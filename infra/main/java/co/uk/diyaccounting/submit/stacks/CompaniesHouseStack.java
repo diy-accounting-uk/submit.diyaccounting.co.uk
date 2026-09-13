@@ -37,6 +37,15 @@ import software.constructs.Construct;
  */
 public class CompaniesHouseStack extends Stack {
 
+    // The XML Gateway's test service and its live service want the opposite of each other on
+    // both the GatewayTest flag and the accounts submission's package reference. ci is the only
+    // deployment environment that talks to the test service; the reference below is the one
+    // Companies House's XML team issued for it. The live reference is not yet known, so it stays
+    // unset for every other environment - the accounts Lambda's own validateEnv() then fails the
+    // deployment's first filing attempt loudly rather than let one go out with a blank one.
+    private static final String XML_GATEWAY_TEST_ENV_NAME = "ci";
+    private static final String XML_GATEWAY_TEST_PACKAGE_REFERENCE = "0012";
+
     public AbstractApiLambdaProps companiesHouseSearchGetLambdaProps;
     public Function companiesHouseSearchGetLambda;
     public ILogGroup companiesHouseSearchGetLambdaLogGroup;
@@ -653,7 +662,13 @@ public class CompaniesHouseStack extends Stack {
         var companiesHouseAccountsPostLambdaEnv = accountsFilingLambdaEnv(props)
                 .with(
                         "COMPANIES_HOUSE_ACCOUNTS_ASYNC_REQUESTS_TABLE_NAME",
-                        companiesHouseAccountsAsyncRequestsTable.getTableName());
+                        companiesHouseAccountsAsyncRequestsTable.getTableName())
+                .with("COMPANIES_HOUSE_GATEWAY_TEST", accountsGatewayTestFlag(props));
+        withPresenterSecretArns(companiesHouseAccountsPostLambdaEnv, props);
+        if (XML_GATEWAY_TEST_ENV_NAME.equals(props.envName())) {
+            companiesHouseAccountsPostLambdaEnv.with(
+                    "COMPANIES_HOUSE_PACKAGE_REFERENCE", XML_GATEWAY_TEST_PACKAGE_REFERENCE);
+        }
         var companiesHouseAccountsPostLambdaUrlOrigin = new ApiLambda(
                 this,
                 ApiLambdaProps.builder()
@@ -692,7 +707,9 @@ public class CompaniesHouseStack extends Stack {
                 .with("RECEIPTS_DYNAMODB_TABLE_NAME", receiptsTable.getTableName())
                 .with(
                         "COMPANIES_HOUSE_ACCOUNTS_ASYNC_REQUESTS_TABLE_NAME",
-                        companiesHouseAccountsAsyncRequestsTable.getTableName());
+                        companiesHouseAccountsAsyncRequestsTable.getTableName())
+                .with("COMPANIES_HOUSE_GATEWAY_TEST", accountsGatewayTestFlag(props));
+        withPresenterSecretArns(companiesHouseAccountsGetLambdaEnv, props);
         var companiesHouseAccountsGetLambdaUrlOrigin = new ApiLambda(
                 this,
                 ApiLambdaProps.builder()
@@ -894,12 +911,32 @@ public class CompaniesHouseStack extends Stack {
         return env;
     }
 
+    // Submit and poll both set GatewayTest on every envelope they send while deployed to ci, the
+    // only environment that talks to the XML Gateway's test service; every other environment
+    // reaches the live gateway and must not set it.
+    private static String accountsGatewayTestFlag(CompaniesHouseStackProps props) {
+        return XML_GATEWAY_TEST_ENV_NAME.equals(props.envName()) ? "true" : "false";
+    }
+
     // Only the submit and poll Lambdas call grantCompaniesHousePresenterSecretsAccess: the preview
     // Lambda renders the iXBRL and never reaches the gateway, so it must not carry
     // secretsmanager:GetSecretValue on either presenter secret.
     private static void grantCompaniesHousePresenterSecretsAccess(Function fn, CompaniesHouseStackProps props) {
         grantWildcardSecretAccess(fn, props.companiesHousePresenterIdArn());
         grantWildcardSecretAccess(fn, props.companiesHousePresenterCodeArn());
+    }
+
+    // resolvePresenterCredentials() in companiesHouseXmlGateway.js reads the ARNs from
+    // COMPANIES_HOUSE_PRESENTER_ID_ARN and COMPANIES_HOUSE_PRESENTER_CODE_ARN; without these the
+    // IAM grant above is unreachable. Blank until B34.6b's sandbox proof lands, same as the XML
+    // Gateway URI - PopulatedMap rejects a blank value outright, so each is set only when configured.
+    private static void withPresenterSecretArns(PopulatedMap<String, String> env, CompaniesHouseStackProps props) {
+        if (StringUtils.isNotBlank(props.companiesHousePresenterIdArn())) {
+            env.with("COMPANIES_HOUSE_PRESENTER_ID_ARN", props.companiesHousePresenterIdArn());
+        }
+        if (StringUtils.isNotBlank(props.companiesHousePresenterCodeArn())) {
+            env.with("COMPANIES_HOUSE_PRESENTER_CODE_ARN", props.companiesHousePresenterCodeArn());
+        }
     }
 
     private static void grantWildcardSecretAccess(Function fn, String secretArn) {

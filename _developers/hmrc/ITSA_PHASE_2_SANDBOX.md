@@ -64,8 +64,8 @@ change where the transcript and checkpoint id land (default `./target/itsa-sandb
 | Setup (first run) | `POST .../test-support/business/{nino}` | `201` with `businessId` |
 | Setup (first run) | `POST .../test-support/itsa-status/{nino}/{taxYear}` | `204` |
 | Reset (first run) | `POST .../vendor-state/checkpoints?nino={nino}` | `201` with a checkpoint id, taken after the business and status above exist |
-| Verify | `GET .../individuals/business/details/{nino}/list` | `200` |
-| Verify | `GET .../individuals/person/itsa-status/{nino}/{taxYear}` | `200` |
+| Verify | `GET .../individuals/business/details/{nino}/list`, `Gov-Test-Scenario: STATEFUL` | `200`, the business this script created |
+| Verify | `GET .../individuals/person/itsa-status/{nino}/{taxYear}`, `Gov-Test-Scenario: STATEFUL` | `200`, the status this script set |
 | Quarterly x4 | `POST .../self-employment/{nino}/{businessId}/period` | `200`/`201`, once per open obligation HMRC returned |
 | Annual | `PUT .../self-employment/{nino}/{businessId}/annual/{taxYear}` | `204` |
 | BSAS trigger | `POST .../adjustable-summary/{nino}/trigger` | `200` with `calculationId` |
@@ -159,5 +159,39 @@ GET .../individuals/person/itsa-status/*******4A/2023-24 -> 403
 ```
 
 That call (`app/functions/hmrc/hmrcItsaStatusGet.js`) is on the Self Assessment Individual
-Details (MTD) API, v2.0 - a subscription not in the list above. The Developer Hub account holder
-needs to add it before a run can get past this call.
+Details (MTD) API, v2.0 - a subscription not in the list above. With the Developer Hub account
+holder subscribing the application, the run got past it and reached two more script defects,
+both fixed:
+
+- Both `GET .../individuals/business/details/{nino}/list` and
+  `GET .../individuals/person/itsa-status/{nino}/{taxYear}` answered `200`, but with a static
+  canned example (`businessId XBIS12345678901`, `"tradingName": "Company X"`, `taxYear 2019-20`,
+  `status "No Status"`) rather than the business and status this script had just created and set
+  through the test-support API. Sending `Gov-Test-Scenario: STATEFUL` on both calls fixes it:
+  Business Details then answers the real `businessId` and `tradingName`, and ITSA status answers
+  the real tax year and `"MTD Mandated"`. `STATEFUL` is documented for Business Details in
+  `_developers/hmrc/ITSA_SPIKE.md` and for ITSA status in `PLAN_ITSA_PHASE_2.md`'s ITSA status
+  section; neither the runbook's table nor the script had been sending it.
+- `GET .../obligations/details/{nino}/income-and-expenditure` answered
+  `404 NO_OBLIGATIONS_FOUND` for the real `businessId`, with or without a `Gov-Test-Scenario`
+  header, and `400 RULE_INCORRECT_GOV_TEST_SCENARIO` for `STATEFUL` specifically. HMRC's
+  resolved OpenAPI for this call
+  (`hmrc/obligations-api`, `resources/public/api/conf/3.0/retrieve_income_tax_income_expenditure.yaml`)
+  lists no `STATEFUL` scenario, only `N/A - DEFAULT`, `OPEN`, `FULFILLED`, `INSOLVENT_TRADER`,
+  `NOT_FOUND`, `NO_OBLIGATIONS_FOUND`, `DYNAMIC` and `CUMULATIVE`; `DYNAMIC` answers only for
+  three fixed example `businessId`s (`XBIS12345678901`, `XPIS12345678901`, `XFIS12345678901`),
+  confirmed by calling it directly with one of them. Recreating the business with
+  `firstAccountingPeriodStartDate`, `firstAccountingPeriodEndDate`, `commencementDate` and
+  `accountingType` set made no difference. This endpoint's sandbox implementation does not read
+  a business created through the test-support API at all - a gap in HMRC's own sandbox, not in
+  this script. The run stops here:
+
+```
+GET .../obligations/details/*******5B/income-and-expenditure?typeOfBusiness=self-employment&businessId=XCIS67805247634&status=open -> 404
+{"code":"NO_OBLIGATIONS_FOUND","message":"No obligations found using this filter"}
+```
+
+Nothing past this call - the four quarterly updates, the annual submission, the adjustable
+summary, the calculation, the final declaration, and the losses and tax liability adjustments
+calls - can be exercised against a test-support-created business until HMRC's sandbox obligations
+endpoint reflects one, or until HMRC's support team names a working alternative.

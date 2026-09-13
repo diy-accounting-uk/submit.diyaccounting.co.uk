@@ -5,12 +5,16 @@
 
 import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
 import { readFileSync } from "fs";
+import { createHash } from "crypto";
 import { buildFraudHeaders, detectVendorPublicIp, _resetForTesting } from "../../lib/buildFraudHeaders.js";
 import { _setTestSalt, _clearSalt, hashSub } from "../../services/subHasher.js";
 
 // Read package info for test assertions (strip scope if present)
 const { name: rawPackageName, version: packageVersion } = JSON.parse(readFileSync(new URL("../../../package.json", import.meta.url)));
 const packageName = rawPackageName.startsWith("@") ? rawPackageName.split("/")[1] : rawPackageName;
+
+// Matches buildFraudHeaders.js's unique-reference derivation: SHA-256(sub + ":" + factorType).
+const hashHex = (input) => createHash("sha256").update(input).digest("hex");
 
 describe("buildFraudHeaders", () => {
   beforeEach(() => {
@@ -287,6 +291,92 @@ describe("buildFraudHeaders", () => {
     const ip = await detectVendorPublicIp();
 
     expect(ip).toBeNull();
+  });
+});
+
+describe("Gov-Client-Multi-Factor (O28)", () => {
+  beforeEach(() => {
+    _resetForTesting();
+  });
+
+  it("builds the header from the authorizer context when mfa_method is TOTP", () => {
+    const event = {
+      headers: { "x-forwarded-for": "198.51.100.1" },
+      requestContext: {
+        authorizer: {
+          lambda: { sub: "user-abc", mfa_method: "TOTP", mfa_federated: "false", auth_time: "1700000000" },
+        },
+      },
+    };
+
+    const { govClientHeaders: headers } = buildFraudHeaders(event);
+
+    expect(headers["Gov-Client-Multi-Factor"]).toBe(
+      `type=TOTP&timestamp=${encodeURIComponent(new Date(1700000000 * 1000).toISOString())}&unique-reference=${hashHex("user-abc:TOTP")}`,
+    );
+  });
+
+  it("builds type=OTHER for a federated sign-in with no mfa_method", () => {
+    const event = {
+      headers: { "x-forwarded-for": "198.51.100.1" },
+      requestContext: {
+        authorizer: {
+          lambda: { sub: "user-abc", mfa_method: "", mfa_federated: "true", auth_time: "1700000000" },
+        },
+      },
+    };
+
+    const { govClientHeaders: headers } = buildFraudHeaders(event);
+
+    expect(headers["Gov-Client-Multi-Factor"]).toContain("type=OTHER");
+    expect(headers["Gov-Client-Multi-Factor"]).toContain(hashHex("user-abc:OTHER"));
+  });
+
+  it("prefers the server-built value over a client-sent Gov-Client-Multi-Factor header", () => {
+    const event = {
+      headers: {
+        "x-forwarded-for": "198.51.100.1",
+        "Gov-Client-Multi-Factor": "type=TOTP&timestamp=client&unique-reference=client-ref",
+      },
+      requestContext: {
+        authorizer: {
+          lambda: { sub: "user-abc", mfa_method: "TOTP", mfa_federated: "false", auth_time: "1700000000" },
+        },
+      },
+    };
+
+    const { govClientHeaders: headers } = buildFraudHeaders(event);
+
+    expect(headers["Gov-Client-Multi-Factor"]).not.toContain("client-ref");
+  });
+
+  it("falls back to the client-sent header when the authorizer context has no MFA signal", () => {
+    const event = {
+      headers: {
+        "x-forwarded-for": "198.51.100.1",
+        "Gov-Client-Multi-Factor": "type=TOTP&timestamp=client&unique-reference=client-ref",
+      },
+      requestContext: {
+        authorizer: { lambda: { sub: "user-abc", mfa_method: "", mfa_federated: "false" } },
+      },
+    };
+
+    const { govClientHeaders: headers } = buildFraudHeaders(event);
+
+    expect(headers["Gov-Client-Multi-Factor"]).toBe("type=TOTP&timestamp=client&unique-reference=client-ref");
+  });
+
+  it("omits the header and logs the required-header warning when neither side supplies one", () => {
+    const event = {
+      headers: { "x-forwarded-for": "198.51.100.1" },
+      requestContext: {
+        authorizer: { lambda: { sub: "user-abc", mfa_method: "", mfa_federated: "false" } },
+      },
+    };
+
+    const { govClientHeaders: headers } = buildFraudHeaders(event);
+
+    expect(headers["Gov-Client-Multi-Factor"]).toBeUndefined();
   });
 });
 

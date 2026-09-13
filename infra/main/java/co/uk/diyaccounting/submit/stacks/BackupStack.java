@@ -11,6 +11,7 @@ import static co.uk.diyaccounting.submit.utils.KindCdk.cfnOutput;
 import co.uk.diyaccounting.submit.SubmitSharedNames;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import org.immutables.value.Value;
 import software.amazon.awscdk.Duration;
 import software.amazon.awscdk.Environment;
@@ -28,8 +29,10 @@ import software.amazon.awscdk.services.backup.IBackupVault;
 import software.amazon.awscdk.services.dynamodb.ITable;
 import software.amazon.awscdk.services.dynamodb.Table;
 import software.amazon.awscdk.services.events.Schedule;
+import software.amazon.awscdk.services.iam.AccountPrincipal;
 import software.amazon.awscdk.services.iam.Effect;
 import software.amazon.awscdk.services.iam.ManagedPolicy;
+import software.amazon.awscdk.services.iam.PolicyDocument;
 import software.amazon.awscdk.services.iam.PolicyStatement;
 import software.amazon.awscdk.services.iam.Role;
 import software.amazon.awscdk.services.iam.ServicePrincipal;
@@ -52,6 +55,23 @@ import software.constructs.Construct;
  * - S3 bucket for DynamoDB exports
  */
 public class BackupStack extends Stack {
+
+    /**
+     * The service role the restore drill uses to copy a recovery point out of the backup account
+     * (914216784828, BackupAccountAccessStack) into ci's own vault. Only ci grants it anything -
+     * the drill never touches prod's vault or data directly.
+     */
+    private static final String RESTORE_DRILL_COPY_ROLE_ARN = "arn:aws:iam::914216784828:role/backup-copy-role";
+
+    /**
+     * The account the copy role above lives in. Granting the role's own ARN as principal fails KMS
+     * key policy validation until the role exists (KMS checks a key policy's principals resolve at
+     * PutKeyPolicy time; the backup account's role is created by a stack that deploys after this
+     * one), so both grants below name the account instead and narrow back to the one role with a
+     * PrincipalArn condition.
+     */
+    private static final String RESTORE_DRILL_COPY_ROLE_ACCOUNT_ID =
+            RESTORE_DRILL_COPY_ROLE_ARN.split(":")[4];
 
     public BackupVault primaryVault;
     public BackupPlan backupPlan;
@@ -166,6 +186,12 @@ public class BackupStack extends Stack {
                         .build()))
                 .build();
 
+        // The restore drill's copy-back leg writes into ci's own vault under a role that lives in
+        // the backup account (backup-copy-role never exists in prod, and the drill never restores
+        // into prod). AWS Backup resolves a copy job's source vault against the calling account,
+        // so that role - not ci's deployment role - has to be the one both accounts grant.
+        boolean isCi = "ci".equals(props.envName());
+
         // ============================================================================
         // Primary Backup Vault (local to deployment account - no cross-region)
         // ============================================================================
@@ -184,14 +210,42 @@ public class BackupStack extends Stack {
                         BackupVaultEvents.COPY_JOB_FAILED,
                         BackupVaultEvents.RESTORE_JOB_FAILED)));
 
+        if (isCi) {
+            vaultBuilder.accessPolicy(PolicyDocument.Builder.create()
+                    .statements(List.of(PolicyStatement.Builder.create()
+                            .sid("AllowBackupAccountCopyRoleToCopyIn")
+                            .effect(Effect.ALLOW)
+                            .principals(List.of(new AccountPrincipal(RESTORE_DRILL_COPY_ROLE_ACCOUNT_ID)))
+                            .actions(List.of("backup:CopyIntoBackupVault"))
+                            .resources(List.of("*"))
+                            .conditions(Map.of("ArnEquals", Map.of("aws:PrincipalArn", RESTORE_DRILL_COPY_ROLE_ARN)))
+                            .build()))
+                    .build());
+        }
+
         this.primaryVault = vaultBuilder.build();
+
+        if (isCi) {
+            // The copy job re-encrypts the recovery point under this key once it lands here, so
+            // the backup account's copy role needs to use it from outside the account that owns
+            // it - the same shape as UseBackupAccountKeyForCopies below, for the copy running the
+            // other way.
+            this.backupKmsKey.addToResourcePolicy(PolicyStatement.Builder.create()
+                    .sid("AllowBackupAccountCopyRoleToEncrypt")
+                    .effect(Effect.ALLOW)
+                    .principals(List.of(new AccountPrincipal(RESTORE_DRILL_COPY_ROLE_ACCOUNT_ID)))
+                    .actions(List.of("kms:Encrypt", "kms:GenerateDataKey*", "kms:DescribeKey", "kms:CreateGrant"))
+                    .resources(List.of("*"))
+                    .conditions(Map.of("ArnEquals", Map.of("aws:PrincipalArn", RESTORE_DRILL_COPY_ROLE_ARN)))
+                    .build());
+        }
 
         // ============================================================================
         // IAM Role for AWS Backup
         // ============================================================================
 
         // AWSBackupServiceRolePolicyForBackup and ...ForRestores cover the DynamoDB tables in
-        // the selection below; the books S3 bucket also in that selection needs its own pair,
+        // the selection below; the diya-gl S3 bucket also in that selection needs its own pair,
         // without which AWS Backup answers "does not have permission to describe resource" for
         // the bucket and the nightly job fails.
         Role backupRole = Role.Builder.create(this, props.resourceNamePrefix() + "-BackupRole")
@@ -308,10 +362,6 @@ public class BackupStack extends Stack {
         ITable passesTable = importTable("ImportedPassesTable", props.sharedNames().passesTableName);
         ITable subscriptionsTable =
                 importTable("ImportedSubscriptionsTable", props.sharedNames().subscriptionsTableName);
-        String booksBucketArn = "arn:aws:s3:::" + props.sharedNames().booksBucketName;
-        // Added beside booksBucketArn, not replacing it - see PLAN_DIYA_GL_NAMING.md's copy
-        // sequence. Both buckets stay in the selection at once until the sequence's later steps
-        // move the DIYA-GL Lambdas over and the old bucket is removed.
         String diyaGlBucketArn = "arn:aws:s3:::" + props.sharedNames().diyaGlBucketName;
 
         BackupSelection.Builder.create(this, props.resourceNamePrefix() + "-CriticalTablesSelection")
@@ -323,7 +373,6 @@ public class BackupStack extends Stack {
                         BackupResource.fromDynamoDbTable(hmrcApiRequestsTable),
                         BackupResource.fromDynamoDbTable(passesTable),
                         BackupResource.fromDynamoDbTable(subscriptionsTable),
-                        BackupResource.fromArn(booksBucketArn),
                         BackupResource.fromArn(diyaGlBucketArn)))
                 .backupSelectionName(props.resourceNamePrefix() + "-critical-tables")
                 .build();

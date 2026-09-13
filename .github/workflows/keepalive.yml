@@ -104,10 +104,26 @@ jobs:
         run: |
           set -euo pipefail
 
+          # Named exemptions, each with a reason: the only way a workflow's cadence miss is
+          # silenced. Keeps the check honest for everything not listed here, and keeps the
+          # reason for what is visible in every run rather than tribal knowledge.
+          declare -A EXEMPT_WORKFLOWS=(
+            ["restore-drill.yml"]="vault does not yet accept the restore path"
+          )
+
           FAILURES=()
+          EXEMPTED=()
 
           for file in .github/workflows/*.yml; do
             if ! grep -qE '^[[:space:]]*schedule:[[:space:]]*$' "$file"; then
+              continue
+            fi
+
+            workflow_file=$(basename "$file")
+
+            if [ -n "${EXEMPT_WORKFLOWS[$workflow_file]:-}" ]; then
+              echo "EXEMPT ${workflow_file}: ${EXEMPT_WORKFLOWS[$workflow_file]}"
+              EXEMPTED+=("${workflow_file}: ${EXEMPT_WORKFLOWS[$workflow_file]}")
               continue
             fi
 
@@ -130,11 +146,26 @@ jobs:
               continue
             fi
 
-            workflow_file=$(basename "$file")
             last_run=$(gh api "repos/${REPO}/actions/workflows/${workflow_file}/runs?event=schedule&per_page=1" \
               --jq '.workflow_runs[0].created_at // empty')
 
             if [ -z "$last_run" ]; then
+              # No schedule-triggered run yet is only a miss once the workflow has existed long
+              # enough to have had one due. Use the workflow's own created_at from the API (when
+              # GitHub first indexed the file on the default branch) rather than its first git
+              # commit: the checkout above is shallow (fetch-depth 1), so a commit-based age would
+              # need a full clone just for this, and the API already carries the date GitHub itself
+              # uses to decide whether the schedule could have fired.
+              created_at=$(gh api "repos/${REPO}/actions/workflows/${workflow_file}" --jq '.created_at // empty')
+              if [ -n "$created_at" ]; then
+                created_epoch=$(date -d "$created_at" +%s)
+                now_epoch=$(date +%s)
+                age_days=$(( (now_epoch - created_epoch) / 86400 ))
+                if [ "$age_days" -le "$cadence" ]; then
+                  echo "OK    ${workflow_file}: no schedule-triggered run yet, but only ${age_days}d old (cadence ${cadence}d) - first slot not due"
+                  continue
+                fi
+              fi
               echo "MISS  ${workflow_file}: no schedule-triggered run recorded yet (cron '${cron}', cadence ${cadence}d)"
               FAILURES+=("${workflow_file}: no schedule-triggered run recorded yet")
               continue
@@ -152,6 +183,12 @@ jobs:
               echo "OK    ${workflow_file}: last schedule run ${age_days}d ago, cadence ${cadence}d"
             fi
           done
+
+          if [ "${#EXEMPTED[@]}" -gt 0 ]; then
+            echo ""
+            echo "Exempted from this check (${#EXEMPTED[@]}):"
+            printf '  - %s\n' "${EXEMPTED[@]}"
+          fi
 
           if [ "${#FAILURES[@]}" -gt 0 ]; then
             echo ""

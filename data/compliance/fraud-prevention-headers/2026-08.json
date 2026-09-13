@@ -1,0 +1,13 @@
+{
+  "month": "August 2026",
+  "status": "advisories",
+  "checkedAt": "2026-09-13T12:44:45.432Z",
+  "emailDate": "2026-09-02 10:30",
+  "subject": "Improve fraud prevention headers for DIY Accounting Submit",
+  "trafficCount": null,
+  "advisories": [
+    "Fraud prevention headers have advisories to review for August 2026."
+  ],
+  "errors": [],
+  "needsAction": true
+}

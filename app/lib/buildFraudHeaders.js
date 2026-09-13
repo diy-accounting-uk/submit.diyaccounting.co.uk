@@ -5,6 +5,7 @@
 
 import { createLogger } from "./logger.js";
 import { readFileSync } from "fs";
+import { createHash } from "crypto";
 import { hashSub, isSaltInitialized } from "../services/subHasher.js";
 import { fetchWithTimeout } from "./httpFetch.js";
 
@@ -57,6 +58,30 @@ export async function detectVendorPublicIp() {
 
   vendorIpDetectionAttempted = true;
   return cachedVendorPublicIp;
+}
+
+/**
+ * Build Gov-Client-Multi-Factor from the authorizer context (O28 step 2b). customAuthorizer.js
+ * verifies the caller's ID token and carries its custom:mfa_method and identities claims
+ * (mfa_method, mfa_federated) plus auth_time through the flat authorizer context -- a token
+ * claim can't be forged, so this is preferred over the client-sent value in
+ * getGovClientHeaders() wherever it's available.
+ *
+ * @param {object} authzCtx - flat authorizer context (event.requestContext.authorizer.lambda)
+ * @param {string} userId - the Cognito sub, for the unique-reference hash
+ * @returns {string|null} the header value, or null when the context can't produce one
+ */
+function buildServerMultiFactorHeader(authzCtx, userId) {
+  if (!authzCtx || !userId) return null;
+
+  const factorType = authzCtx.mfa_method === "TOTP" ? "TOTP" : authzCtx.mfa_federated === "true" ? "OTHER" : null;
+  if (!factorType || !authzCtx.auth_time) return null;
+
+  const timestamp = new Date(Number(authzCtx.auth_time) * 1000).toISOString();
+  // Same derivation as the client-side stableUniqueReference() this replaces (loginWithCognitoCallback.html):
+  // SHA-256(sub + ":" + factorType), stable per user per factor type.
+  const uniqueReference = createHash("sha256").update(`${userId}:${factorType}`).digest("hex");
+  return `type=${factorType}&timestamp=${encodeURIComponent(timestamp)}&unique-reference=${encodeURIComponent(uniqueReference)}`;
 }
 
 /**
@@ -193,7 +218,6 @@ export function buildFraudHeaders(event, options = {}) {
   // 11. Pass through any client-side headers from the browser
   const clientHeaderNames = [
     "Gov-Client-Browser-JS-User-Agent",
-    "Gov-Client-Multi-Factor",
     "Gov-Client-Public-IP-Timestamp",
     "Gov-Client-Screens",
     "Gov-Client-Timezone",
@@ -207,6 +231,24 @@ export function buildFraudHeaders(event, options = {}) {
     if (value && value !== "undefined" && value !== "null") {
       headers[headerName] = value;
     }
+  }
+
+  // 12. Gov-Client-Multi-Factor (O28) -- built server-side from the verified ID token claim
+  // when the authorizer context has one; the client-sent value (sessionStorage, written at the
+  // login callback) is the fallback for a request the authorizer couldn't establish it for.
+  // Server wins because it can't be forged; a genuinely absent value on both sides means the
+  // user signed in with a password only, which is a real advisory, not a bug -- warn like every
+  // other required header this function can't build.
+  const serverMultiFactor = buildServerMultiFactorHeader(authzCtx, userId);
+  const clientMultiFactor = getHeader("Gov-Client-Multi-Factor");
+  const multiFactor = serverMultiFactor || (clientMultiFactor && clientMultiFactor !== "undefined" && clientMultiFactor !== "null" ? clientMultiFactor : null);
+  if (multiFactor) {
+    headers["Gov-Client-Multi-Factor"] = multiFactor;
+  } else {
+    logger.warn({
+      message:
+        "HMRC REQUIRED HEADER MISSING: Gov-Client-Multi-Factor — neither the authorizer nor the client supplied an MFA event; likely a password-only sign-in with no second factor",
+    });
   }
 
   logger.debug({ message: "Built fraud prevention headers", headers });

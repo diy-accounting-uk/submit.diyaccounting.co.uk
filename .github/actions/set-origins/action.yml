@@ -354,10 +354,36 @@ runs:
       run: |
         set -eo pipefail
 
+        # Runs "$@" (an apigatewayv2 CLI call against DOMAIN, the custom domain this function
+        # is vacating) without letting its failure trip `set -e`. Prints stdout and returns 0 on
+        # success. If the call failed because DOMAIN no longer exists — the same self-destruct
+        # race the CloudFront alias vacate above already closes, just against API Gateway instead
+        # of CloudFront — logs that and returns 2. Any other failure prints the error to stderr
+        # and returns 1. Relies on DOMAIN being a caller's `local`, visible here the same way
+        # EXISTING_DISTRIBUTION_ID is visible inside run_against_existing_distribution above.
+        run_against_existing_apigw_domain() {
+          local out rc
+          set +e
+          out=$("$@" 2>&1)
+          rc=$?
+          set -e
+          if [ $rc -eq 0 ]; then
+            printf '%s' "$out"
+            return 0
+          fi
+          if printf '%s' "$out" | grep -q "NotFoundException"; then
+            echo "API GW custom domain [${DOMAIN}] no longer exists (NotFoundException); already vacated, continuing." >&2
+            return 2
+          fi
+          printf '%s\n' "$out" >&2
+          return 1
+        }
+
         transfer_apigw_domain() {
           local DOMAIN="$1"
           local API_ID="$2"
           local CERT_ARN="$3"
+          local rc
 
           echo "Transferring API Gateway custom domain [${DOMAIN}] to API [${API_ID}]"
 
@@ -367,19 +393,39 @@ runs:
 
           if [ "$EXISTING" != "None" ] && [ -n "$EXISTING" ]; then
             echo "Existing API GW custom domain found for [${DOMAIN}], removing old mappings..."
-            MAPPING_IDS=$(aws apigatewayv2 get-api-mappings --domain-name "${DOMAIN}" \
-              --query 'Items[*].ApiMappingId' --output text 2>/dev/null || echo "")
+
+            # Every AWS call below races the same window as the get-domain-names check above:
+            # a self-destruct can delete DOMAIN between that check and any call here. Each is
+            # wrapped so a NotFoundException on DOMAIN is treated as already-vacated rather than
+            # a failure; any other error still fails the step.
+            MAPPING_IDS=$(run_against_existing_apigw_domain aws apigatewayv2 get-api-mappings --domain-name "${DOMAIN}" \
+              --query 'Items[*].ApiMappingId' --output text) && rc=0 || rc=$?
+            if [ $rc -eq 2 ]; then
+              MAPPING_IDS=""
+            elif [ $rc -ne 0 ]; then
+              echo "ERROR: Failed to list API mappings for [${DOMAIN}]"
+              return 1
+            fi
+
             for MID in $MAPPING_IDS; do
               [ -z "$MID" ] || [ "$MID" = "None" ] && continue
               echo "  Deleting mapping [${MID}]"
               aws apigatewayv2 delete-api-mapping --domain-name "${DOMAIN}" --api-mapping-id "$MID"
             done
+
             echo "  Deleting domain [${DOMAIN}]"
             local DELETE_DELAY=15
             local DELETED=false
+            local VACATED=false
             for DELETE_ATTEMPT in 1 2 3 4 5; do
-              if aws apigatewayv2 delete-domain-name --domain-name "${DOMAIN}"; then
+              run_against_existing_apigw_domain aws apigatewayv2 delete-domain-name --domain-name "${DOMAIN}" > /dev/null && rc=0 || rc=$?
+              if [ $rc -eq 0 ]; then
                 DELETED=true
+                break
+              fi
+              if [ $rc -eq 2 ]; then
+                DELETED=true
+                VACATED=true
                 break
               fi
               echo "  Delete attempt ${DELETE_ATTEMPT}/5 failed (likely rate limited), retrying in ${DELETE_DELAY}s..."
@@ -390,8 +436,12 @@ runs:
               echo "ERROR: Failed to delete API GW custom domain [${DOMAIN}] after 5 attempts"
               return 1
             fi
-            echo "  Waiting 10s after domain deletion to avoid rate limiting..."
-            sleep 10
+            if [ "$VACATED" = "true" ]; then
+              echo "  [${DOMAIN}] was already vacated by the time of deletion; nothing was actually deleted here, skipping the post-delete wait."
+            else
+              echo "  Waiting 10s after domain deletion to avoid rate limiting..."
+              sleep 10
+            fi
           fi
 
           echo "Creating API GW custom domain [${DOMAIN}] with cert [${CERT_ARN}]"

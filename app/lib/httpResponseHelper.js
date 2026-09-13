@@ -547,7 +547,9 @@ export function buildUpstreamRejectionResponse({ request, upstreamHost, response
 
 export async function buildTokenExchangeResponse(request, url, body, auditForUserSub = undefined) {
   const upstreamHost = safeHostname(url);
-  let accessToken, response, responseBody;
+  let accessToken;
+  let response;
+  let responseBody;
   try {
     ({ accessToken, response, responseBody } = await performTokenExchange(url, body, auditForUserSub));
   } catch (error) {

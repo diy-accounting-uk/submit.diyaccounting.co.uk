@@ -78,7 +78,8 @@ export async function companiesHouseHttpGet(endpoint, queryParams = {}) {
     Object.entries(queryParams || {}).filter(([, value]) => value !== undefined && value !== null && String(value).trim() !== ""),
   );
   const queryString = new URLSearchParams(cleanParams).toString();
-  const requestUrl = `${baseUrl}${endpoint}${queryString ? `?${queryString}` : ""}`;
+  const querySuffix = queryString ? `?${queryString}` : "";
+  const requestUrl = `${baseUrl}${endpoint}${querySuffix}`;
 
   logger.info({ message: `Request to GET ${requestUrl}`, url: requestUrl, headers: { ...headers, Authorization: "[redacted]" } });
 

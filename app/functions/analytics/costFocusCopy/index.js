@@ -7,9 +7,11 @@
 // independent of that image's build and the nightly Step Functions chain it feeds: a missed or
 // failed cost copy should never stop the Stripe, GA4 or data-quality jobs that chain invokes.
 //
-// The export bucket lives in a different account. Its bucket policy names this Lambda's own
-// execution role by ARN, so a plain cross-account CopyObjectCommand works with no assumed role:
-// s3:GetObject on the source is granted there, s3:PutObject on the destination is granted here.
+// The export bucket lives in a different account, so a plain cross-account CopyObjectCommand
+// works with no assumed role: the source bucket's own policy names this Lambda's execution role
+// by ARN, and that role also carries a matching identity policy, because IAM only allows a
+// cross-account S3 request when both sides grant it. s3:PutObject on the destination needs only
+// the identity policy, since that bucket is in this same account.
 
 // A self-contained zip Lambda (Code.fromAsset zips only this directory), so it logs with plain
 // console.* rather than the shared app/lib/logger.js: that module lives outside this directory

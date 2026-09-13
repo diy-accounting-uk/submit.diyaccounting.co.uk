@@ -47,7 +47,7 @@ function resolveVersionParam(versionParam, metadata) {
   if (versionParam === "latest") {
     return metadata.latestVersion;
   }
-  if (!/^[1-9][0-9]*$/.test(versionParam || "")) {
+  if (!/^[1-9]\d*$/.test(versionParam || "")) {
     return null;
   }
   return Number(versionParam);

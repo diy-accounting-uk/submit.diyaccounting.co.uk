@@ -93,7 +93,10 @@ export async function ingestHandler(event) {
   }
 
   const { presenterId, presenterCode } = await resolvePresenterCredentials();
-  const statusRequestXml = buildStatusRequest({ presenterId, presenterCode, submissionNumber });
+  // A poll of a test-service submission needs the same GatewayTest flag the submission itself
+  // carried; the live service wants it absent, the same split companiesHouseAccountsPost.js makes.
+  const gatewayTest = process.env.COMPANIES_HOUSE_GATEWAY_TEST === "true";
+  const statusRequestXml = buildStatusRequest({ presenterId, presenterCode, submissionNumber, gatewayTest });
   // Forwarded to the gateway call so the simulator's Gov-Test-Scenario handling can be driven
   // from the page's developer-mode field; the real gateway ignores headers it does not know.
   const govTestScenario = getHeader(event.headers, "Gov-Test-Scenario");
