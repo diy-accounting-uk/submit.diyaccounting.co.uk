@@ -158,6 +158,12 @@ A fresh agent carries none of your context, so the brief stands alone. Every bri
   report at once with "build pending, surefire reports at `target/surefire-reports`" or similar.
   The coordinator reads the reports on the merged tree and feeds the verdict back; the agent does
   not wait for the logs to return and does not re-wait on the next turn.
+- **For a proof against a real service with a permanent cost per attempt** (a Companies House
+  submission number, an HMRC sandbox scenario that cannot be reset), brief the agent to fix,
+  lean-deploy, re-prove, all in one turn. `npm run deploy:app-ci -- --deployment <set>` updates
+  Lambda code and web assets in three to five minutes. Only then spend the next scenario or
+  submission number. Otherwise a fix takes the full deploy cost (35 minutes) and the day's budget is
+  gone before the proof runs.
 - **Any new file needs the licence header.** Every comment-capable tracked file carries the SPDX
   identifier and the copyright line, and `app/unit-tests/licenceHeaders.test.js` fails the suite
   when one does not. A new `_developers/*.md` written at the end of an investigation is the usual
