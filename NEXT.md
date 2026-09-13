@@ -34,7 +34,8 @@ named alternatives. A row whose only human step is merging its PR is machine-onl
 standing workflow, not an action the row needs. Within a section, items run by the size of the
 change to committed files, least first (operator, 2026-09-13); a row that changes nothing
 committed — a comment, a run, a scan, a console action — comes before any code. Operator items
-are briefed for Claude Cowork in `../BRIEF_OPERATOR_TASKS_2026-09-04.md` at the workspace root.
+are briefed in `../BRIEF_OPERATOR_RUNBOOK_2026-09-12.md` at the workspace root (updated 2026-09-13),
+with the detail behind each task in the three `../BRIEF_OPERATOR_TASKS_*.md` files.
 Every item names its model: the lowest tier that fits (Fable > Opus > Sonnet > Haiku), or
 `none` for a human step.
 

@@ -16,20 +16,25 @@ Compiled 2026-08-25 from every source: GitHub issues (#3 to #20), local plan doc
 
 **How items are ranked.** Existential first when cheap relative to the risk. Then items that make everything else measurable or truthful, because they compound. Then the revenue path in dependency order. Effort tiebreaks: a small item with the same value class outranks a large one. [DE] marks items in the data engineering layer, with the certification domain they exercise.
 
-## Live status (updated 2026-09-12)
+## Live status (updated 2026-09-13)
 
 Queued and in-flight state lives on `NEXT.md`; this block mirrors it so the backlog reads
-truthfully on its own. Human-only steps are briefed for Claude Cowork at the workspace root:
-`../BRIEF_OPERATOR_TASKS_2026-09-12.md` is current, `../BRIEF_OPERATOR_TASKS_2026-09-09.md` carries
-O17, O21 and O23.
+truthfully on its own. Human-only steps are briefed at the workspace root in
+`../BRIEF_OPERATOR_RUNBOOK_2026-09-12.md` (updated 2026-09-13); the three
+`../BRIEF_OPERATOR_TASKS_*.md` files carry the detail behind its tasks.
 
 - **Four merges on 2026-09-12**: PR #191 (the email hash secret's grant to the four pass Lambdas);
   PR #192, batch 28 (ITSA reads free and submissions charged, a real 403 carrying HMRC's reason,
   `Claude-Run` on the unattended workflows, the DIYA-GL bucket cutover's code half, two walkthrough
   scene scripts, the raw export's field counts); PR #193 (the apex-alias vacate tolerating a ci set
   that expires mid-deploy); PR #194 (214 eslint findings down to 52, and the eslint gate that had
-  reported zero on every run since it was added). Prod runs prod-4918a0d, with prod-e6d3045 left
-  standing as a spare.
+  reported zero on every run since it was added).
+- **Batch b29 (PR #198, 2026-09-13)** carries thirteen tracks: the four pipeline fixes below, B30v's
+  grant, the token charge after HMRC accepts, ITSA deletes free, the copy-back restore drill, the
+  MFA header built server-side, the accounts filing's test flag, the support form's move to the
+  spreadsheets repository, 39 lint findings, the tracked fraud-header record. Prod runs
+  prod-7fbea34, the only prod set. B139 (the live registered-email filing loops at the callback,
+  found by O21's attempt on 2026-09-13) is on its own branch off main.
 - **Four pipeline defects are open** and none is a code regression: B127 merged but unproven on a
   real run, B130 (a superseded deploy reports a failed DORA job), B131 (keepalive red on two
   never-fired schedules), B133 (destroy-prod
@@ -39,8 +44,8 @@ O17, O21 and O23.
   The old prefix is never retired and the spreadsheets repository changes nothing; row 51's naming
   work is down to the S3 bucket.
 - **Tier 1 is empty**: every refined item is on `NEXT.md` with source, owner and model.
-- **Date-gated**: 30a due 2026-09-13; 47 (the Monday crons' proof) 2026-09-14; O16 chase
-  2026-09-21; 43 from 2026-10-02; 48 the week of 2026-11-29.
+- **Date-gated**: 30a due 2026-09-13; 47 (the Monday crons' proof) 2026-09-14; 43 from
+  2026-10-02; 48 the week of 2026-11-29.
 - **Tier 2**: 10's six endpoints are on main behind the environments gate; 11's phase 2 has T1 to
   T7 and the submission cost line landed, with UK property, the cumulative summaries and the losses
   tracks ready; 11a parked by the operator's decision of 2026-09-05; 34's two REST filings are live
