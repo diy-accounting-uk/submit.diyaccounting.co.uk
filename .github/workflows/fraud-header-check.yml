@@ -1,0 +1,77 @@
+# SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0
+# Copyright (C) 2006-2026 DIY Accounting Limited
+
+name: fraud-header-check
+run-name: "Fraud prevention header record freshness check"
+
+# scripts/fraud-header-email-check.js reads HMRC's monthly fraud prevention header report out
+# of the local gyb mail mirror (a private, non-repo directory on one laptop) and writes its
+# decision to data/compliance/fraud-prevention-headers/<YYYY-MM>.json. That fetch cannot run
+# here: the mail mirror is not available to GitHub Actions. What this job can check is whether
+# the record for the expected month has actually landed on this branch — a launchd agent on one
+# laptop fails silently (the laptop is asleep, the mail mirror is stale, nobody commits the
+# result), and this workflow is what turns that silence into a red run.
+#
+# The weekly compliance-test workflow already reads this same directory (via
+# scripts/compliance-fraud-headers-rows.js) into the analytics lake, so a record that never
+# gets committed here never reaches the dashboard either.
+
+on:
+  workflow_dispatch:
+    inputs:
+      month:
+        type: string
+        description: 'Month to check as YYYY-MM (default: the previous calendar month)'
+        required: false
+        default: ''
+  schedule:
+    - cron: '23 8 15 * *' # Monthly on the 15th, off the top-of-hour queue and past the report's due day
+
+permissions:
+  contents: read
+
+jobs:
+  check-record-present:
+    name: 'Check the expected month has a committed record'
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Resolve the expected month
+        id: month
+        run: |
+          MONTH='${{ inputs.month }}'
+          if [ -z "$MONTH" ]; then
+            MONTH=$(date -u -d "$(date -u +%Y-%m-01) -1 month" +%Y-%m)
+          fi
+          echo "month=${MONTH}" | tee -a "$GITHUB_OUTPUT"
+
+      - name: Check the record exists and read its status
+        run: |
+          FILE="data/compliance/fraud-prevention-headers/${{ steps.month.outputs.month }}.json"
+          {
+            echo "## Fraud prevention header record: ${{ steps.month.outputs.month }}"
+            echo ""
+          } >> "$GITHUB_STEP_SUMMARY"
+
+          if [ ! -f "$FILE" ]; then
+            {
+              echo "No record at \`$FILE\` on ${{ github.ref_name }}."
+              echo ""
+              echo "Either the laptop's launchd check (scripts/fraud-header-email-check.js, via"
+              echo "scripts/co.uk.diyaccounting.submit.fraud-header-check.plist) has not run for"
+              echo "this month, or its result was never committed and pushed."
+            } >> "$GITHUB_STEP_SUMMARY"
+            echo "No record at $FILE on ${{ github.ref_name }}."
+            exit 1
+          fi
+
+          STATUS=$(jq -r '.status' "$FILE")
+          NEEDS_ACTION=$(jq -r '.needsAction' "$FILE")
+          CHECKED_AT=$(jq -r '.checkedAt' "$FILE")
+          {
+            echo "Status: **${STATUS}** (needs action: ${NEEDS_ACTION})"
+            echo ""
+            echo "Checked at: ${CHECKED_AT}"
+          } >> "$GITHUB_STEP_SUMMARY"
+          echo "data/compliance/fraud-prevention-headers/${{ steps.month.outputs.month }}.json: status=${STATUS} needsAction=${NEEDS_ACTION}"

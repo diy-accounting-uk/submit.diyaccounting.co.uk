@@ -459,8 +459,11 @@ export async function main(argv) {
   console.log(`fraud-header-email-check: wrote ${outPath}`);
 
   if (alertPayload) {
+    // publishActivityEvent is fire-and-forget: it swallows its own errors and logs them
+    // through pino rather than rejecting, so this line can only report that the attempt was
+    // made, not that the event reached the bus.
     await publishActivityEvent(alertPayload);
-    console.log(`fraud-header-email-check: published activity event for ${expectedMonth.label} (${decision.status})`);
+    console.log(`fraud-header-email-check: requested activity event for ${expectedMonth.label} (${decision.status})`);
   }
 
   return decision;
