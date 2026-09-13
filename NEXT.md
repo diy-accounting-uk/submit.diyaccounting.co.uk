@@ -81,15 +81,9 @@ Every item names its model: the lowest tier that fits (Fable > Opus > Sonnet > H
   (79fbe839): a name with no live stacks succeeds when CloudFormation holds a `DELETE_COMPLETE`
   record for it and the pointer does not name it; fails with neither. Closes when the batch
   merges. **Owner**: Claude Code. **Model**: Haiku.
-- [ ] **B134. Persist `Gov-Client-Device-ID` instead of regenerating it per request.**
-  `web/public/lib/services/hmrc-service.js:174` calls `crypto.randomUUID()` on every request, so the
-  device id changes each time. HMRC report it Correct because their check tests presence and format
-  rather than persistence, but the spec asks for a UUID stored on the device that does not expire.
-  Store it in a first-party cookie or `localStorage`: generate once, reuse, regenerate only when
-  absent. O28's scan counts distinct device ids per sub, which says how visible this is in real
-  traffic. Spec conformance, not an advisory fix. **Source**: `../REPORT_HMRC_HEADER_ADVISORIES.md`.
-  **Owner**: Claude Code. **Model**: Haiku.
-
+- [ ] **B134. Persist `Gov-Client-Device-ID`.** On `claude/b29-board` (2389f27f):
+  `localStorage.hmrcDeviceId`, generated once, never regenerated while present, not cleared at
+  sign-out. Closes when the batch merges. **Owner**: Claude Code. **Model**: Haiku.
 - [ ] **B125. Return a real 403 from HMRC, and show HMRC's reason.** Proven: `e93bb2ea` already
   routed every page through `hmrcErrorMessage()`, and `web/browser-tests/vatObligations.error403.browser.test.js`
   on `claude/b29-board` (5d99f40c) shows the banner carries HMRC's text. Closes when the batch
@@ -202,56 +196,6 @@ Every item names its model: the lowest tier that fits (Fable > Opus > Sonnet > H
   through annual submission, BSAS, calculation, final declaration and the losses and adjustments
   calls. **Source**: `_developers/hmrc/ITSA_PHASE_2_SANDBOX.md` run record. **Owner**: Claude
   Code. **Model**: Sonnet.
-- [ ] **O28. Send `Gov-Client-Multi-Factor` on every request.** Every monthly advisory HMRC has
-  raised, in every month, is this one header missing; every other header reads Correct throughout.
-  Missing per month: April 11 of 18, May 2 of 16, June no traffic, July 0 of 9, August 18 of 21,
-  September 4 of 11 to the 9th. Sending correct header data is a legal requirement, so this is a
-  compliance failure rather than a cosmetic one. **Operator decision: mandate MFA.** Telling HMRC
-  the header is uncollectable was tried and HMRC pushed back, so that route is closed.
-  The evidence, the reasoning and the ranked options are in `../REPORT_HMRC_HEADER_ADVISORIES.md`
-  at the workspace root, with the Developer Hub captures in `../hmrc-header-advisories/`. Read it
-  before starting: it carries the staging argument this row summarises, and section 10 is where
-  HMRC's pushback wording goes.
-  Why it varies: the header is written to `sessionStorage.mfaMetadata` by the inline script in
-  `web/public/auth/loginWithCognitoCallback.html` and read by `hmrc-service.js`. Google federated
-  gives `type=OTHER`; Cognito native with TOTP gives `type=TOTP` from the Pre Token Generation
-  Lambda's `custom:mfa_method`; Cognito native with password only gives nothing.
-  **Step 1, the scan, decides the rest — do not build before reporting it.** The prod async-requests
-  table (`HMRC_VAT_RETURN_POST_ASYNC_REQUESTS_TABLE_NAME`) holds `govClientHeaders` per request, 75
-  requests between 2026-04-01 and 2026-09-09; a read-only scan, no approval needed. Project
-  `Gov-Client-User-IDs` (it carries the raw Cognito sub), whether `Gov-Client-Multi-Factor` is
-  present, its `type=`, and the timestamp, then group by sub. A sub that **never** carries it is a
-  password-only native user, reachable only by step 3. A sub that carries it **sometimes** is the
-  `sessionStorage` lifetime problem — written once at the login callback, lost when the tab closes,
-  so a customer returning on a refresh token sends nothing even with TOTP enrolled. Count distinct
-  `Gov-Client-Device-ID` per sub in the same pass; it answers B134.
-  **Step 2, two ways, and the scan says which.** *2a, `localStorage`:* a three-line change that
-  fixes the "sometimes" cohort with no server change, and the value stays honest because the
-  timestamp is `auth_time` from the ID token and every genuine re-sign-in re-runs the callback. If
-  it ships, **three sites move together** — the write in `loginWithCognitoCallback.html`, that
-  file's final `else` branch removal, and the sign-out removal at
-  `web/public/widgets/auth-status.js:255` — plus the same in `loginWithMockCallback.html`. Moving
-  the write alone gives two real defects: a customer who disables TOTP keeps a false entry, and user
-  B inherits user A's MFA event on a shared browser. It covers only browsers where the callback has
-  run once, and leaves the value client-writable. *2b, server-side:* the destination.
-  `customAuthorizer.js` already hands `buildFraudHeaders.js` a flat context it reads `sub` from, so
-  carry `mfa_method` and the auth time through the same context and build the header there, keeping
-  its shape `type=<TOTP|OTHER>&timestamp=<iso>&unique-reference=<ref>`. Add a `logger.warn` when it
-  cannot be built, matching the other `HMRC REQUIRED HEADER MISSING:` lines — its absence is silent
-  today, which is why this took screenshots to find. A token claim cannot be forged; browser storage
-  can.
-  **Step 3, the pool.** `IdentityStack.java:184` is `.mfa(Mfa.OPTIONAL)`. Required is one word, but
-  every existing native-auth customer then meets a TOTP enrolment screen at their next sign-in.
-  Propose it as a PR and describe that screen; do not ship it before the operator has walked the
-  enrolment path end to end as a new customer meets it. Federated Google users are unaffected.
-  The seven Developer Hub captures live at the workspace root in `../hmrc-header-advisories/`,
-  beside `../REPORT_HMRC_HEADER_ADVISORIES.md`, and stay there: this repository is public and the
-  captures carry the production application id, the operator's name and HMRC's assessment of our
-  compliance. The workspace root is the private side of the boundary, so anything of that kind
-  belongs there and not here.
-  **Source**: `../REPORT_HMRC_HEADER_ADVISORIES.md`; the Developer Hub captures; B22's first run.
-  **Owner**: Claude Code. **Model**: Sonnet.
-
 - [ ] **B34.6b. Companies House accounts filing: the sandbox proof.** After O16: submit the
   FRS 105 accounts to the XML Gateway test service with the test presenter credentials (a
   GitHub environment secret), read the real acknowledgement and poll responses, settle the
@@ -336,6 +280,24 @@ Every item names its model: the lowest tier that fits (Fable > Opus > Sonnet > H
 
 
 ## Human and machine
+
+- [ ] **O28. Send `Gov-Client-Multi-Factor` on every request: mandate MFA in the pool.** Every
+  monthly advisory HMRC has raised is this header missing (`../REPORT_HMRC_HEADER_ADVISORIES.md`).
+  Step 2b is on `claude/b29-board` (b0e3d2be): the browser sends its Cognito ID token as
+  `X-Id-Token`, `customAuthorizer.js` verifies it against the access token's `sub` and passes
+  `custom:mfa_method`, the federated flag and `auth_time` to `buildFraudHeaders.js`, which builds
+  the header (TOTP for an enrolled native user, OTHER for federated Google) and warns
+  `HMRC REQUIRED HEADER MISSING:` for a password-only native user, whom only the pool setting
+  reaches. The prod async-requests table holds nothing (TTL), so the scan could not size the
+  cohorts; `prod-env-hmrc-api-requests` keeps 20 days and showed 3 production VAT POSTs from 3
+  users, 2 without the header.
+  Left, the human half first: `IdentityStack.java:184` is `.mfa(Mfa.OPTIONAL)`. With REQUIRED a
+  returning native-auth customer who never enrolled meets Cognito's hosted-UI "Set up multi-factor
+  authentication" interstitial right after their password — QR code or manual secret, then a
+  6-digit confirm — with no skip; federated Google users see nothing. Walk that path once as a new
+  customer on ci and say go. Then the machine half: the one-word change, its CDK test, and a ci
+  deploy proving native sign-in still completes. **Source**: `../REPORT_HMRC_HEADER_ADVISORIES.md`.
+  **Owner**: Operator decides, Claude Code changes. **Model**: Haiku.
 
 
 ## Human-only
