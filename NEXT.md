@@ -42,7 +42,6 @@ and stop. One branch is driven green at a time. Lifted only by the operator in t
 
 ## Machine-only
 
-
 - [ ] **B133. destroy-prod reports failure when the set is already gone.** Run 34691690046
   (#294, dispatched 11:41:08 for `prod-40b194e`) spent 68 minutes in `Wait for a running prod
   deploy` — the 15112f1f deploy — then failed at `Confirm the deployment has stacks to destroy`
@@ -446,8 +445,32 @@ and stop. One branch is driven green at a time. Lifted only by the operator in t
   rather than reporting non-blocking.
   **Source**: B80's fix. **Owner**: Claude Code. **Model**: Haiku per repository.
 
+- [ ] **B129. Deleting an ITSA loss claim or adjustment is free.** **Operator decision,
+  2026-09-13: make them free.** `hmrcItsaLossesAndClaimsDelete.js:225` and
+  `hmrcItsaTaxLiabilityAdjustmentsDelete.js:223` charge one token under `self-employed-year-end`;
+  a customer who files a wrong claim then removes it pays twice for one net submission, and the
+  delete sends no new figures to HMRC. `self-employed-read` cannot take them: it carries
+  `read:self-assessment` only and a DELETE needs the write scope. So add a third activity in
+  `web/public/submit.catalogue.toml` at `tokenCost = 0` with both scopes, on the same bundles and
+  `display = "never"`, point both handlers at it, and update the two `.activity.test.js` files and
+  `productCatalog.test.js` to prove the count is unchanged after a delete. Nothing else in the
+  product prices an undo, so this is the first submit-versus-undo distinction the catalogue
+  carries. **Source**: B117's wiring pass, 2026-09-12. **Owner**: Claude Code. **Model**: Haiku.
+
+- [ ] **B25c. Issue #11, backups outside the account.** The drill's own state is now known and
+  written up in `_developers/RESTORE_DRILL.md`: `restore-drill.yml` has never run, and two things
+  stop it. The vault's restore grant names a role nothing can assume (B105), and the backup
+  account's stack has not been deployed since before that grant landed (O41). What is proven
+  meanwhile is the copy side: fresh completed recovery points exist for all five critical prod
+  tables and both books buckets, and `restore-test.yml`'s monthly in-account restore has passed
+  three of its last four runs, most recently restoring 4826 receipt items against a live source of
+  4832. Ready now: post that comment on #11, so the issue carries the copy-side proof and names O41x
+  as what the drill waits on. The remainder, after O41x lands: run `restore-drill.yml` and settle
+  the issue on its result. **Source**: issue #11. **Owner**: Claude Code. **Model**: Sonnet.
+
 
 ## Human and machine
+
 
 
 
@@ -474,18 +497,6 @@ and stop. One branch is driven green at a time. Lifted only by the operator in t
   the loop must not spend below. Name the floor to Claude Code with the account id; the first
   test is designed as on-off weeks before any spend. **Source**: `PLAN_ONE_STOP_DASHBOARD.md`
   D17. **Owner**: Operator. **Model**: none.
-
-- [ ] **B129. Decide whether deleting an ITSA loss claim or adjustment costs a token.**
-  `hmrcItsaLossesAndClaimsDelete` and `hmrcItsaTaxLiabilityAdjustmentsDelete` now charge one token,
-  under `self-employed-year-end`, because a DELETE to HMRC is a write and the catalogue prices the
-  page rather than the verb. The other reading is that a correction should be free: a customer who
-  files a wrong claim then removes it pays twice for one net submission, and the delete sends no new
-  figures to HMRC.
-  Two named alternatives. **Keep them charged**: pricing follows the page, one rule, nothing to
-  explain in the catalogue. **Make them free**: deletes move to `self-employed-read`, or to a third
-  activity at `tokenCost = 0`, and the catalogue grows a distinction between submitting and undoing.
-  Nothing else in the product prices an undo today, so there is no precedent either way.
-  **Source**: B117's wiring pass, 2026-09-12. **Owner**: Operator. **Model**: none.
 
 - [ ] **O38. Create the two GitHub Apps the audit ranks joint second.** `diya-ops`, to carry all
   three Lambdas' writes, which separates 55 alarm issues and every support ticket from the
@@ -617,18 +628,6 @@ and stop. One branch is driven green at a time. Lifted only by the operator in t
   than given an environment. Do not dispatch this row again until the operator says so.
   **Source**: `.github/workflows/agentic-lib-*.yml`; run 34716604299.
   **Owner**: Claude Code. **Model**: Sonnet. Blocked on the operator lifting the 2026-09-12 halt.
-
-- [ ] **B25c. Issue #11, backups outside the account.** The drill's own state is now known and
-  written up in `_developers/RESTORE_DRILL.md`: `restore-drill.yml` has never run, and two things
-  stop it. The vault's restore grant names a role nothing can assume (B105), and the backup
-  account's stack has not been deployed since before that grant landed (O41). What is proven
-  meanwhile is the copy side: fresh completed recovery points exist for all five critical prod
-  tables and both books buckets, and `restore-test.yml`'s monthly in-account restore has passed
-  three of its last four runs, most recently restoring 4826 receipt items against a live source of
-  4832. A comment saying exactly this is drafted and not yet posted. After B105 and O41, run the
-  drill and settle the issue on its result. **Source**: issue #11. **Owner**: Claude Code.
-  **Model**: Sonnet. Blocked on O41x: the drill cannot run until the vault accepts a restore
-  grant at all, and today's dispatch proved the current design does not deploy.
 
 - [ ] **B137. `uniqueReference` identifies the user, not the authentication event.** In the
   `Gov-Client-Multi-Factor` header, `uniqueReference` is a SHA-256 of `sub + ":" + factorType`, so
