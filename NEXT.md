@@ -215,22 +215,15 @@ Every item names its model: the lowest tier that fits (Fable > Opus > Sonnet > H
   `promise/always-return` at `web/public/lib/analytics.js:100`. Re-count after the batch merges —
   the token and accounts-filing tracks touched those files — and clear what is left.
   **Source**: batch 27's lint job. **Owner**: Claude Code. **Model**: Haiku.
-- [ ] **O41x. Rework the vault for copy-back restore, then redeploy the backup account.**
-  `setup-backup-account.yml` failed on 2026-09-11 (run 34638032553): AWS Backup refused the vault
-  policy with "cross-account sharing restrictions" (403). A vault access policy takes
-  `backup:CopyIntoBackupVault` cross-account, not restore, so B105's `AllowCiRestoreRoleToRestore`
-  statement cannot deploy. The organisation setting is not implicated;
-  `isCrossAccountBackupEnabled` has been true since 2026-08-29. The stack rolled back cleanly.
-  **Operator decision, 2026-09-11: copy back, then restore locally.** `restore-drill.yml` copies
-  the recovery point from the backup vault to a vault in the source account and restores it there,
-  which is AWS's documented cross-account restore path and the route a real recovery would take. It
-  costs one copy per drill and writes into the source account.
-  So: drop `AllowCiRestoreRoleToRestore` from `CrossAccountBackupVaultStack.java`, leaving
-  `AllowCrossAccountCopy` and the deny guard; give the source account's drill role what a copy-back
-  needs on both vaults and the KMS keys; rewrite `restore-drill.yml` around copy-then-restore; then
-  redeploy the backup account stack. **Source**: run 34638032553; the live vault policy.
-  **Owner**: Claude Code. **Model**: Sonnet.
-
+- [ ] **O41x. Redeploy the backup account, then run the drill.** On `claude/b29-board`
+  (e60b504d to 68817c6b): the refused restore grant is gone from the vault policy; a
+  `backup-copy-role` in the backup account copies a recovery point into `ci-env-primary-vault`
+  (a copy job resolves `SourceBackupVaultName` in the calling account, so it starts from the backup
+  account, not ci); ci's vault and key accept that role; `restore-drill.yml` copies then restores
+  under ci's own role and cleans up both. Left, after the batch merges: dispatch
+  `setup-backup-account.yml` and check the vault policy deploys, then the environment deploy for
+  ci's new grants, then one `restore-drill.yml` run — which is B25c's proof and keepalive's
+  exemption coming off. **Source**: run 34638032553. **Owner**: Claude Code. **Model**: Sonnet.
 - [ ] **B128. A failed HMRC submission must not cost a token.** On `claude/b29-board`
   (0fab6c3c): `hasTokensForActivity` gates before HMRC without decrementing;
   `chargeTokenOnSuccess` decrements once, in each handler's shared adaptor, only after HMRC
