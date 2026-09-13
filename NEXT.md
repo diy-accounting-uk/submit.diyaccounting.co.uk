@@ -41,16 +41,11 @@ Every item names its model: the lowest tier that fits (Fable > Opus > Sonnet > H
 
 ## In flight
 
-- [ ] **B135. Point the support requests at the spreadsheets repository's issues.** The page
-  links and the Lambda's `SUPPORT_GITHUB_REPO` are on main (#198). In flight: spreadsheets PR #109 (`claude/ops-support-issues`, the
-  template) awaits the operator's merge; and the Lambda posts there only once O45's token is on the
-  environments. **Owner**: Claude Code. **Model**: Sonnet.
-
-- [ ] **B138. The homebrew tap's release trigger.** Ruleset 23169518 applied. In flight: homebrew-diya-gl
-  PR #2 (`claude/ops-dispatch-trigger`) merges first; spreadsheets PR #110
-  (`claude/ops-homebrew-dispatch`) merges after O36's `HOMEBREW_DISPATCH_TOKEN` exists
-  (its step fails the publish until then). **Owner**: Operator merges; Claude Code if either goes
-  red. **Model**: Sonnet.
+- [ ] **B138. The homebrew tap's release trigger.** Ruleset 23169518 applied; the sending step is on
+  spreadsheets `main` (PR #110 merged 2026-09-13 13:33 UTC), so every `diya-gl` npm publish fails
+  at its dispatch step until O36's `HOMEBREW_DISPATCH_TOKEN` exists. In flight: homebrew-diya-gl
+  PR #2 (`claude/ops-dispatch-trigger`, the receiving trigger) awaits the operator's merge.
+  **Owner**: Operator merges; Claude Code if it goes red. **Model**: Sonnet.
 
 ## Machine-only
 
@@ -269,22 +264,21 @@ Every item names its model: the lowest tier that fits (Fable > Opus > Sonnet > H
   the PolyForm licence files are on main and on prod since prod-318271f. **Source**:
   `PLAN_LICENSING_UPLIFT_SUBMIT.md` H-LU-9. **Owner**: Operator. **Model**: none.
 
-- [ ] **O45. A token that can write issues in the spreadsheets repository.** The support
-  Lambda's token (`{env}/submit/github/issue_bot_token`, read through `OPS_GITHUB_TOKEN_SECRET_ARN`)
-  is scoped to this repository, so B135's form cannot post there until it is replaced. Two named
-  alternatives: a fine-grained PAT covering both repositories as the interim, or O38's `diya-ops`
-  app installed on both as the destination. Either way the value goes on the `ci` and `prod`
-  GitHub environments and reaches Secrets Manager through `deploy-environment.yml`; tell Claude
-  Code which so B135's Lambda change can land. **Source**: B135. **Owner**: Operator.
-  **Model**: none.
-
-- [ ] **O36. A dispatch token for the homebrew tap.** Create a fine-grained PAT scoped to
-  `homebrew-diya-gl` with contents read and write and put it on
-  `spreadsheets.diyaccounting.co.uk` as `HOMEBREW_DISPATCH_TOKEN`, because the default
-  `GITHUB_TOKEN` cannot dispatch across repositories. `REPORT_HOMEBREW_DIYA_GL_CRON.md` has the
-  exact scopes. B138 carries the ruleset and the two workflow edits. **Source**: B81's report.
-  **Owner**: Operator. **Model**: none.
-
+- [ ] **O45. A token that can write issues in the spreadsheets repository.** The support form's
+  page links, its Lambda's `SUPPORT_GITHUB_REPO` and the spreadsheets `support.md` template are all
+  on the two mains (PR #198, spreadsheets PR #109). The Lambda's token
+  (`{env}/submit/github/issue_bot_token`, read through `OPS_GITHUB_TOKEN_SECRET_ARN`) is scoped to
+  submit, so the form cannot post there until it is replaced. Two named alternatives: a fine-grained
+  PAT covering both repositories as the interim, or O38's `diya-ops` app installed on both as the
+  destination. Either way the value goes on the `ci` and `prod` GitHub environments under the
+  existing secret name and reaches Secrets Manager through `deploy-environment.yml`. **Source**:
+  B135. **Owner**: Operator. **Model**: none.
+- [ ] **O36. A dispatch token for the homebrew tap — now blocking npm publishes.** Spreadsheets
+  PR #110 merged on 2026-09-13, so `publish-diya-gl.yml` fails at its dispatch step until this
+  secret exists. Create a fine-grained PAT scoped to `homebrew-diya-gl` with contents read and
+  write and put it on `spreadsheets.diyaccounting.co.uk` as `HOMEBREW_DISPATCH_TOKEN`
+  (`REPORT_HOMEBREW_DIYA_GL_CRON.md` has the exact scopes). Merge homebrew-diya-gl PR #2 first.
+  **Source**: B81's report. **Owner**: Operator. **Model**: none.
 - [ ] **O37. Turn on SSH commit signing.** `REPORT_GIT_CONFIG.md` settles what the config should
   be and why: keep `pull.rebase=true`, because a rebase re-signs each replayed commit when
   `commit.gpgsign` is a standing default rather than a per-commit flag, and keep
