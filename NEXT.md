@@ -166,6 +166,16 @@ Nothing: no branch, pull request or run carries an open row.
   the sparse three are expected (a median needs more than one sample). **Source**: BACKLOG 52;
   plan row D16. **Owner**: Claude Code. **Model**: Sonnet. **Size**: ~2 files.
 
+- [ ] **B52v. Review the sign-in navigation on the operator dashboard.** The operator asked on
+  2026-09-13 for the sign-in path of `https://submit.diyaccounting.co.uk/operator/dashboard.html`
+  to be reviewed. The page carries its own auth section (`web/public/operator/dashboard.html`
+  lines 90-93: "Not logged in" and a `../auth/login.html` link) and shows "Not authorised to view
+  the operator dashboard." (line 300) when the bundle is missing. Walk the path signed out, signed
+  in without the bundle, and signed in with it: does the page return to itself after sign-in, does
+  the denial name the missing pass, and does the header match the rest of the site's sign-in
+  controls. Fix what the walk shows, with a browser test under `web/browser-tests/`. **Source**:
+  operator, 2026-09-13. **Owner**: Claude Code. **Model**: Sonnet. **Size**: ~2 files.
+
 - [ ] **B52z. No pass type grants the `operator` bundle.** `web/public/operator/dashboard.html` is on
   prod behind the `operator` bundle (`submit.catalogue.toml`, allocation `on-email-match`), but
   `submit.passes.toml` has no `operator` pass type and `prod-env-passes` holds no pass for that
