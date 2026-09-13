@@ -10,7 +10,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 
-import { DENY_PATTERNS, redact, extractFinalAssistantText, describeStoppedRun } from "../../../scripts/redact-triage-output.mjs";
+import { DENY_PATTERNS, redact, extractFinalAssistantText, describeStoppedRun, maxTurnsNote } from "../../../scripts/redact-triage-output.mjs";
 
 const SCRIPT_PATH = fileURLToPath(new URL("../../../scripts/redact-triage-output.mjs", import.meta.url));
 
@@ -142,10 +142,29 @@ describe("extractFinalAssistantText", () => {
   });
 });
 
-describe("describeStoppedRun", () => {
-  test("names the subtype and turn count of a run that hit max-turns with no text", () => {
+describe("maxTurnsNote", () => {
+  test("names the turn budget for a run that hit max-turns", () => {
     const parsed = { type: "result", subtype: "error_max_turns", is_error: false, num_turns: 30 };
-    expect(describeStoppedRun(parsed)).toBe("triage stopped: error_max_turns after 30 turns");
+    expect(maxTurnsNote(parsed)).toBe("_Triage stopped: the 30-turn budget ran out before it finished._");
+  });
+
+  test("returns null for a successful result", () => {
+    expect(maxTurnsNote({ type: "result", subtype: "success", result: "final answer" })).toBeNull();
+  });
+
+  test("returns null for any other stopped subtype", () => {
+    expect(maxTurnsNote({ type: "result", subtype: "error_during_execution", is_error: true, num_turns: 3 })).toBeNull();
+  });
+
+  test("returns null when there is no result entry at all", () => {
+    expect(maxTurnsNote({ foo: "bar" })).toBeNull();
+  });
+});
+
+describe("describeStoppedRun", () => {
+  test("gives the max-turns note for a run that hit max-turns with no text", () => {
+    const parsed = { type: "result", subtype: "error_max_turns", is_error: false, num_turns: 30 };
+    expect(describeStoppedRun(parsed)).toBe("_Triage stopped: the 30-turn budget ran out before it finished._");
   });
 
   test("returns null for a successful result", () => {
@@ -162,12 +181,17 @@ describe("describeStoppedRun", () => {
     expect(describeStoppedRun({ foo: "bar" })).toBeNull();
   });
 
+  test("falls back to a generic message for a stopped subtype that is not max-turns", () => {
+    const parsed = { type: "result", subtype: "error_during_execution", is_error: false, num_turns: 3 };
+    expect(describeStoppedRun(parsed)).toBe("triage stopped: error_during_execution after 3 turns");
+  });
+
   test("reads the last result entry out of a transcript array", () => {
     const parsed = [
       { type: "assistant", message: { role: "assistant", content: [{ type: "text", text: "intermediate turn" }] } },
       { type: "result", subtype: "error_max_turns", is_error: false, num_turns: 30 },
     ];
-    expect(describeStoppedRun(parsed)).toBe("triage stopped: error_max_turns after 30 turns");
+    expect(describeStoppedRun(parsed)).toBe("_Triage stopped: the 30-turn budget ran out before it finished._");
   });
 });
 
@@ -200,7 +224,21 @@ describe("CLI", () => {
     const parsed = { type: "result", subtype: "error_max_turns", is_error: false, num_turns: 30 };
     const result = runCli(JSON.stringify(parsed));
     expect(result.status).toBe(0);
-    expect(result.stdout.trim()).toBe("triage stopped: error_max_turns after 30 turns");
+    expect(result.stdout.trim()).toBe("_Triage stopped: the 30-turn budget ran out before it finished._");
+  });
+
+  test("exits zero with the partial result plus the budget note when max-turns still produced text", () => {
+    const parsed = {
+      type: "result",
+      subtype: "error_max_turns",
+      is_error: false,
+      num_turns: 30,
+      result: "Likely cause: the worker Lambda is timing out under load.",
+    };
+    const result = runCli(JSON.stringify(parsed));
+    expect(result.status).toBe(0);
+    expect(result.stdout).toContain("Likely cause: the worker Lambda is timing out under load.");
+    expect(result.stdout).toContain("_Triage stopped: the 30-turn budget ran out before it finished._");
   });
 
   test("exits non-zero when the input is not valid JSON", () => {
