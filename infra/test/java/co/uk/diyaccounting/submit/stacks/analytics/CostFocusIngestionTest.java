@@ -88,28 +88,22 @@ class CostFocusIngestionTest {
     void copyRoleCanReadAndListTheExportBucketAcrossAccounts() {
         Template template = synthTemplate();
 
+        var readStatement = Match.objectLike(Map.of(
+                "Sid", "ReadTheFocusExportObjects",
+                "Effect", "Allow",
+                "Action", "s3:GetObject",
+                "Resource", "arn:aws:s3:::diy-accounting-cost-focus-887764105431/focus/*"));
+        var listStatement = Match.objectLike(Map.of(
+                "Sid", "ListTheFocusExportBucket",
+                "Effect", "Allow",
+                "Action", "s3:ListBucket",
+                "Resource", "arn:aws:s3:::diy-accounting-cost-focus-887764105431",
+                "Condition", Map.of("StringLike", Map.of("s3:prefix", "focus/*"))));
+        var policyDocument = Match.objectLike(
+                Map.of("Statement", Match.arrayWith(List.of(readStatement, listStatement))));
+
         template.hasResourceProperties(
-                "AWS::IAM::Policy",
-                Match.objectLike(Map.of(
-                        "PolicyDocument",
-                        Match.objectLike(Map.of(
-                                "Statement",
-                                Match.arrayWith(List.of(
-                                        Match.objectLike(Map.of(
-                                                "Sid", "ReadTheFocusExportObjects",
-                                                "Effect", "Allow",
-                                                "Action", "s3:GetObject",
-                                                "Resource",
-                                                        "arn:aws:s3:::diy-accounting-cost-focus-887764105431/focus/*")),
-                                        Match.objectLike(Map.of(
-                                                "Sid", "ListTheFocusExportBucket",
-                                                "Effect", "Allow",
-                                                "Action", "s3:ListBucket",
-                                                "Resource", "arn:aws:s3:::diy-accounting-cost-focus-887764105431",
-                                                "Condition",
-                                                        Map.of(
-                                                                "StringLike",
-                                                                Map.of("s3:prefix", "focus/*"))))))))))));
+                "AWS::IAM::Policy", Match.objectLike(Map.of("PolicyDocument", policyDocument)));
     }
 
     @Test
