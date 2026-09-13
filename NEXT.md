@@ -276,14 +276,6 @@ Nothing: no branch, pull request or run carries an open row.
 
 ## Human-only
 
-- [ ] **O21. File one registered-office or registered-email change on prod.** Both activities
-  are live on submit.diyaccounting.co.uk since prod-4463ec1 (2026-09-07 00:5x UTC), free on the
-  `default` bundle, with the live Companies House filing client. A real filing changes a real
-  company's register, so this is the operator's own company and sign-in. The first attempt on
-  2026-09-13 looped at the authorise callback: Companies House's token response carries no `scope`
-  field and the callback compared against it. Fixed in PR #199 and on prod
-  since prod-4e15028 (about 17:20 UTC). Try again; a receipt or an error message is enough.
-  **Source**: BACKLOG 34. **Owner**: Operator. **Model**: none.
 
 - [ ] **O17. Register the Companies House sandbox test user and set four ci values.**
   Companies House has no create-test-user API, so the operator registers a throwaway account
@@ -329,11 +321,6 @@ Nothing: no branch, pull request or run carries an open row.
   existing secret name and reaches Secrets Manager through `deploy-environment.yml`. **Source**:
   B135. **Owner**: Operator. **Model**: none.
 
-- [ ] **O36. A dispatch token for the homebrew tap — now blocking npm publishes.** Spreadsheets
-  PR #110 merged on 2026-09-13, so `publish-diya-gl.yml` fails at its dispatch step until this
-  secret exists. Create a fine-grained PAT scoped to `homebrew-diya-gl` with contents read and
-  write and put it on `spreadsheets.diyaccounting.co.uk` as `HOMEBREW_DISPATCH_TOKEN`
-  (`REPORT_HOMEBREW_DIYA_GL_CRON.md` has the exact scopes). **Source**: B81's report. **Owner**: Operator. **Model**: none.
 
 - [ ] **O37. Turn on SSH commit signing.** `REPORT_GIT_CONFIG.md` settles what the config should
   be and why: keep `pull.rebase=true`, because a rebase re-signs each replayed commit when
@@ -349,13 +336,6 @@ Nothing: no branch, pull request or run carries an open row.
   `REPORT_GIT_CONFIG.md`; `REPORT_IDENTITY_AUDIT.md` section 9. **Owner**: Operator. **Model**:
   none.
 
-- [ ] **O47. Where the monthly fraud-header check reads HMRC's email from.** Today it runs on
-  the laptop against the local Gmail mirror and its record has to be committed and pushed by hand
-  each month. Two named alternatives: keep it there and commit the record monthly (the b29
-  watchdog fails on the 15th if it is missing); or move the fetch into a scheduled workflow, which
-  needs a Gmail read credential for antony@diyaccounting.co.uk (an OAuth refresh token or
-  app password) as a GitHub Actions secret — mailbox access from CI is your call. **Source**:
-  B136. **Owner**: Operator. **Model**: none.
 
 - [ ] **O44. Tell Companies House's XML team what B34.6b submitted.** One email from your address
   to Neal at `xml@companieshouse.gov.uk`, naming: presenter E0000052288, company 06846849, test
