@@ -11,6 +11,7 @@ import static co.uk.diyaccounting.submit.utils.KindCdk.cfnOutput;
 import co.uk.diyaccounting.submit.SubmitSharedNames;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import org.immutables.value.Value;
 import software.amazon.awscdk.Duration;
 import software.amazon.awscdk.Environment;
@@ -28,7 +29,7 @@ import software.amazon.awscdk.services.backup.IBackupVault;
 import software.amazon.awscdk.services.dynamodb.ITable;
 import software.amazon.awscdk.services.dynamodb.Table;
 import software.amazon.awscdk.services.events.Schedule;
-import software.amazon.awscdk.services.iam.ArnPrincipal;
+import software.amazon.awscdk.services.iam.AccountPrincipal;
 import software.amazon.awscdk.services.iam.Effect;
 import software.amazon.awscdk.services.iam.ManagedPolicy;
 import software.amazon.awscdk.services.iam.PolicyDocument;
@@ -61,6 +62,16 @@ public class BackupStack extends Stack {
      * the drill never touches prod's vault or data directly.
      */
     private static final String RESTORE_DRILL_COPY_ROLE_ARN = "arn:aws:iam::914216784828:role/backup-copy-role";
+
+    /**
+     * The account the copy role above lives in. Granting the role's own ARN as principal fails KMS
+     * key policy validation until the role exists (KMS checks a key policy's principals resolve at
+     * PutKeyPolicy time; the backup account's role is created by a stack that deploys after this
+     * one), so both grants below name the account instead and narrow back to the one role with a
+     * PrincipalArn condition.
+     */
+    private static final String RESTORE_DRILL_COPY_ROLE_ACCOUNT_ID =
+            RESTORE_DRILL_COPY_ROLE_ARN.split(":")[4];
 
     public BackupVault primaryVault;
     public BackupPlan backupPlan;
@@ -204,9 +215,10 @@ public class BackupStack extends Stack {
                     .statements(List.of(PolicyStatement.Builder.create()
                             .sid("AllowBackupAccountCopyRoleToCopyIn")
                             .effect(Effect.ALLOW)
-                            .principals(List.of(new ArnPrincipal(RESTORE_DRILL_COPY_ROLE_ARN)))
+                            .principals(List.of(new AccountPrincipal(RESTORE_DRILL_COPY_ROLE_ACCOUNT_ID)))
                             .actions(List.of("backup:CopyIntoBackupVault"))
                             .resources(List.of("*"))
+                            .conditions(Map.of("ArnEquals", Map.of("aws:PrincipalArn", RESTORE_DRILL_COPY_ROLE_ARN)))
                             .build()))
                     .build());
         }
@@ -221,9 +233,10 @@ public class BackupStack extends Stack {
             this.backupKmsKey.addToResourcePolicy(PolicyStatement.Builder.create()
                     .sid("AllowBackupAccountCopyRoleToEncrypt")
                     .effect(Effect.ALLOW)
-                    .principals(List.of(new ArnPrincipal(RESTORE_DRILL_COPY_ROLE_ARN)))
+                    .principals(List.of(new AccountPrincipal(RESTORE_DRILL_COPY_ROLE_ACCOUNT_ID)))
                     .actions(List.of("kms:Encrypt", "kms:GenerateDataKey*", "kms:DescribeKey", "kms:CreateGrant"))
                     .resources(List.of("*"))
+                    .conditions(Map.of("ArnEquals", Map.of("aws:PrincipalArn", RESTORE_DRILL_COPY_ROLE_ARN)))
                     .build());
         }
 
