@@ -16,11 +16,12 @@ runs), and for Claude Code steps the **Model** a sub-agent should use (Fable > O
 Haiku; the lowest tier that fits). Anything touching code goes through a `claude/*` branch and
 PR; the operator merges.
 
-**Prod runs deployment prod-7b355a0** (PR #200's merge, promoted about 21:1x UTC on 2026-09-13);
-`prod-a8cb1ea` (PR #201's merge) is deploying at 21:49 and replaces it when its probes pass.
-**ci at 21:49 UTC**: `ci-b29w2` stands (self-destructs 23:11); `ci-claud20c8` left one `ApiStack` in
-ROLLBACK_COMPLETE after its self-destruct fired mid-redeploy, which the 02:34 sweep clears; the ci
-pointer still names it. `ci-vatview` (PR #202, three-hour delay) is deploying.
+**Prod runs deployment prod-a8cb1ea** (PR #201's merge, promoted about 22:00 UTC on 2026-09-13,
+carrying batch b29, the filing-callback fix, the accounts envelope fix and the ITSA dashboard fix);
+`prod-7b355a0` is being removed by its `destroy previous` job.
+**ci at 22:04 UTC**: `ci-b29w2` stands (self-destructs 23:11); `ci-vatview` (PR #202, three-hour
+delay from 21:52) is deploying; `ci-claud20c8` left one `ApiStack` in ROLLBACK_COMPLETE, which the
+02:34 sweep clears, and the ci pointer still names it.
 
 The board runs in five sections, in this order: **in flight** (a branch, a pull request or a run
 in motion, each named in the row), **machine-only**, **human and machine**, **human-only**,
