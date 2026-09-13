@@ -227,6 +227,11 @@ jobs:
     name: 'Generate ${{ needs.params.outputs.pass-type }} pass for ${{ needs.names.outputs.environment-name }}'
     runs-on: ubuntu-24.04
     environment: ${{ needs.names.outputs.environment-name }}
+    # This job rotates and purges the passGeneration lane's durable Cognito user, so two runs
+    # on that user queue rather than overlap.
+    concurrency:
+      group: behaviour-test-user-${{ needs.names.outputs.environment-name }}-passGeneration
+      cancel-in-progress: false
     steps:
 
       - name: Configure AWS role via GitHub OIDC

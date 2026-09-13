@@ -3,9 +3,6 @@
 
 name: probe-test
 run-name: "probe test of ${{ github.ref_name }}"
-#concurrency:
-#  group: probe-test-${{ inputs.behaviour-test-suite }}-${{ inputs.environment-name || (github.ref == 'refs/heads/main' && 'prod' || 'ci') }}
-#  cancel-in-progress: false
 
 # bump 00
 
@@ -330,6 +327,14 @@ jobs:
       fail-fast: false
       matrix:
         suite: ${{ fromJSON(needs.params.outputs.behaviour-test-suites-json) }}
+    # Each suite has one durable Cognito user per environment, and every run of this job purges
+    # that user's bundles, rotates its password and toggles the pool's native auth. A deploy's
+    # probe and a scheduled probe can reach the same user at the same time, and the second one
+    # to start deletes the bundle the first is mid-way through using. Jobs that share a user
+    # queue here instead of overlapping.
+    concurrency:
+      group: behaviour-test-user-${{ needs.names.outputs.environment-name }}-${{ matrix.suite }}
+      cancel-in-progress: false
     steps:
       - name: Running behaviour test - ${{ matrix.suite }}
         run: ":"
