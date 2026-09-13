@@ -5,21 +5,21 @@ name: restore drill
 run-name: "Restore drill: prod tables into ci from the cross-account vault"
 
 # Proves the cross-account vault does more than receive copies: it can rebuild a working
-# replica of prod's data in a different AWS account. Pulls the newest recovery point of
-# each critical prod DynamoDB table from submit-cross-account-vault, restores it into ci
-# as ci-restore-<table>, checks the restored bundles table for the salt's own DynamoDB
-# backup item so the salt is proven to come back with it, compares each restored table's
-# item count against its recovery point, times each restore, then deletes every table
-# this run created.
+# replica of prod's data in a different AWS account. For each critical prod DynamoDB table:
+# finds its newest recovery point in submit-cross-account-vault, copies that recovery point
+# into ci's own vault, restores the copy into ci as ci-restore-<table>, checks the restored
+# bundles table for the salt's own DynamoDB backup item so the salt is proven to come back
+# with it, compares each restored table's item count against its recovery point, times each
+# leg, then deletes every table and copied recovery point this run created.
 #
-# This restore runs cross-account: the caller is ci's own deployment role, reading and
-# restoring recovery points owned by the backup account (914216784828). AWS Backup vault
-# access policies only grant a resource-based allow to a named principal; that principal
-# has to be one the caller can actually authenticate as. ci-env-backup-role, the principal
-# the vault currently names for restore, can only be assumed by the backup service itself
-# (its trust policy has no AssumeRole statement for any IAM caller) — so this drill fails
-# at the first AWS Backup call until the vault grants the actual caller identity, not a
-# service-only role, the read/restore actions. See _developers/RESTORE_DRILL.md.
+# The copy and the restore run as two different identities, because they run in two
+# different accounts. AWS Backup resolves a copy job's source vault name against the
+# account making the call, and submit-cross-account-vault lives in the backup account
+# (914216784828) - so the copy has to be started from there, under backup-copy-role
+# (BackupAccountAccessStack), not from ci. Once the copy lands in ci's own vault
+# (ci-env-primary-vault), the restore is an ordinary same-account restore under
+# ci-env-backup-role, exactly like restore-test.yml's proven local restore in the backup
+# account. See _developers/RESTORE_DRILL.md.
 
 on:
   workflow_dispatch: {}
@@ -29,12 +29,14 @@ on:
 env:
   AWS_REGION: 'eu-west-2'
   BACKUP_ACCOUNT_ID: '914216784828'
+  CI_ACCOUNT_ID: '367191799875'
   PROD_ACCOUNT_ID: '972912397388'
   CROSS_ACCOUNT_VAULT_NAME: 'submit-cross-account-vault'
+  CI_PRIMARY_VAULT_NAME: 'ci-env-primary-vault'
 
 jobs:
   restore-drill:
-    name: 'Restore prod tables into ci from the cross-account vault'
+    name: 'Copy prod recovery points into ci and restore them there'
     runs-on: ubuntu-24.04
     timeout-minutes: 120
     environment: ci
@@ -42,7 +44,116 @@ jobs:
       id-token: write
       contents: read
     steps:
-      - name: Configure AWS role via GitHub OIDC
+      - name: Configure AWS role via GitHub OIDC (backup account)
+        uses: aws-actions/configure-aws-credentials@v6
+        with:
+          role-to-assume: 'arn:aws:iam::${{ env.BACKUP_ACCOUNT_ID }}:role/backup-github-actions-role'
+          aws-region: ${{ env.AWS_REGION }}
+          role-chaining: false
+          audience: sts.amazonaws.com
+          role-skip-session-tagging: true
+          output-credentials: true
+          retry-max-attempts: 3
+
+      - name: Assume backup account deployment role
+        uses: aws-actions/configure-aws-credentials@v6
+        with:
+          role-to-assume: 'arn:aws:iam::${{ env.BACKUP_ACCOUNT_ID }}:role/backup-deployment-role'
+          aws-region: ${{ env.AWS_REGION }}
+          role-chaining: true
+          audience: sts.amazonaws.com
+          role-skip-session-tagging: true
+          output-credentials: true
+          retry-max-attempts: 3
+
+      - name: Copy each prod table's recovery point into ci's vault
+        run: |
+          set -uo pipefail
+          : > /tmp/restore-drill-copies.tsv
+          : > /tmp/restore-drill-copied-recovery-points.txt
+
+          COPY_ROLE_ARN="arn:aws:iam::${BACKUP_ACCOUNT_ID}:role/backup-copy-role"
+          DESTINATION_VAULT_ARN="arn:aws:backup:${AWS_REGION}:${CI_ACCOUNT_ID}:backup-vault:${CI_PRIMARY_VAULT_NAME}"
+
+          copy_table() {
+            local SHORT_NAME="$1"
+            local SOURCE_TABLE="prod-env-${SHORT_NAME}"
+            local SOURCE_TABLE_ARN="arn:aws:dynamodb:${AWS_REGION}:${PROD_ACCOUNT_ID}:table/${SOURCE_TABLE}"
+            local START_TS
+            START_TS=$(date +%s)
+
+            echo "=== ${SOURCE_TABLE}: copying into ${CI_PRIMARY_VAULT_NAME} ==="
+
+            local RP
+            if ! RP=$(aws backup list-recovery-points-by-backup-vault \
+              --backup-vault-name "${CROSS_ACCOUNT_VAULT_NAME}" \
+              --region "${AWS_REGION}" \
+              --query "sort_by(RecoveryPoints[?Status=='COMPLETED' && ResourceArn=='${SOURCE_TABLE_ARN}'], &CompletionDate)[-1]" \
+              --output json 2>&1) || [ -z "$RP" ] || [ "$RP" = "null" ]; then
+              echo "FAIL: could not find a completed recovery point for ${SOURCE_TABLE} in ${CROSS_ACCOUNT_VAULT_NAME}."
+              echo "$RP"
+              printf '%s\tno-recovery-point\t-\t-\t%s\n' "$SOURCE_TABLE" "$(( $(date +%s) - START_TS ))" >> /tmp/restore-drill-copies.tsv
+              return 1
+            fi
+
+            local RP_ARN BACKUP_SIZE_BYTES
+            RP_ARN=$(echo "$RP" | jq -r '.RecoveryPointArn')
+            BACKUP_SIZE_BYTES=$(echo "$RP" | jq -r '.BackupSizeInBytes // 0')
+            echo "Recovery point: $RP_ARN ($BACKUP_SIZE_BYTES bytes)"
+
+            local COPY_JOB_ID
+            if ! COPY_JOB_ID=$(aws backup start-copy-job \
+              --recovery-point-arn "$RP_ARN" \
+              --source-backup-vault-name "${CROSS_ACCOUNT_VAULT_NAME}" \
+              --destination-backup-vault-arn "$DESTINATION_VAULT_ARN" \
+              --iam-role-arn "$COPY_ROLE_ARN" \
+              --region "${AWS_REGION}" \
+              --query CopyJobId --output text 2>&1); then
+              echo "FAIL: could not start the copy job for ${SOURCE_TABLE}."
+              echo "$COPY_JOB_ID"
+              printf '%s\tstart-copy-failed\t-\t%s\t%s\n' "$SOURCE_TABLE" "$BACKUP_SIZE_BYTES" "$(( $(date +%s) - START_TS ))" >> /tmp/restore-drill-copies.tsv
+              return 1
+            fi
+            echo "Copy job: $COPY_JOB_ID"
+
+            local STATE="RUNNING"
+            local ATTEMPT=0
+            while [ "$ATTEMPT" -lt 40 ]; do
+              STATE=$(aws backup describe-copy-job --copy-job-id "$COPY_JOB_ID" \
+                --region "${AWS_REGION}" --query CopyJob.State --output text 2>/dev/null || echo "UNKNOWN")
+              echo "$(date -u +%H:%M:%S) copy job $COPY_JOB_ID: $STATE"
+              case "$STATE" in
+                COMPLETED) break ;;
+                FAILED|PARTIAL)
+                  aws backup describe-copy-job --copy-job-id "$COPY_JOB_ID" --region "${AWS_REGION}" --output json
+                  printf '%s\tcopy-%s\t-\t%s\t%s\n' "$SOURCE_TABLE" "$STATE" "$BACKUP_SIZE_BYTES" "$(( $(date +%s) - START_TS ))" >> /tmp/restore-drill-copies.tsv
+                  return 1
+                  ;;
+              esac
+              sleep 30
+              ATTEMPT=$((ATTEMPT + 1))
+            done
+            if [ "$STATE" != "COMPLETED" ]; then
+              echo "FAIL: copy job $COPY_JOB_ID did not finish within 20 minutes."
+              printf '%s\ttimed-out\t-\t%s\t%s\n' "$SOURCE_TABLE" "$BACKUP_SIZE_BYTES" "$(( $(date +%s) - START_TS ))" >> /tmp/restore-drill-copies.tsv
+              return 1
+            fi
+
+            local DEST_RP_ARN
+            DEST_RP_ARN=$(aws backup describe-copy-job --copy-job-id "$COPY_JOB_ID" \
+              --region "${AWS_REGION}" --query CopyJob.DestinationRecoveryPointArn --output text)
+            echo "Copied into ${DEST_RP_ARN}"
+            echo "$DEST_RP_ARN" >> /tmp/restore-drill-copied-recovery-points.txt
+
+            printf '%s\tcopied\t%s\t%s\t%s\n' "$SOURCE_TABLE" "$DEST_RP_ARN" "$BACKUP_SIZE_BYTES" "$(( $(date +%s) - START_TS ))" >> /tmp/restore-drill-copies.tsv
+            return 0
+          }
+
+          for TABLE in receipts bundles hmrc-api-requests passes subscriptions; do
+            copy_table "$TABLE" || true
+          done
+
+      - name: Configure AWS role via GitHub OIDC (ci)
         uses: aws-actions/configure-aws-credentials@v6
         with:
           role-to-assume: ${{ vars.SUBMIT_ACTIONS_ROLE_ARN }}
@@ -53,7 +164,7 @@ jobs:
           output-credentials: true
           retry-max-attempts: 3
 
-      - name: Assume AWS deployment role
+      - name: Assume ci deployment role
         uses: aws-actions/configure-aws-credentials@v6
         with:
           role-to-assume: ${{ vars.SUBMIT_DEPLOY_ROLE_ARN }}
@@ -67,49 +178,40 @@ jobs:
       - name: Set restore parameters
         run: |
           set -euo pipefail
-          ACCOUNT_ID=$(aws sts get-caller-identity --query Account --output text)
-          echo "RESTORE_ROLE_ARN=arn:aws:iam::$ACCOUNT_ID:role/ci-env-backup-role" >> "$GITHUB_ENV"
+          echo "RESTORE_ROLE_ARN=arn:aws:iam::${CI_ACCOUNT_ID}:role/ci-env-backup-role" >> "$GITHUB_ENV"
           : > /tmp/restore-drill-created-tables.txt
           : > /tmp/restore-drill-results.tsv
 
-      # Each prod table's recovery point is looked up and restored in turn so that one
-      # table's failure does not stop the rest from being tried and reported on.
-      - name: Restore each prod table from the cross-account vault
+      # Each table copied above is restored in turn so that one table's failure does not
+      # stop the rest from being tried and reported on. A table whose copy leg failed has
+      # no row in the copies file and is reported as such without attempting a restore.
+      - name: Restore each copied recovery point in ci
         run: |
           set -uo pipefail
 
           restore_table() {
             local SHORT_NAME="$1"
             local SOURCE_TABLE="prod-env-${SHORT_NAME}"
-            local SOURCE_TABLE_ARN="arn:aws:dynamodb:${AWS_REGION}:${PROD_ACCOUNT_ID}:table/${SOURCE_TABLE}"
             local TARGET_TABLE="ci-restore-${SHORT_NAME}"
             local START_TS
             START_TS=$(date +%s)
 
             echo "=== ${SOURCE_TABLE} -> ${TARGET_TABLE} ==="
 
-            local RP
-            if ! RP=$(aws backup list-recovery-points-by-backup-vault \
-              --backup-vault-name "${CROSS_ACCOUNT_VAULT_NAME}" \
-              --backup-vault-account-id "${BACKUP_ACCOUNT_ID}" \
-              --region "${AWS_REGION}" \
-              --query "sort_by(RecoveryPoints[?Status=='COMPLETED' && ResourceArn=='${SOURCE_TABLE_ARN}'], &CompletionDate)[-1]" \
-              --output json 2>&1) || [ -z "$RP" ] || [ "$RP" = "null" ]; then
-              echo "FAIL: could not find a completed recovery point for ${SOURCE_TABLE} in ${CROSS_ACCOUNT_VAULT_NAME}."
-              echo "$RP"
-              printf '%s\tno-recovery-point\t-\t-\t-\t%s\n' "$SOURCE_TABLE" "$(( $(date +%s) - START_TS ))" >> /tmp/restore-drill-results.tsv
+            local COPY_ROW
+            COPY_ROW=$(awk -F'\t' -v t="$SOURCE_TABLE" '$1 == t { print }' /tmp/restore-drill-copies.tsv | tail -1)
+            if [ -z "$COPY_ROW" ] || [ "$(echo "$COPY_ROW" | cut -f2)" != "copied" ]; then
+              echo "FAIL: no successful copy for ${SOURCE_TABLE}, skipping restore."
+              printf '%s\tno-copy\t-\t-\t-\t%s\n' "$SOURCE_TABLE" "$(( $(date +%s) - START_TS ))" >> /tmp/restore-drill-results.tsv
               return 1
             fi
-
             local RP_ARN BACKUP_SIZE_BYTES
-            RP_ARN=$(echo "$RP" | jq -r '.RecoveryPointArn')
-            BACKUP_SIZE_BYTES=$(echo "$RP" | jq -r '.BackupSizeInBytes // 0')
-            echo "Recovery point: $RP_ARN ($BACKUP_SIZE_BYTES bytes)"
+            RP_ARN=$(echo "$COPY_ROW" | cut -f3)
+            BACKUP_SIZE_BYTES=$(echo "$COPY_ROW" | cut -f4)
 
             local META
             if ! META=$(aws backup get-recovery-point-restore-metadata \
-              --backup-vault-name "${CROSS_ACCOUNT_VAULT_NAME}" \
-              --backup-vault-account-id "${BACKUP_ACCOUNT_ID}" \
+              --backup-vault-name "${CI_PRIMARY_VAULT_NAME}" \
               --recovery-point-arn "$RP_ARN" \
               --region "${AWS_REGION}" \
               --query RestoreMetadata --output json 2>&1); then
@@ -223,6 +325,26 @@ jobs:
               echo "No table $TABLE to delete"
             fi
           done < /tmp/restore-drill-created-tables.txt
+
+      - name: Delete the recovery points this run copied into ci
+        if: always()
+        run: |
+          set -uo pipefail
+          if [ ! -s /tmp/restore-drill-copied-recovery-points.txt ]; then
+            echo "No copied recovery points to delete."
+            exit 0
+          fi
+          while IFS= read -r RP_ARN; do
+            [ -z "$RP_ARN" ] && continue
+            if aws backup delete-recovery-point \
+              --backup-vault-name "${CI_PRIMARY_VAULT_NAME}" \
+              --recovery-point-arn "$RP_ARN" \
+              --region "${AWS_REGION}" 2>/dev/null; then
+              echo "Deleted $RP_ARN"
+            else
+              echo "Could not delete $RP_ARN (may already be gone)"
+            fi
+          done < /tmp/restore-drill-copied-recovery-points.txt
 
       - name: Publish the result
         if: always()
