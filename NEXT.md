@@ -66,25 +66,17 @@ Every item names its model: the lowest tier that fits (Fable > Opus > Sonnet > H
 - [ ] **B130. A superseded deploy reports a failed job.** On `claude/b29-board` (44f35d1b):
   `record-dora` skips when the run was cancelled or `names` produced no environment. Closes when
   the batch merges. **Owner**: Claude Code. **Model**: Haiku.
-- [ ] **B30v. The prod FOCUS export copy is denied ListBucket.**
-  **Both environments, not just prod.** `prod-env-cost-focus-copy-errors` has been in ALARM since
-  2026-09-10 03:46 BST and `ci-env-cost-focus-copy-errors` since **2026-09-09 03:46 BST**, a day
-  earlier — "The nightly FOCUS export copy failed at least once in 24 hours". No issue was raised
-  for either, so `alarm-triage.yml` did not fire for either. Both Lambdas' logs say the same thing:
-  `prod-env-cost-focus-copy-role` and `ci-env-cost-focus-copy-role` are each "not authorized to
-  perform: s3:ListBucket" on `arn:aws:s3:::diy-accounting-cost-focus-887764105431`. One cause, two
-  environments, and the fix applies to both.
-  `CostExportStack.java:155` grants that account `s3:ListBucket` on the bucket in the bucket's own
-  resource policy, under an `s3:prefix` condition. A cross-account read needs both sides, so the
-  theory is that the Lambda's role carries no matching identity policy — the same omission B52x hit,
-  where `prod-env-raw-export-publish` had `PutObject` and neither `GetObject` nor `ListBucket` until
-  2026-09-10 18:14. Confirm which side is missing before changing either, then check whether the
-  `s3:prefix` condition matches the prefix the Lambda actually lists. Also find out why no alarm
-  issue exists after two days; `ci-env-github-probe-failed` (in ALARM since 2026-09-13 04:00 UTC,
-  because no ci set exists for the probe to reach) has none either, so the triage path itself may
-  be the gap. **Source**: the alarm; `/aws/lambda/prod-env-cost-focus-copy`,
-  2026-09-12 02:45 to 02:48 UTC. **Owner**: Claude Code. **Model**: Sonnet.
-
+- [ ] **B30v. alarm-triage's budget guard swallowed a real alarm.** The grant is on
+  `claude/b29-board` (7d44b687): the copy role had no identity-side allow on the FOCUS bucket;
+  both environments' alarms clear on the next nightly after the batch deploys. What the
+  investigation found instead: ci alarms never raise issues by design (`OpsStack.java:324-330`,
+  Telegram only), but `prod-env-cost-focus-copy-errors` DID raise #173 at 02:46:53 on 2026-09-10
+  and `alarm-triage.yml` run 34430781962 skipped it — its budget guard counted four triage runs in
+  the prior 24 hours (a CIS-compliance burst), set `proceed=false`, and ended green with no comment
+  on the issue, which was later closed unread. Fix: when the guard skips, post one comment on the
+  issue saying so and why, and count only runs that actually triaged towards the budget, so a
+  burst of skips does not extend the outage. **Source**: run 34430781962; issue #173. **Owner**:
+  Claude Code. **Model**: Sonnet.
 - [ ] **B133. destroy-prod reports failure when the set is already gone.** On `claude/b29-board`
   (79fbe839): a name with no live stacks succeeds when CloudFormation holds a `DELETE_COMPLETE`
   record for it and the pointer does not name it; fails with neither. Closes when the batch
@@ -187,35 +179,29 @@ Every item names its model: the lowest tier that fits (Fable > Opus > Sonnet > H
   product prices an undo, so this is the first submit-versus-undo distinction the catalogue
   carries. **Source**: B117's wiring pass, 2026-09-12. **Owner**: Claude Code. **Model**: Haiku.
 
-- [ ] **B136. The monthly fraud-header check has never run.**
-  `data/compliance/fraud-prevention-headers/` is empty. B22 shipped a monthly check whose launchd
-  agent was supposed to write a file there each month, and no file exists, so the check has produced
-  nothing since it landed and nobody noticed until the advisories were read by hand. Find out
-  whether the agent was ever loaded, whether `scripts/fraud-header-email-check.js` runs today, and
-  decide where it should run: a launchd agent on one laptop is invisible when it fails, and a
-  scheduled workflow is not. Settle at the same time whether
-  `data/compliance/fraud-prevention-headers/*.json` is tracked or gitignored — that was never
-  decided and the directory is currently tracked and empty.
-  **Source**: `../REPORT_HMRC_HEADER_ADVISORIES.md`'s closed lines of enquiry. **Owner**: Claude
-  Code. **Model**: Sonnet.
-
-- [ ] **B11.T7r. ITSA phase 2: run the sandbox year.** The script and the runbook
-  (`_developers/hmrc/ITSA_PHASE_2_SANDBOX.md`) are on main, and the run now clears seven calls
-  before it stops. Three script bugs were fixed on `claude/b28-board`: the checkpoint call needs a
-  `nino` query parameter and 404s on a NINO with no test-support data, so the checkpoint is taken
-  after the business and the ITSA status rather than before, and a restore reuses the saved
-  `businessId` instead of creating a second business; a GB self-employment business needs
-  `businessAddressPostcode`. The run then reaches
-  `GET individuals/person/itsa-status/{nino}/{taxYear}` and gets `403 RESOURCE_FORBIDDEN`.
-  That endpoint is on the **Self Assessment Individual Details (MTD)** API, which the sandbox
-  application is not subscribed to and which the runbook's subscription list never named.
-  **O43 is done**: the sandbox application now carries Self Assessment Individual Details (MTD)
-  2.0 (Beta). So resume from call 7 — `GET individuals/person/itsa-status/{nino}/{taxYear}` — and
-  work through whatever HMRC answers next. The run needs the HMRC sandbox client id and secret from
-  Secrets Manager, so it needs a live SSO session: `aws sso login --sso-session diyaccounting`.
-  **Source**: `PLAN_ITSA_PHASE_2.md` T7; the sandbox run of 2026-09-12. **Owner**: Claude Code.
+- [ ] **B136. The monthly fraud-header check's Telegram alert cannot publish from launchd.** On
+  `claude/b29-board` (a4094df2): the check DID run on 2026-09-12 and wrote the August record, which
+  was never committed, so `compliance.yml`'s lake job has always read an empty directory; the record
+  is now tracked (`data/compliance/fraud-prevention-headers/2026-08.json`) and
+  `fraud-header-check.yml` fails on the 15th when the month's record is missing. Left: the
+  Telegram publish fails under launchd because `AWS_PROFILE=submit-prod` is SSO and cannot refresh
+  unattended, and `publishActivityEvent` swallows the failure (`app/lib/activityAlert.js`). Either
+  give the launchd job a non-SSO credential path or make the script exit non-zero when the publish
+  fails so the watchdog sees it. O47 decides whether the fetch itself moves to CI. **Source**:
+  `~/Library/Logs/co.uk.diyaccounting.submit.fraud-header-check.log`. **Owner**: Claude Code.
   **Model**: Sonnet.
-
+- [ ] **B11.T7r. ITSA phase 2: run the sandbox year.** On `claude/b29-board` (3f8e17b0): with
+  `Gov-Test-Scenario: STATEFUL` business-details and itsa-status return the business the run
+  created (O43's subscription works). The run now stops at
+  `GET obligations/details/{nino}/income-and-expenditure`: 404 `NO_OBLIGATIONS_FOUND` for a
+  test-support business, and HMRC's `obligations-api` OpenAPI has no STATEFUL scenario for it —
+  `DYNAMIC` answers only for the three canned businesses (`XBIS12345678901` etc.). Nothing in this
+  repository fixes that. Two ways on, choose in the runbook: file the quarterly periods without
+  reading obligations (the period-summary endpoints take dates, not an obligation), or run the
+  obligations-dependent calls against the canned `XBIS12345678901` under `DYNAMIC`. Then continue
+  through annual submission, BSAS, calculation, final declaration and the losses and adjustments
+  calls. **Source**: `_developers/hmrc/ITSA_PHASE_2_SANDBOX.md` run record. **Owner**: Claude
+  Code. **Model**: Sonnet.
 - [ ] **O28. Send `Gov-Client-Multi-Factor` on every request.** Every monthly advisory HMRC has
   raised, in every month, is this one header missing; every other header reads Correct throughout.
   Missing per month: April 11 of 18, May 2 of 16, June no traffic, July 0 of 9, August 18 of 21,
@@ -443,6 +429,13 @@ Every item names its model: the lowest tier that fits (Fable > Opus > Sonnet > H
   `REPORT_GIT_CONFIG.md`; `REPORT_IDENTITY_AUDIT.md` section 9. **Owner**: Operator. **Model**:
   none.
 
+- [ ] **O47. Where the monthly fraud-header check reads HMRC's email from.** Today it runs on
+  the laptop against the local Gmail mirror and its record has to be committed and pushed by hand
+  each month. Two named alternatives: keep it there and commit the record monthly (the b29
+  watchdog fails on the 15th if it is missing); or move the fetch into a scheduled workflow, which
+  needs a Gmail read credential for antony@diyaccounting.co.uk (an OAuth refresh token or
+  app password) as a GitHub Actions secret — mailbox access from CI is your call. **Source**:
+  B136. **Owner**: Operator. **Model**: none.
 
 ## Blocked
 
