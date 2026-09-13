@@ -48,7 +48,8 @@ vi.mock("@app/functions/hmrc/hmrcVatObligationGet.js", () => ({
 
 // Mock token enforcement to always allow submissions in unit tests
 vi.mock("@app/services/tokenEnforcement.js", () => ({
-  consumeTokenForActivity: vi.fn().mockResolvedValue({ consumed: true, tokensRemaining: 2, cost: 1 }),
+  hasTokensForActivity: vi.fn().mockResolvedValue({ available: true, cost: 1 }),
+  chargeTokenOnSuccess: vi.fn().mockResolvedValue({ consumed: true, tokensRemaining: 2, cost: 1 }),
 }));
 
 // Defer importing the ingestHandlers until after mocks are defined

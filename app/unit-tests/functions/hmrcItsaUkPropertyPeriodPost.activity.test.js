@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0
 // Copyright (C) 2006-2026 DIY Accounting Limited
 
-// app/unit-tests/functions/hmrcItsaSelfEmploymentPeriodPut.activity.test.js
+// app/unit-tests/functions/hmrcItsaUkPropertyPeriodPost.activity.test.js
 // NOTE: Test data in this file (test-token, test-sub, etc.) are not real credentials
 
 import { describe, test, beforeAll, beforeEach, expect, vi } from "vitest";
@@ -61,29 +61,28 @@ vi.mock("@app/lib/emfMetrics.js", () => ({
   emitMetric: (...args) => mockEmitMetric(...args),
 }));
 
-import { ingestHandler as hmrcItsaSelfEmploymentPeriodPutHandler } from "@app/functions/hmrc/hmrcItsaSelfEmploymentPeriodPut.js";
+import { ingestHandler as hmrcItsaUkPropertyPeriodPostHandler } from "@app/functions/hmrc/hmrcItsaUkPropertyPeriodPost.js";
 
 dotenvConfigIfNotBlank({ path: ".env.test" });
 
 const mockFetch = setupFetchMock();
 
 const VALID_NINO = "AB123456C";
-const VALID_BUSINESS_ID = "XAIS12345678901";
+const VALID_BUSINESS_ID = "XAIS12345678910";
 const VALID_TAX_YEAR = "2023-24";
-const VALID_PERIOD_ID = "2023-04-06_2023-07-05";
 
 function buildPeriodBody(overrides = {}) {
   return {
     nino: VALID_NINO,
     businessId: VALID_BUSINESS_ID,
     taxYear: VALID_TAX_YEAR,
-    periodId: VALID_PERIOD_ID,
-    periodIncome: { turnover: 6000 },
+    fromDate: "2024-04-06",
+    toDate: "2024-07-05",
     ...overrides,
   };
 }
 
-function buildInitialAmendEvent({ body = {}, headers = {} } = {}) {
+function buildInitialSubmissionEvent({ body = {}, headers = {} } = {}) {
   return buildHmrcEvent({
     body: buildPeriodBody(body),
     headers: { authorization: "Bearer test-token", "x-initial-request": "true", ...headers },
@@ -98,14 +97,7 @@ function metricCalls(metricName) {
   return mockEmitMetric.mock.calls.filter((call) => call[0].metricName === metricName);
 }
 
-async function storedReceiptItems() {
-  const lib = await import("@aws-sdk/lib-dynamodb");
-  return mockSend.mock.calls
-    .filter((call) => call[0] instanceof lib.PutCommand && call[0].input.TableName === process.env.RECEIPTS_DYNAMODB_TABLE_NAME)
-    .map((call) => call[0].input.Item);
-}
-
-describe("hmrcItsaSelfEmploymentPeriodPut token charge, receipt and failure reporting", () => {
+describe("hmrcItsaUkPropertyPeriodPost token charge", () => {
   beforeAll(async () => {
     // The vendor IP lookup runs once per module, so settle it before any test queues
     // an HMRC response - otherwise the first test's response is consumed by the lookup.
@@ -128,9 +120,9 @@ describe("hmrcItsaSelfEmploymentPeriodPut token charge, receipt and failure repo
   });
 
   test("checks token availability for the self-employed activity on the initial request, before HMRC is called", async () => {
-    mockHmrcSuccess(mockFetch, { periodIncome: { turnover: 6000 } });
+    mockHmrcSuccess(mockFetch, {});
 
-    const response = await hmrcItsaSelfEmploymentPeriodPutHandler(buildInitialAmendEvent());
+    const response = await hmrcItsaUkPropertyPeriodPostHandler(buildInitialSubmissionEvent());
     expect(response.statusCode).toBe(200);
 
     expect(mockHasTokensForActivity).toHaveBeenCalledTimes(1);
@@ -141,9 +133,9 @@ describe("hmrcItsaSelfEmploymentPeriodPut token charge, receipt and failure repo
   });
 
   test("does not charge a token for a request our own validation rejects before it reaches HMRC", async () => {
-    const event = buildInitialAmendEvent({ body: { periodId: undefined } });
+    const event = buildInitialSubmissionEvent({ body: { nino: undefined } });
 
-    const response = await hmrcItsaSelfEmploymentPeriodPutHandler(event);
+    const response = await hmrcItsaUkPropertyPeriodPostHandler(event);
     expect(response.statusCode).toBe(400);
 
     expect(mockHasTokensForActivity).not.toHaveBeenCalled();
@@ -153,7 +145,7 @@ describe("hmrcItsaSelfEmploymentPeriodPut token charge, receipt and failure repo
   test("an exhausted allowance answers 403 with tokens_exhausted and never calls HMRC", async () => {
     mockHasTokensForActivity.mockResolvedValue({ available: false, reason: "tokens_exhausted", tokensRemaining: 0 });
 
-    const response = await hmrcItsaSelfEmploymentPeriodPutHandler(buildInitialAmendEvent());
+    const response = await hmrcItsaUkPropertyPeriodPostHandler(buildInitialSubmissionEvent());
     expect(response.statusCode).toBe(403);
     const body = JSON.parse(response.body);
     expect(body.reason).toBe("tokens_exhausted");
@@ -163,60 +155,34 @@ describe("hmrcItsaSelfEmploymentPeriodPut token charge, receipt and failure repo
     expect(metricCalls("ItsaSubmissionFailure")).toHaveLength(1);
   });
 
-  test("a successful amendment stores a receipt keyed on the caller's periodId, carrying what HMRC returned", async () => {
-    const periodSummary = { periodIncome: { turnover: 6000 } };
-    mockHmrcSuccess(mockFetch, periodSummary);
+  test("a successful filing emits a success metric alongside the success event", async () => {
+    mockHmrcSuccess(mockFetch, {});
 
-    await hmrcItsaSelfEmploymentPeriodPutHandler(buildInitialAmendEvent());
-
-    const receipts = await storedReceiptItems();
-    expect(receipts).toHaveLength(1);
-    expect(receipts[0].receiptId.endsWith(`-${VALID_PERIOD_ID}`)).toBe(true);
-    expect(receipts[0].receipt).toEqual(periodSummary);
-    expect(receipts[0].actor).toBe("customer");
-    expect(receipts[0].hashedSub).toBeDefined();
-    expect(receipts[0].ttl).toBeDefined();
-  });
-
-  test("a successful amendment emits a success metric alongside the success event", async () => {
-    mockHmrcSuccess(mockFetch, { periodIncome: { turnover: 6000 } });
-
-    await hmrcItsaSelfEmploymentPeriodPutHandler(buildInitialAmendEvent());
+    await hmrcItsaUkPropertyPeriodPostHandler(buildInitialSubmissionEvent());
 
     expect(mockPublishActivityEvent).toHaveBeenCalledWith(
-      expect.objectContaining({ event: "itsa-self-employment-period-amended", userSub: "test-sub" }),
+      expect.objectContaining({ event: "itsa-uk-property-period-created", userSub: "test-sub" }),
     );
     expect(metricCalls("ItsaSubmissionSuccess")).toHaveLength(1);
     expect(metricCalls("ItsaSubmissionFailure")).toHaveLength(0);
   });
 
   test("an HMRC rejection emits a failure event and a failure metric", async () => {
-    mockHmrcError(mockFetch, 400, { code: "RULE_TAX_YEAR_NOT_SUPPORTED", message: "The tax year is not supported" });
+    mockHmrcError(mockFetch, 400, { code: "RULE_OVERLAPPING_PERIOD", message: "The submission overlaps another period" });
 
-    await hmrcItsaSelfEmploymentPeriodPutHandler(buildInitialAmendEvent());
+    await hmrcItsaUkPropertyPeriodPostHandler(buildInitialSubmissionEvent());
 
     const rejections = failureEventsWithCategory("hmrc-rejected");
     expect(rejections).toHaveLength(1);
-    expect(rejections[0][0]).toMatchObject({ event: "itsa-self-employment-period-failed", detail: { hmrcStatus: 400 } });
+    expect(rejections[0][0]).toMatchObject({ event: "itsa-uk-property-period-failed", detail: { hmrcStatus: 400 } });
     expect(metricCalls("ItsaSubmissionFailure")).toHaveLength(1);
     expect(metricCalls("ItsaSubmissionSuccess")).toHaveLength(0);
   });
 
-  test("no NINO or HMRC payload reaches the failure event", async () => {
-    mockHmrcError(mockFetch, 400, { code: "FORMAT_NINO", message: `The NINO ${VALID_NINO} is invalid` });
-
-    await hmrcItsaSelfEmploymentPeriodPutHandler(buildInitialAmendEvent());
-
-    const published = JSON.stringify(failureEventsWithCategory("hmrc-rejected")[0][0]);
-    expect(published).not.toContain(VALID_NINO);
-    expect(published).not.toContain("FORMAT_NINO");
-    expect(published).not.toContain("test-token");
-  });
-
   test("charges the token only after HMRC accepts the submission", async () => {
-    mockHmrcSuccess(mockFetch, { periodIncome: { turnover: 6000 } });
+    mockHmrcSuccess(mockFetch, {});
 
-    const response = await hmrcItsaSelfEmploymentPeriodPutHandler(buildInitialAmendEvent());
+    const response = await hmrcItsaUkPropertyPeriodPostHandler(buildInitialSubmissionEvent());
     expect(response.statusCode).toBe(200);
 
     expect(mockChargeTokenOnSuccess).toHaveBeenCalledTimes(1);
@@ -229,7 +195,7 @@ describe("hmrcItsaSelfEmploymentPeriodPut token charge, receipt and failure repo
   test("an HMRC rejection never charges a token", async () => {
     mockHmrcError(mockFetch, 503, { code: "SERVICE_UNAVAILABLE", message: "Service temporarily unavailable" });
 
-    await hmrcItsaSelfEmploymentPeriodPutHandler(buildInitialAmendEvent());
+    await hmrcItsaUkPropertyPeriodPostHandler(buildInitialSubmissionEvent());
 
     expect(mockChargeTokenOnSuccess).not.toHaveBeenCalled();
   });

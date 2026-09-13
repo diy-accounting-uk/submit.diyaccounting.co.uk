@@ -42,9 +42,11 @@ vi.mock("@app/functions/hmrc/hmrcVatObligationGet.js", () => ({
   getVatObligations: (...args) => mockGetVatObligations(...args),
 }));
 
-const mockConsumeTokenForActivity = vi.fn();
+const mockHasTokensForActivity = vi.fn();
+const mockChargeTokenOnSuccess = vi.fn();
 vi.mock("@app/services/tokenEnforcement.js", () => ({
-  consumeTokenForActivity: (...args) => mockConsumeTokenForActivity(...args),
+  hasTokensForActivity: (...args) => mockHasTokensForActivity(...args),
+  chargeTokenOnSuccess: (...args) => mockChargeTokenOnSuccess(...args),
 }));
 
 // Capture activity events and metrics rather than reaching EventBridge or the log stream.
@@ -128,7 +130,8 @@ describe("hmrcVatReturnPost activity events and business metrics", () => {
       return {};
     });
     mockObligationsSuccess();
-    mockConsumeTokenForActivity.mockResolvedValue({ consumed: true, tokensRemaining: 2, cost: 1 });
+    mockHasTokensForActivity.mockResolvedValue({ available: true, cost: 1 });
+    mockChargeTokenOnSuccess.mockResolvedValue({ consumed: true, tokensRemaining: 2, cost: 1 });
   });
 
   test("a successful submission emits a success metric alongside the success event", async () => {
@@ -203,13 +206,43 @@ describe("hmrcVatReturnPost activity events and business metrics", () => {
   });
 
   test("an exhausted submission allowance reports itself as a failed filing", async () => {
-    mockConsumeTokenForActivity.mockResolvedValue({ consumed: false, reason: "tokens_exhausted", tokensRemaining: 0 });
+    mockHasTokensForActivity.mockResolvedValue({ available: false, reason: "tokens_exhausted", tokensRemaining: 0 });
 
     const response = await hmrcVatReturnPostHandler(buildSubmissionEvent({ "x-initial-request": "true" }));
     expect(response.statusCode).toBe(403);
 
     expect(failureEventsWithCategory("tokens-exhausted")).toHaveLength(1);
     expect(metricCalls("VatSubmissionFailure")).toHaveLength(1);
+    expect(mockChargeTokenOnSuccess).not.toHaveBeenCalled();
+  });
+
+  test("a successful submission charges the token only after HMRC accepts it", async () => {
+    mockHmrcSuccess(mockFetch, { formBundleNumber: "123456789012", processingDate: "2023-01-01T12:00:00.000Z" });
+
+    const response = await hmrcVatReturnPostHandler(buildSubmissionEvent({ "x-initial-request": "true" }));
+    expect(response.statusCode).toBe(200);
+
+    expect(mockChargeTokenOnSuccess).toHaveBeenCalledTimes(1);
+    expect(mockChargeTokenOnSuccess).toHaveBeenCalledWith("test-sub", "submit-vat");
+    const chargeCallOrder = mockChargeTokenOnSuccess.mock.invocationCallOrder[0];
+    const fetchCallOrder = mockFetch.mock.invocationCallOrder[0];
+    expect(fetchCallOrder).toBeLessThan(chargeCallOrder);
+  });
+
+  test("an HMRC rejection never charges a token", async () => {
+    mockHmrcError(mockFetch, 503, { code: "SERVICE_UNAVAILABLE", message: "Service temporarily unavailable" });
+
+    await hmrcVatReturnPostHandler(buildSubmissionEvent({ "x-initial-request": "true" }));
+
+    expect(mockChargeTokenOnSuccess).not.toHaveBeenCalled();
+  });
+
+  test("a customer validation rejection (400) never charges a token", async () => {
+    mockHmrcError(mockFetch, 400, { code: "INVALID_VRN", message: `The VRN ${TEST_VRN} is invalid` });
+
+    await hmrcVatReturnPostHandler(buildSubmissionEvent({ "x-initial-request": "true" }));
+
+    expect(mockChargeTokenOnSuccess).not.toHaveBeenCalled();
   });
 
   test("an internal error while resolving the period reports itself as a failed filing", async () => {

@@ -402,6 +402,24 @@ paths = ["hmrc/itsa/annualSubmission.html", "hmrc/itsa/adjustments.html", "hmrc/
 hmrcScopesRequired = ["write:self-assessment", "read:self-assessment"]
 environments = ["local", "test", "simulator", "proxy", "ci"]
 
+# self-employed-year-end-delete: removing a loss claim or a tax liability adjustment. It sends
+# no new figures to HMRC and undoes a submission the customer already paid for under
+# self-employed-year-end, so it costs nothing. self-employed-read can't cover it: a DELETE needs
+# write:self-assessment, which self-employed-read doesn't carry. No paths: the delete pages
+# (lossesAndClaims.html, taxLiabilityAdjustments.html) stay on self-employed-year-end for their
+# own writes, and entitlement for the DELETE API routes is already gated by self-employed's
+# catch-all path; this activity exists only so the two delete handlers have a zero-cost id to
+# charge against.
+[[activities]]
+id = "self-employed-year-end-delete"
+name = "Self Assessment year-end deletions (HMRC)"
+display = "never"
+bundles = ["resident-itsa", "resident-pro"]
+tokenCost = 0
+metered = true
+hmrcScopesRequired = ["write:self-assessment", "read:self-assessment"]
+environments = ["local", "test", "simulator", "proxy", "ci"]
+
 [[activities]]
 id = "company-lookup"
 name = "Company Lookup (Companies House)"

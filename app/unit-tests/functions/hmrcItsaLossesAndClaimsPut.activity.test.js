@@ -7,7 +7,7 @@
 import { describe, test, beforeAll, beforeEach, expect, vi } from "vitest";
 import { dotenvConfigIfNotBlank } from "@app/lib/env.js";
 import { buildHmrcEvent } from "@app/test-helpers/eventBuilders.js";
-import { setupTestEnv, setupFetchMock, mockHmrcSuccess } from "@app/test-helpers/mockHelpers.js";
+import { setupTestEnv, setupFetchMock, mockHmrcSuccess, mockHmrcError } from "@app/test-helpers/mockHelpers.js";
 import {
   mockSend,
   mockLibDynamoDb,
@@ -37,9 +37,11 @@ vi.mock("@aws-sdk/client-sqs", () => {
   return { SQSClient, SendMessageCommand };
 });
 
-const mockConsumeTokenForActivity = vi.fn();
+const mockHasTokensForActivity = vi.fn();
+const mockChargeTokenOnSuccess = vi.fn();
 vi.mock("@app/services/tokenEnforcement.js", () => ({
-  consumeTokenForActivity: (...args) => mockConsumeTokenForActivity(...args),
+  hasTokensForActivity: (...args) => mockHasTokensForActivity(...args),
+  chargeTokenOnSuccess: (...args) => mockChargeTokenOnSuccess(...args),
 }));
 
 // Capture activity events and metrics rather than reaching EventBridge or the log stream.
@@ -113,18 +115,19 @@ describe("hmrcItsaLossesAndClaimsPut token charge", () => {
       if (cmd instanceof MockGetCommand) return { Item: null };
       return {};
     });
-    mockConsumeTokenForActivity.mockResolvedValue({ consumed: true, tokensRemaining: 4, cost: 1 });
+    mockHasTokensForActivity.mockResolvedValue({ available: true, cost: 1 });
+    mockChargeTokenOnSuccess.mockResolvedValue({ consumed: true, tokensRemaining: 4, cost: 1 });
   });
 
-  test("charges one token for the self-employed-year-end activity on the initial request, before HMRC is called", async () => {
+  test("checks token availability for the self-employed-year-end activity on the initial request, before HMRC is called", async () => {
     mockHmrcSuccess(mockFetch, {});
 
     const response = await hmrcItsaLossesAndClaimsPutHandler(buildInitialLossesEvent());
     expect(response.statusCode).toBe(200);
 
-    expect(mockConsumeTokenForActivity).toHaveBeenCalledTimes(1);
-    expect(mockConsumeTokenForActivity).toHaveBeenCalledWith("test-sub", "self-employed-year-end", expect.any(Object));
-    const tokenCallOrder = mockConsumeTokenForActivity.mock.invocationCallOrder[0];
+    expect(mockHasTokensForActivity).toHaveBeenCalledTimes(1);
+    expect(mockHasTokensForActivity).toHaveBeenCalledWith("test-sub", "self-employed-year-end", expect.any(Object));
+    const tokenCallOrder = mockHasTokensForActivity.mock.invocationCallOrder[0];
     const fetchCallOrder = mockFetch.mock.invocationCallOrder[0];
     expect(tokenCallOrder).toBeLessThan(fetchCallOrder);
   });
@@ -138,12 +141,12 @@ describe("hmrcItsaLossesAndClaimsPut token charge", () => {
     const response = await hmrcItsaLossesAndClaimsPutHandler(event);
     expect(response.statusCode).toBe(400);
 
-    expect(mockConsumeTokenForActivity).not.toHaveBeenCalled();
+    expect(mockHasTokensForActivity).not.toHaveBeenCalled();
     expect(mockFetch).not.toHaveBeenCalled();
   });
 
   test("an exhausted allowance answers 403 with tokens_exhausted and never calls HMRC", async () => {
-    mockConsumeTokenForActivity.mockResolvedValue({ consumed: false, reason: "tokens_exhausted", tokensRemaining: 0 });
+    mockHasTokensForActivity.mockResolvedValue({ available: false, reason: "tokens_exhausted", tokensRemaining: 0 });
 
     const response = await hmrcItsaLossesAndClaimsPutHandler(buildInitialLossesEvent());
     expect(response.statusCode).toBe(403);
@@ -153,5 +156,26 @@ describe("hmrcItsaLossesAndClaimsPut token charge", () => {
     expect(mockFetch).not.toHaveBeenCalled();
     expect(failureEventsWithCategory("tokens-exhausted")).toHaveLength(1);
     expect(metricCalls("ItsaSubmissionFailure")).toHaveLength(1);
+  });
+
+  test("charges the token only after HMRC accepts the submission", async () => {
+    mockHmrcSuccess(mockFetch, {});
+
+    const response = await hmrcItsaLossesAndClaimsPutHandler(buildInitialLossesEvent());
+    expect(response.statusCode).toBe(200);
+
+    expect(mockChargeTokenOnSuccess).toHaveBeenCalledTimes(1);
+    expect(mockChargeTokenOnSuccess).toHaveBeenCalledWith("test-sub", "self-employed-year-end");
+    const chargeCallOrder = mockChargeTokenOnSuccess.mock.invocationCallOrder[0];
+    const fetchCallOrder = mockFetch.mock.invocationCallOrder[0];
+    expect(fetchCallOrder).toBeLessThan(chargeCallOrder);
+  });
+
+  test("an HMRC rejection never charges a token", async () => {
+    mockHmrcError(mockFetch, 503, { code: "SERVICE_UNAVAILABLE", message: "Service temporarily unavailable" });
+
+    await hmrcItsaLossesAndClaimsPutHandler(buildInitialLossesEvent());
+
+    expect(mockChargeTokenOnSuccess).not.toHaveBeenCalled();
   });
 });

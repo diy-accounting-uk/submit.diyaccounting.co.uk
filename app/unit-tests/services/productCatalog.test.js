@@ -132,6 +132,20 @@ describe("productCatalogHelper", () => {
     expect(activity.hmrcScopesRequired).toEqual(selfEmployed.hmrcScopesRequired);
   });
 
+  it("self-employed-year-end-delete removes a loss claim or a tax liability adjustment at no token cost", () => {
+    const catalog = parseCatalog(tomlText);
+    const activity = catalog.activities.find((a) => a.id === "self-employed-year-end-delete");
+    const yearEnd = catalog.activities.find((a) => a.id === "self-employed-year-end");
+    expect(activity).toBeTruthy();
+    expect(activity.tokenCost).toBe(0);
+    expect(activity.metered).toBe(true);
+    // Same entitlement and scope rules as the year-end writes it undoes - a DELETE still needs
+    // write:self-assessment, which self-employed-read doesn't carry.
+    expect(bundlesForActivity(catalog, "self-employed-year-end-delete")).toEqual(bundlesForActivity(catalog, "self-employed-year-end"));
+    expect(activity.hmrcScopesRequired).toEqual(yearEnd.hmrcScopesRequired);
+    expect(activity.environments).toEqual(yearEnd.environments);
+  });
+
   it("file-micro-entity-accounts activity should be granted by resident-ltd and resident-pro", () => {
     const catalog = parseCatalog(tomlText);
     expect(bundlesForActivity(catalog, "file-micro-entity-accounts")).toEqual(["resident-ltd", "resident-pro"]);

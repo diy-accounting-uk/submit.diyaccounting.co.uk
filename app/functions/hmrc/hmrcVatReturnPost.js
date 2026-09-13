@@ -562,16 +562,18 @@ export async function ingestHandler(event) {
     }
   }
 
-  // Token enforcement: consume 1 token for VAT submission (the "value action") — initial request only
+  // Token enforcement: a caller with no tokens for VAT submission (the "value action") is
+  // blocked before HMRC is ever called — initial request only. The token itself is charged
+  // only once HMRC confirms success (see submitVat), so a submission HMRC rejects costs nothing.
   if (isInitialRequest) {
     const activityId = "submit-vat";
     try {
-      const { consumeTokenForActivity } = await import("../../services/tokenEnforcement.js");
+      const { hasTokensForActivity } = await import("../../services/tokenEnforcement.js");
       const { loadCatalogFromRoot } = await import("../../services/productCatalog.js");
       const catalog = loadCatalogFromRoot();
-      const tokenResult = await consumeTokenForActivity(userSub, activityId, catalog);
-      if (!tokenResult.consumed) {
-        logger.info({ message: "Token enforcement blocked submission", activityId, reason: tokenResult.reason });
+      const tokenCheck = await hasTokensForActivity(userSub, activityId, catalog);
+      if (!tokenCheck.available) {
+        logger.info({ message: "Token enforcement blocked submission", activityId, reason: tokenCheck.reason });
         await recordSubmissionFailure({
           failure: "tokens-exhausted",
           summary: "VAT return blocked: submission allowance used up",
@@ -584,7 +586,6 @@ export async function ingestHandler(event) {
           error: { reason: "tokens_exhausted", tokensRemaining: 0 },
         });
       }
-      logger.info({ message: "Token consumed for submission", activityId, tokensRemaining: tokenResult.tokensRemaining });
     } catch (error) {
       logger.error({ message: "Token enforcement error", error: error.message, stack: error.stack });
       await recordSubmissionFailure({
@@ -912,6 +913,8 @@ export async function submitVat(
       actor,
       userSub: auditForUserSub,
     });
+    const { chargeTokenOnSuccess } = await import("../../services/tokenEnforcement.js");
+    await chargeTokenOnSuccess(auditForUserSub, "submit-vat");
   } else {
     const shouldEmitMetric = shouldEmitFailureMetric(hmrcResponse.status);
     await recordSubmissionFailure({
