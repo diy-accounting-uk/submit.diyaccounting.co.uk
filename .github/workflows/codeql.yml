@@ -4,8 +4,16 @@
 name: "CodeQL"
 
 on:
+  # push covers every commit pushed to a branch in this repository, main included; pull_request
+  # exists only so a fork's PR gets scanned too, since a fork's own pushes never reach push here.
+  # Every branch in this repository opens a PR against main straight away (see the workspace
+  # CLAUDE.md's branch-naming convention), so without the analyze job's fork check below, push
+  # and pull_request would both fire for the same commit on the same branch - the 16 runs from
+  # 12 pushed commits seen on 2026-09-13.
   push:
-    branches: [main]
+    branches:
+      - '**'
+      - '!gh_pages'
     paths:
       - 'app/**'
       - 'infra/**'
@@ -70,6 +78,10 @@ permissions:
 
 jobs:
   analyze:
+    # Runs unconditionally for push (this repository's own branches only trigger push, never
+    # pull_request - see the on: block above). For pull_request, runs only when the PR head is a
+    # fork: a same-repository PR's head branch already ran this exact commit under push.
+    if: ${{ github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name != github.repository }}
     name: Analyze
     runs-on: ubuntu-latest
     permissions:
