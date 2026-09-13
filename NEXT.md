@@ -54,7 +54,9 @@ and stop. One branch is driven green at a time. Lifted only by the operator in t
   pointer after the wait, rather than before, is the cheap version.
   Worth settling at the same time: destroy-prod also runs on a schedule (#293 07:51 and #295 12:48
   both succeeded today), so a hand dispatch races the cron for the same set. Say in the workflow
-  which one is authoritative. **Source**: run 34691690046, job 103547976202.
+  which one is authoritative. Second instance: run 34755825044, dispatched 2026-09-13 11:58 for
+  `prod-4918a0d` after the deploy's `destroy previous` job had already removed it, failed the same
+  way. **Source**: runs 34691690046 (job 103547976202) and 34755825044.
   **Owner**: Claude Code. **Model**: Haiku.
 
 - [ ] **B131. keepalive fails on main, and one of its two reasons is its own.**
