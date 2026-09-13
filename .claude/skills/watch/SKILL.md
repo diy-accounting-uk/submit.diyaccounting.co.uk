@@ -32,23 +32,20 @@ A PR merging or opening changes the scope, and picking that up is this skill's j
 
 ## The monitor's brief
 
-Poll every 60-90s. Emit the reds as they land, then one tally when everything is terminal.
+Use `scripts/watch-ci.sh` which runs the poll loop in the background, emitting reds as they land.
+The script polls every 60-90s and exits with 0 when everything is terminal and green, or 1 when
+something is red or still running.
 
-- **Cover every terminal state**: failure, cancelled, timed out. A filter tuned to the happy path
-  is silent through a crash, and silence reads exactly like still running. Ask before arming: if
-  this went red right now, would anything be emitted?
-- **Keep the volume low.** Every line is a message and a monitor that floods is stopped
-  automatically. A PR here carries 70-odd checks, so one line per check is a firehose. Reds plus a
-  final tally is selective without going quiet on bad news.
-- **Poll the API for state, never grep a log for a word.** `status == "completed"` with its
-  `conclusion` is the fact. A log line saying "passed" is not.
-- **Seed silently**: on the first pass record what has already finished without emitting it, so the
-  monitor reports changes rather than history.
-- **An empty result set is not a pass.** A branch that does not exist, a filter matching nothing,
-  and a `jq` asking for a field the `--json` list did not request all return nothing with exit 0,
-  which reads like a clean run. Count rows before interpreting them and report NO DATA when it is
-  zero. Give up loudly after a few empty cycles rather than sitting there looking healthy.
-- Let a failed `gh` call skip the cycle rather than kill the loop.
+`scripts/watch-ci.sh` handles all the coverage requirements:
+
+- **Covers every terminal state**: failure, cancelled, timed out. Emits RED lines for completed
+  runs with a failure/timed_out/action_required conclusion.
+- **Keeps volume low**: one line per failed run, one MERGEABLE line per ready PR, no firehose.
+- **Polls the API for state**: uses `gh run list --json` with `jq`, never greps logs.
+- **Seeds silently**: first poll of each branch records state without emitting, then reports
+  changes only.
+- **Detects empty result sets**: counts rows and gives up with NO DATA after 3 empty cycles.
+- **Skips failed `gh` calls**: a failed run list returns empty list, poll continues.
 - **Probe merge-readiness every cycle.** A watch that only reports reds leaves a PR sitting green
   for however long nobody looks. Each poll, for every open PR that is not a draft, take the **latest
   run of each distinct workflow on its branch** and call the PR ready when **none of those latest
