@@ -16,9 +16,10 @@ runs), and for Claude Code steps the **Model** a sub-agent should use (Fable > O
 Haiku; the lowest tier that fits). Anything touching code goes through a `claude/*` branch and
 PR; the operator merges.
 
-**Prod runs deployment prod-4918a0d**, nine stacks, live since the #194 merge deploy at about
-13:00 UTC; the apex answers 200. It is the only prod set: `prod-e6d3045` was destroyed by
-run 34717906698 at about 20:5x UTC, so nothing spare is being paid for.
+**Prod runs deployment prod-7fbea34**, live since the scheduled `deploy.yml` run 34749667957 set the
+pointer at 10:04 UTC on 2026-09-13, every prod probe green. `prod-4918a0d` still stands as a spare
+(its stacks were listed at 10:04) and the scheduled sweep keeps any set whose own alias is
+published, so it goes only on `gh workflow run destroy-prod.yml -f deployment-name=prod-4918a0d`.
 **No ci deployment exists.** All three sets have gone — `ci-claudc83b`, `ci-claudd44f` and the
 long-overdue `ci-mainb28b` — and `/submit/ci/last-known-good-deployment` reads `None`. Three ready
 rows need a ci set before they can run: B73's email-restricted pass, B71.S3e's remaining sync and
@@ -57,35 +58,6 @@ and stop. One branch is driven green at a time. Lifted only by the operator in t
   which one is authoritative. **Source**: run 34691690046, job 103547976202.
   **Owner**: Claude Code. **Model**: Haiku.
 
-
-
-- [ ] **B132. Every branch push this session had its deploy cancelled, and I cannot say by what.**
-  Three branches, same shape. `claude/ops-cf-vacate-race`: `deploy` 34692059976 and
-  `deploy environment` 34692059872 both cancelled within seconds of the push, and `identity-guard`
-  34692076128 cancelled too. `claude/lint-findings`: `deploy` 34692919287 and `deploy environment`
-  34692919247, both cancelled at 12:11:2x-12:11:32 — two different workflows, two different
-  concurrency groups, eleven seconds apart. Earlier, `main`'s `deploy` of `926e783d` was cancelled,
-  which was a genuine supersession by the `15112f1f` merge.
-  What is established: no workflow in this repository calls `gh run cancel`; `identity-guard` has
-  no concurrency group at all, so nothing in CI could have cancelled that one; both deploy
-  workflows set `cancel-in-progress: false`. On the lint-findings `deploy`, `wait for environment
-  deploy` ran 12:10:03 to 12:11:21 and was cancelled, then the run followed at 12:11:32.
-  Two candidates. **A person or another session**: `antonycc` hand-dispatched
-  `deploy` 34692141909 for `ops-cf-vacate-race` at 11:51:49, so something outside this session was
-  acting on these branches. **The group dropping a queued run**: with `cancel-in-progress: false`
-  GitHub keeps only the latest queued run per group and drops the older, and
-  `deploy-environment.yml`'s group is `deploy-environment-ci` — shared by every ci branch, with no
-  `wait-for-ci-deploys` guard. `deploy.yml`'s own concurrency comment describes exactly this hazard
-  and says that guard is why it does not use a shared group; `deploy-environment.yml` has the
-  hazard and no guard.
-  The API does not expose who cancelled a run. The organisation audit log does, and that is
-  operator-side, so settle it there first rather than guessing. If it is the shared group, give
-  `deploy-environment.yml` the same wait-and-queue treatment `deploy.yml` has.
-  **Source**: runs 34692059872, 34692059976, 34692076128, 34692919247, 34692919287.
-  **Owner**: Claude Code, after the operator reads the audit log. **Model**: Sonnet.
-
-
-
 - [ ] **B131. keepalive fails on main, and one of its two reasons is its own.**
   Run 34692859063 on `bc719fda`: "FAIL: 2 scheduled workflow(s) have not fired within their
   cadence" — `restore-drill.yml` and `youtube-check.yml`, both "no schedule-triggered run recorded
@@ -100,8 +72,6 @@ and stop. One branch is driven green at a time. Lifted only by the operator in t
   that is knowingly blocked — exempt it by name with the blocking item cited, or accept a red main
   until O41x. Do not silence the check generally.
   **Source**: run 34692859063, job 103551097473. **Owner**: Claude Code. **Model**: Sonnet.
-
-
 
 - [ ] **B30v. The prod FOCUS export copy is denied ListBucket.**
   **Both environments, not just prod.** `prod-env-cost-focus-copy-errors` has been in ALARM since
@@ -120,9 +90,6 @@ and stop. One branch is driven green at a time. Lifted only by the operator in t
   issue exists after two days. **Source**: the alarm; `/aws/lambda/prod-env-cost-focus-copy`,
   2026-09-12 02:45 to 02:48 UTC. **Owner**: Claude Code. **Model**: Sonnet.
 
-
-
-
 - [ ] **B130. A superseded deploy reports a failed job.** `record-dora` in `deploy.yml:2950` is
   `if: always()` with `environment: ${{ needs.names.outputs.environment-name }}`. When a run is
   cancelled by the concurrency group, `names` is cancelled with it, that output is empty, so no
@@ -139,9 +106,6 @@ and stop. One branch is driven green at a time. Lifted only by the operator in t
   failure. Check whether the DORA panels already counted cancellations as failures before this.
   **Source**: run 34691378970, job 103548887779. **Owner**: Claude Code. **Model**: Haiku.
 
-
-
-
 - [ ] **B127. The apex-alias vacate races any expiring ci set, and the fix is unproven.**
   `set origins` strips the apex alias from whichever CloudFront distribution holds it, then waits
   for that distribution to finish deploying. In deploy run 34687925996 the distribution was
@@ -153,56 +117,12 @@ and stop. One branch is driven green at a time. Lifted only by the operator in t
   `NoSuchDistribution` as already-vacated and skips the rest of the block, while the waiter on our
   own target distribution stays strict and any other AWS error still fails the step. Verified only
   by a scratch harness with `aws` mocked and by actionlint; **no real run has exercised it**,
-  because reproducing it means timing a deploy against a self-destruct. All that is left of this
-  row: confirm on a real run that a ci set expiring mid-deploy no longer fails the deploy, and
-  decide the second window at `.github/actions/set-origins/action.yml:365-370`, where
+  because reproducing it means timing a deploy against a self-destruct. The real-run proof arrives
+  on its own the next time a ci set expires mid-deploy. The one action left: decide the second
+  window at `.github/actions/set-origins/action.yml:365-370`, where
   `transfer_apigw_domain` checks an API Gateway custom domain exists and then calls
   `get-api-mappings` and `delete-domain-name` against it with no equivalent classification.
   **Source**: deploy run 34687925996, job 103542638824. **Owner**: Claude Code. **Model**: Sonnet.
-
-
-
-
-- [ ] **B124. Prove the three agent workflows by dispatch, in order.** All three are on main,
-  `workflow_dispatch` only, every event trigger commented out until a hand-run has earned it.
-  **`agentic-lib-board.yml` first**, with `write-back=false`: it changes nothing, so a bad render costs only a
-  job. Compare its five parts against a `/board` in the terminal — same rows, same alarm families,
-  same deployment table, or the skill is being read differently in CI. Then `write-back=true` and
-  check the reluctance actually holds: a second run minutes later should say the board is already
-  true and commit nothing.
-  **`agentic-lib-pr.yml` next**, `dry-run=true`, after O42. Its tables must match a
-  `/auto-merge-dry-run` here. Only then a live run against one PR.
-  **`agentic-lib-code.yml` last**, 10 minute budget. The questions that matter: did it take the simplest
-  ready task rather than the most interesting; did it check whether `main` was green first; if it
-  finished, is the PR one you would merge; if it did not, does `work.patch` apply and is
-  `CHANGES.md` specific enough that a different agent could take the next step from it alone. Then
-  dispatch a second run against a deliberately unfinished first and check the resume judgement and
-  the `Resumed-From:` chain.
-  Uncomment a trigger only after that workflow's hand-run has produced something worth keeping.
-  **O42 is done** and the first dispatch already failed, which is what this row exists to find.
-  Run 34716604299, `agentic-lib-board.yml` with `write-back=false`, died at step 5
-  "Configure AWS role via GitHub OIDC": "Credentials could not be loaded". Cause: all three
-  workflows read `role-to-assume: ${{ vars.SUBMIT_ACTIONS_ROLE_ARN }}` from a job that declares no
-  `environment:`, and that variable exists only on the `ci` and `prod` environments, never at
-  repository level. So it resolves to empty and the action has no role to assume. `alarm-triage.yml`
-  gets this right with `environment: ${{ needs.triage.outputs.environment-name }}`; these three
-  copied the step and not the environment. Same root cause as B130.
-  `agentic-lib-board.yml` needs more than an `environment:` line: its Part 4 reads **both** accounts,
-  so one environment cannot serve it. Decide between two jobs keyed by environment, a second assume
-  into the other account, and repo-level role ARNs for both. Also ask, per workflow, whether it
-  needs AWS at all — `/auto-merge` reads GitHub and nothing else, so `agentic-lib-pr.yml`'s OIDC
-  step may simply be surplus.
-  **Halted by the operator, 2026-09-12 20:2x UTC**, during cool-down. The agent fixing the
-  credential wiring was stopped while still reading; nothing was committed and no worktree was
-  left behind. Its one finding, kept so it is not rediscovered: the `/auto-merge` skill contains no
-  AWS reference at all, so `agentic-lib-pr.yml`'s OIDC step is surplus and should be deleted rather
-  than given an environment. Do not dispatch this row again until the operator says so.
-  **Source**: `.github/workflows/agentic-lib-*.yml`; run 34716604299.
-  **Owner**: Claude Code. **Model**: Sonnet.
-
-
-
-
 
 - [ ] **B17v.1. Capture the five walkthrough videos.** One video each for the three VAT read
   pages (liabilities, payments, penalties; against prod, where B17b.1 is now live, in the 17a
@@ -230,10 +150,6 @@ and stop. One branch is driven green at a time. Lifted only by the operator in t
   `self-employed` activity's first `.html` path is now `dashboard.html`, whose form is
   `#businessPickerForm`. Check that on the next capture rather than assuming.
 
-
-
-
-
 - [ ] **B11.T7r. ITSA phase 2: run the sandbox year.** The script and the runbook
   (`_developers/hmrc/ITSA_PHASE_2_SANDBOX.md`) are on main, and the run now clears seven calls
   before it stops. Three script bugs were fixed on `claude/b28-board`: the checkpoint call needs a
@@ -250,9 +166,6 @@ and stop. One branch is driven green at a time. Lifted only by the operator in t
   Secrets Manager, so it needs a live SSO session: `aws sso login --sso-session diyaccounting`.
   **Source**: `PLAN_ITSA_PHASE_2.md` T7; the sandbox run of 2026-09-12. **Owner**: Claude Code.
   **Model**: Sonnet.
-
-
-
 
 - [ ] **B52x. Pull a day of the raw export and count every field.** The first nightly to include
   the raw-export step, 02:15 UTC on 2026-09-10, failed on all three attempts: the
@@ -275,10 +188,6 @@ and stop. One branch is driven green at a time. Lifted only by the operator in t
   the first success after the 2026-09-10 and 2026-09-11 failures, and
   `prod-env-analytics-nightly-failed` has returned to OK. So this row is ready: pull one day through
   the notebook's data path and count the fields.
-
-
-
-
 
 - [ ] **O28. Send `Gov-Client-Multi-Factor` on every request.** Every monthly advisory HMRC has
   raised, in every month, is this one header missing; every other header reads Correct throughout.
@@ -330,8 +239,6 @@ and stop. One branch is driven green at a time. Lifted only by the operator in t
   **Source**: `../REPORT_HMRC_HEADER_ADVISORIES.md`; the Developer Hub captures; B22's first run.
   **Owner**: Claude Code. **Model**: Sonnet.
 
-
-
 - [ ] **B134. Persist `Gov-Client-Device-ID` instead of regenerating it per request.**
   `web/public/lib/services/hmrc-service.js:174` calls `crypto.randomUUID()` on every request, so the
   device id changes each time. HMRC report it Correct because their check tests presence and format
@@ -340,8 +247,6 @@ and stop. One branch is driven green at a time. Lifted only by the operator in t
   absent. O28's scan counts distinct device ids per sub, which says how visible this is in real
   traffic. Spec conformance, not an advisory fix. **Source**: `../REPORT_HMRC_HEADER_ADVISORIES.md`.
   **Owner**: Claude Code. **Model**: Haiku.
-
-
 
 - [ ] **B136. The monthly fraud-header check has never run.**
   `data/compliance/fraud-prevention-headers/` is empty. B22 shipped a monthly check whose launchd
@@ -354,18 +259,6 @@ and stop. One branch is driven green at a time. Lifted only by the operator in t
   decided and the directory is currently tracked and empty.
   **Source**: `../REPORT_HMRC_HEADER_ADVISORIES.md`'s closed lines of enquiry. **Owner**: Claude
   Code. **Model**: Sonnet.
-
-
-
-- [ ] **B137. `uniqueReference` identifies the user, not the authentication event.** In the
-  `Gov-Client-Multi-Factor` header, `uniqueReference` is a SHA-256 of `sub + ":" + factorType`, so
-  it is stable per user per factor type by design. HMRC's spec expects a reference identifying the
-  authentication **event**. They have not flagged it and it is no part of the current advisory, so
-  this is a separate reading of the spec rather than a defect they have raised. Decide whether to
-  change it, and note that O28's step 2b touches the same code — sequence it after, not with.
-  **Source**: `../REPORT_HMRC_HEADER_ADVISORIES.md`. **Owner**: Claude Code. **Model**: Sonnet.
-
-
 
 - [ ] **B128. A failed HMRC submission must not cost a token.** `consumeTokenForActivity` is called
   before the HMRC request in all twelve charging handlers — `hmrcVatReturnPost`,
@@ -380,9 +273,6 @@ and stop. One branch is driven green at a time. Lifted only by the operator in t
   applies to all twelve handlers in one pass, and the proof is a test per handler showing the token
   count unchanged after an HMRC rejection. **Source**: B117's wiring pass, 2026-09-12.
   **Owner**: Claude Code. **Model**: Sonnet.
-
-
-
 
 - [ ] **O41x. Rework the vault for copy-back restore, then redeploy the backup account.**
   `setup-backup-account.yml` failed on 2026-09-11 (run 34638032553): AWS Backup refused the vault
@@ -400,10 +290,6 @@ and stop. One branch is driven green at a time. Lifted only by the operator in t
   redeploy the backup account stack. **Source**: run 34638032553; the live vault policy.
   **Owner**: Claude Code. **Model**: Sonnet.
 
-
-
-
-
 - [ ] **B125. Return a real 403 from HMRC, and show HMRC's reason.**
   `http403ForbiddenFromHmrcResponse` in `app/services/hmrcApi.js:682` ends with
   `return http400BadRequestResponse(...)`. Twenty handlers under `app/functions/hmrc/` map
@@ -412,14 +298,10 @@ and stop. One branch is driven green at a time. Lifted only by the operator in t
   pages discard it and show "An unexpected error occurred".
   **Operator decision, 2026-09-12: emit 403 and surface the body.** Both halves, so a user or a
   test sees the actual cause.
-  Twenty handlers includes live VAT endpoints on prod, so verify against a deployed set before
-  merge: the pages special-case 401 only, which suggests 403 falls through their generic error path,
-  but that is an assumption until a run shows it. **Source**: probe-test run 34658969922;
+  **Merged as `e93bb2ea` in #192** and on prod since prod-7fbea34. Left: show on that set that a
+  403 reaches the page with HMRC's reason. The pages special-case 401 only, which suggests 403
+  falls through their generic error path, but that is an assumption until a run shows it. **Source**: probe-test run 34658969922;
   `app/services/hmrcApi.js:682-724`. **Owner**: Claude Code. **Model**: Sonnet.
-
-
-
-
 
 - [ ] **B122. Clear the 214 eslint findings.** `npm run linting` runs again since batch 27, and
   reports 214 errors: 156 auto-fixable `prettier/prettier` formatting, the rest `no-var` and
@@ -452,10 +334,6 @@ and stop. One branch is driven green at a time. Lifted only by the operator in t
   deployed set rather than unit tests alone. **Source**: batch 27's lint job. **Owner**: Claude
   Code. **Model**: Haiku for the formatting pass, Sonnet for the code fixes.
 
-
-
-
-
 - [ ] **B71.S3e. Migrate the books bucket, steps 2 to 7.** Step 1 shipped in PR #180: the
   `{prefix}-diya-gl-{account}` bucket exists beside `{prefix}-books-{account}` and both are in the
   backup selection. The books stay where they are until the rest runs.
@@ -482,10 +360,6 @@ and stop. One branch is driven green at a time. Lifted only by the operator in t
   Next, now #192 has deployed: ci steps 3 to 6, then prod steps 1 to 6. Step 6 removes the old
   bucket through CDK, never a raw `aws s3` delete.
 
-
-
-
-
 - [ ] **B73. Prove an email-restricted pass works end to end.** The secret and the grant are both
   in place: `ci/submit/email-hash-secret` and `prod/submit/email-hash-secret` hold independent
   48-byte random values, and `EmailHashSecretHelper` grants them to the four pass Lambdas that
@@ -497,7 +371,38 @@ and stop. One branch is driven green at a time. Lifted only by the operator in t
   warned past. **Source**: ci `pass-post` log, 2026-09-09; PR #191. **Owner**: Claude Code.
   **Model**: Haiku.
 
+
 ## Human and machine
+
+- [ ] **B132. Every branch push this session had its deploy cancelled, and I cannot say by what.**
+  Three branches, same shape. `claude/ops-cf-vacate-race`: `deploy` 34692059976 and
+  `deploy environment` 34692059872 both cancelled within seconds of the push, and `identity-guard`
+  34692076128 cancelled too. `claude/lint-findings`: `deploy` 34692919287 and `deploy environment`
+  34692919247, both cancelled at 12:11:2x-12:11:32 — two different workflows, two different
+  concurrency groups, eleven seconds apart. Earlier, `main`'s `deploy` of `926e783d` was cancelled,
+  which was a genuine supersession by the `15112f1f` merge.
+  What is established: no workflow in this repository calls `gh run cancel`; `identity-guard` has
+  no concurrency group at all, so nothing in CI could have cancelled that one; both deploy
+  workflows set `cancel-in-progress: false`. On the lint-findings `deploy`, `wait for environment
+  deploy` ran 12:10:03 to 12:11:21 and was cancelled, then the run followed at 12:11:32.
+  Two candidates. **A person or another session**: `antonycc` hand-dispatched
+  `deploy` 34692141909 for `ops-cf-vacate-race` at 11:51:49, so something outside this session was
+  acting on these branches. **The group dropping a queued run**: with `cancel-in-progress: false`
+  GitHub keeps only the latest queued run per group and drops the older, and
+  `deploy-environment.yml`'s group is `deploy-environment-ci` — shared by every ci branch, with no
+  `wait-for-ci-deploys` guard. `deploy.yml`'s own concurrency comment describes exactly this hazard
+  and says that guard is why it does not use a shared group; `deploy-environment.yml` has the
+  hazard and no guard.
+  The API does not expose who cancelled a run. The organisation audit log does, and that is
+  operator-side, so settle it there first rather than guessing. If it is the shared group, give
+  `deploy-environment.yml` the same wait-and-queue treatment `deploy.yml` has.
+  Read on 2026-09-13: four of the five runs carry a second attempt started by `antonycc` within
+  minutes of the cancellation (34692059872 at 11:52:47, 34692076128 at 11:52:45, 34692919247 at
+  12:13:18, 34692919287 at 12:13:20), all green; only 34692059976 stayed cancelled at attempt 1.
+  A cancel-then-rerun by hand fits that shape; the shared group does not re-run anything. The
+  operator says which; if it was the group, the guard is still the fix.
+  **Source**: runs 34692059872, 34692059976, 34692076128, 34692919247, 34692919287.
+  **Owner**: Operator says whether these were hand-cancelled; Claude Code then. **Model**: Sonnet.
 
 - [ ] **B34.6b. Companies House accounts filing: the sandbox proof.** After O16: submit the
   FRS 105 accounts to the XML Gateway test service with the test presenter credentials (a
@@ -525,8 +430,6 @@ and stop. One branch is driven green at a time. Lifted only by the operator in t
   exist, so the row finishes with an email naming what was submitted.
   **Source**: BACKLOG 34b; the XML team's email of 2026-09-11.
   **Owner**: Claude Code, then Operator. **Model**: Sonnet.
-
-
 
 - [ ] **B135. Point the support requests at the spreadsheets repository's issues.** Three entry
   points send customers to this repository's issues today, and all three move:
@@ -578,6 +481,7 @@ and stop. One branch is driven green at a time. Lifted only by the operator in t
   **Source**: B80's fix. **Owner**: Claude Code, operator reviews each list. **Model**: Haiku per
   repository.
 
+
 ## Human-only
 
 - [ ] **O17. Register the Companies House sandbox test user and set four ci values.**
@@ -588,7 +492,6 @@ and stop. One branch is driven green at a time. Lifted only by the operator in t
   (the authenticator secret) and `COMPANIES_HOUSE_SANDBOX_API_KEY` (the test application's
   REST key, for creating the run's test company). Unblocks B34.7. **Source**: BACKLOG 34; **Owner**: Operator. **Model**: none.
 
-
 - [ ] **O21. File one registered-office or registered-email change on prod.** Both activities
   are live on submit.diyaccounting.co.uk since prod-4463ec1 (2026-09-07 00:5x UTC), free on the
   `default` bundle, with the live Companies House filing client. A real filing changes a real
@@ -596,14 +499,12 @@ and stop. One branch is driven green at a time. Lifted only by the operator in t
   it went; a receipt or an error message is enough. **Source**: BACKLOG 34.
   **Owner**: Operator. **Model**: none.
 
-
 - [ ] **O23. Open a Google Ads account for the paid-traffic experiments.** Both earlier Ads
   accounts were cancelled (`google-analytics.toml`); the reinvestment loop (plan row D17) needs
   one with conversion import from GA4 property 523400333's key events, and a reserve floor
   the loop must not spend below. Name the floor to Claude Code with the account id; the first
   test is designed as on-off weeks before any spend. **Source**: `PLAN_ONE_STOP_DASHBOARD.md`
   D17. **Owner**: Operator. **Model**: none.
-
 
 - [ ] **B129. Decide whether deleting an ITSA loss claim or adjustment costs a token.**
   `hmrcItsaLossesAndClaimsDelete` and `hmrcItsaTaxLiabilityAdjustmentsDelete` now charge one token,
@@ -631,7 +532,6 @@ and stop. One branch is driven green at a time. Lifted only by the operator in t
   `REPORT_IDENTITY_AUDIT.md` section 8, recommendations 2, 3 and 12. **Owner**: Operator.
   **Model**: none.
 
-
 - [ ] **O37. Turn on SSH commit signing.** `REPORT_GIT_CONFIG.md` settles what the config should
   be and why: keep `pull.rebase=true`, because a rebase re-signs each replayed commit when
   `commit.gpgsign` is a standing default rather than a per-commit flag, and keep
@@ -646,11 +546,11 @@ and stop. One branch is driven green at a time. Lifted only by the operator in t
   `REPORT_GIT_CONFIG.md`; `REPORT_IDENTITY_AUDIT.md` section 9. **Owner**: Operator. **Model**:
   none.
 
-
 - [ ] **O33. Tell HMRC's SDS team the licence changed.** One paragraph: the MTD approval
   submission and the production-credentials email described the service as AGPL open source, and
   the PolyForm licence files are on main and on prod since prod-318271f. **Source**:
   `PLAN_LICENSING_UPLIFT_SUBMIT.md` H-LU-9. **Owner**: Operator. **Model**: none.
+
 
 ## Blocked
 
@@ -671,8 +571,6 @@ and stop. One branch is driven green at a time. Lifted only by the operator in t
   Sonnet. Blocked on the spreadsheets repository's ITSA-T8 (the two self-employed derivations)
   and on `PLAN_SUBMISSION_MCP.md` M1.
 
-
-
 - [ ] **B34.7. Run and fix the filing suites' sandbox sign-in.** Batch 9 (6957651c) carries
   the suites' sandbox sign-in with the authenticator step, off by default: `deploy.yml` and
   `probe-test.yml` run the two filing suites only when the dispatch input
@@ -684,7 +582,56 @@ and stop. One branch is driven green at a time. Lifted only by the operator in t
   selector fix. **Source**: BACKLOG 34. **Owner**: Claude Code. **Model**: Sonnet.
   Blocked on O17.
 
+- [ ] **B11.T10. ITSA phase 2: the recognition pack.** `PLAN_ITSA_PHASE_2.md` T10:
+  `_developers/hmrc/ITSA_PRODUCTION_APPROVALS_CHECKLIST.md`, an ITSA pass over the two
+  questionnaires, and the two draft emails for the operator to send. One application now covers
+  both approval stages, and the checklist answers for all nine APIs in the minimum functionality
+  standards with a build behind each. **Source**: BACKLOG 11; `PLAN_ITSA_PHASE_2.md` T10.
+  **Owner**: Claude Code, then Operator. **Model**: Haiku. Blocked on B11.T7r, B11.T21 and
+  B11.T22.
 
+- [ ] **B17v.2. Publish the walkthrough videos.** After O32: fetch the recordings from their
+  capture runs, upload them unlisted with `video-publish`, then the operator runs
+  `npm run video:publish -- --public`. The VAT read-page videos publish beside the three VAT
+  ones; the accounts and ITSA videos publish as sandbox previews. **Source**: BACKLOG 17b,
+  17c. **Owner**: Claude Code, then Operator. **Model**: Haiku. Blocked on O32.
+
+- [ ] **B124. Prove the three agent workflows by dispatch, in order.** All three are on main,
+  `workflow_dispatch` only, every event trigger commented out until a hand-run has earned it.
+  **`agentic-lib-board.yml` first**, with `write-back=false`: it changes nothing, so a bad render costs only a
+  job. Compare its five parts against a `/board` in the terminal — same rows, same alarm families,
+  same deployment table, or the skill is being read differently in CI. Then `write-back=true` and
+  check the reluctance actually holds: a second run minutes later should say the board is already
+  true and commit nothing.
+  **`agentic-lib-pr.yml` next**, `dry-run=true`, after O42. Its tables must match a
+  `/auto-merge-dry-run` here. Only then a live run against one PR.
+  **`agentic-lib-code.yml` last**, 10 minute budget. The questions that matter: did it take the simplest
+  ready task rather than the most interesting; did it check whether `main` was green first; if it
+  finished, is the PR one you would merge; if it did not, does `work.patch` apply and is
+  `CHANGES.md` specific enough that a different agent could take the next step from it alone. Then
+  dispatch a second run against a deliberately unfinished first and check the resume judgement and
+  the `Resumed-From:` chain.
+  Uncomment a trigger only after that workflow's hand-run has produced something worth keeping.
+  **O42 is done** and the first dispatch already failed, which is what this row exists to find.
+  Run 34716604299, `agentic-lib-board.yml` with `write-back=false`, died at step 5
+  "Configure AWS role via GitHub OIDC": "Credentials could not be loaded". Cause: all three
+  workflows read `role-to-assume: ${{ vars.SUBMIT_ACTIONS_ROLE_ARN }}` from a job that declares no
+  `environment:`, and that variable exists only on the `ci` and `prod` environments, never at
+  repository level. So it resolves to empty and the action has no role to assume. `alarm-triage.yml`
+  gets this right with `environment: ${{ needs.triage.outputs.environment-name }}`; these three
+  copied the step and not the environment. Same root cause as B130.
+  `agentic-lib-board.yml` needs more than an `environment:` line: its Part 4 reads **both** accounts,
+  so one environment cannot serve it. Decide between two jobs keyed by environment, a second assume
+  into the other account, and repo-level role ARNs for both. Also ask, per workflow, whether it
+  needs AWS at all — `/auto-merge` reads GitHub and nothing else, so `agentic-lib-pr.yml`'s OIDC
+  step may simply be surplus.
+  **Halted by the operator, 2026-09-12 20:2x UTC**, during cool-down. The agent fixing the
+  credential wiring was stopped while still reading; nothing was committed and no worktree was
+  left behind. Its one finding, kept so it is not rediscovered: the `/auto-merge` skill contains no
+  AWS reference at all, so `agentic-lib-pr.yml`'s OIDC step is surplus and should be deleted rather
+  than given an environment. Do not dispatch this row again until the operator says so.
+  **Source**: `.github/workflows/agentic-lib-*.yml`; run 34716604299.
+  **Owner**: Claude Code. **Model**: Sonnet. Blocked on the operator lifting the 2026-09-12 halt.
 
 - [ ] **B25c. Issue #11, backups outside the account.** The drill's own state is now known and
   written up in `_developers/RESTORE_DRILL.md`: `restore-drill.yml` has never run, and two things
@@ -698,7 +645,13 @@ and stop. One branch is driven green at a time. Lifted only by the operator in t
   **Model**: Sonnet. Blocked on O41x: the drill cannot run until the vault accepts a restore
   grant at all, and today's dispatch proved the current design does not deploy.
 
-
+- [ ] **B137. `uniqueReference` identifies the user, not the authentication event.** In the
+  `Gov-Client-Multi-Factor` header, `uniqueReference` is a SHA-256 of `sub + ":" + factorType`, so
+  it is stable per user per factor type by design. HMRC's spec expects a reference identifying the
+  authentication **event**. They have not flagged it and it is no part of the current advisory, so
+  this is a separate reading of the spec rather than a defect they have raised. Decide whether to
+  change it, and note that O28's step 2b touches the same code — sequence it after, not with.
+  **Source**: `../REPORT_HMRC_HEADER_ADVISORIES.md`. **Owner**: Claude Code. **Model**: Sonnet. Blocked on O28 step 2b.
 
 - [ ] **B70.LU15. Licensing: the brand package.** Pin `@diy-accounting-uk/brand`, copy assets
   and tokens at build, import the tokens, delete the local logo, favicon and token copies;
@@ -707,28 +660,9 @@ and stop. One branch is driven green at a time. Lifted only by the operator in t
   Blocked on the brand package existing, now planned in the spreadsheets repository's
   `PLAN_DIYACCOUNTING_BRAND.md`.
 
-- [ ] **B11.T10. ITSA phase 2: the recognition pack.** `PLAN_ITSA_PHASE_2.md` T10:
-  `_developers/hmrc/ITSA_PRODUCTION_APPROVALS_CHECKLIST.md`, an ITSA pass over the two
-  questionnaires, and the two draft emails for the operator to send. One application now covers
-  both approval stages, and the checklist answers for all nine APIs in the minimum functionality
-  standards with a build behind each. **Source**: BACKLOG 11; `PLAN_ITSA_PHASE_2.md` T10.
-  **Owner**: Claude Code, then Operator. **Model**: Haiku. Blocked on B11.T7r, B11.T21 and
-  B11.T22.
-
-
-
-- [ ] **B17v.2. Publish the walkthrough videos.** After O32: fetch the recordings from their
-  capture runs, upload them unlisted with `video-publish`, then the operator runs
-  `npm run video:publish -- --public`. The VAT read-page videos publish beside the three VAT
-  ones; the accounts and ITSA videos publish as sandbox previews. **Source**: BACKLOG 17b,
-  17c. **Owner**: Claude Code, then Operator. **Model**: Haiku. Blocked on O32.
-
-
-
 - [ ] **O32. View the five walkthrough videos.** After B17v.1: watch each recording and say
   which can go up and what reads wrong. **Source**: BACKLOG 17b, 17c. **Owner**: Operator.
   **Model**: none. Blocked on B17v.1.
-
 
 
 ## Discipline
