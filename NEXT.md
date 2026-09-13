@@ -42,22 +42,24 @@ Every item names its model: the lowest tier that fits (Fable > Opus > Sonnet > H
 
 ## Machine-only
 
-- [ ] **B139. The live registered-email filing loops back to the company-number step.** On prod
-  (prod-7fbea34) at about 14:30 UTC on 2026-09-13 the operator tried O21 for real: company
-  06846849, change of registered email. After the Companies House authorise screen the browser
-  landed back on the page that asks for the company number, and entering it again went round the
-  same loop; nothing was filed. The ci click-through of 2026-09-06 against the sandbox did not do
-  this. Candidates: state lost across the redirect (return path not carried in `state`, token
-  stored under a key the page does not read, the callback sending the user to the activity's first
-  page), the token exchange failing on prod (redirect URI, live client, scope), or a CloudFront
-  behaviour on `/companies-house/*` that ci does not have. Investigating on `claude/ltd-filing-loop`
-  off `main`, kept out of b29 by the operator's instruction; when it is ready the operator says
-  whether it ships alone or folds into the batch. Same branch, separate commit: 06846849 is the
-  operator's real company and must not stand as example data — replace it in the plan, the unit and
-  system tests and the simulator scenarios with an example Companies House itself publishes,
-  leaving only the legal pages and README where it is the company's own identity.
-  **Source**: operator report, 2026-09-13. **Owner**: Claude Code. **Model**: Opus.
-
+- [ ] **B139. The live registered-email filing loops back to the company-number step.** Cause
+  found and fixed on `claude/ltd-filing-loop` (8cf51462, off `main`, not pushed): the Companies
+  House token response carries no `scope` field (its documented fields are `access_token`,
+  `expires_in`, `refresh_token`, `token_type`), so `filingCallback.html` never wrote
+  `companiesHouseTokenScope`, and `hasUsableToken()` on the filing page compared the requested
+  scope against `null` and silently showed the company-number view again. The simulator echoed
+  the scope back, which is why every local and ci run passed. Prod evidence: two
+  `POST /api/v1/companies-house/token` 200s at 13:41:55 and 13:42:25 UTC on 2026-09-13, both 144
+  bytes against a 165-byte scope string, both from `filingCallback.html`; no filing Lambda was
+  ever called. Fix: the filing pages record the requested scope before redirecting, the callback
+  reads it back and treats a missing scope or non-numeric `expiresIn` as a failed exchange shown
+  on the page, the simulator answers in the documented shape, and a browser test drives both
+  filing pages through authorise, callback and resume against a scope-less token. Second commit
+  (206b9995): 06846849 replaced as example data by `00000001`, the number in Companies House's own
+  filing API guide; the legal pages, README and the live-lane lookup fixture keep it as identity.
+  Left: the operator says whether it ships alone or folds into b29; then a prod deploy and O21's
+  retry. **Source**: operator report, 2026-09-13. **Owner**: Operator decides, Claude Code ships.
+  **Model**: Sonnet.
 - [ ] **B73. Prove an email-restricted pass works end to end.** The secret and the grant are both
   in place: `ci/submit/email-hash-secret` and `prod/submit/email-hash-secret` hold independent
   48-byte random values, and `EmailHashSecretHelper` grants them to the four pass Lambdas that
