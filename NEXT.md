@@ -51,28 +51,18 @@ Every item names its model: the lowest tier that fits (Fable > Opus > Sonnet > H
   warned past. **Source**: ci `pass-post` log, 2026-09-09; PR #191. **Owner**: Claude Code.
   **Model**: Haiku.
 
-- [ ] **B52x. Pull a day of the raw export and count every field.** The first nightly to include
-  the raw-export step, 02:15 UTC on 2026-09-10, failed on all three attempts: the
-  `prod-env-raw-export-publish` Lambda's role carried `s3:PutObject` on `exports/*` and no
-  `GetObject` or `ListBucket`, so Athena could not read the curated data its 21 views select from,
-  and it failed before writing a single file. `AnalyticsDashboard.java`'s metrics-publish Lambda
-  runs the identical Athena-over-the-lake pattern and already had both grants; `RawExport.java`
-  never got them. The grants reached prod at 18:14 UTC on 2026-09-10:
-  `prod-env-raw-export-publish`'s role now carries `s3:GetObject` and `s3:ListBucket` on
-  `prod-env-analytics-lake-972912397388`. The 02:15 UTC run of 2026-09-11 failed as well and
-  raised alarm issue #182: the analytics view chain's own fix only reached prod in the merge of
-  2026-09-11 evening, so that run still hit the missing view. The first export that can work is
-  the 02:15 UTC run of 2026-09-12. Then pull one day through the notebook's data path
-  (`PLAN_ONE_STOP_DASHBOARD.md` D16's export) and list every field with its count of non-empty
-  entries, so a field that never fills is found now rather than in three months. Proof the run
-  worked: 21 CSVs and 8 JSONs under `exports/prod/<date>/`, and the state machine's execution
-  showing SUCCEEDED through its raw-export step. **Source**: BACKLOG 52; plan row D16; the failed
-  execution of 2026-09-10. **Owner**: Claude Code. **Model**: Haiku.
-  **The 02:15 UTC nightly of 2026-09-12 SUCCEEDED** (state machine execution started 03:15 BST),
-  the first success after the 2026-09-10 and 2026-09-11 failures, and
-  `prod-env-analytics-nightly-failed` has returned to OK. So this row is ready: pull one day through
-  the notebook's data path and count the fields.
-
+- [ ] **B52x. Two export views emit no rows.** The 02:15 UTC nightlies of 2026-09-12 and
+  2026-09-13 both SUCCEEDED and wrote 21 CSVs and 8 JSONs under
+  `s3://prod-env-analytics-lake-972912397388/exports/prod/<date>/`; the field counts for
+  2026-09-12 are in `_developers/RAW_EXPORT_FIELD_COUNTS.md` (batch b29). Every field fills except:
+  `v_compliance_status` and `v_subscription_renewals_daily` have zero rows, and three fields are
+  sparse (`v_dora_runs_daily.median_lead_time_seconds` 5 of 8,
+  `v_signup_to_first_submission.signup_day` 10 of 11 and `median_hours_to_first_submission` 3 of
+  11). Renewals are empty because the first renewal is 2026-10-02. `v_compliance_status` being
+  empty is not explained: the compliance panel reads it, so find whether the view's source table
+  is unfed or the view's predicate excludes every row, and fix the feed or the view. Say whether
+  the sparse three are expected (a median needs more than one sample). **Source**: BACKLOG 52;
+  plan row D16. **Owner**: Claude Code. **Model**: Sonnet.
 - [ ] **B130. A superseded deploy reports a failed job.** `record-dora` in `deploy.yml:2950` is
   `if: always()` with `environment: ${{ needs.names.outputs.environment-name }}`. When a run is
   cancelled by the concurrency group, `names` is cancelled with it, that output is empty, so no
