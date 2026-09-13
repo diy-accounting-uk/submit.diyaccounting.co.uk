@@ -41,16 +41,6 @@ Every item names its model: the lowest tier that fits (Fable > Opus > Sonnet > H
 
 ## In flight
 
-- [ ] **B127. A ci set expiring mid-deploy, three shapes.** Both vacate windows are closed on main
-  (ef3aac19, a97d3e36). Seen on 2026-09-13, same family: three ci deploys at once contending for
-  the apex alias (`CNAMEAlreadyExists` on PR #199's set-origins at 15:29) and rotating one shared
-  Cognito lane user under each other (PR #202 fixes the lane-user half); and a branch's own redeploy
-  torn down by its first set's self-destruct (`ci-claud20c8`, created 19:37, fired 21:37 while the
-  rebased push was recreating `ApiStack`: "Function not found …custom-authorizer", run
-  34783054685). For the third: a redeploy of an existing deployment name should reset or extend
-  the `SelfDestructStack` schedule, or refuse to start inside its last 45 minutes. On `claude/vat-view-entitlement`, PR #202, deploying `ci-vatview`
-  (run 34784881334): the lane-user half. **Source**: runs 34762675812, 34763080213, 34783054685. **Owner**: Claude Code. **Model**: Sonnet.
-
 - [ ] **B135. Point the support requests at the spreadsheets repository's issues.** The page
   links and the Lambda's `SUPPORT_GITHUB_REPO` are on main (#198). In flight: spreadsheets PR #109 (`claude/ops-support-issues`, the
   template) awaits the operator's merge; and the Lambda posts there only once O45's token is on the
@@ -63,6 +53,16 @@ Every item names its model: the lowest tier that fits (Fable > Opus > Sonnet > H
   red. **Model**: Sonnet.
 
 ## Machine-only
+
+- [ ] **B127. A ci set expiring mid-deploy, three shapes.** Both vacate windows are closed on main
+  (ef3aac19, a97d3e36). Seen on 2026-09-13, same family: three ci deploys at once contending for
+  the apex alias (`CNAMEAlreadyExists` on PR #199's set-origins at 15:29) and rotating one shared
+  Cognito lane user under each other (PR #202 fixes the lane-user half); and a branch's own redeploy
+  torn down by its first set's self-destruct (`ci-claud20c8`, created 19:37, fired 21:37 while the
+  rebased push was recreating `ApiStack`: "Function not found …custom-authorizer", run
+  34783054685). For the third: a redeploy of an existing deployment name should reset or extend
+  the `SelfDestructStack` schedule, or refuse to start inside its last 45 minutes. The lane-user half is on main (#202, e3715879): jobs that
+  rotate a lane user queue on that user. **Source**: runs 34762675812, 34763080213, 34783054685. **Owner**: Claude Code. **Model**: Sonnet.
 
 - [ ] **B52x. Two export views emit no rows.** The 02:15 UTC nightlies of 2026-09-12 and
   2026-09-13 both SUCCEEDED and wrote 21 CSVs and 8 JSONs under
