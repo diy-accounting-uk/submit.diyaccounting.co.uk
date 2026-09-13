@@ -17,6 +17,8 @@ import software.amazon.awscdk.services.cloudwatch.Alarm;
 import software.amazon.awscdk.services.cloudwatch.ComparisonOperator;
 import software.amazon.awscdk.services.cloudwatch.MetricOptions;
 import software.amazon.awscdk.services.cloudwatch.TreatMissingData;
+import software.amazon.awscdk.services.iam.Effect;
+import software.amazon.awscdk.services.iam.PolicyStatement;
 import software.amazon.awscdk.services.iam.Role;
 import software.amazon.awscdk.services.iam.ServicePrincipal;
 import software.amazon.awscdk.services.lambda.Architecture;
@@ -182,11 +184,29 @@ public class CostFocusIngestion {
                 .build();
         this.copyLambda.getNode().addDependency(logGroup);
 
-        // Write access to this account's own lake. Read access to the export bucket in the
-        // management account comes from that bucket's own policy naming this role's ARN, not
-        // from anything granted here: this account has no permission to modify a bucket policy
-        // it does not own.
+        // Write access to this account's own lake.
         props.lakeBucket().grantWrite(this.copyLambda, props.curatedPrefix() + "/*");
+
+        // Read access to the export bucket in the management account. IAM evaluates a
+        // cross-account request as the AND of both sides: the bucket's own resource policy
+        // (granted in CostExportStack, naming this role's ARN) and this role's own identity
+        // policy. This account has no permission to modify a bucket policy it does not own, so
+        // only this half is granted here; the ARNs are built from the bucket name and prefix
+        // strings because this account holds no CDK-managed reference to that bucket.
+        var focusExportBucketArn = "arn:aws:s3:::" + props.focusExportBucketName();
+        this.copyRole.addToPolicy(PolicyStatement.Builder.create()
+                .sid("ReadTheFocusExportObjects")
+                .effect(Effect.ALLOW)
+                .actions(List.of("s3:GetObject"))
+                .resources(List.of(focusExportBucketArn + "/" + props.focusExportS3Prefix() + "/*"))
+                .build());
+        this.copyRole.addToPolicy(PolicyStatement.Builder.create()
+                .sid("ListTheFocusExportBucket")
+                .effect(Effect.ALLOW)
+                .actions(List.of("s3:ListBucket"))
+                .resources(List.of(focusExportBucketArn))
+                .conditions(Map.of("StringLike", Map.of("s3:prefix", props.focusExportS3Prefix() + "/*")))
+                .build());
 
         this.schedule = new Schedule(
                 scope,

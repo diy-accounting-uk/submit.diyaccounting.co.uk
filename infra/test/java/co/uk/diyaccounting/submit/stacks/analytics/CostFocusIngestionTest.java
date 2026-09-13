@@ -5,6 +5,7 @@
 
 package co.uk.diyaccounting.submit.stacks.analytics;
 
+import java.util.List;
 import java.util.Map;
 import org.junit.jupiter.api.Test;
 import software.amazon.awscdk.App;
@@ -81,6 +82,34 @@ class CostFocusIngestionTest {
         template.resourceCountIs("AWS::Scheduler::Schedule", 1);
         template.hasResourceProperties(
                 "AWS::Scheduler::Schedule", Match.objectLike(Map.of("ScheduleExpression", "cron(45 2 * * ? *)")));
+    }
+
+    @Test
+    void copyRoleCanReadAndListTheExportBucketAcrossAccounts() {
+        Template template = synthTemplate();
+
+        template.hasResourceProperties(
+                "AWS::IAM::Policy",
+                Match.objectLike(Map.of(
+                        "PolicyDocument",
+                        Match.objectLike(Map.of(
+                                "Statement",
+                                Match.arrayWith(List.of(
+                                        Match.objectLike(Map.of(
+                                                "Sid", "ReadTheFocusExportObjects",
+                                                "Effect", "Allow",
+                                                "Action", "s3:GetObject",
+                                                "Resource",
+                                                        "arn:aws:s3:::diy-accounting-cost-focus-887764105431/focus/*")),
+                                        Match.objectLike(Map.of(
+                                                "Sid", "ListTheFocusExportBucket",
+                                                "Effect", "Allow",
+                                                "Action", "s3:ListBucket",
+                                                "Resource", "arn:aws:s3:::diy-accounting-cost-focus-887764105431",
+                                                "Condition",
+                                                        Map.of(
+                                                                "StringLike",
+                                                                Map.of("s3:prefix", "focus/*"))))))))))));
     }
 
     @Test
