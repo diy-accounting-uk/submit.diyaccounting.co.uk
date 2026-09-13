@@ -278,37 +278,19 @@ Every item names its model: the lowest tier that fits (Fable > Opus > Sonnet > H
   **Source**: BACKLOG 34b; the XML team's email of 2026-09-11. **Owner**: Claude Code.
   **Model**: Sonnet.
 
-- [ ] **B122. Clear the 214 eslint findings.** `npm run linting` runs again since batch 27, and
-  reports 214 errors: 156 auto-fixable `prettier/prettier` formatting, the rest `no-var` and
-  `no-empty` under `web/public/`. The lint job reports the total and gates only newly added files,
-  so none of this blocks anything today.
-  **214 down to 52, merged as `4918a0d0`.** The total was exactly right and its composition was not:
-  `prettier/prettier` is 130, not 156; the 156 auto-fixable are 130 prettier plus 25 `no-var` plus 1
-  `one-var`; and `no-var` + `no-empty` is 32 of the 84 non-prettier findings, not all of them.
-  Fixed: the 130 formatting findings as one commit, then the 25 `no-var` in
-  `widgets/page-chrome.js` and the 7 empty catches in `widgets/pass-redeemer.js`, each now saying
-  why the failure is ignorable rather than swallowing it.
-  Also fixed: CI's total step ran `npx eslint . --format unix 2>/dev/null | ... || true`, and
-  `--format unix` needs `eslint-formatter-unix`, which ESLint dropped from core in v9 and this repo
-  does not depend on. So the step exited 2 on every run and reported "0 finding(s)" every time. It
-  now uses `--format json` and branches on the exit code.
-  Remaining, and this is the rest of "fix all 214": **52 findings across twelve rules** in `app/`
-  and `cdk-typescript/` — `no-unused-vars` 12, `sonarjs/unused-import` 11,
-  `sonarjs/concise-regex` 7, `sonarjs/regex-complexity` 6, `sonarjs/no-clear-text-protocols` 3,
-  `import/no-commonjs` 3, `sonarjs/super-linear-regex` 2,
-  `sonarjs/no-nested-template-literals` 2, and one each of `one-var`,
-  `sonarjs/prefer-single-boolean-return`, `sonarjs/no-os-command-from-path`,
-  `sonarjs/no-nested-conditional`, `sonarjs/hashing` and `promise/always-return`. The regex and
-  clear-text-protocol ones may be real defects rather than style; read each before rewriting it.
-  Separately: this checkout's own `node_modules` has `typescript` 7.0.2 against a pinned 6.0.3,
-  which crashes `ts-api-utils` and so `eslint` locally. `npm ci` fixes it; a clean worktree was
-  never affected.
-  **Operator decision, 2026-09-11: fix all 214.** Take the formatting pass as its own commit
-  touching no logic, then the `no-var` and `no-empty` fixes as a second. The second half changes
-  real code in pages covered only by the behaviour suites, so it needs those suites run against a
-  deployed set rather than unit tests alone. **Source**: batch 27's lint job. **Owner**: Claude
-  Code. **Model**: Haiku for the formatting pass, Sonnet for the code fixes.
-
+- [ ] **B122. Clear the last 13 eslint findings.** 39 of the 52 are on `claude/b29-board`
+  (0036ec61 to 31a2eefc; three were real defects: an O(n²) email regex in
+  `companiesHouseRegisteredEmailAddressPost.js`, `diff` resolved from PATH in
+  `cdk-typescript/scripts/diff-templates.mjs`, a super-linear Link-header regex in
+  `companiesHouseApi.js`). The 13 left sat in files other b29 tracks were editing:
+  `no-unused-vars`/`sonarjs/unused-import` at line 9 of `hmrcItsaSelfEmploymentAnnualPut.js`,
+  `hmrcItsaSelfEmploymentPeriodPut.js`, `hmrcItsaUkPropertyAnnualPut.js`,
+  `hmrcItsaUkPropertyPeriodPut.js`; `sonarjs/regex-complexity` and `concise-regex` at
+  `hmrcItsaFinalDeclarationPost.js:50`; `sonarjs/prefer-single-boolean-return` at
+  `hmrcVatReturnPost.js:77`; `sonarjs/hashing` at `companiesHouseXmlGateway.js:92`;
+  `promise/always-return` at `web/public/lib/analytics.js:100`. Re-count after the batch merges —
+  the token and accounts-filing tracks touched those files — and clear what is left.
+  **Source**: batch 27's lint job. **Owner**: Claude Code. **Model**: Haiku.
 - [ ] **O41x. Rework the vault for copy-back restore, then redeploy the backup account.**
   `setup-backup-account.yml` failed on 2026-09-11 (run 34638032553): AWS Backup refused the vault
   policy with "cross-account sharing restrictions" (403). A vault access policy takes
