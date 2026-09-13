@@ -19,11 +19,10 @@ PR; the operator merges.
 **Prod runs deployment prod-7fbea34**, eleven stacks, live since the scheduled `deploy.yml` run
 34749667957 set the pointer at 10:04 UTC on 2026-09-13, every prod probe green. It is the only prod
 set: that run's `destroy previous` job removed `prod-4918a0d` between 10:05 and 10:25 UTC.
-**No ci deployment exists.** All three sets have gone — `ci-claudc83b`, `ci-claudd44f` and the
-long-overdue `ci-mainb28b` — and `/submit/ci/last-known-good-deployment` reads `None`. Three ready
-rows need a ci set before they can run: B73's email-restricted pass, B71.S3e's remaining sync and
-verification steps, and B34.6b's sandbox filing. Each needs a `deploy.yml` run against ci first,
-and cool-down holds that.
+**Three ci sets stand** (2026-09-13 15:30 UTC): `ci-claudc761` (b29's branch deploy, live pointer,
+self-destructs 16:08 UTC), `ci-clauda813` (PR #199's branch, 17:10 UTC) and `ci-b29w2` (b29
+dispatched with an eight-hour delay for wave 2, 23:11 UTC). Wave 2 — B73, B71.S3e's ci steps,
+B17v.1's two captures, B34.6b's filing — runs against `ci-b29w2`.
 
 The board runs in four sections, in this order: **machine-only**, **human and machine**,
 **human-only**, **blocked**. The section is the classification — what it takes to carry the row to
@@ -57,8 +56,8 @@ Every item names its model: the lowest tier that fits (Fable > Opus > Sonnet > H
   filing pages through authorise, callback and resume against a scope-less token. Second commit
   (206b9995): 06846849 replaced as example data by `00000001`, the number in Companies House's own
   filing API guide; the legal pages, README and the live-lane lookup fixture keep it as identity.
-  Left: the operator says whether it ships alone or folds into b29; then a prod deploy and O21's
-  retry. **Source**: operator report, 2026-09-13. **Owner**: Operator decides, Claude Code ships.
+  Ships alone by the operator's choice: PR #199, its ci set `ci-clauda813` deploying. Then the
+  prod deploy and O21's retry. **Source**: operator report, 2026-09-13. **Owner**: Claude Code.
   **Model**: Sonnet.
 - [ ] **B73. Prove an email-restricted pass works end to end.** The secret and the grant are both
   in place: `ci/submit/email-hash-secret` and `prod/submit/email-hash-secret` hold independent
