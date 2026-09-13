@@ -142,6 +142,7 @@ describe("companiesHouseAccountsPost ingestHandler", () => {
       setupTestEnv({
         COMPANIES_HOUSE_XMLGW_URI: "https://xmlgw.companieshouse.gov.uk/v1-0/xmlgw/Gateway",
         COMPANIES_HOUSE_ACCOUNTS_ASYNC_REQUESTS_TABLE_NAME: "test-companies-house-accounts-async-requests-table",
+        COMPANIES_HOUSE_PACKAGE_REFERENCE: "0012",
         ENVIRONMENT_NAME: "test",
       }),
     );
@@ -182,9 +183,11 @@ describe("companiesHouseAccountsPost ingestHandler", () => {
       companyNumber: "06846849",
       companyName: "DIY ACCOUNTING LIMITED",
       companyAuthenticationCode: "AB12CD",
+      packageReference: "0012",
       submissionNumber: "00001A",
       dateSigned: "2026-01-15",
       ixbrl: '<?xml version="1.0"?><html>fake ixbrl</html>',
+      gatewayTest: false,
     });
 
     expect(mockPostToGateway).toHaveBeenCalledWith("<GovTalkMessage>submission</GovTalkMessage>", {});
@@ -193,6 +196,19 @@ describe("companiesHouseAccountsPost ingestHandler", () => {
   test("forwards a Gov-Test-Scenario header to the gateway call", async () => {
     await companiesHouseAccountsPostHandler(buildEvent({ headers: { "Gov-Test-Scenario": "ACCOUNTS_REJECTED" } }));
     expect(mockPostToGateway).toHaveBeenCalledWith("<GovTalkMessage>submission</GovTalkMessage>", { "Gov-Test-Scenario": "ACCOUNTS_REJECTED" });
+  });
+
+  test("sets gatewayTest true when COMPANIES_HOUSE_GATEWAY_TEST is true", async () => {
+    process.env.COMPANIES_HOUSE_GATEWAY_TEST = "true";
+    await companiesHouseAccountsPostHandler(buildEvent());
+    const [submissionArgs] = mockBuildAccountsSubmission.mock.calls[0];
+    expect(submissionArgs.gatewayTest).toBe(true);
+  });
+
+  test("fails rather than submit a blank package reference when COMPANIES_HOUSE_PACKAGE_REFERENCE is unset", async () => {
+    delete process.env.COMPANIES_HOUSE_PACKAGE_REFERENCE;
+    await expect(companiesHouseAccountsPostHandler(buildEvent())).rejects.toThrow(/COMPANIES_HOUSE_PACKAGE_REFERENCE/);
+    expect(mockPostToGateway).not.toHaveBeenCalled();
   });
 
   test("rejects a company authentication code that is too short", async () => {

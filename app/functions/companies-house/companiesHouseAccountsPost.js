@@ -190,7 +190,11 @@ async function recordSubmissionFailure({ failure, summary, userSub, detail = {} 
 // HTTP request/response, aware Lambda ingestHandler function
 export async function ingestHandler(event) {
   await initializeSalt();
-  validateEnv(["COMPANIES_HOUSE_XMLGW_URI", "COMPANIES_HOUSE_ACCOUNTS_ASYNC_REQUESTS_TABLE_NAME"]);
+  validateEnv([
+    "COMPANIES_HOUSE_XMLGW_URI",
+    "COMPANIES_HOUSE_ACCOUNTS_ASYNC_REQUESTS_TABLE_NAME",
+    "COMPANIES_HOUSE_PACKAGE_REFERENCE",
+  ]);
 
   const { request } = extractRequest(event);
   const responseHeaders = { "Content-Type": "application/json" };
@@ -221,6 +225,11 @@ export async function ingestHandler(event) {
   // Forwarded to the gateway call so the simulator's Gov-Test-Scenario handling can be driven
   // from the page's developer-mode field; the real gateway ignores headers it does not know.
   const govTestScenario = getHeader(event.headers, "Gov-Test-Scenario");
+  // The test and live gateways expect the opposite of each other on both: the test service wants
+  // GatewayTest set and a package reference it has issued, the live service wants neither. Both
+  // come from the deployment's own environment, never hardcoded here.
+  const gatewayTest = process.env.COMPANIES_HOUSE_GATEWAY_TEST === "true";
+  const packageReference = process.env.COMPANIES_HOUSE_PACKAGE_REFERENCE;
 
   let submissionNumber;
   try {
@@ -236,9 +245,11 @@ export async function ingestHandler(event) {
       companyNumber: accounts.companyNumber,
       companyName: accounts.companyName,
       companyAuthenticationCode: accounts.companyAuthCode,
+      packageReference,
       submissionNumber,
       dateSigned: accounts.dateOfApproval,
       ixbrl,
+      gatewayTest,
     });
 
     const gatewayResponse = await postToGateway(submissionXml, govTestScenario ? { "Gov-Test-Scenario": govTestScenario } : {});

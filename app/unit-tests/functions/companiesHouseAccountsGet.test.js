@@ -131,8 +131,24 @@ describe("companiesHouseAccountsGet ingestHandler", () => {
       presenterId: "presenter-id",
       presenterCode: "presenter-code",
       submissionNumber: "00001A",
+      gatewayTest: false,
     });
     expect(mockPostToGateway).toHaveBeenCalledWith("<GovTalkMessage>status request</GovTalkMessage>", {});
+  });
+
+  test("sets gatewayTest true when COMPANIES_HOUSE_GATEWAY_TEST is true", async () => {
+    process.env.COMPANIES_HOUSE_GATEWAY_TEST = "true";
+    mockParseGatewayResponse.mockReturnValue({
+      errors: [],
+      statuses: [{ statusCode: "PENDING", submissionNumber: "00001A", companyNumber: "06846849", rejections: [] }],
+    });
+    await companiesHouseAccountsGetHandler(buildEvent());
+    expect(mockBuildStatusRequest).toHaveBeenCalledWith({
+      presenterId: "presenter-id",
+      presenterCode: "presenter-code",
+      submissionNumber: "00001A",
+      gatewayTest: true,
+    });
   });
 
   test("forwards a Gov-Test-Scenario header to the gateway call", async () => {

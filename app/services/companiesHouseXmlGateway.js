@@ -135,7 +135,9 @@ function buildEnvelopeXml({ requestClass, transactionId, gatewayTest, presenterI
  * @param {string} input.companyNumber
  * @param {string} input.companyName
  * @param {string} input.companyAuthenticationCode
- * @param {string} [input.packageReference] - blank until Companies House issues one
+ * @param {string} [input.packageReference] - the value Companies House's XML team issues per
+ *   environment (the test service and the live service each expect a different one); the caller
+ *   resolves it from configuration, defaulting to blank only when a caller has none to give
  * @param {string} input.submissionNumber - exactly 6 characters
  * @param {string} input.dateSigned - ISO date the director signed
  * @param {string} input.ixbrl - the generated iXBRL document, not yet base64-encoded
