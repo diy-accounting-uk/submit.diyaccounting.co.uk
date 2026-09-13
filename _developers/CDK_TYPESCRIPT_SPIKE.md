@@ -54,7 +54,7 @@ cd cdk-typescript
 npm run diff
 ```
 
-`scripts/diff-templates.js` strips the two things that differ between synths for reasons that
+`scripts/diff-templates.mjs` strips the two things that differ between synths for reasons that
 have nothing to do with the stack's own design — the CDK bootstrap-version `Parameter`/`Rule`
 boilerplate, and the `AWS::CDK::Metadata` analytics resource plus inline `aws:cdk:path` metadata
 — replaces any 64-character asset hash with a placeholder (this stack has no assets, but the
@@ -163,5 +163,5 @@ rather than being a nice-to-have this one small stack happened to get for free.
 - `cdk-typescript/` — the spike: `package.json` (`aws-cdk-lib` 2.266.0, `constructs` 10.8.1,
   pinned to the versions `pom.xml`'s `cdk.version` and the Java build's resolved `constructs` jar
   use), `lib/cross-account-backup-vault-stack.ts` (the ported stack), `bin/cross-account-backup-vault.ts`
-  (the app entry), `scripts/diff-templates.js` (the normalising diff). Not wired into the root
+  (the app entry), `scripts/diff-templates.mjs` (the normalising diff). Not wired into the root
   `package.json` or any workflow.
