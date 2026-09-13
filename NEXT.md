@@ -41,17 +41,6 @@ Every item names its model: the lowest tier that fits (Fable > Opus > Sonnet > H
 
 ## Machine-only
 
-- [ ] **B73. Prove an email-restricted pass works end to end.** The secret and the grant are both
-  in place: `ci/submit/email-hash-secret` and `prod/submit/email-hash-secret` hold independent
-  48-byte random values, and `EmailHashSecretHelper` grants them to the four pass Lambdas that
-  reach `passService.js` — `passGet`, `passPost`, `passAdminPost`, `passGeneratePost` (PR #191,
-  merged as `926e783d`). `passMyPassesGet` is excluded because it does not use `passService`.
-  `initializeEmailHashSecret()` had never succeeded in any deployed environment, and the
-  warn-and-carry-on path hid it, so nothing has yet exercised the working path. Remaining: create
-  and redeem an email-restricted pass against ci and confirm the secret is fetched rather than
-  warned past. **Source**: ci `pass-post` log, 2026-09-09; PR #191. **Owner**: Claude Code.
-  **Model**: Haiku.
-
 - [ ] **B52x. Two export views emit no rows.** The 02:15 UTC nightlies of 2026-09-12 and
   2026-09-13 both SUCCEEDED and wrote 21 CSVs and 8 JSONs under
   `s3://prod-env-analytics-lake-972912397388/exports/prod/<date>/`; the field counts for
