@@ -7,8 +7,8 @@ import { describe, test, expect } from "vitest";
 
 import {
   extractCheckpointId,
-  selectOpenObligationPeriods,
-  deriveAccountingPeriodFromObligationPeriods,
+  buildStandardQuarterlyPeriods,
+  deriveAccountingPeriodFromPeriods,
   buildQuarterlyTestFigures,
   buildTestBusinessRequestBody,
   buildItsaStatusRequestBody,
@@ -37,47 +37,18 @@ describe("extractCheckpointId", () => {
   });
 });
 
-describe("selectOpenObligationPeriods", () => {
-  const businessId = "XAIS12345678901";
-
-  test("returns open periods sorted by periodStartDate", () => {
-    const body = {
-      obligations: [
-        {
-          businessId,
-          obligationDetails: [
-            { periodStartDate: "2023-10-06", periodEndDate: "2024-01-05", dueDate: "2024-02-05", status: "open" },
-            { periodStartDate: "2023-04-06", periodEndDate: "2023-07-05", dueDate: "2023-08-05", status: "open" },
-            { periodStartDate: "2023-07-06", periodEndDate: "2023-10-05", dueDate: "2023-11-05", status: "fulfilled" },
-          ],
-        },
-      ],
-    };
-
-    const result = selectOpenObligationPeriods(body, businessId);
-
-    expect(result.map((period) => period.periodStartDate)).toEqual(["2023-04-06", "2023-10-06"]);
-  });
-
-  test("throws when the business has no open obligations", () => {
-    const body = {
-      obligations: [
-        {
-          businessId,
-          obligationDetails: [{ periodStartDate: "2023-04-06", periodEndDate: "2023-07-05", dueDate: "2023-08-05", status: "fulfilled" }],
-        },
-      ],
-    };
-
-    expect(() => selectOpenObligationPeriods(body, businessId)).toThrow(/No open income-and-expenditure obligations/);
-  });
-
-  test("throws when the business is not present in the response", () => {
-    expect(() => selectOpenObligationPeriods({ obligations: [] }, businessId)).toThrow(/No open income-and-expenditure obligations/);
+describe("buildStandardQuarterlyPeriods", () => {
+  test("returns the four standard quarters of the tax year in order", () => {
+    expect(buildStandardQuarterlyPeriods("2023-24")).toEqual([
+      { periodStartDate: "2023-04-06", periodEndDate: "2023-07-05" },
+      { periodStartDate: "2023-07-06", periodEndDate: "2023-10-05" },
+      { periodStartDate: "2023-10-06", periodEndDate: "2024-01-05" },
+      { periodStartDate: "2024-01-06", periodEndDate: "2024-04-05" },
+    ]);
   });
 });
 
-describe("deriveAccountingPeriodFromObligationPeriods", () => {
+describe("deriveAccountingPeriodFromPeriods", () => {
   test("spans the earliest start to the latest end", () => {
     const periods = [
       { periodStartDate: "2023-07-06", periodEndDate: "2023-10-05" },
@@ -86,14 +57,14 @@ describe("deriveAccountingPeriodFromObligationPeriods", () => {
       { periodStartDate: "2023-10-06", periodEndDate: "2024-01-05" },
     ];
 
-    expect(deriveAccountingPeriodFromObligationPeriods(periods)).toEqual({
+    expect(deriveAccountingPeriodFromPeriods(periods)).toEqual({
       accountingPeriodStartDate: "2023-04-06",
       accountingPeriodEndDate: "2024-04-05",
     });
   });
 
   test("throws on an empty period list", () => {
-    expect(() => deriveAccountingPeriodFromObligationPeriods([])).toThrow(/empty obligation period list/);
+    expect(() => deriveAccountingPeriodFromPeriods([])).toThrow(/empty period list/);
   });
 });
 
