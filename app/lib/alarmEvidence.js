@@ -357,12 +357,14 @@ export function resolveAlarmEvidence({
   const built = rule.build(ctx);
 
   const logGroupNamePrefixes = built.logGroupNamePrefixes || [];
-  const noEvidenceReason =
-    built.noEvidenceReason !== undefined
-      ? built.noEvidenceReason
-      : logGroupNamePrefixes.length === 0
-        ? "No log group applies to this alarm."
-        : null;
+  let noEvidenceReason;
+  if (built.noEvidenceReason !== undefined) {
+    noEvidenceReason = built.noEvidenceReason;
+  } else if (logGroupNamePrefixes.length === 0) {
+    noEvidenceReason = "No log group applies to this alarm.";
+  } else {
+    noEvidenceReason = null;
+  }
 
   return {
     ruleId: rule.id,
