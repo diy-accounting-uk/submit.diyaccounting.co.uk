@@ -124,6 +124,45 @@ Nothing: no branch, pull request or run carries an open row.
   promotes a set; leave the probe one for `alarm-triage.yml` or the operator. **Source**: operator,
   2026-09-13. **Owner**: Claude Code. **Model**: Sonnet.
 
+- [ ] **B143. An agent reports before its long build returns.** Four agents on 2026-09-13 each
+  stopped one to three times with "waiting for the build": a long foreground `./mvnw clean verify`
+  is promoted to the background and ends the turn, and the agent's next turn only re-waits. Put
+  in `do-next`'s brief shape: commit, start the build with `run_in_background`, and report at
+  once with "build pending, surefire reports at `target/surefire-reports`"; the coordinator reads
+  the reports on the merged tree rather than waiting for the agent's verdict. **Source**:
+  REPORT_SESSION_Kjw4C_2026-09-13.md. **Owner**: Claude Code. **Model**: Haiku.
+
+- [ ] **B142. A sandbox proof iterates on a lean deploy.** B34.6b took three passes and spent
+  submission numbers 000002 and 000003 on pre-fix code because each fix needed a full `deploy.yml`
+  (35 minutes) to reach the ci set and the day's two-submission budget was gone before it could.
+  `npm run deploy:app-ci -- --deployment <set>` updates Lambda code and web assets in three to
+  five minutes. Put in the brief shape for any proof against a real service with a permanent
+  cost per attempt: fix, lean-deploy, re-prove, in one agent turn, and only then spend the next
+  number. **Source**: REPORT_SESSION_Kjw4C_2026-09-13.md. **Owner**: Claude Code. **Model**: Sonnet.
+
+- [ ] **B144. The watch script lives in the repository, written for this host's bash 3.2.** The
+  `/watch` monitor was written twice on 2026-09-13 and died twice: macOS ships bash 3.2, which has no
+  associative arrays, and the failure surfaced as `division by 0` on a branch name. Put the poll
+  loop in `scripts/watch-ci.sh` (state in files, `#!/bin/bash` with a 3.2 guard, `jq` for the API
+  reads) and make the skill run that file instead of composing one per session.
+  **Source**: REPORT_SESSION_Kjw4C_2026-09-13.md. **Owner**: Claude Code. **Model**: Haiku.
+
+- [ ] **B145. Guidance for the two blocks the operator keeps.** Four pastes on 2026-09-13: `aws sso
+  login` twice (an SSO session lasts about eight hours and expired mid-session), `destroy-prod`
+  for a set already gone, and `git branch -D` after a squash the do-next rule now allows. Write
+  into `CLAUDE.md`: check `aws sts get-caller-identity` before dispatching an AWS-reading wave and
+  ask for the login up front, not at the first failure; and list `git branch -D claude/*` after a
+  proven squash among the commands to allow in `.claude/settings.json`, which is the operator's
+  decision to make. **Source**: REPORT_SESSION_Kjw4C_2026-09-13.md. **Owner**: Claude Code;
+  the allowlist is the operator's. **Model**: Haiku.
+
+- [ ] **B146. One trigger per commit for `test` and CodeQL.** Twelve pushed commits produced 16
+  `test` and 16 CodeQL runs on 2026-09-13 (about 1,150 job-minutes): `push` and `pull_request`
+  both trigger them on a branch with an open PR. Keep one — the spreadsheets repository chose
+  `push` for branches and `pull_request` only for forks (its CQ-29) — and check `deploy.yml`'s
+  `delegate to test workflow` does not add a third. **Source**: REPORT_SESSION_Kjw4C_2026-09-13.md.
+  **Owner**: Claude Code. **Model**: Haiku.
+
 - [ ] **B136. The monthly fraud-header check's Telegram alert cannot publish from launchd.** On
   `claude/b29-board` (a4094df2): the check DID run on 2026-09-12 and wrote the August record, which
   was never committed, so `compliance.yml`'s lake job has always read an empty directory; the record
