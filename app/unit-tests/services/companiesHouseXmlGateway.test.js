@@ -55,6 +55,7 @@ const {
   postToGateway,
   getXmlGatewayUri,
   resolvePresenterCredentials,
+  redactPresenterCredentials,
 } = await import("@app/services/companiesHouseXmlGateway.js");
 
 const GET_SUBMISSION_STATUS_RESPONSE_FIXTURE = readFileSync(
@@ -294,6 +295,37 @@ describe("services/companiesHouseXmlGateway", () => {
       expect(requestInit.method).toBe("POST");
       expect(requestInit.headers["Content-Type"]).toBe("text/xml");
       expect(requestInit.body).toBe("<GovTalkMessage>request</GovTalkMessage>");
+    });
+  });
+
+  describe("redactPresenterCredentials", () => {
+    const baseInput = { presenterId: "12345678901", presenterCode: "SimTest1", submissionNumber: "AAA001", transactionId: "2" };
+
+    test("removes the plaintext PresenterID a status request body carries", () => {
+      const xml = buildStatusRequest(baseInput);
+      const redacted = redactPresenterCredentials(xml);
+      expect(redacted).not.toContain(baseInput.presenterId);
+      expect(redacted).toContain("<PresenterID>***</PresenterID>");
+    });
+
+    test("removes the hashed SenderID and Authentication Value every envelope's Header carries", () => {
+      const xml = buildStatusRequest(baseInput);
+      const redacted = redactPresenterCredentials(xml);
+      expect(redacted).not.toContain(hashPresenterCredential(baseInput.presenterId));
+      expect(redacted).not.toContain(hashPresenterCredential(baseInput.presenterCode));
+      expect(redacted).toContain("<SenderID>***</SenderID>");
+      expect(redacted).toMatch(/<Value>\*\*\*<\/Value>/);
+    });
+
+    test("leaves the rest of the envelope untouched", () => {
+      const xml = buildStatusRequest(baseInput);
+      const redacted = redactPresenterCredentials(xml);
+      expect(redacted).toContain("<SubmissionNumber>AAA001</SubmissionNumber>");
+      expect(redacted).toContain("<Class>GetSubmissionStatus</Class>");
+    });
+
+    test("passes through a non-string value unchanged", () => {
+      expect(redactPresenterCredentials(undefined)).toBeUndefined();
     });
   });
 

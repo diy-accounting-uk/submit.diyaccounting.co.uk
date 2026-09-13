@@ -65,15 +65,38 @@ const mockBuildStatusRequest = vi.fn();
 const mockResolvePresenterCredentials = vi.fn();
 const mockPostToGateway = vi.fn();
 const mockParseGatewayResponse = vi.fn();
-vi.mock("@app/services/companiesHouseXmlGateway.js", () => ({
-  hashPresenterCredential: vi.fn((value) => `hashed-${value}`),
-  buildAccountsSubmission: vi.fn(),
-  buildStatusRequest: (...args) => mockBuildStatusRequest(...args),
-  parseGatewayResponse: (...args) => mockParseGatewayResponse(...args),
-  allocateSubmissionNumber: vi.fn(),
-  postToGateway: (...args) => mockPostToGateway(...args),
-  resolvePresenterCredentials: (...args) => mockResolvePresenterCredentials(...args),
-}));
+vi.mock("@app/services/companiesHouseXmlGateway.js", async (importOriginal) => {
+  const actual = await importOriginal();
+  return {
+    ...actual,
+    hashPresenterCredential: vi.fn((value) => `hashed-${value}`),
+    buildAccountsSubmission: vi.fn(),
+    buildStatusRequest: (...args) => mockBuildStatusRequest(...args),
+    parseGatewayResponse: (...args) => mockParseGatewayResponse(...args),
+    allocateSubmissionNumber: vi.fn(),
+    postToGateway: (...args) => mockPostToGateway(...args),
+    resolvePresenterCredentials: (...args) => mockResolvePresenterCredentials(...args),
+  };
+});
+
+const mockLoggerInfo = vi.fn();
+vi.mock("@app/lib/logger.js", async (importOriginal) => {
+  const actual = await importOriginal();
+  return {
+    ...actual,
+    createLogger: (bindings) => {
+      const child = actual.createLogger(bindings);
+      return {
+        info: (obj) => mockLoggerInfo(obj),
+        error: (...args) => child.error(...args),
+        warn: (...args) => child.warn(...args),
+        debug: (...args) => child.debug(...args),
+        trace: (...args) => child.trace(...args),
+        fatal: (...args) => child.fatal(...args),
+      };
+    },
+  };
+});
 
 import { ingestHandler as companiesHouseAccountsGetHandler } from "@app/functions/companies-house/companiesHouseAccountsGet.js";
 
@@ -134,6 +157,37 @@ describe("companiesHouseAccountsGet ingestHandler", () => {
       gatewayTest: false,
     });
     expect(mockPostToGateway).toHaveBeenCalledWith("<GovTalkMessage>status request</GovTalkMessage>", {});
+  });
+
+  test("logs the redacted request and response bodies, never the presenter id or code", async () => {
+    const requestXml =
+      "<GovTalkMessage><Header><SenderDetails><IDAuthentication><SenderID>hashed-presenter-id</SenderID>" +
+      "<Authentication><Method>clear</Method><Value>hashed-presenter-code</Value></Authentication></IDAuthentication></SenderDetails></Header>" +
+      "<Body><GetSubmissionStatus><SubmissionNumber>00001A</SubmissionNumber><PresenterID>presenter-id</PresenterID></GetSubmissionStatus></Body></GovTalkMessage>";
+    const responseXml =
+      "<GovTalkMessage><Header><SenderDetails><IDAuthentication><SenderID>hashed-presenter-id</SenderID>" +
+      "<Authentication><Method>clear</Method><Value>hashed-presenter-code</Value></Authentication></IDAuthentication></SenderDetails></Header>" +
+      "<Body><SubmissionStatus><Status><SubmissionNumber>00001A</SubmissionNumber><StatusCode>PENDING</StatusCode></Status></SubmissionStatus></Body></GovTalkMessage>";
+    mockBuildStatusRequest.mockReturnValue(requestXml);
+    mockPostToGateway.mockResolvedValue({ ok: true, status: 200, data: responseXml, headers: {}, duration: 1 });
+    mockParseGatewayResponse.mockReturnValue({
+      errors: [],
+      statuses: [{ statusCode: "PENDING", submissionNumber: "00001A", companyNumber: "00000001", rejections: [] }],
+    });
+
+    await companiesHouseAccountsGetHandler(buildEvent());
+
+    const loggedText = JSON.stringify(mockLoggerInfo.mock.calls);
+    expect(loggedText).not.toContain("presenter-id");
+    expect(loggedText).not.toContain("hashed-presenter-id");
+    expect(loggedText).not.toContain("hashed-presenter-code");
+
+    const requestLog = mockLoggerInfo.mock.calls.map(([obj]) => obj).find((obj) => obj.message === "Companies House GetSubmissionStatus request");
+    const responseLog = mockLoggerInfo.mock.calls.map(([obj]) => obj).find((obj) => obj.message === "Companies House GetSubmissionStatus response");
+    expect(requestLog.requestXml).toContain("<PresenterID>***</PresenterID>");
+    expect(requestLog.requestXml).toContain("<SenderID>***</SenderID>");
+    expect(responseLog.responseXml).toContain("<SenderID>***</SenderID>");
+    expect(responseLog.status).toBe(200);
   });
 
   test("sets gatewayTest true when COMPANIES_HOUSE_GATEWAY_TEST is true", async () => {

@@ -298,6 +298,24 @@ export async function allocateSubmissionNumber() {
 }
 
 /**
+ * Redact the presenter id and presenter authentication value from a GovTalk envelope before it is
+ * logged: the plaintext PresenterID a GetSubmissionStatus request body carries, and the hashed
+ * SenderID / IDAuthentication Authentication Value every envelope's Header carries (request and
+ * response alike, the response echoing the request's SenderDetails).
+ * @param {string} xml
+ * @returns {string}
+ */
+export function redactPresenterCredentials(xml) {
+  if (typeof xml !== "string") {
+    return xml;
+  }
+  return xml
+    .replace(/(<PresenterID>)[\s\S]*?(<\/PresenterID>)/g, "$1***$2")
+    .replace(/(<SenderID>)[\s\S]*?(<\/SenderID>)/g, "$1***$2")
+    .replace(/(<Authentication>[\s\S]*?<Value>)[\s\S]*?(<\/Value>[\s\S]*?<\/Authentication>)/g, "$1***$2");
+}
+
+/**
  * The XML Gateway endpoint: one URL for both submit and poll. Overridable so a Lambda under test
  * (or against the simulator) can point somewhere other than the real gateway; the test service
  * itself uses this same URL with GatewayTest in the envelope, not a different address.

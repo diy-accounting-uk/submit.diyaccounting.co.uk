@@ -24,6 +24,7 @@ import {
   resolvePresenterCredentials,
   postToGateway,
   parseGatewayResponse,
+  redactPresenterCredentials,
 } from "../../services/companiesHouseXmlGateway.js";
 import { putAsyncRequest, getAsyncRequest } from "../../data/dynamoDbAsyncRequestRepository.js";
 import { putReceipt } from "../../data/dynamoDbReceiptRepository.js";
@@ -100,7 +101,18 @@ export async function ingestHandler(event) {
   // Forwarded to the gateway call so the simulator's Gov-Test-Scenario handling can be driven
   // from the page's developer-mode field; the real gateway ignores headers it does not know.
   const govTestScenario = getHeader(event.headers, "Gov-Test-Scenario");
+  logger.info({
+    message: "Companies House GetSubmissionStatus request",
+    submissionNumber,
+    requestXml: redactPresenterCredentials(statusRequestXml),
+  });
   const gatewayResponse = await postToGateway(statusRequestXml, govTestScenario ? { "Gov-Test-Scenario": govTestScenario } : {});
+  logger.info({
+    message: "Companies House GetSubmissionStatus response",
+    submissionNumber,
+    status: gatewayResponse.status,
+    responseXml: redactPresenterCredentials(gatewayResponse.data),
+  });
   const parsed = parseGatewayResponse(gatewayResponse.data);
 
   if (parsed.errors?.length) {
