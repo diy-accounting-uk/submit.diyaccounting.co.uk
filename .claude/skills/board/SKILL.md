@@ -48,13 +48,13 @@ indistinguishable from not having looked.
 backlog's Tier 1, deduplicated (a NEXT.md item that is also a tier 1 row gets one
 combined row). Columns:
 
-| # | Item | Tier | State | Needs | Status | GH issue |
+| # | Item | Tier | State | Needs | Size | Model | Status | GH issue |
 
 Rows run in board order: **machine-only, then human and machine, then human-only, then
 blocked**. Within a group, rows run by tier, an alarm or a pipeline failure counting as
 tier 1 whether or not a backlog row carries it, then the untiered; within a tier, the rows
-that can start run by the size of the change, fewest files first, read from the `~n files`
-count in `Status` (a row without a count follows the counted ones); equal sizes keep
+that can start run by the size of the change, fewest files first, read from `Size` (a row
+without a count follows the counted ones); equal sizes keep
 `NEXT.md`'s order. Never group rows by backlog number.
 
 - `#`: the backlog row number (`44`), the NEXT.md label (`B14a`), or both (`B44/44`).
@@ -81,6 +81,10 @@ count in `Status` (a row without a count follows the counted ones); equal sizes 
   list to Claude Code" because reading the operator's mail was assumed to be theirs is
   `machine-only` once the mail mirror is local. Say so after the lists when a
   classification contradicts the row's own owner.
+- `Size`: the estimated number of files the change touches, `~n files`, from the item's own
+  estimate; `—` when nothing has estimated it. Row order reads this column.
+- `Model`: the proposed sub-agent tier for the row, one of `Fable`, `Opus`, `Sonnet`, `Haiku`,
+  the lowest that fits; `operator` for a `human-only` row; `—` when not yet chosen.
 - `Status`: an annotation, not a paragraph — one clause, 12 words or fewer, current
   as of this render. Date-gated items name the date; blocked items name the blocker;
   in-flight items name the current step only. The full narrative lives in `NEXT.md`,
