@@ -33,9 +33,9 @@ nothing is dispatched until the operator lifts it.
   that expires mid-deploy); PR #194 (214 eslint findings down to 52, and the eslint gate that had
   reported zero on every run since it was added). Prod runs prod-4918a0d, with prod-e6d3045 left
   standing as a spare.
-- **Five pipeline defects are open** and none is a code regression: B127 merged but unproven on a
+- **Four pipeline defects are open** and none is a code regression: B127 merged but unproven on a
   real run, B130 (a superseded deploy reports a failed DORA job), B131 (keepalive red on two
-  never-fired schedules), B132 (deploys cancelled with no established cause), B133 (destroy-prod
+  never-fired schedules), B133 (destroy-prod
   fails when the set is already gone). B30v is a prod alarm firing since 2026-09-10 with no issue
   raised.
 - **Both `/api/v1/books` and `/api/v1/diya-gl` are permanent** by operator decision of 2026-09-10.

@@ -42,6 +42,7 @@ and stop. One branch is driven green at a time. Lifted only by the operator in t
 
 ## Machine-only
 
+
 - [ ] **B133. destroy-prod reports failure when the set is already gone.** Run 34691690046
   (#294, dispatched 11:41:08 for `prod-40b194e`) spent 68 minutes in `Wait for a running prod
   deploy` — the 15112f1f deploy — then failed at `Confirm the deployment has stacks to destroy`
@@ -168,6 +169,32 @@ and stop. One branch is driven green at a time. Lifted only by the operator in t
   work through whatever HMRC answers next. The run needs the HMRC sandbox client id and secret from
   Secrets Manager, so it needs a live SSO session: `aws sso login --sso-session diyaccounting`.
   **Source**: `PLAN_ITSA_PHASE_2.md` T7; the sandbox run of 2026-09-12. **Owner**: Claude Code.
+  **Model**: Sonnet.
+
+- [ ] **B34.6b. Companies House accounts filing: the sandbox proof.** After O16: submit the
+  FRS 105 accounts to the XML Gateway test service with the test presenter credentials (a
+  GitHub environment secret), read the real acknowledgement and poll responses, settle the
+  `Authority` element question (the worked example carries it, FormSubmission-v2-11 does not),
+  correct the envelope and iXBRL where the sandbox's own validation differs from the public
+  schemas, record what the sandbox returned in the simulator, then add `prod` to the
+  `file-micro-entity-accounts` activity and to `resident-ltd`'s listing. **O16 is done**: Companies House's XML team issued the test presenter credentials on
+  2026-09-11 and they are set as `COMPANIES_HOUSE_PRESENTER_ID` and
+  `COMPANIES_HOUSE_PRESENTER_CODE` on the `ci` environment, reaching Secrets Manager as
+  `ci/submit/companies-house/presenter_id` and `presenter_code`.
+  The email settles three things the code had left open, and the code already has a place for each:
+  **Test Flag 1** is `buildAccountsSubmission`'s `gatewayTest`, which emits
+  `<GatewayTest>1</GatewayTest>` (`companiesHouseXmlGateway.js:101`); **Test Package Reference
+  0012** is its `packageReference`, whose JSDoc still says "blank until Companies House issues one"
+  (`:138`); and **submission numbers must be unique and incremental**, which
+  `allocateSubmissionNumber()` already satisfies with an atomic DynamoDB counter
+  (`:280`), keyed apart from real request ids.
+  The gap: `companiesHouseAccountsPost.js:233` passes neither `gatewayTest` nor `packageReference`,
+  so both fall to their defaults of `false` and blank. Wire both from configuration rather than
+  hardcoding them, because the live service wants the opposite of the test service on both. Do not
+  let a re-run reset the submission counter — the test service rejects a repeated or lower number
+  outright, and a rejection costs a round trip through their reviewer.
+  Needs a ci set to file from. The email telling Companies House what was submitted is O44.
+  **Source**: BACKLOG 34b; the XML team's email of 2026-09-11. **Owner**: Claude Code.
   **Model**: Sonnet.
 
 - [ ] **B52x. Pull a day of the raw export and count every field.** The first nightly to include
@@ -374,66 +401,6 @@ and stop. One branch is driven green at a time. Lifted only by the operator in t
   warned past. **Source**: ci `pass-post` log, 2026-09-09; PR #191. **Owner**: Claude Code.
   **Model**: Haiku.
 
-
-## Human and machine
-
-- [ ] **B132. Every branch push this session had its deploy cancelled, and I cannot say by what.**
-  Three branches, same shape. `claude/ops-cf-vacate-race`: `deploy` 34692059976 and
-  `deploy environment` 34692059872 both cancelled within seconds of the push, and `identity-guard`
-  34692076128 cancelled too. `claude/lint-findings`: `deploy` 34692919287 and `deploy environment`
-  34692919247, both cancelled at 12:11:2x-12:11:32 — two different workflows, two different
-  concurrency groups, eleven seconds apart. Earlier, `main`'s `deploy` of `926e783d` was cancelled,
-  which was a genuine supersession by the `15112f1f` merge.
-  What is established: no workflow in this repository calls `gh run cancel`; `identity-guard` has
-  no concurrency group at all, so nothing in CI could have cancelled that one; both deploy
-  workflows set `cancel-in-progress: false`. On the lint-findings `deploy`, `wait for environment
-  deploy` ran 12:10:03 to 12:11:21 and was cancelled, then the run followed at 12:11:32.
-  Two candidates. **A person or another session**: `antonycc` hand-dispatched
-  `deploy` 34692141909 for `ops-cf-vacate-race` at 11:51:49, so something outside this session was
-  acting on these branches. **The group dropping a queued run**: with `cancel-in-progress: false`
-  GitHub keeps only the latest queued run per group and drops the older, and
-  `deploy-environment.yml`'s group is `deploy-environment-ci` — shared by every ci branch, with no
-  `wait-for-ci-deploys` guard. `deploy.yml`'s own concurrency comment describes exactly this hazard
-  and says that guard is why it does not use a shared group; `deploy-environment.yml` has the
-  hazard and no guard.
-  The API does not expose who cancelled a run. The organisation audit log does, and that is
-  operator-side, so settle it there first rather than guessing. If it is the shared group, give
-  `deploy-environment.yml` the same wait-and-queue treatment `deploy.yml` has.
-  Read on 2026-09-13: four of the five runs carry a second attempt started by `antonycc` within
-  minutes of the cancellation (34692059872 at 11:52:47, 34692076128 at 11:52:45, 34692919247 at
-  12:13:18, 34692919287 at 12:13:20), all green; only 34692059976 stayed cancelled at attempt 1.
-  A cancel-then-rerun by hand fits that shape; the shared group does not re-run anything. The
-  operator says which; if it was the group, the guard is still the fix.
-  **Source**: runs 34692059872, 34692059976, 34692076128, 34692919247, 34692919287.
-  **Owner**: Operator says whether these were hand-cancelled; Claude Code then. **Model**: Sonnet.
-
-- [ ] **B34.6b. Companies House accounts filing: the sandbox proof.** After O16: submit the
-  FRS 105 accounts to the XML Gateway test service with the test presenter credentials (a
-  GitHub environment secret), read the real acknowledgement and poll responses, settle the
-  `Authority` element question (the worked example carries it, FormSubmission-v2-11 does not),
-  correct the envelope and iXBRL where the sandbox's own validation differs from the public
-  schemas, record what the sandbox returned in the simulator, then add `prod` to the
-  `file-micro-entity-accounts` activity and to `resident-ltd`'s listing. **O16 is done**: Companies House's XML team issued the test presenter credentials on
-  2026-09-11 and they are set as `COMPANIES_HOUSE_PRESENTER_ID` and
-  `COMPANIES_HOUSE_PRESENTER_CODE` on the `ci` environment, reaching Secrets Manager as
-  `ci/submit/companies-house/presenter_id` and `presenter_code`.
-  The email settles three things the code had left open, and the code already has a place for each:
-  **Test Flag 1** is `buildAccountsSubmission`'s `gatewayTest`, which emits
-  `<GatewayTest>1</GatewayTest>` (`companiesHouseXmlGateway.js:101`); **Test Package Reference
-  0012** is its `packageReference`, whose JSDoc still says "blank until Companies House issues one"
-  (`:138`); and **submission numbers must be unique and incremental**, which
-  `allocateSubmissionNumber()` already satisfies with an atomic DynamoDB counter
-  (`:280`), keyed apart from real request ids.
-  The gap: `companiesHouseAccountsPost.js:233` passes neither `gatewayTest` nor `packageReference`,
-  so both fall to their defaults of `false` and blank. Wire both from configuration rather than
-  hardcoding them, because the live service wants the opposite of the test service on both. Do not
-  let a re-run reset the submission counter — the test service rejects a repeated or lower number
-  outright, and a rejection costs a round trip through their reviewer.
-  Then the human half: Neal at `xml@companieshouse.gov.uk` reviews the submissions once told they
-  exist, so the row finishes with an email naming what was submitted.
-  **Source**: BACKLOG 34b; the XML team's email of 2026-09-11.
-  **Owner**: Claude Code, then Operator. **Model**: Sonnet.
-
 - [ ] **B135. Point the support requests at the spreadsheets repository's issues.** Three entry
   points send customers to this repository's issues today, and all three move:
   `web/public/help.html:74` (`issues/new?template=support.md`), the FAQ answer at
@@ -445,30 +412,26 @@ and stop. One branch is driven green at a time. Lifted only by the operator in t
   `OpsStack.java:204` uses `props.opsGithubRepo()` for the alarm issues. Changing the shared value
   would move alarm and security-lake issues too, which is not what this asks. Give the support path
   its own configuration point and leave the others alone.
-  Cross-repository prerequisites, which is the human half: `diy-accounting-uk/spreadsheets.diyaccounting.co.uk`
-  needs issues enabled and a `support.md` issue template matching this repository's
-  `.github/ISSUE_TEMPLATE/support.md`, or the `?template=` parameter silently falls back to a blank
-  issue. The token the support Lambda uses must also be able to write issues there — today it is
-  scoped to this repository. Say which token, because O38's `diya-ops` app is the intended long-term
-  answer and a PAT would be the interim one.
+  Cross-repository prerequisites, both ours: `diy-accounting-uk/spreadsheets.diyaccounting.co.uk`
+  needs issues enabled (`gh repo edit --enable-issues`) and a `support.md` issue template matching
+  this repository's `.github/ISSUE_TEMPLATE/support.md`, landed there by PR from a worktree, or the
+  `?template=` parameter silently falls back to a blank issue. The two page links and the template
+  can ship before the Lambda; the Lambda's repository switch waits on O45's token.
   Never edit `web/public-simulator/**`; it is regenerated from `web/public/`.
-  **Source**: operator request, 2026-09-12. **Owner**: Claude Code, with the operator for the
-  spreadsheets repository's settings and the token. **Model**: Sonnet.
+  **Source**: operator request, 2026-09-12. **Owner**: Claude Code. **Model**: Sonnet.
 
-- [ ] **O36. Land the homebrew tap's release trigger and its ruleset.** `REPORT_HOMEBREW_DIYA_GL_CRON.md`
-  (on the batch branch) has the detail and the exact commands. Three writes, none of them ours to
-  make: create a fine-grained PAT scoped to `homebrew-diya-gl` with contents read and write and put
-  it on `spreadsheets.diyaccounting.co.uk` as `HOMEBREW_DISPATCH_TOKEN`, because the default
-  `GITHUB_TOKEN` cannot dispatch across repositories; apply the ruleset (deletion and
-  non_fast_forward on the default branch, the same shape all five siblings carry, which still
-  allows the bot's fast-forward pushes) with
+- [ ] **B138. Land the homebrew tap's release trigger and its ruleset.**
+  `REPORT_HOMEBREW_DIYA_GL_CRON.md` has the detail and the exact commands. Two writes: apply the
+  ruleset (deletion and non_fast_forward on the default branch, the same shape all five siblings
+  carry, which still allows the bot's fast-forward pushes) with
   `gh api --method POST repos/diy-accounting-uk/homebrew-diya-gl/rulesets --input ruleset.json`;
   and make the two workflow edits, swapping the hourly poll for a `repository_dispatch` fired by
-  the npm publish step in the spreadsheets repository. The poll turned out to be cheaper than it
-  looked — 12 scheduled runs in the repository's first 61 hours, not one an hour, because GitHub
-  delays schedules — but it still polls a registry that could just tell it. **Source**: B81's
-  report. **Owner**: Operator, or Claude Code once the operator says the writes are approved.
-  **Model**: none.
+  the npm publish step in the spreadsheets repository, each by PR from a worktree. The dispatch
+  only works once O36's `HOMEBREW_DISPATCH_TOKEN` exists, so land the ruleset and the receiving
+  trigger first and the sending step last. The poll turned out to be cheaper than it looked — 12
+  scheduled runs in the repository's first 61 hours, not one an hour, because GitHub delays
+  schedules — but it still polls a registry that could just tell it. **Source**: B81's report.
+  **Owner**: Claude Code. **Model**: Sonnet.
 
 - [ ] **B80b. The identity guard has to reach the other four repositories.** Submit carries
   `.github/allowed-commit-identities.yml`, `.github/workflows/identity-guard.yml` and
@@ -479,10 +442,13 @@ and stop. One branch is driven green at a time. Lifted only by the operator in t
   **Operator decisions, 2026-09-12.** All four from worktrees in this session, one PR each, no
   sibling checkout touched — the method already used for the attribution-pointer PRs. Each allow
   list is derived from that repository's own author history, and the PR body prints every address
-  with its commit count and date range so the operator strikes or approves each before merge. The
-  check fails the PR, matching submit, rather than reporting non-blocking.
-  **Source**: B80's fix. **Owner**: Claude Code, operator reviews each list. **Model**: Haiku per
-  repository.
+  with its commit count and date range for O46's review. The check fails the PR, matching submit,
+  rather than reporting non-blocking.
+  **Source**: B80's fix. **Owner**: Claude Code. **Model**: Haiku per repository.
+
+
+## Human and machine
+
 
 
 ## Human-only
@@ -553,6 +519,22 @@ and stop. One branch is driven green at a time. Lifted only by the operator in t
   submission and the production-credentials email described the service as AGPL open source, and
   the PolyForm licence files are on main and on prod since prod-318271f. **Source**:
   `PLAN_LICENSING_UPLIFT_SUBMIT.md` H-LU-9. **Owner**: Operator. **Model**: none.
+
+- [ ] **O45. A token that can write issues in the spreadsheets repository.** The support
+  Lambda's token (`{env}/submit/github/issue_bot_token`, read through `OPS_GITHUB_TOKEN_SECRET_ARN`)
+  is scoped to this repository, so B135's form cannot post there until it is replaced. Two named
+  alternatives: a fine-grained PAT covering both repositories as the interim, or O38's `diya-ops`
+  app installed on both as the destination. Either way the value goes on the `ci` and `prod`
+  GitHub environments and reaches Secrets Manager through `deploy-environment.yml`; tell Claude
+  Code which so B135's Lambda change can land. **Source**: B135. **Owner**: Operator.
+  **Model**: none.
+
+- [ ] **O36. A dispatch token for the homebrew tap.** Create a fine-grained PAT scoped to
+  `homebrew-diya-gl` with contents read and write and put it on
+  `spreadsheets.diyaccounting.co.uk` as `HOMEBREW_DISPATCH_TOKEN`, because the default
+  `GITHUB_TOKEN` cannot dispatch across repositories. `REPORT_HOMEBREW_DIYA_GL_CRON.md` has the
+  exact scopes. B138 carries the ruleset and the two workflow edits. **Source**: B81's report.
+  **Owner**: Operator. **Model**: none.
 
 
 ## Blocked
@@ -666,6 +648,17 @@ and stop. One branch is driven green at a time. Lifted only by the operator in t
 - [ ] **O32. View the five walkthrough videos.** After B17v.1: watch each recording and say
   which can go up and what reads wrong. **Source**: BACKLOG 17b, 17c. **Owner**: Operator.
   **Model**: none. Blocked on B17v.1.
+
+- [ ] **O44. Tell Companies House's XML team what B34.6b submitted.** Neal at
+  `xml@companieshouse.gov.uk` reviews test submissions once told they exist. One email from the
+  operator's address naming the submission numbers and the presenter id, with what the sandbox
+  returned. **Source**: BACKLOG 34b; the XML team's email of 2026-09-11. **Owner**: Operator.
+  **Model**: none. Blocked on B34.6b.
+
+- [ ] **O46. Approve the four allow lists.** Each of B80b's PRs prints every author address
+  with its commit count and date range; strike or approve each before merge, because an address
+  on the list is an identity the guard will accept from then on. **Source**: B80's fix.
+  **Owner**: Operator. **Model**: none. Blocked on B80b.
 
 
 ## Discipline
