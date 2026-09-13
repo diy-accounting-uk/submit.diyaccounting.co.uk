@@ -31,8 +31,9 @@ completion, not who owns it now — so no row carries a separate tag that could 
 sits. `human-only` is work no session can do: an external registration, a console action with no
 API, a filing against the operator's own company, an email from their address, a decision between
 named alternatives. A row whose only human step is merging its PR is machine-only; that is the
-standing workflow, not an action the row needs. Within a section, items run by backlog tier, an
-alarm or a pipeline failure counting as tier 1, then the untiered. Operator items
+standing workflow, not an action the row needs. Within a section, items run by the size of the
+change to committed files, least first (operator, 2026-09-13); a row that changes nothing
+committed — a comment, a run, a scan, a console action — comes before any code. Operator items
 are briefed for Claude Cowork in `../BRIEF_OPERATOR_TASKS_2026-09-04.md` at the workspace root.
 Every item names its model: the lowest tier that fits (Fable > Opus > Sonnet > Haiku), or
 `none` for a human step.
@@ -42,37 +43,65 @@ and stop. One branch is driven green at a time. Lifted only by the operator in t
 
 ## Machine-only
 
-- [ ] **B133. destroy-prod reports failure when the set is already gone.** Run 34691690046
-  (#294, dispatched 11:41:08 for `prod-40b194e`) spent 68 minutes in `Wait for a running prod
-  deploy` — the 15112f1f deploy — then failed at `Confirm the deployment has stacks to destroy`
-  (`destroy-prod.yml:733`) with "Refusing to report success: [prod-40b194e] matches no stacks in
-  eu-west-2 or us-east-1". It deleted nothing: the set had already gone while it waited. The check
-  cannot tell "you named a set that never existed" from "the set is already destroyed", and only
-  the first deserves a failure.
-  Fix: succeed when the named set has no stacks and the last-known-good pointer does not name it —
-  that is the requested end state. Keep failing when the name is unrecognised. Re-reading the
-  pointer after the wait, rather than before, is the cheap version.
-  Worth settling at the same time: destroy-prod also runs on a schedule (#293 07:51 and #295 12:48
-  both succeeded today), so a hand dispatch races the cron for the same set. Say in the workflow
-  which one is authoritative. Second instance: run 34755825044, dispatched 2026-09-13 11:58 for
-  `prod-4918a0d` after the deploy's `destroy previous` job had already removed it, failed the same
-  way. **Source**: runs 34691690046 (job 103547976202) and 34755825044.
-  **Owner**: Claude Code. **Model**: Haiku.
+- [ ] **B25c. Issue #11, backups outside the account.** The drill's own state is now known and
+  written up in `_developers/RESTORE_DRILL.md`: `restore-drill.yml` has never run, and two things
+  stop it. The vault's restore grant names a role nothing can assume (B105), and the backup
+  account's stack has not been deployed since before that grant landed (O41). What is proven
+  meanwhile is the copy side: fresh completed recovery points exist for all five critical prod
+  tables and both books buckets, and `restore-test.yml`'s monthly in-account restore has passed
+  three of its last four runs, most recently restoring 4826 receipt items against a live source of
+  4832. Ready now: post that comment on #11, so the issue carries the copy-side proof and names O41x
+  as what the drill waits on. The remainder, after O41x lands: run `restore-drill.yml` and settle
+  the issue on its result. **Source**: issue #11. **Owner**: Claude Code. **Model**: Sonnet.
 
-- [ ] **B131. keepalive fails on main, and one of its two reasons is its own.**
-  Run 34692859063 on `bc719fda`: "FAIL: 2 scheduled workflow(s) have not fired within their
-  cadence" — `restore-drill.yml` and `youtube-check.yml`, both "no schedule-triggered run recorded
-  yet". `main` stays red until both are settled.
-  `youtube-check.yml` is a false failure: it was added on 2026-09-11 with cron `0 6 * * 1`, so its
-  first Monday slot is 2026-09-14 and it cannot have fired yet. The cadence check has no allowance
-  for a workflow younger than its own cadence. Fix that, and while there move the cron off the top
-  of the hour, which is the lesson BACKLOG 47 recorded when the `compliance` and `stack-drift` crons
-  fired five hours late and were moved to 06:06 and 06:36.
-  `restore-drill.yml` is a true failure with no fix here: it has never run and cannot until O41x
-  lands, which B25c already records. So decide what keepalive should do about a scheduled workflow
-  that is knowingly blocked — exempt it by name with the blocking item cited, or accept a red main
-  until O41x. Do not silence the check generally.
-  **Source**: run 34692859063, job 103551097473. **Owner**: Claude Code. **Model**: Sonnet.
+- [ ] **B73. Prove an email-restricted pass works end to end.** The secret and the grant are both
+  in place: `ci/submit/email-hash-secret` and `prod/submit/email-hash-secret` hold independent
+  48-byte random values, and `EmailHashSecretHelper` grants them to the four pass Lambdas that
+  reach `passService.js` — `passGet`, `passPost`, `passAdminPost`, `passGeneratePost` (PR #191,
+  merged as `926e783d`). `passMyPassesGet` is excluded because it does not use `passService`.
+  `initializeEmailHashSecret()` had never succeeded in any deployed environment, and the
+  warn-and-carry-on path hid it, so nothing has yet exercised the working path. Remaining: create
+  and redeem an email-restricted pass against ci and confirm the secret is fetched rather than
+  warned past. **Source**: ci `pass-post` log, 2026-09-09; PR #191. **Owner**: Claude Code.
+  **Model**: Haiku.
+
+- [ ] **B52x. Pull a day of the raw export and count every field.** The first nightly to include
+  the raw-export step, 02:15 UTC on 2026-09-10, failed on all three attempts: the
+  `prod-env-raw-export-publish` Lambda's role carried `s3:PutObject` on `exports/*` and no
+  `GetObject` or `ListBucket`, so Athena could not read the curated data its 21 views select from,
+  and it failed before writing a single file. `AnalyticsDashboard.java`'s metrics-publish Lambda
+  runs the identical Athena-over-the-lake pattern and already had both grants; `RawExport.java`
+  never got them. The grants reached prod at 18:14 UTC on 2026-09-10:
+  `prod-env-raw-export-publish`'s role now carries `s3:GetObject` and `s3:ListBucket` on
+  `prod-env-analytics-lake-972912397388`. The 02:15 UTC run of 2026-09-11 failed as well and
+  raised alarm issue #182: the analytics view chain's own fix only reached prod in the merge of
+  2026-09-11 evening, so that run still hit the missing view. The first export that can work is
+  the 02:15 UTC run of 2026-09-12. Then pull one day through the notebook's data path
+  (`PLAN_ONE_STOP_DASHBOARD.md` D16's export) and list every field with its count of non-empty
+  entries, so a field that never fills is found now rather than in three months. Proof the run
+  worked: 21 CSVs and 8 JSONs under `exports/prod/<date>/`, and the state machine's execution
+  showing SUCCEEDED through its raw-export step. **Source**: BACKLOG 52; plan row D16; the failed
+  execution of 2026-09-10. **Owner**: Claude Code. **Model**: Haiku.
+  **The 02:15 UTC nightly of 2026-09-12 SUCCEEDED** (state machine execution started 03:15 BST),
+  the first success after the 2026-09-10 and 2026-09-11 failures, and
+  `prod-env-analytics-nightly-failed` has returned to OK. So this row is ready: pull one day through
+  the notebook's data path and count the fields.
+
+- [ ] **B130. A superseded deploy reports a failed job.** `record-dora` in `deploy.yml:2950` is
+  `if: always()` with `environment: ${{ needs.names.outputs.environment-name }}`. When a run is
+  cancelled by the concurrency group, `names` is cancelled with it, that output is empty, so no
+  environment is selected and `vars.SUBMIT_ACTIONS_ROLE_ARN` — an environment-scoped variable —
+  resolves to nothing. `configure-aws-credentials` then fails with "Could not load credentials from
+  any providers", and the run shows a failed job. Seen on run 34691378970, the `main` deploy of
+  `926e783d` superseded by the `15112f1f` merge fourteen minutes later; it was cancelled at `wait
+  for environment deploy`, before `deploy api`, so nothing was part-applied.
+  The job's own comment says the row is written "regardless of how the run ended so a failed deploy
+  counts towards the failure rate rather than leaving a silent gap". That is right for a failure and
+  wrong for a supersession: a run cancelled because a newer commit arrived is not a deployment
+  failure, and it cannot write a row anyway without an environment. So skip the job when the run was
+  cancelled, or when `names` produced no environment name, and keep it running for a genuine
+  failure. Check whether the DORA panels already counted cancellations as failures before this.
+  **Source**: run 34691378970, job 103548887779. **Owner**: Claude Code. **Model**: Haiku.
 
 - [ ] **B30v. The prod FOCUS export copy is denied ListBucket.**
   **Both environments, not just prod.** `prod-env-cost-focus-copy-errors` has been in ALARM since
@@ -93,21 +122,44 @@ and stop. One branch is driven green at a time. Lifted only by the operator in t
   be the gap. **Source**: the alarm; `/aws/lambda/prod-env-cost-focus-copy`,
   2026-09-12 02:45 to 02:48 UTC. **Owner**: Claude Code. **Model**: Sonnet.
 
-- [ ] **B130. A superseded deploy reports a failed job.** `record-dora` in `deploy.yml:2950` is
-  `if: always()` with `environment: ${{ needs.names.outputs.environment-name }}`. When a run is
-  cancelled by the concurrency group, `names` is cancelled with it, that output is empty, so no
-  environment is selected and `vars.SUBMIT_ACTIONS_ROLE_ARN` — an environment-scoped variable —
-  resolves to nothing. `configure-aws-credentials` then fails with "Could not load credentials from
-  any providers", and the run shows a failed job. Seen on run 34691378970, the `main` deploy of
-  `926e783d` superseded by the `15112f1f` merge fourteen minutes later; it was cancelled at `wait
-  for environment deploy`, before `deploy api`, so nothing was part-applied.
-  The job's own comment says the row is written "regardless of how the run ended so a failed deploy
-  counts towards the failure rate rather than leaving a silent gap". That is right for a failure and
-  wrong for a supersession: a run cancelled because a newer commit arrived is not a deployment
-  failure, and it cannot write a row anyway without an environment. So skip the job when the run was
-  cancelled, or when `names` produced no environment name, and keep it running for a genuine
-  failure. Check whether the DORA panels already counted cancellations as failures before this.
-  **Source**: run 34691378970, job 103548887779. **Owner**: Claude Code. **Model**: Haiku.
+- [ ] **B133. destroy-prod reports failure when the set is already gone.** Run 34691690046
+  (#294, dispatched 11:41:08 for `prod-40b194e`) spent 68 minutes in `Wait for a running prod
+  deploy` — the 15112f1f deploy — then failed at `Confirm the deployment has stacks to destroy`
+  (`destroy-prod.yml:733`) with "Refusing to report success: [prod-40b194e] matches no stacks in
+  eu-west-2 or us-east-1". It deleted nothing: the set had already gone while it waited. The check
+  cannot tell "you named a set that never existed" from "the set is already destroyed", and only
+  the first deserves a failure.
+  Fix: succeed when the named set has no stacks and the last-known-good pointer does not name it —
+  that is the requested end state. Keep failing when the name is unrecognised. Re-reading the
+  pointer after the wait, rather than before, is the cheap version.
+  Worth settling at the same time: destroy-prod also runs on a schedule (#293 07:51 and #295 12:48
+  both succeeded today), so a hand dispatch races the cron for the same set. Say in the workflow
+  which one is authoritative. Second instance: run 34755825044, dispatched 2026-09-13 11:58 for
+  `prod-4918a0d` after the deploy's `destroy previous` job had already removed it, failed the same
+  way. **Source**: runs 34691690046 (job 103547976202) and 34755825044.
+  **Owner**: Claude Code. **Model**: Haiku.
+
+- [ ] **B134. Persist `Gov-Client-Device-ID` instead of regenerating it per request.**
+  `web/public/lib/services/hmrc-service.js:174` calls `crypto.randomUUID()` on every request, so the
+  device id changes each time. HMRC report it Correct because their check tests presence and format
+  rather than persistence, but the spec asks for a UUID stored on the device that does not expire.
+  Store it in a first-party cookie or `localStorage`: generate once, reuse, regenerate only when
+  absent. O28's scan counts distinct device ids per sub, which says how visible this is in real
+  traffic. Spec conformance, not an advisory fix. **Source**: `../REPORT_HMRC_HEADER_ADVISORIES.md`.
+  **Owner**: Claude Code. **Model**: Haiku.
+
+- [ ] **B125. Return a real 403 from HMRC, and show HMRC's reason.**
+  `http403ForbiddenFromHmrcResponse` in `app/services/hmrcApi.js:682` ends with
+  `return http400BadRequestResponse(...)`. Twenty handlers under `app/functions/hmrc/` map
+  `status === 403` to it, so an unsubscribed API or a missing scope reaches the caller as a
+  malformed request. The 400's body already carries HMRC's explanation in `error.responseBody`; the
+  pages discard it and show "An unexpected error occurred".
+  **Operator decision, 2026-09-12: emit 403 and surface the body.** Both halves, so a user or a
+  test sees the actual cause.
+  **Merged as `e93bb2ea` in #192** and on prod since prod-7fbea34. Left: show on that set that a
+  403 reaches the page with HMRC's reason. The pages special-case 401 only, which suggests 403
+  falls through their generic error path, but that is an assumption until a run shows it. **Source**: probe-test run 34658969922;
+  `app/services/hmrcApi.js:682-724`. **Owner**: Claude Code. **Model**: Sonnet.
 
 - [ ] **B127. The apex-alias vacate races any expiring ci set, and the fix is unproven.**
   `set origins` strips the apex alias from whichever CloudFront distribution holds it, then waits
@@ -126,6 +178,32 @@ and stop. One branch is driven green at a time. Lifted only by the operator in t
   `transfer_apigw_domain` checks an API Gateway custom domain exists and then calls
   `get-api-mappings` and `delete-domain-name` against it with no equivalent classification.
   **Source**: deploy run 34687925996, job 103542638824. **Owner**: Claude Code. **Model**: Sonnet.
+
+- [ ] **B71.S3e. Migrate the books bucket, steps 2 to 7.** Step 1 shipped in PR #180: the
+  `{prefix}-diya-gl-{account}` bucket exists beside `{prefix}-books-{account}` and both are in the
+  backup selection. The books stay where they are until the rest runs.
+  The sequence is in `PLAN_DIYA_GL_NAMING.md`: sync, cut the DIYA-GL Lambdas over and deploy,
+  **re-sync until it copies nothing** — the step that cannot be skipped, because the app writes to
+  the old bucket for the tens of minutes the deploy takes — verify a read, confirm an on-demand
+  backup recovery point, then remove the old bucket. The old bucket goes only after the verified
+  read and the recovery point, both.
+  Handled as customer data whoever the books belong to, because this is the migration path the
+  service needs the first time the answer is unambiguously a customer. Steps 2, 4 and 6 are AWS
+  writes against prod data.
+  **Operator decision, 2026-09-12: run unattended.** No per-step approval. The ordinary rule that
+  an AWS write waits for the operator does not apply to this row. The safety is in the sequence
+  rather than in a prompt: the re-sync must copy nothing before the cutover is believed, and the old
+  bucket goes only after both a verified read and a confirmed on-demand recovery point. Do not
+  reorder or skip either gate to save a step, and record the object counts at each sync. **Source**: `PLAN_DIYA_GL_NAMING.md`
+  NM-S3. **Owner**: Claude Code, with the operator at the write gates. **Model**: Sonnet.
+  **Code merged in #192, ci step 1 run.** PR #180 created the new bucket but left
+  every DIYA-GL Lambda's `DIYA_GL_BUCKET_NAME` pointed at the old one; that is closed, and
+  `_developers/RUNBOOK_DIYA_GL_BUCKET_CUTOVER.md` holds the six AWS steps per environment with both
+  gates. ci step 1 copied 6 objects from `ci-env-books-367191799875` to
+  `ci-env-diya-gl-367191799875`; both buckets now hold 6. prod starts at 16 objects / 146,299 B and
+  waits behind ci's step 6, as the runbook orders it.
+  Next, now #192 has deployed: ci steps 3 to 6, then prod steps 1 to 6. Step 6 removes the old
+  bucket through CDK, never a raw `aws s3` delete.
 
 - [ ] **B17v.1. Capture the five walkthrough videos.** One video each for the three VAT read
   pages (liabilities, payments, penalties; against prod, where B17b.1 is now live, in the 17a
@@ -153,6 +231,77 @@ and stop. One branch is driven green at a time. Lifted only by the operator in t
   `self-employed` activity's first `.html` path is now `dashboard.html`, whose form is
   `#businessPickerForm`. Check that on the next capture rather than assuming.
 
+- [ ] **B131. keepalive fails on main, and one of its two reasons is its own.**
+  Run 34692859063 on `bc719fda`: "FAIL: 2 scheduled workflow(s) have not fired within their
+  cadence" — `restore-drill.yml` and `youtube-check.yml`, both "no schedule-triggered run recorded
+  yet". `main` stays red until both are settled.
+  `youtube-check.yml` is a false failure: it was added on 2026-09-11 with cron `0 6 * * 1`, so its
+  first Monday slot is 2026-09-14 and it cannot have fired yet. The cadence check has no allowance
+  for a workflow younger than its own cadence. Fix that, and while there move the cron off the top
+  of the hour, which is the lesson BACKLOG 47 recorded when the `compliance` and `stack-drift` crons
+  fired five hours late and were moved to 06:06 and 06:36.
+  `restore-drill.yml` is a true failure with no fix here: it has never run and cannot until O41x
+  lands, which B25c already records. So decide what keepalive should do about a scheduled workflow
+  that is knowingly blocked — exempt it by name with the blocking item cited, or accept a red main
+  until O41x. Do not silence the check generally.
+  **Source**: run 34692859063, job 103551097473. **Owner**: Claude Code. **Model**: Sonnet.
+
+- [ ] **B135. Point the support requests at the spreadsheets repository's issues.** Three entry
+  points send customers to this repository's issues today, and all three move:
+  `web/public/help.html:74` (`issues/new?template=support.md`), the FAQ answer at
+  `web/public/faqs.toml:364`, and the support form, whose Lambda POSTs to
+  `https://api.github.com/repos/${GITHUB_REPO}/issues` (`app/functions/support/supportTicketPost.js:87`
+  and `:93`).
+  **The trap: `GITHUB_REPO` is shared.** It is set from `props.githubRepo()` in `AccountStack.java:555`
+  and the same value feeds `IngestionStack.java:533` and `SecurityLakeStack.java:166`, while
+  `OpsStack.java:204` uses `props.opsGithubRepo()` for the alarm issues. Changing the shared value
+  would move alarm and security-lake issues too, which is not what this asks. Give the support path
+  its own configuration point and leave the others alone.
+  Cross-repository prerequisites, both ours: `diy-accounting-uk/spreadsheets.diyaccounting.co.uk`
+  needs issues enabled (`gh repo edit --enable-issues`) and a `support.md` issue template matching
+  this repository's `.github/ISSUE_TEMPLATE/support.md`, landed there by PR from a worktree, or the
+  `?template=` parameter silently falls back to a blank issue. The two page links and the template
+  can ship before the Lambda; the Lambda's repository switch waits on O45's token.
+  Never edit `web/public-simulator/**`; it is regenerated from `web/public/`.
+  **Source**: operator request, 2026-09-12. **Owner**: Claude Code. **Model**: Sonnet.
+
+- [ ] **B138. Land the homebrew tap's release trigger and its ruleset.**
+  `REPORT_HOMEBREW_DIYA_GL_CRON.md` has the detail and the exact commands. Two writes: apply the
+  ruleset (deletion and non_fast_forward on the default branch, the same shape all five siblings
+  carry, which still allows the bot's fast-forward pushes) with
+  `gh api --method POST repos/diy-accounting-uk/homebrew-diya-gl/rulesets --input ruleset.json`;
+  and make the two workflow edits, swapping the hourly poll for a `repository_dispatch` fired by
+  the npm publish step in the spreadsheets repository, each by PR from a worktree. The dispatch
+  only works once O36's `HOMEBREW_DISPATCH_TOKEN` exists, so land the ruleset and the receiving
+  trigger first and the sending step last. The poll turned out to be cheaper than it looked — 12
+  scheduled runs in the repository's first 61 hours, not one an hour, because GitHub delays
+  schedules — but it still polls a registry that could just tell it. **Source**: B81's report.
+  **Owner**: Claude Code. **Model**: Sonnet.
+
+- [ ] **B129. Deleting an ITSA loss claim or adjustment is free.** **Operator decision,
+  2026-09-13: make them free.** `hmrcItsaLossesAndClaimsDelete.js:225` and
+  `hmrcItsaTaxLiabilityAdjustmentsDelete.js:223` charge one token under `self-employed-year-end`;
+  a customer who files a wrong claim then removes it pays twice for one net submission, and the
+  delete sends no new figures to HMRC. `self-employed-read` cannot take them: it carries
+  `read:self-assessment` only and a DELETE needs the write scope. So add a third activity in
+  `web/public/submit.catalogue.toml` at `tokenCost = 0` with both scopes, on the same bundles and
+  `display = "never"`, point both handlers at it, and update the two `.activity.test.js` files and
+  `productCatalog.test.js` to prove the count is unchanged after a delete. Nothing else in the
+  product prices an undo, so this is the first submit-versus-undo distinction the catalogue
+  carries. **Source**: B117's wiring pass, 2026-09-12. **Owner**: Claude Code. **Model**: Haiku.
+
+- [ ] **B136. The monthly fraud-header check has never run.**
+  `data/compliance/fraud-prevention-headers/` is empty. B22 shipped a monthly check whose launchd
+  agent was supposed to write a file there each month, and no file exists, so the check has produced
+  nothing since it landed and nobody noticed until the advisories were read by hand. Find out
+  whether the agent was ever loaded, whether `scripts/fraud-header-email-check.js` runs today, and
+  decide where it should run: a launchd agent on one laptop is invisible when it fails, and a
+  scheduled workflow is not. Settle at the same time whether
+  `data/compliance/fraud-prevention-headers/*.json` is tracked or gitignored — that was never
+  decided and the directory is currently tracked and empty.
+  **Source**: `../REPORT_HMRC_HEADER_ADVISORIES.md`'s closed lines of enquiry. **Owner**: Claude
+  Code. **Model**: Sonnet.
+
 - [ ] **B11.T7r. ITSA phase 2: run the sandbox year.** The script and the runbook
   (`_developers/hmrc/ITSA_PHASE_2_SANDBOX.md`) are on main, and the run now clears seven calls
   before it stops. Three script bugs were fixed on `claude/b28-board`: the checkpoint call needs a
@@ -169,54 +318,6 @@ and stop. One branch is driven green at a time. Lifted only by the operator in t
   Secrets Manager, so it needs a live SSO session: `aws sso login --sso-session diyaccounting`.
   **Source**: `PLAN_ITSA_PHASE_2.md` T7; the sandbox run of 2026-09-12. **Owner**: Claude Code.
   **Model**: Sonnet.
-
-- [ ] **B34.6b. Companies House accounts filing: the sandbox proof.** After O16: submit the
-  FRS 105 accounts to the XML Gateway test service with the test presenter credentials (a
-  GitHub environment secret), read the real acknowledgement and poll responses, settle the
-  `Authority` element question (the worked example carries it, FormSubmission-v2-11 does not),
-  correct the envelope and iXBRL where the sandbox's own validation differs from the public
-  schemas, record what the sandbox returned in the simulator, then add `prod` to the
-  `file-micro-entity-accounts` activity and to `resident-ltd`'s listing. **O16 is done**: Companies House's XML team issued the test presenter credentials on
-  2026-09-11 and they are set as `COMPANIES_HOUSE_PRESENTER_ID` and
-  `COMPANIES_HOUSE_PRESENTER_CODE` on the `ci` environment, reaching Secrets Manager as
-  `ci/submit/companies-house/presenter_id` and `presenter_code`.
-  The email settles three things the code had left open, and the code already has a place for each:
-  **Test Flag 1** is `buildAccountsSubmission`'s `gatewayTest`, which emits
-  `<GatewayTest>1</GatewayTest>` (`companiesHouseXmlGateway.js:101`); **Test Package Reference
-  0012** is its `packageReference`, whose JSDoc still says "blank until Companies House issues one"
-  (`:138`); and **submission numbers must be unique and incremental**, which
-  `allocateSubmissionNumber()` already satisfies with an atomic DynamoDB counter
-  (`:280`), keyed apart from real request ids.
-  The gap: `companiesHouseAccountsPost.js:233` passes neither `gatewayTest` nor `packageReference`,
-  so both fall to their defaults of `false` and blank. Wire both from configuration rather than
-  hardcoding them, because the live service wants the opposite of the test service on both. Do not
-  let a re-run reset the submission counter — the test service rejects a repeated or lower number
-  outright, and a rejection costs a round trip through their reviewer.
-  Needs a ci set to file from. The email telling Companies House what was submitted is O44.
-  **Source**: BACKLOG 34b; the XML team's email of 2026-09-11. **Owner**: Claude Code.
-  **Model**: Sonnet.
-
-- [ ] **B52x. Pull a day of the raw export and count every field.** The first nightly to include
-  the raw-export step, 02:15 UTC on 2026-09-10, failed on all three attempts: the
-  `prod-env-raw-export-publish` Lambda's role carried `s3:PutObject` on `exports/*` and no
-  `GetObject` or `ListBucket`, so Athena could not read the curated data its 21 views select from,
-  and it failed before writing a single file. `AnalyticsDashboard.java`'s metrics-publish Lambda
-  runs the identical Athena-over-the-lake pattern and already had both grants; `RawExport.java`
-  never got them. The grants reached prod at 18:14 UTC on 2026-09-10:
-  `prod-env-raw-export-publish`'s role now carries `s3:GetObject` and `s3:ListBucket` on
-  `prod-env-analytics-lake-972912397388`. The 02:15 UTC run of 2026-09-11 failed as well and
-  raised alarm issue #182: the analytics view chain's own fix only reached prod in the merge of
-  2026-09-11 evening, so that run still hit the missing view. The first export that can work is
-  the 02:15 UTC run of 2026-09-12. Then pull one day through the notebook's data path
-  (`PLAN_ONE_STOP_DASHBOARD.md` D16's export) and list every field with its count of non-empty
-  entries, so a field that never fills is found now rather than in three months. Proof the run
-  worked: 21 CSVs and 8 JSONs under `exports/prod/<date>/`, and the state machine's execution
-  showing SUCCEEDED through its raw-export step. **Source**: BACKLOG 52; plan row D16; the failed
-  execution of 2026-09-10. **Owner**: Claude Code. **Model**: Haiku.
-  **The 02:15 UTC nightly of 2026-09-12 SUCCEEDED** (state machine execution started 03:15 BST),
-  the first success after the 2026-09-10 and 2026-09-11 failures, and
-  `prod-env-analytics-nightly-failed` has returned to OK. So this row is ready: pull one day through
-  the notebook's data path and count the fields.
 
 - [ ] **O28. Send `Gov-Client-Multi-Factor` on every request.** Every monthly advisory HMRC has
   raised, in every month, is this one header missing; every other header reads Correct throughout.
@@ -268,69 +369,31 @@ and stop. One branch is driven green at a time. Lifted only by the operator in t
   **Source**: `../REPORT_HMRC_HEADER_ADVISORIES.md`; the Developer Hub captures; B22's first run.
   **Owner**: Claude Code. **Model**: Sonnet.
 
-- [ ] **B134. Persist `Gov-Client-Device-ID` instead of regenerating it per request.**
-  `web/public/lib/services/hmrc-service.js:174` calls `crypto.randomUUID()` on every request, so the
-  device id changes each time. HMRC report it Correct because their check tests presence and format
-  rather than persistence, but the spec asks for a UUID stored on the device that does not expire.
-  Store it in a first-party cookie or `localStorage`: generate once, reuse, regenerate only when
-  absent. O28's scan counts distinct device ids per sub, which says how visible this is in real
-  traffic. Spec conformance, not an advisory fix. **Source**: `../REPORT_HMRC_HEADER_ADVISORIES.md`.
-  **Owner**: Claude Code. **Model**: Haiku.
-
-- [ ] **B136. The monthly fraud-header check has never run.**
-  `data/compliance/fraud-prevention-headers/` is empty. B22 shipped a monthly check whose launchd
-  agent was supposed to write a file there each month, and no file exists, so the check has produced
-  nothing since it landed and nobody noticed until the advisories were read by hand. Find out
-  whether the agent was ever loaded, whether `scripts/fraud-header-email-check.js` runs today, and
-  decide where it should run: a launchd agent on one laptop is invisible when it fails, and a
-  scheduled workflow is not. Settle at the same time whether
-  `data/compliance/fraud-prevention-headers/*.json` is tracked or gitignored — that was never
-  decided and the directory is currently tracked and empty.
-  **Source**: `../REPORT_HMRC_HEADER_ADVISORIES.md`'s closed lines of enquiry. **Owner**: Claude
-  Code. **Model**: Sonnet.
-
-- [ ] **B128. A failed HMRC submission must not cost a token.** `consumeTokenForActivity` is called
-  before the HMRC request in all twelve charging handlers — `hmrcVatReturnPost`,
-  `hmrcItsaFinalDeclarationPost`, `hmrcItsaSelfEmploymentPeriodPost`,
-  `hmrcItsaSelfEmploymentPeriodPut`, `hmrcItsaUkPropertyPeriodPost`, `hmrcItsaUkPropertyPeriodPut`,
-  and the six year-end handlers B117 just wired — and a non-ok response from HMRC does not refund
-  it. So a customer whose submission HMRC rejects pays for it, and pays again on the retry.
-  **Operator decision, 2026-09-12: failures should not cost.** Settle where the charge belongs: a
-  refund on a non-ok HMRC response, or move the consume to after a successful response and keep
-  whatever reservation stops a caller with no tokens from reaching HMRC at all. Say which and why,
-  because the two differ under a crash between the HMRC call and the write. Whichever it is, it
-  applies to all twelve handlers in one pass, and the proof is a test per handler showing the token
-  count unchanged after an HMRC rejection. **Source**: B117's wiring pass, 2026-09-12.
-  **Owner**: Claude Code. **Model**: Sonnet.
-
-- [ ] **O41x. Rework the vault for copy-back restore, then redeploy the backup account.**
-  `setup-backup-account.yml` failed on 2026-09-11 (run 34638032553): AWS Backup refused the vault
-  policy with "cross-account sharing restrictions" (403). A vault access policy takes
-  `backup:CopyIntoBackupVault` cross-account, not restore, so B105's `AllowCiRestoreRoleToRestore`
-  statement cannot deploy. The organisation setting is not implicated;
-  `isCrossAccountBackupEnabled` has been true since 2026-08-29. The stack rolled back cleanly.
-  **Operator decision, 2026-09-11: copy back, then restore locally.** `restore-drill.yml` copies
-  the recovery point from the backup vault to a vault in the source account and restores it there,
-  which is AWS's documented cross-account restore path and the route a real recovery would take. It
-  costs one copy per drill and writes into the source account.
-  So: drop `AllowCiRestoreRoleToRestore` from `CrossAccountBackupVaultStack.java`, leaving
-  `AllowCrossAccountCopy` and the deny guard; give the source account's drill role what a copy-back
-  needs on both vaults and the KMS keys; rewrite `restore-drill.yml` around copy-then-restore; then
-  redeploy the backup account stack. **Source**: run 34638032553; the live vault policy.
-  **Owner**: Claude Code. **Model**: Sonnet.
-
-- [ ] **B125. Return a real 403 from HMRC, and show HMRC's reason.**
-  `http403ForbiddenFromHmrcResponse` in `app/services/hmrcApi.js:682` ends with
-  `return http400BadRequestResponse(...)`. Twenty handlers under `app/functions/hmrc/` map
-  `status === 403` to it, so an unsubscribed API or a missing scope reaches the caller as a
-  malformed request. The 400's body already carries HMRC's explanation in `error.responseBody`; the
-  pages discard it and show "An unexpected error occurred".
-  **Operator decision, 2026-09-12: emit 403 and surface the body.** Both halves, so a user or a
-  test sees the actual cause.
-  **Merged as `e93bb2ea` in #192** and on prod since prod-7fbea34. Left: show on that set that a
-  403 reaches the page with HMRC's reason. The pages special-case 401 only, which suggests 403
-  falls through their generic error path, but that is an assumption until a run shows it. **Source**: probe-test run 34658969922;
-  `app/services/hmrcApi.js:682-724`. **Owner**: Claude Code. **Model**: Sonnet.
+- [ ] **B34.6b. Companies House accounts filing: the sandbox proof.** After O16: submit the
+  FRS 105 accounts to the XML Gateway test service with the test presenter credentials (a
+  GitHub environment secret), read the real acknowledgement and poll responses, settle the
+  `Authority` element question (the worked example carries it, FormSubmission-v2-11 does not),
+  correct the envelope and iXBRL where the sandbox's own validation differs from the public
+  schemas, record what the sandbox returned in the simulator, then add `prod` to the
+  `file-micro-entity-accounts` activity and to `resident-ltd`'s listing. **O16 is done**: Companies House's XML team issued the test presenter credentials on
+  2026-09-11 and they are set as `COMPANIES_HOUSE_PRESENTER_ID` and
+  `COMPANIES_HOUSE_PRESENTER_CODE` on the `ci` environment, reaching Secrets Manager as
+  `ci/submit/companies-house/presenter_id` and `presenter_code`.
+  The email settles three things the code had left open, and the code already has a place for each:
+  **Test Flag 1** is `buildAccountsSubmission`'s `gatewayTest`, which emits
+  `<GatewayTest>1</GatewayTest>` (`companiesHouseXmlGateway.js:101`); **Test Package Reference
+  0012** is its `packageReference`, whose JSDoc still says "blank until Companies House issues one"
+  (`:138`); and **submission numbers must be unique and incremental**, which
+  `allocateSubmissionNumber()` already satisfies with an atomic DynamoDB counter
+  (`:280`), keyed apart from real request ids.
+  The gap: `companiesHouseAccountsPost.js:233` passes neither `gatewayTest` nor `packageReference`,
+  so both fall to their defaults of `false` and blank. Wire both from configuration rather than
+  hardcoding them, because the live service wants the opposite of the test service on both. Do not
+  let a re-run reset the submission counter — the test service rejects a repeated or lower number
+  outright, and a rejection costs a round trip through their reviewer.
+  Needs a ci set to file from. The email telling Companies House what was submitted is O44.
+  **Source**: BACKLOG 34b; the XML team's email of 2026-09-11. **Owner**: Claude Code.
+  **Model**: Sonnet.
 
 - [ ] **B122. Clear the 214 eslint findings.** `npm run linting` runs again since batch 27, and
   reports 214 errors: 156 auto-fixable `prettier/prettier` formatting, the rest `no-var` and
@@ -363,73 +426,34 @@ and stop. One branch is driven green at a time. Lifted only by the operator in t
   deployed set rather than unit tests alone. **Source**: batch 27's lint job. **Owner**: Claude
   Code. **Model**: Haiku for the formatting pass, Sonnet for the code fixes.
 
-- [ ] **B71.S3e. Migrate the books bucket, steps 2 to 7.** Step 1 shipped in PR #180: the
-  `{prefix}-diya-gl-{account}` bucket exists beside `{prefix}-books-{account}` and both are in the
-  backup selection. The books stay where they are until the rest runs.
-  The sequence is in `PLAN_DIYA_GL_NAMING.md`: sync, cut the DIYA-GL Lambdas over and deploy,
-  **re-sync until it copies nothing** — the step that cannot be skipped, because the app writes to
-  the old bucket for the tens of minutes the deploy takes — verify a read, confirm an on-demand
-  backup recovery point, then remove the old bucket. The old bucket goes only after the verified
-  read and the recovery point, both.
-  Handled as customer data whoever the books belong to, because this is the migration path the
-  service needs the first time the answer is unambiguously a customer. Steps 2, 4 and 6 are AWS
-  writes against prod data.
-  **Operator decision, 2026-09-12: run unattended.** No per-step approval. The ordinary rule that
-  an AWS write waits for the operator does not apply to this row. The safety is in the sequence
-  rather than in a prompt: the re-sync must copy nothing before the cutover is believed, and the old
-  bucket goes only after both a verified read and a confirmed on-demand recovery point. Do not
-  reorder or skip either gate to save a step, and record the object counts at each sync. **Source**: `PLAN_DIYA_GL_NAMING.md`
-  NM-S3. **Owner**: Claude Code, with the operator at the write gates. **Model**: Sonnet.
-  **Code merged in #192, ci step 1 run.** PR #180 created the new bucket but left
-  every DIYA-GL Lambda's `DIYA_GL_BUCKET_NAME` pointed at the old one; that is closed, and
-  `_developers/RUNBOOK_DIYA_GL_BUCKET_CUTOVER.md` holds the six AWS steps per environment with both
-  gates. ci step 1 copied 6 objects from `ci-env-books-367191799875` to
-  `ci-env-diya-gl-367191799875`; both buckets now hold 6. prod starts at 16 objects / 146,299 B and
-  waits behind ci's step 6, as the runbook orders it.
-  Next, now #192 has deployed: ci steps 3 to 6, then prod steps 1 to 6. Step 6 removes the old
-  bucket through CDK, never a raw `aws s3` delete.
+- [ ] **O41x. Rework the vault for copy-back restore, then redeploy the backup account.**
+  `setup-backup-account.yml` failed on 2026-09-11 (run 34638032553): AWS Backup refused the vault
+  policy with "cross-account sharing restrictions" (403). A vault access policy takes
+  `backup:CopyIntoBackupVault` cross-account, not restore, so B105's `AllowCiRestoreRoleToRestore`
+  statement cannot deploy. The organisation setting is not implicated;
+  `isCrossAccountBackupEnabled` has been true since 2026-08-29. The stack rolled back cleanly.
+  **Operator decision, 2026-09-11: copy back, then restore locally.** `restore-drill.yml` copies
+  the recovery point from the backup vault to a vault in the source account and restores it there,
+  which is AWS's documented cross-account restore path and the route a real recovery would take. It
+  costs one copy per drill and writes into the source account.
+  So: drop `AllowCiRestoreRoleToRestore` from `CrossAccountBackupVaultStack.java`, leaving
+  `AllowCrossAccountCopy` and the deny guard; give the source account's drill role what a copy-back
+  needs on both vaults and the KMS keys; rewrite `restore-drill.yml` around copy-then-restore; then
+  redeploy the backup account stack. **Source**: run 34638032553; the live vault policy.
+  **Owner**: Claude Code. **Model**: Sonnet.
 
-- [ ] **B73. Prove an email-restricted pass works end to end.** The secret and the grant are both
-  in place: `ci/submit/email-hash-secret` and `prod/submit/email-hash-secret` hold independent
-  48-byte random values, and `EmailHashSecretHelper` grants them to the four pass Lambdas that
-  reach `passService.js` — `passGet`, `passPost`, `passAdminPost`, `passGeneratePost` (PR #191,
-  merged as `926e783d`). `passMyPassesGet` is excluded because it does not use `passService`.
-  `initializeEmailHashSecret()` had never succeeded in any deployed environment, and the
-  warn-and-carry-on path hid it, so nothing has yet exercised the working path. Remaining: create
-  and redeem an email-restricted pass against ci and confirm the secret is fetched rather than
-  warned past. **Source**: ci `pass-post` log, 2026-09-09; PR #191. **Owner**: Claude Code.
-  **Model**: Haiku.
-
-- [ ] **B135. Point the support requests at the spreadsheets repository's issues.** Three entry
-  points send customers to this repository's issues today, and all three move:
-  `web/public/help.html:74` (`issues/new?template=support.md`), the FAQ answer at
-  `web/public/faqs.toml:364`, and the support form, whose Lambda POSTs to
-  `https://api.github.com/repos/${GITHUB_REPO}/issues` (`app/functions/support/supportTicketPost.js:87`
-  and `:93`).
-  **The trap: `GITHUB_REPO` is shared.** It is set from `props.githubRepo()` in `AccountStack.java:555`
-  and the same value feeds `IngestionStack.java:533` and `SecurityLakeStack.java:166`, while
-  `OpsStack.java:204` uses `props.opsGithubRepo()` for the alarm issues. Changing the shared value
-  would move alarm and security-lake issues too, which is not what this asks. Give the support path
-  its own configuration point and leave the others alone.
-  Cross-repository prerequisites, both ours: `diy-accounting-uk/spreadsheets.diyaccounting.co.uk`
-  needs issues enabled (`gh repo edit --enable-issues`) and a `support.md` issue template matching
-  this repository's `.github/ISSUE_TEMPLATE/support.md`, landed there by PR from a worktree, or the
-  `?template=` parameter silently falls back to a blank issue. The two page links and the template
-  can ship before the Lambda; the Lambda's repository switch waits on O45's token.
-  Never edit `web/public-simulator/**`; it is regenerated from `web/public/`.
-  **Source**: operator request, 2026-09-12. **Owner**: Claude Code. **Model**: Sonnet.
-
-- [ ] **B138. Land the homebrew tap's release trigger and its ruleset.**
-  `REPORT_HOMEBREW_DIYA_GL_CRON.md` has the detail and the exact commands. Two writes: apply the
-  ruleset (deletion and non_fast_forward on the default branch, the same shape all five siblings
-  carry, which still allows the bot's fast-forward pushes) with
-  `gh api --method POST repos/diy-accounting-uk/homebrew-diya-gl/rulesets --input ruleset.json`;
-  and make the two workflow edits, swapping the hourly poll for a `repository_dispatch` fired by
-  the npm publish step in the spreadsheets repository, each by PR from a worktree. The dispatch
-  only works once O36's `HOMEBREW_DISPATCH_TOKEN` exists, so land the ruleset and the receiving
-  trigger first and the sending step last. The poll turned out to be cheaper than it looked — 12
-  scheduled runs in the repository's first 61 hours, not one an hour, because GitHub delays
-  schedules — but it still polls a registry that could just tell it. **Source**: B81's report.
+- [ ] **B128. A failed HMRC submission must not cost a token.** `consumeTokenForActivity` is called
+  before the HMRC request in all twelve charging handlers — `hmrcVatReturnPost`,
+  `hmrcItsaFinalDeclarationPost`, `hmrcItsaSelfEmploymentPeriodPost`,
+  `hmrcItsaSelfEmploymentPeriodPut`, `hmrcItsaUkPropertyPeriodPost`, `hmrcItsaUkPropertyPeriodPut`,
+  and the six year-end handlers B117 just wired — and a non-ok response from HMRC does not refund
+  it. So a customer whose submission HMRC rejects pays for it, and pays again on the retry.
+  **Operator decision, 2026-09-12: failures should not cost.** Settle where the charge belongs: a
+  refund on a non-ok HMRC response, or move the consume to after a successful response and keep
+  whatever reservation stops a caller with no tokens from reaching HMRC at all. Say which and why,
+  because the two differ under a crash between the HMRC call and the write. Whichever it is, it
+  applies to all twelve handlers in one pass, and the proof is a test per handler showing the token
+  count unchanged after an HMRC rejection. **Source**: B117's wiring pass, 2026-09-12.
   **Owner**: Claude Code. **Model**: Sonnet.
 
 - [ ] **B80b. The identity guard has to reach the other four repositories.** Submit carries
@@ -445,33 +469,8 @@ and stop. One branch is driven green at a time. Lifted only by the operator in t
   rather than reporting non-blocking.
   **Source**: B80's fix. **Owner**: Claude Code. **Model**: Haiku per repository.
 
-- [ ] **B129. Deleting an ITSA loss claim or adjustment is free.** **Operator decision,
-  2026-09-13: make them free.** `hmrcItsaLossesAndClaimsDelete.js:225` and
-  `hmrcItsaTaxLiabilityAdjustmentsDelete.js:223` charge one token under `self-employed-year-end`;
-  a customer who files a wrong claim then removes it pays twice for one net submission, and the
-  delete sends no new figures to HMRC. `self-employed-read` cannot take them: it carries
-  `read:self-assessment` only and a DELETE needs the write scope. So add a third activity in
-  `web/public/submit.catalogue.toml` at `tokenCost = 0` with both scopes, on the same bundles and
-  `display = "never"`, point both handlers at it, and update the two `.activity.test.js` files and
-  `productCatalog.test.js` to prove the count is unchanged after a delete. Nothing else in the
-  product prices an undo, so this is the first submit-versus-undo distinction the catalogue
-  carries. **Source**: B117's wiring pass, 2026-09-12. **Owner**: Claude Code. **Model**: Haiku.
-
-- [ ] **B25c. Issue #11, backups outside the account.** The drill's own state is now known and
-  written up in `_developers/RESTORE_DRILL.md`: `restore-drill.yml` has never run, and two things
-  stop it. The vault's restore grant names a role nothing can assume (B105), and the backup
-  account's stack has not been deployed since before that grant landed (O41). What is proven
-  meanwhile is the copy side: fresh completed recovery points exist for all five critical prod
-  tables and both books buckets, and `restore-test.yml`'s monthly in-account restore has passed
-  three of its last four runs, most recently restoring 4826 receipt items against a live source of
-  4832. Ready now: post that comment on #11, so the issue carries the copy-side proof and names O41x
-  as what the drill waits on. The remainder, after O41x lands: run `restore-drill.yml` and settle
-  the issue on its result. **Source**: issue #11. **Owner**: Claude Code. **Model**: Sonnet.
-
 
 ## Human and machine
-
-
 
 
 ## Human-only
@@ -512,20 +511,6 @@ and stop. One branch is driven green at a time. Lifted only by the operator in t
   `REPORT_IDENTITY_AUDIT.md` section 8, recommendations 2, 3 and 12. **Owner**: Operator.
   **Model**: none.
 
-- [ ] **O37. Turn on SSH commit signing.** `REPORT_GIT_CONFIG.md` settles what the config should
-  be and why: keep `pull.rebase=true`, because a rebase re-signs each replayed commit when
-  `commit.gpgsign` is a standing default rather than a per-commit flag, and keep
-  `rerere.enabled=true`, whose guard is `rerere.autoupdate` staying unset so a replayed resolution
-  still pauses for review. What is left is three global lines and registering the key: set
-  `gpg.format ssh`, `user.signingkey` and `commit.gpgsign true`, and add the SSH key as a signing
-  key on the GitHub account. One global config covers all six repositories, since each has one
-  committer. `verify-commit-signatures.yml` is on the batch and reports each commit's
-  `verification.verified` in the job summary without failing, because no commit is signed yet;
-  flip its last step to fail and make it a required ruleset check once signing is routine. This
-  is what every auto-merge policy in `PLAN_REPOSITORY_AUTOMATION.md` rests on. **Source**:
-  `REPORT_GIT_CONFIG.md`; `REPORT_IDENTITY_AUDIT.md` section 9. **Owner**: Operator. **Model**:
-  none.
-
 - [ ] **O33. Tell HMRC's SDS team the licence changed.** One paragraph: the MTD approval
   submission and the production-credentials email described the service as AGPL open source, and
   the PolyForm licence files are on main and on prod since prod-318271f. **Source**:
@@ -547,44 +532,45 @@ and stop. One branch is driven green at a time. Lifted only by the operator in t
   exact scopes. B138 carries the ruleset and the two workflow edits. **Source**: B81's report.
   **Owner**: Operator. **Model**: none.
 
+- [ ] **O37. Turn on SSH commit signing.** `REPORT_GIT_CONFIG.md` settles what the config should
+  be and why: keep `pull.rebase=true`, because a rebase re-signs each replayed commit when
+  `commit.gpgsign` is a standing default rather than a per-commit flag, and keep
+  `rerere.enabled=true`, whose guard is `rerere.autoupdate` staying unset so a replayed resolution
+  still pauses for review. What is left is three global lines and registering the key: set
+  `gpg.format ssh`, `user.signingkey` and `commit.gpgsign true`, and add the SSH key as a signing
+  key on the GitHub account. One global config covers all six repositories, since each has one
+  committer. `verify-commit-signatures.yml` is on the batch and reports each commit's
+  `verification.verified` in the job summary without failing, because no commit is signed yet;
+  flip its last step to fail and make it a required ruleset check once signing is routine. This
+  is what every auto-merge policy in `PLAN_REPOSITORY_AUTOMATION.md` rests on. **Source**:
+  `REPORT_GIT_CONFIG.md`; `REPORT_IDENTITY_AUDIT.md` section 9. **Owner**: Operator. **Model**:
+  none.
+
 
 ## Blocked
 
-- [ ] **B11.T9. ITSA phase 2: the DIYA-GL-to-submission path.** `PLAN_ITSA_PHASE_2.md` T9: the
-  MCP tools `derive_itsa_quarterly_update` and `derive_itsa_annual_submission` in the MCP
-  package, and an import control on `annualSubmission.html` that fills the form from a book.
-  The spreadsheets side's T8 design finds the shipped self-employed template cannot source 31
-  of the 55 ITSA field slots, so the derivations omit those fields; this row must send an
-  omission, never a zero, for a field the book does not carry. Two findings from their side carry
-  SED ids and one changes what this row must do: SED-10 says the self-employed field set changes by
-  tax year — `sa103-mtd-mapping.json` records two allowances gone from 2025-26, an adjustment gone
-  from 2026-27 and two fields added — and their `se-derivations.js` reads none of it, so a book for
-  a year past 2024-25 can carry a field HMRC no longer accepts. The figures are year-agnostic; only
-  the field set moves. Either wait for their SED-10 or filter by year on this side, and say which.
-  SED-2 is theirs: fourteen disallowable categories, seven annual fields and four adjustments the
-  shipped template cannot source at all, which arrive omitted rather than zeroed.
-  **Source**: BACKLOG 11; `PLAN_ITSA_PHASE_2.md` T9. **Owner**: Claude Code. **Model**:
-  Sonnet. Blocked on the spreadsheets repository's ITSA-T8 (the two self-employed derivations)
-  and on `PLAN_SUBMISSION_MCP.md` M1.
+- [ ] **O32. View the five walkthrough videos.** After B17v.1: watch each recording and say
+  which can go up and what reads wrong. **Source**: BACKLOG 17b, 17c. **Owner**: Operator.
+  **Model**: none. Blocked on B17v.1.
 
-- [ ] **B34.7. Run and fix the filing suites' sandbox sign-in.** Batch 9 (6957651c) carries
-  the suites' sandbox sign-in with the authenticator step, off by default: `deploy.yml` and
-  `probe-test.yml` run the two filing suites only when the dispatch input
-  `runCompaniesHouseSandboxFiling` is `true`, and the run fails fast naming any of O17's four
-  values that is empty. Against a standing ci set:
-  `gh workflow run probe-test.yml -f environment-name=ci -f deployment-name=<ci-set>
-  -f behaviour-test-suite=changeRegisteredOfficeBehaviour -f runCompaniesHouseSandboxFiling=true`
-  and the same for `changeRegisteredEmailBehaviour`; the first run's screenshots guide any
-  selector fix. **Source**: BACKLOG 34. **Owner**: Claude Code. **Model**: Sonnet.
-  Blocked on O17.
+- [ ] **O44. Tell Companies House's XML team what B34.6b submitted.** Neal at
+  `xml@companieshouse.gov.uk` reviews test submissions once told they exist. One email from the
+  operator's address naming the submission numbers and the presenter id, with what the sandbox
+  returned. **Source**: BACKLOG 34b; the XML team's email of 2026-09-11. **Owner**: Operator.
+  **Model**: none. Blocked on B34.6b.
 
-- [ ] **B11.T10. ITSA phase 2: the recognition pack.** `PLAN_ITSA_PHASE_2.md` T10:
-  `_developers/hmrc/ITSA_PRODUCTION_APPROVALS_CHECKLIST.md`, an ITSA pass over the two
-  questionnaires, and the two draft emails for the operator to send. One application now covers
-  both approval stages, and the checklist answers for all nine APIs in the minimum functionality
-  standards with a build behind each. **Source**: BACKLOG 11; `PLAN_ITSA_PHASE_2.md` T10.
-  **Owner**: Claude Code, then Operator. **Model**: Haiku. Blocked on B11.T7r, B11.T21 and
-  B11.T22.
+- [ ] **O46. Approve the four allow lists.** Each of B80b's PRs prints every author address
+  with its commit count and date range; strike or approve each before merge, because an address
+  on the list is an identity the guard will accept from then on. **Source**: B80's fix.
+  **Owner**: Operator. **Model**: none. Blocked on B80b.
+
+- [ ] **B137. `uniqueReference` identifies the user, not the authentication event.** In the
+  `Gov-Client-Multi-Factor` header, `uniqueReference` is a SHA-256 of `sub + ":" + factorType`, so
+  it is stable per user per factor type by design. HMRC's spec expects a reference identifying the
+  authentication **event**. They have not flagged it and it is no part of the current advisory, so
+  this is a separate reading of the spec rather than a defect they have raised. Decide whether to
+  change it, and note that O28's step 2b touches the same code — sequence it after, not with.
+  **Source**: `../REPORT_HMRC_HEADER_ADVISORIES.md`. **Owner**: Claude Code. **Model**: Sonnet. Blocked on O28 step 2b.
 
 - [ ] **B17v.2. Publish the walkthrough videos.** After O32: fetch the recordings from their
   capture runs, upload them unlisted with `video-publish`, then the operator runs
@@ -629,13 +615,16 @@ and stop. One branch is driven green at a time. Lifted only by the operator in t
   **Source**: `.github/workflows/agentic-lib-*.yml`; run 34716604299.
   **Owner**: Claude Code. **Model**: Sonnet. Blocked on the operator lifting the 2026-09-12 halt.
 
-- [ ] **B137. `uniqueReference` identifies the user, not the authentication event.** In the
-  `Gov-Client-Multi-Factor` header, `uniqueReference` is a SHA-256 of `sub + ":" + factorType`, so
-  it is stable per user per factor type by design. HMRC's spec expects a reference identifying the
-  authentication **event**. They have not flagged it and it is no part of the current advisory, so
-  this is a separate reading of the spec rather than a defect they have raised. Decide whether to
-  change it, and note that O28's step 2b touches the same code — sequence it after, not with.
-  **Source**: `../REPORT_HMRC_HEADER_ADVISORIES.md`. **Owner**: Claude Code. **Model**: Sonnet. Blocked on O28 step 2b.
+- [ ] **B34.7. Run and fix the filing suites' sandbox sign-in.** Batch 9 (6957651c) carries
+  the suites' sandbox sign-in with the authenticator step, off by default: `deploy.yml` and
+  `probe-test.yml` run the two filing suites only when the dispatch input
+  `runCompaniesHouseSandboxFiling` is `true`, and the run fails fast naming any of O17's four
+  values that is empty. Against a standing ci set:
+  `gh workflow run probe-test.yml -f environment-name=ci -f deployment-name=<ci-set>
+  -f behaviour-test-suite=changeRegisteredOfficeBehaviour -f runCompaniesHouseSandboxFiling=true`
+  and the same for `changeRegisteredEmailBehaviour`; the first run's screenshots guide any
+  selector fix. **Source**: BACKLOG 34. **Owner**: Claude Code. **Model**: Sonnet.
+  Blocked on O17.
 
 - [ ] **B70.LU15. Licensing: the brand package.** Pin `@diy-accounting-uk/brand`, copy assets
   and tokens at build, import the tokens, delete the local logo, favicon and token copies;
@@ -644,20 +633,30 @@ and stop. One branch is driven green at a time. Lifted only by the operator in t
   Blocked on the brand package existing, now planned in the spreadsheets repository's
   `PLAN_DIYACCOUNTING_BRAND.md`.
 
-- [ ] **O32. View the five walkthrough videos.** After B17v.1: watch each recording and say
-  which can go up and what reads wrong. **Source**: BACKLOG 17b, 17c. **Owner**: Operator.
-  **Model**: none. Blocked on B17v.1.
+- [ ] **B11.T10. ITSA phase 2: the recognition pack.** `PLAN_ITSA_PHASE_2.md` T10:
+  `_developers/hmrc/ITSA_PRODUCTION_APPROVALS_CHECKLIST.md`, an ITSA pass over the two
+  questionnaires, and the two draft emails for the operator to send. One application now covers
+  both approval stages, and the checklist answers for all nine APIs in the minimum functionality
+  standards with a build behind each. **Source**: BACKLOG 11; `PLAN_ITSA_PHASE_2.md` T10.
+  **Owner**: Claude Code, then Operator. **Model**: Haiku. Blocked on B11.T7r, B11.T21 and
+  B11.T22.
 
-- [ ] **O44. Tell Companies House's XML team what B34.6b submitted.** Neal at
-  `xml@companieshouse.gov.uk` reviews test submissions once told they exist. One email from the
-  operator's address naming the submission numbers and the presenter id, with what the sandbox
-  returned. **Source**: BACKLOG 34b; the XML team's email of 2026-09-11. **Owner**: Operator.
-  **Model**: none. Blocked on B34.6b.
-
-- [ ] **O46. Approve the four allow lists.** Each of B80b's PRs prints every author address
-  with its commit count and date range; strike or approve each before merge, because an address
-  on the list is an identity the guard will accept from then on. **Source**: B80's fix.
-  **Owner**: Operator. **Model**: none. Blocked on B80b.
+- [ ] **B11.T9. ITSA phase 2: the DIYA-GL-to-submission path.** `PLAN_ITSA_PHASE_2.md` T9: the
+  MCP tools `derive_itsa_quarterly_update` and `derive_itsa_annual_submission` in the MCP
+  package, and an import control on `annualSubmission.html` that fills the form from a book.
+  The spreadsheets side's T8 design finds the shipped self-employed template cannot source 31
+  of the 55 ITSA field slots, so the derivations omit those fields; this row must send an
+  omission, never a zero, for a field the book does not carry. Two findings from their side carry
+  SED ids and one changes what this row must do: SED-10 says the self-employed field set changes by
+  tax year — `sa103-mtd-mapping.json` records two allowances gone from 2025-26, an adjustment gone
+  from 2026-27 and two fields added — and their `se-derivations.js` reads none of it, so a book for
+  a year past 2024-25 can carry a field HMRC no longer accepts. The figures are year-agnostic; only
+  the field set moves. Either wait for their SED-10 or filter by year on this side, and say which.
+  SED-2 is theirs: fourteen disallowable categories, seven annual fields and four adjustments the
+  shipped template cannot source at all, which arrive omitted rather than zeroed.
+  **Source**: BACKLOG 11; `PLAN_ITSA_PHASE_2.md` T9. **Owner**: Claude Code. **Model**:
+  Sonnet. Blocked on the spreadsheets repository's ITSA-T8 (the two self-employed derivations)
+  and on `PLAN_SUBMISSION_MCP.md` M1.
 
 
 ## Discipline
