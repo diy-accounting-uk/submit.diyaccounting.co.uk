@@ -20,7 +20,7 @@ Compiled 2026-08-25 from every source: GitHub issues (#3 to #20), local plan doc
 
 Queued and in-flight state lives on `NEXT.md`; this block mirrors it so the backlog reads
 truthfully on its own. Human-only steps are briefed at the workspace root in
-`../BRIEF_OPERATOR_RUNBOOK_2026-09-12.md` (updated 2026-09-13); the three
+`../BRIEF_OPERATOR_RUNBOOK_2026-09-12.md` (updated 2026-09-13); the four
 `../BRIEF_OPERATOR_TASKS_*.md` files carry the detail behind its tasks.
 
 - **Four merges on 2026-09-12**: PR #191 (the email hash secret's grant to the four pass Lambdas);

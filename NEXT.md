@@ -35,7 +35,8 @@ standing workflow, not an action the row needs. Within a section, items run by t
 change to committed files, least first (operator, 2026-09-13); a row that changes nothing
 committed — a comment, a run, a scan, a console action — comes before any code. Operator items
 are briefed in `../BRIEF_OPERATOR_RUNBOOK_2026-09-12.md` at the workspace root (updated 2026-09-13),
-with the detail behind each task in the three `../BRIEF_OPERATOR_TASKS_*.md` files.
+with the detail behind each task in the four `../BRIEF_OPERATOR_TASKS_*.md` files
+(`2026-09-13` carries the rows the earlier three do not).
 Every item names its model: the lowest tier that fits (Fable > Opus > Sonnet > Haiku), or
 `none` for a human step.
 
