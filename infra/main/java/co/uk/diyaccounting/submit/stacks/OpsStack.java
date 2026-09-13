@@ -39,6 +39,10 @@ import software.amazon.awscdk.services.iam.ServicePrincipal;
 import software.amazon.awscdk.services.lambda.Function;
 import software.amazon.awscdk.services.lambda.FunctionAttributes;
 import software.amazon.awscdk.services.lambda.IFunction;
+import software.amazon.awscdk.services.logs.FilterPattern;
+import software.amazon.awscdk.services.logs.ILogGroup;
+import software.amazon.awscdk.services.logs.LogGroup;
+import software.amazon.awscdk.services.logs.MetricFilter;
 import software.amazon.awscdk.services.s3.Bucket;
 import software.amazon.awscdk.services.s3.BucketEncryption;
 import software.amazon.awscdk.services.s3.LifecycleRule;
@@ -352,6 +356,107 @@ public class OpsStack extends Stack {
         // ============================================================================
         if (props.baseUrl() != null && !props.baseUrl().isBlank()) {
             createSyntheticCanaries(props);
+        }
+
+        // ============================================================================
+        // Token Charge Unpaid Metric Filters (B128)
+        // ============================================================================
+        // app/services/tokenEnforcement.js logs "Token charge failed after HMRC success" and
+        // swallows the error when a token charge fails after HMRC has already accepted the
+        // submission: the customer keeps the filing but the ledger under-counts the charge.
+        // chargeTokenOnSuccess is called from a shared submit function that either a Lambda's
+        // ingest handler (the no-queue path) or its worker handler (the SQS path) can reach, so
+        // every HMRC submission endpoint that charges a token gets a metric filter on both its
+        // ingest and worker log group here, all incrementing the same Submit/Business metric.
+        // The alarm on that metric lives in ObservabilityStack (env-scoped, see
+        // TokenChargeUnpaidAlarm), the same split HmrcSubmissionFailureAlarm and
+        // ItsaSubmissionFailureAlarm use for their EMF metrics, so every deployment's metric
+        // filters feed one alarm that dedupes to a single open GitHub issue per environment.
+        record TokenChargeSource(String label, String functionName) {}
+        List<TokenChargeSource> tokenChargeSources = List.of(
+                new TokenChargeSource(
+                        "VatReturnPostIngest", props.sharedNames().hmrcVatReturnPostIngestLambdaFunctionName),
+                new TokenChargeSource(
+                        "VatReturnPostWorker", props.sharedNames().hmrcVatReturnPostWorkerLambdaFunctionName),
+                new TokenChargeSource(
+                        "ItsaFinalDeclarationPostIngest",
+                        props.sharedNames().hmrcItsaFinalDeclarationPostIngestLambdaFunctionName),
+                new TokenChargeSource(
+                        "ItsaFinalDeclarationPostWorker",
+                        props.sharedNames().hmrcItsaFinalDeclarationPostWorkerLambdaFunctionName),
+                new TokenChargeSource(
+                        "ItsaLossesAndClaimsPutIngest",
+                        props.sharedNames().hmrcItsaLossesAndClaimsPutIngestLambdaFunctionName),
+                new TokenChargeSource(
+                        "ItsaLossesAndClaimsPutWorker",
+                        props.sharedNames().hmrcItsaLossesAndClaimsPutWorkerLambdaFunctionName),
+                new TokenChargeSource(
+                        "ItsaLossesAndClaimsDeleteIngest",
+                        props.sharedNames().hmrcItsaLossesAndClaimsDeleteIngestLambdaFunctionName),
+                new TokenChargeSource(
+                        "ItsaLossesAndClaimsDeleteWorker",
+                        props.sharedNames().hmrcItsaLossesAndClaimsDeleteWorkerLambdaFunctionName),
+                new TokenChargeSource(
+                        "ItsaSelfEmploymentPeriodPutIngest",
+                        props.sharedNames().hmrcItsaSelfEmploymentPeriodPutIngestLambdaFunctionName),
+                new TokenChargeSource(
+                        "ItsaSelfEmploymentPeriodPutWorker",
+                        props.sharedNames().hmrcItsaSelfEmploymentPeriodPutWorkerLambdaFunctionName),
+                new TokenChargeSource(
+                        "ItsaUkPropertyPeriodPutIngest",
+                        props.sharedNames().hmrcItsaUkPropertyPeriodPutIngestLambdaFunctionName),
+                new TokenChargeSource(
+                        "ItsaUkPropertyPeriodPutWorker",
+                        props.sharedNames().hmrcItsaUkPropertyPeriodPutWorkerLambdaFunctionName),
+                new TokenChargeSource(
+                        "ItsaSelfEmploymentAnnualPutIngest",
+                        props.sharedNames().hmrcItsaSelfEmploymentAnnualPutIngestLambdaFunctionName),
+                new TokenChargeSource(
+                        "ItsaSelfEmploymentAnnualPutWorker",
+                        props.sharedNames().hmrcItsaSelfEmploymentAnnualPutWorkerLambdaFunctionName),
+                new TokenChargeSource(
+                        "ItsaUkPropertyAnnualPutIngest",
+                        props.sharedNames().hmrcItsaUkPropertyAnnualPutIngestLambdaFunctionName),
+                new TokenChargeSource(
+                        "ItsaUkPropertyAnnualPutWorker",
+                        props.sharedNames().hmrcItsaUkPropertyAnnualPutWorkerLambdaFunctionName),
+                new TokenChargeSource(
+                        "ItsaSelfEmploymentPeriodPostIngest",
+                        props.sharedNames().hmrcItsaSelfEmploymentPeriodPostIngestLambdaFunctionName),
+                new TokenChargeSource(
+                        "ItsaSelfEmploymentPeriodPostWorker",
+                        props.sharedNames().hmrcItsaSelfEmploymentPeriodPostWorkerLambdaFunctionName),
+                new TokenChargeSource(
+                        "ItsaTaxLiabilityAdjustmentsPutIngest",
+                        props.sharedNames().hmrcItsaTaxLiabilityAdjustmentsPutIngestLambdaFunctionName),
+                new TokenChargeSource(
+                        "ItsaTaxLiabilityAdjustmentsPutWorker",
+                        props.sharedNames().hmrcItsaTaxLiabilityAdjustmentsPutWorkerLambdaFunctionName),
+                new TokenChargeSource(
+                        "ItsaTaxLiabilityAdjustmentsDeleteIngest",
+                        props.sharedNames().hmrcItsaTaxLiabilityAdjustmentsDeleteIngestLambdaFunctionName),
+                new TokenChargeSource(
+                        "ItsaTaxLiabilityAdjustmentsDeleteWorker",
+                        props.sharedNames().hmrcItsaTaxLiabilityAdjustmentsDeleteWorkerLambdaFunctionName),
+                new TokenChargeSource(
+                        "ItsaUkPropertyPeriodPostIngest",
+                        props.sharedNames().hmrcItsaUkPropertyPeriodPostIngestLambdaFunctionName),
+                new TokenChargeSource(
+                        "ItsaUkPropertyPeriodPostWorker",
+                        props.sharedNames().hmrcItsaUkPropertyPeriodPostWorkerLambdaFunctionName));
+
+        for (TokenChargeSource source : tokenChargeSources) {
+            ILogGroup lambdaLogGroup = LogGroup.fromLogGroupName(
+                    this, "TokenChargeUnpaid" + source.label() + "LogGroup", "/aws/lambda/" + source.functionName());
+            MetricFilter.Builder.create(this, "TokenChargeUnpaid" + source.label() + "MetricFilter")
+                    .logGroup(lambdaLogGroup)
+                    .filterPattern(
+                            FilterPattern.literal("{ $.message = \"Token charge failed after HMRC success\" }"))
+                    .metricNamespace("Submit/Business")
+                    .metricName("TokenChargeUnpaid")
+                    .metricValue("1")
+                    .defaultValue(0)
+                    .build();
         }
 
         // ============================================================================
