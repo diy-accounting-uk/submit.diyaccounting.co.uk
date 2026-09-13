@@ -48,10 +48,11 @@ indistinguishable from not having looked.
 backlog's Tier 1, deduplicated (a NEXT.md item that is also a tier 1 row gets one
 combined row). Columns:
 
-| # | Item | Tier | State | Needs | Size | Model | Status | GH issue |
+| # | Item | Tier | State | Where | Needs | Size | Model | Status | GH issue |
 
-Rows run in board order: **machine-only, then human and machine, then human-only, then
-blocked**. Within a group, rows run by tier, an alarm or a pipeline failure counting as
+Rows run in board order: **in-flight rows first, whatever their class, at the top of the
+table**, then **machine-only, then human and machine, then human-only, then blocked**. Within
+a group, rows run by tier, an alarm or a pipeline failure counting as
 tier 1 whether or not a backlog row carries it, then the untiered; within a tier, the rows
 that can start run by the size of the change, fewest files first, read from `Size` (a row
 without a count follows the counted ones); equal sizes keep
@@ -65,10 +66,18 @@ without a count follows the counted ones); equal sizes keep
   standing) is `T1` whether or not a backlog row carries it. Any other item tracked only
   on `NEXT.md` gets `—`, exactly as an item without a GitHub issue does; `NEXT` is where
   things are tracked, not a tier.
-- `State`: exactly one word — `in-flight` (being worked right now), `ready` (nothing
-  prevents starting it, whoever the owner is), or `blocked` (waiting on a date, a
-  prerequisite item, or a decision not yet made). Operator-owned work that could
-  start today is `ready`, not `blocked`.
+- `State`: exactly one word — `in-flight`, `ready` (nothing prevents starting it, whoever
+  the owner is), or `blocked` (waiting on a date, a prerequisite item, or a decision not yet
+  made). Operator-owned work that could start today is `ready`, not `blocked`.
+
+  `in-flight` means evidence of work in motion, checked this render: an agent working the row
+  now (a worktree with its branch), the row's change on a branch or an open pull request not
+  yet on `main` (here or in a sibling repository), or a run the row waits on in progress (a
+  deploy, a capture, a drill). A row whose change is on `main` and waits only for a passive
+  event (a scheduled run, the next nightly) is `ready` with that remainder, not in flight.
+- `Where`: for an in-flight row, the branch, the pull request and any running run, in that
+  order (`claude/vat-view-entitlement, PR #202, deploy 34784881334`); for any other row `—`.
+  Read from `git worktree list`, `gh pr list` and `gh run list`, never from the row's prose.
 - `Needs`: exactly one of `machine-only`, `human and machine`, `human-only` — what it
   takes to carry the row to completion, not who happens to own it now. `human-only` is
   work no session can do: an external registration, a console action with no API, a
@@ -87,8 +96,8 @@ without a count follows the counted ones); equal sizes keep
   the lowest that fits; `operator` for a `human-only` row; `—` when not yet chosen.
 - `Status`: an annotation, not a paragraph — one clause, 12 words or fewer, current
   as of this render. Date-gated items name the date; blocked items name the blocker;
-  in-flight items name the current step only. The full narrative lives in `NEXT.md`,
-  never in this column.
+  in-flight items name the current step only (their branch and PR are in `Where`). The full
+  narrative lives in `NEXT.md`, never in this column.
 - `GH issue`: only when the backlog Source column cites one (`Issue #18` → `#18`),
   else `—`.
 
@@ -180,17 +189,18 @@ the end) gets a note in `Action`: rename before its next push.
 - No commentary beyond the table, the lists, and that closing line, unless something
   in the session materially changed an item since the files were last written — then
   one sentence per such item, after the lists.
-- **Keep `NEXT.md` in board order.** Its open items sit under four headings in this
-  sequence: `## Machine-only`, `## Human and machine`, `## Human-only`, `## Blocked`
-  (each blocked entry naming its blocker, and ordered inside that section by the same
-  three classes). The heading is where the classification lives, so a row carries no
-  separate tag and cannot drift from its section. Within a heading, items run by tier
-  exactly as Part 1's rows do: tier 1 first, alarms and pipeline failures counting as
-  tier 1, the untiered last, within a tier by size (fewest files first), equal sizes in
-  their existing order. Before rendering, move
-  any item whose class, state or tier position no longer matches (a row whose human half
-  is done moves up to `## Machine-only`; a row that gained a blocker moves down to
-  `## Blocked`; a new alarm or pipeline item goes to the top of its section).
+- **Keep `NEXT.md` in board order.** Its open items sit under five headings in this
+  sequence: `## In flight`, `## Machine-only`, `## Human and machine`, `## Human-only`,
+  `## Blocked` (each blocked entry naming its blocker, and ordered inside that section by
+  the same three classes). `## In flight` is first and holds every in-flight row, each
+  naming its branch, pull request and running run in its text; it is also where
+  `/cool-down` writes its marker. The heading is where the classification lives, so a row
+  carries no separate tag and cannot drift from its section. Within a heading, items run
+  exactly as Part 1's rows do. Before rendering, move any item whose class, state or
+  position no longer matches (a row whose branch merged leaves `## In flight` for its
+  class's section with its remainder, or leaves the file; a row whose human half is done
+  moves up to `## Machine-only`; a row that gained a blocker moves down to `## Blocked`; a
+  new alarm or pipeline item goes to the top of its section).
   That move is part of the write-back below.
 - **Every alarm family has a home on `NEXT.md`.** A family whose action is `close as stale`
   or `close as superseded` joins the operator item that lists issues to close (create it if
