@@ -11,9 +11,10 @@ concurrency:
 on:
   workflow_dispatch: {}
   schedule:
-    # Every Monday at 06:00 UTC. Only reads the stored refresh token and the channel it
+    # Weekly on Monday, off the top-of-hour queue and after compliance/certificate-check/
+    # stack-drift (06:06/06:17/06:36). Only reads the stored refresh token and the channel it
     # resolves to; never uploads anything.
-    - cron: '0 6 * * 1'
+    - cron: '46 6 * * 1'
 
 env:
   NODE_VERSION: '24'
