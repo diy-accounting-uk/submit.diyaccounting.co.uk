@@ -245,7 +245,7 @@ public class BackupStack extends Stack {
         // ============================================================================
 
         // AWSBackupServiceRolePolicyForBackup and ...ForRestores cover the DynamoDB tables in
-        // the selection below; the books S3 bucket also in that selection needs its own pair,
+        // the selection below; the diya-gl S3 bucket also in that selection needs its own pair,
         // without which AWS Backup answers "does not have permission to describe resource" for
         // the bucket and the nightly job fails.
         Role backupRole = Role.Builder.create(this, props.resourceNamePrefix() + "-BackupRole")
@@ -362,10 +362,6 @@ public class BackupStack extends Stack {
         ITable passesTable = importTable("ImportedPassesTable", props.sharedNames().passesTableName);
         ITable subscriptionsTable =
                 importTable("ImportedSubscriptionsTable", props.sharedNames().subscriptionsTableName);
-        String booksBucketArn = "arn:aws:s3:::" + props.sharedNames().booksBucketName;
-        // Added beside booksBucketArn, not replacing it - see PLAN_DIYA_GL_NAMING.md's copy
-        // sequence. Both buckets stay in the selection at once until the sequence's later steps
-        // move the DIYA-GL Lambdas over and the old bucket is removed.
         String diyaGlBucketArn = "arn:aws:s3:::" + props.sharedNames().diyaGlBucketName;
 
         BackupSelection.Builder.create(this, props.resourceNamePrefix() + "-CriticalTablesSelection")
@@ -377,7 +373,6 @@ public class BackupStack extends Stack {
                         BackupResource.fromDynamoDbTable(hmrcApiRequestsTable),
                         BackupResource.fromDynamoDbTable(passesTable),
                         BackupResource.fromDynamoDbTable(subscriptionsTable),
-                        BackupResource.fromArn(booksBucketArn),
                         BackupResource.fromArn(diyaGlBucketArn)))
                 .backupSelectionName(props.resourceNamePrefix() + "-critical-tables")
                 .build();
