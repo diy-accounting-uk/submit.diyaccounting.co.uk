@@ -45,9 +45,8 @@ Every item names its model: the lowest tier that fits (Fable > Opus > Sonnet > H
   The `itsa-quarterly-update` capture (run 34774550386) stalled on the dashboard defect PR #201
   fixed; the three `itsa-business-details` captures on `ci-vatview` (runs 34790185457,
   34790343028, 34790629770) failed on browser errors and the scene fix sits on local branch
-  `claude/b30-videos` (182acf07, worktree `.claude/worktrees/b30-videos`); no ci set stands, so
-  both ci captures need a fresh ci deploy of `main`
-  (`gh workflow run deploy.yml -f environment-name=ci -f deployment-name=<name>`).
+  `claude/b31-board` (dd45a7bb, PR #209); both ci captures run against that branch's ci set once
+  deploy 34842572647 stands, dispatched with `--ref claude/b31-board`.
   Then check all five artifacts and write `videos/publish.json`, replacing the 2026-09-07
   `itsa-business-details` entry. Two things the scripts could not settle: the quarterly-update
   script stops with the form filled except `businessId` (only known at run time), and
@@ -68,6 +67,16 @@ Every item names its model: the lowest tier that fits (Fable > Opus > Sonnet > H
   with its commit count and date range for O46's review. The check fails the PR, matching submit,
   rather than reporting non-blocking.
   **Source**: B80's fix. **Owner**: Claude Code. **Model**: Haiku per repository. **Size**: ~12 files.
+
+- [ ] **B34.6b. Companies House accounts filing: the sandbox proof.** Submission 000004 (presenter
+  E0000052288, company 06846849, 2026-09-13 19:04 UTC) was ACCEPTED by the XML Gateway test
+  service; every `GetSubmissionStatus` poll for it answers 9999 "No presenter ID supplied". Since
+  PR #207 the status poll logs the redacted request and response XML. Left: poll 000004 once on
+  PR #209's ci set (deploy 34842572647, branch `claude/b31-board`) and read what the gateway
+  saw; O44 asks Companies
+  House in parallel. The `prod` listing (held as unreferenced local commit 946251d4) waits on a
+  poll that returns a status. **Source**: BACKLOG 34b. **Owner**: Claude Code. **Model**: Sonnet.
+  **Size**: no committed files.
 
 ## Machine-only
 
@@ -116,16 +125,6 @@ Every item names its model: the lowest tier that fits (Fable > Opus > Sonnet > H
   `logout()` awaits `window.envReady` unconditionally, which throws on a page that never loads
   `submit.js` (the agent's finding, unfixed). **Source**: operator, 2026-09-13. **Owner**: Claude
   Code. **Model**: Sonnet. **Size**: ~1 file.
-
-- [ ] **B34.6b. Companies House accounts filing: the sandbox proof.** Submission 000004 (presenter
-  E0000052288, company 06846849, 2026-09-13 19:04 UTC) was ACCEPTED by the XML Gateway test
-  service; every `GetSubmissionStatus` poll for it answers 9999 "No presenter ID supplied". Since
-  PR #207 the status poll logs the redacted request and response XML. Left: deploy a ci set from
-  `main` (`gh workflow run deploy.yml -f environment-name=ci -f deployment-name=<name>`; none
-  stands), poll 000004 once on it and read what the gateway saw; O44 asks Companies
-  House in parallel. The `prod` listing (held as unreferenced local commit 946251d4) waits on a
-  poll that returns a status. **Source**: BACKLOG 34b. **Owner**: Claude Code. **Model**: Sonnet.
-  **Size**: no committed files.
 
 - [ ] **O28. Send `Gov-Client-Multi-Factor` on every request: mandate MFA in the pool.** Every
   monthly advisory HMRC has raised is this header missing (`../REPORT_HMRC_HEADER_ADVISORIES.md`).
