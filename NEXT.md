@@ -18,10 +18,9 @@ PR; the operator merges.
 
 **Prod runs deployment prod-658f986** (PR #209's merge, batch b31, promoted 15:30 UTC on 2026-09-14
 by run 34856840995, which destroyed `prod-b364438`); the only prod set.
-**ci at 19:25 UTC**: `ci-claudd2cf` (PR #213's deploy, run 34882930296, green) is
-last-known-good; it self-destructs at 22:52 UTC. PR #213 merged at 19:23 UTC (ca7ced13) and
-`main`'s deploy (run 34886597393) is creating the next prod set. Batch b32 (`claude/b32-board`,
-worktree `.claude/worktrees/b32`) is the open batch: B34.6b, B161, B158, B160, B155.
+**ci at 20:40 UTC**: `ci-claudd2cf` (last-known-good) self-destructs at 22:52 UTC. Batch b32
+merged as PR #214 (bd664fed) at 20:38 UTC; its deploy created the next prod set. B34.6b's poll is
+the only b32 item left open, below.
 
 The board runs in five sections, in this order: **in flight** (a branch, a pull request or a run
 in motion, each named in the row), **machine-only**, **human and machine**, **human-only**,
@@ -113,16 +112,6 @@ Every item names its model: the lowest tier that fits (Fable > Opus > Sonnet > H
   end the run green with a "deferred to the deploy's probes" summary. **Source**:
   REPORT_SESSION_o+o5Wl_2026-09-14.md. **Owner**: Claude Code. **Model**: Sonnet. **Size**: ~1 file.
 
-- [ ] **B160. `video-capture.yml` records against the apex when the named ci set serves it.**
-  Three captures on 2026-09-14 (runs 34847383246, 34849517903, 34850667197) were dispatched
-  with `deployment-name=ci-claud3123`: the browser signed in on
-  `https://ci-claud3123.submit.diyaccounting.co.uk/`, Cognito's `redirect_uri` is the ci apex,
-  and the OAuth state stored on the first origin was absent on the second ("OAuth state
-  mismatch", `hasStoredState: false`). When the named set is the environment's last-known-good
-  (the apex's target), set `DIY_SUBMIT_BASE_URL` to the apex; otherwise fail the run at the
-  params job naming the mismatch. **Source**: REPORT_SESSION_o+o5Wl_2026-09-14.md; B17v.1 carries
-  the recordings themselves. **Owner**: Claude Code. **Model**: Sonnet. **Size**: ~1 file.
-
 - [ ] **B154. `youtube-check.yml` compares channel handles case-sensitively.** Its first
   scheduled run (34848766784, 13:21 UTC on 2026-09-14) failed: the stored refresh token resolves
   to `@diyaccountingsubmit`, `google/youtube.toml` declares `@DIYAccountingSubmit`, and
@@ -164,15 +153,6 @@ Every item names its model: the lowest tier that fits (Fable > Opus > Sonnet > H
   design). **Source**: `PLAN_ONE_STOP_DASHBOARD.md` D7, D13, D14, D15. Closes #208. **Owner**:
   Claude Code. **Model**: Sonnet. **Size**: ~3 files.
 
-- [ ] **B155. `video-capture.yml` prints the capture lane's password and TOTP secret in its log.**
-  The `Record <script>` step's `env:` block echoes `TEST_AUTH_PASSWORD` and `TEST_AUTH_TOTP_SECRET`
-  unmasked (run 34850667197, 13:42 UTC on 2026-09-14) because they come from a step output, which
-  GitHub does not mask. The lane's user is rotated per run and native auth is disabled after, so
-  the exposure is the run's own window, in a public repository's log. Emit `::add-mask::` for both
-  values in the step that produces them (the `cognito-test-user` step or its script), and check
-  `probe-test.yml` and `deploy.yml` for the same pattern. **Source**: run 34850667197. **Owner**:
-  Claude Code. **Model**: Haiku. **Size**: ~2 files.
-
 - [ ] **B157. One alarm transition opened two issues.** #210 and #212 carry the same alarm
   (`prod-env-github-probe-failed`), state change and timestamp (15:26:00.881 UTC on 2026-09-14).
   `app/functions/ops/alarmToGithubIssue.js` dedupes by a GitHub search for an open issue with the
@@ -183,23 +163,6 @@ Every item names its model: the lowest tier that fits (Fable > Opus > Sonnet > H
   concurrency to 1. Both issues are closed (the probe failure was the deploy's apex move).
   **Source**: issues #210, #212. **Owner**:
   Claude Code. **Model**: Sonnet. **Size**: ~2 files.
-
-- [ ] **B161. `NEXT.md` keeps its five headings, checked.** Two row edits on 2026-09-14 sliced
-  from one row's start to the next row's start and swallowed `## Machine-only` and
-  `## Human and machine` between them; the file carried the wrong shape for three commits. Add
-  a unit test under `app/unit-tests/` that `NEXT.md` carries `## In flight`, `## Machine-only`,
-  `## Human and machine`, `## Human-only` and `## Blocked` once each, in that order, and have
-  the `/board` skill's write-back run it before committing. **Source**:
-  REPORT_SESSION_o+o5Wl_2026-09-14.md. **Owner**: Claude Code. **Model**: Haiku. **Size**: ~2 files.
-
-- [ ] **B158. `/auto-merge` and `/watch` gate on push and pull_request runs only.** Twice on
-  2026-09-14 a `workflow_dispatch` recording run (`video-capture`) on PR #209's head read as a
-  failed check: the auto-merge gate reads every workflow with a run on the head SHA, and
-  `scripts/watch-ci.sh`'s readiness probe groups by workflow the same way. Both should gate on
-  runs whose `event` is `push` or `pull_request` and report the others without counting them.
-  `.claude/skills/auto-merge/SKILL.md` Part 4, `.claude/skills/watch/SKILL.md`,
-  `scripts/watch-ci.sh` (`gh run list --json event`). **Source**: REPORT_SESSION_o+o5Wl_2026-09-14.md.
-  **Owner**: Claude Code. **Model**: Haiku. **Size**: ~3 files.
 
 ## Human and machine
 
