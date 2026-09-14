@@ -54,8 +54,12 @@ while true; do
       [ -z "$num" ] && continue
       runs=$(latest_runs "$br")
       [ -z "$runs" ] && continue
+      # All latest runs must be on the PR's current head commit
+      total=$(echo "$runs" | jq 'length')
+      on_head=$(echo "$runs" | jq '[.[] | select(.headSha == "'"$sha"'")] | length')
+      # No runs are red/failed
       ok=$(echo "$runs" | jq '[.[] | select(.status != "completed" or .conclusion == "failure" or .conclusion == "timed_out" or .conclusion == "action_required" or .conclusion == "startup_failure")] | length')
-      if [ "$ok" -eq 0 ] && ! grep -q "^$num $sha$" "$READY"; then
+      if [ "$on_head" -eq "$total" ] && [ "$ok" -eq 0 ] && ! grep -q "^$num $sha$" "$READY"; then
         echo "$num $sha" >> "$READY"
         echo "MERGEABLE #$num $br ($sha)"
       fi

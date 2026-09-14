@@ -101,6 +101,12 @@ the first characters after `claude/`, so they carry the distinction: `claude/ltd
 or a series number at the end (`claude/a-few-batches-1`,
 `claude/consistent-preamble-hiding-specificity`).
 
+## A direct question gets its answer as the whole reply
+
+When the operator asks a question, answer it in a reply that ends the turn, with every link and
+command in full. Resume the work in the next turn. The operator's client shows only a summary of a
+running turn, so an answer given inside one never reaches them.
+
 ## Test Commands
 
 Run in sequence to verify code works:

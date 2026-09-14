@@ -103,7 +103,13 @@
           "action": "click",
           "target": { "role": "button", "name": "Self Assessment (HMRC)" },
           "expectsNavigation": true,
-          "caption": "Open Self Assessment to ask HMRC about your businesses."
+          "caption": "Making Tax Digital for Income Tax starts from one dashboard."
+        },
+        { "action": "await", "until": "#businessPickerForm", "label": "Opening the ITSA dashboard" },
+        {
+          "action": "click",
+          "target": { "role": "link", "name": "Go to Business Details" },
+          "caption": "Business Details is the first step: which businesses does HMRC know about?"
         },
         { "action": "await", "until": "#itsaBusinessDetailsForm", "label": "Opening the business details form" },
         {

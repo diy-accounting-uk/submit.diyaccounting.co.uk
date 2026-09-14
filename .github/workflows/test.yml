@@ -156,6 +156,14 @@ jobs:
             -ignore 'bool value cannot be assigned' \
             .github/workflows/*.yml
 
+      - name: Setup Node
+        uses: actions/setup-node@v7
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+
+      - name: Validate nested workflow_call permissions
+        run: node scripts/check-workflow-permissions.mjs
+
   lint-js:
     name: 'eslint'
     runs-on: ubuntu-24.04

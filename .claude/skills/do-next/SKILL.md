@@ -139,6 +139,10 @@ A fresh agent carries none of your context, so the brief stands alone. Every bri
 - **Its worktree path and branch**, and that it works only there. It may `git add` its own files
   and commit. Never `git stash`, `git reset`, `git checkout --` or `git clean`. Never push, never
   open a PR, never edit `NEXT.md`.
+- **Every Bash call starts with `cd <worktree>` or uses `git -C <worktree>`**, because a shell that
+  starts in the primary checkout edits `main` and leaves work uncommitted there.
+- **A wait is a `sleep` loop inside one Bash call with a timeout**, never a Monitor or a backgrounded
+  wait, because an agent that hands its wait to a Monitor ends its turn and never resumes.
 - **What it owns and what it must not touch**, with the reason. Where another agent in the same
   wave is nearby, name it.
 - **The evidence, not just the task.** Paste the run ids, the log lines, the timestamps. An agent
@@ -189,6 +193,13 @@ Merge each workstream as its notification arrives. Do not hold them for the end.
 - `git merge --squash <agent-branch>` into the batch worktree, then one commit naming the item:
   one commit per task on the batch, the agent's fixing commits folded into the task they fix.
   Keep the agent's commit message body where it explains the why.
+
+  To rebuild a batch whose fixing commits landed after their tasks (interactive git is not
+  available here, so `git rebase -i --autosquash` is out): make a new branch from the batch's
+  base, `git cherry-pick -n` each task's commits in order, commit once per task, then move the
+  batch branch to the result. Batch b30 was rebuilt this way with 19 cherry-picks.
+  `git rebase -i --autosquash <base>` on an unpushed batch branch is a command the operator may
+  choose to allow in `.claude/settings.json`; that allowlist is theirs.
 - Run that change's blast radius on the merged tree, not the agent's own report.
 - Update `NEXT.md` on `main` in the same breath: mark the item code complete, and remove it only
   once its checks pass. A bug the agent surfaced is that item's remainder, not a new item, unless
