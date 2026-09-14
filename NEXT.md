@@ -18,9 +18,10 @@ PR; the operator merges.
 
 **Prod runs deployment prod-658f986** (PR #209's merge, batch b31, promoted 15:30 UTC on 2026-09-14
 by run 34856840995, which destroyed `prod-b364438`); the only prod set.
-**ci at 19:00 UTC**: `ci-claudd2cf` is being created by PR #213's deploy (run 34882930296,
-eight stacks CREATE_IN_PROGRESS since 18:52 UTC); last-known-good is None until its probes pass;
-the set self-destructs at 22:52 UTC. Batch b32 (`claude/b32-board`) is the open batch.
+**ci at 19:25 UTC**: `ci-claudd2cf` (PR #213's deploy, run 34882930296, green) is
+last-known-good; it self-destructs at 22:52 UTC. PR #213 merged at 19:23 UTC (ca7ced13) and
+`main`'s deploy (run 34886597393) is creating the next prod set. Batch b32 (`claude/b32-board`,
+worktree `.claude/worktrees/b32`) is the open batch: B34.6b, B161, B158, B160, B155.
 
 The board runs in five sections, in this order: **in flight** (a branch, a pull request or a run
 in motion, each named in the row), **machine-only**, **human and machine**, **human-only**,
@@ -74,14 +75,6 @@ Every item names its model: the lowest tier that fits (Fable > Opus > Sonnet > H
   parallel and can cite the 13:12:48 transaction. The `prod` listing (held as unreferenced local
   commit 946251d4) waits on a poll that returns a status. **Source**: BACKLOG 34b. **Owner**:
   Claude Code. **Model**: Sonnet. **Size**: ~1 file.
-
-- [ ] **B162. A ci set self-destructs after 4 hours by default.** `deploy.yml`'s
-  `selfDestructDelayHours` default and env fallback move from 2 to 4 so a batch's second wave
-  (captures, sandbox polls, a lean-deployed experiment) still has the set the first wave's deploy
-  created. Folded into batch b32 (`claude/b32-board`, worktree `.claude/worktrees/b32`, 335f6df1) by the
-  operator's instruction of 2026-09-14 19:00 UTC; PR #213 closes when the batch PR opens. Its own
-  deploy (run 34882930296) is creating `ci-claudd2cf`, the set B34.6b's proof uses.
-  **Source**: operator, 2026-09-14. **Owner**: Claude Code. **Model**: Haiku. **Size**: ~3 files.
 
 ## Machine-only
 
