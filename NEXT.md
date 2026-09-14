@@ -18,9 +18,9 @@ PR; the operator merges.
 
 **Prod runs deployment prod-658f986** (PR #209's merge, batch b31, promoted 15:30 UTC on 2026-09-14
 by run 34856840995, which destroyed `prod-b364438`); the only prod set.
-**ci at 20:40 UTC**: `ci-claudd2cf` (last-known-good) self-destructs at 22:52 UTC. Batch b32
-merged as PR #214 (bd664fed) at 20:38 UTC; its deploy created the next prod set. B34.6b's poll is
-the only b32 item left open, below.
+**ci**: `ci-claudd2cf` is last-known-good and self-destructs at 22:52 UTC. PR #214 (bd664fed)
+merged 20:38 UTC; `main`'s deploy (run 34891994316) is creating the next prod set. B34.6b's poll
+is the only b32 item left open.
 
 The board runs in five sections, in this order: **in flight** (a branch, a pull request or a run
 in motion, each named in the row), **machine-only**, **human and machine**, **human-only**,
@@ -61,6 +61,22 @@ Every item names its model: the lowest tier that fits (Fable > Opus > Sonnet > H
   `itsa-business-details.json` may no longer pass since the activity's first page is
   `dashboard.html`. **Source**: BACKLOG 17b, 17c. **Owner**: Claude Code. **Model**: Sonnet. **Size**: ~1 file.
 
+## Machine-only
+
+- [ ] **B52v. The 5xx behind the operator dashboard's first open.** The sign-in path is on
+  `main` (82ea7ab8, PR #209) and reaches prod with 658f986e's deploy (run 34856840995): the activity is listed for a signed-in operator, the denial names
+  the pass, the page uses the shared header and returns to itself after sign-in. The 5xx of 23:38
+  UTC on 2026-09-13 (issues #204 `prod-e371587-app-api-5xx` and #203
+  `operator-snapshot-get-log-errors`) is not reproduced: that deployment's logs are gone,
+  `prod-b364438`'s `operator-snapshot-get` log group has no events, the Lambda's role holds
+  `dynamodb:Query` on `prod-env-bundles` and `s3:GetObject` on `snapshots/prod/*`, and the
+  object exists. Left: read `/aws/lambda/prod-<set>-app-operator-snapshot-get` after B52z's
+  attempt on `prod-658f986` and fix what it logs; both issues close then. `auth-status.js`'s
+  `logout()` awaits `window.envReady` unconditionally, which throws on a page that never loads
+  `submit.js` (the agent's finding, unfixed). **Source**: operator, 2026-09-13. **Owner**: Claude
+  Code. **Model**: Sonnet. **Size**: ~1 file.
+
+
 - [ ] **B34.6b. Companies House accounts filing: the sandbox proof.** Submission 000004 (presenter
   E0000052288, company 06846849, 2026-09-13 19:04 UTC) was ACCEPTED by the XML Gateway test
   service; every `GetSubmissionStatus` poll for it answers 9999 "No presenter ID supplied", the
@@ -80,22 +96,6 @@ Every item names its model: the lowest tier that fits (Fable > Opus > Sonnet > H
   cite both transactions to Companies House. O44 asks Companies House in parallel and can cite the
   13:12:48 transaction (1789391567972). **Source**: BACKLOG 34b. **Owner**: Claude Code.
   **Model**: Sonnet. **Size**: ~1 file.
-
-## Machine-only
-
-- [ ] **B52v. The 5xx behind the operator dashboard's first open.** The sign-in path is on
-  `main` (82ea7ab8, PR #209) and reaches prod with 658f986e's deploy (run 34856840995): the activity is listed for a signed-in operator, the denial names
-  the pass, the page uses the shared header and returns to itself after sign-in. The 5xx of 23:38
-  UTC on 2026-09-13 (issues #204 `prod-e371587-app-api-5xx` and #203
-  `operator-snapshot-get-log-errors`) is not reproduced: that deployment's logs are gone,
-  `prod-b364438`'s `operator-snapshot-get` log group has no events, the Lambda's role holds
-  `dynamodb:Query` on `prod-env-bundles` and `s3:GetObject` on `snapshots/prod/*`, and the
-  object exists. Left: read `/aws/lambda/prod-<set>-app-operator-snapshot-get` after B52z's
-  attempt on `prod-658f986` and fix what it logs; both issues close then. `auth-status.js`'s
-  `logout()` awaits `window.envReady` unconditionally, which throws on a page that never loads
-  `submit.js` (the agent's finding, unfixed). **Source**: operator, 2026-09-13. **Owner**: Claude
-  Code. **Model**: Sonnet. **Size**: ~1 file.
-
 - [ ] **B156. The alarm-triage skip comment runs `gh` without a repository.** Run 34862119217
   (15:26 UTC on 2026-09-14, issue #212) failed at "Comment that triage was skipped": the `triage`
   job has no checkout, so `gh issue comment` (`.github/workflows/alarm-triage.yml:94`) cannot infer
