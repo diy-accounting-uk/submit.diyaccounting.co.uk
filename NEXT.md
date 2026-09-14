@@ -38,28 +38,14 @@ Every item names its model: the lowest tier that fits (Fable > Opus > Sonnet > H
 
 ## In flight
 
-- [ ] **B17v.1. Capture the five walkthrough videos.** The three prod captures are done
-  (`view-liabilities` run 34651931632, `view-payments` 34689643435, `view-penalties` 34689889022).
-  The `itsa-quarterly-update` capture (run 34774550386) stalled on the dashboard defect PR #201
-  fixed; the three `itsa-business-details` captures on `ci-vatview` (runs 34790185457,
-  34790343028, 34790629770) failed on browser errors and the scene fix is on `main` (658f986e,
-  PR #209). The three prod recordings are checked and in `videos/publish.json` on local branch
-  `claude/b31-videos` (c5d394b4, unpushed, worktree `.claude/worktrees/b31-videos`). The three ci
-  captures of 2026-09-14 (runs 34847383246, 34849517903,
-  34850667197, all `-f deployment-name=ci-claud3123`) died on the sign-in return: the browser
-  started login on `https://ci-claud3123.submit.diyaccounting.co.uk/`, Cognito's `redirect_uri`
-  is the apex `https://ci-submit.diyaccounting.co.uk/`, and the OAuth state stored on the first
-  origin is absent on the second ("OAuth state mismatch", `hasStoredState: false`). Re-dispatch
-  each without `deployment-name`, so the base URL is the apex the set serves:
-  `gh workflow run video-capture.yml --ref main -f script=<script> -f environment-name=ci`,
-  against a standing ci set (`ci-claud824f` until 23:40 UTC on 2026-09-14, then a fresh
-  `deploy.yml` dispatch); then replace the 2026-09-07 `itsa-business-details` entry and add
-  `itsa-quarterly-update` to the manifest.
-  Then check all five artifacts and write `videos/publish.json`, replacing the 2026-09-07
-  `itsa-business-details` entry. Two things the scripts could not settle: the quarterly-update
-  script stops with the form filled except `businessId` (only known at run time), and
-  `itsa-business-details.json` may no longer pass since the activity's first page is
-  `dashboard.html`. **Source**: BACKLOG 17b, 17c. **Owner**: Claude Code. **Model**: Sonnet. **Size**: ~1 file.
+- [ ] **B17v.1. Capture the five walkthrough videos.** All five recordings are checked and in
+  `videos/publish.json` on `claude/b31-videos` (296db202, PR #215): the three prod captures
+  (`view-liabilities` run 34651931632, `view-payments` 34689643435, `view-penalties` 34689889022)
+  and the two ITSA sandbox previews recorded against ci's apex from `main`
+  (`itsa-business-details` 34904243853, `itsa-quarterly-update` 34904726583). The quarterly-update
+  recording stops with the form filled except `businessId`, known only at run time. Left: the PR
+  merges; O32 then views the five. **Source**: BACKLOG 17b, 17c. **Owner**: Claude Code.
+  **Model**: Sonnet. **Size**: ~1 file.
 
 ## Machine-only
 
