@@ -3060,7 +3060,8 @@ jobs:
           Deployment left standing, unpromoted: ${{ needs.names.outputs.deployment-name }}
           BODYEOF
           )
-          gh issue create --repo "${{ github.repository }}" --title "$ISSUE_TITLE" --label incident --body "$BODY"
+          # The REST endpoint creates the label on first use; gh issue create --label fails when it is missing.
+          gh api --method POST "repos/${{ github.repository }}/issues" -f title="$ISSUE_TITLE" -f body="$BODY" -f "labels[]=incident" --jq .html_url
     outputs:
       rolled-back-to-deployment-name: ${{ needs.set-origins.outputs.existing-deployment-name }}
 
