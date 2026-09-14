@@ -76,8 +76,9 @@ Every item names its model: the lowest tier that fits (Fable > Opus > Sonnet > H
   `operator-snapshot-get-log-errors`) is not reproduced: that deployment's logs are gone,
   `prod-b364438`'s `operator-snapshot-get` log group has no events, the Lambda's role holds
   `dynamodb:Query` on `prod-env-bundles` and `s3:GetObject` on `snapshots/prod/*`, and the
-  object exists. Left: read `/aws/lambda/prod-<set>-app-operator-snapshot-get` after B52z's
-  attempt on `prod-658f986` and fix what it logs; both issues close then. `auth-status.js`'s
+  object exists. Issues #204 and #203 are closed as stale (deployment `e371587` is destroyed, its
+  alarms gone). Left: read `/aws/lambda/prod-bd664fe-app-operator-snapshot-get` after B52z's
+  attempt on the live set and fix what it logs. `auth-status.js`'s
   `logout()` awaits `window.envReady` unconditionally, which throws on a page that never loads
   `submit.js` (the agent's finding, unfixed). **Source**: operator, 2026-09-13. **Owner**: Claude
   Code. **Model**: Sonnet. **Size**: ~1 file.
