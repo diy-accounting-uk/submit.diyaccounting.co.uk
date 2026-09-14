@@ -4,14 +4,11 @@
 # Publishing the demo videos
 
 `videos/publish.json` holds the title, description, tags and caption file for each demo
-video, read by `scripts/youtube-upload.js`. Six videos are `publish: true`: three already
-public on the channel (`view-obligations`, `submit-return`, `view-return`) and three
-recorded and awaiting review (`view-liabilities`, `view-payments`, `view-penalties`).
-`itsa-business-details` and `itsa-quarterly-update` are `publish: false` — sandbox-only
-recordings against HMRC's ITSA test environment, never prod, so they stay off the channel.
-`itsa-quarterly-update` has no successful recording yet: every ci attempt on 2026-09-14 hit
-an OAuth state mismatch on the return leg from Cognito sign-in, before the scene reaches the
-form.
+video, read by `scripts/youtube-upload.js`. Every video is `publish: true`: three already
+public on the channel (`view-obligations`, `submit-return`, `view-return`), three prod
+recordings awaiting review (`view-liabilities`, `view-payments`, `view-penalties`), and two
+sandbox previews recorded against a ci deployment and HMRC's ITSA test environment
+(`itsa-business-details`, `itsa-quarterly-update`), whose titles and descriptions say so.
 
 ## Steps
 
@@ -23,6 +20,8 @@ form.
    gh run download 34651931632 -n video-view-liabilities-prod -D target/videos/video-view-liabilities-prod
    gh run download 34689643435 -n video-view-payments-prod -D target/videos/video-view-payments-prod
    gh run download 34689889022 -n video-view-penalties-prod -D target/videos/video-view-penalties-prod
+   gh run download 34904243853 -n video-itsa-business-details-ci -D target/videos/video-itsa-business-details-ci
+   gh run download 34904726583 -n video-itsa-quarterly-update-ci -D target/videos/video-itsa-quarterly-update-ci
    ```
 2. **Create an OAuth client, once, in the Google Cloud console** (project `diyaccounting-ga4`,
    signed in as the channel owner). Google blocks gcloud's own client from asking for YouTube
