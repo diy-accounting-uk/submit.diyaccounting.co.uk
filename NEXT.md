@@ -70,11 +70,17 @@ Every item names its model: the lowest tier that fits (Fable > Opus > Sonnet > H
   `xmlgw.companieshouse.gov.uk` namespace, and the same header authenticated the accepted
   submission. One asymmetry is left to try: the header's `SenderID` is `md5(presenterId)`, the
   body's `PresenterID` is plaintext. Sending the hashed form is on batch b32
-  (`claude/b32-board`, 57dfdc17, from local branch `claude/ltd-status-poll` 474c7240); a lean
-  deploy of it to `ci-claudd2cf` and one poll settle it, dispatched in b32's wave. O44 asks Companies House in
-  parallel and can cite the 13:12:48 transaction. The `prod` listing (held as unreferenced local
-  commit 946251d4) waits on a poll that returns a status. **Source**: BACKLOG 34b. **Owner**:
-  Claude Code. **Model**: Sonnet. **Size**: ~1 file.
+  (`claude/b32-board`, 57dfdc17). The poll itself is not done: it needs the branch's code on a ci
+  Lambda, and the lean deploy that puts it there was broken — `scripts/deploy-app.js` hardcoded the
+  pre-migration account so `deploy:app-ci` failed at the ECR push; b32 fixes that (d7daa69e, the
+  account now comes from the active credentials). Left: with b32 on `main`, run
+  `npm run deploy:app-ci -- --deployment ci-claudd2cf --skip-web` (submit-ci profile), then poll
+  `GET /api/v1/companies-house/accounts/000004` signed in and read the two gateway log lines. If the
+  gateway returns a status, keep 57dfdc17, pin it in the test, and apply the `prod` listing (held as
+  unreferenced local commit 946251d4); if it still answers 9999, revert the body to plaintext and
+  cite both transactions to Companies House. O44 asks Companies House in parallel and can cite the
+  13:12:48 transaction (1789391567972). **Source**: BACKLOG 34b. **Owner**: Claude Code.
+  **Model**: Sonnet. **Size**: ~1 file.
 
 ## Machine-only
 
