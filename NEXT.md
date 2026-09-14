@@ -134,12 +134,6 @@ Every item names its model: the lowest tier that fits (Fable > Opus > Sonnet > H
   matches an `AWS::Logs::LogGroup` created in the same synth. **Source**: REPORT_SESSION_oVpgsO_2026-09-14.md. **Owner**:
   Claude Code. **Model**: Sonnet. **Size**: ~1 file.
 
-- [ ] **B148. Nested permissions checked before a push.** Deploy 34791268179 died at startup:
-  `probe-test.yml`'s new job requested `issues: write` and `deploy.yml`'s 29 calls grant neither;
-  actionlint does not check it. In `test.yml`'s `validate workflow syntax` job, for every workflow
-  with `workflow_call`, read each job's `permissions` and fail when a caller in this repository
-  grants less. **Source**: REPORT_SESSION_oVpgsO_2026-09-14.md. **Owner**: Claude Code. **Model**: Sonnet. **Size**: ~2 files.
-
 ## Human and machine
 
 - [ ] **O28. Send `Gov-Client-Multi-Factor` on every request: mandate MFA in the pool.** Every
