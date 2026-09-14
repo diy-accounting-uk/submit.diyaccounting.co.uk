@@ -16,10 +16,9 @@ runs), and for Claude Code steps the **Model** a sub-agent should use (Fable > O
 Haiku; the lowest tier that fits). Anything touching code goes through a `claude/*` branch and
 PR; the operator merges.
 
-**Prod runs deployment prod-bd664fe** (PR #214's merge, batch b32, run 34891994316, which is
-destroying the previous set `prod-ca7ced1`); the only prod set.
-**ci**: `ci-claud824f` is last-known-good; the spare `ci-claudd2cf` self-destructs at 22:52 UTC.
-B34.6b's poll is the only b32 item left open.
+**Prod runs deployment prod-bd664fe** (PR #214's merge, batch b32, run 34891994316); the only
+prod set. **ci**: `ci-claud824f` is last-known-good and self-destructs at 23:40 UTC on 2026-09-14;
+the spare `ci-claudd2cf` at 22:52 UTC. B34.6b's poll is the only b32 item left open.
 
 The board runs in five sections, in this order: **in flight** (a branch, a pull request or a run
 in motion, each named in the row), **machine-only**, **human and machine**, **human-only**,
@@ -43,16 +42,18 @@ Every item names its model: the lowest tier that fits (Fable > Opus > Sonnet > H
   (`view-liabilities` run 34651931632, `view-payments` 34689643435, `view-penalties` 34689889022).
   The `itsa-quarterly-update` capture (run 34774550386) stalled on the dashboard defect PR #201
   fixed; the three `itsa-business-details` captures on `ci-vatview` (runs 34790185457,
-  34790343028, 34790629770) failed on browser errors and the scene fix sits on local branch
-  `main` (dd45a7bb, PR #209 merged 14:41 UTC on 2026-09-14 as 658f986e). The three prod recordings are checked and in
-  `videos/publish.json` on local branch `claude/b31-videos` (c5d394b4, unpushed). The three ci captures of 2026-09-14 (runs 34847383246, 34849517903,
+  34790343028, 34790629770) failed on browser errors and the scene fix is on `main` (658f986e,
+  PR #209). The three prod recordings are checked and in `videos/publish.json` on local branch
+  `claude/b31-videos` (c5d394b4, unpushed, worktree `.claude/worktrees/b31-videos`). The three ci
+  captures of 2026-09-14 (runs 34847383246, 34849517903,
   34850667197, all `-f deployment-name=ci-claud3123`) died on the sign-in return: the browser
   started login on `https://ci-claud3123.submit.diyaccounting.co.uk/`, Cognito's `redirect_uri`
   is the apex `https://ci-submit.diyaccounting.co.uk/`, and the OAuth state stored on the first
   origin is absent on the second ("OAuth state mismatch", `hasStoredState: false`). Re-dispatch
   each without `deployment-name`, so the base URL is the apex the set serves:
-  `gh workflow run video-capture.yml --ref claude/b31-board -f script=<script> -f environment-name=ci`,
-  against a standing ci set; then replace the 2026-09-07 `itsa-business-details` entry and add
+  `gh workflow run video-capture.yml --ref main -f script=<script> -f environment-name=ci`,
+  against a standing ci set (`ci-claud824f` until 23:40 UTC on 2026-09-14, then a fresh
+  `deploy.yml` dispatch); then replace the 2026-09-07 `itsa-business-details` entry and add
   `itsa-quarterly-update` to the manifest.
   Then check all five artifacts and write `videos/publish.json`, replacing the 2026-09-07
   `itsa-business-details` entry. Two things the scripts could not settle: the quarterly-update
@@ -62,47 +63,6 @@ Every item names its model: the lowest tier that fits (Fable > Opus > Sonnet > H
 
 ## Machine-only
 
-- [ ] **B158b. `watch-ci.sh` repeats the NOT-GATING line every cycle.** B158 added a per-cycle
-  "NOT GATING <branch>: N run(s)" line (`scripts/watch-ci.sh:57`) with no dedup, so a `/watch`
-  monitor re-emits it every 75s and floods the session (the Monitor tool auto-stops a chatty
-  monitor). Emit it once per branch per distinct non-gating set, the way RED and MERGEABLE dedup
-  through the state dir, not every cycle. **Source**: B158 in prod, observed 2026-09-14.
-  **Owner**: Claude Code. **Model**: Haiku. **Size**: ~1 file.
-
-- [ ] **B52v. The 5xx behind the operator dashboard's first open.** The sign-in path is on
-  `main` (82ea7ab8, PR #209) and reaches prod with 658f986e's deploy (run 34856840995): the activity is listed for a signed-in operator, the denial names
-  the pass, the page uses the shared header and returns to itself after sign-in. The 5xx of 23:38
-  UTC on 2026-09-13 (issues #204 `prod-e371587-app-api-5xx` and #203
-  `operator-snapshot-get-log-errors`) is not reproduced: that deployment's logs are gone,
-  `prod-b364438`'s `operator-snapshot-get` log group has no events, the Lambda's role holds
-  `dynamodb:Query` on `prod-env-bundles` and `s3:GetObject` on `snapshots/prod/*`, and the
-  object exists. Issues #204 and #203 are closed as stale (deployment `e371587` is destroyed, its
-  alarms gone). Left: read `/aws/lambda/prod-bd664fe-app-operator-snapshot-get` after B52z's
-  attempt on the live set and fix what it logs. `auth-status.js`'s
-  `logout()` awaits `window.envReady` unconditionally, which throws on a page that never loads
-  `submit.js` (the agent's finding, unfixed). **Source**: operator, 2026-09-13. **Owner**: Claude
-  Code. **Model**: Sonnet. **Size**: ~1 file.
-
-
-- [ ] **B34.6b. Companies House accounts filing: the sandbox proof.** Submission 000004 (presenter
-  E0000052288, company 06846849, 2026-09-13 19:04 UTC) was ACCEPTED by the XML Gateway test
-  service; every `GetSubmissionStatus` poll for it answers 9999 "No presenter ID supplied", the
-  tenth at 13:12:48 UTC on 2026-09-14 (transaction 1789391567972, on `ci-claud3123`). The logged
-  request is schema-correct: `SubmissionNumber` then `PresenterID` in the
-  `xmlgw.companieshouse.gov.uk` namespace, and the same header authenticated the accepted
-  submission. One asymmetry is left to try: the header's `SenderID` is `md5(presenterId)`, the
-  body's `PresenterID` is plaintext. Sending the hashed form is on batch b32
-  (`claude/b32-board`, 57dfdc17). The poll itself is not done: it needs the branch's code on a ci
-  Lambda, and the lean deploy that puts it there was broken — `scripts/deploy-app.js` hardcoded the
-  pre-migration account so `deploy:app-ci` failed at the ECR push; b32 fixes that (d7daa69e, the
-  account now comes from the active credentials). Left: with b32 on `main`, run
-  `npm run deploy:app-ci -- --deployment ci-claudd2cf --skip-web` (submit-ci profile), then poll
-  `GET /api/v1/companies-house/accounts/000004` signed in and read the two gateway log lines. If the
-  gateway returns a status, keep 57dfdc17, pin it in the test, and apply the `prod` listing (held as
-  unreferenced local commit 946251d4); if it still answers 9999, revert the body to plaintext and
-  cite both transactions to Companies House. O44 asks Companies House in parallel and can cite the
-  13:12:48 transaction (1789391567972). **Source**: BACKLOG 34b. **Owner**: Claude Code.
-  **Model**: Sonnet. **Size**: ~1 file.
 - [ ] **B156. The alarm-triage skip comment runs `gh` without a repository.** Run 34862119217
   (15:26 UTC on 2026-09-14, issue #212) failed at "Comment that triage was skipped": the `triage`
   job has no checkout, so `gh issue comment` (`.github/workflows/alarm-triage.yml:94`) cannot infer
@@ -143,6 +103,17 @@ Every item names its model: the lowest tier that fits (Fable > Opus > Sonnet > H
   metric filter in `ObservabilityStack.java` with its test, and the issue closes when it reaches
   prod. **Source**: issue #206. **Owner**: Claude Code. **Model**: Haiku. **Size**: ~2 files.
 
+- [ ] **B157. One alarm transition opened two issues.** #210 and #212 carry the same alarm
+  (`prod-env-github-probe-failed`), state change and timestamp (15:26:00.881 UTC on 2026-09-14).
+  `app/functions/ops/alarmToGithubIssue.js` dedupes by a GitHub search for an open issue with the
+  title (line 270), and two invocations of the same notification a moment apart both search before
+  either has created, and the search index lags anyway. Make the create idempotent: a conditional
+  put keyed on alarm name and state-change timestamp in an existing ops table before the create, or
+  list open issues through the REST issues endpoint (not search) and set the function's reserved
+  concurrency to 1. Both issues are closed (the probe failure was the deploy's apex move).
+  **Source**: issues #210, #212. **Owner**:
+  Claude Code. **Model**: Sonnet. **Size**: ~2 files.
+
 - [ ] **B52y. The nightly snapshot has not published since 2026-09-13 03:16.** Issue #208
   (`prod-env-operator-snapshot-publish-errors`, 03:18 UTC on 2026-09-14): the 03:15 run's
   three invocations each died in `pollUntilTerminal`
@@ -160,16 +131,48 @@ Every item names its model: the lowest tier that fits (Fable > Opus > Sonnet > H
   design). **Source**: `PLAN_ONE_STOP_DASHBOARD.md` D7, D13, D14, D15. Closes #208. **Owner**:
   Claude Code. **Model**: Sonnet. **Size**: ~3 files.
 
-- [ ] **B157. One alarm transition opened two issues.** #210 and #212 carry the same alarm
-  (`prod-env-github-probe-failed`), state change and timestamp (15:26:00.881 UTC on 2026-09-14).
-  `app/functions/ops/alarmToGithubIssue.js` dedupes by a GitHub search for an open issue with the
-  title (line 270), and two invocations of the same notification a moment apart both search before
-  either has created, and the search index lags anyway. Make the create idempotent: a conditional
-  put keyed on alarm name and state-change timestamp in an existing ops table before the create, or
-  list open issues through the REST issues endpoint (not search) and set the function's reserved
-  concurrency to 1. Both issues are closed (the probe failure was the deploy's apex move).
-  **Source**: issues #210, #212. **Owner**:
-  Claude Code. **Model**: Sonnet. **Size**: ~2 files.
+- [ ] **B34.6b. Companies House accounts filing: the sandbox proof.** Submission 000004 (presenter
+  E0000052288, company 06846849, 2026-09-13 19:04 UTC) was ACCEPTED by the XML Gateway test
+  service; every `GetSubmissionStatus` poll for it answers 9999 "No presenter ID supplied", the
+  tenth at 13:12:48 UTC on 2026-09-14 (transaction 1789391567972, on `ci-claud3123`). The logged
+  request is schema-correct: `SubmissionNumber` then `PresenterID` in the
+  `xmlgw.companieshouse.gov.uk` namespace, and the same header authenticated the accepted
+  submission. One asymmetry is left to try: the header's `SenderID` is `md5(presenterId)`, the
+  body's `PresenterID` is plaintext. Sending the hashed form is on batch b32
+  (`claude/b32-board`, 57dfdc17). The poll itself is not done: it needs the branch's code on a ci
+  Lambda, and the lean deploy that puts it there was broken — `scripts/deploy-app.js` hardcoded the
+  pre-migration account so `deploy:app-ci` failed at the ECR push; b32 fixes that (d7daa69e, the
+  account now comes from the active credentials). b32 is on `main` (PR #214). Left: run
+  `npm run deploy:app-ci -- --deployment <ci-set> --skip-web` (submit-ci profile; `ci-claudd2cf`
+  until 22:52 UTC on 2026-09-14, `ci-claud824f` until 23:40 UTC, then a fresh `deploy.yml`
+  dispatch), then poll
+  `GET /api/v1/companies-house/accounts/000004` signed in and read the two gateway log lines. If the
+  gateway returns a status, keep 57dfdc17, pin it in the test, and apply the `prod` listing (held as
+  unreferenced local commit 946251d4); if it still answers 9999, revert the body to plaintext and
+  cite both transactions to Companies House. O44 asks Companies House in parallel and can cite the
+  13:12:48 transaction (1789391567972). **Source**: BACKLOG 34b. **Owner**: Claude Code.
+  **Model**: Sonnet. **Size**: ~1 file.
+
+- [ ] **B52v. The 5xx behind the operator dashboard's first open.** The sign-in path is on
+  `main` (82ea7ab8, PR #209) and reaches prod with 658f986e's deploy (run 34856840995): the activity is listed for a signed-in operator, the denial names
+  the pass, the page uses the shared header and returns to itself after sign-in. The 5xx of 23:38
+  UTC on 2026-09-13 (issues #204 `prod-e371587-app-api-5xx` and #203
+  `operator-snapshot-get-log-errors`) is not reproduced: that deployment's logs are gone,
+  `prod-b364438`'s `operator-snapshot-get` log group has no events, the Lambda's role holds
+  `dynamodb:Query` on `prod-env-bundles` and `s3:GetObject` on `snapshots/prod/*`, and the
+  object exists. Issues #204 and #203 are closed as stale (deployment `e371587` is destroyed, its
+  alarms gone). Left: read `/aws/lambda/prod-bd664fe-app-operator-snapshot-get` after B52z's
+  attempt on the live set and fix what it logs. `auth-status.js`'s
+  `logout()` awaits `window.envReady` unconditionally, which throws on a page that never loads
+  `submit.js` (the agent's finding, unfixed). **Source**: operator, 2026-09-13. **Owner**: Claude
+  Code. **Model**: Sonnet. **Size**: ~1 file.
+
+- [ ] **B158b. `watch-ci.sh` repeats the NOT-GATING line every cycle.** B158 added a per-cycle
+  "NOT GATING <branch>: N run(s)" line (`scripts/watch-ci.sh:57`) with no dedup, so a `/watch`
+  monitor re-emits it every 75s and floods the session (the Monitor tool auto-stops a chatty
+  monitor). Emit it once per branch per distinct non-gating set, the way RED and MERGEABLE dedup
+  through the state dir, not every cycle. **Source**: B158 in prod, observed 2026-09-14.
+  **Owner**: Claude Code. **Model**: Haiku. **Size**: ~1 file.
 
 ## Human and machine
 
@@ -190,6 +193,16 @@ Every item names its model: the lowest tier that fits (Fable > Opus > Sonnet > H
   customer on ci and say go. Then the machine half: the one-word change, its CDK test, and a ci
   deploy proving native sign-in still completes. **Source**: `../REPORT_HMRC_HEADER_ADVISORIES.md`.
   **Owner**: Operator decides, Claude Code changes. **Model**: Haiku. **Size**: ~2 files.
+
+- [ ] **B137. `uniqueReference` identifies the user, not the authentication event.** In the
+  `Gov-Client-Multi-Factor` header, `uniqueReference` is a SHA-256 of `sub + ":" + factorType`, so
+  it is stable per user per factor type by design. HMRC's spec expects a reference identifying the
+  authentication **event**. They have not flagged it and it is no part of the current advisory, so
+  this is a separate reading of the spec rather than a defect they have raised. O28's step 2b, which
+  touched the same code, is on `main` (#198). The operator decides whether to change it; then the
+  change in `buildFraudHeaders.js` with its unit test.
+  **Source**: `../REPORT_HMRC_HEADER_ADVISORIES.md`. **Owner**: Operator decides, Claude Code
+  changes. **Model**: Sonnet. **Size**: ~1 file.
 
 ## Human-only
 
@@ -297,14 +310,6 @@ Every item names its model: the lowest tier that fits (Fable > Opus > Sonnet > H
   **Source**: BACKLOG 11; `PLAN_ITSA_PHASE_2.md` T9. **Owner**: Claude Code. **Model**:
   Sonnet. Blocked on the spreadsheets repository's ITSA-T8 (the two self-employed derivations)
   and on `PLAN_SUBMISSION_MCP.md` M1. **Size**: ~4 files.
-
-- [ ] **B137. `uniqueReference` identifies the user, not the authentication event.** In the
-  `Gov-Client-Multi-Factor` header, `uniqueReference` is a SHA-256 of `sub + ":" + factorType`, so
-  it is stable per user per factor type by design. HMRC's spec expects a reference identifying the
-  authentication **event**. They have not flagged it and it is no part of the current advisory, so
-  this is a separate reading of the spec rather than a defect they have raised. Decide whether to
-  change it, and note that O28's step 2b touches the same code — sequence it after, not with.
-  **Source**: `../REPORT_HMRC_HEADER_ADVISORIES.md`. **Owner**: Claude Code. **Model**: Sonnet. Blocked on O28 step 2b. **Size**: ~1 file.
 
 - [ ] **B124. Prove the three agent workflows by dispatch, in order.** All three are on main,
   `workflow_dispatch` only, every event trigger commented out until a hand-run has earned it.
