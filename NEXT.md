@@ -40,6 +40,9 @@ Every item names its model: the lowest tier that fits (Fable > Opus > Sonnet > H
 
 ## In flight
 
+**COOL-DOWN is on since 2026-09-14T13:40:19Z.** No new board rows except a degradation. Agents commit
+and stop. One branch is driven green at a time. Lifted only by the operator in their own words.
+
 - [ ] **B17v.1. Capture the five walkthrough videos.** The three prod captures are done
   (`view-liabilities` run 34651931632, `view-payments` 34689643435, `view-penalties` 34689889022).
   The `itsa-quarterly-update` capture (run 34774550386) stalled on the dashboard defect PR #201
