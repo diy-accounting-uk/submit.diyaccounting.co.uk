@@ -287,14 +287,14 @@ jobs:
             if [ "$SHORT_NAME" = "bundles" ]; then
               local SALT_ITEM
               SALT_ITEM=$(aws dynamodb get-item --table-name "$TARGET_TABLE" \
-                --key '{"hashedSub": {"S": "system#config"}, "bundleId": {"S": "salt-v2"}}' \
+                --key '{"hashedSub": {"S": "system#canary"}, "bundleId": {"S": "salt-health-check"}}' \
                 --region "${AWS_REGION}" --output json 2>/dev/null || echo "")
               if [ -n "$SALT_ITEM" ] && echo "$SALT_ITEM" | jq -e '.Item' >/dev/null 2>&1; then
                 SALT_NOTE="salt backup item present"
               else
                 SALT_NOTE="salt backup item not present"
               fi
-              echo "Salt backup check (system#config/salt-v2): $SALT_NOTE"
+              echo "Salt backup check (system#canary/salt-health-check): $SALT_NOTE"
             fi
 
             printf '%s\tpass\t%s\t%s\t%s\t%s\n' "$SOURCE_TABLE" "$RESTORED_ITEMS" "$SALT_NOTE" "$BACKUP_SIZE_BYTES" "$(( $(date +%s) - START_TS ))" >> /tmp/restore-drill-results.tsv

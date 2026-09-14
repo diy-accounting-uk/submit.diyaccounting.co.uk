@@ -16,8 +16,10 @@ outside the account are actually usable, not just present.
   lives outside both deployment accounts can rebuild working data, by actually pulling
   it back out and using it, rather than restoring in place.
 - Scans each restored table and compares the item count against the recovery point.
-- For `bundles`, also checks that the salt item (`system#config` / `salt-v2`) came back,
-  since the app cannot hash user subs without it.
+- For `bundles`, also checks that the salt health canary item (`system#canary` /
+  `salt-health-check`, written by migration 003) came back. The salt itself lives in
+  Secrets Manager, not DynamoDB; the canary only proves the hash function that guarded
+  it at backup time is traceable in the restored data.
 - Times each table's copy and restore and reports it, so a real recovery has a duration
   to plan against.
 - Deletes every table and every copied recovery point it created, whether the run passed
@@ -72,3 +74,21 @@ The job summary lists one row per table: result, items restored, salt/notes, rec
 point size, and duration. `pass` on every row means the restore worked and the data
 checked out. Any other result names the table and the step that failed; the raw AWS
 error is printed above it in the log.
+
+## Run record
+
+**2026-09-14, run 34790429557** (first run, after redeploying the backup account stacks
+in run 34790152940 to pick up `backup-copy-role`): all five tables passed.
+
+| Source table | Items | Recovery point bytes | Duration |
+|---|---|---|---|
+| prod-env-receipts | 4901 | 1669010 | 6m49s |
+| prod-env-bundles | 680 | 230637 | 6m49s |
+| prod-env-hmrc-api-requests | 3249 | 7787399 | 5m47s |
+| prod-env-passes | 8859 | 2908500 | 6m48s |
+| prod-env-subscriptions | 449 | 151202 | 5m47s |
+
+The salt check read the wrong key (`system#config`/`salt-v2`, which has never existed -
+migration 003 writes the canary to `system#canary`/`salt-health-check`, and the salt
+itself lives in Secrets Manager). Fixed in `restore-drill.yml`; not re-run against the
+corrected key yet.
