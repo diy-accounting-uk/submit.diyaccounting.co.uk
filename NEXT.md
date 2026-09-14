@@ -18,8 +18,9 @@ PR; the operator merges.
 
 **Prod runs deployment prod-658f986** (PR #209's merge, batch b31, promoted 15:30 UTC on 2026-09-14
 by run 34856840995, which destroyed `prod-b364438`); the only prod set.
-**ci at 18:50 UTC**: none standing and last-known-good is None; PR #213's deploy (run
-34882930296) is creating the next set, which self-destructs after 4 hours.
+**ci at 18:53 UTC**: `ci-claudd2cf` is being created by PR #213's deploy (run 34882930296,
+eight stacks CREATE_IN_PROGRESS since 18:52 UTC); last-known-good is None until its probes pass;
+the set self-destructs at 22:52 UTC.
 
 The board runs in five sections, in this order: **in flight** (a branch, a pull request or a run
 in motion, each named in the row), **machine-only**, **human and machine**, **human-only**,
@@ -41,12 +42,6 @@ Every item names its model: the lowest tier that fits (Fable > Opus > Sonnet > H
 
 **COOL-DOWN is on since 2026-09-14T13:40:19Z.** No new board rows except a degradation. Agents commit
 and stop. One branch is driven green at a time. Lifted only by the operator in their own words.
-
-- [ ] **B162. A ci set self-destructs after 4 hours by default.** `deploy.yml`'s
-  `selfDestructDelayHours` default and env fallback move from 2 to 4 so a batch's second wave
-  (captures, sandbox polls, a lean-deployed experiment) still has the set the first wave's deploy
-  created. On branch `claude/ops-self-destruct-4h`, PR #213; the row closes when it merges.
-  **Source**: operator, 2026-09-14. **Owner**: Claude Code. **Model**: Haiku. **Size**: ~3 files.
 
 - [ ] **B17v.1. Capture the five walkthrough videos.** The three prod captures are done
   (`view-liabilities` run 34651931632, `view-payments` 34689643435, `view-penalties` 34689889022).
@@ -70,6 +65,26 @@ and stop. One branch is driven green at a time. Lifted only by the operator in t
   `itsa-business-details.json` may no longer pass since the activity's first page is
   `dashboard.html`. **Source**: BACKLOG 17b, 17c. **Owner**: Claude Code. **Model**: Sonnet. **Size**: ~1 file.
 
+- [ ] **B34.6b. Companies House accounts filing: the sandbox proof.** Submission 000004 (presenter
+  E0000052288, company 06846849, 2026-09-13 19:04 UTC) was ACCEPTED by the XML Gateway test
+  service; every `GetSubmissionStatus` poll for it answers 9999 "No presenter ID supplied", the
+  tenth at 13:12:48 UTC on 2026-09-14 (transaction 1789391567972, on `ci-claud3123`). The logged
+  request is schema-correct: `SubmissionNumber` then `PresenterID` in the
+  `xmlgw.companieshouse.gov.uk` namespace, and the same header authenticated the accepted
+  submission. One asymmetry is left to try: the header's `SenderID` is `md5(presenterId)`, the
+  body's `PresenterID` is plaintext. Sending the hashed form is on local branch
+  `claude/ltd-status-poll` (474c7240, one file and its test, unpushed, held until cool-down
+  lifts); then a ci deploy carrying it and one poll settle it. O44 asks Companies House in
+  parallel and can cite the 13:12:48 transaction. The `prod` listing (held as unreferenced local
+  commit 946251d4) waits on a poll that returns a status. **Source**: BACKLOG 34b. **Owner**:
+  Claude Code. **Model**: Sonnet. **Size**: ~1 file.
+
+- [ ] **B162. A ci set self-destructs after 4 hours by default.** `deploy.yml`'s
+  `selfDestructDelayHours` default and env fallback move from 2 to 4 so a batch's second wave
+  (captures, sandbox polls, a lean-deployed experiment) still has the set the first wave's deploy
+  created. On branch `claude/ops-self-destruct-4h`, PR #213; its deploy (run 34882930296) and test
+  (run 34882928421) were in progress at 18:53 UTC; the row closes when it merges.
+  **Source**: operator, 2026-09-14. **Owner**: Claude Code. **Model**: Haiku. **Size**: ~3 files.
 
 - [ ] **B80b. The identity guard has to reach the other four repositories.** Submit carries
   `.github/allowed-commit-identities.yml`, `.github/workflows/identity-guard.yml` and
@@ -84,20 +99,6 @@ and stop. One branch is driven green at a time. Lifted only by the operator in t
   with its commit count and date range for O46's review. The check fails the PR, matching submit,
   rather than reporting non-blocking.
   **Source**: B80's fix. **Owner**: Claude Code. **Model**: Haiku per repository. **Size**: ~12 files.
-
-- [ ] **B34.6b. Companies House accounts filing: the sandbox proof.** Submission 000004 (presenter
-  E0000052288, company 06846849, 2026-09-13 19:04 UTC) was ACCEPTED by the XML Gateway test
-  service; every `GetSubmissionStatus` poll for it answers 9999 "No presenter ID supplied", the
-  tenth at 13:12:48 UTC on 2026-09-14 (transaction 1789391567972, on `ci-claud3123`). The logged
-  request is schema-correct: `SubmissionNumber` then `PresenterID` in the
-  `xmlgw.companieshouse.gov.uk` namespace, and the same header authenticated the accepted
-  submission. One asymmetry is left to try: the header's `SenderID` is `md5(presenterId)`, the
-  body's `PresenterID` is plaintext. Sending the hashed form is on local branch
-  `claude/ltd-status-poll` (474c7240, one file and its test, unpushed, held until cool-down
-  lifts); then a ci deploy carrying it and one poll settle it. O44 asks Companies House in
-  parallel and can cite the 13:12:48 transaction. The `prod` listing (held as unreferenced local
-  commit 946251d4) waits on a poll that returns a status. **Source**: BACKLOG 34b. **Owner**:
-  Claude Code. **Model**: Sonnet. **Size**: ~1 file.
 
 ## Machine-only
 
@@ -121,6 +122,25 @@ and stop. One branch is driven green at a time. Lifted only by the operator in t
   case the step exists for. Add `--repo "$GITHUB_REPOSITORY"`. **Source**: run 34862119217.
   **Owner**: Claude Code. **Model**: Haiku. **Size**: ~1 file.
 
+- [ ] **B159. The scheduled probe yields to a deploy in progress on main.** The 15:16 UTC
+  `probe-test.yml` schedule on 2026-09-14 ran while `deploy.yml` 34856840995 was moving the apex
+  to `prod-658f986`; the token exchange answered 403 for the seconds the origins disagreed, and
+  the failure raised two alarm issues, an incident and two triage runs before the re-run passed.
+  In `probe-test.yml`'s schedule path, read `gh run list --workflow deploy.yml --branch main
+  --status in_progress`; when a deploy is running, wait for it (a sleep loop with a ceiling) or
+  end the run green with a "deferred to the deploy's probes" summary. **Source**:
+  REPORT_SESSION_o+o5Wl_2026-09-14.md. **Owner**: Claude Code. **Model**: Sonnet. **Size**: ~1 file.
+
+- [ ] **B160. `video-capture.yml` records against the apex when the named ci set serves it.**
+  Three captures on 2026-09-14 (runs 34847383246, 34849517903, 34850667197) were dispatched
+  with `deployment-name=ci-claud3123`: the browser signed in on
+  `https://ci-claud3123.submit.diyaccounting.co.uk/`, Cognito's `redirect_uri` is the ci apex,
+  and the OAuth state stored on the first origin was absent on the second ("OAuth state
+  mismatch", `hasStoredState: false`). When the named set is the environment's last-known-good
+  (the apex's target), set `DIY_SUBMIT_BASE_URL` to the apex; otherwise fail the run at the
+  params job naming the mismatch. **Source**: REPORT_SESSION_o+o5Wl_2026-09-14.md; B17v.1 carries
+  the recordings themselves. **Owner**: Claude Code. **Model**: Sonnet. **Size**: ~1 file.
+
 - [ ] **B154. `youtube-check.yml` compares channel handles case-sensitively.** Its first
   scheduled run (34848766784, 13:21 UTC on 2026-09-14) failed: the stored refresh token resolves
   to `@diyaccountingsubmit`, `google/youtube.toml` declares `@DIYAccountingSubmit`, and
@@ -136,26 +156,6 @@ and stop. One branch is driven green at a time. Lifted only by the operator in t
   (`ApiStack.java:169` and `:247`). Write both the way API Gateway stores them, with the CDK test,
   so the template matches. **Source**: run 34847862007. **Owner**: Claude Code. **Model**: Haiku.
   **Size**: ~2 files.
-
-- [ ] **B155. `video-capture.yml` prints the capture lane's password and TOTP secret in its log.**
-  The `Record <script>` step's `env:` block echoes `TEST_AUTH_PASSWORD` and `TEST_AUTH_TOTP_SECRET`
-  unmasked (run 34850667197, 13:42 UTC on 2026-09-14) because they come from a step output, which
-  GitHub does not mask. The lane's user is rotated per run and native auth is disabled after, so
-  the exposure is the run's own window, in a public repository's log. Emit `::add-mask::` for both
-  values in the step that produces them (the `cognito-test-user` step or its script), and check
-  `probe-test.yml` and `deploy.yml` for the same pattern. **Source**: run 34850667197. **Owner**:
-  Claude Code. **Model**: Haiku. **Size**: ~2 files.
-
-- [ ] **B157. One alarm transition opened two issues.** #210 and #212 carry the same alarm
-  (`prod-env-github-probe-failed`), state change and timestamp (15:26:00.881 UTC on 2026-09-14).
-  `app/functions/ops/alarmToGithubIssue.js` dedupes by a GitHub search for an open issue with the
-  title (line 270), and two invocations of the same notification a moment apart both search before
-  either has created, and the search index lags anyway. Make the create idempotent: a conditional
-  put keyed on alarm name and state-change timestamp in an existing ops table before the create, or
-  list open issues through the REST issues endpoint (not search) and set the function's reserved
-  concurrency to 1. Both issues are closed (the probe failure was the deploy's apex move).
-  **Source**: issues #210, #212. **Owner**:
-  Claude Code. **Model**: Sonnet. **Size**: ~2 files.
 
 - [ ] **B30x. The CIS console-sign-in-without-MFA alarm fires on SSO sign-ins.** Issue #206:
   `prod-env-cis-console-signin-without-mfa` fired at 23:42 UTC on 2026-09-13 for the operator's
@@ -182,24 +182,25 @@ and stop. One branch is driven green at a time. Lifted only by the operator in t
   design). **Source**: `PLAN_ONE_STOP_DASHBOARD.md` D7, D13, D14, D15. Closes #208. **Owner**:
   Claude Code. **Model**: Sonnet. **Size**: ~3 files.
 
-- [ ] **B159. The scheduled probe yields to a deploy in progress on main.** The 15:16 UTC
-  `probe-test.yml` schedule on 2026-09-14 ran while `deploy.yml` 34856840995 was moving the apex
-  to `prod-658f986`; the token exchange answered 403 for the seconds the origins disagreed, and
-  the failure raised two alarm issues, an incident and two triage runs before the re-run passed.
-  In `probe-test.yml`'s schedule path, read `gh run list --workflow deploy.yml --branch main
-  --status in_progress`; when a deploy is running, wait for it (a sleep loop with a ceiling) or
-  end the run green with a "deferred to the deploy's probes" summary. **Source**:
-  REPORT_SESSION_o+o5Wl_2026-09-14.md. **Owner**: Claude Code. **Model**: Sonnet. **Size**: ~1 file.
+- [ ] **B155. `video-capture.yml` prints the capture lane's password and TOTP secret in its log.**
+  The `Record <script>` step's `env:` block echoes `TEST_AUTH_PASSWORD` and `TEST_AUTH_TOTP_SECRET`
+  unmasked (run 34850667197, 13:42 UTC on 2026-09-14) because they come from a step output, which
+  GitHub does not mask. The lane's user is rotated per run and native auth is disabled after, so
+  the exposure is the run's own window, in a public repository's log. Emit `::add-mask::` for both
+  values in the step that produces them (the `cognito-test-user` step or its script), and check
+  `probe-test.yml` and `deploy.yml` for the same pattern. **Source**: run 34850667197. **Owner**:
+  Claude Code. **Model**: Haiku. **Size**: ~2 files.
 
-- [ ] **B160. `video-capture.yml` records against the apex when the named ci set serves it.**
-  Three captures on 2026-09-14 (runs 34847383246, 34849517903, 34850667197) were dispatched
-  with `deployment-name=ci-claud3123`: the browser signed in on
-  `https://ci-claud3123.submit.diyaccounting.co.uk/`, Cognito's `redirect_uri` is the ci apex,
-  and the OAuth state stored on the first origin was absent on the second ("OAuth state
-  mismatch", `hasStoredState: false`). When the named set is the environment's last-known-good
-  (the apex's target), set `DIY_SUBMIT_BASE_URL` to the apex; otherwise fail the run at the
-  params job naming the mismatch. **Source**: REPORT_SESSION_o+o5Wl_2026-09-14.md; B17v.1 carries
-  the recordings themselves. **Owner**: Claude Code. **Model**: Sonnet. **Size**: ~1 file.
+- [ ] **B157. One alarm transition opened two issues.** #210 and #212 carry the same alarm
+  (`prod-env-github-probe-failed`), state change and timestamp (15:26:00.881 UTC on 2026-09-14).
+  `app/functions/ops/alarmToGithubIssue.js` dedupes by a GitHub search for an open issue with the
+  title (line 270), and two invocations of the same notification a moment apart both search before
+  either has created, and the search index lags anyway. Make the create idempotent: a conditional
+  put keyed on alarm name and state-change timestamp in an existing ops table before the create, or
+  list open issues through the REST issues endpoint (not search) and set the function's reserved
+  concurrency to 1. Both issues are closed (the probe failure was the deploy's apex move).
+  **Source**: issues #210, #212. **Owner**:
+  Claude Code. **Model**: Sonnet. **Size**: ~2 files.
 
 - [ ] **B161. `NEXT.md` keeps its five headings, checked.** Two row edits on 2026-09-14 sliced
   from one row's start to the next row's start and swallowed `## Machine-only` and
@@ -240,6 +241,22 @@ and stop. One branch is driven green at a time. Lifted only by the operator in t
 
 ## Human-only
 
+- [ ] **O17. Register the Companies House sandbox test user and set four ci values.**
+  Companies House has no create-test-user API, so the operator registers a throwaway account
+  on identity-sandbox.company-information.service.gov.uk with an authenticator second factor
+  and puts on the GitHub `ci` environment: the variable `TEST_COMPANIES_HOUSE_USER_ID` (its
+  email) and the secrets `TEST_COMPANIES_HOUSE_PASSWORD`, `TEST_COMPANIES_HOUSE_TOTP_SECRET`
+  (the authenticator secret) and `COMPANIES_HOUSE_SANDBOX_API_KEY` (the test application's
+  REST key, for creating the run's test company). Unblocks B34.7. **Source**: BACKLOG 34; **Owner**: Operator. **Model**: none.
+
+- [ ] **O44. Tell Companies House's XML team what B34.6b submitted.** One email from your address
+  to Neal at `xml@companieshouse.gov.uk`, naming: presenter E0000052288, company 06846849, test
+  package reference 0012; submissions 000002 and 000003 (2026-09-13 18:19 UTC) rejected with error
+  9999 "No element 'Authority'", since fixed; submission 000004 (19:04 UTC) acknowledged with no
+  errors; and that every `GetSubmissionStatus` for 000004 answers 9999 "No presenter ID supplied".
+  Ask whether 000004 was accepted and whether status lookups are enabled for this presenter.
+  **Source**: BACKLOG 34b. **Owner**: Operator. **Model**: none.
+
 - [ ] **B52z. Issue the operator pass and open the dashboard.** The `operator` pass type is on
   main (PR #207) and on prod since prod-5ca7bca. The operator's half:
   ```
@@ -253,14 +270,6 @@ and stop. One branch is driven green at a time. Lifted only by the operator in t
   prints every author address with its commit count and date range; strike or approve each before
   merge, because an address on the list is an identity the guard will accept from then on.
   **Source**: B80's fix. **Owner**: Operator. **Model**: none.
-
-- [ ] **O17. Register the Companies House sandbox test user and set four ci values.**
-  Companies House has no create-test-user API, so the operator registers a throwaway account
-  on identity-sandbox.company-information.service.gov.uk with an authenticator second factor
-  and puts on the GitHub `ci` environment: the variable `TEST_COMPANIES_HOUSE_USER_ID` (its
-  email) and the secrets `TEST_COMPANIES_HOUSE_PASSWORD`, `TEST_COMPANIES_HOUSE_TOTP_SECRET`
-  (the authenticator secret) and `COMPANIES_HOUSE_SANDBOX_API_KEY` (the test application's
-  REST key, for creating the run's test company). Unblocks B34.7. **Source**: BACKLOG 34; **Owner**: Operator. **Model**: none.
 
 - [ ] **O23. Open a Google Ads account for the paid-traffic experiments.** Both earlier Ads
   accounts were cancelled (`google-analytics.toml`); the reinvestment loop (plan row D17) needs
@@ -298,7 +307,6 @@ and stop. One branch is driven green at a time. Lifted only by the operator in t
   existing secret name and reaches Secrets Manager through `deploy-environment.yml`. **Source**:
   B135. **Owner**: Operator. **Model**: none.
 
-
 - [ ] **O37. Turn on SSH commit signing.** `REPORT_GIT_CONFIG.md` settles what the config should
   be and why: keep `pull.rebase=true`, because a rebase re-signs each replayed commit when
   `commit.gpgsign` is a standing default rather than a per-commit flag, and keep
@@ -313,24 +321,7 @@ and stop. One branch is driven green at a time. Lifted only by the operator in t
   `REPORT_GIT_CONFIG.md`; `REPORT_IDENTITY_AUDIT.md` section 9. **Owner**: Operator. **Model**:
   none.
 
-
-- [ ] **O44. Tell Companies House's XML team what B34.6b submitted.** One email from your address
-  to Neal at `xml@companieshouse.gov.uk`, naming: presenter E0000052288, company 06846849, test
-  package reference 0012; submissions 000002 and 000003 (2026-09-13 18:19 UTC) rejected with error
-  9999 "No element 'Authority'", since fixed; submission 000004 (19:04 UTC) acknowledged with no
-  errors; and that every `GetSubmissionStatus` for 000004 answers 9999 "No presenter ID supplied".
-  Ask whether 000004 was accepted and whether status lookups are enabled for this presenter.
-  **Source**: BACKLOG 34b. **Owner**: Operator. **Model**: none.
-
 ## Blocked
-
-- [ ] **B137. `uniqueReference` identifies the user, not the authentication event.** In the
-  `Gov-Client-Multi-Factor` header, `uniqueReference` is a SHA-256 of `sub + ":" + factorType`, so
-  it is stable per user per factor type by design. HMRC's spec expects a reference identifying the
-  authentication **event**. They have not flagged it and it is no part of the current advisory, so
-  this is a separate reading of the spec rather than a defect they have raised. Decide whether to
-  change it, and note that O28's step 2b touches the same code — sequence it after, not with.
-  **Source**: `../REPORT_HMRC_HEADER_ADVISORIES.md`. **Owner**: Claude Code. **Model**: Sonnet. Blocked on O28 step 2b. **Size**: ~1 file.
 
 - [ ] **B34.7. Run and fix the filing suites' sandbox sign-in.** Batch 9 (6957651c) carries
   the suites' sandbox sign-in with the authenticator step, off by default: `deploy.yml` and
@@ -342,6 +333,31 @@ and stop. One branch is driven green at a time. Lifted only by the operator in t
   and the same for `changeRegisteredEmailBehaviour`; the first run's screenshots guide any
   selector fix. **Source**: BACKLOG 34. **Owner**: Claude Code. **Model**: Sonnet.
   Blocked on O17. **Size**: ~1 file.
+
+- [ ] **B11.T9. ITSA phase 2: the DIYA-GL-to-submission path.** `PLAN_ITSA_PHASE_2.md` T9: the
+  MCP tools `derive_itsa_quarterly_update` and `derive_itsa_annual_submission` in the MCP
+  package, and an import control on `annualSubmission.html` that fills the form from a book.
+  The spreadsheets side's T8 design finds the shipped self-employed template cannot source 31
+  of the 55 ITSA field slots, so the derivations omit those fields; this row must send an
+  omission, never a zero, for a field the book does not carry. Two findings from their side carry
+  SED ids and one changes what this row must do: SED-10 says the self-employed field set changes by
+  tax year — `sa103-mtd-mapping.json` records two allowances gone from 2025-26, an adjustment gone
+  from 2026-27 and two fields added — and their `se-derivations.js` reads none of it, so a book for
+  a year past 2024-25 can carry a field HMRC no longer accepts. The figures are year-agnostic; only
+  the field set moves. Either wait for their SED-10 or filter by year on this side, and say which.
+  SED-2 is theirs: fourteen disallowable categories, seven annual fields and four adjustments the
+  shipped template cannot source at all, which arrive omitted rather than zeroed.
+  **Source**: BACKLOG 11; `PLAN_ITSA_PHASE_2.md` T9. **Owner**: Claude Code. **Model**:
+  Sonnet. Blocked on the spreadsheets repository's ITSA-T8 (the two self-employed derivations)
+  and on `PLAN_SUBMISSION_MCP.md` M1. **Size**: ~4 files.
+
+- [ ] **B137. `uniqueReference` identifies the user, not the authentication event.** In the
+  `Gov-Client-Multi-Factor` header, `uniqueReference` is a SHA-256 of `sub + ":" + factorType`, so
+  it is stable per user per factor type by design. HMRC's spec expects a reference identifying the
+  authentication **event**. They have not flagged it and it is no part of the current advisory, so
+  this is a separate reading of the spec rather than a defect they have raised. Decide whether to
+  change it, and note that O28's step 2b touches the same code — sequence it after, not with.
+  **Source**: `../REPORT_HMRC_HEADER_ADVISORIES.md`. **Owner**: Claude Code. **Model**: Sonnet. Blocked on O28 step 2b. **Size**: ~1 file.
 
 - [ ] **B124. Prove the three agent workflows by dispatch, in order.** All three are on main,
   `workflow_dispatch` only, every event trigger commented out until a hand-run has earned it.
@@ -380,31 +396,6 @@ and stop. One branch is driven green at a time. Lifted only by the operator in t
   **Source**: `.github/workflows/agentic-lib-*.yml`; run 34716604299.
   **Owner**: Claude Code. **Model**: Sonnet. Blocked on the operator lifting the 2026-09-12 halt. **Size**: ~3 files.
 
-- [ ] **B11.T10. ITSA phase 2: the recognition pack.** `PLAN_ITSA_PHASE_2.md` T10:
-  `_developers/hmrc/ITSA_PRODUCTION_APPROVALS_CHECKLIST.md`, an ITSA pass over the two
-  questionnaires, and the two draft emails for the operator to send. One application now covers
-  both approval stages, and the checklist answers for all nine APIs in the minimum functionality
-  standards with a build behind each. **Source**: BACKLOG 11; `PLAN_ITSA_PHASE_2.md` T10.
-  **Owner**: Claude Code, then Operator. **Model**: Haiku. Blocked on B11.T7r, B11.T21 and
-  B11.T22. **Size**: ~3 files.
-
-- [ ] **B11.T9. ITSA phase 2: the DIYA-GL-to-submission path.** `PLAN_ITSA_PHASE_2.md` T9: the
-  MCP tools `derive_itsa_quarterly_update` and `derive_itsa_annual_submission` in the MCP
-  package, and an import control on `annualSubmission.html` that fills the form from a book.
-  The spreadsheets side's T8 design finds the shipped self-employed template cannot source 31
-  of the 55 ITSA field slots, so the derivations omit those fields; this row must send an
-  omission, never a zero, for a field the book does not carry. Two findings from their side carry
-  SED ids and one changes what this row must do: SED-10 says the self-employed field set changes by
-  tax year — `sa103-mtd-mapping.json` records two allowances gone from 2025-26, an adjustment gone
-  from 2026-27 and two fields added — and their `se-derivations.js` reads none of it, so a book for
-  a year past 2024-25 can carry a field HMRC no longer accepts. The figures are year-agnostic; only
-  the field set moves. Either wait for their SED-10 or filter by year on this side, and say which.
-  SED-2 is theirs: fourteen disallowable categories, seven annual fields and four adjustments the
-  shipped template cannot source at all, which arrive omitted rather than zeroed.
-  **Source**: BACKLOG 11; `PLAN_ITSA_PHASE_2.md` T9. **Owner**: Claude Code. **Model**:
-  Sonnet. Blocked on the spreadsheets repository's ITSA-T8 (the two self-employed derivations)
-  and on `PLAN_SUBMISSION_MCP.md` M1. **Size**: ~4 files.
-
 - [ ] **B70.LU15. Licensing: the brand package.** Pin `@diy-accounting-uk/brand`, copy assets
   and tokens at build, import the tokens, delete the local logo, favicon and token copies;
   the footer, favicon and title conventions read from the words file. **Source**:
@@ -417,6 +408,14 @@ and stop. One branch is driven green at a time. Lifted only by the operator in t
   `npm run video:publish -- --public`. The VAT read-page videos publish beside the three VAT
   ones; the accounts and ITSA videos publish as sandbox previews. **Source**: BACKLOG 17b,
   17c. **Owner**: Claude Code, then Operator. **Model**: Haiku. Blocked on O32. **Size**: ~1 file.
+
+- [ ] **B11.T10. ITSA phase 2: the recognition pack.** `PLAN_ITSA_PHASE_2.md` T10:
+  `_developers/hmrc/ITSA_PRODUCTION_APPROVALS_CHECKLIST.md`, an ITSA pass over the two
+  questionnaires, and the two draft emails for the operator to send. One application now covers
+  both approval stages, and the checklist answers for all nine APIs in the minimum functionality
+  standards with a build behind each. **Source**: BACKLOG 11; `PLAN_ITSA_PHASE_2.md` T10.
+  **Owner**: Claude Code, then Operator. **Model**: Haiku. Blocked on B11.T7r, B11.T21 and
+  B11.T22. **Size**: ~3 files.
 
 - [ ] **O32. View the five walkthrough videos.** After B17v.1: watch each recording and say
   which can go up and what reads wrong. **Source**: BACKLOG 17b, 17c. **Owner**: Operator.
