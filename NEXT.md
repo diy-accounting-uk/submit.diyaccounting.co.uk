@@ -48,8 +48,10 @@ and stop. One branch is driven green at a time. Lifted only by the operator in t
   The `itsa-quarterly-update` capture (run 34774550386) stalled on the dashboard defect PR #201
   fixed; the three `itsa-business-details` captures on `ci-vatview` (runs 34790185457,
   34790343028, 34790629770) failed on browser errors and the scene fix sits on local branch
-  `claude/b31-board` (dd45a7bb, PR #209); both ci captures run against that branch's ci set once
-  deploy 34842572647 stands, dispatched with `--ref claude/b31-board`.
+  `claude/b31-board` (dd45a7bb, PR #209); the two ci captures were dispatched against
+  `ci-claud3123` (self-destructs 14:41 UTC) at 13:10 UTC on 2026-09-14 by the videos agent, whose
+  recordings check and `videos/publish.json` land on local branch `claude/b31-videos`, held
+  unpushed until cool-down lifts.
   Then check all five artifacts and write `videos/publish.json`, replacing the 2026-09-07
   `itsa-business-details` entry. Two things the scripts could not settle: the quarterly-update
   script stops with the form filled except `businessId` (only known at run time), and
@@ -73,15 +75,17 @@ and stop. One branch is driven green at a time. Lifted only by the operator in t
 
 - [ ] **B34.6b. Companies House accounts filing: the sandbox proof.** Submission 000004 (presenter
   E0000052288, company 06846849, 2026-09-13 19:04 UTC) was ACCEPTED by the XML Gateway test
-  service; every `GetSubmissionStatus` poll for it answers 9999 "No presenter ID supplied". Since
-  PR #207 the status poll logs the redacted request and response XML. Left: poll 000004 once on
-  PR #209's ci set (deploy 34842572647, branch `claude/b31-board`) and read what the gateway
-  saw; O44 asks Companies
-  House in parallel. The `prod` listing (held as unreferenced local commit 946251d4) waits on a
-  poll that returns a status. **Source**: BACKLOG 34b. **Owner**: Claude Code. **Model**: Sonnet.
-  **Size**: no committed files.
-
-## Machine-only
+  service; every `GetSubmissionStatus` poll for it answers 9999 "No presenter ID supplied", the
+  tenth at 13:12:48 UTC on 2026-09-14 (transaction 1789391567972, on `ci-claud3123`). The logged
+  request is schema-correct: `SubmissionNumber` then `PresenterID` in the
+  `xmlgw.companieshouse.gov.uk` namespace, and the same header authenticated the accepted
+  submission. One asymmetry is left to try: the header's `SenderID` is `md5(presenterId)`, the
+  body's `PresenterID` is plaintext. Sending the hashed form is on local branch
+  `claude/ltd-status-poll` (474c7240, one file and its test, unpushed, held until cool-down
+  lifts); then a ci deploy carrying it and one poll settle it. O44 asks Companies House in
+  parallel and can cite the 13:12:48 transaction. The `prod` listing (held as unreferenced local
+  commit 946251d4) waits on a poll that returns a status. **Source**: BACKLOG 34b. **Owner**:
+  Claude Code. **Model**: Sonnet. **Size**: ~1 file.
 
 - [ ] **B47. Read the Monday crons' first run on their new slots.** `compliance.yml` (06:06 UTC
   Monday) and `stack-drift.yml` (06:36) moved off the top of the hour after firing five hours late
