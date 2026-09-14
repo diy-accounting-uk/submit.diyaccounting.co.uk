@@ -174,7 +174,7 @@ describe("services/companiesHouseXmlGateway", () => {
       expect(firstElementText(document, "Class")).toBe(firstElementText(exampleDocument, "Class"));
       expect(firstElement(document, "GetSubmissionStatus")).toBeTruthy();
       expect(firstElement(exampleDocument, "GetSubmissionStatus")).toBeTruthy();
-      expect(firstElementText(document, "PresenterID")).toBe(baseInput.presenterId);
+      expect(firstElementText(document, "PresenterID")).toBe(hashPresenterCredential(baseInput.presenterId));
     });
 
     test("carries SubmissionNumber when given one", () => {
@@ -301,7 +301,7 @@ describe("services/companiesHouseXmlGateway", () => {
   describe("redactPresenterCredentials", () => {
     const baseInput = { presenterId: "12345678901", presenterCode: "SimTest1", submissionNumber: "AAA001", transactionId: "2" };
 
-    test("removes the plaintext PresenterID a status request body carries", () => {
+    test("removes the hashed PresenterID a status request body carries", () => {
       const xml = buildStatusRequest(baseInput);
       const redacted = redactPresenterCredentials(xml);
       expect(redacted).not.toContain(baseInput.presenterId);

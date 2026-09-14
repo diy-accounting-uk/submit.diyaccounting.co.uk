@@ -192,6 +192,13 @@ export function buildAccountsSubmission({
 /**
  * Build the GovTalk envelope for a GetSubmissionStatus poll.
  *
+ * The body's PresenterID carries the same hashed form as the Header's SenderID
+ * (hashPresenterCredential(presenterId)), not the plaintext presenter id: the gateway
+ * authenticates the header against the hash, then answers "No presenter ID supplied" for the
+ * plaintext body value - consistent with it matching the body PresenterID against the
+ * authenticated sender in that same hashed form. Companies House's own example is ambiguous on
+ * this; the plaintext form is what error 9999 refuted, this is the untried alternative.
+ *
  * @param {object} input
  * @param {string} input.presenterId
  * @param {string} input.presenterCode
@@ -215,7 +222,7 @@ export function buildStatusRequest({
 
   const bodyXml = `<GetSubmissionStatus xmlns="http://xmlgw.companieshouse.gov.uk">
       ${identifierXml}
-      <PresenterID>${escapeXmlText(presenterId)}</PresenterID>
+      <PresenterID>${escapeXmlText(hashPresenterCredential(presenterId))}</PresenterID>
     </GetSubmissionStatus>`;
 
   return buildEnvelopeXml({ requestClass: "GetSubmissionStatus", transactionId, gatewayTest, presenterId, presenterCode, bodyXml });
@@ -302,9 +309,10 @@ export async function allocateSubmissionNumber() {
 
 /**
  * Redact the presenter id and presenter authentication value from a GovTalk envelope before it is
- * logged: the plaintext PresenterID a GetSubmissionStatus request body carries, and the hashed
- * SenderID / IDAuthentication Authentication Value every envelope's Header carries (request and
- * response alike, the response echoing the request's SenderDetails).
+ * logged: the PresenterID a GetSubmissionStatus request body carries (the hashed form, matching
+ * the Header's SenderID), and the hashed SenderID / IDAuthentication Authentication Value every
+ * envelope's Header carries (request and response alike, the response echoing the request's
+ * SenderDetails).
  * @param {string} xml
  * @returns {string}
  */
