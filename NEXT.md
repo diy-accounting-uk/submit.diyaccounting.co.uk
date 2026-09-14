@@ -98,21 +98,18 @@ Every item names its model: the lowest tier that fits (Fable > Opus > Sonnet > H
   metric filter in `ObservabilityStack.java` with its test, and the issue closes when it reaches
   prod. **Source**: issue #206. **Owner**: Claude Code. **Model**: Haiku. **Size**: ~2 files.
 
-- [ ] **B52v. Review the sign-in navigation on the operator dashboard.** The operator asked on
-  2026-09-13 for the sign-in path of `https://submit.diyaccounting.co.uk/operator/dashboard.html`
-  to be reviewed. The page carries its own auth section (`web/public/operator/dashboard.html`
-  lines 90-93: "Not logged in" and a `../auth/login.html` link) and shows "Not authorised to view
-  the operator dashboard." (line 300) when the bundle is missing. Walk the path signed out, signed
-  in without the bundle, and signed in with it: does the page return to itself after sign-in, does
-  the denial name the missing pass, and does the header match the rest of the site's sign-in
-  controls. Fix what the walk shows, with a browser test under `web/browser-tests/`. The operator's first attempt at 23:38 UTC on 2026-09-13,
-  signed in, ended in a 5xx: issues #204 (`prod-e371587-app-api-5xx`) and #203
-  (`operator-snapshot-get-log-errors`); that deployment's logs are gone, so reproduce on
-  `prod-b364438` or read the log of the next attempt (`/aws/lambda/prod-b364438-app-operator-snapshot-get`;
-  `app/functions/analytics/operatorSnapshotGet.js`)
-  and make the no-bundle path a 403 with a message naming the operator pass. Both issues close
-  with this row. **Source**:
-  operator, 2026-09-13. **Owner**: Claude Code. **Model**: Sonnet. **Size**: ~2 files.
+- [ ] **B52v. The 5xx behind the operator dashboard's first open.** The sign-in path is on
+  `claude/b31-board` (82ea7ab8): the activity is listed for a signed-in operator, the denial names
+  the pass, the page uses the shared header and returns to itself after sign-in. The 5xx of 23:38
+  UTC on 2026-09-13 (issues #204 `prod-e371587-app-api-5xx` and #203
+  `operator-snapshot-get-log-errors`) is not reproduced: that deployment's logs are gone,
+  `prod-b364438`'s `operator-snapshot-get` log group has no events, the Lambda's role holds
+  `dynamodb:Query` on `prod-env-bundles` and `s3:GetObject` on `snapshots/prod/*`, and the
+  object exists. Left: read `/aws/lambda/prod-<set>-app-operator-snapshot-get` after B52z's
+  attempt on the batch's prod set and fix what it logs; both issues close then. `auth-status.js`'s
+  `logout()` awaits `window.envReady` unconditionally, which throws on a page that never loads
+  `submit.js` (the agent's finding, unfixed). **Source**: operator, 2026-09-13. **Owner**: Claude
+  Code. **Model**: Sonnet. **Size**: ~1 file.
 
 - [ ] **B34.6b. Companies House accounts filing: the sandbox proof.** Submission 000004 (presenter
   E0000052288, company 06846849, 2026-09-13 19:04 UTC) was ACCEPTED by the XML Gateway test
