@@ -38,15 +38,6 @@ Every item names its model: the lowest tier that fits (Fable > Opus > Sonnet > H
 
 ## In flight
 
-- [ ] **B17v.1. Capture the five walkthrough videos.** All five recordings are checked and in
-  `videos/publish.json` on `claude/b31-videos` (296db202, PR #215): the three prod captures
-  (`view-liabilities` run 34651931632, `view-payments` 34689643435, `view-penalties` 34689889022)
-  and the two ITSA sandbox previews recorded against ci's apex from `main`
-  (`itsa-business-details` 34904243853, `itsa-quarterly-update` 34904726583). The quarterly-update
-  recording stops with the form filled except `businessId`, known only at run time. Left: the PR
-  merges; O32 then views the five. **Source**: BACKLOG 17b, 17c. **Owner**: Claude Code.
-  **Model**: Sonnet. **Size**: ~1 file.
-
 ## Machine-only
 
 - [ ] **B156. The alarm-triage skip comment runs `gh` without a repository.** Run 34862119217
@@ -191,6 +182,12 @@ Every item names its model: the lowest tier that fits (Fable > Opus > Sonnet > H
   changes. **Model**: Sonnet. **Size**: ~1 file.
 
 ## Human-only
+
+- [ ] **O32. View the five walkthrough videos.** The recordings are in `videos/publish.json`
+  (`view-liabilities` run 34651931632, `view-payments` 34689643435, `view-penalties` 34689889022,
+  `itsa-business-details` 34904243853, `itsa-quarterly-update` 34904726583; `videos/PUBLISH.md`
+  step 1 downloads them). Watch each and say which can go up and what reads wrong. **Source**:
+  BACKLOG 17b, 17c. **Owner**: Operator. **Model**: none.
 
 - [ ] **O17. Register the Companies House sandbox test user and set four ci values.**
   Companies House has no create-test-user API, so the operator registers a throwaway account
@@ -355,9 +352,7 @@ Every item names its model: the lowest tier that fits (Fable > Opus > Sonnet > H
   **Owner**: Claude Code, then Operator. **Model**: Haiku. Blocked on B11.T7r, B11.T21 and
   B11.T22. **Size**: ~3 files.
 
-- [ ] **O32. View the five walkthrough videos.** After B17v.1: watch each recording and say
-  which can go up and what reads wrong. **Source**: BACKLOG 17b, 17c. **Owner**: Operator.
-  **Model**: none. Blocked on B17v.1.
+
 
 ## Discipline
 
