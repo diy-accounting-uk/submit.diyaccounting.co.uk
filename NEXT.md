@@ -17,7 +17,7 @@ Haiku; the lowest tier that fits). Anything touching code goes through a `claude
 PR; the operator merges.
 
 **Prod runs deployment prod-b364438** (main at b364438e, the daily 04:11 UTC deploy cron run
-5h39m late as run 34830100013, promoted 11:0x UTC on 2026-09-14, which destroyed `prod-5ca7bca`);
+5h39m late as run 34830100013, promoted 10:22 UTC on 2026-09-14 and `prod-5ca7bca` destroyed by 10:42);
 the only prod set.
 **ci at 08:05 UTC**: no set standing; the sweep (run 34820856912) found none and set
 `/submit/ci/last-known-good-deployment` to None.
