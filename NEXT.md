@@ -16,11 +16,10 @@ runs), and for Claude Code steps the **Model** a sub-agent should use (Fable > O
 Haiku; the lowest tier that fits). Anything touching code goes through a `claude/*` branch and
 PR; the operator merges.
 
-**Prod runs deployment prod-b364438** (main at b364438e, the daily 04:11 UTC deploy cron run
-5h39m late as run 34830100013, promoted 10:22 UTC on 2026-09-14 and `prod-5ca7bca` destroyed by 10:42);
-the only prod set.
-**ci at 12:00 UTC**: no app stack in the account and `/submit/ci/last-known-good-deployment`
-is None (the 08:04 sweep, run 34820856912).
+**Prod runs deployment prod-658f986** (PR #209's merge, batch b31, promoted 15:30 UTC on 2026-09-14
+by run 34856840995, which destroyed `prod-b364438`); the only prod set.
+**ci at 15:40 UTC**: none standing; `ci-claud3123` self-destructed at 14:41 and the 16:34 sweep
+sets last-known-good to None.
 
 The board runs in five sections, in this order: **in flight** (a branch, a pull request or a run
 in motion, each named in the row), **machine-only**, **human and machine**, **human-only**,
