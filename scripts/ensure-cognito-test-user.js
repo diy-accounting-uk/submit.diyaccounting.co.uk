@@ -46,14 +46,10 @@ import {
 import { execFileSync } from "child_process";
 import crypto from "crypto";
 import fs from "fs";
+import { fileURLToPath } from "node:url";
 
 const environmentName = process.argv[2];
 const testLane = process.argv[3];
-
-if (!environmentName || !testLane) {
-  console.error("Usage: node scripts/ensure-cognito-test-user.js <environment-name> <test-lane>");
-  process.exit(1);
-}
 
 function durableTestUserEmail(lane) {
   const slug = lane
@@ -65,7 +61,24 @@ function durableTestUserEmail(lane) {
   return `synthetic-${slug}@test.diyaccounting.co.uk`;
 }
 
-async function main() {
+// GitHub does not mask a step's outputs by default, so a caller that reads
+// steps.<id>.outputs.test-auth-password or .test-auth-totp-secret into an env: block prints
+// them unmasked wherever that block's values reach the log. Register both as masked secrets
+// before writing them out, so every later log line in this job replaces them with ***. The
+// username is not a secret and stays visible.
+export function writeGithubOutputCredentials(testEmail, testPassword, totpSecret, githubOutputPath = process.env.GITHUB_OUTPUT) {
+  if (!githubOutputPath) return;
+  console.log(`::add-mask::${testPassword}`);
+  console.log(`::add-mask::${totpSecret}`);
+  fs.appendFileSync(githubOutputPath, `test-auth-username=${testEmail}\ntest-auth-password=${testPassword}\ntest-auth-totp-secret=${totpSecret}\n`);
+}
+
+export async function main() {
+  if (!environmentName || !testLane) {
+    console.error("Usage: node scripts/ensure-cognito-test-user.js <environment-name> <test-lane>");
+    process.exit(1);
+  }
+
   const testEmail = durableTestUserEmail(testLane);
 
   console.log("=== Ensuring Cognito Test User ===");
@@ -256,13 +269,7 @@ async function main() {
     console.log("");
 
     // Output for GitHub Actions
-    if (process.env.GITHUB_OUTPUT) {
-      // Test system credentials - intentionally not masked so they appear in job summary
-      fs.appendFileSync(
-        process.env.GITHUB_OUTPUT,
-        `test-auth-username=${testEmail}\ntest-auth-password=${testPassword}\ntest-auth-totp-secret=${totpSecret}\n`,
-      );
-    }
+    writeGithubOutputCredentials(testEmail, testPassword, totpSecret);
 
     // Also output as simple key=value format for easy sourcing
     console.log(`TEST_AUTH_USERNAME=${testEmail}`);
@@ -274,4 +281,6 @@ async function main() {
   }
 }
 
-main();
+if (process.argv[1] === fileURLToPath(import.meta.url)) {
+  main();
+}
