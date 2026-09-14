@@ -16,11 +16,10 @@ runs), and for Claude Code steps the **Model** a sub-agent should use (Fable > O
 Haiku; the lowest tier that fits). Anything touching code goes through a `claude/*` branch and
 PR; the operator merges.
 
-**Prod runs deployment prod-e371587** (PR #202's merge, promoted about 22:45 UTC on 2026-09-13
-by run 34786322080, carrying batch b29, the filing-callback fix, the accounts envelope fix, the ITSA
-dashboard fix and the lane-user fix); the same run is destroying `prod-a8cb1ea`, the only other set.
-**ci at 23:10 UTC**: `ci-vatview` is live (pointer; main at `e3715879`; self-destructs 00:48 on
-2026-09-14); `ci-b29w2` self-destructs at 23:11.
+**Prod runs deployment prod-5ca7bca** (PR #207's merge, batch b30, promoted 02:38 UTC on 2026-09-14
+by run 34796067321, which destroyed `prod-e371587`); the only prod set.
+**ci at 05:50 UTC**: unverified (no SSO session); `ci-vatview` and `ci-claud3386` were both due to
+self-destruct before the 04:34 sweep.
 
 The board runs in five sections, in this order: **in flight** (a branch, a pull request or a run
 in motion, each named in the row), **machine-only**, **human and machine**, **human-only**,
@@ -40,10 +39,46 @@ Every item names its model: the lowest tier that fits (Fable > Opus > Sonnet > H
 
 ## In flight
 
-Nothing: no branch, pull request or run carries an open row. Batch b30 merged as PR #207
-(5ca7bca9); its deploy of `main` is the proof and rolls the apex back on a failed probe.
+- [ ] **B17v.1. Capture the five walkthrough videos.** The three prod captures are done
+  (`view-liabilities` run 34651931632, `view-payments` 34689643435, `view-penalties` 34689889022).
+  The `itsa-quarterly-update` capture (run 34774550386) stalled on the dashboard defect PR #201
+  fixed; the three `itsa-business-details` captures on `ci-vatview` (runs 34790185457,
+  34790343028, 34790629770) failed on browser errors and the scene fix sits on local branch
+  `claude/b30-videos` (182acf07); `ci-vatview` is gone, so both ci captures need a fresh ci deploy
+  of `main` (`gh workflow run deploy.yml -f environment-name=ci -f deployment-name=<name>`).
+  Then check all five artifacts and write `videos/publish.json`, replacing the 2026-09-07
+  `itsa-business-details` entry. Two things the scripts could not settle: the quarterly-update
+  script stops with the form filled except `businessId` (only known at run time), and
+  `itsa-business-details.json` may no longer pass since the activity's first page is
+  `dashboard.html`. **Source**: BACKLOG 17b, 17c. **Owner**: Claude Code. **Model**: Sonnet. **Size**: ~1 file.
+
+
+
+- [ ] **B80b. The identity guard has to reach the other four repositories.** Submit carries
+  `.github/allowed-commit-identities.yml`, `.github/workflows/identity-guard.yml` and
+  `scripts/check-commit-identities.sh`: a pull-request check that fails when a commit's author email
+  is not on a plain, human-edited allow list. Spreadsheets carries it on main (29e13023) and the other three have open PRs awaiting
+  O46: www #31, root #32, archive #35. Spreadsheets was the one with the actual incident —
+  twenty commits authored `noreply@anthropic.com` by a sub-agent setting the identity inline — so it
+  goes first; `www`, `root` and `archive` follow.
+  **Operator decisions, 2026-09-12.** All four from worktrees in this session, one PR each, no
+  sibling checkout touched — the method already used for the attribution-pointer PRs. Each allow
+  list is derived from that repository's own author history, and the PR body prints every address
+  with its commit count and date range for O46's review. The check fails the PR, matching submit,
+  rather than reporting non-blocking.
+  **Source**: B80's fix. **Owner**: Claude Code. **Model**: Haiku per repository. **Size**: ~12 files.
 
 ## Machine-only
+
+- [ ] **B52y. The five wired objectives fill on the next nightly.** PR #207 gave
+  `low-running-cost`, `security`, `retention`, `operator-effort` and `compliance` their
+  observations; the 02:15 UTC snapshot after 5ca7bca9 reaches prod is the first that carries
+  them. That run raised `prod-env-operator-snapshot-publish-errors` (issue #208, 03:18 UTC):
+  read `/aws/lambda/prod-env-operator-snapshot-publish` for 03:15 on 2026-09-14 (needs an SSO
+  session), fix the observation whose query errors, then check `snapshots/prod/latest.json` for
+  any observation that answers null where its view has rows (two views are monthly or quarterly grain, so a 30-day
+  window can be empty by design). **Source**: `PLAN_ONE_STOP_DASHBOARD.md` D7, D13, D14, D15.
+  Closes #208. **Owner**: Claude Code. **Model**: Sonnet. **Size**: ~1 file.
 
 - [ ] **B30x. The CIS console-sign-in-without-MFA alarm fires on SSO sign-ins.** Issue #206:
   `prod-env-cis-console-signin-without-mfa` fired at 23:42 UTC on 2026-09-13 for the operator's
@@ -62,13 +97,6 @@ Nothing: no branch, pull request or run carries an open row. Batch b30 merged as
   poll that returns a status. **Source**: BACKLOG 34b. **Owner**: Claude Code. **Model**: Sonnet.
   **Size**: no committed files.
 
-- [ ] **B52y. The five wired objectives fill on the next nightly.** PR #207 gave
-  `low-running-cost`, `security`, `retention`, `operator-effort` and `compliance` their
-  observations; the 02:15 UTC snapshot after 5ca7bca9 reaches prod is the first that carries
-  them. Read `snapshots/prod/latest.json` after it and fix any observation whose query errors or
-  answers null where its view has rows (two views are monthly or quarterly grain, so a 30-day
-  window can be empty by design). **Source**: `PLAN_ONE_STOP_DASHBOARD.md` D7, D13, D14, D15.
-  **Owner**: Claude Code. **Model**: Sonnet. **Size**: ~1 file.
 
 - [ ] **B25c. Issue #11, backups outside the account.** The drill's own state is now known and
   written up in `_developers/RESTORE_DRILL.md`: `restore-drill.yml` has never run, and two things
@@ -83,19 +111,6 @@ Nothing: no branch, pull request or run carries an open row. Batch b30 merged as
 
 
 
-
-
-- [ ] **B17v.1. Capture the five walkthrough videos.** The three prod captures are done
-  (`view-liabilities` run 34651931632, `view-payments` 34689643435, `view-penalties` 34689889022).
-  The `itsa-quarterly-update` capture (run 34774550386) stalled on the dashboard defect PR #201
-  fixed; both ci captures re-run against a ci set carrying `main` at `a8cb1ea6` or later: `ci-vatview`
-  (main at `e3715879`) stands until its self-destruct at 00:48 UTC on 2026-09-14, after that a
-  fresh ci deploy of `main`.
-  Then check all five artifacts and write `videos/publish.json`, replacing the 2026-09-07
-  `itsa-business-details` entry. Two things the scripts could not settle: the quarterly-update
-  script stops with the form filled except `businessId` (only known at run time), and
-  `itsa-business-details.json` may no longer pass since the activity's first page is
-  `dashboard.html`. **Source**: BACKLOG 17b, 17c. **Owner**: Claude Code. **Model**: Sonnet. **Size**: ~1 file.
 
 
 
@@ -117,18 +132,10 @@ Nothing: no branch, pull request or run carries an open row. Batch b30 merged as
 
 
 
-- [ ] **B80b. The identity guard has to reach the other four repositories.** Submit carries
-  `.github/allowed-commit-identities.yml`, `.github/workflows/identity-guard.yml` and
-  `scripts/check-commit-identities.sh`: a pull-request check that fails when a commit's author email
-  is not on a plain, human-edited allow list. Spreadsheets is the one with the actual incident —
-  twenty commits authored `noreply@anthropic.com` by a sub-agent setting the identity inline — so it
-  goes first; `www`, `root` and `archive` follow.
-  **Operator decisions, 2026-09-12.** All four from worktrees in this session, one PR each, no
-  sibling checkout touched — the method already used for the attribution-pointer PRs. Each allow
-  list is derived from that repository's own author history, and the PR body prints every address
-  with its commit count and date range for O46's review. The check fails the PR, matching submit,
-  rather than reporting non-blocking.
-  **Source**: B80's fix. **Owner**: Claude Code. **Model**: Haiku per repository. **Size**: ~12 files.
+
+
+
+
 
 ## Human and machine
 
