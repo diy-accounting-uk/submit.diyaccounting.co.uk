@@ -47,13 +47,16 @@ What it covers, so the brief need not be rewritten per session:
 - **State from the API**: `gh run list --json` with `jq`, never a log grep.
 - **Empty result sets counted**, not read as green.
 - **A failed `gh` call skips the cycle** instead of ending the loop.
-- **Probe merge-readiness every cycle.** A watch that only reports reds leaves a PR sitting green
+- **Probe merge-readiness every cycle, from push and pull_request events only.** A watch that only reports reds leaves a PR sitting green
   for however long nobody looks. Each poll, for every open PR that is not a draft, take the **latest
-  run of each distinct workflow on its branch** and call the PR ready when **none of those latest
+  run of each distinct workflow on its branch from push or pull_request events** and call the PR ready when **none of those latest
   runs is still incomplete, and none of them failed**:
 
-      gh run list --branch <headRef> --limit 60 --json workflowName,status,conclusion,databaseId \
-        | jq 'group_by(.workflowName) | map(max_by(.databaseId))'
+      gh run list --branch <headRef> --limit 60 --json workflowName,status,conclusion,databaseId,event \
+        | jq '[.[] | select(.event == "push" or .event == "pull_request")] | group_by(.workflowName) | map(max_by(.databaseId))'
+
+  Only push and pull_request events gate the merge readiness check. Workflow dispatch runs, scheduled runs, and other non-gating events
+  do not affect merge readiness, preventing hand-dispatched workflows from blocking ready PRs.
 
   Incomplete is `queued` or `in_progress`. Failed is `failure`, `timed_out` or `action_required`.
   Anything else — `success`, and also `skipped`, `cancelled` or `neutral` — does not hold the PR

@@ -93,14 +93,19 @@ Say which gate stopped each ineligible PR. "Not ready" without a reason is usele
 
 ## Part 4 — the workflow check
 
-For each eligible PR, list the **distinct workflows that have run against its head SHA**, and take
-the latest run of each:
+For each eligible PR, list the **distinct workflows that have run against its head SHA from push or
+pull_request events**, and take the latest run of each:
 
 ```bash
-gh run list --branch <headRef> --limit 60 --json headSha,workflowName,status,conclusion,databaseId
+gh run list --branch <headRef> --limit 60 --json headSha,workflowName,status,conclusion,databaseId,event \
+  | jq 'map(select(.event == "push" or .event == "pull_request"))'
 ```
 
-Filter to the head SHA, group by `workflowName`, keep the newest per group.
+Filter to the head SHA, filter to push or pull_request events, group by `workflowName`, keep the newest per group.
+
+**Only push and pull_request events gate the merge.** Workflow dispatch runs (manual or automatic video
+capture), scheduled runs, and issue-triggered runs are not checks on the PR and do not prevent a merge.
+This prevents hand-dispatched recordings or maintenance workflows from incorrectly blocking ready PRs.
 
 Merge only when every one of those latest runs has `conclusion == "success"`.
 

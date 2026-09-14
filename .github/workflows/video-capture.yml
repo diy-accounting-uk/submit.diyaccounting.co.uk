@@ -137,7 +137,10 @@ jobs:
           retry-max-attempts: 3
 
       - name: Read back last known good deployment from SSM Parameter Store
-        if: ${{ needs.params.outputs.deployment-name == '' }}
+        # Runs even when deployment-name is given, so an explicit name can be checked against
+        # it below: the apex only serves the last-known-good deployment, and sign-in only
+        # completes on the apex (Cognito's registered redirect_uri), so recording an explicit
+        # deployment that the apex does not serve records a broken sign-in.
         run: |
           PARAMETER_NAME="/submit/${{ needs.params.outputs.github-environment }}/last-known-good-deployment"
           LAST_KNOWN_GOOD=$(aws ssm get-parameter --name "$PARAMETER_NAME" --query "Parameter.Value" --output text 2>/dev/null || echo "")
@@ -146,13 +149,25 @@ jobs:
           fi
           echo "Last known good deployment: ${LAST_KNOWN_GOOD:-<none>}"
 
+      - name: Fail if the named deployment is not the environment's last-known-good
+        if: ${{ needs.params.outputs.deployment-name != '' }}
+        run: |
+          LAST_KNOWN_GOOD=$(cat /tmp/last_known_good_deployment.txt 2>/dev/null || echo "")
+          NAMED="${{ needs.params.outputs.deployment-name }}"
+          if [ "$NAMED" != "$LAST_KNOWN_GOOD" ]; then
+            echo "::error::deployment-name=${NAMED} is not the environment's last-known-good ${LAST_KNOWN_GOOD:-<none>}; the apex serves ${LAST_KNOWN_GOOD:-<none>} and sign-in only completes on the apex" >&2
+            exit 1
+          fi
+
       - name: Resolve deployment name
         id: deployment-name
         run: |
-          if [ -s /tmp/last_known_good_deployment.txt ]; then
+          if [ -n "${{ needs.params.outputs.deployment-name }}" ]; then
+            echo "deployment-name=${{ needs.params.outputs.deployment-name }}" | tee -a "$GITHUB_OUTPUT"
+          elif [ -s /tmp/last_known_good_deployment.txt ]; then
             echo "deployment-name=$(cat /tmp/last_known_good_deployment.txt)" | tee -a "$GITHUB_OUTPUT"
           else
-            echo "deployment-name=${{ needs.params.outputs.deployment-name }}" | tee -a "$GITHUB_OUTPUT"
+            echo "deployment-name=" | tee -a "$GITHUB_OUTPUT"
           fi
 
       - name: Compute environment name and apex URL
@@ -253,14 +268,12 @@ jobs:
             --script "videos/${{ needs.params.outputs.script }}.json" \
             --out "target/videos/${{ needs.params.outputs.script }}"
         env:
-          # An explicit deployment-name input names one deployment among several that can be
-          # live on an environment at once; it has to record against that deployment's own
-          # base-url, not the environment's apex, or the run silently records whatever
-          # deployment currently holds the apex's live pointer instead. Auto-resolved runs (no
-          # explicit input) keep recording at the apex/public URL, unchanged - that is right for
-          # prod, where public-url is the real submit.diyaccounting.co.uk domain the video is
-          # meant to show, and for ci this stays the apex, as before.
-          DIY_SUBMIT_BASE_URL: ${{ needs.params.outputs.deployment-name != '' && needs.names.outputs.base-url || needs.names.outputs.public-url }}
+          # Always the environment's apex/public URL, never a deployment's own subdomain:
+          # Cognito's registered redirect_uri is the apex, so sign-in only completes there.
+          # The names job fails the run before this step if an explicit deployment-name input
+          # is not the environment's last-known-good, so by this point the apex is guaranteed
+          # to serve whichever deployment is being recorded.
+          DIY_SUBMIT_BASE_URL: ${{ needs.names.outputs.public-url }}
           HMRC_ACCOUNT: synthetic
           # HMRC_SANDBOX_CLIENT_ID is a test application credential - not a production secret
           HMRC_SANDBOX_CLIENT_ID: 'uqMHA6RsDGGa7h8EG2VqfqAmv4tV'

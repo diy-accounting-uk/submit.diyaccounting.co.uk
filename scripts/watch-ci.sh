@@ -15,9 +15,17 @@ scope() {
   { echo main; gh pr list --state open --limit 50 --json headRefName --jq '.[].headRefName' 2>/dev/null; } | sort -u
 }
 
-latest_runs() { # branch -> json array of latest run per workflow
-  gh run list --branch "$1" --limit 60 --json workflowName,status,conclusion,databaseId,headSha 2>/dev/null \
+all_latest_runs() { # branch -> json array of all latest runs per workflow
+  gh run list --branch "$1" --limit 60 --json workflowName,status,conclusion,databaseId,headSha,event 2>/dev/null \
     | jq -c 'group_by(.workflowName) | map(max_by(.databaseId))' 2>/dev/null
+}
+
+latest_runs() { # branch -> json array of latest run per workflow (push or pull_request events only)
+  all_latest_runs "$1" | jq -c '[.[] | select(.event == "push" or .event == "pull_request")]' 2>/dev/null
+}
+
+non_gating_runs() { # branch -> json array of latest runs that are not push or pull_request
+  all_latest_runs "$1" | jq -c '[.[] | select(.event != "push" and .event != "pull_request")]' 2>/dev/null
 }
 
 cycle=0
@@ -41,6 +49,12 @@ while true; do
         fi
       done
     red=$((red + $(echo "$runs" | jq '[.[] | select(.status == "completed" and (.conclusion == "failure" or .conclusion == "timed_out" or .conclusion == "action_required" or .conclusion == "startup_failure"))] | length')))
+
+    # Report non-gating runs (workflow_dispatch, schedule, issues, etc.) once per cycle
+    non_gating=$(non_gating_runs "$branch")
+    [ -z "$non_gating" ] && continue
+    ng=$(echo "$non_gating" | jq 'length')
+    [ "$ng" -gt 0 ] && [ "$cycle" -gt 1 ] && echo "NOT GATING $branch: $ng run(s) ($(echo "$non_gating" | jq -r '.[].event' | sort | uniq | paste -sd ',' -))"
   done
   if [ "$total" -eq 0 ]; then
     empty=$((empty + 1))
