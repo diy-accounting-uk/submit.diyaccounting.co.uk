@@ -40,219 +40,27 @@ Every item names its model: the lowest tier that fits (Fable > Opus > Sonnet > H
 
 ## In flight
 
-**Batch b30 — branch `claude/b30-board`, PR #207**, one commit per row below; deploy of its
-head is the ci proof. Each row leaves when the PR merges and its own remainder (if any) moves to
-its section.
-
-- [ ] **O41x. Redeploy the backup account, then run the drill.** Both ran on 2026-09-14:
-  `setup-backup-account.yml` 34790152940 (both backup stacks UPDATE_COMPLETE, `backup-copy-role`
-  exists) and `restore-drill.yml` 34790429557 (five prod tables restored into ci and deleted:
-  receipts 4901, bundles 680, hmrc-api-requests 3249, passes 8859, subscriptions 449). On the
-  batch: the drill's salt check read a key that never existed (`system#config`/`salt-v2`; the
-  canary is `system#canary`/`salt-health-check`), fixed in `restore-drill.yml`; keepalive's
-  exemption removed. Closes when the PR merges. **Owner**: Claude Code. **Model**: Sonnet.
-  **Size**: ~3 files.
-
-- [ ] **B136. The monthly fraud-header check's Telegram alert cannot publish from launchd.** On
-  `claude/b29-board` (a4094df2): the check DID run on 2026-09-12 and wrote the August record, which
-  was never committed, so `compliance.yml`'s lake job has always read an empty directory; the record
-  is now tracked (`data/compliance/fraud-prevention-headers/2026-08.json`) and
-  `fraud-header-check.yml` fails on the 15th when the month's record is missing. Left: the
-  Telegram publish fails under launchd because `AWS_PROFILE=submit-prod` is SSO and cannot refresh
-  unattended, and `publishActivityEvent` swallows the failure (`app/lib/activityAlert.js`). Either
-  give the launchd job a non-SSO credential path or make the script exit non-zero when the publish
-  fails so the watchdog sees it. O47 decides whether the fetch itself moves to CI. **Source**:
-  `~/Library/Logs/co.uk.diyaccounting.submit.fraud-header-check.log`. **Owner**: Claude Code.
-  **Model**: Sonnet. **Size**: ~2 files.
-
-- [ ] **B52x. Two export views emit no rows.** The 02:15 UTC nightlies of 2026-09-12 and
-  2026-09-13 both SUCCEEDED and wrote 21 CSVs and 8 JSONs under
-  `s3://prod-env-analytics-lake-972912397388/exports/prod/<date>/`; the field counts for
-  2026-09-12 are in `_developers/RAW_EXPORT_FIELD_COUNTS.md` (batch b29). Every field fills except:
-  `v_compliance_status` and `v_subscription_renewals_daily` have zero rows, and three fields are
-  sparse (`v_dora_runs_daily.median_lead_time_seconds` 5 of 8,
-  `v_signup_to_first_submission.signup_day` 10 of 11 and `median_hours_to_first_submission` 3 of
-  11). Renewals are empty because the first renewal is 2026-10-02. `v_compliance_status` being
-  empty is not explained: the compliance panel reads it, so find whether the view's source table
-  is unfed or the view's predicate excludes every row, and fix the feed or the view. Say whether
-  the sparse three are expected (a median needs more than one sample). **Source**: BACKLOG 52;
-  plan row D16. **Owner**: Claude Code. **Model**: Sonnet. **Size**: ~2 files.
-
-- [ ] **B30v. alarm-triage's budget guard swallowed a real alarm.** The grant is on
-  `claude/b29-board` (7d44b687): the copy role had no identity-side allow on the FOCUS bucket;
-  both environments' alarms clear on the next nightly after the batch deploys. What the
-  investigation found instead: ci alarms never raise issues by design (`OpsStack.java:324-330`,
-  Telegram only), but `prod-env-cost-focus-copy-errors` DID raise #173 at 02:46:53 on 2026-09-10
-  and `alarm-triage.yml` run 34430781962 skipped it — its budget guard counted four triage runs in
-  the prior 24 hours (a CIS-compliance burst), set `proceed=false`, and ended green with no comment
-  on the issue, which was later closed unread. Fix: when the guard skips, post one comment on the
-  issue saying so and why, and count only runs that actually triaged towards the budget, so a
-  burst of skips does not extend the outage. Same family: triage run 34758499617 on #196 hit
-  `--max-turns 30` after 148 seconds and posted nothing; post the partial result, or a note that
-  the turn budget ran out, instead of silence. **Source**: run 34430781962; issue #173. **Owner**:
-  Claude Code. **Model**: Sonnet. **Size**: ~1 file.
-
-- [ ] **B142. A sandbox proof iterates on a lean deploy.** B34.6b took three passes and spent
-  submission numbers 000002 and 000003 on pre-fix code because each fix needed a full `deploy.yml`
-  (35 minutes) to reach the ci set and the day's two-submission budget was gone before it could.
-  `npm run deploy:app-ci -- --deployment <set>` updates Lambda code and web assets in three to
-  five minutes. Put in the brief shape for any proof against a real service with a permanent
-  cost per attempt: fix, lean-deploy, re-prove, in one agent turn, and only then spend the next
-  number. **Source**: REPORT_SESSION_Kjw4C_2026-09-13.md. **Owner**: Claude Code. **Model**: Sonnet. **Size**: ~1 file.
-
-- [ ] **B143. An agent reports before its long build returns.** Four agents on 2026-09-13 each
-  stopped one to three times with "waiting for the build": a long foreground `./mvnw clean verify`
-  is promoted to the background and ends the turn, and the agent's next turn only re-waits. Put
-  in `do-next`'s brief shape: commit, start the build with `run_in_background`, and report at
-  once with "build pending, surefire reports at `target/surefire-reports`"; the coordinator reads
-  the reports on the merged tree rather than waiting for the agent's verdict. **Source**:
-  REPORT_SESSION_Kjw4C_2026-09-13.md. **Owner**: Claude Code. **Model**: Haiku. **Size**: ~1 file.
-
-- [ ] **B144. The watch script lives in the repository, written for this host's bash 3.2.** The
-  `/watch` monitor was written twice on 2026-09-13 and died twice: macOS ships bash 3.2, which has no
-  associative arrays, and the failure surfaced as `division by 0` on a branch name. Put the poll
-  loop in `scripts/watch-ci.sh` (state in files, `#!/bin/bash` with a 3.2 guard, `jq` for the API
-  reads) and make the skill run that file instead of composing one per session.
-  **Source**: REPORT_SESSION_Kjw4C_2026-09-13.md. **Owner**: Claude Code. **Model**: Haiku. **Size**: ~2 files.
-
-
-- [ ] **B145. Guidance for the two blocks the operator keeps.** Four pastes on 2026-09-13: `aws sso
-  login` twice (an SSO session lasts about eight hours and expired mid-session), `destroy-prod`
-  for a set already gone, and `git branch -D` after a squash the do-next rule now allows. Write
-  into `CLAUDE.md`: check `aws sts get-caller-identity` before dispatching an AWS-reading wave and
-  ask for the login up front, not at the first failure; and list `git branch -D claude/*` after a
-  proven squash among the commands to allow in `.claude/settings.json`, which is the operator's
-  decision to make. **Source**: REPORT_SESSION_Kjw4C_2026-09-13.md. **Owner**: Claude Code;
-  the allowlist is the operator's. **Model**: Haiku. **Size**: ~1 file.
-
-- [ ] **B30w. The triage role cannot read metric filters.** Issue #197: `alarm-triage-role` was
-  denied `logs:DescribeMetricFilters` on `/aws/cloudtrail/prod-env-cloud-trail` during the triage
-  of #196, which raised `prod-env-cis-unauthorized-api-calls` (OK since 13:07 on 2026-09-13).
-  Add the action to the `ListLogGroups` statement in `ObservabilityStack.java` (about line 832;
-  it takes no resource ARN, like `DescribeLogGroups` beside it) with the CDK test; the issue
-  closes when the change reaches prod. **Source**: issue #197; run 34758720814. **Owner**: Claude
-  Code. **Model**: Haiku. **Size**: ~2 files.
-
-- [ ] **B128. Alarm on the unpaid-charge log line.** The charge-after-success change is on main
-  (#198). A charge failing after HMRC accepted is logged as `Token charge failed after HMRC
-  success` and swallowed, so put a metric filter and alarm on that line, or it is a silent
-  giveaway. **Source**: B117's wiring pass. **Owner**: Claude Code. **Model**: Haiku. **Size**: ~2 files.
-
-- [ ] **B140. `deploy.yml` cancels a push deploy that a named dispatch already covers.** Three
-  times on 2026-09-13 the coordinator cancelled a push-triggered deploy by hand in its first minute
-  because a `workflow_dispatch` with `deployment-name` was about to deploy the same head; left
-  alone, the two run together and contend for the ci apex alias and the lane user. Make the
-  workflow do it: in `deploy.yml`, a dispatch that names a deployment cancels any push-triggered
-  run of the same `github.sha` that has not yet started a stack job (`gh run cancel` from the
-  `params` job, or a concurrency group keyed on the sha with the cancel gated on the run's phase).
-  Never cancel a run that has begun a stack deploy. **Source**: operator, 2026-09-13.
-  **Owner**: Claude Code. **Model**: Haiku. **Size**: ~1 file.
-
-
-
-
-- [ ] **B141. A prod rollback and a failed scheduled probe each raise a GitHub issue.** main's
-  deploy 34773988567 rolled the apex back to `prod-4e15028` after `submitVatBehaviour-prod` failed
-  (job 103776012745); the new set stood unpromoted and nobody was told — a recovered prod incident
-  with no record beyond the run. Open an issue (label `incident`, the same issue-bot token path
-  `alarm-to-github-issue` uses) from `deploy.yml`'s `roll back apex to previous deployment` job
-  naming the run, the failed probes, the set rolled back to and the set left standing; and from
-  `probe-test.yml` when a scheduled run (`github.event_name == 'schedule'`) ends with a failed
-  suite, naming the suite and environment. Close the deploy one automatically when a later deploy
-  promotes a set; leave the probe one for `alarm-triage.yml` or the operator. **Source**: operator,
-  2026-09-13. **Owner**: Claude Code. **Model**: Sonnet. **Size**: ~2 files.
-
-
-- [ ] **B127. A ci set expiring mid-deploy, three shapes.** Both vacate windows are closed on main
-  (ef3aac19, a97d3e36). Seen on 2026-09-13, same family: three ci deploys at once contending for
-  the apex alias (`CNAMEAlreadyExists` on PR #199's set-origins at 15:29) and rotating one shared
-  Cognito lane user under each other (PR #202 fixes the lane-user half); and a branch's own redeploy
-  torn down by its first set's self-destruct (`ci-claud20c8`, created 19:37, fired 21:37 while the
-  rebased push was recreating `ApiStack`: "Function not found …custom-authorizer", run
-  34783054685). For the third: a redeploy of an existing deployment name should reset or extend
-  the `SelfDestructStack` schedule, or refuse to start inside its last 45 minutes. The lane-user half is on main (#202, e3715879): jobs that
-  rotate a lane user queue on that user. **Source**: runs 34762675812, 34763080213, 34783054685. **Owner**: Claude Code. **Model**: Sonnet. **Size**: ~3 files.
-
-- [ ] **B146. One trigger per commit for `test` and CodeQL.** Twelve pushed commits produced 16
-  `test` and 16 CodeQL runs on 2026-09-13 (about 1,150 job-minutes): `push` and `pull_request`
-  both trigger them on a branch with an open PR. Keep one — the spreadsheets repository chose
-  `push` for branches and `pull_request` only for forks (its CQ-29) — and check `deploy.yml`'s
-  `delegate to test workflow` does not add a third. **Source**: REPORT_SESSION_Kjw4C_2026-09-13.md.
-  **Owner**: Claude Code. **Model**: Haiku. **Size**: ~3 files.
-
-- [ ] **B34.6b. Companies House accounts filing: the sandbox proof.** Submission 000004 (presenter
-  E0000052288, company 06846849, 2026-09-13 19:04 UTC, from PR #200's ci set) was ACCEPTED by the
-  XML Gateway test service: HTTP 201, `gatewayTimestamp 2026-09-13T20:04:10-00:00`, no errors.
-  000002 and 000003 were rejected earlier for the `Authority` wrapper, which PR #200 removes. Left:
-  every `GetSubmissionStatus` poll for 000004 (nine over 16 minutes) answers error 9999 "No
-  presenter ID supplied", although `buildStatusRequest()` emits `SubmissionNumber` then
-  `PresenterID` as `GetSubmissionStatus-v2-9.xsd` orders them and the same credentials
-  authenticated the submission. The Lambdas log status codes only, so the raw XML was not
-  captured. O44 asks Companies House whether 000004 was accepted downstream and whether status
-  lookups are enabled for this presenter; meanwhile log the raw gateway request and response bodies
-  (presenter code redacted) in `companiesHouseAccountsGet.js` so the next poll shows what the
-  gateway saw. The `prod` listing stays off until a poll returns a status, because a customer must
-  see the outcome of a filing; that commit is held as the unreferenced local commit
-  946251d4 (no branch carries it). **Source**: BACKLOG 34b. **Owner**: Claude Code. **Model**: Sonnet. **Size**: ~1 file.
-
-
-- [ ] **B125. An HMRC 404 reaches the caller as a 400.** The 403 half is done (`e93bb2ea`, browser
-  test in #198). `http404NotFoundFromHmrcResponse` at `app/services/hmrcApi.js:726` still ends in
-  `http400BadRequestResponse`, the same mislabel; the page shows HMRC's text either way, so only
-  the status code is wrong. Fix it the same way, with the unit test. **Source**: B125's proof.
-  **Owner**: Claude Code. **Model**: Haiku. **Size**: ~2 files.
-
-
-- [ ] **B122. Clear the last 13 eslint findings.** 39 of the 52 are on `claude/b29-board`
-  (0036ec61 to 31a2eefc; three were real defects: an O(n²) email regex in
-  `companiesHouseRegisteredEmailAddressPost.js`, `diff` resolved from PATH in
-  `cdk-typescript/scripts/diff-templates.mjs`, a super-linear Link-header regex in
-  `companiesHouseApi.js`). The 13 left sat in files other b29 tracks were editing:
-  `no-unused-vars`/`sonarjs/unused-import` at line 9 of `hmrcItsaSelfEmploymentAnnualPut.js`,
-  `hmrcItsaSelfEmploymentPeriodPut.js`, `hmrcItsaUkPropertyAnnualPut.js`,
-  `hmrcItsaUkPropertyPeriodPut.js`; `sonarjs/regex-complexity` and `concise-regex` at
-  `hmrcItsaFinalDeclarationPost.js:50`; `sonarjs/prefer-single-boolean-return` at
-  `hmrcVatReturnPost.js:77`; `sonarjs/hashing` at `companiesHouseXmlGateway.js:92`;
-  `promise/always-return` at `web/public/lib/analytics.js:100`. Re-count after the batch merges —
-  the token and accounts-filing tracks touched those files — and clear what is left.
-  **Source**: batch 27's lint job. **Owner**: Claude Code. **Model**: Haiku. **Size**: ~8 files.
-
-- [ ] **B52z. No pass type grants the `operator` bundle.** `web/public/operator/dashboard.html` is on
-  prod behind the `operator` bundle (`submit.catalogue.toml`, allocation `on-email-match`), but
-  `submit.passes.toml` has no `operator` pass type and `prod-env-passes` holds no pass for that
-  bundle, so the page denies everyone. Add the pass type (email-restricted, one use, one year, in
-  the shape of `resident-pro-comp`) and the option in `generate-pass.yml`; then the operator
-  dispatches `gh workflow run generate-pass.yml -f pass-type=operator -f email=<sign-in email>
-  -f environment=prod` and redeems the QR. **Source**: `PLAN_ONE_STOP_DASHBOARD.md` D1. **Owner**:
-  Claude Code, then Operator. **Model**: Haiku. **Size**: ~2 files.
-
-- [ ] **B52y. Five dashboard objectives publish no observations.** `app/functions/analytics/operatorSnapshotPublish.js`
-  lines 174-178 declare `low-running-cost`, `security`, `retention`, `operator-effort` and
-  `compliance` with `observations: []`, so the operator page shows them empty while the lake views
-  behind them (`v_cost_vs_target_monthly`, the security and retention views, the operator-effort
-  views, `v_compliance_status`) fill nightly. Wire each objective to two to four observations from
-  its views in the shape the three filled objectives use (view, day column, aggregation, unit, deep
-  link), with the unit test beside the existing ones. **Source**: `PLAN_ONE_STOP_DASHBOARD.md` D7,
-  D13, D14, D15; prod snapshot 2026-09-13. **Owner**: Claude Code. **Model**: Sonnet. **Size**: ~2 files.
-
-
-- [ ] **B11.T7r. ITSA phase 2: run the sandbox year.** On `claude/b29-board` (3f8e17b0): with
-  `Gov-Test-Scenario: STATEFUL` business-details and itsa-status return the business the run
-  created (O43's subscription works). The run now stops at
-  `GET obligations/details/{nino}/income-and-expenditure`: 404 `NO_OBLIGATIONS_FOUND` for a
-  test-support business, and HMRC's `obligations-api` OpenAPI has no STATEFUL scenario for it —
-  `DYNAMIC` answers only for the three canned businesses (`XBIS12345678901` etc.). Nothing in this
-  repository fixes that. Two ways on, choose in the runbook: file the quarterly periods without
-  reading obligations (the period-summary endpoints take dates, not an obligation), or run the
-  obligations-dependent calls against the canned `XBIS12345678901` under `DYNAMIC`. Then continue
-  through annual submission, BSAS, calculation, final declaration and the losses and adjustments
-  calls. **Source**: `_developers/hmrc/ITSA_PHASE_2_SANDBOX.md` run record. **Owner**: Claude
-  Code. **Model**: Sonnet. **Size**: ~2 files.
-
-
-
+Nothing: no branch, pull request or run carries an open row. Batch b30 merged as PR #207
+(5ca7bca9); its deploy of `main` is the proof and rolls the apex back on a failed probe.
 
 ## Machine-only
+
+- [ ] **B34.6b. Companies House accounts filing: the sandbox proof.** Submission 000004 (presenter
+  E0000052288, company 06846849, 2026-09-13 19:04 UTC) was ACCEPTED by the XML Gateway test
+  service; every `GetSubmissionStatus` poll for it answers 9999 "No presenter ID supplied". Since
+  PR #207 the status poll logs the redacted request and response XML. Left: poll 000004 once on a
+  ci set carrying `main` at 5ca7bca9 or later and read what the gateway saw; O44 asks Companies
+  House in parallel. The `prod` listing (held as unreferenced local commit 946251d4) waits on a
+  poll that returns a status. **Source**: BACKLOG 34b. **Owner**: Claude Code. **Model**: Sonnet.
+  **Size**: no committed files.
+
+- [ ] **B52y. The five wired objectives fill on the next nightly.** PR #207 gave
+  `low-running-cost`, `security`, `retention`, `operator-effort` and `compliance` their
+  observations; the 02:15 UTC snapshot after 5ca7bca9 reaches prod is the first that carries
+  them. Read `snapshots/prod/latest.json` after it and fix any observation whose query errors or
+  answers null where its view has rows (two views are monthly or quarterly grain, so a 30-day
+  window can be empty by design). **Source**: `PLAN_ONE_STOP_DASHBOARD.md` D7, D13, D14, D15.
+  **Owner**: Claude Code. **Model**: Sonnet. **Size**: ~1 file.
 
 - [ ] **B25c. Issue #11, backups outside the account.** The drill's own state is now known and
   written up in `_developers/RESTORE_DRILL.md`: `restore-drill.yml` has never run, and two things
@@ -330,6 +138,15 @@ its section.
   **Owner**: Operator decides, Claude Code changes. **Model**: Haiku. **Size**: ~2 files.
 
 ## Human-only
+
+- [ ] **B52z. Issue the operator pass and open the dashboard.** The `operator` pass type is on
+  main (PR #207) and reaches prod with 5ca7bca9's deploy. Then, the operator's half:
+  ```
+  ! gh workflow run generate-pass.yml -f pass-type=operator -f email=<the email you sign in to submit with> -f environment=prod
+  ```
+  redeem the QR from the run's artifact, and open
+  https://submit.diyaccounting.co.uk/operator/dashboard.html. **Source**: `PLAN_ONE_STOP_DASHBOARD.md`
+  D1. **Owner**: Operator. **Model**: none.
 
 
 - [ ] **O17. Register the Companies House sandbox test user and set four ci values.**
