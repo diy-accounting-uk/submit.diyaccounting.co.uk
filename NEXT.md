@@ -48,10 +48,17 @@ and stop. One branch is driven green at a time. Lifted only by the operator in t
   The `itsa-quarterly-update` capture (run 34774550386) stalled on the dashboard defect PR #201
   fixed; the three `itsa-business-details` captures on `ci-vatview` (runs 34790185457,
   34790343028, 34790629770) failed on browser errors and the scene fix sits on local branch
-  `claude/b31-board` (dd45a7bb, PR #209); the two ci captures were dispatched against
-  `ci-claud3123` (self-destructs 14:41 UTC) at 13:10 UTC on 2026-09-14 by the videos agent, whose
-  recordings check and `videos/publish.json` land on local branch `claude/b31-videos`, held
-  unpushed until cool-down lifts.
+  `claude/b31-board` (dd45a7bb, PR #209). The three prod recordings are checked and in
+  `videos/publish.json` on local branch `claude/b31-videos` (c5d394b4, unpushed, held until
+  cool-down lifts). The three ci captures of 2026-09-14 (runs 34847383246, 34849517903,
+  34850667197, all `-f deployment-name=ci-claud3123`) died on the sign-in return: the browser
+  started login on `https://ci-claud3123.submit.diyaccounting.co.uk/`, Cognito's `redirect_uri`
+  is the apex `https://ci-submit.diyaccounting.co.uk/`, and the OAuth state stored on the first
+  origin is absent on the second ("OAuth state mismatch", `hasStoredState: false`). Re-dispatch
+  each without `deployment-name`, so the base URL is the apex the set serves:
+  `gh workflow run video-capture.yml --ref claude/b31-board -f script=<script> -f environment-name=ci`,
+  against a standing ci set; then replace the 2026-09-07 `itsa-business-details` entry and add
+  `itsa-quarterly-update` to the manifest.
   Then check all five artifacts and write `videos/publish.json`, replacing the 2026-09-07
   `itsa-business-details` entry. Two things the scripts could not settle: the quarterly-update
   script stops with the form filled except `businessId` (only known at run time), and
@@ -88,6 +95,15 @@ and stop. One branch is driven green at a time. Lifted only by the operator in t
   Claude Code. **Model**: Sonnet. **Size**: ~1 file.
 
 ## Machine-only
+
+- [ ] **B155. `video-capture.yml` prints the capture lane's password and TOTP secret in its log.**
+  The `Record <script>` step's `env:` block echoes `TEST_AUTH_PASSWORD` and `TEST_AUTH_TOTP_SECRET`
+  unmasked (run 34850667197, 13:42 UTC on 2026-09-14) because they come from a step output, which
+  GitHub does not mask. The lane's user is rotated per run and native auth is disabled after, so
+  the exposure is the run's own window, in a public repository's log. Emit `::add-mask::` for both
+  values in the step that produces them (the `cognito-test-user` step or its script), and check
+  `probe-test.yml` and `deploy.yml` for the same pattern. **Source**: run 34850667197. **Owner**:
+  Claude Code. **Model**: Haiku. **Size**: ~2 files.
 
 - [ ] **B154. `youtube-check.yml` compares channel handles case-sensitively.** Its first
   scheduled run (34848766784, 13:21 UTC on 2026-09-14) failed: the stored refresh token resolves
