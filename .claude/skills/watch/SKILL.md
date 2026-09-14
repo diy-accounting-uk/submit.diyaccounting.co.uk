@@ -32,20 +32,21 @@ A PR merging or opening changes the scope, and picking that up is this skill's j
 
 ## The monitor's brief
 
-Use `scripts/watch-ci.sh` which runs the poll loop in the background, emitting reds as they land.
-The script polls every 60-90s and exits with 0 when everything is terminal and green, or 1 when
-something is red or still running.
+Arm `scripts/watch-ci.sh <state-dir>` under the `Monitor` tool (`persistent: true`). It polls
+every 75 seconds, seeds silently on its first pass (one `SEEDED` line with the counts), emits one
+`RED <branch> <workflow> run <id> (<conclusion>)` per newly failed latest run, one
+`MERGEABLE #<n> <branch> (<sha>)` per PR per head once its latest runs are all terminal and none
+failed, and exits 0 with one `TALLY` line when nothing in scope is still running. It gives up with
+`NO DATA` after three empty cycles. Re-arm it after each push, because a new head means new runs.
 
-`scripts/watch-ci.sh` handles all the coverage requirements:
+What it covers, so the brief need not be rewritten per session:
 
-- **Covers every terminal state**: failure, cancelled, timed out. Emits RED lines for completed
-  runs with a failure/timed_out/action_required conclusion.
-- **Keeps volume low**: one line per failed run, one MERGEABLE line per ready PR, no firehose.
-- **Polls the API for state**: uses `gh run list --json` with `jq`, never greps logs.
-- **Seeds silently**: first poll of each branch records state without emitting, then reports
-  changes only.
-- **Detects empty result sets**: counts rows and gives up with NO DATA after 3 empty cycles.
-- **Skips failed `gh` calls**: a failed run list returns empty list, poll continues.
+- **Every terminal state**: `failure`, `timed_out`, `action_required` and `startup_failure` are
+  red; `success`, `skipped`, `cancelled` and `neutral` are not.
+- **Low volume**: reds once each, readiness once per head, one tally.
+- **State from the API**: `gh run list --json` with `jq`, never a log grep.
+- **Empty result sets counted**, not read as green.
+- **A failed `gh` call skips the cycle** instead of ending the loop.
 - **Probe merge-readiness every cycle.** A watch that only reports reds leaves a PR sitting green
   for however long nobody looks. Each poll, for every open PR that is not a draft, take the **latest
   run of each distinct workflow on its branch** and call the PR ready when **none of those latest

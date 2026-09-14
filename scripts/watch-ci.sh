@@ -1,204 +1,71 @@
 #!/bin/bash
 # SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0
 # Copyright (C) 2006-2026 DIY Accounting Limited
-
-set -euo pipefail
-
-# Bash 3.2 compatibility guard
-if [[ "${BASH_VERSINFO[0]}" -lt 3 || ("${BASH_VERSINFO[0]}" -eq 3 && "${BASH_VERSINFO[1]}" -lt 2) ]]; then
-  echo "error: bash 3.2 or later required" >&2
-  exit 2
-fi
-
+# Poll GitHub Actions for main plus every open PR's head branch. Emit each red once, each
+# PR's merge-readiness once per head, and one tally when everything in scope is terminal.
+# bash 3.2: no associative arrays; state lives in files under $1.
+set -uo pipefail
 STATE_DIR="${1:-target/watch-ci}"
 mkdir -p "$STATE_DIR"
+SEEN="$STATE_DIR/seen"          # one "<runid> <conclusion>" per line already reported
+READY="$STATE_DIR/ready"        # one "<pr> <headsha>" per line already reported
+touch "$SEEN" "$READY"
 
-# Get the scope: main plus all open PR head branches
-get_scope() {
-  {
-    echo "main"
-    gh pr list --state open --limit 50 --json headRefName --jq '.[].headRefName' 2>/dev/null || true
-  } | sort -u
+scope() {
+  { echo main; gh pr list --state open --limit 50 --json headRefName --jq '.[].headRefName' 2>/dev/null; } | sort -u
 }
 
-# Poll runs for a given branch
-poll_branch() {
-  local branch="$1"
-
-  # Get latest run per workflow for this branch
-  gh run list --branch "$branch" --limit 60 --json workflowName,status,conclusion,databaseId \
-    --jq 'group_by(.workflowName) | map(max_by(.databaseId) | {id:.databaseId, workflow:.workflowName, status:.status, conclusion:.conclusion})' 2>/dev/null || echo '[]'
+latest_runs() { # branch -> json array of latest run per workflow
+  gh run list --branch "$1" --limit 60 --json workflowName,status,conclusion,databaseId,headSha 2>/dev/null \
+    | jq -c 'group_by(.workflowName) | map(max_by(.databaseId))' 2>/dev/null
 }
 
-# Emit changes since last poll
-emit_changes() {
-  local branch="$1"
-  local current_file="$STATE_DIR/${branch}.current"
-  local previous_file="$STATE_DIR/${branch}.previous"
+cycle=0
+empty=0
+while true; do
+  cycle=$((cycle + 1))
+  total=0; running=0; red=0
+  for branch in $(scope); do
+    runs=$(latest_runs "$branch")
+    [ -z "$runs" ] && continue
+    n=$(echo "$runs" | jq 'length')
+    total=$((total + n))
+    running=$((running + $(echo "$runs" | jq '[.[] | select(.status != "completed")] | length')))
+    echo "$runs" | jq -r '.[] | select(.status == "completed" and (.conclusion == "failure" or .conclusion == "timed_out" or .conclusion == "action_required" or .conclusion == "startup_failure")) | "\(.databaseId) \(.conclusion) \(.workflowName)"' \
+    | while read -r id concl wf; do
+        [ -z "$id" ] && continue
 
-  local current_state
-  current_state=$(poll_branch "$branch")
-
-  # Check if this is the first poll for this branch (no previous state)
-  if [[ ! -f "$previous_file" ]]; then
-    # Seed silently on first poll
-    echo "$current_state" > "$current_file"
-    return
-  fi
-
-  # Compare current to previous
-  local previous_state
-  previous_state=$(cat "$previous_file")
-
-  # Emit failures (completion != success and status is completed)
-  echo "$current_state" | jq -r '.[] | select(.status == "completed" and .conclusion != "success" and .conclusion != "skipped" and .conclusion != "neutral" and .conclusion != "cancelled") | "RED \(.workflow) \(.id)"' | while read -r line; do
-    [[ -n "$line" ]] && echo "$line"
-  done
-
-  # Move current to previous for next poll
-  cp "$current_file" "$previous_file" 2>/dev/null || echo "$current_state" > "$previous_file"
-  echo "$current_state" > "$current_file"
-}
-
-# Check if all runs in scope are terminal (no queued or in_progress)
-check_terminal() {
-  local all_terminal=true
-
-  get_scope | while read -r branch; do
-    local current_file="$STATE_DIR/${branch}.current"
-    if [[ ! -f "$current_file" ]]; then
-      return
-    fi
-
-    local incomplete
-    incomplete=$(jq -r '[.[] | select(.status == "in_progress" or .status == "queued")] | length' < "$current_file")
-    if [[ "$incomplete" -gt 0 ]]; then
-      echo "1"
-      return
-    fi
-  done | grep -q "1" && echo "1" || echo "0"
-}
-
-# Check if scope has any red (failed/timed_out/action_required)
-check_red() {
-  local has_red=false
-
-  get_scope | while read -r branch; do
-    local current_file="$STATE_DIR/${branch}.current"
-    if [[ ! -f "$current_file" ]]; then
-      return
-    fi
-
-    local red_count
-    red_count=$(jq -r '[.[] | select(.status == "completed" and (.conclusion == "failure" or .conclusion == "timed_out" or .conclusion == "action_required"))] | length' < "$current_file")
-    if [[ "$red_count" -gt 0 ]]; then
-      echo "1"
-      return
-    fi
-  done | grep -q "1" && echo "1" || echo "0"
-}
-
-# Check PRs for merge-readiness
-check_mergeable() {
-  gh pr list --state open --limit 50 --json number,headRefName,isDraft --jq '.[] | select(.isDraft == false)' 2>/dev/null | while read -r pr_line; do
-    local pr_num
-    local pr_branch
-
-    pr_num=$(echo "$pr_line" | jq -r '.number')
-    pr_branch=$(echo "$pr_line" | jq -r '.headRefName')
-
-    local current_file="$STATE_DIR/${pr_branch}.current"
-    if [[ ! -f "$current_file" ]]; then
-      continue
-    fi
-
-    # Check if all latest runs per workflow are not incomplete and not failed
-    local mergeable=true
-    local incomplete_count
-    local failed_count
-
-    incomplete_count=$(jq -r '[.[] | select(.status == "in_progress" or .status == "queued")] | length' < "$current_file")
-    failed_count=$(jq -r '[.[] | select(.status == "completed" and (.conclusion == "failure" or .conclusion == "timed_out" or .conclusion == "action_required"))] | length' < "$current_file")
-
-    if [[ "$incomplete_count" -eq 0 && "$failed_count" -eq 0 ]]; then
-      # Check if we have any data
-      local run_count
-      run_count=$(jq -r 'length' < "$current_file")
-      if [[ "$run_count" -gt 0 ]]; then
-        # Emit mergeable marker once per PR per state
-        local mergeable_marker="$STATE_DIR/${pr_branch}.mergeable"
-        if [[ ! -f "$mergeable_marker" ]]; then
-          echo "MERGEABLE #$pr_num $pr_branch"
-          touch "$mergeable_marker"
+        if ! grep -q "^$id " "$SEEN"; then
+          echo "$id $concl" >> "$SEEN"
+          [ "$cycle" -gt 1 ] && echo "RED $branch $wf run $id ($concl)"
         fi
-      fi
-    else
-      # PR is not mergeable, remove marker if it exists
-      rm -f "$STATE_DIR/${pr_branch}.mergeable"
-    fi
+      done
+    red=$((red + $(echo "$runs" | jq '[.[] | select(.status == "completed" and (.conclusion == "failure" or .conclusion == "timed_out" or .conclusion == "action_required" or .conclusion == "startup_failure"))] | length')))
   done
-}
-
-# Main loop
-main() {
-  local empty_cycles=0
-
-  # Initial scope
-  get_scope | while read -r branch; do
-    poll_branch "$branch" > "$STATE_DIR/${branch}.current" 2>/dev/null || echo '[]' > "$STATE_DIR/${branch}.current"
-  done
-
-  while true; do
-    # Poll each branch
-    local data_count=0
-    get_scope | while read -r branch; do
-      emit_changes "$branch"
-
-      if [[ -f "$STATE_DIR/${branch}.current" ]]; then
-        local count
-        count=$(jq -r 'length' < "$STATE_DIR/${branch}.current")
-        [[ "$count" -gt 0 ]] && ((data_count+=count))
+  if [ "$total" -eq 0 ]; then
+    empty=$((empty + 1))
+    [ "$empty" -ge 3 ] && { echo "NO DATA after $empty cycles"; exit 1; }
+  else
+    empty=0
+  fi
+  # merge-readiness, once per PR per head sha
+  gh pr list --state open --limit 50 --json number,headRefName,headRefOid,isDraft --jq '.[] | select(.isDraft | not) | "\(.number) \(.headRefName) \(.headRefOid)"' 2>/dev/null \
+  | while read -r num br sha; do
+      [ -z "$num" ] && continue
+      runs=$(latest_runs "$br")
+      [ -z "$runs" ] && continue
+      ok=$(echo "$runs" | jq '[.[] | select(.status != "completed" or .conclusion == "failure" or .conclusion == "timed_out" or .conclusion == "action_required" or .conclusion == "startup_failure")] | length')
+      if [ "$ok" -eq 0 ] && ! grep -q "^$num $sha$" "$READY"; then
+        echo "$num $sha" >> "$READY"
+        echo "MERGEABLE #$num $br ($sha)"
       fi
     done
-
-    # Count total data across all branches
-    local total_data=0
-    for f in "$STATE_DIR"/*.current; do
-      [[ -f "$f" ]] && total_data=$((total_data + $(jq 'length' < "$f" 2>/dev/null || echo 0)))
-    done
-
-    # Check for empty result set
-    if [[ $total_data -eq 0 ]]; then
-      ((empty_cycles++))
-      if [[ $empty_cycles -gt 3 ]]; then
-        echo "NO DATA" >&2
-        return 1
-      fi
-    else
-      empty_cycles=0
-    fi
-
-    # Check merge-readiness
-    check_mergeable
-
-    # Check terminal state
-    local is_red
-    is_red=$(check_red)
-    local is_terminal
-    is_terminal=$(check_terminal)
-
-    if [[ "$is_red" == "1" ]]; then
-      return 1
-    fi
-
-    if [[ "$is_terminal" == "0" ]]; then
-      # All terminal, not red
-      return 0
-    fi
-
-    # Still running, wait and loop
-    sleep 60
-  done
-}
-
-main
+  if [ "$cycle" -eq 1 ]; then
+    echo "SEEDED: $total latest runs in scope, $running in flight, $red red already"
+  fi
+  if [ "$running" -eq 0 ]; then
+    echo "TALLY: all terminal, $total latest runs, $red red"
+    exit 0
+  fi
+  sleep 75
+done
