@@ -18,9 +18,9 @@ PR; the operator merges.
 
 **Prod runs deployment prod-658f986** (PR #209's merge, batch b31, promoted 15:30 UTC on 2026-09-14
 by run 34856840995, which destroyed `prod-b364438`); the only prod set.
-**ci at 18:53 UTC**: `ci-claudd2cf` is being created by PR #213's deploy (run 34882930296,
+**ci at 19:00 UTC**: `ci-claudd2cf` is being created by PR #213's deploy (run 34882930296,
 eight stacks CREATE_IN_PROGRESS since 18:52 UTC); last-known-good is None until its probes pass;
-the set self-destructs at 22:52 UTC.
+the set self-destructs at 22:52 UTC. Batch b32 (`claude/b32-board`) is the open batch.
 
 The board runs in five sections, in this order: **in flight** (a branch, a pull request or a run
 in motion, each named in the row), **machine-only**, **human and machine**, **human-only**,
@@ -40,17 +40,13 @@ Every item names its model: the lowest tier that fits (Fable > Opus > Sonnet > H
 
 ## In flight
 
-**COOL-DOWN is on since 2026-09-14T13:40:19Z.** No new board rows except a degradation. Agents commit
-and stop. One branch is driven green at a time. Lifted only by the operator in their own words.
-
 - [ ] **B17v.1. Capture the five walkthrough videos.** The three prod captures are done
   (`view-liabilities` run 34651931632, `view-payments` 34689643435, `view-penalties` 34689889022).
   The `itsa-quarterly-update` capture (run 34774550386) stalled on the dashboard defect PR #201
   fixed; the three `itsa-business-details` captures on `ci-vatview` (runs 34790185457,
   34790343028, 34790629770) failed on browser errors and the scene fix sits on local branch
   `main` (dd45a7bb, PR #209 merged 14:41 UTC on 2026-09-14 as 658f986e). The three prod recordings are checked and in
-  `videos/publish.json` on local branch `claude/b31-videos` (c5d394b4, unpushed, held until
-  cool-down lifts). The three ci captures of 2026-09-14 (runs 34847383246, 34849517903,
+  `videos/publish.json` on local branch `claude/b31-videos` (c5d394b4, unpushed). The three ci captures of 2026-09-14 (runs 34847383246, 34849517903,
   34850667197, all `-f deployment-name=ci-claud3123`) died on the sign-in return: the browser
   started login on `https://ci-claud3123.submit.diyaccounting.co.uk/`, Cognito's `redirect_uri`
   is the apex `https://ci-submit.diyaccounting.co.uk/`, and the OAuth state stored on the first
@@ -72,9 +68,9 @@ and stop. One branch is driven green at a time. Lifted only by the operator in t
   request is schema-correct: `SubmissionNumber` then `PresenterID` in the
   `xmlgw.companieshouse.gov.uk` namespace, and the same header authenticated the accepted
   submission. One asymmetry is left to try: the header's `SenderID` is `md5(presenterId)`, the
-  body's `PresenterID` is plaintext. Sending the hashed form is on local branch
-  `claude/ltd-status-poll` (474c7240, one file and its test, unpushed, held until cool-down
-  lifts); then a ci deploy carrying it and one poll settle it. O44 asks Companies House in
+  body's `PresenterID` is plaintext. Sending the hashed form is on batch b32
+  (`claude/b32-board`, 57dfdc17, from local branch `claude/ltd-status-poll` 474c7240); a lean
+  deploy of it to `ci-claudd2cf` and one poll settle it, dispatched in b32's wave. O44 asks Companies House in
   parallel and can cite the 13:12:48 transaction. The `prod` listing (held as unreferenced local
   commit 946251d4) waits on a poll that returns a status. **Source**: BACKLOG 34b. **Owner**:
   Claude Code. **Model**: Sonnet. **Size**: ~1 file.
@@ -82,23 +78,10 @@ and stop. One branch is driven green at a time. Lifted only by the operator in t
 - [ ] **B162. A ci set self-destructs after 4 hours by default.** `deploy.yml`'s
   `selfDestructDelayHours` default and env fallback move from 2 to 4 so a batch's second wave
   (captures, sandbox polls, a lean-deployed experiment) still has the set the first wave's deploy
-  created. On branch `claude/ops-self-destruct-4h`, PR #213; its deploy (run 34882930296) and test
-  (run 34882928421) were in progress at 18:53 UTC; the row closes when it merges.
+  created. Folded into batch b32 (`claude/b32-board`, worktree `.claude/worktrees/b32`, 335f6df1) by the
+  operator's instruction of 2026-09-14 19:00 UTC; PR #213 closes when the batch PR opens. Its own
+  deploy (run 34882930296) is creating `ci-claudd2cf`, the set B34.6b's proof uses.
   **Source**: operator, 2026-09-14. **Owner**: Claude Code. **Model**: Haiku. **Size**: ~3 files.
-
-- [ ] **B80b. The identity guard has to reach the other four repositories.** Submit carries
-  `.github/allowed-commit-identities.yml`, `.github/workflows/identity-guard.yml` and
-  `scripts/check-commit-identities.sh`: a pull-request check that fails when a commit's author email
-  is not on a plain, human-edited allow list. Spreadsheets carries it on main (29e13023); the other
-  three are open PRs on branch `claude/ops-identity-guard` in each repository, awaiting O46's
-  review of their allow lists: www #31, root #32, archive #35, all three green and mergeable at
-  12:00 UTC on 2026-09-14. Left here: merge each once O46 approves it.
-  **Operator decisions, 2026-09-12.** All four from worktrees in this session, one PR each, no
-  sibling checkout touched — the method already used for the attribution-pointer PRs. Each allow
-  list is derived from that repository's own author history, and the PR body prints every address
-  with its commit count and date range for O46's review. The check fails the PR, matching submit,
-  rather than reporting non-blocking.
-  **Source**: B80's fix. **Owner**: Claude Code. **Model**: Haiku per repository. **Size**: ~12 files.
 
 ## Machine-only
 
@@ -265,11 +248,6 @@ and stop. One branch is driven green at a time. Lifted only by the operator in t
   redeem the QR from the run's artifact, and open
   https://submit.diyaccounting.co.uk/operator/dashboard.html. **Source**: `PLAN_ONE_STOP_DASHBOARD.md`
   D1. **Owner**: Operator. **Model**: none.
-
-- [ ] **O46. Approve the three allow lists.** Each of B80b's PRs (www #31, root #32, archive #35)
-  prints every author address with its commit count and date range; strike or approve each before
-  merge, because an address on the list is an identity the guard will accept from then on.
-  **Source**: B80's fix. **Owner**: Operator. **Model**: none.
 
 - [ ] **O23. Open a Google Ads account for the paid-traffic experiments.** Both earlier Ads
   accounts were cancelled (`google-analytics.toml`); the reinvestment loop (plan row D17) needs
