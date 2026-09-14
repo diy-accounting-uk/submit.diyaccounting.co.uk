@@ -18,8 +18,8 @@ PR; the operator merges.
 
 **Prod runs deployment prod-658f986** (PR #209's merge, batch b31, promoted 15:30 UTC on 2026-09-14
 by run 34856840995, which destroyed `prod-b364438`); the only prod set.
-**ci at 15:40 UTC**: none standing; `ci-claud3123` self-destructed at 14:41 and the 16:34 sweep
-sets last-known-good to None.
+**ci at 18:50 UTC**: none standing and last-known-good is None; PR #213's deploy (run
+34882930296) is creating the next set, which self-destructs after 4 hours.
 
 The board runs in five sections, in this order: **in flight** (a branch, a pull request or a run
 in motion, each named in the row), **machine-only**, **human and machine**, **human-only**,
