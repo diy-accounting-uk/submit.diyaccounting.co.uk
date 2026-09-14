@@ -60,8 +60,8 @@ Every item names its model: the lowest tier that fits (Fable > Opus > Sonnet > H
   `scripts/check-commit-identities.sh`: a pull-request check that fails when a commit's author email
   is not on a plain, human-edited allow list. Spreadsheets carries it on main (29e13023); the other
   three are open PRs on branch `claude/ops-identity-guard` in each repository, awaiting O46's
-  review of their allow lists: www #31, root #32, archive #35. Left here: merge each once O46
-  approves it.
+  review of their allow lists: www #31, root #32, archive #35, all three green and mergeable at
+  12:00 UTC on 2026-09-14. Left here: merge each once O46 approves it.
   **Operator decisions, 2026-09-12.** All four from worktrees in this session, one PR each, no
   sibling checkout touched — the method already used for the attribution-pointer PRs. Each allow
   list is derived from that repository's own author history, and the PR body prints every address
@@ -122,17 +122,6 @@ Every item names its model: the lowest tier that fits (Fable > Opus > Sonnet > H
   stands), poll 000004 once on it and read what the gateway saw; O44 asks Companies
   House in parallel. The `prod` listing (held as unreferenced local commit 946251d4) waits on a
   poll that returns a status. **Source**: BACKLOG 34b. **Owner**: Claude Code. **Model**: Sonnet.
-  **Size**: no committed files.
-
-- [ ] **B25c. Issue #11, backups outside the account.** The drill's own state is now known and
-  written up in `_developers/RESTORE_DRILL.md`: `restore-drill.yml` has never run, and two things
-  stop it. The vault's restore grant names a role nothing can assume (B105), and the backup
-  account's stack has not been deployed since before that grant landed (O41). What is proven
-  meanwhile is the copy side: fresh completed recovery points exist for all five critical prod
-  tables and both books buckets, and `restore-test.yml`'s monthly in-account restore has passed
-  three of its last four runs, most recently restoring 4826 receipt items against a live source of
-  4832. That comment is posted (issuecomment-5653323425, 2026-09-13). The drill ran clean on 2026-09-14 (run 34790429557, batch
-  b30's O41x, on main since 5ca7bca9). Left: comment on #11 with that result and close it. **Source**: issue #11. **Owner**: Claude Code. **Model**: Sonnet.
   **Size**: no committed files.
 
 - [ ] **B152. `watch-ci.sh` reports `MERGEABLE` for a head with no runs yet.** In the minute after a
