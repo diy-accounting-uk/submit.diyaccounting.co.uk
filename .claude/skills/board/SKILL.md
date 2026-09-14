@@ -232,6 +232,6 @@ the end) gets a note in `Action`: rename before its next push.
   entry), **and move every row whose class changed into its correct section, so the file
   carries the same machine-only / human and machine / human-only / blocked sequence the
   table just printed.** A render that shows one order while the file holds another is the
-  failure this rule exists to prevent. Commit the `NEXT.md`-only change to `main` (the
+  failure this rule exists to prevent. Before committing the `NEXT.md` write-back, run `npx vitest run app/unit-tests/nextShape.test.js` and fix the file if it fails. Commit the `NEXT.md`-only change to `main` (the
   docs exception allows a direct push) and push. Never add rendered status for items that are not on `NEXT.md`; the backlog's
   tier tables stay as they are.
