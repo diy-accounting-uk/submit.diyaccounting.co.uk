@@ -44,14 +44,6 @@ Nothing: no branch, pull request or run carries an open row.
 
 ## Machine-only
 
-- [ ] **B131. keepalive red on main until its next run.** The fix is on main (#198: age
-  allowance, `restore-drill.yml` exempted by name until O41x, youtube-check at 06:46 Monday).
-  Closes when the next scheduled keepalive on `main` (weekly, about 2026-09-19) is green, or
-  sooner by dispatch:
-  ```
-  ! gh workflow run keepalive.yml
-  ```
-  **Owner**: Claude Code. **Model**: Sonnet. **Size**: no committed files.
 
 - [ ] **B30v. alarm-triage's budget guard swallowed a real alarm.** The grant is on
   `claude/b29-board` (7d44b687): the copy role had no identity-side allow on the FOCUS bucket;
