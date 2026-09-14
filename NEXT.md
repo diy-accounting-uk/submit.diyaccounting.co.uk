@@ -17,8 +17,8 @@ Haiku; the lowest tier that fits). Anything touching code goes through a `claude
 PR; the operator merges.
 
 **Prod runs deployment prod-bd664fe** (PR #214's merge, batch b32, run 34891994316); the only
-prod set. **ci**: `ci-claud824f` is last-known-good and self-destructs at 23:40 UTC on 2026-09-14;
-the spare `ci-claudd2cf` at 22:52 UTC. B34.6b's poll is the only b32 item left open.
+prod set. **ci**: `ci-claud824f` is last-known-good and the only ci set; it self-destructs at
+23:40 UTC on 2026-09-14. B34.6b's poll is the only b32 item left open.
 
 The board runs in five sections, in this order: **in flight** (a branch, a pull request or a run
 in motion, each named in the row), **machine-only**, **human and machine**, **human-only**,
@@ -120,9 +120,8 @@ Every item names its model: the lowest tier that fits (Fable > Opus > Sonnet > H
   Lambda, and the lean deploy that puts it there was broken — `scripts/deploy-app.js` hardcoded the
   pre-migration account so `deploy:app-ci` failed at the ECR push; b32 fixes that (d7daa69e, the
   account now comes from the active credentials). b32 is on `main` (PR #214). Left: run
-  `npm run deploy:app-ci -- --deployment <ci-set> --skip-web` (submit-ci profile; `ci-claudd2cf`
-  until 22:52 UTC on 2026-09-14, `ci-claud824f` until 23:40 UTC, then a fresh `deploy.yml`
-  dispatch), then poll
+  `npm run deploy:app-ci -- --deployment <ci-set> --skip-web` (submit-ci profile; `ci-claud824f`
+  until 23:40 UTC on 2026-09-14, then a fresh `deploy.yml` dispatch), then poll
   `GET /api/v1/companies-house/accounts/000004` signed in and read the two gateway log lines. If the
   gateway returns a status, keep 57dfdc17, pin it in the test, and apply the `prod` listing (held as
   unreferenced local commit 946251d4); if it still answers 9999, revert the body to plaintext and
