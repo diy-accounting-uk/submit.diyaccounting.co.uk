@@ -19,8 +19,8 @@ PR; the operator merges.
 **Prod runs deployment prod-b364438** (main at b364438e, the daily 04:11 UTC deploy cron run
 5h39m late as run 34830100013, promoted 10:22 UTC on 2026-09-14 and `prod-5ca7bca` destroyed by 10:42);
 the only prod set.
-**ci at 08:05 UTC**: no set standing; the sweep (run 34820856912) found none and set
-`/submit/ci/last-known-good-deployment` to None.
+**ci at 12:00 UTC**: no app stack in the account and `/submit/ci/last-known-good-deployment`
+is None (the 08:04 sweep, run 34820856912).
 
 The board runs in five sections, in this order: **in flight** (a branch, a pull request or a run
 in motion, each named in the row), **machine-only**, **human and machine**, **human-only**,
@@ -78,6 +78,17 @@ Every item names its model: the lowest tier that fits (Fable > Opus > Sonnet > H
   schedule-triggered run dated 2026-09-14 closes backlog row 47, however late; none by Saturday's
   keepalive (08:15 UTC) makes `keepalive.yml` red and the row a fix. **Source**: BACKLOG 47.
   **Owner**: Claude Code. **Model**: Haiku. **Size**: no committed files.
+
+- [ ] **B52y. The five wired objectives fill on the next nightly.** PR #207 gave
+  `low-running-cost`, `security`, `retention`, `operator-effort` and `compliance` their
+  observations; the 02:15 UTC snapshot after 5ca7bca9 reaches prod is the first that carries
+  them. That run raised `prod-env-operator-snapshot-publish-errors` (issue #208, 03:18 UTC):
+  read `/aws/lambda/prod-env-operator-snapshot-publish` for 03:15 on 2026-09-14, fix the
+  observation whose query errors (`app/functions/analytics/operatorSnapshotPublish.js`), then check `snapshots/prod/latest.json` for
+  any observation that answers null where its view has rows (two views are monthly or quarterly grain, so a 30-day
+  window can be empty by design). **Source**: `PLAN_ONE_STOP_DASHBOARD.md` D7, D13, D14, D15.
+  Closes #208 (its alarm is still in ALARM since 03:18 UTC). **Owner**: Claude Code.
+  **Model**: Sonnet. **Size**: ~1 file.
 
 - [ ] **B30x. The CIS console-sign-in-without-MFA alarm fires on SSO sign-ins.** Issue #206:
   `prod-env-cis-console-signin-without-mfa` fired at 23:42 UTC on 2026-09-13 for the operator's
@@ -270,17 +281,6 @@ Every item names its model: the lowest tier that fits (Fable > Opus > Sonnet > H
   **Source**: BACKLOG 34b. **Owner**: Operator. **Model**: none.
 
 ## Blocked
-
-- [ ] **B52y. The five wired objectives fill on the next nightly.** PR #207 gave
-  `low-running-cost`, `security`, `retention`, `operator-effort` and `compliance` their
-  observations; the 02:15 UTC snapshot after 5ca7bca9 reaches prod is the first that carries
-  them. That run raised `prod-env-operator-snapshot-publish-errors` (issue #208, 03:18 UTC):
-  read `/aws/lambda/prod-env-operator-snapshot-publish` for 03:15 on 2026-09-14, fix the
-  observation whose query errors (`app/functions/analytics/operatorSnapshotPublish.js`), then check `snapshots/prod/latest.json` for
-  any observation that answers null where its view has rows (two views are monthly or quarterly grain, so a 30-day
-  window can be empty by design). **Source**: `PLAN_ONE_STOP_DASHBOARD.md` D7, D13, D14, D15.
-  Closes #208. **Owner**: Claude Code. **Model**: Sonnet. Blocked on
-  `aws sso login --sso-session diyaccounting` (the log read). **Size**: ~1 file.
 
 - [ ] **B137. `uniqueReference` identifies the user, not the authentication event.** In the
   `Gov-Client-Multi-Factor` header, `uniqueReference` is a SHA-256 of `sub + ":" + factorType`, so
