@@ -93,10 +93,12 @@ describe("operatorSnapshotGet", () => {
       expect(response.statusCode).toBe(401);
     });
 
-    test("maps a BundleEntitlementError to 403", () => {
+    test("maps a BundleEntitlementError to 403 naming the operator pass", () => {
       const error = new BundleEntitlementError("no bundle", { code: "BUNDLE_ENTITLEMENT_REQUIRED" });
       const response = http403ForbiddenFromBundleEnforcement(error, { requestId: "r1" });
       expect(response.statusCode).toBe(403);
+      expect(bodyOf(response).message).toMatch(/operator pass/);
+      expect(bodyOf(response).message).toMatch(/pass-type=operator/);
     });
 
     test("maps any other error to 500", () => {
@@ -106,7 +108,7 @@ describe("operatorSnapshotGet", () => {
   });
 
   describe("ingestHandler", () => {
-    test("returns 403 when the caller does not hold the operator bundle", async () => {
+    test("returns 403 naming the operator pass when the caller does not hold the operator bundle", async () => {
       mockEnforceBundles.mockRejectedValueOnce(
         new BundleEntitlementError("Forbidden: Activity requires operator bundle", { code: "BUNDLE_FORBIDDEN" }),
       );
@@ -114,6 +116,7 @@ describe("operatorSnapshotGet", () => {
       const response = await ingestHandler(buildLambdaEvent({ path: "/api/v1/operator/snapshot" }));
 
       expect(response.statusCode).toBe(403);
+      expect(bodyOf(response).message).toMatch(/operator pass/);
       expect(mockS3Send).not.toHaveBeenCalled();
     });
 

@@ -520,7 +520,7 @@ paths = ["about.html"]
 [[activities]]
 id = "operator-dashboard"
 name = "Operator Dashboard"
-display = "never"
+display = "on-entitlement"
 bundles = ["operator"]
 metered = false
 paths = ["operator/dashboard.html", "^/api/v1/operator/.*"]

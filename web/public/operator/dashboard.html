@@ -74,31 +74,9 @@
   <body>
     <a href="#mainContent" class="skip-link">Skip to main content</a>
     <header>
-      <div class="header-nav">
-        <div class="header-left">
-          <a href="../" title="Home" class="home-link">
-            <svg class="home-icon" viewBox="0 0 24 24" aria-hidden="true">
-              <path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z" />
-            </svg>
-          </a>
-          <a href="../about.html" title="About & Help" class="info-link">
-            <svg class="info-icon" viewBox="0 0 24 24" aria-hidden="true">
-              <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-6h2v6zm0-8h-2V7h2v2z" />
-            </svg>
-          </a>
-        </div>
-        <div class="auth-section">
-          <span class="entitlement-status">Activity: unrestricted</span>
-          <span class="login-status">Not logged in</span>
-          <a href="../auth/login.html" class="login-link">Log in</a>
-        </div>
-      </div>
+      <p class="chrome-fallback"><a href="../">DIY Accounting Submit</a></p>
       <h1>Operator Dashboard</h1>
       <p class="subtitle">The eight objectives, from last night's snapshot</p>
-      <nav class="main-nav" aria-label="Main navigation">
-        <a href="../">Activities</a>
-        <a href="../bundles.html">Bundles</a>
-      </nav>
     </header>
 
     <main id="mainContent">
@@ -114,26 +92,36 @@
       </section>
     </main>
 
-    <footer>
-      <div class="footer-content">
-        <div class="footer-center">
-          <p>&copy; 2006-2026 DIY Accounting Limited</p>
-          <p>
-            Free to use.
-            <a href="https://github.com/diy-accounting-uk/submit.diyaccounting.co.uk" target="_blank" rel="noopener">Source</a> available
-            under the
-            <a href="https://github.com/diy-accounting-uk/submit.diyaccounting.co.uk/blob/main/LICENSE" target="_blank" rel="noopener"
-              >PolyForm Internal Use License</a
-            >.
-          </p>
-        </div>
-      </div>
-    </footer>
+    <footer data-footer="full"></footer>
 
+    <script src="../widgets/page-chrome.js"></script>
     <script src="../lib/env-loader.js"></script>
     <script type="module" src="../submit.js"></script>
+    <script src="../developer-mode.js"></script>
     <script src="../lib/request-cache.js"></script>
     <script src="../lib/toml-parser.js"></script>
+    <script src="../widgets/entitlement-status.js"></script>
+    <script src="../widgets/auth-status.js"></script>
+    <script src="../widgets/status-messages.js"></script>
+    <script type="module" src="../widgets/view-source-link.js"></script>
+    <script>
+      // Carry the current page across a sign-in round trip: the login link built by
+      // auth-status.js has no return-to of its own, so without this an operator who
+      // clicks "Log in" from here lands on the home page instead of back on the
+      // dashboard. loginWithCognitoCallback.html reads this same key.
+      document.addEventListener("click", function (event) {
+        const link = event.target.closest(".login-link");
+        if (!link) return;
+        const href = link.getAttribute("href") || "";
+        if (href.indexOf("login.html") === -1) return; // logout mode: no redirect to store
+        try {
+          sessionStorage.setItem("postLoginRedirect", window.location.pathname + window.location.search);
+        } catch {
+          // sessionStorage can be unavailable (private browsing); login then lands on
+          // the default page instead of back here.
+        }
+      });
+    </script>
     <script>
       const OBJECTIVE_ORDER = [
         "uptime",
@@ -271,6 +259,12 @@
         if (!response.ok) {
           const error = new Error("request-failed");
           error.status = response.status;
+          try {
+            const body = await response.json();
+            error.apiMessage = body && body.message;
+          } catch {
+            // response body was not JSON; error.apiMessage stays undefined
+          }
           throw error;
         }
         return response.json();
@@ -298,7 +292,7 @@
           renderSnapshot(snapshot);
         } catch (error) {
           if (error.status === 403) {
-            showError("Not authorised to view the operator dashboard.");
+            showError(error.apiMessage || "Not authorised to view the operator dashboard.");
           } else if (error.status === 404) {
             showError("No snapshot has been published yet.");
           } else {
