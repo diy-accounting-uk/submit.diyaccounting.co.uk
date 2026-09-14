@@ -87,13 +87,23 @@ and stop. One branch is driven green at a time. Lifted only by the operator in t
   commit 946251d4) waits on a poll that returns a status. **Source**: BACKLOG 34b. **Owner**:
   Claude Code. **Model**: Sonnet. **Size**: ~1 file.
 
-- [ ] **B47. Read the Monday crons' first run on their new slots.** `compliance.yml` (06:06 UTC
-  Monday) and `stack-drift.yml` (06:36) moved off the top of the hour after firing five hours late
-  on 2026-09-07; 2026-09-14 is their first Monday. Neither had fired by 11:50 UTC, and the same
-  morning GitHub ran `deploy.yml`'s 04:11 cron at 09:50. Read both workflows' run lists: a
-  schedule-triggered run dated 2026-09-14 closes backlog row 47, however late; none by Saturday's
-  keepalive (08:15 UTC) makes `keepalive.yml` red and the row a fix. **Source**: BACKLOG 47.
-  **Owner**: Claude Code. **Model**: Haiku. **Size**: no committed files.
+## Machine-only
+
+- [ ] **B154. `youtube-check.yml` compares channel handles case-sensitively.** Its first
+  scheduled run (34848766784, 13:21 UTC on 2026-09-14) failed: the stored refresh token resolves
+  to `@diyaccountingsubmit`, `google/youtube.toml` declares `@DIYAccountingSubmit`, and
+  `scripts/youtube-upload.js`'s comparison (around line 363) treats those as different channels.
+  YouTube handles are case-insensitive; compare them so, with a unit test. **Source**: run
+  34848766784. **Owner**: Claude Code. **Model**: Haiku. **Size**: ~2 files.
+
+- [ ] **B153. The prod drift check fails on API Gateway's own normalisation.** The first
+  Monday run on the new slot (34847862007, 13:13 UTC on 2026-09-14) reports
+  `prod-b364438-app-ApiStack` DRIFTED: API Gateway stores the CORS `ExposeHeaders` added by
+  f7654464 (`Location`, `Retry-After`, `ETag`) in lowercase, and the default stage's access-log
+  `DestinationArn` without the `:*` suffix `LogGroup.getLogGroupArn()` appends
+  (`ApiStack.java:169` and `:247`). Write both the way API Gateway stores them, with the CDK test,
+  so the template matches. **Source**: run 34847862007. **Owner**: Claude Code. **Model**: Haiku.
+  **Size**: ~2 files.
 
 - [ ] **B52y. The nightly snapshot has not published since 2026-09-13 03:16.** Issue #208
   (`prod-env-operator-snapshot-publish-errors`, 03:18 UTC on 2026-09-14): the 03:15 run's
@@ -132,6 +142,8 @@ and stop. One branch is driven green at a time. Lifted only by the operator in t
   `logout()` awaits `window.envReady` unconditionally, which throws on a page that never loads
   `submit.js` (the agent's finding, unfixed). **Source**: operator, 2026-09-13. **Owner**: Claude
   Code. **Model**: Sonnet. **Size**: ~1 file.
+
+## Human and machine
 
 - [ ] **O28. Send `Gov-Client-Multi-Factor` on every request: mandate MFA in the pool.** Every
   monthly advisory HMRC has raised is this header missing (`../REPORT_HMRC_HEADER_ADVISORIES.md`).
