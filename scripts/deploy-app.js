@@ -24,7 +24,6 @@ import path from "path";
 import os from "os";
 import { fileURLToPath } from "url";
 
-const AWS_ACCOUNT_ID = "887764105431";
 const AWS_REGION = "eu-west-2";
 const AWS_REGION_UE1 = "us-east-1";
 
@@ -183,11 +182,15 @@ function resolveDeployment(flags) {
   const appPrefix = `${deploymentName}-app`;
   const envPrefix = `${environmentName}-env`;
 
+  // The account comes from the active credentials, so ci and prod each push to their own
+  // account without the script needing to know which is which.
+  const accountId = runCapture("aws sts get-caller-identity --query Account --output text");
+
   // ECR repos are environment-level, not deployment-level
   const ecrRepoEuw2 = `${envPrefix}-ecr`;
   const ecrRepoUe1 = `${envPrefix}-ecr-us-east-1`;
-  const ecrUriEuw2 = `${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com/${ecrRepoEuw2}`;
-  const ecrUriUe1 = `${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_REGION_UE1}.amazonaws.com/${ecrRepoUe1}`;
+  const ecrUriEuw2 = `${accountId}.dkr.ecr.${AWS_REGION}.amazonaws.com/${ecrRepoEuw2}`;
+  const ecrUriUe1 = `${accountId}.dkr.ecr.${AWS_REGION_UE1}.amazonaws.com/${ecrRepoUe1}`;
 
   // S3 bucket: lookup from EdgeStack CloudFormation output
   const edgeStackName = `${appPrefix}-EdgeStack`;
@@ -214,6 +217,7 @@ function resolveDeployment(flags) {
     gitShaShort,
     appPrefix,
     envPrefix,
+    accountId,
     ecrRepoEuw2,
     ecrRepoUe1,
     ecrUriEuw2,
@@ -237,7 +241,7 @@ function dockerBuildAndPush(config) {
   // Push to eu-west-2
   console.log(`\nPushing to ECR eu-west-2 (${config.ecrRepoEuw2})...`);
   run(
-    `aws ecr get-login-password --region ${AWS_REGION} | docker login --username AWS --password-stdin ${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_REGION}.amazonaws.com`,
+    `aws ecr get-login-password --region ${AWS_REGION} | docker login --username AWS --password-stdin ${config.accountId}.dkr.ecr.${AWS_REGION}.amazonaws.com`,
   );
   run(`docker tag ${localTag} ${config.ecrUriEuw2}:${config.gitSha}`);
   run(`docker tag ${localTag} ${config.ecrUriEuw2}:latest`);
@@ -247,7 +251,7 @@ function dockerBuildAndPush(config) {
   // Push to us-east-1
   console.log(`\nPushing to ECR us-east-1 (${config.ecrRepoUe1})...`);
   run(
-    `aws ecr get-login-password --region ${AWS_REGION_UE1} | docker login --username AWS --password-stdin ${AWS_ACCOUNT_ID}.dkr.ecr.${AWS_REGION_UE1}.amazonaws.com`,
+    `aws ecr get-login-password --region ${AWS_REGION_UE1} | docker login --username AWS --password-stdin ${config.accountId}.dkr.ecr.${AWS_REGION_UE1}.amazonaws.com`,
   );
   run(`docker tag ${localTag} ${config.ecrUriUe1}:${config.gitSha}`);
   run(`docker tag ${localTag} ${config.ecrUriUe1}:latest`);
