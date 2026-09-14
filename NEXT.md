@@ -44,6 +44,15 @@ Every item names its model: the lowest tier that fits (Fable > Opus > Sonnet > H
 head is the ci proof. Each row leaves when the PR merges and its own remainder (if any) moves to
 its section.
 
+- [ ] **O41x. Redeploy the backup account, then run the drill.** Both ran on 2026-09-14:
+  `setup-backup-account.yml` 34790152940 (both backup stacks UPDATE_COMPLETE, `backup-copy-role`
+  exists) and `restore-drill.yml` 34790429557 (five prod tables restored into ci and deleted:
+  receipts 4901, bundles 680, hmrc-api-requests 3249, passes 8859, subscriptions 449). On the
+  batch: the drill's salt check read a key that never existed (`system#config`/`salt-v2`; the
+  canary is `system#canary`/`salt-health-check`), fixed in `restore-drill.yml`; keepalive's
+  exemption removed. Closes when the PR merges. **Owner**: Claude Code. **Model**: Sonnet.
+  **Size**: ~3 files.
+
 - [ ] **B136. The monthly fraud-header check's Telegram alert cannot publish from launchd.** On
   `claude/b29-board` (a4094df2): the check DID run on 2026-09-12 and wrote the August record, which
   was never committed, so `compliance.yml`'s lake job has always read an empty directory; the record
@@ -245,14 +254,20 @@ its section.
 
 ## Machine-only
 
+- [ ] **B25c. Issue #11, backups outside the account.** The drill's own state is now known and
+  written up in `_developers/RESTORE_DRILL.md`: `restore-drill.yml` has never run, and two things
+  stop it. The vault's restore grant names a role nothing can assume (B105), and the backup
+  account's stack has not been deployed since before that grant landed (O41). What is proven
+  meanwhile is the copy side: fresh completed recovery points exist for all five critical prod
+  tables and both books buckets, and `restore-test.yml`'s monthly in-account restore has passed
+  three of its last four runs, most recently restoring 4826 receipt items against a live source of
+  4832. That comment is posted (issuecomment-5653323425, 2026-09-13). The drill ran clean on 2026-09-14 (run 34790429557, batch
+  b30's O41x). Left: comment on #11 with that result and close it once the PR merges. **Source**: issue #11. **Owner**: Claude Code. **Model**: Sonnet.
+  **Size**: no committed files.
 
 
 
-- [ ] **O41x. Redeploy the backup account, then run the drill.** The code is on main (#198).
-  Left, in order: dispatch `setup-backup-account.yml` and check the vault policy deploys; confirm
-  main's environment deploy of `e8237145` gave ci's vault and key the copy-role grants; run
-  `restore-drill.yml` once — B25c's proof and keepalive's exemption coming off.
-  **Owner**: Claude Code. **Model**: Sonnet. **Size**: no committed files.
+
 
 - [ ] **B17v.1. Capture the five walkthrough videos.** The three prod captures are done
   (`view-liabilities` run 34651931632, `view-payments` 34689643435, `view-penalties` 34689889022).
@@ -410,16 +425,6 @@ its section.
   ones; the accounts and ITSA videos publish as sandbox previews. **Source**: BACKLOG 17b,
   17c. **Owner**: Claude Code, then Operator. **Model**: Haiku. Blocked on O32. **Size**: ~1 file.
 
-- [ ] **B25c. Issue #11, backups outside the account.** The drill's own state is now known and
-  written up in `_developers/RESTORE_DRILL.md`: `restore-drill.yml` has never run, and two things
-  stop it. The vault's restore grant names a role nothing can assume (B105), and the backup
-  account's stack has not been deployed since before that grant landed (O41). What is proven
-  meanwhile is the copy side: fresh completed recovery points exist for all five critical prod
-  tables and both books buckets, and `restore-test.yml`'s monthly in-account restore has passed
-  three of its last four runs, most recently restoring 4826 receipt items against a live source of
-  4832. That comment is posted (issuecomment-5653323425, 2026-09-13). Left: run `restore-drill.yml` and
-  settle the issue on its result. **Source**: issue #11. **Owner**: Claude Code. **Model**: Sonnet.
-  Blocked on O41x. **Size**: no committed files.
 
 - [ ] **B124. Prove the three agent workflows by dispatch, in order.** All three are on main,
   `workflow_dispatch` only, every event trigger commented out until a hand-run has earned it.
