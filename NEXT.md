@@ -114,6 +114,41 @@ Every item names its model: the lowest tier that fits (Fable > Opus > Sonnet > H
 
 
 
+- [ ] **B152. `watch-ci.sh` reports `MERGEABLE` for a head with no runs yet.** In the minute after a
+  push the latest run per workflow still belongs to the previous head, so the probe called PR #207
+  ready on 45bdfac4 before that sha had a run. Report `MERGEABLE` only when every latest run's
+  `headSha` equals the PR's `headRefOid`. **Source**: REPORT_SESSION_oVpgsO_2026-09-14.md. **Owner**: Claude Code.
+  **Model**: Haiku. **Size**: ~1 file.
+
+- [ ] **B147. A direct question gets its answer as the whole reply.** Three times on 2026-09-13
+  the operator asked where the dashboards were and the answer went inside a running turn, where
+  their client showed only a summary; the links never reached them. Write into `CLAUDE.md`: when
+  the operator asks a question, answer it in a reply that ends the turn, links and commands in
+  full, and resume the work in the next turn. **Source**: REPORT_SESSION_oVpgsO_2026-09-14.md. **Owner**: Claude Code.
+  **Model**: Haiku. **Size**: ~1 file.
+
+- [ ] **B151. The sanctioned squash when `rebase -i` is blocked.** Batch b30 was rebuilt as one
+  commit per task with a fresh branch and 19 `cherry-pick -n`s because `git rebase -i --autosquash`
+  is not allowed here. Write that path into the do-next skill's landing section, and list
+  `git rebase -i --autosquash <base>` on an unpushed batch branch among the commands the operator
+  may choose to allow in `.claude/settings.json`; that allowlist is theirs. **Source**: REPORT_SESSION_oVpgsO_2026-09-14.md.
+  **Owner**: Claude Code. **Model**: Haiku. **Size**: ~1 file.
+
+- [ ] **B150. Agents that wait on a Monitor never come back, and one edited the primary checkout.**
+  The videos agent handed each capture wait to a Monitor and sat idle for six hours with three
+  failed runs unread; the skills agent's shell started in the primary checkout and its edits landed
+  on `main` uncommitted. In the do-next brief shape: every Bash call starts with `cd <worktree>` or
+  uses `git -C`; a wait is a `sleep` loop inside one Bash call with a timeout, never a Monitor or a
+  backgrounded wait. **Source**: REPORT_SESSION_oVpgsO_2026-09-14.md. **Owner**: Claude Code. **Model**: Haiku.
+  **Size**: ~1 file.
+
+- [ ] **B149. Imported log groups must exist in the synth.** Deploy 34792364909 failed creating
+  `ci-claud3386-app-OpsStack`: B128's worker metric filters named `/aws/lambda/<worker>` groups
+  the Lambda construct never creates (a worker shares its ingest function's group). Add a CDK test
+  over the application synth that every `AWS::Logs::MetricFilter` `LogGroupName` in an app stack
+  matches an `AWS::Logs::LogGroup` created in the same synth. **Source**: REPORT_SESSION_oVpgsO_2026-09-14.md. **Owner**:
+  Claude Code. **Model**: Sonnet. **Size**: ~1 file.
+
 - [ ] **B52v. Review the sign-in navigation on the operator dashboard.** The operator asked on
   2026-09-13 for the sign-in path of `https://submit.diyaccounting.co.uk/operator/dashboard.html`
   to be reviewed. The page carries its own auth section (`web/public/operator/dashboard.html`
@@ -136,6 +171,12 @@ Every item names its model: the lowest tier that fits (Fable > Opus > Sonnet > H
 
 
 
+
+- [ ] **B148. Nested permissions checked before a push.** Deploy 34791268179 died at startup:
+  `probe-test.yml`'s new job requested `issues: write` and `deploy.yml`'s 29 calls grant neither;
+  actionlint does not check it. In `test.yml`'s `validate workflow syntax` job, for every workflow
+  with `workflow_call`, read each job's `permissions` and fail when a caller in this repository
+  grants less. **Source**: REPORT_SESSION_oVpgsO_2026-09-14.md. **Owner**: Claude Code. **Model**: Sonnet. **Size**: ~2 files.
 
 ## Human and machine
 
