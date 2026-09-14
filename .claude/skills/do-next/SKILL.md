@@ -139,6 +139,10 @@ A fresh agent carries none of your context, so the brief stands alone. Every bri
 - **Its worktree path and branch**, and that it works only there. It may `git add` its own files
   and commit. Never `git stash`, `git reset`, `git checkout --` or `git clean`. Never push, never
   open a PR, never edit `NEXT.md`.
+- **Every Bash call starts with `cd <worktree>` or uses `git -C <worktree>`**, because a shell that
+  starts in the primary checkout edits `main` and leaves work uncommitted there.
+- **A wait is a `sleep` loop inside one Bash call with a timeout**, never a Monitor or a backgrounded
+  wait, because an agent that hands its wait to a Monitor ends its turn and never resumes.
 - **What it owns and what it must not touch**, with the reason. Where another agent in the same
   wave is nearby, name it.
 - **The evidence, not just the task.** Paste the run ids, the log lines, the timestamps. An agent
