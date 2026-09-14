@@ -96,6 +96,23 @@ and stop. One branch is driven green at a time. Lifted only by the operator in t
 
 ## Machine-only
 
+- [ ] **B156. The alarm-triage skip comment runs `gh` without a repository.** Run 34862119217
+  (15:26 UTC on 2026-09-14, issue #212) failed at "Comment that triage was skipped": the `triage`
+  job has no checkout, so `gh issue comment` (`.github/workflows/alarm-triage.yml:94`) cannot infer
+  the repository and dies with "not a git repository", and the issue gets no comment, which is the
+  case the step exists for. Add `--repo "$GITHUB_REPOSITORY"`. **Source**: run 34862119217.
+  **Owner**: Claude Code. **Model**: Haiku. **Size**: ~1 file.
+
+- [ ] **B157. One alarm transition opened two issues.** #210 and #212 carry the same alarm
+  (`prod-env-github-probe-failed`), state change and timestamp (15:26:00.881 UTC on 2026-09-14).
+  `app/functions/ops/alarmToGithubIssue.js` dedupes by a GitHub search for an open issue with the
+  title (line 270), and two invocations of the same notification a moment apart both search before
+  either has created, and the search index lags anyway. Make the create idempotent: a conditional
+  put keyed on alarm name and state-change timestamp in an existing ops table before the create, or
+  list open issues through the REST issues endpoint (not search) and set the function's reserved
+  concurrency to 1; then close #212 as the duplicate. **Source**: issues #210, #212. **Owner**:
+  Claude Code. **Model**: Sonnet. **Size**: ~2 files.
+
 - [ ] **B155. `video-capture.yml` prints the capture lane's password and TOTP secret in its log.**
   The `Record <script>` step's `env:` block echoes `TEST_AUTH_PASSWORD` and `TEST_AUTH_TOTP_SECRET`
   unmasked (run 34850667197, 13:42 UTC on 2026-09-14) because they come from a step output, which
