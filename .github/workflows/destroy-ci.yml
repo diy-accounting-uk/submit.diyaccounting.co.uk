@@ -54,7 +54,7 @@ env:
   GITHUB_ACTOR: ${{ github.actor }}
   # This is a backstop's minimum age, not deploy.yml's self-destruct delay: the primary
   # teardown is the EventBridge schedule each deployment's own SelfDestructStack carries
-  # (deploy.yml's SELF_DESTRUCT_DELAY_HOURS, default 2h). This sweep runs on a fixed cron
+  # (deploy.yml's SELF_DESTRUCT_DELAY_HOURS, default 4h). This sweep runs on a fixed cron
   # regardless of any single deployment's schedule, so it needs its own, larger, minimum age
   # to avoid destroying a deployment the primary schedule hasn't had a chance to reach yet.
   SELF_DESTRUCT_SWEEP_MIN_AGE_HOURS: '8'
