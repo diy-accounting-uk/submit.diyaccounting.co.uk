@@ -45,6 +45,14 @@ Nothing: no branch, pull request or run carries an open row. Batch b30 merged as
 
 ## Machine-only
 
+- [ ] **B30x. The CIS console-sign-in-without-MFA alarm fires on SSO sign-ins.** Issue #206:
+  `prod-env-cis-console-signin-without-mfa` fired at 23:42 UTC on 2026-09-13 for the operator's
+  own SSO console sign-in (CloudTrail: `ConsoleLogin`, `userIdentity.type = AssumedRole`,
+  `AWSReservedSSO_AdministratorAccess`, `MFAUsed = No`, which is what every federated sign-in
+  reports). CIS 3.2's own filter adds `$.userIdentity.type = "IAMUser"`; add that clause to the
+  metric filter in `ObservabilityStack.java` with its test, and the issue closes when it reaches
+  prod. **Source**: issue #206. **Owner**: Claude Code. **Model**: Haiku. **Size**: ~2 files.
+
 - [ ] **B34.6b. Companies House accounts filing: the sandbox proof.** Submission 000004 (presenter
   E0000052288, company 06846849, 2026-09-13 19:04 UTC) was ACCEPTED by the XML Gateway test
   service; every `GetSubmissionStatus` poll for it answers 9999 "No presenter ID supplied". Since
@@ -98,7 +106,12 @@ Nothing: no branch, pull request or run carries an open row. Batch b30 merged as
   the operator dashboard." (line 300) when the bundle is missing. Walk the path signed out, signed
   in without the bundle, and signed in with it: does the page return to itself after sign-in, does
   the denial name the missing pass, and does the header match the rest of the site's sign-in
-  controls. Fix what the walk shows, with a browser test under `web/browser-tests/`. **Source**:
+  controls. Fix what the walk shows, with a browser test under `web/browser-tests/`. The operator's first attempt at 23:38 UTC on 2026-09-13,
+  signed in, ended in a 5xx: issues #204 (`prod-e371587-app-api-5xx`) and #203
+  (`operator-snapshot-get-log-errors`); that deployment's logs are gone, so reproduce on
+  `prod-5ca7bca` or read the log of the next attempt (`/aws/lambda/prod-5ca7bca-app-operator-snapshot-get`)
+  and make the no-bundle path a 403 with a message naming the operator pass. Both issues close
+  with this row. **Source**:
   operator, 2026-09-13. **Owner**: Claude Code. **Model**: Sonnet. **Size**: ~2 files.
 
 
