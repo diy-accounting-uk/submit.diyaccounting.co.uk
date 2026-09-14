@@ -136,16 +136,26 @@ describe("lib/activityAlert", () => {
       }
     });
 
-    test("is a no-op when ACTIVITY_BUS_NAME is not set", async () => {
+    test("is a no-op when ACTIVITY_BUS_NAME is not set, and reports unpublished", async () => {
       delete process.env.ACTIVITY_BUS_NAME;
       // Should not throw
-      await publishActivityEvent({ event: "test-event", summary: "Test" });
+      const result = await publishActivityEvent({ event: "test-event", summary: "Test" });
+      expect(result.published).toBe(false);
+      expect(result.error).toBe("ACTIVITY_BUS_NAME not set");
     });
 
-    test("does not throw on EventBridge failure", async () => {
+    test("does not throw on EventBridge failure, and reports unpublished with the error", async () => {
       process.env.ACTIVITY_BUS_NAME = "test-bus";
       mockSend.mockRejectedValueOnce(new Error("AWS error"));
-      await publishActivityEvent({ event: "test-event", summary: "Test" });
+      const result = await publishActivityEvent({ event: "test-event", summary: "Test" });
+      expect(result.published).toBe(false);
+      expect(result.error).toBe("AWS error");
+    });
+
+    test("reports published on success", async () => {
+      process.env.ACTIVITY_BUS_NAME = "test-bus";
+      const result = await publishActivityEvent({ event: "test-event", summary: "Test" });
+      expect(result).toEqual({ published: true });
     });
 
     test("includes requestId from context in event detail", async () => {

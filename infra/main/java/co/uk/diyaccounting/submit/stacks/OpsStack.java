@@ -39,6 +39,10 @@ import software.amazon.awscdk.services.iam.ServicePrincipal;
 import software.amazon.awscdk.services.lambda.Function;
 import software.amazon.awscdk.services.lambda.FunctionAttributes;
 import software.amazon.awscdk.services.lambda.IFunction;
+import software.amazon.awscdk.services.logs.FilterPattern;
+import software.amazon.awscdk.services.logs.ILogGroup;
+import software.amazon.awscdk.services.logs.LogGroup;
+import software.amazon.awscdk.services.logs.MetricFilter;
 import software.amazon.awscdk.services.s3.Bucket;
 import software.amazon.awscdk.services.s3.BucketEncryption;
 import software.amazon.awscdk.services.s3.LifecycleRule;
@@ -352,6 +356,73 @@ public class OpsStack extends Stack {
         // ============================================================================
         if (props.baseUrl() != null && !props.baseUrl().isBlank()) {
             createSyntheticCanaries(props);
+        }
+
+        // ============================================================================
+        // Token Charge Unpaid Metric Filters (B128)
+        // ============================================================================
+        // app/services/tokenEnforcement.js logs "Token charge failed after HMRC success" and
+        // swallows the error when a token charge fails after HMRC has already accepted the
+        // submission: the customer keeps the filing but the ledger under-counts the charge.
+        // chargeTokenOnSuccess is called from a shared submit function that either a Lambda's
+        // ingest handler (the no-queue path) or its worker handler (the SQS path) can reach. The
+        // Lambda construct gives a worker the same log group as its ingest function (see
+        // AsyncApiLambda: `.logGroup(this.logGroup)`), and no `/aws/lambda/<worker>` group is
+        // ever created, so one metric filter per endpoint on the ingest log group covers both
+        // handlers, all incrementing the same Submit/Business metric.
+        // The alarm on that metric lives in ObservabilityStack (env-scoped, see
+        // TokenChargeUnpaidAlarm), the same split HmrcSubmissionFailureAlarm and
+        // ItsaSubmissionFailureAlarm use for their EMF metrics, so every deployment's metric
+        // filters feed one alarm that dedupes to a single open GitHub issue per environment.
+        record TokenChargeSource(String label, String functionName) {}
+        List<TokenChargeSource> tokenChargeSources = List.of(
+                new TokenChargeSource(
+                        "VatReturnPostIngest", props.sharedNames().hmrcVatReturnPostIngestLambdaFunctionName),
+                new TokenChargeSource(
+                        "ItsaFinalDeclarationPostIngest",
+                        props.sharedNames().hmrcItsaFinalDeclarationPostIngestLambdaFunctionName),
+                new TokenChargeSource(
+                        "ItsaLossesAndClaimsPutIngest",
+                        props.sharedNames().hmrcItsaLossesAndClaimsPutIngestLambdaFunctionName),
+                new TokenChargeSource(
+                        "ItsaLossesAndClaimsDeleteIngest",
+                        props.sharedNames().hmrcItsaLossesAndClaimsDeleteIngestLambdaFunctionName),
+                new TokenChargeSource(
+                        "ItsaSelfEmploymentPeriodPutIngest",
+                        props.sharedNames().hmrcItsaSelfEmploymentPeriodPutIngestLambdaFunctionName),
+                new TokenChargeSource(
+                        "ItsaUkPropertyPeriodPutIngest",
+                        props.sharedNames().hmrcItsaUkPropertyPeriodPutIngestLambdaFunctionName),
+                new TokenChargeSource(
+                        "ItsaSelfEmploymentAnnualPutIngest",
+                        props.sharedNames().hmrcItsaSelfEmploymentAnnualPutIngestLambdaFunctionName),
+                new TokenChargeSource(
+                        "ItsaUkPropertyAnnualPutIngest",
+                        props.sharedNames().hmrcItsaUkPropertyAnnualPutIngestLambdaFunctionName),
+                new TokenChargeSource(
+                        "ItsaSelfEmploymentPeriodPostIngest",
+                        props.sharedNames().hmrcItsaSelfEmploymentPeriodPostIngestLambdaFunctionName),
+                new TokenChargeSource(
+                        "ItsaTaxLiabilityAdjustmentsPutIngest",
+                        props.sharedNames().hmrcItsaTaxLiabilityAdjustmentsPutIngestLambdaFunctionName),
+                new TokenChargeSource(
+                        "ItsaTaxLiabilityAdjustmentsDeleteIngest",
+                        props.sharedNames().hmrcItsaTaxLiabilityAdjustmentsDeleteIngestLambdaFunctionName),
+                new TokenChargeSource(
+                        "ItsaUkPropertyPeriodPostIngest",
+                        props.sharedNames().hmrcItsaUkPropertyPeriodPostIngestLambdaFunctionName));
+
+        for (TokenChargeSource source : tokenChargeSources) {
+            ILogGroup lambdaLogGroup = LogGroup.fromLogGroupName(
+                    this, "TokenChargeUnpaid" + source.label() + "LogGroup", "/aws/lambda/" + source.functionName());
+            MetricFilter.Builder.create(this, "TokenChargeUnpaid" + source.label() + "MetricFilter")
+                    .logGroup(lambdaLogGroup)
+                    .filterPattern(FilterPattern.literal("{ $.message = \"Token charge failed after HMRC success\" }"))
+                    .metricNamespace("Submit/Business")
+                    .metricName("TokenChargeUnpaid")
+                    .metricValue("1")
+                    .defaultValue(0)
+                    .build();
         }
 
         // ============================================================================

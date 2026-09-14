@@ -9,7 +9,7 @@ import { fileURLToPath } from "node:url";
 import { tmpdir } from "node:os";
 import path from "node:path";
 
-const mockPublishActivityEvent = vi.fn().mockResolvedValue(undefined);
+const mockPublishActivityEvent = vi.fn().mockResolvedValue({ published: true });
 vi.mock("../../lib/activityAlert.js", () => ({
   publishActivityEvent: (...args) => mockPublishActivityEvent(...args),
 }));
@@ -342,6 +342,13 @@ describe("main", () => {
     await main(["--mail-dir", mailDir, "--now", "2026-09-15T00:00:00Z"]);
     expect(mockPublishActivityEvent).not.toHaveBeenCalled();
     expect(JSON.parse(readFileSync(path.join(resultDir, "2026-08.json"), "utf8")).status).toBe("correct");
+  });
+
+  it("throws when the activity event fails to publish", async () => {
+    mockPublishActivityEvent.mockResolvedValueOnce({ published: false, error: "Token is expired" });
+    await expect(main(["--mail-dir", mailDirAdvisories, "--now", "2026-05-15T00:00:00Z"])).rejects.toThrow(
+      /failed to publish activity event for April 2026 \(advisories\): Token is expired/,
+    );
   });
 
   it("dry-run prints the decision and publishes nothing", async () => {

@@ -66,18 +66,19 @@ change where the transcript and checkpoint id land (default `./target/itsa-sandb
 | Reset (first run) | `POST .../vendor-state/checkpoints?nino={nino}` | `201` with a checkpoint id, taken after the business and status above exist |
 | Verify | `GET .../individuals/business/details/{nino}/list`, `Gov-Test-Scenario: STATEFUL` | `200`, the business this script created |
 | Verify | `GET .../individuals/person/itsa-status/{nino}/{taxYear}`, `Gov-Test-Scenario: STATEFUL` | `200`, the status this script set |
-| Quarterly x4 | `POST .../self-employment/{nino}/{businessId}/period` | `200`/`201`, once per open obligation HMRC returned |
+| Quarterly x4 | `POST .../self-employment/{nino}/{businessId}/period`, `Gov-Test-Scenario: STATEFUL` | `200`/`201`, once per one of the four standard quarterly periods this script derives from the tax year |
 | Annual | `PUT .../self-employment/{nino}/{businessId}/annual/{taxYear}` | `204` |
 | BSAS trigger | `POST .../adjustable-summary/{nino}/trigger` | `200` with `calculationId` |
-| BSAS retrieve | `GET .../adjustable-summary/{nino}/self-employment/{calculationId}/{taxYear}` | `200` |
+| BSAS retrieve | `GET .../adjustable-summary/{nino}/self-employment/{calculationId}/{taxYear}`, `Gov-Test-Scenario: SELF_EMPLOYMENT_PROFIT` | `200`, HMRC's own canned example - not this run's figures, see below |
 | BSAS adjust | `POST .../adjustable-summary/{nino}/self-employment/{calculationId}/adjust/{taxYear}` | `200`/`204` |
 | Calculation trigger | `POST .../calculations/{nino}/self-assessment/{taxYear}/trigger/intent-to-finalise` | `202` with `calculationId` |
-| Calculation retrieve | `GET .../calculations/{nino}/self-assessment/{taxYear}/{calculationId}` | `404` while HMRC is still calculating, then `200` with `metadata.calculationType` of `"intent-to-finalise"` |
+| Calculation retrieve | `GET .../calculations/{nino}/self-assessment/{taxYear}/{calculationId}`, `Gov-Test-Scenario: DYNAMIC` | `404` while HMRC is still calculating, then `200` with `metadata.calculationType` of `"final-declaration"` - HMRC's own canned value, see below |
 | Final declaration | `POST .../calculations/{nino}/self-assessment/{taxYear}/{calculationId}/final-declaration` | `204` |
 | Validator | `GET .../test/fraud-prevention-headers/validate` | no errors; the only acceptable warning names `gov-client-multi-factor` |
 
 The script throws on any other status, with HMRC's response body in the error, rather than
-skip a step or fall back to a guess.
+skip a step or fall back to a guess - except a `429 MESSAGE_THROTTLED_OUT`, which it retries
+with backoff, since that is HMRC's sandbox rate limit and not a rejection of anything sent.
 
 ## Where the responses go
 
@@ -191,7 +192,70 @@ GET .../obligations/details/*******5B/income-and-expenditure?typeOfBusiness=self
 {"code":"NO_OBLIGATIONS_FOUND","message":"No obligations found using this filter"}
 ```
 
-Nothing past this call - the four quarterly updates, the annual submission, the adjustable
-summary, the calculation, the final declaration, and the losses and tax liability adjustments
-calls - can be exercised against a test-support-created business until HMRC's sandbox obligations
-endpoint reflects one, or until HMRC's support team names a working alternative.
+**Way on: file without reading obligations, over the canned businessId.** Two ways past the gap
+above: file the quarterly periods, the accounting period and the crystallisation check without
+reading obligations at all - the period-summary endpoints take dates, not an obligation, and the
+Self Employment Business 5.0 spec publishes the four standard quarterly period dates for every
+tax year - or run the obligations-dependent calls against the canned `XBIS12345678901` under
+`DYNAMIC` and everything else against the created business. Took the first: it exercises the
+business this script's own test-support calls created, throughout, where the second would have
+switched to HMRC's fixture business partway through the run. `buildStandardQuarterlyPeriods` in
+the script derives the four periods directly from `ITSA_SANDBOX_TAX_YEAR`; the obligations read
+before filing and the crystallisation-obligations read before the calculation trigger are both
+dropped, since both are the same obligations-api gap. The four quarterly periods are then filed
+with `Gov-Test-Scenario: STATEFUL`, since the endpoint's own default does not persist a create
+for a later stateful read.
+
+With that change the run reached the BSAS trigger and found one more script defect, fixed:
+
+- `POST .../adjustable-summary/{nino}/trigger` answered
+  `400 RULE_INCORRECT_OR_EMPTY_BODY_SUBMITTED` on `/typeOfBusiness` - the script's call to
+  `buildBsasTriggerRequestBody` never set `typeOfBusiness`. Fixed by passing
+  `typeOfBusiness: "self-employment"`.
+
+The run then reached the BSAS adjust call and found a second, in this script's own body choice
+rather than a defect in the imported builder:
+
+- `POST .../adjustable-summary/{nino}/self-employment/{calculationId}/adjust/{taxYear}`
+  answered `400 RULE_INCORRECT_OR_EMPTY_BODY_SUBMITTED` for `{"zeroAdjustments": true}`. HMRC's
+  resolved OpenAPI for this call carries two request schemas, chosen by tax year: `zeroAdjustments`
+  exists only on the "For TY 2024-25 and after" schema. `ITSA_SANDBOX_TAX_YEAR` must be 2024-25
+  or earlier, so the "For TY 2023-24 and before" schema applies, which has no `zeroAdjustments`
+  field at all - only `income`, `expenses` and `additions`. The script now sends a real
+  adjustment, `{ income: { other: 1 } }`, for this tax year.
+
+The run then reached the calculation retrieve and found a further sandbox gap, not a script
+defect:
+
+- `GET .../calculations/{nino}/self-assessment/{taxYear}/{calculationId}` answered `200` with
+  `metadata.calculationType` of `"final-declaration"`, for a calculation this run had itself
+  triggered as `intent-to-finalise` moments earlier - with no `Gov-Test-Scenario` header, the
+  response was a fully static canned example (a different `calculationId`, `taxYear 2024-25`,
+  HMRC's own example dates). Adding `Gov-Test-Scenario: DYNAMIC` made the response track this
+  run's own `calculationId`, tax year and period dates, but `metadata.calculationType` still
+  answered `"final-declaration"`. Individual Calculations 8.0's Gov-Test-Scenario table for this
+  call has no scenario that reflects a trigger's own `calculationType` back - only named canned
+  examples and `DYNAMIC`, which only affects dates. The script now warns and continues to the
+  final declaration call rather than treating this as a stop, since it is HMRC's sandbox that
+  cannot answer the question, not a defect this script can fix.
+
+Throughout this run and every one before it, calls landed on HMRC's sandbox rate limit at
+unpredictable points - `bsas-trigger`, `bsas-adjust`, `calculation-trigger` on different runs,
+each `429 MESSAGE_THROTTLED_OUT`, and waiting minutes between whole-script runs did not avoid
+it. `callHmrc` now retries a 429 with a fixed 20-second backoff (or HMRC's own `Retry-After`
+when it sends one) before treating it as a failure.
+
+With all of the above, the run completed:
+
+```
+POST .../calculations/*******2D/self-assessment/2023-24/03d6a9b4-f27a-1307-ae18-bf2510a8b034/final-declaration -> 204
+GET .../test/fraud-prevention-headers/validate -> 200 {"code":"POTENTIALLY_INVALID_HEADERS","warnings":[{"headers":["gov-client-multi-factor"]}]}
+```
+
+Final declaration `204`: true. Fraud header validator clean: true. The BSAS retrieve
+(`Gov-Test-Scenario: SELF_EMPLOYMENT_PROFIT`) and the calculation retrieve
+(`Gov-Test-Scenario: DYNAMIC`) both still answer HMRC's own canned figures and calculation
+type rather than this run's own submitted numbers - documented gaps, not blockers, since
+neither call's body is this script's to assert on. Individual Losses and Individuals Tax
+Liability Adjustments remain untouched, per this runbook's own assumptions section above -
+there is no build yet for either.

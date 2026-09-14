@@ -143,6 +143,43 @@ class OpsStackTest {
                 "expected the prod alarm-silence prefix, got " + resource);
     }
 
+    @Test
+    @SuppressWarnings("unchecked")
+    void tokenChargeUnpaidMetricFiltersCoverEveryHmrcSubmissionEndpointIngestLogGroup() {
+        OpsStack opsStack = synthOpsStack("prod", null, null);
+        Template template = Template.fromStack(opsStack);
+
+        Map<String, Map<String, Object>> metricFilters = template.findResources("AWS::Logs::MetricFilter");
+        assertEquals(
+                12,
+                metricFilters.size(),
+                "expected one metric filter per HMRC submission endpoint that calls chargeTokenOnSuccess, "
+                        + "on the ingest log group its worker shares");
+        assertTrue(
+                metricFilters.keySet().stream().noneMatch(id -> id.contains("Worker")),
+                "a worker has no log group of its own, so no filter may name one: " + metricFilters.keySet());
+
+        for (Map<String, Object> filter : metricFilters.values()) {
+            var properties = (Map<String, Object>) filter.get("Properties");
+            assertEquals("{ $.message = \"Token charge failed after HMRC success\" }", properties.get("FilterPattern"));
+            var metricTransformations = (List<Map<String, Object>>) properties.get("MetricTransformations");
+            assertEquals(1, metricTransformations.size());
+            assertEquals("Submit/Business", metricTransformations.get(0).get("MetricNamespace"));
+            assertEquals("TokenChargeUnpaid", metricTransformations.get(0).get("MetricName"));
+        }
+
+        var logGroupNames = metricFilters.values().stream()
+                .map(filter -> (Map<String, Object>) filter.get("Properties"))
+                .map(properties -> (String) properties.get("LogGroupName"))
+                .toList();
+        assertTrue(
+                logGroupNames.stream().anyMatch(name -> name.contains("hmrc-vat-return-post")),
+                "expected a metric filter on a VAT return post log group, got " + logGroupNames);
+        assertTrue(
+                logGroupNames.stream().anyMatch(name -> name.contains("hmrc-itsa-final-declaration-post")),
+                "expected a metric filter on an ITSA final declaration log group, got " + logGroupNames);
+    }
+
     @SuppressWarnings("unchecked")
     private static List<Map<String, Object>> findPolicyStatementsContainingSid(Template template, String sid) {
         for (Map<String, Object> policy :

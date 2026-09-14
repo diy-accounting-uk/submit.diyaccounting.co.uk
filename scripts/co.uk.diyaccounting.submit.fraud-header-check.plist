@@ -2,6 +2,15 @@
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <!-- SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0 -->
 <!-- Copyright (C) 2006-2026 DIY Accounting Limited -->
+<!--
+  AWS_PROFILE below is the submit-prod SSO profile, which cannot refresh itself unattended.
+  When the SSO token has expired, the Telegram publish step fails and this job exits non-zero
+  (see scripts/fraud-header-email-check.js). The check has still read the HMRC email and
+  written the month's JSON record; only the alert failed to reach Telegram. Fix: run
+  `aws sso login --sso-session diyaccounting`, then run the script by hand:
+    node scripts/fraud-header-email-check.js
+  Log: ~/Library/Logs/co.uk.diyaccounting.submit.fraud-header-check.log
+-->
 <plist version="1.0">
 <dict>
 	<key>Label</key>

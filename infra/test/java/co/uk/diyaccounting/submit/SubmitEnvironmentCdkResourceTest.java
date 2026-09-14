@@ -130,8 +130,9 @@ class SubmitEnvironmentCdkResourceTest {
         // it lives here instead of in the per-deployment OpsStack so a new deployment doesn't
         // create a fresh alarm (and a fresh GitHub issue) against this environment-wide metric.
         // Alongside RumLcpP75Alarm, RumJsErrorAlarm, BundleCapReachedAlarm,
-        // HmrcSubmissionFailureAlarm and ItsaSubmissionFailureAlarm, that's 6 alarms total.
-        observability.resourceCountIs("AWS::CloudWatch::Alarm", 6);
+        // HmrcSubmissionFailureAlarm, ItsaSubmissionFailureAlarm and TokenChargeUnpaidAlarm,
+        // that's 7 alarms total.
+        observability.resourceCountIs("AWS::CloudWatch::Alarm", 7);
         observability.hasResourceProperties(
                 "AWS::CloudWatch::Alarm",
                 Match.objectLike(Map.of(
@@ -142,6 +143,22 @@ class SubmitEnvironmentCdkResourceTest {
                         "EvaluationPeriods", 1,
                         "ComparisonOperator", "GreaterThanOrEqualToThreshold",
                         "TreatMissingData", "breaching")));
+
+        // Token charge unpaid alarm (B128): any occurrence in 5 minutes of the metric that
+        // every deployment's OpsStack metric filters increment when
+        // "Token charge failed after HMRC success" appears in an HMRC submission Lambda's logs.
+        observability.hasResourceProperties(
+                "AWS::CloudWatch::Alarm",
+                Match.objectLike(Map.of(
+                        "AlarmName", "test-env-token-charge-unpaid",
+                        "Namespace", "Submit/Business",
+                        "MetricName", "TokenChargeUnpaid",
+                        "Period", 300,
+                        "Statistic", "Sum",
+                        "Threshold", 1,
+                        "EvaluationPeriods", 1,
+                        "ComparisonOperator", "GreaterThanOrEqualToThreshold",
+                        "TreatMissingData", "notBreaching")));
 
         // 8b) Alarm triage: the read-only role denies customer data even if a later change widens
         // an Allow, its Bedrock Allow names only the two pinned models, and the guardrail and both

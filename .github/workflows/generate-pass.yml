@@ -21,8 +21,9 @@ on:
           - invited-guest
           - resident-guest
           - resident-pro-comp
+          - operator
       email:
-        description: 'Restricted to email (required for invited-guest, resident-guest, resident-pro-comp)'
+        description: 'Restricted to email (required for invited-guest, resident-guest, resident-pro-comp, operator)'
         required: false
         type: string
       max-uses:
@@ -73,7 +74,7 @@ on:
         default: 'day-guest-test-pass'
       email:
         type: string
-        description: 'Restricted to email (required for invited-guest, resident-guest, resident-pro-comp)'
+        description: 'Restricted to email (required for invited-guest, resident-guest, resident-pro-comp, operator)'
         required: false
       max-uses:
         type: string

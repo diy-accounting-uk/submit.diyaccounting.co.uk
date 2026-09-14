@@ -236,7 +236,7 @@ describe("hmrcItsaCalculationTriggerPost ingestHandler", () => {
         const event = buildTriggerEvent({ headers: { "x-wait-time-ms": "30000", "x-initial-request": "true" } });
         const response = await hmrcItsaCalculationTriggerPostHandler(event);
 
-        expect(response.statusCode).toBe(400);
+        expect(response.statusCode).toBe(404);
         // 1 trigger + exactly 5 retrieval attempts (the named bound) - a 6th would mean it never stops.
         expect(mockFetch).toHaveBeenCalledTimes(6);
       },

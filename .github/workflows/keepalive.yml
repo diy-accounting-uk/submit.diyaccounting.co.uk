@@ -107,9 +107,7 @@ jobs:
           # Named exemptions, each with a reason: the only way a workflow's cadence miss is
           # silenced. Keeps the check honest for everything not listed here, and keeps the
           # reason for what is visible in every run rather than tribal knowledge.
-          declare -A EXEMPT_WORKFLOWS=(
-            ["restore-drill.yml"]="vault does not yet accept the restore path"
-          )
+          declare -A EXEMPT_WORKFLOWS=()
 
           FAILURES=()
           EXEMPTED=()

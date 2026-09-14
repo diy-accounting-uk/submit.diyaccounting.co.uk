@@ -223,7 +223,7 @@ describe("hmrcItsaCalculationGet ingestHandler", () => {
       headers: { authorization: "Bearer test-token" },
     });
     const response = await hmrcItsaCalculationGetHandler(event);
-    expect(response.statusCode).toBe(400);
+    expect(response.statusCode).toBe(404);
   });
 
   test("returns 403 JSON when the authenticated user holds no bundle entitled to ITSA self-employment", async () => {

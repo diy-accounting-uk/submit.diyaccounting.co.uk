@@ -100,5 +100,6 @@ fetch("/submit.env", { cache: "no-store" })
     if (measurementId) {
       startGa4(measurementId);
     }
+    return null;
   })
   .catch((error) => console.warn("Failed to read GA4_MEASUREMENT_ID from /submit.env:", error));

@@ -150,6 +150,7 @@
         if (value === null || value === undefined) return "—";
         if (unit === "ratio") return (value * 100).toFixed(1) + "%";
         if (unit === "gbp") return "£" + value.toFixed(2);
+        if (unit === "usd") return "$" + value.toFixed(2);
         return String(Math.round(value * 100) / 100);
       }
 

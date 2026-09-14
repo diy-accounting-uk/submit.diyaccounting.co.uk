@@ -125,6 +125,29 @@ describe("operatorSnapshotPublish", () => {
       });
       expect(sql).toContain("WHERE  workflow = 'deploy'");
     });
+
+    test("counts matching rows with a literal value expression, as the security observations do", () => {
+      const sql = buildWindowedSql({
+        view: "security_hub_findings",
+        dayColumn: "dt",
+        valueExpr: "1",
+        aggregation: "count",
+        where: "finding_id IS NOT NULL AND severity_label = 'CRITICAL'",
+      });
+      expect(sql).toContain("FROM   security_hub_findings");
+      expect(sql).toContain("count(CASE WHEN dt > date_add('day', -30, current_date) THEN 1 END) AS last_30");
+      expect(sql).toContain("WHERE  finding_id IS NOT NULL AND severity_label = 'CRITICAL'");
+    });
+
+    test("runs against a monthly or quarterly grain column exactly as it would a daily one", () => {
+      const sql = buildWindowedSql({
+        view: "v_cost_vs_target_monthly",
+        dayColumn: "month",
+        valueExpr: "variance_usd",
+        aggregation: "avg",
+      });
+      expect(sql).toContain("avg(CASE WHEN month > date_add('day', -30, current_date) THEN variance_usd END) AS last_30");
+    });
   });
 
   describe("computeTrend", () => {
@@ -202,8 +225,48 @@ describe("operatorSnapshotPublish", () => {
         expect(observation.last90).toEqual({ value: 30, trend: 0.5 });
       }
 
-      const cost = snapshot.objectives.find((o) => o.id === "low-running-cost");
-      expect(cost.observations).toEqual([]);
+      for (const objective of snapshot.objectives) {
+        expect(objective.observations.length).toBeGreaterThan(0);
+        for (const observation of objective.observations) {
+          expect(observation.deepLink).toEqual(expect.any(String));
+        }
+      }
+    });
+
+    test("queries the raw findings tables and the coarser-grain views by their real column names", async () => {
+      mockAllQueriesSucceedWith(["10", "5", "30", "20"]);
+
+      const context = {
+        envName: "test",
+        region: "eu-west-2",
+        athenaWorkGroupName: "test-env-analytics",
+        githubRepo: "diy-accounting-uk/submit.diyaccounting.co.uk",
+        ga4PropertyId: "523400333",
+      };
+      await buildSnapshot({ workGroup: "wg", database: "db", context });
+
+      const sqlStatements = mockAthenaSend.mock.calls
+        .filter(([command]) => command.constructor.name === "StartQueryExecutionCommand")
+        .map(([command]) => command.input.QueryString);
+
+      const expectedFragments = [
+        "FROM   v_cost_vs_target_monthly",
+        "FROM   v_cost_per_submission_daily",
+        "FROM   security_hub_findings",
+        "FROM   guardduty_findings",
+        "FROM   github_alerts",
+        "FROM   v_returning_submitters_quarterly",
+        "FROM   v_subscription_renewals_daily",
+        "FROM   v_subscription_cancellations_daily",
+        "FROM   v_operator_interventions_daily",
+        "FROM   v_compliance_status",
+      ];
+      for (const fragment of expectedFragments) {
+        expect(sqlStatements.some((sql) => sql.includes(fragment))).toBe(true);
+      }
+      expect(sqlStatements.some((sql) => sql.includes("severity_label = 'CRITICAL'"))).toBe(true);
+      expect(sqlStatements.some((sql) => sql.includes("area = 'accessibility'"))).toBe(true);
+      expect(sqlStatements.some((sql) => sql.includes("area = 'fraud-prevention-headers'"))).toBe(true);
     });
   });
 

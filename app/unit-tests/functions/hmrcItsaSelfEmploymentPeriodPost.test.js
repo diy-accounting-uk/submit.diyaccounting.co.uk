@@ -455,9 +455,9 @@ describe("hmrcItsaSelfEmploymentPeriodPost ingestHandler", () => {
       headers: { authorization: "Bearer test-token" },
     });
     const response = await hmrcItsaSelfEmploymentPeriodPostHandler(event);
-    // Every HMRC "not found" maps to a client-fixable 400, the way every other write
-    // handler in this repo treats it (see http404NotFoundFromHmrcResponse).
-    expect(response.statusCode).toBe(400);
+    // Every HMRC "not found" maps to a real 404, the way every other write handler in
+    // this repo treats it (see http404NotFoundFromHmrcResponse).
+    expect(response.statusCode).toBe(404);
   });
 
   test("returns 403 JSON when the authenticated user holds no bundle entitled to file a quarterly update", async () => {

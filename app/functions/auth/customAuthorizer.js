@@ -118,7 +118,10 @@ export async function extractMfaContext(headers, accessTokenSub) {
   try {
     idPayload = await getIdTokenVerifier().verify(idToken);
   } catch (error) {
-    logger.warn({ message: "ID token verification failed; no server-built Gov-Client-Multi-Factor for this request", error: error.message });
+    logger.warn({
+      message: "ID token verification failed; no server-built Gov-Client-Multi-Factor for this request",
+      error: error.message,
+    });
     return {};
   }
 

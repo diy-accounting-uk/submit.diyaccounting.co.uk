@@ -10,6 +10,7 @@ import {
   http400BadRequestResponse,
   http500ServerErrorResponse,
   http403ForbiddenResponse,
+  http404NotFoundResponse,
   http401UnauthorizedResponse,
 } from "../lib/httpResponseHelper.js";
 import { putHmrcApiRequest } from "../data/dynamoDbHmrcApiRequestRepository.js";
@@ -742,7 +743,7 @@ export function http404NotFoundFromHmrcResponse(request, hmrcResponse, govClient
     errorResponse.actionAdvice = errorDetails.actionAdvice;
   }
 
-  return http400BadRequestResponse({
+  return http404NotFoundResponse({
     request,
     headers: { ...govClientHeaders },
     message,

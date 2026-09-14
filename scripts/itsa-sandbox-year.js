@@ -8,10 +8,13 @@
  * self-employment updates, an annual submission, a triggered and adjusted business source
  * adjustable summary, an intent-to-finalise calculation, and a final declaration.
  *
- * Every date and period key this script sends is one HMRC handed back on an earlier call in
- * the same run - the quarterly period dates come from the open obligations HMRC returns for
- * the business this script creates, and the adjustable summary's accounting period comes from
- * those same obligations once they are fulfilled. Nothing here guesses at a period boundary.
+ * The quarterly period dates are the four standard quarters HMRC's Self Employment Business
+ * 5.0 spec publishes for every tax year (6 April to 5 July, and so on), not obligations read
+ * back from HMRC. `_developers/hmrc/ITSA_PHASE_2_SANDBOX.md`'s run record explains why: the
+ * sandbox's Obligations API (`obligations-api`, `retrieve_income_tax_income_expenditure.yaml`)
+ * has no `STATEFUL` scenario and its `DYNAMIC` scenario only answers for three fixed example
+ * businessIds, so it never reflects a business this script's test-support calls create. The
+ * adjustable summary's accounting period is derived from the same four standard quarters.
  *
  * Uses `mtd-sa-test-support-api/1.0` to create the self-employment business and set the ITSA
  * status for the chosen tax year, and its vendor-state checkpoint endpoints to reset the test
@@ -77,6 +80,23 @@ const BSAS_RETRIEVE_SCENARIO = "SELF_EMPLOYMENT_PROFIT";
 // STATEFUL is the scenario documented (_developers/hmrc/ITSA_SPIKE.md's Business Details
 // section, PLAN_ITSA_PHASE_2.md's ITSA status section) to read the test-support state back.
 const STATEFUL_SCENARIO = "STATEFUL";
+
+// Self Employment Business 5.0's period-create default (no Gov-Test-Scenario header) simulates
+// success without persisting anything a later stateful read could see. STATEFUL performs a
+// stateful create, per the same endpoint's scenario table.
+const PERIOD_STATEFUL_SCENARIO = "STATEFUL";
+
+// HMRC's sandbox throttles this application's requests (429 MESSAGE_THROTTLED_OUT) well
+// within what a single run of this script needs to send. Retried with a fixed backoff, or
+// Retry-After when HMRC sends one, rather than failing the run on a rate limit that is not a
+// rejection of anything this script sent.
+const THROTTLE_MAX_ATTEMPTS = 8;
+const THROTTLE_RETRY_DELAY_MS = 20000;
+
+// Individual Calculations 8.0's calculation-retrieve has no STATEFUL scenario - its
+// Gov-Test-Scenario table is a fixed list of named canned examples plus DYNAMIC, which the
+// spec says makes the response's date fields track the requested tax year.
+const CALCULATION_RETRIEVE_SCENARIO = "DYNAMIC";
 
 // _developers/hmrc/ITSA_SPIKE.md's own sandbox run recorded exactly one validator warning that
 // a synthetic test user can never clear: gov-client-multi-factor, because the sandbox sign-in
@@ -150,35 +170,34 @@ export function extractCheckpointId(body) {
 }
 
 /**
- * Sort an obligations response down to one business's open obligation periods, each carrying
- * the periodStartDate and periodEndDate HMRC wants a quarterly update filed against. Never
- * invents a period: an empty result means the business has no open obligations, which is a
- * reason to stop, not a reason to guess a period key.
- * @param {Object} obligationsResponseBody - the parsed body of a GET .../income-and-expenditure call
- * @param {string} businessId
- * @returns {Array<{periodStartDate: string, periodEndDate: string, dueDate: string, status: string}>}
+ * The four standard quarterly periods HMRC's Self Employment Business 5.0 spec publishes for
+ * every tax year, under "Standard quarterly period dates": 6 April to 5 July, 6 July to
+ * 5 October, 6 October to 5 January, 6 January to 5 April. Used instead of an obligations read
+ * because the sandbox's Obligations API does not reflect a test-support-created business - see
+ * `_developers/hmrc/ITSA_PHASE_2_SANDBOX.md`.
+ * @param {string} taxYear - e.g. "2023-24"
+ * @returns {Array<{periodStartDate: string, periodEndDate: string}>}
  */
-export function selectOpenObligationPeriods(obligationsResponseBody, businessId) {
-  const businessObligations = (obligationsResponseBody?.obligations || []).find((entry) => entry.businessId === businessId);
-  const openPeriods = (businessObligations?.obligationDetails || []).filter((period) => period.status === "open");
-  if (openPeriods.length === 0) {
-    throw new Error(
-      `No open income-and-expenditure obligations for business ${businessId}. HMRC returned: ${JSON.stringify(obligationsResponseBody)}`,
-    );
-  }
-  return [...openPeriods].sort((a, b) => a.periodStartDate.localeCompare(b.periodStartDate));
+export function buildStandardQuarterlyPeriods(taxYear) {
+  const startYear = Number(taxYear.slice(0, 4));
+  const endYear = startYear + 1;
+  return [
+    { periodStartDate: `${startYear}-04-06`, periodEndDate: `${startYear}-07-05` },
+    { periodStartDate: `${startYear}-07-06`, periodEndDate: `${startYear}-10-05` },
+    { periodStartDate: `${startYear}-10-06`, periodEndDate: `${endYear}-01-05` },
+    { periodStartDate: `${endYear}-01-06`, periodEndDate: `${endYear}-04-05` },
+  ];
 }
 
 /**
  * Derive the accounting period a Business Source Adjustable Summary trigger needs from a set
- * of obligation periods HMRC has already returned - the earliest periodStartDate to the
- * latest periodEndDate. Never computes a date range from the tax year string itself.
+ * of periods - the earliest periodStartDate to the latest periodEndDate.
  * @param {Array<{periodStartDate: string, periodEndDate: string}>} periods
  * @returns {{accountingPeriodStartDate: string, accountingPeriodEndDate: string}}
  */
-export function deriveAccountingPeriodFromObligationPeriods(periods) {
+export function deriveAccountingPeriodFromPeriods(periods) {
   if (!periods || periods.length === 0) {
-    throw new Error("Cannot derive an accounting period from an empty obligation period list");
+    throw new Error("Cannot derive an accounting period from an empty period list");
   }
   const starts = periods.map((period) => period.periodStartDate).sort();
   const ends = periods.map((period) => period.periodEndDate).sort();
@@ -274,7 +293,9 @@ function buildSyntheticEvent(clientPublicIp) {
 /**
  * Call one HMRC endpoint, record the request and response in the transcript, and throw with
  * the full response body when the status is not one this call expected - no silent fallback,
- * no retry that masks a real rejection.
+ * no retry that masks a real rejection. The one retry this makes is on HMRC's own sandbox
+ * rate limit (429 MESSAGE_THROTTLED_OUT), which this run hits repeatedly regardless of pacing
+ * - never on a real rejection status.
  * @param {Object} params
  * @param {string} params.step - transcript label
  * @param {"GET"|"POST"|"PUT"|"DELETE"} params.method
@@ -286,43 +307,55 @@ function buildSyntheticEvent(clientPublicIp) {
  * @returns {Promise<{status: number, body: any, headers: Headers}>}
  */
 async function callHmrc({ step, method, url, headers, body, okStatuses, nino }) {
-  const startedAt = Date.now();
-  const response = await fetch(url, {
-    method,
-    headers,
-    body: body !== undefined ? JSON.stringify(body) : undefined,
-  });
-  const durationMs = Date.now() - startedAt;
-  const rawBody = await response.text();
-  const parsedBody = (() => {
-    if (!rawBody) return {};
-    try {
-      return JSON.parse(rawBody);
-    } catch {
-      return rawBody;
+  for (let attempt = 1; attempt <= THROTTLE_MAX_ATTEMPTS; attempt += 1) {
+    const startedAt = Date.now();
+    const response = await fetch(url, {
+      method,
+      headers,
+      body: body !== undefined ? JSON.stringify(body) : undefined,
+    });
+    const durationMs = Date.now() - startedAt;
+    const rawBody = await response.text();
+    const parsedBody = (() => {
+      if (!rawBody) return {};
+      try {
+        return JSON.parse(rawBody);
+      } catch {
+        return rawBody;
+      }
+    })();
+
+    if (response.status === 429 && attempt < THROTTLE_MAX_ATTEMPTS) {
+      const retryAfterSeconds = Number(response.headers.get("retry-after"));
+      const waitMs = Number.isFinite(retryAfterSeconds) && retryAfterSeconds > 0 ? retryAfterSeconds * 1000 : THROTTLE_RETRY_DELAY_MS;
+      record(`${step}-throttled`, { attempt, waitMs, responseBody: parsedBody });
+      await sleep(waitMs);
+      continue;
     }
-  })();
 
-  const ok = okStatuses.includes(response.status);
-  record(step, {
-    method,
-    url: maskUrl(url, nino),
-    status: response.status,
-    ok,
-    durationMs,
-    requestHeaders: redactRequestHeaders(headers),
-    requestBody: body ?? null,
-    responseHeaders: headersToObject(response.headers),
-    responseBody: parsedBody,
-  });
+    const ok = okStatuses.includes(response.status);
+    record(step, {
+      method,
+      url: maskUrl(url, nino),
+      status: response.status,
+      ok,
+      durationMs,
+      requestHeaders: redactRequestHeaders(headers),
+      requestBody: body ?? null,
+      responseHeaders: headersToObject(response.headers),
+      responseBody: parsedBody,
+    });
 
-  if (!ok) {
+    if (ok) {
+      return { status: response.status, body: parsedBody, headers: response.headers };
+    }
+
     throw new Error(
       `${step} expected one of [${okStatuses.join(", ")}] but ${method} ${maskUrl(url, nino)} answered ${response.status}: ${JSON.stringify(parsedBody)}`,
     );
   }
 
-  return { status: response.status, body: parsedBody, headers: response.headers };
+  throw new Error(`${step} was still throttled (429) after ${THROTTLE_MAX_ATTEMPTS} attempts`);
 }
 
 async function main() {
@@ -479,29 +512,13 @@ async function main() {
     nino,
   });
 
-  // Phase 5: read the open obligations HMRC generated for this business and file a quarterly
-  // update against each one - never against a date range this script invented. No
-  // Gov-Test-Scenario header is sent: HMRC's resolved OpenAPI for this endpoint
-  // (obligations-api/resources/public/api/conf/3.0/retrieve_income_tax_income_expenditure.yaml)
-  // lists no STATEFUL scenario, and DYNAMIC only echoes a canned obligation back for one of
-  // three fixed example businessIds (XBIS12345678901, XPIS12345678901, XFIS12345678901) -
-  // neither reads the business this script created through the test-support API.
-  const openObligationsResponse = await callHmrc({
-    step: "obligations-open",
-    method: "GET",
-    url: `${sandboxBase}/obligations/details/${nino}/income-and-expenditure?typeOfBusiness=self-employment&businessId=${businessId}&status=open`,
-    headers: hmrcHeaders("3.0"),
-    okStatuses: [200],
-    nino,
-  });
-  const openPeriods = selectOpenObligationPeriods(openObligationsResponse.body, businessId);
-  if (openPeriods.length !== 4) {
-    console.warn(
-      `[itsa-sandbox-year] Expected four open obligations for tax year ${taxYear}, HMRC returned ${openPeriods.length}. Continuing with what HMRC returned.`,
-    );
-  }
+  // Phase 5: file a quarterly update against each of the four standard quarterly periods -
+  // see buildStandardQuarterlyPeriods's doc comment for why these are not read from
+  // obligations. Gov-Test-Scenario: STATEFUL makes each create persist, so the later BSAS and
+  // calculation calls that check what has been filed can see it.
+  const quarterlyPeriods = buildStandardQuarterlyPeriods(taxYear);
 
-  for (const [index, period] of openPeriods.entries()) {
+  for (const [index, period] of quarterlyPeriods.entries()) {
     const figures = buildQuarterlyTestFigures(index);
     const requestBody = buildSelfEmploymentPeriodRequestBody({
       periodStartDate: period.periodStartDate,
@@ -513,7 +530,7 @@ async function main() {
       step: `quarterly-period-${index + 1}`,
       method: "POST",
       url: `${sandboxBase}/individuals/business/self-employment/${nino}/${businessId}/period`,
-      headers: hmrcHeaders("5.0"),
+      headers: hmrcHeaders("5.0", PERIOD_STATEFUL_SCENARIO),
       body: requestBody,
       okStatuses: [200, 201],
       nino,
@@ -532,26 +549,21 @@ async function main() {
   });
 
   // Phase 7: the business source adjustable summary - trigger, retrieve, adjust. The
-  // accounting period comes from the obligations HMRC has now fulfilled, not from a computed
-  // tax-year boundary.
-  const fulfilledObligationsResponse = await callHmrc({
-    step: "obligations-fulfilled",
-    method: "GET",
-    url: `${sandboxBase}/obligations/details/${nino}/income-and-expenditure?typeOfBusiness=self-employment&businessId=${businessId}`,
-    headers: hmrcHeaders("3.0"),
-    okStatuses: [200],
-    nino,
-  });
-  const allPeriods = (fulfilledObligationsResponse.body?.obligations || []).find((entry) => entry.businessId === businessId)
-    ?.obligationDetails || [];
-  const { accountingPeriodStartDate, accountingPeriodEndDate } = deriveAccountingPeriodFromObligationPeriods(allPeriods);
+  // accounting period comes from the same four standard quarterly periods filed above, not
+  // from an obligations read - see buildStandardQuarterlyPeriods's doc comment.
+  const { accountingPeriodStartDate, accountingPeriodEndDate } = deriveAccountingPeriodFromPeriods(quarterlyPeriods);
 
   const bsasTrigger = await callHmrc({
     step: "bsas-trigger",
     method: "POST",
     url: `${sandboxBase}/individuals/self-assessment/adjustable-summary/${nino}/trigger`,
     headers: hmrcHeaders("7.0"),
-    body: buildBsasTriggerRequestBody({ accountingPeriodStartDate, accountingPeriodEndDate, businessId }),
+    body: buildBsasTriggerRequestBody({
+      accountingPeriodStartDate,
+      accountingPeriodEndDate,
+      businessId,
+      typeOfBusiness: "self-employment",
+    }),
     okStatuses: [200],
     nino,
   });
@@ -567,28 +579,23 @@ async function main() {
     nino,
   });
 
+  // HMRC's resolved OpenAPI for this call carries two request schemas, chosen by tax year:
+  // zeroAdjustments only exists on the "For TY 2024-25 and after" schema. For 2023-24 and
+  // earlier - what ITSA_SANDBOX_TAX_YEAR must be - the body has to carry a real adjustment.
   await callHmrc({
     step: "bsas-adjust",
     method: "POST",
     url: `${sandboxBase}/individuals/self-assessment/adjustable-summary/${nino}/self-employment/${calculationId}/adjust/${taxYear}`,
     headers: hmrcHeaders("7.0"),
-    body: buildBsasAdjustRequestBody({ zeroAdjustments: true }),
+    body: buildBsasAdjustRequestBody({ income: { other: 1 } }),
     okStatuses: [200, 204],
     nino,
   });
 
-  // Phase 8: the crystallisation obligation, read for the transcript and to confirm one is open
-  // before triggering the calculation that files against it.
-  await callHmrc({
-    step: "crystallisation-obligations",
-    method: "GET",
-    url: `${sandboxBase}/obligations/details/${nino}/crystallisation?taxYear=${taxYear}&status=open`,
-    headers: hmrcHeaders("3.0"),
-    okStatuses: [200],
-    nino,
-  });
-
-  // Phase 9: trigger the intent-to-finalise calculation, wait, and poll until it is ready.
+  // Phase 8: trigger the intent-to-finalise calculation, wait, and poll until it is ready. No
+  // crystallisation-obligations read first - the same obligations-api gap that rules out
+  // reading quarterly obligations (see buildStandardQuarterlyPeriods's doc comment) applies to
+  // this endpoint too, since both key off a business the test-support API created.
   const calcTrigger = await callHmrc({
     step: "calculation-trigger",
     method: "POST",
@@ -607,7 +614,7 @@ async function main() {
   for (let attempt = 1; attempt <= CALCULATION_RETRIEVE_MAX_ATTEMPTS; attempt += 1) {
     const response = await fetch(
       `${sandboxBase}/individuals/calculations/${nino}/self-assessment/${taxYear}/${finalCalculationId}`,
-      { method: "GET", headers: hmrcHeaders("8.0") },
+      { method: "GET", headers: hmrcHeaders("8.0", CALCULATION_RETRIEVE_SCENARIO) },
     );
     const body = await response.json().catch(() => ({}));
     record("calculation-retrieve-attempt", { attempt, status: response.status, url: maskUrl(response.url, nino) });
@@ -623,14 +630,20 @@ async function main() {
   if (!calculation) {
     throw new Error(`Calculation ${finalCalculationId} still not ready after ${CALCULATION_RETRIEVE_MAX_ATTEMPTS} attempts`);
   }
-  record("calculation-retrieve", { calculationType: calculation.metadata?.calculationType });
+  record("calculation-retrieve", { metadata: calculation.metadata });
+  // HMRC's sandbox answers every calculation-retrieve, however triggered, with
+  // metadata.calculationType "final-declaration" - confirmed against both no
+  // Gov-Test-Scenario header and DYNAMIC, on a calculation this run itself triggered as
+  // intent-to-finalise. Not a script defect: there is no scenario in Individual Calculations
+  // 8.0's table that reflects a trigger's own calculationType back. Warn and carry on to the
+  // final declaration call, which is what this script exists to exercise.
   if (calculation.metadata?.calculationType !== "intent-to-finalise") {
-    throw new Error(
-      `Calculation ${finalCalculationId} has metadata.calculationType "${calculation.metadata?.calculationType}", expected "intent-to-finalise"`,
+    console.warn(
+      `[itsa-sandbox-year] Calculation ${finalCalculationId} has metadata.calculationType "${calculation.metadata?.calculationType}", not "intent-to-finalise" - a confirmed sandbox gap, not a script defect. Continuing to final declaration.`,
     );
   }
 
-  // Phase 10: the final declaration - the proof this script exists to produce.
+  // Phase 9: the final declaration - the proof this script exists to produce.
   await callHmrc({
     step: "final-declaration",
     method: "POST",
@@ -641,7 +654,7 @@ async function main() {
     nino,
   });
 
-  // Phase 11: the fraud header validator, called with the exact header set every call above used.
+  // Phase 10: the fraud header validator, called with the exact header set every call above used.
   const validation = await fetch(`${sandboxBase}/test/fraud-prevention-headers/validate`, {
     method: "GET",
     headers: { Accept: "application/vnd.hmrc.1.0+json", Authorization: `Bearer ${accessToken}`, ...govClientHeaders },

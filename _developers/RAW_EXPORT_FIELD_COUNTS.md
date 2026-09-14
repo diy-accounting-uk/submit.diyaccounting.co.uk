@@ -231,16 +231,16 @@ All eight JSON files present with valid structure. Each contains: objective name
 
 Two tables emit no data:
 
-- **v_compliance_status**: All fields empty (0 rows). Referenced by compliance.json objective.
-- **v_subscription_renewals_daily**: All fields empty (0 rows). Referenced by retention.json objective.
+- **v_compliance_status**: All fields empty (0 rows). Referenced by compliance.json objective. Feed is empty, not the view: `compliance_accessibility` and `compliance_fraud_headers` hold 0 rows each in Athena. The writer, `compliance-lake` in `.github/workflows/compliance.yml`, was added 2026-09-08 but only runs on the Monday 06:06 UTC schedule; it had not fired since being added as of the 2026-09-12 and 2026-09-13 exports. First data lands after the 2026-09-14 run.
+- **v_subscription_renewals_daily**: All fields empty (0 rows). Referenced by retention.json objective. The first renewal falls due 2026-10-02.
 
 ## Sparse fields (non-empty < total rows)
 
 Three fields have partial data:
 
-- **v_dora_runs_daily.median_lead_time_seconds**: 5 non-empty of 8 rows. Three workflows lack lead-time data.
-- **v_signup_to_first_submission.signup_day**: 10 non-empty of 11 rows. One signup cohort row lacks the signup date.
-- **v_signup_to_first_submission.median_hours_to_first_submission**: 3 non-empty of 11 rows. Eight signup cohorts lack conversion timing data.
+- **v_dora_runs_daily.median_lead_time_seconds**: 5 non-empty of 8 rows. Expected: `deploy.yml` sets `lead_time_seconds` to null when a run's commit has no merged PR (`merged_at` empty — direct pushes, workflow_dispatch runs), so a workflow/environment group made up entirely of such runs has no lead time to take a median of. No fix.
+- **v_signup_to_first_submission.signup_day**: 10 non-empty of 11 rows. One of 322 accounts has a bundle grant with `granted_at` null. The normal grant path (`app/data/dynamoDbBundleRepository.js` lines 27 and 86) always sets `createdAt`, so this is a single off-path row, not a systemic gap. No fix.
+- **v_signup_to_first_submission.median_hours_to_first_submission**: 3 non-empty of 11 rows. Expected: null exactly where `submitted = 0` for that cohort day (checked directly — every null row has 0 submissions); most of the 11 signup-day cohorts are from the last two weeks and haven't converted yet. No fix.
 
 ## 2026-09-13 nightly status
 

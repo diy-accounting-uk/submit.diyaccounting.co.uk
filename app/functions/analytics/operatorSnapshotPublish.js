@@ -24,11 +24,17 @@ import {
 const logger = createLogger({ source: "app/functions/analytics/operatorSnapshotPublish.js" });
 
 /**
- * Every observation names a view under infra/main/resources/analytics/views, the column it
+ * Every observation names a view under infra/main/resources/analytics/views (security's
+ * observations name a raw Glue table instead: no view sits over the security lake yet, so they
+ * read security_hub_findings, guardduty_findings and github_alerts directly), the column it
  * reads, how to aggregate it across a window (sum for a count, avg for a ratio), and the deep
- * link the page shows beside it. Objectives with no observation yet (low running cost,
- * security, retention, operator effort, compliance) still appear on the page as an empty
- * section: each waits on its own lake source, not on this Lambda.
+ * link the page shows beside it.
+ *
+ * Two views carry a coarser grain than the daily views: v_cost_vs_target_monthly is one row
+ * per month and v_returning_submitters_quarterly one row per quarter. buildWindowedSql's
+ * trailing 30/90-day windows still run against their date column (the month or quarter start),
+ * so a window mostly captures at most the one or two period-starts that fall inside it rather
+ * than a true daily trend — read a null there as "no period closed in this window", not zero.
  */
 export const OBJECTIVE_DEFINITIONS = [
   {
@@ -171,11 +177,196 @@ export const OBJECTIVE_DEFINITIONS = [
       },
     ],
   },
-  { id: "low-running-cost", name: "Low running cost", observations: [] },
-  { id: "security", name: "Security", observations: [] },
-  { id: "retention", name: "Retention", observations: [] },
-  { id: "operator-effort", name: "Operator effort", observations: [] },
-  { id: "compliance", name: "Compliance", observations: [] },
+  {
+    id: "low-running-cost",
+    name: "Low running cost",
+    observations: [
+      {
+        id: "monthly-cost-usd",
+        label: "Monthly cost",
+        unit: "usd",
+        view: "v_cost_vs_target_monthly",
+        dayColumn: "month",
+        valueExpr: "billed_cost_usd",
+        aggregation: "sum",
+        deepLink: (ctx) => buildAthenaSavedQueryLink(ctx.region, ctx.athenaWorkGroupName),
+      },
+      {
+        id: "cost-variance-vs-target-usd",
+        label: "Cost vs $64.77 target",
+        unit: "usd",
+        view: "v_cost_vs_target_monthly",
+        dayColumn: "month",
+        valueExpr: "variance_usd",
+        aggregation: "avg",
+        deepLink: (ctx) => buildAthenaSavedQueryLink(ctx.region, ctx.athenaWorkGroupName),
+      },
+      {
+        id: "cost-per-completion-usd",
+        label: "Cost per completion",
+        unit: "usd",
+        view: "v_cost_per_submission_daily",
+        dayColumn: "day",
+        valueExpr: "cost_per_completion_usd",
+        aggregation: "avg",
+        deepLink: (ctx) => buildAthenaSavedQueryLink(ctx.region, ctx.athenaWorkGroupName),
+      },
+    ],
+  },
+  {
+    id: "security",
+    name: "Security",
+    observations: [
+      // security_hub_findings and guardduty_findings write one row per active finding each
+      // day, plus a zero_findings heartbeat row with no finding_id on a day with none; the
+      // finding_id filter excludes that heartbeat so a quiet day counts as zero, not one.
+      {
+        id: "security-hub-open-findings",
+        label: "Security Hub open findings",
+        unit: "count",
+        view: "security_hub_findings",
+        dayColumn: "dt",
+        valueExpr: "1",
+        aggregation: "count",
+        where: "finding_id IS NOT NULL",
+        deepLink: (ctx) => buildAthenaSavedQueryLink(ctx.region, ctx.athenaWorkGroupName),
+      },
+      {
+        id: "security-hub-critical-findings",
+        label: "Security Hub critical findings",
+        unit: "count",
+        view: "security_hub_findings",
+        dayColumn: "dt",
+        valueExpr: "1",
+        aggregation: "count",
+        where: "finding_id IS NOT NULL AND severity_label = 'CRITICAL'",
+        deepLink: (ctx) => buildAthenaSavedQueryLink(ctx.region, ctx.athenaWorkGroupName),
+      },
+      {
+        id: "guardduty-open-findings",
+        label: "GuardDuty open findings",
+        unit: "count",
+        view: "guardduty_findings",
+        dayColumn: "dt",
+        valueExpr: "1",
+        aggregation: "count",
+        where: "finding_id IS NOT NULL",
+        deepLink: (ctx) => buildAthenaSavedQueryLink(ctx.region, ctx.athenaWorkGroupName),
+      },
+      {
+        id: "github-open-alerts",
+        label: "GitHub open alerts",
+        unit: "count",
+        view: "github_alerts",
+        dayColumn: "dt",
+        valueExpr: "count",
+        aggregation: "sum",
+        deepLink: (ctx) => buildAthenaSavedQueryLink(ctx.region, ctx.athenaWorkGroupName),
+      },
+    ],
+  },
+  {
+    id: "retention",
+    name: "Retention",
+    observations: [
+      {
+        id: "returning-submitters",
+        label: "Returning submitters",
+        unit: "count",
+        view: "v_returning_submitters_quarterly",
+        dayColumn: "quarter",
+        valueExpr: "returning_submitters",
+        aggregation: "sum",
+        deepLink: (ctx) => buildCloudWatchDashboardLink(ctx.region, `${ctx.envName}-env-analytics`),
+      },
+      {
+        id: "subscription-renewals",
+        label: "Subscription renewals",
+        unit: "count",
+        view: "v_subscription_renewals_daily",
+        dayColumn: "day",
+        valueExpr: "renewals",
+        aggregation: "sum",
+        deepLink: (ctx) => buildCloudWatchDashboardLink(ctx.region, `${ctx.envName}-env-analytics`),
+      },
+      {
+        id: "subscription-cancellations",
+        label: "Subscription cancellations",
+        unit: "count",
+        view: "v_subscription_cancellations_daily",
+        dayColumn: "day",
+        valueExpr: "cancellations",
+        aggregation: "sum",
+        deepLink: (ctx) => buildCloudWatchDashboardLink(ctx.region, `${ctx.envName}-env-analytics`),
+      },
+    ],
+  },
+  {
+    id: "operator-effort",
+    name: "Operator effort",
+    observations: [
+      {
+        id: "operator-interventions-total",
+        label: "Operator interventions, all kinds",
+        unit: "count",
+        view: "v_operator_interventions_daily",
+        dayColumn: "day",
+        valueExpr: "interventions",
+        aggregation: "sum",
+        deepLink: (ctx) => buildAthenaSavedQueryLink(ctx.region, ctx.athenaWorkGroupName),
+      },
+      {
+        id: "operator-manual-dispatches",
+        label: "Hand-dispatched workflow runs",
+        unit: "count",
+        view: "v_operator_interventions_daily",
+        dayColumn: "day",
+        valueExpr: "interventions",
+        aggregation: "sum",
+        where: "kind = 'manual-dispatch'",
+        deepLink: (ctx) => buildAthenaSavedQueryLink(ctx.region, ctx.athenaWorkGroupName),
+      },
+      {
+        id: "operator-authored-commits",
+        label: "Operator-authored commits",
+        unit: "count",
+        view: "v_operator_interventions_daily",
+        dayColumn: "day",
+        valueExpr: "interventions",
+        aggregation: "sum",
+        where: "kind = 'commit'",
+        deepLink: (ctx) => buildAthenaSavedQueryLink(ctx.region, ctx.athenaWorkGroupName),
+      },
+    ],
+  },
+  {
+    id: "compliance",
+    name: "Compliance",
+    observations: [
+      {
+        id: "accessibility-open-findings",
+        label: "Accessibility open findings",
+        unit: "count",
+        view: "v_compliance_status",
+        dayColumn: "day",
+        valueExpr: "open_findings",
+        aggregation: "sum",
+        where: "area = 'accessibility'",
+        deepLink: (ctx) => buildGithubActionsWorkflowLink(ctx.githubRepo, "compliance.yml"),
+      },
+      {
+        id: "fraud-header-open-findings",
+        label: "Fraud-prevention header months needing action",
+        unit: "count",
+        view: "v_compliance_status",
+        dayColumn: "day",
+        valueExpr: "open_findings",
+        aggregation: "sum",
+        where: "area = 'fraud-prevention-headers'",
+        deepLink: (ctx) => buildGithubActionsWorkflowLink(ctx.githubRepo, "fraud-header-check.yml"),
+      },
+    ],
+  },
 ];
 
 let cachedAthenaClient = null;

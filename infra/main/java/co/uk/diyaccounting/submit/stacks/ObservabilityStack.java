@@ -686,6 +686,31 @@ public class ObservabilityStack extends Stack {
                 .treatMissingData(TreatMissingData.NOT_BREACHING)
                 .build();
 
+        // Token charge unpaid alarm (B128). app/services/tokenEnforcement.js logs and swallows
+        // "Token charge failed after HMRC success" when a token charge fails after HMRC has
+        // already accepted the submission, so the customer keeps the filing but the ledger
+        // under-counts the charge. Every deployment's OpsStack carries a metric filter on each
+        // HMRC submission endpoint's ingest and worker log group for that message, all
+        // incrementing this one Submit/Business metric; the alarm lives here, env-scoped, rather
+        // than once per deployment, the same split HmrcSubmissionFailureAlarm and
+        // ItsaSubmissionFailureAlarm above use, so every deployment's filters dedupe to one open
+        // GitHub issue per environment. No SnsAction: the alarm-state-change rule in OpsStack
+        // routes this to Telegram and, in prod, to the alarm-to-issue Lambda.
+        Alarm.Builder.create(this, props.resourceNamePrefix() + "-TokenChargeUnpaidAlarm")
+                .alarmName(props.resourceNamePrefix() + "-token-charge-unpaid")
+                .alarmDescription("A token charge failed after HMRC accepted the submission >= 1 time in 5 minutes")
+                .metric(Metric.Builder.create()
+                        .namespace("Submit/Business")
+                        .metricName("TokenChargeUnpaid")
+                        .statistic("Sum")
+                        .period(Duration.minutes(5))
+                        .build())
+                .threshold(1)
+                .evaluationPeriods(1)
+                .comparisonOperator(ComparisonOperator.GREATER_THAN_OR_EQUAL_TO_THRESHOLD)
+                .treatMissingData(TreatMissingData.NOT_BREACHING)
+                .build();
+
         // GitHub Actions probe-test alarm, one per environment rather than one per deployment.
         // Living in OpsStack (per deployment) meant every new deployment created a fresh alarm
         // against this same environment-wide behaviour-test metric, each opening its own GitHub
@@ -828,10 +853,11 @@ public class ObservabilityStack extends Stack {
                         ue1LogGroupArnPrefix + "/aws/lambda/" + props.envName() + "-*:log-stream:*"))
                 .build());
 
-        // Neither logs:DescribeLogGroups nor logs:DescribeQueries supports a resource-level ARN.
+        // Neither logs:DescribeLogGroups, logs:DescribeQueries nor logs:DescribeMetricFilters
+        // supports a resource-level ARN.
         alarmTriageRole.addToPolicy(PolicyStatement.Builder.create()
                 .sid("ListLogGroups")
-                .actions(List.of("logs:DescribeLogGroups", "logs:DescribeQueries"))
+                .actions(List.of("logs:DescribeLogGroups", "logs:DescribeQueries", "logs:DescribeMetricFilters"))
                 .resources(List.of("*"))
                 .build());
 

@@ -89,6 +89,9 @@ export async function resolvePresenterCredentials() {
  * @returns {string}
  */
 export function hashPresenterCredential(value) {
+  // MD5 is the Companies House XML Gateway protocol's own required digest for IDAuthentication,
+  // not a security control this code chooses.
+  // eslint-disable-next-line sonarjs/hashing
   return createHash("md5").update(String(value), "utf8").digest("hex").toLowerCase();
 }
 
@@ -295,6 +298,24 @@ export async function allocateSubmissionNumber() {
   );
 
   return result.Attributes.value.toString(36).toUpperCase().padStart(6, "0");
+}
+
+/**
+ * Redact the presenter id and presenter authentication value from a GovTalk envelope before it is
+ * logged: the plaintext PresenterID a GetSubmissionStatus request body carries, and the hashed
+ * SenderID / IDAuthentication Authentication Value every envelope's Header carries (request and
+ * response alike, the response echoing the request's SenderDetails).
+ * @param {string} xml
+ * @returns {string}
+ */
+export function redactPresenterCredentials(xml) {
+  if (typeof xml !== "string") {
+    return xml;
+  }
+  return xml
+    .replace(/(<PresenterID>)[\s\S]*?(<\/PresenterID>)/g, "$1***$2")
+    .replace(/(<SenderID>)[\s\S]*?(<\/SenderID>)/g, "$1***$2")
+    .replace(/(<Authentication>[\s\S]*?<Value>)[\s\S]*?(<\/Value>[\s\S]*?<\/Authentication>)/g, "$1***$2");
 }
 
 /**

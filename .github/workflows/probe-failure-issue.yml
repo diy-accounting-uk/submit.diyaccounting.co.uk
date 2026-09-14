@@ -1,0 +1,57 @@
+# SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0
+# Copyright (C) 2006-2026 DIY Accounting Limited
+
+# A scheduled probe that fails runs unattended: nobody is watching the run the way a deploy's
+# own web-test failure is watched (that path rolls the apex back and raises its own issue in
+# deploy.yml's rollback-origins). This raises one issue per failed scheduled probe-test run,
+# naming every failed suite from that run's job list.
+#
+# It runs on workflow_run rather than as a job inside probe-test.yml because probe-test.yml is
+# also a reusable workflow called by deploy.yml, and a nested job may not request permissions
+# (issues: write) beyond what every caller grants; GitHub refuses the caller at startup.
+# workflow_run fires only for probe-test's own triggers, and its event filter keeps this to the
+# schedule.
+name: probe-failure-issue
+
+on:
+  workflow_run:
+    workflows: [probe-test]
+    types: [completed]
+
+permissions:
+  actions: read
+  issues: write
+
+jobs:
+  report:
+    if: ${{ github.event.workflow_run.event == 'schedule' && github.event.workflow_run.conclusion == 'failure' }}
+    name: 'report scheduled probe failures'
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Open an incident issue naming the failed suites
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RUN_ID: ${{ github.event.workflow_run.id }}
+          RUN_URL: ${{ github.event.workflow_run.html_url }}
+        run: |
+          FAILED_JOBS=$(gh api "repos/${{ github.repository }}/actions/runs/${RUN_ID}/jobs" --paginate \
+            --jq '.jobs[] | select(.conclusion == "failure") | .name' \
+            | grep '^behaviour test ' | sed 's/^behaviour test //')
+          if [ -z "$FAILED_JOBS" ]; then
+            echo "No failed 'behaviour test' jobs on run ${RUN_ID}; nothing to report."
+            exit 0
+          fi
+          # Job names are '<suite>-<environment>'; the environment is the last segment.
+          ENVIRONMENT=$(echo "$FAILED_JOBS" | head -1 | sed 's/.*-//')
+          TITLE="[INCIDENT] scheduled probe failure (${ENVIRONMENT})"
+          BODY=$(cat <<BODYEOF
+          ## Scheduled probe failure
+
+          Run: ${RUN_URL}
+          Environment: ${ENVIRONMENT}
+          Failed suite(s):
+          ${FAILED_JOBS}
+          BODYEOF
+          )
+          # The REST endpoint creates the label on first use; gh issue create --label fails when it is missing.
+          gh api --method POST "repos/${{ github.repository }}/issues" -f title="$TITLE" -f body="$BODY" -f "labels[]=incident" --jq .html_url

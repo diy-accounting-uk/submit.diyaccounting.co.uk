@@ -74,13 +74,10 @@ function emitSubmissionMetric(metricName, actor) {
  */
 function shouldEmitFailureMetric(status) {
   // 400: customer validation error (e.g., dates don't match any obligation)
-  if (status === 400) {
-    return false;
-  }
   // 401/403: our token handling issue
   // 429: our rate limiting
   // 5xx: HMRC server error
-  return true;
+  return status !== 400;
 }
 
 /**

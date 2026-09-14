@@ -232,6 +232,31 @@ jobs:
       isSkippingDeploy: ${{ steps.normalise.outputs.isSkippingDeploy }}
       github-environment: ${{ steps.normalise.outputs.github-environment }}
 
+  # A workflow_dispatch naming an explicit deployment-name is about to deploy this same commit,
+  # so any push-triggered run of deploy.yml for the same github.sha would otherwise run alongside
+  # it and the two contend for the same ci apex alias and Cognito lane user (B140; the coordinator
+  # cancelled this by hand three times on 2026-09-13). Runs only for that dispatch shape: a plain
+  # push or a dispatch with no deployment-name leaves every other run alone. See
+  # cancel-superseded-push-deploy.mjs for why a run whose own stack deploy has already started is
+  # never touched.
+  cancel-superseded-push-deploy:
+    name: 'cancel superseded push-triggered deploy'
+    if: ${{ github.event_name == 'workflow_dispatch' && inputs.deployment-name != '' }}
+    needs:
+      - params
+    runs-on: ubuntu-24.04
+    permissions:
+      actions: write
+      contents: read
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - name: Cancel any push-triggered run of this commit that hasn't started a stack job
+        uses: './.github/actions/cancel-superseded-push-deploy'
+        with:
+          github-token: ${{ github.token }}
+
   # Restores app-after-environment ordering on purpose (see the concurrency block's comment for
   # the regression this fixes: B94, caused by removing an ordering nobody had written down when
   # B90 split deploy.yml and deploy-environment.yml's concurrency groups).
@@ -398,6 +423,60 @@ jobs:
           # `env` context, only github/inputs/matrix/needs/strategy/vars. A step's `run:` can,
           # so the delay travels out of here alongside the start time it was used to compute.
           echo "SELF_DESTRUCT_DELAY_HOURS=${{ env.SELF_DESTRUCT_DELAY_HOURS }}" >> $GITHUB_OUTPUT
+          # Carried out so the refusal check below (a separate step, for a focused diff) can
+          # tell "redeploy of an existing stack" from "this deployment's first deploy" without
+          # re-running the same describe-stacks call.
+          if [ -n "$EXISTING_CREATION_TIME" ] && [ "$EXISTING_CREATION_TIME" != "None" ]; then
+            echo "EXISTING_STACK_FOUND=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "EXISTING_STACK_FOUND=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      # B127: ci-claud20c8 was created 19:37 UTC 2026-09-13 with the 2-hour default; the branch
+      # was rebased and pushed; the self-destruct fired 21:37 while the redeploy was recreating
+      # ApiStack, and the run failed with "Function not found ...custom-authorizer". Re-anchoring
+      # the schedule on every redeploy (so it always moves forward) was rejected on purpose: the
+      # anchor-to-CreationTime design immediately above exists specifically so a branch under
+      # active development still self-destructs on schedule instead of never — see that step's
+      # own comment. Refusing the redeploy here keeps that guarantee and stops it from landing
+      # mid-stack-recreation instead: it fails before push-images, mvn-package or any stack job
+      # runs, so nothing is left half-deployed.
+      #
+      # The EventBridge cron this reproduces is SelfDestructStack's own hourExpression logic
+      # (24 % delayHours == 0: fires every delayHours hours on the hour that divides evenly from
+      # the anchor's hour; otherwise once daily at the anchor's hour) — see SelfDestructStack.java.
+      # Only checked for a genuine redeploy of an existing stack: a first deploy's own first fire
+      # is always a full selfDestructDelayHours away, which the default (2h) and every documented
+      # use of this input clears easily.
+      - name: Refuse the redeploy if this deployment's next self-destruct fire is imminent
+        if: ${{ steps.deployment-config.outputs.environment-name != 'prod' && steps.self-destruct-start.outputs.EXISTING_STACK_FOUND == 'true' }}
+        shell: bash
+        run: |
+          DELAY_HOURS=${{ env.SELF_DESTRUCT_DELAY_HOURS }}
+          START_EPOCH=$(date -u -d "${{ steps.self-destruct-start.outputs.SELF_DESTRUCT_START_DATETIME }}" +%s)
+          NOW_EPOCH=$(date -u +%s)
+          if [ $((24 % DELAY_HOURS)) -eq 0 ]; then
+            PERIOD_SECONDS=$((DELAY_HOURS * 3600))
+          else
+            # SelfDestructStack.java falls back to a single fixed hour (fires once daily) when
+            # delayHours doesn't divide 24 evenly.
+            PERIOD_SECONDS=$((24 * 3600))
+          fi
+          if [ "$NOW_EPOCH" -le "$START_EPOCH" ]; then
+            NEXT_FIRE_EPOCH=$START_EPOCH
+          else
+            ELAPSED=$((NOW_EPOCH - START_EPOCH))
+            PERIODS_ELAPSED=$(((ELAPSED + PERIOD_SECONDS - 1) / PERIOD_SECONDS))
+            NEXT_FIRE_EPOCH=$((START_EPOCH + PERIODS_ELAPSED * PERIOD_SECONDS))
+          fi
+          SECONDS_UNTIL_FIRE=$((NEXT_FIRE_EPOCH - NOW_EPOCH))
+          MINUTES_UNTIL_FIRE=$((SECONDS_UNTIL_FIRE / 60))
+          NEXT_FIRE_ISO=$(date -u -d "@$NEXT_FIRE_EPOCH" +"%Y-%m-%dT%H:%M:%SZ")
+          echo "Next self-destruct fire for ${{ steps.deployment-config.outputs.deployment-name }}-app-SelfDestructStack: $NEXT_FIRE_ISO ($MINUTES_UNTIL_FIRE minutes away)"
+          if [ "$SECONDS_UNTIL_FIRE" -lt 2700 ]; then
+            echo "::error::Refusing this redeploy: ${{ steps.deployment-config.outputs.deployment-name }}'s self-destruct fires at $NEXT_FIRE_ISO, only $MINUTES_UNTIL_FIRE minutes away, and would tear this redeploy's stacks down mid-flight (B127). Wait for it to pass, or dispatch deploy.yml with an explicit deployment-name to deploy under a fresh name instead."
+            exit 1
+          fi
     outputs:
       environment-name: ${{ steps.deployment-config.outputs.environment-name }}
       deployment-name: ${{ steps.deployment-config.outputs.deployment-name }}
@@ -2805,6 +2884,9 @@ jobs:
       - set-origins
     runs-on: ubuntu-24.04
     environment: ${{ needs.names.outputs.environment-name }}
+    permissions:
+      id-token: write
+      issues: write
     steps:
       - name: Configure AWS role via GitHub OIDC
         uses: aws-actions/configure-aws-credentials@v6
@@ -2850,6 +2932,23 @@ jobs:
           aws cloudformation describe-stacks --region eu-west-2 --query "Stacks[].StackName" --output text | tr '\t' '\n' | sort
           aws cloudformation describe-stacks --region us-east-1 --query "Stacks[].StackName" --output text | tr '\t' '\n' | sort
 
+      # A set promoted to last-known-good means whatever rollback issue is open for this
+      # environment (rollback-origins raised it under this same title) is resolved: some set
+      # has now cleared web-test and gone live. Closes every open one rather than just the
+      # newest, in case more than one rollback happened before a set finally cleared.
+      - name: Close open rollback incident issues for this environment
+        env:
+          GH_TOKEN: ${{ github.token }}
+          ISSUE_TITLE: "[INCIDENT] ${{ needs.names.outputs.environment-name }} apex rollback"
+        run: |
+          gh issue list --repo "${{ github.repository }}" --label incident --state open \
+            --json number,title --jq ".[] | select(.title == \"$ISSUE_TITLE\") | .number" \
+          | while read -r NUMBER; do
+              gh issue comment "$NUMBER" --repo "${{ github.repository }}" \
+                --body "Deployment ${{ needs.names.outputs.deployment-name }} promoted to last known good for ${{ needs.names.outputs.environment-name }}; closing."
+              gh issue close "$NUMBER" --repo "${{ github.repository }}"
+            done
+
   # If set-origins already cut this environment's apex over to the new deployment but that
   # deployment's own behaviour tests then failed, leaving the cutover in place serves a
   # rejected deployment until a person notices. Point the apex and its API Gateway custom
@@ -2884,6 +2983,7 @@ jobs:
     permissions:
       id-token: write
       contents: read
+      issues: write
     steps:
       - name: Checkout
         uses: actions/checkout@v7
@@ -2940,6 +3040,28 @@ jobs:
       - name: Report the rollback
         run: |
           echo "::error::web-test failed for ${{ needs.names.outputs.deployment-name }}; rolled the apex back to ${{ needs.set-origins.outputs.existing-deployment-name }}."
+
+      # The set left standing (needs.names.outputs.deployment-name) is never promoted to
+      # last-known-good on this path (set-last-known-good-deployment requires web-test to
+      # succeed), so nobody is told unless this issue exists. set-last-known-good-deployment
+      # closes it (by this same title) the next time a set for this environment is promoted.
+      - name: Open an incident issue for the rollback
+        if: ${{ !cancelled() }}
+        env:
+          GH_TOKEN: ${{ github.token }}
+          ISSUE_TITLE: "[INCIDENT] ${{ needs.names.outputs.environment-name }} apex rollback"
+        run: |
+          BODY=$(cat <<BODYEOF
+          ## Apex rollback
+
+          Run: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+          Failed probe suite: submitVatBehaviour (the web-test job gating this rollback)
+          Rolled back to deployment: ${{ needs.set-origins.outputs.existing-deployment-name }}
+          Deployment left standing, unpromoted: ${{ needs.names.outputs.deployment-name }}
+          BODYEOF
+          )
+          # The REST endpoint creates the label on first use; gh issue create --label fails when it is missing.
+          gh api --method POST "repos/${{ github.repository }}/issues" -f title="$ISSUE_TITLE" -f body="$BODY" -f "labels[]=incident" --jq .html_url
     outputs:
       rolled-back-to-deployment-name: ${{ needs.set-origins.outputs.existing-deployment-name }}
 

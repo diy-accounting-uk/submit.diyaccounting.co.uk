@@ -20,6 +20,7 @@
 # invited-guest          → invited-guest        → No (free, admin-issued, email-restricted)
 # resident-guest         → resident-guest       → No (free, admin-issued, email-restricted)
 # resident-pro-comp      → resident-pro-comp    → No (free, admin-issued, email-restricted)
+# operator               → operator             → No (free, admin-issued, email-restricted to the operator)
 # resident-pro-test-pass → resident-pro         → No (free, admin-issued, test/sandbox)
 # resident-pro-pass      → resident-pro         → No (free, admin-issued, production)
 # campaign               → invited-guest        → Costs 10 tokens to issue (user-issued, Phase 6)
@@ -120,6 +121,19 @@ id = "resident-pro-comp"
 name = "Resident Pro (Complimentary)"
 description = "Complimentary pro subscription for beta testers and partners"
 bundleId = "resident-pro-comp"
+defaultValidityPeriod = "P1Y"
+defaultMaxUses = 1
+requiresEmailRestriction = true
+
+# operator → unlocks "operator" bundle
+# Grants: access to the operator objectives dashboard, no timeout
+# Tokens: none (the dashboard is not a metered activity)
+# Payment: None (admin-issued to the operator's own sign-in email)
+[[passTypes]]
+id = "operator"
+name = "Operator"
+description = "Admin-issued access to the operator objectives dashboard, restricted to the operator's own sign-in"
+bundleId = "operator"
 defaultValidityPeriod = "P1Y"
 defaultMaxUses = 1
 requiresEmailRestriction = true

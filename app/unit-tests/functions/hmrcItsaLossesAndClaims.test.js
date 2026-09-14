@@ -299,9 +299,9 @@ describe("hmrcItsaLossesAndClaims handlers", () => {
         headers: { authorization: "Bearer test-token" },
       });
       const response = await hmrcItsaLossesAndClaimsGetHandler(event);
-      // Every HMRC "not found" maps to a client-fixable 400, the way every other read handler
-      // in this repo treats it (see http404NotFoundFromHmrcResponse).
-      expect(response.statusCode).toBe(400);
+      // Every HMRC "not found" maps to a real 404, the way every other read handler in this
+      // repo treats it (see http404NotFoundFromHmrcResponse).
+      expect(response.statusCode).toBe(404);
     });
   });
 
