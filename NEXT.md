@@ -109,7 +109,8 @@ and stop. One branch is driven green at a time. Lifted only by the operator in t
   either has created, and the search index lags anyway. Make the create idempotent: a conditional
   put keyed on alarm name and state-change timestamp in an existing ops table before the create, or
   list open issues through the REST issues endpoint (not search) and set the function's reserved
-  concurrency to 1; then close #212 as the duplicate. **Source**: issues #210, #212. **Owner**:
+  concurrency to 1. Both issues are closed (the probe failure was the deploy's apex move).
+  **Source**: issues #210, #212. **Owner**:
   Claude Code. **Model**: Sonnet. **Size**: ~2 files.
 
 - [ ] **B155. `video-capture.yml` prints the capture lane's password and TOTP secret in its log.**
