@@ -63,6 +63,13 @@ Every item names its model: the lowest tier that fits (Fable > Opus > Sonnet > H
 
 ## Machine-only
 
+- [ ] **B158b. `watch-ci.sh` repeats the NOT-GATING line every cycle.** B158 added a per-cycle
+  "NOT GATING <branch>: N run(s)" line (`scripts/watch-ci.sh:57`) with no dedup, so a `/watch`
+  monitor re-emits it every 75s and floods the session (the Monitor tool auto-stops a chatty
+  monitor). Emit it once per branch per distinct non-gating set, the way RED and MERGEABLE dedup
+  through the state dir, not every cycle. **Source**: B158 in prod, observed 2026-09-14.
+  **Owner**: Claude Code. **Model**: Haiku. **Size**: ~1 file.
+
 - [ ] **B52v. The 5xx behind the operator dashboard's first open.** The sign-in path is on
   `main` (82ea7ab8, PR #209) and reaches prod with 658f986e's deploy (run 34856840995): the activity is listed for a signed-in operator, the denial names
   the pass, the page uses the shared header and returns to itself after sign-in. The 5xx of 23:38
