@@ -16,11 +16,10 @@ runs), and for Claude Code steps the **Model** a sub-agent should use (Fable > O
 Haiku; the lowest tier that fits). Anything touching code goes through a `claude/*` branch and
 PR; the operator merges.
 
-**Prod runs deployment prod-658f986** (PR #209's merge, batch b31, promoted 15:30 UTC on 2026-09-14
-by run 34856840995, which destroyed `prod-b364438`); the only prod set.
-**ci**: `ci-claudd2cf` is last-known-good and self-destructs at 22:52 UTC. PR #214 (bd664fed)
-merged 20:38 UTC; `main`'s deploy (run 34891994316) is creating the next prod set. B34.6b's poll
-is the only b32 item left open.
+**Prod runs deployment prod-bd664fe** (PR #214's merge, batch b32, run 34891994316, which is
+destroying the previous set `prod-ca7ced1`); the only prod set.
+**ci**: `ci-claud824f` is last-known-good; the spare `ci-claudd2cf` self-destructs at 22:52 UTC.
+B34.6b's poll is the only b32 item left open.
 
 The board runs in five sections, in this order: **in flight** (a branch, a pull request or a run
 in motion, each named in the row), **machine-only**, **human and machine**, **human-only**,
