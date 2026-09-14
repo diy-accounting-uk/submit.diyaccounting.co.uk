@@ -145,21 +145,23 @@ class OpsStackTest {
 
     @Test
     @SuppressWarnings("unchecked")
-    void tokenChargeUnpaidMetricFiltersCoverEveryHmrcSubmissionEndpointLogGroup() {
+    void tokenChargeUnpaidMetricFiltersCoverEveryHmrcSubmissionEndpointIngestLogGroup() {
         OpsStack opsStack = synthOpsStack("prod", null, null);
         Template template = Template.fromStack(opsStack);
 
         Map<String, Map<String, Object>> metricFilters = template.findResources("AWS::Logs::MetricFilter");
         assertEquals(
-                24,
+                12,
                 metricFilters.size(),
-                "expected one metric filter per ingest and worker log group of each of the twelve "
-                        + "HMRC submission endpoints that call chargeTokenOnSuccess");
+                "expected one metric filter per HMRC submission endpoint that calls chargeTokenOnSuccess, "
+                        + "on the ingest log group its worker shares");
+        assertTrue(
+                metricFilters.keySet().stream().noneMatch(id -> id.contains("Worker")),
+                "a worker has no log group of its own, so no filter may name one: " + metricFilters.keySet());
 
         for (Map<String, Object> filter : metricFilters.values()) {
             var properties = (Map<String, Object>) filter.get("Properties");
-            assertEquals(
-                    "{ $.message = \"Token charge failed after HMRC success\" }", properties.get("FilterPattern"));
+            assertEquals("{ $.message = \"Token charge failed after HMRC success\" }", properties.get("FilterPattern"));
             var metricTransformations = (List<Map<String, Object>>) properties.get("MetricTransformations");
             assertEquals(1, metricTransformations.size());
             assertEquals("Submit/Business", metricTransformations.get(0).get("MetricNamespace"));
