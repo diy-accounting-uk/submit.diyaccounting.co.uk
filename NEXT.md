@@ -79,16 +79,22 @@ Every item names its model: the lowest tier that fits (Fable > Opus > Sonnet > H
   keepalive (08:15 UTC) makes `keepalive.yml` red and the row a fix. **Source**: BACKLOG 47.
   **Owner**: Claude Code. **Model**: Haiku. **Size**: no committed files.
 
-- [ ] **B52y. The five wired objectives fill on the next nightly.** PR #207 gave
-  `low-running-cost`, `security`, `retention`, `operator-effort` and `compliance` their
-  observations; the 02:15 UTC snapshot after 5ca7bca9 reaches prod is the first that carries
-  them. That run raised `prod-env-operator-snapshot-publish-errors` (issue #208, 03:18 UTC):
-  read `/aws/lambda/prod-env-operator-snapshot-publish` for 03:15 on 2026-09-14, fix the
-  observation whose query errors (`app/functions/analytics/operatorSnapshotPublish.js`), then check `snapshots/prod/latest.json` for
-  any observation that answers null where its view has rows (two views are monthly or quarterly grain, so a 30-day
-  window can be empty by design). **Source**: `PLAN_ONE_STOP_DASHBOARD.md` D7, D13, D14, D15.
-  Closes #208 (its alarm is still in ALARM since 03:18 UTC). **Owner**: Claude Code.
-  **Model**: Sonnet. **Size**: ~1 file.
+- [ ] **B52y. The nightly snapshot has not published since 2026-09-13 03:16.** Issue #208
+  (`prod-env-operator-snapshot-publish-errors`, 03:18 UTC on 2026-09-14): the 03:15 run's
+  three invocations each died in `pollUntilTerminal`
+  (`app/functions/analytics/operatorSnapshotPublish.js:408`) with Athena `TABLE_NOT_FOUND:
+  awsdatacatalog.prod_env_analytics.security_hub_findings`, so `snapshots/prod/latest.json`
+  still dates from 2026-09-13 03:16 and none of PR #207's five objectives has filled.
+  Cause: `SecurityLakeStack` (`SubmitEnvironment.java:399`, Glue tables `security_hub_findings`,
+  `guardduty_findings`, `github_alerts` and the nightly writer) is in the CDK app but
+  `deploy-environment.yml` deploys eight env stacks and not that one, so the tables do not exist
+  on prod (Glue database `prod_env_analytics` has no `security_*` table). Two fixes, one row:
+  add the `env-SecurityLakeStack` job to `deploy-environment.yml` where its dependencies place
+  it, and make one observation's failed query answer null for that observation instead of failing
+  the whole publish. Then check `latest.json` for any observation that answers null where its
+  view has rows (two views are monthly or quarterly grain, so a 30-day window can be empty by
+  design). **Source**: `PLAN_ONE_STOP_DASHBOARD.md` D7, D13, D14, D15. Closes #208. **Owner**:
+  Claude Code. **Model**: Sonnet. **Size**: ~3 files.
 
 - [ ] **B30x. The CIS console-sign-in-without-MFA alarm fires on SSO sign-ins.** Issue #206:
   `prod-env-cis-console-signin-without-mfa` fired at 23:42 UTC on 2026-09-13 for the operator's
