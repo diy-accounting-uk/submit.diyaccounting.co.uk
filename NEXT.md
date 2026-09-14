@@ -42,6 +42,12 @@ Every item names its model: the lowest tier that fits (Fable > Opus > Sonnet > H
 **COOL-DOWN is on since 2026-09-14T13:40:19Z.** No new board rows except a degradation. Agents commit
 and stop. One branch is driven green at a time. Lifted only by the operator in their own words.
 
+- [ ] **B162. A ci set self-destructs after 4 hours by default.** `deploy.yml`'s
+  `selfDestructDelayHours` default and env fallback move from 2 to 4 so a batch's second wave
+  (captures, sandbox polls, a lean-deployed experiment) still has the set the first wave's deploy
+  created. On branch `claude/ops-self-destruct-4h`, PR #213; the row closes when it merges.
+  **Source**: operator, 2026-09-14. **Owner**: Claude Code. **Model**: Haiku. **Size**: ~3 files.
+
 - [ ] **B17v.1. Capture the five walkthrough videos.** The three prod captures are done
   (`view-liabilities` run 34651931632, `view-payments` 34689643435, `view-penalties` 34689889022).
   The `itsa-quarterly-update` capture (run 34774550386) stalled on the dashboard defect PR #201
@@ -95,32 +101,25 @@ and stop. One branch is driven green at a time. Lifted only by the operator in t
 
 ## Machine-only
 
+- [ ] **B52v. The 5xx behind the operator dashboard's first open.** The sign-in path is on
+  `main` (82ea7ab8, PR #209) and reaches prod with 658f986e's deploy (run 34856840995): the activity is listed for a signed-in operator, the denial names
+  the pass, the page uses the shared header and returns to itself after sign-in. The 5xx of 23:38
+  UTC on 2026-09-13 (issues #204 `prod-e371587-app-api-5xx` and #203
+  `operator-snapshot-get-log-errors`) is not reproduced: that deployment's logs are gone,
+  `prod-b364438`'s `operator-snapshot-get` log group has no events, the Lambda's role holds
+  `dynamodb:Query` on `prod-env-bundles` and `s3:GetObject` on `snapshots/prod/*`, and the
+  object exists. Left: read `/aws/lambda/prod-<set>-app-operator-snapshot-get` after B52z's
+  attempt on `prod-658f986` and fix what it logs; both issues close then. `auth-status.js`'s
+  `logout()` awaits `window.envReady` unconditionally, which throws on a page that never loads
+  `submit.js` (the agent's finding, unfixed). **Source**: operator, 2026-09-13. **Owner**: Claude
+  Code. **Model**: Sonnet. **Size**: ~1 file.
+
 - [ ] **B156. The alarm-triage skip comment runs `gh` without a repository.** Run 34862119217
   (15:26 UTC on 2026-09-14, issue #212) failed at "Comment that triage was skipped": the `triage`
   job has no checkout, so `gh issue comment` (`.github/workflows/alarm-triage.yml:94`) cannot infer
   the repository and dies with "not a git repository", and the issue gets no comment, which is the
   case the step exists for. Add `--repo "$GITHUB_REPOSITORY"`. **Source**: run 34862119217.
   **Owner**: Claude Code. **Model**: Haiku. **Size**: ~1 file.
-
-- [ ] **B157. One alarm transition opened two issues.** #210 and #212 carry the same alarm
-  (`prod-env-github-probe-failed`), state change and timestamp (15:26:00.881 UTC on 2026-09-14).
-  `app/functions/ops/alarmToGithubIssue.js` dedupes by a GitHub search for an open issue with the
-  title (line 270), and two invocations of the same notification a moment apart both search before
-  either has created, and the search index lags anyway. Make the create idempotent: a conditional
-  put keyed on alarm name and state-change timestamp in an existing ops table before the create, or
-  list open issues through the REST issues endpoint (not search) and set the function's reserved
-  concurrency to 1. Both issues are closed (the probe failure was the deploy's apex move).
-  **Source**: issues #210, #212. **Owner**:
-  Claude Code. **Model**: Sonnet. **Size**: ~2 files.
-
-- [ ] **B155. `video-capture.yml` prints the capture lane's password and TOTP secret in its log.**
-  The `Record <script>` step's `env:` block echoes `TEST_AUTH_PASSWORD` and `TEST_AUTH_TOTP_SECRET`
-  unmasked (run 34850667197, 13:42 UTC on 2026-09-14) because they come from a step output, which
-  GitHub does not mask. The lane's user is rotated per run and native auth is disabled after, so
-  the exposure is the run's own window, in a public repository's log. Emit `::add-mask::` for both
-  values in the step that produces them (the `cognito-test-user` step or its script), and check
-  `probe-test.yml` and `deploy.yml` for the same pattern. **Source**: run 34850667197. **Owner**:
-  Claude Code. **Model**: Haiku. **Size**: ~2 files.
 
 - [ ] **B154. `youtube-check.yml` compares channel handles case-sensitively.** Its first
   scheduled run (34848766784, 13:21 UTC on 2026-09-14) failed: the stored refresh token resolves
@@ -137,6 +136,34 @@ and stop. One branch is driven green at a time. Lifted only by the operator in t
   (`ApiStack.java:169` and `:247`). Write both the way API Gateway stores them, with the CDK test,
   so the template matches. **Source**: run 34847862007. **Owner**: Claude Code. **Model**: Haiku.
   **Size**: ~2 files.
+
+- [ ] **B155. `video-capture.yml` prints the capture lane's password and TOTP secret in its log.**
+  The `Record <script>` step's `env:` block echoes `TEST_AUTH_PASSWORD` and `TEST_AUTH_TOTP_SECRET`
+  unmasked (run 34850667197, 13:42 UTC on 2026-09-14) because they come from a step output, which
+  GitHub does not mask. The lane's user is rotated per run and native auth is disabled after, so
+  the exposure is the run's own window, in a public repository's log. Emit `::add-mask::` for both
+  values in the step that produces them (the `cognito-test-user` step or its script), and check
+  `probe-test.yml` and `deploy.yml` for the same pattern. **Source**: run 34850667197. **Owner**:
+  Claude Code. **Model**: Haiku. **Size**: ~2 files.
+
+- [ ] **B157. One alarm transition opened two issues.** #210 and #212 carry the same alarm
+  (`prod-env-github-probe-failed`), state change and timestamp (15:26:00.881 UTC on 2026-09-14).
+  `app/functions/ops/alarmToGithubIssue.js` dedupes by a GitHub search for an open issue with the
+  title (line 270), and two invocations of the same notification a moment apart both search before
+  either has created, and the search index lags anyway. Make the create idempotent: a conditional
+  put keyed on alarm name and state-change timestamp in an existing ops table before the create, or
+  list open issues through the REST issues endpoint (not search) and set the function's reserved
+  concurrency to 1. Both issues are closed (the probe failure was the deploy's apex move).
+  **Source**: issues #210, #212. **Owner**:
+  Claude Code. **Model**: Sonnet. **Size**: ~2 files.
+
+- [ ] **B30x. The CIS console-sign-in-without-MFA alarm fires on SSO sign-ins.** Issue #206:
+  `prod-env-cis-console-signin-without-mfa` fired at 23:42 UTC on 2026-09-13 for the operator's
+  own SSO console sign-in (CloudTrail: `ConsoleLogin`, `userIdentity.type = AssumedRole`,
+  `AWSReservedSSO_AdministratorAccess`, `MFAUsed = No`, which is what every federated sign-in
+  reports). CIS 3.2's own filter adds `$.userIdentity.type = "IAMUser"`; add that clause to the
+  metric filter in `ObservabilityStack.java` with its test, and the issue closes when it reaches
+  prod. **Source**: issue #206. **Owner**: Claude Code. **Model**: Haiku. **Size**: ~2 files.
 
 - [ ] **B52y. The nightly snapshot has not published since 2026-09-13 03:16.** Issue #208
   (`prod-env-operator-snapshot-publish-errors`, 03:18 UTC on 2026-09-14): the 03:15 run's
@@ -155,26 +182,41 @@ and stop. One branch is driven green at a time. Lifted only by the operator in t
   design). **Source**: `PLAN_ONE_STOP_DASHBOARD.md` D7, D13, D14, D15. Closes #208. **Owner**:
   Claude Code. **Model**: Sonnet. **Size**: ~3 files.
 
-- [ ] **B30x. The CIS console-sign-in-without-MFA alarm fires on SSO sign-ins.** Issue #206:
-  `prod-env-cis-console-signin-without-mfa` fired at 23:42 UTC on 2026-09-13 for the operator's
-  own SSO console sign-in (CloudTrail: `ConsoleLogin`, `userIdentity.type = AssumedRole`,
-  `AWSReservedSSO_AdministratorAccess`, `MFAUsed = No`, which is what every federated sign-in
-  reports). CIS 3.2's own filter adds `$.userIdentity.type = "IAMUser"`; add that clause to the
-  metric filter in `ObservabilityStack.java` with its test, and the issue closes when it reaches
-  prod. **Source**: issue #206. **Owner**: Claude Code. **Model**: Haiku. **Size**: ~2 files.
+- [ ] **B159. The scheduled probe yields to a deploy in progress on main.** The 15:16 UTC
+  `probe-test.yml` schedule on 2026-09-14 ran while `deploy.yml` 34856840995 was moving the apex
+  to `prod-658f986`; the token exchange answered 403 for the seconds the origins disagreed, and
+  the failure raised two alarm issues, an incident and two triage runs before the re-run passed.
+  In `probe-test.yml`'s schedule path, read `gh run list --workflow deploy.yml --branch main
+  --status in_progress`; when a deploy is running, wait for it (a sleep loop with a ceiling) or
+  end the run green with a "deferred to the deploy's probes" summary. **Source**:
+  REPORT_SESSION_o+o5Wl_2026-09-14.md. **Owner**: Claude Code. **Model**: Sonnet. **Size**: ~1 file.
 
-- [ ] **B52v. The 5xx behind the operator dashboard's first open.** The sign-in path is on
-  `main` (82ea7ab8, PR #209) and reaches prod with 658f986e's deploy (run 34856840995): the activity is listed for a signed-in operator, the denial names
-  the pass, the page uses the shared header and returns to itself after sign-in. The 5xx of 23:38
-  UTC on 2026-09-13 (issues #204 `prod-e371587-app-api-5xx` and #203
-  `operator-snapshot-get-log-errors`) is not reproduced: that deployment's logs are gone,
-  `prod-b364438`'s `operator-snapshot-get` log group has no events, the Lambda's role holds
-  `dynamodb:Query` on `prod-env-bundles` and `s3:GetObject` on `snapshots/prod/*`, and the
-  object exists. Left: read `/aws/lambda/prod-<set>-app-operator-snapshot-get` after B52z's
-  attempt on `prod-658f986` and fix what it logs; both issues close then. `auth-status.js`'s
-  `logout()` awaits `window.envReady` unconditionally, which throws on a page that never loads
-  `submit.js` (the agent's finding, unfixed). **Source**: operator, 2026-09-13. **Owner**: Claude
-  Code. **Model**: Sonnet. **Size**: ~1 file.
+- [ ] **B160. `video-capture.yml` records against the apex when the named ci set serves it.**
+  Three captures on 2026-09-14 (runs 34847383246, 34849517903, 34850667197) were dispatched
+  with `deployment-name=ci-claud3123`: the browser signed in on
+  `https://ci-claud3123.submit.diyaccounting.co.uk/`, Cognito's `redirect_uri` is the ci apex,
+  and the OAuth state stored on the first origin was absent on the second ("OAuth state
+  mismatch", `hasStoredState: false`). When the named set is the environment's last-known-good
+  (the apex's target), set `DIY_SUBMIT_BASE_URL` to the apex; otherwise fail the run at the
+  params job naming the mismatch. **Source**: REPORT_SESSION_o+o5Wl_2026-09-14.md; B17v.1 carries
+  the recordings themselves. **Owner**: Claude Code. **Model**: Sonnet. **Size**: ~1 file.
+
+- [ ] **B161. `NEXT.md` keeps its five headings, checked.** Two row edits on 2026-09-14 sliced
+  from one row's start to the next row's start and swallowed `## Machine-only` and
+  `## Human and machine` between them; the file carried the wrong shape for three commits. Add
+  a unit test under `app/unit-tests/` that `NEXT.md` carries `## In flight`, `## Machine-only`,
+  `## Human and machine`, `## Human-only` and `## Blocked` once each, in that order, and have
+  the `/board` skill's write-back run it before committing. **Source**:
+  REPORT_SESSION_o+o5Wl_2026-09-14.md. **Owner**: Claude Code. **Model**: Haiku. **Size**: ~2 files.
+
+- [ ] **B158. `/auto-merge` and `/watch` gate on push and pull_request runs only.** Twice on
+  2026-09-14 a `workflow_dispatch` recording run (`video-capture`) on PR #209's head read as a
+  failed check: the auto-merge gate reads every workflow with a run on the head SHA, and
+  `scripts/watch-ci.sh`'s readiness probe groups by workflow the same way. Both should gate on
+  runs whose `event` is `push` or `pull_request` and report the others without counting them.
+  `.claude/skills/auto-merge/SKILL.md` Part 4, `.claude/skills/watch/SKILL.md`,
+  `scripts/watch-ci.sh` (`gh run list --json event`). **Source**: REPORT_SESSION_o+o5Wl_2026-09-14.md.
+  **Owner**: Claude Code. **Model**: Haiku. **Size**: ~3 files.
 
 ## Human and machine
 

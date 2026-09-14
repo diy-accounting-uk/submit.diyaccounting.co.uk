@@ -101,6 +101,15 @@ the first characters after `claude/`, so they carry the distinction: `claude/ltd
 or a series number at the end (`claude/a-few-batches-1`,
 `claude/consistent-preamble-hiding-specificity`).
 
+## Worktree and branch removal is the operator's
+
+`git worktree remove`, `git branch -d` and `git branch -D` are denied to the session in this
+environment; that is the environment, not a problem to solve. When a worktree or a local branch is
+no longer needed (its content is proven on the batch or on `main`), print the removal as one
+command for the operator, in a fenced block with the `!` prefix, at the moment it stops being
+needed, and again in every `/board` render's Part 5 until it is gone. Nothing waits on the removal:
+a stale worktree or branch left on disk blocks no merge, no dispatch and no push.
+
 ## A direct question gets its answer as the whole reply
 
 When the operator asks a question, answer it in a reply that ends the turn, with every link and

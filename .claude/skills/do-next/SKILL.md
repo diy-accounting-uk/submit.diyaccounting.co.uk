@@ -204,10 +204,12 @@ Merge each workstream as its notification arrives. Do not hold them for the end.
 - Update `NEXT.md` on `main` in the same breath: mark the item code complete, and remove it only
   once its checks pass. A bug the agent surfaced is that item's remainder, not a new item, unless
   it is genuinely separate work — then say so explicitly rather than deciding quietly.
-- Remove the worktree and delete its branch as the merge lands, not in a later sweep. After a
-  squash `git branch -d` refuses, because it cannot see the squash; prove the content landed
-  (`git diff <agent-branch> <batch> -- $(git diff --name-only <batch>...<agent-branch>)` is empty)
-  and then `git branch -D` it — the one place `-D` is right, and only after that diff.
+- Prove the content landed as the merge lands
+  (`git diff <agent-branch> <batch> -- $(git diff --name-only <batch>...<agent-branch>)` is empty),
+  then hand the removal to the operator: `git worktree remove` and `git branch -D` are denied to
+  the session here, so print the one command in a fenced block with the `!` prefix and carry on.
+  The `/board` render lists every such worktree and branch again until it is gone. Nothing waits
+  on the removal.
 
 **Editing `NEXT.md` is where rows get lost.** Never replace the slice between two markers unless
 you have checked they are adjacent — an edit that removes what it did not name is invisible until

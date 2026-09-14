@@ -62,8 +62,8 @@ else to be right, and that is the whole point.
 
 Print the reasoning as well as the branch name. The operator is choosing a merge order.
 
-**Waking:** every hotfix branch is accounted for before anything else starts. Merged means the
-branch and its worktree go in the same breath and its board row is deleted. Still open means it
+**Waking:** every hotfix branch is accounted for before anything else starts. Merged means its
+board row is deleted and its branch and worktree are on the operator's removal list. Still open means it
 keeps its place at the front of the merge order, and the reply says so again rather than
 assuming the operator remembers. A hotfix branch that is neither merged nor open is the first
 thing to explain.

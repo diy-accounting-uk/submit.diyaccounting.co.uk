@@ -154,9 +154,9 @@ git log --oneline origin/main..origin/<headRef>
 The second command must be empty. Anything it lists was left behind by the merge and goes into the
 next batch immediately.
 
-After a verified merge: update local `main`, remove the branch's worktree, and delete the local
-branch with `git branch -d` — never `-D`, which hides the case where the branch was not merged after
-all. **Never delete an origin branch**; list it for the operator instead.
+After a verified merge: update local `main`, then list the branch's worktree, its local branch
+and its origin branch for the operator in Part 7 as one fenced `!` command; removal of all three is
+denied to the session in this environment, and none of them blocks anything.
 
 **Then look at the other open PRs, and leave them alone unless they need a rebase.** A rebase
 restarts the branch's whole deploy, and several at once contend for the ci apex alias and the

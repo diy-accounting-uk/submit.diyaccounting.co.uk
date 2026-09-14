@@ -163,12 +163,15 @@ for branches with commits nowhere else, whether their content already exists on 
 - `unique, desirable`: content not on `main`, not on any open PR, and it belongs to an open
   `NEXT.md` item or backlog row (name it): needs a PR or folding into the batch.
 - `stale`: every commit on `main`, or content identical to `main` (merged under other commits),
-  or an abandoned design superseded by a plan doc on `main`. Action: delete (local: the
-  coordinator may delete a merged worktree branch; origin: the operator deletes).
+  or an abandoned design superseded by a plan doc on `main`. Action: delete, by the operator
+  for local and origin alike.
 - Summarise `worktree-agent-*` branches as one line (count, how many carry content not on
   `main` or the batch, and those names) rather than one row each.
-Never delete an origin branch from this skill; the operator does. Local branches whose tip is
-on `main` or the batch may be pruned with `git branch -d` (never `-D`).
+Never delete anything from this skill: `git worktree remove`, `git branch -d` and `-D` are
+denied to the session here, and an origin branch is the operator's anyway. After the table, print
+one fenced block with the `!` prefix that removes every stale worktree and local branch and every
+merged origin branch, so the operator runs it or leaves it; a stale branch on disk blocks nothing,
+and the block reappears in every render until it is empty.
 Branch names follow `CLAUDE.md`: the integration branch is `claude/b<n>-board`, a track branch
 `claude/<ns>-<n>-<topic>` or `claude/<ns>-<topic>`, the distinctive part right after `claude/`.
 A branch named the old way (`claude/board-batch-<n>`, a generic preamble, a series number at
