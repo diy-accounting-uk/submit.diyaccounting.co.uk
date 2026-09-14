@@ -48,7 +48,7 @@ and stop. One branch is driven green at a time. Lifted only by the operator in t
   The `itsa-quarterly-update` capture (run 34774550386) stalled on the dashboard defect PR #201
   fixed; the three `itsa-business-details` captures on `ci-vatview` (runs 34790185457,
   34790343028, 34790629770) failed on browser errors and the scene fix sits on local branch
-  `claude/b31-board` (dd45a7bb, PR #209). The three prod recordings are checked and in
+  `main` (dd45a7bb, PR #209 merged 14:41 UTC on 2026-09-14 as 658f986e). The three prod recordings are checked and in
   `videos/publish.json` on local branch `claude/b31-videos` (c5d394b4, unpushed, held until
   cool-down lifts). The three ci captures of 2026-09-14 (runs 34847383246, 34849517903,
   34850667197, all `-f deployment-name=ci-claud3123`) died on the sign-in return: the browser
@@ -147,14 +147,14 @@ and stop. One branch is driven green at a time. Lifted only by the operator in t
   prod. **Source**: issue #206. **Owner**: Claude Code. **Model**: Haiku. **Size**: ~2 files.
 
 - [ ] **B52v. The 5xx behind the operator dashboard's first open.** The sign-in path is on
-  `claude/b31-board` (82ea7ab8): the activity is listed for a signed-in operator, the denial names
+  `main` (82ea7ab8, PR #209) and reaches prod with 658f986e's deploy (run 34856840995): the activity is listed for a signed-in operator, the denial names
   the pass, the page uses the shared header and returns to itself after sign-in. The 5xx of 23:38
   UTC on 2026-09-13 (issues #204 `prod-e371587-app-api-5xx` and #203
   `operator-snapshot-get-log-errors`) is not reproduced: that deployment's logs are gone,
   `prod-b364438`'s `operator-snapshot-get` log group has no events, the Lambda's role holds
   `dynamodb:Query` on `prod-env-bundles` and `s3:GetObject` on `snapshots/prod/*`, and the
   object exists. Left: read `/aws/lambda/prod-<set>-app-operator-snapshot-get` after B52z's
-  attempt on the batch's prod set and fix what it logs; both issues close then. `auth-status.js`'s
+  attempt on `prod-658f986` and fix what it logs; both issues close then. `auth-status.js`'s
   `logout()` awaits `window.envReady` unconditionally, which throws on a page that never loads
   `submit.js` (the agent's finding, unfixed). **Source**: operator, 2026-09-13. **Owner**: Claude
   Code. **Model**: Sonnet. **Size**: ~1 file.
