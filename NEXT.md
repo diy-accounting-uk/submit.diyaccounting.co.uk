@@ -16,10 +16,11 @@ runs), and for Claude Code steps the **Model** a sub-agent should use (Fable > O
 Haiku; the lowest tier that fits). Anything touching code goes through a `claude/*` branch and
 PR; the operator merges.
 
-**Prod runs deployment prod-5ca7bca** (PR #207's merge, batch b30, promoted 02:38 UTC on 2026-09-14
-by run 34796067321, which destroyed `prod-e371587`); the only prod set.
-**ci at 05:50 UTC**: unverified (no SSO session); `ci-vatview` and `ci-claud3386` were both due to
-self-destruct before the 04:34 sweep.
+**Prod runs deployment prod-b364438** (main at b364438e, the daily 04:11 UTC deploy cron run
+5h39m late as run 34830100013, promoted 11:0x UTC on 2026-09-14, which destroyed `prod-5ca7bca`);
+the only prod set.
+**ci at 08:05 UTC**: no set standing; the sweep (run 34820856912) found none and set
+`/submit/ci/last-known-good-deployment` to None.
 
 The board runs in five sections, in this order: **in flight** (a branch, a pull request or a run
 in motion, each named in the row), **machine-only**, **human and machine**, **human-only**,
@@ -44,8 +45,9 @@ Every item names its model: the lowest tier that fits (Fable > Opus > Sonnet > H
   The `itsa-quarterly-update` capture (run 34774550386) stalled on the dashboard defect PR #201
   fixed; the three `itsa-business-details` captures on `ci-vatview` (runs 34790185457,
   34790343028, 34790629770) failed on browser errors and the scene fix sits on local branch
-  `claude/b30-videos` (182acf07); `ci-vatview` is gone, so both ci captures need a fresh ci deploy
-  of `main` (`gh workflow run deploy.yml -f environment-name=ci -f deployment-name=<name>`).
+  `claude/b30-videos` (182acf07, worktree `.claude/worktrees/b30-videos`); no ci set stands, so
+  both ci captures need a fresh ci deploy of `main`
+  (`gh workflow run deploy.yml -f environment-name=ci -f deployment-name=<name>`).
   Then check all five artifacts and write `videos/publish.json`, replacing the 2026-09-07
   `itsa-business-details` entry. Two things the scripts could not settle: the quarterly-update
   script stops with the form filled except `businessId` (only known at run time), and
@@ -53,14 +55,13 @@ Every item names its model: the lowest tier that fits (Fable > Opus > Sonnet > H
   `dashboard.html`. **Source**: BACKLOG 17b, 17c. **Owner**: Claude Code. **Model**: Sonnet. **Size**: ~1 file.
 
 
-
 - [ ] **B80b. The identity guard has to reach the other four repositories.** Submit carries
   `.github/allowed-commit-identities.yml`, `.github/workflows/identity-guard.yml` and
   `scripts/check-commit-identities.sh`: a pull-request check that fails when a commit's author email
-  is not on a plain, human-edited allow list. Spreadsheets carries it on main (29e13023) and the other three have open PRs awaiting
-  O46: www #31, root #32, archive #35. Spreadsheets was the one with the actual incident —
-  twenty commits authored `noreply@anthropic.com` by a sub-agent setting the identity inline — so it
-  goes first; `www`, `root` and `archive` follow.
+  is not on a plain, human-edited allow list. Spreadsheets carries it on main (29e13023); the other
+  three are open PRs on branch `claude/ops-identity-guard` in each repository, awaiting O46's
+  review of their allow lists: www #31, root #32, archive #35. Left here: merge each once O46
+  approves it.
   **Operator decisions, 2026-09-12.** All four from worktrees in this session, one PR each, no
   sibling checkout touched — the method already used for the attribution-pointer PRs. Each allow
   list is derived from that repository's own author history, and the PR body prints every address
@@ -70,15 +71,13 @@ Every item names its model: the lowest tier that fits (Fable > Opus > Sonnet > H
 
 ## Machine-only
 
-- [ ] **B52y. The five wired objectives fill on the next nightly.** PR #207 gave
-  `low-running-cost`, `security`, `retention`, `operator-effort` and `compliance` their
-  observations; the 02:15 UTC snapshot after 5ca7bca9 reaches prod is the first that carries
-  them. That run raised `prod-env-operator-snapshot-publish-errors` (issue #208, 03:18 UTC):
-  read `/aws/lambda/prod-env-operator-snapshot-publish` for 03:15 on 2026-09-14 (needs an SSO
-  session), fix the observation whose query errors, then check `snapshots/prod/latest.json` for
-  any observation that answers null where its view has rows (two views are monthly or quarterly grain, so a 30-day
-  window can be empty by design). **Source**: `PLAN_ONE_STOP_DASHBOARD.md` D7, D13, D14, D15.
-  Closes #208. **Owner**: Claude Code. **Model**: Sonnet. **Size**: ~1 file.
+- [ ] **B47. Read the Monday crons' first run on their new slots.** `compliance.yml` (06:06 UTC
+  Monday) and `stack-drift.yml` (06:36) moved off the top of the hour after firing five hours late
+  on 2026-09-07; 2026-09-14 is their first Monday. Neither had fired by 11:50 UTC, and the same
+  morning GitHub ran `deploy.yml`'s 04:11 cron at 09:50. Read both workflows' run lists: a
+  schedule-triggered run dated 2026-09-14 closes backlog row 47, however late; none by Saturday's
+  keepalive (08:15 UTC) makes `keepalive.yml` red and the row a fix. **Source**: BACKLOG 47.
+  **Owner**: Claude Code. **Model**: Haiku. **Size**: no committed files.
 
 - [ ] **B30x. The CIS console-sign-in-without-MFA alarm fires on SSO sign-ins.** Issue #206:
   `prod-env-cis-console-signin-without-mfa` fired at 23:42 UTC on 2026-09-13 for the operator's
@@ -88,15 +87,31 @@ Every item names its model: the lowest tier that fits (Fable > Opus > Sonnet > H
   metric filter in `ObservabilityStack.java` with its test, and the issue closes when it reaches
   prod. **Source**: issue #206. **Owner**: Claude Code. **Model**: Haiku. **Size**: ~2 files.
 
+- [ ] **B52v. Review the sign-in navigation on the operator dashboard.** The operator asked on
+  2026-09-13 for the sign-in path of `https://submit.diyaccounting.co.uk/operator/dashboard.html`
+  to be reviewed. The page carries its own auth section (`web/public/operator/dashboard.html`
+  lines 90-93: "Not logged in" and a `../auth/login.html` link) and shows "Not authorised to view
+  the operator dashboard." (line 300) when the bundle is missing. Walk the path signed out, signed
+  in without the bundle, and signed in with it: does the page return to itself after sign-in, does
+  the denial name the missing pass, and does the header match the rest of the site's sign-in
+  controls. Fix what the walk shows, with a browser test under `web/browser-tests/`. The operator's first attempt at 23:38 UTC on 2026-09-13,
+  signed in, ended in a 5xx: issues #204 (`prod-e371587-app-api-5xx`) and #203
+  (`operator-snapshot-get-log-errors`); that deployment's logs are gone, so reproduce on
+  `prod-b364438` or read the log of the next attempt (`/aws/lambda/prod-b364438-app-operator-snapshot-get`;
+  `app/functions/analytics/operatorSnapshotGet.js`)
+  and make the no-bundle path a 403 with a message naming the operator pass. Both issues close
+  with this row. **Source**:
+  operator, 2026-09-13. **Owner**: Claude Code. **Model**: Sonnet. **Size**: ~2 files.
+
 - [ ] **B34.6b. Companies House accounts filing: the sandbox proof.** Submission 000004 (presenter
   E0000052288, company 06846849, 2026-09-13 19:04 UTC) was ACCEPTED by the XML Gateway test
   service; every `GetSubmissionStatus` poll for it answers 9999 "No presenter ID supplied". Since
-  PR #207 the status poll logs the redacted request and response XML. Left: poll 000004 once on a
-  ci set carrying `main` at 5ca7bca9 or later and read what the gateway saw; O44 asks Companies
+  PR #207 the status poll logs the redacted request and response XML. Left: deploy a ci set from
+  `main` (`gh workflow run deploy.yml -f environment-name=ci -f deployment-name=<name>`; none
+  stands), poll 000004 once on it and read what the gateway saw; O44 asks Companies
   House in parallel. The `prod` listing (held as unreferenced local commit 946251d4) waits on a
   poll that returns a status. **Source**: BACKLOG 34b. **Owner**: Claude Code. **Model**: Sonnet.
   **Size**: no committed files.
-
 
 - [ ] **B25c. Issue #11, backups outside the account.** The drill's own state is now known and
   written up in `_developers/RESTORE_DRILL.md`: `restore-drill.yml` has never run, and two things
@@ -106,13 +121,8 @@ Every item names its model: the lowest tier that fits (Fable > Opus > Sonnet > H
   tables and both books buckets, and `restore-test.yml`'s monthly in-account restore has passed
   three of its last four runs, most recently restoring 4826 receipt items against a live source of
   4832. That comment is posted (issuecomment-5653323425, 2026-09-13). The drill ran clean on 2026-09-14 (run 34790429557, batch
-  b30's O41x). Left: comment on #11 with that result and close it once the PR merges. **Source**: issue #11. **Owner**: Claude Code. **Model**: Sonnet.
+  b30's O41x, on main since 5ca7bca9). Left: comment on #11 with that result and close it. **Source**: issue #11. **Owner**: Claude Code. **Model**: Sonnet.
   **Size**: no committed files.
-
-
-
-
-
 
 - [ ] **B152. `watch-ci.sh` reports `MERGEABLE` for a head with no runs yet.** In the minute after a
   push the latest run per workflow still belongs to the previous head, so the probe called PR #207
@@ -149,29 +159,6 @@ Every item names its model: the lowest tier that fits (Fable > Opus > Sonnet > H
   matches an `AWS::Logs::LogGroup` created in the same synth. **Source**: REPORT_SESSION_oVpgsO_2026-09-14.md. **Owner**:
   Claude Code. **Model**: Sonnet. **Size**: ~1 file.
 
-- [ ] **B52v. Review the sign-in navigation on the operator dashboard.** The operator asked on
-  2026-09-13 for the sign-in path of `https://submit.diyaccounting.co.uk/operator/dashboard.html`
-  to be reviewed. The page carries its own auth section (`web/public/operator/dashboard.html`
-  lines 90-93: "Not logged in" and a `../auth/login.html` link) and shows "Not authorised to view
-  the operator dashboard." (line 300) when the bundle is missing. Walk the path signed out, signed
-  in without the bundle, and signed in with it: does the page return to itself after sign-in, does
-  the denial name the missing pass, and does the header match the rest of the site's sign-in
-  controls. Fix what the walk shows, with a browser test under `web/browser-tests/`. The operator's first attempt at 23:38 UTC on 2026-09-13,
-  signed in, ended in a 5xx: issues #204 (`prod-e371587-app-api-5xx`) and #203
-  (`operator-snapshot-get-log-errors`); that deployment's logs are gone, so reproduce on
-  `prod-5ca7bca` or read the log of the next attempt (`/aws/lambda/prod-5ca7bca-app-operator-snapshot-get`)
-  and make the no-bundle path a 403 with a message naming the operator pass. Both issues close
-  with this row. **Source**:
-  operator, 2026-09-13. **Owner**: Claude Code. **Model**: Sonnet. **Size**: ~2 files.
-
-
-
-
-
-
-
-
-
 - [ ] **B148. Nested permissions checked before a push.** Deploy 34791268179 died at startup:
   `probe-test.yml`'s new job requested `issues: write` and `deploy.yml`'s 29 calls grant neither;
   actionlint does not check it. In `test.yml`'s `validate workflow syntax` job, for every workflow
@@ -201,7 +188,7 @@ Every item names its model: the lowest tier that fits (Fable > Opus > Sonnet > H
 ## Human-only
 
 - [ ] **B52z. Issue the operator pass and open the dashboard.** The `operator` pass type is on
-  main (PR #207) and reaches prod with 5ca7bca9's deploy. Then, the operator's half:
+  main (PR #207) and on prod since prod-5ca7bca. The operator's half:
   ```
   ! gh workflow run generate-pass.yml -f pass-type=operator -f email=<the email you sign in to submit with> -f environment=prod
   ```
@@ -209,6 +196,10 @@ Every item names its model: the lowest tier that fits (Fable > Opus > Sonnet > H
   https://submit.diyaccounting.co.uk/operator/dashboard.html. **Source**: `PLAN_ONE_STOP_DASHBOARD.md`
   D1. **Owner**: Operator. **Model**: none.
 
+- [ ] **O46. Approve the three allow lists.** Each of B80b's PRs (www #31, root #32, archive #35)
+  prints every author address with its commit count and date range; strike or approve each before
+  merge, because an address on the list is an identity the guard will accept from then on.
+  **Source**: B80's fix. **Owner**: Operator. **Model**: none.
 
 - [ ] **O17. Register the Companies House sandbox test user and set four ci values.**
   Companies House has no create-test-user API, so the operator registers a throwaway account
@@ -280,14 +271,16 @@ Every item names its model: the lowest tier that fits (Fable > Opus > Sonnet > H
 
 ## Blocked
 
-- [ ] **O32. View the five walkthrough videos.** After B17v.1: watch each recording and say
-  which can go up and what reads wrong. **Source**: BACKLOG 17b, 17c. **Owner**: Operator.
-  **Model**: none. Blocked on B17v.1.
-
-- [ ] **O46. Approve the four allow lists.** Each of B80b's PRs prints every author address
-  with its commit count and date range; strike or approve each before merge, because an address
-  on the list is an identity the guard will accept from then on. **Source**: B80's fix.
-  **Owner**: Operator. **Model**: none. Blocked on B80b.
+- [ ] **B52y. The five wired objectives fill on the next nightly.** PR #207 gave
+  `low-running-cost`, `security`, `retention`, `operator-effort` and `compliance` their
+  observations; the 02:15 UTC snapshot after 5ca7bca9 reaches prod is the first that carries
+  them. That run raised `prod-env-operator-snapshot-publish-errors` (issue #208, 03:18 UTC):
+  read `/aws/lambda/prod-env-operator-snapshot-publish` for 03:15 on 2026-09-14, fix the
+  observation whose query errors (`app/functions/analytics/operatorSnapshotPublish.js`), then check `snapshots/prod/latest.json` for
+  any observation that answers null where its view has rows (two views are monthly or quarterly grain, so a 30-day
+  window can be empty by design). **Source**: `PLAN_ONE_STOP_DASHBOARD.md` D7, D13, D14, D15.
+  Closes #208. **Owner**: Claude Code. **Model**: Sonnet. Blocked on
+  `aws sso login --sso-session diyaccounting` (the log read). **Size**: ~1 file.
 
 - [ ] **B137. `uniqueReference` identifies the user, not the authentication event.** In the
   `Gov-Client-Multi-Factor` header, `uniqueReference` is a SHA-256 of `sub + ":" + factorType`, so
@@ -297,12 +290,16 @@ Every item names its model: the lowest tier that fits (Fable > Opus > Sonnet > H
   change it, and note that O28's step 2b touches the same code — sequence it after, not with.
   **Source**: `../REPORT_HMRC_HEADER_ADVISORIES.md`. **Owner**: Claude Code. **Model**: Sonnet. Blocked on O28 step 2b. **Size**: ~1 file.
 
-- [ ] **B17v.2. Publish the walkthrough videos.** After O32: fetch the recordings from their
-  capture runs, upload them unlisted with `video-publish`, then the operator runs
-  `npm run video:publish -- --public`. The VAT read-page videos publish beside the three VAT
-  ones; the accounts and ITSA videos publish as sandbox previews. **Source**: BACKLOG 17b,
-  17c. **Owner**: Claude Code, then Operator. **Model**: Haiku. Blocked on O32. **Size**: ~1 file.
-
+- [ ] **B34.7. Run and fix the filing suites' sandbox sign-in.** Batch 9 (6957651c) carries
+  the suites' sandbox sign-in with the authenticator step, off by default: `deploy.yml` and
+  `probe-test.yml` run the two filing suites only when the dispatch input
+  `runCompaniesHouseSandboxFiling` is `true`, and the run fails fast naming any of O17's four
+  values that is empty. Against a standing ci set:
+  `gh workflow run probe-test.yml -f environment-name=ci -f deployment-name=<ci-set>
+  -f behaviour-test-suite=changeRegisteredOfficeBehaviour -f runCompaniesHouseSandboxFiling=true`
+  and the same for `changeRegisteredEmailBehaviour`; the first run's screenshots guide any
+  selector fix. **Source**: BACKLOG 34. **Owner**: Claude Code. **Model**: Sonnet.
+  Blocked on O17. **Size**: ~1 file.
 
 - [ ] **B124. Prove the three agent workflows by dispatch, in order.** All three are on main,
   `workflow_dispatch` only, every event trigger commented out until a hand-run has earned it.
@@ -341,24 +338,6 @@ Every item names its model: the lowest tier that fits (Fable > Opus > Sonnet > H
   **Source**: `.github/workflows/agentic-lib-*.yml`; run 34716604299.
   **Owner**: Claude Code. **Model**: Sonnet. Blocked on the operator lifting the 2026-09-12 halt. **Size**: ~3 files.
 
-- [ ] **B34.7. Run and fix the filing suites' sandbox sign-in.** Batch 9 (6957651c) carries
-  the suites' sandbox sign-in with the authenticator step, off by default: `deploy.yml` and
-  `probe-test.yml` run the two filing suites only when the dispatch input
-  `runCompaniesHouseSandboxFiling` is `true`, and the run fails fast naming any of O17's four
-  values that is empty. Against a standing ci set:
-  `gh workflow run probe-test.yml -f environment-name=ci -f deployment-name=<ci-set>
-  -f behaviour-test-suite=changeRegisteredOfficeBehaviour -f runCompaniesHouseSandboxFiling=true`
-  and the same for `changeRegisteredEmailBehaviour`; the first run's screenshots guide any
-  selector fix. **Source**: BACKLOG 34. **Owner**: Claude Code. **Model**: Sonnet.
-  Blocked on O17. **Size**: ~1 file.
-
-- [ ] **B70.LU15. Licensing: the brand package.** Pin `@diy-accounting-uk/brand`, copy assets
-  and tokens at build, import the tokens, delete the local logo, favicon and token copies;
-  the footer, favicon and title conventions read from the words file. **Source**:
-  `PLAN_LICENSING_UPLIFT_SUBMIT.md` LU-15. **Owner**: Claude Code. **Model**: Sonnet.
-  Blocked on the brand package existing, now planned in the spreadsheets repository's
-  `PLAN_DIYACCOUNTING_BRAND.md`. **Size**: ~6 files.
-
 - [ ] **B11.T10. ITSA phase 2: the recognition pack.** `PLAN_ITSA_PHASE_2.md` T10:
   `_developers/hmrc/ITSA_PRODUCTION_APPROVALS_CHECKLIST.md`, an ITSA pass over the two
   questionnaires, and the two draft emails for the operator to send. One application now covers
@@ -383,6 +362,23 @@ Every item names its model: the lowest tier that fits (Fable > Opus > Sonnet > H
   **Source**: BACKLOG 11; `PLAN_ITSA_PHASE_2.md` T9. **Owner**: Claude Code. **Model**:
   Sonnet. Blocked on the spreadsheets repository's ITSA-T8 (the two self-employed derivations)
   and on `PLAN_SUBMISSION_MCP.md` M1. **Size**: ~4 files.
+
+- [ ] **B70.LU15. Licensing: the brand package.** Pin `@diy-accounting-uk/brand`, copy assets
+  and tokens at build, import the tokens, delete the local logo, favicon and token copies;
+  the footer, favicon and title conventions read from the words file. **Source**:
+  `PLAN_LICENSING_UPLIFT_SUBMIT.md` LU-15. **Owner**: Claude Code. **Model**: Sonnet.
+  Blocked on the brand package existing, now planned in the spreadsheets repository's
+  `PLAN_DIYACCOUNTING_BRAND.md`. **Size**: ~6 files.
+
+- [ ] **B17v.2. Publish the walkthrough videos.** After O32: fetch the recordings from their
+  capture runs, upload them unlisted with `video-publish`, then the operator runs
+  `npm run video:publish -- --public`. The VAT read-page videos publish beside the three VAT
+  ones; the accounts and ITSA videos publish as sandbox previews. **Source**: BACKLOG 17b,
+  17c. **Owner**: Claude Code, then Operator. **Model**: Haiku. Blocked on O32. **Size**: ~1 file.
+
+- [ ] **O32. View the five walkthrough videos.** After B17v.1: watch each recording and say
+  which can go up and what reads wrong. **Source**: BACKLOG 17b, 17c. **Owner**: Operator.
+  **Model**: none. Blocked on B17v.1.
 
 ## Discipline
 
