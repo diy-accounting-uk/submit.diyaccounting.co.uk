@@ -127,15 +127,6 @@ Every item names its model: the lowest tier that fits (Fable > Opus > Sonnet > H
   poll that returns a status. **Source**: BACKLOG 34b. **Owner**: Claude Code. **Model**: Sonnet.
   **Size**: no committed files.
 
-- [ ] **B149. Imported log groups must exist in the synth.** Deploy 34792364909 failed creating
-  `ci-claud3386-app-OpsStack`: B128's worker metric filters named `/aws/lambda/<worker>` groups
-  the Lambda construct never creates (a worker shares its ingest function's group). Add a CDK test
-  over the application synth that every `AWS::Logs::MetricFilter` `LogGroupName` in an app stack
-  matches an `AWS::Logs::LogGroup` created in the same synth. **Source**: REPORT_SESSION_oVpgsO_2026-09-14.md. **Owner**:
-  Claude Code. **Model**: Sonnet. **Size**: ~1 file.
-
-## Human and machine
-
 - [ ] **O28. Send `Gov-Client-Multi-Factor` on every request: mandate MFA in the pool.** Every
   monthly advisory HMRC has raised is this header missing (`../REPORT_HMRC_HEADER_ADVISORIES.md`).
   Step 2b is on main (#198, b0e3d2be): the browser sends its Cognito ID token as
