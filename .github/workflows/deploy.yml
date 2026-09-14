@@ -68,7 +68,7 @@ on:
       selfDestructDelayHours:
         description: 'Hours before self-destruct triggers for non-prod environments'
         required: false
-        default: '2'
+        default: '4'
       skipTestScenarios:
         description: 'Skip test scenarios for behaviour tests'
         type: choice
@@ -145,7 +145,7 @@ env:
   AWS_REGION: 'eu-west-2'
   BASE_IMAGE_TAG_PREFIX: 'submit-base'
   GITHUB_ACTOR: ${{ github.actor }}
-  SELF_DESTRUCT_DELAY_HOURS: ${{ inputs.selfDestructDelayHours || '2' }}
+  SELF_DESTRUCT_DELAY_HOURS: ${{ inputs.selfDestructDelayHours || '4' }}
   BASE_IMAGE_TAG: ${{ github.sha }}
   FORCE_ALL_STACK_DEPLOYMENT: ${{ inputs.forceAllStackDeployment || 'true' }}
   COMMIT_HASH: ${{ github.sha }}
