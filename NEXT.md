@@ -40,14 +40,12 @@ Every item names its model: the lowest tier that fits (Fable > Opus > Sonnet > H
 
 ## In flight
 
-## Machine-only
-
 - [ ] **B156. The alarm-triage skip comment runs `gh` without a repository.** Run 34862119217
   (15:26 UTC on 2026-09-14, issue #212) failed at "Comment that triage was skipped": the `triage`
   job has no checkout, so `gh issue comment` (`.github/workflows/alarm-triage.yml:94`) cannot infer
   the repository and dies with "not a git repository", and the issue gets no comment, which is the
   case the step exists for. Add `--repo "$GITHUB_REPOSITORY"`. **Source**: run 34862119217.
-  **Owner**: Claude Code. **Model**: Haiku. **Size**: ~1 file.
+  In flight on `claude/b33-board` (agent worktree `claude/b33-triage`); no PR yet. **Owner**: Claude Code. **Model**: Haiku. **Size**: ~1 file.
 
 - [ ] **B159. The scheduled probe yields to a deploy in progress on main.** The 15:16 UTC
   `probe-test.yml` schedule on 2026-09-14 ran while `deploy.yml` 34856840995 was moving the apex
@@ -56,14 +54,14 @@ Every item names its model: the lowest tier that fits (Fable > Opus > Sonnet > H
   In `probe-test.yml`'s schedule path, read `gh run list --workflow deploy.yml --branch main
   --status in_progress`; when a deploy is running, wait for it (a sleep loop with a ceiling) or
   end the run green with a "deferred to the deploy's probes" summary. **Source**:
-  REPORT_SESSION_o+o5Wl_2026-09-14.md. **Owner**: Claude Code. **Model**: Sonnet. **Size**: ~1 file.
+  REPORT_SESSION_o+o5Wl_2026-09-14.md. In flight on `claude/b33-board` (agent worktree `claude/b33-probe`); no PR yet. **Owner**: Claude Code. **Model**: Sonnet. **Size**: ~1 file.
 
 - [ ] **B154. `youtube-check.yml` compares channel handles case-sensitively.** Its first
   scheduled run (34848766784, 13:21 UTC on 2026-09-14) failed: the stored refresh token resolves
   to `@diyaccountingsubmit`, `google/youtube.toml` declares `@DIYAccountingSubmit`, and
   `scripts/youtube-upload.js`'s comparison (around line 363) treats those as different channels.
   YouTube handles are case-insensitive; compare them so, with a unit test. **Source**: run
-  34848766784. **Owner**: Claude Code. **Model**: Haiku. **Size**: ~2 files.
+  34848766784. In flight on `claude/b33-board` (agent worktree `claude/b33-youtube`); no PR yet. **Owner**: Claude Code. **Model**: Haiku. **Size**: ~2 files.
 
 - [ ] **B153. The prod drift check fails on API Gateway's own normalisation.** The first
   Monday run on the new slot (34847862007, 13:13 UTC on 2026-09-14) reports
@@ -71,8 +69,10 @@ Every item names its model: the lowest tier that fits (Fable > Opus > Sonnet > H
   f7654464 (`Location`, `Retry-After`, `ETag`) in lowercase, and the default stage's access-log
   `DestinationArn` without the `:*` suffix `LogGroup.getLogGroupArn()` appends
   (`ApiStack.java:169` and `:247`). Write both the way API Gateway stores them, with the CDK test,
-  so the template matches. **Source**: run 34847862007. **Owner**: Claude Code. **Model**: Haiku.
+  so the template matches. **Source**: run 34847862007. In flight on `claude/b33-board` (agent worktree `claude/b33-drift`); no PR yet. **Owner**: Claude Code. **Model**: Haiku.
   **Size**: ~2 files.
+
+## Machine-only
 
 - [ ] **B30x. The CIS console-sign-in-without-MFA alarm fires on SSO sign-ins.** Issue #206:
   `prod-env-cis-console-signin-without-mfa` fired at 23:42 UTC on 2026-09-13 for the operator's
