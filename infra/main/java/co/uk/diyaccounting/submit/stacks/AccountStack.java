@@ -129,19 +129,12 @@ public class AccountStack extends Stack {
 
         String cognitoUserPoolArn();
 
+        // The support form's own GitHub token ({env}/submit/github/support_bot_token, a PAT
+        // scoped to the spreadsheets repository), separate from the alarm-issue token OpsStack
+        // reads, so neither token needs issue rights on both repositories. Blank means no
+        // support Lambda is built.
         @Value.Default
-        default String githubTokenSecretArn() {
-            return "";
-        }
-
-        // The support-ticket path's own machine identity (issue #10-style identity separation:
-        // see REPORT_IDENTITY_AUDIT.md recommendation 2). Same secret OpsStack's alarm-to-issue
-        // Lambda already reads, so once the operator points it at a dedicated GitHub App token,
-        // both public-write paths pick up the new identity together. Falls back to
-        // githubTokenSecretArn() above while it is blank, which is the case today, so this
-        // change does not require a new secret to exist before it deploys.
-        @Value.Default
-        default String opsGithubTokenSecretArn() {
+        default String supportGithubTokenSecretArn() {
             return "";
         }
 
@@ -548,14 +541,9 @@ public class AccountStack extends Stack {
                 this.operatorSnapshotGetLambda.getNode().getId(),
                 props.sharedNames().operatorSnapshotGetIngestLambdaHandler);
 
-        // Support Ticket POST Lambda - only create if a GitHub token secret ARN is provided.
-        // Prefers the dedicated ops identity (see opsGithubTokenSecretArn() above) and falls
-        // back to the generic one while no dedicated secret exists yet.
-        var supportTicketGithubTokenSecretArn = (props.opsGithubTokenSecretArn() != null
-                        && !props.opsGithubTokenSecretArn().isBlank())
-                ? props.opsGithubTokenSecretArn()
-                : props.githubTokenSecretArn();
-        if (supportTicketGithubTokenSecretArn != null && !supportTicketGithubTokenSecretArn.isEmpty()) {
+        // Support Ticket POST Lambda - only create if its GitHub token secret ARN is provided.
+        var supportTicketGithubTokenSecretArn = props.supportGithubTokenSecretArn();
+        if (supportTicketGithubTokenSecretArn != null && !supportTicketGithubTokenSecretArn.isBlank()) {
             var supportTicketPostLambdaEnv = new PopulatedMap<String, String>()
                     .with("ENVIRONMENT_NAME", props.envName())
                     .with("ACTIVITY_BUS_NAME", props.sharedNames().activityBusName)

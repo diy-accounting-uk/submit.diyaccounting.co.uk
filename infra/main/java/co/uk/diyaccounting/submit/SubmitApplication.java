@@ -80,7 +80,6 @@ public class SubmitApplication {
         public String docRootPath;
         public String httpApiUrl;
         public String regionalCertificateArn;
-        public String githubTokenSecretArn;
         public String feedbackEngagementEnabled;
         public String stripeSecretKeyArn;
         public String stripeTestSecretKeyArn;
@@ -97,6 +96,7 @@ public class SubmitApplication {
         public String stripeWebhookSecretArn;
         public String stripeTestWebhookSecretArn;
         public String opsGithubTokenSecretArn;
+        public String supportGithubTokenSecretArn;
         // Comma-separated hand-applied IP block list for EdgeStack's WafManualBlock rule (issue
         // #9 phase 9.3); see wafManualBlockIps in cdk-application/cdk.json.
         public String wafManualBlockIps;
@@ -293,6 +293,10 @@ public class SubmitApplication {
                 "OPS_GITHUB_TOKEN_SECRET_ARN",
                 appProps.opsGithubTokenSecretArn,
                 "(from opsGithubTokenSecretArn in cdk.json)");
+        var supportGithubTokenSecretArn = envOr(
+                "SUPPORT_GITHUB_TOKEN_SECRET_ARN",
+                appProps.supportGithubTokenSecretArn,
+                "(from supportGithubTokenSecretArn in cdk.json)");
         var certificateArn = envOr("CERTIFICATE_ARN", appProps.certificateArn, "(from certificateArn in cdk.json)");
         var regionalCertificateArn = envOr(
                 "REGIONAL_CERTIFICATE_ARN",
@@ -407,8 +411,6 @@ public class SubmitApplication {
         infof(
                 "Synthesizing stack %s for deployment %s to environment %s",
                 sharedNames.accountStackId, deploymentName, envName);
-        var githubTokenSecretArn = envOr(
-                "GITHUB_TOKEN_SECRET_ARN", appProps.githubTokenSecretArn, "(from githubTokenSecretArn in cdk.json)");
         this.accountStack = new AccountStack(
                 app,
                 sharedNames.accountStackId,
@@ -422,8 +424,8 @@ public class SubmitApplication {
                         .sharedNames(sharedNames)
                         .baseImageTag(baseImageTag)
                         .cognitoUserPoolArn(cognitoUserPoolArn)
-                        .githubTokenSecretArn(githubTokenSecretArn != null ? githubTokenSecretArn : "")
-                        .opsGithubTokenSecretArn(opsGithubTokenSecretArn != null ? opsGithubTokenSecretArn : "")
+                        .supportGithubTokenSecretArn(
+                                supportGithubTokenSecretArn != null ? supportGithubTokenSecretArn : "")
                         .feedbackEngagementEnabled("true".equalsIgnoreCase(appProps.feedbackEngagementEnabled))
                         .build());
 
