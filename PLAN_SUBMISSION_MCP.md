@@ -120,6 +120,60 @@ diya-gl package's own server. A chat that needs to correct a line before filing 
 servers; the hosted surface can proxy the four through the same process later if that proves
 awkward. Decide that after the first real use, not before.
 
+## From a book to the nine VAT boxes (M1b)
+
+The Ltd engine (`calculators/ltd.js`, `buildVatReturns`) already computes every return the
+package's `Vatreturns.xlsx` carries. `derive_vat_return` reads those results and adds the
+period matching, the HMRC field names, the rounding and the line attribution; it computes no
+VAT of its own.
+
+**What the engine does.** `Vatreturns.xlsx!Vatinterface` holds one row per VAT period end in
+date order: rows 4 and 5 are the two month ends before the accounting year, rows 6 to 17 the
+twelve month ends in it, rows 18 to 20 the three after it. A row's D/F columns are the sales
+net and output VAT of that month, H/J the purchases net and input VAT, and E/G/I/K the sum of
+that row and the two above it, which is the quarter a return covers. `VATQtr1` to `VATQtr5`
+are the five forms the package ships, filled for the quarters ending 3, 6, 9, 12 and 15
+months after the first accounting month; they read the same interface row the tool reads.
+
+| Box | HMRC field | Interface column | Fed by |
+|---|---|---|---|
+| 1 VAT due on sales | `vatDueSales` | G (three-row sum of F) | Every `sales` journal line whose `accountMainID` is one of the seven sales codes (4000 to 4006), dated in the quarter; VAT is gross × 20 ÷ 120. Plus any line carrying `diya-gl:vatPeriodEnd` whose period end is one of the quarter's three rows |
+| 2 VAT due on acquisitions | `vatDueAcquisitions` | none | Nil: the form never computes it |
+| 3 Total VAT due | `totalVatDue` | | Box 1 + box 2 |
+| 4 VAT reclaimed | `vatReclaimedCurrPeriod` | K (three-row sum of J) | Every `purchases` journal line whose `accountMainID` is one of the 23 purchase codes (5000 to 5900), the same way |
+| 5 Net VAT | `netVatDue` | | Box 3 − box 4 |
+| 6 Sales ex VAT | `totalValueSalesExVAT` | E (three-row sum of D) | The net (gross − VAT) of the box 1 lines; a flat-rate book adds box 1 back (column M), which the Ltd engine never sets |
+| 7 Purchases ex VAT | `totalValuePurchasesExVAT` | I (three-row sum of H) | The net of the box 4 lines |
+| 8 Goods supplied to EU | `totalValueGoodsSuppliedExVAT` | none | Nil |
+| 9 Acquisitions from EU | `totalAcquisitionsExVAT` | none | Nil |
+
+Rules the engine applies, which the tool inherits and states in its answer:
+
+- **One rate on every journal line.** The Ltd calculator takes 20% off every sales and
+  purchases journal line (`VAT_RATE`), and reads neither the line's `taxCode` and `taxRate`
+  nor the book's `[tax.vat]` table. A book whose entity is not `diya-gl:vatRegistered = true`
+  gets a rate of 0 and every box nil; the tool refuses such a book instead of answering zeros.
+- **Journals only.** Bank, payroll and general journal lines feed no box: VAT is accounted
+  for on invoice, from the two day books. A sales or purchases line on an account outside
+  the two code maps is not on any month tab and so not in any box.
+- **A period is a quarter ending on a month end the interface carries.** The tool takes the
+  obligation's `periodEnd`, finds its row, and answers that row's quarter; a `periodStart`
+  that is not the first day of the month two months before is refused. Rows 4 and 5 carry no
+  quarter sum, so the earliest period a book answers ends with its first accounting month.
+  Monthly and annual obligations are a horizon.
+- **CIS deductions change no box.** They move between debtors, creditors and the CIS
+  liability, not the VAT figures.
+- **Rounding is HMRC's.** Boxes 1 to 5 to the penny, boxes 6 to 9 to whole pounds, and box 5
+  recomputed from the rounded boxes 3 and 4 so HMRC's own check holds.
+- **Standard accrual scheme only.** Cash accounting and the flat-rate scheme are horizons;
+  the interface's M column is where a flat-rate percentage would go.
+
+**What the tool adds.** The attribution lists every line behind boxes 1, 4, 6 and 7 with the
+gross, VAT and net it contributed, bucketed by the line's own posting month (or its
+`diya-gl:vatPeriodEnd` for a straddling line), and refuses when those contributions do not
+reconcile to the penny with the interface row, so a book with a line dated outside its
+accounting year cannot answer a return that silently omits it.
+
 ## Sequence
 
 Each row is a `claude/mcp-<n>-<topic>` branch and PR. Rows 1 to 3 need no credentials and no
