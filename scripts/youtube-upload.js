@@ -360,6 +360,33 @@ export async function fetchOwnChannel({ accessToken, quotaProject, fetchImpl = f
 }
 
 /**
+ * Normalize a YouTube channel handle for case-insensitive comparison.
+ * YouTube handles are case-insensitive, so @DIYAccountingSubmit and @diyaccountingsubmit
+ * refer to the same channel. Preserves the leading @ character.
+ *
+ * @param {string|null} handle
+ * @returns {string|null} the handle lowercased, or null if input was null
+ */
+export function normalizeChannelHandle(handle) {
+  if (handle === null) {
+    return null;
+  }
+  return handle.toLowerCase();
+}
+
+/**
+ * Compare two YouTube channel handles case-insensitively.
+ * Both handles are normalized before comparison.
+ *
+ * @param {string|null} actual
+ * @param {string|null} expected
+ * @returns {boolean} true if the handles refer to the same channel
+ */
+export function channelHandlesMatch(actual, expected) {
+  return normalizeChannelHandle(actual) === normalizeChannelHandle(expected);
+}
+
+/**
  * Compare the signed-in channel's handle against the one declared in google/youtube.toml.
  * Pure, so it is unit tested; the network call that produces `channel` is not.
  *
@@ -368,7 +395,7 @@ export async function fetchOwnChannel({ accessToken, quotaProject, fetchImpl = f
  * @throws {Error} when the stored refresh token resolves to a different channel
  */
 export function assertChannelHandleMatches(channel, expectedHandle) {
-  if (channel.handle !== expectedHandle) {
+  if (!channelHandlesMatch(channel.handle, expectedHandle)) {
     throw new Error(
       `The stored refresh token resolves to channel handle "${channel.handle ?? "(none)"}", but google/youtube.toml declares "${expectedHandle}". ` +
         `Delete Secrets Manager secret ${REFRESH_TOKEN_SECRET_NAME} and run --check again to re-consent as the right account.`,

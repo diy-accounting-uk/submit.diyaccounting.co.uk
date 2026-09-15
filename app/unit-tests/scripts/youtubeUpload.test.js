@@ -26,6 +26,8 @@ import {
   obtainAccessToken,
   fetchOwnChannel,
   assertChannelHandleMatches,
+  normalizeChannelHandle,
+  channelHandlesMatch,
   uploadVideo,
   uploadCaption,
   selectUploadedVideos,
@@ -326,9 +328,50 @@ describe("fetchOwnChannel", () => {
   });
 });
 
+describe("normalizeChannelHandle", () => {
+  test("lowercases a handle", () => {
+    expect(normalizeChannelHandle("@DIYAccountingSubmit")).toBe("@diyaccountingsubmit");
+  });
+
+  test("returns null when given null", () => {
+    expect(normalizeChannelHandle(null)).toBeNull();
+  });
+
+  test("preserves the @ character when lowercasing", () => {
+    expect(normalizeChannelHandle("@MiXeD")).toBe("@mixed");
+  });
+});
+
+describe("channelHandlesMatch", () => {
+  test("matches handles case-insensitively", () => {
+    expect(channelHandlesMatch("@DIYAccountingSubmit", "@diyaccountingsubmit")).toBe(true);
+  });
+
+  test("matches identical handles", () => {
+    expect(channelHandlesMatch("@DIYAccountingSubmit", "@DIYAccountingSubmit")).toBe(true);
+  });
+
+  test("rejects different handles", () => {
+    expect(channelHandlesMatch("@DIYAccountingSubmit", "@SomeoneElse")).toBe(false);
+  });
+
+  test("handles null properly when both are null", () => {
+    expect(channelHandlesMatch(null, null)).toBe(true);
+  });
+
+  test("handles null when one side is null", () => {
+    expect(channelHandlesMatch("@DIYAccountingSubmit", null)).toBe(false);
+    expect(channelHandlesMatch(null, "@DIYAccountingSubmit")).toBe(false);
+  });
+});
+
 describe("assertChannelHandleMatches", () => {
   test("passes silently when the handle matches", () => {
     expect(() => assertChannelHandleMatches({ handle: "@DIYAccountingSubmit" }, "@DIYAccountingSubmit")).not.toThrow();
+  });
+
+  test("passes silently when the handles match case-insensitively", () => {
+    expect(() => assertChannelHandleMatches({ handle: "@diyaccountingsubmit" }, "@DIYAccountingSubmit")).not.toThrow();
   });
 
   test("throws naming both handles when they differ", () => {
