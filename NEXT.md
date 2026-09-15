@@ -56,6 +56,17 @@ Every item names its model: the lowest tier that fits (Fable > Opus > Sonnet > H
   Haiku. **Size**: ~0 files.
 
 
+
+- [ ] **B52v. The operator dashboard answers "Failed to load the operator snapshot".** Opened by
+  the operator at 16:39 UTC on 2026-09-15 on `prod-70b0a8e` (the operator list works: the page and
+  its activity show). `GET /api/v1/operator/snapshot` answered 500: `operatorSnapshotGet.js` calls
+  `enforceBundles`, which reads the user's bundles through `dynamoDbBundleRepository`, and that
+  needs the sub-hashing salt, but the handler never calls `initializeSalt()` (`bundleGet.js:87`
+  does). Log: `/aws/lambda/prod-70b0a8e-app-operator-snapshot-get`, request
+  0890740e-eaf3-4fce-8314-96a0b8e93bf8, "Salt not initialized. Call initializeSalt() in your Lambda
+  handler". Add the call at the top of the handler with a unit test that the handler initialises
+  the salt before enforcing; check the other `/api/v1/operator/*` handlers for the same omission.
+  **Source**: operator, 2026-09-15. **Owner**: Claude Code. **Model**: Haiku. **Size**: ~2 files.
 - [ ] **B161. The do-next brief carries a workflow-change checklist.** Both prod incidents of
   2026-09-15 came from `.github/workflows/**` edits that no brief warned about: a called workflow
   inherits its caller's `github.event_name` (B159's `schedule` guard fired inside the scheduled
@@ -126,12 +137,6 @@ Every item names its model: the lowest tier that fits (Fable > Opus > Sonnet > H
 
 ## Human-only
 
-- [ ] **B52z. Open the operator dashboard.** `OPERATORS.txt` (PR #217) is on the live prod set
-  prod-f709723, so signed in as antonyccartwright@gmail.com the "Operator Dashboard" activity is
-  on https://submit.diyaccounting.co.uk/; open it, or open
-  https://submit.diyaccounting.co.uk/operator/dashboard.html, and say what it shows. The pass
-  `harsh-noted-plaid-glyph` (run 34938893333, expires 2026-10-15) also redeems on `bundles.html`
-  now. **Source**: `PLAN_ONE_STOP_DASHBOARD.md` D1. **Owner**: Operator. **Model**: none.
 - [ ] **O32. View the five walkthrough videos.** The recordings are in `videos/publish.json`
   (`view-liabilities` run 34651931632, `view-payments` 34689643435, `view-penalties` 34689889022,
   `itsa-business-details` 34904243853, `itsa-quarterly-update` 34904726583; `videos/PUBLISH.md`
@@ -280,8 +285,9 @@ Every item names its model: the lowest tier that fits (Fable > Opus > Sonnet > H
   SED-2 is theirs: fourteen disallowable categories, seven annual fields and four adjustments the
   shipped template cannot source at all, which arrive omitted rather than zeroed.
   **Source**: BACKLOG 11; `PLAN_ITSA_PHASE_2.md` T9. **Owner**: Claude Code. **Model**:
-  Sonnet. Blocked on the spreadsheets repository's ITSA-T8 (the two self-employed derivations)
-  and on `PLAN_SUBMISSION_MCP.md` M1. **Size**: ~4 files.
+  Sonnet. The spreadsheets side's `app/lib/calculators/se-derivations.js` is on their main, so the
+  T8 half of the blocker is gone; blocked on `PLAN_SUBMISSION_MCP.md` M1 (no `mcp/` package exists
+  yet; BACKLOG row 51). **Size**: ~4 files.
 
 - [ ] **B70.LU15. Licensing: the brand package.** Pin `@diy-accounting-uk/brand`, copy assets
   and tokens at build, import the tokens, delete the local logo, favicon and token copies;
