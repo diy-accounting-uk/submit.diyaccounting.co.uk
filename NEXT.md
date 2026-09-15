@@ -81,6 +81,23 @@ Every item names its model: the lowest tier that fits (Fable > Opus > Sonnet > H
 
 ## Machine-only
 
+- [ ] **B52aa. An operator list in the repository grants the dashboard activity.** Operator,
+  2026-09-15, verbatim: "I want my email antonyccartwright@gmail.com committed to the repository
+  as an operator list (.txt in the root, 1 line per operator) and a logged in user with a login
+  email matching an email on the operator list sees the operator dashboard as an activity in
+  https://submit.diyaccounting.co.uk/ with all the others". Today the `operator-dashboard`
+  activity (`web/public/submit.catalogue.toml:521`, `display = "on-entitlement"`, bundle
+  `operator`) shows only after an `operator` pass is redeemed. Build: `OPERATORS.txt` at the
+  repo root, one email per line, first line `antonyccartwright@gmail.com`; the deploy carries it
+  to the Lambdas (an env var or a file in the image, whichever the existing catalogue loading
+  already does); the bundle service grants the `operator` bundle to a signed-in user whose ID
+  token email matches a line, case-insensitively, so `GET /api/v1/bundle` lists it and the
+  activities page shows "Operator Dashboard" beside Submit VAT, the five VAT views, the three
+  Companies House activities, receipts, the two pass generators and Learn; the
+  `/api/v1/operator/*` and `operator/dashboard.html` entitlement check reads the same match. Unit
+  tests for the match and the grant; one browser test that a listed email sees the activity.
+  **Source**: operator, 2026-09-15. **Owner**: Claude Code. **Model**: Sonnet. **Size**: ~5 files.
+
 - [ ] **B30x. The CIS console-sign-in-without-MFA alarm fires on SSO sign-ins.** Issue #206:
   `prod-env-cis-console-signin-without-mfa` fired at 23:42 UTC on 2026-09-13 for the operator's
   own SSO console sign-in (CloudTrail: `ConsoleLogin`, `userIdentity.type = AssumedRole`,
@@ -207,9 +224,16 @@ Every item names its model: the lowest tier that fits (Fable > Opus > Sonnet > H
   **Source**: BACKLOG 34b. **Owner**: Operator. **Model**: none.
 
 - [ ] **B52z. Issue the operator pass and open the dashboard.** The `operator` pass type is on
-  main (PR #207) and on prod since prod-5ca7bca. The operator's half:
-  the pass is generated (run 34938893333, artifact `passes-operator-34938893333`, expires
-  2026-10-15): redeem its QR, and open
+  main (PR #207) and on prod since prod-5ca7bca. The pass is generated (run 34938893333,
+  `harsh-noted-plaid-glyph`, expires 2026-10-15) and redeeming it on `bundles.html` answered
+  "This pass requires email verification" (07:25 UTC on 2026-09-15): the page checks the code with
+  the public `GET /api/v1/pass?code=` first, and `validatePass`
+  (`app/services/passService.js:227`) rejects every email-restricted pass with `email_required`
+  because the GET has no email, so the authenticated POST that enforces the match is never
+  reached. The fix is on `claude/b34-pass` for the next batch (the check answers valid with
+  `emailRestricted`; the POST is unchanged). B52aa makes the pass unnecessary for a listed
+  operator. Once either is on prod: open
+  https://submit.diyaccounting.co.uk/bundles.html?pass=harsh-noted-plaid-glyph signed in, and open
   https://submit.diyaccounting.co.uk/operator/dashboard.html. **Source**: `PLAN_ONE_STOP_DASHBOARD.md`
   D1. **Owner**: Operator. **Model**: none.
 
