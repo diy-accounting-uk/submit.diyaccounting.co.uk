@@ -121,6 +121,17 @@ and stop. One branch is driven green at a time. Lifted only by the operator in t
 
 
 
+
+- [ ] **B30y. The alarm audit re-count.** BACKLOG 30a, due 2026-09-13: B30j (the hourly
+  bundle-capacity reconcile) and B30k (ci alarms stop opening issues) reached prod on 2026-09-06.
+  Re-run the counts of `_developers/ALARM_AUDIT_2026-09.md` over the seven days after that (alarm
+  state transitions from `cloudwatch describe-alarm-history` on submit-prod and submit-ci, deploy
+  windows from `gh run list --workflow deploy.yml`), compare the families that fired against the
+  90-day baseline in that report, and write the result as a dated section at the top of the same
+  file with one line per family: unchanged, quieter, louder, and the tune or cut it earns. Change
+  no alarm in this row; a tune or cut it finds becomes its own `B30<letter>` row. **Source**:
+  BACKLOG 30a; `_developers/ALARM_AUDIT_2026-09.md`. **Owner**: Claude Code. **Model**: Sonnet.
+  **Size**: ~1 file.
 - [ ] **B161. The do-next brief carries a workflow-change checklist.** Both prod incidents of
   2026-09-15 came from `.github/workflows/**` edits that no brief warned about: a called workflow
   inherits its caller's `github.event_name` (B159's `schedule` guard fired inside the scheduled
@@ -226,6 +237,31 @@ and stop. One branch is driven green at a time. Lifted only by the operator in t
   `PLAN_LICENSING_UPLIFT_SUBMIT.md` H-LU-9. **Owner**: Operator. **Model**: none.
 
 ## Blocked
+
+- [ ] **B52l. The optimiser over the raw export.** `PLAN_ONE_STOP_DASHBOARD.md` D16, BACKLOG 52l:
+  a notebook over the raw export computing the per-block correlations, fitting the block models
+  (linear cost, log-linear funnels, Hill curves for spend), ranking levers by effect per unit cost
+  and proposing the next experiment with its predicted effect and interval; Bayesian optimisation
+  for the continuous knobs and a Thompson-sampling bandit for allocations once experiments exist;
+  one line per objective on the dashboard page. Two chunks: the model design as a section of the
+  plan (Opus), then the notebook and the page line (Sonnet). **Source**: BACKLOG 52l; plan D16.
+  **Owner**: Claude Code. **Model**: Opus for the models, Sonnet for the notebook. Blocked on three
+  months of the raw export, whose first night was 2026-09-09: from 2026-12-09. **Size**: ~3 files.
+
+- [ ] **B52i. The company P&L and balance sheet on the dashboard.** `PLAN_ONE_STOP_DASHBOARD.md`
+  D10, BACKLOG 52i: the company's diya-gl book saved to the DIYA cloud by
+  `../PLAN_FINANCE_AUTOMATION.md` phase 2, derived nightly with the Ltd engine through M1c and M3,
+  rendered above the eight objectives beside the last set filed at Companies House. **Source**:
+  BACKLOG 52i; plan D10. **Owner**: Claude Code. **Model**: Sonnet. Blocked on the finance plan's
+  phases 1 and 2 (the book in the cloud), M1c and M3. **Size**: ~3 files.
+
+- [ ] **B52m. The reinvestment loop on the dashboard.** `PLAN_ONE_STOP_DASHBOARD.md` D17, BACKLOG
+  52m: trailing income, reserve, budget, return per pound and payback on the page; the reinvestment
+  fraction as a lever with the reserve floor the operator names; paid traffic and article boosts as
+  experiment rows with on-off or geographic controls; GA4 conversion import from the Ads account.
+  **Source**: BACKLOG 52m; plan D17. **Owner**: Claude Code, with the operator's fraction and floor.
+  **Model**: Sonnet. Blocked on B52l, on the cost panel carrying revenue (B52e, done when the
+  first renewal posts on 2026-10-02, BACKLOG 43) and on O23. **Size**: ~3 files.
 
 - [ ] **M1b. `derive_vat_return` from a diya-gl book.** The nine VAT boxes from a book's journal
   and its VAT codes, as an MCP tool in `mcp/`, with the mapping written as a table in
