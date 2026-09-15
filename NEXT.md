@@ -40,15 +40,13 @@ Every item names its model: the lowest tier that fits (Fable > Opus > Sonnet > H
 
 ## In flight
 
-## Machine-only
-
 - [ ] **B30x. The CIS console-sign-in-without-MFA alarm fires on SSO sign-ins.** Issue #206:
   `prod-env-cis-console-signin-without-mfa` fired at 23:42 UTC on 2026-09-13 for the operator's
   own SSO console sign-in (CloudTrail: `ConsoleLogin`, `userIdentity.type = AssumedRole`,
   `AWSReservedSSO_AdministratorAccess`, `MFAUsed = No`, which is what every federated sign-in
   reports). CIS 3.2's own filter adds `$.userIdentity.type = "IAMUser"`; add that clause to the
   metric filter in `ObservabilityStack.java` with its test, and the issue closes when it reaches
-  prod. **Source**: issue #206. **Owner**: Claude Code. **Model**: Haiku. **Size**: ~2 files.
+  prod. **Source**: issue #206. In flight on `claude/b35-board` (agent worktree `claude/b35-cis`); no PR yet. **Owner**: Claude Code. **Model**: Haiku. **Size**: ~2 files.
 
 - [ ] **B157. One alarm transition opened two issues.** #210 and #212 carry the same alarm
   (`prod-env-github-probe-failed`), state change and timestamp (15:26:00.881 UTC on 2026-09-14).
@@ -77,6 +75,8 @@ Every item names its model: the lowest tier that fits (Fable > Opus > Sonnet > H
   view has rows (two views are monthly or quarterly grain, so a 30-day window can be empty by
   design). **Source**: `PLAN_ONE_STOP_DASHBOARD.md` D7, D13, D14, D15. Closes #208. **Owner**:
   Claude Code. **Model**: Sonnet. **Size**: ~3 files.
+
+## Machine-only
 
 - [ ] **B34.6b. Companies House accounts filing: the sandbox proof.** Submission 000004 (presenter
   E0000052288, company 06846849, 2026-09-13 19:04 UTC) was ACCEPTED by the XML Gateway test
