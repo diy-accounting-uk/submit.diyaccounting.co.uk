@@ -402,12 +402,10 @@ describe("alarmToGithubIssue", () => {
       global.fetch = vi.fn().mockResolvedValue({
         ok: true,
         json: () =>
-          Promise.resolve({
-            items: [
-              { number: 42, title: "[ALARM] ci-app-health-failed" },
-              { number: 7, title: "[ALARM] some-other-alarm" },
-            ],
-          }),
+          Promise.resolve([
+            { number: 42, title: "[ALARM] ci-app-health-failed" },
+            { number: 7, title: "[ALARM] some-other-alarm" },
+          ]),
       });
 
       const issue = await findOpenIssueByAlarmFamily(
@@ -418,12 +416,14 @@ describe("alarmToGithubIssue", () => {
       expect(issue.number).toBe(42);
       expect(global.fetch).toHaveBeenCalledTimes(1);
       const [url, options] = global.fetch.mock.calls[0];
-      expect(url).toContain("https://api.github.com/search/issues?q=");
+      expect(url).toBe(
+        "https://api.github.com/repos/diy-accounting-uk/submit.diyaccounting.co.uk/issues?state=open&labels=alarm&per_page=100",
+      );
       expect(options.headers.Authorization).toBe("Bearer gh-token");
     });
 
     test("returns null when no open issue matches", async () => {
-      global.fetch = vi.fn().mockResolvedValue({ ok: true, json: () => Promise.resolve({ items: [] }) });
+      global.fetch = vi.fn().mockResolvedValue({ ok: true, json: () => Promise.resolve([]) });
       const issue = await findOpenIssueByAlarmFamily(
         "gh-token",
         "diy-accounting-uk/submit.diyaccounting.co.uk",
@@ -432,11 +432,34 @@ describe("alarmToGithubIssue", () => {
       expect(issue).toBeNull();
     });
 
-    test("throws on a non-ok search response", async () => {
+    test("throws on a non-ok list response", async () => {
       global.fetch = vi.fn().mockResolvedValue({ ok: false, status: 403, text: () => Promise.resolve("rate limited") });
       await expect(
         findOpenIssueByAlarmFamily("gh-token", "diy-accounting-uk/submit.diyaccounting.co.uk", "ci-app-health-failed"),
-      ).rejects.toThrow("GitHub search API error: 403");
+      ).rejects.toThrow("GitHub issues list API error: 403");
+    });
+
+    test("a second invocation for the same alarm and timestamp creates no issue once the first has landed", async () => {
+      // Reproduces #210/#212: two invocations of the same SNS notification, the second running
+      // only after the first's create has completed (what the Lambda's reserved concurrency of
+      // 1 guarantees in production). The list endpoint is consistent, so the second invocation's
+      // list call sees the issue the first invocation just created and finds it by exact title.
+      const created = { number: 300, title: "[ALARM] prod-env-github-probe-failed" };
+      global.fetch = vi.fn().mockResolvedValueOnce({ ok: true, json: () => Promise.resolve([]) });
+      const first = await findOpenIssueByAlarmFamily(
+        "gh-token",
+        "diy-accounting-uk/submit.diyaccounting.co.uk",
+        "prod-env-github-probe-failed",
+      );
+      expect(first).toBeNull();
+
+      global.fetch = vi.fn().mockResolvedValueOnce({ ok: true, json: () => Promise.resolve([created]) });
+      const second = await findOpenIssueByAlarmFamily(
+        "gh-token",
+        "diy-accounting-uk/submit.diyaccounting.co.uk",
+        "prod-env-github-probe-failed",
+      );
+      expect(second).toEqual(created);
     });
   });
 
@@ -540,7 +563,7 @@ describe("alarmToGithubIssue", () => {
       mockSecretsSend.mockResolvedValue({ SecretString: "gh-token-abc" });
       global.fetch = vi
         .fn()
-        .mockResolvedValueOnce({ ok: true, json: () => Promise.resolve({ items: [] }) })
+        .mockResolvedValueOnce({ ok: true, json: () => Promise.resolve([]) })
         .mockResolvedValueOnce({
           ok: true,
           json: () => Promise.resolve({ number: 101, html_url: "https://github.com/diy-accounting-uk/submit.diyaccounting.co.uk/issues/101" }),
@@ -549,13 +572,46 @@ describe("alarmToGithubIssue", () => {
       await handler(ALARM_EVENT);
 
       expect(global.fetch).toHaveBeenCalledTimes(2);
-      const [searchUrl] = global.fetch.mock.calls[0];
-      expect(searchUrl).toContain("search/issues");
+      const [listUrl] = global.fetch.mock.calls[0];
+      expect(listUrl).toBe(
+        "https://api.github.com/repos/diy-accounting-uk/submit.diyaccounting.co.uk/issues?state=open&labels=alarm&per_page=100",
+      );
       const [createUrl, createOptions] = global.fetch.mock.calls[1];
       expect(createUrl).toBe("https://api.github.com/repos/diy-accounting-uk/submit.diyaccounting.co.uk/issues");
       const createBody = JSON.parse(createOptions.body);
       expect(createBody.title).toBe("[ALARM] ci-app-health-failed");
       expect(createBody.body).toContain("OK → ALARM");
+    });
+
+    test("a second invocation of the same alarm state change creates no issue once the first has landed", async () => {
+      // Reproduces #210/#212: the same alarm and the same state-change timestamp, handled by
+      // two invocations back to back. The second invocation's list call sees the issue the
+      // first invocation just created (the list endpoint is consistent, unlike search) and
+      // comments on it instead of creating a duplicate.
+      mockSecretsSend.mockResolvedValue({ SecretString: "gh-token-abc" });
+      const created = {
+        number: 101,
+        html_url: "https://github.com/diy-accounting-uk/submit.diyaccounting.co.uk/issues/101",
+        title: "[ALARM] ci-app-health-failed",
+      };
+      global.fetch = vi
+        .fn()
+        .mockResolvedValueOnce({ ok: true, json: () => Promise.resolve([]) })
+        .mockResolvedValueOnce({ ok: true, json: () => Promise.resolve(created) });
+      await handler(ALARM_EVENT);
+      expect(global.fetch).toHaveBeenCalledTimes(2);
+
+      global.fetch = vi
+        .fn()
+        .mockResolvedValueOnce({ ok: true, json: () => Promise.resolve([created]) })
+        .mockResolvedValueOnce({ ok: true, json: () => Promise.resolve({ id: 1 }) });
+      await handler(ALARM_EVENT);
+
+      expect(global.fetch).toHaveBeenCalledTimes(2);
+      const [secondUrl, secondOptions] = global.fetch.mock.calls[1];
+      expect(secondUrl).toBe("https://api.github.com/repos/diy-accounting-uk/submit.diyaccounting.co.uk/issues/101/comments");
+      expect(secondOptions.method).toBe("POST");
+      expect(secondUrl).not.toBe("https://api.github.com/repos/diy-accounting-uk/submit.diyaccounting.co.uk/issues");
     });
 
     test("comments on the existing open issue instead of creating a duplicate", async () => {
@@ -564,7 +620,7 @@ describe("alarmToGithubIssue", () => {
         .fn()
         .mockResolvedValueOnce({
           ok: true,
-          json: () => Promise.resolve({ items: [{ number: 55, title: "[ALARM] ci-app-health-failed" }] }),
+          json: () => Promise.resolve([{ number: 55, title: "[ALARM] ci-app-health-failed" }]),
         })
         .mockResolvedValueOnce({ ok: true, json: () => Promise.resolve({ id: 1 }) });
 
@@ -580,7 +636,7 @@ describe("alarmToGithubIssue", () => {
       mockSecretsSend.mockResolvedValue({ SecretString: "gh-token-abc" });
       global.fetch = vi
         .fn()
-        .mockResolvedValueOnce({ ok: true, json: () => Promise.resolve({ items: [] }) })
+        .mockResolvedValueOnce({ ok: true, json: () => Promise.resolve([]) })
         .mockResolvedValueOnce({
           ok: true,
           json: () => Promise.resolve({ number: 101, html_url: "https://github.com/x/y/issues/101" }),
@@ -588,8 +644,10 @@ describe("alarmToGithubIssue", () => {
 
       await handler(deploymentAlarmEvent("prod-a0f41c7-app-api-5xx"));
 
-      const [searchUrl] = global.fetch.mock.calls[0];
-      expect(searchUrl).toContain(encodeURIComponent("[ALARM] prod-app-api-5xx"));
+      const [listUrl] = global.fetch.mock.calls[0];
+      expect(listUrl).toBe(
+        "https://api.github.com/repos/diy-accounting-uk/submit.diyaccounting.co.uk/issues?state=open&labels=alarm&per_page=100",
+      );
       const [, createOptions] = global.fetch.mock.calls[1];
       const createBody = JSON.parse(createOptions.body);
       expect(createBody.title).toBe("[ALARM] prod-app-api-5xx");
@@ -602,7 +660,7 @@ describe("alarmToGithubIssue", () => {
         .fn()
         .mockResolvedValueOnce({
           ok: true,
-          json: () => Promise.resolve({ items: [{ number: 200, title: "[ALARM] prod-app-api-5xx" }] }),
+          json: () => Promise.resolve([{ number: 200, title: "[ALARM] prod-app-api-5xx" }]),
         })
         .mockResolvedValueOnce({ ok: true, json: () => Promise.resolve({ id: 1 }) });
 
@@ -628,7 +686,7 @@ describe("alarmToGithubIssue", () => {
       mockSecretsSend.mockResolvedValue({ SecretString: "gh-token-abc" });
       global.fetch = vi
         .fn()
-        .mockResolvedValueOnce({ ok: true, json: () => Promise.resolve({ items: [] }) })
+        .mockResolvedValueOnce({ ok: true, json: () => Promise.resolve([]) })
         .mockResolvedValueOnce({
           ok: true,
           json: () => Promise.resolve({ number: 111, html_url: "https://github.com/x/y/issues/111" }),
@@ -646,7 +704,7 @@ describe("alarmToGithubIssue", () => {
       mockSecretsSend.mockResolvedValue({ SecretString: "gh-token-abc" });
       global.fetch = vi
         .fn()
-        .mockResolvedValueOnce({ ok: true, json: () => Promise.resolve({ items: [] }) })
+        .mockResolvedValueOnce({ ok: true, json: () => Promise.resolve([]) })
         .mockResolvedValueOnce({
           ok: true,
           json: () => Promise.resolve({ number: 112, html_url: "https://github.com/x/y/issues/112" }),
@@ -680,7 +738,7 @@ describe("alarmToGithubIssue", () => {
         .fn()
         .mockResolvedValueOnce({
           ok: true,
-          json: () => Promise.resolve({ items: [{ number: 55, title: "[ALARM] prod-env-hmrc-submission-failure" }] }),
+          json: () => Promise.resolve([{ number: 55, title: "[ALARM] prod-env-hmrc-submission-failure" }]),
         })
         .mockResolvedValueOnce({ ok: true, json: () => Promise.resolve({ id: 1 }) });
 
@@ -714,7 +772,7 @@ describe("alarmToGithubIssue", () => {
       mockSecretsSend.mockResolvedValue({ SecretString: "gh-token-abc" });
       global.fetch = vi
         .fn()
-        .mockResolvedValueOnce({ ok: true, json: () => Promise.resolve({ items: [] }) })
+        .mockResolvedValueOnce({ ok: true, json: () => Promise.resolve([]) })
         .mockResolvedValueOnce({
           ok: true,
           json: () => Promise.resolve({ number: 200, html_url: "https://github.com/x/y/issues/200" }),
@@ -733,7 +791,7 @@ describe("alarmToGithubIssue", () => {
       mockSecretsSend.mockResolvedValue({ SecretString: "gh-token-abc" });
       global.fetch = vi
         .fn()
-        .mockResolvedValueOnce({ ok: true, json: () => Promise.resolve({ items: [] }) })
+        .mockResolvedValueOnce({ ok: true, json: () => Promise.resolve([]) })
         .mockResolvedValueOnce({
           ok: true,
           json: () => Promise.resolve({ number: 113, html_url: "https://github.com/x/y/issues/113" }),

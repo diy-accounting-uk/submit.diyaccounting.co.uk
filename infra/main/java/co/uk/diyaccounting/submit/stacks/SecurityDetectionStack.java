@@ -378,7 +378,7 @@ public class SecurityDetectionStack extends Stack {
                     "ConsoleSigninWithoutMfa",
                     "console-signin-without-mfa",
                     "CIS CloudWatch.2: a console sign-in was made without MFA",
-                    "{ ($.eventName = \"ConsoleLogin\") && ($.additionalEventData.MFAUsed != \"Yes\") }"),
+                    "{ ($.eventName = \"ConsoleLogin\") && ($.additionalEventData.MFAUsed != \"Yes\") && ($.userIdentity.type = \"IAMUser\") }"),
             new CisControl(
                     "RootAccountUsage",
                     "root-account-usage",

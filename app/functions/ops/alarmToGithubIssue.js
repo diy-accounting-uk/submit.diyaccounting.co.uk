@@ -261,14 +261,24 @@ ${evidenceSection}`;
 }
 
 /**
- * Search open issues in the repo for one already raised for this alarm's
+ * List open issues in the repo for one already raised for this alarm's
  * family. Matches on exact title so unrelated issues that happen to mention
  * the family key in their body are not picked up.
+ *
+ * Uses the REST issues list, not the search API: the search index is
+ * eventually consistent and lagged behind a just-created issue, which let
+ * two invocations of the same SNS notification a moment apart both search,
+ * find nothing, and each create an issue (#210 and #212 both raised for the
+ * same prod-env-github-probe-failed ALARM transition at 15:26:00.881 UTC on
+ * 2026-09-14). The list endpoint reads the issues table directly, so a
+ * second invocation that runs after the first's create always sees it. The
+ * function's reserved concurrency of 1 (see OpsStack.java) serialises
+ * invocations so one invocation's create always completes, or fails, before
+ * the next invocation's list runs.
  */
 export async function findOpenIssueByAlarmFamily(githubToken, githubRepo, familyKey) {
   const title = buildIssueTitle(familyKey);
-  const query = `repo:${githubRepo} is:issue is:open in:title "${title}"`;
-  const response = await fetch(`https://api.github.com/search/issues?q=${encodeURIComponent(query)}`, {
+  const response = await fetch(`https://api.github.com/repos/${githubRepo}/issues?state=open&labels=alarm&per_page=100`, {
     headers: {
       "Authorization": `Bearer ${githubToken}`,
       "Accept": "application/vnd.github+json",
@@ -278,11 +288,11 @@ export async function findOpenIssueByAlarmFamily(githubToken, githubRepo, family
 
   if (!response.ok) {
     const errorText = await response.text();
-    throw new Error(`GitHub search API error: ${response.status} ${errorText}`);
+    throw new Error(`GitHub issues list API error: ${response.status} ${errorText}`);
   }
 
-  const result = await response.json();
-  return (result.items || []).find((issue) => issue.title === title) || null;
+  const issues = await response.json();
+  return (issues || []).find((issue) => issue.title === title) || null;
 }
 
 export async function createGitHubIssue(githubToken, githubRepo, { title, body, labels }) {

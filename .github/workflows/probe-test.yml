@@ -228,12 +228,13 @@ jobs:
       # deploy.yml run moving the prod apex can leave the origins briefly disagreeing (e.g. the
       # token exchange 403ing for the seconds new and old origins disagree), which the scheduled
       # probe then reports as a failure even though nothing is actually broken (2026-09-14,
-      # issues #210, #212). workflow_dispatch and workflow_call callers are unaffected: this step
-      # only runs for the schedule trigger, and every later job already needs this one.
+      # issues #210, #212). workflow_dispatch and workflow_call callers are unaffected: the guard
+      # on github.workflow keeps this step out of the deploy's own probes (when probe-test is
+      # called from deploy.yml, it inherits the deploy's schedule event).
       # The repository is public, so listing runs needs no actions permission on the token;
       # granting one here would exceed what deploy.yml's 29 caller jobs allow and fail at startup.
       - name: Wait for a deploy in progress on main before running the scheduled probes
-        if: ${{ github.event_name == 'schedule' }}
+        if: ${{ github.event_name == 'schedule' && github.workflow == 'probe-test' }}
         env:
           GH_TOKEN: ${{ github.token }}
         shell: bash
@@ -242,8 +243,8 @@ jobs:
           POLL_SECONDS=60
           WAITED=0
           while :; do
-            IN_PROGRESS=$(gh run list --workflow deploy.yml --branch main --status in_progress --json databaseId --jq length)
-            QUEUED=$(gh run list --workflow deploy.yml --branch main --status queued --json databaseId --jq length)
+            IN_PROGRESS=$(gh run list --repo "$GITHUB_REPOSITORY" --workflow deploy.yml --branch main --status in_progress --json databaseId --jq length)
+            QUEUED=$(gh run list --repo "$GITHUB_REPOSITORY" --workflow deploy.yml --branch main --status queued --json databaseId --jq length)
             if [ "$IN_PROGRESS" -eq 0 ] && [ "$QUEUED" -eq 0 ]; then
               echo "No deploy.yml run in progress or queued on main, continuing with the scheduled probes."
               break
