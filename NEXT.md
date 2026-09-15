@@ -41,12 +41,6 @@ Every item names its model: the lowest tier that fits (Fable > Opus > Sonnet > H
 **COOL-DOWN is on since 2026-09-15T17:34:47Z.** No new board rows except a degradation. Agents commit
 and stop. One branch is driven green at a time. Lifted only by the operator in their own words.
 
-- [ ] **B17v.2. Publish the walkthrough videos.** The five recordings are on the channel, unlisted,
-  since 2026-09-15 (PR #225 records the ids in `videos/publish.json`; its deploy is running). After
-  O32 names which go public, the operator runs `npm run video:publish -- --public` (it flips every
-  uploaded entry; an entry that must stay unlisted is set `publish: false` first). **Source**:
-  BACKLOG 17b, 17c. **Owner**: Claude Code, then Operator. **Model**: Haiku. **Size**: ~1 file.
-
 ## Machine-only
 
 - [ ] **B166. `verify-commit-signatures.yml` fails on an unsigned commit.** Commit signing is on
@@ -74,8 +68,8 @@ and stop. One branch is driven green at a time. Lifted only by the operator in t
   `deploy-environment.yml`'s create-secrets job (same put-secret-with-rotation-tag shape), a
   `supportGithubTokenSecretArn` prop through `SubmitApplication.java` to `AccountStack`, the support
   Lambda's `GITHUB_TOKEN_SECRET_ARN` pointing at it with `secretsmanager:GetSecretValue` on that ARN
-  only, and the CDK test. Until O45 fills the secret, the create-secrets step must tolerate an
-  empty value the way it does for other optional secrets. **Source**: O45; operator, 2026-09-15.
+  only, and the CDK test. The operator created `SUPPORT_BOT_TOKEN` as a repository secret on 2026-09-15 (a spreadsheets-only
+  PAT) and regenerated `ISSUE_BOT_TOKEN` for a year; `deploy-environment.yml` ran for ci and prod. **Source**: O45; operator, 2026-09-15.
   **Owner**: Claude Code. **Model**: Sonnet. **Size**: ~4 files.
 
 - [ ] **B17v.3. A walkthrough-videos page off the About page.** Operator, 2026-09-15: a button on
@@ -93,7 +87,7 @@ and stop. One branch is driven green at a time. Lifted only by the operator in t
   **Model**: Sonnet. **Size**: ~4 files.
 
 - [ ] **M1a. The submission MCP package skeleton.** `PLAN_SUBMISSION_MCP.md` M1, first chunk:
-  `mcp/` with its own `package.json` (name `@diy-accounting-uk/submit-mcp`, the MCP SDK, a
+  `mcp/` with its own `package.json` (name `@diy-accounting-uk/diya-submit`, the MCP SDK, a
   dependency on the published `@diy-accounting-uk/diya-gl` 1.0.0), the stdio transport, and the
   tools `open_book` and `save_book` over the filesystem; unit tests that open the BrickWork Pro Ltd
   and Precision Code Ltd example books (`ls fixtures | grep -i book` and the diya-gl package's
@@ -183,13 +177,6 @@ and stop. One branch is driven green at a time. Lifted only by the operator in t
 
 ## Human-only
 
-- [ ] **O32. View the five walkthrough videos.** Unlisted on the channel since 2026-09-15:
-  view-liabilities https://youtu.be/xUyGjigMqRU, view-payments https://youtu.be/R9AEUYyeu88,
-  view-penalties https://youtu.be/HrEtYrsck7c, itsa-business-details https://youtu.be/4cc-VxzjmnQ,
-  itsa-quarterly-update https://youtu.be/sDnKOsbB6RA. Watch each and say which can go public and
-  what reads wrong; the three VAT read pages each answered "No liabilities/payments/penalties found"
-  from HMRC's sandbox, so the walkthrough shows the search, not a result. **Source**: BACKLOG 17b,
-  17c. **Owner**: Operator. **Model**: none.
 - [ ] **O17. Register the Companies House sandbox test user and set four ci values.**
   Companies House has no create-test-user API, so the operator registers a throwaway account
   on identity-sandbox.company-information.service.gov.uk with an authenticator second factor
@@ -334,16 +321,6 @@ and stop. One branch is driven green at a time. Lifted only by the operator in t
   B11.T22. **Size**: ~3 files.
 
 
-
-- [ ] **O45. A token for the support form, scoped to the spreadsheets repository only.** After B165
-  gives the support Lambda its own secret: create a fine-grained PAT at
-  https://github.com/settings/personal-access-tokens/new (resource owner `diy-accounting-uk`,
-  repository `spreadsheets.diyaccounting.co.uk` only, permissions Issues read/write and Metadata
-  read, expiry up to a year) and put it on the `ci` and `prod` environments as `SUPPORT_BOT_TOKEN`
-  (https://github.com/diy-accounting-uk/submit.diyaccounting.co.uk/settings/environments); the next
-  `deploy-environment.yml` run carries it to Secrets Manager. The alarm-issue token
-  (`ISSUE_BOT_TOKEN`, submit only) is unchanged. O38's `diya-ops` app replaces the PAT later.
-  **Source**: B135; operator, 2026-09-15. **Owner**: Operator. **Model**: none. Blocked on B165.
 
 ## Discipline
 
