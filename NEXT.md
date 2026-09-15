@@ -17,8 +17,8 @@ Haiku; the lowest tier that fits). Anything touching code goes through a `claude
 PR; the operator merges.
 
 **Prod runs deployment prod-70b0a8e** (PR #222, run 34984108471), promoted under the `deploy-ops`
-gate; `prod-075487d` stands unpromoted beside it (B160). **ci**: `ci-claud5ca3` (b36,
-last-known-good, self-destructs 15:56 UTC on 2026-09-15) and `ci-claud727f` (b38, ~18:20 UTC) stand.
+gate; `prod-075487d` stands unpromoted beside it (B160). **ci**: `ci-claud727f` (b38,
+self-destructs ~18:20 UTC on 2026-09-15) is the only set; `ci-claud5ca3` self-destructed at 15:56.
 
 The board runs in five sections, in this order: **in flight** (a branch, a pull request or a run
 in motion, each named in the row), **machine-only**, **human and machine**, **human-only**,
@@ -49,6 +49,45 @@ Every item names its model: the lowest tier that fits (Fable > Opus > Sonnet > H
   **Source**: `PLAN_ONE_STOP_DASHBOARD.md` D7, D13, D14, D15. **Owner**: Claude Code. **Model**:
   Haiku. **Size**: ~0 files.
 
+
+- [ ] **B161. The do-next brief carries a workflow-change checklist.** Both prod incidents of
+  2026-09-15 came from `.github/workflows/**` edits that no brief warned about: a called workflow
+  inherits its caller's `github.event_name` (B159's `schedule` guard fired inside the scheduled
+  deploy's own probes, run 34952375352, apex rolled back, incident #219, `prod-075487d` left
+  standing) and may request no permission its callers do not grant (the first push's
+  startup_failure 34940554454); `gh` in a checkout-less job needs `--repo` (B156, then B159 again).
+  Add to `.claude/skills/do-next/SKILL.md`'s "Briefing a sub-agent" a bullet for any brief that
+  touches a workflow: those three facts, plus "grep the sibling workflows for the same defect
+  before committing". **Source**: REPORT_SESSION_lF0yVT_2026-09-15.md, suggestion 1. **Owner**:
+  Claude Code. **Model**: Haiku. **Size**: ~1 file.
+
+- [ ] **B162. Env-stack job briefs name a Lambda-bearing sibling.** B52y's first
+  `deploy-security-lake` job copied `deploy-security-detection` (a reusable-workflow call), so CDK
+  deployed the dependency chain with an image tag nothing pushes and the stack's own container
+  Lambda had no image (run 34950583084, 214 job-minutes lost). Add to the same brief section: a
+  brief for a new `deploy-environment.yml` job names the sibling job whose stack also carries a
+  Lambda (`deploy-scan-detection`'s build-push-deploy shape) and says to grep the stack for
+  `baseImageTag` first. **Source**: REPORT_SESSION_lF0yVT_2026-09-15.md, suggestion 2.
+  **Owner**: Claude Code. **Model**: Haiku. **Size**: ~1 file.
+
+- [ ] **B164. Worktree briefs give absolute paths for every file tool.** Two agents on 2026-09-15
+  wrote their change into the primary checkout as well as their worktree (`alarm-triage.yml`,
+  `watch-ci.sh`, identical to the committed content), because the file tools took
+  repository-relative paths that resolved against the primary checkout; `/auto-merge`'s inventory
+  caught them. Add to the brief section: every Read, Edit and Write path is absolute under the
+  worktree, not only the Bash `cd`. **Source**: REPORT_SESSION_lF0yVT_2026-09-15.md, suggestion 5.
+  **Owner**: Claude Code. **Model**: Haiku. **Size**: ~1 file.
+
+- [ ] **B163. A browser test for the restricted-pass redeem flow.** B52ab (PR #217) fixed
+  `bundles.html`'s public pre-check rejecting every email-restricted pass, found by the operator on
+  prod with a screenshot; the unit tests cover `validatePass` and `passGet`, and no browser test
+  drives `handlePassEntry` with a restricted pass. Add one under `web/browser-tests/` in the
+  `serveRealSite` pattern (`operatorDashboardActivity.browser.test.js`): stub
+  `GET /api/v1/pass?code=` answering `valid: true, emailRestricted: true`, open
+  `bundles.html?pass=<code>` signed in, and assert the "Pass valid for the invited email" status and
+  the enabled Request button; and the logged-out wording. **Source**:
+  REPORT_SESSION_lF0yVT_2026-09-15.md, suggestion 4. **Owner**: Claude Code. **Model**: Sonnet.
+  **Size**: ~1 file.
 ## Human and machine
 
 - [ ] **B137. `uniqueReference` identifies the user, not the authentication event.** In the
