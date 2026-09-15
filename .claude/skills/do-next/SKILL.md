@@ -141,10 +141,25 @@ A fresh agent carries none of your context, so the brief stands alone. Every bri
   open a PR, never edit `NEXT.md`.
 - **Every Bash call starts with `cd <worktree>` or uses `git -C <worktree>`**, because a shell that
   starts in the primary checkout edits `main` and leaves work uncommitted there.
+- **Every Read, Edit and Write path is absolute under the worktree**, not only the Bash `cd`. The
+  file tools resolve a repository-relative path against the primary checkout, so an agent that
+  only `cd`s writes its change into `main`'s tree as well as its own; the batch then carries the
+  change twice and the inventory before a merge has to catch it.
 - **A wait is a `sleep` loop inside one Bash call with a timeout**, never a Monitor or a backgrounded
   wait, because an agent that hands its wait to a Monitor ends its turn and never resumes.
 - **What it owns and what it must not touch**, with the reason. Where another agent in the same
   wave is nearby, name it.
+- **For a brief that touches a workflow, three facts about called workflows and one instruction.**
+  A called workflow inherits its caller's `github.event_name`, so a `schedule` guard inside it fires
+  during the scheduled deploy's own probes and rolls the apex back. A called workflow may request no
+  permission its callers do not grant, or every caller fails at startup. `gh` in a job with no
+  checkout needs `--repo` on every call. Then: grep the sibling workflows for the same defect before
+  committing, because each of these has been fixed in one workflow and found again in the next.
+- **For a brief adding a job to `deploy-environment.yml`, name the sibling job whose stack also
+  carries a Lambda** (`deploy-scan-detection`'s build-push-deploy shape), and say to grep the stack
+  for `baseImageTag` first. A job copied from a stack with no Lambda deploys the chain with an image
+  tag nothing pushes, the container Lambda has no image, and the run fails after hundreds of
+  job-minutes.
 - **The evidence, not just the task.** Paste the run ids, the log lines, the timestamps. An agent
   given a diagnosis it can verify beats one given a symptom to rediscover.
 - **Commit before verifying, not after.** This is the instruction that matters most and the one
