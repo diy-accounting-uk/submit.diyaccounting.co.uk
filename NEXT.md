@@ -17,7 +17,7 @@ Haiku; the lowest tier that fits). Anything touching code goes through a `claude
 PR; the operator merges.
 
 **Prod runs deployment prod-70b0a8e** (PR #222, run 34984108471), promoted under the `deploy-ops`
-gate; `prod-075487d` is being destroyed (B160, run 34995132621). **ci**: `ci-claud727f` (b38,
+gate; it is the only prod set. **ci**: `ci-claud727f` (b38,
 self-destructs ~18:20 UTC on 2026-09-15) is the only set; `ci-claud5ca3` self-destructed at 15:56.
 
 The board runs in five sections, in this order: **in flight** (a branch, a pull request or a run
@@ -37,12 +37,6 @@ Every item names its model: the lowest tier that fits (Fable > Opus > Sonnet > H
 `none` for a human step.
 
 ## In flight
-
-- [ ] **B160. Destroy the unpromoted prod set.** `prod-075487d` (nine stacks) was built by the
-  scheduled deploy 34952375352 whose probes failed inside B159's wait step; `destroy-prod.yml` run
-  34995132621 (dispatched 16:3x UTC on 2026-09-15) is removing it; the row closes when the run
-  succeeds and the set is gone. **Source**: run 34952375352. **Owner**: Claude Code. **Model**:
-  none. **Size**: ~0 files.
 
 ## Machine-only
 
