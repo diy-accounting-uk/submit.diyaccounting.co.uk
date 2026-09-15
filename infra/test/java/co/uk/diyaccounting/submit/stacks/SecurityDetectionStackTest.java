@@ -319,4 +319,23 @@ class SecurityDetectionStackTest {
                     entry.getKey() + " pattern must still carry the deploy-role exclusion, was: " + pattern);
         }
     }
+
+    @Test
+    void consoleSigninWithoutMfaFilterScopedToIamUsersOnly() {
+        Template template = Template.fromStack(synthSecurityDetectionStack("true"));
+        var metricFilters = template.findResources("AWS::Logs::MetricFilter");
+
+        // ConsoleLogin without MFA should only match IAM users, not federated/SSO sign-ins which
+        // always report MFAUsed = No.
+        boolean consoleSigninFilterScoped = metricFilters.values().stream().anyMatch(resource -> {
+            @SuppressWarnings("unchecked")
+            var properties = (Map<String, Object>) resource.get("Properties");
+            var filterPattern = (String) properties.get("FilterPattern");
+            return filterPattern.equals(
+                    "{ ($.eventName = \"ConsoleLogin\") && ($.additionalEventData.MFAUsed != \"Yes\") && ($.userIdentity.type = \"IAMUser\") }");
+        });
+        assertTrue(
+                consoleSigninFilterScoped,
+                "expected ConsoleSigninWithoutMfa filter pattern to include IAMUser type guard");
+    }
 }
