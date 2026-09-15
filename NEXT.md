@@ -52,8 +52,8 @@ and stop. One branch is driven green at a time. Lifted only by the operator in t
 - [ ] **B166. `verify-commit-signatures.yml` fails on an unsigned commit.** Commit signing is on
   for this machine since 2026-09-15 (SSH key `id_antony_polycode_mbp_2025` registered as a signing
   key; `commit.gpgsign true`, `gpg.format ssh`; f5fe7039 on PR #225 is the first signed commit).
-  Once that PR's `verify-commit-signatures` run reports it verified, flip the workflow's last step
-  from reporting to failing on any commit whose `verification.verified` is false, and make the check
+  GitHub reports f5fe7039 `verified: true, reason: valid` (run 35001788262). Flip the workflow's
+  last step from reporting to failing on any commit whose `verification.verified` is false, and make the check
   required on `main` (a ruleset edit, the operator's or `gh api` with admin scope). **Source**:
   `REPORT_GIT_CONFIG.md`; O37. **Owner**: Claude Code, then Operator for the ruleset. **Model**:
   Haiku. **Size**: ~1 file.
