@@ -1,0 +1,84 @@
+# SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0
+# Copyright (C) 2006-2026 DIY Accounting Limited
+
+# Google Cloud identity, as code.
+#
+# scripts/gcp-identity-sync.js reads this file, lists the live workload identity pool, its
+# providers and the service account's IAM policy, diffs them against what is written here, and
+# creates or updates the difference. scripts/gcp-key-rotate.js reads [service_account.key_rotation]
+# and rotates the service account's keys on a schedule until every caller is federated.
+#
+# Federation replaces the long-lived service-account key in both directions: GitHub Actions
+# presents its OIDC token to the "github" provider, and the analytics Lambdas present their
+# execution role's AWS credentials to the "aws-ci" / "aws-prod" providers. Each provider's
+# principal set is granted roles/iam.workloadIdentityUser on the service account, so a
+# federated caller impersonates it and holds exactly the roles google/project.toml grants.
+
+[project]
+id = "diyaccounting-ga4"
+# The project number is the audience prefix every federated caller presents. It is the same
+# number that leads the sign-in OAuth client id in google/oauth.toml; the script reads the live
+# number from Resource Manager and fails if this record does not match it.
+number = "670010122633"
+
+[service_account]
+email = "ga4-report-pull@diyaccounting-ga4.iam.gserviceaccount.com"
+
+  # scripts/gcp-key-rotate.js: create a fresh key on each run, write it to the environment's
+  # secret, and delete keys older than max_age_days. Each environment's rotation job writes the
+  # secret its own AWS account holds, so two keys are live at any time (one per environment).
+  [service_account.key_rotation]
+  max_age_days = 90
+  secrets = ["ci/submit/ga4/service_account", "prod/submit/ga4/service_account"]
+
+[workload_identity_pool]
+id = "submit-federation"
+display_name = "GitHub Actions and the submit Lambdas"
+
+  # GitHub Actions on this repository. The attribute condition pins the repository, so a fork
+  # or a sibling repository presenting a token from the same issuer is refused.
+  [[workload_identity_pool.provider]]
+  id = "github"
+  display_name = "GitHub Actions, submit.diyaccounting.co.uk"
+  type = "oidc"
+  issuer_uri = "https://token.actions.githubusercontent.com"
+  attribute_condition = 'assertion.repository == "diy-accounting-uk/submit.diyaccounting.co.uk"'
+  principal_set = "attribute.repository/diy-accounting-uk/submit.diyaccounting.co.uk"
+
+    [workload_identity_pool.provider.attribute_mapping]
+    "google.subject" = "assertion.sub"
+    "attribute.repository" = "assertion.repository"
+    "attribute.repository_owner" = "assertion.repository_owner"
+
+  # The analytics Lambdas in the submit-ci account. Their execution roles are named by CDK
+  # from the function construct ids (IngestionStack.java: Ga4ReportPullFn, Ga4EventExportPullFn,
+  # Ga4DailyPullFn), so the condition matches the role name on those ids rather than pinning a
+  # generated suffix.
+  [[workload_identity_pool.provider]]
+  id = "aws-ci"
+  display_name = "submit-ci analytics Lambdas"
+  type = "aws"
+  account_id = "367191799875"
+  github_environment = "ci"
+  attribute_condition = 'attribute.aws_role.contains("Ga4ReportPullFn") || attribute.aws_role.contains("Ga4EventExportPullFn") || attribute.aws_role.contains("Ga4DailyPullFn")'
+  principal_set = "attribute.account/367191799875"
+
+    [workload_identity_pool.provider.attribute_mapping]
+    "google.subject" = "assertion.arn"
+    "attribute.account" = "assertion.account"
+    "attribute.aws_role" = "assertion.arn.extract('assumed-role/{role}/')"
+
+  # The same three Lambdas in the submit-prod account.
+  [[workload_identity_pool.provider]]
+  id = "aws-prod"
+  display_name = "submit-prod analytics Lambdas"
+  type = "aws"
+  account_id = "972912397388"
+  github_environment = "prod"
+  attribute_condition = 'attribute.aws_role.contains("Ga4ReportPullFn") || attribute.aws_role.contains("Ga4EventExportPullFn") || attribute.aws_role.contains("Ga4DailyPullFn")'
+  principal_set = "attribute.account/972912397388"
+
+    [workload_identity_pool.provider.attribute_mapping]
+    "google.subject" = "assertion.arn"
+    "attribute.account" = "assertion.account"
+    "attribute.aws_role" = "assertion.arn.extract('assumed-role/{role}/')"

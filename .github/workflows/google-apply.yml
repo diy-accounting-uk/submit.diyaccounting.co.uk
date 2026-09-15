@@ -91,9 +91,10 @@ jobs:
         env:
           GA4_SERVICE_ACCOUNT_ARN: "arn:aws:secretsmanager:${{ env.AWS_REGION }}:${{ vars.SUBMIT_ACCOUNT_ID }}:secret:prod/submit/ga4/service_account"
 
-      # Steps run in dependency order: APIs, then IAM roles, then billing, then GA4, then the
-      # GA4-in-BigQuery dataset, then the OAuth clients. The YouTube credential check runs on
-      # its own schedule (.github/workflows/youtube-check.yml), not here.
+      # Steps run in dependency order: APIs, then identity (the workload identity pool and its
+      # bindings), then IAM roles, then billing, then GA4, then the GA4-in-BigQuery dataset,
+      # then the OAuth clients. The YouTube credential check runs on its own schedule
+      # (.github/workflows/youtube-check.yml), not here.
 
       - name: Read-only inventory
         env:
@@ -108,6 +109,16 @@ jobs:
             node scripts/gcp-enable-apis.js 2>&1 | tee gcp-enable-apis.log
           else
             node scripts/gcp-enable-apis.js --apply 2>&1 | tee gcp-enable-apis.log
+          fi
+
+      - name: Run gcp-identity-sync
+        env:
+          GA4_SERVICE_ACCOUNT_JSON: ${{ steps.resolve.outputs.credentials-json }}
+        run: |
+          if [ "${{ github.event_name }}" = "pull_request" ]; then
+            node scripts/gcp-identity-sync.js 2>&1 | tee gcp-identity-sync.log
+          else
+            node scripts/gcp-identity-sync.js --apply 2>&1 | tee gcp-identity-sync.log
           fi
 
       - name: Run google-roles-apply
@@ -163,7 +174,7 @@ jobs:
         run: |
           echo "# Google apply (${{ github.event_name == 'pull_request' && 'plan' || 'apply' }})" >> "$GITHUB_STEP_SUMMARY"
           echo "" >> "$GITHUB_STEP_SUMMARY"
-          for log in google-inventory.log gcp-enable-apis.log google-roles-apply.log gcp-billing-assert.log ga4-sync.log ga4-bigquery-sync.log google-oauth-assert.log; do
+          for log in google-inventory.log gcp-enable-apis.log gcp-identity-sync.log google-roles-apply.log gcp-billing-assert.log ga4-sync.log ga4-bigquery-sync.log google-oauth-assert.log; do
             if [ -f "$log" ]; then
               echo "## $log" >> "$GITHUB_STEP_SUMMARY"
               echo '```' >> "$GITHUB_STEP_SUMMARY"
