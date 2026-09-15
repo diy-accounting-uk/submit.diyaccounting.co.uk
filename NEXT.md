@@ -79,6 +79,18 @@ Every item names its model: the lowest tier that fits (Fable > Opus > Sonnet > H
   through the state dir, not every cycle. **Source**: B158 in prod, observed 2026-09-14.
   Committed on `claude/b34-watch` (90c324e6), for the next batch's PR. **Owner**: Claude Code. **Model**: Haiku. **Size**: ~1 file.
 
+- [ ] **B52ab. The public pass check rejects every email-restricted pass.** `bundles.html`
+  checks a code with the unauthenticated `GET /api/v1/pass?code=` before redeeming, and
+  `validatePass` (`app/services/passService.js:227`) answers `email_required` for any pass with
+  `restrictedToEmailHash` because the GET carries no email, so the page never reaches the
+  authenticated `POST /api/v1/pass` that enforces the match. Every restricted pass type
+  (invited-guest, resident-guest, resident-pro-comp, operator) is unredeemable through the page;
+  seen 07:25 UTC on 2026-09-15 with the operator pass `harsh-noted-plaid-glyph` (three GETs in
+  `prod-bd664fe-app-pass-get`, no POST). Fix: the check answers valid with `emailRestricted: true`
+  when it has no email, `wrong_email` when one mismatches; the POST is unchanged; the page words
+  the invited-email case. Committed on `claude/b34-pass`, for the next batch's PR. **Source**:
+  B52z, 2026-09-15. **Owner**: Claude Code. **Model**: Sonnet. **Size**: ~3 files.
+
 ## Machine-only
 
 - [ ] **B52aa. An operator list in the repository grants the dashboard activity.** Operator,
@@ -223,20 +235,6 @@ Every item names its model: the lowest tier that fits (Fable > Opus > Sonnet > H
   Ask whether 000004 was accepted and whether status lookups are enabled for this presenter.
   **Source**: BACKLOG 34b. **Owner**: Operator. **Model**: none.
 
-- [ ] **B52z. Issue the operator pass and open the dashboard.** The `operator` pass type is on
-  main (PR #207) and on prod since prod-5ca7bca. The pass is generated (run 34938893333,
-  `harsh-noted-plaid-glyph`, expires 2026-10-15) and redeeming it on `bundles.html` answered
-  "This pass requires email verification" (07:25 UTC on 2026-09-15): the page checks the code with
-  the public `GET /api/v1/pass?code=` first, and `validatePass`
-  (`app/services/passService.js:227`) rejects every email-restricted pass with `email_required`
-  because the GET has no email, so the authenticated POST that enforces the match is never
-  reached. The fix is on `claude/b34-pass` for the next batch (the check answers valid with
-  `emailRestricted`; the POST is unchanged). B52aa makes the pass unnecessary for a listed
-  operator. Once either is on prod: open
-  https://submit.diyaccounting.co.uk/bundles.html?pass=harsh-noted-plaid-glyph signed in, and open
-  https://submit.diyaccounting.co.uk/operator/dashboard.html. **Source**: `PLAN_ONE_STOP_DASHBOARD.md`
-  D1. **Owner**: Operator. **Model**: none.
-
 - [ ] **O23. Open a Google Ads account for the paid-traffic experiments.** Both earlier Ads
   accounts were cancelled (`google-analytics.toml`); the reinvestment loop (plan row D17) needs
   one with conversion import from GA4 property 523400333's key events, and a reserve floor
@@ -288,6 +286,13 @@ Every item names its model: the lowest tier that fits (Fable > Opus > Sonnet > H
   none.
 
 ## Blocked
+
+- [ ] **B52z. Redeem the operator pass and open the dashboard.** The pass is generated (run
+  34938893333, `harsh-noted-plaid-glyph`, expires 2026-10-15); redeeming it fails until B52ab is
+  on prod (or B52aa lists the email). Then open
+  https://submit.diyaccounting.co.uk/bundles.html?pass=harsh-noted-plaid-glyph signed in, and open
+  https://submit.diyaccounting.co.uk/operator/dashboard.html. **Source**: `PLAN_ONE_STOP_DASHBOARD.md`
+  D1. **Owner**: Operator. **Model**: none. Blocked on B52ab reaching prod.
 
 - [ ] **B34.7. Run and fix the filing suites' sandbox sign-in.** Batch 9 (6957651c) carries
   the suites' sandbox sign-in with the authenticator step, off by default: `deploy.yml` and
