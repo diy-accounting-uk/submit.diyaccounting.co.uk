@@ -26,14 +26,16 @@ truthfully on its own. Human-only steps are briefed at the workspace root in
 - **Cool-down lifted 2026-09-15 20:10 UTC** by the operator's `/loop` of do-next waves. Prod runs prod-70b0a8e
   (PR #222's deploy), the only prod set; no ci set stands (`ci-claud727f`'s `ApiStack` is
   DELETE_FAILED until the 02:34 UTC `destroy-ci.yml` sweep on 2026-09-16).
-- **Six batches merged on 2026-09-15** (PRs #216, #217, #218, #220, #221, #222): the four failed
-  runs of 2026-09-14, the operator list (`OPERATORS.txt`) and the pass-check fix, the alarm
-  cluster (CIS filter, one issue per alarm, the SecurityLakeStack deploy), the promotion gate on
-  the OpsStack, the watch script's three defects, and the status poll's presenter id back to
-  plaintext. PR #225 (b39, the five recordings unlisted on the channel) merged at 19:25 UTC.
+- **Eight batches merged on 2026-09-15** (PRs #216, #217, #218, #220, #221, #222, #225, #226):
+  the four failed runs of 2026-09-14, the operator list (`OPERATORS.txt`) and the pass-check fix,
+  the alarm cluster (CIS filter, one issue per alarm, the SecurityLakeStack deploy), the promotion
+  gate on the OpsStack, the watch script's three defects, the status poll's presenter id back to
+  plaintext, the five recordings unlisted on the channel, and wave b40 (twelve rows: the operator
+  snapshot's salt, the YouTube caption race, the self-destruct's forced delete, the `mcp/` package
+  skeleton, the restricted-pass browser test, the videos page, the signature check, the support
+  form's own token secret, the do-next brief, the alarm audit re-count).
 - **Open alarm issues**: #208 (the nightly snapshot; the tables now exist on prod, checked after
-  the 03:15 UTC run by B52y.2), #223 and #224 (the operator snapshot's 500, NEXT.md B52v; both
-  alarms OK since 16:55 UTC).
+  the 03:15 UTC run by B52y.2).
 - **Both `/api/v1/books` and `/api/v1/diya-gl` are permanent** by operator decision of 2026-09-10.
   The old prefix is never retired and the spreadsheets repository changes nothing; row 51's naming
   work is down to the S3 bucket.
@@ -41,7 +43,7 @@ truthfully on its own. Human-only steps are briefed at the workspace root in
 - **Date-gated**: 30a is NEXT.md B30y; 43 from 2026-10-02; 48 the week of 2026-11-29.
 - **Tier 2**: 10's six endpoints are on main behind the environments gate; 11's phase 2 has T1 to
   T7, T19, T21 and T22 landed, with T9 refined on `NEXT.md` behind the MCP package (M1a–M1c, from
-  row 51); 11a parked by the operator's decision of 2026-09-05; 34's two REST filings are live on
+  row 51, whose M1a is on main since PR #226); 11a parked by the operator's decision of 2026-09-05; 34's two REST filings are live on
   prod, with the XML Gateway half (34b) waiting on Companies House's answer about status lookups;
   17b's three VAT read pages are live on prod and all eight walkthroughs are public on the channel
   since 2026-09-15 (17d reviews them).

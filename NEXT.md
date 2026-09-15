@@ -40,143 +40,6 @@ Every item names its model: the lowest tier that fits (Fable > Opus > Sonnet > H
 
 ## In flight
 
-All twelve rows below ride **`claude/b40-board`, PR #226** (push 20:22 UTC 2026-09-15: deploy
-35019240338, deploy environment 35019240125 for ci, test 35019239793). `/watch` holds the scope;
-`/auto-merge` lands it. B165's secret exists on ci once the environment deploy finishes; the prod
-environment deploy runs after the merge, before promotion. B166's required status check on ruleset
-16057564 is the coordinator's `gh api` call after the merge.
-
-- [ ] **B52v. The operator dashboard answers "Failed to load the operator snapshot".** Opened by
-  the operator at 16:39 UTC on 2026-09-15 on `prod-70b0a8e` (the operator list works: the page and
-  its activity show). `GET /api/v1/operator/snapshot` answered 500: `operatorSnapshotGet.js` calls
-  `enforceBundles`, which reads the user's bundles through `dynamoDbBundleRepository`, and that
-  needs the sub-hashing salt, but the handler never calls `initializeSalt()` (`bundleGet.js:87`
-  does). Log: `/aws/lambda/prod-70b0a8e-app-operator-snapshot-get`, request
-  0890740e-eaf3-4fce-8314-96a0b8e93bf8, "Salt not initialized. Call initializeSalt() in your Lambda
-  handler". The 500 raised issues #224 (`prod-app-api-5xx`) and #223
-  (`prod-app-account-stack-health`) at 16:40 UTC, the first issues the alarm-to-issue Lambda opened
-  since B157; both alarms returned to OK at 16:55 UTC and the issues stay open until the fix lands.
-  Add the call at the top of the handler with a unit test that the handler initialises
-  the salt before enforcing; check the other `/api/v1/operator/*` handlers for the same omission.
-  Closes #223, #224. **Source**: operator, 2026-09-15; issues #223, #224. **Owner**: Claude Code. **Model**: Haiku. **Size**: ~2 files.
-
-- [ ] **B30y. The alarm audit re-count.** BACKLOG 30a, due 2026-09-13: B30j (the hourly
-  bundle-capacity reconcile) and B30k (ci alarms stop opening issues) reached prod on 2026-09-06.
-  Re-run the counts of `_developers/ALARM_AUDIT_2026-09.md` over the seven days after that (alarm
-  state transitions from `cloudwatch describe-alarm-history` on submit-prod and submit-ci, deploy
-  windows from `gh run list --workflow deploy.yml`), compare the families that fired against the
-  90-day baseline in that report, and write the result as a dated section at the top of the same
-  file with one line per family: unchanged, quieter, louder, and the tune or cut it earns. Change
-  no alarm in this row; a tune or cut it finds becomes its own `B30<letter>` row. **Source**:
-  BACKLOG 30a; `_developers/ALARM_AUDIT_2026-09.md`. **Owner**: Claude Code. **Model**: Sonnet.
-  **Size**: ~1 file.
-
-- [ ] **B166. The signature check fails a PR carrying an unsigned commit.** Commit signing is on
-  for this machine since 2026-09-15 (SSH key `id_antony_polycode_mbp_2025` registered as a signing
-  key; `commit.gpgsign true`, `gpg.format ssh`); GitHub reports f5fe7039 `verified: true, reason:
-  valid` (run 35001788262). Operator decision, 2026-09-15, the "check" option: (1)
-  `verify-commit-signatures.yml`'s last step fails when a PR carries an unsigned commit, except
-  commits authored by `github-actions[bot]`; (2) the check is added to ruleset 16057564 as a required
-  status check on `main` (one `gh api` call, the token has admin); (3) unsigned pushes still land,
-  only the PR's check goes red, so `publish.yml`, the board write-back, Cowork's docs pushes and the
-  bot PRs keep working; (4) this machine's sessions and their sub-agents already sign and pass.
-  Known weakness, accepted: an admin can still merge a red PR, and a direct push to `main` is never
-  checked; BACKLOG 54 (the `required_signatures` ruleset rule) closes that after O38. **Source**:
-  `REPORT_GIT_CONFIG.md`; O37; operator, 2026-09-15. **Owner**: Claude Code. **Model**: Haiku.
-  **Size**: ~1 file.
-
-- [ ] **B161. The do-next brief carries a workflow-change checklist.** Both prod incidents of
-  2026-09-15 came from `.github/workflows/**` edits that no brief warned about: a called workflow
-  inherits its caller's `github.event_name` (B159's `schedule` guard fired inside the scheduled
-  deploy's own probes, run 34952375352, apex rolled back, incident #219, `prod-075487d` left
-  standing) and may request no permission its callers do not grant (the first push's
-  startup_failure 34940554454); `gh` in a checkout-less job needs `--repo` (B156, then B159 again).
-  Add to `.claude/skills/do-next/SKILL.md`'s "Briefing a sub-agent" a bullet for any brief that
-  touches a workflow: those three facts, plus "grep the sibling workflows for the same defect
-  before committing". **Source**: REPORT_SESSION_lF0yVT_2026-09-15.md, suggestion 1. **Owner**:
-  Claude Code. **Model**: Haiku. **Size**: ~1 file.
-
-- [ ] **B162. Env-stack job briefs name a Lambda-bearing sibling.** B52y's first
-  `deploy-security-lake` job copied `deploy-security-detection` (a reusable-workflow call), so CDK
-  deployed the dependency chain with an image tag nothing pushes and the stack's own container
-  Lambda had no image (run 34950583084, 214 job-minutes lost). Add to the same brief section: a
-  brief for a new `deploy-environment.yml` job names the sibling job whose stack also carries a
-  Lambda (`deploy-scan-detection`'s build-push-deploy shape) and says to grep the stack for
-  `baseImageTag` first. **Source**: REPORT_SESSION_lF0yVT_2026-09-15.md, suggestion 2.
-  **Owner**: Claude Code. **Model**: Haiku. **Size**: ~1 file.
-
-- [ ] **B164. Worktree briefs give absolute paths for every file tool.** Two agents on 2026-09-15
-  wrote their change into the primary checkout as well as their worktree (`alarm-triage.yml`,
-  `watch-ci.sh`, identical to the committed content), because the file tools took
-  repository-relative paths that resolved against the primary checkout; `/auto-merge`'s inventory
-  caught them. Add to the brief section: every Read, Edit and Write path is absolute under the
-  worktree, not only the Bash `cd`. **Source**: REPORT_SESSION_lF0yVT_2026-09-15.md, suggestion 5.
-  **Owner**: Claude Code. **Model**: Haiku. **Size**: ~1 file.
-
-- [ ] **B163. A browser test for the restricted-pass redeem flow.** B52ab (PR #217) fixed
-  `bundles.html`'s public pre-check rejecting every email-restricted pass, found by the operator on
-  prod with a screenshot; the unit tests cover `validatePass` and `passGet`, and no browser test
-  drives `handlePassEntry` with a restricted pass. Add one under `web/browser-tests/` in the
-  `serveRealSite` pattern (`operatorDashboardActivity.browser.test.js`): stub
-  `GET /api/v1/pass?code=` answering `valid: true, emailRestricted: true`, open
-  `bundles.html?pass=<code>` signed in, and assert the "Pass valid for the invited email" status and
-  the enabled Request button; and the logged-out wording. **Source**:
-  REPORT_SESSION_lF0yVT_2026-09-15.md, suggestion 4. **Owner**: Claude Code. **Model**: Sonnet.
-  **Size**: ~1 file.
-
-- [ ] **B17w. The caption upload races YouTube's indexing.** `scripts/youtube-upload.js` uploads the
-  caption right after the video and only then records the `videoId` in `videos/publish.json`; on
-  2026-09-15 view-payments' caption call answered 404 `videoNotFound` a second after the upload, the
-  script threw, and the id (R9AEUYyeu88) was not recorded, so a re-run would have uploaded the video
-  twice. Record the id before the caption step, and retry the caption on 404 with a short backoff
-  (three tries over ~30 s); unit test both. **Source**: B17v.2, 2026-09-15. **Owner**: Claude
-  Code. **Model**: Haiku. **Size**: ~2 files.
-
-- [ ] **B165. The support form's Lambda gets its own GitHub token secret.** `AccountStack.java:554`
-  hands `supportTicketPost` the alarm-issue secret (`{env}/submit/github/issue_bot_token`, from the
-  GitHub secret `ISSUE_BOT_TOKEN`), so one token would need issue rights on both repositories. The
-  operator wants the support form able to write only to `spreadsheets.diyaccounting.co.uk`. Add a
-  second secret `{env}/submit/github/support_bot_token` filled from `SUPPORT_BOT_TOKEN` in
-  `deploy-environment.yml`'s create-secrets job (same put-secret-with-rotation-tag shape), a
-  `supportGithubTokenSecretArn` prop through `SubmitApplication.java` to `AccountStack`, the support
-  Lambda's `GITHUB_TOKEN_SECRET_ARN` pointing at it with `secretsmanager:GetSecretValue` on that ARN
-  only, and the CDK test. The operator created `SUPPORT_BOT_TOKEN` as a repository secret on 2026-09-15 (a spreadsheets-only
-  PAT) and regenerated `ISSUE_BOT_TOKEN` for a year; `deploy-environment.yml` ran for ci and prod. **Source**: O45; operator, 2026-09-15.
-  **Owner**: Claude Code. **Model**: Sonnet. **Size**: ~4 files.
-
-- [ ] **B17v.3. A walkthrough-videos page off the About page.** Operator, 2026-09-15: a button on
-  https://submit.diyaccounting.co.uk/about.html linking to a new page that lists the embedded
-  YouTube videos, each with a short blurb saying what it shows, each under an anchor with a share
-  link to that section. Build: `web/public/videos.html` in the shared header and footer, one section
-  per `videos/publish.json` entry that has a `videoId` (an unlisted video embeds), `id` the entry's
-  id, an `<iframe>` embed of `https://www.youtube-nocookie.com/embed/<videoId>`, the title as the
-  heading, the first two sentences of the description as the blurb, and a "Link to this video"
-  anchor `videos.html#<id>` with a copy button; the page reads the manifest at build (copy
-  `videos/publish.json` into `web/public/videos/` the way the catalogue is copied) so a new upload
-  needs no page edit; a "Watch the walkthroughs" button on `about.html`; a browser test that the
-  page lists every entry with a `videoId` and the anchors resolve. Sandbox recordings say
-  "(sandbox)" in their title already. **Source**: operator, 2026-09-15. **Owner**: Claude Code.
-  **Model**: Sonnet. **Size**: ~4 files.
-
-- [ ] **B167. The ci self-destruct leaves `ApiStack` DELETE_FAILED.** `ci-claud824f` at 23:41 UTC on
-  2026-09-14 and `ci-claud727f` at 18:23 UTC on 2026-09-15 both failed on the Billing Cognito
-  authorizer (`AWS::ApiGatewayV2::Authorizer`, "InternalFailure"), leaving the stack until the next
-  `destroy-ci.yml` sweep force-deletes it. Make the self-destruct Lambda retry a DELETE_FAILED stack
-  with `--deletion-mode FORCE_DELETE_STACK` (the sweep's own path), with a unit test; the stack
-  ordering fix (delete the authorizer before the API) is the alternative if the Lambda cannot see
-  the failure. **Source**: `PARKED.md`, 2026-09-15. **Owner**: Claude Code. **Model**: Sonnet.
-  **Size**: ~2 files.
-
-- [ ] **M1a. The submission MCP package skeleton.** `PLAN_SUBMISSION_MCP.md` M1, first chunk:
-  `mcp/` with its own `package.json` (name `@diy-accounting-uk/diya-submit`, the MCP SDK, a
-  dependency on the published `@diy-accounting-uk/diya-gl` 1.0.0), the stdio transport, and the
-  tools `open_book` and `save_book` over the filesystem; unit tests that open the BrickWork Pro Ltd
-  and Precision Code Ltd example books (`ls fixtures | grep -i book` and the diya-gl package's
-  examples say where they are) and round-trip them. Assumption to confirm: the package lives in
-  this repository under `mcp/` and depends on the npm package, not a `file:` sibling. **Source**:
-  `PLAN_SUBMISSION_MCP.md` M1; BACKLOG 51. **Owner**: Claude Code. **Model**: Sonnet. **Size**:
-  ~6 files.
-
 ## Machine-only
 
 - [ ] **B52y.2. Check the nightly snapshot after the SecurityLakeStack reaches prod.** PR #218
@@ -203,6 +66,31 @@ environment deploy runs after the merge, before promotion. B166's required statu
   the alarm's actions until promotion. **Source**: `_developers/ALARM_AUDIT_2026-09.md`, 2026-09-15
   section. **Owner**: Claude Code. **Model**: Sonnet. **Size**: ~2 files.
 
+- [ ] **M1b. `derive_vat_return` from a diya-gl book.** The nine VAT boxes from a book's journal
+  and its VAT codes, as an MCP tool in `mcp/`, with the mapping written as a table in
+  `PLAN_SUBMISSION_MCP.md` first (Opus) and unit tests over both example books against the figures
+  their published reports show. **Source**: `PLAN_SUBMISSION_MCP.md` M1. **Owner**: Claude Code.
+  **Model**: Opus for the mapping, Sonnet for the tool. **Size**: ~3 files.
+
+- [ ] **M1c. `derive_micro_entity_accounts` from a diya-gl book.** The seven FRS 105 balance-sheet
+  lines from a book, passed through the existing `buildMicroEntityAccounts` and the public validator
+  script, with unit tests over BrickWork Pro's example. **Source**: `PLAN_SUBMISSION_MCP.md` M1.
+  **Owner**: Claude Code. **Model**: Opus for the mapping, Sonnet for the tool.
+  **Size**: ~3 files.
+
+- [ ] **B11.T9. ITSA phase 2: the DIYA-GL-to-submission path.** Two chunks, M1a on `main` since PR #226: **T9a**, the
+  MCP tools `derive_itsa_quarterly_update` (a period's figures in a dated year, a running total in a
+  cumulative one, from the same book, calling whichever derivation the tax year names, sending an
+  omission for any of the 31 field slots the template cannot source, never a zero) and
+  `derive_itsa_annual_submission`, over the spreadsheets side's `app/lib/calculators/se-derivations.js`
+  (on their main); **T9b**, an import control on `annualSubmission.html` that fills the form from a
+  book through the same derivation. SED-10: the self-employed field set changes by tax year
+  (`sa103-mtd-mapping.json`: two allowances gone from 2025-26, an adjustment gone from 2026-27, two
+  fields added) and their `se-derivations.js` reads none of it, so T9a filters the field set by tax
+  year on this side unless the operator says to wait for their SED-10. **Source**: BACKLOG 11;
+  `PLAN_ITSA_PHASE_2.md` T9. **Owner**: Claude Code. **Model**: Sonnet. **Size**:
+  ~5 files.
+
 ## Human and machine
 
 - [ ] **O28. Send `Gov-Client-Multi-Factor` on every request: mandate MFA in the pool.** Every
@@ -224,6 +112,18 @@ environment deploy runs after the merge, before promotion. B166's required statu
   **Owner**: Operator decides, Claude Code changes. **Model**: Haiku. **Size**: ~2 files.
 
 ## Human-only
+
+- [ ] **O46. Decide how the signature check gates `main`.** B166's check runs on every PR since PR
+  #226 and fails one carrying an unsigned commit (run 35027270496 passed). Adding it to ruleset
+  16057564 as a required status check (tried 2026-09-15 21:58 UTC, reverted at 22:03) gates every
+  push to `main`, so the board write-back and the docs exception stopped landing ("Required status
+  check \"Check commit signatures\" is expected"), and GitHub refuses the GitHub Actions app as a
+  repository-level bypass actor, so `publish.yml`'s version bump would stop too. Alternatives: (1)
+  leave the check advisory, red on the PR and enforced by `/auto-merge`'s gate, until BACKLOG 54
+  moves the runner pushes onto an app; (2) add the rule with the admin role as the only bypass
+  actor and move `publish.yml`'s bump onto a PAT or the contents API first (a Claude Code change);
+  (3) an organisation-level ruleset, where the Actions app is an allowed bypass actor. **Source**:
+  B166; ruleset 16057564. **Owner**: Operator. **Model**: none.
 
 - [ ] **O17. Register the Companies House sandbox test user and set four ci values.**
   Companies House has no create-test-user API, so the operator registers a throwaway account
@@ -292,18 +192,6 @@ environment deploy runs after the merge, before promotion. B166's required statu
   selector fix. **Source**: BACKLOG 34. **Owner**: Claude Code. **Model**: Sonnet.
   Blocked on O17. **Size**: ~1 file.
 
-- [ ] **M1b. `derive_vat_return` from a diya-gl book.** The nine VAT boxes from a book's journal
-  and its VAT codes, as an MCP tool in `mcp/`, with the mapping written as a table in
-  `PLAN_SUBMISSION_MCP.md` first (Opus) and unit tests over both example books against the figures
-  their published reports show. **Source**: `PLAN_SUBMISSION_MCP.md` M1. **Owner**: Claude Code.
-  **Model**: Opus for the mapping, Sonnet for the tool. Blocked on M1a. **Size**: ~3 files.
-
-- [ ] **M1c. `derive_micro_entity_accounts` from a diya-gl book.** The seven FRS 105 balance-sheet
-  lines from a book, passed through the existing `buildMicroEntityAccounts` and the public validator
-  script, with unit tests over BrickWork Pro's example. **Source**: `PLAN_SUBMISSION_MCP.md` M1.
-  **Owner**: Claude Code. **Model**: Opus for the mapping, Sonnet for the tool. Blocked on M1a.
-  **Size**: ~3 files.
-
 - [ ] **B52l. The optimiser over the raw export.** `PLAN_ONE_STOP_DASHBOARD.md` D16, BACKLOG 52l:
   a notebook over the raw export computing the per-block correlations, fitting the block models
   (linear cost, log-linear funnels, Hill curves for spend), ranking levers by effect per unit cost
@@ -365,19 +253,6 @@ environment deploy runs after the merge, before promotion. B166's required statu
   than given an environment. Do not dispatch this row again until the operator says so.
   **Source**: `.github/workflows/agentic-lib-*.yml`; run 34716604299.
   **Owner**: Claude Code. **Model**: Sonnet. Blocked on the operator lifting the 2026-09-12 halt. **Size**: ~3 files.
-
-- [ ] **B11.T9. ITSA phase 2: the DIYA-GL-to-submission path.** Two chunks after M1a: **T9a**, the
-  MCP tools `derive_itsa_quarterly_update` (a period's figures in a dated year, a running total in a
-  cumulative one, from the same book, calling whichever derivation the tax year names, sending an
-  omission for any of the 31 field slots the template cannot source, never a zero) and
-  `derive_itsa_annual_submission`, over the spreadsheets side's `app/lib/calculators/se-derivations.js`
-  (on their main); **T9b**, an import control on `annualSubmission.html` that fills the form from a
-  book through the same derivation. SED-10: the self-employed field set changes by tax year
-  (`sa103-mtd-mapping.json`: two allowances gone from 2025-26, an adjustment gone from 2026-27, two
-  fields added) and their `se-derivations.js` reads none of it, so T9a filters the field set by tax
-  year on this side unless the operator says to wait for their SED-10. **Source**: BACKLOG 11;
-  `PLAN_ITSA_PHASE_2.md` T9. **Owner**: Claude Code. **Model**: Sonnet. Blocked on M1a. **Size**:
-  ~5 files.
 
 - [ ] **B70.LU15. Licensing: the brand package.** Pin `@diy-accounting-uk/brand`, copy assets
   and tokens at build, import the tokens, delete the local logo, favicon and token copies;
