@@ -1790,6 +1790,8 @@ jobs:
       - deploy-account
       - deploy-edge
       - deploy-publish
+      # OpsStack carries the alarm-to-issue Lambda and ops health alarm, so sets without it are not promotable
+      - deploy-ops
     runs-on: ubuntu-24.04
     environment: ${{ needs.names.outputs.environment-name }}
     permissions:
