@@ -18,7 +18,7 @@ PR; the operator merges.
 
 **Prod runs deployment prod-70b0a8e** (PR #222, run 34984108471), promoted under the `deploy-ops`
 gate; `prod-075487d` stands unpromoted beside it (B160). **ci**: `ci-claud5ca3` (b36,
-last-known-good, self-destructs 15:56 UTC on 2026-09-15) and b38's set stand.
+last-known-good, self-destructs 15:56 UTC on 2026-09-15) and `ci-claud727f` (b38, ~18:20 UTC) stand.
 
 The board runs in five sections, in this order: **in flight** (a branch, a pull request or a run
 in motion, each named in the row), **machine-only**, **human and machine**, **human-only**,
