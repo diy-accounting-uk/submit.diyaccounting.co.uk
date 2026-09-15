@@ -8,6 +8,7 @@ import { extractRequest, extractUserFromAuthorizerContext } from "../lib/httpRes
 import { loadCatalogFromRoot, isActivityListedInEnvironment } from "./productCatalog.js";
 import * as dynamoDbBundleStore from "../data/dynamoDbBundleRepository.js";
 import { getUserBundles } from "../data/dynamoDbBundleRepository.js";
+import { isOperatorEmail } from "../lib/operators.js";
 
 const logger = createLogger({ source: "app/services/bundleEnforcement.js" });
 
@@ -127,7 +128,7 @@ export async function enforceBundles(event, options = {}) {
     hmrcBase,
   });
 
-  const userSub = extractUserInfo(event);
+  const { sub: userSub, email: userEmail } = extractUserInfo(event);
   const { request } = extractRequest(event);
   const requestPath = request?.pathname || "";
   const catalog = loadCatalogFromRoot();
@@ -157,6 +158,9 @@ export async function enforceBundles(event, options = {}) {
   const subscribedBundles = await getUserBundlesFromStorage(userSub);
   const subscribedBundleIds = subscribedBundles.map((b) => b.bundleId);
   const currentBundleIds = new Set([...(automaticBundleIds || []), ...(subscribedBundleIds || [])]);
+  if (isOperatorEmail(userEmail)) {
+    currentBundleIds.add("operator");
+  }
 
   logger.info({
     message: "Checking bundle entitlements",
@@ -217,7 +221,7 @@ function extractUserInfo(event) {
       username: userInfo.username,
       claims: Object.keys(userInfo),
     });
-    return userSub;
+    return { sub: userSub, email: userInfo.email || "" };
   }
 }
 

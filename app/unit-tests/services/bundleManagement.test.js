@@ -257,6 +257,38 @@ describe("bundleEnforcement.js", () => {
       await enforceBundles(event);
     });
 
+    test("grants /api/v1/operator/* to an email on the operator list", async () => {
+      const token = makeJWT("operator-user");
+      const authorizerContext = {
+        "sub": "operator-user",
+        "cognito:username": "operator",
+        "email": "antonyccartwright@gmail.com",
+        "scope": "read write",
+      };
+      const event = buildEvent(token, authorizerContext, "/api/v1/operator/snapshot");
+
+      getUserBundles.mockResolvedValue([]);
+
+      // Should not throw - the operator list grants the "operator" bundle even though
+      // no bundle is stored for this user in DynamoDB
+      await enforceBundles(event);
+    });
+
+    test("denies /api/v1/operator/* to an email not on the operator list", async () => {
+      const token = makeJWT("non-operator-user");
+      const authorizerContext = {
+        "sub": "non-operator-user",
+        "cognito:username": "test",
+        "email": "test@test.submit.diyaccunting.co.uk",
+        "scope": "read write",
+      };
+      const event = buildEvent(token, authorizerContext, "/api/v1/operator/snapshot");
+
+      getUserBundles.mockResolvedValue([]);
+
+      await expect(enforceBundles(event)).rejects.toThrow(BundleEntitlementError);
+    });
+
     // B117: the catalogue has no entry-per-endpoint check anywhere else, so this is the only
     // place that proves enforceBundles() actually refuses a caller with no ITSA bundle for
     // every submitting ITSA activity (quarterly updates, annual submissions, losses and claims,
