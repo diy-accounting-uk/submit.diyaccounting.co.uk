@@ -44,6 +44,15 @@ and stop. One branch is driven green at a time. Lifted only by the operator in t
 
 ## Machine-only
 
+- [ ] **B52y.2. Check the nightly snapshot after the SecurityLakeStack reaches prod.** PR #218
+  (9b695aab) adds the `deploy-security-lake` job and the per-observation null; prod's environment
+  deploy of that merge creates the Glue tables. After the next 03:15 UTC run, read
+  `snapshots/prod/latest.json`: `generatedAt` past 2026-09-16 03:15, `failedObservationCount` 0,
+  and any observation answering null where its view has rows (two views are monthly or quarterly
+  grain, so a 30-day window can be empty by design). Issue #208 closes when the alarm clears.
+  **Source**: `PLAN_ONE_STOP_DASHBOARD.md` D7, D13, D14, D15. **Owner**: Claude Code. **Model**:
+  Haiku. **Size**: ~0 files.
+
 - [ ] **B52v. The operator dashboard answers "Failed to load the operator snapshot".** Opened by
   the operator at 16:39 UTC on 2026-09-15 on `prod-70b0a8e` (the operator list works: the page and
   its activity show). `GET /api/v1/operator/snapshot` answered 500: `operatorSnapshotGet.js` calls
@@ -57,6 +66,16 @@ and stop. One branch is driven green at a time. Lifted only by the operator in t
   the salt before enforcing; check the other `/api/v1/operator/*` handlers for the same omission.
   Closes #223, #224. **Source**: operator, 2026-09-15; issues #223, #224. **Owner**: Claude Code. **Model**: Haiku. **Size**: ~2 files.
 
+- [ ] **B30y. The alarm audit re-count.** BACKLOG 30a, due 2026-09-13: B30j (the hourly
+  bundle-capacity reconcile) and B30k (ci alarms stop opening issues) reached prod on 2026-09-06.
+  Re-run the counts of `_developers/ALARM_AUDIT_2026-09.md` over the seven days after that (alarm
+  state transitions from `cloudwatch describe-alarm-history` on submit-prod and submit-ci, deploy
+  windows from `gh run list --workflow deploy.yml`), compare the families that fired against the
+  90-day baseline in that report, and write the result as a dated section at the top of the same
+  file with one line per family: unchanged, quieter, louder, and the tune or cut it earns. Change
+  no alarm in this row; a tune or cut it finds becomes its own `B30<letter>` row. **Source**:
+  BACKLOG 30a; `_developers/ALARM_AUDIT_2026-09.md`. **Owner**: Claude Code. **Model**: Sonnet.
+  **Size**: ~1 file.
 
 - [ ] **B166. The signature check fails a PR carrying an unsigned commit.** Commit signing is on
   for this machine since 2026-09-15 (SSH key `id_antony_polycode_mbp_2025` registered as a signing
@@ -71,6 +90,46 @@ and stop. One branch is driven green at a time. Lifted only by the operator in t
   checked; BACKLOG 54 (the `required_signatures` ruleset rule) closes that after O38. **Source**:
   `REPORT_GIT_CONFIG.md`; O37; operator, 2026-09-15. **Owner**: Claude Code. **Model**: Haiku.
   **Size**: ~1 file.
+
+- [ ] **B161. The do-next brief carries a workflow-change checklist.** Both prod incidents of
+  2026-09-15 came from `.github/workflows/**` edits that no brief warned about: a called workflow
+  inherits its caller's `github.event_name` (B159's `schedule` guard fired inside the scheduled
+  deploy's own probes, run 34952375352, apex rolled back, incident #219, `prod-075487d` left
+  standing) and may request no permission its callers do not grant (the first push's
+  startup_failure 34940554454); `gh` in a checkout-less job needs `--repo` (B156, then B159 again).
+  Add to `.claude/skills/do-next/SKILL.md`'s "Briefing a sub-agent" a bullet for any brief that
+  touches a workflow: those three facts, plus "grep the sibling workflows for the same defect
+  before committing". **Source**: REPORT_SESSION_lF0yVT_2026-09-15.md, suggestion 1. **Owner**:
+  Claude Code. **Model**: Haiku. **Size**: ~1 file.
+
+- [ ] **B162. Env-stack job briefs name a Lambda-bearing sibling.** B52y's first
+  `deploy-security-lake` job copied `deploy-security-detection` (a reusable-workflow call), so CDK
+  deployed the dependency chain with an image tag nothing pushes and the stack's own container
+  Lambda had no image (run 34950583084, 214 job-minutes lost). Add to the same brief section: a
+  brief for a new `deploy-environment.yml` job names the sibling job whose stack also carries a
+  Lambda (`deploy-scan-detection`'s build-push-deploy shape) and says to grep the stack for
+  `baseImageTag` first. **Source**: REPORT_SESSION_lF0yVT_2026-09-15.md, suggestion 2.
+  **Owner**: Claude Code. **Model**: Haiku. **Size**: ~1 file.
+
+- [ ] **B164. Worktree briefs give absolute paths for every file tool.** Two agents on 2026-09-15
+  wrote their change into the primary checkout as well as their worktree (`alarm-triage.yml`,
+  `watch-ci.sh`, identical to the committed content), because the file tools took
+  repository-relative paths that resolved against the primary checkout; `/auto-merge`'s inventory
+  caught them. Add to the brief section: every Read, Edit and Write path is absolute under the
+  worktree, not only the Bash `cd`. **Source**: REPORT_SESSION_lF0yVT_2026-09-15.md, suggestion 5.
+  **Owner**: Claude Code. **Model**: Haiku. **Size**: ~1 file.
+
+- [ ] **B163. A browser test for the restricted-pass redeem flow.** B52ab (PR #217) fixed
+  `bundles.html`'s public pre-check rejecting every email-restricted pass, found by the operator on
+  prod with a screenshot; the unit tests cover `validatePass` and `passGet`, and no browser test
+  drives `handlePassEntry` with a restricted pass. Add one under `web/browser-tests/` in the
+  `serveRealSite` pattern (`operatorDashboardActivity.browser.test.js`): stub
+  `GET /api/v1/pass?code=` answering `valid: true, emailRestricted: true`, open
+  `bundles.html?pass=<code>` signed in, and assert the "Pass valid for the invited email" status and
+  the enabled Request button; and the logged-out wording. **Source**:
+  REPORT_SESSION_lF0yVT_2026-09-15.md, suggestion 4. **Owner**: Claude Code. **Model**: Sonnet.
+  **Size**: ~1 file.
+
 - [ ] **B17w. The caption upload races YouTube's indexing.** `scripts/youtube-upload.js` uploads the
   caption right after the video and only then records the `videoId` in `videos/publish.json`; on
   2026-09-15 view-payments' caption call answered 404 `videoNotFound` a second after the upload, the
@@ -115,66 +174,6 @@ and stop. One branch is driven green at a time. Lifted only by the operator in t
   `PLAN_SUBMISSION_MCP.md` M1; BACKLOG 51. **Owner**: Claude Code. **Model**: Sonnet. **Size**:
   ~6 files.
 
-- [ ] **B52y.2. Check the nightly snapshot after the SecurityLakeStack reaches prod.** PR #218
-  (9b695aab) adds the `deploy-security-lake` job and the per-observation null; prod's environment
-  deploy of that merge creates the Glue tables. After the next 03:15 UTC run, read
-  `snapshots/prod/latest.json`: `generatedAt` past 2026-09-16 03:15, `failedObservationCount` 0,
-  and any observation answering null where its view has rows (two views are monthly or quarterly
-  grain, so a 30-day window can be empty by design). Issue #208 closes when the alarm clears.
-  **Source**: `PLAN_ONE_STOP_DASHBOARD.md` D7, D13, D14, D15. **Owner**: Claude Code. **Model**:
-  Haiku. **Size**: ~0 files.
-
-
-
-
-- [ ] **B30y. The alarm audit re-count.** BACKLOG 30a, due 2026-09-13: B30j (the hourly
-  bundle-capacity reconcile) and B30k (ci alarms stop opening issues) reached prod on 2026-09-06.
-  Re-run the counts of `_developers/ALARM_AUDIT_2026-09.md` over the seven days after that (alarm
-  state transitions from `cloudwatch describe-alarm-history` on submit-prod and submit-ci, deploy
-  windows from `gh run list --workflow deploy.yml`), compare the families that fired against the
-  90-day baseline in that report, and write the result as a dated section at the top of the same
-  file with one line per family: unchanged, quieter, louder, and the tune or cut it earns. Change
-  no alarm in this row; a tune or cut it finds becomes its own `B30<letter>` row. **Source**:
-  BACKLOG 30a; `_developers/ALARM_AUDIT_2026-09.md`. **Owner**: Claude Code. **Model**: Sonnet.
-  **Size**: ~1 file.
-- [ ] **B161. The do-next brief carries a workflow-change checklist.** Both prod incidents of
-  2026-09-15 came from `.github/workflows/**` edits that no brief warned about: a called workflow
-  inherits its caller's `github.event_name` (B159's `schedule` guard fired inside the scheduled
-  deploy's own probes, run 34952375352, apex rolled back, incident #219, `prod-075487d` left
-  standing) and may request no permission its callers do not grant (the first push's
-  startup_failure 34940554454); `gh` in a checkout-less job needs `--repo` (B156, then B159 again).
-  Add to `.claude/skills/do-next/SKILL.md`'s "Briefing a sub-agent" a bullet for any brief that
-  touches a workflow: those three facts, plus "grep the sibling workflows for the same defect
-  before committing". **Source**: REPORT_SESSION_lF0yVT_2026-09-15.md, suggestion 1. **Owner**:
-  Claude Code. **Model**: Haiku. **Size**: ~1 file.
-
-- [ ] **B162. Env-stack job briefs name a Lambda-bearing sibling.** B52y's first
-  `deploy-security-lake` job copied `deploy-security-detection` (a reusable-workflow call), so CDK
-  deployed the dependency chain with an image tag nothing pushes and the stack's own container
-  Lambda had no image (run 34950583084, 214 job-minutes lost). Add to the same brief section: a
-  brief for a new `deploy-environment.yml` job names the sibling job whose stack also carries a
-  Lambda (`deploy-scan-detection`'s build-push-deploy shape) and says to grep the stack for
-  `baseImageTag` first. **Source**: REPORT_SESSION_lF0yVT_2026-09-15.md, suggestion 2.
-  **Owner**: Claude Code. **Model**: Haiku. **Size**: ~1 file.
-
-- [ ] **B164. Worktree briefs give absolute paths for every file tool.** Two agents on 2026-09-15
-  wrote their change into the primary checkout as well as their worktree (`alarm-triage.yml`,
-  `watch-ci.sh`, identical to the committed content), because the file tools took
-  repository-relative paths that resolved against the primary checkout; `/auto-merge`'s inventory
-  caught them. Add to the brief section: every Read, Edit and Write path is absolute under the
-  worktree, not only the Bash `cd`. **Source**: REPORT_SESSION_lF0yVT_2026-09-15.md, suggestion 5.
-  **Owner**: Claude Code. **Model**: Haiku. **Size**: ~1 file.
-
-- [ ] **B163. A browser test for the restricted-pass redeem flow.** B52ab (PR #217) fixed
-  `bundles.html`'s public pre-check rejecting every email-restricted pass, found by the operator on
-  prod with a screenshot; the unit tests cover `validatePass` and `passGet`, and no browser test
-  drives `handlePassEntry` with a restricted pass. Add one under `web/browser-tests/` in the
-  `serveRealSite` pattern (`operatorDashboardActivity.browser.test.js`): stub
-  `GET /api/v1/pass?code=` answering `valid: true, emailRestricted: true`, open
-  `bundles.html?pass=<code>` signed in, and assert the "Pass valid for the invited email" status and
-  the enabled Request button; and the logged-out wording. **Source**:
-  REPORT_SESSION_lF0yVT_2026-09-15.md, suggestion 4. **Owner**: Claude Code. **Model**: Sonnet.
-  **Size**: ~1 file.
 ## Human and machine
 
 - [ ] **O28. Send `Gov-Client-Multi-Factor` on every request: mandate MFA in the pool.** Every
