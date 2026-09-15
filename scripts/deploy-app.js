@@ -41,6 +41,8 @@ const CLOUDFRONT_INVALIDATION_PATHS = [
   "/tests/*",
   "/widgets/*",
   "/about.html",
+  "/videos.html",
+  "/videos/*",
   "/accessibility.html",
   "/bundles.html",
   "/faqs.toml",
