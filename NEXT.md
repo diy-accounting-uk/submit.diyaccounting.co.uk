@@ -52,7 +52,7 @@ Every item names its model: the lowest tier that fits (Fable > Opus > Sonnet > H
   Left after that: destroy the spare, `gh workflow run destroy-prod.yml -f deployment-name=prod-075487d`
   (operator), and make `deploy-ops` a gate of the last-known-good promotion so a set without an
   OpsStack is never promoted (~1 file, `deploy.yml`). **Source**: runs 34949518154, 34952375352.
-  In flight on `claude/b36-board` (agent worktree `claude/b36-gate`); no PR yet. **Owner**: Claude Code, then Operator. **Model**: Haiku. **Size**: ~1 file.
+  In flight on `claude/b36-board`, PR #220, its deploy running. **Owner**: Claude Code, then Operator. **Model**: Haiku. **Size**: ~1 file.
 
 - [ ] **B158c. `watch-ci.sh` drops a gating run when a later non-gating run exists.** `all_latest_runs`
   (`scripts/watch-ci.sh:19`) groups by workflow and keeps the newest run over every event, and
@@ -61,7 +61,7 @@ Every item names its model: the lowest tier that fits (Fable > Opus > Sonnet > H
   09:47 UTC on 2026-09-15 the watch said "all terminal, 0 red" on `main` while `deploy`
   34949518154 (push) was in progress, because the 04:11 schedule run 34952375352 (pending) was
   newer. Filter by event before grouping, in both `latest_runs` and the merge-readiness probe.
-  **Source**: B158, observed 2026-09-15. In flight on `claude/b36-board` (agent worktree `claude/b36-watch`); no PR yet. **Owner**: Claude Code. **Model**: Haiku. **Size**: ~1 file.
+  **Source**: B158, observed 2026-09-15. In flight on `claude/b36-board`, PR #220, its deploy running. **Owner**: Claude Code. **Model**: Haiku. **Size**: ~1 file.
 
 - [ ] **B52v. The 5xx behind the operator dashboard's first open.** The sign-in path is on
   `main` (82ea7ab8, PR #209) and reaches prod with 658f986e's deploy (run 34856840995): the activity is listed for a signed-in operator, the denial names
@@ -74,7 +74,7 @@ Every item names its model: the lowest tier that fits (Fable > Opus > Sonnet > H
   alarms gone). Left: read `/aws/lambda/prod-bd664fe-app-operator-snapshot-get` after B52z's
   attempt on the live set and fix what it logs. `auth-status.js`'s
   `logout()` awaits `window.envReady` unconditionally, which throws on a page that never loads
-  `submit.js` (the agent's finding, unfixed). **Source**: operator, 2026-09-13. In flight on `claude/b36-board` (agent worktree `claude/b36-logout`); no PR yet. **Owner**: Claude
+  `submit.js` (the agent's finding, unfixed). **Source**: operator, 2026-09-13. In flight on `claude/b36-board`, PR #220, its deploy running. **Owner**: Claude
   Code. **Model**: Sonnet. **Size**: ~1 file.
 
 ## Machine-only
