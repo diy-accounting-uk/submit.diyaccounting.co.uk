@@ -15,6 +15,7 @@ import {
 import { decodeJwtToken } from "../../lib/jwtHelper.js";
 import { registerLambdaRoute } from "../../lib/httpServerToLambdaAdaptor.js";
 import { getUserBundles } from "../../data/dynamoDbBundleRepository.js";
+import { isOperatorEmail } from "../../lib/operators.js";
 import { v4 as uuidv4 } from "uuid";
 import * as asyncApiServices from "../../services/asyncApiServices.js";
 import { initializeSalt, hashSub } from "../../services/subHasher.js";
@@ -77,7 +78,8 @@ export function extractAndValidateParameters(event, errorMessages) {
   }
 
   const userId = decodedToken.sub;
-  return { userId };
+  const userEmail = decodedToken.email || "";
+  return { userId, userEmail };
 }
 
 // HTTP request/response, aware Lambda ingestHandler function
@@ -104,7 +106,7 @@ export async function ingestHandler(event) {
   logger.info({ message: "Retrieving user bundles" });
 
   // Extract and validate parameters
-  const { userId } = extractAndValidateParameters(event, errorMessages);
+  const { userId, userEmail } = extractAndValidateParameters(event, errorMessages);
 
   const responseHeaders = { "Content-Type": "application/json", "Access-Control-Allow-Origin": "*", "Cache-Control": "no-store" };
 
@@ -124,7 +126,7 @@ export async function ingestHandler(event) {
   // Processing
   try {
     logger.info({ message: "Retrieving bundles for request", requestId });
-    result = await retrieveUserBundles(userId, requestId);
+    result = await retrieveUserBundles(userId, requestId, userEmail);
   } catch (error) {
     if (error instanceof asyncApiServices.RequestFailedError) {
       result = error.data;
@@ -149,7 +151,7 @@ export async function ingestHandler(event) {
 }
 
 // Service adaptor aware of the downstream service but not the consuming Lambda's incoming/outgoing HTTP request/response
-export async function retrieveUserBundles(userId, requestId = null) {
+export async function retrieveUserBundles(userId, requestId = null, userEmail = "") {
   logger.info({ message: "retrieveUserBundles entry", userId, requestId });
   try {
     const { loadCatalogFromRoot, getCappedBundleIds } = await import("../../services/productCatalog.js");
@@ -214,6 +216,13 @@ export async function retrieveUserBundles(userId, requestId = null) {
     // Build the union response: user bundles + unallocated catalogue bundles
     const userBundleIds = new Set(userBundles.map((b) => b.bundleId));
     const result = [];
+
+    // The operator bundle is never stored in DynamoDB (no customer holds it) -- an
+    // operator-listed email is granted it here, non-expiring, same as any other bundle.
+    if (isOperatorEmail(userEmail) && !userBundleIds.has("operator")) {
+      result.push({ bundleId: "operator", allocated: true, bundleCapacityAvailable: isCapacityAvailable("operator") });
+      userBundleIds.add("operator");
+    }
 
     for (const bundle of userBundles) {
       const tokensRemaining =

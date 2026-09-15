@@ -183,6 +183,30 @@ describe("bundleGet ingestHandler", () => {
     expect(body).toHaveProperty("tokensRemaining", 0);
   });
 
+  test("includes the operator bundle as allocated when the caller's email is on the operator list", async () => {
+    const token = makeIdToken("operator-user", { email: "antonyccartwright@gmail.com" });
+    const event = buildEventWithToken(token, {});
+
+    const response = await bundleGetHandler(event);
+
+    expect(response.statusCode).toBe(200);
+    const body = parseResponseBody(response);
+    const operatorBundle = body.bundles.find((b) => b.bundleId === "operator");
+    expect(operatorBundle).toMatchObject({ bundleId: "operator", allocated: true });
+  });
+
+  test("leaves the operator bundle unallocated for an email not on the operator list", async () => {
+    const token = makeIdToken("non-operator-user");
+    const event = buildEventWithToken(token, {});
+
+    const response = await bundleGetHandler(event);
+
+    expect(response.statusCode).toBe(200);
+    const body = parseResponseBody(response);
+    const operatorBundle = body.bundles.find((b) => b.bundleId === "operator");
+    expect(operatorBundle).toMatchObject({ bundleId: "operator", allocated: false });
+  });
+
   test("skips async request lookup when x-initial-request header is true", async () => {
     const token = makeIdToken("user-initial");
     const event = buildEventWithToken(token, {});

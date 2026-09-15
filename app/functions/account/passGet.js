@@ -47,6 +47,7 @@ export async function ingestHandler(event) {
         reason: result.reason || undefined,
         bundleId: result.bundleId || undefined,
         usesRemaining: result.usesRemaining !== undefined ? result.usesRemaining : undefined,
+        emailRestricted: result.emailRestricted || undefined,
       },
     });
   } catch (error) {
