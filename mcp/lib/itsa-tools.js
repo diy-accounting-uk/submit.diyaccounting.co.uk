@@ -16,7 +16,7 @@
 // live fields on this side, whatever the derivation itself does. A field the
 // template cannot source is omitted, never sent as a zero.
 
-import { mkdirSync, writeFileSync } from "node:fs";
+import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import { dirname, resolve as resolvePath } from "node:path";
 
 import {
@@ -26,7 +26,11 @@ import {
 import { loadTaxDataForBook, productOf } from "@diy-accounting-uk/diya-gl/dist/app/lib/product-workbook.js";
 import { z } from "zod";
 
-import MAPPING from "@diy-accounting-uk/diya-gl/dist/app/data/hmrc/sa103-mtd-mapping.json" with { type: "json" };
+// The package's SA103 field mapping, read as a file: the repository's eslint parser does not
+// accept JSON import attributes, and mcp/ has its own node_modules beside lib/.
+const MAPPING = JSON.parse(
+  readFileSync(new URL("../node_modules/@diy-accounting-uk/diya-gl/dist/app/data/hmrc/sa103-mtd-mapping.json", import.meta.url), "utf8"),
+);
 
 export const QUARTERLY_PERIOD_TYPES = ["standard", "calendar"];
 
