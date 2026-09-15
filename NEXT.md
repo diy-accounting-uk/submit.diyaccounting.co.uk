@@ -18,7 +18,7 @@ PR; the operator merges.
 
 **Prod runs deployment prod-898b2fd** (PR #220, run 34969618082), promoted with its OpsStack under
 the new `deploy-ops` gate; `prod-075487d` stands unpromoted beside it (B160). **ci**:
-`ci-claud5ca3` (b36, last-known-good, self-destructs 15:56 UTC) stands on 2026-09-15; `ci-claudf91c`'s self-destruct fired at 13:52 UTC and is deleting. B34.6b's poll is the only b32 item left open.
+`ci-claud5ca3` (b36, last-known-good, self-destructs 15:56 UTC) stands on 2026-09-15; `ci-claudf91c`'s self-destruct fired at 13:52 UTC and is deleting. PR #222 (b38, 70b0a8e2) is deploying.
 
 The board runs in five sections, in this order: **in flight** (a branch, a pull request or a run
 in motion, each named in the row), **machine-only**, **human and machine**, **human-only**,
@@ -38,16 +38,6 @@ Every item names its model: the lowest tier that fits (Fable > Opus > Sonnet > H
 
 ## In flight
 
-- [ ] **B34.6b. Companies House accounts filing: the sandbox proof.** Submission 000004 (presenter
-  E0000052288, company 06846849, 2026-09-13 19:04 UTC) was ACCEPTED by the XML Gateway test
-  service; every `GetSubmissionStatus` poll for it answers 9999 "No presenter ID supplied": with the
-  body's `PresenterID` plaintext (transaction 1789391567972, 13:12:48 UTC on 2026-09-14) and with
-  it hashed as `md5(presenterId)` (transaction 1789481253426, 14:07:33 UTC on 2026-09-15, on
-  `ci-claud5ca3`). The hash was not the asymmetry; the body is back to plaintext on
-  `claude/b38-board` (9e4b051d), PR #222, its deploy running. Nothing else on our side is left to try:
-  O44 cites both transactions to Companies House, and the `prod` listing (held as unreferenced
-  local commit 946251d4) waits on their answer. **Source**: BACKLOG 34b. **Owner**: Claude Code.
-  **Model**: Sonnet. **Size**: ~1 file.
 ## Machine-only
 
 - [ ] **B52y.2. Check the nightly snapshot after the SecurityLakeStack reaches prod.** PR #218
@@ -179,6 +169,16 @@ Every item names its model: the lowest tier that fits (Fable > Opus > Sonnet > H
   none.
 
 ## Blocked
+
+- [ ] **B34.6b. Companies House accounts filing: the sandbox proof.** Submission 000004 (presenter
+  E0000052288, company 06846849, 2026-09-13 19:04 UTC) was ACCEPTED by the XML Gateway test
+  service; every `GetSubmissionStatus` poll for it answers 9999 "No presenter ID supplied", with
+  the body's `PresenterID` plaintext (transaction 1789391567972, 2026-09-14 13:12:48 UTC) and
+  hashed (1789481253426, 2026-09-15 14:07:33 UTC); the body is plaintext on `main` (PR #222).
+  Nothing on our side is left to try. When Companies House answers O44: if they enable status
+  lookups, poll once more on a ci set and pin the result in the test; then apply the `prod`
+  listing (held as unreferenced local commit 946251d4). **Source**: BACKLOG 34b. **Owner**:
+  Claude Code. **Model**: Sonnet. Blocked on O44's answer from Companies House. **Size**: ~1 file.
 
 - [ ] **B34.7. Run and fix the filing suites' sandbox sign-in.** Batch 9 (6957651c) carries
   the suites' sandbox sign-in with the authenticator step, off by default: `deploy.yml` and
