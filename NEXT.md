@@ -38,6 +38,9 @@ Every item names its model: the lowest tier that fits (Fable > Opus > Sonnet > H
 
 ## In flight
 
+**COOL-DOWN is on since 2026-09-15T17:34:47Z.** No new board rows except a degradation. Agents commit
+and stop. One branch is driven green at a time. Lifted only by the operator in their own words.
+
 - [ ] **B17v.2. Publish the walkthrough videos.** The five recordings are on the channel, unlisted,
   since 2026-09-15 (PR #225 records the ids in `videos/publish.json`; its deploy is running). After
   O32 names which go public, the operator runs `npm run video:publish -- --public` (it flips every
