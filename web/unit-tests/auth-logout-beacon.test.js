@@ -72,7 +72,7 @@ describe("logout beacon", () => {
       addEventListener: () => {},
     });
     vi.stubGlobal("window", {
-      location: { origin: "https://submit.test", pathname: "/", href: "" },
+      location: { origin: "https://submit.test", pathname: "/", href: "", reload: vi.fn() },
       addEventListener: () => {},
       localStorage: localStorageStub,
       sessionStorage: sessionStorageStub,
@@ -132,5 +132,48 @@ describe("logout beacon", () => {
 
     expect(beaconBodies()[0].email).toBe("someone@example.com");
     expect(globalThis.localStorage.getItem("userInfo")).toBeNull();
+  });
+
+  describe("outside the simulator, without env-loader.js on the page", () => {
+    beforeEach(() => {
+      // Not every page that carries auth-status.js also loads env-loader.js, so
+      // window.envReady can be undefined here — logout() must not depend on it.
+      globalThis.document.documentElement.dataset.simulator = "false";
+    });
+
+    it("still clears the stored session and reloads when window.envReady was never set", async () => {
+      store.userInfo = JSON.stringify({ sub: "abc", email: "someone@example.com" });
+      loadWidget();
+
+      await globalThis.window.AuthStatus.logout();
+
+      expect(globalThis.localStorage.getItem("userInfo")).toBeNull();
+      expect(globalThis.window.location.reload).toHaveBeenCalled();
+    });
+
+    it("still clears the stored session and reloads when window.envReady rejects", async () => {
+      store.userInfo = JSON.stringify({ sub: "abc", email: "someone@example.com" });
+      globalThis.window.envReady = Promise.reject(new Error("Failed to load /submit.env"));
+      loadWidget();
+
+      await globalThis.window.AuthStatus.logout();
+
+      expect(globalThis.localStorage.getItem("userInfo")).toBeNull();
+      expect(globalThis.window.location.reload).toHaveBeenCalled();
+    });
+
+    it("redirects to the Cognito logout endpoint when window.envReady resolves with the values", async () => {
+      store.userInfo = JSON.stringify({ sub: "abc", email: "someone@example.com" });
+      globalThis.window.envReady = Promise.resolve({
+        COGNITO_BASE_URI: "https://auth.example.com/",
+        COGNITO_CLIENT_ID: "client123",
+      });
+      loadWidget();
+
+      await globalThis.window.AuthStatus.logout();
+
+      expect(globalThis.window.location.href).toContain("https://auth.example.com/logout?");
+      expect(globalThis.window.location.href).toContain("client_id=client123");
+    });
   });
 });
