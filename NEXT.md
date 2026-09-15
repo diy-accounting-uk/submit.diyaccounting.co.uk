@@ -39,15 +39,15 @@ Every item names its model: the lowest tier that fits (Fable > Opus > Sonnet > H
 
 ## In flight
 
-## Machine-only
-
 - [ ] **B158d. `watch-ci.sh` ends on one cycle's empty answer.** The TALLY fires the first cycle
   that counts no run in flight, so one eventually-consistent `gh run list` answer ends the watch
   early: at 12:37 UTC on 2026-09-15 it printed "all terminal, 7 latest runs, 0 red" on `main`
   while `deploy` 34969618082, `deploy environment` and `test` were in progress, one cycle after
   seeding with 5 in flight. Require two consecutive cycles with nothing in flight (and the same
-  run set) before the TALLY. **Source**: B158c in use, 2026-09-15. **Owner**: Claude Code.
+  run set) before the TALLY. **Source**: B158c in use, 2026-09-15. In flight on `claude/b37-board`, PR #221 (01b0b1f6). **Owner**: Claude Code.
   **Model**: Haiku. **Size**: ~1 file.
+
+## Machine-only
 
 - [ ] **B52y.2. Check the nightly snapshot after the SecurityLakeStack reaches prod.** PR #218
   (9b695aab) adds the `deploy-security-lake` job and the per-observation null; prod's environment
