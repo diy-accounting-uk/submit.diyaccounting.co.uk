@@ -40,26 +40,14 @@ Every item names its model: the lowest tier that fits (Fable > Opus > Sonnet > H
 
 - [ ] **B34.6b. Companies House accounts filing: the sandbox proof.** Submission 000004 (presenter
   E0000052288, company 06846849, 2026-09-13 19:04 UTC) was ACCEPTED by the XML Gateway test
-  service; every `GetSubmissionStatus` poll for it answers 9999 "No presenter ID supplied", the
-  tenth at 13:12:48 UTC on 2026-09-14 (transaction 1789391567972, on `ci-claud3123`). The logged
-  request is schema-correct: `SubmissionNumber` then `PresenterID` in the
-  `xmlgw.companieshouse.gov.uk` namespace, and the same header authenticated the accepted
-  submission. One asymmetry is left to try: the header's `SenderID` is `md5(presenterId)`, the
-  body's `PresenterID` is plaintext. Sending the hashed form is on `main`
-  (57dfdc17, PR #214). The poll itself is not done: it needs the branch's code on a ci
-  Lambda, and the lean deploy that puts it there was broken — `scripts/deploy-app.js` hardcoded the
-  pre-migration account so `deploy:app-ci` failed at the ECR push; PR #214 fixed that (d7daa69e, the
-  account now comes from the active credentials). Left: run
-  a standing ci set (`ci-claud5ca3` until 15:56 UTC on 2026-09-15 already carries the code, so no
-  lean deploy is needed; after that a fresh `deploy.yml` dispatch), then, once the operator has
-  said go to the Cognito write `npm run test:enableCognitoNative` makes on ci, poll
-  `GET /api/v1/companies-house/accounts/000004` signed in and read the two gateway log lines. If the
-  gateway returns a status, keep 57dfdc17, pin it in the test, and apply the `prod` listing (held as
-  unreferenced local commit 946251d4); if it still answers 9999, revert the body to plaintext and
-  cite both transactions to Companies House. O44 asks Companies House in parallel and can cite the
-  13:12:48 transaction (1789391567972). **Source**: BACKLOG 34b. In flight: the poll is running on `ci-claud5ca3` (agent worktree `claude/b38-chpoll`, batch `claude/b38-board`), the operator having said go to the Cognito write at 14:03 UTC on 2026-09-15. **Owner**: Claude Code.
+  service; every `GetSubmissionStatus` poll for it answers 9999 "No presenter ID supplied": with the
+  body's `PresenterID` plaintext (transaction 1789391567972, 13:12:48 UTC on 2026-09-14) and with
+  it hashed as `md5(presenterId)` (transaction 1789481253426, 14:07:33 UTC on 2026-09-15, on
+  `ci-claud5ca3`). The hash was not the asymmetry; the body is back to plaintext on
+  `claude/b38-board` (9e4b051d), PR to follow the suite. Nothing else on our side is left to try:
+  O44 cites both transactions to Companies House, and the `prod` listing (held as unreferenced
+  local commit 946251d4) waits on their answer. **Source**: BACKLOG 34b. **Owner**: Claude Code.
   **Model**: Sonnet. **Size**: ~1 file.
-
 ## Machine-only
 
 - [ ] **B52y.2. Check the nightly snapshot after the SecurityLakeStack reaches prod.** PR #218
@@ -134,7 +122,9 @@ Every item names its model: the lowest tier that fits (Fable > Opus > Sonnet > H
   to Neal at `xml@companieshouse.gov.uk`, naming: presenter E0000052288, company 06846849, test
   package reference 0012; submissions 000002 and 000003 (2026-09-13 18:19 UTC) rejected with error
   9999 "No element 'Authority'", since fixed; submission 000004 (19:04 UTC) acknowledged with no
-  errors; and that every `GetSubmissionStatus` for 000004 answers 9999 "No presenter ID supplied".
+  errors; and that every `GetSubmissionStatus` for 000004 answers 9999 "No presenter ID supplied", with the
+  `PresenterID` plaintext (transaction 1789391567972, 2026-09-14 13:12:48 UTC) and hashed
+  (transaction 1789481253426, 2026-09-15 14:07:33 UTC).
   Ask whether 000004 was accepted and whether status lookups are enabled for this presenter.
   **Source**: BACKLOG 34b. **Owner**: Operator. **Model**: none.
 
