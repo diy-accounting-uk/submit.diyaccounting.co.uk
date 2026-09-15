@@ -40,16 +40,11 @@ Every item names its model: the lowest tier that fits (Fable > Opus > Sonnet > H
 
 ## In flight
 
-## Machine-only
-
-- [ ] **B52y.2. Check the nightly snapshot after the SecurityLakeStack reaches prod.** PR #218
-  (9b695aab) adds the `deploy-security-lake` job and the per-observation null; prod's environment
-  deploy of that merge creates the Glue tables. After the next 03:15 UTC run, read
-  `snapshots/prod/latest.json`: `generatedAt` past 2026-09-16 03:15, `failedObservationCount` 0,
-  and any observation answering null where its view has rows (two views are monthly or quarterly
-  grain, so a 30-day window can be empty by design). Issue #208 closes when the alarm clears.
-  **Source**: `PLAN_ONE_STOP_DASHBOARD.md` D7, D13, D14, D15. **Owner**: Claude Code. **Model**:
-  Haiku. **Size**: ~0 files.
+All twelve rows below ride **`claude/b40-board`, PR #226** (push 20:22 UTC 2026-09-15: deploy
+35019240338, deploy environment 35019240125 for ci, test 35019239793). `/watch` holds the scope;
+`/auto-merge` lands it. B165's secret exists on ci once the environment deploy finishes; the prod
+environment deploy runs after the merge, before promotion. B166's required status check on ruleset
+16057564 is the coordinator's `gh api` call after the merge.
 
 - [ ] **B52v. The operator dashboard answers "Failed to load the operator snapshot".** Opened by
   the operator at 16:39 UTC on 2026-09-15 on `prod-70b0a8e` (the operator list works: the page and
@@ -182,6 +177,32 @@ Every item names its model: the lowest tier that fits (Fable > Opus > Sonnet > H
   `PLAN_SUBMISSION_MCP.md` M1; BACKLOG 51. **Owner**: Claude Code. **Model**: Sonnet. **Size**:
   ~6 files.
 
+## Machine-only
+
+- [ ] **B52y.2. Check the nightly snapshot after the SecurityLakeStack reaches prod.** PR #218
+  (9b695aab) adds the `deploy-security-lake` job and the per-observation null; prod's environment
+  deploy of that merge creates the Glue tables. After the next 03:15 UTC run, read
+  `snapshots/prod/latest.json`: `generatedAt` past 2026-09-16 03:15, `failedObservationCount` 0,
+  and any observation answering null where its view has rows (two views are monthly or quarterly
+  grain, so a 30-day window can be empty by design). Issue #208 closes when the alarm clears.
+  **Source**: `PLAN_ONE_STOP_DASHBOARD.md` D7, D13, D14, D15. **Owner**: Claude Code. **Model**:
+  Haiku. **Size**: ~0 files.
+
+- [ ] **B30z. Exclude the deploy role from the four CIS metric filters.** B30y's re-count: the CIS
+  families `unauthorized-api-calls` (16 fires), `iam-policy` (12), `s3-bucket-policy` (6) and
+  `route-table` (6) are new since 2026-09-08 and 36 of their 40 fires sit inside deploy windows,
+  because the deploy role's own CloudFormation calls match the filters. Exclude the deploy role's
+  principal in the four filters in `SecurityDetectionStack`, both accounts, with the CDK test.
+  **Source**: `_developers/ALARM_AUDIT_2026-09.md`, 2026-09-15 section. **Owner**: Claude Code.
+  **Model**: Sonnet. **Size**: ~2 files.
+
+- [ ] **B30aa. The api-5xx fire inside a fresh set's own deploy.** B30y's re-count: `app-api-5xx`
+  fires once per fresh set during its deploy (before promotion) and then only for real errors.
+  Find which route answers 5xx while the set is still deploying (the probes against an
+  unpromoted API, or a Lambda before its provisioned alias exists) and either fix the route or hold
+  the alarm's actions until promotion. **Source**: `_developers/ALARM_AUDIT_2026-09.md`, 2026-09-15
+  section. **Owner**: Claude Code. **Model**: Sonnet. **Size**: ~2 files.
+
 ## Human and machine
 
 - [ ] **O28. Send `Gov-Client-Multi-Factor` on every request: mandate MFA in the pool.** Every
@@ -234,10 +255,10 @@ Every item names its model: the lowest tier that fits (Fable > Opus > Sonnet > H
   operator's own account and is the single move that fixes the worst disclosure gap; and
   `diya-agent`, for unattended model runs, so a reader can tell a model's PR from a pipeline's and
   our commits stop being attributed to the GitHub user `claude`. Both are free: an app to create
-  and a private key into Secrets Manager. Neither depends on signing. B77's support-form work now reads the same
-  `OPS_GITHUB_TOKEN_SECRET_ARN` config point the alarm Lambda uses, so rotating the secret
-  `{env}/submit/github/issue_bot_token` in ci and prod to the app's token moves both public-write
-  paths onto it at once, with no code change and no new secret name. While deciding, settle recommendation 12 as well: the byline on articles
+  and a private key into Secrets Manager. Neither depends on signing. The alarm Lambda reads
+  `{env}/submit/github/issue_bot_token` and the support form reads
+  `{env}/submit/github/support_bot_token` (B165), so the app's token goes into both secrets, or a
+  second app carries the spreadsheets-only support writes. While deciding, settle recommendation 12 as well: the byline on articles
   and support replies, before the emails-to-articles pipeline is built, because that is the largest
   volume of machine-written public prose the company will produce. **Source**:
   `REPORT_IDENTITY_AUDIT.md` section 8, recommendations 2, 3 and 12. **Owner**: Operator.
