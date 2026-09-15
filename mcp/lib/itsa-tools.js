@@ -132,8 +132,18 @@ function readPath(target, path) {
   return node;
 }
 
-function writePath(target, path, value) {
+const UNSAFE_PATH_PARTS = new Set(["__proto__", "constructor", "prototype"]);
+
+/**
+ * Writes a value at a dotted path, creating the objects between. A part that
+ * would reach the prototype chain is refused, so a path can never pollute
+ * Object.prototype however the mapping or a caller spells it.
+ */
+export function writePath(target, path, value) {
   const parts = path.split(".");
+  for (const part of parts) {
+    if (UNSAFE_PATH_PARTS.has(part)) throw new Error(`Refusing to write the path ${path}: ${part} is not a field`);
+  }
   let node = target;
   for (let i = 0; i < parts.length - 1; i++) {
     if (!Object.hasOwn(node, parts[i]) || node[parts[i]] === null || typeof node[parts[i]] !== "object") node[parts[i]] = {};

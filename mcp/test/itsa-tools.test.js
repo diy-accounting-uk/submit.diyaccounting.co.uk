@@ -14,6 +14,7 @@ import {
   deriveItsaAnnualSubmission,
   deriveItsaQuarterlyUpdate,
   quarterlyFieldSlots,
+  writePath,
 } from "../lib/itsa-tools.js";
 
 const FIXTURES = fileURLToPath(new URL("./fixtures/", import.meta.url));
@@ -201,5 +202,22 @@ describe("derive_itsa_annual_submission", () => {
     const ltd = createSession();
     await openBook(ltd, { path: LTD });
     await expect(deriveItsaAnnualSubmission(ltd)).rejects.toThrow(/"ltd" book/);
+  });
+});
+
+describe("writePath", () => {
+  test("creates the objects between a dotted path and sets the leaf", () => {
+    const target = {};
+    writePath(target, "adjustments.basisAdjustment", 12.5);
+    expect(target).toEqual({ adjustments: { basisAdjustment: 12.5 } });
+  });
+
+  test("refuses a part that would reach the prototype chain", () => {
+    const target = {};
+    for (const path of ["__proto__.polluted", "adjustments.constructor.prototype.x", "prototype.x"]) {
+      expect(() => writePath(target, path, 1)).toThrow(/is not a field/);
+    }
+    expect({}.polluted).toBeUndefined();
+    expect(target).toEqual({});
   });
 });
