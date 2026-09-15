@@ -44,7 +44,7 @@ Every item names its model: the lowest tier that fits (Fable > Opus > Sonnet > H
   body's `PresenterID` plaintext (transaction 1789391567972, 13:12:48 UTC on 2026-09-14) and with
   it hashed as `md5(presenterId)` (transaction 1789481253426, 14:07:33 UTC on 2026-09-15, on
   `ci-claud5ca3`). The hash was not the asymmetry; the body is back to plaintext on
-  `claude/b38-board` (9e4b051d), PR to follow the suite. Nothing else on our side is left to try:
+  `claude/b38-board` (9e4b051d), PR #222, its deploy running. Nothing else on our side is left to try:
   O44 cites both transactions to Companies House, and the `prod` listing (held as unreferenced
   local commit 946251d4) waits on their answer. **Source**: BACKLOG 34b. **Owner**: Claude Code.
   **Model**: Sonnet. **Size**: ~1 file.
