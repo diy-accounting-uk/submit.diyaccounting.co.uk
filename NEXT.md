@@ -45,7 +45,7 @@ Every item names its model: the lowest tier that fits (Fable > Opus > Sonnet > H
   monitor re-emits it every 75s and floods the session (the Monitor tool auto-stops a chatty
   monitor). Emit it once per branch per distinct non-gating set, the way RED and MERGEABLE dedup
   through the state dir, not every cycle. **Source**: B158 in prod, observed 2026-09-14.
-  Committed on `claude/b34-watch` (90c324e6), for the next batch's PR. **Owner**: Claude Code. **Model**: Haiku. **Size**: ~1 file.
+  On `claude/b34-board` (766908c8); PR to follow the suite. **Owner**: Claude Code. **Model**: Haiku. **Size**: ~1 file.
 
 - [ ] **B52ab. The public pass check rejects every email-restricted pass.** `bundles.html`
   checks a code with the unauthenticated `GET /api/v1/pass?code=` before redeeming, and
@@ -56,10 +56,8 @@ Every item names its model: the lowest tier that fits (Fable > Opus > Sonnet > H
   seen 07:25 UTC on 2026-09-15 with the operator pass `harsh-noted-plaid-glyph` (three GETs in
   `prod-bd664fe-app-pass-get`, no POST). Fix: the check answers valid with `emailRestricted: true`
   when it has no email, `wrong_email` when one mismatches; the POST is unchanged; the page words
-  the invited-email case. Committed on `claude/b34-pass`, for the next batch's PR. **Source**:
+  the invited-email case. On `claude/b34-board` (cf8ef7e9); PR to follow the suite. **Source**:
   B52z, 2026-09-15. **Owner**: Claude Code. **Model**: Sonnet. **Size**: ~3 files.
-
-## Machine-only
 
 - [ ] **B52aa. An operator list in the repository grants the dashboard activity.** Operator,
   2026-09-15, verbatim: "I want my email antonyccartwright@gmail.com committed to the repository
@@ -76,7 +74,9 @@ Every item names its model: the lowest tier that fits (Fable > Opus > Sonnet > H
   Companies House activities, receipts, the two pass generators and Learn; the
   `/api/v1/operator/*` and `operator/dashboard.html` entitlement check reads the same match. Unit
   tests for the match and the grant; one browser test that a listed email sees the activity.
-  **Source**: operator, 2026-09-15. **Owner**: Claude Code. **Model**: Sonnet. **Size**: ~5 files.
+  **Source**: operator, 2026-09-15. Landed on `claude/b34-board` (d44a0499); PR to follow the suite. **Owner**: Claude Code. **Model**: Sonnet. **Size**: ~5 files.
+
+## Machine-only
 
 - [ ] **B30x. The CIS console-sign-in-without-MFA alarm fires on SSO sign-ins.** Issue #206:
   `prod-env-cis-console-signin-without-mfa` fired at 23:42 UTC on 2026-09-13 for the operator's
