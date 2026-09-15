@@ -56,7 +56,7 @@ Every item names its model: the lowest tier that fits (Fable > Opus > Sonnet > H
   put keyed on alarm name and state-change timestamp in an existing ops table before the create, or
   list open issues through the REST issues endpoint (not search) and set the function's reserved
   concurrency to 1. Both issues are closed (the probe failure was the deploy's apex move).
-  **Source**: issues #210, #212. **Owner**:
+  **Source**: issues #210, #212. In flight on `claude/b35-board`, PR #218, its deploy running. **Owner**:
   Claude Code. **Model**: Sonnet. **Size**: ~2 files.
 
 - [ ] **B52y. The nightly snapshot has not published since 2026-09-13 03:16.** Issue #208
@@ -73,7 +73,7 @@ Every item names its model: the lowest tier that fits (Fable > Opus > Sonnet > H
   it, and make one observation's failed query answer null for that observation instead of failing
   the whole publish. Then check `latest.json` for any observation that answers null where its
   view has rows (two views are monthly or quarterly grain, so a 30-day window can be empty by
-  design). **Source**: `PLAN_ONE_STOP_DASHBOARD.md` D7, D13, D14, D15. Closes #208. **Owner**:
+  design). **Source**: `PLAN_ONE_STOP_DASHBOARD.md` D7, D13, D14, D15. Closes #208. In flight on `claude/b35-board`, PR #218, its deploy running. **Owner**:
   Claude Code. **Model**: Sonnet. **Size**: ~3 files.
 
 ## Machine-only
