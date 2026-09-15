@@ -1,0 +1,83 @@
+# SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0
+# Copyright (C) 2006-2026 DIY Accounting Limited
+
+# Sets the agent kill switch for one environment. Every unattended agent path (alarm-triage.yml
+# and the three agentic-lib workflows) reads /submit/<env>/agents/kill-switch through
+# .github/actions/agent-kill-switch before it acts and stops when the flag is on, so this one
+# dispatch is how the operator stops all of them from anywhere gh runs:
+#
+#   gh workflow run agent-kill-switch.yml -f state=on -f environment-name=prod
+#   gh workflow run agent-kill-switch.yml -f state=off -f environment-name=prod
+#
+# The parameter itself is created by the environment deploy (ObservabilityStack) with the value
+# off; this workflow only ever overwrites it.
+
+name: agent kill switch
+
+on:
+  workflow_dispatch:
+    inputs:
+      state:
+        description: 'on stops every unattended agent path in the environment; off lets them run'
+        required: true
+        type: choice
+        options:
+          - 'on'
+          - 'off'
+      environment-name:
+        description: 'The environment whose flag to set'
+        required: true
+        type: choice
+        options:
+          - ci
+          - prod
+
+permissions:
+  id-token: write
+  contents: read
+
+env:
+  AWS_REGION: eu-west-2
+
+jobs:
+  set:
+    name: 'set the kill switch ${{ inputs.state }} on ${{ inputs.environment-name }}'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    environment: ${{ inputs.environment-name }}
+    env:
+      KILL_SWITCH_PARAMETER: /submit/${{ inputs.environment-name }}/agents/kill-switch
+      KILL_SWITCH_STATE: ${{ inputs.state }}
+    steps:
+      - name: Configure AWS role via GitHub OIDC
+        uses: aws-actions/configure-aws-credentials@v6
+        with:
+          role-to-assume: ${{ vars.SUBMIT_ACTIONS_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+          role-chaining: false
+          audience: sts.amazonaws.com
+          role-skip-session-tagging: true
+          output-credentials: true
+          retry-max-attempts: 3
+
+      - name: Assume AWS deployment role
+        uses: aws-actions/configure-aws-credentials@v6
+        with:
+          role-to-assume: ${{ vars.SUBMIT_DEPLOY_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+          role-chaining: true
+          audience: sts.amazonaws.com
+          role-skip-session-tagging: true
+          output-credentials: true
+          retry-max-attempts: 3
+
+      - name: Set the kill switch
+        run: |
+          set -euo pipefail
+          aws ssm put-parameter --name "$KILL_SWITCH_PARAMETER" --type String --value "$KILL_SWITCH_STATE" --overwrite
+          state=$(aws ssm get-parameter --name "$KILL_SWITCH_PARAMETER" --query 'Parameter.Value' --output text)
+          echo "$KILL_SWITCH_PARAMETER is now $state" | tee -a "$GITHUB_STEP_SUMMARY"
+          if [ "$state" != "$KILL_SWITCH_STATE" ]; then
+            echo "::error::the read-back value '$state' is not the requested '$KILL_SWITCH_STATE'"
+            exit 1
+          fi

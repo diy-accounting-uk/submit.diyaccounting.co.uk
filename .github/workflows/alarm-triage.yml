@@ -195,6 +195,12 @@ jobs:
           output-credentials: true
           retry-max-attempts: 3
 
+      - name: Stop when the agent kill switch is on
+        if: steps.role.outputs.configured == 'true'
+        uses: ./.github/actions/agent-kill-switch
+        with:
+          environment-name: ${{ env.ENV_NAME }}
+
       - name: Read the guardrail identifiers
         if: steps.role.outputs.configured == 'true'
         id: guardrail

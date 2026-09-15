@@ -540,6 +540,9 @@ class SubmitEnvironmentCdkResourceTest {
                 "AWS::SSM::Parameter", Match.objectLike(Map.of("Name", "/submit/test/alarm-triage/guardrail-id")));
         observability.hasResourceProperties(
                 "AWS::SSM::Parameter", Match.objectLike(Map.of("Name", "/submit/test/alarm-triage/guardrail-version")));
+        observability.hasResourceProperties(
+                "AWS::SSM::Parameter",
+                Match.objectLike(Map.of("Name", "/submit/test/agents/kill-switch", "Value", "off")));
     }
 
     /**

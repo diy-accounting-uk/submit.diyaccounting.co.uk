@@ -1138,6 +1138,7 @@ public class SubmitSharedNames {
     public String alarmTriageGuardrailName;
     public String alarmTriageGuardrailIdParameterName;
     public String alarmTriageGuardrailVersionParameterName;
+    public String agentKillSwitchParameterName;
 
     public static class SubmitSharedNamesProps {
         public String hostedZoneName;
@@ -4150,6 +4151,7 @@ public class SubmitSharedNames {
         this.alarmTriageGuardrailIdParameterName = "/submit/%s/alarm-triage/guardrail-id".formatted(props.envName);
         this.alarmTriageGuardrailVersionParameterName =
                 "/submit/%s/alarm-triage/guardrail-version".formatted(props.envName);
+        this.agentKillSwitchParameterName = "/submit/%s/agents/kill-switch".formatted(props.envName);
     }
 
     /**

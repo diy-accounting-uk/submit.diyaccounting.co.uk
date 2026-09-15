@@ -91,6 +91,13 @@ jobs:
           output-credentials: true
           retry-max-attempts: 3
 
+      # These three workflows declare no environment (NEXT.md B124), so they read the ci account's
+      # flag with whatever credentials the step above resolved; one flag per account is the model.
+      - name: Stop when the agent kill switch is on
+        uses: ./.github/actions/agent-kill-switch
+        with:
+          environment-name: ci
+
       - name: Install Claude Code
         run: npm install -g "@anthropic-ai/claude-code@${CLAUDE_CODE_VERSION}"
 

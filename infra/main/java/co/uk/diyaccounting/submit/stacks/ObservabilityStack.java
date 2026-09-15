@@ -996,5 +996,18 @@ public class ObservabilityStack extends Stack {
                 .build();
 
         cfnOutput(this, "AlarmTriageGuardrailId", alarmTriageGuardrail.getAttrGuardrailId());
+
+        // The agent kill switch: one flag every unattended agent path reads before acting
+        // (alarm-triage.yml and the three agentic-lib workflows, through
+        // .github/actions/agent-kill-switch). `on` stops them; agent-kill-switch.yml sets it
+        // through the deployment role, so the operator can stop everything with one dispatch.
+        // CloudFormation only rewrites the value when this resource itself changes, so a flag
+        // set to `on` survives an ordinary environment deploy and is turned off by the same
+        // dispatch.
+        StringParameter.Builder.create(this, props.resourceNamePrefix() + "-AgentKillSwitchParameter")
+                .parameterName(props.sharedNames().agentKillSwitchParameterName)
+                .stringValue("off")
+                .description("Set to on to stop every unattended agent workflow before it acts")
+                .build();
     }
 }
