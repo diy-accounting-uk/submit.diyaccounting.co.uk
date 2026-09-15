@@ -14,6 +14,7 @@ import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
 
 import { createSession, openBook, saveBook, SAVE_FORMATS } from "./book-tools.js";
+import { deriveVatReturn } from "./vat-tools.js";
 
 const PACKAGE_JSON = resolve(dirname(fileURLToPath(import.meta.url)), "..", "package.json");
 
@@ -58,6 +59,25 @@ export const TOOLS = {
     },
     handler: saveBook,
   },
+  derive_vat_return: {
+    description:
+      "The nine VAT boxes for one obligation period from the session's loaded book, read from the engine's own VAT " +
+      "interface: the quarter ending on periodEnd (a month end the book carries), with HMRC's field names and " +
+      "rounding, the three months' figures, and every sales and purchases journal line that fed boxes 1, 4, 6 and 7. " +
+      "Refuses a book that is not VAT registered, a period the book does not carry, and a period whose lines do not " +
+      "reconcile with the interface.",
+    inputSchema: {
+      periodEnd: z.string().describe("The obligation's period end, YYYY-MM-DD; must be a month end the book's VAT interface carries"),
+      periodStart: z
+        .string()
+        .optional()
+        .describe("The obligation's period start, YYYY-MM-DD; refused unless it opens the quarter ending periodEnd"),
+      periodKey: z.string().optional().describe("The obligation's period key, echoed back for the submit call"),
+    },
+    handler: deriveVatReturn,
+  },
+  // derive_micro_entity_accounts registers here (M1c); the ITSA derivations
+  // (B11.T9) register through registerItsaTools in ./itsa-tools.js.
 };
 
 /**
