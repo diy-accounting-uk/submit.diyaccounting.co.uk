@@ -15,5 +15,4 @@ A launchd agent template (`scripts/co.uk.diyaccounting.submit.fraud-header-check
 on the 5th and 12th of each month; see `_developers/SETUP.md` step 9 for install/uninstall and
 the AWS profile the alert needs.
 
-What remains: a compliance panel that reads the `data/compliance/fraud-prevention-headers/`
-records — nothing in this repo builds or serves one yet.
+The compliance panel reads the `data/compliance/fraud-prevention-headers/` records (`PLAN_ONE_STOP_DASHBOARD.md` D15).

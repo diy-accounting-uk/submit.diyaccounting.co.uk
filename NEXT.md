@@ -16,12 +16,11 @@ runs), and for Claude Code steps the **Model** a sub-agent should use (Fable > O
 Haiku; the lowest tier that fits). Anything touching code goes through a `claude/*` branch and
 PR; the operator merges.
 
-**Prod runs deployment prod-70b0a8e** (PR #222, run 34984108471), promoted under the `deploy-ops`
-gate; it is the only prod set. `main`'s deploy of PR #226 (run 35028380205, from 21:56 UTC on
-2026-09-15) is in its environment stage and promotes the next prod set when its probes pass. **ci**:
-`ci-claud76c4` stands (the b40 branch's set, ci's last-known-good), self-destruct at 00:47 UTC on
-2026-09-16; `ci-claud727f`'s `ApiStack` is DELETE_FAILED on the Cognito authorizer until the
-`destroy-ci.yml` sweep at 02:34 UTC on 2026-09-16 force-deletes it.
+**Prod runs deployment prod-9f58aaa** (PR #226, run 35028380205), promoted under the `deploy-ops`
+gate at 22:5x UTC on 2026-09-15; the same run destroyed `prod-70b0a8e`, so it is the only prod set.
+**ci**: `ci-clauda7c7` (the b41 branch's set, PR #232) and `ci-claud76c4` (b40's, ci's last-known-good)
+stand until their self-destructs; `ci-claud727f`'s `ApiStack` is DELETE_FAILED on the Cognito
+authorizer until the `destroy-ci.yml` sweep at 02:34 UTC on 2026-09-16 force-deletes it.
 
 The board runs in five sections, in this order: **in flight** (a branch, a pull request or a run
 in motion, each named in the row), **machine-only**, **human and machine**, **human-only**,
@@ -146,6 +145,13 @@ dashboard was opened; those close when the old set goes.
   customer on ci and say go. Then the machine half: the one-word change, its CDK test, and a ci
   deploy proving native sign-in still completes. **Source**: `../REPORT_HMRC_HEADER_ADVISORIES.md`.
   **Owner**: Operator decides, Claude Code changes. **Model**: Haiku. **Size**: ~2 files.
+
+- [ ] **B11.T10. ITSA phase 2: the recognition pack.** `PLAN_ITSA_PHASE_2.md` T10, its inputs (T7r, T21, T22) on `main`:
+  `_developers/hmrc/ITSA_PRODUCTION_APPROVALS_CHECKLIST.md`, an ITSA pass over the two
+  questionnaires, and the two draft emails for the operator to send. One application now covers
+  both approval stages, and the checklist answers for all nine APIs in the minimum functionality
+  standards with a build behind each. **Source**: BACKLOG 11; `PLAN_ITSA_PHASE_2.md` T10.
+  **Owner**: Claude Code, then Operator. **Model**: Haiku. **Size**: ~3 files.
 
 ## Human-only
 
@@ -297,14 +303,6 @@ dashboard was opened; those close when the old set goes.
   Blocked on the brand package existing, now planned in the spreadsheets repository's
   `PLAN_DIYACCOUNTING_BRAND.md`. **Size**: ~6 files.
 
-- [ ] **B11.T10. ITSA phase 2: the recognition pack.** `PLAN_ITSA_PHASE_2.md` T10:
-  `_developers/hmrc/ITSA_PRODUCTION_APPROVALS_CHECKLIST.md`, an ITSA pass over the two
-  questionnaires, and the two draft emails for the operator to send. One application now covers
-  both approval stages, and the checklist answers for all nine APIs in the minimum functionality
-  standards with a build behind each. **Source**: BACKLOG 11; `PLAN_ITSA_PHASE_2.md` T10.
-  **Owner**: Claude Code, then Operator. **Model**: Haiku. Blocked on B11.T7r, B11.T21 and
-  B11.T22. **Size**: ~3 files.
-
 ## Discipline
 
 - **Push once per batch of landed tracks, never per track**, and prefer one dispatch that
@@ -314,3 +312,4 @@ dashboard was opened; those close when the old set goes.
   froze pushes twice. A freeze, when the operator calls one, stops `git push`,
   `gh workflow run` and `gh pr create` until they lift it in their own words; local commits,
   worktree tracks and reading logs continue, and a failed job gets a proposed fix in the reply.
+

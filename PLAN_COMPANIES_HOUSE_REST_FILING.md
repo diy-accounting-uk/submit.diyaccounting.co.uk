@@ -4,7 +4,7 @@
 # PLAN: Companies House REST filing (registered office and registered email address)
 
 > Backlog item B34.3a. Source issue #15, split tracker in
-> `PLAN_ISSUE_15_limited_company_endpoints.md`.
+> `_developers/archive/PLAN_ISSUE_15_limited_company_endpoints.md`.
 > Accounts filing through the XML Gateway is a separate item (B34.3b) and is out of scope here.
 
 ## Operator assertions (verbatim)

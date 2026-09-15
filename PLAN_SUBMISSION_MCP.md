@@ -3,7 +3,8 @@
 
 # PLAN: The submission MCP
 
-Status: open, drafted 2026-09-07. No code written. Backlog row 51.
+Status: open, drafted 2026-09-07. M1 is on main (M1a, PR #226) and on PR #232 (M1b, M1c); M2 to M7 are
+BACKLOG 60, 61, 63, 64 and 65 under row 51.
 
 An MCP server for DIY Accounting Submit. It takes a customer's books, works out the figures a
 filing needs with the diya-gl library from the spreadsheets repository, and drives the two
@@ -59,7 +60,7 @@ in the request body. `companiesHouseAccountsPost.js` wants the seven FRS 105 bal
 lines for the current and prior year and checks they add up. The CSV contract in
 `_developers/CSV_VAT_RETURN_CONTRACT.md` has a reader (`app/lib/vatReturnCsv.js`) and no
 import endpoint (backlog row 16). Nothing in `app/` opens a diya-gl book; the DIYA-GL storage API
-(`PLAN_DIYA_GL_STORAGE.md`, live on prod since PR #150) stores the zip opaquely and returns it
+(`_developers/archive/PLAN_DIYA_GL_STORAGE.md`, live on prod since PR #150) stores the zip opaquely and returns it
 base64-encoded from `GET /api/v1/books/{bookId}/versions/{version}`.
 
 **Realistic test data exists.** The BrickWork Pro Ltd example
@@ -74,7 +75,7 @@ it to Companies House on 2026-09-07 as the source of the test filings.
    `@diy-accounting-uk/diya-gl` at a pinned version. Until H7 lands, development runs against
    a `file:` dependency on the sibling checkout, and the Submit CI installs from the registry,
    so the first merge waits for the tag. No calculation logic lives in this repository.
-2. **The MCP computes; the storage API still stores.** `PLAN_DIYA_GL_STORAGE.md` decided that
+2. **The MCP computes; the storage API still stores.** `_developers/archive/PLAN_DIYA_GL_STORAGE.md` decided that
    the storage Lambdas do storage only. That stands. The submission MCP is a separate process
    (the npm CLI, the Docker image, or its own Lambda) that opens a book with the library and
    computes in Node. No LibreOffice anywhere, as before.
@@ -130,7 +131,7 @@ for H7.
 |---|---|---|---|
 | M1 | The package skeleton at `mcp/`: the SDK, stdio transport, `open_book`, `save_book` over the filesystem, `derive_vat_return`, `derive_micro_entity_accounts`; unit tests over the BrickWork Pro Ltd example and the Precision Code Ltd example; the seven derived lines for BrickWork Pro passed through `buildMicroEntityAccounts` and the public validator script | a `file:` dependency on the sibling `diya-gl/` | Claude Code, Opus for the derivation mapping, Sonnet for the rest M1 runs as three `NEXT.md` rows since 2026-09-15: M1a the skeleton, transport and the two book tools; M1b `derive_vat_return`; M1c `derive_micro_entity_accounts`. |
 | M2 | The Submit-facing tools over the deployed REST API with a bearer token from the environment, against the simulator lane first: obligations, VAT submit, receipt, accounts preview, submit and poll | M1 | Claude Code, Sonnet |
-| M3 | The third Cognito app client, its JWT authoriser and the device-code grant; `open_book` and `save_book` over the DIYA cloud routes | M1; the DIYA-GL client pattern in `PLAN_DIYA_GL_STORAGE.md` | Claude Code, Sonnet; the CDK change through the usual deploy |
+| M3 | The third Cognito app client, its JWT authoriser and the device-code grant; `open_book` and `save_book` over the DIYA cloud routes | M1; the DIYA-GL client pattern in `_developers/archive/PLAN_DIYA_GL_STORAGE.md` | Claude Code, Sonnet; the CDK change through the usual deploy |
 | M4 | The hosted transport: a Lambda with streamable HTTP behind API Gateway on the existing domain, the resource-server metadata, and the OAuth flow end to end from a chat client | M3 | Claude Code, Opus design then Sonnet |
 | M5 | Distribution: `npm publish` from this repo on a tag, the Docker image on GHCR, `web/public/mcp.html` rewritten as the real instructions | M2; H7 on the spreadsheets board for the dependency | Claude Code, Haiku |
 | M6 | The Companies House proof: BrickWork Pro's derived accounts filed to the XML Gateway test service through the MCP | M2; NEXT.md O16 and B34.6b | Claude Code, Sonnet |
@@ -176,5 +177,5 @@ the operator wants the alternative.
   needs are that plan's backlog rows, not this plan's.
 - `PLAN_ONE_STOP_DASHBOARD.md` shows the company's own P&L and balance sheet by running the
   same derivation over the company's own book.
-- `PLAN_COMPANIES_HOUSE_ACCOUNTS_FILING.md`, `PLAN_DIYA_GL_STORAGE.md`,
+- `PLAN_COMPANIES_HOUSE_ACCOUNTS_FILING.md`, `_developers/archive/PLAN_DIYA_GL_STORAGE.md`,
   `_developers/CSV_VAT_RETURN_CONTRACT.md`.

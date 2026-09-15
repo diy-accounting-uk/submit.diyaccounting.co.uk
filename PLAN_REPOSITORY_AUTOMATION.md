@@ -3,7 +3,9 @@
 
 # PLAN: Automate the repository
 
-Status: **design, drafted 2026-09-09.** No code written, no workflow added.
+Status: **design, drafted 2026-09-09.** Phases 0 and 1 in part on main (commit signing, CODEOWNERS, the
+origin labels, the alarm-origin verifier); the ruleset gate is NEXT.md O46; the rest is BACKLOG 56 to 59
+and 68 to 72; phase 6 is the dashboard's D16 (BACKLOG 52l).
 
 ## What the operator asked for
 

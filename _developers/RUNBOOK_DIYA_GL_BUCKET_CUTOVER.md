@@ -1,7 +1,7 @@
 <!-- SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0 -->
 <!-- Copyright (C) 2006-2026 DIY Accounting Limited -->
 
-# Runbook: DIYA-GL bucket cutover (B71.S3e, PLAN_DIYA_GL_NAMING.md's copy sequence)
+# Runbook: DIYA-GL bucket cutover (B71.S3e, archive/PLAN_DIYA_GL_NAMING.md's copy sequence)
 
 Moves the DIYA-GL book storage from `{prefix}-books-{account}` to `{prefix}-diya-gl-{account}`
 without data loss, in ci then prod. Both buckets already exist and are both in the AWS Backup
@@ -9,7 +9,7 @@ selection (PR #180). The code that points the four DIYA-GL Lambdas at the new bu
 `cd2436cb` on this branch — merge and deploy it before step 2 of either environment below.
 
 Run unattended, no per-step approval: the operator's decision recorded in
-`PLAN_DIYA_GL_NAMING.md`. The sequence is the safety mechanism — step 4 must copy nothing before
+`archive/PLAN_DIYA_GL_NAMING.md`. The sequence is the safety mechanism — step 4 must copy nothing before
 the cutover is believed correct, and step 6 (the deletion) waits on both step 4 (verified read) and
 step 5 (confirmed recovery point), not on either alone. Do not reorder or skip a step.
 
@@ -187,7 +187,7 @@ aws --profile submit-ci s3api head-bucket --bucket ci-env-books-367191799875
 
 Pass: the command errors `Not Found` / `404` — the bucket no longer exists. Also drop the
 `${DEPLOYMENT}-app-BooksStack` lines from `destroy-ci.yml` and `stack-drift.yml` once no set of that
-name remains, per `PLAN_DIYA_GL_NAMING.md`'s original step 6.
+name remains, per `archive/PLAN_DIYA_GL_NAMING.md`'s original step 6.
 
 ---
 
