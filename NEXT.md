@@ -18,8 +18,7 @@ PR; the operator merges.
 
 **Prod runs deployment prod-898b2fd** (PR #220, run 34969618082), promoted with its OpsStack under
 the new `deploy-ops` gate; `prod-075487d` stands unpromoted beside it (B160). **ci**:
-`ci-claud5ca3` (b36, last-known-good, self-destructs 15:56 UTC) and `ci-claudf91c` (b35, 13:52 UTC,
-then the next sweep) stand on 2026-09-15. B34.6b's poll is the only b32 item left open.
+`ci-claud5ca3` (b36, last-known-good, self-destructs 15:56 UTC) stands on 2026-09-15; `ci-claudf91c`'s self-destruct fired at 13:52 UTC and is deleting. B34.6b's poll is the only b32 item left open.
 
 The board runs in five sections, in this order: **in flight** (a branch, a pull request or a run
 in motion, each named in the row), **machine-only**, **human and machine**, **human-only**,
@@ -38,17 +37,6 @@ Every item names its model: the lowest tier that fits (Fable > Opus > Sonnet > H
 `none` for a human step.
 
 ## In flight
-
-## Machine-only
-
-- [ ] **B52y.2. Check the nightly snapshot after the SecurityLakeStack reaches prod.** PR #218
-  (9b695aab) adds the `deploy-security-lake` job and the per-observation null; prod's environment
-  deploy of that merge creates the Glue tables. After the next 03:15 UTC run, read
-  `snapshots/prod/latest.json`: `generatedAt` past 2026-09-16 03:15, `failedObservationCount` 0,
-  and any observation answering null where its view has rows (two views are monthly or quarterly
-  grain, so a 30-day window can be empty by design). Issue #208 closes when the alarm clears.
-  **Source**: `PLAN_ONE_STOP_DASHBOARD.md` D7, D13, D14, D15. **Owner**: Claude Code. **Model**:
-  Haiku. **Size**: ~0 files.
 
 - [ ] **B34.6b. Companies House accounts filing: the sandbox proof.** Submission 000004 (presenter
   E0000052288, company 06846849, 2026-09-13 19:04 UTC) was ACCEPTED by the XML Gateway test
@@ -69,8 +57,19 @@ Every item names its model: the lowest tier that fits (Fable > Opus > Sonnet > H
   gateway returns a status, keep 57dfdc17, pin it in the test, and apply the `prod` listing (held as
   unreferenced local commit 946251d4); if it still answers 9999, revert the body to plaintext and
   cite both transactions to Companies House. O44 asks Companies House in parallel and can cite the
-  13:12:48 transaction (1789391567972). **Source**: BACKLOG 34b. **Owner**: Claude Code.
+  13:12:48 transaction (1789391567972). **Source**: BACKLOG 34b. In flight: the poll is running on `ci-claud5ca3` (agent worktree `claude/b38-chpoll`, batch `claude/b38-board`), the operator having said go to the Cognito write at 14:03 UTC on 2026-09-15. **Owner**: Claude Code.
   **Model**: Sonnet. **Size**: ~1 file.
+
+## Machine-only
+
+- [ ] **B52y.2. Check the nightly snapshot after the SecurityLakeStack reaches prod.** PR #218
+  (9b695aab) adds the `deploy-security-lake` job and the per-observation null; prod's environment
+  deploy of that merge creates the Glue tables. After the next 03:15 UTC run, read
+  `snapshots/prod/latest.json`: `generatedAt` past 2026-09-16 03:15, `failedObservationCount` 0,
+  and any observation answering null where its view has rows (two views are monthly or quarterly
+  grain, so a 30-day window can be empty by design). Issue #208 closes when the alarm clears.
+  **Source**: `PLAN_ONE_STOP_DASHBOARD.md` D7, D13, D14, D15. **Owner**: Claude Code. **Model**:
+  Haiku. **Size**: ~0 files.
 
 ## Human and machine
 
