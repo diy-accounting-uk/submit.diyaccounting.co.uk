@@ -220,9 +220,37 @@ class ApiStackTest {
                                 "AllowHeaders",
                                 Match.arrayWith(List.of("authorization", "content-type", "if-match")),
                                 "ExposeHeaders",
-                                Match.arrayWith(List.of("ETag")),
+                                Match.arrayWith(List.of("etag")),
                                 "MaxAge",
                                 600)))));
+    }
+
+    @Test
+    void theDefaultStageAccessLogDestinationArnHasNoTrailingWildcardSuffix() {
+        ApiStack stack = synthApiStack();
+        Template template = Template.fromStack(stack);
+
+        // LogGroup.fromLogGroupName(...).getLogGroupArn() appends ":*" (the IAM-policy form for
+        // the log group's streams), but API Gateway stores the stage's access-log destination
+        // without that suffix. Asserting the suffix-free form here keeps the synthesised template
+        // matching the deployed resource and catches a regression back to getLogGroupArn(). CDK
+        // renders the ARN as an Fn::Join because the partition is a stack pseudo-parameter, so the
+        // suffix-free log group name is asserted as the last segment of that join.
+        Map<String, Object> expectedDestinationArn = Map.of(
+                "Fn::Join",
+                List.of(
+                        "",
+                        List.of(
+                                "arn:",
+                                Map.of("Ref", "AWS::Partition"),
+                                ":logs:eu-west-2:111111111111:log-group:"
+                                        + SubmitSharedNames.forDocs().apiAccessLogGroupName)));
+
+        template.hasResourceProperties(
+                "AWS::ApiGatewayV2::Stage",
+                Match.objectLike(Map.of(
+                        "AccessLogSettings",
+                        Match.objectLike(Map.of("DestinationArn", expectedDestinationArn)))));
     }
 
     @Test

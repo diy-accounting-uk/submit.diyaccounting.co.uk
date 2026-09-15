@@ -13,6 +13,8 @@ import co.uk.diyaccounting.submit.constructs.AbstractApiLambdaProps;
 import java.util.List;
 import java.util.Map;
 import org.immutables.value.Value;
+import software.amazon.awscdk.ArnComponents;
+import software.amazon.awscdk.ArnFormat;
 import software.amazon.awscdk.CfnOutput;
 import software.amazon.awscdk.CustomResource;
 import software.amazon.awscdk.Duration;
@@ -50,7 +52,6 @@ import software.amazon.awscdk.services.lambda.FunctionAttributes;
 import software.amazon.awscdk.services.lambda.IFunction;
 import software.amazon.awscdk.services.lambda.Permission;
 import software.amazon.awscdk.services.lambda.Runtime;
-import software.amazon.awscdk.services.logs.ILogGroup;
 import software.amazon.awscdk.services.logs.LogGroup;
 import software.amazon.awscdk.services.logs.RetentionDays;
 import software.constructs.Construct;
@@ -166,7 +167,9 @@ public class ApiStack extends Stack {
                                 CorsHttpMethod.GET, CorsHttpMethod.PUT, CorsHttpMethod.DELETE, CorsHttpMethod.OPTIONS))
                         .allowHeaders(
                                 List.of("authorization", "content-type", "if-match", "x-request-id", "x-correlationid"))
-                        .exposeHeaders(List.of("x-request-id", "x-correlationid", "Location", "Retry-After", "ETag"))
+                        // API Gateway stores expose-header names lowercase; matching that here
+                        // avoids stack drift against the deployed resource.
+                        .exposeHeaders(List.of("x-request-id", "x-correlationid", "location", "retry-after", "etag"))
                         .maxAge(Duration.seconds(600))
                         .build())
                 .build();
@@ -234,17 +237,24 @@ public class ApiStack extends Stack {
         // The access log group is env-scoped: the ObservabilityStack creates and deletes it and
         // holds the single API Gateway resource policy (10 per account). CloudFormation validates
         // the stage's destination exists when the change set is created, so nothing in this
-        // stack can create it; an app deployment only references it.
-        ILogGroup apiAccessLogGroup = LogGroup.fromLogGroupName(
-                this, props.resourceNamePrefix() + "-ApiAccessLogs", props.sharedNames().apiAccessLogGroupName);
-
-        // Configure default stage access logs and logging level/metrics
+        // stack can create it; an app deployment only references it by ARN, built directly rather
+        // than via LogGroup.fromLogGroupName(...).getLogGroupArn() because that appends ":*" (the
+        // IAM-policy form for the log group's streams), while API Gateway stores the stage's
+        // access-log destination without that suffix. Building it directly here keeps the
+        // synthesised template matching the deployed resource.
         assert this.httpApi.getDefaultStage() != null;
         var defaultStage = (CfnStage) this.httpApi.getDefaultStage().getNode().getDefaultChild();
         assert defaultStage != null;
 
+        String apiAccessLogGroupArn = formatArn(ArnComponents.builder()
+                .service("logs")
+                .resource("log-group")
+                .resourceName(props.sharedNames().apiAccessLogGroupName)
+                .arnFormat(ArnFormat.COLON_RESOURCE_NAME)
+                .build());
+
         defaultStage.setAccessLogSettings(CfnStage.AccessLogSettingsProperty.builder()
-                .destinationArn(apiAccessLogGroup.getLogGroupArn())
+                .destinationArn(apiAccessLogGroupArn)
                 .format("{" + "\"requestId\":\"$context.requestId\","
                         + "\"path\":\"$context.path\","
                         + "\"routeKey\":\"$context.routeKey\","
