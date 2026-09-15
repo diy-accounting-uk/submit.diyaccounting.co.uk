@@ -57,15 +57,20 @@ and stop. One branch is driven green at a time. Lifted only by the operator in t
   the salt before enforcing; check the other `/api/v1/operator/*` handlers for the same omission.
   Closes #223, #224. **Source**: operator, 2026-09-15; issues #223, #224. **Owner**: Claude Code. **Model**: Haiku. **Size**: ~2 files.
 
-- [ ] **B166. `verify-commit-signatures.yml` fails on an unsigned commit.** Commit signing is on
-  for this machine since 2026-09-15 (SSH key `id_antony_polycode_mbp_2025` registered as a signing
-  key; `commit.gpgsign true`, `gpg.format ssh`; f5fe7039 on PR #225 is the first signed commit).
-  GitHub reports f5fe7039 `verified: true, reason: valid` (run 35001788262). Flip the workflow's
-  last step from reporting to failing on any commit whose `verification.verified` is false, and make the check
-  required on `main` (a ruleset edit, the operator's or `gh api` with admin scope). **Source**:
-  `REPORT_GIT_CONFIG.md`; O37. **Owner**: Claude Code, then Operator for the ruleset. **Model**:
-  Haiku. **Size**: ~1 file.
 
+- [ ] **B166. The signature check fails a PR carrying an unsigned commit.** Commit signing is on
+  for this machine since 2026-09-15 (SSH key `id_antony_polycode_mbp_2025` registered as a signing
+  key; `commit.gpgsign true`, `gpg.format ssh`); GitHub reports f5fe7039 `verified: true, reason:
+  valid` (run 35001788262). Operator decision, 2026-09-15, the "check" option: (1)
+  `verify-commit-signatures.yml`'s last step fails when a PR carries an unsigned commit, except
+  commits authored by `github-actions[bot]`; (2) the check is added to ruleset 16057564 as a required
+  status check on `main` (one `gh api` call, the token has admin); (3) unsigned pushes still land,
+  only the PR's check goes red, so `publish.yml`, the board write-back, Cowork's docs pushes and the
+  bot PRs keep working; (4) this machine's sessions and their sub-agents already sign and pass.
+  Known weakness, accepted: an admin can still merge a red PR, and a direct push to `main` is never
+  checked; BACKLOG 54 (the `required_signatures` ruleset rule) closes that after O38. **Source**:
+  `REPORT_GIT_CONFIG.md`; O37; operator, 2026-09-15. **Owner**: Claude Code. **Model**: Haiku.
+  **Size**: ~1 file.
 - [ ] **B17w. The caption upload races YouTube's indexing.** `scripts/youtube-upload.js` uploads the
   caption right after the video and only then records the `videoId` in `videos/publish.json`; on
   2026-09-15 view-payments' caption call answered 404 `videoNotFound` a second after the upload, the
