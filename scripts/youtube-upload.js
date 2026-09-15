@@ -49,6 +49,7 @@ import { fileURLToPath } from "url";
 import TOML from "@iarna/toml";
 import { OAuth2Client } from "google-auth-library";
 import { SecretsManagerClient, GetSecretValueCommand, UpdateSecretCommand, CreateSecretCommand } from "@aws-sdk/client-secrets-manager";
+import { copyVideosManifest } from "./copy-videos-manifest.js";
 
 export const PUBLISH_LIST_PATH = path.resolve("videos/publish.json");
 export const CONFIG_PATH = "google/youtube.toml";
@@ -472,26 +473,82 @@ export async function setVideoPrivacy({ videoId, privacyStatus, accessToken, quo
   return (await response.json()).status.privacyStatus;
 }
 
-export async function uploadCaption({ entry, videoId, accessToken, quotaProject = resolveQuotaProject(), fetchImpl = fetch }) {
+// YouTube indexes a freshly uploaded video asynchronously: a caption POST a second after the
+// upload can answer 404 videoNotFound for a video that exists. Three tries, ~30 s in all.
+export const CAPTION_RETRY_DELAYS_MS = [10_000, 20_000];
+
+function defaultSleep(ms) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+export async function uploadCaption({
+  entry,
+  videoId,
+  accessToken,
+  quotaProject = resolveQuotaProject(),
+  fetchImpl = fetch,
+  sleep = defaultSleep,
+  retryDelaysMs = CAPTION_RETRY_DELAYS_MS,
+}) {
   const metadata = { snippet: { videoId, language: "en", name: "English", isDraft: false } };
   const { body, contentType } = buildMultipartRelated([
     { contentType: "application/json; charset=UTF-8", body: JSON.stringify(metadata) },
     { contentType: "text/vtt", body: fs.readFileSync(entry.captionFile) },
   ]);
-  const response = await fetchImpl(`${UPLOAD_CAPTIONS_ENDPOINT}?uploadType=multipart&part=snippet`, {
-    method: "POST",
-    headers: {
-      Authorization: `Bearer ${accessToken}`,
-      "x-goog-user-project": quotaProject,
-      "Content-Type": contentType,
-      "Content-Length": String(body.length),
-    },
-    body,
-  });
-  if (!response.ok) {
-    throw new Error(`Failed to upload caption for ${entry.id}: ${response.status} ${await response.text()}`);
+  for (let attempt = 0; ; attempt++) {
+    const response = await fetchImpl(`${UPLOAD_CAPTIONS_ENDPOINT}?uploadType=multipart&part=snippet`, {
+      method: "POST",
+      headers: {
+        "Authorization": `Bearer ${accessToken}`,
+        "x-goog-user-project": quotaProject,
+        "Content-Type": contentType,
+        "Content-Length": String(body.length),
+      },
+      body,
+    });
+    if (response.ok) {
+      return response.json();
+    }
+    const detail = await response.text();
+    if (response.status === 404 && attempt < retryDelaysMs.length) {
+      console.log(`  caption for ${entry.id} answered 404 (video not indexed yet); retrying in ${retryDelaysMs[attempt] / 1000}s`);
+      await sleep(retryDelaysMs[attempt]);
+      continue;
+    }
+    throw new Error(`Failed to upload caption for ${entry.id}: ${response.status} ${detail}`);
   }
-  return response.json();
+}
+
+/**
+ * Upload one entry's video, record its id in the publish list on disk, then upload the caption.
+ * The id is saved before the caption step so a caption failure leaves the upload recorded and a
+ * re-run skips the entry instead of uploading the video twice. Every save is followed by the copy
+ * into web/public/videos/, the manifest videos.html reads, so the site and the source never differ.
+ *
+ * @returns {Promise<object>} the publish list with the entry's videoId recorded
+ */
+export async function publishEntry({
+  entry,
+  list,
+  accessToken,
+  quotaProject,
+  publicVideo,
+  uploadVideoImpl = uploadVideo,
+  uploadCaptionImpl = uploadCaption,
+  savePublishListImpl = savePublishList,
+  copyVideosManifestImpl = copyVideosManifest,
+  log = console.log,
+}) {
+  log(`Uploading ${entry.id} (${publicVideo ? "public" : "unlisted"})...`);
+  const videoId = await uploadVideoImpl({ entry, accessToken, quotaProject, publicVideo });
+  log(`  video id: ${videoId}`);
+  const recorded = recordVideoId(list, entry.id, videoId);
+  savePublishListImpl(recorded);
+  copyVideosManifestImpl();
+  await uploadCaptionImpl({ entry, videoId, accessToken, quotaProject });
+  log("  caption uploaded");
+  log(`  https://youtu.be/${videoId}`);
+  return recorded;
 }
 
 export async function main() {
@@ -532,14 +589,7 @@ export async function main() {
   }
 
   for (const entry of pending) {
-    console.log(`Uploading ${entry.id} (${publicVideo ? "public" : "unlisted"})...`);
-    const videoId = await uploadVideo({ entry, accessToken, quotaProject, publicVideo });
-    console.log(`  video id: ${videoId}`);
-    await uploadCaption({ entry, videoId, accessToken, quotaProject });
-    console.log("  caption uploaded");
-    list = recordVideoId(list, entry.id, videoId);
-    savePublishList(list);
-    console.log(`  https://youtu.be/${videoId}`);
+    list = await publishEntry({ entry, list, accessToken, quotaProject, publicVideo });
   }
 }
 

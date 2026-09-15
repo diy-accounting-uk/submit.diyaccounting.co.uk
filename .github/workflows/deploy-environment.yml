@@ -363,6 +363,19 @@ jobs:
             "${{ needs.names.outputs.environment-name }}/submit/github/issue_bot_token" \
             "$SECRET_VALUE"
 
+      - name: Create secret in AWS from secrets.SUPPORT_BOT_TOKEN
+        env:
+          SECRET_VALUE: ${{ secrets.SUPPORT_BOT_TOKEN }}
+          AWS_REGION: ${{ env.AWS_REGION }}
+        run: |
+          if [ -z "$SECRET_VALUE" ]; then
+            echo "No SUPPORT_BOT_TOKEN for ${{ needs.names.outputs.environment-name }}, skipping"
+            exit 0
+          fi
+          scripts/put-secret-with-rotation-tag.sh \
+            "${{ needs.names.outputs.environment-name }}/submit/github/support_bot_token" \
+            "$SECRET_VALUE"
+
       - name: Create user sub hash salt (if not exists)
         run: |
           SECRET_NAME="${{ needs.names.outputs.environment-name }}/submit/user-sub-hash-salt"

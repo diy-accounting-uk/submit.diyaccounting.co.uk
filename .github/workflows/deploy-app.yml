@@ -662,7 +662,7 @@ jobs:
             --paths \
               "/activities/*" "/auth/*" "/docs/*" "/errors/*" "/hmrc/*" \
               "/images/*" "/lib/*" "/prefetch/*" "/tests/*" "/widgets/*" \
-              "/about.html" "/accessibility.html" "/bundles.html" "/faqs.toml" \
+              "/about.html" "/videos.html" "/videos/*" "/accessibility.html" "/bundles.html" "/faqs.toml" \
               "/guide.html" "/help.html" "/mcp.html" \
               "/diy-accounting-spreadsheets.html" "/diy-accounting-limited.html" "/spreadsheets.html" \
               "/android-chrome-192.png" "/android-chrome-512.png" "/apple-touch-icon.png" \

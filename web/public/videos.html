@@ -1,0 +1,233 @@
+<!doctype html>
+<!-- SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0 -->
+<!-- Copyright (C) 2006-2026 DIY Accounting Limited -->
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Walkthrough videos - DIY Accounting Submit</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta
+      name="description"
+      content="Short recordings of DIY Accounting Submit in use: checking VAT obligations, submitting a VAT return to HMRC, viewing returns, liabilities, payments and penalties, and the Self Assessment sandbox."
+    />
+    <link rel="canonical" href="https://submit.diyaccounting.co.uk/videos.html" />
+    <link rel="icon" href="/favicon.ico" sizes="any" />
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+    <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png" />
+    <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16.png" />
+    <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" />
+    <link rel="manifest" href="/site.webmanifest" />
+    <link rel="stylesheet" href="./submit.css" />
+    <script src="./lib/analytics.js"></script>
+    <script src="./lib/session-beacon.js"></script>
+    <style>
+      #mainContent {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        border-radius: var(--radius-lg);
+        padding: 1em;
+      }
+      .videos-page {
+        max-width: 900px;
+        margin: 0 auto;
+      }
+      .videos-intro {
+        background: rgba(255, 255, 255, 0.95);
+        border-radius: 8px;
+        padding: 1.25em 1.5em;
+        margin-bottom: 1.5em;
+      }
+      .videos-intro p {
+        margin: 0;
+        line-height: 1.6;
+      }
+      .video-section {
+        background: rgba(255, 255, 255, 0.95);
+        border-radius: 8px;
+        padding: 1.25em 1.5em;
+        margin-bottom: 1.5em;
+        scroll-margin-top: 1em;
+      }
+      .video-section:target {
+        outline: 3px solid #2c5aa0;
+      }
+      .video-section h2 {
+        margin: 0 0 0.5em;
+        font-size: 1.3em;
+      }
+      .video-section p {
+        line-height: 1.6;
+      }
+      .video-frame {
+        position: relative;
+        width: 100%;
+        aspect-ratio: 16 / 9;
+        background: #000;
+        border-radius: 6px;
+        overflow: hidden;
+        margin: 0.75em 0;
+      }
+      .video-frame iframe {
+        position: absolute;
+        inset: 0;
+        width: 100%;
+        height: 100%;
+        border: 0;
+      }
+      .video-share {
+        display: flex;
+        align-items: center;
+        gap: 0.75em;
+        flex-wrap: wrap;
+        font-size: 0.95em;
+      }
+      .video-share .btn-small {
+        padding: 0.35em 0.9em;
+      }
+      .video-share .copied {
+        color: #155724;
+      }
+    </style>
+  </head>
+  <body>
+    <a href="#mainContent" class="skip-link">Skip to main content</a>
+    <header>
+      <p class="chrome-fallback"><a href="./">DIY Accounting Submit</a></p>
+      <h1>Walkthrough videos</h1>
+      <p class="subtitle">Real recordings of the live product, one task each</p>
+    </header>
+
+    <main id="mainContent">
+      <div id="statusMessagesContainer" role="alert" aria-live="polite"></div>
+
+      <div class="videos-page">
+        <div class="videos-intro">
+          <p>
+            Each video is a recording of DIY Accounting Submit doing one thing, start to finish. Videos marked "(sandbox)" show features
+            recorded against HMRC's test service. They are hosted on the
+            <a href="https://www.youtube.com/@DIYAccountingSubmit" target="_blank" rel="noopener">DIY Accounting Submit YouTube channel</a>.
+          </p>
+        </div>
+
+        <div id="videoList" aria-live="polite">
+          <p class="service-description">Loading videos...</p>
+        </div>
+      </div>
+    </main>
+
+    <footer data-footer="full"></footer>
+
+    <script src="widgets/page-chrome.js"></script>
+    <script src="lib/env-loader.js"></script>
+    <script type="module" src="submit.js"></script>
+    <script src="developer-mode.js"></script>
+    <script src="widgets/entitlement-status.js"></script>
+    <script src="widgets/auth-status.js"></script>
+    <script src="widgets/status-messages.js"></script>
+    <script type="module" src="widgets/view-source-link.js"></script>
+    <script>
+      // Renders one section per entry of videos/publish.json that carries a videoId. The manifest
+      // is copied from the repository's videos/publish.json (npm run videos:manifest), so a new
+      // upload appears here without a page edit.
+      (function () {
+        const MANIFEST_URL = "videos/publish.json";
+        const EMBED_BASE = "https://www.youtube-nocookie.com/embed/";
+
+        function escapeHtml(text) {
+          return String(text ?? "").replace(
+            /[&<>"']/g,
+            (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c],
+          );
+        }
+
+        // The first two sentences of a description, split on a full stop followed by whitespace.
+        function firstTwoSentences(description) {
+          const sentences = String(description ?? "")
+            .split(/(?<=\.)\s+/)
+            .filter(Boolean);
+          return sentences.slice(0, 2).join(" ");
+        }
+
+        function shareLink(id) {
+          const url = new URL(window.location.href);
+          url.search = "";
+          url.hash = id;
+          return url.toString();
+        }
+
+        function sectionHtml(video) {
+          const id = escapeHtml(video.id);
+          const embedSrc = EMBED_BASE + encodeURIComponent(video.videoId);
+          return `
+            <section class="video-section" id="${id}" data-video-id="${escapeHtml(video.videoId)}">
+              <h2>${escapeHtml(video.title)}</h2>
+              <p>${escapeHtml(firstTwoSentences(video.description))}</p>
+              <div class="video-frame">
+                <iframe
+                  src="${embedSrc}"
+                  title="${escapeHtml(video.title)}"
+                  loading="lazy"
+                  allow="accelerometer; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                  referrerpolicy="strict-origin-when-cross-origin"
+                  allowfullscreen
+                ></iframe>
+              </div>
+              <div class="video-share">
+                <a class="video-link" href="videos.html#${id}">Link to this video</a>
+                <button type="button" class="btn btn-small copy-link" data-target="${id}">Copy link</button>
+                <span class="copied" hidden>Copied</span>
+              </div>
+            </section>`;
+        }
+
+        async function render() {
+          const container = document.getElementById("videoList");
+          let manifest;
+          try {
+            const response = await fetch(MANIFEST_URL, { cache: "no-store" });
+            if (!response.ok) throw new Error(`HTTP ${response.status}`);
+            manifest = await response.json();
+          } catch (err) {
+            container.innerHTML = '<p class="service-description">The video list could not be loaded.</p>';
+            console.error("[videos.html] manifest load failed:", err);
+            return;
+          }
+          const videos = (manifest.videos || []).filter((v) => v && v.videoId);
+          if (videos.length === 0) {
+            container.innerHTML = '<p class="service-description">No videos are published yet.</p>';
+            return;
+          }
+          container.innerHTML = videos.map(sectionHtml).join("\n");
+
+          container.querySelectorAll("button.copy-link").forEach((button) => {
+            button.addEventListener("click", async () => {
+              const id = button.getAttribute("data-target");
+              const link = shareLink(id);
+              const copied = button.parentElement.querySelector(".copied");
+              try {
+                await navigator.clipboard.writeText(link);
+                copied.hidden = false;
+                setTimeout(() => {
+                  copied.hidden = true;
+                }, 2000);
+              } catch {
+                window.prompt("Copy this link", link);
+              }
+            });
+          });
+
+          // A hash arriving before the sections existed has nothing to scroll to; scroll now.
+          if (window.location.hash) {
+            const target = document.getElementById(window.location.hash.slice(1));
+            if (target) target.scrollIntoView();
+          }
+        }
+
+        if (document.readyState === "loading") {
+          document.addEventListener("DOMContentLoaded", render, { once: true });
+        } else {
+          render();
+        }
+      })();
+    </script>
+  </body>
+</html>

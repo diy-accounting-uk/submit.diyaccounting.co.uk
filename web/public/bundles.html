@@ -356,7 +356,7 @@
           if (!isLoggedIn) {
             return `
             <div class="service-item" style="text-align:left">
-              <button type="button" class="btn service-btn" data-bundle-id="${b.id}" data-bundle-name="${safeName}"${tgAttr} disabled>Log in to subscribe \u2014 ${rawName}</button>
+              <button type="button" class="btn service-btn" data-bundle-id="${b.id}" data-bundle-name="${safeName}"${tgAttr} data-disabled-reason="login" disabled>Log in to subscribe \u2014 ${rawName}</button>
               <p style="font-size:0.85em; color:#0c5460; margin:0.5em 0 0;">Log in to subscribe to this bundle</p>
             </div>`;
           }
@@ -382,7 +382,7 @@
           if (!isLoggedIn) {
             return `
             <div class="service-item" style="text-align:left">
-              <button type="button" class="btn service-btn" data-bundle-id="${b.id}" data-bundle-name="${safeName}"${tgAttr} disabled>Log in to subscribe \u2014 ${rawName}</button>
+              <button type="button" class="btn service-btn" data-bundle-id="${b.id}" data-bundle-name="${safeName}"${tgAttr} data-disabled-reason="login" disabled>Log in to subscribe \u2014 ${rawName}</button>
               <p style="font-size:0.85em; color:#0c5460; margin:0.5em 0 0;">${b.description || "Log in to subscribe to this bundle"}</p>
             </div>`;
           }
@@ -426,7 +426,7 @@
           if (!isLoggedIn) {
             return `
             <div class="service-item" style="text-align:left">
-              <button type="button" class="btn service-btn" data-bundle-id="${b.id}" data-bundle-name="${safeName}"${tgAttr} data-pass-code="${safeCode}" disabled>Log in to add \u2014 ${rawName}</button>
+              <button type="button" class="btn service-btn" data-bundle-id="${b.id}" data-bundle-name="${safeName}"${tgAttr} data-pass-code="${safeCode}" data-disabled-reason="login" disabled>Log in to add \u2014 ${rawName}</button>
               <p style="font-size:0.85em; color:#0c5460; margin:0.5em 0 0;">Log in to add this bundle</p>
             </div>`;
           }
@@ -640,8 +640,9 @@
         return null;
       }
 
-      // --- bootstrap: fetch catalog and render
-      (async function () {
+      // --- bootstrap: fetch catalog and render. The promise lets initPage wait for the catalogue
+      // before it validates a ?pass= code, so the pass status names the bundle, not its id.
+      const __catalogueReady = (async function () {
         const container = document.getElementById("catalogBundles");
         try {
           await fetchUserBundles();
@@ -1265,7 +1266,7 @@
           const input = document.getElementById("passInput");
           if (input) input.value = passFromUrl;
           // Validate pass (whether new or returning from login)
-          handlePassEntry(passFromUrl.trim().toLowerCase());
+          __catalogueReady.then(() => handlePassEntry(passFromUrl.trim().toLowerCase()));
         } else {
           // Check for pending pass from previous session (saved before login redirect)
           try {
@@ -1273,7 +1274,7 @@
             if (pendingPass && getIdToken()) {
               const input = document.getElementById("passInput");
               if (input) input.value = pendingPass;
-              handlePassEntry(pendingPass.trim().toLowerCase());
+              __catalogueReady.then(() => handlePassEntry(pendingPass.trim().toLowerCase()));
             }
           } catch {}
         }

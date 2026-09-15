@@ -9,18 +9,26 @@ import { dotenvConfigIfNotBlank } from "@app/lib/env.js";
 
 dotenvConfigIfNotBlank({ path: ".env.test" });
 
-// Mock CloudFormation client to simulate 'stack does not exist'
+// Mock CloudFormation client. A stack with no script does not exist. A scripted stack answers
+// each DescribeStacks with the next status in its list, or throws "does not exist" for "gone".
 const describedStackNames = [];
+const deleteStackCalls = [];
+let stackStatusScript = {};
 class MockCFClient {
   async send(cmd) {
     const name = cmd.input?.StackName || "";
-    // Always throw for DescribeStacks to simulate non-existent stacks
     if (cmd.constructor.name === "DescribeStacksCommand") {
       describedStackNames.push(name);
-      const err = new Error(`Stack with id ${name} does not exist`);
-      throw err;
+      const script = stackStatusScript[name];
+      const status = script?.length ? script.shift() : "gone";
+      if (status === "gone") {
+        throw new Error(`Stack with id ${name} does not exist`);
+      }
+      return { Stacks: [{ StackStatus: status, Outputs: [] }] };
     }
-    // DeleteStack should not be called in this scenario, but return ok if it is
+    if (cmd.constructor.name === "DeleteStackCommand") {
+      deleteStackCalls.push(cmd.input);
+    }
     return {};
   }
 }
@@ -171,6 +179,9 @@ describe("functions/infra/selfDestruct", () => {
     logGroupCalls.length = 0;
     extraLogGroupsUsEast1 = [];
     describedStackNames.length = 0;
+    deleteStackCalls.length = 0;
+    stackStatusScript = {};
+    vi.useRealTimers();
     mockSsmSend.mockRejectedValue(Object.assign(new Error("Parameter not found"), { name: "ParameterNotFound" }));
     mockCloudWatchSend.mockResolvedValue({ MetricAlarms: [], CompositeAlarms: [] });
     Object.assign(process.env, {
@@ -239,6 +250,53 @@ describe("functions/infra/selfDestruct", () => {
     expect(deletes.some((c) => c.input.logGroupName.includes("ApiStack-hmrcTokenPost"))).toBe(false);
   });
 
+  it("retries a DELETE_FAILED stack once with FORCE_DELETE_STACK and reports it deleted when the forced delete clears it", async () => {
+    // The custom-domain cleanup and the existence check each describe the api stack once before
+    // the delete; the poll then sees DELETE_FAILED, and the next poll finds the stack gone.
+    stackStatusScript = { "api": ["CREATE_COMPLETE", "CREATE_COMPLETE", "DELETE_FAILED", "gone"], "self-destruct": ["CREATE_COMPLETE"] };
+    vi.useFakeTimers();
+    const { ingestHandler } = await import("@app/functions/infra/selfDestruct.js");
+    const pending = ingestHandler(makeEvent(), { getRemainingTimeInMillis: () => 900000 });
+    await vi.runAllTimersAsync();
+    const res = await pending;
+
+    expect(res.statusCode).toBe(200);
+    const apiDeletes = deleteStackCalls.filter((c) => c.StackName === "api");
+    expect(apiDeletes).toEqual([{ StackName: "api" }, { StackName: "api", DeletionMode: "FORCE_DELETE_STACK" }]);
+    expect(deleteStackCalls.some((c) => c.RetainResources)).toBe(false);
+    const body = JSON.parse(res.body);
+    expect(body.results.find((r) => r.stackName === "api")).toEqual({ stackName: "api", status: "deleted", error: null });
+    expect(body.results.find((r) => r.stackName === "self-destruct")).toEqual({
+      stackName: "self-destruct",
+      status: "deleted",
+      error: null,
+    });
+  });
+
+  it("records an error and keeps the self-destruct stack when a stack is DELETE_FAILED after the forced delete", async () => {
+    stackStatusScript = {
+      "api": ["CREATE_COMPLETE", "CREATE_COMPLETE", "DELETE_FAILED", "DELETE_IN_PROGRESS", "DELETE_FAILED"],
+      "self-destruct": ["CREATE_COMPLETE"],
+    };
+    vi.useFakeTimers();
+    const { ingestHandler } = await import("@app/functions/infra/selfDestruct.js");
+    const pending = ingestHandler(makeEvent(), { getRemainingTimeInMillis: () => 900000 });
+    await vi.runAllTimersAsync();
+    const res = await pending;
+
+    expect(res.statusCode).toBe(500);
+    const apiDeletes = deleteStackCalls.filter((c) => c.StackName === "api");
+    expect(apiDeletes).toEqual([{ StackName: "api" }, { StackName: "api", DeletionMode: "FORCE_DELETE_STACK" }]);
+    const body = JSON.parse(res.body);
+    expect(body.results.find((r) => r.stackName === "api")).toEqual({
+      stackName: "api",
+      status: "error",
+      error: "Stack api was not deleted",
+    });
+    expect(deleteStackCalls.some((c) => c.StackName === "self-destruct")).toBe(false);
+    expect(body.results.find((r) => r.stackName === "self-destruct")).toBeUndefined();
+  });
+
   it("deletes stacks in dependency order, with the Companies House stack beside the HMRC stack", async () => {
     const { ingestHandler } = await import("@app/functions/infra/selfDestruct.js");
     const res = await ingestHandler(makeEvent(), { getRemainingTimeInMillis: () => 900000 });
@@ -301,9 +359,7 @@ describe("functions/infra/selfDestruct", () => {
     const res = await ingestHandler(makeEvent(), { getRemainingTimeInMillis: () => 900000 });
 
     expect(res.statusCode).toBe(200);
-    expect(warnSpy).toHaveBeenCalledWith(
-      expect.stringContaining("ci-branch-origin-bucket does not exist yet, nothing to empty"),
-    );
+    expect(warnSpy).toHaveBeenCalledWith(expect.stringContaining("ci-branch-origin-bucket does not exist yet, nothing to empty"));
     expect(errorSpy).not.toHaveBeenCalled();
 
     delete process.env.EDGE_ORIGIN_BUCKET;
@@ -322,13 +378,9 @@ describe("functions/infra/selfDestruct", () => {
       "utf8",
     );
 
-    const stackNamesReadByLambda = new Set(
-      [...selfDestructJsSource.matchAll(/process\.env\.(\w*STACK_NAME)/g)].map((m) => m[1]),
-    );
+    const stackNamesReadByLambda = new Set([...selfDestructJsSource.matchAll(/process\.env\.(\w*STACK_NAME)/g)].map((m) => m[1]));
     const stackNamesSetByCdk = new Set(
-      [...selfDestructStackJavaSource.matchAll(/putIfNotNull\(selfDestructLambdaEnv, "(\w*STACK_NAME)"/g)].map(
-        (m) => m[1],
-      ),
+      [...selfDestructStackJavaSource.matchAll(/putIfNotNull\(selfDestructLambdaEnv, "(\w*STACK_NAME)"/g)].map((m) => m[1]),
     );
 
     expect(stackNamesReadByLambda.size).toBeGreaterThan(0);
@@ -341,10 +393,7 @@ describe("functions/infra/selfDestruct", () => {
     // both, which is how a newly added stack would slip through. SubmitApplication is where an
     // application stack comes into existence, so bind the deletion list to that instead.
     const testDir = fileURLToPath(new URL(".", import.meta.url));
-    const applicationSource = readFileSync(
-      `${testDir}/../../../infra/main/java/co/uk/diyaccounting/submit/SubmitApplication.java`,
-      "utf8",
-    );
+    const applicationSource = readFileSync(`${testDir}/../../../infra/main/java/co/uk/diyaccounting/submit/SubmitApplication.java`, "utf8");
     const selfDestructJsSource = readFileSync(`${testDir}/../../functions/infra/selfDestruct.js`, "utf8");
 
     const envVarNameFor = (stackClassName) =>
@@ -353,12 +402,8 @@ describe("functions/infra/selfDestruct", () => {
         .replace(/([a-z0-9])([A-Z])/g, "$1_$2")
         .toUpperCase()}_STACK_NAME`;
 
-    const stacksCreated = new Set(
-      [...applicationSource.matchAll(/new (\w+Stack)\(/g)].map((m) => envVarNameFor(m[1])),
-    );
-    const stackNamesReadByLambda = new Set(
-      [...selfDestructJsSource.matchAll(/process\.env\.(\w*STACK_NAME)/g)].map((m) => m[1]),
-    );
+    const stacksCreated = new Set([...applicationSource.matchAll(/new (\w+Stack)\(/g)].map((m) => envVarNameFor(m[1])));
+    const stackNamesReadByLambda = new Set([...selfDestructJsSource.matchAll(/process\.env\.(\w*STACK_NAME)/g)].map((m) => m[1]));
 
     expect(stacksCreated.size).toBeGreaterThan(0);
     expect([...stacksCreated].sort()).toEqual([...stackNamesReadByLambda].sort());

@@ -44,6 +44,7 @@
     "build:simulator": "node scripts/build-simulator.js",
     "simulator:server": "node app/bin/simulator-server.js",
     "bundle": "node scripts/bundle-for-tests.js",
+    "videos:manifest": "node scripts/copy-videos-manifest.js",
     "pretest": "npm run bundle",
     "test": "vitest --run --exclude '**/.claude/**' app/unit-tests/*.test.js app/unit-tests/*/*.test.js app/unit-tests/*/*/*.test.js web/unit-tests/*.test.js app/system-tests/*.test.js",
     "everything": "time sh -c 'rm -rf package-lock.json node_modules target && ./mvnw clean && npm install && npm test && npm run docker:build && ./mvnw test && npm run test:all && npm run test:allBehaviour-proxy && npm run build && npm run cdk-ci && npm run cdk && git restore web/public/submit.deployment-name.txt web/public/submit.environment-name.txt || true && ./mvnw clean compile && npm ci && npm test'",

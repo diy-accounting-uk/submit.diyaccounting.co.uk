@@ -3,6 +3,62 @@
 
 # Alarm Audit Report — September 2026
 
+## Re-count, 2026-09-15: the seven days after B30j and B30k reached prod
+
+**Window**: 2026-09-06 to 2026-09-13 (w1), with the 2026-09-13 to 2026-09-15 20:00 UTC tail (w2)
+shown beside it. **Source**: `cloudwatch describe-alarm-history` (StateUpdate items: 10,666 on
+submit-prod, 12,813 on submit-ci), `gh run list --workflow deploy.yml` (121 runs in w1: 71 success,
+31 failure, 19 cancelled; 46 in w2). A fire is a transition into ALARM; "in deploy" means inside a
+`deploy.yml` run plus 30 minutes. Baseline is the 90-day table below: 5 alarms fired, all
+environment-level detections, none inside a deploy window, and no Lambda health check ever fired.
+
+**Prod, 74 fires in nine days (64 in w1, 10 in w2), 55 of them inside deploy windows.** The
+alarm-to-issue Lambda opened 32 issues in the same span, none of them for ci (B30k held).
+
+| Family | w1 | w2 | in deploy | Verdict | Earns |
+|---|---|---|---|---|---|
+| prod-env-dynamodb-customer-table-scan | 6 | 2 | 2 | quieter: the hourly fire (00:52 to 05:51 on 2026-09-06) stopped when B30j reached prod at 07:00; the two later fires (25 scans at 12:52 on 2026-09-13, 3 at 23:39) are sessions scanning the table | keep |
+| prod-env-cis-unauthorized-api-calls | 15 | 1 | 12 | louder, new since the CIS alarms landed on 2026-09-08; 12 of 16 fires sit inside deploys, the rest are 1 to 4 AccessDenied calls an hour apart | tune (proposed 30z) |
+| prod-env-cis-iam-policy-changes | 12 | 0 | 12 | louder, new; every fire is a deploy's own IAM change | tune (proposed 30z) |
+| prod-env-cis-s3-bucket-policy-changes | 6 | 0 | 6 | louder, new; every fire is a deploy | tune (proposed 30z) |
+| prod-env-cis-route-table-changes | 6 | 0 | 6 | louder, new; every fire is a deploy | tune (proposed 30z) |
+| prod-app-api-5xx | 4 | 2 | 4 | louder against a baseline of 0; one fire per fresh prod set inside its deploy (6c85118, c6e18fd, c6d0ed3, 4600d25), then two real ones (e371587 at 23:38 on 2026-09-13; 70b0a8e at 16:36 on 2026-09-15, the operator snapshot 500, B52v) | investigate the in-deploy fire (proposed 30aa) |
+| check-* Lambda log-errors and errors (bundle-capacity-reconcile 3+3, interest-post 1+1, pass-post 1, operator-snapshot-get 2) | 9 | 2 | 9 | louder against a baseline of 0; each is a real error in code that shipped that week, and each has a landed fix or an open row (B52v) | keep |
+| prod-env-github-probe-failed | 1 | 1 | 1 | unchanged: two probe failures, both during a deploy that rolled the apex back | keep |
+| prod-env-analytics-nightly-failed | 2 | 0 | 1 | quieter after the two 03:22 fires on 2026-09-10 and 2026-09-11; silent since | keep |
+| prod-env-hmrc-submission-failure | 1 | 0 | 0 | unchanged: one real customer failure at 14:23 on 2026-09-09 | keep |
+| prod-env-operator-snapshot-publish-errors | 0 | 1 | 0 | new nightly job's first prod run (B52y.2) | keep |
+| prod-env-cis-console-signin-without-mfa | 0 | 1 | 0 | one fire, the filter fixed on prod (B30x) | keep |
+| prod-env-cost-focus-copy-errors, prod-env-raw-export-publish-errors | 1+1 | 0 | 2 | new nightly jobs' first runs on 2026-09-10 | keep |
+
+**ci, 116 fires**: the same four CIS families lead (58 fires, 49 in deploys), then ci-app-api-5xx
+(14, all in deploys, the same per-set pattern as prod), ci-env-salt-secret-unexpected-read (7, all in
+w2 deploys, from the ci sets' own test users), self-destruct log errors (6, the DELETE_FAILED
+ApiStack, NEXT.md B167), github-probe-failed (6), and the rest single fires. None opened an issue.
+
+**What the two fixes did.** B30j ended the hourly customer-table-scan fire: 6 fires in the six
+hours before it reached prod, 0 from the hourly reconcile in the eight days after. B30k ended ci
+issues: 0 ci-titled issues against 32 for prod. The 90-day baseline's five firing families are down
+to two still firing (customer-table-scan on real scans, and the nightly-missed family's successor
+analytics-nightly-failed, twice). What replaced them is the CIS set, which did not exist in the
+baseline and fires on the deploy pipeline's own changes: 39 of prod's 55 in-deploy fires are CIS.
+
+**Proposed rows** (no alarm changed here):
+
+- **30z, tune the four CIS detection filters to exclude the deploy role.** `iam-policy-changes`,
+  `s3-bucket-policy-changes` and `route-table-changes` fired only inside deploys, and 12 of 16
+  `unauthorized-api-calls` fires did. The metric filters match every CloudTrail event; add a clause
+  excluding `userIdentity.sessionContext.sessionIssuer.arn` of the GitHub Actions deploy role, and
+  for `unauthorized-api-calls` the deploy role and the Lambda execution roles' expected AccessDenied
+  probes, in `SecurityDetectionStack` for both accounts. Removes about 40 fires and 11 issues a
+  week. Sonnet, ~2 files.
+- **30aa, find the 5xx a fresh set answers during its own deploy.** Every new prod and ci set fired
+  `app-api-5xx` once inside its deploy window and never again until real traffic broke something.
+  Read one set's API Gateway access log for the minute the alarm names (e.g. prod-4600d25 at 14:00
+  on 2026-09-09) and say which route answered 5xx and to whom (the probe, the canary, or the alias
+  warm-up); then either fix the cause or start the alarm's evaluation after the set is promoted.
+  Sonnet, ~2 files.
+
 **Date**: 2026-09-03  
 **Environment**: prod (account 972912397388, region eu-west-2)  
 **Audit period**: 90 days (2026-06-05 to 2026-09-03)  

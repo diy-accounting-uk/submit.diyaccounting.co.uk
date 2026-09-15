@@ -20,6 +20,7 @@ import {
 } from "../../lib/httpResponseHelper.js";
 import { registerLambdaRoute } from "../../lib/httpServerToLambdaAdaptor.js";
 import { enforceBundles, BundleAuthorizationError, BundleEntitlementError } from "../../services/bundleManagement.js";
+import { initializeSalt } from "../../services/subHasher.js";
 
 const logger = createLogger({ source: "app/functions/analytics/operatorSnapshotGet.js" });
 
@@ -94,6 +95,8 @@ export async function readLatestSnapshot() {
 }
 
 export async function ingestHandler(event) {
+  // enforceBundles reads the caller's bundles by hashed sub, which needs the salt loaded first.
+  await initializeSalt();
   const { request } = extractRequest(event);
   const responseHeaders = { "Content-Type": "application/json" };
 

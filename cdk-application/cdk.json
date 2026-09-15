@@ -49,8 +49,8 @@
     "docRootPath": "../web/public",
     "edgeFunctionAssetPath": "../app/functions/edge",
     "httpApiUrl": "https://placeholder.example.com/",
-    "githubTokenSecretArn": "",
     "opsGithubTokenSecretArn": "",
+    "supportGithubTokenSecretArn": "",
     "feedbackEngagementEnabled": "true",
     "wafManualBlockIps": ""
   }

@@ -403,4 +403,5 @@ web/www.diyaccounting.co.uk/redirect-function.js
 
 # TypeScript CDK spike build output
 /cdk-typescript/node_modules/
+/mcp/node_modules/
 /cdk-typescript/cdk.out/

@@ -58,6 +58,7 @@ on:
       - 'tests/**'
       - 'behaviour-tests/**'
       - 'web/**'
+      - 'mcp/**'
       - '.env.ci'
       - '.env.prod'
       - '**/cdk.json'
@@ -325,6 +326,32 @@ jobs:
           NPM_CONFIG_FETCH_RETRIES: "3"
 
       - run: npm run test:coverage
+
+  npm-mcp-test:
+    name: 'npm mcp test'
+    runs-on: ubuntu-latest
+    needs:
+      - names
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Setup Node
+        uses: actions/setup-node@v7
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+          cache-dependency-path: mcp/package-lock.json
+
+      - run: timeout 120 npm ci --prefer-offline || { sleep 30; timeout 180 npm ci; }
+        working-directory: mcp
+        timeout-minutes: 6
+        env:
+          NPM_CONFIG_FETCH_RETRIES: "3"
+
+      - run: npx vitest run
+        working-directory: mcp
 
   npm-system-test:
     name: 'npm system test'
