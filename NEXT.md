@@ -16,12 +16,12 @@ runs), and for Claude Code steps the **Model** a sub-agent should use (Fable > O
 Haiku; the lowest tier that fits). Anything touching code goes through a `claude/*` branch and
 PR; the operator merges.
 
-**Prod runs deployment prod-f709723** (PR #217's merge, run 34949518154), last-known-good with
-every probe green, but without an OpsStack: that job failed at the runner level (no steps, no
-log) and nothing downstream needs it, so the run carried on; B160 carries it. prod-f767e65 is being
-destroyed by the same run. **ci**: three sets stand, `ci-claud9f21` (b33, self-destructs 11:20 UTC),
-`ci-claud4326` (b34, 12:24 UTC) and `ci-claudf91c` (b35, last-known-good, 13:52 UTC), all on
-2026-09-15. B34.6b's poll is the only b32 item left open.
+**Prod runs deployment prod-f709723** (PR #217, run 34949518154; no OpsStack, see B160), with
+`prod-075487d` standing unpromoted beside it (the scheduled deploy 34952375352, rolled back;
+incident #219, which `deploy.yml` closes on the next promotion). `main`'s deploy of PR #218
+(34963098209) is building the next set. **ci**: `ci-claud4326` (b34, self-destructs 12:24 UTC) and
+`ci-claudf91c` (b35, last-known-good, 13:52 UTC) stand on 2026-09-15. B34.6b's poll is the only
+b32 item left open.
 
 The board runs in five sections, in this order: **in flight** (a branch, a pull request or a run
 in motion, each named in the row), **machine-only**, **human and machine**, **human-only**,
