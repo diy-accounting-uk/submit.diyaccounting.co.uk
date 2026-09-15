@@ -40,53 +40,19 @@ Every item names its model: the lowest tier that fits (Fable > Opus > Sonnet > H
 
 ## In flight
 
-Wave b41 rides **`claude/b41-board`, PR #232** (pushed 22:23 UTC on 2026-09-15, nine commits;
-its push-triggered test and deploy runs register under the monitor). `main`'s deploy of PR #226
-(run 35028380205) is creating `prod-9f58aaa`, which carries B52v's fix for the operator snapshot's
-500 that fired again on `prod-70b0a8e` at 22:14 and 22:18 UTC (issues #229, #230) when the
-dashboard was opened; those close when the old set goes.
+Wave b42 rides **`claude/b42-board`** (from `main` at 1c1cc8a1, unpushed until the wave lands): B30ab is
+on the batch; B30ac and B59 are being worked in `.claude/worktrees/b42-agents`, B57 and B58 in
+`b42-github`, B55 in `b42-google`, B11.T10's pack in `b42-itsapack`. The push, the PR and `/watch`
+follow the last agent's report. `main`'s deploy of PR #232 (b41) runs alongside.
 
-- [ ] **B30z. Exclude the deploy role from the four CIS metric filters.** B30y's re-count: the CIS
-  families `unauthorized-api-calls` (16 fires), `iam-policy` (12), `s3-bucket-policy` (6) and
-  `route-table` (6) are new since 2026-09-08 and 36 of their 40 fires sit inside deploy windows,
-  because the deploy role's own CloudFormation calls match the filters. Exclude the deploy role's
-  principal in the four filters in `SecurityDetectionStack`, both accounts, with the CDK test.
-  **Source**: `_developers/ALARM_AUDIT_2026-09.md`, 2026-09-15 section. **Owner**: Claude Code.
-  **Model**: Sonnet. **Size**: ~2 files.
-
-- [ ] **B30aa. The api-5xx fire inside a fresh set's own deploy.** B30y's re-count: `app-api-5xx`
-  fires once per fresh set during its deploy (before promotion) and then only for real errors.
-  Find which route answers 5xx while the set is still deploying (the probes against an
-  unpromoted API, or a Lambda before its provisioned alias exists) and either fix the route or hold
-  the alarm's actions until promotion. **Source**: `_developers/ALARM_AUDIT_2026-09.md`, 2026-09-15
-  section. **Owner**: Claude Code. **Model**: Sonnet. **Size**: ~2 files.
-
-- [ ] **M1b. `derive_vat_return` from a diya-gl book.** The nine VAT boxes from a book's journal
-  and its VAT codes, as an MCP tool in `mcp/`, with the mapping written as a table in
-  `PLAN_SUBMISSION_MCP.md` first (Opus) and unit tests over both example books against the figures
-  their published reports show. **Source**: `PLAN_SUBMISSION_MCP.md` M1. **Owner**: Claude Code.
-  **Model**: Opus for the mapping, Sonnet for the tool. **Size**: ~3 files.
-
-- [ ] **M1c. `derive_micro_entity_accounts` from a diya-gl book.** The seven FRS 105 balance-sheet
-  lines from a book, passed through the existing `buildMicroEntityAccounts` and the public validator
-  script, with unit tests over BrickWork Pro's example. **Source**: `PLAN_SUBMISSION_MCP.md` M1.
-  **Owner**: Claude Code. **Model**: Opus for the mapping, Sonnet for the tool.
-  **Size**: ~3 files.
-
-- [ ] **B11.T9. ITSA phase 2: the DIYA-GL-to-submission path.** Two chunks, M1a on `main` since PR #226: **T9a**, the
-  MCP tools `derive_itsa_quarterly_update` (a period's figures in a dated year, a running total in a
-  cumulative one, from the same book, calling whichever derivation the tax year names, sending an
-  omission for any of the 31 field slots the template cannot source, never a zero) and
-  `derive_itsa_annual_submission`, over the spreadsheets side's `app/lib/calculators/se-derivations.js`
-  (on their main); **T9b**, an import control on `annualSubmission.html` that fills the form from a
-  book through the same derivation. SED-10: the self-employed field set changes by tax year
-  (`sa103-mtd-mapping.json`: two allowances gone from 2025-26, an adjustment gone from 2026-27, two
-  fields added) and their `se-derivations.js` reads none of it, so T9a filters the field set by tax
-  year on this side unless the operator says to wait for their SED-10. **Source**: BACKLOG 11;
-  `PLAN_ITSA_PHASE_2.md` T9. **Owner**: Claude Code. **Model**: Sonnet. **Size**:
-  ~5 files.
-
-## Machine-only
+- [ ] **B30ab. The CIS unauthorized-api-calls filter counts the AWS console's own UX calls.**
+  Issue #231 (22:20 UTC, 2026-09-15): four `uxc.amazonaws.com GetAccountColor` AccessDenied events
+  under the operator's SSO administrator session while the console was open, three in one minute,
+  and the filter in `SecurityDetectionStack` excludes only the deploy, GitHub Actions and CDK roles.
+  Exclude `$.eventSource = "uxc.amazonaws.com"` (the console's account-colour lookup, denied for
+  every role without the `uxc:GetAccountColor` permission) in both accounts' filters, with the CDK
+  test; close #231 with the change. **Source**: issue #231; `_developers/ALARM_AUDIT_2026-09.md`.
+  **Owner**: Claude Code. **Model**: Haiku. **Size**: ~2 files.
 
 - [ ] **B30ac. The alarm triage agent queries the telemetry it is allowed to read.** Operator,
   2026-09-15: the triage answer on issue #229 says "Without being able to query CloudWatch Logs or
@@ -108,14 +74,39 @@ dashboard was opened; those close when the old set goes.
   reading the answer. **Source**: operator, 2026-09-15; issue #229; run 35030341835. **Owner**:
   Claude Code. **Model**: Sonnet. **Size**: ~4 files.
 
-- [ ] **B30ab. The CIS unauthorized-api-calls filter counts the AWS console's own UX calls.**
-  Issue #231 (22:20 UTC, 2026-09-15): four `uxc.amazonaws.com GetAccountColor` AccessDenied events
-  under the operator's SSO administrator session while the console was open, three in one minute,
-  and the filter in `SecurityDetectionStack` excludes only the deploy, GitHub Actions and CDK roles.
-  Exclude `$.eventSource = "uxc.amazonaws.com"` (the console's account-colour lookup, denied for
-  every role without the `uxc:GetAccountColor` permission) in both accounts' filters, with the CDK
-  test; close #231 with the change. **Source**: issue #231; `_developers/ALARM_AUDIT_2026-09.md`.
-  **Owner**: Claude Code. **Model**: Haiku. **Size**: ~2 files.
+- [ ] **B59. The agent kill switch.** BACKLOG 59, `PLAN_REPOSITORY_AUTOMATION.md` Q9: the SSM parameter
+  `/submit/<env>/agents/kill-switch` in `ObservabilityStack`, a composite action that fails a job when
+  it is `on`, called first in `alarm-triage.yml` and the three `agentic-lib-*.yml`, and
+  `agent-kill-switch.yml` to set it by dispatch. **Source**: BACKLOG 59. **Owner**: Claude Code.
+  **Model**: Sonnet. **Size**: ~7 files.
+
+- [ ] **B58. The weekly security review runs on its cron.** BACKLOG 58: `security-review.yml`'s
+  `0 6 * * 1` schedule switched on, with whatever a scheduled run needs that a dispatch supplied.
+  **Source**: BACKLOG 58. **Owner**: Claude Code. **Model**: Haiku. **Size**: ~1 file.
+
+- [ ] **B57. Every action pinned to a SHA; Actions restricted to the allowed set.** BACKLOG 57: every
+  `uses:` in the workflows and composite actions pinned to a full commit SHA with its version comment,
+  then `scripts/github-actions-permissions.sh` sets `allowed_actions: selected` with the owners the
+  workflows use and `sha_pinning_required: true`. The five workflows other b42 batches edit are
+  pinned in a follow-up. **Source**: BACKLOG 57. **Owner**: Claude Code. **Model**: Haiku. **Size**:
+  ~30 files.
+
+- [ ] **B55. Google as code: federation and key rotation.** BACKLOG 55, `PLAN_GOOGLE_AS_CODE.md` items 8
+  to 11: `google/identity.toml` and `scripts/gcp-identity-sync.js` for the workload identity pool and
+  its GitHub provider; `google-apply.yml` authenticating by federation; `scripts/gcp-key-rotate.js`
+  rotating the service-account key into Secrets Manager with a dated tag; the analytics Lambdas
+  federating through an `external_account` credential instead of holding the key. Applied by
+  `google-apply.yml` after the merge; the key path stays until the federated run proves itself.
+  **Source**: BACKLOG 55. **Owner**: Claude Code. **Model**: Sonnet. **Size**: ~8 files.
+
+- [ ] **B11.T10. ITSA phase 2: the recognition pack.** `PLAN_ITSA_PHASE_2.md` T10, its inputs (T7r, T21, T22) on `main`:
+  `_developers/hmrc/ITSA_PRODUCTION_APPROVALS_CHECKLIST.md`, an ITSA pass over the two
+  questionnaires, and the two draft emails for the operator to send. One application now covers
+  both approval stages, and the checklist answers for all nine APIs in the minimum functionality
+  standards with a build behind each. **Source**: BACKLOG 11; `PLAN_ITSA_PHASE_2.md` T10.
+  **Owner**: Claude Code (the pack, in flight), then Operator (sends). **Model**: Haiku. **Size**: ~3 files.
+
+## Machine-only
 
 - [ ] **B52y.2. Check the nightly snapshot after the SecurityLakeStack reaches prod.** PR #218
   (9b695aab) adds the `deploy-security-lake` job and the per-observation null; prod's environment
@@ -145,13 +136,6 @@ dashboard was opened; those close when the old set goes.
   customer on ci and say go. Then the machine half: the one-word change, its CDK test, and a ci
   deploy proving native sign-in still completes. **Source**: `../REPORT_HMRC_HEADER_ADVISORIES.md`.
   **Owner**: Operator decides, Claude Code changes. **Model**: Haiku. **Size**: ~2 files.
-
-- [ ] **B11.T10. ITSA phase 2: the recognition pack.** `PLAN_ITSA_PHASE_2.md` T10, its inputs (T7r, T21, T22) on `main`:
-  `_developers/hmrc/ITSA_PRODUCTION_APPROVALS_CHECKLIST.md`, an ITSA pass over the two
-  questionnaires, and the two draft emails for the operator to send. One application now covers
-  both approval stages, and the checklist answers for all nine APIs in the minimum functionality
-  standards with a build behind each. **Source**: BACKLOG 11; `PLAN_ITSA_PHASE_2.md` T10.
-  **Owner**: Claude Code, then Operator. **Model**: Haiku. **Size**: ~3 files.
 
 ## Human-only
 
@@ -212,6 +196,10 @@ dashboard was opened; those close when the old set goes.
   `PLAN_LICENSING_UPLIFT_SUBMIT.md` H-LU-9. **Owner**: Operator. **Model**: none.
 
 ## Blocked
+
+- [ ] **B56. `test` and CodeQL as required status checks on `main`.** BACKLOG 56: added to ruleset
+  16057564 beside the signature check, once O46 settles how the ruleset gates direct pushes. **Source**:
+  BACKLOG 56. **Owner**: Claude Code. **Model**: Haiku. Blocked on O46. **Size**: ~0 files.
 
 - [ ] **B34.6b. Companies House accounts filing: the sandbox proof.** Submission 000004 (presenter
   E0000052288, company 06846849, 2026-09-13 19:04 UTC) was ACCEPTED by the XML Gateway test
