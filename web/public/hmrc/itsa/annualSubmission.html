@@ -88,6 +88,23 @@
 
       <!-- Edit form, shown once a submission has been loaded (or for a first-time entry) -->
       <div id="annualEditForm" class="form-container" style="display: none">
+        <h2>Import from a book</h2>
+        <div class="form-group">
+          <label for="importDerivedFigures">Derived figures file</label>
+          <p id="importDerivedFigures-hint" class="hint">
+            Fill the form from the JSON that the diya-submit MCP tool <code>derive_itsa_annual_submission</code> wrote for this tax year.
+            Every figure it carries lands on its field below; check them, then save.
+          </p>
+          <input
+            type="file"
+            id="importDerivedFigures"
+            name="importDerivedFigures"
+            accept=".json,application/json"
+            aria-describedby="importDerivedFigures-hint"
+          />
+          <p id="importDerivedFiguresStatus" class="hint" aria-live="polite"></p>
+        </div>
+
         <h2>Adjustments</h2>
         <p class="hint">Enter only the figures that apply. Leave a field at 0 to leave it out of what's sent to HMRC.</p>
         <div class="form-group">
@@ -517,8 +534,69 @@
         );
       }
 
+      // The file is derive_itsa_annual_submission's answer: { taxYear, allowances, adjustments,
+      // omitted, warnings }. Only allowances and adjustments reach the form; a figure for a field
+      // the form does not carry is named rather than dropped silently, and a file for another tax
+      // year is refused outright, because the field set differs by year.
+      function parseDerivedFigures(text) {
+        let parsed;
+        try {
+          parsed = JSON.parse(text);
+        } catch {
+          throw new Error("the file is not JSON");
+        }
+        if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) throw new Error("the file does not hold an object");
+        if (typeof parsed.taxYear !== "string") throw new Error("the file names no taxYear");
+        const allowances = parsed.allowances && typeof parsed.allowances === "object" ? parsed.allowances : {};
+        const adjustments = parsed.adjustments && typeof parsed.adjustments === "object" ? parsed.adjustments : {};
+        if (Object.keys(allowances).length === 0 && Object.keys(adjustments).length === 0) {
+          throw new Error("the file carries no allowances and no adjustments");
+        }
+        return { taxYear: parsed.taxYear, allowances, adjustments };
+      }
+
+      function importDerivedFigures(figures, fileName) {
+        const status = document.getElementById("importDerivedFiguresStatus");
+        if (loadedTaxYear && figures.taxYear !== loadedTaxYear) {
+          status.textContent = `${fileName} is for ${figures.taxYear}; this form is for ${loadedTaxYear}. Nothing imported.`;
+          return { imported: 0, unmapped: [] };
+        }
+        const unmapped = [];
+        let imported = 0;
+        const groups = { allowances: figures.allowances, adjustments: figures.adjustments };
+        Object.entries(groups).forEach(([group, values]) => {
+          Object.keys(values).forEach((key) => {
+            if (typeof values[key] !== "number") {
+              unmapped.push(`${group}.${key}`);
+              return;
+            }
+            if (document.getElementById(key)) imported += 1;
+            else unmapped.push(`${group}.${key}`);
+          });
+        });
+        populateEditForm({ allowances: figures.allowances, adjustments: figures.adjustments, nonFinancials: readNonFinancials() });
+        const left = unmapped.length ? ` Not on this form: ${unmapped.join(", ")}.` : "";
+        status.textContent = `Imported ${imported} figure${imported === 1 ? "" : "s"} from ${fileName} for ${figures.taxYear}.${left}`;
+        return { imported, unmapped };
+      }
+
+      async function handleImportDerivedFigures(event) {
+        const status = document.getElementById("importDerivedFiguresStatus");
+        const file = event.target.files && event.target.files[0];
+        if (!file) return;
+        try {
+          const figures = parseDerivedFigures(await file.text());
+          importDerivedFigures(figures, file.name);
+        } catch (error) {
+          status.textContent = `Could not import ${file.name}: ${error.message}.`;
+        } finally {
+          event.target.value = "";
+        }
+      }
+
       document.getElementById("itsaAnnualLoadForm").addEventListener("submit", handleLoadFormSubmission);
       document.getElementById("saveBtn").addEventListener("click", handleSaveClick);
+      document.getElementById("importDerivedFigures").addEventListener("change", handleImportDerivedFigures);
 
       document.getElementById("newSearchBtn")?.addEventListener("click", () => {
         document.getElementById("annualSubmissionResults").style.display = "none";
