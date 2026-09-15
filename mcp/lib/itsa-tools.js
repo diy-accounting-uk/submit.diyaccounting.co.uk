@@ -16,7 +16,6 @@
 // live fields on this side, whatever the derivation itself does. A field the
 // template cannot source is omitted, never sent as a zero.
 
-import { createRequire } from "node:module";
 import { mkdirSync, writeFileSync } from "node:fs";
 import { dirname, resolve as resolvePath } from "node:path";
 
@@ -27,8 +26,7 @@ import {
 import { loadTaxDataForBook, productOf } from "@diy-accounting-uk/diya-gl/dist/app/lib/product-workbook.js";
 import { z } from "zod";
 
-const require = createRequire(import.meta.url);
-const MAPPING = require("@diy-accounting-uk/diya-gl/dist/app/data/hmrc/sa103-mtd-mapping.json");
+import MAPPING from "@diy-accounting-uk/diya-gl/dist/app/data/hmrc/sa103-mtd-mapping.json" with { type: "json" };
 
 export const QUARTERLY_PERIOD_TYPES = ["standard", "calendar"];
 
