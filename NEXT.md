@@ -18,7 +18,9 @@ PR; the operator merges.
 
 **Prod runs deployment prod-bd664fe** (PR #214's merge, batch b32, run 34891994316); the only
 prod set. **ci**: no set stands; `ci-claud824f`'s self-destruct fired at 23:40 UTC on 2026-09-14
-(unverified this render: no SSO session). B34.6b's poll is the only b32 item left open.
+and left `ci-claud824f-app-ApiStack` DELETE_FAILED (the Cognito authorizer answered
+InternalFailure), which the next `destroy-ci.yml` sweep force-deletes. B34.6b's poll is the only
+b32 item left open.
 
 The board runs in five sections, in this order: **in flight** (a branch, a pull request or a run
 in motion, each named in the row), **machine-only**, **human and machine**, **human-only**,
