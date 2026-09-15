@@ -13,6 +13,16 @@ vi.mock("@app/services/bundleManagement.js", async () => {
   };
 });
 
+const mockInitializeSalt = vi.fn();
+
+vi.mock("@app/services/subHasher.js", async () => {
+  const actual = await vi.importActual("@app/services/subHasher.js");
+  return {
+    ...actual,
+    initializeSalt: (...args) => mockInitializeSalt(...args),
+  };
+});
+
 const mockS3Send = vi.fn();
 vi.mock("@aws-sdk/client-s3", () => ({
   S3Client: class {
@@ -42,6 +52,8 @@ function s3BodyOf(snapshot) {
 describe("operatorSnapshotGet", () => {
   beforeEach(() => {
     mockEnforceBundles.mockReset();
+    mockInitializeSalt.mockReset();
+    mockInitializeSalt.mockResolvedValue(undefined);
     mockS3Send.mockReset();
     process.env.ANALYTICS_LAKE_BUCKET_NAME = "test-env-analytics-lake";
     process.env.ENVIRONMENT_NAME = "test";
@@ -108,6 +120,21 @@ describe("operatorSnapshotGet", () => {
   });
 
   describe("ingestHandler", () => {
+    test("initialises the sub-hashing salt before enforcing bundles", async () => {
+      const order = [];
+      mockInitializeSalt.mockImplementation(async () => order.push("initializeSalt"));
+      mockEnforceBundles.mockImplementation(async () => {
+        order.push("enforceBundles");
+        return { userSub: "operator-sub", bundleIds: ["operator"] };
+      });
+      mockS3Send.mockResolvedValueOnce({ Body: s3BodyOf({ generatedAt: "2026-09-15T03:15:00.000Z", objectives: [] }) });
+
+      const response = await ingestHandler(buildLambdaEvent({ path: "/api/v1/operator/snapshot" }));
+
+      expect(response.statusCode).toBe(200);
+      expect(order).toEqual(["initializeSalt", "enforceBundles"]);
+    });
+
     test("returns 403 naming the operator pass when the caller does not hold the operator bundle", async () => {
       mockEnforceBundles.mockRejectedValueOnce(
         new BundleEntitlementError("Forbidden: Activity requires operator bundle", { code: "BUNDLE_FORBIDDEN" }),
