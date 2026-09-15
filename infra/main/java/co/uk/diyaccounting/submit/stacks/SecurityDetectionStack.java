@@ -373,7 +373,11 @@ public class SecurityDetectionStack extends Stack {
                     "UnauthorizedApiCalls",
                     "unauthorized-api-calls",
                     "CIS CloudWatch.1: an unauthorized API call was made",
-                    "{ ($.errorCode = \"*UnauthorizedAccess*\") || ($.errorCode = \"AccessDenied*\") }"),
+                    // The console's own account-colour lookup (uxc:GetAccountColor) is denied to every
+                    // role that lacks that permission, several times per console session, so an open
+                    // console would trip the threshold of 1 on its own.
+                    "{ (($.errorCode = \"*UnauthorizedAccess*\") || ($.errorCode = \"AccessDenied*\"))"
+                            + " && ($.eventSource != \"uxc.amazonaws.com\") }"),
             new CisControl(
                     "ConsoleSigninWithoutMfa",
                     "console-signin-without-mfa",
