@@ -46,7 +46,7 @@ Every item names its model: the lowest tier that fits (Fable > Opus > Sonnet > H
   `AWSReservedSSO_AdministratorAccess`, `MFAUsed = No`, which is what every federated sign-in
   reports). CIS 3.2's own filter adds `$.userIdentity.type = "IAMUser"`; add that clause to the
   metric filter in `ObservabilityStack.java` with its test, and the issue closes when it reaches
-  prod. **Source**: issue #206. In flight on `claude/b35-board` (agent worktree `claude/b35-cis`); no PR yet. **Owner**: Claude Code. **Model**: Haiku. **Size**: ~2 files.
+  prod. **Source**: issue #206. In flight on `claude/b35-board`, PR #218, its deploy running. **Owner**: Claude Code. **Model**: Haiku. **Size**: ~2 files.
 
 - [ ] **B157. One alarm transition opened two issues.** #210 and #212 carry the same alarm
   (`prod-env-github-probe-failed`), state change and timestamp (15:26:00.881 UTC on 2026-09-14).
