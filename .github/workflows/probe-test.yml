@@ -147,6 +147,7 @@ on:
 permissions:
   id-token: write
   contents: read
+  actions: read
 
 env:
   JAVA_VERSION: '25'
@@ -223,6 +224,37 @@ jobs:
           echo 'test-auth-username=${{ inputs.test-auth-username }}' | tee -a "$GITHUB_OUTPUT"
           echo 'test-auth-password=${{ inputs.test-auth-password }}' | tee -a "$GITHUB_OUTPUT"
           echo 'test-auth-totp-secret=${{ inputs.test-auth-totp-secret }}' | tee -a "$GITHUB_OUTPUT"
+
+      # The scheduled probe runs every 4 hours regardless of what else is happening on main. A
+      # deploy.yml run moving the prod apex can leave the origins briefly disagreeing (e.g. the
+      # token exchange 403ing for the seconds new and old origins disagree), which the scheduled
+      # probe then reports as a failure even though nothing is actually broken (2026-09-14,
+      # issues #210, #212). workflow_dispatch and workflow_call callers are unaffected: this step
+      # only runs for the schedule trigger, and every later job already needs this one.
+      - name: Wait for a deploy in progress on main before running the scheduled probes
+        if: ${{ github.event_name == 'schedule' }}
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: bash
+        run: |
+          MAX_WAIT_SECONDS=$((40 * 60))
+          POLL_SECONDS=60
+          WAITED=0
+          while :; do
+            IN_PROGRESS=$(gh run list --workflow deploy.yml --branch main --status in_progress --json databaseId --jq length)
+            QUEUED=$(gh run list --workflow deploy.yml --branch main --status queued --json databaseId --jq length)
+            if [ "$IN_PROGRESS" -eq 0 ] && [ "$QUEUED" -eq 0 ]; then
+              echo "No deploy.yml run in progress or queued on main, continuing with the scheduled probes."
+              break
+            fi
+            if [ "$WAITED" -ge "$MAX_WAIT_SECONDS" ]; then
+              echo "::warning::Waited ${MAX_WAIT_SECONDS}s for deploy.yml on main to finish (in_progress=${IN_PROGRESS}, queued=${QUEUED}); giving up and running the probes anyway."
+              break
+            fi
+            echo "deploy.yml is running on main (in_progress=${IN_PROGRESS}, queued=${QUEUED}); waiting ${POLL_SECONDS}s (${WAITED}/${MAX_WAIT_SECONDS}s so far)..."
+            sleep "$POLL_SECONDS"
+            WAITED=$((WAITED + POLL_SECONDS))
+          done
     outputs:
       behaviour-test-suite: ${{ steps.normalise.outputs.behaviour-test-suite }}
       behaviour-test-suites-json: ${{ steps.normalise.outputs.behaviour-test-suites-json }}
