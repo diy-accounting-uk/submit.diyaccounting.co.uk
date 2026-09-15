@@ -9,7 +9,8 @@ STATE_DIR="${1:-target/watch-ci}"
 mkdir -p "$STATE_DIR"
 SEEN="$STATE_DIR/seen"          # one "<runid> <conclusion>" per line already reported
 READY="$STATE_DIR/ready"        # one "<pr> <headsha>" per line already reported
-touch "$SEEN" "$READY"
+NOTGATING="$STATE_DIR/notgating"  # one "<branch>:<databaseIds>" per line already reported
+touch "$SEEN" "$READY" "$NOTGATING"
 
 scope() {
   { echo main; gh pr list --state open --limit 50 --json headRefName --jq '.[].headRefName' 2>/dev/null; } | sort -u
@@ -50,11 +51,18 @@ while true; do
       done
     red=$((red + $(echo "$runs" | jq '[.[] | select(.status == "completed" and (.conclusion == "failure" or .conclusion == "timed_out" or .conclusion == "action_required" or .conclusion == "startup_failure"))] | length')))
 
-    # Report non-gating runs (workflow_dispatch, schedule, issues, etc.) once per cycle
+    # Report non-gating runs (workflow_dispatch, schedule, issues, etc.) once per distinct set
     non_gating=$(non_gating_runs "$branch")
     [ -z "$non_gating" ] && continue
     ng=$(echo "$non_gating" | jq 'length')
-    [ "$ng" -gt 0 ] && [ "$cycle" -gt 1 ] && echo "NOT GATING $branch: $ng run(s) ($(echo "$non_gating" | jq -r '.[].event' | sort | uniq | paste -sd ',' -))"
+    if [ "$ng" -gt 0 ]; then
+      ng_key=$(echo "$non_gating" | jq -r '.[].databaseId' | sort -n | paste -sd ',' -)
+      ng_key_full="$branch:$ng_key"
+      if ! grep -q "^$ng_key_full$" "$NOTGATING"; then
+        echo "$ng_key_full" >> "$NOTGATING"
+        [ "$cycle" -gt 1 ] && echo "NOT GATING $branch: $ng run(s) ($(echo "$non_gating" | jq -r '.[].event' | sort | uniq | paste -sd ',' -))"
+      fi
+    fi
   done
   if [ "$total" -eq 0 ]; then
     empty=$((empty + 1))
