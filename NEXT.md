@@ -78,6 +78,15 @@ Every item names its model: the lowest tier that fits (Fable > Opus > Sonnet > H
 
 ## Machine-only
 
+- [ ] **B158c. `watch-ci.sh` drops a gating run when a later non-gating run exists.** `all_latest_runs`
+  (`scripts/watch-ci.sh:19`) groups by workflow and keeps the newest run over every event, and
+  `latest_runs` filters to push and pull_request afterwards, so when a schedule or dispatch run of
+  the same workflow is newer than the push run, the push run vanishes from the gating set: at
+  09:47 UTC on 2026-09-15 the watch said "all terminal, 0 red" on `main` while `deploy`
+  34949518154 (push) was in progress, because the 04:11 schedule run 34952375352 (pending) was
+  newer. Filter by event before grouping, in both `latest_runs` and the merge-readiness probe.
+  **Source**: B158, observed 2026-09-15. **Owner**: Claude Code. **Model**: Haiku. **Size**: ~1 file.
+
 - [ ] **B34.6b. Companies House accounts filing: the sandbox proof.** Submission 000004 (presenter
   E0000052288, company 06846849, 2026-09-13 19:04 UTC) was ACCEPTED by the XML Gateway test
   service; every `GetSubmissionStatus` poll for it answers 9999 "No presenter ID supplied", the
