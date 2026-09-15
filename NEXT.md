@@ -41,10 +41,11 @@ Every item names its model: the lowest tier that fits (Fable > Opus > Sonnet > H
 
 ## In flight
 
-Wave b41 rides **`claude/b41-board`** (from `main` at 9f58aaac, no PR yet, unpushed until the wave
-lands): B11.T9's two commits are on the batch; B30z and B30aa are being worked in
-`.claude/worktrees/b41-alarms`, M1b and M1c in `.claude/worktrees/b41-derive`. The push, the PR
-and `/watch` follow the last agent's report.
+Wave b41 rides **`claude/b41-board`, PR #232** (pushed 22:23 UTC on 2026-09-15, nine commits;
+its push-triggered test and deploy runs register under the monitor). `main`'s deploy of PR #226
+(run 35028380205) is creating `prod-9f58aaa`, which carries B52v's fix for the operator snapshot's
+500 that fired again on `prod-70b0a8e` at 22:14 and 22:18 UTC (issues #229, #230) when the
+dashboard was opened; those close when the old set goes.
 
 - [ ] **B30z. Exclude the deploy role from the four CIS metric filters.** B30y's re-count: the CIS
   families `unauthorized-api-calls` (16 fires), `iam-policy` (12), `s3-bucket-policy` (6) and
@@ -87,6 +88,15 @@ and `/watch` follow the last agent's report.
   ~5 files.
 
 ## Machine-only
+
+- [ ] **B30ab. The CIS unauthorized-api-calls filter counts the AWS console's own UX calls.**
+  Issue #231 (22:20 UTC, 2026-09-15): four `uxc.amazonaws.com GetAccountColor` AccessDenied events
+  under the operator's SSO administrator session while the console was open, three in one minute,
+  and the filter in `SecurityDetectionStack` excludes only the deploy, GitHub Actions and CDK roles.
+  Exclude `$.eventSource = "uxc.amazonaws.com"` (the console's account-colour lookup, denied for
+  every role without the `uxc:GetAccountColor` permission) in both accounts' filters, with the CDK
+  test; close #231 with the change. **Source**: issue #231; `_developers/ALARM_AUDIT_2026-09.md`.
+  **Owner**: Claude Code. **Model**: Haiku. **Size**: ~2 files.
 
 - [ ] **B52y.2. Check the nightly snapshot after the SecurityLakeStack reaches prod.** PR #218
   (9b695aab) adds the `deploy-security-lake` job and the per-observation null; prod's environment
