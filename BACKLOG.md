@@ -16,37 +16,35 @@ Compiled 2026-08-25 from every source: GitHub issues (#3 to #20), local plan doc
 
 **How items are ranked.** Existential first when cheap relative to the risk. Then items that make everything else measurable or truthful, because they compound. Then the revenue path in dependency order. Effort tiebreaks: a small item with the same value class outranks a large one. [DE] marks items in the data engineering layer, with the certification domain they exercise.
 
-## Live status (updated 2026-09-14)
+## Live status (updated 2026-09-15)
 
 Queued and in-flight state lives on `NEXT.md`; this block mirrors it so the backlog reads
 truthfully on its own. Human-only steps are briefed at the workspace root in
 `../BRIEF_OPERATOR_RUNBOOK_2026-09-13.md`; the four
 `../BRIEF_OPERATOR_TASKS_*.md` files carry the detail behind its tasks.
 
-- **Cool-down is on since 2026-09-14 13:40 UTC** (`NEXT.md`'s marker). Prod runs prod-b364438
-  (the daily deploy cron, run 34830100013), the only prod set; ci has none standing after 14:41 UTC.
-- **Batch b30 (PR #207) merged 2026-09-14 01:29 UTC**: seventeen rows closed, including the
-  operator pass type, the five wired dashboard objectives, the restore drill (issue #11 closed with
-  its clean run) and the alarm-triage grant that closed #197.
-- **Batch b31 (PR #209, `claude/b31-board` at 91651285) is green and mergeable**: the dashboard
-  sign-in path, the nested-permission check, the metric-filter synth test, four skill and CLAUDE.md
-  rules, and the `itsa-business-details` scene fix. Two local branches hold work off it until
-  cool-down lifts: `claude/ltd-status-poll` (B34.6b's hashed-PresenterID experiment) and
-  `claude/b31-videos` (B17v.1's recordings manifest).
-- **Open alarm issues**: #208 (the nightly snapshot has not published since 2026-09-13 03:16,
-  cause on NEXT.md B52y), #206 (CIS sign-in filter, B30x), #203 and #204 (the dashboard's first
-  open, B52v's remainder).
+- **Cool-down is on since 2026-09-15 17:34 UTC** (`NEXT.md`'s marker). Prod runs prod-70b0a8e
+  (PR #222's deploy), the only prod set; ci has `ci-claud727f` until its self-destruct.
+- **Six batches merged on 2026-09-15** (PRs #216, #217, #218, #220, #221, #222): the four failed
+  runs of 2026-09-14, the operator list (`OPERATORS.txt`) and the pass-check fix, the alarm
+  cluster (CIS filter, one issue per alarm, the SecurityLakeStack deploy), the promotion gate on
+  the OpsStack, the watch script's three defects, and the status poll's presenter id back to
+  plaintext. PR #225 (b39, the five recordings unlisted on the channel) is green and unmerged.
+- **Open alarm issues**: #208 (the nightly snapshot; the tables now exist on prod, checked after
+  the 03:15 UTC run by B52y.2), #206 (CIS sign-in filter, fixed on prod, closes on the next state
+  change).
 - **Both `/api/v1/books` and `/api/v1/diya-gl` are permanent** by operator decision of 2026-09-10.
   The old prefix is never retired and the spreadsheets repository changes nothing; row 51's naming
   work is down to the S3 bucket.
 - **Tier 1 is empty**: every refined item is on `NEXT.md` with source, owner and model.
-- **Date-gated**: 30a due 2026-09-13; 47 (the Monday crons' proof) 2026-09-14, unfired at 13:40
-  UTC; 43 from 2026-10-02; 48 the week of 2026-11-29.
+- **Date-gated**: 30a due 2026-09-13; 47 proven 2026-09-14 (both Monday crons fired, six hours
+  late); 43 from 2026-10-02; 48 the week of 2026-11-29.
 - **Tier 2**: 10's six endpoints are on main behind the environments gate; 11's phase 2 has T1 to
-  T7 and the submission cost line landed, with UK property, the cumulative summaries and the losses
-  tracks ready; 11a parked by the operator's decision of 2026-09-05; 34's two REST filings are live
-  on prod and issue #15 is closed, with the XML Gateway half open as 34b; 17b's three VAT read pages
-  are live on prod and issue #19 is closed, leaving the walkthrough videos.
+  T7, T19, T21 and T22 landed, with T9 refined on `NEXT.md` behind the MCP package (M1a–M1c, from
+  row 51); 11a parked by the operator's decision of 2026-09-05; 34's two REST filings are live on
+  prod, with the XML Gateway half (34b) waiting on Companies House's answer about status lookups;
+  17b's three VAT read pages are live on prod and their walkthroughs are unlisted on the channel
+  pending the operator's view.
 
 ## Tier 1: do next
 
