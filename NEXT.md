@@ -113,6 +113,18 @@ Every item names its model: the lowest tier that fits (Fable > Opus > Sonnet > H
 
 ## Human-only
 
+- [ ] **O46. Decide how the signature check gates `main`.** B166's check runs on every PR since PR
+  #226 and fails one carrying an unsigned commit (run 35027270496 passed). Adding it to ruleset
+  16057564 as a required status check (tried 2026-09-15 21:58 UTC, reverted at 22:03) gates every
+  push to `main`, so the board write-back and the docs exception stopped landing ("Required status
+  check \"Check commit signatures\" is expected"), and GitHub refuses the GitHub Actions app as a
+  repository-level bypass actor, so `publish.yml`'s version bump would stop too. Alternatives: (1)
+  leave the check advisory, red on the PR and enforced by `/auto-merge`'s gate, until BACKLOG 54
+  moves the runner pushes onto an app; (2) add the rule with the admin role as the only bypass
+  actor and move `publish.yml`'s bump onto a PAT or the contents API first (a Claude Code change);
+  (3) an organisation-level ruleset, where the Actions app is an allowed bypass actor. **Source**:
+  B166; ruleset 16057564. **Owner**: Operator. **Model**: none.
+
 - [ ] **O17. Register the Companies House sandbox test user and set four ci values.**
   Companies House has no create-test-user API, so the operator registers a throwaway account
   on identity-sandbox.company-information.service.gov.uk with an authenticator second factor
