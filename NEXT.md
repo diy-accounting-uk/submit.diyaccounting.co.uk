@@ -89,6 +89,26 @@ dashboard was opened; those close when the old set goes.
 
 ## Machine-only
 
+- [ ] **B30ac. The alarm triage agent queries the telemetry it is allowed to read.** Operator,
+  2026-09-15: the triage answer on issue #229 says "Without being able to query CloudWatch Logs or
+  alarm history directly" and recommends the reader run the queries, yet its run (35030341835, 13
+  of 30 turns, no `aws` call in the log) was allowed `Bash(aws logs:*)`, `Bash(aws xray:*)`,
+  `Bash(aws cloudwatch describe-alarms:*)` and `describe-alarm-history` under
+  `SUBMIT_ALARM_TRIAGE_ROLE_ARN`, and `prompts/alarm-triage.md` already names `aws logs start-query`.
+  Three changes: (1) `alarm-triage.yml` proves the credentials before the agent runs (`aws sts
+  get-caller-identity`, `aws logs describe-log-groups` on the first evidence log group, one
+  `describe-alarm-history` on the alarm) and writes the results into `/tmp/evidence.json` so the
+  prompt can say "these calls worked a moment ago"; (2) the prompt requires at least one Logs
+  Insights query and the alarm history before any answer, and forbids "cannot query" unless a call
+  was made and its error is quoted; (3) the triage role in `ObservabilityStack.java` (lines ~824 to
+  ~870: enumerated `cloudwatch:DescribeAlarms`, `logs:StartQuery`, `xray:GetTraceSummaries` and the
+  grants B30w added one at a time) becomes a read-only telemetry policy: every `logs:Describe*`,
+  `logs:Get*`, `logs:FilterLogEvents`, `logs:StartQuery`, `logs:StopQuery`, `cloudwatch:Describe*`,
+  `cloudwatch:Get*`, `cloudwatch:List*`, `xray:Get*`, `xray:BatchGet*` on `*`, with the CDK test,
+  still no DynamoDB, secrets or Cognito. Prove it by re-dispatching `alarm-triage.yml` on #229 and
+  reading the answer. **Source**: operator, 2026-09-15; issue #229; run 35030341835. **Owner**:
+  Claude Code. **Model**: Sonnet. **Size**: ~4 files.
+
 - [ ] **B30ab. The CIS unauthorized-api-calls filter counts the AWS console's own UX calls.**
   Issue #231 (22:20 UTC, 2026-09-15): four `uxc.amazonaws.com GetAccountColor` AccessDenied events
   under the operator's SSO administrator session while the console was open, three in one minute,
