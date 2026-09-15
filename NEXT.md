@@ -16,9 +16,9 @@ runs), and for Claude Code steps the **Model** a sub-agent should use (Fable > O
 Haiku; the lowest tier that fits). Anything touching code goes through a `claude/*` branch and
 PR; the operator merges.
 
-**Prod runs deployment prod-898b2fd** (PR #220, run 34969618082), promoted with its OpsStack under
-the new `deploy-ops` gate; `prod-075487d` stands unpromoted beside it (B160). **ci**:
-`ci-claud5ca3` (b36, last-known-good, self-destructs 15:56 UTC) stands on 2026-09-15; `ci-claudf91c`'s self-destruct fired at 13:52 UTC and is deleting. PR #222 (b38, 70b0a8e2) is deploying.
+**Prod runs deployment prod-70b0a8e** (PR #222, run 34984108471), promoted under the `deploy-ops`
+gate; `prod-075487d` stands unpromoted beside it (B160). **ci**: `ci-claud5ca3` (b36,
+last-known-good, self-destructs 15:56 UTC on 2026-09-15) and b38's set stand.
 
 The board runs in five sections, in this order: **in flight** (a branch, a pull request or a run
 in motion, each named in the row), **machine-only**, **human and machine**, **human-only**,
