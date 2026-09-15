@@ -30,6 +30,7 @@ non_gating_runs() { # branch -> json array of latest runs that are not push or p
 
 cycle=0
 empty=0
+quiet=0
 while true; do
   cycle=$((cycle + 1))
   total=0; running=0; red=0
@@ -89,8 +90,13 @@ while true; do
     echo "SEEDED: $total latest runs in scope, $running in flight, $red red already"
   fi
   if [ "$running" -eq 0 ]; then
-    echo "TALLY: all terminal, $total latest runs, $red red"
-    exit 0
+    quiet=$((quiet + 1))
+    if [ "$quiet" -ge 2 ]; then
+      echo "TALLY: all terminal, $total latest runs, $red red"
+      exit 0
+    fi
+  else
+    quiet=0
   fi
   sleep 75
 done
