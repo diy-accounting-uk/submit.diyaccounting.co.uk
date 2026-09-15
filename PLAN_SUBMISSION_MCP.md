@@ -174,6 +174,50 @@ gross, VAT and net it contributed, bucketed by the line's own posting month (or 
 reconcile to the penny with the interface row, so a book with a line dated outside its
 accounting year cannot answer a return that silently omits it.
 
+## From a book to the seven FRS 105 lines (M1c)
+
+The Ltd engine already builds both balance sheets the accounts need: `PubBalSht`, the
+published balance sheet at the year end, from the trial balance's closing column, and
+`OpenAccounts`, the opening balance sheet, from the book's opening journal
+(`buildOpeningBalance`). `derive_micro_entity_accounts` reads the first for the current year
+and the opening figures for the prior year, rounds them the way Companies House takes them, and
+refuses when either sheet does not balance. It computes no balance of its own.
+
+| Line | Filing field | Current year, from `PubBalSht` | Prior year, from the opening balance |
+|---|---|---|---|
+| Fixed assets | `fixedAssets` | F6: the five asset classes' cost less accumulated depreciation after the year's additions, disposals and charge (trial balance EJ6 to EJ17) | opening cost less opening depreciation (`OpenAccounts` E13) |
+| Current assets | `currentAssets` | E13 = stock E10 (EJ19) + trade debtors E11 (EJ20) + cash at bank and in hand E12 (EJ22 to EJ26: current, savings, credit card, cash, transfers in transit) | stock + trade debtors + the bank and cash balances + long-term debtors (E15 + E16 + E18) |
+| Creditors due within one year | `creditorsWithinOneYear` | E20 = trade creditors E16 (EJ28 to EJ31: trade creditors, net wages, deductions, dividends due) + corporation tax E17 (EJ35) + taxation and social security E18 (EJ32 to EJ34: CIS, VAT, PAYE) | trade creditors + net wages due + wage deductions due + dividends due + corporation tax + CIS, VAT and PAYE due (E20 + E24 + E26) |
+| Creditors due after one year | `creditorsAfterOneYear` | F31 = directors' loan E29 (EJ39) + long-term creditors E30 (EJ40) | directors' loan + long-term creditors (E30) |
+| Called up share capital | `calledUpShareCapital` | F36 (EJ42) | share capital (E33) |
+| Profit and loss account | `profitAndLossAccount` | F39 − F36: the revenue reserve (EJ43, retained earnings brought forward plus the year's retained profit) and the capital reserve (EJ44) | retained earnings + capital reserves (E34) |
+| Capital and reserves | `capitalAndReserves` | F39, shareholders' funds | share capital + retained earnings + capital reserves |
+
+Rules the tool applies:
+
+- **Both sheets must balance before anything is answered.** The published sheet's own net
+  assets, F33 (total assets less current liabilities F26 less creditors after one year F31),
+  must equal shareholders' funds F39; the opening sheet's accuracy check E37 must be nil. A
+  difference is refused with its size. A long-term debtor (EJ37) sits on no published line and
+  is the usual cause.
+- **Whole pounds, and the identity survives the rounding.** Companies House and
+  `companiesHouseAccountsPost.js` take integers and check that capital and reserves equals
+  net assets exactly. The tool rounds fixed assets, current assets, the two creditors lines and
+  share capital, then derives capital and reserves from those four and the profit and loss
+  account from that less share capital, so the check holds; the profit and loss account can
+  sit up to £2 from the sheet's own figure.
+- **A capital reserve folds into the profit and loss account.** The seven-line set has no
+  other reserve line; the answer names the amount folded when it is not nil.
+- **The rest comes from the book's own tables.** Period dates from `documentInfo`; the prior
+  balance sheet date is the day before the period starts; the company number and name from
+  `entityInformation`; the director from the first entry of the `directors` table; the
+  average number of employees is the count of the `employees` table, which the user confirms
+  before filing.
+- **The figures, not the document.** The tool answers the figures the filing endpoint takes
+  (`balanceSheet.currentYear` and `priorYear`). Rendering the iXBRL and running the public
+  validator are `preview_micro_entity_accounts` (M2); the unit test passes BrickWork Pro's
+  derived lines through `buildMicroEntityAccounts` to prove the shape.
+
 ## Sequence
 
 Each row is a `claude/mcp-<n>-<topic>` branch and PR. Rows 1 to 3 need no credentials and no
