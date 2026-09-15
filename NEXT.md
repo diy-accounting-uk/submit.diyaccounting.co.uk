@@ -16,10 +16,10 @@ runs), and for Claude Code steps the **Model** a sub-agent should use (Fable > O
 Haiku; the lowest tier that fits). Anything touching code goes through a `claude/*` branch and
 PR; the operator merges.
 
-**Prod runs deployment prod-9b695aa** (PR #218, run 34963098209), promoted with its OpsStack;
-`prod-075487d` stands unpromoted beside it (B160). PR #220 (b36, 898b2fdc) is deploying. **ci**:
-`ci-claud4326` (b34, self-destructs 12:24 UTC) and `ci-claudf91c` (b35, last-known-good, 13:52 UTC)
-stand on 2026-09-15, with b36's set building. B34.6b's poll is the only b32 item left open.
+**Prod runs deployment prod-898b2fd** (PR #220, run 34969618082), promoted with its OpsStack under
+the new `deploy-ops` gate; `prod-075487d` stands unpromoted beside it (B160). **ci**:
+`ci-claud5ca3` (b36, last-known-good, self-destructs 15:56 UTC) and `ci-claudf91c` (b35, 13:52 UTC,
+then the next sweep) stand on 2026-09-15. B34.6b's poll is the only b32 item left open.
 
 The board runs in five sections, in this order: **in flight** (a branch, a pull request or a run
 in motion, each named in the row), **machine-only**, **human and machine**, **human-only**,
@@ -38,14 +38,6 @@ Every item names its model: the lowest tier that fits (Fable > Opus > Sonnet > H
 `none` for a human step.
 
 ## In flight
-
-- [ ] **B158d. `watch-ci.sh` ends on one cycle's empty answer.** The TALLY fires the first cycle
-  that counts no run in flight, so one eventually-consistent `gh run list` answer ends the watch
-  early: at 12:37 UTC on 2026-09-15 it printed "all terminal, 7 latest runs, 0 red" on `main`
-  while `deploy` 34969618082, `deploy environment` and `test` were in progress, one cycle after
-  seeding with 5 in flight. Require two consecutive cycles with nothing in flight (and the same
-  run set) before the TALLY. **Source**: B158c in use, 2026-09-15. In flight on `claude/b37-board`, PR #221 (01b0b1f6). **Owner**: Claude Code.
-  **Model**: Haiku. **Size**: ~1 file.
 
 ## Machine-only
 
@@ -70,8 +62,9 @@ Every item names its model: the lowest tier that fits (Fable > Opus > Sonnet > H
   Lambda, and the lean deploy that puts it there was broken — `scripts/deploy-app.js` hardcoded the
   pre-migration account so `deploy:app-ci` failed at the ECR push; PR #214 fixed that (d7daa69e, the
   account now comes from the active credentials). Left: run
-  `npm run deploy:app-ci -- --deployment ci-claudf91c --skip-web` (submit-ci profile; that set
-  stands until 13:52 UTC on 2026-09-15, after that a fresh `deploy.yml` dispatch), then poll
+  a standing ci set (`ci-claud5ca3` until 15:56 UTC on 2026-09-15 already carries the code, so no
+  lean deploy is needed; after that a fresh `deploy.yml` dispatch), then, once the operator has
+  said go to the Cognito write `npm run test:enableCognitoNative` makes on ci, poll
   `GET /api/v1/companies-house/accounts/000004` signed in and read the two gateway log lines. If the
   gateway returns a status, keep 57dfdc17, pin it in the test, and apply the `prod` listing (held as
   unreferenced local commit 946251d4); if it still answers 9999, revert the body to plaintext and
