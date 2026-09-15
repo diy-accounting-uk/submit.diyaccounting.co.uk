@@ -41,43 +41,16 @@ Every item names its model: the lowest tier that fits (Fable > Opus > Sonnet > H
 
 ## In flight
 
-- [ ] **B30x. The CIS console-sign-in-without-MFA alarm fires on SSO sign-ins.** Issue #206:
-  `prod-env-cis-console-signin-without-mfa` fired at 23:42 UTC on 2026-09-13 for the operator's
-  own SSO console sign-in (CloudTrail: `ConsoleLogin`, `userIdentity.type = AssumedRole`,
-  `AWSReservedSSO_AdministratorAccess`, `MFAUsed = No`, which is what every federated sign-in
-  reports). CIS 3.2's own filter adds `$.userIdentity.type = "IAMUser"`; add that clause to the
-  metric filter in `ObservabilityStack.java` with its test, and the issue closes when it reaches
-  prod. **Source**: issue #206. In flight on `claude/b35-board`, PR #218, its deploy running. **Owner**: Claude Code. **Model**: Haiku. **Size**: ~2 files.
-
-- [ ] **B157. One alarm transition opened two issues.** #210 and #212 carry the same alarm
-  (`prod-env-github-probe-failed`), state change and timestamp (15:26:00.881 UTC on 2026-09-14).
-  `app/functions/ops/alarmToGithubIssue.js` dedupes by a GitHub search for an open issue with the
-  title (line 270), and two invocations of the same notification a moment apart both search before
-  either has created, and the search index lags anyway. Make the create idempotent: a conditional
-  put keyed on alarm name and state-change timestamp in an existing ops table before the create, or
-  list open issues through the REST issues endpoint (not search) and set the function's reserved
-  concurrency to 1. Both issues are closed (the probe failure was the deploy's apex move).
-  **Source**: issues #210, #212. In flight on `claude/b35-board`, PR #218, its deploy running. **Owner**:
-  Claude Code. **Model**: Sonnet. **Size**: ~2 files.
-
-- [ ] **B52y. The nightly snapshot has not published since 2026-09-13 03:16.** Issue #208
-  (`prod-env-operator-snapshot-publish-errors`, 03:18 UTC on 2026-09-14): the 03:15 run's
-  three invocations each died in `pollUntilTerminal`
-  (`app/functions/analytics/operatorSnapshotPublish.js:408`) with Athena `TABLE_NOT_FOUND:
-  awsdatacatalog.prod_env_analytics.security_hub_findings`, so `snapshots/prod/latest.json`
-  still dates from 2026-09-13 03:16 and none of PR #207's five objectives has filled.
-  Cause: `SecurityLakeStack` (`SubmitEnvironment.java:399`, Glue tables `security_hub_findings`,
-  `guardduty_findings`, `github_alerts` and the nightly writer) is in the CDK app but
-  `deploy-environment.yml` deploys eight env stacks and not that one, so the tables do not exist
-  on prod (Glue database `prod_env_analytics` has no `security_*` table). Two fixes, one row:
-  add the `env-SecurityLakeStack` job to `deploy-environment.yml` where its dependencies place
-  it, and make one observation's failed query answer null for that observation instead of failing
-  the whole publish. Then check `latest.json` for any observation that answers null where its
-  view has rows (two views are monthly or quarterly grain, so a 30-day window can be empty by
-  design). **Source**: `PLAN_ONE_STOP_DASHBOARD.md` D7, D13, D14, D15. Closes #208. In flight on `claude/b35-board`, PR #218, its deploy running. **Owner**:
-  Claude Code. **Model**: Sonnet. **Size**: ~3 files.
-
 ## Machine-only
+
+- [ ] **B52y.2. Check the nightly snapshot after the SecurityLakeStack reaches prod.** PR #218
+  (9b695aab) adds the `deploy-security-lake` job and the per-observation null; prod's environment
+  deploy of that merge creates the Glue tables. After the next 03:15 UTC run, read
+  `snapshots/prod/latest.json`: `generatedAt` past 2026-09-16 03:15, `failedObservationCount` 0,
+  and any observation answering null where its view has rows (two views are monthly or quarterly
+  grain, so a 30-day window can be empty by design). Issue #208 closes when the alarm clears.
+  **Source**: `PLAN_ONE_STOP_DASHBOARD.md` D7, D13, D14, D15. **Owner**: Claude Code. **Model**:
+  Haiku. **Size**: ~0 files.
 
 - [ ] **B160. The live prod set has no OpsStack, and a spare set stands.** Run 34949518154
   (main, f7097236) promoted `prod-f709723` with every probe green but its OpsStack job
@@ -86,7 +59,7 @@ Every item names its model: the lowest tier that fits (Fable > Opus > Sonnet > H
   (34952375352, head 075487d6) then built `prod-075487d` with an OpsStack, but every probe's
   `params` job failed inside B159's wait step (no `--repo`; the schedule guard matched the
   deploy's own probes), so the apex rolled back to `prod-f709723`. The wait step is fixed on
-  PR #218 (e35b68c5); its merge deploys a new set with an OpsStack and destroys `prod-f709723`.
+  `main` (PR #218, 9b695aab); its deploy is building a new set with an OpsStack and destroys `prod-f709723`.
   Left after that: destroy the spare, `gh workflow run destroy-prod.yml -f deployment-name=prod-075487d`
   (operator), and make `deploy-ops` a gate of the last-known-good promotion so a set without an
   OpsStack is never promoted (~1 file, `deploy.yml`). **Source**: runs 34949518154, 34952375352.
