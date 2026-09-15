@@ -265,8 +265,16 @@
       return;
     }
 
-    // Redirect to Cognito logout endpoint to invalidate session
-    const env = await window.envReady;
+    // Redirect to Cognito logout endpoint to invalidate session. window.envReady is
+    // undefined on a page that never loaded env-loader.js, and rejects when /submit.env
+    // failed to fetch — either way the local sign-out above must still stand, so resolve
+    // defensively instead of letting logout() throw before it reaches the reload fallback.
+    let env;
+    try {
+      env = (await window.envReady) || {};
+    } catch {
+      env = {};
+    }
     if (env.COGNITO_BASE_URI && env.COGNITO_CLIENT_ID) {
       const logoutUri = window.location.origin + "/auth/signed-out.html";
       const logoutUrl =
