@@ -41,17 +41,6 @@ Every item names its model: the lowest tier that fits (Fable > Opus > Sonnet > H
 
 ## In flight
 
-## Machine-only
-
-- [ ] **B52y.2. Check the nightly snapshot after the SecurityLakeStack reaches prod.** PR #218
-  (9b695aab) adds the `deploy-security-lake` job and the per-observation null; prod's environment
-  deploy of that merge creates the Glue tables. After the next 03:15 UTC run, read
-  `snapshots/prod/latest.json`: `generatedAt` past 2026-09-16 03:15, `failedObservationCount` 0,
-  and any observation answering null where its view has rows (two views are monthly or quarterly
-  grain, so a 30-day window can be empty by design). Issue #208 closes when the alarm clears.
-  **Source**: `PLAN_ONE_STOP_DASHBOARD.md` D7, D13, D14, D15. **Owner**: Claude Code. **Model**:
-  Haiku. **Size**: ~0 files.
-
 - [ ] **B160. The live prod set has no OpsStack, and a spare set stands.** Run 34949518154
   (main, f7097236) promoted `prod-f709723` with every probe green but its OpsStack job
   (104335127427) failed at the runner level (no steps, no log) and nothing downstream needs it, so
@@ -63,7 +52,8 @@ Every item names its model: the lowest tier that fits (Fable > Opus > Sonnet > H
   Left after that: destroy the spare, `gh workflow run destroy-prod.yml -f deployment-name=prod-075487d`
   (operator), and make `deploy-ops` a gate of the last-known-good promotion so a set without an
   OpsStack is never promoted (~1 file, `deploy.yml`). **Source**: runs 34949518154, 34952375352.
-  **Owner**: Claude Code, then Operator. **Model**: Haiku. **Size**: ~1 file.
+  In flight on `claude/b36-board` (agent worktree `claude/b36-gate`); no PR yet. **Owner**: Claude Code, then Operator. **Model**: Haiku. **Size**: ~1 file.
+
 - [ ] **B158c. `watch-ci.sh` drops a gating run when a later non-gating run exists.** `all_latest_runs`
   (`scripts/watch-ci.sh:19`) groups by workflow and keeps the newest run over every event, and
   `latest_runs` filters to push and pull_request afterwards, so when a schedule or dispatch run of
@@ -71,7 +61,32 @@ Every item names its model: the lowest tier that fits (Fable > Opus > Sonnet > H
   09:47 UTC on 2026-09-15 the watch said "all terminal, 0 red" on `main` while `deploy`
   34949518154 (push) was in progress, because the 04:11 schedule run 34952375352 (pending) was
   newer. Filter by event before grouping, in both `latest_runs` and the merge-readiness probe.
-  **Source**: B158, observed 2026-09-15. **Owner**: Claude Code. **Model**: Haiku. **Size**: ~1 file.
+  **Source**: B158, observed 2026-09-15. In flight on `claude/b36-board` (agent worktree `claude/b36-watch`); no PR yet. **Owner**: Claude Code. **Model**: Haiku. **Size**: ~1 file.
+
+- [ ] **B52v. The 5xx behind the operator dashboard's first open.** The sign-in path is on
+  `main` (82ea7ab8, PR #209) and reaches prod with 658f986e's deploy (run 34856840995): the activity is listed for a signed-in operator, the denial names
+  the pass, the page uses the shared header and returns to itself after sign-in. The 5xx of 23:38
+  UTC on 2026-09-13 (issues #204 `prod-e371587-app-api-5xx` and #203
+  `operator-snapshot-get-log-errors`) is not reproduced: that deployment's logs are gone,
+  `prod-b364438`'s `operator-snapshot-get` log group has no events, the Lambda's role holds
+  `dynamodb:Query` on `prod-env-bundles` and `s3:GetObject` on `snapshots/prod/*`, and the
+  object exists. Issues #204 and #203 are closed as stale (deployment `e371587` is destroyed, its
+  alarms gone). Left: read `/aws/lambda/prod-bd664fe-app-operator-snapshot-get` after B52z's
+  attempt on the live set and fix what it logs. `auth-status.js`'s
+  `logout()` awaits `window.envReady` unconditionally, which throws on a page that never loads
+  `submit.js` (the agent's finding, unfixed). **Source**: operator, 2026-09-13. In flight on `claude/b36-board` (agent worktree `claude/b36-logout`); no PR yet. **Owner**: Claude
+  Code. **Model**: Sonnet. **Size**: ~1 file.
+
+## Machine-only
+
+- [ ] **B52y.2. Check the nightly snapshot after the SecurityLakeStack reaches prod.** PR #218
+  (9b695aab) adds the `deploy-security-lake` job and the per-observation null; prod's environment
+  deploy of that merge creates the Glue tables. After the next 03:15 UTC run, read
+  `snapshots/prod/latest.json`: `generatedAt` past 2026-09-16 03:15, `failedObservationCount` 0,
+  and any observation answering null where its view has rows (two views are monthly or quarterly
+  grain, so a 30-day window can be empty by design). Issue #208 closes when the alarm clears.
+  **Source**: `PLAN_ONE_STOP_DASHBOARD.md` D7, D13, D14, D15. **Owner**: Claude Code. **Model**:
+  Haiku. **Size**: ~0 files.
 
 - [ ] **B34.6b. Companies House accounts filing: the sandbox proof.** Submission 000004 (presenter
   E0000052288, company 06846849, 2026-09-13 19:04 UTC) was ACCEPTED by the XML Gateway test
@@ -93,20 +108,6 @@ Every item names its model: the lowest tier that fits (Fable > Opus > Sonnet > H
   cite both transactions to Companies House. O44 asks Companies House in parallel and can cite the
   13:12:48 transaction (1789391567972). **Source**: BACKLOG 34b. **Owner**: Claude Code.
   **Model**: Sonnet. **Size**: ~1 file.
-
-- [ ] **B52v. The 5xx behind the operator dashboard's first open.** The sign-in path is on
-  `main` (82ea7ab8, PR #209) and reaches prod with 658f986e's deploy (run 34856840995): the activity is listed for a signed-in operator, the denial names
-  the pass, the page uses the shared header and returns to itself after sign-in. The 5xx of 23:38
-  UTC on 2026-09-13 (issues #204 `prod-e371587-app-api-5xx` and #203
-  `operator-snapshot-get-log-errors`) is not reproduced: that deployment's logs are gone,
-  `prod-b364438`'s `operator-snapshot-get` log group has no events, the Lambda's role holds
-  `dynamodb:Query` on `prod-env-bundles` and `s3:GetObject` on `snapshots/prod/*`, and the
-  object exists. Issues #204 and #203 are closed as stale (deployment `e371587` is destroyed, its
-  alarms gone). Left: read `/aws/lambda/prod-bd664fe-app-operator-snapshot-get` after B52z's
-  attempt on the live set and fix what it logs. `auth-status.js`'s
-  `logout()` awaits `window.envReady` unconditionally, which throws on a page that never loads
-  `submit.js` (the agent's finding, unfixed). **Source**: operator, 2026-09-13. **Owner**: Claude
-  Code. **Model**: Sonnet. **Size**: ~1 file.
 
 ## Human and machine
 
