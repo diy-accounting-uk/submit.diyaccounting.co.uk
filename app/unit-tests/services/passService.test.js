@@ -3,7 +3,7 @@
 
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { dotenvConfigIfNotBlank } from "@app/lib/env.js";
-import { _setTestEmailHashSecret } from "../../lib/emailHash.js";
+import { _setTestEmailHashSecret, hashEmail } from "../../lib/emailHash.js";
 
 dotenvConfigIfNotBlank({ path: ".env.test" });
 
@@ -285,7 +285,7 @@ describe("passService", () => {
       expect(result.reason).toBe("expired");
     });
 
-    it("should return email_required for email-restricted pass without email", async () => {
+    it("should return valid with emailRestricted for email-restricted pass without email", async () => {
       getPass.mockResolvedValueOnce({
         pk: "pass#test-code",
         code: "test-code",
@@ -299,8 +299,47 @@ describe("passService", () => {
       });
 
       const result = await checkPass("test-code");
+      expect(result.valid).toBe(true);
+      expect(result.emailRestricted).toBe(true);
+      expect(result.bundleId).toBe("invited-guest");
+      expect(result.usesRemaining).toBe(1);
+    });
+
+    it("should return wrong_email for email-restricted pass with a mismatched email", async () => {
+      getPass.mockResolvedValueOnce({
+        pk: "pass#test-code",
+        code: "test-code",
+        bundleId: "invited-guest",
+        validFrom: "2020-01-01T00:00:00.000Z",
+        validUntil: "2030-12-31T23:59:59.000Z",
+        maxUses: 1,
+        useCount: 0,
+        revokedAt: null,
+        restrictedToEmailHash: hashEmail("invited@example.com", "test-email-hash-secret-for-unit-tests"),
+      });
+
+      const result = await checkPass("test-code", "someone-else@example.com");
       expect(result.valid).toBe(false);
-      expect(result.reason).toBe("email_required");
+      expect(result.reason).toBe("wrong_email");
+    });
+
+    it("should return valid for email-restricted pass with a matching email", async () => {
+      getPass.mockResolvedValueOnce({
+        pk: "pass#test-code",
+        code: "test-code",
+        bundleId: "invited-guest",
+        validFrom: "2020-01-01T00:00:00.000Z",
+        validUntil: "2030-12-31T23:59:59.000Z",
+        maxUses: 1,
+        useCount: 0,
+        revokedAt: null,
+        restrictedToEmailHash: hashEmail("invited@example.com", "test-email-hash-secret-for-unit-tests"),
+      });
+
+      const result = await checkPass("test-code", "invited@example.com");
+      expect(result.valid).toBe(true);
+      expect(result.emailRestricted).toBeUndefined();
+      expect(result.bundleId).toBe("invited-guest");
     });
   });
 

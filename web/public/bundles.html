@@ -976,7 +976,13 @@
 
           if (isLoggedIn) {
             const isSubscriptionBundle = catBundle?.allocation === "on-pass-on-subscription";
-            if (isSubscriptionBundle) {
+            if (result.emailRestricted) {
+              if (isSubscriptionBundle) {
+                showPassStatus(`Pass valid for the invited email. Click "Subscribe" to start your subscription.`, "success");
+              } else {
+                showPassStatus(`Pass valid for the invited email. Click "Request ${bundleName}" to add the bundle.`, "success");
+              }
+            } else if (isSubscriptionBundle) {
               showPassStatus(`Pass valid! Click "Subscribe" to start your subscription.`, "success");
             } else {
               showPassStatus(`Pass valid! Click "Request ${bundleName}" to add the bundle.`, "success");
@@ -986,7 +992,11 @@
               sessionStorage.setItem("pendingPass", code);
               sessionStorage.setItem("postLoginRedirect", window.location.pathname + "?pass=" + encodeURIComponent(code));
             } catch {}
-            showPassStatus(`Pass valid! Log in to add the "${bundleName}" bundle.`, "info");
+            if (result.emailRestricted) {
+              showPassStatus(`Pass valid! Log in with the invited email to add the "${bundleName}" bundle.`, "info");
+            } else {
+              showPassStatus(`Pass valid! Log in to add the "${bundleName}" bundle.`, "info");
+            }
           }
           // Re-render catalogue to show the pass-unlocked bundle
           renderCatalogueBundles();

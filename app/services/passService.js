@@ -232,7 +232,15 @@ function validatePass(pass, now, userEmail, emailHashSecret) {
 
   if (pass.restrictedToEmailHash) {
     if (!userEmail) {
-      return { valid: false, reason: "email_required", pass };
+      // The public check has no email to compare against (it runs before login).
+      // The pass is still valid — the email match is enforced at redemption time.
+      return {
+        valid: true,
+        emailRestricted: true,
+        pass,
+        bundleId: pass.bundleId,
+        usesRemaining: pass.maxUses - pass.useCount,
+      };
     }
 
     let emailHash;
