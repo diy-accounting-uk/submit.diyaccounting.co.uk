@@ -49,7 +49,7 @@
       "videoFile": "target/videos/video-view-return-prod/view-return.mp4",
       "captionFile": "target/videos/video-view-return-prod/view-return.vtt",
       "title": "DIY Accounting Submit: view a submitted VAT return",
-      "description": "DIY Accounting Submit is a free tool for sending VAT returns to HMRC under Making Tax Digital. This video shows signing in, taking out a day pass, and opening a VAT return already on file with HMRC to read back all nine boxes. The return on screen was filed earlier, off camera, with Box 6 (total sales excluding VAT) at \u00a35,000. It's a real recording of the live product, not a mockup or a design draft. Try it yourself at https://submit.diyaccounting.co.uk.",
+      "description": "DIY Accounting Submit is a free tool for sending VAT returns to HMRC under Making Tax Digital. This video shows signing in, taking out a day pass, and opening a VAT return already on file with HMRC to read back all nine boxes. The return on screen was filed earlier, off camera, with Box 6 (total sales excluding VAT) at £5,000. It's a real recording of the live product, not a mockup or a design draft. Try it yourself at https://submit.diyaccounting.co.uk.",
       "tags": [
         "DIY Accounting",
         "VAT return",
@@ -78,7 +78,7 @@
         "VAT return"
       ],
       "categoryId": "27",
-      "videoId": null
+      "videoId": "xUyGjigMqRU"
     },
     {
       "id": "view-payments",
@@ -98,7 +98,7 @@
         "VAT return"
       ],
       "categoryId": "27",
-      "videoId": null
+      "videoId": "R9AEUYyeu88"
     },
     {
       "id": "view-penalties",
@@ -118,7 +118,7 @@
         "VAT return"
       ],
       "categoryId": "27",
-      "videoId": null
+      "videoId": "HrEtYrsck7c"
     },
     {
       "id": "itsa-quarterly-update",
@@ -137,7 +137,7 @@
         "ITSA"
       ],
       "categoryId": "27",
-      "videoId": null
+      "videoId": "sDnKOsbB6RA"
     },
     {
       "id": "itsa-business-details",
@@ -156,7 +156,7 @@
         "ITSA"
       ],
       "categoryId": "27",
-      "videoId": null
+      "videoId": "4cc-VxzjmnQ"
     }
   ]
 }
