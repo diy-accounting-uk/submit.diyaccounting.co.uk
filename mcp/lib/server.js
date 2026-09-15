@@ -16,6 +16,7 @@ import { z } from "zod";
 import { createSession, openBook, saveBook, SAVE_FORMATS } from "./book-tools.js";
 import { deriveMicroEntityAccounts } from "./accounts-tools.js";
 import { deriveVatReturn } from "./vat-tools.js";
+import { registerItsaTools } from "./itsa-tools.js";
 
 const PACKAGE_JSON = resolve(dirname(fileURLToPath(import.meta.url)), "..", "package.json");
 
@@ -86,7 +87,6 @@ export const TOOLS = {
     inputSchema: {},
     handler: deriveMicroEntityAccounts,
   },
-  // The ITSA derivations (B11.T9) register through registerItsaTools in ./itsa-tools.js.
 };
 
 /**
@@ -106,5 +106,6 @@ export function createServer(session = createSession()) {
       }
     });
   }
+  registerItsaTools(server, session);
   return server;
 }
