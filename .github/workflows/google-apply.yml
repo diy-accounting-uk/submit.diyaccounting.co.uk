@@ -2,13 +2,28 @@
 # Copyright (C) 2006-2026 DIY Accounting Limited
 
 name: google apply
-run-name: "google apply (${{ github.event_name == 'pull_request' && 'plan' || 'apply' }}) from ${{ github.ref_name }}"
+run-name: "google apply (${{ (github.event_name == 'push' || (github.event_name == 'workflow_dispatch' && inputs.apply)) && 'apply' || 'plan' }}, ${{ inputs.auth-mode || vars.SUBMIT_GOOGLE_AUTH_MODE || 'key' }}) from ${{ github.ref_name }}"
 
 concurrency:
   group: google-apply-${{ github.ref }}
   cancel-in-progress: false
 
 on:
+  # A hand run proves the federated path before it becomes the default: dispatch with
+  # auth-mode=federated once the identity step has applied the pool, read every step's log,
+  # then set SUBMIT_GOOGLE_AUTH_MODE=federated on the prod environment.
+  workflow_dispatch:
+    inputs:
+      auth-mode:
+        description: "How the steps authenticate to Google: key (the stored service-account key) or federated (GitHub OIDC through the workload identity pool)"
+        required: false
+        default: ""
+        type: string
+      apply:
+        description: "Apply the difference (true) or plan only (false)"
+        required: false
+        default: false
+        type: boolean
   pull_request:
     paths:
       - 'google/**'
@@ -31,10 +46,15 @@ on:
 env:
   NODE_VERSION: '24'
   AWS_REGION: 'eu-west-2'
+  # key until the federated path is proven by a dispatch; the prod environment's
+  # SUBMIT_GOOGLE_AUTH_MODE variable then flips every run.
+  GOOGLE_AUTH_MODE: ${{ inputs.auth-mode || vars.SUBMIT_GOOGLE_AUTH_MODE || 'key' }}
+  # pull_request plans; push and a dispatch with apply=true apply.
+  GOOGLE_APPLY: ${{ (github.event_name == 'push' || (github.event_name == 'workflow_dispatch' && inputs.apply)) && 'true' || 'false' }}
 
 jobs:
   google-apply:
-    name: ${{ github.event_name == 'pull_request' && 'plan' || 'apply' }}
+    name: ${{ (github.event_name == 'push' || (github.event_name == 'workflow_dispatch' && inputs.apply)) && 'apply' || 'plan' }}
     runs-on: ubuntu-24.04
     environment: prod
     permissions:
@@ -78,8 +98,32 @@ jobs:
           output-credentials: true
           retry-max-attempts: 3
 
+      # Federated: the workflow's own OIDC token, exchanged through the pool google/identity.toml
+      # declares, leaves application default credentials for every Google step below. The AWS
+      # chain above stays for ga4-sync's GitHub-variable write and the key path.
+      - name: Read the GitHub provider from google/identity.toml
+        id: identity
+        if: env.GOOGLE_AUTH_MODE == 'federated'
+        run: |
+          node -e '
+            const TOML = require("@iarna/toml");
+            const fs = require("node:fs");
+            const c = TOML.parse(fs.readFileSync("google/identity.toml", "utf-8"));
+            const provider = c.workload_identity_pool.provider.find((p) => p.type === "oidc");
+            console.log(`provider=projects/${c.project.number}/locations/global/workloadIdentityPools/${c.workload_identity_pool.id}/providers/${provider.id}`);
+            console.log(`service-account=${c.service_account.email}`);
+          ' | tee -a "$GITHUB_OUTPUT"
+
+      - name: Authenticate to Google by federation
+        if: env.GOOGLE_AUTH_MODE == 'federated'
+        uses: google-github-actions/auth@v2
+        with:
+          workload_identity_provider: ${{ steps.identity.outputs.provider }}
+          service_account: ${{ steps.identity.outputs.service-account }}
+
       - name: Resolve GA4 service account key
         id: resolve
+        if: env.GOOGLE_AUTH_MODE == 'key'
         run: |
           SECRET_JSON=$(aws secretsmanager get-secret-value --secret-id "$GA4_SERVICE_ACCOUNT_ARN" --query SecretString --output text)
           echo "::add-mask::${SECRET_JSON}"
@@ -105,7 +149,7 @@ jobs:
         env:
           GA4_SERVICE_ACCOUNT_JSON: ${{ steps.resolve.outputs.credentials-json }}
         run: |
-          if [ "${{ github.event_name }}" = "pull_request" ]; then
+          if [ "$GOOGLE_APPLY" != "true" ]; then
             node scripts/gcp-enable-apis.js 2>&1 | tee gcp-enable-apis.log
           else
             node scripts/gcp-enable-apis.js --apply 2>&1 | tee gcp-enable-apis.log
@@ -115,7 +159,7 @@ jobs:
         env:
           GA4_SERVICE_ACCOUNT_JSON: ${{ steps.resolve.outputs.credentials-json }}
         run: |
-          if [ "${{ github.event_name }}" = "pull_request" ]; then
+          if [ "$GOOGLE_APPLY" != "true" ]; then
             node scripts/gcp-identity-sync.js 2>&1 | tee gcp-identity-sync.log
           else
             node scripts/gcp-identity-sync.js --apply 2>&1 | tee gcp-identity-sync.log
@@ -125,7 +169,7 @@ jobs:
         env:
           GA4_SERVICE_ACCOUNT_JSON: ${{ steps.resolve.outputs.credentials-json }}
         run: |
-          if [ "${{ github.event_name }}" = "pull_request" ]; then
+          if [ "$GOOGLE_APPLY" != "true" ]; then
             node scripts/google-roles-apply.js 2>&1 | tee google-roles-apply.log
           else
             node scripts/google-roles-apply.js --apply 2>&1 | tee google-roles-apply.log
@@ -135,7 +179,7 @@ jobs:
         env:
           GA4_SERVICE_ACCOUNT_JSON: ${{ steps.resolve.outputs.credentials-json }}
         run: |
-          if [ "${{ github.event_name }}" = "pull_request" ]; then
+          if [ "$GOOGLE_APPLY" != "true" ]; then
             node scripts/gcp-billing-assert.js 2>&1 | tee gcp-billing-assert.log
           else
             node scripts/gcp-billing-assert.js --apply 2>&1 | tee gcp-billing-assert.log
@@ -146,7 +190,7 @@ jobs:
           GA4_SERVICE_ACCOUNT_JSON: ${{ steps.resolve.outputs.credentials-json }}
           GH_TOKEN: ${{ github.token }}
         run: |
-          if [ "${{ github.event_name }}" = "pull_request" ]; then
+          if [ "$GOOGLE_APPLY" != "true" ]; then
             node scripts/ga4-sync.js 2>&1 | tee ga4-sync.log
           else
             node scripts/ga4-sync.js --apply 2>&1 | tee ga4-sync.log
@@ -156,7 +200,7 @@ jobs:
         env:
           GA4_SERVICE_ACCOUNT_JSON: ${{ steps.resolve.outputs.credentials-json }}
         run: |
-          if [ "${{ github.event_name }}" = "pull_request" ]; then
+          if [ "$GOOGLE_APPLY" != "true" ]; then
             node scripts/ga4-bigquery-sync.js 2>&1 | tee ga4-bigquery-sync.log
           else
             node scripts/ga4-bigquery-sync.js --apply 2>&1 | tee ga4-bigquery-sync.log
@@ -172,7 +216,7 @@ jobs:
       - name: Generate step summary
         if: always()
         run: |
-          echo "# Google apply (${{ github.event_name == 'pull_request' && 'plan' || 'apply' }})" >> "$GITHUB_STEP_SUMMARY"
+          echo "# Google apply ($([ "$GOOGLE_APPLY" = "true" ] && echo apply || echo plan), auth $GOOGLE_AUTH_MODE)" >> "$GITHUB_STEP_SUMMARY"
           echo "" >> "$GITHUB_STEP_SUMMARY"
           for log in google-inventory.log gcp-enable-apis.log gcp-identity-sync.log google-roles-apply.log gcp-billing-assert.log ga4-sync.log ga4-bigquery-sync.log google-oauth-assert.log; do
             if [ -f "$log" ]; then
