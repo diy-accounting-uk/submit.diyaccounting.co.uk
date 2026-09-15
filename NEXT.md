@@ -43,6 +43,19 @@ and stop. One branch is driven green at a time. Lifted only by the operator in t
 
 ## Machine-only
 
+- [ ] **B52v. The operator dashboard answers "Failed to load the operator snapshot".** Opened by
+  the operator at 16:39 UTC on 2026-09-15 on `prod-70b0a8e` (the operator list works: the page and
+  its activity show). `GET /api/v1/operator/snapshot` answered 500: `operatorSnapshotGet.js` calls
+  `enforceBundles`, which reads the user's bundles through `dynamoDbBundleRepository`, and that
+  needs the sub-hashing salt, but the handler never calls `initializeSalt()` (`bundleGet.js:87`
+  does). Log: `/aws/lambda/prod-70b0a8e-app-operator-snapshot-get`, request
+  0890740e-eaf3-4fce-8314-96a0b8e93bf8, "Salt not initialized. Call initializeSalt() in your Lambda
+  handler". The 500 raised issues #224 (`prod-app-api-5xx`) and #223
+  (`prod-app-account-stack-health`) at 16:40 UTC, the first issues the alarm-to-issue Lambda opened
+  since B157. Add the call at the top of the handler with a unit test that the handler initialises
+  the salt before enforcing; check the other `/api/v1/operator/*` handlers for the same omission.
+  Closes #223, #224. **Source**: operator, 2026-09-15; issues #223, #224. **Owner**: Claude Code. **Model**: Haiku. **Size**: ~2 files.
+
 - [ ] **B166. `verify-commit-signatures.yml` fails on an unsigned commit.** Commit signing is on
   for this machine since 2026-09-15 (SSH key `id_antony_polycode_mbp_2025` registered as a signing
   key; `commit.gpgsign true`, `gpg.format ssh`; f5fe7039 on PR #225 is the first signed commit).
@@ -107,16 +120,6 @@ and stop. One branch is driven green at a time. Lifted only by the operator in t
 
 
 
-- [ ] **B52v. The operator dashboard answers "Failed to load the operator snapshot".** Opened by
-  the operator at 16:39 UTC on 2026-09-15 on `prod-70b0a8e` (the operator list works: the page and
-  its activity show). `GET /api/v1/operator/snapshot` answered 500: `operatorSnapshotGet.js` calls
-  `enforceBundles`, which reads the user's bundles through `dynamoDbBundleRepository`, and that
-  needs the sub-hashing salt, but the handler never calls `initializeSalt()` (`bundleGet.js:87`
-  does). Log: `/aws/lambda/prod-70b0a8e-app-operator-snapshot-get`, request
-  0890740e-eaf3-4fce-8314-96a0b8e93bf8, "Salt not initialized. Call initializeSalt() in your Lambda
-  handler". Add the call at the top of the handler with a unit test that the handler initialises
-  the salt before enforcing; check the other `/api/v1/operator/*` handlers for the same omission.
-  **Source**: operator, 2026-09-15. **Owner**: Claude Code. **Model**: Haiku. **Size**: ~2 files.
 - [ ] **B161. The do-next brief carries a workflow-change checklist.** Both prod incidents of
   2026-09-15 came from `.github/workflows/**` edits that no brief warned about: a called workflow
   inherits its caller's `github.event_name` (B159's `schedule` guard fired inside the scheduled
