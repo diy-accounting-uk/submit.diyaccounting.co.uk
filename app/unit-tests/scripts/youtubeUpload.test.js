@@ -30,6 +30,8 @@ import {
   channelHandlesMatch,
   uploadVideo,
   uploadCaption,
+  publishEntry,
+  CAPTION_RETRY_DELAYS_MS,
   selectUploadedVideos,
   setVideoPrivacy,
 } from "../../../scripts/youtube-upload.js";
@@ -459,6 +461,120 @@ describe("uploadCaption", () => {
     expect(options.headers["x-goog-user-project"]).toBe("diyaccounting-ga4");
     expect(options.body.toString()).toContain("yt-video-id");
     expect(options.body.toString()).toContain("WEBVTT");
+  });
+
+  test("retries a 404 (video not indexed yet) with the backoff and succeeds", async () => {
+    const captionFile = path.join(dir, "clip.vtt");
+    fs.writeFileSync(captionFile, "WEBVTT\n");
+    const entry = { id: "clip", captionFile };
+    const notIndexed = { ok: false, status: 404, text: async () => '{"error":{"errors":[{"reason":"videoNotFound"}]}}' };
+    const fetchImpl = vi
+      .fn()
+      .mockResolvedValueOnce(notIndexed)
+      .mockResolvedValueOnce(notIndexed)
+      .mockResolvedValueOnce({ ok: true, json: async () => ({ id: "caption-id" }) });
+    const sleep = vi.fn().mockResolvedValue(undefined);
+    const log = vi.spyOn(console, "log").mockImplementation(() => {});
+
+    const result = await uploadCaption({
+      entry,
+      videoId: "yt-video-id",
+      accessToken: "token",
+      quotaProject: "diyaccounting-ga4",
+      fetchImpl,
+      sleep,
+    });
+
+    expect(result).toEqual({ id: "caption-id" });
+    expect(fetchImpl).toHaveBeenCalledTimes(3);
+    expect(sleep.mock.calls.map(([ms]) => ms)).toEqual(CAPTION_RETRY_DELAYS_MS);
+    expect(CAPTION_RETRY_DELAYS_MS.reduce((a, b) => a + b, 0)).toBe(30_000);
+    log.mockRestore();
+  });
+
+  test("gives up after three 404s naming the status", async () => {
+    const captionFile = path.join(dir, "clip.vtt");
+    fs.writeFileSync(captionFile, "WEBVTT\n");
+    const entry = { id: "clip", captionFile };
+    const fetchImpl = vi.fn().mockResolvedValue({ ok: false, status: 404, text: async () => "videoNotFound" });
+    const sleep = vi.fn().mockResolvedValue(undefined);
+    const log = vi.spyOn(console, "log").mockImplementation(() => {});
+
+    await expect(
+      uploadCaption({ entry, videoId: "yt-video-id", accessToken: "token", quotaProject: "diyaccounting-ga4", fetchImpl, sleep }),
+    ).rejects.toThrow(/Failed to upload caption for clip: 404 videoNotFound/);
+
+    expect(fetchImpl).toHaveBeenCalledTimes(3);
+    expect(sleep).toHaveBeenCalledTimes(2);
+    log.mockRestore();
+  });
+
+  test("does not retry a non-404 failure", async () => {
+    const captionFile = path.join(dir, "clip.vtt");
+    fs.writeFileSync(captionFile, "WEBVTT\n");
+    const entry = { id: "clip", captionFile };
+    const fetchImpl = vi.fn().mockResolvedValue({ ok: false, status: 403, text: async () => "quota" });
+    const sleep = vi.fn().mockResolvedValue(undefined);
+
+    await expect(
+      uploadCaption({ entry, videoId: "yt-video-id", accessToken: "token", quotaProject: "diyaccounting-ga4", fetchImpl, sleep }),
+    ).rejects.toThrow(/403 quota/);
+
+    expect(fetchImpl).toHaveBeenCalledTimes(1);
+    expect(sleep).not.toHaveBeenCalled();
+  });
+});
+
+describe("publishEntry", () => {
+  const list = { videos: [{ id: "clip", publish: true, videoId: null }] };
+  const entry = list.videos[0];
+
+  test("records the video id on disk before uploading the caption", async () => {
+    const order = [];
+    const uploadVideoImpl = vi.fn().mockResolvedValue("yt-new");
+    const savePublishListImpl = vi.fn((saved) => order.push(["save", saved.videos[0].videoId]));
+    const uploadCaptionImpl = vi.fn(async () => order.push(["caption"]));
+
+    const result = await publishEntry({
+      entry,
+      list,
+      accessToken: "token",
+      quotaProject: "p",
+      publicVideo: false,
+      uploadVideoImpl,
+      uploadCaptionImpl,
+      savePublishListImpl,
+      log: () => {},
+    });
+
+    expect(order).toEqual([["save", "yt-new"], ["caption"]]);
+    expect(result.videos[0].videoId).toBe("yt-new");
+    expect(uploadCaptionImpl).toHaveBeenCalledWith({ entry, videoId: "yt-new", accessToken: "token", quotaProject: "p" });
+  });
+
+  test("a caption failure leaves the video id recorded so a re-run skips the upload", async () => {
+    const uploadVideoImpl = vi.fn().mockResolvedValue("yt-new");
+    const savePublishListImpl = vi.fn();
+    const uploadCaptionImpl = vi.fn().mockRejectedValue(new Error("Failed to upload caption for clip: 404 videoNotFound"));
+
+    await expect(
+      publishEntry({
+        entry,
+        list,
+        accessToken: "token",
+        quotaProject: "p",
+        publicVideo: false,
+        uploadVideoImpl,
+        uploadCaptionImpl,
+        savePublishListImpl,
+        log: () => {},
+      }),
+    ).rejects.toThrow(/404/);
+
+    expect(savePublishListImpl).toHaveBeenCalledTimes(1);
+    const saved = savePublishListImpl.mock.calls[0][0];
+    expect(saved.videos[0].videoId).toBe("yt-new");
+    expect(selectPendingUploads(saved)).toEqual([]);
   });
 });
 
