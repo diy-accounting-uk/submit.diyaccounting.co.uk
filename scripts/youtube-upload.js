@@ -49,6 +49,7 @@ import { fileURLToPath } from "url";
 import TOML from "@iarna/toml";
 import { OAuth2Client } from "google-auth-library";
 import { SecretsManagerClient, GetSecretValueCommand, UpdateSecretCommand, CreateSecretCommand } from "@aws-sdk/client-secrets-manager";
+import { copyVideosManifest } from "./copy-videos-manifest.js";
 
 export const PUBLISH_LIST_PATH = path.resolve("videos/publish.json");
 export const CONFIG_PATH = "google/youtube.toml";
@@ -521,7 +522,8 @@ export async function uploadCaption({
 /**
  * Upload one entry's video, record its id in the publish list on disk, then upload the caption.
  * The id is saved before the caption step so a caption failure leaves the upload recorded and a
- * re-run skips the entry instead of uploading the video twice.
+ * re-run skips the entry instead of uploading the video twice. Every save is followed by the copy
+ * into web/public/videos/, the manifest videos.html reads, so the site and the source never differ.
  *
  * @returns {Promise<object>} the publish list with the entry's videoId recorded
  */
@@ -534,6 +536,7 @@ export async function publishEntry({
   uploadVideoImpl = uploadVideo,
   uploadCaptionImpl = uploadCaption,
   savePublishListImpl = savePublishList,
+  copyVideosManifestImpl = copyVideosManifest,
   log = console.log,
 }) {
   log(`Uploading ${entry.id} (${publicVideo ? "public" : "unlisted"})...`);
@@ -541,6 +544,7 @@ export async function publishEntry({
   log(`  video id: ${videoId}`);
   const recorded = recordVideoId(list, entry.id, videoId);
   savePublishListImpl(recorded);
+  copyVideosManifestImpl();
   await uploadCaptionImpl({ entry, videoId, accessToken, quotaProject });
   log("  caption uploaded");
   log(`  https://youtu.be/${videoId}`);

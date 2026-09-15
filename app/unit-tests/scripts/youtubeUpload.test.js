@@ -529,10 +529,11 @@ describe("publishEntry", () => {
   const list = { videos: [{ id: "clip", publish: true, videoId: null }] };
   const entry = list.videos[0];
 
-  test("records the video id on disk before uploading the caption", async () => {
+  test("records the video id on disk, copies the manifest into web/public, then uploads the caption", async () => {
     const order = [];
     const uploadVideoImpl = vi.fn().mockResolvedValue("yt-new");
     const savePublishListImpl = vi.fn((saved) => order.push(["save", saved.videos[0].videoId]));
+    const copyVideosManifestImpl = vi.fn(() => order.push(["copy"]));
     const uploadCaptionImpl = vi.fn(async () => order.push(["caption"]));
 
     const result = await publishEntry({
@@ -544,10 +545,11 @@ describe("publishEntry", () => {
       uploadVideoImpl,
       uploadCaptionImpl,
       savePublishListImpl,
+      copyVideosManifestImpl,
       log: () => {},
     });
 
-    expect(order).toEqual([["save", "yt-new"], ["caption"]]);
+    expect(order).toEqual([["save", "yt-new"], ["copy"], ["caption"]]);
     expect(result.videos[0].videoId).toBe("yt-new");
     expect(uploadCaptionImpl).toHaveBeenCalledWith({ entry, videoId: "yt-new", accessToken: "token", quotaProject: "p" });
   });
@@ -555,6 +557,7 @@ describe("publishEntry", () => {
   test("a caption failure leaves the video id recorded so a re-run skips the upload", async () => {
     const uploadVideoImpl = vi.fn().mockResolvedValue("yt-new");
     const savePublishListImpl = vi.fn();
+    const copyVideosManifestImpl = vi.fn();
     const uploadCaptionImpl = vi.fn().mockRejectedValue(new Error("Failed to upload caption for clip: 404 videoNotFound"));
 
     await expect(
@@ -567,11 +570,13 @@ describe("publishEntry", () => {
         uploadVideoImpl,
         uploadCaptionImpl,
         savePublishListImpl,
+        copyVideosManifestImpl,
         log: () => {},
       }),
     ).rejects.toThrow(/404/);
 
     expect(savePublishListImpl).toHaveBeenCalledTimes(1);
+    expect(copyVideosManifestImpl).toHaveBeenCalledTimes(1);
     const saved = savePublishListImpl.mock.calls[0][0];
     expect(saved.videos[0].videoId).toBe("yt-new");
     expect(selectPendingUploads(saved)).toEqual([]);
