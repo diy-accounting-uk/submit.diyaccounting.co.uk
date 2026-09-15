@@ -72,6 +72,13 @@ Every item names its model: the lowest tier that fits (Fable > Opus > Sonnet > H
   so the template matches. **Source**: run 34847862007. In flight on `claude/b33-board`, PR #216, its deploy running. **Owner**: Claude Code. **Model**: Haiku.
   **Size**: ~2 files.
 
+- [ ] **B158b. `watch-ci.sh` repeats the NOT-GATING line every cycle.** B158 added a per-cycle
+  "NOT GATING <branch>: N run(s)" line (`scripts/watch-ci.sh:57`) with no dedup, so a `/watch`
+  monitor re-emits it every 75s and floods the session (the Monitor tool auto-stops a chatty
+  monitor). Emit it once per branch per distinct non-gating set, the way RED and MERGEABLE dedup
+  through the state dir, not every cycle. **Source**: B158 in prod, observed 2026-09-14.
+  Committed on `claude/b34-watch` (90c324e6), for the next batch's PR. **Owner**: Claude Code. **Model**: Haiku. **Size**: ~1 file.
+
 ## Machine-only
 
 - [ ] **B30x. The CIS console-sign-in-without-MFA alarm fires on SSO sign-ins.** Issue #206:
@@ -144,13 +151,6 @@ Every item names its model: the lowest tier that fits (Fable > Opus > Sonnet > H
   `logout()` awaits `window.envReady` unconditionally, which throws on a page that never loads
   `submit.js` (the agent's finding, unfixed). **Source**: operator, 2026-09-13. **Owner**: Claude
   Code. **Model**: Sonnet. **Size**: ~1 file.
-
-- [ ] **B158b. `watch-ci.sh` repeats the NOT-GATING line every cycle.** B158 added a per-cycle
-  "NOT GATING <branch>: N run(s)" line (`scripts/watch-ci.sh:57`) with no dedup, so a `/watch`
-  monitor re-emits it every 75s and floods the session (the Monitor tool auto-stops a chatty
-  monitor). Emit it once per branch per distinct non-gating set, the way RED and MERGEABLE dedup
-  through the state dir, not every cycle. **Source**: B158 in prod, observed 2026-09-14.
-  **Owner**: Claude Code. **Model**: Haiku. **Size**: ~1 file.
 
 ## Human and machine
 
