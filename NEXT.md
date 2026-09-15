@@ -18,7 +18,7 @@ PR; the operator merges.
 
 **Prod runs deployment prod-f709723** (PR #217's merge, run 34949518154), last-known-good with
 every probe green, but without an OpsStack: that job failed at the runner level (no steps, no
-log) and nothing downstream needs it, so the run carried on; B160 reruns it. prod-f767e65 is being
+log) and nothing downstream needs it, so the run carried on; B160 carries it. prod-f767e65 is being
 destroyed by the same run. **ci**: three sets stand, `ci-claud9f21` (b33, self-destructs 11:20 UTC),
 `ci-claud4326` (b34, 12:24 UTC) and `ci-claudf91c` (b35, last-known-good, 13:52 UTC), all on
 2026-09-15. B34.6b's poll is the only b32 item left open.
@@ -79,16 +79,18 @@ Every item names its model: the lowest tier that fits (Fable > Opus > Sonnet > H
 
 ## Machine-only
 
-- [ ] **B160. The live prod set has no OpsStack.** Run 34949518154 (main, f7097236) promoted
-  `prod-f709723` with every probe green, but its job "deploy OpsStack via deploy-cdk-stack.yml /
-  deploy prod-f709723-app-OpsStack" (104335127427) failed at 09:56 UTC with no steps and no log,
-  and no downstream job needs it, so the alarm-to-issue Lambda and the ops health alarm are not on
-  prod. When the run completes (it is destroying prod-f767e65), rerun its failed jobs:
-  `gh run rerun 34949518154 --failed`; if the rerun fails the same way, dispatch `deploy.yml` on
-  `main`. Then make `deploy-ops` a gate: the last-known-good promotion job should need it, so a
-  set without an OpsStack is never promoted. **Source**: run 34949518154. **Owner**: Claude Code.
-  **Model**: Haiku. **Size**: ~1 file.
-
+- [ ] **B160. The live prod set has no OpsStack, and a spare set stands.** Run 34949518154
+  (main, f7097236) promoted `prod-f709723` with every probe green but its OpsStack job
+  (104335127427) failed at the runner level (no steps, no log) and nothing downstream needs it, so
+  the alarm-to-issue Lambda and the ops health alarm are not on prod. The daily scheduled deploy
+  (34952375352, head 075487d6) then built `prod-075487d` with an OpsStack, but every probe's
+  `params` job failed inside B159's wait step (no `--repo`; the schedule guard matched the
+  deploy's own probes), so the apex rolled back to `prod-f709723`. The wait step is fixed on
+  PR #218 (e35b68c5); its merge deploys a new set with an OpsStack and destroys `prod-f709723`.
+  Left after that: destroy the spare, `gh workflow run destroy-prod.yml -f deployment-name=prod-075487d`
+  (operator), and make `deploy-ops` a gate of the last-known-good promotion so a set without an
+  OpsStack is never promoted (~1 file, `deploy.yml`). **Source**: runs 34949518154, 34952375352.
+  **Owner**: Claude Code, then Operator. **Model**: Haiku. **Size**: ~1 file.
 - [ ] **B158c. `watch-ci.sh` drops a gating run when a later non-gating run exists.** `all_latest_runs`
   (`scripts/watch-ci.sh:19`) groups by workflow and keeps the newest run over every event, and
   `latest_runs` filters to push and pull_request afterwards, so when a schedule or dispatch run of
