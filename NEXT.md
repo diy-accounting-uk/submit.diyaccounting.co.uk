@@ -17,7 +17,7 @@ Haiku; the lowest tier that fits). Anything touching code goes through a `claude
 PR; the operator merges.
 
 **Prod runs deployment prod-70b0a8e** (PR #222, run 34984108471), promoted under the `deploy-ops`
-gate; `prod-075487d` stands unpromoted beside it (B160). **ci**: `ci-claud727f` (b38,
+gate; `prod-075487d` is being destroyed (B160, run 34995132621). **ci**: `ci-claud727f` (b38,
 self-destructs ~18:20 UTC on 2026-09-15) is the only set; `ci-claud5ca3` self-destructed at 15:56.
 
 The board runs in five sections, in this order: **in flight** (a branch, a pull request or a run
@@ -37,6 +37,12 @@ Every item names its model: the lowest tier that fits (Fable > Opus > Sonnet > H
 `none` for a human step.
 
 ## In flight
+
+- [ ] **B160. Destroy the unpromoted prod set.** `prod-075487d` (nine stacks) was built by the
+  scheduled deploy 34952375352 whose probes failed inside B159's wait step; `destroy-prod.yml` run
+  34995132621 (dispatched 16:3x UTC on 2026-09-15) is removing it; the row closes when the run
+  succeeds and the set is gone. **Source**: run 34952375352. **Owner**: Claude Code. **Model**:
+  none. **Size**: ~0 files.
 
 ## Machine-only
 
@@ -119,13 +125,6 @@ Every item names its model: the lowest tier that fits (Fable > Opus > Sonnet > H
   **Owner**: Operator decides, Claude Code changes. **Model**: Haiku. **Size**: ~2 files.
 
 ## Human-only
-
-- [ ] **B160. Destroy the unpromoted prod set.** `prod-075487d` (nine stacks, $35.28 a month)
-  was built by the scheduled deploy 34952375352 whose probes failed inside B159's wait step and
-  rolled the apex back; prod now runs `prod-9b695aa` with an OpsStack, and PR #220 makes
-  `deploy-ops` a gate of promotion. Left: the operator dispatches
-  `gh workflow run destroy-prod.yml -f deployment-name=prod-075487d`. **Source**: run
-  34952375352. **Owner**: Operator. **Model**: none.
 
 - [ ] **B52z. Open the operator dashboard.** `OPERATORS.txt` (PR #217) is on the live prod set
   prod-f709723, so signed in as antonyccartwright@gmail.com the "Operator Dashboard" activity is
