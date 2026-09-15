@@ -16,17 +16,16 @@ scope() {
   { echo main; gh pr list --state open --limit 50 --json headRefName --jq '.[].headRefName' 2>/dev/null; } | sort -u
 }
 
-all_latest_runs() { # branch -> json array of all latest runs per workflow
-  gh run list --branch "$1" --limit 60 --json workflowName,status,conclusion,databaseId,headSha,event 2>/dev/null \
-    | jq -c 'group_by(.workflowName) | map(max_by(.databaseId))' 2>/dev/null
+raw_runs() { # branch -> json array of all runs
+  gh run list --branch "$1" --limit 60 --json workflowName,status,conclusion,databaseId,headSha,event 2>/dev/null
 }
 
 latest_runs() { # branch -> json array of latest run per workflow (push or pull_request events only)
-  all_latest_runs "$1" | jq -c '[.[] | select(.event == "push" or .event == "pull_request")]' 2>/dev/null
+  raw_runs "$1" | jq -c '[.[] | select(.event == "push" or .event == "pull_request")] | group_by(.workflowName) | map(max_by(.databaseId))' 2>/dev/null
 }
 
 non_gating_runs() { # branch -> json array of latest runs that are not push or pull_request
-  all_latest_runs "$1" | jq -c '[.[] | select(.event != "push" and .event != "pull_request")]' 2>/dev/null
+  raw_runs "$1" | jq -c '[.[] | select(.event != "push" and .event != "pull_request")] | group_by(.workflowName) | map(max_by(.databaseId))' 2>/dev/null
 }
 
 cycle=0
