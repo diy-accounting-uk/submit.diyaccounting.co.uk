@@ -221,7 +221,7 @@ runs:
     # --- Cross-account credential switch for Route53 (if Route53 is in a different account) ---
     - name: Assume Route53 account OIDC role
       if: ${{ inputs.route53-actions-role-arn != '' }}
-      uses: aws-actions/configure-aws-credentials@v6
+      uses: aws-actions/configure-aws-credentials@e1253824e5c10ff9df46874f81ed3ec929e19cfd # v6
       with:
         role-to-assume: ${{ inputs.route53-actions-role-arn }}
         aws-region: eu-west-2
@@ -233,7 +233,7 @@ runs:
 
     - name: Assume Route53 account deploy role
       if: ${{ inputs.route53-deploy-role-arn != '' }}
-      uses: aws-actions/configure-aws-credentials@v6
+      uses: aws-actions/configure-aws-credentials@e1253824e5c10ff9df46874f81ed3ec929e19cfd # v6
       with:
         role-to-assume: ${{ inputs.route53-deploy-role-arn }}
         aws-region: eu-west-2
@@ -320,7 +320,7 @@ runs:
     # --- Restore original credentials for API Gateway operations ---
     - name: Restore original OIDC role
       if: ${{ inputs.restore-actions-role-arn != '' }}
-      uses: aws-actions/configure-aws-credentials@v6
+      uses: aws-actions/configure-aws-credentials@e1253824e5c10ff9df46874f81ed3ec929e19cfd # v6
       with:
         role-to-assume: ${{ inputs.restore-actions-role-arn }}
         aws-region: eu-west-2
@@ -332,7 +332,7 @@ runs:
 
     - name: Restore original deploy role
       if: ${{ inputs.restore-deploy-role-arn != '' }}
-      uses: aws-actions/configure-aws-credentials@v6
+      uses: aws-actions/configure-aws-credentials@e1253824e5c10ff9df46874f81ed3ec929e19cfd # v6
       with:
         role-to-assume: ${{ inputs.restore-deploy-role-arn }}
         aws-region: eu-west-2
