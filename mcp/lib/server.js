@@ -1,0 +1,81 @@
+// SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0
+// Copyright (C) 2006-2026 DIY Accounting Limited
+
+// server.js -- the submission MCP server, written once over the MCP SDK's
+// transport abstraction so the stdio surface (bin/diya-submit-mcp.js) and
+// the hosted streamable-HTTP surface (plan row M4) register the same tools
+// against the same session. PLAN_SUBMISSION_MCP.md is the plan of record.
+
+import { readFileSync } from "node:fs";
+import { dirname, resolve } from "node:path";
+import { fileURLToPath } from "node:url";
+
+import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
+import { z } from "zod";
+
+import { createSession, openBook, saveBook, SAVE_FORMATS } from "./book-tools.js";
+
+const PACKAGE_JSON = resolve(dirname(fileURLToPath(import.meta.url)), "..", "package.json");
+
+export const SERVER_INFO = {
+  name: "diya-submit",
+  version: JSON.parse(readFileSync(PACKAGE_JSON, "utf8")).version,
+};
+
+function asToolResult(value) {
+  return { content: [{ type: "text", text: JSON.stringify(value, null, 2) }], structuredContent: value };
+}
+
+function asToolError(err) {
+  return { isError: true, content: [{ type: "text", text: err?.message ?? String(err) }] };
+}
+
+/**
+ * The tools the server registers, keyed by MCP name, with the handler each
+ * one calls: a test can drive the handlers directly against a session
+ * without a transport.
+ */
+export const TOOLS = {
+  open_book: {
+    description:
+      "Open a diya-gl book from the filesystem: a directory holding book.toml and lines.jsonl, or a single file " +
+      "(a DIY Accounting workbook, a package zip, a diya-gl zip, or a diya-gl JSON file). Answers the product, the " +
+      "entity, the period covered, the line count and the book checks summary. Replaces the session's loaded book.",
+    inputSchema: {
+      path: z.string().describe("Path to the book: a directory of book.toml + lines.jsonl, or one file the engine reads"),
+    },
+    handler: openBook,
+  },
+  save_book: {
+    description:
+      "Save the session's loaded book to the filesystem. Formats: diya-gl-dir (book.toml + lines.jsonl into a " +
+      "directory; the default for a path with no extension), diya-gl-zip, json, xlsx (the product's recalculating " +
+      "workbook) and zip (the product's package). xlsx and zip fetch the template from spreadsheets.diyaccounting.co.uk " +
+      "on first use.",
+    inputSchema: {
+      path: z.string().describe("Where to write: a directory for diya-gl-dir, otherwise a file path"),
+      format: z.enum(SAVE_FORMATS).optional().describe("One of diya-gl-dir, diya-gl-zip, json, xlsx, zip"),
+    },
+    handler: saveBook,
+  },
+};
+
+/**
+ * An McpServer with every tool registered against one session. Connect it to
+ * whichever transport the surface uses.
+ * @param {Object} [session] - defaults to a fresh, empty session
+ * @returns {McpServer}
+ */
+export function createServer(session = createSession()) {
+  const server = new McpServer(SERVER_INFO);
+  for (const [name, tool] of Object.entries(TOOLS)) {
+    server.registerTool(name, { description: tool.description, inputSchema: tool.inputSchema }, async (params) => {
+      try {
+        return asToolResult(await tool.handler(session, params));
+      } catch (err) {
+        return asToolError(err);
+      }
+    });
+  }
+  return server;
+}

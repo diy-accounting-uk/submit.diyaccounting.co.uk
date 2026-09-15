@@ -1,0 +1,26 @@
+{
+  "name": "@diy-accounting-uk/diya-submit",
+  "version": "0.1.0",
+  "description": "MCP server that opens a diya-gl book, derives filing figures and drives DIY Accounting Submit's HMRC and Companies House submissions",
+  "type": "module",
+  "private": true,
+  "license": "LicenseRef-PolyForm-Internal-Use-1.0.0",
+  "bin": {
+    "diya-submit-mcp": "bin/diya-submit-mcp.js"
+  },
+  "exports": {
+    ".": "./lib/server.js"
+  },
+  "scripts": {
+    "test": "vitest run",
+    "start": "node bin/diya-submit-mcp.js"
+  },
+  "dependencies": {
+    "@diy-accounting-uk/diya-gl": "1.2.17",
+    "@modelcontextprotocol/sdk": "1.30.0",
+    "zod": "^3.25.0"
+  },
+  "devDependencies": {
+    "vitest": "^4.1.11"
+  }
+}

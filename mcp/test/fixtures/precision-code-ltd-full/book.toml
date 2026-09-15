@@ -1,0 +1,504 @@
+# SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0
+# Copyright (C) 2006-2026 DIY Accounting Limited
+[documentInfo]
+entriesType = "journal"
+language = "en"
+creationDate = 2026-04-01
+periodCoveredStart = 2025-04-01
+periodCoveredEnd = 2026-03-31
+defaultCurrency = "GBP"
+entriesComment = "Subset: full — extracted from Precision Code Ltd master data"
+
+[entityInformation]
+organizationIdentifier = "Precision Code Ltd"
+organizationDescription = "IT consultancy and software development"
+organizationAddressLine = "123 High Street"
+organizationTown = "Manchester"
+organizationPostcode = "M1 1AA"
+organizationTelephone = "0161 555 0100"
+taxRegistrationNumber = "1234567890"
+taxAuthorityIdentifier = "HMRC"
+"diya-gl:product" = "Company"
+"diya-gl:vatRegistered" = true
+"diya-gl:basisOfAccounting" = "accrual"
+"diya-gl:vatNumber" = "123456789"
+"diya-gl:companyNumber" = "12345678"
+"diya-gl:cisRegistered" = true
+
+[[directors]]
+name = "Carol Smith"
+role = "Managing Director"
+shares = 60
+appointed = 2020-01-01
+
+[[directors]]
+name = "David Brown"
+role = "Non-Executive Director"
+shares = 25
+appointed = 2021-06-15
+
+[[directors]]
+name = "Emma Wilson"
+role = "Company Secretary"
+shares = 15
+appointed = 2022-03-01
+
+[[employees]]
+employeeID = "EMP001"
+name = "Alice Johnson"
+role = "Senior Developer"
+grossPay = 3500.00
+payFrequency = "monthly"
+taxCode = "1257L"
+niCategory = "A"
+startDate = 2024-01-15
+isDirector = false
+
+[[employees]]
+employeeID = "EMP002"
+name = "Bob Williams"
+role = "Support Technician"
+grossPay = 2200.00
+payFrequency = "monthly"
+taxCode = "1257L"
+niCategory = "A"
+startDate = 2024-06-01
+isDirector = false
+
+[[employees]]
+employeeID = "EMP003"
+name = "Carol Smith"
+role = "Director"
+grossPay = 1048.00
+payFrequency = "monthly"
+taxCode = "1257L"
+niCategory = "A"
+startDate = 2020-01-01
+isDirector = true
+
+[accounts.sales."4000"]
+accountMainDescription = "Product A - Consultancy"
+"diya-gl:column" = "O"
+
+[accounts.sales."4001"]
+accountMainDescription = "Product B - Software licences"
+"diya-gl:column" = "P"
+
+[accounts.sales."4002"]
+accountMainDescription = "Product C - Training"
+"diya-gl:column" = "Q"
+
+[accounts.sales."4003"]
+accountMainDescription = "Other Direct Income"
+"diya-gl:column" = "R"
+
+[accounts.sales."4004"]
+accountMainDescription = "Grants received"
+"diya-gl:column" = "S"
+
+[accounts.sales."4005"]
+accountMainDescription = "Bad debts written off"
+"diya-gl:column" = "T"
+
+[accounts.sales."4006"]
+accountMainDescription = "Fixed asset sale proceeds"
+"diya-gl:column" = "U"
+
+[accounts.purchases."5000"]
+accountMainDescription = "Direct materials for resale"
+"diya-gl:column" = "O"
+
+[accounts.purchases."5001"]
+accountMainDescription = "Sub-contractor services"
+"diya-gl:column" = "P"
+
+[accounts.purchases."5002"]
+accountMainDescription = "Other direct costs"
+"diya-gl:column" = "Q"
+
+[accounts.purchases."5100"]
+accountMainDescription = "Directors wages (non-PAYE)"
+"diya-gl:column" = "R"
+
+[accounts.purchases."5101"]
+accountMainDescription = "Employee wages (non-PAYE)"
+"diya-gl:column" = "S"
+
+[accounts.purchases."5200"]
+accountMainDescription = "Premises - rent and rates"
+"diya-gl:column" = "T"
+
+[accounts.purchases."5201"]
+accountMainDescription = "Light, heating, power"
+"diya-gl:column" = "U"
+
+[accounts.purchases."5300"]
+accountMainDescription = "Distribution and transport"
+"diya-gl:column" = "V"
+
+[accounts.purchases."5301"]
+accountMainDescription = "Equipment, tools, plant hire"
+"diya-gl:column" = "W"
+
+[accounts.purchases."5400"]
+accountMainDescription = "Repairs and maintenance"
+"diya-gl:column" = "X"
+
+[accounts.purchases."5401"]
+accountMainDescription = "Consumable materials"
+"diya-gl:column" = "Y"
+
+[accounts.purchases."5500"]
+accountMainDescription = "Advertising and promotion"
+"diya-gl:column" = "Z"
+
+[accounts.purchases."5501"]
+accountMainDescription = "General admin (telephone, postage, stationery)"
+"diya-gl:column" = "AA"
+
+[accounts.purchases."5502"]
+accountMainDescription = "Business entertainment"
+"diya-gl:column" = "AJ"
+
+[accounts.purchases."5600"]
+accountMainDescription = "Travel and hotel expenses"
+"diya-gl:column" = "AB"
+
+[accounts.purchases."5601"]
+accountMainDescription = "Motor vehicle expenses"
+"diya-gl:column" = "AC"
+
+[accounts.purchases."5700"]
+accountMainDescription = "Insurance"
+"diya-gl:column" = "AD"
+
+[accounts.purchases."5701"]
+accountMainDescription = "Leasing charges"
+"diya-gl:column" = "AE"
+
+[accounts.purchases."5800"]
+accountMainDescription = "Legal and professional fees"
+"diya-gl:column" = "AF"
+
+[accounts.purchases."5801"]
+accountMainDescription = "Charitable donations"
+"diya-gl:column" = "AG"
+
+[accounts.purchases."5802"]
+accountMainDescription = "Goodwill amortisation"
+"diya-gl:column" = "AH"
+
+[accounts.purchases."5803"]
+accountMainDescription = "Loan interest payable"
+"diya-gl:column" = "AF"
+
+[accounts.purchases."5900"]
+accountMainDescription = "Fixed asset purchases"
+"diya-gl:column" = "AI"
+
+[accounts.bank."1200"]
+accountMainDescription = "Current account"
+accountType = "bank"
+
+[accounts.bank."1210"]
+accountMainDescription = "Savings account"
+accountType = "bank"
+
+[accounts.bank."1220"]
+accountMainDescription = "Cash account"
+accountType = "bank"
+
+[accounts.bank."1230"]
+accountMainDescription = "Credit card account"
+accountType = "bank"
+
+[accounts.capital."3000"]
+accountMainDescription = "Share capital"
+
+[accounts.capital."3100"]
+accountMainDescription = "Retained earnings"
+
+[accounts.capital."3200"]
+accountMainDescription = "Dividends"
+
+[accounts.assets."0000"]
+accountMainDescription = "Land and buildings"
+
+[accounts.assets."0010"]
+accountMainDescription = "Plant and machinery"
+
+[accounts.assets."0020"]
+accountMainDescription = "Fixtures and fittings"
+
+[accounts.assets."0030"]
+accountMainDescription = "Computer equipment"
+
+[accounts.assets."0040"]
+accountMainDescription = "Motor vehicles"
+
+[accounts.assets."1100"]
+accountMainDescription = "Stock"
+
+[accounts.assets."1300"]
+accountMainDescription = "Trade debtors"
+
+[accounts.liabilities."2100"]
+accountMainDescription = "Trade creditors"
+
+[accounts.liabilities."2200"]
+accountMainDescription = "VAT liability"
+
+[accounts.liabilities."2300"]
+accountMainDescription = "Corporation Tax liability"
+
+[accounts.liabilities."2400"]
+accountMainDescription = "PAYE/NI liability"
+
+[accounts.liabilities."2410"]
+accountMainDescription = "CIS liability"
+
+[accounts.liabilities."2500"]
+accountMainDescription = "Directors loan account"
+
+[accounts.liabilities."2600"]
+accountMainDescription = "Long term creditors falling due after more than one year"
+
+[openingBalances]
+stock = 10000.00
+tradeDebtors = 10800.00
+tradeCreditors = 2400.00
+vatDue = 1500.00
+corporationTaxDue = 4500.00
+directorsLoan = 20000.00
+longTermCreditors = 25000.00
+shareCapital = 100.00
+retainedEarnings = 180702.00
+
+[openingBalances.fixedAssetCost]
+landBuildings = 200000.00
+computerTechnology = 3000.00
+motorVehicles = 30000.00
+
+[openingBalances.fixedAssetDepreciation]
+landBuildings = 40000.00
+computerTechnology = 270.00
+motorVehicles = 9828.00
+
+[openingBalances.bankAccounts]
+"1200" = 25000.00
+"1210" = 5000.00
+"1220" = 500.00
+
+[stock]
+openingValue = 10000.00
+closingValue = 6000.00
+materialsPercent = 0.0300
+
+[[debtors]]
+counterparty = "Acme Corp"
+invoice = "INV-0901"
+amount = 7200.00
+timing = "opening"
+
+[[debtors]]
+counterparty = "Beta Systems"
+invoice = "INV-0902"
+amount = 1200.00
+timing = "opening"
+
+[[debtors]]
+counterparty = "Gamma Ltd"
+invoice = "INV-0903"
+amount = 2400.00
+timing = "opening"
+
+[[debtors]]
+counterparty = "Acme Corp"
+invoice = "INV-1012"
+amount = 6100.00
+timing = "closing"
+
+[[debtors]]
+counterparty = "WidgetWorks"
+invoice = "INV-2104"
+amount = 1440.00
+timing = "closing"
+
+[[debtors]]
+counterparty = "Zeta Corp"
+invoice = "CN-1801"
+amount = 360.00
+timing = "closing"
+
+[[creditors]]
+counterparty = "WorkSpace Ltd"
+invoice = "WS-2403"
+amount = 1200.00
+timing = "opening"
+
+[[creditors]]
+counterparty = "Smith & Co"
+invoice = "SC-2403"
+amount = 300.00
+timing = "opening"
+
+[[creditors]]
+counterparty = "TechParts Ltd"
+invoice = "TP-2403"
+amount = 600.00
+timing = "opening"
+
+[[creditors]]
+counterparty = "Shell"
+invoice = "SH-2403"
+amount = 120.00
+timing = "opening"
+
+[[creditors]]
+counterparty = "WorkSpace Ltd"
+invoice = "WS-2603"
+amount = 1200.00
+timing = "closing"
+
+[[creditors]]
+counterparty = "Smith & Co"
+invoice = "SC-2603"
+amount = 300.00
+timing = "closing"
+
+[[creditors]]
+counterparty = "BT Business"
+invoice = "BT-2603"
+amount = 60.00
+timing = "closing"
+
+[[creditors]]
+counterparty = "Shell"
+invoice = "SH-2603"
+amount = 150.00
+timing = "closing"
+
+[[fixedAssets]]
+assetID = "LTD-FA-1"
+class = "motorVehicles"
+description = "Van (2.5 years old)"
+cost = 30000.00
+accumulatedDepreciation = 9828.00
+taxWrittenDownValue = 24000.00
+
+[[fixedAssets]]
+assetID = "LTD-FA-2"
+class = "computerTechnology"
+description = "Laptop (0.5 years old)"
+cost = 3000.00
+accumulatedDepreciation = 270.00
+
+[[fixedAssets]]
+assetID = "LTD-FA-3"
+class = "landBuildings"
+description = "Office premises"
+cost = 200000.00
+accumulatedDepreciation = 40000.00
+
+[[hpAgreements]]
+agreementID = "HP-2025-01"
+financeCompany = "Close Brothers Asset Finance"
+supplier = "Precision Tooling Supplies"
+amountFinanced = 13000.00
+adminCharges = 200.00
+totalInterest = 1800.00
+termMonths = 20
+startDate = 2025-06-01
+
+[[hpAgreements]]
+agreementID = "HP-2025-02"
+financeCompany = "Close Brothers Asset Finance"
+supplier = "Precision Tooling Supplies"
+amountFinanced = 7000.00
+adminCharges = 100.00
+totalInterest = 1000.00
+termMonths = 20
+startDate = 2025-09-01
+
+[[dividends]]
+boardMeetingDate = 2026-03-31
+amount = 15000.00
+
+[[members]]
+memberID = "MEM-1"
+name = "Carol Smith"
+shares = 60
+acquiredDate = 2020-01-01
+
+[[members]]
+memberID = "MEM-2"
+name = "David Brown"
+shares = 25
+acquiredDate = 2021-06-15
+
+[[members]]
+memberID = "MEM-3"
+name = "Emma Wilson"
+shares = 15
+acquiredDate = 2022-03-01
+
+[[charges]]
+chargeDate = 2023-09-01
+description = "Motor vehicles, being the company's delivery van"
+valuation = 30000.00
+holder = "NatWest Bank plc, 250 Bishopsgate, London EC2M 4AA"
+terms = "Fixed charge securing a five year business loan"
+boardMeetingDate = 2023-08-25
+
+[tax.incomeTax]
+personalAllowance = 12570.00
+personalAllowanceTaperThreshold = 100000.00
+basicRate = 0.2000
+basicRateLimit = 37700.00
+higherRate = 0.4000
+higherRateThreshold = 50270.00
+additionalRate = 0.4500
+additionalRateThreshold = 125140.00
+
+[tax.nationalInsurance]
+class2WeeklyRate = 3.50
+class2SmallProfitsThreshold = 6845.00
+class4MainRate = 0.0600
+class4UpperRate = 0.0200
+class4LowerProfits = 12570.00
+class4UpperProfits = 50270.00
+class1EmployeeMainRate = 0.0800
+class1EmployeeUpperRate = 0.0200
+class1EmployeePrimaryThreshold = 12570.00
+class1EmployeeUpperEarningsLimit = 50270.00
+class1EmployerRate = 0.1380
+class1EmployerSecondaryThreshold = 9100.00
+employmentAllowance = 5000.00
+
+[tax.vat]
+standardRate = 0.2000
+reducedRate = 0.0500
+registrationThreshold = 90000.00
+
+[tax.corporationTax]
+smallProfitsRate = 0.1900
+smallProfitsLimit = 50000.00
+mainRate = 0.2500
+mainRateThreshold = 250000.00
+associatedCompanies = 0
+frankedInvestmentIncome = 20000.00
+
+[tax.capitalAllowances]
+annualInvestmentAllowance = 1000000.00
+mainRateWDA = 0.1800
+specialRateWDA = 0.0600
+
+[tax.mileage]
+carFirst10000 = 0.45
+carOver10000 = 0.25
+
+[tax.dividends]
+allowance = 500.00
+basicRate = 0.0875
+higherRate = 0.3375
+additionalRate = 0.3935
