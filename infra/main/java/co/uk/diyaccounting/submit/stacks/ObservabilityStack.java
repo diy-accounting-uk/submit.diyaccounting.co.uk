@@ -815,9 +815,6 @@ public class ObservabilityStack extends Stack {
         // plain "github-actions-role" a first draft of this stack assumed.
         String githubActionsRoleArn =
                 "arn:aws:iam::%s:role/submit-%s-github-actions-role".formatted(this.getAccount(), props.envName());
-        String cloudwatchAlarmArnPrefix = "arn:aws:cloudwatch:*:%s:alarm:".formatted(this.getAccount());
-        String ew2LogGroupArnPrefix = "arn:aws:logs:eu-west-2:%s:log-group:".formatted(this.getAccount());
-        String ue1LogGroupArnPrefix = "arn:aws:logs:us-east-1:%s:log-group:".formatted(this.getAccount());
 
         Role alarmTriageRole = Role.Builder.create(this, props.resourceNamePrefix() + "-AlarmTriageRole")
                 .roleName(props.sharedNames().alarmTriageRoleName)
@@ -826,56 +823,24 @@ public class ObservabilityStack extends Stack {
                 .assumedBy(new ArnPrincipal(githubActionsRoleArn))
                 .build();
 
+        // One read-only telemetry grant: every describe, get, list and query action on Logs,
+        // CloudWatch and X-Ray. The earlier per-action, per-log-group list was widened one denial
+        // at a time (DescribeMetricFilters, DescribeQueries, ...) and the agent, denied once,
+        // stopped querying at all. Customer data stays out by the explicit Deny below, not by the
+        // shape of this Allow; the log groups the role can reach carry no customer data by design.
         alarmTriageRole.addToPolicy(PolicyStatement.Builder.create()
-                .sid("DescribeAlarms")
-                .actions(List.of("cloudwatch:DescribeAlarms", "cloudwatch:DescribeAlarmHistory"))
-                .resources(List.of("*"))
-                .build());
-
-        alarmTriageRole.addToPolicy(PolicyStatement.Builder.create()
-                .sid("QueryDeploymentLogs")
+                .sid("ReadTelemetry")
                 .actions(List.of(
+                        "logs:Describe*",
+                        "logs:Get*",
+                        "logs:FilterLogEvents",
                         "logs:StartQuery",
                         "logs:StopQuery",
-                        "logs:GetQueryResults",
-                        "logs:FilterLogEvents",
-                        "logs:GetLogEvents",
-                        "logs:DescribeLogStreams"))
-                .resources(List.of(
-                        ew2LogGroupArnPrefix + "/aws/lambda/" + props.envName() + "-*",
-                        ew2LogGroupArnPrefix + "/aws/lambda/" + props.envName() + "-*:log-stream:*",
-                        ew2LogGroupArnPrefix + "/aws/lambda/cwsyn-" + props.envName() + "-*",
-                        ew2LogGroupArnPrefix + "/aws/lambda/cwsyn-" + props.envName() + "-*:log-stream:*",
-                        ew2LogGroupArnPrefix + "/aws/apigw/" + props.envName() + "-env/access",
-                        ew2LogGroupArnPrefix + "/aws/apigw/" + props.envName() + "-env/access:log-stream:*",
-                        ew2LogGroupArnPrefix + "/aws/cloudtrail/" + props.envName() + "-env-cloud-trail",
-                        ew2LogGroupArnPrefix + "/aws/cloudtrail/" + props.envName() + "-env-cloud-trail:log-stream:*",
-                        ew2LogGroupArnPrefix + "/aws/kinesisfirehose/" + props.envName() + "-env-*",
-                        ew2LogGroupArnPrefix + "/aws/kinesisfirehose/" + props.envName() + "-env-*:log-stream:*",
-                        ew2LogGroupArnPrefix + "/aws/vendedlogs/states/" + props.envName() + "-env-*",
-                        ew2LogGroupArnPrefix + "/aws/vendedlogs/states/" + props.envName() + "-env-*:log-stream:*",
-                        ue1LogGroupArnPrefix + "/aws/lambda/" + props.envName() + "-*",
-                        ue1LogGroupArnPrefix + "/aws/lambda/" + props.envName() + "-*:log-stream:*"))
-                .build());
-
-        // Neither logs:DescribeLogGroups, logs:DescribeQueries nor logs:DescribeMetricFilters
-        // supports a resource-level ARN.
-        alarmTriageRole.addToPolicy(PolicyStatement.Builder.create()
-                .sid("ListLogGroups")
-                .actions(List.of("logs:DescribeLogGroups", "logs:DescribeQueries", "logs:DescribeMetricFilters"))
-                .resources(List.of("*"))
-                .build());
-
-        // X-Ray has no resource-level permissions.
-        alarmTriageRole.addToPolicy(PolicyStatement.Builder.create()
-                .sid("ReadTraces")
-                .actions(List.of(
-                        "xray:GetTraceSummaries",
-                        "xray:BatchGetTraces",
-                        "xray:GetTraceGraph",
-                        "xray:GetServiceGraph",
-                        "xray:GetInsightSummaries",
-                        "xray:GetInsight"))
+                        "cloudwatch:Describe*",
+                        "cloudwatch:Get*",
+                        "cloudwatch:List*",
+                        "xray:Get*",
+                        "xray:BatchGet*"))
                 .resources(List.of("*"))
                 .build());
 

@@ -463,6 +463,28 @@ class SubmitEnvironmentCdkResourceTest {
                         .anyMatch(a -> a.startsWith("dynamodb:"))),
                 "no Allow statement on the triage role may grant a dynamodb action");
 
+        Map<String, Object> readTelemetryStatement = statements.stream()
+                .filter(s -> "ReadTelemetry".equals(s.get("Sid")))
+                .findFirst()
+                .orElseThrow();
+        assertEquals("Allow", readTelemetryStatement.get("Effect"));
+        assertEquals("*", readTelemetryStatement.get("Resource"));
+        assertTrue(actionsOf(readTelemetryStatement)
+                .containsAll(List.of(
+                        "logs:Describe*",
+                        "logs:Get*",
+                        "logs:FilterLogEvents",
+                        "logs:StartQuery",
+                        "logs:StopQuery",
+                        "cloudwatch:Describe*",
+                        "cloudwatch:Get*",
+                        "cloudwatch:List*",
+                        "xray:Get*",
+                        "xray:BatchGet*")));
+        assertTrue(
+                statements.stream().noneMatch(s -> "QueryDeploymentLogs".equals(s.get("Sid"))),
+                "the per-log-group grant is replaced by ReadTelemetry");
+
         Map<String, Object> invokeModelStatement = statements.stream()
                 .filter(s -> "InvokeTriageModel".equals(s.get("Sid")))
                 .findFirst()
