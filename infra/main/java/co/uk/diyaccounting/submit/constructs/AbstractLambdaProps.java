@@ -34,6 +34,16 @@ public interface AbstractLambdaProps {
         return 0;
     }
 
+    // Caps how many invocations of this function run at once. Unset (the default) leaves the
+    // function unreserved, sharing the account's pool. A function whose correctness depends on
+    // invocations never overlapping (e.g. a list-then-create against an external API with no
+    // idempotency key of its own) sets this to 1 so AWS serialises its invocations instead of
+    // running them concurrently.
+    @Value.Default
+    default Optional<Integer> ingestReservedConcurrentExecutions() {
+        return Optional.empty();
+    }
+
     @Value.Default
     default Duration ingestLambdaTimeout() {
         return Duration.seconds(28);

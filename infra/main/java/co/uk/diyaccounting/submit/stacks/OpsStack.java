@@ -15,6 +15,7 @@ import co.uk.diyaccounting.submit.utils.PopulatedMap;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import org.immutables.value.Value;
 import software.amazon.awscdk.Duration;
 import software.amazon.awscdk.Environment;
@@ -222,6 +223,14 @@ public class OpsStack extends Stack {
                             .ingestLambdaTimeout(Duration.seconds(10))
                             .provisionedConcurrencyAliasName(props.sharedNames().provisionedConcurrencyAliasName)
                             .environment(alarmToGithubIssueEnv)
+                            // Two invocations of the same alarm's state change can run back to
+                            // back (the EventBridge rule redelivers, or two alarms in the same
+                            // family transition within the same second). This Lambda dedupes by
+                            // listing open issues before it creates one, with no idempotency key
+                            // of its own, so a reserved concurrency of 1 serialises invocations:
+                            // one invocation's create always finishes before the next one's list
+                            // runs, so the list always sees it (see #210/#212).
+                            .ingestReservedConcurrentExecutions(Optional.of(1))
                             .build());
             healthCheckedFunctions.add(alarmToGithubIssueLambdaConstruct);
             alarmToGithubIssueLambda = alarmToGithubIssueLambdaConstruct.ingestLambda;

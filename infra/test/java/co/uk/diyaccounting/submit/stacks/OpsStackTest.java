@@ -145,6 +145,28 @@ class OpsStackTest {
 
     @Test
     @SuppressWarnings("unchecked")
+    void alarmToGithubIssueLambdaHasReservedConcurrencyOfOne() {
+        // The Lambda dedupes by listing open issues before it creates one, with no idempotency
+        // key of its own (see #210/#212, two issues opened for one alarm transition). Reserved
+        // concurrency of 1 serialises invocations so one invocation's create always finishes
+        // before the next invocation's list runs.
+        OpsStack opsStack = synthOpsStack(
+                "prod", "arn:aws:secretsmanager:eu-west-2:111111111111:secret:prod/submit/ops/github_token", null);
+        Template template = Template.fromStack(opsStack);
+
+        var matching = template.findResources("AWS::Lambda::Function").entrySet().stream()
+                .filter(entry -> {
+                    var properties = (Map<String, Object>) entry.getValue().get("Properties");
+                    return String.valueOf(properties.get("FunctionName")).contains("alarm-to-github-issue");
+                })
+                .toList();
+        assertEquals(1, matching.size(), "expected exactly one alarm-to-github-issue Lambda function");
+        var properties = (Map<String, Object>) matching.get(0).getValue().get("Properties");
+        assertEquals(1.0, ((Number) properties.get("ReservedConcurrentExecutions")).doubleValue());
+    }
+
+    @Test
+    @SuppressWarnings("unchecked")
     void tokenChargeUnpaidMetricFiltersCoverEveryHmrcSubmissionEndpointIngestLogGroup() {
         OpsStack opsStack = synthOpsStack("prod", null, null);
         Template template = Template.fromStack(opsStack);

@@ -123,6 +123,10 @@ public class Lambda {
         if (props.role().isPresent()) {
             dockerFunctionBuilder.role(props.role().get());
         }
+        if (props.ingestReservedConcurrentExecutions().isPresent()) {
+            dockerFunctionBuilder.reservedConcurrentExecutions(
+                    props.ingestReservedConcurrentExecutions().get());
+        }
         this.ingestLambda = dockerFunctionBuilder.build();
         infof("Created Lambda %s with function %s", this.ingestLambda.getNode().getId(), this.ingestLambda.toString());
 
