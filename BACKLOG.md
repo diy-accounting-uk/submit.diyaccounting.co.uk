@@ -23,7 +23,7 @@ truthfully on its own. Human-only steps are briefed at the workspace root in
 `../BRIEF_OPERATOR_RUNBOOK_2026-09-13.md`; the four
 `../BRIEF_OPERATOR_TASKS_*.md` files carry the detail behind its tasks.
 
-- **Cool-down is on since 2026-09-15 17:34 UTC** (`NEXT.md`'s marker). Prod runs prod-70b0a8e
+- **Cool-down lifted 2026-09-15 20:10 UTC** by the operator's `/loop` of do-next waves. Prod runs prod-70b0a8e
   (PR #222's deploy), the only prod set; no ci set stands (`ci-claud727f`'s `ApiStack` is
   DELETE_FAILED until the 02:34 UTC `destroy-ci.yml` sweep on 2026-09-16).
 - **Six batches merged on 2026-09-15** (PRs #216, #217, #218, #220, #221, #222): the four failed

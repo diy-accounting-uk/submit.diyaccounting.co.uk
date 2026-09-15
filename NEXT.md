@@ -40,9 +40,6 @@ Every item names its model: the lowest tier that fits (Fable > Opus > Sonnet > H
 
 ## In flight
 
-**COOL-DOWN is on since 2026-09-15T17:34:47Z.** No new board rows except a degradation. Agents commit
-and stop. One branch is driven green at a time. Lifted only by the operator in their own words.
-
 ## Machine-only
 
 - [ ] **B52y.2. Check the nightly snapshot after the SecurityLakeStack reaches prod.** PR #218
@@ -165,6 +162,15 @@ and stop. One branch is driven green at a time. Lifted only by the operator in t
   page lists every entry with a `videoId` and the anchors resolve. Sandbox recordings say
   "(sandbox)" in their title already. **Source**: operator, 2026-09-15. **Owner**: Claude Code.
   **Model**: Sonnet. **Size**: ~4 files.
+
+- [ ] **B167. The ci self-destruct leaves `ApiStack` DELETE_FAILED.** `ci-claud824f` at 23:41 UTC on
+  2026-09-14 and `ci-claud727f` at 18:23 UTC on 2026-09-15 both failed on the Billing Cognito
+  authorizer (`AWS::ApiGatewayV2::Authorizer`, "InternalFailure"), leaving the stack until the next
+  `destroy-ci.yml` sweep force-deletes it. Make the self-destruct Lambda retry a DELETE_FAILED stack
+  with `--deletion-mode FORCE_DELETE_STACK` (the sweep's own path), with a unit test; the stack
+  ordering fix (delete the authorizer before the API) is the alternative if the Lambda cannot see
+  the failure. **Source**: `PARKED.md`, 2026-09-15. **Owner**: Claude Code. **Model**: Sonnet.
+  **Size**: ~2 files.
 
 - [ ] **M1a. The submission MCP package skeleton.** `PLAN_SUBMISSION_MCP.md` M1, first chunk:
   `mcp/` with its own `package.json` (name `@diy-accounting-uk/diya-submit`, the MCP SDK, a
