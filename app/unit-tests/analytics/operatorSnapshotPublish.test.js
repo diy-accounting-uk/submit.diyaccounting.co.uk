@@ -76,6 +76,32 @@ function mockAllQueriesSucceedWith(row) {
   });
 }
 
+// Every other query succeeds with `row`; the one whose SQL names `failingViewFragment` (e.g. a
+// missing Glue table) runs to a terminal FAILED state instead, the same shape Athena answers a
+// TABLE_NOT_FOUND query with.
+function mockQueriesWithOneFailing(failingViewFragment, row) {
+  mockAthenaSend.mockImplementation((command) => {
+    switch (command.constructor.name) {
+      case "StartQueryExecutionCommand": {
+        const failing = command.input.QueryString.includes(failingViewFragment);
+        return Promise.resolve({ QueryExecutionId: failing ? "failing-qid" : "qid" });
+      }
+      case "GetQueryExecutionCommand": {
+        if (command.input.QueryExecutionId === "failing-qid") {
+          return Promise.resolve({
+            QueryExecution: { Status: { State: "FAILED", StateChangeReason: "TABLE_NOT_FOUND" } },
+          });
+        }
+        return Promise.resolve({ QueryExecution: { Status: { State: "SUCCEEDED" } } });
+      }
+      case "GetQueryResultsCommand":
+        return Promise.resolve({ ResultSet: resultSetOf(["last_30", "prev_30", "last_90", "prev_90"], row) });
+      default:
+        throw new Error(`unexpected command ${command.constructor.name}`);
+    }
+  });
+}
+
 describe("operatorSnapshotPublish", () => {
   beforeEach(() => {
     mockAthenaSend.mockReset();
@@ -268,6 +294,37 @@ describe("operatorSnapshotPublish", () => {
       expect(sqlStatements.some((sql) => sql.includes("area = 'accessibility'"))).toBe(true);
       expect(sqlStatements.some((sql) => sql.includes("area = 'fraud-prevention-headers'"))).toBe(true);
     });
+
+    test("a failing observation's query answers null instead of failing the whole snapshot", async () => {
+      mockQueriesWithOneFailing("guardduty_findings", ["10", "5", "30", "20"]);
+
+      const context = {
+        envName: "test",
+        region: "eu-west-2",
+        athenaWorkGroupName: "test-env-analytics",
+        githubRepo: "diy-accounting-uk/submit.diyaccounting.co.uk",
+        ga4PropertyId: "523400333",
+      };
+      const snapshot = await buildSnapshot({ workGroup: "wg", database: "db", context });
+
+      const security = snapshot.objectives.find((o) => o.id === "security");
+      const failed = security.observations.find((o) => o.id === "guardduty-open-findings");
+      expect(failed.last30).toEqual({ value: null, trend: null });
+      expect(failed.last90).toEqual({ value: null, trend: null });
+
+      const otherSecurityObservations = security.observations.filter((o) => o.id !== "guardduty-open-findings");
+      expect(otherSecurityObservations.length).toBeGreaterThan(0);
+      for (const observation of otherSecurityObservations) {
+        expect(observation.last30.value).toBe(10);
+      }
+
+      const uptime = snapshot.objectives.find((o) => o.id === "uptime");
+      for (const observation of uptime.observations) {
+        expect(observation.last30.value).toBe(10);
+      }
+
+      expect(snapshot.failedObservationCount).toBe(1);
+    });
   });
 
   describe("writeSnapshot", () => {
@@ -296,6 +353,13 @@ describe("operatorSnapshotPublish", () => {
       const result = await handler();
 
       expect(result).toEqual({ environment: "test", objectives: 8 });
+      expect(mockS3Send).toHaveBeenCalledTimes(2);
+    });
+
+    test("still publishes the snapshot but rejects when an observation failed, so the Lambda's Errors metric still fires", async () => {
+      mockQueriesWithOneFailing("guardduty_findings", ["10", "5", "30", "20"]);
+
+      await expect(handler()).rejects.toThrow(/1 observation/);
       expect(mockS3Send).toHaveBeenCalledTimes(2);
     });
   });

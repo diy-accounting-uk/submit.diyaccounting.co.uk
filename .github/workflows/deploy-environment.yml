@@ -756,6 +756,27 @@ jobs:
           DEPLOYMENT_NAME: ${{ needs.names.outputs.environment-name }}
           BASE_IMAGE_TAG: env-analytics-${{ github.sha }}
 
+  deploy-security-lake:
+    name: 'deploy security lake'
+    needs:
+      - names
+      - create-secrets
+      - deploy-observability
+      - deploy-analytics
+    uses: ./.github/workflows/deploy-cdk-stack.yml
+    permissions:
+      contents: read
+      packages: read
+      id-token: write
+      pages: write
+      pull-requests: read
+    with:
+      stackName: ${{ needs.names.outputs.environment-name }}-env-SecurityLakeStack
+      force-stack-deployment: 'true'
+      environment-name: ${{ needs.names.outputs.environment-name }}
+      deployment-name: ${{ needs.names.outputs.environment-name }}
+      cdk-application: 'environment'
+
   deploy-scan-detection:
     name: 'deploy scan detection'
     needs:

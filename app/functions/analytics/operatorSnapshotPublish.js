@@ -489,20 +489,39 @@ export function toObservationWindows(row) {
   };
 }
 
+const nullObservationWindows = { last30: { value: null, trend: null }, last90: { value: null, trend: null } };
+
 /**
  * Runs every observation's query and assembles the snapshot document, organised by objective.
+ *
+ * A single observation's Athena query failing (e.g. a Glue table that does not exist) answers
+ * null for that observation rather than failing the whole snapshot, so one broken table does not
+ * stop the other objectives publishing. Each failure is logged at warn level and counted in the
+ * returned snapshot's failedObservationCount, so the caller can still surface it.
  *
  * @param {{workGroup: string, database: string, context: object}} params
  * @returns {Promise<object>}
  */
 export async function buildSnapshot({ workGroup, database, context }) {
   const objectives = [];
+  let failedObservationCount = 0;
   for (const objective of OBJECTIVE_DEFINITIONS) {
     const observations = [];
     for (const observation of objective.observations) {
-      const sql = buildWindowedSql(observation);
-      const rows = await runAthenaQuery({ workGroup, database, sql });
-      const windows = toObservationWindows(rows[0]);
+      let windows = nullObservationWindows;
+      try {
+        const sql = buildWindowedSql(observation);
+        const rows = await runAthenaQuery({ workGroup, database, sql });
+        windows = toObservationWindows(rows[0]);
+      } catch (error) {
+        failedObservationCount += 1;
+        logger.warn({
+          message: "Observation query failed, publishing null for it",
+          observationId: observation.id,
+          view: observation.view,
+          error: error.message,
+        });
+      }
       observations.push({
         id: observation.id,
         label: observation.label,
@@ -519,6 +538,7 @@ export async function buildSnapshot({ workGroup, database, context }) {
     generatedAt: new Date().toISOString(),
     environment: context.envName,
     objectives,
+    failedObservationCount,
   };
 }
 
@@ -576,7 +596,19 @@ export async function handler() {
     message: "Operator snapshot published",
     environment: envName,
     objectives: snapshot.objectives.length,
+    failedObservations: snapshot.failedObservationCount,
   });
+
+  // The snapshot is already published at this point, with a null for every observation whose
+  // query failed. Throwing here, after that write, is what still counts as a Lambda invocation
+  // error - the errorsAlarm (OperatorSnapshotPublish.java) reads the function's own Errors
+  // metric, so this is what keeps a broken table visible without re-blocking the rest of the
+  // snapshot on it.
+  if (snapshot.failedObservationCount > 0) {
+    throw new Error(
+      `Operator snapshot published with ${snapshot.failedObservationCount} observation(s) failing their Athena query`,
+    );
+  }
 
   return { environment: envName, objectives: snapshot.objectives.length };
 }
