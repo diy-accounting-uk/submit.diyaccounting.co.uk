@@ -238,6 +238,39 @@ and stop. One branch is driven green at a time. Lifted only by the operator in t
 
 ## Blocked
 
+- [ ] **B34.6b. Companies House accounts filing: the sandbox proof.** Submission 000004 (presenter
+  E0000052288, company 06846849, 2026-09-13 19:04 UTC) was ACCEPTED by the XML Gateway test
+  service; every `GetSubmissionStatus` poll for it answers 9999 "No presenter ID supplied", with
+  the body's `PresenterID` plaintext (transaction 1789391567972, 2026-09-14 13:12:48 UTC) and
+  hashed (1789481253426, 2026-09-15 14:07:33 UTC); the body is plaintext on `main` (PR #222).
+  Nothing on our side is left to try. When Companies House answers O44: if they enable status
+  lookups, poll once more on a ci set and pin the result in the test; then apply the `prod`
+  listing (held as unreferenced local commit 946251d4). **Source**: BACKLOG 34b. **Owner**:
+  Claude Code. **Model**: Sonnet. Blocked on O44's answer from Companies House. **Size**: ~1 file.
+
+- [ ] **B34.7. Run and fix the filing suites' sandbox sign-in.** Batch 9 (6957651c) carries
+  the suites' sandbox sign-in with the authenticator step, off by default: `deploy.yml` and
+  `probe-test.yml` run the two filing suites only when the dispatch input
+  `runCompaniesHouseSandboxFiling` is `true`, and the run fails fast naming any of O17's four
+  values that is empty. Against a standing ci set:
+  `gh workflow run probe-test.yml -f environment-name=ci -f deployment-name=<ci-set>
+  -f behaviour-test-suite=changeRegisteredOfficeBehaviour -f runCompaniesHouseSandboxFiling=true`
+  and the same for `changeRegisteredEmailBehaviour`; the first run's screenshots guide any
+  selector fix. **Source**: BACKLOG 34. **Owner**: Claude Code. **Model**: Sonnet.
+  Blocked on O17. **Size**: ~1 file.
+
+- [ ] **M1b. `derive_vat_return` from a diya-gl book.** The nine VAT boxes from a book's journal
+  and its VAT codes, as an MCP tool in `mcp/`, with the mapping written as a table in
+  `PLAN_SUBMISSION_MCP.md` first (Opus) and unit tests over both example books against the figures
+  their published reports show. **Source**: `PLAN_SUBMISSION_MCP.md` M1. **Owner**: Claude Code.
+  **Model**: Opus for the mapping, Sonnet for the tool. Blocked on M1a. **Size**: ~3 files.
+
+- [ ] **M1c. `derive_micro_entity_accounts` from a diya-gl book.** The seven FRS 105 balance-sheet
+  lines from a book, passed through the existing `buildMicroEntityAccounts` and the public validator
+  script, with unit tests over BrickWork Pro's example. **Source**: `PLAN_SUBMISSION_MCP.md` M1.
+  **Owner**: Claude Code. **Model**: Opus for the mapping, Sonnet for the tool. Blocked on M1a.
+  **Size**: ~3 files.
+
 - [ ] **B52l. The optimiser over the raw export.** `PLAN_ONE_STOP_DASHBOARD.md` D16, BACKLOG 52l:
   a notebook over the raw export computing the per-block correlations, fitting the block models
   (linear cost, log-linear funnels, Hill curves for spend), ranking levers by effect per unit cost
@@ -262,39 +295,6 @@ and stop. One branch is driven green at a time. Lifted only by the operator in t
   **Source**: BACKLOG 52m; plan D17. **Owner**: Claude Code, with the operator's fraction and floor.
   **Model**: Sonnet. Blocked on B52l, on the cost panel carrying revenue (B52e, done when the
   first renewal posts on 2026-10-02, BACKLOG 43) and on O23. **Size**: ~3 files.
-
-- [ ] **M1b. `derive_vat_return` from a diya-gl book.** The nine VAT boxes from a book's journal
-  and its VAT codes, as an MCP tool in `mcp/`, with the mapping written as a table in
-  `PLAN_SUBMISSION_MCP.md` first (Opus) and unit tests over both example books against the figures
-  their published reports show. **Source**: `PLAN_SUBMISSION_MCP.md` M1. **Owner**: Claude Code.
-  **Model**: Opus for the mapping, Sonnet for the tool. Blocked on M1a. **Size**: ~3 files.
-
-- [ ] **M1c. `derive_micro_entity_accounts` from a diya-gl book.** The seven FRS 105 balance-sheet
-  lines from a book, passed through the existing `buildMicroEntityAccounts` and the public validator
-  script, with unit tests over BrickWork Pro's example. **Source**: `PLAN_SUBMISSION_MCP.md` M1.
-  **Owner**: Claude Code. **Model**: Opus for the mapping, Sonnet for the tool. Blocked on M1a.
-  **Size**: ~3 files.
-
-- [ ] **B34.6b. Companies House accounts filing: the sandbox proof.** Submission 000004 (presenter
-  E0000052288, company 06846849, 2026-09-13 19:04 UTC) was ACCEPTED by the XML Gateway test
-  service; every `GetSubmissionStatus` poll for it answers 9999 "No presenter ID supplied", with
-  the body's `PresenterID` plaintext (transaction 1789391567972, 2026-09-14 13:12:48 UTC) and
-  hashed (1789481253426, 2026-09-15 14:07:33 UTC); the body is plaintext on `main` (PR #222).
-  Nothing on our side is left to try. When Companies House answers O44: if they enable status
-  lookups, poll once more on a ci set and pin the result in the test; then apply the `prod`
-  listing (held as unreferenced local commit 946251d4). **Source**: BACKLOG 34b. **Owner**:
-  Claude Code. **Model**: Sonnet. Blocked on O44's answer from Companies House. **Size**: ~1 file.
-
-- [ ] **B34.7. Run and fix the filing suites' sandbox sign-in.** Batch 9 (6957651c) carries
-  the suites' sandbox sign-in with the authenticator step, off by default: `deploy.yml` and
-  `probe-test.yml` run the two filing suites only when the dispatch input
-  `runCompaniesHouseSandboxFiling` is `true`, and the run fails fast naming any of O17's four
-  values that is empty. Against a standing ci set:
-  `gh workflow run probe-test.yml -f environment-name=ci -f deployment-name=<ci-set>
-  -f behaviour-test-suite=changeRegisteredOfficeBehaviour -f runCompaniesHouseSandboxFiling=true`
-  and the same for `changeRegisteredEmailBehaviour`; the first run's screenshots guide any
-  selector fix. **Source**: BACKLOG 34. **Owner**: Claude Code. **Model**: Sonnet.
-  Blocked on O17. **Size**: ~1 file.
 
 - [ ] **B124. Prove the three agent workflows by dispatch, in order.** All three are on main,
   `workflow_dispatch` only, every event trigger commented out until a hand-run has earned it.
@@ -345,6 +345,7 @@ and stop. One branch is driven green at a time. Lifted only by the operator in t
   year on this side unless the operator says to wait for their SED-10. **Source**: BACKLOG 11;
   `PLAN_ITSA_PHASE_2.md` T9. **Owner**: Claude Code. **Model**: Sonnet. Blocked on M1a. **Size**:
   ~5 files.
+
 - [ ] **B70.LU15. Licensing: the brand package.** Pin `@diy-accounting-uk/brand`, copy assets
   and tokens at build, import the tokens, delete the local logo, favicon and token copies;
   the footer, favicon and title conventions read from the words file. **Source**:
@@ -359,8 +360,6 @@ and stop. One branch is driven green at a time. Lifted only by the operator in t
   standards with a build behind each. **Source**: BACKLOG 11; `PLAN_ITSA_PHASE_2.md` T10.
   **Owner**: Claude Code, then Operator. **Model**: Haiku. Blocked on B11.T7r, B11.T21 and
   B11.T22. **Size**: ~3 files.
-
-
 
 ## Discipline
 
