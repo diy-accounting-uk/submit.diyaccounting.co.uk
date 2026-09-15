@@ -147,7 +147,6 @@ on:
 permissions:
   id-token: write
   contents: read
-  actions: read
 
 env:
   JAVA_VERSION: '25'
@@ -231,6 +230,8 @@ jobs:
       # probe then reports as a failure even though nothing is actually broken (2026-09-14,
       # issues #210, #212). workflow_dispatch and workflow_call callers are unaffected: this step
       # only runs for the schedule trigger, and every later job already needs this one.
+      # The repository is public, so listing runs needs no actions permission on the token;
+      # granting one here would exceed what deploy.yml's 29 caller jobs allow and fail at startup.
       - name: Wait for a deploy in progress on main before running the scheduled probes
         if: ${{ github.event_name == 'schedule' }}
         env:
