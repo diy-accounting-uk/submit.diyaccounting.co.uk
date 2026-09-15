@@ -17,8 +17,8 @@ Haiku; the lowest tier that fits). Anything touching code goes through a `claude
 PR; the operator merges.
 
 **Prod runs deployment prod-bd664fe** (PR #214's merge, batch b32, run 34891994316); the only
-prod set. **ci**: `ci-claud824f` is last-known-good and the only ci set; it self-destructs at
-23:40 UTC on 2026-09-14. B34.6b's poll is the only b32 item left open.
+prod set. **ci**: no set stands; `ci-claud824f`'s self-destruct fired at 23:40 UTC on 2026-09-14
+(unverified this render: no SSO session). B34.6b's poll is the only b32 item left open.
 
 The board runs in five sections, in this order: **in flight** (a branch, a pull request or a run
 in motion, each named in the row), **machine-only**, **human and machine**, **human-only**,
@@ -115,13 +115,13 @@ Every item names its model: the lowest tier that fits (Fable > Opus > Sonnet > H
   request is schema-correct: `SubmissionNumber` then `PresenterID` in the
   `xmlgw.companieshouse.gov.uk` namespace, and the same header authenticated the accepted
   submission. One asymmetry is left to try: the header's `SenderID` is `md5(presenterId)`, the
-  body's `PresenterID` is plaintext. Sending the hashed form is on batch b32
-  (`claude/b32-board`, 57dfdc17). The poll itself is not done: it needs the branch's code on a ci
+  body's `PresenterID` is plaintext. Sending the hashed form is on `main`
+  (57dfdc17, PR #214). The poll itself is not done: it needs the branch's code on a ci
   Lambda, and the lean deploy that puts it there was broken — `scripts/deploy-app.js` hardcoded the
-  pre-migration account so `deploy:app-ci` failed at the ECR push; b32 fixes that (d7daa69e, the
-  account now comes from the active credentials). b32 is on `main` (PR #214). Left: run
-  `npm run deploy:app-ci -- --deployment <ci-set> --skip-web` (submit-ci profile; `ci-claud824f`
-  until 23:40 UTC on 2026-09-14, then a fresh `deploy.yml` dispatch), then poll
+  pre-migration account so `deploy:app-ci` failed at the ECR push; PR #214 fixed that (d7daa69e, the
+  account now comes from the active credentials). Left: run
+  `npm run deploy:app-ci -- --deployment <ci-set> --skip-web` (submit-ci profile) against a
+  fresh `deploy.yml` dispatch, since no ci set stands, then poll
   `GET /api/v1/companies-house/accounts/000004` signed in and read the two gateway log lines. If the
   gateway returns a status, keep 57dfdc17, pin it in the test, and apply the `prod` listing (held as
   unreferenced local commit 946251d4); if it still answers 9999, revert the body to plaintext and
@@ -152,6 +152,16 @@ Every item names its model: the lowest tier that fits (Fable > Opus > Sonnet > H
 
 ## Human and machine
 
+- [ ] **B137. `uniqueReference` identifies the user, not the authentication event.** In the
+  `Gov-Client-Multi-Factor` header, `uniqueReference` is a SHA-256 of `sub + ":" + factorType`, so
+  it is stable per user per factor type by design. HMRC's spec expects a reference identifying the
+  authentication **event**. They have not flagged it and it is no part of the current advisory, so
+  this is a separate reading of the spec rather than a defect they have raised. O28's step 2b, which
+  touched the same code, is on `main` (#198). The operator decides whether to change it; then the
+  change in `buildFraudHeaders.js` with its unit test.
+  **Source**: `../REPORT_HMRC_HEADER_ADVISORIES.md`. **Owner**: Operator decides, Claude Code
+  changes. **Model**: Sonnet. **Size**: ~1 file.
+
 - [ ] **O28. Send `Gov-Client-Multi-Factor` on every request: mandate MFA in the pool.** Every
   monthly advisory HMRC has raised is this header missing (`../REPORT_HMRC_HEADER_ADVISORIES.md`).
   Step 2b is on main (#198, b0e3d2be): the browser sends its Cognito ID token as
@@ -169,16 +179,6 @@ Every item names its model: the lowest tier that fits (Fable > Opus > Sonnet > H
   customer on ci and say go. Then the machine half: the one-word change, its CDK test, and a ci
   deploy proving native sign-in still completes. **Source**: `../REPORT_HMRC_HEADER_ADVISORIES.md`.
   **Owner**: Operator decides, Claude Code changes. **Model**: Haiku. **Size**: ~2 files.
-
-- [ ] **B137. `uniqueReference` identifies the user, not the authentication event.** In the
-  `Gov-Client-Multi-Factor` header, `uniqueReference` is a SHA-256 of `sub + ":" + factorType`, so
-  it is stable per user per factor type by design. HMRC's spec expects a reference identifying the
-  authentication **event**. They have not flagged it and it is no part of the current advisory, so
-  this is a separate reading of the spec rather than a defect they have raised. O28's step 2b, which
-  touched the same code, is on `main` (#198). The operator decides whether to change it; then the
-  change in `buildFraudHeaders.js` with its unit test.
-  **Source**: `../REPORT_HMRC_HEADER_ADVISORIES.md`. **Owner**: Operator decides, Claude Code
-  changes. **Model**: Sonnet. **Size**: ~1 file.
 
 ## Human-only
 
@@ -276,23 +276,6 @@ Every item names its model: the lowest tier that fits (Fable > Opus > Sonnet > H
   selector fix. **Source**: BACKLOG 34. **Owner**: Claude Code. **Model**: Sonnet.
   Blocked on O17. **Size**: ~1 file.
 
-- [ ] **B11.T9. ITSA phase 2: the DIYA-GL-to-submission path.** `PLAN_ITSA_PHASE_2.md` T9: the
-  MCP tools `derive_itsa_quarterly_update` and `derive_itsa_annual_submission` in the MCP
-  package, and an import control on `annualSubmission.html` that fills the form from a book.
-  The spreadsheets side's T8 design finds the shipped self-employed template cannot source 31
-  of the 55 ITSA field slots, so the derivations omit those fields; this row must send an
-  omission, never a zero, for a field the book does not carry. Two findings from their side carry
-  SED ids and one changes what this row must do: SED-10 says the self-employed field set changes by
-  tax year — `sa103-mtd-mapping.json` records two allowances gone from 2025-26, an adjustment gone
-  from 2026-27 and two fields added — and their `se-derivations.js` reads none of it, so a book for
-  a year past 2024-25 can carry a field HMRC no longer accepts. The figures are year-agnostic; only
-  the field set moves. Either wait for their SED-10 or filter by year on this side, and say which.
-  SED-2 is theirs: fourteen disallowable categories, seven annual fields and four adjustments the
-  shipped template cannot source at all, which arrive omitted rather than zeroed.
-  **Source**: BACKLOG 11; `PLAN_ITSA_PHASE_2.md` T9. **Owner**: Claude Code. **Model**:
-  Sonnet. Blocked on the spreadsheets repository's ITSA-T8 (the two self-employed derivations)
-  and on `PLAN_SUBMISSION_MCP.md` M1. **Size**: ~4 files.
-
 - [ ] **B124. Prove the three agent workflows by dispatch, in order.** All three are on main,
   `workflow_dispatch` only, every event trigger commented out until a hand-run has earned it.
   **`agentic-lib-board.yml` first**, with `write-back=false`: it changes nothing, so a bad render costs only a
@@ -329,6 +312,23 @@ Every item names its model: the lowest tier that fits (Fable > Opus > Sonnet > H
   than given an environment. Do not dispatch this row again until the operator says so.
   **Source**: `.github/workflows/agentic-lib-*.yml`; run 34716604299.
   **Owner**: Claude Code. **Model**: Sonnet. Blocked on the operator lifting the 2026-09-12 halt. **Size**: ~3 files.
+
+- [ ] **B11.T9. ITSA phase 2: the DIYA-GL-to-submission path.** `PLAN_ITSA_PHASE_2.md` T9: the
+  MCP tools `derive_itsa_quarterly_update` and `derive_itsa_annual_submission` in the MCP
+  package, and an import control on `annualSubmission.html` that fills the form from a book.
+  The spreadsheets side's T8 design finds the shipped self-employed template cannot source 31
+  of the 55 ITSA field slots, so the derivations omit those fields; this row must send an
+  omission, never a zero, for a field the book does not carry. Two findings from their side carry
+  SED ids and one changes what this row must do: SED-10 says the self-employed field set changes by
+  tax year — `sa103-mtd-mapping.json` records two allowances gone from 2025-26, an adjustment gone
+  from 2026-27 and two fields added — and their `se-derivations.js` reads none of it, so a book for
+  a year past 2024-25 can carry a field HMRC no longer accepts. The figures are year-agnostic; only
+  the field set moves. Either wait for their SED-10 or filter by year on this side, and say which.
+  SED-2 is theirs: fourteen disallowable categories, seven annual fields and four adjustments the
+  shipped template cannot source at all, which arrive omitted rather than zeroed.
+  **Source**: BACKLOG 11; `PLAN_ITSA_PHASE_2.md` T9. **Owner**: Claude Code. **Model**:
+  Sonnet. Blocked on the spreadsheets repository's ITSA-T8 (the two self-employed derivations)
+  and on `PLAN_SUBMISSION_MCP.md` M1. **Size**: ~4 files.
 
 - [ ] **B70.LU15. Licensing: the brand package.** Pin `@diy-accounting-uk/brand`, copy assets
   and tokens at build, import the tokens, delete the local logo, favicon and token copies;
