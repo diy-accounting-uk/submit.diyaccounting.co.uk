@@ -57,9 +57,7 @@ describe("open_book", () => {
   }
 
   it("refuses a path that does not exist", async () => {
-    await expect(openBook(createSession(), { path: join(FIXTURES, "no-such-book") })).rejects.toThrow(
-      /No such file or directory/,
-    );
+    await expect(openBook(createSession(), { path: join(FIXTURES, "no-such-book") })).rejects.toThrow(/No such file or directory/);
   });
 
   it("refuses a directory without the two book files", async () => {
@@ -67,9 +65,7 @@ describe("open_book", () => {
   });
 
   it("refuses to save before a book is open", async () => {
-    await expect(saveBook(createSession(), { path: join(scratch, "nothing") })).rejects.toThrow(
-      /Call open_book first/,
-    );
+    await expect(saveBook(createSession(), { path: join(scratch, "nothing") })).rejects.toThrow(/Call open_book first/);
   });
 });
 
@@ -116,9 +112,7 @@ describe("save_book round trips", () => {
     expect((await saveBook(session, { path: join(scratch, "inferred", "b.zip") })).format).toBe("diya-gl-zip");
     expect((await saveBook(session, { path: join(scratch, "inferred", "b") })).format).toBe("diya-gl-dir");
     await expect(saveBook(session, { path: join(scratch, "inferred", "b.txt") })).rejects.toThrow(/Cannot infer/);
-    await expect(saveBook(session, { path: join(scratch, "inferred", "b"), format: "csv" })).rejects.toThrow(
-      /Unknown format/,
-    );
+    await expect(saveBook(session, { path: join(scratch, "inferred", "b"), format: "csv" })).rejects.toThrow(/Unknown format/);
   });
 });
 
