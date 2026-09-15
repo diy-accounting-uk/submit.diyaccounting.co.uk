@@ -17,10 +17,11 @@ Haiku; the lowest tier that fits). Anything touching code goes through a `claude
 PR; the operator merges.
 
 **Prod runs deployment prod-70b0a8e** (PR #222, run 34984108471), promoted under the `deploy-ops`
-gate; it is the only prod set. **ci**: no set stands; `ci-claud727f`'s
-self-destruct fired at 18:22 UTC on 2026-09-15 and left its `ApiStack` DELETE_FAILED on the Cognito
-authorizer, which the next `destroy-ci.yml` sweep (02:34 UTC on 2026-09-16) force-deletes (parked in
-`PARKED.md`).
+gate; it is the only prod set. `main`'s deploy of PR #226 (run 35028380205, from 21:56 UTC on
+2026-09-15) is in its environment stage and promotes the next prod set when its probes pass. **ci**:
+`ci-claud76c4` stands (the b40 branch's set, ci's last-known-good), self-destruct at 00:47 UTC on
+2026-09-16; `ci-claud727f`'s `ApiStack` is DELETE_FAILED on the Cognito authorizer until the
+`destroy-ci.yml` sweep at 02:34 UTC on 2026-09-16 force-deletes it.
 
 The board runs in five sections, in this order: **in flight** (a branch, a pull request or a run
 in motion, each named in the row), **machine-only**, **human and machine**, **human-only**,
@@ -40,16 +41,10 @@ Every item names its model: the lowest tier that fits (Fable > Opus > Sonnet > H
 
 ## In flight
 
-## Machine-only
-
-- [ ] **B52y.2. Check the nightly snapshot after the SecurityLakeStack reaches prod.** PR #218
-  (9b695aab) adds the `deploy-security-lake` job and the per-observation null; prod's environment
-  deploy of that merge creates the Glue tables. After the next 03:15 UTC run, read
-  `snapshots/prod/latest.json`: `generatedAt` past 2026-09-16 03:15, `failedObservationCount` 0,
-  and any observation answering null where its view has rows (two views are monthly or quarterly
-  grain, so a 30-day window can be empty by design). Issue #208 closes when the alarm clears.
-  **Source**: `PLAN_ONE_STOP_DASHBOARD.md` D7, D13, D14, D15. **Owner**: Claude Code. **Model**:
-  Haiku. **Size**: ~0 files.
+Wave b41 rides **`claude/b41-board`** (from `main` at 9f58aaac, no PR yet, unpushed until the wave
+lands): B11.T9's two commits are on the batch; B30z and B30aa are being worked in
+`.claude/worktrees/b41-alarms`, M1b and M1c in `.claude/worktrees/b41-derive`. The push, the PR
+and `/watch` follow the last agent's report.
 
 - [ ] **B30z. Exclude the deploy role from the four CIS metric filters.** B30y's re-count: the CIS
   families `unauthorized-api-calls` (16 fires), `iam-policy` (12), `s3-bucket-policy` (6) and
@@ -90,6 +85,17 @@ Every item names its model: the lowest tier that fits (Fable > Opus > Sonnet > H
   year on this side unless the operator says to wait for their SED-10. **Source**: BACKLOG 11;
   `PLAN_ITSA_PHASE_2.md` T9. **Owner**: Claude Code. **Model**: Sonnet. **Size**:
   ~5 files.
+
+## Machine-only
+
+- [ ] **B52y.2. Check the nightly snapshot after the SecurityLakeStack reaches prod.** PR #218
+  (9b695aab) adds the `deploy-security-lake` job and the per-observation null; prod's environment
+  deploy of that merge creates the Glue tables. After the next 03:15 UTC run, read
+  `snapshots/prod/latest.json`: `generatedAt` past 2026-09-16 03:15, `failedObservationCount` 0,
+  and any observation answering null where its view has rows (two views are monthly or quarterly
+  grain, so a 30-day window can be empty by design). Issue #208 closes when the alarm clears.
+  **Source**: `PLAN_ONE_STOP_DASHBOARD.md` D7, D13, D14, D15. **Owner**: Claude Code. **Model**:
+  Haiku. **Size**: ~0 files.
 
 ## Human and machine
 
