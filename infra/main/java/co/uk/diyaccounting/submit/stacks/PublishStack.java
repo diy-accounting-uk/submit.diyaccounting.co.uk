@@ -233,6 +233,8 @@ public class PublishStack extends Stack {
                         "/tests/*",
                         "/widgets/*",
                         "/about.html",
+                        "/videos.html",
+                        "/videos/*",
                         "/accessibility.html",
                         "/bundles.html",
                         "/faqs.toml",
