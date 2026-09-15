@@ -16,12 +16,10 @@ runs), and for Claude Code steps the **Model** a sub-agent should use (Fable > O
 Haiku; the lowest tier that fits). Anything touching code goes through a `claude/*` branch and
 PR; the operator merges.
 
-**Prod runs deployment prod-f709723** (PR #217, run 34949518154; no OpsStack, see B160), with
-`prod-075487d` standing unpromoted beside it (the scheduled deploy 34952375352, rolled back;
-incident #219, which `deploy.yml` closes on the next promotion). `main`'s deploy of PR #218
-(34963098209) is building the next set. **ci**: `ci-claud4326` (b34, self-destructs 12:24 UTC) and
-`ci-claudf91c` (b35, last-known-good, 13:52 UTC) stand on 2026-09-15. B34.6b's poll is the only
-b32 item left open.
+**Prod runs deployment prod-9b695aa** (PR #218, run 34963098209), promoted with its OpsStack;
+`prod-075487d` stands unpromoted beside it (B160). PR #220 (b36, 898b2fdc) is deploying. **ci**:
+`ci-claud4326` (b34, self-destructs 12:24 UTC) and `ci-claudf91c` (b35, last-known-good, 13:52 UTC)
+stand on 2026-09-15, with b36's set building. B34.6b's poll is the only b32 item left open.
 
 The board runs in five sections, in this order: **in flight** (a branch, a pull request or a run
 in motion, each named in the row), **machine-only**, **human and machine**, **human-only**,
@@ -40,42 +38,6 @@ Every item names its model: the lowest tier that fits (Fable > Opus > Sonnet > H
 `none` for a human step.
 
 ## In flight
-
-- [ ] **B160. The live prod set has no OpsStack, and a spare set stands.** Run 34949518154
-  (main, f7097236) promoted `prod-f709723` with every probe green but its OpsStack job
-  (104335127427) failed at the runner level (no steps, no log) and nothing downstream needs it, so
-  the alarm-to-issue Lambda and the ops health alarm are not on prod. The daily scheduled deploy
-  (34952375352, head 075487d6) then built `prod-075487d` with an OpsStack, but every probe's
-  `params` job failed inside B159's wait step (no `--repo`; the schedule guard matched the
-  deploy's own probes), so the apex rolled back to `prod-f709723`. The wait step is fixed on
-  `main` (PR #218, 9b695aab); its deploy is building a new set with an OpsStack and destroys `prod-f709723`.
-  Left after that: destroy the spare, `gh workflow run destroy-prod.yml -f deployment-name=prod-075487d`
-  (operator), and make `deploy-ops` a gate of the last-known-good promotion so a set without an
-  OpsStack is never promoted (~1 file, `deploy.yml`). **Source**: runs 34949518154, 34952375352.
-  In flight on `claude/b36-board`, PR #220, its deploy running. **Owner**: Claude Code, then Operator. **Model**: Haiku. **Size**: ~1 file.
-
-- [ ] **B158c. `watch-ci.sh` drops a gating run when a later non-gating run exists.** `all_latest_runs`
-  (`scripts/watch-ci.sh:19`) groups by workflow and keeps the newest run over every event, and
-  `latest_runs` filters to push and pull_request afterwards, so when a schedule or dispatch run of
-  the same workflow is newer than the push run, the push run vanishes from the gating set: at
-  09:47 UTC on 2026-09-15 the watch said "all terminal, 0 red" on `main` while `deploy`
-  34949518154 (push) was in progress, because the 04:11 schedule run 34952375352 (pending) was
-  newer. Filter by event before grouping, in both `latest_runs` and the merge-readiness probe.
-  **Source**: B158, observed 2026-09-15. In flight on `claude/b36-board`, PR #220, its deploy running. **Owner**: Claude Code. **Model**: Haiku. **Size**: ~1 file.
-
-- [ ] **B52v. The 5xx behind the operator dashboard's first open.** The sign-in path is on
-  `main` (82ea7ab8, PR #209) and reaches prod with 658f986e's deploy (run 34856840995): the activity is listed for a signed-in operator, the denial names
-  the pass, the page uses the shared header and returns to itself after sign-in. The 5xx of 23:38
-  UTC on 2026-09-13 (issues #204 `prod-e371587-app-api-5xx` and #203
-  `operator-snapshot-get-log-errors`) is not reproduced: that deployment's logs are gone,
-  `prod-b364438`'s `operator-snapshot-get` log group has no events, the Lambda's role holds
-  `dynamodb:Query` on `prod-env-bundles` and `s3:GetObject` on `snapshots/prod/*`, and the
-  object exists. Issues #204 and #203 are closed as stale (deployment `e371587` is destroyed, its
-  alarms gone). Left: read `/aws/lambda/prod-bd664fe-app-operator-snapshot-get` after B52z's
-  attempt on the live set and fix what it logs. `auth-status.js`'s
-  `logout()` awaits `window.envReady` unconditionally, which throws on a page that never loads
-  `submit.js` (the agent's finding, unfixed). **Source**: operator, 2026-09-13. In flight on `claude/b36-board`, PR #220, its deploy running. **Owner**: Claude
-  Code. **Model**: Sonnet. **Size**: ~1 file.
 
 ## Machine-only
 
@@ -140,6 +102,13 @@ Every item names its model: the lowest tier that fits (Fable > Opus > Sonnet > H
   **Owner**: Operator decides, Claude Code changes. **Model**: Haiku. **Size**: ~2 files.
 
 ## Human-only
+
+- [ ] **B160. Destroy the unpromoted prod set.** `prod-075487d` (nine stacks, $35.28 a month)
+  was built by the scheduled deploy 34952375352 whose probes failed inside B159's wait step and
+  rolled the apex back; prod now runs `prod-9b695aa` with an OpsStack, and PR #220 makes
+  `deploy-ops` a gate of promotion. Left: the operator dispatches
+  `gh workflow run destroy-prod.yml -f deployment-name=prod-075487d`. **Source**: run
+  34952375352. **Owner**: Operator. **Model**: none.
 
 - [ ] **B52z. Open the operator dashboard.** `OPERATORS.txt` (PR #217) is on the live prod set
   prod-f709723, so signed in as antonyccartwright@gmail.com the "Operator Dashboard" activity is
