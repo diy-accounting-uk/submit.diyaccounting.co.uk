@@ -17,8 +17,9 @@ Haiku; the lowest tier that fits). Anything touching code goes through a `claude
 PR; the operator merges.
 
 **Prod runs deployment prod-70b0a8e** (PR #222, run 34984108471), promoted under the `deploy-ops`
-gate; it is the only prod set. **ci**: `ci-claud727f` (b38,
-self-destructs ~18:20 UTC on 2026-09-15) is the only set; `ci-claud5ca3` self-destructed at 15:56.
+gate; it is the only prod set. **ci**: no set stands; `ci-claud727f`'s
+self-destruct fired at 18:22 UTC on 2026-09-15 and left its `ApiStack` DELETE_FAILED on the Cognito
+authorizer, which the next `destroy-ci.yml` sweep force-deletes (parked in `PARKED.md`).
 
 The board runs in five sections, in this order: **in flight** (a branch, a pull request or a run
 in motion, each named in the row), **machine-only**, **human and machine**, **human-only**,
