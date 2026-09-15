@@ -59,6 +59,19 @@ baseline and fires on the deploy pipeline's own changes: 39 of prod's 55 in-depl
   warm-up); then either fix the cause or start the alarm's evaluation after the set is promoted.
   Sonnet, ~2 files.
 
+**Outcomes, 2026-09-15 22:00 UTC, from the alarm histories, CloudTrail and the access log:**
+
+- **30z is already landed; no filter changed.** The deploy-role exclusion on the four families
+  (`aebbfc49`, 2026-09-10 14:46 UTC, on prod that evening) ended the infrastructure-change fires:
+  the last OK-to-ALARM was `iam-policy-changes` 2026-09-09 18:47 UTC, `route-table-changes`
+  18:53 UTC, `s3-bucket-policy-changes` 23:57 UTC. `unauthorized-api-calls` kept firing on two
+  real permission gaps, each since granted: `prod-env-data-quality-eval`'s Glue session denied
+  `logs:CreateLogGroup` eleven times a night at 02:16 UTC (2026-09-10, 09-11; granted by
+  `4511dd09`, 2026-09-11) and `prod-env-alarm-triage-role` denied `bedrock:ListInferenceProfiles`
+  (2026-09-11 02:18 and 02:28 UTC; `85227772`, 2026-09-11) then `logs:DescribeMetricFilters`
+  (2026-09-13 12:59 UTC; B30w, `8efc0173`). Nothing has fired since 2026-09-13 13:02 UTC. The
+  family stays as it is: every remaining fire was a denial worth fixing at its own layer.
+
 **Date**: 2026-09-03  
 **Environment**: prod (account 972912397388, region eu-west-2)  
 **Audit period**: 90 days (2026-06-05 to 2026-09-03)  
