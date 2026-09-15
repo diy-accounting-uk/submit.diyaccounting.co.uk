@@ -96,6 +96,7 @@ class SubmitEnvironmentCdkResourceTest {
                 "AWS::CloudTrail::Trail",
                 Match.objectLike(Map.of("IsMultiRegionTrail", true, "IncludeGlobalServiceEvents", true)));
         assertTrailLogsDynamoDbDataEventsExceptGetRecords(observability);
+        assertApiAccessLogGroupKeepsTheConfiguredRetention(observability, appProps);
 
         // Security Hub's default standards are off in ObservabilityStack: SecurityBaselineStack
         // manages the CIS v5.0.0 and AWS Foundational Security Best Practices subscriptions
@@ -300,6 +301,36 @@ class SubmitEnvironmentCdkResourceTest {
     }
 
     /**
+     * The shared API access log is the evidence behind every api-5xx alarm, so its retention is
+     * the environment's ACCESS_LOG_GROUP_RETENTION_PERIOD_DAYS, not the three-day helper default
+     * that every other ensured log group gets.
+     */
+    @SuppressWarnings("unchecked")
+    private static void assertApiAccessLogGroupKeepsTheConfiguredRetention(
+            Template observability, SubmitEnvironment.SubmitEnvironmentProps appProps) {
+        String configured = System.getenv("ACCESS_LOG_GROUP_RETENTION_PERIOD_DAYS");
+        int expectedRetention = Integer.parseInt(
+                configured != null && !configured.isBlank()
+                        ? configured
+                        : (appProps.accessLogGroupRetentionPeriodDays != null
+                                ? appProps.accessLogGroupRetentionPeriodDays
+                                : "30"));
+        List<String> retentionCalls = observability.findResources("Custom::AWS").values().stream()
+                .map(resource -> (Map<String, Object>) resource.get("Properties"))
+                .map(properties -> properties == null ? null : properties.get("Create"))
+                .filter(create -> create instanceof String)
+                .map(create -> (String) create)
+                .filter(create -> create.contains("\"action\":\"putRetentionPolicy\""))
+                .filter(create -> create.matches("(?s).*\"logGroupName\":\"/aws/apigw/[^\"]+/access\".*"))
+                .toList();
+        assertEquals(1, retentionCalls.size(), "expected one putRetentionPolicy call for the API access log group");
+        assertTrue(
+                retentionCalls.get(0).contains("\"retentionInDays\":" + expectedRetention),
+                "expected the API access log group's retention to be " + expectedRetention + " days, call: "
+                        + retentionCalls.get(0));
+    }
+
+    /**
      * The trail must log DynamoDB data events (the security detectors match Scan and GetItem)
      * without the stream poller's GetRecords, and it must not also carry the basic
      * EventSelectors property, which CloudTrail rejects alongside advanced selectors.
@@ -393,8 +424,7 @@ class SubmitEnvironmentCdkResourceTest {
         // resolved value (no deployment is live, or the sweep just cleared one), the dashboard
         // shows that in the title instead of a blank graph that reads the same as a live
         // deployment with no traffic.
-        long lastKnownGoodDeploymentRefCount =
-                dashboardBody.split("lastknowngooddeployment", -1).length - 1;
+        long lastKnownGoodDeploymentRefCount = dashboardBody.split("lastknowngooddeployment", -1).length - 1;
         assertTrue(
                 lastKnownGoodDeploymentRefCount >= 5,
                 "expected the last-known-good-deployment reference in all four titles plus the "
