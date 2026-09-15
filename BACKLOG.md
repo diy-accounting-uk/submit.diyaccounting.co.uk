@@ -39,9 +39,8 @@ truthfully on its own. Human-only steps are briefed at the workspace root in
 - **Both `/api/v1/books` and `/api/v1/diya-gl` are permanent** by operator decision of 2026-09-10.
   The old prefix is never retired and the spreadsheets repository changes nothing; row 51's naming
   work is down to the S3 bucket.
-- **Tier 1 holds rows 55 to 59** (the plan audit of 2026-09-16: Google federation, the ruleset's
-  required checks, Actions pinning, the security-review cron, the kill switch), not yet refined onto
-  `NEXT.md`; every other refined item is on `NEXT.md` with source, owner and model.
+- **Tier 1 holds rows 55 to 59** (the plan audit of 2026-09-16), refined onto `NEXT.md` as B55 to
+  B59: B55, B57, B58 and B59 are in flight on wave b42, B56 waits on O46.
 - **Plans archived 2026-09-16** (every row landed or decided): the three alarm plans, the fraud-header
   email check, the Issue 15 tracker, the edge CORS review, DIYA-GL naming and DIYA-GL storage, all
   under `_developers/archive/`.
@@ -59,11 +58,11 @@ Refined items live on `NEXT.md` under the labels in the second column.
 
 | # | NEXT.md items | Item | Source | Effort | Value |
 |---|---|---|---|---|---|
-| 55 | — | Google as code, items 8 to 11: the workload identity pool and GitHub provider, Actions authenticating by federation instead of a key, key rotation as code, the analytics Lambdas federating instead of holding a key (`PLAN_GOOGLE_AS_CODE.md`). | PLAN_GOOGLE_AS_CODE.md; row 49 | M | Security. Removes the one long-lived Google key and dates the rotation. |
-| 56 | — | `test` and CodeQL as required status checks on ruleset 16057564, once O46 settles how the ruleset gates `main`. | PLAN_REPOSITORY_AUTOMATION.md Phase 0 | S | Compliance. Nothing merges without the suite and CodeQL green. |
-| 57 | — | `sha_pinning_required: true` and `allowed_actions` narrowed from "all" in the repository's Actions settings. | PLAN_REPOSITORY_AUTOMATION.md Phase 0 | S | Security. Supply chain on a public repository that allows any action today. |
-| 58 | — | `security-review.yml`'s weekly cron switched on. | PLAN_REPOSITORY_AUTOMATION.md Phase 0 | S | Security. A built review path that never runs on a schedule. |
-| 59 | — | A kill-switch SSM parameter every agent path checks before acting, set by one `gh workflow run`. | PLAN_REPOSITORY_AUTOMATION.md Q9 | M | Safety. The only stop today is a session-scoped chat freeze. |
+| 55 | B55 | Google as code, items 8 to 11: the workload identity pool and GitHub provider, Actions authenticating by federation instead of a key, key rotation as code, the analytics Lambdas federating instead of holding a key (`PLAN_GOOGLE_AS_CODE.md`). | PLAN_GOOGLE_AS_CODE.md; row 49 | M | Security. Removes the one long-lived Google key and dates the rotation. |
+| 56 | B56 | `test` and CodeQL as required status checks on ruleset 16057564, once O46 settles how the ruleset gates `main`. | PLAN_REPOSITORY_AUTOMATION.md Phase 0 | S | Compliance. Nothing merges without the suite and CodeQL green. |
+| 57 | B57 | `sha_pinning_required: true` and `allowed_actions` narrowed from "all" in the repository's Actions settings. | PLAN_REPOSITORY_AUTOMATION.md Phase 0 | S | Security. Supply chain on a public repository that allows any action today. |
+| 58 | B58 | `security-review.yml`'s weekly cron switched on. | PLAN_REPOSITORY_AUTOMATION.md Phase 0 | S | Security. A built review path that never runs on a schedule. |
+| 59 | B59 | A kill-switch SSM parameter every agent path checks before acting, set by one `gh workflow run`. | PLAN_REPOSITORY_AUTOMATION.md Q9 | M | Safety. The only stop today is a session-scoped chat freeze. |
 
 ## Tier 2: revenue path (start now, runs weeks to months)
 
