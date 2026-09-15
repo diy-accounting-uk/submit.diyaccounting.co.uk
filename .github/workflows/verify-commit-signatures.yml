@@ -4,14 +4,14 @@
 name: verify-commit-signatures
 run-name: "Commit signature check for PR #${{ github.event.pull_request.number }}"
 
-# Reports whether every commit on a PR carries a verified signature
+# Fails when any commit on a PR lacks a verified signature
 # (commit.verification.verified from the GitHub API), which is the only proof
 # that the author field is not a self-asserted string. See REPORT_GIT_CONFIG.md.
 #
-# Informational only for now: no commit in this repository is signed yet, so
-# failing the build here would block every PR. Once commit signing is on and a
-# few weeks of history carry it, change the last step to exit 1 when any commit
-# is unverified and add this job as a required check on the branch ruleset.
+# Commits authored by github-actions[bot] are exempt: publish.yml's version bump
+# and the alarm-triage PRs are made by the runner, which has no signing key.
+# An unsigned push still lands on its branch; only this PR check goes red.
+# The job is a required status check on the main ruleset.
 
 on:
   pull_request:
@@ -40,7 +40,9 @@ jobs:
 
           commits=$(gh api "repos/${REPO}/pulls/${PR_NUMBER}/commits" --paginate)
           total=$(echo "$commits" | jq 'length')
-          unverified=$(echo "$commits" | jq '[.[] | select(.commit.verification.verified == false)] | length')
+          is_bot='(.commit.author.name == "github-actions[bot]" or .author.login == "github-actions[bot]")'
+          unverified=$(echo "$commits" | jq "[.[] | select(.commit.verification.verified == false and (${is_bot} | not))] | length")
+          exempt=$(echo "$commits" | jq "[.[] | select(.commit.verification.verified == false and ${is_bot})] | length")
 
           echo "$commits" \
             | jq -r '.[] | [.sha[0:8], .commit.author.name, .commit.verification.verified, .commit.verification.reason] | @tsv' \
@@ -49,7 +51,7 @@ jobs:
           {
             echo "### Commit signatures"
             echo
-            echo "${unverified} of ${total} commits on this PR are not verified."
+            echo "${unverified} of ${total} commits on this PR are not verified (${exempt} unsigned github-actions[bot] commits exempt)."
             echo
             echo '```'
             echo -e "sha\tauthor\tverified\treason"
@@ -58,5 +60,6 @@ jobs:
           } >> "$GITHUB_STEP_SUMMARY"
 
           if [ "$unverified" -gt 0 ]; then
-            echo "::notice::${unverified} of ${total} commits on this PR are not signed and verified. Informational only until commit signing is turned on; see REPORT_GIT_CONFIG.md."
+            echo "::error::${unverified} of ${total} commits on this PR are not signed and verified. Sign commits with the registered SSH key (REPORT_GIT_CONFIG.md); only github-actions[bot] commits are exempt."
+            exit 1
           fi
