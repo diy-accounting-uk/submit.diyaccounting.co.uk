@@ -16,11 +16,12 @@ runs), and for Claude Code steps the **Model** a sub-agent should use (Fable > O
 Haiku; the lowest tier that fits). Anything touching code goes through a `claude/*` branch and
 PR; the operator merges.
 
-**Prod runs deployment prod-bd664fe** (PR #214, run 34891994316); PR #216 (b33, f767e65d) deployed 34943326639; PR #217 (b34, f7097236) is deploying; the only
-prod set. **ci**: no set stands; `ci-claud824f`'s self-destruct fired at 23:40 UTC on 2026-09-14
-and left `ci-claud824f-app-ApiStack` DELETE_FAILED (the Cognito authorizer answered
-InternalFailure), which the next `destroy-ci.yml` sweep force-deletes. B34.6b's poll is the only
-b32 item left open.
+**Prod runs deployment prod-f709723** (PR #217's merge, run 34949518154), last-known-good with
+every probe green, but without an OpsStack: that job failed at the runner level (no steps, no
+log) and nothing downstream needs it, so the run carried on; B160 reruns it. prod-f767e65 is being
+destroyed by the same run. **ci**: three sets stand, `ci-claud9f21` (b33, self-destructs 11:20 UTC),
+`ci-claud4326` (b34, 12:24 UTC) and `ci-claudf91c` (b35, last-known-good, 13:52 UTC), all on
+2026-09-15. B34.6b's poll is the only b32 item left open.
 
 The board runs in five sections, in this order: **in flight** (a branch, a pull request or a run
 in motion, each named in the row), **machine-only**, **human and machine**, **human-only**,
@@ -78,6 +79,16 @@ Every item names its model: the lowest tier that fits (Fable > Opus > Sonnet > H
 
 ## Machine-only
 
+- [ ] **B160. The live prod set has no OpsStack.** Run 34949518154 (main, f7097236) promoted
+  `prod-f709723` with every probe green, but its job "deploy OpsStack via deploy-cdk-stack.yml /
+  deploy prod-f709723-app-OpsStack" (104335127427) failed at 09:56 UTC with no steps and no log,
+  and no downstream job needs it, so the alarm-to-issue Lambda and the ops health alarm are not on
+  prod. When the run completes (it is destroying prod-f767e65), rerun its failed jobs:
+  `gh run rerun 34949518154 --failed`; if the rerun fails the same way, dispatch `deploy.yml` on
+  `main`. Then make `deploy-ops` a gate: the last-known-good promotion job should need it, so a
+  set without an OpsStack is never promoted. **Source**: run 34949518154. **Owner**: Claude Code.
+  **Model**: Haiku. **Size**: ~1 file.
+
 - [ ] **B158c. `watch-ci.sh` drops a gating run when a later non-gating run exists.** `all_latest_runs`
   (`scripts/watch-ci.sh:19`) groups by workflow and keeps the newest run over every event, and
   `latest_runs` filters to push and pull_request afterwards, so when a schedule or dispatch run of
@@ -99,8 +110,8 @@ Every item names its model: the lowest tier that fits (Fable > Opus > Sonnet > H
   Lambda, and the lean deploy that puts it there was broken — `scripts/deploy-app.js` hardcoded the
   pre-migration account so `deploy:app-ci` failed at the ECR push; PR #214 fixed that (d7daa69e, the
   account now comes from the active credentials). Left: run
-  `npm run deploy:app-ci -- --deployment <ci-set> --skip-web` (submit-ci profile) against a
-  fresh `deploy.yml` dispatch, since no ci set stands, then poll
+  `npm run deploy:app-ci -- --deployment ci-claudf91c --skip-web` (submit-ci profile; that set
+  stands until 13:52 UTC on 2026-09-15, after that a fresh `deploy.yml` dispatch), then poll
   `GET /api/v1/companies-house/accounts/000004` signed in and read the two gateway log lines. If the
   gateway returns a status, keep 57dfdc17, pin it in the test, and apply the `prod` listing (held as
   unreferenced local commit 946251d4); if it still answers 9999, revert the body to plaintext and
@@ -154,14 +165,12 @@ Every item names its model: the lowest tier that fits (Fable > Opus > Sonnet > H
 
 ## Human-only
 
-- [ ] **B52z. Open the operator dashboard.** PR #217 (f7097236) lists antonyccartwright@gmail.com
-  in `OPERATORS.txt`, so once its deploy of `main` is live the "Operator Dashboard" activity
-  shows on https://submit.diyaccounting.co.uk/ for that sign-in; open it, or open
-  https://submit.diyaccounting.co.uk/operator/dashboard.html. The pass
-  `harsh-noted-plaid-glyph` (run 34938893333, expires 2026-10-15) also redeems on
-  `bundles.html` from the same deploy. **Source**: `PLAN_ONE_STOP_DASHBOARD.md` D1.
-  **Owner**: Operator. **Model**: none.
-
+- [ ] **B52z. Open the operator dashboard.** `OPERATORS.txt` (PR #217) is on the live prod set
+  prod-f709723, so signed in as antonyccartwright@gmail.com the "Operator Dashboard" activity is
+  on https://submit.diyaccounting.co.uk/; open it, or open
+  https://submit.diyaccounting.co.uk/operator/dashboard.html, and say what it shows. The pass
+  `harsh-noted-plaid-glyph` (run 34938893333, expires 2026-10-15) also redeems on `bundles.html`
+  now. **Source**: `PLAN_ONE_STOP_DASHBOARD.md` D1. **Owner**: Operator. **Model**: none.
 - [ ] **O32. View the five walkthrough videos.** The recordings are in `videos/publish.json`
   (`view-liabilities` run 34651931632, `view-payments` 34689643435, `view-penalties` 34689889022,
   `itsa-business-details` 34904243853, `itsa-quarterly-update` 34904726583; `videos/PUBLISH.md`
