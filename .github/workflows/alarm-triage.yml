@@ -91,7 +91,7 @@ jobs:
           TRIAGE_SINCE: ${{ steps.budget-guard.outputs.since }}
         run: |
           set -euo pipefail
-          gh issue comment "$ISSUE_NUMBER" --body "Alarm triage was skipped: the budget of 3 triage runs per 24 hours is already used (${TRIAGE_COUNT} posted a result since ${TRIAGE_SINCE}). Nobody has looked at this alarm yet."
+          gh issue comment "$ISSUE_NUMBER" --repo "${{ github.repository }}" --body "Alarm triage was skipped: the budget of 3 triage runs per 24 hours is already used (${TRIAGE_COUNT} posted a result since ${TRIAGE_SINCE}). Nobody has looked at this alarm yet."
 
       - name: Read the alarm out of the issue body
         if: steps.budget-guard.outputs.proceed == 'true'
@@ -102,7 +102,7 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           set -euo pipefail
-          if [ -z "$ISSUE_BODY" ]; then ISSUE_BODY=$(gh issue view "$ISSUE_NUMBER" --json body -q .body); fi
+          if [ -z "$ISSUE_BODY" ]; then ISSUE_BODY=$(gh issue view "$ISSUE_NUMBER" --repo "${{ github.repository }}" --json body -q .body); fi
           ALARM_NAME=$(printf '%s' "$ISSUE_BODY" | sed -n 's/^\*\*Alarm:\*\* //p' | head -1)
           TIMESTAMP=$(printf '%s' "$ISSUE_BODY" | sed -n 's/^\*\*Timestamp:\*\* //p' | head -1)
           REGION=$(printf '%s' "$ISSUE_BODY" | sed -n 's/^\*\*Region:\*\* //p' | head -1)
