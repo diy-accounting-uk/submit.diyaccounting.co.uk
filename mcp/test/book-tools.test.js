@@ -117,8 +117,8 @@ describe("save_book round trips", () => {
 });
 
 describe("the server", () => {
-  it("registers the two book tools and the VAT derivation", () => {
-    expect(Object.keys(TOOLS).sort()).toEqual(["derive_vat_return", "open_book", "save_book"]);
+  it("registers the two book tools and the two derivations", () => {
+    expect(Object.keys(TOOLS).sort()).toEqual(["derive_micro_entity_accounts", "derive_vat_return", "open_book", "save_book"]);
     expect(SAVE_FORMATS).toEqual(["diya-gl-dir", "diya-gl-zip", "json", "xlsx", "zip"]);
     const server = createServer();
     expect(server).toBeDefined();

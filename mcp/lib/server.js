@@ -14,6 +14,7 @@ import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
 
 import { createSession, openBook, saveBook, SAVE_FORMATS } from "./book-tools.js";
+import { deriveMicroEntityAccounts } from "./accounts-tools.js";
 import { deriveVatReturn } from "./vat-tools.js";
 
 const PACKAGE_JSON = resolve(dirname(fileURLToPath(import.meta.url)), "..", "package.json");
@@ -76,8 +77,16 @@ export const TOOLS = {
     },
     handler: deriveVatReturn,
   },
-  // derive_micro_entity_accounts registers here (M1c); the ITSA derivations
-  // (B11.T9) register through registerItsaTools in ./itsa-tools.js.
+  derive_micro_entity_accounts: {
+    description:
+      "The seven FRS 105 balance-sheet lines the accounts filing takes, from the session's loaded book: the current " +
+      "year from the engine's published balance sheet and the prior year from the book's opening balance, in whole " +
+      "pounds with capital and reserves equal to net assets, plus the period dates, the company number and name, the " +
+      "first director and the employee count. Refuses a book whose published or opening balance sheet does not balance.",
+    inputSchema: {},
+    handler: deriveMicroEntityAccounts,
+  },
+  // The ITSA derivations (B11.T9) register through registerItsaTools in ./itsa-tools.js.
 };
 
 /**
