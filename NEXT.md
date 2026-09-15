@@ -16,7 +16,7 @@ runs), and for Claude Code steps the **Model** a sub-agent should use (Fable > O
 Haiku; the lowest tier that fits). Anything touching code goes through a `claude/*` branch and
 PR; the operator merges.
 
-**Prod runs deployment prod-bd664fe** (PR #214, run 34891994316); PR #216 (batch b33, f767e65d) is deploying to a new prod set; the only
+**Prod runs deployment prod-bd664fe** (PR #214, run 34891994316); PR #216 (b33, f767e65d) deployed 34943326639; PR #217 (b34, f7097236) is deploying; the only
 prod set. **ci**: no set stands; `ci-claud824f`'s self-destruct fired at 23:40 UTC on 2026-09-14
 and left `ci-claud824f-app-ApiStack` DELETE_FAILED (the Cognito authorizer answered
 InternalFailure), which the next `destroy-ci.yml` sweep force-deletes. B34.6b's poll is the only
@@ -39,42 +39,6 @@ Every item names its model: the lowest tier that fits (Fable > Opus > Sonnet > H
 `none` for a human step.
 
 ## In flight
-
-- [ ] **B158b. `watch-ci.sh` repeats the NOT-GATING line every cycle.** B158 added a per-cycle
-  "NOT GATING <branch>: N run(s)" line (`scripts/watch-ci.sh:57`) with no dedup, so a `/watch`
-  monitor re-emits it every 75s and floods the session (the Monitor tool auto-stops a chatty
-  monitor). Emit it once per branch per distinct non-gating set, the way RED and MERGEABLE dedup
-  through the state dir, not every cycle. **Source**: B158 in prod, observed 2026-09-14.
-  On `claude/b34-board` (766908c8); PR #217, its deploy running. **Owner**: Claude Code. **Model**: Haiku. **Size**: ~1 file.
-
-- [ ] **B52ab. The public pass check rejects every email-restricted pass.** `bundles.html`
-  checks a code with the unauthenticated `GET /api/v1/pass?code=` before redeeming, and
-  `validatePass` (`app/services/passService.js:227`) answers `email_required` for any pass with
-  `restrictedToEmailHash` because the GET carries no email, so the page never reaches the
-  authenticated `POST /api/v1/pass` that enforces the match. Every restricted pass type
-  (invited-guest, resident-guest, resident-pro-comp, operator) is unredeemable through the page;
-  seen 07:25 UTC on 2026-09-15 with the operator pass `harsh-noted-plaid-glyph` (three GETs in
-  `prod-bd664fe-app-pass-get`, no POST). Fix: the check answers valid with `emailRestricted: true`
-  when it has no email, `wrong_email` when one mismatches; the POST is unchanged; the page words
-  the invited-email case. On `claude/b34-board` (cf8ef7e9); PR #217, its deploy running. **Source**:
-  B52z, 2026-09-15. **Owner**: Claude Code. **Model**: Sonnet. **Size**: ~3 files.
-
-- [ ] **B52aa. An operator list in the repository grants the dashboard activity.** Operator,
-  2026-09-15, verbatim: "I want my email antonyccartwright@gmail.com committed to the repository
-  as an operator list (.txt in the root, 1 line per operator) and a logged in user with a login
-  email matching an email on the operator list sees the operator dashboard as an activity in
-  https://submit.diyaccounting.co.uk/ with all the others". Today the `operator-dashboard`
-  activity (`web/public/submit.catalogue.toml:521`, `display = "on-entitlement"`, bundle
-  `operator`) shows only after an `operator` pass is redeemed. Build: `OPERATORS.txt` at the
-  repo root, one email per line, first line `antonyccartwright@gmail.com`; the deploy carries it
-  to the Lambdas (an env var or a file in the image, whichever the existing catalogue loading
-  already does); the bundle service grants the `operator` bundle to a signed-in user whose ID
-  token email matches a line, case-insensitively, so `GET /api/v1/bundle` lists it and the
-  activities page shows "Operator Dashboard" beside Submit VAT, the five VAT views, the three
-  Companies House activities, receipts, the two pass generators and Learn; the
-  `/api/v1/operator/*` and `operator/dashboard.html` entitlement check reads the same match. Unit
-  tests for the match and the grant; one browser test that a listed email sees the activity.
-  **Source**: operator, 2026-09-15. Landed on `claude/b34-board` (d44a0499); PR #217, its deploy running. **Owner**: Claude Code. **Model**: Sonnet. **Size**: ~5 files.
 
 ## Machine-only
 
@@ -181,6 +145,14 @@ Every item names its model: the lowest tier that fits (Fable > Opus > Sonnet > H
 
 ## Human-only
 
+- [ ] **B52z. Open the operator dashboard.** PR #217 (f7097236) lists antonyccartwright@gmail.com
+  in `OPERATORS.txt`, so once its deploy of `main` is live the "Operator Dashboard" activity
+  shows on https://submit.diyaccounting.co.uk/ for that sign-in; open it, or open
+  https://submit.diyaccounting.co.uk/operator/dashboard.html. The pass
+  `harsh-noted-plaid-glyph` (run 34938893333, expires 2026-10-15) also redeems on
+  `bundles.html` from the same deploy. **Source**: `PLAN_ONE_STOP_DASHBOARD.md` D1.
+  **Owner**: Operator. **Model**: none.
+
 - [ ] **O32. View the five walkthrough videos.** The recordings are in `videos/publish.json`
   (`view-liabilities` run 34651931632, `view-payments` 34689643435, `view-penalties` 34689889022,
   `itsa-business-details` 34904243853, `itsa-quarterly-update` 34904726583; `videos/PUBLISH.md`
@@ -254,13 +226,6 @@ Every item names its model: the lowest tier that fits (Fable > Opus > Sonnet > H
   none.
 
 ## Blocked
-
-- [ ] **B52z. Redeem the operator pass and open the dashboard.** The pass is generated (run
-  34938893333, `harsh-noted-plaid-glyph`, expires 2026-10-15); redeeming it fails until B52ab is
-  on prod (or B52aa lists the email). Then open
-  https://submit.diyaccounting.co.uk/bundles.html?pass=harsh-noted-plaid-glyph signed in, and open
-  https://submit.diyaccounting.co.uk/operator/dashboard.html. **Source**: `PLAN_ONE_STOP_DASHBOARD.md`
-  D1. **Owner**: Operator. **Model**: none. Blocked on B52ab reaching prod.
 
 - [ ] **B34.7. Run and fix the filing suites' sandbox sign-in.** Batch 9 (6957651c) carries
   the suites' sandbox sign-in with the authenticator step, off by default: `deploy.yml` and
