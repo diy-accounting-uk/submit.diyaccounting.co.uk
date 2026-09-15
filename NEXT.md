@@ -38,7 +38,78 @@ Every item names its model: the lowest tier that fits (Fable > Opus > Sonnet > H
 
 ## In flight
 
+- [ ] **B17v.2. Publish the walkthrough videos.** The five recordings are on the channel, unlisted,
+  since 2026-09-15 (PR #225 records the ids in `videos/publish.json`; its deploy is running). After
+  O32 names which go public, the operator runs `npm run video:publish -- --public` (it flips every
+  uploaded entry; an entry that must stay unlisted is set `publish: false` first). **Source**:
+  BACKLOG 17b, 17c. **Owner**: Claude Code, then Operator. **Model**: Haiku. **Size**: ~1 file.
+
 ## Machine-only
+
+- [ ] **B166. `verify-commit-signatures.yml` fails on an unsigned commit.** Commit signing is on
+  for this machine since 2026-09-15 (SSH key `id_antony_polycode_mbp_2025` registered as a signing
+  key; `commit.gpgsign true`, `gpg.format ssh`; f5fe7039 on PR #225 is the first signed commit).
+  Once that PR's `verify-commit-signatures` run reports it verified, flip the workflow's last step
+  from reporting to failing on any commit whose `verification.verified` is false, and make the check
+  required on `main` (a ruleset edit, the operator's or `gh api` with admin scope). **Source**:
+  `REPORT_GIT_CONFIG.md`; O37. **Owner**: Claude Code, then Operator for the ruleset. **Model**:
+  Haiku. **Size**: ~1 file.
+
+- [ ] **B17w. The caption upload races YouTube's indexing.** `scripts/youtube-upload.js` uploads the
+  caption right after the video and only then records the `videoId` in `videos/publish.json`; on
+  2026-09-15 view-payments' caption call answered 404 `videoNotFound` a second after the upload, the
+  script threw, and the id (R9AEUYyeu88) was not recorded, so a re-run would have uploaded the video
+  twice. Record the id before the caption step, and retry the caption on 404 with a short backoff
+  (three tries over ~30 s); unit test both. **Source**: B17v.2, 2026-09-15. **Owner**: Claude
+  Code. **Model**: Haiku. **Size**: ~2 files.
+
+- [ ] **B165. The support form's Lambda gets its own GitHub token secret.** `AccountStack.java:554`
+  hands `supportTicketPost` the alarm-issue secret (`{env}/submit/github/issue_bot_token`, from the
+  GitHub secret `ISSUE_BOT_TOKEN`), so one token would need issue rights on both repositories. The
+  operator wants the support form able to write only to `spreadsheets.diyaccounting.co.uk`. Add a
+  second secret `{env}/submit/github/support_bot_token` filled from `SUPPORT_BOT_TOKEN` in
+  `deploy-environment.yml`'s create-secrets job (same put-secret-with-rotation-tag shape), a
+  `supportGithubTokenSecretArn` prop through `SubmitApplication.java` to `AccountStack`, the support
+  Lambda's `GITHUB_TOKEN_SECRET_ARN` pointing at it with `secretsmanager:GetSecretValue` on that ARN
+  only, and the CDK test. Until O45 fills the secret, the create-secrets step must tolerate an
+  empty value the way it does for other optional secrets. **Source**: O45; operator, 2026-09-15.
+  **Owner**: Claude Code. **Model**: Sonnet. **Size**: ~4 files.
+
+- [ ] **B17v.3. A walkthrough-videos page off the About page.** Operator, 2026-09-15: a button on
+  https://submit.diyaccounting.co.uk/about.html linking to a new page that lists the embedded
+  YouTube videos, each with a short blurb saying what it shows, each under an anchor with a share
+  link to that section. Build: `web/public/videos.html` in the shared header and footer, one section
+  per `videos/publish.json` entry that has a `videoId` (an unlisted video embeds), `id` the entry's
+  id, an `<iframe>` embed of `https://www.youtube-nocookie.com/embed/<videoId>`, the title as the
+  heading, the first two sentences of the description as the blurb, and a "Link to this video"
+  anchor `videos.html#<id>` with a copy button; the page reads the manifest at build (copy
+  `videos/publish.json` into `web/public/videos/` the way the catalogue is copied) so a new upload
+  needs no page edit; a "Watch the walkthroughs" button on `about.html`; a browser test that the
+  page lists every entry with a `videoId` and the anchors resolve. Sandbox recordings say
+  "(sandbox)" in their title already. **Source**: operator, 2026-09-15. **Owner**: Claude Code.
+  **Model**: Sonnet. **Size**: ~4 files.
+
+- [ ] **M1a. The submission MCP package skeleton.** `PLAN_SUBMISSION_MCP.md` M1, first chunk:
+  `mcp/` with its own `package.json` (name `@diy-accounting-uk/submit-mcp`, the MCP SDK, a
+  dependency on the published `@diy-accounting-uk/diya-gl` 1.0.0), the stdio transport, and the
+  tools `open_book` and `save_book` over the filesystem; unit tests that open the BrickWork Pro Ltd
+  and Precision Code Ltd example books (`ls fixtures | grep -i book` and the diya-gl package's
+  examples say where they are) and round-trip them. Assumption to confirm: the package lives in
+  this repository under `mcp/` and depends on the npm package, not a `file:` sibling. **Source**:
+  `PLAN_SUBMISSION_MCP.md` M1; BACKLOG 51. **Owner**: Claude Code. **Model**: Sonnet. **Size**:
+  ~6 files.
+
+- [ ] **M1b. `derive_vat_return` from a diya-gl book.** The nine VAT boxes from a book's journal
+  and its VAT codes, as an MCP tool in `mcp/`, with the mapping written as a table in
+  `PLAN_SUBMISSION_MCP.md` first (Opus) and unit tests over both example books against the figures
+  their published reports show. **Source**: `PLAN_SUBMISSION_MCP.md` M1. **Owner**: Claude Code.
+  **Model**: Opus for the mapping, Sonnet for the tool. Blocked on M1a. **Size**: ~3 files.
+
+- [ ] **M1c. `derive_micro_entity_accounts` from a diya-gl book.** The seven FRS 105 balance-sheet
+  lines from a book, passed through the existing `buildMicroEntityAccounts` and the public validator
+  script, with unit tests over BrickWork Pro's example. **Source**: `PLAN_SUBMISSION_MCP.md` M1.
+  **Owner**: Claude Code. **Model**: Opus for the mapping, Sonnet for the tool. Blocked on M1a.
+  **Size**: ~3 files.
 
 - [ ] **B52y.2. Check the nightly snapshot after the SecurityLakeStack reaches prod.** PR #218
   (9b695aab) adds the `deploy-security-lake` job and the per-observation null; prod's environment
@@ -101,16 +172,6 @@ Every item names its model: the lowest tier that fits (Fable > Opus > Sonnet > H
   **Size**: ~1 file.
 ## Human and machine
 
-- [ ] **B137. `uniqueReference` identifies the user, not the authentication event.** In the
-  `Gov-Client-Multi-Factor` header, `uniqueReference` is a SHA-256 of `sub + ":" + factorType`, so
-  it is stable per user per factor type by design. HMRC's spec expects a reference identifying the
-  authentication **event**. They have not flagged it and it is no part of the current advisory, so
-  this is a separate reading of the spec rather than a defect they have raised. O28's step 2b, which
-  touched the same code, is on `main` (#198). The operator decides whether to change it; then the
-  change in `buildFraudHeaders.js` with its unit test.
-  **Source**: `../REPORT_HMRC_HEADER_ADVISORIES.md`. **Owner**: Operator decides, Claude Code
-  changes. **Model**: Sonnet. **Size**: ~1 file.
-
 - [ ] **O28. Send `Gov-Client-Multi-Factor` on every request: mandate MFA in the pool.** Every
   monthly advisory HMRC has raised is this header missing (`../REPORT_HMRC_HEADER_ADVISORIES.md`).
   Step 2b is on main (#198, b0e3d2be): the browser sends its Cognito ID token as
@@ -131,12 +192,13 @@ Every item names its model: the lowest tier that fits (Fable > Opus > Sonnet > H
 
 ## Human-only
 
-- [ ] **O32. View the five walkthrough videos.** The recordings are in `videos/publish.json`
-  (`view-liabilities` run 34651931632, `view-payments` 34689643435, `view-penalties` 34689889022,
-  `itsa-business-details` 34904243853, `itsa-quarterly-update` 34904726583; `videos/PUBLISH.md`
-  step 1 downloads them). Watch each and say which can go up and what reads wrong. **Source**:
-  BACKLOG 17b, 17c. **Owner**: Operator. **Model**: none.
-
+- [ ] **O32. View the five walkthrough videos.** Unlisted on the channel since 2026-09-15:
+  view-liabilities https://youtu.be/xUyGjigMqRU, view-payments https://youtu.be/R9AEUYyeu88,
+  view-penalties https://youtu.be/HrEtYrsck7c, itsa-business-details https://youtu.be/4cc-VxzjmnQ,
+  itsa-quarterly-update https://youtu.be/sDnKOsbB6RA. Watch each and say which can go public and
+  what reads wrong; the three VAT read pages each answered "No liabilities/payments/penalties found"
+  from HMRC's sandbox, so the walkthrough shows the search, not a result. **Source**: BACKLOG 17b,
+  17c. **Owner**: Operator. **Model**: none.
 - [ ] **O17. Register the Companies House sandbox test user and set four ci values.**
   Companies House has no create-test-user API, so the operator registers a throwaway account
   on identity-sandbox.company-information.service.gov.uk with an authenticator second factor
@@ -181,31 +243,17 @@ Every item names its model: the lowest tier that fits (Fable > Opus > Sonnet > H
   the PolyForm licence files are on main and on prod since prod-318271f. **Source**:
   `PLAN_LICENSING_UPLIFT_SUBMIT.md` H-LU-9. **Owner**: Operator. **Model**: none.
 
-- [ ] **O45. A token that can write issues in the spreadsheets repository.** The support form's
-  page links, its Lambda's `SUPPORT_GITHUB_REPO` and the spreadsheets `support.md` template are all
-  on the two mains (PR #198, spreadsheets PR #109). The Lambda's token
-  (`{env}/submit/github/issue_bot_token`, read through `OPS_GITHUB_TOKEN_SECRET_ARN`) is scoped to
-  submit, so the form cannot post there until it is replaced. Two named alternatives: a fine-grained
-  PAT covering both repositories as the interim, or O38's `diya-ops` app installed on both as the
-  destination. Either way the value goes on the `ci` and `prod` GitHub environments under the
-  existing secret name and reaches Secrets Manager through `deploy-environment.yml`. **Source**:
-  B135. **Owner**: Operator. **Model**: none.
-
-- [ ] **O37. Turn on SSH commit signing.** `REPORT_GIT_CONFIG.md` settles what the config should
-  be and why: keep `pull.rebase=true`, because a rebase re-signs each replayed commit when
-  `commit.gpgsign` is a standing default rather than a per-commit flag, and keep
-  `rerere.enabled=true`, whose guard is `rerere.autoupdate` staying unset so a replayed resolution
-  still pauses for review. What is left is three global lines and registering the key: set
-  `gpg.format ssh`, `user.signingkey` and `commit.gpgsign true`, and add the SSH key as a signing
-  key on the GitHub account. One global config covers all six repositories, since each has one
-  committer. `verify-commit-signatures.yml` is on the batch and reports each commit's
-  `verification.verified` in the job summary without failing, because no commit is signed yet;
-  flip its last step to fail and make it a required ruleset check once signing is routine. This
-  is what every auto-merge policy in `PLAN_REPOSITORY_AUTOMATION.md` rests on. **Source**:
-  `REPORT_GIT_CONFIG.md`; `REPORT_IDENTITY_AUDIT.md` section 9. **Owner**: Operator. **Model**:
-  none.
-
 ## Blocked
+
+- [ ] **O45. A token for the support form, scoped to the spreadsheets repository only.** After B165
+  gives the support Lambda its own secret: create a fine-grained PAT at
+  https://github.com/settings/personal-access-tokens/new (resource owner `diy-accounting-uk`,
+  repository `spreadsheets.diyaccounting.co.uk` only, permissions Issues read/write and Metadata
+  read, expiry up to a year) and put it on the `ci` and `prod` environments as `SUPPORT_BOT_TOKEN`
+  (https://github.com/diy-accounting-uk/submit.diyaccounting.co.uk/settings/environments); the next
+  `deploy-environment.yml` run carries it to Secrets Manager. The alarm-issue token
+  (`ISSUE_BOT_TOKEN`, submit only) is unchanged. O38's `diya-ops` app replaces the PAT later.
+  **Source**: B135; operator, 2026-09-15. **Owner**: Operator. **Model**: none. Blocked on B165.
 
 - [ ] **B34.6b. Companies House accounts filing: the sandbox proof.** Submission 000004 (presenter
   E0000052288, company 06846849, 2026-09-13 19:04 UTC) was ACCEPTED by the XML Gateway test
@@ -265,36 +313,24 @@ Every item names its model: the lowest tier that fits (Fable > Opus > Sonnet > H
   **Source**: `.github/workflows/agentic-lib-*.yml`; run 34716604299.
   **Owner**: Claude Code. **Model**: Sonnet. Blocked on the operator lifting the 2026-09-12 halt. **Size**: ~3 files.
 
-- [ ] **B11.T9. ITSA phase 2: the DIYA-GL-to-submission path.** `PLAN_ITSA_PHASE_2.md` T9: the
-  MCP tools `derive_itsa_quarterly_update` and `derive_itsa_annual_submission` in the MCP
-  package, and an import control on `annualSubmission.html` that fills the form from a book.
-  The spreadsheets side's T8 design finds the shipped self-employed template cannot source 31
-  of the 55 ITSA field slots, so the derivations omit those fields; this row must send an
-  omission, never a zero, for a field the book does not carry. Two findings from their side carry
-  SED ids and one changes what this row must do: SED-10 says the self-employed field set changes by
-  tax year — `sa103-mtd-mapping.json` records two allowances gone from 2025-26, an adjustment gone
-  from 2026-27 and two fields added — and their `se-derivations.js` reads none of it, so a book for
-  a year past 2024-25 can carry a field HMRC no longer accepts. The figures are year-agnostic; only
-  the field set moves. Either wait for their SED-10 or filter by year on this side, and say which.
-  SED-2 is theirs: fourteen disallowable categories, seven annual fields and four adjustments the
-  shipped template cannot source at all, which arrive omitted rather than zeroed.
-  **Source**: BACKLOG 11; `PLAN_ITSA_PHASE_2.md` T9. **Owner**: Claude Code. **Model**:
-  Sonnet. The spreadsheets side's `app/lib/calculators/se-derivations.js` is on their main, so the
-  T8 half of the blocker is gone; blocked on `PLAN_SUBMISSION_MCP.md` M1 (no `mcp/` package exists
-  yet; BACKLOG row 51). **Size**: ~4 files.
-
+- [ ] **B11.T9. ITSA phase 2: the DIYA-GL-to-submission path.** Two chunks after M1a: **T9a**, the
+  MCP tools `derive_itsa_quarterly_update` (a period's figures in a dated year, a running total in a
+  cumulative one, from the same book, calling whichever derivation the tax year names, sending an
+  omission for any of the 31 field slots the template cannot source, never a zero) and
+  `derive_itsa_annual_submission`, over the spreadsheets side's `app/lib/calculators/se-derivations.js`
+  (on their main); **T9b**, an import control on `annualSubmission.html` that fills the form from a
+  book through the same derivation. SED-10: the self-employed field set changes by tax year
+  (`sa103-mtd-mapping.json`: two allowances gone from 2025-26, an adjustment gone from 2026-27, two
+  fields added) and their `se-derivations.js` reads none of it, so T9a filters the field set by tax
+  year on this side unless the operator says to wait for their SED-10. **Source**: BACKLOG 11;
+  `PLAN_ITSA_PHASE_2.md` T9. **Owner**: Claude Code. **Model**: Sonnet. Blocked on M1a. **Size**:
+  ~5 files.
 - [ ] **B70.LU15. Licensing: the brand package.** Pin `@diy-accounting-uk/brand`, copy assets
   and tokens at build, import the tokens, delete the local logo, favicon and token copies;
   the footer, favicon and title conventions read from the words file. **Source**:
   `PLAN_LICENSING_UPLIFT_SUBMIT.md` LU-15. **Owner**: Claude Code. **Model**: Sonnet.
   Blocked on the brand package existing, now planned in the spreadsheets repository's
   `PLAN_DIYACCOUNTING_BRAND.md`. **Size**: ~6 files.
-
-- [ ] **B17v.2. Publish the walkthrough videos.** After O32: fetch the recordings from their
-  capture runs, upload them unlisted with `video-publish`, then the operator runs
-  `npm run video:publish -- --public`. The VAT read-page videos publish beside the three VAT
-  ones; the accounts and ITSA videos publish as sandbox previews. **Source**: BACKLOG 17b,
-  17c. **Owner**: Claude Code, then Operator. **Model**: Haiku. Blocked on O32. **Size**: ~1 file.
 
 - [ ] **B11.T10. ITSA phase 2: the recognition pack.** `PLAN_ITSA_PHASE_2.md` T10:
   `_developers/hmrc/ITSA_PRODUCTION_APPROVALS_CHECKLIST.md`, an ITSA pass over the two
@@ -304,6 +340,17 @@ Every item names its model: the lowest tier that fits (Fable > Opus > Sonnet > H
   **Owner**: Claude Code, then Operator. **Model**: Haiku. Blocked on B11.T7r, B11.T21 and
   B11.T22. **Size**: ~3 files.
 
+
+
+- [ ] **O45. A token for the support form, scoped to the spreadsheets repository only.** After B165
+  gives the support Lambda its own secret: create a fine-grained PAT at
+  https://github.com/settings/personal-access-tokens/new (resource owner `diy-accounting-uk`,
+  repository `spreadsheets.diyaccounting.co.uk` only, permissions Issues read/write and Metadata
+  read, expiry up to a year) and put it on the `ci` and `prod` environments as `SUPPORT_BOT_TOKEN`
+  (https://github.com/diy-accounting-uk/submit.diyaccounting.co.uk/settings/environments); the next
+  `deploy-environment.yml` run carries it to Secrets Manager. The alarm-issue token
+  (`ISSUE_BOT_TOKEN`, submit only) is unchanged. O38's `diya-ops` app replaces the PAT later.
+  **Source**: B135; operator, 2026-09-15. **Owner**: Operator. **Model**: none. Blocked on B165.
 
 
 ## Discipline
