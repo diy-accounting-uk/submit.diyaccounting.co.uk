@@ -208,10 +208,8 @@ Every item names its model: the lowest tier that fits (Fable > Opus > Sonnet > H
 
 - [ ] **B52z. Issue the operator pass and open the dashboard.** The `operator` pass type is on
   main (PR #207) and on prod since prod-5ca7bca. The operator's half:
-  ```
-  ! gh workflow run generate-pass.yml -f pass-type=operator -f email=<the email you sign in to submit with> -f environment=prod
-  ```
-  redeem the QR from the run's artifact, and open
+  the pass is generated (run 34938893333, artifact `passes-operator-34938893333`, expires
+  2026-10-15): redeem its QR, and open
   https://submit.diyaccounting.co.uk/operator/dashboard.html. **Source**: `PLAN_ONE_STOP_DASHBOARD.md`
   D1. **Owner**: Operator. **Model**: none.
 
