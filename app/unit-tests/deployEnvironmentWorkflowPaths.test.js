@@ -20,8 +20,8 @@ const STACKS_DIR = "infra/main/java/co/uk/diyaccounting/submit/stacks/";
 
 // EcrUE1Stack is the same EcrStack construct instantiated a second time for us-east-1 (see
 // SubmitEnvironment.java and SubmitSharedNames.java) -- it has no EcrUE1Stack.java of its own, so
-// its watched source is EcrStack.java.
-// SecurityLakeStack lives in the security/ subpackage, covered by the security/** glob.
+// its watched source is EcrStack.java. SecurityLakeStack.java sits under the stacks/security/
+// subdirectory rather than directly under stacks/, unlike every other stack here.
 const SOURCE_FILE_OVERRIDES = {
   EcrUE1Stack: "EcrStack.java",
   SecurityLakeStack: "security/SecurityLakeStack.java",
