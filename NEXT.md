@@ -16,7 +16,7 @@ runs), and for Claude Code steps the **Model** a sub-agent should use (Fable > O
 Haiku; the lowest tier that fits). Anything touching code goes through a `claude/*` branch and
 PR; the operator merges.
 
-**Prod runs deployment prod-bd664fe** (PR #214's merge, batch b32, run 34891994316); the only
+**Prod runs deployment prod-bd664fe** (PR #214, run 34891994316); PR #216 (batch b33, f767e65d) is deploying to a new prod set; the only
 prod set. **ci**: no set stands; `ci-claud824f`'s self-destruct fired at 23:40 UTC on 2026-09-14
 and left `ci-claud824f-app-ApiStack` DELETE_FAILED (the Cognito authorizer answered
 InternalFailure), which the next `destroy-ci.yml` sweep force-deletes. B34.6b's poll is the only
@@ -39,38 +39,6 @@ Every item names its model: the lowest tier that fits (Fable > Opus > Sonnet > H
 `none` for a human step.
 
 ## In flight
-
-- [ ] **B156. The alarm-triage skip comment runs `gh` without a repository.** Run 34862119217
-  (15:26 UTC on 2026-09-14, issue #212) failed at "Comment that triage was skipped": the `triage`
-  job has no checkout, so `gh issue comment` (`.github/workflows/alarm-triage.yml:94`) cannot infer
-  the repository and dies with "not a git repository", and the issue gets no comment, which is the
-  case the step exists for. Add `--repo "$GITHUB_REPOSITORY"`. **Source**: run 34862119217.
-  In flight on `claude/b33-board`, PR #216, its deploy running. **Owner**: Claude Code. **Model**: Haiku. **Size**: ~1 file.
-
-- [ ] **B159. The scheduled probe yields to a deploy in progress on main.** The 15:16 UTC
-  `probe-test.yml` schedule on 2026-09-14 ran while `deploy.yml` 34856840995 was moving the apex
-  to `prod-658f986`; the token exchange answered 403 for the seconds the origins disagreed, and
-  the failure raised two alarm issues, an incident and two triage runs before the re-run passed.
-  In `probe-test.yml`'s schedule path, read `gh run list --workflow deploy.yml --branch main
-  --status in_progress`; when a deploy is running, wait for it (a sleep loop with a ceiling) or
-  end the run green with a "deferred to the deploy's probes" summary. **Source**:
-  REPORT_SESSION_o+o5Wl_2026-09-14.md. In flight on `claude/b33-board`, PR #216, its deploy running. **Owner**: Claude Code. **Model**: Sonnet. **Size**: ~1 file.
-
-- [ ] **B154. `youtube-check.yml` compares channel handles case-sensitively.** Its first
-  scheduled run (34848766784, 13:21 UTC on 2026-09-14) failed: the stored refresh token resolves
-  to `@diyaccountingsubmit`, `google/youtube.toml` declares `@DIYAccountingSubmit`, and
-  `scripts/youtube-upload.js`'s comparison (around line 363) treats those as different channels.
-  YouTube handles are case-insensitive; compare them so, with a unit test. **Source**: run
-  34848766784. In flight on `claude/b33-board`, PR #216, its deploy running. **Owner**: Claude Code. **Model**: Haiku. **Size**: ~2 files.
-
-- [ ] **B153. The prod drift check fails on API Gateway's own normalisation.** The first
-  Monday run on the new slot (34847862007, 13:13 UTC on 2026-09-14) reports
-  `prod-b364438-app-ApiStack` DRIFTED: API Gateway stores the CORS `ExposeHeaders` added by
-  f7654464 (`Location`, `Retry-After`, `ETag`) in lowercase, and the default stage's access-log
-  `DestinationArn` without the `:*` suffix `LogGroup.getLogGroupArn()` appends
-  (`ApiStack.java:169` and `:247`). Write both the way API Gateway stores them, with the CDK test,
-  so the template matches. **Source**: run 34847862007. In flight on `claude/b33-board`, PR #216, its deploy running. **Owner**: Claude Code. **Model**: Haiku.
-  **Size**: ~2 files.
 
 - [ ] **B158b. `watch-ci.sh` repeats the NOT-GATING line every cycle.** B158 added a per-cycle
   "NOT GATING <branch>: N run(s)" line (`scripts/watch-ci.sh:57`) with no dedup, so a `/watch`
