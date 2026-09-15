@@ -185,7 +185,7 @@ export async function ingestHandler(event, context) {
       return http500ServerErrorResponse({
         request,
         message: "Self-destruct sequence completed with errors",
-        data: { results, timestamp: new Date().toISOString() },
+        error: { results, timestamp: new Date().toISOString() },
       });
     } else {
       console.log("Self-destruct sequence completed");
@@ -203,7 +203,7 @@ export async function ingestHandler(event, context) {
     return http500ServerErrorResponse({
       request,
       message: "Internal Server Error in self-destruct ingestHandler",
-      data: { error: error.message },
+      error: { error: error.message },
     });
   }
 }
@@ -257,7 +257,7 @@ async function deleteStackIfExistsAndWait(client, context, stackName, isSelfDest
   if (!isSelfDestruct) {
     const deleted = await waitForStackDeletion(client, context, stackName, 600); // 10 min timeout
     if (!deleted) {
-      console.log(`Stack ${stackName} did not delete in time.`);
+      throw new Error(`Stack ${stackName} was not deleted`);
     }
     return deleted;
   }
@@ -274,6 +274,7 @@ function addStackNameIfPresent(stackList, stackName) {
 async function waitForStackDeletion(client, context, stackName, maxWaitSeconds) {
   let waited = 0;
   const interval = 10; // seconds
+  let forced = false;
 
   while (waited < maxWaitSeconds) {
     // Check remaining time
@@ -287,9 +288,18 @@ async function waitForStackDeletion(client, context, stackName, maxWaitSeconds) 
       const { DescribeStacksCommand } = await import("@aws-sdk/client-cloudformation");
       const resp = await client.send(new DescribeStacksCommand({ StackName: stackName }));
       const status = resp.Stacks?.[0]?.StackStatus;
+      if (status === "DELETE_FAILED" && forced) {
+        console.log(`Stack ${stackName} is DELETE_FAILED after a forced delete, giving up.`);
+        return false;
+      }
       if (status === "DELETE_FAILED") {
-        console.log(`Stack ${stackName} entered DELETE_FAILED, retrying with --retain-resources`);
-        await retryDeleteWithRetainResources(client, stackName);
+        // The same path destroy-ci.yml's sweep takes: one forced delete, which skips the
+        // resources the first delete could not remove. The earlier retain-resources retry
+        // needed cloudformation:ListStackResources, which this Lambda's role never had, so it
+        // was denied on every poll and the stack stayed DELETE_FAILED until the sweep.
+        console.log(`Stack ${stackName} entered DELETE_FAILED, retrying with FORCE_DELETE_STACK`);
+        await forceDeleteStack(client, stackName);
+        forced = true;
       } else {
         console.log(`Stack ${stackName} status: ${status}, waiting...`);
       }
@@ -309,30 +319,12 @@ async function waitForStackDeletion(client, context, stackName, maxWaitSeconds) 
   return false;
 }
 
-async function retryDeleteWithRetainResources(client, stackName) {
-  const { DeleteStackCommand, ListStackResourcesCommand } = await import("@aws-sdk/client-cloudformation");
-
+async function forceDeleteStack(client, stackName) {
+  const { DeleteStackCommand } = await import("@aws-sdk/client-cloudformation");
   try {
-    // Find resources that failed to delete
-    const resources = await client.send(new ListStackResourcesCommand({ StackName: stackName }));
-    const failedResources = (resources.StackResourceSummaries || [])
-      .filter((r) => r.ResourceStatus === "DELETE_FAILED")
-      .map((r) => r.LogicalResourceId);
-
-    if (failedResources.length === 0) {
-      console.log(`No DELETE_FAILED resources found in ${stackName}, retrying plain delete`);
-      await client.send(new DeleteStackCommand({ StackName: stackName }));
-    } else {
-      console.log(`Retaining failed resources in ${stackName}: ${failedResources.join(", ")}`);
-      await client.send(
-        new DeleteStackCommand({
-          StackName: stackName,
-          RetainResources: failedResources,
-        }),
-      );
-    }
+    await client.send(new DeleteStackCommand({ StackName: stackName, DeletionMode: "FORCE_DELETE_STACK" }));
   } catch (error) {
-    console.log(`Error retrying delete for ${stackName}: ${error.message}`);
+    console.log(`Error forcing delete of ${stackName}: ${error.message}`);
   }
 }
 
