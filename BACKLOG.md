@@ -24,15 +24,16 @@ truthfully on its own. Human-only steps are briefed at the workspace root in
 `../BRIEF_OPERATOR_TASKS_*.md` files carry the detail behind its tasks.
 
 - **Cool-down is on since 2026-09-15 17:34 UTC** (`NEXT.md`'s marker). Prod runs prod-70b0a8e
-  (PR #222's deploy), the only prod set; ci has `ci-claud727f` until its self-destruct.
+  (PR #222's deploy), the only prod set; no ci set stands (`ci-claud727f`'s `ApiStack` is
+  DELETE_FAILED until the 02:34 UTC `destroy-ci.yml` sweep on 2026-09-16).
 - **Six batches merged on 2026-09-15** (PRs #216, #217, #218, #220, #221, #222): the four failed
   runs of 2026-09-14, the operator list (`OPERATORS.txt`) and the pass-check fix, the alarm
   cluster (CIS filter, one issue per alarm, the SecurityLakeStack deploy), the promotion gate on
   the OpsStack, the watch script's three defects, and the status poll's presenter id back to
-  plaintext. PR #225 (b39, the five recordings unlisted on the channel) is green and unmerged.
+  plaintext. PR #225 (b39, the five recordings unlisted on the channel) merged at 19:25 UTC.
 - **Open alarm issues**: #208 (the nightly snapshot; the tables now exist on prod, checked after
-  the 03:15 UTC run by B52y.2), #206 (CIS sign-in filter, fixed on prod, closes on the next state
-  change).
+  the 03:15 UTC run by B52y.2), #223 and #224 (the operator snapshot's 500, NEXT.md B52v; both
+  alarms OK since 16:55 UTC).
 - **Both `/api/v1/books` and `/api/v1/diya-gl` are permanent** by operator decision of 2026-09-10.
   The old prefix is never retired and the spreadsheets repository changes nothing; row 51's naming
   work is down to the S3 bucket.

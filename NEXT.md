@@ -19,7 +19,8 @@ PR; the operator merges.
 **Prod runs deployment prod-70b0a8e** (PR #222, run 34984108471), promoted under the `deploy-ops`
 gate; it is the only prod set. **ci**: no set stands; `ci-claud727f`'s
 self-destruct fired at 18:22 UTC on 2026-09-15 and left its `ApiStack` DELETE_FAILED on the Cognito
-authorizer, which the next `destroy-ci.yml` sweep force-deletes (parked in `PARKED.md`).
+authorizer, which the next `destroy-ci.yml` sweep (02:34 UTC on 2026-09-16) force-deletes (parked in
+`PARKED.md`).
 
 The board runs in five sections, in this order: **in flight** (a branch, a pull request or a run
 in motion, each named in the row), **machine-only**, **human and machine**, **human-only**,
@@ -62,7 +63,8 @@ and stop. One branch is driven green at a time. Lifted only by the operator in t
   0890740e-eaf3-4fce-8314-96a0b8e93bf8, "Salt not initialized. Call initializeSalt() in your Lambda
   handler". The 500 raised issues #224 (`prod-app-api-5xx`) and #223
   (`prod-app-account-stack-health`) at 16:40 UTC, the first issues the alarm-to-issue Lambda opened
-  since B157. Add the call at the top of the handler with a unit test that the handler initialises
+  since B157; both alarms returned to OK at 16:55 UTC and the issues stay open until the fix lands.
+  Add the call at the top of the handler with a unit test that the handler initialises
   the salt before enforcing; check the other `/api/v1/operator/*` handlers for the same omission.
   Closes #223, #224. **Source**: operator, 2026-09-15; issues #223, #224. **Owner**: Claude Code. **Model**: Haiku. **Size**: ~2 files.
 
