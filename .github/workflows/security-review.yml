@@ -24,9 +24,8 @@ on:
         required: false
         default: true
         type: boolean
-  # Uncomment for scheduled weekly security reviews
-  # schedule:
-  #   - cron: '0 6 * * 1'  # Weekly Monday 6:00 AM UTC
+  schedule:
+    - cron: '0 6 * * 1' # Monday 06:00 UTC; the env block below supplies every input the schedule lacks
 
 env:
   TARGET_BRANCH: ${{ inputs.target_branch || 'main' }}
