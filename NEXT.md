@@ -99,18 +99,6 @@ Every item names its model: the lowest tier that fits (Fable > Opus > Sonnet > H
   `PLAN_SUBMISSION_MCP.md` M1; BACKLOG 51. **Owner**: Claude Code. **Model**: Sonnet. **Size**:
   ~6 files.
 
-- [ ] **M1b. `derive_vat_return` from a diya-gl book.** The nine VAT boxes from a book's journal
-  and its VAT codes, as an MCP tool in `mcp/`, with the mapping written as a table in
-  `PLAN_SUBMISSION_MCP.md` first (Opus) and unit tests over both example books against the figures
-  their published reports show. **Source**: `PLAN_SUBMISSION_MCP.md` M1. **Owner**: Claude Code.
-  **Model**: Opus for the mapping, Sonnet for the tool. Blocked on M1a. **Size**: ~3 files.
-
-- [ ] **M1c. `derive_micro_entity_accounts` from a diya-gl book.** The seven FRS 105 balance-sheet
-  lines from a book, passed through the existing `buildMicroEntityAccounts` and the public validator
-  script, with unit tests over BrickWork Pro's example. **Source**: `PLAN_SUBMISSION_MCP.md` M1.
-  **Owner**: Claude Code. **Model**: Opus for the mapping, Sonnet for the tool. Blocked on M1a.
-  **Size**: ~3 files.
-
 - [ ] **B52y.2. Check the nightly snapshot after the SecurityLakeStack reaches prod.** PR #218
   (9b695aab) adds the `deploy-security-lake` job and the per-observation null; prod's environment
   deploy of that merge creates the Glue tables. After the next 03:15 UTC run, read
@@ -245,15 +233,17 @@ Every item names its model: the lowest tier that fits (Fable > Opus > Sonnet > H
 
 ## Blocked
 
-- [ ] **O45. A token for the support form, scoped to the spreadsheets repository only.** After B165
-  gives the support Lambda its own secret: create a fine-grained PAT at
-  https://github.com/settings/personal-access-tokens/new (resource owner `diy-accounting-uk`,
-  repository `spreadsheets.diyaccounting.co.uk` only, permissions Issues read/write and Metadata
-  read, expiry up to a year) and put it on the `ci` and `prod` environments as `SUPPORT_BOT_TOKEN`
-  (https://github.com/diy-accounting-uk/submit.diyaccounting.co.uk/settings/environments); the next
-  `deploy-environment.yml` run carries it to Secrets Manager. The alarm-issue token
-  (`ISSUE_BOT_TOKEN`, submit only) is unchanged. O38's `diya-ops` app replaces the PAT later.
-  **Source**: B135; operator, 2026-09-15. **Owner**: Operator. **Model**: none. Blocked on B165.
+- [ ] **M1b. `derive_vat_return` from a diya-gl book.** The nine VAT boxes from a book's journal
+  and its VAT codes, as an MCP tool in `mcp/`, with the mapping written as a table in
+  `PLAN_SUBMISSION_MCP.md` first (Opus) and unit tests over both example books against the figures
+  their published reports show. **Source**: `PLAN_SUBMISSION_MCP.md` M1. **Owner**: Claude Code.
+  **Model**: Opus for the mapping, Sonnet for the tool. Blocked on M1a. **Size**: ~3 files.
+
+- [ ] **M1c. `derive_micro_entity_accounts` from a diya-gl book.** The seven FRS 105 balance-sheet
+  lines from a book, passed through the existing `buildMicroEntityAccounts` and the public validator
+  script, with unit tests over BrickWork Pro's example. **Source**: `PLAN_SUBMISSION_MCP.md` M1.
+  **Owner**: Claude Code. **Model**: Opus for the mapping, Sonnet for the tool. Blocked on M1a.
+  **Size**: ~3 files.
 
 - [ ] **B34.6b. Companies House accounts filing: the sandbox proof.** Submission 000004 (presenter
   E0000052288, company 06846849, 2026-09-13 19:04 UTC) was ACCEPTED by the XML Gateway test
@@ -351,7 +341,6 @@ Every item names its model: the lowest tier that fits (Fable > Opus > Sonnet > H
   `deploy-environment.yml` run carries it to Secrets Manager. The alarm-issue token
   (`ISSUE_BOT_TOKEN`, submit only) is unchanged. O38's `diya-ops` app replaces the PAT later.
   **Source**: B135; operator, 2026-09-15. **Owner**: Operator. **Model**: none. Blocked on B165.
-
 
 ## Discipline
 
