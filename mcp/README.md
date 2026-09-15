@@ -26,8 +26,11 @@ same server to a different one.
 |---|---|
 | `open_book` | Loads a book from a path: a directory of `book.toml` + `lines.jsonl`, or one file the engine reads (a workbook, a package zip, a diya-gl zip, a diya-gl JSON file). Answers the product, entity, period, line count and the book checks summary. |
 | `save_book` | Writes the session's book to a path as `diya-gl-dir`, `diya-gl-zip`, `json`, `xlsx` or `zip`. The last two compose the product's workbook from the site's templates. |
+| `derive_itsa_quarterly_update` | One period of HMRC's Self Employment Business API from a self-employed book: the period's own figures in a tax year filed as dated period summaries, the running total from 6 April in a year filed as cumulative period summaries (2025-26 on). `periodEndDate` picks the period; `quarterlyPeriodType` is `standard` or `calendar`. A field the book cannot source is omitted, never sent as zero. |
+| `derive_itsa_annual_submission` | The year's allowances and adjustments for the annual submission, restricted to the fields HMRC accepts for that tax year (`sa103-mtd-mapping.json`'s `api.years`). With `path`, also written as the JSON file the site's annual submission page imports. |
 
-One book per session, in memory. `open_book` replaces it.
+One book per session, in memory. `open_book` replaces it. The two ITSA tools live in `lib/itsa-tools.js`
+and register through `registerItsaTools(server, session)`.
 
 ## Test
 
@@ -37,4 +40,6 @@ npm --prefix mcp test
 
 The tests open the BrickWork Pro Ltd and Precision Code Ltd example books under `test/fixtures/`
 (copies of the spreadsheets repository's `examples/`) and round-trip each through the three
-formats that need no template.
+formats that need no template; the ITSA tests open the BrickWork Pro self-employed VAT book
+(`examples/brickwork-pro/se-vat`) and check the quarterly running totals and the annual field set
+by tax year.

@@ -121,6 +121,104 @@ diya-gl package's own server. A chat that needs to correct a line before filing 
 servers; the hosted surface can proxy the four through the same process later if that proves
 awkward. Decide that after the first real use, not before.
 
+## From a book to the nine VAT boxes (M1b)
+
+The Ltd engine (`calculators/ltd.js`, `buildVatReturns`) already computes every return the
+package's `Vatreturns.xlsx` carries. `derive_vat_return` reads those results and adds the
+period matching, the HMRC field names, the rounding and the line attribution; it computes no
+VAT of its own.
+
+**What the engine does.** `Vatreturns.xlsx!Vatinterface` holds one row per VAT period end in
+date order: rows 4 and 5 are the two month ends before the accounting year, rows 6 to 17 the
+twelve month ends in it, rows 18 to 20 the three after it. A row's D/F columns are the sales
+net and output VAT of that month, H/J the purchases net and input VAT, and E/G/I/K the sum of
+that row and the two above it, which is the quarter a return covers. `VATQtr1` to `VATQtr5`
+are the five forms the package ships, filled for the quarters ending 3, 6, 9, 12 and 15
+months after the first accounting month; they read the same interface row the tool reads.
+
+| Box | HMRC field | Interface column | Fed by |
+|---|---|---|---|
+| 1 VAT due on sales | `vatDueSales` | G (three-row sum of F) | Every `sales` journal line whose `accountMainID` is one of the seven sales codes (4000 to 4006), dated in the quarter; VAT is gross × 20 ÷ 120. Plus any line carrying `diya-gl:vatPeriodEnd` whose period end is one of the quarter's three rows |
+| 2 VAT due on acquisitions | `vatDueAcquisitions` | none | Nil: the form never computes it |
+| 3 Total VAT due | `totalVatDue` | | Box 1 + box 2 |
+| 4 VAT reclaimed | `vatReclaimedCurrPeriod` | K (three-row sum of J) | Every `purchases` journal line whose `accountMainID` is one of the 23 purchase codes (5000 to 5900), the same way |
+| 5 Net VAT | `netVatDue` | | Box 3 − box 4 |
+| 6 Sales ex VAT | `totalValueSalesExVAT` | E (three-row sum of D) | The net (gross − VAT) of the box 1 lines; a flat-rate book adds box 1 back (column M), which the Ltd engine never sets |
+| 7 Purchases ex VAT | `totalValuePurchasesExVAT` | I (three-row sum of H) | The net of the box 4 lines |
+| 8 Goods supplied to EU | `totalValueGoodsSuppliedExVAT` | none | Nil |
+| 9 Acquisitions from EU | `totalAcquisitionsExVAT` | none | Nil |
+
+Rules the engine applies, which the tool inherits and states in its answer:
+
+- **One rate on every journal line.** The Ltd calculator takes 20% off every sales and
+  purchases journal line (`VAT_RATE`), and reads neither the line's `taxCode` and `taxRate`
+  nor the book's `[tax.vat]` table. A book whose entity is not `diya-gl:vatRegistered = true`
+  gets a rate of 0 and every box nil; the tool refuses such a book instead of answering zeros.
+- **Journals only.** Bank, payroll and general journal lines feed no box: VAT is accounted
+  for on invoice, from the two day books. A sales or purchases line on an account outside
+  the two code maps is not on any month tab and so not in any box.
+- **A period is a quarter ending on a month end the interface carries.** The tool takes the
+  obligation's `periodEnd`, finds its row, and answers that row's quarter; a `periodStart`
+  that is not the first day of the month two months before is refused. Rows 4 and 5 carry no
+  quarter sum, so the earliest period a book answers ends with its first accounting month.
+  Monthly and annual obligations are a horizon.
+- **CIS deductions change no box.** They move between debtors, creditors and the CIS
+  liability, not the VAT figures.
+- **Rounding is HMRC's.** Boxes 1 to 5 to the penny, boxes 6 to 9 to whole pounds, and box 5
+  recomputed from the rounded boxes 3 and 4 so HMRC's own check holds.
+- **Standard accrual scheme only.** Cash accounting and the flat-rate scheme are horizons;
+  the interface's M column is where a flat-rate percentage would go.
+
+**What the tool adds.** The attribution lists every line behind boxes 1, 4, 6 and 7 with the
+gross, VAT and net it contributed, bucketed by the line's own posting month (or its
+`diya-gl:vatPeriodEnd` for a straddling line), and refuses when those contributions do not
+reconcile to the penny with the interface row, so a book with a line dated outside its
+accounting year cannot answer a return that silently omits it.
+
+## From a book to the seven FRS 105 lines (M1c)
+
+The Ltd engine already builds both balance sheets the accounts need: `PubBalSht`, the
+published balance sheet at the year end, from the trial balance's closing column, and
+`OpenAccounts`, the opening balance sheet, from the book's opening journal
+(`buildOpeningBalance`). `derive_micro_entity_accounts` reads the first for the current year
+and the opening figures for the prior year, rounds them the way Companies House takes them, and
+refuses when either sheet does not balance. It computes no balance of its own.
+
+| Line | Filing field | Current year, from `PubBalSht` | Prior year, from the opening balance |
+|---|---|---|---|
+| Fixed assets | `fixedAssets` | F6: the five asset classes' cost less accumulated depreciation after the year's additions, disposals and charge (trial balance EJ6 to EJ17) | opening cost less opening depreciation (`OpenAccounts` E13) |
+| Current assets | `currentAssets` | E13 = stock E10 (EJ19) + trade debtors E11 (EJ20) + cash at bank and in hand E12 (EJ22 to EJ26: current, savings, credit card, cash, transfers in transit) | stock + trade debtors + the bank and cash balances + long-term debtors (E15 + E16 + E18) |
+| Creditors due within one year | `creditorsWithinOneYear` | E20 = trade creditors E16 (EJ28 to EJ31: trade creditors, net wages, deductions, dividends due) + corporation tax E17 (EJ35) + taxation and social security E18 (EJ32 to EJ34: CIS, VAT, PAYE) | trade creditors + net wages due + wage deductions due + dividends due + corporation tax + CIS, VAT and PAYE due (E20 + E24 + E26) |
+| Creditors due after one year | `creditorsAfterOneYear` | F31 = directors' loan E29 (EJ39) + long-term creditors E30 (EJ40) | directors' loan + long-term creditors (E30) |
+| Called up share capital | `calledUpShareCapital` | F36 (EJ42) | share capital (E33) |
+| Profit and loss account | `profitAndLossAccount` | F39 − F36: the revenue reserve (EJ43, retained earnings brought forward plus the year's retained profit) and the capital reserve (EJ44) | retained earnings + capital reserves (E34) |
+| Capital and reserves | `capitalAndReserves` | F39, shareholders' funds | share capital + retained earnings + capital reserves |
+
+Rules the tool applies:
+
+- **Both sheets must balance before anything is answered.** The published sheet's own net
+  assets, F33 (total assets less current liabilities F26 less creditors after one year F31),
+  must equal shareholders' funds F39; the opening sheet's accuracy check E37 must be nil. A
+  difference is refused with its size. A long-term debtor (EJ37) sits on no published line and
+  is the usual cause.
+- **Whole pounds, and the identity survives the rounding.** Companies House and
+  `companiesHouseAccountsPost.js` take integers and check that capital and reserves equals
+  net assets exactly. The tool rounds fixed assets, current assets, the two creditors lines and
+  share capital, then derives capital and reserves from those four and the profit and loss
+  account from that less share capital, so the check holds; the profit and loss account can
+  sit up to £2 from the sheet's own figure.
+- **A capital reserve folds into the profit and loss account.** The seven-line set has no
+  other reserve line; the answer names the amount folded when it is not nil.
+- **The rest comes from the book's own tables.** Period dates from `documentInfo`; the prior
+  balance sheet date is the day before the period starts; the company number and name from
+  `entityInformation`; the director from the first entry of the `directors` table; the
+  average number of employees is the count of the `employees` table, which the user confirms
+  before filing.
+- **The figures, not the document.** The tool answers the figures the filing endpoint takes
+  (`balanceSheet.currentYear` and `priorYear`). Rendering the iXBRL and running the public
+  validator are `preview_micro_entity_accounts` (M2); the unit test passes BrickWork Pro's
+  derived lines through `buildMicroEntityAccounts` to prove the shape.
+
 ## Sequence
 
 Each row is a `claude/mcp-<n>-<topic>` branch and PR. Rows 1 to 3 need no credentials and no

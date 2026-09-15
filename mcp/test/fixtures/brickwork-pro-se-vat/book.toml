@@ -1,0 +1,210 @@
+# SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0
+# Copyright (C) 2006-2026 DIY Accounting Limited
+[documentInfo]
+entriesType = "journal"
+language = "en"
+creationDate = 2026-04-01
+periodCoveredStart = 2025-04-01
+periodCoveredEnd = 2026-03-31
+defaultCurrency = "GBP"
+entriesComment = "Subset: se-vat — extracted from BrickWork Pro Ltd master data"
+
+[entityInformation]
+organizationIdentifier = "BrickWork Pro Trading"
+organizationDescription = "Bricklaying, plastering and general building"
+organizationAddressLine = "Unit 5, Industrial Estate"
+organizationTown = "Sheffield"
+organizationPostcode = "S1 2AB"
+organizationTelephone = "0114 555 0100"
+taxRegistrationNumber = "9876543210"
+taxAuthorityIdentifier = "HMRC"
+"diya-gl:product" = "SelfEmployed"
+"diya-gl:vatRegistered" = true
+"diya-gl:basisOfAccounting" = "cash"
+"diya-gl:nino" = "EF112233B"
+"diya-gl:vatNumber" = "376543219"
+"diya-gl:cisRegistered" = true
+
+[[employees]]
+employeeID = "EMP002"
+name = "Tom Davies"
+role = "Labourer"
+grossPay = 1500.00
+payFrequency = "monthly"
+taxCode = "1257L"
+niCategory = "A"
+startDate = 2023-03-15
+isDirector = false
+
+[accounts.sales."4000"]
+accountMainDescription = "Building work"
+"diya-gl:column" = "O"
+
+[accounts.sales."4003"]
+accountMainDescription = "Other income"
+"diya-gl:column" = "R"
+
+[accounts.purchases."5000"]
+accountMainDescription = "Building materials"
+"diya-gl:column" = "O"
+
+[accounts.purchases."5001"]
+accountMainDescription = "Sub-contractor services"
+"diya-gl:column" = "P"
+
+[accounts.purchases."5101"]
+accountMainDescription = "Employee wages (non-PAYE)"
+"diya-gl:column" = "S"
+
+[accounts.purchases."5200"]
+accountMainDescription = "Premises - site costs"
+"diya-gl:column" = "T"
+
+[accounts.purchases."5400"]
+accountMainDescription = "Repairs and maintenance"
+"diya-gl:column" = "X"
+
+[accounts.purchases."5500"]
+accountMainDescription = "Advertising"
+"diya-gl:column" = "Z"
+
+[accounts.purchases."5501"]
+accountMainDescription = "General admin"
+"diya-gl:column" = "AA"
+
+[accounts.purchases."5601"]
+accountMainDescription = "Motor vehicle expenses"
+"diya-gl:column" = "AC"
+
+[accounts.purchases."5700"]
+accountMainDescription = "Insurance"
+"diya-gl:column" = "AD"
+
+[accounts.purchases."5800"]
+accountMainDescription = "Legal and professional fees"
+"diya-gl:column" = "AF"
+
+[accounts.purchases."5900"]
+accountMainDescription = "Fixed asset purchases"
+"diya-gl:column" = "AI"
+
+[accounts.bank."1200"]
+accountMainDescription = "Current account"
+accountType = "bank"
+
+[stock]
+openingValue = 3000.00
+closingValue = 2500.00
+
+[[debtors]]
+counterparty = "Acme Developments"
+invoice = "INV-0310"
+amount = 8316.00
+timing = "opening"
+
+[[debtors]]
+counterparty = "HomeStyle Renovations"
+invoice = "INV-0320"
+amount = 3564.00
+timing = "opening"
+
+[[debtors]]
+counterparty = "Acme Developments"
+invoice = "INV-1510"
+amount = 8442.00
+timing = "closing"
+
+[[debtors]]
+counterparty = "HomeStyle Renovations"
+invoice = "INV-1520"
+amount = 3618.00
+timing = "closing"
+
+[[creditors]]
+counterparty = "Vodafone"
+invoice = "VF-2503"
+amount = 108.00
+timing = "opening"
+
+[[creditors]]
+counterparty = "Jewson"
+invoice = "JW-2503"
+amount = 1440.00
+timing = "opening"
+
+[[creditors]]
+counterparty = "Shell"
+invoice = "SH-2503"
+amount = 360.00
+timing = "opening"
+
+[[creditors]]
+counterparty = "Travis Perkins"
+invoice = "TP-2503"
+amount = 810.00
+timing = "opening"
+
+[[creditors]]
+counterparty = "Vodafone"
+invoice = "VF-2603"
+amount = 108.00
+timing = "closing"
+
+[[creditors]]
+counterparty = "Jewson"
+invoice = "JW-2603"
+amount = 1440.00
+timing = "closing"
+
+[[creditors]]
+counterparty = "Shell"
+invoice = "SH-2603"
+amount = 360.00
+timing = "closing"
+
+[[creditors]]
+counterparty = "Travis Perkins"
+invoice = "TP-2603"
+amount = 810.00
+timing = "closing"
+
+[[fixedAssets]]
+assetID = "FA-VAN-001"
+class = "motorVehicles"
+description = "Ford Transit Custom van"
+cost = 12000.00
+acquiredDate = 2025-09-01
+
+[tax.incomeTax]
+personalAllowance = 12570.00
+personalAllowanceTaperThreshold = 100000.00
+basicRate = 0.2000
+basicRateLimit = 37700.00
+higherRate = 0.4000
+higherRateThreshold = 50270.00
+additionalRate = 0.4500
+additionalRateThreshold = 125140.00
+
+[tax.nationalInsurance]
+class2WeeklyRate = 3.50
+class2SmallProfitsThreshold = 6845.00
+class4MainRate = 0.0600
+class4UpperRate = 0.0200
+class4LowerProfits = 12570.00
+class4UpperProfits = 50270.00
+class1EmployeeMainRate = 0.0800
+class1EmployeeUpperRate = 0.0200
+class1EmployeePrimaryThreshold = 12570.00
+class1EmployeeUpperEarningsLimit = 50270.00
+class1EmployerRate = 0.1500
+class1EmployerSecondaryThreshold = 5000.00
+employmentAllowance = 10500.00
+
+[tax.capitalAllowances]
+annualInvestmentAllowance = 1000000.00
+mainRateWDA = 0.1800
+specialRateWDA = 0.0600
+
+[tax.mileage]
+carFirst10000 = 0.45
+carOver10000 = 0.25

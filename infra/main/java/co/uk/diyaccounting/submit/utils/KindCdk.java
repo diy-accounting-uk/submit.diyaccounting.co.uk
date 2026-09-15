@@ -344,6 +344,17 @@ public class KindCdk {
      * @return EnsuredLogGroup containing both the ILogGroup and the AwsCustomResource
      */
     public static EnsuredLogGroup ensureLogGroupWithDependency(Stack stack, String id, String logGroupName) {
+        return ensureLogGroupWithDependency(stack, id, logGroupName, 3);
+    }
+
+    /**
+     * As {@link #ensureLogGroupWithDependency(Stack, String, String)}, with the retention the
+     * dependent putRetentionPolicy call sets. The three-day default suits per-deployment helper
+     * groups; a shared evidence log such as the API access log needs the environment's own value,
+     * or every alarm older than three days is uninvestigable.
+     */
+    public static EnsuredLogGroup ensureLogGroupWithDependency(
+            Stack stack, String id, String logGroupName, int retentionInDays) {
         AwsSdkCall createLogGroupCall = AwsSdkCall.builder()
                 .service("CloudWatchLogs")
                 .action("createLogGroup")
@@ -396,7 +407,7 @@ public class KindCdk {
         AwsSdkCall putRetentionCall = AwsSdkCall.builder()
                 .service("CloudWatchLogs")
                 .action("putRetentionPolicy")
-                .parameters(Map.of("logGroupName", logGroupName, "retentionInDays", 3))
+                .parameters(Map.of("logGroupName", logGroupName, "retentionInDays", retentionInDays))
                 .physicalResourceId(PhysicalResourceId.of(logGroupName + "-retention"))
                 .build();
 

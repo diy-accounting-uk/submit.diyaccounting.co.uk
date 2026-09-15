@@ -1248,6 +1248,28 @@ package, and an import control on `annualSubmission.html` that fills the form fr
 a cumulative one, from the same book, by calling whichever derivation the tax year names. It
 sends an omission for any of the 31 field slots the template cannot source, never a zero.
 
+Both tools call the published `@diy-accounting-uk/diya-gl` package's own `se-derivations` and
+`sa103-mtd-mapping.json`, and restrict every answer to the fields the mapping's `api.years`
+makes live for the tax year (SED-10 applied on this side). The site ships no diya-gl bundle, so
+the import control reads the JSON `derive_itsa_annual_submission` writes when given a `path`,
+which is the tool's own answer:
+
+```json
+{
+  "taxYear": "2025-26",
+  "fieldSlots": ["adjustments.accountingAdjustment", "..."],
+  "allowances": { "annualInvestmentAllowance": 12000, "capitalAllowanceMainPool": 0 },
+  "adjustments": { "balancingChargeOther": 0, "goodsAndServicesOwnUse": 0 },
+  "omitted": ["adjustments.overlapReliefUsed", "..."],
+  "warnings": [{ "field": "allowances.enhancedCapitalAllowance", "reason": "..." }]
+}
+```
+
+The control reads `taxYear`, `allowances` and `adjustments` only. A file for a tax year other
+than the one loaded is refused, because the field set differs by year; a figure for a field the
+form does not carry is named in the status line rather than dropped silently. `fieldSlots`,
+`omitted` and `warnings` are for the reader of the file, not the form.
+
 Waits on T8, on T19 for the cumulative page shape, and on `PLAN_SUBMISSION_MCP.md` M1.
 
 ### T10. The recognition pack (Haiku to assemble, operator to send)

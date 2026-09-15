@@ -59,6 +59,30 @@ baseline and fires on the deploy pipeline's own changes: 39 of prod's 55 in-depl
   warm-up); then either fix the cause or start the alarm's evaluation after the set is promoted.
   Sonnet, ~2 files.
 
+**Outcomes, 2026-09-15 22:00 UTC, from the alarm histories, CloudTrail and the access log:**
+
+- **30z is already landed; no filter changed.** The deploy-role exclusion on the four families
+  (`aebbfc49`, 2026-09-10 14:46 UTC, on prod that evening) ended the infrastructure-change fires:
+  the last OK-to-ALARM was `iam-policy-changes` 2026-09-09 18:47 UTC, `route-table-changes`
+  18:53 UTC, `s3-bucket-policy-changes` 23:57 UTC. `unauthorized-api-calls` kept firing on two
+  real permission gaps, each since granted: `prod-env-data-quality-eval`'s Glue session denied
+  `logs:CreateLogGroup` eleven times a night at 02:16 UTC (2026-09-10, 09-11; granted by
+  `4511dd09`, 2026-09-11) and `prod-env-alarm-triage-role` denied `bedrock:ListInferenceProfiles`
+  (2026-09-11 02:18 and 02:28 UTC; `85227772`, 2026-09-11) then `logs:DescribeMetricFilters`
+  (2026-09-13 12:59 UTC; B30w, `8efc0173`). Nothing has fired since 2026-09-13 13:02 UTC. The
+  family stays as it is: every remaining fire was a denial worth fixing at its own layer.
+- **30aa's premise does not hold; no alarm changed.** The four "in-deploy" fires sit at 09:52 UTC
+  2026-09-06 (inside a failed `deploy.yml`, 34023929108), 06:24 UTC 2026-09-08 (no deploy, no probe,
+  the hourly canary at :27 had not run), 09:46 UTC 2026-09-08 (eight minutes after 34206771214
+  ended) and 14:05 UTC 2026-09-09 (no deploy; the scheduled probe had finished at 13:18). Each
+  datapoint carried about five requests and one 5xx, and each set's access-log streams exist for
+  those minutes, but the shared `/aws/apigw/prod-env/access` group kept three days, so the lines
+  were gone before anyone read them; the two fires that could be read (`e371587` 23:41 UTC
+  2026-09-13, `70b0a8e` 16:39 UTC 2026-09-15) were both `GET /api/v1/operator/snapshot` answering
+  500 to the operator, fixed by B52v. The fix here is to the evidence, not the alarm: the group
+  now keeps `ACCESS_LOG_GROUP_RETENTION_PERIOD_DAYS` (28 on prod) instead of the ensured-log-group
+  helper's three-day default, which the prop declared but never reached.
+
 **Date**: 2026-09-03  
 **Environment**: prod (account 972912397388, region eu-west-2)  
 **Audit period**: 90 days (2026-06-05 to 2026-09-03)  

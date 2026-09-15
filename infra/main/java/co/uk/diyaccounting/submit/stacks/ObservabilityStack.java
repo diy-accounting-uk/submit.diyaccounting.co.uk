@@ -263,11 +263,16 @@ public class ObservabilityStack extends Stack {
                         props.sharedNames().ew2SelfDestructLogGroupName)
                 .logGroup();
 
-        // API Gateway access log group with env-stable name (idempotent creation)
+        // API Gateway access log group with env-stable name (idempotent creation). It keeps the
+        // environment's configured access-log retention rather than the helper default of three
+        // days: this group is the evidence behind every api-5xx alarm, and with three days the
+        // four fires of 2026-09-06 to 09-09 had no lines left to read by the time they were
+        // investigated.
         this.apiAccessLogGroup = ensureLogGroupWithDependency(
                         this,
                         props.resourceNamePrefix() + "-ApiAccessLogGroup",
-                        props.sharedNames().apiAccessLogGroupName)
+                        props.sharedNames().apiAccessLogGroupName,
+                        props.accessLogGroupRetentionPeriodDays())
                 .logGroup();
 
         // Add a single shared resource policy to allow all API Gateway APIs in this environment to write logs

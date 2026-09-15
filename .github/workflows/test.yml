@@ -342,10 +342,20 @@ jobs:
         with:
           node-version: ${{ env.NODE_VERSION }}
           cache: 'npm'
-          cache-dependency-path: mcp/package-lock.json
+          cache-dependency-path: |
+            package-lock.json
+            mcp/package-lock.json
 
       - run: timeout 120 npm ci --prefer-offline || { sleep 30; timeout 180 npm ci; }
         working-directory: mcp
+        timeout-minutes: 6
+        env:
+          NPM_CONFIG_FETCH_RETRIES: "3"
+
+      # The accounts derivation test renders BrickWork Pro's lines through
+      # app/services/microEntityAccountsIxbrl.js, which resolves its own
+      # dependencies from the repository root.
+      - run: timeout 120 npm ci --prefer-offline --ignore-scripts || { sleep 30; timeout 180 npm ci --ignore-scripts; }
         timeout-minutes: 6
         env:
           NPM_CONFIG_FETCH_RETRIES: "3"
