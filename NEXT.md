@@ -20,8 +20,9 @@ PR; the operator merges.
 at 04:5x UTC on 2026-09-16; the same run destroyed the previous set), verified against AWS at 07:2x UTC
 on 2026-09-16: nine stacks CREATE_COMPLETE, every composite alarm OK. **ci**: `ci-clauda982` (the b45
 branch's deploy, created 03:38 UTC) is last-known-good and self-destructs at about 07:38 UTC;
-`ci-claud727f`'s `ApiStack` (DELETE_FAILED) and `ci-claud6956`'s lone `SelfDestructStack` wait on a
-`destroy-ci.yml` sweep, whose cron has not fired since 13:48 UTC on 2026-09-15 (B30ad).
+no ci set stands; `ci-claud6956` and `ci-clauda982` each leave a lone `SelfDestructStack` that the
+sweep skips until B30ad deploys (its cron has not fired since 13:48 UTC on 2026-09-15; the by-hand
+sweep is `gh workflow run destroy-ci.yml --ref main -f sweep-for-stacks=true`).
 
 The board runs in five sections, in this order: **in flight** (a branch, a pull request or a run
 in motion, each named in the row), **machine-only**, **human and machine**, **human-only**,
@@ -41,50 +42,32 @@ Every item names its model: the lowest tier that fits (Fable > Opus > Sonnet > H
 
 ## In flight
 
+- [ ] **B30ad. `destroy-ci.yml` sweeps a set whose only stack is its SelfDestructStack.** On
+  `claude/b46-board` (460da8d9): the keep-list exclusion no longer holds a last-known-good name whose
+  set has already self-destructed; a failed describe-stacks keeps the set. The three missed cron
+  slots on 2026-09-16 had no run objects while `probe-test.yml`'s schedule fired, so nothing in the
+  file changes for that. Lands with the b46 PR. **Source**: this board; `destroy-ci.yml`. **Owner**:
+  Claude Code. **Model**: Haiku. **Size**: ~1 file.
+
+- [ ] **B52y.3. The security lake nightly degrades a failed GitHub alert endpoint to a null row.** On
+  `claude/b46-board` (57d7c31e): the first prod nightly (03:20 UTC on 2026-09-16) threw on
+  `code-scanning/alerts` (403 "Resource not accessible by personal access token") and aborted before
+  the lifecycle, WAF and rotation rows; `fetchGithubAlertRows` now catches per endpoint. After the
+  b46 PR deploys, the next 03:15 UTC nightly runs clean and #249 closes; the `code_scanning` row
+  stays null until O49 rescopes the token. **Source**: issue #249. **Owner**: Claude Code.
+  **Model**: Sonnet. **Size**: ~2 files.
+
+- [ ] **B52y.4. The `cost_focus` Glue columns never match the FOCUS Parquet field names.** Found under
+  B52y.2 (08:4x UTC on 2026-09-16): `cost_focus` holds 799,234 rows but `v_cost_daily` returns none,
+  because `CostFocusTables.java` declares snake_case columns (`charge_category`) while the export's
+  Parquet carries PascalCase (`ChargeCategory`), so every multi-word column reads NULL and the
+  `<> 'Credit'` filter drops every row; the `Tags`/`x_Discounts` map types fail `SELECT *` outright.
+  Every `v_cost_*` view and the snapshot's cost observations are empty. An agent is on it in
+  `worktree-b46-cost` (batch `claude/b46-board`): the table and views redeclared against the real
+  schema, proven against a downloaded Parquet file. **Source**: B52y.2's snapshot check;
+  `PLAN_ONE_STOP_DASHBOARD.md` D13. **Owner**: Claude Code. **Model**: Sonnet. **Size**: ~6 files.
+
 ## Machine-only
-
-- [ ] **B30ad. `destroy-ci.yml`'s cron has not fired since 13:48 UTC on 2026-09-15.** The schedule
-  `34 2,4,6,8,10,12 * * *` missed its 02:34, 04:34 and 06:34 UTC slots on 2026-09-16 while the
-  workflow reads `active` and `probe-test.yml`'s cron ran at 05:22 UTC. Two leftovers wait on the
-  sweep: `ci-claud727f`'s `ApiStack` (DELETE_FAILED since 14:27 UTC on 2026-09-15) and
-  `ci-claud6956`'s `SelfDestructStack`, left standing after its set self-destructed at 04:3x UTC on
-  2026-09-16; `ci-clauda982` is last-known-good and under the sweep's 8-hour minimum age, so a sweep
-  leaves it. Dispatch `gh workflow run destroy-ci.yml --ref main` once and read the run for both
-  leftovers gone; then read the workflow's `concurrency` group and its `wait-for-ci-deploys` step
-  for what held the three scheduled slots, since the other crons fired. **Source**: this render;
-  `destroy-ci.yml`. **Owner**: Claude Code. **Model**: Haiku. **Size**: ~0 files.
-
-- [ ] **B52y.3. The security lake's nightly errored on its 03:15 UTC run.** Issue #249 (03:21 UTC on
-  2026-09-16): `check-prod-env-security-lake-nightly-errors` tripped `prod-env-security-lake-stack-health`
-  on the first nightly after the SecurityLakeStack reached prod (PR #218); the triage was skipped by
-  the workflow's budget; the composite and `check-prod-env-security-lake-nightly-errors` went back to
-  OK at 03:39 UTC. Read the Lambda's log for the 03:11 to 03:27 UTC window (the log group is named in
-  the issue's evidence links), fix what it names, then B52y.2's snapshot check says whether the
-  observations still answered; close #249 when the cause is named. **Source**: issue #249. **Owner**:
-  Claude Code. **Model**: Sonnet. **Size**: ~1 file.
-
-- [ ] **B55.2. Google federation: the Lambdas' nightly proof, then the key goes.** The pool
-  `submit-federation` and its three providers exist (apply run 35050290089); the federated GitHub
-  path is proven (plan run 35050387182) and the prod environment's `SUBMIT_GOOGLE_AUTH_MODE` is
-  `federated` since 03:4x UTC on 2026-09-16. Wave b45 (PR #247, merged 04:1x UTC on
-  2026-09-16) puts `GA4_AUTH_MODE`, `GOOGLE_WIF_AUDIENCE` and `GA4_SERVICE_ACCOUNT_EMAIL` on the
-  three GA4 Lambdas, ci in federated mode and prod on the key; `main`'s deploy carries them. Then: one
-  nightly run of each Lambda on ci in federated mode
-  (the provider's condition matches the generated role names, reasoned from the naming rule and
-  proven by that run), then `.env.prod` to `federated`, then the key, both secrets, the
-  `ga4/service_account` row and `google-key-rotate.yml` go. **Source**: B55; PRs #237, #241, #245,
-  #247; `PLAN_GOOGLE_AS_CODE.md` items 9 and 11. **Owner**: Claude Code. **Model**: Sonnet.
-  **Size**: ~4 files.
-
-- [ ] **B52y.2. Check the nightly snapshot after the SecurityLakeStack reaches prod.** PR #218
-  (9b695aab) adds the `deploy-security-lake` job and the per-observation null; prod's environment
-  deploy of that merge creates the Glue tables. `prod-env-operator-snapshot-publish-errors` went OK
-  at 03:22 UTC on 2026-09-16, after the 03:15 run. Read `snapshots/prod/latest.json`: `generatedAt`
-  past 2026-09-16 03:15, `failedObservationCount` 0, and any observation answering null where its
-  view has rows (two views are monthly or quarterly grain, so a 30-day window can be empty by
-  design). Then close issue #208.
-  **Source**: `PLAN_ONE_STOP_DASHBOARD.md` D7, D13, D14, D15. **Owner**: Claude Code. **Model**:
-  Haiku. **Size**: ~0 files.
 
 ## Human and machine
 
@@ -138,6 +121,15 @@ Every item names its model: the lowest tier that fits (Fable > Opus > Sonnet > H
   (transaction 1789481253426, 2026-09-15 14:07:33 UTC).
   Ask whether 000004 was accepted and whether status lookups are enabled for this presenter.
   **Source**: BACKLOG 34b. **Owner**: Operator. **Model**: none.
+
+- [ ] **O49. Give the ops GitHub token the code-scanning scope.** The security lake nightly reads
+  `dependabot`, `secret-scanning` and `code-scanning` alerts with the token in
+  `prod/submit/github/issue_bot_token` (`OPS_GITHUB_TOKEN_SECRET_ID`); `code-scanning/alerts` answers
+  403 "Resource not accessible by personal access token" (03:20 UTC on 2026-09-16), so that row is
+  null every night. Add `security_events` to the classic token, or the Code scanning alerts
+  read permission to the fine-grained one, and put the new value on the GitHub `prod` (and `ci`)
+  environment secret so `deploy-environment.yml` carries it. O38's `diya-ops` app replaces this
+  token when it exists. **Source**: B52y.3; issue #249. **Owner**: Operator. **Model**: none.
 
 - [ ] **O48. Rotate the GA4 service-account key: it was printed in public job logs.** Found 03:0x UTC
   on 2026-09-16: `google-apply.yml` passed the key's JSON to eight steps as a step env, GitHub's
@@ -211,6 +203,27 @@ Every item names its model: the lowest tier that fits (Fable > Opus > Sonnet > H
   agent kill switch is on", switch `off`, then run B30ac.2's dispatch. **Source**: B59; PR #237.
   **Owner**: Claude Code. **Model**: Haiku. Blocked on the triage budget: from 16:41 UTC on 2026-09-16. **Size**: ~0
   files.
+
+- [ ] **B55.2. Google federation: the Lambdas' nightly proof, then the key goes.** The pool
+  `submit-federation` and its three providers exist (apply run 35050290089); the federated GitHub
+  path is proven (plan run 35050387182) and the prod environment's `SUBMIT_GOOGLE_AUTH_MODE` is
+  `federated` since 03:4x UTC on 2026-09-16. Wave b45 (PR #247, merged 04:1x UTC on
+  2026-09-16) puts `GA4_AUTH_MODE`, `GOOGLE_WIF_AUDIENCE` and `GA4_SERVICE_ACCOUNT_EMAIL` on the
+  three GA4 Lambdas, ci in federated mode and prod on the key; `main`'s deploy carries them. Then: one
+  nightly run of each Lambda on ci in federated mode
+  (the provider's condition matches the generated role names, reasoned from the naming rule and
+  proven by that run), then `.env.prod` to `federated`, then the key, both secrets, the
+  `ga4/service_account` row, `scripts/gcp-key-rotate.js`, `google/identity.toml`'s
+  `[service_account.key_rotation]` block and `google-key-rotate.yml` go (the removal list with file
+  and line is in the b46 wave's agent report, 08:0x UTC on 2026-09-16). The three Lambdas run only
+  inside the step function `ci-env-analytics-nightly` (`cron(15 2 ? * MON *)` UTC), whose last two
+  runs (2026-09-07, 2026-09-14) failed on `ga4-event-export-pull`'s missing BigQuery export table
+  for the day, a data-availability error unrelated to auth. No federated invocation exists yet.
+  **Source**: B55; PRs #237, #241, #245, #247; `PLAN_GOOGLE_AS_CODE.md` items 9 and 11. **Owner**:
+  Claude Code. **Model**: Sonnet. Blocked on a federated run of the three ci Lambdas: Monday
+  2026-09-21 02:15 UTC, or sooner if the operator starts one:
+  `aws --profile submit-ci stepfunctions start-execution --state-machine-arn arn:aws:states:eu-west-2:367191799875:stateMachine:ci-env-analytics-nightly`.
+  **Size**: ~12 files.
 
 - [ ] **B56. `test` and CodeQL as required status checks on `main`.** BACKLOG 56: added to ruleset
   16057564 beside the signature check, once O46 settles how the ruleset gates direct pushes. **Source**:
