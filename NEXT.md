@@ -16,13 +16,12 @@ runs), and for Claude Code steps the **Model** a sub-agent should use (Fable > O
 Haiku; the lowest tier that fits). Anything touching code goes through a `claude/*` branch and
 PR; the operator merges.
 
-**Prod runs deployment prod-a130010** (PR #247, run 35054202697, promoted under the `deploy-ops` gate
-at 04:5x UTC on 2026-09-16; the same run destroyed the previous set), verified against AWS at 07:2x UTC
-on 2026-09-16: nine stacks CREATE_COMPLETE, every composite alarm OK. **ci**: `ci-clauda982` (the b45
-branch's deploy, created 03:38 UTC) is last-known-good and self-destructs at about 07:38 UTC;
-no ci set stands; `ci-claud6956` and `ci-clauda982` each leave a lone `SelfDestructStack` that the
-sweep skips until B30ad deploys (its cron has not fired since 13:48 UTC on 2026-09-15; the by-hand
-sweep is `gh workflow run destroy-ci.yml --ref main -f sweep-for-stacks=true`).
+**Prod runs deployment prod-a84311b** (PR #257, run 35085063660, promoted under the `deploy-ops` gate
+at 10:5x UTC on 2026-09-16; the same run destroyed prod-7137772, which PR #255's run had promoted at
+09:5x), verified against AWS at 11:2x UTC on 2026-09-16: nine stacks CREATE_COMPLETE, every composite
+alarm OK. **ci**: `ci-claud6618` (the b46 branch, created 08:29 UTC) self-destructs at about 12:29 UTC
+and `ci-claudaafa` (the b47 branch, 09:46 UTC, last-known-good) at about 13:46 UTC; `ci-clauda982`'s
+lone `SelfDestructStack` goes on the next sweep now that B30ad is on `main` and the pointer has moved.
 
 The board runs in five sections, in this order: **in flight** (a branch, a pull request or a run
 in motion, each named in the row), **machine-only**, **human and machine**, **human-only**,
@@ -42,32 +41,36 @@ Every item names its model: the lowest tier that fits (Fable > Opus > Sonnet > H
 
 ## In flight
 
-- [ ] **B30ad. `destroy-ci.yml` sweeps a set whose only stack is its SelfDestructStack.** On
-  `claude/b46-board` (460da8d9): the keep-list exclusion no longer holds a last-known-good name whose
-  set has already self-destructed; a failed describe-stacks keeps the set. The three missed cron
-  slots on 2026-09-16 had no run objects while `probe-test.yml`'s schedule fired, so nothing in the
-  file changes for that. Lands with the b46 PR. **Source**: this board; `destroy-ci.yml`. **Owner**:
-  Claude Code. **Model**: Haiku. **Size**: ~1 file.
-
-- [ ] **B52y.3. The security lake nightly degrades a failed GitHub alert endpoint to a null row.** On
-  `claude/b46-board` (57d7c31e): the first prod nightly (03:20 UTC on 2026-09-16) threw on
-  `code-scanning/alerts` (403 "Resource not accessible by personal access token") and aborted before
-  the lifecycle, WAF and rotation rows; `fetchGithubAlertRows` now catches per endpoint. After the
-  b46 PR deploys, the next 03:15 UTC nightly runs clean and #249 closes; the `code_scanning` row
-  stays null until O49 rescopes the token. **Source**: issue #249. **Owner**: Claude Code.
-  **Model**: Sonnet. **Size**: ~2 files.
-
-- [ ] **B52y.4. The `cost_focus` Glue columns never match the FOCUS Parquet field names.** Found under
-  B52y.2 (08:4x UTC on 2026-09-16): `cost_focus` holds 799,234 rows but `v_cost_daily` returns none,
-  because `CostFocusTables.java` declares snake_case columns (`charge_category`) while the export's
-  Parquet carries PascalCase (`ChargeCategory`), so every multi-word column reads NULL and the
-  `<> 'Credit'` filter drops every row; the `Tags`/`x_Discounts` map types fail `SELECT *` outright.
-  Every `v_cost_*` view and the snapshot's cost observations are empty. An agent is on it in
-  `worktree-b46-cost` (batch `claude/b46-board`): the table and views redeclared against the real
-  schema, proven against a downloaded Parquet file. **Source**: B52y.2's snapshot check;
-  `PLAN_ONE_STOP_DASHBOARD.md` D13. **Owner**: Claude Code. **Model**: Sonnet. **Size**: ~6 files.
-
 ## Machine-only
+
+- [ ] **B52y.3. The security lake nightly's fix is on prod; the next nightly proves it.** PR #255
+  (57d7c31e) degrades a failed GitHub alert endpoint to a null row, and main's environment deploy
+  (run 35078117666, 09:5x UTC on 2026-09-16) carried it. Read the 03:15 UTC run on 2026-09-17 in
+  `/aws/lambda/prod-env-security-lake-nightly`: no "Invoke Error", a warn line for `code_scanning`
+  (null until O49), rows written for the day; then close #249. **Source**: issue #249. **Owner**:
+  Claude Code. **Model**: Haiku. **Size**: ~0 files.
+
+- [ ] **B30ad. Give the ci sweep a second trigger, since its cron fires two slots in six.**
+  `destroy-ci.yml`'s schedule `34 2,4,6,8,10,12 * * *` produced one run a day or two for the past
+  week, each 60 to 90 minutes late (07:52 UTC on 2026-09-16; 13:48 and 07:59 on 09-15; 15:12 and
+  08:04 on 09-14; 13:25 and 07:37 on 09-13), and `probe-test.yml`'s `57 */4` cron is late and
+  skips slots the same way, so this is GitHub's scheduler under load, and the workflow file is
+  right. The keep-list fix (PR #255, 460da8d9) is on `main`. Add `workflow_run` on `deploy`
+  completion to `destroy-ci.yml` and route that event through the sweep path
+  (`sweep-for-stacks` true), so leftovers past the 8-hour minimum age go after every deploy as well
+  as on whichever cron slots fire; keep the cron. By hand meanwhile:
+  `gh workflow run destroy-ci.yml --ref main -f sweep-for-stacks=true`. **Source**: this board;
+  `destroy-ci.yml`. **Owner**: Claude Code. **Model**: Sonnet. **Size**: ~1 file.
+
+- [ ] **B52y.4. The cost views are live; check the Glue Data Quality ruleset after its next run.**
+  PR #255 (319a9e89) made `cost_focus` resolve its Parquet columns by position and typed the four
+  period columns and `x_Discounts` as the file has them; after main's environment deploy
+  `v_cost_daily` answers 5,871 rows for 2026-09-01 to 09-15 (11:2x UTC on 2026-09-16). Left: Glue
+  Data Quality reads the table through Spark, which may not honour `parquet.column.index.access`,
+  so `COST_FOCUS_RULESET`'s `IsComplete "billed_cost"` (`DataQuality.java` ~99–105) may still report
+  incomplete; read the ruleset's next result and, if it does, give the rules the positional reader
+  or the Parquet names. **Source**: B52y.2's snapshot check; `PLAN_ONE_STOP_DASHBOARD.md` D13.
+  **Owner**: Claude Code. **Model**: Sonnet. **Size**: ~1 file.
 
 ## Human and machine
 
