@@ -19,8 +19,9 @@ PR; the operator merges.
 **Prod runs deployment prod-f080052** (PR #266, run 35142477824, promoted under the `deploy-ops` gate
 at 20:3x UTC on 2026-09-16 with the pool at `Mfa.REQUIRED`; the same run destroyed prod-a84311b),
 verified against AWS at 20:5x UTC: the pointer names it and the deploy's own prod suites passed.
-**ci**: `ci-claudc4d2` (the b49 branch, created 18:24 UTC) self-destructs at about 22:24 UTC;
-PR #276's deploy (run 35156736691, started 22:0x UTC) is standing up the b52 set.
+**ci**: `ci-claudc4d2` (the b49 branch) is self-destructing (one stack left at 23:0x UTC);
+`ci-claudafe1` (the b52 branch, PR #276, created 22:39 UTC) is standing with its deploy's probes
+still running (run 35156736691); the pointer moves to it when they pass.
 
 The board runs in five sections, in this order: **in flight** (a branch, a pull request or a run
 in motion, each named in the row), **machine-only**, **machine-ask**, **human-driven**,
@@ -42,6 +43,15 @@ step.
 
 ## In flight
 
+- [ ] **B30ah. Alarm triage: 8 a day, a Haiku first pass, Sonnet on escalation.** The operator's
+  pick (2026-09-16, after `REPORT_ALARM_TRIAGE_COST.md`: $0.45 a Sonnet triage, the cap 4 a day at
+  `-gt 3`, 5 of 11 alarm issues untriaged). In flight on `claude/ops-triage-budget` (worktree
+  `.claude/worktrees/triage-budget`, agent running): the budget guard reads one
+  `TRIAGE_BUDGET_PER_DAY` of 8, the first pass runs on the eu Haiku 4.5 profile, a judge step
+  escalates to Sonnet on an error, max-turns, an empty result or an "unable to determine" answer,
+  and the comment names the model. Push and PR follow the agent's report. **Source**:
+  REPORT_ALARM_TRIAGE_COST.md; issue #249. **Owner**: Claude Code. **Model**: Sonnet. **Size**: ~2 files.
+
 - [ ] **B124. The three agentic-lib workflows cannot assume their AWS role.** Run 35153306283
   (`agentic-lib-code.yml`, dispatched by the operator at 21:36 UTC on 2026-09-16, which lifts the
   halt of 2026-09-12) died at "Configure AWS role via GitHub OIDC": "Credentials could not be
@@ -57,7 +67,12 @@ step.
   other account. Then dispatch `agentic-lib-board.yml` with `write-back=false` and compare its five
   parts with a `/board` here, `agentic-lib-pr.yml` with `dry-run=true` against `/auto-merge-dry-run`,
   and `agentic-lib-code.yml` on its 10-minute budget, in that order (BACKLOG row 73 carries the
-  full brief). In flight on `claude/b52-board` (wave b52, worktree `.claude/worktrees/b52`, PR #276, deploy 35156736691, environment deploy 35156736363). **Source**: run 35153306283; BACKLOG 73. **Owner**: Claude Code. **Model**: Sonnet.
+  full brief). Proofs from the branch: board run 35159207896 rendered the same rows and order as
+  this session's `/board` (22 turns, $0.06; its prod block failed on `cloudformation:ListStacks`,
+  which the prod role gains on `main`'s environment deploy, and raised alarm issue #279, which
+  closes then); pr dry-run 35159593566 rendered; code run 35159801420 took B30ai, checked `main`
+  green and wrote a full handover into the checkout instead of `OUT_DIR` (fixed on the batch,
+  de3033ea); the second code run 35160283767, for the resume judgement, is in progress. In flight on `claude/b52-board` (wave b52, worktree `.claude/worktrees/b52`, PR #276, deploy 35156736691, environment deploy 35156736363). **Source**: run 35153306283; BACKLOG 73. **Owner**: Claude Code. **Model**: Sonnet.
   **Size**: ~3 files.
 
 - [ ] **B30af. A deploy that starts during a scheduled prod probe still swaps the apex under it.**
@@ -85,21 +100,19 @@ step.
 
 ## Machine-only
 
+- [ ] **B30ai. Alarm triage reads evidence again: prove it on the next run.** PR #280 (d47884f6)
+  tells the agent to call `aws` with no `--profile`, after `REPORT_ALARM_TRIAGE_COST.md` found all
+  eight triaged runs denied their `aws logs` and `aws cloudwatch` reads (21 denials) for that
+  prefix. Read the next `alarm-triage.yml` run's log for a successful `aws logs` call; #279's
+  triage (run 35159428845, before the fix) still shows the pattern. **Source**:
+  REPORT_ALARM_TRIAGE_COST.md. **Owner**: Claude Code. **Model**: Haiku. **Size**: ~0 files.
+
 - [ ] **B49a. The key-exposure org policy as code.** `iam.serviceAccountKeyExposureResponse` is
   set to `DISABLE_KEY` on organization 936151157673 by hand (22:40 UTC on 2026-09-16, O48). Carry it
   in `google/identity.toml` under a new `[org_policy]` table and have `scripts/gcp-identity-sync.js`
   read and apply it through the Org Policy API (`orgpolicy.googleapis.com`, enabled on the project
   the same day) so `google apply` owns it like the pool and providers. **Source**: O48; BACKLOG 49.
   **Owner**: Claude Code. **Model**: Sonnet. **Size**: ~2 files.
-
-- [ ] **B30ai. Alarm triage reads no evidence: its `aws --profile` calls miss the allow-list.**
-  `REPORT_ALARM_TRIAGE_COST.md` (2026-09-16): every one of the eight triaged runs since the budget
-  guard landed was denied its `aws logs` and `aws cloudwatch` reads, 21 denials, because the agent
-  prefixes `--profile` and the `Bash(aws logs:*)` allow pattern does not match it; each run answered
-  from code alone. Add one line to `prompts/alarm-triage.md` after line 47: call `aws` with no
-  `--profile`, the OIDC role is already assumed on the runner. Then read the next triage run's log
-  for a successful `aws logs` call. **Source**: REPORT_ALARM_TRIAGE_COST.md. **Owner**: Claude Code.
-  **Model**: Haiku. **Size**: ~1 file.
 
 ## Machine-ask
 
@@ -188,17 +201,6 @@ step.
   environments, 2026-09-16). **Size**: ~12 files.
 
 ## Human-driven
-
-- [ ] **B30ah. Pick the triage budget.** `REPORT_ALARM_TRIAGE_COST.md` (2026-09-16): a triage
-  costs $0.45 (Claude Code's own `total_cost_usd` says $0.04 because it prices output only), the
-  cap is 4 a day not 3 (`alarm-triage.yml` line 77, `-gt 3`), $54 a month at today's rate, and 5 of
-  11 alarm issues in the window went untriaged. Options with the monthly figure: a true 3 a day
-  $40.50; 6 a day $81; 12 a day $162; a Haiku first pass with Sonnet on escalation $27 at 4 a day
-  or $40.50 at 6; turn or duration caps change little (successful runs used 11 to 18 turns). The
-  report recommends 6 a day (`-gt 5`, and the skip message's count) alongside B30ai. Say which;
-  Claude Code then changes `alarm-triage.yml` lines 77 and 94 (or builds the escalation logic).
-  **Source**: REPORT_ALARM_TRIAGE_COST.md; issue #249. **Owner**: Operator decides, Claude Code
-  applies. **Model**: Haiku. **Size**: ~1 file.
 
 - [ ] **O23. Open a Google Ads account for the paid-traffic experiments.** Both earlier Ads
   accounts were cancelled (`google-analytics.toml`); the reinvestment loop (plan row D17) needs
