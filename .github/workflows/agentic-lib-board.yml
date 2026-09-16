@@ -90,19 +90,23 @@ jobs:
 
       - name: Read prod's app stacks and live deployment
         id: facts
+        # A read that fails leaves the output empty rather than half-written: the board job
+        # renders an empty prod block as "unverified", but an unterminated heredoc in
+        # GITHUB_OUTPUT fails this job's output step and the board job with it.
         run: |
-          set -euo pipefail
+          set -uo pipefail
+          stacks=$(aws cloudformation list-stacks \
+            --stack-status-filter CREATE_COMPLETE UPDATE_COMPLETE UPDATE_ROLLBACK_COMPLETE \
+            --query "StackSummaries[?contains(StackName,'-app-')].[StackName,CreationTime]" \
+            --output text) || stacks=""
+          live=$(aws ssm get-parameter --name /submit/prod/last-known-good-deployment \
+            --query Parameter.Value --output text) || live=""
           {
             echo "stacks<<BOARD_EOF"
-            aws cloudformation list-stacks \
-              --stack-status-filter CREATE_COMPLETE UPDATE_COMPLETE UPDATE_ROLLBACK_COMPLETE \
-              --query "StackSummaries[?contains(StackName,'-app-')].[StackName,CreationTime]" \
-              --output text
+            echo "${stacks}"
             echo "BOARD_EOF"
+            echo "live-deployment=${live}"
           } | tee -a "$GITHUB_OUTPUT"
-          live=$(aws ssm get-parameter --name /submit/prod/last-known-good-deployment \
-            --query Parameter.Value --output text 2>/dev/null || echo "")
-          echo "live-deployment=${live}" | tee -a "$GITHUB_OUTPUT"
     outputs:
       stacks: ${{ steps.facts.outputs.stacks }}
       live-deployment: ${{ steps.facts.outputs.live-deployment }}
