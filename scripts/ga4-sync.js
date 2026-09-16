@@ -504,22 +504,78 @@ async function resolveProjectNumber(client, projectId) {
   }
 }
 
+/** What `gh` prints when the job's GITHUB_TOKEN may not manage environment variables. */
+export const VARIABLE_ACCESS_FORBIDDEN_TEXT = "Resource not accessible by integration";
+
+/**
+ * True when a `gh variable` call failed because the token cannot manage environment variables
+ * (HTTP 403 "Resource not accessible by integration"): the workflow deliberately holds no
+ * repository-administration token, so this is a finding for the operator, not a failure.
+ * @param {Error & {stderr?: string}} error
+ */
+export function isVariableAccessForbidden(error) {
+  const text = [error?.message, error?.stderr].filter(Boolean).join("\n");
+  return /HTTP 403/.test(text) && text.includes(VARIABLE_ACCESS_FORBIDDEN_TEXT);
+}
+
+/**
+ * The finding recorded when the variable cannot be managed from the workflow: what it needs and
+ * the one command that sets it.
+ */
+export function githubVariableFinding(environment, value) {
+  return (
+    `GitHub variable ${GITHUB_VARIABLE_NAME} (${environment}) needs ${value}; the workflow token cannot manage ` +
+    `environment variables, set it with: gh variable set ${GITHUB_VARIABLE_NAME} --env ${environment} --body ${value}`
+  );
+}
+
+/**
+ * Reads the variable's current value on a GitHub Environment. Answers `{value, forbidden}`:
+ * `forbidden` is true when the token may not read environment variables, so the caller can
+ * record the finding instead of treating the value as unset.
+ */
 function readGithubVariable(environment) {
   try {
-    const output = execFileSync("gh", ["variable", "list", "--env", environment], { encoding: "utf8" });
+    const output = execFileSync("gh", ["variable", "list", "--env", environment], { encoding: "utf8", stdio: ["ignore", "pipe", "pipe"] });
     const row = output
       .split("\n")
       .map((line) => line.split("\t"))
       .find(([name]) => name === GITHUB_VARIABLE_NAME);
-    return row?.[1]?.trim() ?? null;
+    return { value: row?.[1]?.trim() ?? null, forbidden: false };
   } catch (error) {
+    if (isVariableAccessForbidden(error)) {
+      return { value: null, forbidden: true };
+    }
     console.warn(`Could not read the existing GitHub variable ${GITHUB_VARIABLE_NAME} for environment "${environment}": ${error.message}`);
-    return null;
+    return { value: null, forbidden: false };
   }
 }
 
 function setGithubVariable(environment, value) {
-  execFileSync("gh", ["variable", "set", GITHUB_VARIABLE_NAME, "--env", environment, "--body", value], { stdio: "inherit" });
+  execFileSync("gh", ["variable", "set", GITHUB_VARIABLE_NAME, "--env", environment, "--body", value], {
+    encoding: "utf8",
+    stdio: ["ignore", "pipe", "pipe"],
+  });
+}
+
+/**
+ * Applies a "set" variable plan. Answers the finding when the token may not manage environment
+ * variables, null when the variable was set or nothing was to do; any other failure is thrown.
+ * @param {object} variablePlan - the plan's `githubVariable`
+ * @param {(environment: string, value: string) => void} [set] - injectable for tests
+ */
+export function applyGithubVariable(variablePlan, set = setGithubVariable) {
+  if (variablePlan.action !== "set") return null;
+  try {
+    set(variablePlan.environment, variablePlan.value);
+    console.log(`Set ${GITHUB_VARIABLE_NAME}=${variablePlan.value} on GitHub environment "${variablePlan.environment}"`);
+    return null;
+  } catch (error) {
+    if (isVariableAccessForbidden(error)) {
+      return githubVariableFinding(variablePlan.environment, variablePlan.value);
+    }
+    throw error;
+  }
 }
 
 async function createProperty(client, accountName, configProperty) {
@@ -622,10 +678,7 @@ async function applyPropertyPlan(client, plan, accountName) {
     console.log(`Updated BigQuery link ${plan.bigQueryLink.name}`);
   }
 
-  if (plan.githubVariable.action === "set") {
-    setGithubVariable(plan.githubVariable.environment, plan.githubVariable.value);
-    console.log(`Set ${GITHUB_VARIABLE_NAME}=${plan.githubVariable.value} on GitHub environment "${plan.githubVariable.environment}"`);
-  }
+  return applyGithubVariable(plan.githubVariable);
 }
 
 export async function main() {
@@ -652,13 +705,17 @@ export async function main() {
   }
 
   const plans = [];
+  const findings = new Map();
   for (const configProperty of config.properties) {
     const liveProperty = matchProperty(configProperty, liveProperties);
     const liveStreams = liveProperty ? await listDataStreams(client, liveProperty.name) : [];
     const liveBigQueryLinks = liveProperty ? await listBigQueryLinks(client, liveProperty.name) : [];
     const liveKeyEvents = liveProperty && configProperty.keyEvents ? await listKeyEvents(client, liveProperty.name) : [];
     const liveEnhancedMeasurementByStreamName = liveProperty ? await loadEnhancedMeasurementSettings(client, liveStreams) : {};
-    const currentGithubVariableValue = configProperty.githubEnvironment ? readGithubVariable(configProperty.githubEnvironment) : null;
+    const githubVariableRead = configProperty.githubEnvironment
+      ? readGithubVariable(configProperty.githubEnvironment)
+      : { value: null, forbidden: false };
+    const currentGithubVariableValue = githubVariableRead.value;
     const projectNumber = configProperty.bigQueryLink ? (projectNumbersById[configProperty.bigQueryLink.project] ?? null) : null;
 
     const plan = buildPropertyPlan({
@@ -674,9 +731,18 @@ export async function main() {
     plans.push(plan);
     printPropertyPlan(plan, !opts.apply);
 
-    if (opts.apply) {
-      await applyPropertyPlan(client, plan, account.name);
+    if (githubVariableRead.forbidden && plan.githubVariable.value) {
+      findings.set(plan.githubVariable.environment, githubVariableFinding(plan.githubVariable.environment, plan.githubVariable.value));
     }
+    if (opts.apply) {
+      const finding = await applyPropertyPlan(client, plan, account.name);
+      if (finding) findings.set(plan.githubVariable.environment, finding);
+    }
+  }
+
+  if (findings.size > 0) {
+    console.log(`Findings (${findings.size}):`);
+    for (const finding of findings.values()) console.log(`  ${finding}`);
   }
 
   return plans;

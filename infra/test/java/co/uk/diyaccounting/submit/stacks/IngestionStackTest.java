@@ -63,6 +63,28 @@ class IngestionStackTest {
             String ga4BigQueryProjectId,
             String ga4BigQueryDatasetId,
             String ga4BigQueryLocation) {
+        return synthIngestionStack(
+                envName,
+                stripeSecretKeyArn,
+                stripeTestSecretKeyArn,
+                ga4PropertyId,
+                ga4ServiceAccountArn,
+                ga4BigQueryProjectId,
+                ga4BigQueryDatasetId,
+                ga4BigQueryLocation,
+                null);
+    }
+
+    private static IngestionStack synthIngestionStack(
+            String envName,
+            String stripeSecretKeyArn,
+            String stripeTestSecretKeyArn,
+            String ga4PropertyId,
+            String ga4ServiceAccountArn,
+            String ga4BigQueryProjectId,
+            String ga4BigQueryDatasetId,
+            String ga4BigQueryLocation,
+            String ga4AuthMode) {
         App app = new App();
         SubmitSharedNames sharedNames = SubmitSharedNames.forDocs();
 
@@ -98,6 +120,9 @@ class IngestionStackTest {
         }
         if (ga4BigQueryLocation != null) {
             builder.ga4BigQueryLocation(ga4BigQueryLocation);
+        }
+        if (ga4AuthMode != null) {
+            builder.ga4AuthMode(ga4AuthMode);
         }
 
         return new IngestionStack(app, "TestIngestionStack-" + envName, builder.build());
@@ -512,5 +537,34 @@ class IngestionStackTest {
         var properties = (Map<String, Object>) resource.get("Properties");
         var environment = (Map<String, Object>) properties.get("Environment");
         return (Map<String, Object>) environment.get("Variables");
+    }
+
+    @Test
+    void ga4JobsCarryTheFederationVariablesForTheirEnvironment() {
+        Template ci = Template.fromStack(
+                synthIngestionStack("ci", null, null, "552917343", null, "diyaccounting-ga4", null, null, "federated"));
+        for (String functionName :
+                List.of("docs-env-ga4-report-pull", "docs-env-ga4-event-export-pull", "docs-env-ga4-daily-pull")) {
+            var functions = ci.findResources(
+                    "AWS::Lambda::Function", Map.of("Properties", Map.of("FunctionName", functionName)));
+            assertEquals(1, functions.size(), functionName);
+            var env = environmentVariablesOf(functions);
+            assertEquals("federated", env.get("GA4_AUTH_MODE"), functionName);
+            assertEquals(
+                    "//iam.googleapis.com/projects/958354756046/locations/global/workloadIdentityPools/submit-federation/providers/aws-ci",
+                    env.get("GOOGLE_WIF_AUDIENCE"),
+                    functionName);
+            assertEquals(
+                    "ga4-report-pull@diyaccounting-ga4.iam.gserviceaccount.com",
+                    env.get("GA4_SERVICE_ACCOUNT_EMAIL"),
+                    functionName);
+        }
+
+        Template docs = Template.fromStack(synthIngestionStack("docs", null, null, null, null));
+        var reportPull = docs.findResources(
+                "AWS::Lambda::Function", Map.of("Properties", Map.of("FunctionName", "docs-env-ga4-report-pull")));
+        var env = environmentVariablesOf(reportPull);
+        assertEquals("key", env.get("GA4_AUTH_MODE"), "the key path is the default until an environment opts in");
+        assertTrue(((String) env.get("GOOGLE_WIF_AUDIENCE")).endsWith("/providers/aws-docs"));
     }
 }
