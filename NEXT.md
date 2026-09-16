@@ -39,6 +39,16 @@ Every item names its model: the lowest tier that fits (Fable > Opus > Sonnet > H
 
 ## In flight
 
+Wave b44 rides **`claude/b44-board`** (from `main` at bcab3758, unpushed): B55.3, the GA4 key out of the
+job logs, and the pool's display name, in `.claude/worktrees/b44-google`.
+
+- [ ] **B55.3. The GA4 key leaves the workflow's env and logs.** The eight `GA4_SERVICE_ACCOUNT_JSON`
+  step envs and the `credentials-json` output go; the scripts resolve the key from
+  `GA4_SERVICE_ACCOUNT_ARN` themselves, and any step that must hold the JSON writes it to a mode-600
+  file with every line masked; `google-key-rotate.yml` and any other workflow with the pattern the
+  same. **Source**: O48; run 35049344705. **Owner**: Claude Code. **Model**: Sonnet. **Size**: ~2
+  files.
+
 ## Machine-only
 
 - [ ] **B55.2. Prove Google federation and wire the Lambdas.** Wave b43 (PR #241, merged 03:0x UTC on
@@ -104,6 +114,19 @@ Every item names its model: the lowest tier that fits (Fable > Opus > Sonnet > H
   **Owner**: Operator decides, Claude Code changes. **Model**: Haiku. **Size**: ~2 files.
 
 ## Human-only
+
+- [ ] **O48. Rotate the GA4 service-account key: it was printed in public job logs.** Found 03:0x UTC
+  on 2026-09-16: `google-apply.yml` passed the key's JSON to eight steps as a step env, GitHub's
+  `add-mask` matched only the single-line value, and the pretty-printed JSON, private key included,
+  appeared in the env block of every run's log on this public repository; the fifteen runs with logs
+  (back to 2026-09-11) had their logs deleted at 03:0x UTC, and the session's local copies were
+  removed. The account `ga4-report-pull@diyaccounting-ga4.iam.gserviceaccount.com` holds
+  `roles/owner` on the project. Rotate now, through the code path (creates a new key, writes it to
+  both environments' secrets, disables the old one):
+  `gh workflow run google-key-rotate.yml --ref main -f apply=true`
+  then read the run and confirm the old key id is disabled; the workflow fix that stops the printing
+  is B55.3 (wave b44). Write the date into `secrets-rotation.toml`'s `ga4/service_account` row.
+  **Source**: run 35049344705; this session. **Owner**: Operator. **Model**: none.
 
 - [ ] **O46. Decide how the signature check gates `main`.** B166's check runs on every PR since PR
   #226 and fails one carrying an unsigned commit (run 35027270496 passed). Adding it to ruleset
