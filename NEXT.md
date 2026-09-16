@@ -134,18 +134,6 @@ step.
 
 ## Machine-ask
 
-- [ ] **B56. `test` and CodeQL as required status checks on `main`.** O46 settled on 2026-09-16:
-  ruleset 16057564 keeps `Check commit signatures` required with the Admin role as its only bypass
-  actor, `RELEASE_PAT` carries `publish.yml`'s bump, and a docs push by an admin lands directly.
-  Add the contexts to the same ruleset body (`gh api -X PUT .../rulesets/16057564`): the check
-  names on a code head are `npm test`, `maven test`, `eslint` and `CodeQL`. Decided 2026-09-16: a docs-only
-  PR is left to the Admin bypass (docs commits go straight to `main` under the docs exception, and
-  every code head runs all four), so no `test.yml` change; the ruleset write is a blocked command
-  here (the names are confirmed on PR #271's head 9b4ffc53), so the operator runs one command:
-  `gh api repos/diy-accounting-uk/submit.diyaccounting.co.uk/rulesets/16057564 | jq '{name,target,enforcement,bypass_actors,conditions,rules} | .rules |= map(if .type=="required_status_checks" then .parameters.required_status_checks = (["Check commit signatures","npm test","maven test","eslint","CodeQL"] | map({context:.})) else . end)' | gh api -X PUT repos/diy-accounting-uk/submit.diyaccounting.co.uk/rulesets/16057564 --input -`
-  and a GET of the ruleset then lists five contexts.
-  **Source**: BACKLOG 56. **Owner**: the operator runs the one command the session is denied. **Model**: none. **Size**: ~0 files.
-
 - [ ] **O44. Tell Companies House's XML team what B34.6b submitted.** One email from your address
   to Neal at `xml@companieshouse.gov.uk`, naming: presenter E0000052288, company 06846849, test
   package reference 0012; submissions 000002 and 000003 (2026-09-13 18:19 UTC) rejected with error
