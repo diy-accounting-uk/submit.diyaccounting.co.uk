@@ -11,12 +11,17 @@
       "Bash(npm run linting:*)",
       "Bash(npm run formatting:*)",
       "Bash(./mvnw:*)",
-      "WebFetch(domain:developer.service.hmrc.gov.uk)"
+      "WebFetch(domain:developer.service.hmrc.gov.uk)",
+      "Bash(git worktree remove:*)",
+      "Bash(git worktree prune:*)",
+      "Bash(git branch -D claude/:*)",
+      "Bash(git branch -D worktree-:*)",
+      "Bash(git push origin --delete claude/:*)"
     ],
     "deny": [
       "Bash(git push --force:*)",
-      "Bash(git branch -D:*)",
-      "Bash(git rebase -i:*)"
+      "Bash(git rebase -i:*)",
+      "Bash(git branch -D main:*)"
     ]
   },
   "hooks": {
