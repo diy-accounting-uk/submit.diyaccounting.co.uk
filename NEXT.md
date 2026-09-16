@@ -39,33 +39,20 @@ Every item names its model: the lowest tier that fits (Fable > Opus > Sonnet > H
 
 ## In flight
 
-Wave b43 rides **`claude/b43-board`, PR #241** (pushed 02:3x UTC on 2026-09-16, two commits: B55.2's
-project number and masked exit status, B57.2's pinning of the seven remaining workflows). After the
-merge: the push runs `google-apply.yml` through the key path and creates the pool, then the federated
-plan dispatch proves B55.2; the operator's `scripts/github-actions-permissions.sh --require-sha`
-finishes B57.2.
-
-- [ ] **B55.2. Prove Google federation and wire the Lambdas.** `google-apply.yml` ran on the push of
-  PR #237 through the key path (run 35045218215) but its identity-sync step failed on the wrong
-  project number in `identity.toml` (670010122633 read off an OAuth client id; the project is
-  958354756046) while the job reported success, because `| tee` masked the exit status; so no pool
-  exists and the federated plan dispatch (run 35047179597) answered `invalid_target`. Wave b43 fixes
-  the number and the masking (in flight). Then `gh workflow run google-apply.yml --ref main -f auth-mode=federated -f apply=false` must
-  read live state with the key step skipped; then `gh variable set SUBMIT_GOOGLE_AUTH_MODE --env prod
-  --body federated`. The Lambdas: `IngestionStack.java` puts `GA4_AUTH_MODE`, `GOOGLE_WIF_AUDIENCE`
-  (the `aws-ci` / `aws-prod` audience the sync step prints) and `GA4_SERVICE_ACCOUNT_EMAIL` on the
-  three GA4 functions, proven on ci by one nightly run of each in federated mode, then prod; then the
-  key, both secrets, the `ga4/service_account` row and the rotation script go. **Source**: B55; PR
-  #237; `PLAN_GOOGLE_AS_CODE.md` items 9 and 11. **Owner**: Claude Code. **Model**: Sonnet. **Size**:
-  ~4 files.
-
-- [ ] **B57.2. Pin the five agent and Google workflows and require SHA pinning.** `alarm-triage.yml`,
-  the three `agentic-lib-*.yml` and `google-apply.yml` stayed on tags in B57 because other batches
-  were editing them; pin their `uses:` lines, then `scripts/github-actions-permissions.sh --require-sha`
-  (the operator runs the script: the settings write is denied to the session). **Source**: B57; PR
-  #237. **Owner**: Claude Code, then Operator. **Model**: Haiku. **Size**: ~5 files.
-
 ## Machine-only
+
+- [ ] **B55.2. Prove Google federation and wire the Lambdas.** Wave b43 (PR #241, merged 03:0x UTC on
+  2026-09-16) corrected the project number, enabled the IAM, IAM Credentials and STS APIs before the
+  sync, and unmasked and fixed the five script failures `| tee` had hidden. The push's apply run
+  creates the pool, the three providers and the binding; the federated plan dispatch
+  (`gh workflow run google-apply.yml --ref main -f auth-mode=federated -f apply=false`) then proves the
+  GitHub path, after which `gh variable set SUBMIT_GOOGLE_AUTH_MODE --env prod --body federated`. The
+  Lambdas: `IngestionStack.java` puts `GA4_AUTH_MODE`, `GOOGLE_WIF_AUDIENCE` (the `aws-ci` /
+  `aws-prod` audience the sync prints) and `GA4_SERVICE_ACCOUNT_EMAIL` on the three GA4 functions,
+  proven on ci by one nightly run of each in federated mode, then prod; then the key, both secrets,
+  the `ga4/service_account` row and the rotation script go. **Source**: B55; PRs #237, #241;
+  `PLAN_GOOGLE_AS_CODE.md` items 9 and 11. **Owner**: Claude Code. **Model**: Sonnet. **Size**: ~4
+  files.
 
 - [ ] **B30ac.2. Prove the triage agent queries.** The telemetry policy is on the triage role since
   `main`'s environment deploy of PR #237 (02:0x UTC on 2026-09-16). The dispatch
@@ -86,7 +73,8 @@ finishes B57.2.
   **Owner**: Claude Code. **Model**: Haiku. Date-gated: from 16:41 UTC on 2026-09-16. **Size**: ~0
   files.
 
-- [ ] **B52y.2. Check the nightly snapshot after the SecurityLakeStack reaches prod.** PR #218
+- [ ] **B52y.2. Check the nightly snapshot after the SecurityLakeStack reaches prod.** Needs the AWS SSO
+  session (`aws sso login --sso-session diyaccounting`; expired 01:4x UTC on 2026-09-16). PR #218
   (9b695aab) adds the `deploy-security-lake` job and the per-observation null; prod's environment
   deploy of that merge creates the Glue tables. After the next 03:15 UTC run, read
   `snapshots/prod/latest.json`: `generatedAt` past 2026-09-16 03:15, `failedObservationCount` 0,
@@ -128,6 +116,12 @@ finishes B57.2.
   actor and move `publish.yml`'s bump onto a PAT or the contents API first (a Claude Code change);
   (3) an organisation-level ruleset, where the Actions app is an allowed bypass actor. **Source**:
   B166; ruleset 16057564. **Owner**: Operator. **Model**: none.
+
+- [ ] **O47. Apply the Actions allow list and require SHA pinning.** Every action in the repository is
+  pinned since PR #241 (B57, B57.2); the settings write is denied to sessions, so run:
+  `cd /Users/antony/projects/diy-accounting-limited/submit.diyaccounting.co.uk && scripts/github-actions-permissions.sh --require-sha`
+  (sets `allowed_actions: selected` with the six owners the workflows use and
+  `sha_pinning_required: true`). **Source**: BACKLOG 57; B57.2. **Owner**: Operator. **Model**: none.
 
 - [ ] **O17. Register the Companies House sandbox test user and set four ci values.**
   Companies House has no create-test-user API, so the operator registers a throwaway account
