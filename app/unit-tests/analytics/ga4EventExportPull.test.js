@@ -271,7 +271,7 @@ describe("ga4EventExportPull", () => {
     test("builds the BigQuery client from the Lambda's execution role and reads no secret", async () => {
       process.env.GA4_AUTH_MODE = "federated";
       process.env.GOOGLE_WIF_AUDIENCE =
-        "//iam.googleapis.com/projects/670010122633/locations/global/workloadIdentityPools/submit-federation/providers/aws-prod";
+        "//iam.googleapis.com/projects/958354756046/locations/global/workloadIdentityPools/submit-federation/providers/aws-prod";
       process.env.GA4_SERVICE_ACCOUNT_EMAIL = "ga4-report-pull@diyaccounting-ga4.iam.gserviceaccount.com";
       process.env.AWS_REGION = "eu-west-2";
       process.env.AWS_ACCESS_KEY_ID = "ASIAEXAMPLE";

@@ -22,7 +22,7 @@ import {
 const SAMPLE_TOML = `
 [project]
 id = "diyaccounting-ga4"
-number = "670010122633"
+number = "958354756046"
 
 [service_account]
 email = "ga4-report-pull@diyaccounting-ga4.iam.gserviceaccount.com"
@@ -61,7 +61,7 @@ display_name = "GitHub Actions and the submit Lambdas"
     "attribute.aws_role" = "assertion.arn.extract('assumed-role/{role}/')"
 `;
 
-const POOL = "projects/670010122633/locations/global/workloadIdentityPools/submit-federation";
+const POOL = "projects/958354756046/locations/global/workloadIdentityPools/submit-federation";
 
 function liveMatching(config) {
   const providers = {};
@@ -73,7 +73,7 @@ function liveMatching(config) {
       bindings: [
         {
           role: WORKLOAD_IDENTITY_USER_ROLE,
-          members: config.providers.map((p) => principalSetMember("670010122633", "submit-federation", p.principalSet)),
+          members: config.providers.map((p) => principalSetMember("958354756046", "submit-federation", p.principalSet)),
         },
       ],
     },
@@ -95,7 +95,7 @@ describe("gcp-identity-sync parseArgs", () => {
 describe("gcp-identity-sync parseConfig", () => {
   it("reads the project, service account, pool and providers", () => {
     const config = parseConfig(SAMPLE_TOML);
-    expect(config.project).toEqual({ id: "diyaccounting-ga4", number: "670010122633" });
+    expect(config.project).toEqual({ id: "diyaccounting-ga4", number: "958354756046" });
     expect(config.serviceAccount.email).toBe("ga4-report-pull@diyaccounting-ga4.iam.gserviceaccount.com");
     expect(config.pool).toEqual({ id: "submit-federation", displayName: "GitHub Actions and the submit Lambdas" });
     expect(config.providers.map((p) => [p.id, p.type])).toEqual([
@@ -190,7 +190,7 @@ describe("gcp-identity-sync providerDiff", () => {
 
 describe("gcp-identity-sync credential configuration", () => {
   it("names the provider audience under the project number", () => {
-    expect(providerAudience("670010122633", "submit-federation", "aws-prod")).toBe(`//iam.googleapis.com/${POOL}/providers/aws-prod`);
+    expect(providerAudience("958354756046", "submit-federation", "aws-prod")).toBe(`//iam.googleapis.com/${POOL}/providers/aws-prod`);
   });
 
   it("builds the aws external-account configuration with no secret in it", () => {

@@ -8,6 +8,12 @@ concurrency:
   group: google-apply-${{ github.ref }}
   cancel-in-progress: false
 
+# Every run step pipes through tee; without an explicit bash shell GitHub runs `bash -e` and the
+# pipe masks a failing script, which is how a failed identity sync once reported success.
+defaults:
+  run:
+    shell: bash
+
 on:
   # A hand run proves the federated path before it becomes the default: dispatch with
   # auth-mode=federated once the identity step has applied the pool, read every step's log,
