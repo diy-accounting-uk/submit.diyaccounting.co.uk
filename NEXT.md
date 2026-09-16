@@ -16,10 +16,11 @@ runs), and for Claude Code steps the **Model** a sub-agent should use (Fable > O
 Haiku; the lowest tier that fits). Anything touching code goes through a `claude/*` branch and
 PR; the operator merges.
 
-**Prod runs deployment prod-9f58aaa** (PR #226, run 35028380205); `main`'s deploy of PR #232 (b41, run
-35037156633) succeeded at 01:1x UTC on 2026-09-16 and its promotion is read at the next render; `main`'s
-deploy of PR #237 (b42) started at 01:44 UTC. **ci**: the b41 and b42 branch sets stand until their
-self-destructs.
+**Prod runs deployment prod-a130010** (PR #247, run 35054202697, promoted under the `deploy-ops` gate
+at 04:5x UTC on 2026-09-16; the same run destroyed the previous set), unverified against AWS since the
+SSO session expired at 01:4x UTC. **ci**: the b40 to b45 branch sets self-destruct on their own
+schedules; `ci-claud727f`'s `ApiStack` stays DELETE_FAILED until a `destroy-ci.yml` sweep runs, and
+the sweep's 02:34 and 04:34 UTC slots on 2026-09-16 show no run (last run 13:48 UTC on 2026-09-15).
 
 The board runs in five sections, in this order: **in flight** (a branch, a pull request or a run
 in motion, each named in the row), **machine-only**, **human and machine**, **human-only**,
