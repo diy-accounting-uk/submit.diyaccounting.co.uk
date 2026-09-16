@@ -70,6 +70,18 @@ class IdentityStackTest {
     }
 
     @Test
+    void userPoolRequiresTotpMfaAndEnablesSoftwareTokenMfa() {
+        IdentityStack stack = synthIdentityStack("ci");
+        Template template = Template.fromStack(stack);
+
+        template.hasResourceProperties(
+                "AWS::Cognito::UserPool",
+                Match.objectLike(Map.of(
+                        "MfaConfiguration", "ON",
+                        "EnabledMfas", List.of("SOFTWARE_TOKEN_MFA"))));
+    }
+
+    @Test
     void booksClientUsesTheAuthorizationCodeFlowWithNoSecretAndPreventsUserExistenceErrors() {
         IdentityStack stack = synthIdentityStack("ci");
         Template template = Template.fromStack(stack);
@@ -230,18 +242,24 @@ class IdentityStackTest {
 
         Set<String> allowedActions = Set.of(
                 "cognito-idp:AdminCreateUser",
+                "cognito-idp:AdminDeleteUser",
                 "cognito-idp:AdminGetUser",
                 "cognito-idp:AdminSetUserPassword",
                 "cognito-idp:AdminSetUserMFAPreference",
                 "cognito-idp:AssociateSoftwareToken",
                 "cognito-idp:VerifySoftwareToken",
                 "cognito-idp:InitiateAuth",
+                "cognito-idp:RespondToAuthChallenge",
                 "cognito-idp:DescribeUserPoolClient",
                 "cognito-idp:UpdateUserPoolClient",
                 "cloudformation:DescribeStacks",
                 "dynamodb:Query",
                 "dynamodb:DeleteItem",
-                "dynamodb:UpdateItem");
+                "dynamodb:UpdateItem",
+                "secretsmanager:CreateSecret",
+                "secretsmanager:PutSecretValue",
+                "secretsmanager:GetSecretValue",
+                "secretsmanager:DescribeSecret");
 
         Set<String> grantedActions = actionsGrantedToRole(template, "ci-env-spreadsheets-behaviour-role");
 

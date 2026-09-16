@@ -179,9 +179,9 @@ public class IdentityStack extends Stack {
                 .featurePlan(FeaturePlan.PLUS)
                 .standardThreatProtectionMode(StandardThreatProtectionMode.FULL_FUNCTION)
                 .customThreatProtectionMode(CustomThreatProtectionMode.FULL_FUNCTION)
-                // Enable optional TOTP MFA for native auth users (test users, future native users)
-                // Federated users (Google) bypass Cognito MFA — their IdP handles MFA independently
-                .mfa(Mfa.OPTIONAL)
+                // TOTP MFA required for native-auth users; federated Google users bypass Cognito MFA
+                // (their IdP handles MFA independently)
+                .mfa(Mfa.REQUIRED)
                 .mfaSecondFactor(MfaSecondFactor.builder()
                         .otp(true) // TOTP via authenticator apps
                         .sms(false) // No SMS MFA (no phone numbers collected)
@@ -365,17 +365,41 @@ public class IdentityStack extends Stack {
         // scripts/ensure-cognito-test-user.js: create the durable test user, rotate its password,
         // and enrol its TOTP device. It calls InitiateAuth, not AdminInitiateAuth, because the
         // user pool client has ALLOW_USER_PASSWORD_AUTH but not ALLOW_ADMIN_USER_PASSWORD_AUTH.
+        // InitiateAuth and RespondToAuthChallenge are both unauthenticated Cognito APIs (callable
+        // with only the app client id, no IAM permission enforced), listed here for the same
+        // reason InitiateAuth already was: documenting what the script actually calls.
+        // AdminDeleteUser is a real admin action, needed for the one-time path where the user
+        // already has a device enrolled but this script has no stored secret to answer its
+        // challenge with, so the user is recreated instead.
         spreadsheetsBehaviourRole.addToPolicy(PolicyStatement.Builder.create()
                 .effect(Effect.ALLOW)
                 .actions(List.of(
                         "cognito-idp:AdminCreateUser",
+                        "cognito-idp:AdminDeleteUser",
                         "cognito-idp:AdminGetUser",
                         "cognito-idp:AdminSetUserPassword",
                         "cognito-idp:AdminSetUserMFAPreference",
                         "cognito-idp:AssociateSoftwareToken",
                         "cognito-idp:VerifySoftwareToken",
-                        "cognito-idp:InitiateAuth"))
+                        "cognito-idp:InitiateAuth",
+                        "cognito-idp:RespondToAuthChallenge"))
                 .resources(List.of(this.userPool.getUserPoolArn()))
+                .build());
+
+        // scripts/ensure-cognito-test-user.js stores each lane's current TOTP secret in Secrets
+        // Manager so a later run can answer the pool's SOFTWARE_TOKEN_MFA challenge instead of
+        // guessing. Scoped to the test-secret namespace only, not the HMRC/Stripe/Google secrets
+        // this role has no other reason to touch.
+        spreadsheetsBehaviourRole.addToPolicy(PolicyStatement.Builder.create()
+                .effect(Effect.ALLOW)
+                .actions(List.of(
+                        "secretsmanager:CreateSecret",
+                        "secretsmanager:PutSecretValue",
+                        "secretsmanager:GetSecretValue",
+                        "secretsmanager:DescribeSecret"))
+                .resources(List.of(String.format(
+                        "arn:aws:secretsmanager:%s:%s:secret:%s/submit/test/*",
+                        props.getEnv().getRegion(), props.getEnv().getAccount(), props.envName())))
                 .build());
 
         // The spreadsheets ci behaviour run toggles native sign-in on the DIYA-GL (books) app
