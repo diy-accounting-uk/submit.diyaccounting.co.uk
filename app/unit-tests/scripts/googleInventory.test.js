@@ -25,7 +25,7 @@ import {
   shapeTransferConfigs,
   buildInventoryReport,
   findingForForbiddenRead,
-  collectBudgets,
+  readOrFinding,
 } from "../../../scripts/google-inventory.js";
 
 describe("parseArgs", () => {
@@ -342,26 +342,62 @@ describe("findingForForbiddenRead", () => {
   });
 });
 
-describe("collectBudgets", () => {
-  test("answers the budgets and no finding when the read succeeds", async () => {
-    const list = async () => [{ name: "billingAccounts/1/budgets/a" }];
-    expect(await collectBudgets("t", "p", "sa", list)).toEqual({ budgets: [{ name: "billingAccounts/1/budgets/a" }], finding: null });
-  });
+const BILLING_403 =
+  '403 from https://cloudbilling.googleapis.com/v1/projects/diyaccounting-ga4/billingInfo: {"error":{"code":403,"message":"Request had insufficient authentication scopes.","status":"PERMISSION_DENIED","details":[{"@type":"type.googleapis.com/google.rpc.ErrorInfo","reason":"ACCESS_TOKEN_SCOPE_INSUFFICIENT","domain":"googleapis.com"}]}}';
+const KEYS_403 =
+  '403 from https://iam.googleapis.com/v1/projects/diyaccounting-ga4/serviceAccounts/ga4-report-pull@diyaccounting-ga4.iam.gserviceaccount.com/keys: {"error":{"code":403,"message":"Request had insufficient authentication scopes.","status":"PERMISSION_DENIED","details":[{"@type":"type.googleapis.com/google.rpc.ErrorInfo","reason":"ACCESS_TOKEN_SCOPE_INSUFFICIENT","domain":"googleapis.com"}]}}';
+const SA = "ga4-report-pull@diyaccounting-ga4.iam.gserviceaccount.com";
 
-  test("answers no budgets and a finding when the read is forbidden", async () => {
-    const list = async () => {
-      throw new Error("403 from https://cloudbilling.googleapis.com/v1/projects/p/billingInfo: PERMISSION_DENIED");
-    };
-    expect(await collectBudgets("t", "p", "sa@p", list)).toEqual({
-      budgets: [],
-      finding: "billing: not permitted for sa@p (roles/billing.viewer missing)",
+describe("readOrFinding", () => {
+  test("answers the value and no finding when the read succeeds", async () => {
+    expect(await readOrFinding({ what: "billing", serviceAccountEmail: SA, remedy: "r" }, async () => [1], [])).toEqual({
+      value: [1],
+      finding: null,
     });
   });
 
+  test("turns the real billing 403 into a finding naming the scope and answers the fallback", async () => {
+    const result = await readOrFinding(
+      { what: "billing", serviceAccountEmail: SA, remedy: "roles/billing.viewer missing" },
+      async () => {
+        throw new Error(BILLING_403);
+      },
+      [],
+    );
+    expect(result).toEqual({ value: [], finding: `billing: not permitted for ${SA} (the access token lacks the scope)` });
+  });
+
+  test("turns the real service-account-keys 403 into a finding and answers the fallback", async () => {
+    const result = await readOrFinding(
+      { what: "service account keys", serviceAccountEmail: SA, remedy: "iam.serviceAccountKeys.list missing" },
+      async () => {
+        throw new Error(KEYS_403);
+      },
+      [],
+    );
+    expect(result).toEqual({ value: [], finding: `service account keys: not permitted for ${SA} (the access token lacks the scope)` });
+  });
+
+  test("names the remedy when the 403 is a role, not a scope", async () => {
+    const result = await readOrFinding(
+      { what: "IAP brand", serviceAccountEmail: SA, remedy: "iap.brands.list missing" },
+      async () => {
+        throw new Error('403 from https://iap.googleapis.com/v1/projects/1/brands: {"error":{"status":"PERMISSION_DENIED"}}');
+      },
+      null,
+    );
+    expect(result).toEqual({ value: null, finding: `IAP brand: not permitted for ${SA} (iap.brands.list missing)` });
+  });
+
   test("rethrows any other error", async () => {
-    const list = async () => {
-      throw new Error("500 from https://cloudbilling.googleapis.com/v1/projects/p/billingInfo");
-    };
-    await expect(collectBudgets("t", "p", "sa", list)).rejects.toThrow(/^500 from/);
+    await expect(
+      readOrFinding(
+        { what: "billing", serviceAccountEmail: SA, remedy: "r" },
+        async () => {
+          throw new Error("500 from https://cloudbilling.googleapis.com/v1/projects/p/billingInfo");
+        },
+        [],
+      ),
+    ).rejects.toThrow(/^500 from/);
   });
 });

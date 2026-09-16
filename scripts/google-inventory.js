@@ -41,11 +41,10 @@ const IAP_V1 = "https://iap.googleapis.com/v1";
 const BIGQUERY_V2 = "https://bigquery.googleapis.com/bigquery/v2";
 const DATA_TRANSFER_V1 = "https://bigquerydatatransfer.googleapis.com/v1";
 
-const SCOPES = [
-  "https://www.googleapis.com/auth/cloud-platform.read-only",
-  "https://www.googleapis.com/auth/cloud-billing.readonly",
-  "https://www.googleapis.com/auth/analytics.readonly",
-];
+// cloud-platform rather than cloud-platform.read-only: the read-only scope does not cover the
+// Cloud Billing API or iam.serviceAccountKeys.list, and every call this script makes is a GET,
+// so the wider scope changes what the token may be asked for, not what the script does.
+const SCOPES = ["https://www.googleapis.com/auth/cloud-platform", "https://www.googleapis.com/auth/analytics.readonly"];
 
 export function parseArgs(argv) {
   const opts = {
@@ -193,16 +192,21 @@ export function findingForForbiddenRead(error, what, serviceAccountEmail, remedy
 }
 
 /**
- * Lists the billing budgets, or answers none with a finding when the read is forbidden.
- * @returns {Promise<{budgets: object[], finding: string|null}>}
+ * Runs one read of the inventory, or answers the fallback with a finding when the read is
+ * forbidden. Any other error is rethrown, so the script still fails on anything but permissions.
+ * @template T
+ * @param {{what: string, serviceAccountEmail: string, remedy: string}} read - what is being read, as whom, what would permit it
+ * @param {() => Promise<T>} fn - the read
+ * @param {T} fallback - the value to answer when the read is forbidden
+ * @returns {Promise<{value: T, finding: string|null}>}
  */
-export async function collectBudgets(token, project, serviceAccountEmail, list = listBudgets) {
+export async function readOrFinding(read, fn, fallback) {
   try {
-    return { budgets: await list(token, project), finding: null };
+    return { value: await fn(), finding: null };
   } catch (error) {
-    const finding = findingForForbiddenRead(error, "billing", serviceAccountEmail, "roles/billing.viewer missing");
+    const finding = findingForForbiddenRead(error, read.what, read.serviceAccountEmail, read.remedy);
     if (finding === null) throw error;
-    return { budgets: [], finding };
+    return { value: fallback, finding };
   }
 }
 
@@ -437,41 +441,70 @@ export async function main(argv = process.argv.slice(2)) {
   });
   const token = await getAccessToken(createGoogleAuthClient(credentialsJson, SCOPES));
 
-  const [enabledServices, iamPolicy, budgetsResult, projectNumber, ga4Accounts, serviceAccountKeys, bigQueryDatasets] = await Promise.all([
-    listEnabledServices(token, opts.project),
-    getProjectIamPolicy(token, opts.project),
-    collectBudgets(token, opts.project, opts.serviceAccountEmail),
-    getProjectNumber(token, opts.project),
-    listGa4Accounts(token),
-    listServiceAccountKeys(token, opts.project, opts.serviceAccountEmail),
-    listBigQueryDatasets(token, opts.project),
+  const findings = [];
+  const read = async (what, remedy, fn, fallback) => {
+    const result = await readOrFinding({ what, serviceAccountEmail: opts.serviceAccountEmail, remedy }, fn, fallback);
+    if (result.finding !== null) findings.push(result.finding);
+    return result.value;
+  };
+
+  const [enabledServices, iamPolicy, budgets, projectNumber, ga4Accounts, serviceAccountKeys, bigQueryDatasets] = await Promise.all([
+    read("enabled services", "serviceusage.services.list missing", () => listEnabledServices(token, opts.project), []),
+    read("project IAM policy", "resourcemanager.projects.getIamPolicy missing", () => getProjectIamPolicy(token, opts.project), []),
+    read("billing", "roles/billing.viewer missing", () => listBudgets(token, opts.project), []),
+    read("project number", "resourcemanager.projects.get missing", () => getProjectNumber(token, opts.project), null),
+    read("GA4 accounts", "Analytics Admin access missing", () => listGa4Accounts(token), []),
+    read(
+      "service account keys",
+      "iam.serviceAccountKeys.list missing",
+      () => listServiceAccountKeys(token, opts.project, opts.serviceAccountEmail),
+      [],
+    ),
+    read("BigQuery datasets", "bigquery.datasets.get missing", () => listBigQueryDatasets(token, opts.project), []),
   ]);
 
   const accountName =
     ga4Accounts.find((account) => account.name === `accounts/${opts.ga4AccountId}`)?.name ?? `accounts/${opts.ga4AccountId}`;
-  const ga4Properties = await listGa4Properties(token, accountName);
+  const ga4Properties = await read("GA4 properties", "Analytics Admin access missing", () => listGa4Properties(token, accountName), []);
 
   const dataStreamsByProperty = {};
   const keyEventsByProperty = {};
   const bigQueryLinksByProperty = {};
   for (const property of ga4Properties) {
     if (property.deleted) continue;
-    dataStreamsByProperty[property.name] = await listDataStreams(token, property.name);
-    keyEventsByProperty[property.name] = await listKeyEvents(token, property.name);
-    bigQueryLinksByProperty[property.name] = await listBigQueryLinks(token, property.name);
+    dataStreamsByProperty[property.name] = await read(
+      `data streams of ${property.name}`,
+      "Analytics Admin access missing",
+      () => listDataStreams(token, property.name),
+      [],
+    );
+    keyEventsByProperty[property.name] = await read(
+      `key events of ${property.name}`,
+      "Analytics Admin access missing",
+      () => listKeyEvents(token, property.name),
+      [],
+    );
+    bigQueryLinksByProperty[property.name] = await read(
+      `BigQuery links of ${property.name}`,
+      "Analytics Admin access missing",
+      () => listBigQueryLinks(token, property.name),
+      [],
+    );
   }
 
   const [iapBrand, transferConfigs] = await Promise.all([
-    listIapBrand(token, projectNumber),
-    listTransferConfigs(token, opts.project, opts.location),
+    projectNumber === null
+      ? (findings.push("IAP brand: not read, the project number was not permitted"), null)
+      : read("IAP brand", "iap.brands.list missing", () => listIapBrand(token, projectNumber), null),
+    read("BigQuery transfer configs", "bigquery.transfers.get missing", () => listTransferConfigs(token, opts.project, opts.location), []),
   ]);
 
   const report = buildInventoryReport({
     project: opts.project,
     enabledServices,
     iamPolicy,
-    budgets: budgetsResult.budgets,
-    findings: budgetsResult.finding === null ? [] : [budgetsResult.finding],
+    budgets,
+    findings,
     ga4Accounts,
     ga4Properties,
     dataStreamsByProperty,
