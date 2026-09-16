@@ -15,6 +15,7 @@ import {
   buildKeyEventPlan,
   extractBigQueryLinks,
   buildBigQueryLinkPlan,
+  describeLocationMismatch,
   buildGithubVariablePlan,
   buildPropertyPlan,
   GITHUB_VARIABLE_NAME,
@@ -76,9 +77,21 @@ describe("parseConfig", () => {
     expect(shared.id).toBe("523400333");
     expect(shared.timeZone).toBe("Europe/London");
     expect(shared.currency).toBe("GBP");
-    expect(shared.keyEvents).toEqual({ subscribe: "purchase", submit: "submit_vat_return", donate: "purchase", download: "runner_download" });
-    expect(shared.streams).toEqual([{ name: "Submit", uri: "https://submit.diyaccounting.co.uk", measurementId: "G-T81V5NL5MB", enhancedMeasurement: true }]);
-    expect(shared.bigQueryLink).toEqual({ project: "diyaccounting-ga4", location: "europe-west2", dailyExport: true, streamingExport: false });
+    expect(shared.keyEvents).toEqual({
+      subscribe: "purchase",
+      submit: "submit_vat_return",
+      donate: "purchase",
+      download: "runner_download",
+    });
+    expect(shared.streams).toEqual([
+      { name: "Submit", uri: "https://submit.diyaccounting.co.uk", measurementId: "G-T81V5NL5MB", enhancedMeasurement: true },
+    ]);
+    expect(shared.bigQueryLink).toEqual({
+      project: "diyaccounting-ga4",
+      location: "europe-west2",
+      dailyExport: true,
+      streamingExport: false,
+    });
 
     const ci = config.properties[1];
     expect(ci.id).toBeNull();
@@ -114,7 +127,10 @@ describe("matchProperty", () => {
 
   test("finds a property by id among others", () => {
     const configProperty = { id: "523400333", displayName: "DIY Accounting" };
-    const live = [{ name: "properties/1", displayName: "other" }, { name: "properties/523400333", displayName: "DIY Accounting" }];
+    const live = [
+      { name: "properties/1", displayName: "other" },
+      { name: "properties/523400333", displayName: "DIY Accounting" },
+    ];
     expect(matchProperty(configProperty, live)).toEqual({ name: "properties/523400333", displayName: "DIY Accounting" });
   });
 
@@ -143,13 +159,28 @@ describe("buildStreamPlan", () => {
   });
 
   test("finds an existing stream by uri when no measurement_id is recorded", () => {
-    const liveStreams = [{ name: "properties/1/dataStreams/1", webStreamData: { defaultUri: "https://ci-submit.diyaccounting.co.uk", measurementId: "G-CI1234" } }];
+    const liveStreams = [
+      {
+        name: "properties/1/dataStreams/1",
+        webStreamData: { defaultUri: "https://ci-submit.diyaccounting.co.uk", measurementId: "G-CI1234" },
+      },
+    ];
     const plan = buildStreamPlan({ name: "ci", uri: "https://ci-submit.diyaccounting.co.uk", measurementId: null }, liveStreams);
-    expect(plan).toEqual({ action: "noop", name: "properties/1/dataStreams/1", uri: "https://ci-submit.diyaccounting.co.uk", measurementId: "G-CI1234" });
+    expect(plan).toEqual({
+      action: "noop",
+      name: "properties/1/dataStreams/1",
+      uri: "https://ci-submit.diyaccounting.co.uk",
+      measurementId: "G-CI1234",
+    });
   });
 
   test("finds an existing stream by measurement_id", () => {
-    const liveStreams = [{ name: "properties/1/dataStreams/1", webStreamData: { defaultUri: "https://submit.diyaccounting.co.uk", measurementId: "G-T81V5NL5MB" } }];
+    const liveStreams = [
+      {
+        name: "properties/1/dataStreams/1",
+        webStreamData: { defaultUri: "https://submit.diyaccounting.co.uk", measurementId: "G-T81V5NL5MB" },
+      },
+    ];
     const plan = buildStreamPlan({ name: "Submit", uri: "https://submit.diyaccounting.co.uk", measurementId: "G-T81V5NL5MB" }, liveStreams);
     expect(plan.action).toBe("noop");
   });
@@ -160,7 +191,12 @@ describe("buildStreamPlan", () => {
   });
 
   test("fails and names the live mismatch when the uri already resolves to a different id", () => {
-    const liveStreams = [{ name: "properties/1/dataStreams/1", webStreamData: { defaultUri: "https://submit.diyaccounting.co.uk", measurementId: "G-LIVE00000" } }];
+    const liveStreams = [
+      {
+        name: "properties/1/dataStreams/1",
+        webStreamData: { defaultUri: "https://submit.diyaccounting.co.uk", measurementId: "G-LIVE00000" },
+      },
+    ];
     const configStream = { name: "Submit", uri: "https://submit.diyaccounting.co.uk", measurementId: "G-WRONG0000" };
     expect(() => buildStreamPlan(configStream, liveStreams)).toThrow(/live stream at that uri is G-LIVE00000/);
   });
@@ -204,7 +240,9 @@ describe("buildKeyEventPlan", () => {
     const keyEvents = { subscribe: "purchase", donate: "purchase" };
     const existing = [{ name: "properties/1/keyEvents/1", eventName: "purchase" }];
     const plan = buildKeyEventPlan(keyEvents, existing);
-    expect(plan).toEqual([{ eventName: "purchase", labels: ["subscribe", "donate"], action: "noop", existingName: "properties/1/keyEvents/1" }]);
+    expect(plan).toEqual([
+      { eventName: "purchase", labels: ["subscribe", "donate"], action: "noop", existingName: "properties/1/keyEvents/1" },
+    ]);
   });
 
   test("proposes creating a key event that doesn't exist yet", () => {
@@ -241,15 +279,59 @@ describe("buildBigQueryLinkPlan", () => {
   });
 
   test("matches a link by resolved project number, not just project id", () => {
-    const liveLinks = [{ name: "properties/1/bigQueryLinks/1", project: "projects/123456789", datasetLocation: "europe-west2", dailyExportEnabled: true, streamingExportEnabled: false }];
+    const liveLinks = [
+      {
+        name: "properties/1/bigQueryLinks/1",
+        project: "projects/123456789",
+        datasetLocation: "europe-west2",
+        dailyExportEnabled: true,
+        streamingExportEnabled: false,
+      },
+    ];
     const plan = buildBigQueryLinkPlan(configLink, liveLinks, "123456789");
     expect(plan.action).toBe("noop");
   });
 
-  test("proposes an update when the location or export flags don't match", () => {
-    const liveLinks = [{ name: "properties/1/bigQueryLinks/1", project: "projects/diyaccounting-ga4", datasetLocation: "us", dailyExportEnabled: true, streamingExportEnabled: false }];
+  test("proposes an update when the export flags don't match, without the immutable location", () => {
+    const liveLinks = [
+      {
+        name: "properties/1/bigQueryLinks/1",
+        project: "projects/diyaccounting-ga4",
+        datasetLocation: "europe-west2",
+        dailyExportEnabled: false,
+        streamingExportEnabled: true,
+      },
+    ];
     const plan = buildBigQueryLinkPlan(configLink, liveLinks, null);
-    expect(plan).toMatchObject({ action: "update", location: "europe-west2" });
+    expect(plan).toEqual({
+      action: "update",
+      name: "properties/1/bigQueryLinks/1",
+      dailyExport: configLink.dailyExport,
+      streamingExport: configLink.streamingExport,
+    });
+    expect(plan).not.toHaveProperty("location");
+  });
+
+  test("reports a dataset location mismatch instead of patching it", () => {
+    const liveLinks = [
+      {
+        name: "properties/1/bigQueryLinks/1",
+        project: "projects/diyaccounting-ga4",
+        datasetLocation: "us",
+        dailyExportEnabled: configLink.dailyExport,
+        streamingExportEnabled: configLink.streamingExport,
+      },
+    ];
+    const plan = buildBigQueryLinkPlan(configLink, liveLinks, null);
+    expect(plan).toEqual({
+      action: "noop",
+      name: "properties/1/bigQueryLinks/1",
+      locationMismatch: { live: "us", wanted: "europe-west2" },
+    });
+    expect(describeLocationMismatch(plan)).toBe(
+      "BigQuery link properties/1/bigQueryLinks/1: dataset location is us, config says europe-west2; a link's location cannot be changed in place (recreate the link to move it)",
+    );
+    expect(describeLocationMismatch({ action: "noop", name: "x" })).toBeNull();
   });
 });
 
@@ -303,8 +385,21 @@ describe("buildPropertyPlan", () => {
       streams: [{ name: "Submit", uri: "https://submit.diyaccounting.co.uk", measurementId: "G-T81V5NL5MB", enhancedMeasurement: true }],
     };
     const liveProperty = { name: "properties/523400333", displayName: "DIY Accounting" };
-    const liveStreams = [{ name: "properties/523400333/dataStreams/1", webStreamData: { defaultUri: "https://submit.diyaccounting.co.uk", measurementId: "G-T81V5NL5MB" } }];
-    const liveBigQueryLinks = [{ name: "properties/523400333/bigQueryLinks/1", project: "projects/diyaccounting-ga4", datasetLocation: "europe-west2", dailyExportEnabled: true, streamingExportEnabled: false }];
+    const liveStreams = [
+      {
+        name: "properties/523400333/dataStreams/1",
+        webStreamData: { defaultUri: "https://submit.diyaccounting.co.uk", measurementId: "G-T81V5NL5MB" },
+      },
+    ];
+    const liveBigQueryLinks = [
+      {
+        name: "properties/523400333/bigQueryLinks/1",
+        project: "projects/diyaccounting-ga4",
+        datasetLocation: "europe-west2",
+        dailyExportEnabled: true,
+        streamingExportEnabled: false,
+      },
+    ];
     const liveKeyEvents = [{ name: "properties/523400333/keyEvents/1", eventName: "submit_vat_return" }];
     const liveEnhancedMeasurementByStreamName = { "properties/523400333/dataStreams/1": { streamEnabled: true } };
 
@@ -320,7 +415,9 @@ describe("buildPropertyPlan", () => {
     expect(plan.property.action).toBe("noop");
     expect(plan.streams[0].plan.action).toBe("noop");
     expect(plan.streams[0].enhancedMeasurement.action).toBe("noop");
-    expect(plan.keyEvents).toEqual([{ eventName: "submit_vat_return", labels: ["submit"], action: "noop", existingName: "properties/523400333/keyEvents/1" }]);
+    expect(plan.keyEvents).toEqual([
+      { eventName: "submit_vat_return", labels: ["submit"], action: "noop", existingName: "properties/523400333/keyEvents/1" },
+    ]);
     expect(plan.bigQueryLink.action).toBe("noop");
     expect(plan.githubVariable).toEqual({ action: "skip" });
   });

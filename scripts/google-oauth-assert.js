@@ -27,6 +27,7 @@ import { fileURLToPath } from "node:url";
 import TOML from "@iarna/toml";
 import { CloudFormationClient, DescribeStacksCommand } from "@aws-sdk/client-cloudformation";
 import { CognitoIdentityProviderClient, DescribeIdentityProviderCommand } from "@aws-sdk/client-cognito-identity-provider";
+import { SecretsManagerClient } from "@aws-sdk/client-secrets-manager";
 
 import { resolveServiceAccountCredentialsJson, createGoogleAuthClient, getAccessToken } from "./lib/googleAuth.js";
 import { resolveClientCredentials, obtainAccessToken } from "./youtube-upload.js";
@@ -170,7 +171,9 @@ async function fetchCognitoGoogleClientId(identityStack) {
     throw new Error(`Stack ${identityStack} is missing the UserPoolId or CognitoGoogleIdpId output`);
   }
   const cognito = new CognitoIdentityProviderClient({});
-  const { IdentityProvider } = await cognito.send(new DescribeIdentityProviderCommand({ UserPoolId: userPoolId, ProviderName: providerName }));
+  const { IdentityProvider } = await cognito.send(
+    new DescribeIdentityProviderCommand({ UserPoolId: userPoolId, ProviderName: providerName }),
+  );
   const clientId = IdentityProvider?.ProviderDetails?.client_id;
   if (!clientId) {
     throw new Error(`${identityStack}'s Google identity provider has no client_id in its ProviderDetails`);
@@ -207,6 +210,17 @@ async function checkBrand(client, googleToken, failures) {
   }
 }
 
+/**
+ * Whether a CloudFormation read failed because the stack is not in the account this run
+ * assumed. google-apply.yml runs under one GitHub environment, so the other environment's
+ * identity stack is unreachable by design and is skipped, not failed.
+ * @param {Error} error
+ * @returns {boolean}
+ */
+export function isStackOutsideThisAccount(error) {
+  return /Stack with id \S+ does not exist/.test(error?.message ?? "");
+}
+
 async function checkSignInClient(client, failures) {
   if (client.purpose !== "sign_in" || !client.environments) return;
   for (const [environment, { identityStack }] of Object.entries(client.environments)) {
@@ -215,6 +229,10 @@ async function checkSignInClient(client, failures) {
       assertClientIdMatches(`${client.purpose} (${environment})`, client.id, liveId);
       console.log(`  ${environment}: Cognito's Google identity provider client id matches`);
     } catch (err) {
+      if (isStackOutsideThisAccount(err)) {
+        console.log(`  ${environment}: skipped, ${identityStack} is not in the account this run assumed`);
+        continue;
+      }
       failures.push(`${client.purpose} (${environment}): ${err.message}`);
       console.error(`  ${environment}: ${err.message}`);
     }
@@ -224,7 +242,8 @@ async function checkSignInClient(client, failures) {
 async function checkYoutubeClient(client, failures) {
   if (client.purpose !== "youtube_upload") return;
   try {
-    const liveCredentials = await resolveClientCredentials({});
+    const smClient = new SecretsManagerClient({});
+    const liveCredentials = await resolveClientCredentials({ smClient });
     if (client.id) {
       assertClientIdMatches(client.purpose, client.id, liveCredentials.client_id);
       console.log("  client id matches the stored secret");
@@ -232,7 +251,7 @@ async function checkYoutubeClient(client, failures) {
       console.log(`  client id not recorded in oauth.toml; live value is ${liveCredentials.client_id}`);
     }
 
-    const accessToken = await obtainAccessToken({});
+    const accessToken = await obtainAccessToken({ smClient });
     const grantedScopeString = await fetchGrantedScopes(accessToken);
     assertScopesGranted(client.purpose, client.scopes, grantedScopeString);
     console.log("  stored refresh token carries every declared scope");
@@ -244,7 +263,10 @@ async function checkYoutubeClient(client, failures) {
 
 export async function main() {
   const config = loadConfigFromRoot();
-  const credentialsJson = await resolveServiceAccountCredentialsJson({ jsonEnvVar: "GA4_SERVICE_ACCOUNT_JSON", arnEnvVar: "GA4_SERVICE_ACCOUNT_ARN" });
+  const credentialsJson = await resolveServiceAccountCredentialsJson({
+    jsonEnvVar: "GA4_SERVICE_ACCOUNT_JSON",
+    arnEnvVar: "GA4_SERVICE_ACCOUNT_ARN",
+  });
   const googleToken = await getAccessToken(createGoogleAuthClient(credentialsJson));
 
   const failures = [];

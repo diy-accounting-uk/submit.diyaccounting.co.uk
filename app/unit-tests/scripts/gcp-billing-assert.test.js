@@ -16,6 +16,7 @@ import {
   computeNonDefaultServices,
   isProjectSafeToDelete,
   formatInventoryReport,
+  isStrayProjectGone,
 } from "../../../scripts/gcp-billing-assert.js";
 
 const THRESHOLD_PERCENTAGES = [0.5, 0.9, 1.0];
@@ -55,7 +56,7 @@ describe("parseConfig", () => {
   });
 
   test("throws when [budget] is missing", () => {
-    expect(() => parseConfig("[service_account]\nemail = \"a@b.iam.gserviceaccount.com\"\n")).toThrow(/\[budget\]/);
+    expect(() => parseConfig('[service_account]\nemail = "a@b.iam.gserviceaccount.com"\n')).toThrow(/\[budget\]/);
   });
 
   test("throws when a budget field is missing", () => {
@@ -175,7 +176,9 @@ describe("computeNonDefaultServices", () => {
   });
 
   test("accepts a custom default set", () => {
-    expect(computeNonDefaultServices(["a.googleapis.com", "b.googleapis.com"], new Set(["a.googleapis.com"]))).toEqual(["b.googleapis.com"]);
+    expect(computeNonDefaultServices(["a.googleapis.com", "b.googleapis.com"], new Set(["a.googleapis.com"]))).toEqual([
+      "b.googleapis.com",
+    ]);
   });
 });
 
@@ -229,5 +232,23 @@ describe("formatInventoryReport", () => {
     expect(report).toContain("my_dataset");
     expect(report).toContain("my-bucket");
     expect(report).toContain("my-instance");
+  });
+});
+
+describe("isStrayProjectGone", () => {
+  const REAL_BODY =
+    'GET https://serviceusage.googleapis.com/v1/projects/valued-context-507200-m9/services?filter=state%3AENABLED&pageSize=200 failed: 403 Forbidden - {"error":{"code":403,"message":"Project \'747057870039\' not found or permission denied.\\nHelp Token: AbluAGttjfa9","status":"PERMISSION_DENIED"}}';
+
+  test("a deleted project's 403 not-found is the check's satisfied state", () => {
+    expect(isStrayProjectGone(new Error(REAL_BODY))).toBe(true);
+    expect(isStrayProjectGone(new Error("GET https://x failed: 404 Not Found - project not found"))).toBe(true);
+  });
+
+  test("any other failure stays a failure", () => {
+    expect(isStrayProjectGone(new Error("GET https://x failed: 403 Forbidden - Request had insufficient authentication scopes."))).toBe(
+      false,
+    );
+    expect(isStrayProjectGone(new Error("GET https://x failed: 500 Internal Server Error"))).toBe(false);
+    expect(isStrayProjectGone(new Error("fetch failed"))).toBe(false);
   });
 });

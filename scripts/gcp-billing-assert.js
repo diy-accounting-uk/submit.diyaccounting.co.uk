@@ -238,7 +238,7 @@ async function googleApiFetch(accessToken, url, options = {}) {
   const response = await fetch(url, {
     ...options,
     headers: {
-      Authorization: `Bearer ${accessToken}`,
+      "Authorization": `Bearer ${accessToken}`,
       "Content-Type": "application/json",
       ...(options.headers || {}),
     },
@@ -387,7 +387,9 @@ async function assertBudget(accessToken, opts, budgetConfig) {
       console.log(`Created budget: ${created.name}`);
     }
   } else if (decision.action === "reuse-noop") {
-    console.log(`Existing budget "${decision.targetBudget.displayName}" (${decision.targetBudget.name}) already carries ${thresholdLabel} alert thresholds.`);
+    console.log(
+      `Existing budget "${decision.targetBudget.displayName}" (${decision.targetBudget.name}) already carries ${thresholdLabel} alert thresholds.`,
+    );
   } else {
     console.log(
       `Existing budget "${decision.targetBudget.displayName}" (${decision.targetBudget.name}) is missing the ${decision.missingThresholds
@@ -405,12 +407,33 @@ async function assertBudget(accessToken, opts, budgetConfig) {
   }
 }
 
+/**
+ * Whether an error from a read of the stray project says the project no longer exists: a
+ * deleted project answers 403 "Project '<number>' not found or permission denied" (or a 404),
+ * which is the check's satisfied state, since the check exists to see the project gone.
+ * @param {Error} error
+ * @returns {boolean}
+ */
+export function isStrayProjectGone(error) {
+  const message = error?.message ?? "";
+  return /\b(403|404)\b/.test(message) && /not found/i.test(message);
+}
+
 async function assertStrayProjectEmpty(accessToken, opts) {
-  const enabledServices = await listEnabledServices(accessToken, opts.strayProjectId);
+  let enabledServices;
+  try {
+    enabledServices = await listEnabledServices(accessToken, opts.strayProjectId);
+  } catch (error) {
+    if (!isStrayProjectGone(error)) throw error;
+    console.log(`stray project ${opts.strayProjectId}: gone (check satisfied)`);
+    return;
+  }
   const nonDefaultServices = computeNonDefaultServices(enabledServices);
   const bigQueryDatasets = await listBigQueryDatasets(accessToken, opts.strayProjectId);
   const buckets = await listStorageBuckets(accessToken, opts.strayProjectId);
-  const computeInstances = enabledServices.includes("compute.googleapis.com") ? await listComputeInstances(accessToken, opts.strayProjectId) : [];
+  const computeInstances = enabledServices.includes("compute.googleapis.com")
+    ? await listComputeInstances(accessToken, opts.strayProjectId)
+    : [];
 
   const inventory = { enabledServices, nonDefaultServices, bigQueryDatasets, buckets, computeInstances };
   console.log(formatInventoryReport(opts.strayProjectId, inventory));
