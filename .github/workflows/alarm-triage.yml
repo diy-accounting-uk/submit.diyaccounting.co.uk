@@ -38,6 +38,9 @@ env:
   NODE_VERSION: '24'
   AWS_REGION: 'eu-west-2'
   CLAUDE_CODE_VERSION: '2.0.30'
+  # The one place this number is written. The budget guard, its step name and its skip
+  # comment all read it, so the three cannot drift apart the way -gt 3 and "budget of 3" did.
+  TRIAGE_BUDGET_PER_DAY: '8'
 
 jobs:
   triage:
@@ -45,7 +48,7 @@ jobs:
     runs-on: ubuntu-24.04
     timeout-minutes: 5
     steps:
-      - name: Stop if this workflow already ran three times today
+      - name: Stop once ${{ env.TRIAGE_BUDGET_PER_DAY }} triage runs have already posted a result today
         id: budget-guard
         env:
           GH_TOKEN: ${{ github.token }}
@@ -74,7 +77,7 @@ jobs:
           echo "triage runs that posted a result in the last 24 hours: ${COUNT}"
           echo "count=${COUNT}" | tee -a "$GITHUB_OUTPUT"
           echo "since=${SINCE}" | tee -a "$GITHUB_OUTPUT"
-          if [ "${COUNT}" -gt 3 ]; then
+          if [ "${COUNT}" -gt $(( ${{ env.TRIAGE_BUDGET_PER_DAY }} - 1 )) ]; then
             echo "proceed=false" | tee -a "$GITHUB_OUTPUT"
           else
             echo "proceed=true" | tee -a "$GITHUB_OUTPUT"
@@ -91,7 +94,7 @@ jobs:
           TRIAGE_SINCE: ${{ steps.budget-guard.outputs.since }}
         run: |
           set -euo pipefail
-          gh issue comment "$ISSUE_NUMBER" --repo "${{ github.repository }}" --body "Alarm triage was skipped: the budget of 3 triage runs per 24 hours is already used (${TRIAGE_COUNT} posted a result since ${TRIAGE_SINCE}). Nobody has looked at this alarm yet."
+          gh issue comment "$ISSUE_NUMBER" --repo "${{ github.repository }}" --body "Alarm triage was skipped: the budget of ${{ env.TRIAGE_BUDGET_PER_DAY }} triage runs per 24 hours is already used (${TRIAGE_COUNT} posted a result since ${TRIAGE_SINCE}). Nobody has looked at this alarm yet."
 
       - name: Read the alarm out of the issue body
         if: steps.budget-guard.outputs.proceed == 'true'
@@ -134,7 +137,10 @@ jobs:
     needs: triage
     if: needs.triage.outputs.proceed == 'true'
     runs-on: ubuntu-24.04
-    timeout-minutes: 15
+    # Two agent passes can run in this job: the Haiku first pass, and the Sonnet escalation
+    # when Haiku's answer is unusable or unsure. The longest single pass observed is 155s, so
+    # 20 minutes covers two worst-case passes plus the AWS/npm setup steps that run once.
+    timeout-minutes: 20
     environment: ${{ needs.triage.outputs.environment-name }}
     env:
       ENV_NAME: ${{ needs.triage.outputs.environment-name }}
@@ -144,6 +150,7 @@ jobs:
       DEPLOYMENT_NAME: ${{ needs.triage.outputs.deployment }}
       ISSUE_NUMBER: ${{ inputs.issue-number || github.event.issue.number }}
       MODEL_ID: 'eu.anthropic.claude-sonnet-4-5-20250929-v1:0'
+      HAIKU_MODEL_ID: 'eu.anthropic.claude-haiku-4-5-20251001-v1:0'
       RUN_URL: '${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}'
     steps:
       # The triage role is created by the environment's CDK deploy and its ARN is set on the
@@ -274,33 +281,90 @@ jobs:
         if: steps.role.outputs.configured == 'true'
         run: npm install -g "@anthropic-ai/claude-code@${CLAUDE_CODE_VERSION}"
 
-      - name: Run triage
+      - name: Run triage (Haiku)
+        if: steps.role.outputs.configured == 'true'
+        uses: ./.github/actions/run-triage-agent
+        with:
+          model-id: ${{ env.HAIKU_MODEL_ID }}
+          small-fast-model-id: ${{ env.HAIKU_MODEL_ID }}
+          output-file: /tmp/triage.haiku.json
+
+      # Escalates to Sonnet when Haiku's pass is unusable (no result, an error, the turn budget
+      # spent) or unsure (it answered "Is it still broken?" with an admission it could not tell).
+      # Every other case accepts Haiku's answer as final.
+      - name: Judge the first pass
+        if: steps.role.outputs.configured == 'true'
+        id: judge
+        run: |
+          set -euo pipefail
+          ESCALATE=false
+          REASON=""
+          if [ ! -s /tmp/triage.haiku.json ]; then
+            ESCALATE=true
+            REASON="the Haiku pass produced no result file"
+          elif jq -e '.is_error == true' /tmp/triage.haiku.json > /dev/null 2>&1; then
+            ESCALATE=true
+            REASON="the Haiku pass reported is_error"
+          elif jq -e '.subtype == "error_max_turns"' /tmp/triage.haiku.json > /dev/null 2>&1; then
+            ESCALATE=true
+            REASON="the Haiku pass used its turn budget before finishing"
+          elif ! jq -e '.result | length > 0' /tmp/triage.haiku.json > /dev/null 2>&1; then
+            ESCALATE=true
+            REASON="the Haiku pass returned an empty result"
+          else
+            RESULT_TEXT=$(jq -r '.result' /tmp/triage.haiku.json)
+            if printf '%s' "$RESULT_TEXT" | grep -qiE 'unable to determine|cannot determine|could not determine|insufficient evidence|without querying'; then
+              ESCALATE=true
+              REASON="the Haiku pass could not say whether the alarm is still broken"
+            fi
+          fi
+          echo "escalate=${ESCALATE}" | tee -a "$GITHUB_OUTPUT"
+          echo "reason=${REASON}" >> "$GITHUB_OUTPUT"
+          {
+            echo "alarm triage first pass: escalate=${ESCALATE}"
+            [ -n "${REASON}" ] && echo "reason: ${REASON}"
+          } | tee -a "$GITHUB_STEP_SUMMARY"
+
+      - name: Run triage (Sonnet)
+        if: steps.role.outputs.configured == 'true' && steps.judge.outputs.escalate == 'true'
+        uses: ./.github/actions/run-triage-agent
+        with:
+          model-id: ${{ env.MODEL_ID }}
+          small-fast-model-id: ${{ env.HAIKU_MODEL_ID }}
+          output-file: /tmp/triage.sonnet.json
+
+      # Sonnet's answer stands when it ran; otherwise Haiku's does. Every step below this one
+      # (the usable-result gate, redaction, guardrail, comment, draft PR) reads /tmp/triage.json
+      # and does not know or care which model produced it.
+      - name: Select the triage result
+        if: steps.role.outputs.configured == 'true'
+        id: select-result
+        env:
+          SONNET_MODEL_ID: ${{ env.MODEL_ID }}
+          HAIKU_MODEL_ID: ${{ env.HAIKU_MODEL_ID }}
+        run: |
+          set -euo pipefail
+          if [ -s /tmp/triage.sonnet.json ]; then
+            cp /tmp/triage.sonnet.json /tmp/triage.json
+            echo "model=sonnet" | tee -a "$GITHUB_OUTPUT"
+            echo "model-id=${SONNET_MODEL_ID}" | tee -a "$GITHUB_OUTPUT"
+          else
+            cp /tmp/triage.haiku.json /tmp/triage.json
+            echo "model=haiku" | tee -a "$GITHUB_OUTPUT"
+            echo "model-id=${HAIKU_MODEL_ID}" | tee -a "$GITHUB_OUTPUT"
+          fi
+
+      - name: Require a usable result
         if: steps.role.outputs.configured == 'true'
         id: triage-run
-        env:
-          CLAUDE_CODE_USE_BEDROCK: '1'
-          AWS_REGION: ${{ env.AWS_REGION }}
-          ANTHROPIC_MODEL: ${{ env.MODEL_ID }}
-          ANTHROPIC_SMALL_FAST_MODEL: 'eu.anthropic.claude-haiku-4-5-20251001-v1:0'
-          CLAUDE_CODE_MAX_OUTPUT_TOKENS: '8192'
-          DISABLE_TELEMETRY: '1'
-          DISABLE_ERROR_REPORTING: '1'
-          DISABLE_AUTOUPDATER: '1'
         run: |
           set -o pipefail
-          PROMPT=$(envsubst < prompts/alarm-triage.md)
-          claude -p "$PROMPT" \
-            --max-turns 60 \
-            --output-format json \
-            --permission-mode default \
-            --allowedTools "Read,Grep,Glob,Bash(aws logs:*),Bash(aws xray:*),Bash(aws cloudwatch describe-alarm-history:*),Bash(aws cloudwatch describe-alarms:*)" \
-            2>&1 | tee /tmp/triage.json
-          # pipefail (above) makes $? claude's own exit status, not tee's, but a run that stops
-          # early (max-turns, a denied tool, an entitlement error from Bedrock) can still exit 0
-          # with a JSON result that carries no usable answer. Gate on the content, not just the
-          # exit code, so every failure shape - including the AWS Marketplace entitlement error an
-          # environment without the Anthropic model agreement gets back from Bedrock - fails this
-          # step with the reason on record, instead of falling through to be posted as a comment.
+          # A run that stopped early (max-turns, a denied tool, an entitlement error from
+          # Bedrock) can still exit 0 with a JSON result that carries no usable answer. Gate on
+          # the content, not just the exit code, so every failure shape - including the AWS
+          # Marketplace entitlement error an environment without the Anthropic model agreement
+          # gets back from Bedrock - fails this step with the reason on record, instead of
+          # falling through to be posted as a comment.
           #
           # error_max_turns is the one shape that still gets posted: the redaction script already
           # turns it (and any partial `.result` text it carries) into a comment, so this step lets
@@ -372,6 +436,7 @@ jobs:
         id: draft-pr
         env:
           GH_TOKEN: ${{ github.token }}
+          ANSWERING_MODEL_ID: ${{ steps.select-result.outputs.model-id }}
         run: |
           set -euo pipefail
           awk '/^```diff$/ { flag=1; next } /^```$/ { if (flag) exit } flag' /tmp/final-comment.md > triage-change.patch
@@ -397,12 +462,12 @@ jobs:
           # string, so the trailer lines land at column 0 rather than inheriting this script's
           # indentation.
           COMMIT_MSG=$(printf 'Alarm triage for #%s: %s\n\nCo-Authored-By: Claude <noreply@anthropic.com>\nClaude-Model: %s\nClaude-Run: %s' \
-            "$ISSUE_NUMBER" "$ALARM_NAME" "$MODEL_ID" "$RUN_URL")
+            "$ISSUE_NUMBER" "$ALARM_NAME" "$ANSWERING_MODEL_ID" "$RUN_URL")
           git -c user.name='github-actions[bot]' -c user.email='github-actions[bot]@users.noreply.github.com' \
             commit -m "$COMMIT_MSG"
           git push origin "$BRANCH"
           PR_BODY=$(printf 'Draft from the alarm-triage workflow for #%s. Not reviewed by a human. Closes nothing.\n\nCo-Authored-By: Claude <noreply@anthropic.com>\nClaude-Model: %s\nClaude-Run: %s' \
-            "$ISSUE_NUMBER" "$MODEL_ID" "$RUN_URL")
+            "$ISSUE_NUMBER" "$ANSWERING_MODEL_ID" "$RUN_URL")
           PR_URL=$(gh pr create --draft --base main --head "$BRANCH" \
             --title "Alarm triage for #${ISSUE_NUMBER}: ${ALARM_NAME}" \
             --body "$PR_BODY")
@@ -423,7 +488,12 @@ jobs:
           if [ -n "${{ steps.draft-pr.outputs.url }}" ]; then
             printf '\n---\n\nDraft PR for the change above: %s\n' "${{ steps.draft-pr.outputs.url }}" >> /tmp/final-comment.md
           fi
-          gh issue comment "$ISSUE_NUMBER" --body-file /tmp/final-comment.md
+          if [ "${{ steps.select-result.outputs.model }}" = "sonnet" ]; then
+            printf '\n_Answered by Sonnet, escalated because %s._\n' "${{ steps.judge.outputs.reason }}" >> /tmp/final-comment.md
+          else
+            printf '\n_Answered by Haiku._\n' >> /tmp/final-comment.md
+          fi
+          gh issue comment "$ISSUE_NUMBER" --repo "${{ github.repository }}" --body-file /tmp/final-comment.md
 
       # Runs after the comment is safely posted, so the answer above is not lost, but the run
       # still ends red: a triage that only got through 60 turns by exhausting its budget is not a
