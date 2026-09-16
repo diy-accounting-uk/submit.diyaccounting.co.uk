@@ -49,6 +49,18 @@ jobs:
         with:
           node-version: ${{ env.NODE_VERSION }}
 
+      # The ruleset on main refuses a push from the workflow's own token; only an admin's token
+      # (RELEASE_PAT) can land the bump, so an absent secret must stop the run here.
+      - name: Require RELEASE_PAT
+        run: |
+          if [ -z "${RELEASE_PAT}" ]; then
+            echo "::error::RELEASE_PAT is not set. The version bump pushes to main as an admin through this token; create a fine-grained token (Contents: Read and write on this repository) and store it with: gh secret set RELEASE_PAT --repo diy-accounting-uk/submit.diyaccounting.co.uk"
+            exit 1
+          fi
+          echo "RELEASE_PAT is set"
+        env:
+          RELEASE_PAT: ${{ secrets.RELEASE_PAT }}
+
       - name: Calculate new version
         id: version
         run: |
