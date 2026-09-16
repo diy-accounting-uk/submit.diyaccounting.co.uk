@@ -83,6 +83,28 @@ Every item names its model: the lowest tier that fits (Fable > Opus > Sonnet > H
 
 ## Machine-only
 
+- [ ] **B30af. A deploy that starts during a scheduled prod probe still swaps the apex under it.**
+  Issue #273 (20:31 UTC on 2026-09-16): the 19:46 UTC scheduled `probe-test.yml` run found no deploy
+  in flight at its "Wait for a deploy in progress on main" step (lines 236–256), then PR #266's
+  deploy of `main` started at 19:5x and promoted prod-f080052 while the probe's `submitVatBehaviour`
+  and `tokenRefreshBehaviour` suites were navigating at 20:28: both failed with
+  `ERR_SSL_VERSION_OR_CIPHER_MISMATCH` on the apex, everything before the navigation having passed
+  (the new test-user rotation enrolled both prod lanes cleanly). The guard covers only a deploy
+  already running. Either the guard re-checks immediately before each suite's navigation and waits
+  again, or `deploy.yml`'s promotion step waits for a running scheduled probe; pick the one that
+  does not hold a deploy for 40 minutes, then close #273. **Source**: issue #273; run 35142540653.
+  **Owner**: Claude Code. **Model**: Sonnet. **Size**: ~1 file.
+
+- [ ] **B30ag. The alarm-to-issue Lambda opens two issues when SNS delivers twice.** #273 and #274
+  were created in the same second for one transition of `prod-env-github-probe-failed`;
+  `app/functions/ops/alarmToGithubIssue.js` lists open `alarm` issues before creating (lines
+  264–281) and its own comment (268–270) names the race: two invocations of one notification both
+  search before either creates. Make the create idempotent: a conditional write keyed on the alarm
+  name and state-change timestamp (the existing DynamoDB table the ops Lambdas use, or a
+  `PutItem` with `attribute_not_exists`) before the GitHub call, so the second invocation comments or
+  exits. Unit test with two concurrent invocations. #274 is closed as the duplicate. **Source**:
+  issues #273, #274. **Owner**: Claude Code. **Model**: Sonnet. **Size**: ~2 files.
+
 - [ ] **B56. `test` and CodeQL as required status checks on `main`.** O46 settled on 2026-09-16:
   ruleset 16057564 keeps `Check commit signatures` required with the Admin role as its only bypass
   actor, `RELEASE_PAT` carries `publish.yml`'s bump, and a docs push by an admin lands directly.
