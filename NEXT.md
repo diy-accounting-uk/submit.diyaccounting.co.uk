@@ -19,8 +19,8 @@ PR; the operator merges.
 **Prod runs deployment prod-a84311b** (PR #257, run 35085063660, promoted under the `deploy-ops` gate
 at 10:5x UTC on 2026-09-16; the same run destroyed prod-7137772, which PR #255's run had promoted at
 09:5x), verified against AWS at 11:2x UTC on 2026-09-16: nine stacks CREATE_COMPLETE, every composite
-alarm OK, re-verified 17:5x UTC after a fresh SSO login. **ci**: nothing stands; the b46 and b47
-branch sets self-destructed and their `SelfDestructStack`s are gone.
+alarm OK, re-verified 19:2x UTC. **ci**: `ci-claudc4d2` (the b49 branch, created 18:24 UTC, ten
+stacks) carries PR #266's redeploy and self-destructs at about 22:24 UTC; nothing else stands.
 
 The board runs in five sections, in this order: **in flight** (a branch, a pull request or a run
 in motion, each named in the row), **machine-only**, **human and machine**, **human-only**,
