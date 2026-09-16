@@ -74,25 +74,14 @@ Every item names its model: the lowest tier that fits (Fable > Opus > Sonnet > H
   reaches. The prod async-requests table holds nothing (TTL), so the scan could not size the
   cohorts; `prod-env-hmrc-api-requests` keeps 20 days and showed 3 production VAT POSTs from 3
   users, 2 without the header.
-  On `claude/b49-board`, PR #266: `Mfa.REQUIRED` (557219fb) and the ci test user's TOTP rotation
-  under it (a2e92e65: `ensure-cognito-test-user.js` answers `MFA_SETUP` and `SOFTWARE_TOKEN_MFA`,
-  each lane's secret kept at `<env>/submit/test/<lane>/totp-secret`), after the first deploy failed
-  every behaviour suite on the old rotation. The redeploy (run 35137912912) is the proof that
-  native sign-in completes with enrolment enforced. **Source**: `../REPORT_HMRC_HEADER_ADVISORIES.md`.
+  Merged to `main` as f0800529 (PR #266, 19:5x UTC on 2026-09-16): `Mfa.REQUIRED` and the ci test
+  user's TOTP rotation under it (`ensure-cognito-test-user.js` answers `MFA_SETUP` and
+  `SOFTWARE_TOKEN_MFA`, each lane's secret at `<env>/submit/test/<lane>/totp-secret`); the branch
+  redeploy's ci suites, `authBehaviour` included, passed with enrolment enforced. Main's deploy
+  carries it to prod; the row closes when that deploy promotes. **Source**: `../REPORT_HMRC_HEADER_ADVISORIES.md`.
   **Owner**: Claude Code. **Model**: Haiku. **Size**: ~6 files.
 
 ## Machine-only
-
-- [ ] **B30ad. The ci sweep's second trigger is on `main`; its first run proves it.** PR #259
-  (58290819, merged 12:0x UTC on 2026-09-16) adds `workflow_run` on `deploy` completion to
-  `destroy-ci.yml`, routed down the sweep path like `schedule`; the cron stays (it fired one or two
-  of six slots a day for the past week, 60 to 90 minutes late, GitHub's scheduler and not the
-  file). Read the first `workflow_run`-triggered sweep after the next deploy completes (`gh run list
-  --workflow destroy-ci.yml`, event `workflow_run`): all four jobs green and `ci-clauda982`'s lone
-  `SelfDestructStack` gone (its set self-destructed at 07:3x UTC and the pointer has moved).
-  By hand meanwhile: `gh workflow run destroy-ci.yml --ref main -f sweep-for-stacks=true`.
-  **Source**: this board; `destroy-ci.yml`. **Owner**: Claude Code. **Model**: Haiku. **Size**:
-  ~0 files.
 
 - [ ] **B56. `test` and CodeQL as required status checks on `main`.** O46 settled on 2026-09-16:
   ruleset 16057564 keeps `Check commit signatures` required with the Admin role as its only bypass
