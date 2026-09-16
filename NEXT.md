@@ -101,35 +101,14 @@ step.
   `alarm-triage.yml` only after the operator picks. **Source**: issue #249; operator, 2026-09-16.
   **Owner**: Claude Code. **Model**: Sonnet. **Size**: ~1 file.
 
-## Machine-ask
+- [ ] **B49a. The key-exposure org policy as code.** `iam.serviceAccountKeyExposureResponse` is
+  set to `DISABLE_KEY` on organization 936151157673 by hand (22:40 UTC on 2026-09-16, O48). Carry it
+  in `google/identity.toml` under a new `[org_policy]` table and have `scripts/gcp-identity-sync.js`
+  read and apply it through the Org Policy API (`orgpolicy.googleapis.com`, enabled on the project
+  the same day) so `google apply` owns it like the pool and providers. **Source**: O48; BACKLOG 49.
+  **Owner**: Claude Code. **Model**: Sonnet. **Size**: ~2 files.
 
-- [ ] **O48. The exposed GA4 service-account key: rotate, delete, review, then narrow the account.**
-  Found 03:0x UTC on 2026-09-16: `google-apply.yml` passed the key's JSON to eight steps as a step
-  env, GitHub's `add-mask` matched only the single-line value, and the pretty-printed JSON, private
-  key included, appeared in the env block of every run's log on this public repository; the
-  fifteen runs with logs (back to 2026-09-11) had their logs deleted at 03:0x UTC. The account
-  `ga4-report-pull@diyaccounting-ga4.iam.gserviceaccount.com` holds `roles/owner`, so this is an
-  exposed-key incident: Google's guidance is deletion (disabling stops new sign-ins but not tokens
-  already issued), an audit-log review on `serviceAccountKeyName`, and reconsidering the owner
-  binding. Every step is a CLI on this machine (`gcloud` 583 is authenticated as
-  antony@diyaccounting.co.uk), each a Google or GitHub write run one at a time on the operator's
-  go:
-  1. `gh workflow run google-key-rotate.yml --ref main -f apply=true` (new key, both environments'
-     secrets, old key disabled), then read the run.
-  2. `gcloud iam service-accounts keys list --iam-account=ga4-report-pull@diyaccounting-ga4.iam.gserviceaccount.com --managed-by=user --project=diyaccounting-ga4`
-     then `gcloud iam service-accounts keys delete <OLD_KEY_ID> --iam-account=ga4-report-pull@diyaccounting-ga4.iam.gserviceaccount.com --project=diyaccounting-ga4`.
-  3. `gcloud logging read 'protoPayload.authenticationInfo.serviceAccountKeyName:"<OLD_KEY_ID>"' --project=diyaccounting-ga4 --freshness=7d --format='table(timestamp,protoPayload.methodName,protoPayload.resourceName)'`
-     and read what the key touched since 2026-09-11.
-  4. The owner binding out, the narrow roles in, as code: `google/identity.toml` and `google-roles.yml`
-     carry the account's roles, so the change is an edit plus a `google apply` run.
-  5. `gcloud projects describe diyaccounting-ga4 --format='value(parent)'`; if the project sits under an
-     organization, set the `iam.serviceAccountKeyExposureResponse` constraint to `DISABLE_KEY` with
-     `gcloud org-policies set-policy` and keep it in `google/identity.toml`; with no organization the
-     constraint does not apply.
-  6. The date into `secrets-rotation.toml`'s `ga4/service_account` row.
-  **Source**: run 35049344705;
-  https://docs.cloud.google.com/iam/docs/best-practices-for-managing-service-account-keys.
-  **Owner**: Claude Code drives, the operator says go per write. **Model**: Sonnet. **Size**: ~3 files.
+## Machine-ask
 
 - [ ] **B56. `test` and CodeQL as required status checks on `main`.** O46 settled on 2026-09-16:
   ruleset 16057564 keeps `Check commit signatures` required with the Admin role as its only bypass
@@ -212,8 +191,8 @@ step.
   `federated`, the key-mode code out of the three Lambdas and `IngestionStack`, the secret step and
   `GA4_SERVICE_ACCOUNT_ARN` out of `deploy-environment.yml`, `google-key-rotate.yml`,
   `scripts/gcp-key-rotate.js`, `google/identity.toml`'s `[service_account.key_rotation]` block and
-  the `ga4/service_account` row gone, then the operator deletes `GA4_SERVICE_ACCOUNT_JSON` from both
-  GitHub environments. **Size**: ~12 files.
+  the `ga4/service_account` row gone (`GA4_SERVICE_ACCOUNT_JSON` is already off both GitHub
+  environments, 2026-09-16). **Size**: ~12 files.
 
 ## Human-driven
 
