@@ -53,54 +53,16 @@ step.
   `.github/actions/run-triage-agent`. Proof: the next alarm's triage comment names Haiku or Sonnet. **Source**:
   REPORT_ALARM_TRIAGE_COST.md; issue #249. **Owner**: Claude Code. **Model**: Sonnet. **Size**: ~2 files.
 
-- [ ] **B124. The three agentic-lib workflows cannot assume their AWS role.** Run 35153306283
-  (`agentic-lib-code.yml`, dispatched by the operator at 21:36 UTC on 2026-09-16, which lifts the
-  halt of 2026-09-12) died at "Configure AWS role via GitHub OIDC": "Credentials could not be
-  loaded, please check your action inputs". All three read
-  `role-to-assume: ${{ vars.SUBMIT_ACTIONS_ROLE_ARN }}` (`agentic-lib-board.yml:86`,
-  `agentic-lib-pr.yml:127`, `agentic-lib-code.yml:98`) from a job that declares no `environment:`,
-  and that variable exists only on the `ci` and `prod` environments (repository-level variables:
-  `AWS_CERTIFICATE_ARN`, `AWS_HOSTED_ZONE_NAME`, `SUBMIT_GOOGLE_AUTH_MODE`), so it resolves empty;
-  `alarm-triage.yml:138` gets it right with `environment: ${{ needs.triage.outputs.environment-name }}`.
-  Fix per workflow: `agentic-lib-pr.yml` needs no AWS at all (`/auto-merge` reads GitHub only), so
-  its OIDC step goes; `agentic-lib-code.yml` gets `environment: ci`; `agentic-lib-board.yml` reads
-  both accounts for Part 4, so either two jobs keyed by environment or a second assume into the
-  other account. Then dispatch `agentic-lib-board.yml` with `write-back=false` and compare its five
-  parts with a `/board` here, `agentic-lib-pr.yml` with `dry-run=true` against `/auto-merge-dry-run`,
-  and `agentic-lib-code.yml` on its 10-minute budget, in that order (BACKLOG row 73 carries the
-  full brief). Proofs from the branch: board run 35159207896 rendered the same rows and order as
-  this session's `/board` (22 turns, $0.06; its prod block failed on `cloudformation:ListStacks`,
-  which the prod role gains on `main`'s environment deploy, and raised alarm issue #279, which
-  closes then); pr dry-run 35159593566 rendered; code run 35159801420 took B30ai, checked `main`
-  green and wrote a full handover into the checkout instead of `OUT_DIR` (fixed on the batch,
-  de3033ea); the second code run 35160283767 judged the first unresumable (right: its handover was the
-  workflow's fallback text) and redid B30ai; B124.2 carries what both runs found. In flight on `claude/b52-board` (wave b52, worktree `.claude/worktrees/b52`, PR #276, deploy 35156736691, environment deploy 35156736363). **Source**: run 35153306283; BACKLOG 73. **Owner**: Claude Code. **Model**: Sonnet.
-  **Size**: ~3 files.
-
-- [ ] **B30af. A deploy that starts during a scheduled prod probe still swaps the apex under it.**
-  Issue #273 (20:31 UTC on 2026-09-16): the 19:46 UTC scheduled `probe-test.yml` run found no deploy
-  in flight at its "Wait for a deploy in progress on main" step (lines 236–256), then PR #266's
-  deploy of `main` started at 19:5x and promoted prod-f080052 while the probe's `submitVatBehaviour`
-  and `tokenRefreshBehaviour` suites were navigating at 20:28: both failed with
-  `ERR_SSL_VERSION_OR_CIPHER_MISMATCH` on the apex, everything before the navigation having passed
-  (the new test-user rotation enrolled both prod lanes cleanly). The guard covers only a deploy
-  already running. Either the guard re-checks immediately before each suite's navigation and waits
-  again, or `deploy.yml`'s promotion step waits for a running scheduled probe; pick the one that
-  does not hold a deploy for 40 minutes, then close incident #272 (#273 and #274 are closed).
-  In flight on `claude/b52-board` (wave b52, worktree `.claude/worktrees/b52`, PR #276, deploy 35156736691, environment deploy 35156736363). **Source**: issues #272, #273; run 35142540653.
-  **Owner**: Claude Code. **Model**: Sonnet. **Size**: ~1 file.
-
-- [ ] **B30ag. The alarm-to-issue Lambda opens two issues when SNS delivers twice.** #273 and #274
-  were created in the same second for one transition of `prod-env-github-probe-failed`;
-  `app/functions/ops/alarmToGithubIssue.js` lists open `alarm` issues before creating (lines
-  264–281) and its own comment (268–270) names the race: two invocations of one notification both
-  search before either creates. Make the create idempotent: a conditional write keyed on the alarm
-  name and state-change timestamp (the existing DynamoDB table the ops Lambdas use, or a
-  `PutItem` with `attribute_not_exists`) before the GitHub call, so the second invocation comments or
-  exits. Unit test with two concurrent invocations. #274 is closed as the duplicate. In flight on `claude/b52-board` (wave b52, worktree `.claude/worktrees/b52`, PR #276, deploy 35156736691, environment deploy 35156736363). **Source**:
-  issues #273, #274. **Owner**: Claude Code. **Model**: Sonnet. **Size**: ~2 files.
-
 ## Machine-only
+
+- [ ] **B30af.2. Close #272 and #279 when prod carries wave b52.** PR #276 (3ce46938) is on `main`:
+  the probe guard now re-checks for a deploy before each apex navigation (incident #272), one
+  issue per alarm transition across deployments, and the agentic-lib workflows under the
+  alarm-triage role, which gains `cloudformation:ListStacks` on prod's environment deploy (alarm
+  issue #279, its denied call). Read `main`'s deploy 35161551059 and environment deploy
+  35161550538 to their terminal state, confirm the prod pointer moved and the triage role's policy
+  carries the two actions, then close both issues with the run ids. **Source**: issues #272, #279.
+  **Owner**: Claude Code. **Model**: Haiku. **Size**: ~0 files.
 
 - [ ] **B124.2. The code agent's prompt asks for what its tool list denies.** Both code proofs
   (runs 35159801420 and 35160283767, from `claude/b52-board`) picked the simplest ready row,
