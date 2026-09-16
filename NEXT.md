@@ -82,12 +82,6 @@ Every item names its model: the lowest tier that fits (Fable > Opus > Sonnet > H
 
 ## Human-only
 
-- [ ] **O47. Apply the Actions allow list and require SHA pinning.** Every action in the repository is
-  pinned since PR #241 (B57, B57.2); the settings write is denied to sessions, so run:
-  `cd /Users/antony/projects/diy-accounting-limited/submit.diyaccounting.co.uk && scripts/github-actions-permissions.sh --require-sha`
-  (sets `allowed_actions: selected` with the six owners the workflows use and
-  `sha_pinning_required: true`). **Source**: BACKLOG 57; B57.2. **Owner**: Operator. **Model**: none.
-
 - [ ] **O17. Register the Companies House sandbox test user and set four ci values.**
   Companies House has no create-test-user API, so the operator registers a throwaway account
   on identity-sandbox.company-information.service.gov.uk with an authenticator second factor
