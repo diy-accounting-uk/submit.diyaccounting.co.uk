@@ -336,6 +336,14 @@ describe("findingForForbiddenRead", () => {
     );
   });
 
+  test("names the disabled API when the 403 says the API has not been used or is disabled", () => {
+    const body =
+      '403 from https://iam.googleapis.com/v1/projects/diyaccounting-ga4/serviceAccounts/sa/keys: {"error":{"code":403,"message":"Identity and Access Management (IAM) API has not been used in project 958354756046 before or it is disabled. Enable it by visiting https://console.developers.google.com/apis/api/iam.googleapis.com/overview?project=958354756046 then retry.","status":"PERMISSION_DENIED"}}';
+    expect(findingForForbiddenRead(new Error(body), "service account keys", "sa@p", "iam.serviceAccountKeys.list missing")).toBe(
+      "service account keys: not permitted for sa@p (the Identity and Access Management (IAM) API is disabled in the project)",
+    );
+  });
+
   test("answers null for any other error", () => {
     expect(findingForForbiddenRead(new Error("500 from https://x"), "billing", "sa", "r")).toBeNull();
     expect(findingForForbiddenRead(new Error("fetch failed"), "billing", "sa", "r")).toBeNull();

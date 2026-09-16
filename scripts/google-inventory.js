@@ -187,8 +187,14 @@ export function shapeTransferConfigs(transferConfigsListBody) {
  */
 export function findingForForbiddenRead(error, what, serviceAccountEmail, remedy) {
   if (!/^403 /.test(error?.message ?? "")) return null;
-  const scopeProblem = /ACCESS_TOKEN_SCOPE_INSUFFICIENT|insufficient authentication scopes/i.test(error.message);
-  return `${what}: not permitted for ${serviceAccountEmail} (${scopeProblem ? "the access token lacks the scope" : remedy})`;
+  const message = error.message;
+  let reason = remedy;
+  if (/ACCESS_TOKEN_SCOPE_INSUFFICIENT|insufficient authentication scopes/i.test(message)) reason = "the access token lacks the scope";
+  else {
+    const disabledApi = /([A-Za-z()\s]+ API) has not been used in project|([A-Za-z()\s]+ API)[^"]*it is disabled/i.exec(message);
+    if (disabledApi) reason = `the ${(disabledApi[1] ?? disabledApi[2]).trim()} is disabled in the project`;
+  }
+  return `${what}: not permitted for ${serviceAccountEmail} (${reason})`;
 }
 
 /**

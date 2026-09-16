@@ -33,6 +33,12 @@ services = [
   "bigquerydatatransfer.googleapis.com",
   "youtube.googleapis.com",
   "iap.googleapis.com",
+  # Workload identity federation (scripts/gcp-identity-sync.js): the pool and providers live in
+  # the IAM API, the federated token exchange in STS, and service-account impersonation in
+  # IAM Credentials. Without iam.googleapis.com the pool read answers 403 "API has not been used".
+  "iam.googleapis.com",
+  "iamcredentials.googleapis.com",
+  "sts.googleapis.com",
 ]
 
 # The billing budget scripts/gcp-billing-assert.js reuses (it was created by hand on the

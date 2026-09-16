@@ -17,6 +17,7 @@ import {
   credentialConfigPath,
   writeCredentialConfigs,
   WORKLOAD_IDENTITY_USER_ROLE,
+  forbiddenReason,
 } from "../../../scripts/gcp-identity-sync.js";
 
 const SAMPLE_TOML = `
@@ -221,5 +222,25 @@ describe("gcp-identity-sync credential configuration", () => {
     } finally {
       fs.rmSync(root, { recursive: true, force: true });
     }
+  });
+});
+
+describe("forbiddenReason", () => {
+  it("quotes the API's message and the ErrorInfo reason out of a JSON error body", () => {
+    const body =
+      '{"error":{"code":403,"message":"Request had insufficient authentication scopes.","status":"PERMISSION_DENIED","details":[{"@type":"type.googleapis.com/google.rpc.ErrorInfo","reason":"ACCESS_TOKEN_SCOPE_INSUFFICIENT","domain":"googleapis.com"}]}}';
+    expect(forbiddenReason(body)).toBe("Request had insufficient authentication scopes. (ACCESS_TOKEN_SCOPE_INSUFFICIENT)");
+  });
+
+  it("quotes a disabled-API message on its own when the body carries no ErrorInfo reason", () => {
+    const body =
+      '{"error":{"code":403,"message":"Identity and Access Management (IAM) API has not been used in project 958354756046 before or it is disabled.","status":"PERMISSION_DENIED"}}';
+    expect(forbiddenReason(body)).toBe(
+      "Identity and Access Management (IAM) API has not been used in project 958354756046 before or it is disabled.",
+    );
+  });
+
+  it("falls back to the raw text when the body is not JSON", () => {
+    expect(forbiddenReason("Forbidden")).toBe("Forbidden");
   });
 });

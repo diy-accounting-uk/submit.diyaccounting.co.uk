@@ -218,13 +218,35 @@ export function credentialConfigPath(provider) {
   return path.join(CREDENTIALS_DIR, `${provider.id}.json`);
 }
 
+/**
+ * The reason a Google API gave for refusing a request, read out of its JSON error body: the
+ * message, plus the first ErrorInfo reason when there is one. Falls back to the raw text.
+ * @param {string} bodyText
+ * @returns {string}
+ */
+export function forbiddenReason(bodyText) {
+  try {
+    const parsed = JSON.parse(bodyText);
+    const message = parsed?.error?.message;
+    const reason = parsed?.error?.details?.find((d) => d.reason)?.reason;
+    if (message) return reason ? `${message} (${reason})` : message;
+  } catch {
+    // not JSON: the raw text is the reason
+  }
+  return bodyText.slice(0, 300);
+}
+
 async function googleRequest(method, url, token, body) {
   const res = await fetch(url, {
     method,
     headers: { "Authorization": `Bearer ${token}`, "Content-Type": "application/json" },
     body: body === undefined ? undefined : JSON.stringify(body),
   });
+  // A 404 on a read is the resource not existing yet, which the plan reports as "would create".
   if (res.status === 404 && method === "GET") return null;
+  // A 403 is never something the plan can create its way out of: it fails, quoting the reason
+  // (a disabled API, a missing role, an insufficient token scope).
+  if (res.status === 403) throw new Error(`403 from ${method} ${url}: ${forbiddenReason(await res.text())}`);
   if (!res.ok) throw new Error(`${res.status} from ${method} ${url}: ${(await res.text()).slice(0, 300)}`);
   return res.json();
 }
