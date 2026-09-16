@@ -151,9 +151,14 @@ describe("GitHub alert counts", () => {
     expect(fetchImpl.mock.calls[0][1].headers.Authorization).toBe("Bearer test-token");
   });
 
-  test("fetchGithubAlertRows throws on a non-ok response", async () => {
-    const fetchImpl = vi.fn().mockResolvedValue({ ok: false, status: 403, text: async () => "forbidden" });
-    await expect(fetchGithubAlertRows(fetchImpl, "t", "r", "2026-09-08")).rejects.toThrow(/GitHub API error/);
+  test("fetchGithubAlertRows publishes a null row for an endpoint that fails, instead of aborting the run", async () => {
+    const fetchImpl = vi.fn().mockResolvedValueOnce({ ok: false, status: 403, text: async () => "forbidden" }).mockResolvedValue({ ok: true, json: async () => [] });
+    const rows = await fetchGithubAlertRows(fetchImpl, "t", "r", "2026-09-08");
+    expect(fetchImpl).toHaveBeenCalledTimes(3);
+    expect(rows).toEqual(
+      expect.arrayContaining([{ dt: "2026-09-08", alert_type: "code_scanning", severity: null, count: null, oldest_created_at: null }]),
+    );
+    expect(rows).toHaveLength(3);
   });
 });
 

@@ -257,11 +257,18 @@ export function aggregateGithubAlertCounts(alertType, alerts, severityField, dat
   }));
 }
 
+// One endpoint can 403 on a token not scoped for it while the other two succeed; that endpoint
+// gets a null row for the day and the run carries on.
 export async function fetchGithubAlertRows(fetchImpl, token, repo, dateStr) {
   const rows = [];
   for (const endpoint of GITHUB_ALERT_ENDPOINTS) {
-    const alerts = await fetchOpenGithubAlerts(fetchImpl, token, repo, endpoint.path);
-    rows.push(...aggregateGithubAlertCounts(endpoint.alertType, alerts, endpoint.severityField, dateStr));
+    try {
+      const alerts = await fetchOpenGithubAlerts(fetchImpl, token, repo, endpoint.path);
+      rows.push(...aggregateGithubAlertCounts(endpoint.alertType, alerts, endpoint.severityField, dateStr));
+    } catch (error) {
+      logger.warn({ message: "GitHub alert fetch failed, publishing a null row for it", alertType: endpoint.alertType, error: error.message });
+      rows.push({ dt: dateStr, alert_type: endpoint.alertType, severity: null, count: null, oldest_created_at: null });
+    }
   }
   return rows;
 }
