@@ -57,6 +57,11 @@ env:
   GOOGLE_AUTH_MODE: ${{ inputs.auth-mode || vars.SUBMIT_GOOGLE_AUTH_MODE || 'key' }}
   # pull_request plans; push and a dispatch with apply=true apply.
   GOOGLE_APPLY: ${{ (github.event_name == 'push' || (github.event_name == 'workflow_dispatch' && inputs.apply)) && 'true' || 'false' }}
+  # The key path: every script reads the key from this secret through the job's AWS credentials
+  # (scripts/lib/googleAuth.js) and holds it in memory only. It never enters a step output or a
+  # step env, because a multi-line value in an env block is printed in clear in the job log
+  # (add-mask covers the exact single string, not its lines).
+  GA4_SERVICE_ACCOUNT_ARN: "arn:aws:secretsmanager:eu-west-2:${{ vars.SUBMIT_ACCOUNT_ID }}:secret:prod/submit/ga4/service_account"
 
 jobs:
   google-apply:
@@ -127,33 +132,15 @@ jobs:
           workload_identity_provider: ${{ steps.identity.outputs.provider }}
           service_account: ${{ steps.identity.outputs.service-account }}
 
-      - name: Resolve GA4 service account key
-        id: resolve
-        if: env.GOOGLE_AUTH_MODE == 'key'
-        run: |
-          SECRET_JSON=$(aws secretsmanager get-secret-value --secret-id "$GA4_SERVICE_ACCOUNT_ARN" --query SecretString --output text)
-          echo "::add-mask::${SECRET_JSON}"
-          {
-            echo "credentials-json<<GA4_SERVICE_ACCOUNT_JSON_EOF"
-            echo "${SECRET_JSON}"
-            echo "GA4_SERVICE_ACCOUNT_JSON_EOF"
-          } >> "$GITHUB_OUTPUT"
-        env:
-          GA4_SERVICE_ACCOUNT_ARN: "arn:aws:secretsmanager:${{ env.AWS_REGION }}:${{ vars.SUBMIT_ACCOUNT_ID }}:secret:prod/submit/ga4/service_account"
-
       # Steps run in dependency order: APIs, then identity (the workload identity pool and its
       # bindings), then IAM roles, then billing, then GA4, then the GA4-in-BigQuery dataset,
       # then the OAuth clients. The YouTube credential check runs on its own schedule
       # (.github/workflows/youtube-check.yml), not here.
 
       - name: Read-only inventory
-        env:
-          GA4_SERVICE_ACCOUNT_JSON: ${{ steps.resolve.outputs.credentials-json }}
         run: node scripts/google-inventory.js 2>&1 | tee google-inventory.log
 
       - name: Enable the Google APIs the scripts need
-        env:
-          GA4_SERVICE_ACCOUNT_JSON: ${{ steps.resolve.outputs.credentials-json }}
         run: |
           if [ "$GOOGLE_APPLY" != "true" ]; then
             node scripts/gcp-enable-apis.js 2>&1 | tee gcp-enable-apis.log
@@ -162,8 +149,6 @@ jobs:
           fi
 
       - name: Run gcp-identity-sync
-        env:
-          GA4_SERVICE_ACCOUNT_JSON: ${{ steps.resolve.outputs.credentials-json }}
         run: |
           if [ "$GOOGLE_APPLY" != "true" ]; then
             node scripts/gcp-identity-sync.js 2>&1 | tee gcp-identity-sync.log
@@ -172,8 +157,6 @@ jobs:
           fi
 
       - name: Run google-roles-apply
-        env:
-          GA4_SERVICE_ACCOUNT_JSON: ${{ steps.resolve.outputs.credentials-json }}
         run: |
           if [ "$GOOGLE_APPLY" != "true" ]; then
             node scripts/google-roles-apply.js 2>&1 | tee google-roles-apply.log
@@ -182,8 +165,6 @@ jobs:
           fi
 
       - name: Run gcp-billing-assert
-        env:
-          GA4_SERVICE_ACCOUNT_JSON: ${{ steps.resolve.outputs.credentials-json }}
         run: |
           if [ "$GOOGLE_APPLY" != "true" ]; then
             node scripts/gcp-billing-assert.js 2>&1 | tee gcp-billing-assert.log
@@ -193,7 +174,6 @@ jobs:
 
       - name: Run ga4-sync
         env:
-          GA4_SERVICE_ACCOUNT_JSON: ${{ steps.resolve.outputs.credentials-json }}
           GH_TOKEN: ${{ github.token }}
         run: |
           if [ "$GOOGLE_APPLY" != "true" ]; then
@@ -203,8 +183,6 @@ jobs:
           fi
 
       - name: Run ga4-bigquery-sync
-        env:
-          GA4_SERVICE_ACCOUNT_JSON: ${{ steps.resolve.outputs.credentials-json }}
         run: |
           if [ "$GOOGLE_APPLY" != "true" ]; then
             node scripts/ga4-bigquery-sync.js 2>&1 | tee ga4-bigquery-sync.log
@@ -215,8 +193,6 @@ jobs:
       # Read-only: checks google/oauth.toml against Cognito, Secrets Manager and the Google
       # Auth Platform brand, the same on a pull request and on a push. Nothing to apply.
       - name: Run google-oauth-assert
-        env:
-          GA4_SERVICE_ACCOUNT_JSON: ${{ steps.resolve.outputs.credentials-json }}
         run: node scripts/google-oauth-assert.js 2>&1 | tee google-oauth-assert.log
 
       - name: Generate step summary
