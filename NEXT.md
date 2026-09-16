@@ -40,10 +40,12 @@ Every item names its model: the lowest tier that fits (Fable > Opus > Sonnet > H
 
 ## In flight
 
-Wave b42 rides **`claude/b42-board`** (from `main` at 1c1cc8a1, unpushed until the wave lands): B30ab is
-on the batch; B30ac and B59 are being worked in `.claude/worktrees/b42-agents`, B57 and B58 in
-`b42-github`, B55 in `b42-google`, B11.T10's pack in `b42-itsapack`. The push, the PR and `/watch`
-follow the last agent's report. `main`'s deploy of PR #232 (b41) runs alongside.
+Wave b42 rides **`claude/b42-board`, PR #237** (pushed 00:19 UTC on 2026-09-16, ten task commits; its
+push-triggered test and deploy runs register under the monitor). Every batch has landed on the batch.
+After the merge, in order: the environment deploy of `main` updates the triage role and creates the
+kill-switch parameter; `gh workflow run alarm-triage.yml -f issue-number=229` proves B30ac;
+`gh workflow run google-apply.yml --ref main -f auth-mode=federated -f apply=false` proves B55's
+federation. `main`'s deploy of PR #232 (b41) runs alongside.
 
 - [ ] **B30ab. The CIS unauthorized-api-calls filter counts the AWS console's own UX calls.**
   Issue #231 (22:20 UTC, 2026-09-15): four `uxc.amazonaws.com GetAccountColor` AccessDenied events
