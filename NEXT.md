@@ -32,9 +32,7 @@ named alternatives. A row whose only human step is merging its PR is machine-onl
 standing workflow, not an action the row needs. Within a section, items run by the size of the
 change to committed files, least first (operator, 2026-09-13); a row that changes nothing
 committed — a comment, a run, a scan, a console action — comes before any code. Operator items
-are briefed in `../BRIEF_OPERATOR_RUNBOOK_2026-09-13.md` at the workspace root,
-with the detail behind each task in the four `../BRIEF_OPERATOR_TASKS_*.md` files
-(`2026-09-13` carries the rows the earlier three do not).
+are briefed in `../NEXT_OPERATOR_RUNBOOK.md` at the workspace root, one file rewritten in place.
 Every item names its model: the lowest tier that fits (Fable > Opus > Sonnet > Haiku), or
 `none` for a human step.
 
@@ -106,7 +104,7 @@ Every item names its model: the lowest tier that fits (Fable > Opus > Sonnet > H
   of `ci-env-analytics-nightly` at 19:28 UTC proved `ga4-daily-pull` and `ga4-report-pull` federated
   and failed `ga4-event-export-pull` on Google's 127-byte subject limit; `google apply` on `main`
   carries the mapping. The human half: one more start of the state machine
-  (`BRIEF_OPERATOR_TASKS_2026-09-16.md` task 5). The machine half after a clean run: `.env.prod` to
+  (`../NEXT_OPERATOR_RUNBOOK.md`). The machine half after a clean run: `.env.prod` to
   `federated`, the key-mode code out of the three Lambdas and `IngestionStack`, the secret step and
   `GA4_SERVICE_ACCOUNT_ARN` out of `deploy-environment.yml`, `google-key-rotate.yml`,
   `scripts/gcp-key-rotate.js`, `google/identity.toml`'s `[service_account.key_rotation]` block and
@@ -158,12 +156,18 @@ Every item names its model: the lowest tier that fits (Fable > Opus > Sonnet > H
   appeared in the env block of every run's log on this public repository; the fifteen runs with logs
   (back to 2026-09-11) had their logs deleted at 03:0x UTC, and the session's local copies were
   removed. The account `ga4-report-pull@diyaccounting-ga4.iam.gserviceaccount.com` holds
-  `roles/owner` on the project. Rotate now, through the code path (creates a new key, writes it to
-  both environments' secrets, disables the old one):
+  `roles/owner` on the project, so this is an exposed-key incident, and Google's guidance is to
+  delete the key (disabling stops new sign-ins but not tokens already issued from it), review the
+  audit logs on `serviceAccountKeyName` for what the key touched, reconsider the owner binding, and
+  consider replacing the account. Now: rotate through the code path (creates a new key, writes it
+  to both environments' secrets, disables the old one):
   `gh workflow run google-key-rotate.yml --ref main -f apply=true`
-  then read the run and confirm the old key id is disabled; the workflow fix that stops the printing
-  is B55.3 (wave b44). Write the date into `secrets-rotation.toml`'s `ga4/service_account` row.
-  **Source**: run 35049344705; this session. **Owner**: Operator. **Model**: none.
+  then read the run, delete the old key id in the console, do the audit-log review, and write the
+  date into `secrets-rotation.toml`'s `ga4/service_account` row. The org policy constraint
+  `Service Account Key Exposure Response` (`DISABLE_KEY`) belongs in `google/identity.toml` as a
+  Claude Code follow-on. **Source**: run 35049344705;
+  https://docs.cloud.google.com/iam/docs/best-practices-for-managing-service-account-keys.
+  **Owner**: Operator. **Model**: none.
 
 - [ ] **O23. Open a Google Ads account for the paid-traffic experiments.** Both earlier Ads
   accounts were cancelled (`google-analytics.toml`); the reinvestment loop (plan row D17) needs
