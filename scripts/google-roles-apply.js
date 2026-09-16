@@ -28,8 +28,8 @@ import path from "node:path";
 import { fileURLToPath } from "node:url";
 
 import TOML from "@iarna/toml";
-import { GoogleAuth } from "google-auth-library";
-import { SecretsManagerClient, GetSecretValueCommand } from "@aws-sdk/client-secrets-manager";
+
+import { createGoogleAuthorizedClient, resolveServiceAccountCredentialsJson } from "./lib/googleAuth.js";
 
 // AccessBinding is a v1alpha-only resource in the GA4 Analytics Admin API; it has not graduated
 // to v1beta.
@@ -190,38 +190,12 @@ export function loadConfigFromRoot() {
   return parseConfig(fs.readFileSync(filePath, "utf-8"));
 }
 
-let cachedSecretsManagerClient = null;
-
-function getSecretsManagerClient() {
-  if (!cachedSecretsManagerClient) {
-    cachedSecretsManagerClient = new SecretsManagerClient({ region: process.env.AWS_REGION || "eu-west-2" });
-  }
-  return cachedSecretsManagerClient;
-}
-
-/**
- * Resolve the GA4 service-account key JSON, the same env-var-then-Secrets-Manager precedence
- * and secret app/functions/analytics/ga4ReportPull.js uses.
- *
- * @returns {Promise<string>}
- */
-async function resolveServiceAccountCredentialsJson() {
-  if (process.env.GA4_SERVICE_ACCOUNT_JSON) {
-    return process.env.GA4_SERVICE_ACCOUNT_JSON;
-  }
-  const arn = process.env.GA4_SERVICE_ACCOUNT_ARN;
-  if (!arn) {
-    throw new Error("Neither GA4_SERVICE_ACCOUNT_JSON nor GA4_SERVICE_ACCOUNT_ARN is set");
-  }
-  const result = await getSecretsManagerClient().send(new GetSecretValueCommand({ SecretId: arn }));
-  return result.SecretString;
-}
-
 async function getAuthClient() {
-  const credentialsJson = await resolveServiceAccountCredentialsJson();
-  const credentials = JSON.parse(credentialsJson);
-  const auth = new GoogleAuth({ credentials, scopes: SCOPES });
-  return auth.getClient();
+  const credentialsJson = await resolveServiceAccountCredentialsJson({
+    jsonEnvVar: "GA4_SERVICE_ACCOUNT_JSON",
+    arnEnvVar: "GA4_SERVICE_ACCOUNT_ARN",
+  });
+  return createGoogleAuthorizedClient(credentialsJson, SCOPES);
 }
 
 // --- GA4 Analytics Admin API ---

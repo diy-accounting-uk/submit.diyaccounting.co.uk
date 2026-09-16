@@ -19,6 +19,7 @@ import { gzipSync } from "zlib";
 import { S3Client, PutObjectCommand } from "@aws-sdk/client-s3";
 import { SecretsManagerClient, GetSecretValueCommand } from "@aws-sdk/client-secrets-manager";
 import { BigQuery } from "@google-cloud/bigquery";
+import { ga4AuthMode, federationSettings, createFederatedGoogleAuth } from "../../lib/googleWorkloadIdentity.js";
 import { createLogger } from "../../lib/logger.js";
 
 const logger = createLogger({ source: "app/functions/analytics/ga4EventExportPull.js" });
@@ -72,12 +73,24 @@ let cachedCredentialsJson = null;
  * @returns {Promise<BigQuery>}
  */
 async function getBigQueryClient() {
+  const projectId = process.env.GA4_BIGQUERY_PROJECT_ID;
+  if (ga4AuthMode() === "federated") {
+    if (cachedBigQueryClient && cachedCredentialsJson === null) {
+      return cachedBigQueryClient;
+    }
+    const authClient = createFederatedGoogleAuth({
+      ...federationSettings(),
+      scopes: ["https://www.googleapis.com/auth/bigquery", "https://www.googleapis.com/auth/cloud-platform"],
+    });
+    cachedBigQueryClient = new BigQuery({ projectId, authClient });
+    cachedCredentialsJson = null;
+    return cachedBigQueryClient;
+  }
   const credentialsJson = await resolveServiceAccountCredentialsJson();
   if (cachedBigQueryClient && cachedCredentialsJson === credentialsJson) {
     return cachedBigQueryClient;
   }
   const credentials = JSON.parse(credentialsJson);
-  const projectId = process.env.GA4_BIGQUERY_PROJECT_ID;
   cachedBigQueryClient = new BigQuery({ projectId, credentials });
   cachedCredentialsJson = credentialsJson;
   return cachedBigQueryClient;

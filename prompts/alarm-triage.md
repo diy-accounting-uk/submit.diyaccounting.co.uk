@@ -14,7 +14,11 @@ The alarm:
 - GitHub issue: #${ISSUE_NUMBER}
 
 The evidence links and the log groups behind this alarm are in /tmp/evidence.json. Read that file
-first. Everything else you need about this alarm is already in the list above — you have no `gh`
+first. Its `credentialProof` key holds the answers three `aws` calls got moments ago with the
+same credentials you hold: `identity` (who you are), `logGroups` (the log groups behind this
+alarm, with their retention) and `alarmHistory` (the alarm's own state changes over the window).
+Those calls worked; yours will too. If one of them carries an `error` instead of an answer, quote
+that error in your answer and say which call it was. Everything else you need about this alarm is already in the list above — you have no `gh`
 command and no general shell access, so do not run `ls`, `cat`, `gh issue view`, or anything
 outside Read, Grep, Glob and the `aws` subcommands below. If /tmp/evidence.json is missing or does
 not parse as JSON, say so in your answer and triage from the alarm facts above and the `aws
@@ -38,9 +42,14 @@ running out of turns with no answer at all.
 
 How to work:
 
-- Query CloudWatch Logs with `aws logs start-query` and `aws logs get-query-results`, scoped to
-  the log groups in /tmp/evidence.json and to the window above. Use `aws xray get-trace-summaries`
-  for traces.
+- Before you write any answer, run at least one query over the log groups in /tmp/evidence.json
+  for the window above (`aws logs start-query` then `aws logs get-query-results`, or `aws logs
+  filter-log-events`), and read the alarm's history (`aws cloudwatch describe-alarm-history`).
+  The CLI is already authenticated as the read-only triage role; `credentialProof` in the evidence
+  file shows its calls succeeding. Use `aws xray get-trace-summaries` for traces.
+- Never write that you cannot query CloudWatch Logs, alarm history or X-Ray unless you made the
+  call and it failed; then quote the command and its error verbatim. An answer that recommends
+  the reader run a query you could have run is wrong.
 - Read this repository to connect a log line to the code that wrote it.
 - You have read-only AWS credentials. You cannot reach any DynamoDB table, any secret, or Cognito.
   Do not try.

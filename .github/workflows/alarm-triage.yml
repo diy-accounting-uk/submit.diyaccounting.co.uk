@@ -195,6 +195,12 @@ jobs:
           output-credentials: true
           retry-max-attempts: 3
 
+      - name: Stop when the agent kill switch is on
+        if: steps.role.outputs.configured == 'true'
+        uses: ./.github/actions/agent-kill-switch
+        with:
+          environment-name: ${{ env.ENV_NAME }}
+
       - name: Read the guardrail identifiers
         if: steps.role.outputs.configured == 'true'
         id: guardrail
@@ -230,6 +236,40 @@ jobs:
             --region "$ALARM_REGION" --from-alarm \
             2>&1 | tee /tmp/evidence.json
 
+      # The agent has answered "without being able to query CloudWatch Logs" without making one
+      # aws call (#229, run 35030341835). So the same credentials it will hold make the three calls
+      # here first, and the results (or the exact errors) go into the evidence file for the prompt
+      # to quote: an agent told "these calls worked a moment ago" has no room to assume otherwise.
+      - name: Prove the triage credentials against the alarm's telemetry
+        if: steps.role.outputs.configured == 'true'
+        run: |
+          set -o pipefail
+          proof() {
+            # $1 the key, the rest the command; success stores the JSON answer, failure the error text
+            local key="$1"; shift
+            if out=$("$@" 2>&1); then
+              printf '%s' "$out" | jq -c --arg key "$key" '{($key): .}' > "/tmp/proof-${key}.json"
+            else
+              jq -nc --arg key "$key" --arg error "$out" '{($key): {error: $error}}' > "/tmp/proof-${key}.json"
+            fi
+          }
+          WINDOW_START=$(printf '%s' "$ALARM_WINDOW" | sed -E 's/^([^ ]+) to .*/\1/')
+          WINDOW_END=$(printf '%s' "$ALARM_WINDOW" | sed -E 's/^[^ ]+ to ([^ ]+).*/\1/')
+          LOG_GROUP_PREFIX=$(jq -r '.logGroupNamePrefixes[0] // empty' /tmp/evidence.json)
+          proof identity aws sts get-caller-identity --output json
+          proof logGroups aws logs describe-log-groups --region "$ALARM_REGION" \
+            --log-group-name-prefix "${LOG_GROUP_PREFIX:-/aws/lambda/${DEPLOYMENT_NAME}}" \
+            --query 'logGroups[].{name:logGroupName,retentionInDays:retentionInDays}' --output json
+          proof alarmHistory aws cloudwatch describe-alarm-history --region "$ALARM_REGION" \
+            --alarm-name "$ALARM_NAME" --history-item-type StateUpdate \
+            --start-date "$WINDOW_START" --end-date "$WINDOW_END" \
+            --query 'AlarmHistoryItems[].{at:Timestamp,summary:HistorySummary}' --output json
+          jq -s '.[0] + {credentialProof: (.[1] + .[2] + .[3] + {provedAt: (now | todate)})}' \
+            /tmp/evidence.json /tmp/proof-identity.json /tmp/proof-logGroups.json /tmp/proof-alarmHistory.json \
+            > /tmp/evidence.proved.json
+          mv /tmp/evidence.proved.json /tmp/evidence.json
+          jq '.credentialProof' /tmp/evidence.json | tee -a "$GITHUB_STEP_SUMMARY"
+
       - name: Install Claude Code
         if: steps.role.outputs.configured == 'true'
         run: npm install -g "@anthropic-ai/claude-code@${CLAUDE_CODE_VERSION}"
@@ -250,7 +290,7 @@ jobs:
           set -o pipefail
           PROMPT=$(envsubst < prompts/alarm-triage.md)
           claude -p "$PROMPT" \
-            --max-turns 30 \
+            --max-turns 60 \
             --output-format json \
             --permission-mode default \
             --allowedTools "Read,Grep,Glob,Bash(aws logs:*),Bash(aws xray:*),Bash(aws cloudwatch describe-alarm-history:*),Bash(aws cloudwatch describe-alarms:*)" \
@@ -270,7 +310,7 @@ jobs:
           if jq -e '.subtype == "success" and (.is_error | not) and (.result | length > 0)' /tmp/triage.json > /dev/null; then
             echo "stopped=false" | tee -a "$GITHUB_OUTPUT"
           elif jq -e '.subtype == "error_max_turns"' /tmp/triage.json > /dev/null; then
-            echo "triage used its 30-turn budget before finishing; posting whatever partial answer it produced" \
+            echo "triage used its 60-turn budget before finishing; posting whatever partial answer it produced" \
               | tee -a "$GITHUB_STEP_SUMMARY"
             echo "stopped=max_turns" | tee -a "$GITHUB_OUTPUT"
           else
@@ -386,10 +426,10 @@ jobs:
           gh issue comment "$ISSUE_NUMBER" --body-file /tmp/final-comment.md
 
       # Runs after the comment is safely posted, so the answer above is not lost, but the run
-      # still ends red: a triage that only got through 30 turns by exhausting its budget is not a
+      # still ends red: a triage that only got through 60 turns by exhausting its budget is not a
       # clean pass, and green here would hide that the answer may be incomplete.
       - name: Fail the run when triage stopped early
         if: steps.triage-run.outputs.stopped == 'max_turns'
         run: |
-          echo "failing the run: triage stopped after using its 30-turn budget" | tee -a "$GITHUB_STEP_SUMMARY"
+          echo "failing the run: triage stopped after using its 60-turn budget" | tee -a "$GITHUB_STEP_SUMMARY"
           exit 1

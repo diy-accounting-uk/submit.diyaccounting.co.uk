@@ -343,6 +343,10 @@ public class KindCdk {
      * @param logGroupName The name of the log group
      * @return EnsuredLogGroup containing both the ILogGroup and the AwsCustomResource
      */
+    /** The retention periods putRetentionPolicy accepts; any other value fails the custom resource at deploy. */
+    public static final List<Integer> VALID_LOG_RETENTION_DAYS = List.of(
+            1, 3, 5, 7, 14, 30, 60, 90, 120, 150, 180, 365, 400, 545, 731, 1096, 1827, 2192, 2557, 2922, 3288, 3653);
+
     public static EnsuredLogGroup ensureLogGroupWithDependency(Stack stack, String id, String logGroupName) {
         return ensureLogGroupWithDependency(stack, id, logGroupName, 3);
     }
@@ -355,6 +359,10 @@ public class KindCdk {
      */
     public static EnsuredLogGroup ensureLogGroupWithDependency(
             Stack stack, String id, String logGroupName, int retentionInDays) {
+        if (!VALID_LOG_RETENTION_DAYS.contains(retentionInDays)) {
+            throw new IllegalArgumentException("Log group " + logGroupName + " retention " + retentionInDays
+                    + " is not a CloudWatch Logs retention period; valid values are " + VALID_LOG_RETENTION_DAYS);
+        }
         AwsSdkCall createLogGroupCall = AwsSdkCall.builder()
                 .service("CloudWatchLogs")
                 .action("createLogGroup")

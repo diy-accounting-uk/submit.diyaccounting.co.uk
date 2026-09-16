@@ -321,6 +321,32 @@ class SecurityDetectionStackTest {
     }
 
     @Test
+    void unauthorizedApiCallsFilterExcludesTheConsoleAccountColourLookup() {
+        Template template = Template.fromStack(synthSecurityDetectionStack("true"));
+        var metricFilters = template.findResources("AWS::Logs::MetricFilter");
+
+        String pattern = metricFilters.values().stream()
+                .map(resource -> {
+                    @SuppressWarnings("unchecked")
+                    var properties = (Map<String, Object>) resource.get("Properties");
+                    return (String) properties.get("FilterPattern");
+                })
+                .filter(p -> p.contains("UnauthorizedAccess"))
+                .findFirst()
+                .orElseThrow(() -> new AssertionError("no metric filter pattern found for UnauthorizedApiCalls"));
+
+        assertTrue(
+                pattern.contains("($.eventSource != \"uxc.amazonaws.com\")"),
+                "UnauthorizedApiCalls pattern must exclude the console's uxc.amazonaws.com lookups, was: " + pattern);
+        assertTrue(
+                pattern.contains("(($.errorCode = \"*UnauthorizedAccess*\") || ($.errorCode = \"AccessDenied*\"))"),
+                "UnauthorizedApiCalls pattern must keep the error-code chain in its own parentheses, was: " + pattern);
+        assertTrue(
+                pattern.contains("cdk-hnb659fds-*"),
+                "UnauthorizedApiCalls pattern must still carry the deploy-role exclusion, was: " + pattern);
+    }
+
+    @Test
     void consoleSigninWithoutMfaFilterScopedToIamUsersOnly() {
         Template template = Template.fromStack(synthSecurityDetectionStack("true"));
         var metricFilters = template.findResources("AWS::Logs::MetricFilter");

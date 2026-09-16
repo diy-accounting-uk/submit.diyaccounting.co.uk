@@ -24,9 +24,8 @@ on:
         required: false
         default: true
         type: boolean
-  # Uncomment for scheduled weekly security reviews
-  # schedule:
-  #   - cron: '0 6 * * 1'  # Weekly Monday 6:00 AM UTC
+  schedule:
+    - cron: '0 6 * * 1' # Monday 06:00 UTC; the env block below supplies every input the schedule lacks
 
 env:
   TARGET_BRANCH: ${{ inputs.target_branch || 'main' }}
@@ -45,7 +44,7 @@ jobs:
     steps:
       - name: Check for open security review issues
         id: check
-        uses: actions/github-script@v9
+        uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9
         with:
           script: |
             const skipIfOpen = '${{ env.SKIP_IF_OPEN }}' === 'true';
@@ -87,11 +86,10 @@ jobs:
       issue_url: ${{ steps.create.outputs.issue_url }}
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v7
-
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
       - name: Create security review issue
         id: create
-        uses: actions/github-script@v9
+        uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9
         env:
           TARGET_BRANCH: ${{ env.TARGET_BRANCH }}
           WORKFLOW_NAME: ${{ github.workflow }}
@@ -208,7 +206,7 @@ jobs:
       issues: write
     steps:
       - name: Assign issue to Copilot
-        uses: actions/github-script@v9
+        uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9
         with:
           github-token: ${{ secrets.PERSONAL_ACCESS_TOKEN }}
           script: |

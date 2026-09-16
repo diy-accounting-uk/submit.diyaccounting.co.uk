@@ -45,7 +45,7 @@ jobs:
       contents: read
     steps:
       - name: Configure AWS role via GitHub OIDC (backup account)
-        uses: aws-actions/configure-aws-credentials@v6
+        uses: aws-actions/configure-aws-credentials@e1253824e5c10ff9df46874f81ed3ec929e19cfd # v6
         with:
           role-to-assume: 'arn:aws:iam::${{ env.BACKUP_ACCOUNT_ID }}:role/backup-github-actions-role'
           aws-region: ${{ env.AWS_REGION }}
@@ -56,7 +56,7 @@ jobs:
           retry-max-attempts: 3
 
       - name: Assume backup account deployment role
-        uses: aws-actions/configure-aws-credentials@v6
+        uses: aws-actions/configure-aws-credentials@e1253824e5c10ff9df46874f81ed3ec929e19cfd # v6
         with:
           role-to-assume: 'arn:aws:iam::${{ env.BACKUP_ACCOUNT_ID }}:role/backup-deployment-role'
           aws-region: ${{ env.AWS_REGION }}
@@ -154,7 +154,7 @@ jobs:
           done
 
       - name: Configure AWS role via GitHub OIDC (ci)
-        uses: aws-actions/configure-aws-credentials@v6
+        uses: aws-actions/configure-aws-credentials@e1253824e5c10ff9df46874f81ed3ec929e19cfd # v6
         with:
           role-to-assume: ${{ vars.SUBMIT_ACTIONS_ROLE_ARN }}
           aws-region: ${{ env.AWS_REGION }}
@@ -165,7 +165,7 @@ jobs:
           retry-max-attempts: 3
 
       - name: Assume ci deployment role
-        uses: aws-actions/configure-aws-credentials@v6
+        uses: aws-actions/configure-aws-credentials@e1253824e5c10ff9df46874f81ed3ec929e19cfd # v6
         with:
           role-to-assume: ${{ vars.SUBMIT_DEPLOY_ROLE_ARN }}
           aws-region: ${{ env.AWS_REGION }}

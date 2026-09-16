@@ -8,10 +8,12 @@ const mockTableExists = vi.fn();
 const mockGetQueryResults = vi.fn();
 const mockCreateQueryJob = vi.fn();
 
+const mockBigQueryOptions = [];
 vi.mock("@google-cloud/bigquery", () => ({
   BigQuery: class {
     constructor(options) {
       this.options = options;
+      mockBigQueryOptions.push(options);
     }
     dataset(datasetId) {
       return {
@@ -95,9 +97,7 @@ describe("ga4EventExportPull", () => {
   describe("defaultTargetDate", () => {
     test("returns D-2 in UTC as YYYY-MM-DD", () => {
       const now = new Date();
-      const expected = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate() - 2))
-        .toISOString()
-        .slice(0, 10);
+      const expected = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate() - 2)).toISOString().slice(0, 10);
 
       expect(defaultTargetDate()).toBe(expected);
     });
@@ -247,17 +247,14 @@ describe("ga4EventExportPull", () => {
     test("throws without querying when no service-account credential is configured", async () => {
       delete process.env.GA4_SERVICE_ACCOUNT_JSON;
 
-      await expect(handler({ date: "2026-08-20" })).rejects.toThrow(
-        /GA4_SERVICE_ACCOUNT_JSON|GA4_SERVICE_ACCOUNT_ARN/,
-      );
+      await expect(handler({ date: "2026-08-20" })).rejects.toThrow(/GA4_SERVICE_ACCOUNT_JSON|GA4_SERVICE_ACCOUNT_ARN/);
       expect(mockTableExists).not.toHaveBeenCalled();
       expect(mockS3Send).not.toHaveBeenCalled();
     });
 
     test("resolves the service-account credential from Secrets Manager when only the ARN is set", async () => {
       delete process.env.GA4_SERVICE_ACCOUNT_JSON;
-      process.env.GA4_SERVICE_ACCOUNT_ARN =
-        "arn:aws:secretsmanager:eu-west-2:111111111111:secret:ci/submit/ga4/service_account";
+      process.env.GA4_SERVICE_ACCOUNT_ARN = "arn:aws:secretsmanager:eu-west-2:111111111111:secret:ci/submit/ga4/service_account";
       mockSecretsManagerSend.mockResolvedValue({
         SecretString: JSON.stringify({ client_email: "svc@example.com", private_key: "test-key" }),
       });
@@ -267,6 +264,42 @@ describe("ga4EventExportPull", () => {
       expect(result.date).toBe("2026-08-20");
       expect(mockSecretsManagerSend).toHaveBeenCalledTimes(1);
       expect(mockSecretsManagerSend.mock.calls[0][0].input.SecretId).toBe(process.env.GA4_SERVICE_ACCOUNT_ARN);
+    });
+  });
+
+  describe("federated mode", () => {
+    test("builds the BigQuery client from the Lambda's execution role and reads no secret", async () => {
+      process.env.GA4_AUTH_MODE = "federated";
+      process.env.GOOGLE_WIF_AUDIENCE =
+        "//iam.googleapis.com/projects/670010122633/locations/global/workloadIdentityPools/submit-federation/providers/aws-prod";
+      process.env.GA4_SERVICE_ACCOUNT_EMAIL = "ga4-report-pull@diyaccounting-ga4.iam.gserviceaccount.com";
+      process.env.AWS_REGION = "eu-west-2";
+      process.env.AWS_ACCESS_KEY_ID = "ASIAEXAMPLE";
+      process.env.AWS_SECRET_ACCESS_KEY = "secret";
+      process.env.AWS_SESSION_TOKEN = "session";
+      delete process.env.GA4_SERVICE_ACCOUNT_JSON;
+      delete process.env.GA4_SERVICE_ACCOUNT_ARN;
+
+      try {
+        await handler({ date: "2026-08-20" });
+      } finally {
+        for (const name of [
+          "GA4_AUTH_MODE",
+          "GOOGLE_WIF_AUDIENCE",
+          "GA4_SERVICE_ACCOUNT_EMAIL",
+          "AWS_REGION",
+          "AWS_ACCESS_KEY_ID",
+          "AWS_SECRET_ACCESS_KEY",
+          "AWS_SESSION_TOKEN",
+        ]) {
+          delete process.env[name];
+        }
+      }
+
+      const options = mockBigQueryOptions.at(-1);
+      expect(options.credentials).toBeUndefined();
+      expect(options.authClient).toBeDefined();
+      expect(mockSecretsManagerSend).not.toHaveBeenCalled();
     });
   });
 });
