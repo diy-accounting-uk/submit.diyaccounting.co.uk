@@ -23,18 +23,22 @@ verified against AWS at 20:5x UTC: the pointer names it and the deploy's own pro
 nothing else stands.
 
 The board runs in five sections, in this order: **in flight** (a branch, a pull request or a run
-in motion, each named in the row), **machine-only**, **human and machine**, **human-only**,
+in motion, each named in the row), **machine-only**, **machine-ask**, **human-driven**,
 **blocked**. The section is the classification — what it takes to carry the row to
 completion, not who owns it now — so no row carries a separate tag that could drift from where it
-sits. `human-only` is work no session can do: an external registration, a console action with no
-API, a filing against the operator's own company, an email from their address, a decision between
-named alternatives. A row whose only human step is merging its PR is machine-only; that is the
-standing workflow, not an action the row needs. Within a section, items run by the size of the
-change to committed files, least first (operator, 2026-09-13); a row that changes nothing
-committed — a comment, a run, a scan, a console action — comes before any code. Operator items
-are briefed in `../NEXT_OPERATOR_RUNBOOK.md` at the workspace root, one file rewritten in place.
-Every item names its model: the lowest tier that fits (Fable > Opus > Sonnet > Haiku), or
-`none` for a human step.
+sits. `machine-ask` is work a session drives end to end with a human present to authenticate or
+approve: a second factor, an SSO login, a command the session's policy denies, a send from the
+operator's address, a write to Google or GitHub the operator says go to. `human-driven` is work a
+human must navigate themselves: a coding assistant's practical limits, a physical restriction
+beyond one authentication (a proctored exam, a signature in person), or policy (a payment mandate,
+a filing against the operator's own company, a decision between named alternatives). A row whose
+only human step is merging its PR is machine-only; that is the standing workflow, not an action
+the row needs. Within a section, items run by the size of the change to committed files, least
+first (operator, 2026-09-13); a row that changes nothing committed — a comment, a run, a scan, a
+console action — comes before any code. Operator items are briefed in
+`../NEXT_OPERATOR_RUNBOOK.md` at the workspace root, one file rewritten in place. Every item
+names its model: the lowest tier that fits (Fable > Opus > Sonnet > Haiku), or `none` for a human
+step.
 
 ## In flight
 
@@ -53,7 +57,7 @@ Every item names its model: the lowest tier that fits (Fable > Opus > Sonnet > H
   other account. Then dispatch `agentic-lib-board.yml` with `write-back=false` and compare its five
   parts with a `/board` here, `agentic-lib-pr.yml` with `dry-run=true` against `/auto-merge-dry-run`,
   and `agentic-lib-code.yml` on its 10-minute budget, in that order (BACKLOG row 73 carries the
-  full brief). In flight on `claude/b52-board` (wave b52, worktree `.claude/worktrees/b52`, agent dispatched 22:5x UTC on 2026-09-16; push and PR follow the wave). **Source**: run 35153306283; BACKLOG 73. **Owner**: Claude Code. **Model**: Sonnet.
+  full brief). In flight on `claude/b52-board` (wave b52, worktree `.claude/worktrees/b52`, PR #276, deploy 35156736691, environment deploy 35156736363). **Source**: run 35153306283; BACKLOG 73. **Owner**: Claude Code. **Model**: Sonnet.
   **Size**: ~3 files.
 
 - [ ] **B30af. A deploy that starts during a scheduled prod probe still swaps the apex under it.**
@@ -66,7 +70,7 @@ Every item names its model: the lowest tier that fits (Fable > Opus > Sonnet > H
   already running. Either the guard re-checks immediately before each suite's navigation and waits
   again, or `deploy.yml`'s promotion step waits for a running scheduled probe; pick the one that
   does not hold a deploy for 40 minutes, then close incident #272 (#273 and #274 are closed).
-  In flight on `claude/b52-board` (wave b52, worktree `.claude/worktrees/b52`, agent dispatched 22:5x UTC on 2026-09-16; push and PR follow the wave). **Source**: issues #272, #273; run 35142540653.
+  In flight on `claude/b52-board` (wave b52, worktree `.claude/worktrees/b52`, PR #276, deploy 35156736691, environment deploy 35156736363). **Source**: issues #272, #273; run 35142540653.
   **Owner**: Claude Code. **Model**: Sonnet. **Size**: ~1 file.
 
 - [ ] **B30ag. The alarm-to-issue Lambda opens two issues when SNS delivers twice.** #273 and #274
@@ -76,12 +80,96 @@ Every item names its model: the lowest tier that fits (Fable > Opus > Sonnet > H
   search before either creates. Make the create idempotent: a conditional write keyed on the alarm
   name and state-change timestamp (the existing DynamoDB table the ops Lambdas use, or a
   `PutItem` with `attribute_not_exists`) before the GitHub call, so the second invocation comments or
-  exits. Unit test with two concurrent invocations. #274 is closed as the duplicate. In flight on `claude/b52-board` (wave b52, worktree `.claude/worktrees/b52`, agent dispatched 22:5x UTC on 2026-09-16; push and PR follow the wave). **Source**:
+  exits. Unit test with two concurrent invocations. #274 is closed as the duplicate. In flight on `claude/b52-board` (wave b52, worktree `.claude/worktrees/b52`, PR #276, deploy 35156736691, environment deploy 35156736363). **Source**:
   issues #273, #274. **Owner**: Claude Code. **Model**: Sonnet. **Size**: ~2 files.
 
 ## Machine-only
 
-## Human and machine
+## Machine-ask
+
+- [ ] **O48. The exposed GA4 service-account key: rotate, delete, review, then narrow the account.**
+  Found 03:0x UTC on 2026-09-16: `google-apply.yml` passed the key's JSON to eight steps as a step
+  env, GitHub's `add-mask` matched only the single-line value, and the pretty-printed JSON, private
+  key included, appeared in the env block of every run's log on this public repository; the
+  fifteen runs with logs (back to 2026-09-11) had their logs deleted at 03:0x UTC. The account
+  `ga4-report-pull@diyaccounting-ga4.iam.gserviceaccount.com` holds `roles/owner`, so this is an
+  exposed-key incident: Google's guidance is deletion (disabling stops new sign-ins but not tokens
+  already issued), an audit-log review on `serviceAccountKeyName`, and reconsidering the owner
+  binding. Every step is a CLI on this machine (`gcloud` 583 is authenticated as
+  antony@diyaccounting.co.uk), each a Google or GitHub write run one at a time on the operator's
+  go:
+  1. `gh workflow run google-key-rotate.yml --ref main -f apply=true` (new key, both environments'
+     secrets, old key disabled), then read the run.
+  2. `gcloud iam service-accounts keys list --iam-account=ga4-report-pull@diyaccounting-ga4.iam.gserviceaccount.com --managed-by=user --project=diyaccounting-ga4`
+     then `gcloud iam service-accounts keys delete <OLD_KEY_ID> --iam-account=ga4-report-pull@diyaccounting-ga4.iam.gserviceaccount.com --project=diyaccounting-ga4`.
+  3. `gcloud logging read 'protoPayload.authenticationInfo.serviceAccountKeyName:"<OLD_KEY_ID>"' --project=diyaccounting-ga4 --freshness=7d --format='table(timestamp,protoPayload.methodName,protoPayload.resourceName)'`
+     and read what the key touched since 2026-09-11.
+  4. The owner binding out, the narrow roles in, as code: `google/identity.toml` and `google-roles.yml`
+     carry the account's roles, so the change is an edit plus a `google apply` run.
+  5. `gcloud projects describe diyaccounting-ga4 --format='value(parent)'`; if the project sits under an
+     organization, set the `iam.serviceAccountKeyExposureResponse` constraint to `DISABLE_KEY` with
+     `gcloud org-policies set-policy` and keep it in `google/identity.toml`; with no organization the
+     constraint does not apply.
+  6. The date into `secrets-rotation.toml`'s `ga4/service_account` row.
+  **Source**: run 35049344705;
+  https://docs.cloud.google.com/iam/docs/best-practices-for-managing-service-account-keys.
+  **Owner**: Claude Code drives, the operator says go per write. **Model**: Sonnet. **Size**: ~3 files.
+
+- [ ] **B56. `test` and CodeQL as required status checks on `main`.** O46 settled on 2026-09-16:
+  ruleset 16057564 keeps `Check commit signatures` required with the Admin role as its only bypass
+  actor, `RELEASE_PAT` carries `publish.yml`'s bump, and a docs push by an admin lands directly.
+  Add the contexts to the same ruleset body (`gh api -X PUT .../rulesets/16057564`): the check
+  names on a code head are `npm test`, `maven test`, `eslint` and `CodeQL`. Decided 2026-09-16: a docs-only
+  PR is left to the Admin bypass (docs commits go straight to `main` under the docs exception, and
+  every code head runs all four), so no `test.yml` change; the ruleset write is a blocked command
+  here (the names are confirmed on PR #271's head 9b4ffc53), so the operator runs one command:
+  `gh api repos/diy-accounting-uk/submit.diyaccounting.co.uk/rulesets/16057564 | jq '{name,target,enforcement,bypass_actors,conditions,rules} | .rules |= map(if .type=="required_status_checks" then .parameters.required_status_checks = (["Check commit signatures","npm test","maven test","eslint","CodeQL"] | map({context:.})) else . end)' | gh api -X PUT repos/diy-accounting-uk/submit.diyaccounting.co.uk/rulesets/16057564 --input -`
+  and a GET of the ruleset then lists five contexts.
+  **Source**: BACKLOG 56. **Owner**: the operator runs the one command the session is denied. **Model**: none. **Size**: ~0 files.
+
+- [ ] **O44. Tell Companies House's XML team what B34.6b submitted.** One email from your address
+  to Neal at `xml@companieshouse.gov.uk`, naming: presenter E0000052288, company 06846849, test
+  package reference 0012; submissions 000002 and 000003 (2026-09-13 18:19 UTC) rejected with error
+  9999 "No element 'Authority'", since fixed; submission 000004 (19:04 UTC) acknowledged with no
+  errors; and that every `GetSubmissionStatus` for 000004 answers 9999 "No presenter ID supplied", with the
+  `PresenterID` plaintext (transaction 1789391567972, 2026-09-14 13:12:48 UTC) and hashed
+  (transaction 1789481253426, 2026-09-15 14:07:33 UTC).
+  Ask whether 000004 was accepted and whether status lookups are enabled for this presenter.
+  **Source**: BACKLOG 34b. **Owner**: Claude Code drafts and sends from the operator's address on their go. **Model**: Haiku.
+
+- [ ] **O33. Tell HMRC's SDS team the licence changed.** One paragraph: the MTD approval
+  submission and the production-credentials email described the service as AGPL open source, and
+  the PolyForm licence files are on main and on prod since prod-318271f. **Source**:
+  `PLAN_LICENSING_UPLIFT_SUBMIT.md` H-LU-9. **Owner**: Claude Code drafts and sends from the operator's address on their go. **Model**: Haiku.
+
+- [ ] **O17. Register the Companies House sandbox test user and set four ci values.**
+  Companies House has no create-test-user API, so the operator registers a throwaway account
+  on identity-sandbox.company-information.service.gov.uk with an authenticator second factor
+  and puts on the GitHub `ci` environment: the variable `TEST_COMPANIES_HOUSE_USER_ID` (its
+  email) and the secrets `TEST_COMPANIES_HOUSE_PASSWORD`, `TEST_COMPANIES_HOUSE_TOTP_SECRET`
+  (the authenticator secret) and `COMPANIES_HOUSE_SANDBOX_API_KEY` (the test application's
+  REST key, for creating the run's test company). Unblocks B34.7. **Source**: BACKLOG 34; **Owner**: Claude Code drives the registration in Chrome, the operator present for the second factor and the GitHub writes. **Model**: Sonnet.
+
+- [ ] **O38. Create the two GitHub Apps the audit ranks joint second.** `diya-ops`, to carry all
+  three Lambdas' writes, which separates 55 alarm issues and every support ticket from the
+  operator's own account and is the single move that fixes the worst disclosure gap; and
+  `diya-agent`, for unattended model runs, so a reader can tell a model's PR from a pipeline's and
+  our commits stop being attributed to the GitHub user `claude`. Both are free: an app to create
+  and a private key into Secrets Manager. Neither depends on signing. The alarm Lambda reads
+  `{env}/submit/github/issue_bot_token` and the support form reads
+  `{env}/submit/github/support_bot_token` (B165), so the app's token goes into both secrets, or a
+  second app carries the spreadsheets-only support writes. While deciding, settle recommendation 12 as well: the byline on articles
+  and support replies, before the emails-to-articles pipeline is built, because that is the largest
+  volume of machine-written public prose the company will produce. **Source**:
+  `REPORT_IDENTITY_AUDIT.md` section 8, recommendations 2, 3 and 12. **Owner**: Operator.
+  **Model**: none.
+
+- [ ] **B11.T10. ITSA phase 2: the recognition pack.** `PLAN_ITSA_PHASE_2.md` T10, its inputs (T7r, T21, T22) on `main`:
+  `_developers/hmrc/ITSA_PRODUCTION_APPROVALS_CHECKLIST.md`, an ITSA pass over the two
+  questionnaires, and the two draft emails for the operator to send. One application now covers
+  both approval stages, and the checklist answers for all nine APIs in the minimum functionality
+  standards with a build behind each. **Source**: BACKLOG 11; `PLAN_ITSA_PHASE_2.md` T10.
+  **Owner**: Claude Code re-runs the sandbox year on a ci set so the run sits inside HMRC's 14-day log window; then the operator sends `DRAFT_EMAIL_ITSA_RECOGNITION.md` (the pack is on `main` since PR #237, `_developers/hmrc/`) and `DRAFT_EMAIL_ITSA_PRODUCTION_CREDENTIALS.md` when SDST answers. **Model**: Haiku. **Size**: ~3 files.
 
 - [ ] **B55.2. Google federation: the Lambdas' nightly proof, then the key goes.** The pool
   `submit-federation` and its three providers exist (apply run 35050290089); the federated GitHub
@@ -111,89 +199,14 @@ Every item names its model: the lowest tier that fits (Fable > Opus > Sonnet > H
   the `ga4/service_account` row gone, then the operator deletes `GA4_SERVICE_ACCOUNT_JSON` from both
   GitHub environments. **Size**: ~12 files.
 
-- [ ] **B11.T10. ITSA phase 2: the recognition pack.** `PLAN_ITSA_PHASE_2.md` T10, its inputs (T7r, T21, T22) on `main`:
-  `_developers/hmrc/ITSA_PRODUCTION_APPROVALS_CHECKLIST.md`, an ITSA pass over the two
-  questionnaires, and the two draft emails for the operator to send. One application now covers
-  both approval stages, and the checklist answers for all nine APIs in the minimum functionality
-  standards with a build behind each. **Source**: BACKLOG 11; `PLAN_ITSA_PHASE_2.md` T10.
-  **Owner**: Claude Code re-runs the sandbox year on a ci set so the run sits inside HMRC's 14-day log window; then the operator sends `DRAFT_EMAIL_ITSA_RECOGNITION.md` (the pack is on `main` since PR #237, `_developers/hmrc/`) and `DRAFT_EMAIL_ITSA_PRODUCTION_CREDENTIALS.md` when SDST answers. **Model**: Haiku. **Size**: ~3 files.
-
-## Human-only
-
-- [ ] **B56. `test` and CodeQL as required status checks on `main`.** O46 settled on 2026-09-16:
-  ruleset 16057564 keeps `Check commit signatures` required with the Admin role as its only bypass
-  actor, `RELEASE_PAT` carries `publish.yml`'s bump, and a docs push by an admin lands directly.
-  Add the contexts to the same ruleset body (`gh api -X PUT .../rulesets/16057564`): the check
-  names on a code head are `npm test`, `maven test`, `eslint` and `CodeQL`. Decided 2026-09-16: a docs-only
-  PR is left to the Admin bypass (docs commits go straight to `main` under the docs exception, and
-  every code head runs all four), so no `test.yml` change; the ruleset write is a blocked command
-  here (the names are confirmed on PR #271's head 9b4ffc53), so the operator runs one command:
-  `gh api repos/diy-accounting-uk/submit.diyaccounting.co.uk/rulesets/16057564 | jq '{name,target,enforcement,bypass_actors,conditions,rules} | .rules |= map(if .type=="required_status_checks" then .parameters.required_status_checks = (["Check commit signatures","npm test","maven test","eslint","CodeQL"] | map({context:.})) else . end)' | gh api -X PUT repos/diy-accounting-uk/submit.diyaccounting.co.uk/rulesets/16057564 --input -`
-  and a GET of the ruleset then lists five contexts.
-  **Source**: BACKLOG 56. **Owner**: Operator. **Model**: none. **Size**: ~0 files.
-
-- [ ] **O17. Register the Companies House sandbox test user and set four ci values.**
-  Companies House has no create-test-user API, so the operator registers a throwaway account
-  on identity-sandbox.company-information.service.gov.uk with an authenticator second factor
-  and puts on the GitHub `ci` environment: the variable `TEST_COMPANIES_HOUSE_USER_ID` (its
-  email) and the secrets `TEST_COMPANIES_HOUSE_PASSWORD`, `TEST_COMPANIES_HOUSE_TOTP_SECRET`
-  (the authenticator secret) and `COMPANIES_HOUSE_SANDBOX_API_KEY` (the test application's
-  REST key, for creating the run's test company). Unblocks B34.7. **Source**: BACKLOG 34; **Owner**: Operator. **Model**: none.
-
-- [ ] **O44. Tell Companies House's XML team what B34.6b submitted.** One email from your address
-  to Neal at `xml@companieshouse.gov.uk`, naming: presenter E0000052288, company 06846849, test
-  package reference 0012; submissions 000002 and 000003 (2026-09-13 18:19 UTC) rejected with error
-  9999 "No element 'Authority'", since fixed; submission 000004 (19:04 UTC) acknowledged with no
-  errors; and that every `GetSubmissionStatus` for 000004 answers 9999 "No presenter ID supplied", with the
-  `PresenterID` plaintext (transaction 1789391567972, 2026-09-14 13:12:48 UTC) and hashed
-  (transaction 1789481253426, 2026-09-15 14:07:33 UTC).
-  Ask whether 000004 was accepted and whether status lookups are enabled for this presenter.
-  **Source**: BACKLOG 34b. **Owner**: Operator. **Model**: none.
-
-- [ ] **O48. Rotate the GA4 service-account key: it was printed in public job logs.** Found 03:0x UTC
-  on 2026-09-16: `google-apply.yml` passed the key's JSON to eight steps as a step env, GitHub's
-  `add-mask` matched only the single-line value, and the pretty-printed JSON, private key included,
-  appeared in the env block of every run's log on this public repository; the fifteen runs with logs
-  (back to 2026-09-11) had their logs deleted at 03:0x UTC, and the session's local copies were
-  removed. The account `ga4-report-pull@diyaccounting-ga4.iam.gserviceaccount.com` holds
-  `roles/owner` on the project, so this is an exposed-key incident, and Google's guidance is to
-  delete the key (disabling stops new sign-ins but not tokens already issued from it), review the
-  audit logs on `serviceAccountKeyName` for what the key touched, reconsider the owner binding, and
-  consider replacing the account. Now: rotate through the code path (creates a new key, writes it
-  to both environments' secrets, disables the old one):
-  `gh workflow run google-key-rotate.yml --ref main -f apply=true`
-  then read the run, delete the old key id in the console, do the audit-log review, and write the
-  date into `secrets-rotation.toml`'s `ga4/service_account` row. The org policy constraint
-  `Service Account Key Exposure Response` (`DISABLE_KEY`) belongs in `google/identity.toml` as a
-  Claude Code follow-on. **Source**: run 35049344705;
-  https://docs.cloud.google.com/iam/docs/best-practices-for-managing-service-account-keys.
-  **Owner**: Operator. **Model**: none.
+## Human-driven
 
 - [ ] **O23. Open a Google Ads account for the paid-traffic experiments.** Both earlier Ads
   accounts were cancelled (`google-analytics.toml`); the reinvestment loop (plan row D17) needs
   one with conversion import from GA4 property 523400333's key events, and a reserve floor
   the loop must not spend below. Name the floor to Claude Code with the account id; the first
   test is designed as on-off weeks before any spend. **Source**: `PLAN_ONE_STOP_DASHBOARD.md`
-  D17. **Owner**: Operator. **Model**: none.
-
-- [ ] **O38. Create the two GitHub Apps the audit ranks joint second.** `diya-ops`, to carry all
-  three Lambdas' writes, which separates 55 alarm issues and every support ticket from the
-  operator's own account and is the single move that fixes the worst disclosure gap; and
-  `diya-agent`, for unattended model runs, so a reader can tell a model's PR from a pipeline's and
-  our commits stop being attributed to the GitHub user `claude`. Both are free: an app to create
-  and a private key into Secrets Manager. Neither depends on signing. The alarm Lambda reads
-  `{env}/submit/github/issue_bot_token` and the support form reads
-  `{env}/submit/github/support_bot_token` (B165), so the app's token goes into both secrets, or a
-  second app carries the spreadsheets-only support writes. While deciding, settle recommendation 12 as well: the byline on articles
-  and support replies, before the emails-to-articles pipeline is built, because that is the largest
-  volume of machine-written public prose the company will produce. **Source**:
-  `REPORT_IDENTITY_AUDIT.md` section 8, recommendations 2, 3 and 12. **Owner**: Operator.
-  **Model**: none.
-
-- [ ] **O33. Tell HMRC's SDS team the licence changed.** One paragraph: the MTD approval
-  submission and the production-credentials email described the service as AGPL open source, and
-  the PolyForm licence files are on main and on prod since prod-318271f. **Source**:
-  `PLAN_LICENSING_UPLIFT_SUBMIT.md` H-LU-9. **Owner**: Operator. **Model**: none.
+  D17. **Owner**: Operator: a payment mandate and the floor are theirs to decide. **Model**: none.
 
 ## Blocked
 
