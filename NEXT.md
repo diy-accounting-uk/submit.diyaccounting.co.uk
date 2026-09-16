@@ -19,9 +19,8 @@ PR; the operator merges.
 **Prod runs deployment prod-a84311b** (PR #257, run 35085063660, promoted under the `deploy-ops` gate
 at 10:5x UTC on 2026-09-16; the same run destroyed prod-7137772, which PR #255's run had promoted at
 09:5x), verified against AWS at 11:2x UTC on 2026-09-16: nine stacks CREATE_COMPLETE, every composite
-alarm OK; the SSO session expired at 16:5x UTC, so AWS is unverified since. **ci**: `ci-claud6618`
-(the b46 branch) and `ci-claudaafa` (the b47 branch, last-known-good) both passed their self-destruct
-times by 13:46 UTC; their lone `SelfDestructStack`s go on the next sweep past the 8-hour minimum age.
+alarm OK, re-verified 17:5x UTC after a fresh SSO login. **ci**: nothing stands; the b46 and b47
+branch sets self-destructed and their `SelfDestructStack`s are gone.
 
 The board runs in five sections, in this order: **in flight** (a branch, a pull request or a run
 in motion, each named in the row), **machine-only**, **human and machine**, **human-only**,
@@ -175,8 +174,7 @@ Every item names its model: the lowest tier that fits (Fable > Opus > Sonnet > H
   (run 35078117666, 09:5x UTC on 2026-09-16) carried it. Read the 03:15 UTC run on 2026-09-17 in
   `/aws/lambda/prod-env-security-lake-nightly`: no "Invoke Error", a warn line for `code_scanning`
   (null until O49), rows written for the day; then close #249. **Source**: issue #249. **Owner**:
-  Claude Code. **Model**: Haiku. Blocked on the 03:15 UTC run on 2026-09-17 and on the AWS SSO session
-  (`aws sso login --sso-session diyaccounting`; expired 16:5x UTC on 2026-09-16). **Size**: ~0 files.
+  Claude Code. **Model**: Haiku. Blocked on the 03:15 UTC run on 2026-09-17. **Size**: ~0 files.
 
 - [ ] **B52y.4. The cost views are live; check the Glue Data Quality ruleset after its next run.**
   PR #255 (319a9e89) made `cost_focus` resolve its Parquet columns by position and typed the four
@@ -186,8 +184,9 @@ Every item names its model: the lowest tier that fits (Fable > Opus > Sonnet > H
   so `COST_FOCUS_RULESET`'s `IsComplete "billed_cost"` (`DataQuality.java` ~99–105) may still report
   incomplete; read the ruleset's next result and, if it does, give the rules the positional reader
   or the Parquet names. **Source**: B52y.2's snapshot check; `PLAN_ONE_STOP_DASHBOARD.md` D13.
-  **Owner**: Claude Code. **Model**: Sonnet. Blocked on the ruleset's next run and on the AWS SSO session
-  (`aws sso login --sso-session diyaccounting`; expired 16:5x UTC on 2026-09-16). **Size**: ~1 file.
+  **Owner**: Claude Code. **Model**: Sonnet. Blocked on the ruleset's next run: `prod_env_cost_focus_dq` last ran at 02:16 UTC on
+  2026-09-16, before the deploy, so the first result on the fixed table is 2026-09-17's
+  (`aws --profile submit-prod glue list-data-quality-results`). **Size**: ~1 file.
 
 - [ ] **B55.2. Google federation: the Lambdas' nightly proof, then the key goes.** The pool
   `submit-federation` and its three providers exist (apply run 35050290089); the federated GitHub
