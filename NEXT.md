@@ -41,20 +41,31 @@ Every item names its model: the lowest tier that fits (Fable > Opus > Sonnet > H
 
 ## Machine-only
 
-- [ ] **B30ac.2. Prove the triage agent queries.** After `main`'s environment deploy of PR #237 (the
-  read-only telemetry policy on the triage role): `gh workflow run alarm-triage.yml -f issue-number=229`
-  and read the new comment on #229 for a quoted Logs Insights query and the alarm history; then close
-  #229 and #230 (the old set's snapshot 500, fixed by B52v and gone with `prod-70b0a8e`). **Source**:
-  B30ac; PR #237. **Owner**: Claude Code. **Model**: Haiku. **Size**: ~0 files.
+- [ ] **B30ac.2. Prove the triage agent queries.** The telemetry policy is on the triage role since
+  `main`'s environment deploy of PR #237 (02:0x UTC on 2026-09-16). The dispatch
+  `gh workflow run alarm-triage.yml --ref main -f issue-number=229` at 02:14 UTC was skipped by the
+  workflow's own budget of three triage runs per 24 hours (four posted since 02:14 UTC on
+  2026-09-15); the budget frees after 16:41 UTC on 2026-09-16. Dispatch again then and read the new
+  comment on #229 for a quoted Logs Insights query and the alarm history; then close #229 and #230
+  (the old set's snapshot 500, fixed by B52v and gone with `prod-70b0a8e`). **Source**: B30ac; PR
+  #237. **Owner**: Claude Code. **Model**: Haiku. Date-gated: from 16:41 UTC on 2026-09-16. **Size**:
+  ~0 files.
 
-- [ ] **B59.2. Prove the kill switch.** After the same environment deploy: `gh workflow run
-  agent-kill-switch.yml -f state=on -f environment-name=ci`, a dispatch of `alarm-triage.yml` that
-  must stop at "Stop when the agent kill switch is on", then `-f state=off`. **Source**: B59; PR #237.
-  **Owner**: Claude Code. **Model**: Haiku. **Size**: ~0 files.
+- [ ] **B59.2. Prove the kill switch.** The parameter exists in both environments since the same
+  deploy; `agent-kill-switch.yml` set prod's to `on` (run 35047169215) and back to `off` (run
+  35047303339) at 02:1x UTC on 2026-09-16, but the triage dispatch meant to stop at the switch was
+  skipped by the triage budget first, so the stop is unproven. When B30ac.2's budget frees: switch
+  `on` for prod, dispatch `alarm-triage.yml -f issue-number=229` and see it fail at "Stop when the
+  agent kill switch is on", switch `off`, then run B30ac.2's dispatch. **Source**: B59; PR #237.
+  **Owner**: Claude Code. **Model**: Haiku. Date-gated: from 16:41 UTC on 2026-09-16. **Size**: ~0
+  files.
 
 - [ ] **B55.2. Prove Google federation and wire the Lambdas.** `google-apply.yml` ran on the push of
-  PR #237 through the key path and created the pool, the three providers and the binding (read its
-  run). Then `gh workflow run google-apply.yml --ref main -f auth-mode=federated -f apply=false` must
+  PR #237 through the key path (run 35045218215) but its identity-sync step failed on the wrong
+  project number in `identity.toml` (670010122633 read off an OAuth client id; the project is
+  958354756046) while the job reported success, because `| tee` masked the exit status; so no pool
+  exists and the federated plan dispatch (run 35047179597) answered `invalid_target`. Wave b43 fixes
+  the number and the masking (in flight). Then `gh workflow run google-apply.yml --ref main -f auth-mode=federated -f apply=false` must
   read live state with the key step skipped; then `gh variable set SUBMIT_GOOGLE_AUTH_MODE --env prod
   --body federated`. The Lambdas: `IngestionStack.java` puts `GA4_AUTH_MODE`, `GOOGLE_WIF_AUDIENCE`
   (the `aws-ci` / `aws-prod` audience the sync step prints) and `GA4_SERVICE_ACCOUNT_EMAIL` on the
