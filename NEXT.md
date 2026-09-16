@@ -17,10 +17,11 @@ Haiku; the lowest tier that fits). Anything touching code goes through a `claude
 PR; the operator merges.
 
 **Prod runs deployment prod-a130010** (PR #247, run 35054202697, promoted under the `deploy-ops` gate
-at 04:5x UTC on 2026-09-16; the same run destroyed the previous set), unverified against AWS since the
-SSO session expired at 01:4x UTC. **ci**: the b40 to b45 branch sets self-destruct on their own
-schedules; `ci-claud727f`'s `ApiStack` stays DELETE_FAILED until a `destroy-ci.yml` sweep runs, and
-the sweep's 02:34 and 04:34 UTC slots on 2026-09-16 show no run (last run 13:48 UTC on 2026-09-15).
+at 04:5x UTC on 2026-09-16; the same run destroyed the previous set), verified against AWS at 07:2x UTC
+on 2026-09-16: nine stacks CREATE_COMPLETE, every composite alarm OK. **ci**: `ci-clauda982` (the b45
+branch's deploy, created 03:38 UTC) is last-known-good and self-destructs at about 07:38 UTC;
+`ci-claud727f`'s `ApiStack` (DELETE_FAILED) and `ci-claud6956`'s lone `SelfDestructStack` wait on a
+`destroy-ci.yml` sweep, whose cron has not fired since 13:48 UTC on 2026-09-15 (B30ad).
 
 The board runs in five sections, in this order: **in flight** (a branch, a pull request or a run
 in motion, each named in the row), **machine-only**, **human and machine**, **human-only**,
@@ -42,6 +43,26 @@ Every item names its model: the lowest tier that fits (Fable > Opus > Sonnet > H
 
 ## Machine-only
 
+- [ ] **B30ad. `destroy-ci.yml`'s cron has not fired since 13:48 UTC on 2026-09-15.** The schedule
+  `34 2,4,6,8,10,12 * * *` missed its 02:34, 04:34 and 06:34 UTC slots on 2026-09-16 while the
+  workflow reads `active` and `probe-test.yml`'s cron ran at 05:22 UTC. Two leftovers wait on the
+  sweep: `ci-claud727f`'s `ApiStack` (DELETE_FAILED since 14:27 UTC on 2026-09-15) and
+  `ci-claud6956`'s `SelfDestructStack`, left standing after its set self-destructed at 04:3x UTC on
+  2026-09-16; `ci-clauda982` is last-known-good and under the sweep's 8-hour minimum age, so a sweep
+  leaves it. Dispatch `gh workflow run destroy-ci.yml --ref main` once and read the run for both
+  leftovers gone; then read the workflow's `concurrency` group and its `wait-for-ci-deploys` step
+  for what held the three scheduled slots, since the other crons fired. **Source**: this render;
+  `destroy-ci.yml`. **Owner**: Claude Code. **Model**: Haiku. **Size**: ~0 files.
+
+- [ ] **B52y.3. The security lake's nightly errored on its 03:15 UTC run.** Issue #249 (03:21 UTC on
+  2026-09-16): `check-prod-env-security-lake-nightly-errors` tripped `prod-env-security-lake-stack-health`
+  on the first nightly after the SecurityLakeStack reached prod (PR #218); the triage was skipped by
+  the workflow's budget; the composite and `check-prod-env-security-lake-nightly-errors` went back to
+  OK at 03:39 UTC. Read the Lambda's log for the 03:11 to 03:27 UTC window (the log group is named in
+  the issue's evidence links), fix what it names, then B52y.2's snapshot check says whether the
+  observations still answered; close #249 when the cause is named. **Source**: issue #249. **Owner**:
+  Claude Code. **Model**: Sonnet. **Size**: ~1 file.
+
 - [ ] **B55.2. Google federation: the Lambdas' nightly proof, then the key goes.** The pool
   `submit-federation` and its three providers exist (apply run 35050290089); the federated GitHub
   path is proven (plan run 35050387182) and the prod environment's `SUBMIT_GOOGLE_AUTH_MODE` is
@@ -55,32 +76,13 @@ Every item names its model: the lowest tier that fits (Fable > Opus > Sonnet > H
   #247; `PLAN_GOOGLE_AS_CODE.md` items 9 and 11. **Owner**: Claude Code. **Model**: Sonnet.
   **Size**: ~4 files.
 
-- [ ] **B30ac.2. Prove the triage agent queries.** The telemetry policy is on the triage role since
-  `main`'s environment deploy of PR #237 (02:0x UTC on 2026-09-16). The dispatch
-  `gh workflow run alarm-triage.yml --ref main -f issue-number=229` at 02:14 UTC was skipped by the
-  workflow's own budget of three triage runs per 24 hours (four posted since 02:14 UTC on
-  2026-09-15); the budget frees after 16:41 UTC on 2026-09-16. Dispatch again then and read the new
-  comment on #229 for a quoted Logs Insights query and the alarm history; then close #229 and #230
-  (the old set's snapshot 500, fixed by B52v and gone with `prod-70b0a8e`). **Source**: B30ac; PR
-  #237. **Owner**: Claude Code. **Model**: Haiku. Date-gated: from 16:41 UTC on 2026-09-16. **Size**:
-  ~0 files.
-
-- [ ] **B59.2. Prove the kill switch.** The parameter exists in both environments since the same
-  deploy; `agent-kill-switch.yml` set prod's to `on` (run 35047169215) and back to `off` (run
-  35047303339) at 02:1x UTC on 2026-09-16, but the triage dispatch meant to stop at the switch was
-  skipped by the triage budget first, so the stop is unproven. When B30ac.2's budget frees: switch
-  `on` for prod, dispatch `alarm-triage.yml -f issue-number=229` and see it fail at "Stop when the
-  agent kill switch is on", switch `off`, then run B30ac.2's dispatch. **Source**: B59; PR #237.
-  **Owner**: Claude Code. **Model**: Haiku. Date-gated: from 16:41 UTC on 2026-09-16. **Size**: ~0
-  files.
-
-- [ ] **B52y.2. Check the nightly snapshot after the SecurityLakeStack reaches prod.** Needs the AWS SSO
-  session (`aws sso login --sso-session diyaccounting`; expired 01:4x UTC on 2026-09-16). PR #218
+- [ ] **B52y.2. Check the nightly snapshot after the SecurityLakeStack reaches prod.** PR #218
   (9b695aab) adds the `deploy-security-lake` job and the per-observation null; prod's environment
-  deploy of that merge creates the Glue tables. After the next 03:15 UTC run, read
-  `snapshots/prod/latest.json`: `generatedAt` past 2026-09-16 03:15, `failedObservationCount` 0,
-  and any observation answering null where its view has rows (two views are monthly or quarterly
-  grain, so a 30-day window can be empty by design). Issue #208 closes when the alarm clears.
+  deploy of that merge creates the Glue tables. `prod-env-operator-snapshot-publish-errors` went OK
+  at 03:22 UTC on 2026-09-16, after the 03:15 run. Read `snapshots/prod/latest.json`: `generatedAt`
+  past 2026-09-16 03:15, `failedObservationCount` 0, and any observation answering null where its
+  view has rows (two views are monthly or quarterly grain, so a 30-day window can be empty by
+  design). Then close issue #208.
   **Source**: `PLAN_ONE_STOP_DASHBOARD.md` D7, D13, D14, D15. **Owner**: Claude Code. **Model**:
   Haiku. **Size**: ~0 files.
 
@@ -104,32 +106,14 @@ Every item names its model: the lowest tier that fits (Fable > Opus > Sonnet > H
   deploy proving native sign-in still completes. **Source**: `../REPORT_HMRC_HEADER_ADVISORIES.md`.
   **Owner**: Operator decides, Claude Code changes. **Model**: Haiku. **Size**: ~2 files.
 
+- [ ] **B11.T10. ITSA phase 2: the recognition pack.** `PLAN_ITSA_PHASE_2.md` T10, its inputs (T7r, T21, T22) on `main`:
+  `_developers/hmrc/ITSA_PRODUCTION_APPROVALS_CHECKLIST.md`, an ITSA pass over the two
+  questionnaires, and the two draft emails for the operator to send. One application now covers
+  both approval stages, and the checklist answers for all nine APIs in the minimum functionality
+  standards with a build behind each. **Source**: BACKLOG 11; `PLAN_ITSA_PHASE_2.md` T10.
+  **Owner**: Claude Code re-runs the sandbox year on a ci set so the run sits inside HMRC's 14-day log window; then the operator sends `DRAFT_EMAIL_ITSA_RECOGNITION.md` (the pack is on `main` since PR #237, `_developers/hmrc/`) and `DRAFT_EMAIL_ITSA_PRODUCTION_CREDENTIALS.md` when SDST answers. **Model**: Haiku. **Size**: ~3 files.
+
 ## Human-only
-
-- [ ] **O48. Rotate the GA4 service-account key: it was printed in public job logs.** Found 03:0x UTC
-  on 2026-09-16: `google-apply.yml` passed the key's JSON to eight steps as a step env, GitHub's
-  `add-mask` matched only the single-line value, and the pretty-printed JSON, private key included,
-  appeared in the env block of every run's log on this public repository; the fifteen runs with logs
-  (back to 2026-09-11) had their logs deleted at 03:0x UTC, and the session's local copies were
-  removed. The account `ga4-report-pull@diyaccounting-ga4.iam.gserviceaccount.com` holds
-  `roles/owner` on the project. Rotate now, through the code path (creates a new key, writes it to
-  both environments' secrets, disables the old one):
-  `gh workflow run google-key-rotate.yml --ref main -f apply=true`
-  then read the run and confirm the old key id is disabled; the workflow fix that stops the printing
-  is B55.3 (wave b44). Write the date into `secrets-rotation.toml`'s `ga4/service_account` row.
-  **Source**: run 35049344705; this session. **Owner**: Operator. **Model**: none.
-
-- [ ] **O46. Decide how the signature check gates `main`.** B166's check runs on every PR since PR
-  #226 and fails one carrying an unsigned commit (run 35027270496 passed). Adding it to ruleset
-  16057564 as a required status check (tried 2026-09-15 21:58 UTC, reverted at 22:03) gates every
-  push to `main`, so the board write-back and the docs exception stopped landing ("Required status
-  check \"Check commit signatures\" is expected"), and GitHub refuses the GitHub Actions app as a
-  repository-level bypass actor, so `publish.yml`'s version bump would stop too. Alternatives: (1)
-  leave the check advisory, red on the PR and enforced by `/auto-merge`'s gate, until BACKLOG 54
-  moves the runner pushes onto an app; (2) add the rule with the admin role as the only bypass
-  actor and move `publish.yml`'s bump onto a PAT or the contents API first (a Claude Code change);
-  (3) an organisation-level ruleset, where the Actions app is an allowed bypass actor. **Source**:
-  B166; ruleset 16057564. **Owner**: Operator. **Model**: none.
 
 - [ ] **O47. Apply the Actions allow list and require SHA pinning.** Every action in the repository is
   pinned since PR #241 (B57, B57.2); the settings write is denied to sessions, so run:
@@ -154,6 +138,32 @@ Every item names its model: the lowest tier that fits (Fable > Opus > Sonnet > H
   (transaction 1789481253426, 2026-09-15 14:07:33 UTC).
   Ask whether 000004 was accepted and whether status lookups are enabled for this presenter.
   **Source**: BACKLOG 34b. **Owner**: Operator. **Model**: none.
+
+- [ ] **O48. Rotate the GA4 service-account key: it was printed in public job logs.** Found 03:0x UTC
+  on 2026-09-16: `google-apply.yml` passed the key's JSON to eight steps as a step env, GitHub's
+  `add-mask` matched only the single-line value, and the pretty-printed JSON, private key included,
+  appeared in the env block of every run's log on this public repository; the fifteen runs with logs
+  (back to 2026-09-11) had their logs deleted at 03:0x UTC, and the session's local copies were
+  removed. The account `ga4-report-pull@diyaccounting-ga4.iam.gserviceaccount.com` holds
+  `roles/owner` on the project. Rotate now, through the code path (creates a new key, writes it to
+  both environments' secrets, disables the old one):
+  `gh workflow run google-key-rotate.yml --ref main -f apply=true`
+  then read the run and confirm the old key id is disabled; the workflow fix that stops the printing
+  is B55.3 (wave b44). Write the date into `secrets-rotation.toml`'s `ga4/service_account` row.
+  **Source**: run 35049344705; this session. **Owner**: Operator. **Model**: none.
+
+- [ ] **O46. Decide how the signature check gates `main`.** B166's check runs on every PR since PR
+  #226 and fails one carrying an unsigned commit (run 35027270496 passed). Ruleset 16057564 has
+  carried it as a required status check since 21:57 UTC on 2026-09-15 (`active`, no bypass actors):
+  every commit to `main` since has gone through a PR (twelve merges to #252), a direct docs push is
+  refused ("Required status check \"Check commit signatures\" is expected"), GitHub refuses the
+  GitHub Actions app as a repository-level bypass actor, and `publish.yml` has not run since, so its
+  version bump fails at its next run. Alternatives: (1) remove the check from the ruleset and leave
+  it advisory, red on the PR and enforced by `/auto-merge`'s gate, until BACKLOG 54 moves the runner
+  pushes onto an app; (2) keep the rule, add the admin role as its only bypass actor and move
+  `publish.yml`'s bump onto a PAT or the contents API first (a Claude Code change); (3) an
+  organisation-level ruleset, where the Actions app is an allowed bypass actor. **Source**:
+  B166; ruleset 16057564. **Owner**: Operator. **Model**: none.
 
 - [ ] **O23. Open a Google Ads account for the paid-traffic experiments.** Both earlier Ads
   accounts were cancelled (`google-analytics.toml`); the reinvestment loop (plan row D17) needs
@@ -181,22 +191,26 @@ Every item names its model: the lowest tier that fits (Fable > Opus > Sonnet > H
   the PolyForm licence files are on main and on prod since prod-318271f. **Source**:
   `PLAN_LICENSING_UPLIFT_SUBMIT.md` H-LU-9. **Owner**: Operator. **Model**: none.
 
-- [ ] **B11.T10. ITSA phase 2: the recognition pack.** `PLAN_ITSA_PHASE_2.md` T10, its inputs (T7r, T21, T22) on `main`:
-  `_developers/hmrc/ITSA_PRODUCTION_APPROVALS_CHECKLIST.md`, an ITSA pass over the two
-  questionnaires, and the two draft emails for the operator to send. One application now covers
-  both approval stages, and the checklist answers for all nine APIs in the minimum functionality
-  standards with a build behind each. **Source**: BACKLOG 11; `PLAN_ITSA_PHASE_2.md` T10.
-  **Owner**: Operator: the pack is on `main` (PR #237, `_developers/hmrc/`): send `DRAFT_EMAIL_ITSA_RECOGNITION.md` after re-running the sandbox year inside HMRC's 14-day log window, then `DRAFT_EMAIL_ITSA_PRODUCTION_CREDENTIALS.md` when SDST answers. **Model**: Haiku. **Size**: ~3 files.
-
 ## Blocked
 
-- [ ] **B52y.3. The security lake's nightly errored on its 03:15 UTC run.** Issue #249 (03:21 UTC on
-  2026-09-16): `check-prod-env-security-lake-nightly-errors` tripped `prod-env-security-lake-stack-health`
-  on the first nightly after the SecurityLakeStack reached prod (PR #218); the triage was skipped by
-  the workflow's budget. Read the Lambda's log for the 03:11 to 03:27 UTC window (the log group is
-  named in the issue's evidence links), then B52y.2's snapshot check says whether the observations
-  still answered. **Source**: issue #249. **Owner**: Claude Code. **Model**: Sonnet. Blocked on the
-  AWS SSO session (`aws sso login --sso-session diyaccounting`). **Size**: ~1 file.
+- [ ] **B30ac.2. Prove the triage agent queries.** The telemetry policy is on the triage role since
+  `main`'s environment deploy of PR #237 (02:0x UTC on 2026-09-16). The dispatch
+  `gh workflow run alarm-triage.yml --ref main -f issue-number=229` at 02:14 UTC was skipped by the
+  workflow's own budget of three triage runs per 24 hours (four posted since 02:14 UTC on
+  2026-09-15); the budget frees after 16:41 UTC on 2026-09-16. Dispatch again then and read the new
+  comment on #229 for a quoted Logs Insights query and the alarm history; then close #229 and #230
+  (the old set's snapshot 500, fixed by B52v and gone with `prod-70b0a8e`). **Source**: B30ac; PR
+  #237. **Owner**: Claude Code. **Model**: Haiku. Blocked on the triage budget: from 16:41 UTC on 2026-09-16. **Size**:
+  ~0 files.
+
+- [ ] **B59.2. Prove the kill switch.** The parameter exists in both environments since the same
+  deploy; `agent-kill-switch.yml` set prod's to `on` (run 35047169215) and back to `off` (run
+  35047303339) at 02:1x UTC on 2026-09-16, but the triage dispatch meant to stop at the switch was
+  skipped by the triage budget first, so the stop is unproven. When B30ac.2's budget frees: switch
+  `on` for prod, dispatch `alarm-triage.yml -f issue-number=229` and see it fail at "Stop when the
+  agent kill switch is on", switch `off`, then run B30ac.2's dispatch. **Source**: B59; PR #237.
+  **Owner**: Claude Code. **Model**: Haiku. Blocked on the triage budget: from 16:41 UTC on 2026-09-16. **Size**: ~0
+  files.
 
 - [ ] **B56. `test` and CodeQL as required status checks on `main`.** BACKLOG 56: added to ruleset
   16057564 beside the signature check, once O46 settles how the ruleset gates direct pushes. **Source**:
