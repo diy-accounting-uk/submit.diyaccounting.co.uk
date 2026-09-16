@@ -85,28 +85,21 @@ step.
 
 ## Machine-only
 
-- [ ] **B30ah. What alarm triage costs at the capped frequency, and how to triage more.** The
-  operator (2026-09-16): more alarms arrive than the budget triages. `alarm-triage.yml` caps
-  itself at 3 runs per 24 hours (`budget-guard`, line ~49), 15 minutes per job, 60 turns
-  (`--max-turns 60`, line ~293), Sonnet 4.5 with Haiku 4.5 as the small model on Bedrock; #249
-  (03:22 UTC on 2026-09-16) was skipped with "4 posted a result since 2026-09-15T03:21:59Z".
-  Measure, from records: every triage run since the cap landed (`gh run list --workflow
-  alarm-triage.yml`), each run's job minutes, its Bedrock spend (the `triage.json` usage the run
-  uploads, or CloudWatch's `AWS/Bedrock` `InputTokenCount`/`OutputTokenCount` by model in
-  submit-ci and submit-prod, priced at the eu inference-profile rates) and its outcome (result
-  posted, max-turns, skipped), and the count of alarm issues that went untriaged. Report the cost
-  per triage and per day at the cap in `REPORT_ALARM_TRIAGE_COST.md`, then recommend one of, with
-  the figure each implies: a higher budget, a lower model tier for the first pass, or pre-triage
-  constraints (fewer turns, a set duration, a sub-agent limit) and a change to
-  `alarm-triage.yml` only after the operator picks. **Source**: issue #249; operator, 2026-09-16.
-  **Owner**: Claude Code. **Model**: Sonnet. **Size**: ~1 file.
-
 - [ ] **B49a. The key-exposure org policy as code.** `iam.serviceAccountKeyExposureResponse` is
   set to `DISABLE_KEY` on organization 936151157673 by hand (22:40 UTC on 2026-09-16, O48). Carry it
   in `google/identity.toml` under a new `[org_policy]` table and have `scripts/gcp-identity-sync.js`
   read and apply it through the Org Policy API (`orgpolicy.googleapis.com`, enabled on the project
   the same day) so `google apply` owns it like the pool and providers. **Source**: O48; BACKLOG 49.
   **Owner**: Claude Code. **Model**: Sonnet. **Size**: ~2 files.
+
+- [ ] **B30ai. Alarm triage reads no evidence: its `aws --profile` calls miss the allow-list.**
+  `REPORT_ALARM_TRIAGE_COST.md` (2026-09-16): every one of the eight triaged runs since the budget
+  guard landed was denied its `aws logs` and `aws cloudwatch` reads, 21 denials, because the agent
+  prefixes `--profile` and the `Bash(aws logs:*)` allow pattern does not match it; each run answered
+  from code alone. Add one line to `prompts/alarm-triage.md` after line 47: call `aws` with no
+  `--profile`, the OIDC role is already assumed on the runner. Then read the next triage run's log
+  for a successful `aws logs` call. **Source**: REPORT_ALARM_TRIAGE_COST.md. **Owner**: Claude Code.
+  **Model**: Haiku. **Size**: ~1 file.
 
 ## Machine-ask
 
@@ -195,6 +188,17 @@ step.
   environments, 2026-09-16). **Size**: ~12 files.
 
 ## Human-driven
+
+- [ ] **B30ah. Pick the triage budget.** `REPORT_ALARM_TRIAGE_COST.md` (2026-09-16): a triage
+  costs $0.45 (Claude Code's own `total_cost_usd` says $0.04 because it prices output only), the
+  cap is 4 a day not 3 (`alarm-triage.yml` line 77, `-gt 3`), $54 a month at today's rate, and 5 of
+  11 alarm issues in the window went untriaged. Options with the monthly figure: a true 3 a day
+  $40.50; 6 a day $81; 12 a day $162; a Haiku first pass with Sonnet on escalation $27 at 4 a day
+  or $40.50 at 6; turn or duration caps change little (successful runs used 11 to 18 turns). The
+  report recommends 6 a day (`-gt 5`, and the skip message's count) alongside B30ai. Say which;
+  Claude Code then changes `alarm-triage.yml` lines 77 and 94 (or builds the escalation logic).
+  **Source**: REPORT_ALARM_TRIAGE_COST.md; issue #249. **Owner**: Operator decides, Claude Code
+  applies. **Model**: Haiku. **Size**: ~1 file.
 
 - [ ] **O23. Open a Google Ads account for the paid-traffic experiments.** Both earlier Ads
   accounts were cancelled (`google-analytics.toml`); the reinvestment loop (plan row D17) needs
