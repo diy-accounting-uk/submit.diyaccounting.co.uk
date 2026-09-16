@@ -51,9 +51,71 @@ env:
   CLAUDE_CODE_VERSION: '2.0.30'
 
 jobs:
+  # Part 4 of the board reads both accounts' deployment tables. A job carries one GitHub
+  # environment, so the board job (environment ci, for the kill switch and its own OIDC role)
+  # cannot also assume the prod role; this job assumes it separately and hands its two read-only
+  # facts down as outputs, the same two-jobs-keyed-by-environment shape `certificate-check.yml`
+  # and `google-key-rotate.yml` use for their own ci/prod matrix.
+  prod-deployment-facts:
+    name: 'prod deployment facts'
+    runs-on: ubuntu-24.04
+    environment: prod
+    timeout-minutes: 10
+    steps:
+      - name: Configure AWS role via GitHub OIDC
+        uses: aws-actions/configure-aws-credentials@e1253824e5c10ff9df46874f81ed3ec929e19cfd # v6
+        with:
+          role-to-assume: ${{ vars.SUBMIT_ACTIONS_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+          role-chaining: false
+          audience: sts.amazonaws.com
+          role-skip-session-tagging: true
+          output-credentials: true
+          retry-max-attempts: 3
+
+      # The plain actions role above can only assume the deployment role; it has no
+      # cloudformation:ListStacks or ssm:GetParameter of its own. The alarm-triage role does
+      # (ObservabilityStack.java's ReadTelemetry and ReadTriageParameters), so this job chains
+      # into it exactly as alarm-triage.yml does, for the reads below rather than for Bedrock.
+      - name: Assume the read-only alarm triage role
+        uses: aws-actions/configure-aws-credentials@e1253824e5c10ff9df46874f81ed3ec929e19cfd # v6
+        with:
+          role-to-assume: ${{ vars.SUBMIT_ALARM_TRIAGE_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+          role-chaining: true
+          audience: sts.amazonaws.com
+          role-skip-session-tagging: true
+          output-credentials: true
+          retry-max-attempts: 3
+
+      - name: Read prod's app stacks and live deployment
+        id: facts
+        run: |
+          set -euo pipefail
+          {
+            echo "stacks<<BOARD_EOF"
+            aws cloudformation list-stacks \
+              --stack-status-filter CREATE_COMPLETE UPDATE_COMPLETE UPDATE_ROLLBACK_COMPLETE \
+              --query "StackSummaries[?contains(StackName,'-app-')].[StackName,CreationTime]" \
+              --output text
+            echo "BOARD_EOF"
+          } | tee -a "$GITHUB_OUTPUT"
+          live=$(aws ssm get-parameter --name /submit/prod/last-known-good-deployment \
+            --query Parameter.Value --output text 2>/dev/null || echo "")
+          echo "live-deployment=${live}" | tee -a "$GITHUB_OUTPUT"
+    outputs:
+      stacks: ${{ steps.facts.outputs.stacks }}
+      live-deployment: ${{ steps.facts.outputs.live-deployment }}
+
   board:
     name: 'board'
+    needs: prod-deployment-facts
+    # Render even when the prod facts job failed (a bad SSO-less credential, a transient AWS
+    # error): the prompt already treats an empty prod block as "unverified", which is what the
+    # skill asks for on a failed read - a skipped board job would report nothing at all instead.
+    if: ${{ !cancelled() }}
     runs-on: ubuntu-24.04
+    environment: ci
     timeout-minutes: 25
     steps:
       - name: Require an agent token when writing back
@@ -91,8 +153,22 @@ jobs:
           output-credentials: true
           retry-max-attempts: 3
 
-      # These three workflows declare no environment (NEXT.md B124), so they read the ci account's
-      # flag with whatever credentials the step above resolved; one flag per account is the model.
+      # The actions role above has neither bedrock:InvokeModel (the agent below runs on Bedrock)
+      # nor the cloudformation/ssm reads Part 4 makes for ci; the alarm-triage role has both
+      # (ObservabilityStack.java), so this job chains into it exactly as alarm-triage.yml does.
+      - name: Assume the read-only alarm triage role
+        uses: aws-actions/configure-aws-credentials@e1253824e5c10ff9df46874f81ed3ec929e19cfd # v6
+        with:
+          role-to-assume: ${{ vars.SUBMIT_ALARM_TRIAGE_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+          role-chaining: true
+          audience: sts.amazonaws.com
+          role-skip-session-tagging: true
+          output-credentials: true
+          retry-max-attempts: 3
+
+      # This job's environment is ci, so the switch it reads is ci's; prod's Part 4 facts come
+      # from the prod-deployment-facts job above instead of a second switch check here.
       - name: Stop when the agent kill switch is on
         uses: ./.github/actions/agent-kill-switch
         with:
@@ -121,9 +197,11 @@ jobs:
           RUN_ID: ${{ github.run_id }}
           RUN_URL: '${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}'
           WRITE_BACK: ${{ inputs.write-back }}
+          PROD_STACKS: ${{ needs.prod-deployment-facts.outputs.stacks }}
+          PROD_LIVE_DEPLOYMENT: ${{ needs.prod-deployment-facts.outputs.live-deployment }}
         run: |
           set -o pipefail
-          export RUN_ID RUN_URL
+          export RUN_ID RUN_URL PROD_STACKS PROD_LIVE_DEPLOYMENT
           PROMPT="/board
 
           $(envsubst < prompts/board-ci.md)"

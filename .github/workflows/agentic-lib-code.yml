@@ -58,6 +58,10 @@ jobs:
   do-next:
     name: 'do next'
     runs-on: ubuntu-24.04
+    # `ci`, not `prod`: the agent works against the ci deployment and reads ci logs, and
+    # `vars.SUBMIT_ACTIONS_ROLE_ARN` resolves only inside a GitHub environment (it is not a
+    # repository-level variable) - a job with no `environment:` reads it as empty.
+    environment: ci
     # The agent's own budget plus room for setup, the handover write-up and artifact upload. The
     # agent is told to stop at `minutes`; this is the backstop if it does not.
     timeout-minutes: 30
@@ -103,8 +107,23 @@ jobs:
           output-credentials: true
           retry-max-attempts: 3
 
-      # These three workflows declare no environment (NEXT.md B124), so they read the ci account's
-      # flag with whatever credentials the step above resolved; one flag per account is the model.
+      # The actions role above has no bedrock:InvokeModel - only the alarm-triage role does
+      # (ObservabilityStack.java) - so the agent below, which runs on Bedrock, needs this chain
+      # exactly as alarm-triage.yml does.
+      - name: Assume the read-only alarm triage role
+        uses: aws-actions/configure-aws-credentials@e1253824e5c10ff9df46874f81ed3ec929e19cfd # v6
+        with:
+          role-to-assume: ${{ vars.SUBMIT_ALARM_TRIAGE_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+          role-chaining: true
+          audience: sts.amazonaws.com
+          role-skip-session-tagging: true
+          output-credentials: true
+          retry-max-attempts: 3
+
+      # This job's environment is ci, so the switch it reads is ci's; one flag per account is the
+      # model, and a prod-facing agent path reads the prod flag from a job carrying that
+      # environment instead.
       - name: Stop when the agent kill switch is on
         uses: ./.github/actions/agent-kill-switch
         with:

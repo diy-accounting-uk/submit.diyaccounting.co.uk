@@ -480,7 +480,9 @@ class SubmitEnvironmentCdkResourceTest {
                         "cloudwatch:Get*",
                         "cloudwatch:List*",
                         "xray:Get*",
-                        "xray:BatchGet*")));
+                        "xray:BatchGet*",
+                        "cloudformation:ListStacks",
+                        "cloudformation:DescribeStacks")));
         assertTrue(
                 statements.stream().noneMatch(s -> "QueryDeploymentLogs".equals(s.get("Sid"))),
                 "the per-log-group grant is replaced by ReadTelemetry");
