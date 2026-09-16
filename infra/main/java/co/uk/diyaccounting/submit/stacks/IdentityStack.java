@@ -179,9 +179,9 @@ public class IdentityStack extends Stack {
                 .featurePlan(FeaturePlan.PLUS)
                 .standardThreatProtectionMode(StandardThreatProtectionMode.FULL_FUNCTION)
                 .customThreatProtectionMode(CustomThreatProtectionMode.FULL_FUNCTION)
-                // Enable optional TOTP MFA for native auth users (test users, future native users)
-                // Federated users (Google) bypass Cognito MFA — their IdP handles MFA independently
-                .mfa(Mfa.OPTIONAL)
+                // TOTP MFA required for native-auth users; federated Google users bypass Cognito MFA
+                // (their IdP handles MFA independently)
+                .mfa(Mfa.REQUIRED)
                 .mfaSecondFactor(MfaSecondFactor.builder()
                         .otp(true) // TOTP via authenticator apps
                         .sms(false) // No SMS MFA (no phone numbers collected)

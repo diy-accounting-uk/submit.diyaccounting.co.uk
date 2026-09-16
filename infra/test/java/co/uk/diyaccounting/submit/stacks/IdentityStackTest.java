@@ -70,6 +70,18 @@ class IdentityStackTest {
     }
 
     @Test
+    void userPoolRequiresTotpMfaAndEnablesSoftwareTokenMfa() {
+        IdentityStack stack = synthIdentityStack("ci");
+        Template template = Template.fromStack(stack);
+
+        template.hasResourceProperties(
+                "AWS::Cognito::UserPool",
+                Match.objectLike(Map.of(
+                        "MfaConfiguration", "ON",
+                        "EnabledMfas", List.of("SOFTWARE_TOKEN_MFA"))));
+    }
+
+    @Test
     void booksClientUsesTheAuthorizationCodeFlowWithNoSecretAndPreventsUserExistenceErrors() {
         IdentityStack stack = synthIdentityStack("ci");
         Template template = Template.fromStack(stack);
