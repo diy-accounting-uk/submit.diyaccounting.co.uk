@@ -40,6 +40,30 @@ Every item names its model: the lowest tier that fits (Fable > Opus > Sonnet > H
 
 ## In flight
 
+- [ ] **B55.2. Google federation: the Lambdas' nightly proof, then the key goes.** The pool
+  `submit-federation` and its three providers exist (apply run 35050290089); the federated GitHub
+  path is proven (plan run 35050387182) and the prod environment's `SUBMIT_GOOGLE_AUTH_MODE` is
+  `federated` since 03:4x UTC on 2026-09-16. Wave b45 (PR #247, merged 04:1x UTC on
+  2026-09-16) puts `GA4_AUTH_MODE`, `GOOGLE_WIF_AUDIENCE` and `GA4_SERVICE_ACCOUNT_EMAIL` on the
+  three GA4 Lambdas, ci in federated mode and prod on the key; `main`'s deploy carries them. Then: one
+  nightly run of each Lambda on ci in federated mode
+  (the provider's condition matches the generated role names, reasoned from the naming rule and
+  proven by that run), then `.env.prod` to `federated`, then the key, both secrets, the
+  `ga4/service_account` row, `scripts/gcp-key-rotate.js`, `google/identity.toml`'s
+  `[service_account.key_rotation]` block and `google-key-rotate.yml` go (the removal list with file
+  and line is in the b46 wave's agent report, 08:0x UTC on 2026-09-16). The three Lambdas run only
+  inside the step function `ci-env-analytics-nightly` (`cron(15 2 ? * MON *)` UTC), whose last two
+  runs (2026-09-07, 2026-09-14) failed on `ga4-event-export-pull`'s missing BigQuery export table
+  for the day, a data-availability error unrelated to auth. No federated invocation exists yet.
+  **Source**: B55; PRs #237, #241, #245, #247; `PLAN_GOOGLE_AS_CODE.md` items 9 and 11. **Owner**:
+  Claude Code. **Model**: Sonnet. In flight on `claude/b51-board` (worktree `b51-wif`): the operator's
+  start of `ci-env-analytics-nightly` at 19:28 UTC on 2026-09-16 proved `ga4-daily-pull` and
+  `ga4-report-pull` federated and failed `ga4-event-export-pull` on "The size of mapped attribute
+  google.subject exceeds the 127 bytes limit", so `google/identity.toml`'s AWS providers map the
+  subject to the role name instead of the assumed-role ARN; after `google apply` runs on `main`, the
+  operator starts the state machine once more (`BRIEF_OPERATOR_TASKS_2026-09-16.md` task 5), and
+  the key removal follows the clean run. **Size**: ~12 files.
+
 - [ ] **O28. Send `Gov-Client-Multi-Factor` on every request: mandate MFA in the pool.** Every
   monthly advisory HMRC has raised is this header missing (`../REPORT_HMRC_HEADER_ADVISORIES.md`).
   Step 2b is on main (#198, b0e3d2be): the browser sends its Cognito ID token as
@@ -169,27 +193,6 @@ Every item names its model: the lowest tier that fits (Fable > Opus > Sonnet > H
   **Owner**: Claude Code. **Model**: Sonnet. Blocked on the ruleset's next run: `prod_env_cost_focus_dq` last ran at 02:16 UTC on
   2026-09-16, before the deploy, so the first result on the fixed table is 2026-09-17's
   (`aws --profile submit-prod glue list-data-quality-results`). **Size**: ~1 file.
-
-- [ ] **B55.2. Google federation: the Lambdas' nightly proof, then the key goes.** The pool
-  `submit-federation` and its three providers exist (apply run 35050290089); the federated GitHub
-  path is proven (plan run 35050387182) and the prod environment's `SUBMIT_GOOGLE_AUTH_MODE` is
-  `federated` since 03:4x UTC on 2026-09-16. Wave b45 (PR #247, merged 04:1x UTC on
-  2026-09-16) puts `GA4_AUTH_MODE`, `GOOGLE_WIF_AUDIENCE` and `GA4_SERVICE_ACCOUNT_EMAIL` on the
-  three GA4 Lambdas, ci in federated mode and prod on the key; `main`'s deploy carries them. Then: one
-  nightly run of each Lambda on ci in federated mode
-  (the provider's condition matches the generated role names, reasoned from the naming rule and
-  proven by that run), then `.env.prod` to `federated`, then the key, both secrets, the
-  `ga4/service_account` row, `scripts/gcp-key-rotate.js`, `google/identity.toml`'s
-  `[service_account.key_rotation]` block and `google-key-rotate.yml` go (the removal list with file
-  and line is in the b46 wave's agent report, 08:0x UTC on 2026-09-16). The three Lambdas run only
-  inside the step function `ci-env-analytics-nightly` (`cron(15 2 ? * MON *)` UTC), whose last two
-  runs (2026-09-07, 2026-09-14) failed on `ga4-event-export-pull`'s missing BigQuery export table
-  for the day, a data-availability error unrelated to auth. No federated invocation exists yet.
-  **Source**: B55; PRs #237, #241, #245, #247; `PLAN_GOOGLE_AS_CODE.md` items 9 and 11. **Owner**:
-  Claude Code. **Model**: Sonnet. Blocked on a federated run of the three ci Lambdas: Monday
-  2026-09-21 02:15 UTC, or sooner if the operator starts one:
-  `aws --profile submit-ci stepfunctions start-execution --state-machine-arn arn:aws:states:eu-west-2:367191799875:stateMachine:ci-env-analytics-nightly`.
-  **Size**: ~12 files.
 
 - [ ] **B34.6b. Companies House accounts filing: the sandbox proof.** Submission 000004 (presenter
   E0000052288, company 06846849, 2026-09-13 19:04 UTC) was ACCEPTED by the XML Gateway test
