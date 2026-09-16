@@ -40,8 +40,6 @@ Every item names its model: the lowest tier that fits (Fable > Opus > Sonnet > H
 
 ## In flight
 
-## Machine-only
-
 - [ ] **B124. The three agentic-lib workflows cannot assume their AWS role.** Run 35153306283
   (`agentic-lib-code.yml`, dispatched by the operator at 21:36 UTC on 2026-09-16, which lifts the
   halt of 2026-09-12) died at "Configure AWS role via GitHub OIDC": "Credentials could not be
@@ -57,7 +55,7 @@ Every item names its model: the lowest tier that fits (Fable > Opus > Sonnet > H
   other account. Then dispatch `agentic-lib-board.yml` with `write-back=false` and compare its five
   parts with a `/board` here, `agentic-lib-pr.yml` with `dry-run=true` against `/auto-merge-dry-run`,
   and `agentic-lib-code.yml` on its 10-minute budget, in that order (BACKLOG row 73 carries the
-  full brief). **Source**: run 35153306283; BACKLOG 73. **Owner**: Claude Code. **Model**: Sonnet.
+  full brief). In flight on `claude/b52-board` (wave b52, worktree `.claude/worktrees/b52`, agent dispatched 22:5x UTC on 2026-09-16; push and PR follow the wave). **Source**: run 35153306283; BACKLOG 73. **Owner**: Claude Code. **Model**: Sonnet.
   **Size**: ~3 files.
 
 - [ ] **B30af. A deploy that starts during a scheduled prod probe still swaps the apex under it.**
@@ -70,7 +68,7 @@ Every item names its model: the lowest tier that fits (Fable > Opus > Sonnet > H
   already running. Either the guard re-checks immediately before each suite's navigation and waits
   again, or `deploy.yml`'s promotion step waits for a running scheduled probe; pick the one that
   does not hold a deploy for 40 minutes, then close incident #272 (#273 and #274 are closed).
-  **Source**: issues #272, #273; run 35142540653.
+  In flight on `claude/b52-board` (wave b52, worktree `.claude/worktrees/b52`, agent dispatched 22:5x UTC on 2026-09-16; push and PR follow the wave). **Source**: issues #272, #273; run 35142540653.
   **Owner**: Claude Code. **Model**: Sonnet. **Size**: ~1 file.
 
 - [ ] **B30ag. The alarm-to-issue Lambda opens two issues when SNS delivers twice.** #273 and #274
@@ -80,18 +78,10 @@ Every item names its model: the lowest tier that fits (Fable > Opus > Sonnet > H
   search before either creates. Make the create idempotent: a conditional write keyed on the alarm
   name and state-change timestamp (the existing DynamoDB table the ops Lambdas use, or a
   `PutItem` with `attribute_not_exists`) before the GitHub call, so the second invocation comments or
-  exits. Unit test with two concurrent invocations. #274 is closed as the duplicate. **Source**:
+  exits. Unit test with two concurrent invocations. #274 is closed as the duplicate. In flight on `claude/b52-board` (wave b52, worktree `.claude/worktrees/b52`, agent dispatched 22:5x UTC on 2026-09-16; push and PR follow the wave). **Source**:
   issues #273, #274. **Owner**: Claude Code. **Model**: Sonnet. **Size**: ~2 files.
 
-- [ ] **B56. `test` and CodeQL as required status checks on `main`.** O46 settled on 2026-09-16:
-  ruleset 16057564 keeps `Check commit signatures` required with the Admin role as its only bypass
-  actor, `RELEASE_PAT` carries `publish.yml`'s bump, and a docs push by an admin lands directly.
-  Add the contexts to the same ruleset body (`gh api -X PUT .../rulesets/16057564`): the check
-  names on a code head are `npm test`, `maven test`, `eslint` and `CodeQL`. Decide first what a
-  docs-only PR does, since `test.yml` and CodeQL skip it under their paths filters and the
-  contexts would then read "expected" for a non-admin author (an admin's merge bypasses): either
-  a job in `test.yml` that runs on every PR and reports the context, or leave docs-only PRs to the
-  bypass. **Source**: BACKLOG 56. **Owner**: Claude Code. **Model**: Sonnet. **Size**: ~1 file.
+## Machine-only
 
 ## Human and machine
 
@@ -131,6 +121,18 @@ Every item names its model: the lowest tier that fits (Fable > Opus > Sonnet > H
   **Owner**: Claude Code re-runs the sandbox year on a ci set so the run sits inside HMRC's 14-day log window; then the operator sends `DRAFT_EMAIL_ITSA_RECOGNITION.md` (the pack is on `main` since PR #237, `_developers/hmrc/`) and `DRAFT_EMAIL_ITSA_PRODUCTION_CREDENTIALS.md` when SDST answers. **Model**: Haiku. **Size**: ~3 files.
 
 ## Human-only
+
+- [ ] **B56. `test` and CodeQL as required status checks on `main`.** O46 settled on 2026-09-16:
+  ruleset 16057564 keeps `Check commit signatures` required with the Admin role as its only bypass
+  actor, `RELEASE_PAT` carries `publish.yml`'s bump, and a docs push by an admin lands directly.
+  Add the contexts to the same ruleset body (`gh api -X PUT .../rulesets/16057564`): the check
+  names on a code head are `npm test`, `maven test`, `eslint` and `CodeQL`. Decided 2026-09-16: a docs-only
+  PR is left to the Admin bypass (docs commits go straight to `main` under the docs exception, and
+  every code head runs all four), so no `test.yml` change; the ruleset write is a blocked command
+  here (the names are confirmed on PR #271's head 9b4ffc53), so the operator runs one command:
+  `gh api repos/diy-accounting-uk/submit.diyaccounting.co.uk/rulesets/16057564 | jq '{name,target,enforcement,bypass_actors,conditions,rules} | .rules |= map(if .type=="required_status_checks" then .parameters.required_status_checks = (["Check commit signatures","npm test","maven test","eslint","CodeQL"] | map({context:.})) else . end)' | gh api -X PUT repos/diy-accounting-uk/submit.diyaccounting.co.uk/rulesets/16057564 --input -`
+  and a GET of the ruleset then lists five contexts.
+  **Source**: BACKLOG 56. **Owner**: Operator. **Model**: none. **Size**: ~0 files.
 
 - [ ] **O17. Register the Companies House sandbox test user and set four ci values.**
   Companies House has no create-test-user API, so the operator registers a throwaway account
