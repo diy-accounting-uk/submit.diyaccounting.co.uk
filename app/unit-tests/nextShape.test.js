@@ -2,8 +2,8 @@
 // Copyright (C) 2006-2026 DIY Accounting Limited
 
 // nextShape.test.js -- NEXT.md carries five required headings in order, each
-// occurring exactly once: In flight, Machine-only, Human and machine,
-// Human-only, Blocked. Every open row sits under one of those five. The
+// occurring exactly once: In flight, Machine-only, Machine-ask,
+// Human-driven, Blocked. Every open row sits under one of those five. The
 // Discipline heading (which terminates the board rows) must come after Blocked.
 
 import { describe, it, expect } from "vitest";
@@ -19,7 +19,7 @@ describe("NEXT.md shape", () => {
     const raw = readFileSync(resolve(ROOT, "NEXT.md"), "utf8");
     const lines = raw.split(/\r?\n/);
 
-    const requiredHeadings = ["## In flight", "## Machine-only", "## Human and machine", "## Human-only", "## Blocked"];
+    const requiredHeadings = ["## In flight", "## Machine-only", "## Machine-ask", "## Human-driven", "## Blocked"];
 
     const headingIndices = requiredHeadings.map((heading) => lines.indexOf(heading));
 
@@ -51,14 +51,14 @@ describe("NEXT.md shape", () => {
     const raw = readFileSync(resolve(ROOT, "NEXT.md"), "utf8");
     const lines = raw.split(/\r?\n/);
 
-    const requiredHeadings = ["## In flight", "## Machine-only", "## Human and machine", "## Human-only", "## Blocked"];
+    const requiredHeadings = ["## In flight", "## Machine-only", "## Machine-ask", "## Human-driven", "## Blocked"];
 
     // Find indices of the required headings and the Discipline heading
     const headingIndices = {
       "## In flight": lines.indexOf("## In flight"),
       "## Machine-only": lines.indexOf("## Machine-only"),
-      "## Human and machine": lines.indexOf("## Human and machine"),
-      "## Human-only": lines.indexOf("## Human-only"),
+      "## Machine-ask": lines.indexOf("## Machine-ask"),
+      "## Human-driven": lines.indexOf("## Human-driven"),
       "## Blocked": lines.indexOf("## Blocked"),
       "## Discipline": lines.indexOf("## Discipline"),
     };

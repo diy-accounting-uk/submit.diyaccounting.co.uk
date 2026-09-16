@@ -19,9 +19,8 @@ Compiled 2026-08-25 from every source: GitHub issues (#3 to #20), local plan doc
 ## Live status (updated 2026-09-15)
 
 Queued and in-flight state lives on `NEXT.md`; this block mirrors it so the backlog reads
-truthfully on its own. Human-only steps are briefed at the workspace root in
-`../BRIEF_OPERATOR_RUNBOOK_2026-09-13.md`; the four
-`../BRIEF_OPERATOR_TASKS_*.md` files carry the detail behind its tasks.
+truthfully on its own. Machine-ask and human-driven steps are briefed at the workspace root in
+`../NEXT_OPERATOR_RUNBOOK.md`, one file rewritten in place.
 
 - **Cool-down lifted 2026-09-15 20:10 UTC** by the operator's `/loop` of do-next waves. Prod runs prod-70b0a8e
   (PR #222's deploy), the only prod set; no ci set stands (`ci-claud727f`'s `ApiStack` is
