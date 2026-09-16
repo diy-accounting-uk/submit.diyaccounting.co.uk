@@ -112,14 +112,27 @@ step.
   the PolyForm licence files are on main and on prod since prod-318271f. **Source**:
   `PLAN_LICENSING_UPLIFT_SUBMIT.md` H-LU-9. **Owner**: Claude Code drafts and sends from the operator's address on their go. **Model**: Haiku.
 
-- [ ] **O17. Register the Companies House sandbox test user and set four ci values.**
-  Companies House has no create-test-user API, so the operator registers a throwaway account
-  on identity-sandbox.company-information.service.gov.uk with an authenticator second factor
-  and puts on the GitHub `ci` environment: the variable `TEST_COMPANIES_HOUSE_USER_ID` (its
-  email) and the secrets `TEST_COMPANIES_HOUSE_PASSWORD`, `TEST_COMPANIES_HOUSE_TOTP_SECRET`
-  (the authenticator secret) and `COMPANIES_HOUSE_SANDBOX_API_KEY` (the test application's
-  REST key, for creating the run's test company). Unblocks B34.7. **Source**: BACKLOG 34; **Owner**: Claude Code drives the registration in Chrome, the operator present for the second factor and the GitHub writes. **Model**: Sonnet.
-
+- [ ] **O17. A sandbox sign-in for the filing suites, and four ci values.** Checked live at
+  23:2x UTC on 2026-09-16: the sandbox has no registration page of its own
+  (`identity-sandbox.../user/register` and `find-and-update-sandbox...` answer nothing) and no
+  create-user API (the test-data generator makes companies only). Its sign-in page is reached
+  only through `/oauth2/authorise` with the "- test" application's web client (`e5be4a0d…`, the
+  ci client id), a registered redirect (`https://ci-submit.diyaccounting.co.uk/companies-house/filingCallback.html`;
+  a branch set's host is not registered and gets 400) and a scope on the live hosts as
+  `companiesHouseScope` already builds it (the `api-sandbox` form gets "there is a problem"). That
+  page, "Sign in to Companies House", offers GOV.UK One Login, which lands on the production
+  `signin.account.gov.uk/sign-in-or-create`, and a Companies House email sign-in for an existing
+  account. So the test user is a GOV.UK One Login: the operator creates it at that page with a
+  plus-address and an authenticator app (capturing the base32 secret), then signs in once through
+  the sandbox chooser and completes whatever Companies House asks; the four ci values are the
+  email (variable `TEST_COMPANIES_HOUSE_USER_ID`), the password and the secret (secrets
+  `TEST_COMPANIES_HOUSE_PASSWORD`, `TEST_COMPANIES_HOUSE_TOTP_SECRET`) and the "- test"
+  application's REST key (`COMPANIES_HOUSE_SANDBOX_API_KEY`). B34.7 then drives the chooser, the
+  One Login screens and the permission page, which the suite's one-page `#userId`/`#password`
+  selectors do not yet match, against the registered host. Unblocks B34.7. **Source**: BACKLOG 34;
+  the developer hub "- test" application, read by the operator 2026-09-16. **Owner**: the operator
+  creates the One Login and runs the three secret writes; Claude Code sets the variable and runs
+  B34.7. **Model**: Sonnet.
 - [ ] **O38. Create the two GitHub Apps the audit ranks joint second.** `diya-ops`, to carry all
   three Lambdas' writes, which separates 55 alarm issues and every support ticket from the
   operator's own account and is the single move that fixes the worst disclosure gap; and
