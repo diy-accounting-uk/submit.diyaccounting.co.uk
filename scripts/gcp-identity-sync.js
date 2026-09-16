@@ -236,6 +236,39 @@ export function forbiddenReason(bodyText) {
   return bodyText.slice(0, 300);
 }
 
+/**
+ * The API a 403 names as not enabled in the project, or null when the refusal is anything else.
+ * @param {string} message - an error message, as googleRequest throws it
+ * @returns {string|null} e.g. "Identity and Access Management (IAM)"
+ */
+export function disabledApiName(message) {
+  const match = /([A-Za-z()\s]+?) API has not been used in project|([A-Za-z()\s]+?) API[^"]*?it is disabled/i.exec(message ?? "");
+  return match ? (match[1] ?? match[2]).trim() : null;
+}
+
+/**
+ * What the plan says when the IAM API is disabled and nothing can be read: one line per
+ * resource the sync would create once gcp-enable-apis has enabled the API. Answers null in
+ * apply mode (the enable step ran first there, so a 403 is a real failure) and for any
+ * refusal that is not a disabled API.
+ * @param {Error} error - what readLiveState threw
+ * @param {object} config - the parsed identity.toml
+ * @param {boolean} apply - whether the run applies
+ * @returns {string[]|null}
+ */
+export function planWhenApiDisabled(error, config, apply) {
+  if (apply || !/^403 /.test(error?.message ?? "")) return null;
+  const api = disabledApiName(error.message);
+  if (api === null) return null;
+  const number = config.project.number;
+  const because = `the ${api} API is disabled (would enable, then create)`;
+  return [
+    `pool ${poolName(number, config.pool.id)}: ${because}`,
+    ...config.providers.map((provider) => `provider ${providerName(number, config.pool.id, provider.id)}: ${because}`),
+    `${config.serviceAccount.email}: ${WORKLOAD_IDENTITY_USER_ROLE} for ${config.providers.length} principal set(s): ${because.replace("then create", "then bind")}`,
+  ];
+}
+
 async function googleRequest(method, url, token, body) {
   const res = await fetch(url, {
     method,
@@ -368,7 +401,24 @@ export async function main(argv = process.argv.slice(2)) {
   config.project.number = await resolveProjectNumber(token, config);
   console.log(`project ${config.project.id}: number ${config.project.number}`);
 
-  const live = await readLiveState(token, config);
+  let live;
+  try {
+    live = await readLiveState(token, config);
+  } catch (error) {
+    // On a pull request the workflow plans without enabling APIs, so a project that has never
+    // used the IAM API answers 403 to every read until a push applies; the plan says what the
+    // apply will do rather than failing. In apply mode the enable step has already run.
+    const lines = planWhenApiDisabled(error, config, opts.apply);
+    if (lines === null) throw error;
+    for (const line of lines) console.log(line);
+    for (const provider of config.providers) {
+      console.log(`provider ${provider.id}: audience ${providerAudience(config.project.number, config.pool.id, provider.id)}`);
+    }
+    if (opts.writeCredConfigs) {
+      for (const filePath of writeCredentialConfigs(config)) console.log(`wrote ${path.relative(process.cwd(), filePath)}`);
+    }
+    return lines;
+  }
   const plan = planIdentity(config, live);
   if (plan.length === 0) {
     console.log(
