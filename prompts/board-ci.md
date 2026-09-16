@@ -22,9 +22,24 @@ branch is the operator's to delete, exactly as in the terminal.
 runner. Do not report one and do not start one.
 
 **Everything else you may read freely**: `NEXT.md`, `BACKLOG.md`, the open alarm issues, the runs on
-`main` and on every open PR's head, `origin`'s branches, and read-only AWS for the deployment table.
-The AWS role is already assumed for you. If a read fails, render that part as unverified and name
-the failure — never as absent.
+`main` and on every open PR's head, and `origin`'s branches. If a read fails, render that part as
+unverified and name the failure — never as absent.
+
+**Part 4's AWS reads are split across two jobs**, because a job carries one GitHub environment and
+this workflow's ci and prod roles each live on their own. This job's own role reaches ci only: run
+the skill's `aws cloudformation list-stacks` and `aws ssm get-parameter` commands against ci
+yourself. Prod's equivalents were already gathered by a separate job carrying the prod environment
+and are pasted below, not something to re-query — this job holds no prod credentials at all.
+
+Prod app stacks (`StackName`, `CreationTime`, tab-separated, one per line):
+```
+${PROD_STACKS}
+```
+
+Prod's live deployment (`/submit/prod/last-known-good-deployment`): `${PROD_LIVE_DEPLOYMENT}`
+
+Treat an empty block above as "unverified: the prod-deployment-facts job produced nothing" rather
+than as prod having no stacks.
 
 ## The render is the product
 

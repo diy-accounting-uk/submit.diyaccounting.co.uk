@@ -28,6 +28,8 @@ import software.amazon.awscdk.services.cloudwatch.ComparisonOperator;
 import software.amazon.awscdk.services.cloudwatch.Metric;
 import software.amazon.awscdk.services.cloudwatch.TreatMissingData;
 import software.amazon.awscdk.services.cloudwatch.actions.SnsAction;
+import software.amazon.awscdk.services.dynamodb.ITable;
+import software.amazon.awscdk.services.dynamodb.Table;
 import software.amazon.awscdk.services.events.EventBus;
 import software.amazon.awscdk.services.events.EventPattern;
 import software.amazon.awscdk.services.events.Rule;
@@ -206,7 +208,8 @@ public class OpsStack extends Stack {
             var alarmToGithubIssueEnv = new PopulatedMap<String, String>()
                     .with("ENVIRONMENT_NAME", props.envName())
                     .with("OPS_GITHUB_TOKEN_SECRET_ARN", props.opsGithubTokenSecretArn())
-                    .with("GITHUB_REPO", props.opsGithubRepo());
+                    .with("GITHUB_REPO", props.opsGithubRepo())
+                    .with("ALARM_ISSUE_LOCK_DYNAMODB_TABLE_NAME", props.sharedNames().alarmIssueLockTableName);
             var alarmToGithubIssueLambdaConstruct = new Lambda(
                     this,
                     LambdaProps.builder()
@@ -224,16 +227,28 @@ public class OpsStack extends Stack {
                             .provisionedConcurrencyAliasName(props.sharedNames().provisionedConcurrencyAliasName)
                             .environment(alarmToGithubIssueEnv)
                             // Two invocations of the same alarm's state change can run back to
-                            // back (the EventBridge rule redelivers, or two alarms in the same
-                            // family transition within the same second). This Lambda dedupes by
-                            // listing open issues before it creates one, with no idempotency key
-                            // of its own, so a reserved concurrency of 1 serialises invocations:
-                            // one invocation's create always finishes before the next one's list
-                            // runs, so the list always sees it (see #210/#212).
+                            // back within this one deployment's Lambda (the EventBridge rule
+                            // redelivers, or two alarms in the same family transition within the
+                            // same second). Reserved concurrency of 1 serialises those, so one
+                            // invocation's create always finishes before the next one's list
+                            // runs (see #210/#212). It does not reach a second deployment's own
+                            // copy of this Lambda, which carries its own reserved concurrency of
+                            // 1 against the same account-wide alarm (see the alarm-issue-lock
+                            // conditional write below, which is what covers that case).
                             .ingestReservedConcurrentExecutions(Optional.of(1))
                             .build());
             healthCheckedFunctions.add(alarmToGithubIssueLambdaConstruct);
             alarmToGithubIssueLambda = alarmToGithubIssueLambdaConstruct.ingestLambda;
+
+            // Claims the alarm name + state-change timestamp with a conditional put before
+            // raising or commenting on an issue, so two deployments whose own
+            // AlarmStateChangeRule both match the same environment-scoped alarm (see
+            // AlarmStateChangeDelivery's javadoc) race on one write instead of each opening its
+            // own issue. Env-scoped table, shared by every live deployment's copy of this
+            // Lambda.
+            ITable alarmIssueLockTable =
+                    Table.fromTableName(this, "AlarmIssueLockTable", props.sharedNames().alarmIssueLockTableName);
+            alarmIssueLockTable.grant(alarmToGithubIssueLambda, "dynamodb:PutItem");
 
             var githubSecretArnWithWildcard = props.opsGithubTokenSecretArn().endsWith("*")
                     ? props.opsGithubTokenSecretArn()

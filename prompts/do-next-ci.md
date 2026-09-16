@@ -31,7 +31,7 @@ artifacts:
 | File | What it must contain |
 |---|---|
 | `work.patch` | `git diff` of everything you changed. Empty is allowed and honest. |
-| `CHANGES.md` | The handover. Shape defined below. |
+| `CHANGES.md` | The handover, written to `${OUT_DIR}/CHANGES.md`, never into the repository. Shape defined below. |
 | `notes/` | Optional. Logs, command output, anything a later agent would otherwise have to rediscover. |
 
 The split is the whole point. A finished task should land like any other work, reviewable as a PR.
@@ -124,7 +124,8 @@ Ten minutes is not much. Prefer a small change you have verified over a large on
 
 ## Step 5 — write the handover
 
-`CHANGES.md`, and be concrete. A later agent has only this:
+`${OUT_DIR}/CHANGES.md` (the path matters: a `CHANGES.md` in the checkout ends up in the patch and
+the workflow reports no handover at all), and be concrete. A later agent has only this:
 
 ```markdown
 # do-next run ${RUN_ID}

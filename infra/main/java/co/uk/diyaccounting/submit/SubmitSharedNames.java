@@ -124,6 +124,7 @@ public class SubmitSharedNames {
     public String activityBusName;
     public String subscriptionsTableName;
     public String securityStateTableName;
+    public String alarmIssueLockTableName;
     public String diyaGlBucketName;
     public String originBucketName;
     public String originAccessLogBucketName;
@@ -1363,6 +1364,7 @@ public class SubmitSharedNames {
         this.activityBusName = "%s-activity-bus".formatted(this.envResourceNamePrefix);
         this.subscriptionsTableName = "%s-subscriptions".formatted(this.envResourceNamePrefix);
         this.securityStateTableName = "%s-security-state".formatted(this.envResourceNamePrefix);
+        this.alarmIssueLockTableName = "%s-alarm-issue-locks".formatted(this.envResourceNamePrefix);
         this.diyaGlBucketName = "%s-diya-gl-%s".formatted(this.envResourceNamePrefix, props.awsAccount);
         this.distributionAccessLogGroupName = "distribution-%s-logs".formatted(this.envResourceNamePrefix);
         this.distributionAccessLogDeliveryHoldingSourceName =

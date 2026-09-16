@@ -1,0 +1,26 @@
+# SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0
+# Copyright (C) 2006-2026 DIY Accounting Limited
+
+name: 'Wait for a deploy on main'
+description: >
+  Polls for a deploy.yml run in progress or queued on main and waits (up to 40 minutes, polling
+  every 60 seconds) for it to clear before returning. A deploy.yml run moving the prod apex can
+  leave the origins briefly disagreeing (e.g. the token exchange 403ing for the seconds new and
+  old origins disagree), which a probe navigating the apex at that moment then reports as a
+  failure even though nothing is broken (issues #210, #212). The repository
+  is public, so listing runs needs no actions permission on the token.
+inputs:
+  github-token:
+    description: 'Token used to list deploy.yml runs'
+    required: true
+runs:
+  using: 'composite'
+  steps:
+    - name: Wait for a deploy in progress on main
+      shell: bash
+      env:
+        GH_TOKEN: ${{ inputs.github-token }}
+      # The github.action_path and github.workspace expressions expand to the runner's host
+      # paths, which a container job cannot see. The GITHUB_WORKSPACE variable set inside the
+      # step is the checkout's path wherever the step runs (see wait-for-ci-deploys).
+      run: node "${GITHUB_WORKSPACE}/.github/actions/wait-for-main-deploy/wait-for-main-deploy.mjs"

@@ -56,7 +56,7 @@ concurrency:
   cancel-in-progress: true
 
 permissions:
-  id-token: write # OIDC for Bedrock
+  id-token: write # OIDC, chained into the alarm-triage role for Bedrock
   contents: read
   pull-requests: read
 
@@ -69,6 +69,9 @@ jobs:
   auto-merge:
     name: 'auto merge'
     runs-on: ubuntu-24.04
+    # Not for GitHub access - /auto-merge reads GitHub only - but `vars.SUBMIT_ALARM_TRIAGE_ROLE_ARN`
+    # below, the role this job's own Claude process runs under, is a ci/prod environment variable.
+    environment: ci
     timeout-minutes: 20
     steps:
       # A merge performed with GITHUB_TOKEN does not trigger `on: push` workflows - GitHub's own
@@ -132,8 +135,20 @@ jobs:
           output-credentials: true
           retry-max-attempts: 3
 
-      # These three workflows declare no environment (NEXT.md B124), so they read the ci account's
-      # flag with whatever credentials the step above resolved; one flag per account is the model.
+      # /auto-merge reads GitHub only, but the Claude process below runs on Bedrock, and the
+      # plain actions role above has no bedrock:InvokeModel - only the alarm-triage role does
+      # (ObservabilityStack.java), so this job chains into it exactly as alarm-triage.yml does.
+      - name: Assume the read-only alarm triage role
+        uses: aws-actions/configure-aws-credentials@e1253824e5c10ff9df46874f81ed3ec929e19cfd # v6
+        with:
+          role-to-assume: ${{ vars.SUBMIT_ALARM_TRIAGE_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+          role-chaining: true
+          audience: sts.amazonaws.com
+          role-skip-session-tagging: true
+          output-credentials: true
+          retry-max-attempts: 3
+
       - name: Stop when the agent kill switch is on
         uses: ./.github/actions/agent-kill-switch
         with:

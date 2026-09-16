@@ -77,6 +77,7 @@ public class DataStack extends Stack {
     public ITable bundleCapacityTable;
     public ITable subscriptionsTable;
     public ITable securityStateTable;
+    public ITable alarmIssueLockTable;
     public Key saltEncryptionKey;
 
     // Stream view type shared by every streamed table. NEW_AND_OLD_IMAGES rather than NEW_IMAGE
@@ -867,7 +868,8 @@ public class DataStack extends Stack {
         // Security state table for issue #10 data-theft detection: bundle-endpoint burst
         // counters (rate#{hashedSub}#{minute}) and mid-session country-change state
         // (geo#{hashedSub}). PK-only table (no sort key) - both item shapes are looked up by
-        // stateKey. No PITR: every item expires within an hour and none of it is customer data.
+        // stateKey. Every item expires within an hour and none of it is customer data; ensureTable
+        // still turns PITR on for it like every table.
         this.securityStateTable = ensureTable(
                 this,
                 props.resourceNamePrefix() + "-SecurityStateTable",
@@ -880,6 +882,27 @@ public class DataStack extends Stack {
                 props.sharedNames().securityStateTableName,
                 "ttl");
         infof("Ensured security state DynamoDB table with name %s", props.sharedNames().securityStateTableName);
+
+        // Alarm-issue lock table: one item per CloudWatch alarm state-change transition
+        // (dedupeKey = "{alarmName}#{timestamp}"), written with a conditional put before
+        // alarmToGithubIssue.js raises or comments on a GitHub issue. Env-scoped, shared by
+        // every live deployment's alarm-to-GitHub-issue Lambda, so two deployments whose own
+        // AlarmStateChangeRule both match the same environment-scoped alarm (see
+        // AlarmStateChangeDelivery's javadoc) race on the same conditional write instead of
+        // each raising its own issue. PK-only; every item expires within days and none of it
+        // is customer data, though ensureTable still turns PITR on for it like every table.
+        this.alarmIssueLockTable = ensureTable(
+                this,
+                props.resourceNamePrefix() + "-AlarmIssueLockTable",
+                props.sharedNames().alarmIssueLockTableName,
+                "dedupeKey",
+                null);
+        ensureTimeToLive(
+                this,
+                props.resourceNamePrefix() + "-AlarmIssueLockTTL",
+                props.sharedNames().alarmIssueLockTableName,
+                "ttl");
+        infof("Ensured alarm-issue lock DynamoDB table with name %s", props.sharedNames().alarmIssueLockTableName);
 
         // DIYA-GL bucket: one zip-in-S3 store per environment for the paid diya-gl storage tier.
         // Versioned so AWS Backup for S3 can cover it and a bad metadata write has a prior version;
@@ -1213,6 +1236,8 @@ public class DataStack extends Stack {
         cfnOutput(this, "SubscriptionsTableStreamArn", subscriptionsStreamArn);
         cfnOutput(this, "SecurityStateTableName", this.securityStateTable.getTableName());
         cfnOutput(this, "SecurityStateTableArn", this.securityStateTable.getTableArn());
+        cfnOutput(this, "AlarmIssueLockTableName", this.alarmIssueLockTable.getTableName());
+        cfnOutput(this, "AlarmIssueLockTableArn", this.alarmIssueLockTable.getTableArn());
         cfnOutput(this, "DiyaGlBucketName", this.diyaGlBucket.getBucketName());
 
         // KMS key for encrypting salt backup stored in DynamoDB (Path 3 recovery).

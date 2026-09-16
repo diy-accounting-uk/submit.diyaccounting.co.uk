@@ -813,21 +813,29 @@ public class ObservabilityStack extends Stack {
         // role-chaining every other workflow uses), then chains into this role. That role is named
         // submit-{env}-github-actions-role in each deployment account (see GITHUB_SETUP.md), not the
         // plain "github-actions-role" a first draft of this stack assumed.
+        //
+        // The three agentic-lib workflows (board, do-next, auto-merge) chain into it the same way,
+        // for the same reason alarm-triage does: it is the only role in the account that can invoke
+        // the pinned Bedrock models, and cutting a second Bedrock-capable role per agent path would
+        // duplicate the deny list below rather than share it.
         String githubActionsRoleArn =
                 "arn:aws:iam::%s:role/submit-%s-github-actions-role".formatted(this.getAccount(), props.envName());
 
         Role alarmTriageRole = Role.Builder.create(this, props.resourceNamePrefix() + "-AlarmTriageRole")
                 .roleName(props.sharedNames().alarmTriageRoleName)
                 .maxSessionDuration(Duration.hours(1))
-                .description("Read-only role the alarm-triage workflow assumes to gather evidence for one alarm")
+                .description("Read-only role the alarm-triage, board, do-next and auto-merge"
+                        + " agent workflows chain into for Bedrock and read-only AWS")
                 .assumedBy(new ArnPrincipal(githubActionsRoleArn))
                 .build();
 
         // One read-only telemetry grant: every describe, get, list and query action on Logs,
-        // CloudWatch and X-Ray. The earlier per-action, per-log-group list was widened one denial
-        // at a time (DescribeMetricFilters, DescribeQueries, ...) and the agent, denied once,
-        // stopped querying at all. Customer data stays out by the explicit Deny below, not by the
-        // shape of this Allow; the log groups the role can reach carry no customer data by design.
+        // CloudWatch and X-Ray, plus the two CloudFormation reads the board agent's Part 4 needs
+        // (which app stacks exist, and whether one is in a failed state). The earlier per-action,
+        // per-log-group list was widened one denial at a time (DescribeMetricFilters,
+        // DescribeQueries, ...) and the agent, denied once, stopped querying at all. Customer data
+        // stays out by the explicit Deny below, not by the shape of this Allow; the log groups and
+        // stacks this role can reach carry no customer data by design.
         alarmTriageRole.addToPolicy(PolicyStatement.Builder.create()
                 .sid("ReadTelemetry")
                 .actions(List.of(
@@ -840,7 +848,9 @@ public class ObservabilityStack extends Stack {
                         "cloudwatch:Get*",
                         "cloudwatch:List*",
                         "xray:Get*",
-                        "xray:BatchGet*"))
+                        "xray:BatchGet*",
+                        "cloudformation:ListStacks",
+                        "cloudformation:DescribeStacks"))
                 .resources(List.of("*"))
                 .build());
 
@@ -878,6 +888,8 @@ public class ObservabilityStack extends Stack {
                 .resources(List.of("*"))
                 .build());
 
+        // The /submit/{env}/* wildcard already covers last-known-good-deployment, the one
+        // parameter the board agent's Part 4 reads outside the triage namespace.
         alarmTriageRole.addToPolicy(PolicyStatement.Builder.create()
                 .sid("ReadTriageParameters")
                 .actions(List.of("ssm:GetParameter", "ssm:GetParameters"))
