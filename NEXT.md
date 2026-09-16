@@ -39,22 +39,13 @@ Every item names its model: the lowest tier that fits (Fable > Opus > Sonnet > H
 
 ## In flight
 
-Wave b44 rides **`claude/b44-board`** (from `main` at bcab3758, unpushed): B55.3, the GA4 key out of the
-job logs, and the pool's display name, in `.claude/worktrees/b44-google`.
-
-- [ ] **B55.3. The GA4 key leaves the workflow's env and logs.** The eight `GA4_SERVICE_ACCOUNT_JSON`
-  step envs and the `credentials-json` output go; the scripts resolve the key from
-  `GA4_SERVICE_ACCOUNT_ARN` themselves, and any step that must hold the JSON writes it to a mode-600
-  file with every line masked; `google-key-rotate.yml` and any other workflow with the pattern the
-  same. **Source**: O48; run 35049344705. **Owner**: Claude Code. **Model**: Sonnet. **Size**: ~2
-  files.
-
 ## Machine-only
 
-- [ ] **B55.2. Prove Google federation and wire the Lambdas.** Wave b43 (PR #241, merged 03:0x UTC on
-  2026-09-16) corrected the project number, enabled the IAM, IAM Credentials and STS APIs before the
-  sync, and unmasked and fixed the five script failures `| tee` had hidden. The push's apply run
-  creates the pool, the three providers and the binding; the federated plan dispatch
+- [ ] **B55.2. Prove Google federation and wire the Lambdas.** Waves b43 and b44 (PRs #241, #245, merged
+  by 03:2x UTC on 2026-09-16) corrected the project number, enabled the IAM, IAM Credentials and STS
+  APIs before the sync, unmasked and fixed the five script failures `| tee` had hidden, fitted the
+  display names to 32 characters and took the key out of the workflow's env (B55.3). The push's apply
+  run creates the pool, the three providers and the binding; the federated plan dispatch
   (`gh workflow run google-apply.yml --ref main -f auth-mode=federated -f apply=false`) then proves the
   GitHub path, after which `gh variable set SUBMIT_GOOGLE_AUTH_MODE --env prod --body federated`. The
   Lambdas: `IngestionStack.java` puts `GA4_AUTH_MODE`, `GOOGLE_WIF_AUDIENCE` (the `aws-ci` /
