@@ -39,9 +39,12 @@ self-destruct time (creation plus 4 hours) with any stack standing, when its onl
 the same test once its set is down to that one stack. A prod set is stale when it is not the
 last-known-good one. Never list the live set of either environment.
 
-**2. Merged branches**, local and origin. `git fetch --prune origin` first.
+**2. Merged branches**, local and origin. `git fetch --prune origin` first. Run the loop under
+`bash` (the session shell is zsh, which does not split `$files` on newlines and so reports every
+branch as content-on-main):
 
 ```bash
+bash <<'EOF'
 for ref in $(git for-each-ref --format='%(refname:short)' refs/heads refs/remotes/origin \
              | grep -v -E '^(main|origin|origin/main|origin/HEAD)$'); do
   ahead=$(git rev-list --count main..$ref)
@@ -50,6 +53,7 @@ for ref in $(git for-each-ref --format='%(refname:short)' refs/heads refs/remote
     if [ -z "$files" ] || git diff --quiet main $ref -- $files; then echo "$ref content-on-main ($ahead commits)"; else echo "$ref UNIQUE ($ahead commits)"; fi
   fi
 done
+EOF
 ```
 
 `merged` and `content-on-main` (a squashed worktree branch whose every change already sits on
@@ -62,7 +66,8 @@ when its branch is a candidate in category 2. Run `git status --short` inside ea
 first: one with uncommitted tracked changes is kept and reported, because removal would lose
 that work. Untracked `node_modules` does not count.
 
-**4. Logs and test artefacts.** At the repository root: `*.log` (the behaviour-test tees),
+**4. Logs and test artefacts.** Globs also run under `bash` with `shopt -s nullglob`, since an
+unmatched glob aborts a zsh command. At the repository root: `*.log` (the behaviour-test tees),
 `target/behaviour-test-results`, `target/playwright-report`, `target/traces`, `test-results/`,
 `playwright-report/`, and the same under every worktree. Never
 `cognito-native-test-credentials.json`: it is the lock that says native auth is switched on for a
