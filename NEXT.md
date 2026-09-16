@@ -100,15 +100,6 @@ Every item names its model: the lowest tier that fits (Fable > Opus > Sonnet > H
   Ask whether 000004 was accepted and whether status lookups are enabled for this presenter.
   **Source**: BACKLOG 34b. **Owner**: Operator. **Model**: none.
 
-- [ ] **O49. Give the ops GitHub token the code-scanning scope.** The security lake nightly reads
-  `dependabot`, `secret-scanning` and `code-scanning` alerts with the token in
-  `prod/submit/github/issue_bot_token` (`OPS_GITHUB_TOKEN_SECRET_ID`); `code-scanning/alerts` answers
-  403 "Resource not accessible by personal access token" (03:20 UTC on 2026-09-16), so that row is
-  null every night. Add `security_events` to the classic token, or the Code scanning alerts
-  read permission to the fine-grained one, and put the new value on the GitHub `prod` (and `ci`)
-  environment secret so `deploy-environment.yml` carries it. O38's `diya-ops` app replaces this
-  token when it exists. **Source**: B52y.3; issue #249. **Owner**: Operator. **Model**: none.
-
 - [ ] **O48. Rotate the GA4 service-account key: it was printed in public job logs.** Found 03:0x UTC
   on 2026-09-16: `google-apply.yml` passed the key's JSON to eight steps as a step env, GitHub's
   `add-mask` matched only the single-line value, and the pretty-printed JSON, private key included,
@@ -166,8 +157,9 @@ Every item names its model: the lowest tier that fits (Fable > Opus > Sonnet > H
 - [ ] **B52y.3. The security lake nightly's fix is on prod; the next nightly proves it.** PR #255
   (57d7c31e) degrades a failed GitHub alert endpoint to a null row, and main's environment deploy
   (run 35078117666, 09:5x UTC on 2026-09-16) carried it. Read the 03:15 UTC run on 2026-09-17 in
-  `/aws/lambda/prod-env-security-lake-nightly`: no "Invoke Error", a warn line for `code_scanning`
-  (null until O49), rows written for the day; then close #249. **Source**: issue #249. **Owner**:
+  `/aws/lambda/prod-env-security-lake-nightly`: no "Invoke Error", no warn line for a GitHub alert
+  endpoint (the token gained security-events read on 2026-09-16, 20:1x UTC), rows for all three
+  alert types written for the day; then close #249. **Source**: issue #249. **Owner**:
   Claude Code. **Model**: Haiku. Blocked on the 03:15 UTC run on 2026-09-17. **Size**: ~0 files.
 
 - [ ] **B52y.4. The cost views are live; check the Glue Data Quality ruleset after its next run.**
