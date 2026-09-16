@@ -40,6 +40,23 @@ Every item names its model: the lowest tier that fits (Fable > Opus > Sonnet > H
 
 ## In flight
 
+- [ ] **O28. Send `Gov-Client-Multi-Factor` on every request: mandate MFA in the pool.** Every
+  monthly advisory HMRC has raised is this header missing (`../REPORT_HMRC_HEADER_ADVISORIES.md`).
+  Step 2b is on main (#198, b0e3d2be): the browser sends its Cognito ID token as
+  `X-Id-Token`, `customAuthorizer.js` verifies it against the access token's `sub` and passes
+  `custom:mfa_method`, the federated flag and `auth_time` to `buildFraudHeaders.js`, which builds
+  the header (TOTP for an enrolled native user, OTHER for federated Google) and warns
+  `HMRC REQUIRED HEADER MISSING:` for a password-only native user, whom only the pool setting
+  reaches. The prod async-requests table holds nothing (TTL), so the scan could not size the
+  cohorts; `prod-env-hmrc-api-requests` keeps 20 days and showed 3 production VAT POSTs from 3
+  users, 2 without the header.
+  On `claude/b49-board`, PR #266: `Mfa.REQUIRED` (557219fb) and the ci test user's TOTP rotation
+  under it (a2e92e65: `ensure-cognito-test-user.js` answers `MFA_SETUP` and `SOFTWARE_TOKEN_MFA`,
+  each lane's secret kept at `<env>/submit/test/<lane>/totp-secret`), after the first deploy failed
+  every behaviour suite on the old rotation. The redeploy (run 35137912912) is the proof that
+  native sign-in completes with enrolment enforced. **Source**: `../REPORT_HMRC_HEADER_ADVISORIES.md`.
+  **Owner**: Claude Code. **Model**: Haiku. **Size**: ~6 files.
+
 ## Machine-only
 
 - [ ] **B30ad. The ci sweep's second trigger is on `main`; its first run proves it.** PR #259
@@ -53,23 +70,15 @@ Every item names its model: the lowest tier that fits (Fable > Opus > Sonnet > H
   **Source**: this board; `destroy-ci.yml`. **Owner**: Claude Code. **Model**: Haiku. **Size**:
   ~0 files.
 
-- [ ] **O28. Send `Gov-Client-Multi-Factor` on every request: mandate MFA in the pool.** Every
-  monthly advisory HMRC has raised is this header missing (`../REPORT_HMRC_HEADER_ADVISORIES.md`).
-  Step 2b is on main (#198, b0e3d2be): the browser sends its Cognito ID token as
-  `X-Id-Token`, `customAuthorizer.js` verifies it against the access token's `sub` and passes
-  `custom:mfa_method`, the federated flag and `auth_time` to `buildFraudHeaders.js`, which builds
-  the header (TOTP for an enrolled native user, OTHER for federated Google) and warns
-  `HMRC REQUIRED HEADER MISSING:` for a password-only native user, whom only the pool setting
-  reaches. The prod async-requests table holds nothing (TTL), so the scan could not size the
-  cohorts; `prod-env-hmrc-api-requests` keeps 20 days and showed 3 production VAT POSTs from 3
-  users, 2 without the header.
-  The operator walked the enrolment path on ci and said go (2026-09-16, 18:0x UTC). Left:
-  `IdentityStack.java:184` from `.mfa(Mfa.OPTIONAL)` to `Mfa.REQUIRED`, its CDK test, and a ci
-  deploy proving native sign-in still completes; with REQUIRED a returning native-auth customer who
-  never enrolled meets Cognito's hosted-UI "Set up multi-factor authentication" interstitial right
-  after their password, with no skip, and federated Google users see nothing. **Source**:
-  `../REPORT_HMRC_HEADER_ADVISORIES.md`. **Owner**: Claude Code. **Model**: Haiku. **Size**: ~2
-  files.
+- [ ] **B56. `test` and CodeQL as required status checks on `main`.** O46 settled on 2026-09-16:
+  ruleset 16057564 keeps `Check commit signatures` required with the Admin role as its only bypass
+  actor, `RELEASE_PAT` carries `publish.yml`'s bump, and a docs push by an admin lands directly.
+  Add the contexts to the same ruleset body (`gh api -X PUT .../rulesets/16057564`): the check
+  names on a code head are `npm test`, `maven test`, `eslint` and `CodeQL`. Decide first what a
+  docs-only PR does, since `test.yml` and CodeQL skip it under their paths filters and the
+  contexts would then read "expected" for a non-admin author (an admin's merge bypasses): either
+  a job in `test.yml` that runs on every PR and reports the context, or leave docs-only PRs to the
+  bypass. **Source**: BACKLOG 56. **Owner**: Claude Code. **Model**: Sonnet. **Size**: ~1 file.
 
 ## Human and machine
 
@@ -112,19 +121,6 @@ Every item names its model: the lowest tier that fits (Fable > Opus > Sonnet > H
   then read the run and confirm the old key id is disabled; the workflow fix that stops the printing
   is B55.3 (wave b44). Write the date into `secrets-rotation.toml`'s `ga4/service_account` row.
   **Source**: run 35049344705; this session. **Owner**: Operator. **Model**: none.
-
-- [ ] **O46. Decide how the signature check gates `main`.** B166's check runs on every PR since PR
-  #226 and fails one carrying an unsigned commit (run 35027270496 passed). Ruleset 16057564 has
-  carried it as a required status check since 21:57 UTC on 2026-09-15 (`active`, no bypass actors):
-  every commit to `main` since has gone through a PR (twelve merges to #252), a direct docs push is
-  refused ("Required status check \"Check commit signatures\" is expected"), GitHub refuses the
-  GitHub Actions app as a repository-level bypass actor, and `publish.yml` has not run since, so its
-  version bump fails at its next run. Alternatives: (1) remove the check from the ruleset and leave
-  it advisory, red on the PR and enforced by `/auto-merge`'s gate, until BACKLOG 54 moves the runner
-  pushes onto an app; (2) keep the rule, add the admin role as its only bypass actor and move
-  `publish.yml`'s bump onto a PAT or the contents API first (a Claude Code change); (3) an
-  organisation-level ruleset, where the Actions app is an allowed bypass actor. **Source**:
-  B166; ruleset 16057564. **Owner**: Operator. **Model**: none.
 
 - [ ] **O23. Open a Google Ads account for the paid-traffic experiments.** Both earlier Ads
   accounts were cancelled (`google-analytics.toml`); the reinvestment loop (plan row D17) needs
@@ -194,10 +190,6 @@ Every item names its model: the lowest tier that fits (Fable > Opus > Sonnet > H
   2026-09-21 02:15 UTC, or sooner if the operator starts one:
   `aws --profile submit-ci stepfunctions start-execution --state-machine-arn arn:aws:states:eu-west-2:367191799875:stateMachine:ci-env-analytics-nightly`.
   **Size**: ~12 files.
-
-- [ ] **B56. `test` and CodeQL as required status checks on `main`.** BACKLOG 56: added to ruleset
-  16057564 beside the signature check, once O46 settles how the ruleset gates direct pushes. **Source**:
-  BACKLOG 56. **Owner**: Claude Code. **Model**: Haiku. Blocked on O46. **Size**: ~0 files.
 
 - [ ] **B34.6b. Companies House accounts filing: the sandbox proof.** Submission 000004 (presenter
   E0000052288, company 06846849, 2026-09-13 19:04 UTC) was ACCEPTED by the XML Gateway test
