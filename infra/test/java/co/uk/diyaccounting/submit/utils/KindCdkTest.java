@@ -87,4 +87,27 @@ class KindCdkTest {
                 "Custom::AWS",
                 Map.of("Create", software.amazon.awscdk.assertions.Match.stringLikeRegexp(".*describeTable.*")));
     }
+
+    @Test
+    void ensureLogGroupRefusesARetentionCloudWatchDoesNotAccept() {
+        App app = new App();
+        Stack stack = new Stack(app, "TestStack");
+        IllegalArgumentException thrown = assertThrows(
+                IllegalArgumentException.class,
+                () -> KindCdk.ensureLogGroupWithDependency(stack, "AccessLog", "/aws/apigw/test/access", 28));
+        assertTrue(thrown.getMessage().contains("28"), thrown.getMessage());
+        assertTrue(thrown.getMessage().contains("30"), thrown.getMessage());
+    }
+
+    @Test
+    void ensureLogGroupAcceptsEveryCloudWatchRetention() {
+        App app = new App();
+        Stack stack = new Stack(app, "TestStack");
+        int n = 0;
+        for (int days : KindCdk.VALID_LOG_RETENTION_DAYS) {
+            KindCdk.ensureLogGroupWithDependency(stack, "Group" + days, "/aws/test/" + days, days);
+            n++;
+        }
+        assertEquals(22, n);
+    }
 }
