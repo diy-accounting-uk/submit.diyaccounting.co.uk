@@ -46,10 +46,11 @@ step.
 - [ ] **B30ah. Alarm triage: 8 a day, a Haiku first pass, Sonnet on escalation.** The operator's
   pick (2026-09-16, after `REPORT_ALARM_TRIAGE_COST.md`: $0.45 a Sonnet triage, the cap 4 a day at
   `-gt 3`, 5 of 11 alarm issues untriaged). In flight on `claude/ops-triage-budget` (worktree
-  `.claude/worktrees/triage-budget`, agent running): the budget guard reads one
+  `.claude/worktrees/triage-budget`, PR #281): the budget guard reads one
   `TRIAGE_BUDGET_PER_DAY` of 8, the first pass runs on the eu Haiku 4.5 profile, a judge step
   escalates to Sonnet on an error, max-turns, an empty result or an "unable to determine" answer,
-  and the comment names the model. Push and PR follow the agent's report. **Source**:
+  and the comment names the model; the `claude -p` invocation lives once in
+  `.github/actions/run-triage-agent`. Proof: the next alarm's triage comment names Haiku or Sonnet. **Source**:
   REPORT_ALARM_TRIAGE_COST.md; issue #249. **Owner**: Claude Code. **Model**: Sonnet. **Size**: ~2 files.
 
 - [ ] **B124. The three agentic-lib workflows cannot assume their AWS role.** Run 35153306283
