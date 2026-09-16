@@ -72,7 +72,8 @@ step.
   which the prod role gains on `main`'s environment deploy, and raised alarm issue #279, which
   closes then); pr dry-run 35159593566 rendered; code run 35159801420 took B30ai, checked `main`
   green and wrote a full handover into the checkout instead of `OUT_DIR` (fixed on the batch,
-  de3033ea); the second code run 35160283767, for the resume judgement, is in progress. In flight on `claude/b52-board` (wave b52, worktree `.claude/worktrees/b52`, PR #276, deploy 35156736691, environment deploy 35156736363). **Source**: run 35153306283; BACKLOG 73. **Owner**: Claude Code. **Model**: Sonnet.
+  de3033ea); the second code run 35160283767 judged the first unresumable (right: its handover was the
+  workflow's fallback text) and redid B30ai; B124.2 carries what both runs found. In flight on `claude/b52-board` (wave b52, worktree `.claude/worktrees/b52`, PR #276, deploy 35156736691, environment deploy 35156736363). **Source**: run 35153306283; BACKLOG 73. **Owner**: Claude Code. **Model**: Sonnet.
   **Size**: ~3 files.
 
 - [ ] **B30af. A deploy that starts during a scheduled prod probe still swaps the apex under it.**
@@ -99,6 +100,23 @@ step.
   issues #273, #274. **Owner**: Claude Code. **Model**: Sonnet. **Size**: ~2 files.
 
 ## Machine-only
+
+- [ ] **B124.2. The code agent's prompt asks for what its tool list denies.** Both code proofs
+  (runs 35159801420 and 35160283767, from `claude/b52-board`) picked the simplest ready row,
+  checked `main` was green and wrote a specific handover, and neither could finish the shape
+  `prompts/do-next-ci.md` asks for: the `permission_denials` in each run's `claude-output.json`
+  are `gh run download` into `${OUT_DIR}/prior` (the workflow already downloads them, lines
+  ~127-142), `mkdir -p /tmp/do-next-out/...`, `git config user.email/name` (so `git commit`
+  cannot run), `git checkout main`, `git rev-parse origin/main`, and `git diff ... > work.patch`
+  (the workflow takes the patch itself, line ~245); the allow-list is `Read,Grep,Glob,Edit,Write`
+  and `git status/diff/log/add/commit/apply/ls-remote/show`. So the handover landed in the
+  checkout each time (batch de3033ea moves it out) and the "complete, push a branch and open a
+  PR" path is unreachable: no `git push`, no `gh pr create`. Align the two: the workflow sets the
+  git identity before the agent and creates the branch and PR from the patch when the handover
+  says complete; the prompt drops the download, identity, checkout and redirect instructions,
+  names `${OUT_DIR}/CHANGES.md` for the Write tool, and says the workflow takes the patch; then
+  one more 10-minute run proves a PR. **Source**: runs 35159801420, 35160283767; BACKLOG 73.
+  **Owner**: Claude Code. **Model**: Sonnet. **Size**: ~2 files.
 
 - [ ] **B30ai. Alarm triage reads evidence again: prove it on the next run.** PR #280 (d47884f6)
   tells the agent to call `aws` with no `--profile`, after `REPORT_ALARM_TRIAGE_COST.md` found all
