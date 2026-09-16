@@ -42,6 +42,24 @@ Every item names its model: the lowest tier that fits (Fable > Opus > Sonnet > H
 
 ## Machine-only
 
+- [ ] **B124. The three agentic-lib workflows cannot assume their AWS role.** Run 35153306283
+  (`agentic-lib-code.yml`, dispatched by the operator at 21:36 UTC on 2026-09-16, which lifts the
+  halt of 2026-09-12) died at "Configure AWS role via GitHub OIDC": "Credentials could not be
+  loaded, please check your action inputs". All three read
+  `role-to-assume: ${{ vars.SUBMIT_ACTIONS_ROLE_ARN }}` (`agentic-lib-board.yml:86`,
+  `agentic-lib-pr.yml:127`, `agentic-lib-code.yml:98`) from a job that declares no `environment:`,
+  and that variable exists only on the `ci` and `prod` environments (repository-level variables:
+  `AWS_CERTIFICATE_ARN`, `AWS_HOSTED_ZONE_NAME`, `SUBMIT_GOOGLE_AUTH_MODE`), so it resolves empty;
+  `alarm-triage.yml:138` gets it right with `environment: ${{ needs.triage.outputs.environment-name }}`.
+  Fix per workflow: `agentic-lib-pr.yml` needs no AWS at all (`/auto-merge` reads GitHub only), so
+  its OIDC step goes; `agentic-lib-code.yml` gets `environment: ci`; `agentic-lib-board.yml` reads
+  both accounts for Part 4, so either two jobs keyed by environment or a second assume into the
+  other account. Then dispatch `agentic-lib-board.yml` with `write-back=false` and compare its five
+  parts with a `/board` here, `agentic-lib-pr.yml` with `dry-run=true` against `/auto-merge-dry-run`,
+  and `agentic-lib-code.yml` on its 10-minute budget, in that order (BACKLOG row 73 carries the
+  full brief). **Source**: run 35153306283; BACKLOG 73. **Owner**: Claude Code. **Model**: Sonnet.
+  **Size**: ~3 files.
+
 - [ ] **B30af. A deploy that starts during a scheduled prod probe still swaps the apex under it.**
   Issue #273 (20:31 UTC on 2026-09-16): the 19:46 UTC scheduled `probe-test.yml` run found no deploy
   in flight at its "Wait for a deploy in progress on main" step (lines 236–256), then PR #266's
