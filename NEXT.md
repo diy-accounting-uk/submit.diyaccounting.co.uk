@@ -85,6 +85,22 @@ step.
 
 ## Machine-only
 
+- [ ] **B30ah. What alarm triage costs at the capped frequency, and how to triage more.** The
+  operator (2026-09-16): more alarms arrive than the budget triages. `alarm-triage.yml` caps
+  itself at 3 runs per 24 hours (`budget-guard`, line ~49), 15 minutes per job, 60 turns
+  (`--max-turns 60`, line ~293), Sonnet 4.5 with Haiku 4.5 as the small model on Bedrock; #249
+  (03:22 UTC on 2026-09-16) was skipped with "4 posted a result since 2026-09-15T03:21:59Z".
+  Measure, from records: every triage run since the cap landed (`gh run list --workflow
+  alarm-triage.yml`), each run's job minutes, its Bedrock spend (the `triage.json` usage the run
+  uploads, or CloudWatch's `AWS/Bedrock` `InputTokenCount`/`OutputTokenCount` by model in
+  submit-ci and submit-prod, priced at the eu inference-profile rates) and its outcome (result
+  posted, max-turns, skipped), and the count of alarm issues that went untriaged. Report the cost
+  per triage and per day at the cap in `REPORT_ALARM_TRIAGE_COST.md`, then recommend one of, with
+  the figure each implies: a higher budget, a lower model tier for the first pass, or pre-triage
+  constraints (fewer turns, a set duration, a sub-agent limit) and a change to
+  `alarm-triage.yml` only after the operator picks. **Source**: issue #249; operator, 2026-09-16.
+  **Owner**: Claude Code. **Model**: Sonnet. **Size**: ~1 file.
+
 ## Machine-ask
 
 - [ ] **O48. The exposed GA4 service-account key: rotate, delete, review, then narrow the account.**
