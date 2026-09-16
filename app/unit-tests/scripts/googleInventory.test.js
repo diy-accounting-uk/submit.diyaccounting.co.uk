@@ -24,6 +24,8 @@ import {
   shapeBigQueryDatasets,
   shapeTransferConfigs,
   buildInventoryReport,
+  findingForForbiddenRead,
+  collectBudgets,
 } from "../../../scripts/google-inventory.js";
 
 describe("parseArgs", () => {
@@ -47,7 +49,12 @@ describe("parseArgs", () => {
       "--location",
       "us-central1",
     ]);
-    expect(opts).toEqual({ project: "other-project", ga4AccountId: "999", serviceAccountEmail: "someone@example.com", location: "us-central1" });
+    expect(opts).toEqual({
+      project: "other-project",
+      ga4AccountId: "999",
+      serviceAccountEmail: "someone@example.com",
+      location: "us-central1",
+    });
   });
 
   test("rejects an unknown argument", () => {
@@ -95,13 +102,20 @@ describe("shapeBudgets", () => {
       ],
     };
     expect(shapeBudgets(body)).toEqual([
-      { name: "billingAccounts/123/budgets/abc", displayName: "diyaccounting-ga4 monthly budget", amount: "10 GBP", thresholds: [0.5, 0.9] },
+      {
+        name: "billingAccounts/123/budgets/abc",
+        displayName: "diyaccounting-ga4 monthly budget",
+        amount: "10 GBP",
+        thresholds: [0.5, 0.9],
+      },
     ]);
   });
 
   test("reports an unspecified amount and empty thresholds when both are missing", () => {
     const body = { budgets: [{ name: "billingAccounts/123/budgets/abc", displayName: "no amount" }] };
-    expect(shapeBudgets(body)).toEqual([{ name: "billingAccounts/123/budgets/abc", displayName: "no amount", amount: "unspecified", thresholds: [] }]);
+    expect(shapeBudgets(body)).toEqual([
+      { name: "billingAccounts/123/budgets/abc", displayName: "no amount", amount: "unspecified", thresholds: [] },
+    ]);
   });
 });
 
@@ -137,15 +151,30 @@ describe("shapeGa4Properties", () => {
 
 describe("shapeDataStreams", () => {
   test("pulls the measurement id and default uri out of webStreamData", () => {
-    const body = { dataStreams: [{ name: "properties/523400333/dataStreams/1", displayName: "Submit", webStreamData: { measurementId: "G-T81V5NL5MB", defaultUri: "https://submit.diyaccounting.co.uk" } }] };
+    const body = {
+      dataStreams: [
+        {
+          name: "properties/523400333/dataStreams/1",
+          displayName: "Submit",
+          webStreamData: { measurementId: "G-T81V5NL5MB", defaultUri: "https://submit.diyaccounting.co.uk" },
+        },
+      ],
+    };
     expect(shapeDataStreams(body)).toEqual([
-      { name: "properties/523400333/dataStreams/1", displayName: "Submit", measurementId: "G-T81V5NL5MB", defaultUri: "https://submit.diyaccounting.co.uk" },
+      {
+        name: "properties/523400333/dataStreams/1",
+        displayName: "Submit",
+        measurementId: "G-T81V5NL5MB",
+        defaultUri: "https://submit.diyaccounting.co.uk",
+      },
     ]);
   });
 
   test("reports null measurement id and uri when webStreamData is missing", () => {
     const body = { dataStreams: [{ name: "properties/1/dataStreams/2", displayName: "App stream" }] };
-    expect(shapeDataStreams(body)).toEqual([{ name: "properties/1/dataStreams/2", displayName: "App stream", measurementId: null, defaultUri: null }]);
+    expect(shapeDataStreams(body)).toEqual([
+      { name: "properties/1/dataStreams/2", displayName: "App stream", measurementId: null, defaultUri: null },
+    ]);
   });
 });
 
@@ -158,9 +187,23 @@ describe("shapeKeyEvents", () => {
 
 describe("shapeBigQueryLinks", () => {
   test("reads the lowercase-q bigqueryLinks field the API actually returns", () => {
-    const body = { bigqueryLinks: [{ name: "properties/523400333/bigQueryLinks/1", project: "projects/diyaccounting-ga4", datasetLocation: "europe-west2", dailyExportEnabled: true }] };
+    const body = {
+      bigqueryLinks: [
+        {
+          name: "properties/523400333/bigQueryLinks/1",
+          project: "projects/diyaccounting-ga4",
+          datasetLocation: "europe-west2",
+          dailyExportEnabled: true,
+        },
+      ],
+    };
     expect(shapeBigQueryLinks(body)).toEqual([
-      { name: "properties/523400333/bigQueryLinks/1", project: "projects/diyaccounting-ga4", datasetLocation: "europe-west2", dailyExportEnabled: true },
+      {
+        name: "properties/523400333/bigQueryLinks/1",
+        project: "projects/diyaccounting-ga4",
+        datasetLocation: "europe-west2",
+        dailyExportEnabled: true,
+      },
     ]);
   });
 
@@ -190,8 +233,14 @@ describe("shapeServiceAccountKeys", () => {
 
 describe("shapeIapBrand", () => {
   test("returns the first brand when one exists", () => {
-    const body = { brands: [{ name: "projects/123/brands/123", applicationTitle: "DIY Accounting", supportEmail: "support@diyaccounting.co.uk" }] };
-    expect(shapeIapBrand(body)).toEqual({ name: "projects/123/brands/123", applicationTitle: "DIY Accounting", supportEmail: "support@diyaccounting.co.uk" });
+    const body = {
+      brands: [{ name: "projects/123/brands/123", applicationTitle: "DIY Accounting", supportEmail: "support@diyaccounting.co.uk" }],
+    };
+    expect(shapeIapBrand(body)).toEqual({
+      name: "projects/123/brands/123",
+      applicationTitle: "DIY Accounting",
+      supportEmail: "support@diyaccounting.co.uk",
+    });
   });
 
   test("returns null when no brand has been created", () => {
@@ -202,16 +251,27 @@ describe("shapeIapBrand", () => {
 
 describe("shapeBigQueryDatasets", () => {
   test("reads the dataset id off each entry and sorts", () => {
-    const body = { datasets: [{ datasetReference: { datasetId: "ga4_daily" } }, { datasetReference: { datasetId: "analytics_523400333" } }] };
+    const body = {
+      datasets: [{ datasetReference: { datasetId: "ga4_daily" } }, { datasetReference: { datasetId: "analytics_523400333" } }],
+    };
     expect(shapeBigQueryDatasets(body)).toEqual(["analytics_523400333", "ga4_daily"]);
   });
 });
 
 describe("shapeTransferConfigs", () => {
   test("carries the display name, schedule and disabled flag", () => {
-    const body = { transferConfigs: [{ name: "projects/x/locations/y/transferConfigs/1", displayName: "sessions_by_host_source_daily", schedule: "every day 04:30" }] };
+    const body = {
+      transferConfigs: [
+        { name: "projects/x/locations/y/transferConfigs/1", displayName: "sessions_by_host_source_daily", schedule: "every day 04:30" },
+      ],
+    };
     expect(shapeTransferConfigs(body)).toEqual([
-      { name: "projects/x/locations/y/transferConfigs/1", displayName: "sessions_by_host_source_daily", schedule: "every day 04:30", disabled: false },
+      {
+        name: "projects/x/locations/y/transferConfigs/1",
+        displayName: "sessions_by_host_source_daily",
+        schedule: "every day 04:30",
+        disabled: false,
+      },
     ]);
   });
 });
@@ -228,9 +288,22 @@ describe("buildInventoryReport", () => {
         { name: "properties/523400333", displayName: "DIY Accounting", parent: "accounts/1035014", deleted: false },
         { name: "properties/395628828", displayName: "Old property", parent: "accounts/1035014", deleted: true },
       ],
-      dataStreamsByProperty: { "properties/523400333": [{ name: "properties/523400333/dataStreams/1", displayName: "Submit", measurementId: "G-T81V5NL5MB", defaultUri: null }] },
+      dataStreamsByProperty: {
+        "properties/523400333": [
+          { name: "properties/523400333/dataStreams/1", displayName: "Submit", measurementId: "G-T81V5NL5MB", defaultUri: null },
+        ],
+      },
       keyEventsByProperty: { "properties/523400333": [{ name: "properties/523400333/keyEvents/1", eventName: "purchase" }] },
-      bigQueryLinksByProperty: { "properties/523400333": [{ name: "properties/523400333/bigQueryLinks/1", project: "projects/diyaccounting-ga4", datasetLocation: "europe-west2", dailyExportEnabled: true }] },
+      bigQueryLinksByProperty: {
+        "properties/523400333": [
+          {
+            name: "properties/523400333/bigQueryLinks/1",
+            project: "projects/diyaccounting-ga4",
+            datasetLocation: "europe-west2",
+            dailyExportEnabled: true,
+          },
+        ],
+      },
       serviceAccountKeys: [],
       iapBrand: null,
       bigQueryDatasets: ["ga4_daily"],
@@ -243,5 +316,52 @@ describe("buildInventoryReport", () => {
     expect(live.bigQueryLinks).toHaveLength(1);
     expect(trashed.deleted).toBe(true);
     expect(trashed.dataStreams).toEqual([]);
+  });
+});
+
+describe("findingForForbiddenRead", () => {
+  test("turns a 403 on a read into a finding naming the identity and the remedy", () => {
+    const error = new Error("403 from https://cloudbilling.googleapis.com/v1/projects/p/billingInfo: PERMISSION_DENIED");
+    expect(findingForForbiddenRead(error, "billing", "sa@p.iam.gserviceaccount.com", "roles/billing.viewer missing")).toBe(
+      "billing: not permitted for sa@p.iam.gserviceaccount.com (roles/billing.viewer missing)",
+    );
+  });
+
+  test("names the scope when the 403 is ACCESS_TOKEN_SCOPE_INSUFFICIENT", () => {
+    const error = new Error(
+      '403 from https://cloudbilling.googleapis.com/v1/projects/p/billingInfo: {"error":{"status":"PERMISSION_DENIED","details":[{"reason":"ACCESS_TOKEN_SCOPE_INSUFFICIENT"}]}}',
+    );
+    expect(findingForForbiddenRead(error, "billing", "sa@p.iam.gserviceaccount.com", "roles/billing.viewer missing")).toBe(
+      "billing: not permitted for sa@p.iam.gserviceaccount.com (the access token lacks the scope)",
+    );
+  });
+
+  test("answers null for any other error", () => {
+    expect(findingForForbiddenRead(new Error("500 from https://x"), "billing", "sa", "r")).toBeNull();
+    expect(findingForForbiddenRead(new Error("fetch failed"), "billing", "sa", "r")).toBeNull();
+  });
+});
+
+describe("collectBudgets", () => {
+  test("answers the budgets and no finding when the read succeeds", async () => {
+    const list = async () => [{ name: "billingAccounts/1/budgets/a" }];
+    expect(await collectBudgets("t", "p", "sa", list)).toEqual({ budgets: [{ name: "billingAccounts/1/budgets/a" }], finding: null });
+  });
+
+  test("answers no budgets and a finding when the read is forbidden", async () => {
+    const list = async () => {
+      throw new Error("403 from https://cloudbilling.googleapis.com/v1/projects/p/billingInfo: PERMISSION_DENIED");
+    };
+    expect(await collectBudgets("t", "p", "sa@p", list)).toEqual({
+      budgets: [],
+      finding: "billing: not permitted for sa@p (roles/billing.viewer missing)",
+    });
+  });
+
+  test("rethrows any other error", async () => {
+    const list = async () => {
+      throw new Error("500 from https://cloudbilling.googleapis.com/v1/projects/p/billingInfo");
+    };
+    await expect(collectBudgets("t", "p", "sa", list)).rejects.toThrow(/^500 from/);
   });
 });
