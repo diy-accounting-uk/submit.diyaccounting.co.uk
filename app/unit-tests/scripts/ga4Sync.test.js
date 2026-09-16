@@ -18,6 +18,9 @@ import {
   describeLocationMismatch,
   buildGithubVariablePlan,
   buildPropertyPlan,
+  isVariableAccessForbidden,
+  githubVariableFinding,
+  applyGithubVariable,
   GITHUB_VARIABLE_NAME,
 } from "../../../scripts/ga4-sync.js";
 
@@ -353,6 +356,75 @@ describe("buildGithubVariablePlan", () => {
   test("reports noop when the variable already matches", () => {
     const plan = buildGithubVariablePlan({ githubEnvironment: "ci", measurementId: "G-SAME", currentValue: "G-SAME" });
     expect(plan).toEqual({ action: "noop", name: GITHUB_VARIABLE_NAME, environment: "ci", value: "G-SAME" });
+  });
+});
+
+describe("isVariableAccessForbidden", () => {
+  const readFailure = Object.assign(new Error("Command failed: gh variable list --env ci"), {
+    stderr:
+      "failed to get variables: HTTP 403: Resource not accessible by integration (https://api.github.com/repos/diy-accounting-uk/submit.diyaccounting.co.uk/environments/ci/variables?per_page=100)\n",
+  });
+  const writeFailure = Object.assign(new Error("Command failed: gh variable set SUBMIT_GA4_MEASUREMENT_ID --env ci --body G-DV0SDVEZWC"), {
+    stderr:
+      'failed to set variable "SUBMIT_GA4_MEASUREMENT_ID": HTTP 403: Resource not accessible by integration (https://api.github.com/repositories/1231281779/environments/ci/variables)\n',
+  });
+
+  test("recognises the read refused to the workflow token", () => {
+    expect(isVariableAccessForbidden(readFailure)).toBe(true);
+  });
+
+  test("recognises the write refused to the workflow token", () => {
+    expect(isVariableAccessForbidden(writeFailure)).toBe(true);
+  });
+
+  test("leaves every other failure alone", () => {
+    expect(isVariableAccessForbidden(Object.assign(new Error("Command failed"), { stderr: "HTTP 500: boom" }))).toBe(false);
+    expect(isVariableAccessForbidden(new Error("ENOENT: gh not found"))).toBe(false);
+  });
+});
+
+describe("githubVariableFinding", () => {
+  test("names the environment, the value and the command that sets it", () => {
+    expect(githubVariableFinding("ci", "G-DV0SDVEZWC")).toBe(
+      "GitHub variable SUBMIT_GA4_MEASUREMENT_ID (ci) needs G-DV0SDVEZWC; the workflow token cannot manage " +
+        "environment variables, set it with: gh variable set SUBMIT_GA4_MEASUREMENT_ID --env ci --body G-DV0SDVEZWC",
+    );
+  });
+});
+
+describe("applyGithubVariable", () => {
+  const plan = { action: "set", name: GITHUB_VARIABLE_NAME, environment: "ci", value: "G-DV0SDVEZWC", previousValue: null };
+
+  test("does nothing for a plan that is not a set", () => {
+    let calls = 0;
+    expect(applyGithubVariable({ action: "noop", environment: "ci", value: "G-1" }, () => calls++)).toBeNull();
+    expect(calls).toBe(0);
+  });
+
+  test("answers null when the variable was set", () => {
+    const calls = [];
+    expect(applyGithubVariable(plan, (environment, value) => calls.push([environment, value]))).toBeNull();
+    expect(calls).toEqual([["ci", "G-DV0SDVEZWC"]]);
+  });
+
+  test("answers the finding when the token may not manage environment variables", () => {
+    const refused = Object.assign(new Error("Command failed: gh variable set SUBMIT_GA4_MEASUREMENT_ID --env ci --body G-DV0SDVEZWC"), {
+      stderr:
+        'failed to set variable "SUBMIT_GA4_MEASUREMENT_ID": HTTP 403: Resource not accessible by integration (https://api.github.com/repositories/1231281779/environments/ci/variables)',
+    });
+    expect(
+      applyGithubVariable(plan, () => {
+        throw refused;
+      }),
+    ).toBe(githubVariableFinding("ci", "G-DV0SDVEZWC"));
+  });
+
+  test("throws any other failure", () => {
+    expect(() =>
+      applyGithubVariable(plan, () => {
+        throw Object.assign(new Error("Command failed"), { stderr: "HTTP 500: boom" });
+      }),
+    ).toThrow("Command failed");
   });
 });
 
