@@ -8,6 +8,12 @@ concurrency:
   group: google-apply-${{ github.ref }}
   cancel-in-progress: false
 
+# Every run step pipes through tee; without an explicit bash shell GitHub runs `bash -e` and the
+# pipe masks a failing script, which is how a failed identity sync once reported success.
+defaults:
+  run:
+    shell: bash
+
 on:
   # A hand run proves the federated path before it becomes the default: dispatch with
   # auth-mode=federated once the identity step has applied the pool, read every step's log,
@@ -62,10 +68,10 @@ jobs:
       contents: read
     steps:
       - name: Checkout
-        uses: actions/checkout@v7
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
 
       - name: Setup Node.js
-        uses: actions/setup-node@v7
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7
         with:
           node-version: ${{ env.NODE_VERSION }}
           cache: 'npm'
@@ -77,7 +83,7 @@ jobs:
           NPM_CONFIG_FETCH_RETRIES: "3"
 
       - name: Configure AWS role via GitHub OIDC
-        uses: aws-actions/configure-aws-credentials@v6
+        uses: aws-actions/configure-aws-credentials@e1253824e5c10ff9df46874f81ed3ec929e19cfd # v6
         with:
           role-to-assume: ${{ vars.SUBMIT_ACTIONS_ROLE_ARN }}
           aws-region: ${{ env.AWS_REGION }}
@@ -88,7 +94,7 @@ jobs:
           retry-max-attempts: 3
 
       - name: Assume AWS deployment role
-        uses: aws-actions/configure-aws-credentials@v6
+        uses: aws-actions/configure-aws-credentials@e1253824e5c10ff9df46874f81ed3ec929e19cfd # v6
         with:
           role-to-assume: ${{ vars.SUBMIT_DEPLOY_ROLE_ARN }}
           aws-region: ${{ env.AWS_REGION }}
@@ -116,7 +122,7 @@ jobs:
 
       - name: Authenticate to Google by federation
         if: env.GOOGLE_AUTH_MODE == 'federated'
-        uses: google-github-actions/auth@v2
+        uses: google-github-actions/auth@c200f3691d83b41bf9bbd8638997a462592937ed # v2
         with:
           workload_identity_provider: ${{ steps.identity.outputs.provider }}
           service_account: ${{ steps.identity.outputs.service-account }}

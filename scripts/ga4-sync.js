@@ -141,7 +141,9 @@ export function matchProperty(configProperty, liveProperties) {
   if (configProperty.id) {
     const found = live.find((p) => p.name === `properties/${configProperty.id}`);
     if (!found) {
-      throw new Error(`analytics.toml records id ${configProperty.id} for property "${configProperty.displayName}", but no live property with that id was found`);
+      throw new Error(
+        `analytics.toml records id ${configProperty.id} for property "${configProperty.displayName}", but no live property with that id was found`,
+      );
     }
     return found;
   }
@@ -169,7 +171,12 @@ export function buildStreamPlan(configStream, liveStreams = []) {
           (byUri ? ` (the live stream at that uri is ${byUri.webStreamData?.measurementId})` : ""),
       );
     }
-    return { action: "noop", name: byMeasurementId.name, uri: configStream.uri, measurementId: byMeasurementId.webStreamData?.measurementId ?? null };
+    return {
+      action: "noop",
+      name: byMeasurementId.name,
+      uri: configStream.uri,
+      measurementId: byMeasurementId.webStreamData?.measurementId ?? null,
+    };
   }
 
   return byUri
@@ -195,7 +202,9 @@ export function buildEnhancedMeasurementPlan(configStream, streamPlan, liveSetti
     return { action: "skip" };
   }
   const live = liveSettings?.streamEnabled === true;
-  return live === configStream.enhancedMeasurement ? { action: "noop" } : { action: "update", streamEnabled: configStream.enhancedMeasurement };
+  return live === configStream.enhancedMeasurement
+    ? { action: "noop" }
+    : { action: "update", streamEnabled: configStream.enhancedMeasurement };
 }
 
 /**
@@ -257,15 +266,38 @@ export function buildBigQueryLinkPlan(configLink, liveLinks = [], projectNumber 
   if (!configLink) return { action: "skip" };
   const existing = liveLinks.find((link) => projectMatches(link.project, { projectId: configLink.project, projectNumber }));
   if (!existing) {
-    return { action: "create", name: null, project: configLink.project, location: configLink.location, dailyExport: configLink.dailyExport, streamingExport: configLink.streamingExport };
+    return {
+      action: "create",
+      name: null,
+      project: configLink.project,
+      location: configLink.location,
+      dailyExport: configLink.dailyExport,
+      streamingExport: configLink.streamingExport,
+    };
   }
-  const inSync =
-    existing.datasetLocation === configLink.location &&
-    existing.dailyExportEnabled === configLink.dailyExport &&
-    existing.streamingExportEnabled === configLink.streamingExport;
-  return inSync
-    ? { action: "noop", name: existing.name }
-    : { action: "update", name: existing.name, location: configLink.location, dailyExport: configLink.dailyExport, streamingExport: configLink.streamingExport };
+  // A link's dataset location is fixed at creation: the Analytics Admin API rejects
+  // datasetLocation in a PATCH's update mask, so a mismatch is reported, never patched, and
+  // moving the export means recreating the link by hand.
+  const locationMismatch =
+    existing.datasetLocation !== configLink.location ? { live: existing.datasetLocation, wanted: configLink.location } : null;
+  const flagsInSync =
+    existing.dailyExportEnabled === configLink.dailyExport && existing.streamingExportEnabled === configLink.streamingExport;
+  if (flagsInSync) {
+    return locationMismatch ? { action: "noop", name: existing.name, locationMismatch } : { action: "noop", name: existing.name };
+  }
+  return {
+    action: "update",
+    name: existing.name,
+    dailyExport: configLink.dailyExport,
+    streamingExport: configLink.streamingExport,
+    ...(locationMismatch ? { locationMismatch } : {}),
+  };
+}
+
+/** The line a link plan prints about a dataset location the config wants but cannot change. */
+export function describeLocationMismatch(plan) {
+  if (!plan.locationMismatch) return null;
+  return `BigQuery link ${plan.name}: dataset location is ${plan.locationMismatch.live}, config says ${plan.locationMismatch.wanted}; a link's location cannot be changed in place (recreate the link to move it)`;
 }
 
 /**
@@ -369,7 +401,9 @@ function printPropertyPlan(plan, dryRun) {
     if (streamPlan.action === "noop") {
       console.log(`Stream "${config.name}" (${config.uri}): already exists, measurement id ${streamPlan.measurementId}`);
     } else {
-      console.log(`Stream "${config.name}" (${config.uri}): ${tag}would create${streamPlan.blockedOnProperty ? " (after the property is created)" : ""}`);
+      console.log(
+        `Stream "${config.name}" (${config.uri}): ${tag}would create${streamPlan.blockedOnProperty ? " (after the property is created)" : ""}`,
+      );
     }
     if (enhancedMeasurement.action === "update") {
       console.log(`  enhanced measurement: ${tag}would set streamEnabled=${enhancedMeasurement.streamEnabled}`);
@@ -397,13 +431,19 @@ function printPropertyPlan(plan, dryRun) {
     } else {
       console.log(`BigQuery link: ${tag}would create${plan.bigQueryLink.blockedOnProperty ? " (after the property is created)" : ""}`);
     }
+    const mismatch = describeLocationMismatch(plan.bigQueryLink);
+    if (mismatch) console.log(mismatch);
   }
 
   if (plan.githubVariable.action !== "skip") {
     if (plan.githubVariable.action === "noop") {
-      console.log(`GitHub variable ${GITHUB_VARIABLE_NAME} (${plan.githubVariable.environment}): already set to ${plan.githubVariable.value}`);
+      console.log(
+        `GitHub variable ${GITHUB_VARIABLE_NAME} (${plan.githubVariable.environment}): already set to ${plan.githubVariable.value}`,
+      );
     } else if (plan.githubVariable.action === "set") {
-      console.log(`GitHub variable ${GITHUB_VARIABLE_NAME} (${plan.githubVariable.environment}): ${tag}would set to ${plan.githubVariable.value}`);
+      console.log(
+        `GitHub variable ${GITHUB_VARIABLE_NAME} (${plan.githubVariable.environment}): ${tag}would set to ${plan.githubVariable.value}`,
+      );
     } else {
       console.log(`GitHub variable ${GITHUB_VARIABLE_NAME} (${plan.githubVariable.environment}): pending, measurement id not known yet`);
     }
@@ -486,7 +526,12 @@ async function createProperty(client, accountName, configProperty) {
   const { data } = await client.request({
     url: `${ANALYTICS_ADMIN_V1BETA}/properties`,
     method: "POST",
-    data: { parent: accountName, displayName: configProperty.displayName, timeZone: configProperty.timeZone ?? "Europe/London", currencyCode: configProperty.currency ?? "GBP" },
+    data: {
+      parent: accountName,
+      displayName: configProperty.displayName,
+      timeZone: configProperty.timeZone ?? "Europe/London",
+      currencyCode: configProperty.currency ?? "GBP",
+    },
   });
   return data;
 }
@@ -522,7 +567,12 @@ async function createBigQueryLink(client, propertyName, plan) {
   const { data } = await client.request({
     url: `${ANALYTICS_ADMIN_V1ALPHA}/${propertyName}/bigQueryLinks`,
     method: "POST",
-    data: { project: `projects/${plan.project}`, datasetLocation: plan.location, dailyExportEnabled: plan.dailyExport, streamingExportEnabled: plan.streamingExport },
+    data: {
+      project: `projects/${plan.project}`,
+      datasetLocation: plan.location,
+      dailyExportEnabled: plan.dailyExport,
+      streamingExportEnabled: plan.streamingExport,
+    },
   });
   return data;
 }
@@ -531,8 +581,8 @@ async function updateBigQueryLink(client, plan) {
   await client.request({
     url: `${ANALYTICS_ADMIN_V1ALPHA}/${plan.name}`,
     method: "PATCH",
-    params: { updateMask: "datasetLocation,dailyExportEnabled,streamingExportEnabled" },
-    data: { datasetLocation: plan.location, dailyExportEnabled: plan.dailyExport, streamingExportEnabled: plan.streamingExport },
+    params: { updateMask: "dailyExportEnabled,streamingExportEnabled" },
+    data: { dailyExportEnabled: plan.dailyExport, streamingExportEnabled: plan.streamingExport },
   });
 }
 
@@ -582,10 +632,15 @@ export async function main() {
   const opts = parseArgs(process.argv.slice(2));
   const config = loadConfigFromRoot();
 
-  const credentialsJson = await resolveServiceAccountCredentialsJson({ jsonEnvVar: "GA4_SERVICE_ACCOUNT_JSON", arnEnvVar: "GA4_SERVICE_ACCOUNT_ARN" });
+  const credentialsJson = await resolveServiceAccountCredentialsJson({
+    jsonEnvVar: "GA4_SERVICE_ACCOUNT_JSON",
+    arnEnvVar: "GA4_SERVICE_ACCOUNT_ARN",
+  });
   const client = await createGoogleAuthorizedClient(credentialsJson, [ANALYTICS_EDIT_SCOPE, CLOUD_PLATFORM_READONLY_SCOPE]);
 
-  console.log(`Reading current GA4 state for account ${config.account.id} ("${config.account.displayName}")${opts.apply ? "" : " (dry run)"}...`);
+  console.log(
+    `Reading current GA4 state for account ${config.account.id} ("${config.account.displayName}")${opts.apply ? "" : " (dry run)"}...`,
+  );
 
   const account = await findAccount(client, config.account);
   const liveProperties = await listProperties(client, account.name);

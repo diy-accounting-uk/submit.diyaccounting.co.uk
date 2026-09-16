@@ -19,7 +19,7 @@ id = "diyaccounting-ga4"
 # The project number is the audience prefix every federated caller presents. It is the same
 # number that leads the sign-in OAuth client id in google/oauth.toml; the script reads the live
 # number from Resource Manager and fails if this record does not match it.
-number = "670010122633"
+number = "958354756046"
 
 [service_account]
 email = "ga4-report-pull@diyaccounting-ga4.iam.gserviceaccount.com"

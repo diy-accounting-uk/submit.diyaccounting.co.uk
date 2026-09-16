@@ -12,7 +12,7 @@ import {
   AWS_SUBJECT_TOKEN_TYPE,
 } from "../../lib/googleWorkloadIdentity.js";
 
-const AUDIENCE = "//iam.googleapis.com/projects/670010122633/locations/global/workloadIdentityPools/submit-federation/providers/aws-prod";
+const AUDIENCE = "//iam.googleapis.com/projects/958354756046/locations/global/workloadIdentityPools/submit-federation/providers/aws-prod";
 const EMAIL = "ga4-report-pull@diyaccounting-ga4.iam.gserviceaccount.com";
 
 describe("ga4AuthMode", () => {

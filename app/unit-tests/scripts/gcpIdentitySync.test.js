@@ -17,12 +17,17 @@ import {
   credentialConfigPath,
   writeCredentialConfigs,
   WORKLOAD_IDENTITY_USER_ROLE,
+  forbiddenReason,
+  disabledApiName,
+  planWhenApiDisabled,
+  poolName,
+  providerName,
 } from "../../../scripts/gcp-identity-sync.js";
 
 const SAMPLE_TOML = `
 [project]
 id = "diyaccounting-ga4"
-number = "670010122633"
+number = "958354756046"
 
 [service_account]
 email = "ga4-report-pull@diyaccounting-ga4.iam.gserviceaccount.com"
@@ -61,7 +66,7 @@ display_name = "GitHub Actions and the submit Lambdas"
     "attribute.aws_role" = "assertion.arn.extract('assumed-role/{role}/')"
 `;
 
-const POOL = "projects/670010122633/locations/global/workloadIdentityPools/submit-federation";
+const POOL = "projects/958354756046/locations/global/workloadIdentityPools/submit-federation";
 
 function liveMatching(config) {
   const providers = {};
@@ -73,7 +78,7 @@ function liveMatching(config) {
       bindings: [
         {
           role: WORKLOAD_IDENTITY_USER_ROLE,
-          members: config.providers.map((p) => principalSetMember("670010122633", "submit-federation", p.principalSet)),
+          members: config.providers.map((p) => principalSetMember("958354756046", "submit-federation", p.principalSet)),
         },
       ],
     },
@@ -95,7 +100,7 @@ describe("gcp-identity-sync parseArgs", () => {
 describe("gcp-identity-sync parseConfig", () => {
   it("reads the project, service account, pool and providers", () => {
     const config = parseConfig(SAMPLE_TOML);
-    expect(config.project).toEqual({ id: "diyaccounting-ga4", number: "670010122633" });
+    expect(config.project).toEqual({ id: "diyaccounting-ga4", number: "958354756046" });
     expect(config.serviceAccount.email).toBe("ga4-report-pull@diyaccounting-ga4.iam.gserviceaccount.com");
     expect(config.pool).toEqual({ id: "submit-federation", displayName: "GitHub Actions and the submit Lambdas" });
     expect(config.providers.map((p) => [p.id, p.type])).toEqual([
@@ -190,7 +195,7 @@ describe("gcp-identity-sync providerDiff", () => {
 
 describe("gcp-identity-sync credential configuration", () => {
   it("names the provider audience under the project number", () => {
-    expect(providerAudience("670010122633", "submit-federation", "aws-prod")).toBe(`//iam.googleapis.com/${POOL}/providers/aws-prod`);
+    expect(providerAudience("958354756046", "submit-federation", "aws-prod")).toBe(`//iam.googleapis.com/${POOL}/providers/aws-prod`);
   });
 
   it("builds the aws external-account configuration with no secret in it", () => {
@@ -221,5 +226,76 @@ describe("gcp-identity-sync credential configuration", () => {
     } finally {
       fs.rmSync(root, { recursive: true, force: true });
     }
+  });
+});
+
+describe("forbiddenReason", () => {
+  it("quotes the API's message and the ErrorInfo reason out of a JSON error body", () => {
+    const body =
+      '{"error":{"code":403,"message":"Request had insufficient authentication scopes.","status":"PERMISSION_DENIED","details":[{"@type":"type.googleapis.com/google.rpc.ErrorInfo","reason":"ACCESS_TOKEN_SCOPE_INSUFFICIENT","domain":"googleapis.com"}]}}';
+    expect(forbiddenReason(body)).toBe("Request had insufficient authentication scopes. (ACCESS_TOKEN_SCOPE_INSUFFICIENT)");
+  });
+
+  it("quotes a disabled-API message on its own when the body carries no ErrorInfo reason", () => {
+    const body =
+      '{"error":{"code":403,"message":"Identity and Access Management (IAM) API has not been used in project 958354756046 before or it is disabled.","status":"PERMISSION_DENIED"}}';
+    expect(forbiddenReason(body)).toBe(
+      "Identity and Access Management (IAM) API has not been used in project 958354756046 before or it is disabled.",
+    );
+  });
+
+  it("falls back to the raw text when the body is not JSON", () => {
+    expect(forbiddenReason("Forbidden")).toBe("Forbidden");
+  });
+});
+
+const DISABLED_API_BODY =
+  '{"error":{"code":403,"message":"Identity and Access Management (IAM) API has not been used in project 958354756046 before or it is disabled. Enable it by visiting https://console.developers.google.com/apis/api/iam.googleapis.com/overview?project=958354756046 then retry. If you enabled this API recently, wait a few minutes for the action to propagate to our systems and retry.","status":"PERMISSION_DENIED","details":[{"@type":"type.googleapis.com/google.rpc.ErrorInfo","reason":"SERVICE_DISABLED","domain":"googleapis.com","metadata":{"service":"iam.googleapis.com","consumer":"projects/958354756046"}}]}}';
+const DISABLED_API_ERROR = () =>
+  new Error(
+    `403 from GET https://iam.googleapis.com/v1/projects/958354756046/locations/global/workloadIdentityPools/submit-federation: ${forbiddenReason(DISABLED_API_BODY)}`,
+  );
+
+describe("disabledApiName", () => {
+  it("names the API a disabled-API 403 refers to", () => {
+    expect(disabledApiName(DISABLED_API_ERROR().message)).toBe("Identity and Access Management (IAM)");
+  });
+
+  it("answers null for a scope or role refusal", () => {
+    expect(
+      disabledApiName("403 from GET https://x: Request had insufficient authentication scopes. (ACCESS_TOKEN_SCOPE_INSUFFICIENT)"),
+    ).toBeNull();
+    expect(disabledApiName("403 from GET https://x: The caller does not have permission")).toBeNull();
+  });
+});
+
+describe("planWhenApiDisabled", () => {
+  const config = parseConfig(SAMPLE_TOML);
+  config.project.number = "958354756046";
+
+  it("in plan mode answers one would-enable-then-create line per pool, provider and binding", () => {
+    const lines = planWhenApiDisabled(DISABLED_API_ERROR(), config, false);
+    expect(lines).not.toBeNull();
+    expect(lines[0]).toBe(
+      `pool ${poolName("958354756046", config.pool.id)}: the Identity and Access Management (IAM) API is disabled (would enable, then create)`,
+    );
+    for (const provider of config.providers) {
+      expect(lines).toContain(
+        `provider ${providerName("958354756046", config.pool.id, provider.id)}: the Identity and Access Management (IAM) API is disabled (would enable, then create)`,
+      );
+    }
+    expect(lines[lines.length - 1]).toBe(
+      `${config.serviceAccount.email}: roles/iam.workloadIdentityUser for ${config.providers.length} principal set(s): the Identity and Access Management (IAM) API is disabled (would enable, then bind)`,
+    );
+    expect(lines).toHaveLength(2 + config.providers.length);
+  });
+
+  it("in apply mode answers null, so the 403 stays a hard failure with the quoted reason", () => {
+    expect(planWhenApiDisabled(DISABLED_API_ERROR(), config, true)).toBeNull();
+  });
+
+  it("answers null for any refusal that is not a disabled API", () => {
+    expect(planWhenApiDisabled(new Error("403 from GET https://x: The caller does not have permission"), config, false)).toBeNull();
+    expect(planWhenApiDisabled(new Error("500 from GET https://x: boom"), config, false)).toBeNull();
   });
 });

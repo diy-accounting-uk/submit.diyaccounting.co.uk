@@ -5,7 +5,14 @@
 
 import { describe, test, expect } from "vitest";
 
-import { parseConfig, deriveProjectNumber, assertClientIdMatches, assertBrandMatches, assertScopesGranted } from "../../../scripts/google-oauth-assert.js";
+import {
+  parseConfig,
+  deriveProjectNumber,
+  assertClientIdMatches,
+  assertBrandMatches,
+  assertScopesGranted,
+  isStackOutsideThisAccount,
+} from "../../../scripts/google-oauth-assert.js";
 
 const SAMPLE_TOML = `
 [[client]]
@@ -47,7 +54,10 @@ describe("parseConfig", () => {
     expect(signIn.id).toBe("670010122633-j177nir959n1tdnd891uqsgj6fkrj6b1.apps.googleusercontent.com");
     expect(signIn.applicationType).toBe("web");
     expect(signIn.scopes).toEqual(["email", "openid", "profile"]);
-    expect(signIn.redirectUris).toEqual(["https://ci-auth.diyaccounting.co.uk/oauth2/idpresponse", "https://prod-auth.diyaccounting.co.uk/oauth2/idpresponse"]);
+    expect(signIn.redirectUris).toEqual([
+      "https://ci-auth.diyaccounting.co.uk/oauth2/idpresponse",
+      "https://prod-auth.diyaccounting.co.uk/oauth2/idpresponse",
+    ]);
     expect(signIn.environments).toEqual({
       ci: { secret: "ci/submit/google/client_secret", identityStack: "ci-env-IdentityStack" },
       prod: { secret: "prod/submit/google/client_secret", identityStack: "prod-env-IdentityStack" },
@@ -116,16 +126,34 @@ describe("assertScopesGranted", () => {
   test("passes when every declared scope is granted", () => {
     const granted = "https://www.googleapis.com/auth/youtube.upload https://www.googleapis.com/auth/youtube.force-ssl";
     expect(() =>
-      assertScopesGranted("youtube_upload", ["https://www.googleapis.com/auth/youtube.upload", "https://www.googleapis.com/auth/youtube.force-ssl"], granted),
+      assertScopesGranted(
+        "youtube_upload",
+        ["https://www.googleapis.com/auth/youtube.upload", "https://www.googleapis.com/auth/youtube.force-ssl"],
+        granted,
+      ),
     ).not.toThrow();
   });
 
   test("tolerates extra granted scopes the file doesn't track", () => {
-    const granted = "https://www.googleapis.com/auth/youtube.upload https://www.googleapis.com/auth/youtube.force-ssl https://www.googleapis.com/auth/userinfo.email";
+    const granted =
+      "https://www.googleapis.com/auth/youtube.upload https://www.googleapis.com/auth/youtube.force-ssl https://www.googleapis.com/auth/userinfo.email";
     expect(() => assertScopesGranted("youtube_upload", ["https://www.googleapis.com/auth/youtube.upload"], granted)).not.toThrow();
   });
 
   test("throws naming the missing scope", () => {
     expect(() => assertScopesGranted("youtube_upload", ["https://www.googleapis.com/auth/youtube.upload"], "")).toThrow(/youtube\.upload/);
+  });
+});
+
+describe("isStackOutsideThisAccount", () => {
+  test("a stack the assumed account does not hold is skipped, not failed", () => {
+    expect(isStackOutsideThisAccount(new Error("Stack with id ci-env-IdentityStack does not exist"))).toBe(true);
+  });
+
+  test("any other CloudFormation or Cognito failure stays a failure", () => {
+    expect(isStackOutsideThisAccount(new Error("Stack ci-env-IdentityStack is missing the UserPoolId or CognitoGoogleIdpId output"))).toBe(
+      false,
+    );
+    expect(isStackOutsideThisAccount(new Error("AccessDenied"))).toBe(false);
   });
 });

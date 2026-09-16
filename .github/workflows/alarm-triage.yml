@@ -163,17 +163,17 @@ jobs:
 
       - name: Checkout
         if: steps.role.outputs.configured == 'true'
-        uses: actions/checkout@v7
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
 
       - name: Set up Node
         if: steps.role.outputs.configured == 'true'
-        uses: actions/setup-node@v7
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7
         with:
           node-version: ${{ env.NODE_VERSION }}
 
       - name: Configure AWS role via GitHub OIDC
         if: steps.role.outputs.configured == 'true'
-        uses: aws-actions/configure-aws-credentials@v6
+        uses: aws-actions/configure-aws-credentials@e1253824e5c10ff9df46874f81ed3ec929e19cfd # v6
         with:
           role-to-assume: ${{ vars.SUBMIT_ACTIONS_ROLE_ARN }}
           aws-region: ${{ env.AWS_REGION }}
@@ -185,7 +185,7 @@ jobs:
 
       - name: Assume the read-only alarm triage role
         if: steps.role.outputs.configured == 'true'
-        uses: aws-actions/configure-aws-credentials@v6
+        uses: aws-actions/configure-aws-credentials@e1253824e5c10ff9df46874f81ed3ec929e19cfd # v6
         with:
           role-to-assume: ${{ vars.SUBMIT_ALARM_TRIAGE_ROLE_ARN }}
           aws-region: ${{ env.AWS_REGION }}

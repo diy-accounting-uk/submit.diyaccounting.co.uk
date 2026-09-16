@@ -41,10 +41,10 @@ const IAP_V1 = "https://iap.googleapis.com/v1";
 const BIGQUERY_V2 = "https://bigquery.googleapis.com/bigquery/v2";
 const DATA_TRANSFER_V1 = "https://bigquerydatatransfer.googleapis.com/v1";
 
-const SCOPES = [
-  "https://www.googleapis.com/auth/cloud-platform.read-only",
-  "https://www.googleapis.com/auth/analytics.readonly",
-];
+// cloud-platform rather than cloud-platform.read-only: the read-only scope does not cover the
+// Cloud Billing API or iam.serviceAccountKeys.list, and every call this script makes is a GET,
+// so the wider scope changes what the token may be asked for, not what the script does.
+const SCOPES = ["https://www.googleapis.com/auth/cloud-platform", "https://www.googleapis.com/auth/analytics.readonly"];
 
 export function parseArgs(argv) {
   const opts = {
@@ -96,7 +96,9 @@ export function shapeBudgets(budgetsListBody) {
   return (budgetsListBody.budgets ?? []).map((budget) => ({
     name: budget.name,
     displayName: budget.displayName,
-    amount: budget.amount?.specifiedAmount ? `${budget.amount.specifiedAmount.units ?? "0"} ${budget.amount.specifiedAmount.currencyCode ?? ""}`.trim() : "unspecified",
+    amount: budget.amount?.specifiedAmount
+      ? `${budget.amount.specifiedAmount.units ?? "0"} ${budget.amount.specifiedAmount.currencyCode ?? ""}`.trim()
+      : "unspecified",
     thresholds: (budget.thresholdRules ?? []).map((rule) => rule.thresholdPercent),
   }));
 }
@@ -173,11 +175,53 @@ export function shapeTransferConfigs(transferConfigsListBody) {
  * already-shaped rows, so a test can build the whole report from small fixtures without
  * touching the network functions below.
  */
+/**
+ * A read the inventory is not permitted to make becomes a finding line instead of a failure:
+ * an inventory is read-only and must never stop the apply that follows it. Answers the
+ * finding for a 403, or null for any other error, which the caller rethrows.
+ * @param {Error} error - the error a list call threw
+ * @param {string} what - the inventory section, e.g. "billing"
+ * @param {string} serviceAccountEmail - the identity the read ran as
+ * @param {string} remedy - what would permit the read
+ * @returns {string|null}
+ */
+export function findingForForbiddenRead(error, what, serviceAccountEmail, remedy) {
+  if (!/^403 /.test(error?.message ?? "")) return null;
+  const message = error.message;
+  let reason = remedy;
+  if (/ACCESS_TOKEN_SCOPE_INSUFFICIENT|insufficient authentication scopes/i.test(message)) reason = "the access token lacks the scope";
+  else {
+    const disabledApi = /([A-Za-z()\s]+ API) has not been used in project|([A-Za-z()\s]+ API)[^"]*it is disabled/i.exec(message);
+    if (disabledApi) reason = `the ${(disabledApi[1] ?? disabledApi[2]).trim()} is disabled in the project`;
+  }
+  return `${what}: not permitted for ${serviceAccountEmail} (${reason})`;
+}
+
+/**
+ * Runs one read of the inventory, or answers the fallback with a finding when the read is
+ * forbidden. Any other error is rethrown, so the script still fails on anything but permissions.
+ * @template T
+ * @param {{what: string, serviceAccountEmail: string, remedy: string}} read - what is being read, as whom, what would permit it
+ * @param {() => Promise<T>} fn - the read
+ * @param {T} fallback - the value to answer when the read is forbidden
+ * @returns {Promise<{value: T, finding: string|null}>}
+ */
+export async function readOrFinding(read, fn, fallback) {
+  try {
+    return { value: await fn(), finding: null };
+  } catch (error) {
+    const finding = findingForForbiddenRead(error, read.what, read.serviceAccountEmail, read.remedy);
+    if (finding === null) throw error;
+    return { value: fallback, finding };
+  }
+}
+
 export function buildInventoryReport({
   project,
   enabledServices,
   iamPolicy,
   budgets,
+  findings = [],
   ga4Accounts,
   ga4Properties,
   dataStreamsByProperty,
@@ -193,6 +237,7 @@ export function buildInventoryReport({
     enabledServices,
     iamPolicy,
     budgets,
+    findings,
     ga4Accounts,
     ga4Properties: ga4Properties.map((property) => ({
       ...property,
@@ -223,9 +268,17 @@ export function printInventory(report) {
 
   console.log(`Billing budgets (${report.budgets.length}):`);
   for (const budget of report.budgets) {
-    console.log(`  ${budget.displayName} (${budget.name}): ${budget.amount}, thresholds ${list(budget.thresholds.map((t) => `${t * 100}%`))}`);
+    console.log(
+      `  ${budget.displayName} (${budget.name}): ${budget.amount}, thresholds ${list(budget.thresholds.map((t) => `${t * 100}%`))}`,
+    );
   }
   console.log("");
+
+  if (report.findings.length > 0) {
+    console.log(`Findings (${report.findings.length}):`);
+    for (const finding of report.findings) console.log(`  ${finding}`);
+    console.log("");
+  }
 
   console.log(`GA4 accounts (${report.ga4Accounts.length}):`);
   for (const account of report.ga4Accounts) {
@@ -255,7 +308,9 @@ export function printInventory(report) {
   console.log("");
 
   console.log("IAP brand:");
-  console.log(report.iapBrand ? `  ${report.iapBrand.applicationTitle} (${report.iapBrand.name}), support ${report.iapBrand.supportEmail}` : "  none");
+  console.log(
+    report.iapBrand ? `  ${report.iapBrand.applicationTitle} (${report.iapBrand.name}), support ${report.iapBrand.supportEmail}` : "  none",
+  );
   console.log("");
 
   console.log(`BigQuery datasets (${report.bigQueryDatasets.length}):`);
@@ -294,7 +349,11 @@ async function paginate(fetchPage) {
 
 async function listEnabledServices(token, project) {
   const pages = await paginate((pageToken) =>
-    googleGet(`${SERVICE_USAGE_V1}/projects/${project}/services`, token, { filter: "state:ENABLED", pageSize: 200, ...(pageToken ? { pageToken } : {}) }),
+    googleGet(`${SERVICE_USAGE_V1}/projects/${project}/services`, token, {
+      filter: "state:ENABLED",
+      pageSize: 200,
+      ...(pageToken ? { pageToken } : {}),
+    }),
   );
   return shapeEnabledServices({ services: pages.flatMap((page) => page.services ?? []) });
 }
@@ -302,7 +361,7 @@ async function listEnabledServices(token, project) {
 async function getProjectIamPolicy(token, project) {
   const res = await fetch(`${RESOURCE_MANAGER_V3}/projects/${project}:getIamPolicy`, {
     method: "POST",
-    headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
+    headers: { "Authorization": `Bearer ${token}`, "Content-Type": "application/json" },
     body: "{}",
   });
   if (!res.ok) throw new Error(`${res.status} getting IAM policy for ${project}: ${(await res.text()).slice(0, 300)}`);
@@ -324,13 +383,19 @@ async function listBudgets(token, project) {
 }
 
 async function listGa4Accounts(token) {
-  const pages = await paginate((pageToken) => googleGet(`${ANALYTICS_ADMIN_V1ALPHA}/accounts`, token, { showDeleted: true, ...(pageToken ? { pageToken } : {}) }));
+  const pages = await paginate((pageToken) =>
+    googleGet(`${ANALYTICS_ADMIN_V1ALPHA}/accounts`, token, { showDeleted: true, ...(pageToken ? { pageToken } : {}) }),
+  );
   return shapeGa4Accounts({ accounts: pages.flatMap((page) => page.accounts ?? []) });
 }
 
 async function listGa4Properties(token, accountName) {
   const pages = await paginate((pageToken) =>
-    googleGet(`${ANALYTICS_ADMIN_V1ALPHA}/properties`, token, { filter: `parent:${accountName}`, showDeleted: true, ...(pageToken ? { pageToken } : {}) }),
+    googleGet(`${ANALYTICS_ADMIN_V1ALPHA}/properties`, token, {
+      filter: `parent:${accountName}`,
+      showDeleted: true,
+      ...(pageToken ? { pageToken } : {}),
+    }),
   );
   return shapeGa4Properties({ properties: pages.flatMap((page) => page.properties ?? []) });
 }
@@ -357,7 +422,9 @@ async function listIapBrand(token, projectNumber) {
 }
 
 async function listBigQueryDatasets(token, project) {
-  const pages = await paginate((pageToken) => googleGet(`${BIGQUERY_V2}/projects/${project}/datasets`, token, pageToken ? { pageToken } : {}));
+  const pages = await paginate((pageToken) =>
+    googleGet(`${BIGQUERY_V2}/projects/${project}/datasets`, token, pageToken ? { pageToken } : {}),
+  );
   return shapeBigQueryDatasets({ datasets: pages.flatMap((page) => page.datasets ?? []) });
 }
 
@@ -374,35 +441,68 @@ async function listTransferConfigs(token, project, location) {
 export async function main(argv = process.argv.slice(2)) {
   const opts = parseArgs(argv);
 
-  const credentialsJson = await resolveServiceAccountCredentialsJson({ jsonEnvVar: "GA4_SERVICE_ACCOUNT_JSON", arnEnvVar: "GA4_SERVICE_ACCOUNT_ARN" });
+  const credentialsJson = await resolveServiceAccountCredentialsJson({
+    jsonEnvVar: "GA4_SERVICE_ACCOUNT_JSON",
+    arnEnvVar: "GA4_SERVICE_ACCOUNT_ARN",
+  });
   const token = await getAccessToken(createGoogleAuthClient(credentialsJson, SCOPES));
 
+  const findings = [];
+  const read = async (what, remedy, fn, fallback) => {
+    const result = await readOrFinding({ what, serviceAccountEmail: opts.serviceAccountEmail, remedy }, fn, fallback);
+    if (result.finding !== null) findings.push(result.finding);
+    return result.value;
+  };
+
   const [enabledServices, iamPolicy, budgets, projectNumber, ga4Accounts, serviceAccountKeys, bigQueryDatasets] = await Promise.all([
-    listEnabledServices(token, opts.project),
-    getProjectIamPolicy(token, opts.project),
-    listBudgets(token, opts.project),
-    getProjectNumber(token, opts.project),
-    listGa4Accounts(token),
-    listServiceAccountKeys(token, opts.project, opts.serviceAccountEmail),
-    listBigQueryDatasets(token, opts.project),
+    read("enabled services", "serviceusage.services.list missing", () => listEnabledServices(token, opts.project), []),
+    read("project IAM policy", "resourcemanager.projects.getIamPolicy missing", () => getProjectIamPolicy(token, opts.project), []),
+    read("billing", "roles/billing.viewer missing", () => listBudgets(token, opts.project), []),
+    read("project number", "resourcemanager.projects.get missing", () => getProjectNumber(token, opts.project), null),
+    read("GA4 accounts", "Analytics Admin access missing", () => listGa4Accounts(token), []),
+    read(
+      "service account keys",
+      "iam.serviceAccountKeys.list missing",
+      () => listServiceAccountKeys(token, opts.project, opts.serviceAccountEmail),
+      [],
+    ),
+    read("BigQuery datasets", "bigquery.datasets.get missing", () => listBigQueryDatasets(token, opts.project), []),
   ]);
 
-  const accountName = ga4Accounts.find((account) => account.name === `accounts/${opts.ga4AccountId}`)?.name ?? `accounts/${opts.ga4AccountId}`;
-  const ga4Properties = await listGa4Properties(token, accountName);
+  const accountName =
+    ga4Accounts.find((account) => account.name === `accounts/${opts.ga4AccountId}`)?.name ?? `accounts/${opts.ga4AccountId}`;
+  const ga4Properties = await read("GA4 properties", "Analytics Admin access missing", () => listGa4Properties(token, accountName), []);
 
   const dataStreamsByProperty = {};
   const keyEventsByProperty = {};
   const bigQueryLinksByProperty = {};
   for (const property of ga4Properties) {
     if (property.deleted) continue;
-    dataStreamsByProperty[property.name] = await listDataStreams(token, property.name);
-    keyEventsByProperty[property.name] = await listKeyEvents(token, property.name);
-    bigQueryLinksByProperty[property.name] = await listBigQueryLinks(token, property.name);
+    dataStreamsByProperty[property.name] = await read(
+      `data streams of ${property.name}`,
+      "Analytics Admin access missing",
+      () => listDataStreams(token, property.name),
+      [],
+    );
+    keyEventsByProperty[property.name] = await read(
+      `key events of ${property.name}`,
+      "Analytics Admin access missing",
+      () => listKeyEvents(token, property.name),
+      [],
+    );
+    bigQueryLinksByProperty[property.name] = await read(
+      `BigQuery links of ${property.name}`,
+      "Analytics Admin access missing",
+      () => listBigQueryLinks(token, property.name),
+      [],
+    );
   }
 
   const [iapBrand, transferConfigs] = await Promise.all([
-    listIapBrand(token, projectNumber),
-    listTransferConfigs(token, opts.project, opts.location),
+    projectNumber === null
+      ? (findings.push("IAP brand: not read, the project number was not permitted"), null)
+      : read("IAP brand", "iap.brands.list missing", () => listIapBrand(token, projectNumber), null),
+    read("BigQuery transfer configs", "bigquery.transfers.get missing", () => listTransferConfigs(token, opts.project, opts.location), []),
   ]);
 
   const report = buildInventoryReport({
@@ -410,6 +510,7 @@ export async function main(argv = process.argv.slice(2)) {
     enabledServices,
     iamPolicy,
     budgets,
+    findings,
     ga4Accounts,
     ga4Properties,
     dataStreamsByProperty,

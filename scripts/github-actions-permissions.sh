@@ -19,7 +19,7 @@ REQUIRE_SHA=false
 
 # Every third-party action the workflows use; actions/* and github/* are
 # covered by github_owned_allowed.
-PATTERNS='["aws-actions/configure-aws-credentials@*","docker/setup-buildx-action@*","docker/setup-qemu-action@*","astral-sh/setup-uv@*","softprops/action-gh-release@*"]'
+PATTERNS='["aws-actions/configure-aws-credentials@*","docker/setup-buildx-action@*","docker/setup-qemu-action@*","astral-sh/setup-uv@*","softprops/action-gh-release@*","google-github-actions/auth@*"]'
 
 echo "Setting allowed_actions=selected, sha_pinning_required=${REQUIRE_SHA} on ${REPO}"
 gh api -X PUT "repos/${REPO}/actions/permissions" \
