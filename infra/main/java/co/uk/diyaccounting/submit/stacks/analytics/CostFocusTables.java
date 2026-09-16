@@ -60,6 +60,11 @@ public class CostFocusTables {
         var parameters = new LinkedHashMap<String, String>();
         parameters.put("classification", "parquet");
         parameters.put("has_encrypted_data", "false");
+        // The export's Parquet fields are PascalCase with no separator (ChargeCategory), which
+        // never matches these snake_case columns by name, so columns resolve by position: both
+        // orders come from CostFocusIngestion.FOCUS_1_2_COLUMNS (buildColumns() here, the SELECT in
+        // CostExportStack).
+        parameters.put("parquet.column.index.access", "true");
         parameters.put("projection.enabled", "true");
         parameters.put("projection.dt.type", "date");
         parameters.put("projection.dt.format", "yyyy-MM-dd");
@@ -104,14 +109,14 @@ public class CostFocusTables {
             "string", // BillingAccountId
             "string", // BillingAccountName
             "string", // BillingCurrency
-            "string", // BillingPeriodStart
-            "string", // BillingPeriodEnd
+            "timestamp", // BillingPeriodStart
+            "timestamp", // BillingPeriodEnd
             "string", // ChargeCategory
             "string", // ChargeClass
             "string", // ChargeDescription
             "string", // ChargeFrequency
-            "string", // ChargePeriodStart
-            "string", // ChargePeriodEnd
+            "timestamp", // ChargePeriodStart
+            "timestamp", // ChargePeriodEnd
             "double", // BilledCost
             "double", // ContractedCost
             "double", // EffectiveCost
@@ -142,7 +147,7 @@ public class CostFocusTables {
             "string", // SubAccountId
             "string", // SubAccountName
             "map<string,string>", // Tags
-            "string", // x_Discounts
+            "map<string,double>", // x_Discounts
             "string", // x_Operation
             "string" // x_ServiceCode
             );
