@@ -33,13 +33,13 @@ email = "ga4-report-pull@diyaccounting-ga4.iam.gserviceaccount.com"
 
 [workload_identity_pool]
 id = "submit-federation"
-display_name = "GitHub Actions and the submit Lambdas"
+display_name = "GitHub Actions + submit Lambdas"
 
   # GitHub Actions on this repository. The attribute condition pins the repository, so a fork
   # or a sibling repository presenting a token from the same issuer is refused.
   [[workload_identity_pool.provider]]
   id = "github"
-  display_name = "GitHub Actions, submit.diyaccounting.co.uk"
+  display_name = "GitHub Actions, submit repo"
   type = "oidc"
   issuer_uri = "https://token.actions.githubusercontent.com"
   attribute_condition = 'assertion.repository == "diy-accounting-uk/submit.diyaccounting.co.uk"'
