@@ -86,6 +86,39 @@ class AccountStackTest {
         assertEquals(List.of(), githubSecretReadResources(template));
     }
 
+    @Test
+    @SuppressWarnings("unchecked")
+    void operatorSnapshotGetLambdaCanReadSaltSecret() {
+        AccountStack stack = synthAccountStack(null);
+        Template template = Template.fromStack(stack);
+
+        var snapshotGetFunctions = template.findResources("AWS::Lambda::Function").values().stream()
+                .map(resource -> (Map<String, Object>) resource.get("Properties"))
+                .filter(properties -> String.valueOf(properties.get("FunctionName")).contains("operator-snapshot-get"))
+                .toList();
+        assertEquals(1, snapshotGetFunctions.size(), "expected exactly one operator-snapshot-get Lambda");
+        var roleRef = (Map<String, Object>) snapshotGetFunctions.get(0).get("Role");
+        var roleLogicalId = String.valueOf(((List<Object>) roleRef.get("Fn::GetAtt")).get(0));
+
+        var saltSecretReadResources = template.findResources("AWS::IAM::Policy").values().stream()
+                .map(policy -> (Map<String, Object>) policy.get("Properties"))
+                .filter(properties -> ((List<Map<String, Object>>) properties.get("Roles")).stream()
+                        .anyMatch(role -> roleLogicalId.equals(String.valueOf(role.get("Ref")))))
+                .map(properties -> (Map<String, Object>) properties.get("PolicyDocument"))
+                .flatMap(document -> ((List<Map<String, Object>>) document.get("Statement")).stream())
+                .filter(statement -> String.valueOf(statement.get("Action")).contains("secretsmanager:GetSecretValue"))
+                .map(statement -> statement.get("Resource"))
+                .flatMap(resource -> resource instanceof List<?> list
+                        ? list.stream().map(String::valueOf)
+                        : Stream.of(String.valueOf(resource)))
+                .filter(resource -> resource.contains("/submit/user-sub-hash-salt"))
+                .toList();
+        assertEquals(
+                1,
+                saltSecretReadResources.size(),
+                "the operator snapshot GET Lambda's own role must be able to read the user-sub-hash-salt secret");
+    }
+
     // Every Secrets Manager read this stack grants on a GitHub token; the salt and email-hash
     // secret grants the bundle Lambdas carry are not GitHub tokens and are left out.
     @SuppressWarnings("unchecked")

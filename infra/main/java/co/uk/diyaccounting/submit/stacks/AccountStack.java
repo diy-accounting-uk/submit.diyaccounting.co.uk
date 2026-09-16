@@ -531,6 +531,8 @@ public class AccountStack extends Stack {
         this.lambdaFunctionProps.add(this.operatorSnapshotGetLambdaProps);
 
         bundlesTable.grant(this.operatorSnapshotGetLambda, "dynamodb:Query");
+        SubHashSaltHelper.grantSaltAccess(
+                this.operatorSnapshotGetLambda, region, account, props.envName());
         this.operatorSnapshotGetLambda.addToRolePolicy(PolicyStatement.Builder.create()
                 .effect(Effect.ALLOW)
                 .actions(List.of("s3:GetObject"))
