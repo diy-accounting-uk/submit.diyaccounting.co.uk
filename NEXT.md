@@ -16,11 +16,11 @@ runs), and for Claude Code steps the **Model** a sub-agent should use (Fable > O
 Haiku; the lowest tier that fits). Anything touching code goes through a `claude/*` branch and
 PR; the operator merges.
 
-**Prod runs deployment prod-a84311b** (PR #257, run 35085063660, promoted under the `deploy-ops` gate
-at 10:5x UTC on 2026-09-16; the same run destroyed prod-7137772, which PR #255's run had promoted at
-09:5x), verified against AWS at 11:2x UTC on 2026-09-16: nine stacks CREATE_COMPLETE, every composite
-alarm OK, re-verified 19:2x UTC. **ci**: `ci-claudc4d2` (the b49 branch, created 18:24 UTC, ten
-stacks) carries PR #266's redeploy and self-destructs at about 22:24 UTC; nothing else stands.
+**Prod runs deployment prod-f080052** (PR #266, run 35142477824, promoted under the `deploy-ops` gate
+at 20:3x UTC on 2026-09-16 with the pool at `Mfa.REQUIRED`; the same run destroyed prod-a84311b),
+verified against AWS at 20:5x UTC: the pointer names it and the deploy's own prod suites passed.
+**ci**: `ci-claudc4d2` (the b49 branch, created 18:24 UTC) self-destructs at about 22:24 UTC;
+nothing else stands.
 
 The board runs in five sections, in this order: **in flight** (a branch, a pull request or a run
 in motion, each named in the row), **machine-only**, **human and machine**, **human-only**,
@@ -39,47 +39,6 @@ Every item names its model: the lowest tier that fits (Fable > Opus > Sonnet > H
 `none` for a human step.
 
 ## In flight
-
-- [ ] **B55.2. Google federation: the Lambdas' nightly proof, then the key goes.** The pool
-  `submit-federation` and its three providers exist (apply run 35050290089); the federated GitHub
-  path is proven (plan run 35050387182) and the prod environment's `SUBMIT_GOOGLE_AUTH_MODE` is
-  `federated` since 03:4x UTC on 2026-09-16. Wave b45 (PR #247, merged 04:1x UTC on
-  2026-09-16) puts `GA4_AUTH_MODE`, `GOOGLE_WIF_AUDIENCE` and `GA4_SERVICE_ACCOUNT_EMAIL` on the
-  three GA4 Lambdas, ci in federated mode and prod on the key; `main`'s deploy carries them. Then: one
-  nightly run of each Lambda on ci in federated mode
-  (the provider's condition matches the generated role names, reasoned from the naming rule and
-  proven by that run), then `.env.prod` to `federated`, then the key, both secrets, the
-  `ga4/service_account` row, `scripts/gcp-key-rotate.js`, `google/identity.toml`'s
-  `[service_account.key_rotation]` block and `google-key-rotate.yml` go (the removal list with file
-  and line is in the b46 wave's agent report, 08:0x UTC on 2026-09-16). The three Lambdas run only
-  inside the step function `ci-env-analytics-nightly` (`cron(15 2 ? * MON *)` UTC), whose last two
-  runs (2026-09-07, 2026-09-14) failed on `ga4-event-export-pull`'s missing BigQuery export table
-  for the day, a data-availability error unrelated to auth. No federated invocation exists yet.
-  **Source**: B55; PRs #237, #241, #245, #247; `PLAN_GOOGLE_AS_CODE.md` items 9 and 11. **Owner**:
-  Claude Code. **Model**: Sonnet. In flight on `claude/b51-board` (worktree `b51-wif`): the operator's
-  start of `ci-env-analytics-nightly` at 19:28 UTC on 2026-09-16 proved `ga4-daily-pull` and
-  `ga4-report-pull` federated and failed `ga4-event-export-pull` on "The size of mapped attribute
-  google.subject exceeds the 127 bytes limit", so `google/identity.toml`'s AWS providers map the
-  subject to the role name instead of the assumed-role ARN; after `google apply` runs on `main`, the
-  operator starts the state machine once more (`BRIEF_OPERATOR_TASKS_2026-09-16.md` task 5), and
-  the key removal follows the clean run. **Size**: ~12 files.
-
-- [ ] **O28. Send `Gov-Client-Multi-Factor` on every request: mandate MFA in the pool.** Every
-  monthly advisory HMRC has raised is this header missing (`../REPORT_HMRC_HEADER_ADVISORIES.md`).
-  Step 2b is on main (#198, b0e3d2be): the browser sends its Cognito ID token as
-  `X-Id-Token`, `customAuthorizer.js` verifies it against the access token's `sub` and passes
-  `custom:mfa_method`, the federated flag and `auth_time` to `buildFraudHeaders.js`, which builds
-  the header (TOTP for an enrolled native user, OTHER for federated Google) and warns
-  `HMRC REQUIRED HEADER MISSING:` for a password-only native user, whom only the pool setting
-  reaches. The prod async-requests table holds nothing (TTL), so the scan could not size the
-  cohorts; `prod-env-hmrc-api-requests` keeps 20 days and showed 3 production VAT POSTs from 3
-  users, 2 without the header.
-  Merged to `main` as f0800529 (PR #266, 19:5x UTC on 2026-09-16): `Mfa.REQUIRED` and the ci test
-  user's TOTP rotation under it (`ensure-cognito-test-user.js` answers `MFA_SETUP` and
-  `SOFTWARE_TOKEN_MFA`, each lane's secret at `<env>/submit/test/<lane>/totp-secret`); the branch
-  redeploy's ci suites, `authBehaviour` included, passed with enrolment enforced. Main's deploy
-  carries it to prod; the row closes when that deploy promotes. **Source**: `../REPORT_HMRC_HEADER_ADVISORIES.md`.
-  **Owner**: Claude Code. **Model**: Haiku. **Size**: ~6 files.
 
 ## Machine-only
 
@@ -116,6 +75,34 @@ Every item names its model: the lowest tier that fits (Fable > Opus > Sonnet > H
   bypass. **Source**: BACKLOG 56. **Owner**: Claude Code. **Model**: Sonnet. **Size**: ~1 file.
 
 ## Human and machine
+
+- [ ] **B55.2. Google federation: the Lambdas' nightly proof, then the key goes.** The pool
+  `submit-federation` and its three providers exist (apply run 35050290089); the federated GitHub
+  path is proven (plan run 35050387182) and the prod environment's `SUBMIT_GOOGLE_AUTH_MODE` is
+  `federated` since 03:4x UTC on 2026-09-16. Wave b45 (PR #247, merged 04:1x UTC on
+  2026-09-16) puts `GA4_AUTH_MODE`, `GOOGLE_WIF_AUDIENCE` and `GA4_SERVICE_ACCOUNT_EMAIL` on the
+  three GA4 Lambdas, ci in federated mode and prod on the key; `main`'s deploy carries them. Then: one
+  nightly run of each Lambda on ci in federated mode
+  (the provider's condition matches the generated role names, reasoned from the naming rule and
+  proven by that run), then `.env.prod` to `federated`, then the key, both secrets, the
+  `ga4/service_account` row, `scripts/gcp-key-rotate.js`, `google/identity.toml`'s
+  `[service_account.key_rotation]` block and `google-key-rotate.yml` go (the removal list with file
+  and line is in the b46 wave's agent report, 08:0x UTC on 2026-09-16). The three Lambdas run only
+  inside the step function `ci-env-analytics-nightly` (`cron(15 2 ? * MON *)` UTC), whose last two
+  runs (2026-09-07, 2026-09-14) failed on `ga4-event-export-pull`'s missing BigQuery export table
+  for the day, a data-availability error unrelated to auth. No federated invocation exists yet.
+  **Source**: B55; PRs #237, #241, #245, #247; `PLAN_GOOGLE_AS_CODE.md` items 9 and 11. **Owner**:
+  Operator starts, Claude Code finishes. **Model**: Sonnet. PR #271 (5cdaf30e, merged 20:5x UTC on
+  2026-09-16) maps both AWS providers' `google.subject` to the role name, after the operator's start
+  of `ci-env-analytics-nightly` at 19:28 UTC proved `ga4-daily-pull` and `ga4-report-pull` federated
+  and failed `ga4-event-export-pull` on Google's 127-byte subject limit; `google apply` on `main`
+  carries the mapping. The human half: one more start of the state machine
+  (`BRIEF_OPERATOR_TASKS_2026-09-16.md` task 5). The machine half after a clean run: `.env.prod` to
+  `federated`, the key-mode code out of the three Lambdas and `IngestionStack`, the secret step and
+  `GA4_SERVICE_ACCOUNT_ARN` out of `deploy-environment.yml`, `google-key-rotate.yml`,
+  `scripts/gcp-key-rotate.js`, `google/identity.toml`'s `[service_account.key_rotation]` block and
+  the `ga4/service_account` row gone, then the operator deletes `GA4_SERVICE_ACCOUNT_JSON` from both
+  GitHub environments. **Size**: ~12 files.
 
 - [ ] **B11.T10. ITSA phase 2: the recognition pack.** `PLAN_ITSA_PHASE_2.md` T10, its inputs (T7r, T21, T22) on `main`:
   `_developers/hmrc/ITSA_PRODUCTION_APPROVALS_CHECKLIST.md`, an ITSA pass over the two
