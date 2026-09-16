@@ -19,7 +19,7 @@ PR; the operator merges.
 **Prod runs deployment prod-a84311b** (PR #257, run 35085063660, promoted under the `deploy-ops` gate
 at 10:5x UTC on 2026-09-16; the same run destroyed prod-7137772, which PR #255's run had promoted at
 09:5x), verified against AWS at 11:2x UTC on 2026-09-16: nine stacks CREATE_COMPLETE, every composite
-alarm OK. **ci**: `ci-claud6618` (the b46 branch, created 08:29 UTC) is self-destructing since
+alarm OK; the SSO session expired at 16:5x UTC. **ci**: `ci-claud6618` (the b46 branch, created 08:29 UTC) is self-destructing since
 12:3x UTC and `ci-claudaafa` (the b47 branch, 09:46 UTC, last-known-good) goes at about 13:46 UTC;
 nothing else stands.
 
@@ -43,13 +43,6 @@ Every item names its model: the lowest tier that fits (Fable > Opus > Sonnet > H
 
 ## Machine-only
 
-- [ ] **B52y.3. The security lake nightly's fix is on prod; the next nightly proves it.** PR #255
-  (57d7c31e) degrades a failed GitHub alert endpoint to a null row, and main's environment deploy
-  (run 35078117666, 09:5x UTC on 2026-09-16) carried it. Read the 03:15 UTC run on 2026-09-17 in
-  `/aws/lambda/prod-env-security-lake-nightly`: no "Invoke Error", a warn line for `code_scanning`
-  (null until O49), rows written for the day; then close #249. **Source**: issue #249. **Owner**:
-  Claude Code. **Model**: Haiku. **Size**: ~0 files.
-
 - [ ] **B30ad. The ci sweep's second trigger is on `main`; its first run proves it.** PR #259
   (58290819, merged 12:0x UTC on 2026-09-16) adds `workflow_run` on `deploy` completion to
   `destroy-ci.yml`, routed down the sweep path like `schedule`; the cron stays (it fired one or two
@@ -60,16 +53,6 @@ Every item names its model: the lowest tier that fits (Fable > Opus > Sonnet > H
   By hand meanwhile: `gh workflow run destroy-ci.yml --ref main -f sweep-for-stacks=true`.
   **Source**: this board; `destroy-ci.yml`. **Owner**: Claude Code. **Model**: Haiku. **Size**:
   ~0 files.
-
-- [ ] **B52y.4. The cost views are live; check the Glue Data Quality ruleset after its next run.**
-  PR #255 (319a9e89) made `cost_focus` resolve its Parquet columns by position and typed the four
-  period columns and `x_Discounts` as the file has them; after main's environment deploy
-  `v_cost_daily` answers 5,871 rows for 2026-09-01 to 09-15 (11:2x UTC on 2026-09-16). Left: Glue
-  Data Quality reads the table through Spark, which may not honour `parquet.column.index.access`,
-  so `COST_FOCUS_RULESET`'s `IsComplete "billed_cost"` (`DataQuality.java` ~99–105) may still report
-  incomplete; read the ruleset's next result and, if it does, give the rules the positional reader
-  or the Parquet names. **Source**: B52y.2's snapshot check; `PLAN_ONE_STOP_DASHBOARD.md` D13.
-  **Owner**: Claude Code. **Model**: Sonnet. **Size**: ~1 file.
 
 ## Human and machine
 
@@ -187,24 +170,24 @@ Every item names its model: the lowest tier that fits (Fable > Opus > Sonnet > H
 
 ## Blocked
 
-- [ ] **B30ac.2. Prove the triage agent queries.** The telemetry policy is on the triage role since
-  `main`'s environment deploy of PR #237 (02:0x UTC on 2026-09-16). The dispatch
-  `gh workflow run alarm-triage.yml --ref main -f issue-number=229` at 02:14 UTC was skipped by the
-  workflow's own budget of three triage runs per 24 hours (four posted since 02:14 UTC on
-  2026-09-15); the budget frees after 16:41 UTC on 2026-09-16. Dispatch again then and read the new
-  comment on #229 for a quoted Logs Insights query and the alarm history; then close #229 and #230
-  (the old set's snapshot 500, fixed by B52v and gone with `prod-70b0a8e`). **Source**: B30ac; PR
-  #237. **Owner**: Claude Code. **Model**: Haiku. Blocked on the triage budget: from 16:41 UTC on 2026-09-16. **Size**:
-  ~0 files.
+- [ ] **B52y.3. The security lake nightly's fix is on prod; the next nightly proves it.** PR #255
+  (57d7c31e) degrades a failed GitHub alert endpoint to a null row, and main's environment deploy
+  (run 35078117666, 09:5x UTC on 2026-09-16) carried it. Read the 03:15 UTC run on 2026-09-17 in
+  `/aws/lambda/prod-env-security-lake-nightly`: no "Invoke Error", a warn line for `code_scanning`
+  (null until O49), rows written for the day; then close #249. **Source**: issue #249. **Owner**:
+  Claude Code. **Model**: Haiku. Blocked on the 03:15 UTC run on 2026-09-17 and on the AWS SSO session
+  (`aws sso login --sso-session diyaccounting`; expired 16:5x UTC on 2026-09-16). **Size**: ~0 files.
 
-- [ ] **B59.2. Prove the kill switch.** The parameter exists in both environments since the same
-  deploy; `agent-kill-switch.yml` set prod's to `on` (run 35047169215) and back to `off` (run
-  35047303339) at 02:1x UTC on 2026-09-16, but the triage dispatch meant to stop at the switch was
-  skipped by the triage budget first, so the stop is unproven. When B30ac.2's budget frees: switch
-  `on` for prod, dispatch `alarm-triage.yml -f issue-number=229` and see it fail at "Stop when the
-  agent kill switch is on", switch `off`, then run B30ac.2's dispatch. **Source**: B59; PR #237.
-  **Owner**: Claude Code. **Model**: Haiku. Blocked on the triage budget: from 16:41 UTC on 2026-09-16. **Size**: ~0
-  files.
+- [ ] **B52y.4. The cost views are live; check the Glue Data Quality ruleset after its next run.**
+  PR #255 (319a9e89) made `cost_focus` resolve its Parquet columns by position and typed the four
+  period columns and `x_Discounts` as the file has them; after main's environment deploy
+  `v_cost_daily` answers 5,871 rows for 2026-09-01 to 09-15 (11:2x UTC on 2026-09-16). Left: Glue
+  Data Quality reads the table through Spark, which may not honour `parquet.column.index.access`,
+  so `COST_FOCUS_RULESET`'s `IsComplete "billed_cost"` (`DataQuality.java` ~99–105) may still report
+  incomplete; read the ruleset's next result and, if it does, give the rules the positional reader
+  or the Parquet names. **Source**: B52y.2's snapshot check; `PLAN_ONE_STOP_DASHBOARD.md` D13.
+  **Owner**: Claude Code. **Model**: Sonnet. Blocked on the ruleset's next run and on the AWS SSO session
+  (`aws sso login --sso-session diyaccounting`; expired 16:5x UTC on 2026-09-16). **Size**: ~1 file.
 
 - [ ] **B55.2. Google federation: the Lambdas' nightly proof, then the key goes.** The pool
   `submit-federation` and its three providers exist (apply run 35050290089); the federated GitHub
