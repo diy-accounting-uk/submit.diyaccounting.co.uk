@@ -440,8 +440,30 @@ jobs:
             fi
 
             if [[ " ${STACK_DEPLOYMENT_NAMES_TO_KEEP[*]} " =~ " ${DEPLOYMENT_NAME} " ]]; then
-              echo "Skipping $DEPLOYMENT_NAME as it is in the keep list"
-              continue
+              # A self-destructed set leaves behind its own SelfDestructStack; last-known-good can point at a deployment with no other stacks
+              ONLY_SELF_DESTRUCT=true
+              for REGION in eu-west-2 us-east-1; do
+                if ! STACKS=$(aws cloudformation describe-stacks --region "$REGION" \
+                  --query "Stacks[?starts_with(StackName, '${DEPLOYMENT_NAME}-')].StackName" \
+                  --output text); then
+                  echo "describe-stacks failed for $DEPLOYMENT_NAME in $REGION; keeping it" >&2
+                  ONLY_SELF_DESTRUCT=false
+                  break
+                fi
+                for STACK_NAME in $STACKS; do
+                  [ -z "$STACK_NAME" ] && continue
+                  if [[ "$STACK_NAME" != *"-app-SelfDestructStack" ]] && [[ "$STACK_NAME" != *"-del-SelfDestructStack" ]]; then
+                    ONLY_SELF_DESTRUCT=false
+                    break 2
+                  fi
+                done
+              done
+
+              if [ "$ONLY_SELF_DESTRUCT" != "true" ]; then
+                echo "Skipping $DEPLOYMENT_NAME as it is in the keep list"
+                continue
+              fi
+              # Proceed with age check even though in keep list, since only SelfDestructStack remains
             fi
 
             DEPLOYMENT_AGE_HOURS=$(get_deployment_age_hours "$DEPLOYMENT_NAME")

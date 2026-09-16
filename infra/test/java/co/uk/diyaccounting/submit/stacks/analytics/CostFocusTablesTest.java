@@ -63,7 +63,9 @@ class CostFocusTablesTest {
                                         "projection.enabled",
                                         "true",
                                         "projection.dt.type",
-                                        "date")))))));
+                                        "date",
+                                        "parquet.column.index.access",
+                                        "true")))))));
     }
 
     @Test
@@ -135,5 +137,37 @@ class CostFocusTablesTest {
                                                         Map.of("Name", "service_name", "Type", "string"),
                                                         Map.of("Name", "sub_account_id", "Type", "string"),
                                                         Map.of("Name", "tags", "Type", "map<string,string>"))))))))));
+    }
+
+    /**
+     * The FOCUS export writes these five columns with a physical Parquet type that does not match
+     * the declared type an earlier version of this table used ({@code string} for a timestamp,
+     * {@code string} for a map): a type this far off the real data does not merely go unread, it
+     * makes the whole file unreadable ({@code HIVE_CANNOT_OPEN_SPLIT} on any query, {@code SELECT
+     * *} included).
+     */
+    @Test
+    void periodColumnsAreTimestampsAndDiscountsIsAStringToDoubleMap() {
+        Template template = synthTemplate();
+
+        template.hasResourceProperties(
+                "AWS::Glue::Table",
+                Match.objectLike(Map.of(
+                        "TableInput",
+                        Match.objectLike(Map.of(
+                                "StorageDescriptor",
+                                Match.objectLike(Map.of(
+                                        "Columns",
+                                        Match.arrayWith(
+                                                List.of(
+                                                        Map.of("Name", "billing_period_start", "Type", "timestamp"),
+                                                        Map.of("Name", "billing_period_end", "Type", "timestamp"),
+                                                        Map.of("Name", "charge_period_start", "Type", "timestamp"),
+                                                        Map.of("Name", "charge_period_end", "Type", "timestamp"),
+                                                        Map.of(
+                                                                "Name",
+                                                                "x_discounts",
+                                                                "Type",
+                                                                "map<string,double>"))))))))));
     }
 }
