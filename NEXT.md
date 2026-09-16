@@ -39,21 +39,22 @@ Every item names its model: the lowest tier that fits (Fable > Opus > Sonnet > H
 
 ## In flight
 
-## Machine-only
+Wave b45 rides **`claude/b45-board`, PR #247** (pushed 03:5x UTC on 2026-09-16, two commits: B55.4, the
+GA4 sync's variable finding, and B55.2's Lambda wiring); its branch deploy runs under the monitor.
 
-- [ ] **B55.2. Prove Google federation and wire the Lambdas.** Waves b43 and b44 (PRs #241, #245, merged
-  by 03:2x UTC on 2026-09-16) corrected the project number, enabled the IAM, IAM Credentials and STS
-  APIs before the sync, unmasked and fixed the five script failures `| tee` had hidden, fitted the
-  display names to 32 characters and took the key out of the workflow's env (B55.3). The push's apply
-  run creates the pool, the three providers and the binding; the federated plan dispatch
-  (`gh workflow run google-apply.yml --ref main -f auth-mode=federated -f apply=false`) then proves the
-  GitHub path, after which `gh variable set SUBMIT_GOOGLE_AUTH_MODE --env prod --body federated`. The
-  Lambdas: `IngestionStack.java` puts `GA4_AUTH_MODE`, `GOOGLE_WIF_AUDIENCE` (the `aws-ci` /
-  `aws-prod` audience the sync prints) and `GA4_SERVICE_ACCOUNT_EMAIL` on the three GA4 functions,
-  proven on ci by one nightly run of each in federated mode, then prod; then the key, both secrets,
-  the `ga4/service_account` row and the rotation script go. **Source**: B55; PRs #237, #241;
-  `PLAN_GOOGLE_AS_CODE.md` items 9 and 11. **Owner**: Claude Code. **Model**: Sonnet. **Size**: ~4
-  files.
+- [ ] **B55.2. Google federation: the Lambdas' nightly proof, then the key goes.** The pool
+  `submit-federation` and its three providers exist (apply run 35050290089); the federated GitHub
+  path is proven (plan run 35050387182) and the prod environment's `SUBMIT_GOOGLE_AUTH_MODE` is
+  `federated` since 03:4x UTC on 2026-09-16. Wave b45 (PR #247) puts `GA4_AUTH_MODE`,
+  `GOOGLE_WIF_AUDIENCE` and `GA4_SERVICE_ACCOUNT_EMAIL` on the three GA4 Lambdas, ci in federated
+  mode and prod on the key. After the merge: one nightly run of each Lambda on ci in federated mode
+  (the provider's condition matches the generated role names, reasoned from the naming rule and
+  proven by that run), then `.env.prod` to `federated`, then the key, both secrets, the
+  `ga4/service_account` row and `google-key-rotate.yml` go. **Source**: B55; PRs #237, #241, #245,
+  #247; `PLAN_GOOGLE_AS_CODE.md` items 9 and 11. **Owner**: Claude Code. **Model**: Sonnet.
+  **Size**: ~4 files.
+
+## Machine-only
 
 - [ ] **B30ac.2. Prove the triage agent queries.** The telemetry policy is on the triage role since
   `main`'s environment deploy of PR #237 (02:0x UTC on 2026-09-16). The dispatch
