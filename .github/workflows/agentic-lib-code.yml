@@ -242,6 +242,20 @@ jobs:
           set -euo pipefail
           mkdir -p "${OUT_DIR}"
           git add -A 2>/dev/null || true
+          # An agent that wrote its handover somewhere in the checkout instead of OUT_DIR still
+          # wrote one: move it out so it is read as the handover and stays out of the patch, and
+          # drop any patch it wrote there too, since the diff below is the patch.
+          if [ ! -s "${OUT_DIR}/CHANGES.md" ]; then
+            stray=$(git diff --cached --name-only --diff-filter=A | grep -E '(^|/)CHANGES\.md$' | head -1 || true)
+            if [ -n "${stray}" ]; then
+              git reset -q -- "${stray}" 2>/dev/null || true
+              mv "${stray}" "${OUT_DIR}/CHANGES.md"
+            fi
+          fi
+          for straypatch in $(git diff --cached --name-only --diff-filter=A | grep -E '(^|/)work\.patch$' || true); do
+            git reset -q -- "${straypatch}" 2>/dev/null || true
+            rm -f "${straypatch}"
+          done
           git diff --cached > "${OUT_DIR}/work.patch" 2>/dev/null || : > "${OUT_DIR}/work.patch"
           echo "patch bytes: $(wc -c < "${OUT_DIR}/work.patch")"
           if [ ! -s "${OUT_DIR}/CHANGES.md" ]; then
