@@ -50,17 +50,16 @@ Every item names its model: the lowest tier that fits (Fable > Opus > Sonnet > H
   (null until O49), rows written for the day; then close #249. **Source**: issue #249. **Owner**:
   Claude Code. **Model**: Haiku. **Size**: ~0 files.
 
-- [ ] **B30ad. Give the ci sweep a second trigger, since its cron fires two slots in six.**
-  `destroy-ci.yml`'s schedule `34 2,4,6,8,10,12 * * *` produced one run a day or two for the past
-  week, each 60 to 90 minutes late (07:52 UTC on 2026-09-16; 13:48 and 07:59 on 09-15; 15:12 and
-  08:04 on 09-14; 13:25 and 07:37 on 09-13), and `probe-test.yml`'s `57 */4` cron is late and
-  skips slots the same way, so this is GitHub's scheduler under load, and the workflow file is
-  right. The keep-list fix (PR #255, 460da8d9) is on `main`. Add `workflow_run` on `deploy`
-  completion to `destroy-ci.yml` and route that event through the sweep path
-  (`sweep-for-stacks` true), so leftovers past the 8-hour minimum age go after every deploy as well
-  as on whichever cron slots fire; keep the cron. By hand meanwhile:
-  `gh workflow run destroy-ci.yml --ref main -f sweep-for-stacks=true`. **Source**: this board;
-  `destroy-ci.yml`. **Owner**: Claude Code. **Model**: Sonnet. **Size**: ~1 file.
+- [ ] **B30ad. The ci sweep's second trigger is on `main`; its first run proves it.** PR #259
+  (58290819, merged 12:0x UTC on 2026-09-16) adds `workflow_run` on `deploy` completion to
+  `destroy-ci.yml`, routed down the sweep path like `schedule`; the cron stays (it fired one or two
+  of six slots a day for the past week, 60 to 90 minutes late, GitHub's scheduler and not the
+  file). Read the first `workflow_run`-triggered sweep after the next deploy completes (`gh run list
+  --workflow destroy-ci.yml`, event `workflow_run`): all four jobs green and `ci-clauda982`'s lone
+  `SelfDestructStack` gone (its set self-destructed at 07:3x UTC and the pointer has moved).
+  By hand meanwhile: `gh workflow run destroy-ci.yml --ref main -f sweep-for-stacks=true`.
+  **Source**: this board; `destroy-ci.yml`. **Owner**: Claude Code. **Model**: Haiku. **Size**:
+  ~0 files.
 
 - [ ] **B52y.4. The cost views are live; check the Glue Data Quality ruleset after its next run.**
   PR #255 (319a9e89) made `cost_focus` resolve its Parquet columns by position and typed the four
