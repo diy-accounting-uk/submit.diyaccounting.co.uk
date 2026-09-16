@@ -55,6 +55,17 @@ step.
 
 ## Machine-only
 
+- [ ] **B30af.3. A branch deploy's ci probes navigate the ci apex, which main's deploy swaps under
+  them.** Run 35161068061 (`claude/ops-triage-budget`, 23:35 to 23:41 UTC on 2026-09-16):
+  `tokenEnforcementBehaviour-ci` navigated `https://ci-submit.diyaccounting.co.uk` (15 requests in
+  its log) while `main`'s deploy 35161551059 promoted the ci pointer to `ci-claud0bad`; the VAT
+  return POST answered `403 {"message":"Forbidden"}` from the other set and the retry found the
+  submit button enabled. Same race as B30af on prod, on ci and for branch deploys: either a branch
+  deploy's `probe-test` calls run against the branch's own set host (`https://<deployment>.submit…`),
+  which it owns, or the wait-for-main-deploy action guards the ci probes too. Pick the first
+  unless the suites need the apex. Then re-run any red the race caused. **Source**: run
+  35161068061. **Owner**: Claude Code. **Model**: Sonnet. **Size**: ~2 files.
+
 - [ ] **B30af.2. Close #272 and #279 when prod carries wave b52.** PR #276 (3ce46938) is on `main`:
   the probe guard now re-checks for a deploy before each apex navigation (incident #272), one
   issue per alarm transition across deployments, and the agentic-lib workflows under the
