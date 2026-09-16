@@ -338,7 +338,10 @@ Run it from a scheduled workflow, monthly. Fill the `ga4/service_account` row's 
 `secrets-rotation.toml` from the first run.
 
 **11. Lambdas authenticate with federation.** Add an `aws` provider to the pool for account
-`972912397388`, conditioned on the Lambda execution role. Generate the credential configuration with
+`972912397388`, conditioned on the Lambda execution role. Each AWS provider maps `google.subject`
+to the role name via `assertion.arn.extract('assumed-role/{role}/')`, because the full assumed-role
+ARN exceeds Google's 127-byte limit for the longest of the three function names.
+Generate the credential configuration with
 `gcloud iam workload-identity-pools create-cred-config` and commit it. Change
 `app/functions/analytics/ga4EventExportPull.js` and `ga4ReportPull.js` to build their clients from
 external account credentials. Spike the Node client in a real Lambda first; if its default AWS
