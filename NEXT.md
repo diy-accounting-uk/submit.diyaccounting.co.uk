@@ -20,7 +20,7 @@ PR; the operator merges.
 at 20:3x UTC on 2026-09-16 with the pool at `Mfa.REQUIRED`; the same run destroyed prod-a84311b),
 verified against AWS at 20:5x UTC: the pointer names it and the deploy's own prod suites passed.
 **ci**: `ci-claudc4d2` (the b49 branch, created 18:24 UTC) self-destructs at about 22:24 UTC;
-nothing else stands.
+PR #276's deploy (run 35156736691, started 22:0x UTC) is standing up the b52 set.
 
 The board runs in five sections, in this order: **in flight** (a branch, a pull request or a run
 in motion, each named in the row), **machine-only**, **machine-ask**, **human-driven**,
