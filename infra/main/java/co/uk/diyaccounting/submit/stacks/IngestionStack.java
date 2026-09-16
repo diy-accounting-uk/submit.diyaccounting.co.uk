@@ -158,9 +158,47 @@ public class IngestionStack extends Stack {
             return "diy-accounting-uk/submit.diyaccounting.co.uk";
         }
 
+        // How the three GA4 jobs authenticate to Google: "key" reads the service-account key
+        // from GA4_SERVICE_ACCOUNT_ARN; "federated" presents the execution role's credentials to
+        // the workload identity pool's aws-<env> provider and impersonates the service account.
+        // From .env.<env>'s GA4_AUTH_MODE; ci proves the federated path before prod switches.
+        @Value.Default
+        default String ga4AuthMode() {
+            return "key";
+        }
+
+        // The Google Cloud project number and service account behind google/identity.toml; the
+        // federated audience is built from them and the environment name.
+        @Value.Default
+        default String googleProjectNumber() {
+            return "958354756046";
+        }
+
+        @Value.Default
+        default String ga4ServiceAccountEmail() {
+            return "ga4-report-pull@diyaccounting-ga4.iam.gserviceaccount.com";
+        }
+
         static ImmutableIngestionStackProps.Builder builder() {
             return ImmutableIngestionStackProps.builder();
         }
+    }
+
+    /**
+     * The three variables app/lib/googleWorkloadIdentity.js reads. The audience names the
+     * aws-<env> provider of the submit-federation pool in google/identity.toml, whose attribute
+     * condition admits the execution roles of the three GA4 functions by the construct ids
+     * Ga4ReportPullFn, Ga4EventExportPullFn and Ga4DailyPullFn.
+     */
+    static PopulatedMap<String, String> withGoogleFederation(
+            PopulatedMap<String, String> env, IngestionStackProps props) {
+        return env.with("GA4_AUTH_MODE", props.ga4AuthMode())
+                .with(
+                        "GOOGLE_WIF_AUDIENCE",
+                        "//iam.googleapis.com/projects/" + props.googleProjectNumber()
+                                + "/locations/global/workloadIdentityPools/submit-federation/providers/aws-"
+                                + props.envName())
+                .with("GA4_SERVICE_ACCOUNT_EMAIL", props.ga4ServiceAccountEmail());
     }
 
     public IngestionStack(final Construct scope, final String id, final IngestionStackProps props) {
@@ -297,6 +335,7 @@ public class IngestionStack extends Stack {
                 && !props.ga4ServiceAccountArn().isBlank()) {
             ga4ReportPullEnv.with("GA4_SERVICE_ACCOUNT_ARN", props.ga4ServiceAccountArn());
         }
+        withGoogleFederation(ga4ReportPullEnv, props);
 
         IRepository ga4ReportPullRepository = Repository.fromRepositoryAttributes(
                 this,
@@ -385,6 +424,7 @@ public class IngestionStack extends Stack {
                 && !props.ga4ServiceAccountArn().isBlank()) {
             ga4EventExportPullEnv.with("GA4_SERVICE_ACCOUNT_ARN", props.ga4ServiceAccountArn());
         }
+        withGoogleFederation(ga4EventExportPullEnv, props);
 
         IRepository ga4EventExportPullRepository = Repository.fromRepositoryAttributes(
                 this,
@@ -463,6 +503,7 @@ public class IngestionStack extends Stack {
                 && !props.ga4ServiceAccountArn().isBlank()) {
             ga4DailyPullEnv.with("GA4_SERVICE_ACCOUNT_ARN", props.ga4ServiceAccountArn());
         }
+        withGoogleFederation(ga4DailyPullEnv, props);
 
         IRepository ga4DailyPullRepository = Repository.fromRepositoryAttributes(
                 this,
