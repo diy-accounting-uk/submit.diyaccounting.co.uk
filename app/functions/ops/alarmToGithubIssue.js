@@ -39,6 +39,7 @@ import { SSMClient, GetParameterCommand } from "@aws-sdk/client-ssm";
 import { createLogger } from "../../lib/logger.js";
 import { alarmFamilyKey, alarmDeploymentSlug, resolveAlarmEnv } from "../../lib/alarmName.js";
 import { isDeploymentSilenced } from "../../lib/alarmSilence.js";
+import { claimAlarmStateChange } from "../../data/dynamoDbAlarmIssueLockRepository.js";
 import { resolveAlarmEvidence, extractCompositeChildFunctionNames } from "../../lib/alarmEvidence.js";
 import { resolveAlarmWindow } from "../../lib/alarmWindow.js";
 import { buildAlarmConsoleLink, buildLogsInsightsLink, buildXRayTraceSearchLink } from "../../lib/consoleLinks.js";
@@ -271,10 +272,24 @@ ${evidenceSection}`;
  * find nothing, and each create an issue (#210 and #212 both raised for the
  * same prod-env-github-probe-failed ALARM transition at 15:26:00.881 UTC on
  * 2026-09-14). The list endpoint reads the issues table directly, so a
- * second invocation that runs after the first's create always sees it. The
- * function's reserved concurrency of 1 (see OpsStack.java) serialises
- * invocations so one invocation's create always completes, or fails, before
- * the next invocation's list runs.
+ * second invocation that runs after the first's create always sees it.
+ *
+ * This is the second line of defence, not the first: the function's
+ * reserved concurrency of 1 (see OpsStack.java) only serialises invocations
+ * within one deployment's own copy of this Lambda. It does nothing across
+ * deployments - two live deployments each carry their own copy of this
+ * Lambda, their own reserved concurrency of 1, and their own
+ * AlarmStateChangeRule, and both rules match the same environment-scoped
+ * alarm (see AlarmStateChangeDelivery's javadoc), so both Lambdas can run
+ * this list-then-create at the same time and both find nothing (#273 and
+ * #274, one per live deployment, for one prod-env-github-probe-failed
+ * transition).
+ * The handler claims the alarm name and state-change timestamp in the
+ * alarm-issue-lock table before reaching here, so only the invocation that
+ * wins that claim ever calls this function for a given transition; this
+ * list-before-create still catches a distinct transition of the same alarm
+ * family that a still-open issue should be commented on instead of
+ * duplicated.
  */
 export async function findOpenIssueByAlarmFamily(githubToken, githubRepo, familyKey) {
   const title = buildIssueTitle(familyKey);
@@ -370,6 +385,22 @@ export async function handler(event) {
       message: "Deployment is silenced, skipping issue creation",
       alarmName: alarm.alarmName,
       deployment: deploymentSlug,
+    });
+    return;
+  }
+
+  // Claims this exact alarm transition (alarm name + state-change timestamp) before any
+  // GitHub call. Two deployments' own copies of this Lambda can both be invoked for the same
+  // environment-scoped alarm transition (their AlarmStateChangeRules both match it - see
+  // AlarmStateChangeDelivery's javadoc), each with its own reserved concurrency of 1, so
+  // reserved concurrency alone never serialises them against each other (#273/#274). The
+  // conditional write below does: only the invocation that wins it goes on to list or create.
+  const claimed = await claimAlarmStateChange({ alarmName: alarm.alarmName, timestamp: alarm.timestamp });
+  if (!claimed) {
+    logger.info({
+      message: "Alarm transition already claimed by another invocation, skipping",
+      alarmName: alarm.alarmName,
+      timestamp: alarm.timestamp,
     });
     return;
   }

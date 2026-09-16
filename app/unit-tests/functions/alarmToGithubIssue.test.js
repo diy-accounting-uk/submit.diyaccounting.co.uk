@@ -45,6 +45,23 @@ vi.mock("@aws-sdk/client-cloudwatch", () => ({
   },
 }));
 
+// Backs claimAlarmStateChange (app/data/dynamoDbAlarmIssueLockRepository.js), which the
+// handler calls to dedupe an alarm transition across deployments before any GitHub call.
+// Mocked at the client boundary, not the repository, so the handler tests exercise the real
+// conditional-write logic (ConditionalCheckFailedException -> no claim).
+const mockAlarmLockSend = vi.fn();
+const alarmLockDynamoModule = {
+  PutCommand: class PutCommand {
+    constructor(input) {
+      this.input = input;
+    }
+  },
+};
+vi.mock("@app/lib/dynamoDbClient.js", () => ({
+  executeDynamoDbCommand: (commandBuilder) => mockAlarmLockSend(commandBuilder(alarmLockDynamoModule)),
+  getResourceName: (envVarName) => process.env[envVarName] || "test-alarm-issue-locks",
+}));
+
 import {
   resolveAlarmDetail,
   buildIssueTitle,
@@ -532,6 +549,10 @@ describe("alarmToGithubIssue", () => {
       // environment-scoped ones; no test here asserts on the resolved slug's value.
       mockSsmSend.mockResolvedValue({ Parameter: { Value: "ci-mockdeploy" } });
       mockCloudWatchSend.mockReset();
+      mockAlarmLockSend.mockReset();
+      // Every test claims its alarm transition by default; tests exercising the dedupe path
+      // itself override this.
+      mockAlarmLockSend.mockResolvedValue({});
     });
 
     afterEach(() => {
@@ -584,10 +605,12 @@ describe("alarmToGithubIssue", () => {
     });
 
     test("a second invocation of the same alarm state change creates no issue once the first has landed", async () => {
-      // Reproduces #210/#212: the same alarm and the same state-change timestamp, handled by
-      // two invocations back to back. The second invocation's list call sees the issue the
-      // first invocation just created (the list endpoint is consistent, unlike search) and
-      // comments on it instead of creating a duplicate.
+      // Second line of defence (see the ConditionalCheckFailedException tests below for the
+      // primary one): two invocations that each won their own alarm-issue-lock claim - a
+      // distinct alarm transition in the same family, or the lock table skipped - still land
+      // on one issue, because the second invocation's list call sees the issue the first
+      // invocation just created (the list endpoint is consistent, unlike search) and comments
+      // on it instead of creating a duplicate. Reproduces #210/#212.
       mockSecretsSend.mockResolvedValue({ SecretString: "gh-token-abc" });
       const created = {
         number: 101,
@@ -612,6 +635,48 @@ describe("alarmToGithubIssue", () => {
       expect(secondUrl).toBe("https://api.github.com/repos/diy-accounting-uk/submit.diyaccounting.co.uk/issues/101/comments");
       expect(secondOptions.method).toBe("POST");
       expect(secondUrl).not.toBe("https://api.github.com/repos/diy-accounting-uk/submit.diyaccounting.co.uk/issues");
+    });
+
+    test("a ConditionalCheckFailedException on the alarm-issue-lock claim ends the invocation without a GitHub create", async () => {
+      const error = new Error("The conditional request failed");
+      error.name = "ConditionalCheckFailedException";
+      mockAlarmLockSend.mockRejectedValue(error);
+      global.fetch = vi.fn();
+
+      await handler(ALARM_EVENT);
+
+      expect(global.fetch).not.toHaveBeenCalled();
+      expect(mockSecretsSend).not.toHaveBeenCalled();
+    });
+
+    test("two concurrent invocations of the same alarm transition create exactly one GitHub issue", async () => {
+      // Reproduces #273/#274: two deployments' own copies of this Lambda, each invoked for the
+      // same environment-scoped alarm transition at the same moment. Only the caller whose
+      // conditional put on the alarm-issue-lock table succeeds goes on to call GitHub at all.
+      mockSecretsSend.mockResolvedValue({ SecretString: "gh-token-abc" });
+      let putAttempts = 0;
+      mockAlarmLockSend.mockImplementation(() => {
+        putAttempts += 1;
+        if (putAttempts === 1) return Promise.resolve({});
+        const error = new Error("The conditional request failed");
+        error.name = "ConditionalCheckFailedException";
+        return Promise.reject(error);
+      });
+      global.fetch = vi
+        .fn()
+        .mockResolvedValueOnce({ ok: true, json: () => Promise.resolve([]) })
+        .mockResolvedValueOnce({
+          ok: true,
+          json: () => Promise.resolve({ number: 101, html_url: "https://github.com/diy-accounting-uk/submit.diyaccounting.co.uk/issues/101" }),
+        });
+
+      await Promise.all([handler(ALARM_EVENT), handler(ALARM_EVENT)]);
+
+      expect(putAttempts).toBe(2);
+      const createCalls = global.fetch.mock.calls.filter(
+        ([url, options]) => url === "https://api.github.com/repos/diy-accounting-uk/submit.diyaccounting.co.uk/issues" && options?.method === "POST",
+      );
+      expect(createCalls.length).toBe(1);
     });
 
     test("comments on the existing open issue instead of creating a duplicate", async () => {

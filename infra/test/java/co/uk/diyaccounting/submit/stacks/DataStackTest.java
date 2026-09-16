@@ -203,6 +203,7 @@ class DataStackTest {
             dataStack.bundleCapacityTable.getTableName(),
             dataStack.subscriptionsTable.getTableName(),
             dataStack.securityStateTable.getTableName(),
+            dataStack.alarmIssueLockTable.getTableName(),
         };
 
         template.resourceCountIs("Custom::EnsurePitr", tableNames.length);

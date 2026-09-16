@@ -146,10 +146,10 @@ class OpsStackTest {
     @Test
     @SuppressWarnings("unchecked")
     void alarmToGithubIssueLambdaHasReservedConcurrencyOfOne() {
-        // The Lambda dedupes by listing open issues before it creates one, with no idempotency
-        // key of its own (see #210/#212, two issues opened for one alarm transition). Reserved
-        // concurrency of 1 serialises invocations so one invocation's create always finishes
-        // before the next invocation's list runs.
+        // Serialises this deployment's own invocations, so one invocation's create always
+        // finishes before the next one's list runs (see #210/#212). It does not reach a second
+        // deployment's own copy of this Lambda - see alarmToGithubIssueLambdaCanClaimTheAlarmIssueLockTable
+        // for the mechanism that covers that (#273/#274).
         OpsStack opsStack = synthOpsStack(
                 "prod", "arn:aws:secretsmanager:eu-west-2:111111111111:secret:prod/submit/ops/github_token", null);
         Template template = Template.fromStack(opsStack);
@@ -163,6 +163,45 @@ class OpsStackTest {
         assertEquals(1, matching.size(), "expected exactly one alarm-to-github-issue Lambda function");
         var properties = (Map<String, Object>) matching.get(0).getValue().get("Properties");
         assertEquals(1.0, ((Number) properties.get("ReservedConcurrentExecutions")).doubleValue());
+    }
+
+    @Test
+    @SuppressWarnings("unchecked")
+    void alarmToGithubIssueLambdaCanClaimTheAlarmIssueLockTable() {
+        // #273/#274: two live deployments' own copies of this Lambda both raised an issue for
+        // the same environment-scoped alarm transition, because reserved concurrency of 1 only
+        // serialises within one deployment. The Lambda claims the transition in the env-scoped
+        // alarm-issue-lock table before it calls GitHub, so a second deployment's invocation
+        // loses the conditional put instead of also creating an issue.
+        OpsStack opsStack = synthOpsStack(
+                "prod", "arn:aws:secretsmanager:eu-west-2:111111111111:secret:prod/submit/ops/github_token", null);
+        Template template = Template.fromStack(opsStack);
+
+        var matching = template.findResources("AWS::Lambda::Function").entrySet().stream()
+                .filter(entry -> {
+                    var properties = (Map<String, Object>) entry.getValue().get("Properties");
+                    return String.valueOf(properties.get("FunctionName")).contains("alarm-to-github-issue");
+                })
+                .toList();
+        assertEquals(1, matching.size(), "expected exactly one alarm-to-github-issue Lambda function");
+        var properties = (Map<String, Object>) matching.get(0).getValue().get("Properties");
+        var environment = (Map<String, Object>) properties.get("Environment");
+        var variables = (Map<String, Object>) environment.get("Variables");
+        assertEquals("prod-env-alarm-issue-locks", variables.get("ALARM_ISSUE_LOCK_DYNAMODB_TABLE_NAME"));
+
+        var putItemStatements = template.findResources("AWS::IAM::Policy").values().stream()
+                .map(resource -> (Map<String, Object>) resource.get("Properties"))
+                .map(policyProperties -> (Map<String, Object>) policyProperties.get("PolicyDocument"))
+                .flatMap(policyDocument -> ((List<Map<String, Object>>) policyDocument.get("Statement")).stream())
+                .filter(statement -> {
+                    var action = statement.get("Action");
+                    return action.equals("dynamodb:PutItem") || (action instanceof List<?> actions && actions.contains("dynamodb:PutItem"));
+                })
+                .toList();
+        assertTrue(
+                putItemStatements.stream().anyMatch(statement -> String.valueOf(statement.get("Resource")).contains("AlarmIssueLockTable")
+                        || String.valueOf(statement.get("Resource")).contains("alarm-issue-locks")),
+                "expected a dynamodb:PutItem statement scoped to the alarm-issue-lock table, got " + putItemStatements);
     }
 
     @Test
