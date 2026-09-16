@@ -5,10 +5,12 @@ import { describe, test, expect, vi, beforeEach, afterEach } from "vitest";
 import { gunzipSync } from "zlib";
 
 const mockRunReport = vi.fn();
+const mockGa4ClientOptions = [];
 vi.mock("@google-analytics/data", () => ({
   BetaAnalyticsDataClient: class {
     constructor(options) {
       this.options = options;
+      mockGa4ClientOptions.push(options);
     }
     runReport(...args) {
       return mockRunReport(...args);
@@ -44,13 +46,7 @@ vi.mock("@aws-sdk/client-secrets-manager", () => ({
   },
 }));
 
-import {
-  handler,
-  defaultTargetDate,
-  formatGa4Date,
-  rowToRecord,
-  toNdjsonGzip,
-} from "@app/functions/analytics/ga4ReportPull.js";
+import { handler, defaultTargetDate, formatGa4Date, rowToRecord, toNdjsonGzip } from "@app/functions/analytics/ga4ReportPull.js";
 
 function emptyReport() {
   return [{ rows: [] }];
@@ -83,9 +79,7 @@ describe("ga4ReportPull", () => {
   describe("defaultTargetDate", () => {
     test("returns yesterday in UTC as YYYY-MM-DD", () => {
       const now = new Date();
-      const expected = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate() - 1))
-        .toISOString()
-        .slice(0, 10);
+      const expected = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate() - 1)).toISOString().slice(0, 10);
 
       expect(defaultTargetDate()).toBe(expected);
     });
@@ -182,11 +176,7 @@ describe("ga4ReportPull", () => {
       const [trafficCall, pagesCall, eventsCall] = mockRunReport.mock.calls.map((call) => call[0]);
 
       expect(trafficCall.property).toBe("properties/523400333");
-      expect(trafficCall.dimensions).toEqual([
-        { name: "date" },
-        { name: "country" },
-        { name: "sessionDefaultChannelGroup" },
-      ]);
+      expect(trafficCall.dimensions).toEqual([{ name: "date" }, { name: "country" }, { name: "sessionDefaultChannelGroup" }]);
       expect(trafficCall.metrics).toEqual([
         { name: "sessions" },
         { name: "activeUsers" },
@@ -213,13 +203,7 @@ describe("ga4ReportPull", () => {
             rows: [
               {
                 dimensionValues: [{ value: "20260820" }, { value: "GB" }, { value: "Direct" }],
-                metricValues: [
-                  { value: "12" },
-                  { value: "10" },
-                  { value: "3" },
-                  { value: "9" },
-                  { value: "45.5" },
-                ],
+                metricValues: [{ value: "12" }, { value: "10" }, { value: "3" }, { value: "9" }, { value: "45.5" }],
               },
             ],
           },
@@ -257,16 +241,13 @@ describe("ga4ReportPull", () => {
     test("throws without writing any object when no service-account credential is configured", async () => {
       delete process.env.GA4_SERVICE_ACCOUNT_JSON;
 
-      await expect(handler({ date: "2026-08-20" })).rejects.toThrow(
-        /GA4_SERVICE_ACCOUNT_JSON|GA4_SERVICE_ACCOUNT_ARN/,
-      );
+      await expect(handler({ date: "2026-08-20" })).rejects.toThrow(/GA4_SERVICE_ACCOUNT_JSON|GA4_SERVICE_ACCOUNT_ARN/);
       expect(mockS3Send).not.toHaveBeenCalled();
     });
 
     test("resolves the service-account credential from Secrets Manager when only the ARN is set", async () => {
       delete process.env.GA4_SERVICE_ACCOUNT_JSON;
-      process.env.GA4_SERVICE_ACCOUNT_ARN =
-        "arn:aws:secretsmanager:eu-west-2:111111111111:secret:ci/submit/ga4/service_account";
+      process.env.GA4_SERVICE_ACCOUNT_ARN = "arn:aws:secretsmanager:eu-west-2:111111111111:secret:ci/submit/ga4/service_account";
       mockSecretsManagerSend.mockResolvedValue({
         SecretString: JSON.stringify({ client_email: "svc@example.com", private_key: "test-key" }),
       });
@@ -276,6 +257,42 @@ describe("ga4ReportPull", () => {
       expect(result.date).toBe("2026-08-20");
       expect(mockSecretsManagerSend).toHaveBeenCalledTimes(1);
       expect(mockSecretsManagerSend.mock.calls[0][0].input.SecretId).toBe(process.env.GA4_SERVICE_ACCOUNT_ARN);
+    });
+  });
+
+  describe("federated mode", () => {
+    test("builds the GA4 Data API client from the Lambda's execution role and reads no secret", async () => {
+      process.env.GA4_AUTH_MODE = "federated";
+      process.env.GOOGLE_WIF_AUDIENCE =
+        "//iam.googleapis.com/projects/670010122633/locations/global/workloadIdentityPools/submit-federation/providers/aws-prod";
+      process.env.GA4_SERVICE_ACCOUNT_EMAIL = "ga4-report-pull@diyaccounting-ga4.iam.gserviceaccount.com";
+      process.env.AWS_REGION = "eu-west-2";
+      process.env.AWS_ACCESS_KEY_ID = "ASIAEXAMPLE";
+      process.env.AWS_SECRET_ACCESS_KEY = "secret";
+      process.env.AWS_SESSION_TOKEN = "session";
+      delete process.env.GA4_SERVICE_ACCOUNT_JSON;
+      delete process.env.GA4_SERVICE_ACCOUNT_ARN;
+
+      try {
+        await handler({ date: "2026-08-20" });
+      } finally {
+        for (const name of [
+          "GA4_AUTH_MODE",
+          "GOOGLE_WIF_AUDIENCE",
+          "GA4_SERVICE_ACCOUNT_EMAIL",
+          "AWS_REGION",
+          "AWS_ACCESS_KEY_ID",
+          "AWS_SECRET_ACCESS_KEY",
+          "AWS_SESSION_TOKEN",
+        ]) {
+          delete process.env[name];
+        }
+      }
+
+      const options = mockGa4ClientOptions.at(-1);
+      expect(options.credentials).toBeUndefined();
+      expect(options.authClient).toBeDefined();
+      expect(mockSecretsManagerSend).not.toHaveBeenCalled();
     });
   });
 });
