@@ -39,26 +39,11 @@ Every item names its model: the lowest tier that fits (Fable > Opus > Sonnet > H
 
 ## In flight
 
-## Machine-only
-
-- [ ] **B30ac.2. Prove the triage agent queries.** The telemetry policy is on the triage role since
-  `main`'s environment deploy of PR #237 (02:0x UTC on 2026-09-16). The dispatch
-  `gh workflow run alarm-triage.yml --ref main -f issue-number=229` at 02:14 UTC was skipped by the
-  workflow's own budget of three triage runs per 24 hours (four posted since 02:14 UTC on
-  2026-09-15); the budget frees after 16:41 UTC on 2026-09-16. Dispatch again then and read the new
-  comment on #229 for a quoted Logs Insights query and the alarm history; then close #229 and #230
-  (the old set's snapshot 500, fixed by B52v and gone with `prod-70b0a8e`). **Source**: B30ac; PR
-  #237. **Owner**: Claude Code. **Model**: Haiku. Date-gated: from 16:41 UTC on 2026-09-16. **Size**:
-  ~0 files.
-
-- [ ] **B59.2. Prove the kill switch.** The parameter exists in both environments since the same
-  deploy; `agent-kill-switch.yml` set prod's to `on` (run 35047169215) and back to `off` (run
-  35047303339) at 02:1x UTC on 2026-09-16, but the triage dispatch meant to stop at the switch was
-  skipped by the triage budget first, so the stop is unproven. When B30ac.2's budget frees: switch
-  `on` for prod, dispatch `alarm-triage.yml -f issue-number=229` and see it fail at "Stop when the
-  agent kill switch is on", switch `off`, then run B30ac.2's dispatch. **Source**: B59; PR #237.
-  **Owner**: Claude Code. **Model**: Haiku. Date-gated: from 16:41 UTC on 2026-09-16. **Size**: ~0
-  files.
+Wave b43 rides **`claude/b43-board`, PR #241** (pushed 02:3x UTC on 2026-09-16, two commits: B55.2's
+project number and masked exit status, B57.2's pinning of the seven remaining workflows). After the
+merge: the push runs `google-apply.yml` through the key path and creates the pool, then the federated
+plan dispatch proves B55.2; the operator's `scripts/github-actions-permissions.sh --require-sha`
+finishes B57.2.
 
 - [ ] **B55.2. Prove Google federation and wire the Lambdas.** `google-apply.yml` ran on the push of
   PR #237 through the key path (run 35045218215) but its identity-sync step failed on the wrong
@@ -79,6 +64,27 @@ Every item names its model: the lowest tier that fits (Fable > Opus > Sonnet > H
   were editing them; pin their `uses:` lines, then `scripts/github-actions-permissions.sh --require-sha`
   (the operator runs the script: the settings write is denied to the session). **Source**: B57; PR
   #237. **Owner**: Claude Code, then Operator. **Model**: Haiku. **Size**: ~5 files.
+
+## Machine-only
+
+- [ ] **B30ac.2. Prove the triage agent queries.** The telemetry policy is on the triage role since
+  `main`'s environment deploy of PR #237 (02:0x UTC on 2026-09-16). The dispatch
+  `gh workflow run alarm-triage.yml --ref main -f issue-number=229` at 02:14 UTC was skipped by the
+  workflow's own budget of three triage runs per 24 hours (four posted since 02:14 UTC on
+  2026-09-15); the budget frees after 16:41 UTC on 2026-09-16. Dispatch again then and read the new
+  comment on #229 for a quoted Logs Insights query and the alarm history; then close #229 and #230
+  (the old set's snapshot 500, fixed by B52v and gone with `prod-70b0a8e`). **Source**: B30ac; PR
+  #237. **Owner**: Claude Code. **Model**: Haiku. Date-gated: from 16:41 UTC on 2026-09-16. **Size**:
+  ~0 files.
+
+- [ ] **B59.2. Prove the kill switch.** The parameter exists in both environments since the same
+  deploy; `agent-kill-switch.yml` set prod's to `on` (run 35047169215) and back to `off` (run
+  35047303339) at 02:1x UTC on 2026-09-16, but the triage dispatch meant to stop at the switch was
+  skipped by the triage budget first, so the stop is unproven. When B30ac.2's budget frees: switch
+  `on` for prod, dispatch `alarm-triage.yml -f issue-number=229` and see it fail at "Stop when the
+  agent kill switch is on", switch `off`, then run B30ac.2's dispatch. **Source**: B59; PR #237.
+  **Owner**: Claude Code. **Model**: Haiku. Date-gated: from 16:41 UTC on 2026-09-16. **Size**: ~0
+  files.
 
 - [ ] **B52y.2. Check the nightly snapshot after the SecurityLakeStack reaches prod.** PR #218
   (9b695aab) adds the `deploy-security-lake` job and the per-observation null; prod's environment
