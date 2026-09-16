@@ -191,6 +191,14 @@ GA4 sync's variable finding, and B55.2's Lambda wiring); its branch deploy runs 
 
 ## Blocked
 
+- [ ] **B52y.3. The security lake's nightly errored on its 03:15 UTC run.** Issue #249 (03:21 UTC on
+  2026-09-16): `check-prod-env-security-lake-nightly-errors` tripped `prod-env-security-lake-stack-health`
+  on the first nightly after the SecurityLakeStack reached prod (PR #218); the triage was skipped by
+  the workflow's budget. Read the Lambda's log for the 03:11 to 03:27 UTC window (the log group is
+  named in the issue's evidence links), then B52y.2's snapshot check says whether the observations
+  still answered. **Source**: issue #249. **Owner**: Claude Code. **Model**: Sonnet. Blocked on the
+  AWS SSO session (`aws sso login --sso-session diyaccounting`). **Size**: ~1 file.
+
 - [ ] **B56. `test` and CodeQL as required status checks on `main`.** BACKLOG 56: added to ruleset
   16057564 beside the signature check, once O46 settles how the ruleset gates direct pushes. **Source**:
   BACKLOG 56. **Owner**: Claude Code. **Model**: Haiku. Blocked on O46. **Size**: ~0 files.
