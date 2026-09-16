@@ -46,7 +46,9 @@ How to work:
   for the window above (`aws logs start-query` then `aws logs get-query-results`, or `aws logs
   filter-log-events`), and read the alarm's history (`aws cloudwatch describe-alarm-history`).
   The CLI is already authenticated as the read-only triage role; `credentialProof` in the evidence
-  file shows its calls succeeding. Use `aws xray get-trace-summaries` for traces.
+  file shows its calls succeeding. Use `aws xray get-trace-summaries` for traces. Call `aws` with
+  no `--profile` flag: no profile exists on the runner, and a `--profile` prefix takes the command
+  outside the `aws logs`, `aws cloudwatch` and `aws xray` patterns you are allowed, so it is denied.
 - Never write that you cannot query CloudWatch Logs, alarm history or X-Ray unless you made the
   call and it failed; then quote the command and its error verbatim. An answer that recommends
   the reader run a query you could have run is wrong.
