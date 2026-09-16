@@ -39,8 +39,8 @@ truthfully on its own. Human-only steps are briefed at the workspace root in
 - **Both `/api/v1/books` and `/api/v1/diya-gl` are permanent** by operator decision of 2026-09-10.
   The old prefix is never retired and the spreadsheets repository changes nothing; row 51's naming
   work is down to the S3 bucket.
-- **Tier 1 holds rows 55 to 59** (the plan audit of 2026-09-16), refined onto `NEXT.md` as B55 to
-  B59: B55, B57, B58 and B59 are in flight on wave b42, B56 waits on O46.
+- **Tier 1 rows 55 to 59** landed in PR #237 (wave b42) apart from B56, which waits on O46; the
+  post-merge proofs are NEXT.md B30ac.2, B59.2, B55.2 and B57.2.
 - **Plans archived 2026-09-16** (every row landed or decided): the three alarm plans, the fraud-header
   email check, the Issue 15 tracker, the edge CORS review, DIYA-GL naming and DIYA-GL storage, all
   under `_developers/archive/`.

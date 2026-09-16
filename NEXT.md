@@ -16,11 +16,10 @@ runs), and for Claude Code steps the **Model** a sub-agent should use (Fable > O
 Haiku; the lowest tier that fits). Anything touching code goes through a `claude/*` branch and
 PR; the operator merges.
 
-**Prod runs deployment prod-9f58aaa** (PR #226, run 35028380205), promoted under the `deploy-ops`
-gate at 22:5x UTC on 2026-09-15; the same run destroyed `prod-70b0a8e`, so it is the only prod set.
-**ci**: `ci-clauda7c7` (the b41 branch's set, PR #232) and `ci-claud76c4` (b40's, ci's last-known-good)
-stand until their self-destructs; `ci-claud727f`'s `ApiStack` is DELETE_FAILED on the Cognito
-authorizer until the `destroy-ci.yml` sweep at 02:34 UTC on 2026-09-16 force-deletes it.
+**Prod runs deployment prod-9f58aaa** (PR #226, run 35028380205); `main`'s deploy of PR #232 (b41, run
+35037156633) succeeded at 01:1x UTC on 2026-09-16 and its promotion is read at the next render; `main`'s
+deploy of PR #237 (b42) started at 01:44 UTC. **ci**: the b41 and b42 branch sets stand until their
+self-destructs.
 
 The board runs in five sections, in this order: **in flight** (a branch, a pull request or a run
 in motion, each named in the row), **machine-only**, **human and machine**, **human-only**,
@@ -40,75 +39,35 @@ Every item names its model: the lowest tier that fits (Fable > Opus > Sonnet > H
 
 ## In flight
 
-Wave b42 rides **`claude/b42-board`, PR #237** (pushed 00:19 UTC on 2026-09-16, ten task commits; its
-push-triggered test and deploy runs register under the monitor). Every batch has landed on the batch.
-After the merge, in order: the environment deploy of `main` updates the triage role and creates the
-kill-switch parameter; `gh workflow run alarm-triage.yml -f issue-number=229` proves B30ac;
-`gh workflow run google-apply.yml --ref main -f auth-mode=federated -f apply=false` proves B55's
-federation. `main`'s deploy of PR #232 (b41) runs alongside.
-
-- [ ] **B30ab. The CIS unauthorized-api-calls filter counts the AWS console's own UX calls.**
-  Issue #231 (22:20 UTC, 2026-09-15): four `uxc.amazonaws.com GetAccountColor` AccessDenied events
-  under the operator's SSO administrator session while the console was open, three in one minute,
-  and the filter in `SecurityDetectionStack` excludes only the deploy, GitHub Actions and CDK roles.
-  Exclude `$.eventSource = "uxc.amazonaws.com"` (the console's account-colour lookup, denied for
-  every role without the `uxc:GetAccountColor` permission) in both accounts' filters, with the CDK
-  test; close #231 with the change. **Source**: issue #231; `_developers/ALARM_AUDIT_2026-09.md`.
-  **Owner**: Claude Code. **Model**: Haiku. **Size**: ~2 files.
-
-- [ ] **B30ac. The alarm triage agent queries the telemetry it is allowed to read.** Operator,
-  2026-09-15: the triage answer on issue #229 says "Without being able to query CloudWatch Logs or
-  alarm history directly" and recommends the reader run the queries, yet its run (35030341835, 13
-  of 30 turns, no `aws` call in the log) was allowed `Bash(aws logs:*)`, `Bash(aws xray:*)`,
-  `Bash(aws cloudwatch describe-alarms:*)` and `describe-alarm-history` under
-  `SUBMIT_ALARM_TRIAGE_ROLE_ARN`, and `prompts/alarm-triage.md` already names `aws logs start-query`.
-  Three changes: (1) `alarm-triage.yml` proves the credentials before the agent runs (`aws sts
-  get-caller-identity`, `aws logs describe-log-groups` on the first evidence log group, one
-  `describe-alarm-history` on the alarm) and writes the results into `/tmp/evidence.json` so the
-  prompt can say "these calls worked a moment ago"; (2) the prompt requires at least one Logs
-  Insights query and the alarm history before any answer, and forbids "cannot query" unless a call
-  was made and its error is quoted; (3) the triage role in `ObservabilityStack.java` (lines ~824 to
-  ~870: enumerated `cloudwatch:DescribeAlarms`, `logs:StartQuery`, `xray:GetTraceSummaries` and the
-  grants B30w added one at a time) becomes a read-only telemetry policy: every `logs:Describe*`,
-  `logs:Get*`, `logs:FilterLogEvents`, `logs:StartQuery`, `logs:StopQuery`, `cloudwatch:Describe*`,
-  `cloudwatch:Get*`, `cloudwatch:List*`, `xray:Get*`, `xray:BatchGet*` on `*`, with the CDK test,
-  still no DynamoDB, secrets or Cognito. Prove it by re-dispatching `alarm-triage.yml` on #229 and
-  reading the answer. **Source**: operator, 2026-09-15; issue #229; run 35030341835. **Owner**:
-  Claude Code. **Model**: Sonnet. **Size**: ~4 files.
-
-- [ ] **B59. The agent kill switch.** BACKLOG 59, `PLAN_REPOSITORY_AUTOMATION.md` Q9: the SSM parameter
-  `/submit/<env>/agents/kill-switch` in `ObservabilityStack`, a composite action that fails a job when
-  it is `on`, called first in `alarm-triage.yml` and the three `agentic-lib-*.yml`, and
-  `agent-kill-switch.yml` to set it by dispatch. **Source**: BACKLOG 59. **Owner**: Claude Code.
-  **Model**: Sonnet. **Size**: ~7 files.
-
-- [ ] **B58. The weekly security review runs on its cron.** BACKLOG 58: `security-review.yml`'s
-  `0 6 * * 1` schedule switched on, with whatever a scheduled run needs that a dispatch supplied.
-  **Source**: BACKLOG 58. **Owner**: Claude Code. **Model**: Haiku. **Size**: ~1 file.
-
-- [ ] **B57. Every action pinned to a SHA; Actions restricted to the allowed set.** BACKLOG 57: every
-  `uses:` in the workflows and composite actions pinned to a full commit SHA with its version comment,
-  then `scripts/github-actions-permissions.sh` sets `allowed_actions: selected` with the owners the
-  workflows use and `sha_pinning_required: true`. The five workflows other b42 batches edit are
-  pinned in a follow-up. **Source**: BACKLOG 57. **Owner**: Claude Code. **Model**: Haiku. **Size**:
-  ~30 files.
-
-- [ ] **B55. Google as code: federation and key rotation.** BACKLOG 55, `PLAN_GOOGLE_AS_CODE.md` items 8
-  to 11: `google/identity.toml` and `scripts/gcp-identity-sync.js` for the workload identity pool and
-  its GitHub provider; `google-apply.yml` authenticating by federation; `scripts/gcp-key-rotate.js`
-  rotating the service-account key into Secrets Manager with a dated tag; the analytics Lambdas
-  federating through an `external_account` credential instead of holding the key. Applied by
-  `google-apply.yml` after the merge; the key path stays until the federated run proves itself.
-  **Source**: BACKLOG 55. **Owner**: Claude Code. **Model**: Sonnet. **Size**: ~8 files.
-
-- [ ] **B11.T10. ITSA phase 2: the recognition pack.** `PLAN_ITSA_PHASE_2.md` T10, its inputs (T7r, T21, T22) on `main`:
-  `_developers/hmrc/ITSA_PRODUCTION_APPROVALS_CHECKLIST.md`, an ITSA pass over the two
-  questionnaires, and the two draft emails for the operator to send. One application now covers
-  both approval stages, and the checklist answers for all nine APIs in the minimum functionality
-  standards with a build behind each. **Source**: BACKLOG 11; `PLAN_ITSA_PHASE_2.md` T10.
-  **Owner**: Claude Code (the pack, in flight), then Operator (sends). **Model**: Haiku. **Size**: ~3 files.
-
 ## Machine-only
+
+- [ ] **B30ac.2. Prove the triage agent queries.** After `main`'s environment deploy of PR #237 (the
+  read-only telemetry policy on the triage role): `gh workflow run alarm-triage.yml -f issue-number=229`
+  and read the new comment on #229 for a quoted Logs Insights query and the alarm history; then close
+  #229 and #230 (the old set's snapshot 500, fixed by B52v and gone with `prod-70b0a8e`). **Source**:
+  B30ac; PR #237. **Owner**: Claude Code. **Model**: Haiku. **Size**: ~0 files.
+
+- [ ] **B59.2. Prove the kill switch.** After the same environment deploy: `gh workflow run
+  agent-kill-switch.yml -f state=on -f environment-name=ci`, a dispatch of `alarm-triage.yml` that
+  must stop at "Stop when the agent kill switch is on", then `-f state=off`. **Source**: B59; PR #237.
+  **Owner**: Claude Code. **Model**: Haiku. **Size**: ~0 files.
+
+- [ ] **B55.2. Prove Google federation and wire the Lambdas.** `google-apply.yml` ran on the push of
+  PR #237 through the key path and created the pool, the three providers and the binding (read its
+  run). Then `gh workflow run google-apply.yml --ref main -f auth-mode=federated -f apply=false` must
+  read live state with the key step skipped; then `gh variable set SUBMIT_GOOGLE_AUTH_MODE --env prod
+  --body federated`. The Lambdas: `IngestionStack.java` puts `GA4_AUTH_MODE`, `GOOGLE_WIF_AUDIENCE`
+  (the `aws-ci` / `aws-prod` audience the sync step prints) and `GA4_SERVICE_ACCOUNT_EMAIL` on the
+  three GA4 functions, proven on ci by one nightly run of each in federated mode, then prod; then the
+  key, both secrets, the `ga4/service_account` row and the rotation script go. **Source**: B55; PR
+  #237; `PLAN_GOOGLE_AS_CODE.md` items 9 and 11. **Owner**: Claude Code. **Model**: Sonnet. **Size**:
+  ~4 files.
+
+- [ ] **B57.2. Pin the five agent and Google workflows and require SHA pinning.** `alarm-triage.yml`,
+  the three `agentic-lib-*.yml` and `google-apply.yml` stayed on tags in B57 because other batches
+  were editing them; pin their `uses:` lines, then `scripts/github-actions-permissions.sh --require-sha`
+  (the operator runs the script: the settings write is denied to the session). **Source**: B57; PR
+  #237. **Owner**: Claude Code, then Operator. **Model**: Haiku. **Size**: ~5 files.
 
 - [ ] **B52y.2. Check the nightly snapshot after the SecurityLakeStack reaches prod.** PR #218
   (9b695aab) adds the `deploy-security-lake` job and the per-observation null; prod's environment
@@ -196,6 +155,13 @@ federation. `main`'s deploy of PR #232 (b41) runs alongside.
   submission and the production-credentials email described the service as AGPL open source, and
   the PolyForm licence files are on main and on prod since prod-318271f. **Source**:
   `PLAN_LICENSING_UPLIFT_SUBMIT.md` H-LU-9. **Owner**: Operator. **Model**: none.
+
+- [ ] **B11.T10. ITSA phase 2: the recognition pack.** `PLAN_ITSA_PHASE_2.md` T10, its inputs (T7r, T21, T22) on `main`:
+  `_developers/hmrc/ITSA_PRODUCTION_APPROVALS_CHECKLIST.md`, an ITSA pass over the two
+  questionnaires, and the two draft emails for the operator to send. One application now covers
+  both approval stages, and the checklist answers for all nine APIs in the minimum functionality
+  standards with a build behind each. **Source**: BACKLOG 11; `PLAN_ITSA_PHASE_2.md` T10.
+  **Owner**: Operator: the pack is on `main` (PR #237, `_developers/hmrc/`): send `DRAFT_EMAIL_ITSA_RECOGNITION.md` after re-running the sandbox year inside HMRC's 14-day log window, then `DRAFT_EMAIL_ITSA_PRODUCTION_CREDENTIALS.md` when SDST answers. **Model**: Haiku. **Size**: ~3 files.
 
 ## Blocked
 
