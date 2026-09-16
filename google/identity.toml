@@ -64,7 +64,7 @@ display_name = "GitHub Actions + submit Lambdas"
   principal_set = "attribute.account/367191799875"
 
     [workload_identity_pool.provider.attribute_mapping]
-    "google.subject" = "assertion.arn"
+    "google.subject" = "assertion.arn.extract('assumed-role/{role}/')"
     "attribute.account" = "assertion.account"
     "attribute.aws_role" = "assertion.arn.extract('assumed-role/{role}/')"
 
@@ -79,6 +79,6 @@ display_name = "GitHub Actions + submit Lambdas"
   principal_set = "attribute.account/972912397388"
 
     [workload_identity_pool.provider.attribute_mapping]
-    "google.subject" = "assertion.arn"
+    "google.subject" = "assertion.arn.extract('assumed-role/{role}/')"
     "attribute.account" = "assertion.account"
     "attribute.aws_role" = "assertion.arn.extract('assumed-role/{role}/')"

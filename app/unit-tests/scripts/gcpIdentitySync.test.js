@@ -22,6 +22,7 @@ import {
   planWhenApiDisabled,
   poolName,
   providerName,
+  loadConfigFromRoot,
 } from "../../../scripts/gcp-identity-sync.js";
 
 const SAMPLE_TOML = `
@@ -61,7 +62,7 @@ display_name = "GitHub Actions + submit Lambdas"
   principal_set = "attribute.account/972912397388"
 
     [workload_identity_pool.provider.attribute_mapping]
-    "google.subject" = "assertion.arn"
+    "google.subject" = "assertion.arn.extract('assumed-role/{role}/')"
     "attribute.account" = "assertion.account"
     "attribute.aws_role" = "assertion.arn.extract('assumed-role/{role}/')"
 `;
@@ -129,6 +130,19 @@ describe("gcp-identity-sync parseConfig", () => {
   });
   it("throws when the pool is missing", () => {
     expect(() => parseConfig('[project]\nid = "p"\n[service_account]\nemail = "a@b"\n')).toThrow(/workload_identity_pool/);
+  });
+
+  it("maps every aws provider's google.subject to the role name, not the full assumed-role ARN", () => {
+    // The bare assumed-role ARN (arn:aws:sts::<account>:assumed-role/<role>/<session-name>) can
+    // exceed Google's 127-byte limit for a long Lambda function name; extracting just the role
+    // name keeps it short.
+    const config = loadConfigFromRoot();
+    const awsProviders = config.providers.filter((p) => p.type === "aws");
+    expect(awsProviders.length).toBeGreaterThan(0);
+    for (const provider of awsProviders) {
+      expect(provider.attributeMapping["google.subject"]).not.toBe("assertion.arn");
+      expect(provider.attributeMapping["google.subject"]).toBe(provider.attributeMapping["attribute.aws_role"]);
+    }
   });
 });
 
