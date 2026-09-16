@@ -53,8 +53,6 @@ Every item names its model: the lowest tier that fits (Fable > Opus > Sonnet > H
   **Source**: this board; `destroy-ci.yml`. **Owner**: Claude Code. **Model**: Haiku. **Size**:
   ~0 files.
 
-## Human and machine
-
 - [ ] **O28. Send `Gov-Client-Multi-Factor` on every request: mandate MFA in the pool.** Every
   monthly advisory HMRC has raised is this header missing (`../REPORT_HMRC_HEADER_ADVISORIES.md`).
   Step 2b is on main (#198, b0e3d2be): the browser sends its Cognito ID token as
@@ -65,13 +63,15 @@ Every item names its model: the lowest tier that fits (Fable > Opus > Sonnet > H
   reaches. The prod async-requests table holds nothing (TTL), so the scan could not size the
   cohorts; `prod-env-hmrc-api-requests` keeps 20 days and showed 3 production VAT POSTs from 3
   users, 2 without the header.
-  Left, the human half first: `IdentityStack.java:184` is `.mfa(Mfa.OPTIONAL)`. With REQUIRED a
-  returning native-auth customer who never enrolled meets Cognito's hosted-UI "Set up multi-factor
-  authentication" interstitial right after their password — QR code or manual secret, then a
-  6-digit confirm — with no skip; federated Google users see nothing. Walk that path once as a new
-  customer on ci and say go. Then the machine half: the one-word change, its CDK test, and a ci
-  deploy proving native sign-in still completes. **Source**: `../REPORT_HMRC_HEADER_ADVISORIES.md`.
-  **Owner**: Operator decides, Claude Code changes. **Model**: Haiku. **Size**: ~2 files.
+  The operator walked the enrolment path on ci and said go (2026-09-16, 18:0x UTC). Left:
+  `IdentityStack.java:184` from `.mfa(Mfa.OPTIONAL)` to `Mfa.REQUIRED`, its CDK test, and a ci
+  deploy proving native sign-in still completes; with REQUIRED a returning native-auth customer who
+  never enrolled meets Cognito's hosted-UI "Set up multi-factor authentication" interstitial right
+  after their password, with no skip, and federated Google users see nothing. **Source**:
+  `../REPORT_HMRC_HEADER_ADVISORIES.md`. **Owner**: Claude Code. **Model**: Haiku. **Size**: ~2
+  files.
+
+## Human and machine
 
 - [ ] **B11.T10. ITSA phase 2: the recognition pack.** `PLAN_ITSA_PHASE_2.md` T10, its inputs (T7r, T21, T22) on `main`:
   `_developers/hmrc/ITSA_PRODUCTION_APPROVALS_CHECKLIST.md`, an ITSA pass over the two
@@ -234,74 +234,12 @@ Every item names its model: the lowest tier that fits (Fable > Opus > Sonnet > H
   selector fix. **Source**: BACKLOG 34. **Owner**: Claude Code. **Model**: Sonnet.
   Blocked on O17. **Size**: ~1 file.
 
-- [ ] **B52l. The optimiser over the raw export.** `PLAN_ONE_STOP_DASHBOARD.md` D16, BACKLOG 52l:
-  a notebook over the raw export computing the per-block correlations, fitting the block models
-  (linear cost, log-linear funnels, Hill curves for spend), ranking levers by effect per unit cost
-  and proposing the next experiment with its predicted effect and interval; Bayesian optimisation
-  for the continuous knobs and a Thompson-sampling bandit for allocations once experiments exist;
-  one line per objective on the dashboard page. Two chunks: the model design as a section of the
-  plan (Opus), then the notebook and the page line (Sonnet). **Source**: BACKLOG 52l; plan D16.
-  **Owner**: Claude Code. **Model**: Opus for the models, Sonnet for the notebook. Blocked on three
-  months of the raw export, whose first night was 2026-09-09: from 2026-12-09. **Size**: ~3 files.
-
 - [ ] **B52i. The company P&L and balance sheet on the dashboard.** `PLAN_ONE_STOP_DASHBOARD.md`
   D10, BACKLOG 52i: the company's diya-gl book saved to the DIYA cloud by
   `../PLAN_FINANCE_AUTOMATION.md` phase 2, derived nightly with the Ltd engine through M1c and M3,
   rendered above the eight objectives beside the last set filed at Companies House. **Source**:
   BACKLOG 52i; plan D10. **Owner**: Claude Code. **Model**: Sonnet. Blocked on the finance plan's
   phases 1 and 2 (the book in the cloud), M1c and M3. **Size**: ~3 files.
-
-- [ ] **B52m. The reinvestment loop on the dashboard.** `PLAN_ONE_STOP_DASHBOARD.md` D17, BACKLOG
-  52m: trailing income, reserve, budget, return per pound and payback on the page; the reinvestment
-  fraction as a lever with the reserve floor the operator names; paid traffic and article boosts as
-  experiment rows with on-off or geographic controls; GA4 conversion import from the Ads account.
-  **Source**: BACKLOG 52m; plan D17. **Owner**: Claude Code, with the operator's fraction and floor.
-  **Model**: Sonnet. Blocked on B52l, on the cost panel carrying revenue (B52e, done when the
-  first renewal posts on 2026-10-02, BACKLOG 43) and on O23. **Size**: ~3 files.
-
-- [ ] **B124. Prove the three agent workflows by dispatch, in order.** All three are on main,
-  `workflow_dispatch` only, every event trigger commented out until a hand-run has earned it.
-  **`agentic-lib-board.yml` first**, with `write-back=false`: it changes nothing, so a bad render costs only a
-  job. Compare its five parts against a `/board` in the terminal — same rows, same alarm families,
-  same deployment table, or the skill is being read differently in CI. Then `write-back=true` and
-  check the reluctance actually holds: a second run minutes later should say the board is already
-  true and commit nothing.
-  **`agentic-lib-pr.yml` next**, `dry-run=true`, after O42. Its tables must match a
-  `/auto-merge-dry-run` here. Only then a live run against one PR.
-  **`agentic-lib-code.yml` last**, 10 minute budget. The questions that matter: did it take the simplest
-  ready task rather than the most interesting; did it check whether `main` was green first; if it
-  finished, is the PR one you would merge; if it did not, does `work.patch` apply and is
-  `CHANGES.md` specific enough that a different agent could take the next step from it alone. Then
-  dispatch a second run against a deliberately unfinished first and check the resume judgement and
-  the `Resumed-From:` chain.
-  Uncomment a trigger only after that workflow's hand-run has produced something worth keeping.
-  **O42 is done** and the first dispatch already failed, which is what this row exists to find.
-  Run 34716604299, `agentic-lib-board.yml` with `write-back=false`, died at step 5
-  "Configure AWS role via GitHub OIDC": "Credentials could not be loaded". Cause: all three
-  workflows read `role-to-assume: ${{ vars.SUBMIT_ACTIONS_ROLE_ARN }}` from a job that declares no
-  `environment:`, and that variable exists only on the `ci` and `prod` environments, never at
-  repository level. So it resolves to empty and the action has no role to assume. `alarm-triage.yml`
-  gets this right with `environment: ${{ needs.triage.outputs.environment-name }}`; these three
-  copied the step and not the environment. Same root cause as B130.
-  `agentic-lib-board.yml` needs more than an `environment:` line: its Part 4 reads **both** accounts,
-  so one environment cannot serve it. Decide between two jobs keyed by environment, a second assume
-  into the other account, and repo-level role ARNs for both. Also ask, per workflow, whether it
-  needs AWS at all — `/auto-merge` reads GitHub and nothing else, so `agentic-lib-pr.yml`'s OIDC
-  step may simply be surplus.
-  **Halted by the operator, 2026-09-12 20:2x UTC**, during cool-down. The agent fixing the
-  credential wiring was stopped while still reading; nothing was committed and no worktree was
-  left behind. Its one finding, kept so it is not rediscovered: the `/auto-merge` skill contains no
-  AWS reference at all, so `agentic-lib-pr.yml`'s OIDC step is surplus and should be deleted rather
-  than given an environment. Do not dispatch this row again until the operator says so.
-  **Source**: `.github/workflows/agentic-lib-*.yml`; run 34716604299.
-  **Owner**: Claude Code. **Model**: Sonnet. Blocked on the operator lifting the 2026-09-12 halt. **Size**: ~3 files.
-
-- [ ] **B70.LU15. Licensing: the brand package.** Pin `@diy-accounting-uk/brand`, copy assets
-  and tokens at build, import the tokens, delete the local logo, favicon and token copies;
-  the footer, favicon and title conventions read from the words file. **Source**:
-  `PLAN_LICENSING_UPLIFT_SUBMIT.md` LU-15. **Owner**: Claude Code. **Model**: Sonnet.
-  Blocked on the brand package existing, now planned in the spreadsheets repository's
-  `PLAN_DIYACCOUNTING_BRAND.md`. **Size**: ~6 files.
 
 ## Discipline
 
