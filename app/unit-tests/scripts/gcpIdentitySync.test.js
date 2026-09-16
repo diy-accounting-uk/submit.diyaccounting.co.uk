@@ -38,7 +38,7 @@ email = "ga4-report-pull@diyaccounting-ga4.iam.gserviceaccount.com"
 
 [workload_identity_pool]
 id = "submit-federation"
-display_name = "GitHub Actions and the submit Lambdas"
+display_name = "GitHub Actions + submit Lambdas"
 
   [[workload_identity_pool.provider]]
   id = "github"
@@ -102,7 +102,7 @@ describe("gcp-identity-sync parseConfig", () => {
     const config = parseConfig(SAMPLE_TOML);
     expect(config.project).toEqual({ id: "diyaccounting-ga4", number: "958354756046" });
     expect(config.serviceAccount.email).toBe("ga4-report-pull@diyaccounting-ga4.iam.gserviceaccount.com");
-    expect(config.pool).toEqual({ id: "submit-federation", displayName: "GitHub Actions and the submit Lambdas" });
+    expect(config.pool).toEqual({ id: "submit-federation", displayName: "GitHub Actions + submit Lambdas" });
     expect(config.providers.map((p) => [p.id, p.type])).toEqual([
       ["github", "oidc"],
       ["aws-prod", "aws"],
@@ -112,6 +112,17 @@ describe("gcp-identity-sync parseConfig", () => {
   });
   it("throws when a provider has an unknown type", () => {
     expect(() => parseConfig(SAMPLE_TOML.replace('type = "aws"', 'type = "saml"'))).toThrow(/type must be/);
+  });
+
+  it("refuses a pool or provider display name longer than the IAM API allows", () => {
+    const longName = "x".repeat(33);
+    expect(() =>
+      parseConfig(SAMPLE_TOML.replace('display_name = "GitHub Actions + submit Lambdas"', `display_name = "${longName}"`)),
+    ).toThrow(/pool submit-federation: display_name .* is 33 characters; the IAM API allows at most 32/);
+    expect(() => parseConfig(SAMPLE_TOML.replace('display_name = "GitHub Actions"', `display_name = "${longName}"`))).toThrow(
+      /provider github: display_name .* is 33 characters/,
+    );
+    expect(() => parseConfig(SAMPLE_TOML.replace('display_name = "GitHub Actions"', `display_name = "${"y".repeat(32)}"`))).not.toThrow();
   });
   it("throws when an aws provider has no account id", () => {
     expect(() => parseConfig(SAMPLE_TOML.replace('account_id = "972912397388"\n', ""))).toThrow(/aws needs account_id/);

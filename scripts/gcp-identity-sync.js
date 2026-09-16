@@ -38,6 +38,18 @@ const RESOURCE_MANAGER_BASE = "https://cloudresourcemanager.googleapis.com/v1";
  *
  * @param {string} tomlString
  */
+// The IAM API refuses a pool or provider display name longer than this at create time
+// (400 INVALID_ARGUMENT), so the plan refuses it first.
+export const MAX_DISPLAY_NAME_LENGTH = 32;
+
+function assertDisplayName(what, displayName) {
+  if (displayName.length > MAX_DISPLAY_NAME_LENGTH) {
+    throw new Error(
+      `${what}: display_name "${displayName}" is ${displayName.length} characters; the IAM API allows at most ${MAX_DISPLAY_NAME_LENGTH}`,
+    );
+  }
+}
+
 export function parseConfig(tomlString) {
   const parsed = TOML.parse(tomlString);
   const project = parsed.project;
@@ -48,6 +60,7 @@ export function parseConfig(tomlString) {
   if (!pool?.id) throw new Error("identity.toml is missing [workload_identity_pool].id");
   const providers = Array.isArray(pool.provider) ? pool.provider : [];
   if (providers.length === 0) throw new Error("identity.toml declares no [[workload_identity_pool.provider]]");
+  assertDisplayName(`pool ${pool.id}`, pool.display_name ? String(pool.display_name) : "");
   for (const provider of providers) {
     if (!provider.id) throw new Error("a provider is missing its id");
     if (provider.type !== "oidc" && provider.type !== "aws") {
@@ -56,6 +69,7 @@ export function parseConfig(tomlString) {
     if (provider.type === "oidc" && !provider.issuer_uri) throw new Error(`provider ${provider.id}: oidc needs issuer_uri`);
     if (provider.type === "aws" && !provider.account_id) throw new Error(`provider ${provider.id}: aws needs account_id`);
     if (!provider.principal_set) throw new Error(`provider ${provider.id}: principal_set is required`);
+    assertDisplayName(`provider ${provider.id}`, provider.display_name ? String(provider.display_name) : "");
     if (!provider.attribute_mapping || typeof provider.attribute_mapping !== "object") {
       throw new Error(`provider ${provider.id}: attribute_mapping is required`);
     }
