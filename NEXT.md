@@ -69,7 +69,8 @@ Every item names its model: the lowest tier that fits (Fable > Opus > Sonnet > H
   (the new test-user rotation enrolled both prod lanes cleanly). The guard covers only a deploy
   already running. Either the guard re-checks immediately before each suite's navigation and waits
   again, or `deploy.yml`'s promotion step waits for a running scheduled probe; pick the one that
-  does not hold a deploy for 40 minutes, then close #273. **Source**: issue #273; run 35142540653.
+  does not hold a deploy for 40 minutes, then close incident #272 (#273 and #274 are closed).
+  **Source**: issues #272, #273; run 35142540653.
   **Owner**: Claude Code. **Model**: Sonnet. **Size**: ~1 file.
 
 - [ ] **B30ag. The alarm-to-issue Lambda opens two issues when SNS delivers twice.** #273 and #274
