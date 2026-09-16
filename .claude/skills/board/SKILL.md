@@ -51,7 +51,7 @@ combined row). Columns:
 | # | Item | Tier | State | Where | Needs | Size | Model | Status | GH issue |
 
 Rows run in board order: **in-flight rows first, whatever their class, at the top of the
-table**, then **machine-only, then human and machine, then human-only, then blocked**. Within
+table**, then **machine-only, then machine-ask, then human-driven, then blocked**. Within
 a group, rows run by tier, an alarm or a pipeline failure counting as
 tier 1 whether or not a backlog row carries it, then the untiered; within a tier, the rows
 that can start run by the size of the change, fewest files first, read from `Size` (a row
@@ -78,13 +78,22 @@ without a count follows the counted ones); equal sizes keep
 - `Where`: for an in-flight row, the branch, the pull request and any running run, in that
   order (`claude/vat-view-entitlement, PR #202, deploy 34784881334`); for any other row `—`.
   Read from `git worktree list`, `gh pr list` and `gh run list`, never from the row's prose.
-- `Needs`: exactly one of `machine-only`, `human and machine`, `human-only` — what it
-  takes to carry the row to completion, not who happens to own it now. `human-only` is
-  work no session can do: an external registration, a console action with no API, a
-  filing against the operator's own company, an email from their address, a decision
-  between named alternatives. `human and machine` needs both, and `Status` says which
-  half is whose. Everything else is `machine-only`, including a row whose only human
-  step is merging the PR — that is the standing workflow, not an action the row needs.
+- `Needs`: exactly one of `machine-only`, `machine-ask`, `human-driven` — what it
+  takes to carry the row to completion, not who happens to own it now. `machine-ask` is
+  work a session drives end to end with a human present to authenticate or approve: a
+  second factor, an SSO login, a command the session's policy denies, a send from the
+  operator's address, a write to Google or GitHub the operator says go to. `human-driven`
+  is work a human must navigate themselves: a coding assistant's practical limits, a
+  physical restriction beyond one authentication (a proctored exam, a signature in
+  person), or policy (a payment mandate, a filing against the operator's own company, a
+  decision between named alternatives). Everything else is `machine-only`, including a
+  row whose only human step is merging the PR — that is the standing workflow, not an
+  action the row needs.
+
+  A `machine-ask` row's `Status` names the ask — what the human must authenticate or
+  approve — in a few words. When the ask is a command the session's policy denies, print
+  the operator's command in full in a fenced block with the `!` prefix, as this skill
+  already requires for operator commands.
 
   Judge this from the work, not from the row's **Owner** line. A row that says "hand the
   list to Claude Code" because reading the operator's mail was assumed to be theirs is
@@ -93,7 +102,8 @@ without a count follows the counted ones); equal sizes keep
 - `Size`: the estimated number of files the change touches, `~n files`, from the item's own
   estimate; `—` when nothing has estimated it. Row order reads this column.
 - `Model`: the proposed sub-agent tier for the row, one of `Fable`, `Opus`, `Sonnet`, `Haiku`,
-  the lowest that fits; `operator` for a `human-only` row; `—` when not yet chosen.
+  the lowest that fits; `operator` for a `human-driven` row; a `machine-ask` row names the tier
+  that drives it; `—` when not yet chosen.
 - `Status`: an annotation, not a paragraph — one clause, 12 words or fewer, current
   as of this render. Date-gated items name the date; blocked items name the blocker;
   in-flight items name the current step only (their branch and PR are in `Where`). The full
@@ -193,7 +203,7 @@ the end) gets a note in `Action`: rename before its next push.
   in the session materially changed an item since the files were last written — then
   one sentence per such item, after the lists.
 - **Keep `NEXT.md` in board order.** Its open items sit under five headings in this
-  sequence: `## In flight`, `## Machine-only`, `## Human and machine`, `## Human-only`,
+  sequence: `## In flight`, `## Machine-only`, `## Machine-ask`, `## Human-driven`,
   `## Blocked` (each blocked entry naming its blocker, and ordered inside that section by
   the same three classes). `## In flight` is first and holds every in-flight row, each
   naming its branch, pull request and running run in its text; it is also where
@@ -201,7 +211,7 @@ the end) gets a note in `Action`: rename before its next push.
   carries no separate tag and cannot drift from its section. Within a heading, items run
   exactly as Part 1's rows do. Before rendering, move any item whose class, state or
   position no longer matches (a row whose branch merged leaves `## In flight` for its
-  class's section with its remainder, or leaves the file; a row whose human half is done
+  class's section with its remainder, or leaves the file; a row whose ask is answered
   moves up to `## Machine-only`; a row that gained a blocker moves down to `## Blocked`; a
   new alarm or pipeline item goes to the top of its section).
   That move is part of the write-back below.
@@ -230,7 +240,7 @@ the end) gets a note in `Action`: rename before its next push.
   `NEXT.md`, not just in the rendering: after rendering, update any `NEXT.md` item whose
   entry no longer matches the status you just printed (same facts, prose fitted to the
   entry), **and move every row whose class changed into its correct section, so the file
-  carries the same machine-only / human and machine / human-only / blocked sequence the
+  carries the same machine-only / machine-ask / human-driven / blocked sequence the
   table just printed.** A render that shows one order while the file holds another is the
   failure this rule exists to prevent. Before committing the `NEXT.md` write-back, run `npx vitest run app/unit-tests/nextShape.test.js` and fix the file if it fails. Commit the `NEXT.md`-only change to `main` (the
   docs exception allows a direct push) and push. Never add rendered status for items that are not on `NEXT.md`; the backlog's
