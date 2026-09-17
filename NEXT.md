@@ -94,15 +94,13 @@ step.
   **Source**: REPORT_KEY_AUDIT.md gap 7. **Owner**: Claude Code on the operator's go. **Model**:
   Sonnet. **Size**: ~1 file.
 
-- [ ] **B52n.2. Create the `donate` key event and re-import the Ads conversions.** PR #282 is on
-  `main` (b3622391) and `main`'s `google apply` run 35171500236 creates the `donate` key event on GA4
-  property 523400333 (read its log for "Key event \"donate\""); then the operator
-  re-imports GA4's key events into the Google Ads account (its id is in the workspace root's runbook)
-  so its Purchase conversion
-  counts subscriptions only. The spreadsheets site's emitter still sends `purchase` for a donation
-  until that repository lands the one-line change in its inbox. **Source**: B52n. **Owner**: Claude
-  Code runs the apply; the operator re-imports in Ads. **Model**: Haiku. **Size**: ~0 files.
-
+- [ ] **B52n.2. Re-import the Ads conversions now `donate` is its own key event.** `main`'s
+  `google apply` run 35171500236 created key event `donate` on GA4 property 523400333
+  (`keyEvents/15792183948`, 02:1x UTC on 2026-09-17). The operator re-imports GA4's key events into
+  the Google Ads account (its id is in the workspace root's runbook) so its Purchase conversion
+  counts subscriptions only; the spreadsheets site's emitter still sends `purchase` for a donation
+  until that repository lands the one-line change in its inbox. **Source**: B52n. **Owner**:
+  Operator, in the Ads console. **Model**: none. **Size**: ~0 files.
 - [ ] **O44. Tell Companies House's XML team what B34.6b submitted.** One email from your address
   to Neal at `xml@companieshouse.gov.uk`, naming: presenter E0000052288, company 06846849, test
   package reference 0012; submissions 000002 and 000003 (2026-09-13 18:19 UTC) rejected with error
