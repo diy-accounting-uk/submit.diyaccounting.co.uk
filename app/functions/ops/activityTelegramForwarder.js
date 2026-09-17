@@ -23,6 +23,12 @@ const ssmClient = new SSMClient({ region: process.env.AWS_REGION || "eu-west-2" 
 
 let cachedBotToken = null;
 
+// Bounds one sendTelegramMessage call (including a possible 429 retry) well inside the
+// Lambda's 10s timeout: an unbounded fetch under load was itself the failure mode (see
+// postToTelegram) and a large retry wait would reintroduce the same problem.
+const TELEGRAM_FETCH_TIMEOUT_MS = 4000;
+const TELEGRAM_RETRY_AFTER_CAP_MS = 3000;
+
 async function resolveBotToken() {
   if (cachedBotToken) return cachedBotToken;
 
@@ -107,22 +113,67 @@ export function resolveTargetChatIds(detail, chatConfig) {
 }
 
 /**
- * Send a message to a Telegram chat via the Bot API.
+ * POST to the Telegram Bot API with a hard per-attempt timeout. Without a timeout, a slow or
+ * stalled connection runs until the Lambda's own 10s timeout kills the invocation, which counts
+ * as a platform Error rather than the application-level failure this function reports.
+ */
+async function postToTelegram(url, payload) {
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), TELEGRAM_FETCH_TIMEOUT_MS);
+  try {
+    return await fetch(url, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: payload,
+      signal: controller.signal,
+    });
+  } finally {
+    clearTimeout(timeout);
+  }
+}
+
+function sleep(ms) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+/**
+ * Read a 429 response body's `parameters.retry_after` (seconds) as milliseconds, or null when
+ * the body doesn't carry one.
+ */
+function parseRetryAfterMs(body) {
+  try {
+    const retryAfter = JSON.parse(body)?.parameters?.retry_after;
+    return typeof retryAfter === "number" ? retryAfter * 1000 : null;
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Send a message to a Telegram chat via the Bot API. A 429 with a `retry_after` inside
+ * TELEGRAM_RETRY_AFTER_CAP_MS is retried once after waiting that long; any other outcome
+ * (including a second 429) is reported through the warn below and the response is returned,
+ * never thrown.
  */
 export async function sendTelegramMessage(botToken, chatId, text) {
   const url = `https://api.telegram.org/bot${botToken}/sendMessage`;
-  const response = await fetch(url, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-      chat_id: chatId,
-      text,
-      parse_mode: "Markdown",
-    }),
-  });
+  const payload = JSON.stringify({ chat_id: chatId, text, parse_mode: "Markdown" });
+
+  let response = await postToTelegram(url, payload);
+  let body;
+
+  if (response.status === 429) {
+    body = await response.text();
+    const retryAfterMs = parseRetryAfterMs(body);
+    if (retryAfterMs !== null && retryAfterMs <= TELEGRAM_RETRY_AFTER_CAP_MS) {
+      await sleep(retryAfterMs);
+      response = await postToTelegram(url, payload);
+      body = undefined;
+    }
+  }
 
   if (!response.ok) {
-    const body = await response.text();
+    if (body === undefined) body = await response.text();
     logger.warn({ message: "Telegram API error", statusCode: response.status, body, chatId });
   }
 
