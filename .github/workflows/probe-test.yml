@@ -224,18 +224,21 @@ jobs:
           echo 'test-auth-password=${{ inputs.test-auth-password }}' | tee -a "$GITHUB_OUTPUT"
           echo 'test-auth-totp-secret=${{ inputs.test-auth-totp-secret }}' | tee -a "$GITHUB_OUTPUT"
 
-      # The scheduled probe runs every 4 hours regardless of what else is happening on main.
-      # workflow_dispatch and workflow_call callers are unaffected: the guard on github.workflow
-      # keeps this step out of the deploy's own probes (when probe-test is called from deploy.yml,
-      # it inherits the deploy's schedule event). This check is cheap and catches the common case
-      # early, but a promotion can still land in the tens of minutes between here and a matrix
-      # job's Playwright navigation, so behaviour-test repeats it immediately before that
-      # navigation (2026-09-16, issue #272) rather than relying on this one alone.
+      # The scheduled probe runs every 4 hours regardless of what else is happening on main; the
+      # guard on github.workflow keeps this step out of the deploy's own prod probes (when
+      # probe-test is called from deploy.yml, it inherits the deploy's schedule event, and
+      # github.workflow is then 'deploy', not 'probe-test'). A branch's own ci probes wait too:
+      # deploy.yml's set-origins swaps the shared ci apex on every ci deploy, branch or main, and
+      # this job's own DIY_SUBMIT_BASE_URL navigates that apex, so any other deploy.yml run on
+      # main promoting it mid-navigation gets the same stale-origin 403 the scheduled probe was
+      # guarded against. This check is cheap and catches the common case early, but a promotion
+      # can still land in the tens of minutes between here and a matrix job's Playwright
+      # navigation, so behaviour-test repeats it immediately before that navigation (issue #272) rather than relying on this one alone.
       - name: Checkout
-        if: ${{ github.event_name == 'schedule' && github.workflow == 'probe-test' }}
+        if: ${{ (github.event_name == 'schedule' && github.workflow == 'probe-test') || (steps.normalise.outputs.github-environment == 'ci' && github.ref != 'refs/heads/main') }}
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
       - name: Wait for a deploy in progress on main before running the scheduled probes
-        if: ${{ github.event_name == 'schedule' && github.workflow == 'probe-test' }}
+        if: ${{ (github.event_name == 'schedule' && github.workflow == 'probe-test') || (steps.normalise.outputs.github-environment == 'ci' && github.ref != 'refs/heads/main') }}
         uses: './.github/actions/wait-for-main-deploy'
         with:
           github-token: ${{ github.token }}
@@ -470,7 +473,7 @@ jobs:
       # ERR_SSL_VERSION_OR_CIPHER_MISMATCH after the test-user rotation ate most of the elapsed
       # time). Re-checking here, immediately before the navigation, closes that gap.
       - name: Wait for a deploy in progress on main before navigating the apex
-        if: ${{ !cancelled() && steps.companies-house-guard.outcome != 'failure' && github.event_name == 'schedule' && github.workflow == 'probe-test' }}
+        if: ${{ !cancelled() && steps.companies-house-guard.outcome != 'failure' && ((github.event_name == 'schedule' && github.workflow == 'probe-test') || (needs.params.outputs.github-environment == 'ci' && github.ref != 'refs/heads/main')) }}
         uses: './.github/actions/wait-for-main-deploy'
         with:
           github-token: ${{ github.token }}
@@ -519,7 +522,7 @@ jobs:
       # The retry re-navigates the apex, so it needs the same check: a promotion that started
       # during the first attempt can still be running when the retry begins.
       - name: Wait for a deploy in progress on main before retrying
-        if: ${{ !cancelled() && steps.behaviour-test.outcome == 'failure' && github.event_name == 'schedule' && github.workflow == 'probe-test' }}
+        if: ${{ !cancelled() && steps.behaviour-test.outcome == 'failure' && ((github.event_name == 'schedule' && github.workflow == 'probe-test') || (needs.params.outputs.github-environment == 'ci' && github.ref != 'refs/heads/main')) }}
         uses: './.github/actions/wait-for-main-deploy'
         with:
           github-token: ${{ github.token }}

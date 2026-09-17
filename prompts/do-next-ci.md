@@ -17,29 +17,36 @@ Run id: `${RUN_ID}`. Run url: `${RUN_URL}`.
 ## Finished work becomes a PR. Unfinished work becomes a patch.
 
 There are exactly two ways this run can end, and you choose between them by one question: **is the
-work complete and verified?**
+work complete and verified?** Either way, you have no `git push`, `git checkout`, `git config` or
+`gh pr create` tool — the workflow does the pushing and the PR, driven by what you write in
+`CHANGES.md`.
 
-**Complete and verified** — push a branch and open a pull request, as a terminal session would.
-Branch naming follows `CLAUDE.md`: `claude/<ns>-<topic>`, where `<ns>` is the area (`ltd`, `itsa`,
-`vat`, `ops`, `cdk`, `docs`). Check `git ls-remote --heads origin` first and pick a name nobody is
-using. The PR body says what the task was, what you changed, what you ran, and what you did not do.
+**Complete and verified** — commit your work (`git add`, `git commit`) and say so. Pick a branch
+name following `CLAUDE.md`: `claude/<ns>-<topic>`, where `<ns>` is the area (`ltd`, `itsa`, `vat`,
+`ops`, `cdk`, `docs`). Check `git ls-remote --heads origin` first and pick a name nobody is using.
+Write it as `- **Branch**: <name>` in `CHANGES.md`, alongside `- **Status**: complete`. Write
+`${OUT_DIR}/PR.md`: a `# <title>` line, then the pull request body — what the task was, what you
+changed, what you ran, and what you did not do. The workflow pushes that branch and opens the PR
+from this file once you stop.
 
-**Not complete, out of time, or nothing suitable to start** — push nothing at all. No branch, no
-PR, no commit on any remote. Write the patch and the handover instead, and they are uploaded as
-artifacts:
+**Not complete, out of time, or nothing suitable to start** — write `- **Status**: handover` in
+`CHANGES.md` instead. A commit is not required; if you have made one, leave it, it is harmless.
+Write the handover as an artifact:
 
 | File | What it must contain |
 |---|---|
-| `work.patch` | `git diff` of everything you changed. Empty is allowed and honest. |
-| `CHANGES.md` | The handover, written to `${OUT_DIR}/CHANGES.md`, never into the repository. Shape defined below. |
+| `CHANGES.md` | The handover, written with the Write tool to `${OUT_DIR}/CHANGES.md`, never into the repository. Shape defined below. |
 | `notes/` | Optional. Logs, command output, anything a later agent would otherwise have to rediscover. |
+
+`work.patch` is not yours to write: the workflow captures whatever you changed — committed or not
+— once you stop, and uploads it beside `CHANGES.md`.
 
 The split is the whole point. A finished task should land like any other work, reviewable as a PR.
 Half-finished work must not: pushed as commits it litters the history, and raised as a PR it
 litters the review queue with something nobody can judge. A patch file costs nothing if abandoned
 and is trivially resumed if it was on a useful track.
 
-**Never push a partial branch "so it is not lost".** It is not lost — it is in the patch.
+**Never try to push a partial branch "so it is not lost".** It is not lost — it is in the patch.
 
 ### What "complete and verified" means
 
@@ -79,10 +86,13 @@ Look for earlier runs of this same workflow that did not complete cleanly in the
 
 ```
 gh run list --workflow agentic-lib-code.yml --limit 40 --json databaseId,status,conclusion,createdAt,displayTitle
-gh run download <id> --dir ${OUT_DIR}/prior/<id>    # for the interesting ones
 ```
 
-Read their `CHANGES.md` and `work.patch`. **This is your judgement, not a rule.** Resume one when
+The workflow has already downloaded the interesting ones' artifacts before you started, under
+`${OUT_DIR}/prior/<run-id>/` — `find ${OUT_DIR}/prior -maxdepth 2 -name CHANGES.md` lists what is
+there. Read their `CHANGES.md` and `work.patch` directly; you have no tool to download more.
+
+**This is your judgement, not a rule.** Resume one when
 it was genuinely on a useful track — a real diagnosis, a patch that applies, a task still open on
 the board. Do not resume one that was thrashing, that stopped because the task turned out to be
 wrong, or whose patch no longer applies to today's `main`. Most runs will not be worth resuming and
@@ -124,13 +134,16 @@ Ten minutes is not much. Prefer a small change you have verified over a large on
 
 ## Step 5 — write the handover
 
-`${OUT_DIR}/CHANGES.md` (the path matters: a `CHANGES.md` in the checkout ends up in the patch and
-the workflow reports no handover at all), and be concrete. A later agent has only this:
+Write `${OUT_DIR}/CHANGES.md` with the Write tool — the directory already exists (the path matters:
+a `CHANGES.md` left in the checkout ends up in the patch and the workflow reports no handover at
+all), and be concrete. A later agent, or the workflow deciding whether to open a PR, has only this:
 
 ```markdown
 # do-next run ${RUN_ID}
 
 - **Run**: ${RUN_URL}
+- **Status**: complete | handover
+- **Branch**: <name, only when Status is complete>
 - **Resumed-From**: <run-id, or "none — started fresh">
 - **Main was**: green | red (<which workflow, which run>)
 - **Task**: <board label and one line, or "fix main", or "nothing qualified">
@@ -151,20 +164,19 @@ someone who has never seen this task can take it.>
 <yes/no and why. Be honest: telling the next run not to bother is as valuable as telling it to.>
 ```
 
-Write the patch in both cases — it costs nothing and it is the record of what this run produced:
+Write `- **Status**: complete` and `- **Branch**: <name>` exactly like that — the workflow matches
+the line literally to decide whether to push and open a PR. Get either wrong and your work lands as
+a patch instead, which costs nothing but a later run's attention.
 
-```
-git add -A && git diff --cached > ${OUT_DIR}/work.patch
-```
-
-If you opened a pull request, say so at the top of `CHANGES.md` with its number and branch, and set
-**Would I resume this?** to no, because the work has landed somewhere reviewable and a later run
-resuming the same patch would duplicate it.
+When `Status` is `complete`, also write `${OUT_DIR}/PR.md` (see above) and set **Would I resume
+this?** to no, because the work is landing somewhere reviewable and a later run resuming the same
+patch would duplicate it. When `Status` is `handover`, you do not write `work.patch` yourself — the
+workflow captures it from whatever you leave behind, committed or not.
 
 ## Attribution
 
-Use the repository's convention with the unattended-agent marker on every commit and in the body of
-any pull request you open, because this is a machine run and not a person at a terminal:
+Use the repository's convention with the unattended-agent marker on every commit and in `PR.md`
+when you write one, because this is a machine run and not a person at a terminal:
 
 ```
 Co-Authored-By: Claude <noreply@anthropic.com>
