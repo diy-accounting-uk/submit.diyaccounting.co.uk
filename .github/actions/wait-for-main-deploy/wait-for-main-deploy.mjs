@@ -13,9 +13,13 @@ const token = process.env.GH_TOKEN;
 const repository = process.env.GITHUB_REPOSITORY;
 const apiBase = process.env.GITHUB_API_URL || "https://api.github.com";
 
+// A run whose next job waits on an environment's protection rules reports the status
+// "waiting", and one just created reports "requested" or "pending": none of those is
+// "in_progress" or "queued", so the count reads every recent run and keeps the ones that
+// have not completed.
 async function countRuns(status) {
   const response = await fetch(
-    `${apiBase}/repos/${repository}/actions/workflows/deploy.yml/runs?branch=main&status=${status}&per_page=1`,
+    `${apiBase}/repos/${repository}/actions/workflows/deploy.yml/runs?branch=main&per_page=20`,
     {
       headers: {
         Authorization: `Bearer ${token}`,
@@ -28,7 +32,9 @@ async function countRuns(status) {
     throw new Error(`GitHub API answered ${response.status}: ${await response.text()}`);
   }
   const body = await response.json();
-  return body.total_count ?? 0;
+  const runs = body.workflow_runs ?? [];
+  if (status === "in_progress") return runs.filter((run) => run.status === "in_progress").length;
+  return runs.filter((run) => run.status !== "completed" && run.status !== "in_progress").length;
 }
 
 const sleep = (seconds) => new Promise((resolve) => setTimeout(resolve, seconds * 1000));
