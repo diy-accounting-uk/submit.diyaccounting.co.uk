@@ -43,6 +43,17 @@ step.
 
 ## In flight
 
+- [ ] **B124.3. The board and pr agent workflows have the same prompt-versus-tools gaps.** Found
+  while fixing B124.2: `agentic-lib-board.yml` allows `git commit` but sets no git identity, and
+  its prompt's board skill runs `npx vitest run app/unit-tests/nextShape.test.js` before the
+  `NEXT.md` commit while the allow-list grants only `npx prettier`; `agentic-lib-pr.yml`'s
+  auto-merge skill reaches for `git diff`, `git rebase`, `git worktree` and `git push
+  --force-with-lease` in its overlap and conflict parts, none of which its allow-list grants, and
+  the CI prompt excuses only Part 1. Apply the B124.2 shape: identity before the agent, the
+  allow-list matching the skill's reads, and the prompt naming the parts that do not run in CI.
+  In flight on `claude/ops-agentic-siblings` (worktree `.claude/worktrees/agentic-siblings`, agent running). **Source**: the b53 handover agent's report. **Owner**: Claude Code. **Model**: Sonnet.
+  **Size**: ~3 files.
+
 - [ ] **B30af.3. A branch deploy's ci probes navigate the ci apex, which main's deploy swaps under
   them.** Run 35161068061 (`claude/ops-triage-budget`, 23:35 to 23:41 UTC on 2026-09-16):
   `tokenEnforcementBehaviour-ci` navigated `https://ci-submit.diyaccounting.co.uk` (15 requests in
@@ -90,17 +101,6 @@ step.
   **Model**: Sonnet. **Size**: ~3 files.
 
 ## Machine-only
-
-- [ ] **B124.3. The board and pr agent workflows have the same prompt-versus-tools gaps.** Found
-  while fixing B124.2: `agentic-lib-board.yml` allows `git commit` but sets no git identity, and
-  its prompt's board skill runs `npx vitest run app/unit-tests/nextShape.test.js` before the
-  `NEXT.md` commit while the allow-list grants only `npx prettier`; `agentic-lib-pr.yml`'s
-  auto-merge skill reaches for `git diff`, `git rebase`, `git worktree` and `git push
-  --force-with-lease` in its overlap and conflict parts, none of which its allow-list grants, and
-  the CI prompt excuses only Part 1. Apply the B124.2 shape: identity before the agent, the
-  allow-list matching the skill's reads, and the prompt naming the parts that do not run in CI.
-  **Source**: the b53 handover agent's report. **Owner**: Claude Code. **Model**: Sonnet.
-  **Size**: ~3 files.
 
 - [ ] **B30ai. Alarm triage reads evidence again: prove it on the next run.** PR #280 (d47884f6)
   tells the agent to call `aws` with no `--profile`, after `REPORT_ALARM_TRIAGE_COST.md` found all
