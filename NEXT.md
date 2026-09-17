@@ -58,9 +58,9 @@ step.
   logs `DEPLOYMENT_NAME=ci-set<N>` and the slot parameter reads back the run id. P3 to P5 follow
   (IdentityStack's callback list; non-prod `publicDomainName = deploymentDomainName` so every probe
   and Lambda moves together; the apex out of the deploy), P3 after P2's registrations. In flight on `claude/ci-1-slot-pool`, PR #295. Its deploy (35179085180) claimed
-  `ci-set1` and stood the set up, then `set origins` lost the apex CNAME race to PR #291's and
-  #294's deploys (CNAMEAlreadyExists at 04:21 UTC); re-run that job after #294's re-run ends,
-  then the same rebase as B30af.4 for the ruleset's contexts. **Source**:
+  `ci-set1` and stood the set up, and its deploy is green after `set origins` re-ran (the first
+  attempt lost the apex CNAME race to PR #291's and #294's deploys). The merge waits on O49 and,
+  after PR #296 merges, the same rebase as B30af.4 for the ruleset's contexts. **Source**:
   issue #290; the design. **Owner**: Claude Code. **Model**: Sonnet. **Size**: ~7 files.
 
 - [ ] **B55.4. Alarm #289: the prod GA4 Lambdas lost their secret ARN when the GitHub copy of
