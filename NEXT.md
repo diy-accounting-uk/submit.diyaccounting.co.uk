@@ -45,6 +45,18 @@ step.
 
 ## In flight
 
+- [ ] **B30aj. Alarm #284: CloudWatch alarms cannot publish to the prod security-findings topic.**
+  The re-run triage (run 35172745844, Haiku first pass, 02:02 UTC on 2026-09-17, the first comment
+  posted under PR #281's shape) read the alarm history: an alarm fires, its action fails with
+  "CloudWatch Alarms is not authorized to perform: SNS:Publish on
+  arn:aws:sns:eu-west-2:972912397388:prod-env-security-findings", and that failed publish is itself
+  the AccessDenied that `prod-env-cis-unauthorized-api-calls` counts, so the alarm re-fires on its
+  own action. The `security-findings` topic in `ObservabilityStack` (or wherever it is declared)
+  needs a topic policy statement allowing `cloudwatch.amazonaws.com` to `SNS:Publish`, scoped to
+  the account's alarms. In flight on `claude/b54-board` (wave b54, agent running). Then close #284
+  with the fix's run. **Source**: issue #284; run 35172745844. **Owner**: Claude Code. **Model**:
+  Sonnet. **Size**: ~2 files.
+
 - [ ] **B53.2. The runbook's rotation entries follow the key audit.** `REPORT_KEY_AUDIT.md`
   (on `main`): §3.3 asserts Google, HMRC and HMRC-sandbox rotation dates that `secrets-rotation.toml`
   leaves blank, so the two disagree and the true dates are unknown; §3.4 names `SUPPORT_ISSUE_PAT`
@@ -163,16 +175,6 @@ step.
 ## Human-driven
 
 ## Blocked
-
-- [ ] **B30aj. Alarm #284: which prod call was denied at 01:25 UTC on 2026-09-17.**
-  `prod-env-cis-unauthorized-api-calls` fired for one datapoint at 01:25 (window 01:20 to 01:35),
-  deployment prod-29f3405, while `main`'s deploy of PR #281 was destroying prod-3ce4693 and
-  B124.3's board proof (run 35171330354, 01:1x) read prod. Read CloudTrail in submit-prod for
-  `AccessDenied` in that window (`aws --profile submit-prod logs filter-log-events` on the CloudTrail
-  log group, or the triage evidence file of run 35170816042) and name the principal and action;
-  fix or tune per the answer, then close #284. Blocked on `aws sso login --sso-session
-  diyaccounting` (the token expired at 02:2x UTC). **Source**: issue #284. **Owner**: Claude Code.
-  **Model**: Sonnet. **Size**: ~1 file.
 
 - [ ] **O17. A sandbox sign-in for the filing suites, and four ci values.** Checked live at
   23:2x UTC on 2026-09-16: the sandbox has no registration page of its own
