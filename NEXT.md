@@ -103,6 +103,30 @@ step.
 
 ## Machine-only
 
+- [ ] **B53.1. A key audit: every long-lived credential the company holds, where it lives, who can
+  read it, when it last rotated.** The operator (2026-09-17), after the GA4 key exposure (O48).
+  From records: `secrets-rotation.toml` (twelve third-party secrets), `RUNBOOK_INFORMATION_SECURITY.md`
+  §2.1 and §3.3, both AWS accounts' Secrets Manager (`aws secretsmanager list-secrets`, names, tags,
+  `LastChangedDate`, resource policies), the GitHub environments' secrets (names and dates from
+  `gh secret list --env ci|prod`, repository secrets), the Google service accounts' keys
+  (`gcloud iam service-accounts keys list` per account in each project), OAuth client secrets, the
+  `RELEASE_PAT` and `AGENT_TOKEN`/`AUTO_MERGE_TOKEN` PATs (`gh api /user` under each for scopes and
+  expiry), SSH signing keys, and the local `.env` and `cognito-native-test-credentials.json`. Write
+  `REPORT_KEY_AUDIT.md`: one table (credential, kind, lives in, readable by, last rotated, expiry,
+  rotation path as code or manual, exposure surface), the gaps, and the rows this creates.
+  **Source**: operator, 2026-09-17; O48. **Owner**: Claude Code. **Model**: Sonnet. **Size**: ~1 file.
+
+- [ ] **B53.2. A key-rotation entry in `RUNBOOK_INFORMATION_SECURITY.md`.** §3 has Google OAuth
+  (3.1) and HMRC (3.2) client secrets and a schedule (3.3); it has no entry for the GA4 service-account
+  key, whose rotation is code (`google-key-rotate.yml`, `scripts/gcp-key-rotate.js`, monthly on the
+  1st) and whose exposure response ran by hand on 2026-09-16 (O48: rotate, delete the old key,
+  audit-log read on `serviceAccountKeyName`, the GitHub copies deleted, the org policy
+  `iam.serviceAccountKeyExposureResponse`). Add §3.5 "Service-account keys": the scheduled path, the
+  exposure procedure as the six CLI steps, and the two rows §3.3 needs (`ga4/service_account`,
+  rotated 2026-09-16, next 2026-10-01 by the workflow); cross-link `secrets-rotation.toml`. Then
+  generalise: one entry per credential kind B53.1 finds without a documented path. **Source**:
+  operator, 2026-09-17; O48. **Owner**: Claude Code. **Model**: Sonnet. **Size**: ~1 file.
+
 - [ ] **B30ai. Alarm triage reads evidence again: prove it on the next run.** PR #280 (d47884f6)
   tells the agent to call `aws` with no `--profile`, after `REPORT_ALARM_TRIAGE_COST.md` found all
   eight triaged runs denied their `aws logs` and `aws cloudwatch` reads (21 denials) for that
