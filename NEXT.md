@@ -145,7 +145,8 @@ step.
 - [ ] **B52n.2. Create the `donate` key event and re-import the Ads conversions.** After PR #282
   is on `main`: `gh workflow run google-apply.yml --ref main -f apply=true` creates the `donate`
   key event on GA4 property 523400333 (`scripts/ga4-sync.js` plans it today); then the operator
-  re-imports GA4's key events into Google Ads account 814-268-5080 so its Purchase conversion
+  re-imports GA4's key events into the Google Ads account (its id is in the workspace root's runbook)
+  so its Purchase conversion
   counts subscriptions only. The spreadsheets site's emitter still sends `purchase` for a donation
   until that repository lands the one-line change in its inbox. **Source**: B52n. **Owner**: Claude
   Code runs the apply; the operator re-imports in Ads. **Model**: Haiku. **Size**: ~0 files.
