@@ -55,6 +55,15 @@ step.
 
 ## Machine-only
 
+- [ ] **B52n. Subscriptions and donations need separate GA4 event names before D17 bids on them.**
+  `google/analytics.toml` maps both `subscribe` and `donate` to the event name `purchase`, so the
+  Google Ads account's Purchase conversion (imported 2026-09-17, O23 done: account, GA4 property
+  523400333 linked, key events imported, reserve floor recorded at the workspace root) cannot tell
+  one from the other. Give each its own event name in the toml and wherever the site emits them,
+  re-run the GA4 sync, and re-import the key events in Ads; campaign 1 stays paused until then.
+  **Source**: Cowork, 2026-09-17; `PLAN_ONE_STOP_DASHBOARD.md` D17. **Owner**: Claude Code.
+  **Model**: Sonnet. **Size**: ~3 files.
+
 - [ ] **B30af.3. A branch deploy's ci probes navigate the ci apex, which main's deploy swaps under
   them.** Run 35161068061 (`claude/ops-triage-budget`, 23:35 to 23:41 UTC on 2026-09-16):
   `tokenEnforcementBehaviour-ci` navigated `https://ci-submit.diyaccounting.co.uk` (15 requests in
@@ -194,13 +203,6 @@ step.
   environments, 2026-09-16). **Size**: ~12 files.
 
 ## Human-driven
-
-- [ ] **O23. Open a Google Ads account for the paid-traffic experiments.** Both earlier Ads
-  accounts were cancelled (`google-analytics.toml`); the reinvestment loop (plan row D17) needs
-  one with conversion import from GA4 property 523400333's key events, and a reserve floor
-  the loop must not spend below. Name the floor to Claude Code with the account id; the first
-  test is designed as on-off weeks before any spend. **Source**: `PLAN_ONE_STOP_DASHBOARD.md`
-  D17. **Owner**: Operator: a payment mandate and the floor are theirs to decide. **Model**: none.
 
 ## Blocked
 
