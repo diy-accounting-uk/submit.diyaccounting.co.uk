@@ -234,6 +234,35 @@ jobs:
       # branch, a push, and a pull request. The agent has no push or `gh pr create` tool (see the
       # allow-list above), so this step does that on its behalf, only when CHANGES.md's one exact
       # marker line says so.
+      # An agent that wrote its handover somewhere in the checkout instead of OUT_DIR still
+      # wrote one: move it out before the landing step reads it, so a complete run lands and the
+      # handover stays out of the patch; drop any patch it wrote there too, since the capture
+      # step's diff is the patch.
+      - name: Move a handover left in the checkout into the output directory
+        if: always() && steps.run.outcome != 'skipped'
+        run: |
+          set -euo pipefail
+          mkdir -p "${OUT_DIR}"
+          git add -A 2>/dev/null || true
+          if [ ! -s "${OUT_DIR}/CHANGES.md" ]; then
+            stray=$(git diff --cached --name-only --diff-filter=A | grep -E '(^|/)CHANGES\.md$' | head -1 || true)
+            if [ -n "${stray}" ]; then
+              git reset -q -- "${stray}" 2>/dev/null || true
+              mv "${stray}" "${OUT_DIR}/CHANGES.md"
+            fi
+          fi
+          if [ ! -s "${OUT_DIR}/PR.md" ]; then
+            straypr=$(git diff --cached --name-only --diff-filter=A | grep -E '(^|/)PR\.md$' | head -1 || true)
+            if [ -n "${straypr}" ]; then
+              git reset -q -- "${straypr}" 2>/dev/null || true
+              mv "${straypr}" "${OUT_DIR}/PR.md"
+            fi
+          fi
+          for straypatch in $(git diff --cached --name-only --diff-filter=A | grep -E '(^|/)work\.patch$' || true); do
+            git reset -q -- "${straypatch}" 2>/dev/null || true
+            rm -f "${straypatch}"
+          done
+
       - name: Land a complete run as a pull request
         if: always() && steps.run.outcome != 'skipped'
         env:
@@ -310,20 +339,6 @@ jobs:
           set -euo pipefail
           mkdir -p "${OUT_DIR}"
           git add -A 2>/dev/null || true
-          # An agent that wrote its handover somewhere in the checkout instead of OUT_DIR still
-          # wrote one: move it out so it is read as the handover and stays out of the patch, and
-          # drop any patch it wrote there too, since the diff below is the patch.
-          if [ ! -s "${OUT_DIR}/CHANGES.md" ]; then
-            stray=$(git diff --cached --name-only --diff-filter=A | grep -E '(^|/)CHANGES\.md$' | head -1 || true)
-            if [ -n "${stray}" ]; then
-              git reset -q -- "${stray}" 2>/dev/null || true
-              mv "${stray}" "${OUT_DIR}/CHANGES.md"
-            fi
-          fi
-          for straypatch in $(git diff --cached --name-only --diff-filter=A | grep -E '(^|/)work\.patch$' || true); do
-            git reset -q -- "${straypatch}" 2>/dev/null || true
-            rm -f "${straypatch}"
-          done
           # Diff the index against the pre-agent commit, not against HEAD: an agent that committed
           # its own work (now possible - the identity step above lets `git commit` succeed) moves
           # HEAD, and `git diff --cached` alone would then show nothing, silently losing a
