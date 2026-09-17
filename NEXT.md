@@ -20,7 +20,7 @@ PR; the operator merges.
 b8bd2f37, the same code as PRs #294 and #291; last-known-good set at 10:07 UTC on 2026-09-17; it is
 destroying prod-9284434). **ci**: `ci-set1` (PR #295's set, promoted at 08:38 UTC, last-known-good at
 10:06) is live; its self-destruct schedule from the slot's first claim fires next at 11:44 UTC
-(B30af.7). **ci**: `ci-claud86af` is live.
+(B30af.7).
 
 The board runs in five sections, in this order: **in flight** (a branch, a pull request or a run
 in motion, each named in the row), **machine-only**, **machine-ask**, **human-driven**,
