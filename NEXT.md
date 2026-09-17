@@ -16,8 +16,9 @@ runs), and for Claude Code steps the **Model** a sub-agent should use (Fable > O
 Haiku; the lowest tier that fits). Anything touching code goes through a `claude/*` branch and
 PR; the operator merges.
 
-**Prod runs deployment prod-b14a769** (PR #297, run 35214505930, green at 12:25 UTC on 2026-09-17).
-PR #299 merged next; its deploy of `main` promotes prod's next set when its suites pass. **ci**: `ci-set1` (PR #295's set, last-known-good at 10:06 UTC) is live; its self-destruct schedule from
+**Prod runs deployment prod-50e2b12** (PR #299, run 35221056420, green at 13:46 UTC on 2026-09-17,
+nine stacks). PR #300 merged as d689744f; its deploy of `main` (35229274840) is running and promotes
+prod's next set when its suites pass. **ci**: `ci-set1` (PR #295's set, last-known-good at 10:06 UTC) is live; its self-destruct schedule from
 the slot's first claim fires next at 11:44 UTC (B30af.7). PR #295 merged as 53bc2d1c; `main`'s
 deploy 35210720771 is running.
 
@@ -41,40 +42,21 @@ step.
 
 ## In flight
 
-- [ ] **B30af.8. The main-deploy guard waits for main's whole run, not for its apex move.**
-  `wait-for-main-deploy.mjs` holds every branch probe while any `deploy.yml` run on `main` is
-  not completed. On 2026-09-17 PRs #295 and #297 sat in that wait from 08:39 UTC while main's
-  run 35194544211 deployed its prod stacks and destroyed the previous prod set, though the ci
-  apex is only touched by main's `set origins` job, which had finished; the guard's 40-minute
-  ceiling released them, and the same guard runs again inside every behaviour job ("Wait for a
-  deploy in progress on main before navigating the apex"), where the daily scheduled prod deploy
-  (35205082047, 09:25 UTC) caught #295's last two suites for a second 40 minutes; behind that,
-  #297's `wait for previous cleanup` gave up after its 90-minute ceiling waiting for #295's run.
-  Read main's in-flight run's jobs (`/actions/runs/<id>/jobs`) and wait
-  only until its `set origins` job (and `roll back apex` if it runs) is completed, or until the
-  run ends; `.github/actions/wait-for-main-deploy/wait-for-main-deploy.mjs` and its unit test.
-  In flight on `claude/b57-board`, PR #300. **Source**: runs 35194697647 and 35196041181's probe `params` jobs. **Owner**: Claude Code.
-  **Model**: Sonnet. **Size**: ~2 files.
-
-- [ ] **B30af.7. A slot reclaim re-anchors the slot's self-destruct clock.** `ci-set1`'s
-  `SelfDestructStack` keeps the schedule of the slot's first claim (`cron(44 7/4 * * ? *)` from
-  03:47 UTC on 2026-09-17), so the redeploy of the same ref at 07:33 was cut across at 07:44 while
-  it waited on the environment deploy: the self-destruct removed Ops, Publish and Edge under it.
-  When `claim-ci-slot` reclaims a slot (same ref, or stale), the deploy must move the schedule
-  to creation-plus-delay from the claim, or delete and recreate the `SelfDestructStack`, so a
-  redeploy always has a full window. `SelfDestructStack.java`, `claim-ci-slot.mjs`, `deploy.yml`.
-  In flight on `claude/b57-board`, PR #300. **Source**: the self-destruct log `/aws/lambda/ci-env-self-destruct-eu-west-2` at 07:44 UTC on
-  2026-09-17. **Owner**: Claude Code. **Model**: Sonnet.
-  **Size**: ~3 files.
-
 ## Machine-only
 
-- [ ] **B30am. Alarm #298: close it when the forwarder's next burst stays clean.** PR #299 bounds
-  the activity Telegram forwarder's send at 4 s and retries a 429 once; `main`'s deploy carries it.
-  After the next deploy-driven burst (any prod deploy's behaviour tests), read the `Errors` metric
-  of `prod-env-activity-telegram-forwarder` for that hour: 0, and no `Status: timeout` REPORT lines
-  in its log; then close #298 with that evidence. **Source**: issue #298. **Owner**: Claude Code.
-  **Model**: Haiku. **Size**: ~0 files.
+- [ ] **B30af.8. The main-deploy guard's first live proof.** PR #300 (d689744f) makes
+  `wait-for-main-deploy.mjs` stop gating once main's `set origins` job is completed and no rollback
+  is in flight. Proof on the next branch deploy that overlaps a main deploy: the probe's `params`
+  job log carries `job 'set origins' completed on run <id>; not gating` while main's run is still
+  in its prod half. `wait-for-ci-deploys.mjs` (deploy.yml's `wait for previous cleanup`) has the
+  same whole-run shape and is its own row when it next costs a ceiling. **Source**: PR #300.
+  **Owner**: Claude Code. **Model**: Haiku. **Size**: ~0 files.
+
+- [ ] **B30af.7. The slot clock's first live proof.** PR #300 (d689744f) anchors a slot
+  deployment's self-destruct window to its claim. Proof on the next slot claim: `aws --profile
+  submit-ci events describe-rule --name ci-set<N>-app-sd-schedule` shows a start time at the claim
+  plus the delay (ci-set1's read `cron(48 7/4 * * ? *)`, start 07:48:08Z, before the fix).
+  **Source**: PR #300. **Owner**: Claude Code. **Model**: Haiku. **Size**: ~0 files.
 
 - [ ] **B52y.3. The security lake nightly's WAF rows: the next run proves the grant.** PR #297
   (b14a7692) gives the nightly's role `logs:DescribeLogGroups` on the resource IAM evaluates it
