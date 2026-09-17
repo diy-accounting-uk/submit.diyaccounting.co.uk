@@ -16,11 +16,9 @@ runs), and for Claude Code steps the **Model** a sub-agent should use (Fable > O
 Haiku; the lowest tier that fits). Anything touching code goes through a `claude/*` branch and
 PR; the operator merges.
 
-**Prod runs deployment prod-b362239** (PR #282, run 35171500590, promoted at 02:5x UTC on
-2026-09-17, read from alarm issues #292 and #293; unverified against AWS because prod's SSO token
-expired at 02:2x UTC: `aws sso login --sso-session diyaccounting` before the next AWS read). PR
-#288's deploy of `main` (35176978495) is running and promotes its set when its suites pass.
-**ci**: `ci-claud86af` is live.
+**Prod runs deployment prod-952b978** (PR #288, run 35176978495, last-known-good set at 04:32 UTC
+on 2026-09-17; prod's SSO token expired at 02:2x UTC, so unverified against AWS:
+`aws sso login --sso-session diyaccounting` before the next AWS read). **ci**: `ci-claud86af` is live.
 
 The board runs in five sections, in this order: **in flight** (a branch, a pull request or a run
 in motion, each named in the row), **machine-only**, **machine-ask**, **human-driven**,
@@ -42,6 +40,13 @@ step.
 
 ## In flight
 
+- [ ] **B56.1. Every code push runs the checks main's ruleset requires.** `test.yml` and
+  `codeql.yml` skipped pushes touching only `.github/actions/*`, `scripts/` or `google/`, so PR
+  #291's head and PR #295's fix push carried none of the `npm test`, `maven test`, `eslint` and
+  `CodeQL` contexts and GitHub refused both merges. Both workflows now ignore only Markdown. In
+  flight on `claude/ops-test-paths`, PR #296. **Source**: PR #291's refused merge. **Owner**:
+  Claude Code. **Model**: Haiku. **Size**: ~2 files.
+
 - [ ] **B30af.5. Branch deploys leave the ci apex: P1, the slot pool.**
   `_developers/DESIGN_CI_BRANCH_DEPLOYS_OFF_THE_APEX.md` (on `main`) settles the shape: four fixed
   slot hosts `ci-set1` to `ci-set4`, registered once with Cognito, HMRC and Companies House (the
@@ -52,7 +57,10 @@ step.
   `destroy-ci.yml` and `selfDestruct.js` releasing the slot. Proof: a branch deploy's `names` job
   logs `DEPLOYMENT_NAME=ci-set<N>` and the slot parameter reads back the run id. P3 to P5 follow
   (IdentityStack's callback list; non-prod `publicDomainName = deploymentDomainName` so every probe
-  and Lambda moves together; the apex out of the deploy), P3 after P2's registrations. In flight on `claude/ci-1-slot-pool`, PR #295 (its branch deploy is the proof). **Source**:
+  and Lambda moves together; the apex out of the deploy), P3 after P2's registrations. In flight on `claude/ci-1-slot-pool`, PR #295. Its deploy (35179085180) claimed
+  `ci-set1` and stood the set up, then `set origins` lost the apex CNAME race to PR #291's and
+  #294's deploys (CNAMEAlreadyExists at 04:21 UTC); re-run that job after #294's re-run ends,
+  then the same rebase as B30af.4 for the ruleset's contexts. **Source**:
   issue #290; the design. **Owner**: Claude Code. **Model**: Sonnet. **Size**: ~7 files.
 
 - [ ] **B55.4. Alarm #289: the prod GA4 Lambdas lost their secret ARN when the GitHub copy of
@@ -77,16 +85,12 @@ step.
   `waiting` status (an environment-protected job), and six ci suites then met CloudFront's "The
   request could not be satisfied" on the apex. `wait-for-main-deploy.mjs` now reads every recent
   run on `main` and counts the ones not completed. In flight on `claude/ops-wait-guard` (PR
-  #291); the six jobs are re-running after main's deploy ended green. **Source**: run
+  #291), its deploy green; the merge is refused by main's ruleset because the head carries none
+  of the required test contexts (B56.1), so after PR #296 merges the branch rebases onto `main`
+  and its push runs `test.yml`. **Source**: run
   35171600510. **Owner**: Claude Code. **Model**: Haiku. **Size**: ~1 file.
 
 ## Machine-only
-
-- [ ] **B30aj.2. Close #293 when prod carries wave b54.** PR #288 is on `main` with the
-  security-findings topic policy; alarm #293 (`prod-env-cis-unauthorized-api-calls`, 03:18 UTC on
-  2026-09-17) is the same denied SNS publish that #284 re-fired on. Read `main`'s deploy of #288
-  (35176978495) to its terminal state, confirm the prod pointer moved, then close #293 with the
-  run id. **Source**: issue #293. **Owner**: Claude Code. **Model**: Haiku. **Size**: ~0 files.
 
 ## Machine-ask
 
