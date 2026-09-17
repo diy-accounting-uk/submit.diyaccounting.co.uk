@@ -52,7 +52,7 @@ step.
   `destroy-ci.yml` and `selfDestruct.js` releasing the slot. Proof: a branch deploy's `names` job
   logs `DEPLOYMENT_NAME=ci-set<N>` and the slot parameter reads back the run id. P3 to P5 follow
   (IdentityStack's callback list; non-prod `publicDomainName = deploymentDomainName` so every probe
-  and Lambda moves together; the apex out of the deploy), P3 after P2's registrations. In flight on `claude/ci-1-slot-pool` (agent running). **Source**:
+  and Lambda moves together; the apex out of the deploy), P3 after P2's registrations. In flight on `claude/ci-1-slot-pool`, PR #295 (its branch deploy is the proof). **Source**:
   issue #290; the design. **Owner**: Claude Code. **Model**: Sonnet. **Size**: ~7 files.
 
 - [ ] **B55.4. Alarm #289: the prod GA4 Lambdas lost their secret ARN when the GitHub copy of
