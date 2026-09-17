@@ -66,7 +66,7 @@ step.
   row from `NEXT.md` on a branch; the prompt must say `NEXT.md` is never edited by the code agent
   (the board workflow owns it on `main`). Its finding stands and closes B30ai: triage run
   35170816042's "Prove the triage credentials" step ran `aws logs describe-log-groups` and `aws
-  cloudwatch describe-alarm-history` successfully at 01:31 UTC. In flight on `claude/ops-code-landing` (PR follows). **Source**: run 35171625388.
+  cloudwatch describe-alarm-history` successfully at 01:31 UTC. In flight on `claude/ops-code-landing` (PR #287). **Source**: run 35171625388.
   **Owner**: Claude Code. **Model**: Sonnet. **Size**: ~2 files.
 
 - [ ] **B53.2. The runbook's rotation entries follow the key audit.** `REPORT_KEY_AUDIT.md`
