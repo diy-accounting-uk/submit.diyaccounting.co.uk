@@ -168,6 +168,11 @@ public class SubmitSharedNames {
     public String glueDatabaseName;
     public String athenaWorkGroupName;
     public String stateMachineName;
+    // Named the same deterministic way create-secrets in deploy-environment.yml names the
+    // secret it writes the rotated GA4 key into, so IngestionStack never needs the ARN passed
+    // in from a workflow input or cdk.json: the secret's name is a function of the environment
+    // alone, never of whether anything has populated it yet.
+    public String ga4ServiceAccountSecretArn;
     public String activityEventsDeliveryStreamName;
     public String activityEventsDeliveryStreamLogGroupName;
     public String activityEventTransformLambdaFunctionName;
@@ -1233,6 +1238,8 @@ public class SubmitSharedNames {
         this.glueDatabaseName = "%s_env_analytics".formatted(props.envName);
         this.athenaWorkGroupName = "%s-analytics".formatted(this.envResourceNamePrefix);
         this.stateMachineName = "%s-analytics-nightly".formatted(this.envResourceNamePrefix);
+        this.ga4ServiceAccountSecretArn = "arn:aws:secretsmanager:%s:%s:secret:%s/submit/ga4/service_account"
+                .formatted(props.regionName, props.awsAccount, props.envName);
         this.activityEventsDeliveryStreamName = "%s-activity-events".formatted(this.envResourceNamePrefix);
         this.activityEventsDeliveryStreamLogGroupName =
                 "/aws/kinesisfirehose/%s".formatted(this.activityEventsDeliveryStreamName);

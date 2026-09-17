@@ -34,24 +34,13 @@ class IngestionStackTest {
     private static IngestionStack synthIngestionStack(
             String envName, String stripeSecretKeyArn, String stripeTestSecretKeyArn) {
         return synthIngestionStack(
-                envName, stripeSecretKeyArn, stripeTestSecretKeyArn, "999000111", null, "docs-ga4", null, null);
+                envName, stripeSecretKeyArn, stripeTestSecretKeyArn, "999000111", "docs-ga4", null, null);
     }
 
     private static IngestionStack synthIngestionStack(
-            String envName,
-            String stripeSecretKeyArn,
-            String stripeTestSecretKeyArn,
-            String ga4PropertyId,
-            String ga4ServiceAccountArn) {
+            String envName, String stripeSecretKeyArn, String stripeTestSecretKeyArn, String ga4PropertyId) {
         return synthIngestionStack(
-                envName,
-                stripeSecretKeyArn,
-                stripeTestSecretKeyArn,
-                ga4PropertyId,
-                ga4ServiceAccountArn,
-                "docs-ga4",
-                null,
-                null);
+                envName, stripeSecretKeyArn, stripeTestSecretKeyArn, ga4PropertyId, "docs-ga4", null, null);
     }
 
     private static IngestionStack synthIngestionStack(
@@ -59,7 +48,6 @@ class IngestionStackTest {
             String stripeSecretKeyArn,
             String stripeTestSecretKeyArn,
             String ga4PropertyId,
-            String ga4ServiceAccountArn,
             String ga4BigQueryProjectId,
             String ga4BigQueryDatasetId,
             String ga4BigQueryLocation) {
@@ -68,7 +56,6 @@ class IngestionStackTest {
                 stripeSecretKeyArn,
                 stripeTestSecretKeyArn,
                 ga4PropertyId,
-                ga4ServiceAccountArn,
                 ga4BigQueryProjectId,
                 ga4BigQueryDatasetId,
                 ga4BigQueryLocation,
@@ -80,7 +67,6 @@ class IngestionStackTest {
             String stripeSecretKeyArn,
             String stripeTestSecretKeyArn,
             String ga4PropertyId,
-            String ga4ServiceAccountArn,
             String ga4BigQueryProjectId,
             String ga4BigQueryDatasetId,
             String ga4BigQueryLocation,
@@ -108,9 +94,6 @@ class IngestionStackTest {
         }
         if (ga4PropertyId != null) {
             builder.ga4PropertyId(ga4PropertyId);
-        }
-        if (ga4ServiceAccountArn != null) {
-            builder.ga4ServiceAccountArn(ga4ServiceAccountArn);
         }
         if (ga4BigQueryProjectId != null) {
             builder.ga4BigQueryProjectId(ga4BigQueryProjectId);
@@ -295,12 +278,12 @@ class IngestionStackTest {
     void blankGa4PropertyIdFailsSynthInProdButNotElsewhere() {
         assertThrows(
                 IllegalStateException.class,
-                () -> synthIngestionStack("prod", null, null, null, null),
+                () -> synthIngestionStack("prod", null, null, null),
                 "a blank ga4PropertyId in prod must fail synth, not silently run with no property configured");
 
         // Same blank property id, non-prod envName: synth succeeds, matching the ci-deploys-fine-
         // before-the-operator-creates-the-service-account guarantee the design calls for.
-        Template template = Template.fromStack(synthIngestionStack("docs", null, null, null, null));
+        Template template = Template.fromStack(synthIngestionStack("docs", null, null, null));
         template.resourceCountIs("AWS::Lambda::Function", 6);
     }
 
@@ -308,19 +291,19 @@ class IngestionStackTest {
     void blankGa4BigQueryProjectIdFailsSynthInProdButNotElsewhere() {
         assertThrows(
                 IllegalStateException.class,
-                () -> synthIngestionStack("prod", null, null, "999000111", null, null, null, null),
+                () -> synthIngestionStack("prod", null, null, "999000111", null, null, null),
                 "a blank ga4BigQueryProjectId in prod must fail synth, not silently run with the job misconfigured");
 
         // Same blank project id, non-prod envName: synth succeeds, matching the ci-deploys-fine-
         // before-the-operator-grants-BigQuery-access guarantee the design calls for.
         Template template =
-                Template.fromStack(synthIngestionStack("docs", null, null, "999000111", null, null, null, null));
+                Template.fromStack(synthIngestionStack("docs", null, null, "999000111", null, null, null));
         template.resourceCountIs("AWS::Lambda::Function", 6);
     }
 
     @Test
     void ga4PropertyIdEnvVarIsOmittedWhenBlankAndPresentWhenConfigured() {
-        Template blank = Template.fromStack(synthIngestionStack("docs", null, null, null, null));
+        Template blank = Template.fromStack(synthIngestionStack("docs", null, null, null));
         var blankFunctions = blank.findResources(
                 "AWS::Lambda::Function", Map.of("Properties", Map.of("FunctionName", "docs-env-ga4-report-pull")));
         assertEquals(1, blankFunctions.size());
@@ -328,7 +311,7 @@ class IngestionStackTest {
                 environmentVariablesOf(blankFunctions).containsKey("GA4_PROPERTY_ID"),
                 "GA4_PROPERTY_ID must not be set when ga4PropertyId is blank");
 
-        Template configured = Template.fromStack(synthIngestionStack("docs", null, null, "523400333", null));
+        Template configured = Template.fromStack(synthIngestionStack("docs", null, null, "523400333"));
         configured.hasResourceProperties(
                 "AWS::Lambda::Function",
                 Match.objectLike(Map.of(
@@ -340,27 +323,11 @@ class IngestionStackTest {
     }
 
     @Test
-    void ga4ReportPullGetsScopedSecretGrantOnlyWhenArnIsConfigured() {
-        Template unconfigured = Template.fromStack(synthIngestionStack());
-        unconfigured.resourcePropertiesCountIs(
-                "AWS::IAM::Policy",
-                Match.objectLike(Map.of(
-                        "PolicyDocument",
-                        Match.objectLike(Map.of(
-                                "Statement",
-                                Match.arrayWith(List.of(Match.objectLike(Map.of(
-                                        "Action",
-                                        "secretsmanager:GetSecretValue",
-                                        "Resource",
-                                        Match.stringLikeRegexp(".*ga4.*"))))))))),
-                0);
-
-        Template configured = Template.fromStack(synthIngestionStack(
-                "docs",
-                null,
-                null,
-                "523400333",
-                "arn:aws:secretsmanager:eu-west-2:111111111111:secret:docs/submit/ga4/service_account"));
+    void ga4ReportPullAlwaysGetsTheSecretGrantForItsEnvironmentsSecretName() {
+        // The ARN is derived from SubmitSharedNames (region, account, envName), never from a
+        // synth-time input, so the grant exists on every synth, not only when something has
+        // configured it.
+        Template configured = Template.fromStack(synthIngestionStack("docs", null, null, "523400333"));
 
         configured.hasResourceProperties(
                 "AWS::IAM::Policy",
@@ -420,7 +387,7 @@ class IngestionStackTest {
     @Test
     void ga4BigQueryConfigEnvVarsAreOmittedWhenBlankAndPresentWhenConfigured() {
         Template blank =
-                Template.fromStack(synthIngestionStack("docs", null, null, "999000111", null, null, null, null));
+                Template.fromStack(synthIngestionStack("docs", null, null, "999000111", null, null, null));
         var blankFunctions = blank.findResources(
                 "AWS::Lambda::Function",
                 Map.of("Properties", Map.of("FunctionName", "docs-env-ga4-event-export-pull")));
@@ -431,7 +398,7 @@ class IngestionStackTest {
         assertFalse(blankEnv.containsKey("GA4_BIGQUERY_LOCATION"));
 
         Template configured = Template.fromStack(synthIngestionStack(
-                "docs", null, null, "999000111", null, "diyaccounting-ga4", "analytics_523400333", "europe-west2"));
+                "docs", null, null, "999000111", "diyaccounting-ga4", "analytics_523400333", "europe-west2"));
         configured.hasResourceProperties(
                 "AWS::Lambda::Function",
                 Match.objectLike(Map.of(
@@ -450,27 +417,12 @@ class IngestionStackTest {
     }
 
     @Test
-    void ga4EventExportPullGetsScopedSecretGrantOnlyWhenArnIsConfigured() {
-        Template unconfigured = Template.fromStack(synthIngestionStack());
-        unconfigured.resourcePropertiesCountIs(
-                "AWS::IAM::Policy",
-                Match.objectLike(Map.of(
-                        "PolicyDocument",
-                        Match.objectLike(Map.of(
-                                "Statement",
-                                Match.arrayWith(List.of(Match.objectLike(Map.of(
-                                        "Action",
-                                        "secretsmanager:GetSecretValue",
-                                        "Resource",
-                                        Match.stringLikeRegexp(".*ga4.*"))))))))),
-                0);
-
+    void ga4EventExportPullAlwaysGetsTheSecretGrantForItsEnvironmentsSecretName() {
         Template configured = Template.fromStack(synthIngestionStack(
                 "docs",
                 null,
                 null,
                 "999000111",
-                "arn:aws:secretsmanager:eu-west-2:111111111111:secret:docs/submit/ga4/service_account",
                 "diyaccounting-ga4",
                 "analytics_523400333",
                 "europe-west2"));
@@ -542,7 +494,7 @@ class IngestionStackTest {
     @Test
     void ga4JobsCarryTheFederationVariablesForTheirEnvironment() {
         Template ci = Template.fromStack(
-                synthIngestionStack("ci", null, null, "552917343", null, "diyaccounting-ga4", null, null, "federated"));
+                synthIngestionStack("ci", null, null, "552917343", "diyaccounting-ga4", null, null, "federated"));
         for (String functionName :
                 List.of("docs-env-ga4-report-pull", "docs-env-ga4-event-export-pull", "docs-env-ga4-daily-pull")) {
             var functions = ci.findResources(
@@ -560,7 +512,7 @@ class IngestionStackTest {
                     functionName);
         }
 
-        Template docs = Template.fromStack(synthIngestionStack("docs", null, null, null, null));
+        Template docs = Template.fromStack(synthIngestionStack("docs", null, null, null));
         var reportPull = docs.findResources(
                 "AWS::Lambda::Function", Map.of("Properties", Map.of("FunctionName", "docs-env-ga4-report-pull")));
         var env = environmentVariablesOf(reportPull);
