@@ -1,0 +1,70 @@
+# SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0
+# Copyright (C) 2006-2026 DIY Accounting Limited
+
+name: 'Claim a ci slot'
+description: >
+  Claims one of a fixed pool of ci deployment names (ci-set1..ci-setN) so a branch deploy lands
+  on a host already registered with HMRC, Companies House and Cognito. Not for prod and not for an explicit
+  deployment-name dispatch: the caller decides when to invoke this action, this action always
+  claims a slot when run.
+inputs:
+  github-ref:
+    description: "This run's github.ref, stored in the slot's claim record and used to win the same slot back on a redeploy."
+    required: true
+  run-id:
+    description: "This run's github.run_id, stored in the slot's claim record for diagnostics only."
+    required: true
+  self-destruct-delay-hours:
+    description: >
+      This deployment's self-destruct delay. A slot's claim is stale, and so free, once
+      claimedAt is older than this many hours plus one - matching deploy.yml's own
+      self-destruct anchor so a slot outlives the deployment that holds it.
+    required: true
+  slot-count:
+    description: 'Number of fixed slots in the pool.'
+    required: false
+    default: '4'
+  slot-prefix:
+    description: 'Prefix for slot names; slots are named <prefix>1 .. <prefix>N.'
+    required: false
+    default: 'ci-set'
+  poll-interval-seconds:
+    description: 'Seconds to wait between claim attempts when every slot is held.'
+    required: false
+    default: '60'
+  poll-ceiling-seconds:
+    description: 'Total seconds to keep polling before failing the run.'
+    required: false
+    default: '1800'
+  aws-region:
+    description: 'Region for the SSM parameters the slot claims live in.'
+    required: false
+    default: 'eu-west-2'
+
+outputs:
+  deployment-name:
+    description: 'The claimed slot name, e.g. ci-set2.'
+    value: ${{ steps.claim.outputs.DEPLOYMENT_NAME }}
+
+runs:
+  using: 'composite'
+  steps:
+    - id: claim
+      shell: bash
+      env:
+        CLAIM_CI_SLOT_GITHUB_REF: ${{ inputs.github-ref }}
+        CLAIM_CI_SLOT_RUN_ID: ${{ inputs.run-id }}
+        CLAIM_CI_SLOT_DELAY_HOURS: ${{ inputs.self-destruct-delay-hours }}
+        CLAIM_CI_SLOT_SLOT_COUNT: ${{ inputs.slot-count }}
+        CLAIM_CI_SLOT_SLOT_PREFIX: ${{ inputs.slot-prefix }}
+        CLAIM_CI_SLOT_POLL_SECONDS: ${{ inputs.poll-interval-seconds }}
+        CLAIM_CI_SLOT_CEILING_SECONDS: ${{ inputs.poll-ceiling-seconds }}
+        AWS_REGION: ${{ inputs.aws-region }}
+      # The github.action_path and github.workspace expressions expand to the runner's host
+      # paths, which a container job cannot see. The GITHUB_WORKSPACE variable set inside the
+      # step is the checkout's path wherever the step runs - same reasoning as
+      # wait-for-ci-deploys/action.yml.
+      run: |
+        CLAIM_CI_SLOT_AWS_CLI="$(command -v aws)"
+        export CLAIM_CI_SLOT_AWS_CLI
+        node "${GITHUB_WORKSPACE}/.github/actions/claim-ci-slot/claim-ci-slot.mjs"

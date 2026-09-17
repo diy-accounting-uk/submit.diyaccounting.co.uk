@@ -963,6 +963,24 @@ jobs:
             done
           done
 
+      # A slot's stacks come and go on every claim; its registrations with HMRC, Companies
+      # House and Cognito do not. Only the claim record is released here -
+      # a deployment name outside the pool (an explicit deployment-name dispatch) never held
+      # one, so the delete is a harmless no-op for it.
+      - name: Release the ci slot
+        if: ${{ !cancelled() && steps.confirm-stacks.outcome == 'success' }}
+        shell: bash
+        env:
+          DEPLOYMENT: ${{ needs.names.outputs.deployment-name }}
+        run: |
+          if [[ "$DEPLOYMENT" =~ ^ci-set[0-9]+$ ]]; then
+            aws ssm delete-parameter --name "/submit/ci/slots/${DEPLOYMENT}" \
+              && echo "Released slot ${DEPLOYMENT}" \
+              || echo "No slot parameter for ${DEPLOYMENT} to release"
+          else
+            echo "${DEPLOYMENT} holds no ci slot, nothing to release"
+          fi
+
       # DORA row for the one-stop dashboard, written whether this destroy run succeeded or
       # failed, so a failed teardown counts towards the failure rate rather than leaving a gap.
       - name: Build the DORA row

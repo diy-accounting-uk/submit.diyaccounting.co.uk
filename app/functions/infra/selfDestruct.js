@@ -54,6 +54,28 @@ async function getCloudWatchClient() {
 }
 
 /**
+ * Free this deployment's ci slot claim once its stacks are confirmed gone,
+ * so the slot's next claimant does not wait out a stale claim that destroy-ci.yml never got to
+ * release. Released only after every stack deletes cleanly (the caller's guard), the same
+ * ordering destroy-ci.yml uses, so a slot is never handed to a new claimant while this
+ * deployment's stacks might still be mid-teardown. Never throws: a release failure must not
+ * fail the self-destruct sequence behind it.
+ */
+async function releaseSlot(parameterName) {
+  try {
+    const { DeleteParameterCommand } = await import("@aws-sdk/client-ssm");
+    await (await getSsmClient()).send(new DeleteParameterCommand({ Name: parameterName }));
+    console.log(`Released ci slot parameter ${parameterName}`);
+  } catch (error) {
+    if (error.name === "ParameterNotFound") {
+      console.log(`Ci slot parameter ${parameterName} already released`);
+    } else {
+      console.log(`Error releasing ci slot parameter ${parameterName}: ${error.message}`);
+    }
+  }
+}
+
+/**
  * Silence this deployment's alarms before anything is torn down, so a normal teardown does not
  * fire the routers that open a GitHub issue or post to Telegram. DEPLOYMENT_NAME carries the env
  * prefix (e.g. "ci-branch"); an alarm's own name carries only the slug after it, so the prefix is
@@ -160,6 +182,10 @@ export async function ingestHandler(event, context) {
         console.log(`Error deleting leftover log groups for ${process.env.DEPLOYMENT_NAME}: ${error.message}`);
         results.push({ logGroups: [], status: "error", error: error.message });
       }
+    }
+
+    if (process.env.SLOT_PARAMETER_NAME && results.every((r) => r.status !== "error")) {
+      await releaseSlot(process.env.SLOT_PARAMETER_NAME);
     }
 
     // Delete self-destruct stack last if no errors

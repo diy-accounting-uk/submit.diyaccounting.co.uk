@@ -86,6 +86,33 @@ class SelfDestructStackTest {
                         + "leaves it standing after every other app stack is gone");
         assertEquals("ci-selfdestructtest-app-BillingStack", variables.get("BILLING_STACK_NAME"));
         assertEquals("ci-selfdestructtest-app-AccountStack", variables.get("ACCOUNT_STACK_NAME"));
+        assertEquals(
+                "/submit/ci/slots/ci-selfdestructtest",
+                variables.get("SLOT_PARAMETER_NAME"),
+                "self-destruct must know its own slot claim's parameter name to release it");
+    }
+
+    @Test
+    @SuppressWarnings("unchecked")
+    void selfDestructRoleCanReleaseOnlyItsOwnCiSlot() {
+        SelfDestructStack selfDestructStack = synthSelfDestructStack();
+        Template template = Template.fromStack(selfDestructStack);
+
+        List<Map<String, Object>> statements = findPolicyStatementsContainingSid(template, "ReleaseCiSlot");
+        Map<String, Object> statement = statements.stream()
+                .filter(s -> "ReleaseCiSlot".equals(s.get("Sid")))
+                .findFirst()
+                .orElseThrow();
+
+        assertEquals(
+                "ssm:DeleteParameter",
+                statement.get("Action"),
+                "the self-destruct role must be able to release its own ci slot claim");
+        String resource = (String) statement.get("Resource");
+        assertTrue(
+                resource.endsWith("parameter/submit/ci/slots/ci-selfdestructtest"),
+                "expected this deployment's own slot parameter, got " + resource);
+        assertFalse(resource.equals("*"), "the slot-release grant must not be a bare wildcard");
     }
 
     @Test

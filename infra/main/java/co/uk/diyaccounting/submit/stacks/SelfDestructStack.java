@@ -185,6 +185,20 @@ public class SelfDestructStack extends Stack {
                                                                         this.getRegion(),
                                                                         this.getAccount(),
                                                                         props.deploymentName())))
+                                                .build(),
+                                        // Free this deployment's ci slot claim alongside the
+                                        // stacks it held, so a slot's next claimant does not wait out a full
+                                        // self-destruct cycle for a release destroy-ci.yml never got to run.
+                                        PolicyStatement.Builder.create()
+                                                .sid("ReleaseCiSlot")
+                                                .effect(Effect.ALLOW)
+                                                .actions(List.of("ssm:DeleteParameter"))
+                                                .resources(List.of("arn:aws:ssm:%s:%s:parameter/submit/%s/slots/%s"
+                                                        .formatted(
+                                                                this.getRegion(),
+                                                                this.getAccount(),
+                                                                props.envName(),
+                                                                props.deploymentName())))
                                                 .build()))
                                 .build()))
                 .build();
@@ -207,6 +221,10 @@ public class SelfDestructStack extends Stack {
         putIfNotNull(selfDestructLambdaEnv, "EDGE_STACK_NAME", props.sharedNames().edgeStackId);
         putIfNotNull(selfDestructLambdaEnv, "PUBLISH_STACK_NAME", props.sharedNames().publishStackId);
         putIfNotNull(selfDestructLambdaEnv, "SELF_DESTRUCT_STACK_NAME", this.getStackName());
+        putIfNotNull(
+                selfDestructLambdaEnv,
+                "SLOT_PARAMETER_NAME",
+                "/submit/%s/slots/%s".formatted(props.envName(), props.deploymentName()));
 
         infof(
                 "Creating SelfDestructStack for domain: %s (dashed: %s) in region: %s",

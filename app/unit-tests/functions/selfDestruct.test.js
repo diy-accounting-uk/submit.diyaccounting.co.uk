@@ -142,7 +142,12 @@ vi.mock("@aws-sdk/client-ssm", () => {
       this.input = input;
     }
   };
-  return { SSMClient: MockSsmClient, GetParameterCommand, PutParameterCommand };
+  const DeleteParameterCommand = class DeleteParameterCommand {
+    constructor(input) {
+      this.input = input;
+    }
+  };
+  return { SSMClient: MockSsmClient, GetParameterCommand, PutParameterCommand, DeleteParameterCommand };
 });
 
 const mockCloudWatchSend = vi.fn();
@@ -198,6 +203,7 @@ describe("functions/infra/selfDestruct", () => {
       DIYA_GL_STACK_NAME: "diya-gl",
       ACCOUNT_STACK_NAME: "account",
       SELF_DESTRUCT_STACK_NAME: "self-destruct",
+      SLOT_PARAMETER_NAME: "/submit/ci/slots/ci-set1",
       AWS_REGION: "eu-west-2",
     });
   });
@@ -295,6 +301,40 @@ describe("functions/infra/selfDestruct", () => {
     });
     expect(deleteStackCalls.some((c) => c.StackName === "self-destruct")).toBe(false);
     expect(body.results.find((r) => r.stackName === "self-destruct")).toBeUndefined();
+  });
+
+  it("releases the ci slot parameter once every stack deletes cleanly", async () => {
+    mockSsmSend.mockImplementation((cmd) => {
+      if (cmd.constructor.name === "DeleteParameterCommand") return Promise.resolve({});
+      return Promise.reject(Object.assign(new Error("Parameter not found"), { name: "ParameterNotFound" }));
+    });
+
+    const { ingestHandler } = await import("@app/functions/infra/selfDestruct.js");
+    const res = await ingestHandler(makeEvent(), { getRemainingTimeInMillis: () => 900000 });
+
+    expect(res.statusCode).toBe(200);
+    const deleteParameterCalls = mockSsmSend.mock.calls
+      .map(([cmd]) => cmd)
+      .filter((cmd) => cmd.constructor.name === "DeleteParameterCommand");
+    expect(deleteParameterCalls).toEqual([{ input: { Name: "/submit/ci/slots/ci-set1" } }]);
+  });
+
+  it("does not release the ci slot when a stack fails to delete", async () => {
+    stackStatusScript = {
+      "api": ["CREATE_COMPLETE", "CREATE_COMPLETE", "DELETE_FAILED", "DELETE_IN_PROGRESS", "DELETE_FAILED"],
+      "self-destruct": ["CREATE_COMPLETE"],
+    };
+    vi.useFakeTimers();
+    const { ingestHandler } = await import("@app/functions/infra/selfDestruct.js");
+    const pending = ingestHandler(makeEvent(), { getRemainingTimeInMillis: () => 900000 });
+    await vi.runAllTimersAsync();
+    const res = await pending;
+
+    expect(res.statusCode).toBe(500);
+    const deleteParameterCalls = mockSsmSend.mock.calls
+      .map(([cmd]) => cmd)
+      .filter((cmd) => cmd.constructor.name === "DeleteParameterCommand");
+    expect(deleteParameterCalls).toEqual([]);
   });
 
   it("deletes stacks in dependency order, with the Companies House stack beside the HMRC stack", async () => {
