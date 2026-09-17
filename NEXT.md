@@ -45,6 +45,20 @@ step.
 
 ## In flight
 
+- [ ] **B30af.5. Every ci deploy swaps the shared ci apex, so branch deploys race each other.**
+  Incident #290 (03:00 UTC on 2026-09-17): PR #285's branch deploy 35171600510 promoted the apex to
+  its set `ci-claud0f3a`, its `submitVatBehaviour` probe met CloudFront's "The request could not be
+  satisfied" on the apex, and the run rolled the apex back to `ci-claud86af`, leaving its set
+  standing unpromoted. B30af.3's guard only waits for `main`; two branch deploys, or a branch and
+  a rollback, still contend. The clean shape is a branch deploy that never touches the apex: its
+  probes navigate `https://<deployment>.submit.diyaccounting.co.uk`, which needs each deployment's
+  host among the Cognito app client's callback and logout URLs (`IdentityStack.java`
+  `buildCallbackUrls`/`buildLogoutUrls`, apex and public domain only today) and the probe base URL
+  switched per ref. Design the URL list (one callback per standing set, added and removed by the
+  deploy, or a wildcard the pool allows), then build it; only `main`'s deploy promotes the apex.
+  The design is in flight on `claude/docs-apex-design` (`_developers/DESIGN_CI_BRANCH_DEPLOYS_OFF_THE_APEX.md`, Opus agent running); the build follows it. **Source**: issue #290; run 35171600510. **Owner**: Claude Code. **Model**: Opus for the design,
+  Sonnet to build. **Size**: ~4 files.
+
 - [ ] **B55.4. Alarm #289: the prod GA4 Lambdas lost their secret ARN when the GitHub copy of
   the key went.** `prod-env-ga4-report-pull-errors` fired at 02:17 UTC on 2026-09-17 (the nightly,
   deployment prod-29f3405); the triage (run at 02:19) found `GA4_SERVICE_ACCOUNT_ARN` unset on the
@@ -103,20 +117,6 @@ step.
   gap 2. **Owner**: Claude Code. **Model**: Sonnet. **Size**: ~4 files.
 
 ## Machine-only
-
-- [ ] **B30af.5. Every ci deploy swaps the shared ci apex, so branch deploys race each other.**
-  Incident #290 (03:00 UTC on 2026-09-17): PR #285's branch deploy 35171600510 promoted the apex to
-  its set `ci-claud0f3a`, its `submitVatBehaviour` probe met CloudFront's "The request could not be
-  satisfied" on the apex, and the run rolled the apex back to `ci-claud86af`, leaving its set
-  standing unpromoted. B30af.3's guard only waits for `main`; two branch deploys, or a branch and
-  a rollback, still contend. The clean shape is a branch deploy that never touches the apex: its
-  probes navigate `https://<deployment>.submit.diyaccounting.co.uk`, which needs each deployment's
-  host among the Cognito app client's callback and logout URLs (`IdentityStack.java`
-  `buildCallbackUrls`/`buildLogoutUrls`, apex and public domain only today) and the probe base URL
-  switched per ref. Design the URL list (one callback per standing set, added and removed by the
-  deploy, or a wildcard the pool allows), then build it; only `main`'s deploy promotes the apex.
-  **Source**: issue #290; run 35171600510. **Owner**: Claude Code. **Model**: Opus for the design,
-  Sonnet to build. **Size**: ~4 files.
 
 ## Machine-ask
 
