@@ -42,6 +42,22 @@ step.
 
 ## In flight
 
+- [ ] **B55.2. Google federation: the key-mode code goes.** The Lambdas' federated proof is in:
+  the operator's start of `ci-env-analytics-nightly` at 22:12 UTC on 2026-09-17 (execution
+  `6ec15af1`) ran all three GA4 Lambdas with `GA4_AUTH_MODE=federated`; `ga4-daily-pull` and
+  `ga4-report-pull` SUCCEEDED and `ga4-event-export-pull` reached BigQuery and failed only on the
+  missing export table `events_20260915` in ci's own property. The machine half is on
+  `claude/b58-board` (worktree `.claude/worktrees/b58-federation`): `.env.prod` to federated, the
+  key-mode code out of the three Lambdas, `googleWorkloadIdentity.js`, `scripts/lib/googleAuth.js`
+  and `IngestionStack`, the paymentBehaviour BigQuery read federated through
+  `google-github-actions/auth` in `probe-test.yml`, the secret step out of
+  `deploy-environment.yml`, `google-key-rotate.yml`, `scripts/gcp-key-rotate.js`,
+  `google/identity.toml`'s `[service_account.key_rotation]` block and the `ga4/service_account`
+  row gone. After it merges: the operator deletes the Google key and the two
+  `{env}/submit/ga4/service_account` secrets (commands in the batch's report). **Source**: B55;
+  `PLAN_EVERYTHING_AS_CODE.md` items 9 and 11. **Owner**: Claude Code, then the operator's three
+  deletes. **Model**: Sonnet. **Size**: ~15 files.
+
 ## Machine-only
 
 - [ ] **B30af.8. The main-deploy guard's first live proof.** PR #300 (d689744f) makes
@@ -139,33 +155,7 @@ step.
   standards with a build behind each. **Source**: BACKLOG 11; `PLAN_ITSA_PHASE_2.md` T10.
   **Owner**: Claude Code re-runs the sandbox year on a ci set so the run sits inside HMRC's 14-day log window; then the operator sends `DRAFT_EMAIL_ITSA_RECOGNITION.md` (the pack is on `main` since PR #237, `_developers/hmrc/`) and `DRAFT_EMAIL_ITSA_PRODUCTION_CREDENTIALS.md` when SDST answers. **Model**: Haiku. **Size**: ~3 files.
 
-- [ ] **B55.2. Google federation: the Lambdas' nightly proof, then the key goes.** The pool
-  `submit-federation` and its three providers exist (apply run 35050290089); the federated GitHub
-  path is proven (plan run 35050387182) and the prod environment's `SUBMIT_GOOGLE_AUTH_MODE` is
-  `federated` since 03:4x UTC on 2026-09-16. Wave b45 (PR #247, merged 04:1x UTC on
-  2026-09-16) puts `GA4_AUTH_MODE`, `GOOGLE_WIF_AUDIENCE` and `GA4_SERVICE_ACCOUNT_EMAIL` on the
-  three GA4 Lambdas, ci in federated mode and prod on the key; `main`'s deploy carries them. Then: one
-  nightly run of each Lambda on ci in federated mode
-  (the provider's condition matches the generated role names, reasoned from the naming rule and
-  proven by that run), then `.env.prod` to `federated`, then the key, both secrets, the
-  `ga4/service_account` row, `scripts/gcp-key-rotate.js`, `google/identity.toml`'s
-  `[service_account.key_rotation]` block and `google-key-rotate.yml` go (the removal list with file
-  and line is in the b46 wave's agent report, 08:0x UTC on 2026-09-16). The three Lambdas run only
-  inside the step function `ci-env-analytics-nightly` (`cron(15 2 ? * MON *)` UTC), whose last two
-  runs (2026-09-07, 2026-09-14) failed on `ga4-event-export-pull`'s missing BigQuery export table
-  for the day, a data-availability error unrelated to auth. No federated invocation exists yet.
-  **Source**: B55; PRs #237, #241, #245, #247; `PLAN_EVERYTHING_AS_CODE.md` items 9 and 11. **Owner**:
-  Operator starts, Claude Code finishes. **Model**: Sonnet. PR #271 (5cdaf30e, merged 20:5x UTC on
-  2026-09-16) maps both AWS providers' `google.subject` to the role name, after the operator's start
-  of `ci-env-analytics-nightly` at 19:28 UTC proved `ga4-daily-pull` and `ga4-report-pull` federated
-  and failed `ga4-event-export-pull` on Google's 127-byte subject limit; `google apply` on `main`
-  carries the mapping. The human half: one more start of the state machine
-  (`../NEXT_OPERATOR_RUNBOOK.md`). The machine half after a clean run: `.env.prod` to
-  `federated`, the key-mode code out of the three Lambdas and `IngestionStack`, the secret step and
-  `GA4_SERVICE_ACCOUNT_ARN` out of `deploy-environment.yml`, `google-key-rotate.yml`,
-  `scripts/gcp-key-rotate.js`, `google/identity.toml`'s `[service_account.key_rotation]` block and
-  the `ga4/service_account` row gone (`GA4_SERVICE_ACCOUNT_JSON` is already off both GitHub
-  environments, 2026-09-16). **Size**: ~12 files.
+
 
 ## Human-driven
 
