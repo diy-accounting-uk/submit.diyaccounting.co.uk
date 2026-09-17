@@ -55,17 +55,6 @@ step.
   rotation path as code or manual, exposure surface), the gaps, and the rows this creates.
   In flight on `claude/ops-key-audit` (worktree `.claude/worktrees/key-audit`, agent running). **Source**: operator, 2026-09-17; O48. **Owner**: Claude Code. **Model**: Sonnet. **Size**: ~1 file.
 
-- [ ] **B53.2. A key-rotation entry in `RUNBOOK_INFORMATION_SECURITY.md`.** §3 has Google OAuth
-  (3.1) and HMRC (3.2) client secrets and a schedule (3.3); it has no entry for the GA4 service-account
-  key, whose rotation is code (`google-key-rotate.yml`, `scripts/gcp-key-rotate.js`, monthly on the
-  1st) and whose exposure response ran by hand on 2026-09-16 (O48: rotate, delete the old key,
-  audit-log read on `serviceAccountKeyName`, the GitHub copies deleted, the org policy
-  `iam.serviceAccountKeyExposureResponse`). Add §3.5 "Service-account keys": the scheduled path, the
-  exposure procedure as the six CLI steps, and the two rows §3.3 needs (`ga4/service_account`,
-  rotated 2026-09-16, next 2026-10-01 by the workflow); cross-link `secrets-rotation.toml`. Then
-  generalise: one entry per credential kind B53.1 finds without a documented path. In flight on `claude/ops-key-runbook` (worktree `.claude/worktrees/key-runbook`, agent running).
-  **Source**: operator, 2026-09-17; O48. **Owner**: Claude Code. **Model**: Sonnet. **Size**: ~1 file.
-
 - [ ] **B124.3. The board and pr agent workflows have the same prompt-versus-tools gaps.** Found
   while fixing B124.2: `agentic-lib-board.yml` allows `git commit` but sets no git identity, and
   its prompt's board skill runs `npx vitest run app/unit-tests/nextShape.test.js` before the
@@ -211,6 +200,13 @@ step.
 ## Human-driven
 
 ## Blocked
+
+- [ ] **B53.2. One rotation entry per credential kind the key audit finds without a path.**
+  `RUNBOOK_INFORMATION_SECURITY.md` §3.5 (6c76aec5) now carries the Google service-account key:
+  the monthly workflow, its verification, the six-step exposure response, and the §3.3 row. The
+  remainder waits on B53.1's report: for each credential kind it lists with no documented
+  rotation path, one §3 entry in the same shape. **Source**: operator, 2026-09-17; O48. **Owner**:
+  Claude Code. **Model**: Sonnet. **Size**: ~1 file. Blocked on B53.1.
 
 - [ ] **O17. A sandbox sign-in for the filing suites, and four ci values.** Checked live at
   23:2x UTC on 2026-09-16: the sandbox has no registration page of its own
