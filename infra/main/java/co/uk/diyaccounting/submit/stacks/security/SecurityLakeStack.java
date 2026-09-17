@@ -223,12 +223,13 @@ public class SecurityLakeStack extends Stack {
 
         // WAF logs live in us-east-1, on whichever deployment's WAF log group is currently live
         // (EdgeStack, one per app deployment); this Lambda discovers the current set by prefix
-        // rather than depending on a specific deployment's stack.
+        // rather than depending on a specific deployment's stack. DescribeLogGroups names no log
+        // group in its request, so IAM evaluates it against the account's fixed
+        // log-group::log-stream: resource, not a group-name prefix.
         nightlyLambda.addToRolePolicy(PolicyStatement.Builder.create()
                 .effect(Effect.ALLOW)
                 .actions(List.of("logs:DescribeLogGroups"))
-                .resources(List.of("arn:aws:logs:us-east-1:%s:log-group:aws-waf-logs-%s-*"
-                        .formatted(this.getAccount(), props.envName())))
+                .resources(List.of("arn:aws:logs:us-east-1:%s:log-group::log-stream:".formatted(this.getAccount())))
                 .build());
         nightlyLambda.addToRolePolicy(PolicyStatement.Builder.create()
                 .effect(Effect.ALLOW)
