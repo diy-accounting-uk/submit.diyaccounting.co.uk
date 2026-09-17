@@ -187,6 +187,12 @@ describe("dataQualityRun", () => {
       expect(config.partitionScheme).toBe("dt");
     });
 
+    test("selects the dt partition scheme for cost_focus", () => {
+      const costFocusTarget = { table: "cost_focus", ruleset: "ci_env_cost_focus_dq", curatedPrefix: "curated/cost/focus/" };
+      const config = buildTargetConfig(VALID_SHARED_CONFIG, costFocusTarget);
+      expect(config.partitionScheme).toBe("dt");
+    });
+
     test("selects the year-month-day partition scheme for alarm_state_changes", () => {
       const config = buildTargetConfig(VALID_SHARED_CONFIG, VALID_TARGETS[1]);
       expect(config.partitionScheme).toBe("year-month-day");

@@ -13,7 +13,7 @@
 // Athena queries never need any. Glue Data Quality runs on Spark, which reads partitions from the
 // catalog only, so before every run this Lambda registers whatever partitions exist in S3 but are
 // missing from the catalog. activity_events and alarm_state_changes partition on
-// year=*/month=*/day=*; dora_runs partitions on a single dt=YYYY-MM-DD level, so
+// year=*/month=*/day=*; dora_runs and cost_focus partition on a single dt=YYYY-MM-DD level, so
 // registerPartitions dispatches on config.partitionScheme. Idempotent: partitions already
 // registered are left alone, and a partition another concurrent run just created is tolerated as
 // already-existing.
@@ -59,9 +59,10 @@ function getS3Client() {
   return cachedS3Client;
 }
 
-// dora_runs partitions on a single dt=YYYY-MM-DD level; every other target partitions on
-// year=*/month=*/day=*, the scheme registerPartitions defaults to when a target carries none.
-const DT_PARTITIONED_TABLES = new Set(["dora_runs"]);
+// dora_runs and cost_focus partition on a single dt=YYYY-MM-DD level; every other target
+// partitions on year=*/month=*/day=*, the scheme registerPartitions defaults to when a target
+// carries none.
+const DT_PARTITIONED_TABLES = new Set(["dora_runs", "cost_focus"]);
 
 /**
  * Required environment configuration for the run, read once so a missing variable fails fast

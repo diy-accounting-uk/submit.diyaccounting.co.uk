@@ -96,11 +96,15 @@ public class DataQuality extends Construct {
             ]
             """;
 
+    // The Spark reader Glue Data Quality evaluates through sees the export's own Parquet field
+    // names, not this table's snake_case catalog column list (parquet.column.index.access is an
+    // Athena-only SerDe hint), so the completeness rule names BilledCost, the FOCUS 1.2 column as
+    // CostFocusIngestion.FOCUS_1_2_COLUMNS and the physical Parquet schema both spell it.
     private static final String COST_FOCUS_RULESET =
             """
             Rules = [
                 RowCount > 0,
-                IsComplete "billed_cost"
+                IsComplete "BilledCost"
             ]
             """;
 
