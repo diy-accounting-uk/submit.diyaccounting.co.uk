@@ -40,6 +40,32 @@ step.
 
 ## In flight
 
+- [ ] **B52y.3. The security lake nightly's role cannot list the WAF log groups.** The 03:20
+  UTC run on 2026-09-17 (three attempts, `/aws/lambda/prod-env-security-lake-nightly`) ended in
+  `AccessDeniedException: ... not authorized to perform: logs:DescribeLogGroups on resource:
+  arn:aws:logs:us-east-1:972912397388:log-group::log-stream:`. `SecurityLakeStack.java` (~226)
+  grants `logs:DescribeLogGroups` on `arn:aws:logs:us-east-1:<account>:log-group:aws-waf-logs-<env>-*`,
+  but IAM evaluates that action against the `log-group::log-stream:` resource, so the grant never
+  matches. Give the Describe statement that resource (the StartQuery grant keeps its prefix), update
+  `SecurityLakeStackTest`, and the next nightly writes the WAF rows. The GitHub alert rows are
+  B52y.5's. In flight on `claude/b55-board`, PR #297. Then close #249 with the
+  nightly's log. **Source**: issue #249. **Owner**: Claude
+  Code. **Model**: Sonnet. **Size**: ~2 files.
+
+- [ ] **B52y.4. Glue Data Quality cannot read `cost_focus`: the ruleset's rules need the
+  Parquet's own names.** The 2026-09-17 03:18 UTC result of `prod_env_cost_focus_dq`
+  (dqresult-e882b05612b6bbd09b6c557a469fc54f7cc1bf9b) scores 0: `RowCount > 0` fails with 0 rows
+  and `IsComplete "billed_cost"` with "Input data does not include column billed_cost", while
+  Athena's `v_cost_daily` answers 5,871 rows for the same days. Glue DQ reads the table through
+  Spark, which ignores `parquet.column.index.access` (`CostFocusTables.java` ~67) and so sees the
+  export's PascalCase fields, and the zero row count says its reader also missed the projected
+  `dt` partitions. In `DataQuality.java` (~99) make the cost_focus ruleset evaluate what Spark
+  sees: either point the DQ target at the Parquet names (`BilledCost`) and a partition the reader
+  can list, or read the table through a view the positional reader builds; In flight on `claude/b55-board`, PR #297; the proof is the
+  next nightly ingestion's Data Quality result. **Source**: B52y.2's snapshot
+  check; `PLAN_ONE_STOP_DASHBOARD.md` D13. **Owner**: Claude Code. **Model**: Sonnet. **Size**:
+  ~1 file.
+
 - [ ] **B30af.5. Branch deploys leave the ci apex: P1, the slot pool.**
   `_developers/DESIGN_CI_BRANCH_DEPLOYS_OFF_THE_APEX.md` (on `main`) settles the shape: four fixed
   slot hosts `ci-set1` to `ci-set4`, registered once with Cognito, HMRC and Companies House (the
@@ -58,31 +84,6 @@ step.
   issue #290; the design. **Owner**: Claude Code. **Model**: Sonnet. **Size**: ~7 files.
 
 ## Machine-only
-
-- [ ] **B52y.3. The security lake nightly's role cannot list the WAF log groups.** The 03:20
-  UTC run on 2026-09-17 (three attempts, `/aws/lambda/prod-env-security-lake-nightly`) ended in
-  `AccessDeniedException: ... not authorized to perform: logs:DescribeLogGroups on resource:
-  arn:aws:logs:us-east-1:972912397388:log-group::log-stream:`. `SecurityLakeStack.java` (~226)
-  grants `logs:DescribeLogGroups` on `arn:aws:logs:us-east-1:<account>:log-group:aws-waf-logs-<env>-*`,
-  but IAM evaluates that action against the `log-group::log-stream:` resource, so the grant never
-  matches. Give the Describe statement that resource (the StartQuery grant keeps its prefix), update
-  `SecurityLakeStackTest`, and the next nightly writes the WAF rows. The GitHub alert rows are
-  B52y.5's. Then close #249 with the nightly's log. **Source**: issue #249. **Owner**: Claude
-  Code. **Model**: Sonnet. **Size**: ~2 files.
-
-- [ ] **B52y.4. Glue Data Quality cannot read `cost_focus`: the ruleset's rules need the
-  Parquet's own names.** The 2026-09-17 03:18 UTC result of `prod_env_cost_focus_dq`
-  (dqresult-e882b05612b6bbd09b6c557a469fc54f7cc1bf9b) scores 0: `RowCount > 0` fails with 0 rows
-  and `IsComplete "billed_cost"` with "Input data does not include column billed_cost", while
-  Athena's `v_cost_daily` answers 5,871 rows for the same days. Glue DQ reads the table through
-  Spark, which ignores `parquet.column.index.access` (`CostFocusTables.java` ~67) and so sees the
-  export's PascalCase fields, and the zero row count says its reader also missed the projected
-  `dt` partitions. In `DataQuality.java` (~99) make the cost_focus ruleset evaluate what Spark
-  sees: either point the DQ target at the Parquet names (`BilledCost`) and a partition the reader
-  can list, or read the table through a view the positional reader builds; prove it with a
-  `start-data-quality-ruleset-evaluation-run` after the deploy. **Source**: B52y.2's snapshot
-  check; `PLAN_ONE_STOP_DASHBOARD.md` D13. **Owner**: Claude Code. **Model**: Sonnet. **Size**:
-  ~1 file.
 
 ## Machine-ask
 
