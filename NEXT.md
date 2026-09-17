@@ -102,6 +102,17 @@ step.
 
 ## Machine-only
 
+- [ ] **B30af.8. The main-deploy guard waits for main's whole run, not for its apex move.**
+  `wait-for-main-deploy.mjs` holds every branch probe while any `deploy.yml` run on `main` is
+  not completed. On 2026-09-17 PRs #295 and #297 sat in that wait from 08:39 UTC while main's
+  run 35194544211 deployed its prod stacks and destroyed the previous prod set, though the ci
+  apex is only touched by main's `set origins` job, which had finished; the guard's 40-minute
+  ceiling released them. Read main's in-flight run's jobs (`/actions/runs/<id>/jobs`) and wait
+  only until its `set origins` job (and `roll back apex` if it runs) is completed, or until the
+  run ends; `.github/actions/wait-for-main-deploy/wait-for-main-deploy.mjs` and its unit test.
+  **Source**: runs 35194697647 and 35196041181's probe `params` jobs. **Owner**: Claude Code.
+  **Model**: Sonnet. **Size**: ~2 files.
+
 ## Machine-ask
 
 - [ ] **B52y.5. The ops GitHub token cannot read Dependabot or secret-scanning alerts.** The
