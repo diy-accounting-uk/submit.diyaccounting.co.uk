@@ -67,17 +67,6 @@ step.
   workflow that mints and promotes. Build the same for the email hash. In flight on `claude/b54-board` (wave b54, worktree `.claude/worktrees/b54`, agent running; push and PR follow the wave). **Source**: REPORT_KEY_AUDIT.md
   gap 2. **Owner**: Claude Code. **Model**: Sonnet. **Size**: ~4 files.
 
-- [ ] **B124.3. The board and pr agent workflows have the same prompt-versus-tools gaps.** Found
-  while fixing B124.2: `agentic-lib-board.yml` allows `git commit` but sets no git identity, and
-  its prompt's board skill runs `npx vitest run app/unit-tests/nextShape.test.js` before the
-  `NEXT.md` commit while the allow-list grants only `npx prettier`; `agentic-lib-pr.yml`'s
-  auto-merge skill reaches for `git diff`, `git rebase`, `git worktree` and `git push
-  --force-with-lease` in its overlap and conflict parts, none of which its allow-list grants, and
-  the CI prompt excuses only Part 1. Apply the B124.2 shape: identity before the agent, the
-  allow-list matching the skill's reads, and the prompt naming the parts that do not run in CI.
-  In flight on `claude/ops-agentic-siblings` (worktree `.claude/worktrees/agentic-siblings`, PR #283). **Source**: the b53 handover agent's report. **Owner**: Claude Code. **Model**: Sonnet.
-  **Size**: ~3 files.
-
 - [ ] **B30af.3. A branch deploy's ci probes navigate the ci apex, which main's deploy swaps under
   them.** Run 35161068061 (`claude/ops-triage-budget`, 23:35 to 23:41 UTC on 2026-09-16):
   `tokenEnforcementBehaviour-ci` navigated `https://ci-submit.diyaccounting.co.uk` (15 requests in
