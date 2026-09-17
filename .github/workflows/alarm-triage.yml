@@ -322,7 +322,7 @@ jobs:
           echo "reason=${REASON}" >> "$GITHUB_OUTPUT"
           {
             echo "alarm triage first pass: escalate=${ESCALATE}"
-            [ -n "${REASON}" ] && echo "reason: ${REASON}"
+            if [ -n "${REASON}" ]; then echo "reason: ${REASON}"; fi
           } | tee -a "$GITHUB_STEP_SUMMARY"
 
       - name: Run triage (Sonnet)
