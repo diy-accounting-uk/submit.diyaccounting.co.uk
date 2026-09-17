@@ -16,14 +16,11 @@ runs), and for Claude Code steps the **Model** a sub-agent should use (Fable > O
 Haiku; the lowest tier that fits). Anything touching code goes through a `claude/*` branch and
 PR; the operator merges.
 
-**Prod runs deployment prod-29f3405** (PR #281, run 35167028767, promoted at 01:0x UTC on
-2026-09-17), verified against AWS at 01:2x UTC: the pointer names it, nine stacks; run 35167028767 ended green
-at 02:0x UTC having destroyed prod-3ce4693; PR #282's deploy of `main` (35171500590) is running.
-The SSO token expired at 02:2x UTC: `aws sso login --sso-session diyaccounting` before the next
-AWS read. **ci**: `ci-claud0bad` (main's
-set) is live; `ci-claudafe1` (b52 branch) self-destructs at about 02:39 UTC; `ci-claud86af` (b53,
-PR #282) is standing up; `ci-claudc4d2`'s last stack is being removed by `destroy-ci.yml` run 35170510768 (the 01:2x sweep kept
-it as a deployed name).
+**Prod runs deployment prod-b362239** (PR #282, run 35171500590, promoted at 02:5x UTC on
+2026-09-17, read from alarm issues #292 and #293; unverified against AWS because prod's SSO token
+expired at 02:2x UTC: `aws sso login --sso-session diyaccounting` before the next AWS read). PR
+#288's deploy of `main` (35176978495) is running and promotes its set when its suites pass.
+**ci**: `ci-claud86af` is live.
 
 The board runs in five sections, in this order: **in flight** (a branch, a pull request or a run
 in motion, each named in the row), **machine-only**, **machine-ask**, **human-driven**,
@@ -85,7 +82,7 @@ step.
 
 ## Machine-only
 
-- [ ] **B30aj.2. Close #284 and #290 when prod carries wave b54.** PR #288 is on `main`: the
+- [ ] **B30aj.2. Close #284, #293 and #290 when prod carries wave b54.** PR #288 is on `main`: the
   security-findings topic policy (alarm #284 re-fired on its own denied SNS publish), the
   email-hash rotation path and the rotation record. Read `main`'s deploy of #288 to its terminal
   state, confirm the prod pointer moved, then close #284 with the run id. Incident #290 (the ci
@@ -184,6 +181,14 @@ step.
 ## Human-driven
 
 ## Blocked
+
+- [ ] **B30ak. Alarm #292: the prod operator-snapshot publisher errored twice.**
+  `prod-env-operator-snapshot-publish-errors` fired at 03:16 UTC on 2026-09-17 (two errors over
+  its 24-hour period, deployment prod-b362239). The triage did not reach a cause. Read the
+  publisher Lambda's log group in prod around 03:1x UTC for the two error lines, name the cause,
+  fix that layer, and close #292 with the evidence. Blocked on `aws sso login --sso-session
+  diyaccounting` (prod's token expired at 02:2x UTC). **Source**: issue #292. **Owner**: Claude
+  Code. **Model**: Sonnet. **Size**: ~1 file.
 
 - [ ] **B30af.6. Register the four slot hosts' redirect URIs with HMRC and Companies House (P2).**
   After P1 names the slots: eight URIs, `https://ci-set<N>.submit.diyaccounting.co.uk/activities/submitVatCallback.html`
