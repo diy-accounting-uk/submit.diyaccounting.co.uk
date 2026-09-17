@@ -96,10 +96,10 @@ step.
   and Lambda moves together; the apex out of the deploy), P3 after P2's registrations. In flight on `claude/ci-1-slot-pool`, PR #295. Its deploy (35179085180) claimed
   `ci-set1` and stood the set up, and its deploy is green after `set origins` re-ran (the first
   attempt lost the apex CNAME race to PR #291's and #294's deploys). Rebased onto `main` after PR
-  #296; the rebased head's runs were cancelled a minute in and re-run (deploy 35194697647,
-  attempt 2, still at the environment wait). `ci-set1`'s self-destruct fired at 07:44 UTC during
+  #296; its deploy (35194697647, attempt 2) is green. `ci-set1`'s self-destruct fired at 07:44 UTC during
   that wait, on the first claim's clock, and removed the Ops, Publish and Edge stacks; the redeploy
-  recreates them (B30af.7 carries the clock). The merge is O49's. **Source**:
+  recreated them (B30af.7 carries the clock). Merges through `/auto-merge` when main's
+  scheduled deploy 35205082047 ends. **Source**:
   issue #290; the design. **Owner**: Claude Code. **Model**: Sonnet. **Size**: ~7 files.
 
 ## Machine-only
@@ -129,14 +129,6 @@ step.
   alerts: read and Secret scanning alerts: read (a classic token: `security_events` covers code
   scanning only, so a fine-grained token is the shape that can). No code changes. **Source**: issue
   #249. **Owner**: operator (the token), then the next nightly. **Model**: Haiku. **Size**: ~0 files.
-
-- [ ] **O49. PR #295 changes workflow files, which the session's GitHub token cannot merge.**
-  The token has `repo` and not `workflow` scope: `gh pr merge` is refused for any PR touching
-  `.github/workflows/*` ("refusing to allow an OAuth App to create or update workflow ... without
-  `workflow` scope"). Either the operator merges #295 as they merged #291, #294 and #296, or
-  refreshes the token once so the session can: `gh auth refresh -h github.com -s workflow`.
-  **Source**: the refused merges of 2026-09-17. **Owner**: operator. **Model**: Haiku. **Size**:
-  ~0 files.
 
 - [ ] **B53.4. Delete the nine orphaned `prod/submit/*` secrets in the submit-ci account.**
   `REPORT_KEY_AUDIT.md` gap 4: nine `prod/submit/*` names sit in 367191799875, untouched since
