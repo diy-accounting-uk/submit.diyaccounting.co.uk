@@ -403,6 +403,28 @@ jobs:
           SUBMIT_DEPLOY_ROLE_ARN: ${{ vars.SUBMIT_DEPLOY_ROLE_ARN }}
           SUBMIT_ACTIONS_ROLE_ARN: ${{ vars.SUBMIT_ACTIONS_ROLE_ARN }}
 
+      - name: Create email hash secret (if not exists)
+        run: |
+          SECRET_NAME="${{ needs.names.outputs.environment-name }}/submit/email-hash-secret"
+          if ! aws secretsmanager describe-secret --secret-id "$SECRET_NAME" --region ${{ env.AWS_REGION }} 2>/dev/null; then
+            echo "Creating new email hash secret: $SECRET_NAME"
+            SECRET_VALUE=$(openssl rand -base64 32)
+            # Store as JSON registry format for multi-version rotation support (see
+            # email-hash-rotate.yml and app/lib/emailHash.js).
+            REGISTRY=$(jq -n --arg secret "$SECRET_VALUE" '{"current":"v1","versions":{"v1":$secret}}')
+            aws secretsmanager create-secret \
+              --name "$SECRET_NAME" \
+              --description "Secret registry for hashing pass-restriction email addresses" \
+              --secret-string "$REGISTRY" \
+              --region ${{ env.AWS_REGION }} \
+              --tags Key=Purpose,Value=email-hashing Key=Critical,Value=false Key=BackupRequired,Value=false
+            aws secretsmanager tag-resource --secret-id "$SECRET_NAME" \
+              --tags "Key=rotated-at,Value=$(date -u +%Y-%m-%d)" --region ${{ env.AWS_REGION }}
+            echo "Email hash secret created in registry format (current: v1)"
+          else
+            echo "Email hash secret $SECRET_NAME already exists - preserving existing value"
+          fi
+
       # ObservabilityStack reads this parameter as an AWS::SSM::Parameter::Value<String>
       # template parameter, which CloudFormation refuses to resolve at all if the parameter is
       # missing - a hard changeset failure, not a stack-internal default. The destroy sweep

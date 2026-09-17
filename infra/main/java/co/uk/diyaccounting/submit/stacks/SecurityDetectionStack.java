@@ -248,6 +248,47 @@ public class SecurityDetectionStack extends Stack {
         saltSecretUnexpectedReadAlarm.addAlarmAction(new SnsAction(securityFindingsTopic));
 
         // ----------------------------------------------------------------------------------
+        // The same unexpected-read detector as the salt secret above, for the email hash secret
+        //. Stored pass records carry a restrictedToEmailHash value
+        // this secret produced, so a read outside the deployment pipeline is the same signal:
+        // the pass-lambda roles read it as part of normal request handling, everything else is
+        // rotation (runbook section 4) or worth investigating.
+        // ----------------------------------------------------------------------------------
+        String emailHashReadMetricName = "EmailHashSecretUnexpectedRead";
+        MetricFilter.Builder.create(this, props.resourceNamePrefix() + "-EmailHashSecretReadMetricFilter")
+                .logGroup(cloudTrailLogGroup)
+                .filterPattern(FilterPattern.literal(
+                        ("{ ($.eventSource = \"secretsmanager.amazonaws.com\") && ($.eventName = \"GetSecretValue\")"
+                                        + " && ($.requestParameters.secretId = \"*email-hash-secret*\")"
+                                        + " && ($.userIdentity.sessionContext.sessionIssuer.userName != \"%s-*\")"
+                                        + " && ($.userIdentity.sessionContext.sessionIssuer.userName != \"%s\") }")
+                                .formatted(props.envName(), deploymentRoleName)))
+                .metricNamespace("Submit/Security")
+                .metricName(emailHashReadMetricName)
+                .metricValue("1")
+                .defaultValue(0)
+                .build();
+
+        Alarm emailHashSecretUnexpectedReadAlarm = Alarm.Builder.create(
+                        this, props.resourceNamePrefix() + "-EmailHashSecretUnexpectedReadAlarm")
+                .alarmName(props.resourceNamePrefix() + "-email-hash-secret-unexpected-read")
+                .alarmDescription("GetSecretValue on the email-hash-secret by a principal whose role name does"
+                        + " not start with this environment's name. Expected during rotation"
+                        + " (runbook section 4); otherwise investigate.")
+                .metric(Metric.Builder.create()
+                        .namespace("Submit/Security")
+                        .metricName(emailHashReadMetricName)
+                        .statistic("Sum")
+                        .period(Duration.minutes(5))
+                        .build())
+                .threshold(1)
+                .evaluationPeriods(1)
+                .comparisonOperator(ComparisonOperator.GREATER_THAN_OR_EQUAL_TO_THRESHOLD)
+                .treatMissingData(TreatMissingData.NOT_BREACHING)
+                .build();
+        emailHashSecretUnexpectedReadAlarm.addAlarmAction(new SnsAction(securityFindingsTopic));
+
+        // ----------------------------------------------------------------------------------
         // The fourteen CIS AWS Foundations Benchmark CloudWatch log metric filter controls
         // (CIS CloudWatch.1 through .14), each a metric filter plus an any-occurrence alarm on
         // the same CloudTrail log group, following the shape above. The trail already records
@@ -350,8 +391,8 @@ public class SecurityDetectionStack extends Stack {
 
         infof(
                 "SecurityDetectionStack %s created: DynamoDB customer-table Scan and GetItem-volume alarms, the salt"
-                        + " secret unexpected-read alarm, and the fourteen CIS CloudWatch metric filter controls, all"
-                        + " wired to the security-findings topic",
+                        + " and email hash secret unexpected-read alarms, and the fourteen CIS CloudWatch metric"
+                        + " filter controls, all wired to the security-findings topic",
                 this.getNode().getId());
     }
 
