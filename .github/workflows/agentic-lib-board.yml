@@ -141,6 +141,15 @@ jobs:
           fetch-depth: 0
           token: ${{ secrets.AGENT_TOKEN || github.token }}
 
+      # `git commit` is in the agent's allow-list below (the write-back path commits NEXT.md
+      # itself, unlike agentic-lib-code.yml's push-and-PR step), so this identity has to exist
+      # before it runs or the commit fails with "Please tell me who you are".
+      - name: Configure the commit identity
+        run: |
+          set -euo pipefail
+          git config user.name "Claude"
+          git config user.email "noreply@anthropic.com"
+
       - name: Set up Node
         uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7
         with:
@@ -177,6 +186,12 @@ jobs:
         uses: ./.github/actions/agent-kill-switch
         with:
           environment-name: ci
+
+      # The board skill runs `npx vitest run app/unit-tests/nextShape.test.js` before committing
+      # a NEXT.md write-back; without node_modules that either fails outright or fetches vitest
+      # fresh from the registry on every run.
+      - name: Install dependencies
+        run: timeout 120 npm ci --prefer-offline || { sleep 30; timeout 180 npm ci; }
 
       - name: Install Claude Code
         run: npm install -g "@anthropic-ai/claude-code@${CLAUDE_CODE_VERSION}"
@@ -226,7 +241,7 @@ jobs:
             --output-format json \
             --permission-mode default \
             --disallowedTools "Bash(git push:*),Bash(gh pr merge:*),Bash(gh workflow run:*),Bash(gh issue close:*),Bash(gh issue edit:*)" \
-            --allowedTools "Read,Grep,Glob,Edit,Write,Bash(git status:*),Bash(git diff:*),Bash(git log:*),Bash(git fetch:*),Bash(git branch:*),Bash(git ls-remote:*),Bash(git merge-base:*),Bash(git rev-parse:*),Bash(git add:*),Bash(git commit:*),Bash(gh issue list:*),Bash(gh issue view:*),Bash(gh issue comment:*),Bash(gh pr list:*),Bash(gh run list:*),Bash(gh api:*),Bash(aws cloudformation list-stacks:*),Bash(aws cloudformation describe-*),Bash(aws ssm get-parameter:*),Bash(aws cloudwatch describe-alarms:*),Bash(npx prettier:*),Bash(date:*)" \
+            --allowedTools "Read,Grep,Glob,Edit,Write,Bash(git status:*),Bash(git diff:*),Bash(git log:*),Bash(git fetch:*),Bash(git branch:*),Bash(git ls-remote:*),Bash(git merge-base:*),Bash(git rev-parse:*),Bash(git add:*),Bash(git commit:*),Bash(gh issue list:*),Bash(gh issue view:*),Bash(gh issue comment:*),Bash(gh pr list:*),Bash(gh run list:*),Bash(gh api:*),Bash(aws cloudformation list-stacks:*),Bash(aws cloudformation describe-*),Bash(aws ssm get-parameter:*),Bash(aws cloudwatch describe-alarms:*),Bash(npx prettier:*),Bash(npx vitest:*),Bash(date:*)" \
             2>&1 | tee /tmp/board.json
 
       - name: Require a usable render

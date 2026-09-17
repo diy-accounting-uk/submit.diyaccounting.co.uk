@@ -180,12 +180,21 @@ jobs:
 
           PROMPT="${SKILL}
 
-          You are running inside a GitHub Actions step, not a terminal session. Four things differ:
+          You are running inside a GitHub Actions step, not a terminal session. Six things differ:
 
           - ${SCOPE_LINE}
           - There is no local worktree and no local checkout of any PR branch, so the skill's gates
             about uncommitted worktree changes and local branches ahead of origin are satisfied by
             construction. Say so rather than pretending to have checked a worktree that is absent.
+          - The checkout above has \`fetch-depth: 0\`, so \`origin/main~1\` and every \`origin/<ref>\`
+            resolve without an extra fetch; run the overlap check (\`git diff --name-only
+            origin/main~1..origin/main\` against \`origin/main...origin/<headRef>\`) exactly as the
+            skill describes. After a merge, \`git fetch origin\` before diffing again, so
+            \`origin/main\` reflects what just landed rather than the pre-merge tree.
+          - The remaining-PR rebase (\`git worktree add\`, \`git rebase\`, \`git push
+            --force-with-lease\`) does not run here: there is no worktree to rebase in and no
+            terminal session to watch it. A conflicting or overlapping PR is reported in Part 7 as
+            work for the terminal session, never rebased from this runner.
           - Do not invoke /watch at the end. This runner exits; a background monitor cannot outlive
             it. Instead, end your output with what a watcher would have been asked to observe.
           - Render every table the skill requires into your output. It becomes the job summary and
@@ -195,7 +204,7 @@ jobs:
             --max-turns 40 \
             --output-format json \
             --permission-mode default \
-            --allowedTools "Read,Grep,Glob,Bash(gh pr list:*),Bash(gh pr view:*),Bash(gh pr merge:*),Bash(gh run list:*),Bash(gh run view:*),Bash(gh api:*),Bash(git log:*),Bash(git ls-remote:*)" \
+            --allowedTools "Read,Grep,Glob,Bash(gh pr list:*),Bash(gh pr view:*),Bash(gh pr merge:*),Bash(gh run list:*),Bash(gh run view:*),Bash(gh api:*),Bash(git log:*),Bash(git ls-remote:*),Bash(git diff:*),Bash(git fetch:*)" \
             2>&1 | tee /tmp/auto-merge.json
 
       # A run that stops early - max-turns, a denied tool, a Bedrock entitlement error - still
