@@ -86,7 +86,9 @@ step.
   set to `DISABLE_KEY` on organization 936151157673 by hand (22:40 UTC on 2026-09-16, O48). Carry it
   in `google/identity.toml` under a new `[org_policy]` table and have `scripts/gcp-identity-sync.js`
   read and apply it through the Org Policy API (`orgpolicy.googleapis.com`, enabled on the project
-  the same day) so `google apply` owns it like the pool and providers. In flight on `claude/b53-board` (wave b53, worktree `.claude/worktrees/b53`, PR #282). **Source**: O48; BACKLOG 49.
+  the same day) so `google apply` owns it like the pool and providers. In flight on `claude/b53-board` (wave b53, worktree `.claude/worktrees/b53`, PR #282). The service
+  account holds `roles/orgpolicy.policyAdmin` on the organization since 01:1x UTC on 2026-09-17, so
+  `main`'s first `google apply` after the merge is the proof: the org policy line reads "matches". **Source**: O48; BACKLOG 49.
   **Owner**: Claude Code. **Model**: Sonnet. **Size**: ~2 files.
 
 - [ ] **B52n. Subscriptions and donations need separate GA4 event names before D17 bids on them.**
@@ -118,16 +120,6 @@ step.
   counts subscriptions only. The spreadsheets site's emitter still sends `purchase` for a donation
   until that repository lands the one-line change in its inbox. **Source**: B52n. **Owner**: Claude
   Code runs the apply; the operator re-imports in Ads. **Model**: Haiku. **Size**: ~0 files.
-
-- [ ] **B49b. Grant the service account Org Policy Admin so `google apply` owns the constraint.**
-  `gcp-identity-sync.js` (PR #282) reads and applies `[[org_policy]]` entries, and the federated
-  service account holds no organization role, so its plan prints the 403 and apply fails until
-  `roles/orgpolicy.policyAdmin` is granted on organization 936151157673 to
-  `ga4-report-pull@diyaccounting-ga4.iam.gserviceaccount.com`, a Google write the operator says go
-  to: `gcloud organizations add-iam-policy-binding 936151157673 --member=serviceAccount:ga4-report-pull@diyaccounting-ga4.iam.gserviceaccount.com --role=roles/orgpolicy.policyAdmin`.
-  The alternative is managing the constraint at project scope, which the toml's `resource` field
-  can express. **Source**: B49a. **Owner**: Claude Code runs it on the operator's go. **Model**:
-  Haiku. **Size**: ~0 files.
 
 - [ ] **O44. Tell Companies House's XML team what B34.6b submitted.** One email from your address
   to Neal at `xml@companieshouse.gov.uk`, naming: presenter E0000052288, company 06846849, test
