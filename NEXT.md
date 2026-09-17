@@ -43,19 +43,6 @@ step.
 
 ## In flight
 
-- [ ] **B53.1. A key audit: every long-lived credential the company holds, where it lives, who can
-  read it, when it last rotated.** The operator (2026-09-17), after the GA4 key exposure (O48).
-  From records: `secrets-rotation.toml` (twelve third-party secrets), `RUNBOOK_INFORMATION_SECURITY.md`
-  §2.1 and §3.3, both AWS accounts' Secrets Manager (`aws secretsmanager list-secrets`, names, tags,
-  `LastChangedDate`, resource policies), the GitHub environments' secrets (names and dates from
-  `gh secret list --env ci|prod`, repository secrets), the Google service accounts' keys
-  (`gcloud iam service-accounts keys list` per account in each project), OAuth client secrets, the
-  `RELEASE_PAT` and `AGENT_TOKEN`/`AUTO_MERGE_TOKEN` PATs (`gh api /user` under each for scopes and
-  expiry), SSH signing keys, and the local `.env` and `cognito-native-test-credentials.json`. Write
-  `REPORT_KEY_AUDIT.md`: one table (credential, kind, lives in, readable by, last rotated, expiry,
-  rotation path as code or manual, exposure surface), the gaps, and the rows this creates.
-  In flight on `claude/ops-key-audit` (worktree `.claude/worktrees/key-audit`, agent running). **Source**: operator, 2026-09-17; O48. **Owner**: Claude Code. **Model**: Sonnet. **Size**: ~1 file.
-
 - [ ] **B124.3. The board and pr agent workflows have the same prompt-versus-tools gaps.** Found
   while fixing B124.2: `agentic-lib-board.yml` allows `git commit` but sets no git identity, and
   its prompt's board skill runs `npx vitest run app/unit-tests/nextShape.test.js` before the
@@ -117,6 +104,30 @@ step.
 
 ## Machine-only
 
+- [ ] **B53.2. The runbook's rotation entries follow the key audit.** `REPORT_KEY_AUDIT.md`
+  (on `main`): §3.3 asserts Google, HMRC and HMRC-sandbox rotation dates that `secrets-rotation.toml`
+  leaves blank, so the two disagree and the true dates are unknown; §3.4 names `SUPPORT_ISSUE_PAT`
+  and `TEST_HMRC_PASSWORD`, neither of which exists (the bot tokens are `ISSUE_BOT_TOKEN` and
+  `SUPPORT_BOT_TOKEN`); `email-hash-secret` has no rotation entry and no code path. Make the toml
+  the one source of dates (blank where unknown, §3.3 reading from it), correct §3.4, add an
+  `email-hash-secret` entry that names its path once B53.5 lands, and one entry per remaining
+  credential kind the report lists without a documented path. **Source**: REPORT_KEY_AUDIT.md §3
+  gaps 1, 2, 8. **Owner**: Claude Code. **Model**: Sonnet. **Size**: ~2 files.
+
+- [ ] **B53.3. `secrets-rotation.toml` and the tracked `.env.*` files, tidied against the audit.**
+  The toml's Companies House `presenter_id`/`presenter_code` comment says "not yet set in either
+  environment" while ci holds both (`REPORT_KEY_AUDIT.md` gap 5); `.env.simulator`, `.env.test` and
+  `.env.proxy` carry secret-named variables in this public repository (gap 6): read each value in the
+  tracked files and confirm it is a mock or a public id, replacing any that is not with a reference
+  to the environment's secret, and say so in the toml. **Source**: REPORT_KEY_AUDIT.md gaps 5, 6.
+  **Owner**: Claude Code. **Model**: Haiku. **Size**: ~4 files.
+
+- [ ] **B53.5. A rotation path for `email-hash-secret`.** Created once by hand, no script or
+  workflow rotates it (`REPORT_KEY_AUDIT.md` gap 2); the salt (`RUNBOOK_INFORMATION_SECURITY.md` §4)
+  has the pattern: a versioned secret, the reader accepting the current and previous version, a
+  workflow that mints and promotes. Build the same for the email hash. **Source**: REPORT_KEY_AUDIT.md
+  gap 2. **Owner**: Claude Code. **Model**: Sonnet. **Size**: ~4 files.
+
 - [ ] **B30ai. Alarm triage reads evidence again: prove it on the next run.** PR #280 (d47884f6)
   tells the agent to call `aws` with no `--profile`, after `REPORT_ALARM_TRIAGE_COST.md` found all
   eight triaged runs denied their `aws logs` and `aws cloudwatch` reads (21 denials) for that
@@ -125,6 +136,22 @@ step.
   REPORT_ALARM_TRIAGE_COST.md. **Owner**: Claude Code. **Model**: Haiku. **Size**: ~0 files.
 
 ## Machine-ask
+
+- [ ] **B53.4. Delete the nine orphaned `prod/submit/*` secrets in the submit-ci account.**
+  `REPORT_KEY_AUDIT.md` gap 4: nine `prod/submit/*` names sit in 367191799875, untouched since
+  2026-02-21, with distinct ARNs from prod's real copies in 972912397388; nothing in ci reads a
+  `prod/` name. Confirm no reference (`grep -rn 'prod/submit' infra app .github`), then the delete
+  is an AWS write the operator says go to: `aws --profile submit-ci secretsmanager delete-secret
+  --secret-id <name> --recovery-window-in-days 30` per name. **Source**: REPORT_KEY_AUDIT.md gap 4.
+  **Owner**: Claude Code on the operator's go. **Model**: Haiku. **Size**: ~0 files.
+
+- [ ] **B53.7. The gyb Gmail-backup service-account key under a rotation plan.** Project
+  `gyb-project-j7e-1uj-8n2` holds a service-account key for the workspace's mail mirror
+  (`REPORT_KEY_AUDIT.md` gap 7), outside every plan and schedule. Either fold the project into
+  `PLAN_EVERYTHING_AS_CODE.md`'s Google estate with the same key-rotation block, or record it in the
+  workspace root's runbook with a date; a new key is a Google write the operator says go to.
+  **Source**: REPORT_KEY_AUDIT.md gap 7. **Owner**: Claude Code on the operator's go. **Model**:
+  Sonnet. **Size**: ~1 file.
 
 - [ ] **B52n.2. Create the `donate` key event and re-import the Ads conversions.** After PR #282
   is on `main`: `gh workflow run google-apply.yml --ref main -f apply=true` creates the `donate`
@@ -201,13 +228,6 @@ step.
 ## Human-driven
 
 ## Blocked
-
-- [ ] **B53.2. One rotation entry per credential kind the key audit finds without a path.**
-  `RUNBOOK_INFORMATION_SECURITY.md` §3.5 (6c76aec5) now carries the Google service-account key:
-  the monthly workflow, its verification, the six-step exposure response, and the §3.3 row. The
-  remainder waits on B53.1's report: for each credential kind it lists with no documented
-  rotation path, one §3 entry in the same shape. **Source**: operator, 2026-09-17; O48. **Owner**:
-  Claude Code. **Model**: Sonnet. **Size**: ~1 file. Blocked on B53.1.
 
 - [ ] **O17. A sandbox sign-in for the filing suites, and four ci values.** Checked live at
   23:2x UTC on 2026-09-16: the sandbox has no registration page of its own
