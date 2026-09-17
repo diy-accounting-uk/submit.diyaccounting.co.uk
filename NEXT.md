@@ -16,9 +16,10 @@ runs), and for Claude Code steps the **Model** a sub-agent should use (Fable > O
 Haiku; the lowest tier that fits). Anything touching code goes through a `claude/*` branch and
 PR; the operator merges.
 
-**Prod runs deployment prod-952b978** (PR #288, run 35176978495; the pointer verified against AWS
-at 06:1x UTC on 2026-09-17). PRs #296, #294 and #291 merged at 07:25 UTC; `main`'s deploy of
-9284434c (35194544211) promotes prod-9284434 when its suites pass. **ci**: `ci-claud86af` is live.
+**Prod runs deployment prod-952b978** (PR #288, run 35176978495; the pointer and its nine stacks
+verified against AWS at 08:5x UTC on 2026-09-17). PRs #296, #294 and #291 merged at 07:25 UTC;
+`main`'s deploy of fcbc468e (35194438596) is standing prod-fcbc468 up and 9284434c's
+(35194544211) waits behind it in the prod concurrency group. **ci**: `ci-claud86af` is live.
 
 The board runs in five sections, in this order: **in flight** (a branch, a pull request or a run
 in motion, each named in the row), **machine-only**, **machine-ask**, **human-driven**,
@@ -79,8 +80,10 @@ step.
   and Lambda moves together; the apex out of the deploy), P3 after P2's registrations. In flight on `claude/ci-1-slot-pool`, PR #295. Its deploy (35179085180) claimed
   `ci-set1` and stood the set up, and its deploy is green after `set origins` re-ran (the first
   attempt lost the apex CNAME race to PR #291's and #294's deploys). Rebased onto `main` after PR
-  #296 so its push runs `test.yml` and the head carries the ruleset's contexts; the merge is O49's.
-  **Source**:
+  #296; the rebased head's runs were cancelled a minute in and re-run (deploy 35194697647,
+  attempt 2, still at the environment wait). `ci-set1`'s self-destruct fired at 07:44 UTC during
+  that wait, on the first claim's clock, and removed the Ops, Publish and Edge stacks; the redeploy
+  recreates them (B30af.7 carries the clock). The merge is O49's. **Source**:
   issue #290; the design. **Owner**: Claude Code. **Model**: Sonnet. **Size**: ~7 files.
 
 ## Machine-only
@@ -194,6 +197,17 @@ step.
 ## Human-driven
 
 ## Blocked
+
+- [ ] **B30af.7. A slot reclaim re-anchors the slot's self-destruct clock.** `ci-set1`'s
+  `SelfDestructStack` keeps the schedule of the slot's first claim (`cron(44 7/4 * * ? *)` from
+  03:47 UTC on 2026-09-17), so the redeploy of the same ref at 07:33 was cut across at 07:44 while
+  it waited on the environment deploy: the self-destruct removed Ops, Publish and Edge under it.
+  When `claim-ci-slot` reclaims a slot (same ref, or stale), the deploy must move the schedule
+  to creation-plus-delay from the claim, or delete and recreate the `SelfDestructStack`, so a
+  redeploy always has a full window. `SelfDestructStack.java`, `claim-ci-slot.mjs`, `deploy.yml`.
+  **Source**: the self-destruct log `/aws/lambda/ci-env-self-destruct-eu-west-2` at 07:44 UTC on
+  2026-09-17. **Owner**: Claude Code. **Model**: Sonnet. Blocked on PR #295 (P1) merging.
+  **Size**: ~3 files.
 
 - [ ] **B30af.6. Register the four slot hosts' redirect URIs with HMRC and Companies House (P2).**
   After P1 names the slots: eight URIs, `https://ci-set<N>.submit.diyaccounting.co.uk/activities/submitVatCallback.html`
