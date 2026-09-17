@@ -17,8 +17,11 @@
 // `display_name` and created when missing.
 //
 // Usage:
-//   GA4_SERVICE_ACCOUNT_JSON=... (or GA4_SERVICE_ACCOUNT_ARN with AWS credentials) node scripts/ga4-sync.js
+//   node scripts/ga4-sync.js
 //   node scripts/ga4-sync.js --apply
+//
+// Credentials: application default credentials from google-github-actions/auth's federated
+// exchange.
 //
 // Options:
 //   --apply    Write the differences. Without it, the script only reads live state and prints
@@ -30,7 +33,7 @@ import { fileURLToPath } from "node:url";
 import { execFileSync } from "node:child_process";
 import TOML from "@iarna/toml";
 
-import { createGoogleAuthorizedClient, resolveServiceAccountCredentialsJson } from "./lib/googleAuth.js";
+import { createGoogleAuthorizedClient, assertFederatedCredentials } from "./lib/googleAuth.js";
 
 export const GITHUB_VARIABLE_NAME = "SUBMIT_GA4_MEASUREMENT_ID";
 export const CONFIG_PATH = "google/analytics.toml";
@@ -686,11 +689,8 @@ export async function main() {
   const opts = parseArgs(process.argv.slice(2));
   const config = loadConfigFromRoot();
 
-  const credentialsJson = await resolveServiceAccountCredentialsJson({
-    jsonEnvVar: "GA4_SERVICE_ACCOUNT_JSON",
-    arnEnvVar: "GA4_SERVICE_ACCOUNT_ARN",
-  });
-  const client = await createGoogleAuthorizedClient(credentialsJson, [ANALYTICS_EDIT_SCOPE, CLOUD_PLATFORM_READONLY_SCOPE]);
+  assertFederatedCredentials();
+  const client = await createGoogleAuthorizedClient([ANALYTICS_EDIT_SCOPE, CLOUD_PLATFORM_READONLY_SCOPE]);
 
   console.log(
     `Reading current GA4 state for account ${config.account.id} ("${config.account.displayName}")${opts.apply ? "" : " (dry run)"}...`,

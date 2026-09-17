@@ -34,23 +34,18 @@ vi.mock("@aws-sdk/client-s3", () => ({
   },
 }));
 
-const mockSecretsManagerSend = vi.fn();
-vi.mock("@aws-sdk/client-secrets-manager", () => ({
-  SecretsManagerClient: class {
-    send(...args) {
-      return mockSecretsManagerSend(...args);
-    }
-  },
-  GetSecretValueCommand: class {
-    constructor(input) {
-      this.input = input;
-    }
-  },
-}));
-
 import { handler, defaultTargetDate, toNdjsonGzip } from "../../functions/analytics/ga4DailyPull.js";
 
 const TABLES = ["sessions_by_host_source_daily", "funnel_steps_daily", "key_events_daily", "downloads_by_product_daily"];
+
+const FEDERATION_ENV = {
+  GOOGLE_WIF_AUDIENCE: "//iam.googleapis.com/projects/958354756046/locations/global/workloadIdentityPools/submit-federation/providers/aws-prod",
+  GA4_SERVICE_ACCOUNT_EMAIL: "ga4-report-pull@diyaccounting-ga4.iam.gserviceaccount.com",
+  AWS_REGION: "eu-west-2",
+  AWS_ACCESS_KEY_ID: "ASIAEXAMPLE",
+  AWS_SECRET_ACCESS_KEY: "secret",
+  AWS_SESSION_TOKEN: "session",
+};
 
 function stubJob(rows) {
   mockGetQueryResults.mockResolvedValue([rows]);
@@ -64,23 +59,20 @@ describe("ga4DailyPull", () => {
     stubJob([]);
     mockS3Send.mockReset();
     mockS3Send.mockResolvedValue({});
-    mockSecretsManagerSend.mockReset();
 
     process.env.ANALYTICS_LAKE_BUCKET_NAME = "test-lake-bucket";
     process.env.GA4_BIGQUERY_PROJECT_ID = "diyaccounting-ga4";
     process.env.GA4_BIGQUERY_LOCATION = "europe-west2";
-    process.env.GA4_SERVICE_ACCOUNT_JSON = JSON.stringify({
-      client_email: "svc@example.com",
-      private_key: "test-key",
-    });
+    Object.assign(process.env, FEDERATION_ENV);
   });
 
   afterEach(() => {
     delete process.env.ANALYTICS_LAKE_BUCKET_NAME;
     delete process.env.GA4_BIGQUERY_PROJECT_ID;
     delete process.env.GA4_BIGQUERY_LOCATION;
-    delete process.env.GA4_SERVICE_ACCOUNT_JSON;
-    delete process.env.GA4_SERVICE_ACCOUNT_ARN;
+    for (const name of Object.keys(FEDERATION_ENV)) {
+      delete process.env[name];
+    }
     vi.restoreAllMocks();
   });
 
@@ -161,6 +153,19 @@ describe("ga4DailyPull", () => {
       });
     });
 
+    test("builds the BigQuery client from the Lambda's execution role", async () => {
+      await handler({ date: "2026-08-20" });
+
+      // getBigQueryClient() caches its client across calls, so a client built by an earlier
+      // test in this file may still be the one in use; every option this module has ever built
+      // a client from is federated, so any recorded entry proves the point.
+      expect(mockBigQueryOptions.length).toBeGreaterThan(0);
+      for (const options of mockBigQueryOptions) {
+        expect(options.credentials).toBeUndefined();
+        expect(options.authClient).toBeDefined();
+      }
+    });
+
     test("throws when the lake bucket name is not configured", async () => {
       delete process.env.ANALYTICS_LAKE_BUCKET_NAME;
       await expect(handler({ date: "2026-08-20" })).rejects.toThrow(/ANALYTICS_LAKE_BUCKET_NAME/);
@@ -177,62 +182,12 @@ describe("ga4DailyPull", () => {
       await expect(handler({ date: "2026-08-20" })).rejects.toThrow(/GA4_BIGQUERY_LOCATION/);
     });
 
-    test("throws without querying when no service-account credential is configured", async () => {
-      delete process.env.GA4_SERVICE_ACCOUNT_JSON;
+    test("throws without querying when the federation settings are not configured", async () => {
+      delete process.env.GOOGLE_WIF_AUDIENCE;
 
-      await expect(handler({ date: "2026-08-20" })).rejects.toThrow(/GA4_SERVICE_ACCOUNT_JSON|GA4_SERVICE_ACCOUNT_ARN/);
+      await expect(handler({ date: "2026-08-20" })).rejects.toThrow(/GOOGLE_WIF_AUDIENCE/);
       expect(mockCreateQueryJob).not.toHaveBeenCalled();
       expect(mockS3Send).not.toHaveBeenCalled();
-    });
-
-    test("resolves the service-account credential from Secrets Manager when only the ARN is set", async () => {
-      delete process.env.GA4_SERVICE_ACCOUNT_JSON;
-      process.env.GA4_SERVICE_ACCOUNT_ARN = "arn:aws:secretsmanager:eu-west-2:111111111111:secret:ci/submit/ga4/service_account";
-      mockSecretsManagerSend.mockResolvedValue({
-        SecretString: JSON.stringify({ client_email: "svc@example.com", private_key: "test-key" }),
-      });
-
-      const result = await handler({ date: "2026-08-20" });
-
-      expect(result.date).toBe("2026-08-20");
-      expect(mockSecretsManagerSend).toHaveBeenCalledTimes(1);
-      expect(mockSecretsManagerSend.mock.calls[0][0].input.SecretId).toBe(process.env.GA4_SERVICE_ACCOUNT_ARN);
-    });
-  });
-
-  describe("federated mode", () => {
-    test("builds the BigQuery client from the Lambda's execution role and reads no secret", async () => {
-      process.env.GA4_AUTH_MODE = "federated";
-      process.env.GOOGLE_WIF_AUDIENCE =
-        "//iam.googleapis.com/projects/958354756046/locations/global/workloadIdentityPools/submit-federation/providers/aws-prod";
-      process.env.GA4_SERVICE_ACCOUNT_EMAIL = "ga4-report-pull@diyaccounting-ga4.iam.gserviceaccount.com";
-      process.env.AWS_REGION = "eu-west-2";
-      process.env.AWS_ACCESS_KEY_ID = "ASIAEXAMPLE";
-      process.env.AWS_SECRET_ACCESS_KEY = "secret";
-      process.env.AWS_SESSION_TOKEN = "session";
-      delete process.env.GA4_SERVICE_ACCOUNT_JSON;
-      delete process.env.GA4_SERVICE_ACCOUNT_ARN;
-
-      try {
-        await handler({ date: "2026-08-20" });
-      } finally {
-        for (const name of [
-          "GA4_AUTH_MODE",
-          "GOOGLE_WIF_AUDIENCE",
-          "GA4_SERVICE_ACCOUNT_EMAIL",
-          "AWS_REGION",
-          "AWS_ACCESS_KEY_ID",
-          "AWS_SECRET_ACCESS_KEY",
-          "AWS_SESSION_TOKEN",
-        ]) {
-          delete process.env[name];
-        }
-      }
-
-      const options = mockBigQueryOptions.at(-1);
-      expect(options.credentials).toBeUndefined();
-      expect(options.authClient).toBeDefined();
-      expect(mockSecretsManagerSend).not.toHaveBeenCalled();
     });
   });
 });

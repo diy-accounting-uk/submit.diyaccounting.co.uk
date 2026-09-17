@@ -2,7 +2,7 @@
 # Copyright (C) 2006-2026 DIY Accounting Limited
 
 name: google apply
-run-name: "google apply (${{ (github.event_name == 'push' || (github.event_name == 'workflow_dispatch' && inputs.apply)) && 'apply' || 'plan' }}, ${{ inputs.auth-mode || vars.SUBMIT_GOOGLE_AUTH_MODE || 'key' }}) from ${{ github.ref_name }}"
+run-name: "google apply (${{ (github.event_name == 'push' || (github.event_name == 'workflow_dispatch' && inputs.apply)) && 'apply' || 'plan' }}) from ${{ github.ref_name }}"
 
 concurrency:
   group: google-apply-${{ github.ref }}
@@ -15,16 +15,8 @@ defaults:
     shell: bash
 
 on:
-  # A hand run proves the federated path before it becomes the default: dispatch with
-  # auth-mode=federated once the identity step has applied the pool, read every step's log,
-  # then set SUBMIT_GOOGLE_AUTH_MODE=federated on the prod environment.
   workflow_dispatch:
     inputs:
-      auth-mode:
-        description: "How the steps authenticate to Google: key (the stored service-account key) or federated (GitHub OIDC through the workload identity pool)"
-        required: false
-        default: ""
-        type: string
       apply:
         description: "Apply the difference (true) or plan only (false)"
         required: false
@@ -52,16 +44,8 @@ on:
 env:
   NODE_VERSION: '24'
   AWS_REGION: 'eu-west-2'
-  # key until the federated path is proven by a dispatch; the prod environment's
-  # SUBMIT_GOOGLE_AUTH_MODE variable then flips every run.
-  GOOGLE_AUTH_MODE: ${{ inputs.auth-mode || vars.SUBMIT_GOOGLE_AUTH_MODE || 'key' }}
   # pull_request plans; push and a dispatch with apply=true apply.
   GOOGLE_APPLY: ${{ (github.event_name == 'push' || (github.event_name == 'workflow_dispatch' && inputs.apply)) && 'true' || 'false' }}
-  # The key path: every script reads the key from this secret through the job's AWS credentials
-  # (scripts/lib/googleAuth.js) and holds it in memory only. It never enters a step output or a
-  # step env, because a multi-line value in an env block is printed in clear in the job log
-  # (add-mask covers the exact single string, not its lines).
-  GA4_SERVICE_ACCOUNT_ARN: "arn:aws:secretsmanager:eu-west-2:${{ vars.SUBMIT_ACCOUNT_ID }}:secret:prod/submit/ga4/service_account"
 
 jobs:
   google-apply:
@@ -111,10 +95,9 @@ jobs:
 
       # Federated: the workflow's own OIDC token, exchanged through the pool google/identity.toml
       # declares, leaves application default credentials for every Google step below. The AWS
-      # chain above stays for ga4-sync's GitHub-variable write and the key path.
+      # chain above stays for ga4-sync's GitHub-variable write.
       - name: Read the GitHub provider from google/identity.toml
         id: identity
-        if: env.GOOGLE_AUTH_MODE == 'federated'
         run: |
           node -e '
             const TOML = require("@iarna/toml");
@@ -126,7 +109,6 @@ jobs:
           ' | tee -a "$GITHUB_OUTPUT"
 
       - name: Authenticate to Google by federation
-        if: env.GOOGLE_AUTH_MODE == 'federated'
         uses: google-github-actions/auth@c200f3691d83b41bf9bbd8638997a462592937ed # v2
         with:
           workload_identity_provider: ${{ steps.identity.outputs.provider }}
@@ -198,7 +180,7 @@ jobs:
       - name: Generate step summary
         if: always()
         run: |
-          echo "# Google apply ($([ "$GOOGLE_APPLY" = "true" ] && echo apply || echo plan), auth $GOOGLE_AUTH_MODE)" >> "$GITHUB_STEP_SUMMARY"
+          echo "# Google apply ($([ "$GOOGLE_APPLY" = "true" ] && echo apply || echo plan))" >> "$GITHUB_STEP_SUMMARY"
           echo "" >> "$GITHUB_STEP_SUMMARY"
           for log in google-inventory.log gcp-enable-apis.log gcp-identity-sync.log google-roles-apply.log gcp-billing-assert.log ga4-sync.log ga4-bigquery-sync.log google-oauth-assert.log; do
             if [ -f "$log" ]; then

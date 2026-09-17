@@ -467,6 +467,30 @@ jobs:
             exit 1
           fi
 
+      # paymentBehaviour's GA4 purchase assertion (behaviour-tests/helpers/ga4PurchaseQuery.js)
+      # reads BigQuery over application default credentials, the same federated path
+      # google-apply.yml's Google steps use: exchange this job's own OIDC token through the
+      # provider google/identity.toml declares.
+      - name: Read the GitHub provider from google/identity.toml
+        id: google-identity
+        if: ${{ matrix.suite == 'paymentBehaviour' && needs.names.outputs.environment-name == 'ci' }}
+        run: |
+          node -e '
+            const TOML = require("@iarna/toml");
+            const fs = require("node:fs");
+            const c = TOML.parse(fs.readFileSync("google/identity.toml", "utf-8"));
+            const provider = c.workload_identity_pool.provider.find((p) => p.type === "oidc");
+            console.log(`provider=projects/${c.project.number}/locations/global/workloadIdentityPools/${c.workload_identity_pool.id}/providers/${provider.id}`);
+            console.log(`service-account=${c.service_account.email}`);
+          ' | tee -a "$GITHUB_OUTPUT"
+
+      - name: Authenticate to Google by federation
+        if: ${{ matrix.suite == 'paymentBehaviour' && needs.names.outputs.environment-name == 'ci' }}
+        uses: google-github-actions/auth@c200f3691d83b41bf9bbd8638997a462592937ed # v2
+        with:
+          workload_identity_provider: ${{ steps.google-identity.outputs.provider }}
+          service_account: ${{ steps.google-identity.outputs.service-account }}
+
       # The params job's own wait (see its comment) runs tens of minutes before this suite
       # actually navigates the apex, and a deploy.yml promotion can land in that gap (issue #272:
       # submitVatBehaviour and tokenRefreshBehaviour both hit
@@ -514,7 +538,6 @@ jobs:
           # BigQuery read; scoped to ci only so no synthetic purchase reaches the shared prod
           # GA4 property (see behaviour-tests/helpers/ga4PurchaseQuery.js).
           DIY_SUBMIT_ALLOW_REAL_ANALYTICS: ${{ (matrix.suite == 'paymentBehaviour' && needs.names.outputs.environment-name == 'ci') && 'true' || '' }}
-          GA4_SERVICE_ACCOUNT_ARN: ${{ (matrix.suite == 'paymentBehaviour' && needs.names.outputs.environment-name == 'ci') && format('arn:aws:secretsmanager:{0}:{1}:secret:{2}/submit/ga4/service_account', env.AWS_REGION, vars.SUBMIT_ACCOUNT_ID, needs.names.outputs.environment-name) || '' }}
           GA4_BIGQUERY_PROJECT_ID: ${{ (matrix.suite == 'paymentBehaviour' && needs.names.outputs.environment-name == 'ci') && 'diyaccounting-ga4' || '' }}
           GA4_BIGQUERY_DATASET_ID: ${{ (matrix.suite == 'paymentBehaviour' && needs.names.outputs.environment-name == 'ci') && 'analytics_552917343' || '' }}
           GA4_BIGQUERY_LOCATION: ${{ (matrix.suite == 'paymentBehaviour' && needs.names.outputs.environment-name == 'ci') && 'europe-west2' || '' }}
@@ -560,7 +583,6 @@ jobs:
           TEST_COMPANIES_HOUSE_PASSWORD: ${{ secrets.TEST_COMPANIES_HOUSE_PASSWORD }}
           TEST_COMPANIES_HOUSE_TOTP_SECRET: ${{ secrets.TEST_COMPANIES_HOUSE_TOTP_SECRET }}
           DIY_SUBMIT_ALLOW_REAL_ANALYTICS: ${{ (matrix.suite == 'paymentBehaviour' && needs.names.outputs.environment-name == 'ci') && 'true' || '' }}
-          GA4_SERVICE_ACCOUNT_ARN: ${{ (matrix.suite == 'paymentBehaviour' && needs.names.outputs.environment-name == 'ci') && format('arn:aws:secretsmanager:{0}:{1}:secret:{2}/submit/ga4/service_account', env.AWS_REGION, vars.SUBMIT_ACCOUNT_ID, needs.names.outputs.environment-name) || '' }}
           GA4_BIGQUERY_PROJECT_ID: ${{ (matrix.suite == 'paymentBehaviour' && needs.names.outputs.environment-name == 'ci') && 'diyaccounting-ga4' || '' }}
           GA4_BIGQUERY_DATASET_ID: ${{ (matrix.suite == 'paymentBehaviour' && needs.names.outputs.environment-name == 'ci') && 'analytics_552917343' || '' }}
           GA4_BIGQUERY_LOCATION: ${{ (matrix.suite == 'paymentBehaviour' && needs.names.outputs.environment-name == 'ci') && 'europe-west2' || '' }}

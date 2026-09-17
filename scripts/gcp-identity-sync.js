@@ -24,15 +24,14 @@
 // Usage:
 //   node scripts/gcp-identity-sync.js [--apply] [--write-cred-configs]
 //
-// Credentials: GA4_SERVICE_ACCOUNT_JSON (local override), GA4_SERVICE_ACCOUNT_ARN (Secrets
-// Manager), or application default credentials when GOOGLE_AUTH_MODE=federated. The key never
-// reaches a log line.
+// Credentials: application default credentials from google-github-actions/auth's federated
+// exchange.
 
 import fs from "node:fs";
 import path from "node:path";
 import TOML from "@iarna/toml";
 
-import { resolveServiceAccountCredentialsJson, createGoogleAuthClient, getAccessToken } from "./lib/googleAuth.js";
+import { assertFederatedCredentials, createGoogleAuthClient, getAccessToken } from "./lib/googleAuth.js";
 
 export const CONFIG_PATH = "google/identity.toml";
 export const CREDENTIALS_DIR = "google/credentials";
@@ -554,11 +553,8 @@ export function writeCredentialConfigs(config, rootDir = process.cwd()) {
 export async function main(argv = process.argv.slice(2)) {
   const opts = parseArgs(argv);
   const config = loadConfigFromRoot();
-  const credentialsJson = await resolveServiceAccountCredentialsJson({
-    jsonEnvVar: "GA4_SERVICE_ACCOUNT_JSON",
-    arnEnvVar: "GA4_SERVICE_ACCOUNT_ARN",
-  });
-  const token = await getAccessToken(createGoogleAuthClient(credentialsJson));
+  assertFederatedCredentials();
+  const token = await getAccessToken(createGoogleAuthClient());
 
   config.project.number = await resolveProjectNumber(token, config);
   console.log(`project ${config.project.id}: number ${config.project.number}`);

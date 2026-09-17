@@ -152,15 +152,6 @@ public class IngestionStack extends Stack {
             return "diy-accounting-uk/submit.diyaccounting.co.uk";
         }
 
-        // How the three GA4 jobs authenticate to Google: "key" reads the service-account key
-        // from GA4_SERVICE_ACCOUNT_ARN; "federated" presents the execution role's credentials to
-        // the workload identity pool's aws-<env> provider and impersonates the service account.
-        // From .env.<env>'s GA4_AUTH_MODE; ci proves the federated path before prod switches.
-        @Value.Default
-        default String ga4AuthMode() {
-            return "key";
-        }
-
         // The Google Cloud project number and service account behind google/identity.toml; the
         // federated audience is built from them and the environment name.
         @Value.Default
@@ -179,15 +170,14 @@ public class IngestionStack extends Stack {
     }
 
     /**
-     * The three variables app/lib/googleWorkloadIdentity.js reads. The audience names the
+     * The two variables app/lib/googleWorkloadIdentity.js reads. The audience names the
      * aws-<env> provider of the submit-federation pool in google/identity.toml, whose attribute
      * condition admits the execution roles of the three GA4 functions by the construct ids
      * Ga4ReportPullFn, Ga4EventExportPullFn and Ga4DailyPullFn.
      */
     static PopulatedMap<String, String> withGoogleFederation(
             PopulatedMap<String, String> env, IngestionStackProps props) {
-        return env.with("GA4_AUTH_MODE", props.ga4AuthMode())
-                .with(
+        return env.with(
                         "GOOGLE_WIF_AUDIENCE",
                         "//iam.googleapis.com/projects/" + props.googleProjectNumber()
                                 + "/locations/global/workloadIdentityPools/submit-federation/providers/aws-"
@@ -325,7 +315,6 @@ public class IngestionStack extends Stack {
         if (props.ga4PropertyId() != null && !props.ga4PropertyId().isBlank()) {
             ga4ReportPullEnv.with("GA4_PROPERTY_ID", props.ga4PropertyId());
         }
-        ga4ReportPullEnv.with("GA4_SERVICE_ACCOUNT_ARN", sharedNames.ga4ServiceAccountSecretArn);
         withGoogleFederation(ga4ReportPullEnv, props);
 
         IRepository ga4ReportPullRepository = Repository.fromRepositoryAttributes(
@@ -364,12 +353,6 @@ public class IngestionStack extends Stack {
                 .resources(List.of(this.lakeBucket.getBucketArn() + "/curated/ga4/*"))
                 .build());
 
-        ga4ReportPullLambda.addToRolePolicy(PolicyStatement.Builder.create()
-                .effect(Effect.ALLOW)
-                .actions(List.of("secretsmanager:GetSecretValue"))
-                .resources(List.of(sharedNames.ga4ServiceAccountSecretArn + "-*"))
-                .build());
-
         registerIngestionJob(
                 "Ga4ReportPull",
                 ga4ReportPullFunctionName,
@@ -405,7 +388,6 @@ public class IngestionStack extends Stack {
         if (props.ga4BigQueryLocation() != null && !props.ga4BigQueryLocation().isBlank()) {
             ga4EventExportPullEnv.with("GA4_BIGQUERY_LOCATION", props.ga4BigQueryLocation());
         }
-        ga4EventExportPullEnv.with("GA4_SERVICE_ACCOUNT_ARN", sharedNames.ga4ServiceAccountSecretArn);
         withGoogleFederation(ga4EventExportPullEnv, props);
 
         IRepository ga4EventExportPullRepository = Repository.fromRepositoryAttributes(
@@ -444,14 +426,6 @@ public class IngestionStack extends Stack {
                 .resources(List.of(this.lakeBucket.getBucketArn() + "/curated/ga4_bq/*"))
                 .build());
 
-        // Same GA4 service-account secret ga4ReportPullLambda reads: one BigQuery-enabled
-        // service account for both the Data API and the BigQuery export.
-        ga4EventExportPullLambda.addToRolePolicy(PolicyStatement.Builder.create()
-                .effect(Effect.ALLOW)
-                .actions(List.of("secretsmanager:GetSecretValue"))
-                .resources(List.of(sharedNames.ga4ServiceAccountSecretArn + "-*"))
-                .build());
-
         registerIngestionJob(
                 "Ga4EventExportPull",
                 ga4EventExportPullFunctionName,
@@ -474,7 +448,6 @@ public class IngestionStack extends Stack {
         if (props.ga4BigQueryLocation() != null && !props.ga4BigQueryLocation().isBlank()) {
             ga4DailyPullEnv.with("GA4_BIGQUERY_LOCATION", props.ga4BigQueryLocation());
         }
-        ga4DailyPullEnv.with("GA4_SERVICE_ACCOUNT_ARN", sharedNames.ga4ServiceAccountSecretArn);
         withGoogleFederation(ga4DailyPullEnv, props);
 
         IRepository ga4DailyPullRepository = Repository.fromRepositoryAttributes(
@@ -511,14 +484,6 @@ public class IngestionStack extends Stack {
                 .effect(Effect.ALLOW)
                 .actions(List.of("s3:PutObject"))
                 .resources(List.of(this.lakeBucket.getBucketArn() + "/curated/ga4_daily/*"))
-                .build());
-
-        // Same GA4 service-account secret the other GA4 jobs read: one BigQuery-enabled service
-        // account for the Data API, the raw event export and these daily aggregates alike.
-        ga4DailyPullLambda.addToRolePolicy(PolicyStatement.Builder.create()
-                .effect(Effect.ALLOW)
-                .actions(List.of("secretsmanager:GetSecretValue"))
-                .resources(List.of(sharedNames.ga4ServiceAccountSecretArn + "-*"))
                 .build());
 
         registerIngestionJob(

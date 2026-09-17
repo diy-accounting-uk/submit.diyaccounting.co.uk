@@ -14,8 +14,9 @@
 // partitioning_field), so a rerun for the same day is safe.
 //
 // Usage:
-//   GA4_SERVICE_ACCOUNT_JSON=... (or GA4_SERVICE_ACCOUNT_ARN with AWS credentials) \
-//     node scripts/ga4-bigquery-sync.js [--apply]
+//   node scripts/ga4-bigquery-sync.js [--apply]
+// Credentials: application default credentials from google-github-actions/auth's federated
+// exchange.
 
 import fs from "node:fs";
 import path from "node:path";
@@ -23,7 +24,7 @@ import { fileURLToPath } from "node:url";
 
 import TOML from "@iarna/toml";
 
-import { createGoogleAuthorizedClient, resolveServiceAccountCredentialsJson } from "./lib/googleAuth.js";
+import { createGoogleAuthorizedClient, assertFederatedCredentials } from "./lib/googleAuth.js";
 
 const BIGQUERY_V2 = "https://bigquery.googleapis.com/bigquery/v2";
 const DATA_TRANSFER_V1 = "https://bigquerydatatransfer.googleapis.com/v1";
@@ -268,11 +269,8 @@ export async function main() {
   const queries = loadQueries(config, repoRoot);
   const queriesByName = new Map(queries.map((query) => [query.name, query]));
 
-  const credentialsJson = await resolveServiceAccountCredentialsJson({
-    jsonEnvVar: "GA4_SERVICE_ACCOUNT_JSON",
-    arnEnvVar: "GA4_SERVICE_ACCOUNT_ARN",
-  });
-  const client = await createGoogleAuthorizedClient(credentialsJson, [BIGQUERY_SCOPE, CLOUD_PLATFORM_SCOPE]);
+  assertFederatedCredentials();
+  const client = await createGoogleAuthorizedClient([BIGQUERY_SCOPE, CLOUD_PLATFORM_SCOPE]);
 
   console.log(`Reading current BigQuery state for ${config.dataset.projectId}${opts.apply ? "" : " (dry run)"}...`);
 

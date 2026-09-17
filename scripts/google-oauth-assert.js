@@ -15,7 +15,7 @@
 //
 // Usage: node scripts/google-oauth-assert.js
 //
-// Credentials: the brand lookups use GA4_SERVICE_ACCOUNT_JSON / GA4_SERVICE_ACCOUNT_ARN through
+// Credentials: the brand lookups use application default credentials through
 // scripts/lib/googleAuth.js (that service account holds Owner on diyaccounting-ga4, which needs
 // iap.googleapis.com enabled — see google/project.toml [apis]). The YouTube checks reuse
 // scripts/youtube-upload.js's own Secrets Manager credentials and OAuth flow. The Cognito check
@@ -29,7 +29,7 @@ import { CloudFormationClient, DescribeStacksCommand } from "@aws-sdk/client-clo
 import { CognitoIdentityProviderClient, DescribeIdentityProviderCommand } from "@aws-sdk/client-cognito-identity-provider";
 import { SecretsManagerClient } from "@aws-sdk/client-secrets-manager";
 
-import { resolveServiceAccountCredentialsJson, createGoogleAuthClient, getAccessToken } from "./lib/googleAuth.js";
+import { assertFederatedCredentials, createGoogleAuthClient, getAccessToken } from "./lib/googleAuth.js";
 import { resolveClientCredentials, obtainAccessToken } from "./youtube-upload.js";
 
 export const CONFIG_PATH = "google/oauth.toml";
@@ -263,11 +263,8 @@ async function checkYoutubeClient(client, failures) {
 
 export async function main() {
   const config = loadConfigFromRoot();
-  const credentialsJson = await resolveServiceAccountCredentialsJson({
-    jsonEnvVar: "GA4_SERVICE_ACCOUNT_JSON",
-    arnEnvVar: "GA4_SERVICE_ACCOUNT_ARN",
-  });
-  const googleToken = await getAccessToken(createGoogleAuthClient(credentialsJson));
+  assertFederatedCredentials();
+  const googleToken = await getAccessToken(createGoogleAuthClient());
 
   const failures = [];
 

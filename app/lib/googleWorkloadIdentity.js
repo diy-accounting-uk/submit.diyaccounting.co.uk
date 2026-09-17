@@ -11,33 +11,16 @@
 //
 // google-auth-library's AwsClient looks for AWS credentials the way an EC2 instance offers them
 // (the metadata endpoint); a Lambda offers them as environment variables instead, so the client
-// is given a supplier that reads those. The key path stays behind GA4_AUTH_MODE until a federated
-// run in each environment has proven itself.
+// is given a supplier that reads those.
 //
 // Environment, set by the CDK on each Lambda:
-//   GA4_AUTH_MODE               "key" (the default) or "federated"
 //   GOOGLE_WIF_AUDIENCE         //iam.googleapis.com/projects/<number>/locations/global/workloadIdentityPools/<pool>/providers/<aws-provider>
 //   GA4_SERVICE_ACCOUNT_EMAIL   the service account to impersonate
 
 import { AwsClient, GoogleAuth } from "google-auth-library";
 
-export const AUTH_MODES = ["key", "federated"];
 export const AWS_SUBJECT_TOKEN_TYPE = "urn:ietf:params:aws:token-type:aws4_request";
 export const GOOGLE_STS_TOKEN_URL = "https://sts.googleapis.com/v1/token";
-
-/**
- * Which way this Lambda authenticates to Google.
- *
- * @param {NodeJS.ProcessEnv} [env]
- * @returns {"key"|"federated"}
- */
-export function ga4AuthMode(env = process.env) {
-  const mode = env.GA4_AUTH_MODE || "key";
-  if (!AUTH_MODES.includes(mode)) {
-    throw new Error(`GA4_AUTH_MODE must be one of ${AUTH_MODES.join(", ")}, got "${mode}"`);
-  }
-  return mode;
-}
 
 /**
  * The audience and service account a federated Lambda needs, read from its environment.
@@ -48,7 +31,7 @@ export function ga4AuthMode(env = process.env) {
 export function federationSettings(env = process.env) {
   const missing = ["GOOGLE_WIF_AUDIENCE", "GA4_SERVICE_ACCOUNT_EMAIL"].filter((name) => !env[name]);
   if (missing.length > 0) {
-    throw new Error(`GA4_AUTH_MODE=federated needs ${missing.join(" and ")}`);
+    throw new Error(`Federated Google auth needs ${missing.join(" and ")}`);
   }
   return { audience: env.GOOGLE_WIF_AUDIENCE, serviceAccountEmail: env.GA4_SERVICE_ACCOUNT_EMAIL };
 }

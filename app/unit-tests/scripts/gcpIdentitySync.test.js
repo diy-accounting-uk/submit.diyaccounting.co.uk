@@ -38,10 +38,6 @@ number = "958354756046"
 [service_account]
 email = "ga4-report-pull@diyaccounting-ga4.iam.gserviceaccount.com"
 
-  [service_account.key_rotation]
-  max_age_days = 90
-  secrets = ["ci/submit/ga4/service_account", "prod/submit/ga4/service_account"]
-
 [workload_identity_pool]
 id = "submit-federation"
 display_name = "GitHub Actions + submit Lambdas"

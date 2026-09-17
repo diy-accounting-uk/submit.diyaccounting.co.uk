@@ -51,26 +51,6 @@ class IngestionStackTest {
             String ga4BigQueryProjectId,
             String ga4BigQueryDatasetId,
             String ga4BigQueryLocation) {
-        return synthIngestionStack(
-                envName,
-                stripeSecretKeyArn,
-                stripeTestSecretKeyArn,
-                ga4PropertyId,
-                ga4BigQueryProjectId,
-                ga4BigQueryDatasetId,
-                ga4BigQueryLocation,
-                null);
-    }
-
-    private static IngestionStack synthIngestionStack(
-            String envName,
-            String stripeSecretKeyArn,
-            String stripeTestSecretKeyArn,
-            String ga4PropertyId,
-            String ga4BigQueryProjectId,
-            String ga4BigQueryDatasetId,
-            String ga4BigQueryLocation,
-            String ga4AuthMode) {
         App app = new App();
         SubmitSharedNames sharedNames = SubmitSharedNames.forDocs();
 
@@ -103,9 +83,6 @@ class IngestionStackTest {
         }
         if (ga4BigQueryLocation != null) {
             builder.ga4BigQueryLocation(ga4BigQueryLocation);
-        }
-        if (ga4AuthMode != null) {
-            builder.ga4AuthMode(ga4AuthMode);
         }
 
         return new IngestionStack(app, "TestIngestionStack-" + envName, builder.build());
@@ -323,31 +300,6 @@ class IngestionStackTest {
     }
 
     @Test
-    void ga4ReportPullAlwaysGetsTheSecretGrantForItsEnvironmentsSecretName() {
-        // The ARN is derived from SubmitSharedNames (region, account, envName), never from a
-        // synth-time input, so the grant exists on every synth, not only when something has
-        // configured it.
-        Template configured = Template.fromStack(synthIngestionStack("docs", null, null, "523400333"));
-
-        configured.hasResourceProperties(
-                "AWS::IAM::Policy",
-                Match.objectLike(
-                        Map.of(
-                                "PolicyDocument",
-                                Match.objectLike(
-                                        Map.of(
-                                                "Statement",
-                                                Match.arrayWith(
-                                                        List.of(
-                                                                Match.objectLike(
-                                                                        Map.of(
-                                                                                "Action",
-                                                                                "secretsmanager:GetSecretValue",
-                                                                                "Resource",
-                                                                                "arn:aws:secretsmanager:eu-west-2:111111111111:secret:docs/submit/ga4/service_account-*")))))))));
-    }
-
-    @Test
     void ga4ReportPullCanOnlyPutObjectsUnderItsOwnLakePrefix() {
         Template template = Template.fromStack(synthIngestionStack());
 
@@ -417,39 +369,6 @@ class IngestionStackTest {
     }
 
     @Test
-    void ga4EventExportPullAlwaysGetsTheSecretGrantForItsEnvironmentsSecretName() {
-        Template configured = Template.fromStack(synthIngestionStack(
-                "docs",
-                null,
-                null,
-                "999000111",
-                "diyaccounting-ga4",
-                "analytics_523400333",
-                "europe-west2"));
-
-        // All three GA4 jobs share the same service-account secret, so this ARN grant now
-        // appears on three Lambda roles: the pre-existing ga4ReportPull grant, this job's own,
-        // and the ga4DailyPull job's.
-        configured.resourcePropertiesCountIs(
-                "AWS::IAM::Policy",
-                Match.objectLike(
-                        Map.of(
-                                "PolicyDocument",
-                                Match.objectLike(
-                                        Map.of(
-                                                "Statement",
-                                                Match.arrayWith(
-                                                        List.of(
-                                                                Match.objectLike(
-                                                                        Map.of(
-                                                                                "Action",
-                                                                                "secretsmanager:GetSecretValue",
-                                                                                "Resource",
-                                                                                "arn:aws:secretsmanager:eu-west-2:111111111111:secret:docs/submit/ga4/service_account-*")))))))),
-                3);
-    }
-
-    @Test
     void ga4EventExportPullCanOnlyPutObjectsUnderItsOwnLakePrefix() {
         Template template = Template.fromStack(synthIngestionStack());
 
@@ -494,14 +413,13 @@ class IngestionStackTest {
     @Test
     void ga4JobsCarryTheFederationVariablesForTheirEnvironment() {
         Template ci = Template.fromStack(
-                synthIngestionStack("ci", null, null, "552917343", "diyaccounting-ga4", null, null, "federated"));
+                synthIngestionStack("ci", null, null, "552917343", "diyaccounting-ga4", null, null));
         for (String functionName :
                 List.of("docs-env-ga4-report-pull", "docs-env-ga4-event-export-pull", "docs-env-ga4-daily-pull")) {
             var functions = ci.findResources(
                     "AWS::Lambda::Function", Map.of("Properties", Map.of("FunctionName", functionName)));
             assertEquals(1, functions.size(), functionName);
             var env = environmentVariablesOf(functions);
-            assertEquals("federated", env.get("GA4_AUTH_MODE"), functionName);
             assertEquals(
                     "//iam.googleapis.com/projects/958354756046/locations/global/workloadIdentityPools/submit-federation/providers/aws-ci",
                     env.get("GOOGLE_WIF_AUDIENCE"),
@@ -516,7 +434,6 @@ class IngestionStackTest {
         var reportPull = docs.findResources(
                 "AWS::Lambda::Function", Map.of("Properties", Map.of("FunctionName", "docs-env-ga4-report-pull")));
         var env = environmentVariablesOf(reportPull);
-        assertEquals("key", env.get("GA4_AUTH_MODE"), "the key path is the default until an environment opts in");
         assertTrue(((String) env.get("GOOGLE_WIF_AUDIENCE")).endsWith("/providers/aws-docs"));
     }
 }

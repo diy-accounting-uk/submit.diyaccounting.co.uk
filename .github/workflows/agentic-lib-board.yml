@@ -55,7 +55,7 @@ jobs:
   # environment, so the board job (environment ci, for the kill switch and its own OIDC role)
   # cannot also assume the prod role; this job assumes it separately and hands its two read-only
   # facts down as outputs, the same two-jobs-keyed-by-environment shape `certificate-check.yml`
-  # and `google-key-rotate.yml` use for their own ci/prod matrix.
+  # uses for its own ci/prod matrix.
   prod-deployment-facts:
     name: 'prod deployment facts'
     runs-on: ubuntu-24.04

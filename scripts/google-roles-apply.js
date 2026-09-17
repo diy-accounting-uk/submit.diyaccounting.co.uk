@@ -19,9 +19,8 @@
 //   node scripts/google-roles-apply.js
 //   node scripts/google-roles-apply.js --apply
 //
-// Credentials: GA4_SERVICE_ACCOUNT_JSON (raw key JSON, for local runs) or
-// GA4_SERVICE_ACCOUNT_ARN (an AWS Secrets Manager ARN), the same precedence and secret
-// app/functions/analytics/ga4ReportPull.js uses. Never printed.
+// Credentials: application default credentials from google-github-actions/auth's federated
+// exchange, the same path app/functions/analytics/ga4ReportPull.js uses.
 
 import fs from "node:fs";
 import path from "node:path";
@@ -29,7 +28,7 @@ import { fileURLToPath } from "node:url";
 
 import TOML from "@iarna/toml";
 
-import { createGoogleAuthorizedClient, resolveServiceAccountCredentialsJson } from "./lib/googleAuth.js";
+import { createGoogleAuthorizedClient, assertFederatedCredentials } from "./lib/googleAuth.js";
 
 // AccessBinding is a v1alpha-only resource in the GA4 Analytics Admin API; it has not graduated
 // to v1beta.
@@ -191,11 +190,8 @@ export function loadConfigFromRoot() {
 }
 
 async function getAuthClient() {
-  const credentialsJson = await resolveServiceAccountCredentialsJson({
-    jsonEnvVar: "GA4_SERVICE_ACCOUNT_JSON",
-    arnEnvVar: "GA4_SERVICE_ACCOUNT_ARN",
-  });
-  return createGoogleAuthorizedClient(credentialsJson, SCOPES);
+  assertFederatedCredentials();
+  return createGoogleAuthorizedClient(SCOPES);
 }
 
 // --- GA4 Analytics Admin API ---

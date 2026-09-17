@@ -22,9 +22,7 @@
  *                                  (default: valued-context-507200-m9)
  *
  * Environment variables:
- *   GA4_SERVICE_ACCOUNT_JSON   Google service-account key JSON (local dev override)
- *   GA4_SERVICE_ACCOUNT_ARN    Secrets Manager ARN holding that JSON (used otherwise)
- *   AWS_REGION                 AWS region for the Secrets Manager call (default: eu-west-2)
+ *   GOOGLE_APPLICATION_CREDENTIALS   set by google-github-actions/auth's federated exchange
  *
  * The service account needs, at minimum: a billing role that can read and write budgets on
  * the billing account, and read access to Service Usage, BigQuery, Cloud Storage and Compute
@@ -39,7 +37,7 @@ import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import TOML from "@iarna/toml";
-import { resolveServiceAccountCredentialsJson, createGoogleAuthClient, getAccessToken } from "./lib/googleAuth.js";
+import { assertFederatedCredentials, createGoogleAuthClient, getAccessToken } from "./lib/googleAuth.js";
 
 // The APIs Google documents as enabled by default when a new project is created
 // (cloud.google.com/service-usage/docs/enabled-service). A stray project holding only these
@@ -470,11 +468,8 @@ export async function main() {
   console.log(`  Stray project:          ${opts.strayProjectId}`);
   console.log("");
 
-  const credentialsJson = await resolveServiceAccountCredentialsJson({
-    jsonEnvVar: "GA4_SERVICE_ACCOUNT_JSON",
-    arnEnvVar: "GA4_SERVICE_ACCOUNT_ARN",
-  });
-  const googleAuth = createGoogleAuthClient(credentialsJson);
+  assertFederatedCredentials();
+  const googleAuth = createGoogleAuthClient();
   const accessToken = await getAccessToken(googleAuth);
 
   // The budget and the stray-project checks are independent of each other. One failing
