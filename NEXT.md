@@ -42,22 +42,6 @@ step.
 
 ## In flight
 
-- [ ] **B55.2. Google federation: the key-mode code goes.** The Lambdas' federated proof is in:
-  the operator's start of `ci-env-analytics-nightly` at 22:12 UTC on 2026-09-17 (execution
-  `6ec15af1`) ran all three GA4 Lambdas with `GA4_AUTH_MODE=federated`; `ga4-daily-pull` and
-  `ga4-report-pull` SUCCEEDED and `ga4-event-export-pull` reached BigQuery and failed only on the
-  missing export table `events_20260915` in ci's own property. The machine half is on
-  `claude/b58-board`, PR #301 (worktree `.claude/worktrees/b58`): `.env.prod` to federated, the
-  key-mode code out of the three Lambdas, `googleWorkloadIdentity.js`, `scripts/lib/googleAuth.js`
-  and `IngestionStack`, the paymentBehaviour BigQuery read federated through
-  `google-github-actions/auth` in `probe-test.yml`, the secret step out of
-  `deploy-environment.yml`, `google-key-rotate.yml`, `scripts/gcp-key-rotate.js`,
-  `google/identity.toml`'s `[service_account.key_rotation]` block and the `ga4/service_account`
-  row gone. After it merges: the operator deletes the Google key and the two
-  `{env}/submit/ga4/service_account` secrets (commands in the batch's report). **Source**: B55;
-  `PLAN_EVERYTHING_AS_CODE.md` items 9 and 11. **Owner**: Claude Code, then the operator's three
-  deletes. **Model**: Sonnet. **Size**: ~15 files.
-
 - [ ] **B52n.2. The spreadsheets donation event lands as `donate`.** The Ads half is done: the
   operator imported key event `donate` from GA4 property 523400333 into Ads account 814-268-5080
   as a secondary conversion at 23:2x UTC on 2026-09-17. The spreadsheets repository's
@@ -97,6 +81,17 @@ step.
   **Size**: ~0 files.
 
 ## Machine-ask
+
+- [ ] **B55.2. Google federation: the key and its two secrets go.** Every Google caller is
+  federated on `main` since PR #301 (e5a22c29): the three GA4 Lambdas from their execution role,
+  `google-apply.yml` and the paymentBehaviour BigQuery read from the job's OIDC token. Once
+  `main`'s deploy 35287648055 is green on prod, the operator deletes the service account's
+  user-managed keys and the two secrets; the steps are `RUNBOOK_INFORMATION_SECURITY.md` §3.5
+  (`gcloud auth login`, `gcloud iam service-accounts keys list --iam-account=ga4-report-pull@diyaccounting-ga4.iam.gserviceaccount.com --managed-by=user --project=diyaccounting-ga4`,
+  a `keys delete` per id, then `aws --profile submit-ci secretsmanager delete-secret --secret-id ci/submit/ga4/service_account --recovery-window-in-days 30`
+  and the same for `prod` with `--profile submit-prod`). **Source**: B55;
+  `PLAN_EVERYTHING_AS_CODE.md` items 9 and 11. **Owner**: Operator, three deletes. **Model**:
+  none. **Size**: ~0 files.
 
 - [ ] **B53.7. The gyb Gmail-backup service-account key under a rotation plan.** Project
   `gyb-project-j7e-1uj-8n2` holds a service-account key for the workspace's mail mirror
