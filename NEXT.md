@@ -58,6 +58,15 @@ step.
   `PLAN_EVERYTHING_AS_CODE.md` items 9 and 11. **Owner**: Claude Code, then the operator's three
   deletes. **Model**: Sonnet. **Size**: ~15 files.
 
+- [ ] **B52n.2. The spreadsheets donation event lands as `donate`.** The Ads half is done: the
+  operator imported key event `donate` from GA4 property 523400333 into Ads account 814-268-5080
+  as a secondary conversion at 23:2x UTC on 2026-09-17. The spreadsheets repository's
+  `download-page.js` still sent `purchase` for a donation; branch `claude/ops-donate-event`
+  (cc402f5e3) in that repository changes it to `donate` and goes up as a PR once its `npm test`
+  passes. Done when that PR is on the spreadsheets `main` and the next day's `key_events_daily`
+  shows the spreadsheets host's donations under `donate`. **Source**: B52n. **Owner**: Claude
+  Code. **Model**: Haiku. **Size**: ~1 file.
+
 ## Machine-only
 
 - [ ] **B30af.8. The main-deploy guard's first live proof.** PR #300 (d689744f) makes
@@ -96,27 +105,6 @@ step.
   workspace root's runbook with a date; a new key is a Google write the operator says go to.
   **Source**: REPORT_KEY_AUDIT.md gap 7. **Owner**: Claude Code on the operator's go. **Model**:
   Sonnet. **Size**: ~1 file.
-
-- [ ] **B52n.2. Re-import the Ads conversions now `donate` is its own key event.** `main`'s
-  `google apply` run 35171500236 created key event `donate` on GA4 property 523400333
-  (`keyEvents/15792183948`, 02:1x UTC on 2026-09-17). The operator re-imports GA4's key events into
-  the Google Ads account (its id is in the workspace root's runbook) so its Purchase conversion
-  counts subscriptions only; the spreadsheets site's emitter still sends `purchase` for a donation
-  until that repository lands the one-line change in its inbox. **Source**: B52n. **Owner**:
-  Operator, in the Ads console. **Model**: none. **Size**: ~0 files.
-- [ ] **O38. Create the two GitHub Apps the audit ranks joint second.** `diya-ops`, to carry all
-  three Lambdas' writes, which separates 55 alarm issues and every support ticket from the
-  operator's own account and is the single move that fixes the worst disclosure gap; and
-  `diya-agent`, for unattended model runs, so a reader can tell a model's PR from a pipeline's and
-  our commits stop being attributed to the GitHub user `claude`. Both are free: an app to create
-  and a private key into Secrets Manager. Neither depends on signing. The alarm Lambda reads
-  `{env}/submit/github/issue_bot_token` and the support form reads
-  `{env}/submit/github/support_bot_token` (B165), so the app's token goes into both secrets, or a
-  second app carries the spreadsheets-only support writes. While deciding, settle recommendation 12 as well: the byline on articles
-  and support replies, before the emails-to-articles pipeline is built, because that is the largest
-  volume of machine-written public prose the company will produce. **Source**:
-  `REPORT_IDENTITY_AUDIT.md` section 8, recommendations 2, 3 and 12. **Owner**: Operator.
-  **Model**: none.
 
 - [ ] **B11.T10. ITSA phase 2: the recognition pack.** `PLAN_ITSA_PHASE_2.md` T10, its inputs (T7r, T21, T22) on `main`:
   `_developers/hmrc/ITSA_PRODUCTION_APPROVALS_CHECKLIST.md`, an ITSA pass over the two
