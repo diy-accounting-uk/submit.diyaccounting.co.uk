@@ -43,6 +43,30 @@ step.
 
 ## In flight
 
+- [ ] **B53.2. The runbook's rotation entries follow the key audit.** `REPORT_KEY_AUDIT.md`
+  (on `main`): §3.3 asserts Google, HMRC and HMRC-sandbox rotation dates that `secrets-rotation.toml`
+  leaves blank, so the two disagree and the true dates are unknown; §3.4 names `SUPPORT_ISSUE_PAT`
+  and `TEST_HMRC_PASSWORD`, neither of which exists (the bot tokens are `ISSUE_BOT_TOKEN` and
+  `SUPPORT_BOT_TOKEN`); `email-hash-secret` has no rotation entry and no code path. Make the toml
+  the one source of dates (blank where unknown, §3.3 reading from it), correct §3.4, add an
+  `email-hash-secret` entry that names its path once B53.5 lands, and one entry per remaining
+  credential kind the report lists without a documented path. In flight on `claude/b54-board` (wave b54, worktree `.claude/worktrees/b54`, agent running; push and PR follow the wave). **Source**: REPORT_KEY_AUDIT.md §3
+  gaps 1, 2, 8. **Owner**: Claude Code. **Model**: Sonnet. **Size**: ~2 files.
+
+- [ ] **B53.3. `secrets-rotation.toml` and the tracked `.env.*` files, tidied against the audit.**
+  The toml's Companies House `presenter_id`/`presenter_code` comment says "not yet set in either
+  environment" while ci holds both (`REPORT_KEY_AUDIT.md` gap 5); `.env.simulator`, `.env.test` and
+  `.env.proxy` carry secret-named variables in this public repository (gap 6): read each value in the
+  tracked files and confirm it is a mock or a public id, replacing any that is not with a reference
+  to the environment's secret, and say so in the toml. In flight on `claude/b54-board` (wave b54, worktree `.claude/worktrees/b54`, agent running; push and PR follow the wave). **Source**: REPORT_KEY_AUDIT.md gaps 5, 6.
+  **Owner**: Claude Code. **Model**: Haiku. **Size**: ~4 files.
+
+- [ ] **B53.5. A rotation path for `email-hash-secret`.** Created once by hand, no script or
+  workflow rotates it (`REPORT_KEY_AUDIT.md` gap 2); the salt (`RUNBOOK_INFORMATION_SECURITY.md` §4)
+  has the pattern: a versioned secret, the reader accepting the current and previous version, a
+  workflow that mints and promotes. Build the same for the email hash. In flight on `claude/b54-board` (wave b54, worktree `.claude/worktrees/b54`, agent running; push and PR follow the wave). **Source**: REPORT_KEY_AUDIT.md
+  gap 2. **Owner**: Claude Code. **Model**: Sonnet. **Size**: ~4 files.
+
 - [ ] **B124.3. The board and pr agent workflows have the same prompt-versus-tools gaps.** Found
   while fixing B124.2: `agentic-lib-board.yml` allows `git commit` but sets no git identity, and
   its prompt's board skill runs `npx vitest run app/unit-tests/nextShape.test.js` before the
@@ -104,30 +128,6 @@ step.
 
 ## Machine-only
 
-- [ ] **B53.2. The runbook's rotation entries follow the key audit.** `REPORT_KEY_AUDIT.md`
-  (on `main`): §3.3 asserts Google, HMRC and HMRC-sandbox rotation dates that `secrets-rotation.toml`
-  leaves blank, so the two disagree and the true dates are unknown; §3.4 names `SUPPORT_ISSUE_PAT`
-  and `TEST_HMRC_PASSWORD`, neither of which exists (the bot tokens are `ISSUE_BOT_TOKEN` and
-  `SUPPORT_BOT_TOKEN`); `email-hash-secret` has no rotation entry and no code path. Make the toml
-  the one source of dates (blank where unknown, §3.3 reading from it), correct §3.4, add an
-  `email-hash-secret` entry that names its path once B53.5 lands, and one entry per remaining
-  credential kind the report lists without a documented path. **Source**: REPORT_KEY_AUDIT.md §3
-  gaps 1, 2, 8. **Owner**: Claude Code. **Model**: Sonnet. **Size**: ~2 files.
-
-- [ ] **B53.3. `secrets-rotation.toml` and the tracked `.env.*` files, tidied against the audit.**
-  The toml's Companies House `presenter_id`/`presenter_code` comment says "not yet set in either
-  environment" while ci holds both (`REPORT_KEY_AUDIT.md` gap 5); `.env.simulator`, `.env.test` and
-  `.env.proxy` carry secret-named variables in this public repository (gap 6): read each value in the
-  tracked files and confirm it is a mock or a public id, replacing any that is not with a reference
-  to the environment's secret, and say so in the toml. **Source**: REPORT_KEY_AUDIT.md gaps 5, 6.
-  **Owner**: Claude Code. **Model**: Haiku. **Size**: ~4 files.
-
-- [ ] **B53.5. A rotation path for `email-hash-secret`.** Created once by hand, no script or
-  workflow rotates it (`REPORT_KEY_AUDIT.md` gap 2); the salt (`RUNBOOK_INFORMATION_SECURITY.md` §4)
-  has the pattern: a versioned secret, the reader accepting the current and previous version, a
-  workflow that mints and promotes. Build the same for the email hash. **Source**: REPORT_KEY_AUDIT.md
-  gap 2. **Owner**: Claude Code. **Model**: Sonnet. **Size**: ~4 files.
-
 - [ ] **B30ai. Alarm triage reads evidence again: prove it on the next run.** PR #280 (d47884f6)
   tells the agent to call `aws` with no `--profile`, after `REPORT_ALARM_TRIAGE_COST.md` found all
   eight triaged runs denied their `aws logs` and `aws cloudwatch` reads (21 denials) for that
@@ -140,7 +140,7 @@ step.
 - [ ] **B53.4. Delete the nine orphaned `prod/submit/*` secrets in the submit-ci account.**
   `REPORT_KEY_AUDIT.md` gap 4: nine `prod/submit/*` names sit in 367191799875, untouched since
   2026-02-21, with distinct ARNs from prod's real copies in 972912397388; nothing in ci reads a
-  `prod/` name. Confirm no reference (`grep -rn 'prod/submit' infra app .github`), then the delete
+  `prod/` name. No ci code references a `prod/` name (grep, 02:0x UTC on 2026-09-17); the delete
   is an AWS write the operator says go to: `aws --profile submit-ci secretsmanager delete-secret
   --secret-id <name> --recovery-window-in-days 30` per name. **Source**: REPORT_KEY_AUDIT.md gap 4.
   **Owner**: Claude Code on the operator's go. **Model**: Haiku. **Size**: ~0 files.
