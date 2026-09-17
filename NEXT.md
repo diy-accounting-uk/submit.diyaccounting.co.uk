@@ -82,12 +82,11 @@ step.
 
 ## Machine-only
 
-- [ ] **B30aj.2. Close #284, #293 and #290 when prod carries wave b54.** PR #288 is on `main`: the
-  security-findings topic policy (alarm #284 re-fired on its own denied SNS publish), the
-  email-hash rotation path and the rotation record. Read `main`'s deploy of #288 to its terminal
-  state, confirm the prod pointer moved, then close #284 with the run id. Incident #290 (the ci
-  apex rollback) closes with B30af.5's first PR. **Source**: issues #284, #290. **Owner**: Claude
-  Code. **Model**: Haiku. **Size**: ~0 files.
+- [ ] **B30aj.2. Close #293 when prod carries wave b54.** PR #288 is on `main` with the
+  security-findings topic policy; alarm #293 (`prod-env-cis-unauthorized-api-calls`, 03:18 UTC on
+  2026-09-17) is the same denied SNS publish that #284 re-fired on. Read `main`'s deploy of #288
+  (35176978495) to its terminal state, confirm the prod pointer moved, then close #293 with the
+  run id. **Source**: issue #293. **Owner**: Claude Code. **Model**: Haiku. **Size**: ~0 files.
 
 ## Machine-ask
 
