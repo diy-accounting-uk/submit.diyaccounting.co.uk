@@ -188,13 +188,20 @@ See `secrets-rotation.toml` for the per-secret last-rotated dates behind the sch
 
 ### 3.3 Rotation Schedule
 
+`secrets-rotation.toml` is the one record of `last_rotated` dates; this table reads from it.
+Blank means no record exists -- neither the AWS secret's `rotated-at` tag nor a dated commit --
+so the date is unknown, not zero. Fill it in when the next rotation records it there.
+
 | Secret | Rotation Frequency | Last Rotated | Next Due |
 |--------|-------------------|--------------|----------|
-| Google Client Secret | Annually | 2026-01-24 | 2027-01-24 |
-| HMRC Client Secret | Annually | 2025-07-24 | 2026-07-24 |
-| HMRC Sandbox Client Secret | Annually | 2026-01-24 | 2027-01-24 |
+| Google Client Secret | Annually | unknown | -- |
+| HMRC Client Secret | Annually | unknown | -- |
+| HMRC Sandbox Client Secret | Annually | unknown | -- |
 | GA4 Service-Account Key | Monthly (automatic, `google-key-rotate.yml`) | 2026-09-16 | 2026-10-01 |
 | User Sub Hash Salt | Via migration framework | See Section 4 | See Section 4 |
+
+The GitHub secret's own "updated" date (2026-05-07 for all three, ci and prod) is not used here:
+it falls on the account-separation migration, not a documented rotation of the underlying value.
 
 ### 3.4 Other Repository Secrets
 
@@ -202,10 +209,10 @@ These secrets are used for CI/CD and testing, not runtime OAuth:
 
 | Secret | Purpose | Last Updated | Notes |
 |--------|---------|--------------|-------|
-| `PERSONAL_ACCESS_TOKEN` | GitHub API for workflow automation | 2026-01-17 | Rotate quarterly recommended |
-| `RELEASE_PAT` | GitHub release creation | 2026-01-10 | Rotate quarterly recommended |
-| `SUPPORT_ISSUE_PAT` | GitHub issue management | 2026-01-17 | Rotate quarterly recommended |
-| `TEST_HMRC_PASSWORD` | HMRC sandbox test user password | 2026-01-24 | Regenerate via HMRC test user API |
+| `PERSONAL_ACCESS_TOKEN` | GitHub API for workflow automation | 2026-05-07 | Rotate quarterly recommended |
+| `RELEASE_PAT` | GitHub release creation | 2026-09-16 | Rotate quarterly recommended |
+| `ISSUE_BOT_TOKEN` | Issue-filing workflows (`agentic-lib-*.yml`); mirrored to `{env}/submit/github/issue_bot_token` | see `secrets-rotation.toml` | Rotate on exposure; regenerate on GitHub |
+| `SUPPORT_BOT_TOKEN` | Support-issue workflows; mirrored to `{env}/submit/github/support_bot_token` | see `secrets-rotation.toml` | Rotate on exposure; regenerate on GitHub |
 
 ### 3.5 Service-Account Keys (Google)
 
@@ -250,6 +257,36 @@ Google's own guidance for this response is at https://docs.cloud.google.com/iam/
 **Record**
 
 `secrets-rotation.toml`'s `ga4/service_account` row and this runbook's §3.3 table both carry the last rotation date. Update both in the same change.
+
+### 3.6 Email Hash Secret Rotation
+
+This covers the pass email-restriction secret, `{env}/submit/email-hash-secret` (`ci` and `prod`), read by `app/lib/emailHash.js` and used by `app/services/passService.js` to hash and compare the email addresses on email-restricted passes.
+
+**When to rotate**: no schedule today. The secret was created once by hand -- `scripts/generate-pass.js` notes it was found absent and one was created -- and nothing writes a new value. Rotate immediately if exposed, once the path below exists.
+
+**Rotation path**: the rotation workflow B53.5 adds, matching the salt's pattern (§4) -- a versioned secret, a reader that accepts the current and previous version, and a workflow that mints a new version and promotes it.
+
+The version-accepting reader is the guard. Today's reader (`hashEmailWithEnvSecret` in `app/lib/emailHash.js`) fetches one value and hashes against it alone; `passService.js`'s `validatePass` and `redeemPass` compare against that single hash. Rotating the secret before the reader accepts a previous version breaks every already-issued pass whose `restrictedToEmailHash` was computed under the old value -- the incoming email hashes under the new secret and no longer matches. Do not rotate by hand until the version-accepting reader is in place.
+
+**To verify** (once the path lands): each pass record already carries `emailHashSecretVersion` (written by `buildPassRecord`); confirm the reader resolves the version a given record names, not only the current one, before trusting a rotation.
+
+**Record**: `secrets-rotation.toml` has no entry for `email-hash-secret` (see its header comment) until the rotation path exists; add one then, and carry the same date in this section, matching §3.5's pattern.
+
+### 3.7 Other Third-Party Secrets
+
+Console-issued credentials with a `deploy-environment.yml` code path (`create-secrets` job) but no dedicated rotation procedure. Rotate by generating a new value in the named console, updating the GitHub Environment secret, and running **deploy environment** for the affected environment(s); `secrets-rotation.toml` carries the last rotation date for each.
+
+| Credential | Console | GitHub Environment secret | Carried by |
+|---|---|---|---|
+| Companies House API key | Companies House Developer Hub | `COMPANIES_HOUSE_API_KEY` (ci, prod) | `deploy-environment.yml` |
+| Companies House OAuth client secret | Companies House Developer Hub | `COMPANIES_HOUSE_CLIENT_SECRET` (ci, prod) | `deploy-environment.yml`, skipped if unset |
+| Companies House XML Gateway presenter ID | none -- emailed by Companies House | `COMPANIES_HOUSE_PRESENTER_ID` (ci only) | `deploy-environment.yml`, skipped if unset |
+| Companies House XML Gateway presenter code | none -- emailed by Companies House | `COMPANIES_HOUSE_PRESENTER_CODE` (ci only) | `deploy-environment.yml`, skipped if unset |
+| Stripe live secret key | Stripe Dashboard | `STRIPE_SECRET_KEY` (ci, prod) | `deploy-environment.yml` |
+| Stripe test secret key | Stripe Dashboard | `STRIPE_TEST_SECRET_KEY` (ci, prod) | `deploy-environment.yml`; also read locally by `scripts/proxy-secrets.sh` |
+| Stripe live webhook secret | Stripe Dashboard | `STRIPE_WEBHOOK_SECRET` (ci, prod) | `deploy-environment.yml`, skipped if unset |
+| Stripe test webhook secret | Stripe Dashboard | `STRIPE_TEST_WEBHOOK_SECRET` (ci, prod) | `deploy-environment.yml`, skipped if unset |
+| Telegram bot token | BotFather | `TELEGRAM_BOT_TOKEN` (ci, prod) | `deploy-environment.yml` |
 
 ---
 
