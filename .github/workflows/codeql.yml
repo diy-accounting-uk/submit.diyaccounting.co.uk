@@ -10,60 +10,18 @@ on:
   # CLAUDE.md's branch-naming convention), so without the analyze job's fork check below, push
   # and pull_request would both fire for the same commit on the same branch - the 16 runs from
   # 12 pushed commits seen on 2026-09-13.
+  # Every push except a docs-only one is scanned, because main's ruleset requires the CodeQL
+  # context on every pull request.
   push:
     branches:
       - '**'
       - '!gh_pages'
-    paths:
-      - 'app/**'
-      - 'infra/**'
-      - 'tests/**'
-      - 'behaviour-tests/**'
-      - 'web/**'
-      - '.env.ci'
-      - '.env.prod'
-      - '**/cdk.json'
-      - 'Dockerfile'
-      - 'LICENSE'
-      - 'package.json'
-      - 'package-lock.json'
-      - 'pom.xml'
-      - 'web/public/submit.catalogue.toml'
-      - '.github/actions/get-names'
-      - '.github/workflows/*.yml'
-      - '.prettierignore'
-      - '.prettierrc'
-      - 'eslint.config.js'
-      - 'jsconfig.json'
-      - 'mock-oauth2-config.json'
-      - 'playwright.config.js'
-      - 'vitest.config.js'
+    paths-ignore:
+      - '**.md'
   pull_request:
     branches: [main]
-    paths:
-      - 'app/**'
-      - 'infra/**'
-      - 'tests/**'
-      - 'behaviour-tests/**'
-      - 'web/**'
-      - '.env.ci'
-      - '.env.prod'
-      - '**/cdk.json'
-      - 'Dockerfile'
-      - 'LICENSE'
-      - 'package.json'
-      - 'package-lock.json'
-      - 'pom.xml'
-      - 'web/public/submit.catalogue.toml'
-      - '.github/actions/get-names'
-      - '.github/workflows/*.yml'
-      - '.prettierignore'
-      - '.prettierrc'
-      - 'eslint.config.js'
-      - 'jsconfig.json'
-      - 'mock-oauth2-config.json'
-      - 'playwright.config.js'
-      - 'vitest.config.js'
+    paths-ignore:
+      - '**.md'
   schedule:
     # Run weekly on Sundays at 04:00 UTC
     - cron: "0 4 * * 0"

@@ -48,36 +48,14 @@ on:
       HMRC_SANDBOX_CLIENT_SECRET:
         required: false
 
+  # Every push except a docs-only one runs this workflow, because main's ruleset requires its
+  # npm test, maven test and eslint contexts on every pull request.
   push:
     branches:
       - '**'
       - '!gh_pages'
-    paths:
-      - 'app/**'
-      - 'infra/**'
-      - 'tests/**'
-      - 'behaviour-tests/**'
-      - 'web/**'
-      - 'mcp/**'
-      - '.env.ci'
-      - '.env.prod'
-      - '**/cdk.json'
-      - 'Dockerfile'
-      - 'LICENSE'
-      - 'package.json'
-      - 'package-lock.json'
-      - 'pom.xml'
-      - 'web/public/submit.catalogue.toml'
-      - '.github/actions/get-names/**'
-      - '.github/actions/lookup-resources/**'
-      - '.github/workflows/*.yml'
-      - '.prettierignore'
-      - '.prettierrc'
-      - 'eslint.config.js'
-      - 'jsconfig.json'
-      - 'mock-oauth2-config.json'
-      - 'playwright.config.js'
-      - 'vitest.config.js'
+    paths-ignore:
+      - '**.md'
   schedule:
     - cron: '23 4 * * *'
 
