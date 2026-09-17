@@ -53,7 +53,7 @@ step.
   the AccessDenied that `prod-env-cis-unauthorized-api-calls` counts, so the alarm re-fires on its
   own action. The `security-findings` topic in `ObservabilityStack` (or wherever it is declared)
   needs a topic policy statement allowing `cloudwatch.amazonaws.com` to `SNS:Publish`, scoped to
-  the account's alarms. In flight on `claude/b54-board` (wave b54, agent running). Then close #284
+  the account's alarms. In flight on `claude/b54-board` (wave b54, PR #288). Then close #284
   with the fix's run. **Source**: issue #284; run 35172745844. **Owner**: Claude Code. **Model**:
   Sonnet. **Size**: ~2 files.
 
@@ -64,7 +64,7 @@ step.
   `SUPPORT_BOT_TOKEN`); `email-hash-secret` has no rotation entry and no code path. Make the toml
   the one source of dates (blank where unknown, §3.3 reading from it), correct §3.4, add an
   `email-hash-secret` entry that names its path once B53.5 lands, and one entry per remaining
-  credential kind the report lists without a documented path. In flight on `claude/b54-board` (wave b54, worktree `.claude/worktrees/b54`, agent running; push and PR follow the wave). **Source**: REPORT_KEY_AUDIT.md §3
+  credential kind the report lists without a documented path. In flight on `claude/b54-board` (wave b54, worktree `.claude/worktrees/b54`, PR #288). **Source**: REPORT_KEY_AUDIT.md §3
   gaps 1, 2, 8. **Owner**: Claude Code. **Model**: Sonnet. **Size**: ~2 files.
 
 - [ ] **B53.3. `secrets-rotation.toml` and the tracked `.env.*` files, tidied against the audit.**
@@ -72,13 +72,13 @@ step.
   environment" while ci holds both (`REPORT_KEY_AUDIT.md` gap 5); `.env.simulator`, `.env.test` and
   `.env.proxy` carry secret-named variables in this public repository (gap 6): read each value in the
   tracked files and confirm it is a mock or a public id, replacing any that is not with a reference
-  to the environment's secret, and say so in the toml. In flight on `claude/b54-board` (wave b54, worktree `.claude/worktrees/b54`, agent running; push and PR follow the wave). **Source**: REPORT_KEY_AUDIT.md gaps 5, 6.
+  to the environment's secret, and say so in the toml. In flight on `claude/b54-board` (wave b54, worktree `.claude/worktrees/b54`, PR #288). **Source**: REPORT_KEY_AUDIT.md gaps 5, 6.
   **Owner**: Claude Code. **Model**: Haiku. **Size**: ~4 files.
 
 - [ ] **B53.5. A rotation path for `email-hash-secret`.** Created once by hand, no script or
   workflow rotates it (`REPORT_KEY_AUDIT.md` gap 2); the salt (`RUNBOOK_INFORMATION_SECURITY.md` §4)
   has the pattern: a versioned secret, the reader accepting the current and previous version, a
-  workflow that mints and promotes. Build the same for the email hash. In flight on `claude/b54-board` (wave b54, worktree `.claude/worktrees/b54`, agent running; push and PR follow the wave). **Source**: REPORT_KEY_AUDIT.md
+  workflow that mints and promotes. Build the same for the email hash. In flight on `claude/b54-board` (wave b54, worktree `.claude/worktrees/b54`, PR #288). **Source**: REPORT_KEY_AUDIT.md
   gap 2. **Owner**: Claude Code. **Model**: Sonnet. **Size**: ~4 files.
 
 ## Machine-only
