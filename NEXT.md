@@ -67,54 +67,6 @@ step.
   workflow that mints and promotes. Build the same for the email hash. In flight on `claude/b54-board` (wave b54, worktree `.claude/worktrees/b54`, agent running; push and PR follow the wave). **Source**: REPORT_KEY_AUDIT.md
   gap 2. **Owner**: Claude Code. **Model**: Sonnet. **Size**: ~4 files.
 
-- [ ] **B30af.3. A branch deploy's ci probes navigate the ci apex, which main's deploy swaps under
-  them.** Run 35161068061 (`claude/ops-triage-budget`, 23:35 to 23:41 UTC on 2026-09-16):
-  `tokenEnforcementBehaviour-ci` navigated `https://ci-submit.diyaccounting.co.uk` (15 requests in
-  its log) while `main`'s deploy 35161551059 promoted the ci pointer to `ci-claud0bad`; the VAT
-  return POST answered `403 {"message":"Forbidden"}` from the other set and the retry found the
-  submit button enabled. Same race as B30af on prod, on ci and for branch deploys: either a branch
-  deploy's `probe-test` calls run against the branch's own set host (`https://<deployment>.submit…`),
-  which it owns, or the wait-for-main-deploy action guards the ci probes too. Pick the first
-  unless the suites need the apex. Then re-run any red the race caused. In flight on `claude/b53-board` (wave b53, worktree `.claude/worktrees/b53`, PR #282). **Source**: run
-  35161068061. **Owner**: Claude Code. **Model**: Sonnet. **Size**: ~2 files.
-
-- [ ] **B124.2. The code agent's prompt asks for what its tool list denies.** Both code proofs
-  (runs 35159801420 and 35160283767, from `claude/b52-board`) picked the simplest ready row,
-  checked `main` was green and wrote a specific handover, and neither could finish the shape
-  `prompts/do-next-ci.md` asks for: the `permission_denials` in each run's `claude-output.json`
-  are `gh run download` into `${OUT_DIR}/prior` (the workflow already downloads them, lines
-  ~127-142), `mkdir -p /tmp/do-next-out/...`, `git config user.email/name` (so `git commit`
-  cannot run), `git checkout main`, `git rev-parse origin/main`, and `git diff ... > work.patch`
-  (the workflow takes the patch itself, line ~245); the allow-list is `Read,Grep,Glob,Edit,Write`
-  and `git status/diff/log/add/commit/apply/ls-remote/show`. So the handover landed in the
-  checkout each time (batch de3033ea moves it out) and the "complete, push a branch and open a
-  PR" path is unreachable: no `git push`, no `gh pr create`. Align the two: the workflow sets the
-  git identity before the agent and creates the branch and PR from the patch when the handover
-  says complete; the prompt drops the download, identity, checkout and redirect instructions,
-  names `${OUT_DIR}/CHANGES.md` for the Write tool, and says the workflow takes the patch; then
-  one more 10-minute run proves a PR. In flight on `claude/b53-board` (wave b53, worktree `.claude/worktrees/b53`, PR #282). **Source**: runs 35159801420, 35160283767; BACKLOG 73.
-  **Owner**: Claude Code. **Model**: Sonnet. **Size**: ~2 files.
-
-- [ ] **B49a. The key-exposure org policy as code.** `iam.serviceAccountKeyExposureResponse` is
-  set to `DISABLE_KEY` on organization 936151157673 by hand (22:40 UTC on 2026-09-16, O48). Carry it
-  in `google/identity.toml` under a new `[org_policy]` table and have `scripts/gcp-identity-sync.js`
-  read and apply it through the Org Policy API (`orgpolicy.googleapis.com`, enabled on the project
-  the same day) so `google apply` owns it like the pool and providers. In flight on `claude/b53-board` (wave b53, worktree `.claude/worktrees/b53`, PR #282). The service
-  account holds `roles/orgpolicy.policyAdmin` on the organization since 01:1x UTC on 2026-09-17, so
-  `main`'s first `google apply` after the merge is the proof: the org policy line reads "matches". **Source**: O48; BACKLOG 49.
-  **Owner**: Claude Code. **Model**: Sonnet. **Size**: ~2 files.
-
-- [ ] **B52n. Subscriptions and donations need separate GA4 event names before D17 bids on them.**
-  `google/analytics.toml` maps both `subscribe` and `donate` to the event name `purchase`, so the
-  Google Ads account's Purchase conversion (imported 2026-09-17, O23 done: account, GA4 property
-  523400333 linked, key events imported, reserve floor recorded at the workspace root) cannot tell
-  one from the other. Give each its own event name in the toml and wherever the site emits them,
-  re-run the GA4 sync, and re-import the key events in Ads. Campaign 1 (Performance Max, £1 a day)
-  is running since 2026-09-17 on Purchase and Sign-up, so until then its Purchase signal mixes
-  the two.
-  In flight on `claude/b53-board` (wave b53, worktree `.claude/worktrees/b53`, PR #282). **Source**: Cowork, 2026-09-17; `PLAN_ONE_STOP_DASHBOARD.md` D17. **Owner**: Claude Code.
-  **Model**: Sonnet. **Size**: ~3 files.
-
 ## Machine-only
 
 - [ ] **B30ai. Alarm triage reads evidence again: prove it on the next run.** PR #280 (d47884f6)
@@ -142,9 +94,9 @@ step.
   **Source**: REPORT_KEY_AUDIT.md gap 7. **Owner**: Claude Code on the operator's go. **Model**:
   Sonnet. **Size**: ~1 file.
 
-- [ ] **B52n.2. Create the `donate` key event and re-import the Ads conversions.** After PR #282
-  is on `main`: `gh workflow run google-apply.yml --ref main -f apply=true` creates the `donate`
-  key event on GA4 property 523400333 (`scripts/ga4-sync.js` plans it today); then the operator
+- [ ] **B52n.2. Create the `donate` key event and re-import the Ads conversions.** PR #282 is on
+  `main` (b3622391) and `main`'s `google apply` run 35171500236 creates the `donate` key event on GA4
+  property 523400333 (read its log for "Key event \"donate\""); then the operator
   re-imports GA4's key events into the Google Ads account (its id is in the workspace root's runbook)
   so its Purchase conversion
   counts subscriptions only. The spreadsheets site's emitter still sends `purchase` for a donation
