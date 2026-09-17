@@ -16,9 +16,9 @@ runs), and for Claude Code steps the **Model** a sub-agent should use (Fable > O
 Haiku; the lowest tier that fits). Anything touching code goes through a `claude/*` branch and
 PR; the operator merges.
 
-**Prod runs deployment prod-b8bd2f3** (the scheduled `deploy.yml` run 35205082047 of main's docs head
-b8bd2f37, the same code as PRs #294 and #291; last-known-good set at 10:07 UTC on 2026-09-17; it is
-destroying prod-9284434). **ci**: `ci-set1` (PR #295's set, last-known-good at 10:06 UTC) is live; its self-destruct schedule from
+**Prod runs deployment prod-53bc2d1** (PR #295, run 35210720771; the pointer moved at 11:0x UTC on
+2026-09-17 and the run is destroying prod-b8bd2f3). PR #297 merged as b14a7692 at 11:12; its deploy
+35214505930 waits behind that run in the prod concurrency group. **ci**: `ci-set1` (PR #295's set, last-known-good at 10:06 UTC) is live; its self-destruct schedule from
 the slot's first claim fires next at 11:44 UTC (B30af.7). PR #295 merged as 53bc2d1c; `main`'s
 deploy 35210720771 is running.
 
