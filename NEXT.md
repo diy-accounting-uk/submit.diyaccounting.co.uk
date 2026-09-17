@@ -17,10 +17,11 @@ Haiku; the lowest tier that fits). Anything touching code goes through a `claude
 PR; the operator merges.
 
 **Prod runs deployment prod-29f3405** (PR #281, run 35167028767, promoted at 01:0x UTC on
-2026-09-17), verified against AWS at 01:1x UTC: the pointer names it, nine stacks; the same run is
-still on its last jobs and destroys prod-3ce4693 when they end. **ci**: `ci-claud0bad` (main's
+2026-09-17), verified against AWS at 01:2x UTC: the pointer names it, nine stacks; the same run's
+last job is deleting prod-3ce4693 (DELETE_IN_PROGRESS). **ci**: `ci-claud0bad` (main's
 set) is live; `ci-claudafe1` (b52 branch) self-destructs at about 02:39 UTC; `ci-claud86af` (b53,
-PR #282) is standing up; `ci-claudc4d2` has one stack left past its time, for the 02:34 UTC sweep.
+PR #282) is standing up; `ci-claudc4d2`'s last stack is being removed by `destroy-ci.yml` run 35170510768 (the 01:2x sweep kept
+it as a deployed name).
 
 The board runs in five sections, in this order: **in flight** (a branch, a pull request or a run
 in motion, each named in the row), **machine-only**, **machine-ask**, **human-driven**,
