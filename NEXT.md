@@ -45,9 +45,9 @@ step.
 - [ ] **B52n.2. The spreadsheets donation event lands as `donate`.** The Ads half is done: the
   operator imported key event `donate` from GA4 property 523400333 into Ads account 814-268-5080
   as a secondary conversion at 23:2x UTC on 2026-09-17. The spreadsheets repository's
-  `download-page.js` still sent `purchase` for a donation; branch `claude/ops-donate-event`
-  (cc402f5e3) in that repository changes it to `donate` and goes up as a PR once its `npm test`
-  passes. Done when that PR is on the spreadsheets `main` and the next day's `key_events_daily`
+  `download-page.js` still sent `purchase` for a donation; that repository's PR #123
+  (`claude/ops-donate-event`, 9fa1814e0, its `npm test` GREEN locally) changes it to `donate`.
+  Done when PR #123 is on the spreadsheets `main` and the next day's `key_events_daily`
   shows the spreadsheets host's donations under `donate`. **Source**: B52n. **Owner**: Claude
   Code. **Model**: Haiku. **Size**: ~1 file.
 
