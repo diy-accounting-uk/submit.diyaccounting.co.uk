@@ -17,8 +17,10 @@ Haiku; the lowest tier that fits). Anything touching code goes through a `claude
 PR; the operator merges.
 
 **Prod runs deployment prod-29f3405** (PR #281, run 35167028767, promoted at 01:0x UTC on
-2026-09-17), verified against AWS at 01:2x UTC: the pointer names it, nine stacks; the same run's
-last job is deleting prod-3ce4693 (DELETE_IN_PROGRESS). **ci**: `ci-claud0bad` (main's
+2026-09-17), verified against AWS at 01:2x UTC: the pointer names it, nine stacks; run 35167028767 ended green
+at 02:0x UTC having destroyed prod-3ce4693; PR #282's deploy of `main` (35171500590) is running.
+The SSO token expired at 02:2x UTC: `aws sso login --sso-session diyaccounting` before the next
+AWS read. **ci**: `ci-claud0bad` (main's
 set) is live; `ci-claudafe1` (b52 branch) self-destructs at about 02:39 UTC; `ci-claud86af` (b53,
 PR #282) is standing up; `ci-claudc4d2`'s last stack is being removed by `destroy-ci.yml` run 35170510768 (the 01:2x sweep kept
 it as a deployed name).
@@ -69,12 +71,29 @@ step.
 
 ## Machine-only
 
-- [ ] **B30ai. Alarm triage reads evidence again: prove it on the next run.** PR #280 (d47884f6)
-  tells the agent to call `aws` with no `--profile`, after `REPORT_ALARM_TRIAGE_COST.md` found all
-  eight triaged runs denied their `aws logs` and `aws cloudwatch` reads (21 denials) for that
-  prefix. Read the next `alarm-triage.yml` run's log for a successful `aws logs` call; #279's
-  triage (run 35159428845, before the fix) still shows the pattern. **Source**:
-  REPORT_ALARM_TRIAGE_COST.md. **Owner**: Claude Code. **Model**: Haiku. **Size**: ~0 files.
+- [ ] **B30ah.2. The triage judge step failed on its first real run.** Run 35170816042 (alarm
+  triage for #284, 01:30 UTC on 2026-09-17, the first under PR #281's shape): "Run triage (Haiku)"
+  succeeded, "Judge the first pass" failed, so the Sonnet pass, the selection and the comment never
+  ran and #284 got no triage at all. Read the judge step's log for the failing line (its `jq` reads
+  of `/tmp/triage.haiku.json` under `set -euo pipefail`; a `.result` that is not a string, or a
+  missing field, aborts the step instead of escalating), make the judge escalate on any read it
+  cannot make, and add a unit-testable script or a shell test for the four shapes. Then re-run the
+  triage for #284 (`gh workflow run alarm-triage.yml` with the issue number, read the workflow's
+  inputs). **Source**: run 35170816042; issue #284. **Owner**: Claude Code. **Model**: Sonnet.
+  **Size**: ~2 files.
+
+- [ ] **B124.4. The code workflow's landing step runs before the stray-handover move, and the
+  agent edited NEXT.md.** Run 35171625388 (the code proof on `main` after PR #282): the agent
+  wrote a complete handover (`- **Status**: complete`, branch `claude/ops-b30ai-triage-proof`,
+  `PR.md`), but "Land a complete run as a pull request" printed "not a complete run, nothing to
+  land" because it reads `${OUT_DIR}/CHANGES.md` and the step that moves a handover left in the
+  checkout into `OUT_DIR` runs after it ("Capture the patch"). Move the stray-handover block ahead of
+  the landing step (or make both read the same resolver). Also: the run's change was to delete a
+  row from `NEXT.md` on a branch; the prompt must say `NEXT.md` is never edited by the code agent
+  (the board workflow owns it on `main`). Its finding stands and closes B30ai: triage run
+  35170816042's "Prove the triage credentials" step ran `aws logs describe-log-groups` and `aws
+  cloudwatch describe-alarm-history` successfully at 01:31 UTC. **Source**: run 35171625388.
+  **Owner**: Claude Code. **Model**: Sonnet. **Size**: ~2 files.
 
 ## Machine-ask
 
@@ -168,6 +187,16 @@ step.
 ## Human-driven
 
 ## Blocked
+
+- [ ] **B30aj. Alarm #284: which prod call was denied at 01:25 UTC on 2026-09-17.**
+  `prod-env-cis-unauthorized-api-calls` fired for one datapoint at 01:25 (window 01:20 to 01:35),
+  deployment prod-29f3405, while `main`'s deploy of PR #281 was destroying prod-3ce4693 and
+  B124.3's board proof (run 35171330354, 01:1x) read prod. Read CloudTrail in submit-prod for
+  `AccessDenied` in that window (`aws --profile submit-prod logs filter-log-events` on the CloudTrail
+  log group, or the triage evidence file of run 35170816042) and name the principal and action;
+  fix or tune per the answer, then close #284. Blocked on `aws sso login --sso-session
+  diyaccounting` (the token expired at 02:2x UTC). **Source**: issue #284. **Owner**: Claude Code.
+  **Model**: Sonnet. **Size**: ~1 file.
 
 - [ ] **O17. A sandbox sign-in for the filing suites, and four ci values.** Checked live at
   23:2x UTC on 2026-09-16: the sandbox has no registration page of its own
