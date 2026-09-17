@@ -96,14 +96,6 @@ step.
   scanning only, so a fine-grained token is the shape that can). No code changes. **Source**: issue
   #249. **Owner**: operator (the token), then the next nightly. **Model**: Haiku. **Size**: ~0 files.
 
-- [ ] **B53.4. Delete the nine orphaned `prod/submit/*` secrets in the submit-ci account.**
-  `REPORT_KEY_AUDIT.md` gap 4: nine `prod/submit/*` names sit in 367191799875, untouched since
-  2026-02-21, with distinct ARNs from prod's real copies in 972912397388; nothing in ci reads a
-  `prod/` name. No ci code references a `prod/` name (grep, 02:0x UTC on 2026-09-17); the delete
-  is an AWS write the operator says go to: `aws --profile submit-ci secretsmanager delete-secret
-  --secret-id <name> --recovery-window-in-days 30` per name. **Source**: REPORT_KEY_AUDIT.md gap 4.
-  **Owner**: Claude Code on the operator's go. **Model**: Haiku. **Size**: ~0 files.
-
 - [ ] **B53.7. The gyb Gmail-backup service-account key under a rotation plan.** Project
   `gyb-project-j7e-1uj-8n2` holds a service-account key for the workspace's mail mirror
   (`REPORT_KEY_AUDIT.md` gap 7), outside every plan and schedule. Either fold the project into
