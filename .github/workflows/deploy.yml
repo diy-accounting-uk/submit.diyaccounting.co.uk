@@ -409,6 +409,12 @@ jobs:
       # actual first deploy: read it back and anchor the delay to it instead of to "now". Skipped
       # for prod, which never deploys a SelfDestructStack (see deploy-application-self-destruct's
       # `if:` below) and has no such stack to look up.
+      #
+      # A ci slot name is different: the same stack name outlives any one ref, so its
+      # CreationTime can belong to whichever ref claimed the slot first, not to this run. Anchoring
+      # a reclaim to that stale CreationTime could start the window already expired. claim-ci-slot
+      # stamps a fresh claimedAt on every claim or reclaim, so a slot deployment anchors there
+      # instead, always restarting the window from the claim.
       - name: Resolve self-destruct start datetime, anchored to this deployment's own creation
         id: self-destruct-start
         if: ${{ steps.deployment-config.outputs.environment-name != 'prod' }}
@@ -419,7 +425,10 @@ jobs:
             --stack-name "$STACK_NAME" \
             --query "Stacks[0].CreationTime" \
             --output text 2>/dev/null || echo "")
-          if [ -n "$EXISTING_CREATION_TIME" ] && [ "$EXISTING_CREATION_TIME" != "None" ]; then
+          if [ -n "${{ steps.claim-slot.outputs.deployment-name }}" ]; then
+            ANCHOR_DATETIME="${{ steps.claim-slot.outputs.claimed-at }}"
+            echo "Slot ${{ steps.deployment-config.outputs.deployment-name }} was claimed at $ANCHOR_DATETIME; anchoring self-destruct to the claim, not to the stack's CreationTime"
+          elif [ -n "$EXISTING_CREATION_TIME" ] && [ "$EXISTING_CREATION_TIME" != "None" ]; then
             echo "Found existing $STACK_NAME created at $EXISTING_CREATION_TIME; anchoring self-destruct to that creation time, not to this redeploy"
             ANCHOR_DATETIME="$EXISTING_CREATION_TIME"
           else

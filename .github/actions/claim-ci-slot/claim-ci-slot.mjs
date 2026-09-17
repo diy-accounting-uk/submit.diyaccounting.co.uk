@@ -95,6 +95,13 @@ function claimExistingSlot(region, slot, value) {
 
 const sleep = (seconds) => new Promise((resolve) => setTimeout(resolve, seconds * 1000));
 
+// Deploy.yml anchors the slot deployment's self-destruct window to this claim's own timestamp
+// rather than to the stack's CloudFormation CreationTime, because a reclaimed slot's stack can
+// carry over a previous, unrelated ref's creation time.
+function writeClaimOutputs(slot, claimedAt) {
+  appendFileSync(process.env.GITHUB_OUTPUT, `DEPLOYMENT_NAME=${slot}\nCLAIMED_AT=${claimedAt}\n`);
+}
+
 async function main() {
   const ref = process.env.CLAIM_CI_SLOT_GITHUB_REF;
   const runId = process.env.CLAIM_CI_SLOT_RUN_ID;
@@ -125,7 +132,7 @@ async function main() {
       if (record === null) {
         if (tryClaimAbsentSlot(region, slot, value)) {
           console.log(`Claimed free slot ${slot} for ${ref} (run ${runId})`);
-          appendFileSync(process.env.GITHUB_OUTPUT, `DEPLOYMENT_NAME=${slot}\n`);
+          writeClaimOutputs(slot, nowIso);
           return;
         }
         console.log(`${slot} was claimed by another run before this one could take it, trying the next slot`);
@@ -134,7 +141,7 @@ async function main() {
 
       claimExistingSlot(region, slot, value);
       console.log(`Reclaimed slot ${slot} for ${ref} (run ${runId}), previously ${describeSlot(slot, record)}`);
-      appendFileSync(process.env.GITHUB_OUTPUT, `DEPLOYMENT_NAME=${slot}\n`);
+      writeClaimOutputs(slot, nowIso);
       return;
     }
 

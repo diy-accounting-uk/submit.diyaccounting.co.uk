@@ -45,6 +45,9 @@ outputs:
   deployment-name:
     description: 'The claimed slot name, e.g. ci-set2.'
     value: ${{ steps.claim.outputs.DEPLOYMENT_NAME }}
+  claimed-at:
+    description: 'ISO-8601 UTC timestamp this claim or reclaim was written, for anchoring the slot deployment self-destruct window to the claim rather than to the stack.'
+    value: ${{ steps.claim.outputs.CLAIMED_AT }}
 
 runs:
   using: 'composite'
