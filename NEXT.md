@@ -51,7 +51,7 @@ step.
   submit button enabled. Same race as B30af on prod, on ci and for branch deploys: either a branch
   deploy's `probe-test` calls run against the branch's own set host (`https://<deployment>.submit…`),
   which it owns, or the wait-for-main-deploy action guards the ci probes too. Pick the first
-  unless the suites need the apex. Then re-run any red the race caused. In flight on `claude/b53-board` (wave b53, worktree `.claude/worktrees/b53`, agent running; push and PR follow the wave). **Source**: run
+  unless the suites need the apex. Then re-run any red the race caused. In flight on `claude/b53-board` (wave b53, worktree `.claude/worktrees/b53`, PR #282). **Source**: run
   35161068061. **Owner**: Claude Code. **Model**: Sonnet. **Size**: ~2 files.
 
 - [ ] **B124.2. The code agent's prompt asks for what its tool list denies.** Both code proofs
@@ -68,14 +68,14 @@ step.
   git identity before the agent and creates the branch and PR from the patch when the handover
   says complete; the prompt drops the download, identity, checkout and redirect instructions,
   names `${OUT_DIR}/CHANGES.md` for the Write tool, and says the workflow takes the patch; then
-  one more 10-minute run proves a PR. In flight on `claude/b53-board` (wave b53, worktree `.claude/worktrees/b53`, agent running; push and PR follow the wave). **Source**: runs 35159801420, 35160283767; BACKLOG 73.
+  one more 10-minute run proves a PR. In flight on `claude/b53-board` (wave b53, worktree `.claude/worktrees/b53`, PR #282). **Source**: runs 35159801420, 35160283767; BACKLOG 73.
   **Owner**: Claude Code. **Model**: Sonnet. **Size**: ~2 files.
 
 - [ ] **B49a. The key-exposure org policy as code.** `iam.serviceAccountKeyExposureResponse` is
   set to `DISABLE_KEY` on organization 936151157673 by hand (22:40 UTC on 2026-09-16, O48). Carry it
   in `google/identity.toml` under a new `[org_policy]` table and have `scripts/gcp-identity-sync.js`
   read and apply it through the Org Policy API (`orgpolicy.googleapis.com`, enabled on the project
-  the same day) so `google apply` owns it like the pool and providers. In flight on `claude/b53-board` (wave b53, worktree `.claude/worktrees/b53`, agent running; push and PR follow the wave). **Source**: O48; BACKLOG 49.
+  the same day) so `google apply` owns it like the pool and providers. In flight on `claude/b53-board` (wave b53, worktree `.claude/worktrees/b53`, PR #282). **Source**: O48; BACKLOG 49.
   **Owner**: Claude Code. **Model**: Sonnet. **Size**: ~2 files.
 
 - [ ] **B52n. Subscriptions and donations need separate GA4 event names before D17 bids on them.**
@@ -86,10 +86,21 @@ step.
   re-run the GA4 sync, and re-import the key events in Ads. Campaign 1 (Performance Max, £1 a day)
   is running since 2026-09-17 on Purchase and Sign-up, so until then its Purchase signal mixes
   the two.
-  In flight on `claude/b53-board` (wave b53, worktree `.claude/worktrees/b53`, agent running; push and PR follow the wave). **Source**: Cowork, 2026-09-17; `PLAN_ONE_STOP_DASHBOARD.md` D17. **Owner**: Claude Code.
+  In flight on `claude/b53-board` (wave b53, worktree `.claude/worktrees/b53`, PR #282). **Source**: Cowork, 2026-09-17; `PLAN_ONE_STOP_DASHBOARD.md` D17. **Owner**: Claude Code.
   **Model**: Sonnet. **Size**: ~3 files.
 
 ## Machine-only
+
+- [ ] **B124.3. The board and pr agent workflows have the same prompt-versus-tools gaps.** Found
+  while fixing B124.2: `agentic-lib-board.yml` allows `git commit` but sets no git identity, and
+  its prompt's board skill runs `npx vitest run app/unit-tests/nextShape.test.js` before the
+  `NEXT.md` commit while the allow-list grants only `npx prettier`; `agentic-lib-pr.yml`'s
+  auto-merge skill reaches for `git diff`, `git rebase`, `git worktree` and `git push
+  --force-with-lease` in its overlap and conflict parts, none of which its allow-list grants, and
+  the CI prompt excuses only Part 1. Apply the B124.2 shape: identity before the agent, the
+  allow-list matching the skill's reads, and the prompt naming the parts that do not run in CI.
+  **Source**: the b53 handover agent's report. **Owner**: Claude Code. **Model**: Sonnet.
+  **Size**: ~3 files.
 
 - [ ] **B30ai. Alarm triage reads evidence again: prove it on the next run.** PR #280 (d47884f6)
   tells the agent to call `aws` with no `--profile`, after `REPORT_ALARM_TRIAGE_COST.md` found all
@@ -99,6 +110,24 @@ step.
   REPORT_ALARM_TRIAGE_COST.md. **Owner**: Claude Code. **Model**: Haiku. **Size**: ~0 files.
 
 ## Machine-ask
+
+- [ ] **B52n.2. Create the `donate` key event and re-import the Ads conversions.** After PR #282
+  is on `main`: `gh workflow run google-apply.yml --ref main -f apply=true` creates the `donate`
+  key event on GA4 property 523400333 (`scripts/ga4-sync.js` plans it today); then the operator
+  re-imports GA4's key events into Google Ads account 814-268-5080 so its Purchase conversion
+  counts subscriptions only. The spreadsheets site's emitter still sends `purchase` for a donation
+  until that repository lands the one-line change in its inbox. **Source**: B52n. **Owner**: Claude
+  Code runs the apply; the operator re-imports in Ads. **Model**: Haiku. **Size**: ~0 files.
+
+- [ ] **B49b. Grant the service account Org Policy Admin so `google apply` owns the constraint.**
+  `gcp-identity-sync.js` (PR #282) reads and applies `[[org_policy]]` entries, and the federated
+  service account holds no organization role, so its plan prints the 403 and apply fails until
+  `roles/orgpolicy.policyAdmin` is granted on organization 936151157673 to
+  `ga4-report-pull@diyaccounting-ga4.iam.gserviceaccount.com`, a Google write the operator says go
+  to: `gcloud organizations add-iam-policy-binding 936151157673 --member=serviceAccount:ga4-report-pull@diyaccounting-ga4.iam.gserviceaccount.com --role=roles/orgpolicy.policyAdmin`.
+  The alternative is managing the constraint at project scope, which the toml's `resource` field
+  can express. **Source**: B49a. **Owner**: Claude Code runs it on the operator's go. **Model**:
+  Haiku. **Size**: ~0 files.
 
 - [ ] **O44. Tell Companies House's XML team what B34.6b submitted.** One email from your address
   to Neal at `xml@companieshouse.gov.uk`, naming: presenter E0000052288, company 06846849, test
