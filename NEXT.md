@@ -42,6 +42,32 @@ step.
 
 ## In flight
 
+- [ ] **B30af.8. The main-deploy guard waits for main's whole run, not for its apex move.**
+  `wait-for-main-deploy.mjs` holds every branch probe while any `deploy.yml` run on `main` is
+  not completed. On 2026-09-17 PRs #295 and #297 sat in that wait from 08:39 UTC while main's
+  run 35194544211 deployed its prod stacks and destroyed the previous prod set, though the ci
+  apex is only touched by main's `set origins` job, which had finished; the guard's 40-minute
+  ceiling released them, and the same guard runs again inside every behaviour job ("Wait for a
+  deploy in progress on main before navigating the apex"), where the daily scheduled prod deploy
+  (35205082047, 09:25 UTC) caught #295's last two suites for a second 40 minutes; behind that,
+  #297's `wait for previous cleanup` gave up after its 90-minute ceiling waiting for #295's run.
+  Read main's in-flight run's jobs (`/actions/runs/<id>/jobs`) and wait
+  only until its `set origins` job (and `roll back apex` if it runs) is completed, or until the
+  run ends; `.github/actions/wait-for-main-deploy/wait-for-main-deploy.mjs` and its unit test.
+  In flight on `claude/b57-board` (agent working). **Source**: runs 35194697647 and 35196041181's probe `params` jobs. **Owner**: Claude Code.
+  **Model**: Sonnet. **Size**: ~2 files.
+
+- [ ] **B30af.7. A slot reclaim re-anchors the slot's self-destruct clock.** `ci-set1`'s
+  `SelfDestructStack` keeps the schedule of the slot's first claim (`cron(44 7/4 * * ? *)` from
+  03:47 UTC on 2026-09-17), so the redeploy of the same ref at 07:33 was cut across at 07:44 while
+  it waited on the environment deploy: the self-destruct removed Ops, Publish and Edge under it.
+  When `claim-ci-slot` reclaims a slot (same ref, or stale), the deploy must move the schedule
+  to creation-plus-delay from the claim, or delete and recreate the `SelfDestructStack`, so a
+  redeploy always has a full window. `SelfDestructStack.java`, `claim-ci-slot.mjs`, `deploy.yml`.
+  In flight on `claude/b57-board` (agent working). **Source**: the self-destruct log `/aws/lambda/ci-env-self-destruct-eu-west-2` at 07:44 UTC on
+  2026-09-17. **Owner**: Claude Code. **Model**: Sonnet.
+  **Size**: ~3 files.
+
 - [ ] **B30am. Alarm #298: the prod activity Telegram forwarder errors under a burst.**
   `prod-env-activity-stack-health` fired at 08:14 UTC on 2026-09-17 on
   `check-prod-env-activity-telegram-forwarder-errors` (back to OK at 08:15). Lambda `Errors` for
@@ -85,32 +111,6 @@ step.
   ~1 file.
 
 ## Machine-only
-
-- [ ] **B30af.7. A slot reclaim re-anchors the slot's self-destruct clock.** `ci-set1`'s
-  `SelfDestructStack` keeps the schedule of the slot's first claim (`cron(44 7/4 * * ? *)` from
-  03:47 UTC on 2026-09-17), so the redeploy of the same ref at 07:33 was cut across at 07:44 while
-  it waited on the environment deploy: the self-destruct removed Ops, Publish and Edge under it.
-  When `claim-ci-slot` reclaims a slot (same ref, or stale), the deploy must move the schedule
-  to creation-plus-delay from the claim, or delete and recreate the `SelfDestructStack`, so a
-  redeploy always has a full window. `SelfDestructStack.java`, `claim-ci-slot.mjs`, `deploy.yml`.
-  **Source**: the self-destruct log `/aws/lambda/ci-env-self-destruct-eu-west-2` at 07:44 UTC on
-  2026-09-17. **Owner**: Claude Code. **Model**: Sonnet.
-  **Size**: ~3 files.
-
-- [ ] **B30af.8. The main-deploy guard waits for main's whole run, not for its apex move.**
-  `wait-for-main-deploy.mjs` holds every branch probe while any `deploy.yml` run on `main` is
-  not completed. On 2026-09-17 PRs #295 and #297 sat in that wait from 08:39 UTC while main's
-  run 35194544211 deployed its prod stacks and destroyed the previous prod set, though the ci
-  apex is only touched by main's `set origins` job, which had finished; the guard's 40-minute
-  ceiling released them, and the same guard runs again inside every behaviour job ("Wait for a
-  deploy in progress on main before navigating the apex"), where the daily scheduled prod deploy
-  (35205082047, 09:25 UTC) caught #295's last two suites for a second 40 minutes; behind that,
-  #297's `wait for previous cleanup` gave up after its 90-minute ceiling waiting for #295's run.
-  Read main's in-flight run's jobs (`/actions/runs/<id>/jobs`) and wait
-  only until its `set origins` job (and `roll back apex` if it runs) is completed, or until the
-  run ends; `.github/actions/wait-for-main-deploy/wait-for-main-deploy.mjs` and its unit test.
-  **Source**: runs 35194697647 and 35196041181's probe `params` jobs. **Owner**: Claude Code.
-  **Model**: Sonnet. **Size**: ~2 files.
 
 ## Machine-ask
 
