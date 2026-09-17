@@ -90,6 +90,17 @@ step.
 
 ## Machine-ask
 
+- [ ] **B30al. `destroy-ci.yml`'s cron has not fired since its schedule changed.** The last
+  scheduled sweep ran at 13:40 UTC on 2026-09-16 (the old cron's slot, after commit 58290819 at
+  12:29 wrote `34 2,4,6,8,10,12 * * *`); none of the new slots has produced a run, so leftovers
+  wait for the self-destruct fire or a `workflow_run` sweep. The `on:` block on `main` is
+  well-formed and the workflow reports `active`. Re-register the schedule by toggling the
+  workflow (an Actions-settings write, the operator's), then check for the next slot's run:
+  `gh run list --workflow destroy-ci.yml --event schedule --limit 1`. If the toggle does not
+  bring it back, a PR that touches the file does. **Source**: `gh run list --workflow
+  destroy-ci.yml --event schedule`. **Owner**: operator (the toggle), then Claude Code.
+  **Model**: Haiku. **Size**: ~0 files.
+
 - [ ] **B52y.5. The ops GitHub token cannot read Dependabot or secret-scanning alerts.** The
   same nightly logs `GitHub API error fetching dependabot/alerts: 403 {"message":"Resource not
   accessible by personal access token"}` and the same for `secret-scanning/alerts`, and publishes a
