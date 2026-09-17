@@ -16,10 +16,11 @@ runs), and for Claude Code steps the **Model** a sub-agent should use (Fable > O
 Haiku; the lowest tier that fits). Anything touching code goes through a `claude/*` branch and
 PR; the operator merges.
 
-**Prod runs deployment prod-9284434** (PRs #294 and #291, run 35194544211, last-known-good set at
-09:13 UTC on 2026-09-17, nine stacks). The scheduled `deploy.yml` run 35205082047 (09:25 UTC,
-main's docs head b8bd2f37, the same code) had started its stack jobs before it was seen, so it
-runs on: it promotes prod-b8bd2f3 and destroys prod-9284434 when its suites pass. **ci**: `ci-claud86af` is live.
+**Prod runs deployment prod-b8bd2f3** (the scheduled `deploy.yml` run 35205082047 of main's docs head
+b8bd2f37, the same code as PRs #294 and #291; last-known-good set at 10:07 UTC on 2026-09-17; it is
+destroying prod-9284434). **ci**: `ci-set1` (PR #295's set, promoted at 08:38 UTC, last-known-good at
+10:06) is live; its self-destruct schedule from the slot's first claim fires next at 11:44 UTC
+(B30af.7). **ci**: `ci-claud86af` is live.
 
 The board runs in five sections, in this order: **in flight** (a branch, a pull request or a run
 in motion, each named in the row), **machine-only**, **machine-ask**, **human-driven**,
@@ -98,8 +99,8 @@ step.
   attempt lost the apex CNAME race to PR #291's and #294's deploys). Rebased onto `main` after PR
   #296; its deploy (35194697647, attempt 2) is green. `ci-set1`'s self-destruct fired at 07:44 UTC during
   that wait, on the first claim's clock, and removed the Ops, Publish and Edge stacks; the redeploy
-  recreated them (B30af.7 carries the clock). Merges through `/auto-merge` when main's
-  scheduled deploy 35205082047 ends. **Source**:
+  recreated them (B30af.7 carries the clock). `ci-set1` is the live ci set. Merges through `/auto-merge` when main's scheduled deploy
+  35205082047 ends. **Source**:
   issue #290; the design. **Owner**: Claude Code. **Model**: Sonnet. **Size**: ~7 files.
 
 ## Machine-only
