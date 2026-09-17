@@ -49,8 +49,14 @@ export function describeSlot(slot, record) {
   return `${slot}: held by ${record.ref} (run ${record.runId}, claimed ${record.claimedAt})`;
 }
 
+// The action resolves the CLI to an absolute path before this script runs, so the spawn never
+// searches PATH for it.
 function runAws(args) {
-  return spawnSync("aws", args, { encoding: "utf8" });
+  const awsCli = process.env.CLAIM_CI_SLOT_AWS_CLI;
+  if (!awsCli || !awsCli.startsWith("/")) {
+    throw new Error("CLAIM_CI_SLOT_AWS_CLI must be the absolute path of the aws CLI");
+  }
+  return spawnSync(awsCli, args, { encoding: "utf8" });
 }
 
 function getSlotRecord(region, slot) {

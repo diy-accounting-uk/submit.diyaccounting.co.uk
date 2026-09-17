@@ -64,4 +64,7 @@ runs:
       # paths, which a container job cannot see. The GITHUB_WORKSPACE variable set inside the
       # step is the checkout's path wherever the step runs - same reasoning as
       # wait-for-ci-deploys/action.yml.
-      run: node "${GITHUB_WORKSPACE}/.github/actions/claim-ci-slot/claim-ci-slot.mjs"
+      run: |
+        CLAIM_CI_SLOT_AWS_CLI="$(command -v aws)"
+        export CLAIM_CI_SLOT_AWS_CLI
+        node "${GITHUB_WORKSPACE}/.github/actions/claim-ci-slot/claim-ci-slot.mjs"
