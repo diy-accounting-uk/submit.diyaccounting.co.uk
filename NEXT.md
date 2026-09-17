@@ -51,7 +51,7 @@ step.
   `waiting` status (an environment-protected job), and six ci suites then met CloudFront's "The
   request could not be satisfied" on the apex. `wait-for-main-deploy.mjs` now reads every recent
   run on `main` and counts the ones not completed. In flight on `claude/ops-wait-guard` (PR
-  follows); the six jobs are re-running after main's deploy ended green. **Source**: run
+  #291); the six jobs are re-running after main's deploy ended green. **Source**: run
   35171600510. **Owner**: Claude Code. **Model**: Haiku. **Size**: ~1 file.
 
 - [ ] **B30aj. Alarm #284: CloudWatch alarms cannot publish to the prod security-findings topic.**
