@@ -87,6 +87,21 @@ step.
 
 ## Machine-only
 
+- [ ] **B30am. Alarm #298: the prod activity Telegram forwarder errors under a burst.**
+  `prod-env-activity-stack-health` fired at 08:14 UTC on 2026-09-17 on
+  `check-prod-env-activity-telegram-forwarder-errors` (back to OK at 08:15). Lambda `Errors` for
+  `prod-env-activity-telegram-forwarder`: 9 in the five minutes from 07:50 UTC and 1 at 08:10,
+  during an invocation burst (32, 49, then 96 per five minutes) from the two prod deploys'
+  behaviour tests; the log holds eight `Telegram API error` warns at 07:55:09 (`429 Too Many
+  Requests: retry after 5`, chat -5204035635) and no ERROR or timeout line, so the nine errors
+  left no log. `sendTelegramMessage` (`activityTelegramForwarder.js` ~112) posts once and only
+  warns on a non-2xx; `check-...-log-errors` stayed OK. Find what the runtime counted as the nine
+  errors (the REPORT lines of those invocations, `Status: error`, or an init failure), then honour
+  `retry_after` with one bounded retry so a burst is delayed rather than dropped, and tell the
+  triage the alarm exists: its comment said the alarm and function are gone, which
+  `describe-alarms` contradicts. **Source**: issue #298. **Owner**: Claude Code. **Model**:
+  Sonnet. **Size**: ~2 files.
+
 ## Machine-ask
 
 - [ ] **B52y.5. The ops GitHub token cannot read Dependabot or secret-scanning alerts.** The
