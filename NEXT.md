@@ -52,7 +52,8 @@ step.
   errors (the REPORT lines of those invocations, `Status: error`, or an init failure), then honour
   `retry_after` with one bounded retry so a burst is delayed rather than dropped, and tell the
   triage the alarm exists: its comment said the alarm and function are gone, which
-  `describe-alarms` contradicts. In flight on `claude/b56-board` (agent working). **Source**: issue #298. **Owner**: Claude Code. **Model**:
+  `describe-alarms` contradicts. Found: ten invocations hit the Lambda's 10 s timeout on an unbounded fetch; the send is
+  now bounded at 4 s with one 429 retry. In flight on `claude/b56-board`, PR #299. **Source**: issue #298. **Owner**: Claude Code. **Model**:
   Sonnet. **Size**: ~2 files.
 
 - [ ] **B52y.3. The security lake nightly's role cannot list the WAF log groups.** The 03:20
