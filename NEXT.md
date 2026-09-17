@@ -16,11 +16,10 @@ runs), and for Claude Code steps the **Model** a sub-agent should use (Fable > O
 Haiku; the lowest tier that fits). Anything touching code goes through a `claude/*` branch and
 PR; the operator merges.
 
-**Prod runs deployment prod-50e2b12** (PR #299, run 35221056420, green at 13:46 UTC on 2026-09-17,
-nine stacks). PR #300 merged as d689744f; its deploy of `main` (35229274840) is running and promotes
-prod's next set when its suites pass. **ci**: `ci-set1` (PR #295's set, last-known-good at 10:06 UTC) is live; its self-destruct schedule from
-the slot's first claim fires next at 11:44 UTC (B30af.7). PR #295 merged as 53bc2d1c; `main`'s
-deploy 35210720771 is running.
+**Prod runs deployment prod-d689744** (PR #300, run 35229274840, green at 14:45 UTC on 2026-09-17,
+nine stacks, the only prod set standing). **ci**: `ci-set2` (PR #300's set, claimed 10:42 UTC) is
+live; its self-destruct schedule anchors to that claim (fires from 14:42 UTC); `ci-set1`
+self-destructed on its first claim's clock at 11:44 UTC.
 
 The board runs in five sections, in this order: **in flight** (a branch, a pull request or a run
 in motion, each named in the row), **machine-only**, **machine-ask**, **human-driven**,
@@ -51,12 +50,6 @@ step.
   in its prod half. `wait-for-ci-deploys.mjs` (deploy.yml's `wait for previous cleanup`) has the
   same whole-run shape and is its own row when it next costs a ceiling. **Source**: PR #300.
   **Owner**: Claude Code. **Model**: Haiku. **Size**: ~0 files.
-
-- [ ] **B30af.7. The slot clock's first live proof.** PR #300 (d689744f) anchors a slot
-  deployment's self-destruct window to its claim. Proof on the next slot claim: `aws --profile
-  submit-ci events describe-rule --name ci-set<N>-app-sd-schedule` shows a start time at the claim
-  plus the delay (ci-set1's read `cron(48 7/4 * * ? *)`, start 07:48:08Z, before the fix).
-  **Source**: PR #300. **Owner**: Claude Code. **Model**: Haiku. **Size**: ~0 files.
 
 - [ ] **B52y.3. The security lake nightly's WAF rows: the next run proves the grant.** PR #297
   (b14a7692) gives the nightly's role `logs:DescribeLogGroups` on the resource IAM evaluates it
