@@ -4,11 +4,13 @@
 # PLAN: everything as code
 
 Status: open. Items 1-7 and 12-14 are shipped. Items 8-11 (the workload identity pool, GitHub
-Actions and Lambda federation, and key rotation) remain.
+Actions and Lambda federation, and key rotation) remain. Items 15-24 widen the scope past Google to
+Google Ads and every other third-party console the company relies on.
 
-Everything the operator does by hand in the Google consoles moves into files in this repo, applied
-by one workflow. The target is no console visit for a routine change, and no generated id copied
-between browser tabs.
+Everything the operator does by hand in a third-party console moves into files in this repo, applied
+by one workflow per service. The target is no console visit for a routine change, and no generated id
+copied between browser tabs. Google Cloud, GA4 and YouTube are most of the way there; Google Ads,
+Companies House, HMRC, GitHub, Stripe, PayPal and Telegram are not.
 
 ## User assertions (verbatim)
 
@@ -23,6 +25,15 @@ between browser tabs.
 
 > Autonomy. Every Google change today is the operator copying generated ids between console tabs;
 > that is error-prone and the operator does not want to do any of it.
+
+> Please extend the scope of this PLAN_GOOGLE_AS_CODE.md (if it isn't already) to include the Google
+> Ads account we just created, then rename that doc and all the references to it to
+> PLAN_EVERYTHING_AS_CODE.md and we shall create infra/google/cgp infra/google/g4a infra/google/ad
+> as well as infra/stripe and infra/paypal and anything else we rely upon with any configured
+> compliexit to be defined as code.
+
+Read as `infra/google/gcp`, `infra/google/ga4`, `infra/google/ads`, `infra/stripe`, `infra/paypal`,
+and every other third-party service with configured complexity.
 
 ## The recommendation
 
@@ -122,6 +133,9 @@ google/
   oauth.toml       the consent screen fields and the OAuth clients we own
   youtube.toml     the channel, its quota project and its credential secrets
 ```
+
+These six paths and their scripts move under `infra/google/` in item 15; the section "The `infra/`
+layout" below carries the mapping.
 
 One workflow, `.github/workflows/google-apply.yml`, replaces `google-roles.yml` and
 `ga4-bigquery-sync.yml`. It keeps their shape: `environment: prod`, GitHub OIDC into the AWS
@@ -238,6 +252,82 @@ then checks:
 
 It fails the workflow on a mismatch. That turns a silent console edit into a red build.
 
+### Google Ads, concretely
+
+Opened 2026-09-17 under the organisation's manager account. GA4 property `523400333` is linked with
+auto-tagging on, three key events are imported as conversion actions (`purchase`,
+`submit_vat_return`, `runner_download`), Purchase and Sign-up are the account's default goals, and
+one Performance Max campaign runs at £1.00 a day. `PLAN_ONE_STOP_DASHBOARD.md` row D17 is the
+reinvestment loop that will move that budget; `NEXT.md` row B52n splits `donate` off `purchase`
+first.
+
+Access needs three things: a developer token, applied for once in the manager account's API Center
+and limited to test accounts until it is approved; an OAuth client and refresh token for a user with
+access to the manager account, the Desktop-client route `scripts/youtube-upload.js` already uses; and
+the manager-to-client link, which the API reads back as `customer_client`. Every call carries
+`login-customer-id` and operates on the client customer id. The token and both ids live in Secrets
+Manager; `infra/google/ads/ads.toml` records the secret names, never the values.
+
+| Wanted state | Read and applied through |
+| --- | --- |
+| Auto-tagging on the account | `Customer.auto_tagging_enabled` through `CustomerService` |
+| Conversion actions imported from GA4 | `ConversionAction`, one per imported key event |
+| The account's default goals | `CustomerConversionGoal`, plus `CampaignConversionGoal` where a campaign overrides them |
+| The campaign | `Campaign` with `advertising_channel_type = PERFORMANCE_MAX` |
+| Its daily budget | `CampaignBudget.amount_micros` |
+| Its asset group | `AssetGroup`, `AssetGroupAsset`, `Asset` |
+| On-off and geographic controls for an `experiments.toml` row | `Campaign.status`, `CampaignCriterion` |
+| The GA4 side of the link | GA4 Admin API `properties.googleAdsLinks` |
+
+The link has two owners: GA4 creates it, Ads imports through it. `ga4-sync.js` keeps
+`properties.googleAdsLinks`; `ads-sync.js` keeps the Ads side and fails on a missing conversion
+action rather than creating a second one beside it. Confirm every resource name against the API
+version pinned when the work starts; the Ads API retires a version every few months.
+
+**The reserve floor is a guard the loop reads before it raises `amount_micros`.** Below the floor the
+loop leaves the budget alone and says so on the dashboard. The number is the company's
+cash position, so it stays out of this public repository — recorded privately today, an SSM
+parameter in submit-prod once the loop runs unattended. `ads.toml` records the parameter name and the
+guard, never the value.
+
+## The `infra/` layout
+
+Today the Google declarations sit in `google/` and their scripts in `scripts/`, among a hundred
+unrelated ones. Everything declarative moves under `infra/`, one directory per service, each holding
+its TOML and the script that applies it. The Java CDK keeps `infra/main` and `infra/test` exactly as
+they are.
+
+| Today | Tomorrow |
+| --- | --- |
+| `google/project.toml` | `infra/google/gcp/project.toml` |
+| `google/identity.toml` | `infra/google/gcp/identity.toml` |
+| `google/bigquery.toml` | `infra/google/gcp/bigquery.toml` |
+| `google/oauth.toml` | `infra/google/gcp/oauth.toml` |
+| `google/youtube.toml` | `infra/google/gcp/youtube.toml` |
+| `google/credentials/aws-{ci,prod}.json` | `infra/google/gcp/credentials/aws-{ci,prod}.json` |
+| `analytics/bigquery/*.sql` | `infra/google/gcp/bigquery/*.sql` |
+| `google/analytics.toml` | `infra/google/ga4/analytics.toml` |
+| `scripts/gcp-enable-apis.js`, `gcp-billing-assert.js`, `gcp-identity-sync.js`, `gcp-key-rotate.js`, `google-roles-apply.js`, `google-oauth-assert.js`, `google-inventory.js` | `infra/google/gcp/` |
+| `scripts/ga4-sync.js`, `ga4-bigquery-sync.js` | `infra/google/ga4/` |
+| `scripts/lib/googleAuth.js` | `infra/google/lib/googleAuth.js` |
+| — | `infra/google/ads/ads.toml`, `ads-inventory.js`, `ads-sync.js` |
+
+YouTube's declaration stays with `gcp`: what it configures is the project's OAuth client and quota
+project. `scripts/youtube-upload.js` is a publishing tool, so it stays in `scripts/` and reads the
+moved file.
+
+The convention does not change: TOML is the wanted state, a Node script lists live state, diffs and
+plans by default, applies only with `--apply`, and has a unit-tested pure planner.
+`google-apply.yml` keeps driving all three Google directories in one run, Ads last because it depends
+on the GA4 link, with its path filters moved to `infra/google/**`.
+
+The move is wider than the files themselves. `google/*.toml` paths are read by
+`web/unit-tests/analytics.test.js`, `google/bigquery.toml`'s four `sql_file` entries and
+`app/unit-tests/scripts/ga4BigQuerySync.test.js`, named by the three workflows and three npm scripts,
+and quoted in comments in `app/lib/googleWorkloadIdentity.js`, `ga4DailyPull.js`,
+`web/public/lib/analytics.js`, `IngestionStack.java` and `Ga4DailyTables.java`. One commit, so
+nothing ever reads a path that has gone.
+
 ## Migrating from what is live
 
 There is no import step and no state to seed. Every script here lists live Google state and diffs
@@ -267,10 +357,162 @@ keeps skipping entries that carry a `deleteTime`.
 The first apply of each area is gated: run the workflow in plan mode, read the step summary, and
 only then push. Every existing resource should read as "already exists" before an apply runs.
 
+## Everything else with configured complexity
+
+Taken from the repository: `secrets-rotation.toml`'s six consoles, the Stripe scripts and their
+skill, the spreadsheets site's donation routes, the two developer hubs, GitHub's own settings and the
+bot. The last two rows are records: they carry a date each, which `compliance.toml` already holds, so
+there is nothing to apply.
+
+| Service | Configured today | API to read and apply | Proposed path | Applied by |
+| --- | --- | --- | --- | --- |
+| Google Cloud, GA4, YouTube | `google/*.toml`, seven scripts | yes, except OAuth clients | `infra/google/gcp`, `infra/google/ga4` | `google-apply.yml` |
+| Google Ads | the Ads console | yes, with a developer token | `infra/google/ads` | `google-apply.yml` |
+| Companies House | two hub applications, `.env.{ci,prod}` client ids, four secrets, the XML Gateway presenter | none for the hub; the live endpoints answer | `infra/companies-house`, assert only | `infra-apply.yml` |
+| HMRC | two hub applications, their API subscriptions, two secrets | none for the hub; a call proves a subscription | `infra/hmrc`, assert only | `infra-apply.yml` |
+| GitHub | two hand-run scripts, `deploy-environment.yml`, the rest in the console | yes, the REST API covers every setting named below | `infra/github` | `infra-apply.yml` |
+| Stripe, subscriptions | `submit.catalogue.toml` plus `scripts/stripe-setup.js` | yes | `infra/stripe` | `infra-apply.yml` |
+| Stripe, donations | `donate-links.toml` plus a setup script, in the spreadsheets repository | yes | that repository's `infra/stripe` | its own workflow |
+| PayPal | a hardcoded hosted-button id in the spreadsheets template | none for classic hosted buttons | `infra/paypal`, assert only | `infra-apply.yml` |
+| Telegram | a token in Secrets Manager, chat ids in `.env.*` | read-back only (`getMe`, `getChat`) | `infra/telegram`, assert only | `infra-apply.yml` |
+| ICO registration | `compliance.toml` row `ico-registration` | not configuration | record only | — |
+| The company's own filings | `compliance.toml`, the dashboard's statutory calendar | not configuration | record only | — |
+
+### Companies House
+
+Two hub applications, one per environment: "DIY Accounting Submit - test" on the sandbox hosts for
+ci, the live application for prod. Each carries a client id committed in `.env.ci` or `.env.prod`,
+and a client secret and REST key in `{env}/submit/companies-house/*` written from GitHub Environment
+secrets by `deploy-environment.yml`; the sandbox has a second REST key held only as the GitHub secret
+`COMPANIES_HOUSE_SANDBOX_API_KEY`. The XML Gateway presenter id and code are GitHub Environment
+secrets on ci, blank on prod, and outside `secrets-rotation.toml` because no AWS secret exists for
+them yet. The package reference comes from `CompaniesHouseStack.java`.
+
+The redirect URI carries the operational history. It is never stored:
+`web/public/lib/auth-url-builder.js` rebuilds it from `DIY_SUBMIT_BASE_URL` as
+`…/companies-house/filingCallback.html`, and the hub holds the registered copy. `NEXT.md` row O17 is
+what that costs — the sandbox sign-in is reachable only through `/oauth2/authorise` with the "- test"
+client and a registered host, and a branch deployment's host answers 400.
+
+The only application-management surface the repo names is the hub's `manage-applications` web page,
+so `infra/companies-house` is declare-and-verify. `companies-house.toml` records, per environment,
+the application name, the client id, the three base URIs, every registered redirect URI, the secret
+names, and the presenter identity's secret names. `companies-house-assert.js` proves what a live call
+can prove: each client id and redirect pair gets an `/oauth2/authorise` request and must not answer
+400, the REST key answers a public-data call, and the file's client ids match the deployed `.env`. No
+streaming key appears in this repository; the first run records whether one exists.
+
+Residue: creating an application, registering a redirect URI, requesting a presenter account. What
+would close it: an applications API on the hub, which Companies House has not published.
+
+### HMRC
+
+Two applications again, sandbox and production, both client ids committed in the `.env` files, both
+secrets in Secrets Manager from GitHub Environment secrets, and the redirect URI rebuilt at runtime
+as `…/activities/submitVatCallback.html` rather than recorded.
+
+The API subscriptions have no declaration. `_developers/hmrc/ITSA_PHASE_2_SANDBOX.md` is the only
+list — six APIs added to the sandbox application beside Business Details — and it states the
+constraint: only the hub account holder can add a subscription. An unsubscribed call answers
+`RESOURCE_FORBIDDEN`, which makes the state checkable even though it is not writable.
+
+`infra/hmrc/hmrc.toml` records both applications, their base URIs, every subscribed API with its
+version, the redirect URIs and the secret names. `hmrc-assert.js` takes a client-credentials token
+per application and calls one cheap endpoint per declared subscription, failing on
+`RESOURCE_FORBIDDEN`, so a subscription that disappears is a red build rather than a failed customer
+submission. The fraud-prevention headers need nothing new: `buildFraudHeaders.js` builds them, the
+Test Fraud Prevention Headers API validates them on every synthetic run, and
+`scripts/fraud-header-email-check.js` reads HMRC's monthly report.
+
+Residue: holding the hub account, adding a subscription, registering a redirect URI, accepting the
+terms of use, the production-approval correspondence. What would close it: an api-platform management
+API, which HMRC has not published.
+
+### GitHub
+
+Three settings are code today: `scripts/github-actions-permissions.sh` sets the Actions allow-list
+and SHA pinning through `gh api` and nothing calls it, `scripts/check-workflow-permissions.mjs` runs
+in `test.yml`, and `deploy-environment.yml` copies each GitHub Environment secret into Secrets
+Manager. `PLAN_REPOSITORY_AUTOMATION.md`'s capability table and `REPORT_IDENTITY_AUDIT.md` measure
+the rest: five rulesets carrying only `deletion` and `non_fast_forward`, no required status check, no
+signature rule, `root`'s ruleset disabled, delete-branch-on-merge off, Dependabot security fixes
+disabled, `allowed_actions: all` on a public repository, no CODEOWNERS, and zero GitHub Apps on the
+organisation.
+
+Every one is in the REST API: `/repos/{owner}/{repo}/rulesets`, `/actions/permissions` and
+`/actions/permissions/selected-actions`, the repository object's `delete_branch_on_merge`,
+`/automated-security-fixes`, `/environments` and their variables, and `/orgs/{org}/installations`. So
+`infra/github/github.toml` declares the rulesets and their rules, the required checks, the allow-list,
+the environments and the *names* of their variables and secrets, and `github-sync.js` diffs and
+applies. A secret's value never enters the file; the applier reports a name that is missing.
+
+The residue is the two GitHub Apps of `NEXT.md` row O38: creating one is a browser flow, since the
+manifest conversion endpoint still needs a person to complete a redirect, and installing it is a
+console click. Once they exist the API reads them back, so the file can assert them. What would close
+it: an app-creation API, which GitHub has not published.
+
+### Stripe
+
+Submit's subscriptions already have a declaration: `web/public/submit.catalogue.toml` carries five
+bundles' `stripePriceAmount`, `stripeCurrency` and `stripeInterval`, `scripts/lib/stripeCatalogue.js`
+turns them into wanted products, and `scripts/stripe-setup.js` finds or creates each product, its
+recurring price and the two webhook endpoints with their nine events. Three things put it outside the
+convention: it applies by default and plans only with `--dry-run`, the endpoint URLs are hardcoded in
+the script, and the price ids it creates are printed for a person to paste into `.env.ci` and
+`.env.prod` — the habit this plan exists to remove.
+
+`infra/stripe` fixes all three: `stripe.toml` carries the endpoints, their event list and the secret
+names; `stripe-sync.js` plans by default and applies with `--apply`; and the applier writes each new
+price id where the deploy reads it, the way `ga4-sync.js` writes `SUBMIT_GA4_MEASUREMENT_ID`. A
+webhook endpoint's signing secret is returned once, at creation, so the applier writes it straight
+into Secrets Manager through `scripts/put-secret-with-rotation-tag.sh` instead of printing it.
+
+The live/test split stays where `.claude/skills/stripe-catalogue-sync/SKILL.md` puts it: a separate
+explicit go before a live apply, a decision the file does not override.
+
+The spreadsheets site's donation Payment Links are the same shape in the other repository:
+`donate-links.toml` holds four links per environment, a build step templates them into `donate.html`,
+and `scripts/stripe-spreadsheets-setup.js` creates the product, the prices and the links and writes
+them back into the TOML, with no dry run. That repository owns the fix; this plan owns the convention
+it should match.
+
+### PayPal
+
+The whole configuration is one line: a classic hosted Donate button whose `hosted_button_id` is
+hardcoded in the spreadsheets site's `donate.template.html`. No client id, no secret, no IPN
+endpoint, no test mode, no ci/prod split, so nothing rotates and a build can verify nothing. The only
+part already as code is the CSP allowance for `paypal.com` and `paypalobjects.com` in that
+repository's `security-headers.json`.
+
+PayPal's REST API has no resource for classic hosted buttons, and the NVP Button Manager that made
+them is closed to new integrations. So `infra/paypal` is a declaration plus an assertion:
+`paypal.toml` records the button id, the return URL and the page carrying the form, and
+`paypal-assert.js` fails when the template drifts from the file or the donate URL stops resolving.
+What would close the gap is moving donations onto PayPal's REST orders API, declarable and testable
+in the sandbox — the decision `PLAN_ONE_STOP_DASHBOARD.md` row D2 waits on.
+
+### Telegram
+
+Send-only alerting: `app/functions/ops/activityTelegramForwarder.js` posts to `sendMessage` with a
+token from `{env}/submit/telegram/bot_token`, and three chat ids per environment travel from
+`.env.{ci,prod}` through `SubmitEnvironment.java` onto the Lambda. No webhook, no polling, no setup
+script: the bot, the six groups and their chat ids were made by hand and live in
+`RUNBOOK_INFORMATION_SECURITY.md`.
+
+The Bot API reads back everything that drifts: `getMe` confirms the bot behind the token, `getChat`
+confirms each chat id still resolves with the bot in it, `getWebhookInfo` confirms none is set.
+`infra/telegram/telegram.toml` records the bot handle and the six groups with their chat ids and
+environments, and `telegram-assert.js` fails on a mismatch, so a bot removed from a group is a red
+build instead of an alarm that never arrives. The residue is creating a bot and adding it to a group,
+both BotFather chat flows. What would close it: a bot-provisioning API, which Telegram has not
+published.
+
 ## Work items
 
 Each item is small enough to land on its own. Items 1 and 2 are prerequisites for the rest; after
-those, 3 to 6 and 12 to 14 can go in parallel.
+those, 3 to 6 and 12 to 14 can go in parallel. Item 15 moves the tree and precedes everything after
+it; 16 and 17 are the Ads work; 18 to 23 take one service each, ordered by what an undetected
+console change costs.
 
 **1. Read-only inventory of everything Google — done.** `scripts/google-inventory.js` reads enabled
 services on `diyaccounting-ga4`, the project IAM policy, the billing account's budgets, the GA4
@@ -375,6 +617,63 @@ fails the run when the resolved handle no longer matches.
 `youtube-check.yml` joined the workflow table. Nothing deleted by items 3, 5 or 7 had a row there
 to remove.
 
+**15. Move the declarations under `infra/`.** The table in "The `infra/` layout" is the whole
+change: `git mv` each file, update every reader named in that section, and rename the path filters
+in `google-apply.yml`, `google-key-rotate.yml` and `youtube-check.yml`. Nothing else changes, so the
+proof is `npm test` plus one `google-apply.yml` plan run that still reads live state. One commit, so
+no reader is ever pointing at a path that has gone. **Model**: Sonnet. **Size**: ~30 files.
+
+**16. Read-only inventory of the Google Ads account.** `infra/google/ads/ads-inventory.js`, the
+shape of `google-inventory.js`: authenticate with the developer token and the manager's refresh
+token, then list the client customers under the manager, the account's auto-tagging setting and
+conversion tracking settings, every `ConversionAction` with its type, status and origin, the
+`CustomerConversionGoal` set, every campaign with its channel type, status, budget and asset groups,
+and the GA4 link as GA4's Admin API reports it. Print, write nothing. Run it before anything else is
+declared, because the file has to be written from what is live. **Model**: Sonnet. **Size**: ~3
+files.
+
+**17. `infra/google/ads/ads.toml` and `ads-sync.js`.** Declare the account, the three conversion
+actions, the default goals, auto-tagging, the Performance Max campaign, its budget in micros and its
+asset group, and the reserve-floor parameter name. `ads-sync.js` plans by default, applies with
+`--apply`, fails on an expected conversion action that is missing rather than creating one, and
+leaves the GA4 side to `ga4-sync.js`. Add the step to `google-apply.yml`, last. Blocked on item 16
+and on B52n landing the separate `donate` event. **Model**: Sonnet. **Size**: ~4 files.
+
+**18. `infra/companies-house`, and the one door for the rest.** `companies-house.toml` and
+`companies-house-assert.js` as described above, plus `.github/workflows/infra-apply.yml` in
+`google-apply.yml`'s shape: OIDC into AWS, one step per service, plan on a pull request touching
+`infra/**`, apply on push to main. Items 19 to 23 each add a step. **Model**: Sonnet. **Size**: ~4
+files.
+
+**19. `infra/hmrc`.** `hmrc.toml` carrying both applications, their subscriptions with versions, the
+redirect URIs and the secret names; `hmrc-assert.js` proving each subscription with one call per
+declared API. Run it against the sandbox application in ci and the production one in prod.
+**Model**: Sonnet. **Size**: ~4 files.
+
+**20. `infra/github`.** `github.toml` declaring the rulesets and their rules, the required checks,
+the Actions allow-list and SHA pinning, `delete_branch_on_merge`, Dependabot security fixes,
+CODEOWNERS routing and the two environments with their variable and secret names. `github-sync.js`
+diffs and applies through the REST API. Absorbs `scripts/github-actions-permissions.sh`, which
+nothing calls today. The token needs repository administration, so the step runs on the `prod`
+environment. **Model**: Sonnet. **Size**: ~5 files.
+
+**21. `infra/stripe`.** Move `scripts/stripe-setup.js` in, invert its default so it plans without
+`--apply`, move the two webhook endpoint URLs and the nine events into `stripe.toml`, and have it
+write each new price id where the deploy reads it and each endpoint secret into Secrets Manager
+through `put-secret-with-rotation-tag.sh`. `submit.catalogue.toml` stays the source of truth for
+price, currency and interval. **Model**: Sonnet. **Size**: ~5 files.
+
+**22. `infra/paypal`.** `paypal.toml` recording the button id, the return URL and the page that
+carries the form; `paypal-assert.js` failing when the template drifts from the file or the donate URL
+stops resolving. The template lives in the spreadsheets repository, so the assert reads it over the
+live site rather than the sibling checkout. **Model**: Haiku. **Size**: ~3 files.
+
+**23. `infra/telegram`.** `telegram.toml` recording the bot handle and the six groups with their chat
+ids and environments; `telegram-assert.js` calling `getMe`, `getChat` per group and `getWebhookInfo`,
+and failing on a bot removed from a group or a webhook that should not be there. Fills the
+`telegram/bot_token` row's `last_rotated` when the operator next rotates it.
+**Model**: Haiku. **Size**: ~3 files.
+
 ## What stays manual
 
 **Creating an OAuth client, and reading its secret.** Google publishes no general API for the
@@ -409,5 +708,12 @@ submit. Until an API appears, the domains are set once in the GA4 UI, and the li
 `web/unit-tests/analytics.test.js`. Worth rechecking the v1alpha resource list each time this area
 is touched; the Admin API gains resources steadily.
 
-**Opening a Google Ads account.** Out of this plan's scope and named in
-`PLAN_ONE_STOP_DASHBOARD.md` as an operator step.
+**The Google Ads residue.** Creating a client account under a manager is
+`CustomerService.CreateCustomerClient`, so the account itself is not the residue. Three things are.
+The payments profile behind the manager account: entering a card is a console visit, and
+`BillingSetup` only links an existing payments account to a customer. The developer token, applied
+for in the API Center and limited to test accounts until a person at Google approves it, which is the
+one step with a queue in front of it. And the first OAuth consent for the refresh token, the same
+browser approval the YouTube credential needs. What would close the last is the domain-wide
+delegation named above; what would close the first two is a Google billing API for payments
+profiles.
