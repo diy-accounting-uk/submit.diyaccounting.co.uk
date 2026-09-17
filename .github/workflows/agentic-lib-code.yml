@@ -82,14 +82,24 @@ jobs:
       # This agent reads NEXT.md, CLAUDE.md and the skills to decide what to do; those must be the
       # merged versions, not anything a branch proposes.
       # Read from the default branch, and keep credentials: a finished task is pushed as a branch
-      # from this checkout. The branch is always new and always `claude/*`; main is protected by
-      # the deny rule on the agent's tools.
+      # from this checkout by the "Land a complete run as a pull request" step below, never by the
+      # agent, which has no push tool. The branch is always new and always `claude/*`.
       - name: Checkout the default branch
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with:
           ref: ${{ github.event.repository.default_branch }}
           fetch-depth: 0
           token: ${{ secrets.AGENT_TOKEN || github.token }}
+
+      # The agent commits its own work (`git commit` is in its allow-list) but has no push tool
+      # and no `git config` tool, so this identity has to exist before it runs or every commit
+      # fails with "Please tell me who you are". "Claude <noreply@anthropic.com>" is the same
+      # identity every commit's `Co-Authored-By` trailer already names.
+      - name: Configure the commit identity
+        run: |
+          set -euo pipefail
+          git config user.name "Claude"
+          git config user.email "noreply@anthropic.com"
 
       - name: Set up Node
         uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7
@@ -160,6 +170,12 @@ jobs:
           done
           find "${OUT_DIR}/prior" -name CHANGES.md | head -20
 
+      # So the pull-request step below can tell what the agent actually added, regardless of
+      # whether it committed, only edited files, or did both.
+      - name: Record the tree before the agent runs
+        id: before
+        run: echo "sha=$(git rev-parse HEAD)" | tee -a "$GITHUB_OUTPUT"
+
       - name: Run the agent
         id: run
         env:
@@ -171,9 +187,11 @@ jobs:
           DISABLE_TELEMETRY: '1'
           DISABLE_ERROR_REPORTING: '1'
           DISABLE_AUTOUPDATER: '1'
-          # Can push a branch and open a pull request; cannot merge one. Merging is /auto-merge's
-          # job and lives behind a different token, so an agent that writes code cannot also
-          # approve its own work into main.
+          # This token can push and open a PR, but the agent's allow-list only grants it read-only
+          # gh use here (run list/view, pr list); push and `gh pr create` happen in the "Land a
+          # complete run as a pull request" step below instead. Merging is /auto-merge's job on a
+          # different token again, so an agent that writes code cannot also approve its own work
+          # into main.
           GH_TOKEN: ${{ secrets.AGENT_TOKEN }}
           RUN_ID: ${{ github.run_id }}
           RUN_URL: '${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}'
@@ -200,16 +218,66 @@ jobs:
           has a branch on origin, say so and pick by the normal rule instead."
           fi
 
-          # It may branch, push and open a PR. It may not merge, and it may not push to main:
-          # `git push origin main` is refused by the deny rule below, and no merge tool is granted
-          # at all. The allow-list is the enforcement; the brief is only the reasoning.
+          # It may commit; it may not push, branch, open a PR, merge one, or touch git identity -
+          # this step already set that up, and the workflow steps after this one push and open
+          # the PR when CHANGES.md says the work is complete. The allow-list is the enforcement;
+          # the brief is only the reasoning.
           claude -p "$PROMPT" \
             --max-turns 80 \
             --output-format json \
             --permission-mode default \
-            --disallowedTools "Bash(git push origin main:*),Bash(git push --force:*),Bash(gh pr merge:*),Bash(gh workflow run:*)" \
-            --allowedTools "Read,Grep,Glob,Edit,Write,Bash(git status:*),Bash(git diff:*),Bash(git log:*),Bash(git add:*),Bash(git commit:*),Bash(git apply:*),Bash(git ls-remote:*),Bash(git show:*),Bash(git checkout -b:*),Bash(git push origin claude/:*),Bash(gh pr create:*),Bash(npm test:*),Bash(npm run:*),Bash(npx vitest:*),Bash(npx prettier:*),Bash(./mvnw:*),Bash(gh run list:*),Bash(gh run view:*),Bash(gh pr list:*),Bash(date:*),Bash(cat:*),Bash(ls:*),Bash(find:*),Bash(mkdir:*)" \
+            --disallowedTools "Bash(git push:*),Bash(git checkout:*),Bash(git config:*),Bash(gh pr create:*),Bash(gh pr merge:*),Bash(gh workflow run:*)" \
+            --allowedTools "Read,Grep,Glob,Edit,Write,Bash(git status:*),Bash(git diff:*),Bash(git log:*),Bash(git add:*),Bash(git commit:*),Bash(git apply:*),Bash(git ls-remote:*),Bash(git show:*),Bash(git rev-parse:*),Bash(git branch:*),Bash(npm test:*),Bash(npm run:*),Bash(npx vitest:*),Bash(npx prettier:*),Bash(./mvnw:*),Bash(gh run list:*),Bash(gh run view:*),Bash(gh pr list:*),Bash(date:*),Bash(cat:*),Bash(ls:*),Bash(find:*)" \
             2>&1 | tee "${OUT_DIR}/claude-output.json"
+
+      # When the agent reports it finished, land the work exactly as a terminal session would: a
+      # branch, a push, and a pull request. The agent has no push or `gh pr create` tool (see the
+      # allow-list above), so this step does that on its behalf, only when CHANGES.md's one exact
+      # marker line says so.
+      - name: Land a complete run as a pull request
+        if: always() && steps.run.outcome != 'skipped'
+        env:
+          GH_TOKEN: ${{ secrets.AGENT_TOKEN }}
+        run: |
+          set -euo pipefail
+          if [ ! -s "${OUT_DIR}/CHANGES.md" ] || ! grep -qxF '- **Status**: complete' "${OUT_DIR}/CHANGES.md"; then
+            echo "not a complete run, nothing to land"
+            exit 0
+          fi
+          BRANCH=$(grep -m1 '^- \*\*Branch\*\*: ' "${OUT_DIR}/CHANGES.md" | sed 's/^- \*\*Branch\*\*: *//')
+          if [ -z "${BRANCH}" ]; then
+            echo "::error::Status is complete but CHANGES.md has no Branch line"
+            exit 1
+          fi
+          if [ ! -s "${OUT_DIR}/PR.md" ]; then
+            echo "::error::Status is complete but ${OUT_DIR}/PR.md is missing"
+            exit 1
+          fi
+
+          git checkout -b "${BRANCH}"
+
+          # The agent commits its own work; this only covers the case where it edited files and
+          # forgot to. A commit made here has no narrative to draw on beyond the PR title.
+          if ! git diff --quiet || ! git diff --cached --quiet; then
+            git add -A
+            git commit -m "$(head -1 "${OUT_DIR}/PR.md" | sed 's/^# *//')"
+          fi
+
+          if [ "$(git rev-parse HEAD)" = "${{ steps.before.outputs.sha }}" ]; then
+            echo "::error::Status is complete but nothing was committed or changed"
+            exit 1
+          fi
+
+          git push origin "${BRANCH}"
+
+          TITLE=$(head -1 "${OUT_DIR}/PR.md" | sed 's/^# *//')
+          tail -n +2 "${OUT_DIR}/PR.md" > "${OUT_DIR}/pr-body.md"
+          PR_URL=$(gh pr create --repo "${{ github.repository }}" \
+                     --base "${{ github.event.repository.default_branch }}" \
+                     --head "${BRANCH}" \
+                     --title "${TITLE}" \
+                     --body-file "${OUT_DIR}/pr-body.md")
+          echo "- **PR**: ${PR_URL}" >> "${OUT_DIR}/CHANGES.md"
 
       # origin:unattended-agent says a model ran this with nobody watching. Applied here, outside
       # the agent's own tool calls, so it lands whether or not the agent remembered to ask for it.
@@ -256,7 +324,11 @@ jobs:
             git reset -q -- "${straypatch}" 2>/dev/null || true
             rm -f "${straypatch}"
           done
-          git diff --cached > "${OUT_DIR}/work.patch" 2>/dev/null || : > "${OUT_DIR}/work.patch"
+          # Diff the index against the pre-agent commit, not against HEAD: an agent that committed
+          # its own work (now possible - the identity step above lets `git commit` succeed) moves
+          # HEAD, and `git diff --cached` alone would then show nothing, silently losing a
+          # handover's committed-but-unpushed work from the one record a later run can read.
+          git diff --cached "${{ steps.before.outputs.sha }}" > "${OUT_DIR}/work.patch" 2>/dev/null || : > "${OUT_DIR}/work.patch"
           echo "patch bytes: $(wc -c < "${OUT_DIR}/work.patch")"
           if [ ! -s "${OUT_DIR}/CHANGES.md" ]; then
             {
