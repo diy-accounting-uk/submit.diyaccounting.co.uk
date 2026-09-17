@@ -45,30 +45,6 @@ step.
 
 ## In flight
 
-- [ ] **B30ah.2. The triage judge step failed on its first real run.** Run 35170816042 (alarm
-  triage for #284, 01:30 UTC on 2026-09-17, the first under PR #281's shape): "Run triage (Haiku)"
-  succeeded, "Judge the first pass" failed, so the Sonnet pass, the selection and the comment never
-  ran and #284 got no triage at all. Read the judge step's log for the failing line (its `jq` reads
-  of `/tmp/triage.haiku.json` under `set -euo pipefail`; a `.result` that is not a string, or a
-  missing field, aborts the step instead of escalating), make the judge escalate on any read it
-  cannot make, and add a unit-testable script or a shell test for the four shapes. Then re-run the
-  triage for #284 (`gh workflow run alarm-triage.yml` with the issue number, read the workflow's
-  inputs). In flight on `claude/ops-triage-judge` (PR #286). **Source**: run 35170816042; issue #284. **Owner**: Claude Code. **Model**: Sonnet.
-  **Size**: ~2 files.
-
-- [ ] **B124.4. The code workflow's landing step runs before the stray-handover move, and the
-  agent edited NEXT.md.** Run 35171625388 (the code proof on `main` after PR #282): the agent
-  wrote a complete handover (`- **Status**: complete`, branch `claude/ops-b30ai-triage-proof`,
-  `PR.md`), but "Land a complete run as a pull request" printed "not a complete run, nothing to
-  land" because it reads `${OUT_DIR}/CHANGES.md` and the step that moves a handover left in the
-  checkout into `OUT_DIR` runs after it ("Capture the patch"). Move the stray-handover block ahead of
-  the landing step (or make both read the same resolver). Also: the run's change was to delete a
-  row from `NEXT.md` on a branch; the prompt must say `NEXT.md` is never edited by the code agent
-  (the board workflow owns it on `main`). Its finding stands and closes B30ai: triage run
-  35170816042's "Prove the triage credentials" step ran `aws logs describe-log-groups` and `aws
-  cloudwatch describe-alarm-history` successfully at 01:31 UTC. In flight on `claude/ops-code-landing` (PR #287). **Source**: run 35171625388.
-  **Owner**: Claude Code. **Model**: Sonnet. **Size**: ~2 files.
-
 - [ ] **B53.2. The runbook's rotation entries follow the key audit.** `REPORT_KEY_AUDIT.md`
   (on `main`): §3.3 asserts Google, HMRC and HMRC-sandbox rotation dates that `secrets-rotation.toml`
   leaves blank, so the two disagree and the true dates are unknown; §3.4 names `SUPPORT_ISSUE_PAT`
