@@ -42,17 +42,6 @@ step.
 
 ## In flight
 
-## Machine-only
-
-- [ ] **B52n. Subscriptions and donations need separate GA4 event names before D17 bids on them.**
-  `google/analytics.toml` maps both `subscribe` and `donate` to the event name `purchase`, so the
-  Google Ads account's Purchase conversion (imported 2026-09-17, O23 done: account, GA4 property
-  523400333 linked, key events imported, reserve floor recorded at the workspace root) cannot tell
-  one from the other. Give each its own event name in the toml and wherever the site emits them,
-  re-run the GA4 sync, and re-import the key events in Ads; campaign 1 stays paused until then.
-  **Source**: Cowork, 2026-09-17; `PLAN_ONE_STOP_DASHBOARD.md` D17. **Owner**: Claude Code.
-  **Model**: Sonnet. **Size**: ~3 files.
-
 - [ ] **B30af.3. A branch deploy's ci probes navigate the ci apex, which main's deploy swaps under
   them.** Run 35161068061 (`claude/ops-triage-budget`, 23:35 to 23:41 UTC on 2026-09-16):
   `tokenEnforcementBehaviour-ci` navigated `https://ci-submit.diyaccounting.co.uk` (15 requests in
@@ -61,7 +50,7 @@ step.
   submit button enabled. Same race as B30af on prod, on ci and for branch deploys: either a branch
   deploy's `probe-test` calls run against the branch's own set host (`https://<deployment>.submit…`),
   which it owns, or the wait-for-main-deploy action guards the ci probes too. Pick the first
-  unless the suites need the apex. Then re-run any red the race caused. **Source**: run
+  unless the suites need the apex. Then re-run any red the race caused. In flight on `claude/b53-board` (wave b53, worktree `.claude/worktrees/b53`, agent running; push and PR follow the wave). **Source**: run
   35161068061. **Owner**: Claude Code. **Model**: Sonnet. **Size**: ~2 files.
 
 - [ ] **B124.2. The code agent's prompt asks for what its tool list denies.** Both code proofs
@@ -78,8 +67,26 @@ step.
   git identity before the agent and creates the branch and PR from the patch when the handover
   says complete; the prompt drops the download, identity, checkout and redirect instructions,
   names `${OUT_DIR}/CHANGES.md` for the Write tool, and says the workflow takes the patch; then
-  one more 10-minute run proves a PR. **Source**: runs 35159801420, 35160283767; BACKLOG 73.
+  one more 10-minute run proves a PR. In flight on `claude/b53-board` (wave b53, worktree `.claude/worktrees/b53`, agent running; push and PR follow the wave). **Source**: runs 35159801420, 35160283767; BACKLOG 73.
   **Owner**: Claude Code. **Model**: Sonnet. **Size**: ~2 files.
+
+- [ ] **B49a. The key-exposure org policy as code.** `iam.serviceAccountKeyExposureResponse` is
+  set to `DISABLE_KEY` on organization 936151157673 by hand (22:40 UTC on 2026-09-16, O48). Carry it
+  in `google/identity.toml` under a new `[org_policy]` table and have `scripts/gcp-identity-sync.js`
+  read and apply it through the Org Policy API (`orgpolicy.googleapis.com`, enabled on the project
+  the same day) so `google apply` owns it like the pool and providers. In flight on `claude/b53-board` (wave b53, worktree `.claude/worktrees/b53`, agent running; push and PR follow the wave). **Source**: O48; BACKLOG 49.
+  **Owner**: Claude Code. **Model**: Sonnet. **Size**: ~2 files.
+
+- [ ] **B52n. Subscriptions and donations need separate GA4 event names before D17 bids on them.**
+  `google/analytics.toml` maps both `subscribe` and `donate` to the event name `purchase`, so the
+  Google Ads account's Purchase conversion (imported 2026-09-17, O23 done: account, GA4 property
+  523400333 linked, key events imported, reserve floor recorded at the workspace root) cannot tell
+  one from the other. Give each its own event name in the toml and wherever the site emits them,
+  re-run the GA4 sync, and re-import the key events in Ads; campaign 1 stays paused until then.
+  In flight on `claude/b53-board` (wave b53, worktree `.claude/worktrees/b53`, agent running; push and PR follow the wave). **Source**: Cowork, 2026-09-17; `PLAN_ONE_STOP_DASHBOARD.md` D17. **Owner**: Claude Code.
+  **Model**: Sonnet. **Size**: ~3 files.
+
+## Machine-only
 
 - [ ] **B30ai. Alarm triage reads evidence again: prove it on the next run.** PR #280 (d47884f6)
   tells the agent to call `aws` with no `--profile`, after `REPORT_ALARM_TRIAGE_COST.md` found all
@@ -87,13 +94,6 @@ step.
   prefix. Read the next `alarm-triage.yml` run's log for a successful `aws logs` call; #279's
   triage (run 35159428845, before the fix) still shows the pattern. **Source**:
   REPORT_ALARM_TRIAGE_COST.md. **Owner**: Claude Code. **Model**: Haiku. **Size**: ~0 files.
-
-- [ ] **B49a. The key-exposure org policy as code.** `iam.serviceAccountKeyExposureResponse` is
-  set to `DISABLE_KEY` on organization 936151157673 by hand (22:40 UTC on 2026-09-16, O48). Carry it
-  in `google/identity.toml` under a new `[org_policy]` table and have `scripts/gcp-identity-sync.js`
-  read and apply it through the Org Policy API (`orgpolicy.googleapis.com`, enabled on the project
-  the same day) so `google apply` owns it like the pool and providers. **Source**: O48; BACKLOG 49.
-  **Owner**: Claude Code. **Model**: Sonnet. **Size**: ~2 files.
 
 ## Machine-ask
 
