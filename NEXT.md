@@ -68,7 +68,7 @@ step.
   `deploy-environment.yml`. The agent found the ARN reached the Lambda only through a step-level env var in
   `deploy-environment.yml` (set correctly on the deploys around the alarm), never from the CDK;
   `SubmitSharedNames` now derives it and `IngestionStack` always sets the env var and the grant
-  (`claude/ops-ga4-arn`, PR follows). The failing invocation itself is unread: with a prod SSO
+  (`claude/ops-ga4-arn`, PR #294). The failing invocation itself is unread: with a prod SSO
   session, read `/aws/lambda/prod-env-ga4-report-pull` around 02:15 UTC on 2026-09-17 for the
   error line, and if it is not the missing ARN, fix that layer. Then close #289 with the next
   nightly's success. **Source**: issue #289. **Owner**:
