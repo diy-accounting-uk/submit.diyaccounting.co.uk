@@ -146,9 +146,17 @@ public class EcrStack extends Stack {
                                                 .actions(List.of(
                                                         "logs:CreateLogStream",
                                                         "logs:PutLogEvents",
-                                                        "logs:DescribeLogGroups",
                                                         "logs:DescribeLogStreams"))
                                                 .resources(List.of(this.ecrLogGroup.getLogGroupArn() + "*"))
+                                                .build(),
+                                        // DescribeLogGroups names no log group in its request, so IAM
+                                        // evaluates it against the account's fixed log-group::log-stream:
+                                        // resource rather than the specific group above.
+                                        PolicyStatement.Builder.create()
+                                                .effect(Effect.ALLOW)
+                                                .actions(List.of("logs:DescribeLogGroups"))
+                                                .resources(List.of("arn:aws:logs:%s:%s:log-group::log-stream:"
+                                                        .formatted(this.getRegion(), this.getAccount())))
                                                 .build(),
                                         // Additional ECR permissions for scanning and lifecycle
                                         PolicyStatement.Builder.create()

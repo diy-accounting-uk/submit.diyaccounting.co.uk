@@ -62,6 +62,19 @@ class SecurityLakeStackTest {
         template.hasResourceProperties(
                 "AWS::Events::Rule", Match.objectLike(Map.of("ScheduleExpression", "cron(20 3 * * ? *)")));
 
+        // logs:DescribeLogGroups names no log group in its request, so IAM evaluates it against
+        // the account's fixed log-group::log-stream: resource, never a group-name prefix.
+        template.hasResourceProperties(
+                "AWS::IAM::Policy",
+                Match.objectLike(Map.of(
+                        "PolicyDocument",
+                        Match.objectLike(Map.of(
+                                "Statement",
+                                Match.arrayWith(java.util.List.of(Match.objectLike(Map.of(
+                                        "Action", "logs:DescribeLogGroups",
+                                        "Resource",
+                                                "arn:aws:logs:us-east-1:111111111111:log-group::log-stream:")))))))));
+
         template.hasResourceProperties(
                 "AWS::CloudWatch::Alarm",
                 Match.objectLike(Map.of(

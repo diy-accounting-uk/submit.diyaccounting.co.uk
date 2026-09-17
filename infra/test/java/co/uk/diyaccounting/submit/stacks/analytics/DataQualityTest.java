@@ -99,6 +99,13 @@ class DataQualityTest {
                         "TargetTable",
                         Match.objectLike(Map.of(
                                 "DatabaseName", "docs_env_analytics", "TableName", "compliance_fraud_headers")))));
+        template.hasResourceProperties(
+                "AWS::Glue::DataQualityRuleset",
+                Match.objectLike(Map.of(
+                        "Name",
+                        "docs_env_cost_focus_dq",
+                        "TargetTable",
+                        Match.objectLike(Map.of("DatabaseName", "docs_env_analytics", "TableName", "cost_focus")))));
     }
 
     @Test
@@ -120,6 +127,22 @@ class DataQualityTest {
                         "docs_env_dora_runs_dq",
                         "Ruleset",
                         Match.stringLikeRegexp("[\\s\\S]*RowCount > 0[\\s\\S]*finished_at[\\s\\S]*"))));
+    }
+
+    @Test
+    void costFocusRulesetNamesTheColumnItsSparkReaderSees() {
+        Template template = synthDataQuality();
+
+        // Glue Data Quality's Spark reader resolves Parquet columns against the export's own
+        // PascalCase field names, not this table's snake_case catalog column list, so the rule
+        // names BilledCost rather than billed_cost.
+        template.hasResourceProperties(
+                "AWS::Glue::DataQualityRuleset",
+                Match.objectLike(Map.of(
+                        "Name",
+                        "docs_env_cost_focus_dq",
+                        "Ruleset",
+                        Match.stringLikeRegexp("[\\s\\S]*RowCount > 0[\\s\\S]*IsComplete \"BilledCost\"[\\s\\S]*"))));
     }
 
     @Test
