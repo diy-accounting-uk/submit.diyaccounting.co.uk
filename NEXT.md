@@ -51,7 +51,7 @@ step.
   --force-with-lease` in its overlap and conflict parts, none of which its allow-list grants, and
   the CI prompt excuses only Part 1. Apply the B124.2 shape: identity before the agent, the
   allow-list matching the skill's reads, and the prompt naming the parts that do not run in CI.
-  In flight on `claude/ops-agentic-siblings` (worktree `.claude/worktrees/agentic-siblings`, agent running). **Source**: the b53 handover agent's report. **Owner**: Claude Code. **Model**: Sonnet.
+  In flight on `claude/ops-agentic-siblings` (worktree `.claude/worktrees/agentic-siblings`, PR #283). **Source**: the b53 handover agent's report. **Owner**: Claude Code. **Model**: Sonnet.
   **Size**: ~3 files.
 
 - [ ] **B30af.3. A branch deploy's ci probes navigate the ci apex, which main's deploy swaps under
