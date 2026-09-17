@@ -109,7 +109,11 @@ step.
   not completed. On 2026-09-17 PRs #295 and #297 sat in that wait from 08:39 UTC while main's
   run 35194544211 deployed its prod stacks and destroyed the previous prod set, though the ci
   apex is only touched by main's `set origins` job, which had finished; the guard's 40-minute
-  ceiling released them. Read main's in-flight run's jobs (`/actions/runs/<id>/jobs`) and wait
+  ceiling released them, and the same guard runs again inside every behaviour job ("Wait for a
+  deploy in progress on main before navigating the apex"), where the daily scheduled prod deploy
+  (35205082047, 09:25 UTC) caught #295's last two suites for a second 40 minutes; behind that,
+  #297's `wait for previous cleanup` gave up after its 90-minute ceiling waiting for #295's run.
+  Read main's in-flight run's jobs (`/actions/runs/<id>/jobs`) and wait
   only until its `set origins` job (and `roll back apex` if it runs) is completed, or until the
   run ends; `.github/actions/wait-for-main-deploy/wait-for-main-deploy.mjs` and its unit test.
   **Source**: runs 35194697647 and 35196041181's probe `params` jobs. **Owner**: Claude Code.
