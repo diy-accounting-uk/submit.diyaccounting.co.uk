@@ -121,6 +121,8 @@ This verifies all required secrets exist and have values.
 
 ## 3. Secret Rotation Procedures
 
+See `secrets-rotation.toml` for the per-secret last-rotated dates behind the schedule in 3.3.
+
 ### 3.1 Google OAuth Client Secret Rotation
 
 **When to rotate**: Annually, or immediately if compromised.
@@ -191,6 +193,7 @@ This verifies all required secrets exist and have values.
 | Google Client Secret | Annually | 2026-01-24 | 2027-01-24 |
 | HMRC Client Secret | Annually | 2025-07-24 | 2026-07-24 |
 | HMRC Sandbox Client Secret | Annually | 2026-01-24 | 2027-01-24 |
+| GA4 Service-Account Key | Monthly (automatic, `google-key-rotate.yml`) | 2026-09-16 | 2026-10-01 |
 | User Sub Hash Salt | Via migration framework | See Section 4 | See Section 4 |
 
 ### 3.4 Other Repository Secrets
@@ -203,6 +206,50 @@ These secrets are used for CI/CD and testing, not runtime OAuth:
 | `RELEASE_PAT` | GitHub release creation | 2026-01-10 | Rotate quarterly recommended |
 | `SUPPORT_ISSUE_PAT` | GitHub issue management | 2026-01-17 | Rotate quarterly recommended |
 | `TEST_HMRC_PASSWORD` | HMRC sandbox test user password | 2026-01-24 | Regenerate via HMRC test user API |
+
+### 3.5 Service-Account Keys (Google)
+
+This covers the GA4 reporting service account `ga4-report-pull@diyaccounting-ga4.iam.gserviceaccount.com` (`roles/owner` on project `diyaccounting-ga4`). Its key lives in AWS Secrets Manager as `ci/submit/ga4/service_account` and `prod/submit/ga4/service_account`, read by the analytics Lambdas (`app/functions/analytics/ga4*.js`) when `GA4_AUTH_MODE` is `key` rather than `federated`.
+
+**When to rotate**: monthly, by `.github/workflows/google-key-rotate.yml` (`cron: '23 5 1 * *'`). Immediately, by hand, if a key is exposed.
+
+**Scheduled rotation**
+
+The workflow runs one job per environment (ci, prod). Each job calls `scripts/gcp-key-rotate.js`, which reads `[service_account.key_rotation]` from `google/identity.toml` (`max_age_days = 90`), creates a new key, writes it to that environment's AWS secret through `scripts/put-secret-with-rotation-tag.sh`, disables any key older than the limit, and deletes any key that was already disabled on a prior run.
+
+To run it by hand:
+1. Go to **Actions** → **google key rotate** → **Run workflow**.
+2. Set **apply** to `true` (leave it `false` to see the plan only).
+
+To verify:
+1. Open the run's step summary for each environment and check it names the new key id.
+2. `aws secretsmanager describe-secret --secret-id <env>/submit/ga4/service_account --query Tags` shows a `rotated-at` tag matching today.
+3. `gcloud iam service-accounts keys list --iam-account=ga4-report-pull@diyaccounting-ga4.iam.gserviceaccount.com --managed-by=user --project=diyaccounting-ga4` shows the new key and no enabled key older than 90 days.
+
+**Exposure response**
+
+Run in this order.
+
+1. Rotate both environments under a fresh key: `gh workflow run google-key-rotate.yml --ref main -f apply=true`. Check: the run's step summary names a new key id for both ci and prod, and each secret's `rotated-at` tag matches today.
+2. Review the exposed key's audit log before deleting it: `gcloud logging read 'protoPayload.authenticationInfo.serviceAccountKeyName:"<KEY_ID>"' --project=diyaccounting-ga4 --freshness=7d --format='table(timestamp,protoPayload.methodName,protoPayload.resourceName,protoPayload.requestMetadata.callerIp)'`. Check: every caller is expected (the company's own Lambdas, or `google apply` runs from the GitHub runner) — an unfamiliar caller means the exposure was used.
+3. Delete any GitHub Environment copy of the key so a future deploy cannot write it back: `gh secret delete GA4_SERVICE_ACCOUNT_JSON --env ci --repo diy-accounting-uk/submit.diyaccounting.co.uk`, and the same with `--env prod`. Check: `gh secret list --env ci --repo diy-accounting-uk/submit.diyaccounting.co.uk` no longer lists `GA4_SERVICE_ACCOUNT_JSON` (repeat for `prod`).
+4. Delete the exposed key: `gcloud iam service-accounts keys delete <KEY_ID> --iam-account=ga4-report-pull@diyaccounting-ga4.iam.gserviceaccount.com --project=diyaccounting-ga4`. Check: `keys list` no longer shows that key id.
+5. Confirm the organisation policy will auto-disable a future detected leak: `gcloud org-policies describe iam.serviceAccountKeyExposureResponse --organization=936151157673` shows `spec.rules[0].values.allowedValues: [DISABLE_KEY]`. If it does not, set it with `gcloud org-policies set-policy` (needs `roles/orgpolicy.policyAdmin` on the organisation).
+6. Record the date in `secrets-rotation.toml` (`ga4/service_account`, `last_rotated`) and in this runbook's §3.3 table.
+
+Steps 2 and 5 need a `gcloud auth login` session; step 3 needs a GitHub secret-store write. Both are the operator's when the session cannot reach them.
+
+Google's own guidance for this response is at https://docs.cloud.google.com/iam/docs/best-practices-for-managing-service-account-keys: delete a leaked key rather than only disable it, review the audit log for `serviceAccountKeyName` before deleting, and reconsider whether the account needs the access it has.
+
+**Do not**
+
+- Leave a copy of the key in a GitHub Environment secret. `deploy-environment.yml`'s `create-secrets` job writes `secrets.GA4_SERVICE_ACCOUNT_JSON` over the AWS secret on every deploy if that GitHub secret exists, which undoes a rotation.
+- Pass the key JSON to a workflow step as an environment variable. GitHub's log masking covers the exact secret string, not a pretty-printed multi-line JSON value, so the private key still prints in the job log. `google-apply.yml` reads the key from Secrets Manager at runtime and keeps it in memory for this reason.
+- Treat disabling a key as the fix. A disabled key still exists and can be re-enabled; delete it.
+
+**Record**
+
+`secrets-rotation.toml`'s `ga4/service_account` row and this runbook's §3.3 table both carry the last rotation date. Update both in the same change.
 
 ---
 
