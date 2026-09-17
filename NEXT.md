@@ -17,7 +17,7 @@ Haiku; the lowest tier that fits). Anything touching code goes through a `claude
 PR; the operator merges.
 
 **Prod runs deployment prod-952b978** (PR #288, run 35176978495; the pointer and its nine stacks
-verified against AWS at 08:5x UTC on 2026-09-17). PRs #296, #294 and #291 merged at 07:25 UTC;
+verified against AWS at 07:5x UTC on 2026-09-17). PRs #296, #294 and #291 merged at 07:25 UTC;
 `main`'s deploy of fcbc468e (35194438596) is standing prod-fcbc468 up and 9284434c's
 (35194544211) waits behind it in the prod concurrency group. **ci**: `ci-claud86af` is live.
 
