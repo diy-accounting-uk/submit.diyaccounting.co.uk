@@ -104,21 +104,6 @@ step.
   counts subscriptions only; the spreadsheets site's emitter still sends `purchase` for a donation
   until that repository lands the one-line change in its inbox. **Source**: B52n. **Owner**:
   Operator, in the Ads console. **Model**: none. **Size**: ~0 files.
-- [ ] **O44. Tell Companies House's XML team what B34.6b submitted.** One email from your address
-  to Neal at `xml@companieshouse.gov.uk`, naming: presenter E0000052288, company 06846849, test
-  package reference 0012; submissions 000002 and 000003 (2026-09-13 18:19 UTC) rejected with error
-  9999 "No element 'Authority'", since fixed; submission 000004 (19:04 UTC) acknowledged with no
-  errors; and that every `GetSubmissionStatus` for 000004 answers 9999 "No presenter ID supplied", with the
-  `PresenterID` plaintext (transaction 1789391567972, 2026-09-14 13:12:48 UTC) and hashed
-  (transaction 1789481253426, 2026-09-15 14:07:33 UTC).
-  Ask whether 000004 was accepted and whether status lookups are enabled for this presenter.
-  **Source**: BACKLOG 34b. **Owner**: Claude Code drafts and sends from the operator's address on their go. **Model**: Haiku.
-
-- [ ] **O33. Tell HMRC's SDS team the licence changed.** One paragraph: the MTD approval
-  submission and the production-credentials email described the service as AGPL open source, and
-  the PolyForm licence files are on main and on prod since prod-318271f. **Source**:
-  `PLAN_LICENSING_UPLIFT_SUBMIT.md` H-LU-9. **Owner**: Claude Code drafts and sends from the operator's address on their go. **Model**: Haiku.
-
 - [ ] **O38. Create the two GitHub Apps the audit ranks joint second.** `diya-ops`, to carry all
   three Lambdas' writes, which separates 55 alarm issues and every support ticket from the
   operator's own account and is the single move that fixes the worst disclosure gap; and
@@ -198,10 +183,10 @@ step.
   service; every `GetSubmissionStatus` poll for it answers 9999 "No presenter ID supplied", with
   the body's `PresenterID` plaintext (transaction 1789391567972, 2026-09-14 13:12:48 UTC) and
   hashed (1789481253426, 2026-09-15 14:07:33 UTC); the body is plaintext on `main` (PR #222).
-  Nothing on our side is left to try. When Companies House answers O44: if they enable status
+  Nothing on our side is left to try. When Companies House answers BACKLOG 34d: if they enable status
   lookups, poll once more on a ci set and pin the result in the test; then apply the `prod`
   listing (held as unreferenced local commit 946251d4). **Source**: BACKLOG 34b. **Owner**:
-  Claude Code. **Model**: Sonnet. Blocked on O44's answer from Companies House. **Size**: ~1 file.
+  Claude Code. **Model**: Sonnet. Blocked on BACKLOG 34d's answer from Companies House. **Size**: ~1 file.
 
 - [ ] **B34.7. Run and fix the filing suites' sandbox sign-in.** Batch 9 (6957651c) carries
   the suites' sandbox sign-in with the authenticator step, off by default: `deploy.yml` and
