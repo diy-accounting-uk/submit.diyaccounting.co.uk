@@ -58,10 +58,6 @@ Refined items live on `NEXT.md` under the labels in the second column.
 | # | NEXT.md items | Item | Source | Effort | Value |
 |---|---|---|---|---|---|
 | 55 | B55 | Google as code, items 8 to 11: the workload identity pool and GitHub provider, Actions authenticating by federation instead of a key, key rotation as code, the analytics Lambdas federating instead of holding a key (`PLAN_GOOGLE_AS_CODE.md`). | PLAN_GOOGLE_AS_CODE.md; row 49 | M | Security. Removes the one long-lived Google key and dates the rotation. |
-| 56 | B56 | `test` and CodeQL as required status checks on ruleset 16057564, once O46 settles how the ruleset gates `main`. | PLAN_REPOSITORY_AUTOMATION.md Phase 0 | S | Compliance. Nothing merges without the suite and CodeQL green. |
-| 57 | B57 | `sha_pinning_required: true` and `allowed_actions` narrowed from "all" in the repository's Actions settings. | PLAN_REPOSITORY_AUTOMATION.md Phase 0 | S | Security. Supply chain on a public repository that allows any action today. |
-| 58 | B58 | `security-review.yml`'s weekly cron switched on. | PLAN_REPOSITORY_AUTOMATION.md Phase 0 | S | Security. A built review path that never runs on a schedule. |
-| 59 | B59 | A kill-switch SSM parameter every agent path checks before acting, set by one `gh workflow run`. | PLAN_REPOSITORY_AUTOMATION.md Q9 | M | Safety. The only stop today is a session-scoped chat freeze. |
 
 ## Tier 2: revenue path (start now, runs weeks to months)
 
