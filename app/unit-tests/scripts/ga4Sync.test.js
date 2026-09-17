@@ -46,7 +46,7 @@ id = "523400333"
 display_name = "DIY Accounting"
 time_zone = "Europe/London"
 currency = "GBP"
-key_events = { subscribe = "purchase", submit = "submit_vat_return", donate = "purchase", download = "runner_download" }
+key_events = { subscribe = "purchase", submit = "submit_vat_return", donate = "donate", download = "runner_download" }
 
   [[property.stream]]
   name = "Submit"
@@ -83,7 +83,7 @@ describe("parseConfig", () => {
     expect(shared.keyEvents).toEqual({
       subscribe: "purchase",
       submit: "submit_vat_return",
-      donate: "purchase",
+      donate: "donate",
       download: "runner_download",
     });
     expect(shared.streams).toEqual([
@@ -232,19 +232,33 @@ describe("buildEnhancedMeasurementPlan", () => {
 
 describe("groupKeyEventsByName", () => {
   test("groups two labels that share one event name", () => {
-    const grouped = groupKeyEventsByName({ subscribe: "purchase", donate: "purchase", submit: "submit_vat_return" });
-    expect(grouped.get("purchase")).toEqual(["subscribe", "donate"]);
+    const grouped = groupKeyEventsByName({ a: "shared_event", b: "shared_event", submit: "submit_vat_return" });
+    expect(grouped.get("shared_event")).toEqual(["a", "b"]);
     expect(grouped.get("submit_vat_return")).toEqual(["submit"]);
+  });
+
+  test("keeps subscribe and donate apart, since each now fires its own event", () => {
+    const grouped = groupKeyEventsByName({ subscribe: "purchase", donate: "donate" });
+    expect(grouped.get("purchase")).toEqual(["subscribe"]);
+    expect(grouped.get("donate")).toEqual(["donate"]);
   });
 });
 
 describe("buildKeyEventPlan", () => {
   test("marks an existing key event as noop and covers both labels sharing it", () => {
-    const keyEvents = { subscribe: "purchase", donate: "purchase" };
+    const keyEvents = { a: "shared_event", b: "shared_event" };
+    const existing = [{ name: "properties/1/keyEvents/1", eventName: "shared_event" }];
+    const plan = buildKeyEventPlan(keyEvents, existing);
+    expect(plan).toEqual([{ eventName: "shared_event", labels: ["a", "b"], action: "noop", existingName: "properties/1/keyEvents/1" }]);
+  });
+
+  test("plans subscribe and donate as two separate key events", () => {
+    const keyEvents = { subscribe: "purchase", donate: "donate" };
     const existing = [{ name: "properties/1/keyEvents/1", eventName: "purchase" }];
     const plan = buildKeyEventPlan(keyEvents, existing);
     expect(plan).toEqual([
-      { eventName: "purchase", labels: ["subscribe", "donate"], action: "noop", existingName: "properties/1/keyEvents/1" },
+      { eventName: "purchase", labels: ["subscribe"], action: "noop", existingName: "properties/1/keyEvents/1" },
+      { eventName: "donate", labels: ["donate"], action: "create" },
     ]);
   });
 

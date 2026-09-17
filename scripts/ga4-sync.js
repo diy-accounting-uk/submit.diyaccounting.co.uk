@@ -208,8 +208,9 @@ export function buildEnhancedMeasurementPlan(configStream, streamPlan, liveSetti
 }
 
 /**
- * Group a {label: eventName} map by event name, since two labels can share one GA4 event (e.g.
- * "purchase" fires for both subscribe and donate).
+ * Group a {label: eventName} map by event name. Two labels sharing one GA4 event still fold into
+ * one key event rather than proposing a duplicate; subscribe and donate each fire their own event
+ * ("purchase" and "donate") and so no longer share.
  *
  * @param {Record<string, string>} keyEvents
  * @returns {Map<string, string[]>}

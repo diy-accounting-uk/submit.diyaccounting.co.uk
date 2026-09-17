@@ -25,9 +25,9 @@ time_zone = "Europe/London"
 currency = "GBP"
 
 # The four conversions the one-stop dashboard tracks, and the GA4 event name each fires as.
-# "purchase" covers both subscribe (a submit bundle checkout) and donate (a spreadsheets
-# donation) — scripts/ga4-sync.js marks it once rather than proposing a duplicate.
-key_events = { subscribe = "purchase", submit = "submit_vat_return", donate = "purchase", download = "runner_download" }
+# "purchase" is the submit bundle checkout (a subscription); "donate" is a spreadsheets
+# donation — kept as its own event so Google Ads' Purchase conversion counts only subscriptions.
+key_events = { subscribe = "purchase", submit = "submit_vat_return", donate = "donate", download = "runner_download" }
 
   [[property.stream]]
   name = "Gateway"
