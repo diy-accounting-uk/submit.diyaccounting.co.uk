@@ -18,9 +18,9 @@ PR; the operator merges.
 
 **Prod runs deployment prod-b8bd2f3** (the scheduled `deploy.yml` run 35205082047 of main's docs head
 b8bd2f37, the same code as PRs #294 and #291; last-known-good set at 10:07 UTC on 2026-09-17; it is
-destroying prod-9284434). **ci**: `ci-set1` (PR #295's set, promoted at 08:38 UTC, last-known-good at
-10:06) is live; its self-destruct schedule from the slot's first claim fires next at 11:44 UTC
-(B30af.7).
+destroying prod-9284434). **ci**: `ci-set1` (PR #295's set, last-known-good at 10:06 UTC) is live; its self-destruct schedule from
+the slot's first claim fires next at 11:44 UTC (B30af.7). PR #295 merged as 53bc2d1c; `main`'s
+deploy 35210720771 is running.
 
 The board runs in five sections, in this order: **in flight** (a branch, a pull request or a run
 in motion, each named in the row), **machine-only**, **machine-ask**, **human-driven**,
@@ -84,26 +84,18 @@ step.
   check; `PLAN_ONE_STOP_DASHBOARD.md` D13. **Owner**: Claude Code. **Model**: Sonnet. **Size**:
   ~1 file.
 
-- [ ] **B30af.5. Branch deploys leave the ci apex: P1, the slot pool.**
-  `_developers/DESIGN_CI_BRANCH_DEPLOYS_OFF_THE_APEX.md` (on `main`) settles the shape: four fixed
-  slot hosts `ci-set1` to `ci-set4`, registered once with Cognito, HMRC and Companies House (the
-  two hubs reject any unregistered redirect host, so per-deploy registration and per-deploy app
-  clients lose), claimed per ref through an SSM parameter per slot; ci promotion moves to a
-  `promote-ci-apex.yml` that runs after the probes pass, and `set-origins`/`rollback-origins` in
-  `deploy.yml` become prod-only. P1: a `claim-ci-slot` action, the `names` job using it,
-  `destroy-ci.yml` and `selfDestruct.js` releasing the slot. Proof: a branch deploy's `names` job
-  logs `DEPLOYMENT_NAME=ci-set<N>` and the slot parameter reads back the run id. P3 to P5 follow
-  (IdentityStack's callback list; non-prod `publicDomainName = deploymentDomainName` so every probe
-  and Lambda moves together; the apex out of the deploy), P3 after P2's registrations. In flight on `claude/ci-1-slot-pool`, PR #295. Its deploy (35179085180) claimed
-  `ci-set1` and stood the set up, and its deploy is green after `set origins` re-ran (the first
-  attempt lost the apex CNAME race to PR #291's and #294's deploys). Rebased onto `main` after PR
-  #296; its deploy (35194697647, attempt 2) is green. `ci-set1`'s self-destruct fired at 07:44 UTC during
-  that wait, on the first claim's clock, and removed the Ops, Publish and Edge stacks; the redeploy
-  recreated them (B30af.7 carries the clock). `ci-set1` is the live ci set. Merges through `/auto-merge` when main's scheduled deploy
-  35205082047 ends. **Source**:
-  issue #290; the design. **Owner**: Claude Code. **Model**: Sonnet. **Size**: ~7 files.
-
 ## Machine-only
+
+- [ ] **B30af.7. A slot reclaim re-anchors the slot's self-destruct clock.** `ci-set1`'s
+  `SelfDestructStack` keeps the schedule of the slot's first claim (`cron(44 7/4 * * ? *)` from
+  03:47 UTC on 2026-09-17), so the redeploy of the same ref at 07:33 was cut across at 07:44 while
+  it waited on the environment deploy: the self-destruct removed Ops, Publish and Edge under it.
+  When `claim-ci-slot` reclaims a slot (same ref, or stale), the deploy must move the schedule
+  to creation-plus-delay from the claim, or delete and recreate the `SelfDestructStack`, so a
+  redeploy always has a full window. `SelfDestructStack.java`, `claim-ci-slot.mjs`, `deploy.yml`.
+  **Source**: the self-destruct log `/aws/lambda/ci-env-self-destruct-eu-west-2` at 07:44 UTC on
+  2026-09-17. **Owner**: Claude Code. **Model**: Sonnet.
+  **Size**: ~3 files.
 
 - [ ] **B30af.8. The main-deploy guard waits for main's whole run, not for its apex move.**
   `wait-for-main-deploy.mjs` holds every branch probe while any `deploy.yml` run on `main` is
@@ -220,19 +212,6 @@ step.
 
 ## Human-driven
 
-## Blocked
-
-- [ ] **B30af.7. A slot reclaim re-anchors the slot's self-destruct clock.** `ci-set1`'s
-  `SelfDestructStack` keeps the schedule of the slot's first claim (`cron(44 7/4 * * ? *)` from
-  03:47 UTC on 2026-09-17), so the redeploy of the same ref at 07:33 was cut across at 07:44 while
-  it waited on the environment deploy: the self-destruct removed Ops, Publish and Edge under it.
-  When `claim-ci-slot` reclaims a slot (same ref, or stale), the deploy must move the schedule
-  to creation-plus-delay from the claim, or delete and recreate the `SelfDestructStack`, so a
-  redeploy always has a full window. `SelfDestructStack.java`, `claim-ci-slot.mjs`, `deploy.yml`.
-  **Source**: the self-destruct log `/aws/lambda/ci-env-self-destruct-eu-west-2` at 07:44 UTC on
-  2026-09-17. **Owner**: Claude Code. **Model**: Sonnet. Blocked on PR #295 (P1) merging.
-  **Size**: ~3 files.
-
 - [ ] **B30af.6. Register the four slot hosts' redirect URIs with HMRC and Companies House (P2).**
   After P1 names the slots: eight URIs, `https://ci-set<N>.submit.diyaccounting.co.uk/activities/submitVatCallback.html`
   (HMRC Developer Hub, the sandbox application, which today holds the prod host, the ci apex and
@@ -240,8 +219,19 @@ step.
   (the Companies House "- test" application's web client). Both hubs are console forms with no
   API, so this is the operator's, signed in; the design's §6 names the unknown that decides N: HMRC's
   cap on redirect URIs per application. Proof: the design's §3 `curl` answers 200 for each slot
-  host. Blocked on P1. **Source**: the design, P2. **Owner**: Operator, in both hubs. **Model**:
+  host. **Source**: the design, P2. **Owner**: Operator, in both hubs. **Model**:
   none. **Size**: ~0 files.
+
+## Blocked
+
+- [ ] **B30af.5. Branch deploys leave the ci apex: P3 to P5.** P1 (the slot pool) is on `main`
+  (PR #295): a ci branch deploy claims `ci-set1` to `ci-set4` through SSM. Left, in
+  `_developers/DESIGN_CI_BRANCH_DEPLOYS_OFF_THE_APEX.md`: P3, `IdentityStack` lists the four slot
+  hosts as Cognito callback and logout URLs; P4, a non-prod set's public host is its own host so
+  every probe and Lambda moves together; P5, `set-origins` and `rollback-origins` become prod-only
+  and a `promote-ci-apex.yml` runs after the probes. P3 follows the hub registrations. **Source**:
+  the design. **Owner**: Claude Code. **Model**: Sonnet. Blocked on B30af.6 (P2). **Size**: ~9
+  files.
 
 - [ ] **O17. A sandbox sign-in for the filing suites, and four ci values.** Checked live at
   23:2x UTC on 2026-09-16: the sandbox has no registration page of its own
