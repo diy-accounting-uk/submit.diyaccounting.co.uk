@@ -4,10 +4,17 @@
 
 // scripts/gcp-identity-sync.js
 //
-// Makes the workload identity pool, its providers and the service account's
-// roles/iam.workloadIdentityUser bindings match google/identity.toml. Lists the live state
-// through the IAM REST API, diffs, and applies the difference; a resource that already matches
-// is left alone. Plans by default, writes with --apply, like every script google-apply.yml runs.
+// Makes the workload identity pool, its providers, the service account's
+// roles/iam.workloadIdentityUser bindings and every [[org_policy]] match google/identity.toml.
+// Lists the live state through the IAM and Org Policy REST APIs, diffs, and applies the
+// difference; a resource that already matches is left alone. Plans by default, writes with
+// --apply, like every script google-apply.yml runs.
+//
+// An org policy's resource is an organization, not the project the rest of this file manages,
+// so it needs its own role. Today the federated service account holds none there: a plan reads
+// this as a named, non-fatal line, and an apply fails naming the grant that would fix it
+// (roles/orgpolicy.policyAdmin on the organization, or managing the constraint at project scope
+// instead).
 //
 // --write-cred-configs writes one external-account credential configuration per AWS provider
 // into google/credentials/, the same file `gcloud iam workload-identity-pools create-cred-config
@@ -30,8 +37,12 @@ import { resolveServiceAccountCredentialsJson, createGoogleAuthClient, getAccess
 export const CONFIG_PATH = "google/identity.toml";
 export const CREDENTIALS_DIR = "google/credentials";
 export const WORKLOAD_IDENTITY_USER_ROLE = "roles/iam.workloadIdentityUser";
+// The role an organization policy admin needs. The federated service account holds project
+// roles only (google/project.toml), so it cannot write an organization-level policy today.
+export const ORG_POLICY_ADMIN_ROLE = "roles/orgpolicy.policyAdmin";
 const IAM_BASE = "https://iam.googleapis.com/v1";
 const RESOURCE_MANAGER_BASE = "https://cloudresourcemanager.googleapis.com/v1";
+const ORG_POLICY_BASE = "https://orgpolicy.googleapis.com/v2";
 
 /**
  * Parse google/identity.toml into the shape the planner reads.
@@ -74,6 +85,14 @@ export function parseConfig(tomlString) {
       throw new Error(`provider ${provider.id}: attribute_mapping is required`);
     }
   }
+  const orgPolicies = Array.isArray(parsed.org_policy) ? parsed.org_policy : [];
+  for (const policy of orgPolicies) {
+    if (!policy.constraint) throw new Error("an org_policy is missing its constraint");
+    if (!policy.resource) throw new Error(`org_policy ${policy.constraint}: resource is required`);
+    if (!Array.isArray(policy.allowed_values) || policy.allowed_values.length === 0) {
+      throw new Error(`org_policy ${policy.constraint}: allowed_values must be a non-empty array`);
+    }
+  }
   return {
     project: { id: String(project.id), number: project.number ? String(project.number) : null },
     serviceAccount: { email: String(serviceAccount.email) },
@@ -88,6 +107,11 @@ export function parseConfig(tomlString) {
       attributeMapping: Object.fromEntries(Object.entries(provider.attribute_mapping).map(([k, v]) => [k, String(v)])),
       attributeCondition: provider.attribute_condition ? String(provider.attribute_condition) : "",
       principalSet: String(provider.principal_set),
+    })),
+    orgPolicies: orgPolicies.map((policy) => ({
+      constraint: String(policy.constraint),
+      resource: String(policy.resource),
+      allowedValues: policy.allowed_values.map(String),
     })),
   };
 }
@@ -200,6 +224,69 @@ export function planIdentity(config, live) {
   const missing = wantedMembers.filter((member) => !liveMembers.has(member));
   if (missing.length > 0) {
     actions.push({ kind: "bind-workload-identity-user", serviceAccount: config.serviceAccount.email, members: missing });
+  }
+  return actions;
+}
+
+/** The org policy's resource name under the Org Policy API. */
+export function orgPolicyName(resource, constraint) {
+  return `${resource}/policies/${constraint}`;
+}
+
+/** The policy body the Org Policy API stores, for comparison and for writes. */
+export function orgPolicyBody(policy) {
+  return { spec: { rules: [{ values: { allowedValues: [...policy.allowedValues] } }] } };
+}
+
+function sameValues(a = [], b = []) {
+  if (a.length !== b.length) return false;
+  const sortedA = [...a].sort();
+  const sortedB = [...b].sort();
+  return sortedA.every((value, i) => value === sortedB[i]);
+}
+
+/**
+ * Which fields differ between the wanted org policy and the live one. Pure, so it is unit-tested.
+ *
+ * @param {{ allowedValues: string[] }} wanted
+ * @param {object|null} live - the Org Policy API's Policy resource, or null when it doesn't exist
+ */
+export function orgPolicyDiff(wanted, live) {
+  const liveValues = live?.spec?.rules?.[0]?.values?.allowedValues ?? [];
+  return sameValues(wanted.allowedValues, liveValues) ? [] : ["allowedValues"];
+}
+
+/**
+ * Decide what to create or update for each declared org policy, from what readOrgPolicy read
+ * back for it. A policy this service account cannot read reports as "forbidden" rather than
+ * "missing": the caller decides whether that is a non-fatal plan line or an apply failure.
+ * Pure, so it is unit-tested.
+ *
+ * @param {object} config - parseConfig's result
+ * @param {Record<string, { policy: object|null, forbidden: string|null }>} liveOrgPolicies - keyed by constraint
+ */
+export function planOrgPolicies(config, liveOrgPolicies) {
+  const actions = [];
+  for (const policy of config.orgPolicies) {
+    const name = orgPolicyName(policy.resource, policy.constraint);
+    const live = liveOrgPolicies[policy.constraint];
+    if (live?.forbidden) {
+      actions.push({
+        kind: "org-policy-forbidden",
+        name,
+        resource: policy.resource,
+        reason: live.forbidden,
+        serviceAccount: config.serviceAccount.email,
+      });
+      continue;
+    }
+    const wanted = orgPolicyBody(policy);
+    if (!live?.policy) {
+      actions.push({ kind: "create-org-policy", name, resource: policy.resource, body: wanted });
+    } else {
+      const fields = orgPolicyDiff(policy, live.policy);
+      if (fields.length > 0) actions.push({ kind: "update-org-policy", name, body: wanted, fields });
+    }
   }
   return actions;
 }
@@ -326,6 +413,22 @@ async function readLiveState(token, config) {
   return { pool, providers, policy: policy ?? { bindings: [] } };
 }
 
+/**
+ * Read one org policy from the Org Policy API v2. A 403 is not thrown here: an
+ * organization-scoped policy is the one resource in this file the federated service account may
+ * have no role for, so the caller decides whether to print that as a non-fatal plan line or
+ * fail the apply.
+ */
+async function readOrgPolicy(token, policy) {
+  try {
+    const live = await googleRequest("GET", `${ORG_POLICY_BASE}/${orgPolicyName(policy.resource, policy.constraint)}`, token);
+    return { policy: live, forbidden: null };
+  } catch (error) {
+    if (/^403 /.test(error.message)) return { policy: null, forbidden: error.message };
+    throw error;
+  }
+}
+
 const PAST_TENSE = { create: "created", update: "updated", undelete: "undeleted", bind: "bound" };
 
 function describe(action) {
@@ -344,6 +447,19 @@ function describe(action) {
       return `provider ${action.name}: differs on ${action.fields.join(", ")} (would update)`;
     case "bind-workload-identity-user":
       return `${action.serviceAccount}: ${WORKLOAD_IDENTITY_USER_ROLE} missing for ${action.members.join(", ")} (would bind)`;
+    default:
+      return `${action.kind}`;
+  }
+}
+
+function describeOrgPolicy(action) {
+  switch (action.kind) {
+    case "create-org-policy":
+      return `org policy ${action.name}: missing (would create)`;
+    case "update-org-policy":
+      return `org policy ${action.name}: differs on ${action.fields.join(", ")} (would update)`;
+    case "org-policy-forbidden":
+      return `org policy ${action.name}: ${action.reason} (needs ${ORG_POLICY_ADMIN_ROLE} on the organization for ${action.serviceAccount}, or a project-level policy instead)`;
     default:
       return `${action.kind}`;
   }
@@ -392,6 +508,38 @@ async function applyAction(token, action, config, live) {
   }
 }
 
+async function applyOrgPolicyAction(token, action) {
+  switch (action.kind) {
+    case "create-org-policy":
+      return googleRequest("POST", `${ORG_POLICY_BASE}/${action.resource}/policies`, token, { name: action.name, ...action.body });
+    case "update-org-policy":
+      return googleRequest("PATCH", `${ORG_POLICY_BASE}/${action.name}?updateMask=spec`, token, action.body);
+    case "org-policy-forbidden":
+      throw new Error(
+        `${action.name}: ${action.reason}; grant ${ORG_POLICY_ADMIN_ROLE} on the organization to ${action.serviceAccount}, or manage this constraint with a project-level policy instead`,
+      );
+    default:
+      throw new Error(`Unknown org policy action ${action.kind}`);
+  }
+}
+
+/** Plan (and, in apply mode, apply) every [[org_policy]] entry. Prints as it goes. */
+async function runOrgPolicies(token, config, opts) {
+  const live = {};
+  for (const policy of config.orgPolicies) {
+    live[policy.constraint] = await readOrgPolicy(token, policy);
+  }
+  const plan = planOrgPolicies(config, live);
+  for (const action of plan) console.log(describeOrgPolicy(action));
+  if (!opts.apply) return plan;
+
+  for (const action of plan) {
+    await applyOrgPolicyAction(token, action);
+    console.log(describeOrgPolicy(action).replace(/\(would (\w+)\)/, (_, verb) => `(${PAST_TENSE[verb] ?? verb})`));
+  }
+  return plan;
+}
+
 export function writeCredentialConfigs(config, rootDir = process.cwd()) {
   const written = [];
   for (const provider of config.providers.filter((p) => p.type === "aws")) {
@@ -431,7 +579,8 @@ export async function main(argv = process.argv.slice(2)) {
     if (opts.writeCredConfigs) {
       for (const filePath of writeCredentialConfigs(config)) console.log(`wrote ${path.relative(process.cwd(), filePath)}`);
     }
-    return lines;
+    const orgPolicyPlan = await runOrgPolicies(token, config, opts);
+    return [...lines, ...orgPolicyPlan];
   }
   const plan = planIdentity(config, live);
   if (plan.length === 0) {
@@ -447,14 +596,18 @@ export async function main(argv = process.argv.slice(2)) {
   if (opts.writeCredConfigs) {
     for (const filePath of writeCredentialConfigs(config)) console.log(`wrote ${path.relative(process.cwd(), filePath)}`);
   }
-  if (!opts.apply) return plan;
+  if (!opts.apply) {
+    const orgPolicyPlan = await runOrgPolicies(token, config, opts);
+    return [...plan, ...orgPolicyPlan];
+  }
 
   for (const action of plan) {
     const result = await applyAction(token, action, config, live);
     const suffix = result?.done === false ? " (operation started)" : "";
     console.log(`${describe(action).replace(/\(would (\w+)\)/, (_, verb) => `(${PAST_TENSE[verb] ?? verb})`)}${suffix}`);
   }
-  return plan;
+  const orgPolicyPlan = await runOrgPolicies(token, config, opts);
+  return [...plan, ...orgPolicyPlan];
 }
 
 if (import.meta.url === `file://${process.argv[1]}`) {

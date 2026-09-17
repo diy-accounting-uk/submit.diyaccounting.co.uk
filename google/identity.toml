@@ -4,9 +4,10 @@
 # Google Cloud identity, as code.
 #
 # scripts/gcp-identity-sync.js reads this file, lists the live workload identity pool, its
-# providers and the service account's IAM policy, diffs them against what is written here, and
-# creates or updates the difference. scripts/gcp-key-rotate.js reads [service_account.key_rotation]
-# and rotates the service account's keys on a schedule until every caller is federated.
+# providers, the service account's IAM policy and the [[org_policy]] entries below, diffs them
+# against what is written here, and creates or updates the difference. scripts/gcp-key-rotate.js
+# reads [service_account.key_rotation] and rotates the service account's keys on a schedule
+# until every caller is federated.
 #
 # Federation replaces the long-lived service-account key in both directions: GitHub Actions
 # presents its OIDC token to the "github" provider, and the analytics Lambdas present their
@@ -82,3 +83,10 @@ display_name = "GitHub Actions + submit Lambdas"
     "google.subject" = "assertion.arn.extract('assumed-role/{role}/')"
     "attribute.account" = "assertion.account"
     "attribute.aws_role" = "assertion.arn.extract('assumed-role/{role}/')"
+
+# An exposed service-account key must be disabled automatically, not just alerted on, so a leak
+# stops working before anyone reads the alert.
+[[org_policy]]
+constraint = "iam.serviceAccountKeyExposureResponse"
+resource = "organizations/936151157673"
+allowed_values = ["DISABLE_KEY"]

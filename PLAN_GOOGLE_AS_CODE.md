@@ -116,7 +116,7 @@ is long enough to want its own files.
 ```
 google/
   project.toml     APIs to enable, project IAM, the billing budget
-  identity.toml    service accounts, workload identity pools and providers, key rotation
+  identity.toml    service accounts, workload identity pools and providers, key rotation, org policies
   analytics.toml   the GA4 account, its properties, streams, key events, links, export settings
   bigquery.toml    the ga4_daily dataset and its scheduled queries
   oauth.toml       the consent screen fields and the OAuth clients we own

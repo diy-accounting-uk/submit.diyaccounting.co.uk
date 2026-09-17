@@ -17,11 +17,16 @@ import {
   credentialConfigPath,
   writeCredentialConfigs,
   WORKLOAD_IDENTITY_USER_ROLE,
+  ORG_POLICY_ADMIN_ROLE,
   forbiddenReason,
   disabledApiName,
   planWhenApiDisabled,
   poolName,
   providerName,
+  orgPolicyName,
+  orgPolicyBody,
+  orgPolicyDiff,
+  planOrgPolicies,
   loadConfigFromRoot,
 } from "../../../scripts/gcp-identity-sync.js";
 
@@ -65,6 +70,11 @@ display_name = "GitHub Actions + submit Lambdas"
     "google.subject" = "assertion.arn.extract('assumed-role/{role}/')"
     "attribute.account" = "assertion.account"
     "attribute.aws_role" = "assertion.arn.extract('assumed-role/{role}/')"
+
+[[org_policy]]
+constraint = "iam.serviceAccountKeyExposureResponse"
+resource = "organizations/936151157673"
+allowed_values = ["DISABLE_KEY"]
 `;
 
 const POOL = "projects/958354756046/locations/global/workloadIdentityPools/submit-federation";
@@ -130,6 +140,31 @@ describe("gcp-identity-sync parseConfig", () => {
   });
   it("throws when the pool is missing", () => {
     expect(() => parseConfig('[project]\nid = "p"\n[service_account]\nemail = "a@b"\n')).toThrow(/workload_identity_pool/);
+  });
+
+  it("reads org_policy entries", () => {
+    const config = parseConfig(SAMPLE_TOML);
+    expect(config.orgPolicies).toEqual([
+      {
+        constraint: "iam.serviceAccountKeyExposureResponse",
+        resource: "organizations/936151157673",
+        allowedValues: ["DISABLE_KEY"],
+      },
+    ]);
+  });
+
+  it("declares no org policies when the toml has none", () => {
+    expect(parseConfig(SAMPLE_TOML.replace(/\[\[org_policy\]\][\s\S]*$/, "")).orgPolicies).toEqual([]);
+  });
+
+  it("throws when an org_policy has no resource", () => {
+    expect(() => parseConfig(SAMPLE_TOML.replace('resource = "organizations/936151157673"\n', ""))).toThrow(
+      /org_policy iam.serviceAccountKeyExposureResponse: resource is required/,
+    );
+  });
+
+  it("throws when an org_policy has no allowed_values", () => {
+    expect(() => parseConfig(SAMPLE_TOML.replace('allowed_values = ["DISABLE_KEY"]\n', ""))).toThrow(/allowed_values must be a non-empty array/);
   });
 
   it("maps every aws provider's google.subject to the role name, not the full assumed-role ARN", () => {
@@ -215,6 +250,92 @@ describe("gcp-identity-sync providerDiff", () => {
       oidc: { issuerUri: "https://i" },
     };
     expect(providerDiff(wanted, live)).toEqual(["attributeMapping"]);
+  });
+});
+
+describe("gcp-identity-sync ORG_POLICY_ADMIN_ROLE", () => {
+  it("names the role that can write an organization policy", () => {
+    expect(ORG_POLICY_ADMIN_ROLE).toBe("roles/orgpolicy.policyAdmin");
+  });
+});
+
+describe("gcp-identity-sync orgPolicyName / orgPolicyBody / orgPolicyDiff", () => {
+  it("names the policy resource under the organization", () => {
+    expect(orgPolicyName("organizations/936151157673", "iam.serviceAccountKeyExposureResponse")).toBe(
+      "organizations/936151157673/policies/iam.serviceAccountKeyExposureResponse",
+    );
+  });
+
+  it("builds the policy body the Org Policy API stores", () => {
+    expect(orgPolicyBody({ allowedValues: ["DISABLE_KEY"] })).toEqual({
+      spec: { rules: [{ values: { allowedValues: ["DISABLE_KEY"] } }] },
+    });
+  });
+
+  it("reports no diff when the live rule's allowed values match, regardless of order", () => {
+    const wanted = { allowedValues: ["A", "B"] };
+    const live = { spec: { rules: [{ values: { allowedValues: ["B", "A"] } }] } };
+    expect(orgPolicyDiff(wanted, live)).toEqual([]);
+  });
+
+  it("reports allowedValues as differing when the live rule disagrees", () => {
+    const wanted = { allowedValues: ["DISABLE_KEY"] };
+    const live = { spec: { rules: [{ values: { allowedValues: ["ENFORCED_KEY_ROTATION"] } }] } };
+    expect(orgPolicyDiff(wanted, live)).toEqual(["allowedValues"]);
+  });
+
+  it("reports allowedValues as differing when the policy does not exist", () => {
+    expect(orgPolicyDiff({ allowedValues: ["DISABLE_KEY"] }, null)).toEqual(["allowedValues"]);
+  });
+});
+
+describe("gcp-identity-sync planOrgPolicies", () => {
+  const config = parseConfig(SAMPLE_TOML);
+  const policy = config.orgPolicies[0];
+
+  it("plans nothing when the live policy already matches", () => {
+    const live = { [policy.constraint]: { policy: orgPolicyBody(policy), forbidden: null } };
+    expect(planOrgPolicies(config, live)).toEqual([]);
+  });
+
+  it("creates the policy when it does not exist", () => {
+    const live = { [policy.constraint]: { policy: null, forbidden: null } };
+    const plan = planOrgPolicies(config, live);
+    expect(plan).toEqual([
+      {
+        kind: "create-org-policy",
+        name: orgPolicyName(policy.resource, policy.constraint),
+        resource: policy.resource,
+        body: orgPolicyBody(policy),
+      },
+    ]);
+  });
+
+  it("updates the policy when the live allowed values differ", () => {
+    const live = {
+      [policy.constraint]: { policy: { spec: { rules: [{ values: { allowedValues: ["ENFORCED_KEY_ROTATION"] } }] } }, forbidden: null },
+    };
+    expect(planOrgPolicies(config, live)).toEqual([
+      {
+        kind: "update-org-policy",
+        name: orgPolicyName(policy.resource, policy.constraint),
+        body: orgPolicyBody(policy),
+        fields: ["allowedValues"],
+      },
+    ]);
+  });
+
+  it("reports forbidden instead of missing when the read was refused", () => {
+    const live = { [policy.constraint]: { policy: null, forbidden: "403 from GET https://x: The caller does not have permission" } };
+    expect(planOrgPolicies(config, live)).toEqual([
+      {
+        kind: "org-policy-forbidden",
+        name: orgPolicyName(policy.resource, policy.constraint),
+        resource: policy.resource,
+        reason: "403 from GET https://x: The caller does not have permission",
+        serviceAccount: config.serviceAccount.email,
+      },
+    ]);
   });
 });
 
