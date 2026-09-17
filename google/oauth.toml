@@ -4,7 +4,7 @@
 # The Google OAuth clients this repo depends on, as code. Google publishes no general API for
 # reading back a client's own configuration (id, redirect URIs) on the Google Auth Platform —
 # only IAP's brand/client resources, which produce clients this repo can't use (see
-# PLAN_GOOGLE_AS_CODE.md, "What stays manual"). scripts/google-oauth-assert.js therefore checks
+# PLAN_EVERYTHING_AS_CODE.md, "What stays manual"). scripts/google-oauth-assert.js therefore checks
 # what a live API actually exposes: each client's project brand, the sign-in client id against
 # Cognito's own copy of it, and the scopes actually granted to the YouTube client's stored
 # refresh token. redirect_uris and application_type below are a maintained record, not something

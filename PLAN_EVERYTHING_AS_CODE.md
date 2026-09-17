@@ -1,7 +1,7 @@
 <!-- SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0 -->
 <!-- Copyright (C) 2006-2026 DIY Accounting Limited -->
 
-# PLAN: Google Cloud and GA4 as code
+# PLAN: everything as code
 
 Status: open. Items 1-7 and 12-14 are shipped. Items 8-11 (the workload identity pool, GitHub
 Actions and Lambda federation, and key rotation) remain.

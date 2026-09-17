@@ -4,7 +4,7 @@
 # Rotates the GA4 service account's key, one job per environment, each writing the new key
 # to its own account's Secrets Manager secret (scripts/gcp-key-rotate.js reads
 # google/identity.toml's [service_account.key_rotation]). Monthly, and on demand. Goes away
-# with the key itself once the analytics Lambdas are federated (PLAN_GOOGLE_AS_CODE.md item 11).
+# with the key itself once the analytics Lambdas are federated (PLAN_EVERYTHING_AS_CODE.md item 11).
 
 name: google key rotate
 run-name: "google key rotate (${{ github.event_name == 'workflow_dispatch' && (inputs.apply && 'apply' || 'plan') || 'apply' }}) from ${{ github.ref_name }}"
