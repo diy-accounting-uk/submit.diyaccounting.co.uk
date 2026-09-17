@@ -44,7 +44,7 @@ step.
   `codeql.yml` skipped pushes touching only `.github/actions/*`, `scripts/` or `google/`, so PR
   #291's head and PR #295's fix push carried none of the `npm test`, `maven test`, `eslint` and
   `CodeQL` contexts and GitHub refused both merges. Both workflows now ignore only Markdown. In
-  flight on `claude/ops-test-paths`, PR #296. **Source**: PR #291's refused merge. **Owner**:
+  flight on `claude/ops-test-paths`, PR #296, its merge also waiting on O49. **Source**: PR #291's refused merge. **Owner**:
   Claude Code. **Model**: Haiku. **Size**: ~2 files.
 
 - [ ] **B30af.5. Branch deploys leave the ci apex: P1, the slot pool.**
@@ -93,6 +93,15 @@ step.
 ## Machine-only
 
 ## Machine-ask
+
+- [ ] **O49. The session's GitHub token lacks the `workflow` scope, so it cannot merge a PR that
+  changes a workflow file.** `gh pr merge 294` was refused ("the base branch policy prohibits the
+  merge"); the REST merge names the cause: "refusing to allow an OAuth App to create or update
+  workflow `.github/workflows/deploy-environment.yml` without `workflow` scope". PRs #294, #295 and
+  #296 all change workflow files. The operator refreshes the token once, in a terminal:
+  `gh auth refresh -h github.com -s workflow`. Then `/auto-merge` merges them in order. **Source**:
+  the refused merges of 2026-09-17. **Owner**: operator (one command), then Claude Code. **Model**:
+  Haiku. **Size**: ~0 files.
 
 - [ ] **B53.4. Delete the nine orphaned `prod/submit/*` secrets in the submit-ci account.**
   `REPORT_KEY_AUDIT.md` gap 4: nine `prod/submit/*` names sit in 367191799875, untouched since
