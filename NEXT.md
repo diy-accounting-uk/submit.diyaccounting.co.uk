@@ -45,20 +45,6 @@ step.
 
 ## In flight
 
-- [ ] **B30af.5. Every ci deploy swaps the shared ci apex, so branch deploys race each other.**
-  Incident #290 (03:00 UTC on 2026-09-17): PR #285's branch deploy 35171600510 promoted the apex to
-  its set `ci-claud0f3a`, its `submitVatBehaviour` probe met CloudFront's "The request could not be
-  satisfied" on the apex, and the run rolled the apex back to `ci-claud86af`, leaving its set
-  standing unpromoted. B30af.3's guard only waits for `main`; two branch deploys, or a branch and
-  a rollback, still contend. The clean shape is a branch deploy that never touches the apex: its
-  probes navigate `https://<deployment>.submit.diyaccounting.co.uk`, which needs each deployment's
-  host among the Cognito app client's callback and logout URLs (`IdentityStack.java`
-  `buildCallbackUrls`/`buildLogoutUrls`, apex and public domain only today) and the probe base URL
-  switched per ref. Design the URL list (one callback per standing set, added and removed by the
-  deploy, or a wildcard the pool allows), then build it; only `main`'s deploy promotes the apex.
-  The design is in flight on `claude/docs-apex-design` (`_developers/DESIGN_CI_BRANCH_DEPLOYS_OFF_THE_APEX.md`, Opus agent running); the build follows it. **Source**: issue #290; run 35171600510. **Owner**: Claude Code. **Model**: Opus for the design,
-  Sonnet to build. **Size**: ~4 files.
-
 - [ ] **B55.4. Alarm #289: the prod GA4 Lambdas lost their secret ARN when the GitHub copy of
   the key went.** `prod-env-ga4-report-pull-errors` fired at 02:17 UTC on 2026-09-17 (the nightly,
   deployment prod-29f3405); the triage (run at 02:19) found `GA4_SERVICE_ACCOUNT_ARN` unset on the
@@ -81,6 +67,19 @@ step.
   35171600510. **Owner**: Claude Code. **Model**: Haiku. **Size**: ~1 file.
 
 ## Machine-only
+
+- [ ] **B30af.5. Branch deploys leave the ci apex: P1, the slot pool.**
+  `_developers/DESIGN_CI_BRANCH_DEPLOYS_OFF_THE_APEX.md` (on `main`) settles the shape: four fixed
+  slot hosts `ci-set1` to `ci-set4`, registered once with Cognito, HMRC and Companies House (the
+  two hubs reject any unregistered redirect host, so per-deploy registration and per-deploy app
+  clients lose), claimed per ref through an SSM parameter per slot; ci promotion moves to a
+  `promote-ci-apex.yml` that runs after the probes pass, and `set-origins`/`rollback-origins` in
+  `deploy.yml` become prod-only. P1: a `claim-ci-slot` action, the `names` job using it,
+  `destroy-ci.yml` and `selfDestruct.js` releasing the slot. Proof: a branch deploy's `names` job
+  logs `DEPLOYMENT_NAME=ci-set<N>` and the slot parameter reads back the run id. P3 to P5 follow
+  (IdentityStack's callback list; non-prod `publicDomainName = deploymentDomainName` so every probe
+  and Lambda moves together; the apex out of the deploy), P3 after P2's registrations. **Source**:
+  issue #290; the design. **Owner**: Claude Code. **Model**: Sonnet. **Size**: ~7 files.
 
 - [ ] **B30aj.2. Close #284 and #290 when prod carries wave b54.** PR #288 is on `main`: the
   security-findings topic policy (alarm #284 re-fired on its own denied SNS publish), the
@@ -181,6 +180,16 @@ step.
 ## Human-driven
 
 ## Blocked
+
+- [ ] **B30af.6. Register the four slot hosts' redirect URIs with HMRC and Companies House (P2).**
+  After P1 names the slots: eight URIs, `https://ci-set<N>.submit.diyaccounting.co.uk/activities/submitVatCallback.html`
+  (HMRC Developer Hub, the sandbox application, which today holds the prod host, the ci apex and
+  `local.submit…:3443`) and `https://ci-set<N>.submit.diyaccounting.co.uk/companies-house/filingCallback.html`
+  (the Companies House "- test" application's web client). Both hubs are console forms with no
+  API, so this is the operator's, signed in; the design's §6 names the unknown that decides N: HMRC's
+  cap on redirect URIs per application. Proof: the design's §3 `curl` answers 200 for each slot
+  host. Blocked on P1. **Source**: the design, P2. **Owner**: Operator, in both hubs. **Model**:
+  none. **Size**: ~0 files.
 
 - [ ] **O17. A sandbox sign-in for the filing suites, and four ci values.** Checked live at
   23:2x UTC on 2026-09-16: the sandbox has no registration page of its own
