@@ -373,12 +373,25 @@ jobs:
               echo "deployment-name=" | tee -a "$GITHUB_OUTPUT"
           fi
 
+      # Only a plain ci push or dispatch reaches here with no name already resolved: a prod
+      # deploy always resolves its own name below (get-names hashes the commit), a
+      # skip-deploy run already read one back from last-known-good, and an explicit
+      # deployment-name dispatch bypasses the pool.
+      - name: Claim a ci slot
+        id: claim-slot
+        if: ${{ needs.params.outputs.github-environment == 'ci' && steps.resolved-deployment-name.outputs.deployment-name == '' }}
+        uses: './.github/actions/claim-ci-slot'
+        with:
+          github-ref: ${{ github.ref }}
+          run-id: ${{ github.run_id }}
+          self-destruct-delay-hours: ${{ env.SELF_DESTRUCT_DELAY_HOURS }}
+
       - name: Compute deployment name and environment
         id: deployment-config
         uses: './.github/actions/get-names'
         with:
           environment-name: ${{ needs.params.outputs.environment-name || '' }}
-          deployment-name: ${{ steps.resolved-deployment-name.outputs.deployment-name }}
+          deployment-name: ${{ steps.resolved-deployment-name.outputs.deployment-name || steps.claim-slot.outputs.deployment-name }}
 
       - name: Lookup Cognito from domain convention
         id: lookup-cognito
