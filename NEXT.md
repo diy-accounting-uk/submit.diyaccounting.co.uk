@@ -65,9 +65,13 @@ step.
   GA4_SERVICE_ACCOUNT_JSON nor GA4_SERVICE_ACCOUNT_ARN is set". O48 step B deleted
   `GA4_SERVICE_ACCOUNT_JSON` from both GitHub environments on 2026-09-16 (the AWS secrets hold the
   rotated keys), and the ARN the app stacks receive was derived from that secret's presence in
-  `deploy-environment.yml`. The AWS secret `prod/submit/ga4/service_account` exists, so the ARN must
-  come from the secret's name, not the GitHub secret. In flight on `claude/ops-ga4-arn` (agent
-  running). Then close #289 with the next nightly's success. **Source**: issue #289. **Owner**:
+  `deploy-environment.yml`. The agent found the ARN reached the Lambda only through a step-level env var in
+  `deploy-environment.yml` (set correctly on the deploys around the alarm), never from the CDK;
+  `SubmitSharedNames` now derives it and `IngestionStack` always sets the env var and the grant
+  (`claude/ops-ga4-arn`, PR follows). The failing invocation itself is unread: with a prod SSO
+  session, read `/aws/lambda/prod-env-ga4-report-pull` around 02:15 UTC on 2026-09-17 for the
+  error line, and if it is not the missing ARN, fix that layer. Then close #289 with the next
+  nightly's success. **Source**: issue #289. **Owner**:
   Claude Code. **Model**: Sonnet. **Size**: ~2 files.
 
 - [ ] **B30af.4. The main-deploy guard missed a deploy in the waiting state.** Run 35171600510
