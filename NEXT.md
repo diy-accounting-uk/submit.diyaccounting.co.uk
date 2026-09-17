@@ -16,9 +16,9 @@ runs), and for Claude Code steps the **Model** a sub-agent should use (Fable > O
 Haiku; the lowest tier that fits). Anything touching code goes through a `claude/*` branch and
 PR; the operator merges.
 
-**Prod runs deployment prod-952b978** (PR #288, run 35176978495, last-known-good set at 04:32 UTC
-on 2026-09-17; prod's SSO token expired at 02:2x UTC, so unverified against AWS:
-`aws sso login --sso-session diyaccounting` before the next AWS read). **ci**: `ci-claud86af` is live.
+**Prod runs deployment prod-952b978** (PR #288, run 35176978495; the pointer verified against AWS
+at 06:1x UTC on 2026-09-17). PRs #296, #294 and #291 merged at 07:25 UTC; `main`'s deploy of
+9284434c (35194544211) promotes prod-9284434 when its suites pass. **ci**: `ci-claud86af` is live.
 
 The board runs in five sections, in this order: **in flight** (a branch, a pull request or a run
 in motion, each named in the row), **machine-only**, **machine-ask**, **human-driven**,
@@ -40,13 +40,6 @@ step.
 
 ## In flight
 
-- [ ] **B56.1. Every code push runs the checks main's ruleset requires.** `test.yml` and
-  `codeql.yml` skipped pushes touching only `.github/actions/*`, `scripts/` or `google/`, so PR
-  #291's head and PR #295's fix push carried none of the `npm test`, `maven test`, `eslint` and
-  `CodeQL` contexts and GitHub refused both merges. Both workflows now ignore only Markdown. In
-  flight on `claude/ops-test-paths`, PR #296, its merge also waiting on O49. **Source**: PR #291's refused merge. **Owner**:
-  Claude Code. **Model**: Haiku. **Size**: ~2 files.
-
 - [ ] **B30af.5. Branch deploys leave the ci apex: P1, the slot pool.**
   `_developers/DESIGN_CI_BRANCH_DEPLOYS_OFF_THE_APEX.md` (on `main`) settles the shape: four fixed
   slot hosts `ci-set1` to `ci-set4`, registered once with Cognito, HMRC and Companies House (the
@@ -59,49 +52,56 @@ step.
   (IdentityStack's callback list; non-prod `publicDomainName = deploymentDomainName` so every probe
   and Lambda moves together; the apex out of the deploy), P3 after P2's registrations. In flight on `claude/ci-1-slot-pool`, PR #295. Its deploy (35179085180) claimed
   `ci-set1` and stood the set up, and its deploy is green after `set origins` re-ran (the first
-  attempt lost the apex CNAME race to PR #291's and #294's deploys). The merge waits on O49 and,
-  after PR #296 merges, the same rebase as B30af.4 for the ruleset's contexts. **Source**:
+  attempt lost the apex CNAME race to PR #291's and #294's deploys). Rebased onto `main` after PR
+  #296 so its push runs `test.yml` and the head carries the ruleset's contexts; the merge is O49's.
+  **Source**:
   issue #290; the design. **Owner**: Claude Code. **Model**: Sonnet. **Size**: ~7 files.
-
-- [ ] **B55.4. Alarm #289: the prod GA4 Lambdas lost their secret ARN when the GitHub copy of
-  the key went.** `prod-env-ga4-report-pull-errors` fired at 02:17 UTC on 2026-09-17 (the nightly,
-  deployment prod-29f3405); the triage (run at 02:19) found `GA4_SERVICE_ACCOUNT_ARN` unset on the
-  Lambda while `GA4_AUTH_MODE=key`, so `resolveServiceAccountCredentialsJson()` throws "Neither
-  GA4_SERVICE_ACCOUNT_JSON nor GA4_SERVICE_ACCOUNT_ARN is set". O48 step B deleted
-  `GA4_SERVICE_ACCOUNT_JSON` from both GitHub environments on 2026-09-16 (the AWS secrets hold the
-  rotated keys), and the ARN the app stacks receive was derived from that secret's presence in
-  `deploy-environment.yml`. The agent found the ARN reached the Lambda only through a step-level env var in
-  `deploy-environment.yml` (set correctly on the deploys around the alarm), never from the CDK;
-  `SubmitSharedNames` now derives it and `IngestionStack` always sets the env var and the grant
-  (`claude/ops-ga4-arn`, PR #294). The failing invocation itself is unread: with a prod SSO
-  session, read `/aws/lambda/prod-env-ga4-report-pull` around 02:15 UTC on 2026-09-17 for the
-  error line, and if it is not the missing ARN, fix that layer. Then close #289 with the next
-  nightly's success. **Source**: issue #289. **Owner**:
-  Claude Code. **Model**: Sonnet. **Size**: ~2 files.
-
-- [ ] **B30af.4. The main-deploy guard missed a deploy in the waiting state.** Run 35171600510
-  (PR #285's branch deploy): the guard answered "no deploy.yml run in progress or queued on main"
-  at 02:54 UTC on 2026-09-17 while `main`'s deploy 35171500590 sat between jobs in GitHub's
-  `waiting` status (an environment-protected job), and six ci suites then met CloudFront's "The
-  request could not be satisfied" on the apex. `wait-for-main-deploy.mjs` now reads every recent
-  run on `main` and counts the ones not completed. In flight on `claude/ops-wait-guard` (PR
-  #291), its deploy green; the merge is refused by main's ruleset because the head carries none
-  of the required test contexts (B56.1), so after PR #296 merges the branch rebases onto `main`
-  and its push runs `test.yml`. **Source**: run
-  35171600510. **Owner**: Claude Code. **Model**: Haiku. **Size**: ~1 file.
 
 ## Machine-only
 
+- [ ] **B52y.3. The security lake nightly's role cannot list the WAF log groups.** The 03:20
+  UTC run on 2026-09-17 (three attempts, `/aws/lambda/prod-env-security-lake-nightly`) ended in
+  `AccessDeniedException: ... not authorized to perform: logs:DescribeLogGroups on resource:
+  arn:aws:logs:us-east-1:972912397388:log-group::log-stream:`. `SecurityLakeStack.java` (~226)
+  grants `logs:DescribeLogGroups` on `arn:aws:logs:us-east-1:<account>:log-group:aws-waf-logs-<env>-*`,
+  but IAM evaluates that action against the `log-group::log-stream:` resource, so the grant never
+  matches. Give the Describe statement that resource (the StartQuery grant keeps its prefix), update
+  `SecurityLakeStackTest`, and the next nightly writes the WAF rows. The GitHub alert rows are
+  B52y.5's. Then close #249 with the nightly's log. **Source**: issue #249. **Owner**: Claude
+  Code. **Model**: Sonnet. **Size**: ~2 files.
+
+- [ ] **B52y.4. Glue Data Quality cannot read `cost_focus`: the ruleset's rules need the
+  Parquet's own names.** The 2026-09-17 03:18 UTC result of `prod_env_cost_focus_dq`
+  (dqresult-e882b05612b6bbd09b6c557a469fc54f7cc1bf9b) scores 0: `RowCount > 0` fails with 0 rows
+  and `IsComplete "billed_cost"` with "Input data does not include column billed_cost", while
+  Athena's `v_cost_daily` answers 5,871 rows for the same days. Glue DQ reads the table through
+  Spark, which ignores `parquet.column.index.access` (`CostFocusTables.java` ~67) and so sees the
+  export's PascalCase fields, and the zero row count says its reader also missed the projected
+  `dt` partitions. In `DataQuality.java` (~99) make the cost_focus ruleset evaluate what Spark
+  sees: either point the DQ target at the Parquet names (`BilledCost`) and a partition the reader
+  can list, or read the table through a view the positional reader builds; prove it with a
+  `start-data-quality-ruleset-evaluation-run` after the deploy. **Source**: B52y.2's snapshot
+  check; `PLAN_ONE_STOP_DASHBOARD.md` D13. **Owner**: Claude Code. **Model**: Sonnet. **Size**:
+  ~1 file.
+
 ## Machine-ask
 
-- [ ] **O49. The session's GitHub token lacks the `workflow` scope, so it cannot merge a PR that
-  changes a workflow file.** `gh pr merge 294` was refused ("the base branch policy prohibits the
-  merge"); the REST merge names the cause: "refusing to allow an OAuth App to create or update
-  workflow `.github/workflows/deploy-environment.yml` without `workflow` scope". PRs #294, #295 and
-  #296 all change workflow files. The operator refreshes the token once, in a terminal:
-  `gh auth refresh -h github.com -s workflow`. Then `/auto-merge` merges them in order. **Source**:
-  the refused merges of 2026-09-17. **Owner**: operator (one command), then Claude Code. **Model**:
-  Haiku. **Size**: ~0 files.
+- [ ] **B52y.5. The ops GitHub token cannot read Dependabot or secret-scanning alerts.** The
+  same nightly logs `GitHub API error fetching dependabot/alerts: 403 {"message":"Resource not
+  accessible by personal access token"}` and the same for `secret-scanning/alerts`, and publishes a
+  null row for each. The token is the one in `prod/submit/github/issue_bot_token` (and ci's). The
+  operator grants it, at https://github.com/settings/tokens, repository permissions Dependabot
+  alerts: read and Secret scanning alerts: read (a classic token: `security_events` covers code
+  scanning only, so a fine-grained token is the shape that can). No code changes. **Source**: issue
+  #249. **Owner**: operator (the token), then the next nightly. **Model**: Haiku. **Size**: ~0 files.
+
+- [ ] **O49. PR #295 changes workflow files, which the session's GitHub token cannot merge.**
+  The token has `repo` and not `workflow` scope: `gh pr merge` is refused for any PR touching
+  `.github/workflows/*` ("refusing to allow an OAuth App to create or update workflow ... without
+  `workflow` scope"). Either the operator merges #295 as they merged #291, #294 and #296, or
+  refreshes the token once so the session can: `gh auth refresh -h github.com -s workflow`.
+  **Source**: the refused merges of 2026-09-17. **Owner**: operator. **Model**: Haiku. **Size**:
+  ~0 files.
 
 - [ ] **B53.4. Delete the nine orphaned `prod/submit/*` secrets in the submit-ci account.**
   `REPORT_KEY_AUDIT.md` gap 4: nine `prod/submit/*` names sit in 367191799875, untouched since
@@ -194,14 +194,6 @@ step.
 
 ## Blocked
 
-- [ ] **B30ak. Alarm #292: the prod operator-snapshot publisher errored twice.**
-  `prod-env-operator-snapshot-publish-errors` fired at 03:16 UTC on 2026-09-17 (two errors over
-  its 24-hour period, deployment prod-b362239). The triage did not reach a cause. Read the
-  publisher Lambda's log group in prod around 03:1x UTC for the two error lines, name the cause,
-  fix that layer, and close #292 with the evidence. Blocked on `aws sso login --sso-session
-  diyaccounting` (prod's token expired at 02:2x UTC). **Source**: issue #292. **Owner**: Claude
-  Code. **Model**: Sonnet. **Size**: ~1 file.
-
 - [ ] **B30af.6. Register the four slot hosts' redirect URIs with HMRC and Companies House (P2).**
   After P1 names the slots: eight URIs, `https://ci-set<N>.submit.diyaccounting.co.uk/activities/submitVatCallback.html`
   (HMRC Developer Hub, the sandbox application, which today holds the prod host, the ci apex and
@@ -239,26 +231,6 @@ step.
   the developer hub "- test" application, read by the operator 2026-09-16. **Owner**: the operator
   creates the One Login and runs the three secret writes; Claude Code sets the variable and runs
   B34.7. **Model**: Sonnet.
-
-- [ ] **B52y.3. The security lake nightly's fix is on prod; the next nightly proves it.** PR #255
-  (57d7c31e) degrades a failed GitHub alert endpoint to a null row, and main's environment deploy
-  (run 35078117666, 09:5x UTC on 2026-09-16) carried it. Read the 03:15 UTC run on 2026-09-17 in
-  `/aws/lambda/prod-env-security-lake-nightly`: no "Invoke Error", no warn line for a GitHub alert
-  endpoint (the token gained security-events read on 2026-09-16, 20:1x UTC), rows for all three
-  alert types written for the day; then close #249. **Source**: issue #249. **Owner**:
-  Claude Code. **Model**: Haiku. Blocked on the 03:15 UTC run on 2026-09-17. **Size**: ~0 files.
-
-- [ ] **B52y.4. The cost views are live; check the Glue Data Quality ruleset after its next run.**
-  PR #255 (319a9e89) made `cost_focus` resolve its Parquet columns by position and typed the four
-  period columns and `x_Discounts` as the file has them; after main's environment deploy
-  `v_cost_daily` answers 5,871 rows for 2026-09-01 to 09-15 (11:2x UTC on 2026-09-16). Left: Glue
-  Data Quality reads the table through Spark, which may not honour `parquet.column.index.access`,
-  so `COST_FOCUS_RULESET`'s `IsComplete "billed_cost"` (`DataQuality.java` ~99–105) may still report
-  incomplete; read the ruleset's next result and, if it does, give the rules the positional reader
-  or the Parquet names. **Source**: B52y.2's snapshot check; `PLAN_ONE_STOP_DASHBOARD.md` D13.
-  **Owner**: Claude Code. **Model**: Sonnet. Blocked on the ruleset's next run: `prod_env_cost_focus_dq` last ran at 02:16 UTC on
-  2026-09-16, before the deploy, so the first result on the fixed table is 2026-09-17's
-  (`aws --profile submit-prod glue list-data-quality-results`). **Size**: ~1 file.
 
 - [ ] **B34.6b. Companies House accounts filing: the sandbox proof.** Submission 000004 (presenter
   E0000052288, company 06846849, 2026-09-13 19:04 UTC) was ACCEPTED by the XML Gateway test
