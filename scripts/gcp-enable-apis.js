@@ -13,14 +13,14 @@
 // Usage:
 //   node scripts/gcp-enable-apis.js [--apply] [--project diyaccounting-ga4]
 //
-// Credentials: GA4_SERVICE_ACCOUNT_JSON (local override) or GA4_SERVICE_ACCOUNT_ARN (Secrets
-// Manager). The key never reaches a log line.
+// Credentials: application default credentials from google-github-actions/auth's federated
+// exchange.
 
 import fs from "node:fs";
 import path from "node:path";
 import TOML from "@iarna/toml";
 
-import { resolveServiceAccountCredentialsJson, createGoogleAuthClient, getAccessToken } from "./lib/googleAuth.js";
+import { assertFederatedCredentials, createGoogleAuthClient, getAccessToken } from "./lib/googleAuth.js";
 
 export const DEFAULT_PROJECT = "diyaccounting-ga4";
 export const CONFIG_PATH = "google/project.toml";
@@ -80,8 +80,8 @@ async function googlePost(url, token) {
 export async function main(argv = process.argv.slice(2)) {
   const opts = parseArgs(argv);
   const requiredServices = loadConfigFromRoot();
-  const credentialsJson = await resolveServiceAccountCredentialsJson({ jsonEnvVar: "GA4_SERVICE_ACCOUNT_JSON", arnEnvVar: "GA4_SERVICE_ACCOUNT_ARN" });
-  const token = await getAccessToken(createGoogleAuthClient(credentialsJson));
+  assertFederatedCredentials();
+  const token = await getAccessToken(createGoogleAuthClient());
   const base = `https://serviceusage.googleapis.com/v1/projects/${opts.project}/services`;
 
   const states = {};

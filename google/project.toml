@@ -10,10 +10,10 @@
 # file does not exist as far as this repo is concerned. Add it here before asking for it, and
 # remove it here before revoking it.
 #
-# The service account is ga4-report-pull@diyaccounting-ga4.iam.gserviceaccount.com. Its key
-# lives in AWS Secrets Manager (ci/submit/ga4/service_account, prod/submit/ga4/service_account)
-# and is read by app/functions/analytics/ga4ReportPull.js (GA4 Data API) and
-# app/functions/analytics/ga4EventExportPull.js (GA4's BigQuery event export).
+# The service account is ga4-report-pull@diyaccounting-ga4.iam.gserviceaccount.com, impersonated
+# by federated callers (see google/identity.toml) rather than by a key: the analytics Lambdas
+# (app/functions/analytics/ga4ReportPull.js and ga4EventExportPull.js) present their AWS
+# execution role, and GitHub Actions presents its OIDC token.
 
 [service_account]
 email = "ga4-report-pull@diyaccounting-ga4.iam.gserviceaccount.com"

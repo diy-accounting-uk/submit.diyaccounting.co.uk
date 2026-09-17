@@ -11,9 +11,8 @@
 
 import { gzipSync } from "zlib";
 import { S3Client, PutObjectCommand } from "@aws-sdk/client-s3";
-import { SecretsManagerClient, GetSecretValueCommand } from "@aws-sdk/client-secrets-manager";
 import { BetaAnalyticsDataClient } from "@google-analytics/data";
-import { ga4AuthMode, federationSettings, createFederatedGoogleAuth } from "../../lib/googleWorkloadIdentity.js";
+import { federationSettings, createFederatedGoogleAuth } from "../../lib/googleWorkloadIdentity.js";
 import { createLogger } from "../../lib/logger.js";
 
 const logger = createLogger({ source: "app/functions/analytics/ga4ReportPull.js" });
@@ -45,62 +44,29 @@ function getS3Client() {
   return cachedS3Client;
 }
 
-let cachedSecretsManagerClient = null;
-
-function getSecretsManagerClient() {
-  if (!cachedSecretsManagerClient) {
-    cachedSecretsManagerClient = new SecretsManagerClient({ region: process.env.AWS_REGION || "eu-west-2" });
-  }
-  return cachedSecretsManagerClient;
-}
-
-/**
- * Resolve the GA4 service-account key JSON, preferring a plain env var (used by tests and local
- * runs) over Secrets Manager, the same precedence stripeClient.js uses for the Stripe key.
- *
- * @returns {Promise<string>}
- */
-async function resolveServiceAccountCredentialsJson() {
-  if (process.env.GA4_SERVICE_ACCOUNT_JSON) {
-    return process.env.GA4_SERVICE_ACCOUNT_JSON;
-  }
-  const arn = process.env.GA4_SERVICE_ACCOUNT_ARN;
-  if (!arn) {
-    throw new Error("Neither GA4_SERVICE_ACCOUNT_JSON nor GA4_SERVICE_ACCOUNT_ARN is set");
-  }
-  const result = await getSecretsManagerClient().send(new GetSecretValueCommand({ SecretId: arn }));
-  return result.SecretString;
-}
-
 let cachedGa4Client = null;
-let cachedCredentialsJson = null;
+let cachedFederationKey = null;
 
 /**
- * Get a lazy-initialized GA4 Data API client, caching it across Lambda warm starts the same way
- * getStripeClient() does for Stripe.
+ * Get a lazy-initialized federated GA4 Data API client, caching it across Lambda warm starts.
+ * The federation settings are read on every call, not only the first, so a Lambda invoked with
+ * an incomplete environment still throws rather than reusing a client built by an earlier,
+ * better-configured invocation.
  *
  * @returns {Promise<BetaAnalyticsDataClient>}
  */
 async function getGa4Client() {
-  if (ga4AuthMode() === "federated") {
-    if (cachedGa4Client && cachedCredentialsJson === null) {
-      return cachedGa4Client;
-    }
-    const authClient = createFederatedGoogleAuth({
-      ...federationSettings(),
-      scopes: ["https://www.googleapis.com/auth/analytics.readonly"],
-    });
-    cachedGa4Client = new BetaAnalyticsDataClient({ authClient });
-    cachedCredentialsJson = null;
+  const settings = federationSettings();
+  const federationKey = JSON.stringify(settings);
+  if (cachedGa4Client && cachedFederationKey === federationKey) {
     return cachedGa4Client;
   }
-  const credentialsJson = await resolveServiceAccountCredentialsJson();
-  if (cachedGa4Client && cachedCredentialsJson === credentialsJson) {
-    return cachedGa4Client;
-  }
-  const credentials = JSON.parse(credentialsJson);
-  cachedGa4Client = new BetaAnalyticsDataClient({ credentials });
-  cachedCredentialsJson = credentialsJson;
+  const authClient = createFederatedGoogleAuth({
+    ...settings,
+    scopes: ["https://www.googleapis.com/auth/analytics.readonly"],
+  });
+  cachedGa4Client = new BetaAnalyticsDataClient({ authClient });
+  cachedFederationKey = federationKey;
   return cachedGa4Client;
 }
 

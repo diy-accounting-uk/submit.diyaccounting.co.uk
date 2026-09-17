@@ -4,7 +4,6 @@
 import { describe, test, expect } from "vitest";
 import { AwsClient } from "google-auth-library";
 import {
-  ga4AuthMode,
   federationSettings,
   lambdaAwsSecurityCredentialsSupplier,
   externalAccountOptions,
@@ -14,18 +13,6 @@ import {
 
 const AUDIENCE = "//iam.googleapis.com/projects/958354756046/locations/global/workloadIdentityPools/submit-federation/providers/aws-prod";
 const EMAIL = "ga4-report-pull@diyaccounting-ga4.iam.gserviceaccount.com";
-
-describe("ga4AuthMode", () => {
-  test("defaults to the key", () => {
-    expect(ga4AuthMode({})).toBe("key");
-  });
-  test("reads federated", () => {
-    expect(ga4AuthMode({ GA4_AUTH_MODE: "federated" })).toBe("federated");
-  });
-  test("refuses any other value", () => {
-    expect(() => ga4AuthMode({ GA4_AUTH_MODE: "both" })).toThrow(/GA4_AUTH_MODE must be one of key, federated/);
-  });
-});
 
 describe("federationSettings", () => {
   test("reads the audience and the service account", () => {

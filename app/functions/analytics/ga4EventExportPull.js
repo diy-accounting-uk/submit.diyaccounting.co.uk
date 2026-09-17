@@ -17,9 +17,8 @@
 
 import { gzipSync } from "zlib";
 import { S3Client, PutObjectCommand } from "@aws-sdk/client-s3";
-import { SecretsManagerClient, GetSecretValueCommand } from "@aws-sdk/client-secrets-manager";
 import { BigQuery } from "@google-cloud/bigquery";
-import { ga4AuthMode, federationSettings, createFederatedGoogleAuth } from "../../lib/googleWorkloadIdentity.js";
+import { federationSettings, createFederatedGoogleAuth } from "../../lib/googleWorkloadIdentity.js";
 import { createLogger } from "../../lib/logger.js";
 
 const logger = createLogger({ source: "app/functions/analytics/ga4EventExportPull.js" });
@@ -35,64 +34,30 @@ function getS3Client() {
   return cachedS3Client;
 }
 
-let cachedSecretsManagerClient = null;
-
-function getSecretsManagerClient() {
-  if (!cachedSecretsManagerClient) {
-    cachedSecretsManagerClient = new SecretsManagerClient({ region: process.env.AWS_REGION || "eu-west-2" });
-  }
-  return cachedSecretsManagerClient;
-}
-
-/**
- * Resolve the GA4 service-account key JSON, the same env-var-then-Secrets-Manager precedence
- * ga4ReportPull.js uses, and the same secret: this job reads GA4 BigQuery export data with the
- * same service account that reads the GA4 Data API.
- *
- * @returns {Promise<string>}
- */
-async function resolveServiceAccountCredentialsJson() {
-  if (process.env.GA4_SERVICE_ACCOUNT_JSON) {
-    return process.env.GA4_SERVICE_ACCOUNT_JSON;
-  }
-  const arn = process.env.GA4_SERVICE_ACCOUNT_ARN;
-  if (!arn) {
-    throw new Error("Neither GA4_SERVICE_ACCOUNT_JSON nor GA4_SERVICE_ACCOUNT_ARN is set");
-  }
-  const result = await getSecretsManagerClient().send(new GetSecretValueCommand({ SecretId: arn }));
-  return result.SecretString;
-}
-
 let cachedBigQueryClient = null;
-let cachedCredentialsJson = null;
+let cachedFederationKey = null;
 
 /**
- * Get a lazy-initialized BigQuery client, caching it across Lambda warm starts the same way
- * ga4ReportPull.js's getGa4Client() does.
+ * Get a lazy-initialized federated BigQuery client, caching it across Lambda warm starts the
+ * same way ga4ReportPull.js's getGa4Client() does. The federation settings are read on every
+ * call, not only the first, so a Lambda invoked with an incomplete environment still throws
+ * rather than reusing a client built by an earlier, better-configured invocation.
  *
  * @returns {Promise<BigQuery>}
  */
 async function getBigQueryClient() {
+  const settings = federationSettings();
+  const federationKey = JSON.stringify(settings);
+  if (cachedBigQueryClient && cachedFederationKey === federationKey) {
+    return cachedBigQueryClient;
+  }
   const projectId = process.env.GA4_BIGQUERY_PROJECT_ID;
-  if (ga4AuthMode() === "federated") {
-    if (cachedBigQueryClient && cachedCredentialsJson === null) {
-      return cachedBigQueryClient;
-    }
-    const authClient = createFederatedGoogleAuth({
-      ...federationSettings(),
-      scopes: ["https://www.googleapis.com/auth/bigquery", "https://www.googleapis.com/auth/cloud-platform"],
-    });
-    cachedBigQueryClient = new BigQuery({ projectId, authClient });
-    cachedCredentialsJson = null;
-    return cachedBigQueryClient;
-  }
-  const credentialsJson = await resolveServiceAccountCredentialsJson();
-  if (cachedBigQueryClient && cachedCredentialsJson === credentialsJson) {
-    return cachedBigQueryClient;
-  }
-  const credentials = JSON.parse(credentialsJson);
-  cachedBigQueryClient = new BigQuery({ projectId, credentials });
-  cachedCredentialsJson = credentialsJson;
+  const authClient = createFederatedGoogleAuth({
+    ...settings,
+    scopes: ["https://www.googleapis.com/auth/bigquery", "https://www.googleapis.com/auth/cloud-platform"],
+  });
+  cachedBigQueryClient = new BigQuery({ projectId, authClient });
+  cachedFederationKey = federationKey;
   return cachedBigQueryClient;
 }
 

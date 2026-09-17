@@ -328,19 +328,6 @@ jobs:
             "${{ needs.names.outputs.environment-name }}/submit/stripe/test_webhook_secret" \
             "$SECRET_VALUE"
 
-      - name: Create secret in AWS from secrets.GA4_SERVICE_ACCOUNT_JSON
-        env:
-          SECRET_VALUE: ${{ secrets.GA4_SERVICE_ACCOUNT_JSON }}
-          AWS_REGION: ${{ env.AWS_REGION }}
-        run: |
-          if [ -z "$SECRET_VALUE" ]; then
-            echo "No GA4_SERVICE_ACCOUNT_JSON in ${{ needs.names.outputs.environment-name }} environment, skipping"
-            exit 0
-          fi
-          scripts/put-secret-with-rotation-tag.sh \
-            "${{ needs.names.outputs.environment-name }}/submit/ga4/service_account" \
-            "$SECRET_VALUE"
-
       - name: Create secret in AWS from secrets.TELEGRAM_BOT_TOKEN
         run: |
           scripts/put-secret-with-rotation-tag.sh \

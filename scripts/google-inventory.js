@@ -17,14 +17,13 @@
 //     [--service-account ga4-report-pull@diyaccounting-ga4.iam.gserviceaccount.com]
 //     [--location europe-west2]
 //
-// Credentials: GA4_SERVICE_ACCOUNT_JSON (raw key JSON, for local runs) or
-// GA4_SERVICE_ACCOUNT_ARN (an AWS Secrets Manager ARN). Never printed. A run with neither
-// set fails with "Neither GA4_SERVICE_ACCOUNT_JSON nor GA4_SERVICE_ACCOUNT_ARN is set"
-// rather than a network error, since there is nothing to authenticate with.
+// Credentials: application default credentials from google-github-actions/auth's federated
+// exchange. A run without GOOGLE_APPLICATION_CREDENTIALS set fails naming that variable rather
+// than with a network error, since there is nothing to authenticate with.
 
 import { fileURLToPath } from "node:url";
 
-import { resolveServiceAccountCredentialsJson, createGoogleAuthClient, getAccessToken } from "./lib/googleAuth.js";
+import { assertFederatedCredentials, createGoogleAuthClient, getAccessToken } from "./lib/googleAuth.js";
 
 export const DEFAULT_PROJECT = "diyaccounting-ga4";
 export const DEFAULT_GA4_ACCOUNT_ID = "1035014";
@@ -441,11 +440,8 @@ async function listTransferConfigs(token, project, location) {
 export async function main(argv = process.argv.slice(2)) {
   const opts = parseArgs(argv);
 
-  const credentialsJson = await resolveServiceAccountCredentialsJson({
-    jsonEnvVar: "GA4_SERVICE_ACCOUNT_JSON",
-    arnEnvVar: "GA4_SERVICE_ACCOUNT_ARN",
-  });
-  const token = await getAccessToken(createGoogleAuthClient(credentialsJson, SCOPES));
+  assertFederatedCredentials();
+  const token = await getAccessToken(createGoogleAuthClient(SCOPES));
 
   const findings = [];
   const read = async (what, remedy, fn, fallback) => {

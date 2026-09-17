@@ -15,27 +15,22 @@
 // export should already have landed) and confirms BigQuery has ingested a purchase event
 // carrying it, rather than polling for the current run's own event.
 //
-// Reads the GA4 service-account credential the same way ga4EventExportPull.js does
-// (GA4_SERVICE_ACCOUNT_JSON, else GA4_SERVICE_ACCOUNT_ARN via Secrets Manager) — no new
-// credential for this check.
+// Reads application default credentials, the same federated path ga4EventExportPull.js uses —
+// no new credential for this check. probe-test.yml authenticates the job to Google before this
+// runs.
 
 import { BigQuery } from "@google-cloud/bigquery";
-import { resolveServiceAccountCredentialsJson } from "../../scripts/lib/googleAuth.js";
+import { assertFederatedCredentials } from "../../scripts/lib/googleAuth.js";
 import { getStripeClient } from "@app/lib/stripeClient.js";
 
 let cachedClient = null;
-let cachedCredentialsJson = null;
 
 async function getBigQueryClient(projectId) {
-  const credentialsJson = await resolveServiceAccountCredentialsJson({
-    jsonEnvVar: "GA4_SERVICE_ACCOUNT_JSON",
-    arnEnvVar: "GA4_SERVICE_ACCOUNT_ARN",
-  });
-  if (cachedClient && cachedCredentialsJson === credentialsJson) {
+  if (cachedClient) {
     return cachedClient;
   }
-  cachedClient = new BigQuery({ projectId, credentials: JSON.parse(credentialsJson) });
-  cachedCredentialsJson = credentialsJson;
+  assertFederatedCredentials();
+  cachedClient = new BigQuery({ projectId });
   return cachedClient;
 }
 
