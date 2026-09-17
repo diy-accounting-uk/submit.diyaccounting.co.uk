@@ -80,7 +80,6 @@ public class SubmitEnvironment {
         public String stripeTestWebhookSecretArn;
         public String baseImageTag;
         public String ga4PropertyId;
-        public String ga4ServiceAccountArn;
         public String ga4AuthMode;
         public String ga4BigQueryProjectId;
         public String ga4BigQueryDatasetId;
@@ -195,8 +194,6 @@ public class SubmitEnvironment {
         // Not a secret, so cdk.json is the primary source; GA4_PROPERTY_ID still overrides it,
         // matching every other value in this block.
         var ga4PropertyId = envOr("GA4_PROPERTY_ID", appProps.ga4PropertyId, "(from ga4PropertyId in cdk.json)");
-        var ga4ServiceAccountArn = envOr(
-                "GA4_SERVICE_ACCOUNT_ARN", appProps.ga4ServiceAccountArn, "(from ga4ServiceAccountArn in cdk.json)");
         var ga4AuthMode = envOr("GA4_AUTH_MODE", appProps.ga4AuthMode, "(from ga4AuthMode in cdk.json)");
         var ga4BigQueryProjectId = envOr(
                 "GA4_BIGQUERY_PROJECT_ID", appProps.ga4BigQueryProjectId, "(from ga4BigQueryProjectId in cdk.json)");
@@ -460,7 +457,6 @@ public class SubmitEnvironment {
                         .stripeSecretKeyArn(stripeSecretKeyArn != null ? stripeSecretKeyArn : "")
                         .stripeTestSecretKeyArn(stripeTestSecretKeyArn != null ? stripeTestSecretKeyArn : "")
                         .ga4PropertyId(ga4PropertyId != null ? ga4PropertyId : "")
-                        .ga4ServiceAccountArn(ga4ServiceAccountArn != null ? ga4ServiceAccountArn : "")
                         .ga4AuthMode(ga4AuthMode != null && !ga4AuthMode.isBlank() ? ga4AuthMode : "key")
                         .ga4BigQueryProjectId(ga4BigQueryProjectId != null ? ga4BigQueryProjectId : "")
                         .ga4BigQueryDatasetId(ga4BigQueryDatasetId != null ? ga4BigQueryDatasetId : "")

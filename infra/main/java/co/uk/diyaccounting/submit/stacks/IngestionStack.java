@@ -112,12 +112,6 @@ public class IngestionStack extends Stack {
             return "";
         }
 
-        // Same ARN-through-Secrets-Manager pattern as stripeSecretKeyArn.
-        @Value.Default
-        default String ga4ServiceAccountArn() {
-            return "";
-        }
-
         // The Google Cloud project holding the GA4 BigQuery export, from cdk.json's
         // ga4BigQueryProjectId context value. Same blank-in-prod-throws guard as ga4PropertyId:
         // a mistyped key would otherwise silently keep this blank and the event export job would
@@ -331,10 +325,7 @@ public class IngestionStack extends Stack {
         if (props.ga4PropertyId() != null && !props.ga4PropertyId().isBlank()) {
             ga4ReportPullEnv.with("GA4_PROPERTY_ID", props.ga4PropertyId());
         }
-        if (props.ga4ServiceAccountArn() != null
-                && !props.ga4ServiceAccountArn().isBlank()) {
-            ga4ReportPullEnv.with("GA4_SERVICE_ACCOUNT_ARN", props.ga4ServiceAccountArn());
-        }
+        ga4ReportPullEnv.with("GA4_SERVICE_ACCOUNT_ARN", sharedNames.ga4ServiceAccountSecretArn);
         withGoogleFederation(ga4ReportPullEnv, props);
 
         IRepository ga4ReportPullRepository = Repository.fromRepositoryAttributes(
@@ -373,17 +364,11 @@ public class IngestionStack extends Stack {
                 .resources(List.of(this.lakeBucket.getBucketArn() + "/curated/ga4/*"))
                 .build());
 
-        if (props.ga4ServiceAccountArn() != null
-                && !props.ga4ServiceAccountArn().isBlank()) {
-            var ga4SecretArnWithWildcard = props.ga4ServiceAccountArn().endsWith("*")
-                    ? props.ga4ServiceAccountArn()
-                    : props.ga4ServiceAccountArn() + "-*";
-            ga4ReportPullLambda.addToRolePolicy(PolicyStatement.Builder.create()
-                    .effect(Effect.ALLOW)
-                    .actions(List.of("secretsmanager:GetSecretValue"))
-                    .resources(List.of(ga4SecretArnWithWildcard))
-                    .build());
-        }
+        ga4ReportPullLambda.addToRolePolicy(PolicyStatement.Builder.create()
+                .effect(Effect.ALLOW)
+                .actions(List.of("secretsmanager:GetSecretValue"))
+                .resources(List.of(sharedNames.ga4ServiceAccountSecretArn + "-*"))
+                .build());
 
         registerIngestionJob(
                 "Ga4ReportPull",
@@ -420,10 +405,7 @@ public class IngestionStack extends Stack {
         if (props.ga4BigQueryLocation() != null && !props.ga4BigQueryLocation().isBlank()) {
             ga4EventExportPullEnv.with("GA4_BIGQUERY_LOCATION", props.ga4BigQueryLocation());
         }
-        if (props.ga4ServiceAccountArn() != null
-                && !props.ga4ServiceAccountArn().isBlank()) {
-            ga4EventExportPullEnv.with("GA4_SERVICE_ACCOUNT_ARN", props.ga4ServiceAccountArn());
-        }
+        ga4EventExportPullEnv.with("GA4_SERVICE_ACCOUNT_ARN", sharedNames.ga4ServiceAccountSecretArn);
         withGoogleFederation(ga4EventExportPullEnv, props);
 
         IRepository ga4EventExportPullRepository = Repository.fromRepositoryAttributes(
@@ -464,18 +446,11 @@ public class IngestionStack extends Stack {
 
         // Same GA4 service-account secret ga4ReportPullLambda reads: one BigQuery-enabled
         // service account for both the Data API and the BigQuery export.
-        if (props.ga4ServiceAccountArn() != null
-                && !props.ga4ServiceAccountArn().isBlank()) {
-            var ga4EventExportSecretArnWithWildcard =
-                    props.ga4ServiceAccountArn().endsWith("*")
-                            ? props.ga4ServiceAccountArn()
-                            : props.ga4ServiceAccountArn() + "-*";
-            ga4EventExportPullLambda.addToRolePolicy(PolicyStatement.Builder.create()
-                    .effect(Effect.ALLOW)
-                    .actions(List.of("secretsmanager:GetSecretValue"))
-                    .resources(List.of(ga4EventExportSecretArnWithWildcard))
-                    .build());
-        }
+        ga4EventExportPullLambda.addToRolePolicy(PolicyStatement.Builder.create()
+                .effect(Effect.ALLOW)
+                .actions(List.of("secretsmanager:GetSecretValue"))
+                .resources(List.of(sharedNames.ga4ServiceAccountSecretArn + "-*"))
+                .build());
 
         registerIngestionJob(
                 "Ga4EventExportPull",
@@ -499,10 +474,7 @@ public class IngestionStack extends Stack {
         if (props.ga4BigQueryLocation() != null && !props.ga4BigQueryLocation().isBlank()) {
             ga4DailyPullEnv.with("GA4_BIGQUERY_LOCATION", props.ga4BigQueryLocation());
         }
-        if (props.ga4ServiceAccountArn() != null
-                && !props.ga4ServiceAccountArn().isBlank()) {
-            ga4DailyPullEnv.with("GA4_SERVICE_ACCOUNT_ARN", props.ga4ServiceAccountArn());
-        }
+        ga4DailyPullEnv.with("GA4_SERVICE_ACCOUNT_ARN", sharedNames.ga4ServiceAccountSecretArn);
         withGoogleFederation(ga4DailyPullEnv, props);
 
         IRepository ga4DailyPullRepository = Repository.fromRepositoryAttributes(
@@ -543,17 +515,11 @@ public class IngestionStack extends Stack {
 
         // Same GA4 service-account secret the other GA4 jobs read: one BigQuery-enabled service
         // account for the Data API, the raw event export and these daily aggregates alike.
-        if (props.ga4ServiceAccountArn() != null
-                && !props.ga4ServiceAccountArn().isBlank()) {
-            var ga4DailyPullSecretArnWithWildcard = props.ga4ServiceAccountArn().endsWith("*")
-                    ? props.ga4ServiceAccountArn()
-                    : props.ga4ServiceAccountArn() + "-*";
-            ga4DailyPullLambda.addToRolePolicy(PolicyStatement.Builder.create()
-                    .effect(Effect.ALLOW)
-                    .actions(List.of("secretsmanager:GetSecretValue"))
-                    .resources(List.of(ga4DailyPullSecretArnWithWildcard))
-                    .build());
-        }
+        ga4DailyPullLambda.addToRolePolicy(PolicyStatement.Builder.create()
+                .effect(Effect.ALLOW)
+                .actions(List.of("secretsmanager:GetSecretValue"))
+                .resources(List.of(sharedNames.ga4ServiceAccountSecretArn + "-*"))
+                .build());
 
         registerIngestionJob(
                 "Ga4DailyPull",
