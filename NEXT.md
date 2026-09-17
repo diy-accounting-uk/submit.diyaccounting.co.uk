@@ -16,12 +16,11 @@ runs), and for Claude Code steps the **Model** a sub-agent should use (Fable > O
 Haiku; the lowest tier that fits). Anything touching code goes through a `claude/*` branch and
 PR; the operator merges.
 
-**Prod runs deployment prod-f080052** (PR #266, run 35142477824, promoted under the `deploy-ops` gate
-at 20:3x UTC on 2026-09-16 with the pool at `Mfa.REQUIRED`; the same run destroyed prod-a84311b),
-verified against AWS at 20:5x UTC: the pointer names it and the deploy's own prod suites passed.
-**ci**: `ci-claudc4d2` (the b49 branch) is self-destructing (one stack left at 23:0x UTC);
-`ci-claudafe1` (the b52 branch, PR #276, created 22:39 UTC) is standing with its deploy's probes
-still running (run 35156736691); the pointer moves to it when they pass.
+**Prod runs deployment prod-3ce4693** (wave b52, PR #276, run 35161551059, promoted at 00:0x UTC
+on 2026-09-17; the same run destroyed prod-f080052), verified against AWS at 00:3x UTC: the pointer
+names it, nine stacks, no other prod set stands. **ci**: `ci-claud0bad` (main's set from the same
+run) is live; `ci-claudafe1` (b52 branch) and the triage-budget branch's set self-destruct four
+hours after creation or on the next sweep.
 
 The board runs in five sections, in this order: **in flight** (a branch, a pull request or a run
 in motion, each named in the row), **machine-only**, **machine-ask**, **human-driven**,
@@ -42,16 +41,6 @@ names its model: the lowest tier that fits (Fable > Opus > Sonnet > Haiku), or `
 step.
 
 ## In flight
-
-- [ ] **B30ah. Alarm triage: 8 a day, a Haiku first pass, Sonnet on escalation.** The operator's
-  pick (2026-09-16, after `REPORT_ALARM_TRIAGE_COST.md`: $0.45 a Sonnet triage, the cap 4 a day at
-  `-gt 3`, 5 of 11 alarm issues untriaged). In flight on `claude/ops-triage-budget` (worktree
-  `.claude/worktrees/triage-budget`, PR #281): the budget guard reads one
-  `TRIAGE_BUDGET_PER_DAY` of 8, the first pass runs on the eu Haiku 4.5 profile, a judge step
-  escalates to Sonnet on an error, max-turns, an empty result or an "unable to determine" answer,
-  and the comment names the model; the `claude -p` invocation lives once in
-  `.github/actions/run-triage-agent`. Proof: the next alarm's triage comment names Haiku or Sonnet. **Source**:
-  REPORT_ALARM_TRIAGE_COST.md; issue #249. **Owner**: Claude Code. **Model**: Sonnet. **Size**: ~2 files.
 
 ## Machine-only
 
@@ -74,15 +63,6 @@ step.
   which it owns, or the wait-for-main-deploy action guards the ci probes too. Pick the first
   unless the suites need the apex. Then re-run any red the race caused. **Source**: run
   35161068061. **Owner**: Claude Code. **Model**: Sonnet. **Size**: ~2 files.
-
-- [ ] **B30af.2. Close #272 and #279 when prod carries wave b52.** PR #276 (3ce46938) is on `main`:
-  the probe guard now re-checks for a deploy before each apex navigation (incident #272), one
-  issue per alarm transition across deployments, and the agentic-lib workflows under the
-  alarm-triage role, which gains `cloudformation:ListStacks` on prod's environment deploy (alarm
-  issue #279, its denied call). Read `main`'s deploy 35161551059 and environment deploy
-  35161550538 to their terminal state, confirm the prod pointer moved and the triage role's policy
-  carries the two actions, then close both issues with the run ids. **Source**: issues #272, #279.
-  **Owner**: Claude Code. **Model**: Haiku. **Size**: ~0 files.
 
 - [ ] **B124.2. The code agent's prompt asks for what its tool list denies.** Both code proofs
   (runs 35159801420 and 35160283767, from `claude/b52-board`) picked the simplest ready row,
