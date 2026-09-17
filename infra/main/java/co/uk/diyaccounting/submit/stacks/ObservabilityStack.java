@@ -388,6 +388,20 @@ public class ObservabilityStack extends Stack {
                 .displayName("DIY Accounting Submit - Security Findings")
                 .build();
 
+        // Alarms in SecurityDetectionStack publish to this topic via SnsAction; without this
+        // policy CloudWatch Alarms gets AccessDenied on SNS:Publish, and that denial is itself
+        // an AccessDenied CloudTrail event counted by the CIS unauthorized-api-calls metric,
+        // making the alarm re-fire on its own failed action.
+        securityFindingsTopic.addToResourcePolicy(PolicyStatement.Builder.create()
+                .effect(Effect.ALLOW)
+                .principals(List.of(new ServicePrincipal("cloudwatch.amazonaws.com")))
+                .actions(List.of("sns:Publish"))
+                .resources(List.of(securityFindingsTopic.getTopicArn()))
+                .conditions(Map.of(
+                        "StringEquals",
+                        Map.of("aws:SourceAccount", Stack.of(this).getAccount())))
+                .build());
+
         cfnOutput(this, "SecurityFindingsTopicArn", securityFindingsTopic.getTopicArn());
 
         // ============================================================================
