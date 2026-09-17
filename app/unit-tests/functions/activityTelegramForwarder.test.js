@@ -193,6 +193,7 @@ describe("activityTelegramForwarder", () => {
 
     afterEach(() => {
       process.env = { ...originalEnv };
+      vi.useRealTimers();
       vi.restoreAllMocks();
     });
 
@@ -311,6 +312,130 @@ describe("activityTelegramForwarder", () => {
       });
 
       // Should not throw
+      expect(global.fetch).toHaveBeenCalledTimes(1);
+    });
+
+    test("retries once after a 429 with a retry_after inside the cap, and succeeds", async () => {
+      vi.useFakeTimers();
+      const tooManyRequests = {
+        ok: false,
+        status: 429,
+        text: () =>
+          Promise.resolve(
+            '{"ok":false,"error_code":429,"description":"Too Many Requests: retry after 2","parameters":{"retry_after":2}}',
+          ),
+      };
+      const succeeds = { ok: true, status: 200, text: () => Promise.resolve("{}") };
+      global.fetch = vi.fn().mockResolvedValueOnce(tooManyRequests).mockResolvedValueOnce(succeeds);
+
+      const handlerPromise = handler({
+        detail: {
+          event: "login",
+          site: "submit",
+          env: "prod",
+          actor: "customer",
+          flow: "user-journey",
+          summary: "Login",
+        },
+      });
+
+      await vi.advanceTimersByTimeAsync(2000);
+      await handlerPromise;
+
+      expect(global.fetch).toHaveBeenCalledTimes(2);
+      const [firstUrl] = global.fetch.mock.calls[0];
+      const [secondUrl] = global.fetch.mock.calls[1];
+      expect(secondUrl).toBe(firstUrl);
+    });
+
+    test("does not retry a second 429, and still warns without throwing", async () => {
+      vi.useFakeTimers();
+      const tooManyRequests = (retryAfter) => ({
+        ok: false,
+        status: 429,
+        text: () =>
+          Promise.resolve(
+            JSON.stringify({
+              ok: false,
+              error_code: 429,
+              description: `Too Many Requests: retry after ${retryAfter}`,
+              parameters: { retry_after: retryAfter },
+            }),
+          ),
+      });
+      global.fetch = vi.fn().mockResolvedValueOnce(tooManyRequests(2)).mockResolvedValueOnce(tooManyRequests(2));
+
+      const handlerPromise = handler({
+        detail: {
+          event: "login",
+          site: "submit",
+          env: "prod",
+          actor: "customer",
+          flow: "user-journey",
+          summary: "Login",
+        },
+      });
+
+      await vi.advanceTimersByTimeAsync(2000);
+      await handlerPromise;
+
+      // One retry, no more: two fetch calls total, not three.
+      expect(global.fetch).toHaveBeenCalledTimes(2);
+    });
+
+    test("does not retry a 429 whose retry_after exceeds the cap", async () => {
+      const tooManyRequests = {
+        ok: false,
+        status: 429,
+        text: () =>
+          Promise.resolve(
+            '{"ok":false,"error_code":429,"description":"Too Many Requests: retry after 5","parameters":{"retry_after":5}}',
+          ),
+      };
+      global.fetch = vi.fn().mockResolvedValue(tooManyRequests);
+
+      await handler({
+        detail: {
+          event: "login",
+          site: "submit",
+          env: "prod",
+          actor: "customer",
+          flow: "user-journey",
+          summary: "Login",
+        },
+      });
+
+      expect(global.fetch).toHaveBeenCalledTimes(1);
+    });
+
+    test("aborts a Telegram request that runs past the per-attempt timeout, so the invocation does not hang until the Lambda's own timeout", async () => {
+      vi.useFakeTimers();
+      global.fetch = vi.fn().mockImplementation((url, options) => {
+        return new Promise((resolve, reject) => {
+          options.signal.addEventListener("abort", () => {
+            const error = new Error("This operation was aborted");
+            error.name = "AbortError";
+            reject(error);
+          });
+        });
+      });
+
+      const handlerPromise = handler({
+        detail: {
+          event: "login",
+          site: "submit",
+          env: "prod",
+          actor: "customer",
+          flow: "user-journey",
+          summary: "Login",
+        },
+      });
+
+      await vi.advanceTimersByTimeAsync(4000);
+      await handlerPromise;
+
+      // The abort turns into a rejected send, caught by Promise.allSettled — the invocation
+      // returns instead of running to the Lambda's own 10s timeout.
       expect(global.fetch).toHaveBeenCalledTimes(1);
     });
 
