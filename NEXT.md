@@ -168,7 +168,7 @@ step.
   inside the step function `ci-env-analytics-nightly` (`cron(15 2 ? * MON *)` UTC), whose last two
   runs (2026-09-07, 2026-09-14) failed on `ga4-event-export-pull`'s missing BigQuery export table
   for the day, a data-availability error unrelated to auth. No federated invocation exists yet.
-  **Source**: B55; PRs #237, #241, #245, #247; `PLAN_GOOGLE_AS_CODE.md` items 9 and 11. **Owner**:
+  **Source**: B55; PRs #237, #241, #245, #247; `PLAN_EVERYTHING_AS_CODE.md` items 9 and 11. **Owner**:
   Operator starts, Claude Code finishes. **Model**: Sonnet. PR #271 (5cdaf30e, merged 20:5x UTC on
   2026-09-16) maps both AWS providers' `google.subject` to the role name, after the operator's start
   of `ci-env-analytics-nightly` at 19:28 UTC proved `ga4-daily-pull` and `ga4-report-pull` federated

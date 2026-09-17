@@ -57,7 +57,7 @@ Refined items live on `NEXT.md` under the labels in the second column.
 
 | # | NEXT.md items | Item | Source | Effort | Value |
 |---|---|---|---|---|---|
-| 55 | B55 | Google as code, items 8 to 11: the workload identity pool and GitHub provider, Actions authenticating by federation instead of a key, key rotation as code, the analytics Lambdas federating instead of holding a key (`PLAN_GOOGLE_AS_CODE.md`). | PLAN_GOOGLE_AS_CODE.md; row 49 | M | Security. Removes the one long-lived Google key and dates the rotation. |
+| 55 | B55 | Google as code, items 8 to 11: the workload identity pool and GitHub provider, Actions authenticating by federation instead of a key, key rotation as code, the analytics Lambdas federating instead of holding a key (`PLAN_EVERYTHING_AS_CODE.md`). | PLAN_EVERYTHING_AS_CODE.md; row 49 | M | Security. Removes the one long-lived Google key and dates the rotation. |
 
 ## Tier 2: revenue path (start now, runs weeks to months)
 
