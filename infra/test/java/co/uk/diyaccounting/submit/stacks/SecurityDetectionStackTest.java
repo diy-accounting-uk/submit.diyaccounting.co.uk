@@ -45,10 +45,10 @@ class SecurityDetectionStackTest {
     void wiresScanAndGetItemVolumeAlarmsWhenCloudTrailEnabled() {
         Template template = Template.fromStack(synthSecurityDetectionStack("true"));
 
-        // 3 hand-written detectors (scan, GetItem volume, salt read) plus the fourteen CIS
-        // CloudWatch metric filter controls.
-        template.resourceCountIs("AWS::Logs::MetricFilter", 17);
-        template.resourceCountIs("AWS::CloudWatch::Alarm", 17);
+        // 4 hand-written detectors (scan, GetItem volume, salt read, email hash secret read)
+        // plus the fourteen CIS CloudWatch metric filter controls.
+        template.resourceCountIs("AWS::Logs::MetricFilter", 18);
+        template.resourceCountIs("AWS::CloudWatch::Alarm", 18);
 
         // The stack imports ObservabilityStack's topic by ARN rather than creating its own.
         template.resourceCountIs("AWS::SNS::Topic", 0);
@@ -135,6 +135,32 @@ class SecurityDetectionStackTest {
                 "expected the salt-read metric filter pattern to reference GetSecretValue,"
                         + " the salt secret, the docs-* environment role prefix, and the"
                         + " submit-docs-deployment-role exception");
+
+        // Email hash secret unexpected-read alarm: same shape as the salt-read alarm above,
+        // against the Submit/Security namespace's EmailHashSecretUnexpectedRead metric.
+        template.hasResourceProperties(
+                "AWS::CloudWatch::Alarm",
+                Match.objectLike(Map.of(
+                        "AlarmName", "docs-env-email-hash-secret-unexpected-read",
+                        "MetricName", "EmailHashSecretUnexpectedRead",
+                        "Namespace", "Submit/Security",
+                        "ComparisonOperator", "GreaterThanOrEqualToThreshold",
+                        "Threshold", 1)));
+
+        boolean emailHashReadFilterScoped = metricFilters.values().stream().anyMatch(resource -> {
+            @SuppressWarnings("unchecked")
+            var properties = (Map<String, Object>) resource.get("Properties");
+            var filterPattern = (String) properties.get("FilterPattern");
+            return filterPattern.contains("\"GetSecretValue\"")
+                    && filterPattern.contains("email-hash-secret")
+                    && filterPattern.contains("docs-*")
+                    && filterPattern.contains("submit-docs-deployment-role");
+        });
+        assertTrue(
+                emailHashReadFilterScoped,
+                "expected the email-hash-secret-read metric filter pattern to reference"
+                        + " GetSecretValue, the email hash secret, the docs-* environment role"
+                        + " prefix, and the submit-docs-deployment-role exception");
 
         // One of the fourteen CIS CloudWatch metric filter controls, as a representative check
         // that the loop wired both the filter and the alarm through to the shared topic.

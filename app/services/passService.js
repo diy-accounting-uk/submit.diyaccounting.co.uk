@@ -5,7 +5,7 @@
 
 import { createLogger } from "../lib/logger.js";
 import { generatePassphrase } from "../lib/passphrase.js";
-import { hashEmail, hashEmailWithEnvSecret, initializeEmailHashSecret } from "../lib/emailHash.js";
+import { hashEmail, hashEmailWithEnvSecret, hashEmailWithVersion, initializeEmailHashSecret } from "../lib/emailHash.js";
 import { calculateTtl } from "../lib/dateUtils.js";
 import * as passRepository from "../data/dynamoDbPassRepository.js";
 
@@ -193,13 +193,10 @@ export async function redeemPass(code, userEmail, emailHashSecret) {
         return { valid: false, reason: "email_required", pass: redeemed };
       }
 
-      let emailHash;
-      if (emailHashSecret) {
-        emailHash = hashEmail(userEmail, emailHashSecret);
-      } else {
+      if (!emailHashSecret) {
         await initializeEmailHashSecret();
-        emailHash = hashEmailWithEnvSecret(userEmail).hash;
       }
+      const emailHash = hashEmailForComparison(userEmail, emailHashSecret, redeemed.emailHashSecretVersion);
 
       if (redeemed.restrictedToEmailHash !== emailHash) {
         // Email doesn't match - we already incremented useCount, but this is acceptable
@@ -219,6 +216,29 @@ export async function redeemPass(code, userEmail, emailHashSecret) {
   // Atomic redeem failed - diagnose why
   const reason = await diagnoseFailure(code);
   return { valid: false, reason };
+}
+
+/**
+ * Hash a user's email the way a stored pass record was hashed, so the comparison uses the
+ * exact secret version that record was created with rather than whichever version is current
+ * now. A rotation adds a new version to the registry without invalidating passes created
+ * under an earlier one, because each pass carries its own emailHashSecretVersion.
+ *
+ * @param {string} userEmail - The email address to hash
+ * @param {string} [emailHashSecret] - Explicit secret, bypassing the version registry
+ * @param {string} [emailHashSecretVersion] - The version recorded on the pass at creation
+ * @returns {string} The email hash to compare against pass.restrictedToEmailHash
+ */
+function hashEmailForComparison(userEmail, emailHashSecret, emailHashSecretVersion) {
+  if (emailHashSecret) {
+    return hashEmail(userEmail, emailHashSecret);
+  }
+  if (emailHashSecretVersion && emailHashSecretVersion !== "explicit") {
+    return hashEmailWithVersion(userEmail, emailHashSecretVersion);
+  }
+  // Legacy pass records created before emailHashSecretVersion was stored: fall back to
+  // whichever version is current, the only version that existed at the time.
+  return hashEmailWithEnvSecret(userEmail).hash;
 }
 
 /**
@@ -243,12 +263,7 @@ function validatePass(pass, now, userEmail, emailHashSecret) {
       };
     }
 
-    let emailHash;
-    if (emailHashSecret) {
-      emailHash = hashEmail(userEmail, emailHashSecret);
-    } else {
-      emailHash = hashEmailWithEnvSecret(userEmail).hash;
-    }
+    const emailHash = hashEmailForComparison(userEmail, emailHashSecret, pass.emailHashSecretVersion);
 
     if (pass.restrictedToEmailHash !== emailHash) {
       return { valid: false, reason: "wrong_email", pass };

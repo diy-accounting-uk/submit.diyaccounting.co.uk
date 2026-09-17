@@ -1,13 +1,16 @@
 // SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0
 // Copyright (C) 2006-2026 DIY Accounting Limited
 
-import { describe, it, expect, beforeEach } from "vitest";
+import { describe, it, expect, beforeEach, afterEach } from "vitest";
 import {
   hashEmail,
   _setTestEmailHashSecret,
+  _setTestEmailHashSecretRegistry,
   _clearEmailHashSecret,
   hashEmailWithEnvSecret,
+  hashEmailWithVersion,
   getEmailHashSecretVersion,
+  initializeEmailHashSecret,
 } from "../../lib/emailHash.js";
 import { dotenvConfigIfNotBlank } from "@app/lib/env.js";
 
@@ -92,6 +95,78 @@ describe("emailHash", () => {
     it("should return null if not initialized", () => {
       _clearEmailHashSecret();
       expect(getEmailHashSecretVersion()).toBeNull();
+    });
+  });
+
+  describe("hashEmailWithVersion", () => {
+    beforeEach(() => {
+      _setTestEmailHashSecretRegistry({
+        current: "v2",
+        versions: { v1: "secret-v1", v2: "secret-v2" },
+      });
+    });
+
+    it("hashes with a specific non-current version, for re-checking an older pass", () => {
+      const hash = hashEmailWithVersion("user@example.com", "v1");
+      expect(hash).toBe(hashEmail("user@example.com", "secret-v1"));
+      expect(hash).not.toBe(hashEmailWithVersion("user@example.com", "v2"));
+    });
+
+    it("hashes with the current version too", () => {
+      expect(hashEmailWithVersion("user@example.com", "v2")).toBe(hashEmail("user@example.com", "secret-v2"));
+    });
+
+    it("throws for a version not in the registry", () => {
+      expect(() => hashEmailWithVersion("user@example.com", "v99")).toThrow(
+        'Email hash secret version "v99" not found in registry',
+      );
+    });
+
+    it("throws when the secret is not initialized", () => {
+      _clearEmailHashSecret();
+      expect(() => hashEmailWithVersion("user@example.com", "v1")).toThrow("not initialized");
+    });
+  });
+
+  describe("initializeEmailHashSecret", () => {
+    afterEach(() => {
+      delete process.env.EMAIL_HASH_SECRET;
+      _clearEmailHashSecret();
+    });
+
+    it("initializes from a JSON registry in EMAIL_HASH_SECRET", async () => {
+      process.env.EMAIL_HASH_SECRET = '{"current":"v1","versions":{"v1":"env-var-secret"}}';
+
+      await initializeEmailHashSecret();
+
+      expect(getEmailHashSecretVersion()).toBe("v1");
+      expect(hashEmailWithEnvSecret("user@example.com").hash).toBe(hashEmail("user@example.com", "env-var-secret"));
+    });
+
+    it("accepts a legacy raw (non-JSON) secret value as v1, so the secret created by hand keeps working", async () => {
+      process.env.EMAIL_HASH_SECRET = "raw-string-secret";
+
+      await initializeEmailHashSecret();
+
+      expect(getEmailHashSecretVersion()).toBe("v1");
+      expect(hashEmailWithEnvSecret("user@example.com").hash).toBe(hashEmail("user@example.com", "raw-string-secret"));
+    });
+
+    it("treats a JSON value with no current field as a legacy raw secret too", async () => {
+      process.env.EMAIL_HASH_SECRET = '{"versions":{"v1":"secret"}}';
+
+      await initializeEmailHashSecret();
+
+      expect(getEmailHashSecretVersion()).toBe("v1");
+      expect(hashEmailWithEnvSecret("user@example.com").hash).toBe(
+        hashEmail("user@example.com", '{"versions":{"v1":"secret"}}'),
+      );
+    });
+
+    it("rejects a registry where current points to a missing version", async () => {
+      process.env.EMAIL_HASH_SECRET = '{"current":"v2","versions":{"v1":"secret"}}';
+
+      await expect(initializeEmailHashSecret()).rejects.toThrow("registry missing required fields");
     });
   });
 });

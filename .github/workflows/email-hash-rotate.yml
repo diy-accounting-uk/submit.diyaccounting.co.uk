@@ -1,0 +1,96 @@
+# SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0
+# Copyright (C) 2006-2026 DIY Accounting Limited
+
+# Adds a new version to one environment's email-hash-secret registry and makes it current,
+# one job per environment, keeping every earlier version so a pass hashed under it still checks
+# (scripts/email-hash-rotate.js; app/lib/emailHash.js reads the version each pass recorded).
+# Dispatch-only: plan by default, apply to write. Runbook section 4 covers the salt this mirrors.
+
+name: email hash rotate
+run-name: "email hash rotate (${{ inputs.apply && 'apply' || 'plan' }}) from ${{ github.ref_name }}"
+
+concurrency:
+  group: email-hash-rotate
+  cancel-in-progress: false
+
+on:
+  workflow_dispatch:
+    inputs:
+      apply:
+        description: "Write the new version to Secrets Manager (true) or plan only (false)"
+        required: false
+        default: false
+        type: boolean
+
+env:
+  NODE_VERSION: '24'
+  AWS_REGION: 'eu-west-2'
+
+jobs:
+  rotate:
+    name: ${{ matrix.environment }}
+    runs-on: ubuntu-24.04
+    environment: ${{ matrix.environment }}
+    strategy:
+      fail-fast: false
+      max-parallel: 1
+      matrix:
+        environment: [ci, prod]
+    permissions:
+      id-token: write
+      contents: read
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+
+      - name: Setup Node.js
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: timeout 120 npm ci --prefer-offline || { sleep 30; timeout 180 npm ci; }
+        timeout-minutes: 6
+        env:
+          NPM_CONFIG_FETCH_RETRIES: "3"
+
+      - name: Configure AWS role via GitHub OIDC
+        uses: aws-actions/configure-aws-credentials@e1253824e5c10ff9df46874f81ed3ec929e19cfd # v6
+        with:
+          role-to-assume: ${{ vars.SUBMIT_ACTIONS_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+          role-chaining: false
+          audience: sts.amazonaws.com
+          role-skip-session-tagging: true
+          output-credentials: true
+          retry-max-attempts: 3
+
+      - name: Assume AWS deployment role
+        uses: aws-actions/configure-aws-credentials@e1253824e5c10ff9df46874f81ed3ec929e19cfd # v6
+        with:
+          role-to-assume: ${{ vars.SUBMIT_DEPLOY_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+          role-chaining: true
+          audience: sts.amazonaws.com
+          role-skip-session-tagging: true
+          output-credentials: true
+          retry-max-attempts: 3
+
+      - name: Rotate the email hash secret
+        env:
+          ENVIRONMENT_NAME: ${{ matrix.environment }}
+        run: |
+          if [ "${{ inputs.apply }}" = "true" ]; then
+            node scripts/email-hash-rotate.js --apply 2>&1 | tee email-hash-rotate.log
+          else
+            node scripts/email-hash-rotate.js 2>&1 | tee email-hash-rotate.log
+          fi
+
+      - name: Generate step summary
+        if: always()
+        run: |
+          echo "# Email hash rotate, ${{ matrix.environment }} ($([ "${{ inputs.apply }}" = "true" ] && echo apply || echo plan))" >> "$GITHUB_STEP_SUMMARY"
+          echo '```' >> "$GITHUB_STEP_SUMMARY"
+          cat email-hash-rotate.log >> "$GITHUB_STEP_SUMMARY"
+          echo '```' >> "$GITHUB_STEP_SUMMARY"
