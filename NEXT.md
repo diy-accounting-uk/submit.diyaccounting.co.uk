@@ -16,10 +16,9 @@ runs), and for Claude Code steps the **Model** a sub-agent should use (Fable > O
 Haiku; the lowest tier that fits). Anything touching code goes through a `claude/*` branch and
 PR; the operator merges.
 
-**Prod runs deployment prod-952b978** (PR #288, run 35176978495; the pointer and its nine stacks
-verified against AWS at 07:5x UTC on 2026-09-17). PRs #296, #294 and #291 merged at 07:25 UTC;
-`main`'s deploy of fcbc468e (35194438596) is standing prod-fcbc468 up and 9284434c's
-(35194544211) waits behind it in the prod concurrency group. **ci**: `ci-claud86af` is live.
+**Prod runs deployment prod-fcbc468** (PR #296, run 35194438596, last-known-good set at 08:16 UTC on
+2026-09-17; prod-952b978 is being destroyed by that run). `main`'s deploy of 9284434c
+(35194544211, PRs #294 and #291) starts when it ends and promotes prod-9284434. **ci**: `ci-claud86af` is live.
 
 The board runs in five sections, in this order: **in flight** (a branch, a pull request or a run
 in motion, each named in the row), **machine-only**, **machine-ask**, **human-driven**,
@@ -89,17 +88,6 @@ step.
 ## Machine-only
 
 ## Machine-ask
-
-- [ ] **B30al. `destroy-ci.yml`'s cron has not fired since its schedule changed.** The last
-  scheduled sweep ran at 13:40 UTC on 2026-09-16 (the old cron's slot, after commit 58290819 at
-  12:29 wrote `34 2,4,6,8,10,12 * * *`); none of the new slots has produced a run, so leftovers
-  wait for the self-destruct fire or a `workflow_run` sweep. The `on:` block on `main` is
-  well-formed and the workflow reports `active`. Re-register the schedule by toggling the
-  workflow (an Actions-settings write, the operator's), then check for the next slot's run:
-  `gh run list --workflow destroy-ci.yml --event schedule --limit 1`. If the toggle does not
-  bring it back, a PR that touches the file does. **Source**: `gh run list --workflow
-  destroy-ci.yml --event schedule`. **Owner**: operator (the toggle), then Claude Code.
-  **Model**: Haiku. **Size**: ~0 files.
 
 - [ ] **B52y.5. The ops GitHub token cannot read Dependabot or secret-scanning alerts.** The
   same nightly logs `GitHub API error fetching dependabot/alerts: 403 {"message":"Resource not
