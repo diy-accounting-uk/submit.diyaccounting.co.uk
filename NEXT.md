@@ -16,9 +16,8 @@ runs), and for Claude Code steps the **Model** a sub-agent should use (Fable > O
 Haiku; the lowest tier that fits). Anything touching code goes through a `claude/*` branch and
 PR; the operator merges.
 
-**Prod runs deployment prod-53bc2d1** (PR #295, run 35210720771; the pointer moved at 11:0x UTC on
-2026-09-17 and the run is destroying prod-b8bd2f3). PR #297 merged as b14a7692 at 11:12; its deploy
-35214505930 waits behind that run in the prod concurrency group. **ci**: `ci-set1` (PR #295's set, last-known-good at 10:06 UTC) is live; its self-destruct schedule from
+**Prod runs deployment prod-b14a769** (PR #297, run 35214505930, green at 12:25 UTC on 2026-09-17).
+PR #299 merged next; its deploy of `main` promotes prod's next set when its suites pass. **ci**: `ci-set1` (PR #295's set, last-known-good at 10:06 UTC) is live; its self-destruct schedule from
 the slot's first claim fires next at 11:44 UTC (B30af.7). PR #295 merged as 53bc2d1c; `main`'s
 deploy 35210720771 is running.
 
@@ -68,23 +67,14 @@ step.
   2026-09-17. **Owner**: Claude Code. **Model**: Sonnet.
   **Size**: ~3 files.
 
-- [ ] **B30am. Alarm #298: the prod activity Telegram forwarder errors under a burst.**
-  `prod-env-activity-stack-health` fired at 08:14 UTC on 2026-09-17 on
-  `check-prod-env-activity-telegram-forwarder-errors` (back to OK at 08:15). Lambda `Errors` for
-  `prod-env-activity-telegram-forwarder`: 9 in the five minutes from 07:50 UTC and 1 at 08:10,
-  during an invocation burst (32, 49, then 96 per five minutes) from the two prod deploys'
-  behaviour tests; the log holds eight `Telegram API error` warns at 07:55:09 (`429 Too Many
-  Requests: retry after 5`, chat -5204035635) and no ERROR or timeout line, so the nine errors
-  left no log. `sendTelegramMessage` (`activityTelegramForwarder.js` ~112) posts once and only
-  warns on a non-2xx; `check-...-log-errors` stayed OK. Find what the runtime counted as the nine
-  errors (the REPORT lines of those invocations, `Status: error`, or an init failure), then honour
-  `retry_after` with one bounded retry so a burst is delayed rather than dropped, and tell the
-  triage the alarm exists: its comment said the alarm and function are gone, which
-  `describe-alarms` contradicts. Found: ten invocations hit the Lambda's 10 s timeout on an unbounded fetch; the send is
-  now bounded at 4 s with one 429 retry. In flight on `claude/b56-board`, PR #299. **Source**: issue #298. **Owner**: Claude Code. **Model**:
-  Sonnet. **Size**: ~2 files.
-
 ## Machine-only
+
+- [ ] **B30am. Alarm #298: close it when the forwarder's next burst stays clean.** PR #299 bounds
+  the activity Telegram forwarder's send at 4 s and retries a 429 once; `main`'s deploy carries it.
+  After the next deploy-driven burst (any prod deploy's behaviour tests), read the `Errors` metric
+  of `prod-env-activity-telegram-forwarder` for that hour: 0, and no `Status: timeout` REPORT lines
+  in its log; then close #298 with that evidence. **Source**: issue #298. **Owner**: Claude Code.
+  **Model**: Haiku. **Size**: ~0 files.
 
 - [ ] **B52y.3. The security lake nightly's WAF rows: the next run proves the grant.** PR #297
   (b14a7692) gives the nightly's role `logs:DescribeLogGroups` on the resource IAM evaluates it
