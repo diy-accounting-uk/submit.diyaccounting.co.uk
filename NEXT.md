@@ -47,7 +47,7 @@ step.
   `6ec15af1`) ran all three GA4 Lambdas with `GA4_AUTH_MODE=federated`; `ga4-daily-pull` and
   `ga4-report-pull` SUCCEEDED and `ga4-event-export-pull` reached BigQuery and failed only on the
   missing export table `events_20260915` in ci's own property. The machine half is on
-  `claude/b58-board` (worktree `.claude/worktrees/b58-federation`): `.env.prod` to federated, the
+  `claude/b58-board`, PR #301 (worktree `.claude/worktrees/b58`): `.env.prod` to federated, the
   key-mode code out of the three Lambdas, `googleWorkloadIdentity.js`, `scripts/lib/googleAuth.js`
   and `IngestionStack`, the paymentBehaviour BigQuery read federated through
   `google-github-actions/auth` in `probe-test.yml`, the secret step out of
@@ -72,7 +72,9 @@ step.
   (b14a7692) gives the nightly's role `logs:DescribeLogGroups` on the resource IAM evaluates it
   against; main's deploy carries it. Read the 03:15 UTC run on 2026-09-18 in
   `/aws/lambda/prod-env-security-lake-nightly`: no `AccessDeniedException`, WAF rows written for
-  the day; then close #249 with that log (the GitHub alert rows stay null until B52y.5). **Source**:
+  the day, and no `403` on `dependabot/alerts` or `secret-scanning/alerts` (the operator granted
+  the ops token both read permissions in place at 22:5x UTC on 2026-09-17, so the two GitHub
+  alert rows come non-null too); then close #249 with that log. **Source**:
   issue #249. **Owner**: Claude Code. **Model**: Haiku. **Size**: ~0 files.
 
 - [ ] **B52y.4. The cost_focus Data Quality result after the fix: the next nightly proves it.** PR
@@ -86,15 +88,6 @@ step.
   **Size**: ~0 files.
 
 ## Machine-ask
-
-- [ ] **B52y.5. The ops GitHub token cannot read Dependabot or secret-scanning alerts.** The
-  same nightly logs `GitHub API error fetching dependabot/alerts: 403 {"message":"Resource not
-  accessible by personal access token"}` and the same for `secret-scanning/alerts`, and publishes a
-  null row for each. The token is the one in `prod/submit/github/issue_bot_token` (and ci's). The
-  operator grants it, at https://github.com/settings/tokens, repository permissions Dependabot
-  alerts: read and Secret scanning alerts: read (a classic token: `security_events` covers code
-  scanning only, so a fine-grained token is the shape that can). No code changes. **Source**: issue
-  #249. **Owner**: operator (the token), then the next nightly. **Model**: Haiku. **Size**: ~0 files.
 
 - [ ] **B53.7. The gyb Gmail-backup service-account key under a rotation plan.** Project
   `gyb-project-j7e-1uj-8n2` holds a service-account key for the workspace's mail mirror
