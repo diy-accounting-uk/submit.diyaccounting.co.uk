@@ -45,6 +45,15 @@ step.
 
 ## In flight
 
+- [ ] **B30af.4. The main-deploy guard missed a deploy in the waiting state.** Run 35171600510
+  (PR #285's branch deploy): the guard answered "no deploy.yml run in progress or queued on main"
+  at 02:54 UTC on 2026-09-17 while `main`'s deploy 35171500590 sat between jobs in GitHub's
+  `waiting` status (an environment-protected job), and six ci suites then met CloudFront's "The
+  request could not be satisfied" on the apex. `wait-for-main-deploy.mjs` now reads every recent
+  run on `main` and counts the ones not completed. In flight on `claude/ops-wait-guard` (PR
+  follows); the six jobs are re-running after main's deploy ended green. **Source**: run
+  35171600510. **Owner**: Claude Code. **Model**: Haiku. **Size**: ~1 file.
+
 - [ ] **B30aj. Alarm #284: CloudWatch alarms cannot publish to the prod security-findings topic.**
   The re-run triage (run 35172745844, Haiku first pass, 02:02 UTC on 2026-09-17, the first comment
   posted under PR #281's shape) read the alarm history: an alarm fires, its action fails with
