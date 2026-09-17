@@ -54,7 +54,7 @@ step.
   Read main's in-flight run's jobs (`/actions/runs/<id>/jobs`) and wait
   only until its `set origins` job (and `roll back apex` if it runs) is completed, or until the
   run ends; `.github/actions/wait-for-main-deploy/wait-for-main-deploy.mjs` and its unit test.
-  In flight on `claude/b57-board` (agent working). **Source**: runs 35194697647 and 35196041181's probe `params` jobs. **Owner**: Claude Code.
+  Landed on `claude/b57-board`; the batch's tests run before its push. **Source**: runs 35194697647 and 35196041181's probe `params` jobs. **Owner**: Claude Code.
   **Model**: Sonnet. **Size**: ~2 files.
 
 - [ ] **B30af.7. A slot reclaim re-anchors the slot's self-destruct clock.** `ci-set1`'s
@@ -64,7 +64,7 @@ step.
   When `claim-ci-slot` reclaims a slot (same ref, or stale), the deploy must move the schedule
   to creation-plus-delay from the claim, or delete and recreate the `SelfDestructStack`, so a
   redeploy always has a full window. `SelfDestructStack.java`, `claim-ci-slot.mjs`, `deploy.yml`.
-  In flight on `claude/b57-board` (agent working). **Source**: the self-destruct log `/aws/lambda/ci-env-self-destruct-eu-west-2` at 07:44 UTC on
+  Landed on `claude/b57-board`; the batch's tests run before its push. **Source**: the self-destruct log `/aws/lambda/ci-env-self-destruct-eu-west-2` at 07:44 UTC on
   2026-09-17. **Owner**: Claude Code. **Model**: Sonnet.
   **Size**: ~3 files.
 
