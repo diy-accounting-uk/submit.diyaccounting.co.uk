@@ -82,7 +82,9 @@ step.
   Google Ads account's Purchase conversion (imported 2026-09-17, O23 done: account, GA4 property
   523400333 linked, key events imported, reserve floor recorded at the workspace root) cannot tell
   one from the other. Give each its own event name in the toml and wherever the site emits them,
-  re-run the GA4 sync, and re-import the key events in Ads; campaign 1 stays paused until then.
+  re-run the GA4 sync, and re-import the key events in Ads. Campaign 1 (Performance Max, £1 a day)
+  is running since 2026-09-17 on Purchase and Sign-up, so until then its Purchase signal mixes
+  the two.
   In flight on `claude/b53-board` (wave b53, worktree `.claude/worktrees/b53`, agent running; push and PR follow the wave). **Source**: Cowork, 2026-09-17; `PLAN_ONE_STOP_DASHBOARD.md` D17. **Owner**: Claude Code.
   **Model**: Sonnet. **Size**: ~3 files.
 
