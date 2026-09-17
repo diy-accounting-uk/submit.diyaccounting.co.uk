@@ -17,9 +17,10 @@ Haiku; the lowest tier that fits). Anything touching code goes through a `claude
 PR; the operator merges.
 
 **Prod runs deployment prod-d689744** (PR #300, run 35229274840, green at 14:45 UTC on 2026-09-17,
-nine stacks, the only prod set standing). **ci**: `ci-set2` (PR #300's set, claimed 10:42 UTC) is
-live; its self-destruct schedule anchors to that claim (fires from 14:42 UTC); `ci-set1`
-self-destructed on its first claim's clock at 11:44 UTC.
+nine stacks, the only prod set standing). **ci**: no ci set stands; `ci-set2` (PR #300's set,
+claimed 10:42 UTC) self-destructed at 14:42 UTC on its claim's clock and its `SelfDestructStack`
+went at 18:42 UTC; `/submit/ci/last-known-good-deployment` still names it until the 02:34 UTC
+`destroy-ci.yml` sweep on 2026-09-18 sets it to `None`.
 
 The board runs in five sections, in this order: **in flight** (a branch, a pull request or a run
 in motion, each named in the row), **machine-only**, **machine-ask**, **human-driven**,
@@ -60,7 +61,8 @@ step.
 
 - [ ] **B52y.4. The cost_focus Data Quality result after the fix: the next nightly proves it.** PR
   #297 (b14a7692) registers `cost_focus`'s `dt=` partitions and names `BilledCost` in the ruleset.
-  After the next nightly ingestion, `aws --profile submit-prod glue list-data-quality-results
+  The three newest results (2026-09-15 to 2026-09-17, ~02:17 UTC) all pre-date the fix reaching
+  prod at 14:07 UTC on 2026-09-17, so the proof is the 2026-09-18 result: `aws --profile submit-prod glue list-data-quality-results
   --filter '{"DataSource":{"GlueTable":{"DatabaseName":"prod_env_analytics","TableName":"cost_focus"}}}'
   --max-results 3` then `get-data-quality-result` on the newest id: score 1.0, both rules PASS,
   RowCount in the hundreds of thousands. If the score is still 0, the reader is B52y.4's next
