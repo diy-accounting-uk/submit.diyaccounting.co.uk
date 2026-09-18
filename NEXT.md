@@ -74,17 +74,6 @@ step.
   the check command answers 200, and the next 03:15 UTC nightly logs no 403. **Source**: issue #249.
   **Owner**: Operator, one console check and three commands. **Model**: Haiku. **Size**: ~0 files.
 
-- [ ] **B55.2. Google federation: the key and its two secrets go.** Every Google caller is
-  federated on `main` since PR #301 (e5a22c29): the three GA4 Lambdas from their execution role,
-  `google-apply.yml` and the paymentBehaviour BigQuery read from the job's OIDC token. `main`'s
-  deploy 35287648055 is green on prod-e5a22c2 (00:4x UTC on 2026-09-18), so the operator deletes the service account's
-  user-managed keys and the two secrets; the steps are `RUNBOOK_INFORMATION_SECURITY.md` §3.5
-  (`gcloud auth login`, `gcloud iam service-accounts keys list --iam-account=ga4-report-pull@diyaccounting-ga4.iam.gserviceaccount.com --managed-by=user --project=diyaccounting-ga4`,
-  a `keys delete` per id, then `aws --profile submit-ci secretsmanager delete-secret --secret-id ci/submit/ga4/service_account --recovery-window-in-days 30`
-  and the same for `prod` with `--profile submit-prod`). **Source**: B55;
-  `PLAN_EVERYTHING_AS_CODE.md` items 9 and 11. **Owner**: Operator, three deletes. **Model**:
-  none. **Size**: ~0 files.
-
 - [ ] **B11.T10. ITSA phase 2: the recognition pack.** `PLAN_ITSA_PHASE_2.md` T10, its inputs (T7r, T21, T22) on `main`:
   `_developers/hmrc/ITSA_PRODUCTION_APPROVALS_CHECKLIST.md`, an ITSA pass over the two
   questionnaires, and the two draft emails for the operator to send. One application now covers

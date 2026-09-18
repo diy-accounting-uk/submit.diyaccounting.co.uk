@@ -560,26 +560,26 @@ scripts, their four test files, the `ga4:bigquery-link-export` npm script (the o
 plan expected that existed) and `.claude/skills/ga4-property-sync/SKILL.md` are gone; tests live in
 `app/unit-tests/scripts/ga4Sync.test.js`.
 
-**8. Workload identity pool and GitHub provider.** Add `google/identity.toml` declaring the service
+**8. Workload identity pool and GitHub provider — done.** Add `google/identity.toml` declaring the service
 account, the pool, and one provider per external issuer. Add `scripts/gcp-identity-sync.js` against
 `iam.googleapis.com/v1 projects/{p}/locations/global/workloadIdentityPools` and its `providers`
 subresource, plus the `iam.workloadIdentityUser` binding on the service account. Plan and apply like
 the others, with a unit-tested pure planner. Add the step to `google-apply.yml`.
 
-**9. Actions authenticate with federation.** Add `google-github-actions/auth@v2` to
+**9. Actions authenticate with federation — done.** Add `google-github-actions/auth@v2` to
 `google-apply.yml` using the pool from item 8, and drop the "Resolve GA4 service account key" step
 from the steps that only talk to Google. Keep the AWS chain for `ga4-sync.js` (it writes GitHub
 variables) and any step reading Secrets Manager. Verify by running the workflow in plan mode and
 confirming every step still reads live state.
 
-**10. Key rotation as code.** Add `scripts/gcp-key-rotate.js` reading
+**10. Key rotation as code — not needed: item 11 removed the last key on 2026-09-18.** Add `scripts/gcp-key-rotate.js` reading
 `[service_account.key_rotation] max_age_days` from `google/identity.toml`. It creates a key, writes
 it to `ci/submit/ga4/service_account` and `prod/submit/ga4/service_account` through
 `scripts/put-secret-with-rotation-tag.sh`, and on the following run deletes keys past the age limit.
 Run it from a scheduled workflow, monthly. Fill the `ga4/service_account` row's `last_rotated` in
 `secrets-rotation.toml` from the first run.
 
-**11. Lambdas authenticate with federation.** Add an `aws` provider to the pool for account
+**11. Lambdas authenticate with federation — done; the two keys and both secrets were deleted on 2026-09-18.** Add an `aws` provider to the pool for account
 `972912397388`, conditioned on the Lambda execution role. Each AWS provider maps `google.subject`
 to the role name via `assertion.arn.extract('assumed-role/{role}/')`, because the full assumed-role
 ARN exceeds Google's 127-byte limit for the longest of the three function names.
