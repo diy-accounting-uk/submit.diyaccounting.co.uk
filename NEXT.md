@@ -48,8 +48,8 @@ step.
   console error" browser specs have failed on every full run since its main's 717c0ae9 (test
   run 35219358251). The two hosts join connect-src and img-src: spreadsheets PR #123
   (`claude/ops-donate-event`, 50ecfd0c8, third commit, its `test` run is the proof) and here on
-  `claude/b59-board` (329d1737, `EdgeStack.java`'s two policies; `npm test` and `./mvnw clean
-  verify` running, then the PR). **Source**: spreadsheets test run 35290200595. **Owner**:
+  `claude/b59-board`, PR #302 (329d1737, `EdgeStack.java`'s two policies; `npm test` and
+  `./mvnw clean verify` green on the batch tree; its ci deploy is the proof). **Source**: spreadsheets test run 35290200595. **Owner**:
   Claude Code. **Model**: Haiku. **Size**: ~1 file.
 
 - [ ] **B52n.2. The spreadsheets donation event lands as `donate`.** The Ads half is done: the
