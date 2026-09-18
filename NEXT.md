@@ -18,8 +18,9 @@ PR; the operator merges.
 
 **Prod runs deployment prod-0f77333** (the 04:11 UTC scheduled deploy of main, run 35327188863,
 green at 09:54 UTC on 2026-09-18, nine stacks created 09:04 UTC, the only prod set standing; the deploy
-destroyed prod-789552c itself). **ci**: `ci-set1` (PR #303's set, claimed 07:23 UTC on 2026-09-18) is
-live, the only ci set standing; its self-destruct fires from 11:23 UTC.
+destroyed prod-789552c itself). **ci**: no set is live; `ci-set1`'s app stacks self-destructed and its
+`SelfDestructStack` alone remains from 07:24 UTC until the first `destroy-ci.yml` sweep after it is
+eight hours old (15:24 UTC).
 
 The board runs in five sections, in this order: **in flight** (a branch, a pull request or a run
 in motion, each named in the row), **machine-only**, **machine-ask**, **human-driven**,
