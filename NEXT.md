@@ -87,20 +87,39 @@ step.
   aggregate over the export, one panel on `web/public/operator/dashboard.html`. **Source**: BACKLOG
   67; `PLAN_ONE_STOP_DASHBOARD.md` D4. **Owner**: Claude Code. **Model**: Sonnet. **Size**: ~2 files.
 
-- [ ] **B11.T7b. The ITSA sandbox proof at its full scope.** `scripts/itsa-sandbox-year.js` and
-  `_developers/hmrc/ITSA_PHASE_2_SANDBOX.md` record one self-employment-only run on a dated year.
-  `PLAN_ITSA_PHASE_2.md` T7 asks for two runs against a ci set: run A on a year up to 2024-25, both a
-  sole trade and a UK property business on the dated period summaries, then on the sole trade a
-  carry-forward claim, a brought-forward loss, a carry-back claim and its `carryBackLossesDecrease`,
-  then the calculation and the final declaration; run B on a year from 2025-26, both businesses on the
-  cumulative period summary with the ITSA status set through the test support API, a carry-forward
-  claim on the property business and one property carry-back that must come back rejected. Both
-  runs send `suspendTemporalValidations` on the losses and adjustments writes, read back
-  `businessIncomeSources` before declaring, and prove a `204` from the final declaration with the
-  fraud header validator clean; run A also proves the calculation reflects the loss claimed. The
-  responses go into the simulator scenarios and the sandbox doc. Runs inside HMRC's 14-day log
-  window so B11.T10's recognition pack can cite it. **Source**: `PLAN_ITSA_PHASE_2.md` T7. **Owner**: Claude Code.
-  **Model**: Sonnet. **Size**: ~2 files.
+- [ ] **B11.T7b.1. The sandbox script creates both businesses.** `scripts/itsa-sandbox-year.js` creates
+  a sole trade and a UK property business through `mtd-sa-test-support-api/1.0` and sets the ITSA
+  status, with the vendor-state checkpoints to reset between runs. Today it runs a sole trade only.
+  **Source**: `PLAN_ITSA_PHASE_2.md` T7. **Owner**: Claude Code. **Model**: Sonnet. **Size**: ~1 file.
+
+- [ ] **B11.T7b.2. Run A, the dated year.** A tax year up to 2024-25: four quarterly updates and an
+  annual submission for each business on the dated period summaries, a triggered and adjusted
+  summary for each. Reads back `businessIncomeSources` from the calculation and checks both
+  businesses are in it before declaring. After B11.T7b.1. **Source**: `PLAN_ITSA_PHASE_2.md` T7. **Owner**: Claude Code. **Model**: Sonnet. **Size**: ~1 file.
+
+- [ ] **B11.T7b.3. Run A's loss sequence on the sole trade.** In HMRC's order: a carry-forward
+  claim, a brought-forward loss, a carry-back claim, the matching `carryBackLossesDecrease`, then the
+  calculation and the final declaration; proves the calculation reflects the loss claimed and the
+  final declaration answers 204. After B11.T7b.2. **Source**: `PLAN_ITSA_PHASE_2.md` T7. **Owner**: Claude Code. **Model**: Sonnet. **Size**: ~1 file.
+
+- [ ] **B11.T7b.4. Run B, the cumulative year.** A tax year from 2025-26: both businesses on the
+  cumulative period summary, the reporting type coming from an ITSA status set through the test
+  support API, the endpoint family chosen by `resolveItsaSubmissionModel` with no branch of its own
+  in the script. After B11.T7b.1. **Source**: `PLAN_ITSA_PHASE_2.md` T7. **Owner**: Claude Code. **Model**: Sonnet. **Size**: ~1 file.
+
+- [ ] **B11.T7b.5. Run B's two extra calls.** A carry-forward claim on the property business, and one
+  property carry-back attempt that must come back rejected. After B11.T7b.4. **Source**: `PLAN_ITSA_PHASE_2.md` T7. **Owner**: Claude Code. **Model**: Sonnet. **Size**: ~1
+  file.
+
+- [ ] **B11.T7b.6. Both runs' proofs.** `suspendTemporalValidations` on the losses and adjustments
+  writes, `businessIncomeSources` read back before declaring, a 204 from the final declaration, and
+  the fraud header validator clean on the same header set, on each run. After B11.T7b.3 and
+  B11.T7b.5. **Source**: `PLAN_ITSA_PHASE_2.md` T7. **Owner**: Claude Code. **Model**: Sonnet. **Size**: ~1 file.
+
+- [ ] **B11.T7b.7. Record the responses.** Every response from both runs into the simulator
+  scenarios and `_developers/hmrc/ITSA_PHASE_2_SANDBOX.md`, run against a ci set inside HMRC's
+  14-day log window so B11.T10's recognition pack can cite it. After B11.T7b.6. **Source**: `PLAN_ITSA_PHASE_2.md` T7. **Owner**: Claude Code. **Model**: Sonnet. **Size**: ~3
+  files.
 
 - [ ] **B34.8. Design the three next Companies House filings.** One design section each, in
   `PLAN_COMPANIES_HOUSE_ACCOUNTS_FILING.md`, for FRS 102 section 1A small-company accounts (the
