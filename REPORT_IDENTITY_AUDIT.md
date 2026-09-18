@@ -536,13 +536,13 @@ For a generated article or knowledge-base page, a byline under the title, not a 
 (operator, 2026-09-19): no reviewer is named, and the byline says nobody reviewed it:
 
 ```
-Drafted from DIY Accounting support correspondence by a language model. Not reviewed by a person.
+Drafted from DIY Accounting support correspondence by an AI. Not reviewed by a person.
 ```
 
 A machine-drafted support reply carries the same sentence, once, at its end:
 
 ```
-This reply was drafted by a language model and not reviewed by a person.
+This reply was drafted by an AI and not reviewed by a person.
 ```
 
 A byline a reader can check beats a banner they learn to skip.
