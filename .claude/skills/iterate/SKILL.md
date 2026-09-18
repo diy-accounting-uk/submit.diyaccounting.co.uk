@@ -29,8 +29,14 @@ Kanban sense: a wave holds as many batches as file ownership and the SSO window 
 
 ## Before the first cycle
 
-1. **Remote Control.** If the session is not connected, print `/rc` for the operator so the loop
-   can be followed and steered from a phone; it is their command, not the session's.
+1. **Remote Control.** Read the state before saying anything about it. A `/remote-control is
+   active` line carrying a `https://claude.ai/code/session_…` URL means the session is connected,
+   and `/rc` is then never printed or suggested: on a connected session `/rc` opens the disconnect
+   panel, and the `/rc` that follows reconnects under a new session URL, which leaves a phone or
+   browser still on the old URL showing the session as disconnected. Only when nothing says the
+   session is connected, print `/rc` once for the operator; it is their command, not the session's.
+   The `/config` toggle "Enable Remote Control for all sessions" (user settings; a `true` in a
+   project's `.claude/settings.local.json` is ignored) connects every new session on its own.
 2. **SSO.** `aws --profile submit-ci sts get-caller-identity`. If it fails, print
    `aws sso login --sso-session diyaccounting` and wait; the window it opens (8 to 12 hours) is the
    budget every wave is sized to. Note the login time; read every AWS fact a cycle needs while the
