@@ -30,7 +30,7 @@ Kanban sense: a wave holds as many batches as file ownership and the SSO window 
 ## Before the first cycle
 
 1. **Remote Control.** Read the state before saying anything about it. A `/remote-control is
-   active` line carrying a `https://claude.ai/code/session_…` URL means the session is connected,
+active` line carrying a `https://claude.ai/code/session_…` URL means the session is connected,
    and `/rc` is then never printed or suggested: on a connected session `/rc` opens the disconnect
    panel, and the `/rc` that follows reconnects under a new session URL, which leaves a phone or
    browser still on the old URL showing the session as disconnected. Only when nothing says the
