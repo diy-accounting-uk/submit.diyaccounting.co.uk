@@ -92,14 +92,6 @@ step.
 
 ## Machine-ask
 
-- [ ] **B53.7. The gyb Gmail-backup service-account key under a rotation plan.** Project
-  `gyb-project-j7e-1uj-8n2` holds a service-account key for the workspace's mail mirror
-  (`REPORT_KEY_AUDIT.md` gap 7), outside every plan and schedule. Either fold the project into
-  `PLAN_EVERYTHING_AS_CODE.md`'s Google estate with the same key-rotation block, or record it in the
-  workspace root's runbook with a date; a new key is a Google write the operator says go to.
-  **Source**: REPORT_KEY_AUDIT.md gap 7. **Owner**: Claude Code on the operator's go. **Model**:
-  Sonnet. **Size**: ~1 file.
-
 - [ ] **B11.T10. ITSA phase 2: the recognition pack.** `PLAN_ITSA_PHASE_2.md` T10, its inputs (T7r, T21, T22) on `main`:
   `_developers/hmrc/ITSA_PRODUCTION_APPROVALS_CHECKLIST.md`, an ITSA pass over the two
   questionnaires, and the two draft emails for the operator to send. One application now covers
