@@ -36,6 +36,7 @@ import fs from "node:fs";
 import path from "node:path";
 import TOML from "@iarna/toml";
 import { createLogger } from "../../lib/logger.js";
+import { getInstallationAccessToken } from "../../lib/githubAppToken.js";
 
 const logger = createLogger({ source: "app/functions/security/securityLakeNightly.js" });
 
@@ -52,6 +53,10 @@ let logsClient;
 let secretsClient;
 let cloudWatchClient;
 let s3Client;
+
+// Cached across invocations in the same container; the installation token itself is cached
+// inside githubAppToken.js.
+let cachedGitHubAppPrivateKey;
 
 function getSecurityHubClient() {
   if (!securityHubClient) securityHubClient = new SecurityHubClient({ region: REGION });
@@ -476,6 +481,13 @@ export async function buildRotationRows(client, tomlPath, envName, dateStr, now 
   return rows;
 }
 
+async function resolveGitHubAppPrivateKey(client, secretId) {
+  if (cachedGitHubAppPrivateKey) return cachedGitHubAppPrivateKey;
+  const result = await client.send(new GetSecretValueCommand({ SecretId: secretId }));
+  cachedGitHubAppPrivateKey = result.SecretString;
+  return cachedGitHubAppPrivateKey;
+}
+
 // ============================================================================
 // Handler
 // ============================================================================
@@ -489,8 +501,12 @@ export async function handler(event = {}) {
   if (!envName) throw new Error("ENVIRONMENT_NAME environment variable is required");
   const githubRepo = process.env.GITHUB_REPO;
   if (!githubRepo) throw new Error("GITHUB_REPO environment variable is required");
-  const opsGithubTokenSecretId = process.env.OPS_GITHUB_TOKEN_SECRET_ID;
-  if (!opsGithubTokenSecretId) throw new Error("OPS_GITHUB_TOKEN_SECRET_ID environment variable is required");
+  const githubAppId = process.env.GITHUB_APP_ID;
+  if (!githubAppId) throw new Error("GITHUB_APP_ID environment variable is required");
+  const githubAppInstallationId = process.env.GITHUB_APP_INSTALLATION_ID;
+  if (!githubAppInstallationId) throw new Error("GITHUB_APP_INSTALLATION_ID environment variable is required");
+  const githubAppPrivateKeySecretId = process.env.GITHUB_APP_PRIVATE_KEY_SECRET_ID;
+  if (!githubAppPrivateKeySecretId) throw new Error("GITHUB_APP_PRIVATE_KEY_SECRET_ID environment variable is required");
   const lifecycleTomlPath = process.env.LIFECYCLE_TOML_PATH || path.join(process.cwd(), "lifecycle.toml");
   const rotationTomlPath = process.env.SECRETS_ROTATION_TOML_PATH || path.join(process.cwd(), "secrets-rotation.toml");
 
@@ -506,8 +522,14 @@ export async function handler(event = {}) {
   counts["guardduty"] = guardDutyRows.length;
 
   const secretsClient = getSecretsClient();
-  const tokenResult = await secretsClient.send(new GetSecretValueCommand({ SecretId: opsGithubTokenSecretId }));
-  const githubAlertRows = await fetchGithubAlertRows(fetch, tokenResult.SecretString, githubRepo, dateStr);
+  const privateKey = await resolveGitHubAppPrivateKey(secretsClient, githubAppPrivateKeySecretId);
+  const githubToken = await getInstallationAccessToken({
+    appId: githubAppId,
+    privateKey,
+    installationId: githubAppInstallationId,
+    repositories: [githubRepo.split("/")[1]],
+  });
+  const githubAlertRows = await fetchGithubAlertRows(fetch, githubToken, githubRepo, dateStr);
   await putLakeObject(s3, bucket, "github-alerts", dateStr, githubAlertRows);
   counts["github-alerts"] = githubAlertRows.length;
 

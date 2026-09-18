@@ -62,6 +62,11 @@ vi.mock("@app/lib/dynamoDbClient.js", () => ({
   getResourceName: (envVarName) => process.env[envVarName] || "test-alarm-issue-locks",
 }));
 
+const mockGetInstallationAccessToken = vi.fn();
+vi.mock("@app/lib/githubAppToken.js", () => ({
+  getInstallationAccessToken: (...args) => mockGetInstallationAccessToken(...args),
+}));
+
 import {
   resolveAlarmDetail,
   buildIssueTitle,
@@ -541,8 +546,13 @@ describe("alarmToGithubIssue", () => {
 
     beforeEach(() => {
       process.env.GITHUB_REPO = "diy-accounting-uk/submit.diyaccounting.co.uk";
-      process.env.OPS_GITHUB_TOKEN_SECRET_ARN = "arn:aws:secretsmanager:eu-west-2:367191799875:secret:ci/submit/github/token";
+      process.env.GITHUB_APP_ID = "12345";
+      process.env.GITHUB_APP_INSTALLATION_ID = "67890";
+      process.env.GITHUB_APP_PRIVATE_KEY_SECRET_ID = "ci/submit/github/ops_app_private_key";
       mockSecretsSend.mockReset();
+      mockSecretsSend.mockResolvedValue({ SecretString: "test-private-key" });
+      mockGetInstallationAccessToken.mockReset();
+      mockGetInstallationAccessToken.mockResolvedValue("gh-token-abc");
       mockSsmSend.mockReset();
       // Every alarm the handler tests fire is either deployment-scoped (its slug comes
       // straight off the alarm name, no SSM call) or shares this fallback answer for the
@@ -560,9 +570,9 @@ describe("alarmToGithubIssue", () => {
       vi.restoreAllMocks();
     });
 
-    test("throws when OPS_GITHUB_TOKEN_SECRET_ARN is not set", async () => {
-      delete process.env.OPS_GITHUB_TOKEN_SECRET_ARN;
-      await expect(handler(ALARM_EVENT)).rejects.toThrow("OPS_GITHUB_TOKEN_SECRET_ARN environment variable is required");
+    test("throws when GITHUB_APP_ID is not set", async () => {
+      delete process.env.GITHUB_APP_ID;
+      await expect(handler(ALARM_EVENT)).rejects.toThrow("GITHUB_APP_ID environment variable is required");
     });
 
     test("skips issue creation when the alarm state is not ALARM", async () => {

@@ -4,8 +4,8 @@
 // app/functions/analytics/operatorEffortPull.js
 //
 // Nightly job that pulls one UTC day of GitHub Actions runs (by trigger and actor), repo-wide
-// issue timeline events (by actor) and commits (by author) through the REST API, using the
-// issue-bot token, and writes them as newline-delimited JSON under the lake's
+// issue timeline events (by actor) and commits (by author) through the REST API, using a
+// diya-ops installation token, and writes them as newline-delimited JSON under the lake's
 // curated/operator/ prefixes. Backs v_operator_interventions_daily, the operator-effort
 // objective's headline view.
 //
@@ -17,6 +17,7 @@
 import { SecretsManagerClient, GetSecretValueCommand } from "@aws-sdk/client-secrets-manager";
 import { S3Client, PutObjectCommand } from "@aws-sdk/client-s3";
 import { createLogger } from "../../lib/logger.js";
+import { getInstallationAccessToken } from "../../lib/githubAppToken.js";
 
 const logger = createLogger({ source: "app/functions/analytics/operatorEffortPull.js" });
 
@@ -24,7 +25,7 @@ const CLAUDE_COAUTHOR_RE = /Co-Authored-By:\s*Claude/i;
 
 let cachedSmClient = null;
 let cachedS3Client = null;
-let cachedGitHubToken = null;
+let cachedGitHubAppPrivateKey = null;
 
 function getSmClient() {
   if (!cachedSmClient) {
@@ -40,17 +41,32 @@ function getS3Client() {
   return cachedS3Client;
 }
 
-async function resolveGitHubToken() {
-  if (cachedGitHubToken) return cachedGitHubToken;
+async function resolveGitHubAppPrivateKey() {
+  if (cachedGitHubAppPrivateKey) return cachedGitHubAppPrivateKey;
 
-  const arn = process.env.GITHUB_TOKEN_SECRET_ARN;
-  if (!arn) throw new Error("GITHUB_TOKEN_SECRET_ARN environment variable is required");
+  const secretId = process.env.GITHUB_APP_PRIVATE_KEY_SECRET_ID;
+  if (!secretId) throw new Error("GITHUB_APP_PRIVATE_KEY_SECRET_ID environment variable is required");
 
-  const result = await getSmClient().send(new GetSecretValueCommand({ SecretId: arn }));
-  if (!result.SecretString) throw new Error(`Secret ${arn} exists but has no SecretString value`);
+  const result = await getSmClient().send(new GetSecretValueCommand({ SecretId: secretId }));
+  if (!result.SecretString) throw new Error(`Secret ${secretId} exists but has no SecretString value`);
 
-  cachedGitHubToken = result.SecretString;
-  return cachedGitHubToken;
+  cachedGitHubAppPrivateKey = result.SecretString;
+  return cachedGitHubAppPrivateKey;
+}
+
+async function resolveGitHubToken(githubRepo) {
+  const appId = process.env.GITHUB_APP_ID;
+  if (!appId) throw new Error("GITHUB_APP_ID environment variable is required");
+  const installationId = process.env.GITHUB_APP_INSTALLATION_ID;
+  if (!installationId) throw new Error("GITHUB_APP_INSTALLATION_ID environment variable is required");
+
+  const privateKey = await resolveGitHubAppPrivateKey();
+  return getInstallationAccessToken({
+    appId,
+    privateKey,
+    installationId,
+    repositories: [githubRepo.split("/")[1]],
+  });
 }
 
 function githubHeaders(token) {
@@ -269,7 +285,7 @@ export async function handler(event = {}) {
   if (!githubRepo) throw new Error("GITHUB_REPO environment variable is required");
   if (!bucket) throw new Error("ANALYTICS_LAKE_BUCKET_NAME environment variable is required");
 
-  const token = await resolveGitHubToken();
+  const token = await resolveGitHubToken(githubRepo);
 
   const workflowRuns = await pullWorkflowRuns({ githubRepo, token, dateStr: targetDate });
   const issueEvents = await pullIssueEvents({ githubRepo, token, dateStr: targetDate, operatorLogin });

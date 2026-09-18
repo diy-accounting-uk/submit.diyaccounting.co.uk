@@ -36,6 +36,7 @@ import {
 import { registerLambdaRoute } from "../../lib/httpServerToLambdaAdaptor.js";
 import { publishActivityEvent } from "../../lib/activityAlert.js";
 import { appendAutomationDisclosure } from "../../lib/gitHubHelpers.js";
+import { getInstallationAccessToken } from "../../lib/githubAppToken.js";
 
 const logger = createLogger({ source: "app/functions/support/supportTicketPost.js" });
 
@@ -44,51 +45,74 @@ const logger = createLogger({ source: "app/functions/support/supportTicketPost.j
 // rather than configuration, so this comment stays next to the number it explains.
 export const SUPPORT_TICKET_RATE_LIMIT_PER_MINUTE = 3;
 
-// Cache the GitHub token to avoid fetching from Secrets Manager on every request
-let __cachedGitHubToken = null;
+// Cache the GitHub App's private key to avoid fetching from Secrets Manager on every request.
+// The installation token itself is cached inside githubAppToken.js.
+let __cachedGitHubAppPrivateKey = null;
 
 /**
- * Fetch GitHub PAT from AWS Secrets Manager
+ * Fetch the GitHub App's private key from AWS Secrets Manager
  */
-async function getGitHubToken() {
-  if (__cachedGitHubToken) {
-    logger.debug({ message: "Using cached GitHub token" });
-    return __cachedGitHubToken;
+async function getGitHubAppPrivateKey() {
+  if (__cachedGitHubAppPrivateKey) {
+    logger.debug({ message: "Using cached GitHub App private key" });
+    return __cachedGitHubAppPrivateKey;
   }
 
-  const secretArn = process.env.GITHUB_TOKEN_SECRET_ARN;
-  if (!secretArn) {
-    throw new Error("GITHUB_TOKEN_SECRET_ARN environment variable is required");
+  const secretId = process.env.GITHUB_APP_PRIVATE_KEY_SECRET_ID;
+  if (!secretId) {
+    throw new Error("GITHUB_APP_PRIVATE_KEY_SECRET_ID environment variable is required");
   }
 
-  logger.info({ message: "Fetching GitHub token from Secrets Manager", secretArn });
 
   const { SecretsManagerClient, GetSecretValueCommand } = await import("@aws-sdk/client-secrets-manager");
   const client = new SecretsManagerClient({
     region: process.env.AWS_REGION || "eu-west-2",
   });
 
-  const response = await client.send(new GetSecretValueCommand({ SecretId: secretArn }));
+  const response = await client.send(new GetSecretValueCommand({ SecretId: secretId }));
 
   if (!response.SecretString) {
-    throw new Error(`Secret ${secretArn} exists but has no SecretString value`);
+    throw new Error(`Secret ${secretId} exists but has no SecretString value`);
   }
 
-  __cachedGitHubToken = response.SecretString;
-  logger.info({ message: "GitHub token successfully fetched and cached" });
-  return __cachedGitHubToken;
+  __cachedGitHubAppPrivateKey = response.SecretString;
+  logger.info({ message: "GitHub App private key successfully fetched and cached" });
+  return __cachedGitHubAppPrivateKey;
+}
+
+/**
+ * Mint a GitHub App installation token scoped to the support repository
+ */
+async function getGitHubToken(githubRepo) {
+  const appId = process.env.GITHUB_APP_ID;
+  if (!appId) {
+    throw new Error("GITHUB_APP_ID environment variable is required");
+  }
+  const installationId = process.env.GITHUB_APP_INSTALLATION_ID;
+  if (!installationId) {
+    throw new Error("GITHUB_APP_INSTALLATION_ID environment variable is required");
+  }
+
+  const privateKey = await getGitHubAppPrivateKey();
+  return getInstallationAccessToken({
+    appId,
+    privateKey,
+    installationId,
+    repositories: [githubRepo.split("/")[1]],
+  });
 }
 
 /**
  * Create a GitHub issue via the GitHub API
  */
 async function createGitHubIssue({ title, body, labels }) {
-  const githubToken = await getGitHubToken();
   const githubRepo = process.env.SUPPORT_GITHUB_REPO;
 
   if (!githubRepo) {
     throw new Error("SUPPORT_GITHUB_REPO environment variable is required");
   }
+
+  const githubToken = await getGitHubToken(githubRepo);
 
   const response = await fetch(`https://api.github.com/repos/${githubRepo}/issues`, {
     method: "POST",
@@ -215,7 +239,7 @@ export function apiEndpoint(app) {
 /* v8 ignore stop */
 
 export async function ingestHandler(event) {
-  validateEnv(["GITHUB_TOKEN_SECRET_ARN", "SUPPORT_GITHUB_REPO"]);
+  validateEnv(["GITHUB_APP_ID", "GITHUB_APP_INSTALLATION_ID", "GITHUB_APP_PRIVATE_KEY_SECRET_ID", "SUPPORT_GITHUB_REPO"]);
 
   const { request, requestId } = extractRequest(event);
 

@@ -88,6 +88,35 @@ class IngestionStackTest {
         return new IngestionStack(app, "TestIngestionStack-" + envName, builder.build());
     }
 
+    private static IngestionStack synthIngestionStackWithGithubApp(String githubAppId, String githubAppInstallationId) {
+        App app = new App();
+        SubmitSharedNames sharedNames = SubmitSharedNames.forDocs();
+
+        var builder = IngestionStack.IngestionStackProps.builder()
+                .env(Environment.builder()
+                        .account("111111111111")
+                        .region("eu-west-2")
+                        .build())
+                .crossRegionReferences(false)
+                .envName("docs")
+                .deploymentName("docs")
+                .resourceNamePrefix(sharedNames.envResourceNamePrefix)
+                .cloudTrailEnabled("false")
+                .sharedNames(sharedNames)
+                .baseImageTag("latest")
+                .ga4PropertyId("999000111")
+                .ga4BigQueryProjectId("docs-ga4");
+        if (githubAppId != null) {
+            builder.githubAppId(githubAppId);
+        }
+        if (githubAppInstallationId != null) {
+            builder.githubAppInstallationId(githubAppInstallationId);
+        }
+
+        return new IngestionStack(
+                app, "TestIngestionStack-githubapp-" + (githubAppId == null ? "unset" : "set"), builder.build());
+    }
+
     @Test
     void stackWiresTheStripeAndBothGa4JobsByDefault() {
         IngestionStack ingestionStack = synthIngestionStack();
@@ -174,6 +203,40 @@ class IngestionStackTest {
                                                                                 "secretsmanager:GetSecretValue",
                                                                                 "Resource",
                                                                                 "arn:aws:secretsmanager:eu-west-2:111111111111:secret:docs/submit/user-sub-hash-salt*")))))))));
+    }
+
+    @Test
+    @SuppressWarnings("unchecked")
+    void operatorEffortPullGetsGithubAppEnvVarsAndSecretGrantOnlyWhenConfigured() {
+        Template unconfigured = Template.fromStack(synthIngestionStackWithGithubApp(null, null));
+        var unconfiguredFunctions = unconfigured.findResources(
+                "AWS::Lambda::Function", Map.of("Properties", Map.of("FunctionName", "docs-env-operator-effort-pull")));
+        assertEquals(1, unconfiguredFunctions.size());
+        var unconfiguredEnv = environmentVariablesOf(unconfiguredFunctions);
+        assertFalse(unconfiguredEnv.containsKey("GITHUB_APP_ID"));
+        assertFalse(unconfiguredEnv.containsKey("GITHUB_APP_INSTALLATION_ID"));
+        assertFalse(unconfiguredEnv.containsKey("GITHUB_APP_PRIVATE_KEY_SECRET_ID"));
+
+        Template configured = Template.fromStack(synthIngestionStackWithGithubApp("123456", "78901234"));
+        var configuredFunctions = configured.findResources(
+                "AWS::Lambda::Function", Map.of("Properties", Map.of("FunctionName", "docs-env-operator-effort-pull")));
+        assertEquals(1, configuredFunctions.size());
+        var configuredEnv = environmentVariablesOf(configuredFunctions);
+        assertEquals("123456", configuredEnv.get("GITHUB_APP_ID"));
+        assertEquals("78901234", configuredEnv.get("GITHUB_APP_INSTALLATION_ID"));
+        assertEquals("docs/submit/github/ops_app_private_key", configuredEnv.get("GITHUB_APP_PRIVATE_KEY_SECRET_ID"));
+
+        var grantResources = configured.findResources("AWS::IAM::Policy").values().stream()
+                .map(policy -> (Map<String, Object>) policy.get("Properties"))
+                .map(properties -> (Map<String, Object>) properties.get("PolicyDocument"))
+                .flatMap(document -> ((List<Map<String, Object>>) document.get("Statement")).stream())
+                .filter(statement -> "secretsmanager:GetSecretValue".equals(statement.get("Action")))
+                .map(statement -> String.valueOf(statement.get("Resource")))
+                .filter(resource -> resource.contains("ops_app_private_key"))
+                .toList();
+        assertEquals(
+                List.of("arn:aws:secretsmanager:eu-west-2:111111111111:secret:docs/submit/github/ops_app_private_key-*"),
+                grantResources);
     }
 
     @Test

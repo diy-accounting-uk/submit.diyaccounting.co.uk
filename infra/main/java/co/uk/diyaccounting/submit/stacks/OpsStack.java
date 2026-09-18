@@ -104,9 +104,17 @@ public class OpsStack extends Stack {
             return "";
         }
 
-        // GitHub issue configuration for the alarm-to-issue Lambda
+        // GitHub App configuration for the alarm-to-issue Lambda (diya-ops, see
+        // REPORT_IDENTITY_AUDIT.md section 8 recommendation 2). Both id and installation id must
+        // be set for the Lambda to be built; the private key itself is read from Secrets Manager
+        // at runtime, by name, from GITHUB_APP_PRIVATE_KEY_SECRET_ID.
         @Value.Default
-        default String opsGithubTokenSecretArn() {
+        default String githubAppId() {
+            return "";
+        }
+
+        @Value.Default
+        default String githubAppInstallationId() {
             return "";
         }
 
@@ -201,13 +209,22 @@ public class OpsStack extends Stack {
         // it shares the AlarmStateChangeRule below as a second target, so a GitHub
         // API failure or added latency here cannot affect Telegram delivery, and the
         // forwarder's own code, env vars, and IAM role stay untouched. Only created
-        // when a GitHub token secret is configured.
+        // when the diya-ops GitHub App is configured.
         IFunction alarmToGithubIssueLambda = null;
-        if (props.opsGithubTokenSecretArn() != null
-                && !props.opsGithubTokenSecretArn().isBlank()) {
+        if (props.githubAppId() != null
+                && !props.githubAppId().isBlank()
+                && props.githubAppInstallationId() != null
+                && !props.githubAppInstallationId().isBlank()) {
+            // The private key is created by deploy-environment.yml's create-secrets job at
+            // "{env}/submit/github/ops_app_private_key" (see scripts/put-secret-with-rotation-tag.sh);
+            // referencing it by name rather than ARN avoids the random ARN suffix Secrets
+            // Manager appends, so no wildcard match is needed for GetSecretValue's SecretId.
+            var githubAppPrivateKeySecretId = "%s/submit/github/ops_app_private_key".formatted(props.envName());
             var alarmToGithubIssueEnv = new PopulatedMap<String, String>()
                     .with("ENVIRONMENT_NAME", props.envName())
-                    .with("OPS_GITHUB_TOKEN_SECRET_ARN", props.opsGithubTokenSecretArn())
+                    .with("GITHUB_APP_ID", props.githubAppId())
+                    .with("GITHUB_APP_INSTALLATION_ID", props.githubAppInstallationId())
+                    .with("GITHUB_APP_PRIVATE_KEY_SECRET_ID", githubAppPrivateKeySecretId)
                     .with("GITHUB_REPO", props.opsGithubRepo())
                     .with("ALARM_ISSUE_LOCK_DYNAMODB_TABLE_NAME", props.sharedNames().alarmIssueLockTableName);
             var alarmToGithubIssueLambdaConstruct = new Lambda(
@@ -250,13 +267,11 @@ public class OpsStack extends Stack {
                     Table.fromTableName(this, "AlarmIssueLockTable", props.sharedNames().alarmIssueLockTableName);
             alarmIssueLockTable.grant(alarmToGithubIssueLambda, "dynamodb:PutItem");
 
-            var githubSecretArnWithWildcard = props.opsGithubTokenSecretArn().endsWith("*")
-                    ? props.opsGithubTokenSecretArn()
-                    : props.opsGithubTokenSecretArn() + "-*";
             alarmToGithubIssueLambda.addToRolePolicy(PolicyStatement.Builder.create()
                     .effect(Effect.ALLOW)
                     .actions(List.of("secretsmanager:GetSecretValue"))
-                    .resources(List.of(githubSecretArnWithWildcard))
+                    .resources(List.of("arn:aws:secretsmanager:%s:%s:secret:%s-*"
+                            .formatted(this.getRegion(), this.getAccount(), githubAppPrivateKeySecretId)))
                     .build());
 
             // Reads the environment's last-known-good deployment slug for an

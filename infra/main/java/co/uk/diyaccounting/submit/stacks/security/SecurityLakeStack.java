@@ -98,6 +98,18 @@ public class SecurityLakeStack extends Stack {
             return "diy-accounting-uk/submit.diyaccounting.co.uk";
         }
 
+        // GitHub App configuration for the GitHub alert counts pull (diya-ops, see
+        // REPORT_IDENTITY_AUDIT.md section 8 recommendation 2).
+        @Value.Default
+        default String githubAppId() {
+            return "";
+        }
+
+        @Value.Default
+        default String githubAppInstallationId() {
+            return "";
+        }
+
         @Value.Default
         default boolean securityServicesEnabled() {
             return true;
@@ -152,19 +164,31 @@ public class SecurityLakeStack extends Stack {
         // Nightly Lambda
         // ============================================================================
         var functionName = prefix + "-security-lake-nightly";
-        // The GitHub token secret is created by deploy-environment.yml's create-secrets job, one
-        // per environment, at "{env}/submit/github/issue_bot_token" (see
-        // scripts/put-secret-with-rotation-tag.sh); referencing it by name rather than ARN avoids
-        // the random ARN suffix Secrets Manager appends, so no wildcard match is needed for
-        // GetSecretValue's SecretId parameter.
-        String opsGithubTokenSecretId =
-                "%s/%s%s".formatted(props.envName(), SECRETS_PATH_PREFIX, "github/issue_bot_token");
+        // The GitHub App's private key is created by deploy-environment.yml's create-secrets
+        // job, one per environment, at "{env}/submit/github/ops_app_private_key" (see
+        // scripts/put-secret-with-rotation-tag.sh); referencing it by name rather than ARN
+        // avoids the random ARN suffix Secrets Manager appends, so no wildcard match is needed
+        // for GetSecretValue's SecretId parameter.
+        String githubAppPrivateKeySecretId =
+                "%s/%s%s".formatted(props.envName(), SECRETS_PATH_PREFIX, "github/ops_app_private_key");
 
         var environment = new PopulatedMap<String, String>()
                 .with("ENVIRONMENT_NAME", props.envName())
                 .with("ANALYTICS_LAKE_BUCKET_NAME", sharedNames.analyticsLakeBucketName)
-                .with("GITHUB_REPO", props.githubRepo())
-                .with("OPS_GITHUB_TOKEN_SECRET_ID", opsGithubTokenSecretId);
+                .with("GITHUB_REPO", props.githubRepo());
+        // PopulatedMap rejects a blank value outright, and cdk.json's default for both is "" (the
+        // operator sets the real values as GitHub Actions variables - see deploy-cdk-stack.yml),
+        // so these three are added only once the App is actually configured; a synth with neither
+        // set (every CDK unit test) still gets every other env var.
+        if (props.githubAppId() != null
+                && !props.githubAppId().isBlank()
+                && props.githubAppInstallationId() != null
+                && !props.githubAppInstallationId().isBlank()) {
+            environment
+                    .with("GITHUB_APP_ID", props.githubAppId())
+                    .with("GITHUB_APP_INSTALLATION_ID", props.githubAppInstallationId())
+                    .with("GITHUB_APP_PRIVATE_KEY_SECRET_ID", githubAppPrivateKeySecretId);
+        }
 
         this.nightlyLambdaConstruct = new Lambda(
                 this,
@@ -205,12 +229,12 @@ public class SecurityLakeStack extends Stack {
                 .resources(List.of("*"))
                 .build());
 
-        // The GitHub token read, scoped to the one secret this Lambda reads.
+        // The GitHub App private key read, scoped to the one secret this Lambda reads.
         nightlyLambda.addToRolePolicy(PolicyStatement.Builder.create()
                 .effect(Effect.ALLOW)
                 .actions(List.of("secretsmanager:GetSecretValue"))
                 .resources(List.of("arn:aws:secretsmanager:%s:%s:secret:%s-*"
-                        .formatted(this.getRegion(), this.getAccount(), opsGithubTokenSecretId)))
+                        .formatted(this.getRegion(), this.getAccount(), githubAppPrivateKeySecretId)))
                 .build());
 
         // The rotation record, scoped to every secret this environment's deploy pipeline creates.

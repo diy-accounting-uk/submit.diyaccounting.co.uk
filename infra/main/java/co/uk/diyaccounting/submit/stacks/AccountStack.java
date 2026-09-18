@@ -129,12 +129,18 @@ public class AccountStack extends Stack {
 
         String cognitoUserPoolArn();
 
-        // The support form's own GitHub token ({env}/submit/github/support_bot_token, a PAT
-        // scoped to the spreadsheets repository), separate from the alarm-issue token OpsStack
-        // reads, so neither token needs issue rights on both repositories. Blank means no
-        // support Lambda is built.
+        // GitHub App configuration for the support-ticket Lambda (diya-ops, see
+        // REPORT_IDENTITY_AUDIT.md section 8 recommendation 2). The same App and installation
+        // OpsStack reads, but this Lambda's own minted token is scoped to the spreadsheets
+        // repository, not this one, so neither Lambda's token can reach the other's repository.
+        // Both id and installation id must be set for the Lambda to be built.
         @Value.Default
-        default String supportGithubTokenSecretArn() {
+        default String githubAppId() {
+            return "";
+        }
+
+        @Value.Default
+        default String githubAppInstallationId() {
             return "";
         }
 
@@ -543,13 +549,22 @@ public class AccountStack extends Stack {
                 this.operatorSnapshotGetLambda.getNode().getId(),
                 props.sharedNames().operatorSnapshotGetIngestLambdaHandler);
 
-        // Support Ticket POST Lambda - only create if its GitHub token secret ARN is provided.
-        var supportTicketGithubTokenSecretArn = props.supportGithubTokenSecretArn();
-        if (supportTicketGithubTokenSecretArn != null && !supportTicketGithubTokenSecretArn.isBlank()) {
+        // Support Ticket POST Lambda - only create if the diya-ops GitHub App is configured.
+        if (props.githubAppId() != null
+                && !props.githubAppId().isBlank()
+                && props.githubAppInstallationId() != null
+                && !props.githubAppInstallationId().isBlank()) {
+            // The private key is created by deploy-environment.yml's create-secrets job at
+            // "{env}/submit/github/ops_app_private_key" (see scripts/put-secret-with-rotation-tag.sh);
+            // referencing it by name rather than ARN avoids the random ARN suffix Secrets
+            // Manager appends, so no wildcard match is needed for GetSecretValue's SecretId.
+            var githubAppPrivateKeySecretId = "%s/submit/github/ops_app_private_key".formatted(props.envName());
             var supportTicketPostLambdaEnv = new PopulatedMap<String, String>()
                     .with("ENVIRONMENT_NAME", props.envName())
                     .with("ACTIVITY_BUS_NAME", props.sharedNames().activityBusName)
-                    .with("GITHUB_TOKEN_SECRET_ARN", supportTicketGithubTokenSecretArn)
+                    .with("GITHUB_APP_ID", props.githubAppId())
+                    .with("GITHUB_APP_INSTALLATION_ID", props.githubAppInstallationId())
+                    .with("GITHUB_APP_PRIVATE_KEY_SECRET_ID", githubAppPrivateKeySecretId)
                     .with("SUPPORT_GITHUB_REPO", props.supportGithubRepo())
                     .with("SECURITY_STATE_DYNAMODB_TABLE_NAME", securityStateTable.getTableName());
             var supportTicketPostApiLambda = new ApiLambda(
@@ -579,16 +594,14 @@ public class AccountStack extends Stack {
             this.supportTicketPostLambdaLogGroup = supportTicketPostApiLambda.logGroup;
             this.lambdaFunctionProps.add(this.supportTicketPostLambdaProps);
 
-            // Grant permission to read the GitHub token secret. Secrets Manager appends a random
-            // suffix to the ARN it hands back from create-secret, so the resource policy must
-            // match with a wildcard (see OpsStack's identical alarmToGithubIssueLambda grant).
-            var githubTokenSecretArnWithWildcard = supportTicketGithubTokenSecretArn.endsWith("*")
-                    ? supportTicketGithubTokenSecretArn
-                    : supportTicketGithubTokenSecretArn + "-*";
+            // Grant permission to read the GitHub App's private key. Secrets Manager appends a
+            // random suffix to the ARN it hands back from create-secret, so the resource policy
+            // must match with a wildcard (see OpsStack's identical alarmToGithubIssueLambda grant).
             this.supportTicketPostLambda.addToRolePolicy(PolicyStatement.Builder.create()
                     .effect(Effect.ALLOW)
                     .actions(List.of("secretsmanager:GetSecretValue"))
-                    .resources(List.of(githubTokenSecretArnWithWildcard))
+                    .resources(List.of("arn:aws:secretsmanager:%s:%s:secret:%s-*"
+                            .formatted(region, account, githubAppPrivateKeySecretId)))
                     .build());
 
             // Per-IP rate limiting on this unauthenticated public write (see

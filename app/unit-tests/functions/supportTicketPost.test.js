@@ -24,6 +24,11 @@ vi.mock("@aws-sdk/client-secrets-manager", () => ({
   },
 }));
 
+const mockGetInstallationAccessToken = vi.fn();
+vi.mock("@app/lib/githubAppToken.js", () => ({
+  getInstallationAccessToken: (...args) => mockGetInstallationAccessToken(...args),
+}));
+
 import {
   fenceText,
   buildIssueBody,
@@ -156,10 +161,13 @@ describe("supportTicketPost", () => {
     beforeEach(() => {
       vi.clearAllMocks();
       process.env = { ...originalEnv };
-      process.env.GITHUB_TOKEN_SECRET_ARN = "arn:aws:secretsmanager:eu-west-2:111111111111:secret:test/github/token";
+      process.env.GITHUB_APP_ID = "12345";
+      process.env.GITHUB_APP_INSTALLATION_ID = "67890";
+      process.env.GITHUB_APP_PRIVATE_KEY_SECRET_ID = "test/submit/github/ops_app_private_key";
       process.env.SUPPORT_GITHUB_REPO = "diy-accounting-uk/spreadsheets.diyaccounting.co.uk";
       process.env.SECURITY_STATE_DYNAMODB_TABLE_NAME = "test-security-state";
-      mockSecretsSend.mockResolvedValue({ SecretString: "gh-token" });
+      mockSecretsSend.mockResolvedValue({ SecretString: "test-private-key" });
+      mockGetInstallationAccessToken.mockResolvedValue("gh-token");
       mockIncrementRateCounter.mockResolvedValue(1);
     });
 

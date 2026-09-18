@@ -443,5 +443,11 @@ jobs:
           WEBSITE_HASH: ${{ needs.params.outputs['website-hash'] }}
           DIY_SUBMIT_APEX_URL: ${{ needs.names.outputs.apex-url }}
           HOLDING_CERTIFICATE_ARN: ${{ vars.SUBMIT_HOLDING_CERTIFICATE_ARN }}
+          # diya-ops GitHub App: OpsStack, AccountStack and SecurityLakeStack read these to mint
+          # their own installation tokens at runtime (see app/lib/githubAppToken.js). The
+          # private key itself never passes through here - it goes straight into Secrets
+          # Manager by deploy-environment.yml's create-secrets job.
+          GITHUB_APP_ID: ${{ vars.OPS_APP_ID }}
+          GITHUB_APP_INSTALLATION_ID: ${{ vars.OPS_APP_INSTALLATION_ID }}
 
       - run: cat cdk-submit-${{ needs.params.outputs.cdk-application }}.out/cdk-outputs-${{ needs.params.outputs.stackName }}.json | jq '.'

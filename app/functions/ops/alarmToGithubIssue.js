@@ -44,26 +44,42 @@ import { resolveAlarmEvidence, extractCompositeChildFunctionNames } from "../../
 import { resolveAlarmWindow } from "../../lib/alarmWindow.js";
 import { buildAlarmConsoleLink, buildLogsInsightsLink, buildXRayTraceSearchLink } from "../../lib/consoleLinks.js";
 import { appendAutomationDisclosure } from "../../lib/gitHubHelpers.js";
+import { getInstallationAccessToken } from "../../lib/githubAppToken.js";
 
 const logger = createLogger({ source: "app/functions/ops/alarmToGithubIssue.js" });
 
 const smClient = new SecretsManagerClient({ region: process.env.AWS_REGION || "eu-west-2" });
 const ssmClient = new SSMClient({ region: process.env.AWS_REGION || "eu-west-2" });
 
-let cachedGitHubToken = null;
+let cachedGitHubAppPrivateKey = null;
 const cachedDeploymentSlugs = new Map();
 
-async function resolveGitHubToken() {
-  if (cachedGitHubToken) return cachedGitHubToken;
+async function resolveGitHubAppPrivateKey() {
+  if (cachedGitHubAppPrivateKey) return cachedGitHubAppPrivateKey;
 
-  const arn = process.env.OPS_GITHUB_TOKEN_SECRET_ARN;
-  if (!arn) throw new Error("OPS_GITHUB_TOKEN_SECRET_ARN environment variable is required");
+  const secretId = process.env.GITHUB_APP_PRIVATE_KEY_SECRET_ID;
+  if (!secretId) throw new Error("GITHUB_APP_PRIVATE_KEY_SECRET_ID environment variable is required");
 
-  const result = await smClient.send(new GetSecretValueCommand({ SecretId: arn }));
-  if (!result.SecretString) throw new Error(`Secret ${arn} exists but has no SecretString value`);
+  const result = await smClient.send(new GetSecretValueCommand({ SecretId: secretId }));
+  if (!result.SecretString) throw new Error(`Secret ${secretId} exists but has no SecretString value`);
 
-  cachedGitHubToken = result.SecretString;
-  return cachedGitHubToken;
+  cachedGitHubAppPrivateKey = result.SecretString;
+  return cachedGitHubAppPrivateKey;
+}
+
+async function resolveGitHubToken(githubRepo) {
+  const appId = process.env.GITHUB_APP_ID;
+  if (!appId) throw new Error("GITHUB_APP_ID environment variable is required");
+  const installationId = process.env.GITHUB_APP_INSTALLATION_ID;
+  if (!installationId) throw new Error("GITHUB_APP_INSTALLATION_ID environment variable is required");
+
+  const privateKey = await resolveGitHubAppPrivateKey();
+  return getInstallationAccessToken({
+    appId,
+    privateKey,
+    installationId,
+    repositories: [githubRepo.split("/")[1]],
+  });
 }
 
 function parseReasonData(reasonData) {
@@ -408,7 +424,7 @@ export async function handler(event) {
   const githubRepo = process.env.GITHUB_REPO;
   if (!githubRepo) throw new Error("GITHUB_REPO environment variable is required");
 
-  const githubToken = await resolveGitHubToken();
+  const githubToken = await resolveGitHubToken(githubRepo);
   const familyKey = alarmFamilyKey(alarm.alarmName);
 
   const deployment = await resolveDeploymentSlug({ alarmName: alarm.alarmName, env });

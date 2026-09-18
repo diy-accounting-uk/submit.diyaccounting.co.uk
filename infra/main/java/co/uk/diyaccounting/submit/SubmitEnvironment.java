@@ -89,7 +89,8 @@ public class SubmitEnvironment {
         public String telegramTestChatId;
         public String telegramLiveChatId;
         public String telegramOpsChatId;
-        public String githubTokenSecretArn;
+        public String githubAppId;
+        public String githubAppInstallationId;
 
         public static class Builder {
             private final SubmitEnvironmentProps p = new SubmitEnvironmentProps();
@@ -199,10 +200,14 @@ public class SubmitEnvironment {
                 "GA4_BIGQUERY_DATASET_ID", appProps.ga4BigQueryDatasetId, "(from ga4BigQueryDatasetId in cdk.json)");
         var ga4BigQueryLocation =
                 envOr("GA4_BIGQUERY_LOCATION", appProps.ga4BigQueryLocation, "(from ga4BigQueryLocation in cdk.json)");
-        // Same secret OpsStack's alarm-to-issue Lambda reads, resolved by GitHub Actions from
-        // AWS at deploy time and passed as an env var, matching stripeSecretKeyArn above.
-        var githubTokenSecretArn = envOr(
-                "GITHUB_TOKEN_SECRET_ARN", appProps.githubTokenSecretArn, "(from githubTokenSecretArn in cdk.json)");
+        // diya-ops GitHub App configuration for SecurityLakeStack's GitHub alert counts pull and
+        // IngestionStack's operator effort pull; same App and installation OpsStack and
+        // AccountStack read (see SubmitApplication.java).
+        var githubAppId = envOr("GITHUB_APP_ID", appProps.githubAppId, "(from githubAppId in cdk.json)");
+        var githubAppInstallationId = envOr(
+                "GITHUB_APP_INSTALLATION_ID",
+                appProps.githubAppInstallationId,
+                "(from githubAppInstallationId in cdk.json)");
         var scanDetection404PerMinute = Integer.parseInt(envOr(
                 "SCAN_DETECTION_404_PER_MINUTE",
                 appProps.scanDetection404PerMinute == null || appProps.scanDetection404PerMinute.isBlank()
@@ -406,6 +411,8 @@ public class SubmitEnvironment {
                         .sharedNames(sharedNames)
                         .baseImageTag(baseImageTag)
                         .securityServicesEnabled(securityServicesEnabled)
+                        .githubAppId(githubAppId != null ? githubAppId : "")
+                        .githubAppInstallationId(githubAppInstallationId != null ? githubAppInstallationId : "")
                         .build());
         this.securityLakeStack.addStackDependency(this.analyticsStack);
         this.securityLakeStack.addStackDependency(this.observabilityStack);
@@ -458,7 +465,8 @@ public class SubmitEnvironment {
                         .ga4BigQueryProjectId(ga4BigQueryProjectId != null ? ga4BigQueryProjectId : "")
                         .ga4BigQueryDatasetId(ga4BigQueryDatasetId != null ? ga4BigQueryDatasetId : "")
                         .ga4BigQueryLocation(ga4BigQueryLocation != null ? ga4BigQueryLocation : "")
-                        .githubTokenSecretArn(githubTokenSecretArn != null ? githubTokenSecretArn : "")
+                        .githubAppId(githubAppId != null ? githubAppId : "")
+                        .githubAppInstallationId(githubAppInstallationId != null ? githubAppInstallationId : "")
                         .build());
         this.ingestionStack.addStackDependency(this.analyticsStack);
 
