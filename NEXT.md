@@ -101,6 +101,20 @@ step.
 
 
 
+- [ ] **O38. Create the two GitHub Apps the audit ranks joint second.** `diya-ops`, to carry all
+  three Lambdas' writes, which separates 55 alarm issues and every support ticket from the
+  operator's own account and is the single move that fixes the worst disclosure gap; and
+  `diya-agent`, for unattended model runs, so a reader can tell a model's PR from a pipeline's and
+  our commits stop being attributed to the GitHub user `claude`. Both are free: an app to create
+  and a private key into Secrets Manager. Neither depends on signing. The alarm Lambda reads
+  `{env}/submit/github/issue_bot_token` and the support form reads
+  `{env}/submit/github/support_bot_token` (B165), so the app's token goes into both secrets, or a
+  second app carries the spreadsheets-only support writes. While deciding, settle recommendation 12 as well: the byline on articles
+  and support replies, before the emails-to-articles pipeline is built, because that is the largest
+  volume of machine-written public prose the company will produce. **Source**:
+  `REPORT_IDENTITY_AUDIT.md` section 8, recommendations 2, 3 and 12. **Owner**: Operator.
+  **Model**: none.
+
 ## Human-driven
 
 - [ ] **B30af.6. Register the four slot hosts' redirect URIs with HMRC and Companies House (P2).**
