@@ -97,6 +97,13 @@ step.
 
 ## Human-driven
 
+- [ ] **H-LU-9. One paragraph to `SDSTeam@hmrc.gov.uk`: the licence note.** The licence changed on
+  2026-09-09 from AGPL-3.0 to free-to-use with source under PolyForm Internal Use 1.0.0 (plus the
+  accountants' grant); the `Gov-Vendor-License-IDs` header, the service, its price and its API calls
+  are unchanged. Its gate, Submit's relabel (LU-8a), landed 2026-09-09; the operator holds the draft.
+  **Source**: spreadsheets' `PLAN_DIYA_GL_LAUNCH.md`, H-LU-9; BACKLOG 75. **Owner**: Operator, sends
+  the email. **Model**: none. **Size**: ~0 files.
+
 - [ ] **B30af.6. Register the four slot hosts' redirect URIs with HMRC and Companies House (P2).**
   After P1 names the slots: eight URIs, `https://ci-set<N>.submit.diyaccounting.co.uk/activities/submitVatCallback.html`
   (HMRC Developer Hub, the sandbox application, which today holds the prod host, the ci apex and
