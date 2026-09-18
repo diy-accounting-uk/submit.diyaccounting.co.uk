@@ -41,6 +41,24 @@ step.
 
 ## In flight
 
+- [ ] **O38. The two GitHub Apps carry every machine write.** Both apps exist and are installed on
+  the org (23:0x UTC on 2026-09-18): `diyaccounting-ops` (App ID 4995449, installation 162872904 on
+  submit and spreadsheets; Issues write, code scanning, Dependabot and secret scanning alerts read) and
+  `diyaccounting-agent` (App ID 4995481, installation 162872977 on submit; Contents, Pull requests and
+  Issues write). The keys are the repository secrets `OPS_APP_PRIVATE_KEY` and `AGENT_APP_PRIVATE_KEY`;
+  the ids are the variables `OPS_APP_ID`, `OPS_APP_INSTALLATION_ID`, `AGENT_APP_ID`,
+  `AGENT_APP_INSTALLATION_ID`. The code is `claude/b61-board` (worktree b61, one Sonnet agent): a
+  shared installation-token module, the three Lambdas (alarm issues, support tickets, security lake)
+  reading `{env}/submit/github/ops_app_private_key` instead of the two PATs, the CDK plumbing,
+  `deploy-environment.yml` writing that secret, and `alarm-triage.yml` pushing and opening its draft
+  PR as `diyaccounting-agent[bot]`. Proof on ci then prod: an alarm issue, a support ticket and the
+  nightly's alert rows written by the app (`user.type: Bot`), and a triage PR authored by the agent
+  app. Then the PAT secrets `ISSUE_BOT_TOKEN`, `SUPPORT_BOT_TOKEN` and `PERSONAL_ACCESS_TOKEN` and
+  the Secrets Manager entries `{env}/submit/github/issue_bot_token` and `support_bot_token` go.
+  Recommendation 12, the byline on articles and support replies, is still the operator's one sentence.
+  **Source**: `REPORT_IDENTITY_AUDIT.md` section 8, recommendations 2, 3 and 12. **Owner**: Claude
+  Code. **Model**: Sonnet. **Size**: ~12 files.
+
 ## Machine-only
 
 - [ ] **B52y.3. The security lake nightly's two GitHub alert rows: the next run proves the token.**
@@ -69,20 +87,6 @@ step.
   **Owner**: Claude Code re-runs the sandbox year on a ci set so the run sits inside HMRC's 14-day log window; then the operator sends `DRAFT_EMAIL_ITSA_RECOGNITION.md` (the pack is on `main` since PR #237, `_developers/hmrc/`) and `DRAFT_EMAIL_ITSA_PRODUCTION_CREDENTIALS.md` when SDST answers. **Model**: Haiku. **Size**: ~3 files.
 
 
-
-- [ ] **O38. Create the two GitHub Apps the audit ranks joint second.** `diya-ops`, to carry all
-  three Lambdas' writes, which separates 55 alarm issues and every support ticket from the
-  operator's own account and is the single move that fixes the worst disclosure gap; and
-  `diya-agent`, for unattended model runs, so a reader can tell a model's PR from a pipeline's and
-  our commits stop being attributed to the GitHub user `claude`. Both are free: an app to create
-  and a private key into Secrets Manager. Neither depends on signing. The alarm Lambda reads
-  `{env}/submit/github/issue_bot_token` and the support form reads
-  `{env}/submit/github/support_bot_token` (B165), so the app's token goes into both secrets, or a
-  second app carries the spreadsheets-only support writes. While deciding, settle recommendation 12 as well: the byline on articles
-  and support replies, before the emails-to-articles pipeline is built, because that is the largest
-  volume of machine-written public prose the company will produce. **Source**:
-  `REPORT_IDENTITY_AUDIT.md` section 8, recommendations 2, 3 and 12. **Owner**: Operator.
-  **Model**: none.
 
 ## Human-driven
 
