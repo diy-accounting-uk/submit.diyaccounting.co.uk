@@ -47,9 +47,9 @@ step.
   `diyaccounting-agent` (App ID 4995481, installation 162872977 on submit; Contents, Pull requests and
   Issues write). The keys are the repository secrets `OPS_APP_PRIVATE_KEY` and `AGENT_APP_PRIVATE_KEY`;
   the ids are the variables `OPS_APP_ID`, `OPS_APP_INSTALLATION_ID`, `AGENT_APP_ID`,
-  `AGENT_APP_INSTALLATION_ID`. The code is `claude/b61-board` (worktree b61, one Sonnet agent): a
+  `AGENT_APP_INSTALLATION_ID`. The code is PR #304 (`claude/b61-board`, 42cf064a, one commit): a
   shared installation-token module, the three Lambdas (alarm issues, support tickets, security lake)
-  reading `{env}/submit/github/ops_app_private_key` instead of the two PATs, the CDK plumbing,
+  and the operator-effort pull reading `{env}/submit/github/ops_app_private_key` instead of the two PATs, the CDK plumbing,
   `deploy-environment.yml` writing that secret, and `alarm-triage.yml` pushing and opening its draft
   PR as `diyaccounting-agent[bot]`. Proof on ci then prod: an alarm issue, a support ticket and the
   nightly's alert rows written by the app (`user.type: Bot`), and a triage PR authored by the agent
