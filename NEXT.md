@@ -61,19 +61,18 @@ step.
 ## Machine-ask
 
 - [ ] **B52y.3. The security lake nightly's two GitHub alert rows come back 403.** The WAF half is
-  proven and #249 is closed: the 03:15 UTC run on 2026-09-18 wrote `waf 1` with no
-  `AccessDeniedException`. The same run answered 403 `Resource not accessible by personal access token`
-  on both `dependabot/alerts` and `secret-scanning/alerts` and published null rows, four hours after the
-  operator granted the token both read permissions (22:5x UTC on 2026-09-17), while `code-scanning/alerts`
-  succeeds. The token the Lambda reads is `prod/submit/github/issue_bot_token` (last written 23:38 UTC
-  on 2026-09-17 by main's deploy). Two candidates: the granted token is not the one in that secret, or
-  the organisation's fine-grained token policy holds the permission change for approval at
-  https://github.com/organizations/diy-accounting-uk/settings/personal-access-token-requests. The
-  session's classifier refuses to materialise the secret, so the operator runs the check:
-  `T=$(aws --profile submit-prod secretsmanager get-secret-value --secret-id prod/submit/github/issue_bot_token --query SecretString --output text); curl -s -o /dev/null -w '%{http_code}\n' -H "Authorization: Bearer $T" 'https://api.github.com/repos/diy-accounting-uk/submit.diyaccounting.co.uk/dependabot/alerts?per_page=1'`
-  (200 means the next nightly's rows come non-null; 403 means the token in the secret is not the
-  granted one, and the GitHub secret behind it needs the granted token's value). **Source**: issue #249.
-  **Owner**: Operator, one command. **Model**: Haiku. **Size**: ~0 files.
+  proven and #249 is closed. The token the Lambda reads, `prod/submit/github/issue_bot_token`, answered
+  403 `Resource not accessible by personal access token` on `dependabot/alerts` at 10:1x UTC on
+  2026-09-18 from the operator's shell, while both alert features are enabled on the repository and a
+  token with the two read permissions answers 200 on both endpoints. That secret is written by
+  `deploy-environment.yml` from the repository-level Actions secret `ISSUE_BOT_TOKEN` (last set 19:17
+  UTC on 2026-09-15), so the token granted the permissions on 2026-09-17 is not the one stored, or the
+  grant has not taken. The operator checks the token at https://github.com/settings/personal-access-tokens
+  (repository access includes this repository; Dependabot alerts and Secret scanning alerts both
+  read-only), stores the right value with `gh secret set ISSUE_BOT_TOKEN --repo diy-accounting-uk/submit.diyaccounting.co.uk`,
+  then `gh workflow run deploy-environment.yml -f environment-name=prod` and the same for `ci`. Proof:
+  the check command answers 200, and the next 03:15 UTC nightly logs no 403. **Source**: issue #249.
+  **Owner**: Operator, one console check and three commands. **Model**: Haiku. **Size**: ~0 files.
 
 - [ ] **B55.2. Google federation: the key and its two secrets go.** Every Google caller is
   federated on `main` since PR #301 (e5a22c29): the three GA4 Lambdas from their execution role,
