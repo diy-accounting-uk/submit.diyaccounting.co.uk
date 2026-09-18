@@ -44,6 +44,15 @@ step.
 
 ## Machine-only
 
+- [ ] **B52y.3. The security lake nightly's two GitHub alert rows: the next run proves the token.**
+  The WAF half is proven and #249 is closed. The 2026-09-18 run answered 403 `Resource not accessible
+  by personal access token` on `dependabot/alerts` and `secret-scanning/alerts`; the operator has since
+  granted the stored token (`prod/submit/github/issue_bot_token`, the repository secret
+  `ISSUE_BOT_TOKEN`) both read permissions in place, with no regeneration, so no secret write or
+  deploy-environment run is needed. Proof: the 03:15 UTC run on 2026-09-19 in
+  `/aws/lambda/prod-env-security-lake-nightly` logs no 403 and its `github-alerts` count covers all
+  three alert types. **Source**: issue #249. **Owner**: Claude Code. **Model**: Haiku. **Size**: ~0 files.
+
 - [ ] **B52n.2. The spreadsheets donation event lands as `donate`.** The Ads half is done (key event
   `donate` imported from GA4 property 523400333 into Ads account 814-268-5080 as a secondary
   conversion, 23:2x UTC on 2026-09-17) and the spreadsheets repository's `download-page.js` sends
@@ -60,20 +69,6 @@ step.
   **Owner**: Claude Code. **Model**: Haiku. **Size**: ~0 files.
 
 ## Machine-ask
-
-- [ ] **B52y.3. The security lake nightly's two GitHub alert rows come back 403.** The WAF half is
-  proven and #249 is closed. The token the Lambda reads, `prod/submit/github/issue_bot_token`, answered
-  403 `Resource not accessible by personal access token` on `dependabot/alerts` at 10:1x UTC on
-  2026-09-18 from the operator's shell, while both alert features are enabled on the repository and a
-  token with the two read permissions answers 200 on both endpoints. That secret is written by
-  `deploy-environment.yml` from the repository-level Actions secret `ISSUE_BOT_TOKEN` (last set 19:17
-  UTC on 2026-09-15), so the token granted the permissions on 2026-09-17 is not the one stored, or the
-  grant has not taken. The operator checks the token at https://github.com/settings/personal-access-tokens
-  (repository access includes this repository; Dependabot alerts and Secret scanning alerts both
-  read-only), stores the right value with `gh secret set ISSUE_BOT_TOKEN --repo diy-accounting-uk/submit.diyaccounting.co.uk`,
-  then `gh workflow run deploy-environment.yml -f environment-name=prod` and the same for `ci`. Proof:
-  the check command answers 200, and the next 03:15 UTC nightly logs no 403. **Source**: issue #249.
-  **Owner**: Operator, one console check and three commands. **Model**: Haiku. **Size**: ~0 files.
 
 - [ ] **B11.T10. ITSA phase 2: the recognition pack.** `PLAN_ITSA_PHASE_2.md` T10, its inputs (T7r, T21, T22) on `main`:
   `_developers/hmrc/ITSA_PRODUCTION_APPROVALS_CHECKLIST.md`, an ITSA pass over the two
