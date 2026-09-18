@@ -16,8 +16,8 @@ runs), and for Claude Code steps the **Model** a sub-agent should use (Fable > O
 Haiku; the lowest tier that fits). Anything touching code goes through a `claude/*` branch and
 PR; the operator merges.
 
-**Prod runs deployment prod-d689744** (PR #300, run 35229274840, green at 14:45 UTC on 2026-09-17,
-nine stacks, the only prod set standing). **ci**: `ci-set1` (PR #301's set, claimed 23:12 UTC on
+**Prod runs deployment prod-e5a22c2** (PR #301, run 35287648055, green at 00:4x UTC on 2026-09-18,
+nine stacks, the only prod set standing; the deploy destroyed prod-d689744 itself). **ci**: `ci-set1` (PR #301's set, claimed 23:12 UTC on
 2026-09-17) is live, the only ci set standing; its self-destruct fires from 03:12 UTC on
 2026-09-18.
 
@@ -51,17 +51,6 @@ step.
   `claude/b59-board` (329d1737, `EdgeStack.java`'s two policies; `npm test` and `./mvnw clean
   verify` running, then the PR). **Source**: spreadsheets test run 35290200595. **Owner**:
   Claude Code. **Model**: Haiku. **Size**: ~1 file.
-
-- [ ] **B55.2. Google federation: the key and its two secrets go.** Every Google caller is
-  federated on `main` since PR #301 (e5a22c29): the three GA4 Lambdas from their execution role,
-  `google-apply.yml` and the paymentBehaviour BigQuery read from the job's OIDC token. `main`'s
-  deploy 35287648055 (started 23:37 UTC on 2026-09-17) carries it; when it is green on prod, the operator deletes the service account's
-  user-managed keys and the two secrets; the steps are `RUNBOOK_INFORMATION_SECURITY.md` §3.5
-  (`gcloud auth login`, `gcloud iam service-accounts keys list --iam-account=ga4-report-pull@diyaccounting-ga4.iam.gserviceaccount.com --managed-by=user --project=diyaccounting-ga4`,
-  a `keys delete` per id, then `aws --profile submit-ci secretsmanager delete-secret --secret-id ci/submit/ga4/service_account --recovery-window-in-days 30`
-  and the same for `prod` with `--profile submit-prod`). **Source**: B55;
-  `PLAN_EVERYTHING_AS_CODE.md` items 9 and 11. **Owner**: Operator, three deletes. **Model**:
-  none. **Size**: ~0 files.
 
 - [ ] **B52n.2. The spreadsheets donation event lands as `donate`.** The Ads half is done: the
   operator imported key event `donate` from GA4 property 523400333 into Ads account 814-268-5080
@@ -102,6 +91,17 @@ step.
   **Size**: ~0 files.
 
 ## Machine-ask
+
+- [ ] **B55.2. Google federation: the key and its two secrets go.** Every Google caller is
+  federated on `main` since PR #301 (e5a22c29): the three GA4 Lambdas from their execution role,
+  `google-apply.yml` and the paymentBehaviour BigQuery read from the job's OIDC token. `main`'s
+  deploy 35287648055 is green on prod-e5a22c2 (00:4x UTC on 2026-09-18), so the operator deletes the service account's
+  user-managed keys and the two secrets; the steps are `RUNBOOK_INFORMATION_SECURITY.md` §3.5
+  (`gcloud auth login`, `gcloud iam service-accounts keys list --iam-account=ga4-report-pull@diyaccounting-ga4.iam.gserviceaccount.com --managed-by=user --project=diyaccounting-ga4`,
+  a `keys delete` per id, then `aws --profile submit-ci secretsmanager delete-secret --secret-id ci/submit/ga4/service_account --recovery-window-in-days 30`
+  and the same for `prod` with `--profile submit-prod`). **Source**: B55;
+  `PLAN_EVERYTHING_AS_CODE.md` items 9 and 11. **Owner**: Operator, three deletes. **Model**:
+  none. **Size**: ~0 files.
 
 - [ ] **B11.T10. ITSA phase 2: the recognition pack.** `PLAN_ITSA_PHASE_2.md` T10, its inputs (T7r, T21, T22) on `main`:
   `_developers/hmrc/ITSA_PRODUCTION_APPROVALS_CHECKLIST.md`, an ITSA pass over the two
