@@ -16,10 +16,11 @@ runs), and for Claude Code steps the **Model** a sub-agent should use (Fable > O
 Haiku; the lowest tier that fits). Anything touching code goes through a `claude/*` branch and
 PR; the operator merges.
 
-**Prod runs deployment prod-994737c** (main's deploy 35295102307 of PR #302, green at 02:15 UTC on
-2026-09-18, nine stacks created 01:42 UTC, the only prod set standing; the deploy destroyed prod-e5a22c2
-itself). **ci**: no set is live; `ci-set2`'s eight app stacks self-destructed by 05:05 UTC on 2026-09-18
-and its `SelfDestructStack` alone stands until the 08:34 UTC `destroy-ci.yml` sweep.
+**Prod runs deployment prod-789552c** (main's deploy 35321436839 of PR #303, green at 08:45 UTC on
+2026-09-18, nine stacks created 07:56 UTC, the only prod set standing; the deploy destroyed prod-994737c
+itself). **ci**: `ci-set1` (PR #303's set, claimed 07:23 UTC on 2026-09-18) is live, the only ci set
+standing; its self-destruct fires from 11:23 UTC. `ci-set2`'s SelfDestructStack alone remains from
+00:56 UTC and goes at the first `destroy-ci.yml` sweep after it is eight hours old (08:56 UTC).
 
 The board runs in five sections, in this order: **in flight** (a branch, a pull request or a run
 in motion, each named in the row), **machine-only**, **machine-ask**, **human-driven**,
@@ -41,26 +42,14 @@ step.
 
 ## In flight
 
-- [ ] **B52p. Both sites' CSP refuses GA4's pings sent before consent.** gtag sends hits to
-  `analytics.google.com` and its regional hosts while analytics storage is denied, and a Google-signals
-  ping to `stats.g.doubleclick.net`; both sites' policies listed only `*.google-analytics.com`. The
-  analytics.google.com hosts are on `main` here since PR #302 (994737c3) and on prod-994737c; the
-  doubleclick host is `claude/b60-board` (b9283b50, `EdgeStack.java`'s two policies), its PR next. The
-  spreadsheets repository's six DIYA-GL "no console error" browser specs still fail on its PR #123
-  (`claude/ops-donate-event`, 50ecfd0c8, test run 35292636687) on the doubleclick host; that session
-  has the diagnosis in its inbox (07:13 UTC on 2026-09-18) and owns the fix. **Source**: spreadsheets
-  test run 35290200595. **Owner**: Claude Code. **Model**: Haiku. **Size**: ~1 file.
-
-- [ ] **B52n.2. The spreadsheets donation event lands as `donate`.** The Ads half is done: the
-  operator imported key event `donate` from GA4 property 523400333 into Ads account 814-268-5080
-  as a secondary conversion at 23:2x UTC on 2026-09-17. The spreadsheets repository's
-  `download-page.js` still sent `purchase` for a donation; that repository's PR #123
-  (`claude/ops-donate-event`, 9fa1814e0, its `npm test` GREEN locally) changes it to `donate`.
-  Done when PR #123 is on the spreadsheets `main` and the next day's `key_events_daily`
-  shows the spreadsheets host's donations under `donate`. **Source**: B52n. **Owner**: Claude
-  Code. **Model**: Haiku. **Size**: ~1 file.
-
 ## Machine-only
+
+- [ ] **B52n.2. The spreadsheets donation event lands as `donate`.** The Ads half is done (key event
+  `donate` imported from GA4 property 523400333 into Ads account 814-268-5080 as a secondary
+  conversion, 23:2x UTC on 2026-09-17) and the spreadsheets repository's `download-page.js` sends
+  `donate` since its PR #123 merged (b27eb8c4, 08:26 UTC on 2026-09-18). Proof on 2026-09-19: the
+  `key_events_daily` view shows the spreadsheets host's donations under `donate`. **Source**: B52n.
+  **Owner**: Claude Code. **Model**: Haiku. **Size**: ~0 files.
 
 - [ ] **B30af.8. The main-deploy guard's first live proof.** PR #300 (d689744f) makes
   `wait-for-main-deploy.mjs` stop gating once main's `set origins` job is completed and no rollback
