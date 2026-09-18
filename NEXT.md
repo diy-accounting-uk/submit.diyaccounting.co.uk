@@ -16,11 +16,10 @@ runs), and for Claude Code steps the **Model** a sub-agent should use (Fable > O
 Haiku; the lowest tier that fits). Anything touching code goes through a `claude/*` branch and
 PR; the operator merges.
 
-**Prod runs deployment prod-789552c** (main's deploy 35321436839 of PR #303, green at 08:45 UTC on
-2026-09-18, nine stacks created 07:56 UTC, the only prod set standing; the deploy destroyed prod-994737c
-itself). **ci**: `ci-set1` (PR #303's set, claimed 07:23 UTC on 2026-09-18) is live, the only ci set
-standing; its self-destruct fires from 11:23 UTC. `ci-set2`'s SelfDestructStack alone remains from
-00:56 UTC and goes at the first `destroy-ci.yml` sweep after it is eight hours old (08:56 UTC).
+**Prod runs deployment prod-0f77333** (the 04:11 UTC scheduled deploy of main, run 35327188863,
+green at 09:54 UTC on 2026-09-18, nine stacks created 09:04 UTC, the only prod set standing; the deploy
+destroyed prod-789552c itself). **ci**: `ci-set1` (PR #303's set, claimed 07:23 UTC on 2026-09-18) is
+live, the only ci set standing; its self-destruct fires from 11:23 UTC.
 
 The board runs in five sections, in this order: **in flight** (a branch, a pull request or a run
 in motion, each named in the row), **machine-only**, **machine-ask**, **human-driven**,
