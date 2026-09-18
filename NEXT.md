@@ -42,16 +42,6 @@ step.
 
 ## In flight
 
-- [ ] **B30af.8. The main-deploy guard's first live proof.** PR #300 (d689744f) makes
-  `wait-for-main-deploy.mjs` stop gating once main's `set origins` job is completed and no rollback
-  is in flight. The proof pair was dispatched at 22:03 UTC on 2026-09-18: main's deploy 35399752208
-  and, thirty seconds later, deploy 35399794968 of `claude/ops-guard-proof` (identical to main, no
-  PR). Proof: the branch run's probe `params` job logs carry `job 'set origins' completed on run
-  35399752208; not gating` while main's run is still in its prod half. Then the branch and its ci
-  set go. `wait-for-ci-deploys.mjs` (deploy.yml's `wait for previous cleanup`) has the same
-  whole-run shape and is its own row when it next costs a ceiling. **Source**: PR #300.
-  **Owner**: Claude Code. **Model**: Haiku. **Size**: ~0 files.
-
 ## Machine-only
 
 - [ ] **B52y.3. The security lake nightly's two GitHub alert rows: the next run proves the token.**
