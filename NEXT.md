@@ -41,6 +41,17 @@ step.
 
 ## In flight
 
+- [ ] **B52p. Both sites' CSP refuses GA4's consent-mode pings.** gtag sends hits to
+  `analytics.google.com` and its regional hosts while analytics storage is denied (every page
+  load before consent) and both policies listed only `*.google-analytics.com`, so the browser
+  has refused those pings on the live sites; the spreadsheets repository's six DIYA-GL "no
+  console error" browser specs have failed on every full run since its main's 717c0ae9 (test
+  run 35219358251). The two hosts join connect-src and img-src: spreadsheets PR #123
+  (`claude/ops-donate-event`, 50ecfd0c8, third commit, its `test` run is the proof) and here on
+  `claude/b59-board` (329d1737, `EdgeStack.java`'s two policies; `npm test` and `./mvnw clean
+  verify` running, then the PR). **Source**: spreadsheets test run 35290200595. **Owner**:
+  Claude Code. **Model**: Haiku. **Size**: ~1 file.
+
 - [ ] **B55.2. Google federation: the key and its two secrets go.** Every Google caller is
   federated on `main` since PR #301 (e5a22c29): the three GA4 Lambdas from their execution role,
   `google-apply.yml` and the paymentBehaviour BigQuery read from the job's OIDC token. `main`'s
