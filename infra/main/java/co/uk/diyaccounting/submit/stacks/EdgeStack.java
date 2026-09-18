@@ -791,12 +791,12 @@ public class EdgeStack extends Stack {
                         .contentSecurityPolicy(ResponseHeadersContentSecurityPolicy.builder()
                                 .contentSecurityPolicy("default-src 'self'; "
                                         + "script-src 'self' 'unsafe-inline' https://client.rum.us-east-1.amazonaws.com https://www.googletagmanager.com; "
-                                        + "connect-src 'self' https://dataplane.rum.eu-west-2.amazonaws.com https://cognito-identity.eu-west-2.amazonaws.com https://sts.eu-west-2.amazonaws.com https://*.google-analytics.com https://analytics.google.com https://*.analytics.google.com https://www.googletagmanager.com; "
+                                        + "connect-src 'self' https://dataplane.rum.eu-west-2.amazonaws.com https://cognito-identity.eu-west-2.amazonaws.com https://sts.eu-west-2.amazonaws.com https://*.google-analytics.com https://analytics.google.com https://*.analytics.google.com https://stats.g.doubleclick.net https://www.googletagmanager.com; "
                                         // Wildcard, not just https://www.google-analytics.com: GA4's /g/collect
                                         // beacon lands on a region-specific subdomain (e.g.
                                         // region1.google-analytics.com),
                                         // which the literal host doesn't match and CSP then silently drops the pixel.
-                                        + "img-src 'self' data: https://avatars.githubusercontent.com https://*.google-analytics.com https://analytics.google.com https://*.analytics.google.com https://www.googletagmanager.com; "
+                                        + "img-src 'self' data: https://avatars.githubusercontent.com https://*.google-analytics.com https://analytics.google.com https://*.analytics.google.com https://stats.g.doubleclick.net https://www.googletagmanager.com; "
                                         + "style-src 'self' 'unsafe-inline'; "
                                         + "frame-src 'self' https://www.youtube-nocookie.com https://"
                                         + props.sharedNames().simulatorDomainName + "; "
@@ -875,8 +875,8 @@ public class EdgeStack extends Stack {
                         .contentSecurityPolicy(ResponseHeadersContentSecurityPolicy.builder()
                                 .contentSecurityPolicy("default-src 'self'; "
                                         + "script-src 'self' 'unsafe-inline' https://client.rum.us-east-1.amazonaws.com https://www.googletagmanager.com; "
-                                        + "connect-src 'self' https://dataplane.rum.eu-west-2.amazonaws.com https://cognito-identity.eu-west-2.amazonaws.com https://sts.eu-west-2.amazonaws.com https://*.google-analytics.com https://analytics.google.com https://*.analytics.google.com https://www.googletagmanager.com; "
-                                        + "img-src 'self' data: https://avatars.githubusercontent.com https://*.google-analytics.com https://analytics.google.com https://*.analytics.google.com https://www.googletagmanager.com; "
+                                        + "connect-src 'self' https://dataplane.rum.eu-west-2.amazonaws.com https://cognito-identity.eu-west-2.amazonaws.com https://sts.eu-west-2.amazonaws.com https://*.google-analytics.com https://analytics.google.com https://*.analytics.google.com https://stats.g.doubleclick.net https://www.googletagmanager.com; "
+                                        + "img-src 'self' data: https://avatars.githubusercontent.com https://*.google-analytics.com https://analytics.google.com https://*.analytics.google.com https://stats.g.doubleclick.net https://www.googletagmanager.com; "
                                         + "style-src 'self' 'unsafe-inline'; "
                                         + "frame-src 'self' https://www.youtube-nocookie.com https://"
                                         + props.sharedNames().simulatorDomainName + "; "
