@@ -55,7 +55,6 @@ step.
   nightly's alert rows written by the app (`user.type: Bot`), and a triage PR authored by the agent
   app. Then the PAT secrets `ISSUE_BOT_TOKEN`, `SUPPORT_BOT_TOKEN` and `PERSONAL_ACCESS_TOKEN` and
   the Secrets Manager entries `{env}/submit/github/issue_bot_token` and `support_bot_token` go.
-  Recommendation 12, the byline on articles and support replies, is still the operator's one sentence.
   **Source**: `REPORT_IDENTITY_AUDIT.md` section 8, recommendations 2, 3 and 12. **Owner**: Claude
   Code. **Model**: Sonnet. **Size**: ~12 files.
 

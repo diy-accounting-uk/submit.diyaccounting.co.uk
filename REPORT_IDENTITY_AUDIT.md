@@ -532,15 +532,20 @@ For a machine-written GitHub comment, one line at the end:
 _Written by claude-sonnet-4-5 in [alarm-triage #1234](<run url>). Not reviewed by a person._
 ```
 
-For a generated article or knowledge-base page, a byline under the title, not a banner:
+For a generated article or knowledge-base page, a byline under the title, not a banner. Decided
+(operator, 2026-09-19): no reviewer is named, and the byline says nobody reviewed it:
 
 ```
-Drafted from DIY Accounting support correspondence by a language model.
-Reviewed by Antony Cartwright, <date>.
+Drafted from DIY Accounting support correspondence by a language model. Not reviewed by a person.
 ```
 
-If nobody reviewed it, say that instead. A byline a reader can check beats a banner they learn to
-skip.
+A machine-drafted support reply carries the same sentence, once, at its end:
+
+```
+This reply was drafted by a language model and not reviewed by a person.
+```
+
+A byline a reader can check beats a banner they learn to skip.
 
 ---
 
