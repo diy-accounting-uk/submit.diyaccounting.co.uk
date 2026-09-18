@@ -4,8 +4,9 @@
 # PLAN: Automate the repository
 
 Status: **design, drafted 2026-09-09.** Phases 0 and 1 in part on main (commit signing, CODEOWNERS, the
-origin labels, the alarm-origin verifier); the ruleset gate, the Actions settings, the security-review cron and the kill switch are done (2026-09-16)
-and 68 to 72; phase 6 is the dashboard's D16 (BACKLOG 52l).
+origin labels, the alarm-origin verifier); the ruleset gate, the Actions settings, the security-review cron and the kill switch are done (2026-09-16).
+BACKLOG rows 68 to 72 are open, on NEXT.md as B68 to B72; rows 76 to 81 carry the rest of phases 2 to 5;
+phase 6 is the dashboard's D16 (BACKLOG 52l).
 
 ## What the operator asked for
 

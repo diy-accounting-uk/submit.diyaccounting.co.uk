@@ -76,7 +76,117 @@ step.
   `key_events_daily` view shows the spreadsheets host's donations under `donate`. **Source**: B52n.
   **Owner**: Claude Code. **Model**: Haiku. **Size**: ~0 files.
 
+- [ ] **B72. `video-capture.yml` runs after a main deploy that touched a scene-script page.** Today it
+  is `workflow_dispatch` only. Add a `workflow_run` trigger on `deploy.yml` completing on `main`, gated
+  on the deploy's changed files intersecting the pages named in `videos/*.json`; the dispatch path
+  stays. **Source**: BACKLOG 72; `PLAN_REPOSITORY_AUTOMATION.md` Phase 5. **Owner**: Claude Code. **Model**: Sonnet.
+  **Size**: ~1 file.
+
+- [ ] **B52.D4. A visitors-by-class panel on the operator dashboard.** `visitor_kind` (human, bot,
+  synthetic) is tagged on every GA4 hit by `web/public/lib/analytics.js`; nothing reads it. One
+  aggregate over the export, one panel on `web/public/operator/dashboard.html`. **Source**: BACKLOG
+  67; `PLAN_ONE_STOP_DASHBOARD.md` D4. **Owner**: Claude Code. **Model**: Sonnet. **Size**: ~2 files.
+
+- [ ] **B11.T7b. The ITSA sandbox proof at its full scope.** `scripts/itsa-sandbox-year.js` and
+  `_developers/hmrc/ITSA_PHASE_2_SANDBOX.md` record one self-employment-only run on a dated year.
+  `PLAN_ITSA_PHASE_2.md` T7 asks for two runs against a ci set: run A on a year up to 2024-25, both a
+  sole trade and a UK property business on the dated period summaries, then on the sole trade a
+  carry-forward claim, a brought-forward loss, a carry-back claim and its `carryBackLossesDecrease`,
+  then the calculation and the final declaration; run B on a year from 2025-26, both businesses on the
+  cumulative period summary with the ITSA status set through the test support API, a carry-forward
+  claim on the property business and one property carry-back that must come back rejected. Both
+  runs send `suspendTemporalValidations` on the losses and adjustments writes, read back
+  `businessIncomeSources` before declaring, and prove a `204` from the final declaration with the
+  fraud header validator clean; run A also proves the calculation reflects the loss claimed. The
+  responses go into the simulator scenarios and the sandbox doc. Runs inside HMRC's 14-day log
+  window so B11.T10's recognition pack can cite it. **Source**: `PLAN_ITSA_PHASE_2.md` T7. **Owner**: Claude Code.
+  **Model**: Sonnet. **Size**: ~2 files.
+
+- [ ] **B34.8. Design the three next Companies House filings.** One design section each, in
+  `PLAN_COMPANIES_HOUSE_ACCOUNTS_FILING.md`, for FRS 102 section 1A small-company accounts (the
+  wider tag set and a directors' report on the 34b envelope), dormant company accounts (the narrower
+  case with its own rules in the accounts technical interface specification), and pairing the
+  accounts with a CT600 to HMRC (one balance sheet for both filings): the taxonomy and tags, the
+  envelope differences, the pages, the simulator scenarios and the sandbox proof for each. **Source**:
+  BACKLOG 34e, 34f, 34g; `PLAN_COMPANIES_HOUSE_ACCOUNTS_FILING.md` Horizons. **Owner**: Claude Code. **Model**:
+  Opus. **Size**: ~1 file.
+
+- [ ] **B52.D3. CLS on submit's RUM client, and RUM on the spreadsheets site.** The page-experience
+  panel covers the three sites the GA4 linker joins only once both report Core Web Vitals. The submit
+  half is the RUM client's `web/public/lib/` configuration; the spreadsheets half is that repository's
+  and goes to its session by inbox with the same RUM app monitor pattern. **Source**: BACKLOG 62;
+  `PLAN_ONE_STOP_DASHBOARD.md` D3. **Owner**: Claude Code. **Model**: Sonnet. **Size**: ~3 files.
+
+- [ ] **B49.22. `infra/paypal`.** `paypal.toml` recording the button id, the return URL and the page
+  carrying the form; `paypal-assert.js` failing when the template drifts from the file or the donate
+  URL stops resolving, read over the live spreadsheets site. **Source**: BACKLOG 49b;
+  `PLAN_EVERYTHING_AS_CODE.md` item 22. **Owner**: Claude Code. **Model**: Haiku. **Size**: ~3 files.
+
+- [ ] **B49.23. `infra/telegram`.** `telegram.toml` recording the bot handle and the six groups with
+  their chat ids and environments; `telegram-assert.js` calling `getMe`, `getChat` per group and
+  `getWebhookInfo`, failing on a bot removed from a group or an unexpected webhook. **Source**:
+  BACKLOG 49b; `PLAN_EVERYTHING_AS_CODE.md` item 23. **Owner**: Claude Code. **Model**: Haiku. **Size**: ~3 files.
+
+- [ ] **B49.18. `infra/companies-house` and the shared `infra-apply.yml`.** `companies-house.toml`
+  and `companies-house-assert.js`, plus `.github/workflows/infra-apply.yml` in `google-apply.yml`'s
+  shape: OIDC into AWS, one step per service, plan on a pull request touching `infra/**`, apply on
+  push to main. B49.19 to B49.23 each add a step. **Source**: BACKLOG 49b;
+  `PLAN_EVERYTHING_AS_CODE.md` item 18. **Owner**: Claude Code. **Model**: Sonnet. **Size**: ~4 files.
+
+- [ ] **B49.19. `infra/hmrc`.** `hmrc.toml` carrying both applications, their subscriptions with
+  versions, the redirect URIs and the secret names; `hmrc-assert.js` proving each subscription with
+  one call per declared API, against the sandbox application in ci and the production one in prod.
+  **Source**: BACKLOG 49b; `PLAN_EVERYTHING_AS_CODE.md` item 19. **Owner**: Claude Code. **Model**: Sonnet.
+  **Size**: ~4 files.
+
+- [ ] **B71. Support issue triage on `issues: [opened]`.** A workflow in `alarm-triage.yml`'s shape
+  for issues opened through the support form: run the `vat-submission-failure-alarm-user-lookup`
+  skill's read-only lookup, draft a reply as a comment under the recommendation 12 byline, send
+  nothing; and `.github/ISSUE_TEMPLATE/support.md` as the structured form. **Source**: BACKLOG 71;
+  `PLAN_REPOSITORY_AUTOMATION.md` Phase 4. **Owner**: Claude Code. **Model**: Sonnet. **Size**: ~4 files.
+
+- [ ] **B49.21. `infra/stripe`.** Move `scripts/stripe-setup.js` in, invert its default to plan
+  without `--apply`, move the two webhook endpoint URLs and the nine events into `stripe.toml`, write
+  each new price id where the deploy reads it and each endpoint secret into Secrets Manager through
+  `put-secret-with-rotation-tag.sh`; `submit.catalogue.toml` stays the source of price, currency and
+  interval. **Source**: BACKLOG 49b; `PLAN_EVERYTHING_AS_CODE.md` item 21. **Owner**: Claude Code. **Model**:
+  Sonnet. **Size**: ~5 files.
+
+- [ ] **B69. The publication filter as a composite action, and the reliability ledger.**
+  `scripts/redact-triage-output.mjs` is called inline by `alarm-triage.yml`; every public-writing
+  workflow (alarm triage, the agentic-lib workflows, B71's support triage) calls one composite action
+  instead. The ledger: workflow-run, alarm-issue and behaviour-suite outcome rates as lake rows and
+  one dashboard line, the measure of how often the automation is right. **Source**: BACKLOG 69;
+  `PLAN_REPOSITORY_AUTOMATION.md` Phase 1. **Owner**: Claude Code. **Model**: Sonnet. **Size**: ~6 files.
+
+- [ ] **B70. A remedy list, so an alarm issue can close itself.** Alarm families mapped to named
+  remedies (origins back to last-known-good, a stale schedule re-run, a stack redeploy), each a
+  workflow dispatch the triage can name; the triage's draft PR becomes a real one for a remedy the
+  list allows, and the issue closes when the alarm returns to OK after it. Design first (the list,
+  the allowed set, what stays a draft), then the build. **Source**: BACKLOG 70;
+  `PLAN_REPOSITORY_AUTOMATION.md` Phase 3. **Owner**: Claude Code. **Model**: Opus for the design, Sonnet for the
+  build. **Size**: ~6 files.
+
+- [ ] **B49.15. Move the declarations under `infra/`.** The table in `PLAN_EVERYTHING_AS_CODE.md`'s
+  "The `infra/` layout" is the whole change: `git mv` each `google/` file, update every reader named
+  there, rename the path filters in `google-apply.yml` and `youtube-check.yml`. One commit; proof is
+  `npm test` and one `google-apply.yml` plan run reading live state. **Source**: BACKLOG 49b;
+  `PLAN_EVERYTHING_AS_CODE.md` item 15. **Owner**: Claude Code. **Model**: Sonnet. **Size**: ~30 files.
+
 ## Machine-ask
+
+- [ ] **B68. Auto-merge and delete-branch-on-merge on, and the `policy:question` label.** The
+  repository has `allow_auto_merge=false` and `delete_branch_on_merge=false`; the label does not
+  exist. The label is one `gh label create`; the two settings are a repository-administration write
+  the operator approves: `gh api -X PATCH repos/diy-accounting-uk/submit.diyaccounting.co.uk -F allow_auto_merge=true -F delete_branch_on_merge=true`.
+  **Source**: BACKLOG 68; `PLAN_REPOSITORY_AUTOMATION.md` Phase 0, P9. **Owner**: Claude Code, the
+  operator approves the settings write. **Model**: Haiku. **Size**: ~0 files.
+
+- [ ] **B52.D2. Donations on the revenue panel.** Which Stripe account holds the spreadsheets site's
+  donation Payment Links and whether it is the one `v_revenue_daily` reads; then label those charges
+  by product. PayPal donations wait on `../PLAN_FINANCE_AUTOMATION.md` phase 1. **Source**: BACKLOG
+  66; `PLAN_ONE_STOP_DASHBOARD.md` D2. **Owner**: Claude Code, the operator confirms the Stripe
+  account. **Model**: Sonnet. **Size**: ~1 file.
 
 - [ ] **B11.T10. ITSA phase 2: the recognition pack.** `PLAN_ITSA_PHASE_2.md` T10, its inputs (T7r, T21, T22) on `main`:
   `_developers/hmrc/ITSA_PRODUCTION_APPROVALS_CHECKLIST.md`, an ITSA pass over the two
@@ -86,6 +196,23 @@ step.
   **Owner**: Claude Code re-runs the sandbox year on a ci set so the run sits inside HMRC's 14-day log window; then the operator sends `DRAFT_EMAIL_ITSA_RECOGNITION.md` (the pack is on `main` since PR #237, `_developers/hmrc/`) and `DRAFT_EMAIL_ITSA_PRODUCTION_CREDENTIALS.md` when SDST answers. **Model**: Haiku. **Size**: ~3 files.
 
 
+
+- [ ] **B49.16. Read-only inventory of the Google Ads account.** `infra/google/ads/ads-inventory.js`
+  in `google-inventory.js`'s shape: authenticate with the developer token and the manager's refresh
+  token, list the client customers, auto-tagging and conversion tracking settings, every conversion
+  action, the conversion goals, every campaign with budget and asset groups, and the GA4 link; print,
+  write nothing. **Source**: BACKLOG 49b; `PLAN_EVERYTHING_AS_CODE.md` item 16. **Owner**: Claude
+  Code, the operator supplies the Ads developer token and refresh token. **Model**: Sonnet.
+  **Size**: ~3 files.
+
+- [ ] **B49.20. `infra/github`.** `github.toml` declaring the rulesets and their rules, the required
+  checks, the Actions allow-list and SHA pinning, `delete_branch_on_merge`, Dependabot security
+  fixes, CODEOWNERS routing and the two environments with their variable and secret names;
+  `github-sync.js` diffs and applies through the REST API and absorbs
+  `scripts/github-actions-permissions.sh`. The apply needs repository administration, so it runs on
+  the `prod` environment with a token the operator provides. **Source**: BACKLOG 49b;
+  `PLAN_EVERYTHING_AS_CODE.md` item 20. **Owner**: Claude Code, the operator provides the admin
+  token. **Model**: Sonnet. **Size**: ~5 files.
 
 ## Human-driven
 
@@ -165,6 +292,30 @@ step.
   rendered above the eight objectives beside the last set filed at Companies House. **Source**:
   BACKLOG 52i; plan D10. **Owner**: Claude Code. **Model**: Sonnet. Blocked on the finance plan's
   phases 1 and 2 (the book in the cloud), M1c and M3. **Size**: ~3 files.
+
+- [ ] **B49.17. `infra/google/ads/ads.toml` and `ads-sync.js`.** Declare the account, the three
+  conversion actions, the default goals, auto-tagging, the Performance Max campaign with its budget
+  and asset group, and the reserve-floor parameter name; plan by default, apply with `--apply`, fail
+  on an expected conversion action that is missing, leave the GA4 side to `ga4-sync.js`; the last
+  step of `google-apply.yml`. **Source**: BACKLOG 49b; `PLAN_EVERYTHING_AS_CODE.md` item 17. **Owner**: Claude Code.
+  **Model**: Sonnet. Blocked on B49.16 and on B52n.2. **Size**: ~4 files.
+
+- [ ] **B52l. The optimiser over the raw export.** A notebook computing the per-block correlations,
+  fitting the block models (linear cost, log-linear funnels, Hill curves for spend), ranking levers
+  by effect per unit cost and proposing the next experiment with its predicted effect and interval;
+  Bayesian optimisation for the continuous knobs and a Thompson-sampling bandit for allocations once
+  experiments exist; one line per objective on the dashboard page. The model design as a plan
+  section first, then the notebook and the page line. **Source**: BACKLOG 52l;
+  `PLAN_ONE_STOP_DASHBOARD.md` D16. **Owner**: Claude Code. **Model**: Opus for the models, Sonnet for the
+  notebook. Blocked until 2026-12-09, three months of export. **Size**: ~3 files.
+
+- [ ] **B52m. The reinvestment loop.** Trailing income, reserve, budget, return per pound and
+  payback on the page; the reinvestment fraction as a lever with the reserve floor the operator
+  names; paid traffic and article boosts as experiment rows with on-off or geographic controls; GA4
+  conversion import from the Ads account. **Source**: BACKLOG 52m; `PLAN_ONE_STOP_DASHBOARD.md`
+  D17. **Owner**: Claude Code, with the operator's fraction and floor. **Model**: Sonnet. Blocked on
+  B52l, on the cost panel carrying revenue (BACKLOG 43, from 2026-10-02) and on O23. **Size**: ~3
+  files.
 
 ## Discipline
 

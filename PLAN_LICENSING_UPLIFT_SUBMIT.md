@@ -3,7 +3,7 @@
 
 # PLAN: the licensing uplift, Submit's share
 
-Status: written 2026-09-09 by the spreadsheets session from the spreadsheets repository's licensing uplift plan, since archived at `../spreadsheets.diyaccounting.co.uk/_developers/archive/PLAN_LICENSING_UPLIFT.md` and split into `PLAN_DIYACCOUNTING_BRAND.md` (the brand source, the trade mark filings, the diyaccounting.com question) and `PLAN_DIYA_GL_LAUNCH.md` (the domain registrations, the HMRC licence note). This file carries only what lands in this repository. S1 to S7 are on main; H-LU-9 (NEXT.md O33) and LU-15 (NEXT.md B70.LU15) remain.
+Status: written 2026-09-09 by the spreadsheets session from the spreadsheets repository's licensing uplift plan, since archived at `../spreadsheets.diyaccounting.co.uk/_developers/archive/PLAN_LICENSING_UPLIFT.md` and split into `PLAN_DIYACCOUNTING_BRAND.md` (the brand source, the trade mark filings, the diyaccounting.com question) and `PLAN_DIYA_GL_LAUNCH.md` (the domain registrations, the HMRC licence note). This file carries only what lands in this repository. S1 to S7 are on main; H-LU-9 (BACKLOG row 75) and LU-15 (BACKLOG row 74) remain.
 
 **Feed updates back.** The spreadsheets board (`../spreadsheets.diyaccounting.co.uk/NEXT.md`) carries this repository's share as one row, LU-8a, and its plan's rows LU-18 (the Submit lines), H-LU-9 and LU-15 name this repository. When a row here starts, lands or changes shape, append a block to `~/.claude/inboxes/spreadsheets.md` (the inbox protocol in `~/.claude/inboxes/README.md`) saying which row and what changed, so the spreadsheets session updates its board and its plan. A change to the model or a decision is made in the spreadsheets plan first, never here.
 
