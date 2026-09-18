@@ -16,10 +16,10 @@ runs), and for Claude Code steps the **Model** a sub-agent should use (Fable > O
 Haiku; the lowest tier that fits). Anything touching code goes through a `claude/*` branch and
 PR; the operator merges.
 
-**Prod runs deployment prod-e5a22c2** (PR #301, run 35287648055, green at 00:4x UTC on 2026-09-18,
-nine stacks, the only prod set standing; the deploy destroyed prod-d689744 itself). **ci**: `ci-set1` (PR #301's set, claimed 23:12 UTC on
-2026-09-17) is live, the only ci set standing; its self-destruct fires from 03:12 UTC on
-2026-09-18.
+**Prod runs deployment prod-994737c** (main's deploy 35295102307 of PR #302, green at 02:15 UTC on
+2026-09-18, nine stacks created 01:42 UTC, the only prod set standing; the deploy destroyed prod-e5a22c2
+itself). **ci**: no set is live; `ci-set2`'s eight app stacks self-destructed by 05:05 UTC on 2026-09-18
+and its `SelfDestructStack` alone stands until the 08:34 UTC `destroy-ci.yml` sweep.
 
 The board runs in five sections, in this order: **in flight** (a branch, a pull request or a run
 in motion, each named in the row), **machine-only**, **machine-ask**, **human-driven**,
@@ -41,16 +41,15 @@ step.
 
 ## In flight
 
-- [ ] **B52p. Both sites' CSP refuses GA4's consent-mode pings.** gtag sends hits to
-  `analytics.google.com` and its regional hosts while analytics storage is denied (every page
-  load before consent) and both policies listed only `*.google-analytics.com`, so the browser
-  has refused those pings on the live sites; the spreadsheets repository's six DIYA-GL "no
-  console error" browser specs have failed on every full run since its main's 717c0ae9 (test
-  run 35219358251). The two hosts join connect-src and img-src: spreadsheets PR #123
-  (`claude/ops-donate-event`, 50ecfd0c8, third commit, its `test` run is the proof) and here on
-  `main` since PR #302 (994737c3, `EdgeStack.java`'s two policies; its ci deploy passed and
-  main's deploy 35295102307 carries it to prod). **Source**: spreadsheets test run 35290200595. **Owner**:
-  Claude Code. **Model**: Haiku. **Size**: ~1 file.
+- [ ] **B52p. Both sites' CSP refuses GA4's pings sent before consent.** gtag sends hits to
+  `analytics.google.com` and its regional hosts while analytics storage is denied, and a Google-signals
+  ping to `stats.g.doubleclick.net`; both sites' policies listed only `*.google-analytics.com`. The
+  analytics.google.com hosts are on `main` here since PR #302 (994737c3) and on prod-994737c; the
+  doubleclick host is `claude/b60-board` (b9283b50, `EdgeStack.java`'s two policies), its PR next. The
+  spreadsheets repository's six DIYA-GL "no console error" browser specs still fail on its PR #123
+  (`claude/ops-donate-event`, 50ecfd0c8, test run 35292636687) on the doubleclick host; that session
+  has the diagnosis in its inbox (07:13 UTC on 2026-09-18) and owns the fix. **Source**: spreadsheets
+  test run 35290200595. **Owner**: Claude Code. **Model**: Haiku. **Size**: ~1 file.
 
 - [ ] **B52n.2. The spreadsheets donation event lands as `donate`.** The Ads half is done: the
   operator imported key event `donate` from GA4 property 523400333 into Ads account 814-268-5080
@@ -71,26 +70,22 @@ step.
   same whole-run shape and is its own row when it next costs a ceiling. **Source**: PR #300.
   **Owner**: Claude Code. **Model**: Haiku. **Size**: ~0 files.
 
-- [ ] **B52y.3. The security lake nightly's WAF rows: the next run proves the grant.** PR #297
-  (b14a7692) gives the nightly's role `logs:DescribeLogGroups` on the resource IAM evaluates it
-  against; main's deploy carries it. Read the 03:15 UTC run on 2026-09-18 in
-  `/aws/lambda/prod-env-security-lake-nightly`: no `AccessDeniedException`, WAF rows written for
-  the day, and no `403` on `dependabot/alerts` or `secret-scanning/alerts` (the operator granted
-  the ops token both read permissions in place at 22:5x UTC on 2026-09-17, so the two GitHub
-  alert rows come non-null too); then close #249 with that log. **Source**:
-  issue #249. **Owner**: Claude Code. **Model**: Haiku. **Size**: ~0 files.
-
-- [ ] **B52y.4. The cost_focus Data Quality result after the fix: the next nightly proves it.** PR
-  #297 (b14a7692) registers `cost_focus`'s `dt=` partitions and names `BilledCost` in the ruleset.
-  The three newest results (2026-09-15 to 2026-09-17, ~02:17 UTC) all pre-date the fix reaching
-  prod at 14:07 UTC on 2026-09-17, so the proof is the 2026-09-18 result: `aws --profile submit-prod glue list-data-quality-results
-  --filter '{"DataSource":{"GlueTable":{"DatabaseName":"prod_env_analytics","TableName":"cost_focus"}}}'
-  --max-results 3` then `get-data-quality-result` on the newest id: score 1.0, both rules PASS,
-  RowCount in the hundreds of thousands. If the score is still 0, the reader is B52y.4's next
-  layer. **Source**: `PLAN_ONE_STOP_DASHBOARD.md` D13. **Owner**: Claude Code. **Model**: Haiku.
-  **Size**: ~0 files.
-
 ## Machine-ask
+
+- [ ] **B52y.3. The security lake nightly's two GitHub alert rows come back 403.** The WAF half is
+  proven and #249 is closed: the 03:15 UTC run on 2026-09-18 wrote `waf 1` with no
+  `AccessDeniedException`. The same run answered 403 `Resource not accessible by personal access token`
+  on both `dependabot/alerts` and `secret-scanning/alerts` and published null rows, four hours after the
+  operator granted the token both read permissions (22:5x UTC on 2026-09-17), while `code-scanning/alerts`
+  succeeds. The token the Lambda reads is `prod/submit/github/issue_bot_token` (last written 23:38 UTC
+  on 2026-09-17 by main's deploy). Two candidates: the granted token is not the one in that secret, or
+  the organisation's fine-grained token policy holds the permission change for approval at
+  https://github.com/organizations/diy-accounting-uk/settings/personal-access-token-requests. The
+  session's classifier refuses to materialise the secret, so the operator runs the check:
+  `T=$(aws --profile submit-prod secretsmanager get-secret-value --secret-id prod/submit/github/issue_bot_token --query SecretString --output text); curl -s -o /dev/null -w '%{http_code}\n' -H "Authorization: Bearer $T" 'https://api.github.com/repos/diy-accounting-uk/submit.diyaccounting.co.uk/dependabot/alerts?per_page=1'`
+  (200 means the next nightly's rows come non-null; 403 means the token in the secret is not the
+  granted one, and the GitHub secret behind it needs the granted token's value). **Source**: issue #249.
+  **Owner**: Operator, one command. **Model**: Haiku. **Size**: ~0 files.
 
 - [ ] **B55.2. Google federation: the key and its two secrets go.** Every Google caller is
   federated on `main` since PR #301 (e5a22c29): the three GA4 Lambdas from their execution role,
