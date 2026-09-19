@@ -95,8 +95,8 @@ public class SubmitApplication {
         public String stripeTestPriceIdResidentDiyaGl;
         public String stripeWebhookSecretArn;
         public String stripeTestWebhookSecretArn;
-        public String opsGithubTokenSecretArn;
-        public String supportGithubTokenSecretArn;
+        public String githubAppId;
+        public String githubAppInstallationId;
         // Comma-separated hand-applied IP block list for EdgeStack's WafManualBlock rule (issue
         // #9 phase 9.3); see wafManualBlockIps in cdk-application/cdk.json.
         public String wafManualBlockIps;
@@ -289,14 +289,11 @@ public class SubmitApplication {
                 "STRIPE_TEST_WEBHOOK_SECRET_ARN",
                 appProps.stripeTestWebhookSecretArn,
                 "(from stripeTestWebhookSecretArn in cdk.json)");
-        var opsGithubTokenSecretArn = envOr(
-                "OPS_GITHUB_TOKEN_SECRET_ARN",
-                appProps.opsGithubTokenSecretArn,
-                "(from opsGithubTokenSecretArn in cdk.json)");
-        var supportGithubTokenSecretArn = envOr(
-                "SUPPORT_GITHUB_TOKEN_SECRET_ARN",
-                appProps.supportGithubTokenSecretArn,
-                "(from supportGithubTokenSecretArn in cdk.json)");
+        var githubAppId = envOr("GITHUB_APP_ID", appProps.githubAppId, "(from githubAppId in cdk.json)");
+        var githubAppInstallationId = envOr(
+                "GITHUB_APP_INSTALLATION_ID",
+                appProps.githubAppInstallationId,
+                "(from githubAppInstallationId in cdk.json)");
         var certificateArn = envOr("CERTIFICATE_ARN", appProps.certificateArn, "(from certificateArn in cdk.json)");
         var regionalCertificateArn = envOr(
                 "REGIONAL_CERTIFICATE_ARN",
@@ -424,8 +421,8 @@ public class SubmitApplication {
                         .sharedNames(sharedNames)
                         .baseImageTag(baseImageTag)
                         .cognitoUserPoolArn(cognitoUserPoolArn)
-                        .supportGithubTokenSecretArn(
-                                supportGithubTokenSecretArn != null ? supportGithubTokenSecretArn : "")
+                        .githubAppId(githubAppId != null ? githubAppId : "")
+                        .githubAppInstallationId(githubAppInstallationId != null ? githubAppInstallationId : "")
                         .feedbackEngagementEnabled("true".equalsIgnoreCase(appProps.feedbackEngagementEnabled))
                         .build());
 
@@ -556,7 +553,8 @@ public class SubmitApplication {
                         .baseImageTag(baseImageTag)
                         .baseUrl(sharedNames.baseUrl)
                         .alertEmail(alertEmail)
-                        .opsGithubTokenSecretArn(opsGithubTokenSecretArn != null ? opsGithubTokenSecretArn : "")
+                        .githubAppId(githubAppId != null ? githubAppId : "")
+                        .githubAppInstallationId(githubAppInstallationId != null ? githubAppInstallationId : "")
                         .build());
         // this.opsStack.addDependency(hmrcStack);
         // this.opsStack.addDependency(apiStack);

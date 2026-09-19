@@ -20,10 +20,11 @@ import software.amazon.awscdk.assertions.Template;
 
 class AccountStackTest {
 
-    private static final String SUPPORT_TOKEN_SECRET_ARN =
-            "arn:aws:secretsmanager:eu-west-2:111111111111:secret:docs/submit/github/support_bot_token";
+    private static final String TEST_GITHUB_APP_ID = "123456";
+    private static final String TEST_GITHUB_APP_INSTALLATION_ID = "78901234";
+    private static final String EXPECTED_PRIVATE_KEY_SECRET_ID = "docs/submit/github/ops_app_private_key";
 
-    private static AccountStack synthAccountStack(String supportGithubTokenSecretArn) {
+    private static AccountStack synthAccountStack(String githubAppId) {
         App app = new App();
         SubmitSharedNames sharedNames = SubmitSharedNames.forDocs();
 
@@ -40,16 +41,16 @@ class AccountStackTest {
                 .sharedNames(sharedNames)
                 .baseImageTag("latest")
                 .cognitoUserPoolArn("arn:aws:cognito-idp:eu-west-2:111111111111:userpool/eu-west-2_TestPool");
-        if (supportGithubTokenSecretArn != null) {
-            builder.supportGithubTokenSecretArn(supportGithubTokenSecretArn);
+        if (githubAppId != null) {
+            builder.githubAppId(githubAppId).githubAppInstallationId(TEST_GITHUB_APP_INSTALLATION_ID);
         }
         return new AccountStack(app, "TestAccountStack", builder.build());
     }
 
     @Test
     @SuppressWarnings("unchecked")
-    void supportTicketLambdaReadsOnlyTheSupportBotTokenSecret() {
-        AccountStack stack = synthAccountStack(SUPPORT_TOKEN_SECRET_ARN);
+    void supportTicketLambdaReadsOnlyTheGithubAppPrivateKeySecret() {
+        AccountStack stack = synthAccountStack(TEST_GITHUB_APP_ID);
         Template template = Template.fromStack(stack);
 
         var supportFunctions = template.findResources("AWS::Lambda::Function").values().stream()
@@ -59,17 +60,16 @@ class AccountStackTest {
         assertEquals(1, supportFunctions.size(), "expected exactly one support-ticket-post Lambda");
         var environment = (Map<String, Object>) supportFunctions.get(0).get("Environment");
         var variables = (Map<String, Object>) environment.get("Variables");
-        assertEquals(SUPPORT_TOKEN_SECRET_ARN, variables.get("GITHUB_TOKEN_SECRET_ARN"));
+        assertEquals(TEST_GITHUB_APP_ID, variables.get("GITHUB_APP_ID"));
+        assertEquals(TEST_GITHUB_APP_INSTALLATION_ID, variables.get("GITHUB_APP_INSTALLATION_ID"));
+        assertEquals(EXPECTED_PRIVATE_KEY_SECRET_ID, variables.get("GITHUB_APP_PRIVATE_KEY_SECRET_ID"));
         assertEquals("diy-accounting-uk/spreadsheets.diyaccounting.co.uk", variables.get("SUPPORT_GITHUB_REPO"));
 
         List<String> githubSecretResources = githubSecretReadResources(template);
         assertEquals(
-                List.of(SUPPORT_TOKEN_SECRET_ARN + "-*"),
+                List.of("arn:aws:secretsmanager:eu-west-2:111111111111:secret:" + EXPECTED_PRIVATE_KEY_SECRET_ID + "-*"),
                 githubSecretResources,
-                "the support Lambda may read its own token and no other GitHub token");
-        assertTrue(
-                githubSecretResources.stream().noneMatch(resource -> resource.contains("issue_bot_token")),
-                "the support Lambda must not be able to read the alarm-issue token");
+                "the support Lambda may read only the diya-ops App's private key");
     }
 
     @Test

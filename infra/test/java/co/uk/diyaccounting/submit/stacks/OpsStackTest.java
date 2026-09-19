@@ -19,7 +19,10 @@ import software.amazon.awscdk.assertions.Template;
 
 class OpsStackTest {
 
-    private static OpsStack synthOpsStack(String envName, String opsGithubTokenSecretArn, String baseUrl) {
+    private static final String TEST_GITHUB_APP_ID = "123456";
+    private static final String TEST_GITHUB_APP_INSTALLATION_ID = "78901234";
+
+    private static OpsStack synthOpsStack(String envName, String githubAppId, String baseUrl) {
         App app = new App();
         SubmitSharedNames.SubmitSharedNamesProps sharedNamesProps = new SubmitSharedNames.SubmitSharedNamesProps();
         sharedNamesProps.hostedZoneName = "example.com";
@@ -42,8 +45,8 @@ class OpsStackTest {
                 .cloudTrailEnabled("false")
                 .sharedNames(sharedNames)
                 .baseImageTag("latest");
-        if (opsGithubTokenSecretArn != null) {
-            builder.opsGithubTokenSecretArn(opsGithubTokenSecretArn);
+        if (githubAppId != null) {
+            builder.githubAppId(githubAppId).githubAppInstallationId(TEST_GITHUB_APP_INSTALLATION_ID);
         }
         if (baseUrl != null) {
             builder.baseUrl(baseUrl);
@@ -54,8 +57,7 @@ class OpsStackTest {
 
     @Test
     void alarmStateChangeRuleTargetsOnlyTelegramInCi() {
-        OpsStack opsStack = synthOpsStack(
-                "ci", "arn:aws:secretsmanager:eu-west-2:111111111111:secret:ci/submit/ops/github_token", null);
+        OpsStack opsStack = synthOpsStack("ci", TEST_GITHUB_APP_ID, null);
         Template template = Template.fromStack(opsStack);
 
         var rules = template.findResources(
@@ -71,8 +73,7 @@ class OpsStackTest {
 
     @Test
     void alarmStateChangeRuleTargetsTelegramAndGithubIssueInProd() {
-        OpsStack opsStack = synthOpsStack(
-                "prod", "arn:aws:secretsmanager:eu-west-2:111111111111:secret:prod/submit/ops/github_token", null);
+        OpsStack opsStack = synthOpsStack("prod", TEST_GITHUB_APP_ID, null);
         Template template = Template.fromStack(opsStack);
 
         var rules = template.findResources(
@@ -89,8 +90,7 @@ class OpsStackTest {
 
     @Test
     void opsStackCreatesNoBusWideTelegramForwarder() {
-        OpsStack opsStack = synthOpsStack(
-                "prod", "arn:aws:secretsmanager:eu-west-2:111111111111:secret:prod/submit/ops/github_token", null);
+        OpsStack opsStack = synthOpsStack("prod", TEST_GITHUB_APP_ID, null);
         Template template = Template.fromStack(opsStack);
 
         // The catch-all rule on the custom ActivityEvent bus, and the Lambda it targets, now
@@ -126,8 +126,7 @@ class OpsStackTest {
     @Test
     @SuppressWarnings("unchecked")
     void alarmToGithubIssueLambdaCanReadOnlyItsOwnEnvironmentsAlarmSilenceParameters() {
-        OpsStack opsStack = synthOpsStack(
-                "prod", "arn:aws:secretsmanager:eu-west-2:111111111111:secret:prod/submit/ops/github_token", null);
+        OpsStack opsStack = synthOpsStack("prod", TEST_GITHUB_APP_ID, null);
         Template template = Template.fromStack(opsStack);
 
         List<Map<String, Object>> statements = findPolicyStatementsContainingSid(template, "ReadAlarmSilence");
@@ -150,8 +149,7 @@ class OpsStackTest {
         // finishes before the next one's list runs (see #210/#212). It does not reach a second
         // deployment's own copy of this Lambda - see alarmToGithubIssueLambdaCanClaimTheAlarmIssueLockTable
         // for the mechanism that covers that (#273/#274).
-        OpsStack opsStack = synthOpsStack(
-                "prod", "arn:aws:secretsmanager:eu-west-2:111111111111:secret:prod/submit/ops/github_token", null);
+        OpsStack opsStack = synthOpsStack("prod", TEST_GITHUB_APP_ID, null);
         Template template = Template.fromStack(opsStack);
 
         var matching = template.findResources("AWS::Lambda::Function").entrySet().stream()
@@ -173,8 +171,7 @@ class OpsStackTest {
         // serialises within one deployment. The Lambda claims the transition in the env-scoped
         // alarm-issue-lock table before it calls GitHub, so a second deployment's invocation
         // loses the conditional put instead of also creating an issue.
-        OpsStack opsStack = synthOpsStack(
-                "prod", "arn:aws:secretsmanager:eu-west-2:111111111111:secret:prod/submit/ops/github_token", null);
+        OpsStack opsStack = synthOpsStack("prod", TEST_GITHUB_APP_ID, null);
         Template template = Template.fromStack(opsStack);
 
         var matching = template.findResources("AWS::Lambda::Function").entrySet().stream()

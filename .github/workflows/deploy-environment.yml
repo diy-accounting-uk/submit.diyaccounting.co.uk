@@ -336,30 +336,17 @@ jobs:
         env:
           AWS_REGION: ${{ env.AWS_REGION }}
 
-      - name: Create secret in AWS from secrets.ISSUE_BOT_TOKEN
+      - name: Create secret in AWS from secrets.OPS_APP_PRIVATE_KEY
         env:
-          SECRET_VALUE: ${{ secrets.ISSUE_BOT_TOKEN }}
+          SECRET_VALUE: ${{ secrets.OPS_APP_PRIVATE_KEY }}
           AWS_REGION: ${{ env.AWS_REGION }}
         run: |
           if [ -z "$SECRET_VALUE" ]; then
-            echo "No ISSUE_BOT_TOKEN in ${{ needs.names.outputs.environment-name }} environment, skipping"
+            echo "No OPS_APP_PRIVATE_KEY in ${{ needs.names.outputs.environment-name }} environment, skipping"
             exit 0
           fi
           scripts/put-secret-with-rotation-tag.sh \
-            "${{ needs.names.outputs.environment-name }}/submit/github/issue_bot_token" \
-            "$SECRET_VALUE"
-
-      - name: Create secret in AWS from secrets.SUPPORT_BOT_TOKEN
-        env:
-          SECRET_VALUE: ${{ secrets.SUPPORT_BOT_TOKEN }}
-          AWS_REGION: ${{ env.AWS_REGION }}
-        run: |
-          if [ -z "$SECRET_VALUE" ]; then
-            echo "No SUPPORT_BOT_TOKEN for ${{ needs.names.outputs.environment-name }}, skipping"
-            exit 0
-          fi
-          scripts/put-secret-with-rotation-tag.sh \
-            "${{ needs.names.outputs.environment-name }}/submit/github/support_bot_token" \
+            "${{ needs.names.outputs.environment-name }}/submit/github/ops_app_private_key" \
             "$SECRET_VALUE"
 
       - name: Create user sub hash salt (if not exists)
@@ -894,6 +881,12 @@ jobs:
           ENVIRONMENT_NAME: ${{ needs.names.outputs.environment-name }}
           DEPLOYMENT_NAME: ${{ needs.names.outputs.environment-name }}
           BASE_IMAGE_TAG: env-security-lake-${{ github.sha }}
+          # diya-ops GitHub App: SecurityLakeStack reads these to mint its own installation
+          # token at runtime (see app/lib/githubAppToken.js). The private key itself never
+          # passes through here - it goes straight into Secrets Manager by this workflow's
+          # create-secrets job.
+          GITHUB_APP_ID: ${{ vars.OPS_APP_ID }}
+          GITHUB_APP_INSTALLATION_ID: ${{ vars.OPS_APP_INSTALLATION_ID }}
 
   deploy-scan-detection:
     name: 'deploy scan detection'
@@ -1162,6 +1155,12 @@ jobs:
           ENVIRONMENT_NAME: ${{ needs.names.outputs.environment-name }}
           DEPLOYMENT_NAME: ${{ needs.names.outputs.environment-name }}
           BASE_IMAGE_TAG: env-ingestion-${{ github.sha }}
+          # diya-ops GitHub App: IngestionStack's operator effort pull reads these to mint its
+          # own installation token at runtime (see app/lib/githubAppToken.js). The private key
+          # itself never passes through here - it goes straight into Secrets Manager by this
+          # workflow's create-secrets job.
+          GITHUB_APP_ID: ${{ vars.OPS_APP_ID }}
+          GITHUB_APP_INSTALLATION_ID: ${{ vars.OPS_APP_INSTALLATION_ID }}
 
   deploy-ecr:
     name: 'deploy ecr'

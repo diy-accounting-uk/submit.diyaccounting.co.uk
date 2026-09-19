@@ -137,13 +137,18 @@ public class IngestionStack extends Stack {
             return "";
         }
 
-        // The issue-bot token OpsStack's alarm-to-issue Lambda also reads, from cdk.json's
-        // githubTokenSecretArn context value. Defaulted to blank rather than made required so
-        // a caller that has not been updated to pass it yet still compiles; the operator effort
-        // pull job simply gets no secret grant and fails at invocation time until the operator
-        // creates the secret and the caller is updated, the same guard stripeSecretKeyArn uses.
+        // The diya-ops GitHub App id and installation id OpsStack's alarm-to-issue Lambda also
+        // reads (see REPORT_IDENTITY_AUDIT.md section 8, recommendations 2 and 3). Defaulted to
+        // blank rather than made required so a caller that has not been updated to pass them yet
+        // still compiles; the operator effort pull job simply gets no secret grant and fails at
+        // invocation time until both are set, the same guard stripeSecretKeyArn uses.
         @Value.Default
-        default String githubTokenSecretArn() {
+        default String githubAppId() {
+            return "";
+        }
+
+        @Value.Default
+        default String githubAppInstallationId() {
             return "";
         }
 
@@ -494,18 +499,29 @@ public class IngestionStack extends Stack {
 
         // ============================================================================
         // Operator effort pull job: GitHub Actions runs, issue timeline events and commits,
-        // pulled through the REST API with the same issue-bot token OpsStack's alarm-to-issue
-        // Lambda reads
+        // pulled through the REST API with the same diya-ops GitHub App OpsStack's
+        // alarm-to-issue Lambda reads, scoped to this repository
         // ============================================================================
         var operatorEffortPullFunctionName = prefix + "-operator-effort-pull";
+
+        // The private key is created by deploy-environment.yml's create-secrets job at
+        // "{env}/submit/github/ops_app_private_key" (see scripts/put-secret-with-rotation-tag.sh);
+        // referencing it by name rather than ARN avoids the random ARN suffix Secrets Manager
+        // appends, so no wildcard match is needed for GetSecretValue's SecretId.
+        var githubAppPrivateKeySecretId = "%s/submit/github/ops_app_private_key".formatted(props.envName());
 
         var operatorEffortPullEnv = new PopulatedMap<String, String>()
                 .with("ENVIRONMENT_NAME", props.envName())
                 .with("ANALYTICS_LAKE_BUCKET_NAME", sharedNames.analyticsLakeBucketName)
                 .with("GITHUB_REPO", props.githubRepo());
-        if (props.githubTokenSecretArn() != null
-                && !props.githubTokenSecretArn().isBlank()) {
-            operatorEffortPullEnv.with("GITHUB_TOKEN_SECRET_ARN", props.githubTokenSecretArn());
+        if (props.githubAppId() != null
+                && !props.githubAppId().isBlank()
+                && props.githubAppInstallationId() != null
+                && !props.githubAppInstallationId().isBlank()) {
+            operatorEffortPullEnv
+                    .with("GITHUB_APP_ID", props.githubAppId())
+                    .with("GITHUB_APP_INSTALLATION_ID", props.githubAppInstallationId())
+                    .with("GITHUB_APP_PRIVATE_KEY_SECRET_ID", githubAppPrivateKeySecretId);
         }
 
         IRepository operatorEffortPullRepository = Repository.fromRepositoryAttributes(
@@ -544,15 +560,15 @@ public class IngestionStack extends Stack {
                 .resources(List.of(this.lakeBucket.getBucketArn() + "/curated/operator/*"))
                 .build());
 
-        if (props.githubTokenSecretArn() != null
-                && !props.githubTokenSecretArn().isBlank()) {
-            var githubTokenArnWithWildcard = props.githubTokenSecretArn().endsWith("*")
-                    ? props.githubTokenSecretArn()
-                    : props.githubTokenSecretArn() + "-*";
+        if (props.githubAppId() != null
+                && !props.githubAppId().isBlank()
+                && props.githubAppInstallationId() != null
+                && !props.githubAppInstallationId().isBlank()) {
             operatorEffortPullLambda.addToRolePolicy(PolicyStatement.Builder.create()
                     .effect(Effect.ALLOW)
                     .actions(List.of("secretsmanager:GetSecretValue"))
-                    .resources(List.of(githubTokenArnWithWildcard))
+                    .resources(List.of("arn:aws:secretsmanager:%s:%s:secret:%s-*"
+                            .formatted(this.getRegion(), this.getAccount(), githubAppPrivateKeySecretId)))
                     .build());
         }
 

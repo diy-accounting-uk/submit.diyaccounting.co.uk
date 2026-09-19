@@ -34,6 +34,11 @@ vi.mock("@aws-sdk/client-s3", () => ({
 const mockFetch = vi.fn();
 vi.stubGlobal("fetch", mockFetch);
 
+const mockGetInstallationAccessToken = vi.fn();
+vi.mock("@app/lib/githubAppToken.js", () => ({
+  getInstallationAccessToken: (...args) => mockGetInstallationAccessToken(...args),
+}));
+
 import {
   handler,
   defaultTargetDate,
@@ -59,17 +64,23 @@ describe("operatorEffortPull", () => {
     mockSmSend.mockReset();
     mockS3Send.mockReset();
     mockFetch.mockReset();
+    mockGetInstallationAccessToken.mockReset();
     mockS3Send.mockResolvedValue({});
-    mockSmSend.mockResolvedValue({ SecretString: "gh-token" });
+    mockSmSend.mockResolvedValue({ SecretString: "test-private-key" });
+    mockGetInstallationAccessToken.mockResolvedValue("gh-token");
 
     process.env.GITHUB_REPO = "diy-accounting-uk/submit.diyaccounting.co.uk";
-    process.env.GITHUB_TOKEN_SECRET_ARN = "arn:aws:secretsmanager:eu-west-2:111111111111:secret:test-token";
+    process.env.GITHUB_APP_ID = "12345";
+    process.env.GITHUB_APP_INSTALLATION_ID = "67890";
+    process.env.GITHUB_APP_PRIVATE_KEY_SECRET_ID = "test/submit/github/ops_app_private_key";
     process.env.ANALYTICS_LAKE_BUCKET_NAME = "test-lake";
   });
 
   afterEach(() => {
     delete process.env.GITHUB_REPO;
-    delete process.env.GITHUB_TOKEN_SECRET_ARN;
+    delete process.env.GITHUB_APP_ID;
+    delete process.env.GITHUB_APP_INSTALLATION_ID;
+    delete process.env.GITHUB_APP_PRIVATE_KEY_SECRET_ID;
     delete process.env.ANALYTICS_LAKE_BUCKET_NAME;
     delete process.env.OPERATOR_GITHUB_LOGIN;
   });
