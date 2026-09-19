@@ -224,13 +224,6 @@ step.
   `PLAN_EVERYTHING_AS_CODE.md` item 20. **Owner**: Claude Code, the operator provides the admin
   token. **Model**: Sonnet. **Size**: ~5 files.
 
-- [ ] **B68. Auto-merge and delete-branch-on-merge on, and the `policy:question` label.** The
-  repository has `allow_auto_merge=false` and `delete_branch_on_merge=false`; the label does not
-  exist. The label is one `gh label create`; the two settings are a repository-administration write
-  the operator approves: `gh api -X PATCH repos/diy-accounting-uk/submit.diyaccounting.co.uk -F allow_auto_merge=true -F delete_branch_on_merge=true`.
-  **Source**: BACKLOG 68; `PLAN_REPOSITORY_AUTOMATION.md` Phase 0, P9. **Owner**: Claude Code, the
-  operator approves the settings write. **Model**: Haiku. **Size**: ~0 files.
-
 ## Human-driven
 
 - [ ] **B30af.6. Register the four slot hosts' redirect URIs with HMRC and Companies House (P2).**
