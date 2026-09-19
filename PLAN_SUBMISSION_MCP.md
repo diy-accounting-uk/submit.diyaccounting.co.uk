@@ -3,7 +3,7 @@
 
 # PLAN: The submission MCP
 
-Status: open, drafted 2026-09-07. M1 is on main (M1a, PR #226) and on PR #232 (M1b, M1c); M2 to M7 are
+Status: open, drafted 2026-09-07. M1 is on main (M1a, PR #226; M1b and M1c, PR #232); M2 to M7 are
 BACKLOG 60, 61, 63, 64 and 65 under row 51.
 
 An MCP server for DIY Accounting Submit. It takes a customer's books, works out the figures a

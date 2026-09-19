@@ -328,7 +328,7 @@ on NEXT.md.
 | D1 | Views for submissions by activity, sources, the availability SLI and error budget; the page skeleton, the snapshot writer, the `operator` bundle and activity gate | B52a | Claude Code, Sonnet |
 | D2 | Donations and churn: confirm the Stripe account, label the Payment Links' charges; renewals and churn from the subscriptions stream; PayPal donations once the finance plan's pull exists | finance plan phase 1 for PayPal | Claude Code, Sonnet; operator confirms the account |
 | D3 | Synthetic tagging in the two `analytics.js` files and the RUM client; RUM and CLS on spreadsheets; the root page's stream id; cross-domain linking and the key events on the property | none; the GA4 changes through backlog row 49's tooling or the Admin API script | Claude Code, Sonnet; three repos |
-| D4 | Bot share from CloudFront logs by user-agent class; the visitors panel by human, bot, synthetic | D3 | Claude Code, Sonnet |
+| D4 | The visitors panel by human, bot, synthetic, from the `visitor_kind` tag already in the lake | none | Claude Code, Sonnet |
 | D5 | Downloads by product from the BigQuery export | the export, already on | Claude Code, Sonnet |
 | D6 | Alarm state changes into the lake; alarms by family; the error budget burn | D1 | Claude Code, Sonnet |
 | D7 | FOCUS 1.2 Data Export from the management account into the lake, tags, budgets, the anomaly monitor; cost per submission | operator's yes for the management-account export | Claude Code, Sonnet; the cost plan is the design, with the export format changed |
