@@ -41,22 +41,19 @@ step.
 
 ## In flight
 
-- [ ] **O38. The two GitHub Apps carry every machine write.** Both apps exist and are installed on
-  the org (23:0x UTC on 2026-09-18): `diyaccounting-ops` (App ID 4995449, installation 162872904 on
-  submit and spreadsheets; Issues write, code scanning, Dependabot and secret scanning alerts read) and
-  `diyaccounting-agent` (App ID 4995481, installation 162872977 on submit; Contents, Pull requests and
-  Issues write). The keys are the repository secrets `OPS_APP_PRIVATE_KEY` and `AGENT_APP_PRIVATE_KEY`;
-  the ids are the variables `OPS_APP_ID`, `OPS_APP_INSTALLATION_ID`, `AGENT_APP_ID`,
-  `AGENT_APP_INSTALLATION_ID`. The code is PR #304 (`claude/b61-board`, 42cf064a, one commit): a
-  shared installation-token module, the three Lambdas (alarm issues, support tickets, security lake)
-  and the operator-effort pull reading `{env}/submit/github/ops_app_private_key` instead of the two PATs, the CDK plumbing,
-  `deploy-environment.yml` writing that secret, and `alarm-triage.yml` pushing and opening its draft
-  PR as `diyaccounting-agent[bot]`. Proof on ci then prod: an alarm issue, a support ticket and the
-  nightly's alert rows written by the app (`user.type: Bot`), and a triage PR authored by the agent
-  app. Then the PAT secrets `ISSUE_BOT_TOKEN`, `SUPPORT_BOT_TOKEN` and `PERSONAL_ACCESS_TOKEN` and
-  the Secrets Manager entries `{env}/submit/github/issue_bot_token` and `support_bot_token` go.
-  **Source**: `REPORT_IDENTITY_AUDIT.md` section 8, recommendations 2, 3 and 12. **Owner**: Claude
-  Code. **Model**: Sonnet. **Size**: ~12 files.
+- [ ] **O38. The two GitHub Apps carry every machine write.** The code is on `main` since PR #304
+  (7248ef4d): the alarm-issue, support-ticket, security-lake and operator-effort Lambdas mint
+  `diyaccounting-ops` installation tokens (App 4995449, installation 162872904) from
+  `{env}/submit/github/ops_app_private_key`, and `alarm-triage.yml` pushes its draft PR as
+  `diyaccounting-agent[bot]` (App 4995481, installation 162872977). Main's deploy 35412103206 and
+  deploy-environment 35412102948 carry it; the environment run writes the private-key secret from
+  `OPS_APP_PRIVATE_KEY`. Proof: the next alarm issue, support ticket, security-lake nightly and
+  triage PR arrive with `user.type: Bot`. Then delete the repository secrets `ISSUE_BOT_TOKEN`,
+  `SUPPORT_BOT_TOKEN` and `PERSONAL_ACCESS_TOKEN` (`gh secret delete <name>`) and the Secrets
+  Manager entries `{env}/submit/github/issue_bot_token` and `support_bot_token` in ci and prod
+  (`aws secretsmanager delete-secret --recovery-window-in-days 30`, the operator approves).
+  **Source**: `REPORT_IDENTITY_AUDIT.md` section 8, recommendations 2 and 3. **Owner**: Claude
+  Code, the operator approves the five deletes. **Model**: Haiku. **Size**: ~0 files.
 
 ## Machine-only
 
