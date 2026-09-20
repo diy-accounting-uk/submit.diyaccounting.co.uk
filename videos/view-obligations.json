@@ -4,6 +4,7 @@
   "title": "See what VAT you owe HMRC and when",
   "description": "A signed-in walk through VAT obligations: sign in, take out a day pass, ask HMRC for the periods on a VAT registration number, and read the answer.",
   "auth": "user",
+  "pages": ["web/public/index.html", "web/public/auth/login.html", "web/public/bundles.html", "web/public/hmrc/vat/vatObligations.html"],
   "viewport": { "width": 1920, "height": 1080 },
   "deviceScaleFactor": 1,
   "fps": 60,

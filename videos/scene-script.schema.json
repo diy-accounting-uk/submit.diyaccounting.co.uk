@@ -5,7 +5,7 @@
   "description": "One JSON file per video under videos/. See PLAN section 3 in the site-video-capture design for the full write-up. Enforced at load time by scripts/lib/video/scriptSchema.js, since this file is documentation and a $schema pointer, not itself the runtime validator.",
   "type": "object",
   "additionalProperties": false,
-  "required": ["name", "title", "description", "auth", "viewport", "fps", "pacing", "captions", "scenes"],
+  "required": ["name", "title", "description", "auth", "pages", "viewport", "fps", "pacing", "captions", "scenes"],
   "properties": {
     "$schema": { "type": "string" },
     "name": { "type": "string", "minLength": 1 },
@@ -15,6 +15,12 @@
       "type": "string",
       "enum": ["none", "user"],
       "description": "\"user\" says the journey needs a signed-in account, and unlocks the login, consent, ensureBundle and hmrcAuthorise actions. Which identity provider signs the account in comes from TEST_AUTH_PROVIDER at run time, never from the script, so one script proves locally against the simulator variant and records against a deployment through the Cognito Hosted UI."
+    },
+    "pages": {
+      "type": "array",
+      "items": { "type": "string", "minLength": 1 },
+      "minItems": 1,
+      "description": "Every web/public/ page this script's scenes visit, as repo-relative paths. Lets a change to those pages (or a shared asset under web/public/) find the scripts that need re-recording without running any of them."
     },
     "viewport": {
       "type": "object",

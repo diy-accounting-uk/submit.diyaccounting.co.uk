@@ -4,6 +4,7 @@
   "title": "Timer overlay and wait-compression check",
   "description": "One deliberately slow step against a local static server, to confirm the timer pill and the x8 compression marker render. Not a published video.",
   "auth": "none",
+  "pages": ["web/public/index.html"],
   "viewport": { "width": 1920, "height": 1080 },
   "deviceScaleFactor": 1,
   "fps": 60,

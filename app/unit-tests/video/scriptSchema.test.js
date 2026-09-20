@@ -21,6 +21,7 @@ function baseScript(overrides = {}) {
     title: "Example",
     description: "Example",
     auth: "none",
+    pages: ["web/public/index.html"],
     viewport: { width: 1920, height: 1080 },
     fps: 60,
     pacing: {

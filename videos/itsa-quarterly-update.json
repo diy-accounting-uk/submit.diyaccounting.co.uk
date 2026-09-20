@@ -4,6 +4,7 @@
   "title": "From business details to a quarterly update with HMRC",
   "description": "A signed-in walk through Making Tax Digital for Income Tax: sign in, take out Resident ITSA, ask HMRC which businesses and quarterly obligations sit against a National Insurance number, then open the form a quarterly update is filed on.",
   "auth": "user",
+  "pages": ["web/public/index.html", "web/public/auth/login.html", "web/public/bundles.html", "web/public/hmrc/itsa/dashboard.html", "web/public/hmrc/itsa/obligations.html", "web/public/hmrc/itsa/selfEmploymentPeriod.html"],
   "hmrcServices": ["mtd-vat", "mtd-income-tax"],
   "viewport": { "width": 1920, "height": 1080 },
   "deviceScaleFactor": 1,
