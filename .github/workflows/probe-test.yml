@@ -470,15 +470,15 @@ jobs:
       # paymentBehaviour's GA4 purchase assertion (behaviour-tests/helpers/ga4PurchaseQuery.js)
       # reads BigQuery over application default credentials, the same federated path
       # google-apply.yml's Google steps use: exchange this job's own OIDC token through the
-      # provider google/identity.toml declares.
-      - name: Read the GitHub provider from google/identity.toml
+      # provider infra/google/gcp/identity.toml declares.
+      - name: Read the GitHub provider from infra/google/gcp/identity.toml
         id: google-identity
         if: ${{ matrix.suite == 'paymentBehaviour' && needs.names.outputs.environment-name == 'ci' }}
         run: |
           node -e '
             const TOML = require("@iarna/toml");
             const fs = require("node:fs");
-            const c = TOML.parse(fs.readFileSync("google/identity.toml", "utf-8"));
+            const c = TOML.parse(fs.readFileSync("infra/google/gcp/identity.toml", "utf-8"));
             const provider = c.workload_identity_pool.provider.find((p) => p.type === "oidc");
             console.log(`provider=projects/${c.project.number}/locations/global/workloadIdentityPools/${c.workload_identity_pool.id}/providers/${provider.id}`);
             console.log(`service-account=${c.service_account.email}`);

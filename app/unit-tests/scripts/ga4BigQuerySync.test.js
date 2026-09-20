@@ -7,7 +7,7 @@ import { describe, test, expect } from "vitest";
 import fs from "node:fs";
 import path from "node:path";
 
-import { parseArgs, parseConfig, loadQueries, buildPlan, CONFIG_PATH } from "../../../scripts/ga4-bigquery-sync.js";
+import { parseArgs, parseConfig, loadQueries, buildPlan, CONFIG_PATH } from "../../../infra/google/ga4/ga4-bigquery-sync.js";
 
 const REPO_ROOT = process.cwd();
 
@@ -22,7 +22,7 @@ description = "test dataset"
 name = "sessions_by_host_source_daily"
 panel = "Sessions by host and source"
 description = "Sessions by hostname and source"
-sql_file = "analytics/bigquery/sessions_by_host_source_daily.sql"
+sql_file = "infra/google/gcp/bigquery/sessions_by_host_source_daily.sql"
 destination_table = "sessions_by_host_source_daily"
 partition_field = "day"
 write_disposition = "WRITE_TRUNCATE"
@@ -57,7 +57,7 @@ describe("parseConfig", () => {
         name: "sessions_by_host_source_daily",
         panel: "Sessions by host and source",
         description: "Sessions by hostname and source",
-        sqlFile: "analytics/bigquery/sessions_by_host_source_daily.sql",
+        sqlFile: "infra/google/gcp/bigquery/sessions_by_host_source_daily.sql",
         destinationTable: "sessions_by_host_source_daily",
         partitionField: "day",
         writeDisposition: "WRITE_TRUNCATE",
@@ -79,7 +79,7 @@ location = "europe-west2"
 
 [[queries]]
 name = "incomplete"
-sql_file = "analytics/bigquery/incomplete.sql"
+sql_file = "infra/google/gcp/bigquery/incomplete.sql"
 `;
     expect(() => parseConfig(bad)).toThrow('Invalid [[queries]] entry, missing "destination_table"');
   });
@@ -93,7 +93,7 @@ location = "europe-west2"
 
 [[queries]]
 name = "same_name"
-sql_file = "analytics/bigquery/a.sql"
+sql_file = "infra/google/gcp/bigquery/a.sql"
 destination_table = "a"
 partition_field = "day"
 write_disposition = "WRITE_TRUNCATE"
@@ -101,7 +101,7 @@ schedule = "every day 04:30"
 
 [[queries]]
 name = "same_name"
-sql_file = "analytics/bigquery/b.sql"
+sql_file = "infra/google/gcp/bigquery/b.sql"
 destination_table = "b"
 partition_field = "day"
 write_disposition = "WRITE_TRUNCATE"

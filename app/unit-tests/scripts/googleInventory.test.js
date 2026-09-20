@@ -26,7 +26,7 @@ import {
   buildInventoryReport,
   findingForForbiddenRead,
   readOrFinding,
-} from "../../../scripts/google-inventory.js";
+} from "../../../infra/google/gcp/google-inventory.js";
 
 describe("parseArgs", () => {
   test("defaults to the known project, account, service account and location", () => {

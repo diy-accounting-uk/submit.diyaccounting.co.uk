@@ -216,7 +216,7 @@ These secrets are used for CI/CD and testing, not runtime OAuth:
 
 ### 3.5 Service-Account Keys (Google)
 
-Every Google caller (the analytics Lambdas, and every `google-apply.yml` script) now authenticates by workload identity federation: an AWS execution role or a GitHub Actions OIDC token, exchanged through the pool `google/identity.toml` declares, with no long-lived key anywhere. There is no rotation schedule to run because there is no key left to rotate.
+Every Google caller (the analytics Lambdas, and every `google-apply.yml` script) now authenticates by workload identity federation: an AWS execution role or a GitHub Actions OIDC token, exchanged through the pool `infra/google/gcp/identity.toml` declares, with no long-lived key anywhere. There is no rotation schedule to run because there is no key left to rotate.
 
 The GA4 reporting service account `ga4-report-pull@diyaccounting-ga4.iam.gserviceaccount.com` still exists and is still impersonated by federated callers; only its exportable keys are retired. The operator deletes the key and the two AWS secrets that held it (`ci/submit/ga4/service_account`, `prod/submit/ga4/service_account`) as a one-time cleanup:
 

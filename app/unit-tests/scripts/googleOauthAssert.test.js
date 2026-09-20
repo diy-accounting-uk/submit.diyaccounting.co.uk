@@ -12,7 +12,7 @@ import {
   assertBrandMatches,
   assertScopesGranted,
   isStackOutsideThisAccount,
-} from "../../../scripts/google-oauth-assert.js";
+} from "../../../infra/google/gcp/google-oauth-assert.js";
 
 const SAMPLE_TOML = `
 [[client]]

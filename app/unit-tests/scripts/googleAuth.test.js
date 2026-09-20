@@ -2,7 +2,7 @@
 // Copyright (C) 2006-2026 DIY Accounting Limited
 
 import { describe, it, expect, afterEach } from "vitest";
-import { assertFederatedCredentials, createGoogleAuthClient } from "../../../scripts/lib/googleAuth.js";
+import { assertFederatedCredentials, createGoogleAuthClient } from "../../../infra/google/lib/googleAuth.js";
 
 const SAVED = { ...process.env };
 

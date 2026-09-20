@@ -142,8 +142,8 @@ describe("web/public/lib/analytics.js", () => {
     expect(classifyVisitorKind()).toBe("bot");
   });
 
-  it("keeps its linker domains in step with google/analytics.toml's streams", () => {
-    const toml = parseToml(fs.readFileSync(path.join(process.cwd(), "google/analytics.toml"), "utf-8"));
+  it("keeps its linker domains in step with infra/google/ga4/analytics.toml's streams", () => {
+    const toml = parseToml(fs.readFileSync(path.join(process.cwd(), "infra/google/ga4/analytics.toml"), "utf-8"));
     const sharedProperty = toml.property.find((property) => property.id === "523400333");
     const tomlHosts = sharedProperty.stream.map((stream) => new URL(stream.uri).host);
 

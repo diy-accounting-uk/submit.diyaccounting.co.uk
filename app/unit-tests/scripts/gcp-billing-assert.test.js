@@ -17,7 +17,7 @@ import {
   isProjectSafeToDelete,
   formatInventoryReport,
   isStrayProjectGone,
-} from "../../../scripts/gcp-billing-assert.js";
+} from "../../../infra/google/gcp/gcp-billing-assert.js";
 
 const THRESHOLD_PERCENTAGES = [0.5, 0.9, 1.0];
 

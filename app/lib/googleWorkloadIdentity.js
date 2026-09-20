@@ -4,7 +4,7 @@
 // app/lib/googleWorkloadIdentity.js
 //
 // How the analytics Lambdas reach Google without a key. Google's workload identity federation
-// accepts AWS as an external identity provider (google/identity.toml declares one provider per
+// accepts AWS as an external identity provider (infra/google/gcp/identity.toml declares one provider per
 // submit account), so a Lambda presents its own execution role's credentials to Google's STS,
 // which answers a token that impersonates the analytics service account. Nothing long-lived is
 // stored anywhere.

@@ -28,7 +28,7 @@ import {
   orgPolicyDiff,
   planOrgPolicies,
   loadConfigFromRoot,
-} from "../../../scripts/gcp-identity-sync.js";
+} from "../../../infra/google/gcp/gcp-identity-sync.js";
 
 const SAMPLE_TOML = `
 [project]
@@ -358,7 +358,7 @@ describe("gcp-identity-sync credential configuration", () => {
     expect(() => awsCredentialConfig(config, config.providers[0])).toThrow(/not an aws provider/);
   });
 
-  it("writes one file per aws provider under google/credentials", () => {
+  it("writes one file per aws provider under infra/google/gcp/credentials", () => {
     const config = parseConfig(SAMPLE_TOML);
     const root = fs.mkdtempSync(path.join(os.tmpdir(), "gcp-identity-"));
     try {

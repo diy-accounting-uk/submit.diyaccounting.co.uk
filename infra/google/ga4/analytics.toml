@@ -3,7 +3,7 @@
 
 # Google Analytics 4, as code.
 #
-# scripts/ga4-sync.js reads this file, lists the live GA4 account, properties, data streams,
+# infra/google/ga4/ga4-sync.js reads this file, lists the live GA4 account, properties, data streams,
 # key events and BigQuery links, diffs them against what is written here, and creates or
 # updates the difference. A property recorded with an `id` must already exist live: the script
 # fails rather than creating a second one when that id can't be found. A property with no `id`
@@ -68,7 +68,7 @@ github_environment = "ci"
 
 # Retired GA4 property (www site)
 # Trashed 2026-09-05; permanent deletion ~2026-10-10, restorable until then from Admin>Account>Trash.
-# Kept as a reference record here. Not read or applied by scripts/ga4-sync.js.
+# Kept as a reference record here. Not read or applied by infra/google/ga4/ga4-sync.js.
 [old_property]
 property_name = "http://www.diyaccounting.co.uk - GA4"
 property_id = "395628828"
@@ -78,7 +78,7 @@ stream_id = "5793048524"
 measurement_id = "G-PJPVQWRWJZ"
 status = "Retired - trashed 2026-09-05; permanent deletion ~2026-10-10"
 
-# Legacy references (no longer collecting data). Not read or applied by scripts/ga4-sync.js.
+# Legacy references (no longer collecting data). Not read or applied by infra/google/ga4/ga4-sync.js.
 [legacy]
 universal_analytics_id = "UA-1035014-1"
 universal_analytics_status = "Stopped collecting July 2023"

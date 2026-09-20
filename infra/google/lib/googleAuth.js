@@ -1,11 +1,11 @@
 // SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0
 // Copyright (C) 2006-2026 DIY Accounting Limited
 
-// scripts/lib/googleAuth.js
+// infra/google/lib/googleAuth.js
 //
 // Shared helper for scripts that call Google Cloud REST APIs. There is no service-account key:
 // google-github-actions/auth has exchanged the workflow's OIDC token through the workload
-// identity pool in google/identity.toml and left application default credentials behind, which
+// identity pool in infra/google/gcp/identity.toml and left application default credentials behind, which
 // GoogleAuth picks up on its own.
 
 import { GoogleAuth } from "google-auth-library";

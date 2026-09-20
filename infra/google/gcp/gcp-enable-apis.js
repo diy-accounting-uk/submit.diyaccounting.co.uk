@@ -2,16 +2,16 @@
 // SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0
 // Copyright (C) 2006-2026 DIY Accounting Limited
 
-// scripts/gcp-enable-apis.js
+// infra/google/gcp/gcp-enable-apis.js
 //
 // Makes sure the Google APIs the analytics scripts and the YouTube quota project need, listed
-// in google/project.toml's [apis].services, are enabled on the GA4 project, using the same
+// in infra/google/gcp/project.toml's [apis].services, are enabled on the GA4 project, using the same
 // service account the scripts run as (it holds Owner there). Idempotent: an enabled service is
 // left alone. Runs first in google-apply.yml so a fresh project never needs a hand click in the
 // console.
 //
 // Usage:
-//   node scripts/gcp-enable-apis.js [--apply] [--project diyaccounting-ga4]
+//   node infra/google/gcp/gcp-enable-apis.js [--apply] [--project diyaccounting-ga4]
 //
 // Credentials: application default credentials from google-github-actions/auth's federated
 // exchange.
@@ -20,13 +20,13 @@ import fs from "node:fs";
 import path from "node:path";
 import TOML from "@iarna/toml";
 
-import { assertFederatedCredentials, createGoogleAuthClient, getAccessToken } from "./lib/googleAuth.js";
+import { assertFederatedCredentials, createGoogleAuthClient, getAccessToken } from "../lib/googleAuth.js";
 
 export const DEFAULT_PROJECT = "diyaccounting-ga4";
-export const CONFIG_PATH = "google/project.toml";
+export const CONFIG_PATH = "infra/google/gcp/project.toml";
 
 /**
- * Parse google/project.toml's [apis].services list.
+ * Parse infra/google/gcp/project.toml's [apis].services list.
  *
  * @param {string} tomlString
  * @returns {string[]}
@@ -52,7 +52,7 @@ export function parseArgs(argv) {
     if (arg === "--apply") opts.apply = true;
     else if (arg === "--project") opts.project = argv[++i];
     else if (arg === "--help") {
-      console.log("Usage: node scripts/gcp-enable-apis.js [--apply] [--project <id>]");
+      console.log("Usage: node infra/google/gcp/gcp-enable-apis.js [--apply] [--project <id>]");
       process.exit(0);
     } else throw new Error(`Unknown argument "${arg}"`);
   }

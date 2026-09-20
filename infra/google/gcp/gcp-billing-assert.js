@@ -5,13 +5,13 @@
 /**
  *
  * Assert two GCP billing housekeeping facts as code: a budget carrying the alert thresholds
- * declared in google/project.toml's [budget] table on the billing account that holds
+ * declared in infra/google/gcp/project.toml's [budget] table on the billing account that holds
  * diyaccounting-ga4, and that the auto-created project valued-context-507200-m9 is empty
  * before it is deleted.
  *
  * Usage:
- *   node scripts/gcp-billing-assert.js
- *   node scripts/gcp-billing-assert.js --apply
+ *   node infra/google/gcp/gcp-billing-assert.js
+ *   node infra/google/gcp/gcp-billing-assert.js --apply
  *
  * Options:
  *   --apply                        Make the changes; without it, report only
@@ -37,7 +37,7 @@ import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import TOML from "@iarna/toml";
-import { assertFederatedCredentials, createGoogleAuthClient, getAccessToken } from "./lib/googleAuth.js";
+import { assertFederatedCredentials, createGoogleAuthClient, getAccessToken } from "../lib/googleAuth.js";
 
 // The APIs Google documents as enabled by default when a new project is created
 // (cloud.google.com/service-usage/docs/enabled-service). A stray project holding only these
@@ -69,7 +69,7 @@ export const DEFAULT_ENABLED_SERVICES = new Set([
 
 const DEFAULT_BILLING_PROJECT_ID = "diyaccounting-ga4";
 const DEFAULT_STRAY_PROJECT_ID = "valued-context-507200-m9";
-export const CONFIG_PATH = "google/project.toml";
+export const CONFIG_PATH = "infra/google/gcp/project.toml";
 
 /**
  * Parse CLI args. Unknown flags throw rather than being silently ignored.
@@ -107,7 +107,7 @@ export function parseArgs(argv) {
 }
 
 /**
- * Parse google/project.toml's [budget] table.
+ * Parse infra/google/gcp/project.toml's [budget] table.
  *
  * @param {string} tomlString
  * @returns {{displayName: string, amount: string, currencyCode: string, thresholds: number[]}}
