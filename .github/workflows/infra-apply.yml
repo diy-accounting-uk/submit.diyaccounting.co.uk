@@ -115,12 +115,18 @@ jobs:
             node infra/stripe/stripe-sync.js --environment prod --mode live 2>&1 | tee -a stripe-sync.log
           fi
 
+      # There is one donate page, not one per environment, so this only runs once: on the
+      # prod leg, arbitrarily, rather than duplicating an environment-independent check.
+      - name: Run paypal-assert
+        if: matrix.environment == 'prod'
+        run: node infra/paypal/paypal-assert.js 2>&1 | tee paypal-assert.log
+
       - name: Generate step summary
         if: always()
         run: |
           echo "# infra apply (${{ matrix.environment }})" >> "$GITHUB_STEP_SUMMARY"
           echo "" >> "$GITHUB_STEP_SUMMARY"
-          for log in companies-house-assert.log hmrc-assert.log stripe-sync.log; do
+          for log in companies-house-assert.log hmrc-assert.log stripe-sync.log paypal-assert.log; do
             if [ -f "$log" ]; then
               echo "## $log" >> "$GITHUB_STEP_SUMMARY"
               echo '```' >> "$GITHUB_STEP_SUMMARY"

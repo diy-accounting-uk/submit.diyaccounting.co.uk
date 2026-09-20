@@ -591,6 +591,7 @@ Head-injected scripts for early API prefetching:
 | `companies-house/` | Companies House hub applications declared and asserted against live state |
 | `hmrc/` | HMRC Developer Hub applications and their API subscriptions declared and asserted against live state |
 | `stripe/` | Stripe webhook endpoints and the bundle catalogue's products/prices, planned and applied by `stripe-sync.js` |
+| `paypal/` | The hosted Donate button declared and asserted against the live donate page |
 
 #### CDK Constructs
 
@@ -615,6 +616,7 @@ Head-injected scripts for early API prefetching:
 | `infra/companies-house/companies-house.toml` | Companies House hub applications, client ids, redirect URIs and secret names |
 | `infra/hmrc/hmrc.toml` | HMRC Developer Hub applications and their API subscriptions |
 | `infra/stripe/stripe.toml` | Stripe webhook endpoints, their modes and event list, and the two account key secret names |
+| `infra/paypal/paypal.toml` | The hosted Donate button id, form action, donate URL and donate page |
 | `faqs.toml` | FAQ content for help page |
 | `submit.features.toml` | Feature flags configuration |
 | `playwright.config.js` | Playwright test configuration |
