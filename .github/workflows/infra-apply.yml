@@ -105,12 +105,22 @@ jobs:
       - name: Run hmrc-assert
         run: node infra/hmrc/hmrc-assert.js --environment ${{ matrix.environment }} 2>&1 | tee hmrc-assert.log
 
+      # Plan only, never --apply: applying is the stripe-catalogue-sync skill's job, run by
+      # the operator's explicit "go" per mode. ci only ever holds the test key; prod holds
+      # both, since prod-billing runs in both Stripe modes.
+      - name: Run stripe-sync (plan)
+        run: |
+          node infra/stripe/stripe-sync.js --environment ${{ matrix.environment }} --mode test 2>&1 | tee stripe-sync.log
+          if [ "${{ matrix.environment }}" = "prod" ]; then
+            node infra/stripe/stripe-sync.js --environment prod --mode live 2>&1 | tee -a stripe-sync.log
+          fi
+
       - name: Generate step summary
         if: always()
         run: |
           echo "# infra apply (${{ matrix.environment }})" >> "$GITHUB_STEP_SUMMARY"
           echo "" >> "$GITHUB_STEP_SUMMARY"
-          for log in companies-house-assert.log hmrc-assert.log; do
+          for log in companies-house-assert.log hmrc-assert.log stripe-sync.log; do
             if [ -f "$log" ]; then
               echo "## $log" >> "$GITHUB_STEP_SUMMARY"
               echo '```' >> "$GITHUB_STEP_SUMMARY"

@@ -590,6 +590,7 @@ Head-injected scripts for early API prefetching:
 | `aws-accounts/` | Multi-account setup scripts (OIDC, backups, CDK bootstrap) |
 | `companies-house/` | Companies House hub applications declared and asserted against live state |
 | `hmrc/` | HMRC Developer Hub applications and their API subscriptions declared and asserted against live state |
+| `stripe/` | Stripe webhook endpoints and the bundle catalogue's products/prices, planned and applied by `stripe-sync.js` |
 
 #### CDK Constructs
 
@@ -611,6 +612,9 @@ Head-injected scripts for early API prefetching:
 | `infra/google/ga4/analytics.toml` | GA4 account, properties, streams, key events and BigQuery links |
 | `infra/google/gcp/oauth.toml` | The Google OAuth clients (Cognito sign-in, YouTube upload) this repo depends on |
 | `infra/google/gcp/youtube.toml` | YouTube channel handle, quota project and credential secret names |
+| `infra/companies-house/companies-house.toml` | Companies House hub applications, client ids, redirect URIs and secret names |
+| `infra/hmrc/hmrc.toml` | HMRC Developer Hub applications and their API subscriptions |
+| `infra/stripe/stripe.toml` | Stripe webhook endpoints, their modes and event list, and the two account key secret names |
 | `faqs.toml` | FAQ content for help page |
 | `submit.features.toml` | Feature flags configuration |
 | `playwright.config.js` | Playwright test configuration |
@@ -646,7 +650,6 @@ Head-injected scripts for early API prefetching:
 | `toggle-cognito-native-auth.js` | Toggle Cognito native auth provider |
 | `cleanup-test-users.js` | Delete stray Cognito test users and purge durable test users' data |
 | `bundle-for-tests.js` | Grant test bundles |
-| `stripe-setup.js` | Create/verify Stripe webhook endpoints |
 | `export-user-data.js` | Export user data (GDPR) |
 | `delete-user-data.js` | Delete user data (GDPR) |
 | `export-dynamodb-for-test-users.js` | Export DynamoDB for test users |

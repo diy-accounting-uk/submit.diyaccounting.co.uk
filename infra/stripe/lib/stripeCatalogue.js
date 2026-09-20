@@ -1,10 +1,10 @@
 // SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0
 // Copyright (C) 2006-2026 DIY Accounting Limited
 
-// scripts/lib/stripeCatalogue.js
+// infra/stripe/lib/stripeCatalogue.js
 //
 // Pure mapping from the bundle catalogue (web/public/submit.catalogue.toml) to the
-// PRODUCTS list scripts/stripe-setup.js sends to Stripe. Kept separate from the script
+// PRODUCTS list infra/stripe/stripe-sync.js sends to Stripe. Kept separate from the script
 // so it can be unit-tested without a Stripe client.
 
 // Build the PRODUCTS list from a parsed catalogue (productCatalog.js's parseCatalog /

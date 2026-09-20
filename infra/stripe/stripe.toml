@@ -1,0 +1,62 @@
+# SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0
+# Copyright (C) 2006-2026 DIY Accounting Limited
+
+# Stripe subscriptions, as code.
+#
+# web/public/submit.catalogue.toml stays the source of truth for what each on-subscription
+# bundle costs (stripePriceAmount, stripeCurrency, stripeInterval). This file carries the
+# rest of what infra/stripe/stripe-sync.js needs to find-or-create Stripe's side: the two
+# webhook endpoints and which Stripe mode(s) each needs registering in, the event list every
+# endpoint carries, and the two account API keys.
+#
+# ci-billing only ever runs in test mode, since ci never holds a live key. prod-billing runs
+# in both: test mode for synthetic checks against the prod account before a live change ships,
+# and live mode for real customer checkouts. A (url, mode) pair is a distinct Stripe webhook
+# object with its own signing secret, so each mode an endpoint runs in gets its own secret
+# names below.
+
+[[endpoint]]
+environment = "ci"
+url = "https://ci-billing.submit.diyaccounting.co.uk/api/v1/billing/webhook"
+modes = ["test"]
+
+  [endpoint.secret.test]
+  github_secret = "STRIPE_TEST_WEBHOOK_SECRET"
+  aws_secret = "ci/submit/stripe/test_webhook_secret"
+
+[[endpoint]]
+environment = "prod"
+url = "https://prod-billing.submit.diyaccounting.co.uk/api/v1/billing/webhook"
+modes = ["test", "live"]
+
+  [endpoint.secret.test]
+  github_secret = "STRIPE_TEST_WEBHOOK_SECRET"
+  aws_secret = "prod/submit/stripe/test_webhook_secret"
+
+  [endpoint.secret.live]
+  github_secret = "STRIPE_WEBHOOK_SECRET"
+  aws_secret = "prod/submit/stripe/webhook_secret"
+
+[events]
+enabled = [
+  "checkout.session.completed",
+  "customer.subscription.created",
+  "customer.subscription.updated",
+  "customer.subscription.deleted",
+  "invoice.paid",
+  "invoice.payment_failed",
+  "charge.refunded",
+  "charge.dispute.created",
+  "charge.dispute.closed",
+]
+
+# Each AWS account holds its own copy of the account API key it can reach: ci only the test
+# key, prod both, since the prod job's infra-apply.yml plan checks prod-billing in test mode
+# too. A key is never fetched cross-account.
+
+[keys.ci]
+test = "ci/submit/stripe/test_secret_key"
+
+[keys.prod]
+test = "prod/submit/stripe/test_secret_key"
+live = "prod/submit/stripe/secret_key"

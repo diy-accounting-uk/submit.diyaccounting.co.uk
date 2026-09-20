@@ -146,7 +146,7 @@ Both files have entries for `RESIDENT_PRO` and `RESIDENT_VAT` bundles. `.env.ci`
 
 ### Webhook endpoint registration
 
-The endpoints themselves are registered in the Stripe dashboard. `scripts/stripe-setup.js` is idempotent — it creates the endpoint if missing and prints the signing secret to paste into the matching GitHub Environment secret. Endpoints registered:
+The endpoints themselves are registered in the Stripe dashboard. `infra/stripe/stripe-sync.js` is idempotent — it plans by default and, with `--apply`, creates the endpoint if missing and writes the signing secret straight into Secrets Manager. Endpoints registered:
 
 | Stripe mode | Endpoint registered |
 |---|---|
@@ -159,13 +159,13 @@ Local dev registers no endpoint at all: `stripe listen` forwards test-mode Strip
 Run with the correct Stripe mode key:
 
 ```bash
-STRIPE_SECRET_KEY=sk_test_... node scripts/stripe-setup.js   # registers test-mode endpoints
-STRIPE_SECRET_KEY=sk_live_... node scripts/stripe-setup.js   # registers live-mode endpoints
+node infra/stripe/stripe-sync.js --environment ci --mode test --apply     # registers test-mode endpoints
+node infra/stripe/stripe-sync.js --environment prod --mode live --apply  # registers live-mode endpoints
 ```
 
 ### Rotation procedure
 
-When Stripe rotates a signing secret (deliberately, or by re-running `stripe-setup.js`), or when migrating to a new Stripe account:
+When Stripe rotates a signing secret (deliberately, or by re-running `stripe-sync.js`), or when migrating to a new Stripe account:
 
 1. **Identify which secret is stale** using the 4-D map above — branch, AWS env, Stripe mode, resource.
 2. **Get the new `whsec_…`** from Stripe dashboard → Developers → Webhooks → endpoint → Reveal signing secret. **Be in the correct Stripe mode** (sandbox toggle on for test mode).
@@ -200,7 +200,7 @@ The untracked `.env` (gitignored, never committed) is the developer's local-dev 
 6. Push a trivial commit on a feature branch — `test.yml` should pass (proves OIDC).
 7. Open a PR, merge to `main` — `deploy.yml` runs against `submit-ci`.
 8. Manually dispatch promotion to `submit-prod` per the existing flow.
-9. Run `scripts/stripe-setup.js` once per environment to register webhooks.
+9. Run `infra/stripe/stripe-sync.js --environment <env> --mode <test|live> --apply` once per mode to register webhooks.
 
 ## How to obtain values quickly
 

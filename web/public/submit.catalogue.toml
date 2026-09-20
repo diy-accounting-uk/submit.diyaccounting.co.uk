@@ -124,7 +124,7 @@ tokenRefreshInterval = "P1M"
 stripePriceAmount = 99
 # stripePriceAmount, stripeCurrency, stripeInterval
 # ===================================================
-# Source of truth for the Stripe product and price that scripts/stripe-setup.js
+# Source of truth for the Stripe product and price that infra/stripe/stripe-sync.js
 # creates for this bundle. priceAmount is in minor units (pence).
 stripeCurrency = "gbp"
 stripeInterval = "month"
