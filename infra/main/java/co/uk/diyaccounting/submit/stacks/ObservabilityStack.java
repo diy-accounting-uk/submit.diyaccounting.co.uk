@@ -354,6 +354,14 @@ public class ObservabilityStack extends Stack {
                 .period(Duration.minutes(5))
                 .build();
 
+        Metric clsP75 = Metric.Builder.create()
+                .namespace("AWS/RUM")
+                .metricName("WebVitalsCumulativeLayoutShift")
+                .dimensionsMap(Map.of("application_name", rumAppName))
+                .statistic("p75")
+                .period(Duration.minutes(5))
+                .build();
+
         Metric jsErrors = Metric.Builder.create()
                 .namespace("AWS/RUM")
                 .metricName("JsErrorCount")
@@ -370,6 +378,16 @@ public class ObservabilityStack extends Stack {
                 .comparisonOperator(ComparisonOperator.GREATER_THAN_THRESHOLD)
                 .treatMissingData(TreatMissingData.NOT_BREACHING)
                 .alarmDescription("RUM p75 LCP > 4s")
+                .build();
+
+        Alarm.Builder.create(this, props.resourceNamePrefix() + "-RumClsP75Alarm")
+                .alarmName(props.resourceNamePrefix() + "-rum-cls-p75")
+                .metric(clsP75)
+                .threshold(0.25) // CLS "needs improvement" boundary
+                .evaluationPeriods(2)
+                .comparisonOperator(ComparisonOperator.GREATER_THAN_THRESHOLD)
+                .treatMissingData(TreatMissingData.NOT_BREACHING)
+                .alarmDescription("RUM p75 CLS > 0.25")
                 .build();
 
         Alarm.Builder.create(this, props.resourceNamePrefix() + "-RumJsErrorAlarm")
@@ -589,19 +607,25 @@ public class ObservabilityStack extends Stack {
                 GraphWidget.Builder.create()
                         .title("RUM p75 LCP (ms)")
                         .left(List.of(lcpP75))
-                        .width(8)
+                        .width(6)
                         .height(6)
                         .build(),
                 GraphWidget.Builder.create()
                         .title("RUM p75 INP (ms)")
                         .left(List.of(inpP75))
-                        .width(8)
+                        .width(6)
+                        .height(6)
+                        .build(),
+                GraphWidget.Builder.create()
+                        .title("RUM p75 CLS")
+                        .left(List.of(clsP75))
+                        .width(6)
                         .height(6)
                         .build(),
                 GraphWidget.Builder.create()
                         .title("RUM JS Errors (5m sum)")
                         .left(List.of(jsErrors))
-                        .width(8)
+                        .width(6)
                         .height(6)
                         .build()));
 

@@ -68,4 +68,29 @@ class ObservabilityStackTest {
                                                         "aws:SourceAccount",
                                                         Map.of("Ref", "AWS::AccountId"))))))))))));
     }
+
+    @Test
+    void rumClsP75AlarmWatchesTheNeedsImprovementBoundary() {
+        Template template = Template.fromStack(synthObservabilityStack());
+
+        template.hasResourceProperties(
+                "AWS::CloudWatch::Alarm",
+                Match.objectLike(Map.of(
+                        "AlarmName",
+                        Match.stringLikeRegexp(".*-rum-cls-p75"),
+                        "Namespace",
+                        "AWS/RUM",
+                        "MetricName",
+                        "WebVitalsCumulativeLayoutShift",
+                        "ExtendedStatistic",
+                        "p75",
+                        "Threshold",
+                        0.25,
+                        "EvaluationPeriods",
+                        2,
+                        "ComparisonOperator",
+                        "GreaterThanThreshold",
+                        "TreatMissingData",
+                        "notBreaching")));
+    }
 }

@@ -130,10 +130,10 @@ class SubmitEnvironmentCdkResourceTest {
         // One alarm per environment for the GitHub Actions probe test, not one per deployment:
         // it lives here instead of in the per-deployment OpsStack so a new deployment doesn't
         // create a fresh alarm (and a fresh GitHub issue) against this environment-wide metric.
-        // Alongside RumLcpP75Alarm, RumJsErrorAlarm, BundleCapReachedAlarm,
+        // Alongside RumLcpP75Alarm, RumClsP75Alarm, RumJsErrorAlarm, BundleCapReachedAlarm,
         // HmrcSubmissionFailureAlarm, ItsaSubmissionFailureAlarm and TokenChargeUnpaidAlarm,
-        // that's 7 alarms total.
-        observability.resourceCountIs("AWS::CloudWatch::Alarm", 7);
+        // that's 8 alarms total.
+        observability.resourceCountIs("AWS::CloudWatch::Alarm", 8);
         observability.hasResourceProperties(
                 "AWS::CloudWatch::Alarm",
                 Match.objectLike(Map.of(
