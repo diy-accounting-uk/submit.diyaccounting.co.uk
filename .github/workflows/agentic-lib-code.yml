@@ -263,14 +263,16 @@ jobs:
             rm -f "${straypatch}"
           done
 
-      - name: Land a complete run as a pull request
+      - name: Prepare a complete run's branch and pull request body
         if: always() && steps.run.outcome != 'skipped'
+        id: prepare-pr
         env:
           GH_TOKEN: ${{ secrets.AGENT_TOKEN }}
         run: |
           set -euo pipefail
           if [ ! -s "${OUT_DIR}/CHANGES.md" ] || ! grep -qxF '- **Status**: complete' "${OUT_DIR}/CHANGES.md"; then
             echo "not a complete run, nothing to land"
+            echo "ready=false" | tee -a "$GITHUB_OUTPUT"
             exit 0
           fi
           BRANCH=$(grep -m1 '^- \*\*Branch\*\*: ' "${OUT_DIR}/CHANGES.md" | sed 's/^- \*\*Branch\*\*: *//')
@@ -299,13 +301,38 @@ jobs:
 
           git push origin "${BRANCH}"
 
-          TITLE=$(head -1 "${OUT_DIR}/PR.md" | sed 's/^# *//')
+          head -1 "${OUT_DIR}/PR.md" | sed 's/^# *//' > "${OUT_DIR}/pr-title.txt"
           tail -n +2 "${OUT_DIR}/PR.md" > "${OUT_DIR}/pr-body.md"
+          echo "ready=true" | tee -a "$GITHUB_OUTPUT"
+          echo "branch=${BRANCH}" | tee -a "$GITHUB_OUTPUT"
+
+      # The agent's own prose becomes a public PR body with nobody reviewing it first, so it
+      # gets the same redaction and guardrail pass alarm-triage.yml gives its issue comments,
+      # even though this path never touches Bedrock's answer text directly.
+      - name: Filter the pull request body
+        if: always() && steps.prepare-pr.outputs.ready == 'true'
+        id: publish-filter
+        uses: ./.github/actions/publish-filter
+        with:
+          input-file: ${{ env.OUT_DIR }}/pr-body.md
+          format: markdown
+          environment-name: ci
+          model-id: 'eu.anthropic.claude-sonnet-4-5-20250929-v1:0'
+          workflow-name: ${{ github.workflow }}
+          run-number: ${{ github.run_number }}
+          run-url: '${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}'
+
+      - name: Open the pull request
+        if: always() && steps.prepare-pr.outputs.ready == 'true'
+        env:
+          GH_TOKEN: ${{ secrets.AGENT_TOKEN }}
+        run: |
+          set -euo pipefail
           PR_URL=$(gh pr create --repo "${{ github.repository }}" \
                      --base "${{ github.event.repository.default_branch }}" \
-                     --head "${BRANCH}" \
-                     --title "${TITLE}" \
-                     --body-file "${OUT_DIR}/pr-body.md")
+                     --head "${{ steps.prepare-pr.outputs.branch }}" \
+                     --title "$(cat "${OUT_DIR}/pr-title.txt")" \
+                     --body-file "${{ steps.publish-filter.outputs.output-file }}")
           echo "- **PR**: ${PR_URL}" >> "${OUT_DIR}/CHANGES.md"
 
       # origin:unattended-agent says a model ran this with nobody watching. Applied here, outside

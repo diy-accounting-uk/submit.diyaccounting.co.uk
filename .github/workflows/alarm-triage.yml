@@ -217,18 +217,6 @@ jobs:
         with:
           environment-name: ${{ env.ENV_NAME }}
 
-      - name: Read the guardrail identifiers
-        if: steps.role.outputs.configured == 'true'
-        id: guardrail
-        run: |
-          set -euo pipefail
-          aws ssm get-parameter --name "/submit/${ENV_NAME}/alarm-triage/guardrail-id" \
-            --query 'Parameter.Value' --output text | tee /tmp/guardrail-id.txt
-          aws ssm get-parameter --name "/submit/${ENV_NAME}/alarm-triage/guardrail-version" \
-            --query 'Parameter.Value' --output text | tee /tmp/guardrail-version.txt
-          echo "id=$(cat /tmp/guardrail-id.txt)" | tee -a "$GITHUB_OUTPUT"
-          echo "version=$(cat /tmp/guardrail-version.txt)" | tee -a "$GITHUB_OUTPUT"
-
       - name: Install dependencies
         if: steps.role.outputs.configured == 'true'
         run: timeout 120 npm ci --prefer-offline || { sleep 30; timeout 180 npm ci; }
@@ -392,49 +380,18 @@ jobs:
             exit 1
           fi
 
-      - name: Filter the output
+      - name: Filter the triage answer before it is published
         if: steps.role.outputs.configured == 'true'
-        id: filter
-        run: |
-          set -o pipefail
-          node scripts/redact-triage-output.mjs /tmp/triage.json 2>&1 | tee /tmp/triage-comment.md || {
-            echo "redaction failed, see the log above" | tee -a "$GITHUB_STEP_SUMMARY"
-            exit 1
-          }
-          echo "redactions=$(wc -l < /tmp/redactions.txt)" | tee -a "$GITHUB_OUTPUT"
-
-      - name: Apply the Bedrock guardrail
-        if: steps.role.outputs.configured == 'true'
-        id: guardrail-check
-        run: |
-          set -euo pipefail
-          jq -Rs '[{ text: { text: . } }]' /tmp/triage-comment.md > /tmp/guardrail-input.json
-          aws bedrock-runtime apply-guardrail \
-            --guardrail-identifier "${{ steps.guardrail.outputs.id }}" \
-            --guardrail-version "${{ steps.guardrail.outputs.version }}" \
-            --source OUTPUT \
-            --content file:///tmp/guardrail-input.json \
-            2>&1 | tee /tmp/guardrail-result.json
-          ACTION=$(jq -r '.action' /tmp/guardrail-result.json)
-          echo "action=${ACTION}" | tee -a "$GITHUB_OUTPUT"
-
-      # The guardrail's entities and regexes are all ANONYMIZE (see ObservabilityStack.java), so
-      # GUARDRAIL_INTERVENED here means a hit was masked, never that the text was withheld. The
-      # anonymised text is in outputs[0].text; the untouched text is what the redaction script
-      # already wrote when the guardrail found nothing to mask.
-      - name: Note when the guardrail anonymised the comment
-        if: steps.role.outputs.configured == 'true'
-        run: |
-          set -euo pipefail
-          if [ "${{ steps.guardrail-check.outputs.action }}" = "NONE" ]; then
-            cp /tmp/triage-comment.md /tmp/final-comment.md
-          else
-            {
-              echo "_The guardrail anonymised part of this comment before it was posted._"
-              echo
-              jq -r '.outputs[0].text' /tmp/guardrail-result.json
-            } > /tmp/final-comment.md
-          fi
+        id: publish-filter
+        uses: ./.github/actions/publish-filter
+        with:
+          input-file: /tmp/triage.json
+          format: claude-json
+          environment-name: ${{ env.ENV_NAME }}
+          model-id: ${{ steps.select-result.outputs.model-id }}
+          workflow-name: ${{ github.workflow }}
+          run-number: ${{ github.run_number }}
+          run-url: ${{ env.RUN_URL }}
 
       # The diff, if any, is a fenced ```diff block inside the comment just built, so it has
       # already passed the same deny-list and guardrail as the rest of the answer. This step
@@ -449,7 +406,7 @@ jobs:
           AGENT_APP_SLUG: ${{ steps.app-token.outputs.app-slug }}
         run: |
           set -euo pipefail
-          awk '/^```diff$/ { flag=1; next } /^```$/ { if (flag) exit } flag' /tmp/final-comment.md > triage-change.patch
+          awk '/^```diff$/ { flag=1; next } /^```$/ { if (flag) exit } flag' "${{ steps.publish-filter.outputs.output-file }}" > triage-change.patch
           if [ ! -s triage-change.patch ]; then
             echo "no diff block in the triage answer, nothing to open a PR for"
             rm -f triage-change.patch
@@ -501,14 +458,9 @@ jobs:
         run: |
           set -euo pipefail
           if [ -n "${{ steps.draft-pr.outputs.url }}" ]; then
-            printf '\n---\n\nDraft PR for the change above: %s\n' "${{ steps.draft-pr.outputs.url }}" >> /tmp/final-comment.md
+            printf '\n---\n\nDraft PR for the change above: %s\n' "${{ steps.draft-pr.outputs.url }}" >> "${{ steps.publish-filter.outputs.output-file }}"
           fi
-          if [ "${{ steps.select-result.outputs.model }}" = "sonnet" ]; then
-            printf '\n_Answered by Sonnet, escalated because %s._\n' "${{ steps.judge.outputs.reason }}" >> /tmp/final-comment.md
-          else
-            printf '\n_Answered by Haiku._\n' >> /tmp/final-comment.md
-          fi
-          gh issue comment "$ISSUE_NUMBER" --repo "${{ github.repository }}" --body-file /tmp/final-comment.md
+          gh issue comment "$ISSUE_NUMBER" --repo "${{ github.repository }}" --body-file "${{ steps.publish-filter.outputs.output-file }}"
 
       # Runs after the comment is safely posted, so the answer above is not lost, but the run
       # still ends red: a triage that only got through 60 turns by exhausting its budget is not a
