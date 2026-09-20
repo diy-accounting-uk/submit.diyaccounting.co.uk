@@ -261,6 +261,7 @@ Created per deployment by `deploy.yml`:
 | `copilot-setup-steps.yml` | Copilot setup (reusable) | workflow_call |
 | `google-apply.yml` | Plan/apply the `infra/google/` config files against live Google Cloud, GA4 and OAuth state | Pull request (plan), push to main (apply) |
 | `youtube-check.yml` | Check the stored YouTube refresh token still resolves to the declared channel | Schedule (weekly), manual |
+| `infra-apply.yml` | Assert the `infra/companies-house/`, `infra/hmrc/`, `infra/stripe/`, `infra/paypal/` and `infra/telegram/` config files against live provider state | Pull request, push to main, manual |
 
 **Note:** Gateway and spreadsheets deployment workflows have been moved to their own repositories. This repo only deploys the submit application to submit-ci (367191799875) and submit-prod (972912397388).
 
@@ -587,6 +588,7 @@ Head-injected scripts for early API prefetching:
 | `main/java/.../swagger/` | OpenAPI generator |
 | `test/` | JUnit tests for CDK code |
 | `aws-accounts/` | Multi-account setup scripts (OIDC, backups, CDK bootstrap) |
+| `companies-house/` | Companies House hub applications declared and asserted against live state |
 
 #### CDK Constructs
 
