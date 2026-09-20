@@ -41,6 +41,14 @@ export function isActivityListedInEnvironment(activity, environmentName) {
   return typeof environmentName === "string" && listed.includes(environmentName);
 }
 
+// A bundle may carry a `listedInEnvironments` array (e.g. ["ci", "local"]) restricting it to
+// those named environments. Absent or empty means every environment.
+export function isBundleListedInEnvironment(bundle, environmentName) {
+  const listed = bundle?.listedInEnvironments;
+  if (!Array.isArray(listed) || listed.length === 0) return true;
+  return typeof environmentName === "string" && listed.includes(environmentName);
+}
+
 export function getCappedBundleIds(catalog) {
   if (!catalog?.bundles) return [];
   return catalog.bundles.filter((b) => Number.isFinite(b.cap)).map((b) => b.id);
