@@ -206,6 +206,25 @@ step.
 
 ## Machine-only
 
+- [ ] **B30af.7. Release a ci slot when its branch is deleted.** At 22:20 UTC on 2026-09-20 all four
+  `/submit/ci/slots/*` records were held (ci-set1 by `claude/dg-3a-bundle-listed`, open PR #306;
+  ci-set2, ci-set3 and ci-set4 by `claude/dg-1h-callbacks`, `claude/dg-2a-retention` and
+  `claude/b62-board`, each merged and its branch deleted), so PR #310's deploy (run 35535704298)
+  waited 30 minutes in `claim-ci-slot` and failed, and `destroy-ci.yml`'s sweep (35540798780)
+  kept every set because none had reached the sweep's minimum age. Add `on: delete` to
+  `.github/workflows/destroy-ci.yml`: when `github.event.ref_type == 'branch'`, read
+  `aws ssm get-parameters-by-path --path /submit/ci/slots/`, pick the record whose `ref` equals
+  `refs/heads/${{ github.event.ref }}` (the claim record shape is in
+  `.github/actions/claim-ci-slot/claim-ci-slot.mjs` lines 11-13), and run the by-name destroy
+  path with that slot as `deployment-name`; the existing "Release the ci slot" step then deletes
+  the parameter. No match means nothing to do, exit 0. The resolver is a small dependency-free
+  `.github/actions/claim-ci-slot/slot-for-ref.mjs` beside the claim script, with a unit test over
+  the record parsing. Delete-branch-on-merge is on, so a merge frees its slot within a minute.
+  Proof: `npm test`, one merged PR's branch deletion followed by a destroy-ci run that names
+  its set. **Source**: `_developers/DESIGN_CI_BRANCH_DEPLOYS_OFF_THE_APEX.md`; the spreadsheets
+  session's inbox message of 2026-09-20T22:11Z. **Owner**: Claude Code. **Model**: Sonnet.
+  **Size**: ~3 files.
+
 - [ ] **B11.T7b.6. Both runs' proofs.** The exit code rests on two printed lines today, `final
   declaration 204` and `fraud header validator clean`. Add three more, each computed from the
   transcript: `both businesses in calculation income sources`; `loss claims read back` (run A
