@@ -25,6 +25,11 @@ vi.mock("@aws-sdk/client-s3", () => {
   return { S3Client, ListObjectsV2Command, GetObjectCommand };
 });
 
+vi.mock("@app/data/dynamoDbBundleRepository.js", () => ({
+  getUserBundles: vi.fn().mockResolvedValue([]),
+}));
+
+const { getUserBundles } = await import("@app/data/dynamoDbBundleRepository.js");
 const { ingestHandler } = await import("../../functions/diyaGl/diyaGlListGet.js");
 const { _setTestSalt, _clearSalt } = await import("../../services/subHasher.js");
 
@@ -46,21 +51,26 @@ describe("diyaGlListGet", () => {
     mockS3Send.mockReset();
     process.env.DIYA_GL_BUCKET_NAME = "test-books-bucket";
     process.env.DIYA_GL_ALLOWED_ORIGINS = "https://spreadsheets.diyaccounting.co.uk";
+    delete process.env.DIYA_GL_RESIDENT_TIER;
+    getUserBundles.mockReset().mockResolvedValue([]);
     _setTestSalt("test-salt");
   });
 
-  test("returns an empty list when the caller has no books", async () => {
+  test("returns an empty list and the tier-disabled entitlement when the caller has no books", async () => {
     mockS3Send.mockImplementation((command) => handleCommand(command, { commonPrefixes: [] }));
 
     const result = await ingestHandler(buildAuthenticatedEvent({}));
 
     expect(result.statusCode).toBe(200);
-    expect(JSON.parse(result.body)).toEqual({ books: [] });
+    expect(JSON.parse(result.body)).toEqual({
+      entitlement: { reason: "tier-disabled", expiry: null, residentTier: false },
+      books: [],
+    });
   });
 
   test("returns books newest first", async () => {
-    const older = { bookId: "book-a", updatedAt: "2026-01-01T00:00:00.000Z" };
-    const newer = { bookId: "book-b", updatedAt: "2026-06-01T00:00:00.000Z" };
+    const older = { bookId: "book-a", updatedAt: "2026-01-01T00:00:00.000Z", retention: "sandbox", expiresAt: null };
+    const newer = { bookId: "book-b", updatedAt: "2026-06-01T00:00:00.000Z", retention: "sandbox", expiresAt: null };
     mockS3Send.mockImplementation((command) =>
       handleCommand(command, {
         commonPrefixes: ["book-a", "book-b"],
@@ -72,6 +82,49 @@ describe("diyaGlListGet", () => {
 
     expect(result.statusCode).toBe(200);
     expect(JSON.parse(result.body).books.map((b) => b.bookId)).toEqual(["book-b", "book-a"]);
+  });
+
+  test("leaves out a sandbox book past its expiresAt", async () => {
+    const live = {
+      bookId: "book-live",
+      updatedAt: "2026-01-01T00:00:00.000Z",
+      retention: "sandbox",
+      expiresAt: new Date(Date.now() + 60_000).toISOString(),
+    };
+    const expired = {
+      bookId: "book-expired",
+      updatedAt: "2026-01-01T00:00:00.000Z",
+      retention: "sandbox",
+      expiresAt: new Date(Date.now() - 60_000).toISOString(),
+    };
+    mockS3Send.mockImplementation((command) =>
+      handleCommand(command, {
+        commonPrefixes: ["book-live", "book-expired"],
+        metadataByBookId: { "book-live": live, "book-expired": expired },
+      }),
+    );
+
+    const result = await ingestHandler(buildAuthenticatedEvent({}));
+
+    expect(result.statusCode).toBe(200);
+    expect(JSON.parse(result.body).books.map((b) => b.bookId)).toEqual(["book-live"]);
+  });
+
+  test("reports the lapse expiry for a resident book under an expired subscription", async () => {
+    process.env.DIYA_GL_RESIDENT_TIER = "true";
+    const bundleExpiry = "2026-01-01T00:00:00.000Z";
+    getUserBundles.mockResolvedValue([{ bundleId: "resident-diya-gl", subscriptionStatus: "canceled", expiry: bundleExpiry }]);
+    const residentBook = { bookId: "book-resident", updatedAt: "2025-12-01T00:00:00.000Z", retention: "resident", expiresAt: null };
+    mockS3Send.mockImplementation((command) =>
+      handleCommand(command, { commonPrefixes: ["book-resident"], metadataByBookId: { "book-resident": residentBook } }),
+    );
+
+    const result = await ingestHandler(buildAuthenticatedEvent({}));
+
+    expect(result.statusCode).toBe(200);
+    const responseBody = JSON.parse(result.body);
+    expect(responseBody.entitlement).toEqual({ reason: "expired", expiry: bundleExpiry, residentTier: true });
+    expect(responseBody.books[0].expiresAt).toBe("2026-01-31T00:00:00.000Z");
   });
 
   test("rejects an unauthenticated call", async () => {

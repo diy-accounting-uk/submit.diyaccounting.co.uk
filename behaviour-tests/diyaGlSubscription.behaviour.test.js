@@ -20,7 +20,13 @@ import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { dotenvConfigIfNotBlank } from "@app/lib/env.js";
-import { addOnPageLogging, getEnvVarAndLog, runLocalDynamoDb, runLocalHttpServer, runLocalOAuth2Server } from "./helpers/behaviour-helpers.js";
+import {
+  addOnPageLogging,
+  getEnvVarAndLog,
+  runLocalDynamoDb,
+  runLocalHttpServer,
+  runLocalOAuth2Server,
+} from "./helpers/behaviour-helpers.js";
 import { fillAndSubmitStripeTestCard } from "./steps/behaviour-bundle-steps.js";
 import {
   signInWithDiyaGlHostedUi,
@@ -55,7 +61,6 @@ const cognitoBaseUri = getEnvVarAndLog("cognitoBaseUri", "COGNITO_BASE_URI", nul
 const cognitoDiyaGlClientId = getEnvVarAndLog("cognitoDiyaGlClientId", "COGNITO_DIYA_GL_CLIENT_ID", null);
 const testAuthUsername = getEnvVarAndLog("testAuthUsername", "TEST_AUTH_USERNAME", null);
 const testAuthPassword = getEnvVarAndLog("testAuthPassword", "TEST_AUTH_PASSWORD", null);
-const entitlementEnforced = getEnvVarAndLog("entitlementEnforced", "DIYA_GL_ENTITLEMENT_ENFORCED", null) === "true";
 
 // One of the four DIYA-GL page paths IdentityStack registers as a books-client callback/logout
 // URL (see BOOKS_PAGE_NAMES in IdentityStack.java). The spreadsheets site serves these pages at
@@ -116,21 +121,6 @@ test("subscribes with a DIYA-GL token, then puts and reads a book", async ({ pag
     screenshotPath,
   );
   expect(idToken).toBeTruthy();
-
-  /* ******************************************************** */
-  /*  UNENTITLED PUT IS REFUSED, WHEN ENTITLEMENT IS ENFORCED  */
-  /* ******************************************************** */
-
-  if (entitlementEnforced) {
-    const unentitledPut = await putDiyaGlBook({ apiBase, idToken, bookId, zipBase64: FIXTURE_ZIP_BASE64 });
-    expect(unentitledPut.status).toBe(403);
-    expect(unentitledPut.body.code).toBe("subscription-required");
-  } else {
-    test.info().annotations.push({
-      type: "skipped-assertion",
-      description: "DIYA_GL_ENTITLEMENT_ENFORCED is not true on this environment, so the unentitled-PUT-is-refused step was not exercised.",
-    });
-  }
 
   /* ******************************************************************** */
   /*  CHECKOUT WITH THE DIYA-GL TOKEN — THE AUDIENCE CHANGE UNDER TEST  */

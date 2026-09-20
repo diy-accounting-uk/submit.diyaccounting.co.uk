@@ -86,6 +86,8 @@ public class DiyaGlStack extends Stack {
 
         String booksAllowedOrigins();
 
+        Boolean residentTierEnabled();
+
         static ImmutableDiyaGlStackProps.Builder builder() {
             return ImmutableDiyaGlStackProps.builder();
         }
@@ -118,6 +120,13 @@ public class DiyaGlStack extends Stack {
                 .with("ENVIRONMENT_NAME", props.envName())
                 .with("DIYA_GL_ALLOWED_ORIGINS", props.booksAllowedOrigins());
 
+        // List and Version GET both apply the resident-lapse rule (section (c)), so both need the
+        // bundle lookup this DELETE and the plain commonEnv functions do not.
+        var entitlementReadEnv = new PopulatedMap<String, String>(commonEnv)
+                .with("BUNDLE_DYNAMODB_TABLE_NAME", bundlesTable.getTableName())
+                .with("DIYA_GL_BUNDLE_ID", "resident-diya-gl")
+                .with("DIYA_GL_RESIDENT_TIER", props.residentTierEnabled().toString());
+
         // ============================================================================
         // DIYA-GL List GET Lambda (books JWT auth)
         // ============================================================================
@@ -141,7 +150,7 @@ public class DiyaGlStack extends Stack {
                         .customAuthorizer(props.sharedNames().diyaGlListGetLambdaCustomAuthorizer)
                         .booksJwtAuthorizer(true)
                         .optionsPreflightRoute(true)
-                        .environment(commonEnv)
+                        .environment(entitlementReadEnv)
                         .build());
         this.diyaGlListGetLambdaProps = diyaGlListGetApiLambda.apiProps;
         this.diyaGlListGetLambda = diyaGlListGetApiLambda.ingestLambda;
@@ -159,6 +168,7 @@ public class DiyaGlStack extends Stack {
                 .actions(List.of("s3:GetObject"))
                 .resources(List.of(booksMetadataArnPattern))
                 .build());
+        bundlesTable.grant(this.diyaGlListGetLambda, "dynamodb:Query");
         SubHashSaltHelper.grantSaltAccess(this.diyaGlListGetLambda, region, account, props.envName());
         infof(
                 "Created DIYA-GL List GET Lambda %s",
@@ -187,7 +197,7 @@ public class DiyaGlStack extends Stack {
                         .customAuthorizer(props.sharedNames().diyaGlVersionGetLambdaCustomAuthorizer)
                         .booksJwtAuthorizer(true)
                         .optionsPreflightRoute(true)
-                        .environment(commonEnv)
+                        .environment(entitlementReadEnv)
                         .build());
         this.diyaGlVersionGetLambdaProps = diyaGlVersionGetApiLambda.apiProps;
         this.diyaGlVersionGetLambda = diyaGlVersionGetApiLambda.ingestLambda;
@@ -200,6 +210,7 @@ public class DiyaGlStack extends Stack {
                 .actions(List.of("s3:GetObject"))
                 .resources(List.of(booksObjectsArnPattern))
                 .build());
+        bundlesTable.grant(this.diyaGlVersionGetLambda, "dynamodb:Query");
         SubHashSaltHelper.grantSaltAccess(this.diyaGlVersionGetLambda, region, account, props.envName());
         infof(
                 "Created DIYA-GL Version GET Lambda %s",
@@ -215,7 +226,7 @@ public class DiyaGlStack extends Stack {
                 .with("DIYA_GL_MAX_BYTES", "2097152")
                 .with("DIYA_GL_MAX_PER_USER", "20")
                 .with("DIYA_GL_VERSIONS_KEPT", "30")
-                .with("DIYA_GL_ENTITLEMENT_ENFORCED", "false")
+                .with("DIYA_GL_RESIDENT_TIER", props.residentTierEnabled().toString())
                 .with("DIYA_GL_BUNDLE_ID", "resident-diya-gl")
                 .with("BUNDLE_DYNAMODB_TABLE_NAME", bundlesTable.getTableName());
         var diyaGlPutApiLambda = new ApiLambda(
@@ -248,7 +259,7 @@ public class DiyaGlStack extends Stack {
                 onSecondPublishedPath(this.diyaGlPutLambdaProps, props.sharedNames().diyaGlPutBooksUrlPath));
         this.diyaGlPutLambda.addToRolePolicy(PolicyStatement.Builder.create()
                 .effect(Effect.ALLOW)
-                .actions(List.of("s3:GetObject", "s3:PutObject", "s3:DeleteObject"))
+                .actions(List.of("s3:GetObject", "s3:PutObject", "s3:DeleteObject", "s3:PutObjectTagging"))
                 .resources(List.of(booksObjectsArnPattern))
                 .build());
         this.diyaGlPutLambda.addToRolePolicy(PolicyStatement.Builder.create()

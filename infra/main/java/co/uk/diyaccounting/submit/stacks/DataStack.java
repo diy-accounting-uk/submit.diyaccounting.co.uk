@@ -14,6 +14,7 @@ import static co.uk.diyaccounting.submit.utils.KindCdk.ensureTimeToLive;
 
 import co.uk.diyaccounting.submit.SubmitSharedNames;
 import java.util.List;
+import java.util.Map;
 import org.immutables.value.Value;
 import software.amazon.awscdk.Duration;
 import software.amazon.awscdk.Environment;
@@ -923,6 +924,12 @@ public class DataStack extends Stack {
                         LifecycleRule.builder()
                                 .id("expire-noncurrent-versions")
                                 .noncurrentVersionExpiration(Duration.days(30))
+                                .build(),
+                        LifecycleRule.builder()
+                                .id("expire-sandbox")
+                                .tagFilters(Map.of("retention", "sandbox"))
+                                .expiration(Duration.days(2))
+                                .noncurrentVersionExpiration(Duration.days(1))
                                 .build()))
                 .build();
         infof("Ensured diya-gl bucket with name %s", props.sharedNames().diyaGlBucketName);

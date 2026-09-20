@@ -3,9 +3,9 @@
 
 // app/services/diyaGlEntitlement.js
 //
-// Gates the DIYA-GL PUT route on an active subscription. A stub until the billing row wires up
-// the DIYA-GL bundle: DIYA_GL_ENTITLEMENT_ENFORCED stays unset (or "false") until then, so every
-// caller passes.
+// Decides a DIYA-GL book's retention tier: "resident" for an active resident-diya-gl subscriber,
+// "sandbox" for everyone else. DIYA_GL_RESIDENT_TIER gates whether the resident tier is offered
+// at all on this environment; off, every caller gets the sandbox tier without a bundle read.
 
 import { createLogger } from "../lib/logger.js";
 import { initializeSalt } from "./subHasher.js";
@@ -15,16 +15,30 @@ const logger = createLogger({ source: "app/services/diyaGlEntitlement.js" });
 
 const DEFAULT_DIYA_GL_BUNDLE_ID = "resident-diya-gl";
 
+const LAPSED_RESIDENT_GRACE_MS = 30 * 24 * 60 * 60 * 1000;
+
+/**
+ * A lapsed subscriber's resident books expire 30 days after the bundle's own expiry, rather than
+ * immediately: the grace period a resubscribe can beat before the sweeper (DG-3c) removes them.
+ *
+ * @param {string} bundleExpiry - an entitlement's `expiry` field, an ISO date string
+ * @returns {string} an ISO date string, `bundleExpiry` plus 30 days
+ */
+export function lapsedResidentExpiresAt(bundleExpiry) {
+  return new Date(Date.parse(bundleExpiry) + LAPSED_RESIDENT_GRACE_MS).toISOString();
+}
+
 /**
  * @param {string} sub - the raw Cognito sub
- * @returns {Promise<{allowed: boolean, reason: "not-enforced"|"active-subscription"|"no-subscription"|"expired",
- *   bundleId: string|null, expiry: string|null, checkedAt: string}>}
+ * @returns {Promise<{retention: "sandbox"|"resident",
+ *   reason: "tier-disabled"|"active-subscription"|"no-subscription"|"expired",
+ *   residentTier: boolean, bundleId: string|null, expiry: string|null, checkedAt: string}>}
  */
 export async function entitlementFor(sub) {
   const checkedAt = new Date().toISOString();
 
-  if (process.env.DIYA_GL_ENTITLEMENT_ENFORCED !== "true") {
-    return { allowed: true, reason: "not-enforced", bundleId: null, expiry: null, checkedAt };
+  if (process.env.DIYA_GL_RESIDENT_TIER !== "true") {
+    return { retention: "sandbox", reason: "tier-disabled", residentTier: false, bundleId: null, expiry: null, checkedAt };
   }
 
   await initializeSalt();
@@ -34,7 +48,7 @@ export async function entitlementFor(sub) {
 
   if (!matchingBundle) {
     logger.info({ message: "No matching DIYA-GL bundle", bundleId: diyaGlBundleId });
-    return { allowed: false, reason: "no-subscription", bundleId: null, expiry: null, checkedAt };
+    return { retention: "sandbox", reason: "no-subscription", residentTier: true, bundleId: null, expiry: null, checkedAt };
   }
 
   const isActive = matchingBundle.subscriptionStatus === "active";
@@ -42,8 +56,9 @@ export async function entitlementFor(sub) {
 
   if (isActive && isUnexpired) {
     return {
-      allowed: true,
+      retention: "resident",
       reason: "active-subscription",
+      residentTier: true,
       bundleId: matchingBundle.bundleId,
       expiry: matchingBundle.expiry || null,
       checkedAt,
@@ -57,8 +72,9 @@ export async function entitlementFor(sub) {
     expiry: matchingBundle.expiry,
   });
   return {
-    allowed: false,
+    retention: "sandbox",
     reason: "expired",
+    residentTier: true,
     bundleId: matchingBundle.bundleId,
     expiry: matchingBundle.expiry || null,
     checkedAt,

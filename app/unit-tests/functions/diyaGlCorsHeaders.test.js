@@ -166,7 +166,7 @@ describe("DIYA-GL storage error responses", () => {
     process.env.DIYA_GL_MAX_BYTES = "2097152";
     process.env.DIYA_GL_MAX_PER_USER = "20";
     process.env.DIYA_GL_VERSIONS_KEPT = "30";
-    delete process.env.DIYA_GL_ENTITLEMENT_ENFORCED;
+    delete process.env.DIYA_GL_RESIDENT_TIER;
     _setTestSalt("test-salt");
   });
 
