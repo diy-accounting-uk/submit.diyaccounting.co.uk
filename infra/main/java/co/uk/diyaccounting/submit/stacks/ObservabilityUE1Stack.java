@@ -22,10 +22,6 @@ import software.amazon.awscdk.Stack;
 import software.amazon.awscdk.StackProps;
 import software.amazon.awscdk.services.budgets.CfnBudget;
 import software.amazon.awscdk.services.budgets.CfnBudgetsAction;
-import software.amazon.awscdk.services.cloudwatch.Alarm;
-import software.amazon.awscdk.services.cloudwatch.ComparisonOperator;
-import software.amazon.awscdk.services.cloudwatch.Metric;
-import software.amazon.awscdk.services.cloudwatch.TreatMissingData;
 import software.amazon.awscdk.services.iam.AccountPrincipal;
 import software.amazon.awscdk.services.iam.Effect;
 import software.amazon.awscdk.services.iam.ManagedPolicy;
@@ -347,69 +343,9 @@ public class ObservabilityUE1Stack extends Stack {
 
         cfnOutput(this, "SpreadsheetsMetricsSinkArn", spreadsheetsMetricsSink.getAttrArn());
 
-        // "prod" watches spreadsheets-web; every other environment watches its ci counterpart,
-        // the same prod/non-prod split used throughout this environment's stacks.
-        String spreadsheetsRumAppName = "prod".equals(props.envName()) ? "spreadsheets-web" : "ci-spreadsheets-web";
-
-        Metric spreadsheetsLcpP75 = Metric.Builder.create()
-                .namespace("AWS/RUM")
-                .metricName("WebVitalsLargestContentfulPaint")
-                .dimensionsMap(Map.of("application_name", spreadsheetsRumAppName))
-                .account(spreadsheetsAccountId)
-                .statistic("p75")
-                .period(Duration.minutes(5))
-                .build();
-
-        Metric spreadsheetsInpP75 = Metric.Builder.create()
-                .namespace("AWS/RUM")
-                .metricName("WebVitalsInteractionToNextPaint")
-                .dimensionsMap(Map.of("application_name", spreadsheetsRumAppName))
-                .account(spreadsheetsAccountId)
-                .statistic("p75")
-                .period(Duration.minutes(5))
-                .build();
-
-        Metric spreadsheetsClsP75 = Metric.Builder.create()
-                .namespace("AWS/RUM")
-                .metricName("WebVitalsCumulativeLayoutShift")
-                .dimensionsMap(Map.of("application_name", spreadsheetsRumAppName))
-                .account(spreadsheetsAccountId)
-                .statistic("p75")
-                .period(Duration.minutes(5))
-                .build();
-
-        // Until the spreadsheets account links to the sink above, these metrics carry no
-        // datapoints and the alarms sit in INSUFFICIENT_DATA; NOT_BREACHING keeps them out of
-        // ALARM state while that link is missing, the same treatment the submit RUM alarms above
-        // give a quiet app monitor.
-        Alarm.Builder.create(this, props.resourceNamePrefix() + "-SpreadsheetsRumLcpP75Alarm")
-                .alarmName(props.resourceNamePrefix() + "-spreadsheets-rum-lcp-p75")
-                .metric(spreadsheetsLcpP75)
-                .threshold(4000) // 4s
-                .evaluationPeriods(2)
-                .comparisonOperator(ComparisonOperator.GREATER_THAN_THRESHOLD)
-                .treatMissingData(TreatMissingData.NOT_BREACHING)
-                .alarmDescription("Spreadsheets RUM p75 LCP > 4s")
-                .build();
-
-        Alarm.Builder.create(this, props.resourceNamePrefix() + "-SpreadsheetsRumInpP75Alarm")
-                .alarmName(props.resourceNamePrefix() + "-spreadsheets-rum-inp-p75")
-                .metric(spreadsheetsInpP75)
-                .threshold(500) // INP "poor" boundary
-                .evaluationPeriods(2)
-                .comparisonOperator(ComparisonOperator.GREATER_THAN_THRESHOLD)
-                .treatMissingData(TreatMissingData.NOT_BREACHING)
-                .alarmDescription("Spreadsheets RUM p75 INP > 500ms")
-                .build();
-
-        Alarm.Builder.create(this, props.resourceNamePrefix() + "-SpreadsheetsRumClsP75Alarm")
-                .alarmName(props.resourceNamePrefix() + "-spreadsheets-rum-cls-p75")
-                .metric(spreadsheetsClsP75)
-                .threshold(0.25) // CLS "needs improvement" boundary
-                .evaluationPeriods(2)
-                .comparisonOperator(ComparisonOperator.GREATER_THAN_THRESHOLD)
-                .treatMissingData(TreatMissingData.NOT_BREACHING)
-                .alarmDescription("Spreadsheets RUM p75 CLS > 0.25")
-                .build();
+        // CloudWatch refuses an alarm on another account's metric until that account has linked
+        // to the sink ("One or more metrics in your request are Forbidden"), so the three
+        // spreadsheets web-vitals alarms wait for the spreadsheets account's link; the dashboard
+        // widgets in ObservabilityStack render empty meanwhile.
     }
 }

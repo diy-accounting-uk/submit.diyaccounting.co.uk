@@ -70,33 +70,4 @@ class ObservabilityUE1StackTest {
         assertTrue(template.toJSON().toString().contains("064390746177"));
     }
 
-    @Test
-    void spreadsheetsRumLcpAlarmWatchesTheSpreadsheetsAccountInThisRegion() {
-        Template template = Template.fromStack(synthObservabilityUE1Stack());
-
-        template.hasResourceProperties(
-                "AWS::CloudWatch::Alarm",
-                Match.objectLike(Map.of(
-                        "AlarmName",
-                        Match.stringLikeRegexp(".*-spreadsheets-rum-lcp-p75"),
-                        "Threshold",
-                        4000,
-                        "EvaluationPeriods",
-                        2,
-                        "ComparisonOperator",
-                        "GreaterThanThreshold",
-                        "TreatMissingData",
-                        "notBreaching",
-                        "Metrics",
-                        Match.arrayWith(List.of(Match.objectLike(Map.of(
-                                "AccountId",
-                                "064390746177",
-                                "MetricStat",
-                                Match.objectLike(Map.of(
-                                        "Metric",
-                                        Match.objectLike(Map.of(
-                                                "Namespace", "AWS/RUM", "MetricName", "WebVitalsLargestContentfulPaint")),
-                                        "Stat",
-                                        "p75")))))))));
-    }
 }
