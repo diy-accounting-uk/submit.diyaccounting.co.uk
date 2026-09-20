@@ -16,10 +16,9 @@ runs), and for Claude Code steps the **Model** a sub-agent should use (Fable > O
 Haiku; the lowest tier that fits). Anything touching code goes through a `claude/*` branch and
 PR; the operator merges.
 
-**Prod runs deployment prod-0db1730** (main's dispatched deploy 35399752208, green at 23:2x UTC on
-2026-09-18, nine stacks created 22:1x UTC, the only prod set standing; the deploy destroyed prod-0f77333
-itself). **ci**: `ci-set1` (the B30af.8 proof branch's set, claimed 22:1x UTC on 2026-09-18) is live,
-the only ci set standing; its self-destruct fires from 02:1x UTC on 2026-09-19.
+**Prod runs deployment prod-dd95c16** (main's deploy of 2026-09-19, nine stacks created 08:52 UTC,
+the only prod set standing; the deploy destroyed prod-0db1730 itself). **ci**: no set standing;
+`ci-set1` self-destructed and `destroy-ci.yml`'s sweeps since have found nothing.
 
 The board runs in five sections, in this order: **in flight** (a branch, a pull request or a run
 in motion, each named in the row), **machine-only**, **machine-ask**, **human-driven**,
@@ -41,21 +40,21 @@ step.
 
 ## In flight
 
-- [ ] **O38. The two GitHub Apps carry every machine write.** The code is on `main` since PR #304
-  (7248ef4d): the alarm-issue, support-ticket, security-lake and operator-effort Lambdas mint
-  `diyaccounting-ops` installation tokens (App 4995449, installation 162872904) from
-  `{env}/submit/github/ops_app_private_key`, and `alarm-triage.yml` pushes its draft PR as
-  `diyaccounting-agent[bot]` (App 4995481, installation 162872977). Main's deploy 35412103206 and
-  deploy-environment 35412102948 carry it; the environment run writes the private-key secret from
-  `OPS_APP_PRIVATE_KEY`. Proof: the next alarm issue, support ticket, security-lake nightly and
-  triage PR arrive with `user.type: Bot`. Then delete the repository secrets `ISSUE_BOT_TOKEN`,
-  `SUPPORT_BOT_TOKEN` and `PERSONAL_ACCESS_TOKEN` (`gh secret delete <name>`) and the Secrets
-  Manager entries `{env}/submit/github/issue_bot_token` and `support_bot_token` in ci and prod
-  (`aws secretsmanager delete-secret --recovery-window-in-days 30`, the operator approves).
-  **Source**: `REPORT_IDENTITY_AUDIT.md` section 8, recommendations 2 and 3. **Owner**: Claude
-  Code, the operator approves the five deletes. **Model**: Haiku. **Size**: ~0 files.
-
 ## Machine-only
+
+- [ ] **B30an. Exclude service-linked roles from the CIS unauthorized-api-calls filter.** Alarm
+  issue #305 (`prod-env-cis-unauthorized-api-calls`, 2026-09-20 11:46 UTC, OK again at 11:56) was
+  one CloudTrail event: `AWSServiceRoleForResourceExplorer` calling `macie2:ListCustomDataIdentifiers`,
+  `AccessDenied`, AWS's own indexer probing a service the account does not use. The filter is the
+  `UnauthorizedApiCalls` row of `CIS_CONTROLS` in
+  `infra/main/java/co/uk/diyaccounting/submit/stacks/SecurityDetectionStack.java` (line ~415),
+  threshold 1, which already excludes `uxc.amazonaws.com`. Add
+  `($.userIdentity.sessionContext.sessionIssuer.userName != "AWSServiceRoleFor*")` to the pattern
+  with the same `AssumedRole` guard `deployRoleExclusionClause` builds, and one assertion on the
+  synthesised filter pattern in the stack's test. #305 closes when the pattern is on prod. Eleven
+  `cis-unauthorized-api-calls` issues since #157; BACKLOG 30a's re-count says whether the control
+  earns its threshold of 1. **Source**: issue #305; BACKLOG 30. **Owner**: Claude Code. **Model**:
+  Haiku. **Size**: ~2 files.
 
 - [ ] **B11.T7b.1. The sandbox script creates both businesses.** `scripts/itsa-sandbox-year.js`
   creates the sole trade, sets the ITSA status and takes and restores the vendor-state checkpoint;
@@ -145,6 +144,20 @@ step.
   taxonomy: gov.uk collection "Corporation Tax online: support for software developers".
   **Source**: BACKLOG 34e, 34f, 34g. **Owner**: Claude Code. **Model**: Opus. **Size**: ~2 files.
 
+- [ ] **B52y.3. The security lake nightly's Dependabot row.** The 2026-09-20 03:20 UTC run
+  proved the token: `code_scanning` rows carry counts and `secret_scanning` reads `count: 0`. The
+  `dependabot` row is still `count: null` because `fetchOpenGithubAlerts` in
+  `app/functions/security/securityLakeNightly.js` (line ~216) pages with `?page=N` and the
+  Dependabot alerts endpoint answers 400 `Pagination using the page parameter is not supported`
+  (it pages by cursor). Follow the response's `Link` header `rel="next"` URL instead of counting
+  pages, for all three endpoints; a case in `app/unit-tests/functions/security/securityLakeNightly.test.js`
+  feeds two linked pages and one 400. Proof, after the next 03:20 run: `aws --profile submit-prod
+  s3 cp s3://prod-env-analytics-lake-972912397388/curated/security/github-alerts/dt=<run date>/data.json -`
+  has no `"count":null` and `aws --profile submit-prod logs filter-log-events --log-group-name
+  /aws/lambda/prod-env-security-lake-nightly --start-time <ms> --filter-pattern '"GitHub alert fetch
+  failed"'` returns no event. **Source**: issue #249. **Owner**: Claude Code. **Model**: Haiku.
+  **Size**: ~2 files.
+
 - [ ] **B49.22. `infra/paypal`.** `paypal.toml`: `[button] hosted_button_id = "XTEQ73HM52QQW"`,
   `form_action = "https://www.paypal.com/donate"`, `donate_url` (the same id as a GET link), `page =
   "https://spreadsheets.diyaccounting.co.uk/donate.html"`; `[source]` recording the sibling
@@ -201,21 +214,6 @@ step.
   Proof: `npm test` and one `infra-apply.yml` run. After B49.15. **Source**: BACKLOG 49b; item 18.
   **Owner**: Claude Code. **Model**: Sonnet. **Size**: ~5 files.
 
-- [ ] **B52.D4. A visitors-by-class panel on the operator dashboard.** `visitor_kind` (human, bot,
-  synthetic) already reaches the lake: `web/public/lib/analytics.js` sets it as a GA4 user property,
-  `analytics/bigquery/sessions_by_host_source_daily.sql` groups by it, and `ga4DailyPull.js` copies
-  that table to `curated/ga4_daily/`; no view or observation reads it. Add
-  `infra/main/resources/analytics/views/v_visitors_by_kind_daily.sql` on `v_ga4_funnel_daily`'s
-  shape — `SELECT dt AS day, hostname, visitor_kind, sum(sessions) AS sessions, sum(users) AS users
-  FROM sessions_by_host_source_daily GROUP BY 1, 2, 3` — register it in `BusinessViews.java`'s
-  `VIEWS` (readTables `sessions_by_host_source_daily`), append it to `rawExportPublish.js`'s
-  `VIEW_NAMES`, and add one observation per class under the `conversion-to-submission` objective in
-  `operatorSnapshotPublish.js` (`where: "visitor_kind = 'human'"` and so on, GA4 deep link).
-  `dashboard.html` needs no edit: `renderSnapshot` draws whatever observations the snapshot carries.
-  Tests: `VIEW_COUNT` 24 to 25 in `BusinessViewsTest.java`, the VIEW_NAMES assertion in
-  `rawExportPublish.test.js`, `npm run test:unit`, `./mvnw clean verify`. **Source**: BACKLOG 67;
-  `PLAN_ONE_STOP_DASHBOARD.md` D4. **Owner**: Claude Code. **Model**: Sonnet. **Size**: ~5 files.
-
 - [ ] **B49.21. `infra/stripe`.** `git mv scripts/stripe-setup.js infra/stripe/stripe-sync.js` and
   `scripts/lib/stripeCatalogue.js` beside it, fixing its test. `stripe.toml`: `[[endpoint]]` rows
   `environment`, `url` (the two `*-billing.submit…/api/v1/billing/webhook`), `modes` (ci test, prod
@@ -260,6 +258,21 @@ step.
   (`gh issue list --label alarm --state all`) score the table: how many would have closed themselves.
   **Source**: BACKLOG 70; `PLAN_REPOSITORY_AUTOMATION.md` Phase 3, P1, P3, P9. **Owner**: Claude
   Code. **Model**: Opus. **Size**: ~2 files.
+
+- [ ] **B52.D4. A visitors-by-class panel on the operator dashboard.** `visitor_kind` (human, bot,
+  synthetic) already reaches the lake: `web/public/lib/analytics.js` sets it as a GA4 user property,
+  `analytics/bigquery/sessions_by_host_source_daily.sql` groups by it, and `ga4DailyPull.js` copies
+  that table to `curated/ga4_daily/`; no view or observation reads it. Add
+  `infra/main/resources/analytics/views/v_visitors_by_kind_daily.sql` on `v_ga4_funnel_daily`'s
+  shape — `SELECT dt AS day, hostname, visitor_kind, sum(sessions) AS sessions, sum(users) AS users
+  FROM sessions_by_host_source_daily GROUP BY 1, 2, 3` — register it in `BusinessViews.java`'s
+  `VIEWS` (readTables `sessions_by_host_source_daily`), append it to `rawExportPublish.js`'s
+  `VIEW_NAMES`, and add one observation per class under the `conversion-to-submission` objective in
+  `operatorSnapshotPublish.js` (`where: "visitor_kind = 'human'"` and so on, GA4 deep link).
+  `dashboard.html` needs no edit: `renderSnapshot` draws whatever observations the snapshot carries.
+  Tests: `VIEW_COUNT` 24 to 25 in `BusinessViewsTest.java`, the VIEW_NAMES assertion in
+  `rawExportPublish.test.js`, `npm run test:unit`, `./mvnw clean verify`. **Source**: BACKLOG 67;
+  `PLAN_ONE_STOP_DASHBOARD.md` D4. **Owner**: Claude Code. **Model**: Sonnet. **Size**: ~5 files.
 
 - [ ] **B69.1. The publication filter as a composite action.** New `.github/actions/publish-filter/action.yml`
   in `run-triage-agent`'s shape: inputs `input-file`, `format` (`claude-json`|`markdown`),
@@ -341,33 +354,6 @@ step.
   **Source**: BACKLOG 72; `PLAN_REPOSITORY_AUTOMATION.md` Phase 5. **Owner**: Claude Code. **Model**:
   Sonnet. **Size**: ~16 files.
 
-- [ ] **B52y.3. The security lake nightly's two GitHub alert rows: the next run proves the token.**
-  The stored token (`prod/submit/github/issue_bot_token`, repository secret `ISSUE_BOT_TOKEN`) now
-  holds read on Dependabot and secret-scanning alerts in place, so no secret write and no
-  deploy-environment run is needed. The run is 03:20 UTC (`SecurityLakeStack.java`, minute 20 hour
-  3). Proof, three calls after it: `aws --profile submit-prod logs filter-log-events
-  --log-group-name /aws/lambda/prod-env-security-lake-nightly --start-time <ms> --filter-pattern
-  '"GitHub alert fetch failed"'` returns no event; the same call with `'"Security lake nightly run
-  complete"'` shows `counts.github-alerts` at three or more; `aws --profile submit-prod s3 cp
-  s3://prod-env-analytics-lake-<account>/curated/security/github-alerts/dt=<run date>/data.json -`
-  has a JSON line per (alert_type, severity) covering `code_scanning`, `dependabot` and
-  `secret_scanning` with no `"count":null`. A null count or the warn line means the grant did not
-  take: reopen #249 quoting the line. **Source**: issue #249. **Owner**: Claude Code. **Model**:
-  Haiku. **Size**: ~0 files.
-
-- [ ] **B52n.2. The spreadsheets donation event lands as `donate`.** `donate` is a key event on
-  property 523400333 (`google/analytics.toml`) and the spreadsheets repository's
-  `public/lib/download-page.js` sends it since 08:26 UTC on 2026-09-18.
-  `analytics/bigquery/key_events_daily.sql` still maps that host's `purchase` to `donate` as well,
-  so the proof reads the raw event name. Its scheduled query covers event_date D-2, so a full day
-  is first proven by the 04:30 run on 2026-09-21 (event_date 2026-09-19). Proof: `aws --profile
-  submit-prod athena start-query-execution` in workgroup `prod-env-analytics`, database
-  `prod_env_analytics`, `SELECT dt, count(*) FROM ga4_bq_events WHERE stream_id = '13496898428' AND
-  event_name = 'donate' GROUP BY 1` — a non-zero row for 2026-09-19 closes it, and the matching
-  `key_events_daily` row (hostname `spreadsheets.diyaccounting.co.uk`, key_event `donate`) confirms
-  the aggregate carries it. Zero on both means the emitter is not reaching GA4: reopen B52n with the
-  query output. **Source**: B52n. **Owner**: Claude Code. **Model**: Haiku. **Size**: ~0 files.
-
 ## Machine-ask
 
 - [ ] **B11.T7b.3. Run A's loss sequence on the sole trade.** One loss-claims resource per business
@@ -415,21 +401,6 @@ step.
   `ok: true`, final declaration 204. After B11.T7b.1. **Source**: `PLAN_ITSA_PHASE_2.md` T7.
   **Owner**: Claude Code. **Model**: Sonnet. **Size**: ~2 files.
 
-- [ ] **B52.D2. Donations on the revenue panel.** `v_revenue_daily` reads `stripe_charges`, written
-  by `stripeReconcile.js` with the live key at `prod/submit/stripe/secret_key`
-  (`app/lib/stripeClient.js`), labelled by `charge.metadata.bundleId`, so a Payment Link charge
-  falls to `'unknown'`. Read the account side first: fetch that secret and `GET /v1/payment_links`,
-  matching the four live slugs in the spreadsheets repository's
-  `web/spreadsheets.diyaccounting.co.uk/donate-links.toml` (`…4F200`, `4F201`, `4F202`, `4F204`); a
-  match means one account, and `SELECT day, product, revenue_gbp FROM v_revenue_daily WHERE product
-  = 'unknown'` in workgroup `prod-env-analytics` shows whether donations are already landing
-  unlabelled. Then label them by setting `payment_intent_data.metadata.bundleId` on each link in
-  `scripts/stripe-setup.js`'s idempotent shape, with a unit test on the builder. That is a live
-  Stripe write: the operator approves it and confirms the account holding the links is the
-  company's. PayPal donations are not in this row; they arrive with `../PLAN_FINANCE_AUTOMATION.md`
-  phase 1's PayPal pull, which has no code. **Source**: BACKLOG 66; plan D2. **Owner**: Claude Code;
-  the operator approves the Stripe write. **Model**: Sonnet. **Size**: ~2 files.
-
 - [ ] **B11.T10. ITSA phase 2: the recognition pack.** Four files under `_developers/hmrc/` carry
   the pack: `ITSA_PRODUCTION_APPROVALS_CHECKLIST.md`,
   `hmrc_questionnaire_itsa_pass_diy_accounting_limited_v1.md` and the two `DRAFT_EMAIL_ITSA_*.md`.
@@ -444,6 +415,21 @@ step.
   "not evidenced" left in checklist rows 4, 6 and 7. After B11.T7b.7. **Source**: BACKLOG 11;
   `PLAN_ITSA_PHASE_2.md` T10. **Owner**: Claude Code edits and re-runs; the operator sends.
   **Model**: Haiku. **Size**: ~4 files.
+
+- [ ] **B52.D2. Donations on the revenue panel.** `v_revenue_daily` reads `stripe_charges`, written
+  by `stripeReconcile.js` with the live key at `prod/submit/stripe/secret_key`
+  (`app/lib/stripeClient.js`), labelled by `charge.metadata.bundleId`, so a Payment Link charge
+  falls to `'unknown'`. Read the account side first: fetch that secret and `GET /v1/payment_links`,
+  matching the four live slugs in the spreadsheets repository's
+  `web/spreadsheets.diyaccounting.co.uk/donate-links.toml` (`…4F200`, `4F201`, `4F202`, `4F204`); a
+  match means one account, and `SELECT day, product, revenue_gbp FROM v_revenue_daily WHERE product
+  = 'unknown'` in workgroup `prod-env-analytics` shows whether donations are already landing
+  unlabelled. Then label them by setting `payment_intent_data.metadata.bundleId` on each link in
+  `scripts/stripe-setup.js`'s idempotent shape, with a unit test on the builder. That is a live
+  Stripe write: the operator approves it and confirms the account holding the links is the
+  company's. PayPal donations are not in this row; they arrive with `../PLAN_FINANCE_AUTOMATION.md`
+  phase 1's PayPal pull, which has no code. **Source**: BACKLOG 66; plan D2. **Owner**: Claude Code;
+  the operator approves the Stripe write. **Model**: Sonnet. **Size**: ~2 files.
 
 - [ ] **B49.16. Read-only inventory of the Google Ads account.** `infra/google/ads/ads-inventory.js`
   in `google-inventory.js`'s shape, over the Ads REST API (`POST customers/{id}/googleAds:search`
@@ -474,6 +460,22 @@ step.
   `githubSync.test.js` over `parseConfig`, `planGithub`, `rulesetDiff`. Proof: `npm test` and a plan
   reading "already match". After B49.18. **Source**: BACKLOG 49b; item 20. **Owner**: Claude Code,
   the operator supplies the token. **Model**: Sonnet. **Size**: ~5 files.
+
+- [ ] **O38. The two GitHub Apps carry every machine write.** The code is on `main` since PR #304
+  (7248ef4d) and prod-dd95c16 carries it. Proof so far: alarm issue #305 (2026-09-20 11:51 UTC) is
+  authored by `app/diyaccounting-ops`, `user.type: Bot`, and the security-lake nightly of
+  2026-09-20 03:20 UTC read code-scanning and secret-scanning alerts on the App token. The support
+  ticket and the triage PR prove themselves when one next arrives. One read of a PAT remains:
+  `.github/workflows/security-review.yml:211` gives `assign-copilot`'s `github-script` step
+  `secrets.PERSONAL_ACCESS_TOKEN`; replace it with an `actions/create-github-app-token` step on
+  `AGENT_APP_ID`/`AGENT_APP_PRIVATE_KEY` as `alarm-triage.yml:173-176` does, and check on the next
+  `security-review.yml` run that the App can run `replaceActorsForAssignable` (if it cannot, the
+  job goes, since Copilot assignment is the PAT's only use). Then delete the repository secrets
+  `ISSUE_BOT_TOKEN`, `SUPPORT_BOT_TOKEN` and `PERSONAL_ACCESS_TOKEN` (`gh secret delete <name>`)
+  and the Secrets Manager entries `{env}/submit/github/issue_bot_token` and `support_bot_token` in
+  ci and prod (`aws secretsmanager delete-secret --recovery-window-in-days 30`, the operator
+  approves). **Source**: `REPORT_IDENTITY_AUDIT.md` section 8, recommendations 2 and 3. **Owner**:
+  Claude Code, the operator approves the five deletes. **Model**: Haiku. **Size**: ~1 file.
 
 ## Human-driven
 
@@ -509,20 +511,20 @@ step.
   permission pages. **Source**: BACKLOG 34. **Owner**: Claude Code. **Model**: Sonnet. Blocked on
   O17. **Size**: ~1 file.
 
-- [ ] **B34.6b. Companies House accounts filing: the sandbox proof.** Submission 000004 (test
-  presenter, company 06846849, package reference 0012) was acknowledged with no errors by the XML
-  Gateway test service; every `GetSubmissionStatus` poll for it answers 9999 "No presenter ID
-  supplied", with the body's `PresenterID` plaintext and hashed, and the body is plaintext on
-  `main`. The blocker is the email BACKLOG 34d describes, which has not been sent: the last message
-  on the `xml@companieshouse.gov.uk` thread is the operator's of 2026-09-11. Claude Code drafts it,
-  the operator sends, and it asks whether 000004 was accepted and whether status lookups are
-  enabled for this presenter. When the answer comes and lookups are enabled: poll 000004 through
-  `GET /api/v1/companies-house/accounts/000004` on a standing ci set, and pin the returned
-  `StatusCode` and any rejections as a case in
-  `app/unit-tests/functions/companiesHouseAccountsGet.test.js`. The prod catalogue listing is
-  BACKLOG 34c's: prod carries no `COMPANIES_HOUSE_XMLGW_URI` and no presenter secret ARNs.
-  **Source**: BACKLOG 34b, 34d. **Owner**: Claude Code; the operator sends 34d's email. **Model**:
-  Sonnet. Blocked on that answer. **Size**: ~2 files.
+- [ ] **B52n.2. The spreadsheets donation event lands as `donate`.** `donate` is a key event on
+  property 523400333 (`google/analytics.toml`) and the spreadsheets repository's
+  `public/lib/download-page.js` sends it since 08:26 UTC on 2026-09-18.
+  `analytics/bigquery/key_events_daily.sql` still maps that host's `purchase` to `donate` as well,
+  so the proof reads the raw event name. Its scheduled query covers event_date D-2, so a full day
+  is first proven by the 04:30 run on 2026-09-21 (event_date 2026-09-19). Proof: `aws --profile
+  submit-prod athena start-query-execution` in workgroup `prod-env-analytics`, database
+  `prod_env_analytics`, `SELECT dt, count(*) FROM ga4_bq_events WHERE stream_id = '13496898428' AND
+  event_name = 'donate' GROUP BY 1` — a non-zero row for 2026-09-19 closes it, and the matching
+  `key_events_daily` row (hostname `spreadsheets.diyaccounting.co.uk`, key_event `donate`) confirms
+  the aggregate carries it. Zero on both means the emitter is not reaching GA4: reopen B52n with the
+  query output. The lake's newest day, 2026-09-18, has one `donation_prompt` and no `donate` or
+  `purchase` for that stream, so no donation happened that day and the proof waits on the 2026-09-21 run.
+  Blocked on that run. **Source**: B52n. **Owner**: Claude Code. **Model**: Haiku. **Size**: ~0 files.
 
 - [ ] **B52l. The optimiser over the raw export.** A notebook over `../analytics/prod/` (pulled by
   `scripts/analytics-pull.sh`, one CSV per view in `rawExportPublish.js`'s `VIEW_NAMES`): per-block
@@ -537,18 +539,6 @@ step.
   submit-prod s3 ls s3://prod-env-analytics-lake-<account>/exports/prod/`. **Source**: BACKLOG 52l;
   `PLAN_ONE_STOP_DASHBOARD.md` D16. **Owner**: Claude Code. **Model**: Opus for the models, Sonnet
   for the notebook. **Size**: ~3 files.
-
-- [ ] **B52m. The reinvestment loop.** Trailing income, reserve, budget, return per pound and payback
-  as one block on `web/public/operator/dashboard.html`, fed by observations over `v_revenue_daily`
-  and `v_cost_vs_target_monthly` in `operatorSnapshotPublish.js`; the reinvestment fraction as a
-  lever with the operator's reserve floor; paid traffic and article boosts as `experiments.toml`
-  rows with on-off or geographic controls; GA4 conversion import from the Ads account. Blocked on
-  three events: B52l's fitted models, which the return-per-pound figure comes from; the cost panel
-  carrying revenue (BACKLOG 43, from 2026-10-02, the first monthly renewal); and a Google Ads
-  account existing with its conversion import — the operator opens it and supplies the developer
-  and refresh tokens B49.16 needs, then names the reinvestment fraction and the reserve floor.
-  **Source**: BACKLOG 52m; `PLAN_ONE_STOP_DASHBOARD.md` D17. **Owner**: Claude Code, with the
-  operator's fraction and floor. **Model**: Sonnet. **Size**: ~3 files.
 
 - [ ] **B52i. The company P&L and balance sheet on the dashboard.** The company's diya-gl book,
   derived nightly and rendered above the eight objectives beside the last set filed at Companies
@@ -592,6 +582,33 @@ step.
   `needs: set-origins` edges repoint for ci, and probe-test's three `wait-for-main-deploy` steps
   drop for ci. **Source**: the design, P3 to P5. **Owner**: Claude Code. **Model**: Sonnet. Blocked
   on B30af.6 (P2, which also fixes N). **Size**: ~9 files.
+
+- [ ] **B34.6b. Companies House accounts filing: the sandbox proof.** Submission 000004 (test
+  presenter, company 06846849, package reference 0012) was acknowledged with no errors by the XML
+  Gateway test service; every `GetSubmissionStatus` poll for it answers 9999 "No presenter ID
+  supplied", with the body's `PresenterID` plaintext and hashed, and the body is plaintext on
+  `main`. The blocker is the email BACKLOG 34d describes, which has not been sent: the last message
+  on the `xml@companieshouse.gov.uk` thread is the operator's of 2026-09-11. Claude Code drafts it,
+  the operator sends, and it asks whether 000004 was accepted and whether status lookups are
+  enabled for this presenter. When the answer comes and lookups are enabled: poll 000004 through
+  `GET /api/v1/companies-house/accounts/000004` on a standing ci set, and pin the returned
+  `StatusCode` and any rejections as a case in
+  `app/unit-tests/functions/companiesHouseAccountsGet.test.js`. The prod catalogue listing is
+  BACKLOG 34c's: prod carries no `COMPANIES_HOUSE_XMLGW_URI` and no presenter secret ARNs.
+  **Source**: BACKLOG 34b, 34d. **Owner**: Claude Code; the operator sends 34d's email. **Model**:
+  Sonnet. Blocked on that answer. **Size**: ~2 files.
+
+- [ ] **B52m. The reinvestment loop.** Trailing income, reserve, budget, return per pound and payback
+  as one block on `web/public/operator/dashboard.html`, fed by observations over `v_revenue_daily`
+  and `v_cost_vs_target_monthly` in `operatorSnapshotPublish.js`; the reinvestment fraction as a
+  lever with the operator's reserve floor; paid traffic and article boosts as `experiments.toml`
+  rows with on-off or geographic controls; GA4 conversion import from the Ads account. Blocked on
+  three events: B52l's fitted models, which the return-per-pound figure comes from; the cost panel
+  carrying revenue (BACKLOG 43, from 2026-10-02, the first monthly renewal); and a Google Ads
+  account existing with its conversion import — the operator opens it and supplies the developer
+  and refresh tokens B49.16 needs, then names the reinvestment fraction and the reserve floor.
+  **Source**: BACKLOG 52m; `PLAN_ONE_STOP_DASHBOARD.md` D17. **Owner**: Claude Code, with the
+  operator's fraction and floor. **Model**: Sonnet. **Size**: ~3 files.
 
 - [ ] **O17. A sandbox sign-in for the filing suites, and four ci values.** The sandbox has no
   registration page and no create-user API; its sign-in is reached only through
