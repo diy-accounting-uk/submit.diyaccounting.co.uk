@@ -76,9 +76,7 @@ class IdentityStackTest {
 
         template.hasResourceProperties(
                 "AWS::Cognito::UserPool",
-                Match.objectLike(Map.of(
-                        "MfaConfiguration", "ON",
-                        "EnabledMfas", List.of("SOFTWARE_TOKEN_MFA"))));
+                Match.objectLike(Map.of("MfaConfiguration", "ON", "EnabledMfas", List.of("SOFTWARE_TOKEN_MFA"))));
     }
 
     @Test
@@ -134,7 +132,19 @@ class IdentityStackTest {
                 "http://localhost:3000/diya-gl/bst.html",
                 "http://localhost:3000/diya-gl/se.html",
                 "http://localhost:3000/diya-gl/taxi.html",
-                "http://localhost:3000/diya-gl/ltd.html");
+                "http://localhost:3000/diya-gl/ltd.html",
+                "https://ci.diya-gl.co.uk/",
+                "https://ci.diya-gl.co.uk/index.html",
+                "https://ci.diya-gl.co.uk/bst.html",
+                "https://ci.diya-gl.co.uk/se.html",
+                "https://ci.diya-gl.co.uk/taxi.html",
+                "https://ci.diya-gl.co.uk/ltd.html",
+                "http://localhost:3001/",
+                "http://localhost:3001/index.html",
+                "http://localhost:3001/bst.html",
+                "http://localhost:3001/se.html",
+                "http://localhost:3001/taxi.html",
+                "http://localhost:3001/ltd.html");
 
         template.hasResourceProperties(
                 "AWS::Cognito::UserPoolClient",
@@ -172,7 +182,19 @@ class IdentityStackTest {
                 "https://ci-spreadsheets.diyaccounting.co.uk/diya-gl/bst.html",
                 "https://ci-spreadsheets.diyaccounting.co.uk/diya-gl/se.html",
                 "https://ci-spreadsheets.diyaccounting.co.uk/diya-gl/taxi.html",
-                "https://ci-spreadsheets.diyaccounting.co.uk/diya-gl/ltd.html");
+                "https://ci-spreadsheets.diyaccounting.co.uk/diya-gl/ltd.html",
+                "https://diya-gl.co.uk/",
+                "https://diya-gl.co.uk/index.html",
+                "https://diya-gl.co.uk/bst.html",
+                "https://diya-gl.co.uk/se.html",
+                "https://diya-gl.co.uk/taxi.html",
+                "https://diya-gl.co.uk/ltd.html",
+                "https://ci.diya-gl.co.uk/",
+                "https://ci.diya-gl.co.uk/index.html",
+                "https://ci.diya-gl.co.uk/bst.html",
+                "https://ci.diya-gl.co.uk/se.html",
+                "https://ci.diya-gl.co.uk/taxi.html",
+                "https://ci.diya-gl.co.uk/ltd.html");
 
         template.hasResourceProperties(
                 "AWS::Cognito::UserPoolClient",
