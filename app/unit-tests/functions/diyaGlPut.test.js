@@ -422,7 +422,13 @@ describe("diyaGlPut", () => {
       size: 100,
       createdAt: `2026-01-${String((i % 28) + 1).padStart(2, "0")}T00:00:00.000Z`,
     }));
-    const existingMetadata = { bookId: BOOK_ID, latestVersion: 30, latestETag: "etag-30", versions: thirtyVersions, createdAt: "2026-01-01T00:00:00.000Z" };
+    const existingMetadata = {
+      bookId: BOOK_ID,
+      latestVersion: 30,
+      latestETag: "etag-30",
+      versions: thirtyVersions,
+      createdAt: "2026-01-01T00:00:00.000Z",
+    };
     const v31Key = versionKeyFor("test-sub", BOOK_ID, 31);
     const v1Key = versionKeyFor("test-sub", BOOK_ID, 1);
     let deletedKey = null;
@@ -474,7 +480,13 @@ describe("diyaGlPut", () => {
         }
         return {
           ETag: '"meta-etag-after-race"',
-          Body: jsonBody({ bookId: BOOK_ID, latestVersion: 1, latestETag: "zip-v1-etag", versions: [{ version: 1, etag: "zip-v1-etag", size: 5, createdAt: "2026-01-01T00:00:00.000Z" }], createdAt: "2026-01-01T00:00:00.000Z" }),
+          Body: jsonBody({
+            bookId: BOOK_ID,
+            latestVersion: 1,
+            latestETag: "zip-v1-etag",
+            versions: [{ version: 1, etag: "zip-v1-etag", size: 5, createdAt: "2026-01-01T00:00:00.000Z" }],
+            createdAt: "2026-01-01T00:00:00.000Z",
+          }),
         };
       }
       if (command.kind === "list") {

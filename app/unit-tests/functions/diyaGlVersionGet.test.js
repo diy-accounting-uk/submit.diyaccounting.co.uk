@@ -154,7 +154,11 @@ describe("diyaGlVersionGet", () => {
   test("404s book-expired for a resident book past the lapse grace under an expired subscription", async () => {
     process.env.DIYA_GL_RESIDENT_TIER = "true";
     getUserBundles.mockResolvedValue([
-      { bundleId: "resident-diya-gl", subscriptionStatus: "canceled", expiry: new Date(Date.now() - 40 * 24 * 60 * 60 * 1000).toISOString() },
+      {
+        bundleId: "resident-diya-gl",
+        subscriptionStatus: "canceled",
+        expiry: new Date(Date.now() - 40 * 24 * 60 * 60 * 1000).toISOString(),
+      },
     ]);
     const hashedSub = hashSub("test-sub");
     const metadata = { bookId: BOOK_ID, latestVersion: 1, retention: "resident", expiresAt: null };

@@ -85,8 +85,18 @@ describe("diyaGlListGet", () => {
   });
 
   test("leaves out a sandbox book past its expiresAt", async () => {
-    const live = { bookId: "book-live", updatedAt: "2026-01-01T00:00:00.000Z", retention: "sandbox", expiresAt: new Date(Date.now() + 60_000).toISOString() };
-    const expired = { bookId: "book-expired", updatedAt: "2026-01-01T00:00:00.000Z", retention: "sandbox", expiresAt: new Date(Date.now() - 60_000).toISOString() };
+    const live = {
+      bookId: "book-live",
+      updatedAt: "2026-01-01T00:00:00.000Z",
+      retention: "sandbox",
+      expiresAt: new Date(Date.now() + 60_000).toISOString(),
+    };
+    const expired = {
+      bookId: "book-expired",
+      updatedAt: "2026-01-01T00:00:00.000Z",
+      retention: "sandbox",
+      expiresAt: new Date(Date.now() - 60_000).toISOString(),
+    };
     mockS3Send.mockImplementation((command) =>
       handleCommand(command, {
         commonPrefixes: ["book-live", "book-expired"],

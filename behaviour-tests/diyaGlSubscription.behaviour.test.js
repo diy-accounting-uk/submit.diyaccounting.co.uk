@@ -20,7 +20,13 @@ import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { dotenvConfigIfNotBlank } from "@app/lib/env.js";
-import { addOnPageLogging, getEnvVarAndLog, runLocalDynamoDb, runLocalHttpServer, runLocalOAuth2Server } from "./helpers/behaviour-helpers.js";
+import {
+  addOnPageLogging,
+  getEnvVarAndLog,
+  runLocalDynamoDb,
+  runLocalHttpServer,
+  runLocalOAuth2Server,
+} from "./helpers/behaviour-helpers.js";
 import { fillAndSubmitStripeTestCard } from "./steps/behaviour-bundle-steps.js";
 import {
   signInWithDiyaGlHostedUi,
