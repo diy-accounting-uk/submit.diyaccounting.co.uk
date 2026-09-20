@@ -121,12 +121,15 @@ jobs:
         if: matrix.environment == 'prod'
         run: node infra/paypal/paypal-assert.js 2>&1 | tee paypal-assert.log
 
+      - name: Run telegram-assert
+        run: node infra/telegram/telegram-assert.js --environment ${{ matrix.environment }} 2>&1 | tee telegram-assert.log
+
       - name: Generate step summary
         if: always()
         run: |
           echo "# infra apply (${{ matrix.environment }})" >> "$GITHUB_STEP_SUMMARY"
           echo "" >> "$GITHUB_STEP_SUMMARY"
-          for log in companies-house-assert.log hmrc-assert.log stripe-sync.log paypal-assert.log; do
+          for log in companies-house-assert.log hmrc-assert.log stripe-sync.log paypal-assert.log telegram-assert.log; do
             if [ -f "$log" ]; then
               echo "## $log" >> "$GITHUB_STEP_SUMMARY"
               echo '```' >> "$GITHUB_STEP_SUMMARY"

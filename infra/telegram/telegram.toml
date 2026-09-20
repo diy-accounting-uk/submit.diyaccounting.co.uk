@@ -1,0 +1,56 @@
+# SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0
+# Copyright (C) 2006-2026 DIY Accounting Limited
+
+# Telegram, as code.
+#
+# Send-only alerting: app/functions/ops/activityTelegramForwarder.js posts to sendMessage
+# with the token below, and this repository never sets a webhook. The bot and its six groups
+# were made by hand through BotFather chat flows, which publish no provisioning API, so this
+# file is declare-and-verify: infra/telegram/telegram-assert.js reads the token from Secrets
+# Manager (never printed) and confirms getMe resolves the declared username, getChat resolves
+# each declared group to its chat id and title, and getWebhookInfo still reports none set.
+#
+# Chat ids are not secret - Telegram itself returns them on any getChat call by anyone in the
+# group - so they are recorded here, matching .env.ci and .env.prod.
+
+[bot]
+username = "diyaccounting_bot"
+
+[secrets]
+bot_token = "{env}/submit/telegram/bot_token"
+
+[[group]]
+name = "diy-ci-test"
+environment = "ci"
+purpose = "test"
+chat_id = -5250521947
+
+[[group]]
+name = "diy-ci-live"
+environment = "ci"
+purpose = "live"
+chat_id = -5278650420
+
+[[group]]
+name = "diy-ci-ops"
+environment = "ci"
+purpose = "ops"
+chat_id = -5244924884
+
+[[group]]
+name = "diy-prod-test"
+environment = "prod"
+purpose = "test"
+chat_id = -5144319944
+
+[[group]]
+name = "diy-prod-live"
+environment = "prod"
+purpose = "live"
+chat_id = -5177256260
+
+[[group]]
+name = "diy-prod-ops"
+environment = "prod"
+purpose = "ops"
+chat_id = -5204035635
