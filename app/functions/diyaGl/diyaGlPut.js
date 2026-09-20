@@ -31,6 +31,9 @@ import {
   putVersion,
   deleteVersion,
   listBooks,
+  tagObject,
+  versionKey,
+  metadataKey,
 } from "../../data/s3DiyaGlRepository.js";
 
 const logger = createLogger({ source: "app/functions/diyaGl/diyaGlPut.js" });
@@ -131,16 +134,19 @@ function isPreconditionFailed(error) {
   return error?.name === "PreconditionFailed";
 }
 
+const SANDBOX_RETENTION_MS = 24 * 60 * 60 * 1000;
+
 /**
  * Writes the next version's zip and metadata in one attempt. Throws WriteRaceError when an S3
  * conditional write loses a race, for the caller to retry once from a fresh metadata read.
  */
 async function attemptWrite({ ownerPrefix, bookId, existing, fields, decodedBytes, entitlement, versionsKept }) {
   const nextVersion = existing ? existing.metadata.latestVersion + 1 : 1;
+  const retention = entitlement.retention;
 
   let zipETag;
   try {
-    zipETag = await putVersion({ ownerPrefix, bookId, version: nextVersion, bytes: decodedBytes });
+    zipETag = await putVersion({ ownerPrefix, bookId, version: nextVersion, bytes: decodedBytes, retention });
   } catch (error) {
     if (isPreconditionFailed(error)) {
       throw new WriteRaceError("Zip version write raced with another writer");
@@ -166,6 +172,8 @@ async function attemptWrite({ ownerPrefix, bookId, existing, fields, decodedByte
     latestETag: zipETag,
     latestSize: decodedBytes.length,
     versions,
+    retention,
+    expiresAt: retention === "resident" ? null : new Date(Date.parse(now) + SANDBOX_RETENTION_MS).toISOString(),
     createdAt: existing ? existing.metadata.createdAt : now,
     updatedAt: now,
     periodCoveredStart: fields.periodCoveredStart,
@@ -179,6 +187,7 @@ async function attemptWrite({ ownerPrefix, bookId, existing, fields, decodedByte
       ownerPrefix,
       bookId,
       metadata,
+      retention,
       ...(existing ? { ifMatch: existing.metaETag } : { ifNoneMatch: "*" }),
     });
   } catch (error) {
@@ -186,6 +195,13 @@ async function attemptWrite({ ownerPrefix, bookId, existing, fields, decodedByte
       throw new WriteRaceError("Metadata write raced with another writer");
     }
     throw error;
+  }
+
+  if (existing && existing.metadata.retention && existing.metadata.retention !== retention) {
+    for (const savedVersion of versions) {
+      await tagObject(versionKey(ownerPrefix, bookId, savedVersion.version), retention);
+    }
+    await tagObject(metadataKey(ownerPrefix, bookId), retention);
   }
 
   return metadata;
@@ -257,14 +273,6 @@ export async function ingestHandler(event) {
     try {
       await initializeSalt();
       const entitlement = await entitlementFor(user.sub);
-      if (!entitlement.allowed) {
-        return http403ForbiddenResponse({
-          request,
-          headers: corsHeaders,
-          message: "subscription-required",
-          error: { code: "subscription-required" },
-        });
-      }
 
       const ownerPrefix = await resolveOwnerPrefix(user.sub, bookId);
       let existing = await readMetadata(ownerPrefix, bookId);

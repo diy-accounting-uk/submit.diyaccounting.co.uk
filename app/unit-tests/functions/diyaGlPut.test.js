@@ -81,13 +81,20 @@ vi.mock("@aws-sdk/client-s3", () => {
       this.kind = "list";
     }
   }
-  return { S3Client, GetObjectCommand, PutObjectCommand, DeleteObjectCommand, ListObjectsV2Command };
+  class PutObjectTaggingCommand {
+    constructor(input) {
+      this.input = input;
+      this.kind = "tag";
+    }
+  }
+  return { S3Client, GetObjectCommand, PutObjectCommand, DeleteObjectCommand, ListObjectsV2Command, PutObjectTaggingCommand };
 });
 
 vi.mock("@app/data/dynamoDbBundleRepository.js", () => ({
   getUserBundles: vi.fn().mockResolvedValue([]),
 }));
 
+const { getUserBundles } = await import("@app/data/dynamoDbBundleRepository.js");
 const { ingestHandler } = await import("../../functions/diyaGl/diyaGlPut.js");
 const { _setTestSalt, _clearSalt, hashSub } = await import("../../services/subHasher.js");
 
@@ -133,13 +140,16 @@ describe("diyaGlPut", () => {
     process.env.DIYA_GL_MAX_BYTES = "2097152";
     process.env.DIYA_GL_MAX_PER_USER = "20";
     process.env.DIYA_GL_VERSIONS_KEPT = "30";
-    delete process.env.DIYA_GL_ENTITLEMENT_ENFORCED;
+    delete process.env.DIYA_GL_RESIDENT_TIER;
+    getUserBundles.mockReset().mockResolvedValue([]);
     _setTestSalt("test-salt");
   });
 
-  test("creates version 1 for a new book with no If-Match", async () => {
+  test("creates version 1 for a new book with no If-Match, tagged and expiring as a sandbox save", async () => {
     const metaKey = metadataKeyFor("test-sub", BOOK_ID);
     const v1Key = versionKeyFor("test-sub", BOOK_ID, 1);
+    let v1PutInput;
+    let metaPutInput;
     mockS3Send.mockImplementation((command) => {
       if (command.kind === "get" && command.input.Key === metaKey) {
         const error = new Error("not found");
@@ -150,9 +160,11 @@ describe("diyaGlPut", () => {
         return { CommonPrefixes: [] };
       }
       if (command.kind === "put" && command.input.Key === v1Key) {
+        v1PutInput = command.input;
         return { ETag: '"zip-v1-etag"' };
       }
       if (command.kind === "put" && command.input.Key === metaKey) {
+        metaPutInput = command.input;
         return { ETag: '"meta-v1-etag"' };
       }
       throw new Error(`Unexpected command ${command.kind} ${command.input.Key}`);
@@ -165,7 +177,90 @@ describe("diyaGlPut", () => {
     const body = JSON.parse(result.body);
     expect(body.metadata.latestVersion).toBe(1);
     expect(body.metadata.createdAt).toBeTruthy();
-    expect(body.metadata.entitlementAtPut.reason).toBe("not-enforced");
+    expect(body.metadata.entitlementAtPut.reason).toBe("tier-disabled");
+    expect(body.metadata.retention).toBe("sandbox");
+    expect(Date.parse(body.metadata.expiresAt) - Date.parse(body.metadata.updatedAt)).toBe(24 * 60 * 60 * 1000);
+    expect(v1PutInput.Tagging).toBe("retention=sandbox");
+    expect(metaPutInput.Tagging).toBe("retention=sandbox");
+  });
+
+  test("gives a resident save a null expiresAt and the resident tag, when the tier is on and the caller is subscribed", async () => {
+    process.env.DIYA_GL_RESIDENT_TIER = "true";
+    getUserBundles.mockResolvedValue([
+      { bundleId: "resident-diya-gl", subscriptionStatus: "active", expiry: new Date(Date.now() + 60_000).toISOString() },
+    ]);
+    const metaKey = metadataKeyFor("test-sub", BOOK_ID);
+    const v1Key = versionKeyFor("test-sub", BOOK_ID, 1);
+    let v1PutInput;
+    mockS3Send.mockImplementation((command) => {
+      if (command.kind === "get" && command.input.Key === metaKey) {
+        const error = new Error("not found");
+        error.name = "NoSuchKey";
+        throw error;
+      }
+      if (command.kind === "list") {
+        return { CommonPrefixes: [] };
+      }
+      if (command.kind === "put" && command.input.Key === v1Key) {
+        v1PutInput = command.input;
+        return { ETag: '"zip-v1-etag"' };
+      }
+      if (command.kind === "put" && command.input.Key === metaKey) {
+        return { ETag: '"meta-v1-etag"' };
+      }
+      throw new Error(`Unexpected command ${command.kind} ${command.input.Key}`);
+    });
+
+    const result = await ingestHandler(buildPutEvent({}));
+
+    expect(result.statusCode).toBe(200);
+    const body = JSON.parse(result.body);
+    expect(body.metadata.retention).toBe("resident");
+    expect(body.metadata.expiresAt).toBeNull();
+    expect(v1PutInput.Tagging).toBe("retention=resident");
+  });
+
+  test("re-tags kept versions and the sidecar when a save's retention changes", async () => {
+    process.env.DIYA_GL_RESIDENT_TIER = "true";
+    getUserBundles.mockResolvedValue([
+      { bundleId: "resident-diya-gl", subscriptionStatus: "active", expiry: new Date(Date.now() + 60_000).toISOString() },
+    ]);
+    const metaKey = metadataKeyFor("test-sub", BOOK_ID);
+    const v2Key = versionKeyFor("test-sub", BOOK_ID, 2);
+    const v1Key = versionKeyFor("test-sub", BOOK_ID, 1);
+    const existingMetadata = {
+      bookId: BOOK_ID,
+      latestVersion: 1,
+      latestETag: "abc",
+      retention: "sandbox",
+      versions: [{ version: 1, etag: "abc", size: 10, createdAt: "2026-01-01T00:00:00.000Z" }],
+      createdAt: "2026-01-01T00:00:00.000Z",
+    };
+    const taggedKeys = [];
+    mockS3Send.mockImplementation((command) => {
+      if (command.kind === "get" && command.input.Key === metaKey) {
+        return { ETag: '"meta-etag"', Body: jsonBody(existingMetadata) };
+      }
+      if (command.kind === "put" && command.input.Key === v2Key) {
+        return { ETag: '"zip-v2-etag"' };
+      }
+      if (command.kind === "put" && command.input.Key === metaKey) {
+        return { ETag: '"meta-v2-etag"' };
+      }
+      if (command.kind === "tag") {
+        taggedKeys.push({ key: command.input.Key, tagging: command.input.Tagging });
+        return {};
+      }
+      throw new Error(`Unexpected command ${command.kind} ${command.input.Key}`);
+    });
+
+    const result = await ingestHandler(buildPutEvent({ ifMatch: "abc" }));
+
+    expect(result.statusCode).toBe(200);
+    expect(JSON.parse(result.body).metadata.retention).toBe("resident");
+    expect(taggedKeys).toContainEqual({ key: v1Key, tagging: { TagSet: [{ Key: "retention", Value: "resident" }] } });
+    expect(taggedKeys).toContainEqual({ key: v2Key, tagging: { TagSet: [{ Key: "retention", Value: "resident" }] } });
+    expect(taggedKeys).toContainEqual({ key: metaKey, tagging: { TagSet: [{ Key: "retention", Value: "resident" }] } });
   });
 
   test("writes the next version when If-Match matches the current latestETag", async () => {
@@ -282,16 +377,6 @@ describe("diyaGlPut", () => {
 
     expect(result.statusCode).toBe(422);
     expect(JSON.parse(result.body).code).toBe("not-a-diya-gl-package");
-  });
-
-  test("403s subscription-required when entitlement is enforced and unmet, with no S3 write", async () => {
-    process.env.DIYA_GL_ENTITLEMENT_ENFORCED = "true";
-
-    const result = await ingestHandler(buildPutEvent({}));
-
-    expect(result.statusCode).toBe(403);
-    expect(JSON.parse(result.body).code).toBe("subscription-required");
-    expect(mockS3Send).not.toHaveBeenCalled();
   });
 
   test("403s book-limit-reached at 20 existing books for a new book", async () => {

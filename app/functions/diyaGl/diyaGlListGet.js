@@ -13,6 +13,7 @@ import {
 import { registerLambdaRoute } from "../../lib/httpServerToLambdaAdaptor.js";
 import { respondWithDiyaGlCors } from "../../lib/diyaGlCors.js";
 import { initializeSalt } from "../../services/subHasher.js";
+import { entitlementFor, lapsedResidentExpiresAt } from "../../services/diyaGlEntitlement.js";
 import { resolveOwnerPrefix, listBooks } from "../../data/s3DiyaGlRepository.js";
 
 const logger = createLogger({ source: "app/functions/diyaGl/diyaGlListGet.js" });
@@ -47,14 +48,25 @@ export async function ingestHandler(event) {
 
     try {
       await initializeSalt();
+      const entitlement = await entitlementFor(user.sub);
       const ownerPrefix = await resolveOwnerPrefix(user.sub);
-      const books = await listBooks(ownerPrefix);
+      const now = Date.now();
+      const books = (await listBooks(ownerPrefix))
+        .filter((book) => book.retention !== "sandbox" || !book.expiresAt || Date.parse(book.expiresAt) > now)
+        .map((book) =>
+          book.retention === "resident" && entitlement.reason === "expired"
+            ? { ...book, expiresAt: lapsedResidentExpiresAt(entitlement.expiry) }
+            : book,
+        );
       books.sort((a, b) => (b.updatedAt || "").localeCompare(a.updatedAt || ""));
 
       return http200OkResponse({
         request,
         headers: corsHeaders,
-        data: { books },
+        data: {
+          entitlement: { reason: entitlement.reason, expiry: entitlement.expiry, residentTier: entitlement.residentTier },
+          books,
+        },
       });
     } catch (error) {
       logger.error({ message: "Failed to list books", error: error.message, stack: error.stack });

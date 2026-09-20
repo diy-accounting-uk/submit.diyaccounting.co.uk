@@ -103,11 +103,12 @@ export async function readMetadata(ownerPrefix, bookId) {
  * @param {string} params.ownerPrefix
  * @param {string} params.bookId
  * @param {object} params.metadata
+ * @param {string} params.retention - "sandbox" or "resident", written as the object's `retention` tag
  * @param {string} [params.ifMatch]
  * @param {string} [params.ifNoneMatch]
  * @returns {Promise<string>} the new object's ETag, quotes and multipart suffix stripped
  */
-export async function writeMetadata({ ownerPrefix, bookId, metadata, ifMatch, ifNoneMatch }) {
+export async function writeMetadata({ ownerPrefix, bookId, metadata, retention, ifMatch, ifNoneMatch }) {
   const client = await getS3Client();
   const { PutObjectCommand } = await import("@aws-sdk/client-s3");
   const response = await client.send(
@@ -116,6 +117,7 @@ export async function writeMetadata({ ownerPrefix, bookId, metadata, ifMatch, if
       Key: metadataKey(ownerPrefix, bookId),
       Body: JSON.stringify(metadata),
       ContentType: "application/json",
+      Tagging: "retention=" + retention,
       ...(ifMatch ? { IfMatch: ifMatch } : {}),
       ...(ifNoneMatch ? { IfNoneMatch: ifNoneMatch } : {}),
     }),
@@ -132,9 +134,10 @@ export async function writeMetadata({ ownerPrefix, bookId, metadata, ifMatch, if
  * @param {string} params.bookId
  * @param {number} params.version
  * @param {Buffer} params.bytes
+ * @param {string} params.retention - "sandbox" or "resident", written as the object's `retention` tag
  * @returns {Promise<string>} the new object's ETag, quotes and multipart suffix stripped
  */
-export async function putVersion({ ownerPrefix, bookId, version, bytes }) {
+export async function putVersion({ ownerPrefix, bookId, version, bytes, retention }) {
   const client = await getS3Client();
   const { PutObjectCommand } = await import("@aws-sdk/client-s3");
   const response = await client.send(
@@ -143,10 +146,30 @@ export async function putVersion({ ownerPrefix, bookId, version, bytes }) {
       Key: versionKey(ownerPrefix, bookId, version),
       Body: bytes,
       ContentType: "application/zip",
+      Tagging: "retention=" + retention,
       IfNoneMatch: "*",
     }),
   );
   return normaliseETag(response.ETag);
+}
+
+/**
+ * Re-tags an existing object's `retention` tag, for when a book's retention changes at a save and
+ * its already-written version objects and sidecar need to carry the new value.
+ *
+ * @param {string} key
+ * @param {string} retention - "sandbox" or "resident"
+ */
+export async function tagObject(key, retention) {
+  const client = await getS3Client();
+  const { PutObjectTaggingCommand } = await import("@aws-sdk/client-s3");
+  await client.send(
+    new PutObjectTaggingCommand({
+      Bucket: getResourceName("DIYA_GL_BUCKET_NAME", true),
+      Key: key,
+      Tagging: { TagSet: [{ Key: "retention", Value: retention }] },
+    }),
+  );
 }
 
 /**

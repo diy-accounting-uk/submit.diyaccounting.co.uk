@@ -20,6 +20,11 @@ vi.mock("@aws-sdk/client-s3", () => {
   return { S3Client, GetObjectCommand };
 });
 
+vi.mock("@app/data/dynamoDbBundleRepository.js", () => ({
+  getUserBundles: vi.fn().mockResolvedValue([]),
+}));
+
+const { getUserBundles } = await import("@app/data/dynamoDbBundleRepository.js");
 const { ingestHandler } = await import("../../functions/diyaGl/diyaGlVersionGet.js");
 const { _setTestSalt, _clearSalt } = await import("../../services/subHasher.js");
 const { hashSub } = await import("../../services/subHasher.js");
@@ -49,6 +54,8 @@ describe("diyaGlVersionGet", () => {
     mockS3Send.mockReset();
     process.env.DIYA_GL_BUCKET_NAME = "test-books-bucket";
     process.env.DIYA_GL_ALLOWED_ORIGINS = "https://spreadsheets.diyaccounting.co.uk";
+    delete process.env.DIYA_GL_RESIDENT_TIER;
+    getUserBundles.mockReset().mockResolvedValue([]);
     _setTestSalt("test-salt");
   });
 
@@ -123,6 +130,48 @@ describe("diyaGlVersionGet", () => {
 
     expect(result.statusCode).toBe(404);
     expect(JSON.parse(result.body).code).toBe("version-not-found");
+  });
+
+  test("404s book-expired for a sandbox book past its sidecar's expiresAt", async () => {
+    const hashedSub = hashSub("test-sub");
+    const metadata = { bookId: BOOK_ID, latestVersion: 1, retention: "sandbox", expiresAt: new Date(Date.now() - 60_000).toISOString() };
+    mockS3Send.mockImplementation((command) => {
+      const key = command.input.Key;
+      if (key === `users/${hashedSub}/books/${BOOK_ID}/metadata.json`) {
+        return { ETag: '"meta-etag"', Body: jsonBody(metadata) };
+      }
+      const error = new Error("not found");
+      error.name = "NoSuchKey";
+      throw error;
+    });
+
+    const result = await ingestHandler(buildAuthenticatedEvent({}));
+
+    expect(result.statusCode).toBe(404);
+    expect(JSON.parse(result.body).code).toBe("book-expired");
+  });
+
+  test("404s book-expired for a resident book past the lapse grace under an expired subscription", async () => {
+    process.env.DIYA_GL_RESIDENT_TIER = "true";
+    getUserBundles.mockResolvedValue([
+      { bundleId: "resident-diya-gl", subscriptionStatus: "canceled", expiry: new Date(Date.now() - 40 * 24 * 60 * 60 * 1000).toISOString() },
+    ]);
+    const hashedSub = hashSub("test-sub");
+    const metadata = { bookId: BOOK_ID, latestVersion: 1, retention: "resident", expiresAt: null };
+    mockS3Send.mockImplementation((command) => {
+      const key = command.input.Key;
+      if (key === `users/${hashedSub}/books/${BOOK_ID}/metadata.json`) {
+        return { ETag: '"meta-etag"', Body: jsonBody(metadata) };
+      }
+      const error = new Error("not found");
+      error.name = "NoSuchKey";
+      throw error;
+    });
+
+    const result = await ingestHandler(buildAuthenticatedEvent({}));
+
+    expect(result.statusCode).toBe(404);
+    expect(JSON.parse(result.body).code).toBe("book-expired");
   });
 
   test("400s an invalid bookId", async () => {

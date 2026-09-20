@@ -15,6 +15,7 @@ import {
 import { registerLambdaRoute } from "../../lib/httpServerToLambdaAdaptor.js";
 import { respondWithDiyaGlCors } from "../../lib/diyaGlCors.js";
 import { initializeSalt } from "../../services/subHasher.js";
+import { entitlementFor, lapsedResidentExpiresAt } from "../../services/diyaGlEntitlement.js";
 import { isValidBookId, resolveOwnerPrefix, readMetadata, getVersion } from "../../data/s3DiyaGlRepository.js";
 
 const logger = createLogger({ source: "app/functions/diyaGl/diyaGlVersionGet.js" });
@@ -87,6 +88,27 @@ export async function ingestHandler(event) {
         });
       }
       const { metadata } = metadataResult;
+
+      if (metadata.retention === "sandbox") {
+        if (metadata.expiresAt && Date.parse(metadata.expiresAt) <= Date.now()) {
+          return http404NotFoundResponse({
+            request,
+            headers: corsHeaders,
+            message: "book-expired",
+            error: { code: "book-expired" },
+          });
+        }
+      } else if (metadata.retention === "resident") {
+        const entitlement = await entitlementFor(user.sub);
+        if (entitlement.reason === "expired" && Date.parse(lapsedResidentExpiresAt(entitlement.expiry)) <= Date.now()) {
+          return http404NotFoundResponse({
+            request,
+            headers: corsHeaders,
+            message: "book-expired",
+            error: { code: "book-expired" },
+          });
+        }
+      }
 
       const version = resolveVersionParam(event.pathParameters?.version, metadata);
       if (version === null) {

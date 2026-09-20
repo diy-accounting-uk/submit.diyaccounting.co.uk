@@ -186,7 +186,7 @@ describe("System: DIYA-GL storage end to end", () => {
     process.env.DIYA_GL_BUCKET_NAME = "system-test-books-bucket";
     process.env.DIYA_GL_ALLOWED_ORIGINS = "https://spreadsheets.diyaccounting.co.uk";
     process.env.USER_SUB_HASH_SALT = '{"current":"v1","versions":{"v1":"system-test-salt"}}';
-    delete process.env.DIYA_GL_ENTITLEMENT_ENFORCED;
+    delete process.env.DIYA_GL_RESIDENT_TIER;
   });
 
   test("create, read, put-with-etag, stale-etag-conflict, then delete", async () => {
@@ -197,6 +197,8 @@ describe("System: DIYA-GL storage end to end", () => {
     expect(createResult.statusCode).toBe(200);
     const created = JSON.parse(createResult.body);
     expect(created.metadata.latestVersion).toBe(1);
+    expect(created.metadata.retention).toBe("sandbox");
+    expect(Date.parse(created.metadata.expiresAt) - Date.parse(created.metadata.updatedAt)).toBe(24 * 60 * 60 * 1000);
     const firstETag = created.metadata.latestETag;
 
     // 2. List: the new book shows up.
