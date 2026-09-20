@@ -2,10 +2,10 @@
 // SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0
 // Copyright (C) 2006-2026 DIY Accounting Limited
 
-// scripts/gcp-identity-sync.js
+// infra/google/gcp/gcp-identity-sync.js
 //
 // Makes the workload identity pool, its providers, the service account's
-// roles/iam.workloadIdentityUser bindings and every [[org_policy]] match google/identity.toml.
+// roles/iam.workloadIdentityUser bindings and every [[org_policy]] match infra/google/gcp/identity.toml.
 // Lists the live state through the IAM and Org Policy REST APIs, diffs, and applies the
 // difference; a resource that already matches is left alone. Plans by default, writes with
 // --apply, like every script google-apply.yml runs.
@@ -17,12 +17,12 @@
 // instead).
 //
 // --write-cred-configs writes one external-account credential configuration per AWS provider
-// into google/credentials/, the same file `gcloud iam workload-identity-pools create-cred-config
+// into infra/google/gcp/credentials/, the same file `gcloud iam workload-identity-pools create-cred-config
 // --aws` produces. The Lambdas build the same configuration from their environment (see
 // app/lib/googleWorkloadIdentity.js); the committed files are the record of it.
 //
 // Usage:
-//   node scripts/gcp-identity-sync.js [--apply] [--write-cred-configs]
+//   node infra/google/gcp/gcp-identity-sync.js [--apply] [--write-cred-configs]
 //
 // Credentials: application default credentials from google-github-actions/auth's federated
 // exchange.
@@ -31,20 +31,20 @@ import fs from "node:fs";
 import path from "node:path";
 import TOML from "@iarna/toml";
 
-import { assertFederatedCredentials, createGoogleAuthClient, getAccessToken } from "./lib/googleAuth.js";
+import { assertFederatedCredentials, createGoogleAuthClient, getAccessToken } from "../lib/googleAuth.js";
 
-export const CONFIG_PATH = "google/identity.toml";
-export const CREDENTIALS_DIR = "google/credentials";
+export const CONFIG_PATH = "infra/google/gcp/identity.toml";
+export const CREDENTIALS_DIR = "infra/google/gcp/credentials";
 export const WORKLOAD_IDENTITY_USER_ROLE = "roles/iam.workloadIdentityUser";
 // The role an organization policy admin needs. The federated service account holds project
-// roles only (google/project.toml), so it cannot write an organization-level policy today.
+// roles only (infra/google/gcp/project.toml), so it cannot write an organization-level policy today.
 export const ORG_POLICY_ADMIN_ROLE = "roles/orgpolicy.policyAdmin";
 const IAM_BASE = "https://iam.googleapis.com/v1";
 const RESOURCE_MANAGER_BASE = "https://cloudresourcemanager.googleapis.com/v1";
 const ORG_POLICY_BASE = "https://orgpolicy.googleapis.com/v2";
 
 /**
- * Parse google/identity.toml into the shape the planner reads.
+ * Parse infra/google/gcp/identity.toml into the shape the planner reads.
  *
  * @param {string} tomlString
  */
@@ -125,7 +125,7 @@ export function parseArgs(argv) {
     if (arg === "--apply") opts.apply = true;
     else if (arg === "--write-cred-configs") opts.writeCredConfigs = true;
     else if (arg === "--help") {
-      console.log("Usage: node scripts/gcp-identity-sync.js [--apply] [--write-cred-configs]");
+      console.log("Usage: node infra/google/gcp/gcp-identity-sync.js [--apply] [--write-cred-configs]");
       process.exit(0);
     } else throw new Error(`Unknown argument "${arg}"`);
   }

@@ -4,10 +4,18 @@
 # ITSA phase 2: the sandbox year
 
 `scripts/itsa-sandbox-year.js` files a whole tax year against the HMRC sandbox with one test
-user: four quarterly self-employment updates, an annual submission, a triggered and adjusted
-business source adjustable summary, an intent-to-finalise calculation, and a final declaration.
-It proves the phase 2 endpoints work end to end against real sandbox behaviour, the way
-`_developers/hmrc/ITSA_SPIKE.md` proved the phase 1 read.
+user, for a self-employment business and a UK property business: a quarterly update for each
+business, an annual submission, a triggered and adjusted business source adjustable summary, an
+intent-to-finalise calculation and a final declaration - the last four against the self-employment
+business only. It proves the phase 2 endpoints work end to end against real sandbox behaviour, the
+way `_developers/hmrc/ITSA_SPIKE.md` proved the phase 1 read.
+
+`resolveItsaSubmissionModel` (`app/lib/hmrcValidation.js`) decides how the quarterly updates are
+filed, the same way the production handlers decide it: a year up to 2024-25 POSTs four dated
+periods to the self-employment business only - the property business exists but is not filed
+against under this model; a year from 2025-26 PUTs four running totals to each business's
+cumulative resource. The annual submission, adjustable summary and calculation calls carry no
+branch of their own.
 
 The script drives the sandbox directly with Playwright and `fetch`, the way the spike did. It
 does not call this application's own deployed API, so it needs no ci deployment to run - only
@@ -48,9 +56,9 @@ ITSA_SANDBOX_TAX_YEAR=2023-24 \
 scripts/proxy-secrets.sh node scripts/itsa-sandbox-year.js
 ```
 
-`ITSA_SANDBOX_TAX_YEAR` must be 2024-25 or earlier. The self-employment period-summary endpoint
-this script calls only accepts submissions up to that year; from 2025-26 HMRC moves to a
-cumulative submission model with different endpoints, which is out of this script's scope.
+`ITSA_SANDBOX_TAX_YEAR` can be a year on either quarterly filing model - a year up to 2024-25
+(dated) or from 2025-26 (cumulative). Run each once against a fresh `ITSA_SANDBOX_OUT_DIR` to
+cover both.
 
 Add `ITSA_SANDBOX_HEADFUL=true` to watch the sign-in browser, and `ITSA_SANDBOX_OUT_DIR` to
 change where the transcript and checkpoint id land (default `./target/itsa-sandbox-year`).
@@ -61,12 +69,15 @@ change where the transcript and checkpoint id land (default `./target/itsa-sandb
 |---|---|---|
 | Reset (later runs) | `POST .../checkpoints/{id}/restore` | `200`/`201`/`204`, reusing the saved `businessId` |
 | Reset (first run) | `DELETE .../vendor-state` | `204`/`404` |
-| Setup (first run) | `POST .../test-support/business/{nino}` | `201` with `businessId` |
+| Setup (first run) | `POST .../test-support/business/{nino}` (self-employment) | `201` with `businessId` |
+| Setup (first run) | `POST .../test-support/business/{nino}` (uk-property) | `201` with a second `businessId` |
 | Setup (first run) | `POST .../test-support/itsa-status/{nino}/{taxYear}` | `204` |
-| Reset (first run) | `POST .../vendor-state/checkpoints?nino={nino}` | `201` with a checkpoint id, taken after the business and status above exist |
-| Verify | `GET .../individuals/business/details/{nino}/list`, `Gov-Test-Scenario: STATEFUL` | `200`, the business this script created |
+| Reset (first run) | `POST .../vendor-state/checkpoints?nino={nino}` | `201` with a checkpoint id, taken after both businesses and the status above exist |
+| Verify | `GET .../individuals/business/details/{nino}/list`, `Gov-Test-Scenario: STATEFUL` | `200`, both businesses this script created |
 | Verify | `GET .../individuals/person/itsa-status/{nino}/{taxYear}`, `Gov-Test-Scenario: STATEFUL` | `200`, the status this script set |
-| Quarterly x4 | `POST .../self-employment/{nino}/{businessId}/period`, `Gov-Test-Scenario: STATEFUL` | `200`/`201`, once per one of the four standard quarterly periods this script derives from the tax year |
+| Quarterly x4, dated model | `POST .../self-employment/{nino}/{businessId}/period`, `Gov-Test-Scenario: STATEFUL` | `200`/`201`, once per one of the four standard quarterly periods this script derives from the tax year - self-employment only |
+| Quarterly x4, cumulative model | `PUT .../self-employment/{nino}/{businessId}/cumulative/{taxYear}`, `Gov-Test-Scenario: STATEFUL` | `204`, the running total from the tax year's start to each standard quarter's end |
+| Quarterly x4, cumulative model | `PUT .../property/uk/{nino}/{propertyBusinessId}/cumulative/{taxYear}`, `Gov-Test-Scenario: STATEFUL` | `204`, the property business's own running total (`periodAmount`, not `turnover` - Property Business v6.0's field name) |
 | Annual | `PUT .../self-employment/{nino}/{businessId}/annual/{taxYear}` | `204` |
 | BSAS trigger | `POST .../adjustable-summary/{nino}/trigger` | `200` with `calculationId` |
 | BSAS retrieve | `GET .../adjustable-summary/{nino}/self-employment/{calculationId}/{taxYear}`, `Gov-Test-Scenario: SELF_EMPLOYMENT_PROFIT` | `200`, HMRC's own canned example - not this run's figures, see below |
@@ -100,11 +111,11 @@ real run either confirms the guess or tells you which field name to add.
 
 The script is safe to run repeatedly. A checkpoint can only be taken of a NINO that already has
 test-support data, so the first run ever wipes the test user's sandbox data with `DELETE
-.../vendor-state`, creates the business and sets its ITSA status, and only then checkpoints that
-as the baseline, saving `{checkpointId, businessId}` to
+.../vendor-state`, creates both businesses and sets the ITSA status, and only then checkpoints
+that as the baseline, saving `{checkpointId, businessId, propertyBusinessId}` to
 `${ITSA_SANDBOX_OUT_DIR}/checkpoint-id.txt`. Every later run restores that checkpoint and reuses
-the same `businessId` rather than creating a second business, which undoes whatever the previous
-run filed against it since. Delete the checkpoint file to force a fresh wipe-and-checkpoint on
+the same two business ids rather than creating them again, which undoes whatever the previous
+run filed against them since. Delete the checkpoint file to force a fresh wipe-and-checkpoint on
 the next run.
 
 ## Assumptions taken from the plan's open questions
@@ -116,9 +127,10 @@ does:
   to test that stage's endpoints (Business Details, Obligations, Self-Employment Business,
   Individual Calculations) plus the end-of-year ones already built (BSAS, ITSA status). It does
   not touch Individual Losses or Individuals Tax Liability Adjustments, which have no build yet.
-- **Q4, property income.** The plan assumes self-employment only. This script creates and files
-  a self-employment business exclusively; a property business needs its own test-support and
-  endpoint calls, not covered here.
+- **Q4, property income.** The plan assumes self-employment only. This script now creates and
+  sets up a UK property business alongside the self-employment one, and files quarterly updates
+  against it on the cumulative model. The dated model's property leg - period POSTs, the annual
+  submission and the adjustable summary - is not yet built here.
 - **Q5, whether the sandbox test user carries the year.** The plan assumes the existing test
   user plus test-support data, rather than a second test user. This script follows that: it
   takes any sandbox test user with a NINO and creates the business and ITSA status itself,

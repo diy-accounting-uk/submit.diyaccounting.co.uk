@@ -1,0 +1,173 @@
+# SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0
+# Copyright (C) 2006-2026 DIY Accounting Limited
+
+# Re-records any product demo video whose pages a prod deploy touched, so a video never sits
+# more than one deploy behind the page it shows. Runs after deploy.yml finishes on main, works
+# out what changed since the last successful deploy, and dispatches video-capture.yml for every
+# scene script (videos/*.json) whose declared "pages" the diff touches.
+#
+# The workflow_run event carries only the triggering run's head_sha, not what it deployed
+# before, so the base of the diff is the newest earlier successful deploy.yml run on main with a
+# different head_sha. workflow_dispatch's head-sha/base-sha inputs bypass that discovery for a
+# manual re-run or a check of a specific range.
+name: video-capture-on-deploy
+run-name: "record videos touched since the last deploy"
+
+concurrency:
+  # video-capture.yml's own concurrency group (video-capture-<environment>) cancels an
+  # in-progress capture when a newer one starts, so two runs of this workflow dispatching at the
+  # same time would cancel each other's captures instead of each running to completion. Queue
+  # instead of cancelling: every deploy's set of touched videos still gets recorded, just later.
+  group: video-capture-on-deploy
+  cancel-in-progress: false
+
+on:
+  workflow_run:
+    workflows: [deploy]
+    types: [completed]
+    branches: [main]
+  workflow_dispatch:
+    inputs:
+      head-sha:
+        type: string
+        description: 'Head commit to diff to (defaults to the triggering deploy run''s head)'
+        required: false
+        default: ''
+      base-sha:
+        type: string
+        description: 'Base commit to diff from (defaults to the newest earlier successful deploy.yml run on main)'
+        required: false
+        default: ''
+
+permissions:
+  actions: write
+  contents: read
+
+jobs:
+  dispatch-touched-videos:
+    if: ${{ github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success' }}
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+
+      - name: Setup Node
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7
+        with:
+          node-version: '24'
+
+      - name: Resolve the head and base to diff
+        id: range
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+          RUN_HEAD_SHA: ${{ github.event.workflow_run.head_sha }}
+          RUN_ID: ${{ github.event.workflow_run.id }}
+          INPUT_HEAD_SHA: ${{ inputs.head-sha }}
+          INPUT_BASE_SHA: ${{ inputs.base-sha }}
+        run: |
+          set -euo pipefail
+          HEAD="${INPUT_HEAD_SHA:-$RUN_HEAD_SHA}"
+          if [ -z "$HEAD" ]; then
+            echo "No head sha available (no triggering deploy run and no head-sha input); nothing to record."
+            echo "head=" | tee -a "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
+          # The base is the previous successful deploy whatever its head: a scheduled redeploy
+          # of an unchanged main then diffs as empty instead of re-recording every day.
+          BASE="$INPUT_BASE_SHA"
+          if [ -z "$BASE" ]; then
+            BASE=$(gh api "repos/${REPO}/actions/workflows/deploy.yml/runs?branch=main&status=success&per_page=20" \
+              --jq "[.workflow_runs[] | select((.id | tostring) != \"${RUN_ID}\")] | sort_by(.created_at) | .[-1].head_sha // empty")
+          fi
+          if [ -z "$BASE" ]; then
+            echo "No earlier successful deploy.yml run on main to diff ${HEAD} against; nothing to record."
+            echo "head=" | tee -a "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          if [ "$BASE" = "$HEAD" ]; then
+            echo "${HEAD} was already the last deployed head; nothing changed, nothing to record."
+            echo "head=" | tee -a "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
+          echo "Diffing ${BASE}...${HEAD}"
+          echo "head=${HEAD}" | tee -a "$GITHUB_OUTPUT"
+          echo "base=${BASE}" | tee -a "$GITHUB_OUTPUT"
+
+      - name: Work out which scene scripts the diff touches
+        id: scripts
+        if: ${{ steps.range.outputs.head != '' }}
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+          BASE: ${{ steps.range.outputs.base }}
+          HEAD: ${{ steps.range.outputs.head }}
+        run: |
+          set -euo pipefail
+          CHANGED_FILES=$(gh api "repos/${REPO}/compare/${BASE}...${HEAD}" --jq '.files[].filename // empty')
+          if [ -z "$CHANGED_FILES" ]; then
+            echo "No changed files between ${BASE} and ${HEAD}; nothing to record."
+            exit 0
+          fi
+
+          SCRIPTS=$(printf '%s\n' "$CHANGED_FILES" | node scripts/video-scripts-for-changed-files.mjs)
+          if [ -z "$SCRIPTS" ]; then
+            echo "No scene script's declared pages were touched between ${BASE} and ${HEAD}; nothing to record."
+            exit 0
+          fi
+
+          echo "Scripts to record:"
+          echo "$SCRIPTS"
+          # A newline-separated list survives GITHUB_OUTPUT via a delimiter GitHub won't see
+          # inside a script name (script names are lowercase-and-hyphens, per videos/*.json).
+          {
+            echo "names<<VIDEO_SCRIPTS_EOF"
+            echo "$SCRIPTS"
+            echo "VIDEO_SCRIPTS_EOF"
+          } | tee -a "$GITHUB_OUTPUT" > /dev/null
+
+      - name: Record each touched script in turn
+        if: ${{ steps.scripts.outputs.names != '' }}
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+          SCRIPTS: ${{ steps.scripts.outputs.names }}
+        run: |
+          set -euo pipefail
+          echo "$SCRIPTS" | while IFS= read -r SCRIPT; do
+            [ -z "$SCRIPT" ] && continue
+
+            PREV_RUN_ID=$(gh run list --repo "$REPO" --workflow video-capture.yml --limit 1 --json databaseId --jq '.[0].databaseId // empty')
+
+            echo "Dispatching video-capture.yml for ${SCRIPT}"
+            gh workflow run video-capture.yml --repo "$REPO" -f "script=${SCRIPT}" -f "environment-name=prod"
+
+            # Wait for the dispatched run to register before polling it, so this does not read
+            # the previous run's already-completed status and move on before the new one starts.
+            NEW_RUN_ID=""
+            for _ in $(seq 1 20); do
+              sleep 15
+              CANDIDATE=$(gh run list --repo "$REPO" --workflow video-capture.yml --limit 1 --json databaseId --jq '.[0].databaseId // empty')
+              if [ -n "$CANDIDATE" ] && [ "$CANDIDATE" != "$PREV_RUN_ID" ]; then
+                NEW_RUN_ID="$CANDIDATE"
+                break
+              fi
+            done
+            if [ -z "$NEW_RUN_ID" ]; then
+              echo "::warning::video-capture.yml run for ${SCRIPT} never showed up in the run list; moving on to the next script"
+              continue
+            fi
+
+            # video-capture.yml's own concurrency group (video-capture-prod, cancel-in-progress:
+            # true) cancels an in-progress capture when a newer one starts, so the next script's
+            # dispatch must wait for this one to finish rather than racing it.
+            for _ in $(seq 1 80); do
+              STATUS=$(gh run list --repo "$REPO" --workflow video-capture.yml --limit 1 --json status,databaseId --jq "if .[0].databaseId == ${NEW_RUN_ID} then .[0].status else \"unknown\" end")
+              if [ "$STATUS" = "completed" ]; then
+                break
+              fi
+              sleep 30
+            done
+          done

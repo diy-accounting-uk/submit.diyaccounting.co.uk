@@ -2,9 +2,9 @@
 // SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0
 // Copyright (C) 2006-2026 DIY Accounting Limited
 
-// scripts/ga4-bigquery-sync.js
+// infra/google/ga4/ga4-bigquery-sync.js
 //
-// Reads google/bigquery.toml, lists the live ga4_daily dataset and its BigQuery Data
+// Reads infra/google/gcp/bigquery.toml, lists the live ga4_daily dataset and its BigQuery Data
 // Transfer scheduled queries, diffs them against what the file declares, and creates or
 // updates the difference. Read-only and prints the plan unless --apply is given.
 //
@@ -14,7 +14,7 @@
 // partitioning_field), so a rerun for the same day is safe.
 //
 // Usage:
-//   node scripts/ga4-bigquery-sync.js [--apply]
+//   node infra/google/ga4/ga4-bigquery-sync.js [--apply]
 // Credentials: application default credentials from google-github-actions/auth's federated
 // exchange.
 
@@ -24,14 +24,14 @@ import { fileURLToPath } from "node:url";
 
 import TOML from "@iarna/toml";
 
-import { createGoogleAuthorizedClient, assertFederatedCredentials } from "./lib/googleAuth.js";
+import { createGoogleAuthorizedClient, assertFederatedCredentials } from "../lib/googleAuth.js";
 
 const BIGQUERY_V2 = "https://bigquery.googleapis.com/bigquery/v2";
 const DATA_TRANSFER_V1 = "https://bigquerydatatransfer.googleapis.com/v1";
 const BIGQUERY_SCOPE = "https://www.googleapis.com/auth/bigquery";
 const CLOUD_PLATFORM_SCOPE = "https://www.googleapis.com/auth/cloud-platform";
 
-export const CONFIG_PATH = "google/bigquery.toml";
+export const CONFIG_PATH = "infra/google/gcp/bigquery.toml";
 
 export function parseArgs(argv) {
   const opts = { apply: false };
@@ -43,7 +43,7 @@ export function parseArgs(argv) {
 }
 
 /**
- * Parse and validate google/bigquery.toml's content. Pure and file-system free so it
+ * Parse and validate infra/google/gcp/bigquery.toml's content. Pure and file-system free so it
  * can be unit tested with fixtures; sql text is read separately by `loadQueries`.
  *
  * @param {string} tomlString

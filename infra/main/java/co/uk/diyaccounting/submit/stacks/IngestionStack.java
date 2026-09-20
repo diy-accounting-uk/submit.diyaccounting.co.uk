@@ -157,7 +157,7 @@ public class IngestionStack extends Stack {
             return "diy-accounting-uk/submit.diyaccounting.co.uk";
         }
 
-        // The Google Cloud project number and service account behind google/identity.toml; the
+        // The Google Cloud project number and service account behind infra/google/gcp/identity.toml; the
         // federated audience is built from them and the environment name.
         @Value.Default
         default String googleProjectNumber() {
@@ -176,7 +176,7 @@ public class IngestionStack extends Stack {
 
     /**
      * The two variables app/lib/googleWorkloadIdentity.js reads. The audience names the
-     * aws-<env> provider of the submit-federation pool in google/identity.toml, whose attribute
+     * aws-<env> provider of the submit-federation pool in infra/google/gcp/identity.toml, whose attribute
      * condition admits the execution roles of the three GA4 functions by the construct ids
      * Ga4ReportPullFn, Ga4EventExportPullFn and Ga4DailyPullFn.
      */
@@ -439,7 +439,7 @@ public class IngestionStack extends Stack {
 
         // ============================================================================
         // GA4 daily aggregate pull job: the lake's copy of the four one-stop-dashboard tables
-        // google/bigquery.toml maintains in BigQuery's ga4_daily dataset
+        // infra/google/gcp/bigquery.toml maintains in BigQuery's ga4_daily dataset
         // ============================================================================
         var ga4DailyPullFunctionName = prefix + "-ga4-daily-pull";
 

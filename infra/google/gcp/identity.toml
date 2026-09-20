@@ -3,7 +3,7 @@
 
 # Google Cloud identity, as code.
 #
-# scripts/gcp-identity-sync.js reads this file, lists the live workload identity pool, its
+# infra/google/gcp/gcp-identity-sync.js reads this file, lists the live workload identity pool, its
 # providers, the service account's IAM policy and the [[org_policy]] entries below, diffs them
 # against what is written here, and creates or updates the difference.
 #
@@ -11,12 +11,12 @@
 # presents its OIDC token to the "github" provider, and the analytics Lambdas present their
 # execution role's AWS credentials to the "aws-ci" / "aws-prod" providers. Each provider's
 # principal set is granted roles/iam.workloadIdentityUser on the service account, so a
-# federated caller impersonates it and holds exactly the roles google/project.toml grants.
+# federated caller impersonates it and holds exactly the roles infra/google/gcp/project.toml grants.
 
 [project]
 id = "diyaccounting-ga4"
 # The project number is the audience prefix every federated caller presents. It is the same
-# number that leads the sign-in OAuth client id in google/oauth.toml; the script reads the live
+# number that leads the sign-in OAuth client id in infra/google/gcp/oauth.toml; the script reads the live
 # number from Resource Manager and fails if this record does not match it.
 number = "958354756046"
 

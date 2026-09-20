@@ -24,21 +24,13 @@ on:
         type: boolean
   pull_request:
     paths:
-      - 'google/**'
-      - 'analytics/bigquery/**'
-      - 'scripts/google-*.js'
-      - 'scripts/ga4-*.js'
-      - 'scripts/gcp-*.js'
+      - 'infra/google/**'
       - '.github/workflows/google-apply.yml'
   push:
     branches:
       - 'main'
     paths:
-      - 'google/**'
-      - 'analytics/bigquery/**'
-      - 'scripts/google-*.js'
-      - 'scripts/ga4-*.js'
-      - 'scripts/gcp-*.js'
+      - 'infra/google/**'
       - '.github/workflows/google-apply.yml'
 
 env:
@@ -93,16 +85,16 @@ jobs:
           output-credentials: true
           retry-max-attempts: 3
 
-      # Federated: the workflow's own OIDC token, exchanged through the pool google/identity.toml
-      # declares, leaves application default credentials for every Google step below. The AWS
-      # chain above stays for ga4-sync's GitHub-variable write.
-      - name: Read the GitHub provider from google/identity.toml
+      # Federated: the workflow's own OIDC token, exchanged through the pool
+      # infra/google/gcp/identity.toml declares, leaves application default credentials for
+      # every Google step below. The AWS chain above stays for ga4-sync's GitHub-variable write.
+      - name: Read the GitHub provider from infra/google/gcp/identity.toml
         id: identity
         run: |
           node -e '
             const TOML = require("@iarna/toml");
             const fs = require("node:fs");
-            const c = TOML.parse(fs.readFileSync("google/identity.toml", "utf-8"));
+            const c = TOML.parse(fs.readFileSync("infra/google/gcp/identity.toml", "utf-8"));
             const provider = c.workload_identity_pool.provider.find((p) => p.type === "oidc");
             console.log(`provider=projects/${c.project.number}/locations/global/workloadIdentityPools/${c.workload_identity_pool.id}/providers/${provider.id}`);
             console.log(`service-account=${c.service_account.email}`);
@@ -120,38 +112,38 @@ jobs:
       # (.github/workflows/youtube-check.yml), not here.
 
       - name: Read-only inventory
-        run: node scripts/google-inventory.js 2>&1 | tee google-inventory.log
+        run: node infra/google/gcp/google-inventory.js 2>&1 | tee google-inventory.log
 
       - name: Enable the Google APIs the scripts need
         run: |
           if [ "$GOOGLE_APPLY" != "true" ]; then
-            node scripts/gcp-enable-apis.js 2>&1 | tee gcp-enable-apis.log
+            node infra/google/gcp/gcp-enable-apis.js 2>&1 | tee gcp-enable-apis.log
           else
-            node scripts/gcp-enable-apis.js --apply 2>&1 | tee gcp-enable-apis.log
+            node infra/google/gcp/gcp-enable-apis.js --apply 2>&1 | tee gcp-enable-apis.log
           fi
 
       - name: Run gcp-identity-sync
         run: |
           if [ "$GOOGLE_APPLY" != "true" ]; then
-            node scripts/gcp-identity-sync.js 2>&1 | tee gcp-identity-sync.log
+            node infra/google/gcp/gcp-identity-sync.js 2>&1 | tee gcp-identity-sync.log
           else
-            node scripts/gcp-identity-sync.js --apply 2>&1 | tee gcp-identity-sync.log
+            node infra/google/gcp/gcp-identity-sync.js --apply 2>&1 | tee gcp-identity-sync.log
           fi
 
       - name: Run google-roles-apply
         run: |
           if [ "$GOOGLE_APPLY" != "true" ]; then
-            node scripts/google-roles-apply.js 2>&1 | tee google-roles-apply.log
+            node infra/google/gcp/google-roles-apply.js 2>&1 | tee google-roles-apply.log
           else
-            node scripts/google-roles-apply.js --apply 2>&1 | tee google-roles-apply.log
+            node infra/google/gcp/google-roles-apply.js --apply 2>&1 | tee google-roles-apply.log
           fi
 
       - name: Run gcp-billing-assert
         run: |
           if [ "$GOOGLE_APPLY" != "true" ]; then
-            node scripts/gcp-billing-assert.js 2>&1 | tee gcp-billing-assert.log
+            node infra/google/gcp/gcp-billing-assert.js 2>&1 | tee gcp-billing-assert.log
           else
-            node scripts/gcp-billing-assert.js --apply 2>&1 | tee gcp-billing-assert.log
+            node infra/google/gcp/gcp-billing-assert.js --apply 2>&1 | tee gcp-billing-assert.log
           fi
 
       - name: Run ga4-sync
@@ -159,23 +151,23 @@ jobs:
           GH_TOKEN: ${{ github.token }}
         run: |
           if [ "$GOOGLE_APPLY" != "true" ]; then
-            node scripts/ga4-sync.js 2>&1 | tee ga4-sync.log
+            node infra/google/ga4/ga4-sync.js 2>&1 | tee ga4-sync.log
           else
-            node scripts/ga4-sync.js --apply 2>&1 | tee ga4-sync.log
+            node infra/google/ga4/ga4-sync.js --apply 2>&1 | tee ga4-sync.log
           fi
 
       - name: Run ga4-bigquery-sync
         run: |
           if [ "$GOOGLE_APPLY" != "true" ]; then
-            node scripts/ga4-bigquery-sync.js 2>&1 | tee ga4-bigquery-sync.log
+            node infra/google/ga4/ga4-bigquery-sync.js 2>&1 | tee ga4-bigquery-sync.log
           else
-            node scripts/ga4-bigquery-sync.js --apply 2>&1 | tee ga4-bigquery-sync.log
+            node infra/google/ga4/ga4-bigquery-sync.js --apply 2>&1 | tee ga4-bigquery-sync.log
           fi
 
-      # Read-only: checks google/oauth.toml against Cognito, Secrets Manager and the Google
-      # Auth Platform brand, the same on a pull request and on a push. Nothing to apply.
+      # Read-only: checks infra/google/gcp/oauth.toml against Cognito, Secrets Manager and the
+      # Google Auth Platform brand, the same on a pull request and on a push. Nothing to apply.
       - name: Run google-oauth-assert
-        run: node scripts/google-oauth-assert.js 2>&1 | tee google-oauth-assert.log
+        run: node infra/google/gcp/google-oauth-assert.js 2>&1 | tee google-oauth-assert.log
 
       - name: Generate step summary
         if: always()

@@ -32,6 +32,7 @@ export const VIEW_NAMES = [
   "v_purchase_reconciliation_daily",
   "v_submissions_by_activity_daily",
   "v_traffic_sources_daily",
+  "v_visitors_by_kind_daily",
   "v_availability_sli_daily",
   "v_alarm_state_changes_daily",
   "v_dora_runs_daily",

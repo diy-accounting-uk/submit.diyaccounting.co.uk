@@ -22,7 +22,7 @@ import {
   githubVariableFinding,
   applyGithubVariable,
   GITHUB_VARIABLE_NAME,
-} from "../../../scripts/ga4-sync.js";
+} from "../../../infra/google/ga4/ga4-sync.js";
 
 describe("parseArgs", () => {
   test("defaults to plan mode", () => {

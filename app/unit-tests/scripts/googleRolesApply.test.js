@@ -11,7 +11,7 @@ import {
   diffGa4AccountBindings,
   diffGcpProjectBindings,
   applyGcpBindingChanges,
-} from "../../../scripts/google-roles-apply.js";
+} from "../../../infra/google/gcp/google-roles-apply.js";
 
 const SERVICE_ACCOUNT = "ga4-report-pull@diyaccounting-ga4.iam.gserviceaccount.com";
 

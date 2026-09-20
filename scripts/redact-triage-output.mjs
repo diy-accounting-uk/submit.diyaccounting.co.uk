@@ -18,7 +18,9 @@ import { readFileSync, writeFileSync } from "node:fs";
 // rather than leaving a residual 9-digit fragment unmatched by a later pass.
 export const DENY_PATTERNS = [
   { label: "ipv4", re: /\b(?:\d{1,3}\.){3}\d{1,3}\b/g },
-  { label: "ipv6", re: /\b(?:[0-9a-fA-F]{1,4}:){2,7}[0-9a-fA-F]{1,4}\b/g },
+  // {3,7} repeats (4-8 hex groups) rather than {2,7}: a plain HH:MM:SS clock time has only two
+  // colons (three groups), and a full, uncompressed IPv6 address never has fewer than three.
+  { label: "ipv6", re: /\b(?:[0-9a-fA-F]{1,4}:){3,7}[0-9a-fA-F]{1,4}\b/g },
   { label: "email", re: /\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}\b/g },
   { label: "eori", re: /\b(?:GB|XI)\d{12}(?:\d{3})?\b/g },
   { label: "hash64", re: /\b[0-9a-f]{64}\b/gi },
@@ -63,17 +65,31 @@ export function extractFinalAssistantText(parsed) {
       throw new Error(`the triage run failed, so nothing is posted: ${entry.result || "no detail"}`);
     }
     if (typeof entry.result === "string" && entry.result.length > 0) {
-      return entry.result;
+      return finalMessageOnly(entry.result);
     }
     if (entry.type === "assistant" && entry.message && Array.isArray(entry.message.content)) {
       const text = entry.message.content
         .filter((block) => block && block.type === "text" && typeof block.text === "string")
         .map((block) => block.text)
         .join("\n");
-      if (text.length > 0) return text;
+      if (text.length > 0) return finalMessageOnly(text);
     }
   }
   throw new Error("no assistant text found in the input JSON");
+}
+
+/**
+ * A run that talks through an earlier plan before settling on its answer (a compaction can
+ * make the agent recap what it already found) can leave that talk in the same result string,
+ * ahead of the actual answer, separated by a Markdown thematic break. Keeps only the text
+ * after the last such break, so a stray "Let me try a different approach..." from earlier in
+ * the run never reaches the posted comment. Text with no thematic break passes through
+ * unchanged, as does one whose break is trailing (nothing usable follows it).
+ */
+function finalMessageOnly(text) {
+  const segments = text.split(/\n+-{3,}\n+/);
+  const lastSegment = segments[segments.length - 1].trim();
+  return segments.length > 1 && lastSegment.length > 0 ? lastSegment : text;
 }
 
 /**
@@ -101,33 +117,43 @@ export function describeStoppedRun(parsed) {
 }
 
 function main() {
-  const inputPath = process.argv[2];
+  const args = process.argv.slice(2);
+  const isMarkdown = args.includes("--markdown");
+  const inputPath = args.find((arg) => !arg.startsWith("--"));
   if (!inputPath) {
-    console.error("usage: redact-triage-output.mjs <path-to-claude-json>");
+    console.error("usage: redact-triage-output.mjs [--markdown] <path-to-input>");
     process.exit(1);
   }
 
   const raw = readFileSync(inputPath, "utf8");
-  let parsed;
-  try {
-    parsed = JSON.parse(raw);
-  } catch (err) {
-    console.error(`could not parse ${inputPath} as JSON: ${err.message}`);
-    process.exit(1);
-  }
 
+  // A plain Markdown file (a PR body, say) carries no Claude Code JSON envelope to unwrap and
+  // no turn structure to judge, so it skips both parsing and extractFinalAssistantText and goes
+  // to redact() as-is.
   let text;
-  try {
-    text = extractFinalAssistantText(parsed);
-  } catch (err) {
-    const stoppedSummary = describeStoppedRun(parsed);
-    if (stoppedSummary) {
-      writeFileSync("/tmp/redactions.txt", "");
-      process.stdout.write(`${stoppedSummary}\n`);
-      return;
+  let parsed;
+  if (isMarkdown) {
+    text = raw;
+  } else {
+    try {
+      parsed = JSON.parse(raw);
+    } catch (err) {
+      console.error(`could not parse ${inputPath} as JSON: ${err.message}`);
+      process.exit(1);
     }
-    console.error(err.message);
-    process.exit(1);
+
+    try {
+      text = extractFinalAssistantText(parsed);
+    } catch (err) {
+      const stoppedSummary = describeStoppedRun(parsed);
+      if (stoppedSummary) {
+        writeFileSync("/tmp/redactions.txt", "");
+        process.stdout.write(`${stoppedSummary}\n`);
+        return;
+      }
+      console.error(err.message);
+      process.exit(1);
+    }
   }
 
   const { redacted, redactions } = redact(text);
@@ -135,8 +161,8 @@ function main() {
   // A run can exhaust --max-turns after it already wrote a partial `.result`, so
   // extractFinalAssistantText returns text here without ever reaching describeStoppedRun's
   // fallback above. Append the same note in that case so the comment still says the answer may
-  // be incomplete, instead of reading like a finished one.
-  const note = maxTurnsNote(parsed);
+  // be incomplete, instead of reading like a finished one. Markdown input has no such envelope.
+  const note = isMarkdown ? null : maxTurnsNote(parsed);
   const final = note ? `${redacted}\n\n${note}` : redacted;
   process.stdout.write(final.endsWith("\n") ? final : `${final}\n`);
 }

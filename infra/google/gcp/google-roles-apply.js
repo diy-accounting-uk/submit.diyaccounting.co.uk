@@ -2,9 +2,9 @@
 // SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0
 // Copyright (C) 2006-2026 DIY Accounting Limited
 
-// scripts/google-roles-apply.js
+// infra/google/gcp/google-roles-apply.js
 //
-// Reads google/project.toml, lists the live GA4 Analytics Admin API access bindings
+// Reads infra/google/gcp/project.toml, lists the live GA4 Analytics Admin API access bindings
 // and GCP Resource Manager IAM bindings for the principals named in that file, diffs them
 // against what the file declares, and applies the difference. Read-only unless --apply is
 // given.
@@ -16,8 +16,8 @@
 // entry: deleting the entry stops the script from managing that grant, it does not revoke it.
 //
 // Usage:
-//   node scripts/google-roles-apply.js
-//   node scripts/google-roles-apply.js --apply
+//   node infra/google/gcp/google-roles-apply.js
+//   node infra/google/gcp/google-roles-apply.js --apply
 //
 // Credentials: application default credentials from google-github-actions/auth's federated
 // exchange, the same path app/functions/analytics/ga4ReportPull.js uses.
@@ -28,7 +28,7 @@ import { fileURLToPath } from "node:url";
 
 import TOML from "@iarna/toml";
 
-import { createGoogleAuthorizedClient, assertFederatedCredentials } from "./lib/googleAuth.js";
+import { createGoogleAuthorizedClient, assertFederatedCredentials } from "../lib/googleAuth.js";
 
 // AccessBinding is a v1alpha-only resource in the GA4 Analytics Admin API; it has not graduated
 // to v1beta.
@@ -49,7 +49,7 @@ export function parseArgs(argv) {
 }
 
 /**
- * Parse and validate google/project.toml's content.
+ * Parse and validate infra/google/gcp/project.toml's content.
  *
  * @param {string} tomlString
  * @returns {{serviceAccountEmail: string, ga4AccountBindings: {accountId: string, user: string, roles: string[]}[], gcpProjectBindings: {projectId: string, member: string, roles: string[]}[]}}
@@ -185,7 +185,7 @@ function groupBy(items, keyFn) {
  * @returns {{serviceAccountEmail: string, ga4AccountBindings: object[], gcpProjectBindings: object[]}}
  */
 export function loadConfigFromRoot() {
-  const filePath = path.join(process.cwd(), "google/project.toml");
+  const filePath = path.join(process.cwd(), "infra/google/gcp/project.toml");
   return parseConfig(fs.readFileSync(filePath, "utf-8"));
 }
 

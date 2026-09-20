@@ -4,14 +4,14 @@
 # Google roles as code.
 #
 # This file is the source of truth for what the analytics service account can do in Google
-# Analytics 4 and in Google Cloud. scripts/google-roles-apply.js reads it, lists the live
+# Analytics 4 and in Google Cloud. infra/google/gcp/google-roles-apply.js reads it, lists the live
 # bindings through the GA4 Analytics Admin API and the GCP Resource Manager IAM API, diffs
 # them against what is written here, and applies the difference. A grant that is not in this
 # file does not exist as far as this repo is concerned. Add it here before asking for it, and
 # remove it here before revoking it.
 #
 # The service account is ga4-report-pull@diyaccounting-ga4.iam.gserviceaccount.com, impersonated
-# by federated callers (see google/identity.toml) rather than by a key: the analytics Lambdas
+# by federated callers (see infra/google/gcp/identity.toml) rather than by a key: the analytics Lambdas
 # (app/functions/analytics/ga4ReportPull.js and ga4EventExportPull.js) present their AWS
 # execution role, and GitHub Actions presents its OIDC token.
 
@@ -19,9 +19,9 @@
 email = "ga4-report-pull@diyaccounting-ga4.iam.gserviceaccount.com"
 
 # Google APIs the analytics scripts and the YouTube quota project need enabled on the GA4
-# project, applied by scripts/gcp-enable-apis.js. Service Usage itself is enabled on every
+# project, applied by infra/google/gcp/gcp-enable-apis.js. Service Usage itself is enabled on every
 # project by default and is what enables the rest. iap.googleapis.com is here for its brands
-# resource (scripts/google-oauth-assert.js), not for Identity-Aware Proxy itself.
+# resource (infra/google/gcp/google-oauth-assert.js), not for Identity-Aware Proxy itself.
 [apis]
 services = [
   "serviceusage.googleapis.com",
@@ -33,7 +33,7 @@ services = [
   "bigquerydatatransfer.googleapis.com",
   "youtube.googleapis.com",
   "iap.googleapis.com",
-  # Workload identity federation (scripts/gcp-identity-sync.js): the pool and providers live in
+  # Workload identity federation (infra/google/gcp/gcp-identity-sync.js): the pool and providers live in
   # the IAM API, the federated token exchange in STS, and service-account impersonation in
   # IAM Credentials. Without iam.googleapis.com the pool read answers 403 "API has not been used".
   "iam.googleapis.com",
@@ -41,7 +41,7 @@ services = [
   "sts.googleapis.com",
 ]
 
-# The billing budget scripts/gcp-billing-assert.js reuses (it was created by hand on the
+# The billing budget infra/google/gcp/gcp-billing-assert.js reuses (it was created by hand on the
 # billing account) rather than duplicating, adding whichever alert threshold is missing.
 [budget]
 display_name = "diyaccounting-ga4 monthly budget"
@@ -50,7 +50,7 @@ currency = "GBP"
 thresholds = [0.5, 0.9, 1.0]
 
 # GA4 Analytics Admin API access bindings (accounts/*/accessBindings). Account 1035014 is
-# "DIY Accounting" (see google/analytics.toml), holding property 523400333 (live, what
+# "DIY Accounting" (see infra/google/ga4/analytics.toml), holding property 523400333 (live, what
 # ga4ReportPull.js queries) and the trashed property 395628828. A binding at account level
 # covers every property under the account, which is what was granted: admin on the account,
 # not a binding scoped to one property.

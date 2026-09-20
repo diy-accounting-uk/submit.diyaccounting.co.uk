@@ -276,6 +276,7 @@ describe("operatorSnapshotPublish", () => {
         .map(([command]) => command.input.QueryString);
 
       const expectedFragments = [
+        "FROM   v_visitors_by_kind_daily",
         "FROM   v_cost_vs_target_monthly",
         "FROM   v_cost_per_submission_daily",
         "FROM   security_hub_findings",
@@ -293,6 +294,9 @@ describe("operatorSnapshotPublish", () => {
       expect(sqlStatements.some((sql) => sql.includes("severity_label = 'CRITICAL'"))).toBe(true);
       expect(sqlStatements.some((sql) => sql.includes("area = 'accessibility'"))).toBe(true);
       expect(sqlStatements.some((sql) => sql.includes("area = 'fraud-prevention-headers'"))).toBe(true);
+      expect(sqlStatements.some((sql) => sql.includes("visitor_kind = 'human'"))).toBe(true);
+      expect(sqlStatements.some((sql) => sql.includes("visitor_kind = 'bot'"))).toBe(true);
+      expect(sqlStatements.some((sql) => sql.includes("visitor_kind = 'synthetic'"))).toBe(true);
     });
 
     test("a failing observation's query answers null instead of failing the whole snapshot", async () => {

@@ -4,6 +4,7 @@
   "title": "Check for VAT penalty points with HMRC",
   "description": "A signed-in walk through VAT penalties: sign in, take out a day pass, ask HMRC whether a VAT registration number carries any penalty points, and read the answer.",
   "auth": "user",
+  "pages": ["web/public/index.html", "web/public/auth/login.html", "web/public/bundles.html", "web/public/hmrc/vat/vatPenalties.html"],
   "viewport": { "width": 1920, "height": 1080 },
   "deviceScaleFactor": 1,
   "fps": 60,

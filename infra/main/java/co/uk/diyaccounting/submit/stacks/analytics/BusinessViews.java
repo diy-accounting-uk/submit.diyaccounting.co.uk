@@ -123,6 +123,10 @@ public class BusinessViews extends Construct {
             new ViewDefinition(
                     "v_traffic_sources_daily", "Sessions each day, by GA4 channel group", List.of("ga4_traffic")),
             new ViewDefinition(
+                    "v_visitors_by_kind_daily",
+                    "Sessions and users each day, by hostname and visitor kind (human, bot, synthetic)",
+                    List.of("sessions_by_host_source_daily")),
+            new ViewDefinition(
                     "v_availability_sli_daily",
                     "The uptime SLI: probe pass rate and error budget remaining each day, by suite",
                     List.of("probe_runs")),

@@ -1,0 +1,128 @@
+# SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0
+# Copyright (C) 2006-2026 DIY Accounting Limited
+
+name: "Filter agent output before it is published"
+description: >-
+  Runs scripts/redact-triage-output.mjs, the Bedrock output guardrail and a provenance byline
+  over text an unattended agent wrote, before that text reaches a public GitHub surface (an
+  issue comment or a pull request body). Shared by alarm-triage.yml (a Claude Code
+  --output-format json result) and agentic-lib-code.yml (a plain Markdown PR body), so the two
+  publication paths cannot diverge. This is a composite action: it runs with the caller's own
+  github.event_name, so it carries no schedule guard of its own. It runs `aws ssm get-parameter`
+  and `aws bedrock-runtime apply-guardrail` under whatever AWS credentials the caller already
+  holds - it configures none itself - so every caller's job must already be chained into a role
+  that grants ssm:GetParameter on /submit/<environment-name>/alarm-triage/guardrail-id and
+  -version, and bedrock:ApplyGuardrail on that account's guardrail. Both are granted to the
+  alarm-triage role in ObservabilityStack.java, which every caller of this action assumes for
+  its Bedrock access already.
+
+inputs:
+  input-file:
+    description: "path to the file to filter: a claude -p --output-format json result (format: claude-json), or a plain Markdown file (format: markdown)"
+    required: true
+  format:
+    description: "shape of input-file: claude-json or markdown"
+    required: true
+  environment-name:
+    description: "submit environment (ci or prod) whose guardrail SSM parameters to read"
+    required: true
+  model-id:
+    description: "identifier of the model that wrote input-file, named in the closing byline"
+    required: true
+  workflow-name:
+    description: "name of the calling workflow, named in the closing byline"
+    required: true
+  run-number:
+    description: "run number of the calling workflow run, named in the closing byline"
+    required: true
+  run-url:
+    description: "URL of the calling workflow run, linked from the closing byline"
+    required: true
+
+outputs:
+  output-file:
+    description: "path to the filtered, guardrailed, byline-appended Markdown"
+    value: ${{ steps.finalise.outputs.output-file }}
+  redactions:
+    description: "count of deterministic redactions the script made"
+    value: ${{ steps.redact.outputs.redactions }}
+  guardrail-action:
+    description: "the Bedrock guardrail's own action field: NONE or GUARDRAIL_INTERVENED"
+    value: ${{ steps.guardrail.outputs.action }}
+
+runs:
+  using: "composite"
+  steps:
+    - name: Read the guardrail identifiers
+      shell: bash
+      id: guardrail-ids
+      env:
+        ENVIRONMENT_NAME: ${{ inputs.environment-name }}
+      run: |
+        set -euo pipefail
+        aws ssm get-parameter --name "/submit/${ENVIRONMENT_NAME}/alarm-triage/guardrail-id" \
+          --query 'Parameter.Value' --output text | tee /tmp/publish-filter-guardrail-id.txt
+        aws ssm get-parameter --name "/submit/${ENVIRONMENT_NAME}/alarm-triage/guardrail-version" \
+          --query 'Parameter.Value' --output text | tee /tmp/publish-filter-guardrail-version.txt
+        echo "id=$(cat /tmp/publish-filter-guardrail-id.txt)" | tee -a "$GITHUB_OUTPUT"
+        echo "version=$(cat /tmp/publish-filter-guardrail-version.txt)" | tee -a "$GITHUB_OUTPUT"
+
+    - name: Redact
+      shell: bash
+      id: redact
+      env:
+        INPUT_FILE: ${{ inputs.input-file }}
+        FORMAT: ${{ inputs.format }}
+      run: |
+        set -o pipefail
+        FLAG=""
+        if [ "${FORMAT}" = "markdown" ]; then FLAG="--markdown"; fi
+        node scripts/redact-triage-output.mjs ${FLAG} "${INPUT_FILE}" 2>&1 | tee /tmp/publish-filter-redacted.md || {
+          echo "redaction failed, see the log above" >&2
+          exit 1
+        }
+        echo "redactions=$(wc -l < /tmp/redactions.txt)" | tee -a "$GITHUB_OUTPUT"
+
+    - name: Apply the Bedrock guardrail
+      shell: bash
+      id: guardrail
+      env:
+        GUARDRAIL_ID: ${{ steps.guardrail-ids.outputs.id }}
+        GUARDRAIL_VERSION: ${{ steps.guardrail-ids.outputs.version }}
+      run: |
+        set -euo pipefail
+        jq -Rs '[{ text: { text: . } }]' /tmp/publish-filter-redacted.md > /tmp/publish-filter-guardrail-input.json
+        aws bedrock-runtime apply-guardrail \
+          --guardrail-identifier "${GUARDRAIL_ID}" \
+          --guardrail-version "${GUARDRAIL_VERSION}" \
+          --source OUTPUT \
+          --content file:///tmp/publish-filter-guardrail-input.json \
+          2>&1 | tee /tmp/publish-filter-guardrail-result.json
+        echo "action=$(jq -r '.action' /tmp/publish-filter-guardrail-result.json)" | tee -a "$GITHUB_OUTPUT"
+
+    # The guardrail's entities and regexes are all ANONYMIZE (see ObservabilityStack.java), so
+    # GUARDRAIL_INTERVENED here means a hit was masked, never that the text was withheld. The
+    # anonymised text is in outputs[0].text; the untouched text is what the redaction script
+    # already wrote when the guardrail found nothing to mask.
+    - name: Append the byline
+      shell: bash
+      id: finalise
+      env:
+        MODEL_ID: ${{ inputs.model-id }}
+        WORKFLOW_NAME: ${{ inputs.workflow-name }}
+        RUN_NUMBER: ${{ inputs.run-number }}
+        RUN_URL: ${{ inputs.run-url }}
+      run: |
+        set -euo pipefail
+        if [ "${{ steps.guardrail.outputs.action }}" = "NONE" ]; then
+          cp /tmp/publish-filter-redacted.md /tmp/publish-filter-final.md
+        else
+          {
+            echo "_The guardrail anonymised part of this before it was posted._"
+            echo
+            jq -r '.outputs[0].text' /tmp/publish-filter-guardrail-result.json
+          } > /tmp/publish-filter-final.md
+        fi
+        printf '\n_Written by %s in [%s #%s](%s). Not reviewed by a person._\n' \
+          "${MODEL_ID}" "${WORKFLOW_NAME}" "${RUN_NUMBER}" "${RUN_URL}" >> /tmp/publish-filter-final.md
+        echo "output-file=/tmp/publish-filter-final.md" | tee -a "$GITHUB_OUTPUT"

@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0
 // Copyright (C) 2006-2026 DIY Accounting Limited
 
-// scripts/google-inventory.js
+// infra/google/gcp/google-inventory.js
 //
 // Read-only snapshot of everything this repo's Google footprint touches: the enabled
 // services and IAM policy on the GA4 project, the billing account's budgets, every GA4
@@ -13,7 +13,7 @@
 // it, or to check a script's plan against reality.
 //
 // Usage:
-//   node scripts/google-inventory.js [--project diyaccounting-ga4] [--ga4-account 1035014]
+//   node infra/google/gcp/google-inventory.js [--project diyaccounting-ga4] [--ga4-account 1035014]
 //     [--service-account ga4-report-pull@diyaccounting-ga4.iam.gserviceaccount.com]
 //     [--location europe-west2]
 //
@@ -23,7 +23,7 @@
 
 import { fileURLToPath } from "node:url";
 
-import { assertFederatedCredentials, createGoogleAuthClient, getAccessToken } from "./lib/googleAuth.js";
+import { assertFederatedCredentials, createGoogleAuthClient, getAccessToken } from "../lib/googleAuth.js";
 
 export const DEFAULT_PROJECT = "diyaccounting-ga4";
 export const DEFAULT_GA4_ACCOUNT_ID = "1035014";
@@ -69,7 +69,7 @@ export function parseArgs(argv) {
         break;
       case "--help":
         console.log(
-          "Usage: node scripts/google-inventory.js [--project <id>] [--ga4-account <id>] [--service-account <email>] [--location <region>]",
+          "Usage: node infra/google/gcp/google-inventory.js [--project <id>] [--ga4-account <id>] [--service-account <email>] [--location <region>]",
         );
         process.exit(0);
         break;

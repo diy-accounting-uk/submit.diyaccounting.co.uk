@@ -2,7 +2,7 @@
 // Copyright (C) 2006-2026 DIY Accounting Limited
 
 import { describe, it, expect } from "vitest";
-import { parseArgs, planEnables, parseConfig, DEFAULT_PROJECT } from "../../../scripts/gcp-enable-apis.js";
+import { parseArgs, planEnables, parseConfig, DEFAULT_PROJECT } from "../../../infra/google/gcp/gcp-enable-apis.js";
 
 const SAMPLE_SERVICES = [
   "serviceusage.googleapis.com",

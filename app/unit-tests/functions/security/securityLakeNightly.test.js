@@ -14,6 +14,7 @@ import {
   fetchGuardDutyFindings,
   aggregateGithubAlertCounts,
   fetchGithubAlertRows,
+  nextPageUrl,
   computeDaysRemaining,
   readLifecycleToml,
   buildLifecycleRows,
@@ -119,6 +120,26 @@ describe("GuardDuty", () => {
 });
 
 describe("GitHub alert counts", () => {
+  test("nextPageUrl parses the Link header and returns the next URL when present", () => {
+    const link = '<https://api.github.com/page2>; rel="next", <https://api.github.com/last>; rel="last"';
+    expect(nextPageUrl(link)).toBe("https://api.github.com/page2");
+  });
+
+  test("nextPageUrl returns null when Link header is missing", () => {
+    expect(nextPageUrl(null)).toBeNull();
+    expect(nextPageUrl(undefined)).toBeNull();
+  });
+
+  test("nextPageUrl returns null when Link header has no rel=\"next\"", () => {
+    const link = '<https://api.github.com/prev>; rel="prev", <https://api.github.com/last>; rel="last"';
+    expect(nextPageUrl(link)).toBeNull();
+  });
+
+  test("nextPageUrl extracts next URL from a header with multiple relations", () => {
+    const link = '<https://api.github.com/first>; rel="first", <https://api.github.com/next>; rel="next", <https://api.github.com/last>; rel="last"';
+    expect(nextPageUrl(link)).toBe("https://api.github.com/next");
+  });
+
   test("aggregateGithubAlertCounts groups by severity and finds the oldest alert", () => {
     const alerts = [
       { created_at: "2026-09-01T00:00:00Z", rule: { severity: "high" } },
@@ -142,6 +163,7 @@ describe("GitHub alert counts", () => {
   test("fetchGithubAlertRows calls all three GitHub alert endpoints", async () => {
     const fetchImpl = vi.fn().mockResolvedValue({
       ok: true,
+      headers: { get: () => null },
       json: async () => [],
     });
     const rows = await fetchGithubAlertRows(fetchImpl, "test-token", "diy-accounting-uk/submit.diyaccounting.co.uk", "2026-09-08");
@@ -151,8 +173,43 @@ describe("GitHub alert counts", () => {
     expect(fetchImpl.mock.calls[0][1].headers.Authorization).toBe("Bearer test-token");
   });
 
+  test("fetchGithubAlertRows follows Link header cursors across multiple pages", async () => {
+    const fetchImpl = vi
+      .fn()
+      .mockResolvedValueOnce({
+        ok: true,
+        headers: { get: () => '<https://api.github.com/repos/r/code-scanning/alerts?state=open&per_page=100&after=abc>; rel="next"' },
+        json: async () => [{ id: "alert1", created_at: "2026-09-01", rule: { severity: "high" } }],
+      })
+      .mockResolvedValueOnce({
+        ok: true,
+        headers: { get: () => null },
+        json: async () => [{ id: "alert2", created_at: "2026-09-02", rule: { severity: "low" } }],
+      })
+      .mockResolvedValue({
+        ok: true,
+        headers: { get: () => null },
+        json: async () => [],
+      });
+    const rows = await fetchGithubAlertRows(fetchImpl, "test-token", "r", "2026-09-08");
+    expect(fetchImpl).toHaveBeenCalledTimes(4);
+    expect(fetchImpl.mock.calls[0][0]).toContain("state=open&per_page=100");
+    expect(fetchImpl.mock.calls[0][0]).not.toMatch(/[?&]page=/);
+    expect(fetchImpl.mock.calls[1][0]).toBe("https://api.github.com/repos/r/code-scanning/alerts?state=open&per_page=100&after=abc");
+  });
+
+  test("fetchGithubAlertRows publishes a null row for a 400 error with body, including status and message in the error log", async () => {
+    const errorBody = JSON.stringify({ message: "Pagination using the `page` parameter is not supported." });
+    const fetchImpl = vi.fn().mockResolvedValueOnce({ ok: false, status: 400, text: async () => errorBody }).mockResolvedValue({ ok: true, headers: { get: () => null }, json: async () => [] });
+    const rows = await fetchGithubAlertRows(fetchImpl, "t", "r", "2026-09-08");
+    expect(rows).toEqual(
+      expect.arrayContaining([{ dt: "2026-09-08", alert_type: "code_scanning", severity: null, count: null, oldest_created_at: null }]),
+    );
+    expect(rows).toHaveLength(3);
+  });
+
   test("fetchGithubAlertRows publishes a null row for an endpoint that fails, instead of aborting the run", async () => {
-    const fetchImpl = vi.fn().mockResolvedValueOnce({ ok: false, status: 403, text: async () => "forbidden" }).mockResolvedValue({ ok: true, json: async () => [] });
+    const fetchImpl = vi.fn().mockResolvedValueOnce({ ok: false, status: 403, text: async () => "forbidden" }).mockResolvedValue({ ok: true, headers: { get: () => null }, json: async () => [] });
     const rows = await fetchGithubAlertRows(fetchImpl, "t", "r", "2026-09-08");
     expect(fetchImpl).toHaveBeenCalledTimes(3);
     expect(rows).toEqual(

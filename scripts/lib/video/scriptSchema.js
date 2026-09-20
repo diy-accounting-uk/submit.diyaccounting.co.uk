@@ -8,7 +8,7 @@
 // schema file is the documentation and the $schema pointer scripts edit against. A bad script
 // throws with the offending path, per the repo rule: throw, don't skip.
 
-const REQUIRED_TOP_LEVEL = ["name", "title", "description", "auth", "viewport", "fps", "pacing", "captions", "scenes"];
+const REQUIRED_TOP_LEVEL = ["name", "title", "description", "auth", "pages", "viewport", "fps", "pacing", "captions", "scenes"];
 // "user" says the journey needs a signed-in account. Which identity provider signs it in comes
 // from TEST_AUTH_PROVIDER at run time, never from the script, so one script proves locally
 // against the simulator and records against a deployment through the Cognito Hosted UI.
@@ -108,6 +108,13 @@ export function validateScript(script) {
   requireKeys(script, REQUIRED_TOP_LEVEL, "$");
 
   if (!AUTH_VALUES.has(script.auth)) fail("auth", `must be one of ${[...AUTH_VALUES].join(", ")}`);
+
+  if (!Array.isArray(script.pages) || script.pages.length === 0) {
+    fail("pages", "must be a non-empty array of web/public/ page paths");
+  }
+  for (const page of script.pages) {
+    if (typeof page !== "string" || page.length === 0) fail("pages", "each entry must be a non-empty string");
+  }
 
   if ("hmrcServices" in script) {
     if (!Array.isArray(script.hmrcServices) || script.hmrcServices.length === 0) {

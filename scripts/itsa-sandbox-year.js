@@ -4,22 +4,29 @@
 
 /**
  *
- * Files a whole ITSA tax year against the HMRC sandbox with one test user: four quarterly
- * self-employment updates, an annual submission, a triggered and adjusted business source
- * adjustable summary, an intent-to-finalise calculation, and a final declaration.
+ * Files a whole ITSA tax year against the HMRC sandbox with one test user, for a self-employment
+ * business and a UK property business: an annual submission, a triggered and adjusted business
+ * source adjustable summary, an intent-to-finalise calculation and a final declaration, all
+ * against the self-employment business, plus a quarterly update for each business every quarter.
  *
- * The quarterly period dates are the four standard quarters HMRC's Self Employment Business
- * 5.0 spec publishes for every tax year (6 April to 5 July, and so on), not obligations read
- * back from HMRC. `_developers/hmrc/ITSA_PHASE_2_SANDBOX.md`'s run record explains why: the
+ * `resolveItsaSubmissionModel` (`app/lib/hmrcValidation.js`) decides how the quarterly updates
+ * are filed, the same way the production handlers decide it: a year up to 2024-25 POSTs four
+ * dated periods to the self-employment business; a year from 2025-26 PUTs four running totals to
+ * each business's cumulative resource. The annual submission, adjustable summary and calculation
+ * calls take the same shape either way, so they carry no branch of their own.
+ *
+ * The dated model's quarterly period dates are the four standard quarters HMRC's Self Employment
+ * Business 5.0 spec publishes for every tax year (6 April to 5 July, and so on), not obligations
+ * read back from HMRC. `_developers/hmrc/ITSA_PHASE_2_SANDBOX.md`'s run record explains why: the
  * sandbox's Obligations API (`obligations-api`, `retrieve_income_tax_income_expenditure.yaml`)
  * has no `STATEFUL` scenario and its `DYNAMIC` scenario only answers for three fixed example
  * businessIds, so it never reflects a business this script's test-support calls create. The
  * adjustable summary's accounting period is derived from the same four standard quarters.
  *
- * Uses `mtd-sa-test-support-api/1.0` to create the self-employment business and set the ITSA
- * status for the chosen tax year, and its vendor-state checkpoint endpoints to reset the test
- * user's stateful sandbox data between runs: the first run wipes everything and saves a clean
- * checkpoint, every later run restores that checkpoint before creating a fresh business.
+ * Uses `mtd-sa-test-support-api/1.0` to create both businesses and set the ITSA status for the
+ * chosen tax year, and its vendor-state checkpoint endpoints to reset the test user's stateful
+ * sandbox data between runs: the first run wipes everything and saves a clean checkpoint, every
+ * later run restores that checkpoint before creating fresh businesses.
  *
  * This drives the sandbox directly, the way scripts/itsa-sandbox-spike.js drove Business
  * Details - it does not call this application's own deployed API. The request-body builders
@@ -37,9 +44,9 @@
  *   HMRC_SANDBOX_CLIENT_SECRET     sandbox application client secret (from proxy-secrets.sh)
  *   DIY_SUBMIT_BASE_URL            base for the registered redirect uri (from .env.proxy)
  *   ITSA_SANDBOX_TEST_USER_FILE    path to the sandbox test user JSON (userId, password, nino)
- *   ITSA_SANDBOX_TAX_YEAR          tax year to file, e.g. "2023-24" - must be 2024-25 or
- *                                  earlier, the last tax year the period-summary endpoint
- *                                  this script uses will still accept
+ *   ITSA_SANDBOX_TAX_YEAR          tax year to file, e.g. "2023-24" or "2025-26" -
+ *                                  resolveItsaSubmissionModel decides which quarterly filing
+ *                                  model it uses
  *   ITSA_SANDBOX_OUT_DIR           directory for the transcript, screenshots and the
  *                                  restore checkpoint id (default "./target/itsa-sandbox-year")
  *   ITSA_SANDBOX_SCOPE             OAuth scope to request (default
@@ -59,7 +66,9 @@ import { initializeSalt } from "../app/services/subHasher.js";
 import { buildHmrcHeaders } from "../app/services/hmrcApi.js";
 import { getAuthorizationCode, buildAuthorizeUrl } from "./lib/hmrcAuthorizationCode.js";
 import { prepareTokenExchangeRequest } from "../app/functions/hmrc/hmrcTokenPost.js";
+import { resolveItsaSubmissionModel } from "../app/lib/hmrcValidation.js";
 import { buildSelfEmploymentPeriodRequestBody } from "../app/functions/hmrc/hmrcItsaSelfEmploymentPeriodPost.js";
+import { buildUkPropertyCumulativeRequestBody } from "../app/functions/hmrc/hmrcItsaUkPropertyPeriodPost.js";
 import { buildAnnualSubmissionRequestBody } from "../app/functions/hmrc/hmrcItsaSelfEmploymentAnnualPut.js";
 import { buildBsasTriggerRequestBody } from "../app/functions/hmrc/hmrcItsaBsasTriggerPost.js";
 import { buildBsasAdjustRequestBody } from "../app/functions/hmrc/hmrcItsaBsasSelfEmploymentAdjustPost.js";
@@ -190,6 +199,60 @@ export function buildStandardQuarterlyPeriods(taxYear) {
 }
 
 /**
+ * The four cumulative reporting periods of a tax year on the cumulative submission model: each
+ * one runs from the tax year's start to the end of one of the four standard quarters, since a
+ * cumulative period summary always reports the running total from the start of the tax year, not
+ * each quarter's own span.
+ * @param {string} taxYear - e.g. "2025-26"
+ * @returns {Array<{fromDate: string, toDate: string}>}
+ */
+export function buildCumulativeQuarterlyPeriods(taxYear) {
+  const quarters = buildStandardQuarterlyPeriods(taxYear);
+  const yearStart = quarters[0].periodStartDate;
+  return quarters.map((quarter) => ({ fromDate: yearStart, toDate: quarter.periodEndDate }));
+}
+
+/**
+ * The running total a self-employment cumulative period summary reports at the end of one
+ * quarter: the sum of this script's own quarterly test figures (`buildQuarterlyTestFigures`)
+ * from the first quarter through this one, inclusive.
+ * @param {number} quarterIndex - 0-based position of this period among the year's four
+ * @returns {{income: Object, expenses: Object}}
+ */
+export function buildCumulativeSelfEmploymentTestFigures(quarterIndex) {
+  let turnover = 0;
+  let other = 0;
+  let consolidatedExpenses = 0;
+  for (let index = 0; index <= quarterIndex; index += 1) {
+    const figures = buildQuarterlyTestFigures(index);
+    turnover += figures.periodIncome.turnover;
+    other += figures.periodIncome.other;
+    consolidatedExpenses += figures.periodExpenses.consolidatedExpenses;
+  }
+  return { income: { turnover, other }, expenses: { consolidatedExpenses } };
+}
+
+/**
+ * The running total a UK property cumulative period summary reports at the end of one quarter.
+ * Property Business v6.0's cumulative income model has its own field names (`periodAmount`, not
+ * `turnover` - Self Employment Business's field), so this cannot reuse
+ * buildCumulativeSelfEmploymentTestFigures's income shape, though it reuses the same growing
+ * turnover figures from buildQuarterlyTestFigures as the source amount.
+ * @param {number} quarterIndex - 0-based position of this period among the year's four
+ * @returns {{income: Object, expenses: Object}}
+ */
+export function buildCumulativePropertyTestFigures(quarterIndex) {
+  let periodAmount = 0;
+  let consolidatedExpenses = 0;
+  for (let index = 0; index <= quarterIndex; index += 1) {
+    const figures = buildQuarterlyTestFigures(index);
+    periodAmount += figures.periodIncome.turnover;
+    consolidatedExpenses += figures.periodExpenses.consolidatedExpenses;
+  }
+  return { income: { periodAmount }, expenses: { consolidatedExpenses } };
+}
+
+/**
  * Derive the accounting period a Business Source Adjustable Summary trigger needs from a set
  * of periods - the earliest periodStartDate to the latest periodEndDate.
  * @param {Array<{periodStartDate: string, periodEndDate: string}>} periods
@@ -247,6 +310,17 @@ export function buildTestBusinessRequestBody() {
     businessAddressLineOne: "1 Test Street",
     businessAddressPostcode: "AA1 1AA",
     businessAddressCountryCode: "GB",
+  };
+}
+
+/**
+ * The test-support "create a business" request body for one UK property business. HMRC rejects
+ * a property business carrying a business address - `RULE_UNEXPECTED_BUSINESS_ADDRESS` - because
+ * that field is self-employment-only, the same way tradingType and tradingName are.
+ */
+export function buildTestPropertyBusinessRequestBody() {
+  return {
+    typeOfBusiness: "uk-property",
   };
 }
 
@@ -421,15 +495,16 @@ async function main() {
   const hmrcHeaders = (apiVersion, testScenario) =>
     buildHmrcHeaders(accessToken, govClientHeaders, testScenario, randomUUID(), undefined, randomUUID(), apiVersion);
 
-  // Phase 3: reset the test user's stateful sandbox data and get a business ready to file
+  // Phase 3: reset the test user's stateful sandbox data and get both businesses ready to file
   // against. The checkpoint-create call answers 404 MATCHING_RESOURCE_NOT_FOUND against a NINO
-  // with no test-support data yet, so a checkpoint can only be taken after the business and
-  // ITSA status exist, not before. First run ever: wipe everything, create the business and
-  // status, then checkpoint that as the baseline. Every later run: restore that checkpoint,
-  // which brings back the same business with everything filed against it since undone, rather
-  // than creating a second business.
+  // with no test-support data yet, so a checkpoint can only be taken after the businesses and
+  // ITSA status exist, not before. First run ever: wipe everything, create both businesses and
+  // the status, then checkpoint that as the baseline. Every later run: restore that checkpoint,
+  // which brings back the same businesses with everything filed against them since undone,
+  // rather than creating them again.
   let checkpointId = null;
   let businessId = null;
+  let propertyBusinessId = null;
   let checkpointState = null;
   try {
     checkpointState = JSON.parse(readFileSync(checkpointFile, "utf8"));
@@ -437,7 +512,7 @@ async function main() {
     checkpointState = null;
   }
 
-  if (checkpointState?.checkpointId && checkpointState?.businessId) {
+  if (checkpointState?.checkpointId && checkpointState?.businessId && checkpointState?.propertyBusinessId) {
     await callHmrc({
       step: "vendor-state-restore",
       method: "POST",
@@ -448,7 +523,8 @@ async function main() {
     });
     checkpointId = checkpointState.checkpointId;
     businessId = checkpointState.businessId;
-    record("vendor-state-restored", { checkpointId, businessId });
+    propertyBusinessId = checkpointState.propertyBusinessId;
+    record("vendor-state-restored", { checkpointId, businessId, propertyBusinessId });
   } else {
     await callHmrc({
       step: "vendor-state-delete",
@@ -471,6 +547,20 @@ async function main() {
     businessId = businessCreated.body.businessId;
     if (!businessId) throw new Error(`Create business response carried no businessId: ${JSON.stringify(businessCreated.body)}`);
 
+    const propertyBusinessCreated = await callHmrc({
+      step: "test-support-create-property-business",
+      method: "POST",
+      url: `${sandboxBase}/individuals/self-assessment-test-support/business/${nino}`,
+      headers: hmrcHeaders("1.0"),
+      body: buildTestPropertyBusinessRequestBody(),
+      okStatuses: [200, 201],
+      nino,
+    });
+    propertyBusinessId = propertyBusinessCreated.body.businessId;
+    if (!propertyBusinessId) {
+      throw new Error(`Create property business response carried no businessId: ${JSON.stringify(propertyBusinessCreated.body)}`);
+    }
+
     await callHmrc({
       step: "test-support-set-itsa-status",
       method: "POST",
@@ -490,8 +580,8 @@ async function main() {
       nino,
     });
     checkpointId = extractCheckpointId(created.body);
-    writeFileSync(checkpointFile, JSON.stringify({ checkpointId, businessId }));
-    record("vendor-state-checkpoint-saved", { checkpointId, businessId, checkpointFile });
+    writeFileSync(checkpointFile, JSON.stringify({ checkpointId, businessId, propertyBusinessId }));
+    record("vendor-state-checkpoint-saved", { checkpointId, businessId, propertyBusinessId, checkpointFile });
   }
 
   await callHmrc({
@@ -512,29 +602,77 @@ async function main() {
     nino,
   });
 
-  // Phase 5: file a quarterly update against each of the four standard quarterly periods -
-  // see buildStandardQuarterlyPeriods's doc comment for why these are not read from
-  // obligations. Gov-Test-Scenario: STATEFUL makes each create persist, so the later BSAS and
-  // calculation calls that check what has been filed can see it.
-  const quarterlyPeriods = buildStandardQuarterlyPeriods(taxYear);
+  // Phase 5: file a quarterly update for the self-employment business, and, on the cumulative
+  // model, for the property business too. The dated model (2024-25 and earlier) POSTs a new
+  // dated period each quarter, against the four standard quarterly periods - see
+  // buildStandardQuarterlyPeriods's doc comment for why these are not read from obligations. It
+  // has no property leg yet: a property business exists (Phase 3) but is not filed against
+  // under this model. The cumulative model (2025-26 and later) PUTs a running total to each
+  // business's cumulative resource four times, once per standard quarter's end date - see
+  // buildCumulativeQuarterlyPeriods's doc comment. Gov-Test-Scenario: STATEFUL makes every
+  // create or amend persist, so the later BSAS and calculation calls that check what has been
+  // filed can see it.
+  const submissionModel = resolveItsaSubmissionModel(taxYear);
 
-  for (const [index, period] of quarterlyPeriods.entries()) {
-    const figures = buildQuarterlyTestFigures(index);
-    const requestBody = buildSelfEmploymentPeriodRequestBody({
-      periodStartDate: period.periodStartDate,
-      periodEndDate: period.periodEndDate,
-      periodIncome: figures.periodIncome,
-      periodExpenses: figures.periodExpenses,
-    });
-    await callHmrc({
-      step: `quarterly-period-${index + 1}`,
-      method: "POST",
-      url: `${sandboxBase}/individuals/business/self-employment/${nino}/${businessId}/period`,
-      headers: hmrcHeaders("5.0", PERIOD_STATEFUL_SCENARIO),
-      body: requestBody,
-      okStatuses: [200, 201],
-      nino,
-    });
+  if (submissionModel === "dated") {
+    const quarterlyPeriods = buildStandardQuarterlyPeriods(taxYear);
+
+    for (const [index, period] of quarterlyPeriods.entries()) {
+      const figures = buildQuarterlyTestFigures(index);
+      const requestBody = buildSelfEmploymentPeriodRequestBody({
+        periodStartDate: period.periodStartDate,
+        periodEndDate: period.periodEndDate,
+        periodIncome: figures.periodIncome,
+        periodExpenses: figures.periodExpenses,
+      });
+      await callHmrc({
+        step: `quarterly-period-${index + 1}`,
+        method: "POST",
+        url: `${sandboxBase}/individuals/business/self-employment/${nino}/${businessId}/period`,
+        headers: hmrcHeaders("5.0", PERIOD_STATEFUL_SCENARIO),
+        body: requestBody,
+        okStatuses: [200, 201],
+        nino,
+      });
+    }
+  } else {
+    const cumulativePeriods = buildCumulativeQuarterlyPeriods(taxYear);
+
+    for (const [index, period] of cumulativePeriods.entries()) {
+      const selfEmploymentFigures = buildCumulativeSelfEmploymentTestFigures(index);
+      const selfEmploymentBody = buildSelfEmploymentPeriodRequestBody({
+        periodStartDate: period.fromDate,
+        periodEndDate: period.toDate,
+        periodIncome: selfEmploymentFigures.income,
+        periodExpenses: selfEmploymentFigures.expenses,
+      });
+      await callHmrc({
+        step: `self-employment-cumulative-period-${index + 1}`,
+        method: "PUT",
+        url: `${sandboxBase}/individuals/business/self-employment/${nino}/${businessId}/cumulative/${taxYear}`,
+        headers: hmrcHeaders("5.0", PERIOD_STATEFUL_SCENARIO),
+        body: selfEmploymentBody,
+        okStatuses: [204],
+        nino,
+      });
+
+      const propertyFigures = buildCumulativePropertyTestFigures(index);
+      const propertyBody = buildUkPropertyCumulativeRequestBody({
+        fromDate: period.fromDate,
+        toDate: period.toDate,
+        income: propertyFigures.income,
+        expenses: propertyFigures.expenses,
+      });
+      await callHmrc({
+        step: `uk-property-cumulative-period-${index + 1}`,
+        method: "PUT",
+        url: `${sandboxBase}/individuals/business/property/uk/${nino}/${propertyBusinessId}/cumulative/${taxYear}`,
+        headers: hmrcHeaders("6.0", PERIOD_STATEFUL_SCENARIO),
+        body: propertyBody,
+        okStatuses: [204],
+        nino,
+      });
+    }
   }
 
   // Phase 6: the annual submission.
@@ -548,10 +686,13 @@ async function main() {
     nino,
   });
 
-  // Phase 7: the business source adjustable summary - trigger, retrieve, adjust. The
-  // accounting period comes from the same four standard quarterly periods filed above, not
-  // from an obligations read - see buildStandardQuarterlyPeriods's doc comment.
-  const { accountingPeriodStartDate, accountingPeriodEndDate } = deriveAccountingPeriodFromPeriods(quarterlyPeriods);
+  // Phase 7: the business source adjustable summary - trigger, retrieve, adjust. Scoped to a
+  // tax year, not to a quarterly filing model, so its accounting period always spans the same
+  // four standard quarters this tax year has, whichever model filed them - see
+  // buildStandardQuarterlyPeriods's doc comment.
+  const { accountingPeriodStartDate, accountingPeriodEndDate } = deriveAccountingPeriodFromPeriods(
+    buildStandardQuarterlyPeriods(taxYear),
+  );
 
   const bsasTrigger = await callHmrc({
     step: "bsas-trigger",
@@ -580,8 +721,9 @@ async function main() {
   });
 
   // HMRC's resolved OpenAPI for this call carries two request schemas, chosen by tax year:
-  // zeroAdjustments only exists on the "For TY 2024-25 and after" schema. For 2023-24 and
-  // earlier - what ITSA_SANDBOX_TAX_YEAR must be - the body has to carry a real adjustment.
+  // zeroAdjustments only exists on the "For TY 2024-25 and after" schema, on top of the same
+  // income/expenses/additions fields the earlier schema has. This always sends a real
+  // adjustment, which both schemas accept.
   await callHmrc({
     step: "bsas-adjust",
     method: "POST",
@@ -663,7 +805,10 @@ async function main() {
   record("fraud-header-validator", { status: validation.status, code: validationBody.code, body: validationBody });
 
   const outFile = `${outDir}/itsa-sandbox-year-transcript.json`;
-  writeFileSync(outFile, JSON.stringify({ taxYear, nino: maskNino(nino), businessId, checkpointId, transcript }, null, 2));
+  writeFileSync(
+    outFile,
+    JSON.stringify({ taxYear, nino: maskNino(nino), businessId, propertyBusinessId, checkpointId, transcript }, null, 2),
+  );
 
   const finalDeclarationOk = transcript.find((entry) => entry.step === "final-declaration")?.status === 204;
   const validatorOk = validation.ok && isFraudHeaderValidationClean(validationBody);

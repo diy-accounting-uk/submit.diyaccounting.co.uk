@@ -2,9 +2,9 @@
 // SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0
 // Copyright (C) 2006-2026 DIY Accounting Limited
 
-// scripts/ga4-sync.js
+// infra/google/ga4/ga4-sync.js
 //
-// Idempotent GA4 setup over google/analytics.toml, for every property the file declares: the
+// Idempotent GA4 setup over infra/google/ga4/analytics.toml, for every property the file declares: the
 // shared "DIY Accounting" property (523400333, covering gateway/spreadsheets/submit) and each
 // per-environment "DIY Accounting Submit (ci|prod)" property. One pass finds or creates each
 // property, its data streams, its enhanced measurement settings, its key events and its
@@ -17,8 +17,8 @@
 // `display_name` and created when missing.
 //
 // Usage:
-//   node scripts/ga4-sync.js
-//   node scripts/ga4-sync.js --apply
+//   node infra/google/ga4/ga4-sync.js
+//   node infra/google/ga4/ga4-sync.js --apply
 //
 // Credentials: application default credentials from google-github-actions/auth's federated
 // exchange.
@@ -33,10 +33,10 @@ import { fileURLToPath } from "node:url";
 import { execFileSync } from "node:child_process";
 import TOML from "@iarna/toml";
 
-import { createGoogleAuthorizedClient, assertFederatedCredentials } from "./lib/googleAuth.js";
+import { createGoogleAuthorizedClient, assertFederatedCredentials } from "../lib/googleAuth.js";
 
 export const GITHUB_VARIABLE_NAME = "SUBMIT_GA4_MEASUREMENT_ID";
-export const CONFIG_PATH = "google/analytics.toml";
+export const CONFIG_PATH = "infra/google/ga4/analytics.toml";
 
 const ANALYTICS_ADMIN_V1BETA = "https://analyticsadmin.googleapis.com/v1beta";
 // BigQuery links, key events and enhanced measurement settings are v1alpha-only resources on
@@ -60,7 +60,7 @@ export function parseArgs(argv) {
   return opts;
 }
 
-// --- Config: google/analytics.toml -> { account, properties } ---
+// --- Config: infra/google/ga4/analytics.toml -> { account, properties } ---
 
 function normalizeStream(entry, propertyDisplayName) {
   if (!entry.name || !entry.uri) {
@@ -103,7 +103,7 @@ function normalizeProperty(entry) {
 }
 
 /**
- * Parse and validate google/analytics.toml's content.
+ * Parse and validate infra/google/ga4/analytics.toml's content.
  *
  * @param {string} tomlString
  * @returns {{account: {id: string, displayName: string}, properties: object[]}}

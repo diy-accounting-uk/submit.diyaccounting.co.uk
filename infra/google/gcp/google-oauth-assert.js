@@ -2,24 +2,26 @@
 // SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0
 // Copyright (C) 2006-2026 DIY Accounting Limited
 
-// scripts/google-oauth-assert.js
+// infra/google/gcp/google-oauth-assert.js
 //
-// Checks google/oauth.toml's two Google OAuth clients against everything about them a live API
-// can actually confirm: each client's Google Auth Platform brand (where the file declares one),
-// the sign-in client id against Cognito's own copy of it in AWS, the YouTube client id against
-// the Secrets Manager secret it's read from (once the file records one), and the scopes
-// actually granted to the YouTube client's stored refresh token. Fails on any mismatch; never
-// writes anywhere — there is nothing here for it to apply. See google/oauth.toml's header for
-// what it can't check (redirect URIs, application type) and why: Google publishes no general
-// API for reading a non-IAP client's own configuration back.
+// Checks infra/google/gcp/oauth.toml's two Google OAuth clients against everything about them a
+// live API can actually confirm: each client's Google Auth Platform brand (where the file
+// declares one), the sign-in client id against Cognito's own copy of it in AWS, the YouTube
+// client id against the Secrets Manager secret it's read from (once the file records one), and
+// the scopes actually granted to the YouTube client's stored refresh token. Fails on any
+// mismatch; never writes anywhere — there is nothing here for it to apply. See
+// infra/google/gcp/oauth.toml's header for what it can't check (redirect URIs, application
+// type) and why: Google publishes no general API for reading a non-IAP client's own
+// configuration back.
 //
-// Usage: node scripts/google-oauth-assert.js
+// Usage: node infra/google/gcp/google-oauth-assert.js
 //
 // Credentials: the brand lookups use application default credentials through
-// scripts/lib/googleAuth.js (that service account holds Owner on diyaccounting-ga4, which needs
-// iap.googleapis.com enabled — see google/project.toml [apis]). The YouTube checks reuse
-// scripts/youtube-upload.js's own Secrets Manager credentials and OAuth flow. The Cognito check
-// uses this process's ambient AWS credentials to call CloudFormation and Cognito directly.
+// infra/google/lib/googleAuth.js (that service account holds Owner on diyaccounting-ga4, which
+// needs iap.googleapis.com enabled — see infra/google/gcp/project.toml [apis]). The YouTube
+// checks reuse scripts/youtube-upload.js's own Secrets Manager credentials and OAuth flow. The
+// Cognito check uses this process's ambient AWS credentials to call CloudFormation and Cognito
+// directly.
 
 import fs from "node:fs";
 import path from "node:path";
@@ -29,14 +31,14 @@ import { CloudFormationClient, DescribeStacksCommand } from "@aws-sdk/client-clo
 import { CognitoIdentityProviderClient, DescribeIdentityProviderCommand } from "@aws-sdk/client-cognito-identity-provider";
 import { SecretsManagerClient } from "@aws-sdk/client-secrets-manager";
 
-import { assertFederatedCredentials, createGoogleAuthClient, getAccessToken } from "./lib/googleAuth.js";
-import { resolveClientCredentials, obtainAccessToken } from "./youtube-upload.js";
+import { assertFederatedCredentials, createGoogleAuthClient, getAccessToken } from "../lib/googleAuth.js";
+import { resolveClientCredentials, obtainAccessToken } from "../../../scripts/youtube-upload.js";
 
-export const CONFIG_PATH = "google/oauth.toml";
+export const CONFIG_PATH = "infra/google/gcp/oauth.toml";
 const IAP_V1 = "https://iap.googleapis.com/v1";
 const TOKENINFO_ENDPOINT = "https://www.googleapis.com/oauth2/v1/tokeninfo";
 
-// --- Config: google/oauth.toml -> { clients } ---
+// --- Config: infra/google/gcp/oauth.toml -> { clients } ---
 
 function normalizeClient(entry) {
   if (!entry.purpose) {
@@ -59,7 +61,7 @@ function normalizeClient(entry) {
 }
 
 /**
- * Parse and validate google/oauth.toml's content.
+ * Parse and validate infra/google/gcp/oauth.toml's content.
  *
  * @param {string} tomlString
  * @returns {{clients: object[]}}

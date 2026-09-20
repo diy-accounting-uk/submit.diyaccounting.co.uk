@@ -52,12 +52,12 @@ import { SecretsManagerClient, GetSecretValueCommand, UpdateSecretCommand, Creat
 import { copyVideosManifest } from "./copy-videos-manifest.js";
 
 export const PUBLISH_LIST_PATH = path.resolve("videos/publish.json");
-export const CONFIG_PATH = "google/youtube.toml";
+export const CONFIG_PATH = "infra/google/gcp/youtube.toml";
 
 export const OAUTH_SCOPES = ["https://www.googleapis.com/auth/youtube.upload", "https://www.googleapis.com/auth/youtube.force-ssl"];
 
 /**
- * Parse google/youtube.toml's content.
+ * Parse infra/google/gcp/youtube.toml's content.
  *
  * @param {string} tomlString
  * @returns {{channelHandle: string, quotaProject: string, clientSecretName: string, refreshTokenSecretName: string}}
@@ -388,7 +388,7 @@ export function channelHandlesMatch(actual, expected) {
 }
 
 /**
- * Compare the signed-in channel's handle against the one declared in google/youtube.toml.
+ * Compare the signed-in channel's handle against the one declared in infra/google/gcp/youtube.toml.
  * Pure, so it is unit tested; the network call that produces `channel` is not.
  *
  * @param {{handle: string|null}} channel
@@ -398,7 +398,7 @@ export function channelHandlesMatch(actual, expected) {
 export function assertChannelHandleMatches(channel, expectedHandle) {
   if (!channelHandlesMatch(channel.handle, expectedHandle)) {
     throw new Error(
-      `The stored refresh token resolves to channel handle "${channel.handle ?? "(none)"}", but google/youtube.toml declares "${expectedHandle}". ` +
+      `The stored refresh token resolves to channel handle "${channel.handle ?? "(none)"}", but infra/google/gcp/youtube.toml declares "${expectedHandle}". ` +
         `Delete Secrets Manager secret ${REFRESH_TOKEN_SECRET_NAME} and run --check again to re-consent as the right account.`,
     );
   }

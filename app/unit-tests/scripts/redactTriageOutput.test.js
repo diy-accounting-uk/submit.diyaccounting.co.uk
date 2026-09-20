@@ -23,6 +23,15 @@ function runCli(inputJson) {
   return result;
 }
 
+function runCliMarkdown(markdown) {
+  const dir = mkdtempSync(join(tmpdir(), "redact-triage-output-"));
+  const inputPath = join(dir, "pr-body.md");
+  writeFileSync(inputPath, markdown);
+  const result = spawnSync(process.execPath, [SCRIPT_PATH, "--markdown", inputPath], { encoding: "utf8" });
+  rmSync(dir, { recursive: true, force: true });
+  return result;
+}
+
 const POSITIVE_EXAMPLES = {
   ipv4: "192.168.1.1",
   ipv6: "2001:db8:85a3:0:0:8a2e:370:7334",
@@ -84,6 +93,13 @@ describe("redact", () => {
     expect(redactions).toEqual([]);
   });
 
+  test("a plain HH:MM:SS clock time survives untouched, even inside a full timestamp", () => {
+    const text = "The alarm fired at 2026-09-20T11:51:19.023+0000, reported as 11:51:19 UTC.";
+    const { redacted, redactions } = redact(text);
+    expect(redacted).toBe(text);
+    expect(redactions).toEqual([]);
+  });
+
   test("an EORI is labelled eori, not vrn", () => {
     const { redacted, redactions } = redact("trader GB123456789012 filed late");
     expect(redacted).toContain("[redacted:eori]");
@@ -139,6 +155,33 @@ describe("extractFinalAssistantText", () => {
       /no assistant text/,
     );
     expect(() => extractFinalAssistantText({ foo: "bar" })).toThrow(/no assistant text/);
+  });
+
+  test("drops an earlier turn's narration left ahead of a thematic break, in the shape run-triage-agent writes", () => {
+    const resultWithLeakedNarration =
+      "Let me use a simpler approach with Read tool to load and examine the raw JSON data more carefully.\n\n" +
+      "Based on my investigation, I have enough information to provide a triaged answer.\n\n" +
+      "---\n\n" +
+      "## 1. What broke?\n\nThe worker Lambda timed out calling HMRC.\n\n" +
+      "## 2. Is it still broken?\n\nYes.\n\n" +
+      "## 3. Next action\n\nWatch, no action.";
+    const parsed = { type: "result", subtype: "success", is_error: false, result: resultWithLeakedNarration };
+    expect(extractFinalAssistantText(parsed)).toBe(
+      "## 1. What broke?\n\nThe worker Lambda timed out calling HMRC.\n\n" +
+        "## 2. Is it still broken?\n\nYes.\n\n" +
+        "## 3. Next action\n\nWatch, no action.",
+    );
+  });
+
+  test("keeps the whole text when a thematic break has nothing usable after it", () => {
+    const text = "The answer.\n\n---\n\n";
+    const parsed = { type: "result", subtype: "success", is_error: false, result: text };
+    expect(extractFinalAssistantText(parsed)).toBe(text);
+  });
+
+  test("keeps the whole text when there is no thematic break at all", () => {
+    const parsed = { type: "result", subtype: "success", is_error: false, result: "A plain answer, no break." };
+    expect(extractFinalAssistantText(parsed)).toBe("A plain answer, no break.");
   });
 });
 
@@ -245,5 +288,23 @@ describe("CLI", () => {
     const result = runCli("not json at all");
     expect(result.status).not.toBe(0);
     expect(result.stderr).toMatch(/could not parse/);
+  });
+});
+
+describe("CLI --markdown mode", () => {
+  test("redacts a plain Markdown file without treating it as Claude Code JSON", () => {
+    const markdown = "# Add the missing index\n\nFixes the query customer@example.com reported.\n";
+    const result = runCliMarkdown(markdown);
+    expect(result.status).toBe(0);
+    expect(result.stdout).toContain("[redacted:email]");
+    expect(result.stdout).not.toContain("customer@example.com");
+    expect(result.stdout).toContain("# Add the missing index");
+  });
+
+  test("passes non-JSON Markdown through unchanged when nothing matches a deny pattern", () => {
+    const markdown = "# Tidy the retry loop\n\nNo behaviour change, just fewer allocations.\n";
+    const result = runCliMarkdown(markdown);
+    expect(result.status).toBe(0);
+    expect(result.stdout).toBe(`${markdown.trimEnd()}\n`);
   });
 });
