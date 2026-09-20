@@ -1,0 +1,27 @@
+# SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0
+# Copyright (C) 2006-2026 DIY Accounting Limited
+
+name: Support Request
+description: Get help with DIY Accounting Submit
+title: "[Support] "
+labels: ["support", "origin:human"]
+body:
+  - type: dropdown
+    id: category
+    attributes:
+      label: Category
+      options:
+        - connection
+        - submission
+        - bundles
+        - receipts
+        - other
+    validations:
+      required: true
+  - type: textarea
+    id: description
+    attributes:
+      label: Description
+      description: Describe your issue clearly, including any error messages you see and the steps that led to it.
+    validations:
+      required: true

@@ -45,6 +45,11 @@ const logger = createLogger({ source: "app/functions/support/supportTicketPost.j
 // rather than configuration, so this comment stays next to the number it explains.
 export const SUPPORT_TICKET_RATE_LIMIT_PER_MINUTE = 3;
 
+// The five categories a support ticket can carry. web/public/help.html's support form dropdown
+// and .github/ISSUE_TEMPLATE/support.yml's category dropdown both list these same five values, so
+// a category added here without updating both would silently stop matching the form or the issue.
+export const SUPPORT_TICKET_CATEGORIES = ["connection", "submission", "bundles", "receipts", "other"];
+
 // Cache the GitHub App's private key to avoid fetching from Secrets Manager on every request.
 // The installation token itself is cached inside githubAppToken.js.
 let __cachedGitHubAppPrivateKey = null;
@@ -307,12 +312,11 @@ export async function ingestHandler(event) {
     });
   }
 
-  const validCategories = ["connection", "submission", "bundles", "receipts", "other"];
-  if (!validCategories.includes(category)) {
+  if (!SUPPORT_TICKET_CATEGORIES.includes(category)) {
     return http400BadRequestResponse({
       request,
       headers: { ...responseHeaders },
-      message: `Invalid category. Must be one of: ${validCategories.join(", ")}`,
+      message: `Invalid category. Must be one of: ${SUPPORT_TICKET_CATEGORIES.join(", ")}`,
     });
   }
 
@@ -322,7 +326,7 @@ export async function ingestHandler(event) {
     submission: "submission",
     bundles: "bundles",
     receipts: "receipts",
-    other: "general",
+    other: "other",
   };
 
   const issueTitle = `[Support] ${subject}`;
