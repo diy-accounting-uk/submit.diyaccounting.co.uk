@@ -490,16 +490,33 @@ public class IdentityStack extends Stack {
 
     private static final List<String> DIYA_GL_PATH_PREFIXES = List.of("/books/", "/diya-gl/");
 
+    // diya-gl.co.uk serves every page at its own root, so it takes neither spreadsheets prefix;
+    // it is registered on prod only, alongside ci.diya-gl.co.uk, which is registered on every
+    // environment so a Submit deploy can sign a reader into the new site's own ci host.
+    private static final List<String> ROOT_PATH_PREFIXES = List.of("/");
+
     private static List<String> buildBooksUrls(String envName) {
         // prod also lists the ci-spreadsheets host so the spreadsheets repository's ci
         // behaviour run can sign in and test its DIYA-GL pages against Submit's prod environment.
         var hosts = "prod".equals(envName)
                 ? List.of("https://spreadsheets.diyaccounting.co.uk", "https://ci-spreadsheets.diyaccounting.co.uk")
                 : List.of("https://ci-spreadsheets.diyaccounting.co.uk", "http://localhost:3000");
+        var diyaGlHosts = "prod".equals(envName)
+                ? List.of("https://diya-gl.co.uk", "https://ci.diya-gl.co.uk")
+                : List.of("https://ci.diya-gl.co.uk");
         var urls = new java.util.ArrayList<String>();
         for (var host : hosts) {
             for (var prefix : DIYA_GL_PATH_PREFIXES) {
                 urls.add(host + prefix);
+                for (var page : BOOKS_PAGE_NAMES) {
+                    urls.add(host + prefix + page);
+                }
+            }
+        }
+        for (var host : diyaGlHosts) {
+            for (var prefix : ROOT_PATH_PREFIXES) {
+                urls.add(host + prefix);
+                urls.add(host + prefix + "index.html");
                 for (var page : BOOKS_PAGE_NAMES) {
                     urls.add(host + prefix + page);
                 }
