@@ -407,6 +407,40 @@ export async function countActiveAllocations(bundleId, nowIso) {
   }
 }
 
+export async function listLapsedBundleOwners(bundleId, beforeIso) {
+  logger.info({ message: `listLapsedBundleOwners [table: ${getResourceName("BUNDLE_DYNAMODB_TABLE_NAME")}]`, bundleId, beforeIso });
+
+  try {
+    const tableName = getResourceName("BUNDLE_DYNAMODB_TABLE_NAME");
+
+    const hashedSubs = new Set();
+    let lastEvaluatedKey;
+    do {
+      const response = await executeDynamoDbCommand(
+        (module) =>
+          new module.QueryCommand({
+            TableName: tableName,
+            IndexName: "bundleId-expiry-index",
+            KeyConditionExpression: "bundleId = :bundleId AND expiry < :before",
+            ExpressionAttributeValues: { ":bundleId": bundleId, ":before": beforeIso },
+            ExclusiveStartKey: lastEvaluatedKey,
+          }),
+      );
+      for (const item of response.Items || []) {
+        hashedSubs.add(item.hashedSub);
+      }
+      lastEvaluatedKey = response.LastEvaluatedKey;
+    } while (lastEvaluatedKey);
+
+    const owners = [...hashedSubs];
+    logger.info({ message: "Listed lapsed bundle owners", bundleId, count: owners.length });
+    return owners;
+  } catch (error) {
+    logger.error({ message: "Error listing lapsed bundle owners", error: error.message, bundleId });
+    throw error;
+  }
+}
+
 export async function getUserBundles(userId) {
   logger.info({ message: `getUserBundles [table: ${process.env.BUNDLE_DYNAMODB_TABLE_NAME}]`, userId });
 
