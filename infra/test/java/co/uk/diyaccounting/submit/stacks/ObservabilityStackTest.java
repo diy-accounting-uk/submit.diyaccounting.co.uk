@@ -5,7 +5,10 @@
 
 package co.uk.diyaccounting.submit.stacks;
 
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
 import co.uk.diyaccounting.submit.SubmitSharedNames;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import java.util.List;
 import java.util.Map;
 import org.junit.jupiter.api.Test;
@@ -92,5 +95,28 @@ class ObservabilityStackTest {
                         "GreaterThanThreshold",
                         "TreatMissingData",
                         "notBreaching")));
+    }
+
+    @Test
+    void dashboardGraphsSpreadsheetsRumLcpCrossAccountAndCrossRegion() throws com.fasterxml.jackson.core.JsonProcessingException {
+        Template template = Template.fromStack(synthObservabilityStack());
+
+        Map<String, Object> dashboardResource = template.findResources("AWS::CloudWatch::Dashboard")
+                .values()
+                .iterator()
+                .next();
+        @SuppressWarnings("unchecked")
+        Map<String, Object> dashboardProperties = (Map<String, Object>) dashboardResource.get("Properties");
+        // DashboardBody is not a plain string here: it embeds other widgets' unresolved tokens
+        // (the live-deployment SSM lookup), so CDK renders the whole property as an Fn::Join.
+        // Serializing that structure back to JSON still surfaces every literal substring in it.
+        String dashboardBodyJson = new ObjectMapper().writeValueAsString(dashboardProperties.get("DashboardBody"));
+
+        // The widget's metric definition carries the spreadsheets account and its RUM app
+        // monitor's Region so it renders even though this dashboard's own stack is eu-west-2.
+        assertTrue(dashboardBodyJson.contains("Spreadsheets RUM p75 LCP (ms)"));
+        assertTrue(dashboardBodyJson.contains("WebVitalsLargestContentfulPaint"));
+        assertTrue(dashboardBodyJson.contains("064390746177"));
+        assertTrue(dashboardBodyJson.contains("us-east-1"));
     }
 }

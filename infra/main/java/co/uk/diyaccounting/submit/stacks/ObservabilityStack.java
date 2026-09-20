@@ -629,6 +629,65 @@ public class ObservabilityStack extends Stack {
                         .height(6)
                         .build()));
 
+        // Row 1b: the spreadsheets site's own RUM p75 web vitals, read cross-account and
+        // cross-region through the OAM sink ObservabilityUE1Stack creates in us-east-1 (the
+        // spreadsheets RUM app monitor's home Region). A CloudWatch dashboard widget can graph
+        // another account's metrics from another Region directly; an alarm cannot, so the
+        // alarms on these same metrics live in ObservabilityUE1Stack instead. Empty until the
+        // spreadsheets account links to that sink.
+        String spreadsheetsAccountId = "064390746177"; // spreadsheets.diyaccounting.co.uk's AWS account
+        String spreadsheetsRumAppName = "prod".equals(props.envName()) ? "spreadsheets-web" : "ci-spreadsheets-web";
+
+        Metric spreadsheetsLcpP75 = Metric.Builder.create()
+                .namespace("AWS/RUM")
+                .metricName("WebVitalsLargestContentfulPaint")
+                .dimensionsMap(Map.of("application_name", spreadsheetsRumAppName))
+                .account(spreadsheetsAccountId)
+                .region("us-east-1")
+                .statistic("p75")
+                .period(Duration.minutes(5))
+                .build();
+
+        Metric spreadsheetsInpP75 = Metric.Builder.create()
+                .namespace("AWS/RUM")
+                .metricName("WebVitalsInteractionToNextPaint")
+                .dimensionsMap(Map.of("application_name", spreadsheetsRumAppName))
+                .account(spreadsheetsAccountId)
+                .region("us-east-1")
+                .statistic("p75")
+                .period(Duration.minutes(5))
+                .build();
+
+        Metric spreadsheetsClsP75 = Metric.Builder.create()
+                .namespace("AWS/RUM")
+                .metricName("WebVitalsCumulativeLayoutShift")
+                .dimensionsMap(Map.of("application_name", spreadsheetsRumAppName))
+                .account(spreadsheetsAccountId)
+                .region("us-east-1")
+                .statistic("p75")
+                .period(Duration.minutes(5))
+                .build();
+
+        dashboardRows.add(List.of(
+                GraphWidget.Builder.create()
+                        .title("Spreadsheets RUM p75 LCP (ms)")
+                        .left(List.of(spreadsheetsLcpP75))
+                        .width(8)
+                        .height(6)
+                        .build(),
+                GraphWidget.Builder.create()
+                        .title("Spreadsheets RUM p75 INP (ms)")
+                        .left(List.of(spreadsheetsInpP75))
+                        .width(8)
+                        .height(6)
+                        .build(),
+                GraphWidget.Builder.create()
+                        .title("Spreadsheets RUM p75 CLS")
+                        .left(List.of(spreadsheetsClsP75))
+                        .width(8)
+                        .height(6)
+                        .build()));
+
         // Row 2: GitHub Probe Tests
         // GitHub probe test metrics (sent from probe-test.yml), one series per suite
         dashboardRows.add(List.of(GraphWidget.Builder.create()

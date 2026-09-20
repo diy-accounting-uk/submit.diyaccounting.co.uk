@@ -22,12 +22,20 @@ import software.amazon.awscdk.Stack;
 import software.amazon.awscdk.StackProps;
 import software.amazon.awscdk.services.budgets.CfnBudget;
 import software.amazon.awscdk.services.budgets.CfnBudgetsAction;
+import software.amazon.awscdk.services.cloudwatch.Alarm;
+import software.amazon.awscdk.services.cloudwatch.ComparisonOperator;
+import software.amazon.awscdk.services.cloudwatch.Metric;
+import software.amazon.awscdk.services.cloudwatch.TreatMissingData;
+import software.amazon.awscdk.services.iam.AccountPrincipal;
 import software.amazon.awscdk.services.iam.Effect;
 import software.amazon.awscdk.services.iam.ManagedPolicy;
+import software.amazon.awscdk.services.iam.PolicyDocument;
+import software.amazon.awscdk.services.iam.PolicyDocumentProps;
 import software.amazon.awscdk.services.iam.PolicyStatement;
 import software.amazon.awscdk.services.iam.Role;
 import software.amazon.awscdk.services.iam.ServicePrincipal;
 import software.amazon.awscdk.services.logs.ILogGroup;
+import software.amazon.awscdk.services.oam.CfnSink;
 import software.amazon.awscdk.services.sns.Topic;
 import software.amazon.awscdk.services.sns.subscriptions.LambdaSubscription;
 import software.constructs.Construct;
@@ -306,5 +314,102 @@ public class ObservabilityUE1Stack extends Stack {
         infof(
                 "Subscribed Bedrock budget alert forward Lambda %s to %s",
                 budgetAlertForwardLambda.ingestLambda.getNode().getId(), bedrockBudgetAlertsTopic.getTopicName());
+
+        // ============================================================================
+        // Cross-account CloudWatch: the spreadsheets site's RUM metrics
+        // ============================================================================
+        // The spreadsheets site's CloudWatch RUM app monitor lives in its own AWS account, in
+        // this same us-east-1 region. CloudWatch reads another account's metrics only through
+        // cross-account observability (OAM): this sink admits the spreadsheets account, which
+        // then creates a link to it. A CloudWatch alarm on a cross-account metric must live in
+        // the metric's own Region (a dashboard widget can cross both account and Region, an
+        // alarm cannot), so the alarms sit here rather than in the eu-west-2 ObservabilityStack,
+        // which only graphs these same metrics.
+        String spreadsheetsAccountId = "064390746177"; // spreadsheets.diyaccounting.co.uk's AWS account
+
+        PolicyDocument spreadsheetsSinkPolicy = new PolicyDocument(PolicyDocumentProps.builder()
+                .statements(List.of(PolicyStatement.Builder.create()
+                        .effect(Effect.ALLOW)
+                        .principals(List.of(new AccountPrincipal(spreadsheetsAccountId)))
+                        .actions(List.of("oam:CreateLink", "oam:UpdateLink"))
+                        .resources(List.of("*"))
+                        .conditions(Map.of(
+                                "ForAllValues:StringEquals",
+                                Map.of("oam:ResourceTypes", List.of("AWS::CloudWatch::Metric"))))
+                        .build()))
+                .build());
+
+        CfnSink spreadsheetsMetricsSink = CfnSink.Builder.create(
+                        this, props.resourceNamePrefix() + "-SpreadsheetsMetricsSink")
+                .name(props.resourceNamePrefix() + "-spreadsheets-metrics")
+                .policy(spreadsheetsSinkPolicy)
+                .build();
+
+        cfnOutput(this, "SpreadsheetsMetricsSinkArn", spreadsheetsMetricsSink.getAttrArn());
+
+        // "prod" watches spreadsheets-web; every other environment watches its ci counterpart,
+        // the same prod/non-prod split used throughout this environment's stacks.
+        String spreadsheetsRumAppName = "prod".equals(props.envName()) ? "spreadsheets-web" : "ci-spreadsheets-web";
+
+        Metric spreadsheetsLcpP75 = Metric.Builder.create()
+                .namespace("AWS/RUM")
+                .metricName("WebVitalsLargestContentfulPaint")
+                .dimensionsMap(Map.of("application_name", spreadsheetsRumAppName))
+                .account(spreadsheetsAccountId)
+                .statistic("p75")
+                .period(Duration.minutes(5))
+                .build();
+
+        Metric spreadsheetsInpP75 = Metric.Builder.create()
+                .namespace("AWS/RUM")
+                .metricName("WebVitalsInteractionToNextPaint")
+                .dimensionsMap(Map.of("application_name", spreadsheetsRumAppName))
+                .account(spreadsheetsAccountId)
+                .statistic("p75")
+                .period(Duration.minutes(5))
+                .build();
+
+        Metric spreadsheetsClsP75 = Metric.Builder.create()
+                .namespace("AWS/RUM")
+                .metricName("WebVitalsCumulativeLayoutShift")
+                .dimensionsMap(Map.of("application_name", spreadsheetsRumAppName))
+                .account(spreadsheetsAccountId)
+                .statistic("p75")
+                .period(Duration.minutes(5))
+                .build();
+
+        // Until the spreadsheets account links to the sink above, these metrics carry no
+        // datapoints and the alarms sit in INSUFFICIENT_DATA; NOT_BREACHING keeps them out of
+        // ALARM state while that link is missing, the same treatment the submit RUM alarms above
+        // give a quiet app monitor.
+        Alarm.Builder.create(this, props.resourceNamePrefix() + "-SpreadsheetsRumLcpP75Alarm")
+                .alarmName(props.resourceNamePrefix() + "-spreadsheets-rum-lcp-p75")
+                .metric(spreadsheetsLcpP75)
+                .threshold(4000) // 4s
+                .evaluationPeriods(2)
+                .comparisonOperator(ComparisonOperator.GREATER_THAN_THRESHOLD)
+                .treatMissingData(TreatMissingData.NOT_BREACHING)
+                .alarmDescription("Spreadsheets RUM p75 LCP > 4s")
+                .build();
+
+        Alarm.Builder.create(this, props.resourceNamePrefix() + "-SpreadsheetsRumInpP75Alarm")
+                .alarmName(props.resourceNamePrefix() + "-spreadsheets-rum-inp-p75")
+                .metric(spreadsheetsInpP75)
+                .threshold(500) // INP "poor" boundary
+                .evaluationPeriods(2)
+                .comparisonOperator(ComparisonOperator.GREATER_THAN_THRESHOLD)
+                .treatMissingData(TreatMissingData.NOT_BREACHING)
+                .alarmDescription("Spreadsheets RUM p75 INP > 500ms")
+                .build();
+
+        Alarm.Builder.create(this, props.resourceNamePrefix() + "-SpreadsheetsRumClsP75Alarm")
+                .alarmName(props.resourceNamePrefix() + "-spreadsheets-rum-cls-p75")
+                .metric(spreadsheetsClsP75)
+                .threshold(0.25) // CLS "needs improvement" boundary
+                .evaluationPeriods(2)
+                .comparisonOperator(ComparisonOperator.GREATER_THAN_THRESHOLD)
+                .treatMissingData(TreatMissingData.NOT_BREACHING)
+                .alarmDescription("Spreadsheets RUM p75 CLS > 0.25")
+                .build();
     }
 }
