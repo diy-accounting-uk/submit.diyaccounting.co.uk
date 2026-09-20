@@ -575,16 +575,137 @@ Proves: the rule holds under a real batch, and the operator stops merging by han
 
 ### Phase 3. Ops that close their own loop
 
-- A named list of remedies, each tied to the alarm families it answers: roll origins to
-  last-known-good, re-run a stale schedule, redeploy a stack. Each remedy is A2 code, and the
-  model only chooses from the list, which keeps the whole path at B2.
-- The alarm-triage draft PR becomes a real PR when the change touches a file the remedy list
-  allows and the checks pass.
-- An alarm issue closes on OK plus a passing check, once P1 and P3 both hold for it.
+- The remedy list, one row per alarm family, written twice in the same shape:
+  `app/data/alarm-remedies.json` for the workflow and the table below for the reader. The key is
+  what `alarmFamilyKey` in `app/lib/alarmName.js` returns, so every deployment of prod shares a
+  row. Each row is one of four kinds. The model chooses a row; the row's action is A2 code; the
+  whole path is B2.
+  - `dispatch`: run a named workflow with fixed `-f` inputs.
+  - `close-when-gone`: a deployment-scoped family. Close the issue when the alarm it names no
+    longer exists, because the set was destroyed.
+  - `draft-pr`: mark the triage's draft PR ready for review when its diff touches only the row's
+    paths and the checks pass. Merging stays with phase 2's gate.
+  - `none`: leave the issue open for a person.
+- The close rule, for every row whose kind is other than `none`: the App `diyaccounting-ops`
+  authored the issue, `scripts/verify-alarm-origin.mjs` passes on it, and every alarm of the
+  family is OK. A `close-when-gone` row also closes when no alarm of that name exists. The close
+  comment names the rule that fired.
+- The budget is 2 actions per family per day. Over the 16 days with alarm issues, 53 family-days
+  had one issue, 11 had two and 4 had three; the four were one flapping Telegram alarm on
+  2026-09-01, where a third action would have been waste. A third issue in a day leaves the
+  family to a person.
+- The rows this table covers: the 72 families with a live prod alarm (65 in eu-west-2, 7 in
+  us-east-1), 5 prod families in the issue history with no live alarm, and 10 ci families from
+  the history. ci alarms reach Telegram only, since the issue Lambda is a target only in prod, so
+  the ci rows exist for the closed issues and take no new ones. `check-*` child alarms sit outside
+  the alarm-state-change rule and raise no issue, so they have no rows.
+- Horizon: the nightly `*-errors`, `analytics-nightly-missed` and `scan-detect-404-missed`
+  families lose a night's data on every failure. The replay the stacks design is one state
+  machine execution with an explicit date. A `run-nightly.yml` taking `environment-name` and
+  `date` would turn those rows' missing night into a dispatch; until it exists the `draft-pr`
+  rows fix the code and the `missed` rows wait for a person.
 - `alarm-triage.yml`'s run budget generalises to every agent path.
 
+Score, over the 86 closed alarm issues: 37 (43%) would have closed themselves under this table,
+counting an issue as self-closing when its family has a remedy other than `none` and no PR
+references it. `close-when-gone` carries 32 of the 37 (12 from the Telegram forwarder flap on
+2026-09-01 across both environments, 4 from `prod-app-api-5xx` and `prod-app-account-stack-health`
+on retired sets, 16 from ci sets); `draft-pr` 4; `dispatch` 1. 31 of the 86 are `none` families,
+18 of them CIS controls. 18 more closed with a PR referencing them and count as code changes,
+although a board PR that only cites the issue counts the same way, so the 37 is a floor.
+
+| Family | Remedy | Action | Budget/day | Why |
+|---|---|---|---|---|
+| `prod-env-github-probe-failed` | dispatch | `probe-test.yml` `-f environment-name=prod` `-f behaviour-test-suite=submitVatBehaviour` | 2 | The alarm reads the probe's own metric, so one more scheduled-suite run that passes returns it to OK. |
+| `ci-app-activity-telegram-forwarder-errors` | close-when-gone |  | 2 | ci alarms reach Telegram only (the issue Lambda is a prod target), so no new issue arrives; the ci set self-destructs and takes the alarm with it. |
+| `ci-app-activity-telegram-forwarder-high-duration-p95` | close-when-gone |  | 2 | ci alarms reach Telegram only (the issue Lambda is a prod target), so no new issue arrives; the ci set self-destructs and takes the alarm with it. |
+| `ci-app-api-5xx` | close-when-gone |  | 2 | ci alarms reach Telegram only (the issue Lambda is a prod target), so no new issue arrives; the ci set self-destructs and takes the alarm with it. |
+| `ci-app-cognito-token-post-log-errors` | close-when-gone |  | 2 | ci alarms reach Telegram only (the issue Lambda is a prod target), so no new issue arrives; the ci set self-destructs and takes the alarm with it. |
+| `ci-app-health-failed` | close-when-gone |  | 2 | ci alarms reach Telegram only (the issue Lambda is a prod target), so no new issue arrives; the ci set self-destructs and takes the alarm with it. |
+| `ci-app-hmrc-stack-health` | close-when-gone |  | 2 | ci alarms reach Telegram only (the issue Lambda is a prod target), so no new issue arrives; the ci set self-destructs and takes the alarm with it. |
+| `ci-app-ops-stack-health` | close-when-gone |  | 2 | ci alarms reach Telegram only (the issue Lambda is a prod target), so no new issue arrives; the ci set self-destructs and takes the alarm with it. |
+| `ci-app-self-destruct-stack-health` | close-when-gone |  | 2 | ci alarms reach Telegram only (the issue Lambda is a prod target), so no new issue arrives; the ci set self-destructs and takes the alarm with it. |
+| `prod-app-account-stack-health` | close-when-gone |  | 2 | Deployment-scoped; the alarm is deleted with its set, so no OK transition will ever arrive for an issue about a retired set. |
+| `prod-app-activity-telegram-forwarder-errors` | close-when-gone |  | 2 | No live alarm of this name; the check was renamed or moved, so only the historical issues carry it. |
+| `prod-app-activity-telegram-forwarder-high-duration-p95` | close-when-gone |  | 2 | No live alarm of this name; the check was renamed or moved, so only the historical issues carry it. |
+| `prod-app-api-5xx` | close-when-gone |  | 2 | Deployment-scoped; the alarm is deleted with its set, so no OK transition will ever arrive for an issue about a retired set. |
+| `prod-app-api-failed` | close-when-gone |  | 2 | Deployment-scoped; the alarm is deleted with its set, so no OK transition will ever arrive for an issue about a retired set. |
+| `prod-app-auth-stack-health` | close-when-gone |  | 2 | Deployment-scoped; the alarm is deleted with its set, so no OK transition will ever arrive for an issue about a retired set. |
+| `prod-app-billing-stack-health` | close-when-gone |  | 2 | Deployment-scoped; the alarm is deleted with its set, so no OK transition will ever arrive for an issue about a retired set. |
+| `prod-app-cert-expiring` | close-when-gone |  | 2 | Deployment-scoped; the alarm is deleted with its set, so no OK transition will ever arrive for an issue about a retired set. |
+| `prod-app-cognito-token-post-health` | close-when-gone |  | 2 | No live alarm of this name; the check was renamed or moved, so only the historical issues carry it. |
+| `prod-app-cognito-token-post-log-errors` | close-when-gone |  | 2 | No live alarm of this name; the check was renamed or moved, so only the historical issues carry it. |
+| `prod-app-companies-house-stack-health` | close-when-gone |  | 2 | Deployment-scoped; the alarm is deleted with its set, so no OK transition will ever arrive for an issue about a retired set. |
+| `prod-app-diya-gl-stack-health` | close-when-gone |  | 2 | Deployment-scoped; the alarm is deleted with its set, so no OK transition will ever arrive for an issue about a retired set. |
+| `prod-app-edge-stack-health` | close-when-gone |  | 2 | Deployment-scoped; the alarm is deleted with its set, so no OK transition will ever arrive for an issue about a retired set. |
+| `prod-app-github-synthetic-failed` | close-when-gone |  | 2 | No live alarm of this name; the check was renamed or moved, so only the historical issues carry it. |
+| `prod-app-health-failed` | close-when-gone |  | 2 | Deployment-scoped; the alarm is deleted with its set, so no OK transition will ever arrive for an issue about a retired set. |
+| `prod-app-hmrc-group1-stack-health` | close-when-gone |  | 2 | Deployment-scoped; the alarm is deleted with its set, so no OK transition will ever arrive for an issue about a retired set. |
+| `prod-app-hmrc-group2-stack-health` | close-when-gone |  | 2 | Deployment-scoped; the alarm is deleted with its set, so no OK transition will ever arrive for an issue about a retired set. |
+| `prod-app-hmrc-itsa-stack-health` | close-when-gone |  | 2 | Deployment-scoped; the alarm is deleted with its set, so no OK transition will ever arrive for an issue about a retired set. |
+| `prod-app-hmrc-stack-health` | close-when-gone |  | 2 | Deployment-scoped; the alarm is deleted with its set, so no OK transition will ever arrive for an issue about a retired set. |
+| `prod-app-ops-stack-health` | close-when-gone |  | 2 | Deployment-scoped; the alarm is deleted with its set, so no OK transition will ever arrive for an issue about a retired set. |
+| `prod-app-waf-attack-signatures` | close-when-gone |  | 2 | Deployment-scoped; the alarm is deleted with its set, so no OK transition will ever arrive for an issue about a retired set. |
+| `prod-app-waf-known-bad-inputs` | close-when-gone |  | 2 | Deployment-scoped; the alarm is deleted with its set, so no OK transition will ever arrive for an issue about a retired set. |
+| `prod-app-waf-manual-block` | close-when-gone |  | 2 | Deployment-scoped; the alarm is deleted with its set, so no OK transition will ever arrive for an issue about a retired set. |
+| `prod-app-waf-rate-limit` | close-when-gone |  | 2 | Deployment-scoped; the alarm is deleted with its set, so no OK transition will ever arrive for an issue about a retired set. |
+| `prod-env-activity-stack-health` | draft-pr | `app/functions/ops/activityTelegramForwarder.js`, `app/unit-tests/functions/activityTelegramForwarder.test.js` | 2 | One Lambda feeds this composite, the Telegram forwarder; the GitHub issue path is a separate Lambda, so a wrong fix still raises an issue. |
+| `prod-env-analytics-metrics-publish-errors` | draft-pr | `app/functions/analytics/analyticsMetricsPublish.js`, `app/unit-tests/analytics/analyticsMetricsPublish.test.js` | 2 | A nightly job's Lambda errored; a re-run cannot clear a 24-hour errors datapoint and every fix so far was code in this file, which serves no customer request. |
+| `prod-env-analytics-nightly-failed` | draft-pr | `app/functions/analytics/stripeReconcile.js`, `app/unit-tests/analytics/stripeReconcile.test.js`, `app/functions/analytics/ga4ReportPull.js`, `app/unit-tests/analytics/ga4ReportPull.test.js`, `app/functions/analytics/ga4EventExportPull.js`, `app/unit-tests/analytics/ga4EventExportPull.test.js`, `app/functions/analytics/ga4DailyPull.js`, `app/unit-tests/analytics/ga4DailyPull.test.js`, `app/functions/analytics/operatorEffortPull.js`, `app/unit-tests/analytics/operatorEffortPull.test.js`, `app/functions/analytics/dataQualityRun.js`, `app/unit-tests/analytics/dataQualityRun.test.js`, `app/functions/analytics/analyticsMetricsPublish.js`, `app/unit-tests/analytics/analyticsMetricsPublish.test.js`, `app/functions/analytics/rawExportPublish.js`, `app/unit-tests/analytics/rawExportPublish.test.js` | 2 | The state machine stops at the first failing job, so the fix is in one of the chain's Lambda files; the chain serves no customer request. |
+| `prod-env-analytics-stack-health` | draft-pr | `app/functions/analytics/activityEventTransform.js`, `app/unit-tests/analytics/activityEventTransform.test.js`, `app/functions/analytics/dynamoStreamToFirehose.js`, `app/unit-tests/analytics/dynamoStreamToFirehose.test.js`, `app/functions/analytics/alarmStateChangeTransform.js`, `app/unit-tests/analytics/alarmStateChangeTransform.test.js` | 2 | Three stream transforms feed this composite; they shape lake rows and serve no customer request. |
+| `prod-env-cost-focus-copy-errors` | draft-pr | `app/functions/analytics/costFocusCopy/index.js`, `app/unit-tests/analytics/costFocusCopy.test.js` | 2 | A nightly job's Lambda errored; a re-run cannot clear a 24-hour errors datapoint and every fix so far was code in this file, which serves no customer request. |
+| `prod-env-data-quality-run-errors` | draft-pr | `app/functions/analytics/dataQualityRun.js`, `app/unit-tests/analytics/dataQualityRun.test.js` | 2 | A nightly job's Lambda errored; a re-run cannot clear a 24-hour errors datapoint and every fix so far was code in this file, which serves no customer request. |
+| `prod-env-ga4-daily-pull-errors` | draft-pr | `app/functions/analytics/ga4DailyPull.js`, `app/unit-tests/analytics/ga4DailyPull.test.js` | 2 | A nightly job's Lambda errored; a re-run cannot clear a 24-hour errors datapoint and every fix so far was code in this file, which serves no customer request. |
+| `prod-env-ga4-event-export-pull-errors` | draft-pr | `app/functions/analytics/ga4EventExportPull.js`, `app/unit-tests/analytics/ga4EventExportPull.test.js` | 2 | A nightly job's Lambda errored; a re-run cannot clear a 24-hour errors datapoint and every fix so far was code in this file, which serves no customer request. |
+| `prod-env-ga4-report-pull-errors` | draft-pr | `app/functions/analytics/ga4ReportPull.js`, `app/unit-tests/analytics/ga4ReportPull.test.js` | 2 | A nightly job's Lambda errored; a re-run cannot clear a 24-hour errors datapoint and every fix so far was code in this file, which serves no customer request. |
+| `prod-env-obs-ue1-stack-health` | draft-pr | `app/functions/ops/bedrockBudgetAlertForward.js`, `app/unit-tests/functions/bedrockBudgetAlertForward.test.js` | 2 | One Lambda feeds this composite, the budget alert forwarder; it serves no customer request. |
+| `prod-env-operator-effort-pull-errors` | draft-pr | `app/functions/analytics/operatorEffortPull.js`, `app/unit-tests/analytics/operatorEffortPull.test.js` | 2 | A nightly job's Lambda errored; a re-run cannot clear a 24-hour errors datapoint and every fix so far was code in this file, which serves no customer request. |
+| `prod-env-operator-snapshot-publish-errors` | draft-pr | `app/functions/analytics/operatorSnapshotPublish.js`, `app/unit-tests/analytics/operatorSnapshotPublish.test.js` | 2 | A nightly job's Lambda errored; a re-run cannot clear a 24-hour errors datapoint and every fix so far was code in this file, which serves no customer request. |
+| `prod-env-raw-export-publish-errors` | draft-pr | `app/functions/analytics/rawExportPublish.js`, `app/unit-tests/analytics/rawExportPublish.test.js` | 2 | A nightly job's Lambda errored; a re-run cannot clear a 24-hour errors datapoint and every fix so far was code in this file, which serves no customer request. |
+| `prod-env-scan-detect-404-errors` | draft-pr | `app/functions/security/scanRate404Detect.js`, `app/unit-tests/functions/scanRate404Detect.test.js` | 2 | The 404 scan detector errored; it reads logs and writes a metric, so a wrong fix re-fires this same alarm and nothing else. |
+| `prod-env-security-lake-stack-health` | draft-pr | `app/functions/security/securityLakeNightly.js`, `app/unit-tests/functions/security/securityLakeNightly.test.js` | 2 | One Lambda feeds this composite; it reads findings and writes to the lake, so a wrong fix re-fires this same alarm and nothing else. |
+| `prod-env-stripe-reconcile-errors` | draft-pr | `app/functions/analytics/stripeReconcile.js`, `app/unit-tests/analytics/stripeReconcile.test.js` | 2 | A nightly job's Lambda errored; a re-run cannot clear a 24-hour errors datapoint and every fix so far was code in this file, which serves no customer request. |
+| `ci-env-dynamodb-customer-table-scan` | none |  | 0 | Security signal; ci alarms raise no issue now (the issue Lambda is a prod target), so only the historical issues carry it. |
+| `ci-env-salt-secret-unexpected-read` | none |  | 0 | Security signal; ci alarms raise no issue now (the issue Lambda is a prod target), so only the historical issues carry it. |
+| `prod-env-activity-events-data-quality-rules-failed` | none |  | 0 | A data quality rule failed; loosening the rule hides the fault, so a person finds the upstream cause. |
+| `prod-env-alarm-state-changes-data-quality-rules-failed` | none |  | 0 | A data quality rule failed; loosening the rule hides the fault, so a person finds the upstream cause. |
+| `prod-env-analytics-nightly-missed` | none |  | 0 | The nightly did not start; the scheduler needs a person until a replay workflow exists. |
+| `prod-env-billing-webhook-stack-health` | none |  | 0 | The Stripe webhook is a money path; a person reviews every change to it. |
+| `prod-env-bundle-cap-reached` | none |  | 0 | A cap is a business limit; raising it is the operator's decision. |
+| `prod-env-cis-aws-config-changes` | none |  | 0 | A CIS control fired; whether the call was ours or an intruder's is a person's call. |
+| `prod-env-cis-cloudtrail-configuration-changes` | none |  | 0 | A CIS control fired; whether the call was ours or an intruder's is a person's call. |
+| `prod-env-cis-cmk-deletion` | none |  | 0 | A CIS control fired; whether the call was ours or an intruder's is a person's call. |
+| `prod-env-cis-console-authentication-failures` | none |  | 0 | A CIS control fired; whether the call was ours or an intruder's is a person's call. |
+| `prod-env-cis-console-signin-without-mfa` | none |  | 0 | A CIS control fired; whether the call was ours or an intruder's is a person's call. |
+| `prod-env-cis-iam-policy-changes` | none |  | 0 | A CIS control fired; whether the call was ours or an intruder's is a person's call. |
+| `prod-env-cis-nacl-changes` | none |  | 0 | A CIS control fired; whether the call was ours or an intruder's is a person's call. |
+| `prod-env-cis-network-gateway-changes` | none |  | 0 | A CIS control fired; whether the call was ours or an intruder's is a person's call. |
+| `prod-env-cis-root-account-usage` | none |  | 0 | A CIS control fired; whether the call was ours or an intruder's is a person's call. |
+| `prod-env-cis-route-table-changes` | none |  | 0 | A CIS control fired; whether the call was ours or an intruder's is a person's call. |
+| `prod-env-cis-s3-bucket-policy-changes` | none |  | 0 | A CIS control fired; whether the call was ours or an intruder's is a person's call. |
+| `prod-env-cis-security-group-changes` | none |  | 0 | A CIS control fired; whether the call was ours or an intruder's is a person's call. |
+| `prod-env-cis-unauthorized-api-calls` | none |  | 0 | A CIS control fired; whether the call was ours or an intruder's is a person's call. |
+| `prod-env-cis-vpc-changes` | none |  | 0 | A CIS control fired; whether the call was ours or an intruder's is a person's call. |
+| `prod-env-compliance-accessibility-data-quality-rules-failed` | none |  | 0 | A data quality rule failed; loosening the rule hides the fault, so a person finds the upstream cause. |
+| `prod-env-compliance-fraud-headers-data-quality-rules-failed` | none |  | 0 | A data quality rule failed; loosening the rule hides the fault, so a person finds the upstream cause. |
+| `prod-env-cost-focus-data-quality-rules-failed` | none |  | 0 | A data quality rule failed; loosening the rule hides the fault, so a person finds the upstream cause. |
+| `prod-env-dora-runs-data-quality-rules-failed` | none |  | 0 | A data quality rule failed; loosening the rule hides the fault, so a person finds the upstream cause. |
+| `prod-env-dynamodb-customer-table-getitem-volume` | none |  | 0 | Customer reads above the usual volume are a security signal; a person decides. |
+| `prod-env-dynamodb-customer-table-scan` | none |  | 0 | A scan of a customer table is a security signal; a person names who scanned and why. |
+| `prod-env-email-hash-secret-unexpected-read` | none |  | 0 | A read of the email-hash secret outside the known principals is a security signal; a person decides. |
+| `prod-env-firehose-delivery-failed` | none |  | 0 | Firehose could not write to the lake bucket; the fault is in the delivery stream or bucket, which a person inspects. |
+| `prod-env-firehose-put-failed` | none |  | 0 | A producer's PutRecord failed; the fault is between two managed services, which a person inspects. |
+| `prod-env-hmrc-submission-failure` | none |  | 0 | A customer's filing failed; a person looks the customer up and replies. |
+| `prod-env-itsa-submission-failure` | none |  | 0 | A customer's filing failed; a person looks the customer up and replies. |
+| `prod-env-lifecycle-days-remaining` | none |  | 0 | A runtime, dependency or certificate is near its end date; the upgrade is planned work. |
+| `prod-env-rum-js-errors` | none |  | 0 | Browser errors on the customer site; the fix is in web/public, which every customer loads. |
+| `prod-env-rum-lcp-p75` | none |  | 0 | Page speed on the customer site; a person decides what to optimise. |
+| `prod-env-salt-secret-unexpected-read` | none |  | 0 | A read of the salt outside the known principals is a security signal; a person decides. |
+| `prod-env-scan-detect-404-missed` | none |  | 0 | The detector did not run; the scheduler needs a person until a replay workflow exists. |
+| `prod-env-token-charge-unpaid` | none |  | 0 | A customer was not charged after HMRC accepted; the ledger needs a person. |
+
 Proves: an alarm can close without the operator when the remedy is on the list. The measure is the
-share of the 55-issue history that would have closed itself.
+share of the closed alarm issues that close themselves against the 43% this table would have taken.
 
 ### Phase 4. Support
 

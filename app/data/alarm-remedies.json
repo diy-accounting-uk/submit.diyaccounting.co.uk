@@ -1,0 +1,569 @@
+[
+  {
+    "family": "prod-env-github-probe-failed",
+    "remedy": "dispatch",
+    "workflow": "probe-test.yml",
+    "inputs": {
+      "environment-name": "prod",
+      "behaviour-test-suite": "submitVatBehaviour"
+    },
+    "budgetPerDay": 2,
+    "why": "The alarm reads the probe's own metric, so one more scheduled-suite run that passes returns it to OK."
+  },
+  {
+    "family": "ci-app-activity-telegram-forwarder-errors",
+    "remedy": "close-when-gone",
+    "budgetPerDay": 2,
+    "why": "ci alarms reach Telegram only (the issue Lambda is a prod target), so no new issue arrives; the ci set self-destructs and takes the alarm with it."
+  },
+  {
+    "family": "ci-app-activity-telegram-forwarder-high-duration-p95",
+    "remedy": "close-when-gone",
+    "budgetPerDay": 2,
+    "why": "ci alarms reach Telegram only (the issue Lambda is a prod target), so no new issue arrives; the ci set self-destructs and takes the alarm with it."
+  },
+  {
+    "family": "ci-app-api-5xx",
+    "remedy": "close-when-gone",
+    "budgetPerDay": 2,
+    "why": "ci alarms reach Telegram only (the issue Lambda is a prod target), so no new issue arrives; the ci set self-destructs and takes the alarm with it."
+  },
+  {
+    "family": "ci-app-cognito-token-post-log-errors",
+    "remedy": "close-when-gone",
+    "budgetPerDay": 2,
+    "why": "ci alarms reach Telegram only (the issue Lambda is a prod target), so no new issue arrives; the ci set self-destructs and takes the alarm with it."
+  },
+  {
+    "family": "ci-app-health-failed",
+    "remedy": "close-when-gone",
+    "budgetPerDay": 2,
+    "why": "ci alarms reach Telegram only (the issue Lambda is a prod target), so no new issue arrives; the ci set self-destructs and takes the alarm with it."
+  },
+  {
+    "family": "ci-app-hmrc-stack-health",
+    "remedy": "close-when-gone",
+    "budgetPerDay": 2,
+    "why": "ci alarms reach Telegram only (the issue Lambda is a prod target), so no new issue arrives; the ci set self-destructs and takes the alarm with it."
+  },
+  {
+    "family": "ci-app-ops-stack-health",
+    "remedy": "close-when-gone",
+    "budgetPerDay": 2,
+    "why": "ci alarms reach Telegram only (the issue Lambda is a prod target), so no new issue arrives; the ci set self-destructs and takes the alarm with it."
+  },
+  {
+    "family": "ci-app-self-destruct-stack-health",
+    "remedy": "close-when-gone",
+    "budgetPerDay": 2,
+    "why": "ci alarms reach Telegram only (the issue Lambda is a prod target), so no new issue arrives; the ci set self-destructs and takes the alarm with it."
+  },
+  {
+    "family": "prod-app-account-stack-health",
+    "remedy": "close-when-gone",
+    "budgetPerDay": 2,
+    "why": "Deployment-scoped; the alarm is deleted with its set, so no OK transition will ever arrive for an issue about a retired set."
+  },
+  {
+    "family": "prod-app-activity-telegram-forwarder-errors",
+    "remedy": "close-when-gone",
+    "budgetPerDay": 2,
+    "why": "No live alarm of this name; the check was renamed or moved, so only the historical issues carry it."
+  },
+  {
+    "family": "prod-app-activity-telegram-forwarder-high-duration-p95",
+    "remedy": "close-when-gone",
+    "budgetPerDay": 2,
+    "why": "No live alarm of this name; the check was renamed or moved, so only the historical issues carry it."
+  },
+  {
+    "family": "prod-app-api-5xx",
+    "remedy": "close-when-gone",
+    "budgetPerDay": 2,
+    "why": "Deployment-scoped; the alarm is deleted with its set, so no OK transition will ever arrive for an issue about a retired set."
+  },
+  {
+    "family": "prod-app-api-failed",
+    "remedy": "close-when-gone",
+    "budgetPerDay": 2,
+    "why": "Deployment-scoped; the alarm is deleted with its set, so no OK transition will ever arrive for an issue about a retired set."
+  },
+  {
+    "family": "prod-app-auth-stack-health",
+    "remedy": "close-when-gone",
+    "budgetPerDay": 2,
+    "why": "Deployment-scoped; the alarm is deleted with its set, so no OK transition will ever arrive for an issue about a retired set."
+  },
+  {
+    "family": "prod-app-billing-stack-health",
+    "remedy": "close-when-gone",
+    "budgetPerDay": 2,
+    "why": "Deployment-scoped; the alarm is deleted with its set, so no OK transition will ever arrive for an issue about a retired set."
+  },
+  {
+    "family": "prod-app-cert-expiring",
+    "remedy": "close-when-gone",
+    "budgetPerDay": 2,
+    "why": "Deployment-scoped; the alarm is deleted with its set, so no OK transition will ever arrive for an issue about a retired set."
+  },
+  {
+    "family": "prod-app-cognito-token-post-health",
+    "remedy": "close-when-gone",
+    "budgetPerDay": 2,
+    "why": "No live alarm of this name; the check was renamed or moved, so only the historical issues carry it."
+  },
+  {
+    "family": "prod-app-cognito-token-post-log-errors",
+    "remedy": "close-when-gone",
+    "budgetPerDay": 2,
+    "why": "No live alarm of this name; the check was renamed or moved, so only the historical issues carry it."
+  },
+  {
+    "family": "prod-app-companies-house-stack-health",
+    "remedy": "close-when-gone",
+    "budgetPerDay": 2,
+    "why": "Deployment-scoped; the alarm is deleted with its set, so no OK transition will ever arrive for an issue about a retired set."
+  },
+  {
+    "family": "prod-app-diya-gl-stack-health",
+    "remedy": "close-when-gone",
+    "budgetPerDay": 2,
+    "why": "Deployment-scoped; the alarm is deleted with its set, so no OK transition will ever arrive for an issue about a retired set."
+  },
+  {
+    "family": "prod-app-edge-stack-health",
+    "remedy": "close-when-gone",
+    "budgetPerDay": 2,
+    "why": "Deployment-scoped; the alarm is deleted with its set, so no OK transition will ever arrive for an issue about a retired set."
+  },
+  {
+    "family": "prod-app-github-synthetic-failed",
+    "remedy": "close-when-gone",
+    "budgetPerDay": 2,
+    "why": "No live alarm of this name; the check was renamed or moved, so only the historical issues carry it."
+  },
+  {
+    "family": "prod-app-health-failed",
+    "remedy": "close-when-gone",
+    "budgetPerDay": 2,
+    "why": "Deployment-scoped; the alarm is deleted with its set, so no OK transition will ever arrive for an issue about a retired set."
+  },
+  {
+    "family": "prod-app-hmrc-group1-stack-health",
+    "remedy": "close-when-gone",
+    "budgetPerDay": 2,
+    "why": "Deployment-scoped; the alarm is deleted with its set, so no OK transition will ever arrive for an issue about a retired set."
+  },
+  {
+    "family": "prod-app-hmrc-group2-stack-health",
+    "remedy": "close-when-gone",
+    "budgetPerDay": 2,
+    "why": "Deployment-scoped; the alarm is deleted with its set, so no OK transition will ever arrive for an issue about a retired set."
+  },
+  {
+    "family": "prod-app-hmrc-itsa-stack-health",
+    "remedy": "close-when-gone",
+    "budgetPerDay": 2,
+    "why": "Deployment-scoped; the alarm is deleted with its set, so no OK transition will ever arrive for an issue about a retired set."
+  },
+  {
+    "family": "prod-app-hmrc-stack-health",
+    "remedy": "close-when-gone",
+    "budgetPerDay": 2,
+    "why": "Deployment-scoped; the alarm is deleted with its set, so no OK transition will ever arrive for an issue about a retired set."
+  },
+  {
+    "family": "prod-app-ops-stack-health",
+    "remedy": "close-when-gone",
+    "budgetPerDay": 2,
+    "why": "Deployment-scoped; the alarm is deleted with its set, so no OK transition will ever arrive for an issue about a retired set."
+  },
+  {
+    "family": "prod-app-waf-attack-signatures",
+    "remedy": "close-when-gone",
+    "budgetPerDay": 2,
+    "why": "Deployment-scoped; the alarm is deleted with its set, so no OK transition will ever arrive for an issue about a retired set."
+  },
+  {
+    "family": "prod-app-waf-known-bad-inputs",
+    "remedy": "close-when-gone",
+    "budgetPerDay": 2,
+    "why": "Deployment-scoped; the alarm is deleted with its set, so no OK transition will ever arrive for an issue about a retired set."
+  },
+  {
+    "family": "prod-app-waf-manual-block",
+    "remedy": "close-when-gone",
+    "budgetPerDay": 2,
+    "why": "Deployment-scoped; the alarm is deleted with its set, so no OK transition will ever arrive for an issue about a retired set."
+  },
+  {
+    "family": "prod-app-waf-rate-limit",
+    "remedy": "close-when-gone",
+    "budgetPerDay": 2,
+    "why": "Deployment-scoped; the alarm is deleted with its set, so no OK transition will ever arrive for an issue about a retired set."
+  },
+  {
+    "family": "prod-env-activity-stack-health",
+    "remedy": "draft-pr",
+    "paths": ["app/functions/ops/activityTelegramForwarder.js", "app/unit-tests/functions/activityTelegramForwarder.test.js"],
+    "budgetPerDay": 2,
+    "why": "One Lambda feeds this composite, the Telegram forwarder; the GitHub issue path is a separate Lambda, so a wrong fix still raises an issue."
+  },
+  {
+    "family": "prod-env-analytics-metrics-publish-errors",
+    "remedy": "draft-pr",
+    "paths": ["app/functions/analytics/analyticsMetricsPublish.js", "app/unit-tests/analytics/analyticsMetricsPublish.test.js"],
+    "budgetPerDay": 2,
+    "why": "A nightly job's Lambda errored; a re-run cannot clear a 24-hour errors datapoint and every fix so far was code in this file, which serves no customer request."
+  },
+  {
+    "family": "prod-env-analytics-nightly-failed",
+    "remedy": "draft-pr",
+    "paths": [
+      "app/functions/analytics/stripeReconcile.js",
+      "app/unit-tests/analytics/stripeReconcile.test.js",
+      "app/functions/analytics/ga4ReportPull.js",
+      "app/unit-tests/analytics/ga4ReportPull.test.js",
+      "app/functions/analytics/ga4EventExportPull.js",
+      "app/unit-tests/analytics/ga4EventExportPull.test.js",
+      "app/functions/analytics/ga4DailyPull.js",
+      "app/unit-tests/analytics/ga4DailyPull.test.js",
+      "app/functions/analytics/operatorEffortPull.js",
+      "app/unit-tests/analytics/operatorEffortPull.test.js",
+      "app/functions/analytics/dataQualityRun.js",
+      "app/unit-tests/analytics/dataQualityRun.test.js",
+      "app/functions/analytics/analyticsMetricsPublish.js",
+      "app/unit-tests/analytics/analyticsMetricsPublish.test.js",
+      "app/functions/analytics/rawExportPublish.js",
+      "app/unit-tests/analytics/rawExportPublish.test.js"
+    ],
+    "budgetPerDay": 2,
+    "why": "The state machine stops at the first failing job, so the fix is in one of the chain's Lambda files; the chain serves no customer request."
+  },
+  {
+    "family": "prod-env-analytics-stack-health",
+    "remedy": "draft-pr",
+    "paths": [
+      "app/functions/analytics/activityEventTransform.js",
+      "app/unit-tests/analytics/activityEventTransform.test.js",
+      "app/functions/analytics/dynamoStreamToFirehose.js",
+      "app/unit-tests/analytics/dynamoStreamToFirehose.test.js",
+      "app/functions/analytics/alarmStateChangeTransform.js",
+      "app/unit-tests/analytics/alarmStateChangeTransform.test.js"
+    ],
+    "budgetPerDay": 2,
+    "why": "Three stream transforms feed this composite; they shape lake rows and serve no customer request."
+  },
+  {
+    "family": "prod-env-cost-focus-copy-errors",
+    "remedy": "draft-pr",
+    "paths": ["app/functions/analytics/costFocusCopy/index.js", "app/unit-tests/analytics/costFocusCopy.test.js"],
+    "budgetPerDay": 2,
+    "why": "A nightly job's Lambda errored; a re-run cannot clear a 24-hour errors datapoint and every fix so far was code in this file, which serves no customer request."
+  },
+  {
+    "family": "prod-env-data-quality-run-errors",
+    "remedy": "draft-pr",
+    "paths": ["app/functions/analytics/dataQualityRun.js", "app/unit-tests/analytics/dataQualityRun.test.js"],
+    "budgetPerDay": 2,
+    "why": "A nightly job's Lambda errored; a re-run cannot clear a 24-hour errors datapoint and every fix so far was code in this file, which serves no customer request."
+  },
+  {
+    "family": "prod-env-ga4-daily-pull-errors",
+    "remedy": "draft-pr",
+    "paths": ["app/functions/analytics/ga4DailyPull.js", "app/unit-tests/analytics/ga4DailyPull.test.js"],
+    "budgetPerDay": 2,
+    "why": "A nightly job's Lambda errored; a re-run cannot clear a 24-hour errors datapoint and every fix so far was code in this file, which serves no customer request."
+  },
+  {
+    "family": "prod-env-ga4-event-export-pull-errors",
+    "remedy": "draft-pr",
+    "paths": ["app/functions/analytics/ga4EventExportPull.js", "app/unit-tests/analytics/ga4EventExportPull.test.js"],
+    "budgetPerDay": 2,
+    "why": "A nightly job's Lambda errored; a re-run cannot clear a 24-hour errors datapoint and every fix so far was code in this file, which serves no customer request."
+  },
+  {
+    "family": "prod-env-ga4-report-pull-errors",
+    "remedy": "draft-pr",
+    "paths": ["app/functions/analytics/ga4ReportPull.js", "app/unit-tests/analytics/ga4ReportPull.test.js"],
+    "budgetPerDay": 2,
+    "why": "A nightly job's Lambda errored; a re-run cannot clear a 24-hour errors datapoint and every fix so far was code in this file, which serves no customer request."
+  },
+  {
+    "family": "prod-env-obs-ue1-stack-health",
+    "remedy": "draft-pr",
+    "paths": ["app/functions/ops/bedrockBudgetAlertForward.js", "app/unit-tests/functions/bedrockBudgetAlertForward.test.js"],
+    "budgetPerDay": 2,
+    "why": "One Lambda feeds this composite, the budget alert forwarder; it serves no customer request."
+  },
+  {
+    "family": "prod-env-operator-effort-pull-errors",
+    "remedy": "draft-pr",
+    "paths": ["app/functions/analytics/operatorEffortPull.js", "app/unit-tests/analytics/operatorEffortPull.test.js"],
+    "budgetPerDay": 2,
+    "why": "A nightly job's Lambda errored; a re-run cannot clear a 24-hour errors datapoint and every fix so far was code in this file, which serves no customer request."
+  },
+  {
+    "family": "prod-env-operator-snapshot-publish-errors",
+    "remedy": "draft-pr",
+    "paths": ["app/functions/analytics/operatorSnapshotPublish.js", "app/unit-tests/analytics/operatorSnapshotPublish.test.js"],
+    "budgetPerDay": 2,
+    "why": "A nightly job's Lambda errored; a re-run cannot clear a 24-hour errors datapoint and every fix so far was code in this file, which serves no customer request."
+  },
+  {
+    "family": "prod-env-raw-export-publish-errors",
+    "remedy": "draft-pr",
+    "paths": ["app/functions/analytics/rawExportPublish.js", "app/unit-tests/analytics/rawExportPublish.test.js"],
+    "budgetPerDay": 2,
+    "why": "A nightly job's Lambda errored; a re-run cannot clear a 24-hour errors datapoint and every fix so far was code in this file, which serves no customer request."
+  },
+  {
+    "family": "prod-env-scan-detect-404-errors",
+    "remedy": "draft-pr",
+    "paths": ["app/functions/security/scanRate404Detect.js", "app/unit-tests/functions/scanRate404Detect.test.js"],
+    "budgetPerDay": 2,
+    "why": "The 404 scan detector errored; it reads logs and writes a metric, so a wrong fix re-fires this same alarm and nothing else."
+  },
+  {
+    "family": "prod-env-security-lake-stack-health",
+    "remedy": "draft-pr",
+    "paths": ["app/functions/security/securityLakeNightly.js", "app/unit-tests/functions/security/securityLakeNightly.test.js"],
+    "budgetPerDay": 2,
+    "why": "One Lambda feeds this composite; it reads findings and writes to the lake, so a wrong fix re-fires this same alarm and nothing else."
+  },
+  {
+    "family": "prod-env-stripe-reconcile-errors",
+    "remedy": "draft-pr",
+    "paths": ["app/functions/analytics/stripeReconcile.js", "app/unit-tests/analytics/stripeReconcile.test.js"],
+    "budgetPerDay": 2,
+    "why": "A nightly job's Lambda errored; a re-run cannot clear a 24-hour errors datapoint and every fix so far was code in this file, which serves no customer request."
+  },
+  {
+    "family": "ci-env-dynamodb-customer-table-scan",
+    "remedy": "none",
+    "budgetPerDay": 0,
+    "why": "Security signal; ci alarms raise no issue now (the issue Lambda is a prod target), so only the historical issues carry it."
+  },
+  {
+    "family": "ci-env-salt-secret-unexpected-read",
+    "remedy": "none",
+    "budgetPerDay": 0,
+    "why": "Security signal; ci alarms raise no issue now (the issue Lambda is a prod target), so only the historical issues carry it."
+  },
+  {
+    "family": "prod-env-activity-events-data-quality-rules-failed",
+    "remedy": "none",
+    "budgetPerDay": 0,
+    "why": "A data quality rule failed; loosening the rule hides the fault, so a person finds the upstream cause."
+  },
+  {
+    "family": "prod-env-alarm-state-changes-data-quality-rules-failed",
+    "remedy": "none",
+    "budgetPerDay": 0,
+    "why": "A data quality rule failed; loosening the rule hides the fault, so a person finds the upstream cause."
+  },
+  {
+    "family": "prod-env-analytics-nightly-missed",
+    "remedy": "none",
+    "budgetPerDay": 0,
+    "why": "The nightly did not start; the scheduler needs a person until a replay workflow exists."
+  },
+  {
+    "family": "prod-env-billing-webhook-stack-health",
+    "remedy": "none",
+    "budgetPerDay": 0,
+    "why": "The Stripe webhook is a money path; a person reviews every change to it."
+  },
+  {
+    "family": "prod-env-bundle-cap-reached",
+    "remedy": "none",
+    "budgetPerDay": 0,
+    "why": "A cap is a business limit; raising it is the operator's decision."
+  },
+  {
+    "family": "prod-env-cis-aws-config-changes",
+    "remedy": "none",
+    "budgetPerDay": 0,
+    "why": "A CIS control fired; whether the call was ours or an intruder's is a person's call."
+  },
+  {
+    "family": "prod-env-cis-cloudtrail-configuration-changes",
+    "remedy": "none",
+    "budgetPerDay": 0,
+    "why": "A CIS control fired; whether the call was ours or an intruder's is a person's call."
+  },
+  {
+    "family": "prod-env-cis-cmk-deletion",
+    "remedy": "none",
+    "budgetPerDay": 0,
+    "why": "A CIS control fired; whether the call was ours or an intruder's is a person's call."
+  },
+  {
+    "family": "prod-env-cis-console-authentication-failures",
+    "remedy": "none",
+    "budgetPerDay": 0,
+    "why": "A CIS control fired; whether the call was ours or an intruder's is a person's call."
+  },
+  {
+    "family": "prod-env-cis-console-signin-without-mfa",
+    "remedy": "none",
+    "budgetPerDay": 0,
+    "why": "A CIS control fired; whether the call was ours or an intruder's is a person's call."
+  },
+  {
+    "family": "prod-env-cis-iam-policy-changes",
+    "remedy": "none",
+    "budgetPerDay": 0,
+    "why": "A CIS control fired; whether the call was ours or an intruder's is a person's call."
+  },
+  {
+    "family": "prod-env-cis-nacl-changes",
+    "remedy": "none",
+    "budgetPerDay": 0,
+    "why": "A CIS control fired; whether the call was ours or an intruder's is a person's call."
+  },
+  {
+    "family": "prod-env-cis-network-gateway-changes",
+    "remedy": "none",
+    "budgetPerDay": 0,
+    "why": "A CIS control fired; whether the call was ours or an intruder's is a person's call."
+  },
+  {
+    "family": "prod-env-cis-root-account-usage",
+    "remedy": "none",
+    "budgetPerDay": 0,
+    "why": "A CIS control fired; whether the call was ours or an intruder's is a person's call."
+  },
+  {
+    "family": "prod-env-cis-route-table-changes",
+    "remedy": "none",
+    "budgetPerDay": 0,
+    "why": "A CIS control fired; whether the call was ours or an intruder's is a person's call."
+  },
+  {
+    "family": "prod-env-cis-s3-bucket-policy-changes",
+    "remedy": "none",
+    "budgetPerDay": 0,
+    "why": "A CIS control fired; whether the call was ours or an intruder's is a person's call."
+  },
+  {
+    "family": "prod-env-cis-security-group-changes",
+    "remedy": "none",
+    "budgetPerDay": 0,
+    "why": "A CIS control fired; whether the call was ours or an intruder's is a person's call."
+  },
+  {
+    "family": "prod-env-cis-unauthorized-api-calls",
+    "remedy": "none",
+    "budgetPerDay": 0,
+    "why": "A CIS control fired; whether the call was ours or an intruder's is a person's call."
+  },
+  {
+    "family": "prod-env-cis-vpc-changes",
+    "remedy": "none",
+    "budgetPerDay": 0,
+    "why": "A CIS control fired; whether the call was ours or an intruder's is a person's call."
+  },
+  {
+    "family": "prod-env-compliance-accessibility-data-quality-rules-failed",
+    "remedy": "none",
+    "budgetPerDay": 0,
+    "why": "A data quality rule failed; loosening the rule hides the fault, so a person finds the upstream cause."
+  },
+  {
+    "family": "prod-env-compliance-fraud-headers-data-quality-rules-failed",
+    "remedy": "none",
+    "budgetPerDay": 0,
+    "why": "A data quality rule failed; loosening the rule hides the fault, so a person finds the upstream cause."
+  },
+  {
+    "family": "prod-env-cost-focus-data-quality-rules-failed",
+    "remedy": "none",
+    "budgetPerDay": 0,
+    "why": "A data quality rule failed; loosening the rule hides the fault, so a person finds the upstream cause."
+  },
+  {
+    "family": "prod-env-dora-runs-data-quality-rules-failed",
+    "remedy": "none",
+    "budgetPerDay": 0,
+    "why": "A data quality rule failed; loosening the rule hides the fault, so a person finds the upstream cause."
+  },
+  {
+    "family": "prod-env-dynamodb-customer-table-getitem-volume",
+    "remedy": "none",
+    "budgetPerDay": 0,
+    "why": "Customer reads above the usual volume are a security signal; a person decides."
+  },
+  {
+    "family": "prod-env-dynamodb-customer-table-scan",
+    "remedy": "none",
+    "budgetPerDay": 0,
+    "why": "A scan of a customer table is a security signal; a person names who scanned and why."
+  },
+  {
+    "family": "prod-env-email-hash-secret-unexpected-read",
+    "remedy": "none",
+    "budgetPerDay": 0,
+    "why": "A read of the email-hash secret outside the known principals is a security signal; a person decides."
+  },
+  {
+    "family": "prod-env-firehose-delivery-failed",
+    "remedy": "none",
+    "budgetPerDay": 0,
+    "why": "Firehose could not write to the lake bucket; the fault is in the delivery stream or bucket, which a person inspects."
+  },
+  {
+    "family": "prod-env-firehose-put-failed",
+    "remedy": "none",
+    "budgetPerDay": 0,
+    "why": "A producer's PutRecord failed; the fault is between two managed services, which a person inspects."
+  },
+  {
+    "family": "prod-env-hmrc-submission-failure",
+    "remedy": "none",
+    "budgetPerDay": 0,
+    "why": "A customer's filing failed; a person looks the customer up and replies."
+  },
+  {
+    "family": "prod-env-itsa-submission-failure",
+    "remedy": "none",
+    "budgetPerDay": 0,
+    "why": "A customer's filing failed; a person looks the customer up and replies."
+  },
+  {
+    "family": "prod-env-lifecycle-days-remaining",
+    "remedy": "none",
+    "budgetPerDay": 0,
+    "why": "A runtime, dependency or certificate is near its end date; the upgrade is planned work."
+  },
+  {
+    "family": "prod-env-rum-js-errors",
+    "remedy": "none",
+    "budgetPerDay": 0,
+    "why": "Browser errors on the customer site; the fix is in web/public, which every customer loads."
+  },
+  {
+    "family": "prod-env-rum-lcp-p75",
+    "remedy": "none",
+    "budgetPerDay": 0,
+    "why": "Page speed on the customer site; a person decides what to optimise."
+  },
+  {
+    "family": "prod-env-salt-secret-unexpected-read",
+    "remedy": "none",
+    "budgetPerDay": 0,
+    "why": "A read of the salt outside the known principals is a security signal; a person decides."
+  },
+  {
+    "family": "prod-env-scan-detect-404-missed",
+    "remedy": "none",
+    "budgetPerDay": 0,
+    "why": "The detector did not run; the scheduler needs a person until a replay workflow exists."
+  },
+  {
+    "family": "prod-env-token-charge-unpaid",
+    "remedy": "none",
+    "budgetPerDay": 0,
+    "why": "A customer was not charged after HMRC accepted; the ledger needs a person."
+  }
+]
