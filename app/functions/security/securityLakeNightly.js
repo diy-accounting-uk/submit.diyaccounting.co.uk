@@ -214,24 +214,36 @@ const GITHUB_ALERT_ENDPOINTS = [
   { alertType: "secret_scanning", path: "secret-scanning/alerts", severityField: () => "n/a" },
 ];
 
+export function nextPageUrl(linkHeader) {
+  if (!linkHeader) return null;
+  const links = linkHeader.split(",");
+  for (const link of links) {
+    const match = link.match(/<([^>]+)>;\s*rel="next"/);
+    if (match) {
+      return match[1];
+    }
+  }
+  return null;
+}
+
 async function fetchOpenGithubAlerts(fetchImpl, token, repo, endpointPath) {
   const alerts = [];
-  let page = 1;
+  let url = `https://api.github.com/repos/${repo}/${endpointPath}?state=open&per_page=100`;
+  const headers = {
+    "Authorization": `Bearer ${token}`,
+    "Accept": "application/vnd.github+json",
+    "X-GitHub-Api-Version": "2022-11-28",
+  };
   for (;;) {
-    const response = await fetchImpl(`https://api.github.com/repos/${repo}/${endpointPath}?state=open&per_page=100&page=${page}`, {
-      headers: {
-        "Authorization": `Bearer ${token}`,
-        "Accept": "application/vnd.github+json",
-        "X-GitHub-Api-Version": "2022-11-28",
-      },
-    });
+    const response = await fetchImpl(url, { headers });
     if (!response.ok) {
       throw new Error(`GitHub API error fetching ${endpointPath}: ${response.status} ${await response.text()}`);
     }
     const batch = await response.json();
     alerts.push(...batch);
-    if (batch.length < 100) break;
-    page += 1;
+    const link = response.headers.get("link");
+    url = nextPageUrl(link);
+    if (!url) break;
   }
   return alerts;
 }
