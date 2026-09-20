@@ -370,6 +370,9 @@ class SecurityDetectionStackTest {
         assertTrue(
                 pattern.contains("cdk-hnb659fds-*"),
                 "UnauthorizedApiCalls pattern must still carry the deploy-role exclusion, was: " + pattern);
+        assertTrue(
+                pattern.contains("AWSServiceRoleFor*"),
+                "UnauthorizedApiCalls pattern must exclude AWS service-linked roles, was: " + pattern);
     }
 
     @Test
