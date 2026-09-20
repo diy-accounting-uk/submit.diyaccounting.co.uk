@@ -41,16 +41,7 @@ step.
 
 ## In flight
 
-- [ ] **B69.1. The publication filter as a composite action.** On `main` (d2f94db3):
-  `.github/actions/publish-filter`, used by `alarm-triage.yml` and `agentic-lib-code.yml`. Proof
-  in flight: `alarm-triage.yml` dispatch 35542031836 on #305; its comment must end `_Written by
-  <model> in [alarm-triage #<run>](<url>). Not reviewed by a person._` with no leaked preamble and
-  the timestamp intact. **Source**: BACKLOG 69; `PLAN_REPOSITORY_AUTOMATION.md` Phase 1, P7.
-  **Owner**: Claude Code. **Model**: Sonnet. **Size**: ~0 files.
-
-## Machine-only
-
-- [ ] **B30af.7. Release a ci slot when its branch is deleted.** At 22:20 UTC on 2026-09-20 all four
+- [ ] **B30af.7. Release a ci slot when its branch is deleted.** In flight: on `claude/b63-board` (PR #311, 49ffed4d). At 22:20 UTC on 2026-09-20 all four
   `/submit/ci/slots/*` records were held (ci-set1 by `claude/dg-3a-bundle-listed`, open PR #306;
   ci-set2, ci-set3 and ci-set4 by `claude/dg-1h-callbacks`, `claude/dg-2a-retention` and
   `claude/b62-board`, each merged and its branch deleted), so PR #310's deploy (run 35535704298)
@@ -69,7 +60,7 @@ step.
   session's inbox message of 2026-09-20T22:11Z. **Owner**: Claude Code. **Model**: Sonnet.
   **Size**: ~3 files.
 
-- [ ] **B52.D3. The spreadsheets site's RUM on the page-experience panel.** Submit's CLS metric,
+- [ ] **B52.D3. The spreadsheets site's RUM on the page-experience panel.** In flight: on `claude/b63-board` (PR #311, 57f298ab); after merge, send the spreadsheets inbox the `SpreadsheetsMetricsSinkArn` outputs of `prod-env-ObservabilityUE1Stack` and `ci-env-ObservabilityUE1Stack`. Submit's CLS metric,
   alarm and widget are on `main` (d2f94db3). The spreadsheets repository answered on
   2026-09-20T20:06Z: CloudWatch RUM is live there from its PR #126, app monitor `spreadsheets-web`
   (prod) and `ci-spreadsheets-web` (ci), in us-east-1 in account 064390746177, telemetries
@@ -83,7 +74,7 @@ step.
   `SpreadsheetsStack.java` pointing at the sink ARN the deploy prints. **Source**: BACKLOG 62;
   `PLAN_ONE_STOP_DASHBOARD.md` D3. **Owner**: Claude Code. **Model**: Sonnet. **Size**: ~2 files.
 
-- [ ] **B49.22. `infra/paypal`.** `paypal.toml`: `[button] hosted_button_id = "XTEQ73HM52QQW"`,
+- [ ] **B49.22. `infra/paypal`.** In flight: on `claude/b63-board` (PR #311, cfc14f8b). `paypal.toml`: `[button] hosted_button_id = "XTEQ73HM52QQW"`,
   `form_action = "https://www.paypal.com/donate"`, `donate_url` (the same id as a GET link), `page =
   "https://spreadsheets.diyaccounting.co.uk/donate.html"`; `[source]` recording the sibling
   repository's `web/spreadsheets.diyaccounting.co.uk/donate.template.html` and
@@ -96,7 +87,7 @@ step.
   `assertTemplateMatches`. Proof: `npm test`, one `infra-apply.yml` run. After B49.18. **Source**:
   BACKLOG 49b; item 22. **Owner**: Claude Code. **Model**: Haiku. **Size**: ~3 files.
 
-- [ ] **B49.23. `infra/telegram`.** `telegram.toml`: `[bot] username = "diyaccounting_bot"`,
+- [ ] **B49.23. `infra/telegram`.** In flight: on `claude/b63-board` (PR #311, 25851d30). `telegram.toml`: `[bot] username = "diyaccounting_bot"`,
   `[secrets] bot_token = "{env}/submit/telegram/bot_token"`, six `[[group]]` rows `name`,
   `environment`, `purpose` (`test`, `live`, `ops`), `chat_id`, from `.env.ci:139-141`,
   `.env.prod:132-134` and `RUNBOOK_INFORMATION_SECURITY.md:89`. `telegram-assert.js` in
@@ -109,7 +100,7 @@ step.
   test`, one `infra-apply.yml` run. After B49.18. **Source**: BACKLOG 49b; item 23. **Owner**:
   Claude Code. **Model**: Haiku. **Size**: ~3 files.
 
-- [ ] **B49.19. `infra/hmrc`.** `hmrc.toml`: `[application.sandbox]` (client id `uqMH…v4tV`,
+- [ ] **B49.19. `infra/hmrc`.** In flight: on `claude/b63-board` (PR #311, c08fe6ef). `hmrc.toml`: `[application.sandbox]` (client id `uqMH…v4tV`,
   test-api host, `secret = "{env}/submit/hmrc/sandbox_client_secret"`) and
   `[application.production]` (`hKCO…ycev`, `api.service.hmrc.gov.uk`,
   `prod/submit/hmrc/client_secret`), each with `redirect_uris` and
@@ -124,7 +115,7 @@ step.
   `classifySubscriptionResponse`. Proof: `npm test`, one `infra-apply.yml` run. After B49.18.
   **Source**: BACKLOG 49b; item 19. **Owner**: Claude Code. **Model**: Sonnet. **Size**: ~4 files.
 
-- [ ] **B49.18. `infra/companies-house` and the shared `infra-apply.yml`.** `companies-house.toml`:
+- [ ] **B49.18. `infra/companies-house` and the shared `infra-apply.yml`.** In flight: on `claude/b63-board` (PR #311, 679e61c7). `companies-house.toml`:
   `[environment.ci]` and `[environment.prod]`, each `application_name`, `client_id`, three base
   URIs, `redirect_uris` (`<host>/companies-house/filingCallback.html`), `xmlgw_uri`, and
   `[environment.<env>.secrets]` naming `api_key`, `client_secret`, `presenter_id`, `presenter_code`
@@ -139,7 +130,7 @@ step.
   Proof: `npm test` and one `infra-apply.yml` run. **Source**: BACKLOG 49b; item 18.
   **Owner**: Claude Code. **Model**: Sonnet. **Size**: ~5 files.
 
-- [ ] **B49.21. `infra/stripe`.** `git mv scripts/stripe-setup.js infra/stripe/stripe-sync.js` and
+- [ ] **B49.21. `infra/stripe`.** In flight: on `claude/b63-board` (PR #311, 5ad6e1d9). `git mv scripts/stripe-setup.js infra/stripe/stripe-sync.js` and
   `scripts/lib/stripeCatalogue.js` beside it, fixing its test. `stripe.toml`: `[[endpoint]]` rows
   `environment`, `url` (the two `*-billing.submit…/api/v1/billing/webhook`), `modes` (ci test, prod
   both), `github_secret` (`STRIPE_[TEST_]WEBHOOK_SECRET`), `aws_secret`
@@ -154,7 +145,7 @@ step.
   `npm test`, `--mode test` reading "already exists" throughout. After B49.18. **Source**: BACKLOG
   49b; item 21. **Owner**: Claude Code. **Model**: Sonnet. **Size**: ~6 files.
 
-- [ ] **B70.B. The remedy list: build.** From B70.D's `app/data/alarm-remedies.json`.
+- [ ] **B70.B. The remedy list: build.** In flight: on `claude/b63-board` (PR #311, cc7735eb); remainder after merge: enforce each family's `budgetPerDay` (count that family's `remedy:*` actions in the last day before dispatching), and prove `gh workflow run` on the agent App token. From B70.D's `app/data/alarm-remedies.json`.
   `app/unit-tests/data/alarmRemedies.test.js`: every `workflow` names a file in `.github/workflows/`
   and its inputs match that file's `workflow_dispatch.inputs`. `prompts/alarm-triage.md` gets the
   family's row and a final `remedy: <id>|none` line; `alarm-triage.yml` (as on `claude/b61-board`)
@@ -170,7 +161,7 @@ step.
   dispatch, one observed close. **Source**: BACKLOG 70; `PLAN_REPOSITORY_AUTOMATION.md` Phase 3.
   **Owner**: Claude Code. **Model**: Sonnet. **Size**: ~9 files.
 
-- [ ] **B71. Support issue triage on `issues: [opened]`.** New `.github/workflows/support-triage.yml`
+- [ ] **B71. Support issue triage on `issues: [opened]`.** In flight: on `claude/b63-board` (PR #311, 254f7da7). New `.github/workflows/support-triage.yml`
   in `alarm-triage.yml`'s shape as on `claude/b61-board`: `if` `contains(labels, 'support')`, its
   budget guard, kill switch and B69.1 filter, new `prompts/support-triage.md`, and a `prompt-file`
   input on `.github/actions/run-triage-agent`. The Lambda's issue is `[Support] <subject>`, labels
@@ -185,6 +176,24 @@ step.
   Lambda's five values, `description`, labels `support` and `origin:human`. Proof: `npm test`, one
   dispatch. After B69.1. **Source**: BACKLOG 71; `PLAN_REPOSITORY_AUTOMATION.md` Phase 4. **Owner**:
   Claude Code. **Model**: Sonnet. **Size**: ~6 files.
+
+- [ ] **O38. The two GitHub Apps carry every machine write.** In flight: the `security-review.yml` edit is on `claude/b63-board` (PR #311, 3df70639); the five deletes follow the merge, with the operator's approval. The code is on `main` since PR #304
+  (7248ef4d) and prod-dd95c16 carries it. Proof so far: alarm issue #305 (2026-09-20 11:51 UTC) is
+  authored by `app/diyaccounting-ops`, `user.type: Bot`, and the security-lake nightly of
+  2026-09-20 03:20 UTC read code-scanning and secret-scanning alerts on the App token. The support
+  ticket and the triage PR prove themselves when one next arrives. One read of a PAT remains:
+  `.github/workflows/security-review.yml:211` gives `assign-copilot`'s `github-script` step
+  `secrets.PERSONAL_ACCESS_TOKEN`; replace it with an `actions/create-github-app-token` step on
+  `AGENT_APP_ID`/`AGENT_APP_PRIVATE_KEY` as `alarm-triage.yml:173-176` does, and check on the next
+  `security-review.yml` run that the App can run `replaceActorsForAssignable` (if it cannot, the
+  job goes, since Copilot assignment is the PAT's only use). Then delete the repository secrets
+  `ISSUE_BOT_TOKEN`, `SUPPORT_BOT_TOKEN` and `PERSONAL_ACCESS_TOKEN` (`gh secret delete <name>`)
+  and the Secrets Manager entries `{env}/submit/github/issue_bot_token` and `support_bot_token` in
+  ci and prod (`aws secretsmanager delete-secret --recovery-window-in-days 30`, the operator
+  approves). **Source**: `REPORT_IDENTITY_AUDIT.md` section 8, recommendations 2 and 3. **Owner**:
+  Claude Code, the operator approves the five deletes. **Model**: Haiku. **Size**: ~1 file.
+
+## Machine-only
 
 - [ ] **B69.2. The reliability ledger.** `probe_runs`, `alarm_state_changes` and
   `github_workflow_runs` carry suite, alarm and run outcomes; nothing records an agent run's own.
@@ -308,22 +317,6 @@ step.
   `githubSync.test.js` over `parseConfig`, `planGithub`, `rulesetDiff`. Proof: `npm test` and a plan
   reading "already match". After B49.18. **Source**: BACKLOG 49b; item 20. **Owner**: Claude Code,
   the operator supplies the token. **Model**: Sonnet. **Size**: ~5 files.
-
-- [ ] **O38. The two GitHub Apps carry every machine write.** The code is on `main` since PR #304
-  (7248ef4d) and prod-dd95c16 carries it. Proof so far: alarm issue #305 (2026-09-20 11:51 UTC) is
-  authored by `app/diyaccounting-ops`, `user.type: Bot`, and the security-lake nightly of
-  2026-09-20 03:20 UTC read code-scanning and secret-scanning alerts on the App token. The support
-  ticket and the triage PR prove themselves when one next arrives. One read of a PAT remains:
-  `.github/workflows/security-review.yml:211` gives `assign-copilot`'s `github-script` step
-  `secrets.PERSONAL_ACCESS_TOKEN`; replace it with an `actions/create-github-app-token` step on
-  `AGENT_APP_ID`/`AGENT_APP_PRIVATE_KEY` as `alarm-triage.yml:173-176` does, and check on the next
-  `security-review.yml` run that the App can run `replaceActorsForAssignable` (if it cannot, the
-  job goes, since Copilot assignment is the PAT's only use). Then delete the repository secrets
-  `ISSUE_BOT_TOKEN`, `SUPPORT_BOT_TOKEN` and `PERSONAL_ACCESS_TOKEN` (`gh secret delete <name>`)
-  and the Secrets Manager entries `{env}/submit/github/issue_bot_token` and `support_bot_token` in
-  ci and prod (`aws secretsmanager delete-secret --recovery-window-in-days 30`, the operator
-  approves). **Source**: `REPORT_IDENTITY_AUDIT.md` section 8, recommendations 2 and 3. **Owner**:
-  Claude Code, the operator approves the five deletes. **Model**: Haiku. **Size**: ~1 file.
 
 ## Human-driven
 
