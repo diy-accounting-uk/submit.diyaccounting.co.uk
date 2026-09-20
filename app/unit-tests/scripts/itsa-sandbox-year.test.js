@@ -8,6 +8,9 @@ import { describe, test, expect } from "vitest";
 import {
   extractCheckpointId,
   buildStandardQuarterlyPeriods,
+  buildCumulativeQuarterlyPeriods,
+  buildCumulativeSelfEmploymentTestFigures,
+  buildCumulativePropertyTestFigures,
   deriveAccountingPeriodFromPeriods,
   buildQuarterlyTestFigures,
   buildTestBusinessRequestBody,
@@ -46,6 +49,62 @@ describe("buildStandardQuarterlyPeriods", () => {
       { periodStartDate: "2023-10-06", periodEndDate: "2024-01-05" },
       { periodStartDate: "2024-01-06", periodEndDate: "2024-04-05" },
     ]);
+  });
+});
+
+describe("buildCumulativeQuarterlyPeriods", () => {
+  test("each period runs from the tax year start to a standard quarter's end", () => {
+    expect(buildCumulativeQuarterlyPeriods("2025-26")).toEqual([
+      { fromDate: "2025-04-06", toDate: "2025-07-05" },
+      { fromDate: "2025-04-06", toDate: "2025-10-05" },
+      { fromDate: "2025-04-06", toDate: "2026-01-05" },
+      { fromDate: "2025-04-06", toDate: "2026-04-05" },
+    ]);
+  });
+});
+
+describe("buildCumulativeSelfEmploymentTestFigures", () => {
+  test("the first quarter's total equals its own quarterly figures", () => {
+    const first = buildQuarterlyTestFigures(0);
+    expect(buildCumulativeSelfEmploymentTestFigures(0)).toEqual({
+      income: first.periodIncome,
+      expenses: first.periodExpenses,
+    });
+  });
+
+  test("later quarters carry the running total, not just that quarter's own figures", () => {
+    const cumulative = buildCumulativeSelfEmploymentTestFigures(1);
+    const secondQuarterOnly = buildQuarterlyTestFigures(1);
+
+    expect(cumulative.income.turnover).toBeGreaterThan(secondQuarterOnly.periodIncome.turnover);
+    expect(cumulative.expenses.consolidatedExpenses).toBeGreaterThan(secondQuarterOnly.periodExpenses.consolidatedExpenses);
+  });
+
+  test("the running total grows every quarter", () => {
+    const totals = [0, 1, 2, 3].map((index) => buildCumulativeSelfEmploymentTestFigures(index));
+
+    for (let index = 1; index < totals.length; index += 1) {
+      expect(totals[index].income.turnover).toBeGreaterThan(totals[index - 1].income.turnover);
+      expect(totals[index].expenses.consolidatedExpenses).toBeGreaterThan(totals[index - 1].expenses.consolidatedExpenses);
+    }
+  });
+});
+
+describe("buildCumulativePropertyTestFigures", () => {
+  test("reports income under periodAmount, not turnover - the property field name", () => {
+    const figures = buildCumulativePropertyTestFigures(0);
+
+    expect(figures.income).toHaveProperty("periodAmount");
+    expect(figures.income).not.toHaveProperty("turnover");
+  });
+
+  test("the running total grows every quarter", () => {
+    const totals = [0, 1, 2, 3].map((index) => buildCumulativePropertyTestFigures(index));
+
+    for (let index = 1; index < totals.length; index += 1) {
+      expect(totals[index].income.periodAmount).toBeGreaterThan(totals[index - 1].income.periodAmount);
+      expect(totals[index].expenses.consolidatedExpenses).toBeGreaterThan(totals[index - 1].expenses.consolidatedExpenses);
+    }
   });
 });
 
