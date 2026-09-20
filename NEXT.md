@@ -40,9 +40,21 @@ step.
 
 ## In flight
 
-## Machine-only
+- [ ] **B52y.3. The security lake nightly's Dependabot row.** In flight: the Link-header pagination is on `claude/b62-board` (PR #309, f3ad8538); the proof is the first 03:20 UTC run after it reaches prod. The 2026-09-20 03:20 UTC run
+  proved the token: `code_scanning` rows carry counts and `secret_scanning` reads `count: 0`. The
+  `dependabot` row is still `count: null` because `fetchOpenGithubAlerts` in
+  `app/functions/security/securityLakeNightly.js` (line ~216) pages with `?page=N` and the
+  Dependabot alerts endpoint answers 400 `Pagination using the page parameter is not supported`
+  (it pages by cursor). Follow the response's `Link` header `rel="next"` URL instead of counting
+  pages, for all three endpoints; a case in `app/unit-tests/functions/security/securityLakeNightly.test.js`
+  feeds two linked pages and one 400. Proof, after the next 03:20 run: `aws --profile submit-prod
+  s3 cp s3://prod-env-analytics-lake-972912397388/curated/security/github-alerts/dt=<run date>/data.json -`
+  has no `"count":null` and `aws --profile submit-prod logs filter-log-events --log-group-name
+  /aws/lambda/prod-env-security-lake-nightly --start-time <ms> --filter-pattern '"GitHub alert fetch
+  failed"'` returns no event. **Source**: issue #249. **Owner**: Claude Code. **Model**: Haiku.
+  **Size**: ~2 files.
 
-- [ ] **B30an. Exclude service-linked roles from the CIS unauthorized-api-calls filter.** Alarm
+- [ ] **B30an. Exclude service-linked roles from the CIS unauthorized-api-calls filter.** In flight: the pattern change is on `claude/b62-board` (PR #309, bf736bdb); #305 closes when it is on prod. Alarm
   issue #305 (`prod-env-cis-unauthorized-api-calls`, 2026-09-20 11:46 UTC, OK again at 11:56) was
   one CloudTrail event: `AWSServiceRoleForResourceExplorer` calling `macie2:ListCustomDataIdentifiers`,
   `AccessDenied`, AWS's own indexer probing a service the account does not use. The filter is the
@@ -56,7 +68,83 @@ step.
   earns its threshold of 1. **Source**: issue #305; BACKLOG 30. **Owner**: Claude Code. **Model**:
   Haiku. **Size**: ~2 files.
 
-- [ ] **B11.T7b.1. The sandbox script creates both businesses.** `scripts/itsa-sandbox-year.js`
+- [ ] **B52.D3. CLS on submit's web-vitals widgets, and RUM on the spreadsheets site.** In flight: the CLS metric, alarm and widget are on `claude/b62-board` (PR #309, 6e655571); the spreadsheets message sits in `~/.claude/inboxes/spreadsheets.md`. The RUM client
+  (`web/public/submit.js`, `maybeInitRum`) runs the `performance` telemetry, so `AWS/RUM`'s
+  `WebVitalsCumulativeLayoutShift` is collected and nothing reads it: add a `clsP75` metric, a
+  "RUM p75 CLS" `GraphWidget` in dashboard row 1 and an alarm at 0.25 beside `lcpP75`, `inpP75` and
+  `-rum-lcp-p75` in `ObservabilityStack.java` (lines ~349-400 and ~579-605), with one synth
+  assertion in `ObservabilityStackTest.java`; test `./mvnw clean verify`. The spreadsheets half is
+  that repository's: append one message to `~/.claude/inboxes/spreadsheets.md` in the workspace
+  format asking for a `CfnAppMonitor` plus identity pool and guest role in `SpreadsheetsStack.java`
+  on `ObservabilityStack.java` lines 300-345's pattern, the `cwr` loader of `web/public/submit.js`
+  in `web/spreadsheets.diyaccounting.co.uk/public/lib/analytics.js` (loaded by all 147 pages), and
+  `client.rum.us-east-1`, `dataplane.rum.eu-west-2` and `cognito-identity.eu-west-2` added to
+  `script-src`/`connect-src` in `infra/main/resources/security-headers.json`, as `EdgeStack.java`
+  lines 793 and 877 carry them. **Source**: BACKLOG 62; `PLAN_ONE_STOP_DASHBOARD.md` D3. **Owner**:
+  Claude Code. **Model**: Sonnet. **Size**: ~3 files.
+
+- [ ] **B52.D4. A visitors-by-class panel on the operator dashboard.** In flight: on `claude/b62-board` (PR #309, 73116665). `visitor_kind` (human, bot,
+  synthetic) already reaches the lake: `web/public/lib/analytics.js` sets it as a GA4 user property,
+  `analytics/bigquery/sessions_by_host_source_daily.sql` groups by it, and `ga4DailyPull.js` copies
+  that table to `curated/ga4_daily/`; no view or observation reads it. Add
+  `infra/main/resources/analytics/views/v_visitors_by_kind_daily.sql` on `v_ga4_funnel_daily`'s
+  shape — `SELECT dt AS day, hostname, visitor_kind, sum(sessions) AS sessions, sum(users) AS users
+  FROM sessions_by_host_source_daily GROUP BY 1, 2, 3` — register it in `BusinessViews.java`'s
+  `VIEWS` (readTables `sessions_by_host_source_daily`), append it to `rawExportPublish.js`'s
+  `VIEW_NAMES`, and add one observation per class under the `conversion-to-submission` objective in
+  `operatorSnapshotPublish.js` (`where: "visitor_kind = 'human'"` and so on, GA4 deep link).
+  `dashboard.html` needs no edit: `renderSnapshot` draws whatever observations the snapshot carries.
+  Tests: `VIEW_COUNT` 24 to 25 in `BusinessViewsTest.java`, the VIEW_NAMES assertion in
+  `rawExportPublish.test.js`, `npm run test:unit`, `./mvnw clean verify`. **Source**: BACKLOG 67;
+  `PLAN_ONE_STOP_DASHBOARD.md` D4. **Owner**: Claude Code. **Model**: Sonnet. **Size**: ~5 files.
+
+- [ ] **B72. `video-capture.yml` runs after a main deploy that touched a scene-script page.** In flight: on `claude/b62-board` (PR #309, 8d1f2ec3); the proof dispatch after merge is `gh workflow run video-capture-on-deploy.yml -f head-sha=<main> -f base-sha=<previous>`. New
+  `.github/workflows/video-capture-on-deploy.yml`: `on: workflow_run` (`workflows: [deploy]`, `types:
+  [completed]`, `branches: [main]`), job `if` conclusion is success, `permissions: actions: write`,
+  and `workflow_dispatch` (`head-sha`, `base-sha`). The event carries `head_sha` only: `base` is the
+  newest earlier successful `deploy.yml` run on main with a different `head_sha` (`gh api
+  .../workflows/deploy.yml/runs?branch=main&status=success`); the diff is `gh api
+  repos/$R/compare/<base>...<head> --jq '.files[].filename'`; no base or an empty diff means no
+  capture. Scripts name no pages, so add a `pages` array of `web/public/` paths to the ten
+  `videos/*.json`, to `videos/scene-script.schema.json` and to `REQUIRED_TOP_LEVEL` in
+  `scripts/lib/video/scriptSchema.js`; new `scripts/video-scripts-for-changed-files.mjs` exports
+  `scriptsTouchedBy(changedFiles, scripts)`. Dispatch `gh workflow run video-capture.yml -f script=<n>`
+  one at a time (poll `gh run list` to completion; group `video-capture-prod` cancels in progress).
+  Tests: `app/unit-tests/scripts/videoScriptsForChangedFiles.test.js`, `app/unit-tests/videoScenePages.test.js`.
+  **Source**: BACKLOG 72; `PLAN_REPOSITORY_AUTOMATION.md` Phase 5. **Owner**: Claude Code. **Model**:
+  Sonnet. **Size**: ~16 files.
+
+- [ ] **B49.15. Move the declarations under `infra/`.** In flight: on `claude/b62-board` (PR #309, 06e65dee); the proof after merge is `gh workflow run google-apply.yml -f apply=false`. `git mv` per the table in
+  `PLAN_EVERYTHING_AS_CODE.md` "The `infra/` layout": `google/*.toml`, `google/credentials/`,
+  `analytics/bigquery/*.sql`, the nine `scripts/{gcp,google,ga4}-*.js`, `scripts/lib/googleAuth.js`.
+  `scripts/youtube-upload.js` stays; its `CONFIG_PATH` becomes `infra/google/gcp/youtube.toml`.
+  Maven owns only `infra/main` and `infra/test`, so nothing collides. Update every `CONFIG_PATH` and
+  `CREDENTIALS_DIR` constant and `google-roles-apply.js:188`; the `./lib/googleAuth.js` imports,
+  `behaviour-tests/helpers/ga4PurchaseQuery.js`, `google-oauth-assert.js`'s `./youtube-upload.js`;
+  the nine `app/unit-tests/scripts/*.test.js` imports, `ga4BigQuerySync.test.js`'s `sql_file`
+  strings, `web/unit-tests/analytics.test.js:146`; `bigquery.toml`'s four `sql_file` values; the
+  three npm scripts; `google-apply.yml` (filters become `infra/google/**`, the `identity.toml` read,
+  eight steps) and `probe-test.yml:481`, `youtube-check.yml` having no filter; the comments in
+  `app/`, `web/public/lib`, `infra/main` and `REPORT_REPOSITORY_CONTENTS.md`. One commit. Proof:
+  `npm test`, `npm run linting`, `gh workflow run google-apply.yml -f apply=false`. **Source**:
+  BACKLOG 49b; item 15. **Owner**: Claude Code. **Model**: Sonnet. **Size**: ~35 files.
+
+- [ ] **B70.D. The remedy list: design.** In flight: on `claude/b62-board` (PR #309, 9ed88ffd); the 16 nightly `*-errors`/stack-health rows are `draft-pr`, `none` the alternative. One table, in `PLAN_REPOSITORY_AUTOMATION.md` Phase 3 and as
+  `app/data/alarm-remedies.json`, keyed by family (`alarmFamilyKey` in `app/lib/alarmName.js`, e.g.
+  `prod-app-api-5xx`, `prod-env-github-probe-failed`), each row one of: a dispatch (workflow file and
+  `-f` inputs, from those that exist: `set-origins.yml` `domain-source=last-known-good`,
+  `probe-test.yml` `behaviour-test-suite=…`, `deploy-cdk-stack.yml` `stackName=…`, `deploy-app.yml`;
+  no workflow re-runs a nightly Lambda, so `*-analytics-nightly-*` and `*-publish-errors` need a new
+  `run-lambda.yml` or stay `none`), `close-when-gone` (a deployment-scoped family whose deployment
+  is gone), `draft-pr` (the triage's diff marked ready when it touches only listed paths and checks
+  pass), or `none` (`cis-*`, `*-table-scan`, `*-secret-unexpected-read`, `*-submission-failure`).
+  Also the close rule: the App authored the issue (PR #304), `verify-alarm-origin.mjs` passes, every
+  alarm of the family is OK; and a dispatch budget per family per day. The 62 closed alarm issues
+  (`gh issue list --label alarm --state all`) score the table: how many would have closed themselves.
+  **Source**: BACKLOG 70; `PLAN_REPOSITORY_AUTOMATION.md` Phase 3, P1, P3, P9. **Owner**: Claude
+  Code. **Model**: Opus. **Size**: ~2 files.
+
+- [ ] **B11.T7b.1. The sandbox script creates both businesses.** In flight: on `claude/b62-board` (PR #309, 9f1d9117); proven on 2023-24, both ids in `business-details-list`, final declaration 204. `scripts/itsa-sandbox-year.js`
   creates the sole trade, sets the ITSA status and takes and restores the vendor-state checkpoint;
   it has no property business. Add a second `test-support-create-business` call to `POST
   {sandboxBase}/individuals/self-assessment-test-support/business/{nino}`, body from a new
@@ -71,7 +159,7 @@ step.
   `app/unit-tests/scripts/itsa-sandbox-year.test.js`; `npm run test:unit`. **Source**:
   `PLAN_ITSA_PHASE_2.md` T7. **Owner**: Claude Code. **Model**: Sonnet. **Size**: ~2 files.
 
-- [ ] **B11.T7b.4. Run B, the cumulative year.** Import `resolveItsaSubmissionModel` from
+- [ ] **B11.T7b.4. Run B, the cumulative year.** In flight: on `claude/b62-board` (PR #309, 4e73c148); proven on 2025-26, eight cumulative PUTs at 204. Import `resolveItsaSubmissionModel` from
   `app/lib/hmrcValidation.js`, call it on `ITSA_SANDBOX_TAX_YEAR` and branch on the string it
   answers, comparing no year itself. On `"cumulative"` the four quarterly calls per business become
   `PUT .../business/self-employment/{nino}/{businessId}/cumulative/{taxYear}` (5.0) and `PUT
@@ -84,6 +172,39 @@ step.
   `2025-26` out directory. Proof: eight cumulative PUTs at 204, the final declaration 204 line, and
   B11.T7b.1's command still passing. After B11.T7b.1. **Source**: `PLAN_ITSA_PHASE_2.md` T7.
   **Owner**: Claude Code. **Model**: Sonnet. **Size**: ~2 files.
+
+- [ ] **B34.8. Design the three next Companies House filings.** In flight: on `claude/b62-board` (PR #309, 2e7352ff). Replace the Horizons section of
+  `PLAN_COMPANIES_HOUSE_ACCOUNTS_FILING.md` with one section each for FRS 102 section 1A
+  small-company accounts, dormant accounts, and a CT600 to HMRC carrying the same balance sheet,
+  each in the shape of the plan's existing sections and each naming: the entry point and the
+  concepts it adds to `CONCEPTS` in `app/services/microEntityAccountsIxbrl.js`; what changes in the
+  `FormSubmission` envelope `app/services/companiesHouseXmlGateway.js` builds, or that nothing
+  does; the page; the `Gov-Test-Scenario` cases for
+  `app/http-simulator/scenarios/accounts-filing.js`; and its sandbox proof. Read the accounts TIS
+  5.9 on gov.uk: section 1A and FRS 105 share the FRS 102 entry point, dormant accounts carry
+  `EntityDormantTruefalse` and the section 480 statement in place of 477, and section 1A adds the
+  directors' report elements and a P&L. Check every concept against
+  `fixtures/frc-taxonomy/frs-102-2026-concepts.json`. For the CT600, HMRC's own transport and
+  taxonomy: gov.uk collection "Corporation Tax online: support for software developers".
+  **Source**: BACKLOG 34e, 34f, 34g. **Owner**: Claude Code. **Model**: Opus. **Size**: ~2 files.
+
+- [ ] **B69.1. The publication filter as a composite action.** In flight: on `claude/b62-board` (PR #309, fbdb510c); the proof dispatch after merge is `gh workflow run alarm-triage.yml -f issue-number=305`. New `.github/actions/publish-filter/action.yml`
+  in `run-triage-agent`'s shape: inputs `input-file`, `format` (`claude-json`|`markdown`),
+  `environment-name`, `model-id`, `workflow-name`, `run-number`, `run-url`; steps: read
+  `/submit/<env>/alarm-triage/guardrail-id` and `-version` from SSM, run `scripts/redact-triage-output.mjs`
+  (new `--markdown` flag skips `extractFinalAssistantText`), `aws bedrock-runtime apply-guardrail`
+  (its anonymised text when it intervenes), append `_Written by <model-id> in [<workflow-name>
+  #<run-number>](<run-url>). Not reviewed by a person._`; outputs `output-file`, `redactions`,
+  `guardrail-action`. Callers: `alarm-triage.yml` as on `claude/b61-board` replaces its four inline
+  steps and the `_Answered by Haiku._` line; `agentic-lib-code.yml` filters `pr-body.md` before
+  `gh pr create`; `agentic-lib-board.yml`'s tracking comment is a fixed template and stays. The
+  triage role every caller assumes holds `bedrock:ApplyGuardrail` and `ssm:GetParameter`. Tests: the
+  `--markdown` path in `redactTriageOutput.test.js`; proof is one
+  `alarm-triage.yml` dispatch whose comment ends with the byline. After PR #304. **Source**: BACKLOG
+  69; `PLAN_REPOSITORY_AUTOMATION.md` Phase 1, P7; `REPORT_IDENTITY_AUDIT.md` 7.2. **Owner**: Claude
+  Code. **Model**: Sonnet. **Size**: ~6 files.
+
+## Machine-only
 
 - [ ] **B11.T7b.6. Both runs' proofs.** The exit code rests on two printed lines today, `final
   declaration 204` and `fraud header validator clean`. Add three more, each computed from the
@@ -100,21 +221,6 @@ step.
   B11.T7b.5. **Source**: `PLAN_ITSA_PHASE_2.md` T7. **Owner**: Claude Code. **Model**: Sonnet.
   **Size**: ~3 files.
 
-- [ ] **B52.D3. CLS on submit's web-vitals widgets, and RUM on the spreadsheets site.** The RUM client
-  (`web/public/submit.js`, `maybeInitRum`) runs the `performance` telemetry, so `AWS/RUM`'s
-  `WebVitalsCumulativeLayoutShift` is collected and nothing reads it: add a `clsP75` metric, a
-  "RUM p75 CLS" `GraphWidget` in dashboard row 1 and an alarm at 0.25 beside `lcpP75`, `inpP75` and
-  `-rum-lcp-p75` in `ObservabilityStack.java` (lines ~349-400 and ~579-605), with one synth
-  assertion in `ObservabilityStackTest.java`; test `./mvnw clean verify`. The spreadsheets half is
-  that repository's: append one message to `~/.claude/inboxes/spreadsheets.md` in the workspace
-  format asking for a `CfnAppMonitor` plus identity pool and guest role in `SpreadsheetsStack.java`
-  on `ObservabilityStack.java` lines 300-345's pattern, the `cwr` loader of `web/public/submit.js`
-  in `web/spreadsheets.diyaccounting.co.uk/public/lib/analytics.js` (loaded by all 147 pages), and
-  `client.rum.us-east-1`, `dataplane.rum.eu-west-2` and `cognito-identity.eu-west-2` added to
-  `script-src`/`connect-src` in `infra/main/resources/security-headers.json`, as `EdgeStack.java`
-  lines 793 and 877 carry them. **Source**: BACKLOG 62; `PLAN_ONE_STOP_DASHBOARD.md` D3. **Owner**:
-  Claude Code. **Model**: Sonnet. **Size**: ~3 files.
-
 - [ ] **B11.T7b.7. Record the responses.** Every request and response is already in the transcript;
   the comparison against the simulator is not. For each call the two runs add, set HMRC's status and
   body beside the simulator's route and scenario for that call and fix any field name, status or
@@ -128,35 +234,6 @@ step.
   no deployment; the re-run inside HMRC's 14-day window is B11.T10's. Proof: `npm test` green,
   including `app/unit-tests/http-simulator/`. After B11.T7b.6. **Source**: `PLAN_ITSA_PHASE_2.md`
   T7. **Owner**: Claude Code. **Model**: Sonnet. **Size**: ~10 files.
-
-- [ ] **B34.8. Design the three next Companies House filings.** Replace the Horizons section of
-  `PLAN_COMPANIES_HOUSE_ACCOUNTS_FILING.md` with one section each for FRS 102 section 1A
-  small-company accounts, dormant accounts, and a CT600 to HMRC carrying the same balance sheet,
-  each in the shape of the plan's existing sections and each naming: the entry point and the
-  concepts it adds to `CONCEPTS` in `app/services/microEntityAccountsIxbrl.js`; what changes in the
-  `FormSubmission` envelope `app/services/companiesHouseXmlGateway.js` builds, or that nothing
-  does; the page; the `Gov-Test-Scenario` cases for
-  `app/http-simulator/scenarios/accounts-filing.js`; and its sandbox proof. Read the accounts TIS
-  5.9 on gov.uk: section 1A and FRS 105 share the FRS 102 entry point, dormant accounts carry
-  `EntityDormantTruefalse` and the section 480 statement in place of 477, and section 1A adds the
-  directors' report elements and a P&L. Check every concept against
-  `fixtures/frc-taxonomy/frs-102-2026-concepts.json`. For the CT600, HMRC's own transport and
-  taxonomy: gov.uk collection "Corporation Tax online: support for software developers".
-  **Source**: BACKLOG 34e, 34f, 34g. **Owner**: Claude Code. **Model**: Opus. **Size**: ~2 files.
-
-- [ ] **B52y.3. The security lake nightly's Dependabot row.** The 2026-09-20 03:20 UTC run
-  proved the token: `code_scanning` rows carry counts and `secret_scanning` reads `count: 0`. The
-  `dependabot` row is still `count: null` because `fetchOpenGithubAlerts` in
-  `app/functions/security/securityLakeNightly.js` (line ~216) pages with `?page=N` and the
-  Dependabot alerts endpoint answers 400 `Pagination using the page parameter is not supported`
-  (it pages by cursor). Follow the response's `Link` header `rel="next"` URL instead of counting
-  pages, for all three endpoints; a case in `app/unit-tests/functions/security/securityLakeNightly.test.js`
-  feeds two linked pages and one 400. Proof, after the next 03:20 run: `aws --profile submit-prod
-  s3 cp s3://prod-env-analytics-lake-972912397388/curated/security/github-alerts/dt=<run date>/data.json -`
-  has no `"count":null` and `aws --profile submit-prod logs filter-log-events --log-group-name
-  /aws/lambda/prod-env-security-lake-nightly --start-time <ms> --filter-pattern '"GitHub alert fetch
-  failed"'` returns no event. **Source**: issue #249. **Owner**: Claude Code. **Model**: Haiku.
-  **Size**: ~2 files.
 
 - [ ] **B49.22. `infra/paypal`.** `paypal.toml`: `[button] hosted_button_id = "XTEQ73HM52QQW"`,
   `form_action = "https://www.paypal.com/donate"`, `donate_url` (the same id as a GET link), `page =
@@ -229,67 +306,6 @@ step.
   `npm test`, `--mode test` reading "already exists" throughout. After B49.18. **Source**: BACKLOG
   49b; item 21. **Owner**: Claude Code. **Model**: Sonnet. **Size**: ~6 files.
 
-- [ ] **B49.15. Move the declarations under `infra/`.** `git mv` per the table in
-  `PLAN_EVERYTHING_AS_CODE.md` "The `infra/` layout": `google/*.toml`, `google/credentials/`,
-  `analytics/bigquery/*.sql`, the nine `scripts/{gcp,google,ga4}-*.js`, `scripts/lib/googleAuth.js`.
-  `scripts/youtube-upload.js` stays; its `CONFIG_PATH` becomes `infra/google/gcp/youtube.toml`.
-  Maven owns only `infra/main` and `infra/test`, so nothing collides. Update every `CONFIG_PATH` and
-  `CREDENTIALS_DIR` constant and `google-roles-apply.js:188`; the `./lib/googleAuth.js` imports,
-  `behaviour-tests/helpers/ga4PurchaseQuery.js`, `google-oauth-assert.js`'s `./youtube-upload.js`;
-  the nine `app/unit-tests/scripts/*.test.js` imports, `ga4BigQuerySync.test.js`'s `sql_file`
-  strings, `web/unit-tests/analytics.test.js:146`; `bigquery.toml`'s four `sql_file` values; the
-  three npm scripts; `google-apply.yml` (filters become `infra/google/**`, the `identity.toml` read,
-  eight steps) and `probe-test.yml:481`, `youtube-check.yml` having no filter; the comments in
-  `app/`, `web/public/lib`, `infra/main` and `REPORT_REPOSITORY_CONTENTS.md`. One commit. Proof:
-  `npm test`, `npm run linting`, `gh workflow run google-apply.yml -f apply=false`. **Source**:
-  BACKLOG 49b; item 15. **Owner**: Claude Code. **Model**: Sonnet. **Size**: ~35 files.
-
-- [ ] **B70.D. The remedy list: design.** One table, in `PLAN_REPOSITORY_AUTOMATION.md` Phase 3 and as
-  `app/data/alarm-remedies.json`, keyed by family (`alarmFamilyKey` in `app/lib/alarmName.js`, e.g.
-  `prod-app-api-5xx`, `prod-env-github-probe-failed`), each row one of: a dispatch (workflow file and
-  `-f` inputs, from those that exist: `set-origins.yml` `domain-source=last-known-good`,
-  `probe-test.yml` `behaviour-test-suite=…`, `deploy-cdk-stack.yml` `stackName=…`, `deploy-app.yml`;
-  no workflow re-runs a nightly Lambda, so `*-analytics-nightly-*` and `*-publish-errors` need a new
-  `run-lambda.yml` or stay `none`), `close-when-gone` (a deployment-scoped family whose deployment
-  is gone), `draft-pr` (the triage's diff marked ready when it touches only listed paths and checks
-  pass), or `none` (`cis-*`, `*-table-scan`, `*-secret-unexpected-read`, `*-submission-failure`).
-  Also the close rule: the App authored the issue (PR #304), `verify-alarm-origin.mjs` passes, every
-  alarm of the family is OK; and a dispatch budget per family per day. The 62 closed alarm issues
-  (`gh issue list --label alarm --state all`) score the table: how many would have closed themselves.
-  **Source**: BACKLOG 70; `PLAN_REPOSITORY_AUTOMATION.md` Phase 3, P1, P3, P9. **Owner**: Claude
-  Code. **Model**: Opus. **Size**: ~2 files.
-
-- [ ] **B52.D4. A visitors-by-class panel on the operator dashboard.** `visitor_kind` (human, bot,
-  synthetic) already reaches the lake: `web/public/lib/analytics.js` sets it as a GA4 user property,
-  `analytics/bigquery/sessions_by_host_source_daily.sql` groups by it, and `ga4DailyPull.js` copies
-  that table to `curated/ga4_daily/`; no view or observation reads it. Add
-  `infra/main/resources/analytics/views/v_visitors_by_kind_daily.sql` on `v_ga4_funnel_daily`'s
-  shape — `SELECT dt AS day, hostname, visitor_kind, sum(sessions) AS sessions, sum(users) AS users
-  FROM sessions_by_host_source_daily GROUP BY 1, 2, 3` — register it in `BusinessViews.java`'s
-  `VIEWS` (readTables `sessions_by_host_source_daily`), append it to `rawExportPublish.js`'s
-  `VIEW_NAMES`, and add one observation per class under the `conversion-to-submission` objective in
-  `operatorSnapshotPublish.js` (`where: "visitor_kind = 'human'"` and so on, GA4 deep link).
-  `dashboard.html` needs no edit: `renderSnapshot` draws whatever observations the snapshot carries.
-  Tests: `VIEW_COUNT` 24 to 25 in `BusinessViewsTest.java`, the VIEW_NAMES assertion in
-  `rawExportPublish.test.js`, `npm run test:unit`, `./mvnw clean verify`. **Source**: BACKLOG 67;
-  `PLAN_ONE_STOP_DASHBOARD.md` D4. **Owner**: Claude Code. **Model**: Sonnet. **Size**: ~5 files.
-
-- [ ] **B69.1. The publication filter as a composite action.** New `.github/actions/publish-filter/action.yml`
-  in `run-triage-agent`'s shape: inputs `input-file`, `format` (`claude-json`|`markdown`),
-  `environment-name`, `model-id`, `workflow-name`, `run-number`, `run-url`; steps: read
-  `/submit/<env>/alarm-triage/guardrail-id` and `-version` from SSM, run `scripts/redact-triage-output.mjs`
-  (new `--markdown` flag skips `extractFinalAssistantText`), `aws bedrock-runtime apply-guardrail`
-  (its anonymised text when it intervenes), append `_Written by <model-id> in [<workflow-name>
-  #<run-number>](<run-url>). Not reviewed by a person._`; outputs `output-file`, `redactions`,
-  `guardrail-action`. Callers: `alarm-triage.yml` as on `claude/b61-board` replaces its four inline
-  steps and the `_Answered by Haiku._` line; `agentic-lib-code.yml` filters `pr-body.md` before
-  `gh pr create`; `agentic-lib-board.yml`'s tracking comment is a fixed template and stays. The
-  triage role every caller assumes holds `bedrock:ApplyGuardrail` and `ssm:GetParameter`. Tests: the
-  `--markdown` path in `redactTriageOutput.test.js`; proof is one
-  `alarm-triage.yml` dispatch whose comment ends with the byline. After PR #304. **Source**: BACKLOG
-  69; `PLAN_REPOSITORY_AUTOMATION.md` Phase 1, P7; `REPORT_IDENTITY_AUDIT.md` 7.2. **Owner**: Claude
-  Code. **Model**: Sonnet. **Size**: ~6 files.
-
 - [ ] **B71. Support issue triage on `issues: [opened]`.** New `.github/workflows/support-triage.yml`
   in `alarm-triage.yml`'s shape as on `claude/b61-board`: `if` `contains(labels, 'support')`, its
   budget guard, kill switch and B69.1 filter, new `prompts/support-triage.md`, and a `prompt-file`
@@ -337,22 +353,6 @@ step.
   `.github/actions/agent-run-budget` (inputs: workflow file, job, step). Proof: `npm test`, one
   dispatch, one observed close. **Source**: BACKLOG 70; `PLAN_REPOSITORY_AUTOMATION.md` Phase 3.
   **Owner**: Claude Code. **Model**: Sonnet. **Size**: ~9 files.
-
-- [ ] **B72. `video-capture.yml` runs after a main deploy that touched a scene-script page.** New
-  `.github/workflows/video-capture-on-deploy.yml`: `on: workflow_run` (`workflows: [deploy]`, `types:
-  [completed]`, `branches: [main]`), job `if` conclusion is success, `permissions: actions: write`,
-  and `workflow_dispatch` (`head-sha`, `base-sha`). The event carries `head_sha` only: `base` is the
-  newest earlier successful `deploy.yml` run on main with a different `head_sha` (`gh api
-  .../workflows/deploy.yml/runs?branch=main&status=success`); the diff is `gh api
-  repos/$R/compare/<base>...<head> --jq '.files[].filename'`; no base or an empty diff means no
-  capture. Scripts name no pages, so add a `pages` array of `web/public/` paths to the ten
-  `videos/*.json`, to `videos/scene-script.schema.json` and to `REQUIRED_TOP_LEVEL` in
-  `scripts/lib/video/scriptSchema.js`; new `scripts/video-scripts-for-changed-files.mjs` exports
-  `scriptsTouchedBy(changedFiles, scripts)`. Dispatch `gh workflow run video-capture.yml -f script=<n>`
-  one at a time (poll `gh run list` to completion; group `video-capture-prod` cancels in progress).
-  Tests: `app/unit-tests/scripts/videoScriptsForChangedFiles.test.js`, `app/unit-tests/videoScenePages.test.js`.
-  **Source**: BACKLOG 72; `PLAN_REPOSITORY_AUTOMATION.md` Phase 5. **Owner**: Claude Code. **Model**:
-  Sonnet. **Size**: ~16 files.
 
 ## Machine-ask
 
