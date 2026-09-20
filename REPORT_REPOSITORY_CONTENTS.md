@@ -589,6 +589,7 @@ Head-injected scripts for early API prefetching:
 | `test/` | JUnit tests for CDK code |
 | `aws-accounts/` | Multi-account setup scripts (OIDC, backups, CDK bootstrap) |
 | `companies-house/` | Companies House hub applications declared and asserted against live state |
+| `hmrc/` | HMRC Developer Hub applications and their API subscriptions declared and asserted against live state |
 
 #### CDK Constructs
 

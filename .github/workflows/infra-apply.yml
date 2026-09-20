@@ -102,12 +102,15 @@ jobs:
       - name: Run companies-house-assert
         run: node infra/companies-house/companies-house-assert.js --environment ${{ matrix.environment }} 2>&1 | tee companies-house-assert.log
 
+      - name: Run hmrc-assert
+        run: node infra/hmrc/hmrc-assert.js --environment ${{ matrix.environment }} 2>&1 | tee hmrc-assert.log
+
       - name: Generate step summary
         if: always()
         run: |
           echo "# infra apply (${{ matrix.environment }})" >> "$GITHUB_STEP_SUMMARY"
           echo "" >> "$GITHUB_STEP_SUMMARY"
-          for log in companies-house-assert.log; do
+          for log in companies-house-assert.log hmrc-assert.log; do
             if [ -f "$log" ]; then
               echo "## $log" >> "$GITHUB_STEP_SUMMARY"
               echo '```' >> "$GITHUB_STEP_SUMMARY"
