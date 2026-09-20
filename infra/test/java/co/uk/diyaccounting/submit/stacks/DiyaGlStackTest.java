@@ -45,6 +45,7 @@ class DiyaGlStackTest {
                         .baseImageTag("latest")
                         .diyaGlBucketName(DIYA_GL_BUCKET_NAME)
                         .booksAllowedOrigins(BOOKS_ALLOWED_ORIGINS)
+                        .residentTierEnabled(true)
                         .build());
     }
 
@@ -90,7 +91,7 @@ class DiyaGlStackTest {
     }
 
     @Test
-    void thePutFunctionGetsQuotaAndEntitlementEnvironmentVariables() {
+    void thePutFunctionGetsQuotaAndResidentTierEnvironmentVariables() {
         DiyaGlStack stack = synthDiyaGlStack();
         Template template = Template.fromStack(stack);
 
@@ -106,9 +107,56 @@ class DiyaGlStackTest {
                                         "DIYA_GL_MAX_BYTES", "2097152",
                                         "DIYA_GL_MAX_PER_USER", "20",
                                         "DIYA_GL_VERSIONS_KEPT", "30",
-                                        "DIYA_GL_ENTITLEMENT_ENFORCED", "false",
+                                        "DIYA_GL_RESIDENT_TIER", "true",
                                         "DIYA_GL_BUNDLE_ID", "resident-diya-gl",
                                         "BUNDLE_DYNAMODB_TABLE_NAME", "docs-env-bundles")))))));
+    }
+
+    @Test
+    void theListAndVersionFunctionsGetBundleAccessForTheLapseRule() {
+        DiyaGlStack stack = synthDiyaGlStack();
+        Template template = Template.fromStack(stack);
+
+        for (String functionName : List.of(
+                stack.diyaGlListGetLambdaProps.ingestFunctionName(), stack.diyaGlVersionGetLambdaProps.ingestFunctionName())) {
+            template.hasResourceProperties(
+                    "AWS::Lambda::Function",
+                    Match.objectLike(Map.of(
+                            "FunctionName",
+                            functionName,
+                            "Environment",
+                            Match.objectLike(Map.of(
+                                    "Variables",
+                                    Match.objectLike(Map.of(
+                                            "DIYA_GL_RESIDENT_TIER", "true",
+                                            "DIYA_GL_BUNDLE_ID", "resident-diya-gl",
+                                            "BUNDLE_DYNAMODB_TABLE_NAME", "docs-env-bundles")))))));
+            assertTrue(
+                    iamStatementsForFunction(template, functionName).stream()
+                            .anyMatch(statement -> actionsOf(statement).contains("dynamodb:Query")),
+                    "expected " + functionName + " to have dynamodb:Query on the bundles table");
+        }
+    }
+
+    @Test
+    void onlyThePutFunctionGetsObjectTaggingAccess() {
+        DiyaGlStack stack = synthDiyaGlStack();
+        Template template = Template.fromStack(stack);
+
+        assertTrue(
+                iamStatementsForFunction(template, stack.diyaGlPutLambdaProps.ingestFunctionName()).stream()
+                        .anyMatch(statement -> actionsOf(statement).contains("s3:PutObjectTagging")),
+                "expected the put function to have s3:PutObjectTagging");
+
+        for (String functionName : List.of(
+                stack.diyaGlListGetLambdaProps.ingestFunctionName(),
+                stack.diyaGlVersionGetLambdaProps.ingestFunctionName(),
+                stack.diyaGlDeleteLambdaProps.ingestFunctionName())) {
+            assertTrue(
+                    iamStatementsForFunction(template, functionName).stream()
+                            .noneMatch(statement -> actionsOf(statement).contains("s3:PutObjectTagging")),
+                    "expected " + functionName + " to have no s3:PutObjectTagging");
+        }
     }
 
     @Test
