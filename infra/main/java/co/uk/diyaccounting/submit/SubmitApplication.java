@@ -174,7 +174,8 @@ public class SubmitApplication {
         var booksAllowedOrigins = "prod".equals(envName)
                 ? "https://spreadsheets.diyaccounting.co.uk,https://ci-spreadsheets.diyaccounting.co.uk,"
                         + "https://diya-gl.co.uk,https://ci.diya-gl.co.uk"
-                : "https://ci-spreadsheets.diyaccounting.co.uk,http://localhost:3000,https://ci.diya-gl.co.uk";
+                : "https://ci-spreadsheets.diyaccounting.co.uk,http://localhost:3000,"
+                        + "https://ci.diya-gl.co.uk,http://localhost:3001";
         // A checkout or portal returnTo is allowed from the DIYA-GL pages' origins (the same
         // list the books routes use) plus this deployment's own origin, since bundles.html lives
         // there too.

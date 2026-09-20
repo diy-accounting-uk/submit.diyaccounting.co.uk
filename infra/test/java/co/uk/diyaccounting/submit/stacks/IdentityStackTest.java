@@ -140,7 +140,13 @@ class IdentityStackTest {
                 "https://ci.diya-gl.co.uk/bst.html",
                 "https://ci.diya-gl.co.uk/se.html",
                 "https://ci.diya-gl.co.uk/taxi.html",
-                "https://ci.diya-gl.co.uk/ltd.html");
+                "https://ci.diya-gl.co.uk/ltd.html",
+                "http://localhost:3001/",
+                "http://localhost:3001/index.html",
+                "http://localhost:3001/bst.html",
+                "http://localhost:3001/se.html",
+                "http://localhost:3001/taxi.html",
+                "http://localhost:3001/ltd.html");
 
         template.hasResourceProperties(
                 "AWS::Cognito::UserPoolClient",

@@ -503,7 +503,7 @@ public class IdentityStack extends Stack {
                 : List.of("https://ci-spreadsheets.diyaccounting.co.uk", "http://localhost:3000");
         var diyaGlHosts = "prod".equals(envName)
                 ? List.of("https://diya-gl.co.uk", "https://ci.diya-gl.co.uk")
-                : List.of("https://ci.diya-gl.co.uk");
+                : List.of("https://ci.diya-gl.co.uk", "http://localhost:3001");
         var urls = new java.util.ArrayList<String>();
         for (var host : hosts) {
             for (var prefix : DIYA_GL_PATH_PREFIXES) {
