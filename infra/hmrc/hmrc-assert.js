@@ -110,8 +110,9 @@ export function probeRequest({ host, subscription, accessToken }) {
  * it is not. 403 RESOURCE_FORBIDDEN is HMRC's specific "not subscribed to this API" answer;
  * every other documented status this probe can hit (200 success, 400 a validation the probe's
  * placeholder path parameters trip, 401 a token problem unrelated to subscription, 404 the
- * placeholder resource not existing) means the gateway let the call through to the API itself,
- * which only happens once subscribed.
+ * placeholder resource not existing, 405 and 415 a POST-only endpoint refusing the probe's
+ * method or empty body) means the gateway let the call through to the API itself, which only
+ * happens once subscribed.
  *
  * @param {number} status
  * @param {{code?: string}|undefined} body
@@ -121,7 +122,7 @@ export function classifySubscriptionResponse(status, body) {
   if (status === 403 && body?.code === "RESOURCE_FORBIDDEN") {
     return "not-subscribed";
   }
-  if ([200, 400, 401, 404].includes(status)) {
+  if ([200, 400, 401, 404, 405, 415].includes(status)) {
     return "subscribed";
   }
   return "unknown";

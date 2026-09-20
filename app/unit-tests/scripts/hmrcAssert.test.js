@@ -119,6 +119,11 @@ describe("classifySubscriptionResponse", () => {
     expect(classifySubscriptionResponse(403, { code: "RESOURCE_FORBIDDEN" })).toBe("not-subscribed");
   });
 
+  test("a POST-only endpoint refusing the probe's method or body still proves the subscription", () => {
+    expect(classifySubscriptionResponse(415, { statusCode: 415, message: "Expecting text/json or application/json body" })).toBe("subscribed");
+    expect(classifySubscriptionResponse(405, undefined)).toBe("subscribed");
+  });
+
   test.each([200, 400, 401, 404])("%i means subscribed", (status) => {
     expect(classifySubscriptionResponse(status, { code: "SOMETHING_ELSE" })).toBe("subscribed");
   });
