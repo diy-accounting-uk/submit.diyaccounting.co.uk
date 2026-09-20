@@ -49,43 +49,17 @@ jobs:
     steps:
       - name: Stop once ${{ env.TRIAGE_BUDGET_PER_DAY }} triage runs have already posted a result today
         id: budget-guard
-        env:
-          GH_TOKEN: ${{ github.token }}
-        run: |
-          set -euo pipefail
-          SINCE=$(date -u -d '24 hours ago' +%Y-%m-%dT%H:%M:%SZ)
-          # Both opened and workflow_dispatch events start a run, including the ones this guard or
-          # the role check stops, so counting every run that merely started would let a burst of
-          # skips (this guard, the role check, a verify-alarm-origin miss) exhaust the budget
-          # without a single alarm actually being looked at. A run only counts once it has posted
-          # a result: "Comment the triage" is the last step of run-triage and only reaches success
-          # when a comment actually went on the issue, so its per-step conclusion (not the job's
-          # overall conclusion) is the only signal that distinguishes a triaged run from a skipped
-          # one.
-          COUNT=0
-          for RUN_ID in $(gh api \
-            "repos/${{ github.repository }}/actions/workflows/alarm-triage.yml/runs?created=%3E${SINCE}&per_page=100" \
-            --jq '.workflow_runs[].id'); do
-            if [ "${RUN_ID}" = "${{ github.run_id }}" ]; then continue; fi
-            POSTED=$(gh api "repos/${{ github.repository }}/actions/runs/${RUN_ID}/jobs" \
-              --jq '.jobs[] | select(.name == "run-triage") | .steps[]? | select(.name == "Comment the triage") | .conclusion // empty')
-            if [ "${POSTED}" = "success" ]; then
-              COUNT=$((COUNT + 1))
-            fi
-          done
-          echo "triage runs that posted a result in the last 24 hours: ${COUNT}"
-          echo "count=${COUNT}" | tee -a "$GITHUB_OUTPUT"
-          echo "since=${SINCE}" | tee -a "$GITHUB_OUTPUT"
-          if [ "${COUNT}" -gt $(( ${{ env.TRIAGE_BUDGET_PER_DAY }} - 1 )) ]; then
-            echo "proceed=false" | tee -a "$GITHUB_OUTPUT"
-          else
-            echo "proceed=true" | tee -a "$GITHUB_OUTPUT"
-          fi
+        uses: ./.github/actions/agent-run-budget
+        with:
+          workflow-file: alarm-triage.yml
+          job-name: run-triage
+          step-name: Comment the triage
+          budget: ${{ env.TRIAGE_BUDGET_PER_DAY }}
 
       # The budget guard ends this job green with no comment when it skips, which is why #173
       # (2026-09-10) was closed unread: nothing on the issue said triage had not looked at it.
       - name: Comment that triage was skipped
-        if: steps.budget-guard.outputs.proceed == 'false'
+        if: steps.budget-guard.outputs.over-budget == 'true'
         env:
           GH_TOKEN: ${{ github.token }}
           ISSUE_NUMBER: ${{ inputs.issue-number || github.event.issue.number }}
@@ -96,7 +70,7 @@ jobs:
           gh issue comment "$ISSUE_NUMBER" --repo "${{ github.repository }}" --body "Alarm triage was skipped: the budget of ${{ env.TRIAGE_BUDGET_PER_DAY }} triage runs per 24 hours is already used (${TRIAGE_COUNT} posted a result since ${TRIAGE_SINCE}). Nobody has looked at this alarm yet."
 
       - name: Read the alarm out of the issue body
-        if: steps.budget-guard.outputs.proceed == 'true'
+        if: steps.budget-guard.outputs.over-budget == 'false'
         id: alarm
         env:
           ISSUE_BODY: ${{ github.event.issue.body }}
@@ -124,7 +98,7 @@ jobs:
             echo "environment-name=${ENV_NAME}"
           } | tee -a "$GITHUB_OUTPUT"
     outputs:
-      proceed: ${{ steps.budget-guard.outputs.proceed }}
+      proceed: ${{ steps.budget-guard.outputs.over-budget == 'false' }}
       alarm-name: ${{ steps.alarm.outputs.alarm-name }}
       timestamp: ${{ steps.alarm.outputs.timestamp }}
       region: ${{ steps.alarm.outputs.region }}
@@ -273,6 +247,29 @@ jobs:
             > /tmp/evidence.proved.json
           mv /tmp/evidence.proved.json /tmp/evidence.json
           jq '.credentialProof' /tmp/evidence.json | tee -a "$GITHUB_STEP_SUMMARY"
+
+      # Written to $GITHUB_ENV, not a step output, so envsubst in run-triage-agent's prompt
+      # substitution sees it without the composite action needing a new input of its own.
+      - name: Look up the remedy row for this alarm's family
+        if: steps.role.outputs.configured == 'true'
+        id: remedy
+        run: |
+          set -euo pipefail
+          FAMILY_KEY=$(node --input-type=module -e "
+            import { alarmFamilyKey } from './app/lib/alarmName.js';
+            console.log(alarmFamilyKey(process.env.ALARM_NAME));
+          ")
+          REMEDY_ROW=$(FAMILY_KEY="$FAMILY_KEY" node --input-type=module -e "
+            import { readFileSync } from 'node:fs';
+            const remedies = JSON.parse(readFileSync('app/data/alarm-remedies.json', 'utf8'));
+            const row = remedies.find((r) => r.family === process.env.FAMILY_KEY);
+            console.log(row ? JSON.stringify(row) : 'null');
+          ")
+          echo "family=${FAMILY_KEY}" | tee -a "$GITHUB_OUTPUT"
+          {
+            echo "FAMILY_KEY=${FAMILY_KEY}"
+            echo "REMEDY_ROW=${REMEDY_ROW}"
+          } | tee -a "$GITHUB_ENV"
 
       - name: Install Claude Code
         if: steps.role.outputs.configured == 'true'
@@ -461,6 +458,86 @@ jobs:
             printf '\n---\n\nDraft PR for the change above: %s\n' "${{ steps.draft-pr.outputs.url }}" >> "${{ steps.publish-filter.outputs.output-file }}"
           fi
           gh issue comment "$ISSUE_NUMBER" --repo "${{ github.repository }}" --body-file "${{ steps.publish-filter.outputs.output-file }}"
+
+      # Reads the model's own final "remedy: ..." line and checks it against the same row the
+      # prompt gave the model, so a malformed or out-of-scope line does nothing rather than being
+      # trusted. The row is the ceiling on what this step will ever do; the model's line only
+      # decides whether to use it or fall back to a person (policy:question).
+      - name: Act on the remedy the triage named
+        if: steps.role.outputs.configured == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          APP_TOKEN: ${{ steps.app-token.outputs.token }}
+          DRAFT_PR_URL: ${{ steps.draft-pr.outputs.url }}
+        run: |
+          set -euo pipefail
+          gh label create "remedy:dispatch" --color 0e8a16 --description "Triage dispatched this family's own remedy workflow" --repo "${{ github.repository }}" 2>/dev/null || true
+          gh label create "remedy:close-when-gone" --color 0e8a16 --description "This family closes itself once every alarm it names is OK or gone" --repo "${{ github.repository }}" 2>/dev/null || true
+          gh label create "remedy:draft-pr" --color 0e8a16 --description "Triage's own draft PR may go ready when it stays inside the family's paths" --repo "${{ github.repository }}" 2>/dev/null || true
+
+          LINE=$(grep -E '^remedy: ' "${{ steps.publish-filter.outputs.output-file }}" | tail -1 || true)
+          if [ -z "$LINE" ]; then
+            echo "no remedy line in the triage answer, nothing to act on"
+            gh issue edit "$ISSUE_NUMBER" --repo "${{ github.repository }}" --add-label "policy:question"
+            exit 0
+          fi
+
+          ROW_REMEDY=$(jq -r 'if . == null then "none" else .remedy end' <<<"$REMEDY_ROW")
+          ROW_WORKFLOW=$(jq -r '.workflow // empty' <<<"$REMEDY_ROW")
+
+          case "$LINE" in
+            "remedy: none")
+              gh issue edit "$ISSUE_NUMBER" --repo "${{ github.repository }}" --add-label "policy:question"
+              ;;
+            "remedy: dispatch "*)
+              NAMED_WORKFLOW="${LINE#remedy: dispatch }"
+              if [ "$ROW_REMEDY" != "dispatch" ] || [ "$NAMED_WORKFLOW" != "$ROW_WORKFLOW" ]; then
+                echo "triage named a dispatch this family's row does not allow: $LINE"
+                gh issue edit "$ISSUE_NUMBER" --repo "${{ github.repository }}" --add-label "policy:question"
+                exit 0
+              fi
+              INPUT_ARGS=()
+              for KEY in $(jq -r '.inputs // {} | keys[]' <<<"$REMEDY_ROW"); do
+                VALUE=$(jq -r --arg k "$KEY" '.inputs[$k]' <<<"$REMEDY_ROW")
+                INPUT_ARGS+=(-f "${KEY}=${VALUE}")
+              done
+              GH_TOKEN="$APP_TOKEN" gh workflow run "$ROW_WORKFLOW" --repo "${{ github.repository }}" "${INPUT_ARGS[@]}"
+              gh issue edit "$ISSUE_NUMBER" --repo "${{ github.repository }}" --add-label "remedy:dispatch"
+              ;;
+            "remedy: close-when-gone")
+              if [ "$ROW_REMEDY" != "close-when-gone" ]; then
+                echo "triage named close-when-gone but this family's row is $ROW_REMEDY"
+                gh issue edit "$ISSUE_NUMBER" --repo "${{ github.repository }}" --add-label "policy:question"
+                exit 0
+              fi
+              gh issue edit "$ISSUE_NUMBER" --repo "${{ github.repository }}" --add-label "remedy:close-when-gone"
+              ;;
+            "remedy: draft-pr")
+              if [ "$ROW_REMEDY" != "draft-pr" ]; then
+                echo "triage named draft-pr but this family's row is $ROW_REMEDY"
+                gh issue edit "$ISSUE_NUMBER" --repo "${{ github.repository }}" --add-label "policy:question"
+                exit 0
+              fi
+              if [ -z "$DRAFT_PR_URL" ]; then
+                echo "triage named draft-pr but opened no draft PR this run, nothing to mark ready"
+                exit 0
+              fi
+              PR_NUMBER="${DRAFT_PR_URL##*/}"
+              CHANGED=$(git diff --name-only main HEAD)
+              SCOPE=$(printf '%s\n' "$CHANGED" | node scripts/verify-draft-pr-scope.mjs --family "$FAMILY_KEY" || true)
+              if printf '%s' "$SCOPE" | jq -e '.allowed' > /dev/null 2>&1; then
+                GH_TOKEN="$APP_TOKEN" gh pr ready "$PR_NUMBER" --repo "${{ github.repository }}"
+                gh issue edit "$ISSUE_NUMBER" --repo "${{ github.repository }}" --add-label "remedy:draft-pr"
+              else
+                echo "draft PR touches paths outside the family's remedy paths, leaving it as a draft"
+                echo "$SCOPE"
+              fi
+              ;;
+            *)
+              echo "unrecognised remedy line: $LINE"
+              gh issue edit "$ISSUE_NUMBER" --repo "${{ github.repository }}" --add-label "policy:question"
+              ;;
+          esac
 
       # Runs after the comment is safely posted, so the answer above is not lost, but the run
       # still ends red: a triage that only got through 60 turns by exhausting its budget is not a
