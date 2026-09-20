@@ -6,8 +6,9 @@
 `scripts/itsa-sandbox-year.js` files a whole tax year against the HMRC sandbox with one test
 user: four quarterly self-employment updates, an annual submission, a triggered and adjusted
 business source adjustable summary, an intent-to-finalise calculation, and a final declaration.
-It proves the phase 2 endpoints work end to end against real sandbox behaviour, the way
-`_developers/hmrc/ITSA_SPIKE.md` proved the phase 1 read.
+It also creates a UK property business alongside the self-employment one, though nothing is
+filed against it yet. It proves the phase 2 endpoints work end to end against real sandbox
+behaviour, the way `_developers/hmrc/ITSA_SPIKE.md` proved the phase 1 read.
 
 The script drives the sandbox directly with Playwright and `fetch`, the way the spike did. It
 does not call this application's own deployed API, so it needs no ci deployment to run - only
@@ -61,10 +62,11 @@ change where the transcript and checkpoint id land (default `./target/itsa-sandb
 |---|---|---|
 | Reset (later runs) | `POST .../checkpoints/{id}/restore` | `200`/`201`/`204`, reusing the saved `businessId` |
 | Reset (first run) | `DELETE .../vendor-state` | `204`/`404` |
-| Setup (first run) | `POST .../test-support/business/{nino}` | `201` with `businessId` |
+| Setup (first run) | `POST .../test-support/business/{nino}` (self-employment) | `201` with `businessId` |
+| Setup (first run) | `POST .../test-support/business/{nino}` (uk-property) | `201` with a second `businessId` |
 | Setup (first run) | `POST .../test-support/itsa-status/{nino}/{taxYear}` | `204` |
-| Reset (first run) | `POST .../vendor-state/checkpoints?nino={nino}` | `201` with a checkpoint id, taken after the business and status above exist |
-| Verify | `GET .../individuals/business/details/{nino}/list`, `Gov-Test-Scenario: STATEFUL` | `200`, the business this script created |
+| Reset (first run) | `POST .../vendor-state/checkpoints?nino={nino}` | `201` with a checkpoint id, taken after both businesses and the status above exist |
+| Verify | `GET .../individuals/business/details/{nino}/list`, `Gov-Test-Scenario: STATEFUL` | `200`, both businesses this script created |
 | Verify | `GET .../individuals/person/itsa-status/{nino}/{taxYear}`, `Gov-Test-Scenario: STATEFUL` | `200`, the status this script set |
 | Quarterly x4 | `POST .../self-employment/{nino}/{businessId}/period`, `Gov-Test-Scenario: STATEFUL` | `200`/`201`, once per one of the four standard quarterly periods this script derives from the tax year |
 | Annual | `PUT .../self-employment/{nino}/{businessId}/annual/{taxYear}` | `204` |
@@ -100,11 +102,11 @@ real run either confirms the guess or tells you which field name to add.
 
 The script is safe to run repeatedly. A checkpoint can only be taken of a NINO that already has
 test-support data, so the first run ever wipes the test user's sandbox data with `DELETE
-.../vendor-state`, creates the business and sets its ITSA status, and only then checkpoints that
-as the baseline, saving `{checkpointId, businessId}` to
+.../vendor-state`, creates both businesses and sets the ITSA status, and only then checkpoints
+that as the baseline, saving `{checkpointId, businessId, propertyBusinessId}` to
 `${ITSA_SANDBOX_OUT_DIR}/checkpoint-id.txt`. Every later run restores that checkpoint and reuses
-the same `businessId` rather than creating a second business, which undoes whatever the previous
-run filed against it since. Delete the checkpoint file to force a fresh wipe-and-checkpoint on
+the same two business ids rather than creating them again, which undoes whatever the previous
+run filed against them since. Delete the checkpoint file to force a fresh wipe-and-checkpoint on
 the next run.
 
 ## Assumptions taken from the plan's open questions
@@ -116,9 +118,9 @@ does:
   to test that stage's endpoints (Business Details, Obligations, Self-Employment Business,
   Individual Calculations) plus the end-of-year ones already built (BSAS, ITSA status). It does
   not touch Individual Losses or Individuals Tax Liability Adjustments, which have no build yet.
-- **Q4, property income.** The plan assumes self-employment only. This script creates and files
-  a self-employment business exclusively; a property business needs its own test-support and
-  endpoint calls, not covered here.
+- **Q4, property income.** The plan assumes self-employment only. This script now creates a UK
+  property business alongside the self-employment one; filing quarterly updates, an annual
+  submission and an adjustable summary against it needs its own endpoint calls, not covered here.
 - **Q5, whether the sandbox test user carries the year.** The plan assumes the existing test
   user plus test-support data, rather than a second test user. This script follows that: it
   takes any sandbox test user with a NINO and creates the business and ITSA status itself,

@@ -11,6 +11,7 @@ import {
   deriveAccountingPeriodFromPeriods,
   buildQuarterlyTestFigures,
   buildTestBusinessRequestBody,
+  buildTestPropertyBusinessRequestBody,
   buildItsaStatusRequestBody,
   isFraudHeaderValidationClean,
 } from "../../../scripts/itsa-sandbox-year.js";
@@ -93,6 +94,20 @@ describe("buildTestBusinessRequestBody", () => {
     expect(body.tradingName).toBeTruthy();
     expect(body.businessAddressLineOne).toBeTruthy();
     expect(body.businessAddressCountryCode).toBe("GB");
+  });
+});
+
+describe("buildTestPropertyBusinessRequestBody", () => {
+  test("carries only typeOfBusiness", () => {
+    expect(buildTestPropertyBusinessRequestBody()).toEqual({ typeOfBusiness: "uk-property" });
+  });
+
+  test("carries no business address, trading type or trading name - all self-employment-only fields", () => {
+    const body = buildTestPropertyBusinessRequestBody();
+
+    expect(body.businessAddressLineOne).toBeUndefined();
+    expect(body.tradingType).toBeUndefined();
+    expect(body.tradingName).toBeUndefined();
   });
 });
 

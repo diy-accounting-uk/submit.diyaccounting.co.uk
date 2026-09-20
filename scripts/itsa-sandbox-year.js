@@ -16,10 +16,11 @@
  * businessIds, so it never reflects a business this script's test-support calls create. The
  * adjustable summary's accounting period is derived from the same four standard quarters.
  *
- * Uses `mtd-sa-test-support-api/1.0` to create the self-employment business and set the ITSA
- * status for the chosen tax year, and its vendor-state checkpoint endpoints to reset the test
- * user's stateful sandbox data between runs: the first run wipes everything and saves a clean
- * checkpoint, every later run restores that checkpoint before creating a fresh business.
+ * Uses `mtd-sa-test-support-api/1.0` to create the self-employment business and a UK property
+ * business and set the ITSA status for the chosen tax year, and its vendor-state checkpoint
+ * endpoints to reset the test user's stateful sandbox data between runs: the first run wipes
+ * everything and saves a clean checkpoint, every later run restores that checkpoint before
+ * creating fresh businesses.
  *
  * This drives the sandbox directly, the way scripts/itsa-sandbox-spike.js drove Business
  * Details - it does not call this application's own deployed API. The request-body builders
@@ -251,6 +252,17 @@ export function buildTestBusinessRequestBody() {
 }
 
 /**
+ * The test-support "create a business" request body for one UK property business. HMRC rejects
+ * a property business carrying a business address - `RULE_UNEXPECTED_BUSINESS_ADDRESS` - because
+ * that field is self-employment-only, the same way tradingType and tradingName are.
+ */
+export function buildTestPropertyBusinessRequestBody() {
+  return {
+    typeOfBusiness: "uk-property",
+  };
+}
+
+/**
  * The test-support "create or amend ITSA status" request body. "MTD Mandated" with
  * "Sign up - return available" is this script's own choice of test data (PLAN_ITSA_PHASE_2.md
  * does not prescribe one) - see the runbook for how to change it.
@@ -421,15 +433,16 @@ async function main() {
   const hmrcHeaders = (apiVersion, testScenario) =>
     buildHmrcHeaders(accessToken, govClientHeaders, testScenario, randomUUID(), undefined, randomUUID(), apiVersion);
 
-  // Phase 3: reset the test user's stateful sandbox data and get a business ready to file
+  // Phase 3: reset the test user's stateful sandbox data and get both businesses ready to file
   // against. The checkpoint-create call answers 404 MATCHING_RESOURCE_NOT_FOUND against a NINO
-  // with no test-support data yet, so a checkpoint can only be taken after the business and
-  // ITSA status exist, not before. First run ever: wipe everything, create the business and
-  // status, then checkpoint that as the baseline. Every later run: restore that checkpoint,
-  // which brings back the same business with everything filed against it since undone, rather
-  // than creating a second business.
+  // with no test-support data yet, so a checkpoint can only be taken after the businesses and
+  // ITSA status exist, not before. First run ever: wipe everything, create both businesses and
+  // the status, then checkpoint that as the baseline. Every later run: restore that checkpoint,
+  // which brings back the same businesses with everything filed against them since undone,
+  // rather than creating them again.
   let checkpointId = null;
   let businessId = null;
+  let propertyBusinessId = null;
   let checkpointState = null;
   try {
     checkpointState = JSON.parse(readFileSync(checkpointFile, "utf8"));
@@ -437,7 +450,7 @@ async function main() {
     checkpointState = null;
   }
 
-  if (checkpointState?.checkpointId && checkpointState?.businessId) {
+  if (checkpointState?.checkpointId && checkpointState?.businessId && checkpointState?.propertyBusinessId) {
     await callHmrc({
       step: "vendor-state-restore",
       method: "POST",
@@ -448,7 +461,8 @@ async function main() {
     });
     checkpointId = checkpointState.checkpointId;
     businessId = checkpointState.businessId;
-    record("vendor-state-restored", { checkpointId, businessId });
+    propertyBusinessId = checkpointState.propertyBusinessId;
+    record("vendor-state-restored", { checkpointId, businessId, propertyBusinessId });
   } else {
     await callHmrc({
       step: "vendor-state-delete",
@@ -471,6 +485,20 @@ async function main() {
     businessId = businessCreated.body.businessId;
     if (!businessId) throw new Error(`Create business response carried no businessId: ${JSON.stringify(businessCreated.body)}`);
 
+    const propertyBusinessCreated = await callHmrc({
+      step: "test-support-create-property-business",
+      method: "POST",
+      url: `${sandboxBase}/individuals/self-assessment-test-support/business/${nino}`,
+      headers: hmrcHeaders("1.0"),
+      body: buildTestPropertyBusinessRequestBody(),
+      okStatuses: [200, 201],
+      nino,
+    });
+    propertyBusinessId = propertyBusinessCreated.body.businessId;
+    if (!propertyBusinessId) {
+      throw new Error(`Create property business response carried no businessId: ${JSON.stringify(propertyBusinessCreated.body)}`);
+    }
+
     await callHmrc({
       step: "test-support-set-itsa-status",
       method: "POST",
@@ -490,8 +518,8 @@ async function main() {
       nino,
     });
     checkpointId = extractCheckpointId(created.body);
-    writeFileSync(checkpointFile, JSON.stringify({ checkpointId, businessId }));
-    record("vendor-state-checkpoint-saved", { checkpointId, businessId, checkpointFile });
+    writeFileSync(checkpointFile, JSON.stringify({ checkpointId, businessId, propertyBusinessId }));
+    record("vendor-state-checkpoint-saved", { checkpointId, businessId, propertyBusinessId, checkpointFile });
   }
 
   await callHmrc({
@@ -663,7 +691,10 @@ async function main() {
   record("fraud-header-validator", { status: validation.status, code: validationBody.code, body: validationBody });
 
   const outFile = `${outDir}/itsa-sandbox-year-transcript.json`;
-  writeFileSync(outFile, JSON.stringify({ taxYear, nino: maskNino(nino), businessId, checkpointId, transcript }, null, 2));
+  writeFileSync(
+    outFile,
+    JSON.stringify({ taxYear, nino: maskNino(nino), businessId, propertyBusinessId, checkpointId, transcript }, null, 2),
+  );
 
   const finalDeclarationOk = transcript.find((entry) => entry.step === "final-declaration")?.status === 204;
   const validatorOk = validation.ok && isFraudHeaderValidationClean(validationBody);
