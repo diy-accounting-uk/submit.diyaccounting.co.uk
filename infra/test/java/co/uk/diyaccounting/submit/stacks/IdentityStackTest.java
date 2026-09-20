@@ -76,9 +76,7 @@ class IdentityStackTest {
 
         template.hasResourceProperties(
                 "AWS::Cognito::UserPool",
-                Match.objectLike(Map.of(
-                        "MfaConfiguration", "ON",
-                        "EnabledMfas", List.of("SOFTWARE_TOKEN_MFA"))));
+                Match.objectLike(Map.of("MfaConfiguration", "ON", "EnabledMfas", List.of("SOFTWARE_TOKEN_MFA"))));
     }
 
     @Test
