@@ -84,6 +84,25 @@ step.
   `npm test` green. **Source**: BACKLOG 46. **Owner**: Claude Code. **Model**: Sonnet. **Size**: ~9
   files.
 
+- [ ] **B30af.5. Branch deploys leave the ci apex: P3 to P5.** P1 (the slot pool) is on `main`: a
+  ci branch deploy claims `ci-set1` to `ci-set4` through SSM in `deploy.yml`'s `names` job. What is
+  left, per `_developers/DESIGN_CI_BRANCH_DEPLOYS_OFF_THE_APEX.md`: **P3**, `IdentityStack.java`'s
+  `buildCallbackUrls`/`buildLogoutUrls` add every slot host for non-prod (`https://ci-set<N>…/` and
+  `/auth/loginWithCognitoCallback.html`; `/` and `/auth/signed-out.html`), with an
+  `IdentityStackTest.java` case asserting the submit client's `CallbackURLs`/`LogoutURLs` the way
+  the diya-gl cases do, deployed by `deploy-environment.yml`. **P4**, `SubmitSharedNames.java` sets
+  non-prod `publicDomainName = deploymentDomainName`, and `deploy.yml`'s `DIY_SUBMIT_APEX_URL` and
+  `verify-api`'s `APEX_URL` take `needs.names.outputs.public-url`. **P5**, `set-origins` and
+  `rollback-origins` gate to prod, a new `.github/workflows/promote-ci-apex.yml` (concurrency group
+  `promote-ci-apex`, no cancel) is dispatched after `set-last-known-good-deployment`, the ~34
+  `needs: set-origins` edges repoint for ci, and probe-test's three `wait-for-main-deploy` steps
+  drop for ci. **Source**: the design, P3 to P5. **Owner**: Claude Code. **Model**: Sonnet. N = 2: on
+  2026-09-21 HMRC's sandbox application took `ci-set1` and `ci-set2` and reached its five-URI cap
+  (the prod apex, ci apex and local keep the other three; `prod-submit` went), Companies House took
+  the same two, and the §3 curl answers 303 and 302 for both hosts and 400 for `ci-set3`. So P3
+  lists two slot hosts, and `.github/actions/claim-ci-slot/action.yml`'s `slot-count` default drops
+  from 4 to 2 in the same PR. **Size**: ~9 files.
+
 ## Machine-ask
 
 - [ ] **B11.T10. ITSA phase 2: the send.** The operator names the day; Claude Code re-runs the
@@ -93,21 +112,6 @@ step.
   operator names the day and sends. **Model**: Haiku. **Size**: ~1 file.
 
 ## Human-driven
-
-- [ ] **B30af.6. Register the four slot hosts' redirect URIs with HMRC and Companies House (P2).**
-  Eight URIs, for N = 1 to 4:
-  `https://ci-set<N>.submit.diyaccounting.co.uk/activities/submitVatCallback.html` on the HMRC
-  sandbox application `uqMHA6RsDGGa7h8EG2VqfqAmv4tV` at
-  <https://developer.service.hmrc.gov.uk/developer/applications>, and
-  `https://ci-set<N>.submit.diyaccounting.co.uk/companies-house/filingCallback.html` on the
-  Companies House "DIY Accounting Submit - test" application `e5be4a0d-cebf-4024-83a3-5497a0fec4b2`
-  at <https://developer.company-information.service.gov.uk/manage-applications>. Both are console
-  forms with no API. The design's §6 cap is answered on the page: HMRC documents a maximum of five
-  redirect URIs per application and that one already holds three (prod, ci apex, local), so at most
-  two slot hosts fit. Report how many each form accepted; that count is N for P3 and for
-  `slot-count` in `.github/actions/claim-ci-slot/action.yml`. Proof: the design's §3 `curl` answers
-  200 for each host registered. **Source**: the design, P2. **Owner**: Operator, in both hubs.
-  **Model**: none. **Size**: ~0 files.
 
 ## Blocked
 
@@ -160,21 +164,6 @@ step.
   Cognito app client with the device-code grant and `open_book`/`save_book` over the cloud routes;
   M1c is on main (PR #232). **Source**: BACKLOG 52i; `PLAN_ONE_STOP_DASHBOARD.md` D10. **Owner**:
   Claude Code. **Model**: Sonnet. **Size**: ~4 files.
-
-- [ ] **B30af.5. Branch deploys leave the ci apex: P3 to P5.** P1 (the slot pool) is on `main`: a
-  ci branch deploy claims `ci-set1` to `ci-set4` through SSM in `deploy.yml`'s `names` job. What is
-  left, per `_developers/DESIGN_CI_BRANCH_DEPLOYS_OFF_THE_APEX.md`: **P3**, `IdentityStack.java`'s
-  `buildCallbackUrls`/`buildLogoutUrls` add every slot host for non-prod (`https://ci-set<N>…/` and
-  `/auth/loginWithCognitoCallback.html`; `/` and `/auth/signed-out.html`), with an
-  `IdentityStackTest.java` case asserting the submit client's `CallbackURLs`/`LogoutURLs` the way
-  the diya-gl cases do, deployed by `deploy-environment.yml`. **P4**, `SubmitSharedNames.java` sets
-  non-prod `publicDomainName = deploymentDomainName`, and `deploy.yml`'s `DIY_SUBMIT_APEX_URL` and
-  `verify-api`'s `APEX_URL` take `needs.names.outputs.public-url`. **P5**, `set-origins` and
-  `rollback-origins` gate to prod, a new `.github/workflows/promote-ci-apex.yml` (concurrency group
-  `promote-ci-apex`, no cancel) is dispatched after `set-last-known-good-deployment`, the ~34
-  `needs: set-origins` edges repoint for ci, and probe-test's three `wait-for-main-deploy` steps
-  drop for ci. **Source**: the design, P3 to P5. **Owner**: Claude Code. **Model**: Sonnet. Blocked
-  on B30af.6 (P2, which also fixes N). **Size**: ~9 files.
 
 - [ ] **B52.D3. The spreadsheets site's web-vitals alarms.** The OAM sinks are on prod
   (`arn:aws:oam:us-east-1:972912397388:sink/8f40e076-e9ab-445b-8fc2-68557456b63d`) and ci
