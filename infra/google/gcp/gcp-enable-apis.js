@@ -72,9 +72,19 @@ async function googleGet(url, token) {
 }
 
 async function googlePost(url, token) {
-  const res = await fetch(url, { method: "POST", headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" }, body: "{}" });
+  const res = await fetch(url, {
+    method: "POST",
+    headers: { "Authorization": `Bearer ${token}`, "Content-Type": "application/json" },
+    body: "{}",
+  });
   if (!res.ok) throw new Error(`${res.status} from ${url}: ${(await res.text()).slice(0, 300)}`);
   return res.json();
+}
+
+/** The suffix printed after a service's current state: what a plan entry would do, if anything. */
+function describeEnableAction(enable, apply) {
+  if (!enable) return "";
+  return apply ? " (enabling)" : " (would enable)";
 }
 
 export async function main(argv = process.argv.slice(2)) {
@@ -91,7 +101,7 @@ export async function main(argv = process.argv.slice(2)) {
   }
   const plan = planEnables(states, requiredServices);
   for (const { service, state, enable } of plan) {
-    console.log(`${service}: ${state}${enable ? (opts.apply ? " (enabling)" : " (would enable)") : ""}`);
+    console.log(`${service}: ${state}${describeEnableAction(enable, opts.apply)}`);
   }
   if (!opts.apply) return plan;
   for (const { service, enable } of plan) {

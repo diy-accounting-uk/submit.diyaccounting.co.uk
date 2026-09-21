@@ -319,6 +319,20 @@ export function buildGithubVariablePlan({ githubEnvironment, measurementId, curr
     : { action: "set", name: GITHUB_VARIABLE_NAME, environment: githubEnvironment, value: measurementId, previousValue: currentValue };
 }
 
+/** The BigQuery link plan while the property itself is still pending creation, so no live link can exist yet. */
+function buildPendingBigQueryLinkPlan(configLink) {
+  if (!configLink) return { action: "skip" };
+  return {
+    action: "create",
+    name: null,
+    project: configLink.project,
+    location: configLink.location,
+    dailyExport: configLink.dailyExport,
+    streamingExport: configLink.streamingExport,
+    blockedOnProperty: true,
+  };
+}
+
 /**
  * Build the full plan for one configured property: the property itself, each of its streams
  * (with enhanced measurement), its key events, its BigQuery link, and the GitHub variable a
@@ -361,17 +375,7 @@ export function buildPropertyPlan({
   const keyEventPlan = configProperty.keyEvents ? buildKeyEventPlan(configProperty.keyEvents, liveKeyEvents) : null;
 
   const bigQueryLinkPlan = propertyPending
-    ? configProperty.bigQueryLink
-      ? {
-          action: "create",
-          name: null,
-          project: configProperty.bigQueryLink.project,
-          location: configProperty.bigQueryLink.location,
-          dailyExport: configProperty.bigQueryLink.dailyExport,
-          streamingExport: configProperty.bigQueryLink.streamingExport,
-          blockedOnProperty: true,
-        }
-      : { action: "skip" }
+    ? buildPendingBigQueryLinkPlan(configProperty.bigQueryLink)
     : buildBigQueryLinkPlan(configProperty.bigQueryLink, liveBigQueryLinks, projectNumber);
 
   // The GitHub variable takes its measurement id from the property's one designated stream —
@@ -540,6 +544,7 @@ export function githubVariableFinding(environment, value) {
  */
 function readGithubVariable(environment) {
   try {
+    // eslint-disable-next-line sonarjs/no-os-command-from-path -- deliberately runs the gh CLI from PATH
     const output = execFileSync("gh", ["variable", "list", "--env", environment], { encoding: "utf8", stdio: ["ignore", "pipe", "pipe"] });
     const row = output
       .split("\n")
@@ -556,6 +561,7 @@ function readGithubVariable(environment) {
 }
 
 function setGithubVariable(environment, value) {
+  // eslint-disable-next-line sonarjs/no-os-command-from-path -- deliberately runs the gh CLI from PATH
   execFileSync("gh", ["variable", "set", GITHUB_VARIABLE_NAME, "--env", environment, "--body", value], {
     encoding: "utf8",
     stdio: ["ignore", "pipe", "pipe"],
