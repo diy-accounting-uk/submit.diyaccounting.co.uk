@@ -312,6 +312,12 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          # The live-head check below diffs against the previous live prod deploy, which isn't
+          # necessarily within the default shallow depth. workflow_dispatch and push never run
+          # that check, so they keep the cheap shallow clone.
+          fetch-depth: ${{ github.event_name == 'schedule' && 0 || 1 }}
+
       - name: Configure AWS role via GitHub OIDC
         uses: aws-actions/configure-aws-credentials@e1253824e5c10ff9df46874f81ed3ec929e19cfd # v6
         with:
@@ -337,6 +343,54 @@ jobs:
       - name: "needs.params.outputs.isSkippingDeploy=[${{ needs.params.outputs.isSkippingDeploy }}]"
         run: ":"
 
+      # The schedule trigger has no push event to filter by `paths:`, so a nightly run redeploys
+      # and re-cuts prod even when HEAD only changed files the push trigger would have ignored
+      # (e.g. a .md-only commit). /submit/prod/last-known-good-deployment names the sha that is
+      # actually live (set only after set-origins and web-test both succeed on a previous run),
+      # so its suffix is compared against HEAD directly instead of trusting the schedule to have
+      # fired on a real change.
+      - name: Check whether the live prod head is already current
+        id: live-head-check
+        if: ${{ github.event_name == 'schedule' }}
+        shell: bash
+        run: |
+          PARAMETER_NAME="/submit/prod/last-known-good-deployment"
+          LIVE_DEPLOYMENT=$(aws ssm get-parameter --name "$PARAMETER_NAME" --query "Parameter.Value" --output text 2>/dev/null || echo "")
+          if [ -z "$LIVE_DEPLOYMENT" ] || [ "$LIVE_DEPLOYMENT" = "None" ]; then
+            echo "No last-known-good prod deployment on record; treating the live head as not current."
+            echo "live-head-is-current=false" | tee -a "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          echo "$LIVE_DEPLOYMENT" > /tmp/last_known_good_deployment.txt
+          LIVE_SHA7="${LIVE_DEPLOYMENT#prod-}"
+          CURRENT_SHA7="${GITHUB_SHA::7}"
+          if [ "$LIVE_SHA7" = "$CURRENT_SHA7" ]; then
+            echo "HEAD ($CURRENT_SHA7) is already the live deployment ($LIVE_DEPLOYMENT)."
+            echo "live-head-is-current=true" | tee -a "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          if ! git rev-parse --verify "${LIVE_SHA7}^{commit}" >/dev/null 2>&1; then
+            echo "Live sha $LIVE_SHA7 not found in this checkout's history; treating the live head as not current."
+            echo "live-head-is-current=false" | tee -a "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          LIVE_SHA_FULL=$(git rev-parse "$LIVE_SHA7")
+          CHANGED=$(git diff --name-only "$LIVE_SHA_FULL"..HEAD -- \
+            ':(glob)app/data/**' ':(glob)app/functions/**' ':(glob)app/lib/**' ':(glob)app/services/**' \
+            ':(glob)infra/main/**' ':(glob)web/public/**' '.env.ci' '.env.prod' ':(glob)**/cdk.json' \
+            'Dockerfile' 'LICENSE' 'package.json' 'package-lock.json' 'pom.xml' \
+            'web/public/submit.catalogue.toml' ':(glob).github/actions/**' '.github/workflows/deploy.yml' \
+            '.github/workflows/deploy-cdk-stack.yml' '.github/workflows/destroy-prod.yml' \
+            '.github/workflows/generate-pass.yml' '.github/workflows/probe-test.yml' '.github/workflows/test.yml')
+          if [ -z "$CHANGED" ]; then
+            echo "No files under deploy.yml's push paths changed between $LIVE_SHA_FULL and HEAD."
+            echo "live-head-is-current=true" | tee -a "$GITHUB_OUTPUT"
+          else
+            echo "Deploy-relevant files changed since the live deployment:"
+            echo "$CHANGED"
+            echo "live-head-is-current=false" | tee -a "$GITHUB_OUTPUT"
+          fi
+
       - name: If main and skipping deploy, read back last known good prod deployment from SSM Parameter Store
         if: ${{ needs.params.outputs.isSkippingDeploy == 'true' && needs.params.outputs.deployment-name == '' && github.ref == 'refs/heads/main' }}
         run: |
@@ -360,9 +414,10 @@ jobs:
       - name: Determine deployment name to use
         id: resolved-deployment-name
         run: |
-          # If skipping deploy AND we found a last-known-good deployment, use that
-          # Otherwise, pass empty/params value to let get-names compute from commit hash
-          if [ "${{ needs.params.outputs.isSkippingDeploy }}" = "true" ] && [ -s /tmp/last_known_good_deployment.txt ]; then
+          # If skipping deploy (explicitly, or because the live head is already current) AND we
+          # found a last-known-good deployment, use that. Otherwise, pass empty/params value to
+          # let get-names compute from commit hash or branch.
+          if { [ "${{ needs.params.outputs.isSkippingDeploy }}" = "true" ] || [ "${{ steps.live-head-check.outputs.live-head-is-current }}" = "true" ]; } && [ -s /tmp/last_known_good_deployment.txt ]; then
               echo "Using last known good deployment from SSM Parameter Store (skipping deploy)"
               echo "deployment-name=$(cat /tmp/last_known_good_deployment.txt)" | tee -a "$GITHUB_OUTPUT"
           elif [ -n "${{ needs.params.outputs.deployment-name }}" ]; then
@@ -511,6 +566,7 @@ jobs:
       cognito-diya-gl-client-id: ${{ steps.lookup-cognito.outputs.cognito-diya-gl-client-id }}
       self-destruct-start-datetime: ${{ steps.self-destruct-start.outputs.SELF_DESTRUCT_START_DATETIME }}
       self-destruct-delay-hours: ${{ steps.self-destruct-start.outputs.SELF_DESTRUCT_DELAY_HOURS }}
+      live-head-is-current: ${{ steps.live-head-check.outputs.live-head-is-current }}
 
   test:
     name: 'delegate to test workflow'
@@ -633,7 +689,8 @@ jobs:
     name: 'skip deploy check'
     needs:
       - params
-    if: ${{ needs.params.outputs.isSkippingDeploy != 'true' }}
+      - names
+    if: ${{ needs.params.outputs.isSkippingDeploy != 'true' && needs.names.outputs.live-head-is-current != 'true' }}
     runs-on: ubuntu-24.04
     environment: ${{ needs.params.outputs.github-environment }}
     steps:
@@ -642,6 +699,7 @@ jobs:
         run: |
           echo "params.skipDeploy=${{ needs.params.outputs.skipDeploy }}"
           echo "params.isSkippingDeploy=${{ needs.params.outputs.isSkippingDeploy }}"
+          echo "names.live-head-is-current=${{ needs.names.outputs.live-head-is-current }}"
           echo "isSkippingDeploy=${{ needs.params.outputs.isSkippingDeploy }}" >> "$GITHUB_OUTPUT"
 
     outputs:
