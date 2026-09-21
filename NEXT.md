@@ -16,10 +16,9 @@ runs), and for Claude Code steps the **Model** a sub-agent should use (Fable > O
 Haiku; the lowest tier that fits). Anything touching code goes through a `claude/*` branch and
 PR; the operator merges.
 
-**Prod runs deployment prod-a9fa597** (main's deploy 35559744237 of PR #310's merge, green at 04:4x UTC on
-2026-09-21, the only prod set standing; #314's merge touched a behaviour test only). **ci**: `ci-set1`
-is live and last-known-good (b63's set) until it self-destructs. The SSO session expired at 02:3x UTC;
-the set counts and every AWS-read proof below wait on `aws sso login --sso-session diyaccounting`.
+**Prod runs deployment prod-a9fa597**; main's deploy of PR #306's merge (82e4f322) is creating
+prod-82e4f32 and takes the apex when its probes pass. **ci**: `ci-set1` is live and last-known-good
+until it self-destructs. SSO restored at 08:2x UTC on 2026-09-21.
 
 The board runs in five sections, in this order: **in flight** (a branch, a pull request or a run
 in motion, each named in the row), **machine-only**, **machine-ask**, **human-driven**,
@@ -40,6 +39,14 @@ names its model: the lowest tier that fits (Fable > Opus > Sonnet > Haiku), or `
 step.
 
 ## In flight
+
+- [ ] **B30ao. `prod-env-operator-snapshot-publish-errors`: the visitor-kind view's day type.**
+  In flight: on `claude/b65-board` (PR #315, 27df5cb1). Alarm issue #313 was the snapshot's three
+  visitor-kind observations failing `TYPE_MISMATCH: Cannot apply operator: varchar < date`, because
+  `v_visitors_by_kind_daily` read the table's string `day`; it now reads `dt AS day`. Proof: the
+  first 03:1x UTC snapshot run after the merge publishes with no failing observation; then close
+  #313 quoting it. **Source**: issue #313; BACKLOG 30. **Owner**: Claude Code. **Model**: Haiku.
+  **Size**: ~0 files.
 
 ## Machine-only
 
@@ -181,19 +188,6 @@ step.
 
 ## Blocked
 
-- [ ] **B30ao. `prod-env-operator-snapshot-publish-errors`: what the snapshot Lambda threw.** Alarm
-  issue #313 opened at 03:19 UTC on 2026-09-21, one error datapoint in the daily window, minutes
-  after main's deploy of 0c847b07 put prod-0c847b0 live with three new views the snapshot reads
-  (`v_visitors_by_kind_daily`, `v_agent_runs_daily`, and `agent_runs` with no rows yet). Read the
-  error: `aws --profile submit-prod logs filter-log-events --log-group-name
-  /aws/lambda/prod-env-operator-snapshot-publish --start-time <ms of 2026-09-21T02:00Z>
-  --filter-pattern '"level":50'` (or `ERROR`), then fix the query or the view it names in
-  `app/functions/analytics/operatorSnapshotPublish.js` or
-  `infra/main/resources/analytics/views/`. The alarm-triage run for #313 (35557128213) failed
-  before triaging, on the budget action's missing checkout, fixed on PR #312. Blocked on `aws sso
-  login --sso-session diyaccounting`. **Source**: issue #313; BACKLOG 30. **Owner**: Claude Code.
-  **Model**: Sonnet. **Size**: ~2 files.
-
 - [ ] **B34.7. Run and fix the filing suites' sandbox sign-in.** `deploy.yml` and `probe-test.yml`
   run the two filing suites only when the dispatch input `runCompaniesHouseSandboxFiling` is
   `true`, and probe-test's guard step fails fast naming any of O17's four values that is empty.
@@ -208,40 +202,6 @@ step.
   are a stated guess; the first run's screenshots under `target/` show the real One Login and
   permission pages. **Source**: BACKLOG 34. **Owner**: Claude Code. **Model**: Sonnet. Blocked on
   O17. **Size**: ~1 file.
-
-- [ ] **B52y.3. The security lake nightly's Dependabot row.** The Link-header pagination is on
-  `main` (d2f94db3) and prod-d2f94db carries it. Proof, after the 03:20 UTC run on 2026-09-21:
-  `aws --profile submit-prod s3 cp
-  s3://prod-env-analytics-lake-972912397388/curated/security/github-alerts/dt=2026-09-21/data.json -`
-  has no `"count":null` and `aws --profile submit-prod logs filter-log-events --log-group-name
-  /aws/lambda/prod-env-security-lake-nightly --start-time <ms> --filter-pattern '"GitHub alert fetch
-  failed"'` returns no event. The run has happened; the read needs `aws sso login --sso-session diyaccounting`. Blocked on that login. **Source**: issue #249. **Owner**: Claude Code.
-  **Model**: Haiku. **Size**: ~0 files.
-
-- [ ] **B52n.2. The spreadsheets donation event lands as `donate`.** `donate` is a key event on
-  property 523400333 (`google/analytics.toml`) and the spreadsheets repository's
-  `public/lib/download-page.js` sends it since 08:26 UTC on 2026-09-18.
-  `analytics/bigquery/key_events_daily.sql` still maps that host's `purchase` to `donate` as well,
-  so the proof reads the raw event name. Its scheduled query covers event_date D-2, so a full day
-  is first proven by the 04:30 run on 2026-09-21 (event_date 2026-09-19), which has happened. Proof: `aws --profile
-  submit-prod athena start-query-execution` in workgroup `prod-env-analytics`, database
-  `prod_env_analytics`, `SELECT dt, count(*) FROM ga4_bq_events WHERE stream_id = '13496898428' AND
-  event_name = 'donate' GROUP BY 1` — a non-zero row for 2026-09-19 closes it, and the matching
-  `key_events_daily` row (hostname `spreadsheets.diyaccounting.co.uk`, key_event `donate`) confirms
-  the aggregate carries it. Zero on both means the emitter is not reaching GA4: reopen B52n with the
-  query output. The lake's newest day, 2026-09-18, has one `donation_prompt` and no `donate` or
-  `purchase` for that stream, so no donation happened that day. The read needs `aws sso login --sso-session diyaccounting`;
-  blocked on that login. **Source**: B52n. **Owner**: Claude Code. **Model**: Haiku. **Size**: ~0 files.
-
-- [ ] **B69.2. The reliability ledger: the first row.** The five agent workflows write
-  `curated/agent-runs/dt=<day>/<run>-<attempt>.json` since PR #311; `agent_runs`,
-  `v_agent_runs_daily` and three uptime observations read it. Proof, after any agent workflow run
-  on `main` (B71's dispatch is one): `aws --profile submit-prod athena start-query-execution
-  --work-group prod-env-analytics --query-execution-context Database=prod_env_analytics
-  --query-string "SELECT workflow, outcome, model_id FROM agent_runs ORDER BY finished_at DESC
-  LIMIT 5"` returns the row. Blocked on `aws sso login --sso-session diyaccounting`. **Source**:
-  BACKLOG 69; `PLAN_REPOSITORY_AUTOMATION.md` Phase 1. **Owner**: Claude Code. **Model**: Haiku.
-  **Size**: ~0 files.
 
 - [ ] **B11.T7b.6. Both runs' proofs.** The exit code rests on two printed lines today, `final
   declaration 204` and `fraud header validator clean`. Add three more, each computed from the
