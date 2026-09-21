@@ -68,7 +68,6 @@ async function getGitHubAppPrivateKey() {
     throw new Error("GITHUB_APP_PRIVATE_KEY_SECRET_ID environment variable is required");
   }
 
-
   const { SecretsManagerClient, GetSecretValueCommand } = await import("@aws-sdk/client-secrets-manager");
   const client = new SecretsManagerClient({
     region: process.env.AWS_REGION || "eu-west-2",

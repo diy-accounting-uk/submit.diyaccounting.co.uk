@@ -18,7 +18,8 @@
 //   --environment <ci|prod>   Required. Which AWS account to read the key from.
 //   --mode <test|live>        Required. Which Stripe account API key to use.
 //   --apply                   Make the changes; without it, report only.
-//   --products-only           Skip the webhook endpoints, sync products and prices only.
+//   --products-only           Skip the webhook endpoints and payment links, sync products and prices only.
+//   --payment-links-only      Skip products, prices and webhook endpoints, sync payment links only.
 //   --bundle <id>             Limit to a single bundle id.
 //
 // Credentials: the account API key is read from Secrets Manager at the name
@@ -49,7 +50,7 @@ const ENV_FILES = [".env.ci", ".env.prod"];
  * @param {string[]} argv - process.argv.slice(2)
  */
 export function parseArgs(argv) {
-  const opts = { environment: null, mode: null, apply: false, productsOnly: false, bundleId: undefined };
+  const opts = { environment: null, mode: null, apply: false, productsOnly: false, paymentLinksOnly: false, bundleId: undefined };
   for (let i = 0; i < argv.length; i++) {
     switch (argv[i]) {
       case "--environment":
@@ -69,6 +70,9 @@ export function parseArgs(argv) {
         break;
       case "--products-only":
         opts.productsOnly = true;
+        break;
+      case "--payment-links-only":
+        opts.paymentLinksOnly = true;
         break;
       case "--bundle":
         opts.bundleId = argv[++i];
@@ -102,11 +106,19 @@ function normalizeEndpoint(entry) {
   return { environment: entry.environment, url: entry.url, modes: entry.modes, secrets };
 }
 
+function normalizePaymentLink(entry) {
+  if (!entry.url || !entry.bundle_id) {
+    throw new Error(`[[payment_link]] entry is missing url or bundle_id: ${JSON.stringify(entry)}`);
+  }
+  return { url: entry.url, bundleId: entry.bundle_id };
+}
+
 /**
- * Parse infra/stripe/stripe.toml's endpoints, event list and per-account key secret names.
+ * Parse infra/stripe/stripe.toml's endpoints, payment links, event list and per-account key
+ * secret names.
  *
  * @param {string} tomlString
- * @returns {{endpoints: object[], events: string[], keys: {ci: {test: string}, prod: {test: string, live: string}}}}
+ * @returns {{endpoints: object[], paymentLinks: Array<{bundleId: string, url: string}>, events: string[], keys: {ci: {test: string}, prod: {test: string, live: string}}}}
  */
 export function parseConfig(tomlString) {
   const parsed = TOML.parse(tomlString);
@@ -114,6 +126,7 @@ export function parseConfig(tomlString) {
   if (endpoints.length === 0) {
     throw new Error("stripe.toml has no [[endpoint]] entries");
   }
+  const paymentLinks = (parsed.payment_link ?? []).map(normalizePaymentLink);
   const events = parsed.events?.enabled ?? [];
   if (events.length === 0) {
     throw new Error("stripe.toml has no [events].enabled list");
@@ -122,7 +135,7 @@ export function parseConfig(tomlString) {
   if (!keys.ci.test || !keys.prod.test || !keys.prod.live) {
     throw new Error("stripe.toml must declare [keys.ci].test, [keys.prod].test and [keys.prod].live");
   }
-  return { endpoints, events, keys };
+  return { endpoints, paymentLinks, events, keys };
 }
 
 export function loadConfigFromRoot() {
@@ -172,6 +185,30 @@ export function planEndpoints(endpoints, mode, existingWebhooksForMode, desiredE
       secret: endpoint.secrets[mode],
       ...planWebhookAction({ url: endpoint.url, existingWebhooksForMode, desiredEvents }),
     }));
+}
+
+/**
+ * Plan what to change about each declared payment link's payment_intent_data.metadata.bundleId,
+ * against the account's live payment link list. Pure - the live list is passed in, never
+ * fetched here. A declared link the account doesn't have is reported, not created: a Payment
+ * Link is a checkout page an operator builds by hand, stripe-sync only labels one that exists.
+ *
+ * @param {{paymentLinks: Array<{bundleId: string, url: string}>}} config
+ * @param {Array<{id: string, url: string, payment_intent_data?: {metadata?: Record<string,string>}}>} live
+ * @returns {Array<{bundleId: string, url: string, action: "missing"|"noop"|"update", id?: string}>}
+ */
+export function planPaymentLinks(config, live) {
+  return config.paymentLinks.map(({ bundleId, url }) => {
+    const existing = live.find((pl) => pl.url === url);
+    if (!existing) {
+      return { bundleId, url, action: "missing" };
+    }
+    const currentBundleId = existing.payment_intent_data?.metadata?.bundleId;
+    if (currentBundleId === bundleId) {
+      return { bundleId, url, action: "noop", id: existing.id };
+    }
+    return { bundleId, url, action: "update", id: existing.id };
+  });
 }
 
 /**
@@ -350,6 +387,31 @@ async function syncEndpoints(stripe, config, opts) {
   }
 }
 
+async function syncPaymentLinks(stripe, config, opts) {
+  console.log(`\n=== payment links (${opts.mode}) ===`);
+  if (config.paymentLinks.length === 0) {
+    console.log("  stripe.toml has no [[payment_link]] entries");
+    return;
+  }
+  const live = (await stripe.paymentLinks.list({ limit: 100 })).data;
+  const plans = planPaymentLinks(config, live);
+
+  for (const plan of plans) {
+    if (plan.action === "missing") {
+      console.log(`  ${plan.bundleId} (${plan.url}): not found in this account`);
+      continue;
+    }
+    if (plan.action === "noop") {
+      console.log(`  ${plan.bundleId} (${plan.url}): up to date (${plan.id})`);
+      continue;
+    }
+    console.log(`  ${plan.bundleId} (${plan.url}): ${opts.apply ? "updating" : "would update"} (${plan.id})`);
+    if (!opts.apply) continue;
+    await stripe.paymentLinks.update(plan.id, { payment_intent_data: { metadata: { bundleId: plan.bundleId } } });
+    console.log(`    updated ${plan.id}`);
+  }
+}
+
 export async function main() {
   const opts = parseArgs(process.argv.slice(2));
   const config = loadConfigFromRoot();
@@ -363,6 +425,12 @@ export async function main() {
   const secretKey = await getSecretValue(secretName);
   const stripe = new Stripe(secretKey);
 
+  if (opts.paymentLinksOnly) {
+    await syncPaymentLinks(stripe, config, opts);
+    console.log(`\n${opts.apply ? "Applied." : "Plan complete. Re-run with --apply to make these changes."}`);
+    return;
+  }
+
   const results = await syncProducts(stripe, opts);
   if (opts.apply && results.length > 0) {
     await applyEnvUpdates(opts.mode, results);
@@ -370,6 +438,7 @@ export async function main() {
 
   if (!opts.productsOnly) {
     await syncEndpoints(stripe, config, opts);
+    await syncPaymentLinks(stripe, config, opts);
   }
 
   console.log(`\n${opts.apply ? "Applied." : "Plan complete. Re-run with --apply to make these changes."}`);

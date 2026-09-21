@@ -430,14 +430,11 @@ API, which HMRC has not published.
 
 ### GitHub
 
-Three settings are code today: `scripts/github-actions-permissions.sh` sets the Actions allow-list
-and SHA pinning through `gh api` and nothing calls it, `scripts/check-workflow-permissions.mjs` runs
-in `test.yml`, and `deploy-environment.yml` copies each GitHub Environment secret into Secrets
-Manager. `PLAN_REPOSITORY_AUTOMATION.md`'s capability table and `REPORT_IDENTITY_AUDIT.md` measure
-the rest: five rulesets carrying only `deletion` and `non_fast_forward`, no required status check, no
-signature rule, `root`'s ruleset disabled, delete-branch-on-merge off, Dependabot security fixes
-disabled, `allowed_actions: all` on a public repository, no CODEOWNERS, and zero GitHub Apps on the
-organisation.
+Two settings are code today: `scripts/check-workflow-permissions.mjs` runs in `test.yml`, and
+`deploy-environment.yml` copies each GitHub Environment secret into Secrets Manager. Everything else
+sat in the console until `infra/github` and `github-sync.js` covered it: the Actions allow-list and
+SHA pinning, the "main" ruleset's rules and bypass actors, the merge settings, Dependabot security
+fixes, and the environments' variable and secret names.
 
 Every one is in the REST API: `/repos/{owner}/{repo}/rulesets`, `/actions/permissions` and
 `/actions/permissions/selected-actions`, the repository object's `delete_branch_on_merge`,
@@ -650,12 +647,14 @@ redirect URIs and the secret names; `hmrc-assert.js` proving each subscription w
 declared API. Run it against the sandbox application in ci and the production one in prod.
 **Model**: Sonnet. **Size**: ~4 files.
 
-**20. `infra/github`.** `github.toml` declaring the rulesets and their rules, the required checks,
-the Actions allow-list and SHA pinning, `delete_branch_on_merge`, Dependabot security fixes,
-CODEOWNERS routing and the two environments with their variable and secret names. `github-sync.js`
-diffs and applies through the REST API. Absorbs `scripts/github-actions-permissions.sh`, which
-nothing calls today. The token needs repository administration, so the step runs on the `prod`
-environment. **Model**: Sonnet. **Size**: ~5 files.
+**20. `infra/github` — done.** `github.toml` declares the merge settings, the Actions allow-list and
+SHA pinning, Dependabot security fixes, the "main" ruleset's rules and bypass actors, and the `ci`,
+`prod` and `copilot` environments with their variable and secret names. `github-sync.js` reads live
+state through `gh api`, plans by default, and applies with `--apply` through the same routes; a
+declared secret or variable name missing live is a finding, never created. `scripts/github-actions-
+permissions.sh` is gone, absorbed into the allow-list section. The apply step runs on the `infra-
+apply.yml` `prod` leg with `GH_TOKEN: ${{ secrets.ADMIN_TOKEN }}`, since `GITHUB_TOKEN` cannot
+administer a repository's own settings.
 
 **21. `infra/stripe`.** Move `scripts/stripe-setup.js` in, invert its default so it plans without
 `--apply`, move the two webhook endpoint URLs and the nine events into `stripe.toml`, and have it

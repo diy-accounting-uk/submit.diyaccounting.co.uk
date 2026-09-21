@@ -1,0 +1,149 @@
+# SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0
+# Copyright (C) 2006-2026 DIY Accounting Limited
+
+# This repository's own GitHub settings, as code.
+#
+# infra/github/github-sync.js reads this file, reads live state through `gh api`, diffs, and
+# writes the difference back with --apply. A secret or variable's value never appears here,
+# only its name; a declared name missing live is a finding the sync reports, never creates.
+
+[repository]
+allow_auto_merge = true
+delete_branch_on_merge = true
+allow_squash_merge = true
+allow_merge_commit = true
+allow_rebase_merge = true
+
+[actions]
+enabled = true
+allowed_actions = "selected"
+sha_pinning_required = true
+default_workflow_permissions = "read"
+can_approve_pull_request_reviews = false
+github_owned_allowed = true
+verified_allowed = true
+patterns_allowed = [
+  "aws-actions/configure-aws-credentials@*",
+  "docker/setup-buildx-action@*",
+  "docker/setup-qemu-action@*",
+  "astral-sh/setup-uv@*",
+  "softprops/action-gh-release@*",
+  "google-github-actions/auth@*",
+]
+
+# Repository-level Actions secrets and variables: every workflow run can read these regardless
+# of which environment it targets. Names only.
+repository_secrets = [
+  "ADMIN_TOKEN",
+  "AGENT_APP_PRIVATE_KEY",
+  "AGENT_TOKEN",
+  "AUTO_MERGE_TOKEN",
+  "ISSUE_BOT_TOKEN",
+  "OPS_APP_PRIVATE_KEY",
+  "PERSONAL_ACCESS_TOKEN",
+  "RELEASE_PAT",
+  "SUPPORT_BOT_TOKEN",
+]
+repository_variables = [
+  "AGENT_APP_ID",
+  "AGENT_APP_INSTALLATION_ID",
+  "AWS_CERTIFICATE_ARN",
+  "AWS_HOSTED_ZONE_NAME",
+  "OPS_APP_ID",
+  "OPS_APP_INSTALLATION_ID",
+  "SUBMIT_GOOGLE_AUTH_MODE",
+]
+
+# Dependabot's automatic security-fix pull requests. Recorded as read live (false); nothing here
+# has ever turned it on.
+[security]
+automated_security_fixes = false
+
+[[ruleset]]
+name = "main"
+enforcement = "active"
+
+  [ruleset.conditions.ref_name]
+  include = ["~DEFAULT_BRANCH"]
+  exclude = []
+
+  [[ruleset.rule]]
+  type = "deletion"
+
+  [[ruleset.rule]]
+  type = "non_fast_forward"
+
+  [[ruleset.rule]]
+  type = "required_status_checks"
+  strict_required_status_checks_policy = false
+  do_not_enforce_on_create = false
+  required_status_checks = ["Check commit signatures", "npm test", "maven test", "eslint", "CodeQL"]
+
+  # RepositoryRole id 5 is Admin; the operator's own role, which the branch protection UI always
+  # lets bypass so an admin is never locked out of their own repository.
+  [[ruleset.bypass_actor]]
+  actor_id = 5
+  actor_type = "RepositoryRole"
+  bypass_mode = "always"
+
+[[environment]]
+name = "ci"
+variables = [
+  "COMPANIES_HOUSE_CLIENT_ID",
+  "SUBMIT_ACCOUNT_ID",
+  "SUBMIT_ACTIONS_ROLE_ARN",
+  "SUBMIT_ALARM_TRIAGE_ROLE_ARN",
+  "SUBMIT_CERTIFICATE_ARN",
+  "SUBMIT_DEPLOY_ROLE_ARN",
+  "SUBMIT_GA4_MEASUREMENT_ID",
+  "SUBMIT_HOLDING_CERTIFICATE_ARN",
+  "SUBMIT_REGIONAL_CERTIFICATE_ARN",
+]
+secrets = [
+  "COMPANIES_HOUSE_API_KEY",
+  "COMPANIES_HOUSE_CLIENT_SECRET",
+  "COMPANIES_HOUSE_PRESENTER_CODE",
+  "COMPANIES_HOUSE_PRESENTER_ID",
+  "GOOGLE_CLIENT_SECRET",
+  "HMRC_CLIENT_SECRET",
+  "HMRC_SANDBOX_CLIENT_SECRET",
+  "STRIPE_SECRET_KEY",
+  "STRIPE_TEST_SECRET_KEY",
+  "STRIPE_TEST_WEBHOOK_SECRET",
+  "STRIPE_WEBHOOK_SECRET",
+  "TELEGRAM_BOT_TOKEN",
+]
+
+[[environment]]
+name = "prod"
+variables = [
+  "COMPANIES_HOUSE_CLIENT_ID",
+  "SUBMIT_ACCOUNT_ID",
+  "SUBMIT_ACTIONS_ROLE_ARN",
+  "SUBMIT_ALARM_TRIAGE_ROLE_ARN",
+  "SUBMIT_CERTIFICATE_ARN",
+  "SUBMIT_DEPLOY_ROLE_ARN",
+  "SUBMIT_GOOGLE_AUTH_MODE",
+  "SUBMIT_HOLDING_CERTIFICATE_ARN",
+  "SUBMIT_REGIONAL_CERTIFICATE_ARN",
+]
+secrets = [
+  "COMPANIES_HOUSE_API_KEY",
+  "COMPANIES_HOUSE_CLIENT_SECRET",
+  "GOOGLE_CLIENT_SECRET",
+  "HMRC_CLIENT_SECRET",
+  "HMRC_SANDBOX_CLIENT_SECRET",
+  "STRIPE_SECRET_KEY",
+  "STRIPE_TEST_SECRET_KEY",
+  "STRIPE_TEST_WEBHOOK_SECRET",
+  "STRIPE_WEBHOOK_SECRET",
+  "TELEGRAM_BOT_TOKEN",
+]
+
+[[environment]]
+name = "copilot"
+variables = []
+secrets = []
+
+[codeowners]
+rules = [{ pattern = "*", owners = ["@antonycc"] }]

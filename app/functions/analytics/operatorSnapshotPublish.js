@@ -668,9 +668,7 @@ export async function handler() {
   // metric, so this is what keeps a broken table visible without re-blocking the rest of the
   // snapshot on it.
   if (snapshot.failedObservationCount > 0) {
-    throw new Error(
-      `Operator snapshot published with ${snapshot.failedObservationCount} observation(s) failing their Athena query`,
-    );
+    throw new Error(`Operator snapshot published with ${snapshot.failedObservationCount} observation(s) failing their Athena query`);
   }
 
   return { environment: envName, objectives: snapshot.objectives.length };

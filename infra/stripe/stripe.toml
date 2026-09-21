@@ -50,6 +50,29 @@ enabled = [
   "charge.dispute.closed",
 ]
 
+# The spreadsheets site's donation Payment Links live in this same Stripe account. Each one
+# gets its bundle id written onto payment_intent_data.metadata.bundleId, so the charge it
+# produces carries that id too (Stripe copies a Payment Link's payment_intent_data.metadata
+# onto the PaymentIntent, and the PaymentIntent's metadata onto the Charge, as a one-time
+# snapshot at charge creation) and v_revenue_daily can group it under its own product instead
+# of "unknown".
+
+[[payment_link]]
+bundle_id = "donation-10"
+url = "https://buy.stripe.com/5kQ7sK49X9bie0N0bN4F200"
+
+[[payment_link]]
+bundle_id = "donation-20"
+url = "https://buy.stripe.com/3cI7sK7m94V24qd8Ij4F201"
+
+[[payment_link]]
+bundle_id = "donation-45"
+url = "https://buy.stripe.com/8x23cueOB0EM4qdaQr4F202"
+
+[[payment_link]]
+bundle_id = "donation-custom"
+url = "https://buy.stripe.com/3cI28qbCpfzGf4RcYz4F204"
+
 # Each AWS account holds its own copy of the account API key it can reach: ci only the test
 # key, prod both, since the prod job's infra-apply.yml plan checks prod-billing in test mode
 # too. A key is never fetched cross-account.

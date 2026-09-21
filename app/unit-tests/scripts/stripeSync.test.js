@@ -6,7 +6,7 @@
 import { describe, test, expect } from "vitest";
 
 import { buildStripeProductsFromCatalog } from "../../../infra/stripe/lib/stripeCatalogue.js";
-import { parseArgs, parseConfig, planEndpoints, rewriteEnvLines, computeEnvUpdates } from "../../../infra/stripe/stripe-sync.js";
+import { parseArgs, parseConfig, planEndpoints, planPaymentLinks, rewriteEnvLines, computeEnvUpdates } from "../../../infra/stripe/stripe-sync.js";
 import { loadCatalogFromRoot } from "../../services/productCatalog.js";
 import { dotenvConfigIfNotBlank } from "@app/lib/env.js";
 
@@ -72,21 +72,23 @@ describe("parseArgs", () => {
   });
 
   test("reads every flag", () => {
-    expect(parseArgs(["--environment", "ci", "--mode", "test", "--apply", "--products-only", "--bundle", "resident-vat"])).toEqual({
+    expect(parseArgs(["--environment", "ci", "--mode", "test", "--apply", "--products-only", "--payment-links-only", "--bundle", "resident-vat"])).toEqual({
       environment: "ci",
       mode: "test",
       apply: true,
       productsOnly: true,
+      paymentLinksOnly: true,
       bundleId: "resident-vat",
     });
   });
 
-  test("defaults apply, productsOnly and bundleId", () => {
+  test("defaults apply, productsOnly, paymentLinksOnly and bundleId", () => {
     expect(parseArgs(["--environment", "prod", "--mode", "live"])).toEqual({
       environment: "prod",
       mode: "live",
       apply: false,
       productsOnly: false,
+      paymentLinksOnly: false,
       bundleId: undefined,
     });
   });
@@ -119,6 +121,14 @@ modes = ["test", "live"]
   github_secret = "STRIPE_WEBHOOK_SECRET"
   aws_secret = "prod/submit/stripe/webhook_secret"
 
+[[payment_link]]
+bundle_id = "donation-10"
+url = "https://buy.stripe.com/aaa"
+
+[[payment_link]]
+bundle_id = "donation-20"
+url = "https://buy.stripe.com/bbb"
+
 [events]
 enabled = ["checkout.session.completed", "invoice.paid"]
 
@@ -144,6 +154,10 @@ describe("parseConfig", () => {
       test: { githubSecret: "STRIPE_TEST_WEBHOOK_SECRET", awsSecret: "prod/submit/stripe/test_webhook_secret" },
       live: { githubSecret: "STRIPE_WEBHOOK_SECRET", awsSecret: "prod/submit/stripe/webhook_secret" },
     });
+    expect(config.paymentLinks).toEqual([
+      { bundleId: "donation-10", url: "https://buy.stripe.com/aaa" },
+      { bundleId: "donation-20", url: "https://buy.stripe.com/bbb" },
+    ]);
     expect(config.events).toEqual(["checkout.session.completed", "invoice.paid"]);
     expect(config.keys).toEqual({
       ci: { test: "ci/submit/stripe/test_secret_key" },
@@ -188,6 +202,48 @@ test = "t"
 live = "l"
 `;
     expect(() => parseConfig(toml)).toThrow(/events/);
+  });
+
+  test("defaults paymentLinks to an empty list when stripe.toml has none", () => {
+    const toml = `
+[[endpoint]]
+environment = "ci"
+url = "https://x"
+modes = ["test"]
+  [endpoint.secret.test]
+  github_secret = "G"
+  aws_secret = "A"
+[events]
+enabled = ["x"]
+[keys.ci]
+test = "t"
+[keys.prod]
+test = "t"
+live = "l"
+`;
+    expect(parseConfig(toml).paymentLinks).toEqual([]);
+  });
+
+  test("throws when a payment_link entry is missing url or bundle_id", () => {
+    const toml = `
+[[endpoint]]
+environment = "ci"
+url = "https://x"
+modes = ["test"]
+  [endpoint.secret.test]
+  github_secret = "G"
+  aws_secret = "A"
+[[payment_link]]
+bundle_id = "donation-10"
+[events]
+enabled = ["x"]
+[keys.ci]
+test = "t"
+[keys.prod]
+test = "t"
+live = "l"
+`;
+    expect(() => parseConfig(toml)).toThrow(/payment_link/);
   });
 
   test("throws when a key is missing", () => {
@@ -240,6 +296,45 @@ describe("planEndpoints", () => {
     const existing = [{ id: "we_1", url: endpoints[0].url, status: "disabled", enabled_events: [...events] }];
     const plans = planEndpoints(endpoints, "test", existing, events);
     expect(plans[0]).toMatchObject({ action: "update", id: "we_1", eventsChanged: false, needsEnable: true });
+  });
+});
+
+describe("planPaymentLinks", () => {
+  const { paymentLinks } = parseConfig(SAMPLE_TOML);
+
+  test("plans an update when the live link has no bundleId metadata yet", () => {
+    const live = [{ id: "plink_1", url: paymentLinks[0].url, payment_intent_data: { metadata: {} } }];
+    const plans = planPaymentLinks({ paymentLinks }, live);
+    expect(plans[0]).toEqual({ bundleId: "donation-10", url: paymentLinks[0].url, action: "update", id: "plink_1" });
+  });
+
+  test("plans an update when the live link's bundleId differs", () => {
+    const live = [{ id: "plink_1", url: paymentLinks[0].url, payment_intent_data: { metadata: { bundleId: "donation-old" } } }];
+    const plans = planPaymentLinks({ paymentLinks }, live);
+    expect(plans[0]).toMatchObject({ action: "update", id: "plink_1" });
+  });
+
+  test("plans a noop when the live link's bundleId already matches", () => {
+    const live = [{ id: "plink_1", url: paymentLinks[0].url, payment_intent_data: { metadata: { bundleId: "donation-10" } } }];
+    const plans = planPaymentLinks({ paymentLinks }, live);
+    expect(plans[0]).toEqual({ bundleId: "donation-10", url: paymentLinks[0].url, action: "noop", id: "plink_1" });
+  });
+
+  test("reports a declared link the account doesn't have as missing", () => {
+    const plans = planPaymentLinks({ paymentLinks }, []);
+    expect(plans).toEqual([
+      { bundleId: "donation-10", url: paymentLinks[0].url, action: "missing" },
+      { bundleId: "donation-20", url: paymentLinks[1].url, action: "missing" },
+    ]);
+  });
+
+  test("plans every declared link independently", () => {
+    const live = [
+      { id: "plink_1", url: paymentLinks[0].url, payment_intent_data: { metadata: { bundleId: "donation-10" } } },
+      { id: "plink_2", url: paymentLinks[1].url, payment_intent_data: { metadata: {} } },
+    ];
+    const plans = planPaymentLinks({ paymentLinks }, live);
+    expect(plans.map((p) => p.action)).toEqual(["noop", "update"]);
   });
 });
 

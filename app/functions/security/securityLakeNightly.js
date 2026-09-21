@@ -216,12 +216,11 @@ const GITHUB_ALERT_ENDPOINTS = [
 
 export function nextPageUrl(linkHeader) {
   if (!linkHeader) return null;
-  const links = linkHeader.split(",");
-  for (const link of links) {
-    const match = link.match(/<([^>]+)>;\s*rel="next"/);
-    if (match) {
-      return match[1];
-    }
+  for (const link of linkHeader.split(",")) {
+    const [target, ...params] = link.split(";");
+    if (!params.some((param) => param.trim() === 'rel="next"')) continue;
+    const url = target.trim();
+    if (url.startsWith("<") && url.endsWith(">")) return url.slice(1, -1);
   }
   return null;
 }
@@ -283,7 +282,11 @@ export async function fetchGithubAlertRows(fetchImpl, token, repo, dateStr) {
       const alerts = await fetchOpenGithubAlerts(fetchImpl, token, repo, endpoint.path);
       rows.push(...aggregateGithubAlertCounts(endpoint.alertType, alerts, endpoint.severityField, dateStr));
     } catch (error) {
-      logger.warn({ message: "GitHub alert fetch failed, publishing a null row for it", alertType: endpoint.alertType, error: error.message });
+      logger.warn({
+        message: "GitHub alert fetch failed, publishing a null row for it",
+        alertType: endpoint.alertType,
+        error: error.message,
+      });
       rows.push({ dt: dateStr, alert_type: endpoint.alertType, severity: null, count: null, oldest_created_at: null });
     }
   }

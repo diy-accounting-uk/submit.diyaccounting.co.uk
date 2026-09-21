@@ -261,7 +261,7 @@ Created per deployment by `deploy.yml`:
 | `copilot-setup-steps.yml` | Copilot setup (reusable) | workflow_call |
 | `google-apply.yml` | Plan/apply the `infra/google/` config files against live Google Cloud, GA4 and OAuth state | Pull request (plan), push to main (apply) |
 | `youtube-check.yml` | Check the stored YouTube refresh token still resolves to the declared channel | Schedule (weekly), manual |
-| `infra-apply.yml` | Assert the `infra/companies-house/`, `infra/hmrc/`, `infra/stripe/`, `infra/paypal/` and `infra/telegram/` config files against live provider state | Pull request, push to main, manual |
+| `infra-apply.yml` | Assert the `infra/companies-house/`, `infra/hmrc/`, `infra/stripe/`, `infra/paypal/` and `infra/telegram/` config files against live provider state, and plan `infra/github/` against this repository's own live GitHub settings | Pull request, push to main, manual |
 
 **Note:** Gateway and spreadsheets deployment workflows have been moved to their own repositories. This repo only deploys the submit application to submit-ci (367191799875) and submit-prod (972912397388).
 
@@ -619,6 +619,7 @@ Head-injected scripts for early API prefetching:
 | `infra/stripe/stripe.toml` | Stripe webhook endpoints, their modes and event list, and the two account key secret names |
 | `infra/paypal/paypal.toml` | The hosted Donate button id, form action, donate URL and donate page |
 | `infra/telegram/telegram.toml` | The alerting bot's username and its six groups' chat ids |
+| `infra/github/github.toml` | This repository's own merge settings, Actions allow-list, ruleset and environments' variable/secret names |
 | `faqs.toml` | FAQ content for help page |
 | `submit.features.toml` | Feature flags configuration |
 | `playwright.config.js` | Playwright test configuration |
