@@ -112,7 +112,7 @@ jobs:
             exit 0
           fi
 
-          SCRIPTS=$(printf '%s\n' "$CHANGED_FILES" | node scripts/video-scripts-for-changed-files.mjs)
+          SCRIPTS=$(printf '%s\n' "$CHANGED_FILES" | node scripts/video-scripts-for-changed-files.mjs --environment prod)
           if [ -z "$SCRIPTS" ]; then
             echo "No scene script's declared pages were touched between ${BASE} and ${HEAD}; nothing to record."
             exit 0

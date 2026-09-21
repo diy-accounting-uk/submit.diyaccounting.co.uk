@@ -6,6 +6,7 @@
   "auth": "user",
   "pages": ["web/public/index.html", "web/public/auth/login.html", "web/public/bundles.html", "web/public/hmrc/itsa/dashboard.html", "web/public/hmrc/itsa/obligations.html", "web/public/hmrc/itsa/selfEmploymentPeriod.html"],
   "hmrcServices": ["mtd-vat", "mtd-income-tax"],
+  "environments": ["ci"],
   "viewport": { "width": 1920, "height": 1080 },
   "deviceScaleFactor": 1,
   "fps": 60,

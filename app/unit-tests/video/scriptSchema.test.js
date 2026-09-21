@@ -142,6 +142,43 @@ describe("hmrcServices", () => {
   });
 });
 
+describe("environments", () => {
+  test("is optional, defaulting elsewhere to both ci and prod", () => {
+    expect(() => validateScript(baseScript())).not.toThrow();
+  });
+
+  test("accepts a ci-only script", () => {
+    expect(() => validateScript(baseScript({ environments: ["ci"] }))).not.toThrow();
+  });
+
+  test("rejects an empty array", () => {
+    expect(() => validateScript(baseScript({ environments: [] }))).toThrow(/environments/);
+  });
+
+  test("rejects an unknown environment name", () => {
+    expect(() => validateScript(baseScript({ environments: ["staging"] }))).toThrow(/environments/);
+  });
+
+  const ciOnlyScripts = ["itsa-business-details", "itsa-quarterly-update", "file-micro-entity-accounts"];
+
+  test.each(ciOnlyScripts)("%s is recorded on a ci set only", (name) => {
+    expect(readSceneScript(name).environments).toEqual(["ci"]);
+  });
+
+  const allScriptNames = fs
+    .readdirSync(videosDir)
+    .filter((file) => file.endsWith(".json") && !file.endsWith(".schema.json") && file !== "publish.json")
+    .map((file) => file.replace(/\.json$/, ""));
+
+  test.each(allScriptNames)("%s declares only known environment values", (name) => {
+    const script = readSceneScript(name);
+    if (!("environments" in script)) return;
+    for (const environment of script.environments) {
+      expect(["ci", "prod"]).toContain(environment);
+    }
+  });
+});
+
 describe("fill", () => {
   const withStep = (step) => baseScript({ scenes: [{ id: "home", chapter: "Home", steps: [{ action: "goto", url: "/" }, step] }] });
 
