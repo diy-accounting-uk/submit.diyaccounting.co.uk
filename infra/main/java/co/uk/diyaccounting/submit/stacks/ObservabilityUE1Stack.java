@@ -22,6 +22,10 @@ import software.amazon.awscdk.Stack;
 import software.amazon.awscdk.StackProps;
 import software.amazon.awscdk.services.budgets.CfnBudget;
 import software.amazon.awscdk.services.budgets.CfnBudgetsAction;
+import software.amazon.awscdk.services.cloudwatch.Alarm;
+import software.amazon.awscdk.services.cloudwatch.ComparisonOperator;
+import software.amazon.awscdk.services.cloudwatch.Metric;
+import software.amazon.awscdk.services.cloudwatch.TreatMissingData;
 import software.amazon.awscdk.services.iam.AccountPrincipal;
 import software.amazon.awscdk.services.iam.Effect;
 import software.amazon.awscdk.services.iam.ManagedPolicy;
@@ -343,9 +347,71 @@ public class ObservabilityUE1Stack extends Stack {
 
         cfnOutput(this, "SpreadsheetsMetricsSinkArn", spreadsheetsMetricsSink.getAttrArn());
 
+        // The three web-vitals alarms, same shape as ObservabilityStack's own RUM alarms
+        // (RumLcpP75Alarm, RumClsP75Alarm), but on the spreadsheets account's AWS/RUM metrics:
         // CloudWatch refuses an alarm on another account's metric until that account has linked
-        // to the sink ("One or more metrics in your request are Forbidden"), so the three
-        // spreadsheets web-vitals alarms wait for the spreadsheets account's link; the dashboard
-        // widgets in ObservabilityStack render empty meanwhile.
+        // to this sink, and only accepts the metric with the source account id set on it via
+        // Metric.account().
+        String spreadsheetsRumAppName = "prod".equals(props.envName()) ? "spreadsheets-web" : "ci-spreadsheets-web";
+
+        Metric spreadsheetsLcpP75 = Metric.Builder.create()
+                .namespace("AWS/RUM")
+                .metricName("WebVitalsLargestContentfulPaint")
+                .dimensionsMap(Map.of("application_name", spreadsheetsRumAppName))
+                .account(spreadsheetsAccountId)
+                .region("us-east-1")
+                .statistic("p75")
+                .period(Duration.minutes(5))
+                .build();
+
+        Metric spreadsheetsInpP75 = Metric.Builder.create()
+                .namespace("AWS/RUM")
+                .metricName("WebVitalsInteractionToNextPaint")
+                .dimensionsMap(Map.of("application_name", spreadsheetsRumAppName))
+                .account(spreadsheetsAccountId)
+                .region("us-east-1")
+                .statistic("p75")
+                .period(Duration.minutes(5))
+                .build();
+
+        Metric spreadsheetsClsP75 = Metric.Builder.create()
+                .namespace("AWS/RUM")
+                .metricName("WebVitalsCumulativeLayoutShift")
+                .dimensionsMap(Map.of("application_name", spreadsheetsRumAppName))
+                .account(spreadsheetsAccountId)
+                .region("us-east-1")
+                .statistic("p75")
+                .period(Duration.minutes(5))
+                .build();
+
+        Alarm.Builder.create(this, props.resourceNamePrefix() + "-SpreadsheetsRumLcpP75Alarm")
+                .alarmName(props.resourceNamePrefix() + "-spreadsheets-rum-lcp-p75")
+                .metric(spreadsheetsLcpP75)
+                .threshold(4000) // 4s
+                .evaluationPeriods(2)
+                .comparisonOperator(ComparisonOperator.GREATER_THAN_THRESHOLD)
+                .treatMissingData(TreatMissingData.NOT_BREACHING)
+                .alarmDescription("Spreadsheets RUM p75 LCP > 4s")
+                .build();
+
+        Alarm.Builder.create(this, props.resourceNamePrefix() + "-SpreadsheetsRumInpP75Alarm")
+                .alarmName(props.resourceNamePrefix() + "-spreadsheets-rum-inp-p75")
+                .metric(spreadsheetsInpP75)
+                .threshold(500) // 500ms
+                .evaluationPeriods(2)
+                .comparisonOperator(ComparisonOperator.GREATER_THAN_THRESHOLD)
+                .treatMissingData(TreatMissingData.NOT_BREACHING)
+                .alarmDescription("Spreadsheets RUM p75 INP > 500ms")
+                .build();
+
+        Alarm.Builder.create(this, props.resourceNamePrefix() + "-SpreadsheetsRumClsP75Alarm")
+                .alarmName(props.resourceNamePrefix() + "-spreadsheets-rum-cls-p75")
+                .metric(spreadsheetsClsP75)
+                .threshold(0.25) // CLS "needs improvement" boundary
+                .evaluationPeriods(2)
+                .comparisonOperator(ComparisonOperator.GREATER_THAN_THRESHOLD)
+                .treatMissingData(TreatMissingData.NOT_BREACHING)
+                .alarmDescription("Spreadsheets RUM p75 CLS > 0.25")
+                .build();
     }
 }
