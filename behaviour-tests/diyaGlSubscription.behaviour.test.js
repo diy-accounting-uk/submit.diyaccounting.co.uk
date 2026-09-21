@@ -106,8 +106,10 @@ test("subscribes with a DIYA-GL token, then puts and reads a book", async ({ pag
   addOnPageLogging(page);
 
   const apiBase = new URL("api/v1", baseUrl).toString().replace(/\/$/, "");
-  // A fresh id each run: the durable test user keeps its books, and a put on an existing book
-  // without its current etag answers 412.
+  // Fresh ids each run: the durable test user keeps its books, and a put on an existing book
+  // without its current etag answers 412. Two distinct books, not one put twice, because the
+  // retry loop below sends no If-Match and would 412 against its own first save.
+  const sandboxBookId = crypto.randomUUID();
   const bookId = crypto.randomUUID();
   const redirectUri = diyaGlPageUrl;
 
@@ -121,6 +123,15 @@ test("subscribes with a DIYA-GL token, then puts and reads a book", async ({ pag
     screenshotPath,
   );
   expect(idToken).toBeTruthy();
+
+  /* ******************************************************* */
+  /*  A SANDBOX SAVE BEFORE THE SUBSCRIPTION EXISTS  */
+  /* ******************************************************* */
+
+  const sandboxPut = await putDiyaGlBook({ apiBase, idToken, bookId: sandboxBookId, zipBase64: FIXTURE_ZIP_BASE64 });
+  expect(sandboxPut.status, `sandbox put response: ${JSON.stringify(sandboxPut.body)}`).toBe(200);
+  expect(sandboxPut.body.metadata.retention).toBe("sandbox");
+  expect(sandboxPut.body.metadata.expiresAt).not.toBeNull();
 
   /* ******************************************************************** */
   /*  CHECKOUT WITH THE DIYA-GL TOKEN — THE AUDIENCE CHANGE UNDER TEST  */
@@ -159,6 +170,8 @@ test("subscribes with a DIYA-GL token, then puts and reads a book", async ({ pag
     if (put.status !== 200) await page.waitForTimeout(2_000);
   } while (put.status !== 200 && Date.now() < putDeadline);
   expect(put.status, `put response: ${JSON.stringify(put.body)}`).toBe(200);
+  expect(put.body.metadata.retention).toBe("resident");
+  expect(put.body.metadata.expiresAt).toBeNull();
 
   const read = await getDiyaGlBookLatest({ apiBase, idToken, bookId });
   expect(read.status).toBe(200);
