@@ -53,11 +53,15 @@ Accounting Submit, which already holds production credentials for VAT (MTD).
 
 ## Testing completed
 
-We have filed a complete self-employment tax year in the sandbox: four quarterly updates, the
-annual submission, a triggered and adjusted business source adjustable summary, an
-intent-to-finalise calculation and a final declaration (204). The fraud prevention header
-validator reports no errors on that run; its one warning is `gov-client-multi-factor`, which we
-are closing by requiring multi-factor authentication for every account.
+We have filed complete tax years in the sandbox for two income types, self-employment and UK
+property, across both quarterly models: dated period summaries for 2023-24 and cumulative period
+summaries for 2025-26 and 2026-27. Each run filed four quarterly updates for each business, the
+annual submission, a triggered and adjusted business source adjustable summary, an intent-to-finalise
+calculation and a final declaration (204). For 2026-27, we filed loss claims for both businesses and
+tax liability adjustments, each with the required `suspend-temporal-validations` header. The fraud
+prevention header validator reports no errors on these runs; its one warning is
+`gov-client-multi-factor`, which we are closing by requiring multi-factor authentication for every
+account.
 
 Our production approvals checklist answers each of the minimum functionality standards with the
 code that meets it, and is attached.

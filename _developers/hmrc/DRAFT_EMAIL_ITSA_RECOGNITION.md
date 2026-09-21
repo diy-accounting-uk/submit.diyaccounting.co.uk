@@ -40,10 +40,13 @@ Self Assessment Individual Details, Individual Calculations, Individual Losses a
 Tax Liability Adjustments. Our completed checklist answers each standard with the code that meets
 it.
 
-In the sandbox we have filed a complete self-employment tax year with one test user: four
-quarterly updates, the annual submission, a triggered and adjusted business source adjustable
-summary, an intent-to-finalise calculation and a final declaration, which answered 204. The fraud
-prevention header validator reports no errors on the same header set; its one warning is
+In the sandbox we have filed complete tax years for two income types, self-employment and UK
+property, across both quarterly models: dated period summaries for 2023-24 and cumulative period
+summaries for 2025-26 and 2026-27. Each run filed four quarterly updates for each business, the
+annual submission, a triggered and adjusted business source adjustable summary, an intent-to-finalise
+calculation and a final declaration that answered 204. For 2026-27, we filed loss claims for both
+businesses and tax liability adjustments, each with the required `suspend-temporal-validations` header.
+The fraud prevention header validator reports no errors on the same header set; its one warning is
 `gov-client-multi-factor`, which we are closing by requiring multi-factor authentication for every
 account.
 

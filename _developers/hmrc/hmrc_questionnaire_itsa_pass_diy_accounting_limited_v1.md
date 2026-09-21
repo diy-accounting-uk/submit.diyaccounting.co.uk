@@ -25,7 +25,7 @@ Company, contact and product details are unchanged from the VAT questionnaires.
 | Negative amounts and pence | Box 5 never negative; boxes 6 to 9 whole pounds | Every money field takes pounds and pence to two places as HMRC's ITSA schemas require; no whole-pound boxes | The `step="0.01"` inputs on the period pages |
 | Period key visible | No | Not applicable: the ITSA endpoints take dates, and every date comes from the obligation or the tax year the customer picked; no period key is computed or shown | `PLAN_ITSA_PHASE_2.md` T11 |
 | Legal declaration before submission | Yes, HMRC's VAT wording | Yes. The final declaration page shows the declaration before the button; the quarterly pages show the submission cost and the tax-year model before sending | `finalDeclaration.html` line 138; `widgets/submission-cost.js` |
-| Testing in the last two weeks | Yes | The sandbox year ran on 2026-09-14 (`17698550`). Re-run `scripts/itsa-sandbox-year.js` within two weeks of sending, because HMRC keeps its testing logs for 14 days | `ITSA_PHASE_2_SANDBOX.md` |
+| Testing in the last two weeks | Yes | The sandbox year ran for 2023-24, 2025-26 and 2026-27 on 2026-09-21 (`5f2ff46a`). Re-run `scripts/itsa-sandbox-year.js` within two weeks of sending, because HMRC keeps its testing logs for 14 days | `ITSA_PHASE_2_SANDBOX.md` |
 | Error testing | Yes | Yes. Every ITSA page carries HMRC's `Gov-Test-Scenario` options for its endpoint, and the simulator carries the error shapes | `app/http-simulator/routes/itsa-*.js` and `scenarios/itsa-*.js` |
 | UK standards | Yes | Yes. Same pages, styles and formats as VAT | |
 | White label | No | No | |
