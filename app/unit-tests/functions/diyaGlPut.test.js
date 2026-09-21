@@ -179,7 +179,7 @@ describe("diyaGlPut", () => {
     expect(body.metadata.createdAt).toBeTruthy();
     expect(body.metadata.entitlementAtPut.reason).toBe("tier-disabled");
     expect(body.metadata.retention).toBe("sandbox");
-    expect(Date.parse(body.metadata.expiresAt) - Date.parse(body.metadata.updatedAt)).toBe(24 * 60 * 60 * 1000);
+    expect(Date.parse(body.metadata.expiresAt) - Date.parse(body.metadata.updatedAt)).toBe(35 * 24 * 60 * 60 * 1000);
     expect(v1PutInput.Tagging).toBe("retention=sandbox");
     expect(metaPutInput.Tagging).toBe("retention=sandbox");
   });
