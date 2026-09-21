@@ -67,6 +67,22 @@ step.
   Code. **Model**: Opus. **Size**: ~1 file.
 
 
+- [ ] **IT-1. `iterate` runs the batch proofs one after the other.** `npm test` and `./mvnw clean
+  verify` ran concurrently on the b69 batch on 2026-09-21 and five vitest files hit the 5,000 ms
+  timeout at load average 107, costing ~25 minutes and a re-run. `.claude/skills/iterate/SKILL.md`'s
+  "Once per batch" line says serially, Maven first. **Source**:
+  `REPORT_SESSION_uOKRjk_2026-09-22.md` suggestion 4. **Owner**: Claude Code. **Model**: Haiku.
+  **Size**: ~1 file.
+
+- [ ] **B30ap. The suites' artifact upload never reddens a passing run.** Two of `test.yml`'s
+  "Upload artifacts" steps (`actions/upload-artifact`; 44 uses across the workflows) failed with
+  `FinalizeArtifact: (403) Forbidden` on 2026-09-21 after both suites had passed, reddening run
+  35655350071 and costing a rerun and an operator paste. Give every behaviour-suite upload step
+  `continue-on-error: true`, or wrap it in a retry step, so a passed suite stays green when
+  GitHub's artifact service does not. **Source**:
+  `REPORT_SESSION_uOKRjk_2026-09-22.md` suggestion 6. **Owner**: Claude Code. **Model**: Haiku.
+  **Size**: ~1 file.
+
 - [ ] **B69a. `finalMessageOnly` cuts at the first heading.** `scripts/redact-triage-output.mjs`'s
   `finalMessageOnly` drops leaked reasoning only when a `---` thematic break precedes the answer;
   support-triage's comment on issue #100 kept one sentence of reasoning above its first `## `
@@ -91,6 +107,41 @@ step.
   activity event, or the period-end move the webhook writes, in `BusinessViews.java` and its test.
   Proof: the export for 2026-09-06 shows that renewal. **Source**: `REPORT_PRICE_UPDATE_REVIEW.md`
   §2 row 4(c); operator 2026-09-21. **Owner**: Claude Code. **Model**: Sonnet. **Size**: ~2 files.
+
+- [ ] **IT-2. Analysis agents start from the board's current commit.** The price-review agent
+  branched from 95fe276c and reported the PU rows missing from `NEXT.md` after ee02df17 had added
+  them. The brief shape in `.claude/skills/iterate/SKILL.md` and `do-next/SKILL.md` gains one line:
+  a worktree for an analysis or review agent is created from `origin/main` after a fetch, and the
+  brief names that commit. **Source**: `REPORT_SESSION_uOKRjk_2026-09-22.md` suggestion 7.
+  **Owner**: Claude Code. **Model**: Haiku. **Size**: ~2 files.
+
+- [ ] **B11.T7c. Sandbox transcripts live outside the worktree.** `scripts/itsa-sandbox-year.js`
+  defaults `ITSA_SANDBOX_OUT_DIR` to `./target/itsa-sandbox-year` (lines 534 and 1149), so the three
+  2026-09-21 runs' transcripts went with the worktree that held them and B11.T7b.7 ran all three
+  years again (~11 minutes, ~100k tokens). Default to a path under the workspace root beside
+  `../analytics/` (`../itsa-sandbox/<tax-year>/`), say so in `_developers/hmrc/ITSA_PHASE_2_SANDBOX.md`,
+  and keep the checkpoint file there too so a re-run restores it. **Source**:
+  `REPORT_SESSION_uOKRjk_2026-09-22.md` suggestion 5. **Owner**: Claude Code. **Model**: Haiku.
+  **Size**: ~2 files.
+
+- [ ] **B43b. A `package.json` scripts-only edit does not deploy.** `package.json` is in
+  `deploy.yml`'s `push:` `paths:`, so #319's one new npm script deployed a ci set (142 job-minutes,
+  a 4-hour set). A `paths:` filter cannot see inside the file; add a first job that diffs
+  `package.json` against the previous head and sets an output when anything but `scripts` changed
+  (dependencies, engines, `bundle` inputs), and gate the stack jobs on it the way `skip deploy check`
+  gates them; scheduled and dispatched runs unaffected. **Source**:
+  `REPORT_SESSION_uOKRjk_2026-09-22.md` suggestion 3; BACKLOG 43. **Owner**: Claude Code. **Model**:
+  Sonnet. **Size**: ~2 files.
+
+- [ ] **B30af.7. Every behaviour suite's Cognito callback host is in `IdentityStack`'s list.**
+  a7e22a95 dropped the spreadsheets hosts from the DIYA-GL client while `diyaGlSubscription` still
+  built its callback on `ci-spreadsheets…/diya-gl/ltd.html`, and the deploy learned it from a
+  `redirect_mismatch` probe (155 job-minutes). A unit test under `app/unit-tests/` reads each
+  behaviour suite's callback URL builder (the `DIYA_GL_BASE_URL` default and page, the Submit
+  suites' `DIY_SUBMIT_BASE_URL` callbacks) and asserts each host and path appears in the list
+  `IdentityStack.buildCallbackUrls`/`buildBooksUrls` produce for ci, read from the synthesised
+  template `IdentityStackTest.java` already asserts. **Source**: `REPORT_SESSION_uOKRjk_2026-09-22.md`
+  suggestion 2; the design, P3. **Owner**: Claude Code. **Model**: Sonnet. **Size**: ~2 files.
 
 - [ ] **PU-10. Every Stripe charge carries its `bundle_id`.** `stripe_charges.bundle_id` is null on
   every charge, so `v_revenue_daily` reports every product as `unknown` and mixes £165 of
