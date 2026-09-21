@@ -155,6 +155,10 @@ public class BusinessViews extends Construct {
                     "Operator interventions each day, by kind: dispatches, issue comments and commits",
                     List.of("github_workflow_runs", "github_issue_events", "github_commits")),
             new ViewDefinition(
+                    "v_agent_runs_daily",
+                    "Unattended agent workflow runs each day, by outcome, PR-accepted rate and time to close",
+                    List.of("agent_runs", "github_issue_events")),
+            new ViewDefinition(
                     "v_compliance_status",
                     "Open compliance findings each day, by area",
                     List.of("compliance_accessibility", "compliance_fraud_headers")),

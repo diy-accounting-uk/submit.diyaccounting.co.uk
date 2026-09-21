@@ -183,6 +183,7 @@ jobs:
       # This job's environment is ci, so the switch it reads is ci's; prod's Part 4 facts come
       # from the prod-deployment-facts job above instead of a second switch check here.
       - name: Stop when the agent kill switch is on
+        id: kill-switch
         uses: ./.github/actions/agent-kill-switch
         with:
           environment-name: ci
@@ -246,6 +247,7 @@ jobs:
 
       - name: Require a usable render
         if: always() && steps.run.outcome != 'skipped'
+        id: require-render
         run: |
           set -euo pipefail
           test -s /tmp/board.json || { echo "::error::no output from the agent"; exit 1; }
@@ -262,6 +264,7 @@ jobs:
       # and this workflow narrows that further to the one file it exists to maintain.
       - name: Refuse anything that is not NEXT.md
         if: always() && steps.run.outcome == 'success'
+        id: guard-scope
         run: |
           set -euo pipefail
           changed=$(git diff --name-only "${{ steps.before.outputs.sha }}" HEAD; git diff --name-only; git ls-files --others --exclude-standard)
@@ -275,6 +278,7 @@ jobs:
 
       - name: Push the board update
         if: inputs.write-back == 'true' && steps.run.outcome == 'success'
+        id: push-board
         env:
           GH_TOKEN: ${{ secrets.AGENT_TOKEN }}
         run: |
@@ -282,11 +286,75 @@ jobs:
           if git diff --quiet "${{ steps.before.outputs.sha }}" HEAD && git diff --quiet; then
             echo "The board was already true. Nothing committed, nothing pushed."
             echo "The board was already true; nothing committed." >> "$GITHUB_STEP_SUMMARY"
+            echo "pushed=false" | tee -a "$GITHUB_OUTPUT"
             exit 0
           fi
           npx prettier --check NEXT.md
           git push origin HEAD:"${{ github.event.repository.default_branch }}"
           echo "Pushed $(git rev-parse --short HEAD) to ${{ github.event.repository.default_branch }}." >> "$GITHUB_STEP_SUMMARY"
+          echo "pushed=true" | tee -a "$GITHUB_OUTPUT"
+
+      # Agent-run ledger row for the one-stop dashboard (v_agent_runs_daily). "posted" covers both
+      # a pushed write-back and a clean render-only pass; verify-failed reuses the alarm
+      # workflows' name for "a required check on the agent's own output failed", here THE GUARD
+      # rather than an alarm re-verification.
+      - name: Determine the outcome for the ledger
+        if: always()
+        id: ledger-outcome
+        run: |
+          set -euo pipefail
+          if [ "${{ steps.kill-switch.conclusion }}" = "failure" ]; then
+            OUTCOME=skipped-kill-switch
+          elif [ "${{ steps.require-render.conclusion }}" = "failure" ]; then
+            OUTCOME=no-answer
+          elif [ "${{ steps.guard-scope.conclusion }}" = "failure" ]; then
+            OUTCOME=verify-failed
+          elif [ "${{ inputs.write-back }}" = "true" ] && [ "${{ steps.push-board.outputs.pushed }}" = "false" ]; then
+            OUTCOME=no-action
+          else
+            OUTCOME=posted
+          fi
+          echo "outcome=${OUTCOME}" | tee -a "$GITHUB_OUTPUT"
+
+      - name: Build the agent-run row
+        if: always()
+        id: agent-run-row
+        env:
+          GH_TOKEN: ${{ github.token }}
+          ROW_RUN_ID: ${{ github.run_id }}
+          ROW_OUTCOME: ${{ steps.ledger-outcome.outputs.outcome }}
+          ROW_REPOSITORY: ${{ github.repository }}
+        run: |
+          set -euo pipefail
+          STARTED_AT=$(gh api "repos/${ROW_REPOSITORY}/actions/runs/${ROW_RUN_ID}" --jq .run_started_at)
+          FINISHED_AT=$(date -u +%FT%TZ)
+          DURATION_SECONDS=$(( $(date -u -d "$FINISHED_AT" +%s) - $(date -u -d "$STARTED_AT" +%s) ))
+
+          ROW=$(jq -nc \
+            --arg run_id "$ROW_RUN_ID" \
+            --arg run_url "${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}" \
+            --arg trigger "${{ github.event_name }}" \
+            --arg outcome "$ROW_OUTCOME" \
+            --argjson duration_seconds "$DURATION_SECONDS" \
+            --arg finished_at "$FINISHED_AT" \
+            '{
+              workflow: "agentic-lib-board", run_id: $run_id, run_url: $run_url, trigger: $trigger,
+              environment: "ci", issue_number: null,
+              model_id: "eu.anthropic.claude-sonnet-4-5-20250929-v1:0",
+              outcome: $outcome, escalated: false,
+              redactions: null, guardrail_action: null, pr_number: null,
+              duration_seconds: $duration_seconds, finished_at: $finished_at
+            }')
+          echo "row=$ROW" >> "$GITHUB_OUTPUT"
+          echo "key=curated/agent-runs/dt=$(date -u +%F)/${ROW_RUN_ID}-${{ github.run_attempt }}.json" >> "$GITHUB_OUTPUT"
+
+      - name: Write the agent-run row to the lake
+        if: always()
+        uses: ./.github/actions/dora-row
+        with:
+          bucket: 'ci-env-analytics-lake-${{ vars.SUBMIT_ACCOUNT_ID }}'
+          key: ${{ steps.agent-run-row.outputs.key }}
+          row: ${{ steps.agent-run-row.outputs.row }}
 
       - name: Upload the raw agent output
         if: always()

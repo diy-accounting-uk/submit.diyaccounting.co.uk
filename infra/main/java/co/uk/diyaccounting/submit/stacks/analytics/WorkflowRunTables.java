@@ -14,10 +14,13 @@ import software.amazon.awscdk.services.glue.CfnTable;
 import software.constructs.Construct;
 
 /**
- * Glue tables over the two workflow-written sources the {@code put-lake-row} composite action
- * writes: {@code dora_runs} from every deploy and destroy run, and {@code probe_runs} from every
- * probe suite in {@code probe-test.yml}, at {@code curated/dora/dt=<date>/<run-id>-<attempt>.json}
- * and {@code curated/probe/dt=<date>/<run-id>-<suite>.json}.
+ * Glue tables over the three workflow-written sources the {@code dora-row} composite action
+ * writes: {@code dora_runs} from every deploy and destroy run, {@code probe_runs} from every
+ * probe suite in {@code probe-test.yml}, and {@code agent_runs} from every unattended agent
+ * workflow run (alarm-triage, support-triage, alarm-remedy-close, agentic-lib-code,
+ * agentic-lib-board), at {@code curated/dora/dt=<date>/<run-id>-<attempt>.json}, {@code
+ * curated/probe/dt=<date>/<run-id>-<suite>.json} and {@code
+ * curated/agent-runs/dt=<date>/<run-id>-<attempt>.json}.
  *
  * <p>Modelled line for line on {@link Ga4Tables}: one {@code dt} partition-projection column
  * (type {@code date}, format {@code yyyy-MM-dd}), so a new day's object is queryable the moment
@@ -33,11 +36,14 @@ public class WorkflowRunTables {
 
     private static final String CURATED_DORA_PREFIX = "curated/dora/";
     private static final String CURATED_PROBE_PREFIX = "curated/probe/";
+    private static final String CURATED_AGENT_RUNS_PREFIX = "curated/agent-runs/";
     private static final String DORA_RUNS_TABLE_NAME = "dora_runs";
     private static final String PROBE_RUNS_TABLE_NAME = "probe_runs";
+    private static final String AGENT_RUNS_TABLE_NAME = "agent_runs";
 
     public final CfnTable doraRunsTable;
     public final CfnTable probeRunsTable;
+    public final CfnTable agentRunsTable;
 
     @Value.Immutable
     public interface WorkflowRunTablesProps {
@@ -76,6 +82,15 @@ public class WorkflowRunTables {
                 CURATED_PROBE_PREFIX,
                 "One row per probe suite run, one JSON object per line",
                 buildProbeRunsColumns());
+
+        this.agentRunsTable = buildTable(
+                scope,
+                props,
+                catalogId,
+                AGENT_RUNS_TABLE_NAME,
+                CURATED_AGENT_RUNS_PREFIX,
+                "One row per unattended agent workflow run, one JSON object per line",
+                buildAgentRunsColumns());
     }
 
     private static CfnTable buildTable(
@@ -176,5 +191,23 @@ public class WorkflowRunTables {
                 "duration_seconds", "bigint",
                 "trigger", "string",
                 "passed", "boolean");
+    }
+
+    private static List<CfnTable.ColumnProperty> buildAgentRunsColumns() {
+        return columnsOf(
+                "workflow", "string",
+                "run_id", "string",
+                "run_url", "string",
+                "trigger", "string",
+                "environment", "string",
+                "issue_number", "bigint",
+                "model_id", "string",
+                "outcome", "string",
+                "escalated", "boolean",
+                "redactions", "bigint",
+                "guardrail_action", "string",
+                "pr_number", "bigint",
+                "duration_seconds", "bigint",
+                "finished_at", "string");
     }
 }

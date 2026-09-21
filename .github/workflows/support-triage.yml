@@ -49,6 +49,12 @@ jobs:
     if: github.event_name == 'workflow_dispatch' || contains(github.event.issue.labels.*.name, 'support')
     runs-on: ubuntu-24.04
     timeout-minutes: 5
+    # Support tickets are always prod (see the module comment above), so this job's environment
+    # is static and known before it starts - unlike alarm-triage.yml, which cannot resolve ci vs
+    # prod until it has read the alarm name out of the issue body a budget-skip run never reaches.
+    # That is what lets this job assume AWS credentials and write a ledger row for its own
+    # skipped-budget outcome, which alarm-triage.yml's equivalent gate cannot do.
+    environment: prod
     steps:
       - name: Stop once ${{ env.SUPPORT_TRIAGE_BUDGET_PER_DAY }} triage runs have already posted a result today
         id: budget-guard
@@ -87,6 +93,81 @@ jobs:
         run: |
           set -euo pipefail
           gh issue comment "$ISSUE_NUMBER" --repo "${{ github.repository }}" --body "Support triage was skipped: the budget of ${{ env.SUPPORT_TRIAGE_BUDGET_PER_DAY }} triage runs per 24 hours is already used (${TRIAGE_COUNT} posted a result since ${TRIAGE_SINCE}). Nobody has looked at this ticket yet."
+
+      # A local composite action (dora-row, below) only resolves once the repository holding its
+      # action.yml is on disk - this job otherwise never checks anything out.
+      - name: Checkout
+        if: always()
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+
+      # Unconditional (not gated on the budget outcome): the only reason this job assumes AWS
+      # credentials at all is to write the skipped-budget row below, so it runs whether or not
+      # the budget was spent.
+      - name: Configure AWS role via GitHub OIDC
+        if: always()
+        uses: aws-actions/configure-aws-credentials@e1253824e5c10ff9df46874f81ed3ec929e19cfd # v6
+        with:
+          role-to-assume: ${{ vars.SUBMIT_ACTIONS_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+          role-chaining: false
+          audience: sts.amazonaws.com
+          role-skip-session-tagging: true
+          output-credentials: true
+          retry-max-attempts: 3
+
+      - name: Assume the read-only alarm triage role
+        if: always()
+        uses: aws-actions/configure-aws-credentials@e1253824e5c10ff9df46874f81ed3ec929e19cfd # v6
+        with:
+          role-to-assume: ${{ vars.SUBMIT_ALARM_TRIAGE_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+          role-chaining: true
+          audience: sts.amazonaws.com
+          role-skip-session-tagging: true
+          output-credentials: true
+          retry-max-attempts: 3
+
+      # The only outcome this job itself can record: run-triage writes its own row for every
+      # other outcome (see its own ledger steps), since this job never learns what run-triage did.
+      - name: Build the agent-run row
+        if: steps.budget-guard.outputs.proceed == 'false'
+        id: agent-run-row
+        env:
+          GH_TOKEN: ${{ github.token }}
+          ROW_RUN_ID: ${{ github.run_id }}
+          ROW_ISSUE_NUMBER: ${{ inputs.issue-number || github.event.issue.number }}
+          ROW_REPOSITORY: ${{ github.repository }}
+        run: |
+          set -euo pipefail
+          STARTED_AT=$(gh api "repos/${ROW_REPOSITORY}/actions/runs/${ROW_RUN_ID}" --jq .run_started_at)
+          FINISHED_AT=$(date -u +%FT%TZ)
+          DURATION_SECONDS=$(( $(date -u -d "$FINISHED_AT" +%s) - $(date -u -d "$STARTED_AT" +%s) ))
+
+          ROW=$(jq -nc \
+            --arg run_id "$ROW_RUN_ID" \
+            --arg run_url "${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}" \
+            --arg trigger "${{ github.event_name }}" \
+            --arg issue_number "$ROW_ISSUE_NUMBER" \
+            --argjson duration_seconds "$DURATION_SECONDS" \
+            --arg finished_at "$FINISHED_AT" \
+            '{
+              workflow: "support-triage", run_id: $run_id, run_url: $run_url, trigger: $trigger,
+              environment: "prod",
+              issue_number: (if $issue_number == "" then null else ($issue_number | tonumber) end),
+              model_id: null, outcome: "skipped-budget", escalated: false,
+              redactions: null, guardrail_action: null, pr_number: null,
+              duration_seconds: $duration_seconds, finished_at: $finished_at
+            }')
+          echo "row=$ROW" >> "$GITHUB_OUTPUT"
+          echo "key=curated/agent-runs/dt=$(date -u +%F)/${ROW_RUN_ID}-${{ github.run_attempt }}.json" >> "$GITHUB_OUTPUT"
+
+      - name: Write the agent-run row to the lake
+        if: steps.budget-guard.outputs.proceed == 'false'
+        uses: ./.github/actions/dora-row
+        with:
+          bucket: 'prod-env-analytics-lake-${{ vars.SUBMIT_ACCOUNT_ID }}'
+          key: ${{ steps.agent-run-row.outputs.key }}
+          row: ${{ steps.agent-run-row.outputs.row }}
     outputs:
       proceed: ${{ steps.budget-guard.outputs.proceed }}
 
@@ -164,6 +245,7 @@ jobs:
 
       - name: Stop when the agent kill switch is on
         if: steps.role.outputs.configured == 'true'
+        id: kill-switch
         uses: ./.github/actions/agent-kill-switch
         with:
           environment-name: prod
@@ -274,6 +356,7 @@ jobs:
 
       - name: Comment the triage
         if: steps.role.outputs.configured == 'true'
+        id: comment-triage
         env:
           GH_TOKEN: ${{ steps.app-token.outputs.token }}
         run: |
@@ -288,3 +371,72 @@ jobs:
         run: |
           echo "failing the run: triage stopped after using its 60-turn budget" | tee -a "$GITHUB_STEP_SUMMARY"
           exit 1
+
+      # Agent-run ledger row for the one-stop dashboard (v_agent_runs_daily). The triage job's own
+      # skipped-budget row (above) covers the case where this job never ran at all; every outcome
+      # this job can reach is recorded here instead, once per run.
+      - name: Determine the outcome for the ledger
+        if: always() && !cancelled() && steps.role.outputs.configured == 'true'
+        id: ledger-outcome
+        run: |
+          set -euo pipefail
+          if [ "${{ steps.comment-triage.conclusion }}" = "success" ] && [ "${{ steps.triage-run.outputs.stopped }}" = "max_turns" ]; then
+            OUTCOME=max-turns
+          elif [ "${{ steps.comment-triage.conclusion }}" = "success" ]; then
+            OUTCOME=posted
+          elif [ "${{ steps.triage-run.conclusion }}" = "failure" ]; then
+            OUTCOME=no-answer
+          elif [ "${{ steps.kill-switch.conclusion }}" = "failure" ]; then
+            OUTCOME=skipped-kill-switch
+          else
+            OUTCOME=no-action
+          fi
+          echo "outcome=${OUTCOME}" | tee -a "$GITHUB_OUTPUT"
+
+      - name: Build the agent-run row
+        if: always() && !cancelled() && steps.role.outputs.configured == 'true'
+        id: agent-run-row
+        env:
+          GH_TOKEN: ${{ github.token }}
+          ROW_RUN_ID: ${{ github.run_id }}
+          ROW_OUTCOME: ${{ steps.ledger-outcome.outputs.outcome }}
+          ROW_REDACTIONS: ${{ steps.publish-filter.outputs.redactions }}
+          ROW_GUARDRAIL_ACTION: ${{ steps.publish-filter.outputs.guardrail-action }}
+          ROW_REPOSITORY: ${{ github.repository }}
+        run: |
+          set -euo pipefail
+          STARTED_AT=$(gh api "repos/${ROW_REPOSITORY}/actions/runs/${ROW_RUN_ID}" --jq .run_started_at)
+          FINISHED_AT=$(date -u +%FT%TZ)
+          DURATION_SECONDS=$(( $(date -u -d "$FINISHED_AT" +%s) - $(date -u -d "$STARTED_AT" +%s) ))
+
+          ROW=$(jq -nc \
+            --arg run_id "$ROW_RUN_ID" \
+            --arg run_url "$RUN_URL" \
+            --arg trigger "${{ github.event_name }}" \
+            --arg issue_number "$ISSUE_NUMBER" \
+            --arg model_id "$MODEL_ID" \
+            --arg outcome "$ROW_OUTCOME" \
+            --arg redactions "${ROW_REDACTIONS:-}" \
+            --arg guardrail_action "${ROW_GUARDRAIL_ACTION:-}" \
+            --argjson duration_seconds "$DURATION_SECONDS" \
+            --arg finished_at "$FINISHED_AT" \
+            '{
+              workflow: "support-triage", run_id: $run_id, run_url: $run_url, trigger: $trigger,
+              environment: "prod",
+              issue_number: (if $issue_number == "" then null else ($issue_number | tonumber) end),
+              model_id: (if $model_id == "" then null else $model_id end),
+              outcome: $outcome, escalated: false,
+              redactions: (if $redactions == "" then null else ($redactions | tonumber) end),
+              guardrail_action: (if $guardrail_action == "" then null else $guardrail_action end),
+              pr_number: null, duration_seconds: $duration_seconds, finished_at: $finished_at
+            }')
+          echo "row=$ROW" >> "$GITHUB_OUTPUT"
+          echo "key=curated/agent-runs/dt=$(date -u +%F)/${ROW_RUN_ID}-${{ github.run_attempt }}.json" >> "$GITHUB_OUTPUT"
+
+      - name: Write the agent-run row to the lake
+        if: always() && !cancelled() && steps.role.outputs.configured == 'true'
+        uses: ./.github/actions/dora-row
+        with:
+          bucket: 'prod-env-analytics-lake-${{ vars.SUBMIT_ACCOUNT_ID }}'
+          key: ${{ steps.agent-run-row.outputs.key }}
+          row: ${{ steps.agent-run-row.outputs.row }}

@@ -994,6 +994,17 @@ public class ObservabilityStack extends Stack {
                         "arn:aws:ssm:eu-west-2:%s:parameter/submit/%s/*".formatted(this.getAccount(), props.envName())))
                 .build());
 
+        // The one write this role makes to the lake: an agent-run ledger row, one JSON object per
+        // run, under its own prefix. Scoped to that prefix alone so it cannot touch any other
+        // curated table, and to PutObject alone - the DenyCustomerData statement below already
+        // denies this role every read of the lake, and that stays true here.
+        String analyticsLakeBucketArn = "arn:aws:s3:::" + props.sharedNames().analyticsLakeBucketName;
+        alarmTriageRole.addToPolicy(PolicyStatement.Builder.create()
+                .sid("WriteAgentRunLedgerRows")
+                .actions(List.of("s3:PutObject"))
+                .resources(List.of(analyticsLakeBucketArn + "/curated/agent-runs/*"))
+                .build());
+
         // One explicit Deny so a later widening of an Allow above cannot reach customer data. Athena
         // and the lake are denied deliberately: the triage agent works from logs and traces, and
         // reaching the lake means reaching activity events, which carry hashed subs and bundle
