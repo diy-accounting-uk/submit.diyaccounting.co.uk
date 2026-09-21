@@ -74,6 +74,8 @@ import { buildUkPropertyAnnualRequestBody } from "../app/functions/hmrc/hmrcItsa
 import { buildBsasTriggerRequestBody } from "../app/functions/hmrc/hmrcItsaBsasTriggerPost.js";
 import { buildBsasAdjustRequestBody } from "../app/functions/hmrc/hmrcItsaBsasSelfEmploymentAdjustPost.js";
 import { buildBsasUkPropertyAdjustRequestBody } from "../app/functions/hmrc/hmrcItsaBsasUkPropertyAdjustPost.js";
+import { buildLossesAndClaimsRequestBody } from "../app/functions/hmrc/hmrcItsaLossesAndClaimsPut.js";
+import { buildTaxLiabilityAdjustmentsRequestBody } from "../app/functions/hmrc/hmrcItsaTaxLiabilityAdjustmentsPut.js";
 
 // Individual Calculations 8.0: recommended minimum wait between the trigger's 202 and the
 // first retrieve attempt, and how many times to retry while HMRC still answers 404.
@@ -818,6 +820,65 @@ async function main() {
     headers: hmrcHeaders("7.0"),
     body: buildBsasUkPropertyAdjustRequestBody({ income: { totalRentsReceived: 1 } }),
     okStatuses: [200, 204],
+    nino,
+  });
+
+  // Headers for the two year-end endpoints below: suspend-temporal-validations lets a sandbox
+  // year that has not really ended through HMRC's own check that a tax year is over - the
+  // header name is kebab-case on the wire, per Individual Losses 7.0 and Individuals Tax
+  // Liability Adjustments 1.0's own header specs.
+  const suspendTemporalValidationsHeaders = (apiVersion, testScenario) => ({
+    ...hmrcHeaders(apiVersion, testScenario),
+    "suspend-temporal-validations": "true",
+  });
+
+  // Phase 7c: one loss claim and one tax liability adjustment on the self-employment business -
+  // the order HMRC's own guides require: a carry-forward and a carry-back claim together with
+  // the brought-forward loss they draw on, then the matching carryBackLossesDecrease. The
+  // sandbox's canned calculation does not reflect either write (the same DYNAMIC gap the
+  // calculation-retrieve check above already warns about), so the read-backs are the proof.
+  await callHmrc({
+    step: "self-employment-loss-claim-put",
+    method: "PUT",
+    url: `${sandboxBase}/individuals/losses/${nino}/businesses/${businessId}/loss-claims/${taxYear}`,
+    headers: suspendTemporalValidationsHeaders("7.0", STATEFUL_SCENARIO),
+    body: buildLossesAndClaimsRequestBody({
+      typeOfBusiness: "self-employment",
+      losses: { broughtForwardLosses: 500 },
+      claims: { carryForward: { currentYearLosses: 250 }, carryBack: { previousYearGeneralIncome: 100 } },
+    }),
+    okStatuses: [200, 204],
+    nino,
+  });
+
+  const selfEmploymentLossClaimGet = await callHmrc({
+    step: "self-employment-loss-claim-get",
+    method: "GET",
+    url: `${sandboxBase}/individuals/losses/${nino}/businesses/${businessId}/loss-claims/${taxYear}`,
+    headers: hmrcHeaders("7.0", STATEFUL_SCENARIO),
+    okStatuses: [200],
+    nino,
+  });
+  if (!selfEmploymentLossClaimGet.body?.claims?.carryBack) {
+    throw new Error(`Self-employment loss claim read-back carried no claims.carryBack: ${JSON.stringify(selfEmploymentLossClaimGet.body)}`);
+  }
+
+  await callHmrc({
+    step: "tax-liability-adjustments-put",
+    method: "PUT",
+    url: `${sandboxBase}/individuals/tax-liability/adjustments/${nino}/${taxYear}`,
+    headers: suspendTemporalValidationsHeaders("1.0", STATEFUL_SCENARIO),
+    body: buildTaxLiabilityAdjustmentsRequestBody({ carryBackLossesDecrease: { incomeTax: 20 } }),
+    okStatuses: [200, 204],
+    nino,
+  });
+
+  await callHmrc({
+    step: "tax-liability-adjustments-get",
+    method: "GET",
+    url: `${sandboxBase}/individuals/tax-liability/adjustments/${nino}/${taxYear}`,
+    headers: hmrcHeaders("1.0", STATEFUL_SCENARIO),
+    okStatuses: [200],
     nino,
   });
 

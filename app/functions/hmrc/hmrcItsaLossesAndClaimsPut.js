@@ -727,8 +727,10 @@ export async function putItsaLossesAndClaims(
     );
     /* v8 ignore stop */
     // HMRC's sandbox needs this header when a test year has not really ended, since losses and
-    // claims are otherwise refused until the tax year is over.
-    if (suspendTemporalValidations) hmrcRequestHeaders.suspendTemporalValidations = "true";
+    // claims are otherwise refused until the tax year is over. The header name is kebab-case on
+    // the wire (Individual Losses 7.0's own header spec), not the camelCase of the field this
+    // repository carries it under internally.
+    if (suspendTemporalValidations) hmrcRequestHeaders["suspend-temporal-validations"] = "true";
     const httpResult = await hmrcHttpPut(hmrcRequestUrl, hmrcRequestHeaders, govClientHeaders, hmrcRequestBody, auditForUserSub);
     hmrcResponse = httpResult.hmrcResponse;
     hmrcResponseBody = httpResult.hmrcResponseBody;

@@ -253,7 +253,7 @@ describe("hmrcItsaLossesAndClaims handlers", () => {
       await hmrcItsaLossesAndClaimsPutHandler(event);
 
       const calledInit = mockFetch.mock.calls[0][1];
-      expect(calledInit.headers["suspendTemporalValidations"]).toBe("true");
+      expect(calledInit.headers["suspend-temporal-validations"]).toBe("true");
     });
 
     test("returns 400 when HMRC answers with a 400", async () => {

@@ -203,7 +203,7 @@ describe("hmrcItsaTaxLiabilityAdjustments handlers", () => {
       await hmrcItsaTaxLiabilityAdjustmentsPutHandler(event);
 
       const calledInit = mockFetch.mock.calls[0][1];
-      expect(calledInit.headers["suspendTemporalValidations"]).toBe("true");
+      expect(calledInit.headers["suspend-temporal-validations"]).toBe("true");
     });
   });
 
