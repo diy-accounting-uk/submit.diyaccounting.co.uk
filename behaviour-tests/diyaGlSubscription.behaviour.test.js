@@ -56,16 +56,15 @@ const hmrcApiRequestsTableName = getEnvVarAndLog("hmrcApiRequestsTableName", "HM
 const receiptsTableName = getEnvVarAndLog("receiptsTableName", "RECEIPTS_DYNAMODB_TABLE_NAME", null);
 
 const baseUrl = getEnvVarAndLog("baseUrl", "DIY_SUBMIT_BASE_URL", null);
-const spreadsheetsBaseUrl = getEnvVarAndLog("spreadsheetsBaseUrl", "SPREADSHEETS_BASE_URL", "http://localhost:3000/");
+const diyaGlBaseUrl = getEnvVarAndLog("diyaGlBaseUrl", "DIYA_GL_BASE_URL", "http://localhost:3001/");
 const cognitoBaseUri = getEnvVarAndLog("cognitoBaseUri", "COGNITO_BASE_URI", null);
 const cognitoDiyaGlClientId = getEnvVarAndLog("cognitoDiyaGlClientId", "COGNITO_DIYA_GL_CLIENT_ID", null);
 const testAuthUsername = getEnvVarAndLog("testAuthUsername", "TEST_AUTH_USERNAME", null);
 const testAuthPassword = getEnvVarAndLog("testAuthPassword", "TEST_AUTH_PASSWORD", null);
 
-// One of the four DIYA-GL page paths IdentityStack registers as a books-client callback/logout
-// URL (see BOOKS_PAGE_NAMES in IdentityStack.java). The spreadsheets site serves these pages at
-// diya-gl/, not books/ — going straight to the real path means no redirect in the sign-in flow.
-const diyaGlPageUrl = new URL("diya-gl/ltd.html", spreadsheetsBaseUrl).toString();
+// One of the four DIYA-GL pages IdentityStack registers as a books-client callback/logout URL
+// (see BOOKS_PAGE_NAMES in IdentityStack.java), at the root of the diya-gl.co.uk host.
+const diyaGlPageUrl = new URL("ltd.html", diyaGlBaseUrl).toString();
 
 let mockOAuth2Process;
 let serverProcess;
