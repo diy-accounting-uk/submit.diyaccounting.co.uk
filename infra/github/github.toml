@@ -38,11 +38,8 @@ repository_secrets = [
   "AGENT_APP_PRIVATE_KEY",
   "AGENT_TOKEN",
   "AUTO_MERGE_TOKEN",
-  "ISSUE_BOT_TOKEN",
   "OPS_APP_PRIVATE_KEY",
-  "PERSONAL_ACCESS_TOKEN",
   "RELEASE_PAT",
-  "SUPPORT_BOT_TOKEN",
 ]
 repository_variables = [
   "AGENT_APP_ID",
