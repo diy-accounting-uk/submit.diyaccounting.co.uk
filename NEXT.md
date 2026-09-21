@@ -17,8 +17,9 @@ Haiku; the lowest tier that fits). Anything touching code goes through a `claude
 PR; the operator merges.
 
 **Prod runs deployment prod-a15fe51**; main's deploy of PR #315's merge (4fef66c2) is creating
-prod-4fef66c. **ci**: `ci-set1` is live and last-known-good (b65's set) until it self-destructs at
-13:28 UTC or PR #316's deploy reclaims it.
+prod-4fef66c. **ci**: `ci-set1` is live and last-known-good; PR #316's deploy is claiming a slot now.
+Open pull requests: #316 (`claude/b66-board`, four rows) and #317 (`claude/b67-board`, stacked on
+#316, two rows).
 
 The board runs in five sections, in this order: **in flight** (a branch, a pull request or a run
 in motion, each named in the row), **machine-only**, **machine-ask**, **human-driven**,
@@ -40,7 +41,7 @@ step.
 
 ## In flight
 
-- [ ] **B52.D2. Donations on the revenue panel.** In flight: on `claude/b66-board` (PR #316, ffd4351b); the live write is done.
+- [ ] **B52.D2. Donations on the revenue panel.** In flight: on `claude/b66-board` (PR #316, ffd4351b; its ci deploy running); the live write is done and reads up to date.
   `web/spreadsheets.diyaccounting.co.uk/donate-links.toml` (`…4F200`, `4F201`, `4F202`, `4F204`); a
   match means one account, and `SELECT day, product, revenue_gbp FROM v_revenue_daily WHERE product
   = 'unknown'` in workgroup `prod-env-analytics` shows whether donations are already landing
@@ -49,7 +50,7 @@ step.
   Stripe write was approved by the operator on 2026-09-21. PayPal donations are not in this row; they arrive with `../PLAN_FINANCE_AUTOMATION.md`
   phase 1's PayPal pull, which has no code. **Source**: BACKLOG 66; plan D2. **Owner**: Claude Code. **Model**: Sonnet. **Size**: ~2 files.
 
-- [ ] **B49.20. `infra/github`.** In flight: on `claude/b66-board` (PR #316, 8120b903); the plan reads "already match".
+- [ ] **B49.20. `infra/github`.** In flight: on `claude/b66-board` (PR #316, 8120b903); `infra apply` passed on that head with the plan reading "already match".
   `patterns_allowed` from `scripts/github-actions-permissions.sh`; `[security]
   automated_security_fixes = true` (false live); `[[ruleset]]` `main` with its enforcement,
   conditions, its three rules and bypass actors; `[[environment]]` `ci`, `prod`, `copilot` with
@@ -63,7 +64,7 @@ step.
   `githubSync.test.js` over `parseConfig`, `planGithub`, `rulesetDiff`. Proof: `npm test` and a plan
   reading "already match". After B49.18. **Source**: BACKLOG 49b; item 20. **Owner**: Claude Code. **Model**: Sonnet. **Size**: ~5 files.
 
-- [ ] **B49.16. Read-only inventory of the Google Ads account.** In flight: the build is on `claude/b66-board` (PR #316, c9865502); Explorer access on the Overview page (not Basic: Explorer reaches production accounts at 2,880 operations a day) and one consent remain, both the operator's.
+- [ ] **B49.16. Read-only inventory of the Google Ads account.** In flight: the build is on PR #316 (c9865502) and its two run fixes on `claude/b67-board` (PR #317, stacked on #316); Explorer access is granted, the refresh token is in `prod/submit/google/ads/refresh_token`, and the inventory ran on 2026-09-21.
   Google on 2026-09-09: Google Ads API access is now an access level on the Cloud project that
   issued the OAuth credentials, requested on the Google Ads API Overview page
   (<https://console.cloud.google.com/google/ads-apis/overview>, project `diyaccounting-ga4`),
@@ -86,9 +87,7 @@ step.
   **Owner**: Claude Code builds and runs; the operator approves the access upgrade and the
   consent. **Model**: Sonnet. **Size**: ~5 files.
 
-## Machine-only
-
-- [ ] **B11.T7b.6. Both runs' proofs.** The exit code rests on two printed lines today, `final
+- [ ] **B11.T7b.6. Both runs' proofs.** In flight: on `claude/b67-board` (PR #317, 60edce22, stacked on #316); three years ran back to back, each exit 0. The exit code rests on two printed lines today, `final
   declaration 204` and `fraud header validator clean`. Add three more, each computed from the
   transcript: `both businesses in calculation income sources`; `loss claims read back` (run A
   `claims.carryBack` and `carryBackLossesDecrease`, run B the property `claims.carryForward` and the
@@ -101,6 +100,28 @@ step.
   test:unit` passes; `_developers/hmrc/ITSA_PHASE_2_SANDBOX.md`'s "What it proves" and "What each
   phase should return" sections carry each new step with its expected status.  **Source**: `PLAN_ITSA_PHASE_2.md` T7. **Owner**: Claude Code. **Model**: Sonnet.
   **Size**: ~3 files.
+
+## Machine-only
+
+- [ ] **B49.17. `infra/google/ads/ads.toml` and `ads-sync.js`.** Extend the `ads.toml` B49.16
+  starts: `auto_tagging = true`; four `[[conversion_action]]` rows (`purchase`, `submit_vat_return`,
+  `runner_download`, `donate`) with `ga4_event` and `category`; `[[customer_conversion_goal]]` rows
+  `category`, `origin`, `biddable`; one `[[campaign]]` (`name`, `type = "PERFORMANCE_MAX"`,
+  `status`, `budget_micros`, `[[campaign.asset_group]] name`); `[reserve_floor] ssm_parameter =
+  "/submit/prod/ads/reserve-floor-gbp"`, the name only. `ads-sync.js` in `gcp-identity-sync.js`'s
+  shape: GAQL reads, pure `planAds(config, live)`, plan by default, `--apply` through the
+  `customers`, `campaignBudgets`, `campaigns` and `customerConversionGoals` mutates; a declared
+  conversion action missing live fails the run; `googleAdsLinks` stays with `ga4-sync.js`. Pin the
+  API version in one constant. Last step of `google-apply.yml`, reading the two Ads secrets through
+  that workflow's AWS chain, since the federated Google credentials do not cover Ads. Test
+  `adsSync.test.js` over `parseConfig` and `planAds`. Proof: `npm test`, a `google-apply.yml` plan
+  run reading "already match". **Source**: BACKLOG 49b; item 17. **Owner**: Claude Code. **Model**:
+  Sonnet. The inventory of 2026-09-21 is the starting state: conversion actions `purchase`
+  (GA4, primary), `submit_vat_return` (GA4, SIGNUP, primary), `runner_download` (GA4, SIGNUP),
+  `donate` (GA4, PAGE_VIEW), a hidden ci `purchase` and `begin_checkout`, two YouTube actions and a
+  codeless `Sign-up`; goals PURCHASE, SIGNUP, PAGE_VIEW biddable; one Performance Max campaign
+  "Campaign #1" at 1000000 micros a day with "Asset Group 1"; auto-tagging on. The Ads API is an
+  access level on project `diyaccounting-ga4`, so `ads-sync.js` needs no developer token. **Size**: ~4 files.
 
 ## Machine-ask
 
@@ -213,21 +234,6 @@ step.
   Cognito app client with the device-code grant and `open_book`/`save_book` over the cloud routes;
   M1c is on main (PR #232). **Source**: BACKLOG 52i; `PLAN_ONE_STOP_DASHBOARD.md` D10. **Owner**:
   Claude Code. **Model**: Sonnet. **Size**: ~4 files.
-
-- [ ] **B49.17. `infra/google/ads/ads.toml` and `ads-sync.js`.** Extend the `ads.toml` B49.16
-  starts: `auto_tagging = true`; four `[[conversion_action]]` rows (`purchase`, `submit_vat_return`,
-  `runner_download`, `donate`) with `ga4_event` and `category`; `[[customer_conversion_goal]]` rows
-  `category`, `origin`, `biddable`; one `[[campaign]]` (`name`, `type = "PERFORMANCE_MAX"`,
-  `status`, `budget_micros`, `[[campaign.asset_group]] name`); `[reserve_floor] ssm_parameter =
-  "/submit/prod/ads/reserve-floor-gbp"`, the name only. `ads-sync.js` in `gcp-identity-sync.js`'s
-  shape: GAQL reads, pure `planAds(config, live)`, plan by default, `--apply` through the
-  `customers`, `campaignBudgets`, `campaigns` and `customerConversionGoals` mutates; a declared
-  conversion action missing live fails the run; `googleAdsLinks` stays with `ga4-sync.js`. Pin the
-  API version in one constant. Last step of `google-apply.yml`, reading the two Ads secrets through
-  that workflow's AWS chain, since the federated Google credentials do not cover Ads. Test
-  `adsSync.test.js` over `parseConfig` and `planAds`. Proof: `npm test`, a `google-apply.yml` plan
-  run reading "already match". **Source**: BACKLOG 49b; item 17. **Owner**: Claude Code. **Model**:
-  Sonnet. Blocked on B49.16 and B52n.2. **Size**: ~4 files.
 
 - [ ] **B30af.5. Branch deploys leave the ci apex: P3 to P5.** P1 (the slot pool) is on `main`: a
   ci branch deploy claims `ci-set1` to `ci-set4` through SSM in `deploy.yml`'s `names` job. What is
