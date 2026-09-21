@@ -17,9 +17,9 @@ Haiku; the lowest tier that fits). Anything touching code goes through a `claude
 PR; the operator merges.
 
 **Prod runs deployment prod-4fef66c**; main's deploy 35597452065 of PR #316's merge (0d00bdeb) is
-creating prod-0d00bde. **ci**: no set is standing; `ci-set1` went with `claude/b66-board`'s branch delete
-after #316, and PR #319's push deploy claims the next. Open pull request: #319
-(`claude/b68-board` to `main`, one row, head 222f292a, pushed 2026-09-21 after its local proof).
+creating prod-0d00bde. **ci**: `ci-set1` is being created by PR #319's deploy 35599512902. Open pull
+request: #319 (`claude/b68-board` to `main`, one row, head 222f292a). Batch `claude/b69-board`
+(worktree `.claude/worktrees/b69`) is open for the current wave.
 
 The board runs in five sections, in this order: **in flight** (a branch, a pull request or a run
 in motion, each named in the row), **machine-only**, **machine-ask**, **human-driven**,
@@ -42,8 +42,8 @@ step.
 ## In flight
 
 - [ ] **B49.17. `infra/google/ads/ads.toml` and `ads-sync.js`.** In flight: on `claude/b68-board`
-  (worktree `.claude/worktrees/b68`, PR #319 to `main`, head 222f292a, rebased onto #317; local proof:
-  41 unit tests, eslint clean; merges when its runs are green). Extend the `ads.toml` B49.16
+  (worktree `.claude/worktrees/b68`, PR #319 to `main`, head 222f292a; test and CodeQL green, deploy
+  35599512902 creating `ci-set1`; merges when that deploy is green). Extend the `ads.toml` B49.16
   starts: `auto_tagging = true`; four `[[conversion_action]]` rows (`purchase`, `submit_vat_return`,
   `runner_download`, `donate`) with `ga4_event` and `category`; `[[customer_conversion_goal]]` rows
   `category`, `origin`, `biddable`; one `[[campaign]]` (`name`, `type = "PERFORMANCE_MAX"`,
@@ -63,9 +63,9 @@ step.
   "Campaign #1" at 1000000 micros a day with "Asset Group 1"; auto-tagging on. The Ads API is an
   access level on project `diyaccounting-ga4`, so `ads-sync.js` needs no developer token. **Size**: ~4 files.
 
-## Machine-only
-
-- [ ] **B11.T7b.7. Record the responses.** Every request and response is already in the transcript;
+- [ ] **B11.T7b.7. Record the responses.** In flight: a Sonnet agent on `claude/itsa-t7b7-record`
+  (worktree `.claude/worktrees/itsa-t7b7`, off batch `claude/b69-board`, no PR yet), regenerating the
+  three years' transcripts first, since none is on disk. Every request and response is already in the transcript;
   the comparison against the simulator is not. For each call the two runs add, set HMRC's status and
   body beside the simulator's route and scenario for that call and fix any field name, status or
   error shape that differs: `app/http-simulator/routes/itsa-uk-property-period.js`,
@@ -78,6 +78,8 @@ step.
   no deployment; the re-run inside HMRC's 14-day window is B11.T10's. Proof: `npm test` green,
   including `app/unit-tests/http-simulator/`. **Source**: `PLAN_ITSA_PHASE_2.md`
   T7. **Owner**: Claude Code. **Model**: Sonnet. **Size**: ~10 files.
+
+## Machine-only
 
 ## Machine-ask
 
