@@ -22,8 +22,7 @@ Queued and in-flight state lives on `NEXT.md`; this block mirrors it so the back
 truthfully on its own. Machine-ask and human-driven steps are briefed at the workspace root in
 `../NEXT_OPERATOR_RUNBOOK.md`, one file rewritten in place.
 
-- Prod runs prod-0d00bde; main's deploy of PR #319's merge (a7a0d6b3) is in flight; `ci-set1` is
-  the ci set. No open pull request, no agent running, no branch ahead of its remote.
+- Prod runs prod-a7a0d6b (main's deploy of PR #319's merge); `ci-set1` is the ci set. No open pull request, no agent running, no branch ahead of its remote.
 - **Nine batches merged since 2026-09-20** (PRs #309, #311, #312, #315, #316, #317, #319, #320
   here; #306, #307, #308, #310, #314 from the DIYA-GL session): rows 30's CIS filter tune and
   alarm-remedy list (design and build), 49b's items 15 to 23, 62's submit half and the OAM sinks,
