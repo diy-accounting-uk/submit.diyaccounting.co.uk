@@ -261,12 +261,12 @@ one Performance Max campaign runs at £1.00 a day. `PLAN_ONE_STOP_DASHBOARD.md` 
 reinvestment loop that will move that budget; `NEXT.md` row B52n splits `donate` off `purchase`
 first.
 
-Access needs three things: a developer token, applied for once in the manager account's API Center
-and limited to test accounts until it is approved; an OAuth client and refresh token for a user with
-access to the manager account, the Desktop-client route `scripts/youtube-upload.js` already uses; and
-the manager-to-client link, which the API reads back as `customer_client`. Every call carries
-`login-customer-id` and operates on the client customer id. The token and both ids live in Secrets
-Manager; `infra/google/ads/ads.toml` records the secret names, never the values.
+Access needs an access level on the Cloud project `diyaccounting-ga4`, granted on that project's
+"Google Ads API Overview" page in the Cloud console. The Ads API reads the access level from the
+Cloud project, not from a developer token header. The account is accessed through its own OAuth
+client and refresh token: the Desktop-client credentials `scripts/youtube-upload.js` already holds,
+consented separately for the adwords scope. Secrets Manager holds the refresh token; `infra/google/ads/ads.toml`
+records the secret names, never the values.
 
 | Wanted state | Read and applied through |
 | --- | --- |
@@ -367,7 +367,7 @@ there is nothing to apply.
 | Service | Configured today | API to read and apply | Proposed path | Applied by |
 | --- | --- | --- | --- | --- |
 | Google Cloud, GA4, YouTube | `google/*.toml`, seven scripts | yes, except OAuth clients | `infra/google/gcp`, `infra/google/ga4` | `google-apply.yml` |
-| Google Ads | the Ads console | yes, with a developer token | `infra/google/ads` | `google-apply.yml` |
+| Google Ads | the Ads console | yes, through an access level on the Cloud project | `infra/google/ads` | `google-apply.yml` |
 | Companies House | two hub applications, `.env.{ci,prod}` client ids, four secrets, the XML Gateway presenter | none for the hub; the live endpoints answer | `infra/companies-house`, assert only | `infra-apply.yml` |
 | HMRC | two hub applications, their API subscriptions, two secrets | none for the hub; a call proves a subscription | `infra/hmrc`, assert only | `infra-apply.yml` |
 | GitHub | two hand-run scripts, `deploy-environment.yml`, the rest in the console | yes, the REST API covers every setting named below | `infra/github` | `infra-apply.yml` |
@@ -621,13 +621,12 @@ proof is `npm test` plus one `google-apply.yml` plan run that still reads live s
 no reader is ever pointing at a path that has gone. **Model**: Sonnet. **Size**: ~30 files.
 
 **16. Read-only inventory of the Google Ads account.** `infra/google/ads/ads-inventory.js`, the
-shape of `google-inventory.js`: authenticate with the developer token and the manager's refresh
-token, then list the client customers under the manager, the account's auto-tagging setting and
-conversion tracking settings, every `ConversionAction` with its type, status and origin, the
-`CustomerConversionGoal` set, every campaign with its channel type, status, budget and asset groups,
-and the GA4 link as GA4's Admin API reports it. Print, write nothing. Run it before anything else is
-declared, because the file has to be written from what is live. **Model**: Sonnet. **Size**: ~3
-files.
+shape of `google-inventory.js`: authenticate with the Cloud project's access level and the client
+account's refresh token, then read the account's auto-tagging setting and conversion tracking
+settings, every `ConversionAction` with its type, status and origin, the `CustomerConversionGoal`
+set, every campaign with its channel type, status, budget and asset groups, and the GA4 link as
+GA4's Admin API reports it. Print, write nothing. Run it before anything else is declared, because
+the file has to be written from what is live. **Model**: Sonnet. **Size**: ~3 files.
 
 **17. `infra/google/ads/ads.toml` and `ads-sync.js`.** Declare the account, the three conversion
 actions, the default goals, auto-tagging, the Performance Max campaign, its budget in micros and its
@@ -707,12 +706,8 @@ submit. Until an API appears, the domains are set once in the GA4 UI, and the li
 `web/unit-tests/analytics.test.js`. Worth rechecking the v1alpha resource list each time this area
 is touched; the Admin API gains resources steadily.
 
-**The Google Ads residue.** Creating a client account under a manager is
-`CustomerService.CreateCustomerClient`, so the account itself is not the residue. Three things are.
-The payments profile behind the manager account: entering a card is a console visit, and
-`BillingSetup` only links an existing payments account to a customer. The developer token, applied
-for in the API Center and limited to test accounts until a person at Google approves it, which is the
-one step with a queue in front of it. And the first OAuth consent for the refresh token, the same
-browser approval the YouTube credential needs. What would close the last is the domain-wide
-delegation named above; what would close the first two is a Google billing API for payments
-profiles.
+**The Google Ads residue.** Two things are. The payments profile: entering a card is a console visit,
+and `BillingSetup` only links an existing payments account to a customer. The first OAuth consent
+for the refresh token, the same browser approval the YouTube credential needs. What would close the
+last is the domain-wide delegation named above; what would close the first is a Google billing API
+for payments profiles.
