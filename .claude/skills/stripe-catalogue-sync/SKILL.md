@@ -79,5 +79,6 @@ subscribers.
 
 - `--mode <test|live>` — required; which Stripe account API key to read from Secrets Manager.
 - `--apply` — make the change; without it, the run only plans.
-- `--products-only` — skip the webhook endpoints, sync products and prices only.
+- `--products-only` — skip the webhook endpoints and payment links, sync products and prices only.
+- `--payment-links-only` — skip products, prices and webhook endpoints, sync the spreadsheets site's donation Payment Links' `payment_intent_data.metadata.bundleId` only.
 - `--bundle <id>` — limit the run to one bundle, useful when only one price changed.
