@@ -34,7 +34,8 @@ truthfully on its own. Machine-ask and human-driven steps are briefed at the wor
   main since 4fef66c2, proven by the 03:1x UTC snapshot run on 2026-09-22).
 - **Both `/api/v1/books` and `/api/v1/diya-gl` are permanent** by operator decision of 2026-09-10.
 - **Date-gated**: 43 from 2026-10-02; 48 the week of 2026-11-29; 52l from 2026-12-09.
-- **Tier 2**: 11's phase 2 has T7b.1 to T7b.7 on main, T10 remaining; 34b waits on Companies House's answer about status lookups (34d); 62 waits on
+- **Tier 2**: 11's phase 2 has T7b.1 to T7b.7 and the recognition pack's evidence on main, the
+  send (T10) remaining; 34b waits on Companies House's answer about status lookups (34d); 62 waits on
   the spreadsheets repository's OAM link.
 - **Tier 3**: 49b has items 15 to 23 on main; 66's donation links
   carry their bundle id in the live account and on main; 30's remedy list runs (`alarm-remedy-close.yml`

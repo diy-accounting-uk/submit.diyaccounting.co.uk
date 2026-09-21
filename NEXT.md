@@ -41,26 +41,12 @@ step.
 
 ## Machine-only
 
-- [ ] **B11.T10a. The recognition pack's sandbox evidence.** From the three transcripts B11.T7b.7
-  left (`.claude/worktrees/itsa-t7b7/target/itsa-sandbox-<year>/itsa-sandbox-year-transcript.json`
-  for 2023-24, 2025-26 and 2026-27, run 2026-09-21; the runbook's run record in
-  `_developers/hmrc/ITSA_PHASE_2_SANDBOX.md` carries the same facts if that worktree is gone): the
-  checklist's sandbox-proof column in `ITSA_PRODUCTION_APPROVALS_CHECKLIST.md` rows 4, 6 and 7 and
-  its nine-API table (Property Business, Individual Losses, Tax Liability Adjustments), its
-  reviewer-question bullet about property, losses and the cumulative model deleted; both
-  `DRAFT_EMAIL_ITSA_*.md` sandbox paragraphs naming both income types, both quarterly models, the
-  loss claims and the adjustments; `hmrc_questionnaire_itsa_pass_diy_accounting_limited_v1.md`'s
-  testing-in-the-last-two-weeks row with 2026-09-21 and 5f2ff46a. Proof: no "not evidenced" left in
-  checklist rows 4, 6 and 7. **Source**: BACKLOG 11; `PLAN_ITSA_PHASE_2.md` T10. **Owner**: Claude
-  Code. **Model**: Haiku. **Size**: ~4 files.
-
 ## Machine-ask
 
 - [ ] **B11.T10. ITSA phase 2: the send.** The operator names the day; Claude Code re-runs the
   B11.T7b.1 and B11.T7b.4 commands inside the 14 days before it and updates the ITSA pass's
   testing-in-the-last-two-weeks row; the operator sends `DRAFT_EMAIL_ITSA_RECOGNITION.md` to
-  `SDSTeam@hmrc.gov.uk` and `DRAFT_EMAIL_ITSA_PRODUCTION_CREDENTIALS.md` when SDST answers. After
-  B11.T10a. **Source**: BACKLOG 11; `PLAN_ITSA_PHASE_2.md` T10. **Owner**: Claude Code re-runs; the
+  `SDSTeam@hmrc.gov.uk` and `DRAFT_EMAIL_ITSA_PRODUCTION_CREDENTIALS.md` when SDST answers. **Source**: BACKLOG 11; `PLAN_ITSA_PHASE_2.md` T10. **Owner**: Claude Code re-runs; the
   operator names the day and sends. **Model**: Haiku. **Size**: ~1 file.
 
 - [ ] **O38. The two GitHub Apps carry every machine write.** Every workflow and Lambda write runs
