@@ -56,7 +56,7 @@ step.
   `_developers/DESIGN_CI_BRANCH_DEPLOYS_OFF_THE_APEX.md`. **Owner**: Claude Code. **Model**:
   Sonnet. **Size**: ~1 file.
 
-- [ ] **B70.B. The remedy list: the per-family budget.** In flight: on `claude/b64-board` (PR #312, 6ddd2695). The triage's `remedy:` line, the dispatch,
+- [ ] **B70.B. The remedy list: the per-family budget.** In flight: on `claude/b64-board` (PR #312, 6ddd2695); 38d6c7c5 there also puts a checkout ahead of the budget action in `alarm-triage.yml` and `alarm-remedy-close.yml`, which alarm triage for #313 failed on. The triage's `remedy:` line, the dispatch,
   draft-pr and label actions, `alarm-remedy-close.yml` and `.github/actions/agent-run-budget` are
   on `main` (PR #311). `budgetPerDay` in `app/data/alarm-remedies.json` is validated and not
   enforced: the guards count runs per workflow per day, not actions per family. Before the
@@ -217,6 +217,19 @@ step.
   **Model**: none. **Size**: ~0 files.
 
 ## Blocked
+
+- [ ] **B30ao. `prod-env-operator-snapshot-publish-errors`: what the snapshot Lambda threw.** Alarm
+  issue #313 opened at 03:19 UTC on 2026-09-21, one error datapoint in the daily window, minutes
+  after main's deploy of 0c847b07 put prod-0c847b0 live with three new views the snapshot reads
+  (`v_visitors_by_kind_daily`, `v_agent_runs_daily`, and `agent_runs` with no rows yet). Read the
+  error: `aws --profile submit-prod logs filter-log-events --log-group-name
+  /aws/lambda/prod-env-operator-snapshot-publish --start-time <ms of 2026-09-21T02:00Z>
+  --filter-pattern '"level":50'` (or `ERROR`), then fix the query or the view it names in
+  `app/functions/analytics/operatorSnapshotPublish.js` or
+  `infra/main/resources/analytics/views/`. The alarm-triage run for #313 (35557128213) failed
+  before triaging, on the budget action's missing checkout, fixed on PR #312. Blocked on `aws sso
+  login --sso-session diyaccounting`. **Source**: issue #313; BACKLOG 30. **Owner**: Claude Code.
+  **Model**: Sonnet. **Size**: ~2 files.
 
 - [ ] **B34.7. Run and fix the filing suites' sandbox sign-in.** `deploy.yml` and `probe-test.yml`
   run the two filing suites only when the dispatch input `runCompaniesHouseSandboxFiling` is
