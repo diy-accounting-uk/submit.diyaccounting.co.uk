@@ -10,7 +10,13 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 
-import { DENY_PATTERNS, redact, extractFinalAssistantText, describeStoppedRun, maxTurnsNote } from "../../../scripts/redact-triage-output.mjs";
+import {
+  DENY_PATTERNS,
+  redact,
+  extractFinalAssistantText,
+  describeStoppedRun,
+  maxTurnsNote,
+} from "../../../scripts/redact-triage-output.mjs";
 
 const SCRIPT_PATH = fileURLToPath(new URL("../../../scripts/redact-triage-output.mjs", import.meta.url));
 
@@ -33,18 +39,18 @@ function runCliMarkdown(markdown) {
 }
 
 const POSITIVE_EXAMPLES = {
-  ipv4: "192.168.1.1",
-  ipv6: "2001:db8:85a3:0:0:8a2e:370:7334",
-  email: "customer@example.com",
-  eori: "GB123456789012",
-  hash64: "abcd1234".repeat(8),
-  vrn: "GB123456789",
-  utr: "1234567890",
-  nino: "AB123456C",
-  paye: "123/AB456",
-  jwt: "eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiIxMjM0NTY3ODkwIn0.dozjgNryP4J3jVmNHl0w5N_XgL0n3I9PYLxDmkAmr1c",
+  "ipv4": "192.168.1.1",
+  "ipv6": "2001:db8:85a3:0:0:8a2e:370:7334",
+  "email": "customer@example.com",
+  "eori": "GB123456789012",
+  "hash64": "abcd1234".repeat(8),
+  "vrn": "GB123456789",
+  "utr": "1234567890",
+  "nino": "AB123456C",
+  "paye": "123/AB456",
+  "jwt": "eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiIxMjM0NTY3ODkwIn0.dozjgNryP4J3jVmNHl0w5N_XgL0n3I9PYLxDmkAmr1c",
   "aws-access-key": "AKIAIOSFODNN7EXAMPLE",
-  bearer: "Bearer abc123.def456-ghi789==",
+  "bearer": "Bearer abc123.def456-ghi789==",
 };
 
 describe("DENY_PATTERNS", () => {
@@ -151,9 +157,7 @@ describe("extractFinalAssistantText", () => {
   });
 
   test("exits non-zero (throws) when the input has no assistant text", () => {
-    expect(() => extractFinalAssistantText({ type: "result", subtype: "error_max_turns", result: "" })).toThrow(
-      /no assistant text/,
-    );
+    expect(() => extractFinalAssistantText({ type: "result", subtype: "error_max_turns", result: "" })).toThrow(/no assistant text/);
     expect(() => extractFinalAssistantText({ foo: "bar" })).toThrow(/no assistant text/);
   });
 
@@ -182,6 +186,30 @@ describe("extractFinalAssistantText", () => {
   test("keeps the whole text when there is no thematic break at all", () => {
     const parsed = { type: "result", subtype: "success", is_error: false, result: "A plain answer, no break." };
     expect(extractFinalAssistantText(parsed)).toBe("A plain answer, no break.");
+  });
+
+  test("cuts to the first heading when prose precedes it", () => {
+    const text = "Some reasoning about the problem.\n\nMore analysis here.\n\n## The Answer\n\nDetailed explanation.";
+    const parsed = { type: "result", subtype: "success", is_error: false, result: text };
+    expect(extractFinalAssistantText(parsed)).toBe("## The Answer\n\nDetailed explanation.");
+  });
+
+  test("keeps the whole text when the first non-blank line is a heading", () => {
+    const text = "## The Answer\n\nDetailed explanation of the solution.";
+    const parsed = { type: "result", subtype: "success", is_error: false, result: text };
+    expect(extractFinalAssistantText(parsed)).toBe(text);
+  });
+
+  test("keeps the whole text when there is no heading and no break", () => {
+    const text = "Plain prose explanation with no structural markers at all.";
+    const parsed = { type: "result", subtype: "success", is_error: false, result: text };
+    expect(extractFinalAssistantText(parsed)).toBe(text);
+  });
+
+  test("uses the thematic break instead when both a break and a heading exist", () => {
+    const text = "Earlier prose.\n\n---\n\n## Later Heading\n\nAfter break.";
+    const parsed = { type: "result", subtype: "success", is_error: false, result: text };
+    expect(extractFinalAssistantText(parsed)).toBe("## Later Heading\n\nAfter break.");
   });
 });
 
