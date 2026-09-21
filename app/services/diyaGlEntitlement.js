@@ -3,9 +3,10 @@
 
 // app/services/diyaGlEntitlement.js
 //
-// Decides a DIYA-GL book's retention tier: "resident" for an active resident-diya-gl subscriber,
-// "sandbox" for everyone else. DIYA_GL_RESIDENT_TIER gates whether the resident tier is offered
-// at all on this environment; off, every caller gets the sandbox tier without a bundle read.
+// Decides a DIYA-GL book's retention tier: "resident" for an active subscriber to the resident
+// bundle or the resident-diya-gl bundle it replaced, "sandbox" for everyone else.
+// DIYA_GL_RESIDENT_TIER gates whether the resident tier is offered at all on this environment;
+// off, every caller gets the sandbox tier without a bundle read.
 
 import { createLogger } from "../lib/logger.js";
 import { initializeSalt } from "./subHasher.js";
@@ -13,7 +14,9 @@ import { getUserBundles } from "../data/dynamoDbBundleRepository.js";
 
 const logger = createLogger({ source: "app/services/diyaGlEntitlement.js" });
 
-const DEFAULT_DIYA_GL_BUNDLE_ID = "resident-diya-gl";
+// resident first: the current bundle. resident-diya-gl second: honours a subscriber who has not
+// migrated off the bundle it replaced. Either grants the resident tier.
+const DEFAULT_DIYA_GL_BUNDLE_IDS = ["resident", "resident-diya-gl"];
 
 const LAPSED_RESIDENT_GRACE_MS = 30 * 24 * 60 * 60 * 1000;
 
@@ -42,12 +45,12 @@ export async function entitlementFor(sub) {
   }
 
   await initializeSalt();
-  const diyaGlBundleId = process.env.DIYA_GL_BUNDLE_ID || DEFAULT_DIYA_GL_BUNDLE_ID;
+  const diyaGlBundleIds = process.env.DIYA_GL_BUNDLE_ID ? [process.env.DIYA_GL_BUNDLE_ID] : DEFAULT_DIYA_GL_BUNDLE_IDS;
   const bundles = await getUserBundles(sub);
-  const matchingBundle = bundles.find((bundle) => bundle.bundleId === diyaGlBundleId);
+  const matchingBundle = diyaGlBundleIds.map((id) => bundles.find((bundle) => bundle.bundleId === id)).find(Boolean);
 
   if (!matchingBundle) {
-    logger.info({ message: "No matching DIYA-GL bundle", bundleId: diyaGlBundleId });
+    logger.info({ message: "No matching DIYA-GL bundle", bundleIds: diyaGlBundleIds });
     return { retention: "sandbox", reason: "no-subscription", residentTier: true, bundleId: null, expiry: null, checkedAt };
   }
 

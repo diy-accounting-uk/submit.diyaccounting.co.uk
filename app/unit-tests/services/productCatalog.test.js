@@ -41,6 +41,7 @@ describe("productCatalogHelper", () => {
       "day-guest",
       "invited-guest",
       "resident-vat",
+      "resident",
       "resident-guest",
       "resident-pro-comp",
       "resident-pro",
@@ -73,10 +74,11 @@ describe("productCatalogHelper", () => {
     expect(residentItsa.listedInEnvironments).not.toContain("prod");
   });
 
-  it("self-employed activity should be granted by resident-itsa and resident-pro", () => {
+  it("self-employed activity should be granted by resident-itsa, resident and resident-pro", () => {
     const catalog = parseCatalog(tomlText);
-    expect(bundlesForActivity(catalog, "self-employed")).toEqual(["resident-itsa", "resident-pro"]);
+    expect(bundlesForActivity(catalog, "self-employed")).toEqual(["resident-itsa", "resident", "resident-pro"]);
     expect(isActivityAvailable(catalog, "self-employed", "resident-itsa")).toBe(true);
+    expect(isActivityAvailable(catalog, "self-employed", "resident")).toBe(true);
     expect(isActivityAvailable(catalog, "self-employed", "resident-vat")).toBe(false);
   });
 
@@ -147,9 +149,9 @@ describe("productCatalogHelper", () => {
     expect(activity.environments).toEqual(yearEnd.environments);
   });
 
-  it("file-micro-entity-accounts activity should be granted by resident-ltd and resident-pro", () => {
+  it("file-micro-entity-accounts activity should be granted by resident-ltd, resident and resident-pro", () => {
     const catalog = parseCatalog(tomlText);
-    expect(bundlesForActivity(catalog, "file-micro-entity-accounts")).toEqual(["resident-ltd", "resident-pro"]);
+    expect(bundlesForActivity(catalog, "file-micro-entity-accounts")).toEqual(["resident-ltd", "resident", "resident-pro"]);
     expect(isActivityAvailable(catalog, "file-micro-entity-accounts", "resident-ltd")).toBe(true);
     expect(isActivityAvailable(catalog, "file-micro-entity-accounts", "default")).toBe(false);
   });
@@ -165,12 +167,38 @@ describe("productCatalogHelper", () => {
     expect(residentItsa).toMatchObject({ stripePriceAmount: 99, stripeCurrency: "gbp", stripeInterval: "month" });
   });
 
-  it("getStripeSubscriptionBundles should return exactly the five Stripe-priced bundles", () => {
+  it("getStripeSubscriptionBundles should return exactly the six Stripe-priced bundles", () => {
     const catalog = parseCatalog(tomlText);
     const bundleIds = getStripeSubscriptionBundles(catalog)
       .map((b) => b.id)
       .sort();
-    expect(bundleIds).toEqual(["resident-diya-gl", "resident-itsa", "resident-ltd", "resident-pro", "resident-vat"]);
+    expect(bundleIds).toEqual(["resident", "resident-diya-gl", "resident-itsa", "resident-ltd", "resident-pro", "resident-vat"]);
+  });
+
+  it("resident carries the annual price and is hidden from prod until the DIYA-GL tier lifts there", () => {
+    const catalog = parseCatalog(tomlText);
+    const resident = getCatalogBundleById(catalog, "resident");
+    expect(resident).toMatchObject({
+      levelName: "Resident",
+      enable: "always",
+      hidden: false,
+      allocation: "on-subscription",
+      tokensGranted: 100,
+      tokenRefreshInterval: "P1M",
+      stripePriceAmount: 3900,
+      stripeCurrency: "gbp",
+      stripeInterval: "year",
+    });
+    expect(resident.listedInEnvironments).toEqual(["ci"]);
+  });
+
+  it("resident-itsa, resident-ltd and resident-diya-gl are folded into resident and hidden from the bundles page", () => {
+    const catalog = parseCatalog(tomlText);
+    for (const bundleId of ["resident-itsa", "resident-ltd", "resident-diya-gl"]) {
+      const bundle = getCatalogBundleById(catalog, bundleId);
+      expect(bundle.hidden).toBe(true);
+      expect(bundle.enable).toBe("always");
+    }
   });
 
   describe("isActivityListedInEnvironment", () => {
