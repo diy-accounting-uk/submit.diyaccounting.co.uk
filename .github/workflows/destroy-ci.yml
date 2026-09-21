@@ -49,7 +49,9 @@ on:
   # branch that could have held a ci slot. GitHub always runs the default branch's copy of a
   # workflow for a `delete` event and github.event.ref carries the deleted branch's bare name
   # (no refs/heads/ prefix) - the 'names' job below resolves it against the live slot records
-  # rather than trusting deploy.yml to still be running.
+  # rather than trusting deploy.yml to still be running. When the resolved slot's set is still
+  # live or the last known good deployment, the destroy job releases the slot record without
+  # tearing the set down, so the next claimant reclaims it on its own redeploy.
   delete:
 
 permissions:
@@ -726,12 +728,20 @@ jobs:
       # deployment gets is always "{deployment}.submit.diyaccounting.co.uk" (see
       # .github/actions/get-names), regardless of environment, so the live-distribution check
       # matches on that plus this environment's own apex domain.
+      #
+      # On a `delete` event the resolved deployment is a slot a just-deleted branch held, not one
+      # this run chose to destroy on its own account, so finding it live or last-known-good here
+      # is not an error: it means some other branch's deploy has since claimed and republished
+      # that same slot. The `keep-live-set` output tells the rest of this job to skip the destroy
+      # steps and jump straight to releasing the slot record instead of failing the run. Every
+      # other trigger keeps failing here exactly as before.
       - name: Refuse to destroy the live or last known good deployment
         id: refuse
         shell: bash
         env:
           DEPLOYMENT: ${{ needs.names.outputs.deployment-name }}
           CI_APEX_DOMAIN: ${{ needs.names.outputs.apex-domain }}
+          IS_DELETE_EVENT: ${{ github.event_name == 'delete' }}
         run: |
           set -euo pipefail
           if ! [[ "$DEPLOYMENT" =~ ^ci-[a-zA-Z0-9-]+$ ]] \
@@ -739,32 +749,49 @@ jobs:
             echo "Refusing to destroy [$DEPLOYMENT]: not an app deployment name"
             exit 1
           fi
+
           LAST_KNOWN_GOOD=$(aws ssm get-parameter \
             --name "/submit/ci/last-known-good-deployment" \
             --query "Parameter.Value" --output text 2>/dev/null || echo "")
           echo "Last known good ci deployment: [$LAST_KNOWN_GOOD]"
+
+          REASON=""
           if [ "$DEPLOYMENT" = "$LAST_KNOWN_GOOD" ]; then
-            echo "Refusing to destroy [$DEPLOYMENT]: it is the last known good deployment"
-            exit 1
+            REASON="it is the last known good deployment"
+          else
+            LIVE_DISTRIBUTION=$(aws cloudfront list-distributions \
+              --query "DistributionList.Items[?Aliases.Items!=null && contains(Aliases.Items, '${CI_APEX_DOMAIN}') && contains(Aliases.Items, '${DEPLOYMENT}.submit.diyaccounting.co.uk')].Id | [0]" \
+              --output text)
+            if [ -n "$LIVE_DISTRIBUTION" ] && [ "$LIVE_DISTRIBUTION" != "None" ]; then
+              REASON="distribution [$LIVE_DISTRIBUTION] still serves [$CI_APEX_DOMAIN]"
+            fi
           fi
-          LIVE_DISTRIBUTION=$(aws cloudfront list-distributions \
-            --query "DistributionList.Items[?Aliases.Items!=null && contains(Aliases.Items, '${CI_APEX_DOMAIN}') && contains(Aliases.Items, '${DEPLOYMENT}.submit.diyaccounting.co.uk')].Id | [0]" \
-            --output text)
-          if [ -n "$LIVE_DISTRIBUTION" ] && [ "$LIVE_DISTRIBUTION" != "None" ]; then
-            echo "Refusing to destroy [$DEPLOYMENT]: distribution [$LIVE_DISTRIBUTION] still serves [$CI_APEX_DOMAIN]"
-            exit 1
+
+          if [ -z "$REASON" ]; then
+            echo "[$DEPLOYMENT] is neither live nor last known good; proceeding"
+            exit 0
           fi
-          echo "[$DEPLOYMENT] is neither live nor last known good; proceeding"
+
+          if [ "$IS_DELETE_EVENT" = "true" ]; then
+            echo "[$DEPLOYMENT] stays: $REASON, but the branch that held its slot is deleted; releasing the slot record instead of destroying it"
+            echo "keep-live-set=true" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+
+          echo "Refusing to destroy [$DEPLOYMENT]: $REASON"
+          exit 1
 
       # A destroy that matches no stacks must not report success: that reads exactly like a
       # destroy that worked, when in fact the caller named a deployment that was never live in
-      # this account (or already gone). This step, like the refusal above it, has no explicit
-      # `if:` guard, so it only runs when the refusal step succeeded — the default `success()`
-      # every step carries unless overridden. Every step below this one that must not run past a
-      # failed refusal checks `steps.confirm-stacks.outcome == 'success'`, which is true only when
-      # both this step and the refusal before it succeeded.
+      # this account (or already gone). This step carries an explicit `if:` skipping it when the
+      # refusal step found a live/last-known-good set being kept for a deleted branch — nothing
+      # is being destroyed on that path, so there is no stack count to confirm. Every step below
+      # this one that must not run past a failed refusal, or past a kept set, checks
+      # `steps.confirm-stacks.outcome == 'success'`, which is true only when this step ran and
+      # succeeded.
       - name: Confirm the deployment has stacks to destroy
         id: confirm-stacks
+        if: ${{ !cancelled() && steps.refuse.outputs.keep-live-set != 'true' }}
         shell: bash
         env:
           DEPLOYMENT: ${{ needs.names.outputs.deployment-name }}
@@ -784,12 +811,16 @@ jobs:
           echo "[$DEPLOYMENT] matches $STACK_COUNT stack(s); proceeding"
 
       - name: Node dependencies
+        if: ${{ !cancelled() && steps.refuse.outputs.keep-live-set != 'true' }}
         run: timeout 120 npm ci --prefer-offline || { sleep 30; timeout 180 npm ci; }
         timeout-minutes: 6
         env:
           NPM_CONFIG_FETCH_RETRIES: "3"
 
+      # Never silence a kept set's alarms: a live or last-known-good deployment being kept
+      # because its branch was deleted still needs its own alerting live.
       - name: Silence the deployment's alarms
+        if: ${{ !cancelled() && steps.refuse.outputs.keep-live-set != 'true' }}
         run: node scripts/silence-deployment-alarms.mjs --env "${{ needs.names.outputs.environment-name }}" --deployment "${{ needs.names.outputs.deployment-name }}"
 
       # deploy.yml's own cut-over calls this workflow in the same run as its 'maven package' job.
@@ -798,6 +829,7 @@ jobs:
       # cleanup pass below. The actual stack deletion further down reads stack names, not the jar.
       - name: Download Maven build artifact
         id: download-maven-destroy
+        if: ${{ !cancelled() && steps.refuse.outputs.keep-live-set != 'true' }}
         uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8
         continue-on-error: true
         with:
@@ -805,13 +837,14 @@ jobs:
           path: target/
 
       - name: Cache Maven build output
-        if: steps.download-maven-destroy.outcome != 'success'
+        if: ${{ !cancelled() && steps.download-maven-destroy.outcome != 'success' && steps.refuse.outputs.keep-live-set != 'true' }}
         uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6
         with:
           path: target
           key: maven-target-${{ hashFiles('infra/main/java/**', 'infra/main/resources/**', 'pom.xml') }}
 
       - name: Build CDK
+        if: ${{ !cancelled() && steps.refuse.outputs.keep-live-set != 'true' }}
         run: |
           if [ -f target/submit-application.jar ]; then
             echo "Maven output already available (target/submit-application.jar), skipping build"
@@ -1035,9 +1068,12 @@ jobs:
       # A slot's stacks come and go on every claim; its registrations with HMRC, Companies
       # House and Cognito do not. Only the claim record is released here -
       # a deployment name outside the pool (an explicit deployment-name dispatch) never held
-      # one, so the delete is a harmless no-op for it.
+      # one, so the delete is a harmless no-op for it. This also runs on the keep-live-set path:
+      # the set stays up, but the slot record still names a branch that no longer exists, so it
+      # is released the same way a same-ref redeploy would reclaim it, letting the next claimant
+      # take the slot over on its own redeploy.
       - name: Release the ci slot
-        if: ${{ !cancelled() && steps.confirm-stacks.outcome == 'success' }}
+        if: ${{ !cancelled() && (steps.confirm-stacks.outcome == 'success' || steps.refuse.outputs.keep-live-set == 'true') }}
         shell: bash
         env:
           DEPLOYMENT: ${{ needs.names.outputs.deployment-name }}
