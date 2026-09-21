@@ -1,7 +1,7 @@
 <!-- SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0 -->
 <!-- Copyright (C) 2006-2026 DIY Accounting Limited -->
 
-# PLAN: one Resident price, annual by default, a practice licence, a 25-day sandbox
+# PLAN: one Resident price, annual by default, a practice licence, a 35-day sandbox
 
 > Started 2026-09-21 from the spreadsheets session's review of the DIYA-GL business model
 > (`../spreadsheets.diyaccounting.co.uk/PLAN_DIYA_GL_LAUNCH.md` §3 and §5,
@@ -19,7 +19,7 @@
    (the storage half lives in `PLAN_DIYA_GL_LAUNCH.md` LP-24).
 4. (2026-09-21) "add a task for this with the 25 day expiry": the sandbox retention matched to the
    saving cadence, with `sandbox_expired_seen` per sign-in as the loss metric with its own
-   threshold.
+   threshold. Then (2026-09-21): "Change it to 35 days and with submit too."
 5. (2026-09-21) "Annual as the default button."
 6. (2026-09-21) "Practice licence on resident-pro."
 
@@ -52,11 +52,11 @@ as it lands.
 plan's 200–500 subscribers, £39 a year is £7.6k–£19.1k net; the same base at 99p monthly was
 £1.9k–£4.7k. Not VAT registered (launch plan decision 7); every price is the charged amount.
 
-**The sandbox.** Retention becomes 25 days from the last save (was 24 hours). The clock still
-runs from the last save, so a monthly saver never sees it, a quarterly saver sees it once and is
+**The sandbox.** Retention becomes 35 days from the last save (was 24 hours). The clock still
+runs from the last save, so a quarterly saver never sees it, a yearly saver sees it once and is
 told, and the sign-in still turns a paywall into a try. The loss metric is
 `sandbox_expired_seen` per `cloud_sign_in`: above 10% over 500 sign-ins, the clock is too short
-for the audience and the next test is 35 days; the launch plan's two triggers (subscribe-started
+for the audience and the next test is 60 days; the launch plan's two triggers (subscribe-started
 under 2%, checkout completion under half) stay as written.
 
 ## Design
@@ -104,15 +104,15 @@ authorisation (the agent-services model). That is a design task first (the data 
 and the authorisation flow), then a build. Price proposed at £19.99 a month or £199 a year, above
 the £10–£16 single-trader floor and below an accountant's own software.
 
-### (e) The 25-day sandbox
+### (e) The 35-day sandbox
 
 `PLAN_DIYA_GL_HOME.md` §(b) fixed 24 hours: the put route writes `expiresAt = updatedAt + 24h` for
 sandbox books, the lifecycle rule expires `retention=sandbox` objects after 2 days. This plan
-moves both: `expiresAt = updatedAt + 25 days`; the rule's `expiration` to 27 days and
+moves both: `expiresAt = updatedAt + 35 days`; the rule's `expiration` to 37 days and
 `noncurrentVersionExpiration` to 1 day (S3 expires on day boundaries; the sidecar's `expiresAt`
 stays the reader-facing truth, the rule is the backstop). The get route's `404 book-expired` and
 the list route's filter follow the sidecar as they do now. The pages' labels move from "24h
-sandbox" to "25-day sandbox" wherever they appear (the spreadsheets repository: the homepage tier
+sandbox" to "35-day sandbox" wherever they appear (the spreadsheets repository: the homepage tier
 strip, the sign-in title, `renderBookRow`'s countdown in days, `download.html`, the behaviour and
 browser specs, `CLAUDE.md` and the two plans). `diya-gl-events.js` gains `sandbox_expired_seen`,
 sent once per session when a signed-in reader's list comes back shorter than their last one.
@@ -126,11 +126,11 @@ Ids are shared with `NEXT.md`'s board here, and the spreadsheets rows with their
 | PU-1 | The `resident` bundle: catalogue entry, activity lists, the three folded bundles hidden, the entitlement service's bundle list | Submit | — | Sonnet | `web/public/submit.catalogue.toml`, `app/services/diyaGlEntitlement.js`, its tests, `PASSES.md` (~5 files) |
 | PU-2 | Two prices per bundle: catalogue `prices` table, `stripe-sync` per price, checkout by interval, `bundles.html` annual-first | Submit | PU-1 | Sonnet | `submit.catalogue.toml`, `infra/stripe/stripe-sync.js`, `app/functions/billing/billingCheckoutPost.js`, `web/public/bundles.html`, `app/lib/productCatalog.js`, tests (~8 files) |
 | PU-3 | Stripe test then live: the `resident` product with both prices through `stripe-catalogue-sync`; the price ids into `.env.ci` and `.env.prod` | Submit | PU-2 | Haiku, machine-ask (the live key is the operator's) | `.env.ci`, `.env.prod` (~2 files) |
-| PU-4 | The 25-day sandbox: put route expiry, lifecycle rule, the `sandbox_expired_seen` event contract | Submit | — | Sonnet | `app/functions/diyaGl/diyaGlPut.js`, `infra/.../DataStack.java`, `diyaGlPut.test.js`, `DataStackTest.java` (~4 files) |
+| PU-4 | The 35-day sandbox: put route expiry, lifecycle rule, the `sandbox_expired_seen` event contract | Submit | — | Sonnet | `app/functions/diyaGl/diyaGlPut.js`, `infra/.../DataStack.java`, `diyaGlPut.test.js`, `DataStackTest.java` (~4 files) |
 | PU-5 | The DIYA-GL tier on prod: `DIYA_GL_RESIDENT_TIER`, `prod` in `resident`'s environments | Submit | PU-3, PU-4 | Haiku | `SubmitApplication.java`, `submit.catalogue.toml` (~2 files) |
 | PU-6 | Practice licence design: clients under one sign-in, per-client book sets, agent authorisation, batch through MCP and CLI | Submit | — | Opus | `PLAN_PRICE_UPDATE.md` §(d) expanded, then a build task list |
 | PU-7 | Practice licence build, per PU-6's design | Submit | PU-6 | per the design | per the design |
-| PU-8 | The pages: "25-day sandbox" labels, the countdown in days, the DIYA-GL offer showing £39/year first, `sandbox_expired_seen` sent | spreadsheets | PU-4 for the event, PU-2 for the offer | Sonnet | `web/diya-gl.co.uk/public/cloud.js`, `shell.js`, `index.html`, `web/spreadsheets.diyaccounting.co.uk/public/download.html`, `diya-gl-events.js`, the cloud browser spec, the behaviour test, `CLAUDE.md`, `PLAN_DIYA_GL_HOME.md` (~9 files) |
+| PU-8 | The pages: "35-day sandbox" labels, the countdown in days, the DIYA-GL offer showing £39/year first, `sandbox_expired_seen` sent | spreadsheets | PU-4 for the event, PU-2 for the offer | Sonnet | `web/diya-gl.co.uk/public/cloud.js`, `shell.js`, `index.html`, `web/spreadsheets.diyaccounting.co.uk/public/download.html`, `diya-gl-events.js`, the cloud browser spec, the behaviour test, `CLAUDE.md`, `PLAN_DIYA_GL_HOME.md` (~9 files) |
 | PU-9 | Retire `resident-diya-gl`, `resident-itsa`, `resident-ltd` once Stripe live shows no subscription on their prices | Submit | PU-5 | Haiku | `submit.catalogue.toml`, `.env.ci`, `.env.prod` (~3 files) |
 
 ## Decisions taken (operator, 2026-09-21)
@@ -140,7 +140,7 @@ Ids are shared with `NEXT.md`'s board here, and the spreadsheets rows with their
 2. One Resident price: £39 a year, £3.99 a month, filing included as each is recognised.
 3. Annual is the default button.
 4. `resident-pro` becomes the practice licence.
-5. The sandbox runs 25 days.
+5. The sandbox runs 35 days (25 was the first instruction, corrected the same day).
 
 ## Open questions for the operator
 
