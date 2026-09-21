@@ -309,14 +309,82 @@ jobs:
       - wait-for-environment-deploy
     runs-on: ubuntu-24.04
     environment: ${{ needs.params.outputs.github-environment }}
+    env:
+      # The push trigger's `paths:` list above as git pathspecs, for the two diff checks below;
+      # keep the two lists in step.
+      DEPLOY_PATHSPECS: >-
+        :(glob)app/data/** :(glob)app/functions/** :(glob)app/lib/** :(glob)app/services/**
+        :(glob)infra/main/** :(glob)web/public/** .env.ci .env.prod :(glob)**/cdk.json
+        Dockerfile LICENSE package.json package-lock.json pom.xml
+        web/public/submit.catalogue.toml :(glob).github/actions/** .github/workflows/deploy.yml
+        .github/workflows/deploy-cdk-stack.yml .github/workflows/destroy-prod.yml
+        .github/workflows/generate-pass.yml .github/workflows/probe-test.yml .github/workflows/test.yml
     steps:
       - name: Checkout
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with:
-          # The live-head check below diffs against the previous live prod deploy, which isn't
-          # necessarily within the default shallow depth. workflow_dispatch and push never run
-          # that check, so they keep the cheap shallow clone.
-          fetch-depth: ${{ github.event_name == 'schedule' && 0 || 1 }}
+          # The live-head and package.json checks below diff against a commit that isn't
+          # necessarily the default shallow depth away (the previous live prod deploy, or the
+          # push's own previous head), so both need real history. workflow_dispatch never runs
+          # either check, so it keeps the cheap shallow clone.
+          fetch-depth: ${{ github.event_name == 'workflow_dispatch' && 1 || 0 }}
+
+      # push's own `paths:` filter can't see inside package.json, so a scripts-only addition
+      # (a new npm script) still matches the 'package.json' entry there and triggers a full
+      # deploy. Diffing the two commits' package.json with `scripts` removed from
+      # both tells a real dependency/engine/bundle-input change from a scripts-only one; only a
+      # push has a `before` commit to diff against.
+      - name: Check whether this push only changed package.json's scripts
+        id: package-json-check
+        if: ${{ github.event_name == 'push' }}
+        shell: bash
+        run: |
+          BEFORE_SHA="${{ github.event.before }}"
+          if [ -z "$BEFORE_SHA" ] || [ "$BEFORE_SHA" = "0000000000000000000000000000000000000000" ]; then
+            echo "No previous head for this push (new branch); not treating as a scripts-only change."
+            echo "package-json-scripts-only=false" | tee -a "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          if ! git rev-parse --verify "${BEFORE_SHA}^{commit}" >/dev/null 2>&1; then
+            echo "Previous head $BEFORE_SHA not found in this checkout's history; not treating as a scripts-only change."
+            echo "package-json-scripts-only=false" | tee -a "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          CHANGED=$(git diff --name-only "$BEFORE_SHA"..HEAD -- $DEPLOY_PATHSPECS)
+          if [ "$CHANGED" != "package.json" ]; then
+            echo "This push's deploy-relevant changes are not package.json alone:"
+            echo "$CHANGED"
+            echo "package-json-scripts-only=false" | tee -a "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          if ! git show "${BEFORE_SHA}:package.json" > /tmp/package.before.json 2>/dev/null; then
+            echo "package.json did not exist at the previous head; not treating as a scripts-only change."
+            echo "package-json-scripts-only=false" | tee -a "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          git show HEAD:package.json > /tmp/package.after.json
+          if node -e '
+            const fs = require("fs");
+            function deepEqual(a, b) {
+              if (a === b) return true;
+              if (typeof a !== typeof b || a === null || b === null || typeof a !== "object") return false;
+              const aKeys = Object.keys(a).sort();
+              const bKeys = Object.keys(b).sort();
+              if (aKeys.length !== bKeys.length) return false;
+              return aKeys.every((k, i) => k === bKeys[i] && deepEqual(a[k], b[k]));
+            }
+            const before = JSON.parse(fs.readFileSync("/tmp/package.before.json", "utf8"));
+            const after = JSON.parse(fs.readFileSync("/tmp/package.after.json", "utf8"));
+            delete before.scripts;
+            delete after.scripts;
+            process.exit(deepEqual(before, after) ? 0 : 1);
+          '; then
+            echo "package.json changed only in its scripts object."
+            echo "package-json-scripts-only=true" | tee -a "$GITHUB_OUTPUT"
+          else
+            echo "package.json changed outside its scripts object."
+            echo "package-json-scripts-only=false" | tee -a "$GITHUB_OUTPUT"
+          fi
 
       - name: Configure AWS role via GitHub OIDC
         uses: aws-actions/configure-aws-credentials@e1253824e5c10ff9df46874f81ed3ec929e19cfd # v6
@@ -375,13 +443,7 @@ jobs:
             exit 0
           fi
           LIVE_SHA_FULL=$(git rev-parse "$LIVE_SHA7")
-          CHANGED=$(git diff --name-only "$LIVE_SHA_FULL"..HEAD -- \
-            ':(glob)app/data/**' ':(glob)app/functions/**' ':(glob)app/lib/**' ':(glob)app/services/**' \
-            ':(glob)infra/main/**' ':(glob)web/public/**' '.env.ci' '.env.prod' ':(glob)**/cdk.json' \
-            'Dockerfile' 'LICENSE' 'package.json' 'package-lock.json' 'pom.xml' \
-            'web/public/submit.catalogue.toml' ':(glob).github/actions/**' '.github/workflows/deploy.yml' \
-            '.github/workflows/deploy-cdk-stack.yml' '.github/workflows/destroy-prod.yml' \
-            '.github/workflows/generate-pass.yml' '.github/workflows/probe-test.yml' '.github/workflows/test.yml')
+          CHANGED=$(git diff --name-only "$LIVE_SHA_FULL"..HEAD -- $DEPLOY_PATHSPECS)
           if [ -z "$CHANGED" ]; then
             echo "No files under deploy.yml's push paths changed between $LIVE_SHA_FULL and HEAD."
             echo "live-head-is-current=true" | tee -a "$GITHUB_OUTPUT"
@@ -392,7 +454,7 @@ jobs:
           fi
 
       - name: If main and skipping deploy, read back last known good prod deployment from SSM Parameter Store
-        if: ${{ needs.params.outputs.isSkippingDeploy == 'true' && needs.params.outputs.deployment-name == '' && github.ref == 'refs/heads/main' }}
+        if: ${{ (needs.params.outputs.isSkippingDeploy == 'true' || steps.package-json-check.outputs.package-json-scripts-only == 'true') && needs.params.outputs.deployment-name == '' && github.ref == 'refs/heads/main' }}
         run: |
           PARAMETER_NAME="/submit/prod/last-known-good-deployment"
           LAST_KNOWN_GOOD=$(aws ssm get-parameter --name "$PARAMETER_NAME" --query "Parameter.Value" --output text 2>/dev/null || echo "")
@@ -414,10 +476,11 @@ jobs:
       - name: Determine deployment name to use
         id: resolved-deployment-name
         run: |
-          # If skipping deploy (explicitly, or because the live head is already current) AND we
-          # found a last-known-good deployment, use that. Otherwise, pass empty/params value to
-          # let get-names compute from commit hash or branch.
-          if { [ "${{ needs.params.outputs.isSkippingDeploy }}" = "true" ] || [ "${{ steps.live-head-check.outputs.live-head-is-current }}" = "true" ]; } && [ -s /tmp/last_known_good_deployment.txt ]; then
+          # If skipping deploy (explicitly, or because the live head is already current, or
+          # because this push only changed package.json's scripts) AND we found a
+          # last-known-good deployment, use that. Otherwise, pass empty/params value to let
+          # get-names compute from commit hash or branch.
+          if { [ "${{ needs.params.outputs.isSkippingDeploy }}" = "true" ] || [ "${{ steps.live-head-check.outputs.live-head-is-current }}" = "true" ] || [ "${{ steps.package-json-check.outputs.package-json-scripts-only }}" = "true" ]; } && [ -s /tmp/last_known_good_deployment.txt ]; then
               echo "Using last known good deployment from SSM Parameter Store (skipping deploy)"
               echo "deployment-name=$(cat /tmp/last_known_good_deployment.txt)" | tee -a "$GITHUB_OUTPUT"
           elif [ -n "${{ needs.params.outputs.deployment-name }}" ]; then
@@ -567,6 +630,7 @@ jobs:
       self-destruct-start-datetime: ${{ steps.self-destruct-start.outputs.SELF_DESTRUCT_START_DATETIME }}
       self-destruct-delay-hours: ${{ steps.self-destruct-start.outputs.SELF_DESTRUCT_DELAY_HOURS }}
       live-head-is-current: ${{ steps.live-head-check.outputs.live-head-is-current }}
+      package-json-scripts-only: ${{ steps.package-json-check.outputs.package-json-scripts-only }}
 
   test:
     name: 'delegate to test workflow'
@@ -690,7 +754,7 @@ jobs:
     needs:
       - params
       - names
-    if: ${{ needs.params.outputs.isSkippingDeploy != 'true' && needs.names.outputs.live-head-is-current != 'true' }}
+    if: ${{ needs.params.outputs.isSkippingDeploy != 'true' && needs.names.outputs.live-head-is-current != 'true' && needs.names.outputs.package-json-scripts-only != 'true' }}
     runs-on: ubuntu-24.04
     environment: ${{ needs.params.outputs.github-environment }}
     steps:
@@ -700,6 +764,7 @@ jobs:
           echo "params.skipDeploy=${{ needs.params.outputs.skipDeploy }}"
           echo "params.isSkippingDeploy=${{ needs.params.outputs.isSkippingDeploy }}"
           echo "names.live-head-is-current=${{ needs.names.outputs.live-head-is-current }}"
+          echo "names.package-json-scripts-only=${{ needs.names.outputs.package-json-scripts-only }}"
           echo "isSkippingDeploy=${{ needs.params.outputs.isSkippingDeploy }}" >> "$GITHUB_OUTPUT"
 
     outputs:
@@ -1165,7 +1230,10 @@ jobs:
       base-image-tag: ${{ github.sha }}
 
   deploy-application-self-destruct:
-    if: ${{ needs.params.outputs.isSkippingDeploy != 'true' && github.ref != 'refs/heads/main' && needs.names.outputs.environment-name != 'prod' }}
+    # This job's own `if:` doesn't fall back to the default success()-on-needs check, so it must
+    # list every reason skip-deploy-check (a listed need) can be skipped itself, or this job
+    # would still try to run against mvn-package/push-images artifacts that were never built.
+    if: ${{ needs.params.outputs.isSkippingDeploy != 'true' && needs.names.outputs.package-json-scripts-only != 'true' && github.ref != 'refs/heads/main' && needs.names.outputs.environment-name != 'prod' }}
     name: 'deploy SelfDestructStack via deploy-cdk-stack.yml'
     needs:
       - params
