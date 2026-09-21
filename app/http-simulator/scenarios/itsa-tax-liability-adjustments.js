@@ -4,9 +4,13 @@
 // app/http-simulator/scenarios/itsa-tax-liability-adjustments.js
 // Gov-Test-Scenario handlers for the Individuals Tax Liability Adjustments v1.0 endpoints
 
-/** The tax liability adjustments the default GET scenario returns. */
+/**
+ * The tax liability adjustments the default GET scenario returns. submittedOn is on every real
+ * retrieve HMRC's sandbox has answered for this endpoint.
+ */
 function defaultTaxLiabilityAdjustments() {
   return {
+    submittedOn: "2024-04-10T09:30:00.000Z",
     carryBackLossesDecrease: { incomeTax: 100 },
   };
 }

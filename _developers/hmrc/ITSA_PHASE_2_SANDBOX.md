@@ -411,3 +411,70 @@ the tax liability read-back carried `carryBackLossesDecrease`, the property read
 writes carried `suspend-temporal-validations: true` on the wire. `both businesses in calculation
 income sources` stayed `false` on all three runs - the same `DYNAMIC` canned-response gap as
 `metadata.calculationType` above, not a defect in the businesses these runs created.
+
+### Simulator corrections from the three transcripts
+
+The test-support "create a business" call for `uk-property` sends `{"typeOfBusiness":
+"uk-property"}` and answers `201 {"businessId": "XXIS04203940860"}` - no
+`businessAddressPostcode` required, unlike the self-employment business this same endpoint
+creates (`test-support-create-property-business`, all three transcripts).
+
+The calculation retrieve's `inputs.incomeSources.businessIncomeSources` always carried exactly
+one entry, `incomeSourceType: "self-employment"`, never the UK property business - on every tax
+year and both quarterly models. The dated model (`2023-24`) names the periods field
+`submissionPeriods` (an array); the cumulative model (`2025-26`, `2026-27`) names it
+`submissionPeriod` (a single object) - a genuine schema difference by quarterly model, not a
+transcription slip:
+
+```
+2023-24  submissionPeriods: [{ periodId, startDate, endDate, receivedDateTime }]
+2025-26  submissionPeriod:  { submissionId, startDate, endDate, receivedDateTime }
+2026-27  submissionPeriod:  { submissionId, startDate, endDate, receivedDateTime }
+```
+
+`metadata.calculationType` on the calculation retrieve is not the fixed `"final-declaration"`
+the first sandbox run's record above assumed - it varies by tax year even under the same
+`DYNAMIC` scenario: `"final-declaration"` for `2023-24`, `"in-year"` for both `2025-26` and
+`2026-27`. `2025-26` and `2026-27` also came back with the identical `calculationId`
+(`c75dbb53-6237-49e2-b05a-60ef221f0260`) despite being separate runs against a freshly deleted
+checkpoint each time - HMRC's own canned selection, not a defect in these runs.
+
+Three simulator mismatches, found by setting each new-endpoint route and scenario file beside
+its transcript entry and fixed in `app/http-simulator/`:
+
+- **UK property period create status and id** - transcript step `uk-property-period-1`
+  (`2023-24`) answered `201 {"submissionId": "e544fc07-996f-4935-ae7e-761df7c75c28"}`, a
+  generated id. `routes/itsa-uk-property-period.js`'s default/`STATEFUL` path answered `200`
+  with `submissionId` built by concatenating `fromDate` and `toDate` - the self-employment
+  period create's own convention, not this endpoint's. Now answers `201` with
+  `randomUUID()`. `app/system-tests/hmrcSimulator.system.test.js`'s "should create a period
+  summary for a valid request" updated to expect `201` and a UUID-shaped id instead of the
+  literal date string.
+- **Property carry-back rejection code** - transcript step `property-carry-back-rejected`
+  (`2026-27`) answered `400 {"code": "RULE_CARRY_BACK_CLAIM", "message": "Carry back claim
+  type is not valid for property income sources"}`. `scenarios/itsa-losses-and-claims.js`'s
+  `CARRY_BACK_CLAIM` scenario answered `RULE_TYPE_OF_CLAIM_INVALID` - a plausible-looking code
+  this simulator had guessed before this run existed to check it against, flagged as a future
+  finding in the run record above. Now answers `RULE_CARRY_BACK_CLAIM` with HMRC's own message.
+- **`submittedOn` on losses and tax liability adjustments retrieves** - transcript steps
+  `self-employment-loss-claim-get`, `uk-property-loss-claim-get` and
+  `tax-liability-adjustments-get` (`2026-27`) all carried a top-level `submittedOn` timestamp
+  alongside the claims/adjustment fields. `scenarios/itsa-losses-and-claims.js`'s
+  `defaultLossesAndClaims`/`terminalLossClaimLossesAndClaims` and
+  `scenarios/itsa-tax-liability-adjustments.js`'s `defaultTaxLiabilityAdjustments` omitted it.
+  Both now include a fixed `submittedOn` value, the same fixture-date convention the BSAS
+  scenarios already use.
+
+The UK property BSAS retrieve (`uk-property-bsas-retrieve`, scenario `UK_PROPERTY_PROFIT`) came
+back as a much larger canned fixture than `scenarios/itsa-bsas.js`'s `ukPropertyProfitSummary` -
+extra `expenses`/`totalExpenses`, `additions`/`totalAdditions`, an `adjustments` section and an
+`adjustedSummaryCalculation` section, none of which this simulator's version carries. Left
+unchanged: the self-employment BSAS retrieve this simulator already ships is the same kind of
+simplified approximation against an equally large HMRC canned fixture (confirmed against this
+run's own `bsas-retrieve` step), and the handlers on both sides pass the body through unread -
+same class of documented gap as `metadata.calculationType`, not a correction.
+
+The cumulative period PUT bodies (`self-employment-cumulative-period-1` etc.,
+`uk-property-cumulative-period-1` etc.) and the UK property annual submission (`200 {}`) matched
+`routes/itsa-self-employment-cumulative.js`, `routes/itsa-uk-property-cumulative.js` and
+`routes/itsa-uk-property-annual.js` exactly - no change.
