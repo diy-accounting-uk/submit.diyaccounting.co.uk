@@ -68,10 +68,12 @@ import { getAuthorizationCode, buildAuthorizeUrl } from "./lib/hmrcAuthorization
 import { prepareTokenExchangeRequest } from "../app/functions/hmrc/hmrcTokenPost.js";
 import { resolveItsaSubmissionModel } from "../app/lib/hmrcValidation.js";
 import { buildSelfEmploymentPeriodRequestBody } from "../app/functions/hmrc/hmrcItsaSelfEmploymentPeriodPost.js";
-import { buildUkPropertyCumulativeRequestBody } from "../app/functions/hmrc/hmrcItsaUkPropertyPeriodPost.js";
+import { buildUkPropertyPeriodRequestBody, buildUkPropertyCumulativeRequestBody } from "../app/functions/hmrc/hmrcItsaUkPropertyPeriodPost.js";
 import { buildAnnualSubmissionRequestBody } from "../app/functions/hmrc/hmrcItsaSelfEmploymentAnnualPut.js";
+import { buildUkPropertyAnnualRequestBody } from "../app/functions/hmrc/hmrcItsaUkPropertyAnnualPut.js";
 import { buildBsasTriggerRequestBody } from "../app/functions/hmrc/hmrcItsaBsasTriggerPost.js";
 import { buildBsasAdjustRequestBody } from "../app/functions/hmrc/hmrcItsaBsasSelfEmploymentAdjustPost.js";
+import { buildBsasUkPropertyAdjustRequestBody } from "../app/functions/hmrc/hmrcItsaBsasUkPropertyAdjustPost.js";
 
 // Individual Calculations 8.0: recommended minimum wait between the trigger's 202 and the
 // first retrieve attempt, and how many times to retry while HMRC still answers 404.
@@ -83,6 +85,9 @@ const CALCULATION_RETRIEVE_RETRY_DELAY_MS = 3000;
 // Gov-Test-Scenario header, even for a genuinely stateful sandbox business - documented in
 // PLAN_ITSA_PHASE_2.md's BSAS section. SELF_EMPLOYMENT_PROFIT is the scenario named there.
 const BSAS_RETRIEVE_SCENARIO = "SELF_EMPLOYMENT_PROFIT";
+
+// The UK property equivalent of BSAS_RETRIEVE_SCENARIO, from the same scenario table.
+const BSAS_UK_PROPERTY_RETRIEVE_SCENARIO = "UK_PROPERTY_PROFIT";
 
 // Business Details and ITSA status answer a static canned example with no Gov-Test-Scenario
 // header, not the business or status this script just created through the test-support API.
@@ -734,6 +739,88 @@ async function main() {
     nino,
   });
 
+  // Phase 7b: the property leg - proves the mixed customer (a sole trade and a property
+  // business in the same year) end to end, the way Phase 6-7 just did for the sole trade alone.
+  // The dated model has no quarterly filing against the property business earlier (Phase 5
+  // files only the self-employment business under that model), so its four period updates
+  // happen here. The cumulative model already filed the property business's running totals in
+  // Phase 5, so only the annual submission and the adjustable summary sequence remain - and
+  // those apply to a property business regardless of which quarterly model filed it.
+  if (submissionModel === "dated") {
+    const propertyQuarterlyPeriods = buildStandardQuarterlyPeriods(taxYear);
+
+    for (const [index, period] of propertyQuarterlyPeriods.entries()) {
+      const figures = buildQuarterlyTestFigures(index);
+      const requestBody = buildUkPropertyPeriodRequestBody({
+        fromDate: period.periodStartDate,
+        toDate: period.periodEndDate,
+        ukNonFhlProperty: {
+          income: { periodAmount: figures.periodIncome.turnover },
+          expenses: { consolidatedExpenses: figures.periodExpenses.consolidatedExpenses },
+        },
+      });
+      await callHmrc({
+        step: `uk-property-period-${index + 1}`,
+        method: "POST",
+        url: `${sandboxBase}/individuals/business/property/uk/${nino}/${propertyBusinessId}/period/${taxYear}`,
+        headers: hmrcHeaders("6.0", PERIOD_STATEFUL_SCENARIO),
+        body: requestBody,
+        okStatuses: [200, 201],
+        nino,
+      });
+    }
+  }
+
+  await callHmrc({
+    step: "uk-property-annual-submission",
+    method: "PUT",
+    url: `${sandboxBase}/individuals/business/property/uk/${nino}/${propertyBusinessId}/annual/${taxYear}`,
+    headers: hmrcHeaders("6.0"),
+    body: buildUkPropertyAnnualRequestBody({ allowances: { propertyIncomeAllowance: 1000 } }),
+    // Unlike the self-employment annual submission (always 204), the sandbox answers this call
+    // with 200 and an empty body.
+    okStatuses: [200, 204],
+    nino,
+  });
+
+  const propertyBsasTrigger = await callHmrc({
+    step: "uk-property-bsas-trigger",
+    method: "POST",
+    url: `${sandboxBase}/individuals/self-assessment/adjustable-summary/${nino}/trigger`,
+    headers: hmrcHeaders("7.0"),
+    body: buildBsasTriggerRequestBody({
+      accountingPeriodStartDate,
+      accountingPeriodEndDate,
+      businessId: propertyBusinessId,
+      typeOfBusiness: "uk-property",
+    }),
+    okStatuses: [200],
+    nino,
+  });
+  const propertyCalculationId = propertyBsasTrigger.body.calculationId;
+  if (!propertyCalculationId) {
+    throw new Error(`UK property BSAS trigger response carried no calculationId: ${JSON.stringify(propertyBsasTrigger.body)}`);
+  }
+
+  await callHmrc({
+    step: "uk-property-bsas-retrieve",
+    method: "GET",
+    url: `${sandboxBase}/individuals/self-assessment/adjustable-summary/${nino}/uk-property/${propertyCalculationId}/${taxYear}`,
+    headers: hmrcHeaders("7.0", BSAS_UK_PROPERTY_RETRIEVE_SCENARIO),
+    okStatuses: [200],
+    nino,
+  });
+
+  await callHmrc({
+    step: "uk-property-bsas-adjust",
+    method: "POST",
+    url: `${sandboxBase}/individuals/self-assessment/adjustable-summary/${nino}/uk-property/${propertyCalculationId}/adjust/${taxYear}`,
+    headers: hmrcHeaders("7.0"),
+    body: buildBsasUkPropertyAdjustRequestBody({ income: { totalRentsReceived: 1 } }),
+    okStatuses: [200, 204],
+    nino,
+  });
+
   // Phase 8: trigger the intent-to-finalise calculation, wait, and poll until it is ready. No
   // crystallisation-obligations read first - the same obligations-api gap that rules out
   // reading quarterly obligations (see buildStandardQuarterlyPeriods's doc comment) applies to
@@ -782,6 +869,24 @@ async function main() {
   if (calculation.metadata?.calculationType !== "intent-to-finalise") {
     console.warn(
       `[itsa-sandbox-year] Calculation ${finalCalculationId} has metadata.calculationType "${calculation.metadata?.calculationType}", not "intent-to-finalise" - a confirmed sandbox gap, not a script defect. Continuing to final declaration.`,
+    );
+  }
+
+  // Whether the calculation's own income sources carry both businesses this run created and
+  // filed against - the proof the mixed customer (a sole trade and a property business in one
+  // year) reaches the calculation, not just the filing endpoints. HMRC's canned DYNAMIC
+  // calculation is known to answer fixture-only business ids rather than this run's own, so a
+  // miss here is recorded and warned about, not treated as a script failure.
+  const businessIncomeSources = calculation.inputs?.incomeSources?.businessIncomeSources;
+  record("calculation-retrieve-income-sources", { businessIncomeSources });
+  const businessIncomeSourceIds = Array.isArray(businessIncomeSources)
+    ? businessIncomeSources.map((source) => source.businessId)
+    : [];
+  const bothBusinessesInCalculation = businessIncomeSourceIds.includes(businessId) && businessIncomeSourceIds.includes(propertyBusinessId);
+  console.log(`[itsa-sandbox-year] both businesses present in calculation income sources: ${bothBusinessesInCalculation}`);
+  if (!bothBusinessesInCalculation) {
+    console.warn(
+      `[itsa-sandbox-year] Calculation ${finalCalculationId}'s inputs.incomeSources.businessIncomeSources (${JSON.stringify(businessIncomeSourceIds)}) does not carry both business ids - the same DYNAMIC canned-response gap as metadata.calculationType above. Continuing to final declaration.`,
     );
   }
 

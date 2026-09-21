@@ -82,8 +82,14 @@ change where the transcript and checkpoint id land (default `./target/itsa-sandb
 | BSAS trigger | `POST .../adjustable-summary/{nino}/trigger` | `200` with `calculationId` |
 | BSAS retrieve | `GET .../adjustable-summary/{nino}/self-employment/{calculationId}/{taxYear}`, `Gov-Test-Scenario: SELF_EMPLOYMENT_PROFIT` | `200`, HMRC's own canned example - not this run's figures, see below |
 | BSAS adjust | `POST .../adjustable-summary/{nino}/self-employment/{calculationId}/adjust/{taxYear}` | `200`/`204` |
+| Property period x4, dated model only | `POST .../business/property/uk/{nino}/{propertyBusinessId}/period/{taxYear}`, `Gov-Test-Scenario: STATEFUL` | `200`/`201`, once per standard quarterly period - the cumulative model already filed the property business's running totals earlier |
+| Property annual | `PUT .../business/property/uk/{nino}/{propertyBusinessId}/annual/{taxYear}` | `200` with an empty body - unlike the self-employment annual submission's `204` |
+| Property BSAS trigger | `POST .../adjustable-summary/{nino}/trigger` (`typeOfBusiness: "uk-property"`) | `200` with `calculationId` |
+| Property BSAS retrieve | `GET .../adjustable-summary/{nino}/uk-property/{calculationId}/{taxYear}`, `Gov-Test-Scenario: UK_PROPERTY_PROFIT` | `200`, HMRC's own canned example |
+| Property BSAS adjust | `POST .../adjustable-summary/{nino}/uk-property/{calculationId}/adjust/{taxYear}` | `200`/`204` |
 | Calculation trigger | `POST .../calculations/{nino}/self-assessment/{taxYear}/trigger/intent-to-finalise` | `202` with `calculationId` |
 | Calculation retrieve | `GET .../calculations/{nino}/self-assessment/{taxYear}/{calculationId}`, `Gov-Test-Scenario: DYNAMIC` | `404` while HMRC is still calculating, then `200` with `metadata.calculationType` of `"final-declaration"` - HMRC's own canned value, see below |
+| Calculation retrieve, income sources | read from the same response, no extra call | `inputs.incomeSources.businessIncomeSources` - checked for both business ids, not asserted on, since HMRC's canned `DYNAMIC` calculation is known to answer fixture-only ids |
 | Final declaration | `POST .../calculations/{nino}/self-assessment/{taxYear}/{calculationId}/final-declaration` | `204` |
 | Validator | `GET .../test/fraud-prevention-headers/validate` | no errors; the only acceptable warning names `gov-client-multi-factor` |
 
@@ -271,3 +277,19 @@ type rather than this run's own submitted numbers - documented gaps, not blocker
 neither call's body is this script's to assert on. Individual Losses and Individuals Tax
 Liability Adjustments remain untouched, per this runbook's own assumptions section above -
 there is no build yet for either.
+
+### The property leg (run A, 2023-24, dated model)
+
+The property annual submission answered `200` with an empty body on the first attempt - the
+script only accepted `204`, matching the self-employment annual submission, and stopped:
+
+```
+PUT .../business/property/uk/*******1D/X5IS60924830827/annual/2023-24 -> 200 {}
+```
+
+With the script accepting `[200, 204]` there, a full run filed all four property period
+updates, the property annual submission and the property BSAS trigger/retrieve/adjust, every
+one `ok: true`, then declared. `inputs.incomeSources.businessIncomeSources` on the calculation
+retrieve came back `[null]` - the same `DYNAMIC` canned-response gap that already affects
+`metadata.calculationType`, not a defect in the businesses this run created. Final declaration
+`204`: true.
