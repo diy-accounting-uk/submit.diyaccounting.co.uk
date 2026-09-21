@@ -68,10 +68,14 @@ import { getAuthorizationCode, buildAuthorizeUrl } from "./lib/hmrcAuthorization
 import { prepareTokenExchangeRequest } from "../app/functions/hmrc/hmrcTokenPost.js";
 import { resolveItsaSubmissionModel } from "../app/lib/hmrcValidation.js";
 import { buildSelfEmploymentPeriodRequestBody } from "../app/functions/hmrc/hmrcItsaSelfEmploymentPeriodPost.js";
-import { buildUkPropertyCumulativeRequestBody } from "../app/functions/hmrc/hmrcItsaUkPropertyPeriodPost.js";
+import { buildUkPropertyPeriodRequestBody, buildUkPropertyCumulativeRequestBody } from "../app/functions/hmrc/hmrcItsaUkPropertyPeriodPost.js";
 import { buildAnnualSubmissionRequestBody } from "../app/functions/hmrc/hmrcItsaSelfEmploymentAnnualPut.js";
+import { buildUkPropertyAnnualRequestBody } from "../app/functions/hmrc/hmrcItsaUkPropertyAnnualPut.js";
 import { buildBsasTriggerRequestBody } from "../app/functions/hmrc/hmrcItsaBsasTriggerPost.js";
 import { buildBsasAdjustRequestBody } from "../app/functions/hmrc/hmrcItsaBsasSelfEmploymentAdjustPost.js";
+import { buildBsasUkPropertyAdjustRequestBody } from "../app/functions/hmrc/hmrcItsaBsasUkPropertyAdjustPost.js";
+import { buildLossesAndClaimsRequestBody, LossesAndClaimsValidationError } from "../app/functions/hmrc/hmrcItsaLossesAndClaimsPut.js";
+import { buildTaxLiabilityAdjustmentsRequestBody } from "../app/functions/hmrc/hmrcItsaTaxLiabilityAdjustmentsPut.js";
 
 // Individual Calculations 8.0: recommended minimum wait between the trigger's 202 and the
 // first retrieve attempt, and how many times to retry while HMRC still answers 404.
@@ -83,6 +87,9 @@ const CALCULATION_RETRIEVE_RETRY_DELAY_MS = 3000;
 // Gov-Test-Scenario header, even for a genuinely stateful sandbox business - documented in
 // PLAN_ITSA_PHASE_2.md's BSAS section. SELF_EMPLOYMENT_PROFIT is the scenario named there.
 const BSAS_RETRIEVE_SCENARIO = "SELF_EMPLOYMENT_PROFIT";
+
+// The UK property equivalent of BSAS_RETRIEVE_SCENARIO, from the same scenario table.
+const BSAS_UK_PROPERTY_RETRIEVE_SCENARIO = "UK_PROPERTY_PROFIT";
 
 // Business Details and ITSA status answer a static canned example with no Gov-Test-Scenario
 // header, not the business or status this script just created through the test-support API.
@@ -734,6 +741,210 @@ async function main() {
     nino,
   });
 
+  // Phase 7b: the property leg - proves the mixed customer (a sole trade and a property
+  // business in the same year) end to end, the way Phase 6-7 just did for the sole trade alone.
+  // The dated model has no quarterly filing against the property business earlier (Phase 5
+  // files only the self-employment business under that model), so its four period updates
+  // happen here. The cumulative model already filed the property business's running totals in
+  // Phase 5, so only the annual submission and the adjustable summary sequence remain - and
+  // those apply to a property business regardless of which quarterly model filed it.
+  if (submissionModel === "dated") {
+    const propertyQuarterlyPeriods = buildStandardQuarterlyPeriods(taxYear);
+
+    for (const [index, period] of propertyQuarterlyPeriods.entries()) {
+      const figures = buildQuarterlyTestFigures(index);
+      const requestBody = buildUkPropertyPeriodRequestBody({
+        fromDate: period.periodStartDate,
+        toDate: period.periodEndDate,
+        ukNonFhlProperty: {
+          income: { periodAmount: figures.periodIncome.turnover },
+          expenses: { consolidatedExpenses: figures.periodExpenses.consolidatedExpenses },
+        },
+      });
+      await callHmrc({
+        step: `uk-property-period-${index + 1}`,
+        method: "POST",
+        url: `${sandboxBase}/individuals/business/property/uk/${nino}/${propertyBusinessId}/period/${taxYear}`,
+        headers: hmrcHeaders("6.0", PERIOD_STATEFUL_SCENARIO),
+        body: requestBody,
+        okStatuses: [200, 201],
+        nino,
+      });
+    }
+  }
+
+  await callHmrc({
+    step: "uk-property-annual-submission",
+    method: "PUT",
+    url: `${sandboxBase}/individuals/business/property/uk/${nino}/${propertyBusinessId}/annual/${taxYear}`,
+    headers: hmrcHeaders("6.0"),
+    body: buildUkPropertyAnnualRequestBody({ allowances: { propertyIncomeAllowance: 1000 } }),
+    // Unlike the self-employment annual submission (always 204), the sandbox answers this call
+    // with 200 and an empty body.
+    okStatuses: [200, 204],
+    nino,
+  });
+
+  const propertyBsasTrigger = await callHmrc({
+    step: "uk-property-bsas-trigger",
+    method: "POST",
+    url: `${sandboxBase}/individuals/self-assessment/adjustable-summary/${nino}/trigger`,
+    headers: hmrcHeaders("7.0"),
+    body: buildBsasTriggerRequestBody({
+      accountingPeriodStartDate,
+      accountingPeriodEndDate,
+      businessId: propertyBusinessId,
+      typeOfBusiness: "uk-property",
+    }),
+    okStatuses: [200],
+    nino,
+  });
+  const propertyCalculationId = propertyBsasTrigger.body.calculationId;
+  if (!propertyCalculationId) {
+    throw new Error(`UK property BSAS trigger response carried no calculationId: ${JSON.stringify(propertyBsasTrigger.body)}`);
+  }
+
+  await callHmrc({
+    step: "uk-property-bsas-retrieve",
+    method: "GET",
+    url: `${sandboxBase}/individuals/self-assessment/adjustable-summary/${nino}/uk-property/${propertyCalculationId}/${taxYear}`,
+    headers: hmrcHeaders("7.0", BSAS_UK_PROPERTY_RETRIEVE_SCENARIO),
+    okStatuses: [200],
+    nino,
+  });
+
+  await callHmrc({
+    step: "uk-property-bsas-adjust",
+    method: "POST",
+    url: `${sandboxBase}/individuals/self-assessment/adjustable-summary/${nino}/uk-property/${propertyCalculationId}/adjust/${taxYear}`,
+    headers: hmrcHeaders("7.0"),
+    body: buildBsasUkPropertyAdjustRequestBody({ income: { totalRentsReceived: 1 } }),
+    okStatuses: [200, 204],
+    nino,
+  });
+
+  // Headers for the two year-end endpoints below: suspend-temporal-validations lets a sandbox
+  // year that has not really ended through HMRC's own check that a tax year is over - the
+  // header name is kebab-case on the wire, per Individual Losses 7.0 and Individuals Tax
+  // Liability Adjustments 1.0's own header specs.
+  const suspendTemporalValidationsHeaders = (apiVersion, testScenario) => ({
+    ...hmrcHeaders(apiVersion, testScenario),
+    "suspend-temporal-validations": "true",
+  });
+
+  // Phase 7c: one loss claim and one tax liability adjustment on the self-employment business -
+  // the order HMRC's own guides require: a carry-forward and a carry-back claim together with
+  // the brought-forward loss they draw on, then the matching carryBackLossesDecrease. The
+  // sandbox's canned calculation does not reflect either write (the same DYNAMIC gap the
+  // calculation-retrieve check above already warns about), so the read-backs are the proof.
+  await callHmrc({
+    step: "self-employment-loss-claim-put",
+    method: "PUT",
+    url: `${sandboxBase}/individuals/losses/${nino}/businesses/${businessId}/loss-claims/${taxYear}`,
+    headers: suspendTemporalValidationsHeaders("7.0", STATEFUL_SCENARIO),
+    body: buildLossesAndClaimsRequestBody({
+      typeOfBusiness: "self-employment",
+      losses: { broughtForwardLosses: 500 },
+      claims: { carryForward: { currentYearLosses: 250 }, carryBack: { previousYearGeneralIncome: 100 } },
+    }),
+    okStatuses: [200, 204],
+    nino,
+  });
+
+  const selfEmploymentLossClaimGet = await callHmrc({
+    step: "self-employment-loss-claim-get",
+    method: "GET",
+    url: `${sandboxBase}/individuals/losses/${nino}/businesses/${businessId}/loss-claims/${taxYear}`,
+    headers: hmrcHeaders("7.0", STATEFUL_SCENARIO),
+    okStatuses: [200],
+    nino,
+  });
+  if (!selfEmploymentLossClaimGet.body?.claims?.carryBack) {
+    throw new Error(`Self-employment loss claim read-back carried no claims.carryBack: ${JSON.stringify(selfEmploymentLossClaimGet.body)}`);
+  }
+
+  await callHmrc({
+    step: "tax-liability-adjustments-put",
+    method: "PUT",
+    url: `${sandboxBase}/individuals/tax-liability/adjustments/${nino}/${taxYear}`,
+    headers: suspendTemporalValidationsHeaders("1.0", STATEFUL_SCENARIO),
+    body: buildTaxLiabilityAdjustmentsRequestBody({ carryBackLossesDecrease: { incomeTax: 20 } }),
+    okStatuses: [200, 204],
+    nino,
+  });
+
+  await callHmrc({
+    step: "tax-liability-adjustments-get",
+    method: "GET",
+    url: `${sandboxBase}/individuals/tax-liability/adjustments/${nino}/${taxYear}`,
+    headers: hmrcHeaders("1.0", STATEFUL_SCENARIO),
+    okStatuses: [200],
+    nino,
+  });
+
+  // Phase 7d: on the cumulative model only, a loss claim on the property business and the
+  // sandbox's own rejection of a carry-back claim against it - proving both this repository's
+  // local refusal (buildLossesAndClaimsRequestBody throws before any call is made) and HMRC's
+  // own rejection of the same claim type for a property income source.
+  if (submissionModel === "cumulative") {
+    await callHmrc({
+      step: "uk-property-loss-claim-put",
+      method: "PUT",
+      url: `${sandboxBase}/individuals/losses/${nino}/businesses/${propertyBusinessId}/loss-claims/${taxYear}`,
+      headers: suspendTemporalValidationsHeaders("7.0", STATEFUL_SCENARIO),
+      body: buildLossesAndClaimsRequestBody({
+        typeOfBusiness: "uk-property",
+        claims: { carryForward: { currentYearLosses: 300 } },
+      }),
+      okStatuses: [200, 204],
+      nino,
+    });
+
+    const propertyLossClaimGet = await callHmrc({
+      step: "uk-property-loss-claim-get",
+      method: "GET",
+      url: `${sandboxBase}/individuals/losses/${nino}/businesses/${propertyBusinessId}/loss-claims/${taxYear}`,
+      headers: hmrcHeaders("7.0", STATEFUL_SCENARIO),
+      okStatuses: [200],
+      nino,
+    });
+    if (!propertyLossClaimGet.body?.claims?.carryForward) {
+      throw new Error(`UK property loss claim read-back carried no claims.carryForward: ${JSON.stringify(propertyLossClaimGet.body)}`);
+    }
+
+    let propertyCarryBackLocalRefusal = null;
+    try {
+      buildLossesAndClaimsRequestBody({
+        typeOfBusiness: "uk-property",
+        claims: { carryBack: { previousYearGeneralIncome: 100 } },
+      });
+    } catch (error) {
+      propertyCarryBackLocalRefusal = error;
+    }
+    if (!(propertyCarryBackLocalRefusal instanceof LossesAndClaimsValidationError) || propertyCarryBackLocalRefusal.code !== "CARRY_BACK_CLAIM") {
+      throw new Error(
+        `Expected buildLossesAndClaimsRequestBody to refuse a property carry-back claim locally with CARRY_BACK_CLAIM, got: ${propertyCarryBackLocalRefusal}`,
+      );
+    }
+    record("property-carry-back-refused-locally", {
+      code: propertyCarryBackLocalRefusal.code,
+      message: propertyCarryBackLocalRefusal.message,
+    });
+
+    // The raw body this repository's own local refusal never lets reach HMRC in production -
+    // sent here deliberately, against Gov-Test-Scenario: CARRY_BACK_CLAIM, to record the
+    // sandbox's own rejection of the same claim type.
+    await callHmrc({
+      step: "property-carry-back-rejected",
+      method: "PUT",
+      url: `${sandboxBase}/individuals/losses/${nino}/businesses/${propertyBusinessId}/loss-claims/${taxYear}`,
+      headers: suspendTemporalValidationsHeaders("7.0", "CARRY_BACK_CLAIM"),
+      body: { claims: { carryBack: { previousYearGeneralIncome: 100 } } },
+      okStatuses: [400],
+      nino,
+    });
+  }
+
   // Phase 8: trigger the intent-to-finalise calculation, wait, and poll until it is ready. No
   // crystallisation-obligations read first - the same obligations-api gap that rules out
   // reading quarterly obligations (see buildStandardQuarterlyPeriods's doc comment) applies to
@@ -782,6 +993,24 @@ async function main() {
   if (calculation.metadata?.calculationType !== "intent-to-finalise") {
     console.warn(
       `[itsa-sandbox-year] Calculation ${finalCalculationId} has metadata.calculationType "${calculation.metadata?.calculationType}", not "intent-to-finalise" - a confirmed sandbox gap, not a script defect. Continuing to final declaration.`,
+    );
+  }
+
+  // Whether the calculation's own income sources carry both businesses this run created and
+  // filed against - the proof the mixed customer (a sole trade and a property business in one
+  // year) reaches the calculation, not just the filing endpoints. HMRC's canned DYNAMIC
+  // calculation is known to answer fixture-only business ids rather than this run's own, so a
+  // miss here is recorded and warned about, not treated as a script failure.
+  const businessIncomeSources = calculation.inputs?.incomeSources?.businessIncomeSources;
+  record("calculation-retrieve-income-sources", { businessIncomeSources });
+  const businessIncomeSourceIds = Array.isArray(businessIncomeSources)
+    ? businessIncomeSources.map((source) => source.businessId)
+    : [];
+  const bothBusinessesInCalculation = businessIncomeSourceIds.includes(businessId) && businessIncomeSourceIds.includes(propertyBusinessId);
+  console.log(`[itsa-sandbox-year] both businesses present in calculation income sources: ${bothBusinessesInCalculation}`);
+  if (!bothBusinessesInCalculation) {
+    console.warn(
+      `[itsa-sandbox-year] Calculation ${finalCalculationId}'s inputs.incomeSources.businessIncomeSources (${JSON.stringify(businessIncomeSourceIds)}) does not carry both business ids - the same DYNAMIC canned-response gap as metadata.calculationType above. Continuing to final declaration.`,
     );
   }
 
