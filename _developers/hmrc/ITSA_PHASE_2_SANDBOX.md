@@ -26,8 +26,22 @@ the sandbox application's own credentials and a sandbox test user.
 - A `204` from the final declaration.
 - The fraud prevention header validator clean on the same header set every other call in the
   run used.
+- Whether both businesses reached the final calculation's `inputs.incomeSources
+  .businessIncomeSources` - a pure read of the transcript's own recorded response, never
+  asserted on: HMRC's canned `DYNAMIC` calculation is known to answer fixture-only ids, so this
+  line records that gap rather than failing the run over it.
+- Whether the loss claim and tax liability adjustment read-backs carry what this run wrote:
+  `claims.carryBack` and `carryBackLossesDecrease` on the self-employment side, and, on the
+  cumulative model, the property business's `claims.carryForward` and its carry-back claim's
+  `400`. `skipped (tax year before 2026-27)` on a tax year below Individual Losses 7.0's
+  supported minimum, where the whole sequence does not run - see below.
+- Whether every write this run sent to the losses or tax liability adjustments APIs carried the
+  `suspend-temporal-validations` header. Same `skipped` label as above when the sequence did
+  not run.
 
-Both print at the end of the run and are written into the transcript.
+All five print at the end of the run and are written into the transcript. The run exits `1` only
+when the loss-claims read-back or the header check answers `false`; the other three are
+diagnostic.
 
 ## Prerequisites
 
@@ -89,17 +103,19 @@ change where the transcript and checkpoint id land (default `./target/itsa-sandb
 | Property BSAS retrieve | `GET .../adjustable-summary/{nino}/uk-property/{calculationId}/{taxYear}`, `Gov-Test-Scenario: UK_PROPERTY_PROFIT` | `200`, HMRC's own canned example |
 | Property BSAS adjust | `POST .../adjustable-summary/{nino}/uk-property/{calculationId}/adjust/{taxYear}` | `200`/`204` |
 | Calculation trigger | `POST .../calculations/{nino}/self-assessment/{taxYear}/trigger/intent-to-finalise` | `202` with `calculationId` |
-| Calculation retrieve | `GET .../calculations/{nino}/self-assessment/{taxYear}/{calculationId}`, `Gov-Test-Scenario: DYNAMIC` | `404` while HMRC is still calculating, then `200` with `metadata.calculationType` of `"final-declaration"` - HMRC's own canned value, see below |
-| Calculation retrieve, income sources | read from the same response, no extra call | `inputs.incomeSources.businessIncomeSources` - checked for both business ids, not asserted on, since HMRC's canned `DYNAMIC` calculation is known to answer fixture-only ids |
-| Loss claim put, self-employment | `PUT .../losses/{nino}/businesses/{businessId}/loss-claims/{taxYear}`, `Gov-Test-Scenario: STATEFUL`, `suspend-temporal-validations: true` | `200`/`204` |
+| Calculation retrieve | `GET .../calculations/{nino}/self-assessment/{taxYear}/{calculationId}`, `Gov-Test-Scenario: DYNAMIC` | `404` while HMRC is still calculating (retried, same as a `429` on this call, through `callHmrc`'s own backoff), then `200` with `metadata.calculationType` of `"final-declaration"` - HMRC's own canned value, see below |
+| Calculation retrieve, income sources | read from the same response, no extra call | `inputs.incomeSources.businessIncomeSources`, printed at the end as `both businesses in calculation income sources: <true\|false>` - not asserted on, since HMRC's canned `DYNAMIC` calculation is known to answer fixture-only ids |
+| Minimum supported tax year, losses and tax liability adjustments | n/a | `2026-27` - HMRC's own hard-coded minimum for Individual Losses 7.0 and Individuals Tax Liability Adjustments 1.0, below `resolveItsaSubmissionModel`'s own boundary. `isLossesAndAdjustmentsSupportedTaxYear` gates the whole sequence below on it: run A (2023-24) and run B (2025-26) skip it, recording `losses-and-adjustments-skipped`; only a run against `2026-27` exercises it |
+| Loss claim put, self-employment | `PUT .../losses/{nino}/businesses/{businessId}/loss-claims/{taxYear}`, `Gov-Test-Scenario: STATEFUL`, `suspend-temporal-validations: true` | `200`/`204`, tax year `2026-27` or later only |
 | Loss claim get, self-employment | `GET .../losses/{nino}/businesses/{businessId}/loss-claims/{taxYear}`, `Gov-Test-Scenario: STATEFUL` | `200`, `claims.carryBack` present |
-| Tax liability adjustments put | `PUT .../tax-liability/adjustments/{nino}/{taxYear}`, `Gov-Test-Scenario: STATEFUL`, `suspend-temporal-validations: true` | `200`/`204` |
+| Tax liability adjustments put | `PUT .../tax-liability/adjustments/{nino}/{taxYear}`, `Gov-Test-Scenario: STATEFUL`, `suspend-temporal-validations: true` | `200`/`204`, tax year `2026-27` or later only |
 | Tax liability adjustments get | `GET .../tax-liability/adjustments/{nino}/{taxYear}`, `Gov-Test-Scenario: STATEFUL` | `200` |
-| Minimum supported tax year, both APIs | n/a | `2026-27` - HMRC's own hard-coded minimum for Individual Losses 7.0 and Individuals Tax Liability Adjustments 1.0, below `resolveItsaSubmissionModel`'s own boundary, so run A (2023-24) and run B (2025-26) cannot exercise these two endpoints; proven separately against `2026-27` |
-| Loss claim put, UK property, cumulative model only | `PUT .../losses/{nino}/businesses/{propertyBusinessId}/loss-claims/{taxYear}`, `Gov-Test-Scenario: STATEFUL`, `suspend-temporal-validations: true` | `200`/`204` |
+| Loss claim put, UK property, cumulative model only | `PUT .../losses/{nino}/businesses/{propertyBusinessId}/loss-claims/{taxYear}`, `Gov-Test-Scenario: STATEFUL`, `suspend-temporal-validations: true` | `200`/`204`, tax year `2026-27` or later only |
 | Loss claim get, UK property | `GET .../losses/{nino}/businesses/{propertyBusinessId}/loss-claims/{taxYear}`, `Gov-Test-Scenario: STATEFUL` | `200`, `claims.carryForward` present |
 | Property carry-back, refused locally | `buildLossesAndClaimsRequestBody`, no call | throws `LossesAndClaimsValidationError` code `CARRY_BACK_CLAIM` |
 | Property carry-back, rejected by HMRC | `PUT .../losses/{nino}/businesses/{propertyBusinessId}/loss-claims/{taxYear}`, `Gov-Test-Scenario: CARRY_BACK_CLAIM` | `400` `RULE_CARRY_BACK_CLAIM` - the real sandbox's own code, which differs from `itsa-losses-and-claims.js`'s simulated `RULE_TYPE_OF_CLAIM_INVALID`, see below |
+| Loss claims and tax liability adjustments read back | read from the four GETs above, no extra call | printed as `loss claims read back: <true\|false>`, or `skipped (tax year before 2026-27)` when the sequence above did not run |
+| Every losses/adjustments write's own header | read from each PUT's own request headers, no extra call | printed as `suspend-temporal-validations on every losses and adjustments write: <true\|false>`, or `skipped (tax year before 2026-27)` |
 | Final declaration | `POST .../calculations/{nino}/self-assessment/{taxYear}/{calculationId}/final-declaration` | `204` |
 | Validator | `GET .../test/fraud-prevention-headers/validate` | no errors; the only acceptable warning names `gov-client-multi-factor` |
 
@@ -350,3 +366,48 @@ sent to HMRC under `Gov-Test-Scenario: CARRY_BACK_CLAIM` came back `400` with
 `app/http-simulator/scenarios/itsa-losses-and-claims.js`'s `CARRY_BACK_CLAIM` scenario currently
 answers. That simulator scenario is a finding for a future pass, not corrected here. Final
 declaration `204`: true.
+
+### Three years back to back from a clean checkpoint, with all five proof lines
+
+A run against `2025-26` threw partway through the calculation-retrieve poll on a
+`429 MESSAGE_THROTTLED_OUT` - a script defect, not a sandbox rejection: that poll used a raw
+`fetch` instead of `callHmrc`, so it never got the `429` backoff every other call in this script
+already has. Routed through `callHmrc` instead (`404` added to its own `okStatuses`, since an
+in-progress calculation is an expected per-attempt answer, not an error), the same run then
+completed.
+
+Sending the self-employment loss claim unconditionally on every tax year meant `2023-24` and
+`2025-26` both threw on `self-employment-loss-claim-put`'s `400 RULE_TAX_YEAR_NOT_SUPPORTED`,
+matching the finding above - but as a thrown error, not a proof line, so those two years never
+reached the final declaration at all. `isLossesAndAdjustmentsSupportedTaxYear` now gates the
+whole loss claim and tax liability adjustment sequence (self-employment and, on the cumulative
+model, property) on the tax year, so `2023-24` and `2025-26` skip it and reach the final
+declaration.
+
+With both fixed, `2023-24`, `2025-26` and `2026-27` each ran from a freshly deleted checkpoint,
+back to back, and each exited `0`:
+
+```
+[itsa-sandbox-year] final declaration 204: true
+[itsa-sandbox-year] fraud header validator clean: true (code=POTENTIALLY_INVALID_HEADERS)
+[itsa-sandbox-year] both businesses in calculation income sources: false
+[itsa-sandbox-year] loss claims read back: skipped (tax year before 2026-27)
+[itsa-sandbox-year] suspend-temporal-validations on every losses and adjustments write: skipped (tax year before 2026-27)
+```
+
+for `2023-24` and `2025-26`, and
+
+```
+[itsa-sandbox-year] final declaration 204: true
+[itsa-sandbox-year] fraud header validator clean: true (code=POTENTIALLY_INVALID_HEADERS)
+[itsa-sandbox-year] both businesses in calculation income sources: false
+[itsa-sandbox-year] loss claims read back: true
+[itsa-sandbox-year] suspend-temporal-validations on every losses and adjustments write: true
+```
+
+for `2026-27`, where the sequence ran: the self-employment read-back carried `claims.carryBack`,
+the tax liability read-back carried `carryBackLossesDecrease`, the property read-back carried
+`claims.carryForward`, the property carry-back claim answered `400`, and every one of those four
+writes carried `suspend-temporal-validations: true` on the wire. `both businesses in calculation
+income sources` stayed `false` on all three runs - the same `DYNAMIC` canned-response gap as
+`metadata.calculationType` above, not a defect in the businesses these runs created.

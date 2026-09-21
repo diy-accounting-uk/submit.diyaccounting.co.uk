@@ -17,6 +17,10 @@ import {
   buildTestPropertyBusinessRequestBody,
   buildItsaStatusRequestBody,
   isFraudHeaderValidationClean,
+  isLossesAndAdjustmentsSupportedTaxYear,
+  bothBusinessesInCalculationIncomeSources,
+  evaluateLossClaimsReadBack,
+  evaluateSuspendTemporalValidationsHeaderOnWrites,
 } from "../../../scripts/itsa-sandbox-year.js";
 
 describe("extractCheckpointId", () => {
@@ -216,5 +220,133 @@ describe("isFraudHeaderValidationClean", () => {
     };
 
     expect(isFraudHeaderValidationClean(body)).toBe(false);
+  });
+});
+
+describe("isLossesAndAdjustmentsSupportedTaxYear", () => {
+  test("is false for a tax year below Individual Losses 7.0's minimum", () => {
+    expect(isLossesAndAdjustmentsSupportedTaxYear("2023-24")).toBe(false);
+    expect(isLossesAndAdjustmentsSupportedTaxYear("2025-26")).toBe(false);
+  });
+
+  test("is true for the minimum supported tax year and later", () => {
+    expect(isLossesAndAdjustmentsSupportedTaxYear("2026-27")).toBe(true);
+    expect(isLossesAndAdjustmentsSupportedTaxYear("2027-28")).toBe(true);
+  });
+});
+
+describe("bothBusinessesInCalculationIncomeSources", () => {
+  test("is true when both business ids appear in the recorded income sources", () => {
+    const transcript = [
+      { step: "calculation-retrieve-income-sources", businessIncomeSources: [{ businessId: "B1" }, { businessId: "P1" }] },
+    ];
+
+    expect(bothBusinessesInCalculationIncomeSources(transcript, "B1", "P1")).toBe(true);
+  });
+
+  test("is false when only one business id appears", () => {
+    const transcript = [{ step: "calculation-retrieve-income-sources", businessIncomeSources: [{ businessId: "B1" }] }];
+
+    expect(bothBusinessesInCalculationIncomeSources(transcript, "B1", "P1")).toBe(false);
+  });
+
+  test("is false when the transcript carries no such entry", () => {
+    expect(bothBusinessesInCalculationIncomeSources([], "B1", "P1")).toBe(false);
+  });
+
+  test("is false when businessIncomeSources is not an array", () => {
+    const transcript = [{ step: "calculation-retrieve-income-sources", businessIncomeSources: [null] }];
+
+    expect(bothBusinessesInCalculationIncomeSources(transcript, "B1", "P1")).toBe(false);
+  });
+});
+
+describe("evaluateLossClaimsReadBack", () => {
+  test("is skipped when the loss claim sequence did not run", () => {
+    expect(evaluateLossClaimsReadBack([])).toBe("skipped");
+  });
+
+  test("is true when the self-employment and tax liability read-backs carry the expected fields, with no property leg", () => {
+    const transcript = [
+      { step: "self-employment-loss-claim-get", responseBody: { claims: { carryBack: { previousYearGeneralIncome: 100 } } } },
+      { step: "tax-liability-adjustments-get", responseBody: { carryBackLossesDecrease: { incomeTax: 20 } } },
+    ];
+
+    expect(evaluateLossClaimsReadBack(transcript)).toBe(true);
+  });
+
+  test("is true when the property leg also read back its carry-forward and its carry-back 400", () => {
+    const transcript = [
+      { step: "self-employment-loss-claim-get", responseBody: { claims: { carryBack: { previousYearGeneralIncome: 100 } } } },
+      { step: "tax-liability-adjustments-get", responseBody: { carryBackLossesDecrease: { incomeTax: 20 } } },
+      { step: "uk-property-loss-claim-get", responseBody: { claims: { carryForward: { currentYearLosses: 300 } } } },
+      { step: "property-carry-back-rejected", status: 400 },
+    ];
+
+    expect(evaluateLossClaimsReadBack(transcript)).toBe(true);
+  });
+
+  test("is false when the self-employment read-back carries no claims.carryBack", () => {
+    const transcript = [
+      { step: "self-employment-loss-claim-get", responseBody: { claims: {} } },
+      { step: "tax-liability-adjustments-get", responseBody: { carryBackLossesDecrease: { incomeTax: 20 } } },
+    ];
+
+    expect(evaluateLossClaimsReadBack(transcript)).toBe(false);
+  });
+
+  test("is false when the tax liability read-back carries no carryBackLossesDecrease", () => {
+    const transcript = [
+      { step: "self-employment-loss-claim-get", responseBody: { claims: { carryBack: { previousYearGeneralIncome: 100 } } } },
+      { step: "tax-liability-adjustments-get", responseBody: {} },
+    ];
+
+    expect(evaluateLossClaimsReadBack(transcript)).toBe(false);
+  });
+
+  test("is false when the property carry-back was not actually rejected with 400", () => {
+    const transcript = [
+      { step: "self-employment-loss-claim-get", responseBody: { claims: { carryBack: { previousYearGeneralIncome: 100 } } } },
+      { step: "tax-liability-adjustments-get", responseBody: { carryBackLossesDecrease: { incomeTax: 20 } } },
+      { step: "uk-property-loss-claim-get", responseBody: { claims: { carryForward: { currentYearLosses: 300 } } } },
+      { step: "property-carry-back-rejected", status: 200 },
+    ];
+
+    expect(evaluateLossClaimsReadBack(transcript)).toBe(false);
+  });
+});
+
+describe("evaluateSuspendTemporalValidationsHeaderOnWrites", () => {
+  test("is skipped when no losses-or-adjustments write ran", () => {
+    expect(evaluateSuspendTemporalValidationsHeaderOnWrites([])).toBe("skipped");
+  });
+
+  test("is true when every write carried the kebab-case header", () => {
+    const transcript = [
+      { step: "self-employment-loss-claim-put", requestHeaders: { "suspend-temporal-validations": "true" } },
+      { step: "tax-liability-adjustments-put", requestHeaders: { "suspend-temporal-validations": "true" } },
+      { step: "uk-property-loss-claim-put", requestHeaders: { "suspend-temporal-validations": "true" } },
+      { step: "property-carry-back-rejected", requestHeaders: { "suspend-temporal-validations": "true" } },
+    ];
+
+    expect(evaluateSuspendTemporalValidationsHeaderOnWrites(transcript)).toBe(true);
+  });
+
+  test("is false when one write is missing the header", () => {
+    const transcript = [
+      { step: "self-employment-loss-claim-put", requestHeaders: { "suspend-temporal-validations": "true" } },
+      { step: "tax-liability-adjustments-put", requestHeaders: {} },
+    ];
+
+    expect(evaluateSuspendTemporalValidationsHeaderOnWrites(transcript)).toBe(false);
+  });
+
+  test("ignores steps outside the losses-and-adjustments write list", () => {
+    const transcript = [
+      { step: "self-employment-loss-claim-put", requestHeaders: { "suspend-temporal-validations": "true" } },
+      { step: "self-employment-loss-claim-get", requestHeaders: {} },
+    ];
+
+    expect(evaluateSuspendTemporalValidationsHeaderOnWrites(transcript)).toBe(true);
   });
 });

@@ -290,6 +290,85 @@ export function buildQuarterlyTestFigures(quarterIndex) {
 }
 
 /**
+ * Individual Losses 7.0 and Individuals Tax Liability Adjustments 1.0 both hard-code 2026-27 as
+ * the earliest tax year they support - `TaxYear.ending(2027)` and `TaxYear.fromMtd("2026-27")`
+ * in HMRC's own source. A year before that answers 400 RULE_TAX_YEAR_NOT_SUPPORTED on the first
+ * write, regardless of quarterly filing model, so the loss claim and tax liability adjustment
+ * sequence only runs for a tax year this returns true for.
+ * @param {string} taxYear - e.g. "2023-24"
+ * @returns {boolean}
+ */
+export function isLossesAndAdjustmentsSupportedTaxYear(taxYear) {
+  return Number(taxYear.slice(0, 4)) >= 2026;
+}
+
+/**
+ * Whether the calculation retrieved after the intent-to-finalise trigger carries both
+ * businesses this run created, read from the "calculation-retrieve-income-sources" transcript
+ * entry's own `businessIncomeSources`. HMRC's canned DYNAMIC calculation is known to answer
+ * fixture-only business ids rather than a run's own, so this records the gap rather than
+ * asserting on it.
+ * @param {Array<Object>} transcript
+ * @param {string} businessId
+ * @param {string} propertyBusinessId
+ * @returns {boolean}
+ */
+export function bothBusinessesInCalculationIncomeSources(transcript, businessId, propertyBusinessId) {
+  const entry = transcript.find((item) => item.step === "calculation-retrieve-income-sources");
+  const businessIncomeSources = entry?.businessIncomeSources;
+  const ids = Array.isArray(businessIncomeSources) ? businessIncomeSources.map((source) => source?.businessId) : [];
+  return ids.includes(businessId) && ids.includes(propertyBusinessId);
+}
+
+// The write steps `evaluateSuspendTemporalValidationsHeaderOnWrites` checks - every PUT this
+// script sends to the losses or tax liability adjustments APIs, including the one it expects
+// HMRC to reject.
+const LOSSES_AND_ADJUSTMENTS_WRITE_STEPS = [
+  "self-employment-loss-claim-put",
+  "tax-liability-adjustments-put",
+  "uk-property-loss-claim-put",
+  "property-carry-back-rejected",
+];
+
+/**
+ * Whether the self-employment loss claim, the tax liability adjustment, and - on the
+ * cumulative model - the UK property loss claim and its carry-back refusal all read back what
+ * this run wrote. "skipped" when the loss claim and adjustment sequence did not run at all,
+ * because the tax year is below Individual Losses 7.0's supported minimum.
+ * @param {Array<Object>} transcript
+ * @returns {boolean|"skipped"}
+ */
+export function evaluateLossClaimsReadBack(transcript) {
+  const selfEmploymentGet = transcript.find((entry) => entry.step === "self-employment-loss-claim-get");
+  if (!selfEmploymentGet) return "skipped";
+
+  const taxLiabilityGet = transcript.find((entry) => entry.step === "tax-liability-adjustments-get");
+  const propertyGet = transcript.find((entry) => entry.step === "uk-property-loss-claim-get");
+  const propertyCarryBackRejected = transcript.find((entry) => entry.step === "property-carry-back-rejected");
+
+  const selfEmploymentOk = Boolean(selfEmploymentGet.responseBody?.claims?.carryBack);
+  const taxLiabilityOk = Boolean(taxLiabilityGet?.responseBody?.carryBackLossesDecrease);
+  const propertyOk = !propertyGet || (Boolean(propertyGet.responseBody?.claims?.carryForward) && propertyCarryBackRejected?.status === 400);
+
+  return selfEmploymentOk && taxLiabilityOk && propertyOk;
+}
+
+/**
+ * Whether every losses-and-adjustments write this run sent carried the
+ * `suspend-temporal-validations` header - the kebab-case name HMRC's header spec documents,
+ * which `_developers/hmrc/ITSA_PHASE_2_SANDBOX.md`'s run record found both production handlers
+ * were sending under the wrong (camelCase field) name before that fix. "skipped" when none of
+ * `LOSSES_AND_ADJUSTMENTS_WRITE_STEPS` ran.
+ * @param {Array<Object>} transcript
+ * @returns {boolean|"skipped"}
+ */
+export function evaluateSuspendTemporalValidationsHeaderOnWrites(transcript) {
+  const writes = transcript.filter((entry) => LOSSES_AND_ADJUSTMENTS_WRITE_STEPS.includes(entry.step));
+  if (writes.length === 0) return "skipped";
+  return writes.every((entry) => entry.requestHeaders?.["suspend-temporal-validations"] === "true");
+}
+
+/**
  * Whether a fraud prevention header validator response counts as clean for a sandbox test
  * user. "Clean" here matches what _developers/hmrc/ITSA_SPIKE.md's earlier sandbox run
  * established, not a literal VALID_HEADERS code: no errors, and every warning names only
@@ -832,117 +911,125 @@ async function main() {
     "suspend-temporal-validations": "true",
   });
 
-  // Phase 7c: one loss claim and one tax liability adjustment on the self-employment business -
-  // the order HMRC's own guides require: a carry-forward and a carry-back claim together with
-  // the brought-forward loss they draw on, then the matching carryBackLossesDecrease. The
-  // sandbox's canned calculation does not reflect either write (the same DYNAMIC gap the
-  // calculation-retrieve check above already warns about), so the read-backs are the proof.
-  await callHmrc({
-    step: "self-employment-loss-claim-put",
-    method: "PUT",
-    url: `${sandboxBase}/individuals/losses/${nino}/businesses/${businessId}/loss-claims/${taxYear}`,
-    headers: suspendTemporalValidationsHeaders("7.0", STATEFUL_SCENARIO),
-    body: buildLossesAndClaimsRequestBody({
-      typeOfBusiness: "self-employment",
-      losses: { broughtForwardLosses: 500 },
-      claims: { carryForward: { currentYearLosses: 250 }, carryBack: { previousYearGeneralIncome: 100 } },
-    }),
-    okStatuses: [200, 204],
-    nino,
-  });
-
-  const selfEmploymentLossClaimGet = await callHmrc({
-    step: "self-employment-loss-claim-get",
-    method: "GET",
-    url: `${sandboxBase}/individuals/losses/${nino}/businesses/${businessId}/loss-claims/${taxYear}`,
-    headers: hmrcHeaders("7.0", STATEFUL_SCENARIO),
-    okStatuses: [200],
-    nino,
-  });
-  if (!selfEmploymentLossClaimGet.body?.claims?.carryBack) {
-    throw new Error(`Self-employment loss claim read-back carried no claims.carryBack: ${JSON.stringify(selfEmploymentLossClaimGet.body)}`);
-  }
-
-  await callHmrc({
-    step: "tax-liability-adjustments-put",
-    method: "PUT",
-    url: `${sandboxBase}/individuals/tax-liability/adjustments/${nino}/${taxYear}`,
-    headers: suspendTemporalValidationsHeaders("1.0", STATEFUL_SCENARIO),
-    body: buildTaxLiabilityAdjustmentsRequestBody({ carryBackLossesDecrease: { incomeTax: 20 } }),
-    okStatuses: [200, 204],
-    nino,
-  });
-
-  await callHmrc({
-    step: "tax-liability-adjustments-get",
-    method: "GET",
-    url: `${sandboxBase}/individuals/tax-liability/adjustments/${nino}/${taxYear}`,
-    headers: hmrcHeaders("1.0", STATEFUL_SCENARIO),
-    okStatuses: [200],
-    nino,
-  });
-
-  // Phase 7d: on the cumulative model only, a loss claim on the property business and the
-  // sandbox's own rejection of a carry-back claim against it - proving both this repository's
-  // local refusal (buildLossesAndClaimsRequestBody throws before any call is made) and HMRC's
-  // own rejection of the same claim type for a property income source.
-  if (submissionModel === "cumulative") {
+  // Phase 7c/7d: a loss claim and a tax liability adjustment on the self-employment business,
+  // and - on the cumulative model - a loss claim on the property business and the sandbox's own
+  // rejection of a carry-back claim against it. Individual Losses 7.0 and Individuals Tax
+  // Liability Adjustments 1.0 both refuse a tax year before 2026-27 with
+  // 400 RULE_TAX_YEAR_NOT_SUPPORTED on the very first write, so this whole sequence is skipped
+  // below that year rather than sent to fail.
+  if (isLossesAndAdjustmentsSupportedTaxYear(taxYear)) {
+    // The order HMRC's own guides require: a carry-forward and a carry-back claim together with
+    // the brought-forward loss they draw on, then the matching carryBackLossesDecrease. The
+    // sandbox's canned calculation does not reflect either write (the same DYNAMIC gap the
+    // calculation-retrieve check above already warns about), so the read-backs are the proof.
     await callHmrc({
-      step: "uk-property-loss-claim-put",
+      step: "self-employment-loss-claim-put",
       method: "PUT",
-      url: `${sandboxBase}/individuals/losses/${nino}/businesses/${propertyBusinessId}/loss-claims/${taxYear}`,
+      url: `${sandboxBase}/individuals/losses/${nino}/businesses/${businessId}/loss-claims/${taxYear}`,
       headers: suspendTemporalValidationsHeaders("7.0", STATEFUL_SCENARIO),
       body: buildLossesAndClaimsRequestBody({
-        typeOfBusiness: "uk-property",
-        claims: { carryForward: { currentYearLosses: 300 } },
+        typeOfBusiness: "self-employment",
+        losses: { broughtForwardLosses: 500 },
+        claims: { carryForward: { currentYearLosses: 250 }, carryBack: { previousYearGeneralIncome: 100 } },
       }),
       okStatuses: [200, 204],
       nino,
     });
 
-    const propertyLossClaimGet = await callHmrc({
-      step: "uk-property-loss-claim-get",
+    const selfEmploymentLossClaimGet = await callHmrc({
+      step: "self-employment-loss-claim-get",
       method: "GET",
-      url: `${sandboxBase}/individuals/losses/${nino}/businesses/${propertyBusinessId}/loss-claims/${taxYear}`,
+      url: `${sandboxBase}/individuals/losses/${nino}/businesses/${businessId}/loss-claims/${taxYear}`,
       headers: hmrcHeaders("7.0", STATEFUL_SCENARIO),
       okStatuses: [200],
       nino,
     });
-    if (!propertyLossClaimGet.body?.claims?.carryForward) {
-      throw new Error(`UK property loss claim read-back carried no claims.carryForward: ${JSON.stringify(propertyLossClaimGet.body)}`);
+    if (!selfEmploymentLossClaimGet.body?.claims?.carryBack) {
+      throw new Error(`Self-employment loss claim read-back carried no claims.carryBack: ${JSON.stringify(selfEmploymentLossClaimGet.body)}`);
     }
 
-    let propertyCarryBackLocalRefusal = null;
-    try {
-      buildLossesAndClaimsRequestBody({
-        typeOfBusiness: "uk-property",
-        claims: { carryBack: { previousYearGeneralIncome: 100 } },
-      });
-    } catch (error) {
-      propertyCarryBackLocalRefusal = error;
-    }
-    if (!(propertyCarryBackLocalRefusal instanceof LossesAndClaimsValidationError) || propertyCarryBackLocalRefusal.code !== "CARRY_BACK_CLAIM") {
-      throw new Error(
-        `Expected buildLossesAndClaimsRequestBody to refuse a property carry-back claim locally with CARRY_BACK_CLAIM, got: ${propertyCarryBackLocalRefusal}`,
-      );
-    }
-    record("property-carry-back-refused-locally", {
-      code: propertyCarryBackLocalRefusal.code,
-      message: propertyCarryBackLocalRefusal.message,
-    });
-
-    // The raw body this repository's own local refusal never lets reach HMRC in production -
-    // sent here deliberately, against Gov-Test-Scenario: CARRY_BACK_CLAIM, to record the
-    // sandbox's own rejection of the same claim type.
     await callHmrc({
-      step: "property-carry-back-rejected",
+      step: "tax-liability-adjustments-put",
       method: "PUT",
-      url: `${sandboxBase}/individuals/losses/${nino}/businesses/${propertyBusinessId}/loss-claims/${taxYear}`,
-      headers: suspendTemporalValidationsHeaders("7.0", "CARRY_BACK_CLAIM"),
-      body: { claims: { carryBack: { previousYearGeneralIncome: 100 } } },
-      okStatuses: [400],
+      url: `${sandboxBase}/individuals/tax-liability/adjustments/${nino}/${taxYear}`,
+      headers: suspendTemporalValidationsHeaders("1.0", STATEFUL_SCENARIO),
+      body: buildTaxLiabilityAdjustmentsRequestBody({ carryBackLossesDecrease: { incomeTax: 20 } }),
+      okStatuses: [200, 204],
       nino,
     });
+
+    await callHmrc({
+      step: "tax-liability-adjustments-get",
+      method: "GET",
+      url: `${sandboxBase}/individuals/tax-liability/adjustments/${nino}/${taxYear}`,
+      headers: hmrcHeaders("1.0", STATEFUL_SCENARIO),
+      okStatuses: [200],
+      nino,
+    });
+
+    // On the cumulative model only: proving both this repository's local refusal
+    // (buildLossesAndClaimsRequestBody throws before any call is made) and HMRC's own rejection
+    // of the same claim type for a property income source.
+    if (submissionModel === "cumulative") {
+      await callHmrc({
+        step: "uk-property-loss-claim-put",
+        method: "PUT",
+        url: `${sandboxBase}/individuals/losses/${nino}/businesses/${propertyBusinessId}/loss-claims/${taxYear}`,
+        headers: suspendTemporalValidationsHeaders("7.0", STATEFUL_SCENARIO),
+        body: buildLossesAndClaimsRequestBody({
+          typeOfBusiness: "uk-property",
+          claims: { carryForward: { currentYearLosses: 300 } },
+        }),
+        okStatuses: [200, 204],
+        nino,
+      });
+
+      const propertyLossClaimGet = await callHmrc({
+        step: "uk-property-loss-claim-get",
+        method: "GET",
+        url: `${sandboxBase}/individuals/losses/${nino}/businesses/${propertyBusinessId}/loss-claims/${taxYear}`,
+        headers: hmrcHeaders("7.0", STATEFUL_SCENARIO),
+        okStatuses: [200],
+        nino,
+      });
+      if (!propertyLossClaimGet.body?.claims?.carryForward) {
+        throw new Error(`UK property loss claim read-back carried no claims.carryForward: ${JSON.stringify(propertyLossClaimGet.body)}`);
+      }
+
+      let propertyCarryBackLocalRefusal = null;
+      try {
+        buildLossesAndClaimsRequestBody({
+          typeOfBusiness: "uk-property",
+          claims: { carryBack: { previousYearGeneralIncome: 100 } },
+        });
+      } catch (error) {
+        propertyCarryBackLocalRefusal = error;
+      }
+      if (!(propertyCarryBackLocalRefusal instanceof LossesAndClaimsValidationError) || propertyCarryBackLocalRefusal.code !== "CARRY_BACK_CLAIM") {
+        throw new Error(
+          `Expected buildLossesAndClaimsRequestBody to refuse a property carry-back claim locally with CARRY_BACK_CLAIM, got: ${propertyCarryBackLocalRefusal}`,
+        );
+      }
+      record("property-carry-back-refused-locally", {
+        code: propertyCarryBackLocalRefusal.code,
+        message: propertyCarryBackLocalRefusal.message,
+      });
+
+      // The raw body this repository's own local refusal never lets reach HMRC in production -
+      // sent here deliberately, against Gov-Test-Scenario: CARRY_BACK_CLAIM, to record the
+      // sandbox's own rejection of the same claim type.
+      await callHmrc({
+        step: "property-carry-back-rejected",
+        method: "PUT",
+        url: `${sandboxBase}/individuals/losses/${nino}/businesses/${propertyBusinessId}/loss-claims/${taxYear}`,
+        headers: suspendTemporalValidationsHeaders("7.0", "CARRY_BACK_CLAIM"),
+        body: { claims: { carryBack: { previousYearGeneralIncome: 100 } } },
+        okStatuses: [400],
+        nino,
+      });
+    }
+  } else {
+    record("losses-and-adjustments-skipped", { taxYear });
   }
 
   // Phase 8: trigger the intent-to-finalise calculation, wait, and poll until it is ready. No
@@ -963,20 +1050,23 @@ async function main() {
 
   await sleep(CALCULATION_MIN_WAIT_MS);
 
+  // Polls through callHmrc, not a raw fetch, so a 429 MESSAGE_THROTTLED_OUT here gets the same
+  // backoff-and-retry every other call in this script gets, rather than aborting the run - a
+  // defect this run's own sandbox rate limit exposed. 404 is an expected per-attempt answer
+  // (HMRC still calculating), so it is one of this call's own okStatuses, not a thrown error.
   let calculation = null;
   for (let attempt = 1; attempt <= CALCULATION_RETRIEVE_MAX_ATTEMPTS; attempt += 1) {
-    const response = await fetch(
-      `${sandboxBase}/individuals/calculations/${nino}/self-assessment/${taxYear}/${finalCalculationId}`,
-      { method: "GET", headers: hmrcHeaders("8.0", CALCULATION_RETRIEVE_SCENARIO) },
-    );
-    const body = await response.json().catch(() => ({}));
-    record("calculation-retrieve-attempt", { attempt, status: response.status, url: maskUrl(response.url, nino) });
+    const response = await callHmrc({
+      step: "calculation-retrieve-attempt",
+      method: "GET",
+      url: `${sandboxBase}/individuals/calculations/${nino}/self-assessment/${taxYear}/${finalCalculationId}`,
+      headers: hmrcHeaders("8.0", CALCULATION_RETRIEVE_SCENARIO),
+      okStatuses: [200, 404],
+      nino,
+    });
     if (response.status === 200) {
-      calculation = body;
+      calculation = response.body;
       break;
-    }
-    if (response.status !== 404) {
-      throw new Error(`calculation-retrieve answered ${response.status} on attempt ${attempt}: ${JSON.stringify(body)}`);
     }
     if (attempt < CALCULATION_RETRIEVE_MAX_ATTEMPTS) await sleep(CALCULATION_RETRIEVE_RETRY_DELAY_MS);
   }
@@ -1003,16 +1093,6 @@ async function main() {
   // miss here is recorded and warned about, not treated as a script failure.
   const businessIncomeSources = calculation.inputs?.incomeSources?.businessIncomeSources;
   record("calculation-retrieve-income-sources", { businessIncomeSources });
-  const businessIncomeSourceIds = Array.isArray(businessIncomeSources)
-    ? businessIncomeSources.map((source) => source.businessId)
-    : [];
-  const bothBusinessesInCalculation = businessIncomeSourceIds.includes(businessId) && businessIncomeSourceIds.includes(propertyBusinessId);
-  console.log(`[itsa-sandbox-year] both businesses present in calculation income sources: ${bothBusinessesInCalculation}`);
-  if (!bothBusinessesInCalculation) {
-    console.warn(
-      `[itsa-sandbox-year] Calculation ${finalCalculationId}'s inputs.incomeSources.businessIncomeSources (${JSON.stringify(businessIncomeSourceIds)}) does not carry both business ids - the same DYNAMIC canned-response gap as metadata.calculationType above. Continuing to final declaration.`,
-    );
-  }
 
   // Phase 9: the final declaration - the proof this script exists to produce.
   await callHmrc({
@@ -1041,10 +1121,23 @@ async function main() {
 
   const finalDeclarationOk = transcript.find((entry) => entry.step === "final-declaration")?.status === 204;
   const validatorOk = validation.ok && isFraudHeaderValidationClean(validationBody);
+  const bothBusinessesOk = bothBusinessesInCalculationIncomeSources(transcript, businessId, propertyBusinessId);
+  const lossClaimsReadBackOk = evaluateLossClaimsReadBack(transcript);
+  const suspendTemporalValidationsOk = evaluateSuspendTemporalValidationsHeaderOnWrites(transcript);
+  const skippedLabel = "skipped (tax year before 2026-27)";
+
   console.log(`[itsa-sandbox-year] transcript written to ${outFile}`);
   console.log(`[itsa-sandbox-year] final declaration 204: ${finalDeclarationOk}`);
   console.log(`[itsa-sandbox-year] fraud header validator clean: ${validatorOk} (code=${validationBody.code})`);
-  if (!finalDeclarationOk || !validatorOk) {
+  console.log(`[itsa-sandbox-year] both businesses in calculation income sources: ${bothBusinessesOk}`);
+  console.log(`[itsa-sandbox-year] loss claims read back: ${lossClaimsReadBackOk === "skipped" ? skippedLabel : lossClaimsReadBackOk}`);
+  console.log(
+    `[itsa-sandbox-year] suspend-temporal-validations on every losses and adjustments write: ${
+      suspendTemporalValidationsOk === "skipped" ? skippedLabel : suspendTemporalValidationsOk
+    }`,
+  );
+
+  if (!finalDeclarationOk || !validatorOk || lossClaimsReadBackOk === false || suspendTemporalValidationsOk === false) {
     process.exitCode = 1;
   }
 }

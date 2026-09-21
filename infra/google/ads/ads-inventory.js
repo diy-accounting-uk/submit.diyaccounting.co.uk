@@ -289,7 +289,7 @@ async function exchangeRefreshTokenForAccessToken({ clientCredentials, refreshTo
 }
 
 async function runConsent(config, clientFile) {
-  const clientCredentials = await resolveClientCredentials({ clientFile });
+  const clientCredentials = await resolveClientCredentials({ clientFile, smClient: getSecretsManagerClient() });
   const refreshToken = await runLoopbackConsent({ clientCredentials, scopes: [config.scope] });
   execFileSync("scripts/put-secret-with-rotation-tag.sh", [config.refreshTokenSecretName, JSON.stringify({ refresh_token: refreshToken })], {
     stdio: "inherit",
@@ -306,7 +306,7 @@ export async function main(argv = process.argv.slice(2)) {
     return;
   }
 
-  const clientCredentials = await resolveClientCredentials({ clientFile: opts.clientFile });
+  const clientCredentials = await resolveClientCredentials({ clientFile: opts.clientFile, smClient: getSecretsManagerClient() });
   const smClient = getSecretsManagerClient();
   const refreshToken = await readStoredRefreshToken(smClient, config.refreshTokenSecretName);
   if (!refreshToken) {
@@ -340,9 +340,16 @@ export async function main(argv = process.argv.slice(2)) {
     findings.push(finding);
   }
 
-  assertFederatedCredentials();
-  const ga4Token = await getAccessToken(createGoogleAuthClient(["https://www.googleapis.com/auth/analytics.readonly"]));
-  const adsLinks = await fetchGa4AdsLinks(ga4Token, config.ga4PropertyId);
+  // The GA4 side reads with the analytics service account's federated credentials, which only
+  // google-github-actions/auth provides; a local run has the Ads user token alone.
+  let adsLinks = [];
+  if (process.env.GOOGLE_APPLICATION_CREDENTIALS) {
+    assertFederatedCredentials();
+    const ga4Token = await getAccessToken(createGoogleAuthClient(["https://www.googleapis.com/auth/analytics.readonly"]));
+    adsLinks = await fetchGa4AdsLinks(ga4Token, config.ga4PropertyId);
+  } else {
+    findings.push("GA4 googleAdsLinks not read: no federated Google credentials outside GitHub Actions");
+  }
 
   const report = buildInventoryReport({ customerId: config.customerId, customer, conversionActions, conversionGoals, campaigns, assetGroups, adsLinks, findings });
   printInventory(report);
