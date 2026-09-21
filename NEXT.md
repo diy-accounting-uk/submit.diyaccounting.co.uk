@@ -110,6 +110,19 @@ step.
   `githubSync.test.js` over `parseConfig`, `planGithub`, `rulesetDiff`. Proof: `npm test` and a plan
   reading "already match". After B49.18. **Source**: BACKLOG 49b; item 20. **Owner**: Claude Code. **Model**: Sonnet. **Size**: ~5 files.
 
+- [ ] **B52.D2. Donations on the revenue panel.** `v_revenue_daily` reads `stripe_charges`, written
+  by `stripeReconcile.js` with the live key at `prod/submit/stripe/secret_key`
+  (`app/lib/stripeClient.js`), labelled by `charge.metadata.bundleId`, so a Payment Link charge
+  falls to `'unknown'`. Read the account side first: fetch that secret and `GET /v1/payment_links`,
+  matching the four live slugs in the spreadsheets repository's
+  `web/spreadsheets.diyaccounting.co.uk/donate-links.toml` (`…4F200`, `4F201`, `4F202`, `4F204`); a
+  match means one account, and `SELECT day, product, revenue_gbp FROM v_revenue_daily WHERE product
+  = 'unknown'` in workgroup `prod-env-analytics` shows whether donations are already landing
+  unlabelled. Then label them by setting `payment_intent_data.metadata.bundleId` on each link in
+  `scripts/stripe-setup.js`'s idempotent shape, with a unit test on the builder. That live
+  Stripe write was approved by the operator on 2026-09-21. PayPal donations are not in this row; they arrive with `../PLAN_FINANCE_AUTOMATION.md`
+  phase 1's PayPal pull, which has no code. **Source**: BACKLOG 66; plan D2. **Owner**: Claude Code. **Model**: Sonnet. **Size**: ~2 files.
+
 ## Machine-ask
 
 - [ ] **B11.T10. ITSA phase 2: the recognition pack.** Four files under `_developers/hmrc/` carry
@@ -127,35 +140,28 @@ step.
   `PLAN_ITSA_PHASE_2.md` T10. **Owner**: Claude Code edits and re-runs; the operator sends.
   **Model**: Haiku. **Size**: ~4 files.
 
-- [ ] **B52.D2. Donations on the revenue panel.** `v_revenue_daily` reads `stripe_charges`, written
-  by `stripeReconcile.js` with the live key at `prod/submit/stripe/secret_key`
-  (`app/lib/stripeClient.js`), labelled by `charge.metadata.bundleId`, so a Payment Link charge
-  falls to `'unknown'`. Read the account side first: fetch that secret and `GET /v1/payment_links`,
-  matching the four live slugs in the spreadsheets repository's
-  `web/spreadsheets.diyaccounting.co.uk/donate-links.toml` (`…4F200`, `4F201`, `4F202`, `4F204`); a
-  match means one account, and `SELECT day, product, revenue_gbp FROM v_revenue_daily WHERE product
-  = 'unknown'` in workgroup `prod-env-analytics` shows whether donations are already landing
-  unlabelled. Then label them by setting `payment_intent_data.metadata.bundleId` on each link in
-  `scripts/stripe-setup.js`'s idempotent shape, with a unit test on the builder. That is a live
-  Stripe write: the operator approves it and confirms the account holding the links is the
-  company's. PayPal donations are not in this row; they arrive with `../PLAN_FINANCE_AUTOMATION.md`
-  phase 1's PayPal pull, which has no code. **Source**: BACKLOG 66; plan D2. **Owner**: Claude Code;
-  the operator approves the Stripe write. **Model**: Sonnet. **Size**: ~2 files.
-
-- [ ] **B49.16. Read-only inventory of the Google Ads account.** `infra/google/ads/ads-inventory.js`
-  in `google-inventory.js`'s shape, over the Ads REST API (`POST customers/{id}/googleAds:search`
-  with GAQL, headers `developer-token` and `login-customer-id`, no SDK): `customer_client` under the
-  manager, `customer.auto_tagging_enabled`, `conversion_action`, `customer_conversion_goal`,
-  `campaign` with `campaign_budget` and `asset_group`, and GA4's
-  `properties/523400333/googleAdsLinks`; it writes nothing. `ads.toml` starts with `[account]`
-  holding both ids and `[secrets]` naming `prod/submit/google/ads/{developer_token,refresh_token}`.
-  The operator supplies the manager customer id and the developer token from that account's API
-  Center, written with `put-secret-with-rotation-tag.sh prod/submit/google/ads/developer_token
-  '<token>'` under `AWS_PROFILE=submit-prod`, then runs `ads-inventory.js --consent` once, reusing
-  `youtube-upload.js`'s loopback consent for scope `.../auth/adwords`. A test-access token cannot
-  read account 814-268-5080. Test `adsInventory.test.js` over `parseArgs` and `shape*`. After
-  B49.15. **Source**: BACKLOG 49b; item 16. **Owner**: Claude Code, the operator supplies the token,
-  the id and the consent. **Model**: Sonnet. **Size**: ~4 files.
+- [ ] **B49.16. Read-only inventory of the Google Ads account.** Developer tokens were sunset by
+  Google on 2026-09-09: Google Ads API access is now an access level on the Cloud project that
+  issued the OAuth credentials, requested on the Google Ads API Overview page
+  (<https://console.cloud.google.com/google/ads-apis/overview>, project `diyaccounting-ga4`),
+  and no manager account is needed for one account. The account is 814-268-5080 (customer id
+  8142685080). Build: `googleads.googleapis.com` joins `[apis] services` in
+  `infra/google/gcp/project.toml` (applied by `google-apply.yml`); `infra/google/ads/ads.toml`
+  starts with `[account] customer_id = "8142685080"` and `[secrets] refresh_token =
+  "prod/submit/google/ads/refresh_token"`; `infra/google/ads/ads-inventory.js` in
+  `google-inventory.js`'s shape over the Ads REST API (`POST
+  https://googleads.googleapis.com/v21/customers/{id}/googleAds:search` with GAQL, no
+  `developer-token` header, no `login-customer-id`): `customer.auto_tagging_enabled`,
+  `conversion_action`, `customer_conversion_goal`, `campaign` with `campaign_budget` and
+  `asset_group`, and GA4's `properties/523400333/googleAdsLinks`; it writes nothing. `--consent`
+  reuses `scripts/youtube-upload.js`'s loopback consent for scope
+  `https://www.googleapis.com/auth/adwords`, storing the refresh token with
+  `put-secret-with-rotation-tag.sh`. Test `adsInventory.test.js` over `parseArgs` and `shape*`.
+  The run needs two operator steps: on the Overview page, "Upgrade access level" from Test to
+  Basic (Test access reaches test accounts only; Basic needs the project's brand verification),
+  and one browser approval of the consent the script opens. **Source**: BACKLOG 49b; item 16.
+  **Owner**: Claude Code builds and runs; the operator approves the access upgrade and the
+  consent. **Model**: Sonnet. **Size**: ~5 files.
 
 - [ ] **O38. The two GitHub Apps carry every machine write.** Every workflow and Lambda write runs
   on the Apps since PR #311 (0c847b07): `security-review.yml`'s Copilot assignment was the last
