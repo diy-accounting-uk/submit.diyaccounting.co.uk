@@ -7,6 +7,13 @@
 # account: the customer record, its conversion actions and default goals, its campaigns and
 # asset groups, and the GA4 side of the link. It writes nothing.
 #
+# infra/google/ads/ads-sync.js reads the [account], [[conversion_action]],
+# [[customer_conversion_goal]] and [[campaign]] declarations below, diffs them against the live
+# account and plans (or, with --apply, makes) the difference. A declared conversion action that
+# the live account does not have fails the run rather than being created: conversion actions for
+# GA4 events are created in the GA4 property (see infra/google/ga4/ga4-sync.js), not here. The
+# GA4 side of the Ads link stays with ga4-sync.js.
+#
 # API access here is an access level on the Cloud project below, granted on the "Google Ads
 # API Overview" page of the Cloud console, not a developer token: a developer-token header is
 # optional and Google ignores it. Reading this one client account with its own OAuth
@@ -14,6 +21,7 @@
 
 [account]
 customer_id = "8142685080"
+auto_tagging = true
 
 [project]
 id = "diyaccounting-ga4"
@@ -33,3 +41,71 @@ version = "v25"
 
 [ga4]
 property_id = "523400333"
+
+# The four conversion actions the site's GA4 events create, matched here by name. category and
+# primary_for_goal are the two fields ads-sync.js plans against the live conversion action; a
+# name declared here with no matching live conversion action fails the run.
+[[conversion_action]]
+name = "DIY Accounting (web) purchase"
+ga4_event = "purchase"
+category = "PURCHASE"
+primary_for_goal = true
+
+[[conversion_action]]
+name = "DIY Accounting (web) submit_vat_return"
+ga4_event = "submit_vat_return"
+category = "SIGNUP"
+primary_for_goal = true
+
+[[conversion_action]]
+name = "DIY Accounting (web) runner_download"
+ga4_event = "runner_download"
+category = "SIGNUP"
+primary_for_goal = false
+
+[[conversion_action]]
+name = "DIY Accounting (web) donate"
+ga4_event = "donate"
+category = "PAGE_VIEW"
+primary_for_goal = false
+
+# The account's default conversion goals, matched by category. biddable is the only field
+# ads-sync.js plans against the live goal.
+[[customer_conversion_goal]]
+category = "PURCHASE"
+origin = "WEBSITE"
+biddable = true
+
+[[customer_conversion_goal]]
+category = "SIGNUP"
+origin = "WEBSITE"
+biddable = true
+
+[[customer_conversion_goal]]
+category = "PAGE_VIEW"
+origin = "WEBSITE"
+biddable = true
+
+[[customer_conversion_goal]]
+category = "ENGAGEMENT"
+origin = "YOUTUBE_HOSTED"
+biddable = false
+
+[[customer_conversion_goal]]
+category = "YOUTUBE_FOLLOW_ON_VIEWS"
+origin = "YOUTUBE_HOSTED"
+biddable = false
+
+[[campaign]]
+name = "Campaign #1"
+type = "PERFORMANCE_MAX"
+status = "ENABLED"
+budget_micros = 1000000
+
+[[campaign.asset_group]]
+name = "Asset Group 1"
+
+# The parameter name a future reserve-floor check reads the account's minimum daily budget
+# from; nothing reads it yet.
+[reserve_floor]
+ssm_parameter = "/submit/prod/ads/reserve-floor-gbp"

@@ -45,12 +45,13 @@ export const CONFIG_PATH = "infra/google/ads/ads.toml";
 export const ADS_API_OVERVIEW_URL = "https://console.cloud.google.com/google/ads-apis/overview";
 export const GA4_ANALYTICS_ADMIN_V1BETA = "https://analyticsadmin.googleapis.com/v1beta";
 
-const CUSTOMER_QUERY =
+// Shared with ads-sync.js so the two scripts read the account through identical queries.
+export const CUSTOMER_QUERY =
   "SELECT customer.id, customer.descriptive_name, customer.auto_tagging_enabled, customer.currency_code, customer.time_zone FROM customer";
-const CONVERSION_ACTION_QUERY =
+export const CONVERSION_ACTION_QUERY =
   "SELECT conversion_action.resource_name, conversion_action.name, conversion_action.type, conversion_action.category, conversion_action.status, conversion_action.primary_for_goal FROM conversion_action";
-const CONVERSION_GOAL_QUERY = "SELECT customer_conversion_goal.category, customer_conversion_goal.origin, customer_conversion_goal.biddable FROM customer_conversion_goal";
-const CAMPAIGN_QUERY =
+export const CONVERSION_GOAL_QUERY = "SELECT customer_conversion_goal.category, customer_conversion_goal.origin, customer_conversion_goal.biddable FROM customer_conversion_goal";
+export const CAMPAIGN_QUERY =
   "SELECT campaign.resource_name, campaign.name, campaign.status, campaign.advertising_channel_type, campaign.campaign_budget, campaign_budget.amount_micros FROM campaign";
 const ASSET_GROUP_QUERY = "SELECT asset_group.resource_name, asset_group.name, asset_group.status, asset_group.campaign FROM asset_group";
 
@@ -241,7 +242,7 @@ export function printInventory(report) {
 // --- Network calls. Not covered by the unit tests (no network in tests); the shaping
 // functions above are what carry the argument-handling and output-shaping coverage. ---
 
-async function googleAdsSearch(token, customerId, apiVersion, query) {
+export async function googleAdsSearch(token, customerId, apiVersion, query) {
   const res = await fetch(`https://googleads.googleapis.com/${apiVersion}/customers/${customerId}/googleAds:search`, {
     method: "POST",
     headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
@@ -288,6 +289,26 @@ async function exchangeRefreshTokenForAccessToken({ clientCredentials, refreshTo
   return token;
 }
 
+/**
+ * The Ads API bearer token for `config`: the OAuth client credentials plus the refresh token
+ * stored in Secrets Manager, exchanged for an access token. Shared by ads-inventory.js and
+ * ads-sync.js so the token exchange is written once. Needs AWS credentials for Secrets Manager
+ * only — no Google federated credentials, since the Ads API takes its own OAuth user token.
+ *
+ * @param {{refreshTokenSecretName: string}} config
+ * @param {{clientFile?: string}} [opts]
+ * @returns {Promise<string>}
+ */
+export async function getAdsAccessToken(config, { clientFile } = {}) {
+  const smClient = getSecretsManagerClient();
+  const clientCredentials = await resolveClientCredentials({ clientFile, smClient });
+  const refreshToken = await readStoredRefreshToken(smClient, config.refreshTokenSecretName);
+  if (!refreshToken) {
+    throw new Error(`No Ads refresh token found in Secrets Manager secret ${config.refreshTokenSecretName}. Run: node infra/google/ads/ads-inventory.js --consent`);
+  }
+  return exchangeRefreshTokenForAccessToken({ clientCredentials, refreshToken, refreshTokenSecretName: config.refreshTokenSecretName });
+}
+
 async function runConsent(config, clientFile) {
   const clientCredentials = await resolveClientCredentials({ clientFile, smClient: getSecretsManagerClient() });
   const refreshToken = await runLoopbackConsent({ clientCredentials, scopes: [config.scope] });
@@ -306,13 +327,7 @@ export async function main(argv = process.argv.slice(2)) {
     return;
   }
 
-  const clientCredentials = await resolveClientCredentials({ clientFile: opts.clientFile, smClient: getSecretsManagerClient() });
-  const smClient = getSecretsManagerClient();
-  const refreshToken = await readStoredRefreshToken(smClient, config.refreshTokenSecretName);
-  if (!refreshToken) {
-    throw new Error(`No Ads refresh token found in Secrets Manager secret ${config.refreshTokenSecretName}. Run: node infra/google/ads/ads-inventory.js --consent`);
-  }
-  const adsAccessToken = await exchangeRefreshTokenForAccessToken({ clientCredentials, refreshToken, refreshTokenSecretName: config.refreshTokenSecretName });
+  const adsAccessToken = await getAdsAccessToken(config, { clientFile: opts.clientFile });
 
   const findings = [];
   let customer = null;

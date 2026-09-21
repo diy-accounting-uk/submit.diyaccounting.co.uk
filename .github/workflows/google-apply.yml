@@ -169,12 +169,24 @@ jobs:
       - name: Run google-oauth-assert
         run: node infra/google/gcp/google-oauth-assert.js 2>&1 | tee google-oauth-assert.log
 
+      # Plans (or applies) infra/google/ads/ads.toml against the Google Ads account. Reads its
+      # OAuth client and refresh-token secrets from Secrets Manager through the AWS chain above
+      # only — it needs no Google federated credentials, since the Ads API takes its own OAuth
+      # user token rather than a Google Cloud REST call.
+      - name: Plan the Google Ads account
+        run: |
+          if [ "$GOOGLE_APPLY" != "true" ]; then
+            node infra/google/ads/ads-sync.js 2>&1 | tee ads-sync.log
+          else
+            node infra/google/ads/ads-sync.js --apply 2>&1 | tee ads-sync.log
+          fi
+
       - name: Generate step summary
         if: always()
         run: |
           echo "# Google apply ($([ "$GOOGLE_APPLY" = "true" ] && echo apply || echo plan))" >> "$GITHUB_STEP_SUMMARY"
           echo "" >> "$GITHUB_STEP_SUMMARY"
-          for log in google-inventory.log gcp-enable-apis.log gcp-identity-sync.log google-roles-apply.log gcp-billing-assert.log ga4-sync.log ga4-bigquery-sync.log google-oauth-assert.log; do
+          for log in google-inventory.log gcp-enable-apis.log gcp-identity-sync.log google-roles-apply.log gcp-billing-assert.log ga4-sync.log ga4-bigquery-sync.log google-oauth-assert.log ads-sync.log; do
             if [ -f "$log" ]; then
               echo "## $log" >> "$GITHUB_STEP_SUMMARY"
               echo '```' >> "$GITHUB_STEP_SUMMARY"
