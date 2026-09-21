@@ -57,6 +57,10 @@ const USER_ONLY_ACTIONS = new Set(["login", "consent", "ensureBundle", "hmrcAuth
 // ["mtd-vat"] when a script omits the field, so an existing VAT-only script needs no change.
 const ALLOWED_HMRC_SERVICES = new Set(["mtd-vat", "mtd-income-tax"]);
 
+// Where a script can be recorded. Defaults to both when a script omits the field, so an
+// existing script needs no change.
+const ALLOWED_ENVIRONMENTS = new Set(["ci", "prod"]);
+
 function fail(path, message) {
   throw new Error(`scene script invalid at ${path}: ${message}`);
 }
@@ -122,6 +126,15 @@ export function validateScript(script) {
     }
     for (const service of script.hmrcServices) {
       if (!ALLOWED_HMRC_SERVICES.has(service)) fail("hmrcServices", `unknown HMRC service "${service}"`);
+    }
+  }
+
+  if ("environments" in script) {
+    if (!Array.isArray(script.environments) || script.environments.length === 0) {
+      fail("environments", "must be a non-empty array of environment names");
+    }
+    for (const environment of script.environments) {
+      if (!ALLOWED_ENVIRONMENTS.has(environment)) fail("environments", `unknown environment "${environment}"`);
     }
   }
   requireKeys(script.viewport || {}, ["width", "height"], "viewport");

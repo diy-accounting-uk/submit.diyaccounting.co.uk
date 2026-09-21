@@ -12,6 +12,11 @@ const scripts = [
   { name: "view-liabilities", pages: ["web/public/index.html", "web/public/hmrc/vat/vatLiabilities.html"] },
 ];
 
+const scriptsWithCiOnly = [
+  { name: "tour", pages: ["web/public/index.html"] },
+  { name: "itsa-quarterly-update", pages: ["web/public/index.html"], environments: ["ci"] },
+];
+
 describe("scriptsTouchedBy", () => {
   test("returns only the scripts whose pages intersect the changed files", () => {
     expect(scriptsTouchedBy(["web/public/hmrc/vat/vatObligations.html"], scripts)).toEqual(["view-obligations"]);
@@ -43,6 +48,18 @@ describe("scriptsTouchedBy", () => {
 
   test("does not treat a stylesheet nested under a page directory as shared", () => {
     expect(scriptsTouchedBy(["web/public/hmrc/vat/vatObligations.css"], scripts)).toEqual([]);
+  });
+
+  test("leaves out a ci-only script when filtering for prod", () => {
+    expect(scriptsTouchedBy(["web/public/index.html"], scriptsWithCiOnly, "prod")).toEqual(["tour"]);
+  });
+
+  test("keeps a ci-only script when filtering for ci", () => {
+    expect(scriptsTouchedBy(["web/public/index.html"], scriptsWithCiOnly, "ci")).toEqual(["tour", "itsa-quarterly-update"]);
+  });
+
+  test("keeps every touched script when no environment filter is given", () => {
+    expect(scriptsTouchedBy(["web/public/index.html"], scriptsWithCiOnly)).toEqual(["tour", "itsa-quarterly-update"]);
   });
 });
 
