@@ -487,6 +487,7 @@ jobs:
 
           ROW_REMEDY=$(jq -r 'if . == null then "none" else .remedy end' <<<"$REMEDY_ROW")
           ROW_WORKFLOW=$(jq -r '.workflow // empty' <<<"$REMEDY_ROW")
+          ROW_BUDGET=$(jq -r 'if . == null then 0 else .budgetPerDay end' <<<"$REMEDY_ROW")
 
           case "$LINE" in
             "remedy: none")
@@ -497,6 +498,17 @@ jobs:
               if [ "$ROW_REMEDY" != "dispatch" ] || [ "$NAMED_WORKFLOW" != "$ROW_WORKFLOW" ]; then
                 echo "triage named a dispatch this family's row does not allow: $LINE"
                 gh issue edit "$ISSUE_NUMBER" --repo "${{ github.repository }}" --add-label "policy:question"
+                exit 0
+              fi
+              # dispatch takes a real action (a workflow run), so it is metered against
+              # the family's own budgetPerDay; close-when-gone only ever applies a label
+              # and is never metered here.
+              REMAINING=$(node scripts/remedy-budget-remaining.mjs --family "$FAMILY_KEY" --budget "$ROW_BUDGET" --repo "${{ github.repository }}")
+              if [ "$REMAINING" -le 0 ]; then
+                USED=$((ROW_BUDGET - REMAINING))
+                echo "family $FAMILY_KEY has used $USED of its $ROW_BUDGET remedy actions in the last 24 hours"
+                gh issue edit "$ISSUE_NUMBER" --repo "${{ github.repository }}" --add-label "policy:question"
+                gh issue comment "$ISSUE_NUMBER" --repo "${{ github.repository }}" --body "Remedy budget for family ${FAMILY_KEY} is spent: ${USED} of ${ROW_BUDGET} remedy actions already used in the last 24 hours. Leaving this to a person."
                 exit 0
               fi
               INPUT_ARGS=()
@@ -529,6 +541,16 @@ jobs:
               CHANGED=$(git diff --name-only main HEAD)
               SCOPE=$(printf '%s\n' "$CHANGED" | node scripts/verify-draft-pr-scope.mjs --family "$FAMILY_KEY" || true)
               if printf '%s' "$SCOPE" | jq -e '.allowed' > /dev/null 2>&1; then
+                # draft-pr's real action is marking the PR ready, so it is metered here,
+                # after scope is confirmed and before the PR actually goes ready.
+                REMAINING=$(node scripts/remedy-budget-remaining.mjs --family "$FAMILY_KEY" --budget "$ROW_BUDGET" --repo "${{ github.repository }}")
+                if [ "$REMAINING" -le 0 ]; then
+                  USED=$((ROW_BUDGET - REMAINING))
+                  echo "family $FAMILY_KEY has used $USED of its $ROW_BUDGET remedy actions in the last 24 hours"
+                  gh issue edit "$ISSUE_NUMBER" --repo "${{ github.repository }}" --add-label "policy:question"
+                  gh issue comment "$ISSUE_NUMBER" --repo "${{ github.repository }}" --body "Remedy budget for family ${FAMILY_KEY} is spent: ${USED} of ${ROW_BUDGET} remedy actions already used in the last 24 hours. Leaving this to a person."
+                  exit 0
+                fi
                 GH_TOKEN="$APP_TOKEN" gh pr ready "$PR_NUMBER" --repo "${{ github.repository }}"
                 gh issue edit "$ISSUE_NUMBER" --repo "${{ github.repository }}" --add-label "remedy:draft-pr"
               else
