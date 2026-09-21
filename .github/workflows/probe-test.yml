@@ -650,8 +650,10 @@ jobs:
           find target/test-reports/ -type f -exec ls -l {} \;
         shell: bash
 
+        # The artifact service can refuse finalize after the suite passed
       - name: Upload artifacts (results)
         if: ${{ !cancelled() }}
+        continue-on-error: true
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
         with:
           name: ${{ matrix.suite }}-artifacts
@@ -661,6 +663,7 @@ jobs:
 
       - name: Upload artifacts (reports)
         if: ${{ !cancelled() }}
+        continue-on-error: true
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
         with:
           name: ${{ matrix.suite }}-reports
