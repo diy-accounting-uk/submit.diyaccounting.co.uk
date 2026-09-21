@@ -16,9 +16,10 @@ runs), and for Claude Code steps the **Model** a sub-agent should use (Fable > O
 Haiku; the lowest tier that fits). Anything touching code goes through a `claude/*` branch and
 PR; the operator merges.
 
-**Prod runs deployment prod-a9fa597**; main's deploy of PR #306's merge (82e4f322) is creating
-prod-82e4f32 and takes the apex when its probes pass. **ci**: `ci-set1` is live and last-known-good
-until it self-destructs. SSO restored at 08:2x UTC on 2026-09-21.
+**Prod runs deployment prod-a15fe51** (the 09:55 UTC scheduled deploy of main on 2026-09-21; its
+`destroy previous` job is removing prod-82e4f32). **ci**: `ci-set1` is live and last-known-good (b65's
+set, claimed 09:2x UTC); `ci-set2-app-SelfDestructStack` alone stands from 03:38 UTC, past its own
+timer, for the 12:34 UTC sweep.
 
 The board runs in five sections, in this order: **in flight** (a branch, a pull request or a run
 in motion, each named in the row), **machine-only**, **machine-ask**, **human-driven**,
@@ -93,9 +94,20 @@ step.
   B11.T7b.4. Proof: the three transcript entries at 204, 200 and 400. After B11.T7b.4. **Source**:
   `PLAN_ITSA_PHASE_2.md` T7. **Owner**: Claude Code. **Model**: Sonnet. **Size**: ~1 file.
 
-## Machine-only
+- [ ] **B52.D2. Donations on the revenue panel.** In flight: the four links carry `bundleId` metadata in the live account since 2026-09-21 (plan reads "up to date"); the `stripe.toml` `[[payment_link]]` rows and `planPaymentLinks` are on `claude/b65-stripe-donations` (bf939eb9), landing on the next batch. `v_revenue_daily` reads `stripe_charges`, written
+  by `stripeReconcile.js` with the live key at `prod/submit/stripe/secret_key`
+  (`app/lib/stripeClient.js`), labelled by `charge.metadata.bundleId`, so a Payment Link charge
+  falls to `'unknown'`. Read the account side first: fetch that secret and `GET /v1/payment_links`,
+  matching the four live slugs in the spreadsheets repository's
+  `web/spreadsheets.diyaccounting.co.uk/donate-links.toml` (`…4F200`, `4F201`, `4F202`, `4F204`); a
+  match means one account, and `SELECT day, product, revenue_gbp FROM v_revenue_daily WHERE product
+  = 'unknown'` in workgroup `prod-env-analytics` shows whether donations are already landing
+  unlabelled. Then label them by setting `payment_intent_data.metadata.bundleId` on each link in
+  `scripts/stripe-setup.js`'s idempotent shape, with a unit test on the builder. That live
+  Stripe write was approved by the operator on 2026-09-21. PayPal donations are not in this row; they arrive with `../PLAN_FINANCE_AUTOMATION.md`
+  phase 1's PayPal pull, which has no code. **Source**: BACKLOG 66; plan D2. **Owner**: Claude Code. **Model**: Sonnet. **Size**: ~2 files.
 
-- [ ] **B49.20. `infra/github`.** `github.toml`: `[repository]` the two merge settings; `[actions]`
+- [ ] **B49.20. `infra/github`.** In flight: the github-sync agent is writing `infra/github/` on `claude/b65-github-sync`. `github.toml`: `[repository]` the two merge settings; `[actions]`
   the permissions and selected-actions fields, `default_workflow_permissions`, and
   `patterns_allowed` from `scripts/github-actions-permissions.sh`; `[security]
   automated_security_fixes = true` (false live); `[[ruleset]]` `main` with its enforcement,
@@ -110,37 +122,7 @@ step.
   `githubSync.test.js` over `parseConfig`, `planGithub`, `rulesetDiff`. Proof: `npm test` and a plan
   reading "already match". After B49.18. **Source**: BACKLOG 49b; item 20. **Owner**: Claude Code. **Model**: Sonnet. **Size**: ~5 files.
 
-- [ ] **B52.D2. Donations on the revenue panel.** `v_revenue_daily` reads `stripe_charges`, written
-  by `stripeReconcile.js` with the live key at `prod/submit/stripe/secret_key`
-  (`app/lib/stripeClient.js`), labelled by `charge.metadata.bundleId`, so a Payment Link charge
-  falls to `'unknown'`. Read the account side first: fetch that secret and `GET /v1/payment_links`,
-  matching the four live slugs in the spreadsheets repository's
-  `web/spreadsheets.diyaccounting.co.uk/donate-links.toml` (`…4F200`, `4F201`, `4F202`, `4F204`); a
-  match means one account, and `SELECT day, product, revenue_gbp FROM v_revenue_daily WHERE product
-  = 'unknown'` in workgroup `prod-env-analytics` shows whether donations are already landing
-  unlabelled. Then label them by setting `payment_intent_data.metadata.bundleId` on each link in
-  `scripts/stripe-setup.js`'s idempotent shape, with a unit test on the builder. That live
-  Stripe write was approved by the operator on 2026-09-21. PayPal donations are not in this row; they arrive with `../PLAN_FINANCE_AUTOMATION.md`
-  phase 1's PayPal pull, which has no code. **Source**: BACKLOG 66; plan D2. **Owner**: Claude Code. **Model**: Sonnet. **Size**: ~2 files.
-
-## Machine-ask
-
-- [ ] **B11.T10. ITSA phase 2: the recognition pack.** Four files under `_developers/hmrc/` carry
-  the pack: `ITSA_PRODUCTION_APPROVALS_CHECKLIST.md`,
-  `hmrc_questionnaire_itsa_pass_diy_accounting_limited_v1.md` and the two `DRAFT_EMAIL_ITSA_*.md`.
-  Two things remain. From the transcripts B11.T7b.7 leaves: the checklist's sandbox-proof column in
-  rows 4, 6 and 7 and its nine-API table (Property Business, Individual Losses, Tax Liability
-  Adjustments), its reviewer-question bullet about property, losses and the cumulative model
-  deleted; both emails' sandbox paragraph naming both income types, both quarterly models, the loss
-  claims and the adjustments; the ITSA pass's testing-in-the-last-two-weeks row with the new run's
-  date and commit. Then the send: the operator names the day, Claude Code re-runs the B11.T7b.1 and
-  B11.T7b.4 commands inside the 14 days before it and updates that row, the operator sends the
-  recognition email to `SDSTeam@hmrc.gov.uk` and the credentials one when SDST answers. Proof: no
-  "not evidenced" left in checklist rows 4, 6 and 7. After B11.T7b.7. **Source**: BACKLOG 11;
-  `PLAN_ITSA_PHASE_2.md` T10. **Owner**: Claude Code edits and re-runs; the operator sends.
-  **Model**: Haiku. **Size**: ~4 files.
-
-- [ ] **B49.16. Read-only inventory of the Google Ads account.** Developer tokens were sunset by
+- [ ] **B49.16. Read-only inventory of the Google Ads account.** In flight: the build is on `claude/b65-ads-inventory` (642300ea, API v25), landing on the next batch; the access upgrade and the consent follow the merge. Developer tokens were sunset by
   Google on 2026-09-09: Google Ads API access is now an access level on the Cloud project that
   issued the OAuth credentials, requested on the Google Ads API Overview page
   (<https://console.cloud.google.com/google/ads-apis/overview>, project `diyaccounting-ga4`),
@@ -162,6 +144,25 @@ step.
   and one browser approval of the consent the script opens. **Source**: BACKLOG 49b; item 16.
   **Owner**: Claude Code builds and runs; the operator approves the access upgrade and the
   consent. **Model**: Sonnet. **Size**: ~5 files.
+
+## Machine-only
+
+## Machine-ask
+
+- [ ] **B11.T10. ITSA phase 2: the recognition pack.** Four files under `_developers/hmrc/` carry
+  the pack: `ITSA_PRODUCTION_APPROVALS_CHECKLIST.md`,
+  `hmrc_questionnaire_itsa_pass_diy_accounting_limited_v1.md` and the two `DRAFT_EMAIL_ITSA_*.md`.
+  Two things remain. From the transcripts B11.T7b.7 leaves: the checklist's sandbox-proof column in
+  rows 4, 6 and 7 and its nine-API table (Property Business, Individual Losses, Tax Liability
+  Adjustments), its reviewer-question bullet about property, losses and the cumulative model
+  deleted; both emails' sandbox paragraph naming both income types, both quarterly models, the loss
+  claims and the adjustments; the ITSA pass's testing-in-the-last-two-weeks row with the new run's
+  date and commit. Then the send: the operator names the day, Claude Code re-runs the B11.T7b.1 and
+  B11.T7b.4 commands inside the 14 days before it and updates that row, the operator sends the
+  recognition email to `SDSTeam@hmrc.gov.uk` and the credentials one when SDST answers. Proof: no
+  "not evidenced" left in checklist rows 4, 6 and 7. After B11.T7b.7. **Source**: BACKLOG 11;
+  `PLAN_ITSA_PHASE_2.md` T10. **Owner**: Claude Code edits and re-runs; the operator sends.
+  **Model**: Haiku. **Size**: ~4 files.
 
 - [ ] **O38. The two GitHub Apps carry every machine write.** Every workflow and Lambda write runs
   on the Apps since PR #311 (0c847b07): `security-review.yml`'s Copilot assignment was the last
