@@ -41,6 +41,41 @@ step.
 
 ## Machine-only
 
+- [ ] **B49.24. `PLAN_EVERYTHING_AS_CODE.md`'s Google Ads section reads the current access route.**
+  Its "Google Ads, concretely" section (the paragraph beginning "Access needs three things") and the
+  Google Ads line of its provider table still describe the developer token, the manager account and
+  `login-customer-id`, a route Google replaced on 2026-09-09 with an access level on the Cloud
+  project that issued the OAuth credentials. Rewrite them to what `infra/google/ads/ads.toml`,
+  `ads-inventory.js` and `ads-sync.js` do: one customer id, the refresh token from
+  `prod/submit/google/ads/refresh_token`, no developer token, no manager link. Docs only; may go
+  straight to `main`. **Source**: BACKLOG 49b; `PLAN_EVERYTHING_AS_CODE.md` items 16 and 17.
+  **Owner**: Claude Code. **Model**: Haiku. **Size**: ~1 file.
+
+- [ ] **B43a. The scheduled prod deploy skips a head that is already live.** `deploy.yml`'s
+  `11 4 * * *` schedule on `main` creates a full prod set, deploys it and destroys the previous one
+  even when the head only changed `.md` files (prod-a15fe51 from a15fe519 on 2026-09-21). In the
+  `names` or `skip deploy check` job, on `github.event_name == 'schedule'`, read
+  `/submit/prod/last-known-good-deployment`, derive the live set's head from its name the way
+  `get-names` derives a name from a head, and skip the deploy when the two match or when
+  `git diff --name-only <live head>..HEAD` matches none of the `push:` `paths:` list. Proof: a
+  dispatched run with `skipDeploy` unset on a docs-only head ends at the check with no stack job.
+  **Source**: BACKLOG 43. **Owner**: Claude Code. **Model**: Sonnet. **Size**: ~1 file.
+
+- [ ] **B69a. `finalMessageOnly` cuts at the first heading.** `scripts/redact-triage-output.mjs`'s
+  `finalMessageOnly` drops leaked reasoning only when a `---` thematic break precedes the answer;
+  support-triage's comment on issue #100 kept one sentence of reasoning above its first `## `
+  heading. When no break is present and the text carries a `## ` heading after some prose, cut to
+  the first heading; text with neither passes through as today. Cases in
+  `app/unit-tests/scripts/redactTriageOutput.test.js`. **Source**: BACKLOG 69. **Owner**: Claude
+  Code. **Model**: Haiku. **Size**: ~2 files.
+
+- [ ] **B46a. Lint `infra/google/`.** `eslint.config.js`'s global `ignores` carries `scripts/` and
+  `infra/google/`, so the eight Google scripts under `infra/google/` carry 16 sonarjs and security
+  findings nothing lints. Remove `infra/google/` from the ignore list, fix each finding or suppress
+  it on its line with the reason, and leave `scripts/` as it is. Proof: `npm run linting` clean and
+  `npm test` green. **Source**: BACKLOG 46. **Owner**: Claude Code. **Model**: Sonnet. **Size**: ~9
+  files.
+
 ## Machine-ask
 
 - [ ] **B11.T10. ITSA phase 2: the send.** The operator names the day; Claude Code re-runs the
