@@ -123,7 +123,11 @@ closing comment.
   budget freeing, a scheduled run), hold with hourly ticks and wake just after it.
 - With nothing startable and the next unblock past the SSO window or on another day, stop the
   loop: one push notification with the outcome, `ScheduleWakeup` with `stop`, and any Monitor
-  stopped.
+  stopped. The notification names every operator decision that would restart the loop (a parked
+  list to triage, a URI to register, an email to send, a `machine-ask` row's approval), not only
+  the next scheduled event: on 2026-09-21 the loop stopped at 14:12 naming a snapshot run due the
+  next day, while the `PARKED.md` triage that restarted it at 19:08 sat unmentioned in an earlier
+  reply. The loop still stops; the operator restarts it with `/iterate`.
 - A direct question from the operator gets its answer as the whole reply, and the cycle resumes
   on the next turn.
 
