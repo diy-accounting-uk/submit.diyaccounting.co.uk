@@ -1,0 +1,43 @@
+# SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0
+# Copyright (C) 2006-2026 DIY Accounting Limited
+
+# Companies House, as code.
+#
+# Two hub applications, one per environment, made by hand on the Companies House developer
+# hub (manage-applications) because the hub publishes no application-management API.
+# infra/companies-house/companies-house-assert.js reads this file and proves what a live call
+# can prove: each client id and redirect pair authorises without a 400, the REST API key
+# answers a public-data call, and the client id recorded here matches the deployed .env.
+#
+# The redirect URI is never stored: web/public/lib/auth-url-builder.js rebuilds it at runtime
+# as "<DIY_SUBMIT_BASE_URL>/companies-house/filingCallback.html". The values below are that
+# same rule applied to each environment's live host, so the assert script can reconstruct
+# exactly what the browser sends.
+
+[environment.ci]
+application_name = "DIY Accounting Submit - test"
+client_id = "e5be4a0d-cebf-4024-83a3-5497a0fec4b2"
+rest_base_uri = "https://api.company-information.service.gov.uk"
+identity_base_uri = "https://identity-sandbox.company-information.service.gov.uk"
+xmlgw_uri = "https://xmlgw.companieshouse.gov.uk/v1-0/xmlgw/Gateway"
+redirect_uris = ["https://ci-submit.diyaccounting.co.uk/companies-house/filingCallback.html"]
+
+  [environment.ci.secrets]
+  api_key = "ci/submit/companies-house/api_key"
+  client_secret = "ci/submit/companies-house/client_secret"
+  presenter_id = "ci/submit/companies-house/presenter_id"
+  presenter_code = "ci/submit/companies-house/presenter_code"
+
+[environment.prod]
+application_name = "DIY Accounting Submit"
+client_id = "9b4676ee-a473-4d10-aafe-33d5a14d982d"
+rest_base_uri = "https://api.company-information.service.gov.uk"
+identity_base_uri = "https://identity.company-information.service.gov.uk"
+xmlgw_uri = ""
+redirect_uris = ["https://submit.diyaccounting.co.uk/companies-house/filingCallback.html"]
+
+  [environment.prod.secrets]
+  api_key = "prod/submit/companies-house/api_key"
+  client_secret = "prod/submit/companies-house/client_secret"
+  presenter_id = ""
+  presenter_code = ""

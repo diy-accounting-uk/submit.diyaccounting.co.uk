@@ -12,6 +12,7 @@ The alarm:
 - region: ${ALARM_REGION}
 - window: ${ALARM_WINDOW}
 - GitHub issue: #${ISSUE_NUMBER}
+- remedy row for this alarm's family: ${REMEDY_ROW}
 
 The evidence links and the log groups behind this alarm are in /tmp/evidence.json. Read that file
 first. Its `credentialProof` key holds the answers three `aws` calls got moments ago with the
@@ -74,9 +75,28 @@ Write your answer as GitHub-flavoured Markdown, under 400 words, in three sectio
 three questions. Plain sentences. No preamble.
 
 This run posts your answer as an issue comment. If, and only if, question 3 names a change you
-are confident in, add one more fenced ```diff code block at the end of your answer, holding that
-change in `git diff` format against this repository. The workflow extracts that block after your
-answer is posted and applies it as a patch on a new branch, opening a draft PR that references
-this issue — you do not create the branch or the PR yourself, and you cannot edit any file in this
-session. Leave the block out if you are not confident, or if the change does not reduce to a
-single diff.
+are confident in, add one more fenced ```diff code block, holding that change in `git diff` format
+against this repository. The workflow extracts that block after your answer is posted and applies
+it as a patch on a new branch, opening a draft PR that references this issue — you do not create
+the branch or the PR yourself, and you cannot edit any file in this session. Leave the block out if
+you are not confident, or if the change does not reduce to a single diff.
+
+After everything else — the three sections, and the diff block if you wrote one — end your answer
+with one more line, and nothing after it: `remedy: <id>|none`. The remedy row above names the only
+remedy this family is allowed to close or act on, or says there is no row. What you may write on
+that line:
+
+- No row, or the row's remedy is `none`: write `remedy: none`.
+- The row's remedy is `dispatch`: write `remedy: dispatch <workflow>` (the row's own `workflow`
+  value, e.g. `remedy: dispatch probe-test.yml`) when your answer to question 2 is that the alarm
+  is still broken and re-running that workflow is the right next action, or `remedy: none` when it
+  is not.
+- The row's remedy is `close-when-gone`: write `remedy: close-when-gone` when your answer to
+  question 2 is that the alarm has cleared, or `remedy: none` when it has not.
+- The row's remedy is `draft-pr`: write `remedy: draft-pr` when your answer to question 3 is a code
+  change within the row's own paths and you wrote the diff block above, or `remedy: none` when it
+  is not.
+
+You may always write `remedy: none`, whatever the row says — the row names a ceiling on the
+action, never a floor. Never write a remedy kind, or a workflow name, other than what the row
+above gives you.

@@ -286,6 +286,7 @@ describe("operatorSnapshotPublish", () => {
         "FROM   v_subscription_renewals_daily",
         "FROM   v_subscription_cancellations_daily",
         "FROM   v_operator_interventions_daily",
+        "FROM   v_agent_runs_daily",
         "FROM   v_compliance_status",
       ];
       for (const fragment of expectedFragments) {

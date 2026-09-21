@@ -380,7 +380,7 @@ See `../CLAUDE.md` for shared rules. Additional submit-specific rules:
 
 **Secrets in `.env` (gitignored):** The root `.env` file contains real API keys and secrets (Telegram, Google, Cognito). HMRC and Stripe secrets for the proxy variant come from AWS Secrets Manager via `scripts/proxy-secrets.sh`, not from `.env`. Environment-specific `.env.*` files reference price IDs and ARNs but NOT secret keys — those come from `.env` (local) or AWS Secrets Manager (deployed). When CI and prod need different webhook secrets, each resolves its own from Secrets Manager ARNs.
 
-**Stripe webhook setup:** Run `STRIPE_SECRET_KEY=sk_test_... node scripts/stripe-setup.js` to create/verify webhook endpoints for CI and prod. Local dev registers no endpoint: `stripe listen` forwards events directly and prints a per-session signing secret.
+**Stripe webhook setup:** Run `node infra/stripe/stripe-sync.js --environment ci --mode test --apply` to create/verify webhook endpoints for CI and prod. Local dev registers no endpoint: `stripe listen` forwards events directly and prints a per-session signing secret.
 
 ## Naming Conventions
 

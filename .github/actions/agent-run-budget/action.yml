@@ -1,0 +1,71 @@
+# SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0
+# Copyright (C) 2006-2026 DIY Accounting Limited
+
+name: "Stop an agent path once its daily run budget is spent"
+description: "Counts how many runs of the named workflow have already reached the named step (in the named job) with a success conclusion in the last 24 hours, and reports whether the caller is over its daily budget. Shared by every unattended agent path so this counting logic exists once."
+
+inputs:
+  workflow-file:
+    description: "workflow file to count runs of, e.g. alarm-triage.yml"
+    required: true
+  job-name:
+    description: "name of the job whose steps to inspect, e.g. run-triage"
+    required: true
+  step-name:
+    description: "name of the step whose success conclusion counts as a posted result, e.g. Comment the triage"
+    required: true
+  budget:
+    description: "maximum number of posted results allowed in a rolling 24-hour window"
+    required: true
+
+outputs:
+  over-budget:
+    description: "true once `budget` posted results have already landed in the last 24 hours"
+    value: ${{ steps.guard.outputs.over-budget }}
+  count:
+    description: "how many runs posted a result in the last 24 hours"
+    value: ${{ steps.guard.outputs.count }}
+  since:
+    description: "the start of the 24-hour window that was counted"
+    value: ${{ steps.guard.outputs.since }}
+
+runs:
+  using: "composite"
+  steps:
+    - name: Count runs that already posted a result in the last 24 hours
+      id: guard
+      shell: bash
+      env:
+        GH_TOKEN: ${{ github.token }}
+        WORKFLOW_FILE: ${{ inputs.workflow-file }}
+        JOB_NAME: ${{ inputs.job-name }}
+        STEP_NAME: ${{ inputs.step-name }}
+        BUDGET: ${{ inputs.budget }}
+      run: |
+        set -euo pipefail
+        SINCE=$(date -u -d '24 hours ago' +%Y-%m-%dT%H:%M:%SZ)
+        # Every triggering event starts a run, including the ones this guard or an earlier
+        # check stops, so counting every run that merely started would let a burst of skips
+        # exhaust the budget without a single alarm actually being acted on. A run only counts
+        # once it has posted a result: the named step's own per-step conclusion (not the job's
+        # overall conclusion) is the only signal that distinguishes an acted-on run from a
+        # skipped one.
+        COUNT=0
+        for RUN_ID in $(gh api \
+          "repos/${{ github.repository }}/actions/workflows/${WORKFLOW_FILE}/runs?created=%3E${SINCE}&per_page=100" \
+          --jq '.workflow_runs[].id'); do
+          if [ "${RUN_ID}" = "${{ github.run_id }}" ]; then continue; fi
+          POSTED=$(gh api "repos/${{ github.repository }}/actions/runs/${RUN_ID}/jobs" \
+            --jq ".jobs[] | select(.name == \"${JOB_NAME}\") | .steps[]? | select(.name == \"${STEP_NAME}\") | .conclusion // empty")
+          if [ "${POSTED}" = "success" ]; then
+            COUNT=$((COUNT + 1))
+          fi
+        done
+        echo "${WORKFLOW_FILE} runs that posted a result in the last 24 hours: ${COUNT}"
+        echo "count=${COUNT}" | tee -a "$GITHUB_OUTPUT"
+        echo "since=${SINCE}" | tee -a "$GITHUB_OUTPUT"
+        if [ "${COUNT}" -gt $(( BUDGET - 1 )) ]; then
+          echo "over-budget=true" | tee -a "$GITHUB_OUTPUT"
+        else
+          echo "over-budget=false" | tee -a "$GITHUB_OUTPUT"
+        fi

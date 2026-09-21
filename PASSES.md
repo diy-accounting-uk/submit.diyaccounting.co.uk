@@ -248,7 +248,7 @@ The flow is the same: enter code → validate → "Request Resident Pro" button 
 
 **Implemented (Phases 1-5, 7):**
 - Token usage page (`/usage.html`)
-- Stripe SDK integration (`scripts/stripe-setup.js`)
+- Stripe SDK integration (`infra/stripe/stripe-sync.js`)
 - BillingStack CDK infrastructure (checkout, portal, webhook, recover Lambdas)
 - `billingCheckoutPost.js` — creates Stripe Checkout sessions
 - `billingWebhookPost.js` — handles `checkout.session.completed`, `invoice.paid`, `customer.subscription.updated`, `customer.subscription.deleted`, `invoice.payment_failed`

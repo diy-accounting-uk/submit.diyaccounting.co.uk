@@ -1,0 +1,25 @@
+# SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0
+# Copyright (C) 2006-2026 DIY Accounting Limited
+
+# PayPal, as code.
+#
+# The whole configuration is one classic hosted Donate button, made by hand: PayPal's REST
+# API has no resource for it, and the NVP Button Manager that made it is closed to new
+# integrations. infra/paypal/paypal-assert.js reads this file and proves what a live call
+# can: the donate page still renders the button's form with this exact id, and the donate
+# link PayPal builds from that id still resolves.
+#
+# The button id is carried in two places in the spreadsheets repository - source of the
+# repository this file records, so a hand edit to either one is a drifted record, not a
+# silent change.
+
+[button]
+hosted_button_id = "XTEQ73HM52QQW"
+form_action = "https://www.paypal.com/donate"
+donate_url = "https://www.paypal.com/donate/?hosted_button_id=XTEQ73HM52QQW"
+page = "https://spreadsheets.diyaccounting.co.uk/donate.html"
+
+[source]
+repository = "diy-accounting-uk/spreadsheets.diyaccounting.co.uk"
+template = "web/spreadsheets.diyaccounting.co.uk/donate.template.html"
+meta = "app/templates/meta.toml"

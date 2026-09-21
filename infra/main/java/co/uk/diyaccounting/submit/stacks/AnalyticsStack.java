@@ -457,6 +457,7 @@ public class AnalyticsStack extends Stack {
                         .build());
         workflowRunTables.doraRunsTable.addResourceDependency(this.glueDatabase);
         workflowRunTables.probeRunsTable.addResourceDependency(this.glueDatabase);
+        workflowRunTables.agentRunsTable.addResourceDependency(this.glueDatabase);
 
         var operatorEffortTables = new OperatorEffortTables(
                 this,
@@ -794,6 +795,16 @@ public class AnalyticsStack extends Stack {
                 .get("v_operator_interventions_daily")
                 .getNode()
                 .addDependency(operatorEffortTables.commitsTable);
+        businessViews
+                .viewResourcesByName
+                .get("v_agent_runs_daily")
+                .getNode()
+                .addDependency(workflowRunTables.agentRunsTable);
+        businessViews
+                .viewResourcesByName
+                .get("v_agent_runs_daily")
+                .getNode()
+                .addDependency(operatorEffortTables.issueEventsTable);
         businessViews
                 .viewResourcesByName
                 .get("v_compliance_status")

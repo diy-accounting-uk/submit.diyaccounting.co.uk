@@ -1,0 +1,139 @@
+# SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0
+# Copyright (C) 2006-2026 DIY Accounting Limited
+
+name: infra apply
+run-name: "infra apply of ${{ github.ref_name }}"
+
+# One workflow, one step per third-party provider whose console configuration this repository
+# declares under infra/**: Companies House, HMRC, Stripe, PayPal, Telegram. Every provider here
+# publishes no console-management API (or the file only records what a live call can prove), so
+# every step reads live state and asserts it against the file - there is nothing for this
+# workflow to apply. infra/google/** has its own workflow, google-apply.yml, which does apply.
+#
+# No per-step path filter: the workflow's own `paths:` list below is the only gate, so a change
+# to any one provider's directory runs every provider's check, the same convention
+# google-apply.yml already uses for infra/google/**. Splitting further would need a
+# path-filtering action this repository does not otherwise depend on, for a job that already
+# runs in well under a minute.
+
+concurrency:
+  group: infra-apply-${{ github.ref }}
+  cancel-in-progress: false
+
+defaults:
+  run:
+    shell: bash
+
+on:
+  workflow_dispatch: {}
+  pull_request:
+    paths:
+      - 'infra/companies-house/**'
+      - 'infra/hmrc/**'
+      - 'infra/stripe/**'
+      - 'infra/paypal/**'
+      - 'infra/telegram/**'
+      - '.github/workflows/infra-apply.yml'
+  push:
+    branches:
+      - 'main'
+    paths:
+      - 'infra/companies-house/**'
+      - 'infra/hmrc/**'
+      - 'infra/stripe/**'
+      - 'infra/paypal/**'
+      - 'infra/telegram/**'
+      - '.github/workflows/infra-apply.yml'
+
+env:
+  NODE_VERSION: '24'
+  AWS_REGION: 'eu-west-2'
+
+jobs:
+  infra-apply:
+    name: ${{ matrix.environment }}
+    strategy:
+      fail-fast: false
+      matrix:
+        environment: [ci, prod]
+    runs-on: ubuntu-24.04
+    environment: ${{ matrix.environment }}
+    permissions:
+      id-token: write
+      contents: read
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+
+      - name: Setup Node.js
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: timeout 120 npm ci --prefer-offline || { sleep 30; timeout 180 npm ci; }
+        timeout-minutes: 6
+        env:
+          NPM_CONFIG_FETCH_RETRIES: "3"
+
+      - name: Configure AWS role via GitHub OIDC
+        uses: aws-actions/configure-aws-credentials@e1253824e5c10ff9df46874f81ed3ec929e19cfd # v6
+        with:
+          role-to-assume: ${{ vars.SUBMIT_ACTIONS_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+          role-chaining: false
+          audience: sts.amazonaws.com
+          role-skip-session-tagging: true
+          output-credentials: true
+          retry-max-attempts: 3
+
+      - name: Assume AWS deployment role
+        uses: aws-actions/configure-aws-credentials@e1253824e5c10ff9df46874f81ed3ec929e19cfd # v6
+        with:
+          role-to-assume: ${{ vars.SUBMIT_DEPLOY_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+          role-chaining: true
+          audience: sts.amazonaws.com
+          role-skip-session-tagging: true
+          output-credentials: true
+          retry-max-attempts: 3
+
+      - name: Run companies-house-assert
+        run: node infra/companies-house/companies-house-assert.js --environment ${{ matrix.environment }} 2>&1 | tee companies-house-assert.log
+
+      - name: Run hmrc-assert
+        run: node infra/hmrc/hmrc-assert.js --environment ${{ matrix.environment }} 2>&1 | tee hmrc-assert.log
+
+      # Plan only, never --apply: applying is the stripe-catalogue-sync skill's job, run by
+      # the operator's explicit "go" per mode. ci only ever holds the test key; prod holds
+      # both, since prod-billing runs in both Stripe modes.
+      - name: Run stripe-sync (plan)
+        run: |
+          node infra/stripe/stripe-sync.js --environment ${{ matrix.environment }} --mode test 2>&1 | tee stripe-sync.log
+          if [ "${{ matrix.environment }}" = "prod" ]; then
+            node infra/stripe/stripe-sync.js --environment prod --mode live 2>&1 | tee -a stripe-sync.log
+          fi
+
+      # There is one donate page, not one per environment, so this only runs once: on the
+      # prod leg, arbitrarily, rather than duplicating an environment-independent check.
+      - name: Run paypal-assert
+        if: matrix.environment == 'prod'
+        run: node infra/paypal/paypal-assert.js 2>&1 | tee paypal-assert.log
+
+      - name: Run telegram-assert
+        run: node infra/telegram/telegram-assert.js --environment ${{ matrix.environment }} 2>&1 | tee telegram-assert.log
+
+      - name: Generate step summary
+        if: always()
+        run: |
+          echo "# infra apply (${{ matrix.environment }})" >> "$GITHUB_STEP_SUMMARY"
+          echo "" >> "$GITHUB_STEP_SUMMARY"
+          for log in companies-house-assert.log hmrc-assert.log stripe-sync.log paypal-assert.log telegram-assert.log; do
+            if [ -f "$log" ]; then
+              echo "## $log" >> "$GITHUB_STEP_SUMMARY"
+              echo '```' >> "$GITHUB_STEP_SUMMARY"
+              cat "$log" >> "$GITHUB_STEP_SUMMARY"
+              echo '```' >> "$GITHUB_STEP_SUMMARY"
+            fi
+          done

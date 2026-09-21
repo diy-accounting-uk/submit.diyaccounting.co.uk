@@ -45,6 +45,12 @@ on:
   workflow_run:
     workflows: [deploy]
     types: [completed]
+  # A delete-branch-on-merge repository fires this for every merged branch, which is also every
+  # branch that could have held a ci slot. GitHub always runs the default branch's copy of a
+  # workflow for a `delete` event and github.event.ref carries the deleted branch's bare name
+  # (no refs/heads/ prefix) - the 'names' job below resolves it against the live slot records
+  # rather than trusting deploy.yml to still be running.
+  delete:
 
 permissions:
   id-token: write
@@ -565,12 +571,71 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+
+      # Only the delete-triggered slot lookup below needs AWS access from this job - every other
+      # trigger already has its deployment name from params/sweep-for-stacks and get-names needs
+      # no AWS calls of its own.
+      - name: Configure AWS role via GitHub OIDC (deleted-branch slot lookup)
+        if: ${{ github.event_name == 'delete' && github.event.ref_type == 'branch' }}
+        uses: aws-actions/configure-aws-credentials@e1253824e5c10ff9df46874f81ed3ec929e19cfd # v6
+        with:
+          role-to-assume: ${{ vars.SUBMIT_ACTIONS_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+          role-chaining: false
+          audience: sts.amazonaws.com
+          role-skip-session-tagging: true
+          output-credentials: true
+          retry-max-attempts: 3
+
+      - name: Assume AWS deployment role (deleted-branch slot lookup)
+        if: ${{ github.event_name == 'delete' && github.event.ref_type == 'branch' }}
+        uses: aws-actions/configure-aws-credentials@e1253824e5c10ff9df46874f81ed3ec929e19cfd # v6
+        with:
+          role-to-assume: ${{ vars.SUBMIT_DEPLOY_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+          role-chaining: true
+          audience: sts.amazonaws.com
+          role-skip-session-tagging: true
+          output-credentials: true
+          retry-max-attempts: 3
+
+      # Resolves whether a `delete` event names a slot to retire at all: a tag delete never
+      # does, and a branch delete only does when a slot record still names it (the branch's own
+      # deploy already self-destructed, or it never claimed a slot). Every other trigger already
+      # knows its deployment name and always proceeds.
+      - name: Resolve destroy target for a deleted ref
+        id: resolve-delete
+        shell: bash
+        env:
+          SLOT_FOR_REF_GITHUB_REF: refs/heads/${{ github.event.ref }}
+        run: |
+          if [ "${{ github.event_name }}" != "delete" ]; then
+            echo "should-destroy=true" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          if [ "${{ github.event.ref_type }}" != "branch" ]; then
+            echo "Deleted ref '${SLOT_FOR_REF_GITHUB_REF#refs/heads/}' is a ${{ github.event.ref_type }}, nothing to destroy"
+            echo "should-destroy=false" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          SLOT_FOR_REF_AWS_CLI="$(command -v aws)"
+          export SLOT_FOR_REF_AWS_CLI
+          SLOT=$(node "${GITHUB_WORKSPACE}/.github/actions/claim-ci-slot/slot-for-ref.mjs")
+          if [ -z "$SLOT" ]; then
+            echo "No ci slot is held by ${SLOT_FOR_REF_GITHUB_REF}, nothing to destroy"
+            echo "should-destroy=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "Deleted branch ${SLOT_FOR_REF_GITHUB_REF} held ci slot $SLOT"
+            echo "slot-name=$SLOT" >> "$GITHUB_OUTPUT"
+            echo "should-destroy=true" >> "$GITHUB_OUTPUT"
+          fi
+
       - name: Compute deployment name and environment
         id: deployment-config
         uses: ./.github/actions/get-names
         with:
           environment-name: ci
-          deployment-name: ${{ needs.sweep-for-stacks.outputs.deployment-name || needs.params.outputs.deployment-name }}
+          deployment-name: ${{ (github.event_name == 'delete' && steps.resolve-delete.outputs.slot-name) || needs.sweep-for-stacks.outputs.deployment-name || needs.params.outputs.deployment-name }}
     outputs:
       environment-name: ${{ steps.deployment-config.outputs.environment-name }}
       deployment-name: ${{ steps.deployment-config.outputs.deployment-name }}
@@ -580,13 +645,17 @@ jobs:
       apex-url: ${{ steps.deployment-config.outputs.apex-url }}
       holding-domain: ${{ steps.deployment-config.outputs.holding-domain }}
       holding-url: ${{ steps.deployment-config.outputs.holding-url }}
+      should-destroy: ${{ steps.resolve-delete.outputs.should-destroy }}
 
   destroy:
     # Same gate as the `names` job above, and for the same reason: this job deletes
     # CloudFormation stacks, so it must not run on a sweep that failed partway through
     # building its list. Only a skipped sweep (explicit deployment-name) or a sweep that
-    # completed and found a hit may reach here.
-    if: ${{ !cancelled() && (needs.sweep-for-stacks.result == 'skipped' || (needs.sweep-for-stacks.result == 'success' && needs.sweep-for-stacks.outputs.sweeper-hit != 'false')) }}
+    # completed and found a hit may reach here. The should-destroy clause adds the delete-event
+    # case: a deleted tag, or a deleted branch that named no live slot, must end the run
+    # successfully with nothing destroyed rather than falling through to names' own
+    # ref-derived fallback name.
+    if: ${{ !cancelled() && (needs.sweep-for-stacks.result == 'skipped' || (needs.sweep-for-stacks.result == 'success' && needs.sweep-for-stacks.outputs.sweeper-hit != 'false')) && needs.names.outputs.should-destroy == 'true' }}
     needs:
       - params
       - names

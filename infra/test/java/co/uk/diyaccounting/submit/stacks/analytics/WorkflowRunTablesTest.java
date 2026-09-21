@@ -43,12 +43,12 @@ class WorkflowRunTablesTest {
     }
 
     @Test
-    void createsTwoTablesWithDateProjectionAndNoOtherPartitionKey() {
+    void createsThreeTablesWithDateProjectionAndNoOtherPartitionKey() {
         Template template = synthTemplate();
 
-        template.resourceCountIs("AWS::Glue::Table", 2);
+        template.resourceCountIs("AWS::Glue::Table", 3);
 
-        for (String tableName : List.of("dora_runs", "probe_runs")) {
+        for (String tableName : List.of("dora_runs", "probe_runs", "agent_runs")) {
             template.hasResourceProperties(
                     "AWS::Glue::Table",
                     Match.objectLike(Map.of(
@@ -96,6 +96,18 @@ class WorkflowRunTablesTest {
                                 "StorageDescriptor",
                                 Match.objectLike(Map.of(
                                         "Location", "s3://docs-env-analytics-lake-111111111111/curated/probe/")))))));
+
+        template.hasResourceProperties(
+                "AWS::Glue::Table",
+                Match.objectLike(Map.of(
+                        "TableInput",
+                        Match.objectLike(Map.of(
+                                "Name",
+                                "agent_runs",
+                                "StorageDescriptor",
+                                Match.objectLike(Map.of(
+                                        "Location",
+                                        "s3://docs-env-analytics-lake-111111111111/curated/agent-runs/")))))));
     }
 
     @Test
@@ -146,7 +158,33 @@ class WorkflowRunTablesTest {
     }
 
     @Test
-    void tableCountStaysAtTwo() {
-        assertEquals(2, synthTemplate().findResources("AWS::Glue::Table").size());
+    void agentRunsColumnsCarryTheOutcomeAndProvenanceFields() {
+        Template template = synthTemplate();
+
+        template.hasResourceProperties(
+                "AWS::Glue::Table",
+                Match.objectLike(Map.of(
+                        "TableInput",
+                        Match.objectLike(Map.of(
+                                "Name",
+                                "agent_runs",
+                                "StorageDescriptor",
+                                Match.objectLike(Map.of(
+                                        "Columns",
+                                        Match.arrayWith(
+                                                List.of(
+                                                        Map.of("Name", "workflow", "Type", "string"),
+                                                        Map.of("Name", "run_id", "Type", "string"),
+                                                        Map.of("Name", "environment", "Type", "string"),
+                                                        Map.of("Name", "issue_number", "Type", "bigint"),
+                                                        Map.of("Name", "outcome", "Type", "string"),
+                                                        Map.of("Name", "escalated", "Type", "boolean"),
+                                                        Map.of("Name", "pr_number", "Type", "bigint"),
+                                                        Map.of("Name", "duration_seconds", "Type", "bigint"))))))))));
+    }
+
+    @Test
+    void tableCountStaysAtThree() {
+        assertEquals(3, synthTemplate().findResources("AWS::Glue::Table").size());
     }
 }

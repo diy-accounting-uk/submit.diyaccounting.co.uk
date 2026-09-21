@@ -629,6 +629,65 @@ public class ObservabilityStack extends Stack {
                         .height(6)
                         .build()));
 
+        // Row 1b: the spreadsheets site's own RUM p75 web vitals, read cross-account and
+        // cross-region through the OAM sink ObservabilityUE1Stack creates in us-east-1 (the
+        // spreadsheets RUM app monitor's home Region). A CloudWatch dashboard widget can graph
+        // another account's metrics from another Region directly; an alarm cannot, so the
+        // alarms on these same metrics live in ObservabilityUE1Stack instead. Empty until the
+        // spreadsheets account links to that sink.
+        String spreadsheetsAccountId = "064390746177"; // spreadsheets.diyaccounting.co.uk's AWS account
+        String spreadsheetsRumAppName = "prod".equals(props.envName()) ? "spreadsheets-web" : "ci-spreadsheets-web";
+
+        Metric spreadsheetsLcpP75 = Metric.Builder.create()
+                .namespace("AWS/RUM")
+                .metricName("WebVitalsLargestContentfulPaint")
+                .dimensionsMap(Map.of("application_name", spreadsheetsRumAppName))
+                .account(spreadsheetsAccountId)
+                .region("us-east-1")
+                .statistic("p75")
+                .period(Duration.minutes(5))
+                .build();
+
+        Metric spreadsheetsInpP75 = Metric.Builder.create()
+                .namespace("AWS/RUM")
+                .metricName("WebVitalsInteractionToNextPaint")
+                .dimensionsMap(Map.of("application_name", spreadsheetsRumAppName))
+                .account(spreadsheetsAccountId)
+                .region("us-east-1")
+                .statistic("p75")
+                .period(Duration.minutes(5))
+                .build();
+
+        Metric spreadsheetsClsP75 = Metric.Builder.create()
+                .namespace("AWS/RUM")
+                .metricName("WebVitalsCumulativeLayoutShift")
+                .dimensionsMap(Map.of("application_name", spreadsheetsRumAppName))
+                .account(spreadsheetsAccountId)
+                .region("us-east-1")
+                .statistic("p75")
+                .period(Duration.minutes(5))
+                .build();
+
+        dashboardRows.add(List.of(
+                GraphWidget.Builder.create()
+                        .title("Spreadsheets RUM p75 LCP (ms)")
+                        .left(List.of(spreadsheetsLcpP75))
+                        .width(8)
+                        .height(6)
+                        .build(),
+                GraphWidget.Builder.create()
+                        .title("Spreadsheets RUM p75 INP (ms)")
+                        .left(List.of(spreadsheetsInpP75))
+                        .width(8)
+                        .height(6)
+                        .build(),
+                GraphWidget.Builder.create()
+                        .title("Spreadsheets RUM p75 CLS")
+                        .left(List.of(spreadsheetsClsP75))
+                        .width(8)
+                        .height(6)
+                        .build()));
+
         // Row 2: GitHub Probe Tests
         // GitHub probe test metrics (sent from probe-test.yml), one series per suite
         dashboardRows.add(List.of(GraphWidget.Builder.create()
@@ -933,6 +992,17 @@ public class ObservabilityStack extends Stack {
                 .actions(List.of("ssm:GetParameter", "ssm:GetParameters"))
                 .resources(List.of(
                         "arn:aws:ssm:eu-west-2:%s:parameter/submit/%s/*".formatted(this.getAccount(), props.envName())))
+                .build());
+
+        // The one write this role makes to the lake: an agent-run ledger row, one JSON object per
+        // run, under its own prefix. Scoped to that prefix alone so it cannot touch any other
+        // curated table, and to PutObject alone - the DenyCustomerData statement below already
+        // denies this role every read of the lake, and that stays true here.
+        String analyticsLakeBucketArn = "arn:aws:s3:::" + props.sharedNames().analyticsLakeBucketName;
+        alarmTriageRole.addToPolicy(PolicyStatement.Builder.create()
+                .sid("WriteAgentRunLedgerRows")
+                .actions(List.of("s3:PutObject"))
+                .resources(List.of(analyticsLakeBucketArn + "/curated/agent-runs/*"))
                 .build());
 
         // One explicit Deny so a later widening of an Allow above cannot reach customer data. Athena

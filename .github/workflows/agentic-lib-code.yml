@@ -135,6 +135,7 @@ jobs:
       # model, and a prod-facing agent path reads the prod flag from a job carrying that
       # environment instead.
       - name: Stop when the agent kill switch is on
+        id: kill-switch
         uses: ./.github/actions/agent-kill-switch
         with:
           environment-name: ci
@@ -324,6 +325,7 @@ jobs:
 
       - name: Open the pull request
         if: always() && steps.prepare-pr.outputs.ready == 'true'
+        id: open-pr
         env:
           GH_TOKEN: ${{ secrets.AGENT_TOKEN }}
         run: |
@@ -334,6 +336,7 @@ jobs:
                      --title "$(cat "${OUT_DIR}/pr-title.txt")" \
                      --body-file "${{ steps.publish-filter.outputs.output-file }}")
           echo "- **PR**: ${PR_URL}" >> "${OUT_DIR}/CHANGES.md"
+          echo "url=${PR_URL}" | tee -a "$GITHUB_OUTPUT"
 
       # origin:unattended-agent says a model ran this with nobody watching. Applied here, outside
       # the agent's own tool calls, so it lands whether or not the agent remembered to ask for it.
@@ -397,6 +400,79 @@ jobs:
           if grep -qiE '^- \*\*(PR|Pull request)\*\*:' "${OUT_DIR}/CHANGES.md" 2>/dev/null; then
             echo "This run opened a pull request - the patch above is a record, not work to resume." >> "$GITHUB_STEP_SUMMARY"
           fi
+
+      # Agent-run ledger row for the one-stop dashboard (v_agent_runs_daily): one row per run,
+      # recording whether this path landed a pull request, so the posted rate reads from data
+      # rather than from the artifact list. AWS credentials for this write are assumed
+      # unconditionally near the top of this job, so - unlike the alarm workflows - every outcome
+      # below is always reachable.
+      - name: Determine the outcome for the ledger
+        if: always()
+        id: ledger-outcome
+        run: |
+          set -euo pipefail
+          if [ "${{ steps.kill-switch.conclusion }}" = "failure" ]; then
+            OUTCOME=skipped-kill-switch
+          elif [ "${{ steps.run.conclusion }}" = "failure" ]; then
+            OUTCOME=no-answer
+          elif [ -s "${OUT_DIR}/claude-output.json" ] && jq -e '.subtype == "error_max_turns"' "${OUT_DIR}/claude-output.json" > /dev/null 2>&1; then
+            OUTCOME=max-turns
+          elif [ "${{ steps.prepare-pr.outputs.ready }}" = "true" ]; then
+            OUTCOME=posted
+          else
+            OUTCOME=no-action
+          fi
+          echo "outcome=${OUTCOME}" | tee -a "$GITHUB_OUTPUT"
+
+      - name: Build the agent-run row
+        if: always()
+        id: agent-run-row
+        env:
+          GH_TOKEN: ${{ github.token }}
+          ROW_RUN_ID: ${{ github.run_id }}
+          ROW_OUTCOME: ${{ steps.ledger-outcome.outputs.outcome }}
+          ROW_REDACTIONS: ${{ steps.publish-filter.outputs.redactions }}
+          ROW_GUARDRAIL_ACTION: ${{ steps.publish-filter.outputs.guardrail-action }}
+          ROW_PR_URL: ${{ steps.open-pr.outputs.url }}
+          ROW_REPOSITORY: ${{ github.repository }}
+        run: |
+          set -euo pipefail
+          STARTED_AT=$(gh api "repos/${ROW_REPOSITORY}/actions/runs/${ROW_RUN_ID}" --jq .run_started_at)
+          FINISHED_AT=$(date -u +%FT%TZ)
+          DURATION_SECONDS=$(( $(date -u -d "$FINISHED_AT" +%s) - $(date -u -d "$STARTED_AT" +%s) ))
+          PR_NUMBER=""
+          if [ -n "${ROW_PR_URL}" ]; then PR_NUMBER="${ROW_PR_URL##*/}"; fi
+
+          ROW=$(jq -nc \
+            --arg run_id "$ROW_RUN_ID" \
+            --arg run_url "${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}" \
+            --arg trigger "${{ github.event_name }}" \
+            --arg outcome "$ROW_OUTCOME" \
+            --arg redactions "${ROW_REDACTIONS:-}" \
+            --arg guardrail_action "${ROW_GUARDRAIL_ACTION:-}" \
+            --arg pr_number "$PR_NUMBER" \
+            --argjson duration_seconds "$DURATION_SECONDS" \
+            --arg finished_at "$FINISHED_AT" \
+            '{
+              workflow: "agentic-lib-code", run_id: $run_id, run_url: $run_url, trigger: $trigger,
+              environment: "ci", issue_number: null,
+              model_id: "eu.anthropic.claude-sonnet-4-5-20250929-v1:0",
+              outcome: $outcome, escalated: false,
+              redactions: (if $redactions == "" then null else ($redactions | tonumber) end),
+              guardrail_action: (if $guardrail_action == "" then null else $guardrail_action end),
+              pr_number: (if $pr_number == "" then null else ($pr_number | tonumber) end),
+              duration_seconds: $duration_seconds, finished_at: $finished_at
+            }')
+          echo "row=$ROW" >> "$GITHUB_OUTPUT"
+          echo "key=curated/agent-runs/dt=$(date -u +%F)/${ROW_RUN_ID}-${{ github.run_attempt }}.json" >> "$GITHUB_OUTPUT"
+
+      - name: Write the agent-run row to the lake
+        if: always()
+        uses: ./.github/actions/dora-row
+        with:
+          bucket: 'ci-env-analytics-lake-${{ vars.SUBMIT_ACCOUNT_ID }}'
+          key: ${{ steps.agent-run-row.outputs.key }}
+          row: ${{ steps.agent-run-row.outputs.row }}
 
       - name: Upload the handover
         if: always()

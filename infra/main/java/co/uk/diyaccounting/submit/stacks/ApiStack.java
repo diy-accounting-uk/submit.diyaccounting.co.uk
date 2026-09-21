@@ -193,9 +193,11 @@ public class ApiStack extends Stack {
         // Custom resource to clean up external API Gateway custom domain mappings on stack deletion.
         // set-origins creates mappings outside CloudFormation; if not removed before CF deletes the
         // HttpApi, the deletion fails because the $default stage is still referenced.
+        // Both cleanup log groups take CloudFormation-generated names: the Lambdas run during
+        // stack deletion and ship their last log lines after the named group is gone, recreating
+        // it, and a slot's next deployment under the same name then fails on "already exists".
         LogGroup cleanupFnLogGroup = LogGroup.Builder.create(
                         this, props.resourceNamePrefix() + "-ApiGwCleanupFnLogGroup")
-                .logGroupName("/aws/lambda/" + props.resourceNamePrefix() + "-api-gw-cleanup")
                 .retention(RetentionDays.THREE_DAYS)
                 .removalPolicy(RemovalPolicy.DESTROY)
                 .build();
@@ -219,7 +221,6 @@ public class ApiStack extends Stack {
         // custom resource protocol; that wrapper needs its own log group, separate from cleanupFn's.
         LogGroup cleanupProviderLogGroup = LogGroup.Builder.create(
                         this, props.resourceNamePrefix() + "-ApiGwCleanupProviderLogGroup")
-                .logGroupName("/aws/lambda/" + props.resourceNamePrefix() + "-api-gw-cleanup-provider")
                 .retention(RetentionDays.THREE_DAYS)
                 .removalPolicy(RemovalPolicy.DESTROY)
                 .build();

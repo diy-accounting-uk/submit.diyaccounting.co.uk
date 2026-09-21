@@ -1,0 +1,195 @@
+# SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0
+# Copyright (C) 2006-2026 DIY Accounting Limited
+
+name: alarm-remedy-close
+run-name: "close resolved alarm issues"
+
+# Closes an [ALARM] issue only when every one of scripts/close-alarm-issue-when-ok.mjs's own
+# checks passes: the issue was authored by the alarm pipeline's own App identity
+# (diyaccounting-ops[bot]), its claimed alarm transition re-verifies against CloudWatch's own
+# history, and its family's remedy row says the family is allowed to close itself. This job only
+# narrows which issues that script is asked about, to the ones alarm-triage.yml already labelled
+# remedy:*; the script re-derives everything it needs from the issue itself and never trusts the
+# label alone.
+
+on:
+  schedule:
+    - cron: '17 * * * *'
+  workflow_dispatch: {}
+
+permissions:
+  id-token: write
+  issues: write
+
+concurrency:
+  group: alarm-remedy-close
+  cancel-in-progress: false
+
+env:
+  NODE_VERSION: '24'
+  AWS_REGION: 'eu-west-2'
+  # The one place this number is written, same convention as alarm-triage.yml's own budget.
+  CLOSE_BUDGET_PER_DAY: '24'
+
+jobs:
+  close:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    environment: prod
+    steps:
+      - name: Stop once ${{ env.CLOSE_BUDGET_PER_DAY }} close runs have already posted a result today
+        id: budget-guard
+        uses: ./.github/actions/agent-run-budget
+        with:
+          workflow-file: alarm-remedy-close.yml
+          job-name: close
+          step-name: Close the issues that qualify
+          budget: ${{ env.CLOSE_BUDGET_PER_DAY }}
+
+      - name: Checkout
+        if: always()
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+
+      - name: Set up Node
+        if: steps.budget-guard.outputs.over-budget == 'false'
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+
+      # Unconditional (not gated on the budget outcome, unlike every step below): this and the
+      # role assumption after it exist so a budget-skipped run can still write the ledger row at
+      # the end of this job, since prod is this job's only environment and is already known
+      # before it starts.
+      - name: Configure AWS role via GitHub OIDC
+        if: always()
+        uses: aws-actions/configure-aws-credentials@e1253824e5c10ff9df46874f81ed3ec929e19cfd # v6
+        with:
+          role-to-assume: ${{ vars.SUBMIT_ACTIONS_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+          role-chaining: false
+          audience: sts.amazonaws.com
+          role-skip-session-tagging: true
+          output-credentials: true
+          retry-max-attempts: 3
+
+      # Same read-only role alarm-triage.yml assumes for its own CloudWatch reads. Read-only
+      # except for the one write ObservabilityStack.java's WriteAgentRunLedgerRows grant allows:
+      # this workflow's own agent-run row, below.
+      - name: Assume the read-only alarm triage role
+        if: always()
+        uses: aws-actions/configure-aws-credentials@e1253824e5c10ff9df46874f81ed3ec929e19cfd # v6
+        with:
+          role-to-assume: ${{ vars.SUBMIT_ALARM_TRIAGE_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+          role-chaining: true
+          audience: sts.amazonaws.com
+          role-skip-session-tagging: true
+          output-credentials: true
+          retry-max-attempts: 3
+
+      - name: Stop when the agent kill switch is on
+        if: steps.budget-guard.outputs.over-budget == 'false'
+        id: kill-switch
+        uses: ./.github/actions/agent-kill-switch
+        with:
+          environment-name: prod
+
+      - name: Install dependencies
+        if: steps.budget-guard.outputs.over-budget == 'false'
+        run: timeout 120 npm ci --prefer-offline || { sleep 30; timeout 180 npm ci; }
+
+      - name: Generate a token for diya-agent
+        if: steps.budget-guard.outputs.over-budget == 'false'
+        id: app-token
+        uses: actions/create-github-app-token@fee1f7d63c2ff003460e3d139729b119787bc349 # v2.2.2
+        with:
+          app-id: ${{ vars.AGENT_APP_ID }}
+          private-key: ${{ secrets.AGENT_APP_PRIVATE_KEY }}
+
+      # Narrows to issues alarm-triage.yml already decided had a remedy; the script re-checks
+      # author, origin and the remedy row itself, so this filter is a courtesy, not the gate.
+      # Each invocation's JSON `closed` field is kept (not just its exit code) so the ledger step
+      # below can tell "ran and closed nothing" apart from "closed at least one issue".
+      - name: Close the issues that qualify
+        if: steps.budget-guard.outputs.over-budget == 'false'
+        id: close-issues
+        env:
+          GH_TOKEN: ${{ steps.app-token.outputs.token }}
+        run: |
+          set -euo pipefail
+          : > /tmp/close-results.ndjson
+          ISSUE_NUMBERS=$(gh issue list --repo "${{ github.repository }}" --label alarm --state open --json number,labels \
+            --jq '.[] | select(.labels | any(.name | startswith("remedy:"))) | .number')
+          if [ -z "${ISSUE_NUMBERS}" ]; then
+            echo "no open alarm issue carries a remedy:* label"
+            echo "closed-count=0" | tee -a "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          for ISSUE_NUMBER in ${ISSUE_NUMBERS}; do
+            echo "checking issue #${ISSUE_NUMBER}"
+            node scripts/close-alarm-issue-when-ok.mjs --issue-number "${ISSUE_NUMBER}" --repo "${{ github.repository }}" \
+              | tee -a /tmp/close-results.ndjson || true
+          done
+          echo "closed-count=$(jq -s '[.[] | select(.closed == true)] | length' /tmp/close-results.ndjson)" \
+            | tee -a "$GITHUB_OUTPUT"
+
+      # Agent-run ledger row for the one-stop dashboard (v_agent_runs_daily). This workflow closes
+      # zero or more issues per run, not one, so the row is per run rather than per issue: outcome
+      # is "closed" once this run closed at least one, "no-action" when the check ran and found
+      # none, and "skipped-budget" or "skipped-kill-switch" for the two ways the check never ran.
+      - name: Determine the outcome for the ledger
+        if: always() && !cancelled()
+        id: ledger-outcome
+        env:
+          CLOSED_COUNT: ${{ steps.close-issues.outputs.closed-count }}
+        run: |
+          set -euo pipefail
+          if [ "${{ steps.budget-guard.outputs.over-budget }}" = "true" ]; then
+            OUTCOME=skipped-budget
+          elif [ "${{ steps.kill-switch.conclusion }}" = "failure" ]; then
+            OUTCOME=skipped-kill-switch
+          elif [ "${CLOSED_COUNT:-0}" -gt 0 ]; then
+            OUTCOME=closed
+          else
+            OUTCOME=no-action
+          fi
+          echo "outcome=${OUTCOME}" | tee -a "$GITHUB_OUTPUT"
+
+      - name: Build the agent-run row
+        if: always() && !cancelled()
+        id: agent-run-row
+        env:
+          GH_TOKEN: ${{ github.token }}
+          ROW_RUN_ID: ${{ github.run_id }}
+          ROW_OUTCOME: ${{ steps.ledger-outcome.outputs.outcome }}
+          ROW_REPOSITORY: ${{ github.repository }}
+        run: |
+          set -euo pipefail
+          STARTED_AT=$(gh api "repos/${ROW_REPOSITORY}/actions/runs/${ROW_RUN_ID}" --jq .run_started_at)
+          FINISHED_AT=$(date -u +%FT%TZ)
+          DURATION_SECONDS=$(( $(date -u -d "$FINISHED_AT" +%s) - $(date -u -d "$STARTED_AT" +%s) ))
+
+          ROW=$(jq -nc \
+            --arg run_id "$ROW_RUN_ID" \
+            --arg run_url "${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}" \
+            --arg trigger "${{ github.event_name }}" \
+            --arg outcome "$ROW_OUTCOME" \
+            --argjson duration_seconds "$DURATION_SECONDS" \
+            --arg finished_at "$FINISHED_AT" \
+            '{
+              workflow: "alarm-remedy-close", run_id: $run_id, run_url: $run_url, trigger: $trigger,
+              environment: "prod", issue_number: null, model_id: null,
+              outcome: $outcome, escalated: false,
+              redactions: null, guardrail_action: null, pr_number: null,
+              duration_seconds: $duration_seconds, finished_at: $finished_at
+            }')
+          echo "row=$ROW" >> "$GITHUB_OUTPUT"
+          echo "key=curated/agent-runs/dt=$(date -u +%F)/${ROW_RUN_ID}-${{ github.run_attempt }}.json" >> "$GITHUB_OUTPUT"
+
+      - name: Write the agent-run row to the lake
+        if: always() && !cancelled()
+        uses: ./.github/actions/dora-row
+        with:
+          bucket: 'prod-env-analytics-lake-${{ vars.SUBMIT_ACCOUNT_ID }}'
+          key: ${{ steps.agent-run-row.outputs.key }}
+          row: ${{ steps.agent-run-row.outputs.row }}

@@ -261,6 +261,7 @@ Created per deployment by `deploy.yml`:
 | `copilot-setup-steps.yml` | Copilot setup (reusable) | workflow_call |
 | `google-apply.yml` | Plan/apply the `infra/google/` config files against live Google Cloud, GA4 and OAuth state | Pull request (plan), push to main (apply) |
 | `youtube-check.yml` | Check the stored YouTube refresh token still resolves to the declared channel | Schedule (weekly), manual |
+| `infra-apply.yml` | Assert the `infra/companies-house/`, `infra/hmrc/`, `infra/stripe/`, `infra/paypal/` and `infra/telegram/` config files against live provider state | Pull request, push to main, manual |
 
 **Note:** Gateway and spreadsheets deployment workflows have been moved to their own repositories. This repo only deploys the submit application to submit-ci (367191799875) and submit-prod (972912397388).
 
@@ -587,6 +588,11 @@ Head-injected scripts for early API prefetching:
 | `main/java/.../swagger/` | OpenAPI generator |
 | `test/` | JUnit tests for CDK code |
 | `aws-accounts/` | Multi-account setup scripts (OIDC, backups, CDK bootstrap) |
+| `companies-house/` | Companies House hub applications declared and asserted against live state |
+| `hmrc/` | HMRC Developer Hub applications and their API subscriptions declared and asserted against live state |
+| `stripe/` | Stripe webhook endpoints and the bundle catalogue's products/prices, planned and applied by `stripe-sync.js` |
+| `paypal/` | The hosted Donate button declared and asserted against the live donate page |
+| `telegram/` | The alerting bot and its six groups declared and asserted against live Bot API state |
 
 #### CDK Constructs
 
@@ -608,6 +614,11 @@ Head-injected scripts for early API prefetching:
 | `infra/google/ga4/analytics.toml` | GA4 account, properties, streams, key events and BigQuery links |
 | `infra/google/gcp/oauth.toml` | The Google OAuth clients (Cognito sign-in, YouTube upload) this repo depends on |
 | `infra/google/gcp/youtube.toml` | YouTube channel handle, quota project and credential secret names |
+| `infra/companies-house/companies-house.toml` | Companies House hub applications, client ids, redirect URIs and secret names |
+| `infra/hmrc/hmrc.toml` | HMRC Developer Hub applications and their API subscriptions |
+| `infra/stripe/stripe.toml` | Stripe webhook endpoints, their modes and event list, and the two account key secret names |
+| `infra/paypal/paypal.toml` | The hosted Donate button id, form action, donate URL and donate page |
+| `infra/telegram/telegram.toml` | The alerting bot's username and its six groups' chat ids |
 | `faqs.toml` | FAQ content for help page |
 | `submit.features.toml` | Feature flags configuration |
 | `playwright.config.js` | Playwright test configuration |
@@ -643,7 +654,6 @@ Head-injected scripts for early API prefetching:
 | `toggle-cognito-native-auth.js` | Toggle Cognito native auth provider |
 | `cleanup-test-users.js` | Delete stray Cognito test users and purge durable test users' data |
 | `bundle-for-tests.js` | Grant test bundles |
-| `stripe-setup.js` | Create/verify Stripe webhook endpoints |
 | `export-user-data.js` | Export user data (GDPR) |
 | `delete-user-data.js` | Delete user data (GDPR) |
 | `export-dynamodb-for-test-users.js` | Export DynamoDB for test users |

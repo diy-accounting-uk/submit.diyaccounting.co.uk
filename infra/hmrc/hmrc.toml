@@ -1,0 +1,98 @@
+# SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0
+# Copyright (C) 2006-2026 DIY Accounting Limited
+
+# HMRC, as code.
+#
+# Two Developer Hub applications, made by hand because the hub publishes no
+# application-management API: "sandbox" (client id ending v4tV, used from both ci and prod for
+# synthetic and behaviour testing) and "production" (prod only, the live client id). Neither
+# application's API subscriptions can be changed here - only the hub account holder can add
+# one - but a subscription is checkable: an unsubscribed call answers RESOURCE_FORBIDDEN, so
+# infra/hmrc/hmrc-assert.js turns a subscription that disappears into a red build rather than a
+# failed customer submission.
+#
+# The redirect URI is never stored: web/public/lib/auth-url-builder.js rebuilds it at runtime
+# as "<DIY_SUBMIT_BASE_URL>/activities/submitVatCallback.html". The values below are that same
+# rule applied to each host this application runs from.
+#
+# The production application's subscription set is unrecorded beyond what the functions below
+# prove: mark it recorded by the first infra-apply.yml run against prod, not by editing this
+# comment.
+
+[application.sandbox]
+client_id = "uqMHA6RsDGGa7h8EG2VqfqAmv4tV"
+host = "test-api.service.hmrc.gov.uk"
+redirect_uris = [
+  "https://ci-submit.diyaccounting.co.uk/activities/submitVatCallback.html",
+  "https://submit.diyaccounting.co.uk/activities/submitVatCallback.html",
+]
+
+  [application.sandbox.secret]
+  ci = "ci/submit/hmrc/sandbox_client_secret"
+  prod = "prod/submit/hmrc/sandbox_client_secret"
+
+  [[application.sandbox.subscription]]
+  api = "business-details"
+  version = "2.0"
+  probe = "/individuals/business/details/AA000003A/list"
+
+  [[application.sandbox.subscription]]
+  api = "self-assessment-test-support"
+  version = "1.0"
+  method = "POST"
+  probe = "/organisations/self-assessment/test-support/business/income-source"
+
+  [[application.sandbox.subscription]]
+  api = "obligations"
+  version = "3.0"
+  probe = "/obligations/details/AA000003A/income-and-expenditure"
+
+  [[application.sandbox.subscription]]
+  api = "self-employment-business"
+  version = "5.0"
+  probe = "/individuals/business/self-employment/AA000003A/XAIS12345678910/period/2024-25"
+
+  [[application.sandbox.subscription]]
+  api = "business-source-adjustable-summary"
+  version = "7.0"
+  probe = "/individuals/self-assessment/adjustable-summary/AA000003A/self-employment/00000000-0000-0000-0000-000000000000/2024-25"
+
+  [[application.sandbox.subscription]]
+  api = "individual-calculations"
+  version = "8.0"
+  probe = "/individuals/calculations/AA000003A/self-assessment/2024-25/00000000-0000-0000-0000-000000000000"
+
+  [[application.sandbox.subscription]]
+  api = "self-assessment-individual-details"
+  version = "2.0"
+  probe = "/individuals/person/itsa-status/AA000003A/2024-25"
+
+  [[application.sandbox.subscription]]
+  api = "vat-mtd"
+  version = "1.0"
+  probe = "/organisations/vat/193051768/obligations"
+
+  [[application.sandbox.subscription]]
+  api = "test-fraud-prevention-headers"
+  version = "1.0"
+  method = "POST"
+  probe = "/test/fraud-prevention-headers/validate"
+
+  [[application.sandbox.subscription]]
+  api = "create-test-user"
+  version = "1.0"
+  method = "POST"
+  probe = "/create-test-user/individuals"
+
+[application.production]
+client_id = "hKCOeWXZ6ji7H3ep3nMwHrP5ycev"
+host = "api.service.hmrc.gov.uk"
+redirect_uris = ["https://submit.diyaccounting.co.uk/activities/submitVatCallback.html"]
+
+  [application.production.secret]
+  prod = "prod/submit/hmrc/client_secret"
+
+  [[application.production.subscription]]
+  api = "vat-mtd"
+  version = "1.0"
+  probe = "/organisations/vat/193051768/obligations"

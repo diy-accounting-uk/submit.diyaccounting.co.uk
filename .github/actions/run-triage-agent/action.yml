@@ -2,7 +2,7 @@
 # Copyright (C) 2006-2026 DIY Accounting Limited
 
 name: "Run the alarm-triage agent"
-description: "Runs claude -p against prompts/alarm-triage.md with the given model and writes its --output-format json result to a file. Shared by alarm-triage.yml's Haiku first pass and Sonnet escalation so the two invocations cannot diverge. Never fails the step on the agent's own exit code or content: the caller judges the result from the output file."
+description: "Runs claude -p against a prompt file (prompts/alarm-triage.md by default) with the given model and writes its --output-format json result to a file. Shared by alarm-triage.yml's Haiku first pass and Sonnet escalation, and by support-triage.yml, so those invocations cannot diverge. Never fails the step on the agent's own exit code or content: the caller judges the result from the output file."
 
 inputs:
   model-id:
@@ -14,6 +14,10 @@ inputs:
   output-file:
     description: "path to write claude's --output-format json result to"
     required: true
+  prompt-file:
+    description: "path to the prompt template, expanded with envsubst before it is passed to claude -p"
+    required: false
+    default: "prompts/alarm-triage.md"
 
 runs:
   using: "composite"
@@ -29,9 +33,10 @@ runs:
         DISABLE_ERROR_REPORTING: '1'
         DISABLE_AUTOUPDATER: '1'
         OUTPUT_FILE: ${{ inputs.output-file }}
+        PROMPT_FILE: ${{ inputs.prompt-file }}
       run: |
         set -o pipefail
-        PROMPT=$(envsubst < prompts/alarm-triage.md)
+        PROMPT=$(envsubst < "$PROMPT_FILE")
         claude -p "$PROMPT" \
           --max-turns 60 \
           --output-format json \
