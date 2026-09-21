@@ -43,6 +43,9 @@ step.
 
 ## In flight
 
+**COOL-DOWN is on since 2026-09-21T11:52:24Z.** No new board rows except a degradation. Agents commit
+and stop. One branch is driven green at a time. Lifted only by the operator in their own words.
+
 - [ ] **B52.D2. Donations on the revenue panel.** In flight: on `claude/b66-board` (PR #316 to `main`, head 646fe97c), every run on that head green (deploy 35591194517, deploy environment 35591194348, infra apply 35591214607, google apply 35591214395, test 35591193960, CodeQL 35591193973); mergeable, merging once main's deploy 35590701872 ends; the live Stripe write is done and reads up to date.
   `web/spreadsheets.diyaccounting.co.uk/donate-links.toml` (`…4F200`, `4F201`, `4F202`, `4F204`); a
   match means one account, and `SELECT day, product, revenue_gbp FROM v_revenue_daily WHERE product
