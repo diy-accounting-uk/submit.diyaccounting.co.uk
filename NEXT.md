@@ -81,6 +81,27 @@ and stop. One branch is driven green at a time. Lifted only by the operator in t
   `app/unit-tests/scripts/redactTriageOutput.test.js`. **Source**: BACKLOG 69. **Owner**: Claude
   Code. **Model**: Haiku. **Size**: ~2 files.
 
+- [ ] **B46b. The seven open CodeQL alerts, and no bearer token in a committed test report.**
+  Three fixes and one dismissal on GitHub's code-scanning list: #60 (critical) `app/lib/hmrcValidation.js:125`
+  slices a tax-year request parameter Express may deliver as an array; guard it with the
+  `typeof === "string"` check `isValidTaxYear` at line 94 already makes. #62 to #65 (high)
+  `app/functions/infra/selfDestruct.js:318, 326, 344, 353` `console.log` a stack name derived from
+  `process.env`; route those four lines through the structured logger, or dismiss each as a false
+  positive naming the value as a CloudFormation stack name. #66 (medium) `mcp/lib/itsa-tools.js:152`
+  assigns `node[part]` along a dotted path without refusing `__proto__`, `constructor` and
+  `prototype`; refuse them. #68 (high warning) `infra/google/gcp/gcp-billing-assert.js:432` tests a
+  service-name list with `includes("compute.googleapis.com")`, which CodeQL reads as a URL host
+  check; dismiss as a false positive with that reason (`gh api -X PATCH
+  repos/diy-accounting-uk/submit.diyaccounting.co.uk/code-scanning/alerts/68 -f state=dismissed
+  -f dismissed_reason=false_positive`, approved by the operator on 2026-09-21). The 13 generic
+  secret alerts were closed by the operator the same day; eleven pointed at earlier revisions of
+  `web/public/tests/test-report-web-test-local.json`, whose `Authorization` values are
+  `***MASKED***` today. So that it stays so: a unit test under `app/unit-tests/` that reads every
+  tracked `web/public/tests/**/*.json` and fails on an `Authorization` value that is not the mask.
+  Proof: `npm test` green, the code-scanning list shows 0 open, and the test fails when a bearer
+  value is planted in a report. **Source**: BACKLOG 46; the repository's code-scanning and
+  secret-scanning pages. **Owner**: Claude Code. **Model**: Sonnet. **Size**: ~5 files.
+
 - [ ] **B46a. Lint `infra/google/`.** `eslint.config.js`'s global `ignores` carries `scripts/` and
   `infra/google/`, so the eight Google scripts under `infra/google/` carry 16 sonarjs and security
   findings nothing lints. Remove `infra/google/` from the ignore list, fix each finding or suppress
