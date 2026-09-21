@@ -16,11 +16,10 @@ runs), and for Claude Code steps the **Model** a sub-agent should use (Fable > O
 Haiku; the lowest tier that fits). Anything touching code goes through a `claude/*` branch and
 PR; the operator merges.
 
-**Prod runs deployment prod-0c847b0** (main's deploy 35552596434 of PR #311's merge, green at 03:2x UTC on
-2026-09-21, the only prod set standing; PR #312's merge 61ecd57b touched no deployable path). **ci**:
-`ci-set1` is live and last-known-good (b63's set); its slot record, held by the deleted
-`claude/b63-board`, self-destructs with the set. The SSO session expired at 02:3x UTC; the set counts
-and every AWS-read proof below wait on `aws sso login --sso-session diyaccounting`.
+**Prod runs deployment prod-a9fa597** (main's deploy 35559744237 of PR #310's merge, green at 04:4x UTC on
+2026-09-21, the only prod set standing; #314's merge touched a behaviour test only). **ci**: `ci-set1`
+is live and last-known-good (b63's set) until it self-destructs. The SSO session expired at 02:3x UTC;
+the set counts and every AWS-read proof below wait on `aws sso login --sso-session diyaccounting`.
 
 The board runs in five sections, in this order: **in flight** (a branch, a pull request or a run
 in motion, each named in the row), **machine-only**, **machine-ask**, **human-driven**,
@@ -224,15 +223,15 @@ step.
   `public/lib/download-page.js` sends it since 08:26 UTC on 2026-09-18.
   `analytics/bigquery/key_events_daily.sql` still maps that host's `purchase` to `donate` as well,
   so the proof reads the raw event name. Its scheduled query covers event_date D-2, so a full day
-  is first proven by the 04:30 run on 2026-09-21 (event_date 2026-09-19). Proof: `aws --profile
+  is first proven by the 04:30 run on 2026-09-21 (event_date 2026-09-19), which has happened. Proof: `aws --profile
   submit-prod athena start-query-execution` in workgroup `prod-env-analytics`, database
   `prod_env_analytics`, `SELECT dt, count(*) FROM ga4_bq_events WHERE stream_id = '13496898428' AND
   event_name = 'donate' GROUP BY 1` — a non-zero row for 2026-09-19 closes it, and the matching
   `key_events_daily` row (hostname `spreadsheets.diyaccounting.co.uk`, key_event `donate`) confirms
   the aggregate carries it. Zero on both means the emitter is not reaching GA4: reopen B52n with the
   query output. The lake's newest day, 2026-09-18, has one `donation_prompt` and no `donate` or
-  `purchase` for that stream, so no donation happened that day and the proof waits on the 2026-09-21 run.
-  Blocked on that run. **Source**: B52n. **Owner**: Claude Code. **Model**: Haiku. **Size**: ~0 files.
+  `purchase` for that stream, so no donation happened that day. The read needs `aws sso login --sso-session diyaccounting`;
+  blocked on that login. **Source**: B52n. **Owner**: Claude Code. **Model**: Haiku. **Size**: ~0 files.
 
 - [ ] **B69.2. The reliability ledger: the first row.** The five agent workflows write
   `curated/agent-runs/dt=<day>/<run>-<attempt>.json` since PR #311; `agent_runs`,
