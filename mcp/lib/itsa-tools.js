@@ -146,10 +146,16 @@ export function writePath(target, path, value) {
   }
   let node = target;
   for (let i = 0; i < parts.length - 1; i++) {
-    if (!Object.hasOwn(node, parts[i]) || node[parts[i]] === null || typeof node[parts[i]] !== "object") node[parts[i]] = {};
-    node = node[parts[i]];
+    const part = parts[i];
+    // Repeats the guard at the write site itself, not only in the loop above, so static
+    // analysis following this assignment can see the refusal without tracing back to it.
+    if (UNSAFE_PATH_PARTS.has(part)) throw new Error(`Refusing to write the path ${path}: ${part} is not a field`);
+    if (!Object.hasOwn(node, part) || node[part] === null || typeof node[part] !== "object") node[part] = {};
+    node = node[part];
   }
-  node[parts[parts.length - 1]] = value;
+  const lastPart = parts[parts.length - 1];
+  if (UNSAFE_PATH_PARTS.has(lastPart)) throw new Error(`Refusing to write the path ${path}: ${lastPart} is not a field`);
+  node[lastPart] = value;
 }
 
 // Rebuilds a payload from the slots the year accepts, in the mapping's own
