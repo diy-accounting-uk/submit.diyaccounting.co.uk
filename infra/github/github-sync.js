@@ -214,12 +214,8 @@ export function rulesetDiff(declared, live) {
 
   const diffs = [];
   diffs.push(...scalarDiff("", "enforcement", declared.enforcement, live.enforcement));
-  diffs.push(
-    ...arraySetDiff("conditions.ref_name.include", declared.conditions.refName.include, live.conditions?.refName?.include ?? []),
-  );
-  diffs.push(
-    ...arraySetDiff("conditions.ref_name.exclude", declared.conditions.refName.exclude, live.conditions?.refName?.exclude ?? []),
-  );
+  diffs.push(...arraySetDiff("conditions.ref_name.include", declared.conditions.refName.include, live.conditions?.refName?.include ?? []));
+  diffs.push(...arraySetDiff("conditions.ref_name.exclude", declared.conditions.refName.exclude, live.conditions?.refName?.exclude ?? []));
 
   const declaredByType = new Map(declared.rules.map((rule) => [rule.type, rule]));
   const liveByType = new Map((live.rules ?? []).map((rule) => [rule.type, rule]));
@@ -297,12 +293,15 @@ export function planGithub(config, live) {
   diffs.push(...arraySetDiff("actions.repository_secrets", config.actions.repositorySecrets, live.actions.repositorySecrets));
   diffs.push(...arraySetDiff("actions.repository_variables", config.actions.repositoryVariables, live.actions.repositoryVariables));
 
-  diffs.push(...scalarDiff("security", "automated_security_fixes", config.security.automatedSecurityFixes, live.security.automatedSecurityFixes));
+  diffs.push(
+    ...scalarDiff("security", "automated_security_fixes", config.security.automatedSecurityFixes, live.security.automatedSecurityFixes),
+  );
 
   for (const declaredRuleset of config.rulesets) {
     const liveRuleset = live.rulesets?.[declaredRuleset.name] ?? null;
     for (const diff of rulesetDiff(declaredRuleset, liveRuleset)) {
-      diffs.push({ path: `ruleset.${declaredRuleset.name}${diff.path ? `.${diff.path}` : ""}`, declared: diff.declared, live: diff.live });
+      const suffix = diff.path ? `.${diff.path}` : "";
+      diffs.push({ path: `ruleset.${declaredRuleset.name}${suffix}`, declared: diff.declared, live: diff.live });
     }
   }
 
@@ -334,11 +333,13 @@ export function planGithub(config, live) {
 // --- Network calls. Not covered by the unit tests (decision logic only, no network). ---
 
 function ghApiJson(route) {
+  // eslint-disable-next-line sonarjs/no-os-command-from-path -- gh comes from the runner's PATH, as every workflow step's does
   const output = execFileSync("gh", ["api", route], { encoding: "utf8", stdio: ["ignore", "pipe", "pipe"] });
   return JSON.parse(output);
 }
 
 function ghApiNames(route, field) {
+  // eslint-disable-next-line sonarjs/no-os-command-from-path -- gh comes from the runner's PATH, as every workflow step's does
   const output = execFileSync("gh", ["api", "--paginate", "--jq", `.${field}[].name`, route], {
     encoding: "utf8",
     stdio: ["ignore", "pipe", "pipe"],
@@ -353,6 +354,7 @@ function ghApiNames(route, field) {
 function ghApiWrite(method, route, body) {
   const args = ["api", "-X", method, route];
   if (body !== undefined) args.push("--input", "-");
+  // eslint-disable-next-line sonarjs/no-os-command-from-path -- gh comes from the runner's PATH, as every workflow step's does
   execFileSync("gh", args, {
     encoding: "utf8",
     input: body !== undefined ? JSON.stringify(body) : undefined,
