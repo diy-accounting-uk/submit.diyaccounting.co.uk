@@ -48,11 +48,22 @@ step.
   #313 quoting it. **Source**: issue #313; BACKLOG 30. **Owner**: Claude Code. **Model**: Haiku.
   **Size**: ~0 files.
 
-## Machine-only
+- [ ] **B11.T7b.2. Run A, the dated year.** In flight: proven on the sandbox and on `claude/b65-board` (PR #315, 6ed739a8). The sole-trade leg runs to `bsas-adjust`. Add the
+  property leg after it, with the builders in `app/functions/hmrc/hmrcItsaUkProperty*.js` and
+  `hmrcItsaBsasUkProperty*.js`: four `POST
+  .../business/property/uk/{nino}/{propertyBusinessId}/period/{taxYear}` (6.0, `STATEFUL`, the
+  `buildStandardQuarterlyPeriods` dates, `ukNonFhlProperty` with `periodAmount` and
+  `consolidatedExpenses`); `PUT .../annual/{taxYear}` (6.0, `allowances: { propertyIncomeAllowance:
+  1000 }`); a BSAS trigger with `typeOfBusiness: "uk-property"`, then `GET` and `adjust` on
+  `.../adjustable-summary/{nino}/uk-property/{calculationId}/{taxYear}` (7.0, `UK_PROPERTY_PROFIT`
+  on the read, `income: { totalRentsReceived: 1 }` on the adjust). After `calculation-retrieve`,
+  record `inputs.incomeSources.businessIncomeSources` and print whether both businesses appear; only
+  fixture ids there is the known `DYNAMIC` gap, so warn and continue. A 403 names a Property
+  Business 6.0 subscription only the operator adds. Command as B11.T7b.1. Proof: every property step
+  `ok: true`, final declaration 204. After B11.T7b.1. **Source**: `PLAN_ITSA_PHASE_2.md` T7.
+  **Owner**: Claude Code. **Model**: Sonnet. **Size**: ~2 files.
 
-## Machine-ask
-
-- [ ] **B11.T7b.3. Run A's loss sequence on the sole trade.** One loss-claims resource per business
+- [ ] **B11.T7b.3. Run A's loss sequence on the sole trade.** In flight: proven on the sandbox and on `claude/b65-board` (PR #315, 274e7bdd). One loss-claims resource per business
   per year, so the sequence is a PUT, its read-back, an adjustments PUT and its read-back, between
   the property BSAS adjust and `calculation-trigger`. `PUT
   {sandboxBase}/individuals/losses/{nino}/businesses/{businessId}/loss-claims/{taxYear}`: Accept
@@ -67,7 +78,7 @@ step.
   After B11.T7b.2. **Source**: `PLAN_ITSA_PHASE_2.md` T7. **Owner**: Claude Code. **Model**: Sonnet.
   **Size**: ~1 file.
 
-- [ ] **B11.T7b.5. Run B's two extra calls.** Gated on `submissionModel === "cumulative"`, after the
+- [ ] **B11.T7b.5. Run B's two extra calls.** In flight: proven on the sandbox and on `claude/b65-board` (PR #315, 1499b136). Gated on `submissionModel === "cumulative"`, after the
   property BSAS adjust: `PUT
   {sandboxBase}/individuals/losses/{nino}/businesses/{propertyBusinessId}/loss-claims/{taxYear}`
   (7.0, `suspendTemporalValidations: "true"`, okStatuses [200, 204],
@@ -82,20 +93,9 @@ step.
   B11.T7b.4. Proof: the three transcript entries at 204, 200 and 400. After B11.T7b.4. **Source**:
   `PLAN_ITSA_PHASE_2.md` T7. **Owner**: Claude Code. **Model**: Sonnet. **Size**: ~1 file.
 
-- [ ] **B11.T7b.2. Run A, the dated year.** The sole-trade leg runs to `bsas-adjust`. Add the
-  property leg after it, with the builders in `app/functions/hmrc/hmrcItsaUkProperty*.js` and
-  `hmrcItsaBsasUkProperty*.js`: four `POST
-  .../business/property/uk/{nino}/{propertyBusinessId}/period/{taxYear}` (6.0, `STATEFUL`, the
-  `buildStandardQuarterlyPeriods` dates, `ukNonFhlProperty` with `periodAmount` and
-  `consolidatedExpenses`); `PUT .../annual/{taxYear}` (6.0, `allowances: { propertyIncomeAllowance:
-  1000 }`); a BSAS trigger with `typeOfBusiness: "uk-property"`, then `GET` and `adjust` on
-  `.../adjustable-summary/{nino}/uk-property/{calculationId}/{taxYear}` (7.0, `UK_PROPERTY_PROFIT`
-  on the read, `income: { totalRentsReceived: 1 }` on the adjust). After `calculation-retrieve`,
-  record `inputs.incomeSources.businessIncomeSources` and print whether both businesses appear; only
-  fixture ids there is the known `DYNAMIC` gap, so warn and continue. A 403 names a Property
-  Business 6.0 subscription only the operator adds. Command as B11.T7b.1. Proof: every property step
-  `ok: true`, final declaration 204. After B11.T7b.1. **Source**: `PLAN_ITSA_PHASE_2.md` T7.
-  **Owner**: Claude Code. **Model**: Sonnet. **Size**: ~2 files.
+## Machine-only
+
+## Machine-ask
 
 - [ ] **B11.T10. ITSA phase 2: the recognition pack.** Four files under `_developers/hmrc/` carry
   the pack: `ITSA_PRODUCTION_APPROVALS_CHECKLIST.md`,
