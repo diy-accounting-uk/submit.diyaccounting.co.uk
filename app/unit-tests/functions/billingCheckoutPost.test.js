@@ -79,7 +79,7 @@ describe("billingCheckoutPost", () => {
     process.env.STRIPE_TEST_PRICE_ID_RESIDENT_PRO = "price_test_synthetic_456";
     process.env.DIY_SUBMIT_BASE_URL = "https://test-submit.diyaccounting.co.uk/";
     process.env.USER_SUB_HASH_SALT = '{"current":"v1","versions":{"v1":"test-salt-for-unit-tests"}}';
-    process.env.BILLING_RETURN_URL_ORIGINS = "https://ci-spreadsheets.diyaccounting.co.uk,http://localhost:3000";
+    process.env.BILLING_RETURN_URL_ORIGINS = "https://ci.diya-gl.co.uk,http://localhost:3001";
     mockEventBridgeSend.mockClear();
   });
 
@@ -280,15 +280,15 @@ describe("billingCheckoutPost", () => {
   test("uses an allowed returnTo for the checkout success and cancel URLs", async () => {
     const event = buildEventWithToken(validToken, {
       bundleId: "resident-pro",
-      returnTo: "https://ci-spreadsheets.diyaccounting.co.uk/books/ltd.html",
+      returnTo: "https://ci.diya-gl.co.uk/ltd.html",
     });
     await ingestHandler(event);
 
     const params = mockCheckoutSessionsCreate.mock.calls[0][0];
     expect(params.success_url).toBe(
-      "https://ci-spreadsheets.diyaccounting.co.uk/books/ltd.html?checkout=success&session_id={CHECKOUT_SESSION_ID}",
+      "https://ci.diya-gl.co.uk/ltd.html?checkout=success&session_id={CHECKOUT_SESSION_ID}",
     );
-    expect(params.cancel_url).toBe("https://ci-spreadsheets.diyaccounting.co.uk/books/ltd.html?checkout=canceled");
+    expect(params.cancel_url).toBe("https://ci.diya-gl.co.uk/ltd.html?checkout=canceled");
   });
 
   test("falls back to bundles.html URLs when returnTo's origin is not allowed", async () => {
