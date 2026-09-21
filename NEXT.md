@@ -18,8 +18,8 @@ PR; the operator merges.
 
 **Prod runs deployment prod-4fef66c**; main's deploy 35597452065 of PR #316's merge (0d00bdeb) is
 creating prod-0d00bde. **ci**: `ci-set1` is live and last-known-good. Open pull request: #317
-(`claude/b67-board` to `main`, two rows, checks green, merges once main's deploy ends). Cool-down
-lifted by the operator's `/iterate` at 12:2x UTC on 2026-09-21.
+(`claude/b67-board` to `main`, two rows, checks green, merges once main's deploy ends). B49.17's
+change is committed on `claude/b68-board` (aa3d674f), unpushed, held by cool-down.
 
 The board runs in five sections, in this order: **in flight** (a branch, a pull request or a run
 in motion, each named in the row), **machine-only**, **machine-ask**, **human-driven**,
@@ -40,6 +40,9 @@ names its model: the lowest tier that fits (Fable > Opus > Sonnet > Haiku), or `
 step.
 
 ## In flight
+
+**COOL-DOWN is on since 2026-09-21T11:52:24Z.** No new board rows except a degradation. Agents commit
+and stop. One branch is driven green at a time. Lifted only by the operator in their own words.
 
 - [ ] **B52.D2. Donations on the revenue panel.** In flight: on `claude/b66-board` (PR #316 to `main`, head 646fe97c), every run on that head green (deploy 35591194517, deploy environment 35591194348, infra apply 35591214607, google apply 35591214395, test 35591193960, CodeQL 35591193973); mergeable, merging once main's deploy 35590701872 ends; the live Stripe write is done and reads up to date.
   `web/spreadsheets.diyaccounting.co.uk/donate-links.toml` (`…4F200`, `4F201`, `4F202`, `4F204`); a
