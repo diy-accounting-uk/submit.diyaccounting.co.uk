@@ -10,6 +10,11 @@ run-name: "infra apply of ${{ github.ref_name }}"
 # every step reads live state and asserts it against the file - there is nothing for this
 # workflow to apply. infra/google/** has its own workflow, google-apply.yml, which does apply.
 #
+# The github-sync step runs the plan only, like every other step here; applying is a person
+# running `node infra/github/github-sync.js --apply` with the same token. It runs on the prod
+# leg alone because GITHUB_TOKEN cannot administer a repository's own settings, so it reads with
+# the repository secret ADMIN_TOKEN instead.
+#
 # No per-step path filter: the workflow's own `paths:` list below is the only gate, so a change
 # to any one provider's directory runs every provider's check, the same convention
 # google-apply.yml already uses for infra/google/**. Splitting further would need a
@@ -33,6 +38,7 @@ on:
       - 'infra/stripe/**'
       - 'infra/paypal/**'
       - 'infra/telegram/**'
+      - 'infra/github/**'
       - '.github/workflows/infra-apply.yml'
   push:
     branches:
@@ -43,6 +49,7 @@ on:
       - 'infra/stripe/**'
       - 'infra/paypal/**'
       - 'infra/telegram/**'
+      - 'infra/github/**'
       - '.github/workflows/infra-apply.yml'
 
 env:
@@ -124,12 +131,21 @@ jobs:
       - name: Run telegram-assert
         run: node infra/telegram/telegram-assert.js --environment ${{ matrix.environment }} 2>&1 | tee telegram-assert.log
 
+      # This repository's own GitHub settings. Reads only: GITHUB_TOKEN cannot administer a
+      # repository's own settings, so the repository secret ADMIN_TOKEN reads instead. Runs once,
+      # on the prod leg, since the settings are not per-environment.
+      - name: Run github-sync (plan)
+        if: matrix.environment == 'prod'
+        env:
+          GH_TOKEN: ${{ secrets.ADMIN_TOKEN }}
+        run: node infra/github/github-sync.js 2>&1 | tee github-sync.log
+
       - name: Generate step summary
         if: always()
         run: |
           echo "# infra apply (${{ matrix.environment }})" >> "$GITHUB_STEP_SUMMARY"
           echo "" >> "$GITHUB_STEP_SUMMARY"
-          for log in companies-house-assert.log hmrc-assert.log stripe-sync.log paypal-assert.log telegram-assert.log; do
+          for log in companies-house-assert.log hmrc-assert.log stripe-sync.log paypal-assert.log telegram-assert.log github-sync.log; do
             if [ -f "$log" ]; then
               echo "## $log" >> "$GITHUB_STEP_SUMMARY"
               echo '```' >> "$GITHUB_STEP_SUMMARY"
