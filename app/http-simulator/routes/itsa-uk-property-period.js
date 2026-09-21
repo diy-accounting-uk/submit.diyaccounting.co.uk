@@ -5,6 +5,7 @@
 // HMRC Property Business endpoint
 // Handles: POST /individuals/business/property/uk/{nino}/{businessId}/period/{taxYear}
 
+import { randomUUID } from "crypto";
 import { getUkPropertyPeriodErrorForScenario } from "../scenarios/itsa-uk-property-period.js";
 
 /**
@@ -96,10 +97,10 @@ export function apiEndpoint(app) {
     }
 
     // Default and STATEFUL: perform a real create. The simulator has no per-user mutable
-    // state to track across requests, so STATEFUL behaves the same as the default.
-    const submissionId = `${req.body.fromDate}_${req.body.toDate}`;
-
+    // state to track across requests, so STATEFUL behaves the same as the default. HMRC's own
+    // sandbox answers 201 with a generated submissionId, not the 200 and date-derived id the
+    // self-employment period create answers.
     res.setHeader("Content-Type", "application/json");
-    res.status(200).json({ submissionId });
+    res.status(201).json({ submissionId: randomUUID() });
   });
 }

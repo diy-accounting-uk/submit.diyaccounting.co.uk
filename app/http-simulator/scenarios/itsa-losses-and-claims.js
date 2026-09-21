@@ -6,10 +6,12 @@
 
 /**
  * The losses and claims the default GET scenario returns: a carry-forward claim, the common
- * first-year-of-trading case.
+ * first-year-of-trading case. submittedOn is on every real retrieve HMRC's sandbox has answered
+ * for this endpoint.
  */
 function defaultLossesAndClaims() {
   return {
+    submittedOn: "2024-04-10T09:30:00.000Z",
     losses: { broughtForwardLosses: 0 },
     claims: {
       carryForward: { currentYearLosses: 1000 },
@@ -20,6 +22,7 @@ function defaultLossesAndClaims() {
 /** The losses and claims the TERMINAL_LOSS_CLAIM scenario returns. */
 function terminalLossClaimLossesAndClaims() {
   return {
+    submittedOn: "2024-04-10T09:30:00.000Z",
     losses: { broughtForwardLosses: 500 },
     claims: {
       carryBack: { terminalLosses: 500 },
@@ -35,9 +38,10 @@ const getErrorScenarios = {
 };
 
 const putErrorScenarios = {
+  // HMRC's sandbox answers RULE_CARRY_BACK_CLAIM to a property carry-back claim.
   CARRY_BACK_CLAIM: {
     status: 400,
-    body: { code: "RULE_TYPE_OF_CLAIM_INVALID", message: "The claim type provided is not applicable to this income source" },
+    body: { code: "RULE_CARRY_BACK_CLAIM", message: "Carry back claim type is not valid for property income sources" },
   },
   OUTSIDE_AMENDMENT_WINDOW: {
     status: 400,

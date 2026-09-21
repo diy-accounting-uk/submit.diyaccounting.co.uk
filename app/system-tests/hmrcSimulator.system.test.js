@@ -516,9 +516,9 @@ describe("HTTP Simulator", () => {
         body: JSON.stringify(validBody()),
       });
 
-      expect(response.status).toBe(200);
+      expect(response.status).toBe(201);
       const data = await response.json();
-      expect(data.submissionId).toBe("2024-04-06_2024-07-05");
+      expect(data.submissionId).toMatch(/^[0-9a-f-]{36}$/);
     });
 
     it("should return 400 for an invalid NINO", async () => {
