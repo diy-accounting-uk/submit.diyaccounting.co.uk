@@ -73,6 +73,12 @@ and stop. One branch is driven green at a time. Lifted only by the operator in t
   dispatched run with `skipDeploy` unset on a docs-only head ends at the check with no stack job.
   **Source**: BACKLOG 43. **Owner**: Claude Code. **Model**: Sonnet. **Size**: ~1 file.
 
+- [ ] **PU-6. Practice licence design.** Clients under one sign-in, per-client book sets, agent
+  authorisation, batch through the MCP server and the CLI: `PLAN_PRICE_UPDATE.md` §(d) expanded into
+  a design and a build task list for PU-7. **Source**: `PLAN_PRICE_UPDATE.md` PU-6. **Owner**: Claude
+  Code. **Model**: Opus. **Size**: ~1 file.
+
+
 - [ ] **B69a. `finalMessageOnly` cuts at the first heading.** `scripts/redact-triage-output.mjs`'s
   `finalMessageOnly` drops leaked reasoning only when a `---` thematic break precedes the answer;
   support-triage's comment on issue #100 kept one sentence of reasoning above its first `## `
@@ -80,6 +86,11 @@ and stop. One branch is driven green at a time. Lifted only by the operator in t
   the first heading; text with neither passes through as today. Cases in
   `app/unit-tests/scripts/redactTriageOutput.test.js`. **Source**: BACKLOG 69. **Owner**: Claude
   Code. **Model**: Haiku. **Size**: ~2 files.
+
+- [ ] **PU-4. The 25-day sandbox.** Put-route expiry in `app/functions/diyaGl/diyaGlPut.js`, the
+  lifecycle rule in `DataStack.java`, the `sandbox_expired_seen` event contract; `diyaGlPut.test.js`
+  and `DataStackTest.java`. Per `PLAN_PRICE_UPDATE.md` §(e). **Source**: `PLAN_PRICE_UPDATE.md`
+  PU-4. **Owner**: Claude Code. **Model**: Sonnet. **Size**: ~4 files.
 
 - [ ] **B46b. The seven open CodeQL alerts, and no bearer token in a committed test report.**
   Three fixes and one dismissal on GitHub's code-scanning list: #60 (critical) `app/lib/hmrcValidation.js:125`
@@ -101,6 +112,12 @@ and stop. One branch is driven green at a time. Lifted only by the operator in t
   Proof: `npm test` green, the code-scanning list shows 0 open, and the test fails when a bearer
   value is planted in a report. **Source**: BACKLOG 46; the repository's code-scanning and
   secret-scanning pages. **Owner**: Claude Code. **Model**: Sonnet. **Size**: ~5 files.
+
+- [ ] **PU-1. The `resident` bundle.** Catalogue entry in `web/public/submit.catalogue.toml` with
+  the activity lists, the three folded bundles (`resident-diya-gl`, `resident-itsa`, `resident-ltd`)
+  hidden, `app/services/diyaGlEntitlement.js`'s bundle list, its tests, `PASSES.md`. Per
+  `PLAN_PRICE_UPDATE.md` §(a). **Source**: `PLAN_PRICE_UPDATE.md` PU-1. **Owner**: Claude Code.
+  **Model**: Sonnet. **Size**: ~5 files.
 
 - [ ] **B46a. Lint `infra/google/`.** `eslint.config.js`'s global `ignores` carries `scripts/` and
   `infra/google/`, so the eight Google scripts under `infra/google/` carry 16 sonarjs and security
@@ -243,6 +260,30 @@ and stop. One branch is driven green at a time. Lifted only by the operator in t
   `TEST_COMPANIES_HOUSE_PASSWORD`, `TEST_COMPANIES_HOUSE_TOTP_SECRET` and
   `COMPANIES_HOUSE_SANDBOX_API_KEY` (the "- test" REST key); none of the four is set today.
   Unblocks B34.7. **Source**: BACKLOG 34. **Owner**: Operator. **Model**: none.
+
+- [ ] **PU-2. Two prices per bundle.** Catalogue `prices` table, `infra/stripe/stripe-sync.js` per
+  price, `app/functions/billing/billingCheckoutPost.js` checkout by interval, `web/public/bundles.html`
+  annual first, `app/lib/productCatalog.js`, tests. Per `PLAN_PRICE_UPDATE.md` §(b). Blocked on
+  PU-1. **Source**: `PLAN_PRICE_UPDATE.md` PU-2. **Owner**: Claude Code. **Model**: Sonnet.
+  **Size**: ~8 files.
+
+- [ ] **PU-3. Stripe test then live.** The `resident` product with both prices through
+  `stripe-catalogue-sync`, test then live; the price ids into `.env.ci` and `.env.prod`. Blocked on
+  PU-2. **Source**: `PLAN_PRICE_UPDATE.md` PU-3. **Owner**: Claude Code; the live key is the
+  operator's. **Model**: Haiku. **Size**: ~2 files.
+
+- [ ] **PU-5. The DIYA-GL tier on prod.** `DIYA_GL_RESIDENT_TIER` in `SubmitApplication.java`,
+  `prod` in `resident`'s environments in the catalogue. Blocked on PU-3 and PU-4. **Source**:
+  `PLAN_PRICE_UPDATE.md` PU-5. **Owner**: Claude Code. **Model**: Haiku. **Size**: ~2 files.
+
+- [ ] **PU-7. Practice licence build.** Per PU-6's design and its task list. Blocked on PU-6.
+  **Source**: `PLAN_PRICE_UPDATE.md` PU-7. **Owner**: Claude Code. **Model**: per the design.
+  **Size**: per the design.
+
+- [ ] **PU-9. Retire the three folded bundles.** `resident-diya-gl`, `resident-itsa` and
+  `resident-ltd` leave `submit.catalogue.toml`, `.env.ci` and `.env.prod` once Stripe live shows no
+  subscription on their prices. Blocked on PU-5. **Source**: `PLAN_PRICE_UPDATE.md` PU-9.
+  **Owner**: Claude Code. **Model**: Haiku. **Size**: ~3 files.
 
 ## Discipline
 
