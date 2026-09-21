@@ -16,10 +16,12 @@ runs), and for Claude Code steps the **Model** a sub-agent should use (Fable > O
 Haiku; the lowest tier that fits). Anything touching code goes through a `claude/*` branch and
 PR; the operator merges.
 
-**Prod runs deployment prod-4fef66c** (main's deploy 35590701872 of PR #315's merge, live since 11:3x
-UTC on 2026-09-21; its `destroy previous` job is removing prod-a15fe51). **ci**: `ci-set1` is live and
-last-known-good, claimed by `claude/b66-board` (PR #316, deploy green). Open pull requests: #316
-(`claude/b66-board`, four rows, mergeable) and #317 (`claude/b67-board`, stacked on #316, two rows).
+**Prod runs deployment prod-4fef66c** (main's deploy 35590701872 of PR #315's merge 4fef66c2, live
+since 11:3x UTC on 2026-09-21, its `destroy previous` job still removing prod-a15fe51). **ci**:
+`ci-set1` is live and last-known-good, claimed by `claude/b66-board` (its deploy 35591194517 green).
+Open pull requests: #316 (`claude/b66-board` to `main`, four rows, mergeable, waiting on main's
+deploy) and #317 (`claude/b67-board` to `claude/b66-board`, two rows, checks green, merges after
+#316). No agent is running.
 
 The board runs in five sections, in this order: **in flight** (a branch, a pull request or a run
 in motion, each named in the row), **machine-only**, **machine-ask**, **human-driven**,
@@ -41,7 +43,7 @@ step.
 
 ## In flight
 
-- [ ] **B52.D2. Donations on the revenue panel.** In flight: on `claude/b66-board` (PR #316, ffd4351b; its ci deploy running); the live write is done and reads up to date.
+- [ ] **B52.D2. Donations on the revenue panel.** In flight: on `claude/b66-board` (PR #316 to `main`, head 646fe97c), every run on that head green (deploy 35591194517, deploy environment 35591194348, infra apply 35591214607, google apply 35591214395, test 35591193960, CodeQL 35591193973); mergeable, merging once main's deploy 35590701872 ends; the live Stripe write is done and reads up to date.
   `web/spreadsheets.diyaccounting.co.uk/donate-links.toml` (`…4F200`, `4F201`, `4F202`, `4F204`); a
   match means one account, and `SELECT day, product, revenue_gbp FROM v_revenue_daily WHERE product
   = 'unknown'` in workgroup `prod-env-analytics` shows whether donations are already landing
@@ -50,7 +52,7 @@ step.
   Stripe write was approved by the operator on 2026-09-21. PayPal donations are not in this row; they arrive with `../PLAN_FINANCE_AUTOMATION.md`
   phase 1's PayPal pull, which has no code. **Source**: BACKLOG 66; plan D2. **Owner**: Claude Code. **Model**: Sonnet. **Size**: ~2 files.
 
-- [ ] **B49.20. `infra/github`.** In flight: on `claude/b66-board` (PR #316, 8120b903); `infra apply` passed on that head with the plan reading "already match".
+- [ ] **B49.20. `infra/github`.** In flight: on `claude/b66-board` (PR #316 to `main`, head 646fe97c), every run on that head green (deploy 35591194517, deploy environment 35591194348, infra apply 35591214607, google apply 35591214395, test 35591193960, CodeQL 35591193973); mergeable, merging once main's deploy 35590701872 ends; the plan on that run read "already match".
   `patterns_allowed` from `scripts/github-actions-permissions.sh`; `[security]
   automated_security_fixes = true` (false live); `[[ruleset]]` `main` with its enforcement,
   conditions, its three rules and bypass actors; `[[environment]]` `ci`, `prod`, `copilot` with
@@ -64,7 +66,7 @@ step.
   `githubSync.test.js` over `parseConfig`, `planGithub`, `rulesetDiff`. Proof: `npm test` and a plan
   reading "already match". After B49.18. **Source**: BACKLOG 49b; item 20. **Owner**: Claude Code. **Model**: Sonnet. **Size**: ~5 files.
 
-- [ ] **B49.16. Read-only inventory of the Google Ads account.** In flight: the build is on PR #316 (c9865502) and its two run fixes on `claude/b67-board` (PR #317, stacked on #316); Explorer access is granted, the refresh token is in `prod/submit/google/ads/refresh_token`, and the inventory ran on 2026-09-21.
+- [ ] **B49.16. Read-only inventory of the Google Ads account.** In flight: the build is on PR #316 (c9865502, PR #316 to `main`, head 646fe97c) and the two run fixes on `claude/b67-board` (PR #317 to `claude/b66-board`, head 00260c6b, stacked on #316; test 35595329985, CodeQL 35595329966 and google apply 35595352233 green, no deploy for a scripts-only head); Explorer access is granted, the refresh token is in `prod/submit/google/ads/refresh_token`, the inventory ran on 2026-09-21.
   Google on 2026-09-09: Google Ads API access is now an access level on the Cloud project that
   issued the OAuth credentials, requested on the Google Ads API Overview page
   (<https://console.cloud.google.com/google/ads-apis/overview>, project `diyaccounting-ga4`),
@@ -87,9 +89,7 @@ step.
   **Owner**: Claude Code builds and runs; the operator approves the access upgrade and the
   consent. **Model**: Sonnet. **Size**: ~5 files.
 
-- [ ] **B11.T7b.6. Both runs' proofs.** In flight: on `claude/b67-board` (PR #317, 60edce22, stacked on #316); three years ran back to back, each exit 0. The exit code rests on two printed lines today, `final
-  declaration 204` and `fraud header validator clean`. Add three more, each computed from the
-  transcript: `both businesses in calculation income sources`; `loss claims read back` (run A
+- [ ] **B11.T7b.6. Both runs' proofs.** In flight: on `claude/b67-board` (PR #317 to `claude/b66-board`, head 00260c6b, 60edce22; test 35595329985 and CodeQL 35595329966 green; merges after #316, when GitHub retargets it to `main`); three years ran back to back, each exit 0.
   `claims.carryBack` and `carryBackLossesDecrease`, run B the property `claims.carryForward` and the
   carry-back 400); `suspendTemporalValidations on every losses and adjustments write`, from each
   entry's `requestHeaders`. Exit 1 when any line but the income-sources one is false, since that one
