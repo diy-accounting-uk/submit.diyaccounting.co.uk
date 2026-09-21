@@ -39,6 +39,14 @@ step.
 
 ## In flight
 
+- [ ] **O38. The two GitHub Apps carry every machine write.** In flight: `infra/github/github.toml`
+  drops the three deleted secret names on `claude/ops-bot-secrets` (worktree
+  `.claude/worktrees/ops-bot-secrets`, PR #321 to `main`). The seven deletes ran on 2026-09-21: the
+  repository secrets `ISSUE_BOT_TOKEN`, `SUPPORT_BOT_TOKEN`, `PERSONAL_ACCESS_TOKEN`, and the four
+  `issue_bot_token` and `support_bot_token` secrets in ci and prod Secrets Manager. Proof: #321's
+  `infra-apply.yml` plan on `main` reports no missing secret. **Source**: `REPORT_IDENTITY_AUDIT.md`
+  section 8, recommendations 2 and 3. **Owner**: Claude Code. **Model**: Haiku. **Size**: ~1 file.
+
 ## Machine-only
 
 - [ ] **B49.24. `PLAN_EVERYTHING_AS_CODE.md`'s Google Ads section reads the current access route.**
@@ -83,18 +91,6 @@ step.
   testing-in-the-last-two-weeks row; the operator sends `DRAFT_EMAIL_ITSA_RECOGNITION.md` to
   `SDSTeam@hmrc.gov.uk` and `DRAFT_EMAIL_ITSA_PRODUCTION_CREDENTIALS.md` when SDST answers. **Source**: BACKLOG 11; `PLAN_ITSA_PHASE_2.md` T10. **Owner**: Claude Code re-runs; the
   operator names the day and sends. **Model**: Haiku. **Size**: ~1 file.
-
-- [ ] **O38. The two GitHub Apps carry every machine write.** Every workflow and Lambda write runs
-  on the Apps since PR #311 (0c847b07): `security-review.yml`'s Copilot assignment was the last
-  read of a personal access token, and its next run proves the App may call
-  `replaceActorsForAssignable` (a permission error means that job goes). What remains is the
-  five deletes, each with the operator's approval: `gh secret delete ISSUE_BOT_TOKEN`,
-  `gh secret delete SUPPORT_BOT_TOKEN`, `gh secret delete PERSONAL_ACCESS_TOKEN`, and
-  `aws secretsmanager delete-secret --recovery-window-in-days 30 --secret-id
-  <env>/submit/github/issue_bot_token` and `.../support_bot_token` under `AWS_PROFILE=submit-ci`
-  and `submit-prod`. **Source**: `REPORT_IDENTITY_AUDIT.md` section 8, recommendations 2 and 3.
-  **Owner**: Claude Code, the operator approves the five deletes. **Model**: Haiku. **Size**: ~0
-  files.
 
 ## Human-driven
 
