@@ -75,10 +75,59 @@ step.
   `app/unit-tests/scripts/redactTriageOutput.test.js`. **Source**: BACKLOG 69. **Owner**: Claude
   Code. **Model**: Haiku. **Size**: ~2 files.
 
+- [ ] **PU-15. `PLAN_PRICE_UPDATE.md` carries the review's corrections.** Three edits from
+  `REPORT_PRICE_UPDATE_REVIEW.md` §2: (7) a cost-per-session ceiling in "Why" and in
+  `PLAN_ONE_STOP_DASHBOARD.md` D17: at 0.28% session-to-purchase and £127 lifetime contribution
+  (annual, 30% churn) the breakeven cost per session is £0.36, and a £2 click costs £714 per
+  subscriber; (9) PU-8 points at `PLAN_DIYA_GL_HOME.md` DG-6 and DG-2b instead of duplicating them,
+  and PU-4 leaves PU-5's precursors, since the tier lifts without the sandbox change; (10) assertion
+  2's fee share on £39 reads 2.0% (0.785/39), not 2.3%. Docs only; may go straight to `main`.
+  **Source**: `REPORT_PRICE_UPDATE_REVIEW.md` §2 rows 7, 9, 10; operator 2026-09-21. **Owner**:
+  Claude Code. **Model**: Haiku. **Size**: ~2 files.
+
+- [ ] **PU-12. `v_subscription_renewals_daily` counts the real renewal path.** The view has 0
+  rows though a renewal happened on 2026-09-06 (`subscription-renewed`, subscription e74e1d41): its
+  `current_period_end` comparison misses the webhook's path. Read the `subscription-renewed`
+  activity event, or the period-end move the webhook writes, in `BusinessViews.java` and its test.
+  Proof: the export for 2026-09-06 shows that renewal. **Source**: `REPORT_PRICE_UPDATE_REVIEW.md`
+  §2 row 4(c); operator 2026-09-21. **Owner**: Claude Code. **Model**: Sonnet. **Size**: ~2 files.
+
+- [ ] **PU-10. Every Stripe charge carries its `bundle_id`.** `stripe_charges.bundle_id` is null on
+  every charge, so `v_revenue_daily` reports every product as `unknown` and mixes £165 of
+  spreadsheets donations with £3.96 of subscriptions (export 2026-09-20). Checkout sessions set
+  `payment_intent_data.metadata.bundleId` (`app/functions/billing/billingCheckoutPost.js`; the
+  donation links already do, B52.D2), `app/functions/analytics/stripeReconcile.js` reads it onto the
+  charge row, and `StripeReconciliationTables.java` keeps the column. Proof: the next export's
+  `v_revenue_daily` names each product. **Source**: `REPORT_PRICE_UPDATE_REVIEW.md` §2 row 4(a);
+  operator 2026-09-21. **Owner**: Claude Code. **Model**: Sonnet. **Size**: ~3 files.
+
+- [ ] **PU-11. `v_subscription_cancellations_daily` leaves the probes out.** The view counts 312
+  cancelled `resident-vat` subscriptions in 24 days from the probe lanes (`dynamo_subscriptions`
+  carries no actor), so churn, the metric annual billing is meant to move, is unreadable. Give the
+  subscription record an actor at write (`app/functions/billing/billingWebhookPost.js`, from
+  `resolveActorClass`) or filter the view on the synthetic users' hashed subs, in
+  `infra/main/java/co/uk/diyaccounting/submit/stacks/analytics/BusinessViews.java` and its test.
+  Proof: the view's next export shows the human count only. **Source**:
+  `REPORT_PRICE_UPDATE_REVIEW.md` §2 row 4(b); operator 2026-09-21. **Owner**: Claude Code. **Model**:
+  Sonnet. **Size**: ~3 files.
+
 - [ ] **PU-4. The 35-day sandbox.** Put-route expiry in `app/functions/diyaGl/diyaGlPut.js`, the
   lifecycle rule in `DataStack.java`, the `sandbox_expired_seen` event contract; `diyaGlPut.test.js`
   and `DataStackTest.java`. Per `PLAN_PRICE_UPDATE.md` §(e). **Source**: `PLAN_PRICE_UPDATE.md`
   PU-4. **Owner**: Claude Code. **Model**: Sonnet. **Size**: ~4 files.
+
+- [ ] **PU-13. Actor tagging tells customers from probes on every event.** `checkout-session-created`
+  is written as `test-user` for real customers (all three September checkouts, the two paying ones
+  included), and the probe lanes 4b100a90 and 35a4fc02 carry `login` as `test-user` but
+  `bundle-granted`, `vat-return-submitted` (11 of September's 13) and `hmrc-token-exchanged` as
+  `customer`, so every customer-actor view (`v_active_users_daily`, `v_login_to_submission_funnel`,
+  `v_submissions_daily`, `v_purchase_reconciliation_daily`) counts probes and conversion-to-submission
+  reads 4 submitters where 2 are human. `app/lib/activityAlert.js`'s `resolveActorClass` derives the
+  class from the request id prefix alone; derive it from the signed-in user (the synthetic lane
+  users' hashed subs, `synthetic-<lane>@test.diyaccounting.co.uk`) on every event the billing and
+  HMRC handlers write, and add a unit test per event. Proof: an Athena count of September's
+  `vat-return-submitted` by actor reads 2 `customer`. **Source**: `REPORT_PRICE_UPDATE_REVIEW.md` §2
+  row 5; operator 2026-09-21. **Owner**: Claude Code. **Model**: Sonnet. **Size**: ~4 files.
 
 - [ ] **B46b. The seven open CodeQL alerts, and no bearer token in a committed test report.**
   Three fixes and one dismissal on GitHub's code-scanning list: #60 (critical) `app/lib/hmrcValidation.js:125`
@@ -261,8 +310,13 @@ step.
   operator's. **Model**: Haiku. **Size**: ~2 files.
 
 - [ ] **PU-5. The DIYA-GL tier on prod.** `DIYA_GL_RESIDENT_TIER` in `SubmitApplication.java`,
-  `prod` in `resident`'s environments in the catalogue. Blocked on PU-3 and PU-4. **Source**:
+  `prod` in `resident`'s environments in the catalogue. Blocked on PU-3. **Source**:
   `PLAN_PRICE_UPDATE.md` PU-5. **Owner**: Claude Code. **Model**: Haiku. **Size**: ~2 files.
+
+- [ ] **PU-14. An `experiments.toml` row for the price change.** Objective `conversion-to-paid`,
+  lever price, metric purchases per human session, start at PU-5's deploy, so the £39 shape is
+  measured against the 99p rate. Blocked on PU-5. **Source**: `REPORT_PRICE_UPDATE_REVIEW.md` §2 row
+  6; operator 2026-09-21. **Owner**: Claude Code. **Model**: Haiku. **Size**: ~1 file.
 
 - [ ] **PU-7. Practice licence build.** Per PU-6's design and its task list. Blocked on PU-6.
   **Source**: `PLAN_PRICE_UPDATE.md` PU-7. **Owner**: Claude Code. **Model**: per the design.
