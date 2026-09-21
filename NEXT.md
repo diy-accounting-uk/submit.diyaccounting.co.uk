@@ -16,8 +16,8 @@ runs), and for Claude Code steps the **Model** a sub-agent should use (Fable > O
 Haiku; the lowest tier that fits). Anything touching code goes through a `claude/*` branch and
 PR; the operator merges.
 
-**Prod runs deployment prod-a7a0d6b** (main's deploy of PR #319's merge, 35604740348). **ci**:
-`ci-set1` is last-known-good. No open pull request.
+**Prod runs deployment prod-a7a0d6b**; main's deploy of PR #322's merge (78e3e552) is starting.
+**ci**: `ci-set1` is last-known-good. No open pull request.
 
 The board runs in five sections, in this order: **in flight** (a branch, a pull request or a run
 in motion, each named in the row), **machine-only**, **machine-ask**, **human-driven**,
@@ -38,18 +38,6 @@ names its model: the lowest tier that fits (Fable > Opus > Sonnet > Haiku), or `
 step.
 
 ## In flight
-
-**COOL-DOWN is on since 2026-09-21T19:32:35Z.** No new board rows except a degradation. Agents commit
-and stop. One branch is driven green at a time. Lifted only by the operator in their own words.
-
-- [ ] **O38. The two GitHub Apps carry every machine write.** In flight: PR #321 merged as 5f01004d
-  (`infra/github/github.toml` drops the three deleted secret names; worktree
-  `.claude/worktrees/ops-bot-secrets` is stale); `main`'s `infra-apply` run 35645593515 on that head
-  is the proof and is in progress. The seven deletes ran on 2026-09-21: the
-  repository secrets `ISSUE_BOT_TOKEN`, `SUPPORT_BOT_TOKEN`, `PERSONAL_ACCESS_TOKEN`, and the four
-  `issue_bot_token` and `support_bot_token` secrets in ci and prod Secrets Manager. Proof: that run
-  reports no missing secret; then this row goes. **Source**: `REPORT_IDENTITY_AUDIT.md`
-  section 8, recommendations 2 and 3. **Owner**: Claude Code. **Model**: Haiku. **Size**: ~1 file.
 
 ## Machine-only
 

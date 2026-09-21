@@ -22,9 +22,10 @@ Queued and in-flight state lives on `NEXT.md`; this block mirrors it so the back
 truthfully on its own. Machine-ask and human-driven steps are briefed at the workspace root in
 `../NEXT_OPERATOR_RUNBOOK.md`, one file rewritten in place.
 
-- Prod runs prod-a7a0d6b (main's deploy of PR #319's merge); `ci-set1` is the ci set. No open pull request, no agent running, no branch ahead of its remote.
-- **Nine batches merged since 2026-09-20** (PRs #309, #311, #312, #315, #316, #317, #319, #320
-  here; #306, #307, #308, #310, #314 from the DIYA-GL session): rows 30's CIS filter tune and
+- Prod runs prod-a7a0d6b; main's deploy of PR #322's merge (78e3e552) is starting; `ci-set1` is the
+  ci set. No open pull request, no agent running, no branch ahead of its remote.
+- **Eleven batches merged since 2026-09-20** (PRs #309, #311, #312, #315, #316, #317, #319, #320,
+  #321, #322 here; #306, #307, #308, #310, #314 from the DIYA-GL session): rows 30's CIS filter tune and
   alarm-remedy list (design and build), 49b's items 15 to 23, 62's submit half and the OAM sinks,
   66, 67, 69's filter and ledger, 70, 71, 72, 34's three filing designs (34e, 34f, 34g), 11's T7b.1
   to T7b.7, O38's last PAT read, the ci slot release on branch delete, the visitor-kind view's day
