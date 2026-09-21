@@ -87,7 +87,7 @@ and stop. One branch is driven green at a time. Lifted only by the operator in t
   `app/unit-tests/scripts/redactTriageOutput.test.js`. **Source**: BACKLOG 69. **Owner**: Claude
   Code. **Model**: Haiku. **Size**: ~2 files.
 
-- [ ] **PU-4. The 25-day sandbox.** Put-route expiry in `app/functions/diyaGl/diyaGlPut.js`, the
+- [ ] **PU-4. The 35-day sandbox.** Put-route expiry in `app/functions/diyaGl/diyaGlPut.js`, the
   lifecycle rule in `DataStack.java`, the `sandbox_expired_seen` event contract; `diyaGlPut.test.js`
   and `DataStackTest.java`. Per `PLAN_PRICE_UPDATE.md` §(e). **Source**: `PLAN_PRICE_UPDATE.md`
   PU-4. **Owner**: Claude Code. **Model**: Sonnet. **Size**: ~4 files.
