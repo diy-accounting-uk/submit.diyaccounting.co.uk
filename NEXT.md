@@ -17,10 +17,10 @@ Haiku; the lowest tier that fits). Anything touching code goes through a `claude
 PR; the operator merges.
 
 **Prod runs deployment prod-0c847b0** (main's deploy 35552596434 of PR #311's merge, green at 03:2x UTC on
-2026-09-21, the only prod set standing; the deploy destroyed prod-d2f94db itself). **ci**: `ci-set1` is
-live and last-known-good (b63's set), its slot record held by the deleted `claude/b63-board` until PR
-#312 lands or the set self-destructs; the SSO session expired at 02:3x UTC, so the set counts are
-unverified.
+2026-09-21, the only prod set standing; PR #312's merge 61ecd57b touched no deployable path). **ci**:
+`ci-set1` is live and last-known-good (b63's set); its slot record, held by the deleted
+`claude/b63-board`, self-destructs with the set. The SSO session expired at 02:3x UTC; the set counts
+and every AWS-read proof below wait on `aws sso login --sso-session diyaccounting`.
 
 The board runs in five sections, in this order: **in flight** (a branch, a pull request or a run
 in motion, each named in the row), **machine-only**, **machine-ask**, **human-driven**,
@@ -41,42 +41,6 @@ names its model: the lowest tier that fits (Fable > Opus > Sonnet > Haiku), or `
 step.
 
 ## In flight
-
-- [ ] **B30af.7. A deleted branch's live ci set keeps its slot record.** In flight: on `claude/b64-board` (PR #312, 3dcc1224). `destroy-ci.yml` runs on
-  `delete` since PR #311 (0c847b07): deleting `claude/b63-board` resolved `ci-set1` from its slot
-  record (run 35552598086) and the destroy job then refused, because ci-set1 was the live and
-  last-known-good ci set. Right refusal, wrong remainder: the slot record stays held by a branch
-  that no longer exists, so the pool is one slot smaller until the set self-destructs. On the
-  `delete` path, when the resolved set is the live or last-known-good one, skip the destroy and
-  delete the slot record anyway (the next claimant redeploys over the standing set, as a same-ref
-  redeploy does today); every other case destroys as now. The guard step and the "Release the ci
-  slot" step in `destroy-ci.yml` (lines ~960-985) carry the change; extend
-  `app/unit-tests/actions/slotForRef.test.js` only if a pure function moves. Proof: one merged PR
-  whose set was live, followed by an empty `/submit/ci/slots/<set>` record. **Source**:
-  `_developers/DESIGN_CI_BRANCH_DEPLOYS_OFF_THE_APEX.md`. **Owner**: Claude Code. **Model**:
-  Sonnet. **Size**: ~1 file.
-
-- [ ] **B70.B. The remedy list: the per-family budget.** In flight: on `claude/b64-board` (PR #312, 6ddd2695); 38d6c7c5 there also puts a checkout ahead of the budget action in `alarm-triage.yml` and `alarm-remedy-close.yml`, which alarm triage for #313 failed on. The triage's `remedy:` line, the dispatch,
-  draft-pr and label actions, `alarm-remedy-close.yml` and `.github/actions/agent-run-budget` are
-  on `main` (PR #311). `budgetPerDay` in `app/data/alarm-remedies.json` is validated and not
-  enforced: the guards count runs per workflow per day, not actions per family. Before the
-  dispatch or `gh pr ready` step in `alarm-triage.yml`, count the family's `remedy:*` label
-  events in the last 24 hours (`gh api repos/$R/issues?labels=alarm&state=all&since=<24h ago>`
-  filtered by family, or the `remedy:*` labelled events on the timeline) and skip the action with
-  a `policy:question` comment when the count reaches the row's `budgetPerDay`; a pure counter in
-  a small `.mjs` with a test. Also the first real dispatch proves the agent App holds
-  `actions: write` (a 403 from `gh workflow run` means the App's permissions need it). **Source**:
-  BACKLOG 70; `PLAN_REPOSITORY_AUTOMATION.md` Phase 3. **Owner**: Claude Code. **Model**: Sonnet.
-  **Size**: ~2 files.
-
-- [ ] **B72. Ci-only scene scripts stay out of the on-deploy captures.** In flight: on
-  `claude/b64-board` (PR #312, 8c713702). The first on-deploy capture (main's d2f94db3 deploy)
-  dispatched all ten scripts at prod and `itsa-business-details`, `itsa-quarterly-update` and
-  `file-micro-entity-accounts` failed, their activities being on ci sets only; the scripts now
-  carry `"environments": ["ci"]` and the dispatcher passes `--environment prod`. Proof: the next
-  main deploy that touches a shared asset dispatches seven captures, not ten. **Source**: BACKLOG
-  72; `PLAN_REPOSITORY_AUTOMATION.md` Phase 5. **Owner**: Claude Code. **Model**: Sonnet.
-  **Size**: ~0 files.
 
 ## Machine-only
 
@@ -252,7 +216,7 @@ step.
   s3://prod-env-analytics-lake-972912397388/curated/security/github-alerts/dt=2026-09-21/data.json -`
   has no `"count":null` and `aws --profile submit-prod logs filter-log-events --log-group-name
   /aws/lambda/prod-env-security-lake-nightly --start-time <ms> --filter-pattern '"GitHub alert fetch
-  failed"'` returns no event. Blocked on that run. **Source**: issue #249. **Owner**: Claude Code.
+  failed"'` returns no event. The run has happened; the read needs `aws sso login --sso-session diyaccounting`. Blocked on that login. **Source**: issue #249. **Owner**: Claude Code.
   **Model**: Haiku. **Size**: ~0 files.
 
 - [ ] **B52n.2. The spreadsheets donation event lands as `donate`.** `donate` is a key event on
