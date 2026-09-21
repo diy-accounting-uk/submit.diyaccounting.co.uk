@@ -35,6 +35,7 @@ import {
   computeDateWindow,
   defaultTargetDate,
   listAllPages,
+  resolveChargeBundleId,
   sanitizeBalanceTransaction,
   sanitizeCharge,
   sanitizeSubscription,
@@ -209,6 +210,44 @@ describe("stripeReconcile", () => {
     });
   });
 
+  describe("resolveChargeBundleId", () => {
+    test("resolves a subscription charge's bundle through its invoice's subscription", () => {
+      const charge = { id: "ch_1", invoice: "in_1" };
+      const invoiceToSubscription = new Map([["in_1", "sub_1"]]);
+      const subscriptionBundleIds = new Map([["sub_1", "resident-vat"]]);
+
+      expect(resolveChargeBundleId(charge, invoiceToSubscription, subscriptionBundleIds)).toBe("resident-vat");
+    });
+
+    test("keeps a donation charge's own metadata when it has no invoice", () => {
+      const charge = { id: "ch_2", invoice: null, metadata: { bundleId: "donation-10" } };
+
+      expect(resolveChargeBundleId(charge, new Map(), new Map())).toBe("donation-10");
+    });
+
+    test("falls back to the charge's own metadata when the invoice's subscription has no bundle id", () => {
+      const charge = { id: "ch_3", invoice: "in_2", metadata: { bundleId: "donation-20" } };
+      const invoiceToSubscription = new Map([["in_2", "sub_2"]]);
+      const subscriptionBundleIds = new Map([["sub_2", null]]);
+
+      expect(resolveChargeBundleId(charge, invoiceToSubscription, subscriptionBundleIds)).toBe("donation-20");
+    });
+
+    test("stays null when neither the subscription nor the charge carries a bundle id", () => {
+      const charge = { id: "ch_4", invoice: "in_3" };
+      const invoiceToSubscription = new Map([["in_3", "sub_3"]]);
+      const subscriptionBundleIds = new Map([["sub_3", null]]);
+
+      expect(resolveChargeBundleId(charge, invoiceToSubscription, subscriptionBundleIds)).toBeNull();
+    });
+
+    test("stays null for a charge with no invoice and no metadata", () => {
+      const charge = { id: "ch_5", invoice: null };
+
+      expect(resolveChargeBundleId(charge, new Map(), new Map())).toBeNull();
+    });
+  });
+
   describe("sanitizeSubscription", () => {
     test("keeps the documented fields and hashes the customer", () => {
       const row = sanitizeSubscription({
@@ -334,6 +373,34 @@ describe("stripeReconcile", () => {
       const row = JSON.parse(body.trimEnd());
       expect(row.id).toBe("ch_1");
       expect(row.customer).toBe(hashSub("cus_1"));
+    });
+
+    test("expands the invoice on the charges list and resolves a subscription charge's bundle_id through it", async () => {
+      mockSubscriptionsList.mockResolvedValueOnce({
+        data: [{ id: "sub_1", status: "active", customer: "cus_1", metadata: { bundleId: "resident-vat" }, items: { data: [] } }],
+        has_more: false,
+      });
+      mockChargesList.mockResolvedValueOnce({
+        data: [
+          {
+            id: "ch_1",
+            customer: "cus_1",
+            amount: 999,
+            invoice: { id: "in_1", subscription: "sub_1" },
+            metadata: {},
+          },
+        ],
+        has_more: false,
+      });
+
+      await handler({ date: "2026-08-20" });
+
+      expect(mockChargesList).toHaveBeenCalledWith(expect.objectContaining({ expand: ["data.invoice"] }));
+
+      const chargesCall = mockS3Send.mock.calls.find((call) => call[0].input.Key.includes("/stripe_charges/"));
+      const body = gunzipSync(chargesCall[0].input.Body).toString("utf8");
+      const row = JSON.parse(body.trimEnd());
+      expect(row.bundle_id).toBe("resident-vat");
     });
 
     test("requests the live Stripe client in prod and the test client elsewhere", async () => {
