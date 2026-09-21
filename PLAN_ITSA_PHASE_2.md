@@ -1215,11 +1215,16 @@ calculation and the declaration. That is the order HMRC's own guides require, so
 the ordering as well as the endpoints. Run B adds two calls and no sequence: a carry-forward
 claim on the property business, and one carry-back attempt on it that must come back rejected.
 
-Both runs send `suspendTemporalValidations` on the losses and adjustments writes, because HMRC
-allows those endpoints only after a tax year has ended and a sandbox year has not really
-ended. Records each response so the simulator
-scenarios match what HMRC returns, the way the phase 1 simulators were corrected against the
-sandbox.
+Both runs send `suspend-temporal-validations: true` (the header's name on the wire; the
+functions carry it as `suspendTemporalValidations`) on the losses and adjustments writes,
+because HMRC allows those endpoints only after a tax year has ended and a sandbox year has not
+really ended. The Individual Losses and Tax Liability Adjustments APIs refuse any tax year
+before 2026-27 (`RULE_TAX_YEAR_NOT_SUPPORTED`, in HMRC's own sources), so the loss and
+adjustment sequence runs on 2026-27 and the script prints `skipped` for it on earlier years;
+both writes also need `Gov-Test-Scenario: STATEFUL` to persist for their read-backs. Records
+each response so the simulator scenarios match what HMRC returns, the way the phase 1
+simulators were corrected against the sandbox: HMRC's carry-back refusal is
+`RULE_CARRY_BACK_CLAIM` where the simulator answers `RULE_TYPE_OF_CLAIM_INVALID`.
 
 Proves, on each run: a `204` from the final declaration, both businesses present in the
 calculation's income sources, and the fraud header validator clean on the same header set. Run A
