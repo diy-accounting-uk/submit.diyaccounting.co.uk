@@ -17,9 +17,8 @@ Haiku; the lowest tier that fits). Anything touching code goes through a `claude
 PR; the operator merges.
 
 **Prod runs deployment prod-4fef66c**; main's deploy 35597452065 of PR #316's merge (0d00bdeb) is
-creating prod-0d00bde. **ci**: `ci-set1` is live and last-known-good. Open pull request: #317
-(`claude/b67-board` to `main`, two rows, checks green, merges once main's deploy ends). B49.17's
-change is committed on `claude/b68-board` (aa3d674f), unpushed, held by cool-down.
+creating prod-0d00bde. **ci**: `ci-set1` is live and last-known-good. Open pull request: #319
+(`claude/b68-board` to `main`, one row, head 222f292a, pushed 2026-09-21 after its local proof).
 
 The board runs in five sections, in this order: **in flight** (a branch, a pull request or a run
 in motion, each named in the row), **machine-only**, **machine-ask**, **human-driven**,
@@ -41,70 +40,9 @@ step.
 
 ## In flight
 
-**COOL-DOWN is on since 2026-09-21T11:52:24Z.** No new board rows except a degradation. Agents commit
-and stop. One branch is driven green at a time. Lifted only by the operator in their own words.
-
-- [ ] **B52.D2. Donations on the revenue panel.** In flight: on `claude/b66-board` (PR #316 to `main`, head 646fe97c), every run on that head green (deploy 35591194517, deploy environment 35591194348, infra apply 35591214607, google apply 35591214395, test 35591193960, CodeQL 35591193973); mergeable, merging once main's deploy 35590701872 ends; the live Stripe write is done and reads up to date.
-  `web/spreadsheets.diyaccounting.co.uk/donate-links.toml` (`…4F200`, `4F201`, `4F202`, `4F204`); a
-  match means one account, and `SELECT day, product, revenue_gbp FROM v_revenue_daily WHERE product
-  = 'unknown'` in workgroup `prod-env-analytics` shows whether donations are already landing
-  unlabelled. Then label them by setting `payment_intent_data.metadata.bundleId` on each link in
-  `scripts/stripe-setup.js`'s idempotent shape, with a unit test on the builder. That live
-  Stripe write was approved by the operator on 2026-09-21. PayPal donations are not in this row; they arrive with `../PLAN_FINANCE_AUTOMATION.md`
-  phase 1's PayPal pull, which has no code. **Source**: BACKLOG 66; plan D2. **Owner**: Claude Code. **Model**: Sonnet. **Size**: ~2 files.
-
-- [ ] **B49.20. `infra/github`.** In flight: on `claude/b66-board` (PR #316 to `main`, head 646fe97c), every run on that head green (deploy 35591194517, deploy environment 35591194348, infra apply 35591214607, google apply 35591214395, test 35591193960, CodeQL 35591193973); mergeable, merging once main's deploy 35590701872 ends; the plan on that run read "already match".
-  `patterns_allowed` from `scripts/github-actions-permissions.sh`; `[security]
-  automated_security_fixes = true` (false live); `[[ruleset]]` `main` with its enforcement,
-  conditions, its three rules and bypass actors; `[[environment]]` `ci`, `prod`, `copilot` with
-  variable and secret names; `[codeowners]`. Write it from live `gh api` reads, ruleset 16057564
-  among them. `github-sync.js`: `gh api` reads, a pure `planGithub(config, live)`, `--apply` writing
-  back through the same routes; a missing variable or secret name is a finding, not created.
-  `github-actions-permissions.sh` goes. `GITHUB_TOKEN` cannot administer; the operator's fine-grained PAT (this repository,
-  Administration read/write, Environments, Secrets and Variables read) is the repository secret
-  `ADMIN_TOKEN` since 2026-09-21 (GitHub refuses secret names starting `GITHUB_`), the step's
-  `GH_TOKEN` on both matrix legs. Test
-  `githubSync.test.js` over `parseConfig`, `planGithub`, `rulesetDiff`. Proof: `npm test` and a plan
-  reading "already match". After B49.18. **Source**: BACKLOG 49b; item 20. **Owner**: Claude Code. **Model**: Sonnet. **Size**: ~5 files.
-
-- [ ] **B49.16. Read-only inventory of the Google Ads account.** In flight: the build is on PR #316 (c9865502, PR #316 to `main`, head 646fe97c) and the two run fixes on `claude/b67-board` (PR #317 to `claude/b66-board`, head 00260c6b, stacked on #316; test 35595329985, CodeQL 35595329966 and google apply 35595352233 green, no deploy for a scripts-only head); Explorer access is granted, the refresh token is in `prod/submit/google/ads/refresh_token`, the inventory ran on 2026-09-21.
-  Google on 2026-09-09: Google Ads API access is now an access level on the Cloud project that
-  issued the OAuth credentials, requested on the Google Ads API Overview page
-  (<https://console.cloud.google.com/google/ads-apis/overview>, project `diyaccounting-ga4`),
-  and no manager account is needed for one account. The account is 814-268-5080 (customer id
-  8142685080). Build: `googleads.googleapis.com` joins `[apis] services` in
-  `infra/google/gcp/project.toml` (applied by `google-apply.yml`); `infra/google/ads/ads.toml`
-  starts with `[account] customer_id = "8142685080"` and `[secrets] refresh_token =
-  "prod/submit/google/ads/refresh_token"`; `infra/google/ads/ads-inventory.js` in
-  `google-inventory.js`'s shape over the Ads REST API (`POST
-  https://googleads.googleapis.com/v21/customers/{id}/googleAds:search` with GAQL, no
-  `developer-token` header, no `login-customer-id`): `customer.auto_tagging_enabled`,
-  `conversion_action`, `customer_conversion_goal`, `campaign` with `campaign_budget` and
-  `asset_group`, and GA4's `properties/523400333/googleAdsLinks`; it writes nothing. `--consent`
-  reuses `scripts/youtube-upload.js`'s loopback consent for scope
-  `https://www.googleapis.com/auth/adwords`, storing the refresh token with
-  `put-secret-with-rotation-tag.sh`. Test `adsInventory.test.js` over `parseArgs` and `shape*`.
-  The run needs two operator steps: on the Overview page, "Upgrade access level" from Test to
-  Basic (Test access reaches test accounts only; Basic needs the project's brand verification),
-  and one browser approval of the consent the script opens. **Source**: BACKLOG 49b; item 16.
-  **Owner**: Claude Code builds and runs; the operator approves the access upgrade and the
-  consent. **Model**: Sonnet. **Size**: ~5 files.
-
-- [ ] **B11.T7b.6. Both runs' proofs.** In flight: on `claude/b67-board` (PR #317 to `claude/b66-board`, head 00260c6b, 60edce22; test 35595329985 and CodeQL 35595329966 green; merges after #316, when GitHub retargets it to `main`); three years ran back to back, each exit 0.
-  `claims.carryBack` and `carryBackLossesDecrease`, run B the property `claims.carryForward` and the
-  carry-back 400); `suspendTemporalValidations on every losses and adjustments write`, from each
-  entry's `requestHeaders`. Exit 1 when any line but the income-sources one is false, since that one
-  records the `DYNAMIC` gap. Then run both years from a clean checkpoint, back to back: delete both
-  `checkpoint-id.txt` files, run the B11.T7b.1 command, then the B11.T7b.4 command. Proof: both
-  transcripts end with the five lines and each run exits 0;
-  `app/unit-tests/scripts/itsa-sandbox-year.test.js` covers every new pure function and `npm run
-  test:unit` passes; `_developers/hmrc/ITSA_PHASE_2_SANDBOX.md`'s "What it proves" and "What each
-  phase should return" sections carry each new step with its expected status.  **Source**: `PLAN_ITSA_PHASE_2.md` T7. **Owner**: Claude Code. **Model**: Sonnet.
-  **Size**: ~3 files.
-
-## Machine-only
-
-- [ ] **B49.17. `infra/google/ads/ads.toml` and `ads-sync.js`.** Extend the `ads.toml` B49.16
+- [ ] **B49.17. `infra/google/ads/ads.toml` and `ads-sync.js`.** In flight: on `claude/b68-board`
+  (worktree `.claude/worktrees/b68`, PR #319 to `main`, head 222f292a, rebased onto #317; local proof:
+  41 unit tests, eslint clean; merges when its runs are green). Extend the `ads.toml` B49.16
   starts: `auto_tagging = true`; four `[[conversion_action]]` rows (`purchase`, `submit_vat_return`,
   `runner_download`, `donate`) with `ga4_event` and `category`; `[[customer_conversion_goal]]` rows
   `category`, `origin`, `biddable`; one `[[campaign]]` (`name`, `type = "PERFORMANCE_MAX"`,
@@ -123,6 +61,22 @@ and stop. One branch is driven green at a time. Lifted only by the operator in t
   codeless `Sign-up`; goals PURCHASE, SIGNUP, PAGE_VIEW biddable; one Performance Max campaign
   "Campaign #1" at 1000000 micros a day with "Asset Group 1"; auto-tagging on. The Ads API is an
   access level on project `diyaccounting-ga4`, so `ads-sync.js` needs no developer token. **Size**: ~4 files.
+
+## Machine-only
+
+- [ ] **B11.T7b.7. Record the responses.** Every request and response is already in the transcript;
+  the comparison against the simulator is not. For each call the two runs add, set HMRC's status and
+  body beside the simulator's route and scenario for that call and fix any field name, status or
+  error shape that differs: `app/http-simulator/routes/itsa-uk-property-period.js`,
+  `itsa-uk-property-annual.js`, `itsa-bsas.js` (the uk-property retrieve and adjust),
+  `itsa-losses-and-claims.js`, `itsa-tax-liability-adjustments.js`,
+  `itsa-self-employment-cumulative.js`, `itsa-uk-property-cumulative.js`, and the file of each name
+  under `app/http-simulator/scenarios/`. The test-support create-business response for `uk-property`
+  and the calculation's `businessIncomeSources` shape go in the runbook's run record, each
+  correction naming the transcript entry behind it. A run needs an SSO session for `submit-ci` and
+  no deployment; the re-run inside HMRC's 14-day window is B11.T10's. Proof: `npm test` green,
+  including `app/unit-tests/http-simulator/`. **Source**: `PLAN_ITSA_PHASE_2.md`
+  T7. **Owner**: Claude Code. **Model**: Sonnet. **Size**: ~10 files.
 
 ## Machine-ask
 
@@ -173,7 +127,7 @@ and stop. One branch is driven green at a time. Lifted only by the operator in t
 ## Blocked
 
 - [ ] **B30ao. `prod-env-operator-snapshot-publish-errors`: the visitor-kind view's day type.**
-  In flight: on `claude/b65-board` (PR #315, 27df5cb1). Alarm issue #313 was the snapshot's three
+  On `main` since PR #315 (27df5cb1). Alarm issue #313 was the snapshot's three
   visitor-kind observations failing `TYPE_MISMATCH: Cannot apply operator: varchar < date`, because
   `v_visitors_by_kind_daily` read the table's string `day`; it now reads `dt AS day`. Proof: the
   03:1x UTC snapshot run on 2026-09-22 publishes with no failing observation; then close #313
@@ -194,20 +148,6 @@ and stop. One branch is driven green at a time. Lifted only by the operator in t
   are a stated guess; the first run's screenshots under `target/` show the real One Login and
   permission pages. **Source**: BACKLOG 34. **Owner**: Claude Code. **Model**: Sonnet. Blocked on
   O17. **Size**: ~1 file.
-
-- [ ] **B11.T7b.7. Record the responses.** Every request and response is already in the transcript;
-  the comparison against the simulator is not. For each call the two runs add, set HMRC's status and
-  body beside the simulator's route and scenario for that call and fix any field name, status or
-  error shape that differs: `app/http-simulator/routes/itsa-uk-property-period.js`,
-  `itsa-uk-property-annual.js`, `itsa-bsas.js` (the uk-property retrieve and adjust),
-  `itsa-losses-and-claims.js`, `itsa-tax-liability-adjustments.js`,
-  `itsa-self-employment-cumulative.js`, `itsa-uk-property-cumulative.js`, and the file of each name
-  under `app/http-simulator/scenarios/`. The test-support create-business response for `uk-property`
-  and the calculation's `businessIncomeSources` shape go in the runbook's run record, each
-  correction naming the transcript entry behind it. A run needs an SSO session for `submit-ci` and
-  no deployment; the re-run inside HMRC's 14-day window is B11.T10's. Proof: `npm test` green,
-  including `app/unit-tests/http-simulator/`. Blocked on B11.T7b.6. **Source**: `PLAN_ITSA_PHASE_2.md`
-  T7. **Owner**: Claude Code. **Model**: Sonnet. **Size**: ~10 files.
 
 - [ ] **B52l. The optimiser over the raw export.** A notebook over `../analytics/prod/` (pulled by
   `scripts/analytics-pull.sh`, one CSV per view in `rawExportPublish.js`'s `VIEW_NAMES`): per-block
