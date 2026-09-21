@@ -5,7 +5,7 @@
 
 > Started 2026-09-21 from the spreadsheets session's review of the DIYA-GL business model
 > (`../spreadsheets.diyaccounting.co.uk/PLAN_DIYA_GL_LAUNCH.md` §3 and §5,
-> `PLAN_DIYA_GL_HOME.md` §(c) and §(d), `web/public/submit.catalogue.toml`).
+> `../spreadsheets.diyaccounting.co.uk/_developers/archive/PLAN_DIYA_GL_HOME.md` §(c) and §(d), `web/public/submit.catalogue.toml`).
 
 ## User assertions (verbatim)
 
@@ -85,11 +85,11 @@ second set of fields; the plan proposes a `[[bundles.prices]]` table with `inter
 `default = true` on one of them, and `stripe-sync` creating every listed price. `billingCheckoutPost.js`
 takes the chosen interval and picks that price id; `bundles.html` shows the annual price as the
 button and the monthly as a text link beneath it ("or £3.99 a month"). The DIYA-GL page's offer
-(`cloud.js` Subscribe, `PLAN_DIYA_GL_HOME.md` §(c)) shows the same two, annual first.
+(`cloud.js` Subscribe, `../spreadsheets.diyaccounting.co.uk/_developers/archive/PLAN_DIYA_GL_HOME.md` §(c)) shows the same two, annual first.
 
 ### (c) The DIYA-GL tier on prod
 
-`PLAN_DIYA_GL_HOME.md` §(c) lists the two edits that lift the tier to prod:
+`../spreadsheets.diyaccounting.co.uk/_developers/archive/PLAN_DIYA_GL_HOME.md` §(c) lists the two edits that lift the tier to prod:
 `DIYA_GL_RESIDENT_TIER` on and `prod` in the bundle's `listedInEnvironments`. They land here on the
 `resident` bundle, after (a) and (b), in one PR whose ci deploy proves the loop with the Stripe
 test card.
@@ -106,7 +106,7 @@ the £10–£16 single-trader floor and below an accountant's own software.
 
 ### (e) The 35-day sandbox
 
-`PLAN_DIYA_GL_HOME.md` §(b) fixed 24 hours: the put route writes `expiresAt = updatedAt + 24h` for
+`../spreadsheets.diyaccounting.co.uk/_developers/archive/PLAN_DIYA_GL_HOME.md` §(b) fixed 24 hours: the put route writes `expiresAt = updatedAt + 24h` for
 sandbox books, the lifecycle rule expires `retention=sandbox` objects after 2 days. This plan
 moves both: `expiresAt = updatedAt + 35 days`; the rule's `expiration` to 37 days and
 `noncurrentVersionExpiration` to 1 day (S3 expires on day boundaries; the sidecar's `expiresAt`
@@ -130,7 +130,7 @@ Ids are shared with `NEXT.md`'s board here, and the spreadsheets rows with their
 | PU-5 | The DIYA-GL tier on prod: `DIYA_GL_RESIDENT_TIER`, `prod` in `resident`'s environments | Submit | PU-3, PU-4 | Haiku | `SubmitApplication.java`, `submit.catalogue.toml` (~2 files) |
 | PU-6 | Practice licence design: clients under one sign-in, per-client book sets, agent authorisation, batch through MCP and CLI | Submit | — | Opus | `PLAN_PRICE_UPDATE.md` §(d) expanded, then a build task list |
 | PU-7 | Practice licence build, per PU-6's design | Submit | PU-6 | per the design | per the design |
-| PU-8 | The pages: "35-day sandbox" labels, the countdown in days, the DIYA-GL offer showing £39/year first, `sandbox_expired_seen` sent | spreadsheets | PU-4 for the event, PU-2 for the offer | Sonnet | `web/diya-gl.co.uk/public/cloud.js`, `shell.js`, `index.html`, `web/spreadsheets.diyaccounting.co.uk/public/download.html`, `diya-gl-events.js`, the cloud browser spec, the behaviour test, `CLAUDE.md`, `PLAN_DIYA_GL_HOME.md` (~9 files) |
+| PU-8 | The pages: "35-day sandbox" labels, the countdown in days, the DIYA-GL offer showing £39/year first, `sandbox_expired_seen` sent | spreadsheets | PU-4 for the event, PU-2 for the offer | Sonnet | `web/diya-gl.co.uk/public/cloud.js`, `shell.js`, `index.html`, `web/spreadsheets.diyaccounting.co.uk/public/download.html`, `diya-gl-events.js`, the cloud browser spec, the behaviour test, `CLAUDE.md`, `../spreadsheets.diyaccounting.co.uk/_developers/archive/PLAN_DIYA_GL_HOME.md` (~9 files) |
 | PU-9 | Retire `resident-diya-gl`, `resident-itsa`, `resident-ltd` once Stripe live shows no subscription on their prices | Submit | PU-5 | Haiku | `submit.catalogue.toml`, `.env.ci`, `.env.prod` (~3 files) |
 
 ## Decisions taken (operator, 2026-09-21)
