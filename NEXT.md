@@ -95,6 +95,22 @@ step.
   `REPORT_SESSION_uOKRjk_2026-09-22.md` suggestion 6. **Owner**: Claude Code. **Model**: Haiku.
   **Size**: ~1 file.
 
+- [ ] **B58a. `security-review.yml`'s assign job assigns the Copilot agent.** Run 35598208062
+  (the Monday schedule, 2026-09-21) created issue #318 and its `assign-copilot` job printed
+  "Assigned issue #318 to copilot-swe-agent", yet the issue has no assignee and its timeline
+  carries only the four label events, no `assigned` event: the `replaceActorsForAssignable`
+  mutation on the agent App token returns without error and assigns nothing (the job's own
+  comment at line 208 called the App route unproven). While #318 stays open the first job's
+  `skip_if_open_security_issues` check creates nothing on later Mondays, so the review is paused
+  behind it; #318 stays open by the operator's decision until the assignment works. In the job:
+  read the mutation's returned `assignees` and fail the job when the login is absent; print
+  `suggestedActors` so the log shows whether the App sees `copilot-swe-agent` at all; if the App
+  cannot assign it, use the workflow's `GITHUB_TOKEN` (`issues: write`) for that one mutation, or
+  say which token can. Add a `workflow_dispatch` input `issue_number` that runs only the assign
+  job against an existing issue. Proof: a dispatch naming 318 leaves #318 assigned to
+  `copilot-swe-agent`, the `assigned` event on its timeline. **Source**: issue #318; BACKLOG 58.
+  **Owner**: Claude Code. **Model**: Sonnet. **Size**: ~1 file.
+
 - [ ] **B52.D3. The spreadsheets site's web-vitals alarms.** The spreadsheets account's
   `AWS::Oam::Link` is attached to both sinks (label `spreadsheets` on
   `arn:aws:oam:us-east-1:972912397388:sink/8f40e076-e9ab-445b-8fc2-68557456b63d` and on
