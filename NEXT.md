@@ -39,6 +39,9 @@ step.
 
 ## In flight
 
+**COOL-DOWN is on since 2026-09-21T19:32:35Z.** No new board rows except a degradation. Agents commit
+and stop. One branch is driven green at a time. Lifted only by the operator in their own words.
+
 - [ ] **O38. The two GitHub Apps carry every machine write.** In flight: `infra/github/github.toml`
   drops the three deleted secret names on `claude/ops-bot-secrets` (worktree
   `.claude/worktrees/ops-bot-secrets`, PR #321 to `main`). The seven deletes ran on 2026-09-21: the
