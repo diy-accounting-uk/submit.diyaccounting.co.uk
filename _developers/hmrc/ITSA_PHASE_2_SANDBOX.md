@@ -96,6 +96,10 @@ change where the transcript and checkpoint id land (default `./target/itsa-sandb
 | Tax liability adjustments put | `PUT .../tax-liability/adjustments/{nino}/{taxYear}`, `Gov-Test-Scenario: STATEFUL`, `suspend-temporal-validations: true` | `200`/`204` |
 | Tax liability adjustments get | `GET .../tax-liability/adjustments/{nino}/{taxYear}`, `Gov-Test-Scenario: STATEFUL` | `200` |
 | Minimum supported tax year, both APIs | n/a | `2026-27` - HMRC's own hard-coded minimum for Individual Losses 7.0 and Individuals Tax Liability Adjustments 1.0, below `resolveItsaSubmissionModel`'s own boundary, so run A (2023-24) and run B (2025-26) cannot exercise these two endpoints; proven separately against `2026-27` |
+| Loss claim put, UK property, cumulative model only | `PUT .../losses/{nino}/businesses/{propertyBusinessId}/loss-claims/{taxYear}`, `Gov-Test-Scenario: STATEFUL`, `suspend-temporal-validations: true` | `200`/`204` |
+| Loss claim get, UK property | `GET .../losses/{nino}/businesses/{propertyBusinessId}/loss-claims/{taxYear}`, `Gov-Test-Scenario: STATEFUL` | `200`, `claims.carryForward` present |
+| Property carry-back, refused locally | `buildLossesAndClaimsRequestBody`, no call | throws `LossesAndClaimsValidationError` code `CARRY_BACK_CLAIM` |
+| Property carry-back, rejected by HMRC | `PUT .../losses/{nino}/businesses/{propertyBusinessId}/loss-claims/{taxYear}`, `Gov-Test-Scenario: CARRY_BACK_CLAIM` | `400` `RULE_CARRY_BACK_CLAIM` - the real sandbox's own code, which differs from `itsa-losses-and-claims.js`'s simulated `RULE_TYPE_OF_CLAIM_INVALID`, see below |
 | Final declaration | `POST .../calculations/{nino}/self-assessment/{taxYear}/{calculationId}/final-declaration` | `204` |
 | Validator | `GET .../test/fraud-prevention-headers/validate` | no errors; the only acceptable warning names `gov-client-multi-factor` |
 
@@ -327,3 +331,22 @@ With the header fixed, the write succeeded but its read-back answered
 writes already carry. With `STATEFUL` added to both PUTs, a full run against `2026-27` filed the
 loss claim, read back `claims.carryBack` and `claims.carryForward`, filed the tax liability
 adjustment, read back `carryBackLossesDecrease`, then declared. Final declaration `204`: true.
+
+### The property leg under the cumulative model, and the property loss claim (run B, 2025-26 and 2026-27)
+
+A run against `2025-26` reached the same `RULE_TAX_YEAR_NOT_SUPPORTED` as run A once it hit
+`self-employment-loss-claim-put`, confirming the minimum-tax-year finding applies regardless of
+quarterly filing model - but not before proving the property annual submission and the property
+BSAS trigger/retrieve/adjust all `ok: true` under the cumulative model too, alongside the
+property business's own cumulative period updates already covered.
+
+The property loss claim and its carry-back refusal, gated on the cumulative model, needed the
+same `2026-27` run as the self-employment loss sequence to clear the minimum-tax-year gate. With
+that run: the property carry-forward claim filed (`204`) and read back
+(`claims.carryForward: {currentYearLosses: 300}`); `buildLossesAndClaimsRequestBody` refused a
+property carry-back claim locally with `CARRY_BACK_CLAIM`, as designed; and the same raw body
+sent to HMRC under `Gov-Test-Scenario: CARRY_BACK_CLAIM` came back `400` with
+`RULE_CARRY_BACK_CLAIM` - not `RULE_TYPE_OF_CLAIM_INVALID`, the code
+`app/http-simulator/scenarios/itsa-losses-and-claims.js`'s `CARRY_BACK_CLAIM` scenario currently
+answers. That simulator scenario is a finding for a future pass, not corrected here. Final
+declaration `204`: true.

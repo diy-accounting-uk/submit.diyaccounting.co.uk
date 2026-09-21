@@ -74,7 +74,7 @@ import { buildUkPropertyAnnualRequestBody } from "../app/functions/hmrc/hmrcItsa
 import { buildBsasTriggerRequestBody } from "../app/functions/hmrc/hmrcItsaBsasTriggerPost.js";
 import { buildBsasAdjustRequestBody } from "../app/functions/hmrc/hmrcItsaBsasSelfEmploymentAdjustPost.js";
 import { buildBsasUkPropertyAdjustRequestBody } from "../app/functions/hmrc/hmrcItsaBsasUkPropertyAdjustPost.js";
-import { buildLossesAndClaimsRequestBody } from "../app/functions/hmrc/hmrcItsaLossesAndClaimsPut.js";
+import { buildLossesAndClaimsRequestBody, LossesAndClaimsValidationError } from "../app/functions/hmrc/hmrcItsaLossesAndClaimsPut.js";
 import { buildTaxLiabilityAdjustmentsRequestBody } from "../app/functions/hmrc/hmrcItsaTaxLiabilityAdjustmentsPut.js";
 
 // Individual Calculations 8.0: recommended minimum wait between the trigger's 202 and the
@@ -881,6 +881,69 @@ async function main() {
     okStatuses: [200],
     nino,
   });
+
+  // Phase 7d: on the cumulative model only, a loss claim on the property business and the
+  // sandbox's own rejection of a carry-back claim against it - proving both this repository's
+  // local refusal (buildLossesAndClaimsRequestBody throws before any call is made) and HMRC's
+  // own rejection of the same claim type for a property income source.
+  if (submissionModel === "cumulative") {
+    await callHmrc({
+      step: "uk-property-loss-claim-put",
+      method: "PUT",
+      url: `${sandboxBase}/individuals/losses/${nino}/businesses/${propertyBusinessId}/loss-claims/${taxYear}`,
+      headers: suspendTemporalValidationsHeaders("7.0", STATEFUL_SCENARIO),
+      body: buildLossesAndClaimsRequestBody({
+        typeOfBusiness: "uk-property",
+        claims: { carryForward: { currentYearLosses: 300 } },
+      }),
+      okStatuses: [200, 204],
+      nino,
+    });
+
+    const propertyLossClaimGet = await callHmrc({
+      step: "uk-property-loss-claim-get",
+      method: "GET",
+      url: `${sandboxBase}/individuals/losses/${nino}/businesses/${propertyBusinessId}/loss-claims/${taxYear}`,
+      headers: hmrcHeaders("7.0", STATEFUL_SCENARIO),
+      okStatuses: [200],
+      nino,
+    });
+    if (!propertyLossClaimGet.body?.claims?.carryForward) {
+      throw new Error(`UK property loss claim read-back carried no claims.carryForward: ${JSON.stringify(propertyLossClaimGet.body)}`);
+    }
+
+    let propertyCarryBackLocalRefusal = null;
+    try {
+      buildLossesAndClaimsRequestBody({
+        typeOfBusiness: "uk-property",
+        claims: { carryBack: { previousYearGeneralIncome: 100 } },
+      });
+    } catch (error) {
+      propertyCarryBackLocalRefusal = error;
+    }
+    if (!(propertyCarryBackLocalRefusal instanceof LossesAndClaimsValidationError) || propertyCarryBackLocalRefusal.code !== "CARRY_BACK_CLAIM") {
+      throw new Error(
+        `Expected buildLossesAndClaimsRequestBody to refuse a property carry-back claim locally with CARRY_BACK_CLAIM, got: ${propertyCarryBackLocalRefusal}`,
+      );
+    }
+    record("property-carry-back-refused-locally", {
+      code: propertyCarryBackLocalRefusal.code,
+      message: propertyCarryBackLocalRefusal.message,
+    });
+
+    // The raw body this repository's own local refusal never lets reach HMRC in production -
+    // sent here deliberately, against Gov-Test-Scenario: CARRY_BACK_CLAIM, to record the
+    // sandbox's own rejection of the same claim type.
+    await callHmrc({
+      step: "property-carry-back-rejected",
+      method: "PUT",
+      url: `${sandboxBase}/individuals/losses/${nino}/businesses/${propertyBusinessId}/loss-claims/${taxYear}`,
+      headers: suspendTemporalValidationsHeaders("7.0", "CARRY_BACK_CLAIM"),
+      body: { claims: { carryBack: { previousYearGeneralIncome: 100 } } },
+      okStatuses: [400],
+      nino,
+    });
+  }
 
   // Phase 8: trigger the intent-to-finalise calculation, wait, and poll until it is ready. No
   // crystallisation-obligations read first - the same obligations-api gap that rules out
