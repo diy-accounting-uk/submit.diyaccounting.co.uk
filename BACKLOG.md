@@ -23,7 +23,7 @@ truthfully on its own. Machine-ask and human-driven steps are briefed at the wor
 `../NEXT_OPERATOR_RUNBOOK.md`, one file rewritten in place.
 
 - **Cool-down lifted 2026-09-21 12:35 UTC** by the operator's `/wake`. Prod runs prod-4fef66c;
-  main's deploy of PR #316's merge (0d00bdeb) is creating prod-0d00bde; `ci-set1` is the live ci set.
+  main's deploy of PR #316's merge (0d00bdeb) is creating prod-0d00bde; no ci set is standing.
 - **Open pull requests**: #319 (`claude/b68-board`: 49b item 17, `ads.toml` and `ads-sync.js`),
   pushed after its local proof. No agent is running; no branch is ahead of its remote.
 - **Seven batches merged since 2026-09-20** (PRs #309, #311, #312, #315, #316, #317 here; #306,

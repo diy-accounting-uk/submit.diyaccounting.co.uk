@@ -17,7 +17,8 @@ Haiku; the lowest tier that fits). Anything touching code goes through a `claude
 PR; the operator merges.
 
 **Prod runs deployment prod-4fef66c**; main's deploy 35597452065 of PR #316's merge (0d00bdeb) is
-creating prod-0d00bde. **ci**: `ci-set1` is live and last-known-good. Open pull request: #319
+creating prod-0d00bde. **ci**: no set is standing; `ci-set1` went with `claude/b66-board`'s branch delete
+after #316, and PR #319's push deploy claims the next. Open pull request: #319
 (`claude/b68-board` to `main`, one row, head 222f292a, pushed 2026-09-21 after its local proof).
 
 The board runs in five sections, in this order: **in flight** (a branch, a pull request or a run
