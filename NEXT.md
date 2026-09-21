@@ -16,10 +16,9 @@ runs), and for Claude Code steps the **Model** a sub-agent should use (Fable > O
 Haiku; the lowest tier that fits). Anything touching code goes through a `claude/*` branch and
 PR; the operator merges.
 
-**Prod runs deployment prod-a15fe51** (the 09:55 UTC scheduled deploy of main on 2026-09-21; its
-`destroy previous` job is removing prod-82e4f32). **ci**: `ci-set1` is live and last-known-good (b65's
-set, claimed 09:2x UTC); `ci-set2-app-SelfDestructStack` alone stands from 03:38 UTC, past its own
-timer, for the 12:34 UTC sweep.
+**Prod runs deployment prod-a15fe51**; main's deploy of PR #315's merge (4fef66c2) is creating
+prod-4fef66c. **ci**: `ci-set1` is live and last-known-good (b65's set) until it self-destructs at
+13:28 UTC or PR #316's deploy reclaims it.
 
 The board runs in five sections, in this order: **in flight** (a branch, a pull request or a run
 in motion, each named in the row), **machine-only**, **machine-ask**, **human-driven**,
@@ -41,64 +40,7 @@ step.
 
 ## In flight
 
-- [ ] **B30ao. `prod-env-operator-snapshot-publish-errors`: the visitor-kind view's day type.**
-  In flight: on `claude/b65-board` (PR #315, 27df5cb1). Alarm issue #313 was the snapshot's three
-  visitor-kind observations failing `TYPE_MISMATCH: Cannot apply operator: varchar < date`, because
-  `v_visitors_by_kind_daily` read the table's string `day`; it now reads `dt AS day`. Proof: the
-  first 03:1x UTC snapshot run after the merge publishes with no failing observation; then close
-  #313 quoting it. **Source**: issue #313; BACKLOG 30. **Owner**: Claude Code. **Model**: Haiku.
-  **Size**: ~0 files.
-
-- [ ] **B11.T7b.2. Run A, the dated year.** In flight: proven on the sandbox and on `claude/b65-board` (PR #315, 6ed739a8). The sole-trade leg runs to `bsas-adjust`. Add the
-  property leg after it, with the builders in `app/functions/hmrc/hmrcItsaUkProperty*.js` and
-  `hmrcItsaBsasUkProperty*.js`: four `POST
-  .../business/property/uk/{nino}/{propertyBusinessId}/period/{taxYear}` (6.0, `STATEFUL`, the
-  `buildStandardQuarterlyPeriods` dates, `ukNonFhlProperty` with `periodAmount` and
-  `consolidatedExpenses`); `PUT .../annual/{taxYear}` (6.0, `allowances: { propertyIncomeAllowance:
-  1000 }`); a BSAS trigger with `typeOfBusiness: "uk-property"`, then `GET` and `adjust` on
-  `.../adjustable-summary/{nino}/uk-property/{calculationId}/{taxYear}` (7.0, `UK_PROPERTY_PROFIT`
-  on the read, `income: { totalRentsReceived: 1 }` on the adjust). After `calculation-retrieve`,
-  record `inputs.incomeSources.businessIncomeSources` and print whether both businesses appear; only
-  fixture ids there is the known `DYNAMIC` gap, so warn and continue. A 403 names a Property
-  Business 6.0 subscription only the operator adds. Command as B11.T7b.1. Proof: every property step
-  `ok: true`, final declaration 204. After B11.T7b.1. **Source**: `PLAN_ITSA_PHASE_2.md` T7.
-  **Owner**: Claude Code. **Model**: Sonnet. **Size**: ~2 files.
-
-- [ ] **B11.T7b.3. Run A's loss sequence on the sole trade.** In flight: proven on the sandbox and on `claude/b65-board` (PR #315, 274e7bdd). One loss-claims resource per business
-  per year, so the sequence is a PUT, its read-back, an adjustments PUT and its read-back, between
-  the property BSAS adjust and `calculation-trigger`. `PUT
-  {sandboxBase}/individuals/losses/{nino}/businesses/{businessId}/loss-claims/{taxYear}`: Accept
-  7.0, `suspendTemporalValidations: "true"` added to the `hmrcHeaders` result, okStatuses [200,
-  204], `buildLossesAndClaimsRequestBody({ typeOfBusiness: "self-employment", losses: {
-  broughtForwardLosses: 500 }, claims: { carryForward: { currentYearLosses: 250 }, carryBack: {
-  previousYearGeneralIncome: 100 } } })` from `app/functions/hmrc/hmrcItsaLossesAndClaimsPut.js`;
-  then that path on `GET` with `STATEFUL`, asserting `claims.carryBack`. Then `PUT
-  .../tax-liability/adjustments/{nino}/{taxYear}` (1.0, same header, `carryBackLossesDecrease: {
-  incomeTax: 20 }`) and its `STATEFUL` GET. The calculation answers canned figures under `DYNAMIC`,
-  so the proof is the two read-backs and a final declaration still at 204. Command as B11.T7b.1.
-  After B11.T7b.2. **Source**: `PLAN_ITSA_PHASE_2.md` T7. **Owner**: Claude Code. **Model**: Sonnet.
-  **Size**: ~1 file.
-
-- [ ] **B11.T7b.5. Run B's two extra calls.** In flight: proven on the sandbox and on `claude/b65-board` (PR #315, 1499b136). Gated on `submissionModel === "cumulative"`, after the
-  property BSAS adjust: `PUT
-  {sandboxBase}/individuals/losses/{nino}/businesses/{propertyBusinessId}/loss-claims/{taxYear}`
-  (7.0, `suspendTemporalValidations: "true"`, okStatuses [200, 204],
-  `buildLossesAndClaimsRequestBody({ typeOfBusiness: "uk-property", claims: { carryForward: {
-  currentYearLosses: 300 } } })`) and its `STATEFUL` GET asserting `claims.carryForward`. Then the
-  refusal, twice. Assert the builder throws `LossesAndClaimsValidationError` with code
-  `CARRY_BACK_CLAIM` for `{ typeOfBusiness: "uk-property", claims: { carryBack: {
-  previousYearGeneralIncome: 100 } } }`, recorded as `property-carry-back-refused-locally`. Then
-  send that raw body to the same path with `Gov-Test-Scenario: CARRY_BACK_CLAIM`, okStatuses [400],
-  recorded as `property-carry-back-rejected` with HMRC's code and message; the simulator answers
-  `RULE_TYPE_OF_CLAIM_INVALID`, and a different code is a B11.T7b.7 correction. Same command as
-  B11.T7b.4. Proof: the three transcript entries at 204, 200 and 400. After B11.T7b.4. **Source**:
-  `PLAN_ITSA_PHASE_2.md` T7. **Owner**: Claude Code. **Model**: Sonnet. **Size**: ~1 file.
-
-- [ ] **B52.D2. Donations on the revenue panel.** In flight: the four links carry `bundleId` metadata in the live account since 2026-09-21 (plan reads "up to date"); the `stripe.toml` `[[payment_link]]` rows and `planPaymentLinks` are on `claude/b65-stripe-donations` (bf939eb9), landing on the next batch. `v_revenue_daily` reads `stripe_charges`, written
-  by `stripeReconcile.js` with the live key at `prod/submit/stripe/secret_key`
-  (`app/lib/stripeClient.js`), labelled by `charge.metadata.bundleId`, so a Payment Link charge
-  falls to `'unknown'`. Read the account side first: fetch that secret and `GET /v1/payment_links`,
-  matching the four live slugs in the spreadsheets repository's
+- [ ] **B52.D2. Donations on the revenue panel.** In flight: on `claude/b66-board` (PR #316, ffd4351b); the live write is done.
   `web/spreadsheets.diyaccounting.co.uk/donate-links.toml` (`…4F200`, `4F201`, `4F202`, `4F204`); a
   match means one account, and `SELECT day, product, revenue_gbp FROM v_revenue_daily WHERE product
   = 'unknown'` in workgroup `prod-env-analytics` shows whether donations are already landing
@@ -107,8 +49,7 @@ step.
   Stripe write was approved by the operator on 2026-09-21. PayPal donations are not in this row; they arrive with `../PLAN_FINANCE_AUTOMATION.md`
   phase 1's PayPal pull, which has no code. **Source**: BACKLOG 66; plan D2. **Owner**: Claude Code. **Model**: Sonnet. **Size**: ~2 files.
 
-- [ ] **B49.20. `infra/github`.** In flight: the github-sync agent is writing `infra/github/` on `claude/b65-github-sync`. `github.toml`: `[repository]` the two merge settings; `[actions]`
-  the permissions and selected-actions fields, `default_workflow_permissions`, and
+- [ ] **B49.20. `infra/github`.** In flight: on `claude/b66-board` (PR #316, 8120b903); the plan reads "already match".
   `patterns_allowed` from `scripts/github-actions-permissions.sh`; `[security]
   automated_security_fixes = true` (false live); `[[ruleset]]` `main` with its enforcement,
   conditions, its three rules and bypass actors; `[[environment]]` `ci`, `prod`, `copilot` with
@@ -122,7 +63,7 @@ step.
   `githubSync.test.js` over `parseConfig`, `planGithub`, `rulesetDiff`. Proof: `npm test` and a plan
   reading "already match". After B49.18. **Source**: BACKLOG 49b; item 20. **Owner**: Claude Code. **Model**: Sonnet. **Size**: ~5 files.
 
-- [ ] **B49.16. Read-only inventory of the Google Ads account.** In flight: the build is on `claude/b65-ads-inventory` (642300ea, API v25), landing on the next batch; the access upgrade and the consent follow the merge. Developer tokens were sunset by
+- [ ] **B49.16. Read-only inventory of the Google Ads account.** In flight: the build is on `claude/b66-board` (PR #316, c9865502); Explorer access on the Overview page (not Basic: Explorer reaches production accounts at 2,880 operations a day) and one consent remain, both the operator's.
   Google on 2026-09-09: Google Ads API access is now an access level on the Cloud project that
   issued the OAuth credentials, requested on the Google Ads API Overview page
   (<https://console.cloud.google.com/google/ads-apis/overview>, project `diyaccounting-ga4`),
@@ -146,6 +87,20 @@ step.
   consent. **Model**: Sonnet. **Size**: ~5 files.
 
 ## Machine-only
+
+- [ ] **B11.T7b.6. Both runs' proofs.** The exit code rests on two printed lines today, `final
+  declaration 204` and `fraud header validator clean`. Add three more, each computed from the
+  transcript: `both businesses in calculation income sources`; `loss claims read back` (run A
+  `claims.carryBack` and `carryBackLossesDecrease`, run B the property `claims.carryForward` and the
+  carry-back 400); `suspendTemporalValidations on every losses and adjustments write`, from each
+  entry's `requestHeaders`. Exit 1 when any line but the income-sources one is false, since that one
+  records the `DYNAMIC` gap. Then run both years from a clean checkpoint, back to back: delete both
+  `checkpoint-id.txt` files, run the B11.T7b.1 command, then the B11.T7b.4 command. Proof: both
+  transcripts end with the five lines and each run exits 0;
+  `app/unit-tests/scripts/itsa-sandbox-year.test.js` covers every new pure function and `npm run
+  test:unit` passes; `_developers/hmrc/ITSA_PHASE_2_SANDBOX.md`'s "What it proves" and "What each
+  phase should return" sections carry each new step with its expected status.  **Source**: `PLAN_ITSA_PHASE_2.md` T7. **Owner**: Claude Code. **Model**: Sonnet.
+  **Size**: ~3 files.
 
 ## Machine-ask
 
@@ -195,6 +150,14 @@ step.
 
 ## Blocked
 
+- [ ] **B30ao. `prod-env-operator-snapshot-publish-errors`: the visitor-kind view's day type.**
+  In flight: on `claude/b65-board` (PR #315, 27df5cb1). Alarm issue #313 was the snapshot's three
+  visitor-kind observations failing `TYPE_MISMATCH: Cannot apply operator: varchar < date`, because
+  `v_visitors_by_kind_daily` read the table's string `day`; it now reads `dt AS day`. Proof: the
+  03:1x UTC snapshot run on 2026-09-22 publishes with no failing observation; then close #313
+  quoting it. Blocked on that run. **Source**: issue #313; BACKLOG 30. **Owner**: Claude Code. **Model**: Haiku.
+  **Size**: ~0 files.
+
 - [ ] **B34.7. Run and fix the filing suites' sandbox sign-in.** `deploy.yml` and `probe-test.yml`
   run the two filing suites only when the dispatch input `runCompaniesHouseSandboxFiling` is
   `true`, and probe-test's guard step fails fast naming any of O17's four values that is empty.
@@ -209,21 +172,6 @@ step.
   are a stated guess; the first run's screenshots under `target/` show the real One Login and
   permission pages. **Source**: BACKLOG 34. **Owner**: Claude Code. **Model**: Sonnet. Blocked on
   O17. **Size**: ~1 file.
-
-- [ ] **B11.T7b.6. Both runs' proofs.** The exit code rests on two printed lines today, `final
-  declaration 204` and `fraud header validator clean`. Add three more, each computed from the
-  transcript: `both businesses in calculation income sources`; `loss claims read back` (run A
-  `claims.carryBack` and `carryBackLossesDecrease`, run B the property `claims.carryForward` and the
-  carry-back 400); `suspendTemporalValidations on every losses and adjustments write`, from each
-  entry's `requestHeaders`. Exit 1 when any line but the income-sources one is false, since that one
-  records the `DYNAMIC` gap. Then run both years from a clean checkpoint, back to back: delete both
-  `checkpoint-id.txt` files, run the B11.T7b.1 command, then the B11.T7b.4 command. Proof: both
-  transcripts end with the five lines and each run exits 0;
-  `app/unit-tests/scripts/itsa-sandbox-year.test.js` covers every new pure function and `npm run
-  test:unit` passes; `_developers/hmrc/ITSA_PHASE_2_SANDBOX.md`'s "What it proves" and "What each
-  phase should return" sections carry each new step with its expected status. Blocked on B11.T7b.3 and
-  B11.T7b.5. **Source**: `PLAN_ITSA_PHASE_2.md` T7. **Owner**: Claude Code. **Model**: Sonnet.
-  **Size**: ~3 files.
 
 - [ ] **B11.T7b.7. Record the responses.** Every request and response is already in the transcript;
   the comparison against the simulator is not. For each call the two runs add, set HMRC's status and
