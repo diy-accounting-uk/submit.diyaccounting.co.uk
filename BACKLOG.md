@@ -16,40 +16,35 @@ Compiled 2026-08-25 from every source: GitHub issues (#3 to #20), local plan doc
 
 **How items are ranked.** Existential first when cheap relative to the risk. Then items that make everything else measurable or truthful, because they compound. Then the revenue path in dependency order. Effort tiebreaks: a small item with the same value class outranks a large one. [DE] marks items in the data engineering layer, with the certification domain they exercise.
 
-## Live status (updated 2026-09-15)
+## Live status (updated 2026-09-21)
 
 Queued and in-flight state lives on `NEXT.md`; this block mirrors it so the backlog reads
 truthfully on its own. Machine-ask and human-driven steps are briefed at the workspace root in
 `../NEXT_OPERATOR_RUNBOOK.md`, one file rewritten in place.
 
-- **Cool-down lifted 2026-09-15 20:10 UTC** by the operator's `/loop` of do-next waves. Prod runs prod-70b0a8e
-  (PR #222's deploy), the only prod set; no ci set stands (`ci-claud727f`'s `ApiStack` is
-  DELETE_FAILED until the 02:34 UTC `destroy-ci.yml` sweep on 2026-09-16).
-- **Eight batches merged on 2026-09-15** (PRs #216, #217, #218, #220, #221, #222, #225, #226):
-  the four failed runs of 2026-09-14, the operator list (`OPERATORS.txt`) and the pass-check fix,
-  the alarm cluster (CIS filter, one issue per alarm, the SecurityLakeStack deploy), the promotion
-  gate on the OpsStack, the watch script's three defects, the status poll's presenter id back to
-  plaintext, the five recordings unlisted on the channel, and wave b40 (twelve rows: the operator
-  snapshot's salt, the YouTube caption race, the self-destruct's forced delete, the `mcp/` package
-  skeleton, the restricted-pass browser test, the videos page, the signature check, the support
-  form's own token secret, the do-next brief, the alarm audit re-count).
-- **Open alarm issues**: #208 (the nightly snapshot; the tables now exist on prod, checked after
-  the 03:15 UTC run by B52y.2).
+- **Cool-down on since 2026-09-21 11:52 UTC**, called by the operator. Prod runs prod-4fef66c
+  (main's deploy of PR #315's merge); `ci-set1` is the live ci set, claimed by `claude/b66-board`.
+- **Open pull requests**: #316 (`claude/b66-board`: the spreadsheets donation links labelled by
+  product, `infra/github`, the Google Ads inventory build, a lint pass), mergeable once main's
+  deploy ends; #317 (`claude/b67-board`, stacked on #316: the three-year ITSA sandbox proofs and
+  two inventory run fixes). No agent is running; no branch is ahead of its remote.
+- **Five batches merged since 2026-09-20** (PRs #309, #311, #312, #315 here; #306, #307, #308,
+  #310, #314 from the DIYA-GL session): rows 30's CIS filter tune and alarm-remedy list (design and
+  build), 49b's items 15 and 18 to 23, 62's submit half and the OAM sinks, 67, 69's filter and
+  ledger, 70, 71, 72, 34's three filing designs (34e, 34f, 34g), 11's T7b.1 to T7b.5, O38's last
+  PAT read, the ci slot release on branch delete, and the visitor-kind view's day type.
+- **Open alarm issues**: #313 (`prod-env-operator-snapshot-publish-errors`; the view fix is on
+  main since 4fef66c2, proven by the 03:1x UTC snapshot run on 2026-09-22).
 - **Both `/api/v1/books` and `/api/v1/diya-gl` are permanent** by operator decision of 2026-09-10.
-  The old prefix is never retired and the spreadsheets repository changes nothing; row 51's naming
-  work is down to the S3 bucket.
-- **Tier 1 rows 55 to 59** landed in PR #237 (wave b42) apart from B56, which waits on O46; the
-  post-merge proofs are NEXT.md B30ac.2, B59.2, B55.2 and B57.2.
-- **Plans archived 2026-09-16** (every row landed or decided): the three alarm plans, the fraud-header
-  email check, the Issue 15 tracker, the edge CORS review, DIYA-GL naming and DIYA-GL storage, all
-  under `_developers/archive/`.
-- **Date-gated**: 30a is NEXT.md B30y; 43 from 2026-10-02; 48 the week of 2026-11-29.
-- **Tier 2**: 10's six endpoints are on main behind the environments gate; 11's phase 2 has T1 to
-  T7, T19, T21 and T22 landed, with T9 refined on `NEXT.md` behind the MCP package (M1a–M1c, from
-  row 51, whose M1a is on main since PR #226); 11a parked by the operator's decision of 2026-09-05; 34's two REST filings are live on
-  prod, with the XML Gateway half (34b) waiting on Companies House's answer about status lookups;
-  17b's three VAT read pages are live on prod and all eight walkthroughs are public on the channel
-  since 2026-09-15 (17d reviews them).
+- **Date-gated**: 43 from 2026-10-02; 48 the week of 2026-11-29; 52l from 2026-12-09.
+- **Tier 2**: 11's phase 2 has T7b.1 to T7b.5 proven on the sandbox and T7b.6 on PR #317, T7b.7
+  and T10 remaining; 34b waits on Companies House's answer about status lookups (34d); 62 waits on
+  the spreadsheets repository's OAM link.
+- **Tier 3**: 49b has items 15 to 23 landed or on PR #316, 16 run, 17 ready; 66's donation links
+  carry their bundle id in the live account; 30's remedy list runs (`alarm-remedy-close.yml`
+  hourly, `remedy:*` labels, per-family budget).
+- **Tier 4**: 67, 69, 70, 71 and 72 are on main; 69's ledger and 71's triage each have one proven
+  run.
 
 ## Tier 1: do next
 
