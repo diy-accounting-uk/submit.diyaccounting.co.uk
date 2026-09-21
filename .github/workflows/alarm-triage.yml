@@ -47,6 +47,14 @@ jobs:
     runs-on: ubuntu-24.04
     timeout-minutes: 5
     steps:
+      # A local action needs the repository on disk before it can run; only the action's own
+      # directory is fetched, since this job reads nothing else from the tree.
+      - name: Checkout the budget action
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          sparse-checkout: .github/actions/agent-run-budget
+          sparse-checkout-cone-mode: false
+
       - name: Stop once ${{ env.TRIAGE_BUDGET_PER_DAY }} triage runs have already posted a result today
         id: budget-guard
         uses: ./.github/actions/agent-run-budget

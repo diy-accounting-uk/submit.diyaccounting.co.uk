@@ -37,6 +37,10 @@ jobs:
     timeout-minutes: 15
     environment: prod
     steps:
+      # The budget guard is a local action, so the checkout comes first.
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+
       - name: Stop once ${{ env.CLOSE_BUDGET_PER_DAY }} close runs have already posted a result today
         id: budget-guard
         uses: ./.github/actions/agent-run-budget
@@ -45,10 +49,6 @@ jobs:
           job-name: close
           step-name: Close the issues that qualify
           budget: ${{ env.CLOSE_BUDGET_PER_DAY }}
-
-      - name: Checkout
-        if: always()
-        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
 
       - name: Set up Node
         if: steps.budget-guard.outputs.over-budget == 'false'
