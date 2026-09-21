@@ -13,15 +13,20 @@ import co.uk.diyaccounting.submit.constructs.AbstractApiLambdaProps;
 import co.uk.diyaccounting.submit.constructs.ApiLambda;
 import co.uk.diyaccounting.submit.constructs.ApiLambdaProps;
 import co.uk.diyaccounting.submit.constructs.Lambda;
+import co.uk.diyaccounting.submit.constructs.LambdaProps;
 import co.uk.diyaccounting.submit.utils.PopulatedMap;
 import co.uk.diyaccounting.submit.utils.SubHashSaltHelper;
 import java.util.List;
 import org.immutables.value.Value;
+import software.amazon.awscdk.Duration;
 import software.amazon.awscdk.Environment;
 import software.amazon.awscdk.Stack;
 import software.amazon.awscdk.StackProps;
 import software.amazon.awscdk.services.dynamodb.ITable;
 import software.amazon.awscdk.services.dynamodb.Table;
+import software.amazon.awscdk.services.events.Rule;
+import software.amazon.awscdk.services.events.Schedule;
+import software.amazon.awscdk.services.events.targets.LambdaFunction;
 import software.amazon.awscdk.services.iam.Effect;
 import software.amazon.awscdk.services.iam.PolicyStatement;
 import software.amazon.awscdk.services.lambda.Function;
@@ -50,6 +55,13 @@ public class DiyaGlStack extends Stack {
     public AbstractApiLambdaProps diyaGlDeleteLambdaProps;
     public Function diyaGlDeleteLambda;
     public ILogGroup diyaGlDeleteLambdaLogGroup;
+
+    /** Null when {@code residentTierEnabled} is false: no resident books, nothing to sweep. */
+    public co.uk.diyaccounting.submit.constructs.AbstractLambdaProps diyaGlLapseSweepLambdaProps;
+
+    public Function diyaGlLapseSweepLambda;
+    public ILogGroup diyaGlLapseSweepLambdaLogGroup;
+    public Rule diyaGlLapseSweepSchedule;
 
     public List<AbstractApiLambdaProps> lambdaFunctionProps;
 
@@ -203,8 +215,8 @@ public class DiyaGlStack extends Stack {
         this.diyaGlVersionGetLambda = diyaGlVersionGetApiLambda.ingestLambda;
         this.diyaGlVersionGetLambdaLogGroup = diyaGlVersionGetApiLambda.logGroup;
         this.lambdaFunctionProps.add(this.diyaGlVersionGetLambdaProps);
-        this.lambdaFunctionProps.add(
-                onSecondPublishedPath(this.diyaGlVersionGetLambdaProps, props.sharedNames().diyaGlVersionGetBooksUrlPath));
+        this.lambdaFunctionProps.add(onSecondPublishedPath(
+                this.diyaGlVersionGetLambdaProps, props.sharedNames().diyaGlVersionGetBooksUrlPath));
         this.diyaGlVersionGetLambda.addToRolePolicy(PolicyStatement.Builder.create()
                 .effect(Effect.ALLOW)
                 .actions(List.of("s3:GetObject"))
@@ -313,13 +325,74 @@ public class DiyaGlStack extends Stack {
                 .resources(List.of(booksObjectsArnPattern))
                 .build());
         SubHashSaltHelper.grantSaltAccess(this.diyaGlDeleteLambda, region, account, props.envName());
-        infof("Created DIYA-GL DELETE Lambda %s", this.diyaGlDeleteLambda.getNode().getId());
+        infof(
+                "Created DIYA-GL DELETE Lambda %s",
+                this.diyaGlDeleteLambda.getNode().getId());
 
-        Lambda.stackHealthAlarm(
-                this,
-                props.resourceNamePrefix(),
-                "diya-gl",
+        var healthCheckedLambdas = new java.util.ArrayList<Lambda>(
                 List.of(diyaGlListGetApiLambda, diyaGlVersionGetApiLambda, diyaGlPutApiLambda, diyaGlDeleteApiLambda));
+
+        // ============================================================================
+        // DIYA-GL Lapse Sweep Lambda (EventBridge scheduled, daily; deletes a lapsed resident
+        // subscriber's books once the grace period has passed). No resident books exist unless
+        // the tier is on, so the sweeper is built only then.
+        // ============================================================================
+        if (props.residentTierEnabled()) {
+            var diyaGlLapseSweepFunctionName = props.resourceNamePrefix() + "-diya-gl-lapse-sweep";
+            var diyaGlLapseSweepEnv = new PopulatedMap<String, String>()
+                    .with("DIYA_GL_BUCKET_NAME", props.diyaGlBucketName())
+                    .with("BUNDLE_DYNAMODB_TABLE_NAME", bundlesTable.getTableName())
+                    .with("DIYA_GL_BUNDLE_ID", "resident-diya-gl")
+                    .with("DIYA_GL_LAPSE_GRACE_DAYS", "30")
+                    .with("ENVIRONMENT_NAME", props.envName());
+            var diyaGlLapseSweepLambdaConstruct = new Lambda(
+                    this,
+                    LambdaProps.builder()
+                            .idPrefix(diyaGlLapseSweepFunctionName)
+                            .baseImageTag(props.baseImageTag())
+                            .ecrRepositoryName(props.sharedNames().ecrRepositoryName)
+                            .ecrRepositoryArn(props.sharedNames().ecrRepositoryArn)
+                            .ingestFunctionName(diyaGlLapseSweepFunctionName)
+                            .ingestHandler("app/functions/diyaGl/diyaGlLapseSweep.handler")
+                            .ingestLambdaArn("arn:aws:lambda:" + region + ":" + account + ":function:"
+                                    + diyaGlLapseSweepFunctionName)
+                            .ingestProvisionedConcurrencyAliasArn("arn:aws:lambda:" + region + ":" + account
+                                    + ":function:" + diyaGlLapseSweepFunctionName + ":live")
+                            .ingestProvisionedConcurrency(0)
+                            .ingestLambdaTimeout(Duration.minutes(5))
+                            .provisionedConcurrencyAliasName("live")
+                            .environment(diyaGlLapseSweepEnv)
+                            .build());
+            this.diyaGlLapseSweepLambdaProps = diyaGlLapseSweepLambdaConstruct.props;
+            this.diyaGlLapseSweepLambda = diyaGlLapseSweepLambdaConstruct.ingestLambda;
+            this.diyaGlLapseSweepLambdaLogGroup = diyaGlLapseSweepLambdaConstruct.logGroup;
+            this.diyaGlLapseSweepLambda.addToRolePolicy(PolicyStatement.Builder.create()
+                    .effect(Effect.ALLOW)
+                    .actions(List.of("s3:ListBucket"))
+                    .resources(List.of(diyaGlBucketArn))
+                    .build());
+            this.diyaGlLapseSweepLambda.addToRolePolicy(PolicyStatement.Builder.create()
+                    .effect(Effect.ALLOW)
+                    .actions(List.of("s3:GetObject", "s3:DeleteObject"))
+                    .resources(List.of(booksObjectsArnPattern))
+                    .build());
+            bundlesTable.grant(this.diyaGlLapseSweepLambda, "dynamodb:Query");
+
+            this.diyaGlLapseSweepSchedule = Rule.Builder.create(this, diyaGlLapseSweepFunctionName + "-Schedule")
+                    .ruleName(diyaGlLapseSweepFunctionName + "-schedule")
+                    .description("Delete a lapsed diya-gl subscriber's resident books once the grace period has passed")
+                    .schedule(Schedule.rate(Duration.days(1)))
+                    .targets(List.of(LambdaFunction.Builder.create(this.diyaGlLapseSweepLambda)
+                            .build()))
+                    .build();
+
+            healthCheckedLambdas.add(diyaGlLapseSweepLambdaConstruct);
+            infof(
+                    "Created DIYA-GL Lapse Sweep Lambda %s",
+                    this.diyaGlLapseSweepLambda.getNode().getId());
+        }
+
+        Lambda.stackHealthAlarm(this, props.resourceNamePrefix(), "diya-gl", healthCheckedLambdas);
 
         cfnOutput(this, "DiyaGlListGetLambdaArn", this.diyaGlListGetLambda.getFunctionArn());
         cfnOutput(this, "DiyaGlVersionGetLambdaArn", this.diyaGlVersionGetLambda.getFunctionArn());

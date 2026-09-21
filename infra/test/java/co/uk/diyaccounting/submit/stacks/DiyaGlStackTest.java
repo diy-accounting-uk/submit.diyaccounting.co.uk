@@ -6,6 +6,7 @@
 package co.uk.diyaccounting.submit.stacks;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import co.uk.diyaccounting.submit.SubmitSharedNames;
@@ -25,6 +26,10 @@ class DiyaGlStackTest {
             "https://ci-spreadsheets.diyaccounting.co.uk,http://localhost:3000";
 
     private static DiyaGlStack synthDiyaGlStack() {
+        return synthDiyaGlStack(true);
+    }
+
+    private static DiyaGlStack synthDiyaGlStack(boolean residentTierEnabled) {
         App app = new App();
         SubmitSharedNames sharedNames = SubmitSharedNames.forDocs();
 
@@ -45,21 +50,22 @@ class DiyaGlStackTest {
                         .baseImageTag("latest")
                         .diyaGlBucketName(DIYA_GL_BUCKET_NAME)
                         .booksAllowedOrigins(BOOKS_ALLOWED_ORIGINS)
-                        .residentTierEnabled(true)
+                        .residentTierEnabled(residentTierEnabled)
                         .build());
     }
 
     @Test
-    void stackWiresFourLambdas() {
+    void stackWiresFourApiLambdasPlusTheLapseSweeperWhenResidentTierEnabled() {
         DiyaGlStack stack = synthDiyaGlStack();
         Template template = Template.fromStack(stack);
 
-        template.resourceCountIs("AWS::Lambda::Function", 4);
+        template.resourceCountIs("AWS::Lambda::Function", 5);
         for (String functionName : List.of(
                 stack.diyaGlListGetLambdaProps.ingestFunctionName(),
                 stack.diyaGlVersionGetLambdaProps.ingestFunctionName(),
                 stack.diyaGlPutLambdaProps.ingestFunctionName(),
-                stack.diyaGlDeleteLambdaProps.ingestFunctionName())) {
+                stack.diyaGlDeleteLambdaProps.ingestFunctionName(),
+                stack.diyaGlLapseSweepLambdaProps.ingestFunctionName())) {
             template.hasResourceProperties(
                     "AWS::Lambda::Function", Match.objectLike(Map.of("FunctionName", functionName)));
         }
@@ -118,7 +124,8 @@ class DiyaGlStackTest {
         Template template = Template.fromStack(stack);
 
         for (String functionName : List.of(
-                stack.diyaGlListGetLambdaProps.ingestFunctionName(), stack.diyaGlVersionGetLambdaProps.ingestFunctionName())) {
+                stack.diyaGlListGetLambdaProps.ingestFunctionName(),
+                stack.diyaGlVersionGetLambdaProps.ingestFunctionName())) {
             template.hasResourceProperties(
                     "AWS::Lambda::Function",
                     Match.objectLike(Map.of(
@@ -232,8 +239,9 @@ class DiyaGlStackTest {
                 stack.lambdaFunctionProps.size(),
                 "expected four routes doubled: /api/v1/diya-gl and /api/v1/books are both served permanently");
 
-        var urlPaths =
-                stack.lambdaFunctionProps.stream().map(AbstractApiLambdaProps::urlPath).toList();
+        var urlPaths = stack.lambdaFunctionProps.stream()
+                .map(AbstractApiLambdaProps::urlPath)
+                .toList();
         assertTrue(urlPaths.contains("/api/v1/diya-gl"));
         assertTrue(urlPaths.contains("/api/v1/books"));
         assertTrue(urlPaths.contains("/api/v1/diya-gl/{bookId}/versions/{version}"));
@@ -251,6 +259,51 @@ class DiyaGlStackTest {
                     entry.getValue().size(),
                     "expected exactly a diya-gl-path and a books-path route for " + entry.getKey());
         }
+    }
+
+    @Test
+    void theLapseSweepFunctionGetsItsEnvironmentAndScheduleAndBundleQueryAccess() {
+        DiyaGlStack stack = synthDiyaGlStack();
+        Template template = Template.fromStack(stack);
+        String functionName = stack.diyaGlLapseSweepLambdaProps.ingestFunctionName();
+
+        template.hasResourceProperties(
+                "AWS::Lambda::Function",
+                Match.objectLike(Map.of(
+                        "FunctionName",
+                        functionName,
+                        "Environment",
+                        Match.objectLike(Map.of(
+                                "Variables",
+                                Match.objectLike(Map.of(
+                                        "DIYA_GL_BUCKET_NAME", DIYA_GL_BUCKET_NAME,
+                                        "BUNDLE_DYNAMODB_TABLE_NAME", "docs-env-bundles",
+                                        "DIYA_GL_BUNDLE_ID", "resident-diya-gl",
+                                        "DIYA_GL_LAPSE_GRACE_DAYS", "30",
+                                        "ENVIRONMENT_NAME", "docs")))))));
+
+        template.hasResourceProperties(
+                "AWS::Events::Rule",
+                Match.objectLike(Map.of("Name", functionName + "-schedule", "ScheduleExpression", "rate(1 day)")));
+
+        assertTrue(
+                iamStatementsForFunction(template, functionName).stream()
+                        .anyMatch(statement -> actionsOf(statement).contains("dynamodb:Query")),
+                "expected the lapse sweep function to have dynamodb:Query on the bundles table");
+        assertTrue(
+                iamStatementsForFunction(template, functionName).stream()
+                        .anyMatch(statement -> actionsOf(statement).contains("s3:DeleteObject")),
+                "expected the lapse sweep function to have s3:DeleteObject");
+    }
+
+    @Test
+    void noLapseSweepFunctionWhenResidentTierIsDisabled() {
+        DiyaGlStack stack = synthDiyaGlStack(false);
+        Template template = Template.fromStack(stack);
+
+        assertNull(stack.diyaGlLapseSweepLambdaProps);
+        template.resourceCountIs("AWS::Lambda::Function", 4);
+        template.resourceCountIs("AWS::Events::Rule", 0);
     }
 
     @SuppressWarnings("unchecked")
