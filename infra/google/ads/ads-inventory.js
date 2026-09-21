@@ -289,7 +289,7 @@ async function exchangeRefreshTokenForAccessToken({ clientCredentials, refreshTo
 }
 
 async function runConsent(config, clientFile) {
-  const clientCredentials = await resolveClientCredentials({ clientFile });
+  const clientCredentials = await resolveClientCredentials({ clientFile, smClient: getSecretsManagerClient() });
   const refreshToken = await runLoopbackConsent({ clientCredentials, scopes: [config.scope] });
   execFileSync("scripts/put-secret-with-rotation-tag.sh", [config.refreshTokenSecretName, JSON.stringify({ refresh_token: refreshToken })], {
     stdio: "inherit",
@@ -306,7 +306,7 @@ export async function main(argv = process.argv.slice(2)) {
     return;
   }
 
-  const clientCredentials = await resolveClientCredentials({ clientFile: opts.clientFile });
+  const clientCredentials = await resolveClientCredentials({ clientFile: opts.clientFile, smClient: getSecretsManagerClient() });
   const smClient = getSecretsManagerClient();
   const refreshToken = await readStoredRefreshToken(smClient, config.refreshTokenSecretName);
   if (!refreshToken) {
