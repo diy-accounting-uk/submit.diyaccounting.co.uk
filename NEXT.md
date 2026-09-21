@@ -16,10 +16,11 @@ runs), and for Claude Code steps the **Model** a sub-agent should use (Fable > O
 Haiku; the lowest tier that fits). Anything touching code goes through a `claude/*` branch and
 PR; the operator merges.
 
-**Prod runs deployment prod-d2f94db** (main's deploy 35534605226 of PR #309's merge, nine
-stacks created 21:44 UTC on 2026-09-20, the only prod set standing). **ci**: four sets standing,
-`ci-set1` to `ci-set4`, every slot record held by a branch that has merged or is on PR #306;
-`ci-set4` (b62's) self-destructs from 22:54 UTC; B30af.7 releases a slot at branch deletion.
+**Prod runs deployment prod-d2f94db**; main's deploy 35552596434 of PR #311's merge (0c847b07) is
+creating prod-0c847b0 and takes the apex when its probes pass. **ci**: `ci-set1` is live and
+last-known-good (b63's set), its slot record held by the deleted `claude/b63-board`; the other
+three sets were self-destructing at 00:xx UTC on 2026-09-21. The SSO session expired at 02:3x UTC,
+so the set counts are unverified.
 
 The board runs in five sections, in this order: **in flight** (a branch, a pull request or a run
 in motion, each named in the row), **machine-only**, **machine-ask**, **human-driven**,
@@ -41,175 +42,42 @@ step.
 
 ## In flight
 
-- [ ] **B30af.7. Release a ci slot when its branch is deleted.** In flight: on `claude/b63-board` (PR #311, 49ffed4d). At 22:20 UTC on 2026-09-20 all four
-  `/submit/ci/slots/*` records were held (ci-set1 by `claude/dg-3a-bundle-listed`, open PR #306;
-  ci-set2, ci-set3 and ci-set4 by `claude/dg-1h-callbacks`, `claude/dg-2a-retention` and
-  `claude/b62-board`, each merged and its branch deleted), so PR #310's deploy (run 35535704298)
-  waited 30 minutes in `claim-ci-slot` and failed, and `destroy-ci.yml`'s sweep (35540798780)
-  kept every set because none had reached the sweep's minimum age. Add `on: delete` to
-  `.github/workflows/destroy-ci.yml`: when `github.event.ref_type == 'branch'`, read
-  `aws ssm get-parameters-by-path --path /submit/ci/slots/`, pick the record whose `ref` equals
-  `refs/heads/${{ github.event.ref }}` (the claim record shape is in
-  `.github/actions/claim-ci-slot/claim-ci-slot.mjs` lines 11-13), and run the by-name destroy
-  path with that slot as `deployment-name`; the existing "Release the ci slot" step then deletes
-  the parameter. No match means nothing to do, exit 0. The resolver is a small dependency-free
-  `.github/actions/claim-ci-slot/slot-for-ref.mjs` beside the claim script, with a unit test over
-  the record parsing. Delete-branch-on-merge is on, so a merge frees its slot within a minute.
-  Proof: `npm test`, one merged PR's branch deletion followed by a destroy-ci run that names
-  its set. **Source**: `_developers/DESIGN_CI_BRANCH_DEPLOYS_OFF_THE_APEX.md`; the spreadsheets
-  session's inbox message of 2026-09-20T22:11Z. **Owner**: Claude Code. **Model**: Sonnet.
-  **Size**: ~3 files.
-
-- [ ] **B52.D3. The spreadsheets site's RUM on the page-experience panel.** In flight: on `claude/b63-board` (PR #311, 57f298ab); after merge, send the spreadsheets inbox the `SpreadsheetsMetricsSinkArn` outputs of `prod-env-ObservabilityUE1Stack` and `ci-env-ObservabilityUE1Stack`. Submit's CLS metric,
-  alarm and widget are on `main` (d2f94db3). The spreadsheets repository answered on
-  2026-09-20T20:06Z: CloudWatch RUM is live there from its PR #126, app monitor `spreadsheets-web`
-  (prod) and `ci-spreadsheets-web` (ci), in us-east-1 in account 064390746177, telemetries
-  performance, errors, http. Submit's dashboard reads `AWS/RUM` in its own account, so the
-  spreadsheets metrics need CloudWatch cross-account observability: an `AWS::Oam::Sink` with a
-  policy admitting account 064390746177 in `ObservabilityStack.java`'s us-east-1 half (beside the
-  RUM app monitor, lines ~300-345), then three more p75 widgets and alarms (LCP, INP, CLS) on
-  `application_name: spreadsheets-web` with the source account id as the metric's `account`,
-  plus one synth assertion; and one inbox message to `~/.claude/inboxes/spreadsheets.md` asking
-  for the matching `AWS::Oam::Link` (resource types `AWS::CloudWatch::Metric`) in
-  `SpreadsheetsStack.java` pointing at the sink ARN the deploy prints. **Source**: BACKLOG 62;
-  `PLAN_ONE_STOP_DASHBOARD.md` D3. **Owner**: Claude Code. **Model**: Sonnet. **Size**: ~2 files.
-
-- [ ] **B49.22. `infra/paypal`.** In flight: on `claude/b63-board` (PR #311, cfc14f8b). `paypal.toml`: `[button] hosted_button_id = "XTEQ73HM52QQW"`,
-  `form_action = "https://www.paypal.com/donate"`, `donate_url` (the same id as a GET link), `page =
-  "https://spreadsheets.diyaccounting.co.uk/donate.html"`; `[source]` recording the sibling
-  repository's `web/spreadsheets.diyaccounting.co.uk/donate.template.html` and
-  `app/templates/meta.toml` (`[publisher] donate`), which carry the same id. The form posts no
-  return URL, so none is recorded. `paypal-assert.js` in `google-oauth-assert.js`'s shape: GET
-  `page` answers 200 and its HTML holds `action="<form_action>"` and `name="hosted_button_id"
-  value="<id>"` exactly once (pure `findHostedButtonIds(html)`); GET `donate_url` answers 200. Step
-  in `infra-apply.yml`'s prod job only (`if: matrix.environment == 'prod'`), read-only, filter
-  `infra/paypal/**`. Test `paypalAssert.test.js` over `parseConfig`, `findHostedButtonIds`,
-  `assertTemplateMatches`. Proof: `npm test`, one `infra-apply.yml` run. After B49.18. **Source**:
-  BACKLOG 49b; item 22. **Owner**: Claude Code. **Model**: Haiku. **Size**: ~3 files.
-
-- [ ] **B49.23. `infra/telegram`.** In flight: on `claude/b63-board` (PR #311, 25851d30). `telegram.toml`: `[bot] username = "diyaccounting_bot"`,
-  `[secrets] bot_token = "{env}/submit/telegram/bot_token"`, six `[[group]]` rows `name`,
-  `environment`, `purpose` (`test`, `live`, `ops`), `chat_id`, from `.env.ci:139-141`,
-  `.env.prod:132-134` and `RUNBOOK_INFORMATION_SECURITY.md:89`. `telegram-assert.js` in
-  `google-oauth-assert.js`'s shape: read the matrix environment's token from Secrets Manager, never
-  printed; `getMe` username equals `[bot]`; `getChat` per group of that environment answers `ok`
-  with `id` equal to `chat_id` and `title` equal to `name`; `getWebhookInfo` answers an empty `url`;
-  each `chat_id` equals `TELEGRAM_<PURPOSE>_CHAT_ID` in `.env.<env>`. Fail on any mismatch. Step in
-  `infra-apply.yml`, both jobs, filter `infra/telegram/**`. Test `telegramAssert.test.js` over
-  `parseConfig`, `groupsForEnvironment`, `assertBot`, `assertChat`, `assertNoWebhook`. Proof: `npm
-  test`, one `infra-apply.yml` run. After B49.18. **Source**: BACKLOG 49b; item 23. **Owner**:
-  Claude Code. **Model**: Haiku. **Size**: ~3 files.
-
-- [ ] **B49.19. `infra/hmrc`.** In flight: on `claude/b63-board` (PR #311, c08fe6ef). `hmrc.toml`: `[application.sandbox]` (client id `uqMH…v4tV`,
-  test-api host, `secret = "{env}/submit/hmrc/sandbox_client_secret"`) and
-  `[application.production]` (`hKCO…ycev`, `api.service.hmrc.gov.uk`,
-  `prod/submit/hmrc/client_secret`), each with `redirect_uris` and
-  `[[application.<x>.subscription]]` rows `api`, `version`, `probe` (a GET path). Sandbox set:
-  `ITSA_PHASE_2_SANDBOX.md` lines 37-41 plus VAT (MTD), fraud-header and test-user APIs, versions
-  from each `app/functions/hmrc/*.js` `Accept` header; the production set is unrecorded, so the
-  first run records it. `hmrc-assert.js`: a client-credentials token per application
-  (`create-hmrc-test-user.js:75-89`), one GET per subscription with `Accept:
-  application/vnd.hmrc.<version>+json`, failing on 403 `RESOURCE_FORBIDDEN`. The ci job asserts
-  sandbox, the prod job both. Step after companies-house in `infra-apply.yml`, filter
-  `infra/hmrc/**`. Test `hmrcAssert.test.js` over `parseConfig`, `probeRequest`,
-  `classifySubscriptionResponse`. Proof: `npm test`, one `infra-apply.yml` run. After B49.18.
-  **Source**: BACKLOG 49b; item 19. **Owner**: Claude Code. **Model**: Sonnet. **Size**: ~4 files.
-
-- [ ] **B49.18. `infra/companies-house` and the shared `infra-apply.yml`.** In flight: on `claude/b63-board` (PR #311, 679e61c7). `companies-house.toml`:
-  `[environment.ci]` and `[environment.prod]`, each `application_name`, `client_id`, three base
-  URIs, `redirect_uris` (`<host>/companies-house/filingCallback.html`), `xmlgw_uri`, and
-  `[environment.<env>.secrets]` naming `api_key`, `client_secret`, `presenter_id`, `presenter_code`
-  (blank on prod), from `.env.ci` and `.env.prod`. `companies-house-assert.js` in
-  `google-oauth-assert.js`'s shape: `client_id` equals `COMPANIES_HOUSE_CLIENT_ID` in `.env.<env>`;
-  GET `{identity_base_uri}/oauth2/authorise` per redirect with the scope `auth-url-builder.js:54`
-  builds, `redirect: "manual"`, fail on 400; the REST key answers 200 on
-  `{base_uri}/company/00000006`. `infra-apply.yml` takes `google-apply.yml`'s triggers, OIDC chain
-  and summary, `certificate-check.yml`'s `matrix.environment: [ci, prod]`, no Google auth, filter
-  `infra/companies-house/**`; its row joins `REPORT_REPOSITORY_CONTENTS.md`. Test
-  `companiesHouseAssert.test.js` over `parseConfig`, `authoriseUrl`, `classifyAuthoriseResponse`.
-  Proof: `npm test` and one `infra-apply.yml` run. **Source**: BACKLOG 49b; item 18.
-  **Owner**: Claude Code. **Model**: Sonnet. **Size**: ~5 files.
-
-- [ ] **B49.21. `infra/stripe`.** In flight: on `claude/b63-board` (PR #311, 5ad6e1d9). `git mv scripts/stripe-setup.js infra/stripe/stripe-sync.js` and
-  `scripts/lib/stripeCatalogue.js` beside it, fixing its test. `stripe.toml`: `[[endpoint]]` rows
-  `environment`, `url` (the two `*-billing.submit…/api/v1/billing/webhook`), `modes` (ci test, prod
-  both), `github_secret` (`STRIPE_[TEST_]WEBHOOK_SECRET`), `aws_secret`
-  (`{env}/submit/stripe/[test_]webhook_secret`); `[events] enabled` = the nine `DESIRED_EVENTS`;
-  `[keys]` naming the two secret keys. `--mode test|live` reads the key from Secrets Manager and
-  `--apply` replaces the inverted `--dry-run`. A new price id is written into `.env.ci`/`.env.prod`
-  by a pure `rewriteEnvLines`, as `stripe-catalogue-sync/SKILL.md` step 4 does; a new endpoint's
-  secret goes to `gh secret set <name> --env <env>` and to `put-secret-with-rotation-tag.sh`, since
-  `deploy-environment.yml` rewrites the AWS secret from GitHub every deploy. The `infra-apply.yml`
-  step plans only; a live apply stays a local run under the skill's separate go. Test
-  `stripeSync.test.js` over `parseArgs`, `parseConfig`, `planEndpoints`, `rewriteEnvLines`. Proof:
-  `npm test`, `--mode test` reading "already exists" throughout. After B49.18. **Source**: BACKLOG
-  49b; item 21. **Owner**: Claude Code. **Model**: Sonnet. **Size**: ~6 files.
-
-- [ ] **B70.B. The remedy list: build.** In flight: on `claude/b63-board` (PR #311, cc7735eb); remainder after merge: enforce each family's `budgetPerDay` (count that family's `remedy:*` actions in the last day before dispatching), and prove `gh workflow run` on the agent App token. From B70.D's `app/data/alarm-remedies.json`.
-  `app/unit-tests/data/alarmRemedies.test.js`: every `workflow` names a file in `.github/workflows/`
-  and its inputs match that file's `workflow_dispatch.inputs`. `prompts/alarm-triage.md` gets the
-  family's row and a final `remedy: <id>|none` line; `alarm-triage.yml` (as on `claude/b61-board`)
-  parses it, dispatches only an id in the list with the App token (`gh workflow run <file> -f …`),
-  labels the issue `remedy:<id>`, marks the draft PR ready (`gh pr ready`) only for a `draft-pr` row
-  whose diff touches listed paths; otherwise the draft stays and, when the list is silent, a
-  `policy:question` comment (P9). New `.github/workflows/alarm-remedy-close.yml` (`schedule` off the
-  hour, `workflow_dispatch`): for each open `alarm` issue labelled `remedy:*`, new
-  `scripts/close-alarm-issue-when-ok.mjs` (+ test) checks the App is the author,
-  `verify-alarm-origin.mjs` passes, `describe-alarms` shows every alarm of the family OK (or gone,
-  for `close-when-gone`), then `gh issue close`. Kill switch first; the budget guard becomes
-  `.github/actions/agent-run-budget` (inputs: workflow file, job, step). Proof: `npm test`, one
-  dispatch, one observed close. **Source**: BACKLOG 70; `PLAN_REPOSITORY_AUTOMATION.md` Phase 3.
-  **Owner**: Claude Code. **Model**: Sonnet. **Size**: ~9 files.
-
-- [ ] **B71. Support issue triage on `issues: [opened]`.** In flight: on `claude/b63-board` (PR #311, 254f7da7). New `.github/workflows/support-triage.yml`
-  in `alarm-triage.yml`'s shape as on `claude/b61-board`: `if` `contains(labels, 'support')`, its
-  budget guard, kill switch and B69.1 filter, new `prompts/support-triage.md`, and a `prompt-file`
-  input on `.github/actions/run-triage-agent`. The Lambda's issue is `[Support] <subject>`, labels
-  `support`, `<category>` and `origin:machine`, fenced Subject and Message, no name or email; the
-  triage role reaches no DynamoDB, Cognito or Athena, so no customer lookup runs here (that skill
-  serves B70's alarm family). The agent reads that text as data plus `web/public/faqs.toml`,
-  `help.html` and `guide.html`; its comment names the matched article and the label it added (never
-  close, P1) and ends `_Written by <model id> in [support-triage #<run number>](<run url>). Not
-  reviewed by a person._`. The drafted reply goes to the step summary, not the issue (public replies
-  stay human, Q8), under `This reply was drafted by an AI and not reviewed by a person.`.
-  `.github/ISSUE_TEMPLATE/support.md` becomes issue form `support.yml`: a `category` dropdown of the
-  Lambda's five values, `description`, labels `support` and `origin:human`. Proof: `npm test`, one
-  dispatch. After B69.1. **Source**: BACKLOG 71; `PLAN_REPOSITORY_AUTOMATION.md` Phase 4. **Owner**:
-  Claude Code. **Model**: Sonnet. **Size**: ~6 files.
-
-- [ ] **O38. The two GitHub Apps carry every machine write.** In flight: the `security-review.yml` edit is on `claude/b63-board` (PR #311, 3df70639); the five deletes follow the merge, with the operator's approval. The code is on `main` since PR #304
-  (7248ef4d) and prod-dd95c16 carries it. Proof so far: alarm issue #305 (2026-09-20 11:51 UTC) is
-  authored by `app/diyaccounting-ops`, `user.type: Bot`, and the security-lake nightly of
-  2026-09-20 03:20 UTC read code-scanning and secret-scanning alerts on the App token. The support
-  ticket and the triage PR prove themselves when one next arrives. One read of a PAT remains:
-  `.github/workflows/security-review.yml:211` gives `assign-copilot`'s `github-script` step
-  `secrets.PERSONAL_ACCESS_TOKEN`; replace it with an `actions/create-github-app-token` step on
-  `AGENT_APP_ID`/`AGENT_APP_PRIVATE_KEY` as `alarm-triage.yml:173-176` does, and check on the next
-  `security-review.yml` run that the App can run `replaceActorsForAssignable` (if it cannot, the
-  job goes, since Copilot assignment is the PAT's only use). Then delete the repository secrets
-  `ISSUE_BOT_TOKEN`, `SUPPORT_BOT_TOKEN` and `PERSONAL_ACCESS_TOKEN` (`gh secret delete <name>`)
-  and the Secrets Manager entries `{env}/submit/github/issue_bot_token` and `support_bot_token` in
-  ci and prod (`aws secretsmanager delete-secret --recovery-window-in-days 30`, the operator
-  approves). **Source**: `REPORT_IDENTITY_AUDIT.md` section 8, recommendations 2 and 3. **Owner**:
-  Claude Code, the operator approves the five deletes. **Model**: Haiku. **Size**: ~1 file.
-
 ## Machine-only
 
-- [ ] **B69.2. The reliability ledger.** `probe_runs`, `alarm_state_changes` and
-  `github_workflow_runs` carry suite, alarm and run outcomes; nothing records an agent run's own.
-  Each agent workflow (`alarm-triage.yml`, `agentic-lib-code.yml`, `agentic-lib-board.yml`, B71's)
-  ends with a step in `record-dora`'s shape writing one row via `.github/actions/dora-row` to
-  `curated/agent-runs/dt=<date>/<run-id>-<attempt>.json`: `workflow`, `run_id`, `run_url`, `trigger`,
-  `environment`, `issue_number`, `model_id`, `outcome` (`posted`|`skipped-budget`|`skipped-role`|
-  `verify-failed`|`no-answer`|`max-turns`), `escalated`, `redactions`, `guardrail_action`,
-  `pr_number`, `duration_seconds`, `finished_at`. Glue table `agent_runs` in `WorkflowRunTables.java`
-  (copy `probe_runs`, wire in `AnalyticsStack.java`); `v_agent_runs_daily.sql` (copy
-  `v_dora_runs_daily.sql`, register in `BusinessViews.java`) joins `github_issue_events` on
-  `pr_number` (`merged`) and `issue_number` (`closed`, `is_operator`) for posted rate, PR-accepted
-  rate and time-to-close; one observation per rate in `operatorSnapshotPublish.js`'s `uptime` group.
-  Tests: `WorkflowRunTablesTest` in `ComplianceTablesTest`'s shape, `./mvnw clean verify`, the first
-  row in Athena. **Source**: BACKLOG 69; `PLAN_REPOSITORY_AUTOMATION.md` Phase 1. **Owner**: Claude
-  Code. **Model**: Sonnet. **Size**: ~9 files.
+- [ ] **B30af.7. A deleted branch's live ci set keeps its slot record.** `destroy-ci.yml` runs on
+  `delete` since PR #311 (0c847b07): deleting `claude/b63-board` resolved `ci-set1` from its slot
+  record (run 35552598086) and the destroy job then refused, because ci-set1 was the live and
+  last-known-good ci set. Right refusal, wrong remainder: the slot record stays held by a branch
+  that no longer exists, so the pool is one slot smaller until the set self-destructs. On the
+  `delete` path, when the resolved set is the live or last-known-good one, skip the destroy and
+  delete the slot record anyway (the next claimant redeploys over the standing set, as a same-ref
+  redeploy does today); every other case destroys as now. The guard step and the "Release the ci
+  slot" step in `destroy-ci.yml` (lines ~960-985) carry the change; extend
+  `app/unit-tests/actions/slotForRef.test.js` only if a pure function moves. Proof: one merged PR
+  whose set was live, followed by an empty `/submit/ci/slots/<set>` record. **Source**:
+  `_developers/DESIGN_CI_BRANCH_DEPLOYS_OFF_THE_APEX.md`. **Owner**: Claude Code. **Model**:
+  Sonnet. **Size**: ~1 file.
+
+- [ ] **B71. Support issue triage: the proof.** `support-triage.yml`, `prompts/support-triage.md`
+  and the `support.yml` issue form are on `main` (PR #311). Proof: `gh workflow run
+  support-triage.yml -f issue-number=100` (the only `support`-labelled issue, a closed ci wiring
+  test) posts a comment naming the matched article and the label, ending with the publish-filter
+  byline, and puts the drafted reply in the step summary only. **Source**: BACKLOG 71;
+  `PLAN_REPOSITORY_AUTOMATION.md` Phase 4. **Owner**: Claude Code. **Model**: Haiku. **Size**: ~0
+  files.
+
+- [ ] **B70.B. The remedy list: the per-family budget.** The triage's `remedy:` line, the dispatch,
+  draft-pr and label actions, `alarm-remedy-close.yml` and `.github/actions/agent-run-budget` are
+  on `main` (PR #311). `budgetPerDay` in `app/data/alarm-remedies.json` is validated and not
+  enforced: the guards count runs per workflow per day, not actions per family. Before the
+  dispatch or `gh pr ready` step in `alarm-triage.yml`, count the family's `remedy:*` label
+  events in the last 24 hours (`gh api repos/$R/issues?labels=alarm&state=all&since=<24h ago>`
+  filtered by family, or the `remedy:*` labelled events on the timeline) and skip the action with
+  a `policy:question` comment when the count reaches the row's `budgetPerDay`; a pure counter in
+  a small `.mjs` with a test. Also the first real dispatch proves the agent App holds
+  `actions: write` (a 403 from `gh workflow run` means the App's permissions need it). **Source**:
+  BACKLOG 70; `PLAN_REPOSITORY_AUTOMATION.md` Phase 3. **Owner**: Claude Code. **Model**: Sonnet.
+  **Size**: ~2 files.
 
 ## Machine-ask
 
@@ -318,6 +186,18 @@ step.
   reading "already match". After B49.18. **Source**: BACKLOG 49b; item 20. **Owner**: Claude Code,
   the operator supplies the token. **Model**: Sonnet. **Size**: ~5 files.
 
+- [ ] **O38. The two GitHub Apps carry every machine write.** Every workflow and Lambda write runs
+  on the Apps since PR #311 (0c847b07): `security-review.yml`'s Copilot assignment was the last
+  read of a personal access token, and its next run proves the App may call
+  `replaceActorsForAssignable` (a permission error means that job goes). What remains is the
+  five deletes, each with the operator's approval: `gh secret delete ISSUE_BOT_TOKEN`,
+  `gh secret delete SUPPORT_BOT_TOKEN`, `gh secret delete PERSONAL_ACCESS_TOKEN`, and
+  `aws secretsmanager delete-secret --recovery-window-in-days 30 --secret-id
+  <env>/submit/github/issue_bot_token` and `.../support_bot_token` under `AWS_PROFILE=submit-ci`
+  and `submit-prod`. **Source**: `REPORT_IDENTITY_AUDIT.md` section 8, recommendations 2 and 3.
+  **Owner**: Claude Code, the operator approves the five deletes. **Model**: Haiku. **Size**: ~0
+  files.
+
 ## Human-driven
 
 - [ ] **B30af.6. Register the four slot hosts' redirect URIs with HMRC and Companies House (P2).**
@@ -375,6 +255,16 @@ step.
   query output. The lake's newest day, 2026-09-18, has one `donation_prompt` and no `donate` or
   `purchase` for that stream, so no donation happened that day and the proof waits on the 2026-09-21 run.
   Blocked on that run. **Source**: B52n. **Owner**: Claude Code. **Model**: Haiku. **Size**: ~0 files.
+
+- [ ] **B69.2. The reliability ledger: the first row.** The five agent workflows write
+  `curated/agent-runs/dt=<day>/<run>-<attempt>.json` since PR #311; `agent_runs`,
+  `v_agent_runs_daily` and three uptime observations read it. Proof, after any agent workflow run
+  on `main` (B71's dispatch is one): `aws --profile submit-prod athena start-query-execution
+  --work-group prod-env-analytics --query-execution-context Database=prod_env_analytics
+  --query-string "SELECT workflow, outcome, model_id FROM agent_runs ORDER BY finished_at DESC
+  LIMIT 5"` returns the row. Blocked on `aws sso login --sso-session diyaccounting`. **Source**:
+  BACKLOG 69; `PLAN_REPOSITORY_AUTOMATION.md` Phase 1. **Owner**: Claude Code. **Model**: Haiku.
+  **Size**: ~0 files.
 
 - [ ] **B11.T7b.6. Both runs' proofs.** The exit code rests on two printed lines today, `final
   declaration 204` and `fraud header validator clean`. Add three more, each computed from the
@@ -461,6 +351,18 @@ step.
   `needs: set-origins` edges repoint for ci, and probe-test's three `wait-for-main-deploy` steps
   drop for ci. **Source**: the design, P3 to P5. **Owner**: Claude Code. **Model**: Sonnet. Blocked
   on B30af.6 (P2, which also fixes N). **Size**: ~9 files.
+
+- [ ] **B52.D3. The spreadsheets site's web-vitals alarms.** The OAM sinks are on prod
+  (`arn:aws:oam:us-east-1:972912397388:sink/8f40e076-e9ab-445b-8fc2-68557456b63d`) and ci
+  (`arn:aws:oam:us-east-1:367191799875:sink/95055e90-9811-47c0-98db-171adcfbec90`) since PR
+  #311, and the dashboard row reads `spreadsheets-web` by account and region; the sink ARNs went
+  to `~/.claude/inboxes/spreadsheets.md` on 2026-09-21. CloudWatch refuses an alarm on another
+  account's metric until that account has linked, so the three p75 alarms (LCP 4000ms, INP
+  500ms, CLS 0.25, in `ObservabilityUE1Stack.java` beside the sink, in the shape of the submit
+  RUM alarms) return once the spreadsheets repository's `AWS::Oam::Link` is deployed: check with
+  `aws --profile submit-prod oam list-attached-links --sink-identifier <prod sink arn>
+  --region us-east-1`. Blocked on that link. **Source**: BACKLOG 62; `PLAN_ONE_STOP_DASHBOARD.md`
+  D3. **Owner**: Claude Code. **Model**: Sonnet. **Size**: ~2 files.
 
 - [ ] **B34.6b. Companies House accounts filing: the sandbox proof.** Submission 000004 (test
   presenter, company 06846849, package reference 0012) was acknowledged with no errors by the XML
