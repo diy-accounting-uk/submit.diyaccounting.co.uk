@@ -82,6 +82,7 @@ before you merge, not after.
 A branch deployment is expensive and slow, so everything that can share a deploy should. The batch
 branch is `claude/b<n>-board`, taken from `main`. Every sub-agent worktree branches from **the
 batch branch**, not from `main`, so each wave builds on what the last one landed.
+A worktree for an analysis or review agent branches from `origin/main` after a fetch; the brief names that commit.
 
 Give the batch branch its own worktree (`.claude/worktrees/b<n>`) and leave the primary checkout on
 `main`. You merge into the batch worktree; you edit `NEXT.md` on `main`.
