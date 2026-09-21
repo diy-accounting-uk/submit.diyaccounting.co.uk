@@ -1,0 +1,35 @@
+# SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0
+# Copyright (C) 2006-2026 DIY Accounting Limited
+
+# Google Ads account 814-268-5080, as code.
+#
+# infra/google/ads/ads-inventory.js reads this file and prints a read-only snapshot of the
+# account: the customer record, its conversion actions and default goals, its campaigns and
+# asset groups, and the GA4 side of the link. It writes nothing.
+#
+# API access here is an access level on the Cloud project below, granted on the "Google Ads
+# API Overview" page of the Cloud console, not a developer token: a developer-token header is
+# optional and Google ignores it. Reading this one client account with its own OAuth
+# credentials needs no manager account and no login-customer-id header.
+
+[account]
+customer_id = "8142685080"
+
+[project]
+id = "diyaccounting-ga4"
+
+# The OAuth client scripts/youtube-upload.js already holds (a Desktop app client created once
+# in the Cloud console), reused here under the adwords scope instead of the YouTube ones. The
+# refresh token is its own secret: the same client, consented separately for this scope.
+[secrets]
+oauth_client = "prod/submit/youtube/oauth_client"
+refresh_token = "prod/submit/google/ads/refresh_token"
+
+[oauth]
+scope = "https://www.googleapis.com/auth/adwords"
+
+[api]
+version = "v25"
+
+[ga4]
+property_id = "523400333"

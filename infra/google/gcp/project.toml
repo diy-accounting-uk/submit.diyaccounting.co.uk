@@ -32,6 +32,7 @@ services = [
   "bigquery.googleapis.com",
   "bigquerydatatransfer.googleapis.com",
   "youtube.googleapis.com",
+  "googleads.googleapis.com",
   "iap.googleapis.com",
   # Workload identity federation (infra/google/gcp/gcp-identity-sync.js): the pool and providers live in
   # the IAM API, the federated token exchange in STS, and service-account impersonation in
