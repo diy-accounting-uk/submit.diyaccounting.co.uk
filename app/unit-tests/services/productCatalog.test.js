@@ -10,6 +10,7 @@ import {
   bundlesForActivity,
   isActivityAvailable,
   isActivityListedInEnvironment,
+  isBundleListedInEnvironment,
   getCatalogBundleById,
   getStripeSubscriptionBundles,
 } from "../../services/productCatalog.js";
@@ -190,6 +191,22 @@ describe("productCatalogHelper", () => {
     it("hides a restricted activity when the current environment is unknown", () => {
       const activity = { environments: ["local", "ci"] };
       expect(isActivityListedInEnvironment(activity, undefined)).toBe(false);
+    });
+  });
+
+  describe("isBundleListedInEnvironment", () => {
+    it("lists a bundle in a named environment", () => {
+      const bundle = { listedInEnvironments: ["local", "ci"] };
+      expect(isBundleListedInEnvironment(bundle, "ci")).toBe(true);
+    });
+
+    it("hides a bundle from an environment not in its list", () => {
+      const bundle = { listedInEnvironments: ["local", "ci"] };
+      expect(isBundleListedInEnvironment(bundle, "prod")).toBe(false);
+    });
+
+    it("lists a bundle with no listedInEnvironments field everywhere", () => {
+      expect(isBundleListedInEnvironment({}, "prod")).toBe(true);
     });
   });
 

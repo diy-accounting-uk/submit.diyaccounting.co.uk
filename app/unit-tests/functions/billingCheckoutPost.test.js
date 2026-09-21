@@ -73,6 +73,7 @@ describe("billingCheckoutPost", () => {
       id: "cs_test_123",
       url: "https://checkout.stripe.com/c/pay/cs_test_123",
     });
+    process.env.ENVIRONMENT_NAME = "test";
     process.env.STRIPE_SECRET_KEY = "sk_test_mock";
     process.env.STRIPE_PRICE_ID_RESIDENT_PRO = "price_test_123";
     process.env.STRIPE_TEST_PRICE_ID_RESIDENT_PRO = "price_test_synthetic_456";
@@ -299,5 +300,36 @@ describe("billingCheckoutPost", () => {
       "https://test-submit.diyaccounting.co.uk/bundles.html?checkout=success&session_id={CHECKOUT_SESSION_ID}",
     );
     expect(params.cancel_url).toBe("https://test-submit.diyaccounting.co.uk/bundles.html?checkout=canceled");
+  });
+
+  test("refuses a bundle not listed for the current environment before calling Stripe", async () => {
+    process.env.ENVIRONMENT_NAME = "prod";
+    const event = buildEventWithToken(validToken, { bundleId: "resident-diya-gl" });
+    const result = await ingestHandler(event);
+
+    expect(result.statusCode).toBe(400);
+    const body = JSON.parse(result.body);
+    expect(body.code).toBe("bundle-not-listed");
+    expect(mockCheckoutSessionsCreate).not.toHaveBeenCalled();
+  });
+
+  test("proceeds when the bundle is listed for the current environment", async () => {
+    process.env.ENVIRONMENT_NAME = "ci";
+    process.env.STRIPE_PRICE_ID_RESIDENT_DIYA_GL = "price_diya_gl_live_789";
+    const event = buildEventWithToken(validToken, { bundleId: "resident-diya-gl" });
+    const result = await ingestHandler(event);
+
+    expect(result.statusCode).toBe(200);
+    expect(mockCheckoutSessionsCreate).toHaveBeenCalledTimes(1);
+  });
+
+  test("refuses an unknown bundle id before calling Stripe", async () => {
+    const event = buildEventWithToken(validToken, { bundleId: "not-a-real-bundle" });
+    const result = await ingestHandler(event);
+
+    expect(result.statusCode).toBe(400);
+    const body = JSON.parse(result.body);
+    expect(body.code).toBe("bundle-not-listed");
+    expect(mockCheckoutSessionsCreate).not.toHaveBeenCalled();
   });
 });

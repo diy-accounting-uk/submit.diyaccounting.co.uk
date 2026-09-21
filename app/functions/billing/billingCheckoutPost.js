@@ -18,6 +18,7 @@ import { getStripeClient } from "../../lib/stripeClient.js";
 import { getUserBundles } from "../../data/dynamoDbBundleRepository.js";
 import { publishActivityEvent, classifyActor, maskEmail } from "../../lib/activityAlert.js";
 import { resolveAllowedReturnTo } from "./billingReturnUrl.js";
+import { loadCatalogFromRoot, getCatalogBundleById, isBundleListedInEnvironment } from "../../services/productCatalog.js";
 
 const logger = createLogger({ source: "app/functions/billing/billingCheckoutPost.js" });
 
@@ -86,6 +87,18 @@ export async function ingestHandler(event) {
 
     const baseUrl = process.env.DIY_SUBMIT_BASE_URL || "https://submit.diyaccounting.co.uk/";
     const bundleId = body.bundleId || "resident-pro";
+    const catalog = loadCatalogFromRoot();
+    const bundle = getCatalogBundleById(catalog, bundleId);
+    if (!bundle || !isBundleListedInEnvironment(bundle, process.env.ENVIRONMENT_NAME)) {
+      logger.warn({ message: "Bundle not listed in environment", bundleId, environmentName: process.env.ENVIRONMENT_NAME });
+      return http400BadRequestResponse({
+        request,
+        headers: responseHeaders,
+        message: "bundle-not-listed",
+        error: { code: "bundle-not-listed" },
+      });
+    }
+
     const priceId = resolveStripePriceId(bundleId, isSynthetic);
     const returnTo = resolveAllowedReturnTo(body.returnTo);
 
