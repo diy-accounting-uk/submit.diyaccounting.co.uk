@@ -16,11 +16,11 @@ runs), and for Claude Code steps the **Model** a sub-agent should use (Fable > O
 Haiku; the lowest tier that fits). Anything touching code goes through a `claude/*` branch and
 PR; the operator merges.
 
-**Prod runs deployment prod-d2f94db**; main's deploy 35552596434 of PR #311's merge (0c847b07) is
-creating prod-0c847b0 and takes the apex when its probes pass. **ci**: `ci-set1` is live and
-last-known-good (b63's set), its slot record held by the deleted `claude/b63-board`; the other
-three sets were self-destructing at 00:xx UTC on 2026-09-21. The SSO session expired at 02:3x UTC,
-so the set counts are unverified.
+**Prod runs deployment prod-0c847b0** (main's deploy 35552596434 of PR #311's merge, green at 03:2x UTC on
+2026-09-21, the only prod set standing; the deploy destroyed prod-d2f94db itself). **ci**: `ci-set1` is
+live and last-known-good (b63's set), its slot record held by the deleted `claude/b63-board` until PR
+#312 lands or the set self-destructs; the SSO session expired at 02:3x UTC, so the set counts are
+unverified.
 
 The board runs in five sections, in this order: **in flight** (a branch, a pull request or a run
 in motion, each named in the row), **machine-only**, **machine-ask**, **human-driven**,
@@ -42,9 +42,7 @@ step.
 
 ## In flight
 
-## Machine-only
-
-- [ ] **B30af.7. A deleted branch's live ci set keeps its slot record.** `destroy-ci.yml` runs on
+- [ ] **B30af.7. A deleted branch's live ci set keeps its slot record.** In flight: on `claude/b64-board` (PR #312, 3dcc1224). `destroy-ci.yml` runs on
   `delete` since PR #311 (0c847b07): deleting `claude/b63-board` resolved `ci-set1` from its slot
   record (run 35552598086) and the destroy job then refused, because ci-set1 was the live and
   last-known-good ci set. Right refusal, wrong remainder: the slot record stays held by a branch
@@ -58,15 +56,7 @@ step.
   `_developers/DESIGN_CI_BRANCH_DEPLOYS_OFF_THE_APEX.md`. **Owner**: Claude Code. **Model**:
   Sonnet. **Size**: ~1 file.
 
-- [ ] **B71. Support issue triage: the proof.** `support-triage.yml`, `prompts/support-triage.md`
-  and the `support.yml` issue form are on `main` (PR #311). Proof: `gh workflow run
-  support-triage.yml -f issue-number=100` (the only `support`-labelled issue, a closed ci wiring
-  test) posts a comment naming the matched article and the label, ending with the publish-filter
-  byline, and puts the drafted reply in the step summary only. **Source**: BACKLOG 71;
-  `PLAN_REPOSITORY_AUTOMATION.md` Phase 4. **Owner**: Claude Code. **Model**: Haiku. **Size**: ~0
-  files.
-
-- [ ] **B70.B. The remedy list: the per-family budget.** The triage's `remedy:` line, the dispatch,
+- [ ] **B70.B. The remedy list: the per-family budget.** In flight: on `claude/b64-board` (PR #312, 6ddd2695). The triage's `remedy:` line, the dispatch,
   draft-pr and label actions, `alarm-remedy-close.yml` and `.github/actions/agent-run-budget` are
   on `main` (PR #311). `budgetPerDay` in `app/data/alarm-remedies.json` is validated and not
   enforced: the guards count runs per workflow per day, not actions per family. Before the
@@ -78,6 +68,17 @@ step.
   `actions: write` (a 403 from `gh workflow run` means the App's permissions need it). **Source**:
   BACKLOG 70; `PLAN_REPOSITORY_AUTOMATION.md` Phase 3. **Owner**: Claude Code. **Model**: Sonnet.
   **Size**: ~2 files.
+
+- [ ] **B72. Ci-only scene scripts stay out of the on-deploy captures.** In flight: on
+  `claude/b64-board` (PR #312, 8c713702). The first on-deploy capture (main's d2f94db3 deploy)
+  dispatched all ten scripts at prod and `itsa-business-details`, `itsa-quarterly-update` and
+  `file-micro-entity-accounts` failed, their activities being on ci sets only; the scripts now
+  carry `"environments": ["ci"]` and the dispatcher passes `--environment prod`. Proof: the next
+  main deploy that touches a shared asset dispatches seven captures, not ten. **Source**: BACKLOG
+  72; `PLAN_REPOSITORY_AUTOMATION.md` Phase 5. **Owner**: Claude Code. **Model**: Sonnet.
+  **Size**: ~0 files.
+
+## Machine-only
 
 ## Machine-ask
 
