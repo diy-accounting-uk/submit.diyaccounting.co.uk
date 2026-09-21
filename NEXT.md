@@ -95,6 +95,21 @@ step.
 
 ## Machine-only
 
+- [ ] **B49.20. `infra/github`.** `github.toml`: `[repository]` the two merge settings; `[actions]`
+  the permissions and selected-actions fields, `default_workflow_permissions`, and
+  `patterns_allowed` from `scripts/github-actions-permissions.sh`; `[security]
+  automated_security_fixes = true` (false live); `[[ruleset]]` `main` with its enforcement,
+  conditions, its three rules and bypass actors; `[[environment]]` `ci`, `prod`, `copilot` with
+  variable and secret names; `[codeowners]`. Write it from live `gh api` reads, ruleset 16057564
+  among them. `github-sync.js`: `gh api` reads, a pure `planGithub(config, live)`, `--apply` writing
+  back through the same routes; a missing variable or secret name is a finding, not created.
+  `github-actions-permissions.sh` goes. `GITHUB_TOKEN` cannot administer; the operator's fine-grained PAT (this repository,
+  Administration read/write, Environments, Secrets and Variables read) is the repository secret
+  `ADMIN_TOKEN` since 2026-09-21 (GitHub refuses secret names starting `GITHUB_`), the step's
+  `GH_TOKEN` on both matrix legs. Test
+  `githubSync.test.js` over `parseConfig`, `planGithub`, `rulesetDiff`. Proof: `npm test` and a plan
+  reading "already match". After B49.18. **Source**: BACKLOG 49b; item 20. **Owner**: Claude Code. **Model**: Sonnet. **Size**: ~5 files.
+
 ## Machine-ask
 
 - [ ] **B11.T10. ITSA phase 2: the recognition pack.** Four files under `_developers/hmrc/` carry
@@ -141,21 +156,6 @@ step.
   read account 814-268-5080. Test `adsInventory.test.js` over `parseArgs` and `shape*`. After
   B49.15. **Source**: BACKLOG 49b; item 16. **Owner**: Claude Code, the operator supplies the token,
   the id and the consent. **Model**: Sonnet. **Size**: ~4 files.
-
-- [ ] **B49.20. `infra/github`.** `github.toml`: `[repository]` the two merge settings; `[actions]`
-  the permissions and selected-actions fields, `default_workflow_permissions`, and
-  `patterns_allowed` from `scripts/github-actions-permissions.sh`; `[security]
-  automated_security_fixes = true` (false live); `[[ruleset]]` `main` with its enforcement,
-  conditions, its three rules and bypass actors; `[[environment]]` `ci`, `prod`, `copilot` with
-  variable and secret names; `[codeowners]`. Write it from live `gh api` reads, ruleset 16057564
-  among them. `github-sync.js`: `gh api` reads, a pure `planGithub(config, live)`, `--apply` writing
-  back through the same routes; a missing variable or secret name is a finding, not created.
-  `github-actions-permissions.sh` goes. `GITHUB_TOKEN` cannot administer, so the operator supplies a
-  fine-grained PAT (this repository, Administration read/write, Environments, Secrets and Variables
-  read) as the `prod` environment secret `GITHUB_ADMIN_TOKEN`, the step's `GH_TOKEN`. Test
-  `githubSync.test.js` over `parseConfig`, `planGithub`, `rulesetDiff`. Proof: `npm test` and a plan
-  reading "already match". After B49.18. **Source**: BACKLOG 49b; item 20. **Owner**: Claude Code,
-  the operator supplies the token. **Model**: Sonnet. **Size**: ~5 files.
 
 - [ ] **O38. The two GitHub Apps carry every machine write.** Every workflow and Lambda write runs
   on the Apps since PR #311 (0c847b07): `security-review.yml`'s Copilot assignment was the last
