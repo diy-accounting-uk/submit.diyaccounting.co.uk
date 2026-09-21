@@ -113,26 +113,6 @@ class IdentityStackTest {
         Template template = Template.fromStack(stack);
 
         var expectedUrls = List.of(
-                "https://ci-spreadsheets.diyaccounting.co.uk/books/",
-                "https://ci-spreadsheets.diyaccounting.co.uk/books/bst.html",
-                "https://ci-spreadsheets.diyaccounting.co.uk/books/se.html",
-                "https://ci-spreadsheets.diyaccounting.co.uk/books/taxi.html",
-                "https://ci-spreadsheets.diyaccounting.co.uk/books/ltd.html",
-                "https://ci-spreadsheets.diyaccounting.co.uk/diya-gl/",
-                "https://ci-spreadsheets.diyaccounting.co.uk/diya-gl/bst.html",
-                "https://ci-spreadsheets.diyaccounting.co.uk/diya-gl/se.html",
-                "https://ci-spreadsheets.diyaccounting.co.uk/diya-gl/taxi.html",
-                "https://ci-spreadsheets.diyaccounting.co.uk/diya-gl/ltd.html",
-                "http://localhost:3000/books/",
-                "http://localhost:3000/books/bst.html",
-                "http://localhost:3000/books/se.html",
-                "http://localhost:3000/books/taxi.html",
-                "http://localhost:3000/books/ltd.html",
-                "http://localhost:3000/diya-gl/",
-                "http://localhost:3000/diya-gl/bst.html",
-                "http://localhost:3000/diya-gl/se.html",
-                "http://localhost:3000/diya-gl/taxi.html",
-                "http://localhost:3000/diya-gl/ltd.html",
                 "https://ci.diya-gl.co.uk/",
                 "https://ci.diya-gl.co.uk/index.html",
                 "https://ci.diya-gl.co.uk/bst.html",
@@ -158,31 +138,11 @@ class IdentityStackTest {
     }
 
     @Test
-    void prodBooksClientCallbackAndLogoutUrlsCoverTheProdAndCiSpreadsheetsHosts() {
+    void prodBooksClientCallbackAndLogoutUrlsCoverTheDiyaGlProdAndCiHosts() {
         IdentityStack stack = synthIdentityStack("prod");
         Template template = Template.fromStack(stack);
 
         var expectedUrls = List.of(
-                "https://spreadsheets.diyaccounting.co.uk/books/",
-                "https://spreadsheets.diyaccounting.co.uk/books/bst.html",
-                "https://spreadsheets.diyaccounting.co.uk/books/se.html",
-                "https://spreadsheets.diyaccounting.co.uk/books/taxi.html",
-                "https://spreadsheets.diyaccounting.co.uk/books/ltd.html",
-                "https://spreadsheets.diyaccounting.co.uk/diya-gl/",
-                "https://spreadsheets.diyaccounting.co.uk/diya-gl/bst.html",
-                "https://spreadsheets.diyaccounting.co.uk/diya-gl/se.html",
-                "https://spreadsheets.diyaccounting.co.uk/diya-gl/taxi.html",
-                "https://spreadsheets.diyaccounting.co.uk/diya-gl/ltd.html",
-                "https://ci-spreadsheets.diyaccounting.co.uk/books/",
-                "https://ci-spreadsheets.diyaccounting.co.uk/books/bst.html",
-                "https://ci-spreadsheets.diyaccounting.co.uk/books/se.html",
-                "https://ci-spreadsheets.diyaccounting.co.uk/books/taxi.html",
-                "https://ci-spreadsheets.diyaccounting.co.uk/books/ltd.html",
-                "https://ci-spreadsheets.diyaccounting.co.uk/diya-gl/",
-                "https://ci-spreadsheets.diyaccounting.co.uk/diya-gl/bst.html",
-                "https://ci-spreadsheets.diyaccounting.co.uk/diya-gl/se.html",
-                "https://ci-spreadsheets.diyaccounting.co.uk/diya-gl/taxi.html",
-                "https://ci-spreadsheets.diyaccounting.co.uk/diya-gl/ltd.html",
                 "https://diya-gl.co.uk/",
                 "https://diya-gl.co.uk/index.html",
                 "https://diya-gl.co.uk/bst.html",

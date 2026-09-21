@@ -3,9 +3,9 @@
 
 // behaviour-tests/diyaGlStorage.behaviour.test.js
 //
-// Drives the DIYA-GL storage API's four routes as the spreadsheets site's DIYA-GL pages will: sign in
+// Drives the DIYA-GL storage API's four routes as the diya-gl.co.uk pages do: sign in
 // through Submit's hosted UI, read the id token it leaves in localStorage, then navigate to a page
-// on the spreadsheets origin and call the API from there with fetch, so the browser enforces the
+// on the diya-gl.co.uk origin and call the API from there with fetch, so the browser enforces the
 // same CORS the deployed API answers with. Before LP-15 lands the DIYA-GL app client, this runs
 // against the existing client id, which the DIYA-GL authoriser does not yet accept in production -
 // this probe is written and exercised locally but not run against ci in this change.
@@ -43,7 +43,7 @@ const testAuthProvider = getEnvVarAndLog("testAuthProvider", "TEST_AUTH_PROVIDER
 const testAuthUsername = getEnvVarAndLog("testAuthUsername", "TEST_AUTH_USERNAME", null);
 const testAuthPassword = getEnvVarAndLog("testAuthPassword", "TEST_AUTH_PASSWORD", null);
 const baseUrl = getEnvVarAndLog("baseUrl", "DIY_SUBMIT_BASE_URL", null);
-const spreadsheetsBaseUrl = getEnvVarAndLog("spreadsheetsBaseUrl", "SPREADSHEETS_BASE_URL", "http://localhost:3000/");
+const diyaGlBaseUrl = getEnvVarAndLog("diyaGlBaseUrl", "DIYA_GL_BASE_URL", "http://localhost:3001/");
 const runDynamoDb = getEnvVarAndLog("runDynamoDb", "TEST_DYNAMODB", null);
 const bundleTableName = getEnvVarAndLog("bundleTableName", "BUNDLE_DYNAMODB_TABLE_NAME", null);
 const hmrcApiRequestsTableName = getEnvVarAndLog("hmrcApiRequestsTableName", "HMRC_API_REQUESTS_DYNAMODB_TABLE_NAME", null);
@@ -79,7 +79,7 @@ test.afterAll(async () => {
   } catch {}
 });
 
-test("create, read latest, 412 on a stale ETag, then delete a book from the spreadsheets origin", async ({ page }) => {
+test("create, read latest, 412 on a stale ETag, then delete a book from the diya-gl.co.uk origin", async ({ page }) => {
   addOnPageLogging(page);
 
   /* ******* */
@@ -98,7 +98,7 @@ test("create, read latest, 412 on a stale ETag, then delete a book from the spre
   /*  DRIVE THE API FROM THE SPREADSHEETS SITE'S ORIGIN  */
   /* ************************************************** */
 
-  await page.goto(spreadsheetsBaseUrl);
+  await page.goto(diyaGlBaseUrl);
 
   const apiBaseUrl = new URL("api/v1/books", baseUrl).toString();
   const bookId = "aaaaaaaa-bbbb-4ccc-8ddd-eeeeeeeeeeee";

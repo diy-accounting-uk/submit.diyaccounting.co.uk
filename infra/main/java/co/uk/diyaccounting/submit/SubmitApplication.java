@@ -167,15 +167,11 @@ public class SubmitApplication {
                 "COGNITO_DIYA_GL_CLIENT_ID",
                 appProps.diyaGlUserPoolClientId,
                 "(from diyaGlUserPoolClientId in cdk.json)");
-        // The books page runs on the spreadsheets site's own origins, not this deployment's;
-        // prod is the one live spreadsheets domain, every other deployment uses the shared ci one
-        // plus local dev. diya-gl.co.uk is the new site's own origin, registered on prod only;
-        // ci.diya-gl.co.uk carries its ci behaviour runs on every environment.
+        // The books page runs on the DIYA-GL site's own origins: diya-gl.co.uk on prod,
+        // ci.diya-gl.co.uk on every environment, and http://localhost:3001 for local dev.
         var booksAllowedOrigins = "prod".equals(envName)
-                ? "https://spreadsheets.diyaccounting.co.uk,https://ci-spreadsheets.diyaccounting.co.uk,"
-                        + "https://diya-gl.co.uk,https://ci.diya-gl.co.uk"
-                : "https://ci-spreadsheets.diyaccounting.co.uk,http://localhost:3000,"
-                        + "https://ci.diya-gl.co.uk,http://localhost:3001";
+                ? "https://diya-gl.co.uk,https://ci.diya-gl.co.uk"
+                : "https://ci.diya-gl.co.uk,http://localhost:3001";
         // A checkout or portal returnTo is allowed from the DIYA-GL pages' origins (the same
         // list the books routes use) plus this deployment's own origin, since bundles.html lives
         // there too.

@@ -164,6 +164,10 @@ public class KindCdk {
      * a second {@code LogGroup} construct with the same name would fail at deploy with
      * "already exists".
      *
+     * <p>The group takes a CloudFormation-generated name. The provider Lambda runs during stack
+     * deletion and ships its last log lines after a named group is gone, recreating it, and a
+     * slot's next deployment under the same stack name then fails on "already exists".
+     *
      * @param stack The stack whose default AwsCustomResource provider log group is needed
      * @return The shared ILogGroup for that stack's provider Lambda
      */
@@ -174,7 +178,6 @@ public class KindCdk {
             return (ILogGroup) existing;
         }
         return LogGroup.Builder.create(stack, AWS_CUSTOM_RESOURCE_PROVIDER_LOG_GROUP_ID)
-                .logGroupName("/aws/lambda/" + stack.getStackName() + "-AwsCustomResourceProvider")
                 .retention(RetentionDays.THREE_DAYS)
                 .removalPolicy(RemovalPolicy.DESTROY)
                 .build();

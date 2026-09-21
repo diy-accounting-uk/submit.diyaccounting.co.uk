@@ -56,7 +56,7 @@ describe("billingPortalGet", () => {
     process.env.STRIPE_SECRET_KEY = "sk_test_mock";
     process.env.DIY_SUBMIT_BASE_URL = "https://test-submit.diyaccounting.co.uk/";
     process.env.USER_SUB_HASH_SALT = '{"current":"v1","versions":{"v1":"test-salt-for-unit-tests"}}';
-    process.env.BILLING_RETURN_URL_ORIGINS = "https://ci-spreadsheets.diyaccounting.co.uk,http://localhost:3000";
+    process.env.BILLING_RETURN_URL_ORIGINS = "https://ci.diya-gl.co.uk,http://localhost:3001";
   });
 
   afterEach(() => {
@@ -130,11 +130,11 @@ describe("billingPortalGet", () => {
   test("uses an allowed returnTo as the portal return_url", async () => {
     mockGetUserBundles.mockResolvedValue([{ bundleId: "resident-diya-gl", stripeCustomerId: "cus_test_789" }]);
 
-    const event = buildEventWithToken(validToken, {}, { queryStringParameters: { returnTo: "https://ci-spreadsheets.diyaccounting.co.uk/books/ltd.html" } });
+    const event = buildEventWithToken(validToken, {}, { queryStringParameters: { returnTo: "https://ci.diya-gl.co.uk/ltd.html" } });
     await ingestHandler(event);
 
     const params = mockBillingPortalSessionsCreate.mock.calls[0][0];
-    expect(params.return_url).toBe("https://ci-spreadsheets.diyaccounting.co.uk/books/ltd.html");
+    expect(params.return_url).toBe("https://ci.diya-gl.co.uk/ltd.html");
   });
 
   test("falls back to bundles.html when returnTo's origin is not allowed", async () => {
