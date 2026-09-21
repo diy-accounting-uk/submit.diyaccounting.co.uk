@@ -37,6 +37,11 @@ The market's paid floor is £10–£16 a month (§2). £39 a year sits at a quar
 "filed and kept": one price for the books stored, and every filing this company is recognised for
 as it lands.
 
+Paid traffic has a ceiling. At the measured 0.28% of sessions that buy, and £127 of lifetime
+contribution per annual subscriber at 30% churn, a session is worth £0.36. A £2 click costs £714
+per subscriber. Ads work starts from the £0.36 figure (`REPORT_PRICE_UPDATE_REVIEW.md` §4,
+`PLAN_ONE_STOP_DASHBOARD.md` D17).
+
 ## The offer after this plan
 
 | Bundle | Price | What it carries | Change |
@@ -47,7 +52,8 @@ as it lands.
 | `resident-pro` | £19.99/month or £199/year (proposed) | the practice licence: a client list, one book set per client, batch recalc and reports, the MCP server, every filing; higher token grant | unhidden, `on-subscription`, multi-client |
 | `resident-guest`, `resident-pro-comp`, `invited-guest`, `operator` | £0 | as today | none |
 
-**Numbers.** Stripe UK standard 1.5% + 20p. £39 yearly: fee 78.5p, kept £38.21, share 2.0%.
+**Numbers.** Stripe UK standard 1.5% + 20p. £39 yearly: fee 78.5p, kept £38.21, share 2.0%
+(0.785/39; assertion 2's "about 2.3%" is the launch plan's £24 row).
 £3.99 monthly: fee 26p, kept £3.73, share 6.5%. £199 yearly: fee £3.19, share 1.6%. At the launch
 plan's 200–500 subscribers, £39 a year is £7.6k–£19.1k net; the same base at 99p monthly was
 £1.9k–£4.7k. Not VAT registered (launch plan decision 7); every price is the charged amount.
@@ -127,10 +133,10 @@ Ids are shared with `NEXT.md`'s board here, and the spreadsheets rows with their
 | PU-2 | Two prices per bundle: catalogue `prices` table, `stripe-sync` per price, checkout by interval, `bundles.html` annual-first | Submit | PU-1 | Sonnet | `submit.catalogue.toml`, `infra/stripe/stripe-sync.js`, `app/functions/billing/billingCheckoutPost.js`, `web/public/bundles.html`, `app/lib/productCatalog.js`, tests (~8 files) |
 | PU-3 | Stripe test then live: the `resident` product with both prices through `stripe-catalogue-sync`; the price ids into `.env.ci` and `.env.prod` | Submit | PU-2 | Haiku, machine-ask (the live key is the operator's) | `.env.ci`, `.env.prod` (~2 files) |
 | PU-4 | The 35-day sandbox: put route expiry, lifecycle rule, the `sandbox_expired_seen` event contract | Submit | — | Sonnet | `app/functions/diyaGl/diyaGlPut.js`, `infra/.../DataStack.java`, `diyaGlPut.test.js`, `DataStackTest.java` (~4 files) |
-| PU-5 | The DIYA-GL tier on prod: `DIYA_GL_RESIDENT_TIER`, `prod` in `resident`'s environments | Submit | PU-3, PU-4 | Haiku | `SubmitApplication.java`, `submit.catalogue.toml` (~2 files) |
+| PU-5 | The DIYA-GL tier on prod: `DIYA_GL_RESIDENT_TIER`, `prod` in `resident`'s environments | Submit | PU-3 | Haiku | `SubmitApplication.java`, `submit.catalogue.toml` (~2 files) |
 | PU-6 | Practice licence design: clients under one sign-in, per-client book sets, agent authorisation, batch through MCP and CLI | Submit | — | Opus | `PLAN_PRICE_UPDATE.md` §(d) expanded, then a build task list |
 | PU-7 | Practice licence build, per PU-6's design | Submit | PU-6 | per the design | per the design |
-| PU-8 | The pages: "35-day sandbox" labels, the countdown in days, the DIYA-GL offer showing £39/year first, `sandbox_expired_seen` sent | spreadsheets | PU-4 for the event, PU-2 for the offer | Sonnet | `web/diya-gl.co.uk/public/cloud.js`, `shell.js`, `index.html`, `web/spreadsheets.diyaccounting.co.uk/public/download.html`, `diya-gl-events.js`, the cloud browser spec, the behaviour test, `CLAUDE.md`, `../spreadsheets.diyaccounting.co.uk/_developers/archive/PLAN_DIYA_GL_HOME.md` (~9 files) |
+| PU-8 | The DIYA-GL offer on the spreadsheets pages: £39 a year shown first, £3.99 a month beneath it. The sandbox labels are DG-2b and the `sandbox_expired_seen` event is DG-6 in `../spreadsheets.diyaccounting.co.uk/_developers/archive/PLAN_DIYA_GL_HOME.md`; both carry the 35-day change and are tracked there | spreadsheets | PU-2 | Sonnet | `web/diya-gl.co.uk/public/cloud.js`, the cloud browser spec (~2 files) |
 | PU-9 | Retire `resident-diya-gl`, `resident-itsa`, `resident-ltd` once Stripe live shows no subscription on their prices | Submit | PU-5 | Haiku | `submit.catalogue.toml`, `.env.ci`, `.env.prod` (~3 files) |
 
 ## Decisions taken (operator, 2026-09-21)
