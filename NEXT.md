@@ -217,32 +217,10 @@ step.
   permission pages. **Source**: BACKLOG 34. **Owner**: Claude Code. **Model**: Sonnet. Blocked on
   O17. **Size**: ~1 file.
 
-- [ ] **B52l. The optimiser over the raw export.** A notebook over `../analytics/prod/` (pulled by
-  `scripts/analytics-pull.sh`, one CSV per view in `rawExportPublish.js`'s `VIEW_NAMES`): per-block
-  correlations, the block models fitted (linear cost from `v_cost_daily`, log-linear funnels from
-  `v_login_to_submission_funnel` and `v_ga4_funnel_daily`, Hill curves for spend), levers ranked by
-  effect per unit cost, and the next experiment proposed with its predicted effect and interval as a
-  row ready for `experiments.toml`; Bayesian optimisation for the continuous knobs and a
-  Thompson-sampling bandit for allocations once experiments exist. The model design as a section
-  under `PLAN_ONE_STOP_DASHBOARD.md` D16 first, then the notebook, then one line per objective on
-  `web/public/operator/dashboard.html`. Blocked until three months of nightly export exist under
-  `exports/prod/`: first written 2026-09-08, so the gate is 2026-12-09, checked with `aws --profile
-  submit-prod s3 ls s3://prod-env-analytics-lake-<account>/exports/prod/`. **Source**: BACKLOG 52l;
-  `PLAN_ONE_STOP_DASHBOARD.md` D16. **Owner**: Claude Code. **Model**: Opus for the models, Sonnet
-  for the notebook. **Size**: ~3 files.
-
-- [ ] **B52i. The company P&L and balance sheet on the dashboard.** The company's diya-gl book,
-  derived nightly and rendered above the eight objectives beside the last set filed at Companies
-  House. Shape: a nightly Lambda beside `app/functions/analytics/` calling `mcp/lib/accounts-tools.js`
-  `derive_micro_entity_accounts` over the cloud book, writing JSON lines to `curated/finance/` with
-  a Glue table on `Ga4DailyTables.java`'s pattern, one observation set in
-  `operatorSnapshotPublish.js`, and a block above `renderSnapshot`'s objectives in
-  `web/public/operator/dashboard.html`. Blocked on `../PLAN_FINANCE_AUTOMATION.md` phases 1 and 2
-  (open, drafted 2026-08-31, no code): the unblock event is a `book.toml` with validated diya-gl
-  lines for DIYA saved to the DIYA cloud. Also blocked on `PLAN_SUBMISSION_MCP.md` M3, the third
-  Cognito app client with the device-code grant and `open_book`/`save_book` over the cloud routes;
-  M1c is on main (PR #232). **Source**: BACKLOG 52i; `PLAN_ONE_STOP_DASHBOARD.md` D10. **Owner**:
-  Claude Code. **Model**: Sonnet. **Size**: ~4 files.
+- [ ] **PU-14. An `experiments.toml` row for the price change.** Objective `conversion-to-paid`,
+  lever price, metric purchases per human session, start at PU-5's deploy, so the £39 shape is
+  measured against the 99p rate. Blocked on PU-5. **Source**: `REPORT_PRICE_UPDATE_REVIEW.md` §2 row
+  6; operator 2026-09-21. **Owner**: Claude Code. **Model**: Haiku. **Size**: ~1 file.
 
 - [ ] **B52.D3. The spreadsheets site's web-vitals alarms.** The OAM sinks are on prod
   (`arn:aws:oam:us-east-1:972912397388:sink/8f40e076-e9ab-445b-8fc2-68557456b63d`) and ci
@@ -271,6 +249,24 @@ step.
   **Source**: BACKLOG 34b, 34d. **Owner**: Claude Code; the operator sends 34d's email. **Model**:
   Sonnet. Blocked on that answer. **Size**: ~2 files.
 
+- [ ] **PU-5. The DIYA-GL tier on prod.** `DIYA_GL_RESIDENT_TIER` in `SubmitApplication.java`,
+  `prod` in `resident`'s environments in the catalogue. Blocked on PU-3. **Source**:
+  `PLAN_PRICE_UPDATE.md` PU-5. **Owner**: Claude Code. **Model**: Haiku. **Size**: ~2 files.
+
+- [ ] **B52l. The optimiser over the raw export.** A notebook over `../analytics/prod/` (pulled by
+  `scripts/analytics-pull.sh`, one CSV per view in `rawExportPublish.js`'s `VIEW_NAMES`): per-block
+  correlations, the block models fitted (linear cost from `v_cost_daily`, log-linear funnels from
+  `v_login_to_submission_funnel` and `v_ga4_funnel_daily`, Hill curves for spend), levers ranked by
+  effect per unit cost, and the next experiment proposed with its predicted effect and interval as a
+  row ready for `experiments.toml`; Bayesian optimisation for the continuous knobs and a
+  Thompson-sampling bandit for allocations once experiments exist. The model design as a section
+  under `PLAN_ONE_STOP_DASHBOARD.md` D16 first, then the notebook, then one line per objective on
+  `web/public/operator/dashboard.html`. Blocked until three months of nightly export exist under
+  `exports/prod/`: first written 2026-09-08, so the gate is 2026-12-09, checked with `aws --profile
+  submit-prod s3 ls s3://prod-env-analytics-lake-<account>/exports/prod/`. **Source**: BACKLOG 52l;
+  `PLAN_ONE_STOP_DASHBOARD.md` D16. **Owner**: Claude Code. **Model**: Opus for the models, Sonnet
+  for the notebook. **Size**: ~3 files.
+
 - [ ] **B52m. The reinvestment loop.** Trailing income, reserve, budget, return per pound and payback
   as one block on `web/public/operator/dashboard.html`, fed by observations over `v_revenue_daily`
   and `v_cost_vs_target_monthly` in `operatorSnapshotPublish.js`; the reinvestment fraction as a
@@ -282,6 +278,39 @@ step.
   and refresh tokens B49.16 needs, then names the reinvestment fraction and the reserve floor.
   **Source**: BACKLOG 52m; `PLAN_ONE_STOP_DASHBOARD.md` D17. **Owner**: Claude Code, with the
   operator's fraction and floor. **Model**: Sonnet. **Size**: ~3 files.
+
+- [ ] **PU-9. Retire the three folded bundles.** `resident-diya-gl`, `resident-itsa` and
+  `resident-ltd` leave `submit.catalogue.toml`, `.env.ci` and `.env.prod` once Stripe live shows no
+  subscription on their prices. Blocked on PU-5. **Source**: `PLAN_PRICE_UPDATE.md` PU-9.
+  **Owner**: Claude Code. **Model**: Haiku. **Size**: ~3 files.
+
+- [ ] **B52i. The company P&L and balance sheet on the dashboard.** The company's diya-gl book,
+  derived nightly and rendered above the eight objectives beside the last set filed at Companies
+  House. Shape: a nightly Lambda beside `app/functions/analytics/` calling `mcp/lib/accounts-tools.js`
+  `derive_micro_entity_accounts` over the cloud book, writing JSON lines to `curated/finance/` with
+  a Glue table on `Ga4DailyTables.java`'s pattern, one observation set in
+  `operatorSnapshotPublish.js`, and a block above `renderSnapshot`'s objectives in
+  `web/public/operator/dashboard.html`. Blocked on `../PLAN_FINANCE_AUTOMATION.md` phases 1 and 2
+  (open, drafted 2026-08-31, no code): the unblock event is a `book.toml` with validated diya-gl
+  lines for DIYA saved to the DIYA cloud. Also blocked on `PLAN_SUBMISSION_MCP.md` M3, the third
+  Cognito app client with the device-code grant and `open_book`/`save_book` over the cloud routes;
+  M1c is on main (PR #232). **Source**: BACKLOG 52i; `PLAN_ONE_STOP_DASHBOARD.md` D10. **Owner**:
+  Claude Code. **Model**: Sonnet. **Size**: ~4 files.
+
+- [ ] **PU-2. Two prices per bundle.** Catalogue `prices` table, `infra/stripe/stripe-sync.js` per
+  price, `app/functions/billing/billingCheckoutPost.js` checkout by interval, `web/public/bundles.html`
+  annual first, `app/lib/productCatalog.js`, tests. Per `PLAN_PRICE_UPDATE.md` §(b). Blocked on
+  PU-1. **Source**: `PLAN_PRICE_UPDATE.md` PU-2. **Owner**: Claude Code. **Model**: Sonnet.
+  **Size**: ~8 files.
+
+- [ ] **PU-7. Practice licence build.** Per PU-6's design and its task list. Blocked on PU-6.
+  **Source**: `PLAN_PRICE_UPDATE.md` PU-7. **Owner**: Claude Code. **Model**: per the design.
+  **Size**: per the design.
+
+- [ ] **PU-3. Stripe test then live.** The `resident` product with both prices through
+  `stripe-catalogue-sync`, test then live; the price ids into `.env.ci` and `.env.prod`. Blocked on
+  PU-2. **Source**: `PLAN_PRICE_UPDATE.md` PU-3. **Owner**: Claude Code; the live key is the
+  operator's. **Model**: Haiku. **Size**: ~2 files.
 
 - [ ] **O17. A sandbox sign-in for the filing suites, and four ci values.** The sandbox has no
   registration page and no create-user API; its sign-in is reached only through
@@ -297,35 +326,6 @@ step.
   `TEST_COMPANIES_HOUSE_PASSWORD`, `TEST_COMPANIES_HOUSE_TOTP_SECRET` and
   `COMPANIES_HOUSE_SANDBOX_API_KEY` (the "- test" REST key); none of the four is set today.
   Unblocks B34.7. **Source**: BACKLOG 34. **Owner**: Operator. **Model**: none.
-
-- [ ] **PU-2. Two prices per bundle.** Catalogue `prices` table, `infra/stripe/stripe-sync.js` per
-  price, `app/functions/billing/billingCheckoutPost.js` checkout by interval, `web/public/bundles.html`
-  annual first, `app/lib/productCatalog.js`, tests. Per `PLAN_PRICE_UPDATE.md` §(b). Blocked on
-  PU-1. **Source**: `PLAN_PRICE_UPDATE.md` PU-2. **Owner**: Claude Code. **Model**: Sonnet.
-  **Size**: ~8 files.
-
-- [ ] **PU-3. Stripe test then live.** The `resident` product with both prices through
-  `stripe-catalogue-sync`, test then live; the price ids into `.env.ci` and `.env.prod`. Blocked on
-  PU-2. **Source**: `PLAN_PRICE_UPDATE.md` PU-3. **Owner**: Claude Code; the live key is the
-  operator's. **Model**: Haiku. **Size**: ~2 files.
-
-- [ ] **PU-5. The DIYA-GL tier on prod.** `DIYA_GL_RESIDENT_TIER` in `SubmitApplication.java`,
-  `prod` in `resident`'s environments in the catalogue. Blocked on PU-3. **Source**:
-  `PLAN_PRICE_UPDATE.md` PU-5. **Owner**: Claude Code. **Model**: Haiku. **Size**: ~2 files.
-
-- [ ] **PU-14. An `experiments.toml` row for the price change.** Objective `conversion-to-paid`,
-  lever price, metric purchases per human session, start at PU-5's deploy, so the £39 shape is
-  measured against the 99p rate. Blocked on PU-5. **Source**: `REPORT_PRICE_UPDATE_REVIEW.md` §2 row
-  6; operator 2026-09-21. **Owner**: Claude Code. **Model**: Haiku. **Size**: ~1 file.
-
-- [ ] **PU-7. Practice licence build.** Per PU-6's design and its task list. Blocked on PU-6.
-  **Source**: `PLAN_PRICE_UPDATE.md` PU-7. **Owner**: Claude Code. **Model**: per the design.
-  **Size**: per the design.
-
-- [ ] **PU-9. Retire the three folded bundles.** `resident-diya-gl`, `resident-itsa` and
-  `resident-ltd` leave `submit.catalogue.toml`, `.env.ci` and `.env.prod` once Stripe live shows no
-  subscription on their prices. Blocked on PU-5. **Source**: `PLAN_PRICE_UPDATE.md` PU-9.
-  **Owner**: Claude Code. **Model**: Haiku. **Size**: ~3 files.
 
 ## Discipline
 
