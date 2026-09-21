@@ -31,6 +31,13 @@ and stop. One branch is driven green at a time. Lifted only by the operator in t
 
 Commit that on its own, push it, and say in the reply that it is on and what it forbids.
 
+**Stop the loop and the watch in the same turn.** If `/iterate` is running, end it with
+`ScheduleWakeup` `stop: true`; if a `/watch` Monitor is armed, `TaskStop` it. Neither is
+compatible with the mode: the loop dispatches on the next board and the watch exists to feed
+`/auto-merge`, and both would resume work the marker forbids the moment a wake signal arrived. If
+neither is running, say so in one clause; the operator asked for it once because the reply did
+not.
+
 Then tell every sibling session through its inbox that this repository is cooling down, so they
 hold new asks rather than queueing them. Their in-flight work is theirs to finish.
 
@@ -75,8 +82,14 @@ nothing new. Do not interrupt mid-edit. A half-committed branch does not build a
 next session's puzzle; work left uncommitted in a worktree vanishes when the worktree is removed
 and the coordinator gets exactly one look.
 
-Dispatch no new agents. When each reports, merge its verified commit as usual, then check
-`git status --short` **inside its worktree**, not just its last commit.
+Dispatch no new agents. When each reports, land its verified commit on the batch as usual, then
+check `git status --short` **inside its worktree**, not just its last commit.
+
+**A green pull request stays open.** Cool-down settles what is in flight; a merge starts
+`main`'s deploy, which is more in flight, and the operator may be cooling down exactly to keep
+`main` still. Push the batch, drive it green under rule 4, and leave it there: merging it is
+`/wake`'s first step, run by the operator's own word. A live customer-facing fix under rule 2 is
+the one exception, and the reply says so when it asks for that merge order.
 
 **Waking:** before dispatching anything, walk every worktree that is still on disk and check
 `git status --short` in each. Uncommitted work found there is recovered first, because the next
