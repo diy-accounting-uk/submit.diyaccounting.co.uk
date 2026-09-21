@@ -16,10 +16,8 @@ runs), and for Claude Code steps the **Model** a sub-agent should use (Fable > O
 Haiku; the lowest tier that fits). Anything touching code goes through a `claude/*` branch and
 PR; the operator merges.
 
-**Prod runs deployment prod-4fef66c**; main's deploy 35597452065 of PR #316's merge (0d00bdeb) is
-creating prod-0d00bde. **ci**: `ci-set1` is being created by PR #319's deploy 35599512902. Open pull
-request: #319 (`claude/b68-board` to `main`, one row, head 222f292a). Batch `claude/b69-board`
-(worktree `.claude/worktrees/b69`) is open for the current wave.
+**Prod runs deployment prod-0d00bde**; main's deploy 35604740348 of PR #319's merge (a7a0d6b3) is
+in flight. **ci**: `ci-set1` is last-known-good. No open pull request.
 
 The board runs in five sections, in this order: **in flight** (a branch, a pull request or a run
 in motion, each named in the row), **machine-only**, **machine-ask**, **human-driven**,
@@ -41,62 +39,29 @@ step.
 
 ## In flight
 
-- [ ] **B49.17. `infra/google/ads/ads.toml` and `ads-sync.js`.** In flight: on `claude/b68-board`
-  (worktree `.claude/worktrees/b68`, PR #319 to `main`, head 222f292a; test and CodeQL green, deploy
-  35599512902 creating `ci-set1`; merges when that deploy is green). Extend the `ads.toml` B49.16
-  starts: `auto_tagging = true`; four `[[conversion_action]]` rows (`purchase`, `submit_vat_return`,
-  `runner_download`, `donate`) with `ga4_event` and `category`; `[[customer_conversion_goal]]` rows
-  `category`, `origin`, `biddable`; one `[[campaign]]` (`name`, `type = "PERFORMANCE_MAX"`,
-  `status`, `budget_micros`, `[[campaign.asset_group]] name`); `[reserve_floor] ssm_parameter =
-  "/submit/prod/ads/reserve-floor-gbp"`, the name only. `ads-sync.js` in `gcp-identity-sync.js`'s
-  shape: GAQL reads, pure `planAds(config, live)`, plan by default, `--apply` through the
-  `customers`, `campaignBudgets`, `campaigns` and `customerConversionGoals` mutates; a declared
-  conversion action missing live fails the run; `googleAdsLinks` stays with `ga4-sync.js`. Pin the
-  API version in one constant. Last step of `google-apply.yml`, reading the two Ads secrets through
-  that workflow's AWS chain, since the federated Google credentials do not cover Ads. Test
-  `adsSync.test.js` over `parseConfig` and `planAds`. Proof: `npm test`, a `google-apply.yml` plan
-  run reading "already match". **Source**: BACKLOG 49b; item 17. **Owner**: Claude Code. **Model**:
-  Sonnet. The inventory of 2026-09-21 is the starting state: conversion actions `purchase`
-  (GA4, primary), `submit_vat_return` (GA4, SIGNUP, primary), `runner_download` (GA4, SIGNUP),
-  `donate` (GA4, PAGE_VIEW), a hidden ci `purchase` and `begin_checkout`, two YouTube actions and a
-  codeless `Sign-up`; goals PURCHASE, SIGNUP, PAGE_VIEW biddable; one Performance Max campaign
-  "Campaign #1" at 1000000 micros a day with "Asset Group 1"; auto-tagging on. The Ads API is an
-  access level on project `diyaccounting-ga4`, so `ads-sync.js` needs no developer token. **Size**: ~4 files.
-
-- [ ] **B11.T7b.7. Record the responses.** In flight: a Sonnet agent on `claude/itsa-t7b7-record`
-  (worktree `.claude/worktrees/itsa-t7b7`, off batch `claude/b69-board`, no PR yet), regenerating the
-  three years' transcripts first, since none is on disk. Every request and response is already in the transcript;
-  the comparison against the simulator is not. For each call the two runs add, set HMRC's status and
-  body beside the simulator's route and scenario for that call and fix any field name, status or
-  error shape that differs: `app/http-simulator/routes/itsa-uk-property-period.js`,
-  `itsa-uk-property-annual.js`, `itsa-bsas.js` (the uk-property retrieve and adjust),
-  `itsa-losses-and-claims.js`, `itsa-tax-liability-adjustments.js`,
-  `itsa-self-employment-cumulative.js`, `itsa-uk-property-cumulative.js`, and the file of each name
-  under `app/http-simulator/scenarios/`. The test-support create-business response for `uk-property`
-  and the calculation's `businessIncomeSources` shape go in the runbook's run record, each
-  correction naming the transcript entry behind it. A run needs an SSO session for `submit-ci` and
-  no deployment; the re-run inside HMRC's 14-day window is B11.T10's. Proof: `npm test` green,
-  including `app/unit-tests/http-simulator/`. **Source**: `PLAN_ITSA_PHASE_2.md`
-  T7. **Owner**: Claude Code. **Model**: Sonnet. **Size**: ~10 files.
-
 ## Machine-only
+
+- [ ] **B11.T10a. The recognition pack's sandbox evidence.** From the three transcripts B11.T7b.7
+  left (`.claude/worktrees/itsa-t7b7/target/itsa-sandbox-<year>/itsa-sandbox-year-transcript.json`
+  for 2023-24, 2025-26 and 2026-27, run 2026-09-21; the runbook's run record in
+  `_developers/hmrc/ITSA_PHASE_2_SANDBOX.md` carries the same facts if that worktree is gone): the
+  checklist's sandbox-proof column in `ITSA_PRODUCTION_APPROVALS_CHECKLIST.md` rows 4, 6 and 7 and
+  its nine-API table (Property Business, Individual Losses, Tax Liability Adjustments), its
+  reviewer-question bullet about property, losses and the cumulative model deleted; both
+  `DRAFT_EMAIL_ITSA_*.md` sandbox paragraphs naming both income types, both quarterly models, the
+  loss claims and the adjustments; `hmrc_questionnaire_itsa_pass_diy_accounting_limited_v1.md`'s
+  testing-in-the-last-two-weeks row with 2026-09-21 and 5f2ff46a. Proof: no "not evidenced" left in
+  checklist rows 4, 6 and 7. **Source**: BACKLOG 11; `PLAN_ITSA_PHASE_2.md` T10. **Owner**: Claude
+  Code. **Model**: Haiku. **Size**: ~4 files.
 
 ## Machine-ask
 
-- [ ] **B11.T10. ITSA phase 2: the recognition pack.** Four files under `_developers/hmrc/` carry
-  the pack: `ITSA_PRODUCTION_APPROVALS_CHECKLIST.md`,
-  `hmrc_questionnaire_itsa_pass_diy_accounting_limited_v1.md` and the two `DRAFT_EMAIL_ITSA_*.md`.
-  Two things remain. From the transcripts B11.T7b.7 leaves: the checklist's sandbox-proof column in
-  rows 4, 6 and 7 and its nine-API table (Property Business, Individual Losses, Tax Liability
-  Adjustments), its reviewer-question bullet about property, losses and the cumulative model
-  deleted; both emails' sandbox paragraph naming both income types, both quarterly models, the loss
-  claims and the adjustments; the ITSA pass's testing-in-the-last-two-weeks row with the new run's
-  date and commit. Then the send: the operator names the day, Claude Code re-runs the B11.T7b.1 and
-  B11.T7b.4 commands inside the 14 days before it and updates that row, the operator sends the
-  recognition email to `SDSTeam@hmrc.gov.uk` and the credentials one when SDST answers. Proof: no
-  "not evidenced" left in checklist rows 4, 6 and 7. After B11.T7b.7. **Source**: BACKLOG 11;
-  `PLAN_ITSA_PHASE_2.md` T10. **Owner**: Claude Code edits and re-runs; the operator sends.
-  **Model**: Haiku. **Size**: ~4 files.
+- [ ] **B11.T10. ITSA phase 2: the send.** The operator names the day; Claude Code re-runs the
+  B11.T7b.1 and B11.T7b.4 commands inside the 14 days before it and updates the ITSA pass's
+  testing-in-the-last-two-weeks row; the operator sends `DRAFT_EMAIL_ITSA_RECOGNITION.md` to
+  `SDSTeam@hmrc.gov.uk` and `DRAFT_EMAIL_ITSA_PRODUCTION_CREDENTIALS.md` when SDST answers. After
+  B11.T10a. **Source**: BACKLOG 11; `PLAN_ITSA_PHASE_2.md` T10. **Owner**: Claude Code re-runs; the
+  operator names the day and sends. **Model**: Haiku. **Size**: ~1 file.
 
 - [ ] **O38. The two GitHub Apps carry every machine write.** Every workflow and Lambda write runs
   on the Apps since PR #311 (0c847b07): `security-review.yml`'s Copilot assignment was the last

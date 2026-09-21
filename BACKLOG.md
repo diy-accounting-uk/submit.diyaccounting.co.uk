@@ -22,23 +22,21 @@ Queued and in-flight state lives on `NEXT.md`; this block mirrors it so the back
 truthfully on its own. Machine-ask and human-driven steps are briefed at the workspace root in
 `../NEXT_OPERATOR_RUNBOOK.md`, one file rewritten in place.
 
-- **Cool-down lifted 2026-09-21 12:35 UTC** by the operator's `/wake`. Prod runs prod-4fef66c;
-  main's deploy of PR #316's merge (0d00bdeb) is creating prod-0d00bde; no ci set is standing.
-- **Open pull requests**: #319 (`claude/b68-board`: 49b item 17, `ads.toml` and `ads-sync.js`),
-  pushed after its local proof. No agent is running; no branch is ahead of its remote.
-- **Seven batches merged since 2026-09-20** (PRs #309, #311, #312, #315, #316, #317 here; #306,
-  #307, #308, #310, #314 from the DIYA-GL session): rows 30's CIS filter tune and alarm-remedy list
-  (design and build), 49b's items 15, 16 and 18 to 23, 62's submit half and the OAM sinks, 66, 67,
-  69's filter and ledger, 70, 71, 72, 34's three filing designs (34e, 34f, 34g), 11's T7b.1 to
-  T7b.6, O38's last PAT read, the ci slot release on branch delete, the visitor-kind view's day
+- Prod runs prod-0d00bde; main's deploy of PR #319's merge (a7a0d6b3) is in flight; `ci-set1` is
+  the ci set. No open pull request, no agent running, no branch ahead of its remote.
+- **Nine batches merged since 2026-09-20** (PRs #309, #311, #312, #315, #316, #317, #319, #320
+  here; #306, #307, #308, #310, #314 from the DIYA-GL session): rows 30's CIS filter tune and
+  alarm-remedy list (design and build), 49b's items 15 to 23, 62's submit half and the OAM sinks,
+  66, 67, 69's filter and ledger, 70, 71, 72, 34's three filing designs (34e, 34f, 34g), 11's T7b.1
+  to T7b.7, O38's last PAT read, the ci slot release on branch delete, the visitor-kind view's day
   type, and `infra/github`.
 - **Open alarm issues**: #313 (`prod-env-operator-snapshot-publish-errors`; the view fix is on
   main since 4fef66c2, proven by the 03:1x UTC snapshot run on 2026-09-22).
 - **Both `/api/v1/books` and `/api/v1/diya-gl` are permanent** by operator decision of 2026-09-10.
 - **Date-gated**: 43 from 2026-10-02; 48 the week of 2026-11-29; 52l from 2026-12-09.
-- **Tier 2**: 11's phase 2 has T7b.1 to T7b.6 proven on the sandbox, T7b.7 and T10 remaining; 34b waits on Companies House's answer about status lookups (34d); 62 waits on
+- **Tier 2**: 11's phase 2 has T7b.1 to T7b.7 on main, T10 remaining; 34b waits on Companies House's answer about status lookups (34d); 62 waits on
   the spreadsheets repository's OAM link.
-- **Tier 3**: 49b has items 15, 16 and 18 to 23 on main and 17 on PR #319; 66's donation links
+- **Tier 3**: 49b has items 15 to 23 on main; 66's donation links
   carry their bundle id in the live account and on main; 30's remedy list runs (`alarm-remedy-close.yml`
   hourly, `remedy:*` labels, per-family budget).
 - **Tier 4**: 67, 69, 70, 71 and 72 are on main; 69's ledger and 71's triage each have one proven
