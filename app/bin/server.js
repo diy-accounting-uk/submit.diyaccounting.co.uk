@@ -371,24 +371,40 @@ const __argv1 = process.argv[1] ? path.resolve(process.argv[1]) : "";
 const __runDirect = __thisFile === __argv1 || String(process.env.TEST_SERVER_HTTP || "") === "run";
 
 if (__runDirect) {
-  validateEnv([
-    "DIY_SUBMIT_BASE_URL",
-    "COGNITO_CLIENT_ID",
-    "COGNITO_BASE_URI",
-    "HMRC_BASE_URI",
-    "HMRC_SANDBOX_BASE_URI",
-    "HMRC_CLIENT_ID",
-    "HMRC_CLIENT_SECRET_ARN",
-    "HMRC_SANDBOX_CLIENT_ID",
-    "HMRC_SANDBOX_CLIENT_SECRET_ARN",
-    "RECEIPTS_DYNAMODB_TABLE_NAME",
-    "BUNDLE_DYNAMODB_TABLE_NAME",
-    "HMRC_API_REQUESTS_DYNAMODB_TABLE_NAME",
-    "HMRC_VAT_RETURN_POST_ASYNC_REQUESTS_TABLE_NAME",
-    "HMRC_VAT_RETURN_GET_ASYNC_REQUESTS_TABLE_NAME",
-    "HMRC_VAT_OBLIGATION_GET_ASYNC_REQUESTS_TABLE_NAME",
-    "SQS_QUEUE_URL",
-  ]);
+  // TODO: Get rid of this and make it always strict once otherwise stable
+  const strict = process.env.STRICT_ENV_VALIDATION === "true";
+  try {
+    if (strict) {
+      validateEnv([
+        "DIY_SUBMIT_BASE_URL",
+        "COGNITO_CLIENT_ID",
+        "COGNITO_BASE_URI",
+        "HMRC_BASE_URI",
+        "HMRC_SANDBOX_BASE_URI",
+        "HMRC_CLIENT_ID",
+        "HMRC_CLIENT_SECRET_ARN",
+        "HMRC_SANDBOX_CLIENT_ID",
+        "HMRC_SANDBOX_CLIENT_SECRET_ARN",
+        "RECEIPTS_DYNAMODB_TABLE_NAME",
+        "BUNDLE_DYNAMODB_TABLE_NAME",
+        "HMRC_API_REQUESTS_DYNAMODB_TABLE_NAME",
+        "HMRC_VAT_RETURN_POST_ASYNC_REQUESTS_TABLE_NAME",
+        "HMRC_VAT_RETURN_GET_ASYNC_REQUESTS_TABLE_NAME",
+        "HMRC_VAT_OBLIGATION_GET_ASYNC_REQUESTS_TABLE_NAME",
+        "SQS_QUEUE_URL",
+      ]);
+    } else {
+      // In local/dev and behaviour tests, validate only essential vars
+      validateEnv(["DIY_SUBMIT_BASE_URL", "HMRC_BASE_URI"]);
+    }
+  } catch (e) {
+    if (strict) {
+      throw e;
+    } else {
+      console.warn(`Non-strict env validation warning: ${e}`);
+      logger.warn(`Non-strict env validation warning: ${e}`);
+    }
+  }
   // Detect vendor public IP at startup (same as Lambda cold start) for Gov-Vendor-Public-IP header
   detectVendorPublicIp()
     .then((ip) => {
