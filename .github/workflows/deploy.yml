@@ -1765,6 +1765,12 @@ jobs:
 
       - name: Generate web/public/submit.env for client auth config
         shell: bash
+        env:
+          # The browser builds its Cognito, HMRC and Companies House redirect URIs from this, so
+          # it has to be the host the site is served at: the apex on prod, the deployment's own
+          # host on ci, where the probes now navigate the set and the .env file's apex value
+          # would send every sign-in back to a host that holds no OAuth state.
+          DIY_SUBMIT_BASE_URL: ${{ needs.names.outputs.public-url }}
         run: |
           set -euo pipefail
           # Load variables from the environment-specific .env file and write to web/public/submit.env
