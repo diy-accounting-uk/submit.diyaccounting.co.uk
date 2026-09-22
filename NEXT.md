@@ -44,9 +44,8 @@ step.
   (the DIYA-GL tier on prod), F1c (six months of Stripe staged), F1b (the PayPal script, its run
   waiting on OF1), F2a's bank parser, F2b (mail invoices), F2c (the book from the workbook set),
   B60 (the six MCP Submit tools) and B61 (the MCP app client, its PKCE sign-in and cloud
-  `open_book`/`save_book`). Its ci deploy runs on `ci-set1`; its environment deploy failed in
-  `create secrets` on the unguarded PayPal steps, and the guard is committed locally, pushed when
-  the deploy is terminal. **Source**: the rows named. **Owner**: Claude Code. **Model**: Sonnet.
+  `open_book`/`save_book`). Its head c5c1b434 (the PayPal secret steps guarded for an environment
+  without credentials) deploys on `ci-set1`. **Source**: the rows named. **Owner**: Claude Code. **Model**: Sonnet.
   **Size**: ~40 files.
 
 ## Machine-only
