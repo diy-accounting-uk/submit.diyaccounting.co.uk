@@ -181,11 +181,7 @@
       >
         <p style="margin: 0">
           DIY Accounting Submit is listed on HMRC's official finder for Making Tax Digital VAT software.
-          <a
-            href="https://www.tax.service.gov.uk/making-tax-digital-software"
-            target="_blank"
-            rel="noopener"
-            style="color: #2c5aa0"
+          <a href="https://www.tax.service.gov.uk/making-tax-digital-software" target="_blank" rel="noopener" style="color: #2c5aa0"
             >Search for DIY Accounting</a
           >
           on the finder to check for yourself.
@@ -211,6 +207,7 @@
       let __syntheticBundleIds = new Set();
       let __tokensRemaining = 0;
       let __hasTokenBundles = false;
+      let __unlimitedTokenBundleIds = new Set();
       let __fetchBundlesController = null;
 
       async function initializeBundles() {
@@ -254,11 +251,15 @@
               }
               __tokensRemaining = typeof bundlesData.tokensRemaining === "number" ? bundlesData.tokensRemaining : 0;
               __hasTokenBundles = bundlesData.bundles.some((b) => b.allocated && b.tokensGranted !== undefined);
+              __unlimitedTokenBundleIds = new Set(
+                bundlesData.bundles.filter((b) => b.allocated && b.tokensGranted === "unlimited").map((b) => b.bundleId),
+              );
             } else {
               __userBundles = [];
               __syntheticBundleIds = new Set();
               __tokensRemaining = 0;
               __hasTokenBundles = false;
+              __unlimitedTokenBundleIds = new Set();
             }
           } catch (err) {
             if (err.name === "AbortError") {
@@ -462,9 +463,15 @@
               const isMetered = activity.metered === true;
               const tokenLabel = isMetered ? ` (${tokenCost} token${tokenCost !== 1 ? "s" : ""})` : "";
 
+              // An unlimited-grant bundle (the resident-pro practice licence) covering this
+              // activity is exempt from the token count - never insufficient, never blocked.
+              const hasUnlimitedAccess = activity.bundles.some((bundleId) => __unlimitedTokenBundleIds.has(bundleId));
+
               // Check if user has insufficient tokens for metered activities
-              const insufficientTokens = isMetered && __hasTokenBundles && tokenCost > 0 && __tokensRemaining < tokenCost;
-              const noTokensForMetered = isMetered && __hasTokenBundles && tokenCost === 0 && __tokensRemaining === 0;
+              const insufficientTokens =
+                isMetered && __hasTokenBundles && !hasUnlimitedAccess && tokenCost > 0 && __tokensRemaining < tokenCost;
+              const noTokensForMetered =
+                isMetered && __hasTokenBundles && !hasUnlimitedAccess && tokenCost === 0 && __tokensRemaining === 0;
 
               if (insufficientTokens) {
                 buttons.push(`

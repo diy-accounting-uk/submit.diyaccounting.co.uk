@@ -143,7 +143,7 @@ export function createSimulatorServer() {
   // Known bundle token grants (mirrors submit.catalogue.toml)
   const bundleTokenGrants = {
     "day-guest": 3,
-    "resident-pro": 100,
+    "resident-pro": "unlimited",
     "invited-guest": 3,
     "resident-guest": 3,
     "resident-pro-comp": 100,

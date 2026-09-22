@@ -207,7 +207,7 @@
 
         body.innerHTML = tokenBundles
           .map(function (b) {
-            var remaining = Math.max(0, (b.tokensGranted || 0) - (b.tokensConsumed || 0));
+            var remaining = b.tokensGranted === "unlimited" ? "Unlimited" : Math.max(0, (b.tokensGranted || 0) - (b.tokensConsumed || 0));
             var expiryInfo = "";
             if (b.tokenResetAt) {
               var resetDate = new Date(b.tokenResetAt);
