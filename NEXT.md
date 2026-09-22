@@ -56,8 +56,9 @@ step.
   `pool`/`include` block flattened; thresholds 76/68/86/77 from the measured run). AS7a's strict
   validation is reverted on the branch: the simulator lane runs with `COGNITO_CLIENT_ID`,
   `COGNITO_BASE_URI` and the two HMRC secret ARNs blank by design, so every simulator suite's
-  server failed to start in `test` run 35767760731; the reverts push when deploy 35767761916
-  ends. The suite's ci and prod variants need a sandbox agent authorisation the simulator
+  server failed to start in `test` run 35767760731; deploy 35767761916 never won a ci slot (both held, one by
+  PR #334's ended run) and was cancelled; the reverts are pushed as head cd8f56d8, its runs
+  starting. The suite's ci and prod variants need a sandbox agent authorisation the simulator
   shortcut has no equivalent for, so they run only when one exists. **Source**: the rows named.
   **Owner**: Claude Code. **Model**: Sonnet and Haiku. **Size**: ~16 files.
 - [ ] **PU-7. Practice licence build.** PU-7a to PU-7l are on `main`. In flight on
