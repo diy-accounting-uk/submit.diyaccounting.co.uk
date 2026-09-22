@@ -31,6 +31,22 @@ const PRACTICE_BUNDLE_ID = "resident-pro";
 const LAPSED_RESIDENT_GRACE_MS = 30 * 24 * 60 * 60 * 1000;
 
 /**
+ * Whether the given bundle list carries an active, unexpired resident-pro subscription: the one
+ * rule that decides a practice's own entitlement (PLAN_PRICE_UPDATE.md (d), "Security boundaries",
+ * "a request carrying a client id needs an active resident-pro"). Shared with
+ * `bundleManagement.enforceBundles` so the two never diverge.
+ *
+ * @param {object[]} bundles - as returned by `getUserBundles`
+ * @returns {boolean}
+ */
+export function hasActiveResidentProBundle(bundles) {
+  const practiceBundle = bundles.find((bundle) => bundle.bundleId === PRACTICE_BUNDLE_ID);
+  const isActive = practiceBundle?.subscriptionStatus === "active";
+  const isUnexpired = practiceBundle?.expiry ? Date.parse(practiceBundle.expiry) > Date.now() : true;
+  return Boolean(practiceBundle && isActive && isUnexpired);
+}
+
+/**
  * A lapsed subscriber's resident books expire 30 days after the bundle's own expiry, rather than
  * immediately: the grace period a resubscribe can beat before the sweeper (DG-3c) removes them.
  *
@@ -118,11 +134,7 @@ export async function entitlementFor(sub, clientId) {
  * @returns {Promise<object>} the same shape `entitlementFor` returns
  */
 async function entitlementForClient(sub, clientId, bundles, checkedAt) {
-  const practiceBundle = bundles.find((bundle) => bundle.bundleId === PRACTICE_BUNDLE_ID);
-  const isActive = practiceBundle?.subscriptionStatus === "active";
-  const isUnexpired = practiceBundle?.expiry ? Date.parse(practiceBundle.expiry) > Date.now() : true;
-
-  if (!practiceBundle || !isActive || !isUnexpired) {
+  if (!hasActiveResidentProBundle(bundles)) {
     logger.info({ message: "Client-scoped request refused: no active resident-pro subscription", clientId });
     return { retention: "sandbox", reason: "no-practice-subscription", residentTier: true, bundleId: null, expiry: null, checkedAt };
   }
@@ -133,6 +145,7 @@ async function entitlementForClient(sub, clientId, bundles, checkedAt) {
     return { retention: "sandbox", reason: "client-not-found", residentTier: true, bundleId: null, expiry: null, checkedAt };
   }
 
+  const practiceBundle = bundles.find((bundle) => bundle.bundleId === PRACTICE_BUNDLE_ID);
   return {
     retention: "resident",
     reason: "active-subscription",

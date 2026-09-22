@@ -148,4 +148,30 @@ describe("lib/hmrcAgentAuthorisation", () => {
     const response = agentAuthorisationErrorResponse({}, { status: 502, data: {} }, {});
     expect(response.statusCode).toBe(500);
   });
+
+  describe("isClientAuthorisedForService", () => {
+    it("is true for a relationship already in place", async () => {
+      const { isClientAuthorisedForService } = await import("@app/lib/hmrcAgentAuthorisation.js");
+      const client = { authorisations: { "MTD-VAT": { status: "authorised" } } };
+      expect(isClientAuthorisedForService(client, "MTD-VAT")).toBe(true);
+    });
+
+    it("is true for an accepted invitation", async () => {
+      const { isClientAuthorisedForService } = await import("@app/lib/hmrcAgentAuthorisation.js");
+      const client = { authorisations: { "MTD-VAT": { status: "accepted" } } };
+      expect(isClientAuthorisedForService(client, "MTD-VAT")).toBe(true);
+    });
+
+    it("is false for a pending invitation", async () => {
+      const { isClientAuthorisedForService } = await import("@app/lib/hmrcAgentAuthorisation.js");
+      const client = { authorisations: { "MTD-VAT": { status: "pending" } } };
+      expect(isClientAuthorisedForService(client, "MTD-VAT")).toBe(false);
+    });
+
+    it("is false when no authorisation has ever been recorded for that service", async () => {
+      const { isClientAuthorisedForService } = await import("@app/lib/hmrcAgentAuthorisation.js");
+      expect(isClientAuthorisedForService({ authorisations: {} }, "MTD-VAT")).toBe(false);
+      expect(isClientAuthorisedForService(null, "MTD-VAT")).toBe(false);
+    });
+  });
 });

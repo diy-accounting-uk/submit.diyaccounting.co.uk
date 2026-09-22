@@ -8,6 +8,7 @@ import {
   extractRequest,
   http200OkResponse,
   http400BadRequestResponse,
+  http403ForbiddenResponse,
   buildValidationError,
   http401UnauthorizedResponse,
   http500ServerErrorResponse,
@@ -36,6 +37,10 @@ import { getAsyncRequest } from "../../data/dynamoDbAsyncRequestRepository.js";
 import { buildFraudHeaders, detectVendorPublicIp } from "../../lib/buildFraudHeaders.js";
 import { initializeSalt } from "../../services/subHasher.js";
 import { publishActivityEvent } from "../../lib/activityAlert.js";
+import { isClientAuthorisedForService } from "../../lib/hmrcAgentAuthorisation.js";
+
+// The Agent Authorisation API's service identifier for VAT (PLAN_PRICE_UPDATE.md (d)).
+const AGENT_AUTHORISATION_SERVICE = "MTD-VAT";
 
 const logger = createLogger({ source: "app/functions/hmrc/hmrcVatObligationGet.js" });
 
@@ -54,10 +59,11 @@ export function apiEndpoint(app) {
 
 export function extractAndValidateParameters(event, errorMessages) {
   const queryParams = event.queryStringParameters || {};
-  const { vrn, from, to, status, runFraudPreventionHeaderValidation } = queryParams;
+  const { vrn, from, to, status, runFraudPreventionHeaderValidation, clientId } = queryParams;
   const { "Gov-Test-Scenario": testScenario } = queryParams;
 
-  if (!vrn) errorMessages.push("Missing VAT registration number parameter");
+  // A client-scoped request resolves its VRN from the client row, not the query string.
+  if (!vrn && !clientId) errorMessages.push("Missing VAT registration number parameter");
   if (vrn && !isValidVrn(vrn)) errorMessages.push("Invalid VAT registration number format - must be 9 digits");
   if (from && !isValidIsoDate(from)) errorMessages.push("Invalid from date format - must be YYYY-MM-DD");
   if (to && !isValidIsoDate(to)) errorMessages.push("Invalid to date format - must be YYYY-MM-DD");
@@ -89,6 +95,7 @@ export function extractAndValidateParameters(event, errorMessages) {
 
   return {
     vrn,
+    clientId,
     from: finalFrom,
     to: finalTo,
     status,
@@ -118,11 +125,16 @@ export async function ingestHandler(event) {
 
   let errorMessages = [];
 
+  // A practice acting for a client (PLAN_PRICE_UPDATE.md (d)) names the client instead of a VRN;
+  // read early so it can be passed into bundle enforcement's own practice check.
+  const clientId = event.queryStringParameters?.clientId || undefined;
+
   // Bundle enforcement
   let userSub;
   let bundleIds = [];
+  let client = null;
   try {
-    ({ userSub, bundleIds } = await enforceBundles(event));
+    ({ userSub, bundleIds, client } = await enforceBundles(event, { clientId }));
   } catch (error) {
     return http403ForbiddenFromBundleEnforcement(error, request);
   }
@@ -153,6 +165,19 @@ export async function ingestHandler(event) {
     if (!hmrcAccessTokenMaybe) errorMessages.push("Missing Authorization Bearer token");
     return buildValidationError(request, errorMessages, responseHeaders);
   }
+
+  if (clientId && !isClientAuthorisedForService(client, AGENT_AUTHORISATION_SERVICE)) {
+    logger.warn({ message: "Client-scoped request refused: not authorised for MTD-VAT", clientId });
+    return http403ForbiddenResponse({
+      request,
+      headers: responseHeaders,
+      message: "Client is not authorised for MTD-VAT",
+      error: { code: "client-not-authorised" },
+    });
+  }
+
+  // A client-scoped request resolves its VRN from the client row, never from the query string.
+  const resolvedVrn = clientId ? client.identifiers?.vrn : vrn;
 
   const hmrcAccessToken = extractHmrcAccessTokenFromLambdaEvent(event);
   if (!hmrcAccessToken) {
@@ -187,7 +212,8 @@ export async function ingestHandler(event) {
   const waitTimeMs = parseInt(getHeader(event.headers, "x-wait-time-ms") || DEFAULT_WAIT_MS, 10);
 
   const payload = {
-    vrn,
+    vrn: resolvedVrn,
+    clientId,
     from,
     to,
     status,
@@ -239,6 +265,7 @@ export async function ingestHandler(event) {
           payload.requestId,
           payload.traceparent,
           payload.correlationId,
+          payload.clientId,
         );
 
         const serializableHmrcResponse = {
@@ -324,6 +351,7 @@ export async function workerHandler(event) {
         payload.requestId,
         payload.traceparent,
         payload.correlationId,
+        payload.clientId,
       );
 
       const serializableHmrcResponse = {
@@ -384,6 +412,7 @@ export async function getVatObligations(
   requestId = undefined,
   traceparent = undefined,
   correlationId = undefined,
+  clientId = undefined,
 ) {
   // Validate fraud prevention headers for synthetic accounts
   if (hmrcAccount === "synthetic" && runFraudPreventionHeaderValidation) {
@@ -449,6 +478,7 @@ export async function getVatObligations(
     event: "vat-obligations-queried",
     summary: "VAT obligations queried",
     userSub: auditForUserSub,
+    detail: clientId ? { clientId } : {},
   });
   return { hmrcResponse, obligations: hmrcResponse.data, hmrcRequestUrl };
 }
