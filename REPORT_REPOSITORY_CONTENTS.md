@@ -801,7 +801,7 @@ For specific topics, see:
 | Marketing guidance | `_developers/MARKETING_GUIDANCE.md` |
 | Information security runbook | `RUNBOOK_INFORMATION_SECURITY.md` |
 | Accessibility/penetration report | `REPORT_ACCESSIBILITY_PENETRATION.md` |
-| Security review report | `REPORT_SECURITY_REVIEW.md` |
+| Security review report | `_developers/archive/REPORT_SECURITY_REVIEW.md` |
 | HMRC fraud prevention | `hmrc-fraud-prevention.md` |
 | HMRC MTD approval submission | `_developers/hmrc/HMRC_MTD_API_APPROVAL_SUBMISSION.md` |
 | Salted hash implementation | `_developers/archive/SALTED_HASH_IMPLEMENTATION.md` |
