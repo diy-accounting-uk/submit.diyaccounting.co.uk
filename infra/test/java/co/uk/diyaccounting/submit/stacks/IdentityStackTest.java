@@ -66,12 +66,12 @@ class IdentityStackTest {
     }
 
     @Test
-    void stackCreatesTwoUserPoolClientsOnTheSamePool() {
+    void stackCreatesThreeUserPoolClientsOnTheSamePool() {
         IdentityStack stack = synthIdentityStack("ci");
         Template template = Template.fromStack(stack);
 
         template.resourceCountIs("AWS::Cognito::UserPool", 1);
-        template.resourceCountIs("AWS::Cognito::UserPoolClient", 2);
+        template.resourceCountIs("AWS::Cognito::UserPoolClient", 3);
     }
 
     @Test
@@ -92,7 +92,7 @@ class IdentityStackTest {
         // Locate the books client by name rather than relying on synthesis order.
         var booksClients = template.findResources(
                 "AWS::Cognito::UserPoolClient", Map.of("Properties", Map.of("AllowedOAuthFlows", List.of("code"))));
-        assertEquals(2, booksClients.size(), "both clients use the authorization code grant");
+        assertEquals(3, booksClients.size(), "the books, MCP and main clients all use the authorization code grant");
 
         var booksClient = booksClients.values().stream()
                 .filter(resource -> {
@@ -259,6 +259,64 @@ class IdentityStackTest {
         template.hasResourceProperties(
                 "AWS::SSM::Parameter",
                 Match.objectLike(Map.of("Name", "/submit/ci/spreadsheets-diya-gl-app-client-id")));
+    }
+
+    @Test
+    void mcpClientUsesTheAuthorizationCodeFlowWithNoSecretAndPreventsUserExistenceErrors() {
+        IdentityStack stack = synthIdentityStack("ci");
+        Template template = Template.fromStack(stack);
+
+        // Locate the MCP client by name rather than relying on synthesis order.
+        var codeFlowClients = template.findResources(
+                "AWS::Cognito::UserPoolClient", Map.of("Properties", Map.of("AllowedOAuthFlows", List.of("code"))));
+
+        var mcpClient = codeFlowClients.values().stream()
+                .filter(resource -> {
+                    @SuppressWarnings("unchecked")
+                    var properties = (Map<String, Object>) resource.get("Properties");
+                    return String.valueOf(properties.get("ClientName")).endsWith("-mcp-client");
+                })
+                .findFirst()
+                .orElseThrow(() -> new AssertionError("no MCP client found"));
+
+        @SuppressWarnings("unchecked")
+        var properties = (Map<String, Object>) mcpClient.get("Properties");
+        assertFalse((Boolean) properties.get("GenerateSecret"), "the MCP client must not generate a client secret");
+        assertEquals("ENABLED", properties.get("PreventUserExistenceErrors"));
+        assertEquals(List.of("code"), properties.get("AllowedOAuthFlows"));
+        assertEquals(List.of("email", "openid", "profile"), properties.get("AllowedOAuthScopes"));
+    }
+
+    @Test
+    void mcpClientCallbackAndLogoutUrlsCoverEveryLoopbackPortOnBothHostnames() {
+        IdentityStack stack = synthIdentityStack("ci");
+        Template template = Template.fromStack(stack);
+
+        var expectedUrls = new java.util.ArrayList<String>();
+        for (int port = 49152; port <= 49159; port++) {
+            expectedUrls.add("http://127.0.0.1:" + port + "/callback");
+            expectedUrls.add("http://localhost:" + port + "/callback");
+        }
+
+        template.hasResourceProperties(
+                "AWS::Cognito::UserPoolClient",
+                Match.objectLike(Map.of(
+                        "ClientName",
+                        Match.stringLikeRegexp(".*-mcp-client$"),
+                        "CallbackURLs",
+                        Match.arrayEquals(expectedUrls),
+                        "LogoutURLs",
+                        Match.arrayEquals(expectedUrls))));
+    }
+
+    @Test
+    void mcpClientIdIsPublishedAsAStackOutputAndAnSsmParameter() {
+        IdentityStack stack = synthIdentityStack("ci");
+        Template template = Template.fromStack(stack);
+
+        template.hasOutput("McpUserPoolClientId", Match.anyValue());
+        template.hasResourceProperties(
+                "AWS::SSM::Parameter", Match.objectLike(Map.of("Name", "/submit/ci/mcp-app-client-id")));
     }
 
     @Test

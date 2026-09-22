@@ -83,10 +83,18 @@ export const TOOLS = {
   open_book: {
     description:
       "Open a diya-gl book from the filesystem: a directory holding book.toml and lines.jsonl, or a single file " +
-      "(a DIY Accounting workbook, a package zip, a diya-gl zip, or a diya-gl JSON file). Answers the product, the " +
-      "entity, the period covered, the line count and the book checks summary. Replaces the session's loaded book.",
+      "(a DIY Accounting workbook, a package zip, a diya-gl zip, or a diya-gl JSON file). With cloud: true, opens " +
+      "bookId from the DIYA cloud instead (a practice client's own book with clientId), signed in via auth.js's " +
+      "accessToken(). Answers the product, the entity, the period covered, the line count and the book checks " +
+      "summary. Replaces the session's loaded book.",
     inputSchema: {
-      path: z.string().describe("Path to the book: a directory of book.toml + lines.jsonl, or one file the engine reads"),
+      path: z
+        .string()
+        .optional()
+        .describe("Path to the book: a directory of book.toml + lines.jsonl, or one file the engine reads; unused with cloud"),
+      cloud: z.boolean().optional().describe("Open bookId from the DIYA cloud instead of the filesystem"),
+      bookId: z.string().optional().describe("The cloud book's id; required with cloud: true"),
+      clientId: z.string().optional().describe("A practice client's id, to open that client's book instead of the practice's own"),
     },
     handler: openBook,
   },
@@ -95,10 +103,15 @@ export const TOOLS = {
       "Save the session's loaded book to the filesystem. Formats: diya-gl-dir (book.toml + lines.jsonl into a " +
       "directory; the default for a path with no extension), diya-gl-zip, json, xlsx (the product's recalculating " +
       "workbook) and zip (the product's package). xlsx and zip fetch the template from spreadsheets.diyaccounting.co.uk " +
-      "on first use.",
+      "on first use. With cloud: true, writes to the DIYA cloud by bookId instead (a practice client's book set with " +
+      "clientId), signed in via auth.js's accessToken(); carries the if-match etag from the session's last cloud " +
+      "open or save of the same bookId.",
     inputSchema: {
-      path: z.string().describe("Where to write: a directory for diya-gl-dir, otherwise a file path"),
-      format: z.enum(SAVE_FORMATS).optional().describe("One of diya-gl-dir, diya-gl-zip, json, xlsx, zip"),
+      path: z.string().optional().describe("Where to write: a directory for diya-gl-dir, otherwise a file path; unused with cloud"),
+      format: z.enum(SAVE_FORMATS).optional().describe("One of diya-gl-dir, diya-gl-zip, json, xlsx, zip; unused with cloud"),
+      cloud: z.boolean().optional().describe("Save to the DIYA cloud by bookId instead of the filesystem"),
+      bookId: z.string().optional().describe("The cloud book's id; required with cloud: true"),
+      clientId: z.string().optional().describe("A practice client's id, to save into that client's book set"),
     },
     handler: saveBook,
   },

@@ -24,10 +24,15 @@ class ApiStackTest {
 
     private static final String USER_POOL_CLIENT_ID = "main-client-id";
     private static final String BOOKS_USER_POOL_CLIENT_ID = "books-client-id";
+    private static final String MCP_USER_POOL_CLIENT_ID = "mcp-client-id";
     private static final String BOOKS_ALLOWED_ORIGINS =
             "https://ci-spreadsheets.diyaccounting.co.uk,http://localhost:3000";
 
     private static ApiStack synthApiStack() {
+        return synthApiStack("");
+    }
+
+    private static ApiStack synthApiStack(String mcpUserPoolClientId) {
         App app = new App();
         SubmitSharedNames sharedNames = SubmitSharedNames.forDocs();
 
@@ -122,6 +127,7 @@ class ApiStackTest {
                         .userPoolId("eu-west-2_123456789")
                         .userPoolClientId(USER_POOL_CLIENT_ID)
                         .booksUserPoolClientId(BOOKS_USER_POOL_CLIENT_ID)
+                        .mcpUserPoolClientId(mcpUserPoolClientId)
                         .booksAllowedOrigins(BOOKS_ALLOWED_ORIGINS)
                         .customAuthorizerLambdaArn(
                                 "arn:aws:lambda:eu-west-2:111111111111:function:test-custom-authorizer")
@@ -200,6 +206,29 @@ class ApiStackTest {
     }
 
     @Test
+    void aBooksRouteAcceptsEitherTheBooksOrTheMcpClientOnceAnMcpClientIdIsConfigured() {
+        ApiStack stack = synthApiStack(MCP_USER_POOL_CLIENT_ID);
+        Template template = Template.fromStack(stack);
+
+        var booksAuthorizers = template.findResources(
+                "AWS::ApiGatewayV2::Authorizer",
+                Map.of(
+                        "Properties",
+                        Map.of(
+                                "JwtConfiguration",
+                                Map.of("Audience", List.of(BOOKS_USER_POOL_CLIENT_ID, MCP_USER_POOL_CLIENT_ID)))));
+        assertEquals(1, booksAuthorizers.size(), "expected exactly one books authoriser accepting both audiences");
+        String booksAuthorizerId = booksAuthorizers.keySet().iterator().next();
+
+        var putRoutes = template.findResources(
+                "AWS::ApiGatewayV2::Route", Map.of("Properties", Map.of("RouteKey", "PUT /api/v1/books/{bookId}")));
+        assertEquals(1, putRoutes.size());
+        assertEquals(
+                booksAuthorizerId,
+                refOf(((Map<?, ?>) putRoutes.values().iterator().next()).get("Properties"), "AuthorizerId"));
+    }
+
+    @Test
     void theHttpApiCarriesCorsForAnAllowListedOriginSoAnAuthoriserRejection401AlsoGetsIt() {
         ApiStack stack = synthApiStack();
         Template template = Template.fromStack(stack);
@@ -249,8 +278,7 @@ class ApiStackTest {
         template.hasResourceProperties(
                 "AWS::ApiGatewayV2::Stage",
                 Match.objectLike(Map.of(
-                        "AccessLogSettings",
-                        Match.objectLike(Map.of("DestinationArn", expectedDestinationArn)))));
+                        "AccessLogSettings", Match.objectLike(Map.of("DestinationArn", expectedDestinationArn)))));
     }
 
     @Test
