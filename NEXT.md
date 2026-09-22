@@ -84,6 +84,15 @@ step.
 
 ## Machine-only
 
+- [ ] **B34.6b. The email that asks Companies House about submission 000004.** Draft
+  `../DRAFT_EMAIL_XMLGW_000004.md` at the workspace root (private: it names the presenter) for the
+  `xml@companieshouse.gov.uk` thread whose last message is the operator's of 2026-09-11: submission
+  000004 (test presenter, company 06846849, package reference 0012) was acknowledged with no errors
+  by the XML Gateway test service, yet every `GetSubmissionStatus` poll answers 9999 "No presenter
+  ID supplied" with the body's `PresenterID` sent plaintext and hashed; ask whether 000004 was
+  accepted and whether status lookups are enabled for this presenter. **Source**: BACKLOG 34b, 34d.
+  **Owner**: Claude Code. **Model**: Haiku. **Size**: ~1 file.
+
 - [ ] **PU-5. The DIYA-GL tier on prod.** `SubmitApplication.java` line 489 sets
   `.residentTierEnabled(!"prod".equals(envName))`, which `DiyaGlStack.java` (lines 153 and 257)
   passes as `DIYA_GL_RESIDENT_TIER` and `app/services/diyaGlEntitlement.js` line 57 reads; make
@@ -184,6 +193,19 @@ step.
   **Source**: BACKLOG 60; `PLAN_SUBMISSION_MCP.md` M2. **Owner**: Claude Code. **Model**: Sonnet.
   **Size**: ~4 files.
 
+- [ ] **F1b. PayPal transactions to staging.** `scripts/finance/paypal-stage.js`: the Transaction
+  Search API for a month, settled transactions only with the status field kept so holds and
+  reversals can be excluded downstream, written as
+  `../staging/<year-end>/paypal/<yyyy-mm-dd>-paypal-transactions.json`; the client id and secret
+  read from Secrets Manager (`prod/submit/paypal/client_id` and `prod/submit/paypal/client_secret`),
+  landed there by `deploy-environment.yml` from the `prod` environment's `PAYPAL_CLIENT_ID` and
+  `PAYPAL_CLIENT_SECRET` in the shape of its "Create secret in AWS from
+  secrets.TELEGRAM_BOT_TOKEN" step (line 331), with the ARNs on `SubmitEnvironment.java` beside the
+  Telegram ones (line 88); a unit test over a recorded page proves the script before any credential
+  exists. The six-month run (March to August 2026) waits on OF1. **Source**:
+  `../PLAN_FINANCE_AUTOMATION.md` route 1. **Owner**: Claude Code. **Model**: Sonnet. **Size**: ~5
+  files.
+
 - [ ] **B61. The MCP's third Cognito app client and the stdio sign-in.** `PLAN_SUBMISSION_MCP.md`
   M3: a third app client on the pool beside the web and DIYA-GL clients (`IdentityStack.java`, the
   DIYA-GL client's pattern at line 279 onward), a JWT authoriser scoped to its audience on the
@@ -201,29 +223,30 @@ step.
 
 ## Machine-ask
 
-- [ ] **F1b. PayPal transactions to staging.** `scripts/finance/paypal-stage.js`: the Transaction
-  Search API for a month, settled transactions only with the status field kept so holds and
-  reversals can be excluded downstream, written as
-  `../staging/<year-end>/paypal/<yyyy-mm-dd>-paypal-transactions.json`; a unit test over a recorded
-  page. The app client id and secret come from the PayPal developer dashboard, which the operator
-  creates and puts on the `prod` GitHub environment as `PAYPAL_CLIENT_ID` and `PAYPAL_CLIENT_SECRET`
-  for `deploy-environment.yml` to land in Secrets Manager as `prod/submit/paypal/client_id` and
-  `prod/submit/paypal/client_secret`, in the shape of its "Create secret in AWS from
-  secrets.TELEGRAM_BOT_TOKEN" step (line 331), with the ARNs on `SubmitEnvironment.java` beside the
-  Telegram ones (line 88). Run it for March to August 2026. **Source**:
-  `../PLAN_FINANCE_AUTOMATION.md` route 1. **Owner**: Claude Code; the operator creates the PayPal
-  app. **Model**: Sonnet. **Size**: ~5 files.
-
-- [ ] **B11.T10. ITSA phase 2: the send.** The operator names the day; Claude Code re-runs
-  `scripts/itsa-sandbox-year.js` for 2023-24, 2025-26 and 2026-27 (the commands in
-  `_developers/hmrc/ITSA_PHASE_2_SANDBOX.md` lines 69 to 79; B11.T7c moves its output directory)
-  inside the 14 days before it and updates the "Testing in the last two weeks" row of
-  `_developers/hmrc/hmrc_questionnaire_itsa_pass_diy_accounting_limited_v1.md` (line 28); the
-  operator sends `_developers/hmrc/DRAFT_EMAIL_ITSA_RECOGNITION.md` to `SDSTeam@hmrc.gov.uk` and
-  `_developers/hmrc/DRAFT_EMAIL_ITSA_PRODUCTION_CREDENTIALS.md` when SDST answers. **Source**: BACKLOG 11; `PLAN_ITSA_PHASE_2.md` T10. **Owner**: Claude Code re-runs; the
-  operator names the day and sends. **Model**: Haiku. **Size**: ~1 file.
-
 ## Human-driven
+
+- [ ] **OF1. The PayPal app credentials.** In the PayPal developer dashboard
+  (<https://developer.paypal.com/dashboard/applications/live>), create a live REST API app for
+  the company account and put its client id and secret on the `prod` GitHub environment as
+  `PAYPAL_CLIENT_ID` and `PAYPAL_CLIENT_SECRET`
+  (<https://github.com/diy-accounting-uk/submit.diyaccounting.co.uk/settings/environments>); the
+  next `deploy-environment.yml` run lands them, and F1b's six-month run follows. **Source**:
+  `../PLAN_FINANCE_AUTOMATION.md` route 1. **Owner**: Operator. **Model**: none. **Size**: 0 files.
+
+- [ ] **O11. The ITSA send day.** Name the day the recognition email goes, write it into B11.T10's
+  row, and on that day send `_developers/hmrc/DRAFT_EMAIL_ITSA_RECOGNITION.md` to
+  `SDSTeam@hmrc.gov.uk`, then `_developers/hmrc/DRAFT_EMAIL_ITSA_PRODUCTION_CREDENTIALS.md` when
+  SDST answers. **Source**: BACKLOG 11; `PLAN_ITSA_PHASE_2.md` T10. **Owner**: Operator. **Model**:
+  none. **Size**: 0 files.
+
+- [ ] **O34d. Send the XML Gateway email.** Send B34.6b's draft from `antony@diyaccounting.co.uk`
+  as a reply on the `xml@companieshouse.gov.uk` thread, and paste the answer into B34.6c's row when
+  it comes. **Source**: BACKLOG 34d. **Owner**: Operator. **Model**: none. **Size**: 0 files.
+
+- [ ] **O52m. The reinvestment fraction and the reserve floor.** Two numbers, written into B52m's
+  row: the share of trailing income the loop may spend on paid traffic and article boosts, and the
+  cash reserve it never spends below. **Source**: BACKLOG 52m; `PLAN_ONE_STOP_DASHBOARD.md` D17.
+  **Owner**: Operator. **Model**: none. **Size**: 0 files.
 
 - [ ] **F1d. NatWest statements to staging.** The operator signs in to NatWest and downloads, for
   each of March to August 2026, the current account `600947-80597386` and the savings account
@@ -236,14 +259,30 @@ step.
 
 ## Blocked
 
-- [ ] **F2d. DIYA's book, assembled, verified and saved to the DIYA cloud.** The lines from F2a and
-  F2b plus F2c's `book.toml` for 1 March to 31 August 2026, validated against both v2 schemas; March
-  2026 matched line for line against the completed 2025-26 workbook (the control), every month's
-  bank closing balance equal to the statement's, gross income and fees separate, no hold posted;
-  then saved to the DIYA cloud through `save_book` with the operator signed in, which is B52i's
-  unblock event. Blocked on F1b, F1c, F1d, F2a, F2b, F2c and B61. **Source**:
-  `../PLAN_FINANCE_AUTOMATION.md` phase 2 and its verification. **Owner**: Claude Code; the operator
-  signs in. **Model**: Sonnet. **Size**: ~2 files.
+- [ ] **B11.T10. ITSA phase 2: the testing evidence inside the window.** Within the 14 days before
+  the day O11 names, re-run `scripts/itsa-sandbox-year.js` for 2023-24, 2025-26 and 2026-27 (the
+  commands in `_developers/hmrc/ITSA_PHASE_2_SANDBOX.md` lines 69 to 79; B11.T7c's output directory
+  under `../itsa-sandbox/<tax-year>/`) and update the "Testing in the last two weeks" row of
+  `_developers/hmrc/hmrc_questionnaire_itsa_pass_diy_accounting_limited_v1.md` (line 28) with the
+  run dates and commit. Blocked on O11's day. **Source**: BACKLOG 11; `PLAN_ITSA_PHASE_2.md` T10.
+  **Owner**: Claude Code. **Model**: Haiku. **Size**: ~1 file.
+
+- [ ] **B34.6c. Companies House accounts filing: the sandbox proof.** When O34d's answer says
+  lookups are enabled: poll 000004 through `GET /api/v1/companies-house/accounts/000004` on a
+  standing ci set and pin the returned `StatusCode` and any rejections as a case in
+  `app/unit-tests/functions/companiesHouseAccountsGet.test.js`. The prod catalogue listing is
+  BACKLOG 34c's: prod carries no `COMPANIES_HOUSE_XMLGW_URI` and no presenter secret ARNs. Blocked
+  on O34d's answer. **Source**: BACKLOG 34b. **Owner**: Claude Code. **Model**: Sonnet. **Size**:
+  ~1 file.
+
+- [ ] **F2d. DIYA's book, assembled and verified.** The lines from F2a and F2b plus F2c's
+  `book.toml` for 1 March to 31 August 2026, validated with `validateBook` and `validateLines`
+  from the diya-gl package, written under `../staging/2026-2027/book/` (private); March 2026 matched
+  line for line against the completed 2025-26 workbook (the control), every month's bank closing
+  balance equal to the statement's, gross income and fees separate, no hold posted, each check a
+  line in `../staging/2026-2027/book/VERIFICATION.md`. Blocked on F1b, F1c, F1d, F2a, F2b and F2c.
+  **Source**: `../PLAN_FINANCE_AUTOMATION.md` phase 2 and its verification. **Owner**: Claude Code.
+  **Model**: Sonnet. **Size**: ~2 files.
 
 - [ ] **F2e. The MCP writes a populated spreadsheets package.** A tool in `mcp/lib/finance/` that
   takes the book and lines and writes a DIY Accounting spreadsheets package, reconciled under the
@@ -271,21 +310,6 @@ step.
   measured against the 99p rate. Blocked on PU-5. **Source**: `REPORT_PRICE_UPDATE_REVIEW.md` §2 row
   6; operator 2026-09-21. **Owner**: Claude Code. **Model**: Haiku. **Size**: ~1 file.
 
-- [ ] **B34.6b. Companies House accounts filing: the sandbox proof.** Submission 000004 (test
-  presenter, company 06846849, package reference 0012) was acknowledged with no errors by the XML
-  Gateway test service; every `GetSubmissionStatus` poll for it answers 9999 "No presenter ID
-  supplied", with the body's `PresenterID` plaintext and hashed, and the body is plaintext on
-  `main`. The blocker is the email BACKLOG 34d describes, which has not been sent: the last message
-  on the `xml@companieshouse.gov.uk` thread is the operator's of 2026-09-11. Claude Code drafts it,
-  the operator sends, and it asks whether 000004 was accepted and whether status lookups are
-  enabled for this presenter. When the answer comes and lookups are enabled: poll 000004 through
-  `GET /api/v1/companies-house/accounts/000004` on a standing ci set, and pin the returned
-  `StatusCode` and any rejections as a case in
-  `app/unit-tests/functions/companiesHouseAccountsGet.test.js`. The prod catalogue listing is
-  BACKLOG 34c's: prod carries no `COMPANIES_HOUSE_XMLGW_URI` and no presenter secret ARNs.
-  **Source**: BACKLOG 34b, 34d. **Owner**: Claude Code; the operator sends 34d's email. **Model**:
-  Sonnet. Blocked on that answer. **Size**: ~2 files.
-
 - [ ] **B52l. The optimiser over the raw export.** A notebook over `../analytics/prod/` (pulled by
   `scripts/analytics-pull.sh`, one CSV per view in `rawExportPublish.js`'s `VIEW_NAMES`): per-block
   correlations, the block models fitted (linear cost from `v_cost_daily`, log-linear funnels from
@@ -300,24 +324,22 @@ step.
   `PLAN_ONE_STOP_DASHBOARD.md` D16. **Owner**: Claude Code. **Model**: Opus for the models, Sonnet
   for the notebook. **Size**: ~3 files.
 
-- [ ] **B52m. The reinvestment loop.** Trailing income, reserve, budget, return per pound and payback
-  as one block on `web/public/operator/dashboard.html`, fed by observations over `v_revenue_daily`
-  and `v_cost_vs_target_monthly` in `operatorSnapshotPublish.js`; the reinvestment fraction as a
-  lever with the operator's reserve floor; paid traffic and article boosts as `experiments.toml`
-  rows with on-off or geographic controls; GA4 conversion import from the Ads account. Blocked on
-  three events: B52l's fitted models, which the return-per-pound figure comes from; the cost panel
-  carrying revenue (BACKLOG 43, from 2026-10-02, the first monthly renewal); and the operator
-  naming the reinvestment fraction and the reserve floor. The Google Ads account exists as code
-  (`infra/google/ads/ads.toml`: customer `8142685080`, four conversion actions imported from GA4
-  events, one Performance Max campaign), so no token step remains; the cost-per-session ceiling
-  PU-15 writes into D17 is the starting bid ceiling.
-  **Source**: BACKLOG 52m; `PLAN_ONE_STOP_DASHBOARD.md` D17. **Owner**: Claude Code, with the
-  operator's fraction and floor. **Model**: Sonnet. **Size**: ~3 files.
-
 - [ ] **PU-9. Retire the three folded bundles.** `resident-diya-gl`, `resident-itsa` and
   `resident-ltd` leave `submit.catalogue.toml`, `.env.ci` and `.env.prod` once Stripe live shows no
   subscription on their prices. Blocked on PU-5. **Source**: `PLAN_PRICE_UPDATE.md` PU-9.
   **Owner**: Claude Code. **Model**: Haiku. **Size**: ~3 files.
+
+- [ ] **B52m. The reinvestment loop.** Trailing income, reserve, budget, return per pound and payback
+  as one block on `web/public/operator/dashboard.html`, fed by observations over `v_revenue_daily`
+  and `v_cost_vs_target_monthly` in `operatorSnapshotPublish.js`; the reinvestment fraction as a
+  lever with the reserve floor; paid traffic and article boosts as `experiments.toml` rows with
+  on-off or geographic controls; GA4 conversion import from the Ads account, which exists as code
+  (`infra/google/ads/ads.toml`: customer `8142685080`, four conversion actions imported from GA4
+  events, one Performance Max campaign); the cost-per-session ceiling PU-15 wrote into D17 is the
+  starting bid ceiling. Blocked on B52l's fitted models (the return-per-pound figure), the cost
+  panel carrying revenue (BACKLOG 43, from 2026-10-02) and O52m's two numbers. **Source**: BACKLOG
+  52m; `PLAN_ONE_STOP_DASHBOARD.md` D17. **Owner**: Claude Code. **Model**: Sonnet. **Size**: ~3
+  files.
 
 - [ ] **B52i. The company P&L and balance sheet on the dashboard.** The company's diya-gl book,
   derived nightly and rendered above the eight objectives beside the last set filed at Companies
@@ -325,8 +347,13 @@ step.
   `derive_micro_entity_accounts` over the cloud book, writing JSON lines to `curated/finance/` with
   a Glue table on `Ga4DailyTables.java`'s pattern, one observation set in
   `operatorSnapshotPublish.js`, and a block above `renderSnapshot`'s objectives in
-  `web/public/operator/dashboard.html`. Blocked on F2d (DIYA's book saved to the DIYA cloud, the last of the F1 and F2 rows) and on B61 (the MCP's third Cognito app client, whose `open_book`/`save_book` over the cloud routes the nightly derivation uses). **Source**: BACKLOG 52i; `PLAN_ONE_STOP_DASHBOARD.md` D10. **Owner**:
+  `web/public/operator/dashboard.html`. Blocked on OF2 (DIYA's book saved to the DIYA cloud, the last of the F1 and F2 rows) and on B61 (the MCP's third Cognito app client, whose `open_book`/`save_book` over the cloud routes the nightly derivation uses). **Source**: BACKLOG 52i; `PLAN_ONE_STOP_DASHBOARD.md` D10. **Owner**:
   Claude Code. **Model**: Sonnet. **Size**: ~4 files.
+
+- [ ] **OF2. DIYA's book saved to the DIYA cloud.** With the operator signed in through B61's
+  sign-in, `save_book` writes F2d's verified book to the DIYA cloud, which is B52i's unblock event.
+  Blocked on F2d and B61. **Source**: `../PLAN_FINANCE_AUTOMATION.md` phase 2. **Owner**: Claude
+  Code; the operator signs in. **Model**: Haiku. **Size**: 0 files.
 
 - [ ] **O17. A sandbox sign-in for the filing suites, and four ci values.** The sandbox has no
   registration page and no create-user API; its sign-in is reached only through

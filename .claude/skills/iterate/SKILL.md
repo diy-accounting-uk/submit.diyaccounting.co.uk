@@ -52,7 +52,9 @@ active` line carrying a `https://claude.ai/code/session_…` URL means the sessi
 
 ### 1. Board
 
-`/board`, in full, with its write-back. The write-back is a docs commit pushed straight to `main`
+`/refine` first when the session's first wave is about to be dispatched or the board has gained
+rows since the last pass (its four passes correct the references, complete the briefs, share the
+facts between rows and split the human steps out). Then `/board`, in full, with its write-back. The write-back is a docs commit pushed straight to `main`
 (the docs exception, which the Admin bypass on ruleset 16057564 allows); commit first, then push
 as its own command. Read the Part 1 rows whose State is `ready` and Needs is `machine-only`: that
 is the wave's input, in board order. Rows whose remainder is a scheduled run, a nightly, or a date
