@@ -40,10 +40,9 @@ step.
 
 ## In flight
 
-- [ ] **B82. Wave b82 on `claude/b82-board`.** Two agents: PU-7e (the practice's token grant
-  unlimited in `tokenEnforcement.js`, `bundleManagement.js` and the catalogue) and B34i (the ICO
-  register wording for practice client data in `_developers/ICO_CHECKLIST.md`, a docs commit to
-  `main` when it lands, then OICO). No pull request yet. **Source**: the rows named. **Owner**:
+- [ ] **B82. Wave b82 on `claude/b82-board`.** One agent left: PU-7e (the practice's token grant
+  unlimited in `tokenEnforcement.js`, `bundleManagement.js` and the catalogue); B34i's ICO
+  wording is on `main`. No pull request yet. **Source**: the rows named. **Owner**:
   Claude Code. **Model**: Sonnet and Haiku. **Size**: ~5 files.
 
 - [ ] **B81. Wave b81 on `claude/b81-board`, PR #335.** PU-7m (a0bd6686: the practice licence
@@ -84,6 +83,15 @@ step.
   Code. **Model**: Sonnet. **Size**: 262 files.
 
 ## Machine-only
+
+- [ ] **B34j. The privacy notice covers practice client filing.** `web/public/privacy.html`
+  (the processing table near lines 557 to 577) gains a row for filing on behalf of an
+  accountant's clients: the data (name and filing identifiers of a practice's clients), the
+  purpose, the lawful basis and the retention, in the words `_developers/ICO_CHECKLIST.md`'s
+  "Practice licence: client data" section settles, and the records-of-processing line the same
+  section asks for. A unit or browser test asserting the row is present, in the shape the page's
+  existing tests use. **Source**: `_developers/ICO_CHECKLIST.md`; operator 2026-09-22. **Owner**:
+  Claude Code. **Model**: Haiku. **Size**: ~2 files.
 
 - [ ] **AS15. A dead-code pass with knip.** The assessment's dead-code scan used `ts-prune` on
   a JavaScript tree and reported zero, which is "not analysed". Run `npx knip` once at the root
@@ -139,7 +147,8 @@ step.
 
 ## Human-driven
 
-- [ ] **OICO. Update the ICO registration.** With B34i's wording, sign in to the ICO's
+- [ ] **OICO. Update the ICO registration.** With the "Practice licence: client data" section of
+  `_developers/ICO_CHECKLIST.md` (registration ZB070902), sign in to the ICO's
   registration portal and update DIY Accounting Limited's entry to cover the practice licence's
   client data; note the date in `_developers/ICO_CHECKLIST.md`. **Source**: operator
   2026-09-22. **Owner**: Operator. **Model**: none. **Size**: 0 files.
@@ -182,7 +191,8 @@ step.
   into `.env.ci` and `.env.prod` (machine-ask for the live run); the practice page's nav link in
   `web/public/widgets/page-chrome.js` appears; the four ci probes that reach `resident-pro`
   through a pass are updated in the same change; `web/public/diya-gl.html` (or the page that
-  lists `resident`'s prices) drops the monthly line. Blocked on PU-7m (PR #335). **Source**:
+  lists `resident`'s prices) drops the monthly line. Blocked on PU-7m (PR #335), B34j and OICO (the
+  register must cover the client data before the tier is sold). **Source**:
   `PLAN_PRICE_UPDATE.md` §(d); operator 2026-09-22. **Owner**: Claude Code. **Model**: Sonnet.
   **Size**: ~9 files.
 
