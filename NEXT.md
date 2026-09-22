@@ -40,10 +40,12 @@ step.
 
 ## In flight
 
-- [ ] **B82. Wave b82 on `claude/b82-board`.** B34j landed as a9e2e920 (the privacy notice's row for practice
-  client filing, with a browser test); PU-7e's agent is on its second commit (the unlimited
-  grant's display on `usage.html`, the header and the simulator map after the enforcement,
-  webhook-refresh and bundle-read changes); B34i's ICO wording is on `main`. No pull request yet. **Source**: the rows named. **Owner**:
+- [ ] **B82. Wave b82 on `claude/b82-board`.** Three commits, the batch proof running before the push: B34j
+  (a9e2e920, the privacy notice's row for practice client filing, with a browser test) and PU-7e
+  (e4302a96 and c450180d: `tokensGranted = "unlimited"` on `resident-pro`, exempt in
+  enforcement, the webhook refresh and the bundle read, shown as unlimited on the usage page,
+  the header, the submission-cost widget and the dashboard gate, the simulator map to match);
+  B34i's ICO wording is on `main`. No pull request yet. **Source**: the rows named. **Owner**:
   Claude Code. **Model**: Sonnet and Haiku. **Size**: ~5 files.
 
 - [ ] **B81. Wave b81 on `claude/b81-board`, PR #335.** PU-7m (a0bd6686: the practice licence
@@ -81,8 +83,10 @@ step.
   behind; the fix (delete the user's leftover books before the PUT) was the branch's second commit e895c1d0, and the dispatched deploy 35766211386
   (`ci-b79-probe`) still failed it with `Cleaned up 0 existing books`: the list route hides sandbox
   books past their `expiresAt` while the PUT's limit counts every book prefix, so the durable
-  test user sits at the limit on books it cannot see. An agent is reading the ci bucket and
-  fixing the layer that counts wrongly. The same deploy failed three sign-in probes with
+  test user sits at the limit on books it cannot see. The fix is the branch's third commit 3e7255af: the PUT's
+  limit counts what the list shows (`isBookVisible` in `s3DiyaGlRepository.js`), because the
+  probe user's prefix held 20 sandbox books of which several had expired under the earlier
+  24-hour retention; its deploy is in flight. The same deploy failed three sign-in probes with
   `redirect_mismatch`: only `ci-set1`, `ci-set2` and the apex are Cognito callback hosts, so a
   deployment under another name cannot prove a signed-in probe; `ci-b79-probe` and
   `ci-b80-probe` self-destruct four hours after creation. After the merge: repoint `NEXT.md` and `BACKLOG.md` on `main`, and
