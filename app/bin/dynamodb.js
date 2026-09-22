@@ -232,6 +232,49 @@ export async function ensureReceiptsTableExists(tableName, endpoint) {
   }
 }
 
+// Create practice clients table if it doesn't exist. Key schema matches
+// dynamoDbPracticeClientRepository.js: partition key is the practice's hashed sub, sort key is
+// the client's ULID (or the reserved "practice#profile" sentinel row holding the practice's ARN).
+export async function ensurePracticeClientsTableExists(tableName, endpoint) {
+  logger.info(`[dynamodb]: Ensuring practice clients table: '${tableName}' exists on endpoint '${endpoint}'`);
+
+  const clientConfig = {
+    endpoint,
+    region: "us-east-1",
+    credentials: {
+      accessKeyId: "dummy",
+      secretAccessKey: "dummy",
+    },
+  };
+  const dynamodb = new DynamoDBClient(clientConfig);
+
+  try {
+    await dynamodb.send(new DescribeTableCommand({ TableName: tableName }));
+    logger.info(`[dynamodb]: ✅ Table '${tableName}' already exists on endpoint '${endpoint}'`);
+  } catch (err) {
+    if (err.name === "ResourceNotFoundException") {
+      logger.info(`[dynamodb]: ℹ️ Table '${tableName}' not found on endpoint '${endpoint}', creating...`);
+      await dynamodb.send(
+        new CreateTableCommand({
+          TableName: tableName,
+          KeySchema: [
+            { AttributeName: "hashedSub", KeyType: "HASH" },
+            { AttributeName: "clientId", KeyType: "RANGE" },
+          ],
+          AttributeDefinitions: [
+            { AttributeName: "hashedSub", AttributeType: "S" },
+            { AttributeName: "clientId", AttributeType: "S" },
+          ],
+          BillingMode: "PAY_PER_REQUEST",
+        }),
+      );
+      logger.info(`[dynamodb]: ✅ Created table '${tableName}' on endpoint '${endpoint}'`);
+    } else {
+      throw new Error(`[dynamodb]: Failed to check/create table: ${err.message} on endpoint '${endpoint}'`);
+    }
+  }
+}
+
 // Create passes table if it doesn't exist
 export async function ensurePassesTableExists(tableName, endpoint) {
   logger.info(`[dynamodb]: Ensuring passes table: '${tableName}' exists on endpoint '${endpoint}'`);

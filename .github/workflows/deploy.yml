@@ -2325,6 +2325,33 @@ jobs:
     secrets:
       HMRC_SANDBOX_CLIENT_SECRET: ${{ secrets.HMRC_SANDBOX_CLIENT_SECRET }}
 
+  web-test-practice-licence-synthetic:
+    if: ${{ !cancelled() && needs.params.outputs.skipTestScenarios != 'true' && (github.event_name != 'schedule' || needs.names.outputs.live-head-is-current != 'true' || needs.params.outputs.isSkippingDeploy == 'true') }}
+    name: 'practiceLicenceBehaviour-${{ needs.names.outputs.environment-name }} via probe test'
+    needs:
+      - params
+      - names
+      - set-origins
+      - enable-native-auth
+      #- web-test-auth
+      #- web-test-token-enforcement
+      #- web-test-payment
+      #- web-test
+      - verify-api
+    uses: ./.github/workflows/probe-test.yml
+    permissions:
+      contents: read
+      packages: read
+      id-token: write
+    with:
+      environment-name: ${{ needs.names.outputs.environment-name }}
+      deployment-name: ${{ needs.names.outputs.deployment-name }}
+      behaviour-test-suite: 'practiceLicenceBehaviour'
+      generate-test-reports: 'false'
+      skip-native-auth-disable: 'true'
+    secrets:
+      HMRC_SANDBOX_CLIENT_SECRET: ${{ secrets.HMRC_SANDBOX_CLIENT_SECRET }}
+
   web-test-get-vat-return-synthetic:
     if: ${{ !cancelled() && needs.params.outputs.skipTestScenarios != 'true' && (github.event_name != 'schedule' || needs.names.outputs.live-head-is-current != 'true' || needs.params.outputs.isSkippingDeploy == 'true') }}
     name: 'getVatReturnBehaviour-${{ needs.names.outputs.environment-name }} via probe test'
@@ -2948,6 +2975,7 @@ jobs:
       - web-test-payment
       - web-test
       - web-test-post-vat-return-synthetic
+      - web-test-practice-licence-synthetic
       - web-test-get-vat-return-synthetic
       - web-test-obligation-synthetic
       - web-test-liability-synthetic
