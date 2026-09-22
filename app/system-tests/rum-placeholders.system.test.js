@@ -64,4 +64,3 @@ describe("RUM Placeholder Replacement", () => {
     expect(roleMatch[1]).toBe("${RUM_GUEST_ROLE_ARN}");
   });
 });
-
