@@ -205,12 +205,18 @@ async function handleInvoicePaid(invoice, { test = false } = {}) {
   const { hashedSub, bundleId } = subRecord;
   const tokensGranted = getCatalogTokensGranted(bundleId);
 
-  // Retrieve subscription for updated period info
-  let currentPeriodEnd = null;
+  // Retrieve subscription for updated period info. Start from the record's last known period
+  // end, not null: a failed retrieve, or one whose reply carries no current_period_end, must
+  // never overwrite a real value with nothing -- that would erase the renewal from
+  // dynamo_subscriptions (a MODIFY whose current_period_end moved forward is how the analytics
+  // view counts a renewal at all) and drop the bundle's expiry back to a 30-day guess below.
+  let currentPeriodEnd = subRecord.currentPeriodEnd ?? null;
   try {
     const stripe = await getStripeClient({ test });
     const subscription = await stripe.subscriptions.retrieve(subscriptionId);
-    currentPeriodEnd = subscription.current_period_end ? new Date(subscription.current_period_end * 1000).toISOString() : null;
+    if (subscription.current_period_end) {
+      currentPeriodEnd = new Date(subscription.current_period_end * 1000).toISOString();
+    }
   } catch (error) {
     logger.warn({ message: "Failed to retrieve subscription for token refresh", subscriptionId, error: error.message });
   }

@@ -310,6 +310,58 @@ describe("billingWebhookPost", () => {
     expect(mockUpdateSubscription).toHaveBeenCalledTimes(1);
   });
 
+  test("invoice.paid keeps the subscription record's last known period end when the Stripe retrieve fails", async () => {
+    mockGetSubscription.mockResolvedValue({
+      pk: "stripe#sub_test_456",
+      hashedSub: "hashed_sub_value",
+      bundleId: "resident-pro",
+      currentPeriodEnd: "2026-09-06T09:38:58.000Z",
+    });
+    mockSubscriptionsRetrieve.mockRejectedValue(new Error("Stripe API error"));
+
+    const payload = {
+      id: "evt_test_invoice_retrieve_failed",
+      type: "invoice.paid",
+      data: {
+        object: { id: "in_test_retrieve_failed", parent: { subscription_details: { subscription: "sub_test_456" } } },
+      },
+    };
+    mockWebhooksConstructEvent.mockReturnValue(payload);
+
+    const result = await ingestHandler(buildWebhookEvent(payload));
+
+    expect(result.statusCode).toBe(200);
+    const [, updates] = mockUpdateSubscription.mock.calls[0];
+    expect(updates.currentPeriodEnd).toBe("2026-09-06T09:38:58.000Z");
+    const [, , bundleUpdates] = mockUpdateBundleSubscriptionFields.mock.calls[0];
+    expect(bundleUpdates.currentPeriodEnd).toBe("2026-09-06T09:38:58.000Z");
+  });
+
+  test("invoice.paid keeps the subscription record's last known period end when Stripe's reply carries none", async () => {
+    mockGetSubscription.mockResolvedValue({
+      pk: "stripe#sub_test_456",
+      hashedSub: "hashed_sub_value",
+      bundleId: "resident-pro",
+      currentPeriodEnd: "2026-09-06T09:38:58.000Z",
+    });
+    mockSubscriptionsRetrieve.mockResolvedValue({ id: "sub_test_456" });
+
+    const payload = {
+      id: "evt_test_invoice_no_period_end",
+      type: "invoice.paid",
+      data: {
+        object: { id: "in_test_no_period_end", parent: { subscription_details: { subscription: "sub_test_456" } } },
+      },
+    };
+    mockWebhooksConstructEvent.mockReturnValue(payload);
+
+    const result = await ingestHandler(buildWebhookEvent(payload));
+
+    expect(result.statusCode).toBe(200);
+    const [, updates] = mockUpdateSubscription.mock.calls[0];
+    expect(updates.currentPeriodEnd).toBe("2026-09-06T09:38:58.000Z");
+  });
+
   test("invoice.paid refreshes tokens when the subscription is an expanded object", async () => {
     mockGetSubscription.mockResolvedValue({
       pk: "stripe#sub_test_456",
