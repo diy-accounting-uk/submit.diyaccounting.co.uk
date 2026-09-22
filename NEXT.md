@@ -16,9 +16,9 @@ runs), and for Claude Code steps the **Model** a sub-agent should use (Fable > O
 Haiku; the lowest tier that fits). Anything touching code goes through a `claude/*` branch and
 PR; the operator merges.
 
-**Prod runs deployment prod-486af0b** (PR #325's merge); main's deploy of PR #326's merge (fbead536) is
-in flight. **ci**: `ci-set2` is last-known-good; `ci-set1` carries PR #327's deploy. Open pull request: #327
-(`claude/b74-board`: PU-7g, PU-7k, PU-3, B58a), its ci deploy in flight.
+**Prod runs deployment prod-fbead53** (PR #326's merge). **ci**: `ci-set2` is last-known-good; `ci-set1`
+carried PR #327's deploy. PR #327 (`claude/b74-board`) is merging; `claude/b75-board` (nine rows, proofs
+green) pushes once a ci slot is free.
 **ci**: `ci-set1` is last-known-good. Open pull request: #326 (`claude/b73-board`: B30af.8), its ci deploy
 in flight.
 
@@ -69,6 +69,17 @@ step.
   **Size**: ~30 files across 5 rows after this wave.
 
 ## Machine-only
+
+- [ ] **B43c. A skipped scheduled deploy runs no probes.** The `11 4 * * *` run 35709546270 on
+  64c82119 (docs only) took B43a's exit at `skip deploy check`, and every probe suite then ran
+  against the live prod set as a `skipDeploy` run does (the `generate test pass for prod` and the
+  `*-prod via probe test` jobs), forty minutes of runners proving a set the scheduled
+  `probe-test.yml` already proves. In `deploy.yml`, gate the `generate-test-pass` and `web-test-*`
+  jobs (and their `enable-native-auth`/`disable` pair) on `needs.names.outputs.live-head-is-current
+  != 'true'` for `github.event_name == 'schedule'`, keeping them for a dispatched `skipDeploy` run,
+  whose purpose is the probes. Proof: the next scheduled run on an unchanged head ends within five
+  minutes with only `params`, `names`, `test` and the summary jobs. **Source**: run 35709546270;
+  BACKLOG 43. **Owner**: Claude Code. **Model**: Sonnet. **Size**: ~1 file.
 
 - [ ] **B30aq. `maven package` retries a Maven Central 429.** Deploy run 35703918781 on `main`
   (fbead536, a workflow-only change) failed in `mvn-package` (`deploy.yml` line 563 onward) because
