@@ -110,21 +110,6 @@ step.
   run dates and commit. Blocked on O11's day. **Source**: BACKLOG 11; `PLAN_ITSA_PHASE_2.md` T10.
   **Owner**: Claude Code. **Model**: Haiku. **Size**: ~1 file.
 
-- [ ] **B34.7. Run and fix the filing suites' sandbox sign-in.** `deploy.yml` and `probe-test.yml`
-  run the two filing suites only when the dispatch input `runCompaniesHouseSandboxFiling` is
-  `true`, and probe-test's guard step fails fast naming any of O17's four values that is empty.
-  Against a standing ci set, once O17 clears:
-  `gh workflow run probe-test.yml -f environment-name=ci -f deployment-name=<ci-set>
-  -f behaviour-test-suite=changeRegisteredOfficeBehaviour -f runCompaniesHouseSandboxFiling=true`;
-  then the same for `changeRegisteredEmailBehaviour`. The suite navigates the ci apex, which is the
-  registered redirect, so this runs before P4 moves the probes to the set's own host. The fix lands
-  in `behaviour-tests/steps/behaviour-companies-house-filing-steps.js`, whose
-  `authoriseWithCompaniesHouse` selectors (`#userId`, `#password`, `#companyAuthCode`,
-  `#givePermission`) are the simulator's own OAuth page and whose authenticator-challenge selectors
-  are a stated guess; the first run's screenshots under `target/` show the real One Login and
-  permission pages. **Source**: BACKLOG 34. **Owner**: Claude Code. **Model**: Sonnet. Blocked on
-  O17. **Size**: ~1 file.
-
 - [ ] **B34.6c. Companies House accounts filing: the sandbox proof.** When O34d's answer says
   lookups are enabled: poll 000004 through `GET /api/v1/companies-house/accounts/000004` on a
   standing ci set and pin the returned `StatusCode` and any rejections as a case in
@@ -187,21 +172,6 @@ step.
   sign-in, `save_book` writes F2d's verified book to the DIYA cloud, which is B52i's unblock event.
   Blocked on F2d. **Source**: `../PLAN_FINANCE_AUTOMATION.md` phase 2. **Owner**: Claude
   Code; the operator signs in. **Model**: Haiku. **Size**: 0 files.
-
-- [ ] **O17. A sandbox sign-in for the filing suites, and four ci values.** The sandbox has no
-  registration page and no create-user API; its sign-in is reached only through
-  `identity-sandbox.company-information.service.gov.uk/oauth2/authorise` with the "- test" client
-  and the registered ci apex redirect, which offers GOV.UK One Login or a Companies House email
-  sign-in. The blocker: `find-and-update-sandbox.company-information.service.gov.uk` answers no
-  connection (re-checked 2026-09-19; `identity-sandbox/user/register` redirects to
-  `/there-is-a-problem`), so the One Login route cannot complete. Retry that host; if it is still
-  dead after a day, post the host, URL and time on the Companies House developer forum
-  <https://forum.aws.chdev.org/>. When it answers: create a One Login with a plus-address and an
-  authenticator app, capturing the base32 secret, sign in once through the sandbox chooser, and set
-  on the GitHub `ci` environment the variable `TEST_COMPANIES_HOUSE_USER_ID` and the secrets
-  `TEST_COMPANIES_HOUSE_PASSWORD`, `TEST_COMPANIES_HOUSE_TOTP_SECRET` and
-  `COMPANIES_HOUSE_SANDBOX_API_KEY` (the "- test" REST key); none of the four is set today.
-  Unblocks B34.7. **Source**: BACKLOG 34. **Owner**: Operator. **Model**: none.
 
 ## Discipline
 
