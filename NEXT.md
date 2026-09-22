@@ -17,10 +17,10 @@ Haiku; the lowest tier that fits). Anything touching code goes through a `claude
 PR; the operator merges.
 
 **Prod runs deployment prod-cdbc557**.
-**ci**: `ci-set1` is last-known-good again (PR #333's content); `ci-set2` is self-destructing,
-which frees its slot claim. Open pull requests: #333
-(`claude/b79-developers`, redeploying to `ci-set1`), #334 (`claude/b80-board`, head f4770e0c),
-#335 (`claude/b81-board`, head cd8f56d8), #336 (`claude/b82-board`).
+**ci**: `ci-set1` is last-known-good (PR #333's content); `ci-set2` is being redeployed by PR #335's
+deploy rerun 35775629294 (13 probes running at 23:25 UTC). Open pull requests: #333
+(`claude/b79-developers`, head 3e7255af, green), #334 (`claude/b80-board`, head f4770e0c),
+#335 (`claude/b81-board`, head 858c8cd3), #336 (`claude/b82-board`, head c450180d).
 
 The board runs in five sections, in this order: **in flight** (a branch, a pull request or a run
 in motion, each named in the row), **machine-only**, **machine-ask**, **human-driven**,
@@ -71,9 +71,9 @@ and stop. One branch is driven green at a time. Lifted only by the operator in t
   practice licence simulator suite on a missing `mcp/node_modules` (the job never installed the
   MCP package); head 858c8cd3 adds that install and carries B30as (1a9ec71e: a `release-ci-slot`
   job at the end of `deploy.yml` deletes this run's claim unless the set is the ci LKG, with the
-  stale rule as backstop). Its `test` run is green; its deploy 35775629294 failed for want of a ci slot (`ci-set1`
-  claimed by PR #336's run, `ci-set2` by PR #334's ended run until 22:53 UTC), and its failed jobs rerun as soon as `ci-set2`'s self-destruct releases that
-  claim. The suite's ci and prod variants need a sandbox agent authorisation the simulator
+  stale rule as backstop). Its `test` run is green; its deploy 35775629294 first failed for want of a ci slot, and its
+  rerun claimed `ci-set2` at 23:05 UTC once PR #334's claim went stale: every stack is up and the
+  13 probes are running at 23:25 UTC. Green here is the branch's proof; the PR waits for wake. The suite's ci and prod variants need a sandbox agent authorisation the simulator
   shortcut has no equivalent for, so they run only when one exists. **Source**: the rows named.
   **Owner**: Claude Code. **Model**: Sonnet and Haiku. **Size**: ~16 files.
 - [ ] **PU-7. Practice licence build.** PU-7a to PU-7l are on `main`. In flight on
@@ -85,8 +85,11 @@ and stop. One branch is driven green at a time. Lifted only by the operator in t
 - [ ] **B80. Wave b80 on `claude/b80-board`, PR #334.** Three agents: AS8 (the two RUM deployed-environment skips out of the unit runner; AS1's
   coverage commit rejected, the finding on its own row), AS4 and AS7 (the ESLint config cleanup; the strict-mode TODO and warning
   comments), AS6 and AS5 (prettier and Spotless checks in `test.yml`, with the 218 files they reformat; the
-  lint job as a baseline ratchet at zero errors). Its `test` run went red on the new prettier check (one file the AS8 commit left unformatted);
-  the fix is committed and pushes when deploy 35761188691 ends. **Source**: the
+  lint job as a baseline ratchet at zero errors). Its `test` run is green on head f4770e0c (the prettier fix), but no deploy has run on that
+  head: the last deploy 35761188691 (9b633159) failed, and the two commits since touch no deploy
+  path. The head needs a slot deploy (`gh workflow run deploy.yml --ref claude/b80-board -f
+  deployment-name=ci-set1` when `ci-set1` is free, or a rerun after taking `main`) before the PR
+  is proven; it queues behind PR #335's rerun under cool-down. **Source**: the
   rows named. **Owner**: Claude Code. **Model**: Sonnet and Haiku. **Size**: ~10 files plus the
   directives.
 
