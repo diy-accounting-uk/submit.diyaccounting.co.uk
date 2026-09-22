@@ -61,9 +61,16 @@ vi.mock("@app/services/subHasher.js", () => ({
   hashSub: vi.fn((sub) => `hashed-${sub}`),
 }));
 
-const { createClient, getClient, listClients, archiveClient, generateClientId } = await import(
-  "@app/data/dynamoDbPracticeClientRepository.js"
-);
+const {
+  createClient,
+  getClient,
+  listClients,
+  archiveClient,
+  generateClientId,
+  getPracticeArn,
+  setPracticeArn,
+  setClientAuthorisation,
+} = await import("@app/data/dynamoDbPracticeClientRepository.js");
 
 describe("data/dynamoDbPracticeClientRepository", () => {
   beforeEach(() => {
@@ -168,5 +175,70 @@ describe("data/dynamoDbPracticeClientRepository", () => {
     mockSend.mockRejectedValueOnce(new ConditionalCheckFailedException("row not found"));
 
     await expect(archiveClient("practice-sub", "not-mine")).rejects.toThrow(ConditionalCheckFailedException);
+  });
+
+  test("listClients excludes the practice's own profile row from the client list", async () => {
+    mockSend.mockResolvedValueOnce({
+      Items: [
+        { clientId: "practice#profile", arn: "TARN0000001" },
+        { clientId: "c1", archivedAt: null },
+      ],
+    });
+
+    const clients = await listClients("practice-sub");
+
+    expect(clients.map((client) => client.clientId)).toEqual(["c1"]);
+  });
+
+  test("getPracticeArn reads the profile row's arn field", async () => {
+    mockSend.mockResolvedValueOnce({ Item: { hashedSub: "hashed-practice-sub", clientId: "practice#profile", arn: "TARN0000001" } });
+
+    const arn = await getPracticeArn("practice-sub");
+
+    expect(mockGetCommand.mock.calls[0][0].Key).toEqual({ hashedSub: "hashed-practice-sub", clientId: "practice#profile" });
+    expect(arn).toBe("TARN0000001");
+  });
+
+  test("getPracticeArn answers null when the practice has never set one", async () => {
+    mockSend.mockResolvedValueOnce({});
+
+    const arn = await getPracticeArn("practice-sub");
+
+    expect(arn).toBeNull();
+  });
+
+  test("setPracticeArn writes the arn onto the profile row", async () => {
+    const stored = await setPracticeArn("practice-sub", "TARN0000001");
+
+    const item = mockPutCommand.mock.calls[0][0].Item;
+    expect(item.hashedSub).toBe("hashed-practice-sub");
+    expect(item.clientId).toBe("practice#profile");
+    expect(item.arn).toBe("TARN0000001");
+    expect(stored.arn).toBe("TARN0000001");
+  });
+
+  test("setClientAuthorisation writes one service's state onto the client row", async () => {
+    mockSend.mockResolvedValueOnce({
+      Attributes: { clientId: "c1", authorisations: { "MTD-VAT": { status: "pending", invitationId: "inv-1" } } },
+    });
+
+    const updated = await setClientAuthorisation("practice-sub", "c1", "MTD-VAT", { status: "pending", invitationId: "inv-1" });
+
+    expect(mockUpdateCommand.mock.calls[0][0].Key).toEqual({ hashedSub: "hashed-practice-sub", clientId: "c1" });
+    expect(mockUpdateCommand.mock.calls[0][0].UpdateExpression).toBe("SET authorisations.#service = :authorisation");
+    expect(mockUpdateCommand.mock.calls[0][0].ExpressionAttributeNames).toEqual({ "#service": "MTD-VAT" });
+    expect(mockUpdateCommand.mock.calls[0][0].ExpressionAttributeValues[":authorisation"]).toMatchObject({
+      status: "pending",
+      invitationId: "inv-1",
+    });
+    expect(updated.authorisations["MTD-VAT"].status).toBe("pending");
+  });
+
+  test("setClientAuthorisation throws when the client does not belong to this practice", async () => {
+    mockSend.mockRejectedValueOnce(new ConditionalCheckFailedException("row not found"));
+
+    await expect(setClientAuthorisation("practice-sub", "not-mine", "MTD-VAT", { status: "pending" })).rejects.toThrow(
+      ConditionalCheckFailedException,
+    );
   });
 });

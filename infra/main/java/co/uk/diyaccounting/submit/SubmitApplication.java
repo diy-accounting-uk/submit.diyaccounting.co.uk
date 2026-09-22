@@ -60,6 +60,7 @@ public class SubmitApplication {
         public String hmrcSandboxClientId;
         public String hmrcSandboxClientSecretArn;
         public String hmrcSandboxBaseUri;
+        public String hmrcAgentAuthorisationBaseUri;
         public String companiesHouseBaseUri;
         public String companiesHouseApiKeyArn;
         public String companiesHouseFilingBaseUri;
@@ -423,6 +424,10 @@ public class SubmitApplication {
                         .githubAppId(githubAppId != null ? githubAppId : "")
                         .githubAppInstallationId(githubAppInstallationId != null ? githubAppInstallationId : "")
                         .feedbackEngagementEnabled("true".equalsIgnoreCase(appProps.feedbackEngagementEnabled))
+                        .hmrcAgentAuthorisationBaseUri(
+                                appProps.hmrcAgentAuthorisationBaseUri != null
+                                        ? appProps.hmrcAgentAuthorisationBaseUri
+                                        : "")
                         .build());
 
         // Create the BillingStack

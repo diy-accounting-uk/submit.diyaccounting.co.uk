@@ -30,6 +30,7 @@
     "hmrcSandboxClientId": "uqMHA6RsDGGa7h8EG2VqfqAmv4tV",
     "hmrcSandboxBaseUri": "https://test-api.service.hmrc.gov.uk",
     "hmrcSandboxApiProxyEgressUrl": "https://test-api.service.hmrc.gov.uk",
+    "hmrcAgentAuthorisationBaseUri": "https://api.service.hmrc.gov.uk",
     "companiesHouseBaseUri": "https://api.company-information.service.gov.uk",
     "companiesHouseApiKeyArn": "",
     "_comment_companiesHouseFiling": "Filing OAuth config is per-environment, from .env.ci/.env.prod - these defaults stay blank",

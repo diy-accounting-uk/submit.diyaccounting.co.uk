@@ -40,7 +40,8 @@ class AccountStackTest {
                 .cloudTrailEnabled("false")
                 .sharedNames(sharedNames)
                 .baseImageTag("latest")
-                .cognitoUserPoolArn("arn:aws:cognito-idp:eu-west-2:111111111111:userpool/eu-west-2_TestPool");
+                .cognitoUserPoolArn("arn:aws:cognito-idp:eu-west-2:111111111111:userpool/eu-west-2_TestPool")
+                .hmrcAgentAuthorisationBaseUri("https://test-api.service.hmrc.gov.uk");
         if (githubAppId != null) {
             builder.githubAppId(githubAppId).githubAppInstallationId(TEST_GITHUB_APP_INSTALLATION_ID);
         }

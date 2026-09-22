@@ -14,6 +14,12 @@ import crypto from "crypto";
 
 const logger = createLogger({ source: "app/data/dynamoDbPracticeClientRepository.js" });
 
+// PU-7a's table is keyed by the practice's hashed sub and a client id, with no index reading
+// clientId alone. A practice-level attribute (the HMRC agent reference number) has no client to
+// key on, so it lives in a sentinel row in the same table under this reserved clientId - never a
+// value a generated ULID can collide with, since a ULID never contains "#".
+const PROFILE_CLIENT_ID = "practice#profile";
+
 // Crockford base32: no I, L, O, U, so a client id is never misread as a different one when
 // transcribed by hand.
 const ULID_ENCODING = "0123456789ABCDEFGHJKMNPQRSTVWXYZ";
@@ -146,7 +152,7 @@ export async function listClients(practiceSub, { includeArchived = false } = {})
       }),
   );
 
-  const items = response.Items || [];
+  const items = (response.Items || []).filter((item) => item.clientId !== PROFILE_CLIENT_ID);
   logger.info({ message: "Queried DynamoDB for practice clients", hashedSub, itemCount: items.length });
 
   return includeArchived ? items : items.filter((item) => !item.archivedAt);
@@ -182,5 +188,93 @@ export async function archiveClient(practiceSub, clientId) {
   );
 
   logger.info({ message: "Client archived", hashedSub, clientId });
+  return result.Attributes;
+}
+
+/**
+ * Reads the practice's HMRC agent reference number (ARN) from its profile row. Returns null when
+ * the practice has never set one.
+ *
+ * @param {string} practiceSub - the practice's raw Cognito sub
+ * @returns {Promise<string|null>}
+ */
+export async function getPracticeArn(practiceSub) {
+  const hashedSub = hashSub(practiceSub);
+  const tableName = getResourceName("PRACTICE_CLIENTS_DYNAMODB_TABLE_NAME");
+  logger.info({ message: `getPracticeArn [table: ${tableName}]`, hashedSub });
+
+  const result = await executeDynamoDbCommand(
+    (module) =>
+      new module.GetCommand({
+        TableName: tableName,
+        Key: { hashedSub, clientId: PROFILE_CLIENT_ID },
+      }),
+  );
+
+  return result.Item?.arn || null;
+}
+
+/**
+ * Stores the practice's HMRC agent reference number (ARN) on its profile row, creating the row
+ * on first use. No client credential is ever stored alongside it (PLAN_PRICE_UPDATE.md (d), "The
+ * authorisation flow").
+ *
+ * @param {string} practiceSub - the practice's raw Cognito sub
+ * @param {string} arn
+ * @returns {Promise<object>} the stored profile row
+ */
+export async function setPracticeArn(practiceSub, arn) {
+  const hashedSub = hashSub(practiceSub);
+  const tableName = getResourceName("PRACTICE_CLIENTS_DYNAMODB_TABLE_NAME");
+  logger.info({ message: `setPracticeArn [table: ${tableName}]`, hashedSub });
+
+  const now = new Date().toISOString();
+  const item = { hashedSub, clientId: PROFILE_CLIENT_ID, arn, updatedAt: now };
+
+  await executeDynamoDbCommand(
+    (module) =>
+      new module.PutCommand({
+        TableName: tableName,
+        Item: item,
+      }),
+  );
+
+  logger.info({ message: "Practice ARN stored", hashedSub });
+  return item;
+}
+
+/**
+ * Writes one HMRC service's authorisation state onto a client row (PLAN_PRICE_UPDATE.md (d), "The
+ * authorisation flow": "we store the ARN on the practice, and per client the service, the
+ * invitation id, the last status and when we read it"). Refuses when the client does not belong
+ * to this practice.
+ *
+ * @param {string} practiceSub - the practice's raw Cognito sub
+ * @param {string} clientId
+ * @param {string} service - e.g. "MTD-VAT" or "MTD-IT"
+ * @param {object} authorisation - e.g. { status, invitationId }
+ * @returns {Promise<object>} the updated client row
+ * @throws {Error} with `name === "ConditionalCheckFailedException"` when the client is not found
+ */
+export async function setClientAuthorisation(practiceSub, clientId, service, authorisation) {
+  const hashedSub = hashSub(practiceSub);
+  const tableName = getResourceName("PRACTICE_CLIENTS_DYNAMODB_TABLE_NAME");
+  logger.info({ message: `setClientAuthorisation [table: ${tableName}]`, hashedSub, clientId, service });
+
+  const checkedAt = new Date().toISOString();
+  const result = await executeDynamoDbCommand(
+    (module) =>
+      new module.UpdateCommand({
+        TableName: tableName,
+        Key: { hashedSub, clientId },
+        UpdateExpression: "SET authorisations.#service = :authorisation",
+        ConditionExpression: "attribute_exists(clientId)",
+        ExpressionAttributeNames: { "#service": service },
+        ExpressionAttributeValues: { ":authorisation": { ...authorisation, checkedAt } },
+        ReturnValues: "ALL_NEW",
+      }),
+  );
+
+  logger.info({ message: "Client authorisation updated", hashedSub, clientId, service });
   return result.Attributes;
 }
