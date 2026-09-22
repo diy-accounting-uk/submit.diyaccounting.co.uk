@@ -16,7 +16,7 @@ runs), and for Claude Code steps the **Model** a sub-agent should use (Fable > O
 Haiku; the lowest tier that fits). Anything touching code goes through a `claude/*` branch and
 PR; the operator merges.
 
-**Prod runs deployment prod-cdbc557**; main's deploy of PR #332's merge (3276cc16) is in flight.
+**Prod runs deployment prod-cdbc557**.
 **ci**: `ci-set1` is last-known-good. Open pull request: #333 (`claude/b79-developers`), its ci deploy in flight.
 
 The board runs in five sections, in this order: **in flight** (a branch, a pull request or a run
@@ -69,12 +69,19 @@ step.
   has reached the tier's book limit because runs that failed mid-way today left their books
   behind; the fix (delete the user's leftover books before the PUT) lands as a second commit and
   redeploys. After the merge: repoint `NEXT.md` and `BACKLOG.md` on `main`, and
-  land AS15 and AS18, which touch the same files. The spreadsheets move is spreadsheets PR #133 (76 files out,
-  `hmrc-references/` kept) and the www move is www PR #32 (one file out); both merge through
-  their own checks. **Source**: operator 2026-09-22. **Owner**: Claude
+  land AS15 and AS18, which touch the same files. The spreadsheets move (PR #133) is merged; the www move is www PR #32,
+  green and merging. **Source**: operator 2026-09-22. **Owner**: Claude
   Code. **Model**: Sonnet. **Size**: 262 files.
 
 ## Machine-only
+
+- [ ] **AS15. A dead-code pass with knip.** The assessment's dead-code scan used `ts-prune` on
+  a JavaScript tree and reported zero, which is "not analysed". Run `npx knip` once at the root
+  (a `knip.json` naming `app/bin/server.js`, the Lambda handlers under `app/functions/**` and the
+  `mcp/` package as entries, so handlers are not reported as unused), read every finding against
+  the code, and delete what is dead in one commit; anything ambiguous becomes a row here with the
+  finding quoted. No CI gate. **Source**: the AI-readiness assessment of 2026-09-18 (`.assess/assess-report.md` on the `bjcoombs` fork at 45bcc054). **Owner**: Claude Code. **Model**: Haiku.
+  **Size**: ~1 file plus the deletions.
 
 - [ ] **AS1. Coverage collection finds no files, so no gate can fire.** `vitest.config.js`
   declares the thresholds under `coverage.threshold` (Vitest 4 reads `thresholds`), and renaming
@@ -101,14 +108,6 @@ step.
   explains its absence. Proof: `npx vitest run app/system-tests` green with strict validation on.
   **Source**: b80's AS7 run, 2026-09-22. **Owner**: Claude Code. **Model**: Haiku. **Size**: ~2
   files.
-
-- [ ] **AS15. A dead-code pass with knip.** The assessment's dead-code scan used `ts-prune` on
-  a JavaScript tree and reported zero, which is "not analysed". Run `npx knip` once at the root
-  (a `knip.json` naming `app/bin/server.js`, the Lambda handlers under `app/functions/**` and the
-  `mcp/` package as entries, so handlers are not reported as unused), read every finding against
-  the code, and delete what is dead in one commit; anything ambiguous becomes a row here with the
-  finding quoted. No CI gate. **Source**: the AI-readiness assessment of 2026-09-18 (`.assess/assess-report.md` on the `bjcoombs` fork at 45bcc054). **Owner**: Claude Code. **Model**: Haiku.
-  **Size**: ~1 file plus the deletions.
 
 - [ ] **AS18. One assistant guide, aligned with CLAUDE.md.** Junie is no longer used: delete
   `.junie/guidelines.md` and `_developers/Junie.md`, and the "Other AI assistants" lines in
