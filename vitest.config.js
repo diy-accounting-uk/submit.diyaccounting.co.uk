@@ -21,45 +21,34 @@ export default defineConfig(({ mode }) => {
   const env = process.env;
 
   return {
+    resolve: {
+      alias: {
+        "@dist": path.resolve(process.cwd(), "dist"),
+        "@app": path.resolve(process.cwd(), "app"),
+      },
+    },
     test: {
       env,
-      projects: [
-        {
-          name: "default",
-          environment: "node",
-          // Limit workers without CLI flags
-          pool: "forks",
-          poolOptions: { forks: { minForks: 1, maxForks: 1 } },
+      environment: "node",
+      // Limit workers without CLI flags
+      pool: "forks",
+      maxWorkers: 1,
+      minWorkers: 1,
 
-          // Disable file-level parallelism and concurrent tests
-          // fileParallelism: false, // run test files sequentially
-          // sequence: { concurrent: false }, // run tests in a file sequentially
+      // Disable file-level parallelism and concurrent tests
+      // fileParallelism: false, // run test files sequentially
+      // sequence: { concurrent: false }, // run tests in a file sequentially
 
-          // pool: "threads",
-          // poolOptions: {
-          //  threads: { minThreads: 1, maxThreads: 1 },
-          //  forks: { minForks: 1, maxForks: 1 },
-          //  vmThreads: { minThreads: 1, maxThreads: 1 },
-          // },
-          resolve: {
-            alias: {
-              "@dist": path.resolve(process.cwd(), "dist"),
-              "@app": path.resolve(process.cwd(), "app"),
-            },
-          },
-          include: ["app/unit-tests/*.test.js", "app/unit-tests/**/*.test.js", "app/system-tests/*.test.js", "web/unit-tests/*.test.js"],
-          exclude: [
-            "app/bin/*",
-            "app/test-helpers/*",
-            "app/unit-tests/lib/*",
-            "app/functions/non-lambda-mocks/*",
-            "web/browser-tests/*.test.js",
-            "manually-run-tests/*.test.js",
-            "behaviour-tests/*.test.js",
-            "**/node_modules/**",
-            "**/.claude/**",
-          ],
-        },
+      include: ["app/unit-tests/*.test.js", "app/unit-tests/**/*.test.js", "app/system-tests/*.test.js", "web/unit-tests/*.test.js"],
+      exclude: [
+        "app/bin/*",
+        "app/test-helpers/*",
+        "app/functions/non-lambda-mocks/*",
+        "web/browser-tests/*.test.js",
+        "manually-run-tests/*.test.js",
+        "behaviour-tests/*.test.js",
+        "**/node_modules/**",
+        "**/.claude/**",
       ],
       coverage: {
         provider: "v8",
@@ -69,7 +58,6 @@ export default defineConfig(({ mode }) => {
         exclude: [
           "app/bin/*",
           "app/test-helpers/*",
-          "app/unit-tests/lib/*",
           "app/functions/non-lambda-mocks/*",
           "**/dist/**",
           "**/entrypoint/**",
@@ -81,21 +69,15 @@ export default defineConfig(({ mode }) => {
           "manually-run-tests/*.test.js",
           "behaviour-tests/*.test.js",
           "**/node_modules/**",
-          "**/.claude/**",
           "app/index.js",
           "**/exports/**",
         ],
-        threshold: {
-          statements: 85,
-          branches: 80,
-          functions: 75,
-          lines: 85,
-          perFile: {
-            statements: 70,
-            branches: 60,
-            functions: 40,
-            lines: 70,
-          },
+        thresholds: {
+          statements: 76,
+          branches: 68,
+          functions: 86,
+          lines: 77,
+          perFile: false,
         },
       },
     },
