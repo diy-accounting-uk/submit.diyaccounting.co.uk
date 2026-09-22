@@ -131,6 +131,7 @@ describe("the server", () => {
       "open_book",
       "poll_accounts_submission",
       "preview_micro_entity_accounts",
+      "run_for_clients",
       "save_book",
       "submit_micro_entity_accounts",
       "submit_vat_return",
