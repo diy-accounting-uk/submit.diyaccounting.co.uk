@@ -44,7 +44,7 @@ export default [
       "sonarjs/cognitive-complexity": ["error", 40],
       // Do not complain about TODO comments
       "sonarjs/todo-tag": "off",
-      "no-warning-comments": "off",
+      "no-warning-comments": ["warn", { terms: ["todo", "fixme"], location: "start" }],
 
       // Formatting and organisation
       "no-unused-vars": ["error", { argsIgnorePattern: "^_" }],
