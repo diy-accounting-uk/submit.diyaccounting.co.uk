@@ -24,6 +24,10 @@ on:
         required: false
         default: true
         type: boolean
+      issue_number:
+        description: 'Assign Copilot to this existing issue instead of creating one'
+        required: false
+        type: string
   schedule:
     - cron: '0 6 * * 1' # Monday 06:00 UTC; the env block below supplies every input the schedule lacks
 
@@ -35,6 +39,7 @@ env:
 jobs:
   check-existing:
     name: 'Check for Existing Security Issues'
+    if: ${{ !inputs.issue_number }}
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -199,93 +204,220 @@ jobs:
   assign-copilot:
     name: 'Assign to Copilot Agent'
     needs: [check-existing, create-issue]
-    if: needs.check-existing.outputs.should_create == 'true'
+    if: |
+      always() &&
+      (
+        (inputs.issue_number != '' && inputs.issue_number != null && needs.create-issue.result == 'skipped') ||
+        (needs.check-existing.outputs.should_create == 'true' && needs.create-issue.result == 'success')
+      )
     runs-on: ubuntu-latest
     permissions:
       contents: read
       issues: write
     steps:
-      # Assigning the Copilot coding agent through the App is unproven; a permission error from
-      # replaceActorsForAssignable on the next run means the job goes, since this assignment
-      # is the token's only use.
+      - name: Resolve target issue
+        id: resolve-issue
+        uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9
+        with:
+          script: |
+            const dispatchedIssueNumber = '${{ inputs.issue_number }}';
+
+            if (dispatchedIssueNumber) {
+              const { data: issue } = await github.rest.issues.get({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: Number(dispatchedIssueNumber)
+              });
+              core.setOutput('issue_id', issue.node_id);
+              core.setOutput('issue_number', issue.number.toString());
+              core.setOutput('issue_url', issue.html_url);
+            } else {
+              core.setOutput('issue_id', '${{ needs.create-issue.outputs.issue_id }}');
+              core.setOutput('issue_number', '${{ needs.create-issue.outputs.issue_number }}');
+              core.setOutput('issue_url', '${{ needs.create-issue.outputs.issue_url }}');
+            }
+
+      # The workflow's own GITHUB_TOKEN goes first: run 35598208062 showed the App token's
+      # suggestedActors call never lists copilot-swe-agent at all (only human collaborators),
+      # so the App has no route to the actor regardless of what the mutation does with it.
+      - name: Assign issue to Copilot (workflow token)
+        id: assign-workflow-token
+        continue-on-error: true
+        uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9
+        with:
+          script: |
+            const issueId = '${{ steps.resolve-issue.outputs.issue_id }}';
+            const issueNumber = ${{ steps.resolve-issue.outputs.issue_number }};
+
+            const actorsQuery = `
+              query($owner: String!, $name: String!) {
+                repository(owner: $owner, name: $name) {
+                  suggestedActors(capabilities: [CAN_BE_ASSIGNED], first: 100) {
+                    nodes {
+                      login
+                      __typename
+                      ... on Bot { id }
+                      ... on User { id }
+                    }
+                  }
+                }
+              }
+            `;
+
+            const actorsResult = await github.graphql(actorsQuery, {
+              owner: context.repo.owner,
+              name: context.repo.repo
+            });
+
+            const suggestedLogins = actorsResult.repository.suggestedActors.nodes.map(n => n.login);
+            console.log('Suggested actors (workflow token):', suggestedLogins);
+
+            const copilotBot = actorsResult.repository.suggestedActors.nodes.find(
+              actor => actor.login === '${{ env.COPILOT_AGENT_LOGIN }}'
+            );
+
+            if (!copilotBot) {
+              core.setOutput('assigned', 'false');
+              core.setOutput('reason', 'actor-not-suggested');
+              return;
+            }
+
+            const assignMutation = `
+              mutation($assignableId: ID!, $actorIds: [ID!]!) {
+                replaceActorsForAssignable(input: {
+                  assignableId: $assignableId,
+                  actorIds: $actorIds
+                }) {
+                  assignable {
+                    ... on Issue {
+                      assignees(first: 5) {
+                        nodes { login }
+                      }
+                    }
+                  }
+                }
+              }
+            `;
+
+            const assignResult = await github.graphql(assignMutation, {
+              assignableId: issueId,
+              actorIds: [copilotBot.id]
+            });
+
+            const assignees = assignResult.replaceActorsForAssignable.assignable.assignees.nodes.map(n => n.login);
+            console.log('Assignees after mutation (workflow token):', assignees);
+
+            if (assignees.includes('${{ env.COPILOT_AGENT_LOGIN }}')) {
+              core.setOutput('assigned', 'true');
+              console.log(`Assigned issue #${issueNumber} to ${{ env.COPILOT_AGENT_LOGIN }}`);
+            } else {
+              core.setOutput('assigned', 'false');
+              core.setOutput('reason', 'mutation-left-assignee-absent');
+            }
+
       - name: Mint an App token
         id: app-token
+        if: steps.assign-workflow-token.outputs.assigned != 'true'
         uses: actions/create-github-app-token@fee1f7d63c2ff003460e3d139729b119787bc349 # v2.2.2
         with:
           app-id: ${{ vars.AGENT_APP_ID }}
           private-key: ${{ secrets.AGENT_APP_PRIVATE_KEY }}
 
-      - name: Assign issue to Copilot
+      - name: Assign issue to Copilot (GitHub App token)
+        id: assign-app-token
+        if: steps.assign-workflow-token.outputs.assigned != 'true'
+        continue-on-error: true
         uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9
         with:
           github-token: ${{ steps.app-token.outputs.token }}
           script: |
-            const issueId = '${{ needs.create-issue.outputs.issue_id }}';
-            const issueNumber = ${{ needs.create-issue.outputs.issue_number }};
+            const issueId = '${{ steps.resolve-issue.outputs.issue_id }}';
+            const issueNumber = ${{ steps.resolve-issue.outputs.issue_number }};
 
-            try {
-              const actorsQuery = `
-                query($owner: String!, $name: String!) {
-                  repository(owner: $owner, name: $name) {
-                    suggestedActors(capabilities: [CAN_BE_ASSIGNED], first: 100) {
-                      nodes {
-                        login
-                        __typename
-                        ... on Bot { id }
-                        ... on User { id }
-                      }
+            const actorsQuery = `
+              query($owner: String!, $name: String!) {
+                repository(owner: $owner, name: $name) {
+                  suggestedActors(capabilities: [CAN_BE_ASSIGNED], first: 100) {
+                    nodes {
+                      login
+                      __typename
+                      ... on Bot { id }
+                      ... on User { id }
                     }
                   }
                 }
-              `;
-
-              const actorsResult = await github.graphql(actorsQuery, {
-                owner: context.repo.owner,
-                name: context.repo.repo
-              });
-
-              const copilotBot = actorsResult.repository.suggestedActors.nodes.find(
-                actor => actor.login === '${{ env.COPILOT_AGENT_LOGIN }}'
-              );
-
-              if (!copilotBot) {
-                console.log('Copilot agent not found in suggested actors');
-                console.log('Available:', actorsResult.repository.suggestedActors.nodes.map(n => n.login));
-                return;
               }
+            `;
 
-              const assignMutation = `
-                mutation($assignableId: ID!, $actorIds: [ID!]!) {
-                  replaceActorsForAssignable(input: {
-                    assignableId: $assignableId,
-                    actorIds: $actorIds
-                  }) {
-                    assignable {
-                      ... on Issue {
-                        assignees(first: 5) {
-                          nodes { login }
-                        }
-                      }
-                    }
-                  }
-                }
-              `;
+            const actorsResult = await github.graphql(actorsQuery, {
+              owner: context.repo.owner,
+              name: context.repo.repo
+            });
 
-              await github.graphql(assignMutation, {
-                assignableId: issueId,
-                actorIds: [copilotBot.id]
-              });
+            const suggestedLogins = actorsResult.repository.suggestedActors.nodes.map(n => n.login);
+            console.log('Suggested actors (App token):', suggestedLogins);
 
-              console.log(`Assigned issue #${issueNumber} to ${{ env.COPILOT_AGENT_LOGIN }}`);
+            const copilotBot = actorsResult.repository.suggestedActors.nodes.find(
+              actor => actor.login === '${{ env.COPILOT_AGENT_LOGIN }}'
+            );
 
-            } catch (error) {
-              console.log(`Assignment failed (non-critical): ${error.message}`);
+            if (!copilotBot) {
+              core.setOutput('assigned', 'false');
+              core.setOutput('reason', 'actor-not-suggested');
+              return;
             }
 
+            const assignMutation = `
+              mutation($assignableId: ID!, $actorIds: [ID!]!) {
+                replaceActorsForAssignable(input: {
+                  assignableId: $assignableId,
+                  actorIds: $actorIds
+                }) {
+                  assignable {
+                    ... on Issue {
+                      assignees(first: 5) {
+                        nodes { login }
+                      }
+                    }
+                  }
+                }
+              }
+            `;
+
+            const assignResult = await github.graphql(assignMutation, {
+              assignableId: issueId,
+              actorIds: [copilotBot.id]
+            });
+
+            const assignees = assignResult.replaceActorsForAssignable.assignable.assignees.nodes.map(n => n.login);
+            console.log('Assignees after mutation (App token):', assignees);
+
+            if (assignees.includes('${{ env.COPILOT_AGENT_LOGIN }}')) {
+              core.setOutput('assigned', 'true');
+              console.log(`Assigned issue #${issueNumber} to ${{ env.COPILOT_AGENT_LOGIN }}`);
+            } else {
+              core.setOutput('assigned', 'false');
+              core.setOutput('reason', 'mutation-left-assignee-absent');
+            }
+
+      - name: Fail if Copilot was not assigned
+        if: steps.assign-workflow-token.outputs.assigned != 'true' && steps.assign-app-token.outputs.assigned != 'true'
+        uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9
+        with:
+          script: |
+            const workflowReason = '${{ steps.assign-workflow-token.outputs.reason }}' || '${{ steps.assign-workflow-token.outcome }}';
+            const appReason = '${{ steps.assign-app-token.outputs.reason }}' || '${{ steps.assign-app-token.outcome }}';
+            core.setFailed(
+              `Copilot was not assigned to issue #${{ steps.resolve-issue.outputs.issue_number }}. ` +
+              `Workflow token: ${workflowReason}. App token: ${appReason}.`
+            );
+
       - name: Summary
+        if: always()
         run: |
-          echo "## Security Review Issue Created"
+          echo "## Security Review Issue"
           echo ""
-          echo "**Issue:** #${{ needs.create-issue.outputs.issue_number }}"
-          echo "**URL:** ${{ needs.create-issue.outputs.issue_url }}"
+          echo "**Issue:** #${{ steps.resolve-issue.outputs.issue_number }}"
+          echo "**URL:** ${{ steps.resolve-issue.outputs.issue_url }}"
           echo "**Assigned to:** ${{ env.COPILOT_AGENT_LOGIN }}"
+          echo "**Assigned via:** ${{ steps.assign-workflow-token.outputs.assigned == 'true' && 'workflow token' || (steps.assign-app-token.outputs.assigned == 'true' && 'App token' || 'not assigned') }}"
