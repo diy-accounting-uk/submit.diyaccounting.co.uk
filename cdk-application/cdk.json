@@ -17,6 +17,7 @@
     "userPoolArn": "",
     "userPoolClientId": "",
     "diyaGlUserPoolClientId": "",
+    "mcpUserPoolClientId": "",
     "cloudTrailEnabled": "true",
     "subDomainName": "submit",
     "baseImageTag": "latest",

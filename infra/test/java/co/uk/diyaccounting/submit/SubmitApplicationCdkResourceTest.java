@@ -472,6 +472,49 @@ class SubmitApplicationCdkResourceTest {
                 thrown.getMessage().contains("spreadsheets-diya-gl-app-client-id"));
     }
 
+    @Test
+    void mcpUserPoolClientIdStaysEmptyWhenNotSet() throws IOException {
+        Path cdkJsonPath = Path.of("cdk-application/cdk.json").toAbsolutePath();
+        Map<String, Object> ctx = buildContextPropertyMapFromCdkJsonPath(cdkJsonPath);
+        App app = new App(AppProps.builder().context(ctx).build());
+        SubmitApplication.SubmitApplicationProps appProps = SubmitApplication.loadAppProps(app, "cdk-application/");
+
+        // No COGNITO_MCP_CLIENT_ID is set by the class-level environment variables above, and
+        // mcpUserPoolClientId is blank in cdk.json, so this must synth without throwing (unlike
+        // the DIYA-GL client id above) and the books authoriser's audience must carry only the
+        // DIYA-GL client id, with no blank entry added for the unset MCP one.
+        var submitApplication = new SubmitApplication(app, appProps);
+        Template apiStackTemplate = Template.fromStack(submitApplication.apiStack);
+
+        apiStackTemplate.hasResourceProperties(
+                "AWS::ApiGatewayV2::Authorizer",
+                Match.objectLike(Map.of(
+                        "JwtConfiguration",
+                        Match.objectLike(Map.of("Audience", List.of("tt-witheight-cognito-books-client-id"))))));
+    }
+
+    @Test
+    @SetEnvironmentVariable(key = "COGNITO_MCP_CLIENT_ID", value = "tt-witheight-cognito-mcp-client-id")
+    void mcpUserPoolClientIdJoinsTheBooksAuthoriserAudienceWhenSet() throws IOException {
+        Path cdkJsonPath = Path.of("cdk-application/cdk.json").toAbsolutePath();
+        Map<String, Object> ctx = buildContextPropertyMapFromCdkJsonPath(cdkJsonPath);
+        App app = new App(AppProps.builder().context(ctx).build());
+        SubmitApplication.SubmitApplicationProps appProps = SubmitApplication.loadAppProps(app, "cdk-application/");
+
+        var submitApplication = new SubmitApplication(app, appProps);
+        Template apiStackTemplate = Template.fromStack(submitApplication.apiStack);
+
+        apiStackTemplate.hasResourceProperties(
+                "AWS::ApiGatewayV2::Authorizer",
+                Match.objectLike(Map.of(
+                        "JwtConfiguration",
+                        Match.objectLike(Map.of(
+                                "Audience",
+                                List.of(
+                                        "tt-witheight-cognito-books-client-id",
+                                        "tt-witheight-cognito-mcp-client-id"))))));
+    }
+
     /**
      * A DIYA-GL book write carries a zip far larger than the 8KB CloudFront lets WAF inspect, so
      * the managed SizeRestrictions_BODY rule blocked every save before it reached API Gateway. The

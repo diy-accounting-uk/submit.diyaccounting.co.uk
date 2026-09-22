@@ -56,6 +56,9 @@ outputs:
   cognito-diya-gl-client-id:
     description: "Cognito User Pool Client ID for the spreadsheets DIYA-GL pages (selected by ClientName)"
     value: ${{ steps.cognito.outputs.DIYA_GL_CLIENT_ID }}
+  cognito-mcp-client-id:
+    description: "Cognito User Pool Client ID for the submission MCP (selected by ClientName); empty when not found"
+    value: ${{ steps.cognito.outputs.MCP_CLIENT_ID }}
   http-api-id:
     description: "API Gateway HTTP API ID"
     value: ${{ steps.api-gateway.outputs.HTTP_API_ID }}
@@ -167,10 +170,25 @@ runs:
           echo "Found DIYA-GL Client ID: ${DIYA_GL_CLIENT_ID}"
         fi
 
+        # The submission MCP's own client, created by IdentityStack alongside the DIYA-GL one.
+        # Its audience entry is optional (ApiStack's booksJwtAuthorizer only adds it when
+        # non-blank), so unlike the DIYA-GL lookup above this one never retries or fails the
+        # workflow: a not-yet-created or not-found client simply resolves to an empty id.
+        MCP_CLIENT_NAME="${{ inputs.environment-name }}-env-mcp-client"
+        MCP_CLIENT_ID=$(aws cognito-idp list-user-pool-clients \
+          --user-pool-id "${USER_POOL_ID}" \
+          --query "UserPoolClients[?ClientName=='${MCP_CLIENT_NAME}'].ClientId | [0]" \
+          --output text 2>/dev/null || echo "")
+        if [ "$MCP_CLIENT_ID" = "None" ]; then
+          MCP_CLIENT_ID=""
+        fi
+        echo "Found MCP Client ID: ${MCP_CLIENT_ID:-<not found, proceeding leniently>}"
+
         echo "USER_POOL_ID=${USER_POOL_ID}" >> "$GITHUB_OUTPUT"
         echo "USER_POOL_ARN=${USER_POOL_ARN}" >> "$GITHUB_OUTPUT"
         echo "CLIENT_ID=${CLIENT_ID}" >> "$GITHUB_OUTPUT"
         echo "DIYA_GL_CLIENT_ID=${DIYA_GL_CLIENT_ID}" >> "$GITHUB_OUTPUT"
+        echo "MCP_CLIENT_ID=${MCP_CLIENT_ID}" >> "$GITHUB_OUTPUT"
 
     - name: Lookup API Gateway from custom domain
       id: api-gateway

@@ -75,6 +75,7 @@ public class SubmitApplication {
         public String userPoolArn;
         public String userPoolClientId;
         public String diyaGlUserPoolClientId;
+        public String mcpUserPoolClientId;
         public String bundlesTableArn;
         public String hostedZoneId;
         public String certificateArn;
@@ -168,6 +169,14 @@ public class SubmitApplication {
                 "COGNITO_DIYA_GL_CLIENT_ID",
                 appProps.diyaGlUserPoolClientId,
                 "(from diyaGlUserPoolClientId in cdk.json)");
+        // The submission MCP's own client (ApiStack's booksJwtAuthorizer joins its id onto the
+        // books audience when set). Unlike cognitoBooksUserPoolClientId, blank stays valid here:
+        // ApiStack only adds it to the audience list when non-blank, so a not-yet-looked-up value
+        // changes nothing rather than failing synth.
+        var cognitoMcpUserPoolClientId = envOr(
+                "COGNITO_MCP_CLIENT_ID",
+                appProps.mcpUserPoolClientId != null ? appProps.mcpUserPoolClientId : "",
+                "(from mcpUserPoolClientId in cdk.json)");
         // The books page runs on the DIYA-GL site's own origins: diya-gl.co.uk on prod,
         // ci.diya-gl.co.uk on every environment, and http://localhost:3001 for local dev.
         var booksAllowedOrigins = "prod".equals(envName)
@@ -529,6 +538,7 @@ public class SubmitApplication {
                         .userPoolId(cognitoUserPoolId)
                         .userPoolClientId(cognitoUserPoolClientId)
                         .booksUserPoolClientId(cognitoBooksUserPoolClientId)
+                        .mcpUserPoolClientId(cognitoMcpUserPoolClientId)
                         .booksAllowedOrigins(booksAllowedOrigins)
                         .customAuthorizerLambdaArn(authStack.customAuthorizerLambda.getFunctionArn())
                         .buildNumber(buildNumber)

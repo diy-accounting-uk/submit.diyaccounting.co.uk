@@ -434,6 +434,7 @@ jobs:
           COGNITO_USER_POOL_ARN: ${{ steps.lookup.outputs.cognito-user-pool-arn }}
           COGNITO_CLIENT_ID: ${{ steps.lookup.outputs.cognito-client-id }}
           COGNITO_DIYA_GL_CLIENT_ID: ${{ steps.lookup.outputs.cognito-diya-gl-client-id }}
+          COGNITO_MCP_CLIENT_ID: ${{ steps.lookup.outputs.cognito-mcp-client-id }}
           BASE_IMAGE_TAG: ${{ needs.params.outputs['base-image-tag'] }}
           SELF_DESTRUCT_START_DATETIME: ${{ needs.params.outputs['self-destruct-start-datetime'] }}
           SELF_DESTRUCT_DELAY_HOURS: ${{ needs.params.outputs['self-destruct-delay-hours'] }}

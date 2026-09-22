@@ -628,6 +628,7 @@ jobs:
       cognito-user-pool-arn: ${{ steps.lookup-cognito.outputs.cognito-user-pool-arn }}
       cognito-client-id: ${{ steps.lookup-cognito.outputs.cognito-client-id }}
       cognito-diya-gl-client-id: ${{ steps.lookup-cognito.outputs.cognito-diya-gl-client-id }}
+      cognito-mcp-client-id: ${{ steps.lookup-cognito.outputs.cognito-mcp-client-id }}
       self-destruct-start-datetime: ${{ steps.self-destruct-start.outputs.SELF_DESTRUCT_START_DATETIME }}
       self-destruct-delay-hours: ${{ steps.self-destruct-start.outputs.SELF_DESTRUCT_DELAY_HOURS }}
       live-head-is-current: ${{ steps.live-head-check.outputs.live-head-is-current }}
@@ -1547,6 +1548,7 @@ jobs:
           COGNITO_USER_POOL_ARN: ${{ needs.names.outputs.cognito-user-pool-arn }}
           COGNITO_CLIENT_ID: ${{ needs.names.outputs.cognito-client-id }}
           COGNITO_DIYA_GL_CLIENT_ID: ${{ needs.names.outputs.cognito-diya-gl-client-id }}
+          COGNITO_MCP_CLIENT_ID: ${{ needs.names.outputs.cognito-mcp-client-id }}
 
       - run: cat cdk-submit-application.out/cdk-outputs-api.json | jq '.'
 
@@ -1893,6 +1895,7 @@ jobs:
           COGNITO_USER_POOL_ARN: ${{ needs.names.outputs.cognito-user-pool-arn }}
           COGNITO_CLIENT_ID: ${{ needs.names.outputs.cognito-client-id }}
           COGNITO_DIYA_GL_CLIENT_ID: ${{ needs.names.outputs.cognito-diya-gl-client-id }}
+          COGNITO_MCP_CLIENT_ID: ${{ needs.names.outputs.cognito-mcp-client-id }}
 
   deploy-ops:
     name: 'deploy OpsStack via deploy-cdk-stack.yml'
