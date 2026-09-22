@@ -17,7 +17,8 @@ Haiku; the lowest tier that fits). Anything touching code goes through a `claude
 PR; the operator merges.
 
 **Prod runs deployment prod-fbead53**; main's deploy of PR #328's merge (d731afe7) is in flight.
-**ci**: `ci-set1` is last-known-good. No open pull request.
+**ci**: `ci-set1` is last-known-good. No open pull request; `claude/b76-board` pushes when its
+reports land.
 
 The board runs in five sections, in this order: **in flight** (a branch, a pull request or a run
 in motion, each named in the row), **machine-only**, **machine-ask**, **human-driven**,
@@ -39,80 +40,18 @@ step.
 
 ## In flight
 
-## Machine-only
+- [ ] **B76. Wave b76 on `claude/b76-board`.** Six agents: B43c and B30aq (the scheduled run's
+  probe gate and the Maven Central retry, both in `deploy.yml`), B61a (the MCP client id through
+  lookup-resources and the workflows to `ApiStack`), B60a (the six MCP Submit tools against the
+  simulator lane with the 202 poll), PU-7h (audit and receipts by client), PU-14 and PU-9 (the
+  experiment row; the three folded bundles retired where Stripe live shows no subscription), F2f
+  (the mail index reading PDF attachments, `mail-invoices.js` reading their totals). No pull
+  request yet; the batch pushes when the reports land and the merged tree passes
+  `./mvnw clean verify` and `npm test`. **Source**: the rows named. **Owner**: Claude Code.
+  **Model**: Sonnet. **Size**: ~30 files.
 
-- [ ] **B43c. A skipped scheduled deploy runs no probes.** The `11 4 * * *` run 35709546270 on
-  64c82119 (docs only) took B43a's exit at `skip deploy check`, and every probe suite then ran
-  against the live prod set as a `skipDeploy` run does (the `generate test pass for prod` and the
-  `*-prod via probe test` jobs), forty minutes of runners proving a set the scheduled
-  `probe-test.yml` already proves. In `deploy.yml`, gate the `generate-test-pass` and `web-test-*`
-  jobs (and their `enable-native-auth`/`disable` pair) on `needs.names.outputs.live-head-is-current
-  != 'true'` for `github.event_name == 'schedule'`, keeping them for a dispatched `skipDeploy` run,
-  whose purpose is the probes. Proof: the next scheduled run on an unchanged head ends within five
-  minutes with only `params`, `names`, `test` and the summary jobs. **Source**: run 35709546270;
-  BACKLOG 43. **Owner**: Claude Code. **Model**: Sonnet. **Size**: ~1 file.
-
-- [ ] **B30aq. `maven package` retries a Maven Central 429.** Deploy run 35703918781 on `main`
-  (fbead536, a workflow-only change) failed in `mvn-package` (`deploy.yml` line 563 onward) because
-  Maven Central answered 429 Too Many Requests for `maven-jar-plugin:3.5.0`, and every stack job
-  skipped behind it; the rerun passed. Wrap the `./mvnw` call in the same retry shape the workflow
-  uses for `npm ci` (three attempts with a pause), or set the Maven wagon retry properties
-  (`-Dmaven.wagon.http.retryHandler.count=3 -Daether.connector.http.retryHandler.count=3`) on the
-  command, and check the Maven cache step restores `~/.m2` so a warm runner never asks Central.
-  **Source**: run 35703918781; BACKLOG 30. **Owner**: Claude Code. **Model**: Haiku. **Size**: ~1
-  file.
-
-- [ ] **B60a. The six MCP Submit tools against the simulator lane.** `mcp/lib/submit-tools.js`
-  is proven with the HTTP mocked; the plan's M2 wants the simulator
-  lane first. Run each tool against the proxy lane (`npm run start:proxy` or the lane the
-  `simulatorBehaviour` suite uses; `DIYA_SUBMIT_BASE_URL` and a token from B61's sign-in or
-  `scripts/ensure-cognito-test-user.js`), and add the 202 poll the async routes answer with
-  (`AsyncApiLambda` in `ApiStack.java`; the VAT return and the accounts submit return 202 and a poll
-  URL), which the tools treat as a synchronous 200 today. A recorded transcript of the six calls
-  under `mcp/test/fixtures/` becomes the tests' replayed shapes. **Source**:
-  `PLAN_SUBMISSION_MCP.md` M2; BACKLOG 60. **Owner**: Claude Code. **Model**: Sonnet. **Size**:
-  ~3 files.
-
-- [ ] **B61a. The MCP client id reaches ApiStack.** B61's `booksJwtAuthorizer` audience takes
-  `mcpUserPoolClientId` when it is set and today nothing sets it: `IdentityStack.java` writes the
-  id to `/submit/<env>/mcp-app-client-id` (line 332) and exports it, and `SubmitApplication.java`
-  reads the books client through `COGNITO_DIYA_GL_CLIENT_ID` (line 167, `diyaGlUserPoolClientId` in
-  `cdk-application/cdk.json` line 19), which `.github/actions/lookup-resources/action.yml` finds by
-  client name with a retry (lines 140 to 167, output `cognito-diya-gl-client-id`) and the workflows
-  pass on (`deploy.yml` lines 1547 and 1892, `deploy-cdk-stack.yml` 436, `destroy-ci.yml` 1004,
-  `destroy-prod.yml` 979, `probe-test.yml` 539). Do the same for the MCP client
-  (`COGNITO_MCP_CLIENT_ID`, `mcpUserPoolClientId`, output `cognito-mcp-client-id`, the client name
-  `IdentityStack.java` gives it), passed to `ApiStack`'s `mcpUserPoolClientId`; an empty value
-  stays allowed until the first environment deploy has written the parameter. Proof: the ci
-  deploy's ApiStack shows both audiences on the cloud book routes' authoriser. **Source**:
-  `PLAN_SUBMISSION_MCP.md` M3; BACKLOG 61. **Owner**: Claude Code. **Model**: Sonnet. **Size**:
-  ~9 files.
-
-- [ ] **PU-14. An `experiments.toml` row for the price change.** Objective `conversion-to-paid`,
-  lever price, metric purchases per human session, start at PU-5's deploy, so the £39 shape is
-  measured against the 99p rate. **Source**: `REPORT_PRICE_UPDATE_REVIEW.md` §2 row
-  6; operator 2026-09-21. **Owner**: Claude Code. **Model**: Haiku. **Size**: ~1 file.
-
-- [ ] **F2f. The mail index reads invoice attachments.** `../index/corpus.toml`'s `drive` source
-  carries `convert = ["pdf", "doc", "docx"]` (line 11) and the two `eml_tree` sources
-  (`mail-antony` line 41, `mail-support`) carry none, so `corpus doc` returns an email's body only
-  and AWS's "Invoice Available" and Google Cloud's invoice emails yield no figure to
-  `mcp/lib/finance/mail-invoices.js` (F2b, on `claude/b75-board`), which posts a line only where the
-  body states the total. Read the indexer's `eml_tree` reader under `../index/` for whether it
-  honours `convert` for attachments, add it if it does not, set `convert = ["pdf"]` on both mail
-  sources, run `.venv/bin/corpus update --config corpus.toml` from `../index/` (the F1a run took
-  under fifteen minutes for the whole corpus), then extend `mail-invoices.js` with the attachment's
-  total in the shape AWS and Google Cloud invoices print it, with a third redacted recording. Runs
-  F2b's four cases plus the new one. **Source**: F2b's finding; `../PLAN_FINANCE_AUTOMATION.md`
-  route 4. **Owner**: Claude Code. **Model**: Sonnet. **Size**: ~3 files, plus the index.
-
-- [ ] **PU-9. Retire the three folded bundles.** `resident-diya-gl`, `resident-itsa` and
-  `resident-ltd` leave `submit.catalogue.toml`, `.env.ci` and `.env.prod` once Stripe live shows no
-  subscription on their prices. **Source**: `PLAN_PRICE_UPDATE.md` PU-9.
-  **Owner**: Claude Code. **Model**: Haiku. **Size**: ~3 files.
-
-- [ ] **PU-7. Practice licence build.** PU-7a to PU-7g, PU-7k and PU-7l are on `main`. Next is
-  PU-7h, audit and receipts by client: the event field in `app/lib/activityAlert.js`, the receipt
+- [ ] **PU-7. Practice licence build.** PU-7a to PU-7g, PU-7k and PU-7l are on `main`. In flight on
+  `claude/b76-board` (B76): PU-7h, audit and receipts by client: the event field in `app/lib/activityAlert.js`, the receipt
   attribute in `app/data/dynamoDbReceiptRepository.js`, the receipts filter in
   `app/functions/hmrc/hmrcReceiptGet.js`, one Athena view, their tests. Then, in
   `PLAN_PRICE_UPDATE.md` §(d) (lines 227 to 236): PU-7i waits on PU-7h, PU-7j on PU-7i, PU-7m on PU-7j, PU-7e on the operator's grant numbers; the
@@ -122,6 +61,8 @@ step.
   that reach resident-pro through a pass updated in the same change. **Source**:
   `PLAN_PRICE_UPDATE.md` PU-7. **Owner**: Claude Code. **Model**: Sonnet. **Size**: ~7 files for
   PU-7h, ~25 across the four rows after it.
+
+## Machine-only
 
 ## Machine-ask
 
