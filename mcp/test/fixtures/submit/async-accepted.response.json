@@ -1,0 +1,11 @@
+{
+  "status": 202,
+  "headers": {
+    "x-request-id": "720d2408-8389-495f-bd51-3898aca52280",
+    "Location": "https://submit.diyaccounting.co.uk/api/v1/hmrc/vat/obligation",
+    "Retry-After": "5"
+  },
+  "body": {
+    "message": "Request accepted for processing"
+  }
+}

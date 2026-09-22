@@ -2,7 +2,12 @@
 // Copyright (C) 2006-2026 DIY Accounting Limited
 
 // submit-tools.test.js -- the Submit-facing tools over the deployed REST API, with fetch mocked
-// to recorded shapes the simulator-backed API answers with.
+// to shapes recorded from a real simulator-backed lane (fixtures/submit/*.json; see submit-tools.js's
+// pollUntilSettled for the 202-then-poll contract these fixtures exercise).
+
+import { readFileSync } from "node:fs";
+import { dirname, join } from "node:path";
+import { fileURLToPath } from "node:url";
 
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
@@ -19,8 +24,32 @@ import { TOOLS } from "../lib/server.js";
 const VRN = "983238295";
 const HMRC_ACCESS_TOKEN = "hmrc-access-token";
 
-function jsonResponse(status, body) {
-  return { ok: status >= 200 && status < 300, status, json: () => Promise.resolve(body) };
+const fixturesDir = join(dirname(fileURLToPath(import.meta.url)), "fixtures/submit");
+function fixture(name) {
+  return JSON.parse(readFileSync(join(fixturesDir, name), "utf8"));
+}
+
+const LIST_VAT_OBLIGATIONS_RESPONSE = fixture("list-vat-obligations.response.json");
+const SUBMIT_VAT_RETURN_RESPONSE = fixture("submit-vat-return.response.json");
+const GET_VAT_RECEIPT_RESPONSE = fixture("get-vat-receipt.response.json");
+const PREVIEW_MICRO_ENTITY_ACCOUNTS_RESPONSE = fixture("preview-micro-entity-accounts.response.json");
+const SUBMIT_MICRO_ENTITY_ACCOUNTS_RESPONSE = fixture("submit-micro-entity-accounts.response.json");
+const POLL_ACCOUNTS_SUBMISSION_PENDING_RESPONSE = fixture("poll-accounts-submission.pending.response.json");
+const POLL_ACCOUNTS_SUBMISSION_ACCEPTED_RESPONSE = fixture("poll-accounts-submission.accepted.response.json");
+const ASYNC_ACCEPTED = fixture("async-accepted.response.json");
+
+// Mimics the fetch Headers object (case-insensitive .get) that the real 202 responses carry.
+function makeHeaders(headerObj = {}) {
+  const map = new Map(Object.entries(headerObj).map(([key, value]) => [key.toLowerCase(), value]));
+  return { get: (name) => map.get(name.toLowerCase()) ?? null };
+}
+
+function jsonResponse(status, body, headers) {
+  return { ok: status >= 200 && status < 300, status, json: () => Promise.resolve(body), headers: makeHeaders(headers) };
+}
+
+function acceptedResponse() {
+  return jsonResponse(ASYNC_ACCEPTED.status, ASYNC_ACCEPTED.body, ASYNC_ACCEPTED.headers);
 }
 
 const BALANCE_SHEET_YEAR = {
@@ -59,21 +88,22 @@ describe("submit-tools", () => {
     delete process.env.DIYA_SUBMIT_BASE_URL;
     delete process.env.DIYA_SUBMIT_ACCESS_TOKEN;
     vi.unstubAllGlobals();
+    vi.useRealTimers();
   });
 
   describe("list_vat_obligations", () => {
     it("gets obligations with the session bearer on X-Authorization and the HMRC token on Authorization", async () => {
-      const obligations = { obligations: [{ periodKey: "24A1", status: "O", start: "2025-01-01", end: "2025-03-31", due: "2025-05-07" }] };
-      const mockFetch = vi.fn().mockResolvedValueOnce(jsonResponse(200, obligations));
+      const mockFetch = vi.fn().mockResolvedValueOnce(jsonResponse(200, LIST_VAT_OBLIGATIONS_RESPONSE));
       vi.stubGlobal("fetch", mockFetch);
 
       const result = await listVatObligations({}, { vrn: VRN, status: "O", hmrcAccessToken: HMRC_ACCESS_TOKEN });
 
-      expect(result).toEqual(obligations);
+      expect(result).toEqual(LIST_VAT_OBLIGATIONS_RESPONSE);
       const [url, init] = mockFetch.mock.calls[0];
       expect(url).toBe(`https://submit.diyaccounting.co.uk/api/v1/hmrc/vat/obligation?vrn=${VRN}&status=O`);
       expect(init.headers["X-Authorization"]).toBe("Bearer session-access-token");
       expect(init.headers["Authorization"]).toBe(`Bearer ${HMRC_ACCESS_TOKEN}`);
+      expect(init.headers["x-initial-request"]).toBe("true");
     });
 
     it("carries from, to, hmrcAccount and govTestScenario through", async () => {
@@ -114,6 +144,36 @@ describe("submit-tools", () => {
         "Invalid VAT registration number format",
       );
     });
+
+    it("polls a 202 to completion, carrying x-request-id and dropping x-initial-request", async () => {
+      vi.useFakeTimers();
+      const mockFetch = vi
+        .fn()
+        .mockResolvedValueOnce(acceptedResponse())
+        .mockResolvedValueOnce(jsonResponse(200, LIST_VAT_OBLIGATIONS_RESPONSE));
+      vi.stubGlobal("fetch", mockFetch);
+
+      const promise = listVatObligations({}, { vrn: VRN, hmrcAccessToken: HMRC_ACCESS_TOKEN });
+      await vi.runAllTimersAsync();
+      const result = await promise;
+
+      expect(result).toEqual(LIST_VAT_OBLIGATIONS_RESPONSE);
+      expect(mockFetch).toHaveBeenCalledTimes(2);
+      const [, secondInit] = mockFetch.mock.calls[1];
+      expect(secondInit.headers["x-request-id"]).toBe(ASYNC_ACCEPTED.headers["x-request-id"]);
+      expect(secondInit.headers["x-initial-request"]).toBeUndefined();
+    });
+
+    it("throws with the poll URL after the poll never leaves 202", async () => {
+      vi.useFakeTimers();
+      const mockFetch = vi.fn().mockResolvedValue(acceptedResponse());
+      vi.stubGlobal("fetch", mockFetch);
+
+      const promise = listVatObligations({}, { vrn: VRN, hmrcAccessToken: HMRC_ACCESS_TOKEN });
+      const assertion = expect(promise).rejects.toThrow(ASYNC_ACCEPTED.headers.Location);
+      await vi.runAllTimersAsync();
+      await assertion;
+    });
   });
 
   describe("submit_vat_return", () => {
@@ -127,9 +187,8 @@ describe("submit-tools", () => {
       totalAcquisitionsExVAT: 0,
     };
 
-    it("posts the seven filed boxes with the HMRC token in the body, not a header", async () => {
-      const receipt = { processingDate: "2026-03-01T10:00:00.000Z", formBundleNumber: "123456789012", paymentIndicator: "BANK" };
-      const mockFetch = vi.fn().mockResolvedValueOnce(jsonResponse(200, receipt));
+    it("posts the seven filed boxes with the HMRC token in the body, not a header, and returns the receipt nested under receipt/periodKey/receiptId", async () => {
+      const mockFetch = vi.fn().mockResolvedValueOnce(jsonResponse(200, SUBMIT_VAT_RETURN_RESPONSE));
       vi.stubGlobal("fetch", mockFetch);
 
       const result = await submitVatReturn(
@@ -137,7 +196,9 @@ describe("submit-tools", () => {
         { vatNumber: VRN, periodStart: "2025-01-01", periodEnd: "2025-03-31", hmrcAccessToken: HMRC_ACCESS_TOKEN, ...NINE_BOX_FIELDS },
       );
 
-      expect(result).toEqual(receipt);
+      expect(result).toEqual(SUBMIT_VAT_RETURN_RESPONSE);
+      expect(result.receipt.formBundleNumber).toBe(SUBMIT_VAT_RETURN_RESPONSE.receipt.formBundleNumber);
+      expect(result.receiptId).toBe(SUBMIT_VAT_RETURN_RESPONSE.receiptId);
       const [url, init] = mockFetch.mock.calls[0];
       expect(url).toBe("https://submit.diyaccounting.co.uk/api/v1/hmrc/vat/return");
       expect(init.method).toBe("POST");
@@ -166,17 +227,49 @@ describe("submit-tools", () => {
         submitVatReturn({}, { vatNumber: VRN, periodStart: "2025-01-01", periodEnd: "2025-03-31", ...NINE_BOX_FIELDS }),
       ).rejects.toThrow("hmrcAccessToken");
     });
+
+    it("polls a 202 to completion before returning the receipt", async () => {
+      vi.useFakeTimers();
+      const mockFetch = vi
+        .fn()
+        .mockResolvedValueOnce(acceptedResponse())
+        .mockResolvedValueOnce(jsonResponse(200, SUBMIT_VAT_RETURN_RESPONSE));
+      vi.stubGlobal("fetch", mockFetch);
+
+      const promise = submitVatReturn(
+        {},
+        { vatNumber: VRN, periodStart: "2025-01-01", periodEnd: "2025-03-31", hmrcAccessToken: HMRC_ACCESS_TOKEN, ...NINE_BOX_FIELDS },
+      );
+      await vi.runAllTimersAsync();
+      const result = await promise;
+
+      expect(result).toEqual(SUBMIT_VAT_RETURN_RESPONSE);
+      expect(mockFetch).toHaveBeenCalledTimes(2);
+    });
+
+    it("throws with the poll URL after the poll never leaves 202", async () => {
+      vi.useFakeTimers();
+      const mockFetch = vi.fn().mockResolvedValue(acceptedResponse());
+      vi.stubGlobal("fetch", mockFetch);
+
+      const promise = submitVatReturn(
+        {},
+        { vatNumber: VRN, periodStart: "2025-01-01", periodEnd: "2025-03-31", hmrcAccessToken: HMRC_ACCESS_TOKEN, ...NINE_BOX_FIELDS },
+      );
+      const assertion = expect(promise).rejects.toThrow(ASYNC_ACCEPTED.headers.Location);
+      await vi.runAllTimersAsync();
+      await assertion;
+    });
   });
 
   describe("get_vat_receipt", () => {
     it("gets a receipt by name with the session bearer on the plain Authorization header", async () => {
-      const receipt = { formBundleNumber: "123456789012" };
-      const mockFetch = vi.fn().mockResolvedValueOnce(jsonResponse(200, receipt));
+      const mockFetch = vi.fn().mockResolvedValueOnce(jsonResponse(200, GET_VAT_RECEIPT_RESPONSE));
       vi.stubGlobal("fetch", mockFetch);
 
       const result = await getVatReceipt({}, { name: "2025-03-31-123456789012.json" });
 
-      expect(result).toEqual(receipt);
+      expect(result).toEqual(GET_VAT_RECEIPT_RESPONSE);
       const [url, init] = mockFetch.mock.calls[0];
       expect(url).toBe("https://submit.diyaccounting.co.uk/api/v1/hmrc/receipt/2025-03-31-123456789012.json");
       expect(init.headers["Authorization"]).toBe("Bearer session-access-token");
@@ -190,12 +283,13 @@ describe("submit-tools", () => {
 
   describe("preview_micro_entity_accounts", () => {
     it("posts the balance sheet and returns the rendered iXBRL", async () => {
-      const mockFetch = vi.fn().mockResolvedValueOnce(jsonResponse(200, { ixbrl: "<html>...</html>" }));
+      const mockFetch = vi.fn().mockResolvedValueOnce(jsonResponse(200, PREVIEW_MICRO_ENTITY_ACCOUNTS_RESPONSE));
       vi.stubGlobal("fetch", mockFetch);
 
       const result = await previewMicroEntityAccounts({}, ACCOUNTS_PARAMS);
 
-      expect(result).toEqual({ ixbrl: "<html>...</html>" });
+      expect(result).toEqual(PREVIEW_MICRO_ENTITY_ACCOUNTS_RESPONSE);
+      expect(result.ixbrl).toContain("<?xml");
       const [url, init] = mockFetch.mock.calls[0];
       expect(url).toBe("https://submit.diyaccounting.co.uk/api/v1/companies-house/accounts/preview");
       expect(init.headers["Authorization"]).toBe("Bearer session-access-token");
@@ -212,15 +306,15 @@ describe("submit-tools", () => {
 
   describe("submit_micro_entity_accounts", () => {
     it("posts the balance sheet with the company authentication code and returns the submission number", async () => {
-      const mockFetch = vi.fn().mockResolvedValueOnce(jsonResponse(201, { submissionNumber: "ABC123" }));
+      const mockFetch = vi.fn().mockResolvedValueOnce(jsonResponse(201, SUBMIT_MICRO_ENTITY_ACCOUNTS_RESPONSE));
       vi.stubGlobal("fetch", mockFetch);
 
-      const result = await submitMicroEntityAccounts({}, { ...ACCOUNTS_PARAMS, companyAuthCode: "authcode123" });
+      const result = await submitMicroEntityAccounts({}, { ...ACCOUNTS_PARAMS, companyAuthCode: "Sim0123" });
 
-      expect(result).toEqual({ submissionNumber: "ABC123" });
+      expect(result).toEqual(SUBMIT_MICRO_ENTITY_ACCOUNTS_RESPONSE);
       const [, init] = mockFetch.mock.calls[0];
       const body = JSON.parse(init.body);
-      expect(body.companyAuthCode).toBe("authcode123");
+      expect(body.companyAuthCode).toBe("Sim0123");
     });
 
     it("requires companyAuthCode", async () => {
@@ -229,14 +323,25 @@ describe("submit-tools", () => {
   });
 
   describe("poll_accounts_submission", () => {
-    it("gets the filing outcome by submission number", async () => {
-      const mockFetch = vi.fn().mockResolvedValueOnce(jsonResponse(200, { status: "accepted" }));
+    it("gets the filing outcome by submission number, pending before Companies House answers", async () => {
+      const mockFetch = vi.fn().mockResolvedValueOnce(jsonResponse(200, POLL_ACCOUNTS_SUBMISSION_PENDING_RESPONSE));
       vi.stubGlobal("fetch", mockFetch);
 
-      const result = await pollAccountsSubmission({}, { submissionNumber: "ABC123" });
+      const result = await pollAccountsSubmission({}, { submissionNumber: "000001" });
 
-      expect(result).toEqual({ status: "accepted" });
-      expect(mockFetch.mock.calls[0][0]).toBe("https://submit.diyaccounting.co.uk/api/v1/companies-house/accounts/ABC123");
+      expect(result).toEqual(POLL_ACCOUNTS_SUBMISSION_PENDING_RESPONSE);
+      expect(result.statusCode).toBe("PENDING");
+      expect(mockFetch.mock.calls[0][0]).toBe("https://submit.diyaccounting.co.uk/api/v1/companies-house/accounts/000001");
+    });
+
+    it("carries a receiptId once the filing is accepted", async () => {
+      const mockFetch = vi.fn().mockResolvedValueOnce(jsonResponse(200, POLL_ACCOUNTS_SUBMISSION_ACCEPTED_RESPONSE));
+      vi.stubGlobal("fetch", mockFetch);
+
+      const result = await pollAccountsSubmission({}, { submissionNumber: "000001" });
+
+      expect(result.statusCode).toBe("ACCEPT");
+      expect(result.receiptId).toBe(POLL_ACCOUNTS_SUBMISSION_ACCEPTED_RESPONSE.receiptId);
     });
 
     it("requires submissionNumber", async () => {

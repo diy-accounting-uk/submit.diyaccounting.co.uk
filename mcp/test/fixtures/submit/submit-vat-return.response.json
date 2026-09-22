@@ -1,0 +1,27 @@
+{
+  "receipt": {
+    "processingDate": "2026-09-22T10:55:44.288Z",
+    "formBundleNumber": "990458700288",
+    "paymentIndicator": "DD",
+    "chargeRefNumber": "OhpWXRxXOYH1IYVI"
+  },
+  "hmrcResponse": {
+    "ok": true,
+    "status": 201,
+    "statusText": "Created",
+    "headers": {
+      "content-type": "application/json; charset=utf-8",
+      "receipt-id": "6ec876a1-6258-4b80-a296-87a33568dd93",
+      "receipt-signature": "This has been deprecated - DO NOT USE",
+      "receipt-timestamp": "2026-09-22T10:55:44Z"
+    }
+  },
+  "hmrcResponseBody": {
+    "processingDate": "2026-09-22T10:55:44.288Z",
+    "formBundleNumber": "990458700288",
+    "paymentIndicator": "DD",
+    "chargeRefNumber": "OhpWXRxXOYH1IYVI"
+  },
+  "periodKey": "24P2",
+  "receiptId": "2026-09-22T10:55:44.298Z-990458700288"
+}
