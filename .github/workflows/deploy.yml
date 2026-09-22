@@ -1916,7 +1916,10 @@ jobs:
 
   set-origins:
     name: 'set origins'
-    #if: ${{ needs.names.outputs.environment-name != 'prod' || needs.origin-test.outputs.result == 'success' }}
+    # Prod only. A ci set proves itself on its own host, and the ci apex follows the set that
+    # passed, one promotion behind this run, through promote-ci-apex.yml. Skipping this job on ci
+    # does not skip the jobs that need it: every one of them is `if: !cancelled()`.
+    if: ${{ needs.names.outputs.environment-name == 'prod' }}
     needs:
       - names
       - skip-deploy-check
@@ -3011,7 +3014,8 @@ jobs:
     # passing, while CloudFront kept serving something else entirely (reproduced live
     # 2026-09-01/02 - three EdgeStack bugs blocked set-origins for hours while this job
     # kept advancing the SSM pointer regardless).
-    if: ${{ !cancelled() && needs.web-test.result == 'success' && needs.set-origins.result == 'success' }}
+    # On ci set-origins does not run at all, so the requirement is prod's alone.
+    if: ${{ !cancelled() && needs.web-test.result == 'success' && (needs.names.outputs.environment-name != 'prod' || needs.set-origins.result == 'success') }}
     name: 'set last known good deployment'
     needs:
       - names
@@ -3085,6 +3089,37 @@ jobs:
               gh issue close "$NUMBER" --repo "${{ github.repository }}"
             done
 
+  # The ci apex follows a set only once that set's own probes have passed, so it moves after this
+  # run rather than inside it. promote-ci-apex.yml serialises the alias move on its own
+  # concurrency group and this job does not wait for it, so a promotion superseded at that group
+  # is dropped there instead of reddening a deploy.
+  promote-ci-apex:
+    name: 'promote the ci apex to this set'
+    if: ${{ !cancelled() && needs.names.outputs.environment-name == 'ci' && needs.set-last-known-good-deployment.result == 'success' }}
+    needs:
+      - names
+      - set-last-known-good-deployment
+    runs-on: ubuntu-24.04
+    permissions:
+      actions: write
+    steps:
+      - name: Dispatch promote-ci-apex for this deployment
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+          DEPLOYMENT_NAME: ${{ needs.names.outputs.deployment-name }}
+        run: |
+          set -euo pipefail
+          # A workflow_dispatch resolves against the default branch, so the promotion runs the
+          # merged copy of promote-ci-apex.yml whatever branch this deploy came from. Until that
+          # copy exists the apex simply stays where it is, which is the state this row leaves it
+          # in anyway, so say so and pass rather than failing a proven set's deploy.
+          if ! gh workflow view promote-ci-apex.yml --repo "$REPO" >/dev/null 2>&1; then
+            echo "::warning::promote-ci-apex.yml is not on the default branch yet, so the ci apex still points where it did; it will follow ${DEPLOYMENT_NAME} on the first deploy after this branch merges."
+            exit 0
+          fi
+          gh workflow run promote-ci-apex.yml --repo "$REPO" -f "deployment-name=${DEPLOYMENT_NAME}"
+
   # If set-origins already cut this environment's apex over to the new deployment but that
   # deployment's own behaviour tests then failed, leaving the cutover in place serves a
   # rejected deployment until a person notices. Point the apex and its API Gateway custom
@@ -3109,7 +3144,9 @@ jobs:
   # the run cannot report green just because the rollback below succeeds.
   rollback-origins:
     name: 'roll back apex to previous deployment'
-    if: ${{ !cancelled() && needs.set-origins.result == 'success' && needs.web-test.result == 'failure' && needs.set-origins.outputs.existing-deployment-name != '' }}
+    # Prod only, like the promotion it undoes: a ci run never moves an apex, so it has nothing to
+    # roll back and the set it just proved is simply never promoted.
+    if: ${{ !cancelled() && needs.names.outputs.environment-name == 'prod' && needs.set-origins.result == 'success' && needs.web-test.result == 'failure' && needs.set-origins.outputs.existing-deployment-name != '' }}
     needs:
       - names
       - set-origins
@@ -3268,7 +3305,12 @@ jobs:
           MERGED_AT=$(gh api "repos/${DORA_REPOSITORY}/commits/${DORA_SHA}/pulls" --jq '.[0].merged_at // empty' || echo "")
 
           CONCLUSION="success"
-          if [ "$DORA_DEPLOY_PUBLISH_RESULT" != "success" ] || [ "$DORA_SET_ORIGINS_RESULT" != "success" ] || [ "$DORA_WEB_TEST_RESULT" != "success" ]; then
+          if [ "$DORA_DEPLOY_PUBLISH_RESULT" != "success" ] || [ "$DORA_WEB_TEST_RESULT" != "success" ]; then
+            CONCLUSION="failure"
+          fi
+          # set-origins runs for prod only, so on ci it is skipped and there is no apex cutover
+          # to have failed. Any other non-success is a real failed cutover.
+          if [ "$DORA_SET_ORIGINS_RESULT" != "success" ] && [ "$DORA_SET_ORIGINS_RESULT" != "skipped" ]; then
             CONCLUSION="failure"
           fi
 
