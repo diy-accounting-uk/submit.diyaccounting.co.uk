@@ -40,11 +40,14 @@ step.
 
 ## In flight
 
-- [ ] **B81. Wave b81 on `claude/b81-board`.** Three agents: PU-7m (the practice licence
-  behaviour test, on the PU-7 row), AS1 (why coverage collects no files, then the gate under its
+- [ ] **B81. Wave b81 on `claude/b81-board`.** Three agents: PU-7m (landed as a0bd6686: the suite green on the
+  simulator lane, the practice-clients table bootstrapped for the local lanes, and
+  `resident-pro` granted through checkout so `subscriptionStatus` is set), AS1 (why coverage collects no files, then the gate under its
   real key with measured numbers) and AS7a (strict environment validation by default, the
-  local-server system test given its environment). No pull request yet. **Source**: the rows
-  named. **Owner**: Claude Code. **Model**: Sonnet and Haiku. **Size**: ~8 files.
+  local-server system test given its environment). No pull request yet; the ci and prod variants of the suite need a sandbox agent
+  authorisation the simulator shortcut has no equivalent for, so they run only when one exists.
+  **Source**: the rows named. **Owner**: Claude Code. **Model**: Sonnet and Haiku. **Size**: ~20
+  files.
 
 - [ ] **PU-7. Practice licence build.** PU-7a to PU-7l are on `main`. In flight on
   `claude/b81-board` (wave b81, one agent): PU-7m, the
@@ -63,7 +66,8 @@ step.
 - [ ] **B80. Wave b80 on `claude/b80-board`, PR #334.** Three agents: AS8 (the two RUM deployed-environment skips out of the unit runner; AS1's
   coverage commit rejected, the finding on its own row), AS4 and AS7 (the ESLint config cleanup; the strict-mode TODO and warning
   comments), AS6 and AS5 (prettier and Spotless checks in `test.yml`, with the 218 files they reformat; the
-  lint job as a baseline ratchet at zero errors). Five commits, head 9b633159, its ci deploy starting. **Source**: the
+  lint job as a baseline ratchet at zero errors). Its `test` run went red on the new prettier check (one file the AS8 commit left unformatted);
+  the fix is committed and pushes when deploy 35761188691 ends. **Source**: the
   rows named. **Owner**: Claude Code. **Model**: Sonnet and Haiku. **Size**: ~10 files plus the
   directives.
 
