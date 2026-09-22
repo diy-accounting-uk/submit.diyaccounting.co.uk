@@ -42,7 +42,8 @@ step.
 
 - [ ] **B81. Wave b81 on `claude/b81-board`.** Three agents: PU-7m (landed as a0bd6686: the suite green on the
   simulator lane, the practice-clients table bootstrapped for the local lanes, and
-  `resident-pro` granted through checkout so `subscriptionStatus` is set), AS1 (why coverage collects no files, then the gate under its
+  `resident-pro` granted through checkout so `subscriptionStatus` is set), AS7a (landed as 0caff823: the `STRICT_ENV_VALIDATION` flag gone, strict validation
+  the default, the local-server system test loading `.env.test`), AS1 (why coverage collects no files, then the gate under its
   real key with measured numbers) and AS7a (strict environment validation by default, the
   local-server system test given its environment). No pull request yet; the ci and prod variants of the suite need a sandbox agent
   authorisation the simulator shortcut has no equivalent for, so they run only when one exists.
