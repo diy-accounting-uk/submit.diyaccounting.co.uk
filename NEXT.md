@@ -46,8 +46,8 @@ and stop. One branch is driven green at a time. Lifted only by the operator in t
 
 - [ ] **B82. Wave b82 on `claude/b82-board`, PR #336.** Three commits, head c450180d. Its push deploy 35775043216 failed four
   stacks on `ci-set1` because PR #333's dispatched redeploy, named for the same slot, ran on the
-  set at the same time (a dispatch with an explicit slot name bypasses the claim); it reruns
-  after PR #333's deploy is green, one branch at a time: B34j
+  set at the same time (a dispatch with an explicit slot name bypasses the claim); its failed jobs are
+  rerunning on `ci-set1` now that PR #333's deploy is green, one branch at a time: B34j
   (a9e2e920, the privacy notice's row for practice client filing, with a browser test) and PU-7e
   (e4302a96 and c450180d: `tokensGranted = "unlimited"` on `resident-pro`, exempt in
   enforcement, the webhook refresh and the bundle read, shown as unlimited on the usage page,
@@ -68,7 +68,9 @@ and stop. One branch is driven green at a time. Lifted only by the operator in t
   practice licence simulator suite on a missing `mcp/node_modules` (the job never installed the
   MCP package); head 858c8cd3 adds that install and carries B30as (1a9ec71e: a `release-ci-slot`
   job at the end of `deploy.yml` deletes this run's claim unless the set is the ci LKG, with the
-  stale rule as backstop). Its runs are starting. The suite's ci and prod variants need a sandbox agent authorisation the simulator
+  stale rule as backstop). Its `test` run is green; its deploy 35775629294 failed for want of a ci slot (`ci-set1`
+  claimed by PR #336's run, `ci-set2` by PR #334's ended run until 22:53 UTC), and reruns when a
+  slot frees or B30as lands. The suite's ci and prod variants need a sandbox agent authorisation the simulator
   shortcut has no equivalent for, so they run only when one exists. **Source**: the rows named.
   **Owner**: Claude Code. **Model**: Sonnet and Haiku. **Size**: ~16 files.
 - [ ] **PU-7. Practice licence build.** PU-7a to PU-7l are on `main`. In flight on
@@ -99,8 +101,8 @@ and stop. One branch is driven green at a time. Lifted only by the operator in t
   probe user's prefix held 20 sandbox books of which several had expired under the earlier
   24-hour retention. Its deploy 35773445604 on `ci-set1` failed because the sweep destroyed
   `ci-set1` underneath it (B30at); the dispatched redeploy 35775650817 to `ci-set1` passed every
-  stack and probe, the book-limit fix included, and the red push-triggered deploy's failed jobs are rerunning
-  now on `ci-set1`, so the head's own deploy is green for the merge gate. The same deploy failed three sign-in probes with
+  stack and probe, the book-limit fix included, and the push-triggered deploy's rerun on `ci-set1` is green, and the PR is
+  mergeable and clean: it merges first when cool-down lifts. The same deploy failed three sign-in probes with
   `redirect_mismatch`: only `ci-set1`, `ci-set2` and the apex are Cognito callback hosts, so a
   deployment under another name cannot prove a signed-in probe; `ci-b79-probe` and
   `ci-b80-probe` (PR #334's proof deploy 35767071938 failed the same way) self-destruct four
