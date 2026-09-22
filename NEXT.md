@@ -17,8 +17,7 @@ Haiku; the lowest tier that fits). Anything touching code goes through a `claude
 PR; the operator merges.
 
 **Prod runs deployment prod-b9abb8d**; main's deploy of PR #331's merge (cdbc557a) is in flight.
-**ci**: `ci-set1` is last-known-good. No open pull request; `claude/b78-board` (PU-7j) pushes when
-its batch proof passes.
+**ci**: `ci-set1` is last-known-good. Open pull request: #332 (`claude/b78-board`: PU-7j), its test runs in flight.
 
 The board runs in five sections, in this order: **in flight** (a branch, a pull request or a run
 in motion, each named in the row), **machine-only**, **machine-ask**, **human-driven**,
@@ -41,7 +40,8 @@ step.
 ## In flight
 
 - [ ] **PU-7. Practice licence build.** PU-7a to PU-7i, PU-7k and PU-7l are on `main`. In flight on
-  `claude/b78-board` as b2a08e60, its batch proof running before the push: PU-7j, `run_for_clients` in `mcp/lib/batch-tools.js` and the CLI's `--all-clients` in
+  `claude/b78-board`, PR #332, head b2a08e60, its test runs in flight (an mcp-only head, so no ci
+  deploy): PU-7j, `run_for_clients` in `mcp/lib/batch-tools.js` and the CLI's `--all-clients` in
   `mcp/bin/diya-submit-mcp.js`: one result row per client, non-zero exit on any failure, over
   the client tools PU-7i put in `mcp/lib/practice-tools.js`. Then,
   in `PLAN_PRICE_UPDATE.md` §(d) (lines 227 to 236): PU-7m on PU-7j, PU-7e on the operator's grant numbers; the
