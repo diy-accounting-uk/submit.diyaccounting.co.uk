@@ -62,6 +62,7 @@ export function flattenEnvelope(envelope) {
     country: detail.country ?? null,
     page: detail.page ?? null,
     hmrc_status: detail.hmrcStatus ?? null,
+    client_id: detail.clientId ?? null,
     env: process.env.ENVIRONMENT_NAME ?? null,
     detail_json: JSON.stringify(detail),
   };

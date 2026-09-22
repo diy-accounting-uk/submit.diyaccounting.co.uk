@@ -110,7 +110,8 @@ async function recordSubmissionFailure({ failure, summary, userSub, detail = {},
     failure,
     userSub,
     actor,
-    detail: clientId ? { ...detail, clientId } : detail,
+    clientId,
+    detail,
   });
 }
 
@@ -724,7 +725,7 @@ export async function ingestHandler(event) {
         if (payload.userSub && formBundleNumber) {
           const timestamp = new Date().toISOString();
           receiptId = `${timestamp}-${formBundleNumber}`;
-          await putReceipt(payload.userSub, receiptId, receipt, resolveActorClass());
+          await putReceipt(payload.userSub, receiptId, receipt, resolveActorClass(), payload.clientId);
           resultData.receiptId = receiptId;
         }
 
@@ -854,7 +855,7 @@ export async function workerHandler(event) {
       if (userSub && formBundleNumber) {
         const timestamp = new Date().toISOString();
         receiptId = `${timestamp}-${formBundleNumber}`;
-        await putReceipt(userSub, receiptId, receipt, resolveActorClass());
+        await putReceipt(userSub, receiptId, receipt, resolveActorClass(), payload.clientId);
         result.receiptId = receiptId;
       }
 
@@ -971,7 +972,7 @@ export async function submitVat(
       summary: "VAT return submitted",
       actor,
       userSub: auditForUserSub,
-      detail: clientId ? { clientId } : {},
+      clientId,
     });
     const { chargeTokenOnSuccess } = await import("../../services/tokenEnforcement.js");
     await chargeTokenOnSuccess(auditForUserSub, "submit-vat");

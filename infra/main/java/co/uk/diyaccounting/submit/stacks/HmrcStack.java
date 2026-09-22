@@ -338,6 +338,13 @@ public class HmrcStack extends Stack {
                 "ImportedReceiptsTable-%s".formatted(props.deploymentName()),
                 props.sharedNames().receiptsTableName);
 
+        // Lookup existing DynamoDB Practice Clients Table, read by myReceipts to check a
+        // clientId query parameter names one of the caller's own clients before filtering by it.
+        ITable practiceClientsTable = Table.fromTableName(
+                this,
+                "ImportedPracticeClientsTable-%s".formatted(props.deploymentName()),
+                props.sharedNames().practiceClientsTableName);
+
         // Lambdas
 
         this.lambdaFunctionProps = new java.util.ArrayList<>();
@@ -2207,6 +2214,7 @@ public class HmrcStack extends Stack {
                 .with("DIY_SUBMIT_BASE_URL", props.sharedNames().publicBaseUrl)
                 .with("BUNDLE_DYNAMODB_TABLE_NAME", props.sharedNames().bundlesTableName)
                 .with("RECEIPTS_DYNAMODB_TABLE_NAME", props.sharedNames().receiptsTableName)
+                .with("PRACTICE_CLIENTS_DYNAMODB_TABLE_NAME", practiceClientsTable.getTableName())
                 .with("ACTIVITY_BUS_NAME", props.sharedNames().activityBusName)
                 .with("ENVIRONMENT_NAME", props.envName());
         var myReceiptsLambdaUrlOrigin = new ApiLambda(
@@ -2256,6 +2264,8 @@ public class HmrcStack extends Stack {
         // No bundles grant: receipt retrieval reads receipts only.
         // A single receipt is fetched by key; the listing queries the user's partition.
         receiptsTable.grant(this.receiptGetLambda, "dynamodb:GetItem", "dynamodb:Query");
+        // Read-only: confirms a clientId query parameter names one of the caller's own clients.
+        practiceClientsTable.grant(this.receiptGetLambda, "dynamodb:GetItem");
 
         // Grant access to user sub hash salt secret in Secrets Manager
         SubHashSaltHelper.grantSaltAccess(this.receiptGetLambda, region, account, props.envName());

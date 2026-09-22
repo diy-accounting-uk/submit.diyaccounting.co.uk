@@ -267,6 +267,22 @@ describe("lib/activityAlert", () => {
       const detail = JSON.parse(mockSend.mock.calls[0][0].input.Entries[0].Detail);
       expect(detail.hashedSub).toBeUndefined();
     });
+
+    test("carries the client id when the event was for a client-scoped submission", async () => {
+      process.env.ACTIVITY_BUS_NAME = "test-bus";
+      await publishActivityEvent({ event: "vat-return-submitted", summary: "VAT return submitted", clientId: "client-1" });
+
+      const detail = JSON.parse(mockSend.mock.calls[0][0].input.Entries[0].Detail);
+      expect(detail.clientId).toBe("client-1");
+    });
+
+    test("omits the client id when the event was not for a client", async () => {
+      process.env.ACTIVITY_BUS_NAME = "test-bus";
+      await publishActivityEvent({ event: "vat-return-submitted", summary: "VAT return submitted" });
+
+      const detail = JSON.parse(mockSend.mock.calls[0][0].input.Entries[0].Detail);
+      expect(detail.clientId).toBeUndefined();
+    });
   });
 
   describe("resolveActivityBusRegion", () => {
@@ -434,6 +450,29 @@ describe("lib/activityAlert", () => {
 
       const detail = JSON.parse(mockSend.mock.calls[0][0].input.Entries[0].Detail);
       expect(detail.actor).toBe("test-user");
+    });
+
+    test("carries the client id when the failure was for a client-scoped submission", async () => {
+      await publishActivityFailureEvent({
+        event: "vat-return-failed",
+        summary: "VAT return blocked: client not authorised for MTD-VAT",
+        failure: "client-not-authorised",
+        clientId: "client-1",
+      });
+
+      const detail = JSON.parse(mockSend.mock.calls[0][0].input.Entries[0].Detail);
+      expect(detail.clientId).toBe("client-1");
+    });
+
+    test("omits the client id when the failure was not for a client", async () => {
+      await publishActivityFailureEvent({
+        event: "vat-return-failed",
+        summary: "VAT return blocked: no entitlement",
+        failure: "access-denied",
+      });
+
+      const detail = JSON.parse(mockSend.mock.calls[0][0].input.Entries[0].Detail);
+      expect(detail.clientId).toBeUndefined();
     });
   });
 });
