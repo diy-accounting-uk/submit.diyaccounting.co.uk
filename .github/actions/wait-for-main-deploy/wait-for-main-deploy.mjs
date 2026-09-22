@@ -15,8 +15,17 @@
 // run itself is still in_progress. Gating on the whole run's completion instead (as this used
 // to) meant a branch's probes sat out the ~45-minute prod half of every main deploy for no
 // reason, and a same-branch retry inside the 40-minute ceiling would give up and continue anyway.
+//
+// max-wait-minutes controls how long this waits before giving up. The params job (which runs
+// before any concurrency group is taken) uses the default 40 minutes. The behaviour-test job
+// takes a per-suite concurrency lock before it can reach this step, so it passes 0: a single
+// check with no sleep, so the lock is never held waiting on a run this job cannot itself
+// unblock (a scheduled probe and a deploy's own probe of the same suite share that lock, and a
+// deploy's own probe is often what needs to reach 'set origins' next).
 
-const MAX_WAIT_SECONDS = 40 * 60;
+import { appendFileSync } from "node:fs";
+
+const DEFAULT_MAX_WAIT_MINUTES = 40;
 const POLL_SECONDS = 60;
 
 const SET_ORIGINS_JOB_NAME = "set origins";
@@ -84,6 +93,8 @@ async function jobsForRun(runId) {
   return body.jobs ?? [];
 }
 
+// Each gating entry carries the run id (for naming the deploy run in a caller's summary) and a
+// human-readable reason.
 async function gatingRuns() {
   const runs = await listRunsOnMain();
   const gating = [];
@@ -91,7 +102,7 @@ async function gatingRuns() {
     const jobs = run.status === "in_progress" ? await jobsForRun(run.id) : [];
     const { gates, reason } = runStillGatesProbes(run, jobs);
     if (gates) {
-      gating.push(`run ${run.id} (${run.status}): ${reason}`);
+      gating.push({ id: run.id, message: `run ${run.id} (${run.status}): ${reason}` });
     } else {
       console.log(reason);
     }
@@ -101,25 +112,52 @@ async function gatingRuns() {
 
 const sleep = (seconds) => new Promise((resolve) => setTimeout(resolve, seconds * 1000));
 
+// Pure so it can be unit-tested without a network call or a real sleep. Returns whether the
+// caller should stop polling now, and, if so, whether it stopped because a run is still gating
+// (maxWaitSeconds reached with gatingCount > 0) rather than because nothing gates any more.
+// maxWaitSeconds of 0 stops after the first check: waitedSeconds (0) >= maxWaitSeconds (0) is
+// already true, so a gating result gives up immediately instead of sleeping.
+export function decidePollOutcome(gatingCount, waitedSeconds, maxWaitSeconds) {
+  if (gatingCount === 0) {
+    return { stop: true, deployInProgress: false };
+  }
+  if (waitedSeconds >= maxWaitSeconds) {
+    return { stop: true, deployInProgress: true };
+  }
+  return { stop: false, deployInProgress: true };
+}
+
+function setOutput(name, value) {
+  const outputPath = process.env.GITHUB_OUTPUT;
+  if (outputPath) {
+    appendFileSync(outputPath, `${name}=${value}\n`);
+  }
+}
+
 async function main() {
   if (!token || !repository) {
     throw new Error("GH_TOKEN and GITHUB_REPOSITORY must be set");
   }
+  const maxWaitMinutes = Number(process.env.MAX_WAIT_MINUTES ?? DEFAULT_MAX_WAIT_MINUTES);
+  const maxWaitSeconds = maxWaitMinutes * 60;
   let waited = 0;
   for (;;) {
     const gating = await gatingRuns();
-    if (gating.length === 0) {
-      console.log("No deploy.yml run on main is gating the apex, continuing.");
-      return;
-    }
-    if (waited >= MAX_WAIT_SECONDS) {
-      console.log(
-        `::warning::Waited ${MAX_WAIT_SECONDS}s for deploy.yml on main to clear the apex-move window; giving up and continuing anyway. Still gating: ${gating.join("; ")}`,
-      );
+    const outcome = decidePollOutcome(gating.length, waited, maxWaitSeconds);
+    if (outcome.stop) {
+      if (!outcome.deployInProgress) {
+        console.log("No deploy.yml run on main is gating the apex, continuing.");
+      } else {
+        console.log(
+          `::warning::Waited ${waited}s (max ${maxWaitSeconds}s) for deploy.yml on main to clear the apex-move window; giving up and continuing anyway. Still gating: ${gating.map((g) => g.message).join("; ")}`,
+        );
+      }
+      setOutput("deploy-in-progress", outcome.deployInProgress ? "true" : "false");
+      setOutput("gating-run-ids", gating.map((g) => g.id).join(","));
       return;
     }
     console.log(
-      `deploy.yml on main could still move the apex; waiting ${POLL_SECONDS}s (${waited}/${MAX_WAIT_SECONDS}s so far). Still gating: ${gating.join("; ")}`,
+      `deploy.yml on main could still move the apex; waiting ${POLL_SECONDS}s (${waited}/${maxWaitSeconds}s so far). Still gating: ${gating.map((g) => g.message).join("; ")}`,
     );
     await sleep(POLL_SECONDS);
     waited += POLL_SECONDS;

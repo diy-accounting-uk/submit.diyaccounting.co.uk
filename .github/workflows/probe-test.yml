@@ -494,17 +494,31 @@ jobs:
       # actually navigates the apex, and a deploy.yml promotion can land in that gap (issue #272:
       # submitVatBehaviour and tokenRefreshBehaviour both hit
       # ERR_SSL_VERSION_OR_CIPHER_MISMATCH after the test-user rotation ate most of the elapsed
-      # time). Re-checking here, immediately before the navigation, closes that gap.
+      # time). Re-checking here, immediately before the navigation, closes that gap. This job has
+      # already taken the per-suite concurrency lock above, so it checks once (max-wait-minutes:
+      # 0) rather than sitting on that lock for up to 40 minutes: a deploy's own probe of the
+      # same suite queues on the same lock, and it is often what needs to reach 'set origins'
+      # next, so a wait here can only make the gating run take longer to clear.
       - name: Wait for a deploy in progress on main before navigating the apex
+        id: wait-before-navigate
         if: ${{ !cancelled() && steps.companies-house-guard.outcome != 'failure' && github.event_name == 'schedule' && github.workflow == 'probe-test' }}
         uses: './.github/actions/wait-for-main-deploy'
         with:
           github-token: ${{ github.token }}
+          max-wait-minutes: 0
+
+      # A deploy already in flight runs this same suite itself once it reaches the probe stage,
+      # so this suite is superseded rather than skipped outright: the job still ends green.
+      - name: Note ${{ matrix.suite }}-${{ needs.names.outputs.environment-name }} as superseded
+        if: ${{ steps.wait-before-navigate.outputs.deploy-in-progress == 'true' }}
+        run: |
+          echo "Superseded: deploy.yml run(s) ${{ steps.wait-before-navigate.outputs.gating-run-ids }} on main are still gating the apex; ${{ matrix.suite }}-${{ needs.names.outputs.environment-name }} is skipped here and covered by that deploy's own probe." >> "$GITHUB_STEP_SUMMARY"
+        shell: bash
 
       - name: 'Run behaviour test ${{ matrix.suite }}-${{ needs.names.outputs.environment-name }}'
         id: behaviour-test
         continue-on-error: true
-        if: ${{ !cancelled() && steps.companies-house-guard.outcome != 'failure' }}
+        if: ${{ !cancelled() && steps.companies-house-guard.outcome != 'failure' && steps.wait-before-navigate.outputs.deploy-in-progress != 'true' }}
         run: |
           npm run 'test:${{ matrix.suite }}-${{ needs.names.outputs.environment-name }}' || exit_code=$? \
           ; RESULT=${exit_code:-0} \
@@ -544,14 +558,22 @@ jobs:
       # The retry re-navigates the apex, so it needs the same check: a promotion that started
       # during the first attempt can still be running when the retry begins.
       - name: Wait for a deploy in progress on main before retrying
+        id: wait-before-retry
         if: ${{ !cancelled() && steps.behaviour-test.outcome == 'failure' && github.event_name == 'schedule' && github.workflow == 'probe-test' }}
         uses: './.github/actions/wait-for-main-deploy'
         with:
           github-token: ${{ github.token }}
+          max-wait-minutes: 0
+
+      - name: Note ${{ matrix.suite }}-${{ needs.names.outputs.environment-name }} as superseded (retry)
+        if: ${{ steps.wait-before-retry.outputs.deploy-in-progress == 'true' }}
+        run: |
+          echo "Superseded: deploy.yml run(s) ${{ steps.wait-before-retry.outputs.gating-run-ids }} on main are still gating the apex; the retry of ${{ matrix.suite }}-${{ needs.names.outputs.environment-name }} is skipped here and covered by that deploy's own probe." >> "$GITHUB_STEP_SUMMARY"
+        shell: bash
 
       - name: 'Retry behaviour test ${{ matrix.suite }}-${{ needs.names.outputs.environment-name }}'
         id: behaviour-test-retry
-        if: ${{ !cancelled() && steps.behaviour-test.outcome == 'failure' }}
+        if: ${{ !cancelled() && steps.behaviour-test.outcome == 'failure' && steps.wait-before-retry.outputs.deploy-in-progress != 'true' }}
         run: |
           echo "Retrying behaviour test after initial failure..."
           npm run 'test:${{ matrix.suite }}-${{ needs.names.outputs.environment-name }}' || exit_code=$? \
@@ -671,6 +693,10 @@ jobs:
             target/test-reports/
     outputs:
       result: ${{ steps.behaviour-test-retry.outputs.RESULT || steps.behaviour-test.outputs.RESULT }}
+      # 'true' when a deploy on main was gating and this suite ran neither the test nor the
+      # retry: the deploy's own probe of the suite covers it, so publish-cloudwatch-metric must
+      # not record a pass or a fail for it here.
+      superseded: ${{ (steps.wait-before-navigate.outputs.deploy-in-progress == 'true' || steps.wait-before-retry.outputs.deploy-in-progress == 'true') && 'true' || 'false' }}
 
   publish-cloudwatch-metric:
     if: ${{ !cancelled() }}
@@ -713,8 +739,13 @@ jobs:
           retry-max-attempts: 3
 
       - name: publish cloudwatch metric
-        # Matrixed: this step runs once per suite with the same aggregate behaviour-test.result.
-        # Converting GHA job-level result to 0/1: 0 = all suites passed, 1 = any suite failed.
+        # Matrixed: this step runs once per suite with the same aggregate behaviour-test.result
+        # and superseded (GHA collapses a matrixed job's outputs to one value for every
+        # downstream matrix entry; converting job-level result to 0/1: 0 = all suites passed, 1
+        # = any suite failed). Skipped entirely when superseded, so a suite a deploy on main
+        # superseded (see wait-before-navigate/wait-before-retry) is not recorded as a pass or a
+        # fail here: the deploy's own probe of it does that instead.
+        if: ${{ !cancelled() && needs.behaviour-test.outputs.superseded != 'true' }}
         run: |
           if [ "${{ needs.behaviour-test.result }}" = "success" ]; then VALUE=0; else VALUE=1; fi
           aws cloudwatch put-metric-data \
