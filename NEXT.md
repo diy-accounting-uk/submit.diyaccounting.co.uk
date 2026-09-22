@@ -40,9 +40,8 @@ step.
 
 ## In flight
 
-- [ ] **B80. Wave b80 on `claude/b80-board`.** Three agents: AS1 and AS8 (the Vitest coverage
-  gate under its real key with measured numbers; the two RUM deployed-environment skips out of the
-  unit runner), AS4 and AS7 (the ESLint config cleanup; the strict-mode TODO and warning
+- [ ] **B80. Wave b80 on `claude/b80-board`.** Three agents: AS8 (the two RUM deployed-environment skips out of the unit runner; AS1's
+  coverage commit rejected, the finding on its own row), AS4 and AS7 (the ESLint config cleanup; the strict-mode TODO and warning
   comments), AS6 and AS5 (prettier and Spotless checks in `test.yml`; the lint job as a
   baseline ratchet with unused disable directives removed). No pull request yet. **Source**: the
   rows named. **Owner**: Claude Code. **Model**: Sonnet and Haiku. **Size**: ~10 files plus the
@@ -72,6 +71,23 @@ step.
   PU-7j, ~15 across the two rows after it.
 
 ## Machine-only
+
+- [ ] **AS1. Coverage collection finds no files, so no gate can fire.** `vitest.config.js`
+  declares the thresholds under `coverage.threshold` (Vitest 4 reads `thresholds`), and renaming
+  the key changes nothing yet: `npm run test:coverage` on b80 ran 274 files green and reported
+  `All files 0 0 0 0`, `Statements: Unknown% (0/0)`, with the v8 provider and with
+  `@vitest/coverage-istanbul` alike, for the whole suite and for one test file
+  (`app/unit-tests/lib/activityAlert.test.js`) with an explicit `--coverage.include`. Neither
+  provider sees a single `app/**` module, so the modules reach the tests outside Vitest's
+  transform: find why (the `default` project's `pool: "forks"` at `vitest.config.js` lines 26 to
+  50, `server.deps`, the `include`/`exclude` globs at lines 68 to 80, the `--exclude '**/.claude/**'`
+  in `package.json`'s `test:coverage`, and how the unit tests import `app/` modules), make one
+  file report a non-zero figure, then rename the key to `thresholds` with `perFile: false`, run
+  the suite and set the four numbers to the measured figures rounded down. Proof: a threshold one
+  point above the measured figure fails the run, the committed figures pass. **Source**: the
+  AI-readiness assessment of 2026-09-18 (`.assess/assess-report.md` on the `bjcoombs` fork at
+  45bcc054), action 1; b80's run on 2026-09-22. **Owner**: Claude Code. **Model**: Sonnet.
+  **Size**: ~2 files.
 
 - [ ] **AS15. A dead-code pass with knip.** The assessment's dead-code scan used `ts-prune` on
   a JavaScript tree and reported zero, which is "not analysed". Run `npx knip` once at the root
