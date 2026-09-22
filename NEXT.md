@@ -80,15 +80,6 @@ step.
   runs 35699227062, 35700324497, 35702110179; BACKLOG 58. **Owner**: Claude Code. **Model**:
   Sonnet. **Size**: ~1 file.
 
-- [ ] **B34.6b. The email that asks Companies House about submission 000004.** Draft
-  `../DRAFT_EMAIL_XMLGW_000004.md` at the workspace root (private: it names the presenter) for the
-  `xml@companieshouse.gov.uk` thread whose last message is the operator's of 2026-09-11: submission
-  000004 (test presenter, company 06846849, package reference 0012) was acknowledged with no errors
-  by the XML Gateway test service, yet every `GetSubmissionStatus` poll answers 9999 "No presenter
-  ID supplied" with the body's `PresenterID` sent plaintext and hashed; ask whether 000004 was
-  accepted and whether status lookups are enabled for this presenter. **Source**: BACKLOG 34b, 34d.
-  **Owner**: Claude Code. **Model**: Haiku. **Size**: ~1 file.
-
 - [ ] **PU-5. The DIYA-GL tier on prod.** `SubmitApplication.java` line 489 sets
   `.residentTierEnabled(!"prod".equals(envName))`, which `DiyaGlStack.java` (lines 153 and 257)
   passes as `DIYA_GL_RESIDENT_TIER` and `app/services/diyaGlEntitlement.js` line 57 reads; make
@@ -245,7 +236,7 @@ step.
   SDST answers. **Source**: BACKLOG 11; `PLAN_ITSA_PHASE_2.md` T10. **Owner**: Operator. **Model**:
   none. **Size**: 0 files.
 
-- [ ] **O34d. Send the XML Gateway email.** Send B34.6b's draft from `antony@diyaccounting.co.uk`
+- [ ] **O34d. Send the XML Gateway email.** Send `../DRAFT_EMAIL_XMLGW_000004.md` from `antony@diyaccounting.co.uk`
   as a reply on the `xml@companieshouse.gov.uk` thread, and paste the answer into B34.6c's row when
   it comes. **Source**: BACKLOG 34d. **Owner**: Operator. **Model**: none. **Size**: 0 files.
 
