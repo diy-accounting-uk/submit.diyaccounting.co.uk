@@ -16,9 +16,9 @@ runs), and for Claude Code steps the **Model** a sub-agent should use (Fable > O
 Haiku; the lowest tier that fits). Anything touching code goes through a `claude/*` branch and
 PR; the operator merges.
 
-**Prod runs deployment prod-a4ea2f3** (PR #324's merge; its deploy run is on its last prod probe and
-prod-bc09c1b is being destroyed). **ci**: `ci-set1` is last-known-good. Open pull request: #325
-(`claude/b72-board`: PU-7d, PU-7f, PU-7l), its ci deploy in flight.
+**Prod runs deployment prod-a4ea2f3**; main's deploy of PR #325's merge (486af0b6) is in flight.
+**ci**: `ci-set1` is last-known-good. Open pull request: #326 (`claude/b73-board`: B30af.8), its ci deploy
+in flight.
 
 The board runs in five sections, in this order: **in flight** (a branch, a pull request or a run
 in motion, each named in the row), **machine-only**, **machine-ask**, **human-driven**,
@@ -41,7 +41,7 @@ step.
 ## In flight
 
 - [ ] **B30af.8. A scheduled probe never holds a suite's lock while it waits for main's deploy.**
-  In flight: an agent on `worktree-agent-a20c46ad24ab88104`, to land on `claude/b73-board`.
+  In flight: `claude/b73-board`, PR #326, its ci deploy running.
   `probe-test.yml`'s `behaviour-test` job takes the concurrency group
   `behaviour-test-user-<env>-<suite>` (line 352) and then, on a scheduled run, waits inside that
   job for any deploy in progress on `main` (the `wait-for-main-deploy` steps at lines 500 and 548,
@@ -58,15 +58,15 @@ step.
   suite as superseded inside a minute. **Source**: deploy run 35688610628; BACKLOG 30.
   **Owner**: Claude Code. **Model**: Sonnet. **Size**: ~3 files.
 
-- [ ] **PU-7. Practice licence build.** In flight: PU-7d (the entitlement by client), PU-7f (agent
-  authorisation) and PU-7l (`move_book_to_client`) on `claude/b72-board`, PR #325, its ci deploy
-  running. The rows left in `PLAN_PRICE_UPDATE.md` §(d) (lines 227 to 236): PU-7e waits on the
-  operator's grant numbers, PU-7g on PU-7f, PU-7h on PU-7g, PU-7i on PU-7g and the MCP plan's M2
-  and M3, PU-7j on PU-7i, PU-7k on PU-7f, PU-7m on PU-7j; the `resident-pro` catalogue values
-  (`enable = "always"`, `hidden = false`, `allocation = "on-subscription"`) flip in the launch step
-  after PU-7m, with the four ci probes that reach resident-pro through a pass updated in the same
-  change. **Source**: `PLAN_PRICE_UPDATE.md` PU-7. **Owner**: Claude Code. **Model**: Sonnet.
-  **Size**: ~45 files across 7 rows.
+- [ ] **PU-7. Practice licence build.** PU-7a to PU-7f and PU-7l are on `main`. In flight on
+  `claude/b74-board`: PU-7g (the submission routes take a client id and `enforceBundles` gains the
+  practice check, ~10 files) and PU-7k (the practice page, ~5 files). Left in `PLAN_PRICE_UPDATE.md`
+  §(d) (lines 227 to 236): PU-7e waits on the operator's grant numbers, PU-7h on PU-7g, PU-7i on
+  PU-7g and the MCP plan's M2 and M3, PU-7j on PU-7i, PU-7m on PU-7j; the `resident-pro` catalogue
+  values (`enable = "always"`, `hidden = false`, `allocation = "on-subscription"`) flip in the launch
+  step after PU-7m, with the four ci probes that reach resident-pro through a pass updated in the
+  same change. **Source**: `PLAN_PRICE_UPDATE.md` PU-7. **Owner**: Claude Code. **Model**: Sonnet.
+  **Size**: ~30 files across 5 rows after this wave.
 
 ## Machine-only
 
