@@ -59,8 +59,11 @@ step.
   validation is reverted on the branch: the simulator lane runs with `COGNITO_CLIENT_ID`,
   `COGNITO_BASE_URI` and the two HMRC secret ARNs blank by design, so every simulator suite's
   server failed to start in `test` run 35767760731; deploy 35767761916 never won a ci slot (both held, one by
-  PR #334's ended run) and was cancelled; the reverts are pushed as head cd8f56d8, its runs
-  starting. The suite's ci and prod variants need a sandbox agent authorisation the simulator
+  PR #334's ended run) and was cancelled; the reverts pushed as cd8f56d8, whose `test` run failed the new
+  practice licence simulator suite on a missing `mcp/node_modules` (the job never installed the
+  MCP package); head 858c8cd3 adds that install and carries B30as (1a9ec71e: a `release-ci-slot`
+  job at the end of `deploy.yml` deletes this run's claim unless the set is the ci LKG, with the
+  stale rule as backstop). Its runs are starting. The suite's ci and prod variants need a sandbox agent authorisation the simulator
   shortcut has no equivalent for, so they run only when one exists. **Source**: the rows named.
   **Owner**: Claude Code. **Model**: Sonnet and Haiku. **Size**: ~16 files.
 - [ ] **PU-7. Practice licence build.** PU-7a to PU-7l are on `main`. In flight on
@@ -112,17 +115,6 @@ step.
   `queued` (`gh run view`), and the two-slot pool's sets are never swept while claimed. Proof: a
   sweep dispatched with `-f sweep-for-stacks=true` while a branch deploy holds a slot logs the
   skip and leaves the set. **Source**: runs 35766864248 and 35773445604; BACKLOG 30. **Owner**:
-  Claude Code. **Model**: Sonnet. **Size**: ~2 files.
-
-- [ ] **B30as. A finished deploy run releases its ci slot.** `.github/actions/claim-ci-slot`
-  frees a slot only when its parameter is absent, when the claiming ref redeploys, or when the
-  claim is older than the self-destruct delay plus an hour (lines 8 to 22), so PR #334's red run
-  35761188691 held `ci-set2` from 17:53 while PR #335's run 35767761916 waited its whole
-  allowance for a slot and failed. Add a release step at the end of `deploy.yml` (`if:
-  always()`, after the last stack or probe job, and in the cancelled path) that deletes the
-  claim parameter when it still names this run's id; keep the stale rule as the backstop. Proof:
-  a run that fails after claiming leaves its parameter absent, and a second branch's `names` job
-  claims within a minute. **Source**: runs 35761188691 and 35767761916; BACKLOG 30. **Owner**:
   Claude Code. **Model**: Sonnet. **Size**: ~2 files.
 
 - [ ] **AS15. A dead-code pass with knip.** The assessment's dead-code scan used `ts-prune` on
