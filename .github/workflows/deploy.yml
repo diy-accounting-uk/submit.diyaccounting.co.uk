@@ -621,6 +621,7 @@ jobs:
       base-url:      ${{ steps.deployment-config.outputs.base-url }}
       apex-domain: ${{ steps.deployment-config.outputs.apex-domain }}
       apex-url: ${{ steps.deployment-config.outputs.apex-url }}
+      public-url: ${{ steps.deployment-config.outputs.public-url }}
       holding-domain: ${{ steps.deployment-config.outputs.holding-domain }}
       holding-url: ${{ steps.deployment-config.outputs.holding-url }}
       prod-apex-alias: ${{ steps.deployment-config.outputs.prod-apex-alias }}
@@ -1878,7 +1879,7 @@ jobs:
           BASE_IMAGE_TAG: ${{ needs.push-images.outputs.base-image-tag }}
           WEBSITE_HASH: ${{ steps.publish-hash.outputs.WEBSITE_HASH }}
           HTTP_API_URL: ${{ steps.lookup-api.outputs.http-api-url }}
-          DIY_SUBMIT_APEX_URL: ${{ needs.names.outputs.apex-url }}
+          DIY_SUBMIT_APEX_URL: ${{ needs.names.outputs.public-url }}
           # Looked up from Cognito domain convention in names job
           COGNITO_USER_POOL_ARN: ${{ needs.names.outputs.cognito-user-pool-arn }}
           COGNITO_CLIENT_ID: ${{ needs.names.outputs.cognito-client-id }}
@@ -2080,8 +2081,8 @@ jobs:
 
       - name: Verify API health via HEAD /api/v1/cognito/token
         run: |
-          APEX_URL="${{ needs.names.outputs.apex-url }}"
-          ENDPOINT="${APEX_URL}api/v1/cognito/token"
+          PUBLIC_URL="${{ needs.names.outputs.public-url }}"
+          ENDPOINT="${PUBLIC_URL}api/v1/cognito/token"
           echo "Checking API endpoint: $ENDPOINT"
 
           MAX_RETRIES=5

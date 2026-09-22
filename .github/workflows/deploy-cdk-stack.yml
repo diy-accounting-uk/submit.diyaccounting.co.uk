@@ -280,6 +280,7 @@ jobs:
       base-url:      ${{ steps.deployment-config.outputs.base-url }}
       apex-domain: ${{ steps.deployment-config.outputs.apex-domain }}
       apex-url: ${{ steps.deployment-config.outputs.apex-url }}
+      public-url: ${{ steps.deployment-config.outputs.public-url }}
       holding-domain: ${{ steps.deployment-config.outputs.holding-domain }}
       holding-url: ${{ steps.deployment-config.outputs.holding-url }}
 
@@ -441,7 +442,7 @@ jobs:
           # Looked up from API Gateway custom domain, or manual override from http-api-url input
           HTTP_API_URL: ${{ steps.lookup.outputs.http-api-url || needs.params.outputs['http-api-url'] }}
           WEBSITE_HASH: ${{ needs.params.outputs['website-hash'] }}
-          DIY_SUBMIT_APEX_URL: ${{ needs.names.outputs.apex-url }}
+          DIY_SUBMIT_APEX_URL: ${{ needs.names.outputs.public-url }}
           HOLDING_CERTIFICATE_ARN: ${{ vars.SUBMIT_HOLDING_CERTIFICATE_ARN }}
           # diya-ops GitHub App: OpsStack, AccountStack and SecurityLakeStack read these to mint
           # their own installation tokens at runtime (see app/lib/githubAppToken.js). The

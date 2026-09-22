@@ -1177,11 +1177,6 @@ public class SubmitSharedNames {
         this();
         this.hostedZoneName = props.hostedZoneName;
         this.envDomainName = "%s-%s.%s".formatted(props.envName, props.subDomainName, props.hostedZoneName);
-        if ("prod".equals(props.envName)) {
-            this.publicDomainName = "%s.%s".formatted(props.subDomainName, props.hostedZoneName);
-        } else {
-            this.publicDomainName = this.envDomainName;
-        }
         this.cognitoDomainName = "%s-auth.%s".formatted(props.envName, props.hostedZoneName);
         this.holdingDomainName = "prod".equals(props.envName)
                 ? "holding.%s.%s".formatted(props.subDomainName, props.hostedZoneName)
@@ -1193,6 +1188,13 @@ public class SubmitSharedNames {
                         props.deploymentName,
                         props.subDomainName,
                         props.hostedZoneName); // TODO -> deploymentDomainName
+        // Outside prod every deployment is proved on its own host, so that host is also the one
+        // its Lambdas and its submit.env carry; the environment apex follows a proven set later.
+        if ("prod".equals(props.envName)) {
+            this.publicDomainName = "%s.%s".formatted(props.subDomainName, props.hostedZoneName);
+        } else {
+            this.publicDomainName = this.deploymentDomainName;
+        }
         // this.defaultAliasName = "zero";
         this.provisionedConcurrencyAliasName = "pc";
         this.baseUrl = "https://%s/".formatted(this.deploymentDomainName);

@@ -45,10 +45,10 @@ outputs:
     description: "Holding page URL for the environment"
     value: ${{ steps.compute.outputs.DIY_SUBMIT_HOLDING_URL }}
   public-domain:
-    description: "Public-facing hostname (submit.diyaccounting.co.uk for prod, same as apex for non-prod)"
+    description: "Public-facing hostname (submit.diyaccounting.co.uk for prod, the deployment's own host for non-prod)"
     value: ${{ steps.compute.outputs.DIY_SUBMIT_PUBLIC_DOMAIN }}
   public-url:
-    description: "Public-facing URL (https://submit.diyaccounting.co.uk/ for prod, same as apex for non-prod)"
+    description: "Public-facing URL (https://submit.diyaccounting.co.uk/ for prod, the deployment's own URL for non-prod)"
     value: ${{ steps.compute.outputs.DIY_SUBMIT_PUBLIC_URL }}
   prod-apex-alias:
     description: "Additional prod alias domain (submit.diyaccounting.co.uk) - only set for prod"
@@ -139,7 +139,7 @@ runs:
           DIY_SUBMIT_PROD_ALIAS="${DIY_SUBMIT_PUBLIC_DOMAIN}"
           echo "DIY_SUBMIT_PROD_ALIAS=$DIY_SUBMIT_PROD_ALIAS" | tee -a "$GITHUB_OUTPUT"
         else
-          DIY_SUBMIT_PUBLIC_DOMAIN="${DIY_SUBMIT_APEX_DOMAIN}"
+          DIY_SUBMIT_PUBLIC_DOMAIN="${DIY_SUBMIT_BASE_DOMAIN}"
         fi
         DIY_SUBMIT_PUBLIC_URL="https://${DIY_SUBMIT_PUBLIC_DOMAIN}/"
 
