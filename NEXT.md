@@ -132,8 +132,7 @@ step.
   and `v_cost_vs_target_monthly` in `operatorSnapshotPublish.js`; the reinvestment fraction as a
   lever with the reserve floor (operator, 2026-09-22: the fraction is 20% of trailing income, the
   reserve floor £2,000, one experiment may take at most 10% of the budget unless the operator
-  names a larger share for it, and the trailing window is 90 days unless the operator names
-  another); paid traffic and article boosts as `experiments.toml` rows with
+  names a larger share for it, and the trailing window is 30 days); paid traffic and article boosts as `experiments.toml` rows with
   on-off or geographic controls; GA4 conversion import from the Ads account, which exists as code
   (`infra/google/ads/ads.toml`: customer `8142685080`, four conversion actions imported from GA4
   events, one Performance Max campaign); the cost-per-session ceiling PU-15 wrote into D17 is the
