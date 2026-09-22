@@ -40,9 +40,10 @@ step.
 
 ## In flight
 
-- [ ] **B82. Wave b82 on `claude/b82-board`.** Two agents: PU-7e (the practice's token grant
-  unlimited in `tokenEnforcement.js`, `bundleManagement.js` and the catalogue) and B34j (the
-  privacy notice's row for practice client filing); B34i's ICO wording is on `main`. No pull request yet. **Source**: the rows named. **Owner**:
+- [ ] **B82. Wave b82 on `claude/b82-board`.** B34j landed as a9e2e920 (the privacy notice's row for practice
+  client filing, with a browser test); PU-7e's agent is on its second commit (the unlimited
+  grant's display on `usage.html`, the header and the simulator map after the enforcement,
+  webhook-refresh and bundle-read changes); B34i's ICO wording is on `main`. No pull request yet. **Source**: the rows named. **Owner**:
   Claude Code. **Model**: Sonnet and Haiku. **Size**: ~5 files.
 
 - [ ] **B81. Wave b81 on `claude/b81-board`, PR #335.** PU-7m (a0bd6686: the practice licence
