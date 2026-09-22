@@ -14,18 +14,13 @@ on:
         required: false
         default: 'main'
         type: string
-      copilot_agent_login:
-        description: 'GitHub Copilot agent login'
-        required: false
-        default: 'copilot-swe-agent'
-        type: string
       skip_if_open_security_issues:
         description: 'Skip if security review issues already open'
         required: false
         default: true
         type: boolean
       issue_number:
-        description: 'Assign Copilot to this existing issue instead of creating one'
+        description: 'Label this existing issue agentic-lib instead of creating one'
         required: false
         type: string
   schedule:
@@ -33,7 +28,6 @@ on:
 
 env:
   TARGET_BRANCH: ${{ inputs.target_branch || 'main' }}
-  COPILOT_AGENT_LOGIN: ${{ inputs.copilot_agent_login || 'copilot-swe-agent' }}
   SKIP_IF_OPEN: ${{ inputs.skip_if_open_security_issues == null && 'true' || inputs.skip_if_open_security_issues }}
 
 jobs:
@@ -136,15 +130,15 @@ jobs:
               '',
               '---',
               '',
-              '### Instructions for Copilot Agent',
+              '### Instructions for the agent',
               '',
               '1. Review each file pattern listed in the scope section',
               '2. Check for vulnerabilities in each OWASP category',
               '3. Document findings with file paths and line numbers',
-              '4. Create a PR with fixes, grouped into logical commits',
-              '5. If no vulnerabilities found, close this issue with a summary',
+              '4. Commit fixes on a branch within the run\'s time budget; a complete run\'s pull request closes this issue',
+              '5. If no vulnerabilities are found, say so in the pull request body, or in a comment the workflow\'s own token posts, and the issue closes',
               '',
-              `__Create a pull request targeting the \`${targetBranch}\` branch.__`
+              `__Target branch: \`${targetBranch}\`.__`
             ].join('\n');
 
             try {
@@ -185,11 +179,13 @@ jobs:
 
               const issue = result.createIssue.issue;
 
+              // Labelling fires an `issues.labeled` event per label added, and
+              // agentic-lib-code.yml starts a run only on the agentic-lib event.
               await github.rest.issues.addLabels({
                 owner: context.repo.owner,
                 repo: context.repo.repo,
                 issue_number: issue.number,
-                labels: ['security-review', 'copilot-agent']
+                labels: ['security-review', 'agentic-lib']
               });
 
               console.log(`Created issue #${issue.number}: ${issue.url}`);
@@ -201,223 +197,67 @@ jobs:
               core.setFailed(`Failed to create issue: ${error.message}`);
             }
 
-  assign-copilot:
-    name: 'Assign to Copilot Agent'
-    needs: [check-existing, create-issue]
-    if: |
-      always() &&
-      (
-        (inputs.issue_number != '' && inputs.issue_number != null && needs.create-issue.result == 'skipped') ||
-        (needs.check-existing.outputs.should_create == 'true' && needs.create-issue.result == 'success')
-      )
+  label-existing-issue:
+    name: 'Label Existing Issue'
+    if: inputs.issue_number != '' && inputs.issue_number != null
     runs-on: ubuntu-latest
     permissions:
       contents: read
       issues: write
+    outputs:
+      issue_number: ${{ steps.label.outputs.issue_number }}
+      issue_url: ${{ steps.label.outputs.issue_url }}
     steps:
-      - name: Resolve target issue
-        id: resolve-issue
+      - name: Add the agentic-lib label
+        id: label
         uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9
         with:
           script: |
-            const dispatchedIssueNumber = '${{ inputs.issue_number }}';
+            const issueNumber = Number('${{ inputs.issue_number }}');
 
-            if (dispatchedIssueNumber) {
-              const { data: issue } = await github.rest.issues.get({
-                owner: context.repo.owner,
-                repo: context.repo.repo,
-                issue_number: Number(dispatchedIssueNumber)
-              });
-              core.setOutput('issue_id', issue.node_id);
-              core.setOutput('issue_number', issue.number.toString());
-              core.setOutput('issue_url', issue.html_url);
-            } else {
-              core.setOutput('issue_id', '${{ needs.create-issue.outputs.issue_id }}');
-              core.setOutput('issue_number', '${{ needs.create-issue.outputs.issue_number }}');
-              core.setOutput('issue_url', '${{ needs.create-issue.outputs.issue_url }}');
-            }
-
-      # The workflow's own GITHUB_TOKEN goes first: run 35598208062 showed the App token's
-      # suggestedActors call never lists copilot-swe-agent at all (only human collaborators),
-      # so the App has no route to the actor regardless of what the mutation does with it.
-      - name: Assign issue to Copilot (workflow token)
-        id: assign-workflow-token
-        continue-on-error: true
-        uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9
-        with:
-          script: |
-            const issueId = '${{ steps.resolve-issue.outputs.issue_id }}';
-            const issueNumber = ${{ steps.resolve-issue.outputs.issue_number }};
-
-            const actorsQuery = `
-              query($owner: String!, $name: String!) {
-                repository(owner: $owner, name: $name) {
-                  suggestedActors(capabilities: [CAN_BE_ASSIGNED], first: 100) {
-                    nodes {
-                      login
-                      __typename
-                      ... on Bot { id }
-                      ... on User { id }
-                    }
-                  }
-                }
-              }
-            `;
-
-            const actorsResult = await github.graphql(actorsQuery, {
+            const { data: issue } = await github.rest.issues.get({
               owner: context.repo.owner,
-              name: context.repo.repo
+              repo: context.repo.repo,
+              issue_number: issueNumber
             });
 
-            const suggestedLogins = actorsResult.repository.suggestedActors.nodes.map(n => n.login);
-            console.log('Suggested actors (workflow token):', suggestedLogins);
-
-            const copilotBot = actorsResult.repository.suggestedActors.nodes.find(
-              actor => actor.login === '${{ env.COPILOT_AGENT_LOGIN }}'
-            );
-
-            if (!copilotBot) {
-              core.setOutput('assigned', 'false');
-              core.setOutput('reason', 'actor-not-suggested');
-              return;
+            // Labelling fires an `issues.labeled` event per label added, and
+            // agentic-lib-code.yml starts a run only on the agentic-lib event.
+            const existingLabels = issue.labels.map(l => (typeof l === 'string' ? l : l.name));
+            const labelsToAdd = ['agentic-lib'];
+            if (!existingLabels.includes('security-review')) {
+              labelsToAdd.push('security-review');
             }
 
-            const assignMutation = `
-              mutation($assignableId: ID!, $actorIds: [ID!]!) {
-                replaceActorsForAssignable(input: {
-                  assignableId: $assignableId,
-                  actorIds: $actorIds
-                }) {
-                  assignable {
-                    ... on Issue {
-                      assignees(first: 5) {
-                        nodes { login }
-                      }
-                    }
-                  }
-                }
-              }
-            `;
-
-            const assignResult = await github.graphql(assignMutation, {
-              assignableId: issueId,
-              actorIds: [copilotBot.id]
-            });
-
-            const assignees = assignResult.replaceActorsForAssignable.assignable.assignees.nodes.map(n => n.login);
-            console.log('Assignees after mutation (workflow token):', assignees);
-
-            if (assignees.includes('${{ env.COPILOT_AGENT_LOGIN }}')) {
-              core.setOutput('assigned', 'true');
-              console.log(`Assigned issue #${issueNumber} to ${{ env.COPILOT_AGENT_LOGIN }}`);
-            } else {
-              core.setOutput('assigned', 'false');
-              core.setOutput('reason', 'mutation-left-assignee-absent');
-            }
-
-      - name: Mint an App token
-        id: app-token
-        if: steps.assign-workflow-token.outputs.assigned != 'true'
-        uses: actions/create-github-app-token@fee1f7d63c2ff003460e3d139729b119787bc349 # v2.2.2
-        with:
-          app-id: ${{ vars.AGENT_APP_ID }}
-          private-key: ${{ secrets.AGENT_APP_PRIVATE_KEY }}
-
-      - name: Assign issue to Copilot (GitHub App token)
-        id: assign-app-token
-        if: steps.assign-workflow-token.outputs.assigned != 'true'
-        continue-on-error: true
-        uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9
-        with:
-          github-token: ${{ steps.app-token.outputs.token }}
-          script: |
-            const issueId = '${{ steps.resolve-issue.outputs.issue_id }}';
-            const issueNumber = ${{ steps.resolve-issue.outputs.issue_number }};
-
-            const actorsQuery = `
-              query($owner: String!, $name: String!) {
-                repository(owner: $owner, name: $name) {
-                  suggestedActors(capabilities: [CAN_BE_ASSIGNED], first: 100) {
-                    nodes {
-                      login
-                      __typename
-                      ... on Bot { id }
-                      ... on User { id }
-                    }
-                  }
-                }
-              }
-            `;
-
-            const actorsResult = await github.graphql(actorsQuery, {
+            await github.rest.issues.addLabels({
               owner: context.repo.owner,
-              name: context.repo.repo
+              repo: context.repo.repo,
+              issue_number: issueNumber,
+              labels: labelsToAdd
             });
 
-            const suggestedLogins = actorsResult.repository.suggestedActors.nodes.map(n => n.login);
-            console.log('Suggested actors (App token):', suggestedLogins);
+            console.log(`Labelled issue #${issue.number} with ${labelsToAdd.join(', ')}`);
+            core.setOutput('issue_number', issue.number.toString());
+            core.setOutput('issue_url', issue.html_url);
 
-            const copilotBot = actorsResult.repository.suggestedActors.nodes.find(
-              actor => actor.login === '${{ env.COPILOT_AGENT_LOGIN }}'
-            );
-
-            if (!copilotBot) {
-              core.setOutput('assigned', 'false');
-              core.setOutput('reason', 'actor-not-suggested');
-              return;
-            }
-
-            const assignMutation = `
-              mutation($assignableId: ID!, $actorIds: [ID!]!) {
-                replaceActorsForAssignable(input: {
-                  assignableId: $assignableId,
-                  actorIds: $actorIds
-                }) {
-                  assignable {
-                    ... on Issue {
-                      assignees(first: 5) {
-                        nodes { login }
-                      }
-                    }
-                  }
-                }
-              }
-            `;
-
-            const assignResult = await github.graphql(assignMutation, {
-              assignableId: issueId,
-              actorIds: [copilotBot.id]
-            });
-
-            const assignees = assignResult.replaceActorsForAssignable.assignable.assignees.nodes.map(n => n.login);
-            console.log('Assignees after mutation (App token):', assignees);
-
-            if (assignees.includes('${{ env.COPILOT_AGENT_LOGIN }}')) {
-              core.setOutput('assigned', 'true');
-              console.log(`Assigned issue #${issueNumber} to ${{ env.COPILOT_AGENT_LOGIN }}`);
-            } else {
-              core.setOutput('assigned', 'false');
-              core.setOutput('reason', 'mutation-left-assignee-absent');
-            }
-
-      - name: Fail if Copilot was not assigned
-        if: steps.assign-workflow-token.outputs.assigned != 'true' && steps.assign-app-token.outputs.assigned != 'true'
-        uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9
-        with:
-          script: |
-            const workflowReason = '${{ steps.assign-workflow-token.outputs.reason }}' || '${{ steps.assign-workflow-token.outcome }}';
-            const appReason = '${{ steps.assign-app-token.outputs.reason }}' || '${{ steps.assign-app-token.outcome }}';
-            core.setFailed(
-              `Copilot was not assigned to issue #${{ steps.resolve-issue.outputs.issue_number }}. ` +
-              `Workflow token: ${workflowReason}. App token: ${appReason}.`
-            );
-
+  summary:
+    name: 'Summary'
+    needs: [check-existing, create-issue, label-existing-issue]
+    if: always()
+    runs-on: ubuntu-latest
+    permissions: {}
+    steps:
       - name: Summary
-        if: always()
+        env:
+          ISSUE_NUMBER: ${{ needs.create-issue.outputs.issue_number || needs.label-existing-issue.outputs.issue_number }}
+          ISSUE_URL: ${{ needs.create-issue.outputs.issue_url || needs.label-existing-issue.outputs.issue_url }}
         run: |
           echo "## Security Review Issue"
           echo ""
-          echo "**Issue:** #${{ steps.resolve-issue.outputs.issue_number }}"
-          echo "**URL:** ${{ steps.resolve-issue.outputs.issue_url }}"
-          echo "**Assigned to:** ${{ env.COPILOT_AGENT_LOGIN }}"
-          echo "**Assigned via:** ${{ steps.assign-workflow-token.outputs.assigned == 'true' && 'workflow token' || (steps.assign-app-token.outputs.assigned == 'true' && 'App token' || 'not assigned') }}"
+          if [ -z "${ISSUE_NUMBER}" ]; then
+            echo "No issue created or labelled: an open security-review issue already exists."
+          else
+            echo "**Issue:** #${ISSUE_NUMBER}"
+            echo "**URL:** ${ISSUE_URL}"
+            echo "**Label applied:** agentic-lib"
+          fi
