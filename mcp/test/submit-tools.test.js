@@ -129,12 +129,23 @@ describe("submit-tools", () => {
       expect(init.headers.hmrcAccount).toBe("synthetic");
     });
 
-    it("requires vrn", async () => {
+    it("requires vrn, or clientId", async () => {
       await expect(listVatObligations({}, { hmrcAccessToken: HMRC_ACCESS_TOKEN })).rejects.toThrow("vrn");
     });
 
     it("requires hmrcAccessToken", async () => {
       await expect(listVatObligations({}, { vrn: VRN })).rejects.toThrow("hmrcAccessToken");
+    });
+
+    it("resolves the VRN from a practice client's row instead of vrn, when clientId is given", async () => {
+      const mockFetch = vi.fn().mockResolvedValueOnce(jsonResponse(200, LIST_VAT_OBLIGATIONS_RESPONSE));
+      vi.stubGlobal("fetch", mockFetch);
+
+      const result = await listVatObligations({}, { clientId: "01ARZ3NDEKTSV4RRFFQ69G5FAV", hmrcAccessToken: HMRC_ACCESS_TOKEN });
+
+      expect(result).toEqual(LIST_VAT_OBLIGATIONS_RESPONSE);
+      const [url] = mockFetch.mock.calls[0];
+      expect(url).toBe("https://submit.diyaccounting.co.uk/api/v1/hmrc/vat/obligation?clientId=01ARZ3NDEKTSV4RRFFQ69G5FAV");
     });
 
     it("throws the API's own message on a non-ok response", async () => {
@@ -228,6 +239,32 @@ describe("submit-tools", () => {
       ).rejects.toThrow("hmrcAccessToken");
     });
 
+    it("requires vatNumber, or clientId", async () => {
+      await expect(
+        submitVatReturn({}, { periodStart: "2025-01-01", periodEnd: "2025-03-31", hmrcAccessToken: HMRC_ACCESS_TOKEN, ...NINE_BOX_FIELDS }),
+      ).rejects.toThrow("vatNumber");
+    });
+
+    it("sends clientId instead of vatNumber when given, resolved by the route from the client row", async () => {
+      const mockFetch = vi.fn().mockResolvedValueOnce(jsonResponse(200, SUBMIT_VAT_RETURN_RESPONSE));
+      vi.stubGlobal("fetch", mockFetch);
+
+      await submitVatReturn(
+        {},
+        {
+          clientId: "01ARZ3NDEKTSV4RRFFQ69G5FAV",
+          periodStart: "2025-01-01",
+          periodEnd: "2025-03-31",
+          hmrcAccessToken: HMRC_ACCESS_TOKEN,
+          ...NINE_BOX_FIELDS,
+        },
+      );
+
+      const body = JSON.parse(mockFetch.mock.calls[0][1].body);
+      expect(body.clientId).toBe("01ARZ3NDEKTSV4RRFFQ69G5FAV");
+      expect(body.vatNumber).toBeUndefined();
+    });
+
     it("polls a 202 to completion before returning the receipt", async () => {
       vi.useFakeTimers();
       const mockFetch = vi
@@ -279,6 +316,26 @@ describe("submit-tools", () => {
     it("requires name", async () => {
       await expect(getVatReceipt({}, {})).rejects.toThrow("name");
     });
+
+    it("carries clientId as a query parameter when given", async () => {
+      const mockFetch = vi.fn().mockResolvedValueOnce(jsonResponse(200, GET_VAT_RECEIPT_RESPONSE));
+      vi.stubGlobal("fetch", mockFetch);
+
+      await getVatReceipt({}, { name: "2025-03-31-123456789012.json", clientId: "01ARZ3NDEKTSV4RRFFQ69G5FAV" });
+
+      expect(mockFetch.mock.calls[0][0]).toBe(
+        "https://submit.diyaccounting.co.uk/api/v1/hmrc/receipt/2025-03-31-123456789012.json?clientId=01ARZ3NDEKTSV4RRFFQ69G5FAV",
+      );
+    });
+
+    it("throws the API's own client-not-found message for a client that is not the caller's", async () => {
+      const mockFetch = vi.fn().mockResolvedValueOnce(jsonResponse(403, { message: "client-not-found" }));
+      vi.stubGlobal("fetch", mockFetch);
+
+      await expect(getVatReceipt({}, { name: "2025-03-31-123456789012.json", clientId: "not-my-client" })).rejects.toThrow(
+        "client-not-found",
+      );
+    });
   });
 
   describe("preview_micro_entity_accounts", () => {
@@ -302,6 +359,14 @@ describe("submit-tools", () => {
       const params = { ...ACCOUNTS_PARAMS, statementsAccepted: { ...ACCOUNTS_PARAMS.statementsAccepted, microEntityProvisions: false } };
       await expect(previewMicroEntityAccounts({}, params)).rejects.toThrow("microEntityProvisions");
     });
+
+    it("still requires companyNumber when clientId is given, since the preview route never reads it", async () => {
+      const withoutCompanyNumber = { ...ACCOUNTS_PARAMS };
+      delete withoutCompanyNumber.companyNumber;
+      await expect(previewMicroEntityAccounts({}, { ...withoutCompanyNumber, clientId: "01ARZ3NDEKTSV4RRFFQ69G5FAV" })).rejects.toThrow(
+        "companyNumber",
+      );
+    });
   });
 
   describe("submit_micro_entity_accounts", () => {
@@ -319,6 +384,25 @@ describe("submit-tools", () => {
 
     it("requires companyAuthCode", async () => {
       await expect(submitMicroEntityAccounts({}, ACCOUNTS_PARAMS)).rejects.toThrow("companyAuthCode");
+    });
+
+    it("requires companyNumber, or clientId", async () => {
+      const withoutCompanyNumber = { ...ACCOUNTS_PARAMS };
+      delete withoutCompanyNumber.companyNumber;
+      await expect(submitMicroEntityAccounts({}, { ...withoutCompanyNumber, companyAuthCode: "Sim0123" })).rejects.toThrow("companyNumber");
+    });
+
+    it("sends clientId instead of companyNumber when given, resolved by the route from the client row", async () => {
+      const withoutCompanyNumber = { ...ACCOUNTS_PARAMS };
+      delete withoutCompanyNumber.companyNumber;
+      const mockFetch = vi.fn().mockResolvedValueOnce(jsonResponse(201, SUBMIT_MICRO_ENTITY_ACCOUNTS_RESPONSE));
+      vi.stubGlobal("fetch", mockFetch);
+
+      await submitMicroEntityAccounts({}, { ...withoutCompanyNumber, clientId: "01ARZ3NDEKTSV4RRFFQ69G5FAV", companyAuthCode: "Sim0123" });
+
+      const body = JSON.parse(mockFetch.mock.calls[0][1].body);
+      expect(body.clientId).toBe("01ARZ3NDEKTSV4RRFFQ69G5FAV");
+      expect(body.companyNumber).toBeUndefined();
     });
   });
 

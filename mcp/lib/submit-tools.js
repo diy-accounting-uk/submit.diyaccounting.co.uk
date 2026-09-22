@@ -29,7 +29,7 @@ function sessionToken() {
   return value;
 }
 
-function requireField(toolName, params, key) {
+export function requireField(toolName, params, key) {
   const value = params?.[key];
   if (value === undefined || value === null || value === "") {
     throw new Error(`${toolName} requires ${key}`);
@@ -75,10 +75,13 @@ async function pollUntilSettled(url, requestInit, firstResponse) {
  * on top and are never overwritten by the session header. A 202 response is polled to a terminal
  * status before this returns (see pollUntilSettled); a poll that never settles throws with the
  * poll URL in the message rather than returning a partial result.
+ * Exported so practice-tools.js's client tools (list_clients, add_client, invite_client,
+ * client_authorisation_status) call the same routes over the same HTTP layer rather than a
+ * second one of their own.
  * @param {string} path - the route, e.g. "/api/v1/hmrc/vat/obligation?vrn=..."
  * @param {{method?: string, body?: Object, headers?: Object, customAuthorizer?: boolean}} [options]
  */
-async function callSubmitApi(path, { method = "GET", body, headers = {}, customAuthorizer = false } = {}) {
+export async function callSubmitApi(path, { method = "GET", body, headers = {}, customAuthorizer = false } = {}) {
   const sessionHeaderName = customAuthorizer ? "X-Authorization" : "Authorization";
   const finalHeaders = { [sessionHeaderName]: `Bearer ${sessionToken()}`, "x-initial-request": "true", ...headers };
   if (body !== undefined) finalHeaders["Content-Type"] = "application/json";
@@ -96,17 +99,23 @@ async function callSubmitApi(path, { method = "GET", body, headers = {}, customA
 }
 
 /**
- * list_vat_obligations: the open and fulfilled obligations for one VRN.
+ * list_vat_obligations: the open and fulfilled obligations for one VRN, or for one practice
+ * client's VRN when clientId is given instead (hmrcVatObligationGet.js resolves it from the
+ * client row; a client that is not this practice's own answers 403 client-not-found).
  * @param {Object} _session - unused; this tool carries no local session state
- * @param {{vrn: string, from?: string, to?: string, status?: string, hmrcAccessToken: string,
- *   hmrcAccount?: string, govTestScenario?: string}} params
+ * @param {{vrn?: string, clientId?: string, from?: string, to?: string, status?: string,
+ *   hmrcAccessToken: string, hmrcAccount?: string, govTestScenario?: string}} params
  */
 export async function listVatObligations(_session, params = {}) {
-  const vrn = requireField("list_vat_obligations", params, "vrn");
+  const { vrn, clientId, from, to, status, hmrcAccount, govTestScenario } = params;
+  if (!vrn && !clientId) {
+    throw new Error("list_vat_obligations requires vrn, or clientId to resolve it from the client row");
+  }
   const hmrcAccessToken = requireField("list_vat_obligations", params, "hmrcAccessToken");
-  const { from, to, status, hmrcAccount, govTestScenario } = params;
 
-  const query = new URLSearchParams({ vrn });
+  const query = new URLSearchParams();
+  if (vrn) query.set("vrn", vrn);
+  if (clientId) query.set("clientId", clientId);
   if (from) query.set("from", from);
   if (to) query.set("to", to);
   if (status) query.set("status", status);
@@ -130,20 +139,26 @@ const VAT_RETURN_BOX_FIELDS = [
 
 /**
  * submit_vat_return: files the nine boxes the user has confirmed (seven filed fields; boxes 3 and
- * 5 are HMRC's own totals and the route derives them itself). Returns
- * {receipt, hmrcResponse, hmrcResponseBody, periodKey, receiptId} — the filed receipt sits under
- * `receipt` (also duplicated at `hmrcResponseBody`), `periodKey` is the obligation period this
- * route resolved from periodStart/periodEnd, and `receiptId` is the name get_vat_receipt takes.
+ * 5 are HMRC's own totals and the route derives them itself), for vatNumber or, when clientId is
+ * given instead, for that practice client's own VRN (hmrcVatReturnPost.js resolves it from the
+ * client row and ignores vatNumber; a client that is not this practice's own answers 403
+ * client-not-authorised). Returns {receipt, hmrcResponse, hmrcResponseBody, periodKey, receiptId}
+ * — the filed receipt sits under `receipt` (also duplicated at `hmrcResponseBody`), `periodKey` is
+ * the obligation period this route resolved from periodStart/periodEnd, and `receiptId` is the
+ * name get_vat_receipt takes.
  * @param {Object} _session
- * @param {{vatNumber: string, periodStart: string, periodEnd: string, hmrcAccessToken: string,
- *   vatDueSales: number, vatDueAcquisitions: number, vatReclaimedCurrPeriod: number,
- *   totalValueSalesExVAT: number, totalValuePurchasesExVAT: number,
+ * @param {{vatNumber?: string, clientId?: string, periodStart: string, periodEnd: string,
+ *   hmrcAccessToken: string, vatDueSales: number, vatDueAcquisitions: number,
+ *   vatReclaimedCurrPeriod: number, totalValueSalesExVAT: number, totalValuePurchasesExVAT: number,
  *   totalValueGoodsSuppliedExVAT: number, totalAcquisitionsExVAT: number,
  *   hmrcAccount?: string, govTestScenario?: string, runFraudPreventionHeaderValidation?: boolean,
  *   allowSyntheticObligations?: boolean}} params
  */
 export async function submitVatReturn(_session, params = {}) {
-  const vatNumber = requireField("submit_vat_return", params, "vatNumber");
+  const { vatNumber, clientId } = params;
+  if (!vatNumber && !clientId) {
+    throw new Error("submit_vat_return requires vatNumber, or clientId to resolve it from the client row");
+  }
   const periodStart = requireField("submit_vat_return", params, "periodStart");
   const periodEnd = requireField("submit_vat_return", params, "periodEnd");
   const hmrcAccessToken = requireField("submit_vat_return", params, "hmrcAccessToken");
@@ -162,7 +177,8 @@ export async function submitVatReturn(_session, params = {}) {
     customAuthorizer: true,
     headers,
     body: {
-      vatNumber,
+      ...(vatNumber ? { vatNumber } : {}),
+      ...(clientId ? { clientId } : {}),
       periodStart,
       periodEnd,
       accessToken: hmrcAccessToken,
@@ -174,23 +190,33 @@ export async function submitVatReturn(_session, params = {}) {
 }
 
 /**
- * get_vat_receipt: a stored receipt by its file name.
+ * get_vat_receipt: a stored receipt by its file name. clientId narrows the fetch to one of the
+ * practice's clients (hmrcReceiptGet.js checks the client belongs to this practice before
+ * reading; a client that is not this practice's own answers 403 client-not-found) — it does not
+ * change which receipt is read, since a receipt's key is the signed-in user's own regardless.
  * @param {Object} _session
- * @param {{name: string}} params
+ * @param {{name: string, clientId?: string}} params
  */
 export async function getVatReceipt(_session, params = {}) {
   const name = requireField("get_vat_receipt", params, "name");
-  return callSubmitApi(`/api/v1/hmrc/receipt/${encodeURIComponent(name)}`);
+  const { clientId } = params;
+  const query = clientId ? `?clientId=${encodeURIComponent(clientId)}` : "";
+  return callSubmitApi(`/api/v1/hmrc/receipt/${encodeURIComponent(name)}${query}`);
 }
 
 const ACCOUNTS_STATEMENT_FIELDS = ["section477Exemption", "membersNotRequiredAudit", "directorsResponsibilities", "microEntityProvisions"];
 
 /**
  * The body both companies-house/accounts routes take, common to the preview and the submit
- * calls; the submit call adds companyAuthCode on top.
+ * calls; the submit call adds companyAuthCode on top. Only the submit route resolves companyNumber
+ * from a practice client's row (companiesHouseAccountsPost.js); the preview route never reads
+ * clientId at all, so allowClientId stays false there and companyNumber stays required.
  */
-function accountsFilingBody(toolName, params) {
-  const companyNumber = requireField(toolName, params, "companyNumber");
+function accountsFilingBody(toolName, params, { allowClientId = false } = {}) {
+  const clientId = allowClientId ? params?.clientId : undefined;
+  if (!params?.companyNumber && !clientId) {
+    requireField(toolName, params, "companyNumber");
+  }
   const companyName = requireField(toolName, params, "companyName");
   const periodStart = requireField(toolName, params, "periodStart");
   const periodEnd = requireField(toolName, params, "periodEnd");
@@ -205,7 +231,8 @@ function accountsFilingBody(toolName, params) {
     if (statementsAccepted?.[field] !== true) throw new Error(`${toolName} requires statementsAccepted.${field} to be accepted`);
   }
   return {
-    companyNumber,
+    ...(params.companyNumber ? { companyNumber: params.companyNumber } : {}),
+    ...(clientId ? { clientId } : {}),
     companyName,
     periodStart,
     periodEnd,
@@ -218,7 +245,8 @@ function accountsFilingBody(toolName, params) {
 
 /**
  * preview_micro_entity_accounts: the rendered iXBRL for confirmed figures, without reaching the
- * Companies House XML Gateway.
+ * Companies House XML Gateway. The preview route never resolves a company from a practice
+ * client's row, so this tool takes companyNumber only, not clientId.
  * @param {Object} _session
  * @param {{companyNumber: string, companyName: string, periodStart: string, periodEnd: string,
  *   balanceSheet: {currentYear: Object, priorYear: Object}, averageEmployees: number,
@@ -231,16 +259,20 @@ export async function previewMicroEntityAccounts(_session, params = {}) {
 
 /**
  * submit_micro_entity_accounts: files confirmed figures with the company authentication code
- * (6 to 8 characters — Companies House's own format, checked by the route, not by this tool).
- * Returns {submissionNumber, gatewayTimestamp, pollInterval}; poll_accounts_submission takes the
+ * (6 to 8 characters — Companies House's own format, checked by the route, not by this tool), for
+ * companyNumber or, when clientId is given instead, for that practice client's own company number
+ * (companiesHouseAccountsPost.js resolves it from the client row; a client that is not this
+ * practice's own, or not yet authorised for Companies House filing, answers 403). Returns
+ * {submissionNumber, gatewayTimestamp, pollInterval}; poll_accounts_submission takes the
  * submissionNumber to reach the filing's outcome. This route answers synchronously (200/201),
  * unlike list_vat_obligations and submit_vat_return.
  * @param {Object} _session
- * @param {Object} params - as previewMicroEntityAccounts, plus companyAuthCode
+ * @param {Object} params - as previewMicroEntityAccounts, but companyNumber is optional when
+ *   clientId is given, plus companyAuthCode
  */
 export async function submitMicroEntityAccounts(_session, params = {}) {
   const companyAuthCode = requireField("submit_micro_entity_accounts", params, "companyAuthCode");
-  const body = accountsFilingBody("submit_micro_entity_accounts", params);
+  const body = accountsFilingBody("submit_micro_entity_accounts", params, { allowClientId: true });
   return callSubmitApi("/api/v1/companies-house/accounts", { method: "POST", body: { ...body, companyAuthCode } });
 }
 
