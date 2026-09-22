@@ -117,11 +117,15 @@ describe("save_book round trips", () => {
 });
 
 describe("the server", () => {
-  it("registers the book tools, the derivations, the Submit-facing tools and the client book move tool", () => {
+  it("registers the book tools, the derivations, the Submit-facing tools and the practice's client tools", () => {
     expect(Object.keys(TOOLS).sort()).toEqual([
+      "add_client",
+      "client_authorisation_status",
       "derive_micro_entity_accounts",
       "derive_vat_return",
       "get_vat_receipt",
+      "invite_client",
+      "list_clients",
       "list_vat_obligations",
       "move_book_to_client",
       "open_book",

@@ -17,7 +17,7 @@ import { createSession, openBook, saveBook, SAVE_FORMATS } from "./book-tools.js
 import { deriveMicroEntityAccounts } from "./accounts-tools.js";
 import { deriveVatReturn } from "./vat-tools.js";
 import { registerItsaTools } from "./itsa-tools.js";
-import { moveBookToClient } from "./practice-tools.js";
+import { moveBookToClient, listClients, addClient, inviteClient, clientAuthorisationStatus } from "./practice-tools.js";
 import {
   listVatObligations,
   submitVatReturn,
@@ -143,10 +143,12 @@ export const TOOLS = {
   },
   list_vat_obligations: {
     description:
-      "The open and fulfilled VAT obligations HMRC holds for one VRN, over the deployed API. Requires the caller's own " +
-      "HMRC access token; obtaining it is outside this tool's scope.",
+      "The open and fulfilled VAT obligations HMRC holds for one VRN, or for one practice client's VRN when clientId " +
+      "is given instead of vrn, over the deployed API. Requires the caller's own HMRC access token; obtaining it is " +
+      "outside this tool's scope.",
     inputSchema: {
-      vrn: z.string().describe("VAT registration number, 9 digits"),
+      vrn: z.string().optional().describe("VAT registration number, 9 digits; required unless clientId is given"),
+      clientId: z.string().optional().describe("A practice client's id, to resolve vrn from the client row instead"),
       hmrcAccessToken: z.string().describe("The user's HMRC OAuth access token"),
       from: z.string().optional().describe("From date, YYYY-MM-DD; defaults to the start of the current calendar year"),
       to: z.string().optional().describe("To date, YYYY-MM-DD; defaults to today"),
@@ -158,11 +160,13 @@ export const TOOLS = {
   },
   submit_vat_return: {
     description:
-      "Files the nine VAT boxes the user has confirmed (derive_vat_return's hmrc fields) over the deployed API. Boxes 3 " +
-      "and 5 are HMRC's own totals and are not sent; the route derives them. Requires the caller's own HMRC access " +
-      "token; obtaining it is outside this tool's scope.",
+      "Files the nine VAT boxes the user has confirmed (derive_vat_return's hmrc fields) over the deployed API, for " +
+      "vatNumber or, when clientId is given instead, for that practice client's own VRN. Boxes 3 and 5 are HMRC's own " +
+      "totals and are not sent; the route derives them. Requires the caller's own HMRC access token; obtaining it is " +
+      "outside this tool's scope.",
     inputSchema: {
-      vatNumber: z.string().describe("VAT registration number, 9 digits"),
+      vatNumber: z.string().optional().describe("VAT registration number, 9 digits; required unless clientId is given"),
+      clientId: z.string().optional().describe("A practice client's id, to resolve vatNumber from the client row instead"),
       periodStart: z.string().describe("The obligation's period start, YYYY-MM-DD"),
       periodEnd: z.string().describe("The obligation's period end, YYYY-MM-DD"),
       hmrcAccessToken: z.string().describe("The user's HMRC OAuth access token"),
@@ -184,25 +188,32 @@ export const TOOLS = {
     handler: submitVatReturn,
   },
   get_vat_receipt: {
-    description: "A stored HMRC VAT receipt by its file name, over the deployed API.",
+    description:
+      "A stored HMRC VAT receipt by its file name, over the deployed API. clientId, when given, narrows the fetch to " +
+      "one of the practice's clients but does not change which receipt is read.",
     inputSchema: {
       name: z.string().describe("The receipt file name, including .json"),
+      clientId: z.string().optional().describe("A practice client's id, to check the receipt belongs to that client"),
     },
     handler: getVatReceipt,
   },
   preview_micro_entity_accounts: {
     description:
       "The rendered FRS 105 micro-entity iXBRL for confirmed figures (derive_micro_entity_accounts' answer), over the " +
-      "deployed API. Never reaches the Companies House XML Gateway.",
+      "deployed API. Never reaches the Companies House XML Gateway. The route never resolves a company from a " +
+      "practice client's row, so this tool takes companyNumber only, not clientId.",
     inputSchema: accountsFilingInputSchema,
     handler: previewMicroEntityAccounts,
   },
   submit_micro_entity_accounts: {
     description:
-      "Files confirmed micro-entity accounts through the Companies House XML Gateway, over the deployed API; returns " +
-      "the submission number. Takes the company authentication code on this one call only; it is not stored.",
+      "Files confirmed micro-entity accounts through the Companies House XML Gateway, over the deployed API, for " +
+      "companyNumber or, when clientId is given instead, for that practice client's own company number; returns the " +
+      "submission number. Takes the company authentication code on this one call only; it is not stored.",
     inputSchema: {
       ...accountsFilingInputSchema,
+      companyNumber: accountsFilingInputSchema.companyNumber.optional().describe("Required unless clientId is given"),
+      clientId: z.string().optional().describe("A practice client's id, to resolve companyNumber from the client row instead"),
       companyAuthCode: z.string().describe("The company's Companies House authentication code"),
     },
     handler: submitMicroEntityAccounts,
@@ -225,6 +236,56 @@ export const TOOLS = {
       bookId: z.string().describe("The book's id, one of the practice's own"),
     },
     handler: moveBookToClient,
+  },
+  list_clients: {
+    description:
+      "The signed-in practice's own client list (PLAN_PRICE_UPDATE.md (d)), over the deployed API: each client's id, " +
+      "display name, identifiers (VRN, NINO, UTR, company number) and current HMRC authorisation state per service. " +
+      "Archived clients are excluded.",
+    inputSchema: {},
+    handler: listClients,
+  },
+  add_client: {
+    description:
+      "Adds one client to the practice's list, over the deployed API. Every identifier is optional, but a given one " +
+      "must match its HMRC or Companies House format.",
+    inputSchema: {
+      displayName: z.string().describe("The client's name as the practice knows them, 1 to 200 characters"),
+      vrn: z.string().optional().describe("VAT registration number, 9 digits"),
+      nino: z.string().optional().describe("National Insurance number"),
+      utr: z.string().optional().describe("Unique Taxpayer Reference, 10 digits"),
+      companyNumber: z.string().optional().describe("Companies House company number, 8 characters"),
+    },
+    handler: addClient,
+  },
+  invite_client: {
+    description:
+      "Sends an HMRC Agent Authorisation invitation for one client and one service, over the deployed API. The " +
+      "client's own VRN or NINO comes from the client row, not from this call. Requires the practice's own HMRC " +
+      "access token; obtaining it is outside this tool's scope.",
+    inputSchema: {
+      clientId: z.string().describe("The client's id"),
+      service: z.enum(["MTD-VAT", "MTD-IT"]).describe("The HMRC service to request authorisation for"),
+      knownFact: z.string().describe("The VAT registration date (MTD-VAT) or the client's postcode (MTD-IT)"),
+      hmrcAccessToken: z.string().describe("The practice's own HMRC OAuth access token"),
+      arn: z
+        .string()
+        .optional()
+        .describe("The practice's HMRC agent reference number; stored for reuse when given, read back when omitted"),
+    },
+    handler: inviteClient,
+  },
+  client_authorisation_status: {
+    description:
+      "One client's current authorisation status for one HMRC service, over the deployed API: re-reads a pending " +
+      "invitation's own status, or HMRC's relationships endpoint when none is pending. Requires the practice's own " +
+      "HMRC access token; obtaining it is outside this tool's scope.",
+    inputSchema: {
+      clientId: z.string().describe("The client's id"),
+      service: z.enum(["MTD-VAT", "MTD-IT"]).describe("The HMRC service to check"),
+      hmrcAccessToken: z.string().describe("The practice's own HMRC OAuth access token"),
+    },
+    handler: clientAuthorisationStatus,
   },
 };
 
