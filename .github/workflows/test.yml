@@ -700,6 +700,9 @@ jobs:
         env:
           PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD: 1
 
+      - name: Install the MCP package's dependencies (the suite drives the practice through mcp/lib)
+        run: timeout 120 npm ci --prefer-offline || { sleep 30; timeout 180 npm ci; }
+        working-directory: mcp
       - name: Run behaviour test
         run: npm run test:practiceLicenceBehaviour-simulator
 
