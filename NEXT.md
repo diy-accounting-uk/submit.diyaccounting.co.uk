@@ -41,6 +41,9 @@ step.
 
 ## In flight
 
+**COOL-DOWN is on since 2026-09-22T19:56:50Z.** No new board rows except a degradation. Agents commit
+and stop. One branch is driven green at a time. Lifted only by the operator in their own words.
+
 - [ ] **B82. Wave b82 on `claude/b82-board`, PR #336.** Three commits, head c450180d, its runs
   starting: B34j
   (a9e2e920, the privacy notice's row for practice client filing, with a browser test) and PU-7e
