@@ -6,7 +6,7 @@
 
 import { describe, test, beforeAll, beforeEach, expect, vi } from "vitest";
 import { dotenvConfigIfNotBlank } from "@app/lib/env.js";
-import { buildHmrcEvent } from "@app/test-helpers/eventBuilders.js";
+import { buildHmrcEvent, buildAuthorizerContext } from "@app/test-helpers/eventBuilders.js";
 import { setupTestEnv, setupFetchMock, mockHmrcSuccess, mockHmrcError } from "@app/test-helpers/mockHelpers.js";
 import {
   mockSend,
@@ -83,9 +83,10 @@ function mockObligationsSuccess(periodKey = "18A2") {
   });
 }
 
-function buildSubmissionEvent(headers = {}) {
+function buildSubmissionEvent(headers = {}, authorizer) {
   return buildHmrcEvent({
     headers,
+    authorizer,
     body: {
       vatNumber: TEST_VRN,
       periodStart: TEST_PERIOD_START,
@@ -270,7 +271,10 @@ describe("hmrcVatReturnPost activity events and business metrics", () => {
   test("the stored receipt records a test submission as test-user", async () => {
     mockHmrcSuccess(mockFetch, { formBundleNumber: "123456789012", processingDate: "2023-01-01T12:00:00.000Z" });
 
-    await hmrcVatReturnPostHandler(buildSubmissionEvent({ "x-request-id": "test_run-1" }));
+    // No email on the token here (the case a token carries no email claim at all), so the
+    // requestId prefix is the only signal resolveActorClass() has to go on.
+    const noEmailAuthorizer = buildAuthorizerContext("test-sub", "test", "");
+    await hmrcVatReturnPostHandler(buildSubmissionEvent({ "x-request-id": "test_run-1" }, noEmailAuthorizer));
 
     const receipts = await storedReceiptItems();
     expect(receipts).toHaveLength(1);
@@ -280,10 +284,20 @@ describe("hmrcVatReturnPost activity events and business metrics", () => {
   test("a test run is classified as test-user on the event and metric for real errors", async () => {
     mockHmrcError(mockFetch, 503, { code: "SERVICE_UNAVAILABLE", message: "Service temporarily unavailable" });
 
-    await hmrcVatReturnPostHandler(buildSubmissionEvent({ "x-request-id": "test_run-1" }));
+    const noEmailAuthorizer = buildAuthorizerContext("test-sub", "test", "");
+    await hmrcVatReturnPostHandler(buildSubmissionEvent({ "x-request-id": "test_run-1" }, noEmailAuthorizer));
 
     expect(failureEventsWithCategory("hmrc-rejected")[0][0].actor).toBe("test-user");
     expect(metricCalls("VatSubmissionFailure")[0][0].dimensions).toEqual({ Actor: "test-user" });
+  });
+
+  test("a signed-in synthetic lane email classifies as test-user even without the requestId prefix", async () => {
+    mockHmrcSuccess(mockFetch, { formBundleNumber: "123456789012", processingDate: "2023-01-01T12:00:00.000Z" });
+
+    const syntheticAuthorizer = buildAuthorizerContext("synthetic-sub", "synthetic", "synthetic-local@test.diyaccounting.co.uk");
+    await hmrcVatReturnPostHandler(buildSubmissionEvent({}, syntheticAuthorizer));
+
+    expect(mockPublishActivityEvent).toHaveBeenCalledWith(expect.objectContaining({ event: "vat-return-submitted", actor: "test-user" }));
   });
 
   test("a customer-side 400 error emits an activity event but not a failure metric", async () => {

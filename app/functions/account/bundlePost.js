@@ -25,7 +25,7 @@ import { getUserBundles, deleteBundle } from "../../data/dynamoDbBundleRepositor
 import { getAsyncRequest, putAsyncRequest } from "../../data/dynamoDbAsyncRequestRepository.js";
 import * as asyncApiServices from "../../services/asyncApiServices.js";
 import { initializeSalt } from "../../services/subHasher.js";
-import { publishActivityEvent } from "../../lib/activityAlert.js";
+import { publishActivityEvent, classifyActor } from "../../lib/activityAlert.js";
 import { processSqsRecords } from "../../lib/sqsWorkerHelper.js";
 
 const logger = createLogger({ source: "app/functions/account/bundlePost.js" });
@@ -454,6 +454,10 @@ export async function grantBundle(
   await publishActivityEvent({
     event: "bundle-granted",
     summary: "Bundle granted: " + bundleId,
+    // decodedToken flows here unchanged from both the synchronous ingestHandler and the
+    // SQS workerHandler, so this classifies the same way whichever path granted the
+    // bundle, including a probe that calls the endpoint directly with no browser session.
+    actor: classifyActor(decodedToken?.email),
     userSub: userId,
     detail: { bundleId },
   });

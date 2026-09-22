@@ -3,7 +3,7 @@
 
 // app/functions/hmrcVatReturnPost.js
 
-import { createLogger } from "../../lib/logger.js";
+import { createLogger, context } from "../../lib/logger.js";
 import {
   extractRequest,
   http200OkResponse,
@@ -600,6 +600,13 @@ export async function ingestHandler(event) {
 
   const waitTimeMs = parseInt(getHeader(event.headers, "x-wait-time-ms") || DEFAULT_WAIT_MS, 10);
 
+  // enforceBundles (above) already put the signed-in user's email into context, via
+  // extractUserFromAuthorizerContext. Carry it in the SQS payload too: the worker Lambda
+  // that actually publishes vat-return-submitted runs in a separate invocation with its
+  // own empty context, so resolveActorClass() there would otherwise see no email and fall
+  // back to the requestId prefix, which a probe calling this endpoint directly never sets.
+  const userEmail = context.get("userEmail") || null;
+
   // trace: 2
   const payload = {
     vatNumber,
@@ -610,6 +617,7 @@ export async function ingestHandler(event) {
     hmrcAccessToken,
     govClientHeaders,
     userSub,
+    userEmail,
     govTestScenarioHeader,
     runFraudPreventionHeaderValidation,
     requestId,
@@ -743,6 +751,11 @@ export async function workerHandler(event) {
     logger,
     errorPolicy: "classify",
     processRecord: async (payload, { userId: userSub, requestId }) => {
+      // The SQS worker context carries requestId and userSub (set by processSqsRecords)
+      // but not email, since that came from the ingest Lambda's own authorizer context.
+      // Restore it here so resolveActorClass() inside submitVat classifies this the same
+      // way the ingest Lambda would have.
+      if (payload.userEmail) context.set("userEmail", payload.userEmail);
       const { receipt, hmrcResponse, hmrcResponseBody } = await submitVat(
         payload.periodKey,
         payload.vatReturnData,

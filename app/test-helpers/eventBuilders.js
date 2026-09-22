@@ -144,6 +144,7 @@ export function buildHmrcEvent({
   pathParameters = null,
   headers = {},
   requestId = "test-request-id",
+  authorizer,
 } = {}) {
   return buildLambdaEvent({
     headers: {
@@ -155,6 +156,7 @@ export function buildHmrcEvent({
     queryStringParameters,
     pathParameters,
     requestId,
+    ...(authorizer ? { authorizer } : {}),
   });
 }
 

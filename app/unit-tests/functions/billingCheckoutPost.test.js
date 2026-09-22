@@ -129,6 +129,30 @@ describe("billingCheckoutPost", () => {
     expect(detail.hashedSub).toBe(hashSub("test-user-sub"));
   });
 
+  test("classifies a real customer's checkout as customer even though every Cognito user carries a cognito:username claim", async () => {
+    const realCustomerToken = makeIdToken("real-customer-sub", {
+      email: "real.customer@example.com",
+      "cognito:username": "real-customer-sub",
+    });
+    const event = buildEventWithToken(realCustomerToken);
+    await ingestHandler(event);
+
+    const detail = JSON.parse(mockEventBridgeSend.mock.calls[0][0].input.Entries[0].Detail);
+    expect(detail.actor).toBe("customer");
+  });
+
+  test("classifies a synthetic lane's checkout as test-user from its email", async () => {
+    const syntheticToken = makeIdToken("synthetic-sub", {
+      email: "synthetic-local@test.diyaccounting.co.uk",
+      "cognito:username": "synthetic-sub",
+    });
+    const event = buildEventWithToken(syntheticToken);
+    await ingestHandler(event);
+
+    const detail = JSON.parse(mockEventBridgeSend.mock.calls[0][0].input.Entries[0].Detail);
+    expect(detail.actor).toBe("test-user");
+  });
+
   test("returns 401 when no authorization header", async () => {
     const event = buildEventWithToken(null);
     const result = await ingestHandler(event);

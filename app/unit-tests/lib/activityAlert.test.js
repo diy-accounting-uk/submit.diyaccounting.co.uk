@@ -43,10 +43,6 @@ describe("lib/activityAlert", () => {
       expect(classifyActor("test-123@test.diyaccounting.co.uk")).toBe("test-user");
     });
 
-    test("returns 'test-user' for cognito-native auth method", () => {
-      expect(classifyActor("user@example.com", "cognito-native")).toBe("test-user");
-    });
-
     test("returns 'probe' for probe email patterns", () => {
       expect(classifyActor("probe-abc@example.com")).toBe("probe");
       expect(classifyActor("user+probe@example.com")).toBe("probe");
@@ -317,14 +313,30 @@ describe("lib/activityAlert", () => {
       });
     });
 
-    test("returns test-user for a test_ prefixed requestId", async () => {
+    test("classifies from the signed-in user's email over any requestId prefix", async () => {
+      await context.run(new Map(), async () => {
+        context.set("requestId", "abc-123");
+        context.set("userEmail", "alice@example.com");
+        expect(resolveActorClass()).toBe("customer");
+      });
+    });
+
+    test("classifies a synthetic lane's email as test-user even with no requestId prefix", async () => {
+      await context.run(new Map(), async () => {
+        context.set("requestId", "abc-123");
+        context.set("userEmail", "synthetic-local@test.diyaccounting.co.uk");
+        expect(resolveActorClass()).toBe("test-user");
+      });
+    });
+
+    test("falls back to a test_ prefixed requestId when no user is signed in", async () => {
       await context.run(new Map(), async () => {
         context.set("requestId", "test_abc-123");
         expect(resolveActorClass()).toBe("test-user");
       });
     });
 
-    test("returns customer for any other requestId", async () => {
+    test("returns customer for any other requestId when no user is signed in", async () => {
       await context.run(new Map(), async () => {
         context.set("requestId", "abc-123");
         expect(resolveActorClass()).toBe("customer");
