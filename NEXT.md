@@ -120,6 +120,19 @@ and stop. One branch is driven green at a time. Lifted only by the operator in t
   skip and leaves the set. **Source**: runs 35766864248 and 35773445604; BACKLOG 30. **Owner**:
   Claude Code. **Model**: Sonnet. **Size**: ~2 files.
 
+- [ ] **B52f. Web vitals on all three sites.** The page-experience panel wants LCP, INP and CLS
+  at p75 for submit, spreadsheets and the apex; RUM on submit records LCP and INP. Read the RUM
+  app monitor's `telemetries` in `infra/main/java/.../EdgeStack.java` (or wherever
+  `AppMonitor` is built) and the client config in `web/public/lib/analytics.js`, and add CLS if
+  it is not collected; read `../spreadsheets.diyaccounting.co.uk/web/spreadsheets.diyaccounting.co.uk/public/lib/analytics.js`
+  and its `site-rum-loader.browser.test.js` for whether spreadsheets has an app monitor of its
+  own (its CDK under `../spreadsheets.diyaccounting.co.uk/infra`), and add one if not; the apex
+  (`../www.diyaccounting.co.uk`) the same. Then the GA4 side: cross-domain linking across the
+  three hosts and the key events, as code through `infra/google/` (backlog 49's tooling; the
+  Admin API script there). Three repositories, one PR each, this repository's panel reading the
+  three monitors. **Source**: BACKLOG 62; `PLAN_ONE_STOP_DASHBOARD.md` D3. **Owner**: Claude
+  Code. **Model**: Sonnet. **Size**: ~6 files across three repositories.
+
 - [ ] **B52g. `ads-report.js`, what the account did.** A read-only script beside
   `infra/google/ads/ads-sync.js` using its credential path (`ads.toml` `[secrets]`, API
   `v25`) and GAQL over `campaign`, `ad_group` and `keyword_view` with `segments.date` for a date
@@ -137,14 +150,24 @@ and stop. One branch is driven green at a time. Lifted only by the operator in t
   `--keywords`. Proof: `--keywords "submit vat return,mtd vat software" --budget-gbp 50` prints a
   forecast. **Source**: operator 2026-09-22; `PLAN_ONE_STOP_DASHBOARD.md` D17; BACKLOG 52. **Owner**: Claude Code. **Model**: Sonnet. **Size**: ~1 file.
 
-- [ ] **B52j. The `ads-advisor` skill.** `.claude/skills/ads-advisor/SKILL.md`: how to run B52g
-  and B52h, how to read CTR, CPC, conversion rate and cost per session against the funnel's
-  break-even cost per session (£0.36, `PLAN_ONE_STOP_DASHBOARD.md` D17) and the reinvestment
-  numbers on B52m, how to answer "how many clicks for £N a day" (forecast, then the report for
-  what the live campaign does) and "optimise for the same result" (B52k's bidding vocabulary:
-  which strategy and parameters, written into `ads.toml` as a PR whose plan shows the change),
-  and when to say the spend cannot pay back. Registered in `CLAUDE.md`'s skills list. Blocked on
-  B52g, B52h and B52k. **Source**: operator 2026-09-22; `PLAN_ONE_STOP_DASHBOARD.md` D17; BACKLOG 52. **Owner**: Claude Code. **Model**: Haiku.
+- [ ] **B52o. Google's Ads API MCP server, evaluated.** Read Google's published MCP server for
+  the Ads API (its repository, auth model, whether it is read-only GAQL, its developer-token and
+  OAuth needs against `ads.toml` `[secrets]`), and write one page under `_developers/` saying
+  whether it adds anything the scripts above do not, what it would cost to run beside the
+  toml door, and a yes or no; no install. **Source**: operator 2026-09-22; `PLAN_ONE_STOP_DASHBOARD.md` D17; BACKLOG 52. **Owner**: Claude Code.
+  **Model**: Haiku. **Size**: ~1 file.
+
+- [ ] **B52e. Donations on the revenue panel.** `infra/stripe/stripe.toml` (lines 53 to 60)
+  says the spreadsheets site's donation Payment Links live in the same Stripe account and carry
+  `payment_intent_data.metadata.bundleId`, which `v_revenue_daily` groups by (`coalesce(bundle_id,
+  'unknown')`). Prove it on live data: with `AWS_PROFILE=submit-prod`, query the view for the last
+  90 days (`aws athena start-query-execution` with the analytics database and workgroup
+  `operatorSnapshotPublish.js` names) and read whether donation charges appear under their
+  product or under `unknown`; if `unknown`, read a recent donation charge from Stripe live
+  (`infra/stripe/stripe-sync.js`'s key lookup, read-only) for whether the metadata is missing on
+  the link or dropped in the pull (`scripts/finance/stripe-stage.js` or the revenue ingestion
+  Lambda), and fix that layer. PayPal donations join through F1b once OF1 lands. **Source**:
+  BACKLOG 66; `PLAN_ONE_STOP_DASHBOARD.md` D2. **Owner**: Claude Code. **Model**: Sonnet.
   **Size**: ~2 files.
 
 - [ ] **B52k. Bidding strategy as code, every one the API offers.** `ads.toml`'s
@@ -174,12 +197,21 @@ and stop. One branch is driven green at a time. Lifted only by the operator in t
   apply on a paused campaign leaves £0 spent, and B52g's report lists it. **Source**: operator 2026-09-22; `PLAN_ONE_STOP_DASHBOARD.md` D17; BACKLOG 52.
   **Owner**: Claude Code. **Model**: Sonnet. **Size**: ~3 files.
 
-- [ ] **B52o. Google's Ads API MCP server, evaluated.** Read Google's published MCP server for
-  the Ads API (its repository, auth model, whether it is read-only GAQL, its developer-token and
-  OAuth needs against `ads.toml` `[secrets]`), and write one page under `_developers/` saying
-  whether it adds anything the scripts above do not, what it would cost to run beside the
-  toml door, and a yes or no; no install. **Source**: operator 2026-09-22; `PLAN_ONE_STOP_DASHBOARD.md` D17; BACKLOG 52. **Owner**: Claude Code.
-  **Model**: Haiku. **Size**: ~1 file.
+- [ ] **B52d. The visitors panel.** `operatorSnapshotPublish.js` already reads
+  `v_visitors_by_kind_daily` (lines 176 to 191: the `human` and `bot` rows; add `synthetic`) into
+  the snapshot; `web/public/operator/dashboard.html` shows nothing from it. Add a visitors panel
+  (human, bot, synthetic per day, the last 30 days) in the shape the page's other panels use,
+  reading the snapshot's existing fields, with a case in the page's unit test. Proof: the panel
+  renders from a snapshot fixture carrying the three kinds. **Source**: BACKLOG 67;
+  `PLAN_ONE_STOP_DASHBOARD.md` D4. **Owner**: Claude Code. **Model**: Sonnet. **Size**: ~3 files.
+
+- [ ] **AS15. A dead-code pass with knip.** The assessment's dead-code scan used `ts-prune` on
+  a JavaScript tree and reported zero, which is "not analysed". Run `npx knip` once at the root
+  (a `knip.json` naming `app/bin/server.js`, the Lambda handlers under `app/functions/**` and the
+  `mcp/` package as entries, so handlers are not reported as unused), read every finding against
+  the code, and delete what is dead in one commit; anything ambiguous becomes a row here with the
+  finding quoted. No CI gate. **Source**: the AI-readiness assessment of 2026-09-18 (`.assess/assess-report.md` on the `bjcoombs` fork at 45bcc054). **Owner**: Claude Code. **Model**: Haiku.
+  **Size**: ~1 file plus the deletions.
 
 - [ ] **B83. The capabilities audit.** One report, `REPORT_CAPABILITIES.md` at the root, that
   gives an agent the repository's capabilities in one place, the non-obvious ones included (the
@@ -204,14 +236,6 @@ and stop. One branch is driven green at a time. Lifted only by the operator in t
   Claude Code. **Model**: Haiku for the walk, Sonnet for the report. **Size**: ~2 files plus
   the batch outputs.
 
-- [ ] **AS15. A dead-code pass with knip.** The assessment's dead-code scan used `ts-prune` on
-  a JavaScript tree and reported zero, which is "not analysed". Run `npx knip` once at the root
-  (a `knip.json` naming `app/bin/server.js`, the Lambda handlers under `app/functions/**` and the
-  `mcp/` package as entries, so handlers are not reported as unused), read every finding against
-  the code, and delete what is dead in one commit; anything ambiguous becomes a row here with the
-  finding quoted. No CI gate. **Source**: the AI-readiness assessment of 2026-09-18 (`.assess/assess-report.md` on the `bjcoombs` fork at 45bcc054). **Owner**: Claude Code. **Model**: Haiku.
-  **Size**: ~1 file plus the deletions.
-
 - [ ] **AS18. One assistant guide, aligned with CLAUDE.md.** Junie is no longer used: delete
   `.junie/guidelines.md` and `_developers/Junie.md`, and the "Other AI assistants" lines in
   `CLAUDE.md` that name them. Then read `.github/copilot-instructions.md` against `CLAUDE.md`
@@ -219,40 +243,6 @@ and stop. One branch is driven green at a time. Lifted only by the operator in t
   assessment found the Multi-Site section of CLAUDE.md false and expects more). Proof: every
   backticked path in both files exists in a fresh clone. **Source**: the AI-readiness assessment of 2026-09-18 (`.assess/assess-report.md` on the `bjcoombs` fork at 45bcc054), opportunity
   list; operator 2026-09-22. **Owner**: Claude Code. **Model**: Haiku. **Size**: ~4 files.
-
-- [ ] **B52d. The visitors panel.** `operatorSnapshotPublish.js` already reads
-  `v_visitors_by_kind_daily` (lines 176 to 191: the `human` and `bot` rows; add `synthetic`) into
-  the snapshot; `web/public/operator/dashboard.html` shows nothing from it. Add a visitors panel
-  (human, bot, synthetic per day, the last 30 days) in the shape the page's other panels use,
-  reading the snapshot's existing fields, with a case in the page's unit test. Proof: the panel
-  renders from a snapshot fixture carrying the three kinds. **Source**: BACKLOG 67;
-  `PLAN_ONE_STOP_DASHBOARD.md` D4. **Owner**: Claude Code. **Model**: Sonnet. **Size**: ~3 files.
-
-- [ ] **B52e. Donations on the revenue panel.** `infra/stripe/stripe.toml` (lines 53 to 60)
-  says the spreadsheets site's donation Payment Links live in the same Stripe account and carry
-  `payment_intent_data.metadata.bundleId`, which `v_revenue_daily` groups by (`coalesce(bundle_id,
-  'unknown')`). Prove it on live data: with `AWS_PROFILE=submit-prod`, query the view for the last
-  90 days (`aws athena start-query-execution` with the analytics database and workgroup
-  `operatorSnapshotPublish.js` names) and read whether donation charges appear under their
-  product or under `unknown`; if `unknown`, read a recent donation charge from Stripe live
-  (`infra/stripe/stripe-sync.js`'s key lookup, read-only) for whether the metadata is missing on
-  the link or dropped in the pull (`scripts/finance/stripe-stage.js` or the revenue ingestion
-  Lambda), and fix that layer. PayPal donations join through F1b once OF1 lands. **Source**:
-  BACKLOG 66; `PLAN_ONE_STOP_DASHBOARD.md` D2. **Owner**: Claude Code. **Model**: Sonnet.
-  **Size**: ~2 files.
-
-- [ ] **B52f. Web vitals on all three sites.** The page-experience panel wants LCP, INP and CLS
-  at p75 for submit, spreadsheets and the apex; RUM on submit records LCP and INP. Read the RUM
-  app monitor's `telemetries` in `infra/main/java/.../EdgeStack.java` (or wherever
-  `AppMonitor` is built) and the client config in `web/public/lib/analytics.js`, and add CLS if
-  it is not collected; read `../spreadsheets.diyaccounting.co.uk/web/spreadsheets.diyaccounting.co.uk/public/lib/analytics.js`
-  and its `site-rum-loader.browser.test.js` for whether spreadsheets has an app monitor of its
-  own (its CDK under `../spreadsheets.diyaccounting.co.uk/infra`), and add one if not; the apex
-  (`../www.diyaccounting.co.uk`) the same. Then the GA4 side: cross-domain linking across the
-  three hosts and the key events, as code through `infra/google/` (backlog 49's tooling; the
-  Admin API script there). Three repositories, one PR each, this repository's panel reading the
-  three monitors. **Source**: BACKLOG 62; `PLAN_ONE_STOP_DASHBOARD.md` D3. **Owner**: Claude
-  Code. **Model**: Sonnet. **Size**: ~6 files across three repositories.
 
 ## Machine-ask
 
@@ -294,19 +284,6 @@ and stop. One branch is driven green at a time. Lifted only by the operator in t
 
 ## Blocked
 
-- [ ] **PU-7n. The practice licence launch.** Operator, 2026-09-22: `resident-pro` at £199 a
-  year and £19.99 a month, the monthly price shown only on `bundles.html` (the DIYA-GL page shows
-  annual prices alone, for `resident` too). `web/public/submit.catalogue.toml`'s `resident-pro`
-  values flip to `enable = "always"`, `hidden = false`, `allocation = "on-subscription"` with the
-  two prices on its prices table, then `stripe-catalogue-sync` test and live for the price ids
-  into `.env.ci` and `.env.prod` (machine-ask for the live run); the practice page's nav link in
-  `web/public/widgets/page-chrome.js` appears; the four ci probes that reach `resident-pro`
-  through a pass are updated in the same change; `web/public/diya-gl.html` (or the page that
-  lists `resident`'s prices) drops the monthly line. Blocked on PU-7m (PR #335), B34j and OICO (the
-  register must cover the client data before the tier is sold). **Source**:
-  `PLAN_PRICE_UPDATE.md` §(d); operator 2026-09-22. **Owner**: Claude Code. **Model**: Sonnet.
-  **Size**: ~9 files.
-
 - [ ] **B11.T10. ITSA phase 2: the testing evidence inside the window.** Within the 14 days before
   the day O11 names, re-run `scripts/itsa-sandbox-year.js` for 2023-24, 2025-26 and 2026-27 (the
   commands in `_developers/hmrc/ITSA_PHASE_2_SANDBOX.md` lines 69 to 79; B11.T7c's output directory
@@ -322,6 +299,16 @@ and stop. One branch is driven green at a time. Lifted only by the operator in t
   BACKLOG 34c's: prod carries no `COMPANIES_HOUSE_XMLGW_URI` and no presenter secret ARNs. Blocked
   on O34d's answer. **Source**: BACKLOG 34b. **Owner**: Claude Code. **Model**: Sonnet. **Size**:
   ~1 file.
+
+- [ ] **B52j. The `ads-advisor` skill.** `.claude/skills/ads-advisor/SKILL.md`: how to run B52g
+  and B52h, how to read CTR, CPC, conversion rate and cost per session against the funnel's
+  break-even cost per session (£0.36, `PLAN_ONE_STOP_DASHBOARD.md` D17) and the reinvestment
+  numbers on B52m, how to answer "how many clicks for £N a day" (forecast, then the report for
+  what the live campaign does) and "optimise for the same result" (B52k's bidding vocabulary:
+  which strategy and parameters, written into `ads.toml` as a PR whose plan shows the change),
+  and when to say the spend cannot pay back. Registered in `CLAUDE.md`'s skills list. Blocked on
+  B52g, B52h and B52k. **Source**: operator 2026-09-22; `PLAN_ONE_STOP_DASHBOARD.md` D17; BACKLOG 52. **Owner**: Claude Code. **Model**: Haiku.
+  **Size**: ~2 files.
 
 - [ ] **B52l. The optimiser over the raw export.** A notebook over `../analytics/prod/` (pulled by
   `scripts/analytics-pull.sh`, one CSV per view in `rawExportPublish.js`'s `VIEW_NAMES`): per-block
@@ -374,6 +361,19 @@ and stop. One branch is driven green at a time. Lifted only by the operator in t
   spreadsheets repository's existing reconciliation harness rather than a new check; nothing
   automated writes to Google Drive. Blocked on F2d. **Source**: `../PLAN_FINANCE_AUTOMATION.md`
   phase 2. **Owner**: Claude Code. **Model**: Sonnet. **Size**: ~3 files.
+
+- [ ] **PU-7n. The practice licence launch.** Operator, 2026-09-22: `resident-pro` at £199 a
+  year and £19.99 a month, the monthly price shown only on `bundles.html` (the DIYA-GL page shows
+  annual prices alone, for `resident` too). `web/public/submit.catalogue.toml`'s `resident-pro`
+  values flip to `enable = "always"`, `hidden = false`, `allocation = "on-subscription"` with the
+  two prices on its prices table, then `stripe-catalogue-sync` test and live for the price ids
+  into `.env.ci` and `.env.prod` (machine-ask for the live run); the practice page's nav link in
+  `web/public/widgets/page-chrome.js` appears; the four ci probes that reach `resident-pro`
+  through a pass are updated in the same change; `web/public/diya-gl.html` (or the page that
+  lists `resident`'s prices) drops the monthly line. Blocked on PU-7m (PR #335), B34j and OICO (the
+  register must cover the client data before the tier is sold). **Source**:
+  `PLAN_PRICE_UPDATE.md` §(d); operator 2026-09-22. **Owner**: Claude Code. **Model**: Sonnet.
+  **Size**: ~9 files.
 
 - [ ] **OF2. DIYA's book saved to the DIYA cloud.** With the operator signed in through B61's
   sign-in, `save_book` writes F2d's verified book to the DIYA cloud, which is B52i's unblock event.
