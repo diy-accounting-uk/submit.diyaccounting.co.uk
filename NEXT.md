@@ -17,8 +17,8 @@ Haiku; the lowest tier that fits). Anything touching code goes through a `claude
 PR; the operator merges.
 
 **Prod runs deployment prod-fbead53**; main's deploy of PR #328's merge (d731afe7) is in flight.
-**ci**: `ci-set1` is last-known-good. No open pull request; `claude/b76-board` pushes when its
-reports land.
+**ci**: `ci-set1` is last-known-good. Open pull request: #329 (`claude/b76-board`), its ci deploy
+in flight.
 
 The board runs in five sections, in this order: **in flight** (a branch, a pull request or a run
 in motion, each named in the row), **machine-only**, **machine-ask**, **human-driven**,
@@ -40,14 +40,13 @@ step.
 
 ## In flight
 
-- [ ] **B76. Wave b76 on `claude/b76-board`.** Six agents: B43c and B30aq (the scheduled run's
+- [ ] **B76. Wave b76 on `claude/b76-board`, PR #329.** Six agents: B43c and B30aq (the scheduled run's
   probe gate and the Maven Central retry, both in `deploy.yml`), B61a (the MCP client id through
   lookup-resources and the workflows to `ApiStack`), B60a (the six MCP Submit tools against the
   simulator lane with the 202 poll), PU-7h (audit and receipts by client), PU-14 and PU-9 (the
   experiment row; the three folded bundles retired where Stripe live shows no subscription), F2f
-  (the mail index reading PDF attachments, `mail-invoices.js` reading their totals). No pull
-  request yet; the batch pushes when the reports land and the merged tree passes
-  `./mvnw clean verify` and `npm test`. **Source**: the rows named. **Owner**: Claude Code.
+  (the mail index reading PDF attachments, `mail-invoices.js` reading their totals). PR #329,
+  its ci deploy 35722300236 in flight; F2f's commit lands on the branch when its agent reports. **Source**: the rows named. **Owner**: Claude Code.
   **Model**: Sonnet. **Size**: ~30 files.
 
 - [ ] **PU-7. Practice licence build.** PU-7a to PU-7g, PU-7k and PU-7l are on `main`. In flight on
