@@ -79,6 +79,23 @@ step.
 
 ## Machine-only
 
+- [ ] **B34i. The ICO register entry for client data.** Operator, 2026-09-22: a practice's
+  client row holds the display name plus every identifier a filing needs (VRN, NINO, UTR,
+  company number), for people the company holds no relationship with. Draft the register
+  wording in `_developers/ICO_CHECKLIST.md`: the new purpose (filing on behalf of an
+  accountant's clients), the data categories, the data subjects (clients of a practice), the
+  lawful basis and retention (the client row's archive path), ready to paste into the ICO
+  portal; OICO submits it. **Source**: operator 2026-09-22; `PLAN_PRICE_UPDATE.md` open
+  question 4. **Owner**: Claude Code. **Model**: Haiku. **Size**: ~1 file.
+
+- [ ] **PU-7e. The practice's token grant is unlimited.** Operator, 2026-09-22: a practice
+  licence carries an open client list and an unlimited token grant. In
+  `app/services/tokenEnforcement.js` and `app/services/bundleManagement.js`, a holder of
+  `resident-pro` is exempt from the monthly token count (no grant to refresh, no per-client
+  arithmetic); the bundle's catalogue entry says so where the other bundles state their grant;
+  unit tests for a practice submitting past today's flat grant. **Source**: `PLAN_PRICE_UPDATE.md`
+  PU-7e; operator 2026-09-22. **Owner**: Claude Code. **Model**: Sonnet. **Size**: ~4 files.
+
 - [ ] **AS15. A dead-code pass with knip.** The assessment's dead-code scan used `ts-prune` on
   a JavaScript tree and reported zero, which is "not analysed". Run `npx knip` once at the root
   (a `knip.json` naming `app/bin/server.js`, the Lambda handlers under `app/functions/**` and the
@@ -133,15 +150,10 @@ step.
 
 ## Human-driven
 
-- [ ] **OPU7. The practice licence's five numbers and answers.** `PLAN_PRICE_UPDATE.md` "Open
-  questions for the operator" (lines 276 to 289): (1) the practice price, £19.99 a month or £199
-  a year proposed; (2) the client count a licence carries, an open list or a cap with a higher
-  tier above it; (3) the token grant, a base each month and an amount per client (100 a month is
-  today's flat grant for one trader); (4) what a client row may hold, display name plus every
-  identifier a filing needs or identifiers only, which sets what the ICO registration covers;
-  (5) whether `resident`'s monthly price shows on the DIYA-GL page or only on `bundles.html`.
-  Written into PU-7e and PU-7n when answered. **Source**: `PLAN_PRICE_UPDATE.md`. **Owner**:
-  Operator. **Model**: none. **Size**: 0 files.
+- [ ] **OICO. Update the ICO registration.** With B34i's wording, sign in to the ICO's
+  registration portal and update DIY Accounting Limited's entry to cover the practice licence's
+  client data; note the date in `_developers/ICO_CHECKLIST.md`. **Source**: operator
+  2026-09-22. **Owner**: Operator. **Model**: none. **Size**: 0 files.
 
 - [ ] **O34d. Send the XML Gateway email.** Send `../DRAFT_EMAIL_XMLGW_000004.md` from `antony@diyaccounting.co.uk`
   as a reply on the `xml@companieshouse.gov.uk` thread, and paste the answer into B34.6c's row when
@@ -173,20 +185,17 @@ step.
 
 ## Blocked
 
-- [ ] **PU-7e. The token grant that scales with the client count.** `app/services/tokenEnforcement.js`
-  and `app/services/bundleManagement.js`: at each monthly refresh a practice's grant is the base
-  plus the per-client amount times its client count (`listClients` on the practice table), with
-  the cap OPU7 names. Blocked on OPU7 (2) and (3). **Source**: `PLAN_PRICE_UPDATE.md` PU-7e.
-  **Owner**: Claude Code. **Model**: Sonnet. **Size**: ~4 files.
-
-- [ ] **PU-7n. The practice licence launch.** `web/public/submit.catalogue.toml`'s `resident-pro`
-  values flip to `enable = "always"`, `hidden = false`, `allocation = "on-subscription"` with
-  OPU7's price on its prices table (then `stripe-catalogue-sync` test and live for the price
-  ids); the practice page's nav link in `web/public/widgets/page-chrome.js` appears; the four ci
-  probes that reach `resident-pro` through a pass are updated in the same change; PU-8's
-  spreadsheets pages (their PR from `claude/b27-board`) show the offer. Blocked on PU-7m (b81)
-  and OPU7 (1). **Source**: `PLAN_PRICE_UPDATE.md` §(d). **Owner**: Claude Code. **Model**:
-  Sonnet. **Size**: ~8 files.
+- [ ] **PU-7n. The practice licence launch.** Operator, 2026-09-22: `resident-pro` at £199 a
+  year and £19.99 a month, the monthly price shown only on `bundles.html` (the DIYA-GL page shows
+  annual prices alone, for `resident` too). `web/public/submit.catalogue.toml`'s `resident-pro`
+  values flip to `enable = "always"`, `hidden = false`, `allocation = "on-subscription"` with the
+  two prices on its prices table, then `stripe-catalogue-sync` test and live for the price ids
+  into `.env.ci` and `.env.prod` (machine-ask for the live run); the practice page's nav link in
+  `web/public/widgets/page-chrome.js` appears; the four ci probes that reach `resident-pro`
+  through a pass are updated in the same change; `web/public/diya-gl.html` (or the page that
+  lists `resident`'s prices) drops the monthly line. Blocked on PU-7m (PR #335). **Source**:
+  `PLAN_PRICE_UPDATE.md` §(d); operator 2026-09-22. **Owner**: Claude Code. **Model**: Sonnet.
+  **Size**: ~9 files.
 
 - [ ] **B11.T10. ITSA phase 2: the testing evidence inside the window.** Within the 14 days before
   the day O11 names, re-run `scripts/itsa-sandbox-year.js` for 2023-24, 2025-26 and 2026-27 (the
