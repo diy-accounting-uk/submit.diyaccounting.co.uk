@@ -40,6 +40,12 @@ step.
 
 ## In flight
 
+- [ ] **B81. Wave b81 on `claude/b81-board`.** Three agents: PU-7m (the practice licence
+  behaviour test, on the PU-7 row), AS1 (why coverage collects no files, then the gate under its
+  real key with measured numbers) and AS7a (strict environment validation by default, the
+  local-server system test given its environment). No pull request yet. **Source**: the rows
+  named. **Owner**: Claude Code. **Model**: Sonnet and Haiku. **Size**: ~8 files.
+
 - [ ] **PU-7. Practice licence build.** PU-7a to PU-7l are on `main`. In flight on
   `claude/b81-board` (wave b81, one agent): PU-7m, the
   behaviour test `behaviour-tests/practiceLicence.behaviour.test.js`: two clients added through
@@ -81,32 +87,6 @@ step.
   the code, and delete what is dead in one commit; anything ambiguous becomes a row here with the
   finding quoted. No CI gate. **Source**: the AI-readiness assessment of 2026-09-18 (`.assess/assess-report.md` on the `bjcoombs` fork at 45bcc054). **Owner**: Claude Code. **Model**: Haiku.
   **Size**: ~1 file plus the deletions.
-
-- [ ] **AS1. Coverage collection finds no files, so no gate can fire.** `vitest.config.js`
-  declares the thresholds under `coverage.threshold` (Vitest 4 reads `thresholds`), and renaming
-  the key changes nothing yet: `npm run test:coverage` on b80 ran 274 files green and reported
-  `All files 0 0 0 0`, `Statements: Unknown% (0/0)`, with the v8 provider and with
-  `@vitest/coverage-istanbul` alike, for the whole suite and for one test file
-  (`app/unit-tests/lib/activityAlert.test.js`) with an explicit `--coverage.include`. Neither
-  provider sees a single `app/**` module, so the modules reach the tests outside Vitest's
-  transform: find why (the `default` project's `pool: "forks"` at `vitest.config.js` lines 26 to
-  50, `server.deps`, the `include`/`exclude` globs at lines 68 to 80, the `--exclude '**/.claude/**'`
-  in `package.json`'s `test:coverage`, and how the unit tests import `app/` modules), make one
-  file report a non-zero figure, then rename the key to `thresholds` with `perFile: false`, run
-  the suite and set the four numbers to the measured figures rounded down. Proof: a threshold one
-  point above the measured figure fails the run, the committed figures pass. **Source**: the
-  AI-readiness assessment of 2026-09-18 (`.assess/assess-report.md` on the `bjcoombs` fork at
-  45bcc054), action 1; b80's run on 2026-09-22. **Owner**: Claude Code. **Model**: Sonnet.
-  **Size**: ~2 files.
-
-- [ ] **AS7a. Strict env validation by default.** `app/bin/server.js` (around line 374) validates
-  the environment strictly only when a flag says so, because
-  `app/system-tests/runLocalHttpServer.system.test.js` starts the local server without the full
-  environment. Give that test the environment the server needs (the `.env.test` values the other
-  system tests load), make strict validation the default, and delete the flag and the comment that
-  explains its absence. Proof: `npx vitest run app/system-tests` green with strict validation on.
-  **Source**: b80's AS7 run, 2026-09-22. **Owner**: Claude Code. **Model**: Haiku. **Size**: ~2
-  files.
 
 - [ ] **AS18. One assistant guide, aligned with CLAUDE.md.** Junie is no longer used: delete
   `.junie/guidelines.md` and `_developers/Junie.md`, and the "Other AI assistants" lines in
