@@ -16,8 +16,9 @@ runs), and for Claude Code steps the **Model** a sub-agent should use (Fable > O
 Haiku; the lowest tier that fits). Anything touching code goes through a `claude/*` branch and
 PR; the operator merges.
 
-**Prod runs deployment prod-bc09c1b**; main's deploy of PR #324's merge (a4ea2f38) is in flight.
-**ci**: `ci-set1` is last-known-good. No open pull request.
+**Prod runs deployment prod-a4ea2f3** (PR #324's merge; its deploy run is on its last prod probe).
+**ci**: `ci-set1` is last-known-good. Open pull request: #325 (`claude/b72-board`: PU-7d, PU-7f, PU-7l),
+its ci redeploy in flight.
 
 The board runs in five sections, in this order: **in flight** (a branch, a pull request or a run
 in motion, each named in the row), **machine-only**, **machine-ask**, **human-driven**,
@@ -96,14 +97,6 @@ step.
 ## Human-driven
 
 ## Blocked
-
-- [ ] **B30ao. `prod-env-operator-snapshot-publish-errors`: the visitor-kind view's day type.**
-  On `main` since PR #315 (27df5cb1). Alarm issue #313 was the snapshot's three
-  visitor-kind observations failing `TYPE_MISMATCH: Cannot apply operator: varchar < date`, because
-  `v_visitors_by_kind_daily` read the table's string `day`; it now reads `dt AS day`. Proof: the
-  03:1x UTC snapshot run on 2026-09-22 publishes with no failing observation; then close #313
-  quoting it. Blocked on that run. **Source**: issue #313; BACKLOG 30. **Owner**: Claude Code. **Model**: Haiku.
-  **Size**: ~0 files.
 
 - [ ] **B34.7. Run and fix the filing suites' sandbox sign-in.** `deploy.yml` and `probe-test.yml`
   run the two filing suites only when the dispatch input `runCompaniesHouseSandboxFiling` is
