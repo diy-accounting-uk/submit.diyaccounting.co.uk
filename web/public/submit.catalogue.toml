@@ -129,8 +129,9 @@ stripePriceAmount = 99
 stripeCurrency = "gbp"
 stripeInterval = "month"
 
-# resident-itsa: ITSA (Income Tax Self Assessment) subscription — publicly visible, no pass required
-# Payment: £0.99/mo via Stripe Checkout — visible to all authenticated users
+# resident-itsa: ITSA (Income Tax Self Assessment) subscription — folded into resident, hidden
+# from the bundles page. Its Stripe price and existing subscribers are untouched.
+# Payment: £0.99/mo via Stripe Checkout
 # Tokens: 100 granted, refreshing monthly
 # Enables: the self-employed activity (quarterly updates and annual declarations)
 [[bundles]]
@@ -139,7 +140,7 @@ name = "Resident ITSA"
 description = "File Income Tax Self Assessment updates to HMRC. £0.99/month, cancel anytime."
 levelName = "Resident"
 enable = "always"
-hidden = false
+hidden = true
 allocation = "on-subscription"
 tokensGranted = 100
 tokenRefreshInterval = "P1M"
@@ -151,8 +152,9 @@ listedInEnvironments = ["local", "test", "simulator", "proxy", "proxyRunning", "
 # ====================
 # Hidden in production
 
-# resident-ltd: micro-entity accounts filing subscription — publicly visible, no pass required
-# Payment: £0.99/mo via Stripe Checkout — visible to all authenticated users
+# resident-ltd: micro-entity accounts filing subscription — folded into resident, hidden from
+# the bundles page. Its Stripe price and existing subscribers are untouched.
+# Payment: £0.99/mo via Stripe Checkout
 # Tokens: 100 granted, refreshing monthly
 # Enables: filing micro-entity accounts to Companies House
 [[bundles]]
@@ -161,7 +163,7 @@ name = "Resident Ltd"
 description = "File micro-entity accounts to Companies House. £0.99/month, cancel anytime."
 levelName = "Resident"
 enable = "always"
-hidden = false
+hidden = true
 allocation = "on-subscription"
 tokensGranted = 100
 tokenRefreshInterval = "P1M"
@@ -173,8 +175,9 @@ listedInEnvironments = ["local", "test", "simulator", "proxy", "proxyRunning", "
 # ====================
 # Hidden in production
 
-# resident-diya-gl: DIYA-GL book storage subscription — publicly visible, no pass required
-# Payment: £0.99/mo via Stripe Checkout — visible to all authenticated users
+# resident-diya-gl: DIYA-GL book storage subscription — folded into resident, hidden from the
+# bundles page. Its Stripe price and existing subscribers are untouched.
+# Payment: £0.99/mo via Stripe Checkout
 # Tokens: 100 granted, refreshing monthly
 # Enables: saving and loading DIYA-GL books
 [[bundles]]
@@ -183,7 +186,7 @@ name = "DIYA-GL"
 description = "Save and load DIYA-GL books. £0.99/month, cancel anytime."
 levelName = "Resident"
 enable = "always"
-hidden = false
+hidden = true
 allocation = "on-subscription"
 tokensGranted = 100
 tokenRefreshInterval = "P1M"
@@ -194,6 +197,28 @@ listedInEnvironments = ["local", "test", "simulator", "proxy", "proxyRunning", "
 # listedInEnvironments
 # ====================
 # Hidden in production
+
+# resident: the single Resident bundle — DIYA-GL book storage plus VAT, ITSA and Companies
+# House micro-entity filing as each is recognised. Replaces resident-itsa, resident-ltd and
+# resident-diya-gl above, which stay hidden until Stripe live shows no subscription on their
+# prices. resident-vat stays separate at its own 99p price for its existing subscribers.
+# Payment: £39/year via Stripe Checkout; £3.99/month arrives with the second price per bundle
+# Tokens: 100 granted, refreshing monthly
+# listedInEnvironments: ci only until the DIYA-GL resident tier is lifted to prod
+[[bundles]]
+id = "resident"
+name = "Resident"
+description = "Save and load DIYA-GL books, and file VAT, Income Tax Self Assessment and micro-entity accounts to HMRC and Companies House as each is recognised. £39/year, or £3.99/month, cancel anytime."
+levelName = "Resident"
+enable = "always"
+hidden = false
+allocation = "on-subscription"
+tokensGranted = 100
+tokenRefreshInterval = "P1M"
+stripePriceAmount = 3900
+stripeCurrency = "gbp"
+stripeInterval = "year"
+listedInEnvironments = ["ci"]
 
 # resident-guest: Permanent free access for existing DIY customers and partners
 # Unlocked by: resident-guest pass (email-restricted, admin-issued)
@@ -288,7 +313,7 @@ name = "Submit VAT (HMRC)"
 display = "always-with-upsell"
 # display: always-with-upsell
 # shows upsell prompt if not entitled
-bundles = ["day-guest", "invited-guest", "resident-vat", "resident-guest", "resident-pro-comp", "resident-pro"]
+bundles = ["day-guest", "invited-guest", "resident-vat", "resident", "resident-guest", "resident-pro-comp", "resident-pro"]
 tokenCost = 1
 metered = true
 paths = ["hmrc/vat/submitVat.html", "^/api/v1/hmrc/vat.*"]
@@ -298,7 +323,7 @@ hmrcScopesRequired = ["write:vat", "read:vat"]
 id = "vat-obligations"
 name = "VAT Obligations (HMRC)"
 display = "always-with-upsell"
-bundles = ["day-guest", "invited-guest", "resident-vat", "resident-guest", "resident-pro-comp", "resident-pro"]
+bundles = ["day-guest", "invited-guest", "resident-vat", "resident", "resident-guest", "resident-pro-comp", "resident-pro"]
 tokenCost = 0
 metered = true
 paths = ["hmrc/vat/vatObligations.html", "^/api/v1/hmrc/vat.*"]
@@ -313,7 +338,7 @@ hmrcScopesRequired = ["read:vat"]
 id = "vat-liabilities"
 name = "VAT Liabilities (HMRC)"
 display = "always-with-upsell"
-bundles = ["day-guest", "invited-guest", "resident-vat", "resident-guest", "resident-pro-comp", "resident-pro"]
+bundles = ["day-guest", "invited-guest", "resident-vat", "resident", "resident-guest", "resident-pro-comp", "resident-pro"]
 tokenCost = 0
 metered = true
 paths = ["hmrc/vat/vatLiabilities.html", "^/api/v1/hmrc/vat/liability.*"]
@@ -324,7 +349,7 @@ environments = ["local", "test", "simulator", "proxy", "ci", "prod"]
 id = "vat-payments"
 name = "VAT Payments (HMRC)"
 display = "always-with-upsell"
-bundles = ["day-guest", "invited-guest", "resident-vat", "resident-guest", "resident-pro-comp", "resident-pro"]
+bundles = ["day-guest", "invited-guest", "resident-vat", "resident", "resident-guest", "resident-pro-comp", "resident-pro"]
 tokenCost = 0
 metered = true
 paths = ["hmrc/vat/vatPayments.html", "^/api/v1/hmrc/vat/payment.*"]
@@ -335,7 +360,7 @@ environments = ["local", "test", "simulator", "proxy", "ci", "prod"]
 id = "vat-penalties"
 name = "VAT Penalties (HMRC)"
 display = "always-with-upsell"
-bundles = ["day-guest", "invited-guest", "resident-vat", "resident-guest", "resident-pro-comp", "resident-pro"]
+bundles = ["day-guest", "invited-guest", "resident-vat", "resident", "resident-guest", "resident-pro-comp", "resident-pro"]
 tokenCost = 0
 metered = true
 paths = ["hmrc/vat/vatPenalties.html", "^/api/v1/hmrc/vat/penalty.*"]
@@ -346,7 +371,7 @@ environments = ["local", "test", "simulator", "proxy", "ci", "prod"]
 id = "view-vat-return"
 name = "View VAT Return (HMRC)"
 display = "always-with-upsell"
-bundles = ["day-guest", "invited-guest", "resident-vat", "resident-guest", "resident-pro-comp", "resident-pro"]
+bundles = ["day-guest", "invited-guest", "resident-vat", "resident", "resident-guest", "resident-pro-comp", "resident-pro"]
 tokenCost = 0
 metered = true
 paths = ["hmrc/vat/viewVatReturn.html", "^/api/v1/hmrc/vat.*"]
@@ -356,7 +381,7 @@ hmrcScopesRequired = ["read:vat"]
 id = "self-employed"
 name = "Self Assessment (HMRC)"
 display = "always-with-upsell"
-bundles = ["resident-itsa", "resident-pro"]
+bundles = ["resident-itsa", "resident", "resident-pro"]
 tokenCost = 1
 metered = true
 # tokenCost covers the writes that spend a token: a quarterly update, its amendment, and the
@@ -379,7 +404,7 @@ environments = ["local", "test", "simulator", "proxy", "ci"]
 id = "self-employed-read"
 name = "Self Assessment reads (HMRC)"
 display = "never"
-bundles = ["resident-itsa", "resident-pro"]
+bundles = ["resident-itsa", "resident", "resident-pro"]
 tokenCost = 0
 metered = true
 paths = ["hmrc/itsa/businessDetails.html", "hmrc/itsa/obligations.html", "hmrc/itsa/taxCalculation.html", "hmrc/itsa/selfEmploymentPeriods.html", "hmrc/itsa/selfEmploymentPeriodView.html", "hmrc/itsa/ukPropertyPeriods.html", "hmrc/itsa/ukPropertyPeriodView.html"]
@@ -395,7 +420,7 @@ id = "self-employed-year-end"
 name = "Self Assessment year-end submissions (HMRC)"
 display = "never"
 # display: never - reached from the self-employed dashboard, not its own home page entry
-bundles = ["resident-itsa", "resident-pro"]
+bundles = ["resident-itsa", "resident", "resident-pro"]
 tokenCost = 1
 metered = true
 paths = ["hmrc/itsa/annualSubmission.html", "hmrc/itsa/adjustments.html", "hmrc/itsa/ukPropertyAnnualSubmission.html", "hmrc/itsa/ukPropertyAdjustments.html", "hmrc/itsa/lossesAndClaims.html", "hmrc/itsa/taxLiabilityAdjustments.html"]
@@ -414,7 +439,7 @@ environments = ["local", "test", "simulator", "proxy", "ci"]
 id = "self-employed-year-end-delete"
 name = "Self Assessment year-end deletions (HMRC)"
 display = "never"
-bundles = ["resident-itsa", "resident-pro"]
+bundles = ["resident-itsa", "resident", "resident-pro"]
 tokenCost = 0
 metered = true
 hmrcScopesRequired = ["write:self-assessment", "read:self-assessment"]
@@ -453,7 +478,7 @@ environments = ["local", "test", "simulator", "proxy", "ci", "prod"]
 id = "file-micro-entity-accounts"
 name = "File Micro-entity Accounts (Companies House)"
 display = "on-entitlement"
-bundles = ["resident-ltd", "resident-pro"]
+bundles = ["resident-ltd", "resident", "resident-pro"]
 tokenCost = 1
 metered = true
 paths = ["companies-house/fileMicroEntityAccounts.html", "^/api/v1/companies-house/accounts.*"]
@@ -463,7 +488,7 @@ environments = ["local", "test", "simulator", "proxy", "ci"]
 id = "diya-gl-storage"
 name = "Save DIYA-GL books"
 display = "on-entitlement"
-bundles = ["resident-diya-gl"]
+bundles = ["resident-diya-gl", "resident"]
 metered = false
 # The DIYA-GL storage PUT route (app/services/diyaGlEntitlement.js) checks the resident-diya-gl bundle
 # id directly rather than reading this activity, so this entry documents the entitlement
@@ -485,7 +510,7 @@ paths = ["hmrc/receipt/receipts.html", "^/api/v1/hmrc/receipt.*"]
 id = "generate-pass-digital"
 name = "Generate Digital Pass"
 display = "on-entitlement"
-bundles = ["resident-vat", "resident-pro-comp", "resident-pro"]
+bundles = ["resident-vat", "resident", "resident-pro-comp", "resident-pro"]
 tokenCost = 10
 metered = true
 # generate-pass-digital
@@ -499,7 +524,7 @@ paths = ["passes/generate-digital.html", "^/api/v1/pass/generate$"]
 id = "generate-pass-physical"
 name = "Generate Physical Pass"
 display = "on-entitlement"
-bundles = ["resident-vat", "resident-pro-comp", "resident-pro"]
+bundles = ["resident-vat", "resident", "resident-pro-comp", "resident-pro"]
 tokenCost = 10
 metered = true
 # generate-pass-physical

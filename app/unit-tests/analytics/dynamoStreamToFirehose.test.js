@@ -144,8 +144,23 @@ describe("projectFields whitelists", () => {
       status: "active",
       current_period_end: "2026-02-01T00:00:00.000Z",
       cancel_at_period_end: false,
+      actor: null,
     });
     expect(Object.values(row)).not.toContain("cus_probe");
+  });
+
+  test("subscriptions: carries the actor stored on the record at checkout", () => {
+    const image = {
+      pk: "stripe#sub_456",
+      hashedSub: "hash-4",
+      bundleId: "resident-vat",
+      status: "active",
+      currentPeriodEnd: "2026-03-01T00:00:00.000Z",
+      cancelAtPeriodEnd: false,
+      actor: "test-user",
+    };
+    const row = projectFields("subscriptions", image, null, "MODIFY");
+    expect(row.actor).toBe("test-user");
   });
 
   test("passes: hashes the redemption code pk rather than passing it through raw", () => {

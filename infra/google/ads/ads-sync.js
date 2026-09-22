@@ -88,7 +88,9 @@ export function parseConfig(tomlString) {
   if (campaigns.length !== 1) throw new Error(`ads.toml must declare exactly one [[campaign]], found ${campaigns.length}`);
   const campaignEntry = campaigns[0];
   if (!campaignEntry.name || campaignEntry.type !== "PERFORMANCE_MAX" || !campaignEntry.status || !campaignEntry.budget_micros) {
-    throw new Error(`[[campaign]] entry is missing name, status, budget_micros, or its type is not "PERFORMANCE_MAX": ${JSON.stringify(campaignEntry)}`);
+    throw new Error(
+      `[[campaign]] entry is missing name, status, budget_micros, or its type is not "PERFORMANCE_MAX": ${JSON.stringify(campaignEntry)}`,
+    );
   }
   const assetGroups = (Array.isArray(campaignEntry.asset_group) ? campaignEntry.asset_group : []).map((entry) => {
     if (!entry.name) throw new Error(`[[campaign.asset_group]] entry is missing name: ${JSON.stringify(entry)}`);
@@ -227,7 +229,10 @@ export function planAds(config, live) {
         live: liveCampaign.status,
       });
     }
-    const liveBudgetMicros = liveCampaign.budgetAmountMicros === null || liveCampaign.budgetAmountMicros === undefined ? null : String(liveCampaign.budgetAmountMicros);
+    const liveBudgetMicros =
+      liveCampaign.budgetAmountMicros === null || liveCampaign.budgetAmountMicros === undefined
+        ? null
+        : String(liveCampaign.budgetAmountMicros);
     if (liveBudgetMicros !== config.campaign.budgetMicros) {
       actions.push({
         kind: "update-campaign-budget",
@@ -270,7 +275,7 @@ export function describe(action) {
 async function googleAdsMutate(token, customerId, apiVersion, resource, operations) {
   const res = await fetch(`https://googleads.googleapis.com/${apiVersion}/customers/${customerId}/${resource}:mutate`, {
     method: "POST",
-    headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
+    headers: { "Authorization": `Bearer ${token}`, "Content-Type": "application/json" },
     body: JSON.stringify({ operations }),
   });
   if (!res.ok) throw new Error(`${res.status} from ${resource}:mutate: ${(await res.text()).slice(0, 500)}`);

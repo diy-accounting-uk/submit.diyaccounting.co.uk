@@ -50,7 +50,8 @@ export const CUSTOMER_QUERY =
   "SELECT customer.id, customer.descriptive_name, customer.auto_tagging_enabled, customer.currency_code, customer.time_zone FROM customer";
 export const CONVERSION_ACTION_QUERY =
   "SELECT conversion_action.resource_name, conversion_action.name, conversion_action.type, conversion_action.category, conversion_action.status, conversion_action.primary_for_goal FROM conversion_action";
-export const CONVERSION_GOAL_QUERY = "SELECT customer_conversion_goal.category, customer_conversion_goal.origin, customer_conversion_goal.biddable FROM customer_conversion_goal";
+export const CONVERSION_GOAL_QUERY =
+  "SELECT customer_conversion_goal.category, customer_conversion_goal.origin, customer_conversion_goal.biddable FROM customer_conversion_goal";
 export const CAMPAIGN_QUERY =
   "SELECT campaign.resource_name, campaign.name, campaign.status, campaign.advertising_channel_type, campaign.campaign_budget, campaign_budget.amount_micros FROM campaign";
 const ASSET_GROUP_QUERY = "SELECT asset_group.resource_name, asset_group.name, asset_group.status, asset_group.campaign FROM asset_group";
@@ -183,13 +184,20 @@ export function findingForAccessLevel(error, projectId) {
   return `Google Ads: not permitted (${reason}). Set the access level at ${ADS_API_OVERVIEW_URL}?project=${projectId}, "Upgrade access level" to Basic.`;
 }
 
-export function buildInventoryReport({ customerId, customer, conversionActions, conversionGoals, campaigns, assetGroups, adsLinks, findings = [] }) {
+export function buildInventoryReport({
+  customerId,
+  customer,
+  conversionActions,
+  conversionGoals,
+  campaigns,
+  assetGroups,
+  adsLinks,
+  findings = [],
+}) {
   return { customerId, customer, conversionActions, conversionGoals, campaigns, assetGroups, adsLinks, findings };
 }
 
 export function printInventory(report) {
-  const list = (items) => (items.length === 0 ? "none" : items.join(", "));
-
   console.log(`=== Google Ads inventory: ${report.customerId} ===\n`);
 
   if (report.findings.length > 0) {
@@ -208,7 +216,9 @@ export function printInventory(report) {
 
   console.log(`Conversion actions (${report.conversionActions.length}):`);
   for (const action of report.conversionActions) {
-    console.log(`  ${action.name}: ${action.type}, ${action.category}, ${action.status}${action.primaryForGoal ? " [primary for goal]" : ""} (${action.resourceName})`);
+    console.log(
+      `  ${action.name}: ${action.type}, ${action.category}, ${action.status}${action.primaryForGoal ? " [primary for goal]" : ""} (${action.resourceName})`,
+    );
   }
   console.log("");
 
@@ -234,7 +244,9 @@ export function printInventory(report) {
 
   console.log(`GA4 Ads links (${report.adsLinks.length}):`);
   for (const link of report.adsLinks) {
-    console.log(`  customer ${link.customerId}: manage clients ${link.canManageClients}, ads personalization ${link.adsPersonalizationEnabled} (${link.name})`);
+    console.log(
+      `  customer ${link.customerId}: manage clients ${link.canManageClients}, ads personalization ${link.adsPersonalizationEnabled} (${link.name})`,
+    );
   }
   console.log("");
 }
@@ -245,7 +257,7 @@ export function printInventory(report) {
 export async function googleAdsSearch(token, customerId, apiVersion, query) {
   const res = await fetch(`https://googleads.googleapis.com/${apiVersion}/customers/${customerId}/googleAds:search`, {
     method: "POST",
-    headers: { Authorization: `Bearer ${token}`, "Content-Type": "application/json" },
+    headers: { "Authorization": `Bearer ${token}`, "Content-Type": "application/json" },
     body: JSON.stringify({ query }),
   });
   if (!res.ok) throw new Error(`${res.status} from googleAds:search: ${(await res.text()).slice(0, 500)}`);
@@ -279,12 +291,19 @@ async function readStoredRefreshToken(smClient, secretId) {
   }
 }
 
-async function exchangeRefreshTokenForAccessToken({ clientCredentials, refreshToken, refreshTokenSecretName, OAuth2ClientImpl = OAuth2Client }) {
+async function exchangeRefreshTokenForAccessToken({
+  clientCredentials,
+  refreshToken,
+  refreshTokenSecretName,
+  OAuth2ClientImpl = OAuth2Client,
+}) {
   const oAuth2Client = new OAuth2ClientImpl({ clientId: clientCredentials.client_id, clientSecret: clientCredentials.client_secret });
   oAuth2Client.setCredentials({ refresh_token: refreshToken });
   const { token } = await oAuth2Client.getAccessToken();
   if (!token) {
-    throw new Error(`Google did not return an access token for the stored Ads refresh token. Delete Secrets Manager secret ${refreshTokenSecretName} and run --consent again.`);
+    throw new Error(
+      `Google did not return an access token for the stored Ads refresh token. Delete Secrets Manager secret ${refreshTokenSecretName} and run --consent again.`,
+    );
   }
   return token;
 }
@@ -304,7 +323,9 @@ export async function getAdsAccessToken(config, { clientFile } = {}) {
   const clientCredentials = await resolveClientCredentials({ clientFile, smClient });
   const refreshToken = await readStoredRefreshToken(smClient, config.refreshTokenSecretName);
   if (!refreshToken) {
-    throw new Error(`No Ads refresh token found in Secrets Manager secret ${config.refreshTokenSecretName}. Run: node infra/google/ads/ads-inventory.js --consent`);
+    throw new Error(
+      `No Ads refresh token found in Secrets Manager secret ${config.refreshTokenSecretName}. Run: node infra/google/ads/ads-inventory.js --consent`,
+    );
   }
   return exchangeRefreshTokenForAccessToken({ clientCredentials, refreshToken, refreshTokenSecretName: config.refreshTokenSecretName });
 }
@@ -312,9 +333,14 @@ export async function getAdsAccessToken(config, { clientFile } = {}) {
 async function runConsent(config, clientFile) {
   const clientCredentials = await resolveClientCredentials({ clientFile, smClient: getSecretsManagerClient() });
   const refreshToken = await runLoopbackConsent({ clientCredentials, scopes: [config.scope] });
-  execFileSync("scripts/put-secret-with-rotation-tag.sh", [config.refreshTokenSecretName, JSON.stringify({ refresh_token: refreshToken })], {
-    stdio: "inherit",
-  });
+  execFileSync(
+    // eslint-disable-next-line sonarjs/no-os-command-from-path -- deliberately runs this repo's own script, resolved relative to cwd, not searched on PATH
+    "scripts/put-secret-with-rotation-tag.sh",
+    [config.refreshTokenSecretName, JSON.stringify({ refresh_token: refreshToken })],
+    {
+      stdio: "inherit",
+    },
+  );
   console.log(`Stored the Ads refresh token in Secrets Manager secret ${config.refreshTokenSecretName}`);
 }
 
@@ -366,7 +392,16 @@ export async function main(argv = process.argv.slice(2)) {
     findings.push("GA4 googleAdsLinks not read: no federated Google credentials outside GitHub Actions");
   }
 
-  const report = buildInventoryReport({ customerId: config.customerId, customer, conversionActions, conversionGoals, campaigns, assetGroups, adsLinks, findings });
+  const report = buildInventoryReport({
+    customerId: config.customerId,
+    customer,
+    conversionActions,
+    conversionGoals,
+    campaigns,
+    assetGroups,
+    adsLinks,
+    findings,
+  });
   printInventory(report);
   return report;
 }

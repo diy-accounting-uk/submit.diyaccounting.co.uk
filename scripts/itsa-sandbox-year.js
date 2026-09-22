@@ -48,7 +48,8 @@
  *                                  resolveItsaSubmissionModel decides which quarterly filing
  *                                  model it uses
  *   ITSA_SANDBOX_OUT_DIR           directory for the transcript, screenshots and the
- *                                  restore checkpoint id (default "./target/itsa-sandbox-year")
+ *                                  restore checkpoint id (default "../itsa-sandbox/<tax-year>/" relative
+ *                                  to workspace root, outside the repository)
  *   ITSA_SANDBOX_SCOPE             OAuth scope to request (default
  *                                  "read:self-assessment write:self-assessment")
  *   ITSA_SANDBOX_HEADFUL           set to "true" to watch the browser
@@ -59,6 +60,8 @@
 import { readFileSync, writeFileSync, mkdirSync } from "node:fs";
 import { randomUUID } from "node:crypto";
 import { fileURLToPath } from "node:url";
+import { resolve, dirname } from "node:path";
+import { execSync } from "node:child_process";
 import dotenv from "dotenv";
 
 import { buildFraudHeaders, detectVendorPublicIp } from "../app/lib/buildFraudHeaders.js";
@@ -121,6 +124,15 @@ const CALCULATION_RETRIEVE_SCENARIO = "DYNAMIC";
 const KNOWN_ACCEPTABLE_WARNING_HEADERS = ["gov-client-multi-factor"];
 
 const transcript = [];
+
+function resolveDefaultOutDir(taxYear) {
+  // Resolve to ../itsa-sandbox/<tax-year>/ relative to workspace root (outside the repository).
+  // Get the git common dir (which points to .git in the main checkout even when running from
+  // a worktree), then resolve to its parent (the repository root), then to the workspace root.
+  const gitCommonDir = execSync("git rev-parse --git-common-dir", { cwd: process.cwd(), encoding: "utf8" }).trim();
+  const repoRoot = dirname(gitCommonDir);
+  return resolve(repoRoot, "..", "itsa-sandbox", taxYear);
+}
 
 function sleep(ms) {
   return new Promise((resolve) => setTimeout(resolve, ms));
@@ -531,7 +543,7 @@ async function main() {
     throw new Error(`ITSA_SANDBOX_TAX_YEAR must look like "2023-24", got "${taxYear}"`);
   }
   const scope = process.env.ITSA_SANDBOX_SCOPE || "read:self-assessment write:self-assessment";
-  const outDir = process.env.ITSA_SANDBOX_OUT_DIR || "./target/itsa-sandbox-year";
+  const outDir = process.env.ITSA_SANDBOX_OUT_DIR || resolveDefaultOutDir(taxYear);
   mkdirSync(outDir, { recursive: true });
   const checkpointFile = `${outDir}/checkpoint-id.txt`;
 
@@ -1146,7 +1158,8 @@ if (process.argv[1] === fileURLToPath(import.meta.url)) {
   main().catch((error) => {
     console.error(`[itsa-sandbox-year] failed: ${error.message}`);
     try {
-      const outDir = process.env.ITSA_SANDBOX_OUT_DIR || "./target/itsa-sandbox-year";
+      const taxYear = process.env.ITSA_SANDBOX_TAX_YEAR || "unknown";
+      const outDir = process.env.ITSA_SANDBOX_OUT_DIR || resolveDefaultOutDir(taxYear);
       mkdirSync(outDir, { recursive: true });
       writeFileSync(`${outDir}/itsa-sandbox-year-transcript.json`, JSON.stringify({ failed: true, error: error.message, transcript }, null, 2));
       console.error(`[itsa-sandbox-year] partial transcript written to ${outDir}/itsa-sandbox-year-transcript.json`);

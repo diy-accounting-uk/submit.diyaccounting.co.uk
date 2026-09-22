@@ -113,7 +113,29 @@ export function sanitizeBalanceTransaction(tx) {
   };
 }
 
-export function sanitizeCharge(charge) {
+/**
+ * Resolve a charge's bundle id. A subscription charge carries no bundle metadata of its own
+ * (Stripe refuses `payment_intent_data` on a subscription-mode checkout), so its bundle lives
+ * on the subscription that its invoice belongs to: look up the invoice by the charge's
+ * `invoice` id to find `invoice.subscription`, then look up that subscription's own
+ * `metadata.bundleId`. A donation charge (from a Payment Link, one-off `mode: "payment"`)
+ * carries the bundle id directly on `charge.metadata.bundleId`, which Stripe copies from the
+ * Payment Link's `payment_intent_data.metadata` onto the PaymentIntent and onto the Charge at
+ * creation, so that is the fallback.
+ *
+ * @param {object} charge
+ * @param {Map<string, string>} invoiceToSubscription - invoice id -> subscription id
+ * @param {Map<string, string>} subscriptionBundleIds - subscription id -> bundle id
+ * @returns {string|null}
+ */
+export function resolveChargeBundleId(charge, invoiceToSubscription, subscriptionBundleIds) {
+  const invoiceId = resolveId(charge.invoice);
+  const subscriptionId = invoiceId ? invoiceToSubscription.get(invoiceId) : undefined;
+  const subscriptionBundleId = subscriptionId ? subscriptionBundleIds.get(subscriptionId) : undefined;
+  return subscriptionBundleId ?? charge.metadata?.bundleId ?? null;
+}
+
+export function sanitizeCharge(charge, invoiceToSubscription = new Map(), subscriptionBundleIds = new Map()) {
   return {
     id: charge.id,
     amount: charge.amount,
@@ -126,7 +148,7 @@ export function sanitizeCharge(charge) {
     failure_code: charge.failure_code ?? null,
     customer: hashCustomerId(charge.customer),
     invoice: resolveId(charge.invoice),
-    bundle_id: charge.metadata?.bundleId ?? null,
+    bundle_id: resolveChargeBundleId(charge, invoiceToSubscription, subscriptionBundleIds),
   };
 }
 
@@ -205,19 +227,28 @@ export async function handler(event = {}) {
     })
   ).map(sanitizeBalanceTransaction);
 
-  const charges = (
-    await listAllPages((params) => stripe.charges.list(params), {
-      created: { gte, lt },
-    })
-  ).map(sanitizeCharge);
-
   // Subscriptions is a full snapshot, not a delta: `dt` reads as "state as at", which is what a
   // subscription question actually wants, and the daily row count is small enough to afford it.
-  const subscriptions = (
-    await listAllPages((params) => stripe.subscriptions.list(params), {
-      status: "all",
-    })
-  ).map(sanitizeSubscription);
+  // Fetched before charges so a subscription charge's bundle_id can resolve against it below.
+  const rawSubscriptions = await listAllPages((params) => stripe.subscriptions.list(params), {
+    status: "all",
+  });
+  const subscriptions = rawSubscriptions.map(sanitizeSubscription);
+  const subscriptionBundleIds = new Map(rawSubscriptions.map((s) => [s.id, s.metadata?.bundleId ?? null]));
+
+  // expand data.invoice: a subscription-mode checkout carries no bundle metadata on the charge
+  // itself (Stripe refuses payment_intent_data in that mode), so the charge's invoice is the
+  // only way to reach the subscription that does carry it.
+  const rawCharges = await listAllPages((params) => stripe.charges.list(params), {
+    created: { gte, lt },
+    expand: ["data.invoice"],
+  });
+  const invoiceToSubscription = new Map(
+    rawCharges
+      .filter((charge) => charge.invoice && typeof charge.invoice === "object")
+      .map((charge) => [charge.invoice.id, resolveId(charge.invoice.subscription)]),
+  );
+  const charges = rawCharges.map((charge) => sanitizeCharge(charge, invoiceToSubscription, subscriptionBundleIds));
 
   const s3Client = getS3Client();
   const keys = {

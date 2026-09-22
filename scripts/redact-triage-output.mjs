@@ -81,15 +81,20 @@ export function extractFinalAssistantText(parsed) {
 /**
  * A run that talks through an earlier plan before settling on its answer (a compaction can
  * make the agent recap what it already found) can leave that talk in the same result string,
- * ahead of the actual answer, separated by a Markdown thematic break. Keeps only the text
- * after the last such break, so a stray "Let me try a different approach..." from earlier in
- * the run never reaches the posted comment. Text with no thematic break passes through
- * unchanged, as does one whose break is trailing (nothing usable follows it).
+ * ahead of the actual answer. When a Markdown thematic break separates them, keeps only the text
+ * after the last break. When there is no break and prose precedes the first `## ` heading, cuts
+ * to that heading. Text with neither passes through unchanged, as does one whose break is
+ * trailing (nothing usable follows it) or whose first non-blank line is the heading.
  */
 function finalMessageOnly(text) {
   const segments = text.split(/\n+-{3,}\n+/);
   const lastSegment = segments[segments.length - 1].trim();
-  return segments.length > 1 && lastSegment.length > 0 ? lastSegment : text;
+  if (segments.length > 1 && lastSegment.length > 0) {
+    return lastSegment;
+  }
+  const firstHeading = text.search(/^## /m);
+  const prosePrecedesHeading = firstHeading > 0 && text.slice(0, firstHeading).trim().length > 0;
+  return prosePrecedesHeading ? text.slice(firstHeading) : text;
 }
 
 /**

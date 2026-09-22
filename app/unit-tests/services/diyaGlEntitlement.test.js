@@ -48,7 +48,20 @@ describe("diyaGlEntitlement", () => {
     expect(getUserBundles).not.toHaveBeenCalled();
   });
 
-  test("gives resident retention for a caller with an active, unexpired DIYA-GL bundle", async () => {
+  test("gives resident retention for a caller with an active, unexpired resident bundle", async () => {
+    process.env.DIYA_GL_RESIDENT_TIER = "true";
+    const future = new Date(Date.now() + 60_000).toISOString();
+    getUserBundles.mockResolvedValue([{ bundleId: "resident", subscriptionStatus: "active", expiry: future }]);
+
+    const result = await entitlementFor("active-sub");
+
+    expect(result.retention).toBe("resident");
+    expect(result.reason).toBe("active-subscription");
+    expect(result.residentTier).toBe(true);
+    expect(result.bundleId).toBe("resident");
+  });
+
+  test("gives resident retention for a caller still on the folded resident-diya-gl bundle", async () => {
     process.env.DIYA_GL_RESIDENT_TIER = "true";
     const future = new Date(Date.now() + 60_000).toISOString();
     getUserBundles.mockResolvedValue([{ bundleId: "resident-diya-gl", subscriptionStatus: "active", expiry: future }]);

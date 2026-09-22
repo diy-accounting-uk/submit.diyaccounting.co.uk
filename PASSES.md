@@ -61,6 +61,7 @@ Defined in `web/public/submit.catalogue.toml`. Each bundle is an access tier.
 | `default` | - | - | - | - | Automatic | All authenticated users |
 | `day-guest` | Guest | 3 | None | 1 day | On-Request | None — self-service (`enable = "always"`); day-guest-test-pass, digital-pass, physical-pass optional |
 | `invited-guest` | Guest | 3 | Monthly | 1 month | On-Email-Match | invited-guest, campaign |
+| `resident` | Resident | 100 | Monthly | - | On-Subscription | Stripe subscription (£39/year, or £3.99/month) |
 | `resident-guest` | Guest | 3 | Monthly | Unlimited | On-Email-Match | resident-guest |
 | `resident-pro-comp` | Pro | 100 | Monthly | Unlimited | On-Email-Match | resident-pro-comp |
 | `resident-pro` | Pro | 100 | Monthly | - | On-Pass-On-Subscription | resident-pro-test-pass, resident-pro-pass, Stripe subscription |

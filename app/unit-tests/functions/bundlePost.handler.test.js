@@ -421,6 +421,36 @@ describe("bundlePost ingestHandler", () => {
     expect(detail.hashedSub).toBe(hashSub("user-hashed-sub-check"));
   });
 
+  test("classifies bundle-granted as test-user for a synthetic lane's email", async () => {
+    const token = makeIdToken("synthetic-lane-sub", { email: "synthetic-local@test.diyaccounting.co.uk" });
+    const event = buildEventWithToken(token, { bundleId: "day-guest" });
+    event.headers["x-wait-time-ms"] = "30000";
+
+    await bundlePostHandler(event);
+
+    const bundleGrantedCalls = mockEventBridgeSend.mock.calls.filter((call) => {
+      const detail = JSON.parse(call[0].input.Entries[0].Detail);
+      return detail.event === "bundle-granted";
+    });
+    const detail = JSON.parse(bundleGrantedCalls[0][0].input.Entries[0].Detail);
+    expect(detail.actor).toBe("test-user");
+  });
+
+  test("classifies bundle-granted as customer for a real customer's email", async () => {
+    const token = makeIdToken("real-customer-sub", { email: "real.customer@example.com" });
+    const event = buildEventWithToken(token, { bundleId: "day-guest" });
+    event.headers["x-wait-time-ms"] = "30000";
+
+    await bundlePostHandler(event);
+
+    const bundleGrantedCalls = mockEventBridgeSend.mock.calls.filter((call) => {
+      const detail = JSON.parse(call[0].input.Entries[0].Detail);
+      return detail.event === "bundle-granted";
+    });
+    const detail = JSON.parse(bundleGrantedCalls[0][0].input.Entries[0].Detail);
+    expect(detail.actor).toBe("customer");
+  });
+
   // ============================================================================
   // Error Handling Tests (500)
   // ============================================================================

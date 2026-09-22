@@ -159,7 +159,6 @@ export default [
       "app/system-tests/",
       "web/unit-tests/",
       "scripts/",
-      "infra/google/",
       "behaviour-tests/",
       "web/browser-tests/",
       // Generated test reports (Playwright HTML reports contain bundled JS)

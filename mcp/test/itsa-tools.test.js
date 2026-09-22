@@ -220,4 +220,12 @@ describe("writePath", () => {
     expect({}.polluted).toBeUndefined();
     expect(target).toEqual({});
   });
+
+  test("refuses a leaf part that would reach the prototype chain", () => {
+    const target = {};
+    for (const path of ["adjustments.__proto__", "adjustments.constructor", "adjustments.prototype"]) {
+      expect(() => writePath(target, path, 1)).toThrow(/is not a field/);
+    }
+    expect({}.polluted).toBeUndefined();
+  });
 });

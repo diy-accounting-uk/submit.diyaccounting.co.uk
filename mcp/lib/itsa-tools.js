@@ -132,8 +132,6 @@ function readPath(target, path) {
   return node;
 }
 
-const UNSAFE_PATH_PARTS = new Set(["__proto__", "constructor", "prototype"]);
-
 /**
  * Writes a value at a dotted path, creating the objects between. A part that
  * would reach the prototype chain is refused, so a path can never pollute
@@ -142,14 +140,27 @@ const UNSAFE_PATH_PARTS = new Set(["__proto__", "constructor", "prototype"]);
 export function writePath(target, path, value) {
   const parts = path.split(".");
   for (const part of parts) {
-    if (UNSAFE_PATH_PARTS.has(part)) throw new Error(`Refusing to write the path ${path}: ${part} is not a field`);
+    if (part === "__proto__" || part === "constructor" || part === "prototype") {
+      throw new Error(`Refusing to write the path ${path}: ${part} is not a field`);
+    }
   }
   let node = target;
   for (let i = 0; i < parts.length - 1; i++) {
-    if (!Object.hasOwn(node, parts[i]) || node[parts[i]] === null || typeof node[parts[i]] !== "object") node[parts[i]] = {};
-    node = node[parts[i]];
+    const part = parts[i];
+    // The loop above refuses the whole path before anything is written; the comparison is
+    // repeated on the write itself, spelled out, because that is the shape static analysis
+    // recognises as a guard on the assignment.
+    if (part === "__proto__" || part === "constructor" || part === "prototype") {
+      throw new Error(`Refusing to write the path ${path}: ${part} is not a field`);
+    }
+    if (!Object.hasOwn(node, part) || node[part] === null || typeof node[part] !== "object") node[part] = {};
+    node = node[part];
   }
-  node[parts[parts.length - 1]] = value;
+  const lastPart = parts[parts.length - 1];
+  if (lastPart === "__proto__" || lastPart === "constructor" || lastPart === "prototype") {
+    throw new Error(`Refusing to write the path ${path}: ${lastPart} is not a field`);
+  }
+  node[lastPart] = value;
 }
 
 // Rebuilds a payload from the slots the year accepts, in the mapping's own

@@ -190,7 +190,7 @@ export function findingForForbiddenRead(error, what, serviceAccountEmail, remedy
   let reason = remedy;
   if (/ACCESS_TOKEN_SCOPE_INSUFFICIENT|insufficient authentication scopes/i.test(message)) reason = "the access token lacks the scope";
   else {
-    const disabledApi = /([A-Za-z()\s]+ API) has not been used in project|([A-Za-z()\s]+ API)[^"]*it is disabled/i.exec(message);
+    const disabledApi = /([A-Z()\s]{1,100} API) has not been used in project|([A-Z()\s]{1,100} API)[^"]*it is disabled/i.exec(message);
     if (disabledApi) reason = `the ${(disabledApi[1] ?? disabledApi[2]).trim()} is disabled in the project`;
   }
   return `${what}: not permitted for ${serviceAccountEmail} (${reason})`;
@@ -267,9 +267,8 @@ export function printInventory(report) {
 
   console.log(`Billing budgets (${report.budgets.length}):`);
   for (const budget of report.budgets) {
-    console.log(
-      `  ${budget.displayName} (${budget.name}): ${budget.amount}, thresholds ${list(budget.thresholds.map((t) => `${t * 100}%`))}`,
-    );
+    const thresholds = list(budget.thresholds.map((t) => `${t * 100}%`));
+    console.log(`  ${budget.displayName} (${budget.name}): ${budget.amount}, thresholds ${thresholds}`);
   }
   console.log("");
 

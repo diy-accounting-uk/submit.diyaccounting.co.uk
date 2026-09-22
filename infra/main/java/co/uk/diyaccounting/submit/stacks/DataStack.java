@@ -928,7 +928,7 @@ public class DataStack extends Stack {
                         LifecycleRule.builder()
                                 .id("expire-sandbox")
                                 .tagFilters(Map.of("retention", "sandbox"))
-                                .expiration(Duration.days(2))
+                                .expiration(Duration.days(37))
                                 .noncurrentVersionExpiration(Duration.days(1))
                                 .build()))
                 .build();

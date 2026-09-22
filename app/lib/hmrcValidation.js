@@ -122,6 +122,11 @@ export function resolveItsaSubmissionModel(taxYear) {
   if (!isValidTaxYear(taxYear)) {
     throw new Error(`Invalid taxYear format - must be YYYY-YY, got: ${taxYear}`);
   }
+  // isValidTaxYear already rejects a non-string, but stating it here lets static analysis
+  // see that the slice below can never run on an array or other non-string value.
+  if (typeof taxYear !== "string") {
+    throw new Error(`Invalid taxYear format - must be YYYY-YY, got: ${taxYear}`);
+  }
   const startYear = Number(taxYear.slice(0, 4));
   const boundaryStartYear = Number(CUMULATIVE_MODEL_START_TAX_YEAR.slice(0, 4));
   return startYear >= boundaryStartYear ? "cumulative" : "dated";

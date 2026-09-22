@@ -11,7 +11,7 @@ import { putBundleByHashedSub, updateBundleSubscriptionFields, resetTokensByHash
 import { initializeSalt } from "../../services/subHasher.js";
 import { putSubscription, getSubscription, updateSubscription } from "../../data/dynamoDbSubscriptionRepository.js";
 import { loadCatalogFromRoot } from "../../services/productCatalog.js";
-import { publishActivityEvent, maskEmail } from "../../lib/activityAlert.js";
+import { publishActivityEvent, maskEmail, classifyActor } from "../../lib/activityAlert.js";
 
 const logger = createLogger({ source: "app/functions/billing/billingWebhookPost.js" });
 
@@ -112,6 +112,14 @@ async function handleCheckoutComplete(session, { test = false } = {}) {
     return;
   }
 
+  // Stripe's own livemode flag mostly tracks synthetic vs real traffic (probe lanes only
+  // ever check out with test-mode price ids) but it is not the same signal every other
+  // activity event now classifies by, and it says nothing on the subscription record
+  // itself. Derive actor from the customer's email, the same rule as everywhere else, and
+  // store it on the record so the later lifecycle events on this subscription (and the
+  // DynamoDB stream projection to analytics) can read it back without knowing Stripe mode.
+  const actor = classifyActor(customerEmail);
+
   logger.info({ message: "Processing checkout.session.completed", hashedSub, bundleId, subscriptionId });
 
   // Retrieve subscription details from Stripe for period info
@@ -161,6 +169,7 @@ async function handleCheckoutComplete(session, { test = false } = {}) {
       currentPeriodEnd,
       canceledAt: null,
       createdAt: new Date().toISOString(),
+      actor,
     });
     logger.info({ message: "Subscription record stored", subscriptionId, hashedSub });
   }
@@ -169,7 +178,7 @@ async function handleCheckoutComplete(session, { test = false } = {}) {
     event: "subscription-activated",
     site: "submit",
     summary: `Subscription activated: ${bundleId} for ${maskEmail(customerEmail)}`,
-    actor: test ? "test-user" : "customer",
+    actor,
     flow: "user-journey",
     // Stripe webhooks never see the raw Cognito sub, only the hashedSub set as
     // checkout metadata — pass it straight through in detail rather than via
@@ -196,12 +205,18 @@ async function handleInvoicePaid(invoice, { test = false } = {}) {
   const { hashedSub, bundleId } = subRecord;
   const tokensGranted = getCatalogTokensGranted(bundleId);
 
-  // Retrieve subscription for updated period info
-  let currentPeriodEnd = null;
+  // Retrieve subscription for updated period info. Start from the record's last known period
+  // end, not null: a failed retrieve, or one whose reply carries no current_period_end, must
+  // never overwrite a real value with nothing -- that would erase the renewal from
+  // dynamo_subscriptions (a MODIFY whose current_period_end moved forward is how the analytics
+  // view counts a renewal at all) and drop the bundle's expiry back to a 30-day guess below.
+  let currentPeriodEnd = subRecord.currentPeriodEnd ?? null;
   try {
     const stripe = await getStripeClient({ test });
     const subscription = await stripe.subscriptions.retrieve(subscriptionId);
-    currentPeriodEnd = subscription.current_period_end ? new Date(subscription.current_period_end * 1000).toISOString() : null;
+    if (subscription.current_period_end) {
+      currentPeriodEnd = new Date(subscription.current_period_end * 1000).toISOString();
+    }
   } catch (error) {
     logger.warn({ message: "Failed to retrieve subscription for token refresh", subscriptionId, error: error.message });
   }
@@ -229,7 +244,10 @@ async function handleInvoicePaid(invoice, { test = false } = {}) {
     event: "subscription-renewed",
     site: "submit",
     summary: `Subscription renewed: ${bundleId}`,
-    actor: test ? "test-user" : "customer",
+    // The record's own actor, set once from the customer's email at checkout, so a probe
+    // lane's renewals classify the same way its checkout did. Older records written before
+    // that field existed fall back to the Stripe test/live mode flag.
+    actor: subRecord.actor || (test ? "test-user" : "customer"),
     flow: "user-journey",
     detail: { bundleId, subscriptionId, hashedSub },
   });
@@ -270,7 +288,7 @@ async function handleSubscriptionUpdated(subscription, { test = false } = {}) {
       event: "subscription-cancellation-scheduled",
       site: "submit",
       summary: `Cancellation scheduled: ${bundleId}`,
-      actor: test ? "test-user" : "customer",
+      actor: subRecord.actor || (test ? "test-user" : "customer"),
       flow: "user-journey",
       detail: { bundleId, subscriptionId: subscription.id, hashedSub },
     });
@@ -309,7 +327,7 @@ async function handleSubscriptionDeleted(subscription, { test = false } = {}) {
     event: "subscription-canceled",
     site: "submit",
     summary: `Subscription canceled: ${bundleId}`,
-    actor: test ? "test-user" : "customer",
+    actor: subRecord.actor || (test ? "test-user" : "customer"),
     flow: "user-journey",
     detail: { bundleId, subscriptionId: subscription.id, hashedSub },
   });
@@ -349,7 +367,7 @@ async function handlePaymentFailed(invoice, { test = false } = {}) {
     event: "payment-failed",
     site: "submit",
     summary: `Payment failed: ${bundleId}`,
-    actor: test ? "test-user" : "customer",
+    actor: subRecord.actor || (test ? "test-user" : "customer"),
     flow: "user-journey",
     detail: { bundleId, subscriptionId, hashedSub },
   });

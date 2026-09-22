@@ -134,7 +134,7 @@ function isPreconditionFailed(error) {
   return error?.name === "PreconditionFailed";
 }
 
-const SANDBOX_RETENTION_MS = 24 * 60 * 60 * 1000;
+const SANDBOX_RETENTION_MS = 35 * 24 * 60 * 60 * 1000;
 
 /**
  * Writes the next version's zip and metadata in one attempt. Throws WriteRaceError when an S3

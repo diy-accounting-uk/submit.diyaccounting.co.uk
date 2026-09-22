@@ -632,8 +632,10 @@ jobs:
       - name: Run behaviour test
         run: npm run test:submitVatBehaviour-simulator
 
+        # The artifact service can refuse finalize after the suite passed
       - name: Upload artifacts
         if: ${{ !cancelled() }}
+        continue-on-error: true
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
         with:
           name: behaviour-test-simulator-submit-vat
@@ -668,6 +670,7 @@ jobs:
 
       - name: Upload artifacts
         if: ${{ !cancelled() }}
+        continue-on-error: true
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
         with:
           name: behaviour-test-simulator-post-vat-return
@@ -702,6 +705,7 @@ jobs:
 
       - name: Upload artifacts
         if: ${{ !cancelled() }}
+        continue-on-error: true
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
         with:
           name: behaviour-test-simulator-get-vat-return
@@ -736,6 +740,7 @@ jobs:
 
       - name: Upload artifacts
         if: ${{ !cancelled() }}
+        continue-on-error: true
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
         with:
           name: behaviour-test-simulator-get-vat-obligations
@@ -770,6 +775,7 @@ jobs:
 
       - name: Upload artifacts
         if: ${{ !cancelled() }}
+        continue-on-error: true
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
         with:
           name: behaviour-test-simulator-get-vat-liabilities
@@ -804,6 +810,7 @@ jobs:
 
       - name: Upload artifacts
         if: ${{ !cancelled() }}
+        continue-on-error: true
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
         with:
           name: behaviour-test-simulator-get-vat-payments
@@ -838,6 +845,7 @@ jobs:
 
       - name: Upload artifacts
         if: ${{ !cancelled() }}
+        continue-on-error: true
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
         with:
           name: behaviour-test-simulator-get-vat-penalties
@@ -872,6 +880,7 @@ jobs:
 
       - name: Upload artifacts
         if: ${{ !cancelled() }}
+        continue-on-error: true
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
         with:
           name: behaviour-test-simulator-fraud-prevention-headers
@@ -906,6 +915,7 @@ jobs:
 
       - name: Upload artifacts
         if: ${{ !cancelled() }}
+        continue-on-error: true
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
         with:
           name: behaviour-test-simulator-compliance
@@ -940,6 +950,7 @@ jobs:
 
       - name: Upload artifacts
         if: ${{ !cancelled() }}
+        continue-on-error: true
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
         with:
           name: behaviour-test-simulator-vat-validation
@@ -974,6 +985,7 @@ jobs:
 
       - name: Upload artifacts
         if: ${{ !cancelled() }}
+        continue-on-error: true
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
         with:
           name: behaviour-test-simulator-vat-schemes
@@ -1008,6 +1020,7 @@ jobs:
 
       - name: Upload artifacts
         if: ${{ !cancelled() }}
+        continue-on-error: true
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
         with:
           name: behaviour-test-simulator-auth
@@ -1042,6 +1055,7 @@ jobs:
 
       - name: Upload artifacts
         if: ${{ !cancelled() }}
+        continue-on-error: true
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
         with:
           name: behaviour-test-simulator-bundle
@@ -1076,6 +1090,7 @@ jobs:
 
       - name: Upload artifacts
         if: ${{ !cancelled() }}
+        continue-on-error: true
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
         with:
           name: behaviour-test-simulator-help
@@ -1110,6 +1125,7 @@ jobs:
 
       - name: Upload artifacts
         if: ${{ !cancelled() }}
+        continue-on-error: true
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
         with:
           name: behaviour-test-simulator-pass-redemption
@@ -1144,6 +1160,7 @@ jobs:
 
       - name: Upload artifacts
         if: ${{ !cancelled() }}
+        continue-on-error: true
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
         with:
           name: behaviour-test-simulator-token-enforcement
@@ -1178,6 +1195,7 @@ jobs:
 
       - name: Upload artifacts
         if: ${{ !cancelled() }}
+        continue-on-error: true
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
         with:
           name: behaviour-test-simulator-payment
@@ -1212,6 +1230,7 @@ jobs:
 
       - name: Upload artifacts
         if: ${{ !cancelled() }}
+        continue-on-error: true
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
         with:
           name: behaviour-test-simulator-simulator
@@ -1246,6 +1265,7 @@ jobs:
 
       - name: Upload artifacts
         if: ${{ !cancelled() }}
+        continue-on-error: true
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
         with:
           name: behaviour-test-simulator-generate-pass-activity
@@ -1335,6 +1355,7 @@ jobs:
 
       - name: Upload artifacts (results)
         if: ${{ !cancelled() }}
+        continue-on-error: true
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
         with:
           name: behaviour-test-proxy-submit-vat-results
@@ -1344,6 +1365,7 @@ jobs:
 
       - name: Upload artifacts (reports)
         if: ${{ !cancelled() }}
+        continue-on-error: true
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
         with:
           name: behaviour-test-proxy-submit-vat-reports
@@ -1353,6 +1375,7 @@ jobs:
 
       - name: Upload artifacts (dynamodb exports)
         if: ${{ !cancelled() }}
+        continue-on-error: true
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
         with:
           name: behaviour-test-proxy-submit-vat-dynamodb

@@ -345,11 +345,13 @@ export function extractUserFromAuthorizerContext(event) {
   const ctx = authz.jwt?.claims ?? authz.lambda ?? authz;
 
   if (ctx && ctx.sub) {
-    // Plumb userSub through the async context so downstream observability
-    // (activity events → telegram routing) can route customer-journey events
-    // to the LIVE channel even when the caller doesn't pass `actor` explicitly.
+    // Plumb userSub and email through the async context so downstream observability
+    // (activity events → telegram routing, resolveActorClass) can classify a
+    // customer-journey event by who signed in, even when the caller doesn't pass
+    // `actor` explicitly.
     if (context.getStore()) {
       context.set("userSub", ctx.sub);
+      if (ctx.email) context.set("userEmail", ctx.email);
     }
     return {
       sub: ctx.sub,

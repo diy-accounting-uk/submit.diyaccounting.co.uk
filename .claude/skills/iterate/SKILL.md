@@ -64,6 +64,7 @@ are not startable; leave them.
 
 - **One batch branch per wave** (`claude/b<n>-board`, its own worktree under
   `.claude/worktrees/b<n>`), every agent worktree branched from it, `NEXT.md` never on it.
+  A worktree for an analysis or review agent branches from `origin/main` after a fetch; the brief names that commit.
 - **One agent per row.** Rows that share a file go to one agent in one brief, in the order the
   plan fixes, a commit per row. A row over about 25 files is a two-agent chain (design, then
   build), never one long-context agent. Size from the row's `Size`, not from plan prose.
@@ -86,8 +87,9 @@ are not startable; leave them.
   content proof (`git diff <agent-branch> <batch> -- <its files>` empty). Read the diff before
   landing it; a test that asserts a count across the whole stack, or a comment that restates the
   code, is fixed on the batch, not sent back.
-- **Once per batch before its first push**: `npm test` and `./mvnw clean verify` on the merged
-  tree, in the background, both. Then one push, one PR whose body says what each row turned out
+- **Once per batch before its first push**: `./mvnw clean verify` and then `npm test` on the
+  merged tree, serially in one background command, because the two run concurrently push the load
+  average past 100 and vitest files time out. Then one push, one PR whose body says what each row turned out
   to be, and `/watch`.
 
 ### 3. Watch

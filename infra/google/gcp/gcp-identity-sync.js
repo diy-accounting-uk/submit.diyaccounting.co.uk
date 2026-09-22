@@ -342,7 +342,7 @@ export function forbiddenReason(bodyText) {
  * @returns {string|null} e.g. "Identity and Access Management (IAM)"
  */
 export function disabledApiName(message) {
-  const match = /([A-Za-z()\s]+?) API has not been used in project|([A-Za-z()\s]+?) API[^"]*?it is disabled/i.exec(message ?? "");
+  const match = /([A-Z()\s]{1,100}?) API has not been used in project|([A-Z()\s]{1,100}?) API[^"]*?it is disabled/i.exec(message ?? "");
   return match ? (match[1] ?? match[2]).trim() : null;
 }
 
@@ -359,6 +359,7 @@ export function disabledApiName(message) {
 export function planWhenApiDisabled(error, config, apply) {
   if (apply || !/^403 /.test(error?.message ?? "")) return null;
   const api = disabledApiName(error.message);
+  // eslint-disable-next-line security/detect-possible-timing-attacks -- api is a parsed API name, not a secret; a null check, not a timing-sensitive comparison
   if (api === null) return null;
   const number = config.project.number;
   const because = `the ${api} API is disabled (would enable, then create)`;
@@ -600,7 +601,8 @@ export async function main(argv = process.argv.slice(2)) {
   for (const action of plan) {
     const result = await applyAction(token, action, config, live);
     const suffix = result?.done === false ? " (operation started)" : "";
-    console.log(`${describe(action).replace(/\(would (\w+)\)/, (_, verb) => `(${PAST_TENSE[verb] ?? verb})`)}${suffix}`);
+    const pastTense = describe(action).replace(/\(would (\w+)\)/, (_, verb) => `(${PAST_TENSE[verb] ?? verb})`);
+    console.log(`${pastTense}${suffix}`);
   }
   const orgPolicyPlan = await runOrgPolicies(token, config, opts);
   return [...plan, ...orgPolicyPlan];

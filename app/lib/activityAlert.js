@@ -95,11 +95,24 @@ export async function publishActivityEvent({ event, site = "submit", summary, ac
  * This is the single source of the actor class, so activity events, receipt items
  * and business metrics all agree on whether a submission came from a real customer.
  *
+ * Preference order: an explicit override, then the signed-in user's email (set into
+ * context by extractUserFromAuthorizerContext whenever the API Gateway authorizer carries
+ * one), then the `test_` requestId prefix a browser session sets. A probe or canary that
+ * calls a protected endpoint directly (no browser, no sessionStorage) never sets that
+ * prefix, but it does carry a Cognito access token for its own synthetic user, so the
+ * email tier is what actually classifies it. There is no third tier that hashes the
+ * signed-in sub and matches it against the synthetic lane users: their Cognito subs are
+ * only knowable by an AdminGetUser call, not by anything carried on the request, so a
+ * signed-in caller with no email on their token falls straight through to the requestId
+ * prefix.
+ *
  * @param {string} [explicitActor] - Overrides the derived class when supplied
  * @returns {"customer"|"test-user"|"probe"|"system"}
  */
 export function resolveActorClass(explicitActor) {
   if (explicitActor) return explicitActor;
+  const email = context.get("userEmail") || null;
+  if (email) return classifyActor(email);
   const requestId = context.get("requestId") || null;
   return requestId?.startsWith("test_") ? "test-user" : "customer";
 }
@@ -154,15 +167,13 @@ export async function publishActivityFailureEvent({ event, site = "submit", summ
 }
 
 /**
- * Classify an actor based on email and auth method.
+ * Classify an actor based on email.
  * @param {string} email
- * @param {string} [authMethod] - e.g. "cognito-native", "cognito-federated"
  * @returns {"customer"|"test-user"|"probe"|"system"}
  */
-export function classifyActor(email, authMethod) {
+export function classifyActor(email) {
   if (!email) return "system";
   if (email.endsWith("@test.diyaccounting.co.uk")) return "test-user";
-  if (authMethod === "cognito-native") return "test-user";
   if (email.startsWith("probe-") || email.includes("+probe")) return "probe";
   return "customer";
 }

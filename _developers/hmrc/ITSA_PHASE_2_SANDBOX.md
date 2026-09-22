@@ -76,7 +76,8 @@ scripts/proxy-secrets.sh node scripts/itsa-sandbox-year.js
 cover both.
 
 Add `ITSA_SANDBOX_HEADFUL=true` to watch the sign-in browser, and `ITSA_SANDBOX_OUT_DIR` to
-change where the transcript and checkpoint id land (default `./target/itsa-sandbox-year`).
+change where the transcript and checkpoint id land (default `../itsa-sandbox/<tax-year>/` relative
+to workspace root, outside the repository).
 
 ## What each phase should return
 
@@ -125,9 +126,9 @@ with backoff, since that is HMRC's sandbox rate limit and not a rejection of any
 
 ## Where the responses go
 
-Every call's request and response lands in
-`${ITSA_SANDBOX_OUT_DIR:-./target/itsa-sandbox-year}/itsa-sandbox-year-transcript.json`, in call
-order, with the NINO masked and the bearer token redacted. A run that fails partway still writes
+Every call's request and response lands in `${ITSA_SANDBOX_OUT_DIR}/itsa-sandbox-year-transcript.json`
+(or `../itsa-sandbox/<tax-year>/itsa-sandbox-year-transcript.json` relative to workspace root by default),
+in call order, with the NINO masked and the bearer token redacted. A run that fails partway still writes
 what it has so far.
 
 Use the transcript to correct the phase 2 simulator scenarios the way `_developers/hmrc/
@@ -144,11 +145,10 @@ real run either confirms the guess or tells you which field name to add.
 The script is safe to run repeatedly. A checkpoint can only be taken of a NINO that already has
 test-support data, so the first run ever wipes the test user's sandbox data with `DELETE
 .../vendor-state`, creates both businesses and sets the ITSA status, and only then checkpoints
-that as the baseline, saving `{checkpointId, businessId, propertyBusinessId}` to
-`${ITSA_SANDBOX_OUT_DIR}/checkpoint-id.txt`. Every later run restores that checkpoint and reuses
-the same two business ids rather than creating them again, which undoes whatever the previous
-run filed against them since. Delete the checkpoint file to force a fresh wipe-and-checkpoint on
-the next run.
+that as the baseline, saving `{checkpointId, businessId, propertyBusinessId}` to `${ITSA_SANDBOX_OUT_DIR}/checkpoint-id.txt`
+(or `../itsa-sandbox/<tax-year>/checkpoint-id.txt` relative to workspace root by default). Every later run restores
+that checkpoint and reuses the same two business ids rather than creating them again, which undoes whatever the previous
+run filed against them since. Delete the checkpoint file to force a fresh wipe-and-checkpoint on the next run.
 
 ## Assumptions taken from the plan's open questions
 

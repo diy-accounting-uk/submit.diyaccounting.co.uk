@@ -67,6 +67,7 @@ function projectSubscription(image) {
     status: image.status ?? null,
     current_period_end: image.currentPeriodEnd ?? null,
     cancel_at_period_end: image.cancelAtPeriodEnd ?? null,
+    actor: image.actor ?? null,
   };
 }
 

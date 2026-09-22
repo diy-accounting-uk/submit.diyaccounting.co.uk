@@ -105,7 +105,12 @@ export async function ingestHandler(event) {
   // Ensure HMRC OAuth token exchange audit is associated with the authenticated web user's sub
   // Try Authorization header, then authorizer context, then custom x-user-sub header (case-insensitive)
   let userSub = getUserSub(event);
-  if (!userSub) userSub = extractUserFromAuthorizerContext(event)?.sub || null;
+  // Always run this, even when userSub was already found via the Authorization header:
+  // it is also the only place on this request that reads the authorizer's email claim
+  // into context, which resolveActorClass() below needs to tell this customer from a
+  // probe calling the endpoint directly.
+  const authorizerUser = extractUserFromAuthorizerContext(event);
+  if (!userSub) userSub = authorizerUser?.sub || null;
   if (!userSub) {
     userSub = getHeader(event.headers, "x-user-sub") || null;
   }

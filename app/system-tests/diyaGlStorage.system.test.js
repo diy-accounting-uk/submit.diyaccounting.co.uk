@@ -198,7 +198,7 @@ describe("System: DIYA-GL storage end to end", () => {
     const created = JSON.parse(createResult.body);
     expect(created.metadata.latestVersion).toBe(1);
     expect(created.metadata.retention).toBe("sandbox");
-    expect(Date.parse(created.metadata.expiresAt) - Date.parse(created.metadata.updatedAt)).toBe(24 * 60 * 60 * 1000);
+    expect(Date.parse(created.metadata.expiresAt) - Date.parse(created.metadata.updatedAt)).toBe(35 * 24 * 60 * 60 * 1000);
     const firstETag = created.metadata.latestETag;
 
     // 2. List: the new book shows up.

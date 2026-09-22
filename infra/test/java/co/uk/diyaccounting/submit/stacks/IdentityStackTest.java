@@ -10,10 +10,15 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import co.uk.diyaccounting.submit.SubmitSharedNames;
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import org.junit.jupiter.api.Test;
 import software.amazon.awscdk.App;
 import software.amazon.awscdk.Environment;
@@ -165,6 +170,30 @@ class IdentityStackTest {
                         Match.arrayEquals(expectedUrls),
                         "LogoutURLs",
                         Match.arrayEquals(expectedUrls))));
+    }
+
+    @Test
+    void diyaGlSubscriptionSuiteHostsFromTheProbeWorkflowAreInTheBooksClientCallbackUrls() throws IOException {
+        Set<String> hosts = diyaGlBaseUrlHostsFromProbeTestWorkflow();
+        assertFalse(hosts.isEmpty(), "expected at least one DIYA_GL_BASE_URL host in probe-test.yml");
+
+        var pages = List.of("ltd.html", "bst.html", "se.html", "taxi.html");
+
+        Template ciTemplate = Template.fromStack(synthIdentityStack("ci"));
+        Template prodTemplate = Template.fromStack(synthIdentityStack("prod"));
+
+        for (String host : hosts) {
+            boolean prodOnlyHost = "https://diya-gl.co.uk/".equals(host);
+            String envName = prodOnlyHost ? "prod" : "ci";
+            var callbackUrls = booksClientCallbackUrls(prodOnlyHost ? prodTemplate : ciTemplate);
+            for (String page : pages) {
+                String url = host + page;
+                assertTrue(
+                        callbackUrls.contains(url),
+                        "missing " + url + " from the diya-gl-client callback urls for the " + envName
+                                + " environment");
+            }
+        }
     }
 
     @Test
@@ -339,5 +368,36 @@ class IdentityStackTest {
             }
         }
         return grantedActions;
+    }
+
+    @SuppressWarnings("unchecked")
+    private static List<String> booksClientCallbackUrls(Template template) {
+        var booksClients = template.findResources(
+                "AWS::Cognito::UserPoolClient", Map.of("Properties", Map.of("AllowedOAuthFlows", List.of("code"))));
+        var booksClient = booksClients.values().stream()
+                .filter(resource -> {
+                    var properties = (Map<String, Object>) resource.get("Properties");
+                    return String.valueOf(properties.get("ClientName")).endsWith("-diya-gl-client");
+                })
+                .findFirst()
+                .orElseThrow(() -> new AssertionError("no books client found"));
+        var properties = (Map<String, Object>) booksClient.get("Properties");
+        return (List<String>) properties.get("CallbackURLs");
+    }
+
+    private static Set<String> diyaGlBaseUrlHostsFromProbeTestWorkflow() throws IOException {
+        String workflow = Files.readString(Path.of(".github/workflows/probe-test.yml"));
+        Pattern diyaGlBaseUrlLine = Pattern.compile("(?m)^.*DIYA_GL_BASE_URL:.*$");
+        Pattern diyaGlHost = Pattern.compile("https://[A-Za-z0-9.-]*diya-gl\\.co\\.uk/");
+
+        Set<String> hosts = new HashSet<>();
+        Matcher lineMatcher = diyaGlBaseUrlLine.matcher(workflow);
+        while (lineMatcher.find()) {
+            Matcher hostMatcher = diyaGlHost.matcher(lineMatcher.group());
+            while (hostMatcher.find()) {
+                hosts.add(hostMatcher.group());
+            }
+        }
+        return hosts;
     }
 }

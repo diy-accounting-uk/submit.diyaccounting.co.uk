@@ -310,6 +310,58 @@ describe("billingWebhookPost", () => {
     expect(mockUpdateSubscription).toHaveBeenCalledTimes(1);
   });
 
+  test("invoice.paid keeps the subscription record's last known period end when the Stripe retrieve fails", async () => {
+    mockGetSubscription.mockResolvedValue({
+      pk: "stripe#sub_test_456",
+      hashedSub: "hashed_sub_value",
+      bundleId: "resident-pro",
+      currentPeriodEnd: "2026-09-06T09:38:58.000Z",
+    });
+    mockSubscriptionsRetrieve.mockRejectedValue(new Error("Stripe API error"));
+
+    const payload = {
+      id: "evt_test_invoice_retrieve_failed",
+      type: "invoice.paid",
+      data: {
+        object: { id: "in_test_retrieve_failed", parent: { subscription_details: { subscription: "sub_test_456" } } },
+      },
+    };
+    mockWebhooksConstructEvent.mockReturnValue(payload);
+
+    const result = await ingestHandler(buildWebhookEvent(payload));
+
+    expect(result.statusCode).toBe(200);
+    const [, updates] = mockUpdateSubscription.mock.calls[0];
+    expect(updates.currentPeriodEnd).toBe("2026-09-06T09:38:58.000Z");
+    const [, , bundleUpdates] = mockUpdateBundleSubscriptionFields.mock.calls[0];
+    expect(bundleUpdates.currentPeriodEnd).toBe("2026-09-06T09:38:58.000Z");
+  });
+
+  test("invoice.paid keeps the subscription record's last known period end when Stripe's reply carries none", async () => {
+    mockGetSubscription.mockResolvedValue({
+      pk: "stripe#sub_test_456",
+      hashedSub: "hashed_sub_value",
+      bundleId: "resident-pro",
+      currentPeriodEnd: "2026-09-06T09:38:58.000Z",
+    });
+    mockSubscriptionsRetrieve.mockResolvedValue({ id: "sub_test_456" });
+
+    const payload = {
+      id: "evt_test_invoice_no_period_end",
+      type: "invoice.paid",
+      data: {
+        object: { id: "in_test_no_period_end", parent: { subscription_details: { subscription: "sub_test_456" } } },
+      },
+    };
+    mockWebhooksConstructEvent.mockReturnValue(payload);
+
+    const result = await ingestHandler(buildWebhookEvent(payload));
+
+    expect(result.statusCode).toBe(200);
+    const [, updates] = mockUpdateSubscription.mock.calls[0];
+    expect(updates.currentPeriodEnd).toBe("2026-09-06T09:38:58.000Z");
+  });
+
   test("invoice.paid refreshes tokens when the subscription is an expanded object", async () => {
     mockGetSubscription.mockResolvedValue({
       pk: "stripe#sub_test_456",
@@ -797,6 +849,30 @@ describe("billingWebhookPost", () => {
     expect(events[0].hashedSub).toBe("hashed_sub_value");
   });
 
+  test("checkout.session.completed classifies actor from the customer's email and stores it on the subscription record", async () => {
+    const payload = buildCheckoutSessionPayload({ customer_email: "real.customer@example.com" });
+    mockWebhooksConstructEvent.mockReturnValue(payload);
+
+    await ingestHandler(buildWebhookEvent(payload));
+
+    const events = activityEventsNamed("subscription-activated");
+    expect(events[0].actor).toBe("customer");
+    const [subscriptionRecord] = mockPutSubscription.mock.calls[0];
+    expect(subscriptionRecord.actor).toBe("customer");
+  });
+
+  test("checkout.session.completed classifies actor as test-user for a synthetic lane's email", async () => {
+    const payload = buildCheckoutSessionPayload({ customer_email: "synthetic-local@test.diyaccounting.co.uk" });
+    mockWebhooksConstructEvent.mockReturnValue(payload);
+
+    await ingestHandler(buildWebhookEvent(payload));
+
+    const events = activityEventsNamed("subscription-activated");
+    expect(events[0].actor).toBe("test-user");
+    const [subscriptionRecord] = mockPutSubscription.mock.calls[0];
+    expect(subscriptionRecord.actor).toBe("test-user");
+  });
+
   test("invoice.paid publishes subscription-renewed with hashedSub in detail", async () => {
     mockGetSubscription.mockResolvedValue({
       pk: "stripe#sub_test_456",
@@ -815,6 +891,46 @@ describe("billingWebhookPost", () => {
     const events = activityEventsNamed("subscription-renewed");
     expect(events).toHaveLength(1);
     expect(events[0].hashedSub).toBe("hashed_sub_value");
+  });
+
+  test("invoice.paid carries the subscription record's own actor into subscription-renewed", async () => {
+    mockGetSubscription.mockResolvedValue({
+      pk: "stripe#sub_test_456",
+      hashedSub: "hashed_sub_value",
+      bundleId: "resident-pro",
+      actor: "test-user",
+    });
+    const payload = {
+      id: "evt_test_invoice_renewal_actor",
+      type: "invoice.paid",
+      data: { object: { id: "in_test_activity", parent: { subscription_details: { subscription: "sub_test_456" } } } },
+    };
+    mockWebhooksConstructEvent.mockReturnValue(payload);
+
+    await ingestHandler(buildWebhookEvent(payload));
+
+    const events = activityEventsNamed("subscription-renewed");
+    expect(events[0].actor).toBe("test-user");
+  });
+
+  test("invoice.paid falls back to the Stripe test/live mode flag when the subscription record predates the actor field", async () => {
+    mockGetSubscription.mockResolvedValue({
+      pk: "stripe#sub_test_456",
+      hashedSub: "hashed_sub_value",
+      bundleId: "resident-pro",
+    });
+    const payload = {
+      id: "evt_test_invoice_legacy_actor",
+      livemode: true,
+      type: "invoice.paid",
+      data: { object: { id: "in_test_activity", parent: { subscription_details: { subscription: "sub_test_456" } } } },
+    };
+    mockWebhooksConstructEvent.mockReturnValue(payload);
+
+    await ingestHandler(buildWebhookEvent(payload));
+
+    const events = activityEventsNamed("subscription-renewed");
+    expect(events[0].actor).toBe("customer");
   });
 
   test("customer.subscription.updated with cancel_at_period_end publishes cancellation-scheduled with hashedSub in detail", async () => {
