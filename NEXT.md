@@ -16,11 +16,9 @@ runs), and for Claude Code steps the **Model** a sub-agent should use (Fable > O
 Haiku; the lowest tier that fits). Anything touching code goes through a `claude/*` branch and
 PR; the operator merges.
 
-**Prod runs deployment prod-fbead53** (PR #326's merge). **ci**: `ci-set2` is last-known-good; `ci-set1`
-carried PR #327's deploy. PR #327 (`claude/b74-board`) is merging; `claude/b75-board` (nine rows, proofs
-green) pushes once a ci slot is free.
-**ci**: `ci-set1` is last-known-good. Open pull request: #326 (`claude/b73-board`: B30af.8), its ci deploy
-in flight.
+**Prod runs deployment prod-fbead53**; main's deploy of PR #327's merge (30a61fdf) is in flight.
+**ci**: `ci-set1` is last-known-good and carries PR #328's deploy. Open pull request: #328
+(`claude/b75-board`), its ci deploy in flight.
 
 The board runs in five sections, in this order: **in flight** (a branch, a pull request or a run
 in motion, each named in the row), **machine-only**, **machine-ask**, **human-driven**,
@@ -42,20 +40,14 @@ step.
 
 ## In flight
 
-- [ ] **B75. Wave b75 on `claude/b75-board`.** B58b (the agentic-lib landing fix), PU-5 (the DIYA-GL
-  tier on prod), F1c (six months of Stripe staged), F1b (the PayPal script, its run waiting on OF1),
-  F2a's bank parser, F2b (mail invoices), F2c (the book from the workbook set), B60 (the six MCP
-  Submit tools) and B61 (the MCP app client, its PKCE sign-in and cloud `open_book`/`save_book`):
-  nine commits, proofs running, push and PR once PR #327's ci set is swept so a slot is free.
-  **Source**: the rows named. **Owner**: Claude Code. **Model**: Sonnet. **Size**: ~40 files.
-
-- [ ] **B58a. `security-review.yml` hands the weekly review to `agentic-lib`.** The operator's
-  decision of 2026-09-22: the `agentic-lib` label is the only path for the review; the Copilot
-  coding agent is not enabled and the assign job goes. In flight on `claude/b74-board`, PR #327:
-  `assign-copilot` replaced by the `agentic-lib` label on the issue `create-issue` opens, which
-  starts `agentic-lib-code.yml` for it; the `issue_number` dispatch input labels an existing issue
-  instead. **Source**: issue #318; BACKLOG 58. **Owner**: Claude Code. **Model**: Sonnet. **Size**:
-  ~1 file.
+- [ ] **B75. Wave b75 on `claude/b75-board`, PR #328.** B58b (the agentic-lib landing fix), PU-5
+  (the DIYA-GL tier on prod), F1c (six months of Stripe staged), F1b (the PayPal script, its run
+  waiting on OF1), F2a's bank parser, F2b (mail invoices), F2c (the book from the workbook set),
+  B60 (the six MCP Submit tools) and B61 (the MCP app client, its PKCE sign-in and cloud
+  `open_book`/`save_book`). Its ci deploy runs on `ci-set1`; its environment deploy failed in
+  `create secrets` on the unguarded PayPal steps, and the guard is committed locally, pushed when
+  the deploy is terminal. **Source**: the rows named. **Owner**: Claude Code. **Model**: Sonnet.
+  **Size**: ~40 files.
 
 - [ ] **PU-7. Practice licence build.** PU-7a to PU-7f and PU-7l are on `main`. In flight on
   `claude/b74-board`, PR #327, with PU-3's price ids: PU-7g (the submission routes take a client id and
