@@ -16,8 +16,7 @@ runs), and for Claude Code steps the **Model** a sub-agent should use (Fable > O
 Haiku; the lowest tier that fits). Anything touching code goes through a `claude/*` branch and
 PR; the operator merges.
 
-**Prod runs deployment prod-d731afe**; main's deploy of PR #329's merge (b9abb8d4) is in flight and
-carries the resident checkout fix.
+**Prod runs deployment prod-b9abb8d**.
 **ci**: `ci-set1` is last-known-good. Open pull request: #331 (`claude/b77-board`: PU-7i and the
 practice authorisation routes' authoriser), its ci deploy starting.
 
