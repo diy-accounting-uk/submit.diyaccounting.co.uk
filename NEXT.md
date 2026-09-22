@@ -46,8 +46,10 @@ and stop. One branch is driven green at a time. Lifted only by the operator in t
 
 - [ ] **B82. Wave b82 on `claude/b82-board`, PR #336.** Three commits, head c450180d. Its push deploy 35775043216 failed four
   stacks on `ci-set1` because PR #333's dispatched redeploy, named for the same slot, ran on the
-  set at the same time (a dispatch with an explicit slot name bypasses the claim); its failed jobs are
-  rerunning on `ci-set1` now that PR #333's deploy is green, one branch at a time: B34j
+  set at the same time (a dispatch with an explicit slot name bypasses the claim); the rerun on `ci-set1` passed every stack and every
+  probe but `diyaGlSubscriptionBehaviour`, which fails on the book limit PR #333's product fix
+  removes and this branch does not carry; after #333 merges, the branch takes `main` and
+  redeploys for its own green: B34j
   (a9e2e920, the privacy notice's row for practice client filing, with a browser test) and PU-7e
   (e4302a96 and c450180d: `tokensGranted = "unlimited"` on `resident-pro`, exempt in
   enforcement, the webhook refresh and the bundle read, shown as unlimited on the usage page,
