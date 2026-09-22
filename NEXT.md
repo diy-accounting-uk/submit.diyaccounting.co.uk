@@ -18,7 +18,8 @@ PR; the operator merges.
 
 **Prod runs deployment prod-d731afe**; main's deploy of PR #329's merge (b9abb8d4) is in flight and
 carries the resident checkout fix.
-**ci**: `ci-set1` is last-known-good. No open pull request.
+**ci**: `ci-set1` is last-known-good. No open pull request; `claude/b77-board` (PU-7i) pushes
+when its agent reports.
 
 The board runs in five sections, in this order: **in flight** (a branch, a pull request or a run
 in motion, each named in the row), **machine-only**, **machine-ask**, **human-driven**,
@@ -40,9 +41,8 @@ step.
 
 ## In flight
 
-## Machine-only
-
-- [ ] **PU-7. Practice licence build.** PU-7a to PU-7h, PU-7k and PU-7l are on `main`. Next is PU-7i, the MCP
+- [ ] **PU-7. Practice licence build.** PU-7a to PU-7h, PU-7k and PU-7l are on `main`. In flight on
+  `claude/b77-board` (wave b77, one agent): PU-7i, the MCP
   client tools (`list_clients`, `add_client`, `invite_client`, `client_authorisation_status`, and
   the client id on the book and derive tools) over the practice routes PU-7f, PU-7g and PU-7k
   added, in `mcp/lib/client-tools.js`, registered in `mcp/lib/server.js`, the client id on `mcp/lib/book-tools.js`, with recorded-fixture tests in the shape `mcp/test/submit-tools.test.js` uses. Then,
@@ -53,6 +53,8 @@ step.
   that reach resident-pro through a pass updated in the same change. **Source**:
   `PLAN_PRICE_UPDATE.md` PU-7. **Owner**: Claude Code. **Model**: Sonnet. **Size**: ~6 files for
   PU-7i, ~20 across the three rows after it.
+
+## Machine-only
 
 ## Machine-ask
 
