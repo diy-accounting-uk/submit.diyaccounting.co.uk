@@ -42,6 +42,13 @@ step.
 
 ## In flight
 
+- [ ] **B75. Wave b75 on `claude/b75-board`.** B58b (the agentic-lib landing fix), PU-5 (the DIYA-GL
+  tier on prod), F1c (six months of Stripe staged), F1b (the PayPal script, its run waiting on OF1),
+  F2a's bank parser, F2b (mail invoices), F2c (the book from the workbook set), B60 (the six MCP
+  Submit tools) and B61 (the MCP app client, its PKCE sign-in and cloud `open_book`/`save_book`):
+  nine commits, proofs running, push and PR once PR #327's ci set is swept so a slot is free.
+  **Source**: the rows named. **Owner**: Claude Code. **Model**: Sonnet. **Size**: ~40 files.
+
 - [ ] **B58a. `security-review.yml` hands the weekly review to `agentic-lib`.** The operator's
   decision of 2026-09-22: the `agentic-lib` label is the only path for the review; the Copilot
   coding agent is not enabled and the assign job goes. In flight on `claude/b74-board`, PR #327:
@@ -73,50 +80,6 @@ step.
   **Source**: run 35703918781; BACKLOG 30. **Owner**: Claude Code. **Model**: Haiku. **Size**: ~1
   file.
 
-- [ ] **B58b. `agentic-lib-code.yml` lands a complete handover it wrote to `OUT_DIR`.** #318's
-  third run (35702110179) wrote `CHANGES.md` with `- **Status**: complete`, a `Branch` line and
-  `PR.md` to `/tmp/do-next-out`, committed `SECURITY_REVIEW_FINDINGS.md` on its branch, and the
-  `Prepare a complete run's branch and pull request body` step still said "not a complete run";
-  its two earlier runs (35699227062, 35700324497) handed over after their budgets. Read that run's
-  log for the step's own view of `${OUT_DIR}/CHANGES.md` (the exact-line grep `grep -qxF`, the
-  `Move a handover left in the checkout` step's `git add -A`, and whether `OUT_DIR` in the run
-  step and in the landing step are the same path), fix the layer that is wrong, and add
-  `${OUT_DIR}/PR.md` to the uploaded artifact so a missed landing can be replayed. Second defect
-  from the same log: the agent's allow-list denied `find … || echo …` and `ls -la …` because a
-  compound command matches none of the `Bash(find:*)` patterns, so the agent could not read the
-  prior runs it was told to resume; either brief it to use single commands or allow `Bash(test:*)`
-  and `Bash(ls:*)` as it is. Proof: a dispatch with `-f issue-number=318 -f resume-from=35702110179`
-  ends with a PR that closes #318 carrying the findings file from that run's patch. **Source**:
-  runs 35699227062, 35700324497, 35702110179; BACKLOG 58. **Owner**: Claude Code. **Model**:
-  Sonnet. **Size**: ~1 file.
-
-- [ ] **PU-5. The DIYA-GL tier on prod.** `SubmitApplication.java` line 489 sets
-  `.residentTierEnabled(!"prod".equals(envName))`, which `DiyaGlStack.java` (lines 153 and 257)
-  passes as `DIYA_GL_RESIDENT_TIER` and `app/services/diyaGlEntitlement.js` line 57 reads; make
-  it true for prod, and add `prod` to `resident`'s `listedInEnvironments` (`submit.catalogue.toml`
-  line 226, the entry at line 217). After main's deploy the bundles page on prod lists `resident`
-  at £39 a year and £3.99 a month beside `resident-vat`, with the live price ids PU-3 wrote;
-  PU-9 and PU-14 follow it. `DiyaGlStackTest.java` and `productCatalog.test.js` carry the
-  assertions to update. The Stripe prices exist in test and live (PU-3, 2026-09-22) and
-  the ids are on `claude/b74-board`. **Source**:
-  `PLAN_PRICE_UPDATE.md` PU-5. **Owner**: Claude Code. **Model**: Haiku. **Size**: ~2 files.
-
-- [ ] **F2c. Opening balances and the book from the prior-year workbook.**
-  `mcp/lib/finance/book-from-workbook.js`: `book.toml` per `diya-gl-book-v2.schema.json` (entity
-  information, chart of accounts, opening balances, debtors, creditors, fixed assets, dividends,
-  members) seeded from the complete 2025-26 workbook set in the Drive mirror (`Financialaccounts.xlsx`,
-  `Fixedassets.xlsx`, `Companysecretary.xlsx`, the dividends folder), read through
-  `@diy-accounting-uk/diya-gl`'s own workbook reader (`dist/app/lib/workbook-set.js`,
-  `scenario-extractor.js`; the package is `mcp/`'s dependency) and validated with `validateBook`
-  from `dist/app/lib/diya-gl-schema.js`, the import `mcp/lib/book-tools.js` line 22 already makes;
-  a unit test over a copy of the workbook with the figures redacted to round numbers.
-  `../REPORT_FINANCE_SOURCES_2025-26.md` (F1e) lists every sheet and what feeds it: the
-  `Financialaccounts.xlsx` sheets (OpenAccounts, TrialBalance, PubBalSht) carry the opening
-  balances, `Fixedassets.xlsx`'s Schedule the assets, `Companysecretary.xlsx`'s RegisterofMembers
-  the members, and `dividends/Dividend Calculator.xlsx` the dividends. The Companies House filing is not a second anchor. **Source**:
-  `../PLAN_FINANCE_AUTOMATION.md` phase 2. **Owner**: Claude Code. **Model**: Sonnet. **Size**:
-  ~3 files.
-
 - [ ] **F2f. The mail index reads invoice attachments.** `../index/corpus.toml`'s `drive` source
   carries `convert = ["pdf", "doc", "docx"]` (line 11) and the two `eml_tree` sources
   (`mail-antony` line 41, `mail-support`) carry none, so `corpus doc` returns an email's body only
@@ -130,56 +93,31 @@ step.
   F2b's four cases plus the new one. **Source**: F2b's finding; `../PLAN_FINANCE_AUTOMATION.md`
   route 4. **Owner**: Claude Code. **Model**: Sonnet. **Size**: ~3 files, plus the index.
 
-- [ ] **F2a. Staged sources into diya-gl lines.** The bank parser (`mcp/lib/finance/bank-lines.js`) is on
-  `claude/b75-board`. Left: the Stripe parser over F1c's staged files (six months under
-  `../staging/<year-end>/stripe/`, raw Stripe objects: a charge as a `sales` `receipt` line plus a
-  `purchases` fee line, a payout as a `bank` line that must match the bank BAC line) and the PayPal
-  parser (settled transactions only; holds and their reversals excluded; a receipt as `sales`, a
-  bill payment as `purchases` matched to the mailbox invoice), each emitting lines validated with `validateLines` from the diya-gl package's
-  `diya-gl-schema.js`, gross income and fees never netted; unit tests over recorded samples with
-  the March 2026 holds case. The table in the plan's "Target format" section is the mapping. The Stripe parser can
-  start now; the PayPal parser has no sample until OF1 lets F1b write one. `../REPORT_FINANCE_SOURCES_2025-26.md` (F1e) found that `Cashaccount.xlsx` is the PayPal
-  wallet's own ledger (gross sales, fees, wallet-paid purchases), so PayPal lines post to that
-  cash account and the bank sees only the PayPal withdrawals; and that `Creditcardaccount.xlsx`
-  holds the Stripe payout totals, filled for two months only. **Source**: `../PLAN_FINANCE_AUTOMATION.md` phase 2.
-  **Owner**: Claude Code. **Model**: Sonnet. **Size**: ~6 files.
+- [ ] **B60a. The six MCP Submit tools against the simulator lane.** `mcp/lib/submit-tools.js`
+  (B60, on `claude/b75-board`) is proven with the HTTP mocked; the plan's M2 wants the simulator
+  lane first. Run each tool against the proxy lane (`npm run start:proxy` or the lane the
+  `simulatorBehaviour` suite uses; `DIYA_SUBMIT_BASE_URL` and a token from B61's sign-in or
+  `scripts/ensure-cognito-test-user.js`), and add the 202 poll the async routes answer with
+  (`AsyncApiLambda` in `ApiStack.java`; the VAT return and the accounts submit return 202 and a poll
+  URL), which the tools treat as a synchronous 200 today. A recorded transcript of the six calls
+  under `mcp/test/fixtures/` becomes the tests' replayed shapes. **Source**:
+  `PLAN_SUBMISSION_MCP.md` M2; BACKLOG 60. **Owner**: Claude Code. **Model**: Sonnet. **Size**:
+  ~3 files.
 
-- [ ] **B60. The MCP's Submit-facing tools over the deployed REST API.** `PLAN_SUBMISSION_MCP.md`
-  M2: `mcp/lib/submit-tools.js` with obligations, VAT submit, receipt, accounts preview, accounts
-  submit and poll, over the deployed API with a bearer token from the environment
-  (`DIYA_SUBMIT_BASE_URL` and `DIYA_SUBMIT_ACCESS_TOKEN`, the client `mcp/lib/practice-tools.js`
-  introduced for `move_book_to_client`), against the simulator lane first; registered in
-  `mcp/lib/server.js`; tests under `mcp/test/` with the HTTP mocked. PU-7i needs it beside B61.
-  **Source**: BACKLOG 60; `PLAN_SUBMISSION_MCP.md` M2. **Owner**: Claude Code. **Model**: Sonnet.
-  **Size**: ~4 files.
-
-- [ ] **F1b. PayPal transactions to staging.** `scripts/finance/paypal-stage.js`: the Transaction
-  Search API for a month, settled transactions only with the status field kept so holds and
-  reversals can be excluded downstream, written as
-  `../staging/<year-end>/paypal/<yyyy-mm-dd>-paypal-transactions.json`; the client id and secret
-  read from Secrets Manager (`prod/submit/paypal/client_id` and `prod/submit/paypal/client_secret`),
-  landed there by `deploy-environment.yml` from the `prod` environment's `PAYPAL_CLIENT_ID` and
-  `PAYPAL_CLIENT_SECRET` in the shape of its "Create secret in AWS from
-  secrets.TELEGRAM_BOT_TOKEN" step (line 331), with the ARNs on `SubmitEnvironment.java` beside the
-  Telegram ones (line 88); a unit test over a recorded page proves the script before any credential
-  exists. The six-month run (March to August 2026) waits on OF1. **Source**:
-  `../PLAN_FINANCE_AUTOMATION.md` route 1. **Owner**: Claude Code. **Model**: Sonnet. **Size**: ~5
-  files.
-
-- [ ] **B61. The MCP's third Cognito app client and the stdio sign-in.** `PLAN_SUBMISSION_MCP.md`
-  M3: a third app client on the pool beside the web and DIYA-GL clients (`IdentityStack.java`, the
-  DIYA-GL client's pattern at line 279 onward), a JWT authoriser scoped to its audience on the
-  cloud book routes (`ApiStack.java`, the `booksJwtAuthorizer` at line 299 and its wiring at 361 and
-  491), a sign-in for the stdio surfaces, and `open_book`/`save_book` in `mcp/lib/book-tools.js`
-  (today filesystem-only: `openBook` line 89, `saveBook` line 159) over the DIYA cloud routes with
-  that token. The plan's item 4 names the device-code grant and says it costs nothing new; Cognito
-  has no device grant, so that route would cost a table and two routes. The row takes
-  authorization code with PKCE on a loopback redirect instead (`http://127.0.0.1:<port>/callback`
-  on the new client, the flow every CLI uses and Cognito supports as it stands): the MCP opens the
-  hosted UI in the browser, catches the code on the loopback listener, exchanges it, and keeps the
-  refresh token in the OS keychain or a mode-600 file under `~/.config/diya-submit/`. The operator
-  can ask for the device grant instead. Unblocks F2d, PU-7i and B52i. **Source**: BACKLOG 61;
-  `PLAN_SUBMISSION_MCP.md` M3. **Owner**: Claude Code. **Model**: Sonnet. **Size**: ~8 files.
+- [ ] **B61a. The MCP client id reaches ApiStack.** B61's `booksJwtAuthorizer` audience takes
+  `mcpUserPoolClientId` when it is set and today nothing sets it: `IdentityStack.java` writes the
+  id to `/submit/<env>/mcp-app-client-id` (line 332) and exports it, and `SubmitApplication.java`
+  reads the books client through `COGNITO_DIYA_GL_CLIENT_ID` (line 167, `diyaGlUserPoolClientId` in
+  `cdk-application/cdk.json` line 19), which `.github/actions/lookup-resources/action.yml` finds by
+  client name with a retry (lines 140 to 167, output `cognito-diya-gl-client-id`) and the workflows
+  pass on (`deploy.yml` lines 1547 and 1892, `deploy-cdk-stack.yml` 436, `destroy-ci.yml` 1004,
+  `destroy-prod.yml` 979, `probe-test.yml` 539). Do the same for the MCP client
+  (`COGNITO_MCP_CLIENT_ID`, `mcpUserPoolClientId`, output `cognito-mcp-client-id`, the client name
+  `IdentityStack.java` gives it), passed to `ApiStack`'s `mcpUserPoolClientId`; an empty value
+  stays allowed until the first environment deploy has written the parameter. Proof: the ci
+  deploy's ApiStack shows both audiences on the cloud book routes' authoriser. **Source**:
+  `PLAN_SUBMISSION_MCP.md` M3; BACKLOG 61. **Owner**: Claude Code. **Model**: Sonnet. **Size**:
+  ~9 files.
 
 ## Machine-ask
 
