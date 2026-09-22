@@ -42,8 +42,9 @@ step.
 
 - [ ] **B80. Wave b80 on `claude/b80-board`.** Three agents: AS8 (the two RUM deployed-environment skips out of the unit runner; AS1's
   coverage commit rejected, the finding on its own row), AS4 and AS7 (the ESLint config cleanup; the strict-mode TODO and warning
-  comments), AS6 and AS5 (prettier and Spotless checks in `test.yml`; the lint job as a
-  baseline ratchet with unused disable directives removed). No pull request yet. **Source**: the
+  comments), AS6 and AS5 (prettier and Spotless checks in `test.yml`, with the 218 files they reformat; the
+  lint job as a baseline ratchet at zero errors). Five commits on the branch, its batch proof
+  running before the push. **Source**: the
   rows named. **Owner**: Claude Code. **Model**: Sonnet and Haiku. **Size**: ~10 files plus the
   directives.
 
@@ -88,6 +89,15 @@ step.
   AI-readiness assessment of 2026-09-18 (`.assess/assess-report.md` on the `bjcoombs` fork at
   45bcc054), action 1; b80's run on 2026-09-22. **Owner**: Claude Code. **Model**: Sonnet.
   **Size**: ~2 files.
+
+- [ ] **AS7a. Strict env validation by default.** `app/bin/server.js` (around line 374) validates
+  the environment strictly only when a flag says so, because
+  `app/system-tests/runLocalHttpServer.system.test.js` starts the local server without the full
+  environment. Give that test the environment the server needs (the `.env.test` values the other
+  system tests load), make strict validation the default, and delete the flag and the comment that
+  explains its absence. Proof: `npx vitest run app/system-tests` green with strict validation on.
+  **Source**: b80's AS7 run, 2026-09-22. **Owner**: Claude Code. **Model**: Haiku. **Size**: ~2
+  files.
 
 - [ ] **AS15. A dead-code pass with knip.** The assessment's dead-code scan used `ts-prune` on
   a JavaScript tree and reported zero, which is "not analysed". Run `npx knip` once at the root
