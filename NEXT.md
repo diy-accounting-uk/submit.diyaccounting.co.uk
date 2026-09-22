@@ -16,11 +16,9 @@ runs), and for Claude Code steps the **Model** a sub-agent should use (Fable > O
 Haiku; the lowest tier that fits). Anything touching code goes through a `claude/*` branch and
 PR; the operator merges.
 
-**Prod runs deployment prod-a4ea2f3**; main's deploy of PR #325's merge (486af0b6) has created
-prod-486af0b and is on its prod probes. **ci**: `ci-set2` is last-known-good (PR #326's set, promoted by
-`promote-ci-apex.yml`); `ci-set1` carries PR #327's deploy. Open pull requests: #326 (`claude/b73-board`:
-B30af.8), mergeable once main's deploy ends; #327 (`claude/b74-board`: PU-7g, PU-7k, PU-3, B58a), its ci
-deploy in flight.
+**Prod runs deployment prod-486af0b** (PR #325's merge); main's deploy of PR #326's merge (fbead536) is
+in flight. **ci**: `ci-set2` is last-known-good; `ci-set1` carries PR #327's deploy. Open pull request: #327
+(`claude/b74-board`: PU-7g, PU-7k, PU-3, B58a), its ci deploy in flight.
 **ci**: `ci-set1` is last-known-good. Open pull request: #326 (`claude/b73-board`: B30af.8), its ci deploy
 in flight.
 
@@ -46,30 +44,11 @@ step.
 
 - [ ] **B58a. `security-review.yml` hands the weekly review to `agentic-lib`.** The operator's
   decision of 2026-09-22: the `agentic-lib` label is the only path for the review; the Copilot
-  coding agent is not enabled and the assign job goes. In flight on `claude/b74-board`, PR #327: `assign-copilot`
-  (and the `copilot_agent_login` input, the App token mint and the `copilot-agent` label) replaced by
-  the `agentic-lib` label on the issue `create-issue` opens, which starts `agentic-lib-code.yml` for
-  it; the `issue_number` dispatch input labels an existing issue instead. #318 carries the label since
-  2026-09-22 07:21 UTC; run 35699227062 worked it and its outcome is read at the next board. **Source**: issue #318; BACKLOG 58.
-  **Owner**: Claude Code. **Model**: Sonnet. **Size**: ~1 file.
-
-- [ ] **B30af.8. A scheduled probe never holds a suite's lock while it waits for main's deploy.**
-  In flight: `claude/b73-board`, PR #326, its ci deploy running.
-  `probe-test.yml`'s `behaviour-test` job takes the concurrency group
-  `behaviour-test-user-<env>-<suite>` (line 352) and then, on a scheduled run, waits inside that
-  job for any deploy in progress on `main` (the `wait-for-main-deploy` steps at lines 500 and 548,
-  up to 40 minutes each). A deploy of `main` whose own probe of the same suite starts meanwhile
-  queues on that lock, so the two wait on each other: on 2026-09-22 the scheduled probe's
-  `submitVatBehaviour-prod` job held the lock from 05:44 while deploy run 35688610628's
-  `submitVatBehaviour-prod` sat pending, until the scheduled run 35690948230 was cancelled at
-  06:28. Keep the `params` job's wait (line 241, before any lock); replace the two in-job waits
-  with a check that gives up at once: when a `main` deploy is in progress, skip the navigation and
-  end the suite as superseded (`continue-on-error` outcome neutral, the CloudWatch metric not
-  published), since the deploy's own probe covers that suite. `.github/actions/wait-for-main-deploy`
-  gains a `max-wait-minutes` input (default 40; 0 returns at once with an output naming the run).
-  Proof: a dispatched `probe-test.yml` on ci with a deploy of the same branch in flight ends the
-  suite as superseded inside a minute. **Source**: deploy run 35688610628; BACKLOG 30.
-  **Owner**: Claude Code. **Model**: Sonnet. **Size**: ~3 files.
+  coding agent is not enabled and the assign job goes. In flight on `claude/b74-board`, PR #327:
+  `assign-copilot` replaced by the `agentic-lib` label on the issue `create-issue` opens, which
+  starts `agentic-lib-code.yml` for it; the `issue_number` dispatch input labels an existing issue
+  instead. **Source**: issue #318; BACKLOG 58. **Owner**: Claude Code. **Model**: Sonnet. **Size**:
+  ~1 file.
 
 - [ ] **PU-7. Practice licence build.** PU-7a to PU-7f and PU-7l are on `main`. In flight on
   `claude/b74-board`, PR #327, with PU-3's price ids: PU-7g (the submission routes take a client id and
@@ -83,6 +62,23 @@ step.
   **Size**: ~30 files across 5 rows after this wave.
 
 ## Machine-only
+
+- [ ] **B58b. `agentic-lib-code.yml` lands a complete handover it wrote to `OUT_DIR`.** #318's
+  third run (35702110179) wrote `CHANGES.md` with `- **Status**: complete`, a `Branch` line and
+  `PR.md` to `/tmp/do-next-out`, committed `SECURITY_REVIEW_FINDINGS.md` on its branch, and the
+  `Prepare a complete run's branch and pull request body` step still said "not a complete run";
+  its two earlier runs (35699227062, 35700324497) handed over after their budgets. Read that run's
+  log for the step's own view of `${OUT_DIR}/CHANGES.md` (the exact-line grep `grep -qxF`, the
+  `Move a handover left in the checkout` step's `git add -A`, and whether `OUT_DIR` in the run
+  step and in the landing step are the same path), fix the layer that is wrong, and add
+  `${OUT_DIR}/PR.md` to the uploaded artifact so a missed landing can be replayed. Second defect
+  from the same log: the agent's allow-list denied `find … || echo …` and `ls -la …` because a
+  compound command matches none of the `Bash(find:*)` patterns, so the agent could not read the
+  prior runs it was told to resume; either brief it to use single commands or allow `Bash(test:*)`
+  and `Bash(ls:*)` as it is. Proof: a dispatch with `-f issue-number=318 -f resume-from=35702110179`
+  ends with a PR that closes #318 carrying the findings file from that run's patch. **Source**:
+  runs 35699227062, 35700324497, 35702110179; BACKLOG 58. **Owner**: Claude Code. **Model**:
+  Sonnet. **Size**: ~1 file.
 
 - [ ] **B34.6b. The email that asks Companies House about submission 000004.** Draft
   `../DRAFT_EMAIL_XMLGW_000004.md` at the workspace root (private: it names the presenter) for the
@@ -224,6 +220,16 @@ step.
 ## Machine-ask
 
 ## Human-driven
+
+- [ ] **O58. The token-storage finding.** The review's one critical finding, held privately at
+  `../SECURITY_REVIEW_318_2026-09-22.md` (workspace root; the repository is public): Cognito
+  tokens in `localStorage` (`web/public/lib/services/auth-service.js` lines 92 to 94, 124 to 126
+  and 161 to 163) are readable by any script that runs on the page, so an XSS gives a session
+  away; the remediation proposed is httpOnly cookies set by the callback route, which changes the
+  callback, the fetch wrapper and the API's CORS and CSRF handling. Decide whether to take it
+  (then a design row for Claude Code) or to record it as accepted with the CSP as the control;
+  then close #318, whose public thread should carry the outcome, not the finding. **Source**:
+  issue #318; run 35702110179. **Owner**: Operator. **Model**: none. **Size**: 0 files.
 
 - [ ] **OF1. The PayPal app credentials.** In the PayPal developer dashboard
   (<https://developer.paypal.com/dashboard/applications/live>), create a live REST API app for
