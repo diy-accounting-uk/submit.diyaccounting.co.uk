@@ -103,6 +103,40 @@ step.
   backticked path in both files exists in a fresh clone. **Source**: the AI-readiness assessment of 2026-09-18 (`.assess/assess-report.md` on the `bjcoombs` fork at 45bcc054), opportunity
   list; operator 2026-09-22. **Owner**: Claude Code. **Model**: Haiku. **Size**: ~4 files.
 
+- [ ] **B52d. The visitors panel.** `operatorSnapshotPublish.js` already reads
+  `v_visitors_by_kind_daily` (lines 176 to 191: the `human` and `bot` rows; add `synthetic`) into
+  the snapshot; `web/public/operator/dashboard.html` shows nothing from it. Add a visitors panel
+  (human, bot, synthetic per day, the last 30 days) in the shape the page's other panels use,
+  reading the snapshot's existing fields, with a case in the page's unit test. Proof: the panel
+  renders from a snapshot fixture carrying the three kinds. **Source**: BACKLOG 67;
+  `PLAN_ONE_STOP_DASHBOARD.md` D4. **Owner**: Claude Code. **Model**: Sonnet. **Size**: ~3 files.
+
+- [ ] **B52e. Donations on the revenue panel.** `infra/stripe/stripe.toml` (lines 53 to 60)
+  says the spreadsheets site's donation Payment Links live in the same Stripe account and carry
+  `payment_intent_data.metadata.bundleId`, which `v_revenue_daily` groups by (`coalesce(bundle_id,
+  'unknown')`). Prove it on live data: with `AWS_PROFILE=submit-prod`, query the view for the last
+  90 days (`aws athena start-query-execution` with the analytics database and workgroup
+  `operatorSnapshotPublish.js` names) and read whether donation charges appear under their
+  product or under `unknown`; if `unknown`, read a recent donation charge from Stripe live
+  (`infra/stripe/stripe-sync.js`'s key lookup, read-only) for whether the metadata is missing on
+  the link or dropped in the pull (`scripts/finance/stripe-stage.js` or the revenue ingestion
+  Lambda), and fix that layer. PayPal donations join through F1b once OF1 lands. **Source**:
+  BACKLOG 66; `PLAN_ONE_STOP_DASHBOARD.md` D2. **Owner**: Claude Code. **Model**: Sonnet.
+  **Size**: ~2 files.
+
+- [ ] **B52f. Web vitals on all three sites.** The page-experience panel wants LCP, INP and CLS
+  at p75 for submit, spreadsheets and the apex; RUM on submit records LCP and INP. Read the RUM
+  app monitor's `telemetries` in `infra/main/java/.../EdgeStack.java` (or wherever
+  `AppMonitor` is built) and the client config in `web/public/lib/analytics.js`, and add CLS if
+  it is not collected; read `../spreadsheets.diyaccounting.co.uk/web/spreadsheets.diyaccounting.co.uk/public/lib/analytics.js`
+  and its `site-rum-loader.browser.test.js` for whether spreadsheets has an app monitor of its
+  own (its CDK under `../spreadsheets.diyaccounting.co.uk/infra`), and add one if not; the apex
+  (`../www.diyaccounting.co.uk`) the same. Then the GA4 side: cross-domain linking across the
+  three hosts and the key events, as code through `infra/google/` (backlog 49's tooling; the
+  Admin API script there). Three repositories, one PR each, this repository's panel reading the
+  three monitors. **Source**: BACKLOG 62; `PLAN_ONE_STOP_DASHBOARD.md` D3. **Owner**: Claude
+  Code. **Model**: Sonnet. **Size**: ~6 files across three repositories.
+
 ## Machine-ask
 
 ## Human-driven
