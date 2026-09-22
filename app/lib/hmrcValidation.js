@@ -33,6 +33,17 @@ export function isValidNino(nino) {
 }
 
 /**
+ * Validates a Unique Taxpayer Reference (UTR).
+ * Exactly 10 digits. Spaces are ignored.
+ * @param {string|number} utr - The UTR to validate
+ * @returns {boolean} True if valid
+ */
+export function isValidUtr(utr) {
+  const normalized = String(utr).replace(/\s+/g, "");
+  return /^\d{10}$/.test(normalized);
+}
+
+/**
  * Validates HMRC period key format per HMRC MTD VAT API specification.
  * Period keys are 4 characters and can be in several formats:
  *

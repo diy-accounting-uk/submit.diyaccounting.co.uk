@@ -16,6 +16,10 @@ import { apiEndpoint as mockBillingApiEndpoint } from "../functions/non-lambda-m
 import { apiEndpoint as bundleGetApiEndpoint } from "../functions/account/bundleGet.js";
 import { apiEndpoint as bundlePostApiEndpoint } from "../functions/account/bundlePost.js";
 import { apiEndpoint as bundleDeleteApiEndpoint } from "../functions/account/bundleDelete.js";
+import { apiEndpoint as practiceClientsListGetApiEndpoint } from "../functions/practice/practiceClientsListGet.js";
+import { apiEndpoint as practiceClientsPostApiEndpoint } from "../functions/practice/practiceClientsPost.js";
+import { apiEndpoint as practiceClientGetApiEndpoint } from "../functions/practice/practiceClientGet.js";
+import { apiEndpoint as practiceClientDeleteApiEndpoint } from "../functions/practice/practiceClientDelete.js";
 import { apiEndpoint as hmrcTokenPostApiEndpoint } from "../functions/hmrc/hmrcTokenPost.js";
 import { apiEndpoint as hmrcVatReturnPostApiEndpoint } from "../functions/hmrc/hmrcVatReturnPost.js";
 import { apiEndpoint as hmrcVatObligationGetApiEndpoint } from "../functions/hmrc/hmrcVatObligationGet.js";
@@ -274,6 +278,10 @@ if (!process.env.STRIPE_PRICE_ID_RESIDENT_PRO && !process.env.STRIPE_TEST_PRICE_
 bundleGetApiEndpoint(app);
 bundlePostApiEndpoint(app);
 bundleDeleteApiEndpoint(app);
+practiceClientsListGetApiEndpoint(app);
+practiceClientsPostApiEndpoint(app);
+practiceClientGetApiEndpoint(app);
+practiceClientDeleteApiEndpoint(app);
 hmrcTokenPostApiEndpoint(app);
 hmrcVatReturnPostApiEndpoint(app);
 hmrcVatObligationGetApiEndpoint(app);

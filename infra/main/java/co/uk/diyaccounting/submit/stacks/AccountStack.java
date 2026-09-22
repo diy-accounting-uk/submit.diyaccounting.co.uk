@@ -60,6 +60,22 @@ public class AccountStack extends Stack {
     public Function operatorSnapshotGetLambda;
     public ILogGroup operatorSnapshotGetLambdaLogGroup;
 
+    public AbstractApiLambdaProps practiceClientsListGetLambdaProps;
+    public Function practiceClientsListGetLambda;
+    public ILogGroup practiceClientsListGetLambdaLogGroup;
+
+    public AbstractApiLambdaProps practiceClientsPostLambdaProps;
+    public Function practiceClientsPostLambda;
+    public ILogGroup practiceClientsPostLambdaLogGroup;
+
+    public AbstractApiLambdaProps practiceClientGetLambdaProps;
+    public Function practiceClientGetLambda;
+    public ILogGroup practiceClientGetLambdaLogGroup;
+
+    public AbstractApiLambdaProps practiceClientDeleteLambdaProps;
+    public Function practiceClientDeleteLambda;
+    public ILogGroup practiceClientDeleteLambdaLogGroup;
+
     public AbstractApiLambdaProps supportTicketPostLambdaProps;
     public Function supportTicketPostLambda;
     public ILogGroup supportTicketPostLambdaLogGroup;
@@ -193,6 +209,12 @@ public class AccountStack extends Stack {
                 this,
                 "ImportedBundlesTable-%s".formatted(props.deploymentName()),
                 props.sharedNames().bundlesTableName);
+
+        // Lookup existing DynamoDB Practice Clients Table
+        ITable practiceClientsTable = Table.fromTableName(
+                this,
+                "ImportedPracticeClientsTable-%s".formatted(props.deploymentName()),
+                props.sharedNames().practiceClientsTableName);
 
         // Lookup existing DynamoDB Bundle POST Async Requests Table
         ITable bundlePostAsyncRequestsTable = Table.fromTableName(
@@ -548,6 +570,140 @@ public class AccountStack extends Stack {
                 "Created API Lambda %s for the operator snapshot with ingestHandler %s",
                 this.operatorSnapshotGetLambda.getNode().getId(),
                 props.sharedNames().operatorSnapshotGetIngestLambdaHandler);
+
+        // Practice clients: four single-Lambda routes, same JWT authoriser and shape as
+        // bundleGet above. Each reads or writes only the caller's own hashedSub partition.
+        var practiceClientsLambdaEnv = new PopulatedMap<String, String>()
+                .with("PRACTICE_CLIENTS_DYNAMODB_TABLE_NAME", practiceClientsTable.getTableName())
+                .with("ENVIRONMENT_NAME", props.envName());
+
+        var practiceClientsListGetApiLambda = new ApiLambda(
+                this,
+                ApiLambdaProps.builder()
+                        .idPrefix(props.sharedNames().practiceClientsListGetIngestLambdaFunctionName)
+                        .baseImageTag(props.baseImageTag())
+                        .ecrRepositoryName(props.sharedNames().ecrRepositoryName)
+                        .ecrRepositoryArn(props.sharedNames().ecrRepositoryArn)
+                        .ingestFunctionName(props.sharedNames().practiceClientsListGetIngestLambdaFunctionName)
+                        .ingestHandler(props.sharedNames().practiceClientsListGetIngestLambdaHandler)
+                        .ingestLambdaArn(props.sharedNames().practiceClientsListGetIngestLambdaArn)
+                        .ingestProvisionedConcurrencyAliasArn(
+                                props.sharedNames().practiceClientsListGetIngestProvisionedConcurrencyLambdaAliasArn)
+                        .ingestProvisionedConcurrency(0)
+                        .provisionedConcurrencyAliasName(props.sharedNames().provisionedConcurrencyAliasName)
+                        .httpMethod(props.sharedNames().practiceClientsListGetLambdaHttpMethod)
+                        .urlPath(props.sharedNames().practiceClientsListGetLambdaUrlPath)
+                        .jwtAuthorizer(props.sharedNames().practiceClientsListGetLambdaJwtAuthorizer)
+                        .customAuthorizer(props.sharedNames().practiceClientsListGetLambdaCustomAuthorizer)
+                        .environment(practiceClientsLambdaEnv)
+                        .build());
+        healthCheckedFunctions.add(practiceClientsListGetApiLambda);
+        this.practiceClientsListGetLambdaProps = practiceClientsListGetApiLambda.apiProps;
+        this.practiceClientsListGetLambda = practiceClientsListGetApiLambda.ingestLambda;
+        this.practiceClientsListGetLambdaLogGroup = practiceClientsListGetApiLambda.logGroup;
+        this.lambdaFunctionProps.add(this.practiceClientsListGetLambdaProps);
+        practiceClientsTable.grant(this.practiceClientsListGetLambda, "dynamodb:Query");
+        SubHashSaltHelper.grantSaltAccess(this.practiceClientsListGetLambda, region, account, props.envName());
+        infof(
+                "Created API Lambda %s for listing practice clients with ingestHandler %s",
+                this.practiceClientsListGetLambda.getNode().getId(),
+                props.sharedNames().practiceClientsListGetIngestLambdaHandler);
+
+        var practiceClientsPostApiLambda = new ApiLambda(
+                this,
+                ApiLambdaProps.builder()
+                        .idPrefix(props.sharedNames().practiceClientsPostIngestLambdaFunctionName)
+                        .baseImageTag(props.baseImageTag())
+                        .ecrRepositoryName(props.sharedNames().ecrRepositoryName)
+                        .ecrRepositoryArn(props.sharedNames().ecrRepositoryArn)
+                        .ingestFunctionName(props.sharedNames().practiceClientsPostIngestLambdaFunctionName)
+                        .ingestHandler(props.sharedNames().practiceClientsPostIngestLambdaHandler)
+                        .ingestLambdaArn(props.sharedNames().practiceClientsPostIngestLambdaArn)
+                        .ingestProvisionedConcurrencyAliasArn(
+                                props.sharedNames().practiceClientsPostIngestProvisionedConcurrencyLambdaAliasArn)
+                        .ingestProvisionedConcurrency(0)
+                        .provisionedConcurrencyAliasName(props.sharedNames().provisionedConcurrencyAliasName)
+                        .httpMethod(props.sharedNames().practiceClientsPostLambdaHttpMethod)
+                        .urlPath(props.sharedNames().practiceClientsPostLambdaUrlPath)
+                        .jwtAuthorizer(props.sharedNames().practiceClientsPostLambdaJwtAuthorizer)
+                        .customAuthorizer(props.sharedNames().practiceClientsPostLambdaCustomAuthorizer)
+                        .environment(practiceClientsLambdaEnv)
+                        .build());
+        healthCheckedFunctions.add(practiceClientsPostApiLambda);
+        this.practiceClientsPostLambdaProps = practiceClientsPostApiLambda.apiProps;
+        this.practiceClientsPostLambda = practiceClientsPostApiLambda.ingestLambda;
+        this.practiceClientsPostLambdaLogGroup = practiceClientsPostApiLambda.logGroup;
+        this.lambdaFunctionProps.add(this.practiceClientsPostLambdaProps);
+        practiceClientsTable.grant(this.practiceClientsPostLambda, "dynamodb:PutItem");
+        SubHashSaltHelper.grantSaltAccess(this.practiceClientsPostLambda, region, account, props.envName());
+        infof(
+                "Created API Lambda %s for creating a practice client with ingestHandler %s",
+                this.practiceClientsPostLambda.getNode().getId(),
+                props.sharedNames().practiceClientsPostIngestLambdaHandler);
+
+        var practiceClientGetApiLambda = new ApiLambda(
+                this,
+                ApiLambdaProps.builder()
+                        .idPrefix(props.sharedNames().practiceClientGetIngestLambdaFunctionName)
+                        .baseImageTag(props.baseImageTag())
+                        .ecrRepositoryName(props.sharedNames().ecrRepositoryName)
+                        .ecrRepositoryArn(props.sharedNames().ecrRepositoryArn)
+                        .ingestFunctionName(props.sharedNames().practiceClientGetIngestLambdaFunctionName)
+                        .ingestHandler(props.sharedNames().practiceClientGetIngestLambdaHandler)
+                        .ingestLambdaArn(props.sharedNames().practiceClientGetIngestLambdaArn)
+                        .ingestProvisionedConcurrencyAliasArn(
+                                props.sharedNames().practiceClientGetIngestProvisionedConcurrencyLambdaAliasArn)
+                        .ingestProvisionedConcurrency(0)
+                        .provisionedConcurrencyAliasName(props.sharedNames().provisionedConcurrencyAliasName)
+                        .httpMethod(props.sharedNames().practiceClientGetLambdaHttpMethod)
+                        .urlPath(props.sharedNames().practiceClientGetLambdaUrlPath)
+                        .jwtAuthorizer(props.sharedNames().practiceClientGetLambdaJwtAuthorizer)
+                        .customAuthorizer(props.sharedNames().practiceClientGetLambdaCustomAuthorizer)
+                        .environment(practiceClientsLambdaEnv)
+                        .build());
+        healthCheckedFunctions.add(practiceClientGetApiLambda);
+        this.practiceClientGetLambdaProps = practiceClientGetApiLambda.apiProps;
+        this.practiceClientGetLambda = practiceClientGetApiLambda.ingestLambda;
+        this.practiceClientGetLambdaLogGroup = practiceClientGetApiLambda.logGroup;
+        this.lambdaFunctionProps.add(this.practiceClientGetLambdaProps);
+        practiceClientsTable.grant(this.practiceClientGetLambda, "dynamodb:GetItem");
+        SubHashSaltHelper.grantSaltAccess(this.practiceClientGetLambda, region, account, props.envName());
+        infof(
+                "Created API Lambda %s for reading a practice client with ingestHandler %s",
+                this.practiceClientGetLambda.getNode().getId(),
+                props.sharedNames().practiceClientGetIngestLambdaHandler);
+
+        var practiceClientDeleteApiLambda = new ApiLambda(
+                this,
+                ApiLambdaProps.builder()
+                        .idPrefix(props.sharedNames().practiceClientDeleteIngestLambdaFunctionName)
+                        .baseImageTag(props.baseImageTag())
+                        .ecrRepositoryName(props.sharedNames().ecrRepositoryName)
+                        .ecrRepositoryArn(props.sharedNames().ecrRepositoryArn)
+                        .ingestFunctionName(props.sharedNames().practiceClientDeleteIngestLambdaFunctionName)
+                        .ingestHandler(props.sharedNames().practiceClientDeleteIngestLambdaHandler)
+                        .ingestLambdaArn(props.sharedNames().practiceClientDeleteIngestLambdaArn)
+                        .ingestProvisionedConcurrencyAliasArn(
+                                props.sharedNames().practiceClientDeleteIngestProvisionedConcurrencyLambdaAliasArn)
+                        .ingestProvisionedConcurrency(0)
+                        .provisionedConcurrencyAliasName(props.sharedNames().provisionedConcurrencyAliasName)
+                        .httpMethod(props.sharedNames().practiceClientDeleteLambdaHttpMethod)
+                        .urlPath(props.sharedNames().practiceClientDeleteLambdaUrlPath)
+                        .jwtAuthorizer(props.sharedNames().practiceClientDeleteLambdaJwtAuthorizer)
+                        .customAuthorizer(props.sharedNames().practiceClientDeleteLambdaCustomAuthorizer)
+                        .environment(practiceClientsLambdaEnv)
+                        .build());
+        healthCheckedFunctions.add(practiceClientDeleteApiLambda);
+        this.practiceClientDeleteLambdaProps = practiceClientDeleteApiLambda.apiProps;
+        this.practiceClientDeleteLambda = practiceClientDeleteApiLambda.ingestLambda;
+        this.practiceClientDeleteLambdaLogGroup = practiceClientDeleteApiLambda.logGroup;
+        this.lambdaFunctionProps.add(this.practiceClientDeleteLambdaProps);
+        practiceClientsTable.grant(this.practiceClientDeleteLambda, "dynamodb:UpdateItem");
+        SubHashSaltHelper.grantSaltAccess(this.practiceClientDeleteLambda, region, account, props.envName());
+        infof(
+                "Created API Lambda %s for archiving a practice client with ingestHandler %s",
+                this.practiceClientDeleteLambda.getNode().getId(),
+                props.sharedNames().practiceClientDeleteIngestLambdaHandler);
 
         // Support Ticket POST Lambda - only create if the diya-ops GitHub App is configured.
         if (props.githubAppId() != null

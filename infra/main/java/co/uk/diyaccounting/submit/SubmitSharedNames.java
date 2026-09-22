@@ -240,6 +240,42 @@ public class SubmitSharedNames {
     public boolean operatorSnapshotGetLambdaJwtAuthorizer;
     public boolean operatorSnapshotGetLambdaCustomAuthorizer;
 
+    public String practiceClientsListGetIngestLambdaHandler;
+    public String practiceClientsListGetIngestLambdaFunctionName;
+    public String practiceClientsListGetIngestLambdaArn;
+    public String practiceClientsListGetIngestProvisionedConcurrencyLambdaAliasArn;
+    public HttpMethod practiceClientsListGetLambdaHttpMethod;
+    public String practiceClientsListGetLambdaUrlPath;
+    public boolean practiceClientsListGetLambdaJwtAuthorizer;
+    public boolean practiceClientsListGetLambdaCustomAuthorizer;
+
+    public String practiceClientsPostIngestLambdaHandler;
+    public String practiceClientsPostIngestLambdaFunctionName;
+    public String practiceClientsPostIngestLambdaArn;
+    public String practiceClientsPostIngestProvisionedConcurrencyLambdaAliasArn;
+    public HttpMethod practiceClientsPostLambdaHttpMethod;
+    public String practiceClientsPostLambdaUrlPath;
+    public boolean practiceClientsPostLambdaJwtAuthorizer;
+    public boolean practiceClientsPostLambdaCustomAuthorizer;
+
+    public String practiceClientGetIngestLambdaHandler;
+    public String practiceClientGetIngestLambdaFunctionName;
+    public String practiceClientGetIngestLambdaArn;
+    public String practiceClientGetIngestProvisionedConcurrencyLambdaAliasArn;
+    public HttpMethod practiceClientGetLambdaHttpMethod;
+    public String practiceClientGetLambdaUrlPath;
+    public boolean practiceClientGetLambdaJwtAuthorizer;
+    public boolean practiceClientGetLambdaCustomAuthorizer;
+
+    public String practiceClientDeleteIngestLambdaHandler;
+    public String practiceClientDeleteIngestLambdaFunctionName;
+    public String practiceClientDeleteIngestLambdaArn;
+    public String practiceClientDeleteIngestProvisionedConcurrencyLambdaAliasArn;
+    public HttpMethod practiceClientDeleteLambdaHttpMethod;
+    public String practiceClientDeleteLambdaUrlPath;
+    public boolean practiceClientDeleteLambdaJwtAuthorizer;
+    public boolean practiceClientDeleteLambdaCustomAuthorizer;
+
     // TODO: Replace individual attributes with LambdaNames instances
     public LambdaNames bundlePost;
     public String bundlePostIngestLambdaHandler;
@@ -1464,6 +1500,106 @@ public class SubmitSharedNames {
                 "getBundles",
                 List.of(new ApiParameter(
                         "x-wait-time-ms", "header", false, "Max time to wait for synchronous response (ms)"))));
+
+        // Practice clients list GET Lambda (standard JWT auth, same as bundleGet)
+        this.practiceClientsListGetLambdaHttpMethod = HttpMethod.GET;
+        this.practiceClientsListGetLambdaUrlPath = "/api/v1/practice/clients";
+        this.practiceClientsListGetLambdaJwtAuthorizer = true;
+        this.practiceClientsListGetLambdaCustomAuthorizer = false;
+        var practiceClientsListGetLambdaHandlerName = "practiceClientsListGet.ingestHandler";
+        var practiceClientsListGetLambdaHandlerDashed =
+                ResourceNameUtils.convertCamelCaseToDashSeparated(practiceClientsListGetLambdaHandlerName);
+        this.practiceClientsListGetIngestLambdaFunctionName =
+                "%s-%s".formatted(this.appResourceNamePrefix, practiceClientsListGetLambdaHandlerDashed);
+        this.practiceClientsListGetIngestLambdaHandler =
+                "%s/practice/%s".formatted(appLambdaHandlerPrefix, practiceClientsListGetLambdaHandlerName);
+        this.practiceClientsListGetIngestLambdaArn =
+                "%s-%s".formatted(appLambdaArnPrefix, practiceClientsListGetLambdaHandlerDashed);
+        this.practiceClientsListGetIngestProvisionedConcurrencyLambdaAliasArn =
+                "%s:%s".formatted(this.practiceClientsListGetIngestLambdaArn, this.provisionedConcurrencyAliasName);
+        publishedApiLambdas.add(new PublishedLambda(
+                this.practiceClientsListGetLambdaHttpMethod,
+                this.practiceClientsListGetLambdaUrlPath,
+                "List the practice's clients",
+                "Lists every active client held by the authenticated practice",
+                "listPracticeClients"));
+
+        // Practice clients create POST Lambda
+        this.practiceClientsPostLambdaHttpMethod = HttpMethod.POST;
+        this.practiceClientsPostLambdaUrlPath = "/api/v1/practice/clients";
+        this.practiceClientsPostLambdaJwtAuthorizer = true;
+        this.practiceClientsPostLambdaCustomAuthorizer = false;
+        var practiceClientsPostLambdaHandlerName = "practiceClientsPost.ingestHandler";
+        var practiceClientsPostLambdaHandlerDashed =
+                ResourceNameUtils.convertCamelCaseToDashSeparated(practiceClientsPostLambdaHandlerName);
+        this.practiceClientsPostIngestLambdaFunctionName =
+                "%s-%s".formatted(this.appResourceNamePrefix, practiceClientsPostLambdaHandlerDashed);
+        this.practiceClientsPostIngestLambdaHandler =
+                "%s/practice/%s".formatted(appLambdaHandlerPrefix, practiceClientsPostLambdaHandlerName);
+        this.practiceClientsPostIngestLambdaArn =
+                "%s-%s".formatted(appLambdaArnPrefix, practiceClientsPostLambdaHandlerDashed);
+        this.practiceClientsPostIngestProvisionedConcurrencyLambdaAliasArn =
+                "%s:%s".formatted(this.practiceClientsPostIngestLambdaArn, this.provisionedConcurrencyAliasName);
+        publishedApiLambdas.add(new PublishedLambda(
+                this.practiceClientsPostLambdaHttpMethod,
+                this.practiceClientsPostLambdaUrlPath,
+                "Add a practice client",
+                "Creates a new client row for the authenticated practice",
+                "addPracticeClient",
+                List.of(
+                        new ApiParameter("displayName", "body", true, "The client's display name"),
+                        new ApiParameter("vrn", "body", false, "VAT registration number"),
+                        new ApiParameter("nino", "body", false, "National Insurance number"),
+                        new ApiParameter("utr", "body", false, "Unique Taxpayer Reference"),
+                        new ApiParameter("companyNumber", "body", false, "Companies House company number"))));
+
+        // Practice client read GET Lambda
+        this.practiceClientGetLambdaHttpMethod = HttpMethod.GET;
+        this.practiceClientGetLambdaUrlPath = "/api/v1/practice/clients/{clientId}";
+        this.practiceClientGetLambdaJwtAuthorizer = true;
+        this.practiceClientGetLambdaCustomAuthorizer = false;
+        var practiceClientGetLambdaHandlerName = "practiceClientGet.ingestHandler";
+        var practiceClientGetLambdaHandlerDashed =
+                ResourceNameUtils.convertCamelCaseToDashSeparated(practiceClientGetLambdaHandlerName);
+        this.practiceClientGetIngestLambdaFunctionName =
+                "%s-%s".formatted(this.appResourceNamePrefix, practiceClientGetLambdaHandlerDashed);
+        this.practiceClientGetIngestLambdaHandler =
+                "%s/practice/%s".formatted(appLambdaHandlerPrefix, practiceClientGetLambdaHandlerName);
+        this.practiceClientGetIngestLambdaArn =
+                "%s-%s".formatted(appLambdaArnPrefix, practiceClientGetLambdaHandlerDashed);
+        this.practiceClientGetIngestProvisionedConcurrencyLambdaAliasArn =
+                "%s:%s".formatted(this.practiceClientGetIngestLambdaArn, this.provisionedConcurrencyAliasName);
+        publishedApiLambdas.add(new PublishedLambda(
+                this.practiceClientGetLambdaHttpMethod,
+                this.practiceClientGetLambdaUrlPath,
+                "Read a practice client",
+                "Reads one client row belonging to the authenticated practice",
+                "getPracticeClient",
+                List.of(new ApiParameter("clientId", "path", true, "The client's id"))));
+
+        // Practice client archive DELETE Lambda
+        this.practiceClientDeleteLambdaHttpMethod = HttpMethod.DELETE;
+        this.practiceClientDeleteLambdaUrlPath = "/api/v1/practice/clients/{clientId}";
+        this.practiceClientDeleteLambdaJwtAuthorizer = true;
+        this.practiceClientDeleteLambdaCustomAuthorizer = false;
+        var practiceClientDeleteLambdaHandlerName = "practiceClientDelete.ingestHandler";
+        var practiceClientDeleteLambdaHandlerDashed =
+                ResourceNameUtils.convertCamelCaseToDashSeparated(practiceClientDeleteLambdaHandlerName);
+        this.practiceClientDeleteIngestLambdaFunctionName =
+                "%s-%s".formatted(this.appResourceNamePrefix, practiceClientDeleteLambdaHandlerDashed);
+        this.practiceClientDeleteIngestLambdaHandler =
+                "%s/practice/%s".formatted(appLambdaHandlerPrefix, practiceClientDeleteLambdaHandlerName);
+        this.practiceClientDeleteIngestLambdaArn =
+                "%s-%s".formatted(appLambdaArnPrefix, practiceClientDeleteLambdaHandlerDashed);
+        this.practiceClientDeleteIngestProvisionedConcurrencyLambdaAliasArn =
+                "%s:%s".formatted(this.practiceClientDeleteIngestLambdaArn, this.provisionedConcurrencyAliasName);
+        publishedApiLambdas.add(new PublishedLambda(
+                this.practiceClientDeleteLambdaHttpMethod,
+                this.practiceClientDeleteLambdaUrlPath,
+                "Archive a practice client",
+                "Archives one client row belonging to the authenticated practice",
+                "archivePracticeClient",
+                List.of(new ApiParameter("clientId", "path", true, "The client's id"))));
 
         this.operatorSnapshotGetLambdaHttpMethod = HttpMethod.GET;
         this.operatorSnapshotGetLambdaUrlPath = "/api/v1/operator/snapshot";
