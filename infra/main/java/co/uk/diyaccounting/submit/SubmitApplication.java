@@ -89,12 +89,10 @@ public class SubmitApplication {
         public String stripeTestPriceIdResidentPro;
         public String stripePriceIdResidentVat;
         public String stripeTestPriceIdResidentVat;
-        public String stripePriceIdResidentItsa;
-        public String stripeTestPriceIdResidentItsa;
-        public String stripePriceIdResidentLtd;
-        public String stripeTestPriceIdResidentLtd;
-        public String stripePriceIdResidentDiyaGl;
-        public String stripeTestPriceIdResidentDiyaGl;
+        public String stripePriceIdResidentYear;
+        public String stripeTestPriceIdResidentYear;
+        public String stripePriceIdResidentMonth;
+        public String stripeTestPriceIdResidentMonth;
         public String stripeWebhookSecretArn;
         public String stripeTestWebhookSecretArn;
         public String githubAppId;
@@ -266,30 +264,22 @@ public class SubmitApplication {
                 "STRIPE_TEST_PRICE_ID_RESIDENT_VAT",
                 appProps.stripeTestPriceIdResidentVat,
                 "(from stripeTestPriceIdResidentVat in cdk.json)");
-        var stripePriceIdResidentItsa = envOr(
-                "STRIPE_PRICE_ID_RESIDENT_ITSA",
-                appProps.stripePriceIdResidentItsa,
-                "(from stripePriceIdResidentItsa in cdk.json)");
-        var stripeTestPriceIdResidentItsa = envOr(
-                "STRIPE_TEST_PRICE_ID_RESIDENT_ITSA",
-                appProps.stripeTestPriceIdResidentItsa,
-                "(from stripeTestPriceIdResidentItsa in cdk.json)");
-        var stripePriceIdResidentLtd = envOr(
-                "STRIPE_PRICE_ID_RESIDENT_LTD",
-                appProps.stripePriceIdResidentLtd,
-                "(from stripePriceIdResidentLtd in cdk.json)");
-        var stripeTestPriceIdResidentLtd = envOr(
-                "STRIPE_TEST_PRICE_ID_RESIDENT_LTD",
-                appProps.stripeTestPriceIdResidentLtd,
-                "(from stripeTestPriceIdResidentLtd in cdk.json)");
-        var stripePriceIdResidentDiyaGl = envOr(
-                "STRIPE_PRICE_ID_RESIDENT_DIYA_GL",
-                appProps.stripePriceIdResidentDiyaGl,
-                "(from stripePriceIdResidentDiyaGl in cdk.json)");
-        var stripeTestPriceIdResidentDiyaGl = envOr(
-                "STRIPE_TEST_PRICE_ID_RESIDENT_DIYA_GL",
-                appProps.stripeTestPriceIdResidentDiyaGl,
-                "(from stripeTestPriceIdResidentDiyaGl in cdk.json)");
+        var stripePriceIdResidentYear = envOr(
+                "STRIPE_PRICE_ID_RESIDENT_YEAR",
+                appProps.stripePriceIdResidentYear,
+                "(from stripePriceIdResidentYear in cdk.json)");
+        var stripeTestPriceIdResidentYear = envOr(
+                "STRIPE_TEST_PRICE_ID_RESIDENT_YEAR",
+                appProps.stripeTestPriceIdResidentYear,
+                "(from stripeTestPriceIdResidentYear in cdk.json)");
+        var stripePriceIdResidentMonth = envOr(
+                "STRIPE_PRICE_ID_RESIDENT_MONTH",
+                appProps.stripePriceIdResidentMonth,
+                "(from stripePriceIdResidentMonth in cdk.json)");
+        var stripeTestPriceIdResidentMonth = envOr(
+                "STRIPE_TEST_PRICE_ID_RESIDENT_MONTH",
+                appProps.stripeTestPriceIdResidentMonth,
+                "(from stripeTestPriceIdResidentMonth in cdk.json)");
         var stripeWebhookSecretArn = envOr(
                 "STRIPE_WEBHOOK_SECRET_ARN",
                 appProps.stripeWebhookSecretArn,
@@ -463,16 +453,14 @@ public class SubmitApplication {
                         .stripePriceIdResidentVat(stripePriceIdResidentVat != null ? stripePriceIdResidentVat : "")
                         .stripeTestPriceIdResidentVat(
                                 stripeTestPriceIdResidentVat != null ? stripeTestPriceIdResidentVat : "")
-                        .stripePriceIdResidentItsa(stripePriceIdResidentItsa != null ? stripePriceIdResidentItsa : "")
-                        .stripeTestPriceIdResidentItsa(
-                                stripeTestPriceIdResidentItsa != null ? stripeTestPriceIdResidentItsa : "")
-                        .stripePriceIdResidentLtd(stripePriceIdResidentLtd != null ? stripePriceIdResidentLtd : "")
-                        .stripeTestPriceIdResidentLtd(
-                                stripeTestPriceIdResidentLtd != null ? stripeTestPriceIdResidentLtd : "")
-                        .stripePriceIdResidentDiyaGl(
-                                stripePriceIdResidentDiyaGl != null ? stripePriceIdResidentDiyaGl : "")
-                        .stripeTestPriceIdResidentDiyaGl(
-                                stripeTestPriceIdResidentDiyaGl != null ? stripeTestPriceIdResidentDiyaGl : "")
+                        .stripePriceIdResidentYear(
+                                stripePriceIdResidentYear != null ? stripePriceIdResidentYear : "")
+                        .stripeTestPriceIdResidentYear(
+                                stripeTestPriceIdResidentYear != null ? stripeTestPriceIdResidentYear : "")
+                        .stripePriceIdResidentMonth(
+                                stripePriceIdResidentMonth != null ? stripePriceIdResidentMonth : "")
+                        .stripeTestPriceIdResidentMonth(
+                                stripeTestPriceIdResidentMonth != null ? stripeTestPriceIdResidentMonth : "")
                         .baseUrl(sharedNames.publicBaseUrl)
                         .billingReturnUrlOrigins(billingReturnUrlOrigins)
                         .build());
