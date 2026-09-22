@@ -69,8 +69,7 @@ step.
   has reached the tier's book limit because runs that failed mid-way today left their books
   behind; the fix (delete the user's leftover books before the PUT) lands as a second commit and
   redeploys. After the merge: repoint `NEXT.md` and `BACKLOG.md` on `main`, and
-  land AS15 and AS18, which touch the same files. The spreadsheets move (PR #133) is merged; the www move is www PR #32,
-  green and merging. **Source**: operator 2026-09-22. **Owner**: Claude
+  land AS15 and AS18, which touch the same files. The spreadsheets and www moves are merged (their PRs #133 and #32). **Source**: operator 2026-09-22. **Owner**: Claude
   Code. **Model**: Sonnet. **Size**: 262 files.
 
 ## Machine-only
