@@ -16,9 +16,8 @@ runs), and for Claude Code steps the **Model** a sub-agent should use (Fable > O
 Haiku; the lowest tier that fits). Anything touching code goes through a `claude/*` branch and
 PR; the operator merges.
 
-**Prod runs deployment prod-b9abb8d**; main's deploy of PR #331's merge (cdbc557a) is in flight.
-**ci**: `ci-set1` is last-known-good. Open pull requests: #332 (`claude/b78-board`: PU-7j), mergeable, waiting on main's deploy;
-#333 (`claude/b79-developers`), its ci deploy in flight.
+**Prod runs deployment prod-cdbc557**; main's deploy of PR #332's merge (3276cc16) is in flight.
+**ci**: `ci-set1` is last-known-good. Open pull request: #333 (`claude/b79-developers`), its ci deploy in flight.
 
 The board runs in five sections, in this order: **in flight** (a branch, a pull request or a run
 in motion, each named in the row), **machine-only**, **machine-ask**, **human-driven**,
@@ -58,20 +57,20 @@ step.
   their own checks. **Source**: operator 2026-09-22. **Owner**: Claude
   Code. **Model**: Sonnet. **Size**: 262 files.
 
-- [ ] **PU-7. Practice licence build.** PU-7a to PU-7i, PU-7k and PU-7l are on `main`. In flight on
-  `claude/b78-board`, PR #332, head b2a08e60, its test runs in flight (an mcp-only head, so no ci
-  deploy): PU-7j, `run_for_clients` in `mcp/lib/batch-tools.js` and the CLI's `--all-clients` in
-  `mcp/bin/diya-submit-mcp.js`: one result row per client, non-zero exit on any failure, over
-  the client tools PU-7i put in `mcp/lib/practice-tools.js`. Then,
-  in `PLAN_PRICE_UPDATE.md` §(d) (lines 227 to 236): PU-7m on PU-7j, PU-7e on the operator's grant numbers; the
+## Machine-only
+
+- [ ] **PU-7. Practice licence build.** PU-7a to PU-7l are on `main`. Next is PU-7m, the
+  behaviour test `behaviour-tests/practiceLicence.behaviour.test.js`: two clients added through
+  the practice routes, a derive and a submit for each against the HMRC sandbox, over the MCP's
+  `run_for_clients`; its `package.json` script and its `deploy.yml` and `probe-test.yml` jobs in
+  the shape the other suites use. Then,
+  in `PLAN_PRICE_UPDATE.md` §(d) (lines 227 to 236):  PU-7e on the operator's grant numbers; the
   `resident-pro` catalogue values (`enable = "always"`, `hidden = false`,
   `allocation = "on-subscription"`) and the practice page's nav link in
   `web/public/widgets/page-chrome.js` flip in the launch step after PU-7m, with the four ci probes
   that reach resident-pro through a pass updated in the same change. **Source**:
-  `PLAN_PRICE_UPDATE.md` PU-7. **Owner**: Claude Code. **Model**: Sonnet. **Size**: ~5 files for
-  PU-7j, ~15 across the two rows after it.
-
-## Machine-only
+  `PLAN_PRICE_UPDATE.md` PU-7. **Owner**: Claude Code. **Model**: Sonnet. **Size**: ~4 files for
+  PU-7m, ~8 for the launch step after it.
 
 - [ ] **AS1. Coverage collection finds no files, so no gate can fire.** `vitest.config.js`
   declares the thresholds under `coverage.threshold` (Vitest 4 reads `thresholds`), and renaming
