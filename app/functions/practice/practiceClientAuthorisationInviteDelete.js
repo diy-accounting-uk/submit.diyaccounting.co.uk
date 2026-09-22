@@ -56,7 +56,12 @@ export async function ingestHandler(event) {
 
   const service = event.queryStringParameters?.service;
   if (!SUPPORTED_SERVICES.includes(service)) {
-    return http400BadRequestResponse({ request, headers: responseHeaders, message: "service query parameter must be one of MTD-VAT, MTD-IT", error: {} });
+    return http400BadRequestResponse({
+      request,
+      headers: responseHeaders,
+      message: "service query parameter must be one of MTD-VAT, MTD-IT",
+      error: {},
+    });
   }
 
   const accessToken = extractHmrcAccessTokenFromLambdaEvent(event);

@@ -51,7 +51,12 @@ export async function ingestHandler(event) {
     return http400BadRequestResponse({ request, headers: responseHeaders, message: "clientId path parameter is required", error: {} });
   }
   if (!bookId || !isValidBookId(bookId)) {
-    return http400BadRequestResponse({ request, headers: responseHeaders, message: "bookId path parameter must be a valid book id", error: {} });
+    return http400BadRequestResponse({
+      request,
+      headers: responseHeaders,
+      message: "bookId path parameter must be a valid book id",
+      error: {},
+    });
   }
 
   try {

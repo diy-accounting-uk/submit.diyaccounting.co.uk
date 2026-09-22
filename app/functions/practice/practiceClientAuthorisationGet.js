@@ -60,7 +60,12 @@ export async function ingestHandler(event) {
 
   const service = event.queryStringParameters?.service;
   if (!SERVICE_IDENTIFIER[service]) {
-    return http400BadRequestResponse({ request, headers: responseHeaders, message: "service query parameter must be one of MTD-VAT, MTD-IT", error: {} });
+    return http400BadRequestResponse({
+      request,
+      headers: responseHeaders,
+      message: "service query parameter must be one of MTD-VAT, MTD-IT",
+      error: {},
+    });
   }
 
   const accessToken = extractHmrcAccessTokenFromLambdaEvent(event);
@@ -98,7 +103,7 @@ export async function ingestHandler(event) {
     const storedAuthorisation = client.authorisations?.[service];
 
     let status;
-    let invitationId = storedAuthorisation?.invitationId || null;
+    const invitationId = storedAuthorisation?.invitationId || null;
     if (invitationId) {
       const result = await getInvitationStatus({ arn, invitationId, accessToken, govClientHeaders });
       if (!result.ok) {
