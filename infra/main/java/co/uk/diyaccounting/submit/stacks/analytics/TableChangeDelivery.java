@@ -322,6 +322,7 @@ public class TableChangeDelivery extends Construct {
                 columns.add(column("status", "string"));
                 columns.add(column("current_period_end", "string"));
                 columns.add(column("cancel_at_period_end", "boolean"));
+                columns.add(column("actor", "string"));
             }
             case "passes" -> {
                 columns.add(column("pass_id", "string"));

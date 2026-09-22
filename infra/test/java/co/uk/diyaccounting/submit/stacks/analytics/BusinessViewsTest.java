@@ -141,6 +141,28 @@ class BusinessViewsTest {
     }
 
     @Test
+    void subscriptionCancellationsViewExcludesTestAndProbeActors() {
+        Template template = synthBusinessViews();
+
+        var sql = sqlForView(template, "v_subscription_cancellations_daily");
+        assertTrue(
+                sql.contains("actor") && sql.contains("'test-user'") && sql.contains("'probe'"),
+                "expected the cancellations view to filter out test-user and probe actors: " + sql);
+    }
+
+    private static String sqlForView(Template template, String viewName) {
+        var customResources = template.findResources("Custom::AthenaView");
+        for (var resource : customResources.values()) {
+            @SuppressWarnings("unchecked")
+            var properties = (Map<String, Object>) resource.get("Properties");
+            if (viewName.equals(properties.get("ViewName"))) {
+                return String.valueOf(properties.get("Sql"));
+            }
+        }
+        throw new AssertionError("No Custom::AthenaView resource found for view: " + viewName);
+    }
+
+    @Test
     void everyViewCreatorRunsThroughTheSharedProviderNotDirectlyAgainstAthena() {
         Template template = synthBusinessViews();
 
