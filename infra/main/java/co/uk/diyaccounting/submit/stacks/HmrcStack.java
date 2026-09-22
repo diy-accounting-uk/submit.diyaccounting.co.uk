@@ -462,6 +462,7 @@ public class HmrcStack extends Stack {
                 .with("BUNDLE_DYNAMODB_TABLE_NAME", props.sharedNames().bundlesTableName)
                 .with("HMRC_API_REQUESTS_DYNAMODB_TABLE_NAME", hmrcApiRequestsTable.getTableName())
                 .with("RECEIPTS_DYNAMODB_TABLE_NAME", props.sharedNames().receiptsTableName)
+                .with("PRACTICE_CLIENTS_DYNAMODB_TABLE_NAME", practiceClientsTable.getTableName())
                 .with(
                         "HMRC_VAT_RETURN_POST_ASYNC_REQUESTS_TABLE_NAME",
                         hmrcVatReturnPostAsyncRequestsTable.getTableName())
@@ -530,6 +531,10 @@ public class HmrcStack extends Stack {
                             .resources(List.of(activityBusArn))
                             .build());
                 });
+        // Read-only, ingest Lambda only: resolves a client-scoped request's client row when
+        // enforceBundles checks it. The worker never calls getClient() again - the VRN is
+        // already resolved and carried on the payload by the time it dispatches.
+        practiceClientsTable.grant(this.hmrcVatReturnPostLambda, "dynamodb:GetItem");
         infof(
                 "Granted DynamoDB and Secrets Manager salt permissions to %s and its worker",
                 this.hmrcVatReturnPostLambda.getFunctionName());
@@ -541,6 +546,7 @@ public class HmrcStack extends Stack {
                 .with("HMRC_SANDBOX_BASE_URI", props.hmrcSandboxBaseUri())
                 .with("BUNDLE_DYNAMODB_TABLE_NAME", props.sharedNames().bundlesTableName)
                 .with("HMRC_API_REQUESTS_DYNAMODB_TABLE_NAME", hmrcApiRequestsTable.getTableName())
+                .with("PRACTICE_CLIENTS_DYNAMODB_TABLE_NAME", practiceClientsTable.getTableName())
                 .with(
                         "HMRC_VAT_OBLIGATION_GET_ASYNC_REQUESTS_TABLE_NAME",
                         hmrcVatObligationGetAsyncRequestsTable.getTableName())
@@ -606,6 +612,10 @@ public class HmrcStack extends Stack {
                             .resources(List.of(activityBusArn))
                             .build());
                 });
+        // Read-only, ingest Lambda only: resolves a client-scoped request's client row when
+        // enforceBundles checks it. The worker never calls getClient() again - the VRN is
+        // already resolved and carried on the payload by the time it dispatches.
+        practiceClientsTable.grant(this.hmrcVatObligationGetLambda, "dynamodb:GetItem");
         infof(
                 "Granted DynamoDB and Secrets Manager salt permissions to %s and its worker",
                 this.hmrcVatObligationGetLambda.getFunctionName());

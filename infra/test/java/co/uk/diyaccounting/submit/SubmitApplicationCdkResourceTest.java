@@ -101,6 +101,23 @@ class SubmitApplicationCdkResourceTest {
         companiesHouseStackTemplate.resourceCountIs("AWS::Lambda::Function", 13);
         assertStackHealthAlarm(companiesHouseStackTemplate, 13, 0, routedPrefixes);
 
+        // Every route that can carry a clientId resolves it via enforceBundles -> getClient(),
+        // which needs the practice clients table name on the Lambda's own environment. Regression
+        // guard for the gap PU-7h found: PU-7g wired the getClient() call into these three routes
+        // without also wiring the table name and read access to reach it.
+        assertHasEnvironmentVariable(
+                hmrcStackTemplate,
+                submitApplication.hmrcStack.hmrcVatReturnPostLambdaProps.ingestFunctionName(),
+                "PRACTICE_CLIENTS_DYNAMODB_TABLE_NAME");
+        assertHasEnvironmentVariable(
+                hmrcStackTemplate,
+                submitApplication.hmrcStack.hmrcVatObligationGetLambdaProps.ingestFunctionName(),
+                "PRACTICE_CLIENTS_DYNAMODB_TABLE_NAME");
+        assertHasEnvironmentVariable(
+                companiesHouseStackTemplate,
+                submitApplication.companiesHouseStack.companiesHouseAccountsPostLambdaProps.ingestFunctionName(),
+                "PRACTICE_CLIENTS_DYNAMODB_TABLE_NAME");
+
         infof("Created stack:", submitApplication.accountStack.getStackName());
         // 21 Lambdas: bundleGet(1), bundlePost(2), bundleDelete(2), operatorSnapshotGet(1),
         // practiceClientsListGet(1), practiceClientsPost(1), practiceClientGet(1),
@@ -673,6 +690,19 @@ class SubmitApplicationCdkResourceTest {
         });
         org.junit.jupiter.api.Assertions.assertTrue(
                 missing.isEmpty(), "Lambda functions with no explicit log group: " + missing);
+    }
+
+    @SuppressWarnings("unchecked")
+    private static void assertHasEnvironmentVariable(Template template, String functionName, String variableName) {
+        boolean found = template.findResources("AWS::Lambda::Function").values().stream().anyMatch(resource -> {
+            var properties = (Map<String, Object>) resource.get("Properties");
+            if (properties == null || !functionName.equals(properties.get("FunctionName"))) return false;
+            var environment = (Map<String, Object>) properties.get("Environment");
+            var variables = environment == null ? null : (Map<String, Object>) environment.get("Variables");
+            return variables != null && variables.containsKey(variableName);
+        });
+        org.junit.jupiter.api.Assertions.assertTrue(
+                found, "expected " + functionName + " to have the " + variableName + " environment variable");
     }
 
     /**
