@@ -17,7 +17,8 @@ Haiku; the lowest tier that fits). Anything touching code goes through a `claude
 PR; the operator merges.
 
 **Prod runs deployment prod-cdbc557**.
-**ci**: `ci-set1` is last-known-good. Open pull request: #333 (`claude/b79-developers`), its ci deploy in flight.
+**ci**: `ci-set1` is last-known-good. Open pull requests: #333 (`claude/b79-developers`), red until its fix pushes; #334
+(`claude/b80-board`), its ci deploy starting.
 
 The board runs in five sections, in this order: **in flight** (a branch, a pull request or a run
 in motion, each named in the row), **machine-only**, **machine-ask**, **human-driven**,
@@ -53,11 +54,10 @@ step.
   `PLAN_PRICE_UPDATE.md` PU-7. **Owner**: Claude Code. **Model**: Sonnet. **Size**: ~4 files for
   PU-7m, ~8 for the launch step after it.
 
-- [ ] **B80. Wave b80 on `claude/b80-board`.** Three agents: AS8 (the two RUM deployed-environment skips out of the unit runner; AS1's
+- [ ] **B80. Wave b80 on `claude/b80-board`, PR #334.** Three agents: AS8 (the two RUM deployed-environment skips out of the unit runner; AS1's
   coverage commit rejected, the finding on its own row), AS4 and AS7 (the ESLint config cleanup; the strict-mode TODO and warning
   comments), AS6 and AS5 (prettier and Spotless checks in `test.yml`, with the 218 files they reformat; the
-  lint job as a baseline ratchet at zero errors). Five commits on the branch, its batch proof
-  running before the push. **Source**: the
+  lint job as a baseline ratchet at zero errors). Five commits, head 9b633159, its ci deploy starting. **Source**: the
   rows named. **Owner**: Claude Code. **Model**: Sonnet and Haiku. **Size**: ~10 files plus the
   directives.
 
