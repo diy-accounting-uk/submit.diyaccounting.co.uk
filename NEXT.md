@@ -65,7 +65,10 @@ step.
   `backlog`, `design`, `aws-multi-account` and the dated reports (213 files) now live in the
   private workspace tree `../developers/submit`, indexed as the corpus source `developers`; the
   vendor API specs move to `reference/`; `_developers/` keeps `hmrc/` and the live runbooks.
-  Its ci deploy is in flight. After the merge: repoint `NEXT.md` and `BACKLOG.md` on `main`, and
+  Its ci deploy 35753852365 went red in `diyaGlSubscriptionBehaviour`: the durable test user
+  has reached the tier's book limit because runs that failed mid-way today left their books
+  behind; the fix (delete the user's leftover books before the PUT) lands as a second commit and
+  redeploys. After the merge: repoint `NEXT.md` and `BACKLOG.md` on `main`, and
   land AS15 and AS18, which touch the same files. The spreadsheets move is spreadsheets PR #133 (76 files out,
   `hmrc-references/` kept) and the www move is www PR #32 (one file out); both merge through
   their own checks. **Source**: operator 2026-09-22. **Owner**: Claude
