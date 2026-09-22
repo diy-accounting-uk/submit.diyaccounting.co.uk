@@ -96,7 +96,10 @@ and stop. One branch is driven green at a time. Lifted only by the operator in t
   limit counts what the list shows (`isBookVisible` in `s3DiyaGlRepository.js`), because the
   probe user's prefix held 20 sandbox books of which several had expired under the earlier
   24-hour retention. Its deploy 35773445604 on `ci-set1` failed because the sweep destroyed
-  `ci-set1` underneath it (B30at); it redeploys to `ci-set1` once that sweep's deletion ends. The same deploy failed three sign-in probes with
+  `ci-set1` underneath it (B30at); the dispatched redeploy 35775650817 to `ci-set1` passed every
+  stack and probe, the book-limit fix included, and the red push-triggered deploy is rerun
+  (`--failed`) once PR #336's deploy leaves the slot, so the head's own deploy is green for the
+  merge gate. The same deploy failed three sign-in probes with
   `redirect_mismatch`: only `ci-set1`, `ci-set2` and the apex are Cognito callback hosts, so a
   deployment under another name cannot prove a signed-in probe; `ci-b79-probe` and
   `ci-b80-probe` (PR #334's proof deploy 35767071938 failed the same way) self-destruct four
