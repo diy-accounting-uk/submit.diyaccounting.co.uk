@@ -16,10 +16,11 @@ runs), and for Claude Code steps the **Model** a sub-agent should use (Fable > O
 Haiku; the lowest tier that fits). Anything touching code goes through a `claude/*` branch and
 PR; the operator merges.
 
-**Prod runs deployment prod-a4ea2f3**; main's deploy of PR #325's merge (486af0b6) is creating
-prod-486af0b. **ci**: `ci-set1` is last-known-good; `ci-set2` carries PR #326's deploy. Open pull request:
-#326 (`claude/b73-board`: B30af.8), its ci deploy in flight; `claude/b74-board` (PU-7g, PU-7k, PU-3)
-runs its proofs before its push.
+**Prod runs deployment prod-a4ea2f3**; main's deploy of PR #325's merge (486af0b6) has created
+prod-486af0b and is on its prod probes. **ci**: `ci-set2` is last-known-good (PR #326's set, promoted by
+`promote-ci-apex.yml`); `ci-set1` carries PR #327's deploy. Open pull requests: #326 (`claude/b73-board`:
+B30af.8), mergeable once main's deploy ends; #327 (`claude/b74-board`: PU-7g, PU-7k, PU-3, B58a), its ci
+deploy in flight.
 **ci**: `ci-set1` is last-known-good. Open pull request: #326 (`claude/b73-board`: B30af.8), its ci deploy
 in flight.
 
@@ -45,11 +46,11 @@ step.
 
 - [ ] **B58a. `security-review.yml` hands the weekly review to `agentic-lib`.** The operator's
   decision of 2026-09-22: the `agentic-lib` label is the only path for the review; the Copilot
-  coding agent is not enabled and the assign job goes. In flight: an agent replaces `assign-copilot`
-  (and the `copilot_agent_login` input, the App token mint and the `copilot-agent` label) with the
-  `agentic-lib` label on the issue `create-issue` opens, which starts `agentic-lib-code.yml` for it;
-  the `issue_number` dispatch input labels an existing issue instead. #318 carries the label since
-  2026-09-22 07:21 UTC and run 35699227062 is working it. **Source**: issue #318; BACKLOG 58.
+  coding agent is not enabled and the assign job goes. In flight on `claude/b74-board`, PR #327: `assign-copilot`
+  (and the `copilot_agent_login` input, the App token mint and the `copilot-agent` label) replaced by
+  the `agentic-lib` label on the issue `create-issue` opens, which starts `agentic-lib-code.yml` for
+  it; the `issue_number` dispatch input labels an existing issue instead. #318 carries the label since
+  2026-09-22 07:21 UTC; run 35699227062 worked it and its outcome is read at the next board. **Source**: issue #318; BACKLOG 58.
   **Owner**: Claude Code. **Model**: Sonnet. **Size**: ~1 file.
 
 - [ ] **B30af.8. A scheduled probe never holds a suite's lock while it waits for main's deploy.**
@@ -71,7 +72,7 @@ step.
   **Owner**: Claude Code. **Model**: Sonnet. **Size**: ~3 files.
 
 - [ ] **PU-7. Practice licence build.** PU-7a to PU-7f and PU-7l are on `main`. In flight on
-  `claude/b74-board` with PU-3's price ids: PU-7g (the submission routes take a client id and
+  `claude/b74-board`, PR #327, with PU-3's price ids: PU-7g (the submission routes take a client id and
   `enforceBundles` gains the practice check) and PU-7k (the practice page, its nav link held for
   the launch step). Left in `PLAN_PRICE_UPDATE.md`
   §(d) (lines 227 to 236): PU-7e waits on the operator's grant numbers, PU-7h on PU-7g, PU-7i on
