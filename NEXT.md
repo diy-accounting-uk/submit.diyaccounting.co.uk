@@ -17,7 +17,8 @@ Haiku; the lowest tier that fits). Anything touching code goes through a `claude
 PR; the operator merges.
 
 **Prod runs deployment prod-b9abb8d**; main's deploy of PR #331's merge (cdbc557a) is in flight.
-**ci**: `ci-set1` is last-known-good. Open pull request: #332 (`claude/b78-board`: PU-7j), its test runs in flight.
+**ci**: `ci-set1` is last-known-good. Open pull requests: #332 (`claude/b78-board`: PU-7j), mergeable, waiting on main's deploy;
+#333 (`claude/b79-developers`), its ci deploy in flight.
 
 The board runs in five sections, in this order: **in flight** (a branch, a pull request or a run
 in motion, each named in the row), **machine-only**, **machine-ask**, **human-driven**,
@@ -39,6 +40,23 @@ step.
 
 ## In flight
 
+- [ ] **B80. Wave b80 on `claude/b80-board`.** Three agents: AS1 and AS8 (the Vitest coverage
+  gate under its real key with measured numbers; the two RUM deployed-environment skips out of the
+  unit runner), AS4 and AS7 (the ESLint config cleanup; the strict-mode TODO and warning
+  comments), AS6 and AS5 (prettier and Spotless checks in `test.yml`; the lint job as a
+  baseline ratchet with unused disable directives removed). No pull request yet. **Source**: the
+  rows named. **Owner**: Claude Code. **Model**: Sonnet and Haiku. **Size**: ~10 files plus the
+  directives.
+
+- [ ] **B79. The developer archive leaves the repository, PR #333.** `_developers/archive`,
+  `backlog`, `design`, `aws-multi-account` and the dated reports (213 files) now live in the
+  private workspace tree `../developers/submit`, indexed as the corpus source `developers`; the
+  vendor API specs move to `reference/`; `_developers/` keeps `hmrc/` and the live runbooks.
+  Its ci deploy is in flight. After the merge: repoint `NEXT.md` and `BACKLOG.md` on `main`, and
+  land AS15 and AS18, which touch the same files. The spreadsheets and www moves are one agent's
+  two pull requests, reported here when open. **Source**: operator 2026-09-22. **Owner**: Claude
+  Code. **Model**: Sonnet. **Size**: 262 files.
+
 - [ ] **PU-7. Practice licence build.** PU-7a to PU-7i, PU-7k and PU-7l are on `main`. In flight on
   `claude/b78-board`, PR #332, head b2a08e60, its test runs in flight (an mcp-only head, so no ci
   deploy): PU-7j, `run_for_clients` in `mcp/lib/batch-tools.js` and the CLI's `--all-clients` in
@@ -54,28 +72,6 @@ step.
 
 ## Machine-only
 
-- [ ] **AS1. The Vitest coverage gate is real.** `vitest.config.js` declares the thresholds under
-  `coverage.threshold` with a `perFile` object; Vitest reads `coverage.thresholds` and a boolean
-  `perFile`, so `npm run test:coverage` has never failed on them. Rename the key, set `perFile:
-  true`, run `npm run test:coverage` once and set the four numbers to what it reports, rounded
-  down; no new tests or exclusions in the same change. Proof: a threshold one point above the
-  measured figure fails the run, the committed figures pass. **Source**: the AI-readiness assessment of 2026-09-18 (`.assess/assess-report.md` on the `bjcoombs` fork at 45bcc054), action 1.
-  **Owner**: Claude Code. **Model**: Haiku. **Size**: ~1 file.
-
-- [ ] **AS6. Formatting checks run in CI.** No workflow runs `npx prettier --check .` or
-  `./mvnw spotless:check` over existing files (`pom.xml` binds Spotless to `install`, which CI
-  never reaches; `publish.yml` line 269 skips it). Add both as steps of `test.yml`'s lint job;
-  if `prettier --check .` fails on today's tree, list the drifting files in the row and fix them
-  in the same change only where the drift is whitespace. **Source**: the AI-readiness assessment of 2026-09-18 (`.assess/assess-report.md` on the `bjcoombs` fork at 45bcc054). **Owner**:
-  Claude Code. **Model**: Haiku. **Size**: ~1 file.
-
-- [ ] **AS8. Two deployed-environment checks leave the unit runner.** `app/system-tests/
-  rum-placeholders.system.test.js` lines 80 and 86 are `it.skip` cases that need a deployed
-  environment; move the assertion into the RUM behaviour probe that runs against ci and prod, or
-  delete them. The four other skips the assessment counted are conditional on a lane or a
-  credential and stay. **Source**: the AI-readiness assessment of 2026-09-18 (`.assess/assess-report.md` on the `bjcoombs` fork at 45bcc054). **Owner**: Claude Code. **Model**: Haiku.
-  **Size**: ~1 file.
-
 - [ ] **AS15. A dead-code pass with knip.** The assessment's dead-code scan used `ts-prune` on
   a JavaScript tree and reported zero, which is "not analysed". Run `npx knip` once at the root
   (a `knip.json` naming `app/bin/server.js`, the Lambda handlers under `app/functions/**` and the
@@ -84,22 +80,6 @@ step.
   finding quoted. No CI gate. **Source**: the AI-readiness assessment of 2026-09-18 (`.assess/assess-report.md` on the `bjcoombs` fork at 45bcc054). **Owner**: Claude Code. **Model**: Haiku.
   **Size**: ~1 file plus the deletions.
 
-- [ ] **AS7. The strict-mode TODO and warning comments.** `app/bin/server.js` line 374 carries
-  "TODO: Get rid of this and make it always strict once otherwise stable"; resolve it (make the
-  path strict if the tests pass) or turn it into a row here and delete the marker. Then set
-  `no-warning-comments` (`eslint.config.js` line 47) to `warn` so the next marker is visible.
-  **Source**: the AI-readiness assessment of 2026-09-18 (`.assess/assess-report.md` on the `bjcoombs` fork at 45bcc054), action 2. **Owner**: Claude Code. **Model**: Haiku. **Size**: ~2
-  files.
-
-- [ ] **AS4. ESLint config cleanup.** `eslint.config.js`: the override block for
-  `web/spreadsheets.diyaccounting.co.uk/**` (line 97) names a directory that does not exist; the
-  ignores at line 72 spell `web/pubic/tests` and `web/pubic/docs`; `.eslintrc.security.json` is a
-  legacy file beside the flat `eslint.security.config.js`. Remove the block, fix the spelling
-  (then check whether `web/public/tests` and `web/public/docs` were meant to be linted; they are
-  generated output, so they stay ignored), delete the legacy file. Proof: `npm run linting` is
-  clean with the same findings as before. **Source**: the AI-readiness assessment of 2026-09-18 (`.assess/assess-report.md` on the `bjcoombs` fork at 45bcc054), action 3. **Owner**: Claude
-  Code. **Model**: Haiku. **Size**: ~3 files.
-
 - [ ] **AS18. One assistant guide, aligned with CLAUDE.md.** Junie is no longer used: delete
   `.junie/guidelines.md` and `_developers/Junie.md`, and the "Other AI assistants" lines in
   `CLAUDE.md` that name them. Then read `.github/copilot-instructions.md` against `CLAUDE.md`
@@ -107,17 +87,6 @@ step.
   assessment found the Multi-Site section of CLAUDE.md false and expects more). Proof: every
   backticked path in both files exists in a fresh clone. **Source**: the AI-readiness assessment of 2026-09-18 (`.assess/assess-report.md` on the `bjcoombs` fork at 45bcc054), opportunity
   list; operator 2026-09-22. **Owner**: Claude Code. **Model**: Haiku. **Size**: ~4 files.
-
-- [ ] **AS5. The lint job becomes a ratchet.** `test.yml`'s `eslint` job (lines 145 to 198)
-  counts repo-wide findings in a step that never fails and gates only files a change adds
-  (`git diff --diff-filter=A` at line 191). Commit `.eslint-baseline.json` with today's count,
-  fail the job when the count rises above it, and lower the baseline in the same PR when a change
-  removes findings. In the same change set `reportUnusedDisableDirectives: true`
-  (`eslint.security.config.js` line 24) and remove the disable directives it reports unused (the
-  assessment counted 126 of 225 as stale). No mass auto-fix of existing findings. Proof: a PR
-  adding one finding to an existing file fails the `eslint` context; one removing a finding
-  passes. **Source**: the AI-readiness assessment of 2026-09-18 (`.assess/assess-report.md` on the `bjcoombs` fork at 45bcc054), action 2. **Owner**: Claude Code. **Model**: Sonnet. **Size**:
-  ~3 files plus the directives.
 
 ## Machine-ask
 
