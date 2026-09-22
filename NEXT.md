@@ -17,8 +17,9 @@ Haiku; the lowest tier that fits). Anything touching code goes through a `claude
 PR; the operator merges.
 
 **Prod runs deployment prod-cdbc557**.
-**ci**: `ci-set1` is last-known-good (PR #333's content); `ci-set2` is being redeployed by PR #335's
-deploy rerun 35775629294 (13 probes running at 23:25 UTC). Open pull requests: #333
+**ci**: `ci-set2` is last-known-good (PR #335's rerun 35775629294 rebuilt it at 23:05 UTC);
+`ci-set1` self-destructs at 23:57 UTC and its slot claim (PR #336's failed run) goes stale at
+00:57. Open pull requests: #333
 (`claude/b79-developers`, head 3e7255af, green), #334 (`claude/b80-board`, head f4770e0c),
 #335 (`claude/b81-board`, head 858c8cd3), #336 (`claude/b82-board`, head c450180d).
 
@@ -72,8 +73,10 @@ and stop. One branch is driven green at a time. Lifted only by the operator in t
   MCP package); head 858c8cd3 adds that install and carries B30as (1a9ec71e: a `release-ci-slot`
   job at the end of `deploy.yml` deletes this run's claim unless the set is the ci LKG, with the
   stale rule as backstop). Its `test` run is green; its deploy 35775629294 first failed for want of a ci slot, and its
-  rerun claimed `ci-set2` at 23:05 UTC once PR #334's claim went stale: every stack is up and the
-  13 probes are running at 23:25 UTC. Green here is the branch's proof; the PR waits for wake. The suite's ci and prod variants need a sandbox agent authorisation the simulator
+  rerun claimed `ci-set2` at 23:05 UTC once PR #334's claim went stale: every stack and 12 of the 13
+  probes passed, and `diyaGlSubscriptionBehaviour` failed with `book-limit-reached` (job
+  106980081292), the defect PR #333's third commit fixes and this branch does not carry. The
+  branch takes `main` after #333 merges and redeploys for its own green; `ci-set2` is the ci LKG. The suite's ci and prod variants need a sandbox agent authorisation the simulator
   shortcut has no equivalent for, so they run only when one exists. **Source**: the rows named.
   **Owner**: Claude Code. **Model**: Sonnet and Haiku. **Size**: ~16 files.
 - [ ] **PU-7. Practice licence build.** PU-7a to PU-7l are on `main`. In flight on
@@ -88,8 +91,8 @@ and stop. One branch is driven green at a time. Lifted only by the operator in t
   lint job as a baseline ratchet at zero errors). Its `test` run is green on head f4770e0c (the prettier fix), but no deploy has run on that
   head: the last deploy 35761188691 (9b633159) failed, and the two commits since touch no deploy
   path. The head needs a slot deploy (`gh workflow run deploy.yml --ref claude/b80-board -f
-  deployment-name=ci-set1` when `ci-set1` is free, or a rerun after taking `main`) before the PR
-  is proven; it queues behind PR #335's rerun under cool-down. **Source**: the
+  deployment-name=ci-set1` once `ci-set1`'s 23:57 UTC self-destruct has finished, or a rerun
+  after taking `main`) before the PR is proven; it is the branch driven next under cool-down. **Source**: the
   rows named. **Owner**: Claude Code. **Model**: Sonnet and Haiku. **Size**: ~10 files plus the
   directives.
 
