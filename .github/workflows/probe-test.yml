@@ -654,7 +654,7 @@ jobs:
           fi
 
       - name: Export DynamoDB data for test users
-        if: ${{ !cancelled() && needs.params.outputs.generate-test-reports == 'true' }}
+        if: ${{ !cancelled() && needs.params.outputs.generate-test-reports == 'true' && steps.wait-before-navigate.outputs.deploy-in-progress != 'true' && steps.wait-before-retry.outputs.deploy-in-progress != 'true' }}
         run: |
           chmod +x scripts/export-test-dynamodb.sh
           scripts/export-test-dynamodb.sh ${{ needs.names.outputs.environment-name == 'prod' && 'prod-env' || format('{0}-env', needs.names.outputs.environment-name) }}
@@ -664,7 +664,7 @@ jobs:
           RESULTS_DIR: target/behaviour-test-results
 
       - name: Generate test report JSON files
-        if: ${{ !cancelled() && needs.params.outputs.generate-test-reports != 'false' }}
+        if: ${{ !cancelled() && needs.params.outputs.generate-test-reports != 'false' && steps.wait-before-navigate.outputs.deploy-in-progress != 'true' && steps.wait-before-retry.outputs.deploy-in-progress != 'true' }}
         run: |
           echo "Generating test report JSON files from behaviour test results..."
           node scripts/generate-test-reports.js \
@@ -674,7 +674,7 @@ jobs:
         shell: bash
 
       - name: List artefacts
-        if: ${{ !cancelled() && needs.params.outputs.generate-test-reports == 'true' }}
+        if: ${{ !cancelled() && needs.params.outputs.generate-test-reports == 'true' && steps.wait-before-navigate.outputs.deploy-in-progress != 'true' && steps.wait-before-retry.outputs.deploy-in-progress != 'true' }}
         run: |
           echo "Behaviour test results files:"
           find target/behaviour-test-results/ -type f -exec ls -l {} \;
