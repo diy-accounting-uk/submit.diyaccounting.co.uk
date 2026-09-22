@@ -149,6 +149,15 @@ export async function getDiyaGlBookLatest({ apiBase, idToken, bookId }) {
   return { status: response.status, body };
 }
 
+/** GET {apiBase}/diya-gl (or /books) with a DIYA-GL token. Returns the user's books. */
+export async function listDiyaGlBooks({ apiBase, idToken }) {
+  const response = await fetch(`${apiBase}/diya-gl`, {
+    headers: { Authorization: `Bearer ${idToken}` },
+  });
+  const body = await response.json().catch(() => ({}));
+  return { status: response.status, body };
+}
+
 export async function deleteDiyaGlBook({ apiBase, idToken, bookId }) {
   const response = await fetch(`${apiBase}/books/${bookId}`, {
     method: "DELETE",
