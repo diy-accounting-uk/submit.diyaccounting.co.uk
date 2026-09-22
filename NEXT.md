@@ -72,16 +72,6 @@ step.
   as a reply on the `xml@companieshouse.gov.uk` thread, and paste the answer into B34.6c's row when
   it comes. **Source**: BACKLOG 34d. **Owner**: Operator. **Model**: none. **Size**: 0 files.
 
-- [ ] **O58. The token-storage finding.** The review's one critical finding, held privately at
-  `../SECURITY_REVIEW_318_2026-09-22.md` (workspace root; the repository is public): Cognito
-  tokens in `localStorage` (`web/public/lib/services/auth-service.js` lines 92 to 94, 124 to 126
-  and 161 to 163) are readable by any script that runs on the page, so an XSS gives a session
-  away; the remediation proposed is httpOnly cookies set by the callback route, which changes the
-  callback, the fetch wrapper and the API's CORS and CSRF handling. Decide whether to take it
-  (then a design row for Claude Code) or to record it as accepted with the CSP as the control;
-  then close #318, whose public thread should carry the outcome, not the finding. **Source**:
-  issue #318; run 35702110179. **Owner**: Operator. **Model**: none. **Size**: 0 files.
-
 - [ ] **OF1. The PayPal app credentials.** In the PayPal developer dashboard
   (<https://developer.paypal.com/dashboard/applications/live>), create a live REST API app for
   the company account and put its client id and secret on the `prod` GitHub environment as
