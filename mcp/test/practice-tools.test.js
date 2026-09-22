@@ -243,7 +243,7 @@ describe("practice-tools client tools", () => {
   describe("client_authorisation_status", () => {
     const PARAMS = { clientId: CLIENT_ID, service: "MTD-VAT", hmrcAccessToken: "hmrc-access-token" };
 
-    it("gets the status with the HMRC access token on Authorization, and returns the client, status and invitationId", async () => {
+    it("gets the status with the session bearer on X-Authorization and the HMRC token on Authorization, and returns the client, status and invitationId", async () => {
       const mockFetch = vi.fn().mockResolvedValueOnce(jsonResponse(200, CLIENT_AUTHORISATION_STATUS_RESPONSE));
       vi.stubGlobal("fetch", mockFetch);
 
@@ -253,6 +253,7 @@ describe("practice-tools client tools", () => {
       expect(result.status).toBe("authorised");
       const [url, init] = mockFetch.mock.calls[0];
       expect(url).toBe(`https://submit.diyaccounting.co.uk/api/v1/practice/clients/${CLIENT_ID}/authorisation?service=MTD-VAT`);
+      expect(init.headers["X-Authorization"]).toBe("Bearer practice-access-token");
       expect(init.headers.Authorization).toBe("Bearer hmrc-access-token");
     });
 

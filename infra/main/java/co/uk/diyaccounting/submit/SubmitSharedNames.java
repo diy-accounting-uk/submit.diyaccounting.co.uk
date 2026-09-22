@@ -1692,8 +1692,12 @@ public class SubmitSharedNames {
         // checks for a relationship already in place when none is pending.
         this.practiceClientAuthorisationGetLambdaHttpMethod = HttpMethod.GET;
         this.practiceClientAuthorisationGetLambdaUrlPath = "/api/v1/practice/clients/{clientId}/authorisation";
-        this.practiceClientAuthorisationGetLambdaJwtAuthorizer = true;
-        this.practiceClientAuthorisationGetLambdaCustomAuthorizer = false;
+        // The handler reads the HMRC access token from the plain Authorization header
+        // (extractHmrcAccessTokenFromLambdaEvent), so this route needs the custom authoriser (like
+        // hmrcVatObligationGet) to free that header: the Cognito session travels on X-Authorization
+        // instead.
+        this.practiceClientAuthorisationGetLambdaJwtAuthorizer = false;
+        this.practiceClientAuthorisationGetLambdaCustomAuthorizer = true;
         var practiceClientAuthorisationGetLambdaHandlerName = "practiceClientAuthorisationGet.ingestHandler";
         var practiceClientAuthorisationGetLambdaHandlerDashed =
                 ResourceNameUtils.convertCamelCaseToDashSeparated(practiceClientAuthorisationGetLambdaHandlerName);
@@ -1719,8 +1723,11 @@ public class SubmitSharedNames {
         this.practiceClientAuthorisationInviteDeleteLambdaHttpMethod = HttpMethod.DELETE;
         this.practiceClientAuthorisationInviteDeleteLambdaUrlPath =
                 "/api/v1/practice/clients/{clientId}/authorisation/invitations";
-        this.practiceClientAuthorisationInviteDeleteLambdaJwtAuthorizer = true;
-        this.practiceClientAuthorisationInviteDeleteLambdaCustomAuthorizer = false;
+        // Same reasoning as practiceClientAuthorisationGet above: the handler reads the HMRC
+        // access token off the plain Authorization header, so this route needs the custom
+        // authoriser to free that header for it.
+        this.practiceClientAuthorisationInviteDeleteLambdaJwtAuthorizer = false;
+        this.practiceClientAuthorisationInviteDeleteLambdaCustomAuthorizer = true;
         var practiceClientAuthorisationInviteDeleteLambdaHandlerName =
                 "practiceClientAuthorisationInviteDelete.ingestHandler";
         var practiceClientAuthorisationInviteDeleteLambdaHandlerDashed =

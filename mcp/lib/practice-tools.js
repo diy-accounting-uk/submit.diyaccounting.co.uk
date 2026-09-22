@@ -108,12 +108,11 @@ export async function inviteClient(_session, params = {}) {
 
 /**
  * client_authorisation_status: one client's current authorisation status for one HMRC service,
- * over GET /api/v1/practice/clients/{clientId}/authorisation?service=. The route reads the HMRC
- * access token from the plain Authorization header (extractHmrcAccessTokenFromLambdaEvent), the
- * same header callSubmitApi puts the practice's own session bearer on for this route (it sits
- * behind the standard Cognito JWT authoriser, not the custom one that frees Authorization for an
- * HMRC token on list_vat_obligations and submit_vat_return); this call overrides that header with
- * the HMRC access token instead, matching what the route itself reads.
+ * over GET /api/v1/practice/clients/{clientId}/authorisation?service=. This route sits behind the
+ * custom authoriser (like list_vat_obligations and submit_vat_return), since its handler reads the
+ * HMRC access token from the plain Authorization header (extractHmrcAccessTokenFromLambdaEvent):
+ * the practice's own session bearer goes on X-Authorization instead, freeing Authorization for the
+ * HMRC token.
  * @param {Object} _session
  * @param {{clientId: string, service: string, hmrcAccessToken: string}} params
  * @returns {Promise<{client: Object, status: string, invitationId: string|null}>}
@@ -124,6 +123,7 @@ export async function clientAuthorisationStatus(_session, params = {}) {
   const hmrcAccessToken = requireField("client_authorisation_status", params, "hmrcAccessToken");
   const query = new URLSearchParams({ service });
   return callSubmitApi(`/api/v1/practice/clients/${encodeURIComponent(clientId)}/authorisation?${query.toString()}`, {
+    customAuthorizer: true,
     headers: { Authorization: `Bearer ${hmrcAccessToken}` },
   });
 }
