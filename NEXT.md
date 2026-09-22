@@ -178,6 +178,29 @@ step.
   toml door, and a yes or no; no install. **Source**: operator 2026-09-22; `PLAN_ONE_STOP_DASHBOARD.md` D17; BACKLOG 52. **Owner**: Claude Code.
   **Model**: Haiku. **Size**: ~1 file.
 
+- [ ] **B83. The capabilities audit.** One report, `REPORT_CAPABILITIES.md` at the root, that
+  gives an agent the repository's capabilities in one place, the non-obvious ones included (the
+  Google Ads and GA4 management under `infra/google/`, the ci slot pool, the practice licence, the
+  MCP, the finance pipeline). Method, written into the report's own "Method" section: (1) walk
+  every tracked source, workflow, script, config, page and skill file (`git ls-files` over
+  `.js|.mjs|.java|.yml|.toml|.sh|.html|.sql|.md`, excluding `reference/`, `web/public/tests/`,
+  `web/public/docs/`, `web/public-simulator/` and `_developers/hmrc/`; about 1,400 files) in
+  directory-sized batches, each batch one Haiku agent writing one JSON line per file
+  `{"file","capabilities":[{"name","outline"}]}` under `target/capabilities/<batch>.jsonl`, where
+  an outline is the implementation in one or two sentences with the function or job that
+  delivers it; (2) one Sonnet pass over the union that normalises names (one verb-noun phrase
+  each), merges duplicates across files, groups them into capabilities and groups the groups
+  into areas (customer-facing, HMRC and Companies House filing, billing, operations and CI,
+  analytics and finance, MCP and tools, developer workflow), keeping every file's outline as
+  the trace beneath its capability; (3) the report: a table of contents with one grep-able
+  anchor per area and capability (`## Area`, `### Capability` headings, a one-line `Files:`
+  list under each), the Method section, and the date and commit it was built from. Then
+  `CLAUDE.md` links the report in its Quick Reference and explains the format in three lines
+  (areas, capabilities, file outlines; grep the heading to find the implementation). Rebuilt
+  by the same method when the operator asks. **Source**: operator 2026-09-22. **Owner**:
+  Claude Code. **Model**: Haiku for the walk, Sonnet for the report. **Size**: ~2 files plus
+  the batch outputs.
+
 - [ ] **AS15. A dead-code pass with knip.** The assessment's dead-code scan used `ts-prune` on
   a JavaScript tree and reported zero, which is "not analysed". Run `npx knip` once at the root
   (a `knip.json` naming `app/bin/server.js`, the Lambda handlers under `app/functions/**` and the
