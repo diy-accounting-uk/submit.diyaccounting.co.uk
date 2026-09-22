@@ -29,19 +29,26 @@ vi.mock("@app/data/dynamoDbBundleRepository.js", () => ({
   getUserBundles: vi.fn().mockResolvedValue([]),
 }));
 
+vi.mock("@app/data/dynamoDbPracticeClientRepository.js", () => ({
+  getClient: vi.fn(),
+}));
+
 const { getUserBundles } = await import("@app/data/dynamoDbBundleRepository.js");
+const { getClient } = await import("@app/data/dynamoDbPracticeClientRepository.js");
 const { ingestHandler } = await import("../../functions/diyaGl/diyaGlListGet.js");
 const { _setTestSalt, _clearSalt } = await import("../../services/subHasher.js");
+const { hashSub } = await import("../../services/subHasher.js");
 
 function jsonBody(object) {
   return { transformToString: async () => JSON.stringify(object) };
 }
 
-function buildAuthenticatedEvent({ sub = "test-sub", headers = {} } = {}) {
+function buildAuthenticatedEvent({ sub = "test-sub", headers = {}, clientId } = {}) {
   return buildLambdaEvent({
     method: "GET",
     path: "/api/v1/books",
     headers,
+    queryStringParameters: clientId ? { clientId } : null,
     authorizer: buildJwtAuthorizerContext(sub),
   });
 }
@@ -49,6 +56,7 @@ function buildAuthenticatedEvent({ sub = "test-sub", headers = {} } = {}) {
 describe("diyaGlListGet", () => {
   beforeEach(() => {
     mockS3Send.mockReset();
+    getClient.mockReset();
     process.env.DIYA_GL_BUCKET_NAME = "test-books-bucket";
     process.env.DIYA_GL_ALLOWED_ORIGINS = "https://spreadsheets.diyaccounting.co.uk";
     delete process.env.DIYA_GL_RESIDENT_TIER;
@@ -151,6 +159,35 @@ describe("diyaGlListGet", () => {
 
     expect(result.statusCode).toBe(204);
     expect(result.headers["Access-Control-Allow-Origin"]).toBeUndefined();
+  });
+
+  test("lists the client's own books when a clientId belonging to the caller is given", async () => {
+    getClient.mockResolvedValue({ clientId: "client-1" });
+    const hashedSub = hashSub("test-sub");
+    const clientPrefix = `${hashedSub}/clients/client-1`;
+    const book = { bookId: "book-a", updatedAt: "2026-01-01T00:00:00.000Z", retention: "sandbox", expiresAt: null };
+    mockS3Send.mockImplementation((command) => {
+      if (command.constructor.name === "ListObjectsV2Command") {
+        expect(command.input.Prefix).toBe(`users/${clientPrefix}/books/`);
+        return { CommonPrefixes: [{ Prefix: `users/${clientPrefix}/books/book-a/` }] };
+      }
+      return { ETag: '"abc123"', Body: jsonBody(book) };
+    });
+
+    const result = await ingestHandler(buildAuthenticatedEvent({ clientId: "client-1" }));
+
+    expect(result.statusCode).toBe(200);
+    expect(getClient).toHaveBeenCalledWith("test-sub", "client-1");
+  });
+
+  test("403s a clientId that does not belong to the caller's practice", async () => {
+    getClient.mockResolvedValue(null);
+
+    const result = await ingestHandler(buildAuthenticatedEvent({ clientId: "not-mine" }));
+
+    expect(result.statusCode).toBe(403);
+    expect(JSON.parse(result.body).code).toBe("client-not-found");
+    expect(mockS3Send).not.toHaveBeenCalled();
   });
 });
 

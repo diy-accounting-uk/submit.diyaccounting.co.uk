@@ -8,6 +8,7 @@ import {
   extractUserFromAuthorizerContext,
   http200OkResponse,
   http401UnauthorizedResponse,
+  http403ForbiddenResponse,
   http500ServerErrorResponse,
 } from "../../lib/httpResponseHelper.js";
 import { registerLambdaRoute } from "../../lib/httpServerToLambdaAdaptor.js";
@@ -15,6 +16,7 @@ import { respondWithDiyaGlCors } from "../../lib/diyaGlCors.js";
 import { initializeSalt } from "../../services/subHasher.js";
 import { entitlementFor, lapsedResidentExpiresAt } from "../../services/diyaGlEntitlement.js";
 import { resolveOwnerPrefix, listBooks } from "../../data/s3DiyaGlRepository.js";
+import { getClient } from "../../data/dynamoDbPracticeClientRepository.js";
 
 const logger = createLogger({ source: "app/functions/diyaGl/diyaGlListGet.js" });
 
@@ -46,10 +48,24 @@ export async function ingestHandler(event) {
       });
     }
 
+    const clientId = event.queryStringParameters?.clientId || undefined;
+
     try {
       await initializeSalt();
+      if (clientId) {
+        const client = await getClient(user.sub, clientId);
+        if (!client) {
+          return http403ForbiddenResponse({
+            request,
+            headers: corsHeaders,
+            message: "client-not-found",
+            error: { code: "client-not-found" },
+          });
+        }
+      }
+
       const entitlement = await entitlementFor(user.sub);
-      const ownerPrefix = await resolveOwnerPrefix(user.sub);
+      const ownerPrefix = await resolveOwnerPrefix(user.sub, undefined, clientId);
       const now = Date.now();
       const books = (await listBooks(ownerPrefix))
         .filter((book) => book.retention !== "sandbox" || !book.expiresAt || Date.parse(book.expiresAt) > now)

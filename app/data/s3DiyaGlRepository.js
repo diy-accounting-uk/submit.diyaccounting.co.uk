@@ -305,23 +305,33 @@ async function anyBookExists(ownerPrefix) {
  * `getUserBundles`: the current salt version first, then each previous version in turn. Writes
  * always use the current version directly via `hashSub` and never call this.
  *
+ * When `clientId` is given, the prefix is the practice's own hashed sub plus a client segment
+ * (`{hashedSub}/clients/{clientId}`), per PLAN_PRICE_UPDATE.md (d)'s data model: a client's book
+ * set lives under `users/{hashedSub}/clients/{clientId}/books/{bookId}/`, so passing the extended
+ * prefix through unchanged to `bookPrefix`/`metadataKey`/`listBooks` is enough. The caller is
+ * responsible for checking the client belongs to the signed-in practice before calling this.
+ *
  * @param {string} sub - the raw Cognito sub
  * @param {string} [bookId] - when given, resolves by checking that book's own metadata; when
  *   omitted, resolves by checking whether any book exists under the candidate prefix
- * @returns {Promise<string>} the hashed sub to use as the owner prefix
+ * @param {string} [clientId] - when given, resolves the practice's client book set instead of its
+ *   own
+ * @returns {Promise<string>} the owner prefix, a hashed sub with an optional client segment
  */
-export async function resolveOwnerPrefix(sub, bookId) {
-  const currentPrefix = hashSub(sub);
+export async function resolveOwnerPrefix(sub, bookId, clientId) {
+  const withClientSegment = (hashedSub) => (clientId ? `${hashedSub}/clients/${clientId}` : hashedSub);
+
+  const currentPrefix = withClientSegment(hashSub(sub));
   const exists = bookId ? await metadataExists(currentPrefix, bookId) : await anyBookExists(currentPrefix);
   if (exists) {
     return currentPrefix;
   }
 
   for (const version of getPreviousVersions()) {
-    const candidatePrefix = hashSubWithVersion(sub, version);
+    const candidatePrefix = withClientSegment(hashSubWithVersion(sub, version));
     const candidateExists = bookId ? await metadataExists(candidatePrefix, bookId) : await anyBookExists(candidatePrefix);
     if (candidateExists) {
-      logger.warn({ message: "Found books at old salt version", version, bookId });
+      logger.warn({ message: "Found books at old salt version", version, bookId, clientId });
       return candidatePrefix;
     }
   }

@@ -30,9 +30,14 @@ vi.mock("@aws-sdk/client-s3", () => {
   return { S3Client, GetObjectCommand, ListObjectsV2Command, DeleteObjectsCommand };
 });
 
+vi.mock("@app/data/dynamoDbPracticeClientRepository.js", () => ({
+  getClient: vi.fn(),
+}));
+
 const { ingestHandler } = await import("../../functions/diyaGl/diyaGlDelete.js");
 const { _setTestSalt, _clearSalt } = await import("../../services/subHasher.js");
 const { hashSub } = await import("../../services/subHasher.js");
+const { getClient } = await import("@app/data/dynamoDbPracticeClientRepository.js");
 
 const BOOK_ID = "11111111-2222-4333-8444-555555555555";
 
@@ -40,11 +45,12 @@ function jsonBody(object) {
   return { transformToString: async () => JSON.stringify(object) };
 }
 
-function buildAuthenticatedEvent({ sub = "test-sub", bookId = BOOK_ID } = {}) {
+function buildAuthenticatedEvent({ sub = "test-sub", bookId = BOOK_ID, clientId } = {}) {
   return buildLambdaEvent({
     method: "DELETE",
     path: `/api/v1/books/${bookId}`,
     pathParameters: { bookId },
+    queryStringParameters: clientId ? { clientId } : null,
     authorizer: buildJwtAuthorizerContext(sub),
   });
 }
@@ -52,6 +58,7 @@ function buildAuthenticatedEvent({ sub = "test-sub", bookId = BOOK_ID } = {}) {
 describe("diyaGlDelete", () => {
   beforeEach(() => {
     mockS3Send.mockReset();
+    getClient.mockReset();
     process.env.DIYA_GL_BUCKET_NAME = "test-books-bucket";
     _setTestSalt("test-salt");
   });
@@ -121,5 +128,45 @@ describe("diyaGlDelete", () => {
     const result = await ingestHandler(event);
 
     expect(result.statusCode).toBe(401);
+  });
+
+  test("removes objects under the client's own book prefix when a clientId belonging to the caller is given", async () => {
+    getClient.mockResolvedValue({ clientId: "client-1", hashedSub: hashSub("test-sub") });
+    const hashedSub = hashSub("test-sub");
+    const clientPrefix = `${hashedSub}/clients/client-1`;
+    const metadataKey = `users/${clientPrefix}/books/${BOOK_ID}/metadata.json`;
+    const objects = [metadataKey, `users/${clientPrefix}/books/${BOOK_ID}/v1.zip`];
+    mockS3Send.mockImplementation((command) => {
+      if (command.constructor.name === "GetObjectCommand") {
+        if (command.input.Key === metadataKey) {
+          return { ETag: '"meta-etag"', Body: jsonBody({ bookId: BOOK_ID }) };
+        }
+        const error = new Error("not found");
+        error.name = "NoSuchKey";
+        throw error;
+      }
+      if (command.constructor.name === "ListObjectsV2Command") {
+        return { Contents: objects.map((Key) => ({ Key })) };
+      }
+      if (command.constructor.name === "DeleteObjectsCommand") {
+        return { Deleted: command.input.Delete.Objects };
+      }
+      throw new Error(`Unexpected command ${command.constructor.name}`);
+    });
+
+    const result = await ingestHandler(buildAuthenticatedEvent({ clientId: "client-1" }));
+
+    expect(result.statusCode).toBe(200);
+    expect(getClient).toHaveBeenCalledWith("test-sub", "client-1");
+  });
+
+  test("403s a clientId that does not belong to the caller's practice", async () => {
+    getClient.mockResolvedValue(null);
+
+    const result = await ingestHandler(buildAuthenticatedEvent({ clientId: "not-mine" }));
+
+    expect(result.statusCode).toBe(403);
+    expect(JSON.parse(result.body).code).toBe("client-not-found");
+    expect(mockS3Send).not.toHaveBeenCalled();
   });
 });

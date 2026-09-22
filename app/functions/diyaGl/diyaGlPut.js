@@ -35,6 +35,7 @@ import {
   versionKey,
   metadataKey,
 } from "../../data/s3DiyaGlRepository.js";
+import { getClient } from "../../data/dynamoDbPracticeClientRepository.js";
 
 const logger = createLogger({ source: "app/functions/diyaGl/diyaGlPut.js" });
 
@@ -270,11 +271,25 @@ export async function ingestHandler(event) {
       throw error;
     }
 
+    const clientId = body?.clientId || undefined;
+
     try {
       await initializeSalt();
+      if (clientId) {
+        const client = await getClient(user.sub, clientId);
+        if (!client) {
+          return http403ForbiddenResponse({
+            request,
+            headers: corsHeaders,
+            message: "client-not-found",
+            error: { code: "client-not-found" },
+          });
+        }
+      }
+
       const entitlement = await entitlementFor(user.sub);
 
-      const ownerPrefix = await resolveOwnerPrefix(user.sub, bookId);
+      const ownerPrefix = await resolveOwnerPrefix(user.sub, bookId, clientId);
       let existing = await readMetadata(ownerPrefix, bookId);
 
       if (!existing) {

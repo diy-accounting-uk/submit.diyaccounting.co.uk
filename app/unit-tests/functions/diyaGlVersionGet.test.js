@@ -24,7 +24,12 @@ vi.mock("@app/data/dynamoDbBundleRepository.js", () => ({
   getUserBundles: vi.fn().mockResolvedValue([]),
 }));
 
+vi.mock("@app/data/dynamoDbPracticeClientRepository.js", () => ({
+  getClient: vi.fn(),
+}));
+
 const { getUserBundles } = await import("@app/data/dynamoDbBundleRepository.js");
+const { getClient } = await import("@app/data/dynamoDbPracticeClientRepository.js");
 const { ingestHandler } = await import("../../functions/diyaGl/diyaGlVersionGet.js");
 const { _setTestSalt, _clearSalt } = await import("../../services/subHasher.js");
 const { hashSub } = await import("../../services/subHasher.js");
@@ -39,11 +44,12 @@ function bytesBody(buffer) {
   return { transformToByteArray: async () => new Uint8Array(buffer) };
 }
 
-function buildAuthenticatedEvent({ sub = "test-sub", bookId = BOOK_ID, version = "latest", headers = {} } = {}) {
+function buildAuthenticatedEvent({ sub = "test-sub", bookId = BOOK_ID, version = "latest", headers = {}, clientId } = {}) {
   return buildLambdaEvent({
     method: "GET",
     path: `/api/v1/books/${bookId}/versions/${version}`,
     pathParameters: { bookId, version },
+    queryStringParameters: clientId ? { clientId } : null,
     headers,
     authorizer: buildJwtAuthorizerContext(sub),
   });
@@ -52,6 +58,7 @@ function buildAuthenticatedEvent({ sub = "test-sub", bookId = BOOK_ID, version =
 describe("diyaGlVersionGet", () => {
   beforeEach(() => {
     mockS3Send.mockReset();
+    getClient.mockReset();
     process.env.DIYA_GL_BUCKET_NAME = "test-books-bucket";
     process.env.DIYA_GL_ALLOWED_ORIGINS = "https://spreadsheets.diyaccounting.co.uk";
     delete process.env.DIYA_GL_RESIDENT_TIER;
@@ -216,5 +223,39 @@ describe("diyaGlVersionGet", () => {
     const result = await ingestHandler(event);
 
     expect(result.statusCode).toBe(401);
+  });
+
+  test("reads a version from the client's own book prefix when a clientId belonging to the caller is given", async () => {
+    getClient.mockResolvedValue({ clientId: "client-1" });
+    const hashedSub = hashSub("test-sub");
+    const clientPrefix = `${hashedSub}/clients/client-1`;
+    const metadata = { bookId: BOOK_ID, latestVersion: 1, latestETag: "abc" };
+    mockS3Send.mockImplementation((command) => {
+      const key = command.input.Key;
+      if (key === `users/${clientPrefix}/books/${BOOK_ID}/metadata.json`) {
+        return { ETag: '"meta-etag"', Body: jsonBody(metadata) };
+      }
+      if (key === `users/${clientPrefix}/books/${BOOK_ID}/v1.zip`) {
+        return { ETag: '"zip-etag"', Body: bytesBody(Buffer.from("zip-bytes")) };
+      }
+      const error = new Error("not found");
+      error.name = "NoSuchKey";
+      throw error;
+    });
+
+    const result = await ingestHandler(buildAuthenticatedEvent({ clientId: "client-1" }));
+
+    expect(result.statusCode).toBe(200);
+    expect(getClient).toHaveBeenCalledWith("test-sub", "client-1");
+  });
+
+  test("403s a clientId that does not belong to the caller's practice", async () => {
+    getClient.mockResolvedValue(null);
+
+    const result = await ingestHandler(buildAuthenticatedEvent({ clientId: "not-mine" }));
+
+    expect(result.statusCode).toBe(403);
+    expect(JSON.parse(result.body).code).toBe("client-not-found");
+    expect(mockS3Send).not.toHaveBeenCalled();
   });
 });
