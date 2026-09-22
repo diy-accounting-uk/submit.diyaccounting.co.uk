@@ -17,7 +17,8 @@ Haiku; the lowest tier that fits). Anything touching code goes through a `claude
 PR; the operator merges.
 
 **Prod runs deployment prod-cdbc557**.
-**ci**: `ci-set2` is last-known-good (PR #334's set). Open pull requests: #333
+**ci**: `ci-set1` is last-known-good again (PR #333's content); `ci-set2` is self-destructing,
+which frees its slot claim. Open pull requests: #333
 (`claude/b79-developers`, redeploying to `ci-set1`), #334 (`claude/b80-board`, head f4770e0c),
 #335 (`claude/b81-board`, head cd8f56d8), #336 (`claude/b82-board`).
 
@@ -71,8 +72,8 @@ and stop. One branch is driven green at a time. Lifted only by the operator in t
   MCP package); head 858c8cd3 adds that install and carries B30as (1a9ec71e: a `release-ci-slot`
   job at the end of `deploy.yml` deletes this run's claim unless the set is the ci LKG, with the
   stale rule as backstop). Its `test` run is green; its deploy 35775629294 failed for want of a ci slot (`ci-set1`
-  claimed by PR #336's run, `ci-set2` by PR #334's ended run until 22:53 UTC), and reruns when a
-  slot frees or B30as lands. The suite's ci and prod variants need a sandbox agent authorisation the simulator
+  claimed by PR #336's run, `ci-set2` by PR #334's ended run until 22:53 UTC), and its failed jobs rerun as soon as `ci-set2`'s self-destruct releases that
+  claim. The suite's ci and prod variants need a sandbox agent authorisation the simulator
   shortcut has no equivalent for, so they run only when one exists. **Source**: the rows named.
   **Owner**: Claude Code. **Model**: Sonnet and Haiku. **Size**: ~16 files.
 - [ ] **PU-7. Practice licence build.** PU-7a to PU-7l are on `main`. In flight on
