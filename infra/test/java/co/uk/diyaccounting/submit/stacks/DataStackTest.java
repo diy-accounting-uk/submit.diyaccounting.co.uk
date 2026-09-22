@@ -202,6 +202,7 @@ class DataStackTest {
             dataStack.passesTable.getTableName(),
             dataStack.bundleCapacityTable.getTableName(),
             dataStack.subscriptionsTable.getTableName(),
+            dataStack.practiceClientsTable.getTableName(),
             dataStack.securityStateTable.getTableName(),
             dataStack.alarmIssueLockTable.getTableName(),
         };
@@ -332,6 +333,29 @@ class DataStackTest {
                                         dataStack.passesTable.getTableName(),
                                         "issuedBy-index",
                                         "\"ProjectionType\":\"ALL\""))));
+        assertEquals(1, resource.size());
+    }
+
+    @Test
+    void practiceClientsTableIsKeyedByHashedSubAndClientId() {
+        DataStack dataStack = synthDataStack();
+        Template template = Template.fromStack(dataStack);
+
+        // The practice is the partition key and the client's ULID is the sort key, so no index
+        // reads clientId on its own: a client is reachable only through the practice that owns it.
+        var resource = template.findResources(
+                "Custom::AWS",
+                Map.of(
+                        "Properties",
+                        Map.of(
+                                "Create",
+                                createContaining(
+                                        "createTable",
+                                        dataStack.practiceClientsTable.getTableName(),
+                                        "\"AttributeName\":\"hashedSub\"",
+                                        "\"KeyType\":\"HASH\"",
+                                        "\"AttributeName\":\"clientId\"",
+                                        "\"KeyType\":\"RANGE\""))));
         assertEquals(1, resource.size());
     }
 
