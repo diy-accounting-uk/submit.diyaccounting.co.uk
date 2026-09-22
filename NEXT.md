@@ -85,11 +85,6 @@ step.
   SDST answers. **Source**: BACKLOG 11; `PLAN_ITSA_PHASE_2.md` T10. **Owner**: Operator. **Model**:
   none. **Size**: 0 files.
 
-- [ ] **O52m. The reinvestment fraction and the reserve floor.** Two numbers, written into B52m's
-  row: the share of trailing income the loop may spend on paid traffic and article boosts, and the
-  cash reserve it never spends below. **Source**: BACKLOG 52m; `PLAN_ONE_STOP_DASHBOARD.md` D17.
-  **Owner**: Operator. **Model**: none. **Size**: 0 files.
-
 - [ ] **F1d. NatWest statements to staging.** The operator signs in to NatWest and downloads, for
   each of March to August 2026, the current account `600947-80597386` and the savings account
   `600947-80634672` statements as CSV and PDF into `../staging/2025-2026/bank/` (March) and
@@ -135,12 +130,15 @@ step.
 - [ ] **B52m. The reinvestment loop.** Trailing income, reserve, budget, return per pound and payback
   as one block on `web/public/operator/dashboard.html`, fed by observations over `v_revenue_daily`
   and `v_cost_vs_target_monthly` in `operatorSnapshotPublish.js`; the reinvestment fraction as a
-  lever with the reserve floor; paid traffic and article boosts as `experiments.toml` rows with
+  lever with the reserve floor (operator, 2026-09-22: the fraction is 20% of trailing income, the
+  reserve floor £2,000, one experiment may take at most 10% of the budget unless the operator
+  names a larger share for it, and the trailing window is 90 days unless the operator names
+  another); paid traffic and article boosts as `experiments.toml` rows with
   on-off or geographic controls; GA4 conversion import from the Ads account, which exists as code
   (`infra/google/ads/ads.toml`: customer `8142685080`, four conversion actions imported from GA4
   events, one Performance Max campaign); the cost-per-session ceiling PU-15 wrote into D17 is the
   starting bid ceiling. Blocked on B52l's fitted models (the return-per-pound figure), the cost
-  panel carrying revenue (BACKLOG 43, from 2026-10-02) and O52m's two numbers. **Source**: BACKLOG
+  panel carrying revenue (BACKLOG 43, from 2026-10-02). **Source**: BACKLOG
   52m; `PLAN_ONE_STOP_DASHBOARD.md` D17. **Owner**: Claude Code. **Model**: Sonnet. **Size**: ~3
   files.
 
