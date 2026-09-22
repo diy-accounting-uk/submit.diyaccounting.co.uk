@@ -40,6 +40,12 @@ step.
 
 ## In flight
 
+- [ ] **B82. Wave b82 on `claude/b82-board`.** Two agents: PU-7e (the practice's token grant
+  unlimited in `tokenEnforcement.js`, `bundleManagement.js` and the catalogue) and B34i (the ICO
+  register wording for practice client data in `_developers/ICO_CHECKLIST.md`, a docs commit to
+  `main` when it lands, then OICO). No pull request yet. **Source**: the rows named. **Owner**:
+  Claude Code. **Model**: Sonnet and Haiku. **Size**: ~5 files.
+
 - [ ] **B81. Wave b81 on `claude/b81-board`, PR #335.** PU-7m (a0bd6686: the practice licence
   suite green on the simulator lane, the practice-clients table bootstrapped for the local lanes,
   `resident-pro` granted through checkout so `subscriptionStatus` is set) and AS1 (f3538afa: the
@@ -78,23 +84,6 @@ step.
   Code. **Model**: Sonnet. **Size**: 262 files.
 
 ## Machine-only
-
-- [ ] **B34i. The ICO register entry for client data.** Operator, 2026-09-22: a practice's
-  client row holds the display name plus every identifier a filing needs (VRN, NINO, UTR,
-  company number), for people the company holds no relationship with. Draft the register
-  wording in `_developers/ICO_CHECKLIST.md`: the new purpose (filing on behalf of an
-  accountant's clients), the data categories, the data subjects (clients of a practice), the
-  lawful basis and retention (the client row's archive path), ready to paste into the ICO
-  portal; OICO submits it. **Source**: operator 2026-09-22; `PLAN_PRICE_UPDATE.md` open
-  question 4. **Owner**: Claude Code. **Model**: Haiku. **Size**: ~1 file.
-
-- [ ] **PU-7e. The practice's token grant is unlimited.** Operator, 2026-09-22: a practice
-  licence carries an open client list and an unlimited token grant. In
-  `app/services/tokenEnforcement.js` and `app/services/bundleManagement.js`, a holder of
-  `resident-pro` is exempt from the monthly token count (no grant to refresh, no per-client
-  arithmetic); the bundle's catalogue entry says so where the other bundles state their grant;
-  unit tests for a practice submitting past today's flat grant. **Source**: `PLAN_PRICE_UPDATE.md`
-  PU-7e; operator 2026-09-22. **Owner**: Claude Code. **Model**: Sonnet. **Size**: ~4 files.
 
 - [ ] **AS15. A dead-code pass with knip.** The assessment's dead-code scan used `ts-prune` on
   a JavaScript tree and reported zero, which is "not analysed". Run `npx knip` once at the root
