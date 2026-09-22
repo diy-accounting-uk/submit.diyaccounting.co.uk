@@ -486,7 +486,7 @@ public class SubmitApplication {
                         .baseImageTag(baseImageTag)
                         .diyaGlBucketName(sharedNames.diyaGlBucketName)
                         .booksAllowedOrigins(booksAllowedOrigins)
-                        .residentTierEnabled(!"prod".equals(envName))
+                        .residentTierEnabled(true)
                         .build());
 
         // Create the ApiStack with API Gateway v2 for all Lambda endpoints

@@ -223,7 +223,7 @@ hidden = false
 allocation = "on-subscription"
 tokensGranted = 100
 tokenRefreshInterval = "P1M"
-listedInEnvironments = ["ci"]
+listedInEnvironments = ["ci", "prod"]
 
 # prices
 # ======
