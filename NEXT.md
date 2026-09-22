@@ -17,8 +17,9 @@ Haiku; the lowest tier that fits). Anything touching code goes through a `claude
 PR; the operator merges.
 
 **Prod runs deployment prod-cdbc557**.
-**ci**: `ci-set1` is last-known-good. Open pull requests: #333 (`claude/b79-developers`, proof deploy 35766211386), #334
-(`claude/b80-board`, proof deploy 35767071938), #335 (`claude/b81-board`, its ci deploy starting).
+**ci**: `ci-set2` is last-known-good (PR #334's set). Open pull requests: #333
+(`claude/b79-developers`, redeploying to `ci-set1`), #334 (`claude/b80-board`, head f4770e0c),
+#335 (`claude/b81-board`, head cd8f56d8), #336 (`claude/b82-board`).
 
 The board runs in five sections, in this order: **in flight** (a branch, a pull request or a run
 in motion, each named in the row), **machine-only**, **machine-ask**, **human-driven**,
@@ -40,7 +41,8 @@ step.
 
 ## In flight
 
-- [ ] **B82. Wave b82 on `claude/b82-board`.** Three commits, the batch proof running before the push: B34j
+- [ ] **B82. Wave b82 on `claude/b82-board`, PR #336.** Three commits, head c450180d, its runs
+  starting: B34j
   (a9e2e920, the privacy notice's row for practice client filing, with a browser test) and PU-7e
   (e4302a96 and c450180d: `tokensGranted = "unlimited"` on `resident-pro`, exempt in
   enforcement, the webhook refresh and the bundle read, shown as unlimited on the usage page,
@@ -87,7 +89,8 @@ step.
   test user sits at the limit on books it cannot see. The fix is the branch's third commit 3e7255af: the PUT's
   limit counts what the list shows (`isBookVisible` in `s3DiyaGlRepository.js`), because the
   probe user's prefix held 20 sandbox books of which several had expired under the earlier
-  24-hour retention; its deploy is in flight. The same deploy failed three sign-in probes with
+  24-hour retention. Its deploy 35773445604 on `ci-set1` failed because the sweep destroyed
+  `ci-set1` underneath it (B30at); it redeploys to `ci-set1` once that sweep's deletion ends. The same deploy failed three sign-in probes with
   `redirect_mismatch`: only `ci-set1`, `ci-set2` and the apex are Cognito callback hosts, so a
   deployment under another name cannot prove a signed-in probe; `ci-b79-probe` and
   `ci-b80-probe` (PR #334's proof deploy 35767071938 failed the same way) self-destruct four
@@ -96,6 +99,20 @@ step.
   Code. **Model**: Sonnet. **Size**: 262 files.
 
 ## Machine-only
+
+- [ ] **B30at. The sweep destroys a slot set a deploy is using.** PR #334's push deploy set
+  `/submit/ci/last-known-good-deployment` to `ci-set2` at 18:23 UTC when its stacks succeeded
+  (its probes then failed), which made `ci-set1` a non-LKG set older than
+  `SELF_DESTRUCT_SWEEP_MIN_AGE_HOURS` (8); `destroy-ci.yml` run 35766864248, started by that
+  deploy's completion, deleted `ci-set1`'s stacks at 19:25 while PR #333's deploy 35773445604
+  had claimed the slot at 19:23 and was updating them ("the stack disappeared while we were
+  deploying it", then `ERR_NAME_NOT_RESOLVED` on every probe). The sweep's `wait-for-ci-deploys`
+  step (line 12) waits only for runs older than itself. Before destroying each set, the sweep
+  reads `/submit/ci/slots/<slot>` and skips a set whose claim names a run still `in_progress` or
+  `queued` (`gh run view`), and the two-slot pool's sets are never swept while claimed. Proof: a
+  sweep dispatched with `-f sweep-for-stacks=true` while a branch deploy holds a slot logs the
+  skip and leaves the set. **Source**: runs 35766864248 and 35773445604; BACKLOG 30. **Owner**:
+  Claude Code. **Model**: Sonnet. **Size**: ~2 files.
 
 - [ ] **B30as. A finished deploy run releases its ci slot.** `.github/actions/claim-ci-slot`
   frees a slot only when its parameter is absent, when the claiming ref redeploys, or when the
