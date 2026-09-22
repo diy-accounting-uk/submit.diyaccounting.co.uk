@@ -41,6 +41,23 @@ step.
 
 ## Machine-only
 
+- [ ] **B30af.8. A scheduled probe never holds a suite's lock while it waits for main's deploy.**
+  `probe-test.yml`'s `behaviour-test` job takes the concurrency group
+  `behaviour-test-user-<env>-<suite>` (line 352) and then, on a scheduled run, waits inside that
+  job for any deploy in progress on `main` (the `wait-for-main-deploy` steps at lines 500 and 548,
+  up to 40 minutes each). A deploy of `main` whose own probe of the same suite starts meanwhile
+  queues on that lock, so the two wait on each other: on 2026-09-22 the scheduled probe's
+  `submitVatBehaviour-prod` job held the lock from 05:44 while deploy run 35688610628's
+  `submitVatBehaviour-prod` sat pending, until the scheduled run 35690948230 was cancelled at
+  06:28. Keep the `params` job's wait (line 241, before any lock); replace the two in-job waits
+  with a check that gives up at once: when a `main` deploy is in progress, skip the navigation and
+  end the suite as superseded (`continue-on-error` outcome neutral, the CloudWatch metric not
+  published), since the deploy's own probe covers that suite. `.github/actions/wait-for-main-deploy`
+  gains a `max-wait-minutes` input (default 40; 0 returns at once with an output naming the run).
+  Proof: a dispatched `probe-test.yml` on ci with a deploy of the same branch in flight ends the
+  suite as superseded inside a minute. **Source**: deploy run 35688610628; BACKLOG 30.
+  **Owner**: Claude Code. **Model**: Sonnet. **Size**: ~3 files.
+
 - [ ] **PU-7. Practice licence build.** The rows PU-7d to PU-7m in `PLAN_PRICE_UPDATE.md` §(d)
   (lines 227 to 236), each with its files, precursors and size; PU-7a to PU-7c are on `main` (the
   `practice-clients` table, the four `/api/v1/practice/clients` routes, per-client book prefixes).
