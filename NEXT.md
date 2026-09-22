@@ -46,7 +46,7 @@ step.
   simulator lane with the 202 poll), PU-7h (audit and receipts by client), PU-14 and PU-9 (the
   experiment row; the three folded bundles retired where Stripe live shows no subscription), F2f
   (the mail index reading PDF attachments, `mail-invoices.js` reading their totals). PR #329,
-  its ci deploy 35722300236 in flight; F2f's commit lands on the branch when its agent reports. **Source**: the rows named. **Owner**: Claude Code.
+  ten commits, its ci deploy 35722300236 in flight. **Source**: the rows named. **Owner**: Claude Code.
   **Model**: Sonnet. **Size**: ~30 files.
 
 - [ ] **PU-7. Practice licence build.** PU-7a to PU-7g, PU-7k and PU-7l are on `main`. In flight on
