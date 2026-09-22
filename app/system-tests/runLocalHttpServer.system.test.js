@@ -4,7 +4,10 @@
 // app/system-tests/runLocalHttpServer.system.test.js
 
 import { describe, it, expect, beforeAll, afterAll } from "vitest";
+import { dotenvConfigIfNotBlank } from "@app/lib/env.js";
 import { runLocalHttpServer } from "../../behaviour-tests/helpers/behaviour-helpers.js";
+
+dotenvConfigIfNotBlank({ path: ".env.test" });
 
 async function httpGet(url) {
   const res = await fetch(url);
