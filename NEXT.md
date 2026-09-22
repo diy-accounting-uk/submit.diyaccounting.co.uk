@@ -16,9 +16,8 @@ runs), and for Claude Code steps the **Model** a sub-agent should use (Fable > O
 Haiku; the lowest tier that fits). Anything touching code goes through a `claude/*` branch and
 PR; the operator merges.
 
-**Prod runs deployment prod-bc09c1b** (PR #323's merge). **ci**: `ci-set1` is last-known-good.
-Open pull request: #324 (`claude/b71-board`: B58a, PU-2, B30af.5, PU-7a to PU-7c), its ci deploy in
-flight.
+**Prod runs deployment prod-bc09c1b**; main's deploy of PR #324's merge (a4ea2f38) is in flight.
+**ci**: `ci-set1` is last-known-good. No open pull request.
 
 The board runs in five sections, in this order: **in flight** (a branch, a pull request or a run
 in motion, each named in the row), **machine-only**, **machine-ask**, **human-driven**,
@@ -42,63 +41,31 @@ step.
 
 ## Machine-only
 
-- [ ] **B58a. `security-review.yml`'s assign job assigns the Copilot agent.** Run 35598208062
-  (the Monday schedule, 2026-09-21) created issue #318 and its `assign-copilot` job printed
-  "Assigned issue #318 to copilot-swe-agent", yet the issue has no assignee and its timeline
-  carries only the four label events, no `assigned` event: the `replaceActorsForAssignable`
-  mutation on the agent App token returns without error and assigns nothing (the job's own
-  comment at line 208 called the App route unproven). While #318 stays open the first job's
-  `skip_if_open_security_issues` check creates nothing on later Mondays, so the review is paused
-  behind it; #318 stays open by the operator's decision until the assignment works. In the job:
-  read the mutation's returned `assignees` and fail the job when the login is absent; print
-  `suggestedActors` so the log shows whether the App sees `copilot-swe-agent` at all; if the App
-  cannot assign it, use the workflow's `GITHUB_TOKEN` (`issues: write`) for that one mutation, or
-  say which token can. Add a `workflow_dispatch` input `issue_number` that runs only the assign
-  job against an existing issue. Proof: a dispatch naming 318 leaves #318 assigned to
-  `copilot-swe-agent`, the `assigned` event on its timeline. **Source**: issue #318; BACKLOG 58.
-  **Owner**: Claude Code. **Model**: Sonnet. **Size**: ~1 file.
-
-- [ ] **PU-2. Two prices per bundle.** Catalogue `prices` table, `infra/stripe/stripe-sync.js` per
-  price, `app/functions/billing/billingCheckoutPost.js` checkout by interval, `web/public/bundles.html`
-  annual first, `app/services/productCatalog.js` (`stripePriceAmount`/`stripeInterval` per bundle,
-  line 62), tests. Per `PLAN_PRICE_UPDATE.md` §(b); the `resident` entry is in the catalogue at
-  £39 a year with the hidden folded bundles beside it. **Source**: `PLAN_PRICE_UPDATE.md` PU-2.
-  **Owner**: Claude Code. **Model**: Sonnet. **Size**: ~8 files.
-
-- [ ] **B30af.5. Branch deploys leave the ci apex: P3 to P5.** P1 (the slot pool) is on `main`: a
-  ci branch deploy claims `ci-set1` to `ci-set4` through SSM in `deploy.yml`'s `names` job. What is
-  left, per `_developers/DESIGN_CI_BRANCH_DEPLOYS_OFF_THE_APEX.md`: **P3**, `IdentityStack.java`'s
-  `buildCallbackUrls`/`buildLogoutUrls` add every slot host for non-prod (`https://ci-set<N>…/` and
-  `/auth/loginWithCognitoCallback.html`; `/` and `/auth/signed-out.html`), with an
-  `IdentityStackTest.java` case asserting the submit client's `CallbackURLs`/`LogoutURLs` the way
-  the diya-gl cases do (lines 110 to 170), deployed by `deploy-environment.yml`; the builders are
-  at `IdentityStack.java` lines 463 and 474 and read `publicDomainName`/`envDomainName` today.
-  B30af.7 adds a case to the same test class. **P4**, `SubmitSharedNames.java` sets
-  non-prod `publicDomainName = deploymentDomainName`, and `deploy.yml`'s `DIY_SUBMIT_APEX_URL` and
-  `verify-api`'s `APEX_URL` take `needs.names.outputs.public-url` (`deploy.yml` lines 1755 and
-  1957; `SubmitSharedNames.java` sets `publicDomainName` at lines 1181 to 1183). **P5**,
-  `set-origins` (line 1790) and `rollback-origins` (line 2983) gate to prod, a new
-  `.github/workflows/promote-ci-apex.yml` (concurrency group `promote-ci-apex`, no cancel) is
-  dispatched after `set-last-known-good-deployment`, the `needs: set-origins` edges (54 mentions)
-  repoint for ci, and probe-test's three `wait-for-main-deploy` steps drop for ci. P3 is
-  self-contained and can land first in the PR's first commit; P4 and P5 rewire the deploy's
-  ordering and rollback, which is why the model is Opus. **Source**: the design, P3 to P5.
-  **Owner**: Claude Code. **Model**: Opus. N = 2: on
-  2026-09-21 HMRC's sandbox application took `ci-set1` and `ci-set2` and reached its five-URI cap
-  (the prod apex, ci apex and local keep the other three; `prod-submit` went), Companies House took
-  the same two, and the §3 curl answers 303 and 302 for both hosts and 400 for `ci-set3`. So P3
-  lists two slot hosts, and `.github/actions/claim-ci-slot/action.yml`'s `slot-count` default (line
-  26) drops from 4 to 2 in the same PR. **Size**: ~9 files.
-
-- [ ] **PU-7. Practice licence build.** The thirteen rows PU-7a to PU-7m in `PLAN_PRICE_UPDATE.md`
-  §(d) (lines 224 to 236), each with its files, precursors and size; PU-7a (the client table and
-  its repository, ~4 files) and PU-7b, PU-7c (the client routes, the per-client book prefixes)
-  can start, the rest follow their precursors; PU-7d waits on PU-2 as well. The plan's four open
-  questions (the practice price, the client count per tier, the token grant, what a client row may
-  hold) gate PU-7e and the price only. **Source**: `PLAN_PRICE_UPDATE.md` PU-7. **Owner**: Claude
-  Code. **Model**: Sonnet. **Size**: ~75 files across 13 rows.
+- [ ] **PU-7. Practice licence build.** The rows PU-7d to PU-7m in `PLAN_PRICE_UPDATE.md` §(d)
+  (lines 227 to 236), each with its files, precursors and size; PU-7a to PU-7c are on `main` (the
+  `practice-clients` table, the four `/api/v1/practice/clients` routes, per-client book prefixes).
+  PU-7d (the `resident-pro` catalogue values and the entitlement by client, ~4 files), PU-7f (agent
+  authorisation, ~7 files) and PU-7l (`move_book_to_client`, ~5 files) can start; PU-7e waits on
+  the operator's grant numbers, PU-7g on PU-7f, PU-7h on PU-7g, PU-7i on PU-7g and the MCP plan's
+  M2 and M3, PU-7j on PU-7i, PU-7k on PU-7f, PU-7m on PU-7j. **Source**: `PLAN_PRICE_UPDATE.md`
+  PU-7. **Owner**: Claude Code. **Model**: Sonnet. **Size**: ~55 files across 10 rows.
 
 ## Machine-ask
+
+- [ ] **B58a. The Copilot coding agent is enabled, so `security-review.yml` can assign #318.** The
+  dispatch `gh workflow run security-review.yml -f issue_number=318` (run 35688659421, 2026-09-22)
+  failed as designed: `suggestedActors` lists only `antonycc` and `support-at-diyaccounting` under
+  both the workflow token and the App token, so no token can assign `copilot-swe-agent` until the
+  Copilot coding agent is enabled for this repository (GitHub, repository Settings, Copilot, Coding
+  agent; or the organisation's Copilot policy). The operator enables it, then Claude Code re-runs
+  the same dispatch and reads #318's timeline for the `assigned` event. #318 stays open until then.
+  **Source**: issue #318; BACKLOG 58. **Owner**: the operator enables; Claude Code dispatches and
+  reads. **Model**: Haiku. **Size**: ~0 files.
+
+- [ ] **PU-3. Stripe test then live.** The `resident` product with both prices through
+  `stripe-catalogue-sync`, test then live; the price ids into `.env.ci` and `.env.prod`. The catalogue's `prices` rows and the
+  `STRIPE_(TEST_)PRICE_ID_RESIDENT_YEAR`/`_MONTH` env rows are what the sync writes. **Source**: `PLAN_PRICE_UPDATE.md` PU-3. **Owner**: Claude Code; the live key is the
+  operator's. **Model**: Haiku. **Size**: ~2 files.
 
 - [ ] **B11.T10. ITSA phase 2: the send.** The operator names the day; Claude Code re-runs
   `scripts/itsa-sandbox-year.js` for 2023-24, 2025-26 and 2026-27 (the commands in
@@ -207,11 +174,6 @@ step.
   Cognito app client with the device-code grant and `open_book`/`save_book` over the cloud routes;
   M1c is on main (PR #232). **Source**: BACKLOG 52i; `PLAN_ONE_STOP_DASHBOARD.md` D10. **Owner**:
   Claude Code. **Model**: Sonnet. **Size**: ~4 files.
-
-- [ ] **PU-3. Stripe test then live.** The `resident` product with both prices through
-  `stripe-catalogue-sync`, test then live; the price ids into `.env.ci` and `.env.prod`. Blocked on
-  PU-2. **Source**: `PLAN_PRICE_UPDATE.md` PU-3. **Owner**: Claude Code; the live key is the
-  operator's. **Model**: Haiku. **Size**: ~2 files.
 
 - [ ] **O17. A sandbox sign-in for the filing suites, and four ci values.** The sandbox has no
   registration page and no create-user API; its sign-in is reached only through
