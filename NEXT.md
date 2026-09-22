@@ -53,19 +53,11 @@ step.
   **Source**: the rows named. **Owner**: Claude Code. **Model**: Sonnet and Haiku. **Size**: ~20
   files.
 - [ ] **PU-7. Practice licence build.** PU-7a to PU-7l are on `main`. In flight on
-  `claude/b81-board` (wave b81, one agent): PU-7m, the
-  behaviour test `behaviour-tests/practiceLicence.behaviour.test.js`: two clients added through
-  the practice routes, a derive and a submit for each against the HMRC sandbox, over the MCP's
-  `run_for_clients`; its `package.json` script and its `deploy.yml` and `probe-test.yml` jobs in
-  the shape the other suites use. Then,
-  in `PLAN_PRICE_UPDATE.md` §(d) (lines 227 to 236):  PU-7e on the operator's grant numbers; the
-  `resident-pro` catalogue values (`enable = "always"`, `hidden = false`,
-  `allocation = "on-subscription"`) and the practice page's nav link in
-  `web/public/widgets/page-chrome.js` flip in the launch step after PU-7m, with the four ci probes
-  that reach resident-pro through a pass updated in the same change. **Source**:
-  `PLAN_PRICE_UPDATE.md` PU-7. **Owner**: Claude Code. **Model**: Sonnet. **Size**: ~4 files for
-  PU-7m, ~8 for the launch step after it.
-
+  `claude/b81-board` (wave b81): PU-7m, the behaviour test `behaviour-tests/practiceLicence.behaviour.test.js`,
+  two clients added through the practice routes, a derive and a submit for each on the simulator
+  lane over the MCP's `run_for_clients`, registered in `deploy.yml`, `probe-test.yml` and
+  `test.yml`. What follows is PU-7e and PU-7n below. **Source**: `PLAN_PRICE_UPDATE.md` PU-7.
+  **Owner**: Claude Code. **Model**: Sonnet. **Size**: ~4 files.
 - [ ] **B80. Wave b80 on `claude/b80-board`, PR #334.** Three agents: AS8 (the two RUM deployed-environment skips out of the unit runner; AS1's
   coverage commit rejected, the finding on its own row), AS4 and AS7 (the ESLint config cleanup; the strict-mode TODO and warning
   comments), AS6 and AS5 (prettier and Spotless checks in `test.yml`, with the 218 files they reformat; the
@@ -141,6 +133,16 @@ step.
 
 ## Human-driven
 
+- [ ] **OPU7. The practice licence's five numbers and answers.** `PLAN_PRICE_UPDATE.md` "Open
+  questions for the operator" (lines 276 to 289): (1) the practice price, £19.99 a month or £199
+  a year proposed; (2) the client count a licence carries, an open list or a cap with a higher
+  tier above it; (3) the token grant, a base each month and an amount per client (100 a month is
+  today's flat grant for one trader); (4) what a client row may hold, display name plus every
+  identifier a filing needs or identifiers only, which sets what the ICO registration covers;
+  (5) whether `resident`'s monthly price shows on the DIYA-GL page or only on `bundles.html`.
+  Written into PU-7e and PU-7n when answered. **Source**: `PLAN_PRICE_UPDATE.md`. **Owner**:
+  Operator. **Model**: none. **Size**: 0 files.
+
 - [ ] **O34d. Send the XML Gateway email.** Send `../DRAFT_EMAIL_XMLGW_000004.md` from `antony@diyaccounting.co.uk`
   as a reply on the `xml@companieshouse.gov.uk` thread, and paste the answer into B34.6c's row when
   it comes. **Source**: BACKLOG 34d. **Owner**: Operator. **Model**: none. **Size**: 0 files.
@@ -170,6 +172,21 @@ step.
   outside any repository.
 
 ## Blocked
+
+- [ ] **PU-7e. The token grant that scales with the client count.** `app/services/tokenEnforcement.js`
+  and `app/services/bundleManagement.js`: at each monthly refresh a practice's grant is the base
+  plus the per-client amount times its client count (`listClients` on the practice table), with
+  the cap OPU7 names. Blocked on OPU7 (2) and (3). **Source**: `PLAN_PRICE_UPDATE.md` PU-7e.
+  **Owner**: Claude Code. **Model**: Sonnet. **Size**: ~4 files.
+
+- [ ] **PU-7n. The practice licence launch.** `web/public/submit.catalogue.toml`'s `resident-pro`
+  values flip to `enable = "always"`, `hidden = false`, `allocation = "on-subscription"` with
+  OPU7's price on its prices table (then `stripe-catalogue-sync` test and live for the price
+  ids); the practice page's nav link in `web/public/widgets/page-chrome.js` appears; the four ci
+  probes that reach `resident-pro` through a pass are updated in the same change; PU-8's
+  spreadsheets pages (their PR from `claude/b27-board`) show the offer. Blocked on PU-7m (b81)
+  and OPU7 (1). **Source**: `PLAN_PRICE_UPDATE.md` §(d). **Owner**: Claude Code. **Model**:
+  Sonnet. **Size**: ~8 files.
 
 - [ ] **B11.T10. ITSA phase 2: the testing evidence inside the window.** Within the 14 days before
   the day O11 names, re-run `scripts/itsa-sandbox-year.js` for 2023-24, 2025-26 and 2026-27 (the
