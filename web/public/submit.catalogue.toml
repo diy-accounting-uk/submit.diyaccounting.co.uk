@@ -121,13 +121,12 @@ allocation = "on-subscription"
 # Stripe Checkout creates the subscription; webhook grants the bundle.
 tokensGranted = 100
 tokenRefreshInterval = "P1M"
-stripePriceAmount = 99
-# stripePriceAmount, stripeCurrency, stripeInterval
-# ===================================================
-# Source of truth for the Stripe product and price that infra/stripe/stripe-sync.js
-# creates for this bundle. priceAmount is in minor units (pence).
-stripeCurrency = "gbp"
-stripeInterval = "month"
+
+[[bundles.prices]]
+interval = "month"
+amount = 99
+currency = "gbp"
+default = true
 
 # resident-itsa: ITSA (Income Tax Self Assessment) subscription — folded into resident, hidden
 # from the bundles page. Its Stripe price and existing subscribers are untouched.
@@ -144,10 +143,13 @@ hidden = true
 allocation = "on-subscription"
 tokensGranted = 100
 tokenRefreshInterval = "P1M"
-stripePriceAmount = 99
-stripeCurrency = "gbp"
-stripeInterval = "month"
 listedInEnvironments = ["local", "test", "simulator", "proxy", "proxyRunning", "ci"]
+
+[[bundles.prices]]
+interval = "month"
+amount = 99
+currency = "gbp"
+default = true
 # listedInEnvironments
 # ====================
 # Hidden in production
@@ -167,10 +169,13 @@ hidden = true
 allocation = "on-subscription"
 tokensGranted = 100
 tokenRefreshInterval = "P1M"
-stripePriceAmount = 99
-stripeCurrency = "gbp"
-stripeInterval = "month"
 listedInEnvironments = ["local", "test", "simulator", "proxy", "proxyRunning", "ci"]
+
+[[bundles.prices]]
+interval = "month"
+amount = 99
+currency = "gbp"
+default = true
 # listedInEnvironments
 # ====================
 # Hidden in production
@@ -190,10 +195,13 @@ hidden = true
 allocation = "on-subscription"
 tokensGranted = 100
 tokenRefreshInterval = "P1M"
-stripePriceAmount = 99
-stripeCurrency = "gbp"
-stripeInterval = "month"
 listedInEnvironments = ["local", "test", "simulator", "proxy", "proxyRunning", "ci"]
+
+[[bundles.prices]]
+interval = "month"
+amount = 99
+currency = "gbp"
+default = true
 # listedInEnvironments
 # ====================
 # Hidden in production
@@ -202,7 +210,7 @@ listedInEnvironments = ["local", "test", "simulator", "proxy", "proxyRunning", "
 # House micro-entity filing as each is recognised. Replaces resident-itsa, resident-ltd and
 # resident-diya-gl above, which stay hidden until Stripe live shows no subscription on their
 # prices. resident-vat stays separate at its own 99p price for its existing subscribers.
-# Payment: £39/year via Stripe Checkout; £3.99/month arrives with the second price per bundle
+# Payment: £39/year (default) or £3.99/month via Stripe Checkout, one row per interval below
 # Tokens: 100 granted, refreshing monthly
 # listedInEnvironments: ci only until the DIYA-GL resident tier is lifted to prod
 [[bundles]]
@@ -215,10 +223,23 @@ hidden = false
 allocation = "on-subscription"
 tokensGranted = 100
 tokenRefreshInterval = "P1M"
-stripePriceAmount = 3900
-stripeCurrency = "gbp"
-stripeInterval = "year"
 listedInEnvironments = ["ci"]
+
+# prices
+# ======
+# One row per interval infra/stripe/stripe-sync.js creates a Stripe price for. The row
+# carrying default = true is the one billingCheckoutPost.js and bundles.html use when the
+# caller does not name an interval.
+[[bundles.prices]]
+interval = "year"
+amount = 3900
+currency = "gbp"
+default = true
+
+[[bundles.prices]]
+interval = "month"
+amount = 399
+currency = "gbp"
 
 # resident-guest: Permanent free access for existing DIY customers and partners
 # Unlocked by: resident-guest pass (email-restricted, admin-issued)
@@ -275,9 +296,12 @@ hidden = true
 allocation = "on-pass-on-subscription"
 tokensGranted = 100
 tokenRefreshInterval = "P1M"
-stripePriceAmount = 999
-stripeCurrency = "gbp"
-stripeInterval = "month"
+
+[[bundles.prices]]
+interval = "month"
+amount = 999
+currency = "gbp"
+default = true
 #listedInEnvironments = ["local", "test", "proxy", "proxyRunning", "ci"]
 # listedInEnvironments
 # ====================

@@ -59,14 +59,38 @@ export function getCatalogBundleById(catalog, bundleId) {
   return catalog.bundles.find((b) => b.id === bundleId) || null;
 }
 
-// A bundle is Stripe-priced when the catalogue carries stripePriceAmount, stripeCurrency
-// and stripeInterval for it (resident-vat, resident-itsa: allocation "on-subscription";
-// resident-pro: allocation "on-pass-on-subscription" — both sell through Stripe Checkout).
+// A bundle's Stripe prices from its `[[bundles.prices]]` table: one row per interval, one
+// row carrying `default = true`. A row missing its amount, currency or interval is dropped
+// rather than surfaced as a price with a missing field.
+export function getBundlePrices(bundle) {
+  if (!bundle) return [];
+  if (Array.isArray(bundle.prices) && bundle.prices.length > 0) {
+    return bundle.prices
+      .filter((p) => Number.isFinite(p.amount) && typeof p.currency === "string" && typeof p.interval === "string")
+      .map((p) => ({ interval: p.interval, amount: p.amount, currency: p.currency, default: p.default === true }));
+  }
+  return [];
+}
+
+// The one price a checkout for this bundle should use for the given interval ("year" or
+// "month"). A bundle with a single price ignores the requested interval, since there is no
+// choice to make. A bundle with more than one price returns the exact match, the row
+// carrying `default = true` when no interval is given, or null when the requested interval
+// does not exist for it — callers must not fall back silently to a different price.
+export function getBundlePriceForInterval(bundle, interval) {
+  const prices = getBundlePrices(bundle);
+  if (prices.length === 0) return null;
+  if (prices.length === 1) return prices[0];
+  if (!interval) return prices.find((p) => p.default) || prices[0];
+  return prices.find((p) => p.interval === interval) || null;
+}
+
+// A bundle is Stripe-priced when its prices table carries at least one row (resident-vat, resident-itsa, resident-ltd, resident-diya-gl:
+// allocation "on-subscription"; resident-pro: allocation "on-pass-on-subscription";
+// resident: "on-subscription" with two prices — all sell through Stripe Checkout).
 export function getStripeSubscriptionBundles(catalog) {
   if (!catalog?.bundles) return [];
-  return catalog.bundles.filter(
-    (b) => Number.isFinite(b.stripePriceAmount) && typeof b.stripeCurrency === "string" && typeof b.stripeInterval === "string",
-  );
+  return catalog.bundles.filter((b) => getBundlePrices(b).length > 0);
 }
 
 export function loadPassTypesFromRoot() {

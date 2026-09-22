@@ -239,19 +239,23 @@ export function rewriteEnvLines(lines, updates) {
 }
 
 /**
- * Which env files get which STRIPE_(TEST_)PRICE_ID_<BUNDLE> line for a completed price
- * creation, matching .claude/skills/stripe-catalogue-sync/SKILL.md's step 4: ci only ever
- * runs in test mode, so a test-mode price lands in both .env.ci's test and live-named rows;
- * a live-mode price lands only in .env.prod's live-named row.
+ * Which env files get which STRIPE_(TEST_)PRICE_ID_<BUNDLE>[_<INTERVAL>] line for a
+ * completed price creation, matching .claude/skills/stripe-catalogue-sync/SKILL.md's step
+ * 4: ci only ever runs in test mode, so a test-mode price lands in both .env.ci's test and
+ * live-named rows; a live-mode price lands only in .env.prod's live-named row. A result
+ * carrying `interval` (a bundle with more than one Stripe price) gets the interval in its
+ * row name; a single-price bundle keeps the bundle-only name its existing subscribers'
+ * rows already use.
  *
  * @param {"test"|"live"} mode
- * @param {Array<{bundleId: string, priceId: string}>} results
+ * @param {Array<{bundleId: string, priceId: string, interval?: string}>} results
  * @returns {Record<string, Record<string,string>>}
  */
 export function computeEnvUpdates(mode, results) {
   const updates = { ".env.ci": {}, ".env.prod": {} };
-  for (const { bundleId, priceId } of results) {
-    const suffix = `_${bundleId.toUpperCase().replace(/-/g, "_")}`;
+  for (const { bundleId, priceId, interval } of results) {
+    const bundleSuffix = bundleId.toUpperCase().replace(/-/g, "_");
+    const suffix = interval ? `_${bundleSuffix}_${interval.toUpperCase()}` : `_${bundleSuffix}`;
     if (mode === "test") {
       updates[".env.ci"][`STRIPE_TEST_PRICE_ID${suffix}`] = priceId;
       updates[".env.ci"][`STRIPE_PRICE_ID${suffix}`] = priceId;
@@ -329,11 +333,16 @@ async function syncProducts(stripe, opts) {
 
   console.log(`\n=== products and prices (${opts.mode}) ===`);
   const results = [];
+  const productsByBundleId = new Map();
   for (const p of products) {
-    const product = await findOrCreateProduct(stripe, p.bundleId, p.name, p.description, opts.apply);
+    let product = productsByBundleId.get(p.bundleId);
+    if (!product) {
+      product = await findOrCreateProduct(stripe, p.bundleId, p.name, p.description, opts.apply);
+      productsByBundleId.set(p.bundleId, product);
+    }
     const price = await findOrCreatePrice(stripe, product.id, p.bundleId, p.priceAmount, p.currency, p.interval, opts.apply);
     if (price.id !== "(plan, not created)") {
-      results.push({ bundleId: p.bundleId, priceId: price.id });
+      results.push({ bundleId: p.bundleId, priceId: price.id, interval: p.multiPrice ? p.interval : undefined });
     }
   }
   return results;

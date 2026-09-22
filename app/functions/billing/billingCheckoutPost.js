@@ -18,9 +18,20 @@ import { getStripeClient } from "../../lib/stripeClient.js";
 import { getUserBundles } from "../../data/dynamoDbBundleRepository.js";
 import { publishActivityEvent, classifyActor, maskEmail } from "../../lib/activityAlert.js";
 import { resolveAllowedReturnTo } from "./billingReturnUrl.js";
-import { loadCatalogFromRoot, getCatalogBundleById, isBundleListedInEnvironment } from "../../services/productCatalog.js";
+import {
+  loadCatalogFromRoot,
+  getCatalogBundleById,
+  isBundleListedInEnvironment,
+  getBundlePrices,
+  getBundlePriceForInterval,
+} from "../../services/productCatalog.js";
 
 const logger = createLogger({ source: "app/functions/billing/billingCheckoutPost.js" });
+
+// A checkout request names an interval as "annual" or "monthly"; the catalogue's prices
+// use Stripe's own interval names ("year", "month"). Annual is the default per
+// PLAN_PRICE_UPDATE.md decision 3.
+const CHECKOUT_INTERVALS = { annual: "year", monthly: "month" };
 
 /* v8 ignore start */
 export function apiEndpoint(app) {
@@ -29,16 +40,23 @@ export function apiEndpoint(app) {
 /* v8 ignore stop */
 
 /**
- * Resolve the Stripe price ID based on bundleId and synthetic mode.
- * Env var pattern: STRIPE_[TEST_]PRICE_ID_RESIDENT_PRO, STRIPE_[TEST_]PRICE_ID_RESIDENT_VAT, etc.
+ * Resolve the Stripe price ID for a bundle and checkout interval.
+ * Env var pattern: STRIPE_[TEST_]PRICE_ID_RESIDENT_PRO for a bundle with a single price,
+ * STRIPE_[TEST_]PRICE_ID_RESIDENT_YEAR / _RESIDENT_MONTH for a bundle carrying more than one.
  */
-function resolveStripePriceId(bundleId, isSynthetic) {
-  const suffix = `_${bundleId.toUpperCase().replace(/-/g, "_")}`;
+function resolveStripePriceId(bundle, stripeInterval, isSynthetic) {
+  const price = getBundlePriceForInterval(bundle, stripeInterval);
+  if (!price) {
+    logger.warn({ message: "Bundle has no Stripe price for the requested interval", bundleId: bundle.id, stripeInterval });
+    return undefined;
+  }
+  const bundleSuffix = bundle.id.toUpperCase().replace(/-/g, "_");
+  const suffix = getBundlePrices(bundle).length > 1 ? `_${bundleSuffix}_${price.interval.toUpperCase()}` : `_${bundleSuffix}`;
   const prefix = isSynthetic ? "STRIPE_TEST_PRICE_ID" : "STRIPE_PRICE_ID";
   const envVar = `${prefix}${suffix}`;
-  const price = process.env[envVar];
-  if (price) return price;
-  logger.warn({ message: `No ${envVar} configured`, bundleId, isSynthetic });
+  const priceId = process.env[envVar];
+  if (priceId) return priceId;
+  logger.warn({ message: `No ${envVar} configured`, bundleId: bundle.id, stripeInterval: price.interval, isSynthetic });
   return undefined;
 }
 
@@ -99,7 +117,19 @@ export async function ingestHandler(event) {
       });
     }
 
-    const priceId = resolveStripePriceId(bundleId, isSynthetic);
+    const checkoutInterval = body.interval || "annual";
+    const stripeInterval = CHECKOUT_INTERVALS[checkoutInterval];
+    if (!stripeInterval) {
+      logger.warn({ message: "Unrecognised checkout interval", bundleId, checkoutInterval });
+      return http400BadRequestResponse({
+        request,
+        headers: responseHeaders,
+        message: "invalid-interval",
+        error: { code: "invalid-interval" },
+      });
+    }
+
+    const priceId = resolveStripePriceId(bundle, stripeInterval, isSynthetic);
     const returnTo = resolveAllowedReturnTo(body.returnTo);
 
     if (!priceId) {

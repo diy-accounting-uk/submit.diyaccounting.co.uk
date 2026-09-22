@@ -7,22 +7,29 @@
 // PRODUCTS list infra/stripe/stripe-sync.js sends to Stripe. Kept separate from the script
 // so it can be unit-tested without a Stripe client.
 
+import { getBundlePrices } from "../../../app/services/productCatalog.js";
+
 // Build the PRODUCTS list from a parsed catalogue (productCatalog.js's parseCatalog /
-// loadCatalogFromRoot output). Only bundles carrying all three Stripe price fields
-// (stripePriceAmount, stripeCurrency, stripeInterval) are included; a bundle missing any
-// of them is skipped. When bundleId is given, only that bundle is returned (empty array
-// if it has no Stripe price fields or does not exist).
+// loadCatalogFromRoot output). One entry per (bundle, price) pair, so a bundle with a
+// `prices` table (two intervals) yields two entries sharing its bundleId - one Stripe
+// product, one price each. A bundle with none of getBundlePrices' shapes is skipped.
+// When bundleId is given, only that bundle's price(s) are returned (empty array if it has
+// no Stripe prices or does not exist). multiPrice tells the caller whether this bundle's
+// env var row needs the interval in its name (see stripe-sync.js's computeEnvUpdates).
 export function buildStripeProductsFromCatalog(catalog, { bundleId } = {}) {
   const bundles = catalog?.bundles ?? [];
   return bundles
     .filter((b) => (bundleId ? b.id === bundleId : true))
-    .filter((b) => Number.isFinite(b.stripePriceAmount) && typeof b.stripeCurrency === "string" && typeof b.stripeInterval === "string")
-    .map((b) => ({
-      bundleId: b.id,
-      name: b.name,
-      description: b.description,
-      priceAmount: b.stripePriceAmount,
-      currency: b.stripeCurrency,
-      interval: b.stripeInterval,
-    }));
+    .flatMap((b) => {
+      const prices = getBundlePrices(b);
+      return prices.map((price) => ({
+        bundleId: b.id,
+        name: b.name,
+        description: b.description,
+        priceAmount: price.amount,
+        currency: price.currency,
+        interval: price.interval,
+        multiPrice: prices.length > 1,
+      }));
+    });
 }

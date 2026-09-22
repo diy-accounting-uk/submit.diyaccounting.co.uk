@@ -4,7 +4,7 @@
 # Stripe subscriptions, as code.
 #
 # web/public/submit.catalogue.toml stays the source of truth for what each on-subscription
-# bundle costs (stripePriceAmount, stripeCurrency, stripeInterval). This file carries the
+# bundle costs (its [[bundles.prices]] rows). This file carries the
 # rest of what infra/stripe/stripe-sync.js needs to find-or-create Stripe's side: the two
 # webhook endpoints and which Stripe mode(s) each needs registering in, the event list every
 # endpoint carries, and the two account API keys.
