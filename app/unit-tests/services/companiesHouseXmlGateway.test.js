@@ -195,7 +195,11 @@ describe("services/companiesHouseXmlGateway", () => {
       const result = parseGatewayResponse(GET_SUBMISSION_STATUS_RESPONSE_FIXTURE);
       expect(result.statuses.length).toBe(21);
       expect(result.statuses[0]).toMatchObject({ submissionNumber: "dp2872", statusCode: "REJECT", companyNumber: "05120000" });
-      expect(result.statuses[0].rejections[0]).toMatchObject({ rejectCode: "1", description: "Random Test mode rejection", instanceNumber: "1" });
+      expect(result.statuses[0].rejections[0]).toMatchObject({
+        rejectCode: "1",
+        description: "Random Test mode rejection",
+        instanceNumber: "1",
+      });
     });
 
     test("parses a GovTalkErrors block into the errors array", () => {
@@ -347,8 +351,10 @@ describe("services/companiesHouseXmlGateway", () => {
     });
 
     test("reads from Secrets Manager when only the ARN is set", async () => {
-      process.env.COMPANIES_HOUSE_PRESENTER_ID_ARN = "arn:aws:secretsmanager:eu-west-2:123456789012:secret:test/companies-house/presenter_id";
-      process.env.COMPANIES_HOUSE_PRESENTER_CODE_ARN = "arn:aws:secretsmanager:eu-west-2:123456789012:secret:test/companies-house/presenter_code";
+      process.env.COMPANIES_HOUSE_PRESENTER_ID_ARN =
+        "arn:aws:secretsmanager:eu-west-2:123456789012:secret:test/companies-house/presenter_id";
+      process.env.COMPANIES_HOUSE_PRESENTER_CODE_ARN =
+        "arn:aws:secretsmanager:eu-west-2:123456789012:secret:test/companies-house/presenter_code";
       mockSecretsManagerSend.mockResolvedValueOnce({ SecretString: "secrets-manager-presenter-id" });
       mockSecretsManagerSend.mockResolvedValueOnce({ SecretString: "secrets-manager-presenter-code" });
 

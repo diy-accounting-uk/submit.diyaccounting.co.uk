@@ -111,9 +111,9 @@ describe("web/public/lib/analytics.js", () => {
     eval(scriptContent);
     dataLayerPushes = global.dataLayer;
 
-    expect(
-      dataLayerPushes.some((args) => args[0] === "set" && args[1] === "user_properties" && args[2].visitor_kind === "synthetic"),
-    ).toBe(true);
+    expect(dataLayerPushes.some((args) => args[0] === "set" && args[1] === "user_properties" && args[2].visitor_kind === "synthetic")).toBe(
+      true,
+    );
   });
 
   it("tags a canary visit as bot", () => {
@@ -122,9 +122,7 @@ describe("web/public/lib/analytics.js", () => {
     eval(scriptContent);
     dataLayerPushes = global.dataLayer;
 
-    expect(dataLayerPushes.some((args) => args[0] === "set" && args[1] === "user_properties" && args[2].visitor_kind === "bot")).toBe(
-      true,
-    );
+    expect(dataLayerPushes.some((args) => args[0] === "set" && args[1] === "user_properties" && args[2].visitor_kind === "bot")).toBe(true);
   });
 
   it("keeps its bot user-agent list in step with lib/utils/visitor-kind.js", () => {

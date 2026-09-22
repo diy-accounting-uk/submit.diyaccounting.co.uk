@@ -83,8 +83,7 @@ describe("resolve-alarm-evidence.mjs main --from-alarm", () => {
 
   test("alarm not found: writes fallback evidence with alarmFound false and exits without throwing", async () => {
     mockCloudWatchSend.mockResolvedValue({ MetricAlarms: [], CompositeAlarms: [] });
-    process.env.ALARM_WINDOW =
-      "2026-09-06T09:00:00.000Z to 2026-09-06T09:30:00.000Z (period 300s × 6, margin 300s)";
+    process.env.ALARM_WINDOW = "2026-09-06T09:00:00.000Z to 2026-09-06T09:30:00.000Z (period 300s × 6, margin 300s)";
 
     const output = await main([
       "--alarm-name",
@@ -130,15 +129,7 @@ describe("resolve-alarm-evidence.mjs main --from-alarm", () => {
     mockCloudWatchSend.mockRejectedValue(new Error("AccessDenied: user is not authorized to perform this action"));
 
     await expect(
-      main([
-        "--alarm-name",
-        "prod-cfb43ee-app-account-stack-health",
-        "--deployment",
-        "cfb43ee",
-        "--region",
-        "eu-west-2",
-        "--from-alarm",
-      ]),
+      main(["--alarm-name", "prod-cfb43ee-app-account-stack-health", "--deployment", "cfb43ee", "--region", "eu-west-2", "--from-alarm"]),
     ).rejects.toThrow("AccessDenied");
   });
 });

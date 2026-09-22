@@ -121,7 +121,13 @@ describe("analyticsMetricsPublish", () => {
 
   describe("parseResultSet", () => {
     test("maps the header row onto each data row", () => {
-      const resultSet = resultSetOf(["outcome", "submissions"], [["success", "12"], ["failure", "3"]]);
+      const resultSet = resultSetOf(
+        ["outcome", "submissions"],
+        [
+          ["success", "12"],
+          ["failure", "3"],
+        ],
+      );
       expect(parseResultSet(resultSet)).toEqual([
         { outcome: "success", submissions: "12" },
         { outcome: "failure", submissions: "3" },
@@ -229,9 +235,7 @@ describe("analyticsMetricsPublish", () => {
     test("throws once the attempt budget is exhausted", async () => {
       mockAthenaSend.mockResolvedValue({ QueryExecution: { Status: { State: "RUNNING" } } });
 
-      await expect(pollUntilTerminal({ send: mockAthenaSend }, "qid")).rejects.toThrow(
-        /did not reach a terminal state/,
-      );
+      await expect(pollUntilTerminal({ send: mockAthenaSend }, "qid")).rejects.toThrow(/did not reach a terminal state/);
       expect(mockAthenaSend).toHaveBeenCalledTimes(3);
     });
   });
@@ -318,9 +322,7 @@ describe("analyticsMetricsPublish", () => {
 
       await handler({ date: "2020-01-01" });
 
-      const startCalls = mockAthenaSend.mock.calls.filter(
-        ([command]) => command.constructor.name === "StartQueryExecutionCommand",
-      );
+      const startCalls = mockAthenaSend.mock.calls.filter(([command]) => command.constructor.name === "StartQueryExecutionCommand");
       expect(startCalls).toHaveLength(METRIC_DEFINITIONS.length);
       for (const [command] of startCalls) {
         expect(command.input.QueryString).toContain("2020-01-01");
@@ -336,9 +338,7 @@ describe("analyticsMetricsPublish", () => {
 
       vi.useRealTimers();
 
-      const startCalls = mockAthenaSend.mock.calls.filter(
-        ([command]) => command.constructor.name === "StartQueryExecutionCommand",
-      );
+      const startCalls = mockAthenaSend.mock.calls.filter(([command]) => command.constructor.name === "StartQueryExecutionCommand");
       const reconciliationNames = ["Ga4Purchases", "StripePaidCharges", "ActivityActivations"];
       METRIC_DEFINITIONS.forEach((definition, index) => {
         const expectedDate = reconciliationNames.includes(definition.metricName) ? "2026-08-27" : "2026-08-28";

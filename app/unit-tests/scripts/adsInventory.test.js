@@ -241,7 +241,9 @@ describe("ads-inventory findingForAccessLevel", () => {
   });
 
   it("names the Test access level and the Overview page for DEVELOPER_TOKEN_NOT_APPROVED", () => {
-    const error = new Error('403 from googleAds:search: {"error":{"status":"PERMISSION_DENIED","details":[{"errorCode":{"authorizationError":"DEVELOPER_TOKEN_NOT_APPROVED"}}]}}');
+    const error = new Error(
+      '403 from googleAds:search: {"error":{"status":"PERMISSION_DENIED","details":[{"errorCode":{"authorizationError":"DEVELOPER_TOKEN_NOT_APPROVED"}}]}}',
+    );
     const finding = findingForAccessLevel(error, "diyaccounting-ga4");
     expect(finding).toContain("Test");
     expect(finding).toContain(`${ADS_API_OVERVIEW_URL}?project=diyaccounting-ga4`);

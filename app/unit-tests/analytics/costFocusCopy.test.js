@@ -27,9 +27,7 @@ vi.mock("@aws-sdk/client-s3", () => {
 const { S3Client } = await import("@aws-sdk/client-s3");
 const fakeS3Client = new S3Client();
 
-const { handler, readConfig, listRecentExportObjects, todayPartition } = await import(
-  "../../functions/analytics/costFocusCopy/index.js"
-);
+const { handler, readConfig, listRecentExportObjects, todayPartition } = await import("../../functions/analytics/costFocusCopy/index.js");
 
 const ENV_KEYS = ["FOCUS_EXPORT_BUCKET_NAME", "FOCUS_EXPORT_S3_PREFIX", "ANALYTICS_LAKE_BUCKET_NAME", "COST_FOCUS_CURATED_PREFIX"];
 

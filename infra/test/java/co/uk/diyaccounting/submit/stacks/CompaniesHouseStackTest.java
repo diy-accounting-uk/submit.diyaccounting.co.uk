@@ -733,7 +733,9 @@ class CompaniesHouseStackTest {
                 "AWS::Lambda::Function",
                 Map.of(
                         "Properties",
-                        Map.of("FunctionName", stack.companiesHouseAccountsPreviewPostLambdaProps.ingestFunctionName())));
+                        Map.of(
+                                "FunctionName",
+                                stack.companiesHouseAccountsPreviewPostLambdaProps.ingestFunctionName())));
         assertEquals(1, previewFunctions.size());
         var previewEnv = environmentVariablesOf(previewFunctions);
         assertFalse(previewEnv.containsKey("COMPANIES_HOUSE_PRESENTER_ID_ARN"));

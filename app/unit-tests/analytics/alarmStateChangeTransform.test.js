@@ -15,15 +15,15 @@ function decode(data) {
 
 function alarmStateChangeEnvelope(overrides = {}) {
   return {
-    version: "0",
-    id: "11111111-2222-3333-4444-555555555555",
+    "version": "0",
+    "id": "11111111-2222-3333-4444-555555555555",
     "detail-type": "CloudWatch Alarm State Change",
-    source: "aws.cloudwatch",
-    account: "367191799875",
-    time: "2026-09-08T09:15:00Z",
-    region: "eu-west-2",
-    resources: ["arn:aws:cloudwatch:eu-west-2:367191799875:alarm:prod-a0f41c7-app-api-5xx"],
-    detail: {
+    "source": "aws.cloudwatch",
+    "account": "367191799875",
+    "time": "2026-09-08T09:15:00Z",
+    "region": "eu-west-2",
+    "resources": ["arn:aws:cloudwatch:eu-west-2:367191799875:alarm:prod-a0f41c7-app-api-5xx"],
+    "detail": {
       alarmName: "prod-a0f41c7-app-api-5xx",
       state: {
         value: "ALARM",

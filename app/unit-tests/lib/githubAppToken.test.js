@@ -160,8 +160,8 @@ describe("githubAppToken", () => {
   test("throws with the status and body on a non-ok response", async () => {
     const fetchImpl = vi.fn().mockResolvedValue({ ok: false, status: 401, text: () => Promise.resolve("Bad credentials") });
 
-    await expect(
-      getInstallationAccessToken({ appId: "12345", privateKey, installationId: "8", fetchImpl }),
-    ).rejects.toThrow("GitHub API error minting installation access token: 401 Bad credentials");
+    await expect(getInstallationAccessToken({ appId: "12345", privateKey, installationId: "8", fetchImpl })).rejects.toThrow(
+      "GitHub API error minting installation access token: 401 Bad credentials",
+    );
   });
 });

@@ -503,7 +503,7 @@
           lateSubmissionContainer.innerHTML =
             '<h4>Late Submission Penalties</h4><p class="no-data">No late submission penalties in the last 24 months.</p>';
         } else {
-          let html = "<h4>Late Submission Penalties</h4><table class=\"results-table\"><thead><tr>";
+          let html = '<h4>Late Submission Penalties</h4><table class="results-table"><thead><tr>';
           html += "<th>Category</th><th>Status</th><th>Created</th><th>Expires</th><th>Charge Amount</th>";
           html += "</tr></thead><tbody>";
           lateSubmissionDetails.forEach((detail) => {
@@ -511,7 +511,8 @@
             const status = capitalize(detail.penaltyStatus);
             const created = formatDate(detail.penaltyCreationDate);
             const expires = formatDate(detail.penaltyExpiryDate);
-            const chargeAmount = detail.chargeAmount === undefined || detail.chargeAmount === null ? "-" : formatCurrency(detail.chargeAmount);
+            const chargeAmount =
+              detail.chargeAmount === undefined || detail.chargeAmount === null ? "-" : formatCurrency(detail.chargeAmount);
             html += `<tr><td>${escapeHtml(category)}</td><td>${escapeHtml(status)}</td><td>${escapeHtml(created)}</td><td>${escapeHtml(expires)}</td><td>${escapeHtml(chargeAmount)}</td></tr>`;
           });
           html += "</tbody></table>";
@@ -523,7 +524,7 @@
           latePaymentContainer.innerHTML =
             '<h4>Late Payment Penalties</h4><p class="no-data">No late payment penalties in the last 24 months.</p>';
         } else {
-          let html = "<h4>Late Payment Penalties</h4><table class=\"results-table\"><thead><tr>";
+          let html = '<h4>Late Payment Penalties</h4><table class="results-table"><thead><tr>';
           html += "<th>Charge Reference</th><th>Category</th><th>Status</th><th>Period</th><th>Penalty Amount</th><th>Due Date</th>";
           html += "</tr></thead><tbody>";
           latePaymentDetails.forEach((detail) => {
@@ -532,9 +533,7 @@
             const status = capitalize(detail.penaltyStatus);
             const period = formatDateRange(detail.principalChargeBillingFrom, detail.principalChargeBillingTo);
             const amount =
-              detail.penaltyStatus === "posted"
-                ? formatCurrency(detail.penaltyAmountPosted)
-                : formatCurrency(detail.penaltyAmountAccruing);
+              detail.penaltyStatus === "posted" ? formatCurrency(detail.penaltyAmountPosted) : formatCurrency(detail.penaltyAmountAccruing);
             const dueDate = formatDate(detail.principalChargeDueDate);
             html += `<tr><td>${escapeHtml(chargeReference)}</td><td>${escapeHtml(category)}</td><td>${escapeHtml(status)}</td><td>${escapeHtml(period)}</td><td>${escapeHtml(amount)}</td><td>${escapeHtml(dueDate)}</td></tr>`;
           });

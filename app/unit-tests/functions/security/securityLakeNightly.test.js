@@ -130,13 +130,14 @@ describe("GitHub alert counts", () => {
     expect(nextPageUrl(undefined)).toBeNull();
   });
 
-  test("nextPageUrl returns null when Link header has no rel=\"next\"", () => {
+  test('nextPageUrl returns null when Link header has no rel="next"', () => {
     const link = '<https://api.github.com/prev>; rel="prev", <https://api.github.com/last>; rel="last"';
     expect(nextPageUrl(link)).toBeNull();
   });
 
   test("nextPageUrl extracts next URL from a header with multiple relations", () => {
-    const link = '<https://api.github.com/first>; rel="first", <https://api.github.com/next>; rel="next", <https://api.github.com/last>; rel="last"';
+    const link =
+      '<https://api.github.com/first>; rel="first", <https://api.github.com/next>; rel="next", <https://api.github.com/last>; rel="last"';
     expect(nextPageUrl(link)).toBe("https://api.github.com/next");
   });
 
@@ -200,7 +201,10 @@ describe("GitHub alert counts", () => {
 
   test("fetchGithubAlertRows publishes a null row for a 400 error with body, including status and message in the error log", async () => {
     const errorBody = JSON.stringify({ message: "Pagination using the `page` parameter is not supported." });
-    const fetchImpl = vi.fn().mockResolvedValueOnce({ ok: false, status: 400, text: async () => errorBody }).mockResolvedValue({ ok: true, headers: { get: () => null }, json: async () => [] });
+    const fetchImpl = vi
+      .fn()
+      .mockResolvedValueOnce({ ok: false, status: 400, text: async () => errorBody })
+      .mockResolvedValue({ ok: true, headers: { get: () => null }, json: async () => [] });
     const rows = await fetchGithubAlertRows(fetchImpl, "t", "r", "2026-09-08");
     expect(rows).toEqual(
       expect.arrayContaining([{ dt: "2026-09-08", alert_type: "code_scanning", severity: null, count: null, oldest_created_at: null }]),
@@ -209,7 +213,10 @@ describe("GitHub alert counts", () => {
   });
 
   test("fetchGithubAlertRows publishes a null row for an endpoint that fails, instead of aborting the run", async () => {
-    const fetchImpl = vi.fn().mockResolvedValueOnce({ ok: false, status: 403, text: async () => "forbidden" }).mockResolvedValue({ ok: true, headers: { get: () => null }, json: async () => [] });
+    const fetchImpl = vi
+      .fn()
+      .mockResolvedValueOnce({ ok: false, status: 403, text: async () => "forbidden" })
+      .mockResolvedValue({ ok: true, headers: { get: () => null }, json: async () => [] });
     const rows = await fetchGithubAlertRows(fetchImpl, "t", "r", "2026-09-08");
     expect(fetchImpl).toHaveBeenCalledTimes(3);
     expect(rows).toEqual(
@@ -255,9 +262,7 @@ source = "aws acm describe-certificate"
     const fetchImpl = vi.fn();
     const rows = await buildLifecycleRows(fetchImpl, tomlPath, "2026-09-08", new Date("2026-09-08T00:00:00Z"));
     expect(fetchImpl).not.toHaveBeenCalled();
-    expect(rows).toEqual([
-      expect.objectContaining({ name: "ACM Certificate", end_date: "2027-02-06", days_remaining: 151 }),
-    ]);
+    expect(rows).toEqual([expect.objectContaining({ name: "ACM Certificate", end_date: "2027-02-06", days_remaining: 151 })]);
   });
 
   test("buildLifecycleRows fetches a live end date for a known product slug and derives the Lambda deprecation date", async () => {

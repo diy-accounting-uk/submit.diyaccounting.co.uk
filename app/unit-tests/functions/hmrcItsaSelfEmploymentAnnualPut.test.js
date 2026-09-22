@@ -141,9 +141,7 @@ describe("buildAnnualSubmissionRequestBody", () => {
   });
 
   test("accepts a structured building allowance array alongside the itemised allowances", () => {
-    const structuredBuildingAllowance = [
-      { amount: 100, building: { postcode: "SW1A 2AA" } },
-    ];
+    const structuredBuildingAllowance = [{ amount: 100, building: { postcode: "SW1A 2AA" } }];
     const body = buildAnnualSubmissionRequestBody({
       allowances: { annualInvestmentAllowance: 500, structuredBuildingAllowance },
     });

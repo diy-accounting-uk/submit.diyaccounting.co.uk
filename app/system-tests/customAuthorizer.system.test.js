@@ -134,16 +134,12 @@ describe("System: customAuthorizer", () => {
     const nowIat = Math.floor(Date.now() / 1000);
 
     mockVerify.mockResolvedValueOnce({ sub: userId, username: "user", iat: nowIat });
-    const firstRes = await ingestHandler(
-      makeEvent({ "x-authorization": "Bearer token-1", "cloudfront-viewer-country": "GB" }),
-    );
+    const firstRes = await ingestHandler(makeEvent({ "x-authorization": "Bearer token-1", "cloudfront-viewer-country": "GB" }));
     expect(firstRes.policyDocument.Statement[0].Effect).toBe("Allow");
     expect(mockCognitoSend).not.toHaveBeenCalled();
 
     mockVerify.mockResolvedValueOnce({ sub: userId, username: "user", iat: nowIat });
-    const secondRes = await ingestHandler(
-      makeEvent({ "x-authorization": "Bearer token-2", "cloudfront-viewer-country": "FR" }),
-    );
+    const secondRes = await ingestHandler(makeEvent({ "x-authorization": "Bearer token-2", "cloudfront-viewer-country": "FR" }));
     expect(secondRes.policyDocument.Statement[0].Effect).toBe("Deny");
     expect(mockCognitoSend).toHaveBeenCalledTimes(1);
   });
@@ -157,9 +153,7 @@ describe("System: customAuthorizer", () => {
     await ingestHandler(makeEvent({ "x-authorization": "Bearer token-1", "cloudfront-viewer-country": "GB" }));
 
     mockVerify.mockResolvedValueOnce({ sub: userId, username: "user", iat: nowIat });
-    const res = await ingestHandler(
-      makeEvent({ "x-authorization": "Bearer token-2", "cloudfront-viewer-country": "GB" }),
-    );
+    const res = await ingestHandler(makeEvent({ "x-authorization": "Bearer token-2", "cloudfront-viewer-country": "GB" }));
 
     expect(res.policyDocument.Statement[0].Effect).toBe("Allow");
     expect(mockCognitoSend).not.toHaveBeenCalled();

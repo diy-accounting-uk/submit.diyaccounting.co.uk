@@ -19,7 +19,12 @@ const VALID_SENDER_ID = md5Lowercase(SIMULATOR_PRESENTER_ID);
 const VALID_AUTH_VALUE = md5Lowercase(SIMULATOR_PRESENTER_CODE);
 const WRONG_HASH = md5Lowercase("not-the-right-credential");
 
-function accountsEnvelope({ senderId = VALID_SENDER_ID, authValue = VALID_AUTH_VALUE, submissionNumber = "AAA001", companyNumber = "02706061" } = {}) {
+function accountsEnvelope({
+  senderId = VALID_SENDER_ID,
+  authValue = VALID_AUTH_VALUE,
+  submissionNumber = "AAA001",
+  companyNumber = "02706061",
+} = {}) {
   return `<?xml version="1.0" encoding="UTF-8"?>
 <GovTalkMessage xmlns="http://www.govtalk.gov.uk/CM/envelope">
   <EnvelopeVersion>1.0</EnvelopeVersion>
@@ -157,7 +162,10 @@ describe("http-simulator/routes/companies-house-xmlgw", () => {
   });
 
   test("rejects a SubmissionNumber that has already been used", async () => {
-    await request(app).post(GATEWAY_PATH).set("Content-Type", "text/xml").send(accountsEnvelope({ submissionNumber: "REUSE1" }));
+    await request(app)
+      .post(GATEWAY_PATH)
+      .set("Content-Type", "text/xml")
+      .send(accountsEnvelope({ submissionNumber: "REUSE1" }));
     const response = await request(app)
       .post(GATEWAY_PATH)
       .set("Content-Type", "text/xml")
@@ -191,19 +199,31 @@ describe("http-simulator/routes/companies-house-xmlgw", () => {
   });
 
   test("polls PENDING on the first poll and ACCEPT afterwards", async () => {
-    await request(app).post(GATEWAY_PATH).set("Content-Type", "text/xml").send(accountsEnvelope({ submissionNumber: "POLL01" }));
+    await request(app)
+      .post(GATEWAY_PATH)
+      .set("Content-Type", "text/xml")
+      .send(accountsEnvelope({ submissionNumber: "POLL01" }));
 
-    const firstPoll = await request(app).post(GATEWAY_PATH).set("Content-Type", "text/xml").send(statusEnvelope({ submissionNumber: "POLL01" }));
+    const firstPoll = await request(app)
+      .post(GATEWAY_PATH)
+      .set("Content-Type", "text/xml")
+      .send(statusEnvelope({ submissionNumber: "POLL01" }));
     const firstDocument = parseXmlDocument(firstPoll.text);
     expect(firstElementText(firstDocument, "StatusCode")).toBe("PENDING");
 
-    const secondPoll = await request(app).post(GATEWAY_PATH).set("Content-Type", "text/xml").send(statusEnvelope({ submissionNumber: "POLL01" }));
+    const secondPoll = await request(app)
+      .post(GATEWAY_PATH)
+      .set("Content-Type", "text/xml")
+      .send(statusEnvelope({ submissionNumber: "POLL01" }));
     const secondDocument = parseXmlDocument(secondPoll.text);
     expect(firstElementText(secondDocument, "StatusCode")).toBe("ACCEPT");
   });
 
   test("Gov-Test-Scenario ACCOUNTS_REJECTED returns a reject with a RejectCode", async () => {
-    await request(app).post(GATEWAY_PATH).set("Content-Type", "text/xml").send(accountsEnvelope({ submissionNumber: "REJCT1" }));
+    await request(app)
+      .post(GATEWAY_PATH)
+      .set("Content-Type", "text/xml")
+      .send(accountsEnvelope({ submissionNumber: "REJCT1" }));
 
     const response = await request(app)
       .post(GATEWAY_PATH)
@@ -239,7 +259,10 @@ describe("http-simulator/routes/companies-house-xmlgw", () => {
   });
 
   test("Gov-Test-Scenario PENDING_FOREVER never advances past PENDING", async () => {
-    await request(app).post(GATEWAY_PATH).set("Content-Type", "text/xml").send(accountsEnvelope({ submissionNumber: "STUCK1" }));
+    await request(app)
+      .post(GATEWAY_PATH)
+      .set("Content-Type", "text/xml")
+      .send(accountsEnvelope({ submissionNumber: "STUCK1" }));
 
     await request(app)
       .post(GATEWAY_PATH)
@@ -257,7 +280,10 @@ describe("http-simulator/routes/companies-house-xmlgw", () => {
   });
 
   test("polling a submission number that was never submitted answers a business error", async () => {
-    const response = await request(app).post(GATEWAY_PATH).set("Content-Type", "text/xml").send(statusEnvelope({ submissionNumber: "NEVER1" }));
+    const response = await request(app)
+      .post(GATEWAY_PATH)
+      .set("Content-Type", "text/xml")
+      .send(statusEnvelope({ submissionNumber: "NEVER1" }));
 
     const document = parseXmlDocument(response.text);
     expect(firstElementText(document, "Text")).toBe("No Transaction Found");

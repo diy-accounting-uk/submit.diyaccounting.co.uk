@@ -117,9 +117,7 @@ describe("emailHash", () => {
     });
 
     it("throws for a version not in the registry", () => {
-      expect(() => hashEmailWithVersion("user@example.com", "v99")).toThrow(
-        'Email hash secret version "v99" not found in registry',
-      );
+      expect(() => hashEmailWithVersion("user@example.com", "v99")).toThrow('Email hash secret version "v99" not found in registry');
     });
 
     it("throws when the secret is not initialized", () => {
@@ -158,9 +156,7 @@ describe("emailHash", () => {
       await initializeEmailHashSecret();
 
       expect(getEmailHashSecretVersion()).toBe("v1");
-      expect(hashEmailWithEnvSecret("user@example.com").hash).toBe(
-        hashEmail("user@example.com", '{"versions":{"v1":"secret"}}'),
-      );
+      expect(hashEmailWithEnvSecret("user@example.com").hash).toBe(hashEmail("user@example.com", '{"versions":{"v1":"secret"}}'));
     });
 
     it("rejects a registry where current points to a missing version", async () => {

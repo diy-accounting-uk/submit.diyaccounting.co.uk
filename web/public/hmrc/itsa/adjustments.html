@@ -58,7 +58,14 @@
           <div class="form-group">
             <label for="businessId">Business ID</label>
             <p id="businessId-hint" class="hint">The business ID from Business Details, for example XAIS12345678910.</p>
-            <input type="text" id="businessId" name="businessId" required placeholder="e.g., XAIS12345678910" aria-describedby="businessId-hint" />
+            <input
+              type="text"
+              id="businessId"
+              name="businessId"
+              required
+              placeholder="e.g., XAIS12345678910"
+              aria-describedby="businessId-hint"
+            />
           </div>
 
           <div class="form-group">
@@ -191,7 +198,13 @@
 
       async function submitAdjustment(adjustDetails, testScenario, runFraudPreventionHeaderValidation, accessToken) {
         const govClientHeaders = await getGovClientHeaders();
-        return await adjustBsasSelfEmployment(adjustDetails, accessToken, govClientHeaders, runFraudPreventionHeaderValidation, testScenario);
+        return await adjustBsasSelfEmployment(
+          adjustDetails,
+          accessToken,
+          govClientHeaders,
+          runFraudPreventionHeaderValidation,
+          testScenario,
+        );
       }
 
       function displaySummary(bsas) {

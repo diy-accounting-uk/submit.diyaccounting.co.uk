@@ -54,9 +54,7 @@ export function apiEndpoint(app) {
     const { nino, businessId, taxYear } = req.params;
     const govTestScenario = req.headers["gov-test-scenario"];
 
-    console.log(
-      `[http-simulator:itsa-uk-property-period] POST /individuals/business/property/uk/${nino}/${businessId}/period/${taxYear}`,
-    );
+    console.log(`[http-simulator:itsa-uk-property-period] POST /individuals/business/property/uk/${nino}/${businessId}/period/${taxYear}`);
 
     if (!isValidNino(nino)) {
       return res.status(400).json({ code: "FORMAT_NINO", message: "The provided NINO is invalid" });

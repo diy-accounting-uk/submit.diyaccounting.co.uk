@@ -62,12 +62,8 @@ export async function signInWithDiyaGlHostedUi(
       }
     };
     page.on("request", rememberCallback);
-    await page.route("**/books/cloud.js", (route) =>
-      route.fulfill({ status: 200, contentType: "application/javascript", body: "" }),
-    );
-    await page.route("**/diya-gl/cloud.js", (route) =>
-      route.fulfill({ status: 200, contentType: "application/javascript", body: "" }),
-    );
+    await page.route("**/books/cloud.js", (route) => route.fulfill({ status: 200, contentType: "application/javascript", body: "" }));
+    await page.route("**/diya-gl/cloud.js", (route) => route.fulfill({ status: 200, contentType: "application/javascript", body: "" }));
 
     await page.goto(authorizeUrl, { waitUntil: "domcontentloaded", timeout: 30_000 });
     await fillInHostedUINativeAuth(page, testAuthUsername, testAuthPassword, screenshotPath);
@@ -110,7 +106,7 @@ export async function signInWithDiyaGlHostedUi(
 export async function postDiyaGlCheckout({ apiBase, idToken, bundleId, returnTo }) {
   const response = await fetch(`${apiBase}/billing/checkout`, {
     method: "POST",
-    headers: { "Content-Type": "application/json", Authorization: `Bearer ${idToken}` },
+    headers: { "Content-Type": "application/json", "Authorization": `Bearer ${idToken}` },
     body: JSON.stringify({ bundleId, returnTo }),
   });
   const body = await response.json().catch(() => ({}));
@@ -130,7 +126,7 @@ export async function getDiyaGlBillingPortal({ apiBase, idToken, returnTo }) {
 export async function putDiyaGlBook({ apiBase, idToken, bookId, zipBase64 }) {
   const response = await fetch(`${apiBase}/books/${bookId}`, {
     method: "PUT",
-    headers: { "Content-Type": "application/json", Authorization: `Bearer ${idToken}` },
+    headers: { "Content-Type": "application/json", "Authorization": `Bearer ${idToken}` },
     body: JSON.stringify({
       title: "DIYA-GL Subscription Behaviour Probe",
       product: "ltd",

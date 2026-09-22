@@ -211,7 +211,8 @@ class BusinessViewsTest {
             var dependsOn = function.get("DependsOn");
             assertTrue(dependsOn instanceof List<?>, "expected a DependsOn list on the " + handler + " function");
             assertTrue(
-                    ((List<?>) dependsOn).stream().anyMatch(id -> String.valueOf(id).contains(athenaViewPolicyLogicalId)),
+                    ((List<?>) dependsOn)
+                            .stream().anyMatch(id -> String.valueOf(id).contains(athenaViewPolicyLogicalId)),
                     "expected the " + handler + " function to depend on the Athena view IAM policy, found: "
                             + dependsOn);
         }

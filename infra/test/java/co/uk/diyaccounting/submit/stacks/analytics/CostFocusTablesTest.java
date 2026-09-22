@@ -105,13 +105,15 @@ class CostFocusTablesTest {
     void glueColumnsMatchFocusApiColumnsInNameCountAndOrder() {
         Template template = synthTemplate();
 
-        var table = template.findResources("AWS::Glue::Table").values().iterator().next();
+        var table =
+                template.findResources("AWS::Glue::Table").values().iterator().next();
         var properties = (Map<String, Object>) table.get("Properties");
         var tableInput = (Map<String, Object>) properties.get("TableInput");
         var storageDescriptor = (Map<String, Object>) tableInput.get("StorageDescriptor");
         var columns = (List<Map<String, Object>>) storageDescriptor.get("Columns");
 
-        var actualNames = columns.stream().map(column -> (String) column.get("Name")).toList();
+        var actualNames =
+                columns.stream().map(column -> (String) column.get("Name")).toList();
         var expectedNames = CostFocusIngestion.FOCUS_1_2_COLUMNS.stream()
                 .map(CostFocusTables::glueColumnName)
                 .toList();

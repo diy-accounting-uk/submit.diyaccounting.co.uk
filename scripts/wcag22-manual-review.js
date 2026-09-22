@@ -293,7 +293,8 @@ async function main() {
           if (sizeFails.length || focus.violations.length) {
             console.log(`  [${viewport.label}px] target-size fails: ${sizeFails.length}, focus-obscured: ${focus.violations.length}`);
             for (const f of sizeFails) console.log(`    size: ${f.selector} (${f.width}x${f.height})`);
-            for (const v of focus.violations) console.log(`    focus: ${v.selector} covered by ${v.coveringSelector} (${v.coveringPosition})`);
+            for (const v of focus.violations)
+              console.log(`    focus: ${v.selector} covered by ${v.coveringSelector} (${v.coveringPosition})`);
           } else {
             console.log(`  [${viewport.label}px] OK (${targetSizes.length} targets, ${focus.visited.length} tab stops)`);
           }

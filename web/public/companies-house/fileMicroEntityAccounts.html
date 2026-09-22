@@ -62,8 +62,8 @@
       <div id="formView" class="form-container" style="display: none">
         <h2>Micro-entity accounts</h2>
         <p>
-          Company <strong id="formCompanyName"></strong> (<span id="formCompanyNumber"></span>). This is not the company you
-          meant? <a href="#" id="changeCompanyLink">Change company</a>.
+          Company <strong id="formCompanyName"></strong> (<span id="formCompanyNumber"></span>). This is not the company you meant?
+          <a href="#" id="changeCompanyLink">Change company</a>.
         </p>
         <form id="accountsForm">
           <h3>Period</h3>
@@ -156,8 +156,7 @@
           <div class="form-group">
             <input type="checkbox" id="statementSection477Exemption" name="statementSection477Exemption" />
             <label for="statementSection477Exemption" style="display: inline; font-weight: normal">
-              The company is entitled to exemption from audit under section 477 of the Companies Act 2006 relating to small
-              companies.
+              The company is entitled to exemption from audit under section 477 of the Companies Act 2006 relating to small companies.
             </label>
           </div>
           <div class="form-group">
@@ -169,15 +168,15 @@
           <div class="form-group">
             <input type="checkbox" id="statementDirectorsResponsibilities" name="statementDirectorsResponsibilities" />
             <label for="statementDirectorsResponsibilities" style="display: inline; font-weight: normal">
-              The directors acknowledge their responsibilities for complying with the requirements of the Companies Act 2006
-              with respect to accounting records and the preparation of accounts.
+              The directors acknowledge their responsibilities for complying with the requirements of the Companies Act 2006 with respect to
+              accounting records and the preparation of accounts.
             </label>
           </div>
           <div class="form-group">
             <input type="checkbox" id="statementMicroEntityProvisions" name="statementMicroEntityProvisions" />
             <label for="statementMicroEntityProvisions" style="display: inline; font-weight: normal">
-              These accounts have been prepared in accordance with the provisions applicable to companies subject to the
-              small companies regime and in accordance with the provisions available to micro-entities.
+              These accounts have been prepared in accordance with the provisions applicable to companies subject to the small companies
+              regime and in accordance with the provisions available to micro-entities.
             </label>
           </div>
 
@@ -392,9 +391,7 @@
           return;
         }
         container.style.display = "block";
-        container.innerHTML = rejections
-          .map((entry) => `<p>${entry.rejectCode}: ${entry.description}</p>`)
-          .join("\n");
+        container.innerHTML = rejections.map((entry) => `<p>${entry.rejectCode}: ${entry.description}</p>`).join("\n");
       }
 
       async function pollUntilSettled(submissionNumber, extraHeaders = {}) {

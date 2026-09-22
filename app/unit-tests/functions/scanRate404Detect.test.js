@@ -182,9 +182,7 @@ describe("functions/security/scanRate404Detect", () => {
 
     test("a window spanning midnight produces one query per date", async () => {
       mockS3Send.mockResolvedValueOnce(commonPrefixesResponse(["EDFXAMPLE1"]));
-      mockSsmSend
-        .mockResolvedValueOnce({ Parameter: { Value: "2026-08-31T23:50" } })
-        .mockResolvedValueOnce({});
+      mockSsmSend.mockResolvedValueOnce({ Parameter: { Value: "2026-08-31T23:50" } }).mockResolvedValueOnce({});
       mockRunAthenaQuery.mockResolvedValue([]);
 
       await handler({ now: "2026-09-01T00:10:00Z" });

@@ -6,10 +6,7 @@
 // Handles: GET|PUT /individuals/business/property/uk/{nino}/{businessId}/annual/{taxYear}
 
 import { randomUUID } from "crypto";
-import {
-  getUkPropertyAnnualForScenario,
-  getUkPropertyAnnualAmendErrorForScenario,
-} from "../scenarios/itsa-uk-property-annual.js";
+import { getUkPropertyAnnualForScenario, getUkPropertyAnnualAmendErrorForScenario } from "../scenarios/itsa-uk-property-annual.js";
 
 function isValidNino(nino) {
   const normalized = String(nino).replace(/\s+/g, "").toUpperCase();
@@ -77,9 +74,7 @@ export function apiEndpoint(app) {
     const { nino, businessId, taxYear } = req.params;
     const govTestScenario = req.headers["gov-test-scenario"];
 
-    console.log(
-      `[http-simulator:itsa-uk-property-annual] GET /individuals/business/property/uk/${nino}/${businessId}/annual/${taxYear}`,
-    );
+    console.log(`[http-simulator:itsa-uk-property-annual] GET /individuals/business/property/uk/${nino}/${businessId}/annual/${taxYear}`);
 
     if (!validatePathParams(req, res)) return;
 
@@ -98,9 +93,7 @@ export function apiEndpoint(app) {
     const { nino, businessId, taxYear } = req.params;
     const govTestScenario = req.headers["gov-test-scenario"];
 
-    console.log(
-      `[http-simulator:itsa-uk-property-annual] PUT /individuals/business/property/uk/${nino}/${businessId}/annual/${taxYear}`,
-    );
+    console.log(`[http-simulator:itsa-uk-property-annual] PUT /individuals/business/property/uk/${nino}/${businessId}/annual/${taxYear}`);
 
     if (!validatePathParams(req, res)) return;
 

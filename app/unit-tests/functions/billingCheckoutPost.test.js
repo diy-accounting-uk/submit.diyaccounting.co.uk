@@ -131,7 +131,7 @@ describe("billingCheckoutPost", () => {
 
   test("classifies a real customer's checkout as customer even though every Cognito user carries a cognito:username claim", async () => {
     const realCustomerToken = makeIdToken("real-customer-sub", {
-      email: "real.customer@example.com",
+      "email": "real.customer@example.com",
       "cognito:username": "real-customer-sub",
     });
     const event = buildEventWithToken(realCustomerToken);
@@ -143,7 +143,7 @@ describe("billingCheckoutPost", () => {
 
   test("classifies a synthetic lane's checkout as test-user from its email", async () => {
     const syntheticToken = makeIdToken("synthetic-sub", {
-      email: "synthetic-local@test.diyaccounting.co.uk",
+      "email": "synthetic-local@test.diyaccounting.co.uk",
       "cognito:username": "synthetic-sub",
     });
     const event = buildEventWithToken(syntheticToken);
@@ -319,9 +319,7 @@ describe("billingCheckoutPost", () => {
     await ingestHandler(event);
 
     const params = mockCheckoutSessionsCreate.mock.calls[0][0];
-    expect(params.success_url).toBe(
-      "https://ci.diya-gl.co.uk/ltd.html?checkout=success&session_id={CHECKOUT_SESSION_ID}",
-    );
+    expect(params.success_url).toBe("https://ci.diya-gl.co.uk/ltd.html?checkout=success&session_id={CHECKOUT_SESSION_ID}");
     expect(params.cancel_url).toBe("https://ci.diya-gl.co.uk/ltd.html?checkout=canceled");
   });
 

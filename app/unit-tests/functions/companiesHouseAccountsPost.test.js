@@ -195,7 +195,9 @@ describe("companiesHouseAccountsPost ingestHandler", () => {
 
   test("forwards a Gov-Test-Scenario header to the gateway call", async () => {
     await companiesHouseAccountsPostHandler(buildEvent({ headers: { "Gov-Test-Scenario": "ACCOUNTS_REJECTED" } }));
-    expect(mockPostToGateway).toHaveBeenCalledWith("<GovTalkMessage>submission</GovTalkMessage>", { "Gov-Test-Scenario": "ACCOUNTS_REJECTED" });
+    expect(mockPostToGateway).toHaveBeenCalledWith("<GovTalkMessage>submission</GovTalkMessage>", {
+      "Gov-Test-Scenario": "ACCOUNTS_REJECTED",
+    });
   });
 
   test("sets gatewayTest true when COMPANIES_HOUSE_GATEWAY_TEST is true", async () => {

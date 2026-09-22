@@ -85,7 +85,9 @@ describe("services/microEntityAccountsIxbrl", () => {
       for (const key of MANDATORY_CONCEPT_KEYS) {
         const concept = CONCEPTS[key];
         const qualifiedName = `${concept.prefix}:${concept.name}`;
-        const elements = Array.from(document.getElementsByTagName("ix:nonNumeric")).filter((el) => el.getAttribute("name") === qualifiedName);
+        const elements = Array.from(document.getElementsByTagName("ix:nonNumeric")).filter(
+          (el) => el.getAttribute("name") === qualifiedName,
+        );
         expect(elements.length, `expected a fact for ${qualifiedName}`).toBeGreaterThan(0);
         expect(elements[0].getAttribute("contextRef")).toBeTruthy();
       }
@@ -156,7 +158,9 @@ describe("services/microEntityAccountsIxbrl", () => {
       function valueFor(conceptKey, contextRefSuffix) {
         const concept = CONCEPTS[conceptKey];
         const qualifiedName = `${concept.prefix}:${concept.name}`;
-        const elements = Array.from(document.getElementsByTagName("ix:nonFraction")).filter((el) => el.getAttribute("name") === qualifiedName);
+        const elements = Array.from(document.getElementsByTagName("ix:nonFraction")).filter(
+          (el) => el.getAttribute("name") === qualifiedName,
+        );
         const element = contextRefSuffix ? elements.find((el) => el.getAttribute("contextRef").endsWith(contextRefSuffix)) : elements[0];
         return Number(element.textContent);
       }
@@ -182,7 +186,12 @@ describe("services/microEntityAccountsIxbrl", () => {
       const balancedLossInput = {
         ...SAMPLE_INPUT,
         balanceSheet: {
-          current: { ...SAMPLE_INPUT.balanceSheet.current, calledUpShareCapital: 10500, profitAndLossAccount: -500, capitalAndReserves: 10000 },
+          current: {
+            ...SAMPLE_INPUT.balanceSheet.current,
+            calledUpShareCapital: 10500,
+            profitAndLossAccount: -500,
+            capitalAndReserves: 10000,
+          },
         },
       };
       const xhtml = buildMicroEntityAccounts(balancedLossInput);

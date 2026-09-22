@@ -87,9 +87,7 @@ describe("operatorEffortPull", () => {
 
   test("defaultTargetDate returns yesterday in UTC", () => {
     const now = new Date();
-    const expected = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate() - 1))
-      .toISOString()
-      .slice(0, 10);
+    const expected = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate() - 1)).toISOString().slice(0, 10);
     expect(defaultTargetDate()).toBe(expected);
   });
 

@@ -39,9 +39,9 @@ describe("lib/hmrcAgentAuthorisation", () => {
   });
 
   it("createInvitation posts to /agents/{arn}/invitations and reads the invitation id off the Location header", async () => {
-    const mockFetch = vi.fn().mockResolvedValueOnce(
-      mockJsonResponse({ ok: true, status: 204, headers: { location: "/agents/TARN0000001/invitations/inv-1" } }),
-    );
+    const mockFetch = vi
+      .fn()
+      .mockResolvedValueOnce(mockJsonResponse({ ok: true, status: 204, headers: { location: "/agents/TARN0000001/invitations/inv-1" } }));
     vi.stubGlobal("fetch", mockFetch);
 
     const { createInvitation } = await import("@app/lib/hmrcAgentAuthorisation.js");
@@ -128,7 +128,9 @@ describe("lib/hmrcAgentAuthorisation", () => {
 
     expect(result.ok).toBe(true);
     const [url] = mockFetch.mock.calls[0];
-    expect(url).toBe("https://test-api.service.hmrc.gov.uk/agents/TARN0000001/relationships?service=MTD-VAT&clientIdType=vrn&clientId=123456789");
+    expect(url).toBe(
+      "https://test-api.service.hmrc.gov.uk/agents/TARN0000001/relationships?service=MTD-VAT&clientIdType=vrn&clientId=123456789",
+    );
   });
 
   it("agentAuthorisationErrorResponse maps a 404 to a not-found response", async () => {

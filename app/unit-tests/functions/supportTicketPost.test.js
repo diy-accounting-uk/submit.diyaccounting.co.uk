@@ -180,10 +180,7 @@ describe("supportTicketPost", () => {
       global.fetch = vi.fn();
 
       const response = await ingestHandler(
-        requestEvent(
-          { subject: "s", description: "d", category: "other" },
-          { "x-forwarded-for": "203.0.113.5" },
-        ),
+        requestEvent({ subject: "s", description: "d", category: "other" }, { "x-forwarded-for": "203.0.113.5" }),
       );
 
       expect(response.statusCode).toBe(429);
@@ -252,10 +249,7 @@ describe("supportTicketPost", () => {
       global.fetch = vi.fn();
 
       const response = await ingestHandler(
-        requestEvent(
-          { subject: "s".repeat(101), description: "d", category: "other" },
-          { "x-forwarded-for": "203.0.113.5" },
-        ),
+        requestEvent({ subject: "s".repeat(101), description: "d", category: "other" }, { "x-forwarded-for": "203.0.113.5" }),
       );
 
       expect(response.statusCode).toBe(400);

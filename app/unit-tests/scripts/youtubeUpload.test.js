@@ -123,16 +123,29 @@ describe("selectPendingUploads (the idempotency guard)", () => {
   });
 
   test("selects nothing once every publish:true entry has a videoId", () => {
-    const list = { videos: [{ id: "a", publish: true, videoId: "abc" }, { id: "b", publish: false }] };
+    const list = {
+      videos: [
+        { id: "a", publish: true, videoId: "abc" },
+        { id: "b", publish: false },
+      ],
+    };
     expect(selectPendingUploads(list)).toEqual([]);
   });
 });
 
 describe("recordVideoId", () => {
   test("sets the videoId on the matching entry only, without mutating the input", () => {
-    const list = { videos: [{ id: "a", publish: true, videoId: null }, { id: "b", publish: true, videoId: null }] };
+    const list = {
+      videos: [
+        { id: "a", publish: true, videoId: null },
+        { id: "b", publish: true, videoId: null },
+      ],
+    };
     const next = recordVideoId(list, "a", "xyz789");
-    expect(next.videos).toEqual([{ id: "a", publish: true, videoId: "xyz789" }, { id: "b", publish: true, videoId: null }]);
+    expect(next.videos).toEqual([
+      { id: "a", publish: true, videoId: "xyz789" },
+      { id: "b", publish: true, videoId: null },
+    ]);
     expect(list.videos[0].videoId).toBeNull();
   });
 });
@@ -163,7 +176,9 @@ describe("resolveQuotaProject", () => {
   });
 });
 
-const CLIENT_JSON = JSON.stringify({ installed: { client_id: "client-123", client_secret: "shh", auth_uri: "https://accounts.google.com/o/oauth2/auth" } });
+const CLIENT_JSON = JSON.stringify({
+  installed: { client_id: "client-123", client_secret: "shh", auth_uri: "https://accounts.google.com/o/oauth2/auth" },
+});
 
 describe("resolveClientCredentials", () => {
   let dir;
@@ -312,7 +327,10 @@ describe("obtainAccessToken", () => {
 
 describe("fetchOwnChannel", () => {
   test("returns the signed-in channel's title and handle", async () => {
-    const fetchImpl = vi.fn().mockResolvedValue({ ok: true, json: async () => ({ items: [{ snippet: { title: "DIY Accounting Submit", customUrl: "@DIYAccountingSubmit" } }] }) });
+    const fetchImpl = vi.fn().mockResolvedValue({
+      ok: true,
+      json: async () => ({ items: [{ snippet: { title: "DIY Accounting Submit", customUrl: "@DIYAccountingSubmit" } }] }),
+    });
 
     const channel = await fetchOwnChannel({ accessToken: "token", quotaProject: "diyaccounting-ga4", fetchImpl });
 
@@ -326,7 +344,9 @@ describe("fetchOwnChannel", () => {
   test("fails loudly when no channel is linked to the account", async () => {
     const fetchImpl = vi.fn().mockResolvedValue({ ok: true, json: async () => ({ items: [] }) });
 
-    await expect(fetchOwnChannel({ accessToken: "token", quotaProject: "diyaccounting-ga4", fetchImpl })).rejects.toThrow(/no YouTube channel/);
+    await expect(fetchOwnChannel({ accessToken: "token", quotaProject: "diyaccounting-ga4", fetchImpl })).rejects.toThrow(
+      /no YouTube channel/,
+    );
   });
 });
 
@@ -377,7 +397,9 @@ describe("assertChannelHandleMatches", () => {
   });
 
   test("throws naming both handles when they differ", () => {
-    expect(() => assertChannelHandleMatches({ handle: "@SomeoneElse" }, "@DIYAccountingSubmit")).toThrow(/"@SomeoneElse".*"@DIYAccountingSubmit"/s);
+    expect(() => assertChannelHandleMatches({ handle: "@SomeoneElse" }, "@DIYAccountingSubmit")).toThrow(
+      /"@SomeoneElse".*"@DIYAccountingSubmit"/s,
+    );
   });
 
   test("throws when the signed-in account has no handle at all", () => {
@@ -437,7 +459,9 @@ describe("uploadVideo", () => {
     const entry = { id: "clip", videoFile, title: "t", description: "d", tags: [], categoryId: "27" };
     const fetchImpl = vi.fn().mockResolvedValue({ ok: true, headers: new Headers() });
 
-    await expect(uploadVideo({ entry, accessToken: "token", quotaProject: "diyaccounting-ga4", publicVideo: false, fetchImpl })).rejects.toThrow(/Location header/);
+    await expect(
+      uploadVideo({ entry, accessToken: "token", quotaProject: "diyaccounting-ga4", publicVideo: false, fetchImpl }),
+    ).rejects.toThrow(/Location header/);
   });
 });
 
@@ -452,7 +476,13 @@ describe("uploadCaption", () => {
     const entry = { id: "clip", captionFile };
     const fetchImpl = vi.fn().mockResolvedValue({ ok: true, json: async () => ({ id: "caption-id" }) });
 
-    const result = await uploadCaption({ entry, videoId: "yt-video-id", accessToken: "token", quotaProject: "diyaccounting-ga4", fetchImpl });
+    const result = await uploadCaption({
+      entry,
+      videoId: "yt-video-id",
+      accessToken: "token",
+      quotaProject: "diyaccounting-ga4",
+      fetchImpl,
+    });
 
     expect(result).toEqual({ id: "caption-id" });
     const [url, options] = fetchImpl.mock.calls[0];
@@ -600,7 +630,13 @@ describe("setVideoPrivacy", () => {
   test("puts the new privacy status on the video and returns what YouTube recorded", async () => {
     const fetchImpl = vi.fn().mockResolvedValue({ ok: true, json: async () => ({ status: { privacyStatus: "public" } }) });
 
-    const status = await setVideoPrivacy({ videoId: "yt-a", privacyStatus: "public", accessToken: "token", quotaProject: "diyaccounting-ga4", fetchImpl });
+    const status = await setVideoPrivacy({
+      videoId: "yt-a",
+      privacyStatus: "public",
+      accessToken: "token",
+      quotaProject: "diyaccounting-ga4",
+      fetchImpl,
+    });
 
     expect(status).toBe("public");
     const [url, options] = fetchImpl.mock.calls[0];
@@ -613,6 +649,8 @@ describe("setVideoPrivacy", () => {
   test("throws with YouTube's answer when the update is refused", async () => {
     const fetchImpl = vi.fn().mockResolvedValue({ ok: false, status: 403, text: async () => "forbidden" });
 
-    await expect(setVideoPrivacy({ videoId: "yt-a", privacyStatus: "public", accessToken: "token", quotaProject: "diyaccounting-ga4", fetchImpl })).rejects.toThrow("403 forbidden");
+    await expect(
+      setVideoPrivacy({ videoId: "yt-a", privacyStatus: "public", accessToken: "token", quotaProject: "diyaccounting-ga4", fetchImpl }),
+    ).rejects.toThrow("403 forbidden");
   });
 });

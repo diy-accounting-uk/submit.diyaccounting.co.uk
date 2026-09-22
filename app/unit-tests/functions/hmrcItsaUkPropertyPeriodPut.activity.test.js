@@ -85,7 +85,7 @@ function buildPeriodBody(overrides = {}) {
 function buildInitialAmendEvent({ body = {}, headers = {} } = {}) {
   return buildHmrcEvent({
     body: buildPeriodBody(body),
-    headers: { authorization: "Bearer test-token", "x-initial-request": "true", ...headers },
+    headers: { "authorization": "Bearer test-token", "x-initial-request": "true", ...headers },
   });
 }
 

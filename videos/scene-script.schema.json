@@ -399,7 +399,10 @@
               "action": {},
               "bundle": { "type": "string", "minLength": 1 },
               "testPass": { "type": "boolean", "description": "Grant through a test pass, which carries the HMRC sandbox qualifier." },
-              "hidden": { "type": "boolean", "description": "The bundle is not in the catalogue and only ever appears under the account's current bundles." },
+              "hidden": {
+                "type": "boolean",
+                "description": "The bundle is not in the catalogue and only ever appears under the account's current bundles."
+              },
               "caption": { "type": "string" },
               "pauseMs": { "type": "number", "minimum": 0 },
               "note": { "type": "string" }

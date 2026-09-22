@@ -53,10 +53,7 @@ vi.mock("@app/services/tokenEnforcement.js", () => ({
 }));
 
 // Defer importing the ingestHandlers until after mocks are defined
-import {
-  ingestHandler as hmrcVatReturnPostHandler,
-  extractAndValidateParameters,
-} from "@app/functions/hmrc/hmrcVatReturnPost.js";
+import { ingestHandler as hmrcVatReturnPostHandler, extractAndValidateParameters } from "@app/functions/hmrc/hmrcVatReturnPost.js";
 
 dotenvConfigIfNotBlank({ path: ".env.test" });
 

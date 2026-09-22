@@ -63,7 +63,11 @@ test.describe("Bundles page - Manage Subscription button on mobile", () => {
 
     await page.route("**/*.js", async (route) => {
       const url = route.request().url();
-      const passthrough = { "toml-parser.js": tomlParserContent, "bundle-cache.js": bundleCacheContent, "request-cache.js": requestCacheContent };
+      const passthrough = {
+        "toml-parser.js": tomlParserContent,
+        "bundle-cache.js": bundleCacheContent,
+        "request-cache.js": requestCacheContent,
+      };
       const match = Object.keys(passthrough).find((name) => url.includes(name));
       if (match) {
         await route.fulfill({ status: 200, contentType: "application/javascript", body: passthrough[match] });

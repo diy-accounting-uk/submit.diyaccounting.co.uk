@@ -14,7 +14,12 @@ import {
   runLocalOAuth2Server,
 } from "./helpers/behaviour-helpers.js";
 import { consentToDataCollection, goToHomePageExpectNotLoggedIn } from "./steps/behaviour-steps.js";
-import { clickLogIn, loginWithCognitoOrMockAuth, verifyLoggedInStatus, logOutAndExpectToBeLoggedOut } from "./steps/behaviour-login-steps.js";
+import {
+  clickLogIn,
+  loginWithCognitoOrMockAuth,
+  verifyLoggedInStatus,
+  logOutAndExpectToBeLoggedOut,
+} from "./steps/behaviour-login-steps.js";
 import {
   goToChangeRegisteredEmail,
   enterCompanyNumber,

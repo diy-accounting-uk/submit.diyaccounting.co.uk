@@ -87,7 +87,7 @@ function buildPeriodBody(overrides = {}) {
 function buildInitialSubmissionEvent(headers = {}) {
   return buildHmrcEvent({
     body: buildPeriodBody(),
-    headers: { authorization: "Bearer test-token", "x-initial-request": "true", ...headers },
+    headers: { "authorization": "Bearer test-token", "x-initial-request": "true", ...headers },
   });
 }
 
@@ -144,7 +144,7 @@ describe("hmrcItsaSelfEmploymentPeriodPost token charge, receipt and failure rep
   test("does not charge a token for a request our own validation rejects before it reaches HMRC", async () => {
     const event = buildHmrcEvent({
       body: buildPeriodBody({ nino: undefined }),
-      headers: { authorization: "Bearer test-token", "x-initial-request": "true" },
+      headers: { "authorization": "Bearer test-token", "x-initial-request": "true" },
     });
 
     const response = await hmrcItsaSelfEmploymentPeriodPostHandler(event);

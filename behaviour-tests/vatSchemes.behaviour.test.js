@@ -282,7 +282,16 @@ test.describe("VAT Scheme Support Tests", () => {
     console.log(`[VAT Scheme Test] ${vatSchemeTestData.RETAIL.description}`);
 
     await initSubmitVat(page, screenshotPath);
-    await fillInVat9Box(page, testVatNumber, undefined, vatSchemeTestData.RETAIL, null, runFraudPreventionHeaderValidation, screenshotPath, allowSyntheticObligations);
+    await fillInVat9Box(
+      page,
+      testVatNumber,
+      undefined,
+      vatSchemeTestData.RETAIL,
+      null,
+      runFraudPreventionHeaderValidation,
+      screenshotPath,
+      allowSyntheticObligations,
+    );
     await submitFormVat(page, screenshotPath);
 
     await goToHmrcAuth(page, screenshotPath);
@@ -304,7 +313,16 @@ test.describe("VAT Scheme Support Tests", () => {
     console.log(`[VAT Scheme Test] ${vatSchemeTestData.MARGIN.description}`);
 
     await initSubmitVat(page, screenshotPath);
-    await fillInVat9Box(page, testVatNumber, undefined, vatSchemeTestData.MARGIN, null, runFraudPreventionHeaderValidation, screenshotPath, allowSyntheticObligations);
+    await fillInVat9Box(
+      page,
+      testVatNumber,
+      undefined,
+      vatSchemeTestData.MARGIN,
+      null,
+      runFraudPreventionHeaderValidation,
+      screenshotPath,
+      allowSyntheticObligations,
+    );
     await submitFormVat(page, screenshotPath);
 
     await goToHmrcAuth(page, screenshotPath);

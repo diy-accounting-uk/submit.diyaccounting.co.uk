@@ -63,7 +63,10 @@ describe("remainingBudget", () => {
   });
 
   test("ignores remedy label events on a different family", () => {
-    const rows = [row(FAMILY, [labeledAt("2026-09-21T11:00:00.000Z")]), row(OTHER_FAMILY, [labeledAt("2026-09-21T11:30:00.000Z"), labeledAt("2026-09-21T11:45:00.000Z")])];
+    const rows = [
+      row(FAMILY, [labeledAt("2026-09-21T11:00:00.000Z")]),
+      row(OTHER_FAMILY, [labeledAt("2026-09-21T11:30:00.000Z"), labeledAt("2026-09-21T11:45:00.000Z")]),
+    ];
     expect(remainingBudget({ rows, family: FAMILY, now: NOW, budgetPerDay: 2 })).toBe(1);
   });
 

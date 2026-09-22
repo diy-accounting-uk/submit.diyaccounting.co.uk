@@ -60,9 +60,7 @@ function parameterNotFound() {
 
 describe("silenceParameterName", () => {
   test("names the parameter under the env and deployment", () => {
-    expect(silenceParameterName({ env: "prod", deployment: "a0f41c7" })).toBe(
-      "/submit/prod/alarm-silence/a0f41c7",
-    );
+    expect(silenceParameterName({ env: "prod", deployment: "a0f41c7" })).toBe("/submit/prod/alarm-silence/a0f41c7");
   });
 });
 

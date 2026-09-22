@@ -117,9 +117,7 @@ describe("billingPortalGet", () => {
   });
 
   test("picks the Stripe live client when qualifiers.stripeTestMode is absent, even if qualifiers.synthetic is true", async () => {
-    mockGetUserBundles.mockResolvedValue([
-      { bundleId: "resident-pro", stripeCustomerId: "cus_test_123", qualifiers: { synthetic: true } },
-    ]);
+    mockGetUserBundles.mockResolvedValue([{ bundleId: "resident-pro", stripeCustomerId: "cus_test_123", qualifiers: { synthetic: true } }]);
 
     const event = buildEventWithToken(validToken);
     await ingestHandler(event);

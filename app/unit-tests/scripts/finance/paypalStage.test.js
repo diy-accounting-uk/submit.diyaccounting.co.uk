@@ -75,10 +75,7 @@ describe("fetchAccessToken", () => {
     });
     const token = await fetchAccessToken("test-client-id", "test-client-secret", fetchImpl);
     expect(token).toBe("A21AAFakeAccessToken0000000000000000000000000000000000000000");
-    expect(fetchImpl).toHaveBeenCalledWith(
-      "https://api-m.paypal.com/v1/oauth2/token",
-      expect.objectContaining({ method: "POST" }),
-    );
+    expect(fetchImpl).toHaveBeenCalledWith("https://api-m.paypal.com/v1/oauth2/token", expect.objectContaining({ method: "POST" }));
   });
 
   test("throws with the response body when the grant is refused", async () => {
@@ -160,7 +157,10 @@ describe("fetchAllTransactions", () => {
       total_pages: 2,
       transaction_details: [
         {
-          transaction_info: { ...RECORDED_TRANSACTION_SEARCH_PAGE.transaction_details[0].transaction_info, transaction_id: "3TY00000AA0000002" },
+          transaction_info: {
+            ...RECORDED_TRANSACTION_SEARCH_PAGE.transaction_details[0].transaction_info,
+            transaction_id: "3TY00000AA0000002",
+          },
         },
       ],
     };

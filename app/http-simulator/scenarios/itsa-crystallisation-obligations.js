@@ -93,7 +93,10 @@ export function getItsaCrystallisationObligationsForScenario(scenario, taxYear) 
 
   if (scenarioUpper === "MULTIPLE") {
     return {
-      obligations: [obligationForTaxYear(effectiveTaxYear, "fulfilled"), obligationForTaxYear(String(parseInt(effectiveTaxYear.slice(0, 4), 10) + 1), "open")],
+      obligations: [
+        obligationForTaxYear(effectiveTaxYear, "fulfilled"),
+        obligationForTaxYear(String(parseInt(effectiveTaxYear.slice(0, 4), 10) + 1), "open"),
+      ],
     };
   }
 

@@ -84,7 +84,7 @@ function buildAnnualBody(overrides = {}) {
 function buildInitialAnnualEvent({ body = {}, headers = {} } = {}) {
   return buildHmrcEvent({
     body: buildAnnualBody(body),
-    headers: { authorization: "Bearer test-token", "x-initial-request": "true", ...headers },
+    headers: { "authorization": "Bearer test-token", "x-initial-request": "true", ...headers },
   });
 }
 
@@ -134,7 +134,7 @@ describe("hmrcItsaUkPropertyAnnualPut token charge", () => {
   test("does not charge a token for a request our own validation rejects before it reaches HMRC", async () => {
     const event = buildHmrcEvent({
       body: buildAnnualBody({ nino: undefined }),
-      headers: { authorization: "Bearer test-token", "x-initial-request": "true" },
+      headers: { "authorization": "Bearer test-token", "x-initial-request": "true" },
     });
 
     const response = await hmrcItsaUkPropertyAnnualPutHandler(event);

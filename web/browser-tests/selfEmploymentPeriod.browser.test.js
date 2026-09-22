@@ -53,11 +53,9 @@ test.describe("ITSA Self-Employment Period - Form", () => {
       }
     });
 
-    const modifiedHtml = periodHtmlContent
-      .replace("<head>", '<head><base href="http://localhost:3000/hmrc/itsa/">')
-      .replace(
-        "<body>",
-        `<body><script>
+    const modifiedHtml = periodHtmlContent.replace("<head>", '<head><base href="http://localhost:3000/hmrc/itsa/">').replace(
+      "<body>",
+      `<body><script>
 window.showStatus = window.showStatus || function(){};
 window.hideStatus = window.hideStatus || function(){};
 window.showLoading = window.showLoading || function(){};
@@ -66,7 +64,7 @@ window.generateRandomState = window.generateRandomState || function(){ return "t
 window.getGovClientHeaders = window.getGovClientHeaders || function(){ return Promise.resolve({}); };
 window.authorizedFetch = window.authorizedFetch || function(){ return Promise.resolve({ ok: true, json: function(){ return Promise.resolve({}); }}); };
 </script>`,
-      );
+    );
 
     await page.setContent(modifiedHtml, {
       url: "http://localhost:3000/hmrc/itsa/selfEmploymentPeriod.html",

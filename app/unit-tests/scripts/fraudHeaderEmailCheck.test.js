@@ -285,7 +285,11 @@ describe("buildRecord", () => {
       emailDate: "2026-09-05 10:30",
       subject: "Fraud prevention headers for DIY Accounting Submit",
     };
-    const record = buildRecord({ decision, expectedMonth: { label: "August 2026", key: "2026-08" }, checkedAt: "2026-09-15T00:00:00.000Z" });
+    const record = buildRecord({
+      decision,
+      expectedMonth: { label: "August 2026", key: "2026-08" },
+      checkedAt: "2026-09-15T00:00:00.000Z",
+    });
     expect(record).toEqual({
       month: "August 2026",
       status: "correct",

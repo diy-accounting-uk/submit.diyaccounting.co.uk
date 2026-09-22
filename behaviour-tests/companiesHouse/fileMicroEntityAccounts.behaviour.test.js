@@ -6,9 +6,20 @@
 import { test } from "../helpers/playwrightTestWithout.js";
 import fs from "node:fs";
 import { dotenvConfigIfNotBlank } from "@app/lib/env.js";
-import { addOnPageLogging, getEnvVarAndLog, runLocalDynamoDb, runLocalHttpServer, runLocalOAuth2Server } from "../helpers/behaviour-helpers.js";
+import {
+  addOnPageLogging,
+  getEnvVarAndLog,
+  runLocalDynamoDb,
+  runLocalHttpServer,
+  runLocalOAuth2Server,
+} from "../helpers/behaviour-helpers.js";
 import { consentToDataCollection, goToHomePageExpectNotLoggedIn } from "../steps/behaviour-steps.js";
-import { clickLogIn, loginWithCognitoOrMockAuth, verifyLoggedInStatus, logOutAndExpectToBeLoggedOut } from "../steps/behaviour-login-steps.js";
+import {
+  clickLogIn,
+  loginWithCognitoOrMockAuth,
+  verifyLoggedInStatus,
+  logOutAndExpectToBeLoggedOut,
+} from "../steps/behaviour-login-steps.js";
 import {
   goToFileMicroEntityAccounts,
   enterCompanyNumberAndLookUp,

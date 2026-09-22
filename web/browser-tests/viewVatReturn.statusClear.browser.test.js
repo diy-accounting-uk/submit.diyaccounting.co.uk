@@ -107,10 +107,9 @@ test.describe("viewVatReturn - stale status banners", () => {
       sessionStorage.setItem("hmrcAccessToken", "test-access-token");
     });
 
-    await page.goto(
-      `${baseUrl}/hmrc/vat/viewVatReturn.html?vrn=193054661&periodStart=2017-01-01&periodEnd=2017-03-31`,
-      { waitUntil: "domcontentloaded" },
-    );
+    await page.goto(`${baseUrl}/hmrc/vat/viewVatReturn.html?vrn=193054661&periodStart=2017-01-01&periodEnd=2017-03-31`, {
+      waitUntil: "domcontentloaded",
+    });
 
     // Auto-submit fires on load (URL params + access token both present) and the mocked
     // endpoint 404s on this first call — the page's catch-block error banner appears.

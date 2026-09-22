@@ -195,13 +195,15 @@ public class HmrcItsaStack extends Stack {
                 "ImportedHmrcItsaUkPropertyAnnualPutAsyncRequestsTable-%s".formatted(props.deploymentName()),
                 props.sharedNames().hmrcItsaUkPropertyAnnualPutAsyncRequestsTableName);
 
-        // Lookup existing DynamoDB HMRC ITSA business source adjustable summary (UK property) retrieve async request table
+        // Lookup existing DynamoDB HMRC ITSA business source adjustable summary (UK property) retrieve async request
+        // table
         ITable hmrcItsaBsasUkPropertyGetAsyncRequestsTable = Table.fromTableName(
                 this,
                 "ImportedHmrcItsaBsasUkPropertyGetAsyncRequestsTable-%s".formatted(props.deploymentName()),
                 props.sharedNames().hmrcItsaBsasUkPropertyGetAsyncRequestsTableName);
 
-        // Lookup existing DynamoDB HMRC ITSA business source adjustable summary (UK property) adjust async request table
+        // Lookup existing DynamoDB HMRC ITSA business source adjustable summary (UK property) adjust async request
+        // table
         ITable hmrcItsaBsasUkPropertyAdjustPostAsyncRequestsTable = Table.fromTableName(
                 this,
                 "ImportedHmrcItsaBsasUkPropertyAdjustPostAsyncRequestsTable-%s".formatted(props.deploymentName()),
@@ -276,13 +278,13 @@ public class HmrcItsaStack extends Stack {
                         .ingestFunctionName(props.sharedNames().hmrcItsaUkPropertyPeriodPostIngestLambdaFunctionName)
                         .ingestHandler(props.sharedNames().hmrcItsaUkPropertyPeriodPostIngestLambdaHandler)
                         .ingestLambdaArn(props.sharedNames().hmrcItsaUkPropertyPeriodPostIngestLambdaArn)
-                        .ingestProvisionedConcurrencyAliasArn(
-                                props.sharedNames().hmrcItsaUkPropertyPeriodPostIngestProvisionedConcurrencyLambdaAliasArn)
+                        .ingestProvisionedConcurrencyAliasArn(props.sharedNames()
+                                .hmrcItsaUkPropertyPeriodPostIngestProvisionedConcurrencyLambdaAliasArn)
                         .workerFunctionName(props.sharedNames().hmrcItsaUkPropertyPeriodPostWorkerLambdaFunctionName)
                         .workerHandler(props.sharedNames().hmrcItsaUkPropertyPeriodPostWorkerLambdaHandler)
                         .workerLambdaArn(props.sharedNames().hmrcItsaUkPropertyPeriodPostWorkerLambdaArn)
-                        .workerProvisionedConcurrencyAliasArn(
-                                props.sharedNames().hmrcItsaUkPropertyPeriodPostWorkerProvisionedConcurrencyLambdaAliasArn)
+                        .workerProvisionedConcurrencyAliasArn(props.sharedNames()
+                                .hmrcItsaUkPropertyPeriodPostWorkerProvisionedConcurrencyLambdaAliasArn)
                         .workerQueueName(props.sharedNames().hmrcItsaUkPropertyPeriodPostLambdaQueueName)
                         .workerDeadLetterQueueName(
                                 props.sharedNames().hmrcItsaUkPropertyPeriodPostLambdaDeadLetterQueueName)
@@ -355,13 +357,13 @@ public class HmrcItsaStack extends Stack {
                         .ingestFunctionName(props.sharedNames().hmrcItsaUkPropertyPeriodsGetIngestLambdaFunctionName)
                         .ingestHandler(props.sharedNames().hmrcItsaUkPropertyPeriodsGetIngestLambdaHandler)
                         .ingestLambdaArn(props.sharedNames().hmrcItsaUkPropertyPeriodsGetIngestLambdaArn)
-                        .ingestProvisionedConcurrencyAliasArn(
-                                props.sharedNames().hmrcItsaUkPropertyPeriodsGetIngestProvisionedConcurrencyLambdaAliasArn)
+                        .ingestProvisionedConcurrencyAliasArn(props.sharedNames()
+                                .hmrcItsaUkPropertyPeriodsGetIngestProvisionedConcurrencyLambdaAliasArn)
                         .workerFunctionName(props.sharedNames().hmrcItsaUkPropertyPeriodsGetWorkerLambdaFunctionName)
                         .workerHandler(props.sharedNames().hmrcItsaUkPropertyPeriodsGetWorkerLambdaHandler)
                         .workerLambdaArn(props.sharedNames().hmrcItsaUkPropertyPeriodsGetWorkerLambdaArn)
-                        .workerProvisionedConcurrencyAliasArn(
-                                props.sharedNames().hmrcItsaUkPropertyPeriodsGetWorkerProvisionedConcurrencyLambdaAliasArn)
+                        .workerProvisionedConcurrencyAliasArn(props.sharedNames()
+                                .hmrcItsaUkPropertyPeriodsGetWorkerProvisionedConcurrencyLambdaAliasArn)
                         .workerQueueName(props.sharedNames().hmrcItsaUkPropertyPeriodsGetLambdaQueueName)
                         .workerDeadLetterQueueName(
                                 props.sharedNames().hmrcItsaUkPropertyPeriodsGetLambdaDeadLetterQueueName)
@@ -433,13 +435,13 @@ public class HmrcItsaStack extends Stack {
                         .ingestFunctionName(props.sharedNames().hmrcItsaUkPropertyPeriodGetIngestLambdaFunctionName)
                         .ingestHandler(props.sharedNames().hmrcItsaUkPropertyPeriodGetIngestLambdaHandler)
                         .ingestLambdaArn(props.sharedNames().hmrcItsaUkPropertyPeriodGetIngestLambdaArn)
-                        .ingestProvisionedConcurrencyAliasArn(
-                                props.sharedNames().hmrcItsaUkPropertyPeriodGetIngestProvisionedConcurrencyLambdaAliasArn)
+                        .ingestProvisionedConcurrencyAliasArn(props.sharedNames()
+                                .hmrcItsaUkPropertyPeriodGetIngestProvisionedConcurrencyLambdaAliasArn)
                         .workerFunctionName(props.sharedNames().hmrcItsaUkPropertyPeriodGetWorkerLambdaFunctionName)
                         .workerHandler(props.sharedNames().hmrcItsaUkPropertyPeriodGetWorkerLambdaHandler)
                         .workerLambdaArn(props.sharedNames().hmrcItsaUkPropertyPeriodGetWorkerLambdaArn)
-                        .workerProvisionedConcurrencyAliasArn(
-                                props.sharedNames().hmrcItsaUkPropertyPeriodGetWorkerProvisionedConcurrencyLambdaAliasArn)
+                        .workerProvisionedConcurrencyAliasArn(props.sharedNames()
+                                .hmrcItsaUkPropertyPeriodGetWorkerProvisionedConcurrencyLambdaAliasArn)
                         .workerQueueName(props.sharedNames().hmrcItsaUkPropertyPeriodGetLambdaQueueName)
                         .workerDeadLetterQueueName(
                                 props.sharedNames().hmrcItsaUkPropertyPeriodGetLambdaDeadLetterQueueName)
@@ -513,13 +515,13 @@ public class HmrcItsaStack extends Stack {
                         .ingestFunctionName(props.sharedNames().hmrcItsaUkPropertyPeriodPutIngestLambdaFunctionName)
                         .ingestHandler(props.sharedNames().hmrcItsaUkPropertyPeriodPutIngestLambdaHandler)
                         .ingestLambdaArn(props.sharedNames().hmrcItsaUkPropertyPeriodPutIngestLambdaArn)
-                        .ingestProvisionedConcurrencyAliasArn(
-                                props.sharedNames().hmrcItsaUkPropertyPeriodPutIngestProvisionedConcurrencyLambdaAliasArn)
+                        .ingestProvisionedConcurrencyAliasArn(props.sharedNames()
+                                .hmrcItsaUkPropertyPeriodPutIngestProvisionedConcurrencyLambdaAliasArn)
                         .workerFunctionName(props.sharedNames().hmrcItsaUkPropertyPeriodPutWorkerLambdaFunctionName)
                         .workerHandler(props.sharedNames().hmrcItsaUkPropertyPeriodPutWorkerLambdaHandler)
                         .workerLambdaArn(props.sharedNames().hmrcItsaUkPropertyPeriodPutWorkerLambdaArn)
-                        .workerProvisionedConcurrencyAliasArn(
-                                props.sharedNames().hmrcItsaUkPropertyPeriodPutWorkerProvisionedConcurrencyLambdaAliasArn)
+                        .workerProvisionedConcurrencyAliasArn(props.sharedNames()
+                                .hmrcItsaUkPropertyPeriodPutWorkerProvisionedConcurrencyLambdaAliasArn)
                         .workerQueueName(props.sharedNames().hmrcItsaUkPropertyPeriodPutLambdaQueueName)
                         .workerDeadLetterQueueName(
                                 props.sharedNames().hmrcItsaUkPropertyPeriodPutLambdaDeadLetterQueueName)
@@ -593,13 +595,13 @@ public class HmrcItsaStack extends Stack {
                         .ingestFunctionName(props.sharedNames().hmrcItsaUkPropertyAnnualGetIngestLambdaFunctionName)
                         .ingestHandler(props.sharedNames().hmrcItsaUkPropertyAnnualGetIngestLambdaHandler)
                         .ingestLambdaArn(props.sharedNames().hmrcItsaUkPropertyAnnualGetIngestLambdaArn)
-                        .ingestProvisionedConcurrencyAliasArn(
-                                props.sharedNames().hmrcItsaUkPropertyAnnualGetIngestProvisionedConcurrencyLambdaAliasArn)
+                        .ingestProvisionedConcurrencyAliasArn(props.sharedNames()
+                                .hmrcItsaUkPropertyAnnualGetIngestProvisionedConcurrencyLambdaAliasArn)
                         .workerFunctionName(props.sharedNames().hmrcItsaUkPropertyAnnualGetWorkerLambdaFunctionName)
                         .workerHandler(props.sharedNames().hmrcItsaUkPropertyAnnualGetWorkerLambdaHandler)
                         .workerLambdaArn(props.sharedNames().hmrcItsaUkPropertyAnnualGetWorkerLambdaArn)
-                        .workerProvisionedConcurrencyAliasArn(
-                                props.sharedNames().hmrcItsaUkPropertyAnnualGetWorkerProvisionedConcurrencyLambdaAliasArn)
+                        .workerProvisionedConcurrencyAliasArn(props.sharedNames()
+                                .hmrcItsaUkPropertyAnnualGetWorkerProvisionedConcurrencyLambdaAliasArn)
                         .workerQueueName(props.sharedNames().hmrcItsaUkPropertyAnnualGetLambdaQueueName)
                         .workerDeadLetterQueueName(
                                 props.sharedNames().hmrcItsaUkPropertyAnnualGetLambdaDeadLetterQueueName)
@@ -673,13 +675,13 @@ public class HmrcItsaStack extends Stack {
                         .ingestFunctionName(props.sharedNames().hmrcItsaUkPropertyAnnualPutIngestLambdaFunctionName)
                         .ingestHandler(props.sharedNames().hmrcItsaUkPropertyAnnualPutIngestLambdaHandler)
                         .ingestLambdaArn(props.sharedNames().hmrcItsaUkPropertyAnnualPutIngestLambdaArn)
-                        .ingestProvisionedConcurrencyAliasArn(
-                                props.sharedNames().hmrcItsaUkPropertyAnnualPutIngestProvisionedConcurrencyLambdaAliasArn)
+                        .ingestProvisionedConcurrencyAliasArn(props.sharedNames()
+                                .hmrcItsaUkPropertyAnnualPutIngestProvisionedConcurrencyLambdaAliasArn)
                         .workerFunctionName(props.sharedNames().hmrcItsaUkPropertyAnnualPutWorkerLambdaFunctionName)
                         .workerHandler(props.sharedNames().hmrcItsaUkPropertyAnnualPutWorkerLambdaHandler)
                         .workerLambdaArn(props.sharedNames().hmrcItsaUkPropertyAnnualPutWorkerLambdaArn)
-                        .workerProvisionedConcurrencyAliasArn(
-                                props.sharedNames().hmrcItsaUkPropertyAnnualPutWorkerProvisionedConcurrencyLambdaAliasArn)
+                        .workerProvisionedConcurrencyAliasArn(props.sharedNames()
+                                .hmrcItsaUkPropertyAnnualPutWorkerProvisionedConcurrencyLambdaAliasArn)
                         .workerQueueName(props.sharedNames().hmrcItsaUkPropertyAnnualPutLambdaQueueName)
                         .workerDeadLetterQueueName(
                                 props.sharedNames().hmrcItsaUkPropertyAnnualPutLambdaDeadLetterQueueName)
@@ -761,7 +763,8 @@ public class HmrcItsaStack extends Stack {
                         .workerProvisionedConcurrencyAliasArn(
                                 props.sharedNames().hmrcItsaBsasUkPropertyGetWorkerProvisionedConcurrencyLambdaAliasArn)
                         .workerQueueName(props.sharedNames().hmrcItsaBsasUkPropertyGetLambdaQueueName)
-                        .workerDeadLetterQueueName(props.sharedNames().hmrcItsaBsasUkPropertyGetLambdaDeadLetterQueueName)
+                        .workerDeadLetterQueueName(
+                                props.sharedNames().hmrcItsaBsasUkPropertyGetLambdaDeadLetterQueueName)
                         .workerProvisionedConcurrency(0)
                         .workerLambdaTimeout(Duration.seconds(120))
                         .queueVisibilityTimeout(Duration.seconds(140))
@@ -774,7 +777,8 @@ public class HmrcItsaStack extends Stack {
                         .build());
 
         // Update API environment with SQS queue URL
-        itsaBsasUkPropertyGetLambdaEnv.put("SQS_QUEUE_URL", hmrcItsaBsasUkPropertyGetLambdaUrlOrigin.queue.getQueueUrl());
+        itsaBsasUkPropertyGetLambdaEnv.put(
+                "SQS_QUEUE_URL", hmrcItsaBsasUkPropertyGetLambdaUrlOrigin.queue.getQueueUrl());
 
         this.hmrcItsaBsasUkPropertyGetLambdaProps = hmrcItsaBsasUkPropertyGetLambdaUrlOrigin.apiProps;
         this.hmrcItsaBsasUkPropertyGetLambda = hmrcItsaBsasUkPropertyGetLambdaUrlOrigin.ingestLambda;
@@ -826,12 +830,14 @@ public class HmrcItsaStack extends Stack {
                         .baseImageTag(props.baseImageTag())
                         .ecrRepositoryName(props.sharedNames().ecrRepositoryName)
                         .ecrRepositoryArn(props.sharedNames().ecrRepositoryArn)
-                        .ingestFunctionName(props.sharedNames().hmrcItsaBsasUkPropertyAdjustPostIngestLambdaFunctionName)
+                        .ingestFunctionName(
+                                props.sharedNames().hmrcItsaBsasUkPropertyAdjustPostIngestLambdaFunctionName)
                         .ingestHandler(props.sharedNames().hmrcItsaBsasUkPropertyAdjustPostIngestLambdaHandler)
                         .ingestLambdaArn(props.sharedNames().hmrcItsaBsasUkPropertyAdjustPostIngestLambdaArn)
-                        .ingestProvisionedConcurrencyAliasArn(
-                                props.sharedNames().hmrcItsaBsasUkPropertyAdjustPostIngestProvisionedConcurrencyLambdaAliasArn)
-                        .workerFunctionName(props.sharedNames().hmrcItsaBsasUkPropertyAdjustPostWorkerLambdaFunctionName)
+                        .ingestProvisionedConcurrencyAliasArn(props.sharedNames()
+                                .hmrcItsaBsasUkPropertyAdjustPostIngestProvisionedConcurrencyLambdaAliasArn)
+                        .workerFunctionName(
+                                props.sharedNames().hmrcItsaBsasUkPropertyAdjustPostWorkerLambdaFunctionName)
                         .workerHandler(props.sharedNames().hmrcItsaBsasUkPropertyAdjustPostWorkerLambdaHandler)
                         .workerLambdaArn(props.sharedNames().hmrcItsaBsasUkPropertyAdjustPostWorkerLambdaArn)
                         .workerProvisionedConcurrencyAliasArn(props.sharedNames()
@@ -865,11 +871,14 @@ public class HmrcItsaStack extends Stack {
                 props.sharedNames().hmrcItsaBsasUkPropertyAdjustPostWorkerLambdaHandler);
 
         // Grant the ITSA BSAS UK property adjustment Lambda and its worker permission to access DynamoDB Bundles Table
-        List.of(this.hmrcItsaBsasUkPropertyAdjustPostLambda, hmrcItsaBsasUkPropertyAdjustPostLambdaUrlOrigin.workerLambda)
+        List.of(
+                        this.hmrcItsaBsasUkPropertyAdjustPostLambda,
+                        hmrcItsaBsasUkPropertyAdjustPostLambdaUrlOrigin.workerLambda)
                 .forEach(fn -> {
                     bundlesTable.grant(fn, "dynamodb:Query");
                     hmrcApiRequestsTable.grant(fn, "dynamodb:PutItem");
-                    hmrcItsaBsasUkPropertyAdjustPostAsyncRequestsTable.grant(fn, "dynamodb:GetItem", "dynamodb:UpdateItem");
+                    hmrcItsaBsasUkPropertyAdjustPostAsyncRequestsTable.grant(
+                            fn, "dynamodb:GetItem", "dynamodb:UpdateItem");
 
                     // Grant access to user sub hash salt secret in Secrets Manager
                     SubHashSaltHelper.grantSaltAccess(fn, region, account, props.envName());
@@ -907,15 +916,16 @@ public class HmrcItsaStack extends Stack {
                         .ingestFunctionName(props.sharedNames().hmrcItsaLossesAndClaimsGetIngestLambdaFunctionName)
                         .ingestHandler(props.sharedNames().hmrcItsaLossesAndClaimsGetIngestLambdaHandler)
                         .ingestLambdaArn(props.sharedNames().hmrcItsaLossesAndClaimsGetIngestLambdaArn)
-                        .ingestProvisionedConcurrencyAliasArn(
-                                props.sharedNames().hmrcItsaLossesAndClaimsGetIngestProvisionedConcurrencyLambdaAliasArn)
+                        .ingestProvisionedConcurrencyAliasArn(props.sharedNames()
+                                .hmrcItsaLossesAndClaimsGetIngestProvisionedConcurrencyLambdaAliasArn)
                         .workerFunctionName(props.sharedNames().hmrcItsaLossesAndClaimsGetWorkerLambdaFunctionName)
                         .workerHandler(props.sharedNames().hmrcItsaLossesAndClaimsGetWorkerLambdaHandler)
                         .workerLambdaArn(props.sharedNames().hmrcItsaLossesAndClaimsGetWorkerLambdaArn)
-                        .workerProvisionedConcurrencyAliasArn(
-                                props.sharedNames().hmrcItsaLossesAndClaimsGetWorkerProvisionedConcurrencyLambdaAliasArn)
+                        .workerProvisionedConcurrencyAliasArn(props.sharedNames()
+                                .hmrcItsaLossesAndClaimsGetWorkerProvisionedConcurrencyLambdaAliasArn)
                         .workerQueueName(props.sharedNames().hmrcItsaLossesAndClaimsGetLambdaQueueName)
-                        .workerDeadLetterQueueName(props.sharedNames().hmrcItsaLossesAndClaimsGetLambdaDeadLetterQueueName)
+                        .workerDeadLetterQueueName(
+                                props.sharedNames().hmrcItsaLossesAndClaimsGetLambdaDeadLetterQueueName)
                         .workerProvisionedConcurrency(0)
                         .workerLambdaTimeout(Duration.seconds(120))
                         .queueVisibilityTimeout(Duration.seconds(140))
@@ -928,7 +938,8 @@ public class HmrcItsaStack extends Stack {
                         .build());
 
         // Update API environment with SQS queue URL
-        itsaLossesAndClaimsGetLambdaEnv.put("SQS_QUEUE_URL", hmrcItsaLossesAndClaimsGetLambdaUrlOrigin.queue.getQueueUrl());
+        itsaLossesAndClaimsGetLambdaEnv.put(
+                "SQS_QUEUE_URL", hmrcItsaLossesAndClaimsGetLambdaUrlOrigin.queue.getQueueUrl());
 
         this.hmrcItsaLossesAndClaimsGetLambdaProps = hmrcItsaLossesAndClaimsGetLambdaUrlOrigin.apiProps;
         this.hmrcItsaLossesAndClaimsGetLambda = hmrcItsaLossesAndClaimsGetLambdaUrlOrigin.ingestLambda;
@@ -985,15 +996,16 @@ public class HmrcItsaStack extends Stack {
                         .ingestFunctionName(props.sharedNames().hmrcItsaLossesAndClaimsPutIngestLambdaFunctionName)
                         .ingestHandler(props.sharedNames().hmrcItsaLossesAndClaimsPutIngestLambdaHandler)
                         .ingestLambdaArn(props.sharedNames().hmrcItsaLossesAndClaimsPutIngestLambdaArn)
-                        .ingestProvisionedConcurrencyAliasArn(
-                                props.sharedNames().hmrcItsaLossesAndClaimsPutIngestProvisionedConcurrencyLambdaAliasArn)
+                        .ingestProvisionedConcurrencyAliasArn(props.sharedNames()
+                                .hmrcItsaLossesAndClaimsPutIngestProvisionedConcurrencyLambdaAliasArn)
                         .workerFunctionName(props.sharedNames().hmrcItsaLossesAndClaimsPutWorkerLambdaFunctionName)
                         .workerHandler(props.sharedNames().hmrcItsaLossesAndClaimsPutWorkerLambdaHandler)
                         .workerLambdaArn(props.sharedNames().hmrcItsaLossesAndClaimsPutWorkerLambdaArn)
-                        .workerProvisionedConcurrencyAliasArn(
-                                props.sharedNames().hmrcItsaLossesAndClaimsPutWorkerProvisionedConcurrencyLambdaAliasArn)
+                        .workerProvisionedConcurrencyAliasArn(props.sharedNames()
+                                .hmrcItsaLossesAndClaimsPutWorkerProvisionedConcurrencyLambdaAliasArn)
                         .workerQueueName(props.sharedNames().hmrcItsaLossesAndClaimsPutLambdaQueueName)
-                        .workerDeadLetterQueueName(props.sharedNames().hmrcItsaLossesAndClaimsPutLambdaDeadLetterQueueName)
+                        .workerDeadLetterQueueName(
+                                props.sharedNames().hmrcItsaLossesAndClaimsPutLambdaDeadLetterQueueName)
                         .workerProvisionedConcurrency(0)
                         .workerLambdaTimeout(Duration.seconds(120))
                         .queueVisibilityTimeout(Duration.seconds(140))
@@ -1006,7 +1018,8 @@ public class HmrcItsaStack extends Stack {
                         .build());
 
         // Update API environment with SQS queue URL
-        itsaLossesAndClaimsPutLambdaEnv.put("SQS_QUEUE_URL", hmrcItsaLossesAndClaimsPutLambdaUrlOrigin.queue.getQueueUrl());
+        itsaLossesAndClaimsPutLambdaEnv.put(
+                "SQS_QUEUE_URL", hmrcItsaLossesAndClaimsPutLambdaUrlOrigin.queue.getQueueUrl());
 
         this.hmrcItsaLossesAndClaimsPutLambdaProps = hmrcItsaLossesAndClaimsPutLambdaUrlOrigin.apiProps;
         this.hmrcItsaLossesAndClaimsPutLambda = hmrcItsaLossesAndClaimsPutLambdaUrlOrigin.ingestLambda;
@@ -1063,13 +1076,13 @@ public class HmrcItsaStack extends Stack {
                         .ingestFunctionName(props.sharedNames().hmrcItsaLossesAndClaimsDeleteIngestLambdaFunctionName)
                         .ingestHandler(props.sharedNames().hmrcItsaLossesAndClaimsDeleteIngestLambdaHandler)
                         .ingestLambdaArn(props.sharedNames().hmrcItsaLossesAndClaimsDeleteIngestLambdaArn)
-                        .ingestProvisionedConcurrencyAliasArn(
-                                props.sharedNames().hmrcItsaLossesAndClaimsDeleteIngestProvisionedConcurrencyLambdaAliasArn)
+                        .ingestProvisionedConcurrencyAliasArn(props.sharedNames()
+                                .hmrcItsaLossesAndClaimsDeleteIngestProvisionedConcurrencyLambdaAliasArn)
                         .workerFunctionName(props.sharedNames().hmrcItsaLossesAndClaimsDeleteWorkerLambdaFunctionName)
                         .workerHandler(props.sharedNames().hmrcItsaLossesAndClaimsDeleteWorkerLambdaHandler)
                         .workerLambdaArn(props.sharedNames().hmrcItsaLossesAndClaimsDeleteWorkerLambdaArn)
-                        .workerProvisionedConcurrencyAliasArn(
-                                props.sharedNames().hmrcItsaLossesAndClaimsDeleteWorkerProvisionedConcurrencyLambdaAliasArn)
+                        .workerProvisionedConcurrencyAliasArn(props.sharedNames()
+                                .hmrcItsaLossesAndClaimsDeleteWorkerProvisionedConcurrencyLambdaAliasArn)
                         .workerQueueName(props.sharedNames().hmrcItsaLossesAndClaimsDeleteLambdaQueueName)
                         .workerDeadLetterQueueName(
                                 props.sharedNames().hmrcItsaLossesAndClaimsDeleteLambdaDeadLetterQueueName)
@@ -1104,7 +1117,8 @@ public class HmrcItsaStack extends Stack {
                 .forEach(fn -> {
                     bundlesTable.grant(fn, "dynamodb:Query");
                     hmrcApiRequestsTable.grant(fn, "dynamodb:PutItem");
-                    hmrcItsaLossesAndClaimsDeleteAsyncRequestsTable.grant(fn, "dynamodb:GetItem", "dynamodb:UpdateItem");
+                    hmrcItsaLossesAndClaimsDeleteAsyncRequestsTable.grant(
+                            fn, "dynamodb:GetItem", "dynamodb:UpdateItem");
 
                     // Grant access to user sub hash salt secret in Secrets Manager
                     SubHashSaltHelper.grantSaltAccess(fn, region, account, props.envName());
@@ -1139,12 +1153,14 @@ public class HmrcItsaStack extends Stack {
                         .baseImageTag(props.baseImageTag())
                         .ecrRepositoryName(props.sharedNames().ecrRepositoryName)
                         .ecrRepositoryArn(props.sharedNames().ecrRepositoryArn)
-                        .ingestFunctionName(props.sharedNames().hmrcItsaTaxLiabilityAdjustmentsGetIngestLambdaFunctionName)
+                        .ingestFunctionName(
+                                props.sharedNames().hmrcItsaTaxLiabilityAdjustmentsGetIngestLambdaFunctionName)
                         .ingestHandler(props.sharedNames().hmrcItsaTaxLiabilityAdjustmentsGetIngestLambdaHandler)
                         .ingestLambdaArn(props.sharedNames().hmrcItsaTaxLiabilityAdjustmentsGetIngestLambdaArn)
                         .ingestProvisionedConcurrencyAliasArn(props.sharedNames()
                                 .hmrcItsaTaxLiabilityAdjustmentsGetIngestProvisionedConcurrencyLambdaAliasArn)
-                        .workerFunctionName(props.sharedNames().hmrcItsaTaxLiabilityAdjustmentsGetWorkerLambdaFunctionName)
+                        .workerFunctionName(
+                                props.sharedNames().hmrcItsaTaxLiabilityAdjustmentsGetWorkerLambdaFunctionName)
                         .workerHandler(props.sharedNames().hmrcItsaTaxLiabilityAdjustmentsGetWorkerLambdaHandler)
                         .workerLambdaArn(props.sharedNames().hmrcItsaTaxLiabilityAdjustmentsGetWorkerLambdaArn)
                         .workerProvisionedConcurrencyAliasArn(props.sharedNames()
@@ -1169,7 +1185,8 @@ public class HmrcItsaStack extends Stack {
 
         this.hmrcItsaTaxLiabilityAdjustmentsGetLambdaProps = hmrcItsaTaxLiabilityAdjustmentsGetLambdaUrlOrigin.apiProps;
         this.hmrcItsaTaxLiabilityAdjustmentsGetLambda = hmrcItsaTaxLiabilityAdjustmentsGetLambdaUrlOrigin.ingestLambda;
-        this.hmrcItsaTaxLiabilityAdjustmentsGetLambdaLogGroup = hmrcItsaTaxLiabilityAdjustmentsGetLambdaUrlOrigin.logGroup;
+        this.hmrcItsaTaxLiabilityAdjustmentsGetLambdaLogGroup =
+                hmrcItsaTaxLiabilityAdjustmentsGetLambdaUrlOrigin.logGroup;
         this.lambdaFunctionProps.add(this.hmrcItsaTaxLiabilityAdjustmentsGetLambdaProps);
         infof(
                 "Created Async API Lambda %s for ITSA tax liability adjustments retrieval with ingestHandler %s and worker %s",
@@ -1222,12 +1239,14 @@ public class HmrcItsaStack extends Stack {
                         .baseImageTag(props.baseImageTag())
                         .ecrRepositoryName(props.sharedNames().ecrRepositoryName)
                         .ecrRepositoryArn(props.sharedNames().ecrRepositoryArn)
-                        .ingestFunctionName(props.sharedNames().hmrcItsaTaxLiabilityAdjustmentsPutIngestLambdaFunctionName)
+                        .ingestFunctionName(
+                                props.sharedNames().hmrcItsaTaxLiabilityAdjustmentsPutIngestLambdaFunctionName)
                         .ingestHandler(props.sharedNames().hmrcItsaTaxLiabilityAdjustmentsPutIngestLambdaHandler)
                         .ingestLambdaArn(props.sharedNames().hmrcItsaTaxLiabilityAdjustmentsPutIngestLambdaArn)
                         .ingestProvisionedConcurrencyAliasArn(props.sharedNames()
                                 .hmrcItsaTaxLiabilityAdjustmentsPutIngestProvisionedConcurrencyLambdaAliasArn)
-                        .workerFunctionName(props.sharedNames().hmrcItsaTaxLiabilityAdjustmentsPutWorkerLambdaFunctionName)
+                        .workerFunctionName(
+                                props.sharedNames().hmrcItsaTaxLiabilityAdjustmentsPutWorkerLambdaFunctionName)
                         .workerHandler(props.sharedNames().hmrcItsaTaxLiabilityAdjustmentsPutWorkerLambdaHandler)
                         .workerLambdaArn(props.sharedNames().hmrcItsaTaxLiabilityAdjustmentsPutWorkerLambdaArn)
                         .workerProvisionedConcurrencyAliasArn(props.sharedNames()
@@ -1252,7 +1271,8 @@ public class HmrcItsaStack extends Stack {
 
         this.hmrcItsaTaxLiabilityAdjustmentsPutLambdaProps = hmrcItsaTaxLiabilityAdjustmentsPutLambdaUrlOrigin.apiProps;
         this.hmrcItsaTaxLiabilityAdjustmentsPutLambda = hmrcItsaTaxLiabilityAdjustmentsPutLambdaUrlOrigin.ingestLambda;
-        this.hmrcItsaTaxLiabilityAdjustmentsPutLambdaLogGroup = hmrcItsaTaxLiabilityAdjustmentsPutLambdaUrlOrigin.logGroup;
+        this.hmrcItsaTaxLiabilityAdjustmentsPutLambdaLogGroup =
+                hmrcItsaTaxLiabilityAdjustmentsPutLambdaUrlOrigin.logGroup;
         this.lambdaFunctionProps.add(this.hmrcItsaTaxLiabilityAdjustmentsPutLambdaProps);
         infof(
                 "Created Async API Lambda %s for ITSA tax liability adjustments submission with ingestHandler %s and worker %s",
@@ -1327,7 +1347,8 @@ public class HmrcItsaStack extends Stack {
                         .httpMethod(props.sharedNames().hmrcItsaTaxLiabilityAdjustmentsDeleteLambdaHttpMethod)
                         .urlPath(props.sharedNames().hmrcItsaTaxLiabilityAdjustmentsDeleteLambdaUrlPath)
                         .jwtAuthorizer(props.sharedNames().hmrcItsaTaxLiabilityAdjustmentsDeleteLambdaJwtAuthorizer)
-                        .customAuthorizer(props.sharedNames().hmrcItsaTaxLiabilityAdjustmentsDeleteLambdaCustomAuthorizer)
+                        .customAuthorizer(
+                                props.sharedNames().hmrcItsaTaxLiabilityAdjustmentsDeleteLambdaCustomAuthorizer)
                         .environment(itsaTaxLiabilityAdjustmentsDeleteLambdaEnv)
                         .build());
 
@@ -1337,7 +1358,8 @@ public class HmrcItsaStack extends Stack {
 
         this.hmrcItsaTaxLiabilityAdjustmentsDeleteLambdaProps =
                 hmrcItsaTaxLiabilityAdjustmentsDeleteLambdaUrlOrigin.apiProps;
-        this.hmrcItsaTaxLiabilityAdjustmentsDeleteLambda = hmrcItsaTaxLiabilityAdjustmentsDeleteLambdaUrlOrigin.ingestLambda;
+        this.hmrcItsaTaxLiabilityAdjustmentsDeleteLambda =
+                hmrcItsaTaxLiabilityAdjustmentsDeleteLambdaUrlOrigin.ingestLambda;
         this.hmrcItsaTaxLiabilityAdjustmentsDeleteLambdaLogGroup =
                 hmrcItsaTaxLiabilityAdjustmentsDeleteLambdaUrlOrigin.logGroup;
         this.lambdaFunctionProps.add(this.hmrcItsaTaxLiabilityAdjustmentsDeleteLambdaProps);

@@ -2,12 +2,7 @@
 // Copyright (C) 2006-2026 DIY Accounting Limited
 
 import { describe, test, expect } from "vitest";
-import {
-  rowsFromAxeResults,
-  rowsFromPa11yResults,
-  buildRows,
-  toNdjson,
-} from "../../../scripts/compliance-accessibility-rows.js";
+import { rowsFromAxeResults, rowsFromPa11yResults, buildRows, toNdjson } from "../../../scripts/compliance-accessibility-rows.js";
 
 describe("compliance-accessibility-rows", () => {
   test("rowsFromAxeResults counts violations and passes per page", () => {

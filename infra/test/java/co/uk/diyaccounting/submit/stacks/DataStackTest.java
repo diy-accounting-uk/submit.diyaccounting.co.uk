@@ -442,10 +442,14 @@ class DataStackTest {
                         Match.objectLike(Map.of(
                                 "Rules",
                                 Match.arrayWith(List.of(Match.objectLike(Map.of(
-                                        "Id", "expire-sandbox",
-                                        "Status", "Enabled",
-                                        "ExpirationInDays", 37,
-                                        "NoncurrentVersionExpiration", Map.of("NoncurrentDays", 1)))))))));
+                                        "Id",
+                                        "expire-sandbox",
+                                        "Status",
+                                        "Enabled",
+                                        "ExpirationInDays",
+                                        37,
+                                        "NoncurrentVersionExpiration",
+                                        Map.of("NoncurrentDays", 1)))))))));
     }
 
     @Test

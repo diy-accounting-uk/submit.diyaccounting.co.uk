@@ -41,9 +41,7 @@ vi.mock("@aws-sdk/client-s3", () => {
   return { S3Client, ListObjectsV2Command, CopyObjectCommand, DeleteObjectsCommand, GetObjectCommand };
 });
 
-const { moveBookToClient, BookNotFoundError, DestinationBookExistsError, _resetS3Client } = await import(
-  "@app/data/s3DiyaGlRepository.js"
-);
+const { moveBookToClient, BookNotFoundError, DestinationBookExistsError, _resetS3Client } = await import("@app/data/s3DiyaGlRepository.js");
 const { hashSub, _setTestSalt } = await import("../../services/subHasher.js");
 
 const BOOK_ID = "11111111-2222-4333-8444-555555555555";

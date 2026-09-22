@@ -23,7 +23,13 @@ import path from "path";
 
 import { validateScript } from "./lib/video/scriptSchema.js";
 import { groupFor, pauseForGroup, residualAfterWait, captionMinMs, compressionFor } from "./lib/video/pacing.js";
-import { installOverlay, caption as overlayCaption, chapter as overlayChapter, suppress as overlaySuppress, readEvents } from "./lib/video/overlay.js";
+import {
+  installOverlay,
+  caption as overlayCaption,
+  chapter as overlayChapter,
+  suppress as overlaySuppress,
+  readEvents,
+} from "./lib/video/overlay.js";
 import { executeAction, SceneStepError } from "./lib/video/actions.js";
 import { createWaitPhase } from "./lib/video/waitPhase.js";
 import { createCapture } from "./lib/video/capture.js";
@@ -372,7 +378,13 @@ async function main() {
             await overlayCaption(page, step.text);
             await new Promise((resolve) => setTimeout(resolve, minMs));
             await overlayCaption(page, null);
-            captionEvents.push({ startMs, text: step.text, maxCharsPerLine: script.captions.maxCharsPerLine, maxLines: script.captions.maxLines, _minMs: minMs });
+            captionEvents.push({
+              startMs,
+              text: step.text,
+              maxCharsPerLine: script.captions.maxCharsPerLine,
+              maxLines: script.captions.maxLines,
+              _minMs: minMs,
+            });
           }
         } else if (step.action === "hold") {
           await new Promise((resolve) => setTimeout(resolve, fastForward || offCamera ? 0 : step.ms));
@@ -514,7 +526,12 @@ async function main() {
 
   // Last gate before any of this can be published: nothing the run was handed as a credential
   // may appear in a text artefact that ships with the video.
-  for (const artefact of [`${script.name}.vtt`, `${script.name}.transcript.md`, `${script.name}.timeline.json`, `${script.name}.overlay-events.json`]) {
+  for (const artefact of [
+    `${script.name}.vtt`,
+    `${script.name}.transcript.md`,
+    `${script.name}.timeline.json`,
+    `${script.name}.overlay-events.json`,
+  ]) {
     assertNoSecrets(artefact, fs.readFileSync(path.join(outDir, artefact), "utf8"), secrets);
   }
 

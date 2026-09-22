@@ -197,6 +197,18 @@ jobs:
           echo "$added" >> "$GITHUB_STEP_SUMMARY"
           echo "$added" | xargs npx eslint
 
+      - name: Check formatting (Prettier)
+        run: npx prettier --check .
+
+      - uses: actions/setup-java@b6effb05e454b25005698d916606bdc6ffcbf961 # v5
+        with:
+          distribution: 'temurin'
+          java-version: ${{ env.JAVA_VERSION }}
+          cache: 'maven'
+
+      - name: Check formatting (Spotless)
+        run: ./mvnw spotless:check
+
   params:
     runs-on: ubuntu-24.04
     steps:

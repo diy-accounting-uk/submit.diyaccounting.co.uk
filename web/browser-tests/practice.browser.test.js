@@ -56,7 +56,11 @@ test.describe("Practice page", () => {
       }
       if (route.request().method() === "POST") {
         const response = createResponse || { client: { ...CLIENT_A, clientId: "01NEWCLIENT00000000000000" } };
-        await route.fulfill({ status: response.status || 201, contentType: "application/json", body: JSON.stringify(response.body || response) });
+        await route.fulfill({
+          status: response.status || 201,
+          contentType: "application/json",
+          body: JSON.stringify(response.body || response),
+        });
         return;
       }
       await route.continue();
@@ -171,7 +175,10 @@ test.describe("Practice page", () => {
   test("shows validation errors from a failed add-client request as text", async ({ page }) => {
     await setupRoutes(page, {
       clients: [],
-      createResponse: { status: 400, body: { message: "Invalid request", error: { errorMessages: ["displayName is required and must be 1-200 characters"] } } },
+      createResponse: {
+        status: 400,
+        body: { message: "Invalid request", error: { errorMessages: ["displayName is required and must be 1-200 characters"] } },
+      },
     });
     await loadPage(page);
 

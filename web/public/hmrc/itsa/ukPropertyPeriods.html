@@ -38,9 +38,7 @@
       <!-- Search Form -->
       <div id="periodsForm" class="form-container">
         <div class="form-toggle-buttons">
-          <button type="button" id="toggleSearchCriteriaBtn" class="secondary-button" style="display: none">
-            Show Search Criteria
-          </button>
+          <button type="button" id="toggleSearchCriteriaBtn" class="secondary-button" style="display: none">Show Search Criteria</button>
           <button type="button" id="cancelRequestBtn" class="cancel-button" style="display: none">Cancel Request</button>
         </div>
         <div id="searchCriteriaContainer">
@@ -48,9 +46,7 @@
           <form id="itsaUkPropertyPeriodsForm">
             <div class="form-group">
               <label for="nino">National Insurance number</label>
-              <p id="nino-hint" class="hint">
-                This is two letters, six numbers and a final letter, for example AB123456C.
-              </p>
+              <p id="nino-hint" class="hint">This is two letters, six numbers and a final letter, for example AB123456C.</p>
               <input
                 type="text"
                 id="nino"
@@ -68,18 +64,32 @@
             <div class="form-group">
               <label for="businessId">Business ID</label>
               <p id="businessId-hint" class="hint">The business ID from Business Details, for example XAIS12345678910.</p>
-              <input type="text" id="businessId" name="businessId" required placeholder="e.g., XAIS12345678910" aria-describedby="businessId-hint" />
+              <input
+                type="text"
+                id="businessId"
+                name="businessId"
+                required
+                placeholder="e.g., XAIS12345678910"
+                aria-describedby="businessId-hint"
+              />
             </div>
 
             <div class="form-group">
               <label for="taxYear">Tax year</label>
               <p id="taxYear-hint" class="hint">Format YYYY-YY, for example 2023-24.</p>
-              <input type="text" id="taxYear" name="taxYear" required placeholder="e.g., 2023-24" maxlength="7" aria-describedby="taxYear-hint" />
+              <input
+                type="text"
+                id="taxYear"
+                name="taxYear"
+                required
+                placeholder="e.g., 2023-24"
+                maxlength="7"
+                aria-describedby="taxYear-hint"
+              />
             </div>
 
             <p id="cumulativeListNote" class="hint" style="display: none">
-              This tax year reports one running total rather than a list of submissions, so this shows the current total
-              instead of a list.
+              This tax year reports one running total rather than a list of submissions, so this shows the current total instead of a list.
             </p>
 
             <!-- Developer Test Scenario Section -->
@@ -411,7 +421,14 @@
             showStatus("Retrieving period summaries...", "info");
 
             if (isCumulativeTaxYear(taxYear)) {
-              const result = await fetchCurrentTotal(nino, businessId, taxYear, testScenario, runFraudPreventionHeaderValidation, accessToken);
+              const result = await fetchCurrentTotal(
+                nino,
+                businessId,
+                taxYear,
+                testScenario,
+                runFraudPreventionHeaderValidation,
+                accessToken,
+              );
               displayCurrentTotal(result);
             } else {
               const result = await fetchPeriods(nino, businessId, taxYear, testScenario, runFraudPreventionHeaderValidation, accessToken);
@@ -474,7 +491,7 @@
         const tableContainer = document.getElementById("periodsTable");
 
         if (!periodSummary) {
-          tableContainer.innerHTML = "<p class=\"no-data\">HMRC has no total on file yet for this tax year.</p>";
+          tableContainer.innerHTML = '<p class="no-data">HMRC has no total on file yet for this tax year.</p>';
           return;
         }
 

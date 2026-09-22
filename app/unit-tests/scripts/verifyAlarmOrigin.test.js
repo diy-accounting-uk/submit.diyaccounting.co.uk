@@ -120,13 +120,23 @@ describe("evaluateAlarmHistory", () => {
   });
 
   test("skips a history item whose HistoryData is not valid JSON, without crashing", () => {
-    const badItem = { AlarmName: ALARM_NAME, HistoryItemType: "StateUpdate", Timestamp: new Date("2026-09-03T21:40:00.000Z"), HistoryData: "{not json" };
+    const badItem = {
+      AlarmName: ALARM_NAME,
+      HistoryItemType: "StateUpdate",
+      Timestamp: new Date("2026-09-03T21:40:00.000Z"),
+      HistoryData: "{not json",
+    };
     const result = evaluateAlarmHistory({ alarmName: ALARM_NAME, startIso, endIso, historyItems: [badItem, stateUpdateItem({})] });
     expect(result.verified).toBe(true);
   });
 
   test("ignores a ConfigurationUpdate history item even when it names the alarm", () => {
-    const configItem = { AlarmName: ALARM_NAME, HistoryItemType: "ConfigurationUpdate", Timestamp: new Date("2026-09-03T21:40:00.000Z"), HistoryData: "{}" };
+    const configItem = {
+      AlarmName: ALARM_NAME,
+      HistoryItemType: "ConfigurationUpdate",
+      Timestamp: new Date("2026-09-03T21:40:00.000Z"),
+      HistoryData: "{}",
+    };
     const result = evaluateAlarmHistory({ alarmName: ALARM_NAME, startIso, endIso, historyItems: [configItem] });
     expect(result.verified).toBe(false);
   });
@@ -158,7 +168,12 @@ describe("fetchAlarmHistory", () => {
       .mockResolvedValueOnce({ AlarmHistoryItems: [stateUpdateItem({})], NextToken: "page-2" })
       .mockResolvedValueOnce({ AlarmHistoryItems: [stateUpdateItem({ timestamp: "2026-09-03T21:41:00.000Z" })] });
 
-    const items = await fetchAlarmHistory({ alarmName: ALARM_NAME, region: "eu-west-2", startIso: "2026-09-03T21:25:00.000Z", endIso: "2026-09-03T21:50:00.000Z" });
+    const items = await fetchAlarmHistory({
+      alarmName: ALARM_NAME,
+      region: "eu-west-2",
+      startIso: "2026-09-03T21:25:00.000Z",
+      endIso: "2026-09-03T21:50:00.000Z",
+    });
 
     expect(items).toHaveLength(2);
     expect(mockCloudWatchSend).toHaveBeenCalledTimes(2);

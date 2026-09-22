@@ -29,11 +29,9 @@ test.describe("ITSA Adjustments - Form", () => {
       }
     });
 
-    const modifiedHtml = htmlContent
-      .replace("<head>", '<head><base href="http://localhost:3000/hmrc/itsa/">')
-      .replace(
-        "<body>",
-        `<body><script>
+    const modifiedHtml = htmlContent.replace("<head>", '<head><base href="http://localhost:3000/hmrc/itsa/">').replace(
+      "<body>",
+      `<body><script>
 window.showStatus = window.showStatus || function(){};
 window.hideStatus = window.hideStatus || function(){};
 window.showLoading = window.showLoading || function(){};
@@ -41,7 +39,7 @@ window.hideLoading = window.hideLoading || function(){};
 window.generateRandomState = window.generateRandomState || function(){ return "test-state"; };
 window.getGovClientHeaders = window.getGovClientHeaders || function(){ return Promise.resolve({}); };
 </script>`,
-      );
+    );
 
     await page.setContent(modifiedHtml, {
       url: "http://localhost:3000/hmrc/itsa/adjustments.html",

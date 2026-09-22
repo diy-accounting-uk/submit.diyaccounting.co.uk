@@ -249,7 +249,7 @@ public class SecurityDetectionStack extends Stack {
 
         // ----------------------------------------------------------------------------------
         // The same unexpected-read detector as the salt secret above, for the email hash secret
-        //. Stored pass records carry a restrictedToEmailHash value
+        // . Stored pass records carry a restrictedToEmailHash value
         // this secret produced, so a read outside the deployment pipeline is the same signal:
         // the pass-lambda roles read it as part of normal request handling, everything else is
         // rotation (runbook section 4) or worth investigating.
@@ -336,8 +336,12 @@ public class SecurityDetectionStack extends Stack {
         // AttachRolePolicy/PutRolePolicy call made under a role that happens to start with the
         // environment's name, which is exactly the kind of grant this control exists to catch.
         Set<String> deployChangedControlsExact = Set.of(
-                "UnauthorizedApiCalls", "IamPolicyChanges", "SecurityGroupChanges", "NaclChanges",
-                "NetworkGatewayChanges", "VpcChanges");
+                "UnauthorizedApiCalls",
+                "IamPolicyChanges",
+                "SecurityGroupChanges",
+                "NaclChanges",
+                "NetworkGatewayChanges",
+                "VpcChanges");
 
         // The two controls proven noisy from CDK's per-stack helper roles, so they alone carry
         // the env-name wildcard.

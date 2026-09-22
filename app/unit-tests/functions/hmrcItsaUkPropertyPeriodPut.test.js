@@ -231,7 +231,9 @@ describe("hmrcItsaUkPropertyPeriodPut ingestHandler - cumulative tax year", () =
     const calledUrl = mockFetch.mock.calls[0][0];
     const calledInit = mockFetch.mock.calls[0][1];
     expect(calledInit.method).toBe("PUT");
-    expect(calledUrl).toContain(`/individuals/business/property/uk/${VALID_NINO}/${VALID_BUSINESS_ID}/cumulative/${VALID_CUMULATIVE_TAX_YEAR}`);
+    expect(calledUrl).toContain(
+      `/individuals/business/property/uk/${VALID_NINO}/${VALID_BUSINESS_ID}/cumulative/${VALID_CUMULATIVE_TAX_YEAR}`,
+    );
     expect(response.statusCode).toBe(200);
     expect(JSON.parse(response.body)).toEqual({ model: "cumulative" });
   });

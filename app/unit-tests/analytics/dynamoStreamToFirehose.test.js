@@ -24,13 +24,8 @@ vi.mock("../../services/subHasher.js", () => ({
   hashSub: vi.fn((value) => `hashed(${value})`),
 }));
 
-const {
-  handler,
-  resolveTableKind,
-  resolveTableName,
-  projectFields,
-  buildRow,
-} = await import("../../functions/analytics/dynamoStreamToFirehose.js");
+const { handler, resolveTableKind, resolveTableName, projectFields, buildRow } =
+  await import("../../functions/analytics/dynamoStreamToFirehose.js");
 const { hashSub } = await import("../../services/subHasher.js");
 
 function streamArn(tableName) {
@@ -200,9 +195,7 @@ describe("projectFields whitelists", () => {
   });
 
   test("an unrecognised table kind throws rather than passing the image through", () => {
-    expect(() => projectFields("hmrc-api-requests", { anything: "here" }, null, "INSERT")).toThrow(
-      /no redaction whitelist/i,
-    );
+    expect(() => projectFields("hmrc-api-requests", { anything: "here" }, null, "INSERT")).toThrow(/no redaction whitelist/i);
   });
 
   test("a raw sub never appears in any projected field", () => {

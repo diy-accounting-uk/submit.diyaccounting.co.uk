@@ -180,8 +180,7 @@ export async function runLocalDynamoDb(runDynamoDb, bundleTableName, hmrcApiRequ
     if (hmrcItsaSelfEmploymentAnnualPutAsyncTable)
       await ensureAsyncRequestsTableExists(hmrcItsaSelfEmploymentAnnualPutAsyncTable, endpoint);
 
-    const hmrcItsaCrystallisationObligationsGetAsyncTable =
-      process.env.HMRC_ITSA_CRYSTALLISATION_OBLIGATIONS_GET_ASYNC_REQUESTS_TABLE_NAME;
+    const hmrcItsaCrystallisationObligationsGetAsyncTable = process.env.HMRC_ITSA_CRYSTALLISATION_OBLIGATIONS_GET_ASYNC_REQUESTS_TABLE_NAME;
     if (hmrcItsaCrystallisationObligationsGetAsyncTable)
       await ensureAsyncRequestsTableExists(hmrcItsaCrystallisationObligationsGetAsyncTable, endpoint);
 
@@ -192,53 +191,42 @@ export async function runLocalDynamoDb(runDynamoDb, bundleTableName, hmrcApiRequ
     if (hmrcItsaBsasTriggerPostAsyncTable) await ensureAsyncRequestsTableExists(hmrcItsaBsasTriggerPostAsyncTable, endpoint);
 
     const hmrcItsaBsasSelfEmploymentGetAsyncTable = process.env.HMRC_ITSA_BSAS_SELF_EMPLOYMENT_GET_ASYNC_REQUESTS_TABLE_NAME;
-    if (hmrcItsaBsasSelfEmploymentGetAsyncTable)
-      await ensureAsyncRequestsTableExists(hmrcItsaBsasSelfEmploymentGetAsyncTable, endpoint);
+    if (hmrcItsaBsasSelfEmploymentGetAsyncTable) await ensureAsyncRequestsTableExists(hmrcItsaBsasSelfEmploymentGetAsyncTable, endpoint);
 
-    const hmrcItsaBsasSelfEmploymentAdjustPostAsyncTable =
-      process.env.HMRC_ITSA_BSAS_SELF_EMPLOYMENT_ADJUST_POST_ASYNC_REQUESTS_TABLE_NAME;
+    const hmrcItsaBsasSelfEmploymentAdjustPostAsyncTable = process.env.HMRC_ITSA_BSAS_SELF_EMPLOYMENT_ADJUST_POST_ASYNC_REQUESTS_TABLE_NAME;
     if (hmrcItsaBsasSelfEmploymentAdjustPostAsyncTable)
       await ensureAsyncRequestsTableExists(hmrcItsaBsasSelfEmploymentAdjustPostAsyncTable, endpoint);
 
     const hmrcItsaBsasUkPropertyGetAsyncTable = process.env.HMRC_ITSA_BSAS_UK_PROPERTY_GET_ASYNC_REQUESTS_TABLE_NAME;
     if (hmrcItsaBsasUkPropertyGetAsyncTable) await ensureAsyncRequestsTableExists(hmrcItsaBsasUkPropertyGetAsyncTable, endpoint);
 
-    const hmrcItsaBsasUkPropertyAdjustPostAsyncTable =
-      process.env.HMRC_ITSA_BSAS_UK_PROPERTY_ADJUST_POST_ASYNC_REQUESTS_TABLE_NAME;
+    const hmrcItsaBsasUkPropertyAdjustPostAsyncTable = process.env.HMRC_ITSA_BSAS_UK_PROPERTY_ADJUST_POST_ASYNC_REQUESTS_TABLE_NAME;
     if (hmrcItsaBsasUkPropertyAdjustPostAsyncTable)
       await ensureAsyncRequestsTableExists(hmrcItsaBsasUkPropertyAdjustPostAsyncTable, endpoint);
 
     const hmrcItsaCalculationTriggerPostAsyncTable = process.env.HMRC_ITSA_CALCULATION_TRIGGER_POST_ASYNC_REQUESTS_TABLE_NAME;
-    if (hmrcItsaCalculationTriggerPostAsyncTable)
-      await ensureAsyncRequestsTableExists(hmrcItsaCalculationTriggerPostAsyncTable, endpoint);
+    if (hmrcItsaCalculationTriggerPostAsyncTable) await ensureAsyncRequestsTableExists(hmrcItsaCalculationTriggerPostAsyncTable, endpoint);
 
     const hmrcItsaCalculationGetAsyncTable = process.env.HMRC_ITSA_CALCULATION_GET_ASYNC_REQUESTS_TABLE_NAME;
     if (hmrcItsaCalculationGetAsyncTable) await ensureAsyncRequestsTableExists(hmrcItsaCalculationGetAsyncTable, endpoint);
 
     const hmrcItsaFinalDeclarationPostAsyncTable = process.env.HMRC_ITSA_FINAL_DECLARATION_POST_ASYNC_REQUESTS_TABLE_NAME;
-    if (hmrcItsaFinalDeclarationPostAsyncTable)
-      await ensureAsyncRequestsTableExists(hmrcItsaFinalDeclarationPostAsyncTable, endpoint);
+    if (hmrcItsaFinalDeclarationPostAsyncTable) await ensureAsyncRequestsTableExists(hmrcItsaFinalDeclarationPostAsyncTable, endpoint);
 
     const hmrcItsaLossesAndClaimsGetAsyncTable = process.env.HMRC_ITSA_LOSSES_AND_CLAIMS_GET_ASYNC_REQUESTS_TABLE_NAME;
-    if (hmrcItsaLossesAndClaimsGetAsyncTable)
-      await ensureAsyncRequestsTableExists(hmrcItsaLossesAndClaimsGetAsyncTable, endpoint);
+    if (hmrcItsaLossesAndClaimsGetAsyncTable) await ensureAsyncRequestsTableExists(hmrcItsaLossesAndClaimsGetAsyncTable, endpoint);
 
     const hmrcItsaLossesAndClaimsPutAsyncTable = process.env.HMRC_ITSA_LOSSES_AND_CLAIMS_PUT_ASYNC_REQUESTS_TABLE_NAME;
-    if (hmrcItsaLossesAndClaimsPutAsyncTable)
-      await ensureAsyncRequestsTableExists(hmrcItsaLossesAndClaimsPutAsyncTable, endpoint);
+    if (hmrcItsaLossesAndClaimsPutAsyncTable) await ensureAsyncRequestsTableExists(hmrcItsaLossesAndClaimsPutAsyncTable, endpoint);
 
-    const hmrcItsaLossesAndClaimsDeleteAsyncTable =
-      process.env.HMRC_ITSA_LOSSES_AND_CLAIMS_DELETE_ASYNC_REQUESTS_TABLE_NAME;
-    if (hmrcItsaLossesAndClaimsDeleteAsyncTable)
-      await ensureAsyncRequestsTableExists(hmrcItsaLossesAndClaimsDeleteAsyncTable, endpoint);
+    const hmrcItsaLossesAndClaimsDeleteAsyncTable = process.env.HMRC_ITSA_LOSSES_AND_CLAIMS_DELETE_ASYNC_REQUESTS_TABLE_NAME;
+    if (hmrcItsaLossesAndClaimsDeleteAsyncTable) await ensureAsyncRequestsTableExists(hmrcItsaLossesAndClaimsDeleteAsyncTable, endpoint);
 
-    const hmrcItsaTaxLiabilityAdjustmentsGetAsyncTable =
-      process.env.HMRC_ITSA_TAX_LIABILITY_ADJUSTMENTS_GET_ASYNC_REQUESTS_TABLE_NAME;
+    const hmrcItsaTaxLiabilityAdjustmentsGetAsyncTable = process.env.HMRC_ITSA_TAX_LIABILITY_ADJUSTMENTS_GET_ASYNC_REQUESTS_TABLE_NAME;
     if (hmrcItsaTaxLiabilityAdjustmentsGetAsyncTable)
       await ensureAsyncRequestsTableExists(hmrcItsaTaxLiabilityAdjustmentsGetAsyncTable, endpoint);
 
-    const hmrcItsaTaxLiabilityAdjustmentsPutAsyncTable =
-      process.env.HMRC_ITSA_TAX_LIABILITY_ADJUSTMENTS_PUT_ASYNC_REQUESTS_TABLE_NAME;
+    const hmrcItsaTaxLiabilityAdjustmentsPutAsyncTable = process.env.HMRC_ITSA_TAX_LIABILITY_ADJUSTMENTS_PUT_ASYNC_REQUESTS_TABLE_NAME;
     if (hmrcItsaTaxLiabilityAdjustmentsPutAsyncTable)
       await ensureAsyncRequestsTableExists(hmrcItsaTaxLiabilityAdjustmentsPutAsyncTable, endpoint);
 

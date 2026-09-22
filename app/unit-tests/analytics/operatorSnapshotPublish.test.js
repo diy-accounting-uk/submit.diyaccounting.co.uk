@@ -235,9 +235,7 @@ describe("operatorSnapshotPublish", () => {
       const snapshot = await buildSnapshot({ workGroup: "wg", database: "db", context });
 
       const observationCount = OBJECTIVE_DEFINITIONS.reduce((sum, o) => sum + o.observations.length, 0);
-      const startCalls = mockAthenaSend.mock.calls.filter(
-        ([command]) => command.constructor.name === "StartQueryExecutionCommand",
-      );
+      const startCalls = mockAthenaSend.mock.calls.filter(([command]) => command.constructor.name === "StartQueryExecutionCommand");
       expect(startCalls).toHaveLength(observationCount);
 
       expect(snapshot.environment).toBe("test");

@@ -455,7 +455,7 @@ describe("HTTP Simulator", () => {
 
     it("should retrieve the running total", async () => {
       const response = await fetch(`${baseUrl}/individuals/business/self-employment/AB123456C/XAIS12345678910/cumulative/2025-26`, {
-        headers: { "Accept": "application/vnd.hmrc.5.0+json", "Authorization": "Bearer test-token" },
+        headers: { Accept: "application/vnd.hmrc.5.0+json", Authorization: "Bearer test-token" },
       });
 
       expect(response.status).toBe(200);
@@ -738,7 +738,7 @@ describe("HTTP Simulator", () => {
 
     it("should retrieve the default annual submission", async () => {
       const response = await fetch(`${baseUrl}/individuals/business/self-employment/AB123456C/XAIS12345678910/annual/2023-24`, {
-        headers: { "Accept": "application/vnd.hmrc.5.0+json", "Authorization": "Bearer test-token" },
+        headers: { Accept: "application/vnd.hmrc.5.0+json", Authorization: "Bearer test-token" },
       });
       expect(response.status).toBe(200);
       const data = await response.json();
@@ -843,7 +843,7 @@ describe("HTTP Simulator", () => {
   describe("ITSA Crystallisation Obligations", () => {
     it("should return one open obligation by default, with dates derived from the requested tax year", async () => {
       const response = await fetch(`${baseUrl}/obligations/details/AB123456C/crystallisation?taxYear=2023-24`, {
-        headers: { "Accept": "application/vnd.hmrc.3.0+json", "Authorization": "Bearer test-token" },
+        headers: { Accept: "application/vnd.hmrc.3.0+json", Authorization: "Bearer test-token" },
       });
       expect(response.status).toBe(200);
       const data = await response.json();
@@ -910,7 +910,7 @@ describe("HTTP Simulator", () => {
   describe("ITSA Status", () => {
     it("should return the itsaStatuses for a valid NINO and tax year", async () => {
       const response = await fetch(`${baseUrl}/individuals/person/itsa-status/AB123456C/2023-24`, {
-        headers: { "Accept": "application/vnd.hmrc.2.0+json", "Authorization": "Bearer test-token" },
+        headers: { Accept: "application/vnd.hmrc.2.0+json", Authorization: "Bearer test-token" },
       });
       expect(response.status).toBe(200);
       const data = await response.json();
@@ -1039,7 +1039,7 @@ describe("HTTP Simulator", () => {
     it("should answer not-found with no Gov-Test-Scenario header on retrieve, matching HMRC's own default", async () => {
       const response = await fetch(
         `${baseUrl}/individuals/self-assessment/adjustable-summary/AB123456C/self-employment/f2fb30e5-4ab6-4a29-b3c1-c7264259ff1c/2023-24`,
-        { headers: { "Accept": "application/vnd.hmrc.7.0+json", "Authorization": "Bearer test-token" } },
+        { headers: { Accept: "application/vnd.hmrc.7.0+json", Authorization: "Bearer test-token" } },
       );
       expect(response.status).toBe(404);
       const data = await response.json();
@@ -1067,10 +1067,9 @@ describe("HTTP Simulator", () => {
     });
 
     it("should reflect the request's nino, calculationId and taxYear for a DYNAMIC_ scenario", async () => {
-      const response = await fetch(
-        `${baseUrl}/individuals/self-assessment/adjustable-summary/AB123456C/self-employment/12345678/2022-23`,
-        { headers: { "Gov-Test-Scenario": "DYNAMIC_SELF_EMPLOYMENT_PROFIT" } },
-      );
+      const response = await fetch(`${baseUrl}/individuals/self-assessment/adjustable-summary/AB123456C/self-employment/12345678/2022-23`, {
+        headers: { "Gov-Test-Scenario": "DYNAMIC_SELF_EMPLOYMENT_PROFIT" },
+      });
       expect(response.status).toBe(200);
       const data = await response.json();
       expect(data.metadata.calculationId).toBe("12345678");
@@ -1281,7 +1280,7 @@ describe("HTTP Simulator", () => {
     it("should retrieve a default success example with no Gov-Test-Scenario header", async () => {
       const response = await fetch(
         `${baseUrl}/individuals/calculations/AB123456C/self-assessment/2023-24/f2fb30e5-4ab6-4a29-b3c1-c7264259ff1c`,
-        { headers: { "Accept": "application/vnd.hmrc.8.0+json", "Authorization": "Bearer test-token" } },
+        { headers: { Accept: "application/vnd.hmrc.8.0+json", Authorization: "Bearer test-token" } },
       );
       expect(response.status).toBe(200);
       const data = await response.json();
@@ -1320,9 +1319,7 @@ describe("HTTP Simulator", () => {
     });
 
     it("should return 400 for an invalid calculationId on retrieve", async () => {
-      const response = await fetch(
-        `${baseUrl}/individuals/calculations/AB123456C/self-assessment/2023-24/not-a-calculation-id`,
-      );
+      const response = await fetch(`${baseUrl}/individuals/calculations/AB123456C/self-assessment/2023-24/not-a-calculation-id`);
       expect(response.status).toBe(400);
       const data = await response.json();
       expect(data.code).toBe("FORMAT_CALCULATION_ID");

@@ -29,11 +29,9 @@ test.describe("ITSA Tax Calculation - Form", () => {
       }
     });
 
-    const modifiedHtml = htmlContent
-      .replace("<head>", '<head><base href="http://localhost:3000/hmrc/itsa/">')
-      .replace(
-        "<body>",
-        `<body><script>
+    const modifiedHtml = htmlContent.replace("<head>", '<head><base href="http://localhost:3000/hmrc/itsa/">').replace(
+      "<body>",
+      `<body><script>
 window.showStatus = window.showStatus || function(){};
 window.hideStatus = window.hideStatus || function(){};
 window.showLoading = window.showLoading || function(){};
@@ -41,7 +39,7 @@ window.hideLoading = window.hideLoading || function(){};
 window.generateRandomState = window.generateRandomState || function(){ return "test-state"; };
 window.getGovClientHeaders = window.getGovClientHeaders || function(){ return Promise.resolve({}); };
 </script>`,
-      );
+    );
 
     await page.setContent(modifiedHtml, {
       url: "http://localhost:3000/hmrc/itsa/taxCalculation.html",
@@ -88,7 +86,12 @@ window.getGovClientHeaders = window.getGovClientHeaders || function(){ return Pr
         {
           metadata: { calculationId: "abc123", calculationType: "in-year" },
           calculation: {
-            taxCalculation: { totalIncomeTaxAndNicsDue: 1900, incomeTax: { totalIncomeTax: 1400 }, nics: { totalNic: 500 }, totalTaxDeducted: 0 },
+            taxCalculation: {
+              totalIncomeTaxAndNicsDue: 1900,
+              incomeTax: { totalIncomeTax: 1400 },
+              nics: { totalNic: 500 },
+              totalTaxDeducted: 0,
+            },
             allowancesAndDeductions: { personalAllowance: 12570 },
           },
           messages: { errors: [{ id: "C1", text: "an error" }], warnings: [], info: [] },

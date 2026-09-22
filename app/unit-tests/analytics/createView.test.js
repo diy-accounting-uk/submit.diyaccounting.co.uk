@@ -107,8 +107,7 @@ describe("isComplete", () => {
       QueryExecution: {
         Status: {
           State: "FAILED",
-          StateChangeReason:
-            "TABLE_NOT_FOUND: line 1:15: Table 'awsdatacatalog.prod_env_analytics.v_ga4_funnel_daily' does not exist",
+          StateChangeReason: "TABLE_NOT_FOUND: line 1:15: Table 'awsdatacatalog.prod_env_analytics.v_ga4_funnel_daily' does not exist",
         },
       },
     });

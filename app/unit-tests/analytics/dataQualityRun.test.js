@@ -74,12 +74,7 @@ const {
   registerPartitions,
 } = await import("../../functions/analytics/dataQualityRun.js");
 
-const ENV_KEYS = [
-  "GLUE_DATABASE_NAME",
-  "GLUE_DATA_QUALITY_ROLE_ARN",
-  "ANALYTICS_LAKE_BUCKET_NAME",
-  "GLUE_DATA_QUALITY_TARGETS",
-];
+const ENV_KEYS = ["GLUE_DATABASE_NAME", "GLUE_DATA_QUALITY_ROLE_ARN", "ANALYTICS_LAKE_BUCKET_NAME", "GLUE_DATA_QUALITY_TARGETS"];
 
 const VALID_TARGETS = [
   { table: "activity_events", ruleset: "ci_env_activity_events_dq", curatedPrefix: "curated/activity-events/" },
@@ -244,9 +239,7 @@ describe("dataQualityRun", () => {
 
   describe("listDtPartitionPrefixes", () => {
     test("lists the dt partitions one level below the curated prefix", async () => {
-      mockS3Send.mockResolvedValueOnce(
-        listObjectsResponse(["curated/dora/dt=2026-09-07/", "curated/dora/dt=2026-09-08/"]),
-      );
+      mockS3Send.mockResolvedValueOnce(listObjectsResponse(["curated/dora/dt=2026-09-07/", "curated/dora/dt=2026-09-08/"]));
 
       const prefixes = await listDtPartitionPrefixes(fakeS3Client, "ci-env-analytics-lake-111111111111", "curated/dora/");
 
@@ -425,9 +418,7 @@ describe("dataQualityRun", () => {
 
     test("registers dt-scheme partitions for a dora_runs-shaped config", async () => {
       const doraConfig = { ...VALID_CONFIG, tableName: "dora_runs", curatedPrefix: "curated/dora/", partitionScheme: "dt" };
-      mockS3Send.mockResolvedValueOnce(
-        listObjectsResponse(["curated/dora/dt=2026-09-07/", "curated/dora/dt=2026-09-08/"]),
-      );
+      mockS3Send.mockResolvedValueOnce(listObjectsResponse(["curated/dora/dt=2026-09-07/", "curated/dora/dt=2026-09-08/"]));
       mockGlueSend
         .mockResolvedValueOnce({ Partitions: [{ Values: ["2026-09-07"] }] }) // GetPartitions
         .mockResolvedValueOnce({ Table: { StorageDescriptor: SAMPLE_STORAGE_DESCRIPTOR } }) // GetTable
