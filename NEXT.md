@@ -117,6 +117,67 @@ step.
   skip and leaves the set. **Source**: runs 35766864248 and 35773445604; BACKLOG 30. **Owner**:
   Claude Code. **Model**: Sonnet. **Size**: ~2 files.
 
+- [ ] **B52g. `ads-report.js`, what the account did.** A read-only script beside
+  `infra/google/ads/ads-sync.js` using its credential path (`ads.toml` `[secrets]`, API
+  `v25`) and GAQL over `campaign`, `ad_group` and `keyword_view` with `segments.date` for a date
+  range (`--from`, `--to`, default the last 28 days): impressions, clicks, cost, average CPC,
+  CTR, conversions, conversion value, per campaign, per ad group and per keyword, as a table on
+  stdout and JSON with `--json`. No writes. Proof: a run against customer 8142685080 prints the
+  Performance Max campaign's rows for the range. **Source**: operator 2026-09-22; `PLAN_ONE_STOP_DASHBOARD.md` D17; BACKLOG 52. **Owner**: Claude Code.
+  **Model**: Sonnet. **Size**: ~1 file.
+
+- [ ] **B52h. `ads-forecast.js`, what a budget would buy.** A read-only script using
+  `KeywordPlanIdeaService`: `generateKeywordHistoricalMetrics` for a keyword list (UK, English)
+  giving monthly searches, competition and top-of-page bid ranges, and
+  `generateKeywordForecastMetrics` for those keywords at a daily budget (`--budget-gbp`) giving
+  expected clicks, impressions, cost and average CPC; the keyword list from a file or
+  `--keywords`. Proof: `--keywords "submit vat return,mtd vat software" --budget-gbp 50` prints a
+  forecast. **Source**: operator 2026-09-22; `PLAN_ONE_STOP_DASHBOARD.md` D17; BACKLOG 52. **Owner**: Claude Code. **Model**: Sonnet. **Size**: ~1 file.
+
+- [ ] **B52j. The `ads-advisor` skill.** `.claude/skills/ads-advisor/SKILL.md`: how to run B52g
+  and B52h, how to read CTR, CPC, conversion rate and cost per session against the funnel's
+  break-even cost per session (£0.36, `PLAN_ONE_STOP_DASHBOARD.md` D17) and the reinvestment
+  numbers on B52m, how to answer "how many clicks for £N a day" (forecast, then the report for
+  what the live campaign does) and "optimise for the same result" (B52k's bidding vocabulary:
+  which strategy and parameters, written into `ads.toml` as a PR whose plan shows the change),
+  and when to say the spend cannot pay back. Registered in `CLAUDE.md`'s skills list. Blocked on
+  B52g, B52h and B52k. **Source**: operator 2026-09-22; `PLAN_ONE_STOP_DASHBOARD.md` D17; BACKLOG 52. **Owner**: Claude Code. **Model**: Haiku.
+  **Size**: ~2 files.
+
+- [ ] **B52k. Bidding strategy as code, every one the API offers.** `ads.toml`'s
+  `[[campaign]]` gains a `[campaign.bidding]` table mapped one to one onto the Google Ads API's
+  campaign bidding fields, so any strategy the API accepts is declarable: `manual_cpc`
+  (`enhanced_cpc`), `maximize_clicks` (`target_spend` with optional `cpc_bid_ceiling_gbp`),
+  `maximize_conversions` (optional `target_cpa_gbp`), `maximize_conversion_value` (optional
+  `target_roas`), `target_cpa`, `target_roas`, `target_impression_share` (`location`,
+  `fraction`, `cpc_bid_ceiling_gbp`), and a portfolio strategy by `bidding_strategy` resource
+  name. `ads-sync.js` plans and applies it through `campaigns:mutate` with the field mask for the
+  strategy chosen, refusing a strategy the campaign's channel type cannot take (Performance Max
+  accepts only the two maximise-conversion forms) with the reason in the plan. Money fields in
+  pounds in the toml, micros on the wire. Unit tests for the mapping and the refusals in the shape
+  `ads-sync.js`'s existing tests use; the header comment updated (it still says the script never
+  writes conversion actions, and it does). **Source**: operator 2026-09-22; `PLAN_ONE_STOP_DASHBOARD.md` D17; BACKLOG 52. **Owner**: Claude Code.
+  **Model**: Sonnet. **Size**: ~3 files.
+
+- [ ] **B52n. A Search campaign as code.** `ads-sync.js` refuses to create a campaign today (its
+  header: a declared campaign the account lacks fails the run), because the one campaign is
+  Performance Max, whose asset groups need uploaded images and headlines the toml does not
+  carry. A Search campaign needs none of that: extend `ads.toml` with a `[[campaign]]` of
+  `type = "SEARCH"` carrying `[[campaign.ad_group]]` (name, keywords with match type, and one
+  responsive search ad's headlines, descriptions and final URL, the submit home page), and let
+  `ads-sync.js` create and update campaign, budget, ad groups, keywords and the ad through their
+  `mutate` calls, paused by default so a merge never spends until `status = "ENABLED"` is
+  declared. Performance Max stays read-and-adjust only. Proof: a plan run shows the creation, an
+  apply on a paused campaign leaves £0 spent, and B52g's report lists it. **Source**: operator 2026-09-22; `PLAN_ONE_STOP_DASHBOARD.md` D17; BACKLOG 52.
+  **Owner**: Claude Code. **Model**: Sonnet. **Size**: ~3 files.
+
+- [ ] **B52o. Google's Ads API MCP server, evaluated.** Read Google's published MCP server for
+  the Ads API (its repository, auth model, whether it is read-only GAQL, its developer-token and
+  OAuth needs against `ads.toml` `[secrets]`), and write one page under `_developers/` saying
+  whether it adds anything the scripts above do not, what it would cost to run beside the
+  toml door, and a yes or no; no install. **Source**: operator 2026-09-22; `PLAN_ONE_STOP_DASHBOARD.md` D17; BACKLOG 52. **Owner**: Claude Code.
+  **Model**: Haiku. **Size**: ~1 file.
+
 - [ ] **AS15. A dead-code pass with knip.** The assessment's dead-code scan used `ts-prune` on
   a JavaScript tree and reported zero, which is "not analysed". Run `npx knip` once at the root
   (a `knip.json` naming `app/bin/server.js`, the Lambda handlers under `app/functions/**` and the
