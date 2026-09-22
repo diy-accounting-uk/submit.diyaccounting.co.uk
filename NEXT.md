@@ -91,15 +91,6 @@ step.
   the ids are on `claude/b74-board`. **Source**:
   `PLAN_PRICE_UPDATE.md` PU-5. **Owner**: Claude Code. **Model**: Haiku. **Size**: ~2 files.
 
-- [ ] **F1a. The staging tree and its index source.** `../staging/<year-end>/<source>/` at the
-  workspace root (`2025-2026/` for March 2026, `2026-2027/` for April to August), a `README.md` there
-  naming the layout and the date-stamped file names the plan's write boundary gives, and `staging`
-  added to `../index/corpus.toml` as its own source in the shape of the `analytics` source (line
-  111: `[[sources]]`, `name`, `type = "filetree"`, `root = "../staging"`), then the workspace's
-  `reindex` skill (`../.claude/skills/reindex/SKILL.md`). Nothing under `../staging/` is ever committed to a repository. **Source**:
-  `../PLAN_FINANCE_AUTOMATION.md`, the write boundary. **Owner**: Claude Code. **Model**: Haiku.
-  **Size**: ~2 files.
-
 - [ ] **F1c. Stripe balance transactions and payouts to staging.** `scripts/finance/stripe-stage.js`:
   for a month, `balance_transactions` with `expand: data.source` and the payouts, from the live key
   the way `infra/stripe/stripe-sync.js` reads it for `--mode live` (its `GetSecretValueCommand`
@@ -237,7 +228,8 @@ step.
 - [ ] **F1d. NatWest statements to staging.** The operator signs in to NatWest and downloads, for
   each of March to August 2026, the current account `600947-80597386` and the savings account
   `600947-80634672` statements as CSV and PDF into `../staging/2025-2026/bank/` (March) and
-  `../staging/2026-2027/bank/` (April to August), named
+  `../staging/2026-2027/bank/` (April to August; both directories exist, with `../staging/README.md`
+  naming the layout), named
   `<yyyy-mm-dd>-natwest-<current|savings>-<account>.<csv|pdf>` with the month's last day, the shape
   of the 2025-26 files in the Drive mirror. No automation touches the bank sign-in. **Source**:
   `../PLAN_FINANCE_AUTOMATION.md` route 3. **Owner**: Operator. **Model**: none. **Size**: 24 files
