@@ -44,8 +44,10 @@ step.
 **COOL-DOWN is on since 2026-09-22T19:56:50Z.** No new board rows except a degradation. Agents commit
 and stop. One branch is driven green at a time. Lifted only by the operator in their own words.
 
-- [ ] **B82. Wave b82 on `claude/b82-board`, PR #336.** Three commits, head c450180d, its runs
-  starting: B34j
+- [ ] **B82. Wave b82 on `claude/b82-board`, PR #336.** Three commits, head c450180d. Its push deploy 35775043216 failed four
+  stacks on `ci-set1` because PR #333's dispatched redeploy, named for the same slot, ran on the
+  set at the same time (a dispatch with an explicit slot name bypasses the claim); it reruns
+  after PR #333's deploy is green, one branch at a time: B34j
   (a9e2e920, the privacy notice's row for practice client filing, with a browser test) and PU-7e
   (e4302a96 and c450180d: `tokensGranted = "unlimited"` on `resident-pro`, exempt in
   enforcement, the webhook refresh and the bundle read, shown as unlimited on the usage page,
@@ -97,9 +99,8 @@ and stop. One branch is driven green at a time. Lifted only by the operator in t
   probe user's prefix held 20 sandbox books of which several had expired under the earlier
   24-hour retention. Its deploy 35773445604 on `ci-set1` failed because the sweep destroyed
   `ci-set1` underneath it (B30at); the dispatched redeploy 35775650817 to `ci-set1` passed every
-  stack and probe, the book-limit fix included, and the red push-triggered deploy is rerun
-  (`--failed`) once PR #336's deploy leaves the slot, so the head's own deploy is green for the
-  merge gate. The same deploy failed three sign-in probes with
+  stack and probe, the book-limit fix included, and the red push-triggered deploy's failed jobs are rerunning
+  now on `ci-set1`, so the head's own deploy is green for the merge gate. The same deploy failed three sign-in probes with
   `redirect_mismatch`: only `ci-set1`, `ci-set2` and the apex are Cognito callback hosts, so a
   deployment under another name cannot prove a signed-in probe; `ci-b79-probe` and
   `ci-b80-probe` (PR #334's proof deploy 35767071938 failed the same way) self-destruct four
