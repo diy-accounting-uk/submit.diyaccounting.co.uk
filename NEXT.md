@@ -16,8 +16,9 @@ runs), and for Claude Code steps the **Model** a sub-agent should use (Fable > O
 Haiku; the lowest tier that fits). Anything touching code goes through a `claude/*` branch and
 PR; the operator merges.
 
-**Prod runs deployment prod-78e3e55**; main's deploy of PR #323's merge (bc09c1ba) is in flight.
-**ci**: `ci-set1` is last-known-good. No open pull request.
+**Prod runs deployment prod-bc09c1b** (PR #323's merge). **ci**: `ci-set1` is last-known-good.
+Open pull request: #324 (`claude/b71-board`: B58a, PU-2, B30af.5, PU-7a to PU-7c), its ci deploy in
+flight.
 
 The board runs in five sections, in this order: **in flight** (a branch, a pull request or a run
 in motion, each named in the row), **machine-only**, **machine-ask**, **human-driven**,
