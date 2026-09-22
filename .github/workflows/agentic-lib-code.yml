@@ -286,7 +286,7 @@ jobs:
             --output-format json \
             --permission-mode default \
             --disallowedTools "Bash(git push:*),Bash(git checkout:*),Bash(git config:*),Bash(gh pr create:*),Bash(gh pr merge:*),Bash(gh workflow run:*)" \
-            --allowedTools "Read,Grep,Glob,Edit,Write,Bash(git status:*),Bash(git diff:*),Bash(git log:*),Bash(git add:*),Bash(git commit:*),Bash(git apply:*),Bash(git ls-remote:*),Bash(git show:*),Bash(git rev-parse:*),Bash(git branch:*),Bash(npm test:*),Bash(npm run:*),Bash(npx vitest:*),Bash(npx prettier:*),Bash(./mvnw:*),Bash(gh run list:*),Bash(gh run view:*),Bash(gh pr list:*),Bash(date:*),Bash(cat:*),Bash(ls:*),Bash(find:*)" \
+            --allowedTools "Read,Grep,Glob,Edit,Write,Bash(git status:*),Bash(git diff:*),Bash(git log:*),Bash(git add:*),Bash(git commit:*),Bash(git apply:*),Bash(git ls-remote:*),Bash(git show:*),Bash(git rev-parse:*),Bash(git branch:*),Bash(npm test:*),Bash(npm run:*),Bash(npx vitest:*),Bash(npx prettier:*),Bash(./mvnw:*),Bash(gh run list:*),Bash(gh run view:*),Bash(gh pr list:*),Bash(date:*),Bash(cat:*),Bash(ls:*),Bash(find:*),Bash(test:*)" \
             2>&1 | tee "${OUT_DIR}/claude-output.json"
 
       # When the agent reports it finished, land the work exactly as a terminal session would: a
@@ -329,7 +329,7 @@ jobs:
           GH_TOKEN: ${{ secrets.AGENT_TOKEN }}
         run: |
           set -euo pipefail
-          if [ ! -s "${OUT_DIR}/CHANGES.md" ] || ! grep -qxF '- **Status**: complete' "${OUT_DIR}/CHANGES.md"; then
+          if [ ! -s "${OUT_DIR}/CHANGES.md" ] || ! grep -qxF -- '- **Status**: complete' "${OUT_DIR}/CHANGES.md"; then
             echo "not a complete run, nothing to land"
             echo "ready=false" | tee -a "$GITHUB_OUTPUT"
             exit 0
@@ -550,6 +550,7 @@ jobs:
           path: |
             ${{ env.OUT_DIR }}/work.patch
             ${{ env.OUT_DIR }}/CHANGES.md
+            ${{ env.OUT_DIR }}/PR.md
             ${{ env.OUT_DIR }}/claude-output.json
             ${{ env.OUT_DIR }}/notes
           if-no-files-found: warn
