@@ -134,6 +134,25 @@ export async function getRelationship({ arn, service, clientIdType, clientId, ac
   return agentAuthorisationRequest("GET", url, { accessToken, govClientHeaders, testScenario });
 }
 
+// The two stored statuses that mean HMRC has granted this practice authority over the client:
+// "authorised" comes from a relationship already in place (getRelationship), "accepted" from an
+// invitation the client has accepted (getInvitationStatus). Anything else - "pending",
+// "rejected", "expired", "unauthorised", or no stored status at all - refuses.
+const AUTHORISED_STATUSES = new Set(["authorised", "accepted"]);
+
+/**
+ * Whether a practice's client row carries a granted authorisation for one service. Read by every
+ * client-scoped submission route (PLAN_PRICE_UPDATE.md (d), "Security boundaries") so a
+ * submission never reaches HMRC on a client the practice was never authorised for.
+ *
+ * @param {object|null} client - a practice-clients row, as `dynamoDbPracticeClientRepository.getClient` returns it
+ * @param {string} service - e.g. "MTD-VAT" or "MTD-IT"
+ * @returns {boolean}
+ */
+export function isClientAuthorisedForService(client, service) {
+  return AUTHORISED_STATUSES.has(client?.authorisations?.[service]?.status);
+}
+
 /**
  * Maps a non-ok Agent Authorisation API result to this service's own JSON error response. HMRC
  * answers "no relationship found" and "no invitation found" both with 404, which is not an error

@@ -9,6 +9,8 @@ import { loadCatalogFromRoot, isActivityListedInEnvironment } from "./productCat
 import * as dynamoDbBundleStore from "../data/dynamoDbBundleRepository.js";
 import { getUserBundles } from "../data/dynamoDbBundleRepository.js";
 import { isOperatorEmail } from "../lib/operators.js";
+import { hasActiveResidentProBundle } from "./diyaGlEntitlement.js";
+import { getClient } from "../data/dynamoDbPracticeClientRepository.js";
 
 const logger = createLogger({ source: "app/services/bundleEnforcement.js" });
 
@@ -121,7 +123,7 @@ export async function removeBundles(userId, bundlesToRemove) {
 }
 
 export async function enforceBundles(event, options = {}) {
-  const { hmrcBase = process.env.HMRC_BASE_URI } = options;
+  const { hmrcBase = process.env.HMRC_BASE_URI, clientId } = options;
 
   logger.info({
     message: "enforceBundles called",
@@ -195,7 +197,29 @@ export async function enforceBundles(event, options = {}) {
     matchedBundleIds,
   });
 
-  return { userSub, bundleIds: matchedBundleIds };
+  // A client-scoped request (PLAN_PRICE_UPDATE.md (d), "Security boundaries") needs the
+  // practice's own active resident-pro subscription, and the client row must exist under this
+  // same practice and not be archived - the same rule diyaGlEntitlement.js applies to a client's
+  // book set, reused here rather than duplicated.
+  let client = null;
+  if (clientId) {
+    if (!hasActiveResidentProBundle(subscribedBundles)) {
+      const errorDetails = { code: "CLIENT_SCOPE_FORBIDDEN", clientId, userSub, path: requestPath };
+      const message = "Forbidden: a client-scoped request requires an active resident-pro subscription";
+      logger.warn({ message, ...errorDetails });
+      throw new BundleEntitlementError(message, errorDetails);
+    }
+
+    client = await getClient(userSub, clientId);
+    if (!client || client.archivedAt) {
+      const errorDetails = { code: "CLIENT_NOT_FOUND", clientId, userSub, path: requestPath };
+      const message = "Forbidden: client not found for this practice";
+      logger.warn({ message, ...errorDetails });
+      throw new BundleEntitlementError(message, errorDetails);
+    }
+  }
+
+  return { userSub, bundleIds: matchedBundleIds, client };
 }
 
 function extractUserInfo(event) {

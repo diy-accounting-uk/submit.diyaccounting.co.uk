@@ -281,6 +281,104 @@ describe("hmrcVatObligationGet ingestHandler", () => {
     expect(response.statusCode).toBe(200);
     expect(JSON.parse(response.body)).toEqual(obligations);
   });
+
+  describe("client-scoped requests (PLAN_PRICE_UPDATE.md (d))", () => {
+    const CLIENT_TABLE = "test-practice-clients-table";
+
+    function mockPracticeAndClient(clientItem) {
+      mockSend.mockImplementation(async (cmd) => {
+        const lib = await import("@aws-sdk/lib-dynamodb");
+        if (cmd instanceof lib.QueryCommand) {
+          return { Items: [{ bundleId: "resident-pro", subscriptionStatus: "active" }], Count: 1 };
+        }
+        if (cmd instanceof lib.GetCommand) {
+          if (cmd.input?.TableName === CLIENT_TABLE) {
+            return { Item: clientItem };
+          }
+          return { Item: null };
+        }
+        return {};
+      });
+    }
+
+    beforeEach(() => {
+      process.env.PRACTICE_CLIENTS_DYNAMODB_TABLE_NAME = CLIENT_TABLE;
+    });
+
+    test("resolves the VRN from the client row when the client is present and authorised", async () => {
+      mockPracticeAndClient({
+        clientId: "c1",
+        identifiers: { vrn: "111222333" },
+        authorisations: { "MTD-VAT": { status: "authorised" } },
+        archivedAt: null,
+      });
+      mockHmrcSuccess(mockFetch, { obligations: [] });
+
+      const event = buildHmrcEvent({
+        queryStringParameters: { clientId: "c1" },
+        headers: { authorization: "Bearer test-token" },
+      });
+      const response = await hmrcVatObligationGetHandler(event);
+
+      expect(response.statusCode).toBe(200);
+      const obligationsCall = mockFetch.mock.calls.find(([url]) => String(url).includes("/obligations"));
+      expect(String(obligationsCall[0])).toContain("/organisations/vat/111222333/obligations");
+    });
+
+    test("returns 403 JSON when the client is present but not authorised for MTD-VAT", async () => {
+      mockPracticeAndClient({
+        clientId: "c1",
+        identifiers: { vrn: "111222333" },
+        authorisations: { "MTD-VAT": { status: "pending" } },
+        archivedAt: null,
+      });
+
+      const event = buildHmrcEvent({
+        queryStringParameters: { clientId: "c1" },
+        headers: { authorization: "Bearer test-token" },
+      });
+      const response = await hmrcVatObligationGetHandler(event);
+
+      expect(response.statusCode).toBe(403);
+      const body = parseResponseBody(response);
+      expect(body.code).toBe("client-not-authorised");
+      expect(mockFetch).not.toHaveBeenCalled();
+    });
+
+    test("returns 403 JSON for a client id belonging to another practice", async () => {
+      mockPracticeAndClient(null);
+
+      const event = buildHmrcEvent({
+        queryStringParameters: { clientId: "not-mine" },
+        headers: { authorization: "Bearer test-token" },
+      });
+      const response = await hmrcVatObligationGetHandler(event);
+
+      expect(response.statusCode).toBe(403);
+      const body = parseResponseBody(response);
+      expect(body.code).toBe("CLIENT_NOT_FOUND");
+      expect(mockFetch).not.toHaveBeenCalled();
+    });
+
+    test("uses the query string VRN as before when no clientId is given", async () => {
+      mockSend.mockImplementation(async (cmd) => {
+        const lib = await import("@aws-sdk/lib-dynamodb");
+        if (cmd instanceof lib.QueryCommand) return { Items: [], Count: 0 };
+        return {};
+      });
+      mockHmrcSuccess(mockFetch, { obligations: [] });
+
+      const event = buildHmrcEvent({
+        queryStringParameters: { vrn: "111222333" },
+        headers: { authorization: "Bearer test-token" },
+      });
+      const response = await hmrcVatObligationGetHandler(event);
+
+      expect(response.statusCode).toBe(200);
+      const obligationsCall = mockFetch.mock.calls.find(([url]) => String(url).includes("/obligations"));
+      expect(String(obligationsCall[0])).toContain("/organisations/vat/111222333/obligations");
+    });
+  });
 });
 
 import { workerHandler as hmrcVatObligationGetWorker } from "@app/functions/hmrc/hmrcVatObligationGet.js";

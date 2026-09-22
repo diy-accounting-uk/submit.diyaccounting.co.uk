@@ -13,6 +13,7 @@ import {
   buildValidationError,
   http200OkResponse,
   http201CreatedResponse,
+  http403ForbiddenResponse,
   http500ServerErrorResponse,
   getHeader,
 } from "../../lib/httpResponseHelper.js";
@@ -32,8 +33,15 @@ import {
 import { putAsyncRequest } from "../../data/dynamoDbAsyncRequestRepository.js";
 import { publishActivityEvent, publishActivityFailureEvent, resolveActorClass } from "../../lib/activityAlert.js";
 import { initializeSalt } from "../../services/subHasher.js";
+import { isClientAuthorisedForService } from "../../lib/hmrcAgentAuthorisation.js";
 
 const logger = createLogger({ source: "app/functions/companies-house/companiesHouseAccountsPost.js" });
+
+// The Agent Authorisation API only names HMRC services (MTD-VAT, MTD-IT); Companies House has no
+// equivalent delegated-authority flow yet (PLAN_PRICE_UPDATE.md (d) does not name one), so this
+// key is reserved for when one exists. Until a route sets it, no client-scoped filing can pass
+// the check below - the safe default for an authorisation this service has never granted.
+const AGENT_AUTHORISATION_SERVICE = "CH-ACCOUNTS";
 
 const MIN_COMPANY_AUTH_CODE_LENGTH = 6;
 const MAX_COMPANY_AUTH_CODE_LENGTH = 8;
@@ -58,7 +66,7 @@ export function apiEndpoint(app) {
 
 // Extracts and validates the accounts filing request. Shared with the preview Lambda, which
 // never needs the company authentication code because it never reaches the gateway.
-export function extractAndValidateAccountsParameters(event, errorMessages, { requireCompanyAuthCode = true } = {}) {
+export function extractAndValidateAccountsParameters(event, errorMessages, { requireCompanyAuthCode = true, clientId } = {}) {
   const parsedBody = parseRequestBody(event) || {};
   const {
     companyNumber,
@@ -72,9 +80,15 @@ export function extractAndValidateAccountsParameters(event, errorMessages, { req
     statementsAccepted,
   } = parsedBody;
 
-  const { valid: companyNumberValid, normalised: normalisedCompanyNumber } = isValidCompanyNumber(companyNumber);
-  if (!companyNumberValid) {
-    errorMessages.push("Invalid company number - must be 8 characters");
+  // A client-scoped request (PLAN_PRICE_UPDATE.md (d)) resolves its company number from the
+  // client row instead, so the body's own companyNumber is neither required nor validated here.
+  let normalisedCompanyNumber;
+  if (!clientId) {
+    const { valid: companyNumberValid, normalised } = isValidCompanyNumber(companyNumber);
+    if (!companyNumberValid) {
+      errorMessages.push("Invalid company number - must be 8 characters");
+    }
+    normalisedCompanyNumber = normalised;
   }
 
   const trimmedCompanyName = typeof companyName === "string" ? companyName.trim() : "";
@@ -176,14 +190,14 @@ function validateBalanceSheetAddsUp(year, yearLabel, errorMessages) {
   }
 }
 
-async function recordSubmissionFailure({ failure, summary, userSub, detail = {} }) {
+async function recordSubmissionFailure({ failure, summary, userSub, detail = {}, clientId }) {
   await publishActivityFailureEvent({
     event: "companies-house-accounts-failed",
     summary,
     failure,
     userSub,
     actor: resolveActorClass(),
-    detail,
+    detail: clientId ? { ...detail, clientId } : detail,
   });
 }
 
@@ -195,9 +209,14 @@ export async function ingestHandler(event) {
   const { request } = extractRequest(event);
   const responseHeaders = { "Content-Type": "application/json" };
 
+  // A practice acting for a client (PLAN_PRICE_UPDATE.md (d)) names the client instead of a
+  // company number; read early so it can be passed into bundle enforcement's own practice check.
+  const clientId = parseRequestBody(event)?.clientId || undefined;
+
   let userSub;
+  let client = null;
   try {
-    ({ userSub } = await enforceBundles(event));
+    ({ userSub, client } = await enforceBundles(event, { clientId }));
   } catch (error) {
     return http403ForbiddenFromBundleEnforcement(error, request);
   }
@@ -210,11 +229,33 @@ export async function ingestHandler(event) {
     });
   }
 
+  if (clientId && !isClientAuthorisedForService(client, AGENT_AUTHORISATION_SERVICE)) {
+    logger.warn({ message: "Client-scoped request refused: not authorised for Companies House filing", clientId });
+    await recordSubmissionFailure({
+      failure: "client-not-authorised",
+      summary: "Companies House accounts blocked: client not authorised",
+      userSub,
+      clientId,
+    });
+    return http403ForbiddenResponse({
+      request,
+      headers: responseHeaders,
+      message: "Client is not authorised for Companies House filing",
+      error: { code: "client-not-authorised" },
+    });
+  }
+
   const errorMessages = [];
-  const accounts = extractAndValidateAccountsParameters(event, errorMessages);
+  const accounts = extractAndValidateAccountsParameters(event, errorMessages, { clientId });
 
   if (errorMessages.length > 0) {
     return buildValidationError(request, errorMessages, responseHeaders);
+  }
+
+  // A client-scoped request resolves its company number from the client row, never from the
+  // body: buildMicroEntityAccounts and buildAccountsSubmission below both read it off `accounts`.
+  if (clientId) {
+    accounts.companyNumber = client.identifiers?.companyNumber;
   }
 
   const asyncRequestsTableName = process.env.COMPANIES_HOUSE_ACCOUNTS_ASYNC_REQUESTS_TABLE_NAME;
@@ -258,6 +299,7 @@ export async function ingestHandler(event) {
         summary: "Companies House accounts submission rejected by the gateway",
         userSub,
         detail: { errors: parsed.errors },
+        clientId,
       });
       return http500ServerErrorResponse({
         request,
@@ -271,6 +313,7 @@ export async function ingestHandler(event) {
       event: "companies-house-accounts-submitted",
       summary: "Companies House micro-entity accounts submitted",
       userSub,
+      detail: clientId ? { clientId } : {},
     });
 
     return http201CreatedResponse({
@@ -291,6 +334,7 @@ export async function ingestHandler(event) {
       failure: "internal-error",
       summary: "Companies House accounts submission failed unexpectedly",
       userSub,
+      clientId,
     });
     return http500ServerErrorResponse({
       request,

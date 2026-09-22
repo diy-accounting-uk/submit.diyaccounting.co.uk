@@ -51,8 +51,12 @@ import { buildFraudHeaders, detectVendorPublicIp } from "../../lib/buildFraudHea
 import { initializeSalt } from "../../services/subHasher.js";
 import { publishActivityEvent, publishActivityFailureEvent, resolveActorClass } from "../../lib/activityAlert.js";
 import { emitMetric } from "../../lib/emfMetrics.js";
+import { isClientAuthorisedForService } from "../../lib/hmrcAgentAuthorisation.js";
 
 const logger = createLogger({ source: "app/functions/hmrc/hmrcVatReturnPost.js" });
+
+// The Agent Authorisation API's service identifier for VAT (PLAN_PRICE_UPDATE.md (d)).
+const AGENT_AUTHORISATION_SERVICE = "MTD-VAT";
 
 const MAX_WAIT_MS = 25000;
 const DEFAULT_WAIT_MS = 0;
@@ -93,8 +97,9 @@ function shouldEmitFailureMetric(status) {
  * @param {string} [params.userSub]
  * @param {Object} [params.detail] - Additional non-identifying detail fields
  * @param {boolean} [params.emitMetric=true] - Whether to emit the failure metric
+ * @param {string} [params.clientId] - carried onto the event detail when this is a client-scoped submission
  */
-async function recordSubmissionFailure({ failure, summary, userSub, detail = {}, emitMetric = true }) {
+async function recordSubmissionFailure({ failure, summary, userSub, detail = {}, emitMetric = true, clientId }) {
   const actor = resolveActorClass();
   if (emitMetric) {
     emitSubmissionMetric("VatSubmissionFailure", actor);
@@ -105,7 +110,7 @@ async function recordSubmissionFailure({ failure, summary, userSub, detail = {},
     failure,
     userSub,
     actor,
-    detail,
+    detail: clientId ? { ...detail, clientId } : detail,
   });
 }
 
@@ -124,6 +129,9 @@ export function extractAndValidateParameters(event, errorMessages) {
   const parsedBody = parseRequestBody(event);
   const {
     vatNumber,
+    // A practice acting for a client (PLAN_PRICE_UPDATE.md (d)): resolves the VRN from the
+    // client row instead of vatNumber above.
+    clientId,
     // Period dates for server-side resolution via obligations API
     periodStart,
     periodEnd,
@@ -151,8 +159,9 @@ export function extractAndValidateParameters(event, errorMessages) {
   // Detect request format (9-box or legacy)
   const requestFormat = detectRequestFormat(parsedBody);
 
-  // Collect validation errors for required fields
-  if (!vatNumber) errorMessages.push("Missing vatNumber parameter from body");
+  // Collect validation errors for required fields. A client-scoped request resolves its VRN
+  // from the client row instead, so vatNumber is not required from the body when clientId is set.
+  if (!vatNumber && !clientId) errorMessages.push("Missing vatNumber parameter from body");
 
   // periodStart and periodEnd are required - periodKey is resolved from obligations
   if (!periodStart) errorMessages.push("Missing periodStart parameter from body");
@@ -267,6 +276,7 @@ export function extractAndValidateParameters(event, errorMessages) {
 
   return {
     vatNumber,
+    clientId,
     periodStart,
     periodEnd,
     hmrcAccessToken,
@@ -302,6 +312,7 @@ async function resolvePeriodKeyFromObligations({
   requestId,
   traceparent,
   correlationId,
+  clientId,
 }) {
   logger.info({ message: "Resolving periodKey from date range", periodStart, periodEnd, vatNumber });
 
@@ -319,6 +330,7 @@ async function resolvePeriodKeyFromObligations({
     requestId,
     traceparent,
     correlationId,
+    clientId,
   );
 
   if (!hmrcResponse.ok) {
@@ -328,6 +340,7 @@ async function resolvePeriodKeyFromObligations({
       summary: "VAT return blocked: could not read obligations from HMRC",
       userSub,
       detail: { hmrcStatus: hmrcResponse.status },
+      clientId,
     });
     return {
       response: buildValidationError(request, [`Failed to resolve period key: HMRC returned ${hmrcResponse.status}`], responseHeaders),
@@ -368,6 +381,7 @@ async function resolvePeriodKeyFromObligations({
       summary: "VAT return blocked: period already filed at HMRC",
       userSub,
       detail: { received: matchedObligation.received },
+      clientId,
     });
     const receivedOn = matchedObligation.received
       ? ` HMRC received it on ${new Date(matchedObligation.received).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" })}.`
@@ -395,6 +409,7 @@ async function resolvePeriodKeyFromObligations({
     failure: "obligation-not-matched",
     summary: "VAT return blocked: no open obligation for the requested period",
     userSub,
+    clientId,
   });
   const openPeriodsAdvice = openPeriods.length
     ? ` HMRC is expecting a return for: ${openPeriods.join("; ")}.`
@@ -429,16 +444,21 @@ export async function ingestHandler(event) {
 
   let errorMessages = [];
 
+  // A practice acting for a client (PLAN_PRICE_UPDATE.md (d)) names the client instead of a VRN;
+  // read early so it can be passed into bundle enforcement's own practice check.
+  const clientId = parseRequestBody(event)?.clientId || undefined;
+
   // Bundle enforcement
   let userSub;
   let bundleIds = [];
+  let client = null;
   try {
-    ({ userSub, bundleIds } = await enforceBundles(event));
+    ({ userSub, bundleIds, client } = await enforceBundles(event, { clientId }));
   } catch (error) {
     // Note: Tracing headers (x-request-id, traceparent) are available via context
     // but not currently included in 403 error responses. The request URL is passed
     // for logging purposes. See httpResponseHelper.js for response header handling.
-    await recordSubmissionFailure({ failure: "access-denied", summary: "VAT return blocked: no entitlement" });
+    await recordSubmissionFailure({ failure: "access-denied", summary: "VAT return blocked: no entitlement", clientId });
     return http403ForbiddenFromBundleEnforcement(error, request);
   }
 
@@ -448,6 +468,22 @@ export async function ingestHandler(event) {
       request,
       headers: { "Content-Type": "application/json" },
       data: {},
+    });
+  }
+
+  if (clientId && !isClientAuthorisedForService(client, AGENT_AUTHORISATION_SERVICE)) {
+    logger.warn({ message: "Client-scoped request refused: not authorised for MTD-VAT", clientId });
+    await recordSubmissionFailure({
+      failure: "client-not-authorised",
+      summary: "VAT return blocked: client not authorised for MTD-VAT",
+      userSub,
+      clientId,
+    });
+    return http403ForbiddenResponse({
+      request,
+      headers: { "Content-Type": "application/json" },
+      message: "Client is not authorised for MTD-VAT",
+      error: { code: "client-not-authorised" },
     });
   }
 
@@ -463,6 +499,9 @@ export async function ingestHandler(event) {
     runFraudPreventionHeaderValidation,
     allowSyntheticObligations,
   } = extractAndValidateParameters(event, errorMessages);
+
+  // A client-scoped request resolves its VRN from the client row, never from the request body.
+  const resolvedVatNumber = clientId ? client.identifiers?.vrn : vatNumber;
 
   // Generate Gov-Client headers and collect any header-related validation errors
   const { govClientHeaders, govClientErrorMessages } = buildFraudHeaders(event, { bundleIds });
@@ -488,6 +527,7 @@ export async function ingestHandler(event) {
       failure: "auth-expired",
       summary: "VAT return rejected: HMRC authorisation invalid",
       userSub,
+      clientId,
     });
     // If token is explicitly unauthorized, return 401; otherwise return 400 with validation message only
     if (err instanceof UnauthorizedTokenError) {
@@ -525,7 +565,7 @@ export async function ingestHandler(event) {
       const resolution = await resolvePeriodKeyFromObligations({
         request,
         responseHeaders,
-        vatNumber,
+        vatNumber: resolvedVatNumber,
         periodStart,
         periodEnd,
         hmrcAccessToken,
@@ -538,6 +578,7 @@ export async function ingestHandler(event) {
         requestId,
         traceparent,
         correlationId,
+        clientId,
       });
       if (resolution.response) {
         return resolution.response;
@@ -550,6 +591,7 @@ export async function ingestHandler(event) {
         failure: "internal-error",
         summary: "VAT return failed while resolving the obligation period",
         userSub,
+        clientId,
       });
       return http500ServerErrorResponse({
         request,
@@ -575,6 +617,7 @@ export async function ingestHandler(event) {
           failure: "tokens-exhausted",
           summary: "VAT return blocked: submission allowance used up",
           userSub,
+          clientId,
         });
         return http403ForbiddenResponse({
           request,
@@ -589,6 +632,7 @@ export async function ingestHandler(event) {
         failure: "internal-error",
         summary: "VAT return failed while checking the submission allowance",
         userSub,
+        clientId,
       });
       return http500ServerErrorResponse({
         request,
@@ -609,7 +653,8 @@ export async function ingestHandler(event) {
 
   // trace: 2
   const payload = {
-    vatNumber,
+    vatNumber: resolvedVatNumber,
+    clientId,
     periodKey: normalizedPeriodKey,
     vatReturnData,
     requestFormat,
@@ -653,6 +698,7 @@ export async function ingestHandler(event) {
           payload.requestId,
           payload.traceparent,
           payload.correlationId,
+          payload.clientId,
         );
 
         const serializableHmrcResponse = {
@@ -708,6 +754,7 @@ export async function ingestHandler(event) {
         failure: "internal-error",
         summary: "VAT return failed unexpectedly",
         userSub,
+        clientId,
       });
       return http500ServerErrorResponse({
         request,
@@ -769,6 +816,7 @@ export async function workerHandler(event) {
         payload.requestId,
         payload.traceparent,
         payload.correlationId,
+        payload.clientId,
       );
 
       const serializableHmrcResponse = {
@@ -850,6 +898,7 @@ export async function submitVat(
   requestId = undefined,
   traceparent = undefined,
   correlationId = undefined,
+  clientId = undefined,
 ) {
   // Validate fraud prevention headers for synthetic accounts
   if (hmrcAccount === "synthetic" && runFraudPreventionHeaderValidation) {
@@ -922,6 +971,7 @@ export async function submitVat(
       summary: "VAT return submitted",
       actor,
       userSub: auditForUserSub,
+      detail: clientId ? { clientId } : {},
     });
     const { chargeTokenOnSuccess } = await import("../../services/tokenEnforcement.js");
     await chargeTokenOnSuccess(auditForUserSub, "submit-vat");
@@ -933,6 +983,7 @@ export async function submitVat(
       userSub: auditForUserSub,
       detail: { hmrcStatus: hmrcResponse.status },
       emitMetric: shouldEmitMetric,
+      clientId,
     });
   }
 

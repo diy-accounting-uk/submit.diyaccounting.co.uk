@@ -8,6 +8,7 @@ import { dotenvConfigIfNotBlank } from "@app/lib/env.js";
 // Import real functions from bundleManagement
 import { BundleAuthorizationError, BundleEntitlementError, enforceBundles } from "@app/services/bundleManagement.js";
 import { getUserBundles } from "@app/data/dynamoDbBundleRepository.js";
+import { getClient } from "@app/data/dynamoDbPracticeClientRepository.js";
 
 dotenvConfigIfNotBlank({ path: ".env.test" });
 
@@ -18,6 +19,12 @@ vi.mock("@app/data/dynamoDbBundleRepository.js", () => ({
   deleteBundle: vi.fn(),
   deleteAllBundles: vi.fn(),
   isDynamoDbEnabled: vi.fn(() => true),
+}));
+
+// Mock the practice-clients repository at the module boundary used by bundleManagement's
+// client-scoped practice check.
+vi.mock("@app/data/dynamoDbPracticeClientRepository.js", () => ({
+  getClient: vi.fn(),
 }));
 
 // Import the mocked functions for assertions in tests that go via Dynamo
@@ -75,6 +82,7 @@ describe("bundleEnforcement.js", () => {
       // Ensure we do NOT use mock bundle store for enforceBundles tests by default
       TEST_BUNDLE_MOCK: "false",
     };
+    getClient.mockReset();
   });
 
   describe("enforceBundles", () => {
@@ -377,6 +385,74 @@ describe("bundleEnforcement.js", () => {
       await enforceBundles(event);
 
       expect(getUserBundles).toHaveBeenCalledWith("user-from-authorizer");
+    });
+  });
+
+  describe("enforceBundles client-scoped requests", () => {
+    function buildClientScopedEvent(sub = "practice-sub") {
+      const token = makeJWT(sub);
+      const authorizerContext = { sub, "cognito:username": "test", email: "practice@test.diyaccounting.co.uk", scope: "read write" };
+      return buildEvent(token, authorizerContext, "/api/v1/hmrc/vat/return");
+    }
+
+    test("allows a client-scoped request when the practice holds an active resident-pro subscription and the client is found", async () => {
+      getUserBundles.mockResolvedValue([{ bundleId: "resident-pro", subscriptionStatus: "active" }]);
+      getClient.mockResolvedValue({ clientId: "c1", identifiers: { vrn: "111222333" }, archivedAt: null });
+
+      const result = await enforceBundles(buildClientScopedEvent(), { clientId: "c1" });
+
+      expect(result.client).toEqual({ clientId: "c1", identifiers: { vrn: "111222333" }, archivedAt: null });
+      expect(getClient).toHaveBeenCalledWith("practice-sub", "c1");
+    });
+
+    test("refuses a client-scoped request when the practice holds no resident-pro subscription", async () => {
+      getUserBundles.mockResolvedValue([{ bundleId: "day-guest" }]);
+
+      await expect(enforceBundles(buildClientScopedEvent(), { clientId: "c1" })).rejects.toMatchObject({
+        name: "BundleEntitlementError",
+        details: { code: "CLIENT_SCOPE_FORBIDDEN", clientId: "c1" },
+      });
+      expect(getClient).not.toHaveBeenCalled();
+    });
+
+    test("refuses a client-scoped request when resident-pro has expired", async () => {
+      getUserBundles.mockResolvedValue([
+        { bundleId: "resident-pro", subscriptionStatus: "active", expiry: new Date(Date.now() - 1000).toISOString() },
+      ]);
+
+      await expect(enforceBundles(buildClientScopedEvent(), { clientId: "c1" })).rejects.toMatchObject({
+        name: "BundleEntitlementError",
+        details: { code: "CLIENT_SCOPE_FORBIDDEN", clientId: "c1" },
+      });
+    });
+
+    test("refuses a client-scoped request when the client belongs to another practice", async () => {
+      getUserBundles.mockResolvedValue([{ bundleId: "resident-pro", subscriptionStatus: "active" }]);
+      getClient.mockResolvedValue(null);
+
+      await expect(enforceBundles(buildClientScopedEvent(), { clientId: "not-mine" })).rejects.toMatchObject({
+        name: "BundleEntitlementError",
+        details: { code: "CLIENT_NOT_FOUND", clientId: "not-mine" },
+      });
+    });
+
+    test("refuses a client-scoped request when the client is archived", async () => {
+      getUserBundles.mockResolvedValue([{ bundleId: "resident-pro", subscriptionStatus: "active" }]);
+      getClient.mockResolvedValue({ clientId: "c1", archivedAt: "2026-01-01T00:00:00.000Z" });
+
+      await expect(enforceBundles(buildClientScopedEvent(), { clientId: "c1" })).rejects.toMatchObject({
+        name: "BundleEntitlementError",
+        details: { code: "CLIENT_NOT_FOUND", clientId: "c1" },
+      });
+    });
+
+    test("leaves client null and never reads the practice-clients table when no clientId is given", async () => {
+      getUserBundles.mockResolvedValue([{ bundleId: "day-guest" }]);
+
+      const result = await enforceBundles(buildEvent(makeJWT("plain-sub"), { sub: "plain-sub" }));
+
+      expect(result.client).toBeNull();
+      expect(getClient).not.toHaveBeenCalled();
     });
   });
 });

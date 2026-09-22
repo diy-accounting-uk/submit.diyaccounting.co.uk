@@ -13,7 +13,7 @@ vi.mock("@app/data/dynamoDbPracticeClientRepository.js", () => ({
 
 const { getUserBundles } = await import("@app/data/dynamoDbBundleRepository.js");
 const { getClient } = await import("@app/data/dynamoDbPracticeClientRepository.js");
-const { entitlementFor, lapsedResidentExpiresAt } = await import("../../services/diyaGlEntitlement.js");
+const { entitlementFor, lapsedResidentExpiresAt, hasActiveResidentProBundle } = await import("../../services/diyaGlEntitlement.js");
 const { _setTestSalt, _clearSalt } = await import("../../services/subHasher.js");
 
 function restoreEnv(key, value) {
@@ -162,6 +162,30 @@ describe("diyaGlEntitlement", () => {
     expect(result.retention).toBe("sandbox");
     expect(result.reason).toBe("no-practice-subscription");
     expect(getClient).not.toHaveBeenCalled();
+  });
+});
+
+describe("hasActiveResidentProBundle", () => {
+  test("is true for an active, unexpired resident-pro bundle", () => {
+    const future = new Date(Date.now() + 60_000).toISOString();
+    expect(hasActiveResidentProBundle([{ bundleId: "resident-pro", subscriptionStatus: "active", expiry: future }])).toBe(true);
+  });
+
+  test("is true for an active resident-pro bundle with no expiry", () => {
+    expect(hasActiveResidentProBundle([{ bundleId: "resident-pro", subscriptionStatus: "active" }])).toBe(true);
+  });
+
+  test("is false when resident-pro has expired", () => {
+    const past = new Date(Date.now() - 60_000).toISOString();
+    expect(hasActiveResidentProBundle([{ bundleId: "resident-pro", subscriptionStatus: "active", expiry: past }])).toBe(false);
+  });
+
+  test("is false when no resident-pro bundle is held", () => {
+    expect(hasActiveResidentProBundle([{ bundleId: "resident-vat", subscriptionStatus: "active" }])).toBe(false);
+  });
+
+  test("is false when resident-pro is held but not active", () => {
+    expect(hasActiveResidentProBundle([{ bundleId: "resident-pro", subscriptionStatus: "canceled" }])).toBe(false);
   });
 });
 

@@ -1,0 +1,129 @@
+<!-- practice.html -->
+<!doctype html>
+<!-- SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0 -->
+<!-- Copyright (C) 2006-2026 DIY Accounting Limited -->
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <title>DIY Accounting Submit - Practice</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta
+      name="description"
+      content="Manage your practice's client list and HMRC agent authorisation for DIY Accounting Submit."
+    />
+    <link rel="canonical" href="https://submit.diyaccounting.co.uk/practice.html" />
+    <link rel="icon" href="/favicon.ico" sizes="any" />
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+    <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png" />
+    <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16.png" />
+    <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" />
+    <link rel="manifest" href="/site.webmanifest" />
+    <link rel="stylesheet" href="submit.css" />
+    <!-- CloudWatch RUM configuration placeholders; replace values during deployment -->
+    <meta name="rum:appMonitorId" content="${RUM_APP_MONITOR_ID}" />
+    <meta name="rum:region" content="${AWS_REGION}" />
+    <meta name="rum:identityPoolId" content="${RUM_IDENTITY_POOL_ID}" />
+    <meta name="rum:guestRoleArn" content="${RUM_GUEST_ROLE_ARN}" />
+    <script src="./lib/analytics.js"></script>
+    <script src="./lib/session-beacon.js"></script>
+  </head>
+  <body>
+    <a href="#mainContent" class="skip-link">Skip to main content</a>
+    <header>
+      <p class="chrome-fallback"><a href="./">DIY Accounting Submit</a></p>
+      <h1>DIY Accounting Submit</h1>
+      <p class="subtitle">Manage your practice's clients and their HMRC authorisation</p>
+    </header>
+
+    <main id="mainContent">
+      <div id="statusMessagesContainer" role="alert" aria-live="polite"></div>
+
+      <div id="loadingSpinner" class="spinner" style="display: none"></div>
+
+      <div class="form-container">
+        <h2>Clients</h2>
+
+        <div id="unauthenticatedHint" style="display: none; margin-bottom: 1em; color: #b30000">
+          Please log in to view your clients.
+        </div>
+
+        <div id="clientsErrorState" role="alert" style="display: none; margin-bottom: 1em; color: #b30000"></div>
+
+        <div id="clientsEmptyState" style="display: none; color: #555">No clients yet. Add your first client below.</div>
+
+        <div style="overflow-x: auto">
+          <table id="clientsTable" class="data-table" style="width: 100%; display: none">
+            <thead>
+              <tr>
+                <th>Client</th>
+                <th>Identifiers</th>
+                <th>VAT authorisation</th>
+                <th>ITSA authorisation</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody id="clientsTableBody"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="form-container">
+        <h2>Agent reference number</h2>
+        <p class="hint">
+          The agent reference number (ARN) from your agent services account. Set once, sent with an invitation whenever you enter a
+          value; leave blank to reuse the one already on file.
+        </p>
+        <div class="form-group">
+          <label for="arnInput">ARN</label>
+          <input type="text" id="arnInput" autocomplete="off" placeholder="e.g. AARN1234567" />
+        </div>
+      </div>
+
+      <div class="form-container">
+        <h2>Add client</h2>
+        <form id="addClientForm">
+          <div class="form-group">
+            <label for="displayNameInput">Client name</label>
+            <input type="text" id="displayNameInput" name="displayName" autocomplete="off" />
+          </div>
+          <div class="form-group">
+            <label for="vrnInput">VAT registration number</label>
+            <p class="hint">9 digits, for a client filing VAT.</p>
+            <input type="text" id="vrnInput" name="vrn" autocomplete="off" />
+          </div>
+          <div class="form-group">
+            <label for="ninoInput">National Insurance number</label>
+            <p class="hint">For a client filing Income Tax Self Assessment.</p>
+            <input type="text" id="ninoInput" name="nino" autocomplete="off" />
+          </div>
+          <div class="form-group">
+            <label for="utrInput">Unique Taxpayer Reference</label>
+            <p class="hint">10 digits.</p>
+            <input type="text" id="utrInput" name="utr" autocomplete="off" />
+          </div>
+          <div class="form-group">
+            <label for="companyNumberInput">Company number</label>
+            <p class="hint">8 characters, for a client filing company accounts.</p>
+            <input type="text" id="companyNumberInput" name="companyNumber" autocomplete="off" />
+          </div>
+          <div id="addClientErrors" class="error-message" style="display: none"></div>
+          <button type="submit" id="addClientBtn" class="btn">Add client</button>
+        </form>
+      </div>
+    </main>
+
+    <footer data-footer="full"></footer>
+
+    <script src="widgets/page-chrome.js"></script>
+    <script src="lib/env-loader.js"></script>
+    <script type="module" src="submit.js"></script>
+    <script src="developer-mode.js"></script>
+    <script src="lib/request-cache.js"></script>
+    <script src="widgets/entitlement-status.js"></script>
+    <script src="widgets/auth-status.js"></script>
+    <script src="widgets/status-messages.js"></script>
+    <script src="widgets/loading-spinner.js"></script>
+    <script type="module" src="widgets/view-source-link.js"></script>
+    <script src="practice.js"></script>
+  </body>
+</html>

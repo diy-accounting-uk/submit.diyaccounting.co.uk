@@ -254,3 +254,104 @@ describe("companiesHouseAccountsPost ingestHandler", () => {
     expect(parseResponseBody(response)).toEqual({});
   });
 });
+
+describe("companiesHouseAccountsPost client-scoped requests (PLAN_PRICE_UPDATE.md (d))", () => {
+  const CLIENT_TABLE = "test-practice-clients-table";
+
+  function mockPracticeAndClient(clientItem) {
+    mockSend.mockImplementation(async (cmd) => {
+      const lib = await import("@aws-sdk/lib-dynamodb");
+      if (cmd instanceof lib.QueryCommand) {
+        return { Items: [{ bundleId: "resident-pro", subscriptionStatus: "active" }], Count: 1 };
+      }
+      if (cmd instanceof lib.GetCommand) {
+        if (cmd.input?.TableName === CLIENT_TABLE) {
+          return { Item: clientItem };
+        }
+        return { Item: null };
+      }
+      return {};
+    });
+  }
+
+  beforeEach(() => {
+    Object.assign(
+      process.env,
+      setupTestEnv({
+        COMPANIES_HOUSE_XMLGW_URI: "https://xmlgw.companieshouse.gov.uk/v1-0/xmlgw/Gateway",
+        COMPANIES_HOUSE_ACCOUNTS_ASYNC_REQUESTS_TABLE_NAME: "test-companies-house-accounts-async-requests-table",
+        COMPANIES_HOUSE_PACKAGE_REFERENCE: "0012",
+        ENVIRONMENT_NAME: "test",
+        PRACTICE_CLIENTS_DYNAMODB_TABLE_NAME: CLIENT_TABLE,
+      }),
+    );
+    vi.clearAllMocks();
+    mockEventBridgeSend.mockResolvedValue({});
+    mockBuildMicroEntityAccounts.mockReturnValue('<?xml version="1.0"?><html>fake ixbrl</html>');
+    mockAllocateSubmissionNumber.mockResolvedValue("00001A");
+    mockResolvePresenterCredentials.mockResolvedValue({ presenterId: "presenter-id", presenterCode: "presenter-code" });
+    mockBuildAccountsSubmission.mockReturnValue("<GovTalkMessage>submission</GovTalkMessage>");
+    mockPostToGateway.mockResolvedValue({ ok: true, status: 200, data: "<GovTalkMessage>ack</GovTalkMessage>", headers: {}, duration: 1 });
+    mockParseGatewayResponse.mockReturnValue({ errors: [], statuses: [], gatewayTimestamp: "2026-01-15T10:00:00Z", pollInterval: 1 });
+  });
+
+  test("resolves the company number from the client row when the client is present and authorised", async () => {
+    mockPracticeAndClient({
+      clientId: "c1",
+      identifiers: { companyNumber: "00000099" },
+      authorisations: { "CH-ACCOUNTS": { status: "authorised" } },
+      archivedAt: null,
+    });
+
+    const body = buildAccountsBody({ clientId: "c1" });
+    delete body.companyNumber;
+    const response = await companiesHouseAccountsPostHandler(buildEvent({ body }));
+
+    expect(response.statusCode).toBe(201);
+    const [generatorInput] = mockBuildMicroEntityAccounts.mock.calls[0];
+    expect(generatorInput.companyNumber).toBe("00000099");
+    const [submissionArgs] = mockBuildAccountsSubmission.mock.calls[0];
+    expect(submissionArgs.companyNumber).toBe("00000099");
+  });
+
+  test("returns 403 JSON when the client is present but not authorised for Companies House filing", async () => {
+    mockPracticeAndClient({
+      clientId: "c1",
+      identifiers: { companyNumber: "00000099" },
+      authorisations: {},
+      archivedAt: null,
+    });
+
+    const response = await companiesHouseAccountsPostHandler(buildEvent({ body: buildAccountsBody({ clientId: "c1" }) }));
+
+    expect(response.statusCode).toBe(403);
+    const body = parseResponseBody(response);
+    expect(body.code).toBe("client-not-authorised");
+    expect(mockPostToGateway).not.toHaveBeenCalled();
+  });
+
+  test("returns 403 JSON for a client id belonging to another practice", async () => {
+    mockPracticeAndClient(null);
+
+    const response = await companiesHouseAccountsPostHandler(buildEvent({ body: buildAccountsBody({ clientId: "not-mine" }) }));
+
+    expect(response.statusCode).toBe(403);
+    const body = parseResponseBody(response);
+    expect(body.code).toBe("CLIENT_NOT_FOUND");
+    expect(mockPostToGateway).not.toHaveBeenCalled();
+  });
+
+  test("uses the body companyNumber as before when no clientId is given", async () => {
+    mockSend.mockImplementation(async (cmd) => {
+      const lib = await import("@aws-sdk/lib-dynamodb");
+      if (cmd instanceof lib.QueryCommand) return { Items: [], Count: 0 };
+      return {};
+    });
+
+    const response = await companiesHouseAccountsPostHandler(buildEvent());
+
+    expect(response.statusCode).toBe(201);
+    const [generatorInput] = mockBuildMicroEntityAccounts.mock.calls[0];
+    expect(generatorInput.companyNumber).toBe("00000001");
+  });
+});

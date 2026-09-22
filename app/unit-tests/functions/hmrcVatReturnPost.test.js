@@ -440,6 +440,137 @@ describe("hmrcVatReturnPost ingestHandler", () => {
   });
 });
 
+describe("hmrcVatReturnPost client-scoped requests (PLAN_PRICE_UPDATE.md (d))", () => {
+  const CLIENT_TABLE = "test-practice-clients-table";
+
+  function mockPracticeAndClient(clientItem) {
+    mockSend.mockImplementation(async (cmd) => {
+      if (cmd instanceof MockQueryCommand) {
+        return { Items: [{ bundleId: "resident-pro", subscriptionStatus: "active" }], Count: 1 };
+      }
+      if (cmd instanceof MockPutCommand) return {};
+      if (cmd instanceof MockUpdateCommand) return {};
+      if (cmd instanceof MockGetCommand) {
+        if (cmd.input?.TableName === CLIENT_TABLE) {
+          return { Item: clientItem };
+        }
+        return { Item: null };
+      }
+      return {};
+    });
+  }
+
+  beforeEach(() => {
+    Object.assign(process.env, setupTestEnv());
+    vi.clearAllMocks();
+    process.env.PRACTICE_CLIENTS_DYNAMODB_TABLE_NAME = CLIENT_TABLE;
+    mockObligationsSuccess();
+  });
+
+  test("resolves the VRN from the client row when the client is present and authorised", async () => {
+    mockPracticeAndClient({
+      clientId: "c1",
+      identifiers: { vrn: "111222333" },
+      authorisations: { "MTD-VAT": { status: "authorised" } },
+      archivedAt: null,
+    });
+    mockHmrcSuccess(mockFetch, {
+      formBundleNumber: "123456789012",
+      chargeRefNumber: "XM002610011594",
+      processingDate: "2026-01-01T12:00:00.000Z",
+    });
+
+    const event = buildHmrcEvent({
+      body: {
+        clientId: "c1",
+        periodStart: TEST_PERIOD_START,
+        periodEnd: TEST_PERIOD_END,
+        vatDue: 100,
+        accessToken: "test-token",
+      },
+    });
+    const response = await hmrcVatReturnPostHandler(event);
+
+    expect(response.statusCode).toBe(200);
+    const returnPost = mockFetch.mock.calls.find(([url]) => String(url).includes("/returns"));
+    expect(String(returnPost[0])).toContain("/organisations/vat/111222333/returns");
+    expect(mockGetVatObligations.mock.calls[0][0]).toBe("111222333");
+  });
+
+  test("returns 403 JSON when the client is present but not authorised for MTD-VAT", async () => {
+    mockPracticeAndClient({
+      clientId: "c1",
+      identifiers: { vrn: "111222333" },
+      authorisations: {},
+      archivedAt: null,
+    });
+
+    const event = buildHmrcEvent({
+      body: {
+        clientId: "c1",
+        periodStart: TEST_PERIOD_START,
+        periodEnd: TEST_PERIOD_END,
+        vatDue: 100,
+        accessToken: "test-token",
+      },
+    });
+    const response = await hmrcVatReturnPostHandler(event);
+
+    expect(response.statusCode).toBe(403);
+    const body = parseResponseBody(response);
+    expect(body.code).toBe("client-not-authorised");
+    expect(mockFetch).not.toHaveBeenCalled();
+  });
+
+  test("returns 403 JSON for a client id belonging to another practice", async () => {
+    mockPracticeAndClient(null);
+
+    const event = buildHmrcEvent({
+      body: {
+        clientId: "not-mine",
+        periodStart: TEST_PERIOD_START,
+        periodEnd: TEST_PERIOD_END,
+        vatDue: 100,
+        accessToken: "test-token",
+      },
+    });
+    const response = await hmrcVatReturnPostHandler(event);
+
+    expect(response.statusCode).toBe(403);
+    const body = parseResponseBody(response);
+    expect(body.code).toBe("CLIENT_NOT_FOUND");
+    expect(mockFetch).not.toHaveBeenCalled();
+  });
+
+  test("uses the body vatNumber as before when no clientId is given", async () => {
+    mockSend.mockImplementation(async (cmd) => {
+      if (cmd instanceof MockQueryCommand) return { Items: [], Count: 0 };
+      if (cmd instanceof MockGetCommand) return { Item: null };
+      return {};
+    });
+    mockHmrcSuccess(mockFetch, {
+      formBundleNumber: "123456789012",
+      chargeRefNumber: "XM002610011594",
+      processingDate: "2026-01-01T12:00:00.000Z",
+    });
+
+    const event = buildHmrcEvent({
+      body: {
+        vatNumber: "111222333",
+        periodStart: TEST_PERIOD_START,
+        periodEnd: TEST_PERIOD_END,
+        vatDue: 100,
+        accessToken: "test-token",
+      },
+    });
+    const response = await hmrcVatReturnPostHandler(event);
+
+    expect(response.statusCode).toBe(200);
+    const returnPost = mockFetch.mock.calls.find(([url]) => String(url).includes("/returns"));
+    expect(String(returnPost[0])).toContain("/organisations/vat/111222333/returns");
+  });
+});
+
 describe("hmrcVatReturnPost extractAndValidateParameters allowSyntheticObligations", () => {
   function buildParamsEvent(allowSyntheticObligations, hmrcAccount) {
     return buildHmrcEvent({
