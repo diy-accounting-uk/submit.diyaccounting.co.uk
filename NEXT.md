@@ -63,6 +63,16 @@ step.
 
 ## Machine-only
 
+- [ ] **B30aq. `maven package` retries a Maven Central 429.** Deploy run 35703918781 on `main`
+  (fbead536, a workflow-only change) failed in `mvn-package` (`deploy.yml` line 563 onward) because
+  Maven Central answered 429 Too Many Requests for `maven-jar-plugin:3.5.0`, and every stack job
+  skipped behind it; the rerun passed. Wrap the `./mvnw` call in the same retry shape the workflow
+  uses for `npm ci` (three attempts with a pause), or set the Maven wagon retry properties
+  (`-Dmaven.wagon.http.retryHandler.count=3 -Daether.connector.http.retryHandler.count=3`) on the
+  command, and check the Maven cache step restores `~/.m2` so a warm runner never asks Central.
+  **Source**: run 35703918781; BACKLOG 30. **Owner**: Claude Code. **Model**: Haiku. **Size**: ~1
+  file.
+
 - [ ] **B58b. `agentic-lib-code.yml` lands a complete handover it wrote to `OUT_DIR`.** #318's
   third run (35702110179) wrote `CHANGES.md` with `- **Status**: complete`, a `Branch` line and
   `PR.md` to `/tmp/do-next-out`, committed `SECURITY_REVIEW_FINDINGS.md` on its branch, and the
@@ -91,32 +101,6 @@ step.
   the ids are on `claude/b74-board`. **Source**:
   `PLAN_PRICE_UPDATE.md` PU-5. **Owner**: Claude Code. **Model**: Haiku. **Size**: ~2 files.
 
-- [ ] **F1c. Stripe balance transactions and payouts to staging.** `scripts/finance/stripe-stage.js`:
-  for a month, `balance_transactions` with `expand: data.source` and the payouts, from the live key
-  the way `infra/stripe/stripe-sync.js` reads it for `--mode live` (its `GetSecretValueCommand`
-  around line 274; a read-only listing), written as
-  `../staging/<year-end>/stripe/<yyyy-mm-dd>-stripe-balance-transactions.json` and
-  `…-payouts.json` as the raw Stripe objects, one array per file, with gross, fee and net kept
-  separate; a unit test over a recorded page. Run it for March to August 2026 (profile
-  `submit-prod`). F2a's Stripe parser reads these files, so this row lands first; the Drive
-  mirror's `stripe/2026-03 Stripe - transactions.csv` is the cross-check for March. **Source**: `../PLAN_FINANCE_AUTOMATION.md` route 2. **Owner**:
-  Claude Code. **Model**: Sonnet. **Size**: ~2 files.
-
-- [ ] **F2b. Supplier invoices from the mailbox.** `mcp/lib/finance/mail-invoices.js`: for a
-  period, the supplier invoices read through the corpus index: `../index/.venv/bin/corpus search
-  --source mail-antony --since <date> --until <date> --json "<supplier>"` then `corpus doc --json
-  <id>` for the extracted text (the index content-indexes the PDF attachments, which is why no
-  PDF reader is needed in this repository); the `.eml` itself sits under
-  `../mail/antony@diyaccounting.co.uk/<yyyy>/<m>/<d>/<id>.eml` and `../mail/INDEX.tsv` lists
-  date, mailbox, from, to, subject, attachments and path. The module shells out to that CLI
-  through one function the tests replace with two recorded, redacted documents; emitted as
-  `purchases` lines with
-  `documentType = "invoice"` and the supplier's `taxCode` (`S` or `OS`), against
-  `diya-gl-lines-v2.schema.json` in the spreadsheets repository's `public/schema/`; a unit test over
-  two recorded invoices (AWS, Google Cloud). No file harvesting. **Source**:
-  `../PLAN_FINANCE_AUTOMATION.md` route 4, phase 2. **Owner**: Claude Code. **Model**: Sonnet.
-  **Size**: ~3 files.
-
 - [ ] **F2c. Opening balances and the book from the prior-year workbook.**
   `mcp/lib/finance/book-from-workbook.js`: `book.toml` per `diya-gl-book-v2.schema.json` (entity
   information, chart of accounts, opening balances, debtors, creditors, fixed assets, dividends,
@@ -133,19 +117,28 @@ step.
   `../PLAN_FINANCE_AUTOMATION.md` phase 2. **Owner**: Claude Code. **Model**: Sonnet. **Size**:
   ~3 files.
 
-- [ ] **F2a. Staged sources into diya-gl lines.** `mcp/lib/finance/`: parsers for the NatWest CSV
-  (`Date,Type,Description,Value,Balance,Account Name,Account Number`; `Type` to
-  `diya-gl:bankCode`; samples in the Drive mirror's `2025-2026 accounts/bank/`), the Stripe files
-  (a charge as a `sales` `receipt` line plus a `purchases` fee line, a payout as a `bank` line that
-  must match the bank BAC line) and the PayPal export (settled transactions only; holds and their
-  reversals excluded; a receipt as `sales`, a bill payment as `purchases` matched to the mailbox
-  invoice), each emitting lines validated with `validateLines` from the diya-gl package's
+- [ ] **F2f. The mail index reads invoice attachments.** `../index/corpus.toml`'s `drive` source
+  carries `convert = ["pdf", "doc", "docx"]` (line 11) and the two `eml_tree` sources
+  (`mail-antony` line 41, `mail-support`) carry none, so `corpus doc` returns an email's body only
+  and AWS's "Invoice Available" and Google Cloud's invoice emails yield no figure to
+  `mcp/lib/finance/mail-invoices.js` (F2b, on `claude/b75-board`), which posts a line only where the
+  body states the total. Read the indexer's `eml_tree` reader under `../index/` for whether it
+  honours `convert` for attachments, add it if it does not, set `convert = ["pdf"]` on both mail
+  sources, run `.venv/bin/corpus update --config corpus.toml` from `../index/` (the F1a run took
+  under fifteen minutes for the whole corpus), then extend `mail-invoices.js` with the attachment's
+  total in the shape AWS and Google Cloud invoices print it, with a third redacted recording. Runs
+  F2b's four cases plus the new one. **Source**: F2b's finding; `../PLAN_FINANCE_AUTOMATION.md`
+  route 4. **Owner**: Claude Code. **Model**: Sonnet. **Size**: ~3 files, plus the index.
+
+- [ ] **F2a. Staged sources into diya-gl lines.** The bank parser (`mcp/lib/finance/bank-lines.js`) is on
+  `claude/b75-board`. Left: the Stripe parser over F1c's staged files (six months under
+  `../staging/<year-end>/stripe/`, raw Stripe objects: a charge as a `sales` `receipt` line plus a
+  `purchases` fee line, a payout as a `bank` line that must match the bank BAC line) and the PayPal
+  parser (settled transactions only; holds and their reversals excluded; a receipt as `sales`, a
+  bill payment as `purchases` matched to the mailbox invoice), each emitting lines validated with `validateLines` from the diya-gl package's
   `diya-gl-schema.js`, gross income and fees never netted; unit tests over recorded samples with
-  the March 2026 holds case. The table in the plan's "Target format" section is the mapping. The
-  bank parser can start now (the Drive mirror holds the 2025-26 CSVs, named
-  `Current 600947-80597386 01-01-2026 to 31-01-2026.csv`); the Stripe parser reads F1c's JSON
-  files, so it follows F1c; the PayPal parser has no sample until F1b writes one, so it follows
-  F1b. `../REPORT_FINANCE_SOURCES_2025-26.md` (F1e) found that `Cashaccount.xlsx` is the PayPal
+  the March 2026 holds case. The table in the plan's "Target format" section is the mapping. The Stripe parser can
+  start now; the PayPal parser has no sample until OF1 lets F1b write one. `../REPORT_FINANCE_SOURCES_2025-26.md` (F1e) found that `Cashaccount.xlsx` is the PayPal
   wallet's own ledger (gross sales, fees, wallet-paid purchases), so PayPal lines post to that
   cash account and the bank sees only the PayPal withdrawals; and that `Creditcardaccount.xlsx`
   holds the Stripe payout totals, filled for two months only. **Source**: `../PLAN_FINANCE_AUTOMATION.md` phase 2.
@@ -258,7 +251,7 @@ step.
   from the diya-gl package, written under `../staging/2026-2027/book/` (private); March 2026 matched
   line for line against the completed 2025-26 workbook (the control), every month's bank closing
   balance equal to the statement's, gross income and fees separate, no hold posted, each check a
-  line in `../staging/2026-2027/book/VERIFICATION.md`. Blocked on F1b, F1c, F1d, F2a, F2b and F2c.
+  line in `../staging/2026-2027/book/VERIFICATION.md`. Blocked on F1b's run (OF1), F1d, F2a's Stripe and PayPal parsers, F2c and F2f.
   **Source**: `../PLAN_FINANCE_AUTOMATION.md` phase 2 and its verification. **Owner**: Claude Code.
   **Model**: Sonnet. **Size**: ~2 files.
 
