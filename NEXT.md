@@ -17,8 +17,8 @@ Haiku; the lowest tier that fits). Anything touching code goes through a `claude
 PR; the operator merges.
 
 **Prod runs deployment prod-cdbc557**.
-**ci**: `ci-set1` is last-known-good. Open pull requests: #333 (`claude/b79-developers`), red until its fix pushes; #334
-(`claude/b80-board`), its ci deploy starting.
+**ci**: `ci-set1` is last-known-good. Open pull requests: #333 (`claude/b79-developers`, proof deploy 35766211386), #334
+(`claude/b80-board`, proof deploy 35767071938), #335 (`claude/b81-board`, its ci deploy starting).
 
 The board runs in five sections, in this order: **in flight** (a branch, a pull request or a run
 in motion, each named in the row), **machine-only**, **machine-ask**, **human-driven**,
@@ -40,8 +40,8 @@ step.
 
 ## In flight
 
-- [ ] **B81. Wave b81 on `claude/b81-board`.** Three commits, the batch proof running before the
-  push: PU-7m (a0bd6686: the practice licence suite green on the simulator lane, the
+- [ ] **B81. Wave b81 on `claude/b81-board`, PR #335.** Four commits, head e0744b65, its ci deploy
+  starting: PU-7m (a0bd6686: the practice licence suite green on the simulator lane, the
   practice-clients table bootstrapped for the local lanes, `resident-pro` granted through checkout
   so `subscriptionStatus` is set), AS7a (0caff823: the `STRICT_ENV_VALIDATION` flag gone, strict
   validation the default, the local-server system test loading `.env.test`) and AS1 (f3538afa:
