@@ -49,17 +49,6 @@ step.
   the deploy is terminal. **Source**: the rows named. **Owner**: Claude Code. **Model**: Sonnet.
   **Size**: ~40 files.
 
-- [ ] **PU-7. Practice licence build.** PU-7a to PU-7f and PU-7l are on `main`. In flight on
-  `claude/b74-board`, PR #327, with PU-3's price ids: PU-7g (the submission routes take a client id and
-  `enforceBundles` gains the practice check) and PU-7k (the practice page, its nav link held for
-  the launch step). Left in `PLAN_PRICE_UPDATE.md`
-  §(d) (lines 227 to 236): PU-7e waits on the operator's grant numbers, PU-7h on PU-7g, PU-7i on
-  PU-7g, B60 and B61, PU-7j on PU-7i, PU-7m on PU-7j; the `resident-pro` catalogue
-  values (`enable = "always"`, `hidden = false`, `allocation = "on-subscription"`) and the practice page's
-  nav link in `web/public/widgets/page-chrome.js` flip in the launch step after PU-7m, with the
-  four ci probes that reach resident-pro through a pass updated in the same change. **Source**: `PLAN_PRICE_UPDATE.md` PU-7. **Owner**: Claude Code. **Model**: Sonnet.
-  **Size**: ~30 files across 5 rows after this wave.
-
 ## Machine-only
 
 - [ ] **B43c. A skipped scheduled deploy runs no probes.** The `11 4 * * *` run 35709546270 on
@@ -106,6 +95,19 @@ step.
   under `mcp/test/fixtures/` becomes the tests' replayed shapes. **Source**:
   `PLAN_SUBMISSION_MCP.md` M2; BACKLOG 60. **Owner**: Claude Code. **Model**: Sonnet. **Size**:
   ~3 files.
+
+- [ ] **PU-7. Practice licence build.** PU-7a to PU-7g, PU-7k and PU-7l are on `main`. Next is
+  PU-7h, audit and receipts by client: the event field in `app/lib/activityAlert.js`, the receipt
+  attribute in `app/data/dynamoDbReceiptRepository.js`, the receipts filter in
+  `app/functions/hmrc/hmrcReceiptGet.js`, one Athena view, their tests. Then, in
+  `PLAN_PRICE_UPDATE.md` §(d) (lines 227 to 236): PU-7i waits on B60 and B61 (on `claude/b75-board`,
+  PR #328), PU-7j on PU-7i, PU-7m on PU-7j, PU-7e on the operator's grant numbers; the
+  `resident-pro` catalogue values (`enable = "always"`, `hidden = false`,
+  `allocation = "on-subscription"`) and the practice page's nav link in
+  `web/public/widgets/page-chrome.js` flip in the launch step after PU-7m, with the four ci probes
+  that reach resident-pro through a pass updated in the same change. **Source**:
+  `PLAN_PRICE_UPDATE.md` PU-7. **Owner**: Claude Code. **Model**: Sonnet. **Size**: ~7 files for
+  PU-7h, ~25 across the four rows after it.
 
 - [ ] **B61a. The MCP client id reaches ApiStack.** B61's `booksJwtAuthorizer` audience takes
   `mcpUserPoolClientId` when it is set and today nothing sets it: `IdentityStack.java` writes the
