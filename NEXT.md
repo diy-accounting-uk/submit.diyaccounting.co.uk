@@ -53,8 +53,9 @@ step.
   private workspace tree `../developers/submit`, indexed as the corpus source `developers`; the
   vendor API specs move to `reference/`; `_developers/` keeps `hmrc/` and the live runbooks.
   Its ci deploy is in flight. After the merge: repoint `NEXT.md` and `BACKLOG.md` on `main`, and
-  land AS15 and AS18, which touch the same files. The spreadsheets and www moves are one agent's
-  two pull requests, reported here when open. **Source**: operator 2026-09-22. **Owner**: Claude
+  land AS15 and AS18, which touch the same files. The spreadsheets move is spreadsheets PR #133 (76 files out,
+  `hmrc-references/` kept) and the www move is www PR #32 (one file out); both merge through
+  their own checks. **Source**: operator 2026-09-22. **Owner**: Claude
   Code. **Model**: Sonnet. **Size**: 262 files.
 
 - [ ] **PU-7. Practice licence build.** PU-7a to PU-7i, PU-7k and PU-7l are on `main`. In flight on
