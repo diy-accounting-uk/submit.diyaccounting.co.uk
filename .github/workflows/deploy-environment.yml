@@ -336,6 +336,22 @@ jobs:
         env:
           AWS_REGION: ${{ env.AWS_REGION }}
 
+      - name: Create secret in AWS from secrets.PAYPAL_CLIENT_ID
+        run: |
+          scripts/put-secret-with-rotation-tag.sh \
+            "${{ needs.names.outputs.environment-name }}/submit/paypal/client_id" \
+            "${{ secrets.PAYPAL_CLIENT_ID }}"
+        env:
+          AWS_REGION: ${{ env.AWS_REGION }}
+
+      - name: Create secret in AWS from secrets.PAYPAL_CLIENT_SECRET
+        run: |
+          scripts/put-secret-with-rotation-tag.sh \
+            "${{ needs.names.outputs.environment-name }}/submit/paypal/client_secret" \
+            "${{ secrets.PAYPAL_CLIENT_SECRET }}"
+        env:
+          AWS_REGION: ${{ env.AWS_REGION }}
+
       - name: Create secret in AWS from secrets.OPS_APP_PRIVATE_KEY
         env:
           SECRET_VALUE: ${{ secrets.OPS_APP_PRIVATE_KEY }}
