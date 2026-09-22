@@ -40,16 +40,18 @@ step.
 
 ## In flight
 
-- [ ] **B81. Wave b81 on `claude/b81-board`.** Three agents: PU-7m (landed as a0bd6686: the suite green on the
-  simulator lane, the practice-clients table bootstrapped for the local lanes, and
-  `resident-pro` granted through checkout so `subscriptionStatus` is set), AS7a (landed as 0caff823: the `STRICT_ENV_VALIDATION` flag gone, strict validation
-  the default, the local-server system test loading `.env.test`), AS1 (why coverage collects no files, then the gate under its
-  real key with measured numbers) and AS7a (strict environment validation by default, the
-  local-server system test given its environment). No pull request yet; the ci and prod variants of the suite need a sandbox agent
+- [ ] **B81. Wave b81 on `claude/b81-board`.** Three commits, the batch proof running before the
+  push: PU-7m (a0bd6686: the practice licence suite green on the simulator lane, the
+  practice-clients table bootstrapped for the local lanes, `resident-pro` granted through checkout
+  so `subscriptionStatus` is set), AS7a (0caff823: the `STRICT_ENV_VALIDATION` flag gone, strict
+  validation the default, the local-server system test loading `.env.test`) and AS1 (f3538afa:
+  the `**/.claude/**` coverage exclude matched every file inside a worktree under
+  `.claude/worktrees/`, so both providers reported nothing; the project config's misplaced
+  `pool`/`include` block flattened; thresholds 76/68/86/77 from the measured run, a point above
+  fails and the committed numbers pass). The suite's ci and prod variants need a sandbox agent
   authorisation the simulator shortcut has no equivalent for, so they run only when one exists.
   **Source**: the rows named. **Owner**: Claude Code. **Model**: Sonnet and Haiku. **Size**: ~20
   files.
-
 - [ ] **PU-7. Practice licence build.** PU-7a to PU-7l are on `main`. In flight on
   `claude/b81-board` (wave b81, one agent): PU-7m, the
   behaviour test `behaviour-tests/practiceLicence.behaviour.test.js`: two clients added through
@@ -78,8 +80,8 @@ step.
   vendor API specs move to `reference/`; `_developers/` keeps `hmrc/` and the live runbooks.
   Its ci deploy 35753852365 went red in `diyaGlSubscriptionBehaviour`: the durable test user
   has reached the tier's book limit because runs that failed mid-way today left their books
-  behind; the fix (delete the user's leftover books before the PUT) lands as a second commit and
-  redeploys. After the merge: repoint `NEXT.md` and `BACKLOG.md` on `main`, and
+  behind; the fix (delete the user's leftover books before the PUT) is the branch's second commit,
+  pushed for its redeploy. After the merge: repoint `NEXT.md` and `BACKLOG.md` on `main`, and
   land AS15 and AS18, which touch the same files. The spreadsheets and www moves are merged (their PRs #133 and #32). **Source**: operator 2026-09-22. **Owner**: Claude
   Code. **Model**: Sonnet. **Size**: 262 files.
 
