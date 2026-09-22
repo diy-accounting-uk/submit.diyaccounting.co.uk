@@ -162,7 +162,7 @@ describe("diyaGlVersionGet", () => {
     process.env.DIYA_GL_RESIDENT_TIER = "true";
     getUserBundles.mockResolvedValue([
       {
-        bundleId: "resident-diya-gl",
+        bundleId: "resident",
         subscriptionStatus: "canceled",
         expiry: new Date(Date.now() - 40 * 24 * 60 * 60 * 1000).toISOString(),
       },

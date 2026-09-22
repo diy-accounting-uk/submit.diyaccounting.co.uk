@@ -151,20 +151,20 @@ describe("diyaGlLapseSweep", () => {
       TableName: "test-bundle-table",
       IndexName: "bundleId-expiry-index",
       KeyConditionExpression: "bundleId = :bundleId AND expiry < :before",
-      ExpressionAttributeValues: { ":bundleId": "resident-diya-gl", ":before": "2026-08-21T00:00:00.000Z" },
+      ExpressionAttributeValues: { ":bundleId": "resident", ":before": "2026-08-21T00:00:00.000Z" },
     });
   });
 
   test("honors a configured lapse grace period and bundle id", async () => {
     process.env.DIYA_GL_LAPSE_GRACE_DAYS = "10";
-    process.env.DIYA_GL_BUNDLE_ID = "resident-ltd";
+    process.env.DIYA_GL_BUNDLE_ID = "custom-books-bundle";
     mockDynamoSend.mockResolvedValueOnce({ Items: [] });
 
     await handler({ now: "2026-09-20T00:00:00.000Z" });
 
     const command = mockDynamoSend.mock.calls[0][0];
     expect(command.params).toMatchObject({
-      ExpressionAttributeValues: { ":bundleId": "resident-ltd", ":before": "2026-09-10T00:00:00.000Z" },
+      ExpressionAttributeValues: { ":bundleId": "custom-books-bundle", ":before": "2026-09-10T00:00:00.000Z" },
     });
   });
 
@@ -172,7 +172,7 @@ describe("diyaGlLapseSweep", () => {
     mockDynamoSend
       .mockResolvedValueOnce({
         Items: [{ hashedSub: "owner1" }],
-        LastEvaluatedKey: { bundleId: "resident-diya-gl", expiry: "a" },
+        LastEvaluatedKey: { bundleId: "resident", expiry: "a" },
       })
       .mockResolvedValueOnce({ Items: [{ hashedSub: "owner1" }, { hashedSub: "owner2" }] });
     fixtureS3({
