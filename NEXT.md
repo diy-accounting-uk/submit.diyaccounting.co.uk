@@ -72,19 +72,6 @@ step.
   **Source**: run 35703918781; BACKLOG 30. **Owner**: Claude Code. **Model**: Haiku. **Size**: ~1
   file.
 
-- [ ] **F2f. The mail index reads invoice attachments.** `../index/corpus.toml`'s `drive` source
-  carries `convert = ["pdf", "doc", "docx"]` (line 11) and the two `eml_tree` sources
-  (`mail-antony` line 41, `mail-support`) carry none, so `corpus doc` returns an email's body only
-  and AWS's "Invoice Available" and Google Cloud's invoice emails yield no figure to
-  `mcp/lib/finance/mail-invoices.js` (F2b, on `claude/b75-board`), which posts a line only where the
-  body states the total. Read the indexer's `eml_tree` reader under `../index/` for whether it
-  honours `convert` for attachments, add it if it does not, set `convert = ["pdf"]` on both mail
-  sources, run `.venv/bin/corpus update --config corpus.toml` from `../index/` (the F1a run took
-  under fifteen minutes for the whole corpus), then extend `mail-invoices.js` with the attachment's
-  total in the shape AWS and Google Cloud invoices print it, with a third redacted recording. Runs
-  F2b's four cases plus the new one. **Source**: F2b's finding; `../PLAN_FINANCE_AUTOMATION.md`
-  route 4. **Owner**: Claude Code. **Model**: Sonnet. **Size**: ~3 files, plus the index.
-
 - [ ] **B60a. The six MCP Submit tools against the simulator lane.** `mcp/lib/submit-tools.js`
   (B60, on `claude/b75-board`) is proven with the HTTP mocked; the plan's M2 wants the simulator
   lane first. Run each tool against the proxy lane (`npm run start:proxy` or the lane the
@@ -95,19 +82,6 @@ step.
   under `mcp/test/fixtures/` becomes the tests' replayed shapes. **Source**:
   `PLAN_SUBMISSION_MCP.md` M2; BACKLOG 60. **Owner**: Claude Code. **Model**: Sonnet. **Size**:
   ~3 files.
-
-- [ ] **PU-7. Practice licence build.** PU-7a to PU-7g, PU-7k and PU-7l are on `main`. Next is
-  PU-7h, audit and receipts by client: the event field in `app/lib/activityAlert.js`, the receipt
-  attribute in `app/data/dynamoDbReceiptRepository.js`, the receipts filter in
-  `app/functions/hmrc/hmrcReceiptGet.js`, one Athena view, their tests. Then, in
-  `PLAN_PRICE_UPDATE.md` §(d) (lines 227 to 236): PU-7i waits on B60 and B61 (on `claude/b75-board`,
-  PR #328), PU-7j on PU-7i, PU-7m on PU-7j, PU-7e on the operator's grant numbers; the
-  `resident-pro` catalogue values (`enable = "always"`, `hidden = false`,
-  `allocation = "on-subscription"`) and the practice page's nav link in
-  `web/public/widgets/page-chrome.js` flip in the launch step after PU-7m, with the four ci probes
-  that reach resident-pro through a pass updated in the same change. **Source**:
-  `PLAN_PRICE_UPDATE.md` PU-7. **Owner**: Claude Code. **Model**: Sonnet. **Size**: ~7 files for
-  PU-7h, ~25 across the four rows after it.
 
 - [ ] **B61a. The MCP client id reaches ApiStack.** B61's `booksJwtAuthorizer` audience takes
   `mcpUserPoolClientId` when it is set and today nothing sets it: `IdentityStack.java` writes the
@@ -124,9 +98,39 @@ step.
   `PLAN_SUBMISSION_MCP.md` M3; BACKLOG 61. **Owner**: Claude Code. **Model**: Sonnet. **Size**:
   ~9 files.
 
+- [ ] **F2f. The mail index reads invoice attachments.** `../index/corpus.toml`'s `drive` source
+  carries `convert = ["pdf", "doc", "docx"]` (line 11) and the two `eml_tree` sources
+  (`mail-antony` line 41, `mail-support`) carry none, so `corpus doc` returns an email's body only
+  and AWS's "Invoice Available" and Google Cloud's invoice emails yield no figure to
+  `mcp/lib/finance/mail-invoices.js` (F2b, on `claude/b75-board`), which posts a line only where the
+  body states the total. Read the indexer's `eml_tree` reader under `../index/` for whether it
+  honours `convert` for attachments, add it if it does not, set `convert = ["pdf"]` on both mail
+  sources, run `.venv/bin/corpus update --config corpus.toml` from `../index/` (the F1a run took
+  under fifteen minutes for the whole corpus), then extend `mail-invoices.js` with the attachment's
+  total in the shape AWS and Google Cloud invoices print it, with a third redacted recording. Runs
+  F2b's four cases plus the new one. **Source**: F2b's finding; `../PLAN_FINANCE_AUTOMATION.md`
+  route 4. **Owner**: Claude Code. **Model**: Sonnet. **Size**: ~3 files, plus the index.
+
+- [ ] **PU-7. Practice licence build.** PU-7a to PU-7g, PU-7k and PU-7l are on `main`. Next is
+  PU-7h, audit and receipts by client: the event field in `app/lib/activityAlert.js`, the receipt
+  attribute in `app/data/dynamoDbReceiptRepository.js`, the receipts filter in
+  `app/functions/hmrc/hmrcReceiptGet.js`, one Athena view, their tests. Then, in
+  `PLAN_PRICE_UPDATE.md` §(d) (lines 227 to 236): PU-7i waits on B60 and B61 (on `claude/b75-board`,
+  PR #328), PU-7j on PU-7i, PU-7m on PU-7j, PU-7e on the operator's grant numbers; the
+  `resident-pro` catalogue values (`enable = "always"`, `hidden = false`,
+  `allocation = "on-subscription"`) and the practice page's nav link in
+  `web/public/widgets/page-chrome.js` flip in the launch step after PU-7m, with the four ci probes
+  that reach resident-pro through a pass updated in the same change. **Source**:
+  `PLAN_PRICE_UPDATE.md` PU-7. **Owner**: Claude Code. **Model**: Sonnet. **Size**: ~7 files for
+  PU-7h, ~25 across the four rows after it.
+
 ## Machine-ask
 
 ## Human-driven
+
+- [ ] **O34d. Send the XML Gateway email.** Send `../DRAFT_EMAIL_XMLGW_000004.md` from `antony@diyaccounting.co.uk`
+  as a reply on the `xml@companieshouse.gov.uk` thread, and paste the answer into B34.6c's row when
+  it comes. **Source**: BACKLOG 34d. **Owner**: Operator. **Model**: none. **Size**: 0 files.
 
 - [ ] **O58. The token-storage finding.** The review's one critical finding, held privately at
   `../SECURITY_REVIEW_318_2026-09-22.md` (workspace root; the repository is public): Cognito
@@ -151,10 +155,6 @@ step.
   `SDSTeam@hmrc.gov.uk`, then `_developers/hmrc/DRAFT_EMAIL_ITSA_PRODUCTION_CREDENTIALS.md` when
   SDST answers. **Source**: BACKLOG 11; `PLAN_ITSA_PHASE_2.md` T10. **Owner**: Operator. **Model**:
   none. **Size**: 0 files.
-
-- [ ] **O34d. Send the XML Gateway email.** Send `../DRAFT_EMAIL_XMLGW_000004.md` from `antony@diyaccounting.co.uk`
-  as a reply on the `xml@companieshouse.gov.uk` thread, and paste the answer into B34.6c's row when
-  it comes. **Source**: BACKLOG 34d. **Owner**: Operator. **Model**: none. **Size**: 0 files.
 
 - [ ] **O52m. The reinvestment fraction and the reserve floor.** Two numbers, written into B52m's
   row: the share of trailing income the loop may spend on paid traffic and article boosts, and the
@@ -181,29 +181,6 @@ step.
   run dates and commit. Blocked on O11's day. **Source**: BACKLOG 11; `PLAN_ITSA_PHASE_2.md` T10.
   **Owner**: Claude Code. **Model**: Haiku. **Size**: ~1 file.
 
-- [ ] **B34.6c. Companies House accounts filing: the sandbox proof.** When O34d's answer says
-  lookups are enabled: poll 000004 through `GET /api/v1/companies-house/accounts/000004` on a
-  standing ci set and pin the returned `StatusCode` and any rejections as a case in
-  `app/unit-tests/functions/companiesHouseAccountsGet.test.js`. The prod catalogue listing is
-  BACKLOG 34c's: prod carries no `COMPANIES_HOUSE_XMLGW_URI` and no presenter secret ARNs. Blocked
-  on O34d's answer. **Source**: BACKLOG 34b. **Owner**: Claude Code. **Model**: Sonnet. **Size**:
-  ~1 file.
-
-- [ ] **F2d. DIYA's book, assembled and verified.** The lines from F2a and F2b plus F2c's
-  `book.toml` for 1 March to 31 August 2026, validated with `validateBook` and `validateLines`
-  from the diya-gl package, written under `../staging/2026-2027/book/` (private); March 2026 matched
-  line for line against the completed 2025-26 workbook (the control), every month's bank closing
-  balance equal to the statement's, gross income and fees separate, no hold posted, each check a
-  line in `../staging/2026-2027/book/VERIFICATION.md`. Blocked on F1b's run (OF1), F1d, F2a's Stripe and PayPal parsers, F2c and F2f.
-  **Source**: `../PLAN_FINANCE_AUTOMATION.md` phase 2 and its verification. **Owner**: Claude Code.
-  **Model**: Sonnet. **Size**: ~2 files.
-
-- [ ] **F2e. The MCP writes a populated spreadsheets package.** A tool in `mcp/lib/finance/` that
-  takes the book and lines and writes a DIY Accounting spreadsheets package, reconciled under the
-  spreadsheets repository's existing reconciliation harness rather than a new check; nothing
-  automated writes to Google Drive. Blocked on F2d. **Source**: `../PLAN_FINANCE_AUTOMATION.md`
-  phase 2. **Owner**: Claude Code. **Model**: Sonnet. **Size**: ~3 files.
-
 - [ ] **B34.7. Run and fix the filing suites' sandbox sign-in.** `deploy.yml` and `probe-test.yml`
   run the two filing suites only when the dispatch input `runCompaniesHouseSandboxFiling` is
   `true`, and probe-test's guard step fails fast naming any of O17's four values that is empty.
@@ -219,10 +196,13 @@ step.
   permission pages. **Source**: BACKLOG 34. **Owner**: Claude Code. **Model**: Sonnet. Blocked on
   O17. **Size**: ~1 file.
 
-- [ ] **PU-14. An `experiments.toml` row for the price change.** Objective `conversion-to-paid`,
-  lever price, metric purchases per human session, start at PU-5's deploy, so the £39 shape is
-  measured against the 99p rate. Blocked on PU-5. **Source**: `REPORT_PRICE_UPDATE_REVIEW.md` §2 row
-  6; operator 2026-09-21. **Owner**: Claude Code. **Model**: Haiku. **Size**: ~1 file.
+- [ ] **B34.6c. Companies House accounts filing: the sandbox proof.** When O34d's answer says
+  lookups are enabled: poll 000004 through `GET /api/v1/companies-house/accounts/000004` on a
+  standing ci set and pin the returned `StatusCode` and any rejections as a case in
+  `app/unit-tests/functions/companiesHouseAccountsGet.test.js`. The prod catalogue listing is
+  BACKLOG 34c's: prod carries no `COMPANIES_HOUSE_XMLGW_URI` and no presenter secret ARNs. Blocked
+  on O34d's answer. **Source**: BACKLOG 34b. **Owner**: Claude Code. **Model**: Sonnet. **Size**:
+  ~1 file.
 
 - [ ] **B52l. The optimiser over the raw export.** A notebook over `../analytics/prod/` (pulled by
   `scripts/analytics-pull.sh`, one CSV per view in `rawExportPublish.js`'s `VIEW_NAMES`): per-block
@@ -237,11 +217,6 @@ step.
   submit-prod s3 ls s3://prod-env-analytics-lake-<account>/exports/prod/`. **Source**: BACKLOG 52l;
   `PLAN_ONE_STOP_DASHBOARD.md` D16. **Owner**: Claude Code. **Model**: Opus for the models, Sonnet
   for the notebook. **Size**: ~3 files.
-
-- [ ] **PU-9. Retire the three folded bundles.** `resident-diya-gl`, `resident-itsa` and
-  `resident-ltd` leave `submit.catalogue.toml`, `.env.ci` and `.env.prod` once Stripe live shows no
-  subscription on their prices. Blocked on PU-5. **Source**: `PLAN_PRICE_UPDATE.md` PU-9.
-  **Owner**: Claude Code. **Model**: Haiku. **Size**: ~3 files.
 
 - [ ] **B52m. The reinvestment loop.** Trailing income, reserve, budget, return per pound and payback
   as one block on `web/public/operator/dashboard.html`, fed by observations over `v_revenue_daily`
@@ -263,6 +238,31 @@ step.
   `operatorSnapshotPublish.js`, and a block above `renderSnapshot`'s objectives in
   `web/public/operator/dashboard.html`. Blocked on OF2 (DIYA's book saved to the DIYA cloud, the last of the F1 and F2 rows) and on B61 (the MCP's third Cognito app client, whose `open_book`/`save_book` over the cloud routes the nightly derivation uses). **Source**: BACKLOG 52i; `PLAN_ONE_STOP_DASHBOARD.md` D10. **Owner**:
   Claude Code. **Model**: Sonnet. **Size**: ~4 files.
+
+- [ ] **PU-14. An `experiments.toml` row for the price change.** Objective `conversion-to-paid`,
+  lever price, metric purchases per human session, start at PU-5's deploy, so the £39 shape is
+  measured against the 99p rate. Blocked on PU-5. **Source**: `REPORT_PRICE_UPDATE_REVIEW.md` §2 row
+  6; operator 2026-09-21. **Owner**: Claude Code. **Model**: Haiku. **Size**: ~1 file.
+
+- [ ] **F2d. DIYA's book, assembled and verified.** The lines from F2a and F2b plus F2c's
+  `book.toml` for 1 March to 31 August 2026, validated with `validateBook` and `validateLines`
+  from the diya-gl package, written under `../staging/2026-2027/book/` (private); March 2026 matched
+  line for line against the completed 2025-26 workbook (the control), every month's bank closing
+  balance equal to the statement's, gross income and fees separate, no hold posted, each check a
+  line in `../staging/2026-2027/book/VERIFICATION.md`. Blocked on F1b's run (OF1), F1d, F2a's Stripe and PayPal parsers, F2c and F2f.
+  **Source**: `../PLAN_FINANCE_AUTOMATION.md` phase 2 and its verification. **Owner**: Claude Code.
+  **Model**: Sonnet. **Size**: ~2 files.
+
+- [ ] **F2e. The MCP writes a populated spreadsheets package.** A tool in `mcp/lib/finance/` that
+  takes the book and lines and writes a DIY Accounting spreadsheets package, reconciled under the
+  spreadsheets repository's existing reconciliation harness rather than a new check; nothing
+  automated writes to Google Drive. Blocked on F2d. **Source**: `../PLAN_FINANCE_AUTOMATION.md`
+  phase 2. **Owner**: Claude Code. **Model**: Sonnet. **Size**: ~3 files.
+
+- [ ] **PU-9. Retire the three folded bundles.** `resident-diya-gl`, `resident-itsa` and
+  `resident-ltd` leave `submit.catalogue.toml`, `.env.ci` and `.env.prod` once Stripe live shows no
+  subscription on their prices. Blocked on PU-5. **Source**: `PLAN_PRICE_UPDATE.md` PU-9.
+  **Owner**: Claude Code. **Model**: Haiku. **Size**: ~3 files.
 
 - [ ] **OF2. DIYA's book saved to the DIYA cloud.** With the operator signed in through B61's
   sign-in, `save_book` writes F2d's verified book to the DIYA cloud, which is B52i's unblock event.
