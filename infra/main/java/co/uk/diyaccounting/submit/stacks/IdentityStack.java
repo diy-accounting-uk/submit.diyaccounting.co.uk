@@ -460,27 +460,13 @@ public class IdentityStack extends Stack {
                 this.getNode().getId(), props.sharedNames().dashedDeploymentDomainName);
     }
 
-    // Each ci slot host is registered by hand with Cognito, HMRC and Companies House, so a branch
-    // deploy that claims a slot completes its sign-ins on its own host instead of the shared apex.
-    // Two slots, because the HMRC and Companies House sandbox applications both reached their
-    // redirect-URI cap at ci-set2. Keep in step with claim-ci-slot's slot-count default.
-    private static final int CI_SLOT_COUNT = 2;
-
-    private static final String CI_SLOT_PREFIX = "ci-set";
-
     private static List<String> buildAuthHosts(SubmitSharedNames sharedNames, String envName) {
         if ("prod".equals(envName)) {
             return List.of(sharedNames.publicDomainName, sharedNames.envDomainName);
         }
         var hosts = new java.util.ArrayList<String>();
         hosts.add(sharedNames.envDomainName);
-        // A slot is served at the same host shape as any other deployment, so the suffix is taken
-        // from deploymentDomainName rather than rebuilt from the sub-domain and the zone.
-        var deploymentDomainSuffix =
-                sharedNames.deploymentDomainName.substring(sharedNames.deploymentDomainName.indexOf('.'));
-        for (int slot = 1; slot <= CI_SLOT_COUNT; slot++) {
-            hosts.add(CI_SLOT_PREFIX + slot + deploymentDomainSuffix);
-        }
+        hosts.addAll(sharedNames.ciSlotHostNames);
         return hosts;
     }
 

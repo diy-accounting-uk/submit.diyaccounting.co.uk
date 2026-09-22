@@ -62,6 +62,12 @@ public class SubmitSharedNames {
 
     public String hostedZoneName;
     public String deploymentDomainName;
+    // Each ci slot host is registered by hand with Cognito, HMRC and Companies House, so a branch
+    // deploy that claims a slot completes its sign-ins on its own host instead of the shared apex,
+    // and the simulator lets that host frame it. Two slots, because the HMRC and Companies House
+    // sandbox applications both reached their redirect-URI cap at ci-set2. Keep in step with
+    // claim-ci-slot's slot-count default. Empty on prod.
+    public List<String> ciSlotHostNames;
     public String envDomainName;
     public String publicDomainName;
     public String cognitoDomainName;
@@ -1229,8 +1235,13 @@ public class SubmitSharedNames {
         // its Lambdas and its submit.env carry; the environment apex follows a proven set later.
         if ("prod".equals(props.envName)) {
             this.publicDomainName = "%s.%s".formatted(props.subDomainName, props.hostedZoneName);
+            this.ciSlotHostNames = List.of();
         } else {
             this.publicDomainName = this.deploymentDomainName;
+            // A slot is served at the same host shape as any other deployment.
+            this.ciSlotHostNames = List.of(
+                    "ci-set1.%s.%s".formatted(props.subDomainName, props.hostedZoneName),
+                    "ci-set2.%s.%s".formatted(props.subDomainName, props.hostedZoneName));
         }
         // this.defaultAliasName = "zero";
         this.provisionedConcurrencyAliasName = "pc";
@@ -2318,16 +2329,16 @@ public class SubmitSharedNames {
                 "%s/hmrc/%s".formatted(appLambdaHandlerPrefix, hmrcItsaUkPropertyPeriodPostLambdaHandlerName);
         this.hmrcItsaUkPropertyPeriodPostIngestLambdaArn =
                 "%s-%s".formatted(appLambdaArnPrefix, hmrcItsaUkPropertyPeriodPostLambdaHandlerDashed);
-        this.hmrcItsaUkPropertyPeriodPostIngestProvisionedConcurrencyLambdaAliasArn =
-                "%s:%s".formatted(this.hmrcItsaUkPropertyPeriodPostIngestLambdaArn, this.provisionedConcurrencyAliasName);
+        this.hmrcItsaUkPropertyPeriodPostIngestProvisionedConcurrencyLambdaAliasArn = "%s:%s"
+                .formatted(this.hmrcItsaUkPropertyPeriodPostIngestLambdaArn, this.provisionedConcurrencyAliasName);
         this.hmrcItsaUkPropertyPeriodPostWorkerLambdaFunctionName =
                 "%s-worker".formatted(this.hmrcItsaUkPropertyPeriodPostIngestLambdaFunctionName);
         this.hmrcItsaUkPropertyPeriodPostWorkerLambdaHandler =
                 "%s/hmrc/%s".formatted(appLambdaHandlerPrefix, hmrcItsaUkPropertyPeriodPostLambdaWorkerHandlerName);
         this.hmrcItsaUkPropertyPeriodPostWorkerLambdaArn =
                 "%s-worker".formatted(this.hmrcItsaUkPropertyPeriodPostIngestLambdaArn);
-        this.hmrcItsaUkPropertyPeriodPostWorkerProvisionedConcurrencyLambdaAliasArn =
-                "%s:%s".formatted(this.hmrcItsaUkPropertyPeriodPostWorkerLambdaArn, this.provisionedConcurrencyAliasName);
+        this.hmrcItsaUkPropertyPeriodPostWorkerProvisionedConcurrencyLambdaAliasArn = "%s:%s"
+                .formatted(this.hmrcItsaUkPropertyPeriodPostWorkerLambdaArn, this.provisionedConcurrencyAliasName);
         this.hmrcItsaUkPropertyPeriodPostLambdaQueueName =
                 "%s-queue".formatted(this.hmrcItsaUkPropertyPeriodPostIngestLambdaFunctionName);
         this.hmrcItsaUkPropertyPeriodPostLambdaDeadLetterQueueName =
@@ -2344,7 +2355,8 @@ public class SubmitSharedNames {
                         new ApiParameter("taxYear", "body", true, "Tax year in the format YYYY-YY"),
                         new ApiParameter("fromDate", "body", true, "Start of the period, format YYYY-MM-DD"),
                         new ApiParameter("toDate", "body", true, "End of the period, format YYYY-MM-DD"),
-                        new ApiParameter("ukFhlProperty", "body", false, "Furnished holiday lettings income and expenses"),
+                        new ApiParameter(
+                                "ukFhlProperty", "body", false, "Furnished holiday lettings income and expenses"),
                         new ApiParameter("ukNonFhlProperty", "body", false, "Non-FHL property income and expenses"),
                         new ApiParameter("Gov-Test-Scenario", "query", false, "HMRC sandbox test scenario"),
                         new ApiParameter(
@@ -2367,16 +2379,16 @@ public class SubmitSharedNames {
                 "%s/hmrc/%s".formatted(appLambdaHandlerPrefix, hmrcItsaUkPropertyPeriodsGetLambdaHandlerName);
         this.hmrcItsaUkPropertyPeriodsGetIngestLambdaArn =
                 "%s-%s".formatted(appLambdaArnPrefix, hmrcItsaUkPropertyPeriodsGetLambdaHandlerDashed);
-        this.hmrcItsaUkPropertyPeriodsGetIngestProvisionedConcurrencyLambdaAliasArn =
-                "%s:%s".formatted(this.hmrcItsaUkPropertyPeriodsGetIngestLambdaArn, this.provisionedConcurrencyAliasName);
+        this.hmrcItsaUkPropertyPeriodsGetIngestProvisionedConcurrencyLambdaAliasArn = "%s:%s"
+                .formatted(this.hmrcItsaUkPropertyPeriodsGetIngestLambdaArn, this.provisionedConcurrencyAliasName);
         this.hmrcItsaUkPropertyPeriodsGetWorkerLambdaFunctionName =
                 "%s-worker".formatted(this.hmrcItsaUkPropertyPeriodsGetIngestLambdaFunctionName);
         this.hmrcItsaUkPropertyPeriodsGetWorkerLambdaHandler =
                 "%s/hmrc/%s".formatted(appLambdaHandlerPrefix, hmrcItsaUkPropertyPeriodsGetLambdaWorkerHandlerName);
         this.hmrcItsaUkPropertyPeriodsGetWorkerLambdaArn =
                 "%s-worker".formatted(this.hmrcItsaUkPropertyPeriodsGetIngestLambdaArn);
-        this.hmrcItsaUkPropertyPeriodsGetWorkerProvisionedConcurrencyLambdaAliasArn =
-                "%s:%s".formatted(this.hmrcItsaUkPropertyPeriodsGetWorkerLambdaArn, this.provisionedConcurrencyAliasName);
+        this.hmrcItsaUkPropertyPeriodsGetWorkerProvisionedConcurrencyLambdaAliasArn = "%s:%s"
+                .formatted(this.hmrcItsaUkPropertyPeriodsGetWorkerLambdaArn, this.provisionedConcurrencyAliasName);
         this.hmrcItsaUkPropertyPeriodsGetLambdaQueueName =
                 "%s-queue".formatted(this.hmrcItsaUkPropertyPeriodsGetIngestLambdaFunctionName);
         this.hmrcItsaUkPropertyPeriodsGetLambdaDeadLetterQueueName =
@@ -2412,16 +2424,16 @@ public class SubmitSharedNames {
                 "%s/hmrc/%s".formatted(appLambdaHandlerPrefix, hmrcItsaUkPropertyPeriodGetLambdaHandlerName);
         this.hmrcItsaUkPropertyPeriodGetIngestLambdaArn =
                 "%s-%s".formatted(appLambdaArnPrefix, hmrcItsaUkPropertyPeriodGetLambdaHandlerDashed);
-        this.hmrcItsaUkPropertyPeriodGetIngestProvisionedConcurrencyLambdaAliasArn =
-                "%s:%s".formatted(this.hmrcItsaUkPropertyPeriodGetIngestLambdaArn, this.provisionedConcurrencyAliasName);
+        this.hmrcItsaUkPropertyPeriodGetIngestProvisionedConcurrencyLambdaAliasArn = "%s:%s"
+                .formatted(this.hmrcItsaUkPropertyPeriodGetIngestLambdaArn, this.provisionedConcurrencyAliasName);
         this.hmrcItsaUkPropertyPeriodGetWorkerLambdaFunctionName =
                 "%s-worker".formatted(this.hmrcItsaUkPropertyPeriodGetIngestLambdaFunctionName);
         this.hmrcItsaUkPropertyPeriodGetWorkerLambdaHandler =
                 "%s/hmrc/%s".formatted(appLambdaHandlerPrefix, hmrcItsaUkPropertyPeriodGetLambdaWorkerHandlerName);
         this.hmrcItsaUkPropertyPeriodGetWorkerLambdaArn =
                 "%s-worker".formatted(this.hmrcItsaUkPropertyPeriodGetIngestLambdaArn);
-        this.hmrcItsaUkPropertyPeriodGetWorkerProvisionedConcurrencyLambdaAliasArn =
-                "%s:%s".formatted(this.hmrcItsaUkPropertyPeriodGetWorkerLambdaArn, this.provisionedConcurrencyAliasName);
+        this.hmrcItsaUkPropertyPeriodGetWorkerProvisionedConcurrencyLambdaAliasArn = "%s:%s"
+                .formatted(this.hmrcItsaUkPropertyPeriodGetWorkerLambdaArn, this.provisionedConcurrencyAliasName);
         this.hmrcItsaUkPropertyPeriodGetLambdaQueueName =
                 "%s-queue".formatted(this.hmrcItsaUkPropertyPeriodGetIngestLambdaFunctionName);
         this.hmrcItsaUkPropertyPeriodGetLambdaDeadLetterQueueName =
@@ -2436,7 +2448,8 @@ public class SubmitSharedNames {
                         new ApiParameter("nino", "query", true, "National Insurance number"),
                         new ApiParameter("businessId", "query", true, "The business id from Business Details"),
                         new ApiParameter("taxYear", "query", true, "Tax year in the format YYYY-YY"),
-                        new ApiParameter("submissionId", "query", true, "The submission id from a listed period summary"),
+                        new ApiParameter(
+                                "submissionId", "query", true, "The submission id from a listed period summary"),
                         new ApiParameter("Gov-Test-Scenario", "query", false, "HMRC sandbox test scenario"),
                         new ApiParameter(
                                 "runFraudPreventionHeaderValidation",
@@ -2458,16 +2471,16 @@ public class SubmitSharedNames {
                 "%s/hmrc/%s".formatted(appLambdaHandlerPrefix, hmrcItsaUkPropertyPeriodPutLambdaHandlerName);
         this.hmrcItsaUkPropertyPeriodPutIngestLambdaArn =
                 "%s-%s".formatted(appLambdaArnPrefix, hmrcItsaUkPropertyPeriodPutLambdaHandlerDashed);
-        this.hmrcItsaUkPropertyPeriodPutIngestProvisionedConcurrencyLambdaAliasArn =
-                "%s:%s".formatted(this.hmrcItsaUkPropertyPeriodPutIngestLambdaArn, this.provisionedConcurrencyAliasName);
+        this.hmrcItsaUkPropertyPeriodPutIngestProvisionedConcurrencyLambdaAliasArn = "%s:%s"
+                .formatted(this.hmrcItsaUkPropertyPeriodPutIngestLambdaArn, this.provisionedConcurrencyAliasName);
         this.hmrcItsaUkPropertyPeriodPutWorkerLambdaFunctionName =
                 "%s-worker".formatted(this.hmrcItsaUkPropertyPeriodPutIngestLambdaFunctionName);
         this.hmrcItsaUkPropertyPeriodPutWorkerLambdaHandler =
                 "%s/hmrc/%s".formatted(appLambdaHandlerPrefix, hmrcItsaUkPropertyPeriodPutLambdaWorkerHandlerName);
         this.hmrcItsaUkPropertyPeriodPutWorkerLambdaArn =
                 "%s-worker".formatted(this.hmrcItsaUkPropertyPeriodPutIngestLambdaArn);
-        this.hmrcItsaUkPropertyPeriodPutWorkerProvisionedConcurrencyLambdaAliasArn =
-                "%s:%s".formatted(this.hmrcItsaUkPropertyPeriodPutWorkerLambdaArn, this.provisionedConcurrencyAliasName);
+        this.hmrcItsaUkPropertyPeriodPutWorkerProvisionedConcurrencyLambdaAliasArn = "%s:%s"
+                .formatted(this.hmrcItsaUkPropertyPeriodPutWorkerLambdaArn, this.provisionedConcurrencyAliasName);
         this.hmrcItsaUkPropertyPeriodPutLambdaQueueName =
                 "%s-queue".formatted(this.hmrcItsaUkPropertyPeriodPutIngestLambdaFunctionName);
         this.hmrcItsaUkPropertyPeriodPutLambdaDeadLetterQueueName =
@@ -2482,8 +2495,10 @@ public class SubmitSharedNames {
                         new ApiParameter("nino", "body", true, "National Insurance number"),
                         new ApiParameter("businessId", "body", true, "The business id from Business Details"),
                         new ApiParameter("taxYear", "body", true, "Tax year in the format YYYY-YY"),
-                        new ApiParameter("submissionId", "body", true, "The submission id from a listed period summary"),
-                        new ApiParameter("ukFhlProperty", "body", false, "Furnished holiday lettings income and expenses"),
+                        new ApiParameter(
+                                "submissionId", "body", true, "The submission id from a listed period summary"),
+                        new ApiParameter(
+                                "ukFhlProperty", "body", false, "Furnished holiday lettings income and expenses"),
                         new ApiParameter("ukNonFhlProperty", "body", false, "Non-FHL property income and expenses"),
                         new ApiParameter("Gov-Test-Scenario", "query", false, "HMRC sandbox test scenario"),
                         new ApiParameter(
@@ -2506,16 +2521,16 @@ public class SubmitSharedNames {
                 "%s/hmrc/%s".formatted(appLambdaHandlerPrefix, hmrcItsaUkPropertyAnnualGetLambdaHandlerName);
         this.hmrcItsaUkPropertyAnnualGetIngestLambdaArn =
                 "%s-%s".formatted(appLambdaArnPrefix, hmrcItsaUkPropertyAnnualGetLambdaHandlerDashed);
-        this.hmrcItsaUkPropertyAnnualGetIngestProvisionedConcurrencyLambdaAliasArn =
-                "%s:%s".formatted(this.hmrcItsaUkPropertyAnnualGetIngestLambdaArn, this.provisionedConcurrencyAliasName);
+        this.hmrcItsaUkPropertyAnnualGetIngestProvisionedConcurrencyLambdaAliasArn = "%s:%s"
+                .formatted(this.hmrcItsaUkPropertyAnnualGetIngestLambdaArn, this.provisionedConcurrencyAliasName);
         this.hmrcItsaUkPropertyAnnualGetWorkerLambdaFunctionName =
                 "%s-worker".formatted(this.hmrcItsaUkPropertyAnnualGetIngestLambdaFunctionName);
         this.hmrcItsaUkPropertyAnnualGetWorkerLambdaHandler =
                 "%s/hmrc/%s".formatted(appLambdaHandlerPrefix, hmrcItsaUkPropertyAnnualGetLambdaWorkerHandlerName);
         this.hmrcItsaUkPropertyAnnualGetWorkerLambdaArn =
                 "%s-worker".formatted(this.hmrcItsaUkPropertyAnnualGetIngestLambdaArn);
-        this.hmrcItsaUkPropertyAnnualGetWorkerProvisionedConcurrencyLambdaAliasArn =
-                "%s:%s".formatted(this.hmrcItsaUkPropertyAnnualGetWorkerLambdaArn, this.provisionedConcurrencyAliasName);
+        this.hmrcItsaUkPropertyAnnualGetWorkerProvisionedConcurrencyLambdaAliasArn = "%s:%s"
+                .formatted(this.hmrcItsaUkPropertyAnnualGetWorkerLambdaArn, this.provisionedConcurrencyAliasName);
         this.hmrcItsaUkPropertyAnnualGetLambdaQueueName =
                 "%s-queue".formatted(this.hmrcItsaUkPropertyAnnualGetIngestLambdaFunctionName);
         this.hmrcItsaUkPropertyAnnualGetLambdaDeadLetterQueueName =
@@ -2551,16 +2566,16 @@ public class SubmitSharedNames {
                 "%s/hmrc/%s".formatted(appLambdaHandlerPrefix, hmrcItsaUkPropertyAnnualPutLambdaHandlerName);
         this.hmrcItsaUkPropertyAnnualPutIngestLambdaArn =
                 "%s-%s".formatted(appLambdaArnPrefix, hmrcItsaUkPropertyAnnualPutLambdaHandlerDashed);
-        this.hmrcItsaUkPropertyAnnualPutIngestProvisionedConcurrencyLambdaAliasArn =
-                "%s:%s".formatted(this.hmrcItsaUkPropertyAnnualPutIngestLambdaArn, this.provisionedConcurrencyAliasName);
+        this.hmrcItsaUkPropertyAnnualPutIngestProvisionedConcurrencyLambdaAliasArn = "%s:%s"
+                .formatted(this.hmrcItsaUkPropertyAnnualPutIngestLambdaArn, this.provisionedConcurrencyAliasName);
         this.hmrcItsaUkPropertyAnnualPutWorkerLambdaFunctionName =
                 "%s-worker".formatted(this.hmrcItsaUkPropertyAnnualPutIngestLambdaFunctionName);
         this.hmrcItsaUkPropertyAnnualPutWorkerLambdaHandler =
                 "%s/hmrc/%s".formatted(appLambdaHandlerPrefix, hmrcItsaUkPropertyAnnualPutLambdaWorkerHandlerName);
         this.hmrcItsaUkPropertyAnnualPutWorkerLambdaArn =
                 "%s-worker".formatted(this.hmrcItsaUkPropertyAnnualPutIngestLambdaArn);
-        this.hmrcItsaUkPropertyAnnualPutWorkerProvisionedConcurrencyLambdaAliasArn =
-                "%s:%s".formatted(this.hmrcItsaUkPropertyAnnualPutWorkerLambdaArn, this.provisionedConcurrencyAliasName);
+        this.hmrcItsaUkPropertyAnnualPutWorkerProvisionedConcurrencyLambdaAliasArn = "%s:%s"
+                .formatted(this.hmrcItsaUkPropertyAnnualPutWorkerLambdaArn, this.provisionedConcurrencyAliasName);
         this.hmrcItsaUkPropertyAnnualPutLambdaQueueName =
                 "%s-queue".formatted(this.hmrcItsaUkPropertyAnnualPutIngestLambdaFunctionName);
         this.hmrcItsaUkPropertyAnnualPutLambdaDeadLetterQueueName =
@@ -2820,7 +2835,10 @@ public class SubmitSharedNames {
                                 "accountingPeriodStartDate", "body", true, "The accounting period's start date"),
                         new ApiParameter("accountingPeriodEndDate", "body", true, "The accounting period's end date"),
                         new ApiParameter(
-                                "typeOfBusiness", "body", true, "self-employment or uk-property, from the picked business"),
+                                "typeOfBusiness",
+                                "body",
+                                true,
+                                "self-employment or uk-property, from the picked business"),
                         new ApiParameter("Gov-Test-Scenario", "query", false, "HMRC sandbox test scenario"),
                         new ApiParameter(
                                 "runFraudPreventionHeaderValidation",
@@ -3178,16 +3196,16 @@ public class SubmitSharedNames {
                 "%s/hmrc/%s".formatted(appLambdaHandlerPrefix, hmrcItsaLossesAndClaimsGetLambdaHandlerName);
         this.hmrcItsaLossesAndClaimsGetIngestLambdaArn =
                 "%s-%s".formatted(appLambdaArnPrefix, hmrcItsaLossesAndClaimsGetLambdaHandlerDashed);
-        this.hmrcItsaLossesAndClaimsGetIngestProvisionedConcurrencyLambdaAliasArn = "%s:%s"
-                .formatted(this.hmrcItsaLossesAndClaimsGetIngestLambdaArn, this.provisionedConcurrencyAliasName);
+        this.hmrcItsaLossesAndClaimsGetIngestProvisionedConcurrencyLambdaAliasArn =
+                "%s:%s".formatted(this.hmrcItsaLossesAndClaimsGetIngestLambdaArn, this.provisionedConcurrencyAliasName);
         this.hmrcItsaLossesAndClaimsGetWorkerLambdaFunctionName =
                 "%s-worker".formatted(this.hmrcItsaLossesAndClaimsGetIngestLambdaFunctionName);
         this.hmrcItsaLossesAndClaimsGetWorkerLambdaHandler =
                 "%s/hmrc/%s".formatted(appLambdaHandlerPrefix, hmrcItsaLossesAndClaimsGetLambdaWorkerHandlerName);
         this.hmrcItsaLossesAndClaimsGetWorkerLambdaArn =
                 "%s-worker".formatted(this.hmrcItsaLossesAndClaimsGetIngestLambdaArn);
-        this.hmrcItsaLossesAndClaimsGetWorkerProvisionedConcurrencyLambdaAliasArn = "%s:%s"
-                .formatted(this.hmrcItsaLossesAndClaimsGetWorkerLambdaArn, this.provisionedConcurrencyAliasName);
+        this.hmrcItsaLossesAndClaimsGetWorkerProvisionedConcurrencyLambdaAliasArn =
+                "%s:%s".formatted(this.hmrcItsaLossesAndClaimsGetWorkerLambdaArn, this.provisionedConcurrencyAliasName);
         this.hmrcItsaLossesAndClaimsGetLambdaQueueName =
                 "%s-queue".formatted(this.hmrcItsaLossesAndClaimsGetIngestLambdaFunctionName);
         this.hmrcItsaLossesAndClaimsGetLambdaDeadLetterQueueName =
@@ -3223,16 +3241,16 @@ public class SubmitSharedNames {
                 "%s/hmrc/%s".formatted(appLambdaHandlerPrefix, hmrcItsaLossesAndClaimsPutLambdaHandlerName);
         this.hmrcItsaLossesAndClaimsPutIngestLambdaArn =
                 "%s-%s".formatted(appLambdaArnPrefix, hmrcItsaLossesAndClaimsPutLambdaHandlerDashed);
-        this.hmrcItsaLossesAndClaimsPutIngestProvisionedConcurrencyLambdaAliasArn = "%s:%s"
-                .formatted(this.hmrcItsaLossesAndClaimsPutIngestLambdaArn, this.provisionedConcurrencyAliasName);
+        this.hmrcItsaLossesAndClaimsPutIngestProvisionedConcurrencyLambdaAliasArn =
+                "%s:%s".formatted(this.hmrcItsaLossesAndClaimsPutIngestLambdaArn, this.provisionedConcurrencyAliasName);
         this.hmrcItsaLossesAndClaimsPutWorkerLambdaFunctionName =
                 "%s-worker".formatted(this.hmrcItsaLossesAndClaimsPutIngestLambdaFunctionName);
         this.hmrcItsaLossesAndClaimsPutWorkerLambdaHandler =
                 "%s/hmrc/%s".formatted(appLambdaHandlerPrefix, hmrcItsaLossesAndClaimsPutLambdaWorkerHandlerName);
         this.hmrcItsaLossesAndClaimsPutWorkerLambdaArn =
                 "%s-worker".formatted(this.hmrcItsaLossesAndClaimsPutIngestLambdaArn);
-        this.hmrcItsaLossesAndClaimsPutWorkerProvisionedConcurrencyLambdaAliasArn = "%s:%s"
-                .formatted(this.hmrcItsaLossesAndClaimsPutWorkerLambdaArn, this.provisionedConcurrencyAliasName);
+        this.hmrcItsaLossesAndClaimsPutWorkerProvisionedConcurrencyLambdaAliasArn =
+                "%s:%s".formatted(this.hmrcItsaLossesAndClaimsPutWorkerLambdaArn, this.provisionedConcurrencyAliasName);
         this.hmrcItsaLossesAndClaimsPutLambdaQueueName =
                 "%s-queue".formatted(this.hmrcItsaLossesAndClaimsPutIngestLambdaFunctionName);
         this.hmrcItsaLossesAndClaimsPutLambdaDeadLetterQueueName =
@@ -3248,7 +3266,10 @@ public class SubmitSharedNames {
                         new ApiParameter("businessId", "body", true, "The business id from Business Details"),
                         new ApiParameter("taxYear", "body", true, "Tax year in the format YYYY-YY"),
                         new ApiParameter(
-                                "typeOfBusiness", "body", true, "One of self-employment, uk-property, foreign-property"),
+                                "typeOfBusiness",
+                                "body",
+                                true,
+                                "One of self-employment, uk-property, foreign-property"),
                         new ApiParameter("losses", "body", false, "Losses brought forward or made in the year"),
                         new ApiParameter("claims", "body", false, "Claims made against those losses"),
                         new ApiParameter(
@@ -3323,8 +3344,8 @@ public class SubmitSharedNames {
         // AWS Lambda function names cap at 64 characters - the deployed function name drops
         // "adjustments" to "adjust", the same shortening hmrcItsaBsasUkPropertyAdjustPost uses.
         var hmrcItsaTaxLiabilityAdjustmentsGetLambdaHandlerDashed = "hmrc-itsa-tax-liability-adjust-get";
-        this.hmrcItsaTaxLiabilityAdjustmentsGetIngestLambdaFunctionName = "%s-%s"
-                .formatted(this.appResourceNamePrefix, hmrcItsaTaxLiabilityAdjustmentsGetLambdaHandlerDashed);
+        this.hmrcItsaTaxLiabilityAdjustmentsGetIngestLambdaFunctionName =
+                "%s-%s".formatted(this.appResourceNamePrefix, hmrcItsaTaxLiabilityAdjustmentsGetLambdaHandlerDashed);
         this.hmrcItsaTaxLiabilityAdjustmentsGetIngestLambdaHandler =
                 "%s/hmrc/%s".formatted(appLambdaHandlerPrefix, hmrcItsaTaxLiabilityAdjustmentsGetLambdaHandlerName);
         this.hmrcItsaTaxLiabilityAdjustmentsGetIngestLambdaArn =
@@ -3371,8 +3392,8 @@ public class SubmitSharedNames {
         // AWS Lambda function names cap at 64 characters - the deployed function name drops
         // "adjustments" to "adjust", the same shortening hmrcItsaBsasUkPropertyAdjustPost uses.
         var hmrcItsaTaxLiabilityAdjustmentsPutLambdaHandlerDashed = "hmrc-itsa-tax-liability-adjust-put";
-        this.hmrcItsaTaxLiabilityAdjustmentsPutIngestLambdaFunctionName = "%s-%s"
-                .formatted(this.appResourceNamePrefix, hmrcItsaTaxLiabilityAdjustmentsPutLambdaHandlerDashed);
+        this.hmrcItsaTaxLiabilityAdjustmentsPutIngestLambdaFunctionName =
+                "%s-%s".formatted(this.appResourceNamePrefix, hmrcItsaTaxLiabilityAdjustmentsPutLambdaHandlerDashed);
         this.hmrcItsaTaxLiabilityAdjustmentsPutIngestLambdaHandler =
                 "%s/hmrc/%s".formatted(appLambdaHandlerPrefix, hmrcItsaTaxLiabilityAdjustmentsPutLambdaHandlerName);
         this.hmrcItsaTaxLiabilityAdjustmentsPutIngestLambdaArn =
@@ -3432,10 +3453,10 @@ public class SubmitSharedNames {
         // AWS Lambda function names cap at 64 characters - the deployed function name drops
         // "adjustments" to "adjust", the same shortening hmrcItsaBsasUkPropertyAdjustPost uses.
         var hmrcItsaTaxLiabilityAdjustmentsDeleteLambdaHandlerDashed = "hmrc-itsa-tax-liability-adjust-delete";
-        this.hmrcItsaTaxLiabilityAdjustmentsDeleteIngestLambdaFunctionName = "%s-%s"
-                .formatted(this.appResourceNamePrefix, hmrcItsaTaxLiabilityAdjustmentsDeleteLambdaHandlerDashed);
-        this.hmrcItsaTaxLiabilityAdjustmentsDeleteIngestLambdaHandler = "%s/hmrc/%s"
-                .formatted(appLambdaHandlerPrefix, hmrcItsaTaxLiabilityAdjustmentsDeleteLambdaHandlerName);
+        this.hmrcItsaTaxLiabilityAdjustmentsDeleteIngestLambdaFunctionName =
+                "%s-%s".formatted(this.appResourceNamePrefix, hmrcItsaTaxLiabilityAdjustmentsDeleteLambdaHandlerDashed);
+        this.hmrcItsaTaxLiabilityAdjustmentsDeleteIngestLambdaHandler =
+                "%s/hmrc/%s".formatted(appLambdaHandlerPrefix, hmrcItsaTaxLiabilityAdjustmentsDeleteLambdaHandlerName);
         this.hmrcItsaTaxLiabilityAdjustmentsDeleteIngestLambdaArn =
                 "%s-%s".formatted(appLambdaArnPrefix, hmrcItsaTaxLiabilityAdjustmentsDeleteLambdaHandlerDashed);
         this.hmrcItsaTaxLiabilityAdjustmentsDeleteIngestProvisionedConcurrencyLambdaAliasArn = "%s:%s"
@@ -4206,7 +4227,8 @@ public class SubmitSharedNames {
                 "%s-%s".formatted(this.appResourceNamePrefix, diyaGlVersionGetLambdaHandlerDashed);
         this.diyaGlVersionGetIngestLambdaHandler =
                 "%s/diyaGl/%s".formatted(appLambdaHandlerPrefix, diyaGlVersionGetLambdaHandlerName);
-        this.diyaGlVersionGetIngestLambdaArn = "%s-%s".formatted(appLambdaArnPrefix, diyaGlVersionGetLambdaHandlerDashed);
+        this.diyaGlVersionGetIngestLambdaArn =
+                "%s-%s".formatted(appLambdaArnPrefix, diyaGlVersionGetLambdaHandlerDashed);
         this.diyaGlVersionGetIngestProvisionedConcurrencyLambdaAliasArn =
                 "%s:%s".formatted(this.diyaGlVersionGetIngestLambdaArn, this.provisionedConcurrencyAliasName);
         publishedApiLambdas.add(new PublishedLambda(
@@ -4226,10 +4248,12 @@ public class SubmitSharedNames {
         this.diyaGlPutLambdaJwtAuthorizer = false;
         this.diyaGlPutLambdaCustomAuthorizer = false;
         var diyaGlPutLambdaHandlerName = "diyaGlPut.ingestHandler";
-        var diyaGlPutLambdaHandlerDashed = ResourceNameUtils.convertCamelCaseToDashSeparated(diyaGlPutLambdaHandlerName);
+        var diyaGlPutLambdaHandlerDashed =
+                ResourceNameUtils.convertCamelCaseToDashSeparated(diyaGlPutLambdaHandlerName);
         this.diyaGlPutIngestLambdaFunctionName =
                 "%s-%s".formatted(this.appResourceNamePrefix, diyaGlPutLambdaHandlerDashed);
-        this.diyaGlPutIngestLambdaHandler = "%s/diyaGl/%s".formatted(appLambdaHandlerPrefix, diyaGlPutLambdaHandlerName);
+        this.diyaGlPutIngestLambdaHandler =
+                "%s/diyaGl/%s".formatted(appLambdaHandlerPrefix, diyaGlPutLambdaHandlerName);
         this.diyaGlPutIngestLambdaArn = "%s-%s".formatted(appLambdaArnPrefix, diyaGlPutLambdaHandlerDashed);
         this.diyaGlPutIngestProvisionedConcurrencyLambdaAliasArn =
                 "%s:%s".formatted(this.diyaGlPutIngestLambdaArn, this.provisionedConcurrencyAliasName);

@@ -73,6 +73,24 @@ class SubmitEnvironmentCdkResourceTest {
 
         // 4) The holding stack serves one page from one bucket behind one distribution
         Template.fromStack(env.holdingStack).resourceCountIs("AWS::CloudFront::Distribution", 1);
+
+        if (env.simulatorStack != null) {
+            // A branch deploy on a ci slot frames the simulator from the slot's own host.
+            var simulatorHeaders = Template.fromStack(env.simulatorStack)
+                    .findResources("AWS::CloudFront::ResponseHeadersPolicy")
+                    .values()
+                    .iterator()
+                    .next();
+            String csp = new ObjectMapper()
+                    .valueToTree(simulatorHeaders)
+                    .at(
+                            "/Properties/ResponseHeadersPolicyConfig/SecurityHeadersConfig/ContentSecurityPolicy/ContentSecurityPolicy")
+                    .asText();
+            assertTrue(csp.startsWith("frame-ancestors "), "simulator CSP starts with frame-ancestors: " + csp);
+            for (String slotHost : List.of("ci-set1.", "ci-set2.")) {
+                assertTrue(csp.contains(" https://" + slotHost), "simulator CSP names " + slotHost + ": " + csp);
+            }
+        }
         Template.fromStack(env.holdingStack).resourceCountIs("AWS::S3::Bucket", 1);
 
         // 5) Identity stack should create a Cognito User Pool
