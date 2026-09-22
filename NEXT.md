@@ -40,6 +40,15 @@ step.
 
 ## In flight
 
+- [ ] **B58a. `security-review.yml` hands the weekly review to `agentic-lib`.** The operator's
+  decision of 2026-09-22: the `agentic-lib` label is the only path for the review; the Copilot
+  coding agent is not enabled and the assign job goes. In flight: an agent replaces `assign-copilot`
+  (and the `copilot_agent_login` input, the App token mint and the `copilot-agent` label) with the
+  `agentic-lib` label on the issue `create-issue` opens, which starts `agentic-lib-code.yml` for it;
+  the `issue_number` dispatch input labels an existing issue instead. #318 carries the label since
+  2026-09-22 07:21 UTC and run 35699227062 is working it. **Source**: issue #318; BACKLOG 58.
+  **Owner**: Claude Code. **Model**: Sonnet. **Size**: ~1 file.
+
 - [ ] **B30af.8. A scheduled probe never holds a suite's lock while it waits for main's deploy.**
   In flight: `claude/b73-board`, PR #326, its ci deploy running.
   `probe-test.yml`'s `behaviour-test` job takes the concurrency group
@@ -59,8 +68,9 @@ step.
   **Owner**: Claude Code. **Model**: Sonnet. **Size**: ~3 files.
 
 - [ ] **PU-7. Practice licence build.** PU-7a to PU-7f and PU-7l are on `main`. In flight on
-  `claude/b74-board`: PU-7g (the submission routes take a client id and `enforceBundles` gains the
-  practice check, ~10 files) and PU-7k (the practice page, ~5 files). Left in `PLAN_PRICE_UPDATE.md`
+  `claude/b74-board` with PU-3's price ids: PU-7g (the submission routes take a client id and
+  `enforceBundles` gains the practice check) and PU-7k (the practice page, its nav link held for
+  the launch step). Left in `PLAN_PRICE_UPDATE.md`
   §(d) (lines 227 to 236): PU-7e waits on the operator's grant numbers, PU-7h on PU-7g, PU-7i on
   PU-7g and the MCP plan's M2 and M3, PU-7j on PU-7i, PU-7m on PU-7j; the `resident-pro` catalogue
   values (`enable = "always"`, `hidden = false`, `allocation = "on-subscription"`) flip in the launch
@@ -70,22 +80,91 @@ step.
 
 ## Machine-only
 
+- [ ] **PU-5. The DIYA-GL tier on prod.** `SubmitApplication.java` line 484 sets
+  `.residentTierEnabled(!"prod".equals(envName))`, which `DiyaGlStack.java` (lines 140 and 241)
+  passes as `DIYA_GL_RESIDENT_TIER` and `app/services/diyaGlEntitlement.js` line 40 reads; make
+  it true for prod, and add `prod` to `resident`'s environments in the catalogue. The Stripe prices exist in test and live (PU-3, 2026-09-22) and
+  the ids are on `claude/b74-board`. **Source**:
+  `PLAN_PRICE_UPDATE.md` PU-5. **Owner**: Claude Code. **Model**: Haiku. **Size**: ~2 files.
+
+- [ ] **F1e. What the accounts consume.** Before any downloader: read the complete 2025-26 workbook
+  set in the Drive mirror (`../drive/DIY Accounting Limited/finance/2025-2026 accounts/`:
+  `Currentaccount.xlsx`, `Savingaccount.xlsx`, `Sales.xlsx`, `Purchases.xlsx`, `Cashaccount.xlsx`,
+  `Financialaccounts.xlsx`, `Vatreturns.xlsx`, `dividends/`, `invoices/`, `paypal/`, `stripe/`,
+  `bank/`) and write `../REPORT_FINANCE_SOURCES_2025-26.md` at the workspace root (private): which
+  figures each sheet takes from which source, which staged fields therefore matter, the
+  counterparties on the bank lines, and the answer to "does the previous year show anything
+  missing". Per `../PLAN_FINANCE_AUTOMATION.md` phase 1's first instruction. **Source**:
+  `../PLAN_FINANCE_AUTOMATION.md` phase 1. **Owner**: Claude Code. **Model**: Sonnet. **Size**:
+  ~1 file.
+
+- [ ] **F1a. The staging tree and its index source.** `../staging/<year-end>/<source>/` at the
+  workspace root (`2025-2026/` for March 2026, `2026-2027/` for April to August), a `README.md` there
+  naming the layout and the date-stamped file names the plan's write boundary gives, and `staging`
+  added to `../index/corpus.toml` as its own source in the shape of the `analytics` source (line
+  111), then `/reindex`. Nothing under `../staging/` is ever committed to a repository. **Source**:
+  `../PLAN_FINANCE_AUTOMATION.md`, the write boundary. **Owner**: Claude Code. **Model**: Haiku.
+  **Size**: ~2 files.
+
+- [ ] **F1c. Stripe balance transactions and payouts to staging.** `scripts/finance/stripe-stage.js`:
+  for a month, `balance_transactions` with `expand: data.source` and the payouts, from the live key
+  the way `infra/stripe/stripe-sync.js` reads it from Secrets Manager (a read-only listing), written
+  as `../staging/<year-end>/stripe/<yyyy-mm-dd>-stripe-balance-transactions.json` and
+  `…-payouts.json` with gross, fee and net kept separate; a unit test over a recorded page.
+  Run it for March to August 2026. **Source**: `../PLAN_FINANCE_AUTOMATION.md` route 2. **Owner**:
+  Claude Code. **Model**: Sonnet. **Size**: ~2 files.
+
+- [ ] **F2b. Supplier invoices from the mailbox.** `mcp/lib/finance/mail-invoices.js`: for a
+  period, the supplier invoices read through corpus-loom (`search` on `mail-antony` and
+  `mail-support` by sender and period, then `get_document`), emitted as `purchases` lines with
+  `documentType = "invoice"` and the supplier's `taxCode` (`S` or `OS`), against
+  `diya-gl-lines-v2.schema.json` in the spreadsheets repository's `public/schema/`; a unit test over
+  two recorded invoices (AWS, Google Cloud). No file harvesting. **Source**:
+  `../PLAN_FINANCE_AUTOMATION.md` route 4, phase 2. **Owner**: Claude Code. **Model**: Sonnet.
+  **Size**: ~3 files.
+
+- [ ] **F2c. Opening balances and the book from the prior-year workbook.**
+  `mcp/lib/finance/book-from-workbook.js`: `book.toml` per `diya-gl-book-v2.schema.json` (entity
+  information, chart of accounts, opening balances, debtors, creditors, fixed assets, dividends,
+  members) seeded from the complete 2025-26 workbook set in the Drive mirror (`Financialaccounts.xlsx`,
+  `Fixedassets.xlsx`, `Companysecretary.xlsx`, the dividends folder), validated against the schema;
+  a unit test over the workbook. The Companies House filing is not a second anchor. **Source**:
+  `../PLAN_FINANCE_AUTOMATION.md` phase 2. **Owner**: Claude Code. **Model**: Sonnet. **Size**:
+  ~3 files.
+
+- [ ] **F2a. Staged sources into diya-gl lines.** `mcp/lib/finance/`: parsers for the NatWest CSV
+  (`Date,Type,Description,Value,Balance,Account Name,Account Number`; `Type` to
+  `diya-gl:bankCode`; samples in the Drive mirror's `2025-2026 accounts/bank/`), the Stripe files
+  (a charge as a `sales` `receipt` line plus a `purchases` fee line, a payout as a `bank` line that
+  must match the bank BAC line) and the PayPal export (settled transactions only; holds and their
+  reversals excluded; a receipt as `sales`, a bill payment as `purchases` matched to the mailbox
+  invoice), each emitting lines against `diya-gl-lines-v2.schema.json`, gross income and fees never
+  netted; unit tests over recorded samples with the March 2026 holds case. The table in the plan's
+  "Target format" section is the mapping. **Source**: `../PLAN_FINANCE_AUTOMATION.md` phase 2.
+  **Owner**: Claude Code. **Model**: Sonnet. **Size**: ~6 files.
+
+- [ ] **B61. The MCP's third Cognito app client and the device-code grant.** `PLAN_SUBMISSION_MCP.md`
+  M3: a third app client on the pool beside the web and DIYA-GL clients (`IdentityStack.java`, the
+  DIYA-GL client's pattern at line 279 onward), a JWT authoriser scoped to its audience on the
+  cloud book routes (`ApiStack.java`, the way the books authoriser is wired), the device-code grant
+  for the stdio surfaces (Cognito has no device grant of its own: a small table and two routes,
+  `POST /api/v1/device/code` and `POST /api/v1/device/token`, in the shape the plan's item 4
+  describes, with a unit test each), and `open_book`/`save_book` in `mcp/lib/book-tools.js` over
+  the DIYA cloud routes with that token. Unblocks F2d, PU-7i and B52i. **Source**: BACKLOG 61;
+  `PLAN_SUBMISSION_MCP.md` M3. **Owner**: Claude Code. **Model**: Sonnet. **Size**: ~10 files.
+
 ## Machine-ask
 
-- [ ] **B58a. The Copilot coding agent is enabled, so `security-review.yml` can assign #318.** The
-  dispatch `gh workflow run security-review.yml -f issue_number=318` (run 35688659421, 2026-09-22)
-  failed as designed: `suggestedActors` lists only `antonycc` and `support-at-diyaccounting` under
-  both the workflow token and the App token, so no token can assign `copilot-swe-agent` until the
-  Copilot coding agent is enabled for this repository (GitHub, repository Settings, Copilot, Coding
-  agent; or the organisation's Copilot policy). The operator enables it, then Claude Code re-runs
-  the same dispatch and reads #318's timeline for the `assigned` event. #318 stays open until then.
-  **Source**: issue #318; BACKLOG 58. **Owner**: the operator enables; Claude Code dispatches and
-  reads. **Model**: Haiku. **Size**: ~0 files.
-
-- [ ] **PU-3. Stripe test then live.** The `resident` product with both prices through
-  `stripe-catalogue-sync`, test then live; the price ids into `.env.ci` and `.env.prod`. The catalogue's `prices` rows and the
-  `STRIPE_(TEST_)PRICE_ID_RESIDENT_YEAR`/`_MONTH` env rows are what the sync writes. **Source**: `PLAN_PRICE_UPDATE.md` PU-3. **Owner**: Claude Code; the live key is the
-  operator's. **Model**: Haiku. **Size**: ~2 files.
+- [ ] **F1b. PayPal transactions to staging.** `scripts/finance/paypal-stage.js`: the Transaction
+  Search API for a month, settled transactions only with the status field kept so holds and
+  reversals can be excluded downstream, written as
+  `../staging/<year-end>/paypal/<yyyy-mm-dd>-paypal-transactions.json`; a unit test over a recorded
+  page. The app client id and secret come from the PayPal developer dashboard, which the operator
+  creates and puts on the `prod` GitHub environment as `PAYPAL_CLIENT_ID` and `PAYPAL_CLIENT_SECRET`
+  for `deploy-environment.yml` to land in Secrets Manager as `prod/submit/paypal/client`, the way
+  the other third-party secrets travel. Run it for March to August 2026. **Source**:
+  `../PLAN_FINANCE_AUTOMATION.md` route 1. **Owner**: Claude Code; the operator creates the PayPal
+  app. **Model**: Sonnet. **Size**: ~3 files.
 
 - [ ] **B11.T10. ITSA phase 2: the send.** The operator names the day; Claude Code re-runs
   `scripts/itsa-sandbox-year.js` for 2023-24, 2025-26 and 2026-27 (the commands in
@@ -98,7 +177,31 @@ step.
 
 ## Human-driven
 
+- [ ] **F1d. NatWest statements to staging.** The operator signs in to NatWest and downloads, for
+  each of March to August 2026, the current account `600947-80597386` and the savings account
+  `600947-80634672` statements as CSV and PDF into `../staging/2025-2026/bank/` (March) and
+  `../staging/2026-2027/bank/` (April to August), named
+  `<yyyy-mm-dd>-natwest-<current|savings>-<account>.<csv|pdf>` with the month's last day, the shape
+  of the 2025-26 files in the Drive mirror. No automation touches the bank sign-in. **Source**:
+  `../PLAN_FINANCE_AUTOMATION.md` route 3. **Owner**: Operator. **Model**: none. **Size**: 24 files
+  outside any repository.
+
 ## Blocked
+
+- [ ] **F2d. DIYA's book, assembled, verified and saved to the DIYA cloud.** The lines from F2a and
+  F2b plus F2c's `book.toml` for 1 March to 31 August 2026, validated against both v2 schemas; March
+  2026 matched line for line against the completed 2025-26 workbook (the control), every month's
+  bank closing balance equal to the statement's, gross income and fees separate, no hold posted;
+  then saved to the DIYA cloud through `save_book` with the operator signed in, which is B52i's
+  unblock event. Blocked on F1b, F1c, F1d, F2a, F2b, F2c and B61. **Source**:
+  `../PLAN_FINANCE_AUTOMATION.md` phase 2 and its verification. **Owner**: Claude Code; the operator
+  signs in. **Model**: Sonnet. **Size**: ~2 files.
+
+- [ ] **F2e. The MCP writes a populated spreadsheets package.** A tool in `mcp/lib/finance/` that
+  takes the book and lines and writes a DIY Accounting spreadsheets package, reconciled under the
+  spreadsheets repository's existing reconciliation harness rather than a new check; nothing
+  automated writes to Google Drive. Blocked on F2d. **Source**: `../PLAN_FINANCE_AUTOMATION.md`
+  phase 2. **Owner**: Claude Code. **Model**: Sonnet. **Size**: ~3 files.
 
 - [ ] **B34.7. Run and fix the filing suites' sandbox sign-in.** `deploy.yml` and `probe-test.yml`
   run the two filing suites only when the dispatch input `runCompaniesHouseSandboxFiling` is
@@ -134,12 +237,6 @@ step.
   BACKLOG 34c's: prod carries no `COMPANIES_HOUSE_XMLGW_URI` and no presenter secret ARNs.
   **Source**: BACKLOG 34b, 34d. **Owner**: Claude Code; the operator sends 34d's email. **Model**:
   Sonnet. Blocked on that answer. **Size**: ~2 files.
-
-- [ ] **PU-5. The DIYA-GL tier on prod.** `SubmitApplication.java` line 484 sets
-  `.residentTierEnabled(!"prod".equals(envName))`, which `DiyaGlStack.java` (lines 140 and 241)
-  passes as `DIYA_GL_RESIDENT_TIER` and `app/services/diyaGlEntitlement.js` line 40 reads; make
-  it true for prod, and add `prod` to `resident`'s environments in the catalogue. Blocked on PU-3. **Source**:
-  `PLAN_PRICE_UPDATE.md` PU-5. **Owner**: Claude Code. **Model**: Haiku. **Size**: ~2 files.
 
 - [ ] **B52l. The optimiser over the raw export.** A notebook over `../analytics/prod/` (pulled by
   `scripts/analytics-pull.sh`, one CSV per view in `rawExportPublish.js`'s `VIEW_NAMES`): per-block
@@ -180,11 +277,7 @@ step.
   `derive_micro_entity_accounts` over the cloud book, writing JSON lines to `curated/finance/` with
   a Glue table on `Ga4DailyTables.java`'s pattern, one observation set in
   `operatorSnapshotPublish.js`, and a block above `renderSnapshot`'s objectives in
-  `web/public/operator/dashboard.html`. Blocked on `../PLAN_FINANCE_AUTOMATION.md` phases 1 and 2
-  (open, drafted 2026-08-31, no code): the unblock event is a `book.toml` with validated diya-gl
-  lines for DIYA saved to the DIYA cloud. Also blocked on `PLAN_SUBMISSION_MCP.md` M3, the third
-  Cognito app client with the device-code grant and `open_book`/`save_book` over the cloud routes;
-  M1c is on main (PR #232). **Source**: BACKLOG 52i; `PLAN_ONE_STOP_DASHBOARD.md` D10. **Owner**:
+  `web/public/operator/dashboard.html`. Blocked on F2d (DIYA's book saved to the DIYA cloud, the last of the F1 and F2 rows) and on B61 (the MCP's third Cognito app client, whose `open_book`/`save_book` over the cloud routes the nightly derivation uses). **Source**: BACKLOG 52i; `PLAN_ONE_STOP_DASHBOARD.md` D10. **Owner**:
   Claude Code. **Model**: Sonnet. **Size**: ~4 files.
 
 - [ ] **O17. A sandbox sign-in for the filing suites, and four ci values.** The sandbox has no
