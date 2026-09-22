@@ -89,7 +89,7 @@ IAM Identity Center provides single sign-on across all accounts:
 - Click to access any account with assigned permission set
 - AWS CLI SSO profiles for programmatic access
 
-See `_developers/aws-multi-account/IAM_IDENTITY_CENTER.md` for setup details.
+See `../developers/submit/aws-multi-account/IAM_IDENTITY_CENTER.md` for setup details.
 
 ---
 

@@ -290,7 +290,7 @@ agree. Rows D16 and D17.
 | DORA delivery metrics | Uptime, cost | SSM pointer only | One lake row per deploy and destroy: name, environment, branch, sha, run id, duration, lead time from the PR; failure and recovery from the alarm issues | D8 |
 | Returning submitters and renewals | Retention | Receipts and subscriptions tables, activity events | A view keyed by hashed subject across quarters; renewal and cancellation events from the subscriptions stream | D14 |
 | Operator interventions | Operator effort | Actions runs by trigger and actor, issue timelines, the mail mirror, the boards' git history | A nightly pull of runs, issues and commits by actor; a classification of each intervention | D14 |
-| Compliance findings | Compliance | `compliance.yml` weekly; HMRC's monthly email and `app/lib/fraudPreventionHeaderReport.js`; the questionnaires in `_developers/reference/` | The accessibility results into the lake; backlog 22's email-to-parser path; a `compliance.toml` for the standing items (questionnaires, presenter account, ICO, terms of use) with a date and an owner each | D15 |
+| Compliance findings | Compliance | `compliance.yml` weekly; HMRC's monthly email and `app/lib/fraudPreventionHeaderReport.js`; the questionnaires in `reference/` | The accessibility results into the lake; backlog 22's email-to-parser path; a `compliance.toml` for the standing items (questionnaires, presenter account, ICO, terms of use) with a date and an owner each | D15 |
 | Experiments | All | none | `experiments.toml`, annotations, the open list per objective | D11 |
 | Raw export and index | All | none | The nightly export, the pull script, the corpus source | D12 |
 | Deep links | All | none | Every row links to its object | D9 |
@@ -339,7 +339,7 @@ on NEXT.md.
 | D12 | The raw export, `scripts/analytics-pull.sh`, the `analytics` corpus source, `reindex` | D1 | Claude Code, Sonnet; the corpus change at the workspace root |
 | D13 | The security panels: AWS Config recorder and the CIS 5.0 standard, findings and GitHub alerts into the lake, `lifecycle.toml` and its check, the SBOM and KEV match, the CloudTrail metric filters, WAF logs, the rotation record | D1; the operator's yes for Config and the multi-region trail (an environment deploy) | Claude Code, Sonnet; Opus for the traffic baselines |
 | D14 | Retention and operator-effort views: returning submitters by quarter keyed by hashed subject, renewals and cancellations from the subscriptions stream; a nightly pull of Actions runs by trigger and actor, issue timelines and commits by author, classified into interventions | D1 | Claude Code, Sonnet |
-| D15 | The compliance panel: accessibility results from `compliance.yml` into the lake; backlog 22's path from HMRC's monthly email to `fraudPreventionHeaderReport.js` and the result into the lake; `compliance.toml` for the standing items with dates and owners | D1; `_developers/archive/PLAN_FRAUD_HEADER_EMAIL_CHECK.md` | Claude Code, Sonnet |
+| D15 | The compliance panel: accessibility results from `compliance.yml` into the lake; backlog 22's path from HMRC's monthly email to `fraudPreventionHeaderReport.js` and the result into the lake; `compliance.toml` for the standing items with dates and owners | D1; `../developers/submit/archive/PLAN_FRAUD_HEADER_EMAIL_CHECK.md` | Claude Code, Sonnet |
 | D16 | The optimiser: a notebook over the raw export that computes the per-block correlations, fits the block models (linear cost, log-linear funnels, Hill curves for spend), ranks levers by effect per unit cost, and proposes the next experiment with its predicted effect; Bayesian optimisation for the continuous knobs and a bandit for allocations once experiments exist | D12; three months of export | Claude Code, Opus for the models, Sonnet for the notebook |
 | D17 | The reinvestment loop: trailing income, reserve, budget, return per pound and payback on the page; the reinvestment fraction as a lever with a reserve floor; paid-traffic experiments as rows with on-off or geographic controls; the Ads account with GA4 conversion import. The paid rows start from the £0.36 breakeven cost per session (0.28% session-to-purchase, £127 lifetime contribution at 30% churn; `REPORT_PRICE_UPDATE_REVIEW.md` §4), against which a £2 click costs £714 per subscriber | D2, D16; the operator opens the Ads account and sets the reserve floor | Claude Code, Sonnet; the operator's decisions |
 
@@ -628,7 +628,7 @@ ruleset name, so the same loop builds one alarm per target and `DataQualityTest`
 | The Ltd engine as a published package | spreadsheets board H7 | Ready to start |
 | Which Stripe account holds the donation Payment Links | Stripe dashboard | Operator confirms |
 | A Google Ads account with GA4 conversion import, and the article-boost channels | Google Ads; the publishing platforms | Operator opens; both earlier Ads accounts were cancelled |
-| HMRC's monthly fraud-prevention header email reaching the parser | `_developers/archive/PLAN_FRAUD_HEADER_EMAIL_CHECK.md`, backlog 22 | Parser built; the path is that plan's open work |
+| HMRC's monthly fraud-prevention header email reaching the parser | `../developers/submit/archive/PLAN_FRAUD_HEADER_EMAIL_CHECK.md`, backlog 22 | Parser built; the path is that plan's open work |
 
 ## Distance
 
@@ -647,28 +647,28 @@ Swept on 2026-09-07 across this repo's plans, boards and open issues.
 
 | Item | Relation to this plan | Disposition |
 |---|---|---|
-| `_developers/archive/PLAN_ALARM_EVIDENCE_AND_TRIAGE.md`, NEXT.md B30o | The alarms panel reads the same state-change events; the triage chain's anonymised comments are the deep link | Keep; B30o proves the chain, D6 lands the events in the lake |
-| `_developers/archive/PLAN_ALARM_TEARDOWN.md`, BACKLOG 30a (re-run the audit, due 2026-09-13) | Alarm and canary cuts are the running-cost lever; the audit's counts are the baseline | Keep; the audit becomes a nightly view under D6 |
-| `_developers/backlog/ALARM_VALIDATION_STRATEGY.md` | Chaos checks that each alarm fires; the uptime SLI depends on the alarms being true | Keep as reference; not scheduled |
+| `../developers/submit/archive/PLAN_ALARM_EVIDENCE_AND_TRIAGE.md`, NEXT.md B30o | The alarms panel reads the same state-change events; the triage chain's anonymised comments are the deep link | Keep; B30o proves the chain, D6 lands the events in the lake |
+| `../developers/submit/archive/PLAN_ALARM_TEARDOWN.md`, BACKLOG 30a (re-run the audit, due 2026-09-13) | Alarm and canary cuts are the running-cost lever; the audit's counts are the baseline | Keep; the audit becomes a nightly view under D6 |
+| `../developers/submit/backlog/ALARM_VALIDATION_STRATEGY.md` | Chaos checks that each alarm fires; the uptime SLI depends on the alarms being true | Keep as reference; not scheduled |
 | BACKLOG 47, NEXT.md D2 | The scheduled workflows feed the DORA and drift panels; the Monday crons' first proof is 2026-09-14 | Keep; D2 |
 | BACKLOG 39, NEXT.md B39.1, issue #13 (multi-URL Lighthouse) | Web vitals for the sibling sites, which the uptime objective wants at p75 | Keep; D3 takes the RUM half, Lighthouse stays the lab measure |
 | BACKLOG 43 | The monthly bill check against the cost plan's target | Keep; the cost panel (D7) replaces the hand check once FOCUS lands |
 | BACKLOG 49 | GA4 property changes as code; D3's cross-domain and key-event changes go through it or the Admin API script | Keep |
 | BACKLOG 27a (pen test), 46 (corpus credentials), 48 (certbot) , issue #11 (backups outside the account) | Security panels: lifecycle, secrets, data protection | Keep; each feeds a row of the security table |
-| `_developers/archive/PLAN_FRAUD_HEADER_EMAIL_CHECK.md`, BACKLOG 22 | The compliance panel's HMRC header report is that plan's parser with its email path built | Keep; D15 |
+| `../developers/submit/archive/PLAN_FRAUD_HEADER_EMAIL_CHECK.md`, BACKLOG 22 | The compliance panel's HMRC header report is that plan's parser with its email path built | Keep; D15 |
 | Issue #18 (alerting in Slack with agents raising issues) | The alarm-to-issue chain delivered the issue half; Slack was not chosen | Operator's call: close, or re-scope to the alarms panel |
-| `_developers/backlog/PLAN_SECURITY_DETECTION_UPLIFT.md` | Phases 0 to 3 delivered in January 2026; phase 4's ideas are the security panels | Archived 2026-09-07 |
-| `_developers/backlog/SLACK_INTEGRATION_PLAN.md` | Superseded by the alarm-to-issue chain | Archived 2026-09-07 |
-| `_developers/backlog/PLAN_MCP_SERVER.md` | Superseded by `PLAN_SUBMISSION_MCP.md` | Archived 2026-09-07 |
-| `_developers/backlog/METRIC_SON_DESIGN.md` | A second presentation of the same metrics | Keep as a horizon |
-| `_developers/archive/PLAN_USAGE_DATA_PIPELINE.md`, `PLAN_SCHEDULED_INGESTION.md`, `PLAN_GA4.md`, `PLAN_COST_INSTRUMENTATION.md`, `PLAN_COST_OPTIMISATION.md`, `PLAN_ALARM_CONSOLIDATION.md`, `PLAN_SYNTHETIC_NAMING_ALIGNMENT.md` | The delivered designs this plan builds on | Reference only |
+| `../developers/submit/backlog/PLAN_SECURITY_DETECTION_UPLIFT.md` | Phases 0 to 3 delivered in January 2026; phase 4's ideas are the security panels | Archived 2026-09-07 |
+| `../developers/submit/backlog/SLACK_INTEGRATION_PLAN.md` | Superseded by the alarm-to-issue chain | Archived 2026-09-07 |
+| `../developers/submit/backlog/PLAN_MCP_SERVER.md` | Superseded by `PLAN_SUBMISSION_MCP.md` | Archived 2026-09-07 |
+| `../developers/submit/backlog/METRIC_SON_DESIGN.md` | A second presentation of the same metrics | Keep as a horizon |
+| `../developers/submit/archive/PLAN_USAGE_DATA_PIPELINE.md`, `PLAN_SCHEDULED_INGESTION.md`, `PLAN_GA4.md`, `PLAN_COST_INSTRUMENTATION.md`, `PLAN_COST_OPTIMISATION.md`, `PLAN_ALARM_CONSOLIDATION.md`, `PLAN_SYNTHETIC_NAMING_ALIGNMENT.md` | The delivered designs this plan builds on | Reference only |
 
 ## Related
 
-- `_developers/archive/PLAN_USAGE_DATA_PIPELINE.md`, `_developers/archive/PLAN_GA4.md`,
-  `_developers/archive/PLAN_COST_INSTRUMENTATION.md`, `_developers/archive/PLAN_ALARM_EVIDENCE_AND_TRIAGE.md`
+- `../developers/submit/archive/PLAN_USAGE_DATA_PIPELINE.md`, `../developers/submit/archive/PLAN_GA4.md`,
+  `../developers/submit/archive/PLAN_COST_INSTRUMENTATION.md`, `../developers/submit/archive/PLAN_ALARM_EVIDENCE_AND_TRIAGE.md`
 - `.claude/skills/board/SKILL.md` renders the work board; this page renders the business.
-- `_developers/backlog/METRIC_SON_DESIGN.md` can sit on the page as a second presentation of
+- `../developers/submit/backlog/METRIC_SON_DESIGN.md` can sit on the page as a second presentation of
   the same metrics.
 - `../PLAN_FINANCE_AUTOMATION.md`, `PLAN_SUBMISSION_MCP.md`
 - Standards: Google SRE workbook (SLOs, golden signals); web.dev Core Web Vitals;

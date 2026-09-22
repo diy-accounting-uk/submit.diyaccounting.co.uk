@@ -98,7 +98,7 @@ function generateIndexHtml(baseUrl, specFiles) {
 
   <h2>OpenAPI Specifications</h2>
   <ul>
-    ${specLinks || "<li>No OpenAPI specs found in _developers/reference/</li>"}
+    ${specLinks || "<li>No OpenAPI specs found in reference/</li>"}
   </ul>
 
   <h2>Gov-Test-Scenario Support</h2>

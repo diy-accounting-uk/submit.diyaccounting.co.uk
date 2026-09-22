@@ -154,7 +154,7 @@ choose on the operator's behalf. It also does not stop dead: an idle agent costs
 wrong one, and the reversible half survives either answer.
 
 **P10. Automation stays inside the shapes GitHub's abuse heuristics accept.**
-This is not hypothetical. `_developers/archive/PLAN_FLAGGED.md` records the flagging of two of the
+This is not hypothetical. `../developers/submit/archive/PLAN_FLAGGED.md` records the flagging of two of the
 operator's orgs on 2026-05-03 and the full suspension of `@antonycc` on 2026-05-06. The
 high-confidence signals it lists are the exact output of naive auto-merge: 17 seconds from open
 to merge, an empty PR body, zero reviewers, a self-merge, 283 files in one PR, a deletion-heavy
@@ -441,7 +441,7 @@ a reliability rank, its axis C blast radius, what exists today, what it needs, a
 
 ### 5.3 Support
 
-Inbound volume fell about 97% after 2018 (`_developers/SUPPORT_MAIL_ANALYSIS_2026-09.md`), so this
+Inbound volume fell about 97% after 2018 (`../developers/submit/SUPPORT_MAIL_ANALYSIS_2026-09.md`), so this
 domain is small in traffic and high in blast radius. Every row touches a customer.
 
 | Capability | A | B | C | Today | Needs | Gate |
@@ -839,8 +839,8 @@ is tier 1. Everything else waits.
   `scripts/resolve-alarm-evidence.mjs`, `prompts/alarm-triage.md`.
 - `infra/main/java/co/uk/diyaccounting/submit/stacks/OpsStack.java`, `ObservabilityStack.java`,
   `ObservabilityUE1Stack.java`, `CostExportStack.java`, and the `analytics/` stacks and views.
-- `.claude/skills/` (eight skills), `_developers/archive/PLAN_FLAGGED.md`,
-  `_developers/SUPPORT_MAIL_ANALYSIS_2026-09.md`, `../PLAN_FINANCE_AUTOMATION.md`.
+- `.claude/skills/` (eight skills), `../developers/submit/archive/PLAN_FLAGGED.md`,
+  `../developers/submit/SUPPORT_MAIL_ANALYSIS_2026-09.md`, `../PLAN_FINANCE_AUTOMATION.md`.
 - Live reads on 2026-09-09: the repository settings, the `main` ruleset, the labels, the
   environments, the Actions permissions, the Dependabot and code-scanning alerts, the last 100
   workflow runs, the 55 `[ALARM]` issues, and the commit verification state of `main`.
