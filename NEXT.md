@@ -91,24 +91,6 @@ step.
   the ids are on `claude/b74-board`. **Source**:
   `PLAN_PRICE_UPDATE.md` PU-5. **Owner**: Claude Code. **Model**: Haiku. **Size**: ~2 files.
 
-- [ ] **F1e. What the accounts consume.** Before any downloader: read the complete 2025-26 workbook
-  set in the Drive mirror (`../drive/DIY Accounting Limited/finance/2025-2026 accounts/`:
-  `Currentaccount.xlsx`, `Savingaccount.xlsx`, `Sales.xlsx`, `Purchases.xlsx`, `Cashaccount.xlsx`,
-  `Financialaccounts.xlsx`, `Vatreturns.xlsx`, `dividends/`, `invoices/`, `paypal/`, `stripe/`,
-  `bank/`) and write `../REPORT_FINANCE_SOURCES_2025-26.md` at the workspace root (private): which
-  figures each sheet takes from which source, which staged fields therefore matter, the
-  counterparties on the bank lines, and the answer to "does the previous year show anything
-  missing". Per `../PLAN_FINANCE_AUTOMATION.md` phase 1's first instruction. No spreadsheet
-  reader is installed on the machine (no `xlsx`, `exceljs` or `openpyxl`); the
-  `@diy-accounting-uk/diya-gl` package in `mcp/node_modules` (after `npm ci` in `mcp/`) bundles
-  one (`dist/app/lib/xlsx/`, `workbook-set.js`, `product-workbook.js`, `scenario-extractor.js`),
-  so a throwaway node script in the scratchpad reads the workbooks through it. The folder's shape:
-  `paypal/` holds three PDFs a month (`2025-04 PayPal - transactions.PDF`), `stripe/` a
-  `transactions.csv` and `summary.pdf` a month, `invoices/` only `Salesinvoice.xlsx`,
-  `dividends/` a `.docx` per shareholder, and `year end accounts/` is empty. **Source**:
-  `../PLAN_FINANCE_AUTOMATION.md` phase 1. **Owner**: Claude Code. **Model**: Sonnet. **Size**:
-  ~1 file.
-
 - [ ] **F1a. The staging tree and its index source.** `../staging/<year-end>/<source>/` at the
   workspace root (`2025-2026/` for March 2026, `2026-2027/` for April to August), a `README.md` there
   naming the layout and the date-stamped file names the plan's write boundary gives, and `staging`
@@ -152,7 +134,11 @@ step.
   `@diy-accounting-uk/diya-gl`'s own workbook reader (`dist/app/lib/workbook-set.js`,
   `scenario-extractor.js`; the package is `mcp/`'s dependency) and validated with `validateBook`
   from `dist/app/lib/diya-gl-schema.js`, the import `mcp/lib/book-tools.js` line 22 already makes;
-  a unit test over a copy of the workbook with the figures redacted to round numbers. The Companies House filing is not a second anchor. **Source**:
+  a unit test over a copy of the workbook with the figures redacted to round numbers.
+  `../REPORT_FINANCE_SOURCES_2025-26.md` (F1e) lists every sheet and what feeds it: the
+  `Financialaccounts.xlsx` sheets (OpenAccounts, TrialBalance, PubBalSht) carry the opening
+  balances, `Fixedassets.xlsx`'s Schedule the assets, `Companysecretary.xlsx`'s RegisterofMembers
+  the members, and `dividends/Dividend Calculator.xlsx` the dividends. The Companies House filing is not a second anchor. **Source**:
   `../PLAN_FINANCE_AUTOMATION.md` phase 2. **Owner**: Claude Code. **Model**: Sonnet. **Size**:
   ~3 files.
 
@@ -168,7 +154,10 @@ step.
   bank parser can start now (the Drive mirror holds the 2025-26 CSVs, named
   `Current 600947-80597386 01-01-2026 to 31-01-2026.csv`); the Stripe parser reads F1c's JSON
   files, so it follows F1c; the PayPal parser has no sample until F1b writes one, so it follows
-  F1b. **Source**: `../PLAN_FINANCE_AUTOMATION.md` phase 2.
+  F1b. `../REPORT_FINANCE_SOURCES_2025-26.md` (F1e) found that `Cashaccount.xlsx` is the PayPal
+  wallet's own ledger (gross sales, fees, wallet-paid purchases), so PayPal lines post to that
+  cash account and the bank sees only the PayPal withdrawals; and that `Creditcardaccount.xlsx`
+  holds the Stripe payout totals, filled for two months only. **Source**: `../PLAN_FINANCE_AUTOMATION.md` phase 2.
   **Owner**: Claude Code. **Model**: Sonnet. **Size**: ~6 files.
 
 - [ ] **B60. The MCP's Submit-facing tools over the deployed REST API.** `PLAN_SUBMISSION_MCP.md`
