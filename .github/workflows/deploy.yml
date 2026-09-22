@@ -701,7 +701,8 @@ jobs:
         id: package
         shell: bash
         run: |
-          ./mvnw clean verify -DskipTests -Dmaven.compiler.source=${{ env.JAVA_VERSION }} -Dmaven.compiler.target=${{ env.JAVA_VERSION }}
+          MVN_ARGS="clean verify -DskipTests -Dmaven.compiler.source=${{ env.JAVA_VERSION }} -Dmaven.compiler.target=${{ env.JAVA_VERSION }} -Dmaven.wagon.http.retryHandler.count=3 -Daether.connector.http.retryHandler.count=3"
+          ./mvnw $MVN_ARGS || { sleep 30; ./mvnw $MVN_ARGS || { sleep 60; ./mvnw $MVN_ARGS; }; }
 
       - name: Upload Maven build artifact
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
@@ -1520,6 +1521,7 @@ jobs:
             echo "Maven output not cached, building with profile cdk-application..."
             ./mvnw --errors clean verify -DskipTests \
               -Dmaven.compiler.source=${{ env.JAVA_VERSION }} -Dmaven.compiler.target=${{ env.JAVA_VERSION }} \
+              -Dmaven.wagon.http.retryHandler.count=3 -Daether.connector.http.retryHandler.count=3 \
               -P cdk-application
           else
             echo "Maven output cached (target/submit-application.jar exists), skipping build"
@@ -1862,6 +1864,7 @@ jobs:
             echo "Maven output not cached, building with profile cdk-application..."
             ./mvnw --errors clean verify -DskipTests \
               -Dmaven.compiler.source=${{ env.JAVA_VERSION }} -Dmaven.compiler.target=${{ env.JAVA_VERSION }} \
+              -Dmaven.wagon.http.retryHandler.count=3 -Daether.connector.http.retryHandler.count=3 \
               -P cdk-application
           else
             echo "Maven output cached (target/submit-application.jar exists), skipping build"
