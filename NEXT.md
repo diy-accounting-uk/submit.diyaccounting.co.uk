@@ -16,9 +16,8 @@ runs), and for Claude Code steps the **Model** a sub-agent should use (Fable > O
 Haiku; the lowest tier that fits). Anything touching code goes through a `claude/*` branch and
 PR; the operator merges.
 
-**Prod runs deployment prod-b9abb8d**.
-**ci**: `ci-set1` is last-known-good. Open pull request: #331 (`claude/b77-board`: PU-7i, the
-practice authorisation routes' authoriser, B30ar), its ci deploy 35742688137 in flight.
+**Prod runs deployment prod-b9abb8d**; main's deploy of PR #331's merge (cdbc557a) is in flight.
+**ci**: `ci-set1` is last-known-good. No open pull request.
 
 The board runs in five sections, in this order: **in flight** (a branch, a pull request or a run
 in motion, each named in the row), **machine-only**, **machine-ask**, **human-driven**,
@@ -40,29 +39,19 @@ step.
 
 ## In flight
 
-- [ ] **B30ar. A superseded probe run opens an incident.** Scheduled probe run 35735167737 (prod,
-  13:41 UTC) found main's deploy in progress, marked `submitVatBehaviour` and
-  `tokenRefreshBehaviour` superseded and skipped the test step, then `Export DynamoDB data for
-  test users` (`probe-test.yml` line 656) and `List artefacts` (line 676) failed on the missing
-  `target/behaviour-test-results` directory, the job went red and the workflow opened #330. In
-  flight on `claude/b77-board` (PR #331, deploy 35742688137): the post-steps and the incident step gated on the
-  `superseded` output the record step at line 759 already reads. **Source**: run 35735167737;
-  BACKLOG 30. **Owner**: Claude Code. **Model**: Sonnet. **Size**: ~1 file.
+## Machine-only
 
-- [ ] **PU-7. Practice licence build.** PU-7a to PU-7h, PU-7k and PU-7l are on `main`. In flight on
-  `claude/b77-board`, PR #331, head 253c7ba8, its ci deploy 35742688137 in flight: PU-7i, the MCP
-  client tools (`list_clients`, `add_client`, `invite_client`, `client_authorisation_status`, and
-  the client id on the book and derive tools) over the practice routes PU-7f, PU-7g and PU-7k
-  added, in `mcp/lib/client-tools.js`, registered in `mcp/lib/server.js`, the client id on `mcp/lib/book-tools.js`, with recorded-fixture tests in the shape `mcp/test/submit-tools.test.js` uses. Then,
-  in `PLAN_PRICE_UPDATE.md` §(d) (lines 227 to 236): PU-7j on PU-7i, PU-7m on PU-7j, PU-7e on the operator's grant numbers; the
+- [ ] **PU-7. Practice licence build.** PU-7a to PU-7i, PU-7k and PU-7l are on `main`. Next is
+  PU-7j, `run_for_clients` in `mcp/lib/batch-tools.js` and the CLI's `--all-clients` in
+  `mcp/bin/diya-submit-mcp.js`: one result row per client, non-zero exit on any failure, over
+  the client tools PU-7i put in `mcp/lib/practice-tools.js`. Then,
+  in `PLAN_PRICE_UPDATE.md` §(d) (lines 227 to 236): PU-7m on PU-7j, PU-7e on the operator's grant numbers; the
   `resident-pro` catalogue values (`enable = "always"`, `hidden = false`,
   `allocation = "on-subscription"`) and the practice page's nav link in
   `web/public/widgets/page-chrome.js` flip in the launch step after PU-7m, with the four ci probes
   that reach resident-pro through a pass updated in the same change. **Source**:
-  `PLAN_PRICE_UPDATE.md` PU-7. **Owner**: Claude Code. **Model**: Sonnet. **Size**: ~6 files for
-  PU-7i, ~20 across the three rows after it.
-
-## Machine-only
+  `PLAN_PRICE_UPDATE.md` PU-7. **Owner**: Claude Code. **Model**: Sonnet. **Size**: ~5 files for
+  PU-7j, ~15 across the two rows after it.
 
 ## Machine-ask
 
