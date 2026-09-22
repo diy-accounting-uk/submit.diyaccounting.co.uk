@@ -13,13 +13,31 @@ inputs:
   github-token:
     description: 'Token used to list deploy.yml runs'
     required: true
+  max-wait-minutes:
+    description: >
+      Minutes to poll before giving up and returning anyway. 0 checks once and returns
+      immediately, for a caller that already holds a lock it cannot sit on.
+    required: false
+    default: '40'
+outputs:
+  deploy-in-progress:
+    description: >
+      'true' when this returned because a deploy.yml run on main is still gating (whether it
+      gave up at max-wait-minutes or, with max-wait-minutes 0, found one gating on the first
+      check); 'false' when no run gates the apex.
+    value: ${{ steps.wait.outputs.deploy-in-progress }}
+  gating-run-ids:
+    description: 'Comma-separated deploy.yml run ids still gating, when deploy-in-progress is true'
+    value: ${{ steps.wait.outputs.gating-run-ids }}
 runs:
   using: 'composite'
   steps:
     - name: Wait for a deploy in progress on main
+      id: wait
       shell: bash
       env:
         GH_TOKEN: ${{ inputs.github-token }}
+        MAX_WAIT_MINUTES: ${{ inputs.max-wait-minutes }}
       # The github.action_path and github.workspace expressions expand to the runner's host
       # paths, which a container job cannot see. The GITHUB_WORKSPACE variable set inside the
       # step is the checkout's path wherever the step runs (see wait-for-ci-deploys).

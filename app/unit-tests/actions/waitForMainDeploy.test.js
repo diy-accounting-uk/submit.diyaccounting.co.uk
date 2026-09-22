@@ -5,7 +5,7 @@
 
 import { describe, test, expect } from "vitest";
 
-import { runStillGatesProbes } from "../../../.github/actions/wait-for-main-deploy/wait-for-main-deploy.mjs";
+import { runStillGatesProbes, decidePollOutcome } from "../../../.github/actions/wait-for-main-deploy/wait-for-main-deploy.mjs";
 
 function job(name, status) {
   return { name, status };
@@ -67,5 +67,31 @@ describe("runStillGatesProbes", () => {
     const result = runStillGatesProbes(run, []);
     expect(result.gates).toBe(true);
     expect(result.reason).toContain("waiting");
+  });
+});
+
+describe("decidePollOutcome", () => {
+  test("stops with nothing gating when gatingCount is 0, even with time left to wait", () => {
+    const result = decidePollOutcome(0, 0, 40 * 60);
+    expect(result.stop).toBe(true);
+    expect(result.deployInProgress).toBe(false);
+  });
+
+  test("keeps polling while something gates and time remains", () => {
+    const result = decidePollOutcome(1, 0, 40 * 60);
+    expect(result.stop).toBe(false);
+    expect(result.deployInProgress).toBe(true);
+  });
+
+  test("a zero max-wait gives up on the first check instead of polling, when something gates", () => {
+    const result = decidePollOutcome(1, 0, 0);
+    expect(result.stop).toBe(true);
+    expect(result.deployInProgress).toBe(true);
+  });
+
+  test("a zero max-wait still reports nothing in progress when nothing gates", () => {
+    const result = decidePollOutcome(0, 0, 0);
+    expect(result.stop).toBe(true);
+    expect(result.deployInProgress).toBe(false);
   });
 });
