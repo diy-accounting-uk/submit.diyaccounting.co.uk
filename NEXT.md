@@ -41,6 +41,15 @@ step.
 
 ## In flight
 
+- [ ] **B30ar. A superseded probe run opens an incident.** Scheduled probe run 35735167737 (prod,
+  13:41 UTC) found main's deploy in progress, marked `submitVatBehaviour` and
+  `tokenRefreshBehaviour` superseded and skipped the test step, then `Export DynamoDB data for
+  test users` (`probe-test.yml` line 656) and `List artefacts` (line 676) failed on the missing
+  `target/behaviour-test-results` directory, the job went red and the workflow opened #330. In
+  flight on `claude/b77-board` (PR #331): the post-steps and the incident step gated on the
+  `superseded` output the record step at line 759 already reads. **Source**: run 35735167737;
+  BACKLOG 30. **Owner**: Claude Code. **Model**: Sonnet. **Size**: ~1 file.
+
 - [ ] **PU-7. Practice licence build.** PU-7a to PU-7h, PU-7k and PU-7l are on `main`. In flight on
   `claude/b77-board`, PR #331, its ci deploy starting: PU-7i, the MCP
   client tools (`list_clients`, `add_client`, `invite_client`, `client_authorisation_status`, and
