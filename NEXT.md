@@ -17,8 +17,8 @@ Haiku; the lowest tier that fits). Anything touching code goes through a `claude
 PR; the operator merges.
 
 **Prod runs deployment prod-b9abb8d**.
-**ci**: `ci-set1` is last-known-good. Open pull request: #331 (`claude/b77-board`: PU-7i and the
-practice authorisation routes' authoriser), its ci deploy starting.
+**ci**: `ci-set1` is last-known-good. Open pull request: #331 (`claude/b77-board`: PU-7i, the
+practice authorisation routes' authoriser, B30ar), its ci deploy 35742688137 in flight.
 
 The board runs in five sections, in this order: **in flight** (a branch, a pull request or a run
 in motion, each named in the row), **machine-only**, **machine-ask**, **human-driven**,
@@ -45,12 +45,12 @@ step.
   `tokenRefreshBehaviour` superseded and skipped the test step, then `Export DynamoDB data for
   test users` (`probe-test.yml` line 656) and `List artefacts` (line 676) failed on the missing
   `target/behaviour-test-results` directory, the job went red and the workflow opened #330. In
-  flight on `claude/b77-board` (PR #331): the post-steps and the incident step gated on the
+  flight on `claude/b77-board` (PR #331, deploy 35742688137): the post-steps and the incident step gated on the
   `superseded` output the record step at line 759 already reads. **Source**: run 35735167737;
   BACKLOG 30. **Owner**: Claude Code. **Model**: Sonnet. **Size**: ~1 file.
 
 - [ ] **PU-7. Practice licence build.** PU-7a to PU-7h, PU-7k and PU-7l are on `main`. In flight on
-  `claude/b77-board`, PR #331, its ci deploy starting: PU-7i, the MCP
+  `claude/b77-board`, PR #331, head 253c7ba8, its ci deploy 35742688137 in flight: PU-7i, the MCP
   client tools (`list_clients`, `add_client`, `invite_client`, `client_authorisation_status`, and
   the client id on the book and derive tools) over the practice routes PU-7f, PU-7g and PU-7k
   added, in `mcp/lib/client-tools.js`, registered in `mcp/lib/server.js`, the client id on `mcp/lib/book-tools.js`, with recorded-fixture tests in the shape `mcp/test/submit-tools.test.js` uses. Then,
