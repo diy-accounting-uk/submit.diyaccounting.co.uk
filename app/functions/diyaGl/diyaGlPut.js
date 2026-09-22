@@ -287,7 +287,7 @@ export async function ingestHandler(event) {
         }
       }
 
-      const entitlement = await entitlementFor(user.sub);
+      const entitlement = await entitlementFor(user.sub, clientId);
 
       const ownerPrefix = await resolveOwnerPrefix(user.sub, bookId, clientId);
       let existing = await readMetadata(ownerPrefix, bookId);

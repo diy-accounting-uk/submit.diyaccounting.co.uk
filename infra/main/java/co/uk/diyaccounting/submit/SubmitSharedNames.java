@@ -282,6 +282,33 @@ public class SubmitSharedNames {
     public boolean practiceClientDeleteLambdaJwtAuthorizer;
     public boolean practiceClientDeleteLambdaCustomAuthorizer;
 
+    public String practiceClientAuthorisationInvitePostIngestLambdaHandler;
+    public String practiceClientAuthorisationInvitePostIngestLambdaFunctionName;
+    public String practiceClientAuthorisationInvitePostIngestLambdaArn;
+    public String practiceClientAuthorisationInvitePostIngestProvisionedConcurrencyLambdaAliasArn;
+    public HttpMethod practiceClientAuthorisationInvitePostLambdaHttpMethod;
+    public String practiceClientAuthorisationInvitePostLambdaUrlPath;
+    public boolean practiceClientAuthorisationInvitePostLambdaJwtAuthorizer;
+    public boolean practiceClientAuthorisationInvitePostLambdaCustomAuthorizer;
+
+    public String practiceClientAuthorisationGetIngestLambdaHandler;
+    public String practiceClientAuthorisationGetIngestLambdaFunctionName;
+    public String practiceClientAuthorisationGetIngestLambdaArn;
+    public String practiceClientAuthorisationGetIngestProvisionedConcurrencyLambdaAliasArn;
+    public HttpMethod practiceClientAuthorisationGetLambdaHttpMethod;
+    public String practiceClientAuthorisationGetLambdaUrlPath;
+    public boolean practiceClientAuthorisationGetLambdaJwtAuthorizer;
+    public boolean practiceClientAuthorisationGetLambdaCustomAuthorizer;
+
+    public String practiceClientAuthorisationInviteDeleteIngestLambdaHandler;
+    public String practiceClientAuthorisationInviteDeleteIngestLambdaFunctionName;
+    public String practiceClientAuthorisationInviteDeleteIngestLambdaArn;
+    public String practiceClientAuthorisationInviteDeleteIngestProvisionedConcurrencyLambdaAliasArn;
+    public HttpMethod practiceClientAuthorisationInviteDeleteLambdaHttpMethod;
+    public String practiceClientAuthorisationInviteDeleteLambdaUrlPath;
+    public boolean practiceClientAuthorisationInviteDeleteLambdaJwtAuthorizer;
+    public boolean practiceClientAuthorisationInviteDeleteLambdaCustomAuthorizer;
+
     // TODO: Replace individual attributes with LambdaNames instances
     public LambdaNames bundlePost;
     public String bundlePostIngestLambdaHandler;
@@ -1164,6 +1191,15 @@ public class SubmitSharedNames {
     public boolean diyaGlDeleteLambdaJwtAuthorizer;
     public boolean diyaGlDeleteLambdaCustomAuthorizer;
 
+    public String practiceClientBookMovePostIngestLambdaHandler;
+    public String practiceClientBookMovePostIngestLambdaFunctionName;
+    public String practiceClientBookMovePostIngestLambdaArn;
+    public String practiceClientBookMovePostIngestProvisionedConcurrencyLambdaAliasArn;
+    public HttpMethod practiceClientBookMovePostLambdaHttpMethod;
+    public String practiceClientBookMovePostLambdaUrlPath;
+    public boolean practiceClientBookMovePostLambdaJwtAuthorizer;
+    public boolean practiceClientBookMovePostLambdaCustomAuthorizer;
+
     // Alarm-to-GitHub-issue Lambda (EventBridge target, not API)
     public String alarmToGithubIssueLambdaHandler;
     public String alarmToGithubIssueLambdaFunctionName;
@@ -1611,6 +1647,104 @@ public class SubmitSharedNames {
                 "Archives one client row belonging to the authenticated practice",
                 "archivePracticeClient",
                 List.of(new ApiParameter("clientId", "path", true, "The client's id"))));
+
+        // Practice client authorisation invite POST Lambda: creates an HMRC Agent Authorisation
+        // invitation for a client (PLAN_PRICE_UPDATE.md (d), "The authorisation flow").
+        this.practiceClientAuthorisationInvitePostLambdaHttpMethod = HttpMethod.POST;
+        this.practiceClientAuthorisationInvitePostLambdaUrlPath =
+                "/api/v1/practice/clients/{clientId}/authorisation/invitations";
+        this.practiceClientAuthorisationInvitePostLambdaJwtAuthorizer = true;
+        this.practiceClientAuthorisationInvitePostLambdaCustomAuthorizer = false;
+        var practiceClientAuthorisationInvitePostLambdaHandlerName =
+                "practiceClientAuthorisationInvitePost.ingestHandler";
+        var practiceClientAuthorisationInvitePostLambdaHandlerDashed =
+                ResourceNameUtils.convertCamelCaseToDashSeparated(
+                        practiceClientAuthorisationInvitePostLambdaHandlerName);
+        this.practiceClientAuthorisationInvitePostIngestLambdaFunctionName =
+                "%s-%s".formatted(this.appResourceNamePrefix, practiceClientAuthorisationInvitePostLambdaHandlerDashed);
+        this.practiceClientAuthorisationInvitePostIngestLambdaHandler = "%s/practice/%s"
+                .formatted(appLambdaHandlerPrefix, practiceClientAuthorisationInvitePostLambdaHandlerName);
+        this.practiceClientAuthorisationInvitePostIngestLambdaArn =
+                "%s-%s".formatted(appLambdaArnPrefix, practiceClientAuthorisationInvitePostLambdaHandlerDashed);
+        this.practiceClientAuthorisationInvitePostIngestProvisionedConcurrencyLambdaAliasArn = "%s:%s"
+                .formatted(
+                        this.practiceClientAuthorisationInvitePostIngestLambdaArn,
+                        this.provisionedConcurrencyAliasName);
+        publishedApiLambdas.add(new PublishedLambda(
+                this.practiceClientAuthorisationInvitePostLambdaHttpMethod,
+                this.practiceClientAuthorisationInvitePostLambdaUrlPath,
+                "Invite a client to authorise this practice",
+                "Creates an HMRC Agent Authorisation invitation for one client and service",
+                "invitePracticeClientAuthorisation",
+                List.of(
+                        new ApiParameter("clientId", "path", true, "The client's id"),
+                        new ApiParameter("service", "body", true, "MTD-VAT or MTD-IT"),
+                        new ApiParameter(
+                                "knownFact", "body", true, "The VAT registration date, or the client's postcode"),
+                        new ApiParameter("accessToken", "body", true, "The practice's HMRC access token"),
+                        new ApiParameter(
+                                "arn",
+                                "body",
+                                false,
+                                "The practice's agent reference number, if not already stored"))));
+
+        // Practice client authorisation status GET Lambda: reads an invitation's status, or
+        // checks for a relationship already in place when none is pending.
+        this.practiceClientAuthorisationGetLambdaHttpMethod = HttpMethod.GET;
+        this.practiceClientAuthorisationGetLambdaUrlPath = "/api/v1/practice/clients/{clientId}/authorisation";
+        this.practiceClientAuthorisationGetLambdaJwtAuthorizer = true;
+        this.practiceClientAuthorisationGetLambdaCustomAuthorizer = false;
+        var practiceClientAuthorisationGetLambdaHandlerName = "practiceClientAuthorisationGet.ingestHandler";
+        var practiceClientAuthorisationGetLambdaHandlerDashed =
+                ResourceNameUtils.convertCamelCaseToDashSeparated(practiceClientAuthorisationGetLambdaHandlerName);
+        this.practiceClientAuthorisationGetIngestLambdaFunctionName =
+                "%s-%s".formatted(this.appResourceNamePrefix, practiceClientAuthorisationGetLambdaHandlerDashed);
+        this.practiceClientAuthorisationGetIngestLambdaHandler =
+                "%s/practice/%s".formatted(appLambdaHandlerPrefix, practiceClientAuthorisationGetLambdaHandlerName);
+        this.practiceClientAuthorisationGetIngestLambdaArn =
+                "%s-%s".formatted(appLambdaArnPrefix, practiceClientAuthorisationGetLambdaHandlerDashed);
+        this.practiceClientAuthorisationGetIngestProvisionedConcurrencyLambdaAliasArn = "%s:%s"
+                .formatted(this.practiceClientAuthorisationGetIngestLambdaArn, this.provisionedConcurrencyAliasName);
+        publishedApiLambdas.add(new PublishedLambda(
+                this.practiceClientAuthorisationGetLambdaHttpMethod,
+                this.practiceClientAuthorisationGetLambdaUrlPath,
+                "Read a client's authorisation status",
+                "Reads a pending invitation's status, or checks HMRC for an existing relationship",
+                "getPracticeClientAuthorisation",
+                List.of(
+                        new ApiParameter("clientId", "path", true, "The client's id"),
+                        new ApiParameter("service", "query", true, "MTD-VAT or MTD-IT"))));
+
+        // Practice client authorisation invite DELETE Lambda: cancels a pending invitation.
+        this.practiceClientAuthorisationInviteDeleteLambdaHttpMethod = HttpMethod.DELETE;
+        this.practiceClientAuthorisationInviteDeleteLambdaUrlPath =
+                "/api/v1/practice/clients/{clientId}/authorisation/invitations";
+        this.practiceClientAuthorisationInviteDeleteLambdaJwtAuthorizer = true;
+        this.practiceClientAuthorisationInviteDeleteLambdaCustomAuthorizer = false;
+        var practiceClientAuthorisationInviteDeleteLambdaHandlerName =
+                "practiceClientAuthorisationInviteDelete.ingestHandler";
+        var practiceClientAuthorisationInviteDeleteLambdaHandlerDashed =
+                ResourceNameUtils.convertCamelCaseToDashSeparated(
+                        practiceClientAuthorisationInviteDeleteLambdaHandlerName);
+        this.practiceClientAuthorisationInviteDeleteIngestLambdaFunctionName = "%s-%s"
+                .formatted(this.appResourceNamePrefix, practiceClientAuthorisationInviteDeleteLambdaHandlerDashed);
+        this.practiceClientAuthorisationInviteDeleteIngestLambdaHandler = "%s/practice/%s"
+                .formatted(appLambdaHandlerPrefix, practiceClientAuthorisationInviteDeleteLambdaHandlerName);
+        this.practiceClientAuthorisationInviteDeleteIngestLambdaArn =
+                "%s-%s".formatted(appLambdaArnPrefix, practiceClientAuthorisationInviteDeleteLambdaHandlerDashed);
+        this.practiceClientAuthorisationInviteDeleteIngestProvisionedConcurrencyLambdaAliasArn = "%s:%s"
+                .formatted(
+                        this.practiceClientAuthorisationInviteDeleteIngestLambdaArn,
+                        this.provisionedConcurrencyAliasName);
+        publishedApiLambdas.add(new PublishedLambda(
+                this.practiceClientAuthorisationInviteDeleteLambdaHttpMethod,
+                this.practiceClientAuthorisationInviteDeleteLambdaUrlPath,
+                "Cancel a client's pending invitation",
+                "Cancels a pending HMRC Agent Authorisation invitation for one client and service",
+                "cancelPracticeClientAuthorisationInvite",
+                List.of(
+                        new ApiParameter("clientId", "path", true, "The client's id"),
+                        new ApiParameter("service", "query", true, "MTD-VAT or MTD-IT"))));
 
         this.operatorSnapshotGetLambdaHttpMethod = HttpMethod.GET;
         this.operatorSnapshotGetLambdaUrlPath = "/api/v1/operator/snapshot";
@@ -4288,6 +4422,35 @@ public class SubmitSharedNames {
                 "Deletes a book and every stored version for the authenticated books user",
                 "deleteBook",
                 List.of(new ApiParameter("bookId", "path", true, "The book's id"))));
+
+        // Practice client book move POST Lambda: copies one of the practice's own books to a
+        // client's book set and deletes the source (PLAN_PRICE_UPDATE.md (d), "Migration from
+        // sole trader to practice"). Standard JWT auth like the other practice routes, not the
+        // books authoriser, since the caller here is always the practice itself.
+        this.practiceClientBookMovePostLambdaHttpMethod = HttpMethod.POST;
+        this.practiceClientBookMovePostLambdaUrlPath = "/api/v1/practice/clients/{clientId}/books/{bookId}/move";
+        this.practiceClientBookMovePostLambdaJwtAuthorizer = true;
+        this.practiceClientBookMovePostLambdaCustomAuthorizer = false;
+        var practiceClientBookMovePostLambdaHandlerName = "practiceClientBookMovePost.ingestHandler";
+        var practiceClientBookMovePostLambdaHandlerDashed =
+                ResourceNameUtils.convertCamelCaseToDashSeparated(practiceClientBookMovePostLambdaHandlerName);
+        this.practiceClientBookMovePostIngestLambdaFunctionName =
+                "%s-%s".formatted(this.appResourceNamePrefix, practiceClientBookMovePostLambdaHandlerDashed);
+        this.practiceClientBookMovePostIngestLambdaHandler =
+                "%s/practice/%s".formatted(appLambdaHandlerPrefix, practiceClientBookMovePostLambdaHandlerName);
+        this.practiceClientBookMovePostIngestLambdaArn =
+                "%s-%s".formatted(appLambdaArnPrefix, practiceClientBookMovePostLambdaHandlerDashed);
+        this.practiceClientBookMovePostIngestProvisionedConcurrencyLambdaAliasArn =
+                "%s:%s".formatted(this.practiceClientBookMovePostIngestLambdaArn, this.provisionedConcurrencyAliasName);
+        publishedApiLambdas.add(new PublishedLambda(
+                this.practiceClientBookMovePostLambdaHttpMethod,
+                this.practiceClientBookMovePostLambdaUrlPath,
+                "Move a book to a client",
+                "Copies one of the practice's own books to a client's book set and deletes the source",
+                "movePracticeClientBook",
+                List.of(
+                        new ApiParameter("clientId", "path", true, "The client's id"),
+                        new ApiParameter("bookId", "path", true, "The book's id"))));
 
         // Alarm-to-GitHub-issue Lambda (EventBridge target, not API)
         var alarmToGithubIssueLambdaHandlerName = "alarmToGithubIssue.handler";

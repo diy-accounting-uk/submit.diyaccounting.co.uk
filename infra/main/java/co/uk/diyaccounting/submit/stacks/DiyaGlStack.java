@@ -56,6 +56,10 @@ public class DiyaGlStack extends Stack {
     public Function diyaGlDeleteLambda;
     public ILogGroup diyaGlDeleteLambdaLogGroup;
 
+    public AbstractApiLambdaProps practiceClientBookMovePostLambdaProps;
+    public Function practiceClientBookMovePostLambda;
+    public ILogGroup practiceClientBookMovePostLambdaLogGroup;
+
     /** Null when {@code residentTierEnabled} is false: no resident books, nothing to sweep. */
     public co.uk.diyaccounting.submit.constructs.AbstractLambdaProps diyaGlLapseSweepLambdaProps;
 
@@ -122,6 +126,14 @@ public class DiyaGlStack extends Stack {
                 "ImportedBundlesTable-%s".formatted(props.deploymentName()),
                 props.sharedNames().bundlesTableName);
 
+        // Lookup existing DynamoDB Practice Clients Table: every books route here takes an
+        // optional clientId (PLAN_PRICE_UPDATE.md (d)) and checks it belongs to the caller via
+        // getClient before resolving the client's book prefix.
+        ITable practiceClientsTable = Table.fromTableName(
+                this,
+                "ImportedPracticeClientsTable-%s".formatted(props.deploymentName()),
+                props.sharedNames().practiceClientsTableName);
+
         var region = props.getEnv() != null ? props.getEnv().getRegion() : "eu-west-2";
         var account = props.getEnv() != null ? props.getEnv().getAccount() : "";
 
@@ -130,7 +142,8 @@ public class DiyaGlStack extends Stack {
         var commonEnv = new PopulatedMap<String, String>()
                 .with("DIYA_GL_BUCKET_NAME", props.diyaGlBucketName())
                 .with("ENVIRONMENT_NAME", props.envName())
-                .with("DIYA_GL_ALLOWED_ORIGINS", props.booksAllowedOrigins());
+                .with("DIYA_GL_ALLOWED_ORIGINS", props.booksAllowedOrigins())
+                .with("PRACTICE_CLIENTS_DYNAMODB_TABLE_NAME", practiceClientsTable.getTableName());
 
         // List and Version GET both apply the resident-lapse rule (section (c)), so both need the
         // bundle lookup this DELETE and the plain commonEnv functions do not.
@@ -181,6 +194,7 @@ public class DiyaGlStack extends Stack {
                 .resources(List.of(booksMetadataArnPattern))
                 .build());
         bundlesTable.grant(this.diyaGlListGetLambda, "dynamodb:Query");
+        practiceClientsTable.grant(this.diyaGlListGetLambda, "dynamodb:GetItem");
         SubHashSaltHelper.grantSaltAccess(this.diyaGlListGetLambda, region, account, props.envName());
         infof(
                 "Created DIYA-GL List GET Lambda %s",
@@ -223,6 +237,7 @@ public class DiyaGlStack extends Stack {
                 .resources(List.of(booksObjectsArnPattern))
                 .build());
         bundlesTable.grant(this.diyaGlVersionGetLambda, "dynamodb:Query");
+        practiceClientsTable.grant(this.diyaGlVersionGetLambda, "dynamodb:GetItem");
         SubHashSaltHelper.grantSaltAccess(this.diyaGlVersionGetLambda, region, account, props.envName());
         infof(
                 "Created DIYA-GL Version GET Lambda %s",
@@ -235,6 +250,7 @@ public class DiyaGlStack extends Stack {
                 .with("DIYA_GL_BUCKET_NAME", props.diyaGlBucketName())
                 .with("ENVIRONMENT_NAME", props.envName())
                 .with("DIYA_GL_ALLOWED_ORIGINS", props.booksAllowedOrigins())
+                .with("PRACTICE_CLIENTS_DYNAMODB_TABLE_NAME", practiceClientsTable.getTableName())
                 .with("DIYA_GL_MAX_BYTES", "2097152")
                 .with("DIYA_GL_MAX_PER_USER", "20")
                 .with("DIYA_GL_VERSIONS_KEPT", "30")
@@ -280,6 +296,7 @@ public class DiyaGlStack extends Stack {
                 .resources(List.of(diyaGlBucketArn))
                 .build());
         bundlesTable.grant(this.diyaGlPutLambda, "dynamodb:Query");
+        practiceClientsTable.grant(this.diyaGlPutLambda, "dynamodb:GetItem");
         SubHashSaltHelper.grantSaltAccess(this.diyaGlPutLambda, region, account, props.envName());
         infof("Created DIYA-GL PUT Lambda %s", this.diyaGlPutLambda.getNode().getId());
 
@@ -324,13 +341,62 @@ public class DiyaGlStack extends Stack {
                 .actions(List.of("s3:GetObject", "s3:DeleteObject"))
                 .resources(List.of(booksObjectsArnPattern))
                 .build());
+        practiceClientsTable.grant(this.diyaGlDeleteLambda, "dynamodb:GetItem");
         SubHashSaltHelper.grantSaltAccess(this.diyaGlDeleteLambda, region, account, props.envName());
         infof(
                 "Created DIYA-GL DELETE Lambda %s",
                 this.diyaGlDeleteLambda.getNode().getId());
 
-        var healthCheckedLambdas = new java.util.ArrayList<Lambda>(
-                List.of(diyaGlListGetApiLambda, diyaGlVersionGetApiLambda, diyaGlPutApiLambda, diyaGlDeleteApiLambda));
+        // ============================================================================
+        // Practice client book move POST Lambda (standard JWT auth, not the books authoriser -
+        // the caller is always the signed-in practice, never a client)
+        // ============================================================================
+        var practiceClientBookMovePostApiLambda = new ApiLambda(
+                this,
+                ApiLambdaProps.builder()
+                        .idPrefix(props.sharedNames().practiceClientBookMovePostIngestLambdaFunctionName)
+                        .baseImageTag(props.baseImageTag())
+                        .ecrRepositoryName(props.sharedNames().ecrRepositoryName)
+                        .ecrRepositoryArn(props.sharedNames().ecrRepositoryArn)
+                        .ingestFunctionName(props.sharedNames().practiceClientBookMovePostIngestLambdaFunctionName)
+                        .ingestHandler(props.sharedNames().practiceClientBookMovePostIngestLambdaHandler)
+                        .ingestLambdaArn(props.sharedNames().practiceClientBookMovePostIngestLambdaArn)
+                        .ingestProvisionedConcurrencyAliasArn(props.sharedNames()
+                                .practiceClientBookMovePostIngestProvisionedConcurrencyLambdaAliasArn)
+                        .ingestProvisionedConcurrency(0)
+                        .provisionedConcurrencyAliasName(props.sharedNames().provisionedConcurrencyAliasName)
+                        .httpMethod(props.sharedNames().practiceClientBookMovePostLambdaHttpMethod)
+                        .urlPath(props.sharedNames().practiceClientBookMovePostLambdaUrlPath)
+                        .jwtAuthorizer(props.sharedNames().practiceClientBookMovePostLambdaJwtAuthorizer)
+                        .customAuthorizer(props.sharedNames().practiceClientBookMovePostLambdaCustomAuthorizer)
+                        .environment(commonEnv)
+                        .build());
+        this.practiceClientBookMovePostLambdaProps = practiceClientBookMovePostApiLambda.apiProps;
+        this.practiceClientBookMovePostLambda = practiceClientBookMovePostApiLambda.ingestLambda;
+        this.practiceClientBookMovePostLambdaLogGroup = practiceClientBookMovePostApiLambda.logGroup;
+        this.lambdaFunctionProps.add(this.practiceClientBookMovePostLambdaProps);
+        this.practiceClientBookMovePostLambda.addToRolePolicy(PolicyStatement.Builder.create()
+                .effect(Effect.ALLOW)
+                .actions(List.of("s3:ListBucket"))
+                .resources(List.of(diyaGlBucketArn))
+                .build());
+        this.practiceClientBookMovePostLambda.addToRolePolicy(PolicyStatement.Builder.create()
+                .effect(Effect.ALLOW)
+                .actions(List.of("s3:GetObject", "s3:GetObjectTagging", "s3:PutObject", "s3:DeleteObject"))
+                .resources(List.of(booksObjectsArnPattern))
+                .build());
+        practiceClientsTable.grant(this.practiceClientBookMovePostLambda, "dynamodb:GetItem");
+        SubHashSaltHelper.grantSaltAccess(this.practiceClientBookMovePostLambda, region, account, props.envName());
+        infof(
+                "Created Practice Client Book Move Lambda %s",
+                this.practiceClientBookMovePostLambda.getNode().getId());
+
+        var healthCheckedLambdas = new java.util.ArrayList<Lambda>(List.of(
+                diyaGlListGetApiLambda,
+                diyaGlVersionGetApiLambda,
+                diyaGlPutApiLambda,
+                diyaGlDeleteApiLambda,
+                practiceClientBookMovePostApiLambda));
 
         // ============================================================================
         // DIYA-GL Lapse Sweep Lambda (EventBridge scheduled, daily; deletes a lapsed resident

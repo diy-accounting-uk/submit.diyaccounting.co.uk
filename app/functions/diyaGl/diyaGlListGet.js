@@ -64,7 +64,7 @@ export async function ingestHandler(event) {
         }
       }
 
-      const entitlement = await entitlementFor(user.sub);
+      const entitlement = await entitlementFor(user.sub, clientId);
       const ownerPrefix = await resolveOwnerPrefix(user.sub, undefined, clientId);
       const now = Date.now();
       const books = (await listBooks(ownerPrefix))

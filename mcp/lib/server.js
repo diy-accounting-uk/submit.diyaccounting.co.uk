@@ -17,6 +17,7 @@ import { createSession, openBook, saveBook, SAVE_FORMATS } from "./book-tools.js
 import { deriveMicroEntityAccounts } from "./accounts-tools.js";
 import { deriveVatReturn } from "./vat-tools.js";
 import { registerItsaTools } from "./itsa-tools.js";
+import { moveBookToClient } from "./practice-tools.js";
 
 const PACKAGE_JSON = resolve(dirname(fileURLToPath(import.meta.url)), "..", "package.json");
 
@@ -86,6 +87,18 @@ export const TOOLS = {
       "first director and the employee count. Refuses a book whose published or opening balance sheet does not balance.",
     inputSchema: {},
     handler: deriveMicroEntityAccounts,
+  },
+  move_book_to_client: {
+    description:
+      "Move one of the practice's own books to a client's book set (PLAN_PRICE_UPDATE.md (d), migration from sole " +
+      "trader to practice). Calls DIY Accounting Submit's own move route, which copies the book and every kept " +
+      "version, verifies each copy, then deletes the source. Refuses when the client already has a book with this " +
+      "id, or the practice has no such book of its own.",
+    inputSchema: {
+      clientId: z.string().describe("The client's id"),
+      bookId: z.string().describe("The book's id, one of the practice's own"),
+    },
+    handler: moveBookToClient,
   },
 };
 

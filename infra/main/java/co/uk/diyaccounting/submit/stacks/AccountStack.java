@@ -76,6 +76,18 @@ public class AccountStack extends Stack {
     public Function practiceClientDeleteLambda;
     public ILogGroup practiceClientDeleteLambdaLogGroup;
 
+    public AbstractApiLambdaProps practiceClientAuthorisationInvitePostLambdaProps;
+    public Function practiceClientAuthorisationInvitePostLambda;
+    public ILogGroup practiceClientAuthorisationInvitePostLambdaLogGroup;
+
+    public AbstractApiLambdaProps practiceClientAuthorisationGetLambdaProps;
+    public Function practiceClientAuthorisationGetLambda;
+    public ILogGroup practiceClientAuthorisationGetLambdaLogGroup;
+
+    public AbstractApiLambdaProps practiceClientAuthorisationInviteDeleteLambdaProps;
+    public Function practiceClientAuthorisationInviteDeleteLambda;
+    public ILogGroup practiceClientAuthorisationInviteDeleteLambdaLogGroup;
+
     public AbstractApiLambdaProps supportTicketPostLambdaProps;
     public Function supportTicketPostLambda;
     public ILogGroup supportTicketPostLambdaLogGroup;
@@ -144,6 +156,10 @@ public class AccountStack extends Stack {
         String baseImageTag();
 
         String cognitoUserPoolArn();
+
+        // Base URI for HMRC's Agent Authorisation API (PLAN_PRICE_UPDATE.md (d), "The
+        // authorisation flow"), read by the three practiceClientAuthorisation* Lambdas below.
+        String hmrcAgentAuthorisationBaseUri();
 
         // GitHub App configuration for the support-ticket Lambda (diya-ops, see
         // REPORT_IDENTITY_AUDIT.md section 8 recommendation 2). The same App and installation
@@ -704,6 +720,124 @@ public class AccountStack extends Stack {
                 "Created API Lambda %s for archiving a practice client with ingestHandler %s",
                 this.practiceClientDeleteLambda.getNode().getId(),
                 props.sharedNames().practiceClientDeleteIngestLambdaHandler);
+
+        // Practice client authorisation: three single-Lambda routes calling out to HMRC's Agent
+        // Authorisation API (PLAN_PRICE_UPDATE.md (d), "The authorisation flow"). Each still reads
+        // or writes only the caller's own hashedSub partition, plus the HMRC call itself.
+        var practiceClientAuthorisationLambdaEnv = new PopulatedMap<>(practiceClientsLambdaEnv)
+                .with("HMRC_AGENT_AUTHORISATION_BASE_URI", props.hmrcAgentAuthorisationBaseUri());
+
+        var practiceClientAuthorisationInvitePostApiLambda = new ApiLambda(
+                this,
+                ApiLambdaProps.builder()
+                        .idPrefix(props.sharedNames().practiceClientAuthorisationInvitePostIngestLambdaFunctionName)
+                        .baseImageTag(props.baseImageTag())
+                        .ecrRepositoryName(props.sharedNames().ecrRepositoryName)
+                        .ecrRepositoryArn(props.sharedNames().ecrRepositoryArn)
+                        .ingestFunctionName(
+                                props.sharedNames().practiceClientAuthorisationInvitePostIngestLambdaFunctionName)
+                        .ingestHandler(props.sharedNames().practiceClientAuthorisationInvitePostIngestLambdaHandler)
+                        .ingestLambdaArn(props.sharedNames().practiceClientAuthorisationInvitePostIngestLambdaArn)
+                        .ingestProvisionedConcurrencyAliasArn(props.sharedNames()
+                                .practiceClientAuthorisationInvitePostIngestProvisionedConcurrencyLambdaAliasArn)
+                        .ingestProvisionedConcurrency(0)
+                        .provisionedConcurrencyAliasName(props.sharedNames().provisionedConcurrencyAliasName)
+                        .httpMethod(props.sharedNames().practiceClientAuthorisationInvitePostLambdaHttpMethod)
+                        .urlPath(props.sharedNames().practiceClientAuthorisationInvitePostLambdaUrlPath)
+                        .jwtAuthorizer(props.sharedNames().practiceClientAuthorisationInvitePostLambdaJwtAuthorizer)
+                        .customAuthorizer(
+                                props.sharedNames().practiceClientAuthorisationInvitePostLambdaCustomAuthorizer)
+                        .environment(practiceClientAuthorisationLambdaEnv)
+                        .build());
+        healthCheckedFunctions.add(practiceClientAuthorisationInvitePostApiLambda);
+        this.practiceClientAuthorisationInvitePostLambdaProps = practiceClientAuthorisationInvitePostApiLambda.apiProps;
+        this.practiceClientAuthorisationInvitePostLambda = practiceClientAuthorisationInvitePostApiLambda.ingestLambda;
+        this.practiceClientAuthorisationInvitePostLambdaLogGroup =
+                practiceClientAuthorisationInvitePostApiLambda.logGroup;
+        this.lambdaFunctionProps.add(this.practiceClientAuthorisationInvitePostLambdaProps);
+        practiceClientsTable.grant(
+                this.practiceClientAuthorisationInvitePostLambda,
+                "dynamodb:GetItem",
+                "dynamodb:PutItem",
+                "dynamodb:UpdateItem");
+        SubHashSaltHelper.grantSaltAccess(
+                this.practiceClientAuthorisationInvitePostLambda, region, account, props.envName());
+        infof(
+                "Created API Lambda %s for inviting a practice client with ingestHandler %s",
+                this.practiceClientAuthorisationInvitePostLambda.getNode().getId(),
+                props.sharedNames().practiceClientAuthorisationInvitePostIngestLambdaHandler);
+
+        var practiceClientAuthorisationGetApiLambda = new ApiLambda(
+                this,
+                ApiLambdaProps.builder()
+                        .idPrefix(props.sharedNames().practiceClientAuthorisationGetIngestLambdaFunctionName)
+                        .baseImageTag(props.baseImageTag())
+                        .ecrRepositoryName(props.sharedNames().ecrRepositoryName)
+                        .ecrRepositoryArn(props.sharedNames().ecrRepositoryArn)
+                        .ingestFunctionName(props.sharedNames().practiceClientAuthorisationGetIngestLambdaFunctionName)
+                        .ingestHandler(props.sharedNames().practiceClientAuthorisationGetIngestLambdaHandler)
+                        .ingestLambdaArn(props.sharedNames().practiceClientAuthorisationGetIngestLambdaArn)
+                        .ingestProvisionedConcurrencyAliasArn(props.sharedNames()
+                                .practiceClientAuthorisationGetIngestProvisionedConcurrencyLambdaAliasArn)
+                        .ingestProvisionedConcurrency(0)
+                        .provisionedConcurrencyAliasName(props.sharedNames().provisionedConcurrencyAliasName)
+                        .httpMethod(props.sharedNames().practiceClientAuthorisationGetLambdaHttpMethod)
+                        .urlPath(props.sharedNames().practiceClientAuthorisationGetLambdaUrlPath)
+                        .jwtAuthorizer(props.sharedNames().practiceClientAuthorisationGetLambdaJwtAuthorizer)
+                        .customAuthorizer(props.sharedNames().practiceClientAuthorisationGetLambdaCustomAuthorizer)
+                        .environment(practiceClientAuthorisationLambdaEnv)
+                        .build());
+        healthCheckedFunctions.add(practiceClientAuthorisationGetApiLambda);
+        this.practiceClientAuthorisationGetLambdaProps = practiceClientAuthorisationGetApiLambda.apiProps;
+        this.practiceClientAuthorisationGetLambda = practiceClientAuthorisationGetApiLambda.ingestLambda;
+        this.practiceClientAuthorisationGetLambdaLogGroup = practiceClientAuthorisationGetApiLambda.logGroup;
+        this.lambdaFunctionProps.add(this.practiceClientAuthorisationGetLambdaProps);
+        practiceClientsTable.grant(
+                this.practiceClientAuthorisationGetLambda, "dynamodb:GetItem", "dynamodb:UpdateItem");
+        SubHashSaltHelper.grantSaltAccess(this.practiceClientAuthorisationGetLambda, region, account, props.envName());
+        infof(
+                "Created API Lambda %s for reading a practice client's authorisation with ingestHandler %s",
+                this.practiceClientAuthorisationGetLambda.getNode().getId(),
+                props.sharedNames().practiceClientAuthorisationGetIngestLambdaHandler);
+
+        var practiceClientAuthorisationInviteDeleteApiLambda = new ApiLambda(
+                this,
+                ApiLambdaProps.builder()
+                        .idPrefix(props.sharedNames().practiceClientAuthorisationInviteDeleteIngestLambdaFunctionName)
+                        .baseImageTag(props.baseImageTag())
+                        .ecrRepositoryName(props.sharedNames().ecrRepositoryName)
+                        .ecrRepositoryArn(props.sharedNames().ecrRepositoryArn)
+                        .ingestFunctionName(
+                                props.sharedNames().practiceClientAuthorisationInviteDeleteIngestLambdaFunctionName)
+                        .ingestHandler(props.sharedNames().practiceClientAuthorisationInviteDeleteIngestLambdaHandler)
+                        .ingestLambdaArn(props.sharedNames().practiceClientAuthorisationInviteDeleteIngestLambdaArn)
+                        .ingestProvisionedConcurrencyAliasArn(props.sharedNames()
+                                .practiceClientAuthorisationInviteDeleteIngestProvisionedConcurrencyLambdaAliasArn)
+                        .ingestProvisionedConcurrency(0)
+                        .provisionedConcurrencyAliasName(props.sharedNames().provisionedConcurrencyAliasName)
+                        .httpMethod(props.sharedNames().practiceClientAuthorisationInviteDeleteLambdaHttpMethod)
+                        .urlPath(props.sharedNames().practiceClientAuthorisationInviteDeleteLambdaUrlPath)
+                        .jwtAuthorizer(props.sharedNames().practiceClientAuthorisationInviteDeleteLambdaJwtAuthorizer)
+                        .customAuthorizer(
+                                props.sharedNames().practiceClientAuthorisationInviteDeleteLambdaCustomAuthorizer)
+                        .environment(practiceClientAuthorisationLambdaEnv)
+                        .build());
+        healthCheckedFunctions.add(practiceClientAuthorisationInviteDeleteApiLambda);
+        this.practiceClientAuthorisationInviteDeleteLambdaProps =
+                practiceClientAuthorisationInviteDeleteApiLambda.apiProps;
+        this.practiceClientAuthorisationInviteDeleteLambda =
+                practiceClientAuthorisationInviteDeleteApiLambda.ingestLambda;
+        this.practiceClientAuthorisationInviteDeleteLambdaLogGroup =
+                practiceClientAuthorisationInviteDeleteApiLambda.logGroup;
+        this.lambdaFunctionProps.add(this.practiceClientAuthorisationInviteDeleteLambdaProps);
+        practiceClientsTable.grant(
+                this.practiceClientAuthorisationInviteDeleteLambda, "dynamodb:GetItem", "dynamodb:UpdateItem");
+        SubHashSaltHelper.grantSaltAccess(
+                this.practiceClientAuthorisationInviteDeleteLambda, region, account, props.envName());
+        infof(
+                "Created API Lambda %s for cancelling a practice client's invitation with ingestHandler %s",
+                this.practiceClientAuthorisationInviteDeleteLambda.getNode().getId(),
+                props.sharedNames().practiceClientAuthorisationInviteDeleteIngestLambdaHandler);
 
         // Support Ticket POST Lambda - only create if the diya-ops GitHub App is configured.
         if (props.githubAppId() != null

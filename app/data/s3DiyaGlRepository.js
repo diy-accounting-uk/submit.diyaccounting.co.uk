@@ -300,6 +300,86 @@ async function anyBookExists(ownerPrefix) {
   return (response.CommonPrefixes || []).length > 0;
 }
 
+export class BookNotFoundError extends Error {
+  constructor(message) {
+    super(message);
+    this.name = "BookNotFoundError";
+  }
+}
+
+export class DestinationBookExistsError extends Error {
+  constructor(message) {
+    super(message);
+    this.name = "DestinationBookExistsError";
+  }
+}
+
+/**
+ * Moves a book from the practice's own book set to a client's (PLAN_PRICE_UPDATE.md (d),
+ * "Migration from sole trader to practice"). Copies every object under the source prefix
+ * (metadata.json and every kept version) to the destination prefix, verifying each copy's ETag
+ * against the source before any delete, then deletes the source keys. Refuses when the
+ * destination already holds a book with this id, or when the source book doesn't exist.
+ *
+ * @param {string} practiceSub - the practice's raw Cognito sub
+ * @param {string} clientId
+ * @param {string} bookId
+ * @returns {Promise<{bookId: string, clientId: string, movedObjectCount: number}>}
+ * @throws {BookNotFoundError} when the practice has no such book of its own
+ * @throws {DestinationBookExistsError} when the client already has a book with this id
+ */
+export async function moveBookToClient(practiceSub, clientId, bookId) {
+  const client = await getS3Client();
+  const { ListObjectsV2Command, CopyObjectCommand, DeleteObjectsCommand } = await import("@aws-sdk/client-s3");
+  const bucket = getResourceName("DIYA_GL_BUCKET_NAME", true);
+
+  const sourceOwnerPrefix = await resolveOwnerPrefix(practiceSub, bookId);
+  const destinationOwnerPrefix = `${hashSub(practiceSub)}/clients/${clientId}`;
+
+  if (await metadataExists(destinationOwnerPrefix, bookId)) {
+    throw new DestinationBookExistsError(`Client ${clientId} already has a book ${bookId}`);
+  }
+
+  const sourcePrefix = bookPrefix(sourceOwnerPrefix, bookId);
+  const destinationPrefix = bookPrefix(destinationOwnerPrefix, bookId);
+
+  const sourceObjects = [];
+  let continuationToken;
+  do {
+    const listResponse = await client.send(
+      new ListObjectsV2Command({ Bucket: bucket, Prefix: sourcePrefix, ContinuationToken: continuationToken }),
+    );
+    sourceObjects.push(...(listResponse.Contents || []));
+    continuationToken = listResponse.NextContinuationToken;
+  } while (continuationToken);
+
+  if (sourceObjects.length === 0) {
+    throw new BookNotFoundError(`No book ${bookId} found under the practice's own books`);
+  }
+
+  // Copy every object first, verifying each copy's ETag against the source. Nothing is deleted
+  // until every copy has been proven, so a failure partway through leaves the source untouched.
+  const movedKeys = [];
+  for (const sourceObject of sourceObjects) {
+    const sourceKey = sourceObject.Key;
+    const destinationKey = destinationPrefix + sourceKey.slice(sourcePrefix.length);
+    const copyResponse = await client.send(
+      new CopyObjectCommand({ Bucket: bucket, CopySource: `${bucket}/${sourceKey}`, Key: destinationKey }),
+    );
+    const copiedETag = normaliseETag(copyResponse.CopyObjectResult?.ETag);
+    const sourceETag = normaliseETag(sourceObject.ETag);
+    if (!copiedETag || copiedETag !== sourceETag) {
+      throw new Error(`Copy verification failed for ${sourceKey}: expected ETag ${sourceETag}, got ${copiedETag}`);
+    }
+    movedKeys.push(sourceKey);
+  }
+
+  await client.send(new DeleteObjectsCommand({ Bucket: bucket, Delete: { Objects: movedKeys.map((Key) => ({ Key })) } }));
+
+  logger.info({ message: "Moved book to client", clientId, bookId, movedObjectCount: movedKeys.length });
+  return { bookId, clientId, movedObjectCount: movedKeys.length };
+}
+
 /**
  * Resolves the S3 key prefix for a caller's books, following the same salt-rotation fallback as
  * `getUserBundles`: the current salt version first, then each previous version in turn. Writes

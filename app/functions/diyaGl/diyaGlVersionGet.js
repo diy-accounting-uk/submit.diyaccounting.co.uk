@@ -115,7 +115,7 @@ export async function ingestHandler(event) {
           });
         }
       } else if (metadata.retention === "resident") {
-        const entitlement = await entitlementFor(user.sub);
+        const entitlement = await entitlementFor(user.sub, clientId);
         if (entitlement.reason === "expired" && Date.parse(lapsedResidentExpiresAt(entitlement.expiry)) <= Date.now()) {
           return http404NotFoundResponse({
             request,

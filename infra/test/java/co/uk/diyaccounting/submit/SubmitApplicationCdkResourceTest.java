@@ -102,13 +102,15 @@ class SubmitApplicationCdkResourceTest {
         assertStackHealthAlarm(companiesHouseStackTemplate, 13, 0, routedPrefixes);
 
         infof("Created stack:", submitApplication.accountStack.getStackName());
-        // 18 Lambdas: bundleGet(1), bundlePost(2), bundleDelete(2), operatorSnapshotGet(1),
+        // 21 Lambdas: bundleGet(1), bundlePost(2), bundleDelete(2), operatorSnapshotGet(1),
         // practiceClientsListGet(1), practiceClientsPost(1), practiceClientGet(1),
-        // practiceClientDelete(1), interestPost(1), passGet(1), passPost(1), passAdminPost(1),
+        // practiceClientDelete(1), practiceClientAuthorisationInvitePost(1),
+        // practiceClientAuthorisationGet(1), practiceClientAuthorisationInviteDelete(1),
+        // interestPost(1), passGet(1), passPost(1), passAdminPost(1),
         // passGeneratePost(1), passMyPassesGet(1), bundleCapacityReconcile(1), sessionBeaconPost(1)
         Template accountStackTemplate = Template.fromStack(submitApplication.accountStack);
-        accountStackTemplate.resourceCountIs("AWS::Lambda::Function", 18);
-        assertStackHealthAlarm(accountStackTemplate, 16, 2, routedPrefixes);
+        accountStackTemplate.resourceCountIs("AWS::Lambda::Function", 21);
+        assertStackHealthAlarm(accountStackTemplate, 19, 2, routedPrefixes);
 
         // Regression guard: bundleGet performs lazy token refresh via dynamodb:UpdateItem on the
         // bundles table (see app/functions/account/bundleGet.js resetTokens). Its grant on
@@ -286,8 +288,15 @@ class SubmitApplicationCdkResourceTest {
         // /api/v1/hmrc/itsa/tax-liability-adjustments, for another 4 + 4 = 8 routes, bringing the
         // total to 135 + 8 = 143. GET and POST /api/v1/practice/clients share one path (2 method
         // routes + 1 auto-HEAD), and GET and DELETE /api/v1/practice/clients/{clientId} share
-        // another (2 + 1), for another 3 + 3 = 6 routes, bringing the total to 143 + 6 = 149.
-        apiStackTemplate.resourceCountIs("AWS::ApiGatewayV2::Route", 149);
+        // another (2 + 1), for another 3 + 3 = 6 routes, bringing the total to 143 + 6 = 149. GET
+        // /api/v1/practice/clients/{clientId}/authorisation adds its own route plus its own
+        // auto-HEAD route, since no other method shares that path, for 149 + 2 = 151. POST and
+        // DELETE /api/v1/practice/clients/{clientId}/authorisation/invitations share one path (2
+        // method routes + 1 auto-HEAD, since auto-HEAD is added once per path regardless of which
+        // method registers it first), for another 3 routes, bringing the total to 151 + 3 = 154.
+        // POST /api/v1/practice/clients/{clientId}/books/{bookId}/move adds its own route plus
+        // its own auto-HEAD route, since no other method shares that path, for 154 + 2 = 156.
+        apiStackTemplate.resourceCountIs("AWS::ApiGatewayV2::Route", 156);
 
         // Dashboard moved to environment-level ObservabilityStack
         infof("Created stack:", submitApplication.opsStack.getStackName());
