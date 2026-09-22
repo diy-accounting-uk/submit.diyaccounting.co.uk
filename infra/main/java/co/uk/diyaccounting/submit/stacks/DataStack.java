@@ -77,6 +77,7 @@ public class DataStack extends Stack {
     public ITable passesTable;
     public ITable bundleCapacityTable;
     public ITable subscriptionsTable;
+    public ITable practiceClientsTable;
     public ITable securityStateTable;
     public ITable alarmIssueLockTable;
     public Key saltEncryptionKey;
@@ -866,6 +867,17 @@ public class DataStack extends Stack {
                 props.resourceNamePrefix() + "-Subscriptions", props.sharedNames().subscriptionsTableName);
         infof("Ensured subscriptions DynamoDB table with name %s", props.sharedNames().subscriptionsTableName);
 
+        // Practice clients table: partition key is the practice's hashed sub, sort key is the
+        // client's ULID. No index reads clientId on its own (PLAN_PRICE_UPDATE.md (d)), so a
+        // client is reachable only through the practice that owns it.
+        this.practiceClientsTable = ensureTable(
+                this,
+                props.resourceNamePrefix() + "-PracticeClientsTable",
+                props.sharedNames().practiceClientsTableName,
+                "hashedSub",
+                "clientId");
+        infof("Ensured practice clients DynamoDB table with name %s", props.sharedNames().practiceClientsTableName);
+
         // Security state table for issue #10 data-theft detection: bundle-endpoint burst
         // counters (rate#{hashedSub}#{minute}) and mid-session country-change state
         // (geo#{hashedSub}). PK-only table (no sort key) - both item shapes are looked up by
@@ -1240,6 +1252,8 @@ public class DataStack extends Stack {
         cfnOutput(this, "BundleCapacityTableArn", this.bundleCapacityTable.getTableArn());
         cfnOutput(this, "SubscriptionsTableName", this.subscriptionsTable.getTableName());
         cfnOutput(this, "SubscriptionsTableArn", this.subscriptionsTable.getTableArn());
+        cfnOutput(this, "PracticeClientsTableName", this.practiceClientsTable.getTableName());
+        cfnOutput(this, "PracticeClientsTableArn", this.practiceClientsTable.getTableArn());
         cfnOutput(this, "SubscriptionsTableStreamArn", subscriptionsStreamArn);
         cfnOutput(this, "SecurityStateTableName", this.securityStateTable.getTableName());
         cfnOutput(this, "SecurityStateTableArn", this.securityStateTable.getTableArn());

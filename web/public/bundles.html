@@ -316,6 +316,12 @@
         return false;
       }
 
+      // --- format a catalogue price (amount in pence) as e.g. "£39" or "£3.99"
+      const formatGbpPence = (amountPence) => {
+        const pounds = amountPence / 100;
+        return `£${Number.isInteger(pounds) ? pounds.toFixed(0) : pounds.toFixed(2)}`;
+      };
+
       // --- render one catalog card
       const cardHtml = (b) => {
         const rawName = (b && (b.name || b.id)) || "";
@@ -394,6 +400,25 @@
               <p style="font-size:0.85em; color:#155724; margin:0.5em 0 0;">Active subscription</p>
             </div>`;
           }
+
+          // Two prices per bundle (annual and monthly): the annual (default) price is the
+          // main Subscribe button, the monthly price is a text link beneath it.
+          const prices = Array.isArray(b.prices) ? b.prices : [];
+          if (prices.length > 1) {
+            const annual = prices.find((p) => p.interval === "year") || prices.find((p) => p.default) || prices[0];
+            const monthly = prices.find((p) => p !== annual && p.interval === "month") || prices.find((p) => p !== annual);
+            return `
+            <div class="service-item" style="text-align:left">
+              <button type="button" class="btn service-btn" data-bundle-id="${b.id}" data-bundle-name="${safeName}" data-subscribe="true" data-interval="annual" style="background-color: #6f42c1;">Subscribe ${formatGbpPence(annual.amount)}/yr \u2014 ${rawName}</button>
+              ${
+                monthly
+                  ? `<p style="font-size:0.85em; margin:0.5em 0 0;"><button type="button" class="btn-link" data-bundle-id="${b.id}" data-bundle-name="${safeName}" data-subscribe="true" data-interval="monthly" style="background:none;border:none;padding:0;color:#2c5aa0;text-decoration:underline;cursor:pointer;">or ${formatGbpPence(monthly.amount)}/month</button></p>`
+                  : ""
+              }
+              <p style="font-size:0.85em; color:#383d41; margin:0.5em 0 0;">${b.description || "Subscription via Stripe"}</p>
+            </div>`;
+          }
+
           return `
           <div class="service-item" style="text-align:left">
             <button type="button" class="btn service-btn" data-bundle-id="${b.id}" data-bundle-name="${safeName}" data-subscribe="true" style="background-color: #6f42c1;">Subscribe \u2014 ${rawName}</button>
@@ -506,11 +531,13 @@
           return;
         }
 
+        const original = btn.textContent;
         btn.textContent = "Redirecting to checkout...";
         btn.disabled = true;
 
         try {
           const bundleId = btn.getAttribute("data-bundle-id");
+          const interval = btn.getAttribute("data-interval");
           const isSynthetic = sessionStorage.getItem("hmrcAccount") === "synthetic";
 
           // GA4 ecommerce: begin_checkout when the user starts a Stripe checkout
@@ -525,7 +552,7 @@
           const response = await window.fetchWithIdToken("/api/v1/billing/checkout", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ bundleId, ...(isSynthetic && { synthetic: true }) }),
+            body: JSON.stringify({ bundleId, ...(interval && { interval }), ...(isSynthetic && { synthetic: true }) }),
           });
           const body = await response.json().catch(() => ({}));
 
@@ -533,12 +560,12 @@
             window.location.href = body.checkoutUrl;
           } else {
             showStatus(`Failed to start checkout: ${body.error || body.message || "Unknown error"}`, "error");
-            btn.textContent = "Subscribe £9.99/mo";
+            btn.textContent = original;
             btn.disabled = false;
           }
         } catch (err) {
           showStatus(`Failed to start checkout: ${err?.message || err}`, "error");
-          btn.textContent = "Subscribe £9.99/mo";
+          btn.textContent = original;
           btn.disabled = false;
         }
       });

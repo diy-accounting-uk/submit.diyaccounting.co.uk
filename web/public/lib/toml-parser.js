@@ -2,8 +2,28 @@
 // Copyright (C) 2006-2026 DIY Accounting Limited
 
 // Minimal TOML parser for configuration files
-// Supports: key = value, [section], [[array-of-tables]], strings, multi-line strings ("""), numbers, arrays
+// Supports: key = value, [section], [[array-of-tables]] (including a dotted path such as
+// [[bundles.prices]], which nests onto the last entry of the array its parent path names),
+// strings, multi-line strings ("""), numbers, arrays
 (function () {
+  // Walk a dotted path's parent segments (all but the last), descending into the last
+  // entry of any array-of-tables found along the way. [[bundles.prices]] resolves "bundles"
+  // to the array res.bundles, then returns its last entry, so "prices" attaches to that one
+  // bundle rather than becoming a top-level "bundles.prices" key.
+  function resolveParent(root, pathParts) {
+    let node = root;
+    for (let idx = 0; idx < pathParts.length - 1; idx++) {
+      const part = pathParts[idx];
+      if (Array.isArray(node[part])) {
+        node = node[part][node[part].length - 1];
+      } else {
+        if (!node[part]) node[part] = {};
+        node = node[part];
+      }
+    }
+    return node;
+  }
+
   const TOML = {
     parse: function (src) {
       const res = {};
@@ -20,12 +40,15 @@
           continue;
         }
 
-        // Array of tables: [[section]]
+        // Array of tables: [[section]] or [[parent.section]]
         if (line.startsWith("[[")) {
           const sectionName = line.substring(2, line.lastIndexOf("]]")).trim();
-          if (!res[sectionName]) res[sectionName] = [];
+          const pathParts = sectionName.split(".");
+          const lastKey = pathParts[pathParts.length - 1];
+          const parent = resolveParent(res, pathParts);
+          if (!parent[lastKey]) parent[lastKey] = [];
           const newEntry = {};
-          res[sectionName].push(newEntry);
+          parent[lastKey].push(newEntry);
           currentSection = newEntry;
           i++;
           continue;

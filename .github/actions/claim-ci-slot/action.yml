@@ -23,7 +23,9 @@ inputs:
   slot-count:
     description: 'Number of fixed slots in the pool.'
     required: false
-    default: '4'
+    # Two, because the HMRC and Companies House sandbox applications both reached their
+    # redirect-URI cap at ci-set2. Keep in step with IdentityStack's CI_SLOT_COUNT.
+    default: '2'
   slot-prefix:
     description: 'Prefix for slot names; slots are named <prefix>1 .. <prefix>N.'
     required: false

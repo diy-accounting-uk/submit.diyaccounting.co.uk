@@ -73,6 +73,24 @@ class SubmitEnvironmentCdkResourceTest {
 
         // 4) The holding stack serves one page from one bucket behind one distribution
         Template.fromStack(env.holdingStack).resourceCountIs("AWS::CloudFront::Distribution", 1);
+
+        if (env.simulatorStack != null) {
+            // A branch deploy on a ci slot frames the simulator from the slot's own host.
+            var simulatorHeaders = Template.fromStack(env.simulatorStack)
+                    .findResources("AWS::CloudFront::ResponseHeadersPolicy")
+                    .values()
+                    .iterator()
+                    .next();
+            String csp = new ObjectMapper()
+                    .valueToTree(simulatorHeaders)
+                    .at(
+                            "/Properties/ResponseHeadersPolicyConfig/SecurityHeadersConfig/ContentSecurityPolicy/ContentSecurityPolicy")
+                    .asText();
+            assertTrue(csp.startsWith("frame-ancestors "), "simulator CSP starts with frame-ancestors: " + csp);
+            for (String slotHost : List.of("ci-set1.", "ci-set2.")) {
+                assertTrue(csp.contains(" https://" + slotHost), "simulator CSP names " + slotHost + ": " + csp);
+            }
+        }
         Template.fromStack(env.holdingStack).resourceCountIs("AWS::S3::Bucket", 1);
 
         // 5) Identity stack should create a Cognito User Pool
@@ -85,8 +103,8 @@ class SubmitEnvironmentCdkResourceTest {
         // GSIs: passes issuedBy-index, bundles bundleId-expiry-index
         // Streams: receipts, bundles, passes, subscriptions (one UpdateTable to enable, one
         //      DescribeTable to read the stream ARN)
-        Template.fromStack(env.dataStack).resourceCountIs("Custom::AWS", 101);
-        Template.fromStack(env.dataStack).resourceCountIs("Custom::EnsurePitr", 47);
+        Template.fromStack(env.dataStack).resourceCountIs("Custom::AWS", 102);
+        Template.fromStack(env.dataStack).resourceCountIs("Custom::EnsurePitr", 48);
 
         // 8) Observability stack should enable CloudTrail (Trail present), covering every region
         // so the WAF, the RUM monitor and the canaries' us-east-1 activity are seen too.

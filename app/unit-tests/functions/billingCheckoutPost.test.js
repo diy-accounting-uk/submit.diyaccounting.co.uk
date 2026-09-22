@@ -301,6 +301,65 @@ describe("billingCheckoutPost", () => {
     expect(result.statusCode).toBe(500);
   });
 
+  test("uses STRIPE_PRICE_ID_RESIDENT_YEAR by default (annual) for resident checkout", async () => {
+    process.env.ENVIRONMENT_NAME = "ci";
+    process.env.STRIPE_PRICE_ID_RESIDENT_YEAR = "price_resident_annual_789";
+    const event = buildEventWithToken(validToken, { bundleId: "resident" });
+    await ingestHandler(event);
+
+    const params = mockCheckoutSessionsCreate.mock.calls[0][0];
+    expect(params.line_items[0].price).toBe("price_resident_annual_789");
+    expect(params.metadata.bundleId).toBe("resident");
+  });
+
+  test("uses STRIPE_PRICE_ID_RESIDENT_MONTH when the interval is monthly", async () => {
+    process.env.ENVIRONMENT_NAME = "ci";
+    process.env.STRIPE_PRICE_ID_RESIDENT_MONTH = "price_resident_monthly_789";
+    const event = buildEventWithToken(validToken, { bundleId: "resident", interval: "monthly" });
+    await ingestHandler(event);
+
+    const params = mockCheckoutSessionsCreate.mock.calls[0][0];
+    expect(params.line_items[0].price).toBe("price_resident_monthly_789");
+  });
+
+  test("uses STRIPE_TEST_PRICE_ID_RESIDENT_MONTH for a synthetic resident monthly checkout", async () => {
+    process.env.ENVIRONMENT_NAME = "ci";
+    process.env.STRIPE_TEST_PRICE_ID_RESIDENT_MONTH = "price_resident_monthly_test_789";
+    const event = buildEventWithToken(validToken, { bundleId: "resident", interval: "monthly", synthetic: true });
+    await ingestHandler(event);
+
+    const params = mockCheckoutSessionsCreate.mock.calls[0][0];
+    expect(params.line_items[0].price).toBe("price_resident_monthly_test_789");
+  });
+
+  test("returns 500 when resident's annual price is not configured", async () => {
+    process.env.ENVIRONMENT_NAME = "ci";
+    delete process.env.STRIPE_PRICE_ID_RESIDENT_YEAR;
+    delete process.env.STRIPE_TEST_PRICE_ID_RESIDENT_YEAR;
+    const event = buildEventWithToken(validToken, { bundleId: "resident" });
+    const result = await ingestHandler(event);
+    expect(result.statusCode).toBe(500);
+  });
+
+  test("returns 400 for an unrecognised checkout interval", async () => {
+    process.env.ENVIRONMENT_NAME = "ci";
+    const event = buildEventWithToken(validToken, { bundleId: "resident", interval: "weekly" });
+    const result = await ingestHandler(event);
+    expect(result.statusCode).toBe(400);
+    const body = JSON.parse(result.body);
+    expect(body.code).toBe("invalid-interval");
+    expect(mockCheckoutSessionsCreate).not.toHaveBeenCalled();
+  });
+
+  test("a single-price bundle ignores an interval it does not carry", async () => {
+    process.env.STRIPE_PRICE_ID_RESIDENT_VAT = "price_vat_live_789";
+    const event = buildEventWithToken(validToken, { bundleId: "resident-vat", interval: "monthly" });
+    await ingestHandler(event);
+
+    const params = mockCheckoutSessionsCreate.mock.calls[0][0];
+    expect(params.line_items[0].price).toBe("price_vat_live_789");
+  });
+
   test("uses an allowed returnTo for the checkout success and cancel URLs", async () => {
     const event = buildEventWithToken(validToken, {
       bundleId: "resident-pro",

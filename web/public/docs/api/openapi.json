@@ -887,6 +887,61 @@
         "operationId" : "getOperatorSnapshot"
       }
     },
+    "/practice/clients" : {
+      "get" : {
+        "summary" : "List the practice's clients",
+        "description" : "Lists every active client held by the authenticated practice",
+        "operationId" : "listPracticeClients"
+      },
+      "post" : {
+        "summary" : "Add a practice client",
+        "description" : "Creates a new client row for the authenticated practice",
+        "operationId" : "addPracticeClient",
+        "parameters" : [ {
+          "name" : "displayName",
+          "in" : "body",
+          "required" : true,
+          "description" : "The client's display name",
+          "schema" : {
+            "type" : "string"
+          }
+        }, {
+          "name" : "vrn",
+          "in" : "body",
+          "required" : false,
+          "description" : "VAT registration number",
+          "schema" : {
+            "type" : "string",
+            "example" : "983238295",
+            "pattern" : "^\\d{9}$"
+          }
+        }, {
+          "name" : "nino",
+          "in" : "body",
+          "required" : false,
+          "description" : "National Insurance number",
+          "schema" : {
+            "type" : "string"
+          }
+        }, {
+          "name" : "utr",
+          "in" : "body",
+          "required" : false,
+          "description" : "Unique Taxpayer Reference",
+          "schema" : {
+            "type" : "string"
+          }
+        }, {
+          "name" : "companyNumber",
+          "in" : "body",
+          "required" : false,
+          "description" : "Companies House company number",
+          "schema" : {
+            "type" : "string"
+          }
+        } ]
+      }
+    },
     "/bundle/{id}" : {
       "delete" : {
         "summary" : "Delete bundle by id",
@@ -2351,6 +2406,36 @@
             "description" : "Request completed successfully"
           }
         }
+      }
+    },
+    "/practice/clients/{clientId}" : {
+      "get" : {
+        "summary" : "Read a practice client",
+        "description" : "Reads one client row belonging to the authenticated practice",
+        "operationId" : "getPracticeClient",
+        "parameters" : [ {
+          "name" : "clientId",
+          "in" : "path",
+          "required" : true,
+          "description" : "The client's id",
+          "schema" : {
+            "type" : "string"
+          }
+        } ]
+      },
+      "delete" : {
+        "summary" : "Archive a practice client",
+        "description" : "Archives one client row belonging to the authenticated practice",
+        "operationId" : "archivePracticeClient",
+        "parameters" : [ {
+          "name" : "clientId",
+          "in" : "path",
+          "required" : true,
+          "description" : "The client's id",
+          "schema" : {
+            "type" : "string"
+          }
+        } ]
       }
     },
     "/bundle" : {

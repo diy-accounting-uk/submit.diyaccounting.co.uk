@@ -6,7 +6,14 @@
 import { describe, test, expect } from "vitest";
 
 import { buildStripeProductsFromCatalog } from "../../../infra/stripe/lib/stripeCatalogue.js";
-import { parseArgs, parseConfig, planEndpoints, planPaymentLinks, rewriteEnvLines, computeEnvUpdates } from "../../../infra/stripe/stripe-sync.js";
+import {
+  parseArgs,
+  parseConfig,
+  planEndpoints,
+  planPaymentLinks,
+  rewriteEnvLines,
+  computeEnvUpdates,
+} from "../../../infra/stripe/stripe-sync.js";
 import { loadCatalogFromRoot } from "../../services/productCatalog.js";
 import { dotenvConfigIfNotBlank } from "@app/lib/env.js";
 
@@ -15,24 +22,68 @@ dotenvConfigIfNotBlank({ path: ".env.test" });
 describe("buildStripeProductsFromCatalog", () => {
   const catalog = loadCatalogFromRoot();
 
-  test("returns the six Stripe-priced products with the correct amounts", () => {
+  test("returns the seven Stripe prices with the correct amounts, resident carrying two", () => {
     const products = buildStripeProductsFromCatalog(catalog);
-    const byBundleId = Object.fromEntries(products.map((p) => [p.bundleId, p]));
+    const byBundleId = Object.fromEntries(products.filter((p) => p.bundleId !== "resident").map((p) => [p.bundleId, p]));
+    const residentPrices = products.filter((p) => p.bundleId === "resident");
 
-    expect(products).toHaveLength(6);
-    expect(byBundleId["resident-pro"]).toMatchObject({ name: "Resident Pro", priceAmount: 999, currency: "gbp", interval: "month" });
-    expect(byBundleId["resident-vat"]).toMatchObject({ name: "Resident VAT", priceAmount: 99, currency: "gbp", interval: "month" });
-    expect(byBundleId["resident-itsa"]).toMatchObject({ name: "Resident ITSA", priceAmount: 99, currency: "gbp", interval: "month" });
-    expect(byBundleId["resident-ltd"]).toMatchObject({ name: "Resident Ltd", priceAmount: 99, currency: "gbp", interval: "month" });
-    expect(byBundleId["resident-diya-gl"]).toMatchObject({ name: "DIYA-GL", priceAmount: 99, currency: "gbp", interval: "month" });
-    expect(byBundleId["resident"]).toMatchObject({ name: "Resident", priceAmount: 3900, currency: "gbp", interval: "year" });
+    expect(products).toHaveLength(7);
+    expect(byBundleId["resident-pro"]).toMatchObject({
+      name: "Resident Pro",
+      priceAmount: 999,
+      currency: "gbp",
+      interval: "month",
+      multiPrice: false,
+    });
+    expect(byBundleId["resident-vat"]).toMatchObject({
+      name: "Resident VAT",
+      priceAmount: 99,
+      currency: "gbp",
+      interval: "month",
+      multiPrice: false,
+    });
+    expect(byBundleId["resident-itsa"]).toMatchObject({
+      name: "Resident ITSA",
+      priceAmount: 99,
+      currency: "gbp",
+      interval: "month",
+      multiPrice: false,
+    });
+    expect(byBundleId["resident-ltd"]).toMatchObject({
+      name: "Resident Ltd",
+      priceAmount: 99,
+      currency: "gbp",
+      interval: "month",
+      multiPrice: false,
+    });
+    expect(byBundleId["resident-diya-gl"]).toMatchObject({
+      name: "DIYA-GL",
+      priceAmount: 99,
+      currency: "gbp",
+      interval: "month",
+      multiPrice: false,
+    });
+
+    expect(residentPrices).toHaveLength(2);
+    expect(residentPrices).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({ name: "Resident", priceAmount: 3900, currency: "gbp", interval: "year", multiPrice: true }),
+        expect.objectContaining({ name: "Resident", priceAmount: 399, currency: "gbp", interval: "month", multiPrice: true }),
+      ]),
+    );
   });
 
   test("skips a bundle without Stripe price fields", () => {
     const catalogWithGap = {
       bundles: [
         { id: "default", name: "Default", allocation: "automatic" },
-        { id: "resident-vat", name: "Resident VAT", description: "VAT", allocation: "on-subscription", stripePriceAmount: 99, stripeCurrency: "gbp", stripeInterval: "month" },
+        {
+          id: "resident-vat",
+          name: "Resident VAT",
+          description: "VAT",
+          allocation: "on-subscription",
+          prices: [{ interval: "month", amount: 99, currency: "gbp", default: true }],
+        },
       ],
     };
     const products = buildStripeProductsFromCatalog(catalogWithGap);
@@ -42,6 +93,12 @@ describe("buildStripeProductsFromCatalog", () => {
   test("filters to a single bundle when bundleId is given", () => {
     const products = buildStripeProductsFromCatalog(catalog, { bundleId: "resident-pro" });
     expect(products.map((p) => p.bundleId)).toEqual(["resident-pro"]);
+  });
+
+  test("filters to a single bundle's two prices when bundleId names a multi-price bundle", () => {
+    const products = buildStripeProductsFromCatalog(catalog, { bundleId: "resident" });
+    expect(products.map((p) => p.interval).sort()).toEqual(["month", "year"]);
+    expect(products.every((p) => p.bundleId === "resident" && p.multiPrice === true)).toBe(true);
   });
 
   test("returns an empty list when the requested bundle has no Stripe price fields", () => {
@@ -73,7 +130,19 @@ describe("parseArgs", () => {
   });
 
   test("reads every flag", () => {
-    expect(parseArgs(["--environment", "ci", "--mode", "test", "--apply", "--products-only", "--payment-links-only", "--bundle", "resident-vat"])).toEqual({
+    expect(
+      parseArgs([
+        "--environment",
+        "ci",
+        "--mode",
+        "test",
+        "--apply",
+        "--products-only",
+        "--payment-links-only",
+        "--bundle",
+        "resident-vat",
+      ]),
+    ).toEqual({
       environment: "ci",
       mode: "test",
       apply: true,
@@ -167,7 +236,7 @@ describe("parseConfig", () => {
   });
 
   test("throws when there are no [[endpoint]] entries", () => {
-    expect(() => parseConfig("[events]\nenabled = [\"x\"]\n[keys.ci]\ntest=\"t\"\n[keys.prod]\ntest=\"t\"\nlive=\"l\"\n")).toThrow(/endpoint/);
+    expect(() => parseConfig('[events]\nenabled = ["x"]\n[keys.ci]\ntest="t"\n[keys.prod]\ntest="t"\nlive="l"\n')).toThrow(/endpoint/);
   });
 
   test("throws when an endpoint's mode has no matching secret table", () => {
@@ -342,7 +411,11 @@ describe("planPaymentLinks", () => {
 describe("rewriteEnvLines", () => {
   test("replaces the value on a line whose key matches", () => {
     const lines = ["FOO=1", "STRIPE_PRICE_ID_RESIDENT_VAT=price_old", "BAR=2"];
-    expect(rewriteEnvLines(lines, { STRIPE_PRICE_ID_RESIDENT_VAT: "price_new" })).toEqual(["FOO=1", "STRIPE_PRICE_ID_RESIDENT_VAT=price_new", "BAR=2"]);
+    expect(rewriteEnvLines(lines, { STRIPE_PRICE_ID_RESIDENT_VAT: "price_new" })).toEqual([
+      "FOO=1",
+      "STRIPE_PRICE_ID_RESIDENT_VAT=price_new",
+      "BAR=2",
+    ]);
   });
 
   test("appends a new line for a key that isn't present", () => {
@@ -375,5 +448,18 @@ describe("computeEnvUpdates", () => {
     const updates = computeEnvUpdates("live", [{ bundleId: "resident-vat", priceId: "price_live_1" }]);
     expect(updates[".env.ci"]).toEqual({});
     expect(updates[".env.prod"]).toEqual({ STRIPE_PRICE_ID_RESIDENT_VAT: "price_live_1" });
+  });
+
+  test("a result carrying an interval gets the interval in its row name", () => {
+    const updates = computeEnvUpdates("test", [
+      { bundleId: "resident", priceId: "price_annual_1", interval: "year" },
+      { bundleId: "resident", priceId: "price_monthly_1", interval: "month" },
+    ]);
+    expect(updates[".env.ci"]).toEqual({
+      STRIPE_TEST_PRICE_ID_RESIDENT_YEAR: "price_annual_1",
+      STRIPE_PRICE_ID_RESIDENT_YEAR: "price_annual_1",
+      STRIPE_TEST_PRICE_ID_RESIDENT_MONTH: "price_monthly_1",
+      STRIPE_PRICE_ID_RESIDENT_MONTH: "price_monthly_1",
+    });
   });
 });

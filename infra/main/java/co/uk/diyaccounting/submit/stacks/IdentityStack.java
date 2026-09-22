@@ -266,8 +266,8 @@ public class IdentityStack extends Stack {
                 .oAuth(OAuthSettings.builder()
                         .flows(OAuthFlows.builder().authorizationCodeGrant(true).build())
                         .scopes(List.of(OAuthScope.EMAIL, OAuthScope.OPENID, OAuthScope.PROFILE))
-                        .callbackUrls(buildCallbackUrls(props.sharedNames()))
-                        .logoutUrls(buildLogoutUrls(props.sharedNames()))
+                        .callbackUrls(buildCallbackUrls(props.sharedNames(), props.envName()))
+                        .logoutUrls(buildLogoutUrls(props.sharedNames(), props.envName()))
                         .build())
                 .supportedIdentityProviders(allProviders)
                 .build();
@@ -460,23 +460,30 @@ public class IdentityStack extends Stack {
                 this.getNode().getId(), props.sharedNames().dashedDeploymentDomainName);
     }
 
-    private static List<String> buildCallbackUrls(SubmitSharedNames sharedNames) {
-        var urls = new java.util.ArrayList<>(List.of(
-                "https://" + sharedNames.publicDomainName + "/",
-                "https://" + sharedNames.publicDomainName + "/auth/loginWithCognitoCallback.html"));
-        if (!sharedNames.publicDomainName.equals(sharedNames.envDomainName)) {
-            urls.add("https://" + sharedNames.envDomainName + "/");
-            urls.add("https://" + sharedNames.envDomainName + "/auth/loginWithCognitoCallback.html");
+    private static List<String> buildAuthHosts(SubmitSharedNames sharedNames, String envName) {
+        if ("prod".equals(envName)) {
+            return List.of(sharedNames.publicDomainName, sharedNames.envDomainName);
+        }
+        var hosts = new java.util.ArrayList<String>();
+        hosts.add(sharedNames.envDomainName);
+        hosts.addAll(sharedNames.ciSlotHostNames);
+        return hosts;
+    }
+
+    private static List<String> buildCallbackUrls(SubmitSharedNames sharedNames, String envName) {
+        var urls = new java.util.ArrayList<String>();
+        for (var host : buildAuthHosts(sharedNames, envName)) {
+            urls.add("https://" + host + "/");
+            urls.add("https://" + host + "/auth/loginWithCognitoCallback.html");
         }
         return urls;
     }
 
-    private static List<String> buildLogoutUrls(SubmitSharedNames sharedNames) {
-        var urls = new java.util.ArrayList<>(List.of("https://" + sharedNames.publicDomainName + "/"));
-        urls.add("https://" + sharedNames.publicDomainName + "/auth/signed-out.html");
-        if (!sharedNames.publicDomainName.equals(sharedNames.envDomainName)) {
-            urls.add("https://" + sharedNames.envDomainName + "/");
-            urls.add("https://" + sharedNames.envDomainName + "/auth/signed-out.html");
+    private static List<String> buildLogoutUrls(SubmitSharedNames sharedNames, String envName) {
+        var urls = new java.util.ArrayList<String>();
+        for (var host : buildAuthHosts(sharedNames, envName)) {
+            urls.add("https://" + host + "/");
+            urls.add("https://" + host + "/auth/signed-out.html");
         }
         return urls;
     }

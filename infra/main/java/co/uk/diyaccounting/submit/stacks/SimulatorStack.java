@@ -183,12 +183,18 @@ public class SimulatorStack extends Stack {
         // Response headers policy - allow iframe embedding from the parent site
         String simulatorDomainName = props.sharedNames().simulatorDomainName;
         String envDomainName = props.sharedNames().envDomainName;
+        // A branch deploy on a ci slot serves simulator.html from the slot's own host, which
+        // frames this site, so each slot host is a permitted ancestor beside the environment apex.
+        String ciSlotFrameAncestors = props.sharedNames().ciSlotHostNames.stream()
+                .map(host -> " https://" + host)
+                .reduce("", String::concat);
         ResponseHeadersPolicy responseHeadersPolicy = ResponseHeadersPolicy.Builder.create(
                         this, props.resourceNamePrefix() + "-SimulatorResponseHeaders")
                 .responseHeadersPolicyName(props.resourceNamePrefix() + "-simulator-headers")
                 .securityHeadersBehavior(ResponseSecurityHeadersBehavior.builder()
                         .contentSecurityPolicy(ResponseHeadersContentSecurityPolicy.builder()
                                 .contentSecurityPolicy("frame-ancestors https://" + envDomainName
+                                        + ciSlotFrameAncestors
                                         + " https://submit.diyaccounting.co.uk http://localhost:3000;")
                                 .override(true)
                                 .build())

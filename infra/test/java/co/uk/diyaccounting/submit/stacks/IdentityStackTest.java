@@ -197,6 +197,59 @@ class IdentityStackTest {
     }
 
     @Test
+    void ciSubmitClientUrlsCoverTheApexAndEverySlotHost() {
+        Template template = Template.fromStack(synthIdentityStack("ci"));
+
+        var expectedCallbackUrls = List.of(
+                "https://ci-submit.example.com/",
+                "https://ci-submit.example.com/auth/loginWithCognitoCallback.html",
+                "https://ci-set1.submit.example.com/",
+                "https://ci-set1.submit.example.com/auth/loginWithCognitoCallback.html",
+                "https://ci-set2.submit.example.com/",
+                "https://ci-set2.submit.example.com/auth/loginWithCognitoCallback.html");
+        var expectedLogoutUrls = List.of(
+                "https://ci-submit.example.com/",
+                "https://ci-submit.example.com/auth/signed-out.html",
+                "https://ci-set1.submit.example.com/",
+                "https://ci-set1.submit.example.com/auth/signed-out.html",
+                "https://ci-set2.submit.example.com/",
+                "https://ci-set2.submit.example.com/auth/signed-out.html");
+
+        assertEquals(expectedCallbackUrls, submitClientUrls(template, "CallbackURLs"));
+        assertEquals(expectedLogoutUrls, submitClientUrls(template, "LogoutURLs"));
+    }
+
+    @Test
+    void prodSubmitClientUrlsCoverThePublicAndApexHostsOnly() {
+        Template template = Template.fromStack(synthIdentityStack("prod"));
+
+        var expectedCallbackUrls = List.of(
+                "https://submit.example.com/",
+                "https://submit.example.com/auth/loginWithCognitoCallback.html",
+                "https://prod-submit.example.com/",
+                "https://prod-submit.example.com/auth/loginWithCognitoCallback.html");
+        var expectedLogoutUrls = List.of(
+                "https://submit.example.com/",
+                "https://submit.example.com/auth/signed-out.html",
+                "https://prod-submit.example.com/",
+                "https://prod-submit.example.com/auth/signed-out.html");
+
+        assertEquals(expectedCallbackUrls, submitClientUrls(template, "CallbackURLs"));
+        assertEquals(expectedLogoutUrls, submitClientUrls(template, "LogoutURLs"));
+    }
+
+    @Test
+    void everyClaimableCiSlotHostIsRegisteredOnTheSubmitClient() throws IOException {
+        int slotCount = claimCiSlotCountFromActionDefault();
+        var callbackUrls = submitClientUrls(Template.fromStack(synthIdentityStack("ci")), "CallbackURLs");
+
+        for (int slot = 1; slot <= slotCount; slot++) {
+            String host = "https://ci-set" + slot + ".submit.example.com/";
+            assertTrue(callbackUrls.contains(host), "missing " + host + " from the submit client callback urls");
+        }
+    }
+
+    @Test
     void booksClientIdIsPublishedAsAStackOutputAndAnSsmParameter() {
         IdentityStack stack = synthIdentityStack("ci");
         Template template = Template.fromStack(stack);
@@ -383,6 +436,27 @@ class IdentityStackTest {
                 .orElseThrow(() -> new AssertionError("no books client found"));
         var properties = (Map<String, Object>) booksClient.get("Properties");
         return (List<String>) properties.get("CallbackURLs");
+    }
+
+    @SuppressWarnings("unchecked")
+    private static List<String> submitClientUrls(Template template, String propertyName) {
+        var submitClient = template.findResources("AWS::Cognito::UserPoolClient").values().stream()
+                .filter(resource -> {
+                    var properties = (Map<String, Object>) resource.get("Properties");
+                    return !String.valueOf(properties.get("ClientName")).endsWith("-diya-gl-client");
+                })
+                .findFirst()
+                .orElseThrow(() -> new AssertionError("no submit client found"));
+        var properties = (Map<String, Object>) submitClient.get("Properties");
+        return (List<String>) properties.get(propertyName);
+    }
+
+    private static int claimCiSlotCountFromActionDefault() throws IOException {
+        String action = Files.readString(Path.of(".github/actions/claim-ci-slot/action.yml"));
+        Matcher matcher = Pattern.compile("slot-count:.*?default: '(\\d+)'", Pattern.DOTALL)
+                .matcher(action);
+        assertTrue(matcher.find(), "no slot-count default found in claim-ci-slot/action.yml");
+        return Integer.parseInt(matcher.group(1));
     }
 
     private static Set<String> diyaGlBaseUrlHostsFromProbeTestWorkflow() throws IOException {

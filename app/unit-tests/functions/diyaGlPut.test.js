@@ -94,7 +94,12 @@ vi.mock("@app/data/dynamoDbBundleRepository.js", () => ({
   getUserBundles: vi.fn().mockResolvedValue([]),
 }));
 
+vi.mock("@app/data/dynamoDbPracticeClientRepository.js", () => ({
+  getClient: vi.fn(),
+}));
+
 const { getUserBundles } = await import("@app/data/dynamoDbBundleRepository.js");
+const { getClient } = await import("@app/data/dynamoDbPracticeClientRepository.js");
 const { ingestHandler } = await import("../../functions/diyaGl/diyaGlPut.js");
 const { _setTestSalt, _clearSalt, hashSub } = await import("../../services/subHasher.js");
 
@@ -104,7 +109,7 @@ function jsonBody(object) {
   return { transformToString: async () => JSON.stringify(object) };
 }
 
-function buildPutEvent({ sub = "test-sub", bookId = BOOK_ID, body, ifMatch } = {}) {
+function buildPutEvent({ sub = "test-sub", bookId = BOOK_ID, body, ifMatch, clientId } = {}) {
   const requestBody = {
     title: "Precision Code Ltd",
     product: "ltd",
@@ -112,6 +117,7 @@ function buildPutEvent({ sub = "test-sub", bookId = BOOK_ID, body, ifMatch } = {
     periodCoveredEnd: "2026-03-31",
     provenance: { formatVersion: "1", engineVersion: "1.2.3", taxDataHash: null, templateHash: null, reconciledCommit: null },
     zipBase64: FIXTURE_ZIP_BASE64,
+    ...(clientId ? { clientId } : {}),
     ...body,
   };
   return buildLambdaEvent({
@@ -135,6 +141,7 @@ function versionKeyFor(sub, bookId, version) {
 describe("diyaGlPut", () => {
   beforeEach(() => {
     mockS3Send.mockReset();
+    getClient.mockReset();
     process.env.DIYA_GL_BUCKET_NAME = "test-books-bucket";
     process.env.DIYA_GL_ALLOWED_ORIGINS = "https://spreadsheets.diyaccounting.co.uk";
     process.env.DIYA_GL_MAX_BYTES = "2097152";
@@ -563,5 +570,44 @@ describe("diyaGlPut", () => {
 
     expect(result.statusCode).toBe(204);
     expect(result.headers["Access-Control-Allow-Origin"]).toBe("https://spreadsheets.diyaccounting.co.uk");
+  });
+
+  test("saves under the client's own book prefix when a clientId belonging to the caller is given", async () => {
+    getClient.mockResolvedValue({ clientId: "client-1" });
+    const clientPrefix = `${hashSub("test-sub")}/clients/client-1`;
+    const metaKey = `users/${clientPrefix}/books/${BOOK_ID}/metadata.json`;
+    const v1Key = `users/${clientPrefix}/books/${BOOK_ID}/v1.zip`;
+    mockS3Send.mockImplementation((command) => {
+      if (command.kind === "get" && command.input.Key === metaKey) {
+        const error = new Error("not found");
+        error.name = "NoSuchKey";
+        throw error;
+      }
+      if (command.kind === "list") {
+        return { CommonPrefixes: [] };
+      }
+      if (command.kind === "put" && command.input.Key === v1Key) {
+        return { ETag: '"zip-v1-etag"' };
+      }
+      if (command.kind === "put" && command.input.Key === metaKey) {
+        return { ETag: '"meta-v1-etag"' };
+      }
+      throw new Error(`Unexpected command ${command.kind} ${command.input.Key}`);
+    });
+
+    const result = await ingestHandler(buildPutEvent({ clientId: "client-1" }));
+
+    expect(result.statusCode).toBe(200);
+    expect(getClient).toHaveBeenCalledWith("test-sub", "client-1");
+  });
+
+  test("403s a clientId that does not belong to the caller's practice", async () => {
+    getClient.mockResolvedValue(null);
+
+    const result = await ingestHandler(buildPutEvent({ clientId: "not-mine" }));
+
+    expect(result.statusCode).toBe(403);
+    expect(JSON.parse(result.body).code).toBe("client-not-found");
+    expect(mockS3Send).not.toHaveBeenCalled();
   });
 });

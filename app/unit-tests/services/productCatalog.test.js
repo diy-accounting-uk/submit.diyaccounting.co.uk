@@ -13,6 +13,8 @@ import {
   isBundleListedInEnvironment,
   getCatalogBundleById,
   getStripeSubscriptionBundles,
+  getBundlePrices,
+  getBundlePriceForInterval,
 } from "../../services/productCatalog.js";
 import { dotenvConfigIfNotBlank } from "@app/lib/env.js";
 
@@ -156,15 +158,15 @@ describe("productCatalogHelper", () => {
     expect(isActivityAvailable(catalog, "file-micro-entity-accounts", "default")).toBe(false);
   });
 
-  it("resident-pro, resident-vat and resident-itsa should carry Stripe price fields", () => {
+  it("resident-pro, resident-vat and resident-itsa each carry one monthly Stripe price", () => {
     const catalog = parseCatalog(tomlText);
     const residentPro = getCatalogBundleById(catalog, "resident-pro");
     const residentVat = getCatalogBundleById(catalog, "resident-vat");
     const residentItsa = getCatalogBundleById(catalog, "resident-itsa");
 
-    expect(residentPro).toMatchObject({ stripePriceAmount: 999, stripeCurrency: "gbp", stripeInterval: "month" });
-    expect(residentVat).toMatchObject({ stripePriceAmount: 99, stripeCurrency: "gbp", stripeInterval: "month" });
-    expect(residentItsa).toMatchObject({ stripePriceAmount: 99, stripeCurrency: "gbp", stripeInterval: "month" });
+    expect(getBundlePrices(residentPro)).toEqual([{ interval: "month", amount: 999, currency: "gbp", default: true }]);
+    expect(getBundlePrices(residentVat)).toEqual([{ interval: "month", amount: 99, currency: "gbp", default: true }]);
+    expect(getBundlePrices(residentItsa)).toEqual([{ interval: "month", amount: 99, currency: "gbp", default: true }]);
   });
 
   it("getStripeSubscriptionBundles should return exactly the six Stripe-priced bundles", () => {
@@ -175,7 +177,7 @@ describe("productCatalogHelper", () => {
     expect(bundleIds).toEqual(["resident", "resident-diya-gl", "resident-itsa", "resident-ltd", "resident-pro", "resident-vat"]);
   });
 
-  it("resident carries the annual price and is hidden from prod until the DIYA-GL tier lifts there", () => {
+  it("resident carries the annual and monthly prices, annual default, and is hidden from prod until the DIYA-GL tier lifts there", () => {
     const catalog = parseCatalog(tomlText);
     const resident = getCatalogBundleById(catalog, "resident");
     expect(resident).toMatchObject({
@@ -185,11 +187,32 @@ describe("productCatalogHelper", () => {
       allocation: "on-subscription",
       tokensGranted: 100,
       tokenRefreshInterval: "P1M",
-      stripePriceAmount: 3900,
-      stripeCurrency: "gbp",
-      stripeInterval: "year",
     });
     expect(resident.listedInEnvironments).toEqual(["ci"]);
+    expect(getBundlePrices(resident)).toEqual([
+      { interval: "year", amount: 3900, currency: "gbp", default: true },
+      { interval: "month", amount: 399, currency: "gbp", default: false },
+    ]);
+    expect(getBundlePriceForInterval(resident)).toMatchObject({ interval: "year", amount: 3900 });
+    expect(getBundlePriceForInterval(resident, "month")).toMatchObject({ interval: "month", amount: 399 });
+  });
+
+  it("resident-vat carries one price and ignores an interval it does not have", () => {
+    const catalog = parseCatalog(tomlText);
+    const residentVat = getCatalogBundleById(catalog, "resident-vat");
+    expect(getBundlePrices(residentVat)).toEqual([{ interval: "month", amount: 99, currency: "gbp", default: true }]);
+    expect(getBundlePriceForInterval(residentVat, "year")).toMatchObject({ interval: "month", amount: 99 });
+  });
+
+  it("getBundlePrices returns nothing for a bundle with no price fields", () => {
+    expect(getBundlePrices(getCatalogBundleById(parseCatalog(tomlText), "default"))).toEqual([]);
+    expect(getBundlePrices(null)).toEqual([]);
+  });
+
+  it("getBundlePriceForInterval returns null for a multi-price bundle's unlisted interval", () => {
+    const catalog = parseCatalog(tomlText);
+    const resident = getCatalogBundleById(catalog, "resident");
+    expect(getBundlePriceForInterval(resident, "week")).toBeNull();
   });
 
   it("resident-itsa, resident-ltd and resident-diya-gl are folded into resident and hidden from the bundles page", () => {
