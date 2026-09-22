@@ -39,6 +39,20 @@ step.
 
 ## In flight
 
+- [ ] **PU-7. Practice licence build.** PU-7a to PU-7l are on `main`. In flight on
+  `claude/b81-board` (wave b81, one agent): PU-7m, the
+  behaviour test `behaviour-tests/practiceLicence.behaviour.test.js`: two clients added through
+  the practice routes, a derive and a submit for each against the HMRC sandbox, over the MCP's
+  `run_for_clients`; its `package.json` script and its `deploy.yml` and `probe-test.yml` jobs in
+  the shape the other suites use. Then,
+  in `PLAN_PRICE_UPDATE.md` §(d) (lines 227 to 236):  PU-7e on the operator's grant numbers; the
+  `resident-pro` catalogue values (`enable = "always"`, `hidden = false`,
+  `allocation = "on-subscription"`) and the practice page's nav link in
+  `web/public/widgets/page-chrome.js` flip in the launch step after PU-7m, with the four ci probes
+  that reach resident-pro through a pass updated in the same change. **Source**:
+  `PLAN_PRICE_UPDATE.md` PU-7. **Owner**: Claude Code. **Model**: Sonnet. **Size**: ~4 files for
+  PU-7m, ~8 for the launch step after it.
+
 - [ ] **B80. Wave b80 on `claude/b80-board`.** Three agents: AS8 (the two RUM deployed-environment skips out of the unit runner; AS1's
   coverage commit rejected, the finding on its own row), AS4 and AS7 (the ESLint config cleanup; the strict-mode TODO and warning
   comments), AS6 and AS5 (prettier and Spotless checks in `test.yml`, with the 218 files they reformat; the
@@ -58,19 +72,6 @@ step.
   Code. **Model**: Sonnet. **Size**: 262 files.
 
 ## Machine-only
-
-- [ ] **PU-7. Practice licence build.** PU-7a to PU-7l are on `main`. Next is PU-7m, the
-  behaviour test `behaviour-tests/practiceLicence.behaviour.test.js`: two clients added through
-  the practice routes, a derive and a submit for each against the HMRC sandbox, over the MCP's
-  `run_for_clients`; its `package.json` script and its `deploy.yml` and `probe-test.yml` jobs in
-  the shape the other suites use. Then,
-  in `PLAN_PRICE_UPDATE.md` §(d) (lines 227 to 236):  PU-7e on the operator's grant numbers; the
-  `resident-pro` catalogue values (`enable = "always"`, `hidden = false`,
-  `allocation = "on-subscription"`) and the practice page's nav link in
-  `web/public/widgets/page-chrome.js` flip in the launch step after PU-7m, with the four ci probes
-  that reach resident-pro through a pass updated in the same change. **Source**:
-  `PLAN_PRICE_UPDATE.md` PU-7. **Owner**: Claude Code. **Model**: Sonnet. **Size**: ~4 files for
-  PU-7m, ~8 for the launch step after it.
 
 - [ ] **AS1. Coverage collection finds no files, so no gate can fire.** `vitest.config.js`
   declares the thresholds under `coverage.threshold` (Vitest 4 reads `thresholds`), and renaming
