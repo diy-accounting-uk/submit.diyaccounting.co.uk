@@ -207,6 +207,21 @@ export async function deleteVersion(ownerPrefix, bookId, version) {
 }
 
 /**
+ * True when a book is still visible to its owner. A resident book never disappears on its own; a
+ * sandbox book disappears once its `expiresAt` passes, even though its S3 objects live on until
+ * the bucket's own lifecycle rule catches up. Callers that count or list a user's books must
+ * apply this so a book nobody can see any more doesn't still occupy a slot against the per-user
+ * book limit.
+ *
+ * @param {object} book - a book metadata object, as returned by `readMetadata`/`listBooks`
+ * @param {number} [now] - epoch ms, defaults to `Date.now()`
+ * @returns {boolean}
+ */
+export function isBookVisible(book, now = Date.now()) {
+  return book.retention !== "sandbox" || !book.expiresAt || Date.parse(book.expiresAt) > now;
+}
+
+/**
  * Lists every book's metadata under an owner prefix, at most 20 books (the per-user book limit).
  * An unreadable metadata.json is logged and skipped rather than failing the whole list.
  *
