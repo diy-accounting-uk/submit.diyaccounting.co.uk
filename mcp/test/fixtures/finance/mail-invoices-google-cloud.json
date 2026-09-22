@@ -1,0 +1,27 @@
+{
+  "search": [
+    {
+      "source": "mail-antony",
+      "path": "2026/3/1/redacted-google-cloud-invoice.eml",
+      "title": "Google Cloud EMEA Limited: your invoice is available",
+      "date": "2026-03-01T12:08:35+00:00",
+      "score": 0.0145,
+      "excerpt": "Google Cloud EMEA Limited: your invoice is available ... Google Payments <payments-noreply@google.com> ...",
+      "chunk_seq": 0,
+      "content_indexed": true
+    }
+  ],
+  "doc": {
+    "source": "mail-antony",
+    "path": "2026/3/1/redacted-google-cloud-invoice.eml",
+    "title": "Google Cloud EMEA Limited: your invoice is available",
+    "doc_date": "2026-03-01T12:08:35+00:00",
+    "content_indexed": true,
+    "meta": {
+      "from": "Google Payments <payments-noreply@google.com>",
+      "to": "admin@diyaccounting.co.uk",
+      "attachments": ["invoice.pdf"]
+    },
+    "content": "Google Cloud EMEA Limited: your invoice is available — Google Payments <payments-noreply@google.com>, 2026-03-01\n\nYou've successfully sent a payment.\n\nInvoice number: 5450054252\n\nTotal\n£196.00 GBP\n\nGoogle Cloud EMEA Limited"
+  }
+}
