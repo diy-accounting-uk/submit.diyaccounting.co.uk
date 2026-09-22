@@ -31,3 +31,13 @@ start = "2026-09-01"
 end = "2026-09-30"
 change = "none: the first month of measurement, before any lever is pulled"
 result = ""
+
+[[experiments]]
+id = "exp-2026-09-resident-price"
+objective = "conversion-to-paid"
+hypothesis = ""
+lever = "price"
+metric = "purchases-per-human-session"
+start = "2026-09-22"
+change = "PR #328 deploy: the resident bundle's £39/year (default) or £3.99/month shape reaches prod, measured against the previous 99p/month rate"
+result = ""
