@@ -325,6 +325,61 @@ describe("bundleGet ingestHandler", () => {
     expect(updateCmd.input.UpdateExpression).toMatch(/tokensConsumed\s*=\s*:zero/);
   });
 
+  test("an unlimited-grant bundle is never refreshed and never pollutes the tokensRemaining total", async () => {
+    const userId = "user-unlimited-grant";
+    const token = makeIdToken(userId);
+    const event = buildEventWithToken(token, {});
+    event.headers["x-wait-time-ms"] = "500";
+
+    const bundlesTableName = process.env.BUNDLE_DYNAMODB_TABLE_NAME;
+    const pastIso = "1970-01-01T00:00:00.000Z";
+    const unlimitedBundle = {
+      hashedSub: "hashed-" + userId,
+      bundleId: "resident-pro",
+      tokensGranted: "unlimited",
+      tokensConsumed: 0,
+      tokenResetAt: pastIso,
+    };
+    const meteredBundle = {
+      hashedSub: "hashed-" + userId,
+      bundleId: "day-guest",
+      tokensGranted: 3,
+      tokensConsumed: 1,
+    };
+
+    mockSend.mockImplementation(async (cmd) => {
+      if (cmd instanceof MockQueryCommand && cmd.input.TableName === bundlesTableName) {
+        return { Items: [unlimitedBundle, meteredBundle], Count: 2 };
+      }
+      if (cmd instanceof MockQueryCommand) {
+        return { Items: [], Count: 0 };
+      }
+      if (cmd instanceof MockGetCommand) {
+        return { Item: undefined };
+      }
+      return {};
+    });
+
+    const response = await bundleGetHandler(event);
+
+    expect(response.statusCode).toBe(200);
+    const body = parseResponseBody(response);
+
+    // No UpdateItem for the unlimited bundle, even though its tokenResetAt has elapsed.
+    const updateCalls = mockSend.mock.calls
+      .map((call) => call[0])
+      .filter((cmd) => cmd instanceof MockUpdateCommand && cmd.input.TableName === bundlesTableName);
+    expect(updateCalls).toHaveLength(0);
+
+    // Only the metered bundle's remaining tokens count towards the total - no NaN from the
+    // unlimited bundle's non-numeric grant.
+    expect(body.tokensRemaining).toBe(2);
+    const residentPro = body.bundles.find((b) => b.bundleId === "resident-pro");
+    expect(residentPro).not.toHaveProperty("tokensRemaining");
+    const dayGuest = body.bundles.find((b) => b.bundleId === "day-guest");
+    expect(dayGuest.tokensRemaining).toBe(2);
+  });
+
   // ============================================================================
   // Error Handling Tests (500)
   // ============================================================================

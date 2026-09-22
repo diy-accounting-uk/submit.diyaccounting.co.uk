@@ -10,7 +10,7 @@ import { getStripeClient } from "../../lib/stripeClient.js";
 import { putBundleByHashedSub, updateBundleSubscriptionFields, resetTokensByHashedSub } from "../../data/dynamoDbBundleRepository.js";
 import { initializeSalt } from "../../services/subHasher.js";
 import { putSubscription, getSubscription, updateSubscription } from "../../data/dynamoDbSubscriptionRepository.js";
-import { loadCatalogFromRoot } from "../../services/productCatalog.js";
+import { loadCatalogFromRoot, isUnlimitedTokenGrant } from "../../services/productCatalog.js";
 import { publishActivityEvent, maskEmail, classifyActor } from "../../lib/activityAlert.js";
 
 const logger = createLogger({ source: "app/functions/billing/billingWebhookPost.js" });
@@ -223,8 +223,11 @@ async function handleInvoicePaid(invoice, { test = false } = {}) {
 
   const nextResetAt = currentPeriodEnd || new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString();
 
-  // Reset tokens for the new billing period
-  await resetTokensByHashedSub(hashedSub, bundleId, tokensGranted, nextResetAt);
+  // Reset tokens for the new billing period - an unlimited grant (the resident-pro practice
+  // licence) carries no count, so there is nothing to reset.
+  if (!isUnlimitedTokenGrant(tokensGranted)) {
+    await resetTokensByHashedSub(hashedSub, bundleId, tokensGranted, nextResetAt);
+  }
 
   // Update period dates on the bundle
   await updateBundleSubscriptionFields(hashedSub, bundleId, {

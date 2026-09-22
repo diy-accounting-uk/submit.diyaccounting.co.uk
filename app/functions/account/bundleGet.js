@@ -154,7 +154,7 @@ export async function ingestHandler(event) {
 export async function retrieveUserBundles(userId, requestId = null, userEmail = "") {
   logger.info({ message: "retrieveUserBundles entry", userId, requestId });
   try {
-    const { loadCatalogFromRoot, getCappedBundleIds } = await import("../../services/productCatalog.js");
+    const { loadCatalogFromRoot, getCappedBundleIds, isUnlimitedTokenGrant } = await import("../../services/productCatalog.js");
 
     // Load user bundles from DynamoDB
     const userBundles = await getUserBundles(userId);
@@ -199,7 +199,12 @@ export async function retrieveUserBundles(userId, requestId = null, userEmail = 
     // Lazy token refresh for user bundles
     const now = new Date().toISOString();
     for (const bundle of userBundles) {
-      if (bundle.tokenResetAt && bundle.tokenResetAt <= now && bundle.tokensGranted !== undefined) {
+      if (
+        bundle.tokenResetAt &&
+        bundle.tokenResetAt <= now &&
+        bundle.tokensGranted !== undefined &&
+        !isUnlimitedTokenGrant(bundle.tokensGranted)
+      ) {
         const catBundle = (catalog.bundles || []).find((b) => b.id === bundle.bundleId);
         if (catBundle?.tokenRefreshInterval) {
           const { resetTokens } = await import("../../data/dynamoDbBundleRepository.js");
@@ -226,7 +231,9 @@ export async function retrieveUserBundles(userId, requestId = null, userEmail = 
 
     for (const bundle of userBundles) {
       const tokensRemaining =
-        bundle.tokensGranted !== undefined ? Math.max(0, bundle.tokensGranted - (bundle.tokensConsumed || 0)) : undefined;
+        bundle.tokensGranted !== undefined && !isUnlimitedTokenGrant(bundle.tokensGranted)
+          ? Math.max(0, bundle.tokensGranted - (bundle.tokensConsumed || 0))
+          : undefined;
       result.push({
         ...bundle,
         allocated: true,
@@ -247,7 +254,7 @@ export async function retrieveUserBundles(userId, requestId = null, userEmail = 
 
     let totalTokensRemaining = 0;
     for (const bundle of userBundles) {
-      if (bundle.tokensGranted !== undefined) {
+      if (bundle.tokensGranted !== undefined && !isUnlimitedTokenGrant(bundle.tokensGranted)) {
         totalTokensRemaining += Math.max(0, bundle.tokensGranted - (bundle.tokensConsumed || 0));
       }
     }
