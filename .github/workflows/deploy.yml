@@ -3413,3 +3413,78 @@ jobs:
       # This run IS the prod deploy destroy-prod.yml's own wait step would otherwise wait for —
       # see that step's comment in destroy-prod.yml for why waiting here would deadlock.
       called-from-deploy: true
+
+  # A failed or cancelled run never reaches set-last-known-good-deployment, and until now only
+  # claim-ci-slot.mjs's own staleness rule (self-destruct delay plus one hour) freed its slot
+  # again - about five hours on the default two-hour delay, during which no other branch can get
+  # a slot at all. Releasing here, at the end of every run regardless of outcome, gives the slot
+  # back the moment this run is done instead of waiting on staleness; that rule stays as the
+  # backstop for a run that never reaches this job (a runner outage, a cancellation before this
+  # point).
+  #
+  # Only releases a deployment name that is actually a slot (ci-setN); an explicit
+  # deployment-name dispatch or a prod deployment holds no slot and this is a no-op for it, same
+  # as destroy-ci.yml's own release step. A deployment that is still this environment's
+  # last-known-good is left alone even when this run's own claim named it, so a run that just got
+  # promoted doesn't hand its slot to the next unrelated branch the moment it ends - see
+  # set-last-known-good-deployment above for where that parameter is written.
+  release-ci-slot:
+    name: 'release the ci slot this run claimed'
+    if: ${{ always() && needs.names.outputs.deployment-name != '' }}
+    needs:
+      - params
+      - names
+      - deploy-ops
+      - web-test
+      - set-last-known-good-deployment
+      - promote-ci-apex
+      - rollback-origins
+      - record-dora
+      - destroy-previous
+    runs-on: ubuntu-24.04
+    environment: ${{ needs.params.outputs.github-environment }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+
+      - name: Configure AWS role via GitHub OIDC
+        uses: aws-actions/configure-aws-credentials@e1253824e5c10ff9df46874f81ed3ec929e19cfd # v6
+        with:
+          role-to-assume: ${{ vars.SUBMIT_ACTIONS_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+          role-chaining: false
+          audience: sts.amazonaws.com
+          role-skip-session-tagging: true
+          output-credentials: true
+          retry-max-attempts: 3
+
+      - name: Assume AWS deployment role
+        uses: aws-actions/configure-aws-credentials@e1253824e5c10ff9df46874f81ed3ec929e19cfd # v6
+        with:
+          role-to-assume: ${{ vars.SUBMIT_DEPLOY_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+          role-chaining: true
+          audience: sts.amazonaws.com
+          role-skip-session-tagging: true
+          output-credentials: true
+          retry-max-attempts: 3
+
+      - name: Release the ci slot this run claimed
+        shell: bash
+        env:
+          DEPLOYMENT: ${{ needs.names.outputs.deployment-name }}
+        run: |
+          if [[ ! "$DEPLOYMENT" =~ ^ci-set[0-9]+$ ]]; then
+            echo "$DEPLOYMENT holds no ci slot, nothing to release"
+            exit 0
+          fi
+          LAST_KNOWN_GOOD=$(aws ssm get-parameter --name "/submit/ci/last-known-good-deployment" --query "Parameter.Value" --output text 2>/dev/null || echo "")
+          if [ "$LAST_KNOWN_GOOD" = "$DEPLOYMENT" ]; then
+            echo "$DEPLOYMENT is the current ci last-known-good deployment; leaving its slot claim in place"
+            exit 0
+          fi
+          RELEASE_CI_SLOT_AWS_CLI="$(command -v aws)"
+          export RELEASE_CI_SLOT_AWS_CLI
+          export RELEASE_CI_SLOT_DEPLOYMENT_NAME="$DEPLOYMENT"
+          export RELEASE_CI_SLOT_RUN_ID="${{ github.run_id }}"
+          node .github/actions/claim-ci-slot/release-ci-slot.mjs
