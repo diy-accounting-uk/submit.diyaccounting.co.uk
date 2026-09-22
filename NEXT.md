@@ -90,11 +90,23 @@ step.
   24-hour retention; its deploy is in flight. The same deploy failed three sign-in probes with
   `redirect_mismatch`: only `ci-set1`, `ci-set2` and the apex are Cognito callback hosts, so a
   deployment under another name cannot prove a signed-in probe; `ci-b79-probe` and
-  `ci-b80-probe` self-destruct four hours after creation. After the merge: repoint `NEXT.md` and `BACKLOG.md` on `main`, and
+  `ci-b80-probe` (PR #334's proof deploy 35767071938 failed the same way) self-destruct four
+  hours after creation. After the merge: repoint `NEXT.md` and `BACKLOG.md` on `main`, and
   land AS15 and AS18, which touch the same files. The spreadsheets and www moves are merged (their PRs #133 and #32). **Source**: operator 2026-09-22. **Owner**: Claude
   Code. **Model**: Sonnet. **Size**: 262 files.
 
 ## Machine-only
+
+- [ ] **B30as. A finished deploy run releases its ci slot.** `.github/actions/claim-ci-slot`
+  frees a slot only when its parameter is absent, when the claiming ref redeploys, or when the
+  claim is older than the self-destruct delay plus an hour (lines 8 to 22), so PR #334's red run
+  35761188691 held `ci-set2` from 17:53 while PR #335's run 35767761916 waited its whole
+  allowance for a slot and failed. Add a release step at the end of `deploy.yml` (`if:
+  always()`, after the last stack or probe job, and in the cancelled path) that deletes the
+  claim parameter when it still names this run's id; keep the stale rule as the backstop. Proof:
+  a run that fails after claiming leaves its parameter absent, and a second branch's `names` job
+  claims within a minute. **Source**: runs 35761188691 and 35767761916; BACKLOG 30. **Owner**:
+  Claude Code. **Model**: Sonnet. **Size**: ~2 files.
 
 - [ ] **AS15. A dead-code pass with knip.** The assessment's dead-code scan used `ts-prune` on
   a JavaScript tree and reported zero, which is "not analysed". Run `npx knip` once at the root
