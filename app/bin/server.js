@@ -23,6 +23,7 @@ import { apiEndpoint as practiceClientDeleteApiEndpoint } from "../functions/pra
 import { apiEndpoint as practiceClientAuthorisationInvitePostApiEndpoint } from "../functions/practice/practiceClientAuthorisationInvitePost.js";
 import { apiEndpoint as practiceClientAuthorisationGetApiEndpoint } from "../functions/practice/practiceClientAuthorisationGet.js";
 import { apiEndpoint as practiceClientAuthorisationInviteDeleteApiEndpoint } from "../functions/practice/practiceClientAuthorisationInviteDelete.js";
+import { apiEndpoint as practiceClientBookMovePostApiEndpoint } from "../functions/practice/practiceClientBookMovePost.js";
 import { apiEndpoint as hmrcTokenPostApiEndpoint } from "../functions/hmrc/hmrcTokenPost.js";
 import { apiEndpoint as hmrcVatReturnPostApiEndpoint } from "../functions/hmrc/hmrcVatReturnPost.js";
 import { apiEndpoint as hmrcVatObligationGetApiEndpoint } from "../functions/hmrc/hmrcVatObligationGet.js";
@@ -288,6 +289,7 @@ practiceClientDeleteApiEndpoint(app);
 practiceClientAuthorisationInvitePostApiEndpoint(app);
 practiceClientAuthorisationGetApiEndpoint(app);
 practiceClientAuthorisationInviteDeleteApiEndpoint(app);
+practiceClientBookMovePostApiEndpoint(app);
 hmrcTokenPostApiEndpoint(app);
 hmrcVatReturnPostApiEndpoint(app);
 hmrcVatObligationGetApiEndpoint(app);

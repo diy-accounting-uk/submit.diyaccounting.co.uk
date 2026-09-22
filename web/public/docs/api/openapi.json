@@ -351,6 +351,30 @@
         }
       }
     },
+    "/practice/clients/{clientId}/books/{bookId}/move" : {
+      "post" : {
+        "summary" : "Move a book to a client",
+        "description" : "Copies one of the practice's own books to a client's book set and deletes the source",
+        "operationId" : "movePracticeClientBook",
+        "parameters" : [ {
+          "name" : "clientId",
+          "in" : "path",
+          "required" : true,
+          "description" : "The client's id",
+          "schema" : {
+            "type" : "string"
+          }
+        }, {
+          "name" : "bookId",
+          "in" : "path",
+          "required" : true,
+          "description" : "The book's id",
+          "schema" : {
+            "type" : "string"
+          }
+        } ]
+      }
+    },
     "/hmrc/itsa/self-employment/period" : {
       "post" : {
         "summary" : "File an ITSA self-employment quarterly update",
@@ -885,6 +909,30 @@
         "summary" : "Get the operator objectives snapshot",
         "description" : "Retrieves the latest nightly snapshot behind the one-stop operator dashboard",
         "operationId" : "getOperatorSnapshot"
+      }
+    },
+    "/practice/clients/{clientId}/authorisation" : {
+      "get" : {
+        "summary" : "Read a client's authorisation status",
+        "description" : "Reads a pending invitation's status, or checks HMRC for an existing relationship",
+        "operationId" : "getPracticeClientAuthorisation",
+        "parameters" : [ {
+          "name" : "clientId",
+          "in" : "path",
+          "required" : true,
+          "description" : "The client's id",
+          "schema" : {
+            "type" : "string"
+          }
+        }, {
+          "name" : "service",
+          "in" : "query",
+          "required" : true,
+          "description" : "MTD-VAT or MTD-IT",
+          "schema" : {
+            "type" : "string"
+          }
+        } ]
       }
     },
     "/practice/clients" : {
@@ -1853,6 +1901,76 @@
             "description" : "Request completed successfully"
           }
         }
+      }
+    },
+    "/practice/clients/{clientId}/authorisation/invitations" : {
+      "post" : {
+        "summary" : "Invite a client to authorise this practice",
+        "description" : "Creates an HMRC Agent Authorisation invitation for one client and service",
+        "operationId" : "invitePracticeClientAuthorisation",
+        "parameters" : [ {
+          "name" : "clientId",
+          "in" : "path",
+          "required" : true,
+          "description" : "The client's id",
+          "schema" : {
+            "type" : "string"
+          }
+        }, {
+          "name" : "service",
+          "in" : "body",
+          "required" : true,
+          "description" : "MTD-VAT or MTD-IT",
+          "schema" : {
+            "type" : "string"
+          }
+        }, {
+          "name" : "knownFact",
+          "in" : "body",
+          "required" : true,
+          "description" : "The VAT registration date, or the client's postcode",
+          "schema" : {
+            "type" : "string"
+          }
+        }, {
+          "name" : "accessToken",
+          "in" : "body",
+          "required" : true,
+          "description" : "The practice's HMRC access token",
+          "schema" : {
+            "type" : "string"
+          }
+        }, {
+          "name" : "arn",
+          "in" : "body",
+          "required" : false,
+          "description" : "The practice's agent reference number, if not already stored",
+          "schema" : {
+            "type" : "string"
+          }
+        } ]
+      },
+      "delete" : {
+        "summary" : "Cancel a client's pending invitation",
+        "description" : "Cancels a pending HMRC Agent Authorisation invitation for one client and service",
+        "operationId" : "cancelPracticeClientAuthorisationInvite",
+        "parameters" : [ {
+          "name" : "clientId",
+          "in" : "path",
+          "required" : true,
+          "description" : "The client's id",
+          "schema" : {
+            "type" : "string"
+          }
+        }, {
+          "name" : "service",
+          "in" : "query",
+          "required" : true,
+          "description" : "MTD-VAT or MTD-IT",
+          "schema" : {
+            "type" : "string"
+          }
+        } ]
       }
     },
     "/billing/checkout" : {

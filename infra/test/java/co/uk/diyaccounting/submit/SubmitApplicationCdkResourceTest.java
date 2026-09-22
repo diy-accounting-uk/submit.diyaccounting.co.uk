@@ -294,7 +294,9 @@ class SubmitApplicationCdkResourceTest {
         // DELETE /api/v1/practice/clients/{clientId}/authorisation/invitations share one path (2
         // method routes + 1 auto-HEAD, since auto-HEAD is added once per path regardless of which
         // method registers it first), for another 3 routes, bringing the total to 151 + 3 = 154.
-        apiStackTemplate.resourceCountIs("AWS::ApiGatewayV2::Route", 154);
+        // POST /api/v1/practice/clients/{clientId}/books/{bookId}/move adds its own route plus
+        // its own auto-HEAD route, since no other method shares that path, for 154 + 2 = 156.
+        apiStackTemplate.resourceCountIs("AWS::ApiGatewayV2::Route", 156);
 
         // Dashboard moved to environment-level ObservabilityStack
         infof("Created stack:", submitApplication.opsStack.getStackName());

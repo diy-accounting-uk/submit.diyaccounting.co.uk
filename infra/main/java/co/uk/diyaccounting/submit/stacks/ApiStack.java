@@ -338,6 +338,12 @@ public class ApiStack extends Stack {
 
         java.util.Set<String> createdRouteKeys = new java.util.HashSet<>();
         java.util.Map<String, String> firstCreatorByRoute = new java.util.HashMap<>();
+        // A Lambda published under a second route (DiyaGlStack's onSecondPublishedPath, or two
+        // different HTTP methods sharing one path) is still one underlying function, and the
+        // invoke permission below already scopes to every route on this API
+        // ("execute-api:.../*"), so a second identical permission is pure duplication -
+        // deduped by function name, the same way HEAD/OPTIONS routes are deduped by path.
+        java.util.Set<String> permittedFunctionNames = new java.util.HashSet<>();
         for (int i = 0; i < props.lambdaFunctions().size(); i++) {
             AbstractApiLambdaProps apiLambdaProps = props.lambdaFunctions().get(i);
             String routeKeyStr = apiLambdaProps.httpMethod().toString() + " " + apiLambdaProps.urlPath();
@@ -357,7 +363,8 @@ public class ApiStack extends Stack {
                     billingJwtAuthorizer,
                     customAuthorizer,
                     createdRouteKeys,
-                    firstCreatorByRoute);
+                    firstCreatorByRoute,
+                    permittedFunctionNames);
         }
 
         // Synthesis-time diagnostics: list all created routes
@@ -446,7 +453,8 @@ public class ApiStack extends Stack {
             HttpJwtAuthorizer billingJwtAuthorizer,
             HttpLambdaAuthorizer customAuthorizer,
             java.util.Set<String> createdRouteKeys,
-            java.util.Map<String, String> firstCreatorByRoute) {
+            java.util.Map<String, String> firstCreatorByRoute,
+            java.util.Set<String> permittedFunctionNames) {
 
         // Build stable, unique construct IDs per route using method+path signature
         String keySuffix = (apiLambdaProps.httpMethod().toString() + "-" + apiLambdaProps.urlPath())
@@ -516,15 +524,24 @@ public class ApiStack extends Stack {
                 "Created route %s %s for function %s",
                 apiLambdaProps.httpMethod().toString(), apiLambdaProps.urlPath(), fn.getFunctionName());
 
-        // Explicitly allow API Gateway to invoke this Lambda (defensive against region/env mismatches)
-        fn.addPermission(
-                apiLambdaProps.ingestFunctionName() + "-AllowInvokeFromHttpApi-" + keySuffix,
-                Permission.builder()
-                        .action("lambda:InvokeFunction")
-                        .principal(new ServicePrincipal("apigateway.amazonaws.com"))
-                        .sourceArn("arn:aws:execute-api:" + this.getRegion() + ":" + this.getAccount() + ":"
-                                + this.httpApi.getApiId() + "/*")
-                        .build());
+        // Explicitly allow API Gateway to invoke this Lambda (defensive against region/env mismatches).
+        // One permission per underlying function is enough: the SourceArn below already covers every
+        // route on this API, so a function published under a second route (or a second HTTP method
+        // sharing one path) does not need a second, identically-scoped permission.
+        if (permittedFunctionNames.add(apiLambdaProps.ingestFunctionName())) {
+            fn.addPermission(
+                    apiLambdaProps.ingestFunctionName() + "-AllowInvokeFromHttpApi-" + keySuffix,
+                    Permission.builder()
+                            .action("lambda:InvokeFunction")
+                            .principal(new ServicePrincipal("apigateway.amazonaws.com"))
+                            .sourceArn("arn:aws:execute-api:" + this.getRegion() + ":" + this.getAccount() + ":"
+                                    + this.httpApi.getApiId() + "/*")
+                            .build());
+        } else {
+            infof(
+                    "Skipping duplicate invoke permission for already-permitted function %s",
+                    apiLambdaProps.ingestFunctionName());
+        }
 
         // Per-function error alarm already exists as `{fn}-errors` from the Lambda construct
         // (Lambda.java) on this same fn.metricErrors() metric — no need to alarm on it again here.

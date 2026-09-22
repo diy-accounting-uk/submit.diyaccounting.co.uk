@@ -59,12 +59,13 @@ class DiyaGlStackTest {
         DiyaGlStack stack = synthDiyaGlStack();
         Template template = Template.fromStack(stack);
 
-        template.resourceCountIs("AWS::Lambda::Function", 5);
+        template.resourceCountIs("AWS::Lambda::Function", 6);
         for (String functionName : List.of(
                 stack.diyaGlListGetLambdaProps.ingestFunctionName(),
                 stack.diyaGlVersionGetLambdaProps.ingestFunctionName(),
                 stack.diyaGlPutLambdaProps.ingestFunctionName(),
                 stack.diyaGlDeleteLambdaProps.ingestFunctionName(),
+                stack.practiceClientBookMovePostLambdaProps.ingestFunctionName(),
                 stack.diyaGlLapseSweepLambdaProps.ingestFunctionName())) {
             template.hasResourceProperties(
                     "AWS::Lambda::Function", Match.objectLike(Map.of("FunctionName", functionName)));
@@ -222,6 +223,51 @@ class DiyaGlStackTest {
     }
 
     @Test
+    void everyFunctionGetsReadAccessToThePracticeClientsTable() {
+        DiyaGlStack stack = synthDiyaGlStack();
+        Template template = Template.fromStack(stack);
+
+        for (String functionName : List.of(
+                stack.diyaGlListGetLambdaProps.ingestFunctionName(),
+                stack.diyaGlVersionGetLambdaProps.ingestFunctionName(),
+                stack.diyaGlPutLambdaProps.ingestFunctionName(),
+                stack.diyaGlDeleteLambdaProps.ingestFunctionName(),
+                stack.practiceClientBookMovePostLambdaProps.ingestFunctionName())) {
+            template.hasResourceProperties(
+                    "AWS::Lambda::Function",
+                    Match.objectLike(Map.of(
+                            "FunctionName",
+                            functionName,
+                            "Environment",
+                            Match.objectLike(Map.of(
+                                    "Variables",
+                                    Match.objectLike(Map.of(
+                                            "PRACTICE_CLIENTS_DYNAMODB_TABLE_NAME", "docs-env-practice-clients")))))));
+            assertTrue(
+                    iamStatementsForFunction(template, functionName).stream()
+                            .anyMatch(statement -> actionsOf(statement).contains("dynamodb:GetItem")),
+                    "expected " + functionName + " to have dynamodb:GetItem on the practice clients table");
+        }
+    }
+
+    @Test
+    void theBookMoveFunctionGetsReadWriteAndDeleteAccessToTheBucket() {
+        DiyaGlStack stack = synthDiyaGlStack();
+        Template template = Template.fromStack(stack);
+        String functionName = stack.practiceClientBookMovePostLambdaProps.ingestFunctionName();
+
+        var statements = iamStatementsForFunction(template, functionName);
+        assertTrue(
+                statements.stream().anyMatch(statement -> actionsOf(statement).contains("s3:GetObject")));
+        assertTrue(
+                statements.stream().anyMatch(statement -> actionsOf(statement).contains("s3:PutObject")));
+        assertTrue(
+                statements.stream().anyMatch(statement -> actionsOf(statement).contains("s3:DeleteObject")));
+        assertTrue(
+                statements.stream().noneMatch(statement -> actionsOf(statement).contains("s3:*")));
+    }
+
+    @Test
     void outputsCarryTheApiBaseUrl() {
         DiyaGlStack stack = synthDiyaGlStack();
         Template template = Template.fromStack(stack);
@@ -235,9 +281,10 @@ class DiyaGlStackTest {
         DiyaGlStack stack = synthDiyaGlStack();
 
         assertEquals(
-                8,
+                9,
                 stack.lambdaFunctionProps.size(),
-                "expected four routes doubled: /api/v1/diya-gl and /api/v1/books are both served permanently");
+                "expected four routes doubled (/api/v1/diya-gl and /api/v1/books both served permanently) "
+                        + "plus the practice client book move route, which has no second path");
 
         var urlPaths = stack.lambdaFunctionProps.stream()
                 .map(AbstractApiLambdaProps::urlPath)
@@ -248,10 +295,14 @@ class DiyaGlStackTest {
         assertTrue(urlPaths.contains("/api/v1/books/{bookId}/versions/{version}"));
         assertTrue(urlPaths.contains("/api/v1/diya-gl/{bookId}"));
         assertTrue(urlPaths.contains("/api/v1/books/{bookId}"));
+        assertTrue(urlPaths.contains("/api/v1/practice/clients/{clientId}/books/{bookId}/move"));
 
-        // Both entries resolve to the same underlying Lambda, so this is one implementation
-        // published under two permanent routes, not two drifting copies.
+        // Every diya-gl route resolves to the same underlying Lambda under both its paths, so
+        // each is one implementation published twice, not two drifting copies. The move route has
+        // only ever had the one path, so it is excluded from that pairing check.
         var byFunctionName = stack.lambdaFunctionProps.stream()
+                .filter(props -> !props.ingestFunctionName()
+                        .equals(stack.practiceClientBookMovePostLambdaProps.ingestFunctionName()))
                 .collect(java.util.stream.Collectors.groupingBy(AbstractApiLambdaProps::ingestFunctionName));
         for (var entry : byFunctionName.entrySet()) {
             assertEquals(
@@ -302,7 +353,7 @@ class DiyaGlStackTest {
         Template template = Template.fromStack(stack);
 
         assertNull(stack.diyaGlLapseSweepLambdaProps);
-        template.resourceCountIs("AWS::Lambda::Function", 4);
+        template.resourceCountIs("AWS::Lambda::Function", 5);
         template.resourceCountIs("AWS::Events::Rule", 0);
     }
 

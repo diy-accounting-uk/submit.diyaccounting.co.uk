@@ -1191,6 +1191,15 @@ public class SubmitSharedNames {
     public boolean diyaGlDeleteLambdaJwtAuthorizer;
     public boolean diyaGlDeleteLambdaCustomAuthorizer;
 
+    public String practiceClientBookMovePostIngestLambdaHandler;
+    public String practiceClientBookMovePostIngestLambdaFunctionName;
+    public String practiceClientBookMovePostIngestLambdaArn;
+    public String practiceClientBookMovePostIngestProvisionedConcurrencyLambdaAliasArn;
+    public HttpMethod practiceClientBookMovePostLambdaHttpMethod;
+    public String practiceClientBookMovePostLambdaUrlPath;
+    public boolean practiceClientBookMovePostLambdaJwtAuthorizer;
+    public boolean practiceClientBookMovePostLambdaCustomAuthorizer;
+
     // Alarm-to-GitHub-issue Lambda (EventBridge target, not API)
     public String alarmToGithubIssueLambdaHandler;
     public String alarmToGithubIssueLambdaFunctionName;
@@ -4413,6 +4422,35 @@ public class SubmitSharedNames {
                 "Deletes a book and every stored version for the authenticated books user",
                 "deleteBook",
                 List.of(new ApiParameter("bookId", "path", true, "The book's id"))));
+
+        // Practice client book move POST Lambda: copies one of the practice's own books to a
+        // client's book set and deletes the source (PLAN_PRICE_UPDATE.md (d), "Migration from
+        // sole trader to practice"). Standard JWT auth like the other practice routes, not the
+        // books authoriser, since the caller here is always the practice itself.
+        this.practiceClientBookMovePostLambdaHttpMethod = HttpMethod.POST;
+        this.practiceClientBookMovePostLambdaUrlPath = "/api/v1/practice/clients/{clientId}/books/{bookId}/move";
+        this.practiceClientBookMovePostLambdaJwtAuthorizer = true;
+        this.practiceClientBookMovePostLambdaCustomAuthorizer = false;
+        var practiceClientBookMovePostLambdaHandlerName = "practiceClientBookMovePost.ingestHandler";
+        var practiceClientBookMovePostLambdaHandlerDashed =
+                ResourceNameUtils.convertCamelCaseToDashSeparated(practiceClientBookMovePostLambdaHandlerName);
+        this.practiceClientBookMovePostIngestLambdaFunctionName =
+                "%s-%s".formatted(this.appResourceNamePrefix, practiceClientBookMovePostLambdaHandlerDashed);
+        this.practiceClientBookMovePostIngestLambdaHandler =
+                "%s/practice/%s".formatted(appLambdaHandlerPrefix, practiceClientBookMovePostLambdaHandlerName);
+        this.practiceClientBookMovePostIngestLambdaArn =
+                "%s-%s".formatted(appLambdaArnPrefix, practiceClientBookMovePostLambdaHandlerDashed);
+        this.practiceClientBookMovePostIngestProvisionedConcurrencyLambdaAliasArn =
+                "%s:%s".formatted(this.practiceClientBookMovePostIngestLambdaArn, this.provisionedConcurrencyAliasName);
+        publishedApiLambdas.add(new PublishedLambda(
+                this.practiceClientBookMovePostLambdaHttpMethod,
+                this.practiceClientBookMovePostLambdaUrlPath,
+                "Move a book to a client",
+                "Copies one of the practice's own books to a client's book set and deletes the source",
+                "movePracticeClientBook",
+                List.of(
+                        new ApiParameter("clientId", "path", true, "The client's id"),
+                        new ApiParameter("bookId", "path", true, "The book's id"))));
 
         // Alarm-to-GitHub-issue Lambda (EventBridge target, not API)
         var alarmToGithubIssueLambdaHandlerName = "alarmToGithubIssue.handler";
