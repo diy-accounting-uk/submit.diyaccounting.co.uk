@@ -2016,7 +2016,7 @@ jobs:
   #     phase: 'post-deploy'
 
   enable-native-auth:
-    if: ${{ !cancelled() }}
+    if: ${{ !cancelled() && (github.event_name != 'schedule' || needs.names.outputs.live-head-is-current != 'true' || needs.params.outputs.isSkippingDeploy == 'true') }}
     name: 'enable native auth for behaviour tests'
     needs:
       - params
@@ -2126,7 +2126,7 @@ jobs:
           exit 1
 
   generate-test-pass:
-    if: ${{ !cancelled() }}
+    if: ${{ !cancelled() && (github.event_name != 'schedule' || needs.names.outputs.live-head-is-current != 'true' || needs.params.outputs.isSkippingDeploy == 'true') }}
     name: 'generate test pass for ${{ needs.names.outputs.environment-name }}'
     needs:
       - params
@@ -2147,7 +2147,7 @@ jobs:
       HMRC_SANDBOX_CLIENT_SECRET: ${{ secrets.HMRC_SANDBOX_CLIENT_SECRET }}
 
   web-test-auth:
-    if: ${{ !cancelled() }}
+    if: ${{ !cancelled() && (github.event_name != 'schedule' || needs.names.outputs.live-head-is-current != 'true' || needs.params.outputs.isSkippingDeploy == 'true') }}
     name: 'authBehaviour-${{ needs.names.outputs.environment-name }} via probe test'
     needs:
       - names
@@ -2170,7 +2170,7 @@ jobs:
       HMRC_SANDBOX_CLIENT_SECRET: ${{ secrets.HMRC_SANDBOX_CLIENT_SECRET }}
 
   web-test-token-enforcement:
-    if: ${{ !cancelled() }}
+    if: ${{ !cancelled() && (github.event_name != 'schedule' || needs.names.outputs.live-head-is-current != 'true' || needs.params.outputs.isSkippingDeploy == 'true') }}
     name: 'tokenEnforcementBehaviour-${{ needs.names.outputs.environment-name }} via probe test'
     needs:
       - params
@@ -2193,7 +2193,7 @@ jobs:
       HMRC_SANDBOX_CLIENT_SECRET: ${{ secrets.HMRC_SANDBOX_CLIENT_SECRET }}
 
   web-test-payment:
-    if: ${{ !cancelled() }}
+    if: ${{ !cancelled() && (github.event_name != 'schedule' || needs.names.outputs.live-head-is-current != 'true' || needs.params.outputs.isSkippingDeploy == 'true') }}
     name: 'paymentBehaviour-${{ needs.names.outputs.environment-name }} via probe test'
     needs:
       - params
@@ -2216,7 +2216,7 @@ jobs:
       HMRC_SANDBOX_CLIENT_SECRET: ${{ secrets.HMRC_SANDBOX_CLIENT_SECRET }}
 
   web-test:
-    if: ${{ !cancelled() }}
+    if: ${{ !cancelled() && (github.event_name != 'schedule' || needs.names.outputs.live-head-is-current != 'true' || needs.params.outputs.isSkippingDeploy == 'true') }}
     name: 'submitVatBehaviour-${{ needs.names.outputs.environment-name }} via probe test'
     needs:
       - params
@@ -2239,7 +2239,7 @@ jobs:
       HMRC_SANDBOX_CLIENT_SECRET: ${{ secrets.HMRC_SANDBOX_CLIENT_SECRET }}
 
   web-test-bundle:
-    if: ${{ !cancelled() }}
+    if: ${{ !cancelled() && (github.event_name != 'schedule' || needs.names.outputs.live-head-is-current != 'true' || needs.params.outputs.isSkippingDeploy == 'true') }}
     name: 'bundleBehaviour-${{ needs.names.outputs.environment-name }} via probe test'
     needs:
       - params
@@ -2266,7 +2266,7 @@ jobs:
       HMRC_SANDBOX_CLIENT_SECRET: ${{ secrets.HMRC_SANDBOX_CLIENT_SECRET }}
 
   web-test-pass-redemption:
-    if: ${{ !cancelled() }}
+    if: ${{ !cancelled() && (github.event_name != 'schedule' || needs.names.outputs.live-head-is-current != 'true' || needs.params.outputs.isSkippingDeploy == 'true') }}
     name: 'passRedemptionBehaviour-${{ needs.names.outputs.environment-name }} via probe test'
     needs:
       - params
@@ -2293,7 +2293,7 @@ jobs:
       HMRC_SANDBOX_CLIENT_SECRET: ${{ secrets.HMRC_SANDBOX_CLIENT_SECRET }}
 
   web-test-post-vat-return-synthetic:
-    if: ${{ !cancelled() && needs.params.outputs.skipTestScenarios != 'true' }}
+    if: ${{ !cancelled() && needs.params.outputs.skipTestScenarios != 'true' && (github.event_name != 'schedule' || needs.names.outputs.live-head-is-current != 'true' || needs.params.outputs.isSkippingDeploy == 'true') }}
     name: 'postVatReturnBehaviour-${{ needs.names.outputs.environment-name }} via probe test'
     needs:
       - params
@@ -2320,7 +2320,7 @@ jobs:
       HMRC_SANDBOX_CLIENT_SECRET: ${{ secrets.HMRC_SANDBOX_CLIENT_SECRET }}
 
   web-test-get-vat-return-synthetic:
-    if: ${{ !cancelled() && needs.params.outputs.skipTestScenarios != 'true' }}
+    if: ${{ !cancelled() && needs.params.outputs.skipTestScenarios != 'true' && (github.event_name != 'schedule' || needs.names.outputs.live-head-is-current != 'true' || needs.params.outputs.isSkippingDeploy == 'true') }}
     name: 'getVatReturnBehaviour-${{ needs.names.outputs.environment-name }} via probe test'
     needs:
       - params
@@ -2347,7 +2347,7 @@ jobs:
       HMRC_SANDBOX_CLIENT_SECRET: ${{ secrets.HMRC_SANDBOX_CLIENT_SECRET }}
 
   web-test-obligation-synthetic:
-    if: ${{ !cancelled() && needs.params.outputs.skipTestScenarios != 'true' }}
+    if: ${{ !cancelled() && needs.params.outputs.skipTestScenarios != 'true' && (github.event_name != 'schedule' || needs.names.outputs.live-head-is-current != 'true' || needs.params.outputs.isSkippingDeploy == 'true') }}
     name: 'getVatObligationsBehaviour-${{ needs.names.outputs.environment-name }} via probe test'
     needs:
       - params
@@ -2375,7 +2375,7 @@ jobs:
 
   web-test-liability-synthetic:
     # Gated to non-prod environments until examined.
-    if: ${{ !cancelled() && needs.params.outputs.skipTestScenarios != 'true' && needs.names.outputs.environment-name == 'ci' }}
+    if: ${{ !cancelled() && needs.params.outputs.skipTestScenarios != 'true' && needs.names.outputs.environment-name == 'ci' && (github.event_name != 'schedule' || needs.names.outputs.live-head-is-current != 'true' || needs.params.outputs.isSkippingDeploy == 'true') }}
     name: 'getVatLiabilitiesBehaviour-${{ needs.names.outputs.environment-name }} via probe test'
     needs:
       - params
@@ -2403,7 +2403,7 @@ jobs:
 
   web-test-vat-payment-synthetic:
     # Gated to non-prod environments until examined.
-    if: ${{ !cancelled() && needs.params.outputs.skipTestScenarios != 'true' && needs.names.outputs.environment-name == 'ci' }}
+    if: ${{ !cancelled() && needs.params.outputs.skipTestScenarios != 'true' && needs.names.outputs.environment-name == 'ci' && (github.event_name != 'schedule' || needs.names.outputs.live-head-is-current != 'true' || needs.params.outputs.isSkippingDeploy == 'true') }}
     name: 'getVatPaymentsBehaviour-${{ needs.names.outputs.environment-name }} via probe test'
     needs:
       - params
@@ -2431,7 +2431,7 @@ jobs:
 
   web-test-vat-penalty-synthetic:
     # Gated to non-prod environments until examined.
-    if: ${{ !cancelled() && needs.params.outputs.skipTestScenarios != 'true' && needs.names.outputs.environment-name == 'ci' }}
+    if: ${{ !cancelled() && needs.params.outputs.skipTestScenarios != 'true' && needs.names.outputs.environment-name == 'ci' && (github.event_name != 'schedule' || needs.names.outputs.live-head-is-current != 'true' || needs.params.outputs.isSkippingDeploy == 'true') }}
     name: 'getVatPenaltiesBehaviour-${{ needs.names.outputs.environment-name }} via probe test'
     needs:
       - params
@@ -2459,7 +2459,7 @@ jobs:
 
   web-test-diya-gl-subscription:
     # The three subscription bundles list on ci only until the operator lifts each one.
-    if: ${{ !cancelled() && needs.names.outputs.environment-name == 'ci' }}
+    if: ${{ !cancelled() && needs.names.outputs.environment-name == 'ci' && (github.event_name != 'schedule' || needs.names.outputs.live-head-is-current != 'true' || needs.params.outputs.isSkippingDeploy == 'true') }}
     name: 'diyaGlSubscriptionBehaviour-${{ needs.names.outputs.environment-name }} via probe test'
     needs:
       - params
@@ -2482,7 +2482,7 @@ jobs:
       HMRC_SANDBOX_CLIENT_SECRET: ${{ secrets.HMRC_SANDBOX_CLIENT_SECRET }}
 
   web-test-fraud-prevention-headers-vat-synthetic:
-    if: ${{ !cancelled() }}
+    if: ${{ !cancelled() && (github.event_name != 'schedule' || needs.names.outputs.live-head-is-current != 'true' || needs.params.outputs.isSkippingDeploy == 'true') }}
     name: 'postVatReturnFraudPreventionHeadersBehaviour-${{ needs.names.outputs.environment-name }} via probe test'
     needs:
       - params
@@ -2509,7 +2509,7 @@ jobs:
       HMRC_SANDBOX_CLIENT_SECRET: ${{ secrets.HMRC_SANDBOX_CLIENT_SECRET }}
 
   web-test-compliance-synthetic:
-    if: ${{ !cancelled() }}
+    if: ${{ !cancelled() && (github.event_name != 'schedule' || needs.names.outputs.live-head-is-current != 'true' || needs.params.outputs.isSkippingDeploy == 'true') }}
     name: 'complianceBehaviour-${{ needs.names.outputs.environment-name }} via probe test'
     needs:
       - params
@@ -2536,7 +2536,7 @@ jobs:
       HMRC_SANDBOX_CLIENT_SECRET: ${{ secrets.HMRC_SANDBOX_CLIENT_SECRET }}
 
   web-test-help-synthetic:
-    if: ${{ !cancelled() }}
+    if: ${{ !cancelled() && (github.event_name != 'schedule' || needs.names.outputs.live-head-is-current != 'true' || needs.params.outputs.isSkippingDeploy == 'true') }}
     name: 'helpBehaviour-${{ needs.names.outputs.environment-name }} via probe test'
     needs:
       - params
@@ -2563,7 +2563,7 @@ jobs:
       HMRC_SANDBOX_CLIENT_SECRET: ${{ secrets.HMRC_SANDBOX_CLIENT_SECRET }}
 
   web-test-vatValidation-synthetic:
-    if: ${{ !cancelled() && needs.params.outputs.skipTestScenarios != 'true' }}
+    if: ${{ !cancelled() && needs.params.outputs.skipTestScenarios != 'true' && (github.event_name != 'schedule' || needs.names.outputs.live-head-is-current != 'true' || needs.params.outputs.isSkippingDeploy == 'true') }}
     name: 'vatValidationBehaviour-${{ needs.names.outputs.environment-name }} via probe test'
     needs:
       - params
@@ -2590,7 +2590,7 @@ jobs:
       HMRC_SANDBOX_CLIENT_SECRET: ${{ secrets.HMRC_SANDBOX_CLIENT_SECRET }}
 
   web-test-vatSchemes-synthetic:
-    if: ${{ !cancelled() && needs.params.outputs.skipTestScenarios != 'true' }}
+    if: ${{ !cancelled() && needs.params.outputs.skipTestScenarios != 'true' && (github.event_name != 'schedule' || needs.names.outputs.live-head-is-current != 'true' || needs.params.outputs.isSkippingDeploy == 'true') }}
     name: 'vatSchemesBehaviour-${{ needs.names.outputs.environment-name }} via probe test'
     needs:
       - params
@@ -2618,7 +2618,7 @@ jobs:
 
   web-test-companies-house:
     # Gated to non-prod environments until examined.
-    if: ${{ !cancelled() && needs.names.outputs.environment-name == 'ci' }}
+    if: ${{ !cancelled() && needs.names.outputs.environment-name == 'ci' && (github.event_name != 'schedule' || needs.names.outputs.live-head-is-current != 'true' || needs.params.outputs.isSkippingDeploy == 'true') }}
     name: 'companiesHouseBehaviour-${{ needs.names.outputs.environment-name }} via probe test'
     needs:
       - params
@@ -2649,7 +2649,7 @@ jobs:
     # is turned on. Signs in to the real Companies House sandbox, so it needs
     # COMPANIES_HOUSE_SANDBOX_API_KEY, TEST_COMPANIES_HOUSE_USER_ID, TEST_COMPANIES_HOUSE_PASSWORD
     # and TEST_COMPANIES_HOUSE_TOTP_SECRET on the ci environment (see probe-test.yml).
-    if: ${{ !cancelled() && needs.names.outputs.environment-name == 'ci' && needs.params.outputs.runCompaniesHouseSandboxFiling == 'true' }}
+    if: ${{ !cancelled() && needs.names.outputs.environment-name == 'ci' && needs.params.outputs.runCompaniesHouseSandboxFiling == 'true' && (github.event_name != 'schedule' || needs.names.outputs.live-head-is-current != 'true' || needs.params.outputs.isSkippingDeploy == 'true') }}
     name: 'changeRegisteredOfficeBehaviour-${{ needs.names.outputs.environment-name }} via probe test'
     needs:
       - params
@@ -2680,7 +2680,7 @@ jobs:
     # is turned on. Signs in to the real Companies House sandbox, so it needs
     # COMPANIES_HOUSE_SANDBOX_API_KEY, TEST_COMPANIES_HOUSE_USER_ID, TEST_COMPANIES_HOUSE_PASSWORD
     # and TEST_COMPANIES_HOUSE_TOTP_SECRET on the ci environment (see probe-test.yml).
-    if: ${{ !cancelled() && needs.names.outputs.environment-name == 'ci' && needs.params.outputs.runCompaniesHouseSandboxFiling == 'true' }}
+    if: ${{ !cancelled() && needs.names.outputs.environment-name == 'ci' && needs.params.outputs.runCompaniesHouseSandboxFiling == 'true' && (github.event_name != 'schedule' || needs.names.outputs.live-head-is-current != 'true' || needs.params.outputs.isSkippingDeploy == 'true') }}
     name: 'changeRegisteredEmailBehaviour-${{ needs.names.outputs.environment-name }} via probe test'
     needs:
       - params
@@ -2708,7 +2708,7 @@ jobs:
 
   web-test-itsa-business-details-synthetic:
     # Gated to non-prod environments until examined.
-    if: ${{ !cancelled() && needs.params.outputs.skipTestScenarios != 'true' && needs.names.outputs.environment-name == 'ci' }}
+    if: ${{ !cancelled() && needs.params.outputs.skipTestScenarios != 'true' && needs.names.outputs.environment-name == 'ci' && (github.event_name != 'schedule' || needs.names.outputs.live-head-is-current != 'true' || needs.params.outputs.isSkippingDeploy == 'true') }}
     name: 'itsaBusinessDetailsBehaviour-${{ needs.names.outputs.environment-name }} via probe test'
     needs:
       - params
@@ -2736,7 +2736,7 @@ jobs:
 
   web-test-itsa-obligations-synthetic:
     # Gated to non-prod environments until examined.
-    if: ${{ !cancelled() && needs.params.outputs.skipTestScenarios != 'true' && needs.names.outputs.environment-name == 'ci' }}
+    if: ${{ !cancelled() && needs.params.outputs.skipTestScenarios != 'true' && needs.names.outputs.environment-name == 'ci' && (github.event_name != 'schedule' || needs.names.outputs.live-head-is-current != 'true' || needs.params.outputs.isSkippingDeploy == 'true') }}
     name: 'itsaObligationsBehaviour-${{ needs.names.outputs.environment-name }} via probe test'
     needs:
       - params
@@ -2764,7 +2764,7 @@ jobs:
 
   web-test-itsa-uk-property-period-synthetic:
     # Gated to non-prod environments until examined.
-    if: ${{ !cancelled() && needs.params.outputs.skipTestScenarios != 'true' && needs.names.outputs.environment-name == 'ci' }}
+    if: ${{ !cancelled() && needs.params.outputs.skipTestScenarios != 'true' && needs.names.outputs.environment-name == 'ci' && (github.event_name != 'schedule' || needs.names.outputs.live-head-is-current != 'true' || needs.params.outputs.isSkippingDeploy == 'true') }}
     name: 'itsaUkPropertyPeriodBehaviour-${{ needs.names.outputs.environment-name }} via probe test'
     needs:
       - params
@@ -2792,7 +2792,7 @@ jobs:
 
   web-test-itsa-uk-property-annual-synthetic:
     # Gated to non-prod environments until examined.
-    if: ${{ !cancelled() && needs.params.outputs.skipTestScenarios != 'true' && needs.names.outputs.environment-name == 'ci' }}
+    if: ${{ !cancelled() && needs.params.outputs.skipTestScenarios != 'true' && needs.names.outputs.environment-name == 'ci' && (github.event_name != 'schedule' || needs.names.outputs.live-head-is-current != 'true' || needs.params.outputs.isSkippingDeploy == 'true') }}
     name: 'itsaUkPropertyAnnualSubmissionBehaviour-${{ needs.names.outputs.environment-name }} via probe test'
     needs:
       - params
@@ -2820,7 +2820,7 @@ jobs:
 
   web-test-itsa-losses-and-claims-synthetic:
     # Gated to non-prod environments until examined.
-    if: ${{ !cancelled() && needs.params.outputs.skipTestScenarios != 'true' && needs.names.outputs.environment-name == 'ci' }}
+    if: ${{ !cancelled() && needs.params.outputs.skipTestScenarios != 'true' && needs.names.outputs.environment-name == 'ci' && (github.event_name != 'schedule' || needs.names.outputs.live-head-is-current != 'true' || needs.params.outputs.isSkippingDeploy == 'true') }}
     name: 'itsaLossesAndClaimsBehaviour-${{ needs.names.outputs.environment-name }} via probe test'
     needs:
       - params
@@ -2848,7 +2848,7 @@ jobs:
 
   web-test-itsa-self-employment-period-synthetic:
     # Gated to non-prod environments until examined.
-    if: ${{ !cancelled() && needs.params.outputs.skipTestScenarios != 'true' && needs.names.outputs.environment-name == 'ci' }}
+    if: ${{ !cancelled() && needs.params.outputs.skipTestScenarios != 'true' && needs.names.outputs.environment-name == 'ci' && (github.event_name != 'schedule' || needs.names.outputs.live-head-is-current != 'true' || needs.params.outputs.isSkippingDeploy == 'true') }}
     name: 'itsaSelfEmploymentPeriodBehaviour-${{ needs.names.outputs.environment-name }} via probe test'
     needs:
       - params
@@ -2875,7 +2875,7 @@ jobs:
       HMRC_SANDBOX_CLIENT_SECRET: ${{ secrets.HMRC_SANDBOX_CLIENT_SECRET }}
 
   web-test-simulator:
-    if: ${{ !cancelled() }}
+    if: ${{ !cancelled() && (github.event_name != 'schedule' || needs.names.outputs.live-head-is-current != 'true' || needs.params.outputs.isSkippingDeploy == 'true') }}
     name: 'simulatorBehaviour-${{ needs.names.outputs.environment-name }} via probe test'
     needs:
       - params
@@ -2902,7 +2902,7 @@ jobs:
       HMRC_SANDBOX_CLIENT_SECRET: ${{ secrets.HMRC_SANDBOX_CLIENT_SECRET }}
 
   web-test-generate-pass-activity:
-    if: ${{ !cancelled() }}
+    if: ${{ !cancelled() && (github.event_name != 'schedule' || needs.names.outputs.live-head-is-current != 'true' || needs.params.outputs.isSkippingDeploy == 'true') }}
     name: 'generatePassActivityBehaviour-${{ needs.names.outputs.environment-name }} via probe test'
     needs:
       - params
@@ -2929,7 +2929,7 @@ jobs:
       HMRC_SANDBOX_CLIENT_SECRET: ${{ secrets.HMRC_SANDBOX_CLIENT_SECRET }}
 
   disable-native-auth:
-    if: ${{ !cancelled() }}
+    if: ${{ !cancelled() && (github.event_name != 'schedule' || needs.names.outputs.live-head-is-current != 'true' || needs.params.outputs.isSkippingDeploy == 'true') }}
     name: 'disable native auth after behaviour tests'
     needs:
       - params
