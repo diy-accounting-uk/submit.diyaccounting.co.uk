@@ -77,8 +77,14 @@ step.
   vendor API specs move to `reference/`; `_developers/` keeps `hmrc/` and the live runbooks.
   Its ci deploy 35753852365 went red in `diyaGlSubscriptionBehaviour`: the durable test user
   has reached the tier's book limit because runs that failed mid-way today left their books
-  behind; the fix (delete the user's leftover books before the PUT) is the branch's second commit e895c1d0; a behaviour-test change triggers no
-  deploy, so the proof is the dispatched deploy 35766211386 (`ci-b79-probe`). After the merge: repoint `NEXT.md` and `BACKLOG.md` on `main`, and
+  behind; the fix (delete the user's leftover books before the PUT) was the branch's second commit e895c1d0, and the dispatched deploy 35766211386
+  (`ci-b79-probe`) still failed it with `Cleaned up 0 existing books`: the list route hides sandbox
+  books past their `expiresAt` while the PUT's limit counts every book prefix, so the durable
+  test user sits at the limit on books it cannot see. An agent is reading the ci bucket and
+  fixing the layer that counts wrongly. The same deploy failed three sign-in probes with
+  `redirect_mismatch`: only `ci-set1`, `ci-set2` and the apex are Cognito callback hosts, so a
+  deployment under another name cannot prove a signed-in probe; `ci-b79-probe` and
+  `ci-b80-probe` self-destruct four hours after creation. After the merge: repoint `NEXT.md` and `BACKLOG.md` on `main`, and
   land AS15 and AS18, which touch the same files. The spreadsheets and www moves are merged (their PRs #133 and #32). **Source**: operator 2026-09-22. **Owner**: Claude
   Code. **Model**: Sonnet. **Size**: 262 files.
 
