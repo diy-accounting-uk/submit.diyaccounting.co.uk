@@ -1,0 +1,27 @@
+{
+  "search": [
+    {
+      "source": "mail-antony",
+      "path": "2026/6/2/redacted-aws-invoice-available.eml",
+      "title": "Amazon Web Services Invoice Available [Account: 000000000000]",
+      "date": "2026-06-02T00:15:39+00:00",
+      "score": 0.0161,
+      "excerpt": "Amazon Web Services Invoice Available ... Electronic Invoice(s) available ...",
+      "chunk_seq": 0,
+      "content_indexed": true
+    }
+  ],
+  "doc": {
+    "source": "mail-antony",
+    "path": "2026/6/2/redacted-aws-invoice-available.eml",
+    "title": "Amazon Web Services Invoice Available [Account: 000000000000]",
+    "doc_date": "2026-06-02T00:15:39+00:00",
+    "content_indexed": true,
+    "meta": {
+      "from": "Amazon Web Services <no-reply@tax-and-invoicing.us-east-1.amazonaws.com>",
+      "to": "admin@diyaccounting.co.uk",
+      "attachments": ["EUINGB26-000001.pdf"]
+    },
+    "content": "Amazon Web Services Invoice Available [Account: 000000000000] — Amazon Web Services <no-reply@tax-and-invoicing.us-east-1.amazonaws.com>, 2026-06-02\n\nGreetings from Amazon Web Services,\n\nWe are writing to notify you that your AWS Account has Electronic Invoice(s) available. This is for usage of AWS services for billing period May 1 - May 31, 2026. Additional information regarding your bill, individual service charge details, and your account history are available on the Billing & Cost Management Page. Thank you for using Amazon Web Services.\n\nWe will automatically charge the total amount due shown above to your default payment method unless your bank requires additional verification from you.\n\nSincerely,\nAmazon Web Services\n\n--- attachment: EUINGB26-000001.pdf ---\n VAT Invoice\n Email or talk to us about your AWS account or bill, visit console.aws.amazon.com/support\n\nAccount number:                                             Invoice Summary\n000000000000                                                VAT Invoice Number:                                            EUINGB26-000001\nAddress:                                                    VAT Invoice Date:                                                June 1, 2026\nAcme Cloud Testing Ltd                                      TOTAL AMOUNT                                                         EUR 123.45\nATTN: Test Contact\n42 Fictional Way, Sampleton, ZZ9 9ZZ, GB                    TOTAL VAT                                                             GBP 20.58\n\nThis VAT Invoice is for the billing period May 1 - May 31, 2026\nYou have selected EUR as your preferred payment currency.\n\n                                                      AMAZON WEB SERVICES EMEA SARL\n                                               38 AVENUE JOHN F. KENNEDY, L-1855 LUXEMBOURG"
+  }
+}

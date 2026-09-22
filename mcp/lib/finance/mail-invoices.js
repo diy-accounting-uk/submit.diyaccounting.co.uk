@@ -59,25 +59,49 @@ function parseAmount(raw) {
   return Number(`${wholePart}.${fractionPart}`);
 }
 
-// A token such as "$84.00", "£196.00 GBP" or "196.00 GBP": an optional
-// leading currency symbol, the digits, and an optional trailing three-letter
-// code. The trailing code wins over the symbol when both are present.
+// A token such as "$84.00", "£196.00 GBP", "196.00 GBP" or "EUR 165.28": an
+// optional leading currency symbol or three-letter code, the digits, and an
+// optional trailing three-letter code. A trailing code wins over a leading
+// one, and either wins over a symbol, when more than one is present.
 function extractAmountToken(text) {
   const cleaned = text.split(NON_BREAKING_SPACE).join(" ").trim();
   const numberMatch = cleaned.match(/\d[\d.,]*/);
   if (!numberMatch) return null;
   const symbolMatch = cleaned.match(/^([£$€])/);
-  const currencyCodeMatch = cleaned.match(/([A-Z]{3})$/);
-  const currency = (currencyCodeMatch && currencyCodeMatch[1]) || (symbolMatch && CURRENCY_SYMBOLS[symbolMatch[1]]) || "GBP";
+  const leadingCodeMatch = cleaned.match(/^([A-Z]{3})\b/);
+  const trailingCodeMatch = cleaned.match(/([A-Z]{3})$/);
+  const currency =
+    (trailingCodeMatch && trailingCodeMatch[1]) ||
+    (leadingCodeMatch && leadingCodeMatch[1]) ||
+    (symbolMatch && CURRENCY_SYMBOLS[symbolMatch[1]]) ||
+    "GBP";
   return { currency, amount: parseAmount(numberMatch[0]) };
 }
 
-// Two shapes seen in the mailbox: an AWS-style statement line ("Total in
-// USD: $84.00") and a Google/PayPal-style receipt block, where "Total"
-// stands alone on its own line and the amount is the next non-blank line.
-// A hit with neither is not an invoice this module can post -- most search
-// hits are account-security notices, not bills -- so it is skipped rather
-// than guessed at.
+// AWS's VAT invoice PDF prints its total in a two-column layout that
+// pdftotext (-layout) collapses onto one line: the label anywhere in the
+// line, the amount as the line's last token, e.g.
+// "...  TOTAL AMOUNT                    EUR 165.28" or, on a receipt,
+// "Total amount due    USD 12.34". Matched case-insensitively because the
+// billing-statement email and the invoice PDF capitalise it differently.
+// eslint-disable-next-line security/detect-unsafe-regex -- linear time regex, no backtracking risk
+const AWS_PDF_TOTAL_LABEL = /total amount(?:\s+due)?/i;
+
+// Google Workspace/Cloud's invoice PDF prints the same way, with the
+// currency in the label rather than the amount: "Total in GBP ... £28.00".
+// The lookbehind keeps this off the PDF's "Subtotal in GBP" line (the
+// pre-VAT figure), which would otherwise match as a substring.
+const GOOGLE_PDF_TOTAL_LABEL = /(?<!sub)total in [A-Z]{3}\b/i;
+
+// Three shapes seen in the mailbox: an AWS billing-statement email body
+// ("Total in USD: $84.00"), a Google/PayPal-style receipt block where
+// "Total" stands alone on its own line and the amount is the next non-blank
+// line, and a PDF invoice attachment's own total line (AWS's "TOTAL AMOUNT"
+// or Google's "Total in <CCY>", both trailing the amount at line end,
+// pdftotext having collapsed the printed layout onto one line). A hit with
+// none of these is not an invoice this module can post -- most search hits
+// are account-security notices, not bills -- so it is skipped rather than
+// guessed at.
 function findInvoiceTotal(content) {
   if (!content) return null;
 
@@ -98,6 +122,18 @@ function findInvoiceTotal(content) {
         if (candidate === "") continue;
         return extractAmountToken(candidate);
       }
+    }
+
+    const awsPdfMatch = line.match(AWS_PDF_TOTAL_LABEL);
+    if (awsPdfMatch) {
+      const token = extractAmountToken(line.slice(awsPdfMatch.index + awsPdfMatch[0].length));
+      if (token) return token;
+    }
+
+    const googlePdfMatch = line.match(GOOGLE_PDF_TOTAL_LABEL);
+    if (googlePdfMatch) {
+      const token = extractAmountToken(line.slice(googlePdfMatch.index + googlePdfMatch[0].length));
+      if (token) return token;
     }
   }
 
