@@ -40,18 +40,18 @@ step.
 
 ## In flight
 
-- [ ] **B81. Wave b81 on `claude/b81-board`, PR #335.** Four commits, head e0744b65, its ci deploy
-  starting: PU-7m (a0bd6686: the practice licence suite green on the simulator lane, the
-  practice-clients table bootstrapped for the local lanes, `resident-pro` granted through checkout
-  so `subscriptionStatus` is set), AS7a (0caff823: the `STRICT_ENV_VALIDATION` flag gone, strict
-  validation the default, the local-server system test loading `.env.test`) and AS1 (f3538afa:
-  the `**/.claude/**` coverage exclude matched every file inside a worktree under
+- [ ] **B81. Wave b81 on `claude/b81-board`, PR #335.** PU-7m (a0bd6686: the practice licence
+  suite green on the simulator lane, the practice-clients table bootstrapped for the local lanes,
+  `resident-pro` granted through checkout so `subscriptionStatus` is set) and AS1 (f3538afa: the
+  `**/.claude/**` coverage exclude matched every file inside a worktree under
   `.claude/worktrees/`, so both providers reported nothing; the project config's misplaced
-  `pool`/`include` block flattened; thresholds 76/68/86/77 from the measured run, a point above
-  fails and the committed numbers pass). The suite's ci and prod variants need a sandbox agent
-  authorisation the simulator shortcut has no equivalent for, so they run only when one exists.
-  **Source**: the rows named. **Owner**: Claude Code. **Model**: Sonnet and Haiku. **Size**: ~20
-  files.
+  `pool`/`include` block flattened; thresholds 76/68/86/77 from the measured run). AS7a's strict
+  validation is reverted on the branch: the simulator lane runs with `COGNITO_CLIENT_ID`,
+  `COGNITO_BASE_URI` and the two HMRC secret ARNs blank by design, so every simulator suite's
+  server failed to start in `test` run 35767760731; the reverts push when deploy 35767761916
+  ends. The suite's ci and prod variants need a sandbox agent authorisation the simulator
+  shortcut has no equivalent for, so they run only when one exists. **Source**: the rows named.
+  **Owner**: Claude Code. **Model**: Sonnet and Haiku. **Size**: ~16 files.
 - [ ] **PU-7. Practice licence build.** PU-7a to PU-7l are on `main`. In flight on
   `claude/b81-board` (wave b81): PU-7m, the behaviour test `behaviour-tests/practiceLicence.behaviour.test.js`,
   two clients added through the practice routes, a derive and a submit for each on the simulator
