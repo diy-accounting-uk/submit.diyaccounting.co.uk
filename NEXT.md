@@ -16,9 +16,8 @@ runs), and for Claude Code steps the **Model** a sub-agent should use (Fable > O
 Haiku; the lowest tier that fits). Anything touching code goes through a `claude/*` branch and
 PR; the operator merges.
 
-**Prod runs deployment prod-fbead53**; main's deploy of PR #327's merge (30a61fdf) is in flight.
-**ci**: `ci-set1` is last-known-good and carries PR #328's deploy. Open pull request: #328
-(`claude/b75-board`), its ci deploy in flight.
+**Prod runs deployment prod-fbead53**; main's deploy of PR #328's merge (d731afe7) is in flight.
+**ci**: `ci-set1` is last-known-good. No open pull request.
 
 The board runs in five sections, in this order: **in flight** (a branch, a pull request or a run
 in motion, each named in the row), **machine-only**, **machine-ask**, **human-driven**,
@@ -39,14 +38,6 @@ names its model: the lowest tier that fits (Fable > Opus > Sonnet > Haiku), or `
 step.
 
 ## In flight
-
-- [ ] **B75. Wave b75 on `claude/b75-board`, PR #328.** B58b (the agentic-lib landing fix), PU-5
-  (the DIYA-GL tier on prod), F1c (six months of Stripe staged), F1b (the PayPal script, its run
-  waiting on OF1), F2a's bank parser, F2b (mail invoices), F2c (the book from the workbook set),
-  B60 (the six MCP Submit tools) and B61 (the MCP app client, its PKCE sign-in and cloud
-  `open_book`/`save_book`). Its head c5c1b434 (the PayPal secret steps guarded for an environment
-  without credentials) deploys on `ci-set1`. **Source**: the rows named. **Owner**: Claude Code. **Model**: Sonnet.
-  **Size**: ~40 files.
 
 ## Machine-only
 
@@ -72,7 +63,7 @@ step.
   file.
 
 - [ ] **B60a. The six MCP Submit tools against the simulator lane.** `mcp/lib/submit-tools.js`
-  (B60, on `claude/b75-board`) is proven with the HTTP mocked; the plan's M2 wants the simulator
+  is proven with the HTTP mocked; the plan's M2 wants the simulator
   lane first. Run each tool against the proxy lane (`npm run start:proxy` or the lane the
   `simulatorBehaviour` suite uses; `DIYA_SUBMIT_BASE_URL` and a token from B61's sign-in or
   `scripts/ensure-cognito-test-user.js`), and add the 202 poll the async routes answer with
@@ -97,6 +88,11 @@ step.
   `PLAN_SUBMISSION_MCP.md` M3; BACKLOG 61. **Owner**: Claude Code. **Model**: Sonnet. **Size**:
   ~9 files.
 
+- [ ] **PU-14. An `experiments.toml` row for the price change.** Objective `conversion-to-paid`,
+  lever price, metric purchases per human session, start at PU-5's deploy, so the £39 shape is
+  measured against the 99p rate. **Source**: `REPORT_PRICE_UPDATE_REVIEW.md` §2 row
+  6; operator 2026-09-21. **Owner**: Claude Code. **Model**: Haiku. **Size**: ~1 file.
+
 - [ ] **F2f. The mail index reads invoice attachments.** `../index/corpus.toml`'s `drive` source
   carries `convert = ["pdf", "doc", "docx"]` (line 11) and the two `eml_tree` sources
   (`mail-antony` line 41, `mail-support`) carry none, so `corpus doc` returns an email's body only
@@ -110,12 +106,16 @@ step.
   F2b's four cases plus the new one. **Source**: F2b's finding; `../PLAN_FINANCE_AUTOMATION.md`
   route 4. **Owner**: Claude Code. **Model**: Sonnet. **Size**: ~3 files, plus the index.
 
+- [ ] **PU-9. Retire the three folded bundles.** `resident-diya-gl`, `resident-itsa` and
+  `resident-ltd` leave `submit.catalogue.toml`, `.env.ci` and `.env.prod` once Stripe live shows no
+  subscription on their prices. **Source**: `PLAN_PRICE_UPDATE.md` PU-9.
+  **Owner**: Claude Code. **Model**: Haiku. **Size**: ~3 files.
+
 - [ ] **PU-7. Practice licence build.** PU-7a to PU-7g, PU-7k and PU-7l are on `main`. Next is
   PU-7h, audit and receipts by client: the event field in `app/lib/activityAlert.js`, the receipt
   attribute in `app/data/dynamoDbReceiptRepository.js`, the receipts filter in
   `app/functions/hmrc/hmrcReceiptGet.js`, one Athena view, their tests. Then, in
-  `PLAN_PRICE_UPDATE.md` §(d) (lines 227 to 236): PU-7i waits on B60 and B61 (on `claude/b75-board`,
-  PR #328), PU-7j on PU-7i, PU-7m on PU-7j, PU-7e on the operator's grant numbers; the
+  `PLAN_PRICE_UPDATE.md` §(d) (lines 227 to 236): PU-7i waits on PU-7h, PU-7j on PU-7i, PU-7m on PU-7j, PU-7e on the operator's grant numbers; the
   `resident-pro` catalogue values (`enable = "always"`, `hidden = false`,
   `allocation = "on-subscription"`) and the practice page's nav link in
   `web/public/widgets/page-chrome.js` flip in the launch step after PU-7m, with the four ci probes
@@ -235,13 +235,8 @@ step.
   `derive_micro_entity_accounts` over the cloud book, writing JSON lines to `curated/finance/` with
   a Glue table on `Ga4DailyTables.java`'s pattern, one observation set in
   `operatorSnapshotPublish.js`, and a block above `renderSnapshot`'s objectives in
-  `web/public/operator/dashboard.html`. Blocked on OF2 (DIYA's book saved to the DIYA cloud, the last of the F1 and F2 rows) and on B61 (the MCP's third Cognito app client, whose `open_book`/`save_book` over the cloud routes the nightly derivation uses). **Source**: BACKLOG 52i; `PLAN_ONE_STOP_DASHBOARD.md` D10. **Owner**:
+  `web/public/operator/dashboard.html`. Blocked on OF2 (DIYA's book saved to the DIYA cloud, the last of the F1 and F2 rows). **Source**: BACKLOG 52i; `PLAN_ONE_STOP_DASHBOARD.md` D10. **Owner**:
   Claude Code. **Model**: Sonnet. **Size**: ~4 files.
-
-- [ ] **PU-14. An `experiments.toml` row for the price change.** Objective `conversion-to-paid`,
-  lever price, metric purchases per human session, start at PU-5's deploy, so the £39 shape is
-  measured against the 99p rate. Blocked on PU-5. **Source**: `REPORT_PRICE_UPDATE_REVIEW.md` §2 row
-  6; operator 2026-09-21. **Owner**: Claude Code. **Model**: Haiku. **Size**: ~1 file.
 
 - [ ] **F2d. DIYA's book, assembled and verified.** The lines from F2a and F2b plus F2c's
   `book.toml` for 1 March to 31 August 2026, validated with `validateBook` and `validateLines`
@@ -258,14 +253,9 @@ step.
   automated writes to Google Drive. Blocked on F2d. **Source**: `../PLAN_FINANCE_AUTOMATION.md`
   phase 2. **Owner**: Claude Code. **Model**: Sonnet. **Size**: ~3 files.
 
-- [ ] **PU-9. Retire the three folded bundles.** `resident-diya-gl`, `resident-itsa` and
-  `resident-ltd` leave `submit.catalogue.toml`, `.env.ci` and `.env.prod` once Stripe live shows no
-  subscription on their prices. Blocked on PU-5. **Source**: `PLAN_PRICE_UPDATE.md` PU-9.
-  **Owner**: Claude Code. **Model**: Haiku. **Size**: ~3 files.
-
 - [ ] **OF2. DIYA's book saved to the DIYA cloud.** With the operator signed in through B61's
   sign-in, `save_book` writes F2d's verified book to the DIYA cloud, which is B52i's unblock event.
-  Blocked on F2d and B61. **Source**: `../PLAN_FINANCE_AUTOMATION.md` phase 2. **Owner**: Claude
+  Blocked on F2d. **Source**: `../PLAN_FINANCE_AUTOMATION.md` phase 2. **Owner**: Claude
   Code; the operator signs in. **Model**: Haiku. **Size**: 0 files.
 
 - [ ] **O17. A sandbox sign-in for the filing suites, and four ci values.** The sandbox has no
