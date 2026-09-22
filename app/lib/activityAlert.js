@@ -37,11 +37,12 @@ const ebClient = new EventBridgeClient({ region: resolveActivityBusRegion() });
  * @param {string} [params.actor] - Actor classification
  * @param {string} [params.flow] - Flow classification
  * @param {string} [params.userSub] - Raw sub of the authenticated user; hashed before it reaches the event, never logged raw
+ * @param {string} [params.clientId] - The practice's client id when the submission was client-scoped; absent otherwise
  * @param {Object} [params.detail] - Additional detail fields
  * @returns {Promise<{published: boolean, error?: string}>} published is false when
  *   ACTIVITY_BUS_NAME was unset (skipped) or the EventBridge send failed (error holds the message)
  */
-export async function publishActivityEvent({ event, site = "submit", summary, actor, flow, userSub, detail = {} }) {
+export async function publishActivityEvent({ event, site = "submit", summary, actor, flow, userSub, clientId, detail = {} }) {
   const busName = process.env.ACTIVITY_BUS_NAME;
   if (!busName) {
     logger.info({ message: "ACTIVITY_BUS_NAME not set, skipping activity event", event });
@@ -71,6 +72,7 @@ export async function publishActivityEvent({ event, site = "submit", summary, ac
               timestamp: new Date().toISOString(),
               ...(requestId ? { requestId } : {}),
               ...(hashedSub ? { hashedSub } : {}),
+              ...(clientId ? { clientId } : {}),
               ...detail,
             }),
           },
@@ -148,9 +150,20 @@ function hashSubForEvent(userSub) {
  * @param {string} [params.userSub] - Raw sub; hashed before it reaches the event
  * @param {string} [params.actor]
  * @param {string} [params.flow]
+ * @param {string} [params.clientId] - The practice's client id when the submission was client-scoped; absent otherwise
  * @param {Object} [params.detail] - Additional non-identifying detail fields
  */
-export async function publishActivityFailureEvent({ event, site = "submit", summary, failure, userSub, actor, flow, detail = {} }) {
+export async function publishActivityFailureEvent({
+  event,
+  site = "submit",
+  summary,
+  failure,
+  userSub,
+  actor,
+  flow,
+  clientId,
+  detail = {},
+}) {
   await publishActivityEvent({
     event,
     site,
@@ -158,6 +171,7 @@ export async function publishActivityFailureEvent({ event, site = "submit", summ
     actor,
     flow,
     userSub,
+    clientId,
     detail: {
       outcome: "failure",
       failure,

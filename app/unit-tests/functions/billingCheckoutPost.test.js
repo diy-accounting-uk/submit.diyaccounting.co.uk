@@ -245,60 +245,11 @@ describe("billingCheckoutPost", () => {
     expect(result.statusCode).toBe(500);
   });
 
-  test("uses STRIPE_PRICE_ID_RESIDENT_ITSA for resident-itsa checkout", async () => {
-    process.env.STRIPE_PRICE_ID_RESIDENT_ITSA = "price_itsa_live_789";
-    const event = buildEventWithToken(validToken, { bundleId: "resident-itsa" });
-    await ingestHandler(event);
-
-    const params = mockCheckoutSessionsCreate.mock.calls[0][0];
-    expect(params.line_items[0].price).toBe("price_itsa_live_789");
-    expect(params.metadata.bundleId).toBe("resident-itsa");
-  });
-
-  test("uses STRIPE_TEST_PRICE_ID_RESIDENT_ITSA for resident-itsa synthetic checkout", async () => {
-    process.env.STRIPE_TEST_PRICE_ID_RESIDENT_ITSA = "price_itsa_test_789";
-    const event = buildEventWithToken(validToken, { bundleId: "resident-itsa", synthetic: true });
-    await ingestHandler(event);
-
-    const params = mockCheckoutSessionsCreate.mock.calls[0][0];
-    expect(params.line_items[0].price).toBe("price_itsa_test_789");
-    expect(params.metadata.bundleId).toBe("resident-itsa");
-  });
-
-  test("returns 500 when resident-itsa price ID is not configured", async () => {
-    delete process.env.STRIPE_PRICE_ID_RESIDENT_ITSA;
-    delete process.env.STRIPE_TEST_PRICE_ID_RESIDENT_ITSA;
+  test("returns bundle-not-listed for a retired bundle id", async () => {
     const event = buildEventWithToken(validToken, { bundleId: "resident-itsa" });
     const result = await ingestHandler(event);
-    expect(result.statusCode).toBe(500);
-  });
-
-  test("uses STRIPE_PRICE_ID_RESIDENT_DIYA_GL for resident-diya-gl checkout", async () => {
-    process.env.STRIPE_PRICE_ID_RESIDENT_DIYA_GL = "price_diya_gl_live_789";
-    const event = buildEventWithToken(validToken, { bundleId: "resident-diya-gl" });
-    await ingestHandler(event);
-
-    const params = mockCheckoutSessionsCreate.mock.calls[0][0];
-    expect(params.line_items[0].price).toBe("price_diya_gl_live_789");
-    expect(params.metadata.bundleId).toBe("resident-diya-gl");
-  });
-
-  test("uses STRIPE_TEST_PRICE_ID_RESIDENT_DIYA_GL for resident-diya-gl synthetic checkout", async () => {
-    process.env.STRIPE_TEST_PRICE_ID_RESIDENT_DIYA_GL = "price_diya_gl_test_789";
-    const event = buildEventWithToken(validToken, { bundleId: "resident-diya-gl", synthetic: true });
-    await ingestHandler(event);
-
-    const params = mockCheckoutSessionsCreate.mock.calls[0][0];
-    expect(params.line_items[0].price).toBe("price_diya_gl_test_789");
-    expect(params.metadata.bundleId).toBe("resident-diya-gl");
-  });
-
-  test("returns 500 when resident-diya-gl price ID is not configured", async () => {
-    delete process.env.STRIPE_PRICE_ID_RESIDENT_DIYA_GL;
-    delete process.env.STRIPE_TEST_PRICE_ID_RESIDENT_DIYA_GL;
-    const event = buildEventWithToken(validToken, { bundleId: "resident-diya-gl" });
-    const result = await ingestHandler(event);
-    expect(result.statusCode).toBe(500);
+    expect(result.statusCode).toBe(400);
+    expect(JSON.parse(result.body).code).toBe("bundle-not-listed");
   });
 
   test("uses STRIPE_PRICE_ID_RESIDENT_YEAR by default (annual) for resident checkout", async () => {
@@ -386,8 +337,8 @@ describe("billingCheckoutPost", () => {
   });
 
   test("refuses a bundle not listed for the current environment before calling Stripe", async () => {
-    process.env.ENVIRONMENT_NAME = "prod";
-    const event = buildEventWithToken(validToken, { bundleId: "resident-diya-gl" });
+    process.env.ENVIRONMENT_NAME = "test";
+    const event = buildEventWithToken(validToken, { bundleId: "resident" });
     const result = await ingestHandler(event);
 
     expect(result.statusCode).toBe(400);
@@ -398,8 +349,8 @@ describe("billingCheckoutPost", () => {
 
   test("proceeds when the bundle is listed for the current environment", async () => {
     process.env.ENVIRONMENT_NAME = "ci";
-    process.env.STRIPE_PRICE_ID_RESIDENT_DIYA_GL = "price_diya_gl_live_789";
-    const event = buildEventWithToken(validToken, { bundleId: "resident-diya-gl" });
+    process.env.STRIPE_PRICE_ID_RESIDENT_YEAR = "price_resident_annual_789";
+    const event = buildEventWithToken(validToken, { bundleId: "resident" });
     const result = await ingestHandler(event);
 
     expect(result.statusCode).toBe(200);

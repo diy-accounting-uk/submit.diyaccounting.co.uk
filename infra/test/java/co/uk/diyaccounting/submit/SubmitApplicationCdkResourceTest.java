@@ -101,6 +101,23 @@ class SubmitApplicationCdkResourceTest {
         companiesHouseStackTemplate.resourceCountIs("AWS::Lambda::Function", 13);
         assertStackHealthAlarm(companiesHouseStackTemplate, 13, 0, routedPrefixes);
 
+        // Every route that can carry a clientId resolves it via enforceBundles -> getClient(),
+        // which needs the practice clients table name on the Lambda's own environment. Regression
+        // guard for the gap PU-7h found: PU-7g wired the getClient() call into these three routes
+        // without also wiring the table name and read access to reach it.
+        assertHasEnvironmentVariable(
+                hmrcStackTemplate,
+                submitApplication.hmrcStack.hmrcVatReturnPostLambdaProps.ingestFunctionName(),
+                "PRACTICE_CLIENTS_DYNAMODB_TABLE_NAME");
+        assertHasEnvironmentVariable(
+                hmrcStackTemplate,
+                submitApplication.hmrcStack.hmrcVatObligationGetLambdaProps.ingestFunctionName(),
+                "PRACTICE_CLIENTS_DYNAMODB_TABLE_NAME");
+        assertHasEnvironmentVariable(
+                companiesHouseStackTemplate,
+                submitApplication.companiesHouseStack.companiesHouseAccountsPostLambdaProps.ingestFunctionName(),
+                "PRACTICE_CLIENTS_DYNAMODB_TABLE_NAME");
+
         infof("Created stack:", submitApplication.accountStack.getStackName());
         // 21 Lambdas: bundleGet(1), bundlePost(2), bundleDelete(2), operatorSnapshotGet(1),
         // practiceClientsListGet(1), practiceClientsPost(1), practiceClientGet(1),
@@ -472,6 +489,75 @@ class SubmitApplicationCdkResourceTest {
                 thrown.getMessage().contains("spreadsheets-diya-gl-app-client-id"));
     }
 
+    @Test
+    void mcpUserPoolClientIdStaysEmptyWhenNotSet() throws IOException {
+        Path cdkJsonPath = Path.of("cdk-application/cdk.json").toAbsolutePath();
+        Map<String, Object> ctx = buildContextPropertyMapFromCdkJsonPath(cdkJsonPath);
+        App app = new App(AppProps.builder().context(ctx).build());
+        SubmitApplication.SubmitApplicationProps appProps = SubmitApplication.loadAppProps(app, "cdk-application/");
+
+        // No COGNITO_MCP_CLIENT_ID is set by the class-level environment variables above, and
+        // mcpUserPoolClientId is blank in cdk.json, so this must synth without throwing (unlike
+        // the DIYA-GL client id above) and the books authoriser's audience must carry only the
+        // DIYA-GL client id, with no blank entry added for the unset MCP one.
+        var submitApplication = new SubmitApplication(app, appProps);
+        Template apiStackTemplate = Template.fromStack(submitApplication.apiStack);
+
+        apiStackTemplate.hasResourceProperties(
+                "AWS::ApiGatewayV2::Authorizer",
+                Match.objectLike(Map.of(
+                        "JwtConfiguration",
+                        Match.objectLike(Map.of("Audience", List.of("tt-witheight-cognito-books-client-id"))))));
+    }
+
+    @Test
+    @SetEnvironmentVariable(key = "COGNITO_MCP_CLIENT_ID", value = "tt-witheight-cognito-mcp-client-id")
+    void mcpUserPoolClientIdJoinsTheBooksAuthoriserAudienceWhenSet() throws IOException {
+        Path cdkJsonPath = Path.of("cdk-application/cdk.json").toAbsolutePath();
+        Map<String, Object> ctx = buildContextPropertyMapFromCdkJsonPath(cdkJsonPath);
+        App app = new App(AppProps.builder().context(ctx).build());
+        SubmitApplication.SubmitApplicationProps appProps = SubmitApplication.loadAppProps(app, "cdk-application/");
+
+        var submitApplication = new SubmitApplication(app, appProps);
+        Template apiStackTemplate = Template.fromStack(submitApplication.apiStack);
+
+        apiStackTemplate.hasResourceProperties(
+                "AWS::ApiGatewayV2::Authorizer",
+                Match.objectLike(Map.of(
+                        "JwtConfiguration",
+                        Match.objectLike(Map.of(
+                                "Audience",
+                                List.of(
+                                        "tt-witheight-cognito-books-client-id",
+                                        "tt-witheight-cognito-mcp-client-id"))))));
+    }
+
+    @Test
+    @SetEnvironmentVariable.SetEnvironmentVariables({
+        @SetEnvironmentVariable(key = "STRIPE_PRICE_ID_RESIDENT_YEAR", value = "price_live_resident_year"),
+        @SetEnvironmentVariable(key = "STRIPE_PRICE_ID_RESIDENT_MONTH", value = "price_live_resident_month"),
+        @SetEnvironmentVariable(key = "STRIPE_TEST_PRICE_ID_RESIDENT_YEAR", value = "price_test_resident_year"),
+        @SetEnvironmentVariable(key = "STRIPE_TEST_PRICE_ID_RESIDENT_MONTH", value = "price_test_resident_month"),
+    })
+    void residentBundlePriceIdsReachTheCheckoutLambdaWhenSet() throws IOException {
+        Path cdkJsonPath = Path.of("cdk-application/cdk.json").toAbsolutePath();
+        Map<String, Object> ctx = buildContextPropertyMapFromCdkJsonPath(cdkJsonPath);
+        App app = new App(AppProps.builder().context(ctx).build());
+        SubmitApplication.SubmitApplicationProps appProps = SubmitApplication.loadAppProps(app, "cdk-application/");
+
+        var submitApplication = new SubmitApplication(app, appProps);
+        Template billingStackTemplate = Template.fromStack(submitApplication.billingStack);
+        String checkoutFunctionName =
+                submitApplication.billingStack.billingCheckoutPostLambdaProps.ingestFunctionName();
+
+        assertHasEnvironmentVariable(billingStackTemplate, checkoutFunctionName, "STRIPE_PRICE_ID_RESIDENT_YEAR");
+        assertHasEnvironmentVariable(billingStackTemplate, checkoutFunctionName, "STRIPE_PRICE_ID_RESIDENT_MONTH");
+        assertHasEnvironmentVariable(
+                billingStackTemplate, checkoutFunctionName, "STRIPE_TEST_PRICE_ID_RESIDENT_YEAR");
+        assertHasEnvironmentVariable(
+                billingStackTemplate, checkoutFunctionName, "STRIPE_TEST_PRICE_ID_RESIDENT_MONTH");
+    }
+
     /**
      * A DIYA-GL book write carries a zip far larger than the 8KB CloudFront lets WAF inspect, so
      * the managed SizeRestrictions_BODY rule blocked every save before it reached API Gateway. The
@@ -630,6 +716,19 @@ class SubmitApplicationCdkResourceTest {
         });
         org.junit.jupiter.api.Assertions.assertTrue(
                 missing.isEmpty(), "Lambda functions with no explicit log group: " + missing);
+    }
+
+    @SuppressWarnings("unchecked")
+    private static void assertHasEnvironmentVariable(Template template, String functionName, String variableName) {
+        boolean found = template.findResources("AWS::Lambda::Function").values().stream().anyMatch(resource -> {
+            var properties = (Map<String, Object>) resource.get("Properties");
+            if (properties == null || !functionName.equals(properties.get("FunctionName"))) return false;
+            var environment = (Map<String, Object>) properties.get("Environment");
+            var variables = environment == null ? null : (Map<String, Object>) environment.get("Variables");
+            return variables != null && variables.containsKey(variableName);
+        });
+        org.junit.jupiter.api.Assertions.assertTrue(
+                found, "expected " + functionName + " to have the " + variableName + " environment variable");
     }
 
     /**

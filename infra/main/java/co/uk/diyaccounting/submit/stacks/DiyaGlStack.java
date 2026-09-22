@@ -149,7 +149,7 @@ public class DiyaGlStack extends Stack {
         // bundle lookup this DELETE and the plain commonEnv functions do not.
         var entitlementReadEnv = new PopulatedMap<String, String>(commonEnv)
                 .with("BUNDLE_DYNAMODB_TABLE_NAME", bundlesTable.getTableName())
-                .with("DIYA_GL_BUNDLE_ID", "resident-diya-gl")
+                .with("DIYA_GL_BUNDLE_ID", "resident")
                 .with("DIYA_GL_RESIDENT_TIER", props.residentTierEnabled().toString());
 
         // ============================================================================
@@ -255,7 +255,7 @@ public class DiyaGlStack extends Stack {
                 .with("DIYA_GL_MAX_PER_USER", "20")
                 .with("DIYA_GL_VERSIONS_KEPT", "30")
                 .with("DIYA_GL_RESIDENT_TIER", props.residentTierEnabled().toString())
-                .with("DIYA_GL_BUNDLE_ID", "resident-diya-gl")
+                .with("DIYA_GL_BUNDLE_ID", "resident")
                 .with("BUNDLE_DYNAMODB_TABLE_NAME", bundlesTable.getTableName());
         var diyaGlPutApiLambda = new ApiLambda(
                 this,
@@ -408,7 +408,7 @@ public class DiyaGlStack extends Stack {
             var diyaGlLapseSweepEnv = new PopulatedMap<String, String>()
                     .with("DIYA_GL_BUCKET_NAME", props.diyaGlBucketName())
                     .with("BUNDLE_DYNAMODB_TABLE_NAME", bundlesTable.getTableName())
-                    .with("DIYA_GL_BUNDLE_ID", "resident-diya-gl")
+                    .with("DIYA_GL_BUNDLE_ID", "resident")
                     .with("DIYA_GL_LAPSE_GRACE_DAYS", "30")
                     .with("ENVIRONMENT_NAME", props.envName());
             var diyaGlLapseSweepLambdaConstruct = new Lambda(

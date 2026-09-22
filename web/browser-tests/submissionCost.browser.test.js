@@ -17,7 +17,7 @@ const CATALOGUE_TOML = `
 [[activities]]
 id = "self-employed"
 name = "Self Assessment (HMRC)"
-bundles = ["resident-itsa"]
+bundles = ["resident"]
 tokenCost = 1
 metered = true
 paths = ["activity.html"]
@@ -25,7 +25,7 @@ paths = ["activity.html"]
 [[activities]]
 id = "self-employed-year-end"
 name = "Self Assessment year-end submissions (HMRC)"
-bundles = ["resident-itsa"]
+bundles = ["resident"]
 tokenCost = 0
 metered = true
 paths = ["free-activity.html"]
@@ -100,7 +100,7 @@ test.describe("Submission cost widget", () => {
   test("shows the cost and remaining balance when both are known", async ({ page }) => {
     await setupRoutes(page, {
       bundleResponse: {
-        bundles: [{ bundleId: "resident-itsa", allocated: true, tokensGranted: 100, tokensConsumed: 13, tokensRemaining: 87 }],
+        bundles: [{ bundleId: "resident", allocated: true, tokensGranted: 100, tokensConsumed: 13, tokensRemaining: 87 }],
         tokensRemaining: 87,
       },
     });
@@ -142,7 +142,7 @@ test.describe("Submission cost widget", () => {
       bundleResponse: {
         bundles: [
           {
-            bundleId: "resident-itsa",
+            bundleId: "resident",
             allocated: true,
             tokensGranted: 100,
             tokensConsumed: 100,
@@ -172,11 +172,11 @@ test.describe("Submission cost widget", () => {
     await page.route("**/api/v1/bundle", async (route) => {
       const body = exhausted
         ? {
-            bundles: [{ bundleId: "resident-itsa", allocated: true, tokensGranted: 100, tokensConsumed: 100, tokensRemaining: 0 }],
+            bundles: [{ bundleId: "resident", allocated: true, tokensGranted: 100, tokensConsumed: 100, tokensRemaining: 0 }],
             tokensRemaining: 0,
           }
         : {
-            bundles: [{ bundleId: "resident-itsa", allocated: true, tokensGranted: 100, tokensConsumed: 99, tokensRemaining: 1 }],
+            bundles: [{ bundleId: "resident", allocated: true, tokensGranted: 100, tokensConsumed: 99, tokensRemaining: 1 }],
             tokensRemaining: 1,
           };
       await route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify(body) });
@@ -198,7 +198,7 @@ test.describe("Submission cost widget", () => {
     await setupRoutes(page, {
       buttonDisabled: true,
       bundleResponse: {
-        bundles: [{ bundleId: "resident-itsa", allocated: true, tokensGranted: 100, tokensConsumed: 13, tokensRemaining: 87 }],
+        bundles: [{ bundleId: "resident", allocated: true, tokensGranted: 100, tokensConsumed: 13, tokensRemaining: 87 }],
         tokensRemaining: 87,
       },
     });

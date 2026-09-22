@@ -260,7 +260,7 @@ test("Click through: File a UK Property Quarterly Update with HMRC", async ({ pa
   /*  BUNDLES  */
   /* ********* */
 
-  await ensureBundleViaPassApi(page, "resident-itsa", screenshotPath, { testPass: true });
+  await ensureBundleViaPassApi(page, "resident", screenshotPath, { testPass: true });
   await goToHomePageUsingMainNav(page, screenshotPath);
 
   /* ***************************************** */

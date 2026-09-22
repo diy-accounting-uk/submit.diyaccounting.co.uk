@@ -115,7 +115,7 @@ class DiyaGlStackTest {
                                         "DIYA_GL_MAX_PER_USER", "20",
                                         "DIYA_GL_VERSIONS_KEPT", "30",
                                         "DIYA_GL_RESIDENT_TIER", "true",
-                                        "DIYA_GL_BUNDLE_ID", "resident-diya-gl",
+                                        "DIYA_GL_BUNDLE_ID", "resident",
                                         "BUNDLE_DYNAMODB_TABLE_NAME", "docs-env-bundles")))))));
     }
 
@@ -137,7 +137,7 @@ class DiyaGlStackTest {
                                     "Variables",
                                     Match.objectLike(Map.of(
                                             "DIYA_GL_RESIDENT_TIER", "true",
-                                            "DIYA_GL_BUNDLE_ID", "resident-diya-gl",
+                                            "DIYA_GL_BUNDLE_ID", "resident",
                                             "BUNDLE_DYNAMODB_TABLE_NAME", "docs-env-bundles")))))));
             assertTrue(
                     iamStatementsForFunction(template, functionName).stream()
@@ -329,7 +329,7 @@ class DiyaGlStackTest {
                                 Match.objectLike(Map.of(
                                         "DIYA_GL_BUCKET_NAME", DIYA_GL_BUCKET_NAME,
                                         "BUNDLE_DYNAMODB_TABLE_NAME", "docs-env-bundles",
-                                        "DIYA_GL_BUNDLE_ID", "resident-diya-gl",
+                                        "DIYA_GL_BUNDLE_ID", "resident",
                                         "DIYA_GL_LAPSE_GRACE_DAYS", "30",
                                         "ENVIRONMENT_NAME", "docs")))))));
 

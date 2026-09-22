@@ -89,7 +89,12 @@ done
 
 export HMRC_BASE_URI="$SIMULATOR_URL"
 export HMRC_SANDBOX_BASE_URI="$SIMULATOR_URL"
+export HMRC_AGENT_AUTHORISATION_BASE_URI="$SIMULATOR_URL"
 export TEST_MOCK_OAUTH2_BASE="$SIMULATOR_URL"
+export COMPANIES_HOUSE_BASE_URI="$SIMULATOR_URL"
+export COMPANIES_HOUSE_IDENTITY_BASE_URI="$SIMULATOR_URL"
+export COMPANIES_HOUSE_FILING_BASE_URI="$SIMULATOR_URL"
+export COMPANIES_HOUSE_XMLGW_URI="$SIMULATOR_URL/v1-0/xmlgw/Gateway"
 
 echo 'Starting web server...' >&2
 # Foreground process; when this exits, cleanup will run and terminate the others.

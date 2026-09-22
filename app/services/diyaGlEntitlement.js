@@ -4,7 +4,7 @@
 // app/services/diyaGlEntitlement.js
 //
 // Decides a DIYA-GL book's retention tier: "resident" for an active subscriber to the resident
-// bundle or the resident-diya-gl bundle it replaced, "sandbox" for everyone else.
+// bundle, "sandbox" for everyone else.
 // DIYA_GL_RESIDENT_TIER gates whether the resident tier is offered at all on this environment;
 // off, every caller gets the sandbox tier without a bundle read.
 //
@@ -21,9 +21,8 @@ import { getClient } from "../data/dynamoDbPracticeClientRepository.js";
 
 const logger = createLogger({ source: "app/services/diyaGlEntitlement.js" });
 
-// resident first: the current bundle. resident-diya-gl second: honours a subscriber who has not
-// migrated off the bundle it replaced. Either grants the resident tier.
-const DEFAULT_DIYA_GL_BUNDLE_IDS = ["resident", "resident-diya-gl"];
+// The one bundle that grants the resident tier.
+const DEFAULT_DIYA_GL_BUNDLE_IDS = ["resident"];
 
 // The one bundle that grants a practice the resident tier for its clients' books.
 const PRACTICE_BUNDLE_ID = "resident-pro";

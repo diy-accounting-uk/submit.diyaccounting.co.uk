@@ -5,9 +5,7 @@
 //
 // The row this proves: a token from the DIYA-GL app client can subscribe through Submit's
 // billing checkout and portal, and the subject that checkout enrols is the same subject
-// diyaGlEntitlement.entitlementFor(sub) reads back for the storage PUT. Runs on ci only —
-// resident-diya-gl is listed for purchase there until the operator lifts it, and there is no
-// prod variant yet.
+// diyaGlEntitlement.entitlementFor(sub) reads back for the storage PUT.
 //
 // The checkout, portal and books calls run as plain Node fetches rather than page.evaluate calls
 // from the browser (see behaviour-diya-gl-subscription-steps.js for why); only the interactive
@@ -136,7 +134,7 @@ test("subscribes with a DIYA-GL token, then puts and reads a book", async ({ pag
   /*  CHECKOUT WITH THE DIYA-GL TOKEN — THE AUDIENCE CHANGE UNDER TEST  */
   /* ******************************************************************** */
 
-  const checkout = await postDiyaGlCheckout({ apiBase, idToken, bundleId: "resident-diya-gl", returnTo: diyaGlPageUrl });
+  const checkout = await postDiyaGlCheckout({ apiBase, idToken, bundleId: "resident", returnTo: diyaGlPageUrl });
   expect(checkout.status, `checkout response: ${JSON.stringify(checkout.body)}`).toBe(200);
   expect(checkout.body.checkoutUrl).toContain("checkout.stripe.com");
 

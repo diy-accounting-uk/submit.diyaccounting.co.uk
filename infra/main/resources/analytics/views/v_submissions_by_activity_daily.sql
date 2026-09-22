@@ -2,10 +2,10 @@
 -- Copyright (C) 2006-2026 DIY Accounting Limited
 
 CREATE OR REPLACE VIEW v_submissions_by_activity_daily AS
-SELECT day, activity, outcome,
+SELECT day, activity, outcome, client_id,
        count(*)                   AS completions,
        count(DISTINCT hashed_sub) AS customers
-FROM  (SELECT date(event_ts) AS day, hashed_sub,
+FROM  (SELECT date(event_ts) AS day, hashed_sub, client_id,
               coalesce(outcome, 'success') AS outcome,
               CASE event
                 WHEN 'vat-return-submitted'                            THEN 'vat-return'
@@ -21,4 +21,4 @@ FROM  (SELECT date(event_ts) AS day, hashed_sub,
        FROM   activity_events_all
        WHERE  actor = 'customer')
 WHERE  activity IS NOT NULL
-GROUP  BY 1, 2, 3
+GROUP  BY 1, 2, 3, 4

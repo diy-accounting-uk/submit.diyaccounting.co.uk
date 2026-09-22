@@ -478,7 +478,7 @@ export async function getVatObligations(
     event: "vat-obligations-queried",
     summary: "VAT obligations queried",
     userSub: auditForUserSub,
-    detail: clientId ? { clientId } : {},
+    clientId,
   });
   return { hmrcResponse, obligations: hmrcResponse.data, hmrcRequestUrl };
 }

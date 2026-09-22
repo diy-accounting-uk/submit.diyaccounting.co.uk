@@ -130,26 +130,26 @@ describe("tokenEnforcement", () => {
 
     it("charges a token for self-employed against the real catalogue - the quarterly update and final declaration handlers hardcode this activity id", async () => {
       const catalog = loadCatalogFromRoot();
-      getUserBundles.mockResolvedValueOnce([{ bundleId: "resident-itsa", tokensGranted: 100, tokensConsumed: 10 }]);
+      getUserBundles.mockResolvedValueOnce([{ bundleId: "resident", tokensGranted: 100, tokensConsumed: 10 }]);
       consumeToken.mockResolvedValueOnce({ consumed: true, tokensRemaining: 89 });
 
       const result = await consumeTokenForActivity("user-1", "self-employed", catalog);
 
       expect(result.consumed).toBe(true);
       expect(result.cost).toBe(1);
-      expect(consumeToken).toHaveBeenCalledWith("user-1", "resident-itsa", 1);
+      expect(consumeToken).toHaveBeenCalledWith("user-1", "resident", 1);
     });
 
     it("charges a token for self-employed-year-end against the real catalogue - the annual submission, adjustments, losses and claims, and tax liability adjustments all submit to HMRC", async () => {
       const catalog = loadCatalogFromRoot();
-      getUserBundles.mockResolvedValueOnce([{ bundleId: "resident-itsa", tokensGranted: 100, tokensConsumed: 10 }]);
+      getUserBundles.mockResolvedValueOnce([{ bundleId: "resident", tokensGranted: 100, tokensConsumed: 10 }]);
       consumeToken.mockResolvedValueOnce({ consumed: true, tokensRemaining: 89 });
 
       const result = await consumeTokenForActivity("user-1", "self-employed-year-end", catalog);
 
       expect(result.consumed).toBe(true);
       expect(result.cost).toBe(1);
-      expect(consumeToken).toHaveBeenCalledWith("user-1", "resident-itsa", 1);
+      expect(consumeToken).toHaveBeenCalledWith("user-1", "resident", 1);
     });
 
     it("charges nothing for self-employed-read against the real catalogue - business details, obligations and calculations only read", async () => {
@@ -196,17 +196,17 @@ describe("tokenEnforcement", () => {
 
   describe("chargeTokenOnSuccess", () => {
     it("charges a token against the real catalogue for a successful submission", async () => {
-      getUserBundles.mockResolvedValueOnce([{ bundleId: "resident-itsa", tokensGranted: 100, tokensConsumed: 10 }]);
+      getUserBundles.mockResolvedValueOnce([{ bundleId: "resident", tokensGranted: 100, tokensConsumed: 10 }]);
       consumeToken.mockResolvedValueOnce({ consumed: true, tokensRemaining: 89 });
 
       const result = await chargeTokenOnSuccess("user-1", "self-employed");
 
       expect(result.consumed).toBe(true);
-      expect(consumeToken).toHaveBeenCalledWith("user-1", "resident-itsa", 1);
+      expect(consumeToken).toHaveBeenCalledWith("user-1", "resident", 1);
     });
 
     it("logs and swallows the failure when consumeToken throws, instead of raising", async () => {
-      getUserBundles.mockResolvedValueOnce([{ bundleId: "resident-itsa", tokensGranted: 100, tokensConsumed: 10 }]);
+      getUserBundles.mockResolvedValueOnce([{ bundleId: "resident", tokensGranted: 100, tokensConsumed: 10 }]);
       consumeToken.mockRejectedValueOnce(new Error("write failed"));
 
       const result = await chargeTokenOnSuccess("user-1", "self-employed");

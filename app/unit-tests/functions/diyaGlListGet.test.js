@@ -121,7 +121,7 @@ describe("diyaGlListGet", () => {
   test("reports the lapse expiry for a resident book under an expired subscription", async () => {
     process.env.DIYA_GL_RESIDENT_TIER = "true";
     const bundleExpiry = "2026-01-01T00:00:00.000Z";
-    getUserBundles.mockResolvedValue([{ bundleId: "resident-diya-gl", subscriptionStatus: "canceled", expiry: bundleExpiry }]);
+    getUserBundles.mockResolvedValue([{ bundleId: "resident", subscriptionStatus: "canceled", expiry: bundleExpiry }]);
     const residentBook = { bookId: "book-resident", updatedAt: "2025-12-01T00:00:00.000Z", retention: "resident", expiresAt: null };
     mockS3Send.mockImplementation((command) =>
       handleCommand(command, { commonPrefixes: ["book-resident"], metadataByBookId: { "book-resident": residentBook } }),

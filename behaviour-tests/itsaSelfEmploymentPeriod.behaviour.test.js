@@ -254,7 +254,7 @@ test("Click through: File an ITSA Quarterly Update with HMRC", async ({ page }, 
   /*  BUNDLES  */
   /* ********* */
 
-  await ensureBundleViaPassApi(page, "resident-itsa", screenshotPath, { testPass: true });
+  await ensureBundleViaPassApi(page, "resident", screenshotPath, { testPass: true });
   await goToHomePageUsingMainNav(page, screenshotPath);
 
   /* ***************************************** */

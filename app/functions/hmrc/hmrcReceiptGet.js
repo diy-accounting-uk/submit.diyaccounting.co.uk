@@ -16,6 +16,7 @@ import { validateEnv } from "../../lib/env.js";
 import { registerLambdaRoute } from "../../lib/httpServerToLambdaAdaptor.js";
 import { getUserSub } from "../../lib/jwtHelper.js";
 import { getReceipt, listUserReceipts } from "../../data/dynamoDbReceiptRepository.js";
+import { getClient } from "../../data/dynamoDbPracticeClientRepository.js";
 import { initializeSalt } from "../../services/subHasher.js";
 
 const logger = createLogger({ source: "app/functions/hmrc/hmrcReceiptGet.js" });
@@ -100,6 +101,21 @@ export async function ingestHandler(event) {
     return buildValidationError(request, errorMessages, responseHeaders);
   }
 
+  // A practice narrowing the list to one of its clients (queryStringParameters only, never
+  // a path segment) - unrelated to the single-receipt name/key branch below.
+  const clientId = event.queryStringParameters?.clientId || undefined;
+  if (clientId) {
+    const client = await getClient(userSub, clientId);
+    if (!client) {
+      return http403ForbiddenResponse({
+        request,
+        headers: { ...responseHeaders },
+        message: "client-not-found",
+        error: { code: "client-not-found" },
+      });
+    }
+  }
+
   // Processing
   try {
     if (hasNameOrKey) {
@@ -111,8 +127,8 @@ export async function ingestHandler(event) {
         body: JSON.stringify(receipt),
       };
     } else {
-      logger.info({ message: "Listing user receipts", userSub });
-      const receipts = await listUserReceipts(userSub);
+      logger.info({ message: "Listing user receipts", userSub, clientId });
+      const receipts = await listUserReceipts(userSub, clientId);
       return http200OkResponse({
         request,
         headers: { ...responseHeaders },

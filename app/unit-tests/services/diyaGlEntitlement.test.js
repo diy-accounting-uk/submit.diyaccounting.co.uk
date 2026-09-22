@@ -67,23 +67,23 @@ describe("diyaGlEntitlement", () => {
     expect(result.bundleId).toBe("resident");
   });
 
-  test("gives resident retention for a caller still on the folded resident-diya-gl bundle", async () => {
+  test("gives sandbox retention with reason no-subscription for a caller holding only the resident-diya-gl bundle", async () => {
     process.env.DIYA_GL_RESIDENT_TIER = "true";
     const future = new Date(Date.now() + 60_000).toISOString();
     getUserBundles.mockResolvedValue([{ bundleId: "resident-diya-gl", subscriptionStatus: "active", expiry: future }]);
 
     const result = await entitlementFor("active-sub");
 
-    expect(result.retention).toBe("resident");
-    expect(result.reason).toBe("active-subscription");
+    expect(result.retention).toBe("sandbox");
+    expect(result.reason).toBe("no-subscription");
     expect(result.residentTier).toBe(true);
-    expect(result.bundleId).toBe("resident-diya-gl");
+    expect(result.bundleId).toBeNull();
   });
 
-  test("gives sandbox retention with reason expired for a DIYA-GL bundle whose expiry has passed", async () => {
+  test("gives sandbox retention with reason expired for a resident bundle whose expiry has passed", async () => {
     process.env.DIYA_GL_RESIDENT_TIER = "true";
     const past = new Date(Date.now() - 60_000).toISOString();
-    getUserBundles.mockResolvedValue([{ bundleId: "resident-diya-gl", subscriptionStatus: "canceled", expiry: past }]);
+    getUserBundles.mockResolvedValue([{ bundleId: "resident", subscriptionStatus: "canceled", expiry: past }]);
 
     const result = await entitlementFor("expired-sub");
 

@@ -113,32 +113,22 @@ public class BillingStack extends Stack {
         }
 
         @Value.Default
-        default String stripePriceIdResidentItsa() {
+        default String stripePriceIdResidentYear() {
             return "";
         }
 
         @Value.Default
-        default String stripeTestPriceIdResidentItsa() {
+        default String stripeTestPriceIdResidentYear() {
             return "";
         }
 
         @Value.Default
-        default String stripePriceIdResidentLtd() {
+        default String stripePriceIdResidentMonth() {
             return "";
         }
 
         @Value.Default
-        default String stripeTestPriceIdResidentLtd() {
-            return "";
-        }
-
-        @Value.Default
-        default String stripePriceIdResidentDiyaGl() {
-            return "";
-        }
-
-        @Value.Default
-        default String stripeTestPriceIdResidentDiyaGl() {
+        default String stripeTestPriceIdResidentMonth() {
             return "";
         }
 
@@ -216,32 +206,23 @@ public class BillingStack extends Stack {
             billingCheckoutPostLambdaEnv.with(
                     "STRIPE_TEST_PRICE_ID_RESIDENT_VAT", props.stripeTestPriceIdResidentVat());
         }
-        if (props.stripePriceIdResidentItsa() != null
-                && !props.stripePriceIdResidentItsa().isBlank()) {
-            billingCheckoutPostLambdaEnv.with("STRIPE_PRICE_ID_RESIDENT_ITSA", props.stripePriceIdResidentItsa());
+        if (props.stripePriceIdResidentYear() != null
+                && !props.stripePriceIdResidentYear().isBlank()) {
+            billingCheckoutPostLambdaEnv.with("STRIPE_PRICE_ID_RESIDENT_YEAR", props.stripePriceIdResidentYear());
         }
-        if (props.stripeTestPriceIdResidentItsa() != null
-                && !props.stripeTestPriceIdResidentItsa().isBlank()) {
+        if (props.stripeTestPriceIdResidentYear() != null
+                && !props.stripeTestPriceIdResidentYear().isBlank()) {
             billingCheckoutPostLambdaEnv.with(
-                    "STRIPE_TEST_PRICE_ID_RESIDENT_ITSA", props.stripeTestPriceIdResidentItsa());
+                    "STRIPE_TEST_PRICE_ID_RESIDENT_YEAR", props.stripeTestPriceIdResidentYear());
         }
-        if (props.stripePriceIdResidentLtd() != null
-                && !props.stripePriceIdResidentLtd().isBlank()) {
-            billingCheckoutPostLambdaEnv.with("STRIPE_PRICE_ID_RESIDENT_LTD", props.stripePriceIdResidentLtd());
+        if (props.stripePriceIdResidentMonth() != null
+                && !props.stripePriceIdResidentMonth().isBlank()) {
+            billingCheckoutPostLambdaEnv.with("STRIPE_PRICE_ID_RESIDENT_MONTH", props.stripePriceIdResidentMonth());
         }
-        if (props.stripeTestPriceIdResidentLtd() != null
-                && !props.stripeTestPriceIdResidentLtd().isBlank()) {
+        if (props.stripeTestPriceIdResidentMonth() != null
+                && !props.stripeTestPriceIdResidentMonth().isBlank()) {
             billingCheckoutPostLambdaEnv.with(
-                    "STRIPE_TEST_PRICE_ID_RESIDENT_LTD", props.stripeTestPriceIdResidentLtd());
-        }
-        if (props.stripePriceIdResidentDiyaGl() != null
-                && !props.stripePriceIdResidentDiyaGl().isBlank()) {
-            billingCheckoutPostLambdaEnv.with("STRIPE_PRICE_ID_RESIDENT_DIYA_GL", props.stripePriceIdResidentDiyaGl());
-        }
-        if (props.stripeTestPriceIdResidentDiyaGl() != null
-                && !props.stripeTestPriceIdResidentDiyaGl().isBlank()) {
-            billingCheckoutPostLambdaEnv.with(
-                    "STRIPE_TEST_PRICE_ID_RESIDENT_DIYA_GL", props.stripeTestPriceIdResidentDiyaGl());
+                    "STRIPE_TEST_PRICE_ID_RESIDENT_MONTH", props.stripeTestPriceIdResidentMonth());
         }
         if (props.baseUrl() != null && !props.baseUrl().isBlank()) {
             billingCheckoutPostLambdaEnv.with("DIY_SUBMIT_BASE_URL", props.baseUrl());

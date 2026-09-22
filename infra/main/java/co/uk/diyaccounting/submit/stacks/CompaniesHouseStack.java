@@ -179,6 +179,13 @@ public class CompaniesHouseStack extends Stack {
                 "ImportedCompaniesHouseAccountsAsyncRequestsTable-%s".formatted(props.deploymentName()),
                 props.sharedNames().companiesHouseAccountsAsyncRequestsTableName);
 
+        // Lookup existing DynamoDB Practice Clients Table - the accounts submit Lambda reads it
+        // when enforceBundles resolves a client-scoped request's client row.
+        ITable practiceClientsTable = Table.fromTableName(
+                this,
+                "ImportedPracticeClientsTable-%s".formatted(props.deploymentName()),
+                props.sharedNames().practiceClientsTableName);
+
         this.lambdaFunctionProps = new java.util.ArrayList<>();
 
         // Region and account for Secrets Manager access
@@ -663,6 +670,7 @@ public class CompaniesHouseStack extends Stack {
                 .with(
                         "COMPANIES_HOUSE_ACCOUNTS_ASYNC_REQUESTS_TABLE_NAME",
                         companiesHouseAccountsAsyncRequestsTable.getTableName())
+                .with("PRACTICE_CLIENTS_DYNAMODB_TABLE_NAME", practiceClientsTable.getTableName())
                 .with("COMPANIES_HOUSE_GATEWAY_TEST", accountsGatewayTestFlag(props));
         withPresenterSecretArns(companiesHouseAccountsPostLambdaEnv, props);
         if (XML_GATEWAY_TEST_ENV_NAME.equals(props.envName())) {
@@ -702,6 +710,8 @@ public class CompaniesHouseStack extends Stack {
         grantCompaniesHousePresenterSecretsAccess(this.companiesHouseAccountsPostLambda, props);
         companiesHouseAccountsAsyncRequestsTable.grant(
                 this.companiesHouseAccountsPostLambda, "dynamodb:GetItem", "dynamodb:UpdateItem");
+        // Read-only: resolves a client-scoped request's client row when enforceBundles checks it.
+        practiceClientsTable.grant(this.companiesHouseAccountsPostLambda, "dynamodb:GetItem");
 
         var companiesHouseAccountsGetLambdaEnv = accountsFilingLambdaEnv(props)
                 .with("RECEIPTS_DYNAMODB_TABLE_NAME", receiptsTable.getTableName())

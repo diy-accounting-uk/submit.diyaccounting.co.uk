@@ -22,12 +22,12 @@ dotenvConfigIfNotBlank({ path: ".env.test" });
 describe("buildStripeProductsFromCatalog", () => {
   const catalog = loadCatalogFromRoot();
 
-  test("returns the seven Stripe prices with the correct amounts, resident carrying two", () => {
+  test("returns the four Stripe prices with the correct amounts, resident carrying two", () => {
     const products = buildStripeProductsFromCatalog(catalog);
     const byBundleId = Object.fromEntries(products.filter((p) => p.bundleId !== "resident").map((p) => [p.bundleId, p]));
     const residentPrices = products.filter((p) => p.bundleId === "resident");
 
-    expect(products).toHaveLength(7);
+    expect(products).toHaveLength(4);
     expect(byBundleId["resident-pro"]).toMatchObject({
       name: "Resident Pro",
       priceAmount: 999,
@@ -37,27 +37,6 @@ describe("buildStripeProductsFromCatalog", () => {
     });
     expect(byBundleId["resident-vat"]).toMatchObject({
       name: "Resident VAT",
-      priceAmount: 99,
-      currency: "gbp",
-      interval: "month",
-      multiPrice: false,
-    });
-    expect(byBundleId["resident-itsa"]).toMatchObject({
-      name: "Resident ITSA",
-      priceAmount: 99,
-      currency: "gbp",
-      interval: "month",
-      multiPrice: false,
-    });
-    expect(byBundleId["resident-ltd"]).toMatchObject({
-      name: "Resident Ltd",
-      priceAmount: 99,
-      currency: "gbp",
-      interval: "month",
-      multiPrice: false,
-    });
-    expect(byBundleId["resident-diya-gl"]).toMatchObject({
-      name: "DIYA-GL",
       priceAmount: 99,
       currency: "gbp",
       interval: "month",

@@ -439,6 +439,15 @@ jobs:
           BOOKS_CLIENT_ID=$(node scripts/stack-output.js "$STACK_NAME" BooksUserPoolClientId)
           echo "books-client-id=$BOOKS_CLIENT_ID" | tee -a "$GITHUB_OUTPUT"
 
+      - name: Look up the submission MCP app client
+        id: mcp-client
+        shell: bash
+        run: |
+          # This job runs in the Playwright container, which has the AWS SDK but not the CLI.
+          STACK_NAME="${{ needs.names.outputs.environment-name }}-env-IdentityStack"
+          MCP_CLIENT_ID=$(node scripts/stack-output.js "$STACK_NAME" McpUserPoolClientId)
+          echo "mcp-client-id=$MCP_CLIENT_ID" | tee -a "$GITHUB_OUTPUT"
+
       - name: Stagger HMRC API calls
         if: ${{ !cancelled() }}
         run: |
@@ -537,6 +546,7 @@ jobs:
           # The DIYA-GL subscription suite signs in on the DIYA-GL app client through the hosted
           # UI directly; unused by every other suite.
           COGNITO_DIYA_GL_CLIENT_ID: ${{ steps.diya-gl-client.outputs.books-client-id }}
+          COGNITO_MCP_CLIENT_ID: ${{ steps.mcp-client.outputs.mcp-client-id }}
           COGNITO_BASE_URI: ${{ matrix.suite == 'diyaGlSubscriptionBehaviour' && format('https://{0}-auth.diyaccounting.co.uk', needs.names.outputs.environment-name) || '' }}
           # The DIYA-GL client's callback URLs are the diya-gl.co.uk pages, so the sign-in
           # returns there; the ci client also lists localhost:3001 for local runs.
@@ -593,6 +603,7 @@ jobs:
           # The DIYA-GL subscription suite signs in on the DIYA-GL app client through the hosted
           # UI directly; unused by every other suite.
           COGNITO_DIYA_GL_CLIENT_ID: ${{ steps.diya-gl-client.outputs.books-client-id }}
+          COGNITO_MCP_CLIENT_ID: ${{ steps.mcp-client.outputs.mcp-client-id }}
           COGNITO_BASE_URI: ${{ matrix.suite == 'diyaGlSubscriptionBehaviour' && format('https://{0}-auth.diyaccounting.co.uk', needs.names.outputs.environment-name) || '' }}
           # The DIYA-GL client's callback URLs are the diya-gl.co.uk pages, so the sign-in
           # returns there; the ci client also lists localhost:3001 for local runs.

@@ -249,7 +249,7 @@ test("Click through: Load and save a UK Property Annual Submission with HMRC", a
   /*  BUNDLES  */
   /* ********* */
 
-  await ensureBundleViaPassApi(page, "resident-itsa", screenshotPath, { testPass: true });
+  await ensureBundleViaPassApi(page, "resident", screenshotPath, { testPass: true });
   await goToHomePageUsingMainNav(page, screenshotPath);
 
   /* ***************************************** */

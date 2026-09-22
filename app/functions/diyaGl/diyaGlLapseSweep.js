@@ -13,7 +13,7 @@ import { listBooks, deleteBook } from "../../data/s3DiyaGlRepository.js";
 
 const logger = createLogger({ source: "app/functions/diyaGl/diyaGlLapseSweep.js" });
 
-const DEFAULT_BUNDLE_ID = "resident-diya-gl";
+const DEFAULT_BUNDLE_ID = "resident";
 const DEFAULT_LAPSE_GRACE_DAYS = 30;
 const MS_PER_DAY = 24 * 60 * 60 * 1000;
 

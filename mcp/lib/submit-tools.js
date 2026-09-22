@@ -37,23 +37,57 @@ function requireField(toolName, params, key) {
   return value;
 }
 
+// hmrcVatObligationGet.js and hmrcVatReturnPost.js run behind an AsyncApiLambda: a first request
+// with no x-request-id header is the initial request, and it answers 202 with a Location header
+// and an x-request-id to poll with. A poll re-sends the same request (same method, same body)
+// carrying that x-request-id and without x-initial-request, until the status leaves 202 — the
+// same contract web/public/lib/services/api-client.js's executeAsyncRequestPolling implements for
+// the browser. Every route is polled the same way here, since only these two currently answer 202
+// and a route that starts answering synchronously never takes the branch below.
+const POLL_MAX_ATTEMPTS = 10;
+const POLL_INTERVAL_MS = 1000;
+const POLL_BACKOFF_MAX_MS = 4000;
+
+async function pollUntilSettled(url, requestInit, firstResponse) {
+  let response = firstResponse;
+  const pollHeaders = { ...requestInit.headers };
+  delete pollHeaders["x-initial-request"];
+  const requestId = response.headers.get("x-request-id");
+  if (requestId) pollHeaders["x-request-id"] = requestId;
+  const pollUrl = response.headers.get("Location") || url;
+
+  for (let attempt = 1; attempt <= POLL_MAX_ATTEMPTS && response.status === 202; attempt += 1) {
+    const delayMs = Math.min(POLL_INTERVAL_MS * 2 ** (attempt - 1), POLL_BACKOFF_MAX_MS);
+    await new Promise((resolve) => setTimeout(resolve, delayMs));
+    response = await fetch(url, { ...requestInit, headers: pollHeaders });
+  }
+
+  if (response.status === 202) {
+    throw new Error(`Timed out after ${POLL_MAX_ATTEMPTS} polls waiting for ${pollUrl} to complete`);
+  }
+  return response;
+}
+
 /**
  * Calls one of this service's own API routes with the session bearer token, over the custom
  * authoriser's X-Authorization header when customAuthorizer is set, or the standard Authorization
  * header otherwise; extra headers (an HMRC access token, Gov-Test-Scenario, hmrcAccount) merge in
- * on top and are never overwritten by the session header.
+ * on top and are never overwritten by the session header. A 202 response is polled to a terminal
+ * status before this returns (see pollUntilSettled); a poll that never settles throws with the
+ * poll URL in the message rather than returning a partial result.
  * @param {string} path - the route, e.g. "/api/v1/hmrc/vat/obligation?vrn=..."
  * @param {{method?: string, body?: Object, headers?: Object, customAuthorizer?: boolean}} [options]
  */
 async function callSubmitApi(path, { method = "GET", body, headers = {}, customAuthorizer = false } = {}) {
   const sessionHeaderName = customAuthorizer ? "X-Authorization" : "Authorization";
-  const finalHeaders = { [sessionHeaderName]: `Bearer ${sessionToken()}`, ...headers };
+  const finalHeaders = { [sessionHeaderName]: `Bearer ${sessionToken()}`, "x-initial-request": "true", ...headers };
   if (body !== undefined) finalHeaders["Content-Type"] = "application/json";
-  const response = await fetch(`${baseUrl()}${path}`, {
-    method,
-    headers: finalHeaders,
-    body: body !== undefined ? JSON.stringify(body) : undefined,
-  });
+  const url = `${baseUrl()}${path}`;
+  const requestInit = { method, headers: finalHeaders, body: body !== undefined ? JSON.stringify(body) : undefined };
+  let response = await fetch(url, requestInit);
+  if (response.status === 202) {
+    response = await pollUntilSettled(url, requestInit, response);
+  }
   const responseBody = await response.json().catch(() => ({}));
   if (!response.ok) {
     throw new Error(responseBody?.message || `${path} failed with HTTP ${response.status}`);
@@ -96,7 +130,10 @@ const VAT_RETURN_BOX_FIELDS = [
 
 /**
  * submit_vat_return: files the nine boxes the user has confirmed (seven filed fields; boxes 3 and
- * 5 are HMRC's own totals and the route derives them itself) and returns the receipt.
+ * 5 are HMRC's own totals and the route derives them itself). Returns
+ * {receipt, hmrcResponse, hmrcResponseBody, periodKey, receiptId} — the filed receipt sits under
+ * `receipt` (also duplicated at `hmrcResponseBody`), `periodKey` is the obligation period this
+ * route resolved from periodStart/periodEnd, and `receiptId` is the name get_vat_receipt takes.
  * @param {Object} _session
  * @param {{vatNumber: string, periodStart: string, periodEnd: string, hmrcAccessToken: string,
  *   vatDueSales: number, vatDueAcquisitions: number, vatReclaimedCurrPeriod: number,
@@ -193,8 +230,11 @@ export async function previewMicroEntityAccounts(_session, params = {}) {
 }
 
 /**
- * submit_micro_entity_accounts: files confirmed figures with the company authentication code;
- * returns the submission number.
+ * submit_micro_entity_accounts: files confirmed figures with the company authentication code
+ * (6 to 8 characters — Companies House's own format, checked by the route, not by this tool).
+ * Returns {submissionNumber, gatewayTimestamp, pollInterval}; poll_accounts_submission takes the
+ * submissionNumber to reach the filing's outcome. This route answers synchronously (200/201),
+ * unlike list_vat_obligations and submit_vat_return.
  * @param {Object} _session
  * @param {Object} params - as previewMicroEntityAccounts, plus companyAuthCode
  */
@@ -205,7 +245,9 @@ export async function submitMicroEntityAccounts(_session, params = {}) {
 }
 
 /**
- * poll_accounts_submission: accepted, rejected with reasons, or pending.
+ * poll_accounts_submission: the filing's outcome — {submissionNumber, statusCode, companyNumber,
+ * rejections}, where statusCode is "PENDING" while Companies House has not answered yet, "ACCEPT"
+ * once filed (with a receiptId added), or "REJECT" with rejections carrying the reasons.
  * @param {Object} _session
  * @param {{submissionNumber: string}} params
  */

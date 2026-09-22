@@ -102,6 +102,16 @@ describe("activityEventTransform", () => {
     expect(row.bundle_id).toBeNull();
     expect(row.subscription_id).toBeNull();
     expect(row.country).toBeNull();
+    expect(row.client_id).toBeNull();
+  });
+
+  test("promotes the client id from a client-scoped submission", async () => {
+    const detail = { ...loginDetail, event: "vat-return-submitted", clientId: "client-abc" };
+
+    const result = await handler({ records: [{ recordId: "r1", data: encode(envelope(detail)) }] });
+    const row = JSON.parse(decode(result.records[0].data));
+
+    expect(row.client_id).toBe("client-abc");
   });
 
   test("round-trips the original detail into detail_json", async () => {

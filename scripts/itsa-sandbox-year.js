@@ -587,7 +587,7 @@ async function main() {
   const vendorPublicIp = await detectVendorPublicIp();
   process.env.USER_SUB_HASH_SALT = JSON.stringify({ current: "itsa-sandbox-year", versions: { "itsa-sandbox-year": randomUUID() } });
   await initializeSalt();
-  const { govClientHeaders } = buildFraudHeaders(buildSyntheticEvent(vendorPublicIp), { bundleIds: ["resident-itsa"] });
+  const { govClientHeaders } = buildFraudHeaders(buildSyntheticEvent(vendorPublicIp), { bundleIds: ["resident"] });
   record("fraud-headers", { headerNames: Object.keys(govClientHeaders).sort() });
 
   const hmrcHeaders = (apiVersion, testScenario) =>

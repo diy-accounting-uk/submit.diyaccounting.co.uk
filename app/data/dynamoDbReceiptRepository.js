@@ -17,8 +17,10 @@ const logger = createLogger({ source: "app/data/dynamoDbReceiptRepository.js" })
  * @param {object} receipt - The receipt data to store
  * @param {string} actor - Actor class of the filer ("customer", "test-user", "probe"),
  *   so real filings can be counted apart from CI and behaviour-test submissions
+ * @param {string} [clientId] - The practice's client id when the filing was client-scoped;
+ *   omitted for the practice's own filings, so existing receipts with no client id stay readable
  */
-export async function putReceipt(userSub, receiptId, receipt, actor) {
+export async function putReceipt(userSub, receiptId, receipt, actor, clientId) {
   logger.info({ message: `DynamoDB enabled, proceeding with putReceipt [table: ${process.env.RECEIPTS_DYNAMODB_TABLE_NAME}]` });
 
   try {
@@ -33,6 +35,7 @@ export async function putReceipt(userSub, receiptId, receipt, actor) {
       receiptId,
       receipt,
       actor,
+      clientId,
       saltVersion: getSaltVersion(),
       createdAt: now.toISOString(),
     };
@@ -139,11 +142,13 @@ export async function getReceipt(userSub, receiptId) {
 }
 
 /**
- * List all receipts for a user
+ * List a user's receipts, optionally narrowed to one of their practice's clients.
  * @param {string} userSub - The user's subject identifier
+ * @param {string} [clientId] - When given, only that client's receipts are returned; when
+ *   omitted, only the caller's own (no client id) receipts are returned
  * @returns {Array} Array of receipt metadata objects
  */
-export async function listUserReceipts(userSub) {
+export async function listUserReceipts(userSub, clientId) {
   logger.info({
     message: `DynamoDB enabled, proceeding with listUserReceipts [table: ${process.env.RECEIPTS_DYNAMODB_TABLE_NAME}]`,
     userSub,
@@ -187,35 +192,39 @@ export async function listUserReceipts(userSub) {
       }
     }
 
-    // Convert DynamoDB items to receipt metadata
-    const receipts = (response.Items || []).map((item) => {
-      // Extract timestamp and formBundleNumber from receiptId
-      // Format: {ISO8601-timestamp}-{formBundleNumber}
-      // ISO timestamps end with 'Z', so find the hyphen after 'Z'
-      const zIndex = item.receiptId.indexOf("Z-");
-      let timestamp;
-      let formBundleNumber;
+    // Convert DynamoDB items to receipt metadata, narrowed to the requested client (or, with no
+    // client id given, to the caller's own filings - a client's receipts never show by default).
+    const receipts = (response.Items || [])
+      .filter((item) => (clientId ? item.clientId === clientId : !item.clientId))
+      .map((item) => {
+        // Extract timestamp and formBundleNumber from receiptId
+        // Format: {ISO8601-timestamp}-{formBundleNumber}
+        // ISO timestamps end with 'Z', so find the hyphen after 'Z'
+        const zIndex = item.receiptId.indexOf("Z-");
+        let timestamp;
+        let formBundleNumber;
 
-      if (zIndex > 0) {
-        // Found 'Z-', so split there
-        timestamp = item.receiptId.substring(0, zIndex + 1); // Include the 'Z'
-        formBundleNumber = item.receiptId.substring(zIndex + 2); // Skip 'Z-'
-      } else {
-        // Fallback: no timestamp format found, treat whole string as formBundleNumber
-        timestamp = item.receiptId;
-        formBundleNumber = item.receiptId;
-      }
+        if (zIndex > 0) {
+          // Found 'Z-', so split there
+          timestamp = item.receiptId.substring(0, zIndex + 1); // Include the 'Z'
+          formBundleNumber = item.receiptId.substring(zIndex + 2); // Skip 'Z-'
+        } else {
+          // Fallback: no timestamp format found, treat whole string as formBundleNumber
+          timestamp = item.receiptId;
+          formBundleNumber = item.receiptId;
+        }
 
-      return {
-        receiptId: item.receiptId,
-        key: `receipts/${userSub}/${item.receiptId}.json`, // Legacy S3-style key for compatibility
-        name: `${item.receiptId}.json`,
-        timestamp: timestamp,
-        formBundleNumber: formBundleNumber,
-        createdAt: item.createdAt,
-        lastModified: item.createdAt, // Use createdAt as lastModified for compatibility
-      };
-    });
+        return {
+          receiptId: item.receiptId,
+          key: `receipts/${userSub}/${item.receiptId}.json`, // Legacy S3-style key for compatibility
+          name: `${item.receiptId}.json`,
+          timestamp: timestamp,
+          formBundleNumber: formBundleNumber,
+          createdAt: item.createdAt,
+          lastModified: item.createdAt, // Use createdAt as lastModified for compatibility
+          clientId: item.clientId || null,
+        };
+      });
 
     // Sort by timestamp descending (most recent first)
     receipts.sort((a, b) => String(b.timestamp).localeCompare(String(a.timestamp)));

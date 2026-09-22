@@ -75,6 +75,7 @@ public class SubmitApplication {
         public String userPoolArn;
         public String userPoolClientId;
         public String diyaGlUserPoolClientId;
+        public String mcpUserPoolClientId;
         public String bundlesTableArn;
         public String hostedZoneId;
         public String certificateArn;
@@ -88,12 +89,10 @@ public class SubmitApplication {
         public String stripeTestPriceIdResidentPro;
         public String stripePriceIdResidentVat;
         public String stripeTestPriceIdResidentVat;
-        public String stripePriceIdResidentItsa;
-        public String stripeTestPriceIdResidentItsa;
-        public String stripePriceIdResidentLtd;
-        public String stripeTestPriceIdResidentLtd;
-        public String stripePriceIdResidentDiyaGl;
-        public String stripeTestPriceIdResidentDiyaGl;
+        public String stripePriceIdResidentYear;
+        public String stripeTestPriceIdResidentYear;
+        public String stripePriceIdResidentMonth;
+        public String stripeTestPriceIdResidentMonth;
         public String stripeWebhookSecretArn;
         public String stripeTestWebhookSecretArn;
         public String githubAppId;
@@ -168,6 +167,14 @@ public class SubmitApplication {
                 "COGNITO_DIYA_GL_CLIENT_ID",
                 appProps.diyaGlUserPoolClientId,
                 "(from diyaGlUserPoolClientId in cdk.json)");
+        // The submission MCP's own client (ApiStack's booksJwtAuthorizer joins its id onto the
+        // books audience when set). Unlike cognitoBooksUserPoolClientId, blank stays valid here:
+        // ApiStack only adds it to the audience list when non-blank, so a not-yet-looked-up value
+        // changes nothing rather than failing synth.
+        var cognitoMcpUserPoolClientId = envOr(
+                "COGNITO_MCP_CLIENT_ID",
+                appProps.mcpUserPoolClientId != null ? appProps.mcpUserPoolClientId : "",
+                "(from mcpUserPoolClientId in cdk.json)");
         // The books page runs on the DIYA-GL site's own origins: diya-gl.co.uk on prod,
         // ci.diya-gl.co.uk on every environment, and http://localhost:3001 for local dev.
         var booksAllowedOrigins = "prod".equals(envName)
@@ -257,30 +264,22 @@ public class SubmitApplication {
                 "STRIPE_TEST_PRICE_ID_RESIDENT_VAT",
                 appProps.stripeTestPriceIdResidentVat,
                 "(from stripeTestPriceIdResidentVat in cdk.json)");
-        var stripePriceIdResidentItsa = envOr(
-                "STRIPE_PRICE_ID_RESIDENT_ITSA",
-                appProps.stripePriceIdResidentItsa,
-                "(from stripePriceIdResidentItsa in cdk.json)");
-        var stripeTestPriceIdResidentItsa = envOr(
-                "STRIPE_TEST_PRICE_ID_RESIDENT_ITSA",
-                appProps.stripeTestPriceIdResidentItsa,
-                "(from stripeTestPriceIdResidentItsa in cdk.json)");
-        var stripePriceIdResidentLtd = envOr(
-                "STRIPE_PRICE_ID_RESIDENT_LTD",
-                appProps.stripePriceIdResidentLtd,
-                "(from stripePriceIdResidentLtd in cdk.json)");
-        var stripeTestPriceIdResidentLtd = envOr(
-                "STRIPE_TEST_PRICE_ID_RESIDENT_LTD",
-                appProps.stripeTestPriceIdResidentLtd,
-                "(from stripeTestPriceIdResidentLtd in cdk.json)");
-        var stripePriceIdResidentDiyaGl = envOr(
-                "STRIPE_PRICE_ID_RESIDENT_DIYA_GL",
-                appProps.stripePriceIdResidentDiyaGl,
-                "(from stripePriceIdResidentDiyaGl in cdk.json)");
-        var stripeTestPriceIdResidentDiyaGl = envOr(
-                "STRIPE_TEST_PRICE_ID_RESIDENT_DIYA_GL",
-                appProps.stripeTestPriceIdResidentDiyaGl,
-                "(from stripeTestPriceIdResidentDiyaGl in cdk.json)");
+        var stripePriceIdResidentYear = envOr(
+                "STRIPE_PRICE_ID_RESIDENT_YEAR",
+                appProps.stripePriceIdResidentYear,
+                "(from stripePriceIdResidentYear in cdk.json)");
+        var stripeTestPriceIdResidentYear = envOr(
+                "STRIPE_TEST_PRICE_ID_RESIDENT_YEAR",
+                appProps.stripeTestPriceIdResidentYear,
+                "(from stripeTestPriceIdResidentYear in cdk.json)");
+        var stripePriceIdResidentMonth = envOr(
+                "STRIPE_PRICE_ID_RESIDENT_MONTH",
+                appProps.stripePriceIdResidentMonth,
+                "(from stripePriceIdResidentMonth in cdk.json)");
+        var stripeTestPriceIdResidentMonth = envOr(
+                "STRIPE_TEST_PRICE_ID_RESIDENT_MONTH",
+                appProps.stripeTestPriceIdResidentMonth,
+                "(from stripeTestPriceIdResidentMonth in cdk.json)");
         var stripeWebhookSecretArn = envOr(
                 "STRIPE_WEBHOOK_SECRET_ARN",
                 appProps.stripeWebhookSecretArn,
@@ -454,16 +453,14 @@ public class SubmitApplication {
                         .stripePriceIdResidentVat(stripePriceIdResidentVat != null ? stripePriceIdResidentVat : "")
                         .stripeTestPriceIdResidentVat(
                                 stripeTestPriceIdResidentVat != null ? stripeTestPriceIdResidentVat : "")
-                        .stripePriceIdResidentItsa(stripePriceIdResidentItsa != null ? stripePriceIdResidentItsa : "")
-                        .stripeTestPriceIdResidentItsa(
-                                stripeTestPriceIdResidentItsa != null ? stripeTestPriceIdResidentItsa : "")
-                        .stripePriceIdResidentLtd(stripePriceIdResidentLtd != null ? stripePriceIdResidentLtd : "")
-                        .stripeTestPriceIdResidentLtd(
-                                stripeTestPriceIdResidentLtd != null ? stripeTestPriceIdResidentLtd : "")
-                        .stripePriceIdResidentDiyaGl(
-                                stripePriceIdResidentDiyaGl != null ? stripePriceIdResidentDiyaGl : "")
-                        .stripeTestPriceIdResidentDiyaGl(
-                                stripeTestPriceIdResidentDiyaGl != null ? stripeTestPriceIdResidentDiyaGl : "")
+                        .stripePriceIdResidentYear(
+                                stripePriceIdResidentYear != null ? stripePriceIdResidentYear : "")
+                        .stripeTestPriceIdResidentYear(
+                                stripeTestPriceIdResidentYear != null ? stripeTestPriceIdResidentYear : "")
+                        .stripePriceIdResidentMonth(
+                                stripePriceIdResidentMonth != null ? stripePriceIdResidentMonth : "")
+                        .stripeTestPriceIdResidentMonth(
+                                stripeTestPriceIdResidentMonth != null ? stripeTestPriceIdResidentMonth : "")
                         .baseUrl(sharedNames.publicBaseUrl)
                         .billingReturnUrlOrigins(billingReturnUrlOrigins)
                         .build());
@@ -529,6 +526,7 @@ public class SubmitApplication {
                         .userPoolId(cognitoUserPoolId)
                         .userPoolClientId(cognitoUserPoolClientId)
                         .booksUserPoolClientId(cognitoBooksUserPoolClientId)
+                        .mcpUserPoolClientId(cognitoMcpUserPoolClientId)
                         .booksAllowedOrigins(booksAllowedOrigins)
                         .customAuthorizerLambdaArn(authStack.customAuthorizerLambda.getFunctionArn())
                         .buildNumber(buildNumber)

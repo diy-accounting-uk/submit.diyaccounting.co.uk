@@ -1,10 +1,11 @@
 // SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0
 // Copyright (C) 2006-2026 DIY Accounting Limited
 
-// mail-invoices.test.js -- invoiceLinesForPeriod over two recorded, redacted
-// mailbox documents (an AWS billing statement and a Google Cloud invoice),
-// with the corpus CLI replaced by a function returning the fixtures instead
-// of shelling out to a live index.
+// mail-invoices.test.js -- invoiceLinesForPeriod over three recorded, redacted
+// mailbox documents (an AWS billing statement, a Google Cloud invoice, and an
+// AWS invoice email whose total sits only in its PDF attachment's extracted
+// text), with the corpus CLI replaced by a function returning the fixtures
+// instead of shelling out to a live index.
 
 import { readFileSync } from "node:fs";
 import { dirname, resolve } from "node:path";
@@ -23,6 +24,7 @@ function readFixture(name) {
 
 const AWS_FIXTURE = readFixture("mail-invoices-aws.json");
 const GOOGLE_CLOUD_FIXTURE = readFixture("mail-invoices-google-cloud.json");
+const AWS_PDF_TOTAL_FIXTURE = readFixture("mail-invoices-aws-pdf-total.json");
 
 function fakeRunCorpus(fixturesBySupplier) {
   const docsByPath = new Map();
@@ -71,6 +73,27 @@ describe("invoiceLinesForPeriod", () => {
       detailComment: "Amazon Web Services",
     });
     expect(lines[0]).not.toHaveProperty("documentReference");
+  });
+
+  it("emits a purchases invoice line from an AWS invoice email whose total sits only in its PDF attachment's extracted text", async () => {
+    const lines = await invoiceLinesForPeriod(
+      { from: "2026-06-01", to: "2026-06-30", suppliers: [{ name: "Amazon Web Services", taxCode: "OS", ...CLOUD_HOSTING_ACCOUNT }] },
+      { runCorpus: fakeRunCorpus({ "Amazon Web Services": AWS_PDF_TOTAL_FIXTURE }) },
+    );
+
+    expect(lines).toHaveLength(1);
+    expect(lines[0]).toMatchObject({
+      sourceJournalID: "purchases",
+      documentType: "invoice",
+      postingDate: "2026-06-02",
+      documentDate: "2026-06-02",
+      accountMainID: "5002",
+      amount: 123.45,
+      amountCurrency: "EUR",
+      taxCode: "OS",
+      documentReference: "EUINGB26-000001",
+      detailComment: "Amazon Web Services",
+    });
   });
 
   it("emits a purchases invoice line from a recorded Google Cloud invoice, with its invoice number as the reference", async () => {

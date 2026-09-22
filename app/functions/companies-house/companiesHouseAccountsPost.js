@@ -197,7 +197,8 @@ async function recordSubmissionFailure({ failure, summary, userSub, detail = {},
     failure,
     userSub,
     actor: resolveActorClass(),
-    detail: clientId ? { ...detail, clientId } : detail,
+    clientId,
+    detail,
   });
 }
 
@@ -313,7 +314,7 @@ export async function ingestHandler(event) {
       event: "companies-house-accounts-submitted",
       summary: "Companies House micro-entity accounts submitted",
       userSub,
-      detail: clientId ? { clientId } : {},
+      clientId,
     });
 
     return http201CreatedResponse({

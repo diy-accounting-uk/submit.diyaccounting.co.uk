@@ -977,6 +977,7 @@ jobs:
           COGNITO_USER_POOL_ARN: ${{ steps.lookup.outputs.cognito-user-pool-arn }}
           COGNITO_CLIENT_ID: ${{ steps.lookup.outputs.cognito-client-id }}
           COGNITO_DIYA_GL_CLIENT_ID: ${{ steps.lookup.outputs.cognito-diya-gl-client-id }}
+          COGNITO_MCP_CLIENT_ID: ${{ steps.lookup.outputs.cognito-mcp-client-id }}
           WEBSITE_HASH: 'placeholder'
           HTTP_API_URL: 'https://placeholder'
 

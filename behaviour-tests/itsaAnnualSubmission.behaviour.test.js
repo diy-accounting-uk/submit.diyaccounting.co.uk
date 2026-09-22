@@ -242,7 +242,7 @@ test("Click through: Load and save an ITSA Annual Submission with HMRC", async (
   /*  BUNDLES  */
   /* ********* */
 
-  await ensureBundleViaPassApi(page, "resident-itsa", screenshotPath, { testPass: true });
+  await ensureBundleViaPassApi(page, "resident", screenshotPath, { testPass: true });
   await goToHomePageUsingMainNav(page, screenshotPath);
 
   /* ***************************************** */
