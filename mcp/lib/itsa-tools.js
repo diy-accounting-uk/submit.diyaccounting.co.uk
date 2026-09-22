@@ -132,8 +132,6 @@ function readPath(target, path) {
   return node;
 }
 
-const UNSAFE_PATH_PARTS = new Set(["__proto__", "constructor", "prototype"]);
-
 /**
  * Writes a value at a dotted path, creating the objects between. A part that
  * would reach the prototype chain is refused, so a path can never pollute
@@ -142,19 +140,26 @@ const UNSAFE_PATH_PARTS = new Set(["__proto__", "constructor", "prototype"]);
 export function writePath(target, path, value) {
   const parts = path.split(".");
   for (const part of parts) {
-    if (UNSAFE_PATH_PARTS.has(part)) throw new Error(`Refusing to write the path ${path}: ${part} is not a field`);
+    if (part === "__proto__" || part === "constructor" || part === "prototype") {
+      throw new Error(`Refusing to write the path ${path}: ${part} is not a field`);
+    }
   }
   let node = target;
   for (let i = 0; i < parts.length - 1; i++) {
     const part = parts[i];
-    // Repeats the guard at the write site itself, not only in the loop above, so static
-    // analysis following this assignment can see the refusal without tracing back to it.
-    if (UNSAFE_PATH_PARTS.has(part)) throw new Error(`Refusing to write the path ${path}: ${part} is not a field`);
+    // The loop above refuses the whole path before anything is written; the comparison is
+    // repeated on the write itself, spelled out, because that is the shape static analysis
+    // recognises as a guard on the assignment.
+    if (part === "__proto__" || part === "constructor" || part === "prototype") {
+      throw new Error(`Refusing to write the path ${path}: ${part} is not a field`);
+    }
     if (!Object.hasOwn(node, part) || node[part] === null || typeof node[part] !== "object") node[part] = {};
     node = node[part];
   }
   const lastPart = parts[parts.length - 1];
-  if (UNSAFE_PATH_PARTS.has(lastPart)) throw new Error(`Refusing to write the path ${path}: ${lastPart} is not a field`);
+  if (lastPart === "__proto__" || lastPart === "constructor" || lastPart === "prototype") {
+    throw new Error(`Refusing to write the path ${path}: ${lastPart} is not a field`);
+  }
   node[lastPart] = value;
 }
 
