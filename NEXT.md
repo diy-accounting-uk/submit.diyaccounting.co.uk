@@ -45,15 +45,11 @@ step.
   lookup-resources and the workflows to `ApiStack`), B60a (the six MCP Submit tools against the
   simulator lane with the 202 poll), PU-7h (audit and receipts by client), PU-14 and PU-9 (the
   experiment row; the three folded bundles retired where Stripe live shows no subscription), F2f
-  (the mail index reading PDF attachments, `mail-invoices.js` reading their totals). PR #329,
-  ten commits. Its ci deploy 35722300236 went red in `diyaGlSubscriptionBehaviour`: the checkout
-  Lambda has no `STRIPE_PRICE_ID_RESIDENT_YEAR` because `BillingStack.java` and
-  `SubmitApplication.java` wire only `RESIDENT_PRO`, `RESIDENT_VAT` and the three retired
-  bundles, so a `resident` checkout answers 500 on ci and on prod-d731afe today. The fix (the
-  four resident price vars replacing the retired six) lands as the eleventh commit and redeploys;
-  the merge carries it to prod. **Source**: the rows named. **Owner**: Claude Code.
-  **Model**: Sonnet. **Size**: ~30 files.
-
+  (the mail index reading PDF attachments, `mail-invoices.js` reading their totals), plus the
+  resident bundle's four Stripe price vars wired into the checkout Lambda (the first deploy's
+  `diyaGlSubscriptionBehaviour` red, and a 500 on prod-d731afe's resident checkout until the
+  merge deploys). Eleven commits, head 51b81741, its ci deploy 35728970921 in flight. **Source**: the
+  rows named. **Owner**: Claude Code. **Model**: Sonnet. **Size**: ~30 files.
 - [ ] **PU-7. Practice licence build.** PU-7a to PU-7g, PU-7k and PU-7l are on `main`. In flight on
   `claude/b76-board` (B76): PU-7h, audit and receipts by client: the event field in `app/lib/activityAlert.js`, the receipt
   attribute in `app/data/dynamoDbReceiptRepository.js`, the receipts filter in
