@@ -67,6 +67,7 @@ public class IdentityStack extends Stack {
     public UserPool userPool;
     public UserPoolClient userPoolClient;
     public UserPoolClient booksUserPoolClient;
+    public UserPoolClient mcpUserPoolClient;
     public UserPoolIdentityProviderGoogle googleIdentityProvider;
     public final HashMap<UserPoolClientIdentityProvider, IDependable> identityProviders = new HashMap<>();
     public final UserPoolDomain userPoolDomain;
@@ -305,6 +306,35 @@ public class IdentityStack extends Stack {
                 .stringValue(this.booksUserPoolClient.getUserPoolClientId())
                 .build();
 
+        // MCP User Pool Client
+        // A third client on the same pool for the submission MCP's stdio surfaces
+        // (PLAN_SUBMISSION_MCP.md M3): authorization code with PKCE on a loopback redirect, the
+        // flow every CLI uses, no client secret. Cognito needs an exact callback URL match, so
+        // every port in the loopback listener's range is registered on both hostnames a listener
+        // can bind (127.0.0.1 and localhost) rather than one fixed port.
+        this.mcpUserPoolClient = UserPoolClient.Builder.create(this, props.resourceNamePrefix() + "-McpUserPoolClient")
+                .userPool(userPool)
+                .userPoolClientName(props.resourceNamePrefix() + "-mcp-client")
+                .generateSecret(false)
+                .preventUserExistenceErrors(true)
+                .oAuth(OAuthSettings.builder()
+                        .flows(OAuthFlows.builder().authorizationCodeGrant(true).build())
+                        .scopes(List.of(OAuthScope.EMAIL, OAuthScope.OPENID, OAuthScope.PROFILE))
+                        .callbackUrls(buildMcpLoopbackUrls())
+                        .logoutUrls(buildMcpLoopbackUrls())
+                        .build())
+                .supportedIdentityProviders(allProviders)
+                .build();
+        this.identityProviders
+                .values()
+                .forEach(idp -> this.mcpUserPoolClient.getNode().addDependency(idp));
+
+        var mcpUserPoolClientIdParameterName = "/submit/%s/mcp-app-client-id".formatted(props.envName());
+        StringParameter.Builder.create(this, props.resourceNamePrefix() + "-McpUserPoolClientIdParameter")
+                .parameterName(mcpUserPoolClientIdParameterName)
+                .stringValue(this.mcpUserPoolClient.getUserPoolClientId())
+                .build();
+
         // Create Cognito User Pool Domain
         this.userPoolDomain = UserPoolDomain.Builder.create(this, props.resourceNamePrefix() + "-UserPoolDomain")
                 .userPool(userPool)
@@ -335,6 +365,7 @@ public class IdentityStack extends Stack {
         // one goes.
         cfnOutput(this, "BooksUserPoolClientId", this.booksUserPoolClient.getUserPoolClientId());
         cfnOutput(this, "DiyaGlUserPoolClientId", this.booksUserPoolClient.getUserPoolClientId());
+        cfnOutput(this, "McpUserPoolClientId", this.mcpUserPoolClient.getUserPoolClientId());
         cfnOutput(this, "UserPoolDomainName", this.userPoolDomain.getDomainName());
         cfnOutput(this, "UserPoolDomainARecord", this.userPoolDomainARecordName);
         cfnOutput(this, "UserPoolDomainAaaaRecord", this.userPoolDomainAaaaRecordName);
@@ -484,6 +515,22 @@ public class IdentityStack extends Stack {
         for (var host : buildAuthHosts(sharedNames, envName)) {
             urls.add("https://" + host + "/");
             urls.add("https://" + host + "/auth/signed-out.html");
+        }
+        return urls;
+    }
+
+    // The loopback listener's port range for the submission MCP's stdio sign-in
+    // (mcp/lib/auth.js): the first free port in this range is where signIn() listens for the
+    // authorization code, so Cognito needs every one of them registered on both hostnames a
+    // listener can bind.
+    private static final int MCP_LOOPBACK_PORT_FIRST = 49152;
+    private static final int MCP_LOOPBACK_PORT_LAST = 49159;
+
+    private static List<String> buildMcpLoopbackUrls() {
+        var urls = new java.util.ArrayList<String>();
+        for (int port = MCP_LOOPBACK_PORT_FIRST; port <= MCP_LOOPBACK_PORT_LAST; port++) {
+            urls.add("http://127.0.0.1:" + port + "/callback");
+            urls.add("http://localhost:" + port + "/callback");
         }
         return urls;
     }

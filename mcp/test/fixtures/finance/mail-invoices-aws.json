@@ -1,0 +1,50 @@
+{
+  "search": [
+    {
+      "source": "mail-antony",
+      "path": "2026/9/2/redacted-aws-billing-statement.eml",
+      "title": "Amazon Web Services Billing Statement Available",
+      "date": "2026-09-02T05:32:16+00:00",
+      "score": 0.0154,
+      "excerpt": "Amazon Web Services Billing Statement Available ... Amazon Web Services <invoicing@aws.com> ...",
+      "chunk_seq": 0,
+      "content_indexed": true
+    },
+    {
+      "source": "mail-antony",
+      "path": "2026/9/2/redacted-aws-2sv-notice.eml",
+      "title": "Secure your AWS account with multi-factor authentication",
+      "date": "2026-09-05T10:03:00+00:00",
+      "score": 0.011,
+      "excerpt": "Secure your AWS account ... enable multi-factor authentication ...",
+      "chunk_seq": 0,
+      "content_indexed": true
+    }
+  ],
+  "doc": {
+    "source": "mail-antony",
+    "path": "2026/9/2/redacted-aws-billing-statement.eml",
+    "title": "Amazon Web Services Billing Statement Available",
+    "doc_date": "2026-09-02T05:32:16+00:00",
+    "content_indexed": true,
+    "meta": {
+      "from": "Amazon Web Services <invoicing@aws.com>",
+      "to": "admin@diyaccounting.co.uk",
+      "attachments": []
+    },
+    "content": "Amazon Web Services Billing Statement Available — Amazon Web Services <invoicing@aws.com>, 2026-09-02\n\nGreetings from Amazon Web Services,\n\nThis e-mail confirms that your latest billing statement is available on the AWS web site. Your account will be charged the following:\n\nTotal in USD: $84.00\n\nThe credit card on file is currently your default payment method for your AWS charges.\n\nThank you for using Amazon Web Services.\n\nSincerely,\nAmazon Web Services"
+  },
+  "noise-doc": {
+    "source": "mail-antony",
+    "path": "2026/9/2/redacted-aws-2sv-notice.eml",
+    "title": "Secure your AWS account with multi-factor authentication",
+    "doc_date": "2026-09-05T10:03:00+00:00",
+    "content_indexed": true,
+    "meta": {
+      "from": "Amazon Web Services <no-reply@aws.amazon.com>",
+      "to": "admin@diyaccounting.co.uk",
+      "attachments": []
+    },
+    "content": "Secure your AWS account with multi-factor authentication — Amazon Web Services <no-reply@aws.amazon.com>, 2026-09-05\n\nWe recommend enabling multi-factor authentication (MFA) for your root user to help protect your account."
+  }
+}

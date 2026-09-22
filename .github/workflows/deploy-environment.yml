@@ -336,6 +336,32 @@ jobs:
         env:
           AWS_REGION: ${{ env.AWS_REGION }}
 
+      - name: Create secret in AWS from secrets.PAYPAL_CLIENT_ID
+        env:
+          PAYPAL_CLIENT_ID: ${{ secrets.PAYPAL_CLIENT_ID }}
+          AWS_REGION: ${{ env.AWS_REGION }}
+        run: |
+          if [ -z "${PAYPAL_CLIENT_ID}" ]; then
+            echo "::notice::PAYPAL_CLIENT_ID is not set on this environment; skipping the secret"
+            exit 0
+          fi
+          scripts/put-secret-with-rotation-tag.sh \
+            "${{ needs.names.outputs.environment-name }}/submit/paypal/client_id" \
+            "${PAYPAL_CLIENT_ID}"
+
+      - name: Create secret in AWS from secrets.PAYPAL_CLIENT_SECRET
+        env:
+          PAYPAL_CLIENT_SECRET: ${{ secrets.PAYPAL_CLIENT_SECRET }}
+          AWS_REGION: ${{ env.AWS_REGION }}
+        run: |
+          if [ -z "${PAYPAL_CLIENT_SECRET}" ]; then
+            echo "::notice::PAYPAL_CLIENT_SECRET is not set on this environment; skipping the secret"
+            exit 0
+          fi
+          scripts/put-secret-with-rotation-tag.sh \
+            "${{ needs.names.outputs.environment-name }}/submit/paypal/client_secret" \
+            "${PAYPAL_CLIENT_SECRET}"
+
       - name: Create secret in AWS from secrets.OPS_APP_PRIVATE_KEY
         env:
           SECRET_VALUE: ${{ secrets.OPS_APP_PRIVATE_KEY }}

@@ -92,6 +92,11 @@ The workflow has already downloaded the interesting ones' artifacts before you s
 `${OUT_DIR}/prior/<run-id>/` — `find ${OUT_DIR}/prior -maxdepth 2 -name CHANGES.md` lists what is
 there. Read their `CHANGES.md` and `work.patch` directly; you have no tool to download more.
 
+Run that as one plain command, not chained with `|| echo ...` or `&& echo ...` — your allow-list
+is checked against the whole command string, and a stray `echo` on the end of an otherwise-allowed
+command denies the lot. The same goes for every other check below: `ls`, `find`, `test`, `cat`,
+one at a time, and read the result rather than echoing a fallback message.
+
 **This is your judgement, not a rule.** Resume one when
 it was genuinely on a useful track — a real diagnosis, a patch that applies, a task still open on
 the board. Do not resume one that was thrashing, that stopped because the task turned out to be

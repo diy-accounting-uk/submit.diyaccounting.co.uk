@@ -17,21 +17,35 @@ import { basename, extname, resolve as resolvePath } from "node:path";
 import { buildFileReportDocument, calculatedResultsFor, extractBookFromFile } from "@diy-accounting-uk/diya-gl/dist/app/bin/export.js";
 import { runBookChecks, bookChecksJson } from "@diy-accounting-uk/diya-gl/dist/app/lib/book-checks.js";
 import { canonicalBookToml, canonicalLinesJsonl } from "@diy-accounting-uk/diya-gl/dist/app/lib/diya-gl-canonical.js";
-import { writeBookJson, writeDiyaGlZip } from "@diy-accounting-uk/diya-gl/dist/app/lib/diya-gl-interchange.js";
+import { readBookSource, writeBookJson, writeDiyaGlZip } from "@diy-accounting-uk/diya-gl/dist/app/lib/diya-gl-interchange.js";
 import { loadDiyaGlData } from "@diy-accounting-uk/diya-gl/dist/app/lib/diya-gl-loader.js";
 import { validateBook, validateLines } from "@diy-accounting-uk/diya-gl/dist/app/lib/diya-gl-schema.js";
 import { loadTaxDataForBook, productOf, savePackageZip, saveWorkbook } from "@diy-accounting-uk/diya-gl/dist/app/lib/product-workbook.js";
-import { productModule } from "@diy-accounting-uk/diya-gl/dist/app/lib/products.js";
+import { PRODUCTS, productModule } from "@diy-accounting-uk/diya-gl/dist/app/lib/products.js";
 import { stampBook } from "@diy-accounting-uk/diya-gl/dist/app/lib/provenance.js";
+
+import { accessToken as mcpAccessToken } from "./auth.js";
 
 export const SAVE_FORMATS = ["diya-gl-dir", "diya-gl-zip", "json", "xlsx", "zip"];
 
+// The DIYA cloud forms of open_book/save_book reach DIY Accounting Submit's own storage routes
+// (diyaGlListGet.js, diyaGlVersionGet.js, diyaGlPut.js), the same routes the spreadsheets site's
+// DIYA-GL pages use, over the MCP's own signed-in session (auth.js). Configuration comes from the
+// environment: DIYA_SUBMIT_BASE_URL, the same variable practice-tools.js and submit-tools.js read.
+function baseUrl() {
+  const value = process.env.DIYA_SUBMIT_BASE_URL;
+  if (!value) throw new Error("DIYA_SUBMIT_BASE_URL is not set");
+  return value.replace(/\/$/, "");
+}
+
 /**
- * A fresh, empty session: no book loaded.
- * @returns {{book: Object|null, lines: Array|null, product: string|null, sourcePath: string|null}}
+ * A fresh, empty session: no book loaded. cloud carries the last cloud open or save's bookId,
+ * clientId and etag, so a later save_book with cloud: true sends the right if-match.
+ * @returns {{book: Object|null, lines: Array|null, product: string|null, sourcePath: string|null,
+ *   cloud: {bookId: string, clientId: string|null, etag: string}|null}}
  */
 export function createSession() {
-  return { book: null, lines: null, product: null, sourcePath: null };
+  return { book: null, lines: null, product: null, sourcePath: null, cloud: null };
 }
 
 function requireLoaded(session) {
@@ -80,14 +94,46 @@ function summarise(session, kind, bookChecks) {
 }
 
 /**
+ * The session's loaded book from the DIYA cloud by book id, over the same route the spreadsheets
+ * site's DIYA-GL pages read (GET /api/v1/books/{bookId}/versions/latest). Replaces the session's
+ * loaded book and records the etag save_book's cloud form needs for its next if-match.
+ */
+async function openCloudBook(session, { bookId, clientId } = {}) {
+  if (!bookId) throw new Error("open_book with cloud: true requires bookId");
+  const query = clientId ? `?clientId=${encodeURIComponent(clientId)}` : "";
+  const response = await fetch(`${baseUrl()}/api/v1/books/${encodeURIComponent(bookId)}/versions/latest${query}`, {
+    headers: { Authorization: `Bearer ${await mcpAccessToken()}` },
+  });
+  const body = await response.json().catch(() => ({}));
+  if (!response.ok) {
+    throw new Error(body?.message || `open_book (cloud) failed with HTTP ${response.status}`);
+  }
+
+  const bytes = Buffer.from(body.zipBase64, "base64");
+  const { product, book, lines } = await readBookSource(bytes, `${bookId}.zip`, { products: PRODUCTS });
+  if (!product) throw new Error(`Cloud book ${bookId} declares no product this server can open`);
+
+  session.book = book;
+  session.lines = lines;
+  session.product = product;
+  session.sourcePath = null;
+  session.cloud = { bookId, clientId: clientId ?? null, etag: body.metadata.latestETag };
+
+  return summarise(session, "cloud", await bookChecksFor(book, lines));
+}
+
+/**
  * open_book: a path in, the loaded book's summary out. A directory is read
  * as book.toml + lines.jsonl; a file is read by content, whichever of the
- * engine's kinds it sniffs as. Replaces the session's loaded book.
+ * engine's kinds it sniffs as. With cloud: true, reads bookId from the DIYA
+ * cloud instead (a practice client's own book with clientId). Replaces the
+ * session's loaded book.
  * @param {Object} session
- * @param {{path: string}} params
+ * @param {{path: string} | {cloud: true, bookId: string, clientId?: string}} params
  */
-export async function openBook(session, { path } = {}) {
-  if (!path) throw new Error("open_book requires a path");
+export async function openBook(session, { path, cloud, bookId, clientId } = {}) {
+  if (cloud) return openCloudBook(session, { bookId, clientId });
+  if (!path) throw new Error("open_book requires a path, or cloud: true and bookId");
   const resolved = resolvePath(path);
   if (!existsSync(resolved)) throw new Error(`No such file or directory: ${resolved}`);
 
@@ -146,18 +192,69 @@ function formatFor(path, requested) {
   throw new Error(`Cannot infer a format from ${basename(path)}; pass one of ${SAVE_FORMATS.join(", ")}`);
 }
 
+function isoDateOrNull(value) {
+  if (value === undefined || value === null) return null;
+  return new Date(value).toISOString().slice(0, 10);
+}
+
+/**
+ * The session's loaded book to the DIYA cloud by book id, over the same route the spreadsheets
+ * site's DIYA-GL pages write (PUT /api/v1/books/{bookId}). Carries the if-match etag from the
+ * session's last cloud open or save of this same bookId; a book saved here for the first time (no
+ * prior cloud open) sends none, matching a brand-new book on that route.
+ */
+async function saveCloudBook(session, { bookId, clientId } = {}) {
+  requireLoaded(session);
+  if (!bookId) throw new Error("save_book with cloud: true requires bookId");
+  const { book, lines } = session;
+  const info = book.documentInfo ?? {};
+  const entity = book.entityInformation ?? {};
+
+  const { results } = await bookChecksFor(book, lines);
+  const bookchecks = JSON.parse(bookChecksJson(results));
+  const zipBytes = Buffer.from(await writeDiyaGlZip({ book, lines, report: reportFor(book, lines), bookchecks }));
+
+  const ifMatch = session.cloud?.bookId === bookId ? session.cloud.etag : undefined;
+  const response = await fetch(`${baseUrl()}/api/v1/books/${encodeURIComponent(bookId)}`, {
+    method: "PUT",
+    headers: {
+      "Content-Type": "application/json",
+      "Authorization": `Bearer ${await mcpAccessToken()}`,
+      ...(ifMatch ? { "if-match": ifMatch } : {}),
+    },
+    body: JSON.stringify({
+      title: entity.organizationIdentifier || bookId,
+      product: session.product,
+      periodCoveredStart: isoDateOrNull(info.periodCoveredStart),
+      periodCoveredEnd: isoDateOrNull(info.periodCoveredEnd),
+      zipBase64: zipBytes.toString("base64"),
+      ...(clientId ? { clientId } : {}),
+    }),
+  });
+  const body = await response.json().catch(() => ({}));
+  if (!response.ok) {
+    throw new Error(body?.message || `save_book (cloud) failed with HTTP ${response.status}`);
+  }
+
+  session.cloud = { bookId, clientId: clientId ?? null, etag: body.metadata.latestETag };
+  return { path: null, format: "cloud", bookId, etag: body.metadata.latestETag, lineCount: lines.length, bytes: zipBytes.length };
+}
+
 /**
  * save_book: the session's loaded book to a path, in one of five shapes.
  * diya-gl-dir writes book.toml and lines.jsonl into the directory (the
  * default for a path with no extension); diya-gl-zip and json write the
  * engine's own interchange formats; xlsx and zip compose the product's
  * workbook or package, which fetches the template from
- * spreadsheets.diyaccounting.co.uk the first time it runs.
+ * spreadsheets.diyaccounting.co.uk the first time it runs. With cloud: true,
+ * writes to the DIYA cloud by bookId instead (a practice client's book set
+ * with clientId).
  * @param {Object} session
- * @param {{path: string, format?: string}} params
+ * @param {{path: string, format?: string} | {cloud: true, bookId: string, clientId?: string}} params
  */
-export async function saveBook(session, { path, format } = {}) {
-  if (!path) throw new Error("save_book requires a path");
+export async function saveBook(session, { path, format, cloud, bookId, clientId } = {}) {
+  if (cloud) return saveCloudBook(session, { bookId, clientId });
+  if (!path) throw new Error("save_book requires a path, or cloud: true and bookId");
   requireLoaded(session);
   const { book, lines } = session;
   const resolved = resolvePath(path);

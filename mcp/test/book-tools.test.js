@@ -117,13 +117,19 @@ describe("save_book round trips", () => {
 });
 
 describe("the server", () => {
-  it("registers the two book tools, the two derivations and the client book move tool", () => {
+  it("registers the book tools, the derivations, the Submit-facing tools and the client book move tool", () => {
     expect(Object.keys(TOOLS).sort()).toEqual([
       "derive_micro_entity_accounts",
       "derive_vat_return",
+      "get_vat_receipt",
+      "list_vat_obligations",
       "move_book_to_client",
       "open_book",
+      "poll_accounts_submission",
+      "preview_micro_entity_accounts",
       "save_book",
+      "submit_micro_entity_accounts",
+      "submit_vat_return",
     ]);
     expect(SAVE_FORMATS).toEqual(["diya-gl-dir", "diya-gl-zip", "json", "xlsx", "zip"]);
     const server = createServer();
