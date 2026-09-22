@@ -85,7 +85,7 @@ export function getBundlePriceForInterval(bundle, interval) {
   return prices.find((p) => p.interval === interval) || null;
 }
 
-// A bundle is Stripe-priced when its prices table carries at least one row (resident-vat, resident-itsa, resident-ltd, resident-diya-gl:
+// A bundle is Stripe-priced when its prices table carries at least one row (resident-vat:
 // allocation "on-subscription"; resident-pro: allocation "on-pass-on-subscription";
 // resident: "on-subscription" with two prices — all sell through Stripe Checkout).
 export function getStripeSubscriptionBundles(catalog) {

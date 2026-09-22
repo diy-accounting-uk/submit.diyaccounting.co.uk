@@ -128,91 +128,12 @@ amount = 99
 currency = "gbp"
 default = true
 
-# resident-itsa: ITSA (Income Tax Self Assessment) subscription — folded into resident, hidden
-# from the bundles page. Its Stripe price and existing subscribers are untouched.
-# Payment: £0.99/mo via Stripe Checkout
-# Tokens: 100 granted, refreshing monthly
-# Enables: the self-employed activity (quarterly updates and annual declarations)
-[[bundles]]
-id = "resident-itsa"
-name = "Resident ITSA"
-description = "File Income Tax Self Assessment updates to HMRC. £0.99/month, cancel anytime."
-levelName = "Resident"
-enable = "always"
-hidden = true
-allocation = "on-subscription"
-tokensGranted = 100
-tokenRefreshInterval = "P1M"
-listedInEnvironments = ["local", "test", "simulator", "proxy", "proxyRunning", "ci"]
-
-[[bundles.prices]]
-interval = "month"
-amount = 99
-currency = "gbp"
-default = true
-# listedInEnvironments
-# ====================
-# Hidden in production
-
-# resident-ltd: micro-entity accounts filing subscription — folded into resident, hidden from
-# the bundles page. Its Stripe price and existing subscribers are untouched.
-# Payment: £0.99/mo via Stripe Checkout
-# Tokens: 100 granted, refreshing monthly
-# Enables: filing micro-entity accounts to Companies House
-[[bundles]]
-id = "resident-ltd"
-name = "Resident Ltd"
-description = "File micro-entity accounts to Companies House. £0.99/month, cancel anytime."
-levelName = "Resident"
-enable = "always"
-hidden = true
-allocation = "on-subscription"
-tokensGranted = 100
-tokenRefreshInterval = "P1M"
-listedInEnvironments = ["local", "test", "simulator", "proxy", "proxyRunning", "ci"]
-
-[[bundles.prices]]
-interval = "month"
-amount = 99
-currency = "gbp"
-default = true
-# listedInEnvironments
-# ====================
-# Hidden in production
-
-# resident-diya-gl: DIYA-GL book storage subscription — folded into resident, hidden from the
-# bundles page. Its Stripe price and existing subscribers are untouched.
-# Payment: £0.99/mo via Stripe Checkout
-# Tokens: 100 granted, refreshing monthly
-# Enables: saving and loading DIYA-GL books
-[[bundles]]
-id = "resident-diya-gl"
-name = "DIYA-GL"
-description = "Save and load DIYA-GL books. £0.99/month, cancel anytime."
-levelName = "Resident"
-enable = "always"
-hidden = true
-allocation = "on-subscription"
-tokensGranted = 100
-tokenRefreshInterval = "P1M"
-listedInEnvironments = ["local", "test", "simulator", "proxy", "proxyRunning", "ci"]
-
-[[bundles.prices]]
-interval = "month"
-amount = 99
-currency = "gbp"
-default = true
-# listedInEnvironments
-# ====================
-# Hidden in production
-
 # resident: the single Resident bundle — DIYA-GL book storage plus VAT, ITSA and Companies
-# House micro-entity filing as each is recognised. Replaces resident-itsa, resident-ltd and
-# resident-diya-gl above, which stay hidden until Stripe live shows no subscription on their
-# prices. resident-vat stays separate at its own 99p price for its existing subscribers.
+# House micro-entity filing as each is recognised. Replaced resident-itsa, resident-ltd and
+# resident-diya-gl, retired once Stripe live showed no subscription on their prices.
+# resident-vat stays separate at its own 99p price for its existing subscribers.
 # Payment: £39/year (default) or £3.99/month via Stripe Checkout, one row per interval below
 # Tokens: 100 granted, refreshing monthly
-# listedInEnvironments: ci only until the DIYA-GL resident tier is lifted to prod
 [[bundles]]
 id = "resident"
 name = "Resident"
@@ -279,9 +200,8 @@ tokenRefreshInterval = "P1M"
 # Unlocked by: resident-pro-test-pass (synthetic), resident-pro-pass (production), Stripe monthly subscription
 # Payment: Pass reveals the card, subscription grants the bundle (£9.99/mo via Stripe Checkout)
 # Tokens: 100 granted, refreshing monthly
-# Enables: the union of resident-vat, resident-itsa and resident-ltd — VAT submission, Self
-# Assessment and micro-entity accounts filing — plus generating digital/physical passes (costs
-# 10 tokens each)
+# Enables: VAT submission, Self Assessment and micro-entity accounts filing, plus generating
+# digital/physical passes (costs 10 tokens each)
 # Access to all authenticated activities including VAT submission for subscribed users
 # Note: resident-pro-comp (above) grants this level for free via on-email-match — comp passes bypass subscription
 [[bundles]]
@@ -405,7 +325,7 @@ hmrcScopesRequired = ["read:vat"]
 id = "self-employed"
 name = "Self Assessment (HMRC)"
 display = "always-with-upsell"
-bundles = ["resident-itsa", "resident", "resident-pro"]
+bundles = ["resident", "resident-pro"]
 tokenCost = 1
 metered = true
 # tokenCost covers the writes that spend a token: a quarterly update, its amendment, and the
@@ -414,7 +334,7 @@ metered = true
 # its adjustments, losses and claims, and tax liability adjustments are "self-employed-year-end",
 # which also spends a token. A page's own activity tells the truth about what it costs.
 # The catch-all API regex stays on this activity so every ITSA API call is gated to
-# resident-itsa/resident-pro regardless of which page-level activity governs the calling page.
+# resident/resident-pro regardless of which page-level activity governs the calling page.
 paths = ["hmrc/itsa/dashboard.html", "hmrc/itsa/selfEmploymentPeriod.html", "hmrc/itsa/selfEmploymentPeriodAmend.html", "hmrc/itsa/ukPropertyPeriod.html", "hmrc/itsa/ukPropertyPeriodAmend.html", "hmrc/itsa/finalDeclaration.html", "^/api/v1/hmrc/itsa.*"]
 hmrcScopesRequired = ["write:self-assessment", "read:self-assessment"]
 environments = ["local", "test", "simulator", "proxy", "ci"]
@@ -428,7 +348,7 @@ environments = ["local", "test", "simulator", "proxy", "ci"]
 id = "self-employed-read"
 name = "Self Assessment reads (HMRC)"
 display = "never"
-bundles = ["resident-itsa", "resident", "resident-pro"]
+bundles = ["resident", "resident-pro"]
 tokenCost = 0
 metered = true
 paths = ["hmrc/itsa/businessDetails.html", "hmrc/itsa/obligations.html", "hmrc/itsa/taxCalculation.html", "hmrc/itsa/selfEmploymentPeriods.html", "hmrc/itsa/selfEmploymentPeriodView.html", "hmrc/itsa/ukPropertyPeriods.html", "hmrc/itsa/ukPropertyPeriodView.html"]
@@ -444,7 +364,7 @@ id = "self-employed-year-end"
 name = "Self Assessment year-end submissions (HMRC)"
 display = "never"
 # display: never - reached from the self-employed dashboard, not its own home page entry
-bundles = ["resident-itsa", "resident", "resident-pro"]
+bundles = ["resident", "resident-pro"]
 tokenCost = 1
 metered = true
 paths = ["hmrc/itsa/annualSubmission.html", "hmrc/itsa/adjustments.html", "hmrc/itsa/ukPropertyAnnualSubmission.html", "hmrc/itsa/ukPropertyAdjustments.html", "hmrc/itsa/lossesAndClaims.html", "hmrc/itsa/taxLiabilityAdjustments.html"]
@@ -463,7 +383,7 @@ environments = ["local", "test", "simulator", "proxy", "ci"]
 id = "self-employed-year-end-delete"
 name = "Self Assessment year-end deletions (HMRC)"
 display = "never"
-bundles = ["resident-itsa", "resident", "resident-pro"]
+bundles = ["resident", "resident-pro"]
 tokenCost = 0
 metered = true
 hmrcScopesRequired = ["write:self-assessment", "read:self-assessment"]
@@ -502,7 +422,7 @@ environments = ["local", "test", "simulator", "proxy", "ci", "prod"]
 id = "file-micro-entity-accounts"
 name = "File Micro-entity Accounts (Companies House)"
 display = "on-entitlement"
-bundles = ["resident-ltd", "resident", "resident-pro"]
+bundles = ["resident", "resident-pro"]
 tokenCost = 1
 metered = true
 paths = ["companies-house/fileMicroEntityAccounts.html", "^/api/v1/companies-house/accounts.*"]
@@ -512,7 +432,7 @@ environments = ["local", "test", "simulator", "proxy", "ci"]
 id = "diya-gl-storage"
 name = "Save DIYA-GL books"
 display = "on-entitlement"
-bundles = ["resident-diya-gl", "resident"]
+bundles = ["resident"]
 metered = false
 # The DIYA-GL storage PUT route (app/services/diyaGlEntitlement.js) checks the resident-diya-gl bundle
 # id directly rather than reading this activity, so this entry documents the entitlement

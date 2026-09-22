@@ -64,22 +64,9 @@ describe("productCatalogHelper", () => {
     expect(isActivityAvailable(catalog, "submit-vat", "default")).toBe(false);
   });
 
-  it("resident-itsa should mirror resident-vat's pricing shape and be hidden in prod", () => {
+  it("self-employed activity should be granted by resident and resident-pro", () => {
     const catalog = parseCatalog(tomlText);
-    const residentVat = getCatalogBundleById(catalog, "resident-vat");
-    const residentItsa = getCatalogBundleById(catalog, "resident-itsa");
-    expect(residentItsa).toBeTruthy();
-    expect(residentItsa.allocation).toBe("on-subscription");
-    expect(residentItsa.tokensGranted).toBe(residentVat.tokensGranted);
-    expect(residentItsa.tokenRefreshInterval).toBe(residentVat.tokenRefreshInterval);
-    expect(residentItsa.enable).toBe("always");
-    expect(residentItsa.listedInEnvironments).not.toContain("prod");
-  });
-
-  it("self-employed activity should be granted by resident-itsa, resident and resident-pro", () => {
-    const catalog = parseCatalog(tomlText);
-    expect(bundlesForActivity(catalog, "self-employed")).toEqual(["resident-itsa", "resident", "resident-pro"]);
-    expect(isActivityAvailable(catalog, "self-employed", "resident-itsa")).toBe(true);
+    expect(bundlesForActivity(catalog, "self-employed")).toEqual(["resident", "resident-pro"]);
     expect(isActivityAvailable(catalog, "self-employed", "resident")).toBe(true);
     expect(isActivityAvailable(catalog, "self-employed", "resident-vat")).toBe(false);
   });
@@ -151,30 +138,28 @@ describe("productCatalogHelper", () => {
     expect(activity.environments).toEqual(yearEnd.environments);
   });
 
-  it("file-micro-entity-accounts activity should be granted by resident-ltd, resident and resident-pro", () => {
+  it("file-micro-entity-accounts activity should be granted by resident and resident-pro", () => {
     const catalog = parseCatalog(tomlText);
-    expect(bundlesForActivity(catalog, "file-micro-entity-accounts")).toEqual(["resident-ltd", "resident", "resident-pro"]);
-    expect(isActivityAvailable(catalog, "file-micro-entity-accounts", "resident-ltd")).toBe(true);
+    expect(bundlesForActivity(catalog, "file-micro-entity-accounts")).toEqual(["resident", "resident-pro"]);
+    expect(isActivityAvailable(catalog, "file-micro-entity-accounts", "resident")).toBe(true);
     expect(isActivityAvailable(catalog, "file-micro-entity-accounts", "default")).toBe(false);
   });
 
-  it("resident-pro, resident-vat and resident-itsa each carry one monthly Stripe price", () => {
+  it("resident-pro and resident-vat each carry one monthly Stripe price", () => {
     const catalog = parseCatalog(tomlText);
     const residentPro = getCatalogBundleById(catalog, "resident-pro");
     const residentVat = getCatalogBundleById(catalog, "resident-vat");
-    const residentItsa = getCatalogBundleById(catalog, "resident-itsa");
 
     expect(getBundlePrices(residentPro)).toEqual([{ interval: "month", amount: 999, currency: "gbp", default: true }]);
     expect(getBundlePrices(residentVat)).toEqual([{ interval: "month", amount: 99, currency: "gbp", default: true }]);
-    expect(getBundlePrices(residentItsa)).toEqual([{ interval: "month", amount: 99, currency: "gbp", default: true }]);
   });
 
-  it("getStripeSubscriptionBundles should return exactly the six Stripe-priced bundles", () => {
+  it("getStripeSubscriptionBundles should return exactly the three Stripe-priced bundles", () => {
     const catalog = parseCatalog(tomlText);
     const bundleIds = getStripeSubscriptionBundles(catalog)
       .map((b) => b.id)
       .sort();
-    expect(bundleIds).toEqual(["resident", "resident-diya-gl", "resident-itsa", "resident-ltd", "resident-pro", "resident-vat"]);
+    expect(bundleIds).toEqual(["resident", "resident-pro", "resident-vat"]);
   });
 
   it("resident carries the annual and monthly prices, annual default, and is listed in ci and prod", () => {
@@ -213,15 +198,6 @@ describe("productCatalogHelper", () => {
     const catalog = parseCatalog(tomlText);
     const resident = getCatalogBundleById(catalog, "resident");
     expect(getBundlePriceForInterval(resident, "week")).toBeNull();
-  });
-
-  it("resident-itsa, resident-ltd and resident-diya-gl are folded into resident and hidden from the bundles page", () => {
-    const catalog = parseCatalog(tomlText);
-    for (const bundleId of ["resident-itsa", "resident-ltd", "resident-diya-gl"]) {
-      const bundle = getCatalogBundleById(catalog, bundleId);
-      expect(bundle.hidden).toBe(true);
-      expect(bundle.enable).toBe("always");
-    }
   });
 
   describe("isActivityListedInEnvironment", () => {

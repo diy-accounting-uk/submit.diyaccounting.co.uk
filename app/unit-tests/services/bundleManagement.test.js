@@ -223,7 +223,7 @@ describe("bundleEnforcement.js", () => {
       };
       const event = buildEvent(token, authorizerContext, "/api/v1/hmrc/itsa/business-details");
 
-      getUserBundles.mockResolvedValue([{ bundleId: "resident-itsa", expiry: new Date().toISOString() }]);
+      getUserBundles.mockResolvedValue([{ bundleId: "resident", expiry: new Date().toISOString() }]);
 
       await expect(enforceBundles(event)).rejects.toMatchObject({
         name: "BundleEntitlementError",
@@ -314,7 +314,7 @@ describe("bundleEnforcement.js", () => {
         "/api/v1/hmrc/itsa/final-declaration",
       ];
 
-      test.each(submittingItsaPaths)("refuses %s for a caller with no resident-itsa/resident-pro bundle", async (urlPath) => {
+      test.each(submittingItsaPaths)("refuses %s for a caller with no resident/resident-pro bundle", async (urlPath) => {
         process.env.ENVIRONMENT_NAME = "ci";
         const token = makeJWT("user-without-itsa-bundle");
         const authorizerContext = {
@@ -334,7 +334,7 @@ describe("bundleEnforcement.js", () => {
         });
       });
 
-      test.each(submittingItsaPaths)("allows %s for a caller with the resident-itsa bundle", async (urlPath) => {
+      test.each(submittingItsaPaths)("allows %s for a caller with the resident bundle", async (urlPath) => {
         process.env.ENVIRONMENT_NAME = "ci";
         const token = makeJWT("user-with-itsa-bundle");
         const authorizerContext = {
@@ -345,13 +345,13 @@ describe("bundleEnforcement.js", () => {
         };
         const event = buildEvent(token, authorizerContext, urlPath);
 
-        getUserBundles.mockResolvedValue([{ bundleId: "resident-itsa", expiry: new Date().toISOString() }]);
+        getUserBundles.mockResolvedValue([{ bundleId: "resident", expiry: new Date().toISOString() }]);
 
         // Should not throw
         await enforceBundles(event);
       });
 
-      test("refuses an ITSA read path for a caller with no resident-itsa/resident-pro bundle too - free means no token, not no bundle", async () => {
+      test("refuses an ITSA read path for a caller with no resident/resident-pro bundle too - free means no token, not no bundle", async () => {
         process.env.ENVIRONMENT_NAME = "ci";
         const token = makeJWT("user-without-itsa-bundle-read");
         const authorizerContext = {

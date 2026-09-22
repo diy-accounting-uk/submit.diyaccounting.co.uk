@@ -244,10 +244,10 @@ test("Click through: View ITSA Obligations from HMRC", async ({ page }, testInfo
   /*  BUNDLES  */
   /* ********* */
 
-  // The self-employed activity requires the resident-itsa bundle, which is normally an
+  // The self-employed activity requires the resident bundle, which is normally an
   // on-subscription (Stripe) bundle - grant it directly via the admin pass API, as
   // generatePassActivity.behaviour.test.js does for resident-vat.
-  await ensureBundleViaPassApi(page, "resident-itsa", screenshotPath, { testPass: true });
+  await ensureBundleViaPassApi(page, "resident", screenshotPath, { testPass: true });
   await goToHomePageUsingMainNav(page, screenshotPath);
 
   /* ******************* */

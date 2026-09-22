@@ -259,7 +259,7 @@ describe("hmrcItsaBusinessDetailsGet ingestHandler", () => {
     mockSend.mockImplementation(async (cmd) => {
       const lib = await import("@aws-sdk/lib-dynamodb");
       if (cmd instanceof lib.QueryCommand) {
-        return { Items: [{ bundleId: "resident-itsa" }], Count: 1 };
+        return { Items: [{ bundleId: "resident" }], Count: 1 };
       }
       return {};
     });
