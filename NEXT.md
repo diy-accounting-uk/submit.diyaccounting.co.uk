@@ -17,7 +17,7 @@ Haiku; the lowest tier that fits). Anything touching code goes through a `claude
 PR; the operator merges.
 
 **Prod runs deployment prod-d9cb643** (PR #339's merge deploy 35860344955); `main`'s dispatch
-35870127527 deploys PR #340's merge `cc46199e`.
+35870127527 deploys PR #340's merge `cc46199e` as `prod-cc46199` (stacks up, at `set origins`).
 **ci**: `ci-set1` is last-known-good and the only ci set standing; `ci-set2` was swept.
 Pull requests open: diy-accounting-uk/www.diyaccounting.co.uk#33 (mergeable now: the sink admits
 the gateway account), diy-accounting-uk/spreadsheets.diyaccounting.co.uk#136.
@@ -64,8 +64,8 @@ Shared facts for the analytics rows (B52d, B52e, B52l, B52m): the prod Athena da
   b84's tip): B52j's `ads-advisor` skill; B30ba (one deploy per delivered push); B30az (the
   self-destruct Lambda skips a set that is last-known-good or held by a claim younger than three
   hours); the B30ay guard moved into `cancel-superseded-push-deploy` so it cancels the whole run;
-  and that job's cancel limited to the environment the push run deploys to. Full suite, one push,
-  one PR. **Owner**: Claude Code. **Model**: Sonnet. **Size**: ~8 files.
+  and that job's cancel limited to the environment the push run deploys to. PR #342, full suite
+  green locally; its ci deploy 35870881195 holds `ci-set1`. **Owner**: Claude Code. **Model**: Sonnet. **Size**: ~8 files.
 
 - [ ] **B52f1. The gateway's RUM monitor and GA4 linker.** PR
   diy-accounting-uk/www.diyaccounting.co.uk#33 (branch `claude/obs-gateway-rum`), green locally
