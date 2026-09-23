@@ -130,16 +130,6 @@ Shared facts for the analytics rows (B52d, B52e, B52l, B52m): the prod Athena da
   SDST answers. **Source**: BACKLOG 11; `PLAN_ITSA_PHASE_2.md` T10. **Owner**: Operator. **Model**:
   none. **Size**: 0 files.
 
-- [ ] **F1d. NatWest statements to staging.** The operator signs in to NatWest and downloads, for
-  each of March to August 2026, the current account `600947-80597386` and the savings account
-  `600947-80634672` statements as CSV and PDF into `../staging/2025-2026/bank/` (March) and
-  `../staging/2026-2027/bank/` (April to August; both directories exist, with `../staging/README.md`
-  naming the layout), named
-  `<yyyy-mm-dd>-natwest-<current|savings>-<account>.<csv|pdf>` with the month's last day, the shape
-  of the 2025-26 files in the Drive mirror. No automation touches the bank sign-in. **Source**:
-  `../PLAN_FINANCE_AUTOMATION.md` route 3. **Owner**: Operator. **Model**: none. **Size**: 24 files
-  outside any repository.
-
 ## Blocked
 
 - [ ] **B52h1. `ads-forecast.js`'s live proof.** The script is on `main` (49 unit tests green);
@@ -221,14 +211,19 @@ Shared facts for the analytics rows (B52d, B52e, B52l, B52m): the prod Athena da
   Claude Code. **Model**: Sonnet. **Size**: ~4 files.
 
 - [ ] **F2d. DIYA's book, assembled and verified.** The lines from F2a (Stripe), F2g (PayPal),
-  `mcp/lib/finance/bank-lines.js` over F1d's statements and `mcp/lib/finance/mail-invoices.js`,
+  `mcp/lib/finance/bank-lines.js` over the NatWest statements in the Drive mirror
+  (`../drive/DIY Accounting Limited/finance/2025-2026 accounts/bank/` for March,
+  `../drive/DIY Accounting Limited/finance/2026-2027 accounts/bank/` for April to August, CSV and
+  PDF per month, named `<Current|Savings> <account> <dd-mm-yyyy> to <dd-mm-yyyy>` or with a hyphen
+  between the dates; April's current account also has a 1–10 April part-month file, which the
+  full-month file supersedes) and `mcp/lib/finance/mail-invoices.js`,
   plus `mcp/lib/finance/book-from-workbook.js`'s `book.toml` for 1 March to 31 August 2026,
   validated with `validateBook` and `validateLines` from the diya-gl package, written under
   `../staging/2026-2027/book/` (private); March 2026 matched line for line against the completed
   2025-26 workbook (the control), every month's bank closing balance equal to the statement's,
   gross income and fees separate, no hold posted, each check a line in
   `../staging/2026-2027/book/VERIFICATION.md`. F2a's `mcp/lib/finance/stripe-lines.js` is on `main`.
-  Blocked on F1d and F2g.
+  Blocked on F2g.
   **Source**: `../PLAN_FINANCE_AUTOMATION.md` phase 2 and its verification. **Owner**: Claude Code.
   **Model**: Sonnet. **Size**: ~2 files.
 
