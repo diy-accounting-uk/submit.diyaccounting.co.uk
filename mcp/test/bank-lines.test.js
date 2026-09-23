@@ -26,6 +26,7 @@ describe("bankLinesFromCsv", () => {
       expect(line.accountMainID).toBe("1200");
       expect(line["diya-gl:bankAccountID"]).toBe("1200");
       expect(line.amount).toBeGreaterThan(0);
+      expect(["D", "C"]).toContain(line.debitCreditCode);
     }
   });
 
@@ -54,7 +55,15 @@ describe("bankLinesFromCsv", () => {
     const refund = lines.find((line) => line.postingDate === "2026-03-15");
     const hosting = lines.find((line) => line.postingDate === "2026-03-10");
     expect(refund["diya-gl:bankCode"]).toBe("DR");
+    expect(refund.debitCreditCode).toBe("D");
     expect(hosting["diya-gl:bankCode"]).toBe("CR");
+    expect(hosting.debitCreditCode).toBe("C");
+  });
+
+  it("sets debitCreditCode C for a bank charge, which is always money out", () => {
+    const lines = bankLinesFromCsv(STATEMENT, { accountMainID: "1200" });
+    const charge = lines.find((line) => line.postingDate === "2026-03-31");
+    expect(charge.debitCreditCode).toBe("C");
   });
 
   it("codes the savings account's interest as money in", () => {
@@ -64,6 +73,7 @@ describe("bankLinesFromCsv", () => {
     ].join("\n");
     const [line] = bankLinesFromCsv(savings, { accountMainID: "1210" });
     expect(line["diya-gl:bankCode"]).toBe("DR");
+    expect(line.debitCreditCode).toBe("D");
     expect(line.amount).toBeCloseTo(0.19, 2);
   });
 

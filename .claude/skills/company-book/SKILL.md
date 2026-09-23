@@ -35,7 +35,7 @@ The parsers live in `mcp/lib/finance/` (run `npm ci` in `mcp/` first):
 
 | Source | Module | Call |
 |---|---|---|
-| Opening balances and chart of accounts | `book-from-workbook.js` | over the prior year's workbook set |
+| Opening balances and chart of accounts | `book-from-workbook.js` | `bookFromWorkbookSet` over the prior year's workbook set; `openingJournalLines(book)` to turn its `openingBalances` into the opening journal the engine reads |
 | NatWest | `bank-lines.js` | `bankLinesFromCsv(text, { accountMainID })`, `closingBalance(text)` |
 | Stripe | `stripe-lines.js` | `stripeLinesFromTransactions`, `stripePayoutLines`, `reconcileStripeMonth` |
 | PayPal | `paypal-statement-lines.js` | `paypalLinesFromStatementPdf(transactionsPdf, { ...accounts, statementPdfPath })`, `reconcilePaypalMonth({ transactionsText, statementText })`; needs `pdftotext` (poppler) |
@@ -54,6 +54,22 @@ Posting rules:
   rows are releases.
 - A payment to a creditor carries bank code `CR` and no purchases line. Polycode Limited's
   management fee is one of these.
+- Every bank line carries both `diya-gl:bankCode` (the analysis column) and `debitCreditCode`
+  (`D` for money in, `C` for money out). The engine's `book-ltd-bank-line-has-side` check reads
+  `debitCreditCode` alone; a line with only `diya-gl:bankCode` drops out of the trial balance.
+- A Ltd book's opening balance sheet is read only from an opening journal (`sourceJournalID`
+  `"journal"`, `documentReference` starting `OB-`), never from `book.toml`'s own
+  `[openingBalances]` table. Call `openingJournalLines(book)` after seeding the book to turn that
+  table into the journal the engine reads; it declares any account referenced there that
+  `book.toml` does not already carry (from a fixed map, never an invented code).
+- The book period starts 1 April, not 1 March: the company's year ends 31 March, and a book that
+  starts in March straddles the year end and carries part of the prior year's control into this
+  one's opening position.
+- The engine has no way yet to net a Stripe refund or dispute against turnover: a sales-journal
+  line's amount is schema-fixed to zero or more, and nothing reads `documentType`, so a
+  `credit-note` line still adds to turnover instead of reducing it. Posting the refund is still
+  correct; the turnover figure it feeds stays overstated by the refunded amount until the engine
+  gains a way to net it (a spreadsheets change, not a parser one).
 
 Glue code for a run goes in the session's scratchpad, not the repository. A defect in a committed
 parser is fixed in the parser, with a test, on a branch.
