@@ -113,16 +113,13 @@ and stop. One branch is driven green at a time. Lifted only by the operator in t
 
 ## Human-driven
 
-- [ ] **OF2d. Review DIYA's book and copy it into Drive.** The book for 1 March to 31 August 2026
-  is in `../staging/2026-2027/book/` (`book.toml`, `lines.jsonl` with 488 lines, `VERIFICATION.md`).
-  Bank closing balances match every statement to the penny; Stripe (6 months) and PayPal (April to
-  August) reconcile with no residual; `validateBook` and `validateLines` pass; March matches the
-  2025-26 workbook except purchases 5301, £7.43 lower, which is March's Stripe fee posted
-  separately. One decision: the £200 March bank payment to Polycode Limited ("2025-2026
-  HOSTING") has no line in the 2025-26 workbook and is posted as a bank movement only; the
-  alternative books it to purchases 5800 (+£200 March purchases). Say which, then copy the three
-  files into Drive under `finance/2026-2027 accounts/`. That copy is OF2's input. **Owner**:
-  Operator. **Model**: none. **Size**: 0 files.
+- [ ] **OF2d. Copy DIYA's book into Drive.** The book for 1 March to 31 August 2026 is in
+  `../staging/2026-2027/book/` (`book.toml`, `lines.jsonl` with 488 lines, `VERIFICATION.md`):
+  bank balances match every statement, Stripe and PayPal reconcile with no residual, validation
+  passes, and the review items (the £200 Polycode creditor payment, Hiscox, Linktree) are
+  resolved in `VERIFICATION.md`. Copy the three files into Drive under
+  `finance/2026-2027 accounts/`. That copy is OF2's input. **Owner**: Operator. **Model**: none.
+  **Size**: 0 files.
 
 - [ ] **OB30bc. Make the content scan a required check.** After B30bc merges, add `content scan` to
   the required status checks of ruleset 16057564
