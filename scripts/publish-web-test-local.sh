@@ -38,6 +38,9 @@ cat "web/public/tests/test-report-${targetTest?}.json" \
   # Clean the screenshot name in the report
   sed "${sedInPlace[@]}" "s/${screenshotFilename?}/${cleanScreenshotFilename?}/g" "web/public/tests/test-report-${targetTest?}.json"
 done
+# The fraud-prevention headers carry the machine's real public IP; the report is published, so
+# swap every IPv4 on those header lines for a documentation address (RFC 5737).
+sed -E "${sedInPlace[@]}" '/Public-IP|Forwarded/ s/([0-9]{1,3}\.){3}[0-9]{1,3}/198.51.100.10/g' "web/public/tests/test-report-${targetTest?}.json"
 # If sourceTestName is not the same as targetTest, then replace occurrences of sourceTestName in web/public/tests/test-report-web-test-local.json with targetTest
 if [[ "${sourceTestName?}" != "${targetTest?}" ]]; then
   # Replace occurrences of sourceTestName in web/public/tests/test-report-web-test-local.json with targetTest

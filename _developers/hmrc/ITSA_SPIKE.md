@@ -49,7 +49,7 @@ Accept: application/vnd.hmrc.2.0+json
 Authorization: Bearer <token>
 x-request-id: 6e80bdfe-5f6b-4723-ae5e-e25940c667d3
 x-correlationid: 21046ffe-fbd5-432b-91f5-24df8683faf5
-Gov-Client-Public-IP: 88.97.27.180
+Gov-Client-Public-IP: 203.0.113.10
 Gov-Client-Public-Port: 51234
 Gov-Client-Device-ID: 50ea2fe0-ce68-4654-9fff-18b2d9e6bfc3
 Gov-Client-User-IDs: cognito=spike-4ac44b16-c846-466e-b735-d5b9a4113b38
@@ -59,8 +59,8 @@ Gov-Client-Public-IP-Timestamp: 2026-09-05T16:25:15.214Z
 Gov-Client-Screens: width=1512&height=982&colour-depth=30&scaling-factor=2
 Gov-Client-Timezone: UTC+00:00
 Gov-Client-Window-Size: width=1512&height=857
-Gov-Vendor-Public-IP: 88.97.27.180
-Gov-Vendor-Forwarded: by=88.97.27.180&for=88.97.27.180
+Gov-Vendor-Public-IP: 203.0.113.10
+Gov-Vendor-Forwarded: by=203.0.113.10&for=203.0.113.10
 Gov-Vendor-License-IDs: diyaccounting=46523ed2...a9b703
 Gov-Vendor-Product-Name: web-submit-diyaccounting-co-uk
 Gov-Vendor-Version: web-submit-diyaccounting-co-uk=1.0.0
