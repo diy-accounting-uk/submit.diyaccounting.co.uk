@@ -19,7 +19,7 @@ PR; the operator merges.
 **Prod runs deployment prod-1b6c3e2** (PR #336's merge deploy 35837285414, its stacks and probes
 green, destroying `prod-eb07c6d` since 09:4x UTC).
 **ci**: `ci-set2` is last-known-good (PR #335's dispatch 35838093200); PR #335's dispatch
-35843310128 rebuilt `ci-set1` (09:35 UTC) with its probe fix and is in its probes. The scheduled
+35843310128 rebuilt `ci-set1` with its probe fix and is green (10:00 UTC). The scheduled
 deploy 35842115487 of the docs-only head c4ab9605 was cancelled before its first stack job. `main`'s `test` run is green from 2a4f0354. Open
 pull request: #335 (`claude/b81-board`, head abaf5d4d).
 
@@ -80,7 +80,9 @@ and stop. One branch is driven green at a time. Lifted only by the operator in t
   09:19 UTC. The branch merged `main` again (b3f9533f, PR #338's file) and fixes the probe
   (abaf5d4d: delete by `bookId`, delete the sandbox book at the end; the next run's cleanup
   clears the leftovers through the API). Neither commit touches a deploy path, so the dispatched
-  deploy 35843310128 to `ci-set1` (09:33 UTC) is the head's proof. The suite's ci and prod variants need a sandbox agent authorisation the simulator
+  deploy 35843310128 to `ci-set1` is the head's proof: every stack and every probe green at
+  10:00 UTC, `diyaGlSubscriptionBehaviour` included, and the head's `test` run 35843297989 is
+  green. The PR is mergeable and waits for the operator's merge or the wake word. The suite's ci and prod variants need a sandbox agent authorisation the simulator
   shortcut has no equivalent for, so they run only when one exists. **Source**: the rows named.
   **Owner**: Claude Code. **Model**: Sonnet and Haiku. **Size**: ~16 files.
 - [ ] **PU-7. Practice licence build.** PU-7a to PU-7l are on `main`. In flight on
