@@ -45,5 +45,8 @@ COPY submit.passes.toml submit.passes.toml
 COPY OPERATORS.txt OPERATORS.txt
 COPY lifecycle.toml lifecycle.toml
 COPY secrets-rotation.toml secrets-rotation.toml
+# stripeReconcile.js reads the donation Payment Links' bundle ids from here to resolve a
+# historic charge that carries no bundle metadata of its own.
+COPY infra/stripe/stripe.toml infra/stripe/stripe.toml
 
 # Lambda will use CMD override from CDK EcrImageCodeProps

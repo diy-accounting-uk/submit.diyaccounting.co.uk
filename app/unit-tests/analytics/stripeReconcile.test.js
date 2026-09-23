@@ -7,6 +7,8 @@ import { gunzipSync } from "zlib";
 const mockBalanceTransactionsList = vi.fn();
 const mockChargesList = vi.fn();
 const mockSubscriptionsList = vi.fn();
+const mockPaymentLinksList = vi.fn();
+const mockCheckoutSessionsList = vi.fn();
 
 // stripeReconcile.js reuses the same getStripeClient() the billing Lambdas use; mocking it
 // directly (rather than "stripe" and Secrets Manager underneath it) both simplifies the test
@@ -35,6 +37,7 @@ import {
   computeDateWindow,
   defaultTargetDate,
   listAllPages,
+  loadPaymentLinkBundleIdsFromRoot,
   resolveChargeBundleId,
   sanitizeBalanceTransaction,
   sanitizeCharge,
@@ -52,18 +55,24 @@ describe("stripeReconcile", () => {
     mockBalanceTransactionsList.mockReset();
     mockChargesList.mockReset();
     mockSubscriptionsList.mockReset();
+    mockPaymentLinksList.mockReset();
+    mockCheckoutSessionsList.mockReset();
     mockS3Send.mockReset();
     mockS3Send.mockResolvedValue({});
 
     mockBalanceTransactionsList.mockResolvedValue(emptyPage());
     mockChargesList.mockResolvedValue(emptyPage());
     mockSubscriptionsList.mockResolvedValue(emptyPage());
+    mockPaymentLinksList.mockResolvedValue(emptyPage());
+    mockCheckoutSessionsList.mockResolvedValue(emptyPage());
 
     mockGetStripeClient.mockReset();
     mockGetStripeClient.mockResolvedValue({
       balanceTransactions: { list: mockBalanceTransactionsList },
       charges: { list: mockChargesList },
       subscriptions: { list: mockSubscriptionsList },
+      paymentLinks: { list: mockPaymentLinksList },
+      checkout: { sessions: { list: mockCheckoutSessionsList } },
     });
 
     process.env.ANALYTICS_LAKE_BUCKET_NAME = "test-lake-bucket";
@@ -244,6 +253,49 @@ describe("stripeReconcile", () => {
 
       expect(resolveChargeBundleId(charge, new Map(), new Map())).toBeNull();
     });
+
+    test("resolves a historic donation charge through its Checkout Session's payment link", () => {
+      const charge = { id: "ch_6", invoice: null, payment_intent: "pi_1" };
+      const paymentIntentToPaymentLinkId = new Map([["pi_1", "plink_1"]]);
+      const paymentLinkIdToBundleId = new Map([["plink_1", "donation-10"]]);
+
+      expect(resolveChargeBundleId(charge, new Map(), new Map(), paymentIntentToPaymentLinkId, paymentLinkIdToBundleId)).toBe(
+        "donation-10",
+      );
+    });
+
+    test("prefers the subscription's bundle id over the payment link fallback", () => {
+      const charge = { id: "ch_7", invoice: "in_1", payment_intent: "pi_1" };
+      const invoiceToSubscription = new Map([["in_1", "sub_1"]]);
+      const subscriptionBundleIds = new Map([["sub_1", "resident-vat"]]);
+      const paymentIntentToPaymentLinkId = new Map([["pi_1", "plink_1"]]);
+      const paymentLinkIdToBundleId = new Map([["plink_1", "donation-10"]]);
+
+      expect(
+        resolveChargeBundleId(charge, invoiceToSubscription, subscriptionBundleIds, paymentIntentToPaymentLinkId, paymentLinkIdToBundleId),
+      ).toBe("resident-vat");
+    });
+
+    test("stays null when the payment intent has no matching Checkout Session", () => {
+      const charge = { id: "ch_8", invoice: null, payment_intent: "pi_2" };
+
+      expect(resolveChargeBundleId(charge, new Map(), new Map(), new Map(), new Map())).toBeNull();
+    });
+
+    test("stays null when the session's payment link is not one stripe.toml declares", () => {
+      const charge = { id: "ch_9", invoice: null, payment_intent: "pi_1" };
+      const paymentIntentToPaymentLinkId = new Map([["pi_1", "plink_unlisted"]]);
+
+      expect(resolveChargeBundleId(charge, new Map(), new Map(), paymentIntentToPaymentLinkId, new Map())).toBeNull();
+    });
+  });
+
+  describe("loadPaymentLinkBundleIdsFromRoot", () => {
+    test("reads infra/stripe/stripe.toml's payment links as url -> bundle id", () => {
+      const paymentLinks = loadPaymentLinkBundleIdsFromRoot();
+
+      expect(paymentLinks.get("https://buy.stripe.com/5kQ7sK49X9bie0N0bN4F200")).toBe("donation-10");
+    });
   });
 
   describe("sanitizeSubscription", () => {
@@ -399,6 +451,50 @@ describe("stripeReconcile", () => {
       const body = gunzipSync(chargesCall[0].input.Body).toString("utf8");
       const row = JSON.parse(body.trimEnd());
       expect(row.bundle_id).toBe("resident-vat");
+    });
+
+    test("resolves a historic donation charge's bundle_id from its Checkout Session's payment link", async () => {
+      mockPaymentLinksList.mockResolvedValueOnce({
+        data: [{ id: "plink_1", url: "https://buy.stripe.com/5kQ7sK49X9bie0N0bN4F200" }],
+        has_more: false,
+      });
+      mockCheckoutSessionsList.mockResolvedValueOnce({
+        data: [{ id: "cs_1", payment_intent: "pi_1", payment_link: "plink_1" }],
+        has_more: false,
+      });
+      mockChargesList.mockResolvedValueOnce({
+        data: [{ id: "ch_1", customer: "cus_1", amount: 1000, payment_intent: "pi_1", metadata: {} }],
+        has_more: false,
+      });
+
+      await handler({ date: "2026-08-20" });
+
+      const chargesCall = mockS3Send.mock.calls.find((call) => call[0].input.Key.includes("/stripe_charges/"));
+      const body = gunzipSync(chargesCall[0].input.Body).toString("utf8");
+      const row = JSON.parse(body.trimEnd());
+      expect(row.bundle_id).toBe("donation-10");
+    });
+
+    test("leaves bundle_id null when a charge's payment link is not declared in stripe.toml", async () => {
+      mockPaymentLinksList.mockResolvedValueOnce({
+        data: [{ id: "plink_unlisted", url: "https://buy.stripe.com/not-declared" }],
+        has_more: false,
+      });
+      mockCheckoutSessionsList.mockResolvedValueOnce({
+        data: [{ id: "cs_1", payment_intent: "pi_1", payment_link: "plink_unlisted" }],
+        has_more: false,
+      });
+      mockChargesList.mockResolvedValueOnce({
+        data: [{ id: "ch_1", customer: "cus_1", amount: 1000, payment_intent: "pi_1", metadata: {} }],
+        has_more: false,
+      });
+
+      await handler({ date: "2026-08-20" });
+
+      const chargesCall = mockS3Send.mock.calls.find((call) => call[0].input.Key.includes("/stripe_charges/"));
+      const body = gunzipSync(chargesCall[0].input.Body).toString("utf8");
+      const row = JSON.parse(body.trimEnd());
+      expect(row.bundle_id).toBeNull();
     });
 
     test("requests the live Stripe client in prod and the test client elsewhere", async () => {
