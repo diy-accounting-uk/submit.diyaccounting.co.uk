@@ -54,32 +54,37 @@ Shared facts for the analytics rows (B52d, B52e, B52l, B52m): the prod Athena da
   balance movement. The API route (OF1, F1b, F2g) stays; this one unblocks F2d now. **Owner**:
   Claude Code. **Model**: Sonnet. **Size**: ~2 files.
 
-- [ ] **B52f2a. The spreadsheets linker PR's smoke test.** PR
-  diy-accounting-uk/spreadsheets.diyaccounting.co.uk#136: its deploy's behaviour test asserted the
-  literal `gtag("config", "G-X4ZPD99X2K")`; the assertion now carries the linker (commit
-  `3759d0aea`), pushed and redeploying. **Owner**: Claude Code (the operator merges in that
-  repository). **Model**: Haiku. **Size**: 1 file.
-
 - [ ] **B30at1. The sweep's claim check, proven.** Needs a claimed set that is not last-known-good
   (the sweep keeps the last-known-good set before it reads any claim): the next time two branches
   deploy at once, `gh workflow run destroy-ci.yml -f sweep-for-stacks=true` while the second holds
   `ci-set2`, and its log shows "stays: claimed by run". **Owner**: Claude Code. **Model**: Haiku.
   **Size**: 0 files.
 
-- [ ] **B52f1. The gateway's RUM monitor and GA4 linker.** PR
-  diy-accounting-uk/www.diyaccounting.co.uk#33 (branch `claude/obs-gateway-rum`), green locally
-  (`./mvnw clean verify`, 25 unit, 13 browser). Its deploy 35855769008 failed at 11:41 UTC on "Access denied for operation 'CreateLink'", before
-  submit's sink policy admitted account 283165661847; both sinks admit it now and the failed job
-  is re-running.
-  **Owner**: Claude Code (the operator merges in that repository). **Model**: Haiku. **Size**:
-  11 files.
-
-- [ ] **B52f2. GA4 cross-domain linking on the spreadsheets site.** PR
-  diy-accounting-uk/spreadsheets.diyaccounting.co.uk#136 (branch `claude/obs-ga4-linker`),
-  pre-push green. **Owner**: Claude Code (the operator merges in that repository). **Model**:
-  Haiku. **Size**: 2 files.
-
 ## Machine-only
+
+- [ ] **OF1a. PayPal client id read from a variable.** The operator created the live app
+  `diya-finance` and put `PAYPAL_CLIENT_SECRET` on the `prod` environment as a secret and
+  `PAYPAL_CLIENT_ID` as a variable (2026-09-23). `.github/workflows/deploy-environment.yml`'s step
+  "Create secret in AWS from secrets.PAYPAL_CLIENT_ID" (line 339) reads `secrets.PAYPAL_CLIENT_ID`,
+  so it would skip. Change it to `vars.PAYPAL_CLIENT_ID` (and its step name), keep the secret step,
+  then after merge dispatch `gh workflow run deploy-environment.yml --ref main -f environment-name=prod`
+  (read the workflow for its inputs first) and confirm `prod/submit/paypal/client_id` and
+  `client_secret` exist in Secrets Manager (read-only `describe-secret`). Then F1b runs.
+  **Owner**: Claude Code. **Model**: Haiku. **Size**: 1 file.
+
+- [ ] **ITSA8. The diversion note for income the build does not cover.** Row 8 of
+  `_developers/hmrc/ITSA_PRODUCTION_APPROVALS_CHECKLIST.md` is "Not evidenced": a customer with
+  foreign property or other income is not told where to finish their return. Add the note to
+  `web/public/hmrc/itsa/dashboard.html` (and wherever the business picker shows a foreign-property
+  business), with a browser test, and mark row 8 evidenced with the file and line. **Owner**:
+  Claude Code. **Model**: Sonnet. **Size**: ~3 files.
+
+- [ ] **ITSA13. WCAG 2.1 AA evidence for the 19 ITSA pages.** Row 13 of the checklist is "Not
+  evidenced": `scripts/axe-quickscan.mjs`'s page list carries the VAT pages and none of the 19
+  pages under `web/public/hmrc/itsa/`. Add them, run the scan against the simulator
+  (`npm run` the script the accessibility workflow uses; read `.github/workflows/` for it), fix
+  what it finds, and record the result in the checklist and `REPORT_ACCESSIBILITY_PENETRATION.md`.
+  **Owner**: Claude Code. **Model**: Sonnet. **Size**: ~4 files.
 
 - [ ] **ROPA. A record of processing for the practice client list.** `_developers/ICO_CHECKLIST.md`
   "Practice licence: client data" (line 68 onward) marks "Records of processing: client list"
@@ -101,28 +106,9 @@ Shared facts for the analytics rows (B52d, B52e, B52l, B52m): the prod Athena da
   £199 a year and £19.99 a month (the catalogue flip, the nav link, the Stripe live prices, PU-7n).
   **Owner**: Operator. **Model**: none. **Size**: 0 files.
 
-- [ ] **OB52h. Basic access for the Ads API project.** `infra/google/ads/ads-forecast.js` (on
-  `claude/b83-board`) gets `DEVELOPER_TOKEN_NOT_APPROVED`, "This method is not allowed for use with
-  explorer access", from `KeywordPlanIdeaService`; the Cloud project `diyaccounting-ga4` holds
-  Explorer access, which serves `googleAds:search` only. Since 2026-09-09 the access level sits on
-  the Cloud project: complete brand verification for `diyaccounting-ga4` (Google Auth Platform,
-  Branding, <https://console.cloud.google.com/auth/branding?project=diyaccounting-ga4>), then on the
-  Google Ads API overview page
-  (<https://console.cloud.google.com/apis/api/googleads.googleapis.com/overview?project=diyaccounting-ga4>)
-  expand "Apply for next access level" and apply for Basic. B52h's live proof follows.
-  **Source**: B52h's run 2026-09-23. **Owner**: Operator. **Model**: none. **Size**: 0 files.
-
 - [ ] **O34d. Send the XML Gateway email.** Send `../DRAFT_EMAIL_XMLGW_000004.md` from `antony@diyaccounting.co.uk`
   as a reply on the `xml@companieshouse.gov.uk` thread, and paste the answer into B34.6c's row when
   it comes. **Source**: BACKLOG 34d. **Owner**: Operator. **Model**: none. **Size**: 0 files.
-
-- [ ] **OF1. The PayPal app credentials.** In the PayPal developer dashboard
-  (<https://developer.paypal.com/dashboard/applications/live>), create a live REST API app for
-  the company account and put its client id and secret on the `prod` GitHub environment as
-  `PAYPAL_CLIENT_ID` and `PAYPAL_CLIENT_SECRET`
-  (<https://github.com/diy-accounting-uk/submit.diyaccounting.co.uk/settings/environments>); the
-  next `deploy-environment.yml` run lands them, and F1b's six-month run follows. **Source**:
-  `../PLAN_FINANCE_AUTOMATION.md` route 1. **Owner**: Operator. **Model**: none. **Size**: 0 files.
 
 - [ ] **O11. The ITSA send day.** Name the day the recognition email goes, write it into B11.T10's
   row, and on that day send `_developers/hmrc/DRAFT_EMAIL_ITSA_RECOGNITION.md` to
@@ -132,18 +118,11 @@ Shared facts for the analytics rows (B52d, B52e, B52l, B52m): the prod Athena da
 
 ## Blocked
 
-- [ ] **B52h1. `ads-forecast.js`'s live proof.** The script is on `main` (49 unit tests green);
-  Google refuses `KeywordPlanIdeaService` under Explorer access (`DEVELOPER_TOKEN_NOT_APPROVED`).
-  After OB52h: `AWS_PROFILE=submit-prod node infra/google/ads/ads-forecast.js --keywords "submit vat return,mtd vat software" --budget-gbp 50`
-  prints a forecast. Blocked on OB52h. **Owner**: Claude Code. **Model**: Haiku. **Size**: 0
-  files.
-
-
 - [ ] **F1b. PayPal's six months staged.** Run `scripts/finance/paypal-stage.js` (the credential
   read from Secrets Manager `prod/submit/paypal/client_id` and `prod/submit/paypal/client_secret`
   with `AWS_PROFILE=submit-prod`) for each month from March to August 2026, writing
   `../staging/<year-end>/paypal/<yyyy-mm-dd>-paypal-transactions.json`. F2g reads the output.
-  Blocked on OF1. **Source**: `../PLAN_FINANCE_AUTOMATION.md` route 1. **Owner**: Claude Code.
+  Blocked on OF1a. **Source**: `../PLAN_FINANCE_AUTOMATION.md` route 1. **Owner**: Claude Code.
   **Model**: Haiku. **Size**: 0 files.
 
 - [ ] **F2g. PayPal transactions into diya-gl lines.** `mcp/lib/finance/paypal-lines.js` over
