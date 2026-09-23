@@ -7,18 +7,44 @@
 // Plans (and, with --apply, makes) the Google Ads account match infra/google/ads/ads.toml's
 // [account], [[conversion_action]], [[customer_conversion_goal]] and [[campaign]] declarations.
 // Reads the live state with the same GAQL queries infra/google/ads/ads-inventory.js uses, plus
-// the campaign's bidding strategy fields, and writes through customers:mutate (auto-tagging),
-// campaignBudgets:mutate (the campaign's budget), campaigns:mutate (the campaign's status and its
-// bidding strategy) and customerConversionGoals:mutate (a goal's biddable flag) only.
+// each campaign's bidding strategy fields, and writes through customers:mutate (auto-tagging),
+// campaignBudgets:mutate (a campaign's budget), campaigns:mutate (a campaign's status, its bidding
+// strategy, and a new Search campaign itself), customerConversionGoals:mutate (a goal's biddable
+// flag), adGroups:mutate, adGroupCriteria:mutate and adGroupAds:mutate (a new Search campaign's ad
+// groups, keywords and responsive search ad).
 //
-// A declared conversion action, conversion goal or campaign the live account does not have fails
-// the run: this script never creates a conversion action (those are created in the GA4 property;
-// see infra/google/ga4/ga4-sync.js), a conversion goal, or a campaign. A conversion action's
-// category and primary_for_goal are compared and reported, but never written — there is no
-// conversionActions:mutate call here, so that drift stays a plan line until it is fixed in the
-// GA4 property or the Ads UI. The GA4 side of the Ads link stays with ga4-sync.js.
+// A declared conversion action, conversion goal or Performance Max campaign the live account does
+// not have fails the run: this script never creates a conversion action (those are created in the
+// GA4 property; see infra/google/ga4/ga4-sync.js), a conversion goal, or a Performance Max
+// campaign — Performance Max stays read-and-adjust only. A declared Search campaign
+// (type = "SEARCH") the live account lacks is created instead: its budget, the campaign itself
+// (paused unless status = "ENABLED" is declared), each [[campaign.ad_group]], its
+// [[campaign.ad_group.keyword]] entries and its one [campaign.ad_group.ad] responsive search ad.
+// Example:
 //
-// The declared campaign needs a [campaign.bidding] table, mapped one to one onto the API's
+//   [[campaign]]
+//   name = "Search #1"
+//   type = "SEARCH"
+//   budget_gbp = 5.00
+//   status = "PAUSED"
+//
+//   [campaign.bidding]
+//   strategy = "maximize_conversions"
+//   target_cpa_gbp = 12.50
+//
+//   [[campaign.ad_group]]
+//   name = "VAT software"
+//
+//   [[campaign.ad_group.keyword]]
+//   text = "vat filing software"
+//   match_type = "EXACT"
+//
+//   [campaign.ad_group.ad]
+//   headlines = ["File VAT Returns Online", "HMRC MTD Compliant Software", "Free VAT Filing Tool"]
+//   descriptions = ["Submit VAT returns direct to HMRC.", "Free, simple, MTD compliant."]
+//   final_url = "https://submit.diyaccounting.co.uk/"
+//
+// Every [[campaign]] also needs a [campaign.bidding] table, mapped one to one onto the API's
 // campaign bidding fields: manual_cpc (enhanced_cpc), maximize_clicks (the API's target_spend,
 // optional cpc_bid_ceiling_gbp), maximize_conversions (optional target_cpa_gbp),
 // maximize_conversion_value (optional target_roas), target_cpa (target_cpa_gbp), target_roas
@@ -27,6 +53,11 @@
 // micros on the wire. A Performance Max campaign accepts only maximize_conversions and
 // maximize_conversion_value; a declared strategy its channel type cannot take is refused, with the
 // reason in the plan, and never applied.
+//
+// A conversion action's category and primary_for_goal are compared and reported, but never
+// written — there is no conversionActions:mutate call here, so that drift stays a plan line until
+// it is fixed in the GA4 property or the Ads UI. The GA4 side of the Ads link stays with
+// ga4-sync.js.
 //
 // Usage:
 //   node infra/google/ads/ads-sync.js [--client-file <path>]
@@ -59,7 +90,7 @@ import {
   shapeCampaigns,
 } from "./ads-inventory.js";
 
-// Selects the campaign's bidding strategy fields, kept separate from ads-inventory.js's
+// Selects each campaign's bidding strategy fields, kept separate from ads-inventory.js's
 // CAMPAIGN_QUERY (a read-only report query neither this file nor ads-inventory.js needs to widen
 // for its own sake). campaign.bidding_strategy is set only for a portfolio (shared) strategy;
 // campaign.bidding_strategy_type always names which of the oneof sub-messages below is live.
@@ -70,6 +101,10 @@ const CAMPAIGN_BIDDING_QUERY =
   "campaign.target_cpa.target_cpa_micros, campaign.target_roas.target_roas, " +
   "campaign.target_impression_share.location, campaign.target_impression_share.location_fraction_micros, " +
   "campaign.target_impression_share.cpc_bid_ceiling_micros FROM campaign";
+
+const KEYWORD_MATCH_TYPES = new Set(["EXACT", "PHRASE", "BROAD"]);
+
+const SEARCH_AD_FINAL_URL_PREFIX = "https://submit.diyaccounting.co.uk/";
 
 // The Google Ads API campaign bidding oneof field each toml strategy maps onto. "portfolio" sets
 // the top-level biddingStrategy resource-name field instead, so it has no entry here.
@@ -177,8 +212,102 @@ function parseBidding(entry, campaignName) {
 }
 
 /**
+ * Parse one [[campaign.ad_group]] entry: its keywords and its one responsive search ad.
+ *
+ * @param {object} entry
+ * @param {string} campaignName
+ */
+function parseAdGroup(entry, campaignName) {
+  if (!entry.name) throw new Error(`campaign "${campaignName}" has a [[campaign.ad_group]] entry missing name`);
+
+  const keywords = (Array.isArray(entry.keyword) ? entry.keyword : []).map((keywordEntry) => {
+    if (!keywordEntry.text) throw new Error(`ad group "${entry.name}" has a [[campaign.ad_group.keyword]] entry missing text`);
+    if (!KEYWORD_MATCH_TYPES.has(keywordEntry.match_type)) {
+      throw new Error(
+        `ad group "${entry.name}"'s keyword "${keywordEntry.text}" has match_type "${keywordEntry.match_type}", must be one of ${[...KEYWORD_MATCH_TYPES].join(", ")}`,
+      );
+    }
+    return { text: String(keywordEntry.text), matchType: String(keywordEntry.match_type) };
+  });
+  if (keywords.length === 0) throw new Error(`ad group "${entry.name}" has no [[campaign.ad_group.keyword]]`);
+
+  const ad = entry.ad;
+  if (!ad) throw new Error(`ad group "${entry.name}" has no [campaign.ad_group.ad]`);
+
+  const headlines = Array.isArray(ad.headlines) ? ad.headlines.map(String) : [];
+  if (headlines.length < 3 || headlines.length > 15) {
+    throw new Error(`ad group "${entry.name}"'s ad needs 3-15 headlines, found ${headlines.length}`);
+  }
+  const longHeadline = headlines.find((headline) => headline.length > 30);
+  if (longHeadline) throw new Error(`ad group "${entry.name}"'s ad headline "${longHeadline}" is longer than 30 characters`);
+
+  const descriptions = Array.isArray(ad.descriptions) ? ad.descriptions.map(String) : [];
+  if (descriptions.length < 2 || descriptions.length > 4) {
+    throw new Error(`ad group "${entry.name}"'s ad needs 2-4 descriptions, found ${descriptions.length}`);
+  }
+  const longDescription = descriptions.find((description) => description.length > 90);
+  if (longDescription) throw new Error(`ad group "${entry.name}"'s ad description "${longDescription}" is longer than 90 characters`);
+
+  if (typeof ad.final_url !== "string" || !ad.final_url.startsWith(SEARCH_AD_FINAL_URL_PREFIX)) {
+    throw new Error(
+      `ad group "${entry.name}"'s ad final_url must start with ${SEARCH_AD_FINAL_URL_PREFIX}, got ${JSON.stringify(ad.final_url)}`,
+    );
+  }
+
+  return { name: String(entry.name), keywords, ad: { headlines, descriptions, finalUrl: String(ad.final_url) } };
+}
+
+/**
+ * Parse one [[campaign]] entry: the fields common to every type, plus type-specific fields —
+ * asset groups for PERFORMANCE_MAX, budget in pounds and ad groups for SEARCH.
+ *
+ * @param {object} entry
+ */
+function parseCampaign(entry) {
+  if (!entry.name) throw new Error(`[[campaign]] entry is missing name: ${JSON.stringify(entry)}`);
+  if (entry.type !== "PERFORMANCE_MAX" && entry.type !== "SEARCH") {
+    throw new Error(`campaign "${entry.name}" has type "${entry.type}", must be "PERFORMANCE_MAX" or "SEARCH"`);
+  }
+  const bidding = parseBidding(entry.bidding, entry.name);
+
+  if (entry.type === "PERFORMANCE_MAX") {
+    if (!entry.status || !entry.budget_micros) {
+      throw new Error(`campaign "${entry.name}" is missing status or budget_micros`);
+    }
+    const assetGroups = (Array.isArray(entry.asset_group) ? entry.asset_group : []).map((assetGroupEntry) => {
+      if (!assetGroupEntry.name) throw new Error(`campaign "${entry.name}" has a [[campaign.asset_group]] entry missing name`);
+      return { name: String(assetGroupEntry.name) };
+    });
+    if (assetGroups.length === 0) throw new Error(`campaign "${entry.name}" has no [[campaign.asset_group]]`);
+    return {
+      name: String(entry.name),
+      type: entry.type,
+      status: String(entry.status),
+      budgetMicros: String(entry.budget_micros),
+      assetGroups,
+      adGroups: [],
+      bidding,
+    };
+  }
+
+  // SEARCH
+  if (entry.budget_gbp === undefined) throw new Error(`campaign "${entry.name}" is missing budget_gbp`);
+  const adGroups = (Array.isArray(entry.ad_group) ? entry.ad_group : []).map((adGroupEntry) => parseAdGroup(adGroupEntry, entry.name));
+  if (adGroups.length === 0) throw new Error(`campaign "${entry.name}" has no [[campaign.ad_group]]`);
+  return {
+    name: String(entry.name),
+    type: entry.type,
+    status: entry.status ? String(entry.status) : "PAUSED",
+    budgetMicros: poundsToMicros(entry.budget_gbp),
+    assetGroups: [],
+    adGroups,
+    bidding,
+  };
+}
+
+/**
  * Parse infra/google/ads/ads.toml's declared account state: everything ads-inventory.js's
- * parseConfig reads, plus the conversion actions, conversion goals, campaign and reserve-floor
+ * parseConfig reads, plus the conversion actions, conversion goals, campaigns and reserve-floor
  * declarations ads-sync.js plans against.
  *
  * @param {string} tomlString
@@ -211,33 +340,21 @@ export function parseConfig(tomlString) {
   });
   if (conversionGoals.length === 0) throw new Error("ads.toml declares no [[customer_conversion_goal]]");
 
-  const campaigns = Array.isArray(parsed.campaign) ? parsed.campaign : [];
-  if (campaigns.length !== 1) throw new Error(`ads.toml must declare exactly one [[campaign]], found ${campaigns.length}`);
-  const campaignEntry = campaigns[0];
-  if (!campaignEntry.name || campaignEntry.type !== "PERFORMANCE_MAX" || !campaignEntry.status || !campaignEntry.budget_micros) {
-    throw new Error(
-      `[[campaign]] entry is missing name, status, budget_micros, or its type is not "PERFORMANCE_MAX": ${JSON.stringify(campaignEntry)}`,
-    );
-  }
-  const bidding = parseBidding(campaignEntry.bidding, campaignEntry.name);
-  const assetGroups = (Array.isArray(campaignEntry.asset_group) ? campaignEntry.asset_group : []).map((entry) => {
-    if (!entry.name) throw new Error(`[[campaign.asset_group]] entry is missing name: ${JSON.stringify(entry)}`);
-    return { name: String(entry.name) };
-  });
-  if (assetGroups.length === 0) throw new Error("the declared campaign has no [[campaign.asset_group]]");
-  const campaign = {
-    name: String(campaignEntry.name),
-    type: campaignEntry.type,
-    status: String(campaignEntry.status),
-    budgetMicros: String(campaignEntry.budget_micros),
-    assetGroups,
-    bidding,
-  };
+  const campaignEntries = Array.isArray(parsed.campaign) ? parsed.campaign : [];
+  if (campaignEntries.length === 0) throw new Error("ads.toml declares no [[campaign]]");
+  const campaigns = campaignEntries.map(parseCampaign);
 
   const reserveFloorSsmParameter = parsed.reserve_floor?.ssm_parameter;
   if (!reserveFloorSsmParameter) throw new Error("ads.toml is missing [reserve_floor].ssm_parameter");
 
-  return { ...base, autoTagging, conversionActions, conversionGoals, campaign, reserveFloorSsmParameter: String(reserveFloorSsmParameter) };
+  return {
+    ...base,
+    autoTagging,
+    conversionActions,
+    conversionGoals,
+    campaigns,
+    reserveFloorSsmParameter: String(reserveFloorSsmParameter),
+  };
 }
 
 export function loadConfigFromRoot() {
@@ -320,7 +437,7 @@ export function shapeCampaignBidding(searchBody) {
 
 /**
  * Read the account, conversion actions, conversion goals and campaigns the same way
- * ads-inventory.js does, plus the campaign's bidding strategy, shaped for planAds.
+ * ads-inventory.js does, plus each campaign's bidding strategy, shaped for planAds.
  *
  * @param {string} token
  * @param {{customerId: string, apiVersion: string}} config
@@ -370,12 +487,39 @@ function biddingFieldsDiffer(declared, live) {
 }
 
 /**
+ * The plan actions that create a declared Search campaign the live account lacks: its budget,
+ * the campaign, and each ad group with its keywords and responsive search ad, in the order
+ * applyAction must run them so each create has its parent's resource name.
+ *
+ * @param {ReturnType<parseCampaign>} campaign
+ */
+function planCampaignCreation(campaign) {
+  const actions = [
+    { kind: "create-campaign-budget", campaignName: campaign.name, amountMicros: campaign.budgetMicros },
+    {
+      kind: "create-campaign",
+      campaignName: campaign.name,
+      status: campaign.status,
+      budgetMicros: campaign.budgetMicros,
+      bidding: campaign.bidding,
+    },
+  ];
+  for (const adGroup of campaign.adGroups) {
+    actions.push({ kind: "create-ad-group", campaignName: campaign.name, adGroupName: adGroup.name });
+    actions.push({ kind: "create-ad-group-keywords", campaignName: campaign.name, adGroupName: adGroup.name, keywords: adGroup.keywords });
+    actions.push({ kind: "create-ad-group-ad", campaignName: campaign.name, adGroupName: adGroup.name, ad: adGroup.ad });
+  }
+  return actions;
+}
+
+/**
  * Decide what differs between ads.toml's declared state and the live account. Pure, so it is
  * unit-tested against mocked live state.
  *
- * A declared conversion action, conversion goal or campaign the live account does not have is
- * not a plan action: this script has no create path for any of the three, so a name it cannot
- * find live throws instead of silently planning nothing.
+ * A declared conversion action, conversion goal or Performance Max campaign the live account does
+ * not have is not a plan action: this script has no create path for any of the three, so a name
+ * it cannot find live throws instead of silently planning nothing. A declared Search campaign the
+ * live account lacks plans a create instead.
  *
  * @param {ReturnType<parseConfig>} config
  * @param {{customer: object, conversionActions: object[], conversionGoals: object[], campaigns: object[]}} live
@@ -428,15 +572,22 @@ export function planAds(config, live) {
     }
   }
 
-  const liveCampaign = live.campaigns.find((campaign) => campaign.name === config.campaign.name);
-  if (!liveCampaign) {
-    missing.push(`campaign "${config.campaign.name}"`);
-  } else {
-    if (liveCampaign.status !== config.campaign.status) {
+  for (const campaign of config.campaigns) {
+    const liveCampaign = live.campaigns.find((candidate) => candidate.name === campaign.name);
+    if (!liveCampaign) {
+      if (campaign.type !== "SEARCH") {
+        missing.push(`campaign "${campaign.name}"`);
+        continue;
+      }
+      actions.push(...planCampaignCreation(campaign));
+      continue;
+    }
+
+    if (liveCampaign.status !== campaign.status) {
       actions.push({
         kind: "update-campaign-status",
         resourceName: liveCampaign.resourceName,
-        wanted: config.campaign.status,
+        wanted: campaign.status,
         live: liveCampaign.status,
       });
     }
@@ -444,28 +595,28 @@ export function planAds(config, live) {
       liveCampaign.budgetAmountMicros === null || liveCampaign.budgetAmountMicros === undefined
         ? null
         : String(liveCampaign.budgetAmountMicros);
-    if (liveBudgetMicros !== config.campaign.budgetMicros) {
+    if (liveBudgetMicros !== campaign.budgetMicros) {
       actions.push({
         kind: "update-campaign-budget",
         budgetResourceName: liveCampaign.budgetResourceName,
-        wanted: config.campaign.budgetMicros,
+        wanted: campaign.budgetMicros,
         live: liveBudgetMicros,
       });
     }
 
-    const allowedStrategies = CHANNEL_TYPE_BIDDING_STRATEGIES[config.campaign.type];
-    if (allowedStrategies && !allowedStrategies.has(config.campaign.bidding.strategy)) {
+    const allowedStrategies = CHANNEL_TYPE_BIDDING_STRATEGIES[campaign.type];
+    if (allowedStrategies && !allowedStrategies.has(campaign.bidding.strategy)) {
       actions.push({
         kind: "refuse-bidding-strategy",
-        campaignName: config.campaign.name,
-        strategy: config.campaign.bidding.strategy,
-        reason: `campaign type ${config.campaign.type} accepts only ${[...allowedStrategies].join(", ")}`,
+        campaignName: campaign.name,
+        strategy: campaign.bidding.strategy,
+        reason: `campaign type ${campaign.type} accepts only ${[...allowedStrategies].join(", ")}`,
       });
-    } else if (biddingFieldsDiffer(config.campaign.bidding, liveCampaign.bidding)) {
+    } else if (biddingFieldsDiffer(campaign.bidding, liveCampaign.bidding)) {
       actions.push({
         kind: "update-campaign-bidding",
         resourceName: liveCampaign.resourceName,
-        wanted: config.campaign.bidding,
+        wanted: campaign.bidding,
         live: liveCampaign.bidding,
       });
     }
@@ -473,7 +624,7 @@ export function planAds(config, live) {
 
   if (missing.length > 0) {
     throw new Error(
-      `ads.toml declares ${missing.join(", ")}, which the live account does not have. ads-sync.js never creates a conversion action, a conversion goal or a campaign — create it live first.`,
+      `ads.toml declares ${missing.join(", ")}, which the live account does not have. ads-sync.js never creates a conversion action, a conversion goal or a Performance Max campaign — create it live first.`,
     );
   }
 
@@ -496,13 +647,25 @@ export function describe(action) {
       return `campaign ${action.resourceName}: bidding ${JSON.stringify(action.live)} (declared ${JSON.stringify(action.wanted)}) (would update)`;
     case "refuse-bidding-strategy":
       return `campaign "${action.campaignName}": bidding strategy "${action.strategy}" refused — ${action.reason} (not applied)`;
+    case "create-campaign-budget":
+      return `campaign "${action.campaignName}": budget ${action.amountMicros} micros (would create)`;
+    case "create-campaign":
+      return `campaign "${action.campaignName}": SEARCH, ${action.status}, bidding ${action.bidding.strategy} (would create)`;
+    case "create-ad-group":
+      return `campaign "${action.campaignName}", ad group "${action.adGroupName}" (would create)`;
+    case "create-ad-group-keywords":
+      return `campaign "${action.campaignName}", ad group "${action.adGroupName}": ${action.keywords.length} keyword(s) (would create)`;
+    case "create-ad-group-ad":
+      return `campaign "${action.campaignName}", ad group "${action.adGroupName}": responsive search ad, ${action.ad.headlines.length} headline(s), ${action.ad.descriptions.length} description(s) (would create)`;
     default:
       return `${action.kind}`;
   }
 }
 
 /**
- * The updateMask and update body for a campaign's bidding oneof field.
+ * The updateMask and update body for a campaign's bidding oneof field — shared by an update
+ * (against a live campaign resource name) and a create (folded into the campaign's own create
+ * body, where the mask is unused).
  *
  * @param {ReturnType<parseBidding>} bidding
  */
@@ -575,7 +738,7 @@ async function googleAdsMutate(token, customerId, apiVersion, resource, operatio
   return res.json();
 }
 
-async function applyAction(token, config, action) {
+async function applyAction(token, config, action, context) {
   switch (action.kind) {
     case "update-auto-tagging":
       return googleAdsMutate(token, config.customerId, config.apiVersion, "customers", [
@@ -609,6 +772,67 @@ async function applyAction(token, config, action) {
       // Refused: the campaign's channel type cannot take this strategy. The plan line is the
       // operator-facing signal; there is nothing to apply.
       return null;
+    case "create-campaign-budget": {
+      const result = await googleAdsMutate(token, config.customerId, config.apiVersion, "campaignBudgets", [
+        { create: { name: `${action.campaignName} budget`, amountMicros: action.amountMicros } },
+      ]);
+      context.budgetResourceNameByCampaign[action.campaignName] = result.results[0].resourceName;
+      return result;
+    }
+    case "create-campaign": {
+      const { update: biddingFields } = biddingMutatePayload(action.bidding);
+      const result = await googleAdsMutate(token, config.customerId, config.apiVersion, "campaigns", [
+        {
+          create: {
+            name: action.campaignName,
+            status: action.status,
+            advertisingChannelType: "SEARCH",
+            campaignBudget: context.budgetResourceNameByCampaign[action.campaignName],
+            ...biddingFields,
+          },
+        },
+      ]);
+      context.campaignResourceNameByCampaign[action.campaignName] = result.results[0].resourceName;
+      return result;
+    }
+    case "create-ad-group": {
+      const result = await googleAdsMutate(token, config.customerId, config.apiVersion, "adGroups", [
+        {
+          create: {
+            name: action.adGroupName,
+            campaign: context.campaignResourceNameByCampaign[action.campaignName],
+            status: "ENABLED",
+          },
+        },
+      ]);
+      context.adGroupResourceNameByKey[`${action.campaignName}/${action.adGroupName}`] = result.results[0].resourceName;
+      return result;
+    }
+    case "create-ad-group-keywords": {
+      const adGroupResourceName = context.adGroupResourceNameByKey[`${action.campaignName}/${action.adGroupName}`];
+      const operations = action.keywords.map((keyword) => ({
+        create: { adGroup: adGroupResourceName, status: "ENABLED", keyword: { text: keyword.text, matchType: keyword.matchType } },
+      }));
+      return googleAdsMutate(token, config.customerId, config.apiVersion, "adGroupCriteria", operations);
+    }
+    case "create-ad-group-ad": {
+      const adGroupResourceName = context.adGroupResourceNameByKey[`${action.campaignName}/${action.adGroupName}`];
+      return googleAdsMutate(token, config.customerId, config.apiVersion, "adGroupAds", [
+        {
+          create: {
+            adGroup: adGroupResourceName,
+            status: "ENABLED",
+            ad: {
+              finalUrls: [action.ad.finalUrl],
+              responsiveSearchAd: {
+                headlines: action.ad.headlines.map((text) => ({ text })),
+                descriptions: action.ad.descriptions.map((text) => ({ text })),
+              },
+            },
+          },
+        },
+      ]);
+    }
     default:
       throw new Error(`Unknown action ${action.kind}`);
   }
@@ -624,7 +848,7 @@ export async function main(argv = process.argv.slice(2)) {
 
   if (plan.length === 0) {
     console.log(
-      `customer ${config.customerId}, ${config.conversionActions.length} conversion action(s), ${config.conversionGoals.length} conversion goal(s) and campaign "${config.campaign.name}": already match`,
+      `customer ${config.customerId}, ${config.conversionActions.length} conversion action(s), ${config.conversionGoals.length} conversion goal(s) and ${config.campaigns.length} campaign(s): already match`,
     );
   }
   for (const action of plan) console.log(describe(action));
@@ -634,10 +858,11 @@ export async function main(argv = process.argv.slice(2)) {
     return plan;
   }
 
+  const context = { budgetResourceNameByCampaign: {}, campaignResourceNameByCampaign: {}, adGroupResourceNameByKey: {} };
   for (const action of plan) {
     if (action.kind === "conversion-action-drift" || action.kind === "refuse-bidding-strategy") continue;
-    await applyAction(token, config, action);
-    console.log(describe(action).replace("(would update)", "(updated)"));
+    await applyAction(token, config, action, context);
+    console.log(describe(action).replace("(would update)", "(updated)").replace("(would create)", "(created)"));
   }
   return plan;
 }
