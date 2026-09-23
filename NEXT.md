@@ -100,6 +100,17 @@ and stop. One branch is driven green at a time. Lifted only by the operator in t
 
 ## Machine-only
 
+- [ ] **B30av. A superseded scheduled probe fails its upload job.** The scheduled `probe-test` run
+  35821806378 (05:17 UTC, 2026-09-23) found `main`'s deploy 35821860017 gating the apex, so both
+  prod suites took the superseded path (`.github/workflows/probe-test.yml` line 521) and ended
+  green with no report, but `upload-web-test-results` (line 818) runs on
+  `generate-test-reports == 'true'` alone and its report step (lines 922 to 924) failed with
+  "Downloaded test report not found", so the run is red for a suite nothing ran. Add
+  `&& needs.behaviour-test.outputs.superseded != 'true'` to that job's `if`, the guard the
+  probe-row step already uses (line 759). Proof: `prettier --check` on the file, a js-yaml parse,
+  and the next scheduled run that coincides with a `main` deploy ending green. **Source**: run
+  35821806378. **Owner**: Claude Code. **Model**: Haiku. **Size**: 1 file.
+
 - [ ] **B30au. The snapshot-publish alarm re-fires on a two-day-old datapoint.**
   `prod-env-operator-snapshot-publish-errors` opened issue #337 at 03:16 UTC on 2026-09-23 on
   "1 datapoint [2.0 (21/09/26 03:16:00)]" and returned to OK two minutes later; the Lambda's
