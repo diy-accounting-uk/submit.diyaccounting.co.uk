@@ -17,7 +17,7 @@ import { applyCellWrites } from "@diy-accounting-uk/diya-gl/dist/app/lib/spreads
 
 import { validateLines } from "@diy-accounting-uk/diya-gl/dist/app/lib/diya-gl-schema.js";
 
-import { bookFromWorkbookSet, openingJournalLines, toToml } from "../lib/finance/book-from-workbook.js";
+import { bookFromWorkbookSet, openingBankBalanceLines, openingJournalLines, toToml } from "../lib/finance/book-from-workbook.js";
 
 // This workspace's sibling checkout of the spreadsheets repository; never
 // copied into this repository. Currentaccount.xlsx carries no line data
@@ -173,6 +173,42 @@ describe("openingJournalLines", () => {
   it("rejects an opening balance account it has no mapping for", () => {
     const withUnknown = { ...DIYA_OPENING_BOOK, openingBalances: { ...DIYA_OPENING_BOOK.openingBalances, unknownAccount: 1 } };
     expect(() => openingJournalLines(withUnknown)).toThrow(/unknownAccount.*no opening journal account mapping/);
+  });
+});
+
+describe("openingBankBalanceLines", () => {
+  it("emits one BC-coded bank line per opening bank balance, dated the period's first day", () => {
+    const lines = openingBankBalanceLines(DIYA_OPENING_BOOK);
+
+    expect(lines).toHaveLength(4);
+    const current = lines.find((line) => line.accountMainID === "1200");
+    expect(current).toMatchObject({ sourceJournalID: "bank", postingDate: "2026-04-01", amount: 903.18 });
+  });
+
+  it("codes every line D, since every DIYA bank balance is money the account holds", () => {
+    const lines = openingBankBalanceLines(DIYA_OPENING_BOOK);
+    for (const line of lines) {
+      expect(line["diya-gl:bankCode"]).toBe("BC");
+      expect(line.debitCreditCode).toBe("D");
+      expect(line["diya-gl:bankAccountID"]).toBe(line.accountMainID);
+    }
+  });
+
+  it("carries each account's opening figure from book.openingBalances.bankAccounts", () => {
+    const lines = openingBankBalanceLines(DIYA_OPENING_BOOK);
+    const byAccount = Object.fromEntries(lines.map((line) => [line.accountMainID, line.amount]));
+    expect(byAccount).toEqual({ 1200: 903.18, 1210: 246.82, 1220: 94.27, 1230: 136.47 });
+  });
+
+  it("emits lines that validate against the diya-gl lines schema", () => {
+    const lines = openingBankBalanceLines(DIYA_OPENING_BOOK);
+    const result = validateLines(lines, DIYA_OPENING_BOOK);
+    expect(result.errors).toEqual([]);
+    expect(result.valid).toBe(true);
+  });
+
+  it("requires documentInfo.periodCoveredStart", () => {
+    expect(() => openingBankBalanceLines({ openingBalances: { bankAccounts: { 1200: 1 } } })).toThrow(/periodCoveredStart/);
   });
 });
 

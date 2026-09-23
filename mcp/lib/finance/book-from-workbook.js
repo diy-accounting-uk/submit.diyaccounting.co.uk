@@ -196,3 +196,44 @@ export function openingJournalLines(book) {
   }
   return { book: updatedBook, lines };
 }
+
+/**
+ * Builds the opening balance a bank workbook reads for itself: one bank
+ * line per account in book.openingBalances.bankAccounts, coded "BC" and
+ * dated the period's first day, which is how the workbook's own month tab
+ * takes an opening balance rather than as a statement line (see
+ * isOpeningBankBalance, ../spreadsheets.diyaccounting.co.uk/app/lib/book-checks/ltd.js
+ * line 88, and the "Trial Balance ... closing balance echo" check,
+ * app/products/ltd.js line 3431). This is separate from
+ * openingJournalLines(): the balance sheet reads the opening journal, the
+ * bank workbook reads this BC line, and a book needs both or the two
+ * disagree on the account's opening balance by exactly this amount.
+ * @param {Object} book - a book with documentInfo.periodCoveredStart and openingBalances.bankAccounts
+ * @returns {Array<Object>} the validated opening bank lines
+ */
+export function openingBankBalanceLines(book) {
+  const periodStart = toIsoDateString(book?.documentInfo?.periodCoveredStart);
+  if (!periodStart) {
+    throw new Error("openingBankBalanceLines requires book.documentInfo.periodCoveredStart");
+  }
+  const bankAccounts = book?.openingBalances?.bankAccounts || {};
+
+  const lines = Object.entries(bankAccounts).map(([code, value]) => ({
+    "entryNumber": `${OPENING_BALANCE_DOCUMENT_PREFIX}BANK-${code}`,
+    "sourceJournalID": "bank",
+    "postingDate": periodStart,
+    "accountMainID": code,
+    "amount": Math.abs(value),
+    "documentType": "bank-statement",
+    "detailComment": "Opening balance",
+    "diya-gl:bankCode": "BC",
+    "diya-gl:bankAccountID": code,
+    "debitCreditCode": value >= 0 ? "D" : "C",
+  }));
+
+  const { valid, errors } = validateLines(lines, book);
+  if (!valid) {
+    throw new Error(`Opening bank balance lines failed validation:\n${errors.join("\n")}`);
+  }
+  return lines;
+}
