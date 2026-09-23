@@ -16,7 +16,7 @@ runs), and for Claude Code steps the **Model** a sub-agent should use (Fable > O
 Haiku; the lowest tier that fits). Anything touching code goes through a `claude/*` branch and
 PR; the operator merges.
 
-**Prod runs deployment prod-d458f02** (PR #343's merge deploy).
+**Prod runs deployment prod-d458f02** (PR #343's merge deploy; #344 and #345 changed no deployed code).
 **ci**: `ci-set1` is last-known-good and the only ci set standing; `ci-set2` was swept.
 Pull requests open: diy-accounting-uk/www.diyaccounting.co.uk#33 (mergeable now: the sink admits
 the gateway account), diy-accounting-uk/spreadsheets.diyaccounting.co.uk#136.
@@ -49,13 +49,23 @@ Shared facts for the analytics rows (B52d, B52e, B52l, B52m): the prod Athena da
 **COOL-DOWN is on since 2026-09-23T19:29:15Z.** No new board rows except a degradation. Agents commit
 and stop. One branch is driven green at a time. Lifted only by the operator in their own words.
 
-- [ ] **F2g1. PayPal statements into diya-gl lines.** Branch `claude/b87-board` (worktree
-  `.claude/worktrees/b87`): `mcp/lib/finance/paypal-statement-lines.js` parses the monthly
-  `<yyyy-mm> PayPal - transactions.PDF` in the Drive mirror
-  (`../drive/DIY Accounting Limited/finance/2026-2027 accounts/paypal/`, `pdftotext -layout`),
-  settled rows only, holds and reversals excluded, each month checked against its statement's
-  balance movement. The API route (OF1, F1b, F2g) stays; this one unblocks F2d now. **Owner**:
-  Claude Code. **Model**: Sonnet. **Size**: ~2 files.
+- [ ] **F2d. DIYA's book, assembled and verified.** The lines from F2a (Stripe), F2g1 (PayPal statements),
+  `mcp/lib/finance/bank-lines.js` over the NatWest statements in the Drive mirror
+  (`../drive/DIY Accounting Limited/finance/2025-2026 accounts/bank/` for March,
+  `../drive/DIY Accounting Limited/finance/2026-2027 accounts/bank/` for April to August, CSV and
+  PDF per month, named `<Current|Savings> <account> <dd-mm-yyyy> to <dd-mm-yyyy>` or with a hyphen
+  between the dates; April's current account also has a 1–10 April part-month file, which the
+  full-month file supersedes) and `mcp/lib/finance/mail-invoices.js`,
+  plus `mcp/lib/finance/book-from-workbook.js`'s `book.toml` for 1 March to 31 August 2026,
+  validated with `validateBook` and `validateLines` from the diya-gl package, written under
+  `../staging/2026-2027/book/` (private); March 2026 matched line for line against the completed
+  2025-26 workbook (the control), every month's bank closing balance equal to the statement's,
+  gross income and fees separate, no hold posted, each check a line in
+  `../staging/2026-2027/book/VERIFICATION.md`. F2a's `mcp/lib/finance/stripe-lines.js` is on `main`.
+  The operator copies the book and `VERIFICATION.md` into Drive (operator, 2026-09-23). An agent is assembling it now (cool-down: it finishes the step it is on,
+  writes what it has and stops); F2g1's PayPal parser is on `main` (PR #345).
+  **Source**: `../PLAN_FINANCE_AUTOMATION.md` phase 2 and its verification. **Owner**: Claude Code.
+  **Model**: Sonnet. **Size**: ~2 files.
 
 - [ ] **B30at1. The sweep's claim check, proven.** Needs a claimed set that is not last-known-good
   (the sweep keeps the last-known-good set before it reads any claim): the next time two branches
@@ -117,18 +127,6 @@ and stop. One branch is driven green at a time. Lifted only by the operator in t
   (`npm run` the script the accessibility workflow uses; read `.github/workflows/` for it), fix
   what it finds, and record the result in the checklist and `REPORT_ACCESSIBILITY_PENETRATION.md`.
   **Owner**: Claude Code. **Model**: Sonnet. **Size**: ~4 files.
-
-- [ ] **ROPA. A record of processing for the practice client list.** `_developers/ICO_CHECKLIST.md`
-  "Practice licence: client data" (line 68 onward) marks "Records of processing: client list"
-  `Pending`: no document lists what the client list holds, why, where (`{env}-env-practice-clients`,
-  eu-west-2), who (the practice as controller for its clients, DIY Accounting as processor for the
-  roster and controller for its own records), retention (archived rows kept, receipts seven years)
-  and how rights are met. Write it as `_developers/RECORDS_OF_PROCESSING.md` from the checklist's
-  rows (they carry the file and line evidence), mark the checklist row met, and mark its
-  "Registration scope requires update" row not applicable: the ICO register records name,
-  address, number, tier, dates and DPO only
-  (<https://ico.org.uk/about-the-ico/what-we-do/register-of-fee-payers/>). **Owner**: Claude Code.
-  **Model**: Haiku. **Size**: 2 files.
 
 ## Machine-ask
 
@@ -225,24 +223,6 @@ and stop. One branch is driven green at a time. Lifted only by the operator in t
   `operatorSnapshotPublish.js`, and a block above `renderSnapshot`'s objectives in
   `web/public/operator/dashboard.html`. Blocked on OF2 (DIYA's book saved to the DIYA cloud, the last of the F1 and F2 rows). **Source**: BACKLOG 52i; `PLAN_ONE_STOP_DASHBOARD.md` D10. **Owner**:
   Claude Code. **Model**: Sonnet. **Size**: ~4 files.
-
-- [ ] **F2d. DIYA's book, assembled and verified.** The lines from F2a (Stripe), F2g1 (PayPal statements),
-  `mcp/lib/finance/bank-lines.js` over the NatWest statements in the Drive mirror
-  (`../drive/DIY Accounting Limited/finance/2025-2026 accounts/bank/` for March,
-  `../drive/DIY Accounting Limited/finance/2026-2027 accounts/bank/` for April to August, CSV and
-  PDF per month, named `<Current|Savings> <account> <dd-mm-yyyy> to <dd-mm-yyyy>` or with a hyphen
-  between the dates; April's current account also has a 1–10 April part-month file, which the
-  full-month file supersedes) and `mcp/lib/finance/mail-invoices.js`,
-  plus `mcp/lib/finance/book-from-workbook.js`'s `book.toml` for 1 March to 31 August 2026,
-  validated with `validateBook` and `validateLines` from the diya-gl package, written under
-  `../staging/2026-2027/book/` (private); March 2026 matched line for line against the completed
-  2025-26 workbook (the control), every month's bank closing balance equal to the statement's,
-  gross income and fees separate, no hold posted, each check a line in
-  `../staging/2026-2027/book/VERIFICATION.md`. F2a's `mcp/lib/finance/stripe-lines.js` is on `main`.
-  The operator copies the book and `VERIFICATION.md` into Drive (operator, 2026-09-23). Blocked
-  on F2g1.
-  **Source**: `../PLAN_FINANCE_AUTOMATION.md` phase 2 and its verification. **Owner**: Claude Code.
-  **Model**: Sonnet. **Size**: ~2 files.
 
 - [ ] **F2e. The MCP writes a populated spreadsheets package.** A tool in `mcp/lib/finance/` that
   takes the book and lines and writes a DIY Accounting spreadsheets package, reconciled under the
