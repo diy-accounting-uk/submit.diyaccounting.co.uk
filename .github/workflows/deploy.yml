@@ -3501,3 +3501,99 @@ jobs:
           export RELEASE_CI_SLOT_DEPLOYMENT_NAME="$DEPLOYMENT"
           export RELEASE_CI_SLOT_RUN_ID="${{ github.run_id }}"
           node .github/actions/claim-ci-slot/release-ci-slot.mjs
+
+  # GitHub drops most of destroy-ci.yml's cron slots, so each ci deploy ends by checking for a
+  # set old enough to sweep and calls the sweep only when it finds one.
+  check-ci-sweep:
+    if: ${{ !cancelled() && needs.params.outputs.github-environment == 'ci' }}
+    name: 'check whether a ci set needs sweeping'
+    needs:
+      - params
+      - names
+      - disable-native-auth
+    runs-on: ubuntu-24.04
+    environment: ci
+    steps:
+      - name: Configure AWS role via GitHub OIDC
+        uses: aws-actions/configure-aws-credentials@e1253824e5c10ff9df46874f81ed3ec929e19cfd # v6
+        with:
+          role-to-assume: ${{ vars.SUBMIT_ACTIONS_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+          role-chaining: false
+          audience: sts.amazonaws.com
+          role-skip-session-tagging: true
+          output-credentials: true
+          retry-max-attempts: 3
+
+      - name: Assume AWS deployment role
+        uses: aws-actions/configure-aws-credentials@e1253824e5c10ff9df46874f81ed3ec929e19cfd # v6
+        with:
+          role-to-assume: ${{ vars.SUBMIT_DEPLOY_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+          role-chaining: true
+          audience: sts.amazonaws.com
+          role-skip-session-tagging: true
+          output-credentials: true
+          retry-max-attempts: 3
+
+      - name: Find whether any ci set's SelfDestructStack is old enough to sweep
+        id: check
+        shell: bash
+        run: |
+          set -euo pipefail
+          LAST_KNOWN_GOOD=$(aws ssm get-parameter --name "/submit/ci/last-known-good-deployment" --query "Parameter.Value" --output text 2>/dev/null || echo "")
+          echo "Last known good ci deployment: '$LAST_KNOWN_GOOD'"
+
+          STACK_LINES=$(
+            for REGION in eu-west-2 us-east-1; do
+              aws cloudformation describe-stacks --region "$REGION" \
+                --query "Stacks[?ends_with(StackName, '-app-SelfDestructStack')].[StackName,CreationTime]" \
+                --output text 2>/dev/null || true
+            done
+          )
+
+          NOW_EPOCH=$(date -u +%s)
+          NEEDS_SWEEP="false"
+
+          while IFS=$'\t' read -r STACK_NAME CREATION_TIME; do
+            [ -z "$STACK_NAME" ] && continue
+            case "$STACK_NAME" in
+              ci-*-app-SelfDestructStack) ;;
+              *) continue ;;
+            esac
+            DEPLOYMENT_NAME="${STACK_NAME%-app-SelfDestructStack}"
+            if [ "$DEPLOYMENT_NAME" = "$LAST_KNOWN_GOOD" ]; then
+              echo "$DEPLOYMENT_NAME: last known good, not a sweep candidate"
+              continue
+            fi
+            CREATED_EPOCH=$(date -u -d "$CREATION_TIME" +%s 2>/dev/null || echo "0")
+            if [ "$CREATED_EPOCH" -eq 0 ]; then
+              echo "$DEPLOYMENT_NAME: could not parse creation time '$CREATION_TIME', skipping"
+              continue
+            fi
+            AGE_HOURS=$(( (NOW_EPOCH - CREATED_EPOCH) / 3600 ))
+            echo "$DEPLOYMENT_NAME: $AGE_HOURS hours old"
+            # Keep in step with destroy-ci.yml's own SELF_DESTRUCT_SWEEP_MIN_AGE_HOURS.
+            if [ "$AGE_HOURS" -ge 8 ]; then
+              echo "$DEPLOYMENT_NAME is $AGE_HOURS hours old and not last-known-good; a sweep is needed"
+              NEEDS_SWEEP="true"
+            fi
+          done <<< "$STACK_LINES"
+
+          echo "needs-sweep=$NEEDS_SWEEP" | tee -a "$GITHUB_OUTPUT"
+    outputs:
+      needs-sweep: ${{ steps.check.outputs.needs-sweep }}
+
+  sweep-ci:
+    if: ${{ !cancelled() && needs.check-ci-sweep.outputs.needs-sweep == 'true' }}
+    name: 'sweep ci for a stale set'
+    needs:
+      - check-ci-sweep
+    permissions:
+      id-token: write
+      contents: read
+      actions: read
+    secrets: inherit
+    uses: './.github/workflows/destroy-ci.yml'
+    with:
+      sweep-for-stacks: true
