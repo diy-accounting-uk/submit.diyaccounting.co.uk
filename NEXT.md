@@ -236,7 +236,11 @@ Shared facts for the analytics rows (B52d, B52e, B52l, B52m): the prod Athena da
   it. First, the opening balances at 1 April 2026 are the closing balances of the year ended
   31 March 2026, read with diya-gl from the 2025-26 workbook set in
   `../drive/DIY Accounting Limited/finance/2025-2026 accounts/` (operator, 2026-09-23); the
-  current `[openingBalances]` came from the superseded 1 March draft. Add `[[members]]` to `book.toml` from the Companies House register (the confirmation
+  current `[openingBalances]` came from the superseded 1 March draft. The same set's bank, cash,
+  sales and purchases sheets show how each kind of transaction was labelled: derive a label map
+  (payee or description pattern to account, bank code, VAT code), store it at
+  `../staging/labels/diya-labels.toml`, apply it to every line, and list what it does not cover in
+  `VERIFICATION.md` (operator, 2026-09-23). Add `[[members]]` to `book.toml` from the Companies House register (the confirmation
   statement of 2025-10-25; share capital £100) so `RegisterofMembers` passes. Rebuild, re-run the
   report, update `VERIFICATION.md`. (b) and (d) are purchases credit notes: their totals read
   right once F2l's engine change covers purchases. **Source**: F2k's report; operator
@@ -297,6 +301,16 @@ Shared facts for the analytics rows (B52d, B52e, B52l, B52m): the prod Athena da
   merges past a PII hit. Blocked on B30bc's merge and its proof: both docs-only pushes (a root
   `.md`, a skill) ran `content scan` and the PR reached `CLEAN`. **Owner**: Operator.
   **Model**: none. **Size**: 0 files.
+
+- [ ] **F2n. The finance parsers code lines from the label map.** `bank-lines.js` (`bankCodeFor`,
+  line 104) codes a line from the statement's type alone, and `paypal-statement-lines.js` and
+  `stripe-lines.js` post every receipt to sales. Give each an optional `labels` input, the map F2m
+  writes to `../staging/labels/diya-labels.toml` (read by the caller and passed in, so the
+  parsers stay pure and the repository holds no payee data), that sets account, bank code and VAT
+  code for a matching description; an unmatched line keeps today's coding and is returned in an
+  `unlabelled` list. Tests over a synthetic map. The company-book skill's Build section names
+  the map and the refresh from the prior year's workbooks. Blocked on F2m (the map's shape).
+  **Source**: operator 2026-09-23. **Owner**: Claude Code. **Model**: Sonnet. **Size**: ~7 files.
 
 - [ ] **B30at1. The sweep's claim check, proven.** Needs a claimed set that is not last-known-good
   (the sweep keeps the last-known-good set before it reads any claim): the next time two branches
