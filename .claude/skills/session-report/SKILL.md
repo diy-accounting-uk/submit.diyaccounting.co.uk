@@ -70,7 +70,7 @@ nothing; say so and give the private-rate figure beside it.
 **AWS.** Count the deploys (`gh run list --workflow deploy.yml` and `deploy-environment.yml`, by
 environment), the ci sets created and how long each stood (`SelfDestructStack` creation to
 deletion, from CloudFormation), and any prod set left standing beside the live one (`$35.28` a
-month each, `_developers/archive/PLAN_COST_OPTIMISATION.md`). Every ci set costs its hours of
+month each, `../developers/submit/archive/PLAN_COST_OPTIMISATION.md`). Every ci set costs its hours of
 Lambda, DynamoDB, CloudFront and Cognito; name the source for any figure. The workflows make no
 metered LLM call; say so if that is still true.
 

@@ -865,7 +865,7 @@ Based on https://developer.service.hmrc.gov.uk/api-documentation/docs/terms-of-u
 > - Compliance reports generated automatically: `REPORT_ACCESSIBILITY_PENETRATION.md`
 > - Security scan results in `web/public/tests/penetration/`
 > - GitHub Actions workflows run security scans on each deployment
-> - Documentation: `_developers/archive/PII_AND_SENSITIVE_DATA.md`, `_developers/archive/PRIVACY_DUTIES.md`
+> - Documentation: `../developers/submit/archive/PII_AND_SENSITIVE_DATA.md`, `../developers/submit/archive/PRIVACY_DUTIES.md`
 >
 > **Reference:** ICO Information Security Checklist: https://ico.org.uk/for-organisations/advice-for-small-organisations/getting-started-with-gdpr/data-protection-self-assessment-medium-businesses/information-security-checklist/
 

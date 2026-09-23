@@ -880,7 +880,7 @@ IaC repeatability is proven: submit-prod (972912397388) was deployed from scratc
 
 **Recovery equation**: Salt + Backups + Code = Full recovery from total loss.
 
-For detailed backup architecture, table inventory, cross-account backup plans, and restore testing procedures, see `_developers/backlog/PLAN_CROSS_ACCOUNT_BACKUPS.md`.
+For detailed backup architecture, table inventory, cross-account backup plans, and restore testing procedures, see `../developers/submit/backlog/PLAN_CROSS_ACCOUNT_BACKUPS.md`.
 
 ---
 

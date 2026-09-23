@@ -16,7 +16,7 @@ Use this prompt when the user-facing documentation needs refreshing after featur
 
 ## Terminology Requirements
 
-**All field names and terms MUST follow** `_developers/reference/UK-Government-Form-Field-Standards-Guide.md`:
+**All field names and terms MUST follow** `reference/UK-Government-Form-Field-Standards-Guide.md`:
 
 | Correct Term | Do NOT Use |
 |--------------|------------|

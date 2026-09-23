@@ -10,7 +10,7 @@
 [[items]]
 id = "hmrc-questionnaires"
 name = "HMRC production-approval questionnaires"
-description = "Software developer checklist and WCAG 2.1 AA checklist (_developers/reference/), parked until the ITSA recognition case is made"
+description = "Software developer checklist and WCAG 2.1 AA checklist (reference/), parked until the ITSA recognition case is made"
 status = "parked"
 date = "2026-09-05"
 date_kind = "reviewed"
@@ -20,7 +20,7 @@ source = "BACKLOG 11a"
 [[items]]
 id = "mtd-terms-of-use"
 name = "MTD terms of use"
-description = "HMRC's software developer terms of use, tracked against _developers/reference/HMRC_MTD_API_Production_Approval_Guide.pdf"
+description = "HMRC's software developer terms of use, tracked against reference/HMRC_MTD_API_Production_Approval_Guide.pdf"
 status = "current"
 date = "2026-09-05"
 date_kind = "reviewed"
