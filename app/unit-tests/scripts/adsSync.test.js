@@ -2,7 +2,7 @@
 // Copyright (C) 2006-2026 DIY Accounting Limited
 
 import { describe, it, expect } from "vitest";
-import { parseArgs, parseConfig, planAds, describe as describeAction } from "../../../infra/google/ads/ads-sync.js";
+import { parseArgs, parseConfig, planAds, describe as describeAction, shapeCampaignBidding } from "../../../infra/google/ads/ads-sync.js";
 
 const VALID_TOML = `
 [account]
@@ -53,6 +53,9 @@ type = "PERFORMANCE_MAX"
 status = "ENABLED"
 budget_micros = 1000000
 
+[campaign.bidding]
+strategy = "maximize_conversions"
+
 [[campaign.asset_group]]
 name = "Asset Group 1"
 
@@ -99,6 +102,7 @@ function baseLive() {
         advertisingChannelType: "PERFORMANCE_MAX",
         budgetResourceName: "customers/8142685080/campaignBudgets/1",
         budgetAmountMicros: "1000000",
+        bidding: { strategy: "maximize_conversions", targetCpaMicros: null },
       },
     ],
   };
@@ -141,6 +145,7 @@ describe("ads-sync parseConfig", () => {
       status: "ENABLED",
       budgetMicros: "1000000",
       assetGroups: [{ name: "Asset Group 1" }],
+      bidding: { strategy: "maximize_conversions" },
     });
     expect(config.reserveFloorSsmParameter).toBe("/submit/prod/ads/reserve-floor-gbp");
   });
@@ -161,6 +166,99 @@ describe("ads-sync parseConfig", () => {
 
   it("throws when [reserve_floor].ssm_parameter is missing", () => {
     expect(() => parseConfig(VALID_TOML.replace(/\[reserve_floor\][\s\S]*/, ""))).toThrow(/reserve_floor/);
+  });
+
+  it("throws when the campaign has no [campaign.bidding]", () => {
+    const bad = VALID_TOML.replace('[campaign.bidding]\nstrategy = "maximize_conversions"\n\n', "");
+    expect(() => parseConfig(bad)).toThrow(/has no \[campaign\.bidding\]/);
+  });
+});
+
+describe("ads-sync parseConfig bidding", () => {
+  function withBidding(biddingToml) {
+    return VALID_TOML.replace('[campaign.bidding]\nstrategy = "maximize_conversions"\n', biddingToml);
+  }
+
+  it("parses manual_cpc's enhanced_cpc", () => {
+    const config = parseConfig(withBidding('[campaign.bidding]\nstrategy = "manual_cpc"\nenhanced_cpc = true\n'));
+    expect(config.campaign.bidding).toEqual({ strategy: "manual_cpc", enhancedCpc: true });
+  });
+
+  it("throws when manual_cpc has no enhanced_cpc", () => {
+    expect(() => parseConfig(withBidding('[campaign.bidding]\nstrategy = "manual_cpc"\n'))).toThrow(/manual_cpc.*needs enhanced_cpc/);
+  });
+
+  it("parses maximize_clicks with no ceiling", () => {
+    const config = parseConfig(withBidding('[campaign.bidding]\nstrategy = "maximize_clicks"\n'));
+    expect(config.campaign.bidding).toEqual({ strategy: "maximize_clicks" });
+  });
+
+  it("converts maximize_clicks's optional cpc_bid_ceiling_gbp to micros", () => {
+    const config = parseConfig(withBidding('[campaign.bidding]\nstrategy = "maximize_clicks"\ncpc_bid_ceiling_gbp = 2.50\n'));
+    expect(config.campaign.bidding).toEqual({ strategy: "maximize_clicks", cpcBidCeilingMicros: "2500000" });
+  });
+
+  it("converts maximize_conversions's optional target_cpa_gbp to micros", () => {
+    const config = parseConfig(withBidding('[campaign.bidding]\nstrategy = "maximize_conversions"\ntarget_cpa_gbp = 10\n'));
+    expect(config.campaign.bidding).toEqual({ strategy: "maximize_conversions", targetCpaMicros: "10000000" });
+  });
+
+  it("parses maximize_conversion_value's optional target_roas", () => {
+    const config = parseConfig(withBidding('[campaign.bidding]\nstrategy = "maximize_conversion_value"\ntarget_roas = 3.5\n'));
+    expect(config.campaign.bidding).toEqual({ strategy: "maximize_conversion_value", targetRoas: 3.5 });
+  });
+
+  it("requires target_cpa_gbp for the target_cpa strategy", () => {
+    expect(() => parseConfig(withBidding('[campaign.bidding]\nstrategy = "target_cpa"\n'))).toThrow(/target_cpa.*needs target_cpa_gbp/);
+  });
+
+  it("converts target_cpa's target_cpa_gbp to micros", () => {
+    const config = parseConfig(withBidding('[campaign.bidding]\nstrategy = "target_cpa"\ntarget_cpa_gbp = 8\n'));
+    expect(config.campaign.bidding).toEqual({ strategy: "target_cpa", targetCpaMicros: "8000000" });
+  });
+
+  it("requires target_roas for the target_roas strategy", () => {
+    expect(() => parseConfig(withBidding('[campaign.bidding]\nstrategy = "target_roas"\n'))).toThrow(/target_roas.*needs target_roas/);
+  });
+
+  it("parses the target_roas strategy's target_roas", () => {
+    const config = parseConfig(withBidding('[campaign.bidding]\nstrategy = "target_roas"\ntarget_roas = 4\n'));
+    expect(config.campaign.bidding).toEqual({ strategy: "target_roas", targetRoas: 4 });
+  });
+
+  it("requires location and fraction for target_impression_share", () => {
+    expect(() => parseConfig(withBidding('[campaign.bidding]\nstrategy = "target_impression_share"\n'))).toThrow(
+      /target_impression_share.*needs location and fraction/,
+    );
+  });
+
+  it("converts target_impression_share's fraction and optional ceiling to micros", () => {
+    const config = parseConfig(
+      withBidding(
+        '[campaign.bidding]\nstrategy = "target_impression_share"\nlocation = "TOP_OF_PAGE"\nfraction = 0.65\ncpc_bid_ceiling_gbp = 1.20\n',
+      ),
+    );
+    expect(config.campaign.bidding).toEqual({
+      strategy: "target_impression_share",
+      location: "TOP_OF_PAGE",
+      locationFractionMicros: "650000",
+      cpcBidCeilingMicros: "1200000",
+    });
+  });
+
+  it("requires bidding_strategy for the portfolio strategy", () => {
+    expect(() => parseConfig(withBidding('[campaign.bidding]\nstrategy = "portfolio"\n'))).toThrow(/portfolio.*needs bidding_strategy/);
+  });
+
+  it("parses a portfolio strategy's bidding_strategy resource name", () => {
+    const config = parseConfig(
+      withBidding('[campaign.bidding]\nstrategy = "portfolio"\nbidding_strategy = "customers/8142685080/biddingStrategies/9"\n'),
+    );
+    expect(config.campaign.bidding).toEqual({ strategy: "portfolio", biddingStrategy: "customers/8142685080/biddingStrategies/9" });
+  });
+
+  it("throws on an unknown strategy", () => {
+    expect(() => parseConfig(withBidding('[campaign.bidding]\nstrategy = "auto_bid"\n'))).toThrow(/unknown strategy "auto_bid"/);
   });
 });
 
@@ -257,5 +355,117 @@ describe("ads-sync planAds", () => {
     live.campaigns = [];
 
     expect(() => planAds(config, live)).toThrow(/Campaign #1/);
+  });
+});
+
+describe("ads-sync planAds bidding", () => {
+  it("plans a bidding update when the live strategy differs", () => {
+    const config = parseConfig(VALID_TOML);
+    const live = baseLive();
+    live.campaigns[0].bidding = { strategy: "manual_cpc", enhancedCpc: false };
+
+    const plan = planAds(config, live);
+
+    expect(plan).toEqual([
+      {
+        kind: "update-campaign-bidding",
+        resourceName: "customers/8142685080/campaigns/1",
+        wanted: { strategy: "maximize_conversions" },
+        live: { strategy: "manual_cpc", enhancedCpc: false },
+      },
+    ]);
+    expect(describeAction(plan[0])).toContain("would update");
+  });
+
+  it("plans a bidding update when a declared field differs from live", () => {
+    const config = parseConfig(
+      VALID_TOML.replace('strategy = "maximize_conversions"\n', 'strategy = "maximize_conversions"\ntarget_cpa_gbp = 10\n'),
+    );
+    const live = baseLive();
+    live.campaigns[0].bidding = { strategy: "maximize_conversions", targetCpaMicros: "5000000" };
+
+    const plan = planAds(config, live);
+
+    expect(plan).toEqual([
+      {
+        kind: "update-campaign-bidding",
+        resourceName: "customers/8142685080/campaigns/1",
+        wanted: { strategy: "maximize_conversions", targetCpaMicros: "10000000" },
+        live: { strategy: "maximize_conversions", targetCpaMicros: "5000000" },
+      },
+    ]);
+  });
+
+  it("plans nothing when an undeclared optional field differs live", () => {
+    const config = parseConfig(VALID_TOML);
+    const live = baseLive();
+    live.campaigns[0].bidding = { strategy: "maximize_conversions", targetCpaMicros: "5000000" };
+
+    expect(planAds(config, live)).toEqual([]);
+  });
+
+  it("refuses a strategy Performance Max cannot take, without applying it or blocking other diffs", () => {
+    const config = parseConfig(VALID_TOML.replace('strategy = "maximize_conversions"', 'strategy = "manual_cpc"\nenhanced_cpc = true'));
+    const live = baseLive();
+    live.campaigns[0].status = "PAUSED";
+
+    const plan = planAds(config, live);
+
+    expect(plan).toEqual([
+      {
+        kind: "update-campaign-status",
+        resourceName: "customers/8142685080/campaigns/1",
+        wanted: "ENABLED",
+        live: "PAUSED",
+      },
+      {
+        kind: "refuse-bidding-strategy",
+        campaignName: "Campaign #1",
+        strategy: "manual_cpc",
+        reason: "campaign type PERFORMANCE_MAX accepts only maximize_conversions, maximize_conversion_value",
+      },
+    ]);
+    expect(describeAction(plan[1])).toContain("refused");
+    expect(describeAction(plan[1])).toContain("not applied");
+  });
+});
+
+describe("ads-sync shapeCampaignBidding", () => {
+  it("shapes each strategy's fields from a googleAds:search response", () => {
+    const body = {
+      results: [
+        {
+          campaign: {
+            resourceName: "customers/8142685080/campaigns/1",
+            biddingStrategyType: "MAXIMIZE_CONVERSIONS",
+            maximizeConversions: { targetCpaMicros: "10000000" },
+          },
+        },
+        {
+          campaign: {
+            resourceName: "customers/8142685080/campaigns/2",
+            biddingStrategy: "customers/8142685080/biddingStrategies/9",
+            biddingStrategyType: "TARGET_CPA",
+          },
+        },
+      ],
+    };
+
+    const byResourceName = shapeCampaignBidding(body);
+
+    expect(byResourceName.get("customers/8142685080/campaigns/1")).toEqual({
+      strategy: "maximize_conversions",
+      targetCpaMicros: "10000000",
+    });
+    expect(byResourceName.get("customers/8142685080/campaigns/2")).toEqual({
+      strategy: "portfolio",
+      biddingStrategy: "customers/8142685080/biddingStrategies/9",
+    });
+  });
+
+  it("shapes an unrecognised bidding strategy type to a null strategy", () => {
+    const body = { results: [{ campaign: { resourceName: "customers/8142685080/campaigns/3", biddingStrategyType: "COMMISSION" } }] };
+
+    expect(shapeCampaignBidding(body).get("customers/8142685080/campaigns/3")).toEqual({ strategy: null });
   });
 });
