@@ -174,7 +174,10 @@ describe("hmrcVatReturnPost workerHandler", () => {
   });
 
   test("does not re-throw a terminal HMRC rejection, and records it as completed rather than retrying", async () => {
-    mockHmrcError(mockFetch, 400, { code: "INVALID_PERIOD_KEY", message: "The remote endpoint has indicated that the period key is invalid" });
+    mockHmrcError(mockFetch, 400, {
+      code: "INVALID_PERIOD_KEY",
+      message: "The remote endpoint has indicated that the period key is invalid",
+    });
 
     const requestId = "worker-test-terminal";
     await expect(hmrcVatReturnPostWorker({ Records: [buildSubmissionRecord({ requestId })] })).resolves.toBeUndefined();

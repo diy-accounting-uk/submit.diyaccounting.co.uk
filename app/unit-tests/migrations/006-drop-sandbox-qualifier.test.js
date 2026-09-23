@@ -63,7 +63,7 @@ describe("006-drop-sandbox-qualifier", () => {
     const scanInput = mockDynamoSend.mock.calls[0][0].input;
     expect(scanInput.TableName).toBe("ci-env-bundles");
     expect(scanInput.FilterExpression).toContain("attribute_exists(qualifiers.sandbox)");
-    expect(scanInput.FilterExpression).toContain('NOT begins_with(hashedSub, :system)');
+    expect(scanInput.FilterExpression).toContain("NOT begins_with(hashedSub, :system)");
   });
 
   test("real run backfills qualifiers.synthetic and removes qualifiers.sandbox, keyed by hashedSub and bundleId", async () => {

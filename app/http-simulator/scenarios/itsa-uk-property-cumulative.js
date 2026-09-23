@@ -14,11 +14,17 @@ const putErrorScenarios = {
   },
   START_DATE_NOT_ALIGNED_TO_COMMENCEMENT_DATE: {
     status: 400,
-    body: { code: "RULE_START_DATE_NOT_ALIGNED_TO_COMMENCEMENT_DATE", message: "The submission start date is not aligned to the commencement date" },
+    body: {
+      code: "RULE_START_DATE_NOT_ALIGNED_TO_COMMENCEMENT_DATE",
+      message: "The submission start date is not aligned to the commencement date",
+    },
   },
   START_DATE_NOT_ALIGNED_WITH_REPORTING_TYPE: {
     status: 400,
-    body: { code: "RULE_START_DATE_NOT_ALIGNED_WITH_REPORTING_TYPE", message: "The submission start date does not match the reporting type" },
+    body: {
+      code: "RULE_START_DATE_NOT_ALIGNED_WITH_REPORTING_TYPE",
+      message: "The submission start date does not match the reporting type",
+    },
   },
   END_DATE_NOT_ALIGNED_WITH_REPORTING_TYPE: {
     status: 400,

@@ -138,7 +138,13 @@ describe("companiesHouseAccountsGet ingestHandler", () => {
     });
     mockResolvePresenterCredentials.mockResolvedValue({ presenterId: "presenter-id", presenterCode: "presenter-code" });
     mockBuildStatusRequest.mockReturnValue("<GovTalkMessage>status request</GovTalkMessage>");
-    mockPostToGateway.mockResolvedValue({ ok: true, status: 200, data: "<GovTalkMessage>status response</GovTalkMessage>", headers: {}, duration: 1 });
+    mockPostToGateway.mockResolvedValue({
+      ok: true,
+      status: 200,
+      data: "<GovTalkMessage>status response</GovTalkMessage>",
+      headers: {},
+      duration: 1,
+    });
   });
 
   test("polls the gateway and returns PENDING while the submission is unresolved", async () => {
@@ -182,8 +188,12 @@ describe("companiesHouseAccountsGet ingestHandler", () => {
     expect(loggedText).not.toContain("hashed-presenter-id");
     expect(loggedText).not.toContain("hashed-presenter-code");
 
-    const requestLog = mockLoggerInfo.mock.calls.map(([obj]) => obj).find((obj) => obj.message === "Companies House GetSubmissionStatus request");
-    const responseLog = mockLoggerInfo.mock.calls.map(([obj]) => obj).find((obj) => obj.message === "Companies House GetSubmissionStatus response");
+    const requestLog = mockLoggerInfo.mock.calls
+      .map(([obj]) => obj)
+      .find((obj) => obj.message === "Companies House GetSubmissionStatus request");
+    const responseLog = mockLoggerInfo.mock.calls
+      .map(([obj]) => obj)
+      .find((obj) => obj.message === "Companies House GetSubmissionStatus response");
     expect(requestLog.requestXml).toContain("<PresenterID>***</PresenterID>");
     expect(requestLog.requestXml).toContain("<SenderID>***</SenderID>");
     expect(responseLog.responseXml).toContain("<SenderID>***</SenderID>");
@@ -211,7 +221,9 @@ describe("companiesHouseAccountsGet ingestHandler", () => {
       statuses: [{ statusCode: "PENDING", submissionNumber: "00001A", companyNumber: "00000001", rejections: [] }],
     });
     await companiesHouseAccountsGetHandler(buildEvent({ headers: { "Gov-Test-Scenario": "ACCOUNTS_REJECTED" } }));
-    expect(mockPostToGateway).toHaveBeenCalledWith("<GovTalkMessage>status request</GovTalkMessage>", { "Gov-Test-Scenario": "ACCOUNTS_REJECTED" });
+    expect(mockPostToGateway).toHaveBeenCalledWith("<GovTalkMessage>status request</GovTalkMessage>", {
+      "Gov-Test-Scenario": "ACCOUNTS_REJECTED",
+    });
   });
 
   test("writes a receipt and returns ACCEPT when the gateway accepts the filing", async () => {

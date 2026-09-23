@@ -57,14 +57,19 @@
           <div class="form-group">
             <label for="businessId">Business ID</label>
             <p id="businessId-hint" class="hint">The business ID from Business Details, for example XAIS12345678910.</p>
-            <input type="text" id="businessId" name="businessId" required placeholder="e.g., XAIS12345678910" aria-describedby="businessId-hint" />
+            <input
+              type="text"
+              id="businessId"
+              name="businessId"
+              required
+              placeholder="e.g., XAIS12345678910"
+              aria-describedby="businessId-hint"
+            />
           </div>
 
           <div class="form-group">
             <label for="typeOfBusiness">Business type</label>
-            <p id="typeOfBusiness-hint" class="hint">
-              Carry-back is only available for a sole trade. A landlord's loss carries forward.
-            </p>
+            <p id="typeOfBusiness-hint" class="hint">Carry-back is only available for a sole trade. A landlord's loss carries forward.</p>
             <select id="typeOfBusiness" name="typeOfBusiness" aria-describedby="typeOfBusiness-hint">
               <option value="self-employment">Self-employment (sole trade)</option>
               <option value="uk-property">UK property</option>
@@ -444,7 +449,14 @@
               showLoading();
               hideStatus();
               showStatus("Loading losses and claims...", "info");
-              const result = await loadLossesAndClaims(nino, businessId, taxYear, testScenario, runFraudPreventionHeaderValidation, accessToken);
+              const result = await loadLossesAndClaims(
+                nino,
+                businessId,
+                taxYear,
+                testScenario,
+                runFraudPreventionHeaderValidation,
+                accessToken,
+              );
               loadedNino = nino;
               loadedBusinessId = businessId;
               loadedTaxYear = taxYear;

@@ -201,7 +201,8 @@ export async function fillInItsaObligations(page, obligationsQuery = {}, screens
 
     await page.waitForTimeout(100);
     await loggedFill(page, "#nino", hmrcNino, "Entering National Insurance number", { screenshotPath });
-    if (typeOfBusiness) await loggedSelectOption(page, "#typeOfBusiness", String(typeOfBusiness), "a business type filter", { screenshotPath });
+    if (typeOfBusiness)
+      await loggedSelectOption(page, "#typeOfBusiness", String(typeOfBusiness), "a business type filter", { screenshotPath });
     if (businessId) await loggedFill(page, "#businessId", businessId, "Entering business ID filter", { screenshotPath });
     if (status) await loggedSelectOption(page, "#status", String(status), "a status filter", { screenshotPath });
     await page.screenshot({ path: `${screenshotPath}/${timestamp()}-04-obligations-fill-in.png` });
@@ -338,16 +339,8 @@ export async function initItsaSelfEmploymentPeriod(page, screenshotPath = defaul
 
 export async function fillInItsaSelfEmploymentPeriod(page, periodQuery = {}, screenshotPath = defaultScreenshotPath) {
   await test.step("The user fills in the quarterly update form", async () => {
-    const {
-      hmrcNino,
-      businessId,
-      taxYear,
-      periodStartDate,
-      periodEndDate,
-      turnover,
-      testScenario,
-      runFraudPreventionHeaderValidation,
-    } = periodQuery || {};
+    const { hmrcNino, businessId, taxYear, periodStartDate, periodEndDate, turnover, testScenario, runFraudPreventionHeaderValidation } =
+      periodQuery || {};
     await page.screenshot({ path: `${screenshotPath}/${timestamp()}-01-self-employment-period-fill-in.png` });
 
     const testDataLink = page.locator("#testDataLink.visible");
@@ -515,7 +508,8 @@ export async function fillInItsaUkPropertyPeriod(page, periodQuery = {}, screens
       if (propertyType) await loggedSelectOption(page, "#propertyType", propertyType, "the property type", { screenshotPath });
       if (fromDate) await loggedFill(page, "#fromDate", fromDate, "Entering period start date", { screenshotPath });
       if (toDate) await loggedFill(page, "#toDate", toDate, "Entering period end date", { screenshotPath });
-      if (periodAmount !== undefined) await loggedFill(page, "#periodAmount", String(periodAmount), "Entering rental income", { screenshotPath });
+      if (periodAmount !== undefined)
+        await loggedFill(page, "#periodAmount", String(periodAmount), "Entering rental income", { screenshotPath });
     }
 
     await page.screenshot({ path: `${screenshotPath}/${timestamp()}-04-uk-property-period-fill-in.png` });
@@ -861,7 +855,8 @@ export async function fillInItsaCalculationTrigger(page, calculationQuery = {}, 
     const { hmrcNino, taxYear, calculationType, testScenario, runFraudPreventionHeaderValidation } = calculationQuery || {};
     await loggedFill(page, "#nino", hmrcNino, "Entering National Insurance number", { screenshotPath });
     if (taxYear) await loggedFill(page, "#taxYear", taxYear, "Entering tax year", { screenshotPath });
-    if (calculationType) await loggedSelectOption(page, "#calculationType", String(calculationType), "a calculation type", { screenshotPath });
+    if (calculationType)
+      await loggedSelectOption(page, "#calculationType", String(calculationType), "a calculation type", { screenshotPath });
     await page.waitForTimeout(50);
 
     if (testScenario || runFraudPreventionHeaderValidation) {

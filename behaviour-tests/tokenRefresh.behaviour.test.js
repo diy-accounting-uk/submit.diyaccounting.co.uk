@@ -5,7 +5,7 @@
 //
 // Exercises the lazy-token-refresh path in bundleGet which issues
 // dynamodb:UpdateItem against the bundles table. The CDK IAM grant for this
-// path was missing in the 2026-04 production incident (see _developers/archive/REPORT_INCIDENT_BUNDLES.md).
+// path was missing in the 2026-04 production incident (see ../developers/submit/archive/REPORT_INCIDENT_BUNDLES.md).
 // This test fails with HTTP 500 from GET /api/v1/bundle if the grant is ever
 // reverted. Sandbox-safe against -ci and -prod: each run allocates and mutates
 // only the freshly minted Cognito test user's own bundle row (unique hashedSub),

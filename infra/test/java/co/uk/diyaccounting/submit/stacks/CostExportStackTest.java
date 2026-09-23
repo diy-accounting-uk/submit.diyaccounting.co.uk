@@ -95,21 +95,28 @@ class CostExportStackTest {
 
         template.hasResourceProperties(
                 "AWS::S3::BucketPolicy",
-                Match.objectLike(Map.of(
-                        "PolicyDocument",
-                        Match.objectLike(Map.of(
-                                "Statement",
-                                Match.arrayWith(List.of(Match.objectLike(Map.of(
-                                        "Sid",
-                                        "AllowBcmDataExportsDelivery",
-                                        "Condition",
+                Match.objectLike(
+                        Map.of(
+                                "PolicyDocument",
+                                Match.objectLike(
                                         Map.of(
-                                                "StringEquals",
-                                                Map.of("aws:SourceAccount", "887764105431"),
-                                                "StringLike",
-                                                Map.of(
-                                                        "aws:SourceArn",
-                                                        "arn:aws:bcm-data-exports:us-east-1:887764105431:export/*")))))))))));
+                                                "Statement",
+                                                Match.arrayWith(
+                                                        List.of(
+                                                                Match.objectLike(
+                                                                        Map.of(
+                                                                                "Sid",
+                                                                                "AllowBcmDataExportsDelivery",
+                                                                                "Condition",
+                                                                                Map.of(
+                                                                                        "StringEquals",
+                                                                                        Map.of(
+                                                                                                "aws:SourceAccount",
+                                                                                                "887764105431"),
+                                                                                        "StringLike",
+                                                                                        Map.of(
+                                                                                                "aws:SourceArn",
+                                                                                                "arn:aws:bcm-data-exports:us-east-1:887764105431:export/*")))))))))));
     }
 
     @Test

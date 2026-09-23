@@ -417,17 +417,14 @@ test("Payment funnel: guest → exhaustion → upgrade → submission → usage"
     console.log("STEP 6a: GA4 purchase event and BigQuery verification");
     console.log("=".repeat(60));
 
-    await page.evaluate(
-      (transactionId) => {
-        window.gtag("event", "purchase", {
-          transaction_id: transactionId,
-          value: 0,
-          currency: "GBP",
-          items: [{ item_id: "resident-vat", item_name: "Resident VAT" }],
-        });
-      },
-      webhookActivation.stripeSubscriptionId,
-    );
+    await page.evaluate((transactionId) => {
+      window.gtag("event", "purchase", {
+        transaction_id: transactionId,
+        value: 0,
+        currency: "GBP",
+        items: [{ item_id: "resident-vat", item_name: "Resident VAT" }],
+      });
+    }, webhookActivation.stripeSubscriptionId);
     console.log(`Dispatched GA4 purchase event: transaction_id=${webhookActivation.stripeSubscriptionId}`);
 
     const projectId = process.env.GA4_BIGQUERY_PROJECT_ID;

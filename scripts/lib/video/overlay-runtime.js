@@ -32,7 +32,19 @@
     }
   }
 
-  let root, pointerEl, ringEl, trailCanvas, trailCtx, captionBox, chapterLabel, heartbeatEl, timerPill, timerLabelEl, timerCountEl, timerBarEl, timerCompressionEl;
+  let root,
+    pointerEl,
+    ringEl,
+    trailCanvas,
+    trailCtx,
+    captionBox,
+    chapterLabel,
+    heartbeatEl,
+    timerPill,
+    timerLabelEl,
+    timerCountEl,
+    timerBarEl,
+    timerCompressionEl;
   let pointerX = window.innerWidth / 2;
   let pointerY = window.innerHeight / 2;
   const editTrail = []; // up to 8 {el, until} — fading underline on recently-typed fields
@@ -240,8 +252,7 @@
     const cy = rect.top + rect.height / 2;
     const ripple = document.createElement("div");
     ripple.style.cssText =
-      `position:absolute;left:${cx}px;top:${cy}px;width:0;height:0;margin:0;border-radius:50%;` +
-      `border:2px solid ${ACCENT};opacity:0.9;`;
+      `position:absolute;left:${cx}px;top:${cy}px;width:0;height:0;margin:0;border-radius:50%;` + `border:2px solid ${ACCENT};opacity:0.9;`;
     root.appendChild(ripple);
     outlineRect(rect, 350);
     await animate(450, (e) => {

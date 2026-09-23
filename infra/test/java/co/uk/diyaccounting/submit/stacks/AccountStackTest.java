@@ -7,7 +7,6 @@ package co.uk.diyaccounting.submit.stacks;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import co.uk.diyaccounting.submit.SubmitSharedNames;
 import java.util.List;
@@ -56,7 +55,8 @@ class AccountStackTest {
 
         var supportFunctions = template.findResources("AWS::Lambda::Function").values().stream()
                 .map(resource -> (Map<String, Object>) resource.get("Properties"))
-                .filter(properties -> String.valueOf(properties.get("FunctionName")).contains("support-ticket-post"))
+                .filter(properties ->
+                        String.valueOf(properties.get("FunctionName")).contains("support-ticket-post"))
                 .toList();
         assertEquals(1, supportFunctions.size(), "expected exactly one support-ticket-post Lambda");
         var environment = (Map<String, Object>) supportFunctions.get(0).get("Environment");
@@ -68,7 +68,8 @@ class AccountStackTest {
 
         List<String> githubSecretResources = githubSecretReadResources(template);
         assertEquals(
-                List.of("arn:aws:secretsmanager:eu-west-2:111111111111:secret:" + EXPECTED_PRIVATE_KEY_SECRET_ID + "-*"),
+                List.of("arn:aws:secretsmanager:eu-west-2:111111111111:secret:" + EXPECTED_PRIVATE_KEY_SECRET_ID
+                        + "-*"),
                 githubSecretResources,
                 "the support Lambda may read only the diya-ops App's private key");
     }
@@ -81,7 +82,8 @@ class AccountStackTest {
         assertNull(stack.supportTicketPostLambda);
         var supportFunctions = template.findResources("AWS::Lambda::Function").values().stream()
                 .map(resource -> (Map<?, ?>) resource.get("Properties"))
-                .filter(properties -> String.valueOf(properties.get("FunctionName")).contains("support-ticket-post"))
+                .filter(properties ->
+                        String.valueOf(properties.get("FunctionName")).contains("support-ticket-post"))
                 .toList();
         assertEquals(List.of(), supportFunctions);
         assertEquals(List.of(), githubSecretReadResources(template));
@@ -95,7 +97,8 @@ class AccountStackTest {
 
         var snapshotGetFunctions = template.findResources("AWS::Lambda::Function").values().stream()
                 .map(resource -> (Map<String, Object>) resource.get("Properties"))
-                .filter(properties -> String.valueOf(properties.get("FunctionName")).contains("operator-snapshot-get"))
+                .filter(properties ->
+                        String.valueOf(properties.get("FunctionName")).contains("operator-snapshot-get"))
                 .toList();
         assertEquals(1, snapshotGetFunctions.size(), "expected exactly one operator-snapshot-get Lambda");
         var roleRef = (Map<String, Object>) snapshotGetFunctions.get(0).get("Role");
@@ -103,8 +106,8 @@ class AccountStackTest {
 
         var saltSecretReadResources = template.findResources("AWS::IAM::Policy").values().stream()
                 .map(policy -> (Map<String, Object>) policy.get("Properties"))
-                .filter(properties -> ((List<Map<String, Object>>) properties.get("Roles")).stream()
-                        .anyMatch(role -> roleLogicalId.equals(String.valueOf(role.get("Ref")))))
+                .filter(properties -> ((List<Map<String, Object>>) properties.get("Roles"))
+                        .stream().anyMatch(role -> roleLogicalId.equals(String.valueOf(role.get("Ref")))))
                 .map(properties -> (Map<String, Object>) properties.get("PolicyDocument"))
                 .flatMap(document -> ((List<Map<String, Object>>) document.get("Statement")).stream())
                 .filter(statement -> String.valueOf(statement.get("Action")).contains("secretsmanager:GetSecretValue"))

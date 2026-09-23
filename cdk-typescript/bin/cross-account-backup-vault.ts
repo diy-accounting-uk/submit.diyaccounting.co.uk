@@ -26,8 +26,7 @@ const primaryEnv: Environment | undefined =
 
 const vaultName = process.env.CROSS_ACCOUNT_VAULT_NAME ?? contextString("vaultName", "submit-cross-account-vault");
 
-const rawRoleArns =
-  process.env.SOURCE_BACKUP_ROLE_ARNS ?? contextString("sourceBackupRoleArns", "");
+const rawRoleArns = process.env.SOURCE_BACKUP_ROLE_ARNS ?? contextString("sourceBackupRoleArns", "");
 const sourceBackupRoleArns = rawRoleArns
   .split(",")
   .map((arn: string) => arn.trim())

@@ -71,7 +71,10 @@ import { getAuthorizationCode, buildAuthorizeUrl } from "./lib/hmrcAuthorization
 import { prepareTokenExchangeRequest } from "../app/functions/hmrc/hmrcTokenPost.js";
 import { resolveItsaSubmissionModel } from "../app/lib/hmrcValidation.js";
 import { buildSelfEmploymentPeriodRequestBody } from "../app/functions/hmrc/hmrcItsaSelfEmploymentPeriodPost.js";
-import { buildUkPropertyPeriodRequestBody, buildUkPropertyCumulativeRequestBody } from "../app/functions/hmrc/hmrcItsaUkPropertyPeriodPost.js";
+import {
+  buildUkPropertyPeriodRequestBody,
+  buildUkPropertyCumulativeRequestBody,
+} from "../app/functions/hmrc/hmrcItsaUkPropertyPeriodPost.js";
 import { buildAnnualSubmissionRequestBody } from "../app/functions/hmrc/hmrcItsaSelfEmploymentAnnualPut.js";
 import { buildUkPropertyAnnualRequestBody } from "../app/functions/hmrc/hmrcItsaUkPropertyAnnualPut.js";
 import { buildBsasTriggerRequestBody } from "../app/functions/hmrc/hmrcItsaBsasTriggerPost.js";
@@ -788,9 +791,7 @@ async function main() {
   // tax year, not to a quarterly filing model, so its accounting period always spans the same
   // four standard quarters this tax year has, whichever model filed them - see
   // buildStandardQuarterlyPeriods's doc comment.
-  const { accountingPeriodStartDate, accountingPeriodEndDate } = deriveAccountingPeriodFromPeriods(
-    buildStandardQuarterlyPeriods(taxYear),
-  );
+  const { accountingPeriodStartDate, accountingPeriodEndDate } = deriveAccountingPeriodFromPeriods(buildStandardQuarterlyPeriods(taxYear));
 
   const bsasTrigger = await callHmrc({
     step: "bsas-trigger",
@@ -957,7 +958,9 @@ async function main() {
       nino,
     });
     if (!selfEmploymentLossClaimGet.body?.claims?.carryBack) {
-      throw new Error(`Self-employment loss claim read-back carried no claims.carryBack: ${JSON.stringify(selfEmploymentLossClaimGet.body)}`);
+      throw new Error(
+        `Self-employment loss claim read-back carried no claims.carryBack: ${JSON.stringify(selfEmploymentLossClaimGet.body)}`,
+      );
     }
 
     await callHmrc({
@@ -1017,7 +1020,10 @@ async function main() {
       } catch (error) {
         propertyCarryBackLocalRefusal = error;
       }
-      if (!(propertyCarryBackLocalRefusal instanceof LossesAndClaimsValidationError) || propertyCarryBackLocalRefusal.code !== "CARRY_BACK_CLAIM") {
+      if (
+        !(propertyCarryBackLocalRefusal instanceof LossesAndClaimsValidationError) ||
+        propertyCarryBackLocalRefusal.code !== "CARRY_BACK_CLAIM"
+      ) {
         throw new Error(
           `Expected buildLossesAndClaimsRequestBody to refuse a property carry-back claim locally with CARRY_BACK_CLAIM, got: ${propertyCarryBackLocalRefusal}`,
         );
@@ -1161,7 +1167,10 @@ if (process.argv[1] === fileURLToPath(import.meta.url)) {
       const taxYear = process.env.ITSA_SANDBOX_TAX_YEAR || "unknown";
       const outDir = process.env.ITSA_SANDBOX_OUT_DIR || resolveDefaultOutDir(taxYear);
       mkdirSync(outDir, { recursive: true });
-      writeFileSync(`${outDir}/itsa-sandbox-year-transcript.json`, JSON.stringify({ failed: true, error: error.message, transcript }, null, 2));
+      writeFileSync(
+        `${outDir}/itsa-sandbox-year-transcript.json`,
+        JSON.stringify({ failed: true, error: error.message, transcript }, null, 2),
+      );
       console.error(`[itsa-sandbox-year] partial transcript written to ${outDir}/itsa-sandbox-year-transcript.json`);
     } catch (writeError) {
       console.error(`[itsa-sandbox-year] could not write partial transcript: ${writeError.message}`);

@@ -70,9 +70,7 @@ describe("checkTimerMarkers", () => {
   test("fails when a timer was shown for a step whose wait never crossed the threshold", () => {
     const steps = [step({ waitMs: 50, navigated: false, timerShown: true })];
     const failures = checkTimerMarkers(steps, [{ type: "timerStart" }], script);
-    expect(failures).toEqual([
-      { check: "timerShownWithoutLongWait", step: "scene#0", expected: "waitMs > 250", actual: 50 },
-    ]);
+    expect(failures).toEqual([{ check: "timerShownWithoutLongWait", step: "scene#0", expected: "waitMs > 250", actual: 50 }]);
   });
 
   test("throws naming the field on a timeline recorded before navigated/timerShown existed", () => {

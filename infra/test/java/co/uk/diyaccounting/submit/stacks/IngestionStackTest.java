@@ -235,7 +235,8 @@ class IngestionStackTest {
                 .filter(resource -> resource.contains("ops_app_private_key"))
                 .toList();
         assertEquals(
-                List.of("arn:aws:secretsmanager:eu-west-2:111111111111:secret:docs/submit/github/ops_app_private_key-*"),
+                List.of(
+                        "arn:aws:secretsmanager:eu-west-2:111111111111:secret:docs/submit/github/ops_app_private_key-*"),
                 grantResources);
     }
 
@@ -336,8 +337,7 @@ class IngestionStackTest {
 
         // Same blank project id, non-prod envName: synth succeeds, matching the ci-deploys-fine-
         // before-the-operator-grants-BigQuery-access guarantee the design calls for.
-        Template template =
-                Template.fromStack(synthIngestionStack("docs", null, null, "999000111", null, null, null));
+        Template template = Template.fromStack(synthIngestionStack("docs", null, null, "999000111", null, null, null));
         template.resourceCountIs("AWS::Lambda::Function", 6);
     }
 
@@ -401,8 +401,7 @@ class IngestionStackTest {
 
     @Test
     void ga4BigQueryConfigEnvVarsAreOmittedWhenBlankAndPresentWhenConfigured() {
-        Template blank =
-                Template.fromStack(synthIngestionStack("docs", null, null, "999000111", null, null, null));
+        Template blank = Template.fromStack(synthIngestionStack("docs", null, null, "999000111", null, null, null));
         var blankFunctions = blank.findResources(
                 "AWS::Lambda::Function",
                 Map.of("Properties", Map.of("FunctionName", "docs-env-ga4-event-export-pull")));
@@ -475,8 +474,8 @@ class IngestionStackTest {
 
     @Test
     void ga4JobsCarryTheFederationVariablesForTheirEnvironment() {
-        Template ci = Template.fromStack(
-                synthIngestionStack("ci", null, null, "552917343", "diyaccounting-ga4", null, null));
+        Template ci =
+                Template.fromStack(synthIngestionStack("ci", null, null, "552917343", "diyaccounting-ga4", null, null));
         for (String functionName :
                 List.of("docs-env-ga4-report-pull", "docs-env-ga4-event-export-pull", "docs-env-ga4-daily-pull")) {
             var functions = ci.findResources(

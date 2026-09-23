@@ -39,7 +39,8 @@ import { handler, defaultTargetDate, toNdjsonGzip } from "../../functions/analyt
 const TABLES = ["sessions_by_host_source_daily", "funnel_steps_daily", "key_events_daily", "downloads_by_product_daily"];
 
 const FEDERATION_ENV = {
-  GOOGLE_WIF_AUDIENCE: "//iam.googleapis.com/projects/958354756046/locations/global/workloadIdentityPools/submit-federation/providers/aws-prod",
+  GOOGLE_WIF_AUDIENCE:
+    "//iam.googleapis.com/projects/958354756046/locations/global/workloadIdentityPools/submit-federation/providers/aws-prod",
   GA4_SERVICE_ACCOUNT_EMAIL: "ga4-report-pull@diyaccounting-ga4.iam.gserviceaccount.com",
   AWS_REGION: "eu-west-2",
   AWS_ACCESS_KEY_ID: "ASIAEXAMPLE",

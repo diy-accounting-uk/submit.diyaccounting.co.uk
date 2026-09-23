@@ -371,8 +371,8 @@ const __argv1 = process.argv[1] ? path.resolve(process.argv[1]) : "";
 const __runDirect = __thisFile === __argv1 || String(process.env.TEST_SERVER_HTTP || "") === "run";
 
 if (__runDirect) {
-  // TODO: Get rid of this and make it always strict once otherwise stable
   const strict = process.env.STRICT_ENV_VALIDATION === "true";
+  // Strict env validation is needed in production but breaks system tests which start a local server without all env vars
   try {
     if (strict) {
       validateEnv([

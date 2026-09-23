@@ -86,7 +86,7 @@ function validateTarget(target, path) {
 function validateStep(step, scenePath, sceneId, stepIndex, auth) {
   const path = `${scenePath}.steps[${stepIndex}]`;
   if (!step || typeof step !== "object") fail(path, "step must be an object");
-  if (!step.action) fail(path, "missing required field \"action\"");
+  if (!step.action) fail(path, 'missing required field "action"');
   if (!(step.action in STEP_REQUIRED_FIELDS)) fail(path, `unknown action "${step.action}"`);
   requireKeys(step, STEP_REQUIRED_FIELDS[step.action], path);
   if ("target" in step) validateTarget(step.target, `${path}.target`);

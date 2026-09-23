@@ -78,8 +78,8 @@
             <div id="loadCurrentTotalGroup" class="form-group" style="display: none">
               <button type="button" id="loadCurrentTotalBtn" class="secondary-button">Load current total from HMRC</button>
               <p class="hint">
-                This tax year reports one running total rather than a set of submissions to amend. Load it before editing it
-                to the new total.
+                This tax year reports one running total rather than a set of submissions to amend. Load it before editing it to the new
+                total.
               </p>
             </div>
 
@@ -92,8 +92,7 @@
             </div>
 
             <p id="cumulativeMoneyNote" class="hint" style="display: none">
-              This tax year reports a running total. Each figure below is the corrected total for the year so far, not just
-              this quarter.
+              This tax year reports a running total. Each figure below is the corrected total for the year so far, not just this quarter.
             </p>
 
             <div class="form-group">
@@ -316,7 +315,8 @@
         const expenses = property.expenses || {};
         if (income.periodAmount !== undefined) document.getElementById("periodAmount").value = income.periodAmount;
         if (income.otherIncome !== undefined) document.getElementById("otherIncome").value = income.otherIncome;
-        if (expenses.repairsAndMaintenance !== undefined) document.getElementById("repairsAndMaintenance").value = expenses.repairsAndMaintenance;
+        if (expenses.repairsAndMaintenance !== undefined)
+          document.getElementById("repairsAndMaintenance").value = expenses.repairsAndMaintenance;
         if (expenses.other !== undefined) document.getElementById("otherExpenses").value = expenses.other;
         showStatus("Loaded the current year-to-date total from HMRC. Edit the figures below to the new total.", "info");
       }
@@ -492,7 +492,12 @@
           hideStatus();
           showStatus("Amending period summary...", "info");
 
-          await amendPeriod(pendingRequest.amendData, pendingRequest.testScenario, pendingRequest.runFraudPreventionHeaderValidation, accessToken);
+          await amendPeriod(
+            pendingRequest.amendData,
+            pendingRequest.testScenario,
+            pendingRequest.runFraudPreventionHeaderValidation,
+            accessToken,
+          );
 
           document.getElementById("periodAmendResults").style.display = "block";
           hideStatus();

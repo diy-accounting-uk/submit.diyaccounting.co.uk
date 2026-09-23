@@ -144,9 +144,7 @@ describe("buildBsasAdjustRequestBody", () => {
   });
 
   test("rejects a body whose only sections are empty and zeroAdjustments is not set", () => {
-    expect(() => buildBsasAdjustRequestBody({ income: {}, expenses: {}, additions: {} })).toThrow(
-      /An empty or non-matching body/,
-    );
+    expect(() => buildBsasAdjustRequestBody({ income: {}, expenses: {}, additions: {} })).toThrow(/An empty or non-matching body/);
   });
 });
 

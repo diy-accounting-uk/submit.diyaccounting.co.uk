@@ -246,7 +246,16 @@
           item.dataset.experimentId = experiment.id;
           const hypothesis = experiment.hypothesis && experiment.hypothesis.length > 0 ? experiment.hypothesis : "(no hypothesis yet)";
           item.textContent =
-            experiment.id + " — " + experiment.objective + ": " + hypothesis + " (" + experiment.start + " to " + (experiment.end || "open") + ")";
+            experiment.id +
+            " — " +
+            experiment.objective +
+            ": " +
+            hypothesis +
+            " (" +
+            experiment.start +
+            " to " +
+            (experiment.end || "open") +
+            ")";
           list.appendChild(item);
         });
       }

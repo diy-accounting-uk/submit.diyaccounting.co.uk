@@ -326,7 +326,9 @@ describe("hmrcItsaSelfEmploymentPeriodGet ingestHandler - cumulative tax year", 
     await hmrcItsaSelfEmploymentPeriodGetHandler(event);
 
     const calledUrl = mockFetch.mock.calls[0][0];
-    expect(calledUrl).toContain(`/individuals/business/self-employment/${VALID_NINO}/${VALID_BUSINESS_ID}/cumulative/${VALID_CUMULATIVE_TAX_YEAR}`);
+    expect(calledUrl).toContain(
+      `/individuals/business/self-employment/${VALID_NINO}/${VALID_BUSINESS_ID}/cumulative/${VALID_CUMULATIVE_TAX_YEAR}`,
+    );
     expect(calledUrl).not.toContain("/period/");
   });
 });

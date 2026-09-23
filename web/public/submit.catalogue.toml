@@ -196,10 +196,10 @@ allocation = "on-email-match"
 tokensGranted = 100
 tokenRefreshInterval = "P1M"
 
-# resident-pro: Pro subscription access
+# resident-pro: Pro subscription access, the practice licence
 # Unlocked by: resident-pro-test-pass (synthetic), resident-pro-pass (production), Stripe monthly subscription
 # Payment: Pass reveals the card, subscription grants the bundle (£9.99/mo via Stripe Checkout)
-# Tokens: 100 granted, refreshing monthly
+# Tokens: unlimited, no refresh - an open client list, not metered per submission
 # Enables: VAT submission, Self Assessment and micro-entity accounts filing, plus generating
 # digital/physical passes (costs 10 tokens each)
 # Access to all authenticated activities including VAT submission for subscribed users
@@ -214,8 +214,10 @@ hidden = true
 # After entering a valid pass, user sees a "Subscribe £9.99/mo" button instead of "Request".
 # Stripe Checkout creates the subscription; webhook grants the bundle.
 allocation = "on-pass-on-subscription"
-tokensGranted = 100
-tokenRefreshInterval = "P1M"
+# tokensGranted = "unlimited" is the sentinel productCatalog.js's isUnlimitedTokenGrant()
+# recognises - the token enforcement and refresh paths treat this bundle as exempt from the
+# token count rather than assigning it a large numeric cap.
+tokensGranted = "unlimited"
 
 [[bundles.prices]]
 interval = "month"

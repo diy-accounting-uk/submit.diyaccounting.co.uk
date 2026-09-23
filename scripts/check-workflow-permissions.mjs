@@ -205,9 +205,22 @@ export function findViolations(workflowsByFile) {
             calledJob.permissions instanceof Map
               ? calledJob.permissions
               : new Map(
-                  ["actions", "attestations", "checks", "contents", "deployments", "discussions", "id-token", "issues", "packages", "pages", "pull-requests", "repository-projects", "security-events", "statuses"].map(
-                    (scope) => [scope, levelFor(calledJob.permissions, scope)],
-                  ),
+                  [
+                    "actions",
+                    "attestations",
+                    "checks",
+                    "contents",
+                    "deployments",
+                    "discussions",
+                    "id-token",
+                    "issues",
+                    "packages",
+                    "pages",
+                    "pull-requests",
+                    "repository-projects",
+                    "security-events",
+                    "statuses",
+                  ].map((scope) => [scope, levelFor(calledJob.permissions, scope)]),
                 );
 
           for (const [scope, neededLevel] of neededScopes) {

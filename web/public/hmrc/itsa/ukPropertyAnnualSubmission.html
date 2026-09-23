@@ -57,7 +57,14 @@
           <div class="form-group">
             <label for="businessId">Business ID</label>
             <p id="businessId-hint" class="hint">The business ID from Business Details, for example XAIS12345678910.</p>
-            <input type="text" id="businessId" name="businessId" required placeholder="e.g., XAIS12345678910" aria-describedby="businessId-hint" />
+            <input
+              type="text"
+              id="businessId"
+              name="businessId"
+              required
+              placeholder="e.g., XAIS12345678910"
+              aria-describedby="businessId-hint"
+            />
           </div>
 
           <div class="form-group">
@@ -101,7 +108,14 @@
           <p id="privateUseAdjustment-hint" class="hint">
             Cannot be entered alongside the property income allowance below - HMRC rejects the combination.
           </p>
-          <input type="number" id="privateUseAdjustment" name="privateUseAdjustment" step="0.01" value="0" aria-describedby="privateUseAdjustment-hint" />
+          <input
+            type="number"
+            id="privateUseAdjustment"
+            name="privateUseAdjustment"
+            step="0.01"
+            value="0"
+            aria-describedby="privateUseAdjustment-hint"
+          />
         </div>
         <div class="form-group">
           <label for="businessPremisesRenovationAllowanceBalancingCharges">Business premises renovation allowance balancing charges</label>
@@ -152,7 +166,14 @@
           </div>
           <div class="form-group">
             <label for="businessPremisesRenovationAllowance">Business premises renovation allowance</label>
-            <input type="number" id="businessPremisesRenovationAllowance" name="businessPremisesRenovationAllowance" step="0.01" value="0" disabled />
+            <input
+              type="number"
+              id="businessPremisesRenovationAllowance"
+              name="businessPremisesRenovationAllowance"
+              step="0.01"
+              value="0"
+              disabled
+            />
           </div>
           <div class="form-group">
             <label for="otherCapitalAllowance">Other capital allowance</label>
@@ -349,11 +370,7 @@
           } else if (pendingSave) {
             showLoading();
             showStatus("Saving annual submission...", "info");
-            await saveAnnualSubmission(
-              pendingSave.annualDetails,
-              pendingSave.runFraudPreventionHeaderValidation,
-              accessToken,
-            );
+            await saveAnnualSubmission(pendingSave.annualDetails, pendingSave.runFraudPreventionHeaderValidation, accessToken);
             document.getElementById("annualEditForm").style.display = "none";
             document.getElementById("annualSubmissionResults").style.display = "block";
             hideStatus();
@@ -426,7 +443,14 @@
               showLoading();
               hideStatus();
               showStatus("Loading annual submission...", "info");
-              const result = await loadAnnualSubmission(nino, businessId, taxYear, testScenario, runFraudPreventionHeaderValidation, accessToken);
+              const result = await loadAnnualSubmission(
+                nino,
+                businessId,
+                taxYear,
+                testScenario,
+                runFraudPreventionHeaderValidation,
+                accessToken,
+              );
               loadedNino = nino;
               loadedBusinessId = businessId;
               loadedTaxYear = taxYear;

@@ -17,8 +17,8 @@ import co.uk.diyaccounting.submit.constructs.AsyncApiLambda;
 import co.uk.diyaccounting.submit.constructs.AsyncApiLambdaProps;
 import co.uk.diyaccounting.submit.constructs.Lambda;
 import co.uk.diyaccounting.submit.constructs.LambdaProps;
-import co.uk.diyaccounting.submit.utils.PopulatedMap;
 import co.uk.diyaccounting.submit.utils.EmailHashSecretHelper;
+import co.uk.diyaccounting.submit.utils.PopulatedMap;
 import co.uk.diyaccounting.submit.utils.SubHashSaltHelper;
 import java.util.ArrayList;
 import java.util.List;
@@ -575,8 +575,7 @@ public class AccountStack extends Stack {
         this.lambdaFunctionProps.add(this.operatorSnapshotGetLambdaProps);
 
         bundlesTable.grant(this.operatorSnapshotGetLambda, "dynamodb:Query");
-        SubHashSaltHelper.grantSaltAccess(
-                this.operatorSnapshotGetLambda, region, account, props.envName());
+        SubHashSaltHelper.grantSaltAccess(this.operatorSnapshotGetLambda, region, account, props.envName());
         this.operatorSnapshotGetLambda.addToRolePolicy(PolicyStatement.Builder.create()
                 .effect(Effect.ALLOW)
                 .actions(List.of("s3:GetObject"))

@@ -91,7 +91,9 @@ describe("diffGa4AccountBindings", () => {
   });
 
   test("reports no changes when live roles already match, regardless of order", () => {
-    const live = [{ name: "accounts/1035014/accessBindings/abc", user: SERVICE_ACCOUNT, roles: ["predefinedRoles/analyst", "predefinedRoles/admin"] }];
+    const live = [
+      { name: "accounts/1035014/accessBindings/abc", user: SERVICE_ACCOUNT, roles: ["predefinedRoles/analyst", "predefinedRoles/admin"] },
+    ];
     const diff = diffGa4AccountBindings([{ user: SERVICE_ACCOUNT, roles: ["predefinedRoles/admin", "predefinedRoles/analyst"] }], live);
     expect(diff.toCreate).toEqual([]);
     expect(diff.toUpdate).toEqual([]);
@@ -101,7 +103,9 @@ describe("diffGa4AccountBindings", () => {
     const live = [{ name: "accounts/1035014/accessBindings/abc", user: SERVICE_ACCOUNT, roles: ["predefinedRoles/analyst"] }];
     const diff = diffGa4AccountBindings([{ user: SERVICE_ACCOUNT, roles: ["predefinedRoles/admin"] }], live);
     expect(diff.toCreate).toEqual([]);
-    expect(diff.toUpdate).toEqual([{ name: "accounts/1035014/accessBindings/abc", user: SERVICE_ACCOUNT, roles: ["predefinedRoles/admin"] }]);
+    expect(diff.toUpdate).toEqual([
+      { name: "accounts/1035014/accessBindings/abc", user: SERVICE_ACCOUNT, roles: ["predefinedRoles/admin"] },
+    ]);
   });
 
   test("ignores a live binding for a user not named in the desired list", () => {

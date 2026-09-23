@@ -139,9 +139,7 @@ describe("companiesHouseRegisteredEmailAddressPost ingestHandler", () => {
     expect(body.links).toEqual(RESOURCE_RESPONSE.links);
 
     const [requestedUrl, requestInit] = mockFetch.mock.calls[0];
-    expect(requestedUrl).toBe(
-      "https://api-sandbox.company-information.service.gov.uk/transactions/017100005912/registered-email-address",
-    );
+    expect(requestedUrl).toBe("https://api-sandbox.company-information.service.gov.uk/transactions/017100005912/registered-email-address");
     expect(JSON.parse(requestInit.body)).toEqual({
       registered_email_address: "filings@example.co.uk",
       accept_appropriate_email_address_statement: true,

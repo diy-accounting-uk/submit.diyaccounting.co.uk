@@ -148,6 +148,11 @@
     container.textContent = `This submission costs ${tokenCost} token${tokenCost === 1 ? "" : "s"}. You have ${tokensRemaining} left.`;
   }
 
+  function renderUnlimitedBalance(container, tokenCost) {
+    container.className = "submission-cost hint";
+    container.textContent = `This submission costs ${tokenCost} token${tokenCost === 1 ? "" : "s"}. You have unlimited tokens.`;
+  }
+
   function renderExhausted(container, resetDate) {
     container.className = "submission-cost status-message warning";
     container.textContent = "";
@@ -178,6 +183,12 @@
     if (!qualifyingBundle) {
       // Balance unknown: not signed in yet, or the read failed. Never a guess, never a block.
       renderCostOnly(container, tokenCost);
+      setBlockedByTokens(button, false);
+      return;
+    }
+
+    if (qualifyingBundle.tokensGranted === "unlimited") {
+      renderUnlimitedBalance(container, tokenCost);
       setBlockedByTokens(button, false);
       return;
     }

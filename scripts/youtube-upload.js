@@ -210,7 +210,9 @@ export async function storeClientCredentials({ clientFile, smClient = getSecrets
   const raw = fs.readFileSync(clientFile, "utf8");
   const parsed = JSON.parse(raw);
   if (!parsed.installed || !parsed.installed.client_id || !parsed.installed.client_secret) {
-    throw new Error(`${clientFile} does not look like a Desktop OAuth client JSON (expected an "installed" object with client_id and client_secret)`);
+    throw new Error(
+      `${clientFile} does not look like a Desktop OAuth client JSON (expected an "installed" object with client_id and client_secret)`,
+    );
   }
   await writeSecret({
     smClient,
@@ -232,7 +234,9 @@ export async function resolveClientCredentials({ clientFile, smClient } = {}) {
   const parsed = JSON.parse(raw);
   const installed = parsed.installed;
   if (!installed || !installed.client_id || !installed.client_secret) {
-    throw new Error(`OAuth client credentials from ${clientFile || CLIENT_SECRET_NAME} do not have the expected {"installed": {"client_id", "client_secret"}} shape`);
+    throw new Error(
+      `OAuth client credentials from ${clientFile || CLIENT_SECRET_NAME} do not have the expected {"installed": {"client_id", "client_secret"}} shape`,
+    );
   }
   return { client_id: installed.client_id, client_secret: installed.client_secret };
 }
@@ -278,7 +282,8 @@ function waitForAuthorizationCode({ port, redirectUri }) {
 
 function openInBrowser(url) {
   const platform = process.platform;
-  const [command, args] = platform === "darwin" ? ["open", [url]] : platform === "win32" ? ["cmd", ["/c", "start", "", url]] : ["xdg-open", [url]];
+  const [command, args] =
+    platform === "darwin" ? ["open", [url]] : platform === "win32" ? ["cmd", ["/c", "start", "", url]] : ["xdg-open", [url]];
   const child = spawn(command, args, { stdio: "ignore", detached: true });
   child.on("error", () => {}); // best effort: the URL above is already printed for opening by hand
   child.unref();
@@ -286,10 +291,19 @@ function openInBrowser(url) {
 
 // The loopback flow for Desktop OAuth clients: a local HTTP server receives the authorization
 // code Google redirects to, so nothing but this machine ever sees it.
-export async function runLoopbackConsent({ clientCredentials, scopes = OAUTH_SCOPES, OAuth2ClientImpl = OAuth2Client, openUrl = openInBrowser } = {}) {
+export async function runLoopbackConsent({
+  clientCredentials,
+  scopes = OAUTH_SCOPES,
+  OAuth2ClientImpl = OAuth2Client,
+  openUrl = openInBrowser,
+} = {}) {
   const port = await getFreeTcpPort();
   const redirectUri = `http://127.0.0.1:${port}/`;
-  const oAuth2Client = new OAuth2ClientImpl({ clientId: clientCredentials.client_id, clientSecret: clientCredentials.client_secret, redirectUri });
+  const oAuth2Client = new OAuth2ClientImpl({
+    clientId: clientCredentials.client_id,
+    clientSecret: clientCredentials.client_secret,
+    redirectUri,
+  });
   const authUrl = oAuth2Client.generateAuthUrl({ access_type: "offline", prompt: "consent", scope: scopes });
 
   const codePromise = waitForAuthorizationCode({ port, redirectUri });
@@ -299,7 +313,9 @@ export async function runLoopbackConsent({ clientCredentials, scopes = OAUTH_SCO
 
   const { tokens } = await oAuth2Client.getToken({ code, redirect_uri: redirectUri });
   if (!tokens.refresh_token) {
-    throw new Error("Google did not return a refresh token. Revoke the app's access at https://myaccount.google.com/permissions and run again so Google issues a fresh one.");
+    throw new Error(
+      "Google did not return a refresh token. Revoke the app's access at https://myaccount.google.com/permissions and run again so Google issues a fresh one.",
+    );
   }
   return tokens.refresh_token;
 }
@@ -333,7 +349,9 @@ export async function obtainAccessToken({
   oAuth2Client.setCredentials({ refresh_token: refreshToken });
   const { token } = await oAuth2Client.getAccessToken();
   if (!token) {
-    throw new Error(`Google did not return an access token for the stored refresh token. Delete Secrets Manager secret ${REFRESH_TOKEN_SECRET_NAME} and run again to re-consent.`);
+    throw new Error(
+      `Google did not return an access token for the stored refresh token. Delete Secrets Manager secret ${REFRESH_TOKEN_SECRET_NAME} and run again to re-consent.`,
+    );
   }
   return token;
 }
@@ -347,7 +365,7 @@ export async function obtainAccessToken({
  */
 export async function fetchOwnChannel({ accessToken, quotaProject, fetchImpl = fetch }) {
   const response = await fetchImpl(`${CHANNELS_ENDPOINT}?part=snippet&mine=true`, {
-    headers: { Authorization: `Bearer ${accessToken}`, "x-goog-user-project": quotaProject },
+    headers: { "Authorization": `Bearer ${accessToken}`, "x-goog-user-project": quotaProject },
   });
   if (!response.ok) {
     throw new Error(`Failed to look up the signed-in channel: ${response.status} ${await response.text()}`);
@@ -408,7 +426,7 @@ async function initiateResumableUpload({ accessToken, quotaProject, resource, fi
   const response = await fetchImpl(`${UPLOAD_VIDEOS_ENDPOINT}?uploadType=resumable&part=snippet,status`, {
     method: "POST",
     headers: {
-      Authorization: `Bearer ${accessToken}`,
+      "Authorization": `Bearer ${accessToken}`,
       "x-goog-user-project": quotaProject,
       "Content-Type": "application/json; charset=UTF-8",
       "X-Upload-Content-Length": String(fileSize),
@@ -461,7 +479,7 @@ export async function setVideoPrivacy({ videoId, privacyStatus, accessToken, quo
   const response = await fetchImpl(`${VIDEOS_ENDPOINT}?part=status`, {
     method: "PUT",
     headers: {
-      Authorization: `Bearer ${accessToken}`,
+      "Authorization": `Bearer ${accessToken}`,
       "Content-Type": "application/json",
       "x-goog-user-project": quotaProject,
     },

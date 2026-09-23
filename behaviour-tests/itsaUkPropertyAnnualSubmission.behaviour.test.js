@@ -288,7 +288,11 @@ test("Click through: Load and save a UK Property Annual Submission with HMRC", a
   const taxYear = "2023-24";
 
   await initItsaUkPropertyAnnualSubmission(page, screenshotPath);
-  await fillInItsaUkPropertyAnnualLoad(page, { hmrcNino: testNino, businessId, taxYear, runFraudPreventionHeaderValidation }, screenshotPath);
+  await fillInItsaUkPropertyAnnualLoad(
+    page,
+    { hmrcNino: testNino, businessId, taxYear, runFraudPreventionHeaderValidation },
+    screenshotPath,
+  );
   await submitItsaUkPropertyAnnualLoadForm(page, screenshotPath);
   await verifyItsaUkPropertyAnnualLoadResults(page, screenshotPath);
 
@@ -321,7 +325,8 @@ test("Click through: Load and save a UK Property Annual Submission with HMRC", a
     testId: "itsaUkPropertyAnnualSubmissionBehaviour",
     name: testInfo.title,
     title: "Load and Save a UK Property Annual Submission (HMRC: Property Business GET/PUT)",
-    description: "Loads the year's annual submission for a UK property business, enters adjustments and allowances, and saves them to HMRC.",
+    description:
+      "Loads the year's annual submission for a UK property business, enters adjustments and allowances, and saves them to HMRC.",
     hmrcApis: [
       { url: "/api/v1/hmrc/itsa/business/details", method: "GET" },
       { url: "/api/v1/hmrc/itsa/uk-property/annual", method: "GET" },

@@ -100,10 +100,7 @@ vi.mock("@aws-sdk/client-eventbridge", () => ({
 }));
 
 // Defer importing the ingestHandlers until after mocks are defined
-import {
-  ingestHandler as hmrcVatReturnGetHandler,
-  extractAndValidateParameters,
-} from "@app/functions/hmrc/hmrcVatReturnGet.js";
+import { ingestHandler as hmrcVatReturnGetHandler, extractAndValidateParameters } from "@app/functions/hmrc/hmrcVatReturnGet.js";
 import { hashSub } from "@app/services/subHasher.js";
 import { syntheticPeriodKeys } from "@app/lib/obligationFormatter.js";
 
@@ -397,8 +394,8 @@ describe("hmrcVatReturnGet ingestHandler", () => {
         allowSyntheticObligations: "true",
       },
       headers: {
-        authorization: "Bearer test-token",
-        hmrcAccount: "synthetic",
+        "authorization": "Bearer test-token",
+        "hmrcAccount": "synthetic",
         "x-wait-time-ms": "30000",
         "x-initial-request": "true",
       },
@@ -434,8 +431,8 @@ describe("hmrcVatReturnGet ingestHandler", () => {
         allowSyntheticObligations: "true",
       },
       headers: {
-        authorization: "Bearer test-token",
-        hmrcAccount: "synthetic",
+        "authorization": "Bearer test-token",
+        "hmrcAccount": "synthetic",
         "x-wait-time-ms": "30000",
         "x-initial-request": "true",
       },

@@ -112,9 +112,9 @@ describe("functions/auth/customAuthorizer", () => {
     it("carries mfa_method, federated and auth_time from a verified ID token", async () => {
       const { extractMfaContext } = await import("@app/functions/auth/customAuthorizer.js");
       mockVerify.mockResolvedValueOnce({
-        sub: "user-sub",
+        "sub": "user-sub",
         "custom:mfa_method": "TOTP",
-        auth_time: 1700000000,
+        "auth_time": 1700000000,
       });
 
       const result = await extractMfaContext({ "x-id-token": "id-token-value" }, "user-sub");
@@ -147,7 +147,7 @@ describe("functions/auth/customAuthorizer", () => {
 
     it("returns nothing when the ID token's sub doesn't match the access token's", async () => {
       const { extractMfaContext } = await import("@app/functions/auth/customAuthorizer.js");
-      mockVerify.mockResolvedValueOnce({ sub: "someone-else", "custom:mfa_method": "TOTP" });
+      mockVerify.mockResolvedValueOnce({ "sub": "someone-else", "custom:mfa_method": "TOTP" });
 
       const result = await extractMfaContext({ "x-id-token": "id-token-value" }, "user-sub");
 
@@ -160,7 +160,7 @@ describe("functions/auth/customAuthorizer", () => {
       const { ingestHandler } = await import("@app/functions/auth/customAuthorizer.js");
       mockVerify
         .mockResolvedValueOnce({ sub: "user-sub", auth_time: 1600000000 }) // access token
-        .mockResolvedValueOnce({ sub: "user-sub", "custom:mfa_method": "TOTP", auth_time: 1700000000 }); // ID token
+        .mockResolvedValueOnce({ "sub": "user-sub", "custom:mfa_method": "TOTP", "auth_time": 1700000000 }); // ID token
 
       const res = await ingestHandler(makeEvent({ "x-authorization": "Bearer token-abc", "x-id-token": "id-token" }));
 
@@ -266,9 +266,7 @@ describe("functions/auth/customAuthorizer", () => {
       mockVerify.mockResolvedValueOnce({ sub: "user-sub-raw", username: "user", iat: 1000 });
       mockGetSessionGeo.mockResolvedValueOnce({ country: "GB" });
 
-      const res = await ingestHandler(
-        makeEvent({ "x-authorization": "Bearer token-abc", "cloudfront-viewer-country": "FR" }),
-      );
+      const res = await ingestHandler(makeEvent({ "x-authorization": "Bearer token-abc", "cloudfront-viewer-country": "FR" }));
 
       expect(res.policyDocument.Statement[0].Effect).toBe("Deny");
       expect(mockPutSessionGeo).toHaveBeenCalledTimes(1);
@@ -290,9 +288,7 @@ describe("functions/auth/customAuthorizer", () => {
       mockVerify.mockResolvedValueOnce({ sub: "user-sub", username: "user", iat: 1000 });
       mockGetSessionGeo.mockResolvedValueOnce({ country: "FR", revokedAt: 5000 });
 
-      const res = await ingestHandler(
-        makeEvent({ "x-authorization": "Bearer token-abc", "cloudfront-viewer-country": "FR" }),
-      );
+      const res = await ingestHandler(makeEvent({ "x-authorization": "Bearer token-abc", "cloudfront-viewer-country": "FR" }));
 
       expect(res.policyDocument.Statement[0].Effect).toBe("Deny");
       expect(mockPutSessionGeo).not.toHaveBeenCalled();

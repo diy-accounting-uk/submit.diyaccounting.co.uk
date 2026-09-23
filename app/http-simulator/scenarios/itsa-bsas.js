@@ -24,7 +24,10 @@ const triggerErrorScenarios = {
   },
   NOT_FOUND: {
     status: 404,
-    body: { code: "MATCHING_RESOURCE_NOT_FOUND", message: "A matching incomeSourceId record was not found, or the incomeSourceType provided does not relate to the incomeSourceId" },
+    body: {
+      code: "MATCHING_RESOURCE_NOT_FOUND",
+      message: "A matching incomeSourceId record was not found, or the incomeSourceType provided does not relate to the incomeSourceId",
+    },
   },
   TAX_YEAR_NOT_SUPPORTED: {
     status: 400,

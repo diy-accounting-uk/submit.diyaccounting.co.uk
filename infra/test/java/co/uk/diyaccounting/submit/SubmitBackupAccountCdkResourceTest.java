@@ -90,13 +90,11 @@ class SubmitBackupAccountCdkResourceTest {
         template.hasResourceProperties(
                 "AWS::Backup::BackupVault",
                 Match.objectLike(Map.of(
-                        "AccessPolicy",
-                        Match.objectLike(Map.of("Statement", Match.arrayWith(expectedStatements))))));
+                        "AccessPolicy", Match.objectLike(Map.of("Statement", Match.arrayWith(expectedStatements))))));
 
-        var vault = (Map<String, Object>)
-                template.findResources("AWS::Backup::BackupVault").values().stream()
-                        .findFirst()
-                        .orElseThrow(() -> new AssertionError("expected the cross-account vault"));
+        var vault = (Map<String, Object>) template.findResources("AWS::Backup::BackupVault").values().stream()
+                .findFirst()
+                .orElseThrow(() -> new AssertionError("expected the cross-account vault"));
         var accessPolicy = (Map<String, Object>) ((Map<String, Object>) vault.get("Properties")).get("AccessPolicy");
         var statements = (List<Object>) accessPolicy.get("Statement");
         assertEquals(2, statements.size());

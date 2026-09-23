@@ -5,12 +5,14 @@
 
 import { createLogger } from "../lib/logger.js";
 import { consumeToken, getUserBundles, recordTokenEvent } from "../data/dynamoDbBundleRepository.js";
+import { isUnlimitedTokenGrant } from "./productCatalog.js";
 
 const logger = createLogger({ source: "app/services/tokenEnforcement.js" });
 
 /**
  * Find a bundle owned by the user that both grants an activity and still has enough
- * tokens remaining to cover its cost.
+ * tokens remaining to cover its cost. A bundle carrying an unlimited grant (the resident-pro
+ * practice licence) always qualifies, regardless of how many tokens it has recorded as consumed.
  *
  * @param {Array<Object>} userBundles - Bundles returned by getUserBundles
  * @param {Object} activity - Activity entry from the catalogue
@@ -22,6 +24,7 @@ function findQualifyingBundle(userBundles, activity, tokenCost) {
   return userBundles.find((b) => {
     if (!activityBundleIds.has(b.bundleId)) return false;
     if (b.tokensGranted === undefined) return false;
+    if (isUnlimitedTokenGrant(b.tokensGranted)) return true;
     const remaining = b.tokensGranted - (b.tokensConsumed || 0);
     return remaining >= tokenCost;
   });
@@ -95,6 +98,13 @@ export async function consumeTokenForActivity(userId, activityId, catalog) {
   if (!qualifyingBundle) {
     logger.info({ message: "No qualifying bundle with tokens remaining", userId, activityId });
     return { consumed: false, reason: "tokens_exhausted", tokensRemaining: 0 };
+  }
+
+  // An unlimited grant (the resident-pro practice licence) is exempt from the token count:
+  // no DynamoDB decrement, no consumption event, no possibility of exhaustion.
+  if (isUnlimitedTokenGrant(qualifyingBundle.tokensGranted)) {
+    logger.info({ message: "Unlimited grant - no token consumption recorded", userId, activityId, bundleId: qualifyingBundle.bundleId });
+    return { consumed: true, cost: tokenCost };
   }
 
   // Atomically consume a token from the qualifying bundle

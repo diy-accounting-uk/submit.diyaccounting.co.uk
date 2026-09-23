@@ -96,7 +96,12 @@
         const hasTokenBundles = data.bundles.some(function (b) {
           return b.allocated && b.tokensGranted !== undefined;
         });
-        if (hasTokenBundles && typeof data.tokensRemaining === "number") {
+        const hasUnlimitedTokenBundle = data.bundles.some(function (b) {
+          return b.allocated && b.tokensGranted === "unlimited";
+        });
+        if (hasUnlimitedTokenBundle) {
+          tokenCountEl.textContent = "Unlimited tokens";
+        } else if (hasTokenBundles && typeof data.tokensRemaining === "number") {
           tokenCountEl.textContent = data.tokensRemaining + " token" + (data.tokensRemaining !== 1 ? "s" : "");
         } else {
           tokenCountEl.textContent = "0 tokens";

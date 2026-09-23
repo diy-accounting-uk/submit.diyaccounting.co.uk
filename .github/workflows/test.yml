@@ -168,6 +168,7 @@ jobs:
           NPM_CONFIG_FETCH_RETRIES: "3"
 
       - name: Report the repository-wide finding count
+        id: repo-count
         run: |
           set +e
           eslint_json=$(npx eslint . --format json)
@@ -175,11 +176,36 @@ jobs:
           set -e
           if [ "$eslint_exit" -ge 2 ]; then
             echo "eslint could not run (exit ${eslint_exit}) — see the job log above for the crash, not 0 findings." >> "$GITHUB_STEP_SUMMARY"
+            echo "ran=false" >> "$GITHUB_OUTPUT"
           else
-            total=$(printf '%s' "$eslint_json" | jq '[.[].messages[]] | length')
-            echo "eslint reports ${total} finding(s) across the repository." >> "$GITHUB_STEP_SUMMARY"
+            errors=$(printf '%s' "$eslint_json" | jq '[.[].messages[] | select(.severity == 2)] | length')
+            warnings=$(printf '%s' "$eslint_json" | jq '[.[].messages[] | select(.severity == 1)] | length')
+            echo "eslint reports ${errors} error(s) and ${warnings} warning(s) across the repository." >> "$GITHUB_STEP_SUMMARY"
+            echo "ran=true" >> "$GITHUB_OUTPUT"
+            echo "errors=${errors}" >> "$GITHUB_OUTPUT"
+            echo "warnings=${warnings}" >> "$GITHUB_OUTPUT"
           fi
           echo "This step never fails; the gate below covers the files this change touches." >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Ratchet the repository-wide error count against the baseline
+        if: steps.repo-count.outputs.ran == 'true'
+        run: |
+          current_errors='${{ steps.repo-count.outputs.errors }}'
+          current_warnings='${{ steps.repo-count.outputs.warnings }}'
+          baseline_errors=$(jq '.errors' .eslint-baseline.json)
+          baseline_warnings=$(jq '.warnings' .eslint-baseline.json)
+          echo "Baseline: ${baseline_errors} error(s), ${baseline_warnings} warning(s) (.eslint-baseline.json)." >> "$GITHUB_STEP_SUMMARY"
+          echo "Current: ${current_errors} error(s), ${current_warnings} warning(s)." >> "$GITHUB_STEP_SUMMARY"
+          if [ "$current_errors" -gt "$baseline_errors" ]; then
+            echo "eslint error count rose from ${baseline_errors} to ${current_errors}. Fix the new errors, or lower the baseline only by fixing findings, never by raising the number." >> "$GITHUB_STEP_SUMMARY"
+            exit 1
+          fi
+          if [ "$current_errors" -lt "$baseline_errors" ] || [ "$current_warnings" -lt "$baseline_warnings" ]; then
+            echo "Findings dropped below the baseline. Commit this as the new .eslint-baseline.json:" >> "$GITHUB_STEP_SUMMARY"
+            echo '```json' >> "$GITHUB_STEP_SUMMARY"
+            printf '{\n  "errors": %s,\n  "warnings": %s\n}\n' "$current_errors" "$current_warnings" >> "$GITHUB_STEP_SUMMARY"
+            echo '```' >> "$GITHUB_STEP_SUMMARY"
+          fi
 
       - name: Lint the JavaScript this change adds
         run: |
@@ -196,6 +222,18 @@ jobs:
           echo "Linting $(echo "$added" | wc -l | tr -d ' ') newly added file(s):" >> "$GITHUB_STEP_SUMMARY"
           echo "$added" >> "$GITHUB_STEP_SUMMARY"
           echo "$added" | xargs npx eslint
+
+      - name: Check formatting (Prettier)
+        run: npx prettier --check .
+
+      - uses: actions/setup-java@b6effb05e454b25005698d916606bdc6ffcbf961 # v5
+        with:
+          distribution: 'temurin'
+          java-version: ${{ env.JAVA_VERSION }}
+          cache: 'maven'
+
+      - name: Check formatting (Spotless)
+        run: ./mvnw spotless:check
 
   params:
     runs-on: ubuntu-24.04

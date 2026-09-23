@@ -99,11 +99,10 @@ class CostFocusIngestionTest {
                 "Action", "s3:ListBucket",
                 "Resource", "arn:aws:s3:::diy-accounting-cost-focus-887764105431",
                 "Condition", Map.of("StringLike", Map.of("s3:prefix", "focus/*"))));
-        var policyDocument = Match.objectLike(
-                Map.of("Statement", Match.arrayWith(List.of(readStatement, listStatement))));
+        var policyDocument =
+                Match.objectLike(Map.of("Statement", Match.arrayWith(List.of(readStatement, listStatement))));
 
-        template.hasResourceProperties(
-                "AWS::IAM::Policy", Match.objectLike(Map.of("PolicyDocument", policyDocument)));
+        template.hasResourceProperties("AWS::IAM::Policy", Match.objectLike(Map.of("PolicyDocument", policyDocument)));
     }
 
     @Test

@@ -50,7 +50,11 @@ async function serveRealSite(page) {
         await route.fulfill({
           status: 200,
           contentType: "application/json",
-          body: JSON.stringify({ bundles: [{ bundleId: "resident-vat", allocated: true, stripeSubscriptionId: "sub_1", tokensGranted: 100, tokensRemaining: 90 }] }),
+          body: JSON.stringify({
+            bundles: [
+              { bundleId: "resident-vat", allocated: true, stripeSubscriptionId: "sub_1", tokensGranted: 100, tokensRemaining: 90 },
+            ],
+          }),
         });
         return;
       }

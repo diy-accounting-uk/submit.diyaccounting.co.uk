@@ -82,7 +82,7 @@ function buildAdjustmentsBody(overrides = {}) {
 function buildInitialAdjustmentsEvent({ body = {}, headers = {} } = {}) {
   return buildHmrcEvent({
     body: buildAdjustmentsBody(body),
-    headers: { authorization: "Bearer test-token", "x-initial-request": "true", ...headers },
+    headers: { "authorization": "Bearer test-token", "x-initial-request": "true", ...headers },
   });
 }
 
@@ -132,7 +132,7 @@ describe("hmrcItsaTaxLiabilityAdjustmentsPut token charge", () => {
   test("does not charge a token for a request our own validation rejects before it reaches HMRC", async () => {
     const event = buildHmrcEvent({
       body: buildAdjustmentsBody({ nino: undefined }),
-      headers: { authorization: "Bearer test-token", "x-initial-request": "true" },
+      headers: { "authorization": "Bearer test-token", "x-initial-request": "true" },
     });
 
     const response = await hmrcItsaTaxLiabilityAdjustmentsPutHandler(event);

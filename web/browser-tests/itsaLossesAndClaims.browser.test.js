@@ -26,11 +26,9 @@ async function loadPage(page, html, url) {
     }
   });
 
-  const modifiedHtml = html
-    .replace("<head>", `<head><base href="${new URL(".", url)}">`)
-    .replace(
-      "<body>",
-      `<body><script>
+  const modifiedHtml = html.replace("<head>", `<head><base href="${new URL(".", url)}">`).replace(
+    "<body>",
+    `<body><script>
 window.showStatus = window.showStatus || function(){};
 window.hideStatus = window.hideStatus || function(){};
 window.showLoading = window.showLoading || function(){};
@@ -39,7 +37,7 @@ window.generateRandomState = window.generateRandomState || function(){ return "t
 window.getGovClientHeaders = window.getGovClientHeaders || function(){ return Promise.resolve({}); };
 window.authorizedFetch = window.authorizedFetch || function(){ return Promise.resolve({ ok: true, json: function(){ return Promise.resolve({}); }}); };
 </script>`,
-    );
+  );
 
   await page.setContent(modifiedHtml, { url, waitUntil: "domcontentloaded" });
   await delay(200);

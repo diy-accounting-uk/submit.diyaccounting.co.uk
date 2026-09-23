@@ -219,7 +219,8 @@ class MetricFilterLogGroupCdkResourceTest {
             if (stackName.endsWith("-SelfDestructStack")) continue;
             Map<String, Map<String, Object>> filters = entry.getValue().findResources("AWS::Logs::MetricFilter");
             for (Map.Entry<String, Map<String, Object>> filterEntry : filters.entrySet()) {
-                Map<String, Object> properties = (Map<String, Object>) filterEntry.getValue().get("Properties");
+                Map<String, Object> properties =
+                        (Map<String, Object>) filterEntry.getValue().get("Properties");
                 Object logGroupNameRaw = properties == null ? null : properties.get("LogGroupName");
                 String problem = describeUnresolvedLogGroupName(
                         logGroupNameRaw,
@@ -362,7 +363,10 @@ class MetricFilterLogGroupCdkResourceTest {
     }
 
     private static String resolveSubToken(
-            String token, Map<String, Object> vars, String stackName, Map<String, String> lambdaLogicalIdToFunctionName) {
+            String token,
+            Map<String, Object> vars,
+            String stackName,
+            Map<String, String> lambdaLogicalIdToFunctionName) {
         if (vars.containsKey(token)) {
             Object value = vars.get(token);
             if (value instanceof String stringValue) return stringValue;

@@ -67,9 +67,7 @@ class ObservabilityStackTest {
                                         "Condition",
                                         Map.of(
                                                 "StringEquals",
-                                                Map.of(
-                                                        "aws:SourceAccount",
-                                                        Map.of("Ref", "AWS::AccountId"))))))))))));
+                                                Map.of("aws:SourceAccount", Map.of("Ref", "AWS::AccountId"))))))))))));
     }
 
     @Test
@@ -98,7 +96,8 @@ class ObservabilityStackTest {
     }
 
     @Test
-    void dashboardGraphsSpreadsheetsRumLcpCrossAccountAndCrossRegion() throws com.fasterxml.jackson.core.JsonProcessingException {
+    void dashboardGraphsSpreadsheetsRumLcpCrossAccountAndCrossRegion()
+            throws com.fasterxml.jackson.core.JsonProcessingException {
         Template template = Template.fromStack(synthObservabilityStack());
 
         Map<String, Object> dashboardResource = template.findResources("AWS::CloudWatch::Dashboard")

@@ -62,12 +62,7 @@ import {
   VerifySoftwareTokenCommand,
   AdminSetUserMFAPreferenceCommand,
 } from "@aws-sdk/client-cognito-identity-provider";
-import {
-  SecretsManagerClient,
-  CreateSecretCommand,
-  GetSecretValueCommand,
-  PutSecretValueCommand,
-} from "@aws-sdk/client-secrets-manager";
+import { SecretsManagerClient, CreateSecretCommand, GetSecretValueCommand, PutSecretValueCommand } from "@aws-sdk/client-secrets-manager";
 import { execFileSync } from "child_process";
 import crypto from "crypto";
 import fs from "fs";
@@ -208,7 +203,9 @@ async function logInAndAnswerChallenge(cognitoClient, secretsClient, { userPoolC
     );
 
     if (!respondResponse.AuthenticationResult?.AccessToken) {
-      throw new Error(`Expected tokens after completing MFA_SETUP but got: ${respondResponse.ChallengeName || "no challenge and no tokens"}`);
+      throw new Error(
+        `Expected tokens after completing MFA_SETUP but got: ${respondResponse.ChallengeName || "no challenge and no tokens"}`,
+      );
     }
 
     return { accessToken: respondResponse.AuthenticationResult.AccessToken, totpSecret };
@@ -233,7 +230,9 @@ async function logInAndAnswerChallenge(cognitoClient, secretsClient, { userPoolC
     );
 
     if (!respondResponse.AuthenticationResult?.AccessToken) {
-      throw new Error(`Expected tokens after answering SOFTWARE_TOKEN_MFA but got: ${respondResponse.ChallengeName || "no challenge and no tokens"}`);
+      throw new Error(
+        `Expected tokens after answering SOFTWARE_TOKEN_MFA but got: ${respondResponse.ChallengeName || "no challenge and no tokens"}`,
+      );
     }
 
     return { accessToken: respondResponse.AuthenticationResult.AccessToken };
@@ -292,7 +291,10 @@ export function writeGithubOutputCredentials(testEmail, testPassword, totpSecret
   if (!githubOutputPath) return;
   console.log(`::add-mask::${testPassword}`);
   console.log(`::add-mask::${totpSecret}`);
-  fs.appendFileSync(githubOutputPath, `test-auth-username=${testEmail}\ntest-auth-password=${testPassword}\ntest-auth-totp-secret=${totpSecret}\n`);
+  fs.appendFileSync(
+    githubOutputPath,
+    `test-auth-username=${testEmail}\ntest-auth-password=${testPassword}\ntest-auth-totp-secret=${totpSecret}\n`,
+  );
 }
 
 export async function main() {

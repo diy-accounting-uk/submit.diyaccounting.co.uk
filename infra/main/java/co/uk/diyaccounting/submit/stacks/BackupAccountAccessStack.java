@@ -222,8 +222,8 @@ public class BackupAccountAccessStack extends Stack {
                 .sid("CopyFromCrossAccountVault")
                 .effect(Effect.ALLOW)
                 .actions(List.of("backup:CopyFromBackupVault"))
-                .resources(List.of(String.format(
-                        "arn:aws:backup:%s:%s:recovery-point:*", this.getRegion(), this.getAccount())))
+                .resources(List.of(
+                        String.format("arn:aws:backup:%s:%s:recovery-point:*", this.getRegion(), this.getAccount())))
                 .build());
 
         this.copyRole.addToPolicy(PolicyStatement.Builder.create()
@@ -259,8 +259,8 @@ public class BackupAccountAccessStack extends Stack {
                 .sid("StartCopyJobFromCrossAccountVault")
                 .effect(Effect.ALLOW)
                 .actions(List.of("backup:StartCopyJob"))
-                .resources(List.of(String.format(
-                        "arn:aws:backup:%s:%s:recovery-point:*", this.getRegion(), this.getAccount())))
+                .resources(List.of(
+                        String.format("arn:aws:backup:%s:%s:recovery-point:*", this.getRegion(), this.getAccount())))
                 .build());
 
         this.deploymentRole.addToPolicy(PolicyStatement.Builder.create()

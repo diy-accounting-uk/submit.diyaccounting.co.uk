@@ -42,9 +42,7 @@ export function wrapCaptionLines(text, maxCharsPerLine, maxLines) {
   if (current) lines.push(current);
   if (lines.length === 0) lines.push("");
   if (lines.length > maxLines) {
-    throw new Error(
-      `caption "${text}" wraps to ${lines.length} lines at ${maxCharsPerLine} chars/line, more than maxLines=${maxLines}`,
-    );
+    throw new Error(`caption "${text}" wraps to ${lines.length} lines at ${maxCharsPerLine} chars/line, more than maxLines=${maxLines}`);
   }
   return lines;
 }

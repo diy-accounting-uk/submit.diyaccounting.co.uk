@@ -139,8 +139,7 @@ class AnalyticsStackTest {
         assertEquals("archive/security/sbom/", sbomRule.getPrefix());
         assertEquals(2555, sbomRule.getExpiration().toDays().intValue());
         assertEquals(
-                StorageClass.INFREQUENT_ACCESS,
-                sbomRule.getTransitions().get(0).getStorageClass());
+                StorageClass.INFREQUENT_ACCESS, sbomRule.getTransitions().get(0).getStorageClass());
         assertEquals(
                 30,
                 sbomRule.getTransitions().get(0).getTransitionAfter().toDays().intValue());

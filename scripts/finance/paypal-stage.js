@@ -120,7 +120,7 @@ export async function fetchAccessToken(clientId, clientSecret, fetchImpl = fetch
   const response = await fetchImpl(OAUTH_TOKEN_URL, {
     method: "POST",
     headers: {
-      Authorization: `Basic ${Buffer.from(`${clientId}:${clientSecret}`).toString("base64")}`,
+      "Authorization": `Basic ${Buffer.from(`${clientId}:${clientSecret}`).toString("base64")}`,
       "Content-Type": "application/x-www-form-urlencoded",
     },
     body: "grant_type=client_credentials",
@@ -148,7 +148,7 @@ export async function fetchTransactionsPage(accessToken, { startDate, endDate, p
     page: String(page),
   });
   const response = await fetchImpl(`${TRANSACTIONS_URL}?${query}`, {
-    headers: { Authorization: `Bearer ${accessToken}`, "Content-Type": "application/json" },
+    headers: { "Authorization": `Bearer ${accessToken}`, "Content-Type": "application/json" },
   });
   const body = await response.json();
   if (!response.ok) {

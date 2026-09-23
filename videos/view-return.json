@@ -4,7 +4,14 @@
   "title": "See a VAT return you already sent HMRC",
   "description": "A signed-in walk through viewing a submitted VAT return: sign in, take out a day pass, ask HMRC for the periods, authorise, then open a return HMRC has already received and read the nine boxes.",
   "auth": "user",
-  "pages": ["web/public/index.html", "web/public/auth/login.html", "web/public/bundles.html", "web/public/hmrc/vat/vatObligations.html", "web/public/hmrc/vat/submitVat.html", "web/public/hmrc/vat/viewVatReturn.html"],
+  "pages": [
+    "web/public/index.html",
+    "web/public/auth/login.html",
+    "web/public/bundles.html",
+    "web/public/hmrc/vat/vatObligations.html",
+    "web/public/hmrc/vat/submitVat.html",
+    "web/public/hmrc/vat/viewVatReturn.html"
+  ],
   "viewport": {
     "width": 1920,
     "height": 1080
@@ -35,10 +42,7 @@
       "sidePct": 12.5
     }
   },
-  "suppress": [
-    "#feedbackEngagementBanner",
-    "#feedbackEngagementSection"
-  ],
+  "suppress": ["#feedbackEngagementBanner", "#feedbackEngagementSection"],
   "finalHoldMs": 3000,
   "scenes": [
     {

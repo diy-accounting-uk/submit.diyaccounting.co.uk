@@ -391,7 +391,7 @@ describe("bundleEnforcement.js", () => {
   describe("enforceBundles client-scoped requests", () => {
     function buildClientScopedEvent(sub = "practice-sub") {
       const token = makeJWT(sub);
-      const authorizerContext = { sub, "cognito:username": "test", email: "practice@test.diyaccounting.co.uk", scope: "read write" };
+      const authorizerContext = { sub, "cognito:username": "test", "email": "practice@test.diyaccounting.co.uk", "scope": "read write" };
       return buildEvent(token, authorizerContext, "/api/v1/hmrc/vat/return");
     }
 

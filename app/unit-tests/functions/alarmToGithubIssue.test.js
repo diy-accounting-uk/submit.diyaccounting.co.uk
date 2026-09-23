@@ -82,11 +82,11 @@ import {
 import { alarmFamilyKey } from "@app/lib/alarmName.js";
 
 const ALARM_EVENT = {
-  source: "aws.cloudwatch",
+  "source": "aws.cloudwatch",
   "detail-type": "CloudWatch Alarm State Change",
-  region: "eu-west-2",
-  resources: ["arn:aws:cloudwatch:eu-west-2:367191799875:alarm:ci-app-health-failed"],
-  detail: {
+  "region": "eu-west-2",
+  "resources": ["arn:aws:cloudwatch:eu-west-2:367191799875:alarm:ci-app-health-failed"],
+  "detail": {
     alarmName: "ci-app-health-failed",
     state: { value: "ALARM", reason: "Threshold crossed", timestamp: "2026-08-31T12:00:00.000+0000" },
     previousState: { value: "OK" },
@@ -95,11 +95,11 @@ const ALARM_EVENT = {
 
 function deploymentAlarmEvent(alarmName, stateValue = "ALARM", previousStateValue = "OK") {
   return {
-    source: "aws.cloudwatch",
+    "source": "aws.cloudwatch",
     "detail-type": "CloudWatch Alarm State Change",
-    region: "eu-west-2",
-    resources: [`arn:aws:cloudwatch:eu-west-2:367191799875:alarm:${alarmName}`],
-    detail: {
+    "region": "eu-west-2",
+    "resources": [`arn:aws:cloudwatch:eu-west-2:367191799875:alarm:${alarmName}`],
+    "detail": {
       alarmName,
       state: { value: stateValue, reason: "Threshold crossed", timestamp: "2026-08-31T12:00:00.000+0000" },
       previousState: { value: previousStateValue },
@@ -187,15 +187,11 @@ describe("alarmToGithubIssue", () => {
 
   describe("alarmFamilyKey via buildIssueTitle", () => {
     test("a deployment-scoped name maps to the family title", () => {
-      expect(buildIssueTitle(alarmFamilyKey("ci-claudeboa-app-hmrc-stack-health"))).toBe(
-        "[ALARM] ci-app-hmrc-stack-health",
-      );
+      expect(buildIssueTitle(alarmFamilyKey("ci-claudeboa-app-hmrc-stack-health"))).toBe("[ALARM] ci-app-hmrc-stack-health");
     });
 
     test("an env-scoped name is unchanged", () => {
-      expect(buildIssueTitle(alarmFamilyKey("prod-env-salt-secret-unexpected-read"))).toBe(
-        "[ALARM] prod-env-salt-secret-unexpected-read",
-      );
+      expect(buildIssueTitle(alarmFamilyKey("prod-env-salt-secret-unexpected-read"))).toBe("[ALARM] prod-env-salt-secret-unexpected-read");
     });
   });
 
@@ -389,8 +385,7 @@ describe("alarmToGithubIssue", () => {
       mockCloudWatchSend.mockResolvedValue({
         CompositeAlarms: [
           {
-            AlarmRule:
-              'ALARM("arn:aws:cloudwatch:eu-west-2:367191799875:alarm:check-prod-0f68ed8-app-hmrc-vat-return-post-errors")',
+            AlarmRule: 'ALARM("arn:aws:cloudwatch:eu-west-2:367191799875:alarm:check-prod-0f68ed8-app-hmrc-vat-return-post-errors")',
           },
         ],
       });
@@ -430,11 +425,7 @@ describe("alarmToGithubIssue", () => {
           ]),
       });
 
-      const issue = await findOpenIssueByAlarmFamily(
-        "gh-token",
-        "diy-accounting-uk/submit.diyaccounting.co.uk",
-        "ci-app-health-failed",
-      );
+      const issue = await findOpenIssueByAlarmFamily("gh-token", "diy-accounting-uk/submit.diyaccounting.co.uk", "ci-app-health-failed");
       expect(issue.number).toBe(42);
       expect(global.fetch).toHaveBeenCalledTimes(1);
       const [url, options] = global.fetch.mock.calls[0];
@@ -446,11 +437,7 @@ describe("alarmToGithubIssue", () => {
 
     test("returns null when no open issue matches", async () => {
       global.fetch = vi.fn().mockResolvedValue({ ok: true, json: () => Promise.resolve([]) });
-      const issue = await findOpenIssueByAlarmFamily(
-        "gh-token",
-        "diy-accounting-uk/submit.diyaccounting.co.uk",
-        "ci-app-health-failed",
-      );
+      const issue = await findOpenIssueByAlarmFamily("gh-token", "diy-accounting-uk/submit.diyaccounting.co.uk", "ci-app-health-failed");
       expect(issue).toBeNull();
     });
 
@@ -535,9 +522,9 @@ describe("alarmToGithubIssue", () => {
 
     test("throws on a non-ok comment response", async () => {
       global.fetch = vi.fn().mockResolvedValue({ ok: false, status: 404, text: () => Promise.resolve("not found") });
-      await expect(
-        commentOnGitHubIssue("gh-token", "diy-accounting-uk/submit.diyaccounting.co.uk", 42, "comment text"),
-      ).rejects.toThrow("GitHub API error commenting on issue: 404");
+      await expect(commentOnGitHubIssue("gh-token", "diy-accounting-uk/submit.diyaccounting.co.uk", 42, "comment text")).rejects.toThrow(
+        "GitHub API error commenting on issue: 404",
+      );
     });
   });
 
@@ -597,7 +584,8 @@ describe("alarmToGithubIssue", () => {
         .mockResolvedValueOnce({ ok: true, json: () => Promise.resolve([]) })
         .mockResolvedValueOnce({
           ok: true,
-          json: () => Promise.resolve({ number: 101, html_url: "https://github.com/diy-accounting-uk/submit.diyaccounting.co.uk/issues/101" }),
+          json: () =>
+            Promise.resolve({ number: 101, html_url: "https://github.com/diy-accounting-uk/submit.diyaccounting.co.uk/issues/101" }),
         });
 
       await handler(ALARM_EVENT);
@@ -677,14 +665,16 @@ describe("alarmToGithubIssue", () => {
         .mockResolvedValueOnce({ ok: true, json: () => Promise.resolve([]) })
         .mockResolvedValueOnce({
           ok: true,
-          json: () => Promise.resolve({ number: 101, html_url: "https://github.com/diy-accounting-uk/submit.diyaccounting.co.uk/issues/101" }),
+          json: () =>
+            Promise.resolve({ number: 101, html_url: "https://github.com/diy-accounting-uk/submit.diyaccounting.co.uk/issues/101" }),
         });
 
       await Promise.all([handler(ALARM_EVENT), handler(ALARM_EVENT)]);
 
       expect(putAttempts).toBe(2);
       const createCalls = global.fetch.mock.calls.filter(
-        ([url, options]) => url === "https://api.github.com/repos/diy-accounting-uk/submit.diyaccounting.co.uk/issues" && options?.method === "POST",
+        ([url, options]) =>
+          url === "https://api.github.com/repos/diy-accounting-uk/submit.diyaccounting.co.uk/issues" && options?.method === "POST",
       );
       expect(createCalls.length).toBe(1);
     });

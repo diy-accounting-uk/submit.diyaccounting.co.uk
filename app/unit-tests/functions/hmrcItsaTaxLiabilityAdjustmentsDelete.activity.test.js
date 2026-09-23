@@ -81,7 +81,7 @@ function buildDeleteBody(overrides = {}) {
 function buildInitialDeleteEvent({ body = {}, headers = {} } = {}) {
   return buildHmrcEvent({
     body: buildDeleteBody(body),
-    headers: { authorization: "Bearer test-token", "x-initial-request": "true", ...headers },
+    headers: { "authorization": "Bearer test-token", "x-initial-request": "true", ...headers },
   });
 }
 
@@ -131,7 +131,7 @@ describe("hmrcItsaTaxLiabilityAdjustmentsDelete token charge", () => {
   test("does not charge a token for a request our own validation rejects before it reaches HMRC", async () => {
     const event = buildHmrcEvent({
       body: buildDeleteBody({ nino: undefined }),
-      headers: { authorization: "Bearer test-token", "x-initial-request": "true" },
+      headers: { "authorization": "Bearer test-token", "x-initial-request": "true" },
     });
 
     const response = await hmrcItsaTaxLiabilityAdjustmentsDeleteHandler(event);

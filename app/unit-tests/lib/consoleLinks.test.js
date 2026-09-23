@@ -3,12 +3,7 @@
 
 import { describe, test, expect } from "vitest";
 
-import {
-  encodeConsoleHashValue,
-  buildAlarmConsoleLink,
-  buildLogsInsightsLink,
-  buildXRayTraceSearchLink,
-} from "@app/lib/consoleLinks.js";
+import { encodeConsoleHashValue, buildAlarmConsoleLink, buildLogsInsightsLink, buildXRayTraceSearchLink } from "@app/lib/consoleLinks.js";
 
 const WORKED_EXAMPLE_QUERY = [
   "SOURCE logGroups(namePrefix: ['/aws/lambda/prod-0f68ed8-app-hmrc-vat-return-post'])",
@@ -86,21 +81,15 @@ describe("buildXRayTraceSearchLink", () => {
   });
 
   test("returns null for an empty filter expression", () => {
-    expect(
-      buildXRayTraceSearchLink({ region: "eu-west-2", startIso: "a", endIso: "b", filterExpression: "" }),
-    ).toBeNull();
-    expect(
-      buildXRayTraceSearchLink({ region: "eu-west-2", startIso: "a", endIso: "b", filterExpression: null }),
-    ).toBeNull();
+    expect(buildXRayTraceSearchLink({ region: "eu-west-2", startIso: "a", endIso: "b", filterExpression: "" })).toBeNull();
+    expect(buildXRayTraceSearchLink({ region: "eu-west-2", startIso: "a", endIso: "b", filterExpression: null })).toBeNull();
   });
 });
 
 describe("buildAlarmConsoleLink", () => {
   test("builds a region-scoped CloudWatch alarm console URL", () => {
     const link = buildAlarmConsoleLink("eu-west-2", "ci-app-health-failed");
-    expect(link).toBe(
-      "https://eu-west-2.console.aws.amazon.com/cloudwatch/home?region=eu-west-2#alarmsV2:alarm/ci-app-health-failed",
-    );
+    expect(link).toBe("https://eu-west-2.console.aws.amazon.com/cloudwatch/home?region=eu-west-2#alarmsV2:alarm/ci-app-health-failed");
   });
 
   test("encodes an alarm name containing a slash", () => {

@@ -5,12 +5,7 @@
 
 import { describe, test, expect } from "vitest";
 
-import {
-  parseConfig,
-  applicationsForEnvironment,
-  probeRequest,
-  classifySubscriptionResponse,
-} from "../../../infra/hmrc/hmrc-assert.js";
+import { parseConfig, applicationsForEnvironment, probeRequest, classifySubscriptionResponse } from "../../../infra/hmrc/hmrc-assert.js";
 
 const SAMPLE_TOML = `
 [application.sandbox]
@@ -67,7 +62,7 @@ describe("parseConfig", () => {
   });
 
   test("throws when either application is missing", () => {
-    expect(() => parseConfig("[application.sandbox]\nclient_id = \"x\"\nhost = \"h\"\n")).toThrow(/production/);
+    expect(() => parseConfig('[application.sandbox]\nclient_id = "x"\nhost = "h"\n')).toThrow(/production/);
   });
 
   test("throws when a subscription is missing a required field", () => {
@@ -120,7 +115,9 @@ describe("classifySubscriptionResponse", () => {
   });
 
   test("a POST-only endpoint refusing the probe's method or body still proves the subscription", () => {
-    expect(classifySubscriptionResponse(415, { statusCode: 415, message: "Expecting text/json or application/json body" })).toBe("subscribed");
+    expect(classifySubscriptionResponse(415, { statusCode: 415, message: "Expecting text/json or application/json body" })).toBe(
+      "subscribed",
+    );
     expect(classifySubscriptionResponse(405, undefined)).toBe("subscribed");
   });
 
