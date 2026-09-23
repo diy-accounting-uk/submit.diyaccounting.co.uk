@@ -81,7 +81,7 @@ Shared facts for the analytics rows (B52d, B52e, B52l, B52m): the prod Athena da
   (0) as the first test. Shares `refine/SKILL.md` with B30be: one agent; the `company-book/SKILL.md` line lands in F2k's agent. **Source**: session
   report Mc+ncD. **Owner**: Claude Code. **Model**: Haiku. **Size**: 2 files.
 
-- [ ] **B30bb. A Markdown-only push leaves a PR blocked.** On `claude/b89-board`, PR #346. `main`'s ruleset (16057564) requires
+- [ ] **B30bb. A Markdown-only push leaves a PR blocked.** On `claude/b89-board`, PR #346. The proof on #346 showed a dispatched `test.yml` does not count (GitHub leaves workflow_dispatch suites out of a PR's rollup); an agent is changing `test.yml` to run on every push and skip its heavy jobs on a Markdown-only one, which satisfies the required checks. `main`'s ruleset (16057564) requires
   `Check commit signatures`, `npm test`, `maven test`, `eslint` and `CodeQL` on the PR head, but
   `.github/workflows/codeql.yml` ignores `**.md` on push and pull_request (lines 19 and 23) and has
   no `workflow_dispatch`, and `test.yml` skips a Markdown-only push too (line 57; it already has
@@ -235,7 +235,7 @@ Shared facts for the analytics rows (B52d, B52e, B52l, B52m): the prod Athena da
   the company-book skill). **Source**: F2k's diagnosis. **Owner**: Claude Code. **Model**: Sonnet.
   **Size**: ~4 files.
 
-- [ ] **PU-7n. The practice licence launch.** An agent is building it on `claude/b90-board` now (the Stripe live run waits for the operator). Operator, 2026-09-22: `resident-pro` at £199 a
+- [ ] **PU-7n. The practice licence launch.** On `claude/b90-board` (catalogue, nav, probes, the CDK price-id wiring; live prices created 2026-09-23 on the operator's go: year `price_1UIyyPCD0Ld2ukzIHeO99d6G`, month `price_1UIyyPCD0Ld2ukzIQefbnWMO`); the batch's suites run before its push. The DIYA-GL line is spreadsheets branch `claude/diya-gl-resident-pro`. Operator, 2026-09-22: `resident-pro` at £199 a
   year and £19.99 a month, the monthly price shown only on `bundles.html` (the DIYA-GL page shows
   annual prices alone, for `resident` too). `web/public/submit.catalogue.toml`'s `resident-pro`
   block (line 208: `enable = "on-pass"`, `hidden = true`, `allocation = "on-pass-on-subscription"`,
@@ -286,14 +286,14 @@ Shared facts for the analytics rows (B52d, B52e, B52l, B52m): the prod Athena da
   statement date. Steps are task B of `../NEXT_OPERATOR_RUNBOOK.md`. File this one by WebFiling: Submit's confirmation statement (the CS rows) is not built, and CS-H6's prod proof is a fee-free second statement after this one. The personal codes are CS-H3's too. **Owner**: Operator.
   **Model**: none. **Size**: 0 files.
 
+## Blocked
+
 - [ ] **O11. The ITSA send day.** Operator, 2026-09-23: the day after PR #346 merges (so checklist
   rows 8 and 13 read evidenced), inside the 14-day window that the 2026-09-21 sandbox run keeps open
   to 5 October. Claude Code writes the date here and into B11.T10's row when #346 merges. On that day send `_developers/hmrc/DRAFT_EMAIL_ITSA_RECOGNITION.md` to
   `SDSTeam@hmrc.gov.uk`, then `_developers/hmrc/DRAFT_EMAIL_ITSA_PRODUCTION_CREDENTIALS.md` when
   SDST answers. **Source**: BACKLOG 11; `PLAN_ITSA_PHASE_2.md` T10. **Owner**: Operator. **Model**:
   none. **Size**: 0 files.
-
-## Blocked
 
 - [ ] **CS-H2. Send the confirmation-statement email.** Send `../DRAFT_EMAIL_XMLGW_CS01.md` on the `xml@companieshouse.gov.uk` thread, and paste the answers into CS-9's row. Blocked on CS-H2d. **Source**: `PLAN_COMPANIES_HOUSE_CONFIRMATION_STATEMENT.md` (its Tasks table carries the files). **Owner**: Operator. **Model**: none. **Size**: 0 files.
 
