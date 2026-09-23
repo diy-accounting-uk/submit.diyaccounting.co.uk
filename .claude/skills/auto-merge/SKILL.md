@@ -47,8 +47,9 @@ git branch -r
 gh pr list --state open --json number,title,headRefName,headRefOid,isDraft,mergeable,mergeStateStatus
 ```
 
-For each PR from that read, check whether its head changes only `.md` files
-(`git diff --name-only origin/main...origin/<headRef>`) and whether any required context is
+For each PR from that read, check whether its latest push changed only `.md` files
+(`git diff --name-only <headRefOid>~1 <headRefOid>`; a PR whose earlier commits carry code still
+skips `test.yml` and `codeql.yml` on a Markdown-only push) and whether any required context is
 missing (`gh api repos/diy-accounting-uk/submit.diyaccounting.co.uk/commits/<headRefOid>/check-runs
 --jq '.check_runs[].name'` against the ruleset's required list,
 `gh api repos/diy-accounting-uk/submit.diyaccounting.co.uk/rulesets/16057564 --jq

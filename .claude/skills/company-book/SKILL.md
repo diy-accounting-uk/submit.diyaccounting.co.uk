@@ -50,6 +50,10 @@ Validate with `validateBook` and `validateLines` from `@diy-accounting-uk/diya-g
 
 Posting rules:
 
+- DIY Accounting Limited is not VAT registered: `"diya-gl:vatRegistered" = false`, turnover is
+  gross, no VAT is extracted or reclaimed. Turnover against the registration threshold is reviewed
+  in each board pack.
+
 - Take account codes from the prior year's workbooks. Never invent one.
 - Post gross income and fees as separate lines. Never net them.
 - A payout or transfer that shows in two sources (a Stripe payout and its bank credit, a PayPal
