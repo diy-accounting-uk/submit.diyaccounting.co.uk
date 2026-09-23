@@ -45,9 +45,7 @@ Shared facts for the analytics rows (B52d, B52e, B52l, B52m): the prod Athena da
 
 ## In flight
 
-## Machine-only
-
-- [ ] **B30be. Refine pass 2 names the call site and the forbidden patterns.** The coordinator
+- [ ] **B30be. Refine pass 2 names the call site and the forbidden patterns.** On `claude/b89-board`, not yet pushed. The coordinator
   corrected 6 agent results on 2026-09-23 (knip deleting a used file, a Stripe API pin on every
   client, a `GITHUB_ENV` name clash, a compatibility alias, a stack-update heuristic, a
   `.dockerignore` excluding `infra/`). In `.claude/skills/refine/SKILL.md` pass 2 (`## Pass 2 —
@@ -57,7 +55,7 @@ Shared facts for the analytics rows (B52d, B52e, B52l, B52m): the prod Athena da
   needs it, whole-tree formatting or deletion tools, broad ignore rules. **Source**: session
   report Mc+ncD. **Owner**: Claude Code. **Model**: Haiku. **Size**: 1 file.
 
-- [ ] **OF1a. PayPal client id read from a variable.** The operator created the live app
+- [ ] **OF1a. PayPal client id read from a variable.** On `claude/b89-board`, not yet pushed. The operator created the live app
   `diya-finance` and put `PAYPAL_CLIENT_SECRET` on the `prod` environment as a secret and
   `PAYPAL_CLIENT_ID` as a variable (2026-09-23). `.github/workflows/deploy-environment.yml`'s step
   "Create secret in AWS from secrets.PAYPAL_CLIENT_ID" (line 339) reads `secrets.PAYPAL_CLIENT_ID`,
@@ -69,13 +67,13 @@ Shared facts for the analytics rows (B52d, B52e, B52l, B52m): the prod Athena da
   secretsmanager describe-secret --secret-id <id>`; both were absent on 2026-09-23). Then F1b runs.
   **Owner**: Claude Code. **Model**: Haiku. **Size**: 1 file.
 
-- [ ] **CS1. `compliance.toml`'s presenter status is current.** The `companies-house-presenter`
+- [ ] **CS1. `compliance.toml`'s presenter status is current.** On `claude/b89-board`, not yet pushed. The `companies-house-presenter`
   item (line 30) says test-account activation is pending; the test presenter 66666727000 was
   issued 2026-09-11 and its ci secrets set 2026-09-12. Update `description`, `status` and `date`,
   `compliance.yml` reads it (REPORT_CAPABILITIES OPS-38); a TOML parse is the proof.
   **Owner**: Claude Code. **Model**: Haiku. **Size**: 1 file.
 
-- [ ] **B30bf. A parser brief carries one real month and its expected residual.** The PayPal
+- [ ] **B30bf. A parser brief carries one real month and its expected residual.** On `claude/b89-board`, not yet pushed. The PayPal
   statement parser took 4 rounds (0.67M tokens) because the activity-summary parse was overwritten
   by a later bare heading and no fixture caught it. In `.claude/skills/refine/SKILL.md` pass 2 and
   `.claude/skills/company-book/SKILL.md`'s `## Build` (line 32), require a parser brief to name one real
@@ -83,7 +81,7 @@ Shared facts for the analytics rows (B52d, B52e, B52l, B52m): the prod Athena da
   (0) as the first test. Shares `refine/SKILL.md` with B30be: one agent; the `company-book/SKILL.md` line lands in F2k's agent. **Source**: session
   report Mc+ncD. **Owner**: Claude Code. **Model**: Haiku. **Size**: 2 files.
 
-- [ ] **B30bb. A Markdown-only push leaves a PR blocked.** `main`'s ruleset (16057564) requires
+- [ ] **B30bb. A Markdown-only push leaves a PR blocked.** On `claude/b89-board`, not yet pushed. `main`'s ruleset (16057564) requires
   `Check commit signatures`, `npm test`, `maven test`, `eslint` and `CodeQL` on the PR head, but
   `.github/workflows/codeql.yml` ignores `**.md` on push and pull_request (lines 19 and 23) and has
   no `workflow_dispatch`, and `test.yml` skips a Markdown-only push too (line 57; it already has
@@ -98,7 +96,7 @@ Shared facts for the analytics rows (B52d, B52e, B52l, B52m): the prod Athena da
   head (session report Mc+ncD). Same agent as B30bc. **Owner**: Claude Code. **Model**:
   Sonnet. **Size**: 2 files.
 
-- [ ] **B30bd. Worker agents start no agents.** The capabilities-report agent forked itself
+- [ ] **B30bd. Worker agents start no agents.** On `claude/b89-board`, not yet pushed. The capabilities-report agent forked itself
   recursively on 2026-09-23: 0.78M tokens reported, more unreported, and duplicate writers whose
   errors had to be relayed and corrected. In `.claude/skills/do-next/SKILL.md` and
   `.claude/skills/iterate/SKILL.md`, make every worker brief say it must not call the `Agent` tool
@@ -106,7 +104,7 @@ Shared facts for the analytics rows (B52d, B52e, B52l, B52m): the prod Athena da
   the coordinator before dispatch. **Source**: session report Mc+ncD. **Owner**: Claude Code.
   **Model**: Haiku. **Size**: 2 files.
 
-- [ ] **B30bg. Sibling-repository worktrees push in one attempt.** The spreadsheets push on
+- [ ] **B30bg. Sibling-repository worktrees push in one attempt.** Skill part on `claude/b89-board`, not yet pushed; the hook part is spreadsheets PR #137 (`claude/ops-prepush-clean`). The spreadsheets push on
   2026-09-23 took 3 attempts, one of them a 41-minute run: the worktree had an empty
   `node_modules`, and `../spreadsheets.diyaccounting.co.uk/.githooks/pre-push` wrote about 100
   generated files (and changed `provenance-data.js`) that then sat uncommitted. In
@@ -117,7 +115,7 @@ Shared facts for the analytics rows (B52d, B52e, B52l, B52m): the prod Athena da
   hook with that command's exit status) (a branch and PR there). Shares `do-next/SKILL.md` with B30bd: one agent. **Source**: session report
   Mc+ncD. **Owner**: Claude Code. **Model**: Sonnet. **Size**: 2 files (one per repository).
 
-- [ ] **B52h2. Forecast Search at a match type and a bid ceiling.** `infra/google/ads/ads-forecast.js`
+- [ ] **B52h2. Forecast Search at a match type and a bid ceiling.** On `claude/b89-board`, not yet pushed. `infra/google/ads/ads-forecast.js`
   sends every keyword as `BROAD` with no maximum cost per click (line 155), so the forecast of
   2026-09-23 read £38 a click for £50 a day. Add `--match-type <EXACT|PHRASE|BROAD>` and
   `--cpc-ceiling-gbp <n>` (the API's field is `maxCpcBidCeilingMicros` inside
@@ -125,7 +123,7 @@ Shared facts for the analytics rows (B52d, B52e, B52l, B52m): the prod Athena da
   and in `.claude/skills/ads-advisor/SKILL.md` say to quote the match type and ceiling with any
   forecast. **Owner**: Claude Code. **Model**: Haiku. **Size**: 3 files.
 
-- [ ] **F2h. `mail-invoices.js` finds the workspace from a worktree.** `WORKSPACE_ROOT` in
+- [ ] **F2h. `mail-invoices.js` finds the workspace from a worktree.** On `claude/b89-board`, not yet pushed. `WORKSPACE_ROOT` in
   `mcp/lib/finance/mail-invoices.js` (line 21) is four directories above the file, which from
   `.claude/worktrees/<name>/` lands inside `submit.diyaccounting.co.uk/`, so `CORPUS_BIN` and
   `CORPUS_CONFIG` (lines 22 to 23) miss and F2d needed a `runCorpus` override. Replace it with an
@@ -138,7 +136,7 @@ Shared facts for the analytics rows (B52d, B52e, B52l, B52m): the prod Athena da
   with a cap and the configured name). **Owner**: Claude Code. **Model**: Haiku. **Size**: 3
   files.
 
-- [ ] **F2i. Direct debits confirmed from a payment schedule.** `invoiceLinesForPeriod` in
+- [ ] **F2i. Direct debits confirmed from a payment schedule.** On `claude/b89-board`, not yet pushed. `invoiceLinesForPeriod` in
   `mcp/lib/finance/mail-invoices.js` (line 165) takes one total per document
   (`findInvoiceTotal`, line 105), so a schedule of dated instalments posts nothing. Hiscox's
   "Payment schedule.pdf" is indexed in the corpus as an attachment section
@@ -155,7 +153,7 @@ Shared facts for the analytics rows (B52d, B52e, B52l, B52m): the prod Athena da
   Shares `mail-invoices.js` with F2h: one agent, F2h first. **Source**: `PARKED.md`; operator
   2026-09-23 (option a). **Owner**: Claude Code. **Model**: Sonnet. **Size**: 2 files.
 
-- [ ] **ITSA8. The diversion note for income the build does not cover.** Row 8 of
+- [ ] **ITSA8. The diversion note for income the build does not cover.** On `claude/b89-board`, not yet pushed. Row 8 of
   `_developers/hmrc/ITSA_PRODUCTION_APPROVALS_CHECKLIST.md` is "Not evidenced": a customer with
   foreign property or other income is not told where to finish their return. Worse,
   `applyPickedBusinessToLinks` in `web/public/hmrc/itsa/dashboard.html` (line 295) routes every
@@ -168,7 +166,7 @@ Shared facts for the analytics rows (B52d, B52e, B52l, B52m): the prod Athena da
   obligations and losses cover it. **Owner**:
   Claude Code. **Model**: Sonnet. **Size**: ~3 files.
 
-- [ ] **B30bi. The ci last-known-good set goes 12 hours after its promotion.** `findSkipReason`
+- [ ] **B30bi. The ci last-known-good set goes 12 hours after its promotion.** On `claude/b89-board`, not yet pushed. `findSkipReason`
   in `app/functions/infra/selfDestruct.js` (line 137) skips every self-destruct fire while
   `/submit/ci/last-known-good-deployment` names the set, so `ci-set1` stands until another ci
   deploy passes (about $15 a month: 5 provisioned-concurrency configs, 2 canaries, 3 alarms).
@@ -188,7 +186,19 @@ Shared facts for the analytics rows (B52d, B52e, B52l, B52m): the prod Athena da
   once. Prod never deploys a `SelfDestructStack`, so prod is unaffected. **Source**: operator
   2026-09-23 (option A, 12 hours). **Owner**: Claude Code. **Model**: Sonnet. **Size**: ~4 files.
 
-- [ ] **B30bc. A PII scan on every push, docs included.** GitHub secret scanning with push
+- [ ] **ITSA13. WCAG 2.1 AA evidence for the 19 ITSA pages.** On `claude/b89-board`, not yet pushed. Row 13 of the checklist is "Not
+  evidenced": no scan names any of the 19 pages under `web/public/hmrc/itsa/`. Three lists carry
+  the scanned pages: `scripts/axe-quickscan.mjs`'s `PAGES` (line 12; run as `node
+  scripts/axe-quickscan.mjs <baseUrl> wcag2a,wcag2aa,wcag21a,wcag21aa`), `package.json`'s
+  `accessibility:axe-*` URL lists (lines 328 to 330), and `.pa11yci.{proxy,ci,prod}.json`, which
+  `.github/workflows/compliance.yml`'s pa11y job runs (line 151). Add the 19 pages to all of them.
+  Signed out, a page scans only its empty state; scan the populated state too with a browser test
+  that serves the page as `web/browser-tests/itsaDashboard.browser.test.js` does (`page.route`,
+  line 45) and injects `node_modules/axe-core/axe.min.js` (installed). Fix what either finds and
+  record the result in the checklist (row 13, line 46) and `REPORT_ACCESSIBILITY_PENETRATION.md`.
+  **Owner**: Claude Code. **Model**: Sonnet. **Size**: ~8 files.
+
+- [ ] **B30bc. A PII scan on every push, docs included.** In rework on an agent worktree: the first build reused the redactor's `DENY_PATTERNS` and hit 2,489 lines of the current tree (the words "bearer token" among them); the rework gives the scan its own patterns, targets zero hits on the tree, and exempts test directories for personal data only. GitHub secret scanning with push
   protection and non-provider patterns is on for this repository, so provider tokens and private
   keys are blocked at push already; nothing scans what a push adds for personal data. Add
   `.github/workflows/content-scan.yml` on push (every branch, no path filter) and pull_request: scan
@@ -204,49 +214,41 @@ Shared facts for the analytics rows (B52d, B52e, B52l, B52m): the prod Athena da
   Record the run ids in OB30bc's row. Adding `content scan` to the ruleset's
   required checks is OB30bc. **Owner**: Claude Code. **Model**: Sonnet. **Size**: ~4 files.
 
-- [ ] **F2k. DIYA's book rebuilt so diya-gl reads it.** Cowork loaded
-  `../staging/2026-2027/book/book-diya-gl.zip` in diya-gl-mcp 1.2.31 (`extract_book`, `product:
-  ltd`, then `report`, 2026-09-23): bank balances and purchases stand; turnover, the balance sheet
-  and CT do not. Four causes, each in a parser in `mcp/lib/finance/` with a test:
-  (1) `bank-lines.js` sets only `diya-gl:bankCode` (line 134); the ltd check
-  `book-ltd-bank-line-has-side` (`../spreadsheets.diyaccounting.co.uk/app/lib/book-checks/ltd.js`
-  line 141) needs `debitCreditCode` `D` or `C` on every bank line, so 70 of 71 bank lines drop
-  out and cash reads £103.66 against statement closings of £1,624.90 (current) and £271.69
-  (savings); (2) `stripe-lines.js`'s refunds (`documentType: "credit-note"`, line 87) post as
-  positive sales, +£91.92 on turnover (engine £3,899.91, lines net £3,807.99): find the engine's
-  refund encoding in `../spreadsheets.diyaccounting.co.uk/app/lib/scenario-extractor.js` and its
-  fixtures (`app/test/fixtures/ltd-scenario-full.toml`), and use it; if the engine has none, the
-  engine fix is a spreadsheets PR; (3) the engine reads ltd opening balances only from an opening
-  journal, `sourceJournalID: "journal"` lines whose `documentReference` starts with the opening
-  prefix (`isOpeningBalanceLine`, `scenario-extractor.js` line 237; `buildOpeningBalance` line
-  252), never from `book.toml`'s `[openingBalances]`, so emit the journal from
-  `book-from-workbook.js`; (4) 1 March to 31 August straddles the 31 March year end: rebuild as
-  1 April to 31 August 2026, with March carried in the 2025-26 control. Set
-  `"diya-gl:vatRegistered"` to the registration's current state (registered; cancelling it is
-  runbook task N). The 26 `book-duplicate-entries` warnings are same-day Stripe refunds with
-  distinct ids; leave them. Then rebuild with glue in the session scratchpad, load the zip with
-  the current `@diy-accounting-uk/diya-gl` (1.2.32), and prove: zero book-check failures, bank
-  1200 and 1210 closing at the statement figures, turnover net of refunds, the opening balance
-  sheet populated, zero `check/P&L` failures; rewrite `VERIFICATION.md` and the zip. The
-  company-book skill's Build section changes with it; B30bf's line for that file lands in this
-  row's agent. PayPal wallet flows reaching a 1220 bank line is F2g's. **Source**: Cowork
-  inbox 2026-09-23T20:46:44Z. **Owner**: Claude Code. **Model**: Sonnet. **Size**: ~6 files.
+- [ ] **F2k. DIYA's book rebuilt so diya-gl reads it.** On `claude/b89-board`: bank lines carry
+  `debitCreditCode`, `book-from-workbook.js` emits the opening journal and the opening `BC` bank
+  lines, and `periodCoveredEnd` is the fiscal year end (2027-03-31). The rebuilt book (1 April to
+  31 August 2026, 452 lines) is in `../staging/2026-2027/book/`: 0 book-check failures, bank 1200
+  and 1210 close at £1,624.90 and £271.69, Stripe residual 0, opening balance sheet populated. The
+  superseded book is in `../staging/2026-2027/book-2026-09-23-superseded/`. Remainders: F2l, OF2k,
+  F2m. **Source**: Cowork inbox 2026-09-23T20:46:44Z. **Owner**: Claude Code. **Model**: Sonnet.
+  **Size**: 5 files.
 
-- [ ] **ITSA13. WCAG 2.1 AA evidence for the 19 ITSA pages.** Row 13 of the checklist is "Not
-  evidenced": no scan names any of the 19 pages under `web/public/hmrc/itsa/`. Three lists carry
-  the scanned pages: `scripts/axe-quickscan.mjs`'s `PAGES` (line 12; run as `node
-  scripts/axe-quickscan.mjs <baseUrl> wcag2a,wcag2aa,wcag21a,wcag21aa`), `package.json`'s
-  `accessibility:axe-*` URL lists (lines 328 to 330), and `.pa11yci.{proxy,ci,prod}.json`, which
-  `.github/workflows/compliance.yml`'s pa11y job runs (line 151). Add the 19 pages to all of them.
-  Signed out, a page scans only its empty state; scan the populated state too with a browser test
-  that serves the page as `web/browser-tests/itsaDashboard.browser.test.js` does (`page.route`,
-  line 45) and injects `node_modules/axe-core/axe.min.js` (installed). Fix what either finds and
-  record the result in the checklist (row 13, line 46) and `REPORT_ACCESSIBILITY_PENETRATION.md`.
-  **Owner**: Claude Code. **Model**: Sonnet. **Size**: ~8 files.
+## Machine-only
+
+- [ ] **F2l. The engine nets a credit note against turnover.** The diya-gl schema fixes a line's
+  `amount` at `minimum: 0` (`../spreadsheets.diyaccounting.co.uk/web/spreadsheets.diyaccounting.co.uk/public/schema/diya-gl-lines-v2.schema.json`
+  lines 69 to 72) and nothing reads `documentType`: `computeGrossSales`
+  (`app/lib/scenario-extractor.js` line 536), `salesTotal` (`app/lib/book-checks.js` line 326) and
+  `totalsByCode` add a `sales` line with `documentType: "credit-note"` as a sale. Make those three
+  subtract it, with cases over a sale and its refund in the same month, in a spreadsheets branch
+  and PR; the release carries it to `@diy-accounting-uk/diya-gl`. DIYA's April book carries two
+  Stripe refunds (£10.98 gross), so turnover reads £18.30 net too high until this lands; then
+  rebuild the zip and re-run the report (F2k's glue is in the session scratchpad; the steps are in
+  the company-book skill). **Source**: F2k's diagnosis. **Owner**: Claude Code. **Model**: Sonnet.
+  **Size**: ~4 files.
 
 ## Machine-ask
 
 ## Human-driven
+
+- [ ] **OF2k. Say what four kinds of April to August receipt are.** The rebuilt book posts them as
+  sales; each needs its account. Write the answer into F2m's row:
+  (1) £1,000 "Mobile Payment: Antony Cartwright": a director's loan credit (account 2500) or
+  something else; (2) £160.22 of AWS refunds: a credit against hosting (5301); (3) £1.00 and the
+  other small charges on the operator's own subscription: test purchases to reverse, or real
+  sales; (4) £2.28 cashback: other income or a purchases credit. The lines are in
+  `../staging/2026-2027/book/lines.jsonl` and listed in its `VERIFICATION.md`. **Owner**: Operator.
+  **Model**: none. **Size**: 0 files.
 
 - [ ] **OCS. The confirmation statement, due 5 October 2026.** Made up to 21 September 2026;
   DIY Accounting Limited 06846849 last filed a CS01 on 25 October 2025
@@ -273,7 +275,7 @@ Shared facts for the analytics rows (B52d, B52e, B52l, B52m): the prod Athena da
 
 ## Blocked
 
-- [ ] **OF2d. Copy DIYA's book into Drive.** Blocked on F2k's rebuilt book (Cowork found turnover, the balance sheet and CT wrong in the current one). The book is in
+- [ ] **OF2d. Copy DIYA's book into Drive.** Blocked on F2l and F2m (the rebuilt book's turnover counts two refunds and £1,163.50 of non-customer receipts as sales). The book is in
   `../staging/2026-2027/book/` (`book.toml`, `lines.jsonl` with 488 lines, `VERIFICATION.md`, and `book-diya-gl.zip` for the spreadsheets MCP):
   bank balances match every statement, Stripe and PayPal reconcile with no residual, validation
   passes, and the review items (the £200 Polycode creditor payment, Hiscox, Linktree) are
@@ -287,6 +289,13 @@ Shared facts for the analytics rows (B52d, B52e, B52l, B52m): the prod Athena da
   merges past a PII hit. Blocked on B30bc's merge and its proof: both docs-only pushes (a root
   `.md`, a skill) ran `content scan` and the PR reached `CLEAN`. **Owner**: Operator.
   **Model**: none. **Size**: 0 files.
+
+- [ ] **F2m. DIYA's book: the non-sales lines reclassified and the members register.** Apply
+  OF2k's answers to the £1,163.50 of April to August `sales` lines that are not customer revenue,
+  and add `[[members]]` to `book.toml` from the Companies House register (the confirmation
+  statement of 2025-10-25; share capital £100), so `RegisterofMembers` passes; rebuild, re-run the
+  report, update `VERIFICATION.md`. Blocked on OF2k. **Source**: F2k's report. **Owner**: Claude
+  Code. **Model**: Sonnet. **Size**: 0 files.
 
 - [ ] **B30at1. The sweep's claim check, proven.** Needs a claimed set that is not last-known-good
   (the sweep keeps the last-known-good set before it reads any claim): the next time two branches
