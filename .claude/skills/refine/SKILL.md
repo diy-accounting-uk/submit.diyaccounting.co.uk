@@ -86,6 +86,10 @@ have to discover to finish. Then put that in the brief. The checks that paid for
   a dispatch-and-read is Haiku; a bounded change against an existing pattern is Sonnet; a design a
   Sonnet then builds from, or a change to a deploy's ordering and rollback, is Opus. A row over
   about 25 files is a two-agent chain. Change the row's **Model** when the check disagrees with it.
+- **Parser briefs carry a real source month and residual.** A brief for a statement parser names
+  one real source month by its path under `../drive/…/finance/`, and the first test asserts the
+  expected reconciliation residual (0), to catch a parse that loses detail to a later heading and
+  takes several rounds to surface.
 - **The brief's constants**: worktree path and branch, `cd <worktree>` in every Bash call,
   absolute paths, the evidence (run ids, log lines, file:line), "commit before a long
   verification", "a wait is a sleep loop inside one Bash call, never a Monitor", the licence header
