@@ -46,6 +46,20 @@ Shared facts for the analytics rows (B52d, B52e, B52l, B52m): the prod Athena da
 
 ## In flight
 
+- [ ] **F2g1. PayPal statements into diya-gl lines.** Branch `claude/b87-board` (worktree
+  `.claude/worktrees/b87`): `mcp/lib/finance/paypal-statement-lines.js` parses the monthly
+  `<yyyy-mm> PayPal - transactions.PDF` in the Drive mirror
+  (`../drive/DIY Accounting Limited/finance/2026-2027 accounts/paypal/`, `pdftotext -layout`),
+  settled rows only, holds and reversals excluded, each month checked against its statement's
+  balance movement. The API route (OF1, F1b, F2g) stays; this one unblocks F2d now. **Owner**:
+  Claude Code. **Model**: Sonnet. **Size**: ~2 files.
+
+- [ ] **B52f2a. The spreadsheets linker PR's smoke test.** PR
+  diy-accounting-uk/spreadsheets.diyaccounting.co.uk#136: its deploy's behaviour test asserted the
+  literal `gtag("config", "G-X4ZPD99X2K")`; the assertion now carries the linker (commit
+  `3759d0aea`), pushed and redeploying. **Owner**: Claude Code (the operator merges in that
+  repository). **Model**: Haiku. **Size**: 1 file.
+
 - [ ] **B30at1. The sweep's claim check, proven.** Needs a claimed set that is not last-known-good
   (the sweep keeps the last-known-good set before it reads any claim): the next time two branches
   deploy at once, `gh workflow run destroy-ci.yml -f sweep-for-stacks=true` while the second holds
@@ -54,8 +68,9 @@ Shared facts for the analytics rows (B52d, B52e, B52l, B52m): the prod Athena da
 
 - [ ] **B52f1. The gateway's RUM monitor and GA4 linker.** PR
   diy-accounting-uk/www.diyaccounting.co.uk#33 (branch `claude/obs-gateway-rum`), green locally
-  (`./mvnw clean verify`, 25 unit, 13 browser). Merges after B83w's deploy, which admits account
-  283165661847 to the sink its `CfnLink` targets; the `CfnLink` is refused before that.
+  (`./mvnw clean verify`, 25 unit, 13 browser). Its deploy 35855769008 failed at 11:41 UTC on "Access denied for operation 'CreateLink'", before
+  submit's sink policy admitted account 283165661847; both sinks admit it now and the failed job
+  is re-running.
   **Owner**: Claude Code (the operator merges in that repository). **Model**: Haiku. **Size**:
   11 files.
 
@@ -185,7 +200,7 @@ Shared facts for the analytics rows (B52d, B52e, B52l, B52m): the prod Athena da
   `web/public/operator/dashboard.html`. Blocked on OF2 (DIYA's book saved to the DIYA cloud, the last of the F1 and F2 rows). **Source**: BACKLOG 52i; `PLAN_ONE_STOP_DASHBOARD.md` D10. **Owner**:
   Claude Code. **Model**: Sonnet. **Size**: ~4 files.
 
-- [ ] **F2d. DIYA's book, assembled and verified.** The lines from F2a (Stripe), F2g (PayPal),
+- [ ] **F2d. DIYA's book, assembled and verified.** The lines from F2a (Stripe), F2g1 (PayPal statements),
   `mcp/lib/finance/bank-lines.js` over the NatWest statements in the Drive mirror
   (`../drive/DIY Accounting Limited/finance/2025-2026 accounts/bank/` for March,
   `../drive/DIY Accounting Limited/finance/2026-2027 accounts/bank/` for April to August, CSV and
@@ -198,7 +213,8 @@ Shared facts for the analytics rows (B52d, B52e, B52l, B52m): the prod Athena da
   2025-26 workbook (the control), every month's bank closing balance equal to the statement's,
   gross income and fees separate, no hold posted, each check a line in
   `../staging/2026-2027/book/VERIFICATION.md`. F2a's `mcp/lib/finance/stripe-lines.js` is on `main`.
-  Blocked on F2g.
+  The operator copies the book and `VERIFICATION.md` into Drive (operator, 2026-09-23). Blocked
+  on F2g1.
   **Source**: `../PLAN_FINANCE_AUTOMATION.md` phase 2 and its verification. **Owner**: Claude Code.
   **Model**: Sonnet. **Size**: ~2 files.
 
