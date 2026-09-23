@@ -16,10 +16,11 @@ runs), and for Claude Code steps the **Model** a sub-agent should use (Fable > O
 Haiku; the lowest tier that fits). Anything touching code goes through a `claude/*` branch and
 PR; the operator merges.
 
-**Prod runs deployment prod-eb07c6d** (PR #334's merge deploy 35834372622, green at 09:29 UTC);
-`main`'s deploy 35837285414 (PR #336's merge 1b6c3e2d) is building `prod-1b6c3e2` to replace it.
+**Prod runs deployment prod-1b6c3e2** (PR #336's merge deploy 35837285414, its stacks and probes
+green, destroying `prod-eb07c6d` since 09:4x UTC).
 **ci**: `ci-set2` is last-known-good (PR #335's dispatch 35838093200); PR #335's dispatch
-35843310128 to `ci-set1` carries its probe fix. `main`'s `test` run is green from 2a4f0354. Open
+35843310128 rebuilt `ci-set1` (09:35 UTC) with its probe fix and is in its probes. The scheduled
+deploy 35842115487 of the docs-only head c4ab9605 was cancelled before its first stack job. `main`'s `test` run is green from 2a4f0354. Open
 pull request: #335 (`claude/b81-board`, head abaf5d4d).
 
 The board runs in five sections, in this order: **in flight** (a branch, a pull request or a run
