@@ -18,8 +18,8 @@ PR; the operator merges.
 
 **Prod runs deployment prod-cdbc557**.
 **ci**: `ci-set2` is last-known-good (PR #335's rerun 35775629294 rebuilt it at 23:05 UTC);
-`ci-set1` self-destructs at 23:57 UTC and its slot claim (PR #336's failed run) goes stale at
-00:57. Open pull requests: #333
+`ci-set1` is being rebuilt by PR #334's dispatched deploy 35801175335 (00:14 UTC); its slot
+claim (PR #336's failed run) goes stale at 00:57. Open pull requests: #333
 (`claude/b79-developers`, head 3e7255af, green), #334 (`claude/b80-board`, head f4770e0c),
 #335 (`claude/b81-board`, head 858c8cd3), #336 (`claude/b82-board`, head c450180d).
 
@@ -90,9 +90,8 @@ and stop. One branch is driven green at a time. Lifted only by the operator in t
   comments), AS6 and AS5 (prettier and Spotless checks in `test.yml`, with the 218 files they reformat; the
   lint job as a baseline ratchet at zero errors). Its `test` run is green on head f4770e0c (the prettier fix), but no deploy has run on that
   head: the last deploy 35761188691 (9b633159) failed, and the two commits since touch no deploy
-  path. The head needs a slot deploy (`gh workflow run deploy.yml --ref claude/b80-board -f
-  deployment-name=ci-set1` once `ci-set1`'s 23:57 UTC self-destruct has finished, or a rerun
-  after taking `main`) before the PR is proven; it is the branch driven next under cool-down. **Source**: the
+  path. Its dispatched deploy 35801175335 to `ci-set1` (00:14 UTC, after the set's self-destruct)
+  is the head's proof and runs now; it is the branch driven under cool-down. **Source**: the
   rows named. **Owner**: Claude Code. **Model**: Sonnet and Haiku. **Size**: ~10 files plus the
   directives.
 
