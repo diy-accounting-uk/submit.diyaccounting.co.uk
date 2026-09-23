@@ -14,6 +14,7 @@ dotenvConfigIfNotBlank({ path: ".env.test" });
 const describedStackNames = [];
 const deleteStackCalls = [];
 let stackStatusScript = {};
+let stackUpdateTimes = {};
 class MockCFClient {
   async send(cmd) {
     const name = cmd.input?.StackName || "";
@@ -24,7 +25,7 @@ class MockCFClient {
       if (status === "gone") {
         throw new Error(`Stack with id ${name} does not exist`);
       }
-      return { Stacks: [{ StackStatus: status, Outputs: [] }] };
+      return { Stacks: [{ StackStatus: status, Outputs: [], LastUpdatedTime: stackUpdateTimes[name] ?? new Date() }] };
     }
     if (cmd.constructor.name === "DeleteStackCommand") {
       deleteStackCalls.push(cmd.input);
@@ -186,6 +187,7 @@ describe("functions/infra/selfDestruct", () => {
     describedStackNames.length = 0;
     deleteStackCalls.length = 0;
     stackStatusScript = {};
+    stackUpdateTimes = {};
     vi.useRealTimers();
     mockSsmSend.mockRejectedValue(Object.assign(new Error("Parameter not found"), { name: "ParameterNotFound" }));
     mockCloudWatchSend.mockResolvedValue({ MetricAlarms: [], CompositeAlarms: [] });
@@ -337,6 +339,88 @@ describe("functions/infra/selfDestruct", () => {
     expect(deleteParameterCalls).toEqual([]);
   });
 
+  it("skips deletion when this deployment is the environment's last-known-good", async () => {
+    process.env.LAST_KNOWN_GOOD_PARAMETER_NAME = "/submit/ci/last-known-good-deployment";
+    mockSsmSend.mockImplementation((cmd) => {
+      if (cmd.constructor.name === "GetParameterCommand" && cmd.input.Name === "/submit/ci/last-known-good-deployment") {
+        return Promise.resolve({ Parameter: { Value: "ci-branch" } });
+      }
+      return Promise.reject(Object.assign(new Error("Parameter not found"), { name: "ParameterNotFound" }));
+    });
+
+    const { ingestHandler } = await import("@app/functions/infra/selfDestruct.js");
+    const res = await ingestHandler(makeEvent(), { getRemainingTimeInMillis: () => 900000 });
+
+    expect(res.statusCode).toBe(200);
+    const body = JSON.parse(res.body);
+    expect(body.message).toBe("Self-destruct sequence skipped");
+    expect(body.reason).toMatch(/last-known-good/);
+    expect(deleteStackCalls).toEqual([]);
+    expect(describedStackNames).toEqual([]);
+
+    delete process.env.LAST_KNOWN_GOOD_PARAMETER_NAME;
+  });
+
+  it("skips deletion while a deploy holds the ci slot", async () => {
+    const claimedAt = new Date().toISOString();
+    mockSsmSend.mockImplementation((cmd) => {
+      if (cmd.constructor.name === "GetParameterCommand" && cmd.input.Name === "/submit/ci/slots/ci-set1") {
+        return Promise.resolve({
+          Parameter: { Value: JSON.stringify({ ref: "refs/heads/claude/b84-board", runId: "35863587199", claimedAt }) },
+        });
+      }
+      return Promise.reject(Object.assign(new Error("Parameter not found"), { name: "ParameterNotFound" }));
+    });
+
+    const { ingestHandler } = await import("@app/functions/infra/selfDestruct.js");
+    const res = await ingestHandler(makeEvent(), { getRemainingTimeInMillis: () => 900000 });
+
+    expect(res.statusCode).toBe(200);
+    const body = JSON.parse(res.body);
+    expect(body.message).toBe("Self-destruct sequence skipped");
+    expect(body.reason).toMatch(/35863587199/);
+    expect(deleteStackCalls).toEqual([]);
+  });
+
+  it("deletes as normal when the ci slot claim is older than the longest deploy", async () => {
+    stackStatusScript = { "self-destruct": ["CREATE_COMPLETE", "CREATE_COMPLETE", "CREATE_COMPLETE"] };
+    mockSsmSend.mockImplementation((cmd) => {
+      if (cmd.constructor.name === "GetParameterCommand" && cmd.input.Name === "/submit/ci/slots/ci-set1") {
+        return Promise.resolve({
+          Parameter: { Value: JSON.stringify({ ref: "refs/heads/main", runId: "1", claimedAt: "2020-01-01T00:00:00.000Z" }) },
+        });
+      }
+      if (cmd.constructor.name === "DeleteParameterCommand") return Promise.resolve({});
+      return Promise.reject(Object.assign(new Error("Parameter not found"), { name: "ParameterNotFound" }));
+    });
+
+    const { ingestHandler } = await import("@app/functions/infra/selfDestruct.js");
+    const res = await ingestHandler(makeEvent(), { getRemainingTimeInMillis: () => 900000 });
+
+    expect(res.statusCode).toBe(200);
+    const body = JSON.parse(res.body);
+    expect(body.message).toMatch(/Self-destruct sequence completed/);
+    expect(deleteStackCalls).toEqual([{ StackName: "self-destruct" }]);
+  });
+
+  it("skips deletion when the ci slot claim record cannot be read, rather than treating it as absent", async () => {
+    mockSsmSend.mockImplementation((cmd) => {
+      if (cmd.constructor.name === "GetParameterCommand" && cmd.input.Name === "/submit/ci/slots/ci-set1") {
+        return Promise.reject(new Error("SSM throttled"));
+      }
+      return Promise.reject(Object.assign(new Error("Parameter not found"), { name: "ParameterNotFound" }));
+    });
+
+    const { ingestHandler } = await import("@app/functions/infra/selfDestruct.js");
+    const res = await ingestHandler(makeEvent(), { getRemainingTimeInMillis: () => 900000 });
+
+    expect(res.statusCode).toBe(200);
+    const body = JSON.parse(res.body);
+    expect(body.message).toBe("Self-destruct sequence skipped");
+    expect(body.reason).toMatch(/could not read.*SSM throttled/);
+    expect(deleteStackCalls).toEqual([]);
+  });
+
   it("deletes stacks in dependency order, with the Companies House stack beside the HMRC stack", async () => {
     const { ingestHandler } = await import("@app/functions/infra/selfDestruct.js");
     const res = await ingestHandler(makeEvent(), { getRemainingTimeInMillis: () => 900000 });
@@ -363,9 +447,15 @@ describe("functions/infra/selfDestruct", () => {
 
   it("calls the silencer before any CloudFormation call, and still deletes stacks when the silencer rejects", async () => {
     let ssmCalledBeforeFirstDescribe = false;
-    mockSsmSend.mockImplementation(() => {
+    mockSsmSend.mockImplementation((cmd) => {
       if (describedStackNames.length === 0) ssmCalledBeforeFirstDescribe = true;
-      return Promise.reject(new Error("SSM unavailable"));
+      // Only the alarm-silence marker is unreadable here; the last-known-good and ci-slot
+      // parameters this test does not care about answer "not found" as usual, so the deployment
+      // is not protected and the deletion this test asserts on still goes ahead.
+      if (cmd.input?.Name === "/submit/ci/alarm-silence/branch") {
+        return Promise.reject(new Error("SSM unavailable"));
+      }
+      return Promise.reject(Object.assign(new Error("Parameter not found"), { name: "ParameterNotFound" }));
     });
 
     const { ingestHandler } = await import("@app/functions/infra/selfDestruct.js");

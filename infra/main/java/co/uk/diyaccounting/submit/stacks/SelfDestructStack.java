@@ -186,19 +186,34 @@ public class SelfDestructStack extends Stack {
                                                                         this.getAccount(),
                                                                         props.deploymentName())))
                                                 .build(),
-                                        // Free this deployment's ci slot claim alongside the
-                                        // stacks it held, so a slot's next claimant does not wait out a full
-                                        // self-destruct cycle for a release destroy-ci.yml never got to run.
+                                        // Read this deployment's own ci slot claim before deleting anything (so
+                                        // a set an unfinished deploy just claimed is left alone), then free the
+                                        // claim alongside the stacks it held, so a slot's next claimant does not
+                                        // wait out a full self-destruct cycle for a release destroy-ci.yml never
+                                        // got to run.
                                         PolicyStatement.Builder.create()
-                                                .sid("ReleaseCiSlot")
+                                                .sid("ReadAndReleaseCiSlot")
                                                 .effect(Effect.ALLOW)
-                                                .actions(List.of("ssm:DeleteParameter"))
+                                                .actions(List.of("ssm:GetParameter", "ssm:DeleteParameter"))
                                                 .resources(List.of("arn:aws:ssm:%s:%s:parameter/submit/%s/slots/%s"
                                                         .formatted(
                                                                 this.getRegion(),
                                                                 this.getAccount(),
                                                                 props.envName(),
                                                                 props.deploymentName())))
+                                                .build(),
+                                        // Read the environment's last-known-good pointer before deleting anything,
+                                        // so a set that pointer currently names is left alone.
+                                        PolicyStatement.Builder.create()
+                                                .sid("ReadLastKnownGoodDeployment")
+                                                .effect(Effect.ALLOW)
+                                                .actions(List.of("ssm:GetParameter"))
+                                                .resources(List.of(
+                                                        "arn:aws:ssm:%s:%s:parameter/submit/%s/last-known-good-deployment"
+                                                                .formatted(
+                                                                        this.getRegion(),
+                                                                        this.getAccount(),
+                                                                        props.envName())))
                                                 .build()))
                                 .build()))
                 .build();
@@ -225,6 +240,10 @@ public class SelfDestructStack extends Stack {
                 selfDestructLambdaEnv,
                 "SLOT_PARAMETER_NAME",
                 "/submit/%s/slots/%s".formatted(props.envName(), props.deploymentName()));
+        putIfNotNull(
+                selfDestructLambdaEnv,
+                "LAST_KNOWN_GOOD_PARAMETER_NAME",
+                "/submit/%s/last-known-good-deployment".formatted(props.envName()));
 
         infof(
                 "Creating SelfDestructStack for domain: %s (dashed: %s) in region: %s",
