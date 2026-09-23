@@ -16,12 +16,11 @@ runs), and for Claude Code steps the **Model** a sub-agent should use (Fable > O
 Haiku; the lowest tier that fits). Anything touching code goes through a `claude/*` branch and
 PR; the operator merges.
 
-**Prod runs deployment prod-1b6c3e2** (PR #336's merge deploy 35837285414, its stacks and probes
-green, destroying `prod-eb07c6d` since 09:4x UTC).
-**ci**: `ci-set2` is last-known-good (PR #335's dispatch 35838093200); PR #335's dispatch
-35843310128 rebuilt `ci-set1` with its probe fix and is green (10:00 UTC). The scheduled
-deploy 35842115487 of the docs-only head c4ab9605 was cancelled before its first stack job. `main`'s `test` run is green from 2a4f0354. Open
-pull request: #335 (`claude/b81-board`, head abaf5d4d).
+**Prod runs deployment prod-1b6c3e2** (PR #336's merge deploy 35837285414); PR #335's merge deploy
+35846477374 follows it.
+**ci**: `ci-set1` is last-known-good (PR #335's dispatch 35843310128, green at 10:00 UTC).
+`main`'s deploy 35846477374 (PR #335's merge 184afec6, 10:02 UTC) is queued behind 35837285414
+(PR #336's merge), which is deleting `prod-eb07c6d`. No pull request is open.
 
 The board runs in five sections, in this order: **in flight** (a branch, a pull request or a run
 in motion, each named in the row), **machine-only**, **machine-ask**, **human-driven**,
@@ -46,51 +45,6 @@ step.
 **COOL-DOWN is on since 2026-09-22T19:56:50Z.** No new board rows except a degradation. Agents commit
 and stop. One branch is driven green at a time. Lifted only by the operator in their own words.
 
-- [ ] **B81. Wave b81 on `claude/b81-board`, PR #335.** PU-7m (a0bd6686: the practice licence
-  suite green on the simulator lane, the practice-clients table bootstrapped for the local lanes,
-  `resident-pro` granted through checkout so `subscriptionStatus` is set) and AS1 (f3538afa: the
-  `**/.claude/**` coverage exclude matched every file inside a worktree under
-  `.claude/worktrees/`, so both providers reported nothing; the project config's misplaced
-  `pool`/`include` block flattened; thresholds 76/68/86/77 from the measured run). AS7a's strict
-  validation is reverted on the branch: the simulator lane runs with `COGNITO_CLIENT_ID`,
-  `COGNITO_BASE_URI` and the two HMRC secret ARNs blank by design, so every simulator suite's
-  server failed to start in `test` run 35767760731; deploy 35767761916 never won a ci slot (both held, one by
-  PR #334's ended run) and was cancelled; the reverts pushed as cd8f56d8, whose `test` run failed the new
-  practice licence simulator suite on a missing `mcp/node_modules` (the job never installed the
-  MCP package); head 858c8cd3 adds that install and carries B30as (1a9ec71e: a `release-ci-slot`
-  job at the end of `deploy.yml` deletes this run's claim unless the set is the ci LKG, with the
-  stale rule as backstop). Its `test` run is green; its deploy 35775629294 first failed for want of a ci slot, and its
-  rerun claimed `ci-set2` at 23:05 UTC once PR #334's claim went stale: every stack and 12 of the 13
-  probes passed, and `diyaGlSubscriptionBehaviour` failed with `book-limit-reached` (job
-  106980081292), the defect PR #333's third commit fixes and this branch does not carry. The
-  branch merged `main` as ec4b22f5 (clean; lint, 3894 tests and Spotless green on the merged tree)
-  and pushed it. Its `test` run 35831691533 failed the coverage gate this branch introduced (AS1):
-  functions 85.9% against the 86% threshold, because `main`'s merged code added uncovered
-  functions; the fix is c9601a2c (functions 85, the floor of the merged tree's measurement). Its push
-  deploy 35831692141 never won a slot (both claims held by PRs #334's and #336's ended runs, which
-  do not carry this branch's `release-ci-slot` job, until they go stale at 10:43 and 11:47 UTC)
-  and was cancelled, as was the dispatched deploy 35836957021 of that head once the operator asked
-  for the branch to carry `main` (2026-09-23 08:30 UTC). The branch merged `main` again as
-  a64b57dc (PRs #334 and #336; prettier, lint, coverage 85.91% functions, 3901 tests and Spotless
-  green on the merged tree) and pushed it; the dispatched deploy 35838093200 to `ci-set2` passed every stack and every
-  probe but `diyaGlSubscriptionBehaviour` (its delegated `eslint` job red on the file PR #338
-  formatted). That probe's cause: the cleanup deleted by `book.id` where the list route returns
-  `bookId`, so it deleted nothing, and the probe never deleted the sandbox book each run creates;
-  with sandbox retention at 35 days the ci test user's prefix held 25 books, 20 unexpired, from
-  09:19 UTC. The branch merged `main` again (b3f9533f, PR #338's file) and fixes the probe
-  (abaf5d4d: delete by `bookId`, delete the sandbox book at the end; the next run's cleanup
-  clears the leftovers through the API). Neither commit touches a deploy path, so the dispatched
-  deploy 35843310128 to `ci-set1` is the head's proof: every stack and every probe green at
-  10:00 UTC, `diyaGlSubscriptionBehaviour` included, and the head's `test` run 35843297989 is
-  green. The PR is mergeable and waits for the operator's merge or the wake word. The suite's ci and prod variants need a sandbox agent authorisation the simulator
-  shortcut has no equivalent for, so they run only when one exists. **Source**: the rows named.
-  **Owner**: Claude Code. **Model**: Sonnet and Haiku. **Size**: ~16 files.
-- [ ] **PU-7. Practice licence build.** PU-7a to PU-7l are on `main`. In flight on
-  `claude/b81-board` (wave b81): PU-7m, the behaviour test `behaviour-tests/practiceLicence.behaviour.test.js`,
-  two clients added through the practice routes, a derive and a submit for each on the simulator
-  lane over the MCP's `run_for_clients`, registered in `deploy.yml`, `probe-test.yml` and
-  `test.yml`. What follows is PU-7e and PU-7n below. **Source**: `PLAN_PRICE_UPDATE.md` PU-7.
-  **Owner**: Claude Code. **Model**: Sonnet. **Size**: ~4 files.
 ## Machine-only
 
 - [ ] **B30av. A superseded scheduled probe fails its upload job.** The scheduled `probe-test` run
