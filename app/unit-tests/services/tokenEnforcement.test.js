@@ -162,6 +162,28 @@ describe("tokenEnforcement", () => {
       expect(getUserBundles).not.toHaveBeenCalled();
       expect(consumeToken).not.toHaveBeenCalled();
     });
+
+    it("does not refuse a resident-pro holder past today's flat grant of 100, and never touches the token count", async () => {
+      const catalog = loadCatalogFromRoot();
+      getUserBundles.mockResolvedValueOnce([{ bundleId: "resident-pro", tokensGranted: "unlimited", tokensConsumed: 150 }]);
+
+      const result = await consumeTokenForActivity("user-1", "submit-vat", catalog);
+
+      expect(result.consumed).toBe(true);
+      expect(result.cost).toBe(1);
+      expect(consumeToken).not.toHaveBeenCalled();
+    });
+
+    it("still refuses a resident holder past its 100-token grant", async () => {
+      const catalog = loadCatalogFromRoot();
+      getUserBundles.mockResolvedValueOnce([{ bundleId: "resident", tokensGranted: 100, tokensConsumed: 100 }]);
+
+      const result = await consumeTokenForActivity("user-1", "submit-vat", catalog);
+
+      expect(result.consumed).toBe(false);
+      expect(result.reason).toBe("tokens_exhausted");
+      expect(consumeToken).not.toHaveBeenCalled();
+    });
   });
 
   describe("hasTokensForActivity", () => {
@@ -173,6 +195,16 @@ describe("tokenEnforcement", () => {
       expect(result.available).toBe(true);
       expect(result.cost).toBe(1);
       expect(consumeToken).not.toHaveBeenCalled();
+    });
+
+    it("reports a resident-pro holder as available however far past 100 its recorded count sits", async () => {
+      const catalog = loadCatalogFromRoot();
+      getUserBundles.mockResolvedValueOnce([{ bundleId: "resident-pro", tokensGranted: "unlimited", tokensConsumed: 150 }]);
+
+      const result = await hasTokensForActivity("user-1", "submit-vat", catalog);
+
+      expect(result.available).toBe(true);
+      expect(result.cost).toBe(1);
     });
 
     it("reports tokens_exhausted when no qualifying bundle has tokens", async () => {

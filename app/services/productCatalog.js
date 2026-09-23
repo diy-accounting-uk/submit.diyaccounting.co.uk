@@ -59,6 +59,16 @@ export function getCatalogBundleById(catalog, bundleId) {
   return catalog.bundles.find((b) => b.id === bundleId) || null;
 }
 
+// A bundle's tokensGranted carries this sentinel instead of a number for an unlimited grant
+// (the resident-pro practice licence): exempt from token counting rather than a large numeric
+// cap. Token enforcement (app/services/tokenEnforcement.js) and the subscription token refresh
+// (app/functions/billing/billingWebhookPost.js) both check this before touching the count.
+export const UNLIMITED_TOKENS_GRANTED = "unlimited";
+
+export function isUnlimitedTokenGrant(tokensGranted) {
+  return tokensGranted === UNLIMITED_TOKENS_GRANTED;
+}
+
 // A bundle's Stripe prices from its `[[bundles.prices]]` table: one row per interval, one
 // row carrying `default = true`. A row missing its amount, currency or interval is dropped
 // rather than surfaced as a price with a missing field.

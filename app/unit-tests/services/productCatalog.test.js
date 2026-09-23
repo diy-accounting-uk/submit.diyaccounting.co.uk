@@ -15,6 +15,7 @@ import {
   getStripeSubscriptionBundles,
   getBundlePrices,
   getBundlePriceForInterval,
+  isUnlimitedTokenGrant,
 } from "../../services/productCatalog.js";
 import { dotenvConfigIfNotBlank } from "@app/lib/env.js";
 
@@ -152,6 +153,21 @@ describe("productCatalogHelper", () => {
 
     expect(getBundlePrices(residentPro)).toEqual([{ interval: "month", amount: 999, currency: "gbp", default: true }]);
     expect(getBundlePrices(residentVat)).toEqual([{ interval: "month", amount: 99, currency: "gbp", default: true }]);
+  });
+
+  it("resident-pro carries an unlimited token grant and no refresh interval, the practice licence", () => {
+    const catalog = parseCatalog(tomlText);
+    const residentPro = getCatalogBundleById(catalog, "resident-pro");
+    expect(residentPro.tokensGranted).toBe("unlimited");
+    expect(residentPro.tokenRefreshInterval).toBeUndefined();
+    expect(isUnlimitedTokenGrant(residentPro.tokensGranted)).toBe(true);
+  });
+
+  it("isUnlimitedTokenGrant is true only for the unlimited sentinel", () => {
+    expect(isUnlimitedTokenGrant("unlimited")).toBe(true);
+    expect(isUnlimitedTokenGrant(100)).toBe(false);
+    expect(isUnlimitedTokenGrant(undefined)).toBe(false);
+    expect(isUnlimitedTokenGrant("Unlimited")).toBe(false);
   });
 
   it("getStripeSubscriptionBundles should return exactly the three Stripe-priced bundles", () => {
