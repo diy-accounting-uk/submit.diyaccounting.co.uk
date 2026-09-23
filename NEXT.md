@@ -46,6 +46,9 @@ Shared facts for the analytics rows (B52d, B52e, B52l, B52m): the prod Athena da
 
 ## In flight
 
+**COOL-DOWN is on since 2026-09-23T19:29:15Z.** No new board rows except a degradation. Agents commit
+and stop. One branch is driven green at a time. Lifted only by the operator in their own words.
+
 - [ ] **F2g1. PayPal statements into diya-gl lines.** Branch `claude/b87-board` (worktree
   `.claude/worktrees/b87`): `mcp/lib/finance/paypal-statement-lines.js` parses the monthly
   `<yyyy-mm> PayPal - transactions.PDF` in the Drive mirror
