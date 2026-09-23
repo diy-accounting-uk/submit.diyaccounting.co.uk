@@ -342,14 +342,6 @@ Shared facts for the analytics rows (B52d, B52e, B52l, B52m): the prod Athena da
 
 - [ ] **CS-H6. Go for the prod confirmation statement.** Give the go for a statement for 06846849 through Submit (a fee-free second statement in the 2026-27 payment period, after the 5 October one by WebFiling), knowing it moves the next review date. Blocked on CS-11, CS-H3 and CS-H4. **Source**: `PLAN_COMPANIES_HOUSE_CONFIRMATION_STATEMENT.md` (its Tasks table carries the files). **Owner**: Operator. **Model**: none. **Size**: 0 files.
 
-- [ ] **OF2d. Copy DIYA's book into Drive.** Blocked on F2l and F2o (refunds not yet netted; the directors' loan and members register not yet final). The book is in
-  `../staging/2026-2027/book/` (`book.toml`, `lines.jsonl` with 488 lines, `VERIFICATION.md`, and `book-diya-gl.zip` for the spreadsheets MCP):
-  bank balances match every statement, Stripe and PayPal reconcile with no residual, validation
-  passes, and the review items (the £200 Polycode creditor payment, Hiscox, Linktree) are
-  resolved in `VERIFICATION.md`. Copy the three files into Drive under
-  `finance/2026-2027 accounts/`. That copy is OF2's input. **Owner**: Operator. **Model**: none.
-  **Size**: 0 files.
-
 - [ ] **OB30bc. Make the content scan a required check.** Add `content scan` to the required
   status checks of ruleset 16057564
   (<https://github.com/diy-accounting-uk/submit.diyaccounting.co.uk/rules/16057564>), so no PR
