@@ -235,13 +235,7 @@ Shared facts for the analytics rows (B52d, B52e, B52l, B52m): the prod Athena da
   the company-book skill). **Source**: F2k's diagnosis. **Owner**: Claude Code. **Model**: Sonnet.
   **Size**: ~4 files.
 
-## Machine-only
-
-- [ ] **CS-1. Confirmation statement fixtures.** Save the `ConfirmationAndVerificationStatement-v1-0` schema set, the CompanyData and PaymentPeriods schemas, and the published examples under `fixtures/companies-house-xmlgw/` from `xmlgw.companieshouse.gov.uk/v1-0/schema/` and `/examples/`. The form since 2025-11-18 is `ConfirmationAndVerificationStatement`; `ConfirmationStatement-v1-3` has no verification block. `app/unit-tests/licenceHeaders.test.js` (line 34) already exempts `fixtures/companies-house-xmlgw/` from the licence header; the accounts fixtures there (`GetSubmissionStatus_response.xml`) show the naming. Needs network access to `xmlgw.companieshouse.gov.uk`. **Source**: `PLAN_COMPANIES_HOUSE_CONFIRMATION_STATEMENT.md` (its Tasks table carries the files). **Owner**: Claude Code. **Model**: Haiku. **Size**: 12 files.
-
-- [ ] **CS-H2d. Draft the confirmation-statement email to the XML team.** Write `../DRAFT_EMAIL_XMLGW_CS01.md` with the plan's Q1 (which endpoint and credentials test the 2025-11-18 schemas: Companies House said on 2025-11-04 to use `https://xmlgw-sandpit-staging.companieshouse.gov.uk/v1-0/xmlgw/Gateway` with live presenter credentials, package reference 0012 and GatewayTest 1; and test company data for `CompanyDataRequest`), Q2 (shareholders on a no-change statement, reject 11686) and Q4 (authorisation tests and the package reference for the form). It follows O34d on the same thread. Changes nothing committed. **Source**: `PLAN_COMPANIES_HOUSE_CONFIRMATION_STATEMENT.md` (its Tasks table carries the files). **Owner**: Claude Code. **Model**: Haiku. **Size**: 0 files.
-
-- [ ] **F2o. DIYA's book: the directors' loan reaches the balance sheet.** The report engine's
+- [ ] **F2o. DIYA's book: the directors' loan reaches the balance sheet.** An agent is applying it to the staging book now. The report engine's
   directors' loan row (`../spreadsheets.diyaccounting.co.uk/app/lib/calculators/ltd.js` line 1601)
   reads only bank lines carrying `diya-gl:bankCode` `DL` on a declared bank account; the £1,000
   arrived through PayPal, and the book declares no PayPal bank account, so `PubBalSht!E29` still
@@ -255,19 +249,7 @@ Shared facts for the analytics rows (B52d, B52e, B52l, B52m): the prod Athena da
   "same as the previous year"). Rebuild, re-run the report, update `VERIFICATION.md`. Then OF2's
   re-save. Shares the PayPal wallet with F2g. **Source**: F2m's report. **Owner**: Claude Code. **Model**: Sonnet. **Size**: 0 files.
 
-- [ ] **F2n. The finance parsers code lines from the label map.** `bank-lines.js` (`bankCodeFor`,
-  line 104) codes a line from the statement's type alone, and `paypal-statement-lines.js` and
-  `stripe-lines.js` post every receipt to sales. Give each an optional `labels` input, the map F2m
-  writes to `../staging/labels/diya-labels.toml` (read by the caller and passed in, so the
-  parsers stay pure and the repository holds no payee data), that sets account, bank code and VAT
-  code for a matching description; an unmatched line keeps today's coding and is returned in an
-  `unlabelled` list. Tests over a synthetic map. The company-book skill's Build section names
-  the map and the refresh from the prior year's workbooks. The map exists: `../staging/labels/diya-labels.toml` (12 rules, 11 payee patterns from the 2025-26 set).
-  **Source**: operator 2026-09-23. **Owner**: Claude Code. **Model**: Sonnet. **Size**: ~7 files.
-
-## Machine-ask
-
-- [ ] **PU-7n. The practice licence launch.** Operator, 2026-09-22: `resident-pro` at £199 a
+- [ ] **PU-7n. The practice licence launch.** An agent is building it on `claude/b90-board` now (the Stripe live run waits for the operator). Operator, 2026-09-22: `resident-pro` at £199 a
   year and £19.99 a month, the monthly price shown only on `bundles.html` (the DIYA-GL page shows
   annual prices alone, for `resident` too). `web/public/submit.catalogue.toml`'s `resident-pro`
   block (line 208: `enable = "on-pass"`, `hidden = true`, `allocation = "on-pass-on-subscription"`,
@@ -282,6 +264,24 @@ Shared facts for the analytics rows (B52d, B52e, B52l, B52m): the prod Athena da
   that repository's own PR. The operator gave the go on 2026-09-23 (the ICO fee register records no processing
   purposes, so ZB070902 needs no change). **Source**: `PLAN_PRICE_UPDATE.md` §(d); operator 2026-09-22 and 2026-09-23 (go). **Owner**: Claude
   Code. **Model**: Sonnet. **Size**: ~9 files.
+
+## Machine-only
+
+- [ ] **CS-1. Confirmation statement fixtures.** Save the `ConfirmationAndVerificationStatement-v1-0` schema set, the CompanyData and PaymentPeriods schemas, and the published examples under `fixtures/companies-house-xmlgw/` from `xmlgw.companieshouse.gov.uk/v1-0/schema/` and `/examples/`. The form since 2025-11-18 is `ConfirmationAndVerificationStatement`; `ConfirmationStatement-v1-3` has no verification block. `app/unit-tests/licenceHeaders.test.js` (line 34) already exempts `fixtures/companies-house-xmlgw/` from the licence header; the accounts fixtures there (`GetSubmissionStatus_response.xml`) show the naming. Needs network access to `xmlgw.companieshouse.gov.uk`. **Source**: `PLAN_COMPANIES_HOUSE_CONFIRMATION_STATEMENT.md` (its Tasks table carries the files). **Owner**: Claude Code. **Model**: Haiku. **Size**: 12 files.
+
+- [ ] **CS-H2d. Draft the confirmation-statement email to the XML team.** Write `../DRAFT_EMAIL_XMLGW_CS01.md` with the plan's Q1 (which endpoint and credentials test the 2025-11-18 schemas: Companies House said on 2025-11-04 to use `https://xmlgw-sandpit-staging.companieshouse.gov.uk/v1-0/xmlgw/Gateway` with live presenter credentials, package reference 0012 and GatewayTest 1; and test company data for `CompanyDataRequest`), Q2 (shareholders on a no-change statement, reject 11686) and Q4 (authorisation tests and the package reference for the form). It follows O34d on the same thread. Changes nothing committed. **Source**: `PLAN_COMPANIES_HOUSE_CONFIRMATION_STATEMENT.md` (its Tasks table carries the files). **Owner**: Claude Code. **Model**: Haiku. **Size**: 0 files.
+
+- [ ] **F2n. The finance parsers code lines from the label map.** `bank-lines.js` (`bankCodeFor`,
+  line 104) codes a line from the statement's type alone, and `paypal-statement-lines.js` and
+  `stripe-lines.js` post every receipt to sales. Give each an optional `labels` input, the map F2m
+  writes to `../staging/labels/diya-labels.toml` (read by the caller and passed in, so the
+  parsers stay pure and the repository holds no payee data), that sets account, bank code and VAT
+  code for a matching description; an unmatched line keeps today's coding and is returned in an
+  `unlabelled` list. Tests over a synthetic map. The company-book skill's Build section names
+  the map and the refresh from the prior year's workbooks. The map exists: `../staging/labels/diya-labels.toml` (12 rules, 11 payee patterns from the 2025-26 set).
+  **Source**: operator 2026-09-23. **Owner**: Claude Code. **Model**: Sonnet. **Size**: ~7 files.
+
+## Machine-ask
 
 ## Human-driven
 
