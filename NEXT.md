@@ -18,8 +18,7 @@ PR; the operator merges.
 
 **Prod runs deployment prod-d458f02** (PR #343's merge deploy; #344 and #345 changed no deployed code).
 **ci**: `ci-set1` is last-known-good and the only ci set standing; `ci-set2` was swept.
-Pull requests open: diy-accounting-uk/www.diyaccounting.co.uk#33 (mergeable now: the sink admits
-the gateway account), diy-accounting-uk/spreadsheets.diyaccounting.co.uk#136.
+No pull request is open in this repository or its siblings.
 
 The board runs in five sections, in this order: **in flight** (a branch, a pull request or a run
 in motion, each named in the row), **machine-only**, **machine-ask**, **human-driven**,
