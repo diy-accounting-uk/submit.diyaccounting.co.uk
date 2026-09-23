@@ -16,22 +16,20 @@ Compiled 2026-08-25 from every source: GitHub issues (#3 to #20), local plan doc
 
 **How items are ranked.** Existential first when cheap relative to the risk. Then items that make everything else measurable or truthful, because they compound. Then the revenue path in dependency order. Effort tiebreaks: a small item with the same value class outranks a large one. [DE] marks items in the data engineering layer, with the certification domain they exercise.
 
-## Live status (updated 2026-09-21)
+## Live status (updated 2026-09-23)
 
 Queued and in-flight state lives on `NEXT.md`; this block mirrors it so the backlog reads
 truthfully on its own. Machine-ask and human-driven steps are briefed at the workspace root in
 `../NEXT_OPERATOR_RUNBOOK.md`, one file rewritten in place.
 
-- Prod runs prod-a7a0d6b; main's deploy of PR #322's merge (78e3e552) is starting; `ci-set1` is the
-  ci set. No open pull request, no agent running, no branch ahead of its remote.
-- **Eleven batches merged since 2026-09-20** (PRs #309, #311, #312, #315, #316, #317, #319, #320,
-  #321, #322 here; #306, #307, #308, #310, #314 from the DIYA-GL session): rows 30's CIS filter tune and
-  alarm-remedy list (design and build), 49b's items 15 to 23, 62's submit half and the OAM sinks,
-  66, 67, 69's filter and ledger, 70, 71, 72, 34's three filing designs (34e, 34f, 34g), 11's T7b.1
-  to T7b.7, O38's last PAT read, the ci slot release on branch delete, the visitor-kind view's day
-  type, and `infra/github`.
-- **Open alarm issues**: #313 (`prod-env-operator-snapshot-publish-errors`; the view fix is on
-  main since 4fef66c2, proven by the 03:1x UTC snapshot run on 2026-09-22).
+- Prod runs prod-1b6c3e2; main's deploy of PR #335's merge (184afec6) is in flight; `ci-set1` is
+  the ci set. No open pull request, no agent running, no branch but `main`.
+- **Five batches merged on 2026-09-23** (PRs #333, #334, #335, #336, #338; #133 in spreadsheets and
+  #32 in www on 2026-09-22): the developer archive moved to `../developers/`, the assessment rows
+  AS1, AS4, AS5, AS6, AS7 and AS8, the practice licence's unlimited grant (PU-7e) and behaviour test
+  (PU-7m), the privacy notice's practice row, the ci slot release on run end (B30as), the DIYA-GL
+  book-limit and probe-cleanup fixes.
+- **Open alarm issues**: none (#313 and #337 closed; the alarm's period is B30au).
 - **Both `/api/v1/books` and `/api/v1/diya-gl` are permanent** by operator decision of 2026-09-10.
 - **Date-gated**: 43 from 2026-10-02; 48 the week of 2026-11-29; 52l from 2026-12-09.
 - **Tier 2**: 11's phase 2 has T7b.1 to T7b.7 and the recognition pack's evidence on main, the

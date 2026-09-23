@@ -272,18 +272,10 @@ Ids are shared with `NEXT.md`'s board here, and the spreadsheets rows with their
 3. Annual is the default button.
 4. `resident-pro` becomes the practice licence.
 5. The sandbox runs 35 days (25 was the first instruction, corrected the same day).
-
-## Open questions for the operator
-
-- The practice price: £19.99 a month or £199 a year is proposed. The design (§(d)) found no
-  per-client fee at HMRC, since the invitation API costs nothing, so the price rests on what a
-  practice will pay rather than on a cost to recover.
-- The client count a practice licence carries: an open list, or a cap with a higher tier above it.
-  PU-7e cannot set the token grant until this is decided.
-- The token grant for a practice: the base each month and the amount per client. 100 a month is
-  today's flat grant for one trader.
-- What a client row may hold: the display name and every identifier a filing needs, or identifiers
-  only. The practice's clients are people the company holds no relationship with, so the answer
-  sets what the ICO registration has to cover.
-- Whether the `resident` bundle's monthly price is offered at all on the DIYA-GL page, or only on
-  `bundles.html`; the plan shows both, annual first, everywhere.
+6. The practice price: £19.99 a month or £199 a year (operator, 2026-09-22).
+7. A practice licence carries an open client list, no cap (operator, 2026-09-22).
+8. A practice's token grant is unlimited (operator, 2026-09-22; `tokensGranted = "unlimited"` on
+   `resident-pro`, on main from PR #336).
+9. A client row holds the display name plus every identifier a filing needs; the ICO registration
+   is updated to match (NEXT.md OICO) (operator, 2026-09-22).
+10. The `resident` bundle's monthly price is offered only on `bundles.html` (operator, 2026-09-22).

@@ -42,9 +42,6 @@ step.
 
 ## In flight
 
-**COOL-DOWN is on since 2026-09-22T19:56:50Z.** No new board rows except a degradation. Agents commit
-and stop. One branch is driven green at a time. Lifted only by the operator in their own words.
-
 ## Machine-only
 
 - [ ] **B30av. A superseded scheduled probe fails its upload job.** The scheduled `probe-test` run
