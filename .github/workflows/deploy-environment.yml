@@ -336,9 +336,9 @@ jobs:
         env:
           AWS_REGION: ${{ env.AWS_REGION }}
 
-      - name: Create secret in AWS from secrets.PAYPAL_CLIENT_ID
+      - name: Create secret in AWS from vars.PAYPAL_CLIENT_ID
         env:
-          PAYPAL_CLIENT_ID: ${{ secrets.PAYPAL_CLIENT_ID }}
+          PAYPAL_CLIENT_ID: ${{ vars.PAYPAL_CLIENT_ID }}
           AWS_REGION: ${{ env.AWS_REGION }}
         run: |
           if [ -z "${PAYPAL_CLIENT_ID}" ]; then
