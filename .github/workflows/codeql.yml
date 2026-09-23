@@ -12,6 +12,10 @@ on:
   # 12 pushed commits seen on 2026-09-13.
   # Every push except a docs-only one is scanned, because main's ruleset requires the CodeQL
   # context on every pull request.
+  # workflow_dispatch lets a Markdown-only PR head (which paths-ignore skips on both push and
+  # pull_request, so the CodeQL context never runs on its own) be dispatched manually so its
+  # required check gets a run; the analyze job's fork check above already admits this event.
+  workflow_dispatch:
   push:
     branches:
       - '**'
