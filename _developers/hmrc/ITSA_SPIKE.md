@@ -114,7 +114,7 @@ where that rule bites, so do not read this as clearance for submissions from one
 
 ## Which assumptions held
 
-From `_developers/backlog/self-employed-api-operations.md`:
+From `../developers/submit/backlog/self-employed-api-operations.md`:
 
 - **Our sandbox application can reach the Income Tax APIs.** Held. Business Details v2.0 answered
   our existing client id with no extra registration.

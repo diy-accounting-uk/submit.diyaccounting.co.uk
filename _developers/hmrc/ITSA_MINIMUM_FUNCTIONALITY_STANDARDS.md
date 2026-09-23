@@ -12,7 +12,7 @@ Sources read 2026-09-03:
 Phase 1 is backlog row 10: sandbox integration with the self-employment quarterly update APIs
 (Business Details, Obligations, Self Employment Business). Phase 2 is row 11: annual summaries,
 final declaration, then the recognition application. Mapped against `STRATEGY.md` and
-`_developers/backlog/self-employed-api-operations.md`.
+`../developers/submit/backlog/self-employed-api-operations.md`.
 
 ## The requirement that changes the plan
 
@@ -39,7 +39,7 @@ VAT).
 | Fraud prevention header data on every call | How to integrate | Yes | | | Already built and HMRC-evaluated for VAT (`STRATEGY.md`); same header library applies to ITSA calls. |
 | Obtain a business ID per customer business | Business Details API | Yes | | | Row 10 lists Business Details explicitly. |
 | Create and maintain digital records, or digitally link to software that does | How to integrate | Yes | | | Met by the spreadsheet-plus-bridging model already used for VAT; no new build. |
-| Submit quarterly update information for each mandated income source | Self Employment Business, Obligations APIs | Yes | | | Row 10's core: `_developers/backlog/self-employed-api-operations.md` specs the period-summary endpoints. |
+| Submit quarterly update information for each mandated income source | Self Employment Business, Obligations APIs | Yes | | | Row 10's core: `../developers/submit/backlog/self-employed-api-operations.md` specs the period-summary endpoints. |
 | View an estimate of income tax liability, with the required disclaimer shown first | Individual Calculations API | | Yes | | Not in row 10's three named APIs; the disclaimer text itself is a new UI requirement, not just an API call. |
 | Make required adjustments and finalise business income for the year | Business Source Adjustable Summary, Individuals Tax Liability Adjustments APIs | | Yes | | This is the "annual summaries" half of row 11. |
 | Carry business losses forward, back, or sideways | Individual Losses API | | Yes | | Not named in either backlog row today; row 11 needs to absorb it explicitly. |

@@ -3,7 +3,7 @@
 
 # PLAN: Companies House accounts filing (FRS 105 micro-entity, XML Gateway) and its three next filings
 
-> Backlog row 34b. The REST filings stay as they are in `_developers/archive/PLAN_COMPANIES_HOUSE_REST_FILING.md`; that
+> Backlog row 34b. The REST filings stay as they are in `../developers/submit/archive/PLAN_COMPANIES_HOUSE_REST_FILING.md`; that
 > API does not carry accounts.
 
 ## Goal and the two halves

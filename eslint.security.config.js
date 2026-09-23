@@ -79,6 +79,7 @@ export default [
       // but are now included in security scanning since this config only uses security plugin
       // Exclude non-production directories
       "_developers/",
+      "reference/",
       // Simulator is auto-generated from web/public/ - never edit directly
       "web/public-simulator/",
     ],
