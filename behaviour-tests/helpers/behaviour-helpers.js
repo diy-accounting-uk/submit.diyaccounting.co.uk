@@ -10,6 +10,7 @@ import {
   ensureAsyncRequestsTableExists,
   ensurePassesTableExists,
   ensureCapacityTableExists,
+  ensurePracticeClientsTableExists,
 } from "@app/bin/dynamodb.js";
 import { spawn } from "child_process";
 import { checkIfServerIsRunning } from "./serverHelper.js";
@@ -103,6 +104,11 @@ export async function runLocalDynamoDb(runDynamoDb, bundleTableName, hmrcApiRequ
     const capacityTable = process.env.BUNDLE_CAPACITY_DYNAMODB_TABLE_NAME;
     if (capacityTable) {
       await ensureCapacityTableExists(capacityTable, endpoint);
+    }
+
+    const practiceClientsTable = process.env.PRACTICE_CLIENTS_DYNAMODB_TABLE_NAME;
+    if (practiceClientsTable) {
+      await ensurePracticeClientsTableExists(practiceClientsTable, endpoint);
     }
 
     const asyncTable = process.env.ASYNC_REQUESTS_DYNAMODB_TABLE_NAME;

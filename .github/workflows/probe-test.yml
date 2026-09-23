@@ -33,6 +33,7 @@ on:
           - 'tokenEnforcementBehaviour'
           - 'tokenRefreshBehaviour'
           - 'postVatReturnBehaviour'
+          - 'practiceLicenceBehaviour'
           - 'getVatObligationsBehaviour'
           - 'getVatLiabilitiesBehaviour'
           - 'getVatPaymentsBehaviour'

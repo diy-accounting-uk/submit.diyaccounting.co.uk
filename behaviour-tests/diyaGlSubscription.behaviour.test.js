@@ -130,7 +130,7 @@ test("subscribes with a DIYA-GL token, then puts and reads a book", async ({ pag
   if (existing.status === 200 && existing.body.books) {
     let deletedCount = 0;
     for (const book of existing.body.books) {
-      const deleteResult = await deleteDiyaGlBook({ apiBase, idToken, bookId: book.id });
+      const deleteResult = await deleteDiyaGlBook({ apiBase, idToken, bookId: book.bookId });
       if (deleteResult.status === 200) {
         deletedCount++;
       }
@@ -193,6 +193,8 @@ test("subscribes with a DIYA-GL token, then puts and reads a book", async ({ pag
 
   const deleted = await deleteDiyaGlBook({ apiBase, idToken, bookId });
   expect(deleted.status).toBe(200);
+  const sandboxDeleted = await deleteDiyaGlBook({ apiBase, idToken, bookId: sandboxBookId });
+  expect(sandboxDeleted.status).toBe(200);
 
   /* ************************************ */
   /*  THE BILLING PORTAL, SAME TOKEN TOO  */

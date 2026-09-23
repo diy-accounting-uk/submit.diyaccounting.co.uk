@@ -174,6 +174,14 @@ export default defineConfig({
       timeout: 300_000,
     },
     {
+      name: "practiceLicenceBehaviour",
+      testDir: "behaviour-tests",
+      testMatch: ["**/practiceLicence.behaviour.test.js"],
+      workers: 1,
+      outputDir: "./target/behaviour-test-results/",
+      timeout: 300_000,
+    },
+    {
       name: "getVatReturnBehaviour",
       testDir: "behaviour-tests",
       testMatch: ["**/getVatReturn.behaviour.test.js"],

@@ -12,8 +12,10 @@
 // {"ref": "<github.ref>", "runId": "<id>", "claimedAt": "<ISO>"}. A slot is free when its
 // parameter is absent, when its ref is this run's own (a redeploy wins its slot back), or when
 // its claim has outlived this deployment's own self-destruct delay plus one hour - by then the
-// deployment that held it is gone even if its own release step (destroy-ci.yml, or
-// selfDestruct.js) never ran.
+// deployment that held it is gone even if none of its release paths (deploy.yml's own
+// release-ci-slot job, destroy-ci.yml, or selfDestruct.js) ran. release-ci-slot.mjs releases a
+// deploy.yml run's own claim as soon as that run ends, pass or fail, so this staleness rule is
+// the backstop for a run that never reaches its own release job at all, not the everyday path.
 //
 // No compare-and-swap exists for a plain SSM String parameter, so the create-only path (a
 // currently absent slot) is the only atomic claim here: `put-parameter` with no --overwrite
