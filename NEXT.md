@@ -16,12 +16,12 @@ runs), and for Claude Code steps the **Model** a sub-agent should use (Fable > O
 Haiku; the lowest tier that fits). Anything touching code goes through a `claude/*` branch and
 PR; the operator merges.
 
-**Prod runs deployment prod-5086803** (PR #333's merge deploy 35821860017, green at 06:31 UTC).
-**ci**: `main`'s deploys 35834372622 (PR #334's merge eb07c6df, 07:56 UTC, in its probes) and
-35837285414 (PR #336's merge 1b6c3e2d, queued behind it) are the integration proof for the two
-merges; `main`'s `test` run is red on one unformatted file (B30aw, PR #338). PR #335 deploys to
-`ci-set2` by dispatch 35838093200. Open pull requests: #338 (`claude/ops-prettier`, head
-5b8bcbbd), #335 (`claude/b81-board`, head a64b57dc).
+**Prod runs deployment prod-eb07c6d** (PR #334's merge deploy 35834372622, green at 09:0x UTC);
+`main`'s deploy 35837285414 (PR #336's merge 1b6c3e2d) is in flight and replaces it.
+**ci**: `ci-set2` is last-known-good (PR #335's dispatched deploy 35838093200, in its probes;
+its delegated `eslint` job is red on the file PR #338 formatted, merged as 2a4f0354 at 09:15 UTC).
+`ci-set1` self-destructed at 09:43. `main`'s `test` run on 2a4f0354 is in flight. Open pull
+request: #335 (`claude/b81-board`, head a64b57dc), which takes `main` once that deploy ends.
 
 The board runs in five sections, in this order: **in flight** (a branch, a pull request or a run
 in motion, each named in the row), **machine-only**, **machine-ask**, **human-driven**,
@@ -45,14 +45,6 @@ step.
 
 **COOL-DOWN is on since 2026-09-22T19:56:50Z.** No new board rows except a degradation. Agents commit
 and stop. One branch is driven green at a time. Lifted only by the operator in their own words.
-
-- [ ] **B30aw. `main`'s test run is red on one unformatted file, PR #338.** PR #336 added
-  `web/browser-tests/privacy-notice.browser.test.js` before PR #334's prettier gate existed; with
-  both merged, `main`'s `test` run 35837284696 (1b6c3e2d) and PR #335's 35838071472 fail the
-  `eslint` job's prettier step on that one file. The fix is `claude/ops-prettier` (5b8bcbbd, the
-  file formatted, no deploy path touched), PR #338, which merges first; PR #335 takes it after
-  its dispatched deploy ends. **Source**: runs 35837284696 and 35838071472. **Owner**: Claude
-  Code. **Model**: Haiku. **Size**: 1 file.
 
 - [ ] **B81. Wave b81 on `claude/b81-board`, PR #335.** PU-7m (a0bd6686: the practice licence
   suite green on the simulator lane, the practice-clients table bootstrapped for the local lanes,
@@ -81,8 +73,8 @@ and stop. One branch is driven green at a time. Lifted only by the operator in t
   for the branch to carry `main` (2026-09-23 08:30 UTC). The branch merged `main` again as
   a64b57dc (PRs #334 and #336; prettier, lint, coverage 85.91% functions, 3901 tests and Spotless
   green on the merged tree) and pushed it; the dispatched deploy 35838093200 to `ci-set2` is the head's proof. Its `test`
-  run 35838071472 is red on the file B30aw formats; the branch takes `main` after PR #338 merges
-  and that deploy ends (a docs-free, deploy-path-free merge, so the deploy proof stands). The suite's ci and prod variants need a sandbox agent authorisation the simulator
+  run 35838071472 is red on the file PR #338 formatted (merged 2a4f0354); the branch takes
+  `main` once that deploy ends, a merge that touches no deploy path, so the deploy's proof stands. The suite's ci and prod variants need a sandbox agent authorisation the simulator
   shortcut has no equivalent for, so they run only when one exists. **Source**: the rows named.
   **Owner**: Claude Code. **Model**: Sonnet and Haiku. **Size**: ~16 files.
 - [ ] **PU-7. Practice licence build.** PU-7a to PU-7l are on `main`. In flight on
