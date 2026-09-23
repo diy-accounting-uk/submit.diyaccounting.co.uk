@@ -41,9 +41,8 @@ vi.mock("@aws-sdk/client-s3", () => {
   return { S3Client, ListObjectsV2Command, CopyObjectCommand, DeleteObjectsCommand, GetObjectCommand };
 });
 
-const { moveBookToClient, BookNotFoundError, DestinationBookExistsError, _resetS3Client } = await import(
-  "@app/data/s3DiyaGlRepository.js"
-);
+const { moveBookToClient, BookNotFoundError, DestinationBookExistsError, isBookVisible, _resetS3Client } =
+  await import("@app/data/s3DiyaGlRepository.js");
 const { hashSub, _setTestSalt } = await import("../../services/subHasher.js");
 
 const BOOK_ID = "11111111-2222-4333-8444-555555555555";
@@ -55,6 +54,26 @@ function notFoundError() {
   error.name = "NoSuchKey";
   return error;
 }
+
+describe("data/s3DiyaGlRepository isBookVisible", () => {
+  const now = Date.parse("2026-06-15T00:00:00.000Z");
+
+  test("is true for a resident book with no expiresAt", () => {
+    expect(isBookVisible({ retention: "resident", expiresAt: null }, now)).toBe(true);
+  });
+
+  test("is true for a sandbox book whose expiresAt is still in the future", () => {
+    expect(isBookVisible({ retention: "sandbox", expiresAt: "2026-06-16T00:00:00.000Z" }, now)).toBe(true);
+  });
+
+  test("is false for a sandbox book whose expiresAt has passed", () => {
+    expect(isBookVisible({ retention: "sandbox", expiresAt: "2026-06-14T00:00:00.000Z" }, now)).toBe(false);
+  });
+
+  test("is true for a sandbox book with no expiresAt yet recorded", () => {
+    expect(isBookVisible({ retention: "sandbox", expiresAt: null }, now)).toBe(true);
+  });
+});
 
 describe("data/s3DiyaGlRepository moveBookToClient", () => {
   let sourcePrefix;

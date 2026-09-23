@@ -412,6 +412,43 @@ describe("diyaGlPut", () => {
     expect(JSON.parse(result.body).code).toBe("book-limit-reached");
   });
 
+  test("does not count expired sandbox books against the per-user limit", async () => {
+    const metaKey = metadataKeyFor("test-sub", BOOK_ID);
+    const v1Key = versionKeyFor("test-sub", BOOK_ID, 1);
+    const twentyBookIds = Array.from({ length: 20 }, (_, i) => `book-${i}`);
+    const expiredSandboxIds = new Set(twentyBookIds.slice(0, 5));
+    mockS3Send.mockImplementation((command) => {
+      if (command.kind === "get" && command.input.Key === metaKey) {
+        const error = new Error("not found");
+        error.name = "NoSuchKey";
+        throw error;
+      }
+      if (command.kind === "get") {
+        // One of the 20 existing books' own metadata reads, made by listBooks' per-book count.
+        const bookId = command.input.Key.split("/")[3];
+        const metadata = expiredSandboxIds.has(bookId)
+          ? { bookId, retention: "sandbox", expiresAt: "2020-01-01T00:00:00.000Z", updatedAt: "2020-01-01T00:00:00.000Z" }
+          : { bookId, retention: "resident", updatedAt: "2026-01-01T00:00:00.000Z" };
+        return { ETag: '"etag"', Body: jsonBody(metadata) };
+      }
+      if (command.kind === "list") {
+        const prefix = command.input.Prefix;
+        return { CommonPrefixes: twentyBookIds.map((id) => ({ Prefix: `${prefix}${id}/` })) };
+      }
+      if (command.kind === "put" && command.input.Key === v1Key) {
+        return { ETag: '"zip-v1-etag"' };
+      }
+      if (command.kind === "put" && command.input.Key === metaKey) {
+        return { ETag: '"meta-v1-etag"' };
+      }
+      throw new Error(`Unexpected command ${command.kind} ${command.input.Key}`);
+    });
+
+    const result = await ingestHandler(buildPutEvent({}));
+
+    expect(result.statusCode).toBe(200);
+  });
+
   test("400s a bookId that is not a UUID, with no S3 call", async () => {
     const result = await ingestHandler(buildPutEvent({ bookId: "../../other" }));
 

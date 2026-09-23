@@ -87,7 +87,7 @@ Core variables defined in all environment files:
 - `{env}/submit/user-sub-hash-salt` - HMAC-SHA256 salt for user ID hashing
 - `{env}/submit/email-hash-secret` - HMAC-SHA256 secret for email hashing (pass restrictions)
 
-See `_developers/archive/SALTED_HASH_IMPLEMENTATION.md` and `_developers/archive/SALT_SECRET_RECOVERY.md` for implementation details.
+See `../developers/submit/archive/SALTED_HASH_IMPLEMENTATION.md` and `../developers/submit/archive/SALT_SECRET_RECOVERY.md` for implementation details.
 
 ## Build and Test Commands
 
@@ -794,22 +794,22 @@ For specific topics, see:
 | AWS account migration history | `AWS_ACCOUNT_MIGRATION.md` |
 | AWS costs | `AWS_COSTS.md` |
 | Payment lifecycle plan | `PLAN_PAYMENT_LIFECYCLE.md` |
-| Backup strategy | `_developers/backlog/PLAN_BACKUP_STRATEGY.md` |
-| Security detection uplift | `_developers/backlog/PLAN_SECURITY_DETECTION_UPLIFT.md` |
+| Backup strategy | `../developers/submit/backlog/PLAN_BACKUP_STRATEGY.md` |
+| Security detection uplift | `../developers/submit/backlog/PLAN_SECURITY_DETECTION_UPLIFT.md` |
 | Site map | `_developers/SITE_MAP.md` |
-| MFA implementation | `_developers/MFA_IMPLEMENTATION_SUMMARY.md` |
+| MFA implementation | `../developers/submit/archive/REPORT_MFA_IMPLEMENTATION.md` |
 | Marketing guidance | `_developers/MARKETING_GUIDANCE.md` |
 | Information security runbook | `RUNBOOK_INFORMATION_SECURITY.md` |
 | Accessibility/penetration report | `REPORT_ACCESSIBILITY_PENETRATION.md` |
-| Security review report | `_developers/archive/REPORT_SECURITY_REVIEW.md` |
+| Security review report | `../developers/submit/archive/REPORT_SECURITY_REVIEW.md` |
 | HMRC fraud prevention | `hmrc-fraud-prevention.md` |
 | HMRC MTD approval submission | `_developers/hmrc/HMRC_MTD_API_APPROVAL_SUBMISSION.md` |
-| Salted hash implementation | `_developers/archive/SALTED_HASH_IMPLEMENTATION.md` |
-| Salt secret recovery | `_developers/archive/SALT_SECRET_RECOVERY.md` |
-| CloudFront fix history | `_developers/archive/CLOUDFRONT_FRAUD_HEADERS_FIX.md` |
-| Obligation flexibility | `_developers/archive/OBLIGATION_FLEXIBILITY_FIX.md` |
+| Salted hash implementation | `../developers/submit/archive/SALTED_HASH_IMPLEMENTATION.md` |
+| Salt secret recovery | `../developers/submit/archive/SALT_SECRET_RECOVERY.md` |
+| CloudFront fix history | `../developers/submit/archive/CLOUDFRONT_FRAUD_HEADERS_FIX.md` |
+| Obligation flexibility | `../developers/submit/archive/OBLIGATION_FLEXIBILITY_FIX.md` |
 | Test report generation | `scripts/generate-test-reports.js` |
 | API documentation | `web/public/docs/api/openapi.yaml` |
-| Account separation (completed) | `_developers/archive/PLAN_ACCOUNT_SEPARATION.md` |
+| Account separation (completed) | `../developers/submit/archive/PLAN_ACCOUNT_SEPARATION.md` |
 
 **For detailed implementation, always refer to the source files directly.**

@@ -37,7 +37,7 @@ Registration `ZB070902` was renewed by direct debit on 2026-05-20, expiring 2027
 |---|---|---|
 | HMRC receipts retained 7 years, matching the stated policy | Gap | `app/data/dynamoDbReceiptRepository.js:46-49` computes a 7-year TTL value on every receipt item, but `infra/main/java/co/uk/diyaccounting/submit/stacks/DataStack.java:101-111` never calls `ensureTimeToLive` for the receipts table (every other table with a computed TTL does — see lines 121, 135, 151, 167, 183, 199, 216, 276). The `ttl` attribute is written but DynamoDB isn't told to expire on it, so receipts are retained indefinitely rather than auto-expiring at 7 years. |
 | HMRC API audit trail retention matches the stated policy | Gap | Code and CDK agree on 28 days (`app/data/dynamoDbHmrcApiRequestRepository.js:75-78`, `DataStack.java:209,216-220`, `RUNBOOK_INFORMATION_SECURITY.md:632`), but `web/public/privacy.html:399-401` tells users this data is kept "30 days". |
-| Closed-account cleanup | Met | `scripts/cleanup-deleted-accounts.js`, run per `_developers/archive/PRIVACY_DUTIES.md:143-145`. |
+| Closed-account cleanup | Met | `scripts/cleanup-deleted-accounts.js`, run per `../developers/submit/archive/PRIVACY_DUTIES.md:143-145`. |
 
 ## Subject access and erasure
 
@@ -45,7 +45,7 @@ Registration `ZB070902` was renewed by direct debit on 2026-05-20, expiring 2027
 |---|---|---|
 | Erasure request path exists and is audited | Met | Two GitHub Actions workflows: `.github/workflows/delete-user-data.yml` (deletes by hashed sub, with a dry-run mode when `confirm` is false) and `.github/workflows/delete-user-data-by-email.yml` (resolves an email to a hashed sub, then calls the same deletion path). Both run through CI with logged output. |
 | Subject access (export) request path is equally auditable | Gap | `scripts/export-user-data.js` exists but has no GitHub Actions wrapper — it only runs locally with AWS credentials, with no dry-run and no CI audit trail, unlike the erasure path. |
-| Erasure explains the 7-year receipt exception to the user | Met | `_developers/archive/PRIVACY_DUTIES.md:21-24` and `web/public/privacy.html:531` both state receipts are retained for HMRC's 7-year requirement even after account deletion. |
+| Erasure explains the 7-year receipt exception to the user | Met | `../developers/submit/archive/PRIVACY_DUTIES.md:21-24` and `web/public/privacy.html:531` both state receipts are retained for HMRC's 7-year requirement even after account deletion. |
 
 ## Processors
 
@@ -61,7 +61,7 @@ Registration `ZB070902` was renewed by direct debit on 2026-05-20, expiring 2027
 
 | Item | Status | Reason |
 |---|---|---|
-| A breach process exists | Met | `RUNBOOK_INFORMATION_SECURITY.md` section 6.2 ("When a Breach Occurs") and `_developers/archive/PRIVACY_DUTIES.md` section 2. |
+| A breach process exists | Met | `RUNBOOK_INFORMATION_SECURITY.md` section 6.2 ("When a Breach Occurs") and `../developers/submit/archive/PRIVACY_DUTIES.md` section 2. |
 | The process names the 72-hour ICO deadline | Met | `RUNBOOK_INFORMATION_SECURITY.md:423`. |
 | The process gives a ready-to-use notification template (what to record, who decides, the ICO form fields) | Now met | Added as `RUNBOOK_INFORMATION_SECURITY.md` section 6.7, this commit. Previously the runbook only listed the steps and the ICO's complaints URL, not a template. |
 

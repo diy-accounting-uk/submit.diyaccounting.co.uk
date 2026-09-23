@@ -478,7 +478,7 @@ What a reader sees today, and whether someone skimming would notice.
 | Commit messages | 3,791 co-author trailers in 14 forms, plus 45 commits authored as "Claude" | No. Nobody reads trailers | Trailer stays as an audit aid, not as the disclosure |
 | Release notes and changelogs | **Nothing exists.** No releases published in any repository, no CHANGELOG | n/a | Yes, once `publish.yml` works. An assembled note says it was assembled |
 | Customer-facing site copy | **No AI disclosure anywhere** on `submit.diyaccounting.co.uk` or the spreadsheets site | No | Only where a model generated the page. Not on hand-written pages |
-| Knowledge-base articles | **Nothing exists yet.** Backlog 23 and `_developers/backlog/PLAN_EMAILS_TO_ARTICLES.md` would generate pages at scale from 14 years of support mail | n/a | **Yes, and this is the biggest one coming.** Machine-generated pages published under the company's name, at volume |
+| Knowledge-base articles | **Nothing exists yet.** Backlog 23 and `../developers/submit/backlog/PLAN_EMAILS_TO_ARTICLES.md` would generate pages at scale from 14 years of support mail | n/a | **Yes, and this is the biggest one coming.** Machine-generated pages published under the company's name, at volume |
 | Support replies to customers | Nothing built. `STRATEGY.md` W4 names Gmail drafting | n/a | Yes. A reply in a person's voice that a model wrote needs to say so |
 | Public posts and replies | No account exists on any social surface | n/a | Yes, on any reply that reads as one person answering another |
 | Spreadsheets generated packages | Commit message says "Generate BST packages from app/data and app/templates" | Yes, in the commit. Nothing in the package | Templated, so a light touch. The commit message is enough |

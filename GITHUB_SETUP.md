@@ -62,7 +62,7 @@ Different values per environment.
 | `ROOT_DEPLOY_ROLE_ARN` | `aws --profile management iam get-role --role-name root-deployment-role --query Role.Arn --output text` |
 | `ROOT_HOSTED_ZONE_ID` | `aws --profile management route53 list-hosted-zones-by-name --dns-name diyaccounting.co.uk --query 'HostedZones[0].Id' --output text` (strip `/hostedzone/`) |
 | `AWS_HOSTED_ZONE_NAME` | `diyaccounting.co.uk` |
-| `AWS_CERTIFICATE_ARN` | the CI submit cert ARN (used only by `_developers/archive/generate-issue.yml`) |
+| `AWS_CERTIFICATE_ARN` | the CI submit cert ARN (used only by `../developers/submit/archive/generate-issue.yml`) |
 
 ## GitHub Actions Secrets
 
@@ -71,7 +71,7 @@ Different values per environment.
 | Secret | Purpose | How to obtain |
 |---|---|---|
 | `RELEASE_PAT` | Used by `publish.yml` to push tags / release commits | GitHub PAT, `repo` scope |
-| `PERSONAL_ACCESS_TOKEN` | Used by `_developers/archive/generate-issue.yml` and `security-review.yml` | GitHub PAT, `repo` + appropriate scopes |
+| `PERSONAL_ACCESS_TOKEN` | Used by `../developers/submit/archive/generate-issue.yml` and `security-review.yml` | GitHub PAT, `repo` + appropriate scopes |
 
 ### Environment-scoped (set on both `ci` and `prod`)
 

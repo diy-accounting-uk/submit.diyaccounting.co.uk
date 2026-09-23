@@ -33,6 +33,7 @@ import {
   putDiyaGlBook,
   getDiyaGlBookLatest,
   deleteDiyaGlBook,
+  listDiyaGlBooks,
 } from "./steps/behaviour-diya-gl-subscription-steps.js";
 
 dotenvConfigIfNotBlank({ path: ".env" });
@@ -120,6 +121,22 @@ test("subscribes with a DIYA-GL token, then puts and reads a book", async ({ pag
     screenshotPath,
   );
   expect(idToken).toBeTruthy();
+
+  /* *************************************************************** */
+  /*  CLEANUP: DELETE ANY EXISTING BOOKS FROM PREVIOUS TEST RUNS  */
+  /* *************************************************************** */
+
+  const existing = await listDiyaGlBooks({ apiBase, idToken });
+  if (existing.status === 200 && existing.body.books) {
+    let deletedCount = 0;
+    for (const book of existing.body.books) {
+      const deleteResult = await deleteDiyaGlBook({ apiBase, idToken, bookId: book.id });
+      if (deleteResult.status === 200) {
+        deletedCount++;
+      }
+    }
+    console.log(`Cleaned up ${deletedCount} existing books from previous test runs`);
+  }
 
   /* ******************************************************* */
   /*  A SANDBOX SAVE BEFORE THE SUBSCRIPTION EXISTS  */
