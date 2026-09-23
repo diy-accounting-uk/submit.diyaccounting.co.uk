@@ -50,6 +50,31 @@ and stop. One branch is driven green at a time. Lifted only by the operator in t
 
 ## Machine-only
 
+- [ ] **B30bh. Record a source location in memory when the operator names it.** Five operator
+  messages on 2026-09-23 corrected where a source lives (the Drive finance path, `authuser=1`, the
+  spreadsheets MCP meaning the published diya-gl package, Polycode as a creditor, the mail mirror
+  path); all five are saved now. Add one feedback memory: when the operator names a path, account,
+  URL parameter or meaning, write or update the memory in the same turn, before acting on it, and
+  index it in `MEMORY.md`. Changes nothing committed. **Source**: session report Mc+ncD.
+  **Owner**: Claude Code. **Model**: Haiku. **Size**: 0 files.
+
+- [ ] **B30be. Refine pass 2 names the call site and the forbidden patterns.** The coordinator
+  corrected 6 agent results on 2026-09-23 (knip deleting a used file, a Stripe API pin on every
+  client, a `GITHUB_ENV` name clash, a compatibility alias, a stack-update heuristic, a
+  `.dockerignore` excluding `infra/`). In `.claude/skills/refine/SKILL.md` pass 2, require every
+  brief to name the exact call site (file:line) the change lands on, and to list the patterns the
+  rules forbid that the change could reach: aliases, a setting applied wider than the call that
+  needs it, whole-tree formatting or deletion tools, broad ignore rules. **Source**: session
+  report Mc+ncD. **Owner**: Claude Code. **Model**: Haiku. **Size**: 1 file.
+
+- [ ] **B30bf. A parser brief carries one real month and its expected residual.** The PayPal
+  statement parser took 4 rounds (0.67M tokens) because the activity-summary parse was overwritten
+  by a later bare heading and no fixture caught it. In `.claude/skills/refine/SKILL.md` pass 2 and
+  `.claude/skills/company-book/SKILL.md`'s Build section, require a parser brief to name one real
+  source month (its path under `../drive/…/finance/`) and the expected reconciliation residual
+  (0) as the first test. Shares `refine/SKILL.md` with B30be: one agent. **Source**: session
+  report Mc+ncD. **Owner**: Claude Code. **Model**: Haiku. **Size**: 2 files.
+
 - [ ] **B30bb. A Markdown-only push leaves a PR blocked.** `main`'s ruleset (16057564) requires
   `Check commit signatures`, `npm test`, `maven test`, `eslint` and `CodeQL` on the PR head, but
   `.github/workflows/codeql.yml` ignores `**.md` on push and pull_request and has no
@@ -58,8 +83,27 @@ and stop. One branch is driven green at a time. Lifted only by the operator in t
   `codeql.yml`, and in `.claude/skills/auto-merge/SKILL.md` a step: when the PR head changes only
   `.md` files and a required check is missing, dispatch `test.yml` and `codeql.yml` on the head
   (`gh workflow run <file> --ref <headRef>`) and wait for them. Proof: a Markdown-only commit on a
-  PR reaches `CLEAN` after the dispatches. Same agent as B30bc. **Owner**: Claude Code. **Model**:
+  PR reaches `CLEAN` after the dispatches. Saves about 20 minutes and a force-push per Markdown-only
+  head (session report Mc+ncD). Same agent as B30bc. **Owner**: Claude Code. **Model**:
   Sonnet. **Size**: 2 files.
+
+- [ ] **B30bd. Worker agents start no agents.** The capabilities-report agent forked itself
+  recursively on 2026-09-23: 0.78M tokens reported, more unreported, and duplicate writers whose
+  errors had to be relayed and corrected. In `.claude/skills/do-next/SKILL.md` and
+  `.claude/skills/iterate/SKILL.md`, make every worker brief say it must not call the `Agent` tool
+  or fork, and that only the coordinator fans out; a brief whose work needs splitting is split by
+  the coordinator before dispatch. **Source**: session report Mc+ncD. **Owner**: Claude Code.
+  **Model**: Haiku. **Size**: 2 files.
+
+- [ ] **B30bg. Sibling-repository worktrees push in one attempt.** The spreadsheets push on
+  2026-09-23 took 3 attempts, one of them a 41-minute run: the worktree had an empty
+  `node_modules`, and `../spreadsheets.diyaccounting.co.uk/.githooks/pre-push` wrote about 100
+  generated files (and changed `provenance-data.js`) that then sat uncommitted. In
+  `.claude/skills/do-next/SKILL.md`, make a sibling-repository brief symlink the main checkout's
+  `node_modules` into its worktree; in the spreadsheets repository, make the pre-push hook fail
+  with the list of files it wrote when `git status --porcelain` is not clean after it runs (a
+  branch and PR there). Shares `do-next/SKILL.md` with B30bd: one agent. **Source**: session report
+  Mc+ncD. **Owner**: Claude Code. **Model**: Sonnet. **Size**: 2 files (one per repository).
 
 - [ ] **B30bc. A secret and PII scan on every push, docs included.** No workflow scans what a
   push adds when the push is Markdown-only (CodeQL and `test.yml` skip it). Add
