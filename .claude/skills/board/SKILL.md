@@ -181,7 +181,12 @@ Never delete anything from this skill: `git worktree remove`, `git branch -d` an
 denied to the session here, and an origin branch is the operator's anyway. After the table, print
 one fenced block with the `!` prefix that removes every stale worktree and local branch and every
 merged origin branch, so the operator runs it or leaves it; a stale branch on disk blocks nothing,
-and the block reappears in every render until it is empty.
+and the block reappears in every render until it is empty. Join removal commands with `;` so one
+failure does not stop the rest. Use `--force --force` on worktree remove to override locks:
+
+```
+! git worktree remove --force --force /path/to/worktree1; git worktree remove --force --force /path/to/worktree2
+```
 Branch names follow `CLAUDE.md`: the integration branch is `claude/b<n>-board`, a track branch
 `claude/<ns>-<n>-<topic>` or `claude/<ns>-<topic>`, the distinctive part right after `claude/`.
 A branch named the old way (`claude/board-batch-<n>`, a generic preamble, a series number at
