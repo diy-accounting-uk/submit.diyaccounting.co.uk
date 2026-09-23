@@ -469,8 +469,8 @@ domain is small in traffic and high in blast radius. Every row touches a custome
 | Google Cloud and GA4 as code | A2 | B1 R4 | C4 | Nothing. Backlog 49. Every Google change is the operator copying ids between console tabs | A tool choice, then the projects, IAM, budgets, OAuth clients, properties and streams moved into it | P5 |
 | Nightly analytics ingestion and raw export | A2 | B1 R4 | C0 | Runs. The first raw export lands 02:15 UTC on 2026-09-10 | Backlog B52x proves every field fills | None |
 | The optimiser: which lever to pull next | A2 script, B3 method | B3 R4 | C0 | Designed as backlog 52l, not built | Three months of export | None. It proposes only |
-| Reinvestment loop spend decisions | A3 | B3 R4 | C4 | Nothing. Backlog 52m | The Ads account (O23), a reserve floor from the operator, the optimiser | P5, Q5 |
-| Ads campaign management | A3 with the API, A4 through the console | B3 R4 | C4 | No account. Both earlier ones were cancelled | The account, then the API. Use A4 only until the API path is built | P5, Q5 |
+| Reinvestment loop spend decisions | A3 | B3 R4 | C4 | Nothing. Backlog 52m | The optimiser (backlog 52l) | P5, Q5 |
+| Ads campaign management | A3 with the API, A4 through the console | B3 R4 | C4 | Account 814-268-5080 as code (`infra/google/ads/ads.toml`), one Performance Max campaign | Campaign writes through the API; A4 until then | P5, Q5 |
 | Video capture from a scene script | A2 | B1 R3 | C1 | `video-capture.yml` against a live deployment: mp4, stills and a transcript, all as artifacts. Dispatch only | An event trigger | None |
 | Video publish to YouTube | A2, then human | B1 R3 | C6 | Works. Three VAT videos public since 2026-09-07. The operator runs the public flip | Nothing. The flip stays human | P8 |
 | Screenshots for a release | A2 | B1 R3 | C0 to C6 | The capture run already produces stills; nothing selects or publishes them | Selection and a destination | P8 |
@@ -789,8 +789,8 @@ rung, and it is where the operator's interest lies. Everything green is the end 
 Assumption: docs-only first, widening when the authorship check has thirty runs behind it.
 
 **Q5. The numbers behind P5.** Bedrock already has $150/month with an automatic deny, and $5/day
-as a warning, which the alarm-triage path has never approached. Ads has no account yet, and O23
-asks the operator for a reserve floor. Total AWS runs against a $64.77/month steady-state target
+as a warning, which the alarm-triage path has never approached. The Ads account is 814-268-5080 and
+the reserve floor is £2,000 (operator, 2026-09-22). Total AWS runs against a $64.77/month steady-state target
 the cost panel now tracks. Recommendation: keep the Bedrock numbers, set the Ads daily cap in the
 account itself rather than in our code, and add a total-AWS budget action at 150% of target so a
 runaway loop stops without a person. The operator names the reserve floor.

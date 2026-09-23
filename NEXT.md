@@ -171,6 +171,15 @@ Shared facts for the analytics rows (B52d, B52e, B52l, B52m): the prod Athena da
 
 ## Human-driven
 
+- [ ] **OCS. The confirmation statement, due 5 October 2026.** Made up to 21 September 2026;
+  DIY Accounting Limited 06846849 last filed a CS01 on 25 October 2025
+  (<https://find-and-update.company-information.service.gov.uk/company/06846849/filing-history>).
+  Before filing, confirm the registered email address the 13 September update (reference
+  123168-928517-893411) left on the register is the one the company keeps, and file a second update
+  if it is a test value; then supply each director-PSC's personal code within 14 days of the
+  statement date. Steps are task B of `../NEXT_OPERATOR_RUNBOOK.md`. **Owner**: Operator.
+  **Model**: none. **Size**: 0 files.
+
 - [ ] **OF2d. Copy DIYA's book into Drive.** The book for 1 March to 31 August 2026 is in
   `../staging/2026-2027/book/` (`book.toml`, `lines.jsonl` with 488 lines, `VERIFICATION.md`, and `book-diya-gl.zip` for the spreadsheets MCP):
   bank balances match every statement, Stripe and PayPal reconcile with no residual, validation
@@ -190,7 +199,7 @@ Shared facts for the analytics rows (B52d, B52e, B52l, B52m): the prod Athena da
 
 - [ ] **O34d. Send the XML Gateway email.** Send `../DRAFT_EMAIL_XMLGW_000004.md` from `antony@diyaccounting.co.uk`
   as a reply on the `xml@companieshouse.gov.uk` thread, and paste the answer into B34.6c's row when
-  it comes. **Source**: BACKLOG 34d. **Owner**: Operator. **Model**: none. **Size**: 0 files.
+  it comes. The draft names test presenter 66666727000, the id on the ci environment. **Source**: BACKLOG 34b. **Owner**: Operator. **Model**: none. **Size**: 0 files.
 
 - [ ] **O11. The ITSA send day.** Name the day the recognition email goes, write it into B11.T10's
   row, and on that day send `_developers/hmrc/DRAFT_EMAIL_ITSA_RECOGNITION.md` to

@@ -1728,7 +1728,7 @@ test support API, and its vendor-state checkpoints reset the user between runs.
 
 ## Sources
 
-- `BACKLOG.md` rows 10, 11 and 11a. `NEXT.md` B10.4 and B11.
+- `BACKLOG.md` rows 10 and 11. `NEXT.md` O11 and B11.T10.
 - `_developers/hmrc/ITSA_SPIKE.md`, `_developers/hmrc/ITSA_MINIMUM_FUNCTIONALITY_STANDARDS.md`.
 - `PLAN_SUBMISSION_MCP.md`, `../developers/submit/archive/PLAN_COMPANIES_HOUSE_REST_FILING.md`.
 - Making Tax Digital for Income Tax end-to-end service guide, "How to integrate with HMRC APIs":

@@ -232,7 +232,7 @@ for H7.
 | M3 | The third Cognito app client, its JWT authoriser and the device-code grant; `open_book` and `save_book` over the DIYA cloud routes | M1; the DIYA-GL client pattern in `../developers/submit/archive/PLAN_DIYA_GL_STORAGE.md` | Claude Code, Sonnet; the CDK change through the usual deploy |
 | M4 | The hosted transport: a Lambda with streamable HTTP behind API Gateway on the existing domain, the resource-server metadata, and the OAuth flow end to end from a chat client | M3 | Claude Code, Opus design then Sonnet |
 | M5 | Distribution: `npm publish` from this repo on a tag, the Docker image on GHCR, `web/public/mcp.html` rewritten as the real instructions | M2; H7 on the spreadsheets board for the dependency | Claude Code, Haiku |
-| M6 | The Companies House proof: BrickWork Pro's derived accounts filed to the XML Gateway test service through the MCP | M2; NEXT.md O16 and B34.6b | Claude Code, Sonnet |
+| M6 | The Companies House proof: BrickWork Pro's derived accounts filed to the XML Gateway test service through the MCP | M2; NEXT.md B34.6c | Claude Code, Sonnet |
 | M7 | The VAT proof: a derived return filed through the MCP against HMRC's sandbox with the existing test user | M2 | Claude Code, Sonnet |
 
 ## Verification
@@ -255,7 +255,6 @@ for H7.
 | `NPM_TOKEN` secret, then the `diya-gl-v1.0.0` tag | spreadsheets board H7, operator | Ready to start; nothing else blocks publication |
 | The published package's API surface staying as `books-interchange.js` and `calculators/ltd.js` expose it today | spreadsheets repo | Landed; pin the version |
 | The `vat-returns` view's period boundaries matching HMRC obligation dates | spreadsheets engine (`buildVatReturns`); straddling periods are a named horizon in that repo's Ltd plan | Open on that side |
-| Test presenter credentials from Companies House | NEXT.md O16, operator | Requested 2026-09-05; details sent 2026-09-07 |
 | An MCP client to run the hosted flow end to end | Claude Desktop or Claude Code on the operator's machine | Available |
 
 ## Distance
