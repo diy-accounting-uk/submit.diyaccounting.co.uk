@@ -202,6 +202,74 @@ function findInvoiceTotal(content) {
   return null;
 }
 
+// An insurer's "Payment schedule.pdf" attachment (Hiscox's is the recorded
+// case) lists each Direct Debit instalment on its own dated row rather than
+// printing one total, so a document that carries this attachment is read as
+// a schedule of instalments instead of being handed to findInvoiceTotal --
+// there is no single total on it to find. pdftotext (-layout) renders the
+// table as a "Date  Amount" header followed by rows of
+// "dd/mm/yyyy  £nn.nn", both collapsed onto their own line.
+const PAYMENT_SCHEDULE_ATTACHMENT = /---\s*attachment:\s*payment schedule\.pdf\s*---/i;
+const PAYMENT_SCHEDULE_TABLE_HEADER = /^Date\s+Amount$/i;
+const PAYMENT_SCHEDULE_ROW = /^(\d{2})\/(\d{2})\/(\d{4})\s+(\S.*)$/;
+
+// The Direct Debit's own reference sits below the table on the same
+// attachment page ("Reference Number: PL-PSC03001837355/12"), so an
+// instalment posted from it carries that as its documentReference, the way
+// an ordinary invoice line carries an invoice number.
+const PAYMENT_SCHEDULE_REFERENCE = /Reference Number:\s*(\S+)/i;
+
+/**
+ * Every (date, amount) instalment on a document's payment-schedule
+ * attachment, or null when the document carries no such attachment. Reads
+ * every row under the "Date  Amount" header until a blank or non-matching
+ * line ends the table.
+ * @param {string} content
+ * @returns {Array<{date: string, amount: number, currency: string, reference: string|undefined}>|null}
+ */
+function findScheduleInstalments(content) {
+  if (!content || !PAYMENT_SCHEDULE_ATTACHMENT.test(content)) return null;
+
+  const referenceMatch = content.match(PAYMENT_SCHEDULE_REFERENCE);
+  const reference = referenceMatch ? referenceMatch[1] : undefined;
+
+  const instalments = [];
+  let inTable = false;
+  for (const rawLine of content.split("\n")) {
+    const line = rawLine.trim();
+    if (PAYMENT_SCHEDULE_TABLE_HEADER.test(line)) {
+      inTable = true;
+      continue;
+    }
+    if (!inTable) continue;
+
+    const rowMatch = line.match(PAYMENT_SCHEDULE_ROW);
+    if (!rowMatch) {
+      if (line === "") continue;
+      break;
+    }
+    const [, day, month, year, amountText] = rowMatch;
+    const token = extractAmountToken(amountText);
+    if (!token) continue;
+    instalments.push({ date: `${year}-${month}-${day}`, amount: token.amount, currency: token.currency, reference });
+  }
+
+  return instalments.length > 0 ? instalments : null;
+}
+
+// A collection date the schedule prints falls on a weekend, moving the
+// actual Direct Debit to the next working day (the schedule's own words:
+// "If your payment collection date falls on a weekend or a bank holiday,
+// we'll collect it the next working day"). No bank-holiday list exists yet
+// in this repository, so only a weekend shifts the date.
+function nextWorkingDay(isoDate) {
+  const date = new Date(`${isoDate}T00:00:00Z`);
+  const dayOfWeek = date.getUTCDay();
+  if (dayOfWeek === 6) date.setUTCDate(date.getUTCDate() + 2);
+  else if (dayOfWeek === 0) date.setUTCDate(date.getUTCDate() + 1);
+  return date.toISOString().slice(0, 10);
+}
+
 function findDocumentReference(title, content) {
   const titleMatch = title && title.match(/Invoice (?:ID|number):\s*([\w-]+)/i);
   if (titleMatch) return titleMatch[1];
@@ -219,7 +287,10 @@ function compact(line) {
  * than harvested and stored: each configured supplier is searched for by
  * name over `mail-antony` within the period, every hit's extracted text is
  * fetched, and every hit that carries a recognisable total becomes one
- * `purchases`/`invoice` diya-gl line.
+ * `purchases`/`invoice` diya-gl line. A hit whose document carries a
+ * payment-schedule attachment instead yields one line per instalment
+ * scheduled inside the period, and no total line -- there is no single
+ * total on that document to find.
  * @param {{from: string, to: string, suppliers: Array<{name: string, taxCode: string, accountMainID: string, accountMainDescription?: string}>}} period
  * @param {{runCorpus?: (args: string[]) => Promise<Object|Array>}} [deps]
  * @returns {Promise<Array<Object>>} diya-gl lines, unvalidated against any book
@@ -236,6 +307,30 @@ export async function invoiceLinesForPeriod({ from, to, suppliers }, { runCorpus
 
     for (const hit of hits) {
       const doc = await runCorpusFn(["doc", "--json", hit.source, hit.path]);
+
+      const instalments = findScheduleInstalments(doc.content);
+      if (instalments) {
+        for (const instalment of instalments) {
+          if (instalment.date < from || instalment.date > to) continue;
+          lines.push(
+            compact({
+              sourceJournalID: "purchases",
+              documentType: "invoice",
+              postingDate: nextWorkingDay(instalment.date),
+              documentDate: instalment.date,
+              accountMainID: supplier.accountMainID,
+              accountMainDescription: supplier.accountMainDescription,
+              amount: instalment.amount,
+              amountCurrency: instalment.currency,
+              taxCode: supplier.taxCode,
+              documentReference: instalment.reference,
+              detailComment: supplier.name,
+            }),
+          );
+        }
+        continue;
+      }
+
       const total = findInvoiceTotal(doc.content);
       if (!total) continue;
 

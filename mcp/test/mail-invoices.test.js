@@ -1,11 +1,12 @@
 // SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0
 // Copyright (C) 2006-2026 DIY Accounting Limited
 
-// mail-invoices.test.js -- invoiceLinesForPeriod over three recorded, redacted
-// mailbox documents (an AWS billing statement, a Google Cloud invoice, and an
-// AWS invoice email whose total sits only in its PDF attachment's extracted
-// text), with the corpus CLI replaced by a function returning the fixtures
-// instead of shelling out to a live index.
+// mail-invoices.test.js -- invoiceLinesForPeriod over recorded, redacted
+// mailbox documents (an AWS billing statement, a Google Cloud invoice, an AWS
+// invoice email whose total sits only in its PDF attachment's extracted
+// text, and two Hiscox emails whose "Payment schedule.pdf" attachment lists
+// dated instalments instead of a total), with the corpus CLI replaced by a
+// function returning the fixtures instead of shelling out to a live index.
 
 import { readFileSync } from "node:fs";
 import { dirname, resolve } from "node:path";
@@ -25,21 +26,31 @@ function readFixture(name) {
 const AWS_FIXTURE = readFixture("mail-invoices-aws.json");
 const GOOGLE_CLOUD_FIXTURE = readFixture("mail-invoices-google-cloud.json");
 const AWS_PDF_TOTAL_FIXTURE = readFixture("mail-invoices-aws-pdf-total.json");
+const HISCOX_2025_SCHEDULE_FIXTURE = readFixture("mail-invoices-hiscox-2025-schedule.json");
+const HISCOX_2026_SCHEDULE_FIXTURE = readFixture("mail-invoices-hiscox-2026-schedule.json");
 
+// A supplier's value is either one recorded fixture or, for a supplier with
+// more than one email on record (Hiscox's policy renews yearly onto a new
+// payment schedule), an array of them: their search hits are concatenated,
+// as a live search over both years would return both.
 function fakeRunCorpus(fixturesBySupplier) {
   const docsByPath = new Map();
-  for (const fixture of Object.values(fixturesBySupplier)) {
+  const registerDoc = (fixture) => {
     docsByPath.set(fixture.doc.path, fixture.doc);
     if (fixture["noise-doc"]) docsByPath.set(fixture["noise-doc"].path, fixture["noise-doc"]);
+  };
+  for (const value of Object.values(fixturesBySupplier)) {
+    if (Array.isArray(value)) value.forEach(registerDoc);
+    else registerDoc(value);
   }
 
   return async (args) => {
     const command = args[0];
     if (command === "search") {
       const supplierName = args.at(-1);
-      const fixture = fixturesBySupplier[supplierName];
-      if (!fixture) throw new Error(`no recorded search fixture for "${supplierName}"`);
-      return fixture.search;
+      const value = fixturesBySupplier[supplierName];
+      if (!value) throw new Error(`no recorded search fixture for "${supplierName}"`);
+      return Array.isArray(value) ? value.flatMap((fixture) => fixture.search) : value.search;
     }
     if (command === "doc") {
       const path = args.at(-1);
@@ -139,6 +150,49 @@ describe("invoiceLinesForPeriod", () => {
 
   it("throws rather than search with no suppliers configured", async () => {
     await expect(invoiceLinesForPeriod({ from: "2026-01-01", to: "2026-01-31", suppliers: [] })).rejects.toThrow(/supplier/);
+  });
+
+  it("posts one purchases line per scheduled instalment inside the period, from a payment-schedule attachment, and none for a total", async () => {
+    const insuranceAccount = { accountMainID: "5700", accountMainDescription: "Insurance" };
+    const lines = await invoiceLinesForPeriod(
+      {
+        from: "2026-03-01",
+        to: "2026-08-31",
+        suppliers: [{ name: "Hiscox", taxCode: "E", ...insuranceAccount }],
+      },
+      { runCorpus: fakeRunCorpus({ Hiscox: [HISCOX_2025_SCHEDULE_FIXTURE, HISCOX_2026_SCHEDULE_FIXTURE] }) },
+    );
+
+    expect(lines).toHaveLength(6);
+
+    const marchToJuly = lines.filter((line) => line.postingDate < "2026-08-01");
+    expect(marchToJuly).toHaveLength(5);
+    for (const line of marchToJuly) {
+      expect(line).toMatchObject({
+        sourceJournalID: "purchases",
+        documentType: "invoice",
+        accountMainID: "5700",
+        amount: 9.17,
+        amountCurrency: "GBP",
+        taxCode: "E",
+        documentReference: "PL-PSC03001837355/11",
+        detailComment: "Hiscox",
+      });
+    }
+
+    const august = lines.find((line) => line.postingDate.startsWith("2026-08"));
+    expect(august).toMatchObject({
+      sourceJournalID: "purchases",
+      documentType: "invoice",
+      postingDate: "2026-08-10",
+      documentDate: "2026-08-08",
+      accountMainID: "5700",
+      amount: 10.12,
+      amountCurrency: "GBP",
+      taxCode: "E",
+      documentReference: "PL-PSC03001837355/12",
+      detailComment: "Hiscox",
+    });
   });
 });
 

@@ -1,0 +1,27 @@
+{
+  "search": [
+    {
+      "source": "mail-antony",
+      "path": "2026/6/12/19eba6fef669188c.eml",
+      "title": "Hiscox Business Insurance - Policy number - PL-PSC03001837355/12 Company name: DIY Accounting Limited",
+      "date": "2026-06-12T06:04:50+00:00",
+      "score": 0.021,
+      "excerpt": "Hiscox Business Insurance - Policy number - PL-PSC03001837355/12 ... Payment schedule ...",
+      "chunk_seq": 0,
+      "content_indexed": true
+    }
+  ],
+  "doc": {
+    "source": "mail-antony",
+    "path": "2026/6/12/19eba6fef669188c.eml",
+    "title": "Hiscox Business Insurance - Policy number - PL-PSC03001837355/12 Company name: DIY Accounting Limited",
+    "doc_date": "2026-06-12T06:04:50+00:00",
+    "content_indexed": true,
+    "meta": {
+      "from": "service@hiscox.co.uk",
+      "to": "admin@diyaccounting.co.uk",
+      "attachments": ["Payment schedule.pdf"]
+    },
+    "content": "--- attachment: Payment schedule.pdf ---\nHiscox Insurance\n                                  Payment schedule\n\nYour Direct Debit schedule\nYour monthly payment is simply your total premium divided by the number of instalments.There are\nno extra fees on top, and you can change your policy at any time with no administration charges.\n\nDate                                                       Amount\n 08/08/2026                                                 £10.12\n 08/09/2026                                                 £10.08\n 08/10/2026                                                 £10.08\n 08/11/2026                                                 £10.08\n 08/12/2026                                                 £10.08\n 08/01/2027                                                 £10.08\n 08/02/2027                                                 £10.08\n 08/03/2027                                                 £10.08\n 08/04/2027                                                 £10.08\n 08/05/2027                                                 £10.08\n 08/06/2027                                                 £10.08\n 08/07/2027                                                 £10.08\n\nIf your payment collection date falls on a weekend or a bank holiday, we’ll collect it the next working\nday. When we take your payment, you’ll see these details on your statement:\n\nReference Number:                                        PL-PSC03001837355/12"
+  }
+}
