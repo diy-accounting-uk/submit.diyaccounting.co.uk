@@ -54,11 +54,10 @@ Shared facts for the analytics rows (B52d, B52e, B52l, B52m): the prod Athena da
   `names` in two seconds, but the probe jobs still ran against prod with test scenarios on and
   opened alarm #341 (closed; a deliberate `SUBMIT_API_HTTP_500`); both defects are fixed on
   `claude/b85-board` (the guard cancels the whole run; the cancel action leaves another
-  environment's push run alone), and the proof dispatch is re-run after b85 merges. B30at's proof
-  needs a claimed set that is not last-known-good (the sweep keeps the last-known-good set before
+  environment's push run alone), and the proof dispatch is re-run after b85 merges. B30at's proof needs a claimed set that is not last-known-good (the sweep keeps the last-known-good set before
   it reads any claim; b85's deploy claimed `ci-set1`, which is last-known-good): the next time two
   branches deploy at once, `gh workflow run destroy-ci.yml -f sweep-for-stacks=true` while the
-  second holds `ci-set2`, and its log shows "stays: claimed by run". B52e1 follows. **Owner**: Claude Code. **Model**: Haiku. **Size**: 0 files.
+  second holds `ci-set2`, and its log shows "stays: claimed by run". **Owner**: Claude Code. **Model**: Haiku. **Size**: 0 files.
 
 - [ ] **B85w. Wave b85.** Branch `claude/b85-board` (worktree `.claude/worktrees/b85`, from
   b84's tip): B52j's `ads-advisor` skill; B30ba (one deploy per delivered push); B30az (the
@@ -81,18 +80,18 @@ Shared facts for the analytics rows (B52d, B52e, B52l, B52m): the prod Athena da
 
 ## Machine-only
 
-## Machine-ask
+- [ ] **B52e2. Submit's £0.99 charges still land as `unknown`.** The 1–21 September backfill
+  (`prod-env-stripe-reconcile` invoked per date, 2026-09-23) moved every donation to its product,
+  but the four `resident-vat` charges (2026-09-02, -03, -06, -09) still read `unknown` in
+  `v_revenue_daily`, though B52e's investigation expected `resolveChargeBundleId`'s
+  invoice-to-subscription path in `app/functions/analytics/stripeReconcile.js` to resolve them.
+  Read one of those charges' curated row (`curated/stripe/stripe_charges/dt=2026-09-03/charges.json.gz`)
+  and the Lambda's log for that invoke for which step returned nothing (the charge's `invoice`
+  under the Lambda's pinned API version, the subscription's `metadata.bundleId`), fix that layer
+  with a test, and re-invoke for the four dates (operator approves). **Owner**: Claude Code.
+  **Model**: Sonnet. **Size**: ~2 files.
 
-- [ ] **B52e1. Backfill the revenue labels for 1 to 21 September.** After B83w's deploy puts the
-  Payment Link fallback into the prod `stripeReconcile` Lambda, invoke it once per date so each
-  day's `curated/stripe/stripe_charges/dt=<date>/charges.json.gz` is rewritten with the resolved
-  `bundle_id`. The Lambda invoke is a prod AWS write outside a workflow, so the operator approves
-  it; the command, run from the repository root with `AWS_PROFILE=submit-prod`:
-  `for d in $(seq -w 1 21); do aws lambda invoke --function-name <prod stripeReconcile function> --payload "{\"date\":\"2026-09-$d\"}" --cli-binary-format raw-in-base64-out /dev/stdout; done`
-  (the function name is read from `aws lambda list-functions` at the time). Proof: `v_revenue_daily`
-  for September shows the donations under `donation-10`/`-20`/`-45`/`-custom` and the £0.99
-  charges under `resident-vat`. **Owner**: Claude Code; the operator approves. **Model**: Haiku.
-  **Size**: 0 files.
+## Machine-ask
 
 ## Human-driven
 
