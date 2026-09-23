@@ -55,8 +55,10 @@ Shared facts for the analytics rows (B52d, B52e, B52l, B52m): the prod Athena da
   opened alarm #341 (closed; a deliberate `SUBMIT_API_HTTP_500`); both defects are fixed on
   `claude/b85-board` (the guard cancels the whole run; the cancel action leaves another
   environment's push run alone), and the proof dispatch is re-run after b85 merges. B30at's proof
-  (`gh workflow run destroy-ci.yml -f sweep-for-stacks=true` while b85's branch deploy holds a
-  slot) and B52e1 follow. **Owner**: Claude Code. **Model**: Haiku. **Size**: 0 files.
+  needs a claimed set that is not last-known-good (the sweep keeps the last-known-good set before
+  it reads any claim; b85's deploy claimed `ci-set1`, which is last-known-good): the next time two
+  branches deploy at once, `gh workflow run destroy-ci.yml -f sweep-for-stacks=true` while the
+  second holds `ci-set2`, and its log shows "stays: claimed by run". B52e1 follows. **Owner**: Claude Code. **Model**: Haiku. **Size**: 0 files.
 
 - [ ] **B85w. Wave b85.** Branch `claude/b85-board` (worktree `.claude/worktrees/b85`, from
   b84's tip): B52j's `ads-advisor` skill; B30ba (one deploy per delivered push); B30az (the
