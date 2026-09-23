@@ -225,7 +225,21 @@ Shared facts for the analytics rows (B52d, B52e, B52l, B52m): the prod Athena da
 
 ## Machine-only
 
-- [ ] **F2l. The engine nets a credit note against turnover.** The diya-gl schema fixes a line's
+- [ ] **F2m. DIYA's book: the non-sales receipts reclassified and the members register.** The
+  rebuilt book (`../staging/2026-2027/book/`) posts £1,163.50 of April to August receipts as
+  sales. The operator's answers (2026-09-23): (a) £1,000 "Mobile Payment: Antony Cartwright" is a
+  directors' loan credit (account 2500), taking the DLA balance to zero; (b) the £160.22 of AWS
+  refunds are a credit against hosting (5301); (c) the £1.00 and other small charges on the
+  operator's own subscription are test purchases, reversed out of sales; (d) the £2.28 cashback
+  is earned on PayPal purchases, a credit against purchases. Post each on the account named; if
+  (a)'s £1,000 does not bring the DLA to exactly zero, report the difference rather than forcing
+  it. Add `[[members]]` to `book.toml` from the Companies House register (the confirmation
+  statement of 2025-10-25; share capital £100) so `RegisterofMembers` passes. Rebuild, re-run the
+  report, update `VERIFICATION.md`. (b) and (d) are purchases credit notes: their totals read
+  right once F2l's engine change covers purchases. **Source**: F2k's report; operator
+  2026-09-23. **Owner**: Claude Code. **Model**: Sonnet. **Size**: 0 files.
+
+- [ ] **F2l. The engine nets a credit note against turnover.** In flight: a spreadsheets branch `claude/gl-creditnote-net`, its PR to follow. The diya-gl schema fixes a line's
   `amount` at `minimum: 0` (`../spreadsheets.diyaccounting.co.uk/web/spreadsheets.diyaccounting.co.uk/public/schema/diya-gl-lines-v2.schema.json`
   lines 69 to 72) and nothing reads `documentType`: `computeGrossSales`
   (`app/lib/scenario-extractor.js` line 536), `salesTotal` (`app/lib/book-checks.js` line 326) and
@@ -240,15 +254,6 @@ Shared facts for the analytics rows (B52d, B52e, B52l, B52m): the prod Athena da
 ## Machine-ask
 
 ## Human-driven
-
-- [ ] **OF2k. Say what four kinds of April to August receipt are.** The rebuilt book posts them as
-  sales; each needs its account. Write the answer into F2m's row:
-  (1) £1,000 "Mobile Payment: Antony Cartwright": a director's loan credit (account 2500) or
-  something else; (2) £160.22 of AWS refunds: a credit against hosting (5301); (3) £1.00 and the
-  other small charges on the operator's own subscription: test purchases to reverse, or real
-  sales; (4) £2.28 cashback: other income or a purchases credit. The lines are in
-  `../staging/2026-2027/book/lines.jsonl` and listed in its `VERIFICATION.md`. **Owner**: Operator.
-  **Model**: none. **Size**: 0 files.
 
 - [ ] **OCS. The confirmation statement, due 5 October 2026.** Made up to 21 September 2026;
   DIY Accounting Limited 06846849 last filed a CS01 on 25 October 2025
@@ -289,13 +294,6 @@ Shared facts for the analytics rows (B52d, B52e, B52l, B52m): the prod Athena da
   merges past a PII hit. Blocked on B30bc's merge and its proof: both docs-only pushes (a root
   `.md`, a skill) ran `content scan` and the PR reached `CLEAN`. **Owner**: Operator.
   **Model**: none. **Size**: 0 files.
-
-- [ ] **F2m. DIYA's book: the non-sales lines reclassified and the members register.** Apply
-  OF2k's answers to the £1,163.50 of April to August `sales` lines that are not customer revenue,
-  and add `[[members]]` to `book.toml` from the Companies House register (the confirmation
-  statement of 2025-10-25; share capital £100), so `RegisterofMembers` passes; rebuild, re-run the
-  report, update `VERIFICATION.md`. Blocked on OF2k. **Source**: F2k's report. **Owner**: Claude
-  Code. **Model**: Sonnet. **Size**: 0 files.
 
 - [ ] **B30at1. The sweep's claim check, proven.** Needs a claimed set that is not last-known-good
   (the sweep keeps the last-known-good set before it reads any claim): the next time two branches
