@@ -77,6 +77,7 @@ Skills live at `.claude/skills/<name>/SKILL.md`.
 - `.claude/skills/iterate/SKILL.md` — the delivery cycle run unattended: board, a wave of isolated sub-agent batches on one branch and one PR, watch, auto-merge, watch, board, again, until no machine-only row can start; a Plan–Do–Check–Act cycle in the orchestrator–workers shape; invoke as `/iterate`
 - `.claude/skills/clean/SKILL.md` — gather stale deployments, merged branches, worktrees of merged branches, logs and test artefacts, and build output; ask once; remove every agreed category in one go; then fetch, switch to main and pull when nothing is in progress; invoke as `/clean`
 - `.claude/skills/vat-submission-failure-alarm-user-lookup/SKILL.md` — from a submission-failure alarm, find the customer, what HMRC said and whether they wrote in, read-only and without scanning a customer table
+- `.claude/skills/ads-advisor/SKILL.md` — answer questions about Google Ads performance, forecast clicks for a daily budget, and propose bidding strategy changes from live account data
 
 ## Permission Handling
 

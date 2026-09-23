@@ -239,9 +239,13 @@ jobs:
   # push or a dispatch with no deployment-name leaves every other run alone. See
   # cancel-superseded-push-deploy.mjs for why a run whose own stack deploy has already started is
   # never touched.
+  #
+  # GitHub sometimes delivers one push twice, starting two deploys of the same head a second
+  # apart; the newer push-triggered run cancels itself when an older one for the same SHA is
+  # still queued or running.
   cancel-superseded-push-deploy:
     name: 'cancel superseded push-triggered deploy'
-    if: ${{ github.event_name == 'workflow_dispatch' && inputs.deployment-name != '' }}
+    if: ${{ (github.event_name == 'workflow_dispatch' && inputs.deployment-name != '') || github.event_name == 'push' }}
     needs:
       - params
     runs-on: ubuntu-24.04
@@ -251,10 +255,48 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+      # Only ci-set1, ci-set2 and the apex are Cognito callback hosts, so a ci dispatch naming
+      # any other set builds stacks whose signed-in probes cannot pass. The whole run is
+      # cancelled, because failing one job still lets the probe jobs start.
+      - name: Stop a ci dispatch whose deployment-name cannot sign in
+        if: ${{ github.event_name == 'workflow_dispatch' && inputs.deployment-name != '' }}
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TARGET_ENVIRONMENT: ${{ needs.params.outputs.github-environment }}
+          DEPLOYMENT_NAME: ${{ needs.params.outputs.deployment-name }}
+          SKIP_TEST_SCENARIOS: ${{ needs.params.outputs.skipTestScenarios }}
+        run: |
+          if [ "$TARGET_ENVIRONMENT" = "ci" ] && [ "$SKIP_TEST_SCENARIOS" = "false" ] \
+            && [ "$DEPLOYMENT_NAME" != "ci-set1" ] && [ "$DEPLOYMENT_NAME" != "ci-set2" ]; then
+            echo "::error::a ci deployment-name must be ci-set1 or ci-set2 when test scenarios run; other names cannot sign in because only those hosts are Cognito callbacks"
+            gh run cancel "${{ github.run_id }}" --repo "${{ github.repository }}"
+            exit 1
+          fi
+      # A push deploys main to prod and any other branch to ci; a dispatch aimed at the other
+      # environment covers nothing the push run does, so it leaves that run alone.
       - name: Cancel any push-triggered run of this commit that hasn't started a stack job
+        if: ${{ github.event_name == 'workflow_dispatch' && inputs.deployment-name != '' && (needs.params.outputs.github-environment == 'prod') == (github.ref == 'refs/heads/main') }}
         uses: './.github/actions/cancel-superseded-push-deploy'
         with:
           github-token: ${{ github.token }}
+      - name: For push events, cancel this run if an older run for the same SHA already exists
+        if: ${{ github.event_name == 'push' }}
+        shell: bash
+        run: |
+          OLDER_RUNS=$(gh run list --repo "${{ github.repository }}" --workflow deploy.yml --branch "${{ github.ref_name }}" --json databaseId,headSha,status,event,createdAt --jq ".[] | select(.event == \"push\" and .headSha == \"${{ github.sha }}\" and .databaseId < ${{ github.run_id }}) | select(.status == \"in_progress\" or .status == \"queued\")")
+
+          if [ -z "$OLDER_RUNS" ]; then
+            echo "No older push-triggered deploy.yml run for this SHA; proceeding."
+            exit 0
+          fi
+
+          OLDER_ID=$(echo "$OLDER_RUNS" | jq -r '.databaseId' | head -1)
+          echo "Found older push-triggered run $OLDER_ID for SHA ${{ github.sha }} with status in_progress or queued."
+          echo "Cancelling this run (${{ github.run_id }}) to avoid duplicate deploy."
+          gh run cancel "${{ github.run_id }}" --repo "${{ github.repository }}"
+        env:
+          GH_TOKEN: ${{ github.token }}
 
   # Restores app-after-environment ordering on purpose (see the concurrency block's comment for
   # the regression this fixes: B94, caused by removing an ordering nobody had written down when
@@ -320,19 +362,6 @@ jobs:
         .github/workflows/deploy-cdk-stack.yml .github/workflows/destroy-prod.yml
         .github/workflows/generate-pass.yml .github/workflows/probe-test.yml .github/workflows/test.yml
     steps:
-      - name: Validate ci deployment-name is in the pool when test scenarios run
-        env:
-          TARGET_ENVIRONMENT: ${{ needs.params.outputs.github-environment }}
-          DEPLOYMENT_NAME: ${{ needs.params.outputs.deployment-name }}
-          SKIP_TEST_SCENARIOS: ${{ needs.params.outputs.skipTestScenarios }}
-        run: |
-          if [ "$TARGET_ENVIRONMENT" = "ci" ] && [ -n "$DEPLOYMENT_NAME" ] && [ "$SKIP_TEST_SCENARIOS" = "false" ]; then
-            if [ "$DEPLOYMENT_NAME" != "ci-set1" ] && [ "$DEPLOYMENT_NAME" != "ci-set2" ]; then
-              echo "::error::a ci deployment-name must be ci-set1 or ci-set2 when test scenarios run; other names cannot sign in because only those hosts are Cognito callbacks"
-              exit 1
-            fi
-          fi
-
       - name: Checkout
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with:

@@ -106,6 +106,67 @@ async function silenceDeploymentAlarms(deploymentName) {
   }
 }
 
+/**
+ * Read one SSM parameter, distinguishing "does not exist" from "could not be read": the callers
+ * below use "does not exist" to mean no protection applies, but an unreadable parameter might
+ * still be in force, so it must not be treated the same as absent - see findSkipReason.
+ */
+async function readSsmParameter(parameterName) {
+  const { GetParameterCommand } = await import("@aws-sdk/client-ssm");
+  try {
+    const result = await (await getSsmClient()).send(new GetParameterCommand({ Name: parameterName }));
+    return { found: true, value: result.Parameter?.Value ?? null };
+  } catch (error) {
+    if (error.name === "ParameterNotFound") {
+      return { found: false, value: null };
+    }
+    return { found: true, value: null, unreadable: true, error };
+  }
+}
+
+// deploy.yml releases its own ci slot claim when its run ends, pass or fail, so a claim record
+// that exists and is younger than the longest deploy belongs to a deploy still working on the set.
+const ACTIVE_CLAIM_WINDOW_MS = 3 * 60 * 60 * 1000;
+
+/**
+ * Why this deployment must be left alone this cycle, or null: it is the ci environment's
+ * last-known-good deployment, or a deploy holds its ci slot. An unreadable parameter counts as
+ * protection, because a wrongly skipped cycle costs one schedule interval and a wrong delete
+ * breaks a running deploy. The schedule is recurring, so a skip needs no rescheduling.
+ */
+async function findSkipReason({ deploymentName, lastKnownGoodParameterName, slotParameterName, nowMs }) {
+  if (lastKnownGoodParameterName) {
+    const lastKnownGood = await readSsmParameter(lastKnownGoodParameterName);
+    if (lastKnownGood.unreadable) {
+      return `could not read ${lastKnownGoodParameterName} (${lastKnownGood.error.message}), treating this deployment as protected`;
+    }
+    if (lastKnownGood.value === deploymentName) {
+      return `${deploymentName} is the last-known-good deployment`;
+    }
+  }
+
+  if (slotParameterName) {
+    const slot = await readSsmParameter(slotParameterName);
+    if (slot.unreadable) {
+      return `could not read ${slotParameterName} (${slot.error.message}), treating its ci slot claim as active`;
+    }
+    let record = null;
+    if (slot.value) {
+      try {
+        record = JSON.parse(slot.value);
+      } catch {
+        record = null;
+      }
+    }
+    const claimedAtMs = record?.claimedAt ? Date.parse(record.claimedAt) : NaN;
+    if (!Number.isNaN(claimedAtMs) && nowMs - claimedAtMs < ACTIVE_CLAIM_WINDOW_MS) {
+      return `ci slot is claimed by run ${record.runId} since ${record.claimedAt}`;
+    }
+  }
+
+  return null;
+}
+
 export async function ingestHandler(event, context) {
   const client = await getCloudFormationClient();
   const clientUE1 = await getCloudFormationClient("us-east-1");
@@ -122,19 +183,6 @@ export async function ingestHandler(event, context) {
   try {
     request = extractRequest(event);
 
-    if (process.env.DEPLOYMENT_NAME) {
-      await silenceDeploymentAlarms(process.env.DEPLOYMENT_NAME);
-    }
-
-    if (process.env.EDGE_ORIGIN_BUCKET) {
-      await emptyBucket(process.env.EDGE_ORIGIN_BUCKET);
-    }
-
-    // Clean up external API Gateway custom domain mappings before deleting ApiStack
-    if (process.env.API_STACK_NAME) {
-      await cleanupApiGatewayMappings(process.env.API_STACK_NAME);
-    }
-
     // Stack deletion order (reverse of creation dependency order)
     const stacksToDelete = [];
     addStackNameIfPresent(stacksToDelete, process.env.OPS_STACK_NAME);
@@ -149,6 +197,39 @@ export async function ingestHandler(event, context) {
     addStackNameIfPresent(stacksToDelete, process.env.DIYA_GL_STACK_NAME);
     addStackNameIfPresent(stacksToDelete, process.env.ACCOUNT_STACK_NAME);
     const selfDestructStackName = process.env.SELF_DESTRUCT_STACK_NAME;
+
+    // Checked before any destructive step below (alarm silencing included), so a set that is
+    // last-known-good or mid-deploy is left untouched rather than silenced and then torn down.
+    const skipReason = await findSkipReason({
+      deploymentName: process.env.DEPLOYMENT_NAME,
+      lastKnownGoodParameterName: process.env.LAST_KNOWN_GOOD_PARAMETER_NAME,
+      slotParameterName: process.env.SLOT_PARAMETER_NAME,
+      nowMs: Date.now(),
+    });
+    if (skipReason) {
+      console.log(`skip: ${skipReason}`);
+      return http200OkResponse({
+        request,
+        data: {
+          message: "Self-destruct sequence skipped",
+          reason: skipReason,
+          timestamp: new Date().toISOString(),
+        },
+      });
+    }
+
+    if (process.env.DEPLOYMENT_NAME) {
+      await silenceDeploymentAlarms(process.env.DEPLOYMENT_NAME);
+    }
+
+    if (process.env.EDGE_ORIGIN_BUCKET) {
+      await emptyBucket(process.env.EDGE_ORIGIN_BUCKET);
+    }
+
+    // Clean up external API Gateway custom domain mappings before deleting ApiStack
+    if (process.env.API_STACK_NAME) {
+      await cleanupApiGatewayMappings(process.env.API_STACK_NAME);
+    }
 
     console.log(`Stacks to delete in order: ${stacksToDelete.join(", ")}`);
 
