@@ -320,17 +320,20 @@ public class ObservabilityUE1Stack extends Stack {
         // ============================================================================
         // The spreadsheets site's CloudWatch RUM app monitor lives in its own AWS account, in
         // this same us-east-1 region. CloudWatch reads another account's metrics only through
-        // cross-account observability (OAM): this sink admits the spreadsheets account, which
-        // then creates a link to it. A CloudWatch alarm on a cross-account metric must live in
+        // cross-account observability (OAM): this sink admits the spreadsheets account and the
+        // gateway account (diyaccounting.co.uk's own RUM monitor), each of which then creates a
+        // link to it. A CloudWatch alarm on a cross-account metric must live in
         // the metric's own Region (a dashboard widget can cross both account and Region, an
         // alarm cannot), so the alarms sit here rather than in the eu-west-2 ObservabilityStack,
         // which only graphs these same metrics.
         String spreadsheetsAccountId = "064390746177"; // spreadsheets.diyaccounting.co.uk's AWS account
+        String gatewayAccountId = "283165661847"; // diyaccounting.co.uk's AWS account
 
         PolicyDocument spreadsheetsSinkPolicy = new PolicyDocument(PolicyDocumentProps.builder()
                 .statements(List.of(PolicyStatement.Builder.create()
                         .effect(Effect.ALLOW)
-                        .principals(List.of(new AccountPrincipal(spreadsheetsAccountId)))
+                        .principals(List.of(
+                                new AccountPrincipal(spreadsheetsAccountId), new AccountPrincipal(gatewayAccountId)))
                         .actions(List.of("oam:CreateLink", "oam:UpdateLink"))
                         .resources(List.of("*"))
                         .conditions(Map.of(

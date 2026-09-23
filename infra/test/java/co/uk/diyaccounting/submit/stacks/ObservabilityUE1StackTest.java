@@ -42,7 +42,7 @@ class ObservabilityUE1StackTest {
     }
 
     @Test
-    void spreadsheetsMetricsSinkAdmitsTheSpreadsheetsAccountForMetricsOnly() {
+    void metricsSinkAdmitsTheSpreadsheetsAndGatewayAccountsForMetricsOnly() {
         Template template = Template.fromStack(synthObservabilityUE1Stack());
 
         template.hasResourceProperties(
@@ -68,6 +68,7 @@ class ObservabilityUE1StackTest {
         // The principal's account id is asserted separately: CDK renders AccountPrincipal's ARN
         // as an Fn::Join (the partition is a pseudo-parameter, not a literal), not a plain string.
         assertTrue(template.toJSON().toString().contains("064390746177"));
+        assertTrue(template.toJSON().toString().contains("283165661847"));
     }
 
     @Test
