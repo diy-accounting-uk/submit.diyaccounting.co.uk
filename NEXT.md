@@ -53,36 +53,56 @@ and stop. One branch is driven green at a time. Lifted only by the operator in t
 - [ ] **B30bh. Record a source location in memory when the operator names it.** Five operator
   messages on 2026-09-23 corrected where a source lives (the Drive finance path, `authuser=1`, the
   spreadsheets MCP meaning the published diya-gl package, Polycode as a creditor, the mail mirror
-  path); all five are saved now. Add one feedback memory: when the operator names a path, account,
-  URL parameter or meaning, write or update the memory in the same turn, before acting on it, and
-  index it in `MEMORY.md`. Changes nothing committed. **Source**: session report Mc+ncD.
+  path); the first two are memories (`finance-sources-in-drive-mirror.md`,
+  `google-console-steps-need-a-web-check.md`), the other three are in
+  `.claude/skills/company-book/SKILL.md` (lines 26, 55, 94). Add one feedback memory in
+  `~/.claude/projects/-Users-antony-projects-diy-accounting-limited-submit-diyaccounting-co-uk/memory/`:
+  when the operator names a path, account, URL parameter or meaning, write or update the memory
+  (or the skill that owns the fact) in the same turn, before acting on it, and index it in
+  `MEMORY.md`. Changes nothing committed. **Source**: session report Mc+ncD.
   **Owner**: Claude Code. **Model**: Haiku. **Size**: 0 files.
 
 - [ ] **B30be. Refine pass 2 names the call site and the forbidden patterns.** The coordinator
   corrected 6 agent results on 2026-09-23 (knip deleting a used file, a Stripe API pin on every
   client, a `GITHUB_ENV` name clash, a compatibility alias, a stack-update heuristic, a
-  `.dockerignore` excluding `infra/`). In `.claude/skills/refine/SKILL.md` pass 2, require every
+  `.dockerignore` excluding `infra/`). In `.claude/skills/refine/SKILL.md` pass 2 (`## Pass 2 —
+  feasibility`, line 52), require every
   brief to name the exact call site (file:line) the change lands on, and to list the patterns the
   rules forbid that the change could reach: aliases, a setting applied wider than the call that
   needs it, whole-tree formatting or deletion tools, broad ignore rules. **Source**: session
   report Mc+ncD. **Owner**: Claude Code. **Model**: Haiku. **Size**: 1 file.
 
+- [ ] **OF1a. PayPal client id read from a variable.** The operator created the live app
+  `diya-finance` and put `PAYPAL_CLIENT_SECRET` on the `prod` environment as a secret and
+  `PAYPAL_CLIENT_ID` as a variable (2026-09-23). `.github/workflows/deploy-environment.yml`'s step
+  "Create secret in AWS from secrets.PAYPAL_CLIENT_ID" (line 339) reads `secrets.PAYPAL_CLIENT_ID`,
+  so it would skip. Change it to `vars.PAYPAL_CLIENT_ID` (and its step name), keep the secret step.
+  The merge's push to `main` runs `deploy-environment.yml` itself (the workflow's own path is in
+  its `push.paths`); confirm that run's environment is prod, and only if it is not, dispatch
+  `gh workflow run deploy-environment.yml --ref main -f environment-name=prod`. Then confirm
+  `prod/submit/paypal/client_id` and `client_secret` exist (`aws --profile submit-prod
+  secretsmanager describe-secret --secret-id <id>`; both were absent on 2026-09-23). Then F1b runs.
+  **Owner**: Claude Code. **Model**: Haiku. **Size**: 1 file.
+
 - [ ] **B30bf. A parser brief carries one real month and its expected residual.** The PayPal
   statement parser took 4 rounds (0.67M tokens) because the activity-summary parse was overwritten
   by a later bare heading and no fixture caught it. In `.claude/skills/refine/SKILL.md` pass 2 and
-  `.claude/skills/company-book/SKILL.md`'s Build section, require a parser brief to name one real
+  `.claude/skills/company-book/SKILL.md`'s `## Build` (line 32), require a parser brief to name one real
   source month (its path under `../drive/…/finance/`) and the expected reconciliation residual
   (0) as the first test. Shares `refine/SKILL.md` with B30be: one agent. **Source**: session
   report Mc+ncD. **Owner**: Claude Code. **Model**: Haiku. **Size**: 2 files.
 
 - [ ] **B30bb. A Markdown-only push leaves a PR blocked.** `main`'s ruleset (16057564) requires
   `Check commit signatures`, `npm test`, `maven test`, `eslint` and `CodeQL` on the PR head, but
-  `.github/workflows/codeql.yml` ignores `**.md` on push and pull_request and has no
-  `workflow_dispatch`, and `test.yml` skips a Markdown-only push too; PR #344's head `5175ec17`
-  (a skill file) sat `BLOCKED` until the branch was moved back. Add `workflow_dispatch` to
-  `codeql.yml`, and in `.claude/skills/auto-merge/SKILL.md` a step: when the PR head changes only
-  `.md` files and a required check is missing, dispatch `test.yml` and `codeql.yml` on the head
-  (`gh workflow run <file> --ref <headRef>`) and wait for them. Proof: a Markdown-only commit on a
+  `.github/workflows/codeql.yml` ignores `**.md` on push and pull_request (lines 19 and 23) and has
+  no `workflow_dispatch`, and `test.yml` skips a Markdown-only push too (line 57; it already has
+  `workflow_dispatch`, line 8); PR #344's head `5175ec17` (a skill file) sat `BLOCKED` until the
+  branch was moved back. `Check commit signatures` comes from `verify-commit-signatures.yml` on
+  `pull_request`, so it runs. Add `workflow_dispatch` to `codeql.yml` (the analyze job's `if:` at
+  line 42 already admits it), and in `.claude/skills/auto-merge/SKILL.md` a step after the
+  `gh pr list` read (line 47): when the PR head changes only `.md` files and a required check is
+  missing, dispatch `test.yml` and `codeql.yml` on the head (`gh workflow run <file> --ref
+  <headRef>`) and wait for them. Proof: a Markdown-only commit on a
   PR reaches `CLEAN` after the dispatches. Saves about 20 minutes and a force-push per Markdown-only
   head (session report Mc+ncD). Same agent as B30bc. **Owner**: Claude Code. **Model**:
   Sonnet. **Size**: 2 files.
@@ -101,51 +121,54 @@ and stop. One branch is driven green at a time. Lifted only by the operator in t
   generated files (and changed `provenance-data.js`) that then sat uncommitted. In
   `.claude/skills/do-next/SKILL.md`, make a sibling-repository brief symlink the main checkout's
   `node_modules` into its worktree; in the spreadsheets repository, make the pre-push hook fail
-  with the list of files it wrote when `git status --porcelain` is not clean after it runs (a
-  branch and PR there). Shares `do-next/SKILL.md` with B30bd: one agent. **Source**: session report
+  with the list of files it wrote when `git status --porcelain` is not clean after
+  `node scripts/test-scope.mjs --base "$base"` runs (both calls, lines 127 and 132, today end the
+  hook with that command's exit status) (a branch and PR there). Shares `do-next/SKILL.md` with B30bd: one agent. **Source**: session report
   Mc+ncD. **Owner**: Claude Code. **Model**: Sonnet. **Size**: 2 files (one per repository).
-
-- [ ] **B30bc. A secret and PII scan on every push, docs included.** No workflow scans what a
-  push adds when the push is Markdown-only (CodeQL and `test.yml` skip it). Add
-  `.github/workflows/content-scan.yml` on push (every branch, no path filter) and pull_request: scan
-  the lines the push or PR adds with the patterns `scripts/redact-triage-output.mjs` already
-  exports (`DENY_PATTERNS`: email, NINO, UTR, VRN, EORI, AWS keys, JWTs, bearer tokens, IP
-  addresses), plus private-key blocks and common provider tokens (GitHub, Stripe, Google), with an
-  allow-list for addresses and ids the repository publishes on purpose. Fail on a hit and print
-  the file, line and label, never the matched value. Extend `redact-triage-output.mjs` or a
-  sibling script with tests, as the capabilities rule asks. Adding `content scan` to the ruleset's
-  required checks is OB30bc. **Owner**: Claude Code. **Model**: Sonnet. **Size**: ~4 files.
 
 - [ ] **B52h2. Forecast Search at a match type and a bid ceiling.** `infra/google/ads/ads-forecast.js`
   sends every keyword as `BROAD` with no maximum cost per click (line 155), so the forecast of
   2026-09-23 read £38 a click for £50 a day. Add `--match-type <EXACT|PHRASE|BROAD>` and
-  `--cpc-ceiling-gbp <n>` (maximize clicks with `cpcBidCeilingMicros`, or manual CPC), with tests,
+  `--cpc-ceiling-gbp <n>` (the API's field is `maxCpcBidCeilingMicros` inside
+  `maximizeClicksBiddingStrategy`, line 154), with cases in `app/unit-tests/scripts/adsForecast.test.js`,
   and in `.claude/skills/ads-advisor/SKILL.md` say to quote the match type and ceiling with any
   forecast. **Owner**: Claude Code. **Model**: Haiku. **Size**: 3 files.
 
-- [ ] **OF1a. PayPal client id read from a variable.** The operator created the live app
-  `diya-finance` and put `PAYPAL_CLIENT_SECRET` on the `prod` environment as a secret and
-  `PAYPAL_CLIENT_ID` as a variable (2026-09-23). `.github/workflows/deploy-environment.yml`'s step
-  "Create secret in AWS from secrets.PAYPAL_CLIENT_ID" (line 339) reads `secrets.PAYPAL_CLIENT_ID`,
-  so it would skip. Change it to `vars.PAYPAL_CLIENT_ID` (and its step name), keep the secret step,
-  then after merge dispatch `gh workflow run deploy-environment.yml --ref main -f environment-name=prod`
-  (read the workflow for its inputs first) and confirm `prod/submit/paypal/client_id` and
-  `client_secret` exist in Secrets Manager (read-only `describe-secret`). Then F1b runs.
-  **Owner**: Claude Code. **Model**: Haiku. **Size**: 1 file.
-
 - [ ] **ITSA8. The diversion note for income the build does not cover.** Row 8 of
   `_developers/hmrc/ITSA_PRODUCTION_APPROVALS_CHECKLIST.md` is "Not evidenced": a customer with
-  foreign property or other income is not told where to finish their return. Add the note to
-  `web/public/hmrc/itsa/dashboard.html` (and wherever the business picker shows a foreign-property
-  business), with a browser test, and mark row 8 evidenced with the file and line. **Owner**:
+  foreign property or other income is not told where to finish their return. Worse,
+  `applyPickedBusinessToLinks` in `web/public/hmrc/itsa/dashboard.html` (line 295) routes every
+  type that is not `self-employment` to the `ukProperty*` pages, so a picked `foreign-property`
+  business is sent to UK property forms. Make a `foreign-property` pick show the diversion note and
+  no step 3 to 8 links, add the note beside the picker (line 331), cover both in
+  `web/browser-tests/itsaDashboard.browser.test.js` (its `page.route` pattern, line 45), and mark
+  row 8 (checklist line 41) evidenced with the file and line. `obligations.html` (line 74) and
+  `lossesAndClaims.html` (line 76) offer `foreign-property` as a type; leave them, HMRC's
+  obligations and losses cover it. **Owner**:
   Claude Code. **Model**: Sonnet. **Size**: ~3 files.
 
+- [ ] **B30bc. A PII scan on every push, docs included.** GitHub secret scanning with push
+  protection and non-provider patterns is on for this repository, so provider tokens and private
+  keys are blocked at push already; nothing scans what a push adds for personal data. Add
+  `.github/workflows/content-scan.yml` on push (every branch, no path filter) and pull_request: scan
+  the lines the push or PR adds with the patterns `scripts/redact-triage-output.mjs` already
+  exports (`DENY_PATTERNS`, line 19: email, NINO, UTR, VRN, EORI, AWS keys, JWTs, bearer tokens,
+  IP addresses), with an allow-list for addresses and ids the repository publishes on purpose. Fail on a hit and print
+  the file, line and label, never the matched value. Extend `redact-triage-output.mjs` or a
+  sibling script with tests, as the capabilities rule asks. Adding `content scan` to the ruleset's
+  required checks is OB30bc. **Owner**: Claude Code. **Model**: Sonnet. **Size**: ~4 files.
+
 - [ ] **ITSA13. WCAG 2.1 AA evidence for the 19 ITSA pages.** Row 13 of the checklist is "Not
-  evidenced": `scripts/axe-quickscan.mjs`'s page list carries the VAT pages and none of the 19
-  pages under `web/public/hmrc/itsa/`. Add them, run the scan against the simulator
-  (`npm run` the script the accessibility workflow uses; read `.github/workflows/` for it), fix
-  what it finds, and record the result in the checklist and `REPORT_ACCESSIBILITY_PENETRATION.md`.
-  **Owner**: Claude Code. **Model**: Sonnet. **Size**: ~4 files.
+  evidenced": no scan names any of the 19 pages under `web/public/hmrc/itsa/`. Three lists carry
+  the scanned pages: `scripts/axe-quickscan.mjs`'s `PAGES` (line 12; run as `node
+  scripts/axe-quickscan.mjs <baseUrl> wcag2a,wcag2aa,wcag21a,wcag21aa`), `package.json`'s
+  `accessibility:axe-*` URL lists (lines 328 to 330), and `.pa11yci.{proxy,ci,prod}.json`, which
+  `.github/workflows/compliance.yml`'s pa11y job runs (line 151). Add the 19 pages to all of them.
+  Signed out, a page scans only its empty state; scan the populated state too with a browser test
+  that serves the page as `web/browser-tests/itsaDashboard.browser.test.js` does (`page.route`,
+  line 45) and injects `node_modules/axe-core/axe.min.js` (installed). Fix what either finds and
+  record the result in the checklist (row 13, line 46) and `REPORT_ACCESSIBILITY_PENETRATION.md`.
+  **Owner**: Claude Code. **Model**: Sonnet. **Size**: ~8 files.
 
 ## Machine-ask
 
@@ -194,11 +217,16 @@ and stop. One branch is driven green at a time. Lifted only by the operator in t
   **Model**: Haiku. **Size**: 0 files.
 
 - [ ] **F2g. PayPal transactions into diya-gl lines.** `mcp/lib/finance/paypal-lines.js` over
-  F1b's staged files, on F2a's pattern: settled transactions only, holds and their reversals
-  excluded (the March 2026 holds case as a test), a receipt as `sales`, a bill payment as
-  `purchases` matched to the mailbox invoice, posted to the PayPal wallet's cash account
-  (`Cashaccount.xlsx` is that ledger, per `../REPORT_FINANCE_SOURCES_2025-26.md`) so the bank
-  sees only the withdrawals; validated with `validateLines`; a unit test over a recorded page.
+  F1b's staged files, on `mcp/lib/finance/stripe-lines.js`'s pattern. The statement route,
+  `mcp/lib/finance/paypal-statement-lines.js`, already applies the rules this route needs
+  (settled only; holds and their releases unposted, `isHoldCandidate` line 288 and
+  `isReleaseCandidate` line 301; a receipt gross to `sales` with its fee to `purchases`; bank
+  transfers and currency conversions unposted, `isCurrencyConversionOrTransfer` line 274): reuse
+  those functions where the API's record shape allows. A bill payment is `purchases` matched to
+  the mailbox invoice (`mcp/lib/finance/mail-invoices.js`). Validated with `validateLines`; a unit
+  test over a recorded page; the proof is that the API route's `sales` and `purchases` lines for
+  March to August 2026 equal the PayPal lines the statement route wrote into
+  `../staging/2026-2027/book/lines.jsonl`.
   Blocked on F1b. **Source**: `../PLAN_FINANCE_AUTOMATION.md` phase 2. **Owner**: Claude Code.
   **Model**: Sonnet. **Size**: ~2 files.
 
