@@ -1,0 +1,40 @@
+Transaction History
+June 01, 2026 through June 30, 2026
+
+
+
+
+DIY Accounting Limited
+antony@diyaccounting.co.uk
+
+
+Date         Description                                       Status      Currency   Gross     Fee       Net
+
+             Pre-approved Payment Bill User Payment: Google
+01/06/2026   Cloud EMEA Limited                                Completed   GBP        -24.00   0.00     -24.00
+             ID: TESTID0001AAAAAAAA
+
+             General Hold
+02/06/2026                                                     Completed   GBP        -12.34   0.00     -12.34
+             ID: TESTID0002BBBBBBBB
+
+             Reversal of General Account Hold: PayPal
+02/06/2026                                                     Completed   GBP         12.34   0.00      12.34
+             ID: TESTID0003CCCCCCCC
+
+             General Authorisation: AWS EMEA
+03/06/2026                                                     Pending     GBP        -50.00   0.00     -50.00
+             ID: TESTID0004DDDDDDDD
+
+             Donation Payment: A N Other
+04/06/2026                                                     Completed   GBP         10.00   -0.59      9.41
+             ID: TESTID0005EEEEEEEE
+
+             General Withdrawal
+05/06/2026                                                     Completed   GBP        -50.00   0.00     -50.00
+             ID: TESTID0006FFFFFFFF
+
+
+
+
+June 01, 2026 through June 30, 2026                                                                    Page 1
