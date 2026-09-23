@@ -81,15 +81,25 @@ Shared facts for the analytics rows (B52d, B52e, B52l, B52m): the prod Athena da
 
 ## Machine-only
 
+- [ ] **ROPA. A record of processing for the practice client list.** `_developers/ICO_CHECKLIST.md`
+  "Practice licence: client data" (line 68 onward) marks "Records of processing: client list"
+  `Pending`: no document lists what the client list holds, why, where (`{env}-env-practice-clients`,
+  eu-west-2), who (the practice as controller for its clients, DIY Accounting as processor for the
+  roster and controller for its own records), retention (archived rows kept, receipts seven years)
+  and how rights are met. Write it as `_developers/RECORDS_OF_PROCESSING.md` from the checklist's
+  rows (they carry the file and line evidence), mark the checklist row met, and mark its
+  "Registration scope requires update" row not applicable: the ICO register records name,
+  address, number, tier, dates and DPO only
+  (<https://ico.org.uk/about-the-ico/what-we-do/register-of-fee-payers/>). **Owner**: Claude Code.
+  **Model**: Haiku. **Size**: 2 files.
+
 ## Machine-ask
 
 ## Human-driven
 
-- [ ] **OICO. Update the ICO registration.** With the "Practice licence: client data" section of
-  `_developers/ICO_CHECKLIST.md` (line 68; registration ZB070902, whose scope row at line 83 is
-  `Pending`), sign in to the ICO's registration portal and update DIY Accounting Limited's entry
-  to cover the practice licence's client data; note the date in that row. PU-7n waits on this
-  alone. **Source**: operator 2026-09-22. **Owner**: Operator. **Model**: none. **Size**: 0 files.
+- [ ] **OPU7n. Go for the practice licence launch.** Say go when `resident-pro` should go on sale at
+  £199 a year and £19.99 a month (the catalogue flip, the nav link, the Stripe live prices, PU-7n).
+  **Owner**: Operator. **Model**: none. **Size**: 0 files.
 
 - [ ] **OB52h. Basic access for the Ads API project.** `infra/google/ads/ads-forecast.js` (on
   `claude/b83-board`) gets `DEVELOPER_TOKEN_NOT_APPROVED`, "This method is not allowed for use with
@@ -236,8 +246,8 @@ Shared facts for the analytics rows (B52d, B52e, B52l, B52m): the prod Athena da
   `resident-pro` through a pass are updated in the same change; the DIYA-GL page
   (`../spreadsheets.diyaccounting.co.uk/web/diya-gl.co.uk/public/index.html`, whose tier list at
   line 73 shows `resident` at £39 a year alone) gains a `resident-pro` line at £199 a year, in
-  that repository's own PR. Blocked on OICO (the register must cover the client data before the
-  tier is sold). **Source**: `PLAN_PRICE_UPDATE.md` §(d); operator 2026-09-22. **Owner**: Claude
+  that repository's own PR. Blocked on OPU7n, the operator's go for the launch (the ICO fee register
+  records no processing purposes, so ZB070902 needs no change). **Source**: `PLAN_PRICE_UPDATE.md` §(d); operator 2026-09-22. **Owner**: Claude
   Code. **Model**: Sonnet. **Size**: ~9 files.
 
 - [ ] **OF2. DIYA's book saved to the DIYA cloud.** With the operator signed in through B61's
