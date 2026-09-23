@@ -16,10 +16,9 @@ runs), and for Claude Code steps the **Model** a sub-agent should use (Fable > O
 Haiku; the lowest tier that fits). Anything touching code goes through a `claude/*` branch and
 PR; the operator merges.
 
-**Prod runs deployment prod-5086803** (PR #333's merge; `prod-cdbc557` is being destroyed by that deploy since 06:11 UTC).
+**Prod runs deployment prod-5086803** (PR #333's merge deploy 35821860017, green at 06:31 UTC).
 **ci**: `ci-set1` is last-known-good (PR #334's push deploy 35822161136, green at 06:23 UTC).
-`main`'s deploy 35821860017 (PR #333's merge 50868030) passed its ci probes and prod stacks and
-is destroying the previous prod set since 06:11. PR #335's deploy was red only on
+PR #336's push deploy 35826770865 is in flight. PR #335's deploy was red only on
 `diyaGlSubscriptionBehaviour`'s book limit, which `main` now fixes. Open pull
 requests: #334 (`claude/b80-board`, head f4770e0c),
 #335 (`claude/b81-board`, head 858c8cd3), #336 (`claude/b82-board`, head c450180d).
@@ -51,8 +50,8 @@ and stop. One branch is driven green at a time. Lifted only by the operator in t
   stacks on `ci-set1` because PR #333's dispatched redeploy, named for the same slot, ran on the
   set at the same time (a dispatch with an explicit slot name bypasses the claim); the rerun on `ci-set1` passed every stack and every
   probe but `diyaGlSubscriptionBehaviour`, which fails on the book limit PR #333's product fix
-  removes and this branch does not carry; the branch merged `main` as 71738aa2 (clean); lint, `npm test` and Spotless run on the merged
-  tree, then one push and its deploy: B34j
+  removes and this branch does not carry; the branch merged `main` as 71738aa2 (clean; lint, 3898 tests and Spotless green on the merged
+  tree) and pushed it; its push deploy 35826770865 (06:26 UTC) is the head's proof: B34j
   (a9e2e920, the privacy notice's row for practice client filing, with a browser test) and PU-7e
   (e4302a96 and c450180d: `tokensGranted = "unlimited"` on `resident-pro`, exempt in
   enforcement, the webhook refresh and the bundle read, shown as unlimited on the usage page,
