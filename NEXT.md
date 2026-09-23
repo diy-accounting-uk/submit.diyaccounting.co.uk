@@ -62,6 +62,35 @@ Shared facts for the analytics rows (B52d, B52e, B52l, B52m): the prod Athena da
 
 ## Machine-only
 
+- [ ] **B30bb. A Markdown-only push leaves a PR blocked.** `main`'s ruleset (16057564) requires
+  `Check commit signatures`, `npm test`, `maven test`, `eslint` and `CodeQL` on the PR head, but
+  `.github/workflows/codeql.yml` ignores `**.md` on push and pull_request and has no
+  `workflow_dispatch`, and `test.yml` skips a Markdown-only push too; PR #344's head `5175ec17`
+  (a skill file) sat `BLOCKED` until the branch was moved back. Add `workflow_dispatch` to
+  `codeql.yml`, and in `.claude/skills/auto-merge/SKILL.md` a step: when the PR head changes only
+  `.md` files and a required check is missing, dispatch `test.yml` and `codeql.yml` on the head
+  (`gh workflow run <file> --ref <headRef>`) and wait for them. Proof: a Markdown-only commit on a
+  PR reaches `CLEAN` after the dispatches. Same agent as B30bc. **Owner**: Claude Code. **Model**:
+  Sonnet. **Size**: 2 files.
+
+- [ ] **B30bc. A secret and PII scan on every push, docs included.** No workflow scans what a
+  push adds when the push is Markdown-only (CodeQL and `test.yml` skip it). Add
+  `.github/workflows/content-scan.yml` on push (every branch, no path filter) and pull_request: scan
+  the lines the push or PR adds with the patterns `scripts/redact-triage-output.mjs` already
+  exports (`DENY_PATTERNS`: email, NINO, UTR, VRN, EORI, AWS keys, JWTs, bearer tokens, IP
+  addresses), plus private-key blocks and common provider tokens (GitHub, Stripe, Google), with an
+  allow-list for addresses and ids the repository publishes on purpose. Fail on a hit and print
+  the file, line and label, never the matched value. Extend `redact-triage-output.mjs` or a
+  sibling script with tests, as the capabilities rule asks. Adding `content scan` to the ruleset's
+  required checks is OB30bc. **Owner**: Claude Code. **Model**: Sonnet. **Size**: ~4 files.
+
+- [ ] **B52h2. Forecast Search at a match type and a bid ceiling.** `infra/google/ads/ads-forecast.js`
+  sends every keyword as `BROAD` with no maximum cost per click (line 155), so the forecast of
+  2026-09-23 read £38 a click for £50 a day. Add `--match-type <EXACT|PHRASE|BROAD>` and
+  `--cpc-ceiling-gbp <n>` (maximize clicks with `cpcBidCeilingMicros`, or manual CPC), with tests,
+  and in `.claude/skills/ads-advisor/SKILL.md` say to quote the match type and ceiling with any
+  forecast. **Owner**: Claude Code. **Model**: Haiku. **Size**: 3 files.
+
 - [ ] **OF1a. PayPal client id read from a variable.** The operator created the live app
   `diya-finance` and put `PAYPAL_CLIENT_SECRET` on the `prod` environment as a secret and
   `PAYPAL_CLIENT_ID` as a variable (2026-09-23). `.github/workflows/deploy-environment.yml`'s step
@@ -101,6 +130,11 @@ Shared facts for the analytics rows (B52d, B52e, B52l, B52m): the prod Athena da
 ## Machine-ask
 
 ## Human-driven
+
+- [ ] **OB30bc. Make the content scan a required check.** After B30bc merges, add `content scan` to
+  the required status checks of ruleset 16057564
+  (<https://github.com/diy-accounting-uk/submit.diyaccounting.co.uk/rules/16057564>), so no PR merges
+  past a secret or PII hit. **Owner**: Operator. **Model**: none. **Size**: 0 files.
 
 - [ ] **OPU7n. Go for the practice licence launch.** Say go when `resident-pro` should go on sale at
   £199 a year and £19.99 a month (the catalogue flip, the nav link, the Stripe live prices, PU-7n).
