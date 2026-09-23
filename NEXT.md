@@ -286,8 +286,9 @@ Shared facts for the analytics rows (B52d, B52e, B52l, B52m): the prod Athena da
   statement date. Steps are task B of `../NEXT_OPERATOR_RUNBOOK.md`. File this one by WebFiling: Submit's confirmation statement (the CS rows) is not built, and CS-H6's prod proof is a fee-free second statement after this one. The personal codes are CS-H3's too. **Owner**: Operator.
   **Model**: none. **Size**: 0 files.
 
-- [ ] **O11. The ITSA send day.** Name the day the recognition email goes, write it into B11.T10's
-  row, and on that day send `_developers/hmrc/DRAFT_EMAIL_ITSA_RECOGNITION.md` to
+- [ ] **O11. The ITSA send day.** Operator, 2026-09-23: the day after PR #346 merges (so checklist
+  rows 8 and 13 read evidenced), inside the 14-day window that the 2026-09-21 sandbox run keeps open
+  to 5 October. Claude Code writes the date here and into B11.T10's row when #346 merges. On that day send `_developers/hmrc/DRAFT_EMAIL_ITSA_RECOGNITION.md` to
   `SDSTeam@hmrc.gov.uk`, then `_developers/hmrc/DRAFT_EMAIL_ITSA_PRODUCTION_CREDENTIALS.md` when
   SDST answers. **Source**: BACKLOG 11; `PLAN_ITSA_PHASE_2.md` T10. **Owner**: Operator. **Model**:
   none. **Size**: 0 files.
@@ -363,7 +364,7 @@ Shared facts for the analytics rows (B52d, B52e, B52l, B52m): the prod Athena da
   command in `_developers/hmrc/ITSA_PHASE_2_SANDBOX.md` "The command", lines 66 to 80, output
   under `../itsa-sandbox/<tax-year>/`) and update the "Testing in the last two weeks" row of
   `_developers/hmrc/hmrc_questionnaire_itsa_pass_diy_accounting_limited_v1.md` (line 28, today
-  "2026-09-21 (`5f2ff46a`)") with the run dates and commit. Blocked on O11's day. **Source**:
+  "2026-09-21 (`5f2ff46a`)") with the run dates and commit. Blocked on O11's day: the day after PR #346 merges; no re-run is needed if that falls on or before 5 October (the 2026-09-21 run's 14 days). **Source**:
   BACKLOG 11; `PLAN_ITSA_PHASE_2.md` T10. **Owner**: Claude Code. **Model**: Haiku. **Size**:
   ~1 file.
 
