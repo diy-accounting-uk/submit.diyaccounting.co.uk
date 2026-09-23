@@ -223,27 +223,6 @@ Shared facts for the analytics rows (B52d, B52e, B52l, B52m): the prod Athena da
   F2m. **Source**: Cowork inbox 2026-09-23T20:46:44Z. **Owner**: Claude Code. **Model**: Sonnet.
   **Size**: 5 files.
 
-- [ ] **F2m. DIYA's book: the non-sales receipts reclassified and the members register.** An agent is applying it to the staging book now. The
-  rebuilt book (`../staging/2026-2027/book/`) posts £1,163.50 of April to August receipts as
-  sales. The operator's answers (2026-09-23): (a) £1,000 "Mobile Payment: Antony Cartwright" is a
-  directors' loan credit (account 2500), taking the DLA balance to zero; (b) the £160.22 of AWS
-  refunds are a credit against hosting (5301); (c) the £1.00 and other small charges on the
-  operator's own subscription are test purchases, reversed out of sales; (d) the £2.28 cashback
-  is earned on PayPal purchases, a credit against purchases. Post each on the account named; if
-  (a)'s £1,000 does not bring the DLA to exactly zero, report the difference rather than forcing
-  it. First, the opening balances at 1 April 2026 are the closing balances of the year ended
-  31 March 2026, read with diya-gl from the 2025-26 workbook set in
-  `../drive/DIY Accounting Limited/finance/2025-2026 accounts/` (operator, 2026-09-23); the
-  current `[openingBalances]` came from the superseded 1 March draft. The same set's bank, cash,
-  sales and purchases sheets show how each kind of transaction was labelled: derive a label map
-  (payee or description pattern to account, bank code, VAT code), store it at
-  `../staging/labels/diya-labels.toml`, apply it to every line, and list what it does not cover in
-  `VERIFICATION.md` (operator, 2026-09-23). Add `[[members]]` to `book.toml` from the Companies House register (the confirmation
-  statement of 2025-10-25; share capital £100) so `RegisterofMembers` passes. Rebuild, re-run the
-  report, update `VERIFICATION.md`. (b) and (d) are purchases credit notes: their totals read
-  right once F2l's engine change covers purchases. **Source**: F2k's report; operator
-  2026-09-23. **Owner**: Claude Code. **Model**: Sonnet. **Size**: 0 files.
-
 - [ ] **F2l. The engine nets a credit note against turnover.** In flight: a spreadsheets branch `claude/gl-creditnote-net`, its PR to follow. The diya-gl schema fixes a line's
   `amount` at `minimum: 0` (`../spreadsheets.diyaccounting.co.uk/web/spreadsheets.diyaccounting.co.uk/public/schema/diya-gl-lines-v2.schema.json`
   lines 69 to 72) and nothing reads `documentType`: `computeGrossSales`
@@ -257,6 +236,16 @@ Shared facts for the analytics rows (B52d, B52e, B52l, B52m): the prod Athena da
   **Size**: ~4 files.
 
 ## Machine-only
+
+- [ ] **F2n. The finance parsers code lines from the label map.** `bank-lines.js` (`bankCodeFor`,
+  line 104) codes a line from the statement's type alone, and `paypal-statement-lines.js` and
+  `stripe-lines.js` post every receipt to sales. Give each an optional `labels` input, the map F2m
+  writes to `../staging/labels/diya-labels.toml` (read by the caller and passed in, so the
+  parsers stay pure and the repository holds no payee data), that sets account, bank code and VAT
+  code for a matching description; an unmatched line keeps today's coding and is returned in an
+  `unlabelled` list. Tests over a synthetic map. The company-book skill's Build section names
+  the map and the refresh from the prior year's workbooks. The map exists: `../staging/labels/diya-labels.toml` (12 rules, 11 payee patterns from the 2025-26 set).
+  **Source**: operator 2026-09-23. **Owner**: Claude Code. **Model**: Sonnet. **Size**: ~7 files.
 
 ## Machine-ask
 
@@ -277,6 +266,18 @@ Shared facts for the analytics rows (B52d, B52e, B52l, B52m): the prod Athena da
   Code. **Model**: Sonnet. **Size**: ~9 files.
 
 ## Human-driven
+
+- [ ] **OF2m. Two confirmations for DIYA's book.** F2m applied your four answers to the book in
+  `../staging/2026-2027/book/` (report checks 759, 0 failing; turnover £2,318.78 gross, not VAT
+  registered). Two answers are needed, written into F2o's row:
+  (1) The £1,000 mobile payment from the director, posted to the directors' loan (2500), leaves it
+  at +£556.71 (the company owes the director), not zero: the opening was −£443.29. Is the whole
+  £1,000 a director's loan, or does £443.29 clear the loan and £556.71 go elsewhere (name the
+  account)? (2) The members register F2m built (five members, 20 £1 shares each, £100) comes from
+  the 2016 shareholder list, the PSC register and the 2024-25 dividends; the 2016 list shows £500
+  of capital and no capital filing since reduces it to £100. Confirm the five holdings, and say
+  whether the reduction was filed. The details are in the book's `VERIFICATION.md`. This register
+  also feeds the confirmation statement. **Owner**: Operator. **Model**: none. **Size**: 0 files.
 
 - [ ] **OCS. The confirmation statement, due 5 October 2026.** Made up to 21 September 2026;
   DIY Accounting Limited 06846849 last filed a CS01 on 25 October 2025
@@ -299,7 +300,7 @@ Shared facts for the analytics rows (B52d, B52e, B52l, B52m): the prod Athena da
 
 ## Blocked
 
-- [ ] **OF2d. Copy DIYA's book into Drive.** Blocked on F2l and F2m (the rebuilt book's turnover counts two refunds and £1,163.50 of non-customer receipts as sales). The book is in
+- [ ] **OF2d. Copy DIYA's book into Drive.** Blocked on F2l and F2o (refunds not yet netted; the directors' loan not yet on the balance sheet). The book is in
   `../staging/2026-2027/book/` (`book.toml`, `lines.jsonl` with 488 lines, `VERIFICATION.md`, and `book-diya-gl.zip` for the spreadsheets MCP):
   bank balances match every statement, Stripe and PayPal reconcile with no residual, validation
   passes, and the review items (the £200 Polycode creditor payment, Hiscox, Linktree) are
@@ -314,15 +315,15 @@ Shared facts for the analytics rows (B52d, B52e, B52l, B52m): the prod Athena da
   `.md`, a skill) ran `content scan` and the PR reached `CLEAN`. **Owner**: Operator.
   **Model**: none. **Size**: 0 files.
 
-- [ ] **F2n. The finance parsers code lines from the label map.** `bank-lines.js` (`bankCodeFor`,
-  line 104) codes a line from the statement's type alone, and `paypal-statement-lines.js` and
-  `stripe-lines.js` post every receipt to sales. Give each an optional `labels` input, the map F2m
-  writes to `../staging/labels/diya-labels.toml` (read by the caller and passed in, so the
-  parsers stay pure and the repository holds no payee data), that sets account, bank code and VAT
-  code for a matching description; an unmatched line keeps today's coding and is returned in an
-  `unlabelled` list. Tests over a synthetic map. The company-book skill's Build section names
-  the map and the refresh from the prior year's workbooks. Blocked on F2m (the map's shape).
-  **Source**: operator 2026-09-23. **Owner**: Claude Code. **Model**: Sonnet. **Size**: ~7 files.
+- [ ] **F2o. DIYA's book: the directors' loan reaches the balance sheet.** The report engine's
+  directors' loan row (`../spreadsheets.diyaccounting.co.uk/app/lib/calculators/ltd.js` line 1601)
+  reads only bank lines carrying `diya-gl:bankCode` `DL` on a declared bank account; the £1,000
+  arrived through PayPal, and the book declares no PayPal bank account, so `PubBalSht!E29` still
+  shows the opening −£443.29. Declare the PayPal wallet (1220 per the 2025-26 set; check the
+  account code there) as a bank account with its lines, post the director's receipt as a `DL`
+  bank line per OF2m's answer, rebuild, re-run the report, and update `VERIFICATION.md` and the
+  members register per OF2m. Then OF2's re-save. Shares the PayPal wallet with F2g. Blocked on
+  OF2m. **Source**: F2m's report. **Owner**: Claude Code. **Model**: Sonnet. **Size**: 0 files.
 
 - [ ] **B30at1. The sweep's claim check, proven.** Needs a claimed set that is not last-known-good
   (the sweep keeps the last-known-good set before it reads any claim): the next time two branches
@@ -409,16 +410,16 @@ Shared facts for the analytics rows (B52d, B52e, B52l, B52m): the prod Athena da
 - [ ] **F2e. The MCP writes a populated spreadsheets package.** A tool in `mcp/lib/finance/` that
   takes the book and lines and writes a DIY Accounting spreadsheets package, reconciled under the
   spreadsheets repository's existing reconciliation harness rather than a new check; nothing
-  automated writes to Google Drive. Blocked on F2m (the final book). **Source**: `../PLAN_FINANCE_AUTOMATION.md`
+  automated writes to Google Drive. Blocked on F2o (the final book). **Source**: `../PLAN_FINANCE_AUTOMATION.md`
   phase 2. **Owner**: Claude Code. **Model**: Sonnet. **Size**: ~3 files.
 
 - [ ] **OF2. DIYA's book saved to the DIYA cloud.** The operator saved F2k's book from the
   DIYA-GL web app on 2026-09-23 22:51 (signed in as the operator's personal Google address;
   company "DIY Accounting Limited", ltd, 2026-04-01 to 2027-03-31, version 1). That book predates
   F2m (turnover £2,901.07 divided by 1.2, members register empty) and sits in the 35-day sandbox,
-  expiring about 2026-10-28. Remaining: save F2m's book (a new version of the same company) and
+  expiring about 2026-10-28. Remaining: save the final book (a new version of the same company) and
   keep it past 35 days (a Resident subscription or a comp on the account that holds it). Blocked
-  on F2l and F2m. **Source**: `../PLAN_FINANCE_AUTOMATION.md` phase 2. **Owner**: Operator.
+  on F2l and F2o. **Source**: `../PLAN_FINANCE_AUTOMATION.md` phase 2. **Owner**: Operator.
   **Model**: none. **Size**: 0 files.
 
 ## Discipline
