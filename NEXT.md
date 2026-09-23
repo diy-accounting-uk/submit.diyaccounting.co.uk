@@ -16,8 +16,8 @@ runs), and for Claude Code steps the **Model** a sub-agent should use (Fable > O
 Haiku; the lowest tier that fits). Anything touching code goes through a `claude/*` branch and
 PR; the operator merges.
 
-**Prod runs deployment prod-d9cb643** (PR #339's merge deploy 35860344955); `main`'s dispatch
-35870127527 deploys PR #340's merge `cc46199e` as `prod-cc46199` (stacks up, at `set origins`).
+**Prod runs deployment prod-d45be8c** (PR #342's merge); `main`'s deploy of PR #343's merge
+`d458f022` is running.
 **ci**: `ci-set1` is last-known-good and the only ci set standing; `ci-set2` was swept.
 Pull requests open: diy-accounting-uk/www.diyaccounting.co.uk#33 (mergeable now: the sink admits
 the gateway account), diy-accounting-uk/spreadsheets.diyaccounting.co.uk#136.
@@ -47,24 +47,19 @@ Shared facts for the analytics rows (B52d, B52e, B52l, B52m): the prod Athena da
 
 ## In flight
 
-- [ ] **B83w. Waves b83 and b84 on prod.** PR #339 (`d9cb6432`) deployed: prod runs
-  `prod-d9cb643`. PR #340 (`cc46199e`, B83 and AS15) merged; its push deploy 35869105425 was
-  cancelled by the B30ay proof dispatch (the cancel-superseded action took any push run of the
-  commit), so `main` is redeploying by dispatch 35870127527. B30ay's proof run 35869150806 failed
-  `names` in two seconds, but the probe jobs still ran against prod with test scenarios on and
-  opened alarm #341 (closed; a deliberate `SUBMIT_API_HTTP_500`); both defects are fixed on
-  `claude/b85-board` (the guard cancels the whole run; the cancel action leaves another
-  environment's push run alone), and the proof dispatch is re-run after b85 merges. B30at's proof needs a claimed set that is not last-known-good (the sweep keeps the last-known-good set before
-  it reads any claim; b85's deploy claimed `ci-set1`, which is last-known-good): the next time two
-  branches deploy at once, `gh workflow run destroy-ci.yml -f sweep-for-stacks=true` while the
-  second holds `ci-set2`, and its log shows "stays: claimed by run". **Owner**: Claude Code. **Model**: Haiku. **Size**: 0 files.
+- [ ] **B52e2. Submit's £0.99 charges carry their product.** PR #343 (`d458f022`) reads Stripe
+  charges at `2024-12-18.acacia` in `stripeReconcile.js` (the SDK default `2026-07-29.dahlia`
+  returns charges with no `invoice`); `main`'s deploy of it is running. The env-stack Lambda
+  `prod-env-stripe-reconcile` must show a `LastModified` after the merge; then re-invoke it for
+  2026-09-02, -03, -06 and -09 (operator approves) and `v_revenue_daily` shows those four under
+  `resident-vat`. **Owner**: Claude Code; the operator approves the invokes. **Model**: Haiku.
+  **Size**: 0 files.
 
-- [ ] **B85w. Wave b85.** Branch `claude/b85-board` (worktree `.claude/worktrees/b85`, from
-  b84's tip): B52j's `ads-advisor` skill; B30ba (one deploy per delivered push); B30az (the
-  self-destruct Lambda skips a set that is last-known-good or held by a claim younger than three
-  hours); the B30ay guard moved into `cancel-superseded-push-deploy` so it cancels the whole run;
-  and that job's cancel limited to the environment the push run deploys to. PR #342, full suite
-  green locally; its ci deploy 35870881195 holds `ci-set1`. **Owner**: Claude Code. **Model**: Sonnet. **Size**: ~8 files.
+- [ ] **B30at1. The sweep's claim check, proven.** Needs a claimed set that is not last-known-good
+  (the sweep keeps the last-known-good set before it reads any claim): the next time two branches
+  deploy at once, `gh workflow run destroy-ci.yml -f sweep-for-stacks=true` while the second holds
+  `ci-set2`, and its log shows "stays: claimed by run". **Owner**: Claude Code. **Model**: Haiku.
+  **Size**: 0 files.
 
 - [ ] **B52f1. The gateway's RUM monitor and GA4 linker.** PR
   diy-accounting-uk/www.diyaccounting.co.uk#33 (branch `claude/obs-gateway-rum`), green locally
@@ -79,17 +74,6 @@ Shared facts for the analytics rows (B52d, B52e, B52l, B52m): the prod Athena da
   Haiku. **Size**: 2 files.
 
 ## Machine-only
-
-- [ ] **B52e2. Submit's £0.99 charges still land as `unknown`.** The 1–21 September backfill
-  (`prod-env-stripe-reconcile` invoked per date, 2026-09-23) moved every donation to its product,
-  but the four `resident-vat` charges (2026-09-02, -03, -06, -09) still read `unknown` in
-  `v_revenue_daily`, though B52e's investigation expected `resolveChargeBundleId`'s
-  invoice-to-subscription path in `app/functions/analytics/stripeReconcile.js` to resolve them.
-  Read one of those charges' curated row (`curated/stripe/stripe_charges/dt=2026-09-03/charges.json.gz`)
-  and the Lambda's log for that invoke for which step returned nothing (the charge's `invoice`
-  under the Lambda's pinned API version, the subscription's `metadata.bundleId`), fix that layer
-  with a test, and re-invoke for the four dates (operator approves). **Owner**: Claude Code.
-  **Model**: Sonnet. **Size**: ~2 files.
 
 ## Machine-ask
 
