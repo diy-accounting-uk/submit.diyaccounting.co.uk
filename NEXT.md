@@ -48,12 +48,6 @@ Shared facts for the analytics rows (B52d, B52e, B52l, B52m): the prod Athena da
 **COOL-DOWN is on since 2026-09-23T19:29:15Z.** No new board rows except a degradation. Agents commit
 and stop. One branch is driven green at a time. Lifted only by the operator in their own words.
 
-- [ ] **B30at1. The sweep's claim check, proven.** Needs a claimed set that is not last-known-good
-  (the sweep keeps the last-known-good set before it reads any claim): the next time two branches
-  deploy at once, `gh workflow run destroy-ci.yml -f sweep-for-stacks=true` while the second holds
-  `ci-set2`, and its log shows "stays: claimed by run". **Owner**: Claude Code. **Model**: Haiku.
-  **Size**: 0 files.
-
 ## Machine-only
 
 - [ ] **B30bb. A Markdown-only push leaves a PR blocked.** `main`'s ruleset (16057564) requires
@@ -141,6 +135,12 @@ and stop. One branch is driven green at a time. Lifted only by the operator in t
   none. **Size**: 0 files.
 
 ## Blocked
+
+- [ ] **B30at1. The sweep's claim check, proven.** Needs a claimed set that is not last-known-good
+  (the sweep keeps the last-known-good set before it reads any claim): the next time two branches
+  deploy at once, `gh workflow run destroy-ci.yml -f sweep-for-stacks=true` while the second holds
+  `ci-set2`, and its log shows "stays: claimed by run". Blocked on two branches deploying at once. **Owner**: Claude Code. **Model**: Haiku.
+  **Size**: 0 files.
 
 - [ ] **F1b. PayPal's six months staged.** Run `scripts/finance/paypal-stage.js` (the credential
   read from Secrets Manager `prod/submit/paypal/client_id` and `prod/submit/paypal/client_secret`
