@@ -8,6 +8,8 @@ import {
   readKeywordsFile,
   resolveKeywords,
   parseBudgetGbp,
+  parseMatchType,
+  parseCpcCeilingGbp,
   defaultForecastPeriod,
   buildHistoricalMetricsRequest,
   buildForecastMetricsRequest,
@@ -25,6 +27,8 @@ describe("ads-forecast parseArgs", () => {
       keywordsFile: undefined,
       budgetGbp: "50",
       clientFile: undefined,
+      matchType: "BROAD",
+      cpcCeilingGbp: undefined,
     });
   });
   it("reads --keywords-file", () => {
@@ -32,6 +36,18 @@ describe("ads-forecast parseArgs", () => {
   });
   it("reads --client-file with its path", () => {
     expect(parseArgs(["--keywords", "a", "--budget-gbp", "1", "--client-file", "/tmp/client.json"]).clientFile).toBe("/tmp/client.json");
+  });
+  it("reads --match-type and defaults to BROAD", () => {
+    expect(parseArgs(["--keywords", "a", "--budget-gbp", "1"]).matchType).toBe("BROAD");
+  });
+  it("reads --match-type EXACT", () => {
+    expect(parseArgs(["--keywords", "a", "--budget-gbp", "1", "--match-type", "EXACT"]).matchType).toBe("EXACT");
+  });
+  it("reads --match-type PHRASE", () => {
+    expect(parseArgs(["--keywords", "a", "--budget-gbp", "1", "--match-type", "PHRASE"]).matchType).toBe("PHRASE");
+  });
+  it("reads --cpc-ceiling-gbp when given", () => {
+    expect(parseArgs(["--keywords", "a", "--budget-gbp", "1", "--cpc-ceiling-gbp", "2.5"]).cpcCeilingGbp).toBe("2.5");
   });
   it("fails when neither --keywords nor --keywords-file is given", () => {
     expect(() => parseArgs(["--budget-gbp", "50"])).toThrow(/one of --keywords or --keywords-file is required/);
@@ -47,6 +63,12 @@ describe("ads-forecast parseArgs", () => {
   });
   it("fails when --budget-gbp has no value", () => {
     expect(() => parseArgs(["--keywords", "a", "--budget-gbp"])).toThrow(/--budget-gbp requires/);
+  });
+  it("fails when --match-type has no value", () => {
+    expect(() => parseArgs(["--keywords", "a", "--budget-gbp", "1", "--match-type"])).toThrow(/--match-type requires/);
+  });
+  it("fails when --cpc-ceiling-gbp has no value", () => {
+    expect(() => parseArgs(["--keywords", "a", "--budget-gbp", "1", "--cpc-ceiling-gbp"])).toThrow(/--cpc-ceiling-gbp requires/);
   });
   it("rejects an unknown argument", () => {
     expect(() => parseArgs(["--nope"])).toThrow(/Unknown argument/);
@@ -91,6 +113,42 @@ describe("ads-forecast parseBudgetGbp", () => {
   });
 });
 
+describe("ads-forecast parseMatchType", () => {
+  it("accepts EXACT", () => {
+    expect(parseMatchType("EXACT")).toBe("EXACT");
+  });
+  it("accepts PHRASE", () => {
+    expect(parseMatchType("PHRASE")).toBe("PHRASE");
+  });
+  it("accepts BROAD", () => {
+    expect(parseMatchType("BROAD")).toBe("BROAD");
+  });
+  it("rejects an invalid match type", () => {
+    expect(() => parseMatchType("INVALID")).toThrow(/must be one of EXACT, PHRASE, or BROAD/);
+  });
+  it("rejects lowercase exact", () => {
+    expect(() => parseMatchType("exact")).toThrow(/must be one of EXACT, PHRASE, or BROAD/);
+  });
+});
+
+describe("ads-forecast parseCpcCeilingGbp", () => {
+  it("parses a positive number", () => {
+    expect(parseCpcCeilingGbp("2.5")).toBe(2.5);
+  });
+  it("returns undefined when given undefined", () => {
+    expect(parseCpcCeilingGbp(undefined)).toBeUndefined();
+  });
+  it("returns undefined when given null", () => {
+    expect(parseCpcCeilingGbp(null)).toBeUndefined();
+  });
+  it("rejects zero", () => {
+    expect(() => parseCpcCeilingGbp("0")).toThrow(/positive number/);
+  });
+  it("rejects a non-numeric value", () => {
+    expect(() => parseCpcCeilingGbp("two-fifty")).toThrow(/positive number/);
+  });
+});
+
 describe("ads-forecast defaultForecastPeriod", () => {
   it("starts tomorrow and runs 30 days", () => {
     expect(defaultForecastPeriod(new Date("2026-09-23T10:00:00Z"))).toEqual({ from: "2026-09-24", to: "2026-10-23" });
@@ -122,6 +180,25 @@ describe("ads-forecast buildForecastMetricsRequest", () => {
         adGroups: [{ keywords: [{ text: "submit vat return", matchType: "BROAD" }] }],
       },
     });
+  });
+  it("uses EXACT match type when specified", () => {
+    const request = buildForecastMetricsRequest(["submit vat return"], 50, { from: "2026-09-24", to: "2026-10-23" }, "EXACT");
+    expect(request.campaign.adGroups[0].keywords[0].matchType).toBe("EXACT");
+  });
+  it("uses PHRASE match type when specified", () => {
+    const request = buildForecastMetricsRequest(["submit vat return"], 50, { from: "2026-09-24", to: "2026-10-23" }, "PHRASE");
+    expect(request.campaign.adGroups[0].keywords[0].matchType).toBe("PHRASE");
+  });
+  it("adds maxCpcBidCeilingMicros when CPC ceiling is given", () => {
+    const request = buildForecastMetricsRequest(["submit vat return"], 50, { from: "2026-09-24", to: "2026-10-23" }, "BROAD", 2.5);
+    expect(request.campaign.biddingStrategy.maximizeClicksBiddingStrategy).toEqual({
+      dailyTargetSpendMicros: "50000000",
+      maxCpcBidCeilingMicros: "2500000",
+    });
+  });
+  it("omits maxCpcBidCeilingMicros when CPC ceiling is not given", () => {
+    const request = buildForecastMetricsRequest(["submit vat return"], 50, { from: "2026-09-24", to: "2026-10-23" });
+    expect(request.campaign.biddingStrategy.maximizeClicksBiddingStrategy.maxCpcBidCeilingMicros).toBeUndefined();
   });
 });
 
@@ -191,6 +268,28 @@ describe("ads-forecast buildForecastReport", () => {
       period: { from: "2026-09-24", to: "2026-10-23" },
       historical: [1],
       forecast: { clicks: 2 },
+      matchType: "BROAD",
+      cpcCeilingGbp: undefined,
+    });
+  });
+  it("includes matchType and cpcCeilingGbp when given", () => {
+    const report = buildForecastReport({
+      keywords: ["a"],
+      budgetGbp: 50,
+      period: { from: "2026-09-24", to: "2026-10-23" },
+      historical: [1],
+      forecast: { clicks: 2 },
+      matchType: "EXACT",
+      cpcCeilingGbp: 2.5,
+    });
+    expect(report).toEqual({
+      keywords: ["a"],
+      budgetGbp: 50,
+      period: { from: "2026-09-24", to: "2026-10-23" },
+      historical: [1],
+      forecast: { clicks: 2 },
+      matchType: "EXACT",
+      cpcCeilingGbp: 2.5,
     });
   });
 });
