@@ -47,18 +47,6 @@ Shared facts for the analytics rows (B52d, B52e, B52l, B52m): the prod Athena da
 
 ## Machine-only
 
-- [ ] **B30bh. Record a source location in memory when the operator names it.** Five operator
-  messages on 2026-09-23 corrected where a source lives (the Drive finance path, `authuser=1`, the
-  spreadsheets MCP meaning the published diya-gl package, Polycode as a creditor, the mail mirror
-  path); the first two are memories (`finance-sources-in-drive-mirror.md`,
-  `google-console-steps-need-a-web-check.md`), the other three are in
-  `.claude/skills/company-book/SKILL.md` (lines 26, 55, 94). Add one feedback memory in
-  `~/.claude/projects/-Users-antony-projects-diy-accounting-limited-submit-diyaccounting-co-uk/memory/`:
-  when the operator names a path, account, URL parameter or meaning, write or update the memory
-  (or the skill that owns the fact) in the same turn, before acting on it, and index it in
-  `MEMORY.md`. Changes nothing committed. **Source**: session report Mc+ncD.
-  **Owner**: Claude Code. **Model**: Haiku. **Size**: 0 files.
-
 - [ ] **B30be. Refine pass 2 names the call site and the forbidden patterns.** The coordinator
   corrected 6 agent results on 2026-09-23 (knip deleting a used file, a Stripe API pin on every
   client, a `GITHUB_ENV` name clash, a compatibility alias, a stack-update heuristic, a
@@ -92,7 +80,7 @@ Shared facts for the analytics rows (B52d, B52e, B52l, B52m): the prod Athena da
   by a later bare heading and no fixture caught it. In `.claude/skills/refine/SKILL.md` pass 2 and
   `.claude/skills/company-book/SKILL.md`'s `## Build` (line 32), require a parser brief to name one real
   source month (its path under `../drive/…/finance/`) and the expected reconciliation residual
-  (0) as the first test. Shares `refine/SKILL.md` with B30be: one agent. **Source**: session
+  (0) as the first test. Shares `refine/SKILL.md` with B30be: one agent; the `company-book/SKILL.md` line lands in F2k's agent. **Source**: session
   report Mc+ncD. **Owner**: Claude Code. **Model**: Haiku. **Size**: 2 files.
 
 - [ ] **B30bb. A Markdown-only push leaves a PR blocked.** `main`'s ruleset (16057564) requires
@@ -216,6 +204,34 @@ Shared facts for the analytics rows (B52d, B52e, B52l, B52m): the prod Athena da
   Record the run ids in OB30bc's row. Adding `content scan` to the ruleset's
   required checks is OB30bc. **Owner**: Claude Code. **Model**: Sonnet. **Size**: ~4 files.
 
+- [ ] **F2k. DIYA's book rebuilt so diya-gl reads it.** Cowork loaded
+  `../staging/2026-2027/book/book-diya-gl.zip` in diya-gl-mcp 1.2.31 (`extract_book`, `product:
+  ltd`, then `report`, 2026-09-23): bank balances and purchases stand; turnover, the balance sheet
+  and CT do not. Four causes, each in a parser in `mcp/lib/finance/` with a test:
+  (1) `bank-lines.js` sets only `diya-gl:bankCode` (line 134); the ltd check
+  `book-ltd-bank-line-has-side` (`../spreadsheets.diyaccounting.co.uk/app/lib/book-checks/ltd.js`
+  line 141) needs `debitCreditCode` `D` or `C` on every bank line, so 70 of 71 bank lines drop
+  out and cash reads £103.66 against statement closings of £1,624.90 (current) and £271.69
+  (savings); (2) `stripe-lines.js`'s refunds (`documentType: "credit-note"`, line 87) post as
+  positive sales, +£91.92 on turnover (engine £3,899.91, lines net £3,807.99): find the engine's
+  refund encoding in `../spreadsheets.diyaccounting.co.uk/app/lib/scenario-extractor.js` and its
+  fixtures (`app/test/fixtures/ltd-scenario-full.toml`), and use it; if the engine has none, the
+  engine fix is a spreadsheets PR; (3) the engine reads ltd opening balances only from an opening
+  journal, `sourceJournalID: "journal"` lines whose `documentReference` starts with the opening
+  prefix (`isOpeningBalanceLine`, `scenario-extractor.js` line 237; `buildOpeningBalance` line
+  252), never from `book.toml`'s `[openingBalances]`, so emit the journal from
+  `book-from-workbook.js`; (4) 1 March to 31 August straddles the 31 March year end: rebuild as
+  1 April to 31 August 2026, with March carried in the 2025-26 control. Set
+  `"diya-gl:vatRegistered"` to the registration's current state (registered; cancelling it is
+  runbook task N). The 26 `book-duplicate-entries` warnings are same-day Stripe refunds with
+  distinct ids; leave them. Then rebuild with glue in the session scratchpad, load the zip with
+  the current `@diy-accounting-uk/diya-gl` (1.2.32), and prove: zero book-check failures, bank
+  1200 and 1210 closing at the statement figures, turnover net of refunds, the opening balance
+  sheet populated, zero `check/P&L` failures; rewrite `VERIFICATION.md` and the zip. The
+  company-book skill's Build section changes with it; B30bf's line for that file lands in this
+  row's agent. PayPal wallet flows reaching a 1220 bank line is F2g's. **Source**: Cowork
+  inbox 2026-09-23T20:46:44Z. **Owner**: Claude Code. **Model**: Sonnet. **Size**: ~6 files.
+
 - [ ] **ITSA13. WCAG 2.1 AA evidence for the 19 ITSA pages.** Row 13 of the checklist is "Not
   evidenced": no scan names any of the 19 pages under `web/public/hmrc/itsa/`. Three lists carry
   the scanned pages: `scripts/axe-quickscan.mjs`'s `PAGES` (line 12; run as `node
@@ -241,14 +257,6 @@ Shared facts for the analytics rows (B52d, B52e, B52l, B52m): the prod Athena da
   statement date. Steps are task B of `../NEXT_OPERATOR_RUNBOOK.md`. **Owner**: Operator.
   **Model**: none. **Size**: 0 files.
 
-- [ ] **OF2d. Copy DIYA's book into Drive.** The book for 1 March to 31 August 2026 is in
-  `../staging/2026-2027/book/` (`book.toml`, `lines.jsonl` with 488 lines, `VERIFICATION.md`, and `book-diya-gl.zip` for the spreadsheets MCP):
-  bank balances match every statement, Stripe and PayPal reconcile with no residual, validation
-  passes, and the review items (the £200 Polycode creditor payment, Hiscox, Linktree) are
-  resolved in `VERIFICATION.md`. Copy the three files into Drive under
-  `finance/2026-2027 accounts/`. That copy is OF2's input. **Owner**: Operator. **Model**: none.
-  **Size**: 0 files.
-
 - [ ] **OPU7n. Go for the practice licence launch.** Say go when `resident-pro` should go on sale at
   £199 a year and £19.99 a month (the catalogue flip, the nav link, the Stripe live prices, PU-7n).
   **Owner**: Operator. **Model**: none. **Size**: 0 files.
@@ -264,6 +272,14 @@ Shared facts for the analytics rows (B52d, B52e, B52l, B52m): the prod Athena da
   none. **Size**: 0 files.
 
 ## Blocked
+
+- [ ] **OF2d. Copy DIYA's book into Drive.** Blocked on F2k's rebuilt book (Cowork found turnover, the balance sheet and CT wrong in the current one). The book is in
+  `../staging/2026-2027/book/` (`book.toml`, `lines.jsonl` with 488 lines, `VERIFICATION.md`, and `book-diya-gl.zip` for the spreadsheets MCP):
+  bank balances match every statement, Stripe and PayPal reconcile with no residual, validation
+  passes, and the review items (the £200 Polycode creditor payment, Hiscox, Linktree) are
+  resolved in `VERIFICATION.md`. Copy the three files into Drive under
+  `finance/2026-2027 accounts/`. That copy is OF2's input. **Owner**: Operator. **Model**: none.
+  **Size**: 0 files.
 
 - [ ] **OB30bc. Make the content scan a required check.** Add `content scan` to the required
   status checks of ruleset 16057564
