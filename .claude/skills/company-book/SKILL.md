@@ -31,6 +31,10 @@ operator for a document.
 
 ## Build
 
+A brief for a parser change names one real source month (its path under `../drive/…/finance/`)
+and states the expected reconciliation residual, 0, as the change's first test. A parser fixture
+with no real month behind it can pass while missing what the real file actually does.
+
 The parsers live in `mcp/lib/finance/` (run `npm ci` in `mcp/` first):
 
 | Source | Module | Call |
