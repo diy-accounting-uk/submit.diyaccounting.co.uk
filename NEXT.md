@@ -237,6 +237,20 @@ Shared facts for the analytics rows (B52d, B52e, B52l, B52m): the prod Athena da
 
 ## Machine-only
 
+- [ ] **F2o. DIYA's book: the directors' loan reaches the balance sheet.** The report engine's
+  directors' loan row (`../spreadsheets.diyaccounting.co.uk/app/lib/calculators/ltd.js` line 1601)
+  reads only bank lines carrying `diya-gl:bankCode` `DL` on a declared bank account; the £1,000
+  arrived through PayPal, and the book declares no PayPal bank account, so `PubBalSht!E29` still
+  shows the opening −£443.29. Declare the PayPal wallet (1220 per the 2025-26 set; check the
+  account code there) as a bank account with its lines, split the director's £1,000 receipt
+  (operator, 2026-09-23: the directors' loan is to read zero for now): £443.29 as a `DL` bank line
+  clearing the opening −£443.29, and £556.71 to the book's suspense account (take its code from
+  the chart; the operator will reconcile it against Polycode's management fee, OF2p). Replace the
+  members register and share capital with the 2025-26 set's (`Companysecretary.xlsx` and the
+  closing balance sheet in `../drive/DIY Accounting Limited/finance/2025-2026 accounts/`; operator:
+  "same as the previous year"). Rebuild, re-run the report, update `VERIFICATION.md`. Then OF2's
+  re-save. Shares the PayPal wallet with F2g. **Source**: F2m's report. **Owner**: Claude Code. **Model**: Sonnet. **Size**: 0 files.
+
 - [ ] **F2n. The finance parsers code lines from the label map.** `bank-lines.js` (`bankCodeFor`,
   line 104) codes a line from the statement's type alone, and `paypal-statement-lines.js` and
   `stripe-lines.js` post every receipt to sales. Give each an optional `labels` input, the map F2m
@@ -267,17 +281,11 @@ Shared facts for the analytics rows (B52d, B52e, B52l, B52m): the prod Athena da
 
 ## Human-driven
 
-- [ ] **OF2m. Two confirmations for DIYA's book.** F2m applied your four answers to the book in
-  `../staging/2026-2027/book/` (report checks 759, 0 failing; turnover £2,318.78 gross, not VAT
-  registered). Two answers are needed, written into F2o's row:
-  (1) The £1,000 mobile payment from the director, posted to the directors' loan (2500), leaves it
-  at +£556.71 (the company owes the director), not zero: the opening was −£443.29. Is the whole
-  £1,000 a director's loan, or does £443.29 clear the loan and £556.71 go elsewhere (name the
-  account)? (2) The members register F2m built (five members, 20 £1 shares each, £100) comes from
-  the 2016 shareholder list, the PSC register and the 2024-25 dividends; the 2016 list shows £500
-  of capital and no capital filing since reduces it to £100. Confirm the five holdings, and say
-  whether the reduction was filed. The details are in the book's `VERIFICATION.md`. This register
-  also feeds the confirmation statement. **Owner**: Operator. **Model**: none. **Size**: 0 files.
+- [ ] **OF2p. Where the £556.71 of the director's £1,000 belongs.** F2o posts £443.29 of the
+  director's £1,000 to clear the directors' loan and holds £556.71 in suspense. Check it against
+  Polycode's accounts (part may settle the management fee) and write the account for each part
+  into the book's `VERIFICATION.md` or a new row. **Owner**: Operator. **Model**: none. **Size**: 0
+  files.
 
 - [ ] **OCS. The confirmation statement, due 5 October 2026.** Made up to 21 September 2026;
   DIY Accounting Limited 06846849 last filed a CS01 on 25 October 2025
@@ -300,7 +308,7 @@ Shared facts for the analytics rows (B52d, B52e, B52l, B52m): the prod Athena da
 
 ## Blocked
 
-- [ ] **OF2d. Copy DIYA's book into Drive.** Blocked on F2l and F2o (refunds not yet netted; the directors' loan not yet on the balance sheet). The book is in
+- [ ] **OF2d. Copy DIYA's book into Drive.** Blocked on F2l and F2o (refunds not yet netted; the directors' loan and members register not yet final). The book is in
   `../staging/2026-2027/book/` (`book.toml`, `lines.jsonl` with 488 lines, `VERIFICATION.md`, and `book-diya-gl.zip` for the spreadsheets MCP):
   bank balances match every statement, Stripe and PayPal reconcile with no residual, validation
   passes, and the review items (the £200 Polycode creditor payment, Hiscox, Linktree) are
@@ -314,16 +322,6 @@ Shared facts for the analytics rows (B52d, B52e, B52l, B52m): the prod Athena da
   merges past a PII hit. Blocked on B30bc's merge and its proof: both docs-only pushes (a root
   `.md`, a skill) ran `content scan` and the PR reached `CLEAN`. **Owner**: Operator.
   **Model**: none. **Size**: 0 files.
-
-- [ ] **F2o. DIYA's book: the directors' loan reaches the balance sheet.** The report engine's
-  directors' loan row (`../spreadsheets.diyaccounting.co.uk/app/lib/calculators/ltd.js` line 1601)
-  reads only bank lines carrying `diya-gl:bankCode` `DL` on a declared bank account; the £1,000
-  arrived through PayPal, and the book declares no PayPal bank account, so `PubBalSht!E29` still
-  shows the opening −£443.29. Declare the PayPal wallet (1220 per the 2025-26 set; check the
-  account code there) as a bank account with its lines, post the director's receipt as a `DL`
-  bank line per OF2m's answer, rebuild, re-run the report, and update `VERIFICATION.md` and the
-  members register per OF2m. Then OF2's re-save. Shares the PayPal wallet with F2g. Blocked on
-  OF2m. **Source**: F2m's report. **Owner**: Claude Code. **Model**: Sonnet. **Size**: 0 files.
 
 - [ ] **B30at1. The sweep's claim check, proven.** Needs a claimed set that is not last-known-good
   (the sweep keeps the last-known-good set before it reads any claim): the next time two branches
