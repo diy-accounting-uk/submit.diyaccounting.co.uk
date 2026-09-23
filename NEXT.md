@@ -17,8 +17,9 @@ Haiku; the lowest tier that fits). Anything touching code goes through a `claude
 PR; the operator merges.
 
 **Prod runs deployment prod-cdbc557**.
-**ci**: `ci-set1` is last-known-good (PR #334's dispatched deploy 35801175335 rebuilt it at
-00:14 UTC); `ci-set2` carries PR #335's content. Every open pull request's deploy is red only on
+**ci**: no set is standing; `ci-set1` (the last-known-good parameter's value) self-destructed at
+04:01 UTC and `ci-set2` at 03:05, so the ci apex has no target until the next green deploy (PR
+#333's merge deploy at wake). Every open pull request's deploy is red only on
 `diyaGlSubscriptionBehaviour`'s book limit, which PR #333 fixes. Open pull requests: #333
 (`claude/b79-developers`, head 3e7255af, green), #334 (`claude/b80-board`, head f4770e0c),
 #335 (`claude/b81-board`, head 858c8cd3), #336 (`claude/b82-board`, head c450180d).
