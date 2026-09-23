@@ -32,7 +32,7 @@ people, and do not host it for others under any name.
 | Path | Licence |
 | --- | --- |
 | `_developers/` | PolyForm |
-| `.claude/`, `.github/`, `.junie/`, `.mvn/`, `.run/` | PolyForm; the Maven wrapper is Apache-2.0 third-party code, see below |
+| `.claude/`, `.github/`, `.mvn/`, `.run/` | PolyForm; the Maven wrapper is Apache-2.0 third-party code, see below |
 | `analytics/` | PolyForm |
 | `app/` | PolyForm |
 | `behaviour-tests/` | PolyForm |

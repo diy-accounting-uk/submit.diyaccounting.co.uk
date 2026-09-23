@@ -224,8 +224,9 @@ Merge each workstream as its notification arrives. Do not hold them for the end.
   (`git diff <agent-branch> <batch> -- $(git diff --name-only <batch>...<agent-branch>)` is empty),
   then hand the removal to the operator: `git worktree remove` and `git branch -D` are denied to
   the session here, so print the one command in a fenced block with the `!` prefix and carry on.
-  The `/board` render lists every such worktree and branch again until it is gone. Nothing waits
-  on the removal.
+  Use `git worktree remove --force --force <path>` for each worktree and join with `;` so one
+  failure does not stop the rest. The `/board` render lists every such worktree and branch again
+  until it is gone. Nothing waits on the removal.
 
 **Editing `NEXT.md` is where rows get lost.** Never replace the slice between two markers unless
 you have checked they are adjacent — an edit that removes what it did not name is invisible until

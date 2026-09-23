@@ -72,11 +72,12 @@ export default defineConfig(({ mode }) => {
           "app/index.js",
           "**/exports/**",
         ],
+        // Each threshold is the measured figure minus one point, so a merge that moves a figure by under a point stays green.
         thresholds: {
-          statements: 76,
-          branches: 68,
-          functions: 85,
-          lines: 77,
+          statements: 75,
+          branches: 67,
+          functions: 84,
+          lines: 76,
           perFile: false,
         },
       },

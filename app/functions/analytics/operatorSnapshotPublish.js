@@ -178,6 +178,7 @@ export const OBJECTIVE_DEFINITIONS = [
         valueExpr: "sessions",
         aggregation: "sum",
         where: "visitor_kind = 'human'",
+        dailySeries: true,
         deepLink: (ctx) => buildGa4ReportsLink(ctx.ga4PropertyId),
       },
       {
@@ -189,6 +190,7 @@ export const OBJECTIVE_DEFINITIONS = [
         valueExpr: "sessions",
         aggregation: "sum",
         where: "visitor_kind = 'bot'",
+        dailySeries: true,
         deepLink: (ctx) => buildGa4ReportsLink(ctx.ga4PropertyId),
       },
       {
@@ -200,6 +202,7 @@ export const OBJECTIVE_DEFINITIONS = [
         valueExpr: "sessions",
         aggregation: "sum",
         where: "visitor_kind = 'synthetic'",
+        dailySeries: true,
         deepLink: (ctx) => buildGa4ReportsLink(ctx.ga4PropertyId),
       },
     ],
@@ -526,9 +529,35 @@ export function buildWindowedSql({ view, dayColumn, valueExpr, aggregation, wher
   );
 }
 
+/**
+ * One row per day for the trailing 30 days, for an observation flagged `dailySeries: true`.
+ * The windowed query above answers a single total for the period; the operator dashboard's
+ * Visitors panel needs the day-by-day breakdown instead, so this runs as a second query
+ * alongside it for those observations only.
+ *
+ * @param {{view: string, dayColumn: string, valueExpr: string, aggregation: string, where?: string}} observation
+ * @returns {string}
+ */
+export function buildDailySeriesSql({ view, dayColumn, valueExpr, aggregation, where }) {
+  const conditions = [`${dayColumn} > date_add('day', -30, current_date)`];
+  if (where) conditions.push(where);
+  return (
+    `SELECT ${dayColumn} AS day,\n` +
+    `       ${aggregation}(${valueExpr}) AS value\n` +
+    `FROM   ${view}\n` +
+    `WHERE  ${conditions.join(" AND ")}\n` +
+    `GROUP BY ${dayColumn}\n` +
+    `ORDER BY ${dayColumn}`
+  );
+}
+
 function toNumberOrNull(value) {
   if (value === null || value === undefined) return null;
   return Number(value);
+}
+
+export function toDailySeries(rows) {
+  return (rows || []).map((row) => ({ day: row.day, value: toNumberOrNull(row.value) }));
 }
 
 /**
@@ -572,10 +601,17 @@ export async function buildSnapshot({ workGroup, database, context }) {
     const observations = [];
     for (const observation of objective.observations) {
       let windows = nullObservationWindows;
+      let dailySeries = [];
       try {
         const sql = buildWindowedSql(observation);
         const rows = await runAthenaQuery({ workGroup, database, sql });
         windows = toObservationWindows(rows[0]);
+
+        if (observation.dailySeries) {
+          const dailySql = buildDailySeriesSql(observation);
+          const dailyRows = await runAthenaQuery({ workGroup, database, sql: dailySql });
+          dailySeries = toDailySeries(dailyRows);
+        }
       } catch (error) {
         failedObservationCount += 1;
         logger.warn({
@@ -585,14 +621,18 @@ export async function buildSnapshot({ workGroup, database, context }) {
           error: error.message,
         });
       }
-      observations.push({
+      const observationResult = {
         id: observation.id,
         label: observation.label,
         unit: observation.unit,
         last30: windows.last30,
         last90: windows.last90,
         deepLink: observation.deepLink(context),
-      });
+      };
+      if (observation.dailySeries) {
+        observationResult.dailySeries = dailySeries;
+      }
+      observations.push(observationResult);
     }
     objectives.push({ id: objective.id, name: objective.name, observations });
   }

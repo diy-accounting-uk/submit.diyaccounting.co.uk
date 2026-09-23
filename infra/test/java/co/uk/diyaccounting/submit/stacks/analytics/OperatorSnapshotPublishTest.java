@@ -103,7 +103,8 @@ class OperatorSnapshotPublishTest {
                 Match.objectLike(Map.of(
                         "AlarmName", "docs-env-operator-snapshot-publish-errors",
                         "MetricName", "Errors",
-                        "Namespace", "AWS/Lambda")));
+                        "Namespace", "AWS/Lambda",
+                        "Period", 3600)));
     }
 
     @Test

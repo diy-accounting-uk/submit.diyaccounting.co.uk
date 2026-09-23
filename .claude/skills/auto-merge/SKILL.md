@@ -172,18 +172,39 @@ probe fails. For each remaining open PR, in the order they will merge:
    (`git diff --name-only origin/main~1..origin/main` against `git diff --name-only
    origin/main...origin/<headRef>`). Empty intersection and not `CONFLICTING`: it merges as it
    stands on its next turn, no rebase. Record `left as is` in Part 6.
-2. Conflicting, or overlapping files: rebase locally first. In its worktree (or a fresh
+2. File intersection misses a gate the merged PR made stricter, because a stricter gate reaches
+   every file, not just the ones the merged PR touched. Check for one:
+   `git diff origin/main~1 origin/main -- .github/workflows/test.yml` for a new or changed job or
+   step running prettier, eslint, or spotless, or adding or raising a coverage threshold; `git diff
+   origin/main~1 origin/main -- vitest.config.js` for a changed `coverage.thresholds` value. Read
+   `.github/workflows/test.yml` for the command each gate runs today — currently `npx prettier
+   --check .` (job `lint-js`, step "Check formatting (Prettier)"), `./mvnw spotless:check` (job
+   `lint-js`, step "Check formatting (Spotless)"), `npx eslint . --format json` compared against
+   `.eslint-baseline.json` (job `lint-js`, step "Ratchet the repository-wide error count"), and
+   `npm run test:coverage` for the `vitest.config.js` thresholds (job `npm-unit-test`).
+   For each gate the merged PR added or changed, and each remaining candidate: build a scratch
+   worktree on the candidate's head merged with the new `main`, then run the gate's command in it.
+   ```bash
+   git worktree add --detach <tmp> origin/<headRef>
+   git -C <tmp> merge --no-edit origin/main
+   ```
+   Run the gate's command with `<tmp>` as the working directory. A red result: report `gate <name>
+   red on #<n>` in Part 6 and Part 7, leave the PR open, and hand its fix to a sub-agent — never
+   fix it inside this skill. Put `<tmp>` under `/tmp` or the session's scratchpad; its removal is
+   the operator's like every other worktree here, so list it in Part 7's removal block.
+3. Conflicting, or overlapping files: rebase locally first. In its worktree (or a fresh
    `git worktree add`), `git fetch origin && git rebase origin/main`, then run the change's blast
    radius there. A conflict aborts the rebase (`git rebase --abort`) and is reported in Part 7 as
    work for a sub-agent; never resolve it inside this skill.
-3. Push the rebase with `git push --force-with-lease origin <headRef>` only when no deploy run on
+4. Push the rebase with `git push --force-with-lease origin <headRef>` only when no deploy run on
    that branch is in flight (`gh run list --branch <headRef>` shows nothing `in_progress` or
    `queued` for a deploy workflow); otherwise leave the local rebase in place and report it as
    pending the branch's deploy. The lease refuses the push if the branch moved underneath; that
    too is reported, never forced.
 
 Skip any branch with uncommitted work in a worktree or commits ahead of origin, and say so in
-Part 7. In dry-run mode print the commands per branch and mark the row **would rebase** or
+Part 7. In dry-run mode print the commands per branch — the gate check's scratch worktree
+included — without running them, and mark the row **would rebase**, **would check gates**, or
 **left as is**.
 
 ## Part 6 — the result table
@@ -195,8 +216,8 @@ One row per PR touched this run, including any just merged.
 
 `Check result` is exactly `ready` or `blocking`, and when blocking it names the gate. The last column
 is the action taken, or recommended when nothing was taken. A remaining open PR shows `left as is`,
-`rebased onto <sha>`, `rebase pending: deploy in flight`, or `rebase skipped: <reason>` here. End the table with a summary row giving
-the overall action for the run.
+`rebased onto <sha>`, `rebase pending: deploy in flight`, `rebase skipped: <reason>`, or `gate <name>
+red on #<n>` here. End the table with a summary row giving the overall action for the run.
 
 ## Part 7 — next actions
 

@@ -14,6 +14,10 @@
 # GA4 events are created in the GA4 property (see infra/google/ga4/ga4-sync.js), not here. The
 # GA4 side of the Ads link stays with ga4-sync.js.
 #
+# Each [[campaign]] needs a [campaign.bidding] table naming its strategy and that strategy's
+# fields — see ads-sync.js's header comment for the full mapping. A Performance Max campaign
+# accepts only maximize_conversions and maximize_conversion_value.
+#
 # API access here is an access level on the Cloud project below, granted on the "Google Ads
 # API Overview" page of the Cloud console, not a developer token: a developer-token header is
 # optional and Google ignores it. Reading this one client account with its own OAuth
@@ -101,6 +105,9 @@ name = "Campaign #1"
 type = "PERFORMANCE_MAX"
 status = "ENABLED"
 budget_micros = 1000000
+
+[campaign.bidding]
+strategy = "maximize_conversions"
 
 [[campaign.asset_group]]
 name = "Asset Group 1"

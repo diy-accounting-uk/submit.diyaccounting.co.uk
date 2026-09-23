@@ -50,6 +50,42 @@ const FIXTURE_SNAPSHOT = {
           last90: { value: 0.4, trend: 0.05 },
           deepLink: "https://eu-west-2.console.aws.amazon.com/cloudwatch/home?region=eu-west-2#dashboards:name=prod-env-analytics",
         },
+        {
+          id: "sessions-human",
+          label: "Sessions, human visitors",
+          unit: "count",
+          last30: { value: 210, trend: 0.05 },
+          last90: { value: 600, trend: 0.02 },
+          dailySeries: [
+            { day: "2026-09-06", value: 30 },
+            { day: "2026-09-07", value: 28 },
+          ],
+          deepLink: "https://analytics.google.com/analytics/web/#/p523400333/reports/intelligenthome",
+        },
+        {
+          id: "sessions-bot",
+          label: "Sessions, bot visitors",
+          unit: "count",
+          last30: { value: 40, trend: -0.1 },
+          last90: { value: 130, trend: 0.01 },
+          dailySeries: [
+            { day: "2026-09-06", value: 5 },
+            { day: "2026-09-07", value: 6 },
+          ],
+          deepLink: "https://analytics.google.com/analytics/web/#/p523400333/reports/intelligenthome",
+        },
+        {
+          id: "sessions-synthetic",
+          label: "Sessions, synthetic visitors",
+          unit: "count",
+          last30: { value: 60, trend: 0 },
+          last90: { value: 180, trend: 0 },
+          dailySeries: [
+            { day: "2026-09-06", value: 8 },
+            { day: "2026-09-07", value: 8 },
+          ],
+          deepLink: "https://analytics.google.com/analytics/web/#/p523400333/reports/intelligenthome",
+        },
       ],
     },
     { id: "conversion-to-paid", name: "Conversion to paid", observations: [] },
@@ -164,6 +200,20 @@ test.describe("Operator Dashboard", () => {
       "href",
       "https://eu-west-2.console.aws.amazon.com/cloudwatch/home?region=eu-west-2#dashboards:name=prod-env-operations",
     );
+  });
+
+  test("renders the visitors panel with human, bot and synthetic sessions per day", async ({ page }) => {
+    await setupRoutes(page);
+    await loadDashboard(page);
+
+    const rows = page.locator("#visitorsPanel tr.visitors-day");
+    await expect(rows).toHaveCount(2);
+
+    const firstDay = page.locator('#visitorsPanel tr.visitors-day[data-day="2026-09-06"]');
+    await expect(firstDay.locator("td").nth(0)).toHaveText("2026-09-06");
+    await expect(firstDay.locator("td").nth(1)).toHaveText("30");
+    await expect(firstDay.locator("td").nth(2)).toHaveText("5");
+    await expect(firstDay.locator("td").nth(3)).toHaveText("8");
   });
 
   test("shows a placeholder for an objective with no observations yet", async ({ page }) => {

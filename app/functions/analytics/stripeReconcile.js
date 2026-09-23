@@ -9,7 +9,10 @@
 // caller in this system uses, so a lake row joins to activity events without ever carrying a
 // Stripe identifier, an email address or a card detail.
 
+import fs from "node:fs";
+import path from "node:path";
 import { gzipSync } from "zlib";
+import TOML from "@iarna/toml";
 import { S3Client, PutObjectCommand } from "@aws-sdk/client-s3";
 import { createLogger } from "../../lib/logger.js";
 import { getStripeClient } from "../../lib/stripeClient.js";
@@ -74,6 +77,23 @@ function resolveId(value) {
 }
 
 /**
+ * The spreadsheets site's donation Payment Links, url -> bundle id, from
+ * infra/stripe/stripe.toml. Loaded once per reconciliation run, not per charge: a donation
+ * charge carries no bundle id of its own when it predates that Payment Link's
+ * payment_intent_data.metadata being configured, so resolving it needs this url -> bundle id
+ * table matched against the account's live Payment Links (see resolveChargeBundleId).
+ *
+ * @param {string} [cwd]
+ * @returns {Map<string, string>} payment link url -> bundle id
+ */
+export function loadPaymentLinkBundleIdsFromRoot(cwd = process.cwd()) {
+  const filePath = path.join(cwd, "infra/stripe/stripe.toml");
+  const raw = fs.readFileSync(filePath, "utf-8");
+  const parsed = TOML.parse(raw);
+  return new Map((parsed.payment_link ?? []).map((entry) => [entry.url, entry.bundle_id]));
+}
+
+/**
  * Page through a Stripe list endpoint to exhaustion, following `has_more` with
  * `starting_after` rather than the SDK's async-iterator auto-pagination, so the paging
  * behaviour is visible and testable against a plain mocked `list()`.
@@ -121,21 +141,47 @@ export function sanitizeBalanceTransaction(tx) {
  * `metadata.bundleId`. A donation charge (from a Payment Link, one-off `mode: "payment"`)
  * carries the bundle id directly on `charge.metadata.bundleId`, which Stripe copies from the
  * Payment Link's `payment_intent_data.metadata` onto the PaymentIntent and onto the Charge at
- * creation, so that is the fallback.
+ * creation, so that is the next fallback.
+ *
+ * A donation charge from before the Payment Link's payment_intent_data.metadata was
+ * configured carries neither: metadata is a one-time snapshot at charge creation, and
+ * updating the Payment Link's config afterwards does not add it retroactively. The last
+ * fallback resolves that case through the Checkout Session the charge's payment intent
+ * belongs to: the session's `payment_link` id, matched against the account's live Payment
+ * Links to find the one whose url infra/stripe/stripe.toml declares for a bundle.
  *
  * @param {object} charge
  * @param {Map<string, string>} invoiceToSubscription - invoice id -> subscription id
  * @param {Map<string, string>} subscriptionBundleIds - subscription id -> bundle id
+ * @param {Map<string, string>} [paymentIntentToPaymentLinkId] - payment intent id -> payment link id
+ * @param {Map<string, string>} [paymentLinkIdToBundleId] - payment link id -> bundle id
  * @returns {string|null}
  */
-export function resolveChargeBundleId(charge, invoiceToSubscription, subscriptionBundleIds) {
+export function resolveChargeBundleId(
+  charge,
+  invoiceToSubscription,
+  subscriptionBundleIds,
+  paymentIntentToPaymentLinkId = new Map(),
+  paymentLinkIdToBundleId = new Map(),
+) {
   const invoiceId = resolveId(charge.invoice);
   const subscriptionId = invoiceId ? invoiceToSubscription.get(invoiceId) : undefined;
   const subscriptionBundleId = subscriptionId ? subscriptionBundleIds.get(subscriptionId) : undefined;
-  return subscriptionBundleId ?? charge.metadata?.bundleId ?? null;
+  if (subscriptionBundleId) return subscriptionBundleId;
+  if (charge.metadata?.bundleId) return charge.metadata.bundleId;
+
+  const paymentIntentId = resolveId(charge.payment_intent);
+  const paymentLinkId = paymentIntentId ? paymentIntentToPaymentLinkId.get(paymentIntentId) : undefined;
+  return (paymentLinkId ? paymentLinkIdToBundleId.get(paymentLinkId) : undefined) ?? null;
 }
 
-export function sanitizeCharge(charge, invoiceToSubscription = new Map(), subscriptionBundleIds = new Map()) {
+export function sanitizeCharge(
+  charge,
+  invoiceToSubscription = new Map(),
+  subscriptionBundleIds = new Map(),
+  paymentIntentToPaymentLinkId = new Map(),
+  paymentLinkIdToBundleId = new Map(),
+) {
   return {
     id: charge.id,
     amount: charge.amount,
@@ -148,7 +194,13 @@ export function sanitizeCharge(charge, invoiceToSubscription = new Map(), subscr
     failure_code: charge.failure_code ?? null,
     customer: hashCustomerId(charge.customer),
     invoice: resolveId(charge.invoice),
-    bundle_id: resolveChargeBundleId(charge, invoiceToSubscription, subscriptionBundleIds),
+    bundle_id: resolveChargeBundleId(
+      charge,
+      invoiceToSubscription,
+      subscriptionBundleIds,
+      paymentIntentToPaymentLinkId,
+      paymentLinkIdToBundleId,
+    ),
   };
 }
 
@@ -236,6 +288,25 @@ export async function handler(event = {}) {
   const subscriptions = rawSubscriptions.map(sanitizeSubscription);
   const subscriptionBundleIds = new Map(rawSubscriptions.map((s) => [s.id, s.metadata?.bundleId ?? null]));
 
+  // A donation charge from before its Payment Link's payment_intent_data.metadata was
+  // configured carries no bundle metadata snapshot. Resolving it needs the account's live
+  // Payment Links, matched by url against infra/stripe/stripe.toml, plus the day's Checkout
+  // Sessions, which is where a Charge's payment_link actually lives (the Charge and
+  // PaymentIntent objects do not carry it).
+  const paymentLinkUrlToBundleId = loadPaymentLinkBundleIdsFromRoot();
+  const livePaymentLinks = await listAllPages((params) => stripe.paymentLinks.list(params), {});
+  const paymentLinkIdToBundleId = new Map(
+    livePaymentLinks.map((link) => [link.id, paymentLinkUrlToBundleId.get(link.url)]).filter(([, bundleId]) => bundleId != null),
+  );
+  const rawCheckoutSessions = await listAllPages((params) => stripe.checkout.sessions.list(params), {
+    created: { gte, lt },
+  });
+  const paymentIntentToPaymentLinkId = new Map(
+    rawCheckoutSessions
+      .filter((session) => session.payment_intent && session.payment_link)
+      .map((session) => [resolveId(session.payment_intent), resolveId(session.payment_link)]),
+  );
+
   // expand data.invoice: a subscription-mode checkout carries no bundle metadata on the charge
   // itself (Stripe refuses payment_intent_data in that mode), so the charge's invoice is the
   // only way to reach the subscription that does carry it.
@@ -248,7 +319,9 @@ export async function handler(event = {}) {
       .filter((charge) => charge.invoice && typeof charge.invoice === "object")
       .map((charge) => [charge.invoice.id, resolveId(charge.invoice.subscription)]),
   );
-  const charges = rawCharges.map((charge) => sanitizeCharge(charge, invoiceToSubscription, subscriptionBundleIds));
+  const charges = rawCharges.map((charge) =>
+    sanitizeCharge(charge, invoiceToSubscription, subscriptionBundleIds, paymentIntentToPaymentLinkId, paymentLinkIdToBundleId),
+  );
 
   const s3Client = getS3Client();
   const keys = {

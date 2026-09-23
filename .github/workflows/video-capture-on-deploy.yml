@@ -4,7 +4,10 @@
 # Re-records any product demo video whose pages a prod deploy touched, so a video never sits
 # more than one deploy behind the page it shows. Runs after deploy.yml finishes on main, works
 # out what changed since the last successful deploy, and dispatches video-capture.yml for every
-# scene script (videos/*.json) whose declared "pages" the diff touches.
+# scene script (videos/*.json) whose declared "pages" the diff touches, videos/publish.json
+# marks "publish": true, and no video-capture.yml run in the last 24 hours already recorded.
+# Those last two only gate the automatic deploy trigger: a workflow_dispatch run (a manual
+# re-run or a check of a specific range) records every page-touched scene, unfiltered.
 #
 # The workflow_run event carries only the triggering run's head_sha, not what it deployed
 # before, so the base of the diff is the newest earlier successful deploy.yml run on main with a
@@ -128,12 +131,54 @@ jobs:
             echo "VIDEO_SCRIPTS_EOF"
           } | tee -a "$GITHUB_OUTPUT" > /dev/null
 
-      - name: Record each touched script in turn
+      - name: Filter to scenes due a recording
+        id: due
         if: ${{ steps.scripts.outputs.names != '' }}
         env:
           GH_TOKEN: ${{ github.token }}
           REPO: ${{ github.repository }}
-          SCRIPTS: ${{ steps.scripts.outputs.names }}
+          EVENT_NAME: ${{ github.event_name }}
+          NAMES: ${{ steps.scripts.outputs.names }}
+        run: |
+          set -euo pipefail
+          if [ "$EVENT_NAME" = "workflow_dispatch" ]; then
+            {
+              echo "names<<VIDEO_DUE_EOF"
+              echo "$NAMES"
+              echo "VIDEO_DUE_EOF"
+            } | tee -a "$GITHUB_OUTPUT" > /dev/null
+            exit 0
+          fi
+
+          # video-capture.yml is the workflow that actually records and uploads each scene (as
+          # "video-<script>-<environment-name>"); this workflow only dispatches it, so its own
+          # runs never carry an artifact to check.
+          SINCE=$(date -u -d '24 hours ago' +%FT%TZ)
+          RUN_IDS=$(gh run list --repo "$REPO" --workflow video-capture.yml --created ">=${SINCE}" --json databaseId --jq '.[].databaseId')
+          : > /tmp/video-recorded-artifacts.txt
+          for RUN_ID in $RUN_IDS; do
+            gh api "repos/${REPO}/actions/runs/${RUN_ID}/artifacts" --jq '.artifacts[].name' >> /tmp/video-recorded-artifacts.txt
+          done
+
+          DUE=$(echo "$NAMES" | node scripts/video-scenes-to-record.mjs --publish videos/publish.json --recorded /tmp/video-recorded-artifacts.txt)
+          if [ -z "$DUE" ]; then
+            echo "No touched scene is due a recording (not in videos/publish.json with publish: true, or already recorded in the last 24 hours); nothing to record."
+          else
+            echo "Scenes due a recording:"
+            echo "$DUE"
+          fi
+          {
+            echo "names<<VIDEO_DUE_EOF"
+            echo "$DUE"
+            echo "VIDEO_DUE_EOF"
+          } | tee -a "$GITHUB_OUTPUT" > /dev/null
+
+      - name: Record each touched script in turn
+        if: ${{ steps.due.outputs.names != '' }}
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REPO: ${{ github.repository }}
+          SCRIPTS: ${{ steps.due.outputs.names }}
         run: |
           set -euo pipefail
           echo "$SCRIPTS" | while IFS= read -r SCRIPT; do

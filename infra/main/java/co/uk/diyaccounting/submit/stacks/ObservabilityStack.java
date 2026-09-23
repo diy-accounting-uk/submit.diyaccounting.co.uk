@@ -688,6 +688,63 @@ public class ObservabilityStack extends Stack {
                         .height(6)
                         .build()));
 
+        // Row 1c: the gateway site's own RUM p75 web vitals, read cross-account and
+        // cross-region through the OAM sink ObservabilityUE1Stack creates in us-east-1 (the
+        // gateway RUM app monitor's home Region). Empty until the gateway account links to
+        // that sink.
+        String gatewayAccountId = "283165661847"; // www.diyaccounting.co.uk's AWS account
+        String gatewayRumAppName = "prod".equals(props.envName()) ? "gateway-web" : "ci-gateway-web";
+
+        Metric gatewayLcpP75 = Metric.Builder.create()
+                .namespace("AWS/RUM")
+                .metricName("WebVitalsLargestContentfulPaint")
+                .dimensionsMap(Map.of("application_name", gatewayRumAppName))
+                .account(gatewayAccountId)
+                .region("us-east-1")
+                .statistic("p75")
+                .period(Duration.minutes(5))
+                .build();
+
+        Metric gatewayInpP75 = Metric.Builder.create()
+                .namespace("AWS/RUM")
+                .metricName("WebVitalsInteractionToNextPaint")
+                .dimensionsMap(Map.of("application_name", gatewayRumAppName))
+                .account(gatewayAccountId)
+                .region("us-east-1")
+                .statistic("p75")
+                .period(Duration.minutes(5))
+                .build();
+
+        Metric gatewayClsP75 = Metric.Builder.create()
+                .namespace("AWS/RUM")
+                .metricName("WebVitalsCumulativeLayoutShift")
+                .dimensionsMap(Map.of("application_name", gatewayRumAppName))
+                .account(gatewayAccountId)
+                .region("us-east-1")
+                .statistic("p75")
+                .period(Duration.minutes(5))
+                .build();
+
+        dashboardRows.add(List.of(
+                GraphWidget.Builder.create()
+                        .title("Gateway RUM p75 LCP (ms)")
+                        .left(List.of(gatewayLcpP75))
+                        .width(8)
+                        .height(6)
+                        .build(),
+                GraphWidget.Builder.create()
+                        .title("Gateway RUM p75 INP (ms)")
+                        .left(List.of(gatewayInpP75))
+                        .width(8)
+                        .height(6)
+                        .build(),
+                GraphWidget.Builder.create()
+                        .title("Gateway RUM p75 CLS")
+                        .left(List.of(gatewayClsP75))
+                        .width(8)
+                        .height(6)
+                        .build()));
+
         // Row 2: GitHub Probe Tests
         // GitHub probe test metrics (sent from probe-test.yml), one series per suite
         dashboardRows.add(List.of(GraphWidget.Builder.create()

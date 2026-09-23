@@ -97,7 +97,7 @@ Run the agreed removals in category order and report each command's result.
   each run to finish (`gh run watch <id>` in the foreground, or a sleep loop inside one Bash call)
   and read its conclusion; a red run is reported with its failed step, never retried blind.
 - **Branches.** `git branch -D <local…>` and `git push origin --delete <remote…>`.
-- **Worktrees.** `git worktree remove --force <path>` for each, then `git worktree prune`.
+- **Worktrees.** `git worktree remove --force --force <path>` for each (doubled flag overrides locks), joined with `;`, then `git worktree prune`.
 - **Logs and artefacts.** `rm -f` the files and `rm -rf` the directories named in the table.
 - **Build output.** `rm -rf target cdk.out cdk-environment/cdk.out web/public/submit.bundle.js
   node_modules`, then `npm ci` in the foreground with a 600 s timeout, then `npm run bundle` so

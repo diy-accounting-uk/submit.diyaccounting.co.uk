@@ -208,9 +208,9 @@ public class OperatorSnapshotPublish extends Construct {
         // ============================================================================
         this.errorsAlarm = Alarm.Builder.create(this, prefix + "-OperatorSnapshotPublish-ErrorsAlarm")
                 .alarmName(functionName + "-errors")
-                .alarmDescription("Operator snapshot publish errored at least once in 24 hours")
+                .alarmDescription("Operator snapshot publish errored at least once in an hour")
                 .metric(this.snapshotPublishLambda.metricErrors(
-                        MetricOptions.builder().period(Duration.hours(24)).build()))
+                        MetricOptions.builder().period(Duration.hours(1)).build()))
                 .threshold(1)
                 .evaluationPeriods(1)
                 .comparisonOperator(ComparisonOperator.GREATER_THAN_OR_EQUAL_TO_THRESHOLD)

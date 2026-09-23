@@ -12,7 +12,7 @@ Purpose: Enforce the project's high standards for code quality, maintainability,
 ## Scope and Inputs
 
 - Target: The entire repository (Node.js and Java).
-- Key documents: `REPORT_REPOSITORY_CONTENTS.md`, project guidelines in Junie instructions.
+- Key documents: `REPORT_REPOSITORY_CONTENTS.md`, `CLAUDE.md`.
 - Focus: Refactoring, bug fixing, and coding standards.
 
 ## Core Responsibilities

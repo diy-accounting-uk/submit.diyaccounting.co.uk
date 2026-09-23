@@ -9,9 +9,8 @@
 
 This file contains guidelines for **GitHub Copilot** code review agent. The repository also has guidelines for other AI coding assistants:
 - `CLAUDE.md` + `.claude/rules/` - Guidelines for Claude Code (emphasis on autonomous task execution & implementation)
-- `.junie/guidelines.md` - Guidelines for Junie (custom agent, emphasis on testing & iteration)
 
-Each assistant has complementary strengths - GitHub Copilot is optimized for code review, analysis, and providing thoughtful feedback.
+GitHub Copilot is optimized for code review, analysis, and providing thoughtful feedback.
 
 ## Purpose
 
@@ -44,9 +43,6 @@ As a code review agent, prioritize **static analysis and code comprehension** ov
 4. **Check references** against documented scripts and configuration
 5. **Suggest tests** when appropriate, but let developers/CI run them
 
-**Note**: The `.junie/guidelines.md` file describes behavior for the Junie custom agent, which emphasizes continuous
-testing and iteration. As a code review agent, your role is complementary - you provide thoughtful analysis while Junie
-handles execution and testing.
 
 ### Analysis Workflow
 

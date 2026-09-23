@@ -817,7 +817,7 @@ jobs:
           row: ${{ steps.probe-row.outputs.row }}
 
   upload-web-test-results:
-    if: ${{ !cancelled() && needs.params.outputs.generate-test-reports == 'true' }}
+    if: ${{ !cancelled() && needs.params.outputs.generate-test-reports == 'true' && needs.behaviour-test.outputs.superseded != 'true' }}
     name: 'upload web test results ${{ matrix.suite }}'
     needs:
       - params
