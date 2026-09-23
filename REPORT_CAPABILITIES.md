@@ -393,6 +393,8 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
     - [MCP-11](#mcp-11-seed-a-book-from-a-workbook-set) Seed a book from a workbook set: use when a finished trading year's Company package workbooks must seed a new book.toml for the following year.
     - [MCP-12](#mcp-12-read-invoices-from-the-local-mail-index) Read invoices from the local mail index: use when supplier invoice emails must become staged diya-gl purchases lines without a live Gmail call.
     - [MCP-13](#mcp-13-import-stripe-transaction-and-payout-lines) Import Stripe transaction and payout lines: use when staged Stripe balance transactions and payouts must become validated diya-gl sales, purchases and bank lines.
+    - [MCP-16](#mcp-16-parse-paypal-statements-into-diya-gl-lines) Parse PayPal statements into diya-gl lines: use when PayPal activity must become book lines from the monthly statement PDFs, or a PayPal month must be reconciled.
+    - [MCP-17](#mcp-17-build-and-hand-over-the-companys-own-book) Build and hand over the company's own book: use when the operator asks for DIY Accounting Limited's accounts, P&L or book, or wants Cowork to read the finances.
   - [Documentation and disclaimer](#documentation-and-disclaimer-mcp)
     - [MCP-14](#mcp-14-document-the-submission-mcps-plan-and-tool-reference) Document the submission MCP's plan and tool reference: use when starting work on the submission MCP: what is built, planned, and how to run it.
     - [MCP-15](#mcp-15-disclaim-an-mcp-server-on-the-marketing-site) Disclaim an MCP server on the marketing site: use when checking or editing the public claim that DIY Accounting Submit has no MCP server.
@@ -4100,7 +4102,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - [Server and CLI](#server-and-cli-mcp): [MCP-01](#mcp-01-expose-the-submission-mcp-server-and-tools) Expose the submission MCP server and tools · [MCP-02](#mcp-02-authenticate-mcp-sessions-via-cognito) Authenticate MCP sessions via Cognito
 - [Book and derivation tools](#book-and-derivation-tools-mcp): [MCP-03](#mcp-03-load-and-save-diya-gl-books-via-mcp) Load and save diya-gl books via MCP · [MCP-04](#mcp-04-derive-micro-entity-accounts-figures-for-companies-house-filing) Derive micro-entity accounts figures for Companies House filing · [MCP-05](#mcp-05-derive-vat-figures-via-mcp-tools) Derive VAT figures via MCP tools · [MCP-06](#mcp-06-derive-itsa-quarterly-and-annual-submission-figures) Derive ITSA quarterly and annual submission figures
 - [Filing and practice tools](#filing-and-practice-tools-mcp): [MCP-07](#mcp-07-file-vat-returns-and-accounts-via-api) File VAT returns and accounts via API · [MCP-08](#mcp-08-manage-practice-clients-and-hmrc-agent-authorisation) Manage practice clients and HMRC agent authorisation · [MCP-09](#mcp-09-run-a-client-scoped-tool-across-every-practice-client) Run a client-scoped tool across every practice client
-- [Finance data import](#finance-data-import-mcp): [MCP-10](#mcp-10-import-a-natwest-bank-statement-into-diya-gl-lines) Import a NatWest bank statement into diya-gl lines · [MCP-11](#mcp-11-seed-a-book-from-a-workbook-set) Seed a book from a workbook set · [MCP-12](#mcp-12-read-invoices-from-the-local-mail-index) Read invoices from the local mail index · [MCP-13](#mcp-13-import-stripe-transaction-and-payout-lines) Import Stripe transaction and payout lines
+- [Finance data import](#finance-data-import-mcp): [MCP-10](#mcp-10-import-a-natwest-bank-statement-into-diya-gl-lines) Import a NatWest bank statement into diya-gl lines · [MCP-11](#mcp-11-seed-a-book-from-a-workbook-set) Seed a book from a workbook set · [MCP-12](#mcp-12-read-invoices-from-the-local-mail-index) Read invoices from the local mail index · [MCP-13](#mcp-13-import-stripe-transaction-and-payout-lines) Import Stripe transaction and payout lines · [MCP-16](#mcp-16-parse-paypal-statements-into-diya-gl-lines) Parse PayPal statements into diya-gl lines · [MCP-17](#mcp-17-build-and-hand-over-the-companys-own-book) Build and hand over the company's own book
 - [Documentation and disclaimer](#documentation-and-disclaimer-mcp): [MCP-14](#mcp-14-document-the-submission-mcps-plan-and-tool-reference) Document the submission MCP's plan and tool reference · [MCP-15](#mcp-15-disclaim-an-mcp-server-on-the-marketing-site) Disclaim an MCP server on the marketing site
 <!-- /generated:area MCP -->
 
@@ -4225,6 +4227,8 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - [MCP-11](#mcp-11-seed-a-book-from-a-workbook-set) Seed a book from a workbook set
 - [MCP-12](#mcp-12-read-invoices-from-the-local-mail-index) Read invoices from the local mail index
 - [MCP-13](#mcp-13-import-stripe-transaction-and-payout-lines) Import Stripe transaction and payout lines
+- [MCP-16](#mcp-16-parse-paypal-statements-into-diya-gl-lines) Parse PayPal statements into diya-gl lines
+- [MCP-17](#mcp-17-build-and-hand-over-the-companys-own-book) Build and hand over the company's own book
 <!-- /generated:group finance-data-import-mcp -->
 
 #### MCP-10 Import a NatWest bank statement into diya-gl lines
@@ -4266,6 +4270,26 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - **Files:** mcp/lib/finance/stripe-lines.js, mcp/test/stripe-lines.test.js
 - **Keywords:** stripe import, balance transactions, payouts, diya-gl lines, reconcile stripe, sales fee split
 - **Related:** MCP-10, MCP-12
+
+#### MCP-16 Parse PayPal statements into diya-gl lines
+
+- **Use when:** PayPal activity must become book lines from the monthly statement PDFs, or a PayPal month must be reconciled.
+- **Does:** paypalLinesFromStatementPdf renders transactions.PDF with pdftotext and posts settled receipts and payments, gross and fee apart. chooseReleaseRows picks hold releases that sum to the statement's Releases figure. reconcilePaypalMonth checks a month against statement.PDF.
+- **Run:** `import { paypalLinesFromStatementPdf, reconcilePaypalMonth } from "mcp/lib/finance/paypal-statement-lines.js"`
+- **Entry:** `mcp/lib/finance/paypal-statement-lines.js:paypalLinesFromStatementPdf`; `mcp/lib/finance/paypal-statement-lines.js:reconcilePaypalMonth`
+- **Files:** mcp/lib/finance/paypal-statement-lines.js, mcp/test/paypal-statement-lines.test.js, mcp/test/fixtures/finance/paypal-statement.txt
+- **Keywords:** paypal, statement, pdf, pdftotext, holds, releases, reconcile, cash account
+- **Related:** MCP-13, MCP-17
+
+#### MCP-17 Build and hand over the company's own book
+
+- **Use when:** the operator asks for DIY Accounting Limited's accounts, P&L or book, or wants Cowork to read the finances.
+- **Does:** The company-book skill builds the book from bank, Stripe, PayPal and supplier sources with the finance parsers. It writes VERIFICATION.md and a zip the spreadsheets MCP loads. It tells Cowork through INBOX.md how to read it with diya-gl-mcp.
+- **Run:** `/company-book`
+- **Entry:** `.claude/skills/company-book/SKILL.md`
+- **Files:** .claude/skills/company-book/SKILL.md, mcp/lib/finance/book-from-workbook.js, mcp/lib/finance/bank-lines.js, mcp/lib/finance/stripe-lines.js, mcp/lib/finance/paypal-statement-lines.js, mcp/lib/finance/mail-invoices.js
+- **Keywords:** company accounts, book, bookkeeping, p&l, verification, cowork, diya-gl-mcp, spreadsheets mcp, staging
+- **Related:** MCP-13, MCP-16
 
 ### Documentation and disclaimer (MCP)
 
@@ -5020,6 +5044,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - board do-next watch auto-merge: [DEV-30](#dev-30-run-the-delivery-cycle-unattended)
 - board headings: [DEV-21](#dev-21-verify-module-wiring-and-repository-shape)
 - board-ci: [DEV-25](#dev-25-maintain-the-specialist-agent-prompt-library)
+- book: [MCP-17](#mcp-17-build-and-hand-over-the-companys-own-book)
 - book from workbook: [MCP-11](#mcp-11-seed-a-book-from-a-workbook-set)
 - book keys: [BILL-23](#bill-23-store-diya-gl-books-in-s3)
 - book ownership: [BILL-15](#bill-15-move-a-book-to-a-client)
@@ -5027,6 +5052,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - book version: [BILL-20](#bill-20-fetch-a-versioned-diya-gl-book)
 - book-move lambda: [BILL-39](#bill-39-cdk-diya-gl-stack)
 - book.toml: [MCP-03](#mcp-03-load-and-save-diya-gl-books-via-mcp)
+- bookkeeping: [MCP-17](#mcp-17-build-and-hand-over-the-companys-own-book)
 - bootstrap account: [OPS-103](#ops-103-bootstrap-a-new-aws-account-for-cdk)
 - box 3: [HMRC-07](#hmrc-07-build-and-validate-9-box-vat-return-data)
 - box 5: [HMRC-07](#hmrc-07-build-and-validate-9-box-vat-return-data)
@@ -5078,6 +5104,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - capped bundle: [BILL-35](#bill-35-load-and-query-the-productactivity-catalogue)
 - caption overlay: [OPS-89](#ops-89-overlay-pointer-and-caption-cues-on-video)
 - captions: [OPS-90](#ops-90-encode-captured-video-frames-and-captions), [OPS-92](#ops-92-redact-secrets-from-video-artefacts), [OPS-94](#ops-94-play-demo-videos-on-the-public-site)
+- cash account: [MCP-16](#mcp-16-parse-paypal-statements-into-diya-gl-lines)
 - catalogue: [BILL-35](#bill-35-load-and-query-the-productactivity-catalogue)
 - catalogue sync: [BILL-30](#bill-30-sync-the-stripe-productprice-catalogue)
 - cdk: [CH-14](#ch-14-provision-the-companies-house-cdk-stack), [BILL-36](#bill-36-cdk-account-stack), [BILL-37](#bill-37-cdk-billing-app-stack), [BILL-38](#bill-38-cdk-billing-webhook-stack), [BILL-39](#bill-39-cdk-diya-gl-stack)
@@ -5190,6 +5217,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - commits: [DATA-07](#data-07-pull-github-operator-effort-data)
 - companies house: [CH-01](#ch-01-exchange-a-companies-house-oauth-token), [CH-02](#ch-02-verify-the-companies-house-oauth-app-configuration), [CH-03](#ch-03-search-the-companies-house-register), [CH-04](#ch-04-fetch-a-company-profile), [CH-05](#ch-05-file-a-change-of-registered-office-address), [CH-06](#ch-06-file-a-change-of-registered-email-address), [CH-07](#ch-07-preview-micro-entity-accounts-before-filing), [CH-08](#ch-08-file-micro-entity-accounts-to-companies-house), [CH-09](#ch-09-query-and-submit-document-transactions), [CH-10](#ch-10-fetch-http-with-a-timeout), [CH-12](#ch-12-generate-synthetic-test-companies), [CH-13](#ch-13-map-the-frc-ixbrl-taxonomy-and-validate-accounts), [CH-14](#ch-14-provision-the-companies-house-cdk-stack), [OPS-35](#ops-35-verify-third-party-console-configuration-against-declared-state), [MCP-04](#mcp-04-derive-micro-entity-accounts-figures-for-companies-house-filing), [DEV-04](#dev-04-simulate-companies-house-identity-and-filing)
 - companies house accounts: [MCP-07](#mcp-07-file-vat-returns-and-accounts-via-api)
+- company accounts: [MCP-17](#mcp-17-build-and-hand-over-the-companys-own-book)
 - company background page: [SITE-11](#site-11-promote-sibling-products-and-partners)
 - company number: [CH-04](#ch-04-fetch-a-company-profile)
 - company package: [MCP-11](#mcp-11-seed-a-book-from-a-workbook-set)
@@ -5250,6 +5278,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - countactiveallocations: [BILL-05](#bill-05-reconcile-bundle-capacity-counters)
 - country change: [SITE-02](#site-02-verify-jwts-at-the-api-gateway)
 - coverage thresholds: [DEV-23](#dev-23-configure-the-test-and-lint-toolchains)
+- cowork: [MCP-17](#mcp-17-build-and-hand-over-the-companys-own-book)
 - cpc: [DATA-34](#data-34-report-google-ads-campaign-performance)
 - crawler: [SITE-04](#site-04-track-visits-via-session-beacon)
 - create or replace view: [DATA-10](#data-10-create-or-replace-athena-business-views)
@@ -5370,6 +5399,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - diya-gl bank lines: [MCP-10](#mcp-10-import-a-natwest-bank-statement-into-diya-gl-lines)
 - diya-gl lines: [DATA-51](#data-51-turn-staged-stripe-activity-into-diya-gl-lines), [MCP-13](#mcp-13-import-stripe-transaction-and-payout-lines)
 - diya-gl stack: [BILL-39](#bill-39-cdk-diya-gl-stack)
+- diya-gl-mcp: [MCP-17](#mcp-17-build-and-hand-over-the-companys-own-book)
 - diya-submit-mcp: [MCP-01](#mcp-01-expose-the-submission-mcp-server-and-tools)
 - diyaccounting.co.uk: [OPS-133](#ops-133-serve-the-root-domain-holding-page)
 - do-next: [DEV-28](#dev-28-work-nextmd-as-dispatched-sub-agents)
@@ -5664,6 +5694,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - holding page certificate: [OPS-49](#ops-49-request-and-renew-the-holding-page-certificate)
 - holding page domain: [OPS-49](#ops-49-request-and-renew-the-holding-page-certificate)
 - holding page stack: [OPS-116](#ops-116-provision-the-holding-page-stack)
+- holds: [MCP-16](#mcp-16-parse-paypal-statements-into-diya-gl-lines)
 - homepage cta: [SITE-03](#site-03-capture-feedback-interest)
 - hosted ui: [SITE-01](#site-01-sign-customers-in-via-cognito), [DEV-16](#dev-16-manage-the-durable-cognito-test-user-lifecycle)
 - hourly: [BILL-05](#bill-05-reconcile-bundle-capacity-counters)
@@ -5989,6 +6020,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - overlay: [OPS-89](#ops-89-overlay-pointer-and-caption-cues-on-video)
 - overloaded batch: [DEV-35](#dev-35-cool-down-an-overloaded-batch)
 - ownership check: [BILL-18](#bill-18-delete-a-diya-gl-book)
+- p&l: [MCP-17](#mcp-17-build-and-hand-over-the-companys-own-book)
 - pa11y: [DATA-14](#data-14-catalogue-compliance-findings-for-the-dashboard), [DEV-14](#dev-14-start-the-proxy-and-simulator-local-dev-environments)
 - package manager: [OPS-36](#ops-36-configure-dependabot-dependency-updates)
 - page chrome: [SITE-14](#site-14-render-page-chrome-and-widgets)
@@ -6011,8 +6043,10 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - payments: [DEV-08](#dev-08-simulate-hmrc-vat-mtd-api)
 - payout schedule: [BILL-31](#bill-31-configure-stripe-account-policies)
 - payouts: [MCP-13](#mcp-13-import-stripe-transaction-and-payout-lines)
-- paypal: [BILL-29](#bill-29-assert-the-paypal-donate-button-configuration), [OPS-35](#ops-35-verify-third-party-console-configuration-against-declared-state)
+- paypal: [BILL-29](#bill-29-assert-the-paypal-donate-button-configuration), [OPS-35](#ops-35-verify-third-party-console-configuration-against-declared-state), [MCP-16](#mcp-16-parse-paypal-statements-into-diya-gl-lines)
 - paypal transaction search: [DATA-48](#data-48-stage-paypal-transactions-for-reconciliation)
+- pdf: [MCP-16](#mcp-16-parse-paypal-statements-into-diya-gl-lines)
+- pdftotext: [MCP-16](#mcp-16-parse-paypal-statements-into-diya-gl-lines)
 - penalties: [DEV-08](#dev-08-simulate-hmrc-vat-mtd-api)
 - penalty points: [HMRC-06](#hmrc-06-retrieve-vat-penalties)
 - pending: [BILL-14](#bill-14-cancel-a-pending-client-authorisation-invite)
@@ -6155,7 +6189,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - receipts: [DATA-04](#data-04-stream-dynamodb-table-changes-into-the-lake)
 - receipts page: [HMRC-22](#hmrc-22-store-and-retrieve-hmrc-submission-receipts)
 - recognition email: [HMRC-38](#hmrc-38-check-readiness-for-the-itsa-recognition-email)
-- reconcile: [BILL-05](#bill-05-reconcile-bundle-capacity-counters), [MCP-05](#mcp-05-derive-vat-figures-via-mcp-tools)
+- reconcile: [BILL-05](#bill-05-reconcile-bundle-capacity-counters), [MCP-05](#mcp-05-derive-vat-figures-via-mcp-tools), [MCP-16](#mcp-16-parse-paypal-statements-into-diya-gl-lines)
 - reconcile stripe: [MCP-13](#mcp-13-import-stripe-transaction-and-payout-lines)
 - reconciliation: [DATA-48](#data-48-stage-paypal-transactions-for-reconciliation), [MCP-10](#mcp-10-import-a-natwest-bank-statement-into-diya-gl-lines)
 - recording: [OPS-88](#ops-88-orchestrate-demo-video-recording-journeys)
@@ -6180,7 +6214,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - reinvestment ceiling: [DATA-36](#data-36-answer-google-ads-questions-from-live-data)
 - relationships endpoint: [BILL-13](#bill-13-check-a-clients-authorisation-status)
 - release slot: [OPS-10](#ops-10-claim-release-and-track-a-ci-deployment-slot)
-- releases: [OPS-85](#ops-85-obtain-and-use-github-app-api-tokens)
+- releases: [OPS-85](#ops-85-obtain-and-use-github-app-api-tokens), [MCP-16](#mcp-16-parse-paypal-statements-into-diya-gl-lines)
 - relief claims: [HMRC-17](#hmrc-17-manage-itsa-losses-and-claims)
 - remedy budget: [OPS-79](#ops-79-track-an-alarm-familys-daily-remedy-budget)
 - remedy row: [OPS-21](#ops-21-auto-close-resolved-alarm-issues), [OPS-22](#ops-22-verify-a-triage-draft-pr-stays-in-scope)
@@ -6372,6 +6406,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - spdx: [DEV-20](#dev-20-check-spdx-licence-headers)
 - specialist agent: [DEV-25](#dev-25-maintain-the-specialist-agent-prompt-library)
 - spreadsheets contract: [HMRC-08](#hmrc-08-parse-vat-returns-from-a-bulk-csv-file)
+- spreadsheets mcp: [MCP-17](#mcp-17-build-and-hand-over-the-companys-own-book)
 - spreadsheets product: [SITE-11](#site-11-promote-sibling-products-and-partners)
 - sqs: [OPS-87](#ops-87-process-sqs-message-batches-in-lambda-workers)
 - ssm parameter: [OPS-19](#ops-19-kill-switch-to-stop-unattended-agent-workflows), [OPS-77](#ops-77-silence-alarms-during-deployment-teardown)
@@ -6381,10 +6416,12 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - stack output: [OPS-136](#ops-136-retrieve-cloudformation-stack-outputs)
 - stack wiring: [OPS-123](#ops-123-wire-cdk-application-entrypoints-per-account)
 - stackname: [OPS-08](#ops-08-deploy-a-single-cdk-stack-on-demand)
+- staging: [MCP-17](#mcp-17-build-and-hand-over-the-companys-own-book)
 - staging directory: [DATA-50](#data-50-resolve-finance-staging-directory-paths)
 - stale deployment sweep: [DEV-34](#dev-34-clean-up-stale-deployments-and-branches)
 - standalone cdk app: [DATA-17](#data-17-export-aws-billing-data-in-focus-format)
 - standalone harness: [HMRC-35](#hmrc-35-spike-test-the-itsa-sandbox-oauth-and-business-details-flow)
+- statement: [MCP-16](#mcp-16-parse-paypal-statements-into-diya-gl-lines)
 - static analysis: [OPS-30](#ops-30-run-codeql-security-scanning)
 - static pages: [SITE-10](#site-10-serve-general-site-pages)
 - status clear: [HMRC-02](#hmrc-02-retrieve-a-submitted-vat-return)
@@ -6598,6 +6635,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - vatreturncsverror: [HMRC-08](#hmrc-08-parse-vat-returns-from-a-bulk-csv-file)
 - vendor ip: [HMRC-25](#hmrc-25-build-hmrc-fraud-prevention-headers)
 - vendored library: [SITE-19](#site-19-generate-qr-codes)
+- verification: [MCP-17](#mcp-17-build-and-hand-over-the-companys-own-book)
 - verification field: [OPS-29](#ops-29-verify-commit-signatures-on-pull-requests)
 - verify ingestion jobs: [DATA-22](#data-22-orchestrate-the-nightly-ingestion-workflow)
 - verify pipeline: [DATA-22](#data-22-orchestrate-the-nightly-ingestion-workflow)

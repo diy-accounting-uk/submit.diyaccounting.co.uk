@@ -114,7 +114,7 @@ and stop. One branch is driven green at a time. Lifted only by the operator in t
 ## Human-driven
 
 - [ ] **OF2d. Copy DIYA's book into Drive.** The book for 1 March to 31 August 2026 is in
-  `../staging/2026-2027/book/` (`book.toml`, `lines.jsonl` with 488 lines, `VERIFICATION.md`):
+  `../staging/2026-2027/book/` (`book.toml`, `lines.jsonl` with 488 lines, `VERIFICATION.md`, and `book-diya-gl.zip` for the spreadsheets MCP):
   bank balances match every statement, Stripe and PayPal reconcile with no residual, validation
   passes, and the review items (the £200 Polycode creditor payment, Hiscox, Linktree) are
   resolved in `VERIFICATION.md`. Copy the three files into Drive under
