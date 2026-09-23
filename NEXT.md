@@ -78,7 +78,11 @@ and stop. One branch is driven green at a time. Lifted only by the operator in t
   probes passed, and `diyaGlSubscriptionBehaviour` failed with `book-limit-reached` (job
   106980081292), the defect PR #333's third commit fixes and this branch does not carry. The
   branch merged `main` as ec4b22f5 (clean; lint, 3894 tests and Spotless green on the merged tree)
-  and pushed it; its push deploy is the head's proof. The suite's ci and prod variants need a sandbox agent authorisation the simulator
+  and pushed it. Its `test` run 35831691533 failed the coverage gate this branch introduced (AS1):
+  functions 85.9% against the 86% threshold set from the pre-merge measurement, because `main`'s
+  merged code added uncovered functions. The fix (a threshold with headroom, or a test for the
+  uncovered functions, decided from the local coverage run) pushes once its push deploy
+  35831692141 has ended. The suite's ci and prod variants need a sandbox agent authorisation the simulator
   shortcut has no equivalent for, so they run only when one exists. **Source**: the rows named.
   **Owner**: Claude Code. **Model**: Sonnet and Haiku. **Size**: ~16 files.
 - [ ] **PU-7. Practice licence build.** PU-7a to PU-7l are on `main`. In flight on
