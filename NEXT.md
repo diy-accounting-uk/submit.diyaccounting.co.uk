@@ -17,11 +17,10 @@ Haiku; the lowest tier that fits). Anything touching code goes through a `claude
 PR; the operator merges.
 
 **Prod runs deployment prod-cdbc557**.
-**ci**: no set is standing; `ci-set1` (the last-known-good parameter's value) self-destructed at
-04:01 UTC and `ci-set2` at 03:05, so the ci apex has no target until the next green deploy (PR
-#333's merge deploy at wake). Every open pull request's deploy is red only on
-`diyaGlSubscriptionBehaviour`'s book limit, which PR #333 fixes. Open pull requests: #333
-(`claude/b79-developers`, head 3e7255af, green), #334 (`claude/b80-board`, head f4770e0c),
+**ci**: no set is standing (every set self-destructed by 04:01 UTC); `main`'s deploy 35821860017
+(PR #333's merge 50868030, 05:18 UTC) rebuilds one. The three open pull requests' deploys were
+red only on `diyaGlSubscriptionBehaviour`'s book limit, which `main` now fixes. Open pull
+requests: #334 (`claude/b80-board`, head f4770e0c),
 #335 (`claude/b81-board`, head 858c8cd3), #336 (`claude/b82-board`, head c450180d).
 
 The board runs in five sections, in this order: **in flight** (a branch, a pull request or a run
@@ -51,8 +50,8 @@ and stop. One branch is driven green at a time. Lifted only by the operator in t
   stacks on `ci-set1` because PR #333's dispatched redeploy, named for the same slot, ran on the
   set at the same time (a dispatch with an explicit slot name bypasses the claim); the rerun on `ci-set1` passed every stack and every
   probe but `diyaGlSubscriptionBehaviour`, which fails on the book limit PR #333's product fix
-  removes and this branch does not carry; after #333 merges, the branch takes `main` and
-  redeploys for its own green: B34j
+  removes and this branch does not carry; the branch takes `main` (50868030) and
+  redeploys for its own green once PR #334's deploy has ended: B34j
   (a9e2e920, the privacy notice's row for practice client filing, with a browser test) and PU-7e
   (e4302a96 and c450180d: `tokensGranted = "unlimited"` on `resident-pro`, exempt in
   enforcement, the webhook refresh and the bundle read, shown as unlimited on the usage page,
@@ -77,7 +76,7 @@ and stop. One branch is driven green at a time. Lifted only by the operator in t
   rerun claimed `ci-set2` at 23:05 UTC once PR #334's claim went stale: every stack and 12 of the 13
   probes passed, and `diyaGlSubscriptionBehaviour` failed with `book-limit-reached` (job
   106980081292), the defect PR #333's third commit fixes and this branch does not carry. The
-  branch takes `main` after #333 merges and redeploys for its own green; `ci-set2` is the ci LKG. The suite's ci and prod variants need a sandbox agent authorisation the simulator
+  branch takes `main` (50868030) and redeploys for its own green once PR #334's deploy has ended. The suite's ci and prod variants need a sandbox agent authorisation the simulator
   shortcut has no equivalent for, so they run only when one exists. **Source**: the rows named.
   **Owner**: Claude Code. **Model**: Sonnet and Haiku. **Size**: ~16 files.
 - [ ] **PU-7. Practice licence build.** PU-7a to PU-7l are on `main`. In flight on
@@ -93,33 +92,11 @@ and stop. One branch is driven green at a time. Lifted only by the operator in t
   head: the last deploy 35761188691 (9b633159) failed, and the two commits since touch no deploy
   path. Its dispatched deploy 35801175335 to `ci-set1` (00:14 UTC) passed every stack and every
   probe but `diyaGlSubscriptionBehaviour`, red with `book-limit-reached` (job 106996738920), the
-  defect PR #333 fixes and this branch does not carry; after #333 merges, the branch takes `main`
-  and redeploys for its own green. **Source**: the
+  defect `main` now fixes (PR #333). The branch merged `main` as 93279af1 (operator, 2026-09-23:
+  one conflict, the `isBookVisible` import); lint, `npm test` and Spotless run on the merged tree,
+  then one push and its deploy. **Source**: the
   rows named. **Owner**: Claude Code. **Model**: Sonnet and Haiku. **Size**: ~10 files plus the
   directives.
-
-- [ ] **B79. The developer archive leaves the repository, PR #333.** `_developers/archive`,
-  `backlog`, `design`, `aws-multi-account` and the dated reports (213 files) now live in the
-  private workspace tree `../developers/submit`, indexed as the corpus source `developers`; the
-  vendor API specs move to `reference/`; `_developers/` keeps `hmrc/` and the live runbooks.
-  Its ci deploy 35753852365 went red in `diyaGlSubscriptionBehaviour`: the durable test user
-  has reached the tier's book limit because runs that failed mid-way today left their books
-  behind; the fix (delete the user's leftover books before the PUT) was the branch's second commit e895c1d0, and the dispatched deploy 35766211386
-  (`ci-b79-probe`) still failed it with `Cleaned up 0 existing books`: the list route hides sandbox
-  books past their `expiresAt` while the PUT's limit counts every book prefix, so the durable
-  test user sits at the limit on books it cannot see. The fix is the branch's third commit 3e7255af: the PUT's
-  limit counts what the list shows (`isBookVisible` in `s3DiyaGlRepository.js`), because the
-  probe user's prefix held 20 sandbox books of which several had expired under the earlier
-  24-hour retention. Its deploy 35773445604 on `ci-set1` failed because the sweep destroyed
-  `ci-set1` underneath it (B30at); the dispatched redeploy 35775650817 to `ci-set1` passed every
-  stack and probe, the book-limit fix included, and the push-triggered deploy's rerun on `ci-set1` is green, and the PR is
-  mergeable and clean: it merges first when cool-down lifts. The same deploy failed three sign-in probes with
-  `redirect_mismatch`: only `ci-set1`, `ci-set2` and the apex are Cognito callback hosts, so a
-  deployment under another name cannot prove a signed-in probe; `ci-b79-probe` and
-  `ci-b80-probe` (PR #334's proof deploy 35767071938 failed the same way) self-destruct four
-  hours after creation. After the merge: repoint `NEXT.md` and `BACKLOG.md` on `main`, and
-  land AS15 and AS18, which touch the same files. The spreadsheets and www moves are merged (their PRs #133 and #32). **Source**: operator 2026-09-22. **Owner**: Claude
-  Code. **Model**: Sonnet. **Size**: 262 files.
 
 ## Machine-only
 
