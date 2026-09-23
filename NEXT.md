@@ -16,11 +16,11 @@ runs), and for Claude Code steps the **Model** a sub-agent should use (Fable > O
 Haiku; the lowest tier that fits). Anything touching code goes through a `claude/*` branch and
 PR; the operator merges.
 
-**Prod runs deployment prod-184afec**; `main`'s deploy 35860344955 of PR #339's merge (`d9cb6432`)
-is in progress and moves it on.
+**Prod runs deployment prod-d9cb643** (PR #339's merge deploy 35860344955); `main`'s dispatch
+35870127527 deploys PR #340's merge `cc46199e`.
 **ci**: `ci-set1` is last-known-good and the only ci set standing; `ci-set2` was swept.
-Pull requests open: diy-accounting-uk/www.diyaccounting.co.uk#33,
-diy-accounting-uk/spreadsheets.diyaccounting.co.uk#136.
+Pull requests open: diy-accounting-uk/www.diyaccounting.co.uk#33 (mergeable now: the sink admits
+the gateway account), diy-accounting-uk/spreadsheets.diyaccounting.co.uk#136.
 
 The board runs in five sections, in this order: **in flight** (a branch, a pull request or a run
 in motion, each named in the row), **machine-only**, **machine-ask**, **human-driven**,
@@ -47,24 +47,23 @@ Shared facts for the analytics rows (B52d, B52e, B52l, B52m): the prod Athena da
 
 ## In flight
 
-- [ ] **B83w. Wave b83 on `main`: the deploy.** PR #339 merged as `d9cb6432` with B30av, B30ay,
-  B30at, B30ax, B30au, AS1a, B84, B85, B72a, B52d, B52e, B52f3, B52g, B52h, B52k, B52n, B52o,
-  F2a, AS18 and the us-east-1 sink policy admitting the gateway account. `main`'s deploy
-  35860344955 is in progress. When it is green: (1) B30ay's proof, one dispatch
-  `gh workflow run deploy.yml --ref main -f environment-name=ci -f deployment-name=ci-x -f skipTestScenarios=false`
-  that must end in under two minutes with the "must be ci-set1 or ci-set2" error; (2) B30at's
-  proof, `gh workflow run destroy-ci.yml -f sweep-for-stacks=true` while b84's branch deploy holds
-  a slot, whose log must show "stays: claimed by run"; (3) B52e1 below. **Owner**: Claude Code.
-  **Model**: Haiku. **Size**: 0 files.
+- [ ] **B83w. Waves b83 and b84 on prod.** PR #339 (`d9cb6432`) deployed: prod runs
+  `prod-d9cb643`. PR #340 (`cc46199e`, B83 and AS15) merged; its push deploy 35869105425 was
+  cancelled by the B30ay proof dispatch (the cancel-superseded action took any push run of the
+  commit), so `main` is redeploying by dispatch 35870127527. B30ay's proof run 35869150806 failed
+  `names` in two seconds, but the probe jobs still ran against prod with test scenarios on and
+  opened alarm #341 (closed; a deliberate `SUBMIT_API_HTTP_500`); both defects are fixed on
+  `claude/b85-board` (the guard cancels the whole run; the cancel action leaves another
+  environment's push run alone), and the proof dispatch is re-run after b85 merges. B30at's proof
+  (`gh workflow run destroy-ci.yml -f sweep-for-stacks=true` while b85's branch deploy holds a
+  slot) and B52e1 follow. **Owner**: Claude Code. **Model**: Haiku. **Size**: 0 files.
 
-- [ ] **B84w. Wave b84: AS15 and B83.** Branch `claude/b84-board` (worktree
-  `.claude/worktrees/b84`, from b83's tip). AS15: knip found 3 dead files and 7 unused
-  devDependencies (worktree branch `worktree-agent-afff35e978f85fb7b`); it lands with
-  `cdk-typescript/scripts/diff-templates.mjs` restored (`cdk-typescript/package.json`'s `diff`
-  script runs it) and `package-lock.json` regenerated. B83: the per-file walk is complete
-  (1,295 files, 1,525 capabilities under `target/capabilities/`); a Sonnet pass is writing
-  `REPORT_CAPABILITIES.md` and the `CLAUDE.md` link. Then the full suite, one push, one PR.
-  **Owner**: Claude Code. **Model**: Sonnet. **Size**: ~6 files.
+- [ ] **B85w. Wave b85.** Branch `claude/b85-board` (worktree `.claude/worktrees/b85`, from
+  b84's tip): B52j's `ads-advisor` skill; B30ba (one deploy per delivered push); B30az (the
+  self-destruct Lambda skips a set that is last-known-good or held by a claim younger than three
+  hours); the B30ay guard moved into `cancel-superseded-push-deploy` so it cancels the whole run;
+  and that job's cancel limited to the environment the push run deploys to. Full suite, one push,
+  one PR. **Owner**: Claude Code. **Model**: Sonnet. **Size**: ~8 files.
 
 - [ ] **B52f1. The gateway's RUM monitor and GA4 linker.** PR
   diy-accounting-uk/www.diyaccounting.co.uk#33 (branch `claude/obs-gateway-rum`), green locally
@@ -79,47 +78,6 @@ Shared facts for the analytics rows (B52d, B52e, B52l, B52m): the prod Athena da
   Haiku. **Size**: 2 files.
 
 ## Machine-only
-
-- [ ] **B30az. A ci slot set self-destructs while it is last-known-good.** `ci-set1` (created
-  09:35 UTC on 2026-09-23, last-known-good since PR #335's dispatch) lost its
-  `SelfDestructStack` at 12:45 and every other stack by 13:04, while
-  `/submit/ci/last-known-good-deployment` still named it; b84's first deploy 35863587199 claimed
-  the slot at 12:55 and failed in `deploy AccountStack` with "Stack … is in DELETE_IN_PROGRESS
-  state and can not be updated". `app/functions/infra/selfDestruct.js` deletes on its schedule
-  with no check of last-known-good or of a live slot claim (it only releases the slot after,
-  line 190), and a redeploy of a slot set does not move the timer, which is anchored to the
-  set's first creation. **Problem**: the ci apex's set disappears on a timer, and any deploy that
-  claims its slot in that window races the teardown. **Fixed when**: the self-destruct Lambda
-  reads `/submit/ci/last-known-good-deployment` and `/submit/ci/slots/<slot>` before deleting,
-  skips (and reschedules itself by the delay) when its set is last-known-good or claimed by an
-  unfinished run (`slot-claim-active.mjs`'s rule, B30at), with unit tests in
-  `app/unit-tests/functions/selfDestruct.test.js`; proof is a week with no deploy failing on
-  `DELETE_IN_PROGRESS`. **Source**: runs 35863587199 and 35862205311 (the operator's
-  refused `destroy-ci` dispatch at 12:42 for the same set). **Owner**: Claude Code. **Model**:
-  Sonnet. **Size**: ~3 files.
-
-- [ ] **B30ba. One push starts two deploys of the same head.** The push of `claude/b84-board` at
-  12:55 UTC on 2026-09-23 (head `ec28d64b`) started `deploy` twice (35863587199 and
-  35863589011, one second apart), and `test` and CodeQL twice; both deploys ran against
-  `ci-set1` at once. **Problem**: two deploys of one head are pure cost and can race each other on
-  one set. **Fixed when**: `deploy.yml`'s `cancel-superseded-push-deploy` job (line 242) also
-  cancels a push-triggered deploy when an older in-progress or queued `deploy` run exists for the
-  same branch and head SHA (keep the older), and a push that GitHub delivers twice runs one
-  deploy; proof is the next new-branch push showing one deploy run. Read that job first: it
-  already cancels a push deploy covered by a named dispatch. **Source**: runs 35863587199,
-  35863589011, 35863585902, 35863588138. **Owner**: Claude Code. **Model**: Haiku. **Size**:
-  1 file.
-
-- [ ] **B52j. The `ads-advisor` skill.** `.claude/skills/ads-advisor/SKILL.md`: how to run B52g
-  and B52h, how to read CTR, CPC, conversion rate and cost per session against the funnel's
-  break-even cost per session (£0.36, `PLAN_ONE_STOP_DASHBOARD.md` D17) and the reinvestment
-  numbers on B52m, how to answer "how many clicks for £N a day" (forecast, then the report for
-  what the live campaign does) and "optimise for the same result" (B52k's bidding vocabulary:
-  which strategy and parameters, written into `ads.toml` as a PR whose plan shows the change),
-  and when to say the spend cannot pay back. Registered in `CLAUDE.md`'s skills list. B52g's
-  `ads-report.js`, B52h's `ads-forecast.js` and B52k's `[campaign.bidding]` are on `main`; the
-  forecast answers live once OB52h lands, and the skill says so. **Source**: operator 2026-09-22; `PLAN_ONE_STOP_DASHBOARD.md` D17; BACKLOG 52. **Owner**: Claude Code. **Model**: Haiku.
-  **Size**: ~2 files.
 
 ## Machine-ask
 
