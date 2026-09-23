@@ -239,9 +239,13 @@ jobs:
   # push or a dispatch with no deployment-name leaves every other run alone. See
   # cancel-superseded-push-deploy.mjs for why a run whose own stack deploy has already started is
   # never touched.
+  #
+  # GitHub sometimes delivers one push twice, starting two deploys of the same head a second
+  # apart; the newer push-triggered run cancels itself when an older one for the same SHA is
+  # still queued or running.
   cancel-superseded-push-deploy:
     name: 'cancel superseded push-triggered deploy'
-    if: ${{ github.event_name == 'workflow_dispatch' && inputs.deployment-name != '' }}
+    if: ${{ (github.event_name == 'workflow_dispatch' && inputs.deployment-name != '') || github.event_name == 'push' }}
     needs:
       - params
     runs-on: ubuntu-24.04
@@ -252,9 +256,27 @@ jobs:
       - name: Checkout
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
       - name: Cancel any push-triggered run of this commit that hasn't started a stack job
+        if: ${{ github.event_name == 'workflow_dispatch' && inputs.deployment-name != '' }}
         uses: './.github/actions/cancel-superseded-push-deploy'
         with:
           github-token: ${{ github.token }}
+      - name: For push events, cancel this run if an older run for the same SHA already exists
+        if: ${{ github.event_name == 'push' }}
+        shell: bash
+        run: |
+          OLDER_RUNS=$(gh run list --repo "${{ github.repository }}" --workflow deploy.yml --branch "${{ github.ref_name }}" --json databaseId,headSha,status,event,createdAt --jq ".[] | select(.event == \"push\" and .headSha == \"${{ github.sha }}\" and .databaseId < ${{ github.run_id }}) | select(.status == \"in_progress\" or .status == \"queued\")")
+
+          if [ -z "$OLDER_RUNS" ]; then
+            echo "No older push-triggered deploy.yml run for this SHA; proceeding."
+            exit 0
+          fi
+
+          OLDER_ID=$(echo "$OLDER_RUNS" | jq -r '.databaseId' | head -1)
+          echo "Found older push-triggered run $OLDER_ID for SHA ${{ github.sha }} with status in_progress or queued."
+          echo "Cancelling this run (${{ github.run_id }}) to avoid duplicate deploy."
+          gh run cancel "${{ github.run_id }}" --repo "${{ github.repository }}"
+        env:
+          GH_TOKEN: ${{ github.token }}
 
   # Restores app-after-environment ordering on purpose (see the concurrency block's comment for
   # the regression this fixes: B94, caused by removing an ordering nobody had written down when
