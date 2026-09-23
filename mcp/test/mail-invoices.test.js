@@ -14,7 +14,7 @@ import { describe, expect, it } from "vitest";
 
 import { validateLines } from "@diy-accounting-uk/diya-gl/dist/app/lib/diya-gl-schema.js";
 
-import { invoiceLinesForPeriod } from "../lib/finance/mail-invoices.js";
+import { findWorkspaceRoot, invoiceLinesForPeriod } from "../lib/finance/mail-invoices.js";
 
 const FIXTURES = resolve(dirname(fileURLToPath(import.meta.url)), "fixtures", "finance");
 
@@ -139,5 +139,41 @@ describe("invoiceLinesForPeriod", () => {
 
   it("throws rather than search with no suppliers configured", async () => {
     await expect(invoiceLinesForPeriod({ from: "2026-01-01", to: "2026-01-31", suppliers: [] })).rejects.toThrow(/supplier/);
+  });
+});
+
+describe("findWorkspaceRoot", () => {
+  const existsOnly = (paths) => (path) => paths.has(path);
+
+  it("finds the workspace root from a main checkout path", () => {
+    const workspaceRoot = "/ws/diy-accounting-limited";
+    const startPath = `${workspaceRoot}/submit.diyaccounting.co.uk/mcp/lib/finance`;
+    const exists = existsOnly(new Set([`${workspaceRoot}/index/corpus.toml`]));
+
+    expect(findWorkspaceRoot(startPath, "diy-accounting-limited", exists)).toBe(workspaceRoot);
+  });
+
+  it("finds the workspace root from a worktree path", () => {
+    const workspaceRoot = "/ws/diy-accounting-limited";
+    const startPath = `${workspaceRoot}/submit.diyaccounting.co.uk/.claude/worktrees/agent-af0ba2f/mcp/lib/finance`;
+    const exists = existsOnly(new Set([`${workspaceRoot}/index/corpus.toml`]));
+
+    expect(findWorkspaceRoot(startPath, "diy-accounting-limited", exists)).toBe(workspaceRoot);
+  });
+
+  it("throws when no directory of the configured name is found within the cap", () => {
+    const startPath = "/home/runner/work/submit.diyaccounting.co.uk/submit.diyaccounting.co.uk/mcp/lib/finance";
+    const exists = existsOnly(new Set());
+
+    expect(() => findWorkspaceRoot(startPath, "diy-accounting-limited", exists)).toThrow(
+      /no "diy-accounting-limited" workspace directory.*8 levels above ".*mcp\/lib\/finance"/,
+    );
+  });
+
+  it("throws when the matching directory has no index/corpus.toml beside it", () => {
+    const startPath = "/opt/diy-accounting-limited/other-project/mcp/lib/finance";
+    const exists = existsOnly(new Set());
+
+    expect(() => findWorkspaceRoot(startPath, "diy-accounting-limited", exists)).toThrow(/diy-accounting-limited/);
   });
 });

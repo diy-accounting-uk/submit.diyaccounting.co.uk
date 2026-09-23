@@ -9,30 +9,92 @@
 // into lines. It stages nothing to disk and reads no .eml file itself.
 
 import { execFile } from "node:child_process";
-import { dirname, resolve as resolvePath } from "node:path";
+import { existsSync, readFileSync } from "node:fs";
+import { basename, dirname, resolve as resolvePath } from "node:path";
 import { fileURLToPath } from "node:url";
 import { promisify } from "node:util";
 
 const execFileAsync = promisify(execFile);
 
-// This file lives at <workspace>/submit.diyaccounting.co.uk/mcp/lib/finance/,
-// and the corpus CLI and its config live at <workspace>/index/. Four levels
-// up from here is the workspace root every sibling repository shares.
-const WORKSPACE_ROOT = resolvePath(dirname(fileURLToPath(import.meta.url)), "..", "..", "..", "..");
-const CORPUS_BIN = resolvePath(WORKSPACE_ROOT, "index", ".venv", "bin", "corpus");
-const CORPUS_CONFIG = resolvePath(WORKSPACE_ROOT, "index", "corpus.toml");
+const MODULE_DIR = dirname(fileURLToPath(import.meta.url));
+
+// The workspace directory's basename is a config property rather than a
+// literal, because a worktree of this repository sits several directories
+// deeper than a main checkout: ".claude/worktrees/<name>/mcp/lib/finance"
+// still needs to find the same "diy-accounting-limited" workspace that
+// "mcp/lib/finance" finds from a main checkout.
+const PACKAGE_JSON = resolvePath(MODULE_DIR, "..", "..", "package.json");
+const WORKSPACE_DIR_NAME = JSON.parse(readFileSync(PACKAGE_JSON, "utf8")).config.workspaceDirName;
+
+// The module's directory can sit at any depth under the workspace root --
+// a main checkout ("<workspace>/submit.diyaccounting.co.uk/mcp/lib/finance")
+// or a worktree ("<workspace>/submit.diyaccounting.co.uk/.claude/worktrees/
+// <name>/mcp/lib/finance") -- so the root is found by walking upward for the
+// first directory named WORKSPACE_DIR_NAME that also holds the corpus
+// index's config, rather than by counting a fixed number of ".." segments.
+const WORKSPACE_WALK_MAX_LEVELS = 8;
 
 /**
- * Run the corpus CLI and parse its JSON stdout. The one seam tests replace:
- * every other function in this module takes it as a parameter instead of
- * calling it directly, so a test can hand in two recorded, redacted
- * documents instead of shelling out to a live index.
- * @param {string[]} args - full argv after the `corpus` binary, e.g.
- *   ["search", "--config", CORPUS_CONFIG, "--source", "mail-antony", ..., "--json", query]
+ * Walk upward from startPath, at most WORKSPACE_WALK_MAX_LEVELS directories,
+ * for the first one whose basename is workspaceDirName and which also holds
+ * an index/corpus.toml -- the workspace root every sibling repository (and
+ * every worktree of this one) shares. The exists check is a parameter so a
+ * test can walk a directory structure that was never created on disk, and so
+ * a directory that merely shares the workspace's name, with no corpus index
+ * beside it, is passed over rather than accepted.
+ * @param {string} startPath - directory to start from
+ * @param {string} workspaceDirName - the workspace directory's basename
+ * @param {(path: string) => boolean} exists - existsSync, or a fake for tests
+ * @returns {string} the matching workspace root directory
+ */
+export function findWorkspaceRoot(startPath, workspaceDirName, exists) {
+  let dir = startPath;
+  for (let level = 0; level <= WORKSPACE_WALK_MAX_LEVELS; level += 1) {
+    if (basename(dir) === workspaceDirName && exists(resolvePath(dir, "index", "corpus.toml"))) {
+      return dir;
+    }
+    const parent = dirname(dir);
+    if (parent === dir) break;
+    dir = parent;
+  }
+  throw new Error(
+    `no "${workspaceDirName}" workspace directory with an index/corpus.toml was found within ` +
+      `${WORKSPACE_WALK_MAX_LEVELS} levels above "${startPath}"`,
+  );
+}
+
+// Resolved on first actual use rather than on import: the walk throws
+// outside a full workspace checkout (a CI runner holds only this one
+// repository, with no sibling "index"), and every test in this module
+// replaces runCorpus below before that first use ever happens.
+let corpusPaths = null;
+
+function resolveCorpusPaths() {
+  if (!corpusPaths) {
+    const workspaceRoot = findWorkspaceRoot(MODULE_DIR, WORKSPACE_DIR_NAME, existsSync);
+    corpusPaths = {
+      bin: resolvePath(workspaceRoot, "index", ".venv", "bin", "corpus"),
+      config: resolvePath(workspaceRoot, "index", "corpus.toml"),
+    };
+  }
+  return corpusPaths;
+}
+
+/**
+ * Run the corpus CLI and parse its JSON stdout, adding the --config flag
+ * every subcommand needs. The one seam tests replace: every other function
+ * in this module takes it as a parameter instead of calling it directly, so
+ * a test can hand in two recorded, redacted documents instead of shelling
+ * out to a live index -- and never resolves the corpus binary or its config,
+ * which only exist inside a full workspace checkout.
+ * @param {string[]} args - the corpus subcommand and its own arguments, e.g.
+ *   ["search", "--source", "mail-antony", ..., "--json", query]
  * @returns {Promise<Object|Array>} the parsed JSON the CLI printed
  */
 export async function runCorpus(args) {
-  const { stdout } = await execFileAsync(CORPUS_BIN, args, { maxBuffer: 32 * 1024 * 1024 });
+  const { bin, config } = resolveCorpusPaths();
+  const [command, ...rest] = args;
+  const { stdout } = await execFileAsync(bin, [command, "--config", config, ...rest], { maxBuffer: 32 * 1024 * 1024 });
   return JSON.parse(stdout);
 }
 
@@ -170,22 +232,10 @@ export async function invoiceLinesForPeriod({ from, to, suppliers }, { runCorpus
 
   const lines = [];
   for (const supplier of suppliers) {
-    const hits = await runCorpusFn([
-      "search",
-      "--config",
-      CORPUS_CONFIG,
-      "--source",
-      "mail-antony",
-      "--since",
-      from,
-      "--until",
-      to,
-      "--json",
-      supplier.name,
-    ]);
+    const hits = await runCorpusFn(["search", "--source", "mail-antony", "--since", from, "--until", to, "--json", supplier.name]);
 
     for (const hit of hits) {
-      const doc = await runCorpusFn(["doc", "--config", CORPUS_CONFIG, "--json", hit.source, hit.path]);
+      const doc = await runCorpusFn(["doc", "--json", hit.source, hit.path]);
       const total = findInvoiceTotal(doc.content);
       if (!total) continue;
 
