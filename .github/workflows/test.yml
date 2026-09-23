@@ -48,14 +48,15 @@ on:
       HMRC_SANDBOX_CLIENT_SECRET:
         required: false
 
-  # Every push except a docs-only one runs this workflow, because main's ruleset requires its
-  # npm test, maven test and eslint contexts on every pull request.
+  # Every push runs this workflow, because main's ruleset requires its npm test, maven test and
+  # eslint contexts on every pull request. A docs-only push still needs those three contexts to
+  # exist on the head commit, so there is no paths-ignore here: the `changes` job below decides
+  # per push whether the heavy jobs actually run or report 'skipped', which still satisfies a
+  # required check.
   push:
     branches:
       - '**'
       - '!gh_pages'
-    paths-ignore:
-      - '**.md'
   schedule:
     - cron: '23 4 * * *'
 
@@ -94,6 +95,57 @@ env:
 
 jobs:
 
+  # Decides whether the push touched anything but Markdown, so the heavy jobs below can skip on
+  # a docs-only push while still posting a status check for it. A job GitHub skips via its own
+  # `if:` reports 'skipped', and main's ruleset counts a skipped required check as passing — the
+  # documented way to keep a required context green on a push that has nothing for it to check.
+  # workflow_dispatch, workflow_call (deploy.yml's own delegated run) and the nightly schedule
+  # always run everything: the operator asked for it, deploy.yml only calls this workflow for a
+  # real deployment, and the nightly run should cover the whole suite regardless of what changed.
+  changes:
+    name: 'changes'
+    runs-on: ubuntu-24.04
+    outputs:
+      code: ${{ steps.check.outputs.code }}
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          fetch-depth: 0
+
+      - name: Decide whether this push touches anything but Markdown
+        id: check
+        shell: bash
+        run: |
+          case "${{ github.event_name }}" in
+            workflow_dispatch|workflow_call|schedule)
+              echo "code=true" >> "$GITHUB_OUTPUT"
+              exit 0
+              ;;
+          esac
+
+          before='${{ github.event.before }}'
+          if [ -n "$before" ] && [ "$before" != "0000000000000000000000000000000000000000" ] \
+            && git cat-file -e "${before}^{commit}" 2>/dev/null; then
+            range="${before}..${{ github.sha }}"
+          else
+            # A new branch's zero SHA, or a force push whose old tip is no longer fetchable:
+            # fall back to comparing against the default branch.
+            git fetch origin '${{ github.event.repository.default_branch }}' --quiet
+            range="origin/${{ github.event.repository.default_branch }}...HEAD"
+            echo "before SHA unusable; comparing $range instead." >> "$GITHUB_STEP_SUMMARY"
+          fi
+
+          changed=$(git diff --name-only $range)
+          echo "Changed files ($range):" >> "$GITHUB_STEP_SUMMARY"
+          echo "$changed" >> "$GITHUB_STEP_SUMMARY"
+
+          non_md=$(printf '%s\n' "$changed" | grep -v -E '\.md$' || true)
+          if [ -z "$changed" ] || [ -n "$non_md" ]; then
+            echo "code=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "code=false" >> "$GITHUB_OUTPUT"
+          fi
+
   playwright-version:
     runs-on: ubuntu-latest
     outputs:
@@ -104,8 +156,11 @@ jobs:
         run: echo "version=$(node -p "require('./package-lock.json').packages['node_modules/playwright'].version")" >> "$GITHUB_OUTPUT"
 
   lint-workflows:
+    if: ${{ needs.changes.outputs.code == 'true' }}
     name: 'validate workflow syntax'
     runs-on: ubuntu-24.04
+    needs:
+      - changes
     steps:
       - name: Checkout
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
@@ -143,8 +198,11 @@ jobs:
         run: node scripts/check-workflow-permissions.mjs
 
   lint-js:
+    if: ${{ needs.changes.outputs.code == 'true' }}
     name: 'eslint'
     runs-on: ubuntu-24.04
+    needs:
+      - changes
     # Gates JavaScript files this change ADDS, and reports the repository total without failing on
     # it. Linting everything would be red on every run until a backlog of pre-existing findings is
     # cleared, and a check that is always red teaches everyone to ignore red, the way an alarm that
@@ -294,9 +352,11 @@ jobs:
       holding-url: ${{ steps.deployment-config.outputs.holding-url }}
 
   npm-test:
+    if: ${{ needs.changes.outputs.code == 'true' }}
     name: 'npm test'
     runs-on: ubuntu-24.04
     needs:
+      - changes
       - names
     permissions:
       contents: read
@@ -318,9 +378,11 @@ jobs:
       - run: npm test
 
   npm-unit-test:
+    if: ${{ needs.changes.outputs.code == 'true' }}
     name: 'npm unit test'
     runs-on: ubuntu-latest
     needs:
+      - changes
       - names
     permissions:
       contents: read
@@ -341,9 +403,11 @@ jobs:
       - run: npm run test:coverage
 
   npm-mcp-test:
+    if: ${{ needs.changes.outputs.code == 'true' }}
     name: 'npm mcp test'
     runs-on: ubuntu-latest
     needs:
+      - changes
       - names
     permissions:
       contents: read
@@ -376,9 +440,11 @@ jobs:
         working-directory: mcp
 
   npm-system-test:
+    if: ${{ needs.changes.outputs.code == 'true' }}
     name: 'npm system test'
     runs-on: ubuntu-latest
     needs:
+      - changes
       - names
     permissions:
       contents: read
@@ -399,9 +465,11 @@ jobs:
       - run: npm run test:system
 
   npm-test-web-unit:
+    if: ${{ needs.changes.outputs.code == 'true' }}
     name: 'npm unit test with coverage'
     runs-on: ubuntu-latest
     needs:
+      - changes
       - names
     permissions:
       contents: read
@@ -425,9 +493,11 @@ jobs:
       - run: npm run test:web-unit
 
   npm-browser-test:
+    if: ${{ needs.changes.outputs.code == 'true' }}
     name: 'npm browser test'
     runs-on: ubuntu-latest
     needs:
+      - changes
       - names
     permissions:
       contents: read
@@ -450,9 +520,11 @@ jobs:
       - run: npm run test:browser
 
   mvn-test:
+    if: ${{ needs.changes.outputs.code == 'true' }}
     name: 'maven test'
     runs-on: ubuntu-latest
     needs:
+      - changes
       - names
     permissions:
       contents: read
@@ -472,8 +544,10 @@ jobs:
           ./mvnw clean test
 
   npm-test-cdk-ci:
+    if: ${{ needs.changes.outputs.code == 'true' }}
     name: 'npm test cdk-ci'
     needs:
+      - changes
       - names
     runs-on: ubuntu-24.04
     environment: ci
@@ -558,8 +632,10 @@ jobs:
           COGNITO_CLIENT_ID: ${{ steps.lookup.outputs.cognito-client-id }}
 
   npm-test-cdk-prod:
+    if: ${{ needs.changes.outputs.code == 'true' }}
     name: 'npm test cdk prod'
     needs:
+      - changes
       - names
     runs-on: ubuntu-24.04
     environment: prod
@@ -645,11 +721,13 @@ jobs:
   # Simulator behaviour tests - run in parallel without a tunnel, Docker or HMRC
   # Uses Playwright official container for faster builds (browsers pre-installed)
   behaviour-test-simulator-submit-vat:
+    if: ${{ needs.changes.outputs.code == 'true' }}
     name: 'simulator - submitVatBehaviour'
     runs-on: ubuntu-24.04
     container:
       image: mcr.microsoft.com/playwright:v${{ needs.playwright-version.outputs.version }}-jammy
     needs:
+      - changes
       - names
       - playwright-version
     steps:
@@ -681,11 +759,13 @@ jobs:
           path: target/behaviour-test-results/
 
   behaviour-test-simulator-post-vat-return:
+    if: ${{ needs.changes.outputs.code == 'true' }}
     name: 'simulator - postVatReturnBehaviour'
     runs-on: ubuntu-24.04
     container:
       image: mcr.microsoft.com/playwright:v${{ needs.playwright-version.outputs.version }}-jammy
     needs:
+      - changes
       - names
       - playwright-version
     steps:
@@ -716,11 +796,13 @@ jobs:
           path: target/behaviour-test-results/
 
   behaviour-test-simulator-practice-licence:
+    if: ${{ needs.changes.outputs.code == 'true' }}
     name: 'simulator - practiceLicenceBehaviour'
     runs-on: ubuntu-24.04
     container:
       image: mcr.microsoft.com/playwright:v${{ needs.playwright-version.outputs.version }}-jammy
     needs:
+      - changes
       - names
       - playwright-version
     steps:
@@ -754,11 +836,13 @@ jobs:
           path: target/behaviour-test-results/
 
   behaviour-test-simulator-get-vat-return:
+    if: ${{ needs.changes.outputs.code == 'true' }}
     name: 'simulator - getVatReturnBehaviour'
     runs-on: ubuntu-24.04
     container:
       image: mcr.microsoft.com/playwright:v${{ needs.playwright-version.outputs.version }}-jammy
     needs:
+      - changes
       - names
       - playwright-version
     steps:
@@ -789,11 +873,13 @@ jobs:
           path: target/behaviour-test-results/
 
   behaviour-test-simulator-get-vat-obligations:
+    if: ${{ needs.changes.outputs.code == 'true' }}
     name: 'simulator - getVatObligationsBehaviour'
     runs-on: ubuntu-24.04
     container:
       image: mcr.microsoft.com/playwright:v${{ needs.playwright-version.outputs.version }}-jammy
     needs:
+      - changes
       - names
       - playwright-version
     steps:
@@ -824,11 +910,13 @@ jobs:
           path: target/behaviour-test-results/
 
   behaviour-test-simulator-get-vat-liabilities:
+    if: ${{ needs.changes.outputs.code == 'true' }}
     name: 'simulator - getVatLiabilitiesBehaviour'
     runs-on: ubuntu-24.04
     container:
       image: mcr.microsoft.com/playwright:v${{ needs.playwright-version.outputs.version }}-jammy
     needs:
+      - changes
       - names
       - playwright-version
     steps:
@@ -859,11 +947,13 @@ jobs:
           path: target/behaviour-test-results/
 
   behaviour-test-simulator-get-vat-payments:
+    if: ${{ needs.changes.outputs.code == 'true' }}
     name: 'simulator - getVatPaymentsBehaviour'
     runs-on: ubuntu-24.04
     container:
       image: mcr.microsoft.com/playwright:v${{ needs.playwright-version.outputs.version }}-jammy
     needs:
+      - changes
       - names
       - playwright-version
     steps:
@@ -894,11 +984,13 @@ jobs:
           path: target/behaviour-test-results/
 
   behaviour-test-simulator-get-vat-penalties:
+    if: ${{ needs.changes.outputs.code == 'true' }}
     name: 'simulator - getVatPenaltiesBehaviour'
     runs-on: ubuntu-24.04
     container:
       image: mcr.microsoft.com/playwright:v${{ needs.playwright-version.outputs.version }}-jammy
     needs:
+      - changes
       - names
       - playwright-version
     steps:
@@ -929,11 +1021,13 @@ jobs:
           path: target/behaviour-test-results/
 
   behaviour-test-simulator-fraud-prevention-headers:
+    if: ${{ needs.changes.outputs.code == 'true' }}
     name: 'simulator - fraudPreventionHeadersBehaviour'
     runs-on: ubuntu-24.04
     container:
       image: mcr.microsoft.com/playwright:v${{ needs.playwright-version.outputs.version }}-jammy
     needs:
+      - changes
       - names
       - playwright-version
     steps:
@@ -964,11 +1058,13 @@ jobs:
           path: target/behaviour-test-results/
 
   behaviour-test-simulator-compliance:
+    if: ${{ needs.changes.outputs.code == 'true' }}
     name: 'simulator - complianceBehaviour'
     runs-on: ubuntu-24.04
     container:
       image: mcr.microsoft.com/playwright:v${{ needs.playwright-version.outputs.version }}-jammy
     needs:
+      - changes
       - names
       - playwright-version
     steps:
@@ -999,11 +1095,13 @@ jobs:
           path: target/behaviour-test-results/
 
   behaviour-test-simulator-vat-validation:
+    if: ${{ needs.changes.outputs.code == 'true' }}
     name: 'simulator - vatValidationBehaviour'
     runs-on: ubuntu-24.04
     container:
       image: mcr.microsoft.com/playwright:v${{ needs.playwright-version.outputs.version }}-jammy
     needs:
+      - changes
       - names
       - playwright-version
     steps:
@@ -1034,11 +1132,13 @@ jobs:
           path: target/behaviour-test-results/
 
   behaviour-test-simulator-vat-schemes:
+    if: ${{ needs.changes.outputs.code == 'true' }}
     name: 'simulator - vatSchemesBehaviour'
     runs-on: ubuntu-24.04
     container:
       image: mcr.microsoft.com/playwright:v${{ needs.playwright-version.outputs.version }}-jammy
     needs:
+      - changes
       - names
       - playwright-version
     steps:
@@ -1069,11 +1169,13 @@ jobs:
           path: target/behaviour-test-results/
 
   behaviour-test-simulator-auth:
+    if: ${{ needs.changes.outputs.code == 'true' }}
     name: 'simulator - authBehaviour'
     runs-on: ubuntu-24.04
     container:
       image: mcr.microsoft.com/playwright:v${{ needs.playwright-version.outputs.version }}-jammy
     needs:
+      - changes
       - names
       - playwright-version
     steps:
@@ -1104,11 +1206,13 @@ jobs:
           path: target/behaviour-test-results/
 
   behaviour-test-simulator-bundle:
+    if: ${{ needs.changes.outputs.code == 'true' }}
     name: 'simulator - bundleBehaviour'
     runs-on: ubuntu-24.04
     container:
       image: mcr.microsoft.com/playwright:v${{ needs.playwright-version.outputs.version }}-jammy
     needs:
+      - changes
       - names
       - playwright-version
     steps:
@@ -1139,11 +1243,13 @@ jobs:
           path: target/behaviour-test-results/
 
   behaviour-test-simulator-help:
+    if: ${{ needs.changes.outputs.code == 'true' }}
     name: 'simulator - helpBehaviour'
     runs-on: ubuntu-24.04
     container:
       image: mcr.microsoft.com/playwright:v${{ needs.playwright-version.outputs.version }}-jammy
     needs:
+      - changes
       - names
       - playwright-version
     steps:
@@ -1174,11 +1280,13 @@ jobs:
           path: target/behaviour-test-results/
 
   behaviour-test-simulator-pass-redemption:
+    if: ${{ needs.changes.outputs.code == 'true' }}
     name: 'simulator - passRedemptionBehaviour'
     runs-on: ubuntu-24.04
     container:
       image: mcr.microsoft.com/playwright:v${{ needs.playwright-version.outputs.version }}-jammy
     needs:
+      - changes
       - names
       - playwright-version
     steps:
@@ -1209,11 +1317,13 @@ jobs:
           path: target/behaviour-test-results/
 
   behaviour-test-simulator-token-enforcement:
+    if: ${{ needs.changes.outputs.code == 'true' }}
     name: 'simulator - tokenEnforcementBehaviour'
     runs-on: ubuntu-24.04
     container:
       image: mcr.microsoft.com/playwright:v${{ needs.playwright-version.outputs.version }}-jammy
     needs:
+      - changes
       - names
       - playwright-version
     steps:
@@ -1244,11 +1354,13 @@ jobs:
           path: target/behaviour-test-results/
 
   behaviour-test-simulator-payment:
+    if: ${{ needs.changes.outputs.code == 'true' }}
     name: 'simulator - paymentBehaviour'
     runs-on: ubuntu-24.04
     container:
       image: mcr.microsoft.com/playwright:v${{ needs.playwright-version.outputs.version }}-jammy
     needs:
+      - changes
       - names
       - playwright-version
     steps:
@@ -1279,11 +1391,13 @@ jobs:
           path: target/behaviour-test-results/
 
   behaviour-test-simulator-simulator:
+    if: ${{ needs.changes.outputs.code == 'true' }}
     name: 'simulator - simulatorBehaviour'
     runs-on: ubuntu-24.04
     container:
       image: mcr.microsoft.com/playwright:v${{ needs.playwright-version.outputs.version }}-jammy
     needs:
+      - changes
       - names
       - playwright-version
     steps:
@@ -1314,11 +1428,13 @@ jobs:
           path: target/behaviour-test-results/
 
   behaviour-test-simulator-generate-pass-activity:
+    if: ${{ needs.changes.outputs.code == 'true' }}
     name: 'simulator - generatePassActivityBehaviour'
     runs-on: ubuntu-24.04
     container:
       image: mcr.microsoft.com/playwright:v${{ needs.playwright-version.outputs.version }}-jammy
     needs:
+      - changes
       - names
       - playwright-version
     steps:
@@ -1351,9 +1467,10 @@ jobs:
   # Proxy behaviour test - requires Docker and HMRC sandbox secrets
   # Uses manual Playwright install (not container) because Docker is needed for mock-oauth2-server
   behaviour-test-proxy-submit-vat:
-    if: ${{ !cancelled() && needs.params.outputs.runProxyBehaviourTests == 'true' }}
+    if: ${{ needs.changes.outputs.code == 'true' && !cancelled() && needs.params.outputs.runProxyBehaviourTests == 'true' }}
     name: 'proxy - submitVatBehaviour'
     needs:
+      - changes
       - params
       - names
     runs-on: ubuntu-24.04

@@ -78,10 +78,18 @@ have to discover to finish. Then put that in the brief. The checks that paid for
 - **Limits the change can hit.** A stack near CloudFormation's 500 resources, a redirect-URI cap at
   HMRC, a concurrency group two runs share: name it and the headroom, because the ci deploy is
   where it fails otherwise.
+- **The call site and forbidden patterns.** A brief must name the exact call site (file:line) the
+  change lands on, and list the patterns the rules forbid that the change could reach: compatibility
+  aliases, a setting applied wider than the call that needs it, whole-tree formatting or deletion
+  tools, broad ignore rules.
 - **The model**, the lowest that fits, from the work not the label: a one-file mechanical edit or
   a dispatch-and-read is Haiku; a bounded change against an existing pattern is Sonnet; a design a
   Sonnet then builds from, or a change to a deploy's ordering and rollback, is Opus. A row over
   about 25 files is a two-agent chain. Change the row's **Model** when the check disagrees with it.
+- **Parser briefs carry a real source month and residual.** A brief for a statement parser names
+  one real source month by its path under `../drive/…/finance/`, and the first test asserts the
+  expected reconciliation residual (0), to catch a parse that loses detail to a later heading and
+  takes several rounds to surface.
 - **The brief's constants**: worktree path and branch, `cd <worktree>` in every Bash call,
   absolute paths, the evidence (run ids, log lines, file:line), "commit before a long
   verification", "a wait is a sleep loop inside one Bash call, never a Monitor", the licence header
@@ -142,4 +150,8 @@ since the row was written; a developer-token blocker Google had removed; a subsc
 checkout that refuses `payment_intent_data`; a view's 0 rows caused by the webhook writing null;
 a JS test that could not read a synth; a device grant Cognito does not have; an unfinished
 practice page linked from every prod nav; a nightly deploy of a docs-only head; two probe jobs
-holding each other's lock.
+holding each other's lock; six corrected agent results (knip deleting a used file, a Stripe API pin
+on every client, a `GITHUB_ENV` name clash, a compatibility alias, a stack-update heuristic, a
+`.dockerignore` excluding `infra/`). A dispatched workflow's checks never count toward a pull request's required checks
+(GitHub leaves `workflow_dispatch` suites out of the PR's rollup); a required check must come from a push
+or pull_request run, skipped by `if:` when it has nothing to do.

@@ -34,6 +34,25 @@
     "https://local.submit.diyaccounting.co.uk:3443/errors/500.html",
     "https://local.submit.diyaccounting.co.uk:3443/errors/502.html",
     "https://local.submit.diyaccounting.co.uk:3443/errors/503.html",
-    "https://local.submit.diyaccounting.co.uk:3443/errors/504.html"
+    "https://local.submit.diyaccounting.co.uk:3443/errors/504.html",
+    "https://local.submit.diyaccounting.co.uk:3443/hmrc/itsa/dashboard.html",
+    "https://local.submit.diyaccounting.co.uk:3443/hmrc/itsa/businessDetails.html",
+    "https://local.submit.diyaccounting.co.uk:3443/hmrc/itsa/obligations.html",
+    "https://local.submit.diyaccounting.co.uk:3443/hmrc/itsa/selfEmploymentPeriod.html",
+    "https://local.submit.diyaccounting.co.uk:3443/hmrc/itsa/selfEmploymentPeriodAmend.html",
+    "https://local.submit.diyaccounting.co.uk:3443/hmrc/itsa/selfEmploymentPeriods.html",
+    "https://local.submit.diyaccounting.co.uk:3443/hmrc/itsa/selfEmploymentPeriodView.html",
+    "https://local.submit.diyaccounting.co.uk:3443/hmrc/itsa/annualSubmission.html",
+    "https://local.submit.diyaccounting.co.uk:3443/hmrc/itsa/adjustments.html",
+    "https://local.submit.diyaccounting.co.uk:3443/hmrc/itsa/lossesAndClaims.html",
+    "https://local.submit.diyaccounting.co.uk:3443/hmrc/itsa/taxLiabilityAdjustments.html",
+    "https://local.submit.diyaccounting.co.uk:3443/hmrc/itsa/taxCalculation.html",
+    "https://local.submit.diyaccounting.co.uk:3443/hmrc/itsa/finalDeclaration.html",
+    "https://local.submit.diyaccounting.co.uk:3443/hmrc/itsa/ukPropertyAdjustments.html",
+    "https://local.submit.diyaccounting.co.uk:3443/hmrc/itsa/ukPropertyAnnualSubmission.html",
+    "https://local.submit.diyaccounting.co.uk:3443/hmrc/itsa/ukPropertyPeriod.html",
+    "https://local.submit.diyaccounting.co.uk:3443/hmrc/itsa/ukPropertyPeriodAmend.html",
+    "https://local.submit.diyaccounting.co.uk:3443/hmrc/itsa/ukPropertyPeriods.html",
+    "https://local.submit.diyaccounting.co.uk:3443/hmrc/itsa/ukPropertyPeriodView.html"
   ]
 }

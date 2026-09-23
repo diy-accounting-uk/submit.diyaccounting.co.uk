@@ -19,8 +19,10 @@ example envelopes and a free XBRL validator, so the whole build can be verified 
 **Sandbox proof (NEXT.md O34d, B34.6c).** Test submission 000004 was acknowledged with no errors
 on 2026-09-13 under test presenter 66666727000 (`COMPANIES_HOUSE_PRESENTER_ID` and
 `COMPANIES_HOUSE_PRESENTER_CODE` on the GitHub `ci` environment). Every status poll answers 9999
-"No presenter ID supplied"; O34d asks the XML team whether 000004 was accepted and whether lookups
-are enabled. The live presenter account is E0000052288.
+"No presenter ID supplied", the latest on 2026-09-23 (transactions 1790201546927 and
+1790201549414; a header `Method` of `CHMD5` gets 502 "Authorisation Failure" instead, so the header
+authenticates and the lookup fails on the presenter ID). O34d asks the XML team whether 000004 was
+accepted and whether lookups are enabled. The live presenter account is E0000052288.
 
 ### Sources
 

@@ -41,6 +41,12 @@ import software.constructs.Construct;
 
 public class SelfDestructStack extends Stack {
 
+    // How long the environment's last-known-good pointer protects the set it names from
+    // self-destruct, measured from the pointer's own LastModifiedDate. Past this window the
+    // pointer no longer blocks the schedule, so the set it names goes 12 to 16 hours after its
+    // promotion (up to one schedule interval beyond the window itself).
+    private static final int LAST_KNOWN_GOOD_PROTECTION_HOURS = 12;
+
     public final Role functionRole;
     public final Function selfDestructFunction;
     public final Rule selfDestructSchedule;
@@ -203,11 +209,13 @@ public class SelfDestructStack extends Stack {
                                                                 props.deploymentName())))
                                                 .build(),
                                         // Read the environment's last-known-good pointer before deleting anything,
-                                        // so a set that pointer currently names is left alone.
+                                        // so a set that pointer currently names is left alone within its
+                                        // protection window, and clear the pointer to "None" before destroying
+                                        // that set once the window has passed.
                                         PolicyStatement.Builder.create()
-                                                .sid("ReadLastKnownGoodDeployment")
+                                                .sid("ReadAndClearLastKnownGoodDeployment")
                                                 .effect(Effect.ALLOW)
-                                                .actions(List.of("ssm:GetParameter"))
+                                                .actions(List.of("ssm:GetParameter", "ssm:PutParameter"))
                                                 .resources(List.of(
                                                         "arn:aws:ssm:%s:%s:parameter/submit/%s/last-known-good-deployment"
                                                                 .formatted(
@@ -244,6 +252,10 @@ public class SelfDestructStack extends Stack {
                 selfDestructLambdaEnv,
                 "LAST_KNOWN_GOOD_PARAMETER_NAME",
                 "/submit/%s/last-known-good-deployment".formatted(props.envName()));
+        putIfNotNull(
+                selfDestructLambdaEnv,
+                "LAST_KNOWN_GOOD_PROTECTION_HOURS",
+                String.valueOf(LAST_KNOWN_GOOD_PROTECTION_HOURS));
 
         infof(
                 "Creating SelfDestructStack for domain: %s (dashed: %s) in region: %s",

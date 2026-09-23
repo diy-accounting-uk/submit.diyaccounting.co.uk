@@ -6,9 +6,13 @@
 // validated diya-gl bank lines, one per statement transaction. Every
 // transaction the statement carries becomes a line: no holds to filter,
 // no fee to split out, no netting. The amount is always positive per the
-// diya-gl-lines-v2 schema; direction lives in diya-gl:bankCode instead
-// (a receipt code for money in, a payment code for money out), matching
-// how the bank workbook's own receipt and payment analysis columns work.
+// diya-gl-lines-v2 schema; direction lives in two fields, both required by
+// the engine's book-ltd-bank-line-has-side check
+// (../spreadsheets.diyaccounting.co.uk/app/lib/book-checks/ltd.js line 141):
+// diya-gl:bankCode, the analysis column a bank workbook totals the line
+// into (DR/CR/B/...), and debitCreditCode ("D"/"C"), the side the check
+// itself reads. A line with a bankCode but no debitCreditCode reaches
+// neither block of its month tab and drops out of the trial balance.
 
 import { validateLines } from "@diy-accounting-uk/diya-gl/dist/app/lib/diya-gl-schema.js";
 
@@ -111,6 +115,13 @@ function bankCodeFor(type, value) {
   throw new Error(`Unrecognised statement type "${type}"`);
 }
 
+// The side book-ltd-bank-line-has-side reads: "D" for money in to the bank
+// account, "C" for money out, decided by the same sign of Value that
+// bankCodeFor keys off (a bank charge's Value is always negative).
+function debitCreditCodeFor(value) {
+  return value >= 0 ? "D" : "C";
+}
+
 /**
  * Parses a NatWest current account CSV export into validated diya-gl bank
  * lines, one per statement transaction.
@@ -133,6 +144,7 @@ export function bankLinesFromCsv(text, { accountMainID }) {
     "detailComment": row.description,
     "diya-gl:bankCode": bankCodeFor(row.type, row.value),
     "diya-gl:bankAccountID": accountMainID,
+    "debitCreditCode": debitCreditCodeFor(row.value),
   }));
 
   const book = { accounts: { bank: { [accountMainID]: {} } } };

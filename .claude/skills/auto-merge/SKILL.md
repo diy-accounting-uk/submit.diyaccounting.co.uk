@@ -47,6 +47,35 @@ git branch -r
 gh pr list --state open --json number,title,headRefName,headRefOid,isDraft,mergeable,mergeStateStatus
 ```
 
+For each PR from that read, check whether its latest push changed only `.md` files
+(`git diff --name-only <headRefOid>~1 <headRefOid>`; a PR whose earlier commits carry code still
+skips `codeql.yml` on a Markdown-only push) and whether any required context is missing
+(`gh api repos/diy-accounting-uk/submit.diyaccounting.co.uk/commits/<headRefOid>/check-runs
+--jq '.check_runs[].name'` against the ruleset's required list,
+`gh api repos/diy-accounting-uk/submit.diyaccounting.co.uk/rulesets/16057564 --jq
+'.rules[] | select(.type=="required_status_checks") | .parameters.required_status_checks[].context'`).
+`test.yml` runs on every push regardless of what changed; its `changes` job reports `npm test`,
+`maven test` and `eslint` as skipped on a Markdown-only push, and a skipped required check counts
+as passing, so no dispatch is needed for it. `codeql.yml` still skips by its own `paths-ignore`,
+so its `CodeQL` context never runs on its own. `Check commit signatures` comes from
+`verify-commit-signatures.yml` on `pull_request`, which always runs and needs no dispatch. When
+`CodeQL` is missing on a Markdown-only head, dispatch the workflow that carries it and wait:
+
+```bash
+gh workflow run codeql.yml --ref <headRef>
+```
+
+Then re-read the check runs on a sleep loop, in one Bash call, until every required context has a
+conclusion:
+
+```bash
+for i in $(seq 1 20); do
+  sleep 15
+  gh api repos/diy-accounting-uk/submit.diyaccounting.co.uk/commits/<headRefOid>/check-runs \
+    --jq '.check_runs[] | "\(.name) \(.status) \(.conclusion)"'
+done
+```
+
 For each worktree, `git status --short` **inside it**. Uncommitted work in a worktree is real work
 and it vanishes when the worktree goes.
 

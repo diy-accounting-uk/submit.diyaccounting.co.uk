@@ -115,13 +115,47 @@ async function readSsmParameter(parameterName) {
   const { GetParameterCommand } = await import("@aws-sdk/client-ssm");
   try {
     const result = await (await getSsmClient()).send(new GetParameterCommand({ Name: parameterName }));
-    return { found: true, value: result.Parameter?.Value ?? null };
+    return {
+      found: true,
+      value: result.Parameter?.Value ?? null,
+      lastModifiedDate: result.Parameter?.LastModifiedDate ?? null,
+    };
   } catch (error) {
     if (error.name === "ParameterNotFound") {
-      return { found: false, value: null };
+      return { found: false, value: null, lastModifiedDate: null };
     }
     return { found: true, value: null, unreadable: true, error };
   }
+}
+
+/**
+ * Clear the environment's last-known-good pointer to "None" before destroying the set it names,
+ * once its protection window has passed, so deploy.yml and destroy-ci.yml (which both treat
+ * "None" as no set) never read the pointer as still naming a set this Lambda is about to delete.
+ * Never throws: a write failure must not stop the teardown behind it.
+ */
+// Throws on failure: destroying the set while the pointer still names it would leave a
+// skip-deploy run resolving to a set that no longer exists, so this cycle stops instead.
+async function clearLastKnownGoodPointer(parameterName) {
+  const { PutParameterCommand } = await import("@aws-sdk/client-ssm");
+  await (await getSsmClient()).send(new PutParameterCommand({ Name: parameterName, Value: "None", Type: "String", Overwrite: true }));
+  console.log(`Cleared last-known-good pointer ${parameterName} to None`);
+}
+
+/**
+ * The last-known-good protection window in hours. Required whenever a last-known-good parameter
+ * name is configured: an unset or non-positive value would either protect nothing (a silent
+ * teardown of the live set) or protect forever (the cost this whole change removes), so this
+ * throws rather than falling back to a default.
+ */
+function parseLastKnownGoodProtectionHours(rawValue, lastKnownGoodParameterName) {
+  const hours = Number(rawValue);
+  if (!rawValue || !Number.isFinite(hours) || hours <= 0) {
+    throw new Error(
+      `LAST_KNOWN_GOOD_PROTECTION_HOURS must be a positive number when ${lastKnownGoodParameterName} is set, got ${rawValue}`,
+    );
+  }
+  return hours;
 }
 
 // deploy.yml releases its own ci slot claim when its run ends, pass or fail, so a claim record
@@ -129,26 +163,46 @@ async function readSsmParameter(parameterName) {
 const ACTIVE_CLAIM_WINDOW_MS = 3 * 60 * 60 * 1000;
 
 /**
- * Why this deployment must be left alone this cycle, or null: it is the ci environment's
- * last-known-good deployment, or a deploy holds its ci slot. An unreadable parameter counts as
- * protection, because a wrongly skipped cycle costs one schedule interval and a wrong delete
- * breaks a running deploy. The schedule is recurring, so a skip needs no rescheduling.
+ * Why this deployment must be left alone this cycle, or a null reason: it is the ci environment's
+ * last-known-good deployment within its protection window, or a deploy holds its ci slot. An
+ * unreadable parameter counts as protection, because a wrongly skipped cycle costs one schedule
+ * interval and a wrong delete breaks a running deploy. The schedule is recurring, so a skip needs
+ * no rescheduling.
+ *
+ * Also reports whether the last-known-good pointer names this deployment past its protection
+ * window, so the caller can clear it to "None" before destroying the set it names. The flag is
+ * meaningful only when the reason comes back null: a skip caused by the slot check running
+ * afterwards must leave the pointer alone.
  */
-async function findSkipReason({ deploymentName, lastKnownGoodParameterName, slotParameterName, nowMs }) {
+async function findSkipReason({ deploymentName, lastKnownGoodParameterName, lastKnownGoodProtectionHoursEnv, slotParameterName, nowMs }) {
+  let clearLastKnownGoodPointer = false;
+
   if (lastKnownGoodParameterName) {
+    const protectionHours = parseLastKnownGoodProtectionHours(lastKnownGoodProtectionHoursEnv, lastKnownGoodParameterName);
     const lastKnownGood = await readSsmParameter(lastKnownGoodParameterName);
     if (lastKnownGood.unreadable) {
-      return `could not read ${lastKnownGoodParameterName} (${lastKnownGood.error.message}), treating this deployment as protected`;
+      return {
+        reason: `could not read ${lastKnownGoodParameterName} (${lastKnownGood.error.message}), treating this deployment as protected`,
+        clearLastKnownGoodPointer: false,
+      };
     }
     if (lastKnownGood.value === deploymentName) {
-      return `${deploymentName} is the last-known-good deployment`;
+      const lastModifiedMs = lastKnownGood.lastModifiedDate ? new Date(lastKnownGood.lastModifiedDate).getTime() : NaN;
+      const withinProtectionWindow = !Number.isNaN(lastModifiedMs) && nowMs - lastModifiedMs < protectionHours * 60 * 60 * 1000;
+      if (withinProtectionWindow) {
+        return { reason: `${deploymentName} is the last-known-good deployment`, clearLastKnownGoodPointer: false };
+      }
+      clearLastKnownGoodPointer = true;
     }
   }
 
   if (slotParameterName) {
     const slot = await readSsmParameter(slotParameterName);
     if (slot.unreadable) {
-      return `could not read ${slotParameterName} (${slot.error.message}), treating its ci slot claim as active`;
+      return {
+        reason: `could not read ${slotParameterName} (${slot.error.message}), treating its ci slot claim as active`,
+        clearLastKnownGoodPointer: false,
+      };
     }
     let record = null;
     if (slot.value) {
@@ -160,11 +214,14 @@ async function findSkipReason({ deploymentName, lastKnownGoodParameterName, slot
     }
     const claimedAtMs = record?.claimedAt ? Date.parse(record.claimedAt) : NaN;
     if (!Number.isNaN(claimedAtMs) && nowMs - claimedAtMs < ACTIVE_CLAIM_WINDOW_MS) {
-      return `ci slot is claimed by run ${record.runId} since ${record.claimedAt}`;
+      return {
+        reason: `ci slot is claimed by run ${record.runId} since ${record.claimedAt}`,
+        clearLastKnownGoodPointer: false,
+      };
     }
   }
 
-  return null;
+  return { reason: null, clearLastKnownGoodPointer };
 }
 
 export async function ingestHandler(event, context) {
@@ -200,22 +257,30 @@ export async function ingestHandler(event, context) {
 
     // Checked before any destructive step below (alarm silencing included), so a set that is
     // last-known-good or mid-deploy is left untouched rather than silenced and then torn down.
-    const skipReason = await findSkipReason({
+    const skipCheck = await findSkipReason({
       deploymentName: process.env.DEPLOYMENT_NAME,
       lastKnownGoodParameterName: process.env.LAST_KNOWN_GOOD_PARAMETER_NAME,
+      lastKnownGoodProtectionHoursEnv: process.env.LAST_KNOWN_GOOD_PROTECTION_HOURS,
       slotParameterName: process.env.SLOT_PARAMETER_NAME,
       nowMs: Date.now(),
     });
-    if (skipReason) {
-      console.log(`skip: ${skipReason}`);
+    if (skipCheck.reason) {
+      console.log(`skip: ${skipCheck.reason}`);
       return http200OkResponse({
         request,
         data: {
           message: "Self-destruct sequence skipped",
-          reason: skipReason,
+          reason: skipCheck.reason,
           timestamp: new Date().toISOString(),
         },
       });
+    }
+
+    // The last-known-good pointer named this deployment past its protection window: clear it
+    // before anything is torn down, so a run reading the pointer mid-teardown never resolves to
+    // a set that is about to stop existing.
+    if (skipCheck.clearLastKnownGoodPointer) {
+      await clearLastKnownGoodPointer(process.env.LAST_KNOWN_GOOD_PARAMETER_NAME);
     }
 
     if (process.env.DEPLOYMENT_NAME) {

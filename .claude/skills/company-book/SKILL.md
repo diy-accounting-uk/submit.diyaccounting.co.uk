@@ -31,20 +31,28 @@ operator for a document.
 
 ## Build
 
+A brief for a parser change names one real source month (its path under `../drive/…/finance/`)
+and states the expected reconciliation residual, 0, as the change's first test. A parser fixture
+with no real month behind it can pass while missing what the real file actually does.
+
 The parsers live in `mcp/lib/finance/` (run `npm ci` in `mcp/` first):
 
 | Source | Module | Call |
 |---|---|---|
-| Opening balances and chart of accounts | `book-from-workbook.js` | over the prior year's workbook set |
+| Opening balances and chart of accounts | `book-from-workbook.js` | `bookFromWorkbookSet` over the prior year's workbook set; `openingJournalLines(book)` and `openingBankBalanceLines(book)` to turn its `openingBalances` into the lines the engine reads |
 | NatWest | `bank-lines.js` | `bankLinesFromCsv(text, { accountMainID })`, `closingBalance(text)` |
 | Stripe | `stripe-lines.js` | `stripeLinesFromTransactions`, `stripePayoutLines`, `reconcileStripeMonth` |
 | PayPal | `paypal-statement-lines.js` | `paypalLinesFromStatementPdf(transactionsPdf, { ...accounts, statementPdfPath })`, `reconcilePaypalMonth({ transactionsText, statementText })`; needs `pdftotext` (poppler) |
-| Supplier invoices | `mail-invoices.js` | its `runCorpus` option points at the corpus CLI when run from a worktree |
+| Supplier invoices | `mail-invoices.js` | `invoiceLinesForPeriod({ from, to, suppliers })`; finds the corpus CLI from a main checkout or a worktree; a "Payment schedule.pdf" attachment gives one line per instalment |
 
 Validate with `validateBook` and `validateLines` from `@diy-accounting-uk/diya-gl`
 (`dist/app/lib/diya-gl-schema.js`).
 
 Posting rules:
+
+- DIY Accounting Limited is not VAT registered: `"diya-gl:vatRegistered" = false`, turnover is
+  gross, no VAT is extracted or reclaimed. Turnover against the registration threshold is reviewed
+  in each board pack.
 
 - Take account codes from the prior year's workbooks. Never invent one.
 - Post gross income and fees as separate lines. Never net them.
@@ -54,6 +62,37 @@ Posting rules:
   rows are releases.
 - A payment to a creditor carries bank code `CR` and no purchases line. Polycode Limited's
   management fee is one of these.
+- Every bank line carries both `diya-gl:bankCode` (the analysis column) and `debitCreditCode`
+  (`D` for money in, `C` for money out). The engine's `book-ltd-bank-line-has-side` check reads
+  `debitCreditCode` alone; a line with only `diya-gl:bankCode` drops out of the trial balance.
+- A Ltd book's opening balance sheet is read only from an opening journal (`sourceJournalID`
+  `"journal"`, `documentReference` starting `OB-`), never from `book.toml`'s own
+  `[openingBalances]` table. Call `openingJournalLines(book)` after seeding the book to turn that
+  table into the journal the engine reads; it declares any account referenced there that
+  `book.toml` does not already carry (from a fixed map, never an invented code).
+- A bank account's own opening balance is a second, separate line from the opening journal above:
+  a `"BC"`-coded bank line dated the period's first day, which is how each bank workbook's own
+  month tab takes its opening balance. Call `openingBankBalanceLines(book)` too, or the balance
+  sheet and the bank workbook's own running total disagree by exactly the account's opening
+  figure.
+- `documentInfo.periodCoveredEnd` is the company's fiscal year end, not the last date this book
+  happens to have data for. Setting it to a mid-year data cutoff makes the engine infer the wrong
+  12-month layout (it picks the template variant and month-tab order from this date) and shifts
+  every real month onto the wrong column, failing dozens of monthly P&L tie-out checks that have
+  nothing to do with the book's own data. A book covering April to August of a March year end
+  still carries `periodCoveredEnd = "<next> 03-31"`.
+- The book period starts 1 April, not 1 March: the company's year ends 31 March, and a book that
+  starts in March straddles the year end and carries part of the prior year's control into this
+  one's opening position.
+- `stripePayoutLines` exists for `reconcileStripeMonth`'s own proof figures, not for a line this
+  book keeps: the NatWest current-account CSV already carries the same payout as a BAC receipt
+  (same date, same amount), and posting both counts the payout twice.
+- The engine has no way yet to net a Stripe refund or dispute against turnover: a sales-journal
+  line's amount is schema-fixed to zero or more, and nothing reads `documentType`, so a
+  `credit-note` line still adds to turnover instead of reducing it. Posting the refund is still
+  correct; the turnover figure it feeds stays overstated by twice the refunded amount (once for
+  never cancelling the original sale, once for adding again) until the engine gains a way to net
+  it (a spreadsheets change, not a parser one).
 
 Glue code for a run goes in the session's scratchpad, not the repository. A defect in a committed
 parser is fixed in the parser, with a test, on a branch.

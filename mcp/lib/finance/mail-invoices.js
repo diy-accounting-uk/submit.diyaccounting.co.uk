@@ -9,30 +9,92 @@
 // into lines. It stages nothing to disk and reads no .eml file itself.
 
 import { execFile } from "node:child_process";
-import { dirname, resolve as resolvePath } from "node:path";
+import { existsSync, readFileSync } from "node:fs";
+import { basename, dirname, resolve as resolvePath } from "node:path";
 import { fileURLToPath } from "node:url";
 import { promisify } from "node:util";
 
 const execFileAsync = promisify(execFile);
 
-// This file lives at <workspace>/submit.diyaccounting.co.uk/mcp/lib/finance/,
-// and the corpus CLI and its config live at <workspace>/index/. Four levels
-// up from here is the workspace root every sibling repository shares.
-const WORKSPACE_ROOT = resolvePath(dirname(fileURLToPath(import.meta.url)), "..", "..", "..", "..");
-const CORPUS_BIN = resolvePath(WORKSPACE_ROOT, "index", ".venv", "bin", "corpus");
-const CORPUS_CONFIG = resolvePath(WORKSPACE_ROOT, "index", "corpus.toml");
+const MODULE_DIR = dirname(fileURLToPath(import.meta.url));
+
+// The workspace directory's basename is a config property rather than a
+// literal, because a worktree of this repository sits several directories
+// deeper than a main checkout: ".claude/worktrees/<name>/mcp/lib/finance"
+// still needs to find the same "diy-accounting-limited" workspace that
+// "mcp/lib/finance" finds from a main checkout.
+const PACKAGE_JSON = resolvePath(MODULE_DIR, "..", "..", "package.json");
+const WORKSPACE_DIR_NAME = JSON.parse(readFileSync(PACKAGE_JSON, "utf8")).config.workspaceDirName;
+
+// The module's directory can sit at any depth under the workspace root --
+// a main checkout ("<workspace>/submit.diyaccounting.co.uk/mcp/lib/finance")
+// or a worktree ("<workspace>/submit.diyaccounting.co.uk/.claude/worktrees/
+// <name>/mcp/lib/finance") -- so the root is found by walking upward for the
+// first directory named WORKSPACE_DIR_NAME that also holds the corpus
+// index's config, rather than by counting a fixed number of ".." segments.
+const WORKSPACE_WALK_MAX_LEVELS = 8;
 
 /**
- * Run the corpus CLI and parse its JSON stdout. The one seam tests replace:
- * every other function in this module takes it as a parameter instead of
- * calling it directly, so a test can hand in two recorded, redacted
- * documents instead of shelling out to a live index.
- * @param {string[]} args - full argv after the `corpus` binary, e.g.
- *   ["search", "--config", CORPUS_CONFIG, "--source", "mail-antony", ..., "--json", query]
+ * Walk upward from startPath, at most WORKSPACE_WALK_MAX_LEVELS directories,
+ * for the first one whose basename is workspaceDirName and which also holds
+ * an index/corpus.toml -- the workspace root every sibling repository (and
+ * every worktree of this one) shares. The exists check is a parameter so a
+ * test can walk a directory structure that was never created on disk, and so
+ * a directory that merely shares the workspace's name, with no corpus index
+ * beside it, is passed over rather than accepted.
+ * @param {string} startPath - directory to start from
+ * @param {string} workspaceDirName - the workspace directory's basename
+ * @param {(path: string) => boolean} exists - existsSync, or a fake for tests
+ * @returns {string} the matching workspace root directory
+ */
+export function findWorkspaceRoot(startPath, workspaceDirName, exists) {
+  let dir = startPath;
+  for (let level = 0; level <= WORKSPACE_WALK_MAX_LEVELS; level += 1) {
+    if (basename(dir) === workspaceDirName && exists(resolvePath(dir, "index", "corpus.toml"))) {
+      return dir;
+    }
+    const parent = dirname(dir);
+    if (parent === dir) break;
+    dir = parent;
+  }
+  throw new Error(
+    `no "${workspaceDirName}" workspace directory with an index/corpus.toml was found within ` +
+      `${WORKSPACE_WALK_MAX_LEVELS} levels above "${startPath}"`,
+  );
+}
+
+// Resolved on first actual use rather than on import: the walk throws
+// outside a full workspace checkout (a CI runner holds only this one
+// repository, with no sibling "index"), and every test in this module
+// replaces runCorpus below before that first use ever happens.
+let corpusPaths = null;
+
+function resolveCorpusPaths() {
+  if (!corpusPaths) {
+    const workspaceRoot = findWorkspaceRoot(MODULE_DIR, WORKSPACE_DIR_NAME, existsSync);
+    corpusPaths = {
+      bin: resolvePath(workspaceRoot, "index", ".venv", "bin", "corpus"),
+      config: resolvePath(workspaceRoot, "index", "corpus.toml"),
+    };
+  }
+  return corpusPaths;
+}
+
+/**
+ * Run the corpus CLI and parse its JSON stdout, adding the --config flag
+ * every subcommand needs. The one seam tests replace: every other function
+ * in this module takes it as a parameter instead of calling it directly, so
+ * a test can hand in two recorded, redacted documents instead of shelling
+ * out to a live index -- and never resolves the corpus binary or its config,
+ * which only exist inside a full workspace checkout.
+ * @param {string[]} args - the corpus subcommand and its own arguments, e.g.
+ *   ["search", "--source", "mail-antony", ..., "--json", query]
  * @returns {Promise<Object|Array>} the parsed JSON the CLI printed
  */
 export async function runCorpus(args) {
-  const { stdout } = await execFileAsync(CORPUS_BIN, args, { maxBuffer: 32 * 1024 * 1024 });
+  const { bin, config } = resolveCorpusPaths();
+  const [command, ...rest] = args;
+  const { stdout } = await execFileAsync(bin, [command, "--config", config, ...rest], { maxBuffer: 32 * 1024 * 1024 });
   return JSON.parse(stdout);
 }
 
@@ -140,6 +202,74 @@ function findInvoiceTotal(content) {
   return null;
 }
 
+// An insurer's "Payment schedule.pdf" attachment (Hiscox's is the recorded
+// case) lists each Direct Debit instalment on its own dated row rather than
+// printing one total, so a document that carries this attachment is read as
+// a schedule of instalments instead of being handed to findInvoiceTotal --
+// there is no single total on it to find. pdftotext (-layout) renders the
+// table as a "Date  Amount" header followed by rows of
+// "dd/mm/yyyy  £nn.nn", both collapsed onto their own line.
+const PAYMENT_SCHEDULE_ATTACHMENT = /---\s*attachment:\s*payment schedule\.pdf\s*---/i;
+const PAYMENT_SCHEDULE_TABLE_HEADER = /^Date\s+Amount$/i;
+const PAYMENT_SCHEDULE_ROW = /^(\d{2})\/(\d{2})\/(\d{4})\s+(\S.*)$/;
+
+// The Direct Debit's own reference sits below the table on the same
+// attachment page ("Reference Number: PL-PSC03001837355/12"), so an
+// instalment posted from it carries that as its documentReference, the way
+// an ordinary invoice line carries an invoice number.
+const PAYMENT_SCHEDULE_REFERENCE = /Reference Number:\s*(\S+)/i;
+
+/**
+ * Every (date, amount) instalment on a document's payment-schedule
+ * attachment, or null when the document carries no such attachment. Reads
+ * every row under the "Date  Amount" header until a blank or non-matching
+ * line ends the table.
+ * @param {string} content
+ * @returns {Array<{date: string, amount: number, currency: string, reference: string|undefined}>|null}
+ */
+function findScheduleInstalments(content) {
+  if (!content || !PAYMENT_SCHEDULE_ATTACHMENT.test(content)) return null;
+
+  const referenceMatch = content.match(PAYMENT_SCHEDULE_REFERENCE);
+  const reference = referenceMatch ? referenceMatch[1] : undefined;
+
+  const instalments = [];
+  let inTable = false;
+  for (const rawLine of content.split("\n")) {
+    const line = rawLine.trim();
+    if (PAYMENT_SCHEDULE_TABLE_HEADER.test(line)) {
+      inTable = true;
+      continue;
+    }
+    if (!inTable) continue;
+
+    const rowMatch = line.match(PAYMENT_SCHEDULE_ROW);
+    if (!rowMatch) {
+      if (line === "") continue;
+      break;
+    }
+    const [, day, month, year, amountText] = rowMatch;
+    const token = extractAmountToken(amountText);
+    if (!token) continue;
+    instalments.push({ date: `${year}-${month}-${day}`, amount: token.amount, currency: token.currency, reference });
+  }
+
+  return instalments.length > 0 ? instalments : null;
+}
+
+// A collection date the schedule prints falls on a weekend, moving the
+// actual Direct Debit to the next working day (the schedule's own words:
+// "If your payment collection date falls on a weekend or a bank holiday,
+// we'll collect it the next working day"). No bank-holiday list exists yet
+// in this repository, so only a weekend shifts the date.
+function nextWorkingDay(isoDate) {
+  const date = new Date(`${isoDate}T00:00:00Z`);
+  const dayOfWeek = date.getUTCDay();
+  if (dayOfWeek === 6) date.setUTCDate(date.getUTCDate() + 2);
+  else if (dayOfWeek === 0) date.setUTCDate(date.getUTCDate() + 1);
+  return date.toISOString().slice(0, 10);
+}
+
 function findDocumentReference(title, content) {
   const titleMatch = title && title.match(/Invoice (?:ID|number):\s*([\w-]+)/i);
   if (titleMatch) return titleMatch[1];
@@ -157,7 +287,10 @@ function compact(line) {
  * than harvested and stored: each configured supplier is searched for by
  * name over `mail-antony` within the period, every hit's extracted text is
  * fetched, and every hit that carries a recognisable total becomes one
- * `purchases`/`invoice` diya-gl line.
+ * `purchases`/`invoice` diya-gl line. A hit whose document carries a
+ * payment-schedule attachment instead yields one line per instalment
+ * scheduled inside the period, and no total line -- there is no single
+ * total on that document to find.
  * @param {{from: string, to: string, suppliers: Array<{name: string, taxCode: string, accountMainID: string, accountMainDescription?: string}>}} period
  * @param {{runCorpus?: (args: string[]) => Promise<Object|Array>}} [deps]
  * @returns {Promise<Array<Object>>} diya-gl lines, unvalidated against any book
@@ -170,22 +303,34 @@ export async function invoiceLinesForPeriod({ from, to, suppliers }, { runCorpus
 
   const lines = [];
   for (const supplier of suppliers) {
-    const hits = await runCorpusFn([
-      "search",
-      "--config",
-      CORPUS_CONFIG,
-      "--source",
-      "mail-antony",
-      "--since",
-      from,
-      "--until",
-      to,
-      "--json",
-      supplier.name,
-    ]);
+    const hits = await runCorpusFn(["search", "--source", "mail-antony", "--since", from, "--until", to, "--json", supplier.name]);
 
     for (const hit of hits) {
-      const doc = await runCorpusFn(["doc", "--config", CORPUS_CONFIG, "--json", hit.source, hit.path]);
+      const doc = await runCorpusFn(["doc", "--json", hit.source, hit.path]);
+
+      const instalments = findScheduleInstalments(doc.content);
+      if (instalments) {
+        for (const instalment of instalments) {
+          if (instalment.date < from || instalment.date > to) continue;
+          lines.push(
+            compact({
+              sourceJournalID: "purchases",
+              documentType: "invoice",
+              postingDate: nextWorkingDay(instalment.date),
+              documentDate: instalment.date,
+              accountMainID: supplier.accountMainID,
+              accountMainDescription: supplier.accountMainDescription,
+              amount: instalment.amount,
+              amountCurrency: instalment.currency,
+              taxCode: supplier.taxCode,
+              documentReference: instalment.reference,
+              detailComment: supplier.name,
+            }),
+          );
+        }
+        continue;
+      }
+
       const total = findInvoiceTotal(doc.content);
       if (!total) continue;
 

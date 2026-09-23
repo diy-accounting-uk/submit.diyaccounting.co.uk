@@ -89,6 +89,8 @@ Output shows:
 issue (NEXT.md row OB52h). When this happens, report it and fall back to the report for
 actual performance data — never guess forecast numbers.
 
+State the match type and any CPC ceiling when quoting the forecast to the operator.
+
 ### Fallback: estimate from the report
 
 If forecast is unavailable, use the latest report data:

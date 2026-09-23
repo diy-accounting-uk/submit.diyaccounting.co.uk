@@ -33,7 +33,14 @@ export const GEO_TARGET_CONSTANT_UK = "geoTargetConstants/2826";
 export const LANGUAGE_CONSTANT_ENGLISH = "languageConstants/1000";
 
 export function parseArgs(argv) {
-  const opts = { keywords: undefined, keywordsFile: undefined, budgetGbp: undefined, clientFile: undefined };
+  const opts = {
+    keywords: undefined,
+    keywordsFile: undefined,
+    budgetGbp: undefined,
+    clientFile: undefined,
+    matchType: "BROAD",
+    cpcCeilingGbp: undefined,
+  };
   for (let i = 0; i < argv.length; i++) {
     const arg = argv[i];
     if (arg === "--keywords") {
@@ -52,10 +59,18 @@ export function parseArgs(argv) {
       const value = argv[++i];
       if (!value) throw new Error("--client-file requires a path argument");
       opts.clientFile = value;
+    } else if (arg === "--match-type") {
+      const value = argv[++i];
+      if (!value) throw new Error("--match-type requires a value (EXACT, PHRASE, or BROAD)");
+      opts.matchType = value;
+    } else if (arg === "--cpc-ceiling-gbp") {
+      const value = argv[++i];
+      if (!value) throw new Error("--cpc-ceiling-gbp requires a number argument");
+      opts.cpcCeilingGbp = value;
     } else if (arg === "--help") {
       console.log(
-        'Usage: node infra/google/ads/ads-forecast.js --keywords "a,b" --budget-gbp 50 [--client-file <path>]\n' +
-          "   or: node infra/google/ads/ads-forecast.js --keywords-file <path> --budget-gbp 50 [--client-file <path>]",
+        'Usage: node infra/google/ads/ads-forecast.js --keywords "a,b" --budget-gbp 50 [--match-type <EXACT|PHRASE|BROAD>] [--cpc-ceiling-gbp <n>] [--client-file <path>]\n' +
+          "   or: node infra/google/ads/ads-forecast.js --keywords-file <path> --budget-gbp 50 [--match-type <EXACT|PHRASE|BROAD>] [--cpc-ceiling-gbp <n>] [--client-file <path>]",
       );
       process.exit(0);
     } else {
@@ -91,6 +106,21 @@ export function resolveKeywords(opts, readFileSync = fs.readFileSync) {
 export function parseBudgetGbp(value) {
   const gbp = Number(value);
   if (!Number.isFinite(gbp) || gbp <= 0) throw new Error(`--budget-gbp must be a positive number, got "${value}"`);
+  return gbp;
+}
+
+export function parseMatchType(value) {
+  const valid = ["EXACT", "PHRASE", "BROAD"];
+  if (!valid.includes(value)) {
+    throw new Error(`--match-type must be one of EXACT, PHRASE, or BROAD, got "${value}"`);
+  }
+  return value;
+}
+
+export function parseCpcCeilingGbp(value) {
+  if (value === undefined || value === null) return undefined;
+  const gbp = Number(value);
+  if (!Number.isFinite(gbp) || gbp <= 0) throw new Error(`--cpc-ceiling-gbp must be a positive number, got "${value}"`);
   return gbp;
 }
 
@@ -137,22 +167,30 @@ export function buildHistoricalMetricsRequest(keywords) {
 
 /**
  * Request body for KeywordPlanIdeaService.GenerateKeywordForecastMetrics: a hypothetical Search
- * campaign with one ad group holding `keywords` as broad match, a maximize-clicks bidding
+ * campaign with one ad group holding `keywords` at the given match type, a maximize-clicks bidding
  * strategy at the given daily budget, geo UK, language English.
  *
  * @param {string[]} keywords
  * @param {number} budgetGbp
  * @param {{from: string, to: string}} period
+ * @param {string} [matchType="BROAD"]
+ * @param {number} [cpcCeilingGbp]
  * @returns {object}
  */
-export function buildForecastMetricsRequest(keywords, budgetGbp, period) {
+export function buildForecastMetricsRequest(keywords, budgetGbp, period, matchType = "BROAD", cpcCeilingGbp) {
+  const biddingStrategy = {
+    maximizeClicksBiddingStrategy: { dailyTargetSpendMicros: poundsToMicros(budgetGbp) },
+  };
+  if (cpcCeilingGbp !== undefined) {
+    biddingStrategy.maximizeClicksBiddingStrategy.maxCpcBidCeilingMicros = poundsToMicros(cpcCeilingGbp);
+  }
   return {
     forecastPeriod: { startDate: period.from, endDate: period.to },
     campaign: {
       languageConstants: [LANGUAGE_CONSTANT_ENGLISH],
       geoTargetConstants: [GEO_TARGET_CONSTANT_UK],
-      biddingStrategy: { maximizeClicksBiddingStrategy: { dailyTargetSpendMicros: poundsToMicros(budgetGbp) } },
-      adGroups: [{ keywords: keywords.map((text) => ({ text, matchType: "BROAD" })) }],
+      biddingStrategy,
+      adGroups: [{ keywords: keywords.map((text) => ({ text, matchType })) }],
     },
   };
 }
@@ -185,13 +223,14 @@ export function shapeForecastMetrics(forecastBody) {
   };
 }
 
-export function buildForecastReport({ keywords, budgetGbp, period, historical, forecast }) {
-  return { keywords, budgetGbp, period, historical, forecast };
+export function buildForecastReport({ keywords, budgetGbp, period, historical, forecast, matchType = "BROAD", cpcCeilingGbp }) {
+  return { keywords, budgetGbp, period, historical, forecast, matchType, cpcCeilingGbp };
 }
 
 export function printForecastReport(report) {
+  const ceilingInfo = report.cpcCeilingGbp !== undefined ? `, CPC ceiling £${report.cpcCeilingGbp.toFixed(2)}` : "";
   console.log(
-    `=== Google Ads keyword forecast: ${report.keywords.length} keyword(s), £${report.budgetGbp.toFixed(2)}/day, ${report.period.from} to ${report.period.to} ===\n`,
+    `=== Google Ads keyword forecast: ${report.keywords.length} keyword(s), £${report.budgetGbp.toFixed(2)}/day, ${report.matchType} match${ceilingInfo}, ${report.period.from} to ${report.period.to} ===\n`,
   );
 
   console.log(`Historical metrics (${report.historical.length}):`);
@@ -224,6 +263,8 @@ export async function main(argv = process.argv.slice(2)) {
   const opts = parseArgs(argv);
   const keywords = resolveKeywords(opts);
   const budgetGbp = parseBudgetGbp(opts.budgetGbp);
+  const matchType = parseMatchType(opts.matchType);
+  const cpcCeilingGbp = parseCpcCeilingGbp(opts.cpcCeilingGbp);
   const period = defaultForecastPeriod();
 
   const config = loadConfigFromRoot();
@@ -242,7 +283,7 @@ export async function main(argv = process.argv.slice(2)) {
       config.customerId,
       config.apiVersion,
       "generateKeywordForecastMetrics",
-      buildForecastMetricsRequest(keywords, budgetGbp, period),
+      buildForecastMetricsRequest(keywords, budgetGbp, period, matchType, cpcCeilingGbp),
     ),
   ]);
 
@@ -252,6 +293,8 @@ export async function main(argv = process.argv.slice(2)) {
     period,
     historical: shapeHistoricalMetrics(historicalBody),
     forecast: shapeForecastMetrics(forecastBody),
+    matchType,
+    cpcCeilingGbp,
   });
   printForecastReport(report);
   return report;

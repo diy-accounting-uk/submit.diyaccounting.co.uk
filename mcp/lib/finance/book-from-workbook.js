@@ -13,7 +13,7 @@
 import { workbookSetFromDirectory } from "@diy-accounting-uk/diya-gl/dist/app/lib/workbook-set.js";
 import { sniffProduct } from "@diy-accounting-uk/diya-gl/dist/app/lib/diya-gl-interchange.js";
 import { extractBook, extractLines } from "@diy-accounting-uk/diya-gl/dist/app/lib/xlsx-exporter.js";
-import { validateBook } from "@diy-accounting-uk/diya-gl/dist/app/lib/diya-gl-schema.js";
+import { validateBook, validateLines } from "@diy-accounting-uk/diya-gl/dist/app/lib/diya-gl-schema.js";
 import { stampBook } from "@diy-accounting-uk/diya-gl/dist/app/lib/provenance.js";
 import { productModule } from "@diy-accounting-uk/diya-gl/dist/app/lib/products.js";
 import { stringify } from "smol-toml";
@@ -72,4 +72,168 @@ export async function bookFromWorkbookSet({ dir } = {}) {
  */
 export function toToml(book) {
   return stringify(book);
+}
+
+// A Ltd book's opening balance sheet is read only from an opening journal
+// (sourceJournalID "journal", documentReference starting "OB-"; see
+// isOpeningBalanceLine and buildOpeningBalance,
+// ../spreadsheets.diyaccounting.co.uk/app/lib/scenario-extractor.js lines
+// 237 and 252) -- never from book.toml's own [openingBalances] table, which
+// the loader reads for the "bst" product alone. This mirrors the engine's
+// own OA_JOURNAL_MAP (app/lib/xlsx-exporter.js line 1097), which extracts
+// the same journal from a completed package's OpenAccounts sheet: same
+// account codes, same natural side, same "Opening balances" comment.
+//
+// Keyed by the v2 book field name toV2OpeningBalances() writes
+// (scenario-extractor.js line 284) so a book.toml built from either that
+// function or a hand-maintained [openingBalances] table carries lines this
+// map can find every account for.
+const OPENING_JOURNAL_ACCOUNTS = {
+  stock: { accountMainID: "1100", section: "assets", normalSide: "D", comment: "Opening stock" },
+  tradeDebtors: { accountMainID: "1300", section: "assets", normalSide: "D", comment: "Trade debtors" },
+  longTermDebtors: { accountMainID: "1400", section: "assets", normalSide: "D", comment: "Long term debtors" },
+  tradeCreditors: { accountMainID: "2100", section: "liabilities", normalSide: "C", comment: "Trade creditors" },
+  netWagesDue: { accountMainID: "2150", section: "liabilities", normalSide: "C", comment: "Net wages due" },
+  wageDeductionsDue: { accountMainID: "2160", section: "liabilities", normalSide: "C", comment: "Wage deductions due" },
+  vatDue: { accountMainID: "2200", section: "liabilities", normalSide: "C", comment: "VAT liability" },
+  corporationTaxDue: { accountMainID: "2300", section: "liabilities", normalSide: "C", comment: "Corporation Tax liability" },
+  payeDue: { accountMainID: "2400", section: "liabilities", normalSide: "C", comment: "PAYE due" },
+  cisDue: { accountMainID: "2410", section: "liabilities", normalSide: "C", comment: "CIS due" },
+  directorsLoan: { accountMainID: "2500", section: "liabilities", normalSide: "C", comment: "Directors loan" },
+  longTermCreditors: { accountMainID: "2600", section: "liabilities", normalSide: "C", comment: "Long term creditors" },
+  shareCapital: { accountMainID: "3000", section: "capital", normalSide: "C", comment: "Share capital" },
+  retainedEarnings: { accountMainID: "3100", section: "capital", normalSide: "C", comment: "Retained earnings" },
+  dividendsDue: { accountMainID: "3200", section: "capital", normalSide: "C", comment: "Dividends due" },
+  capitalReserves: { accountMainID: "3300", section: "capital", normalSide: "C", comment: "Capital reserves" },
+};
+
+const OPENING_JOURNAL_BANK_ACCOUNTS = {
+  1200: "Current account opening balance",
+  1210: "Savings account opening balance",
+  1220: "Cash account opening balance",
+  1230: "Credit card account opening balance",
+};
+
+const OPENING_BALANCE_DOCUMENT_PREFIX = "OB-";
+
+function toIsoDateString(value) {
+  return value instanceof Date ? value.toISOString().slice(0, 10) : value;
+}
+
+function flipSide(side) {
+  return side === "D" ? "C" : "D";
+}
+
+// Adds a chart-of-accounts entry for an opening balance account book.toml
+// does not already declare, the way a real package's own extractBook run
+// would (a directors' loan account exists in book.accounts.liabilities as
+// soon as a workbook set's OpenAccounts sheet carries a non-zero balance
+// for it). The account code and section come from OPENING_JOURNAL_ACCOUNTS
+// / OPENING_JOURNAL_BANK_ACCOUNTS above, never invented here.
+function withDeclaredAccount(accounts, section, code, description) {
+  const declared = accounts[section] || {};
+  if (declared[code]) return accounts;
+  const withDescription =
+    section === "bank" ? { accountMainDescription: description, accountType: "bank" } : { accountMainDescription: description };
+  return { ...accounts, [section]: { ...declared, [code]: withDescription } };
+}
+
+/**
+ * Builds the opening journal a Ltd book's balance sheet is read from, out
+ * of book.openingBalances (the scalars and the bankAccounts table), and
+ * declares any account referenced there that book.accounts does not
+ * already carry.
+ * @param {Object} book - a book with documentInfo.periodCoveredStart and openingBalances
+ * @returns {{book: Object, lines: Array<Object>}} the book with any missing
+ *   accounts declared, and the validated opening journal lines
+ */
+export function openingJournalLines(book) {
+  const periodStart = toIsoDateString(book?.documentInfo?.periodCoveredStart);
+  if (!periodStart) {
+    throw new Error("openingJournalLines requires book.documentInfo.periodCoveredStart");
+  }
+  const openingBalances = book.openingBalances || {};
+
+  const entries = [];
+  for (const [key, value] of Object.entries(openingBalances)) {
+    if (key === "bankAccounts" || key === "fixedAssetCost" || key === "fixedAssetDepreciation") continue;
+    const account = OPENING_JOURNAL_ACCOUNTS[key];
+    if (!account) {
+      throw new Error(`book.openingBalances.${key} has no opening journal account mapping in OPENING_JOURNAL_ACCOUNTS`);
+    }
+    entries.push({ ...account, value });
+  }
+  for (const [code, value] of Object.entries(openingBalances.bankAccounts || {})) {
+    const comment = OPENING_JOURNAL_BANK_ACCOUNTS[code];
+    if (!comment) {
+      throw new Error(`book.openingBalances.bankAccounts.${code} has no opening journal account mapping in OPENING_JOURNAL_BANK_ACCOUNTS`);
+    }
+    entries.push({ accountMainID: code, section: "bank", normalSide: "D", comment, value });
+  }
+
+  let accounts = book.accounts || {};
+  for (const entry of entries) accounts = withDeclaredAccount(accounts, entry.section, entry.accountMainID, entry.comment);
+  const updatedBook = { ...book, accounts };
+
+  const lines = entries.map((entry) => ({
+    entryNumber: `${OPENING_BALANCE_DOCUMENT_PREFIX}${entry.accountMainID}`,
+    sourceJournalID: "journal",
+    postingDate: periodStart,
+    accountMainID: entry.accountMainID,
+    amount: Math.abs(entry.value),
+    documentType: "journal",
+    documentReference: `${OPENING_BALANCE_DOCUMENT_PREFIX}001`,
+    detailComment: "Opening balances",
+    lineItemComment: entry.comment,
+    taxCode: "OS",
+    taxRate: 0,
+    debitCreditCode: entry.value >= 0 ? entry.normalSide : flipSide(entry.normalSide),
+  }));
+
+  const { valid, errors } = validateLines(lines, updatedBook);
+  if (!valid) {
+    throw new Error(`Opening journal lines failed validation:\n${errors.join("\n")}`);
+  }
+  return { book: updatedBook, lines };
+}
+
+/**
+ * Builds the opening balance a bank workbook reads for itself: one bank
+ * line per account in book.openingBalances.bankAccounts, coded "BC" and
+ * dated the period's first day, which is how the workbook's own month tab
+ * takes an opening balance rather than as a statement line (see
+ * isOpeningBankBalance, ../spreadsheets.diyaccounting.co.uk/app/lib/book-checks/ltd.js
+ * line 88, and the "Trial Balance ... closing balance echo" check,
+ * app/products/ltd.js line 3431). This is separate from
+ * openingJournalLines(): the balance sheet reads the opening journal, the
+ * bank workbook reads this BC line, and a book needs both or the two
+ * disagree on the account's opening balance by exactly this amount.
+ * @param {Object} book - a book with documentInfo.periodCoveredStart and openingBalances.bankAccounts
+ * @returns {Array<Object>} the validated opening bank lines
+ */
+export function openingBankBalanceLines(book) {
+  const periodStart = toIsoDateString(book?.documentInfo?.periodCoveredStart);
+  if (!periodStart) {
+    throw new Error("openingBankBalanceLines requires book.documentInfo.periodCoveredStart");
+  }
+  const bankAccounts = book?.openingBalances?.bankAccounts || {};
+
+  const lines = Object.entries(bankAccounts).map(([code, value]) => ({
+    "entryNumber": `${OPENING_BALANCE_DOCUMENT_PREFIX}BANK-${code}`,
+    "sourceJournalID": "bank",
+    "postingDate": periodStart,
+    "accountMainID": code,
+    "amount": Math.abs(value),
+    "documentType": "bank-statement",
+    "detailComment": "Opening balance",
+    "diya-gl:bankCode": "BC",
+    "diya-gl:bankAccountID": code,
+    "debitCreditCode": value >= 0 ? "D" : "C",
+  }));
+
+  const { valid, errors } = validateLines(lines, book);
+  if (!valid) {
+    throw new Error(`Opening bank balance lines failed validation:\n${errors.join("\n")}`);
+  }
+  return lines;
 }

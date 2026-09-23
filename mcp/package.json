@@ -11,6 +11,9 @@
   "exports": {
     ".": "./lib/server.js"
   },
+  "config": {
+    "workspaceDirName": "diy-accounting-limited"
+  },
   "scripts": {
     "test": "vitest run",
     "start": "node bin/diya-submit-mcp.js"

@@ -79,7 +79,9 @@ are not startable; leave them.
 - **Every brief carries** the worktree path and branch, absolute paths for every file tool,
   `cd <worktree>` in every Bash call, the evidence (run ids, log lines, file:line), "commit before
   a long verification", "a wait is a sleep loop inside one Bash call, never a Monitor", the
-  licence header rule for new files, and the report-back contract. A brief that touches a workflow
+  licence header rule for new files, "it must not call the `Agent` tool or fork — only the
+  coordinator fans out", and the report-back contract. A brief whose work needs splitting is split
+  by the coordinator before dispatch, never left to the worker to split. A brief that touches a workflow
   carries the called-workflow checklist: inherited `github.event_name`, permissions the callers
   must grant, `--repo` on `gh` with no checkout, grep the siblings for the same defect. A brief
   that dispatches a workflow names the exact inputs (`destroy-ci.yml` needs

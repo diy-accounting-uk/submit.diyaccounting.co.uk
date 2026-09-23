@@ -48,7 +48,7 @@
         align-items: center;
         gap: var(--spacing-md);
         margin: var(--spacing-md) 0;
-        color: #777;
+        color: #666;
       }
       .dashboard-divider::before,
       .dashboard-divider::after {
@@ -122,6 +122,16 @@
         </form>
         <div id="businessPickerResults" style="display: none">
           <div id="businessPickerList" class="business-picker-list"></div>
+          <div id="foreignPropertyDiversionNote" class="status-message warning" style="display: none" role="alert">
+            This service does not yet handle foreign property or other income. Finish that part of your return with other MTD-compatible
+            software or HMRC's online service - see
+            <a
+              href="https://www.gov.uk/guidance/find-software-thats-compatible-with-making-tax-digital-for-income-tax"
+              target="_blank"
+              rel="noopener"
+              >HMRC's software finder</a
+            >.
+          </div>
           <p id="yearTokenCost" class="hint"></p>
         </div>
       </div>
@@ -289,17 +299,37 @@
         }
       }
 
-      // The dated and cumulative self-employment models share one page family; the property
-      // models share their own. There is no third family - "self-employment" routes one way,
-      // every other HMRC business type routes the other.
+      // The dated and cumulative self-employment models share one page family; the UK property
+      // models share their own. Foreign property and any other HMRC business type have no page
+      // family here, so a pick of that type hides the step 3 to 8 links and shows the diversion
+      // note instead of routing to either family.
+      const STEP_LINK_IDS = ["step3Link", "step4Link", "step5Link", "step6Link", "step7Link", "step8Link"];
+
+      function listedBusinessNeedsDiversion() {
+        return Array.from(document.querySelectorAll('#businessPickerList input[name="pickedBusiness"]')).some(
+          (radio) => radio.dataset.typeOfBusiness !== "self-employment" && radio.dataset.typeOfBusiness !== "uk-property",
+        );
+      }
+
       function applyPickedBusinessToLinks(business) {
-        const isProperty = business && business.typeOfBusiness !== "self-employment";
-        document.getElementById("step3Link").href = isProperty ? "ukPropertyPeriod.html" : "selfEmploymentPeriod.html";
-        document.getElementById("step4Link").href = isProperty ? "ukPropertyPeriods.html" : "selfEmploymentPeriods.html";
-        document.getElementById("step5Link").href = isProperty ? "ukPropertyPeriodView.html" : "selfEmploymentPeriodView.html";
-        document.getElementById("step6Link").href = isProperty ? "ukPropertyPeriodAmend.html" : "selfEmploymentPeriodAmend.html";
-        document.getElementById("step7Link").href = isProperty ? "ukPropertyAnnualSubmission.html" : "annualSubmission.html";
-        document.getElementById("step8Link").href = isProperty ? "ukPropertyAdjustments.html" : "adjustments.html";
+        const typeOfBusiness = business && business.typeOfBusiness;
+        const isUkProperty = typeOfBusiness === "uk-property";
+        const pickedNeedsDiversion = !!typeOfBusiness && typeOfBusiness !== "self-employment" && !isUkProperty;
+
+        STEP_LINK_IDS.forEach((id) => {
+          document.getElementById(id).closest(".dashboard-step").style.display = pickedNeedsDiversion ? "none" : "";
+        });
+        document.getElementById("foreignPropertyDiversionNote").style.display =
+          pickedNeedsDiversion || listedBusinessNeedsDiversion() ? "block" : "none";
+
+        if (pickedNeedsDiversion) return;
+
+        document.getElementById("step3Link").href = isUkProperty ? "ukPropertyPeriod.html" : "selfEmploymentPeriod.html";
+        document.getElementById("step4Link").href = isUkProperty ? "ukPropertyPeriods.html" : "selfEmploymentPeriods.html";
+        document.getElementById("step5Link").href = isUkProperty ? "ukPropertyPeriodView.html" : "selfEmploymentPeriodView.html";
+        document.getElementById("step6Link").href = isUkProperty ? "ukPropertyPeriodAmend.html" : "selfEmploymentPeriodAmend.html";
+        document.getElementById("step7Link").href = isUkProperty ? "ukPropertyAnnualSubmission.html" : "annualSubmission.html";
+        document.getElementById("step8Link").href = isUkProperty ? "ukPropertyAdjustments.html" : "adjustments.html";
       }
 
       function escapeHtml(text) {
