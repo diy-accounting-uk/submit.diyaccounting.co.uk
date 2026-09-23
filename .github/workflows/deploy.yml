@@ -273,8 +273,10 @@ jobs:
             gh run cancel "${{ github.run_id }}" --repo "${{ github.repository }}"
             exit 1
           fi
+      # A push deploys main to prod and any other branch to ci; a dispatch aimed at the other
+      # environment covers nothing the push run does, so it leaves that run alone.
       - name: Cancel any push-triggered run of this commit that hasn't started a stack job
-        if: ${{ github.event_name == 'workflow_dispatch' && inputs.deployment-name != '' }}
+        if: ${{ github.event_name == 'workflow_dispatch' && inputs.deployment-name != '' && (needs.params.outputs.github-environment == 'prod') == (github.ref == 'refs/heads/main') }}
         uses: './.github/actions/cancel-superseded-push-deploy'
         with:
           github-token: ${{ github.token }}
