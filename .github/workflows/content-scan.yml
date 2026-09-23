@@ -1,0 +1,61 @@
+# SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0
+# Copyright (C) 2006-2026 DIY Accounting Limited
+
+name: "content scan"
+
+on:
+  # No paths-ignore: unlike test.yml and codeql.yml, this workflow scans a docs-only push too,
+  # because personal data can land in a Markdown file (a support triage note, a pasted email)
+  # as easily as in code. push covers every commit pushed to a branch in this repository, main
+  # included; pull_request exists only so a fork's PR gets scanned too, since a fork's own
+  # pushes never reach push here.
+  push:
+    branches:
+      - '**'
+      - '!gh_pages'
+  pull_request:
+    branches: [main]
+
+concurrency:
+  group: content-scan-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  scan:
+    # Runs unconditionally for push (this repository's own branches only trigger push, never
+    # pull_request). For pull_request, runs only when the PR head is a fork: a same-repository
+    # PR's head branch already ran this exact commit under push. Mirrors codeql.yml's analyze job.
+    if: ${{ github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name != github.repository }}
+    name: content scan
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          # The diff step below needs the push's previous head, or the PR's base, in history;
+          # neither is reliably inside a shallow clone's default depth.
+          fetch-depth: 0
+
+      - name: Compute the diff to scan
+        id: diff
+        shell: bash
+        run: |
+          set -euo pipefail
+          if [ "${{ github.event_name }}" = "pull_request" ]; then
+            BASE_SHA="${{ github.event.pull_request.base.sha }}"
+          else
+            BASE_SHA="${{ github.event.before }}"
+            if [ -z "$BASE_SHA" ] || [ "$BASE_SHA" = "0000000000000000000000000000000000000000" ]; then
+              # First push of a new branch: there is no previous head to diff against, so every
+              # line the branch carries counts as added. The empty tree's hash is fixed across
+              # every git repository.
+              BASE_SHA="4b825dc642cb6eb9a060e54bf8d69288fbee4904"
+            fi
+          fi
+          git diff "$BASE_SHA" "${{ github.sha }}" > /tmp/content-scan.diff
+
+      - name: Scan added lines for personal data
+        run: node scripts/content-scan.mjs /tmp/content-scan.diff

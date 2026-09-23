@@ -1,0 +1,94 @@
+# SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0
+# Copyright (C) 2006-2026 DIY Accounting Limited
+
+# Values content-scan.mjs exempts from a hit because the repository publishes them on purpose.
+# One entry per line: an exact string, or a case-insensitive regex wrapped in a leading and
+# trailing `/`, matched against the whole matched text (the full email, the full "Bearer ..."
+# token, the full number). A human edits this list. Do not add a real customer's address or id
+# to work around a failing scan — fix the pattern or the line instead.
+#
+# Built by scanning every added line of the whole tracked tree (git diff from the empty tree to
+# HEAD) with an empty allow-list and classifying every distinct hit. Everything else that
+# matched (test fixtures using syntactically valid but fake identifiers, inside the scanner's
+# own exempt test directories) needed no entry here at all.
+
+# GitHub's own bot and per-user noreply addresses (committers listed in
+# .github/allowed-commit-identities.yml) and its system addresses (action@github.com,
+# noreply@github.com, and the "git@github.com:org/repo.git" SSH clone URL, which is
+# email-shaped but is not an address).
+/@users\.noreply\.github\.com$/
+/@github\.com$/
+
+# Claude's fixed commit co-author address (CLAUDE.md's attribution convention), in every commit
+# trailer this repository writes.
+noreply@anthropic.com
+
+# UK government department contact addresses this repository corresponds with about HMRC MTD
+# and Companies House filing (SDSTeam@hmrc.gov.uk, makingtaxdigital-softwarevendors@hmrc.gov.uk,
+# xml@companieshouse.gov.uk, noreply@tax.service.gov.uk) and the ICO's own complaints address.
+/@[a-z0-9.-]+\.gov\.uk$/
+/@([a-z0-9-]+\.)?ico\.org\.uk$/
+
+# The operator's own git-commit identities, documented in .github/allowed-commit-identities.yml
+# (current) and REPORT_IDENTITY_AUDIT.md (former employer accounts, kept there for the audit).
+antonyccartwright@gmail.com
+antony.cartwright@awaze.com
+antony.cartwright@westfieldhealth.com
+
+# The company's own GA4 reporting service account (infra/google/gcp/*, IngestionStack.java),
+# not a customer's identity.
+ga4-report-pull@diyaccounting-ga4.iam.gserviceaccount.com
+
+# Stripe's own published API-documentation contact address (reference/stripe-api-*).
+dev-platform@stripe.com
+
+# A deliberately misspelled placeholder domain ("diyaccunting", not "diyaccounting") used as a
+# local-dev sentinel value in app/lib/httpServerToLambdaAdaptor.js so it can never resolve to a
+# real address.
+test@test.submit.diyaccunting.co.uk
+
+# HMRC's own documented example identifiers and format placeholders, repeated throughout the
+# vendored OpenAPI specs under reference/ and this repository's own doc comments, test-data
+# generator and health-check probes.
+AA999999A
+AA000003A
+TC663795B
+AB123456C
+GB123456789012
+GB123456123456
+/^Bearer bb7fed3fe10dd235a2ccda3d50fb$/
+/^Bearer 59fc92c1cdf0b8ef1f138a702effdbd2$/
+
+# The company's own VAT registration numbers used with HMRC's sandbox: the developer test VRN
+# probed by infra/hmrc/hmrc.toml's health checks, and the one named in the API-approval
+# submission record (_developers/hmrc/HMRC_MTD_API_APPROVAL_SUBMISSION.md).
+193051768
+239849510
+
+# HMRC's own documented example VRN in the vendored reference/hmrc-txm-fph-validator-api spec.
+107794340
+
+# Placeholder VRNs in this repository's own demo/prefetch code: an all-zero sentinel
+# (web/public/prefetch/prefetch-hmrc-vat-return-get-head.js) and the guided-tour fill value
+# (web/public/widgets/simulator-journeys.js).
+000000000
+123456789
+
+# The sandbox test VRN and two accessibility-node ids that coincidentally sit near the word
+# "Vat" in web/public/tests/test-report-web-test-local.json, a committed Playwright test report.
+522533768
+184474740
+265607811
+
+# This repository's own test-fixture secrets, already fake and already documented as such in
+# app/unit-tests/scripts/redactTriageOutput.test.js (AWS's own published example access key,
+# and a JWT with no real signature) and app/unit-tests/lib/loggerPiiRedaction.test.js.
+AKIAIOSFODNN7EXAMPLE
+eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiIxMjM0NTY3ODkwIn0.dozjgNryP4J3jVmNHl0w5N_XgL0n3I9PYLxDmkAmr1c
+/^Bearer abc123\.def456-ghi789$/
+/^Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9\.payload\.sig$/
+
+# A coincidental digit run inside an SVG path's coordinate data in the vendored HTML export
+# reference/Obligations and returns | VAT (MTD) End-to-End Service Guide - VAT (MTD) end-to-end
+# service guide.html; not an address.
+2.81.8.8
