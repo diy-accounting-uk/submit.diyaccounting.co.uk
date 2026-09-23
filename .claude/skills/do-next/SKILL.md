@@ -146,6 +146,11 @@ A fresh agent carries none of your context, so the brief stands alone. Every bri
   duplicate writers whose errors then had to be relayed and corrected.
 - **Every Bash call starts with `cd <worktree>` or uses `git -C <worktree>`**, because a shell that
   starts in the primary checkout edits `main` and leaves work uncommitted there.
+- **For a sibling-repository worktree** (a worktree in another repository, e.g.
+  `spreadsheets.diyaccounting.co.uk`), symlink that repository's main checkout's `node_modules`
+  into the worktree before anything needs it: `ln -s <main checkout>/node_modules
+  <worktree>/node_modules`. An empty `node_modules` in a fresh worktree is what turned a
+  sibling-repository push into three attempts, one of them 41 minutes.
 - **Every Read, Edit and Write path is absolute under the worktree**, not only the Bash `cd`. The
   file tools resolve a repository-relative path against the primary checkout, so an agent that
   only `cd`s writes its change into `main`'s tree as well as its own; the batch then carries the
