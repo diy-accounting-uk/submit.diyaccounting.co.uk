@@ -320,6 +320,19 @@ jobs:
         .github/workflows/deploy-cdk-stack.yml .github/workflows/destroy-prod.yml
         .github/workflows/generate-pass.yml .github/workflows/probe-test.yml .github/workflows/test.yml
     steps:
+      - name: Validate ci deployment-name is in the pool when test scenarios run
+        env:
+          TARGET_ENVIRONMENT: ${{ needs.params.outputs.github-environment }}
+          DEPLOYMENT_NAME: ${{ needs.params.outputs.deployment-name }}
+          SKIP_TEST_SCENARIOS: ${{ needs.params.outputs.skipTestScenarios }}
+        run: |
+          if [ "$TARGET_ENVIRONMENT" = "ci" ] && [ -n "$DEPLOYMENT_NAME" ] && [ "$SKIP_TEST_SCENARIOS" = "false" ]; then
+            if [ "$DEPLOYMENT_NAME" != "ci-set1" ] && [ "$DEPLOYMENT_NAME" != "ci-set2" ]; then
+              echo "::error::a ci deployment-name must be ci-set1 or ci-set2 when test scenarios run; other names cannot sign in because only those hosts are Cognito callbacks"
+              exit 1
+            fi
+          fi
+
       - name: Checkout
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with:
