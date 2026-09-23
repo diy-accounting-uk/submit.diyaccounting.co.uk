@@ -140,6 +140,10 @@ A fresh agent carries none of your context, so the brief stands alone. Every bri
 - **Its worktree path and branch**, and that it works only there. It may `git add` its own files
   and commit. Never `git stash`, `git reset`, `git checkout --` or `git clean`. Never push, never
   open a PR, never edit `NEXT.md`.
+- **It must not call the `Agent` tool or fork.** Only the coordinator fans out. A brief whose work
+  needs splitting is split by the coordinator before dispatch, not handed to the worker to split
+  itself — a worker that forked itself recursively once ran to 0.78M reported tokens with
+  duplicate writers whose errors then had to be relayed and corrected.
 - **Every Bash call starts with `cd <worktree>` or uses `git -C <worktree>`**, because a shell that
   starts in the primary checkout edits `main` and leaves work uncommitted there.
 - **Every Read, Edit and Write path is absolute under the worktree**, not only the Bash `cd`. The
