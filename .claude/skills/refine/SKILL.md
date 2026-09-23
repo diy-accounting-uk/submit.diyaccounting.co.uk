@@ -152,4 +152,6 @@ a JS test that could not read a synth; a device grant Cognito does not have; an 
 practice page linked from every prod nav; a nightly deploy of a docs-only head; two probe jobs
 holding each other's lock; six corrected agent results (knip deleting a used file, a Stripe API pin
 on every client, a `GITHUB_ENV` name clash, a compatibility alias, a stack-update heuristic, a
-`.dockerignore` excluding `infra/`).
+`.dockerignore` excluding `infra/`). A dispatched workflow's checks never count toward a pull request's required checks
+(GitHub leaves `workflow_dispatch` suites out of the PR's rollup); a required check must come from a push
+or pull_request run, skipped by `if:` when it has nothing to do.
