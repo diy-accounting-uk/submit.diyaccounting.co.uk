@@ -403,19 +403,23 @@ Shared facts for the analytics rows (B52d, B52e, B52l, B52m): the prod Athena da
   `derive_micro_entity_accounts` over the cloud book, writing JSON lines to `curated/finance/` with
   a Glue table on `Ga4DailyTables.java`'s pattern, one observation set in
   `operatorSnapshotPublish.js`, and a block above `renderSnapshot`'s objectives in
-  `web/public/operator/dashboard.html`. Blocked on OF2 (DIYA's book saved to the DIYA cloud, the last of the F1 and F2 rows). **Source**: BACKLOG 52i; `PLAN_ONE_STOP_DASHBOARD.md` D10. **Owner**:
+  `web/public/operator/dashboard.html`. Blocked on OF2 (DIYA's final book saved to the DIYA cloud and kept past the 35-day sandbox). **Source**: BACKLOG 52i; `PLAN_ONE_STOP_DASHBOARD.md` D10. **Owner**:
   Claude Code. **Model**: Sonnet. **Size**: ~4 files.
 
 - [ ] **F2e. The MCP writes a populated spreadsheets package.** A tool in `mcp/lib/finance/` that
   takes the book and lines and writes a DIY Accounting spreadsheets package, reconciled under the
   spreadsheets repository's existing reconciliation harness rather than a new check; nothing
-  automated writes to Google Drive. Blocked on OF2d. **Source**: `../PLAN_FINANCE_AUTOMATION.md`
+  automated writes to Google Drive. Blocked on F2m (the final book). **Source**: `../PLAN_FINANCE_AUTOMATION.md`
   phase 2. **Owner**: Claude Code. **Model**: Sonnet. **Size**: ~3 files.
 
-- [ ] **OF2. DIYA's book saved to the DIYA cloud.** With the operator signed in through B61's
-  sign-in, `save_book` writes F2d's verified book to the DIYA cloud, which is B52i's unblock event.
-  Blocked on OF2d. **Source**: `../PLAN_FINANCE_AUTOMATION.md` phase 2. **Owner**: Claude
-  Code; the operator signs in. **Model**: Haiku. **Size**: 0 files.
+- [ ] **OF2. DIYA's book saved to the DIYA cloud.** The operator saved F2k's book from the
+  DIYA-GL web app on 2026-09-23 22:51 (signed in as the operator's personal Google address;
+  company "DIY Accounting Limited", ltd, 2026-04-01 to 2027-03-31, version 1). That book predates
+  F2m (turnover £2,901.07 divided by 1.2, members register empty) and sits in the 35-day sandbox,
+  expiring about 2026-10-28. Remaining: save F2m's book (a new version of the same company) and
+  keep it past 35 days (a Resident subscription or a comp on the account that holds it). Blocked
+  on F2l and F2m. **Source**: `../PLAN_FINANCE_AUTOMATION.md` phase 2. **Owner**: Operator.
+  **Model**: none. **Size**: 0 files.
 
 ## Discipline
 
