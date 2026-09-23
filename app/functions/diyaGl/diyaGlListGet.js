@@ -15,7 +15,7 @@ import { registerLambdaRoute } from "../../lib/httpServerToLambdaAdaptor.js";
 import { respondWithDiyaGlCors } from "../../lib/diyaGlCors.js";
 import { initializeSalt } from "../../services/subHasher.js";
 import { entitlementFor, lapsedResidentExpiresAt } from "../../services/diyaGlEntitlement.js";
-import { resolveOwnerPrefix, listBooks } from "../../data/s3DiyaGlRepository.js";
+import { resolveOwnerPrefix, listBooks, isBookVisible } from "../../data/s3DiyaGlRepository.js";
 import { getClient } from "../../data/dynamoDbPracticeClientRepository.js";
 
 const logger = createLogger({ source: "app/functions/diyaGl/diyaGlListGet.js" });
@@ -68,7 +68,7 @@ export async function ingestHandler(event) {
       const ownerPrefix = await resolveOwnerPrefix(user.sub, undefined, clientId);
       const now = Date.now();
       const books = (await listBooks(ownerPrefix))
-        .filter((book) => book.retention !== "sandbox" || !book.expiresAt || Date.parse(book.expiresAt) > now)
+        .filter((book) => isBookVisible(book, now))
         .map((book) =>
           book.retention === "resident" && entitlement.reason === "expired"
             ? { ...book, expiresAt: lapsedResidentExpiresAt(entitlement.expiry) }

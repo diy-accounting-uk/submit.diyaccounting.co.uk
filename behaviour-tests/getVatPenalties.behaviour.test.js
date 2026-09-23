@@ -304,7 +304,7 @@ test("Click through: View VAT penalties from HMRC", async ({ page }, testInfo) =
   /* ************************************* */
   if (isSyntheticMode()) {
     /**
-     * HMRC VAT API Sandbox scenarios (excerpt from _developers/reference/hmrc-mtd-vat-api-1.0.yaml)
+     * HMRC VAT API Sandbox scenarios (excerpt from reference/hmrc-mtd-vat-api-1.0.yaml)
      *
      * GET /organisations/vat/{vrn}/penalties - no from/to query params, always the trailing 24 months
      *  - Default (No header value): multiple penalties in the last 2 years

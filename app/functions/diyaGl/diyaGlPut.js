@@ -25,6 +25,7 @@ import { entitlementFor } from "../../services/diyaGlEntitlement.js";
 import { listZipMemberNames, isDiyaGlPackage, NotAZipError } from "../../lib/zipMembers.js";
 import {
   isValidBookId,
+  isBookVisible,
   resolveOwnerPrefix,
   readMetadata,
   writeMetadata,
@@ -293,7 +294,7 @@ export async function ingestHandler(event) {
       let existing = await readMetadata(ownerPrefix, bookId);
 
       if (!existing) {
-        const currentBooks = await listBooks(ownerPrefix);
+        const currentBooks = (await listBooks(ownerPrefix)).filter((book) => isBookVisible(book));
         const maxPerUser = Number(process.env.DIYA_GL_MAX_PER_USER || 20);
         if (currentBooks.length >= maxPerUser) {
           return http403ForbiddenResponse({

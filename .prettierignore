@@ -5,6 +5,7 @@ node_modules/
 target/
 cdk.out/
 _developers/
+reference/
 .*
 *.env
 *.md

@@ -235,7 +235,7 @@ test("Click through: View VAT Return (single API focus: GET)", async ({ page }, 
 
   if (isSyntheticMode()) {
     /**
-     * HMRC VAT API Sandbox scenarios (excerpt from _developers/reference/hmrc-mtd-vat-api-1.0.yaml)
+     * HMRC VAT API Sandbox scenarios (excerpt from reference/hmrc-mtd-vat-api-1.0.yaml)
      *
      * GET /organisations/vat/{vrn}/returns/{periodKey}
      *  - DATE_RANGE_TOO_LARGE: The date of the requested return cannot be further than four years from the current date.

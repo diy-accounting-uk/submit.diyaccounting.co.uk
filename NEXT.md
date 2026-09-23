@@ -16,8 +16,13 @@ runs), and for Claude Code steps the **Model** a sub-agent should use (Fable > O
 Haiku; the lowest tier that fits). Anything touching code goes through a `claude/*` branch and
 PR; the operator merges.
 
-**Prod runs deployment prod-b9abb8d**; main's deploy of PR #331's merge (cdbc557a) is in flight.
-**ci**: `ci-set1` is last-known-good. Open pull request: #332 (`claude/b78-board`: PU-7j), its test runs in flight.
+**Prod runs deployment prod-cdbc557**.
+**ci**: no set is standing; `ci-set1` (the last-known-good parameter's value) self-destructed at
+04:01 UTC and `ci-set2` at 03:05, so the ci apex has no target until the next green deploy (PR
+#333's merge deploy at wake). Every open pull request's deploy is red only on
+`diyaGlSubscriptionBehaviour`'s book limit, which PR #333 fixes. Open pull requests: #333
+(`claude/b79-developers`, head 3e7255af, green), #334 (`claude/b80-board`, head f4770e0c),
+#335 (`claude/b81-board`, head 858c8cd3), #336 (`claude/b82-board`, head c450180d).
 
 The board runs in five sections, in this order: **in flight** (a branch, a pull request or a run
 in motion, each named in the row), **machine-only**, **machine-ask**, **human-driven**,
@@ -39,42 +44,197 @@ step.
 
 ## In flight
 
-- [ ] **PU-7. Practice licence build.** PU-7a to PU-7i, PU-7k and PU-7l are on `main`. In flight on
-  `claude/b78-board`, PR #332, head b2a08e60, its test runs in flight (an mcp-only head, so no ci
-  deploy): PU-7j, `run_for_clients` in `mcp/lib/batch-tools.js` and the CLI's `--all-clients` in
-  `mcp/bin/diya-submit-mcp.js`: one result row per client, non-zero exit on any failure, over
-  the client tools PU-7i put in `mcp/lib/practice-tools.js`. Then,
-  in `PLAN_PRICE_UPDATE.md` §(d) (lines 227 to 236): PU-7m on PU-7j, PU-7e on the operator's grant numbers; the
-  `resident-pro` catalogue values (`enable = "always"`, `hidden = false`,
-  `allocation = "on-subscription"`) and the practice page's nav link in
-  `web/public/widgets/page-chrome.js` flip in the launch step after PU-7m, with the four ci probes
-  that reach resident-pro through a pass updated in the same change. **Source**:
-  `PLAN_PRICE_UPDATE.md` PU-7. **Owner**: Claude Code. **Model**: Sonnet. **Size**: ~5 files for
-  PU-7j, ~15 across the two rows after it.
+**COOL-DOWN is on since 2026-09-22T19:56:50Z.** No new board rows except a degradation. Agents commit
+and stop. One branch is driven green at a time. Lifted only by the operator in their own words.
+
+- [ ] **B82. Wave b82 on `claude/b82-board`, PR #336.** Three commits, head c450180d. Its push deploy 35775043216 failed four
+  stacks on `ci-set1` because PR #333's dispatched redeploy, named for the same slot, ran on the
+  set at the same time (a dispatch with an explicit slot name bypasses the claim); the rerun on `ci-set1` passed every stack and every
+  probe but `diyaGlSubscriptionBehaviour`, which fails on the book limit PR #333's product fix
+  removes and this branch does not carry; after #333 merges, the branch takes `main` and
+  redeploys for its own green: B34j
+  (a9e2e920, the privacy notice's row for practice client filing, with a browser test) and PU-7e
+  (e4302a96 and c450180d: `tokensGranted = "unlimited"` on `resident-pro`, exempt in
+  enforcement, the webhook refresh and the bundle read, shown as unlimited on the usage page,
+  the header, the submission-cost widget and the dashboard gate, the simulator map to match);
+  B34i's ICO wording is on `main`. No pull request yet. **Source**: the rows named. **Owner**:
+  Claude Code. **Model**: Sonnet and Haiku. **Size**: ~5 files.
+
+- [ ] **B81. Wave b81 on `claude/b81-board`, PR #335.** PU-7m (a0bd6686: the practice licence
+  suite green on the simulator lane, the practice-clients table bootstrapped for the local lanes,
+  `resident-pro` granted through checkout so `subscriptionStatus` is set) and AS1 (f3538afa: the
+  `**/.claude/**` coverage exclude matched every file inside a worktree under
+  `.claude/worktrees/`, so both providers reported nothing; the project config's misplaced
+  `pool`/`include` block flattened; thresholds 76/68/86/77 from the measured run). AS7a's strict
+  validation is reverted on the branch: the simulator lane runs with `COGNITO_CLIENT_ID`,
+  `COGNITO_BASE_URI` and the two HMRC secret ARNs blank by design, so every simulator suite's
+  server failed to start in `test` run 35767760731; deploy 35767761916 never won a ci slot (both held, one by
+  PR #334's ended run) and was cancelled; the reverts pushed as cd8f56d8, whose `test` run failed the new
+  practice licence simulator suite on a missing `mcp/node_modules` (the job never installed the
+  MCP package); head 858c8cd3 adds that install and carries B30as (1a9ec71e: a `release-ci-slot`
+  job at the end of `deploy.yml` deletes this run's claim unless the set is the ci LKG, with the
+  stale rule as backstop). Its `test` run is green; its deploy 35775629294 first failed for want of a ci slot, and its
+  rerun claimed `ci-set2` at 23:05 UTC once PR #334's claim went stale: every stack and 12 of the 13
+  probes passed, and `diyaGlSubscriptionBehaviour` failed with `book-limit-reached` (job
+  106980081292), the defect PR #333's third commit fixes and this branch does not carry. The
+  branch takes `main` after #333 merges and redeploys for its own green; `ci-set2` is the ci LKG. The suite's ci and prod variants need a sandbox agent authorisation the simulator
+  shortcut has no equivalent for, so they run only when one exists. **Source**: the rows named.
+  **Owner**: Claude Code. **Model**: Sonnet and Haiku. **Size**: ~16 files.
+- [ ] **PU-7. Practice licence build.** PU-7a to PU-7l are on `main`. In flight on
+  `claude/b81-board` (wave b81): PU-7m, the behaviour test `behaviour-tests/practiceLicence.behaviour.test.js`,
+  two clients added through the practice routes, a derive and a submit for each on the simulator
+  lane over the MCP's `run_for_clients`, registered in `deploy.yml`, `probe-test.yml` and
+  `test.yml`. What follows is PU-7e and PU-7n below. **Source**: `PLAN_PRICE_UPDATE.md` PU-7.
+  **Owner**: Claude Code. **Model**: Sonnet. **Size**: ~4 files.
+- [ ] **B80. Wave b80 on `claude/b80-board`, PR #334.** Three agents: AS8 (the two RUM deployed-environment skips out of the unit runner; AS1's
+  coverage commit rejected, the finding on its own row), AS4 and AS7 (the ESLint config cleanup; the strict-mode TODO and warning
+  comments), AS6 and AS5 (prettier and Spotless checks in `test.yml`, with the 218 files they reformat; the
+  lint job as a baseline ratchet at zero errors). Its `test` run is green on head f4770e0c (the prettier fix), but no deploy has run on that
+  head: the last deploy 35761188691 (9b633159) failed, and the two commits since touch no deploy
+  path. Its dispatched deploy 35801175335 to `ci-set1` (00:14 UTC) passed every stack and every
+  probe but `diyaGlSubscriptionBehaviour`, red with `book-limit-reached` (job 106996738920), the
+  defect PR #333 fixes and this branch does not carry; after #333 merges, the branch takes `main`
+  and redeploys for its own green. **Source**: the
+  rows named. **Owner**: Claude Code. **Model**: Sonnet and Haiku. **Size**: ~10 files plus the
+  directives.
+
+- [ ] **B79. The developer archive leaves the repository, PR #333.** `_developers/archive`,
+  `backlog`, `design`, `aws-multi-account` and the dated reports (213 files) now live in the
+  private workspace tree `../developers/submit`, indexed as the corpus source `developers`; the
+  vendor API specs move to `reference/`; `_developers/` keeps `hmrc/` and the live runbooks.
+  Its ci deploy 35753852365 went red in `diyaGlSubscriptionBehaviour`: the durable test user
+  has reached the tier's book limit because runs that failed mid-way today left their books
+  behind; the fix (delete the user's leftover books before the PUT) was the branch's second commit e895c1d0, and the dispatched deploy 35766211386
+  (`ci-b79-probe`) still failed it with `Cleaned up 0 existing books`: the list route hides sandbox
+  books past their `expiresAt` while the PUT's limit counts every book prefix, so the durable
+  test user sits at the limit on books it cannot see. The fix is the branch's third commit 3e7255af: the PUT's
+  limit counts what the list shows (`isBookVisible` in `s3DiyaGlRepository.js`), because the
+  probe user's prefix held 20 sandbox books of which several had expired under the earlier
+  24-hour retention. Its deploy 35773445604 on `ci-set1` failed because the sweep destroyed
+  `ci-set1` underneath it (B30at); the dispatched redeploy 35775650817 to `ci-set1` passed every
+  stack and probe, the book-limit fix included, and the push-triggered deploy's rerun on `ci-set1` is green, and the PR is
+  mergeable and clean: it merges first when cool-down lifts. The same deploy failed three sign-in probes with
+  `redirect_mismatch`: only `ci-set1`, `ci-set2` and the apex are Cognito callback hosts, so a
+  deployment under another name cannot prove a signed-in probe; `ci-b79-probe` and
+  `ci-b80-probe` (PR #334's proof deploy 35767071938 failed the same way) self-destruct four
+  hours after creation. After the merge: repoint `NEXT.md` and `BACKLOG.md` on `main`, and
+  land AS15 and AS18, which touch the same files. The spreadsheets and www moves are merged (their PRs #133 and #32). **Source**: operator 2026-09-22. **Owner**: Claude
+  Code. **Model**: Sonnet. **Size**: 262 files.
 
 ## Machine-only
 
-- [ ] **AS1. The Vitest coverage gate is real.** `vitest.config.js` declares the thresholds under
-  `coverage.threshold` with a `perFile` object; Vitest reads `coverage.thresholds` and a boolean
-  `perFile`, so `npm run test:coverage` has never failed on them. Rename the key, set `perFile:
-  true`, run `npm run test:coverage` once and set the four numbers to what it reports, rounded
-  down; no new tests or exclusions in the same change. Proof: a threshold one point above the
-  measured figure fails the run, the committed figures pass. **Source**: the AI-readiness assessment of 2026-09-18 (`.assess/assess-report.md` on the `bjcoombs` fork at 45bcc054), action 1.
-  **Owner**: Claude Code. **Model**: Haiku. **Size**: ~1 file.
+- [ ] **B30au. The snapshot-publish alarm re-fires on a two-day-old datapoint.**
+  `prod-env-operator-snapshot-publish-errors` opened issue #337 at 03:16 UTC on 2026-09-23 on
+  "1 datapoint [2.0 (21/09/26 03:16:00)]" and returned to OK two minutes later; the Lambda's
+  `Errors` metric has no datapoint after 2026-09-21 03:00 UTC and the 22 and 23 September
+  publishes logged `failedObservations: 0`. The same re-evaluation opened #292 on 2026-09-17 for
+  the 15 September errors. Cause: `OperatorSnapshotPublish.java` (lines 212 to 217) builds the
+  alarm on a 24-hour period with one evaluation period, so CloudWatch re-evaluates the daily
+  bucket at its edge two days on. Change the period to one hour (the nightly runs once at 03:17
+  UTC, so an hourly `Errors` sum of 1 or more fires within the hour and clears the next);
+  `OperatorSnapshotPublishTest.java` (line 101) asserts the name and metric only, so add
+  `Period: 3600` to that `objectLike`. Proof: `./mvnw -q test -Dtest=OperatorSnapshotPublishTest`
+  and the synthesised alarm's `Period`. **Source**: issue #337; alarm history 2026-09-17 and
+  2026-09-23. **Owner**: Claude Code. **Model**: Haiku. **Size**: ~2 files.
 
-- [ ] **AS6. Formatting checks run in CI.** No workflow runs `npx prettier --check .` or
-  `./mvnw spotless:check` over existing files (`pom.xml` binds Spotless to `install`, which CI
-  never reaches; `publish.yml` line 269 skips it). Add both as steps of `test.yml`'s lint job;
-  if `prettier --check .` fails on today's tree, list the drifting files in the row and fix them
-  in the same change only where the drift is whitespace. **Source**: the AI-readiness assessment of 2026-09-18 (`.assess/assess-report.md` on the `bjcoombs` fork at 45bcc054). **Owner**:
-  Claude Code. **Model**: Haiku. **Size**: ~1 file.
+- [ ] **B30at. The sweep destroys a slot set a deploy is using.** PR #334's push deploy set
+  `/submit/ci/last-known-good-deployment` to `ci-set2` at 18:23 UTC when its stacks succeeded
+  (its probes then failed), which made `ci-set1` a non-LKG set older than
+  `SELF_DESTRUCT_SWEEP_MIN_AGE_HOURS` (8); `destroy-ci.yml` run 35766864248, started by that
+  deploy's completion, deleted `ci-set1`'s stacks at 19:25 while PR #333's deploy 35773445604
+  had claimed the slot at 19:23 and was updating them ("the stack disappeared while we were
+  deploying it", then `ERR_NAME_NOT_RESOLVED` on every probe). The sweep's `wait-for-ci-deploys`
+  step (line 12) waits only for runs older than itself. Before destroying each set, the sweep
+  reads `/submit/ci/slots/<slot>` and skips a set whose claim names a run still `in_progress` or
+  `queued` (`gh run view`), and the two-slot pool's sets are never swept while claimed. Proof: a
+  sweep dispatched with `-f sweep-for-stacks=true` while a branch deploy holds a slot logs the
+  skip and leaves the set. **Source**: runs 35766864248 and 35773445604; BACKLOG 30. **Owner**:
+  Claude Code. **Model**: Sonnet. **Size**: ~2 files.
 
-- [ ] **AS8. Two deployed-environment checks leave the unit runner.** `app/system-tests/
-  rum-placeholders.system.test.js` lines 80 and 86 are `it.skip` cases that need a deployed
-  environment; move the assertion into the RUM behaviour probe that runs against ci and prod, or
-  delete them. The four other skips the assessment counted are conditional on a lane or a
-  credential and stay. **Source**: the AI-readiness assessment of 2026-09-18 (`.assess/assess-report.md` on the `bjcoombs` fork at 45bcc054). **Owner**: Claude Code. **Model**: Haiku.
-  **Size**: ~1 file.
+- [ ] **B52f. Web vitals on all three sites.** The page-experience panel wants LCP, INP and CLS
+  at p75 for submit, spreadsheets and the apex; RUM on submit records LCP and INP. Read the RUM
+  app monitor's `telemetries` in `infra/main/java/.../EdgeStack.java` (or wherever
+  `AppMonitor` is built) and the client config in `web/public/lib/analytics.js`, and add CLS if
+  it is not collected; read `../spreadsheets.diyaccounting.co.uk/web/spreadsheets.diyaccounting.co.uk/public/lib/analytics.js`
+  and its `site-rum-loader.browser.test.js` for whether spreadsheets has an app monitor of its
+  own (its CDK under `../spreadsheets.diyaccounting.co.uk/infra`), and add one if not; the apex
+  (`../www.diyaccounting.co.uk`) the same. Then the GA4 side: cross-domain linking across the
+  three hosts and the key events, as code through `infra/google/` (backlog 49's tooling; the
+  Admin API script there). Three repositories, one PR each, this repository's panel reading the
+  three monitors. **Source**: BACKLOG 62; `PLAN_ONE_STOP_DASHBOARD.md` D3. **Owner**: Claude
+  Code. **Model**: Sonnet. **Size**: ~6 files across three repositories.
+
+- [ ] **B52g. `ads-report.js`, what the account did.** A read-only script beside
+  `infra/google/ads/ads-sync.js` using its credential path (`ads.toml` `[secrets]`, API
+  `v25`) and GAQL over `campaign`, `ad_group` and `keyword_view` with `segments.date` for a date
+  range (`--from`, `--to`, default the last 28 days): impressions, clicks, cost, average CPC,
+  CTR, conversions, conversion value, per campaign, per ad group and per keyword, as a table on
+  stdout and JSON with `--json`. No writes. Proof: a run against customer 8142685080 prints the
+  Performance Max campaign's rows for the range. **Source**: operator 2026-09-22; `PLAN_ONE_STOP_DASHBOARD.md` D17; BACKLOG 52. **Owner**: Claude Code.
+  **Model**: Sonnet. **Size**: ~1 file.
+
+- [ ] **B52h. `ads-forecast.js`, what a budget would buy.** A read-only script using
+  `KeywordPlanIdeaService`: `generateKeywordHistoricalMetrics` for a keyword list (UK, English)
+  giving monthly searches, competition and top-of-page bid ranges, and
+  `generateKeywordForecastMetrics` for those keywords at a daily budget (`--budget-gbp`) giving
+  expected clicks, impressions, cost and average CPC; the keyword list from a file or
+  `--keywords`. Proof: `--keywords "submit vat return,mtd vat software" --budget-gbp 50` prints a
+  forecast. **Source**: operator 2026-09-22; `PLAN_ONE_STOP_DASHBOARD.md` D17; BACKLOG 52. **Owner**: Claude Code. **Model**: Sonnet. **Size**: ~1 file.
+
+- [ ] **B52o. Google's Ads API MCP server, evaluated.** Read Google's published MCP server for
+  the Ads API (its repository, auth model, whether it is read-only GAQL, its developer-token and
+  OAuth needs against `ads.toml` `[secrets]`), and write one page under `_developers/` saying
+  whether it adds anything the scripts above do not, what it would cost to run beside the
+  toml door, and a yes or no; no install. **Source**: operator 2026-09-22; `PLAN_ONE_STOP_DASHBOARD.md` D17; BACKLOG 52. **Owner**: Claude Code.
+  **Model**: Haiku. **Size**: ~1 file.
+
+- [ ] **B52e. Donations on the revenue panel.** `infra/stripe/stripe.toml` (lines 53 to 60)
+  says the spreadsheets site's donation Payment Links live in the same Stripe account and carry
+  `payment_intent_data.metadata.bundleId`, which `v_revenue_daily` groups by (`coalesce(bundle_id,
+  'unknown')`). Prove it on live data: with `AWS_PROFILE=submit-prod`, query the view for the last
+  90 days (`aws athena start-query-execution` with the analytics database and workgroup
+  `operatorSnapshotPublish.js` names) and read whether donation charges appear under their
+  product or under `unknown`; if `unknown`, read a recent donation charge from Stripe live
+  (`infra/stripe/stripe-sync.js`'s key lookup, read-only) for whether the metadata is missing on
+  the link or dropped in the pull (`scripts/finance/stripe-stage.js` or the revenue ingestion
+  Lambda), and fix that layer. PayPal donations join through F1b once OF1 lands. **Source**:
+  BACKLOG 66; `PLAN_ONE_STOP_DASHBOARD.md` D2. **Owner**: Claude Code. **Model**: Sonnet.
+  **Size**: ~2 files.
+
+- [ ] **B52k. Bidding strategy as code, every one the API offers.** `ads.toml`'s
+  `[[campaign]]` gains a `[campaign.bidding]` table mapped one to one onto the Google Ads API's
+  campaign bidding fields, so any strategy the API accepts is declarable: `manual_cpc`
+  (`enhanced_cpc`), `maximize_clicks` (`target_spend` with optional `cpc_bid_ceiling_gbp`),
+  `maximize_conversions` (optional `target_cpa_gbp`), `maximize_conversion_value` (optional
+  `target_roas`), `target_cpa`, `target_roas`, `target_impression_share` (`location`,
+  `fraction`, `cpc_bid_ceiling_gbp`), and a portfolio strategy by `bidding_strategy` resource
+  name. `ads-sync.js` plans and applies it through `campaigns:mutate` with the field mask for the
+  strategy chosen, refusing a strategy the campaign's channel type cannot take (Performance Max
+  accepts only the two maximise-conversion forms) with the reason in the plan. Money fields in
+  pounds in the toml, micros on the wire. Unit tests for the mapping and the refusals in the shape
+  `ads-sync.js`'s existing tests use; the header comment updated (it still says the script never
+  writes conversion actions, and it does). **Source**: operator 2026-09-22; `PLAN_ONE_STOP_DASHBOARD.md` D17; BACKLOG 52. **Owner**: Claude Code.
+  **Model**: Sonnet. **Size**: ~3 files.
+
+- [ ] **B52n. A Search campaign as code.** `ads-sync.js` refuses to create a campaign today (its
+  header: a declared campaign the account lacks fails the run), because the one campaign is
+  Performance Max, whose asset groups need uploaded images and headlines the toml does not
+  carry. A Search campaign needs none of that: extend `ads.toml` with a `[[campaign]]` of
+  `type = "SEARCH"` carrying `[[campaign.ad_group]]` (name, keywords with match type, and one
+  responsive search ad's headlines, descriptions and final URL, the submit home page), and let
+  `ads-sync.js` create and update campaign, budget, ad groups, keywords and the ad through their
+  `mutate` calls, paused by default so a merge never spends until `status = "ENABLED"` is
+  declared. Performance Max stays read-and-adjust only. Proof: a plan run shows the creation, an
+  apply on a paused campaign leaves £0 spent, and B52g's report lists it. **Source**: operator 2026-09-22; `PLAN_ONE_STOP_DASHBOARD.md` D17; BACKLOG 52.
+  **Owner**: Claude Code. **Model**: Sonnet. **Size**: ~3 files.
+
+- [ ] **B52d. The visitors panel.** `operatorSnapshotPublish.js` already reads
+  `v_visitors_by_kind_daily` (lines 176 to 191: the `human` and `bot` rows; add `synthetic`) into
+  the snapshot; `web/public/operator/dashboard.html` shows nothing from it. Add a visitors panel
+  (human, bot, synthetic per day, the last 30 days) in the shape the page's other panels use,
+  reading the snapshot's existing fields, with a case in the page's unit test. Proof: the panel
+  renders from a snapshot fixture carrying the three kinds. **Source**: BACKLOG 67;
+  `PLAN_ONE_STOP_DASHBOARD.md` D4. **Owner**: Claude Code. **Model**: Sonnet. **Size**: ~3 files.
 
 - [ ] **AS15. A dead-code pass with knip.** The assessment's dead-code scan used `ts-prune` on
   a JavaScript tree and reported zero, which is "not analysed". Run `npx knip` once at the root
@@ -84,21 +244,28 @@ step.
   finding quoted. No CI gate. **Source**: the AI-readiness assessment of 2026-09-18 (`.assess/assess-report.md` on the `bjcoombs` fork at 45bcc054). **Owner**: Claude Code. **Model**: Haiku.
   **Size**: ~1 file plus the deletions.
 
-- [ ] **AS7. The strict-mode TODO and warning comments.** `app/bin/server.js` line 374 carries
-  "TODO: Get rid of this and make it always strict once otherwise stable"; resolve it (make the
-  path strict if the tests pass) or turn it into a row here and delete the marker. Then set
-  `no-warning-comments` (`eslint.config.js` line 47) to `warn` so the next marker is visible.
-  **Source**: the AI-readiness assessment of 2026-09-18 (`.assess/assess-report.md` on the `bjcoombs` fork at 45bcc054), action 2. **Owner**: Claude Code. **Model**: Haiku. **Size**: ~2
-  files.
-
-- [ ] **AS4. ESLint config cleanup.** `eslint.config.js`: the override block for
-  `web/spreadsheets.diyaccounting.co.uk/**` (line 97) names a directory that does not exist; the
-  ignores at line 72 spell `web/pubic/tests` and `web/pubic/docs`; `.eslintrc.security.json` is a
-  legacy file beside the flat `eslint.security.config.js`. Remove the block, fix the spelling
-  (then check whether `web/public/tests` and `web/public/docs` were meant to be linted; they are
-  generated output, so they stay ignored), delete the legacy file. Proof: `npm run linting` is
-  clean with the same findings as before. **Source**: the AI-readiness assessment of 2026-09-18 (`.assess/assess-report.md` on the `bjcoombs` fork at 45bcc054), action 3. **Owner**: Claude
-  Code. **Model**: Haiku. **Size**: ~3 files.
+- [ ] **B83. The capabilities audit.** One report, `REPORT_CAPABILITIES.md` at the root, that
+  gives an agent the repository's capabilities in one place, the non-obvious ones included (the
+  Google Ads and GA4 management under `infra/google/`, the ci slot pool, the practice licence, the
+  MCP, the finance pipeline). Method, written into the report's own "Method" section: (1) walk
+  every tracked source, workflow, script, config, page and skill file (`git ls-files` over
+  `.js|.mjs|.java|.yml|.toml|.sh|.html|.sql|.md`, excluding `reference/`, `web/public/tests/`,
+  `web/public/docs/`, `web/public-simulator/` and `_developers/hmrc/`; about 1,400 files) in
+  directory-sized batches, each batch one Haiku agent writing one JSON line per file
+  `{"file","capabilities":[{"name","outline"}]}` under `target/capabilities/<batch>.jsonl`, where
+  an outline is the implementation in one or two sentences with the function or job that
+  delivers it; (2) one Sonnet pass over the union that normalises names (one verb-noun phrase
+  each), merges duplicates across files, groups them into capabilities and groups the groups
+  into areas (customer-facing, HMRC and Companies House filing, billing, operations and CI,
+  analytics and finance, MCP and tools, developer workflow), keeping every file's outline as
+  the trace beneath its capability; (3) the report: a table of contents with one grep-able
+  anchor per area and capability (`## Area`, `### Capability` headings, a one-line `Files:`
+  list under each), the Method section, and the date and commit it was built from. Then
+  `CLAUDE.md` links the report in its Quick Reference and explains the format in three lines
+  (areas, capabilities, file outlines; grep the heading to find the implementation). Rebuilt
+  by the same method when the operator asks. **Source**: operator 2026-09-22. **Owner**:
+  Claude Code. **Model**: Haiku for the walk, Sonnet for the report. **Size**: ~2 files plus
+  the batch outputs.
 
 - [ ] **AS18. One assistant guide, aligned with CLAUDE.md.** Junie is no longer used: delete
   `.junie/guidelines.md` and `_developers/Junie.md`, and the "Other AI assistants" lines in
@@ -108,20 +275,15 @@ step.
   backticked path in both files exists in a fresh clone. **Source**: the AI-readiness assessment of 2026-09-18 (`.assess/assess-report.md` on the `bjcoombs` fork at 45bcc054), opportunity
   list; operator 2026-09-22. **Owner**: Claude Code. **Model**: Haiku. **Size**: ~4 files.
 
-- [ ] **AS5. The lint job becomes a ratchet.** `test.yml`'s `eslint` job (lines 145 to 198)
-  counts repo-wide findings in a step that never fails and gates only files a change adds
-  (`git diff --diff-filter=A` at line 191). Commit `.eslint-baseline.json` with today's count,
-  fail the job when the count rises above it, and lower the baseline in the same PR when a change
-  removes findings. In the same change set `reportUnusedDisableDirectives: true`
-  (`eslint.security.config.js` line 24) and remove the disable directives it reports unused (the
-  assessment counted 126 of 225 as stale). No mass auto-fix of existing findings. Proof: a PR
-  adding one finding to an existing file fails the `eslint` context; one removing a finding
-  passes. **Source**: the AI-readiness assessment of 2026-09-18 (`.assess/assess-report.md` on the `bjcoombs` fork at 45bcc054), action 2. **Owner**: Claude Code. **Model**: Sonnet. **Size**:
-  ~3 files plus the directives.
-
 ## Machine-ask
 
 ## Human-driven
+
+- [ ] **OICO. Update the ICO registration.** With the "Practice licence: client data" section of
+  `_developers/ICO_CHECKLIST.md` (registration ZB070902), sign in to the ICO's
+  registration portal and update DIY Accounting Limited's entry to cover the practice licence's
+  client data; note the date in `_developers/ICO_CHECKLIST.md`. **Source**: operator
+  2026-09-22. **Owner**: Operator. **Model**: none. **Size**: 0 files.
 
 - [ ] **O34d. Send the XML Gateway email.** Send `../DRAFT_EMAIL_XMLGW_000004.md` from `antony@diyaccounting.co.uk`
   as a reply on the `xml@companieshouse.gov.uk` thread, and paste the answer into B34.6c's row when
@@ -168,6 +330,16 @@ step.
   BACKLOG 34c's: prod carries no `COMPANIES_HOUSE_XMLGW_URI` and no presenter secret ARNs. Blocked
   on O34d's answer. **Source**: BACKLOG 34b. **Owner**: Claude Code. **Model**: Sonnet. **Size**:
   ~1 file.
+
+- [ ] **B52j. The `ads-advisor` skill.** `.claude/skills/ads-advisor/SKILL.md`: how to run B52g
+  and B52h, how to read CTR, CPC, conversion rate and cost per session against the funnel's
+  break-even cost per session (£0.36, `PLAN_ONE_STOP_DASHBOARD.md` D17) and the reinvestment
+  numbers on B52m, how to answer "how many clicks for £N a day" (forecast, then the report for
+  what the live campaign does) and "optimise for the same result" (B52k's bidding vocabulary:
+  which strategy and parameters, written into `ads.toml` as a PR whose plan shows the change),
+  and when to say the spend cannot pay back. Registered in `CLAUDE.md`'s skills list. Blocked on
+  B52g, B52h and B52k. **Source**: operator 2026-09-22; `PLAN_ONE_STOP_DASHBOARD.md` D17; BACKLOG 52. **Owner**: Claude Code. **Model**: Haiku.
+  **Size**: ~2 files.
 
 - [ ] **B52l. The optimiser over the raw export.** A notebook over `../analytics/prod/` (pulled by
   `scripts/analytics-pull.sh`, one CSV per view in `rawExportPublish.js`'s `VIEW_NAMES`): per-block
@@ -220,6 +392,19 @@ step.
   spreadsheets repository's existing reconciliation harness rather than a new check; nothing
   automated writes to Google Drive. Blocked on F2d. **Source**: `../PLAN_FINANCE_AUTOMATION.md`
   phase 2. **Owner**: Claude Code. **Model**: Sonnet. **Size**: ~3 files.
+
+- [ ] **PU-7n. The practice licence launch.** Operator, 2026-09-22: `resident-pro` at £199 a
+  year and £19.99 a month, the monthly price shown only on `bundles.html` (the DIYA-GL page shows
+  annual prices alone, for `resident` too). `web/public/submit.catalogue.toml`'s `resident-pro`
+  values flip to `enable = "always"`, `hidden = false`, `allocation = "on-subscription"` with the
+  two prices on its prices table, then `stripe-catalogue-sync` test and live for the price ids
+  into `.env.ci` and `.env.prod` (machine-ask for the live run); the practice page's nav link in
+  `web/public/widgets/page-chrome.js` appears; the four ci probes that reach `resident-pro`
+  through a pass are updated in the same change; `web/public/diya-gl.html` (or the page that
+  lists `resident`'s prices) drops the monthly line. Blocked on PU-7m (PR #335), B34j and OICO (the
+  register must cover the client data before the tier is sold). **Source**:
+  `PLAN_PRICE_UPDATE.md` §(d); operator 2026-09-22. **Owner**: Claude Code. **Model**: Sonnet.
+  **Size**: ~9 files.
 
 - [ ] **OF2. DIYA's book saved to the DIYA cloud.** With the operator signed in through B61's
   sign-in, `save_book` writes F2d's verified book to the DIYA cloud, which is B52i's unblock event.

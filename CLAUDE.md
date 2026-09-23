@@ -167,7 +167,7 @@ Behaviour tests (`npm run test:*Behaviour-*`) take approximately 2-3 minutes. Ou
 - Tests MUST NOT be overfit to specific responses
 - Simulator should NOT encourage hardcoding specific dates/periods
 
-See `_developers/archive/OBLIGATION_FLEXIBILITY_FIX.md` for detailed guidance.
+See `../developers/submit/archive/OBLIGATION_FLEXIBILITY_FIX.md` for detailed guidance.
 
 ## Target Directory Access
 
@@ -559,7 +559,7 @@ Gateway (diyaccounting.co.uk) is managed by `diy-accounting-uk/www.diyaccounting
 
 Behaviour tests exist for spreadsheets (`test:spreadsheetsBehaviour-*`).
 
-**Stripe Payment Links** are live on the spreadsheets site for donations (see `_developers/archive/PLAN_STRIPE_1.md` — completed). Submit site subscription payments are planned in `PLAN_PAYMENT_INTEGRATION.md`.
+**Stripe Payment Links** are live on the spreadsheets site for donations (see `../developers/submit/archive/PLAN_STRIPE_1.md` — completed). Submit site subscription payments are planned in `PLAN_PAYMENT_INTEGRATION.md`.
 
 ## Security Checklist
 

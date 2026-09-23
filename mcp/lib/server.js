@@ -17,6 +17,7 @@ import { createSession, openBook, saveBook, SAVE_FORMATS } from "./book-tools.js
 import { deriveMicroEntityAccounts } from "./accounts-tools.js";
 import { deriveVatReturn } from "./vat-tools.js";
 import { registerItsaTools } from "./itsa-tools.js";
+import { runForClients, RUN_FOR_CLIENTS_TOOLS } from "./batch-tools.js";
 import { moveBookToClient, listClients, addClient, inviteClient, clientAuthorisationStatus } from "./practice-tools.js";
 import {
   listVatObligations,
@@ -286,6 +287,21 @@ export const TOOLS = {
       hmrcAccessToken: z.string().describe("The practice's own HMRC OAuth access token"),
     },
     handler: clientAuthorisationStatus,
+  },
+  run_for_clients: {
+    description:
+      "Runs one client-scoped tool once per client in the practice's own list (list_clients), passing each client's " +
+      "clientId in turn. Returns one row per client -- {clientId, displayName, ok, result or error} -- plus a summary " +
+      "count; one client's failure never stops the rest. tool is one of list_vat_obligations, submit_vat_return, " +
+      "get_vat_receipt, submit_micro_entity_accounts, open_book, save_book.",
+    inputSchema: {
+      tool: z.enum(RUN_FOR_CLIENTS_TOOLS).describe("The client-scoped tool to run for every client"),
+      args: z
+        .record(z.string(), z.any())
+        .optional()
+        .describe("That tool's other arguments; clientId is added per client and overrides any given here"),
+    },
+    handler: runForClients,
   },
 };
 

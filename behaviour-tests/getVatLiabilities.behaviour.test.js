@@ -308,7 +308,7 @@ test("Click through: View VAT liabilities from HMRC", async ({ page }, testInfo)
   /* ************************************* */
   if (isSyntheticMode()) {
     /**
-     * HMRC VAT API Sandbox scenarios (excerpt from _developers/reference/hmrc-mtd-vat-api-1.0.yaml)
+     * HMRC VAT API Sandbox scenarios (excerpt from reference/hmrc-mtd-vat-api-1.0.yaml)
      *
      * GET /organisations/vat/{vrn}/liabilities
      *  - Default (No header value): no data found

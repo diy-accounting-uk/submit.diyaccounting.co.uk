@@ -37,7 +37,7 @@ Registration `ZB070902` was renewed by direct debit on 2026-05-20, expiring 2027
 |---|---|---|
 | HMRC receipts retained 7 years, matching the stated policy | Gap | `app/data/dynamoDbReceiptRepository.js:46-49` computes a 7-year TTL value on every receipt item, but `infra/main/java/co/uk/diyaccounting/submit/stacks/DataStack.java:101-111` never calls `ensureTimeToLive` for the receipts table (every other table with a computed TTL does — see lines 121, 135, 151, 167, 183, 199, 216, 276). The `ttl` attribute is written but DynamoDB isn't told to expire on it, so receipts are retained indefinitely rather than auto-expiring at 7 years. |
 | HMRC API audit trail retention matches the stated policy | Gap | Code and CDK agree on 28 days (`app/data/dynamoDbHmrcApiRequestRepository.js:75-78`, `DataStack.java:209,216-220`, `RUNBOOK_INFORMATION_SECURITY.md:632`), but `web/public/privacy.html:399-401` tells users this data is kept "30 days". |
-| Closed-account cleanup | Met | `scripts/cleanup-deleted-accounts.js`, run per `_developers/archive/PRIVACY_DUTIES.md:143-145`. |
+| Closed-account cleanup | Met | `scripts/cleanup-deleted-accounts.js`, run per `../developers/submit/archive/PRIVACY_DUTIES.md:143-145`. |
 
 ## Subject access and erasure
 
@@ -45,7 +45,7 @@ Registration `ZB070902` was renewed by direct debit on 2026-05-20, expiring 2027
 |---|---|---|
 | Erasure request path exists and is audited | Met | Two GitHub Actions workflows: `.github/workflows/delete-user-data.yml` (deletes by hashed sub, with a dry-run mode when `confirm` is false) and `.github/workflows/delete-user-data-by-email.yml` (resolves an email to a hashed sub, then calls the same deletion path). Both run through CI with logged output. |
 | Subject access (export) request path is equally auditable | Gap | `scripts/export-user-data.js` exists but has no GitHub Actions wrapper — it only runs locally with AWS credentials, with no dry-run and no CI audit trail, unlike the erasure path. |
-| Erasure explains the 7-year receipt exception to the user | Met | `_developers/archive/PRIVACY_DUTIES.md:21-24` and `web/public/privacy.html:531` both state receipts are retained for HMRC's 7-year requirement even after account deletion. |
+| Erasure explains the 7-year receipt exception to the user | Met | `../developers/submit/archive/PRIVACY_DUTIES.md:21-24` and `web/public/privacy.html:531` both state receipts are retained for HMRC's 7-year requirement even after account deletion. |
 
 ## Processors
 
@@ -61,6 +61,25 @@ Registration `ZB070902` was renewed by direct debit on 2026-05-20, expiring 2027
 
 | Item | Status | Reason |
 |---|---|---|
-| A breach process exists | Met | `RUNBOOK_INFORMATION_SECURITY.md` section 6.2 ("When a Breach Occurs") and `_developers/archive/PRIVACY_DUTIES.md` section 2. |
+| A breach process exists | Met | `RUNBOOK_INFORMATION_SECURITY.md` section 6.2 ("When a Breach Occurs") and `../developers/submit/archive/PRIVACY_DUTIES.md` section 2. |
 | The process names the 72-hour ICO deadline | Met | `RUNBOOK_INFORMATION_SECURITY.md:423`. |
 | The process gives a ready-to-use notification template (what to record, who decides, the ICO form fields) | Now met | Added as `RUNBOOK_INFORMATION_SECURITY.md` section 6.7, this commit. Previously the runbook only listed the steps and the ICO's complaints URL, not a template. |
+
+## Practice licence: client data
+
+The practice licence (bundle `resident-pro`, `PLAN_PRICE_UPDATE.md:(d)`) adds a new role: a practice (accountant or small firm) subscribes and holds a client list, each row carrying the identifiers HMRC needs to file the client's VAT return or accounts on the client's behalf. The clients have no direct relationship with DIY Accounting Limited.
+
+| Item | Status | Reason |
+|---|---|---|
+| Data subject category known and described | Met | Clients of a practice (individuals and companies the practice holds a business relationship with and an agent authorisation for; the data subject has no direct agreement with DIY Accounting). `PLAN_PRICE_UPDATE.md:103-177`. |
+| Data categories captured | Met | Display name, VAT registration number, National Insurance number, Unique Taxpayer Reference, company number. `app/data/dynamoDbPracticeClientRepository.js:70-86`. Filing receipts per client carry `clientId` attribute per `PLAN_PRICE_UPDATE.md:(d)`, "The data model". |
+| Lawful basis identified | Met | Two contracts. The practice's own subscription with DIY Accounting (`PLAN_PRICE_UPDATE.md:103-110`). The practice's business relationship with each client, at arm's length and outside this system. The practice consents to DIY Accounting processing the client list (contract performance, because DIY Accounting's role is processor for the client roster and controller for its own account records, API logs, and subscriber data). The individual client's separate consent is to the practice, not to this system. |
+| Storage: table, partition key, sort key, indexes | Met | Table `{env}-env-practice-clients` with partition key `hashedSub` (practice) and sort key `clientId` (ULID). No index reads `clientId` alone. `infra/main/java/co/uk/diyaccounting/submit/stacks/DataStack.java:873-879`. PITR enabled (ensureTable default). |
+| Authorisation cached, not stored | Met | Per-client per-service (MTD-VAT, MTD-IT) authorisation state cached after each check: service, invitation id, status (`pending`, `accepted`, `rejected`, `expired`, `authorised`, `unauthorised`), and checkedAt timestamp. No client credential is stored. `app/data/dynamoDbPracticeClientRepository.js:247-280` (setClientAuthorisation). `PLAN_PRICE_UPDATE.md:173-176`. |
+| Invitation flow | Met | Invitation issued to client via HMRC Agent Authorisation API, `POST /agents/{arn}/invitations`. Client accepts online with their own Government Gateway sign-in. `app/functions/practice/practiceClientAuthorisationInvitePost.js:108-125`. Status checked on demand, `GET /agents/{arn}/invitations/{invitationId}`. `app/functions/practice/practiceClientAuthorisationGet.js:103-124`. |
+| Archival: retention, no deletion | Met | Client row archived by setting `archivedAt` timestamp. Row and book sets persist (surviving a lapse and reappearing on resubscribe). No data deleted — archived rows excluded from active listings. `app/functions/practice/practiceClientDelete.js:19,60` (archiveClient). `PLAN_PRICE_UPDATE.md:119-122`. |
+| Filing receipts: 7-year retention | Met | HMRC receipt requirement already met. `app/data/dynamoDbReceiptRepository.js:46-49` and `ICO_CHECKLIST.md` Retention section. Receipts now carry `clientId` attribute. `PLAN_PRICE_UPDATE.md:(d)`, "The data model". |
+| International transfers | Met | AWS eu-west-2 (London) hosting, existing policy. No cross-border data transfers beyond AWS region. `web/public/privacy.html:557-577`. |
+| Registration scope requires update | Pending | Current registration `ZB070902` scope did not anticipate the practice licence role or the client data subject category. Scope update needed before public launch of `resident-pro`. |
+| Privacy notice requires new section | Pending | `web/public/privacy.html` needs a new Purposes row covering: practice client filing (purpose), clients of a practice (data subjects), identifier storage and filing content (data categories), contract performance with the practice (lawful basis), archival and 7-year receipt retention (retention), AWS (processor). Existing table at `web/public/privacy.html:668-714`. |
+| Records of processing: client list | Pending | `_developers/archive/PRIVACY_DUTIES.md` or a reference document in the codebase listing this processing: what, why, where stored (table, region), who (practice subscriber, DIY Accounting processor role), retention (client archived, receipts 7 years), and how rights are satisfied (erasure note per recipient, no client credential stored). Currently covers sole-trader processing only. |

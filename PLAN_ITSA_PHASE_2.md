@@ -31,7 +31,7 @@ own track.
 
 ## The specs
 
-Present in `_developers/reference/`:
+Present in `reference/`:
 
 | Spec | Version | Covers |
 |---|---|---|
@@ -1049,7 +1049,7 @@ question about whether a production window opens for the 2027-28 tax year. Addre
 
 Twenty-two tracks. Each is one sub-agent's work. The ten endpoint tracks share a spine of files
 every new Lambda has to touch, so they hold that spine one at a time, in order, each rebasing on
-the previous merge. That is the pattern `_developers/archive/PLAN_COMPANIES_HOUSE_REST_FILING.md` used for
+the previous merge. That is the pattern `../developers/submit/archive/PLAN_COMPANIES_HOUSE_REST_FILING.md` used for
 `SubmitSharedNames.java`, and it works here for the same reason.
 
 The shared spine: `infra/main/java/co/uk/diyaccounting/submit/SubmitSharedNames.java`,
@@ -1730,7 +1730,7 @@ test support API, and its vendor-state checkpoints reset the user between runs.
 
 - `BACKLOG.md` rows 10, 11 and 11a. `NEXT.md` B10.4 and B11.
 - `_developers/hmrc/ITSA_SPIKE.md`, `_developers/hmrc/ITSA_MINIMUM_FUNCTIONALITY_STANDARDS.md`.
-- `PLAN_SUBMISSION_MCP.md`, `_developers/archive/PLAN_COMPANIES_HOUSE_REST_FILING.md`.
+- `PLAN_SUBMISSION_MCP.md`, `../developers/submit/archive/PLAN_COMPANIES_HOUSE_REST_FILING.md`.
 - Making Tax Digital for Income Tax end-to-end service guide, "How to integrate with HMRC APIs":
   <https://developer.service.hmrc.gov.uk/guides/income-tax-mtd-end-to-end-service-guide/documentation/how-to-integrate.html>
 - Individual Losses (MTD) 7.0 and Individuals Tax Liability Adjustments (MTD) 1.0, whose

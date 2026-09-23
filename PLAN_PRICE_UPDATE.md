@@ -5,7 +5,7 @@
 
 > Started 2026-09-21 from the spreadsheets session's review of the DIYA-GL business model
 > (`../spreadsheets.diyaccounting.co.uk/PLAN_DIYA_GL_LAUNCH.md` §3 and §5,
-> `../spreadsheets.diyaccounting.co.uk/_developers/archive/PLAN_DIYA_GL_HOME.md` §(c) and §(d), `web/public/submit.catalogue.toml`).
+> `../spreadsheets.diyaccounting.co.uk/../developers/submit/archive/PLAN_DIYA_GL_HOME.md` §(c) and §(d), `web/public/submit.catalogue.toml`).
 
 ## User assertions (verbatim)
 
@@ -91,11 +91,11 @@ second set of fields; the plan proposes a `[[bundles.prices]]` table with `inter
 `default = true` on one of them, and `stripe-sync` creating every listed price. `billingCheckoutPost.js`
 takes the chosen interval and picks that price id; `bundles.html` shows the annual price as the
 button and the monthly as a text link beneath it ("or £3.99 a month"). The DIYA-GL page's offer
-(`cloud.js` Subscribe, `../spreadsheets.diyaccounting.co.uk/_developers/archive/PLAN_DIYA_GL_HOME.md` §(c)) shows the same two, annual first.
+(`cloud.js` Subscribe, `../spreadsheets.diyaccounting.co.uk/../developers/submit/archive/PLAN_DIYA_GL_HOME.md` §(c)) shows the same two, annual first.
 
 ### (c) The DIYA-GL tier on prod
 
-`../spreadsheets.diyaccounting.co.uk/_developers/archive/PLAN_DIYA_GL_HOME.md` §(c) lists the two edits that lift the tier to prod:
+`../spreadsheets.diyaccounting.co.uk/../developers/submit/archive/PLAN_DIYA_GL_HOME.md` §(c) lists the two edits that lift the tier to prod:
 `DIYA_GL_RESIDENT_TIER` on and `prod` in the bundle's `listedInEnvironments`. They land here on the
 `resident` bundle, after (a) and (b), in one PR whose ci deploy proves the loop with the Stripe
 test card.
@@ -237,7 +237,7 @@ the practice's own act.
 
 ### (e) The 35-day sandbox
 
-`../spreadsheets.diyaccounting.co.uk/_developers/archive/PLAN_DIYA_GL_HOME.md` §(b) fixed 24 hours: the put route writes `expiresAt = updatedAt + 24h` for
+`../spreadsheets.diyaccounting.co.uk/../developers/submit/archive/PLAN_DIYA_GL_HOME.md` §(b) fixed 24 hours: the put route writes `expiresAt = updatedAt + 24h` for
 sandbox books, the lifecycle rule expires `retention=sandbox` objects after 2 days. This plan
 moves both: `expiresAt = updatedAt + 35 days`; the rule's `expiration` to 37 days and
 `noncurrentVersionExpiration` to 1 day (S3 expires on day boundaries; the sidecar's `expiresAt`
@@ -261,7 +261,7 @@ Ids are shared with `NEXT.md`'s board here, and the spreadsheets rows with their
 | PU-5 | The DIYA-GL tier on prod: `DIYA_GL_RESIDENT_TIER`, `prod` in `resident`'s environments | Submit | PU-3 | Haiku | `SubmitApplication.java`, `submit.catalogue.toml` (~2 files) |
 | PU-6 | Practice licence design: clients under one sign-in, per-client book sets, agent authorisation, batch through MCP and CLI | Submit | — | Opus | `PLAN_PRICE_UPDATE.md` §(d) expanded, then a build task list |
 | PU-7 | Practice licence build: the thirteen rows PU-7a to PU-7m in §(d) | Submit | PU-6 | Sonnet | §(d)'s build steps (~75 files across 13 rows) |
-| PU-8 | The DIYA-GL offer on the spreadsheets pages: £39 a year shown first, £3.99 a month beneath it. The sandbox labels are DG-2b and the `sandbox_expired_seen` event is DG-6 in `../spreadsheets.diyaccounting.co.uk/_developers/archive/PLAN_DIYA_GL_HOME.md`; both carry the 35-day change and are tracked there | spreadsheets | PU-2 | Sonnet | `web/diya-gl.co.uk/public/cloud.js`, the cloud browser spec (~2 files) |
+| PU-8 | The DIYA-GL offer on the spreadsheets pages: £39 a year shown first, £3.99 a month beneath it. The sandbox labels are DG-2b and the `sandbox_expired_seen` event is DG-6 in `../spreadsheets.diyaccounting.co.uk/../developers/submit/archive/PLAN_DIYA_GL_HOME.md`; both carry the 35-day change and are tracked there | spreadsheets | PU-2 | Sonnet | `web/diya-gl.co.uk/public/cloud.js`, the cloud browser spec (~2 files) |
 | PU-9 | Retire `resident-diya-gl`, `resident-itsa`, `resident-ltd` once Stripe live shows no subscription on their prices | Submit | PU-5 | Haiku | `submit.catalogue.toml`, `.env.ci`, `.env.prod` (~3 files) |
 
 ## Decisions taken (operator, 2026-09-21)
