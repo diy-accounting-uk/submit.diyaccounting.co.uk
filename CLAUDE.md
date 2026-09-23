@@ -55,7 +55,6 @@ stripped after sessions kept accreting status notes and "tidy up X if wanted" li
 **Primary documentation**: See `REPORT_REPOSITORY_CONTENTS.md` for complete architecture, npm scripts, AWS stacks, and directory structure.
 
 **Other AI assistants in this repo**:
-- `.junie/guidelines.md` - Junie (testing & iteration focus)
 - `.github/copilot-instructions.md` - GitHub Copilot (code review focus)
 
 ## Skills
@@ -549,13 +548,7 @@ device per run instead of creating and deleting a user each time.
 
 ## Multi-Site Deployments
 
-This repository also deploys the spreadsheets sibling site via a dedicated workflow:
-
-| Site | Workflow | Source |
-|------|----------|--------|
-| spreadsheets.diyaccounting.co.uk | `deploy-spreadsheets.yml` | `web/spreadsheets.diyaccounting.co.uk/` |
-
-Gateway (diyaccounting.co.uk) is managed by `diy-accounting-uk/www.diyaccounting.co.uk`. Root DNS and holding page are managed by `diy-accounting-uk/root.diyaccounting.co.uk`.
+The spreadsheets site is managed by the sibling repository `diy-accounting-uk/spreadsheets.diyaccounting.co.uk`. Gateway (diyaccounting.co.uk) is managed by `diy-accounting-uk/www.diyaccounting.co.uk`. Root DNS and holding page are managed by `diy-accounting-uk/root.diyaccounting.co.uk`.
 
 Behaviour tests exist for spreadsheets (`test:spreadsheetsBehaviour-*`).
 
