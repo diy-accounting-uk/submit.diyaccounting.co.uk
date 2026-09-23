@@ -16,8 +16,7 @@ runs), and for Claude Code steps the **Model** a sub-agent should use (Fable > O
 Haiku; the lowest tier that fits). Anything touching code goes through a `claude/*` branch and
 PR; the operator merges.
 
-**Prod runs deployment prod-d45be8c** (PR #342's merge); `main`'s deploy of PR #343's merge
-`d458f022` is running.
+**Prod runs deployment prod-d458f02** (PR #343's merge deploy).
 **ci**: `ci-set1` is last-known-good and the only ci set standing; `ci-set2` was swept.
 Pull requests open: diy-accounting-uk/www.diyaccounting.co.uk#33 (mergeable now: the sink admits
 the gateway account), diy-accounting-uk/spreadsheets.diyaccounting.co.uk#136.
@@ -46,14 +45,6 @@ Shared facts for the analytics rows (B52d, B52e, B52l, B52m): the prod Athena da
 `ATHENA_WORK_GROUP_NAME` (lines 103 to 104).
 
 ## In flight
-
-- [ ] **B52e2. Submit's £0.99 charges carry their product.** PR #343 (`d458f022`) reads Stripe
-  charges at `2024-12-18.acacia` in `stripeReconcile.js` (the SDK default `2026-07-29.dahlia`
-  returns charges with no `invoice`); `main`'s deploy of it is running. The env-stack Lambda
-  `prod-env-stripe-reconcile` must show a `LastModified` after the merge; then re-invoke it for
-  2026-09-02, -03, -06 and -09 (operator approves) and `v_revenue_daily` shows those four under
-  `resident-vat`. **Owner**: Claude Code; the operator approves the invokes. **Model**: Haiku.
-  **Size**: 0 files.
 
 - [ ] **B30at1. The sweep's claim check, proven.** Needs a claimed set that is not last-known-good
   (the sweep keeps the last-known-good set before it reads any claim): the next time two branches
