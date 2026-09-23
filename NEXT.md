@@ -223,7 +223,7 @@ Shared facts for the analytics rows (B52d, B52e, B52l, B52m): the prod Athena da
   F2m. **Source**: Cowork inbox 2026-09-23T20:46:44Z. **Owner**: Claude Code. **Model**: Sonnet.
   **Size**: 5 files.
 
-- [ ] **F2l. The engine nets a credit note against turnover.** In flight: a spreadsheets branch `claude/gl-creditnote-net`, its PR to follow. The diya-gl schema fixes a line's
+- [ ] **F2l. The engine nets a credit note against turnover.** In flight: spreadsheets PR #138 (`claude/gl-creditnote-net`), purchases credit notes included; merging it publishes the engine. The diya-gl schema fixes a line's
   `amount` at `minimum: 0` (`../spreadsheets.diyaccounting.co.uk/web/spreadsheets.diyaccounting.co.uk/public/schema/diya-gl-lines-v2.schema.json`
   lines 69 to 72) and nothing reads `documentType`: `computeGrossSales`
   (`app/lib/scenario-extractor.js` line 536), `salesTotal` (`app/lib/book-checks.js` line 326) and
@@ -234,20 +234,6 @@ Shared facts for the analytics rows (B52d, B52e, B52l, B52m): the prod Athena da
   rebuild the zip and re-run the report (F2k's glue is in the session scratchpad; the steps are in
   the company-book skill). **Source**: F2k's diagnosis. **Owner**: Claude Code. **Model**: Sonnet.
   **Size**: ~4 files.
-
-- [ ] **F2o. DIYA's book: the directors' loan reaches the balance sheet.** An agent is applying it to the staging book now. The report engine's
-  directors' loan row (`../spreadsheets.diyaccounting.co.uk/app/lib/calculators/ltd.js` line 1601)
-  reads only bank lines carrying `diya-gl:bankCode` `DL` on a declared bank account; the £1,000
-  arrived through PayPal, and the book declares no PayPal bank account, so `PubBalSht!E29` still
-  shows the opening −£443.29. Declare the PayPal wallet (1220 per the 2025-26 set; check the
-  account code there) as a bank account with its lines, split the director's £1,000 receipt
-  (operator, 2026-09-23: the directors' loan is to read zero for now): £443.29 as a `DL` bank line
-  clearing the opening −£443.29, and £556.71 to the book's suspense account (take its code from
-  the chart). Replace the
-  members register and share capital with the 2025-26 set's (`Companysecretary.xlsx` and the
-  closing balance sheet in `../drive/DIY Accounting Limited/finance/2025-2026 accounts/`; operator:
-  "same as the previous year"). Rebuild, re-run the report, update `VERIFICATION.md`. Then OF2's
-  re-save. Shares the PayPal wallet with F2g. **Source**: F2m's report. **Owner**: Claude Code. **Model**: Sonnet. **Size**: 0 files.
 
 - [ ] **PU-7n. The practice licence launch.** An agent is building it on `claude/b90-board` now (the Stripe live run waits for the operator). Operator, 2026-09-22: `resident-pro` at £199 a
   year and £19.99 a month, the monthly price shown only on `bundles.html` (the DIYA-GL page shows
@@ -434,7 +420,7 @@ Shared facts for the analytics rows (B52d, B52e, B52l, B52m): the prod Athena da
 - [ ] **F2e. The MCP writes a populated spreadsheets package.** A tool in `mcp/lib/finance/` that
   takes the book and lines and writes a DIY Accounting spreadsheets package, reconciled under the
   spreadsheets repository's existing reconciliation harness rather than a new check; nothing
-  automated writes to Google Drive. Blocked on F2o (the final book). **Source**: `../PLAN_FINANCE_AUTOMATION.md`
+  automated writes to Google Drive. Blocked on F2l (the engine that nets refunds). **Source**: `../PLAN_FINANCE_AUTOMATION.md`
   phase 2. **Owner**: Claude Code. **Model**: Sonnet. **Size**: ~3 files.
 
 - [ ] **OF2. DIYA's book saved to the DIYA cloud.** The operator saved F2k's book from the
@@ -443,7 +429,7 @@ Shared facts for the analytics rows (B52d, B52e, B52l, B52m): the prod Athena da
   F2m (turnover £2,901.07 divided by 1.2, members register empty) and sits in the 35-day sandbox,
   expiring about 2026-10-28. Remaining: save the final book (a new version of the same company) and
   keep it past 35 days (a Resident subscription or a comp on the account that holds it). Blocked
-  on F2l and F2o. **Source**: `../PLAN_FINANCE_AUTOMATION.md` phase 2. **Owner**: Operator.
+  on F2l (spreadsheets PR #138; its release republishes the engine that reads the book). **Source**: `../PLAN_FINANCE_AUTOMATION.md` phase 2. **Owner**: Operator.
   **Model**: none. **Size**: 0 files.
 
 ## Discipline
