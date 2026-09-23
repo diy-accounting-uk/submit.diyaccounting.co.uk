@@ -122,6 +122,20 @@ and stop. One branch is driven green at a time. Lifted only by the operator in t
 
 ## Machine-only
 
+- [ ] **B30au. The snapshot-publish alarm re-fires on a two-day-old datapoint.**
+  `prod-env-operator-snapshot-publish-errors` opened issue #337 at 03:16 UTC on 2026-09-23 on
+  "1 datapoint [2.0 (21/09/26 03:16:00)]" and returned to OK two minutes later; the Lambda's
+  `Errors` metric has no datapoint after 2026-09-21 03:00 UTC and the 22 and 23 September
+  publishes logged `failedObservations: 0`. The same re-evaluation opened #292 on 2026-09-17 for
+  the 15 September errors. Cause: `OperatorSnapshotPublish.java` (lines 212 to 217) builds the
+  alarm on a 24-hour period with one evaluation period, so CloudWatch re-evaluates the daily
+  bucket at its edge two days on. Change the period to one hour (the nightly runs once at 03:17
+  UTC, so an hourly `Errors` sum of 1 or more fires within the hour and clears the next);
+  `OperatorSnapshotPublishTest.java` (line 101) asserts the name and metric only, so add
+  `Period: 3600` to that `objectLike`. Proof: `./mvnw -q test -Dtest=OperatorSnapshotPublishTest`
+  and the synthesised alarm's `Period`. **Source**: issue #337; alarm history 2026-09-17 and
+  2026-09-23. **Owner**: Claude Code. **Model**: Haiku. **Size**: ~2 files.
+
 - [ ] **B30at. The sweep destroys a slot set a deploy is using.** PR #334's push deploy set
   `/submit/ci/last-known-good-deployment` to `ci-set2` at 18:23 UTC when its stacks succeeded
   (its probes then failed), which made `ci-set1` a non-LKG set older than
