@@ -26,12 +26,7 @@ import {
   verifyLoggedInStatus,
 } from "./steps/behaviour-login-steps.js";
 import { ensureBundlePresent, goToBundlesPage } from "./steps/behaviour-bundle-steps.js";
-import {
-  fillInVatPayments,
-  initVatPayments,
-  submitVatPaymentsForm,
-  verifyVatPaymentsResults,
-} from "./steps/behaviour-hmrc-vat-steps.js";
+import { fillInVatPayments, initVatPayments, submitVatPaymentsForm, verifyVatPaymentsResults } from "./steps/behaviour-hmrc-vat-steps.js";
 import {
   acceptCookiesHmrc,
   fillInHmrcAuth,

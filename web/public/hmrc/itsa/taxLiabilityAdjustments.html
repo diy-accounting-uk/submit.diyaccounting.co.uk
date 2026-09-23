@@ -39,8 +39,8 @@
       <div id="loadCriteriaForm" class="form-container">
         <h2>Load a Year's Tax Liability Adjustments</h2>
         <p class="hint">
-          This is the second half of a carry-back claim. Record the loss on the Losses and Claims page first, then come here
-          to say what it saves.
+          This is the second half of a carry-back claim. Record the loss on the Losses and Claims page first, then come here to say what it
+          saves.
         </p>
         <form id="itsaAdjustmentsLoadForm">
           <div class="form-group">
@@ -61,7 +61,15 @@
           <div class="form-group">
             <label for="taxYear">Tax year the claim decreases</label>
             <p id="taxYear-hint" class="hint">The earlier tax year the carry-back claim reduces the liability for.</p>
-            <input type="text" id="taxYear" name="taxYear" required placeholder="e.g., 2022-23" maxlength="7" aria-describedby="taxYear-hint" />
+            <input
+              type="text"
+              id="taxYear"
+              name="taxYear"
+              required
+              placeholder="e.g., 2022-23"
+              maxlength="7"
+              aria-describedby="taxYear-hint"
+            />
           </div>
 
           <!-- Developer Test Scenario Section -->
@@ -94,8 +102,8 @@
       <div id="adjustmentsEditForm" class="form-container" style="display: none">
         <h2>What HMRC calculated for that year</h2>
         <p class="hint">
-          Retrieved fresh from HMRC's own calculation, so the figure in front of you while you enter the decrease is theirs,
-          not ours. We add nothing to it and subtract nothing from it.
+          Retrieved fresh from HMRC's own calculation, so the figure in front of you while you enter the decrease is theirs, not ours. We
+          add nothing to it and subtract nothing from it.
         </p>
         <button type="button" id="showEarlierYearBtn" class="secondary-button">Show that year's calculated liability</button>
         <dl>
@@ -105,8 +113,8 @@
 
         <h2>What the carry-back claim saves</h2>
         <p class="hint">
-          The amount by which the carry-back claim decreases this year's liability, from your own or your accountant's
-          computation. Leave a field at 0 if it does not apply.
+          The amount by which the carry-back claim decreases this year's liability, from your own or your accountant's computation. Leave a
+          field at 0 if it does not apply.
         </p>
         <div class="form-group">
           <label for="incomeTax">Income Tax decrease</label>
@@ -199,7 +207,14 @@
 
       async function loadAdjustments(nino, taxYear, testScenario, runFraudPreventionHeaderValidation, accessToken) {
         const govClientHeaders = await getGovClientHeaders();
-        return await getTaxLiabilityAdjustments(nino, taxYear, accessToken, govClientHeaders, runFraudPreventionHeaderValidation, testScenario);
+        return await getTaxLiabilityAdjustments(
+          nino,
+          taxYear,
+          accessToken,
+          govClientHeaders,
+          runFraudPreventionHeaderValidation,
+          testScenario,
+        );
       }
 
       async function saveAdjustments(adjustmentsDetails, testScenario, runFraudPreventionHeaderValidation, accessToken) {
@@ -227,7 +242,13 @@
           button.disabled = true;
           figureEl.textContent = "Retrieving from HMRC...";
           const govClientHeaders = await getGovClientHeaders();
-          const result = await triggerCalculation({ nino, taxYear, calculationType: "in-year" }, accessToken, govClientHeaders, false, null);
+          const result = await triggerCalculation(
+            { nino, taxYear, calculationType: "in-year" },
+            accessToken,
+            govClientHeaders,
+            false,
+            null,
+          );
           const totalIncomeTaxAndNicsDue = result?.calculation?.taxCalculation?.totalIncomeTaxAndNicsDue;
           figureEl.textContent = formatCurrency(totalIncomeTaxAndNicsDue);
         } catch (error) {

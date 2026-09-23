@@ -72,20 +72,26 @@
             <div id="periodIdGroup" class="form-group">
               <label for="periodId">Period ID</label>
               <p id="periodId-hint" class="hint">From the Period Summaries list, for example 2023-04-06_2023-07-05.</p>
-              <input type="text" id="periodId" name="periodId" required placeholder="e.g., 2023-04-06_2023-07-05" aria-describedby="periodId-hint" />
+              <input
+                type="text"
+                id="periodId"
+                name="periodId"
+                required
+                placeholder="e.g., 2023-04-06_2023-07-05"
+                aria-describedby="periodId-hint"
+              />
             </div>
 
             <div id="loadCurrentTotalGroup" class="form-group" style="display: none">
               <button type="button" id="loadCurrentTotalBtn" class="secondary-button">Load current total from HMRC</button>
               <p class="hint">
-                This tax year reports one running total rather than a set of submissions to amend. Load it before editing it
-                to the new total.
+                This tax year reports one running total rather than a set of submissions to amend. Load it before editing it to the new
+                total.
               </p>
             </div>
 
             <p id="cumulativeMoneyNote" class="hint" style="display: none">
-              This tax year reports a running total. Each figure below is the corrected total for the year so far, not just
-              this quarter.
+              This tax year reports a running total. Each figure below is the corrected total for the year so far, not just this quarter.
             </p>
 
             <div class="form-group">
@@ -465,7 +471,12 @@
           hideStatus();
           showStatus("Amending period summary...", "info");
 
-          await amendPeriod(pendingRequest.amendData, pendingRequest.testScenario, pendingRequest.runFraudPreventionHeaderValidation, accessToken);
+          await amendPeriod(
+            pendingRequest.amendData,
+            pendingRequest.testScenario,
+            pendingRequest.runFraudPreventionHeaderValidation,
+            accessToken,
+          );
 
           document.getElementById("periodAmendResults").style.display = "block";
           hideStatus();

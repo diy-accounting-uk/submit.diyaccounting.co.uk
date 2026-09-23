@@ -38,9 +38,7 @@ const scenarioObligations = {
     {
       typeOfBusiness: "self-employment",
       businessId: "XBIS12345678903",
-      obligationDetails: [
-        { periodStartDate: "2024-07-06", periodEndDate: "2024-10-05", dueDate: "2024-11-05", status: "open" },
-      ],
+      obligationDetails: [{ periodStartDate: "2024-07-06", periodEndDate: "2024-10-05", dueDate: "2024-11-05", status: "open" }],
     },
   ],
   FULFILLED: [
@@ -62,9 +60,7 @@ const scenarioObligations = {
     {
       typeOfBusiness: "self-employment",
       businessId: "XAIS12345678910",
-      obligationDetails: [
-        { periodStartDate: "2025-04-06", periodEndDate: "2025-07-05", dueDate: "2025-08-05", status: "open" },
-      ],
+      obligationDetails: [{ periodStartDate: "2025-04-06", periodEndDate: "2025-07-05", dueDate: "2025-08-05", status: "open" }],
     },
   ],
 };

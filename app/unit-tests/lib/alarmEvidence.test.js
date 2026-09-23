@@ -270,10 +270,7 @@ describe("resolveAlarmEvidence", () => {
       namespace: null,
       metricName: null,
       dimensions: {},
-      compositeChildFunctionNames: [
-        "prod-0f68ed8-app-hmrc-vat-return-post",
-        "prod-0f68ed8-app-hmrc-vat-return-get",
-      ],
+      compositeChildFunctionNames: ["prod-0f68ed8-app-hmrc-vat-return-post", "prod-0f68ed8-app-hmrc-vat-return-get"],
     });
 
     expect(evidence.ruleId).toBe(14);

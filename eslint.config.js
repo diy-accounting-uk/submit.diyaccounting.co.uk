@@ -44,7 +44,7 @@ export default [
       "sonarjs/cognitive-complexity": ["error", 40],
       // Do not complain about TODO comments
       "sonarjs/todo-tag": "off",
-      "no-warning-comments": "off",
+      "no-warning-comments": ["warn", { terms: ["todo", "fixme"], location: "start" }],
 
       // Formatting and organisation
       "no-unused-vars": ["error", { argsIgnorePattern: "^_" }],
@@ -69,7 +69,7 @@ export default [
   },
   {
     files: ["**/*.js"],
-    ignores: ["**/*-tests/**/*.js", "**/*.test.js", "eslint.config.js", "web/pubic/tests", "web/pubic/docs"],
+    ignores: ["**/*-tests/**/*.js", "**/*.test.js", "eslint.config.js", "web/public/tests", "web/public/docs"],
     rules: {
       ...security.configs.recommended.rules,
       "security/detect-non-literal-fs-filename": "off",
@@ -90,28 +90,6 @@ export default [
     },
     rules: {
       "sonarjs/code-eval": "off",
-    },
-  },
-  // Browser environment for spreadsheets site (loaded via <script> tags, not ESM)
-  {
-    files: ["web/spreadsheets.diyaccounting.co.uk/**/*.js"],
-    languageOptions: {
-      globals: {
-        ...globals.browser,
-        dataLayer: "writable",
-        gtag: "writable",
-        TomlParser: "readonly",
-        KBSearch: "readonly",
-        debounce: "readonly",
-      },
-    },
-    rules: {
-      "no-invalid-this": "off",
-      "prefer-rest-params": "off",
-      "sonarjs/no-ignored-exceptions": "off",
-      "sonarjs/slow-regex": "off",
-      "promise/always-return": "off",
-      "promise/no-nesting": "off",
     },
   },
   // Browser environment for gateway site

@@ -160,7 +160,9 @@ describe("gcp-identity-sync parseConfig", () => {
   });
 
   it("throws when an org_policy has no allowed_values", () => {
-    expect(() => parseConfig(SAMPLE_TOML.replace('allowed_values = ["DISABLE_KEY"]\n', ""))).toThrow(/allowed_values must be a non-empty array/);
+    expect(() => parseConfig(SAMPLE_TOML.replace('allowed_values = ["DISABLE_KEY"]\n', ""))).toThrow(
+      /allowed_values must be a non-empty array/,
+    );
   });
 
   it("maps every aws provider's google.subject to the role name, not the full assumed-role ARN", () => {

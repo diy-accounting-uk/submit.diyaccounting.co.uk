@@ -39,15 +39,7 @@ describe("services/hmrcApi", () => {
 
   it("buildHmrcHeaders builds the Accept header from an explicit apiVersion", async () => {
     const { buildHmrcHeaders } = await import("@app/services/hmrcApi.js");
-    const headers = buildHmrcHeaders(
-      "at-123",
-      { "Gov-Client-Device-ID": "dev" },
-      undefined,
-      undefined,
-      undefined,
-      undefined,
-      "2.0",
-    );
+    const headers = buildHmrcHeaders("at-123", { "Gov-Client-Device-ID": "dev" }, undefined, undefined, undefined, undefined, "2.0");
     expect(headers.Accept).toBe("application/vnd.hmrc.2.0+json");
     expect(headers.Authorization).toBe("Bearer at-123");
   });
@@ -382,10 +374,15 @@ describe("services/hmrcApi", () => {
       const { http400BadRequestFromHmrcResponse } = await import("@app/services/hmrcApi.js");
       const hmrcResponse = { status: 400, data: { code: "INVALID_VRN", message: "Bad VRN" } };
 
-      const response = http400BadRequestFromHmrcResponse(undefined, hmrcResponse, {}, {
-        userMessage: "The VAT registration number is not valid",
-        actionAdvice: "Please check the VAT registration number and try again",
-      });
+      const response = http400BadRequestFromHmrcResponse(
+        undefined,
+        hmrcResponse,
+        {},
+        {
+          userMessage: "The VAT registration number is not valid",
+          actionAdvice: "Please check the VAT registration number and try again",
+        },
+      );
 
       const body = JSON.parse(response.body);
       expect(body.message).toBe("The VAT registration number is not valid");

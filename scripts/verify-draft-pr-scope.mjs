@@ -75,7 +75,10 @@ export function evaluate({ family, changedPaths, remediesPath = REMEDIES_PATH })
     return { allowed: true, reason: `every changed path is one of ${family}'s own remedy paths` };
   }
   const outside = changedPaths.filter((path) => !new Set(row.paths).has(path));
-  return { allowed: false, reason: `changed paths outside family ${family}'s remedy paths: ${outside.join(", ") || "(no changed paths given)"}` };
+  return {
+    allowed: false,
+    reason: `changed paths outside family ${family}'s remedy paths: ${outside.join(", ") || "(no changed paths given)"}`,
+  };
 }
 
 function readStdin() {

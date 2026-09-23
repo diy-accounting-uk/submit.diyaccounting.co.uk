@@ -194,10 +194,11 @@ async function doScroll(page, step, ctx) {
     const count = await locator.count();
     if (count === 0) {
       await writeFailureStill(page, ctx);
-      throw new SceneStepError(
-        `scene "${ctx.sceneId}" step ${ctx.stepIndex} (scroll): target not found: ${JSON.stringify(step.target)}`,
-        { sceneId: ctx.sceneId, stepIndex: ctx.stepIndex, target: step.target },
-      );
+      throw new SceneStepError(`scene "${ctx.sceneId}" step ${ctx.stepIndex} (scroll): target not found: ${JSON.stringify(step.target)}`, {
+        sceneId: ctx.sceneId,
+        stepIndex: ctx.stepIndex,
+        target: step.target,
+      });
     }
     const box = await locator.evaluate((el) => {
       const rect = el.getBoundingClientRect();
@@ -236,10 +237,11 @@ async function doAwait(page, step, ctx) {
     await ctx.waitPhase(() => locator.waitFor({ state: "visible", timeout: step.timeoutMs || 30000 }));
   } catch (err) {
     await writeFailureStill(page, ctx);
-    throw new SceneStepError(
-      `scene "${ctx.sceneId}" step ${ctx.stepIndex} (await): "${step.until}" never appeared (${err.message})`,
-      { sceneId: ctx.sceneId, stepIndex: ctx.stepIndex, target: step.until },
-    );
+    throw new SceneStepError(`scene "${ctx.sceneId}" step ${ctx.stepIndex} (await): "${step.until}" never appeared (${err.message})`, {
+      sceneId: ctx.sceneId,
+      stepIndex: ctx.stepIndex,
+      target: step.until,
+    });
   }
   return { waitMs: Date.now() - start, rect: null };
 }

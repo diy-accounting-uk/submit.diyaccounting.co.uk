@@ -865,7 +865,14 @@
         }
 
         // submitVat is the hmrc-service module's export (exposed on window by web/public/lib/services/hmrc-service.js)
-        return await submitVat(vatNumber, vatData, accessToken, govClientHeaders, runFraudPreventionHeaderValidation, allowSyntheticObligations);
+        return await submitVat(
+          vatNumber,
+          vatData,
+          accessToken,
+          govClientHeaders,
+          runFraudPreventionHeaderValidation,
+          allowSyntheticObligations,
+        );
       }
 
       function displayReceipt(response) {

@@ -232,8 +232,7 @@ class BackupStackCdkResourceTest {
                         "BackupVaultName",
                         "ci-env-primary-vault",
                         "AccessPolicy",
-                        Match.objectLike(
-                                Map.of("Statement", Match.arrayWith(List.of(copyInStatement)))))));
+                        Match.objectLike(Map.of("Statement", Match.arrayWith(List.of(copyInStatement)))))));
 
         Matcher encryptStatement = Match.objectLike(Map.of(
                 "Sid",
@@ -250,8 +249,7 @@ class BackupStackCdkResourceTest {
                 "AWS::KMS::Key",
                 Match.objectLike(Map.of(
                         "KeyPolicy",
-                        Match.objectLike(
-                                Map.of("Statement", Match.arrayWith(List.of(encryptStatement)))))));
+                        Match.objectLike(Map.of("Statement", Match.arrayWith(List.of(encryptStatement)))))));
     }
 
     @Test
@@ -259,11 +257,8 @@ class BackupStackCdkResourceTest {
         Template template = synthBackupStack(Optional.of(CROSS_ACCOUNT_VAULT_ARN));
 
         template.hasResourceProperties(
-                "AWS::Backup::BackupVault",
-                Match.objectLike(Map.of("BackupVaultName", "prod-env-primary-vault")));
+                "AWS::Backup::BackupVault", Match.objectLike(Map.of("BackupVaultName", "prod-env-primary-vault")));
         template.resourcePropertiesCountIs(
-                "AWS::Backup::BackupVault",
-                Match.objectLike(Map.of("AccessPolicy", Match.anyValue())),
-                0);
+                "AWS::Backup::BackupVault", Match.objectLike(Map.of("AccessPolicy", Match.anyValue())), 0);
     }
 }

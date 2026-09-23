@@ -4,7 +4,14 @@
   "title": "A tour of DIY Accounting Submit",
   "description": "An unauthenticated walk through the site: what it does, how to use it, where to get help.",
   "auth": "none",
-  "pages": ["web/public/index.html", "web/public/about.html", "web/public/guide.html", "web/public/help.html", "web/public/bundles.html", "web/public/accessibility.html"],
+  "pages": [
+    "web/public/index.html",
+    "web/public/about.html",
+    "web/public/guide.html",
+    "web/public/help.html",
+    "web/public/bundles.html",
+    "web/public/accessibility.html"
+  ],
   "viewport": { "width": 1920, "height": 1080 },
   "deviceScaleFactor": 1,
   "fps": 60,

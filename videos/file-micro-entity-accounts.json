@@ -4,7 +4,12 @@
   "title": "File a company's micro-entity accounts with Companies House",
   "description": "A signed-in walk through filing micro-entity accounts: sign in, take out Resident Ltd, look up a company, fill in the balance sheet, preview the iXBRL, and file it with Companies House's sandbox.",
   "auth": "user",
-  "pages": ["web/public/index.html", "web/public/auth/login.html", "web/public/bundles.html", "web/public/companies-house/fileMicroEntityAccounts.html"],
+  "pages": [
+    "web/public/index.html",
+    "web/public/auth/login.html",
+    "web/public/bundles.html",
+    "web/public/companies-house/fileMicroEntityAccounts.html"
+  ],
   "environments": ["ci"],
   "viewport": { "width": 1920, "height": 1080 },
   "deviceScaleFactor": 1,

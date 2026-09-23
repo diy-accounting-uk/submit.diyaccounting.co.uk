@@ -97,7 +97,9 @@ test.describe("Change Registered Office Address page", () => {
           Promise.resolve({
             transactionId: "test-transaction-id",
             status: "closed",
-            filings: [{ id: "f1", type: "registered-office-address", description: "Change of registered office address", status: "accepted" }],
+            filings: [
+              { id: "f1", type: "registered-office-address", description: "Change of registered office address", status: "accepted" },
+            ],
           });
       },
       { addressArg: address, lookupErrorArg: lookupError },

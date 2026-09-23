@@ -255,8 +255,7 @@ class SubmitApplicationCdkResourceTest {
                 Map.of("RouteKey", "GET /api/v1/companies-house/accounts/{submissionNumber}"));
         // The new diya-gl paths are the primary routes; the old books paths are served alongside
         // them permanently, since the spreadsheets site's cloud.js keeps calling the old paths.
-        apiStackTemplate.hasResourceProperties(
-                "AWS::ApiGatewayV2::Route", Map.of("RouteKey", "GET /api/v1/diya-gl"));
+        apiStackTemplate.hasResourceProperties("AWS::ApiGatewayV2::Route", Map.of("RouteKey", "GET /api/v1/diya-gl"));
         apiStackTemplate.hasResourceProperties(
                 "AWS::ApiGatewayV2::Route", Map.of("RouteKey", "GET /api/v1/diya-gl/{bookId}/versions/{version}"));
         apiStackTemplate.hasResourceProperties(
@@ -485,8 +484,7 @@ class SubmitApplicationCdkResourceTest {
         IllegalStateException thrown = org.junit.jupiter.api.Assertions.assertThrows(
                 IllegalStateException.class, () -> new SubmitApplication(app, appProps));
         org.junit.jupiter.api.Assertions.assertTrue(thrown.getMessage().contains("COGNITO_DIYA_GL_CLIENT_ID"));
-        org.junit.jupiter.api.Assertions.assertTrue(
-                thrown.getMessage().contains("spreadsheets-diya-gl-app-client-id"));
+        org.junit.jupiter.api.Assertions.assertTrue(thrown.getMessage().contains("spreadsheets-diya-gl-app-client-id"));
     }
 
     @Test
@@ -552,10 +550,8 @@ class SubmitApplicationCdkResourceTest {
 
         assertHasEnvironmentVariable(billingStackTemplate, checkoutFunctionName, "STRIPE_PRICE_ID_RESIDENT_YEAR");
         assertHasEnvironmentVariable(billingStackTemplate, checkoutFunctionName, "STRIPE_PRICE_ID_RESIDENT_MONTH");
-        assertHasEnvironmentVariable(
-                billingStackTemplate, checkoutFunctionName, "STRIPE_TEST_PRICE_ID_RESIDENT_YEAR");
-        assertHasEnvironmentVariable(
-                billingStackTemplate, checkoutFunctionName, "STRIPE_TEST_PRICE_ID_RESIDENT_MONTH");
+        assertHasEnvironmentVariable(billingStackTemplate, checkoutFunctionName, "STRIPE_TEST_PRICE_ID_RESIDENT_YEAR");
+        assertHasEnvironmentVariable(billingStackTemplate, checkoutFunctionName, "STRIPE_TEST_PRICE_ID_RESIDENT_MONTH");
     }
 
     /**
@@ -630,7 +626,8 @@ class SubmitApplicationCdkResourceTest {
                 uriPrefixOr != null, "expected the uri-prefix exemption to be an OrStatement of both prefixes");
         var uriPrefixSearchStrings = ((List<Map<String, Object>>) uriPrefixOr.get("Statements"))
                 .stream()
-                        .map(part -> (String) ((Map<String, Object>) part.get("ByteMatchStatement")).get("SearchString"))
+                        .map(part ->
+                                (String) ((Map<String, Object>) part.get("ByteMatchStatement")).get("SearchString"))
                         .toList();
         org.junit.jupiter.api.Assertions.assertTrue(
                 uriPrefixSearchStrings.contains("/api/v1/diya-gl") && uriPrefixSearchStrings.contains("/api/v1/books"),
@@ -720,13 +717,14 @@ class SubmitApplicationCdkResourceTest {
 
     @SuppressWarnings("unchecked")
     private static void assertHasEnvironmentVariable(Template template, String functionName, String variableName) {
-        boolean found = template.findResources("AWS::Lambda::Function").values().stream().anyMatch(resource -> {
-            var properties = (Map<String, Object>) resource.get("Properties");
-            if (properties == null || !functionName.equals(properties.get("FunctionName"))) return false;
-            var environment = (Map<String, Object>) properties.get("Environment");
-            var variables = environment == null ? null : (Map<String, Object>) environment.get("Variables");
-            return variables != null && variables.containsKey(variableName);
-        });
+        boolean found = template.findResources("AWS::Lambda::Function").values().stream()
+                .anyMatch(resource -> {
+                    var properties = (Map<String, Object>) resource.get("Properties");
+                    if (properties == null || !functionName.equals(properties.get("FunctionName"))) return false;
+                    var environment = (Map<String, Object>) properties.get("Environment");
+                    var variables = environment == null ? null : (Map<String, Object>) environment.get("Variables");
+                    return variables != null && variables.containsKey(variableName);
+                });
         org.junit.jupiter.api.Assertions.assertTrue(
                 found, "expected " + functionName + " to have the " + variableName + " environment variable");
     }

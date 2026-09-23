@@ -102,9 +102,7 @@ describe("rawExportPublish", () => {
 
   test("defaultTargetDate returns yesterday in UTC", () => {
     const now = new Date();
-    const expected = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate() - 1))
-      .toISOString()
-      .slice(0, 10);
+    const expected = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate() - 1)).toISOString().slice(0, 10);
     expect(defaultTargetDate()).toBe(expected);
   });
 
@@ -117,7 +115,13 @@ describe("rawExportPublish", () => {
   });
 
   test("toCsv renders the header first, then one line per row", () => {
-    const csv = toCsv(["day", "count"], [["2026-09-01", "3"], ["2026-09-02", null]]);
+    const csv = toCsv(
+      ["day", "count"],
+      [
+        ["2026-09-01", "3"],
+        ["2026-09-02", null],
+      ],
+    );
     expect(csv).toBe("day,count\n2026-09-01,3\n2026-09-02,\n");
   });
 

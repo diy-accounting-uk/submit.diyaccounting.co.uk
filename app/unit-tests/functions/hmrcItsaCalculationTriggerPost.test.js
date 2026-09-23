@@ -178,7 +178,10 @@ describe("hmrcItsaCalculationTriggerPost ingestHandler", () => {
   });
 
   test("returns 400 when HMRC rejects the trigger, and never retrieves a calculation", async () => {
-    mockHmrcError(mockFetch, 400, { code: "RULE_RECENT_SUBMISSIONS_EXIST", message: "More recent submissions exist. Trigger a new calculation" });
+    mockHmrcError(mockFetch, 400, {
+      code: "RULE_RECENT_SUBMISSIONS_EXIST",
+      message: "More recent submissions exist. Trigger a new calculation",
+    });
 
     const event = buildTriggerEvent({ headers: { "x-wait-time-ms": "30000", "x-initial-request": "true" } });
     const response = await hmrcItsaCalculationTriggerPostHandler(event);
@@ -194,75 +197,63 @@ describe("hmrcItsaCalculationTriggerPost ingestHandler", () => {
     // waits make the test slower but deterministic; the explicit per-test timeout below covers
     // the worst case named by the constants themselves.
 
-    test(
-      "waits at least 5 seconds, retries on 404, and completes with the finished calculation",
-      async () => {
-        mockFetch.mockResolvedValueOnce(jsonResponse({ ok: true, status: 202, body: { calculationId: VALID_CALCULATION_ID } }));
-        // Two "not finished yet" responses, then a finished calculation - well within the bound.
-        mockFetch.mockResolvedValueOnce(
-          jsonResponse({ ok: false, status: 404, body: { code: "MATCHING_RESOURCE_NOT_FOUND", message: "Matching resource not found" } }),
-        );
-        mockFetch.mockResolvedValueOnce(
-          jsonResponse({ ok: false, status: 404, body: { code: "MATCHING_RESOURCE_NOT_FOUND", message: "Matching resource not found" } }),
-        );
-        const finishedCalculation = {
-          metadata: { calculationId: VALID_CALCULATION_ID, calculationType: "in-year", finalDeclaration: false },
-          calculation: { taxCalculation: { totalIncomeTaxAndNicsDue: 1900 } },
-        };
-        mockFetch.mockResolvedValueOnce(jsonResponse({ ok: true, status: 200, body: finishedCalculation }));
-
-        const event = buildTriggerEvent({ headers: { "x-wait-time-ms": "30000", "x-initial-request": "true" } });
-        const response = await hmrcItsaCalculationTriggerPostHandler(event);
-
-        expect(response.statusCode).toBe(200);
-        expect(JSON.parse(response.body)).toEqual(finishedCalculation);
-        // 1 trigger + 2 not-ready retrievals + 1 finished retrieval
-        expect(mockFetch).toHaveBeenCalledTimes(4);
-      },
-      20000,
-    );
-
-    test(
-      "stops retrying at the bound and reports not found rather than polling forever",
-      async () => {
-        mockFetch.mockResolvedValueOnce(jsonResponse({ ok: true, status: 202, body: { calculationId: VALID_CALCULATION_ID } }));
-        // Every retrieval attempt answers 404 - the calculation never finishes in this test.
-        for (let i = 0; i < 5; i += 1) {
-          mockFetch.mockResolvedValueOnce(
-            jsonResponse({ ok: false, status: 404, body: { code: "MATCHING_RESOURCE_NOT_FOUND", message: "Matching resource not found" } }),
-          );
-        }
-
-        const event = buildTriggerEvent({ headers: { "x-wait-time-ms": "30000", "x-initial-request": "true" } });
-        const response = await hmrcItsaCalculationTriggerPostHandler(event);
-
-        expect(response.statusCode).toBe(404);
-        // 1 trigger + exactly 5 retrieval attempts (the named bound) - a 6th would mean it never stops.
-        expect(mockFetch).toHaveBeenCalledTimes(6);
-      },
-      30000,
-    );
-  });
-
-  test(
-    "publishes the itsa-calculation-triggered event with the hashed sub, never the raw sub",
-    async () => {
+    test("waits at least 5 seconds, retries on 404, and completes with the finished calculation", async () => {
       mockFetch.mockResolvedValueOnce(jsonResponse({ ok: true, status: 202, body: { calculationId: VALID_CALCULATION_ID } }));
-      mockFetch.mockResolvedValueOnce(jsonResponse({ ok: true, status: 200, body: { metadata: { calculationId: VALID_CALCULATION_ID } } }));
+      // Two "not finished yet" responses, then a finished calculation - well within the bound.
+      mockFetch.mockResolvedValueOnce(
+        jsonResponse({ ok: false, status: 404, body: { code: "MATCHING_RESOURCE_NOT_FOUND", message: "Matching resource not found" } }),
+      );
+      mockFetch.mockResolvedValueOnce(
+        jsonResponse({ ok: false, status: 404, body: { code: "MATCHING_RESOURCE_NOT_FOUND", message: "Matching resource not found" } }),
+      );
+      const finishedCalculation = {
+        metadata: { calculationId: VALID_CALCULATION_ID, calculationType: "in-year", finalDeclaration: false },
+        calculation: { taxCalculation: { totalIncomeTaxAndNicsDue: 1900 } },
+      };
+      mockFetch.mockResolvedValueOnce(jsonResponse({ ok: true, status: 200, body: finishedCalculation }));
 
       const event = buildTriggerEvent({ headers: { "x-wait-time-ms": "30000", "x-initial-request": "true" } });
-      await hmrcItsaCalculationTriggerPostHandler(event);
+      const response = await hmrcItsaCalculationTriggerPostHandler(event);
 
-      const triggeredCalls = mockEventBridgeSend.mock.calls.filter((call) => {
-        const detail = JSON.parse(call[0].input.Entries[0].Detail);
-        return detail.event === "itsa-calculation-triggered";
-      });
-      expect(triggeredCalls).toHaveLength(1);
-      const rawDetail = triggeredCalls[0][0].input.Entries[0].Detail;
-      expect(rawDetail).not.toContain('"test-sub"');
-      const detail = JSON.parse(rawDetail);
-      expect(detail.hashedSub).toBe(hashSub("test-sub"));
-    },
-    15000,
-  );
+      expect(response.statusCode).toBe(200);
+      expect(JSON.parse(response.body)).toEqual(finishedCalculation);
+      // 1 trigger + 2 not-ready retrievals + 1 finished retrieval
+      expect(mockFetch).toHaveBeenCalledTimes(4);
+    }, 20000);
+
+    test("stops retrying at the bound and reports not found rather than polling forever", async () => {
+      mockFetch.mockResolvedValueOnce(jsonResponse({ ok: true, status: 202, body: { calculationId: VALID_CALCULATION_ID } }));
+      // Every retrieval attempt answers 404 - the calculation never finishes in this test.
+      for (let i = 0; i < 5; i += 1) {
+        mockFetch.mockResolvedValueOnce(
+          jsonResponse({ ok: false, status: 404, body: { code: "MATCHING_RESOURCE_NOT_FOUND", message: "Matching resource not found" } }),
+        );
+      }
+
+      const event = buildTriggerEvent({ headers: { "x-wait-time-ms": "30000", "x-initial-request": "true" } });
+      const response = await hmrcItsaCalculationTriggerPostHandler(event);
+
+      expect(response.statusCode).toBe(404);
+      // 1 trigger + exactly 5 retrieval attempts (the named bound) - a 6th would mean it never stops.
+      expect(mockFetch).toHaveBeenCalledTimes(6);
+    }, 30000);
+  });
+
+  test("publishes the itsa-calculation-triggered event with the hashed sub, never the raw sub", async () => {
+    mockFetch.mockResolvedValueOnce(jsonResponse({ ok: true, status: 202, body: { calculationId: VALID_CALCULATION_ID } }));
+    mockFetch.mockResolvedValueOnce(jsonResponse({ ok: true, status: 200, body: { metadata: { calculationId: VALID_CALCULATION_ID } } }));
+
+    const event = buildTriggerEvent({ headers: { "x-wait-time-ms": "30000", "x-initial-request": "true" } });
+    await hmrcItsaCalculationTriggerPostHandler(event);
+
+    const triggeredCalls = mockEventBridgeSend.mock.calls.filter((call) => {
+      const detail = JSON.parse(call[0].input.Entries[0].Detail);
+      return detail.event === "itsa-calculation-triggered";
+    });
+    expect(triggeredCalls).toHaveLength(1);
+    const rawDetail = triggeredCalls[0][0].input.Entries[0].Detail;
+    expect(rawDetail).not.toContain('"test-sub"');
+    const detail = JSON.parse(rawDetail);
+    expect(detail.hashedSub).toBe(hashSub("test-sub"));
+  }, 15000);
 });

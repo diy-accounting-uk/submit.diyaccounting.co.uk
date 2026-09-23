@@ -321,9 +321,7 @@ describe("activityTelegramForwarder", () => {
         ok: false,
         status: 429,
         text: () =>
-          Promise.resolve(
-            '{"ok":false,"error_code":429,"description":"Too Many Requests: retry after 2","parameters":{"retry_after":2}}',
-          ),
+          Promise.resolve('{"ok":false,"error_code":429,"description":"Too Many Requests: retry after 2","parameters":{"retry_after":2}}'),
       };
       const succeeds = { ok: true, status: 200, text: () => Promise.resolve("{}") };
       global.fetch = vi.fn().mockResolvedValueOnce(tooManyRequests).mockResolvedValueOnce(succeeds);
@@ -388,9 +386,7 @@ describe("activityTelegramForwarder", () => {
         ok: false,
         status: 429,
         text: () =>
-          Promise.resolve(
-            '{"ok":false,"error_code":429,"description":"Too Many Requests: retry after 5","parameters":{"retry_after":5}}',
-          ),
+          Promise.resolve('{"ok":false,"error_code":429,"description":"Too Many Requests: retry after 5","parameters":{"retry_after":5}}'),
       };
       global.fetch = vi.fn().mockResolvedValue(tooManyRequests);
 
@@ -604,9 +600,7 @@ describe("activityTelegramForwarder", () => {
         Subject: "AWS Budget Notification",
         Message: "ci budget has exceeded 85% of the budgeted amount.\nMore detail follows.",
       });
-      expect(detail.summary).toBe(
-        "AWS Budget Notification: ci budget has exceeded 85% of the budgeted amount.",
-      );
+      expect(detail.summary).toBe("AWS Budget Notification: ci budget has exceeded 85% of the budgeted amount.");
       expect(detail.actor).toBe("system");
       expect(detail.flow).toBe("operational");
       expect(detail.event).toBe("cost-alert");

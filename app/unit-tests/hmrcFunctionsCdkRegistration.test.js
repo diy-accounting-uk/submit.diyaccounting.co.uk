@@ -60,9 +60,7 @@ describe("app/functions/hmrc handlers are registered in the CDK", () => {
       const registeredName = FIELD_NAME_OVERRIDES[baseName] ?? baseName;
       const fieldName = `${registeredName}IngestLambdaFunctionName`;
       if (!stacksText.includes(fieldName)) {
-        offenders.push(
-          `${baseName}: no stack references sharedNames().${fieldName} -- the Lambda has a file but no CDK construct`,
-        );
+        offenders.push(`${baseName}: no stack references sharedNames().${fieldName} -- the Lambda has a file but no CDK construct`);
       }
     }
 

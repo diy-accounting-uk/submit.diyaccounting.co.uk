@@ -85,7 +85,7 @@ function buildDeclarationBody(overrides = {}) {
 function buildInitialDeclarationEvent(headers = {}) {
   return buildHmrcEvent({
     body: buildDeclarationBody(),
-    headers: { authorization: "Bearer test-token", "x-initial-request": "true", ...headers },
+    headers: { "authorization": "Bearer test-token", "x-initial-request": "true", ...headers },
   });
 }
 
@@ -142,7 +142,7 @@ describe("hmrcItsaFinalDeclarationPost token cost, receipt and failure reporting
   test("does not charge a token for a request our own validation rejects before it reaches HMRC", async () => {
     const event = buildHmrcEvent({
       body: buildDeclarationBody({ nino: undefined }),
-      headers: { authorization: "Bearer test-token", "x-initial-request": "true" },
+      headers: { "authorization": "Bearer test-token", "x-initial-request": "true" },
     });
 
     const response = await hmrcItsaFinalDeclarationPostHandler(event);
@@ -204,7 +204,10 @@ describe("hmrcItsaFinalDeclarationPost token cost, receipt and failure reporting
   });
 
   test("an HMRC rejection emits a failure event and a failure metric", async () => {
-    mockHmrcError(mockFetch, 400, { code: "RULE_RECENT_SUBMISSIONS_EXIST", message: "More recent submissions exist. Trigger a new calculation" });
+    mockHmrcError(mockFetch, 400, {
+      code: "RULE_RECENT_SUBMISSIONS_EXIST",
+      message: "More recent submissions exist. Trigger a new calculation",
+    });
 
     await hmrcItsaFinalDeclarationPostHandler(buildInitialDeclarationEvent());
 

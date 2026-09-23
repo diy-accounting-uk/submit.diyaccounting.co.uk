@@ -61,9 +61,7 @@ export function apiEndpoint(app) {
     const { nino, businessId, taxYear } = req.params;
     const govTestScenario = req.headers["gov-test-scenario"];
 
-    console.log(
-      `[http-simulator:itsa-losses-and-claims] GET /individuals/losses/${nino}/businesses/${businessId}/loss-claims/${taxYear}`,
-    );
+    console.log(`[http-simulator:itsa-losses-and-claims] GET /individuals/losses/${nino}/businesses/${businessId}/loss-claims/${taxYear}`);
 
     if (!validatePathParams(req, res)) return;
 
@@ -82,9 +80,7 @@ export function apiEndpoint(app) {
     const { nino, businessId, taxYear } = req.params;
     const govTestScenario = req.headers["gov-test-scenario"];
 
-    console.log(
-      `[http-simulator:itsa-losses-and-claims] PUT /individuals/losses/${nino}/businesses/${businessId}/loss-claims/${taxYear}`,
-    );
+    console.log(`[http-simulator:itsa-losses-and-claims] PUT /individuals/losses/${nino}/businesses/${businessId}/loss-claims/${taxYear}`);
 
     if (!validatePathParams(req, res)) return;
 

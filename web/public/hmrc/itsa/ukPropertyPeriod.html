@@ -46,9 +46,7 @@
           <form id="itsaUkPropertyPeriodForm">
             <div class="form-group">
               <label for="nino">National Insurance number</label>
-              <p id="nino-hint" class="hint">
-                This is two letters, six numbers and a final letter, for example AB123456C.
-              </p>
+              <p id="nino-hint" class="hint">This is two letters, six numbers and a final letter, for example AB123456C.</p>
               <input
                 type="text"
                 id="nino"
@@ -66,13 +64,28 @@
             <div class="form-group">
               <label for="businessId">Business ID</label>
               <p id="businessId-hint" class="hint">The business ID from Business Details, for example XAIS12345678910.</p>
-              <input type="text" id="businessId" name="businessId" required placeholder="e.g., XAIS12345678910" aria-describedby="businessId-hint" />
+              <input
+                type="text"
+                id="businessId"
+                name="businessId"
+                required
+                placeholder="e.g., XAIS12345678910"
+                aria-describedby="businessId-hint"
+              />
             </div>
 
             <div class="form-group">
               <label for="taxYear">Tax year</label>
               <p id="taxYear-hint" class="hint">The tax year this period falls in, format YYYY-YY, for example 2024-25.</p>
-              <input type="text" id="taxYear" name="taxYear" required placeholder="e.g., 2024-25" maxlength="7" aria-describedby="taxYear-hint" />
+              <input
+                type="text"
+                id="taxYear"
+                name="taxYear"
+                required
+                placeholder="e.g., 2024-25"
+                maxlength="7"
+                aria-describedby="taxYear-hint"
+              />
             </div>
 
             <div id="propertyTypeGroup" class="form-group">
@@ -89,8 +102,8 @@
             <div id="loadCurrentTotalGroup" class="form-group" style="display: none">
               <button type="button" id="loadCurrentTotalBtn" class="secondary-button">Load current total from HMRC</button>
               <p class="hint">
-                This tax year reports one running total rather than four separate quarters. Load what HMRC already has before
-                editing it to the new total.
+                This tax year reports one running total rather than four separate quarters. Load what HMRC already has before editing it to
+                the new total.
               </p>
             </div>
 
@@ -109,14 +122,23 @@
             </div>
 
             <p id="cumulativeMoneyNote" class="hint" style="display: none">
-              This tax year reports a running total. Each figure below is the total for the year so far, up to the period end
-              date above, not just this quarter.
+              This tax year reports a running total. Each figure below is the total for the year so far, up to the period end date above,
+              not just this quarter.
             </p>
 
             <div class="form-group">
               <label for="periodAmount">Rental income</label>
               <p id="periodAmount-hint" class="hint">The rent and other income received for this period. Enter 0 if none.</p>
-              <input type="number" id="periodAmount" name="periodAmount" step="0.01" min="0" value="0" required aria-describedby="periodAmount-hint" />
+              <input
+                type="number"
+                id="periodAmount"
+                name="periodAmount"
+                step="0.01"
+                min="0"
+                value="0"
+                required
+                aria-describedby="periodAmount-hint"
+              />
             </div>
 
             <div class="form-group">
@@ -374,7 +396,8 @@
         const expenses = property.expenses || {};
         if (income.periodAmount !== undefined) document.getElementById("periodAmount").value = income.periodAmount;
         if (income.otherIncome !== undefined) document.getElementById("otherIncome").value = income.otherIncome;
-        if (expenses.repairsAndMaintenance !== undefined) document.getElementById("repairsAndMaintenance").value = expenses.repairsAndMaintenance;
+        if (expenses.repairsAndMaintenance !== undefined)
+          document.getElementById("repairsAndMaintenance").value = expenses.repairsAndMaintenance;
         if (expenses.other !== undefined) document.getElementById("otherExpenses").value = expenses.other;
         showStatus("Loaded your current year-to-date total from HMRC. Edit the figures below to the new total.", "info");
       }

@@ -119,14 +119,14 @@
 
         <h3>Businesses in This Return</h3>
         <p class="hint">
-          Every business HMRC counted in this calculation, so a business you have but HMRC did not count is a gap you can
-          still fix before you declare.
+          Every business HMRC counted in this calculation, so a business you have but HMRC did not count is a gap you can still fix before
+          you declare.
         </p>
         <div id="businessesList"></div>
         <p id="taxLiabilityAdjustmentLine" class="hint"></p>
         <div id="unclaimedLossWarning" class="status-message warning" style="display: none" role="alert">
-          A business above shows a loss with no claim recorded against it. Visit Losses and Claims before declaring if you
-          meant to carry it forward, sideways or back.
+          A business above shows a loss with no claim recorded against it. Visit Losses and Claims before declaring if you meant to carry it
+          forward, sideways or back.
         </div>
 
         <div id="notReadyForDeclaration" class="status-message error" style="display: none" role="alert"></div>
@@ -220,12 +220,26 @@
 
       async function runRetrieveCalculation(nino, taxYear, calculationId, testScenario, runFraudPreventionHeaderValidation, accessToken) {
         const govClientHeaders = await getGovClientHeaders();
-        return await getCalculation(nino, taxYear, calculationId, accessToken, govClientHeaders, runFraudPreventionHeaderValidation, testScenario);
+        return await getCalculation(
+          nino,
+          taxYear,
+          calculationId,
+          accessToken,
+          govClientHeaders,
+          runFraudPreventionHeaderValidation,
+          testScenario,
+        );
       }
 
       async function runSubmitDeclaration(declarationDetails, testScenario, runFraudPreventionHeaderValidation, accessToken) {
         const govClientHeaders = await getGovClientHeaders();
-        return await postFinalDeclaration(declarationDetails, accessToken, govClientHeaders, runFraudPreventionHeaderValidation, testScenario);
+        return await postFinalDeclaration(
+          declarationDetails,
+          accessToken,
+          govClientHeaders,
+          runFraudPreventionHeaderValidation,
+          testScenario,
+        );
       }
 
       function formatCurrency(value) {
@@ -476,7 +490,10 @@
             } catch (error) {
               // A figure changed since the calculation the customer confirmed - the fix is a
               // fresh calculation, not a retry of this same submission.
-              if (String(error.message || "").includes("RULE_RECENT_SUBMISSIONS_EXIST") || String(error.message || "").includes("More recent submissions exist")) {
+              if (
+                String(error.message || "").includes("RULE_RECENT_SUBMISSIONS_EXIST") ||
+                String(error.message || "").includes("More recent submissions exist")
+              ) {
                 document.getElementById("recentSubmissionsChanged").style.display = "block";
                 hideStatus();
               } else if (error.status === 403 && error.reason === "tokens_exhausted") {

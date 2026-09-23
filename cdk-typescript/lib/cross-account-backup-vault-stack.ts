@@ -64,14 +64,7 @@ export class CrossAccountBackupVaultStack extends Stack {
         sid: "AllowSourceAccountBackupRolesToEncrypt",
         effect: Effect.ALLOW,
         principals: sourceBackupRoles,
-        actions: [
-          "kms:Encrypt",
-          "kms:Decrypt",
-          "kms:ReEncrypt*",
-          "kms:GenerateDataKey*",
-          "kms:DescribeKey",
-          "kms:CreateGrant",
-        ],
+        actions: ["kms:Encrypt", "kms:Decrypt", "kms:ReEncrypt*", "kms:GenerateDataKey*", "kms:DescribeKey", "kms:CreateGrant"],
         resources: ["*"],
       }),
     );

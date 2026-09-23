@@ -84,9 +84,7 @@ describe("practiceClientsPost", () => {
   });
 
   test("rejects an invalid company number", async () => {
-    const result = await ingestHandler(
-      buildAuthenticatedEvent({ body: { displayName: "Acme Ltd", companyNumber: "not-valid!" } }),
-    );
+    const result = await ingestHandler(buildAuthenticatedEvent({ body: { displayName: "Acme Ltd", companyNumber: "not-valid!" } }));
 
     expect(result.statusCode).toBe(400);
     expect(createClient).not.toHaveBeenCalled();

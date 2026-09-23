@@ -110,7 +110,20 @@ export function resolveRepo(explicit) {
 }
 
 function fetchAlarmIssues(repo) {
-  const out = gh(["issue", "list", "--repo", repo, "--label", "alarm", "--state", "all", "--limit", "200", "--json", "number,title,labels,createdAt,updatedAt"]);
+  const out = gh([
+    "issue",
+    "list",
+    "--repo",
+    repo,
+    "--label",
+    "alarm",
+    "--state",
+    "all",
+    "--limit",
+    "200",
+    "--json",
+    "number,title,labels,createdAt,updatedAt",
+  ]);
   return JSON.parse(out);
 }
 

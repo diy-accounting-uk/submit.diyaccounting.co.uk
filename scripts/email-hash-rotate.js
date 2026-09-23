@@ -73,9 +73,8 @@ export async function main(argv = process.argv.slice(2)) {
   if (!envName) throw new Error("ENVIRONMENT_NAME is required (e.g., 'ci' or 'prod')");
   const secretName = `${envName}/${SECRET_NAME_SUFFIX}`;
 
-  const { SecretsManagerClient, GetSecretValueCommand, UpdateSecretCommand, TagResourceCommand } = await import(
-    "@aws-sdk/client-secrets-manager"
-  );
+  const { SecretsManagerClient, GetSecretValueCommand, UpdateSecretCommand, TagResourceCommand } =
+    await import("@aws-sdk/client-secrets-manager");
   const client = new SecretsManagerClient({ region: process.env.AWS_REGION || "eu-west-2" });
 
   const current = await client.send(new GetSecretValueCommand({ SecretId: secretName }));

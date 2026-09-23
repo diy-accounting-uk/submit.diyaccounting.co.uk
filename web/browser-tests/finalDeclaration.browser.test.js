@@ -29,11 +29,9 @@ test.describe("ITSA Final Declaration - Form", () => {
       }
     });
 
-    const modifiedHtml = htmlContent
-      .replace("<head>", '<head><base href="http://localhost:3000/hmrc/itsa/">')
-      .replace(
-        "<body>",
-        `<body><script>
+    const modifiedHtml = htmlContent.replace("<head>", '<head><base href="http://localhost:3000/hmrc/itsa/">').replace(
+      "<body>",
+      `<body><script>
 window.showStatus = window.showStatus || function(){};
 window.hideStatus = window.hideStatus || function(){};
 window.showLoading = window.showLoading || function(){};
@@ -41,7 +39,7 @@ window.hideLoading = window.hideLoading || function(){};
 window.generateRandomState = window.generateRandomState || function(){ return "test-state"; };
 window.getGovClientHeaders = window.getGovClientHeaders || function(){ return Promise.resolve({}); };
 </script>`,
-      );
+    );
 
     // page.setContent's `url` option only resolves relative asset paths - it never becomes
     // window.location (the page stays "about:blank"), so a test reading the query string needs
@@ -90,7 +88,10 @@ window.getGovClientHeaders = window.getGovClientHeaders || function(){ return Pr
     await page.evaluate(() => {
       window.displayCalculation({
         metadata: { calculationId: "calc-1", calculationType: "intent-to-finalise" },
-        calculation: { taxCalculation: { totalIncomeTaxAndNicsDue: 1900, incomeTax: {}, nics: {}, totalTaxDeducted: 0 }, allowancesAndDeductions: {} },
+        calculation: {
+          taxCalculation: { totalIncomeTaxAndNicsDue: 1900, incomeTax: {}, nics: {}, totalTaxDeducted: 0 },
+          allowancesAndDeductions: {},
+        },
       });
     });
 
@@ -116,7 +117,10 @@ window.getGovClientHeaders = window.getGovClientHeaders || function(){ return Pr
     await page.evaluate(() => {
       window.displayCalculation({
         metadata: { calculationId: "calc-2", calculationType: "in-year" },
-        calculation: { taxCalculation: { totalIncomeTaxAndNicsDue: 1900, incomeTax: {}, nics: {}, totalTaxDeducted: 0 }, allowancesAndDeductions: {} },
+        calculation: {
+          taxCalculation: { totalIncomeTaxAndNicsDue: 1900, incomeTax: {}, nics: {}, totalTaxDeducted: 0 },
+          allowancesAndDeductions: {},
+        },
       });
     });
 
@@ -136,7 +140,10 @@ window.getGovClientHeaders = window.getGovClientHeaders || function(){ return Pr
     await page.evaluate(() => {
       window.displayCalculation({
         metadata: { calculationId: "shown-calc-id", calculationType: "intent-to-finalise" },
-        calculation: { taxCalculation: { totalIncomeTaxAndNicsDue: 1900, incomeTax: {}, nics: {}, totalTaxDeducted: 0 }, allowancesAndDeductions: {} },
+        calculation: {
+          taxCalculation: { totalIncomeTaxAndNicsDue: 1900, incomeTax: {}, nics: {}, totalTaxDeducted: 0 },
+          allowancesAndDeductions: {},
+        },
       });
     });
 

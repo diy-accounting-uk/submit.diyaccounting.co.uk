@@ -192,12 +192,15 @@ class OpsStackTest {
                 .flatMap(policyDocument -> ((List<Map<String, Object>>) policyDocument.get("Statement")).stream())
                 .filter(statement -> {
                     var action = statement.get("Action");
-                    return action.equals("dynamodb:PutItem") || (action instanceof List<?> actions && actions.contains("dynamodb:PutItem"));
+                    return action.equals("dynamodb:PutItem")
+                            || (action instanceof List<?> actions && actions.contains("dynamodb:PutItem"));
                 })
                 .toList();
         assertTrue(
-                putItemStatements.stream().anyMatch(statement -> String.valueOf(statement.get("Resource")).contains("AlarmIssueLockTable")
-                        || String.valueOf(statement.get("Resource")).contains("alarm-issue-locks")),
+                putItemStatements.stream()
+                        .anyMatch(statement -> String.valueOf(statement.get("Resource"))
+                                        .contains("AlarmIssueLockTable")
+                                || String.valueOf(statement.get("Resource")).contains("alarm-issue-locks")),
                 "expected a dynamodb:PutItem statement scoped to the alarm-issue-lock table, got " + putItemStatements);
     }
 

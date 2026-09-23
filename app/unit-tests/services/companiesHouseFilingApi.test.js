@@ -82,7 +82,8 @@ describe("companiesHouseFilingApi", () => {
 
     test("prefers the environment variable secret over the Secrets Manager ARN", async () => {
       process.env.COMPANIES_HOUSE_CLIENT_SECRET = "env-client-secret";
-      process.env.COMPANIES_HOUSE_CLIENT_SECRET_ARN = "arn:aws:secretsmanager:eu-west-2:123456789012:secret:test/companies-house/client_secret";
+      process.env.COMPANIES_HOUSE_CLIENT_SECRET_ARN =
+        "arn:aws:secretsmanager:eu-west-2:123456789012:secret:test/companies-house/client_secret";
 
       const secret = await resolveClientSecret();
 
@@ -91,7 +92,8 @@ describe("companiesHouseFilingApi", () => {
     });
 
     test("reads the client secret from Secrets Manager when only the ARN is set", async () => {
-      process.env.COMPANIES_HOUSE_CLIENT_SECRET_ARN = "arn:aws:secretsmanager:eu-west-2:123456789012:secret:test/companies-house/client_secret";
+      process.env.COMPANIES_HOUSE_CLIENT_SECRET_ARN =
+        "arn:aws:secretsmanager:eu-west-2:123456789012:secret:test/companies-house/client_secret";
 
       const secret = await resolveClientSecret();
 

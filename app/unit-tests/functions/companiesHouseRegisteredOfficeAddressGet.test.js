@@ -143,9 +143,7 @@ describe("companiesHouseRegisteredOfficeAddressGet ingestHandler", () => {
   });
 
   test("rejects a malformed company number with 400", async () => {
-    const response = await companiesHouseRegisteredOfficeAddressGetHandler(
-      buildEvent({ pathParameters: { companyNumber: "bad-number" } }),
-    );
+    const response = await companiesHouseRegisteredOfficeAddressGetHandler(buildEvent({ pathParameters: { companyNumber: "bad-number" } }));
     expect(response.statusCode).toBe(400);
     expect(mockFetch).not.toHaveBeenCalled();
   });

@@ -453,8 +453,7 @@ public class SubmitApplication {
                         .stripePriceIdResidentVat(stripePriceIdResidentVat != null ? stripePriceIdResidentVat : "")
                         .stripeTestPriceIdResidentVat(
                                 stripeTestPriceIdResidentVat != null ? stripeTestPriceIdResidentVat : "")
-                        .stripePriceIdResidentYear(
-                                stripePriceIdResidentYear != null ? stripePriceIdResidentYear : "")
+                        .stripePriceIdResidentYear(stripePriceIdResidentYear != null ? stripePriceIdResidentYear : "")
                         .stripeTestPriceIdResidentYear(
                                 stripeTestPriceIdResidentYear != null ? stripeTestPriceIdResidentYear : "")
                         .stripePriceIdResidentMonth(

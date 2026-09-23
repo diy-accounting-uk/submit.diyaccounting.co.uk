@@ -61,16 +61,8 @@ vi.mock("@app/services/subHasher.js", () => ({
   hashSub: vi.fn((sub) => `hashed-${sub}`),
 }));
 
-const {
-  createClient,
-  getClient,
-  listClients,
-  archiveClient,
-  generateClientId,
-  getPracticeArn,
-  setPracticeArn,
-  setClientAuthorisation,
-} = await import("@app/data/dynamoDbPracticeClientRepository.js");
+const { createClient, getClient, listClients, archiveClient, generateClientId, getPracticeArn, setPracticeArn, setClientAuthorisation } =
+  await import("@app/data/dynamoDbPracticeClientRepository.js");
 
 describe("data/dynamoDbPracticeClientRepository", () => {
   beforeEach(() => {

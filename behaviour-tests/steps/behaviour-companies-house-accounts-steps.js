@@ -46,30 +46,10 @@ export async function verifyCompanyLookedUp(page, expectedName, expectedNumber, 
 async function fillYear(page, prefix, year) {
   await loggedFill(page, `#${prefix}FixedAssets`, String(year.fixedAssets), `${prefix} fixed assets`);
   await loggedFill(page, `#${prefix}CurrentAssets`, String(year.currentAssets), `${prefix} current assets`);
-  await loggedFill(
-    page,
-    `#${prefix}CreditorsWithinOneYear`,
-    String(year.creditorsWithinOneYear),
-    `${prefix} creditors within one year`,
-  );
-  await loggedFill(
-    page,
-    `#${prefix}CreditorsAfterOneYear`,
-    String(year.creditorsAfterOneYear),
-    `${prefix} creditors after one year`,
-  );
-  await loggedFill(
-    page,
-    `#${prefix}CalledUpShareCapital`,
-    String(year.calledUpShareCapital),
-    `${prefix} called up share capital`,
-  );
-  await loggedFill(
-    page,
-    `#${prefix}ProfitAndLossAccount`,
-    String(year.profitAndLossAccount),
-    `${prefix} profit and loss account`,
-  );
+  await loggedFill(page, `#${prefix}CreditorsWithinOneYear`, String(year.creditorsWithinOneYear), `${prefix} creditors within one year`);
+  await loggedFill(page, `#${prefix}CreditorsAfterOneYear`, String(year.creditorsAfterOneYear), `${prefix} creditors after one year`);
+  await loggedFill(page, `#${prefix}CalledUpShareCapital`, String(year.calledUpShareCapital), `${prefix} called up share capital`);
+  await loggedFill(page, `#${prefix}ProfitAndLossAccount`, String(year.profitAndLossAccount), `${prefix} profit and loss account`);
   await loggedFill(page, `#${prefix}CapitalAndReserves`, String(year.capitalAndReserves), `${prefix} capital and reserves`);
 }
 

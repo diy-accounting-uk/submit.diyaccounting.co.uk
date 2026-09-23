@@ -149,9 +149,7 @@ describe("companiesHouseRegisteredOfficeAddressPost ingestHandler", () => {
     expect(body.links).toEqual(RESOURCE_RESPONSE.links);
 
     const [requestedUrl, requestInit] = mockFetch.mock.calls[0];
-    expect(requestedUrl).toBe(
-      "https://api-sandbox.company-information.service.gov.uk/transactions/017100005912/registered-office-address",
-    );
+    expect(requestedUrl).toBe("https://api-sandbox.company-information.service.gov.uk/transactions/017100005912/registered-office-address");
     const sentBody = JSON.parse(requestInit.body);
     expect(sentBody).toEqual({
       premises: "13",
@@ -177,9 +175,7 @@ describe("companiesHouseRegisteredOfficeAddressPost ingestHandler", () => {
   );
 
   test("rejects a country outside the enum with 400", async () => {
-    const response = await companiesHouseRegisteredOfficeAddressPostHandler(
-      buildEvent({ body: { ...VALID_BODY, country: "France" } }),
-    );
+    const response = await companiesHouseRegisteredOfficeAddressPostHandler(buildEvent({ body: { ...VALID_BODY, country: "France" } }));
     expect(response.statusCode).toBe(400);
     expect(mockFetch).not.toHaveBeenCalled();
   });

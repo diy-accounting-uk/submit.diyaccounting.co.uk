@@ -13,7 +13,7 @@ dotenvConfigIfNotBlank({ path: ".env.test" });
 
 let simulator;
 
-const AUTH_HEADERS = { Authorization: "Bearer simulator-access-token", "Content-Type": "application/json" };
+const AUTH_HEADERS = { "Authorization": "Bearer simulator-access-token", "Content-Type": "application/json" };
 
 describe("System: Companies House Filing Simulator", () => {
   beforeAll(async () => {

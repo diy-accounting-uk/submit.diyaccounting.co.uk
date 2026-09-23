@@ -169,11 +169,23 @@ function withTimeout(promise, ms, message) {
   });
 }
 
-async function requestAndVerifySubmitReturn(page, { vatNumber, vatDue, testScenario, runFraudPreventionHeaderValidation, allowSyntheticObligations }) {
+async function requestAndVerifySubmitReturn(
+  page,
+  { vatNumber, vatDue, testScenario, runFraudPreventionHeaderValidation, allowSyntheticObligations },
+) {
   // Ensure sufficient tokens before each submission (day-guest has tokensGranted=3)
   await refreshBundleIfTokensLow(page);
   await initSubmitVat(page, screenshotPath);
-  await fillInVat(page, vatNumber, undefined, vatDue, testScenario, runFraudPreventionHeaderValidation, screenshotPath, allowSyntheticObligations);
+  await fillInVat(
+    page,
+    vatNumber,
+    undefined,
+    vatDue,
+    testScenario,
+    runFraudPreventionHeaderValidation,
+    screenshotPath,
+    allowSyntheticObligations,
+  );
   // Click submit. The HMRC access token may or may not be cached:
   // - Cached (first resubmission after success): client calls API directly
   // - Cleared (after a failed submission): client redirects to HMRC OAuth
@@ -279,7 +291,16 @@ test("Click through: Submit VAT Return (single API focus: POST)", async ({ page 
   /* *************************** */
   // First submission: perform HMRC AUTH only this first time
   await initSubmitVat(page, screenshotPath);
-  await fillInVat(page, testVatNumber, undefined, hmrcVatDueAmount, null, runFraudPreventionHeaderValidation, screenshotPath, allowSyntheticObligations);
+  await fillInVat(
+    page,
+    testVatNumber,
+    undefined,
+    hmrcVatDueAmount,
+    null,
+    runFraudPreventionHeaderValidation,
+    screenshotPath,
+    allowSyntheticObligations,
+  );
   await submitFormVat(page, screenshotPath);
 
   /* ************ */

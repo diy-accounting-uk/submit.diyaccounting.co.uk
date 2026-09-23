@@ -117,13 +117,19 @@ function main() {
     console.log("ffmpeg probe:", JSON.stringify(probe, null, 2));
 
     if (probe.width !== script.viewport.width || probe.height !== script.viewport.height) {
-      failures.push({ check: "resolution", expected: `${script.viewport.width}x${script.viewport.height}`, actual: `${probe.width}x${probe.height}` });
+      failures.push({
+        check: "resolution",
+        expected: `${script.viewport.width}x${script.viewport.height}`,
+        actual: `${probe.width}x${probe.height}`,
+      });
     }
     if (!probe.isH264) failures.push({ check: "codec", expected: "h264", actual: report.match(/Video:\s*(\S+)/)?.[1] || "unknown" });
     if (probe.fps !== null && Math.abs(probe.fps - script.fps) > 0.1) {
       failures.push({ check: "fps", expected: script.fps, actual: probe.fps });
     }
-    const expectedDurationMs = timelineSteps.length ? timelineSteps[timelineSteps.length - 1].endMs + script.finalHoldMs : script.finalHoldMs;
+    const expectedDurationMs = timelineSteps.length
+      ? timelineSteps[timelineSteps.length - 1].endMs + script.finalHoldMs
+      : script.finalHoldMs;
     if (probe.durationMs !== null) {
       const tolerance = expectedDurationMs * 0.05;
       const diff = Math.abs(probe.durationMs - expectedDurationMs);

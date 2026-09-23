@@ -38,9 +38,7 @@
       <!-- Search Form -->
       <div id="periodViewForm" class="form-container">
         <div class="form-toggle-buttons">
-          <button type="button" id="toggleSearchCriteriaBtn" class="secondary-button" style="display: none">
-            Show Search Criteria
-          </button>
+          <button type="button" id="toggleSearchCriteriaBtn" class="secondary-button" style="display: none">Show Search Criteria</button>
           <button type="button" id="cancelRequestBtn" class="cancel-button" style="display: none">Cancel Request</button>
         </div>
         <div id="searchCriteriaContainer">
@@ -72,14 +70,20 @@
             </div>
 
             <p id="cumulativeViewNote" class="hint" style="display: none">
-              This tax year reports one running total, so there is no period ID to enter - HMRC returns the current total for
-              the tax year.
+              This tax year reports one running total, so there is no period ID to enter - HMRC returns the current total for the tax year.
             </p>
 
             <div id="periodIdGroup" class="form-group">
               <label for="periodId">Period ID</label>
               <p id="periodId-hint" class="hint">From the Period Summaries list, for example 2023-04-06_2023-07-05.</p>
-              <input type="text" id="periodId" name="periodId" required placeholder="e.g., 2023-04-06_2023-07-05" aria-describedby="periodId-hint" />
+              <input
+                type="text"
+                id="periodId"
+                name="periodId"
+                required
+                placeholder="e.g., 2023-04-06_2023-07-05"
+                aria-describedby="periodId-hint"
+              />
             </div>
 
             <!-- Developer Test Scenario Section -->
@@ -361,7 +365,15 @@
             hideStatus();
             showStatus("Retrieving period summary...", "info");
 
-            const result = await fetchPeriod(nino, businessId, taxYear, periodId, testScenario, runFraudPreventionHeaderValidation, accessToken);
+            const result = await fetchPeriod(
+              nino,
+              businessId,
+              taxYear,
+              periodId,
+              testScenario,
+              runFraudPreventionHeaderValidation,
+              accessToken,
+            );
 
             displayPeriod(result);
             document.getElementById("periodViewResults").style.display = "block";

@@ -28,7 +28,10 @@ const triggerErrorScenarios = {
   },
   CALCULATION_IN_PROGRESS: {
     status: 400,
-    body: { code: "RULE_CALCULATION_IN_PROGRESS", message: "A calculation is in progress. Please wait before triggering a new calculation" },
+    body: {
+      code: "RULE_CALCULATION_IN_PROGRESS",
+      message: "A calculation is in progress. Please wait before triggering a new calculation",
+    },
   },
   BUSINESS_VALIDATION_FAILURE: {
     status: 400,

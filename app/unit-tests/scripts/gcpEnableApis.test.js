@@ -29,7 +29,7 @@ describe("gcp-enable-apis parseConfig", () => {
     expect(parseConfig(toml)).toEqual(["serviceusage.googleapis.com", "bigquery.googleapis.com"]);
   });
   it("throws when [apis].services is missing", () => {
-    expect(() => parseConfig("[service_account]\nemail = \"a@b.iam.gserviceaccount.com\"\n")).toThrow(/apis\]\.services/);
+    expect(() => parseConfig('[service_account]\nemail = "a@b.iam.gserviceaccount.com"\n')).toThrow(/apis\]\.services/);
   });
   it("throws when [apis].services is empty", () => {
     expect(() => parseConfig("[apis]\nservices = []\n")).toThrow(/apis\]\.services/);

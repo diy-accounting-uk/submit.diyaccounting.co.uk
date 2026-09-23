@@ -614,7 +614,10 @@ describe("billingWebhookPost", () => {
       id: "evt_test_payment_failed_expanded",
       type: "invoice.payment_failed",
       data: {
-        object: { id: "in_test_fail_expanded", parent: { subscription_details: { subscription: { id: "sub_test_456", status: "past_due" } } } },
+        object: {
+          id: "in_test_fail_expanded",
+          parent: { subscription_details: { subscription: { id: "sub_test_456", status: "past_due" } } },
+        },
       },
     };
     mockWebhooksConstructEvent.mockReturnValue(payload);

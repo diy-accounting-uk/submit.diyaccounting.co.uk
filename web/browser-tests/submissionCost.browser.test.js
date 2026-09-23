@@ -125,9 +125,7 @@ test.describe("Submission cost widget", () => {
     await expect(page.locator("#submitBtn")).toBeEnabled();
   });
 
-  test("says the write is free and never touches the submit button on a page whose activity carries no token cost", async ({
-    page,
-  }) => {
+  test("says the write is free and never touches the submit button on a page whose activity carries no token cost", async ({ page }) => {
     await setupRoutes(page, { loggedIn: true });
 
     await page.goto("http://localhost:3000/free-activity.html", { waitUntil: "domcontentloaded" });

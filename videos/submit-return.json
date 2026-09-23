@@ -4,7 +4,13 @@
   "title": "Submit a VAT return to HMRC",
   "description": "A signed-in walk through submitting a VAT return: sign in, take out a day pass, ask HMRC for the periods, authorise, then fill in the nine boxes for an open period and submit.",
   "auth": "user",
-  "pages": ["web/public/index.html", "web/public/auth/login.html", "web/public/bundles.html", "web/public/hmrc/vat/vatObligations.html", "web/public/hmrc/vat/submitVat.html"],
+  "pages": [
+    "web/public/index.html",
+    "web/public/auth/login.html",
+    "web/public/bundles.html",
+    "web/public/hmrc/vat/vatObligations.html",
+    "web/public/hmrc/vat/submitVat.html"
+  ],
   "viewport": { "width": 1920, "height": 1080 },
   "deviceScaleFactor": 1,
   "fps": 60,

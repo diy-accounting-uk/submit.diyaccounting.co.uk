@@ -8,7 +8,11 @@
 //          POST /individuals/calculations/{nino}/self-assessment/{taxYear}/{calculationId}/{calculationType}
 
 import { randomUUID } from "crypto";
-import { getCalculationTriggerErrorForScenario, getCalculationForScenario, getFinalDeclarationErrorForScenario } from "../scenarios/itsa-calculations.js";
+import {
+  getCalculationTriggerErrorForScenario,
+  getCalculationForScenario,
+  getFinalDeclarationErrorForScenario,
+} from "../scenarios/itsa-calculations.js";
 
 const TRIGGER_CALCULATION_TYPES = ["in-year", "intent-to-finalise", "intent-to-amend"];
 const FINAL_DECLARATION_CALCULATION_TYPES = ["final-declaration", "confirm-amendment"];
@@ -45,7 +49,9 @@ export function apiEndpoint(app) {
     const { nino, taxYear, calculationType } = req.params;
     const govTestScenario = req.headers["gov-test-scenario"];
 
-    console.log(`[http-simulator:itsa-calculations] POST /individuals/calculations/${nino}/self-assessment/${taxYear}/trigger/${calculationType}`);
+    console.log(
+      `[http-simulator:itsa-calculations] POST /individuals/calculations/${nino}/self-assessment/${taxYear}/trigger/${calculationType}`,
+    );
 
     if (!isValidNino(nino)) {
       return res.status(400).json({ code: "FORMAT_NINO", message: "The provided NINO is invalid" });

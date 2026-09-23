@@ -56,11 +56,9 @@ test.describe("ITSA Obligations - Form", () => {
       }
     });
 
-    const modifiedHtml = obligationsHtmlContent
-      .replace("<head>", '<head><base href="http://localhost:3000/hmrc/itsa/">')
-      .replace(
-        "<body>",
-        `<body><script>
+    const modifiedHtml = obligationsHtmlContent.replace("<head>", '<head><base href="http://localhost:3000/hmrc/itsa/">').replace(
+      "<body>",
+      `<body><script>
 window.showStatus = window.showStatus || function(){};
 window.hideStatus = window.hideStatus || function(){};
 window.showLoading = window.showLoading || function(){};
@@ -69,7 +67,7 @@ window.generateRandomState = window.generateRandomState || function(){ return "t
 window.getGovClientHeaders = window.getGovClientHeaders || function(){ return Promise.resolve({}); };
 window.authorizedFetch = window.authorizedFetch || function(){ return Promise.resolve({ ok: true, json: function(){ return Promise.resolve({}); }}); };
 </script>`,
-      );
+    );
 
     await page.setContent(modifiedHtml, {
       url: "http://localhost:3000/hmrc/itsa/obligations.html",
@@ -144,7 +142,13 @@ window.authorizedFetch = window.authorizedFetch || function(){ return Promise.re
           typeOfBusiness: "self-employment",
           businessId: "XAIS12345678910",
           obligationDetails: [
-            { periodStartDate: "2024-04-06", periodEndDate: "2024-07-05", dueDate: "2024-08-05", status: "fulfilled", receivedDate: "2024-08-01" },
+            {
+              periodStartDate: "2024-04-06",
+              periodEndDate: "2024-07-05",
+              dueDate: "2024-08-05",
+              status: "fulfilled",
+              receivedDate: "2024-08-01",
+            },
             { periodStartDate: "2024-07-06", periodEndDate: "2024-10-05", dueDate: "2024-11-05", status: "open" },
           ],
         },

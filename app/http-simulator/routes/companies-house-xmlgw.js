@@ -183,16 +183,21 @@ export function apiEndpoint(app) {
       document = parseXmlDocument(req.body || "");
     } catch {
       res.setHeader("Content-Type", "text/xml; charset=utf-8");
-      return res
-        .status(200)
-        .send(
-          buildResponseEnvelope({
-            requestClass: "Unknown",
-            transactionId: "0",
-            qualifier: "error",
-            errors: [{ raisedBy: "Gateway", number: 604, type: "fatal", text: "Invalid Request - Request XML contains missing fields or invalid data" }],
-          }),
-        );
+      return res.status(200).send(
+        buildResponseEnvelope({
+          requestClass: "Unknown",
+          transactionId: "0",
+          qualifier: "error",
+          errors: [
+            {
+              raisedBy: "Gateway",
+              number: 604,
+              type: "fatal",
+              text: "Invalid Request - Request XML contains missing fields or invalid data",
+            },
+          ],
+        }),
+      );
     }
 
     const requestClass = firstElementText(document, "Class");

@@ -177,7 +177,9 @@ describe("hmrcItsaStatusGet ingestHandler", () => {
       itsaStatuses: [
         {
           taxYear: "2023-24",
-          itsaStatusDetails: [{ submittedOn: "2024-04-06T12:00:00.000Z", status: "MTD Mandated", statusReason: "Sign up - return available" }],
+          itsaStatusDetails: [
+            { submittedOn: "2024-04-06T12:00:00.000Z", status: "MTD Mandated", statusReason: "Sign up - return available" },
+          ],
         },
       ],
     };

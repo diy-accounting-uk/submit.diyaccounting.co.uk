@@ -69,8 +69,8 @@
           <div class="form-group">
             <label for="calculationType">Calculation type</label>
             <p id="calculationType-hint" class="hint">
-              An in-year calculation is an estimate you can check at any time. Intent to finalise is the calculation you confirm in a
-              final declaration.
+              An in-year calculation is an estimate you can check at any time. Intent to finalise is the calculation you confirm in a final
+              declaration.
             </p>
             <select id="calculationType" name="calculationType" required aria-describedby="calculationType-hint">
               <option value="in-year">In-year estimate</option>
@@ -130,7 +130,11 @@
 
           <p id="calculationIdDisplay" class="hint"></p>
           <div id="continueToFinalDeclaration" class="button-group" style="display: none">
-            <a href="finalDeclaration.html" id="continueToFinalDeclarationLink" class="btn" style="display: inline-block; width: auto; text-decoration: none"
+            <a
+              href="finalDeclaration.html"
+              id="continueToFinalDeclarationLink"
+              class="btn"
+              style="display: inline-block; width: auto; text-decoration: none"
               >Continue to Final Declaration</a
             >
           </div>
@@ -178,7 +182,13 @@
 
       async function runCalculationTrigger(calculationDetails, testScenario, runFraudPreventionHeaderValidation, accessToken) {
         const govClientHeaders = await getGovClientHeaders();
-        return await triggerCalculation(calculationDetails, accessToken, govClientHeaders, runFraudPreventionHeaderValidation, testScenario);
+        return await triggerCalculation(
+          calculationDetails,
+          accessToken,
+          govClientHeaders,
+          runFraudPreventionHeaderValidation,
+          testScenario,
+        );
       }
 
       function escapeHtml(text) {
@@ -231,7 +241,9 @@
         ];
         messagesContainer.innerHTML = allMessages.length
           ? `<h3>Messages</h3><ul id="calculationMessagesList">${allMessages
-              .map((m) => `<li class="status-message ${escapeHtml(m.level)}"><strong>${escapeHtml(m.id)}:</strong> ${escapeHtml(m.text)}</li>`)
+              .map(
+                (m) => `<li class="status-message ${escapeHtml(m.level)}"><strong>${escapeHtml(m.id)}:</strong> ${escapeHtml(m.text)}</li>`,
+              )
               .join("")}</ul>`
           : "";
       }

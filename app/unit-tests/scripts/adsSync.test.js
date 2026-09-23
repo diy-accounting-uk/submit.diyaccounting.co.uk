@@ -62,10 +62,30 @@ ssm_parameter = "/submit/prod/ads/reserve-floor-gbp"
 
 function baseLive() {
   return {
-    customer: { id: "8142685080", name: "DIY Accounting Limited", autoTaggingEnabled: true, currencyCode: "GBP", timeZone: "Europe/London" },
+    customer: {
+      id: "8142685080",
+      name: "DIY Accounting Limited",
+      autoTaggingEnabled: true,
+      currencyCode: "GBP",
+      timeZone: "Europe/London",
+    },
     conversionActions: [
-      { resourceName: "customers/8142685080/conversionActions/1", name: "DIY Accounting (web) purchase", type: "GOOGLE_ANALYTICS_4_PURCHASE", category: "PURCHASE", status: "ENABLED", primaryForGoal: true },
-      { resourceName: "customers/8142685080/conversionActions/2", name: "DIY Accounting (web) submit_vat_return", type: "GOOGLE_ANALYTICS_4_CUSTOM", category: "SIGNUP", status: "ENABLED", primaryForGoal: true },
+      {
+        resourceName: "customers/8142685080/conversionActions/1",
+        name: "DIY Accounting (web) purchase",
+        type: "GOOGLE_ANALYTICS_4_PURCHASE",
+        category: "PURCHASE",
+        status: "ENABLED",
+        primaryForGoal: true,
+      },
+      {
+        resourceName: "customers/8142685080/conversionActions/2",
+        name: "DIY Accounting (web) submit_vat_return",
+        type: "GOOGLE_ANALYTICS_4_CUSTOM",
+        category: "SIGNUP",
+        status: "ENABLED",
+        primaryForGoal: true,
+      },
     ],
     conversionGoals: [
       { category: "PURCHASE", origin: "WEBSITE", biddable: true },

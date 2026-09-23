@@ -69,8 +69,8 @@
           <div class="form-group">
             <input type="checkbox" id="acceptEmailStatement" name="acceptEmailStatement" />
             <label for="acceptEmailStatement" style="display: inline; font-weight: normal">
-              I confirm this is an appropriate email address under section 88A(2) of the Companies Act 2006 - one the company is
-              likely to notice mail sent to.
+              I confirm this is an appropriate email address under section 88A(2) of the Companies Act 2006 - one the company is likely to
+              notice mail sent to.
             </label>
           </div>
           <button type="submit" id="continueBtn" class="btn">Continue</button>
@@ -248,9 +248,7 @@
       function renderFilingResult(transaction) {
         const container = document.getElementById("filingResult");
         const filings = transaction.filings || [];
-        const lines = [
-          `<p>Transaction <strong>${transaction.transactionId}</strong> is <strong>${transaction.status}</strong>.</p>`,
-        ];
+        const lines = [`<p>Transaction <strong>${transaction.transactionId}</strong> is <strong>${transaction.status}</strong>.</p>`];
         filings.forEach((entry) => {
           lines.push(`<p>Filing: ${entry.description || entry.type} - <strong>${entry.status}</strong></p>`);
           if (entry.rejectReasons && entry.rejectReasons.length > 0) {
@@ -263,9 +261,7 @@
       function renderValidationErrors(errors) {
         const container = document.getElementById("validationErrors");
         container.style.display = "block";
-        container.innerHTML = (errors || [])
-          .map((entry) => `<p>${entry.location || ""}: ${entry.error || "invalid value"}</p>`)
-          .join("\n");
+        container.innerHTML = (errors || []).map((entry) => `<p>${entry.location || ""}: ${entry.error || "invalid value"}</p>`).join("\n");
       }
 
       function redirectToAuthorise(scope) {

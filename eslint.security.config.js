@@ -21,7 +21,7 @@ export default [
       },
     },
     linterOptions: {
-      reportUnusedDisableDirectives: false,
+      reportUnusedDisableDirectives: true,
     },
     rules: {
       // Only security rules - disable any sonarjs that might be inherited

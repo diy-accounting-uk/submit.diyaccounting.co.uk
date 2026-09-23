@@ -103,7 +103,7 @@ describe("parseWorkflow", () => {
   test("reads the workflow-level permissions default", () => {
     const parsed = parseWorkflow(CALLED_WORKFLOW);
     expect(parsed.workflowPermissions).toBeInstanceOf(Map);
-    expect(Object.fromEntries(parsed.workflowPermissions)).toEqual({ "id-token": "write", contents: "read" });
+    expect(Object.fromEntries(parsed.workflowPermissions)).toEqual({ "id-token": "write", "contents": "read" });
   });
 
   test("reads a job's own permissions override, distinct from the workflow default", () => {

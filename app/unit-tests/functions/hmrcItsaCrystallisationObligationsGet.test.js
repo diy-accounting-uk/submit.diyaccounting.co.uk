@@ -327,7 +327,9 @@ describe("hmrcItsaCrystallisationObligationsGet ingestHandler", () => {
   });
 
   test("returns 200 when processing completes synchronously (large x-wait-time-ms)", async () => {
-    const obligations = { obligations: [{ periodStartDate: "2023-04-06", periodEndDate: "2024-04-05", dueDate: "2025-01-31", status: "open" }] };
+    const obligations = {
+      obligations: [{ periodStartDate: "2023-04-06", periodEndDate: "2024-04-05", dueDate: "2025-01-31", status: "open" }],
+    };
     mockHmrcSuccess(mockFetch, obligations);
 
     const event = buildHmrcEvent({
@@ -353,7 +355,9 @@ describe("hmrcItsaCrystallisationObligationsGet worker", () => {
   });
 
   test("successfully processes SQS message and marks as completed", async () => {
-    const obligations = { obligations: [{ periodStartDate: "2023-04-06", periodEndDate: "2024-04-05", dueDate: "2025-01-31", status: "open" }] };
+    const obligations = {
+      obligations: [{ periodStartDate: "2023-04-06", periodEndDate: "2024-04-05", dueDate: "2025-01-31", status: "open" }],
+    };
     mockHmrcSuccess(mockFetch, obligations);
 
     const event = {

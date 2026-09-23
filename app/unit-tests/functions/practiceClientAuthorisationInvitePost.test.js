@@ -16,9 +16,7 @@ vi.mock("@app/lib/hmrcAgentAuthorisation.js", () => ({
   agentAuthorisationErrorResponse: vi.fn(() => ({ statusCode: 500, body: JSON.stringify({ message: "mapped error" }) })),
 }));
 
-const { getClient, getPracticeArn, setPracticeArn, setClientAuthorisation } = await import(
-  "@app/data/dynamoDbPracticeClientRepository.js"
-);
+const { getClient, getPracticeArn, setPracticeArn, setClientAuthorisation } = await import("@app/data/dynamoDbPracticeClientRepository.js");
 const { createInvitation, agentAuthorisationErrorResponse } = await import("@app/lib/hmrcAgentAuthorisation.js");
 const { ingestHandler } = await import("../../functions/practice/practiceClientAuthorisationInvitePost.js");
 const { _setTestSalt } = await import("../../services/subHasher.js");
@@ -50,7 +48,10 @@ describe("practiceClientAuthorisationInvitePost", () => {
     getClient.mockResolvedValue({ clientId: "c1", identifiers: { vrn: "123456789" }, archivedAt: null });
     getPracticeArn.mockResolvedValue("TARN0000001");
     createInvitation.mockResolvedValue({ ok: true, status: 204, invitationId: "inv-1" });
-    setClientAuthorisation.mockResolvedValue({ clientId: "c1", authorisations: { "MTD-VAT": { status: "pending", invitationId: "inv-1" } } });
+    setClientAuthorisation.mockResolvedValue({
+      clientId: "c1",
+      authorisations: { "MTD-VAT": { status: "pending", invitationId: "inv-1" } },
+    });
 
     const result = await ingestHandler(
       buildAuthenticatedEvent({ body: { service: "MTD-VAT", knownFact: "2020-01-01", accessToken: "hmrc-token" } }),
@@ -59,7 +60,13 @@ describe("practiceClientAuthorisationInvitePost", () => {
     expect(result.statusCode).toBe(201);
     expect(JSON.parse(result.body)).toMatchObject({ invitationId: "inv-1", status: "pending" });
     expect(createInvitation).toHaveBeenCalledWith(
-      expect.objectContaining({ arn: "TARN0000001", service: "MTD-VAT", clientIdType: "vrn", clientId: "123456789", knownFact: "2020-01-01" }),
+      expect.objectContaining({
+        arn: "TARN0000001",
+        service: "MTD-VAT",
+        clientIdType: "vrn",
+        clientId: "123456789",
+        knownFact: "2020-01-01",
+      }),
     );
     expect(setPracticeArn).not.toHaveBeenCalled();
     expect(setClientAuthorisation).toHaveBeenCalledWith("practice-sub", "c1", "MTD-VAT", { status: "pending", invitationId: "inv-1" });

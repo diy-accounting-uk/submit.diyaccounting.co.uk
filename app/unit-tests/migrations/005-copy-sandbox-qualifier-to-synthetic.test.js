@@ -64,7 +64,7 @@ describe("005-copy-sandbox-qualifier-to-synthetic", () => {
     expect(scanInput.TableName).toBe("ci-env-bundles");
     expect(scanInput.FilterExpression).toContain("attribute_exists(qualifiers.sandbox)");
     expect(scanInput.FilterExpression).toContain("attribute_not_exists(qualifiers.synthetic)");
-    expect(scanInput.FilterExpression).toContain('NOT begins_with(hashedSub, :system)');
+    expect(scanInput.FilterExpression).toContain("NOT begins_with(hashedSub, :system)");
   });
 
   test("real run copies qualifiers.sandbox onto qualifiers.synthetic, keyed by hashedSub and bundleId", async () => {

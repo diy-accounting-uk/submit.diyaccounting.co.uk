@@ -96,7 +96,9 @@ test.describe("Company Lookup page", () => {
   }
 
   async function loadPage(page, query = "") {
-    const url = query ? `http://localhost:3000/companies-house/companySearch.html?${query}` : "http://localhost:3000/companies-house/companySearch.html";
+    const url = query
+      ? `http://localhost:3000/companies-house/companySearch.html?${query}`
+      : "http://localhost:3000/companies-house/companySearch.html";
     await page.goto(url, { waitUntil: "domcontentloaded" });
     await delay(200);
   }
@@ -170,7 +172,9 @@ test.describe("Company Lookup page", () => {
 
   test("shows a retry message with the wait time when the API reports a rate limit", async ({ page }) => {
     setupPage(page);
-    await setupRoutes(page, { searchError: { message: "Companies House is rate limiting our lookups", status: 429, retryAfterSeconds: 300 } });
+    await setupRoutes(page, {
+      searchError: { message: "Companies House is rate limiting our lookups", status: 429, retryAfterSeconds: 300 },
+    });
     await loadPage(page);
 
     await page.fill("#companyQuery", "Simulator Example");

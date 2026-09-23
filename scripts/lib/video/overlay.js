@@ -20,10 +20,7 @@ export async function installOverlay(page) {
 }
 
 export async function svcCall(page, method, ...args) {
-  return page.evaluate(
-    ([m, a]) => window.__svc[m](...a),
-    [method, args],
-  );
+  return page.evaluate(([m, a]) => window.__svc[m](...a), [method, args]);
 }
 
 export async function pointTo(page, x, y) {

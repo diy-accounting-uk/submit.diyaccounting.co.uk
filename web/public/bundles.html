@@ -1241,9 +1241,7 @@
           if (sessionId && typeof gtag === "function") {
             (async () => {
               try {
-                const response = await window.fetchWithIdToken(
-                  `/api/v1/billing/checkout/${encodeURIComponent(sessionId)}`,
-                );
+                const response = await window.fetchWithIdToken(`/api/v1/billing/checkout/${encodeURIComponent(sessionId)}`);
                 const body = await response.json().catch(() => ({}));
                 if (response.ok && body.amountTotal != null) {
                   gtag("event", "purchase", {

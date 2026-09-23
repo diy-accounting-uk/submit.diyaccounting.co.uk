@@ -106,8 +106,8 @@
           <div class="form-group">
             <input type="checkbox" id="acceptOfficeStatement" name="acceptOfficeStatement" />
             <label for="acceptOfficeStatement" style="display: inline; font-weight: normal">
-              I confirm this is an appropriate address under section 86(2) of the Companies Act 2006 - somewhere the company's
-              officers can be reached and documents delivered to them can be recorded.
+              I confirm this is an appropriate address under section 86(2) of the Companies Act 2006 - somewhere the company's officers can
+              be reached and documents delivered to them can be recorded.
             </label>
           </div>
           <button type="submit" id="continueBtn" class="btn">Continue</button>
@@ -287,9 +287,7 @@
       function renderFilingResult(transaction) {
         const container = document.getElementById("filingResult");
         const filings = transaction.filings || [];
-        const lines = [
-          `<p>Transaction <strong>${transaction.transactionId}</strong> is <strong>${transaction.status}</strong>.</p>`,
-        ];
+        const lines = [`<p>Transaction <strong>${transaction.transactionId}</strong> is <strong>${transaction.status}</strong>.</p>`];
         filings.forEach((entry) => {
           lines.push(`<p>Filing: ${entry.description || entry.type} - <strong>${entry.status}</strong></p>`);
           if (entry.rejectReasons && entry.rejectReasons.length > 0) {
@@ -302,9 +300,7 @@
       function renderValidationErrors(errors) {
         const container = document.getElementById("validationErrors");
         container.style.display = "block";
-        container.innerHTML = (errors || [])
-          .map((entry) => `<p>${entry.location || ""}: ${entry.error || "invalid value"}</p>`)
-          .join("\n");
+        container.innerHTML = (errors || []).map((entry) => `<p>${entry.location || ""}: ${entry.error || "invalid value"}</p>`).join("\n");
       }
 
       function redirectToAuthorise(scope) {
