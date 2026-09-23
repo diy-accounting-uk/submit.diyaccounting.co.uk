@@ -79,10 +79,12 @@ and stop. One branch is driven green at a time. Lifted only by the operator in t
   106980081292), the defect PR #333's third commit fixes and this branch does not carry. The
   branch merged `main` as ec4b22f5 (clean; lint, 3894 tests and Spotless green on the merged tree)
   and pushed it. Its `test` run 35831691533 failed the coverage gate this branch introduced (AS1):
-  functions 85.9% against the 86% threshold set from the pre-merge measurement, because `main`'s
-  merged code added uncovered functions. The fix (a threshold with headroom, or a test for the
-  uncovered functions, decided from the local coverage run) pushes once its push deploy
-  35831692141 has ended. The suite's ci and prod variants need a sandbox agent authorisation the simulator
+  functions 85.9% against the 86% threshold, because `main`'s merged code added uncovered
+  functions; the fix is c9601a2c (functions 85, the floor of the merged tree's measurement,
+  proven by a local coverage run) and is pushed. Its push deploy 35831692141 never won a slot
+  (both claims held by PR #334's and PR #336's ended runs, which do not carry this branch's
+  `release-ci-slot` job, until they go stale at 10:43 and 11:47 UTC) and was cancelled; the
+  dispatched deploy 35836957021 to `ci-set2` (08:24 UTC) is the head's proof. The suite's ci and prod variants need a sandbox agent authorisation the simulator
   shortcut has no equivalent for, so they run only when one exists. **Source**: the rows named.
   **Owner**: Claude Code. **Model**: Sonnet and Haiku. **Size**: ~16 files.
 - [ ] **PU-7. Practice licence build.** PU-7a to PU-7l are on `main`. In flight on
