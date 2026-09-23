@@ -17,11 +17,9 @@ Haiku; the lowest tier that fits). Anything touching code goes through a `claude
 PR; the operator merges.
 
 **Prod runs deployment prod-5086803** (PR #333's merge deploy 35821860017, green at 06:31 UTC).
-**ci**: `ci-set1` is last-known-good (PR #334's push deploy 35822161136, green at 06:23 UTC).
-PR #336's push deploy 35826770865 is green (07:21 UTC); PR #335's push deploy of ec4b22f5 is in
-flight. Open pull
-requests: #334 (`claude/b80-board`, head f4770e0c),
-#335 (`claude/b81-board`, head 858c8cd3), #336 (`claude/b82-board`, head c450180d).
+**ci**: `main`'s deploy 35837285414 (PR #336's merge 1b6c3e2d, 08:28 UTC) is the integration proof
+for PRs #334 and #336, both merged by the operator; PR #335's dispatched deploy 35836957021 runs on
+`ci-set2`. Open pull request: #335 (`claude/b81-board`, head c9601a2c).
 
 The board runs in five sections, in this order: **in flight** (a branch, a pull request or a run
 in motion, each named in the row), **machine-only**, **machine-ask**, **human-driven**,
@@ -45,20 +43,6 @@ step.
 
 **COOL-DOWN is on since 2026-09-22T19:56:50Z.** No new board rows except a degradation. Agents commit
 and stop. One branch is driven green at a time. Lifted only by the operator in their own words.
-
-- [ ] **B82. Wave b82 on `claude/b82-board`, PR #336.** Three commits, head c450180d. Its push deploy 35775043216 failed four
-  stacks on `ci-set1` because PR #333's dispatched redeploy, named for the same slot, ran on the
-  set at the same time (a dispatch with an explicit slot name bypasses the claim); the rerun on `ci-set1` passed every stack and every
-  probe but `diyaGlSubscriptionBehaviour`, which fails on the book limit PR #333's product fix
-  removes and this branch does not carry; the branch merged `main` as 71738aa2 and its push deploy 35826770865 passed every stack and
-  every probe (07:21 UTC); every workflow on the head is green, so the PR waits for the operator's
-  merge or the wake word: B34j
-  (a9e2e920, the privacy notice's row for practice client filing, with a browser test) and PU-7e
-  (e4302a96 and c450180d: `tokensGranted = "unlimited"` on `resident-pro`, exempt in
-  enforcement, the webhook refresh and the bundle read, shown as unlimited on the usage page,
-  the header, the submission-cost widget and the dashboard gate, the simulator map to match);
-  B34i's ICO wording is on `main`. No pull request yet. **Source**: the rows named. **Owner**:
-  Claude Code. **Model**: Sonnet and Haiku. **Size**: ~5 files.
 
 - [ ] **B81. Wave b81 on `claude/b81-board`, PR #335.** PU-7m (a0bd6686: the practice licence
   suite green on the simulator lane, the practice-clients table bootstrapped for the local lanes,
@@ -93,20 +77,6 @@ and stop. One branch is driven green at a time. Lifted only by the operator in t
   lane over the MCP's `run_for_clients`, registered in `deploy.yml`, `probe-test.yml` and
   `test.yml`. What follows is PU-7e and PU-7n below. **Source**: `PLAN_PRICE_UPDATE.md` PU-7.
   **Owner**: Claude Code. **Model**: Sonnet. **Size**: ~4 files.
-- [ ] **B80. Wave b80 on `claude/b80-board`, PR #334.** Three agents: AS8 (the two RUM deployed-environment skips out of the unit runner; AS1's
-  coverage commit rejected, the finding on its own row), AS4 and AS7 (the ESLint config cleanup; the strict-mode TODO and warning
-  comments), AS6 and AS5 (prettier and Spotless checks in `test.yml`, with the 218 files they reformat; the
-  lint job as a baseline ratchet at zero errors). Its `test` run is green on head f4770e0c (the prettier fix), but no deploy has run on that
-  head: the last deploy 35761188691 (9b633159) failed, and the two commits since touch no deploy
-  path. Its dispatched deploy 35801175335 to `ci-set1` (00:14 UTC) passed every stack and every
-  probe but `diyaGlSubscriptionBehaviour`, red with `book-limit-reached` (job 106996738920), the
-  defect `main` now fixes (PR #333). The branch merged `main` as 93279af1 (one conflict, the
-  `isBookVisible` import) and pushed as 337c3f4e; its push deploy 35822161136 on `ci-set1` passed
-  every stack and every probe, and every workflow on the head is green: the PR is mergeable and
-  clean, held for the operator's merge or the wake word. **Source**: the
-  rows named. **Owner**: Claude Code. **Model**: Sonnet and Haiku. **Size**: ~10 files plus the
-  directives.
-
 ## Machine-only
 
 - [ ] **B30av. A superseded scheduled probe fails its upload job.** The scheduled `probe-test` run
