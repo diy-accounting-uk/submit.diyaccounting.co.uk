@@ -130,6 +130,11 @@ jobs:
     environment: ci
     steps:
 
+      # The active-claim check in "Select deployment names for destruction" below runs a script
+      # out of this checkout, which no earlier step in this job provided.
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+
       - name: Configure AWS role via GitHub OIDC
         uses: aws-actions/configure-aws-credentials@e1253824e5c10ff9df46874f81ed3ec929e19cfd # v6
         with:
@@ -323,12 +328,17 @@ jobs:
       # Select ci deployment names of stacks to destroy, excluding public/last-known-good
       - name: Select deployment names for destruction
         id: select-stack
+        env:
+          GH_TOKEN: ${{ github.token }}
         run: |
           LAST_KNOWN_GOOD_DEPLOYMENT_NAME="${{ steps.last-known-good-deployment-names.outputs.last-known-good-deployment-name }}"
           PUBLIC_DEPLOYMENT_NAMES="${{ steps.public-deployment-names.outputs.public-deployment-names }}"
           PUBLISHED_DEPLOYMENT_NAMES="${{ steps.published-deployment-names.outputs.published-deployment-names }}"
           DEPLOYED_DEPLOYMENT_NAMES="${{ steps.deployed-deployment-names.outputs.deployed-deployment-names }}"
           SELF_DESTRUCT_SWEEP_MIN_AGE_HOURS="${{ env.SELF_DESTRUCT_SWEEP_MIN_AGE_HOURS }}"
+
+          ACTIVE_CLAIM_AWS_CLI="$(command -v aws)"
+          export ACTIVE_CLAIM_AWS_CLI
 
           echo "Last known good deployment name: '$LAST_KNOWN_GOOD_DEPLOYMENT_NAME'"
           echo "Public deployment names: $PUBLIC_DEPLOYMENT_NAMES"
@@ -494,6 +504,17 @@ jobs:
             fi
 
             echo "Deployment $DEPLOYMENT_NAME is $DEPLOYMENT_AGE_HOURS hours old (>= $SELF_DESTRUCT_SWEEP_MIN_AGE_HOURS hours), eligible for destruction"
+
+            # A redeploy of the same branch reclaims its slot (claim-ci-slot.mjs) without
+            # necessarily changing the stack CreationTime the age check above just read, so a set
+            # can pass that check while a live run is still mid-deploy against it. Read the slot's
+            # claim record and skip destruction while the run it names is still in progress or
+            # queued.
+            CLAIM_ACTIVE=$(ACTIVE_CLAIM_SLOT="$DEPLOYMENT_NAME" node "${GITHUB_WORKSPACE}/.github/actions/claim-ci-slot/slot-claim-active.mjs")
+            if [ "$CLAIM_ACTIVE" = "true" ]; then
+              echo "Skipping $DEPLOYMENT_NAME: its slot claim names a run that is still active"
+              continue
+            fi
 
             SELECTED_DEPLOYMENT_NAME="$DEPLOYMENT_NAME"
             echo "Selected deployment for destruction: Environment='ci', Deployment='$SELECTED_DEPLOYMENT_NAME'"
