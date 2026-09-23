@@ -45,6 +45,9 @@ Shared facts for the analytics rows (B52d, B52e, B52l, B52m): the prod Athena da
 
 ## In flight
 
+**COOL-DOWN is on since 2026-09-23T23:07:44Z.** No new board rows except a degradation. Agents commit
+and stop. One branch is driven green at a time. Lifted only by the operator in their own words.
+
 - [ ] **B30be. Refine pass 2 names the call site and the forbidden patterns.** On `claude/b89-board`, PR #346. The coordinator
   corrected 6 agent results on 2026-09-23 (knip deleting a used file, a Stripe API pin on every
   client, a `GITHUB_ENV` name clash, a compatibility alias, a stack-update heuristic, a
