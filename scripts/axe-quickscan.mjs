@@ -2,9 +2,13 @@
 // Copyright (C) 2006-2026 DIY Accounting Limited
 
 // Ad-hoc axe-core scan (npx axe CLI is broken on this machine — chromedriver/Chrome
-// version mismatch unrelated to the app). Injects axe-core from the CDN allowlist
-// via Playwright instead, against the same 25 pages as text-spacing-test.js.
+// version mismatch unrelated to the app). Injects axe-core from the local install via
+// Playwright instead — the app's own Content-Security-Policy script-src has no CDN host on
+// it, so a script tag pointed at a CDN URL is blocked by the page it is scanning.
 import { chromium } from "@playwright/test";
+import path from "path";
+
+const axeCorePath = path.join(process.cwd(), "node_modules/axe-core/axe.min.js");
 
 const baseUrl = process.argv[2];
 const tags = process.argv[3].split(",");
@@ -35,6 +39,25 @@ const PAGES = [
   "/errors/502.html",
   "/errors/503.html",
   "/errors/504.html",
+  "/hmrc/itsa/dashboard.html",
+  "/hmrc/itsa/businessDetails.html",
+  "/hmrc/itsa/obligations.html",
+  "/hmrc/itsa/selfEmploymentPeriod.html",
+  "/hmrc/itsa/selfEmploymentPeriodAmend.html",
+  "/hmrc/itsa/selfEmploymentPeriods.html",
+  "/hmrc/itsa/selfEmploymentPeriodView.html",
+  "/hmrc/itsa/annualSubmission.html",
+  "/hmrc/itsa/adjustments.html",
+  "/hmrc/itsa/lossesAndClaims.html",
+  "/hmrc/itsa/taxLiabilityAdjustments.html",
+  "/hmrc/itsa/taxCalculation.html",
+  "/hmrc/itsa/finalDeclaration.html",
+  "/hmrc/itsa/ukPropertyAdjustments.html",
+  "/hmrc/itsa/ukPropertyAnnualSubmission.html",
+  "/hmrc/itsa/ukPropertyPeriod.html",
+  "/hmrc/itsa/ukPropertyPeriodAmend.html",
+  "/hmrc/itsa/ukPropertyPeriods.html",
+  "/hmrc/itsa/ukPropertyPeriodView.html",
 ];
 
 const browser = await chromium.launch({ args: ["--disable-gpu", "--no-sandbox"] });
@@ -45,7 +68,7 @@ const violationDetails = [];
 for (const p of PAGES) {
   const page = await browser.newPage();
   await page.goto(baseUrl + p, { waitUntil: "networkidle" });
-  await page.addScriptTag({ url: "https://cdnjs.cloudflare.com/ajax/libs/axe-core/4.9.1/axe.min.js" });
+  await page.addScriptTag({ path: axeCorePath });
   const results = await page.evaluate(async (tags) => {
     return await window.axe.run(document, { runOnly: { type: "tag", values: tags } });
   }, tags);

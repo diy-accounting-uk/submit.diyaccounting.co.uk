@@ -247,6 +247,23 @@ Scanned with `--omit=dev` — only production dependencies affect compliance sta
 | /errors/503.html | 1 |
 | /errors/504.html | 1 |
 
+### 2.6 ITSA pages (WCAG 2.1 AA)
+
+The 19 pages under `web/public/hmrc/itsa/` are not yet in the `.pa11yci.*.json` / Lighthouse /
+text-spacing runs this report otherwise covers. Two ad-hoc checks stand in until they are, run
+2026-09-23 with axe-core 4.9.1 (tags `wcag2a,wcag2aa,wcag21a,wcag21aa`):
+
+| Check | Pages | Violations | Passes |
+|-------|-------|------------|--------|
+| `scripts/axe-quickscan.mjs`, signed out (empty state), all 44 pages | 44 (25 existing + 19 ITSA) | 0 | 958 |
+| `web/browser-tests/itsaAccessibility.browser.test.js`, populated state (form loaded, results rendered) | 19 ITSA | 0 | — |
+
+**Status**: ✅ No accessibility violations found on the ITSA pages
+
+One violation found and fixed in this pass: `dashboard.html`'s `.dashboard-divider` text used
+`#777` on white (4.47:1 contrast), short of the 4.5:1 minimum for WCAG 1.4.3. Changed to `#666`
+(5.74:1).
+
 ---
 
 ## 3. Report Files
