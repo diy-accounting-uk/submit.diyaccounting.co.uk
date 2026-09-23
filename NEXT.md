@@ -16,10 +16,12 @@ runs), and for Claude Code steps the **Model** a sub-agent should use (Fable > O
 Haiku; the lowest tier that fits). Anything touching code goes through a `claude/*` branch and
 PR; the operator merges.
 
-**Prod runs deployment prod-5086803** (PR #333's merge deploy 35821860017, green at 06:31 UTC).
-**ci**: `main`'s deploy 35837285414 (PR #336's merge 1b6c3e2d, 08:28 UTC) is the integration proof
-for PRs #334 and #336, both merged by the operator; PR #335's dispatched deploy 35836957021 runs on
-`ci-set2`. Open pull request: #335 (`claude/b81-board`, head c9601a2c).
+**Prod runs deployment prod-eb07c6d** (PR #334's merge deploy 35834372622, green at 09:0x UTC);
+`main`'s deploy 35837285414 (PR #336's merge 1b6c3e2d) is in flight and replaces it.
+**ci**: `ci-set2` is last-known-good (PR #335's dispatched deploy 35838093200, in its probes;
+its delegated `eslint` job is red on the file PR #338 formatted, merged as 2a4f0354 at 09:15 UTC).
+`ci-set1` self-destructed at 09:43. `main`'s `test` run on 2a4f0354 is in flight. Open pull
+request: #335 (`claude/b81-board`, head a64b57dc), which takes `main` once that deploy ends.
 
 The board runs in five sections, in this order: **in flight** (a branch, a pull request or a run
 in motion, each named in the row), **machine-only**, **machine-ask**, **human-driven**,
@@ -64,11 +66,15 @@ and stop. One branch is driven green at a time. Lifted only by the operator in t
   branch merged `main` as ec4b22f5 (clean; lint, 3894 tests and Spotless green on the merged tree)
   and pushed it. Its `test` run 35831691533 failed the coverage gate this branch introduced (AS1):
   functions 85.9% against the 86% threshold, because `main`'s merged code added uncovered
-  functions; the fix is c9601a2c (functions 85, the floor of the merged tree's measurement,
-  proven by a local coverage run) and is pushed. Its push deploy 35831692141 never won a slot
-  (both claims held by PR #334's and PR #336's ended runs, which do not carry this branch's
-  `release-ci-slot` job, until they go stale at 10:43 and 11:47 UTC) and was cancelled; the
-  dispatched deploy 35836957021 to `ci-set2` (08:24 UTC) is the head's proof. The suite's ci and prod variants need a sandbox agent authorisation the simulator
+  functions; the fix is c9601a2c (functions 85, the floor of the merged tree's measurement). Its push
+  deploy 35831692141 never won a slot (both claims held by PRs #334's and #336's ended runs, which
+  do not carry this branch's `release-ci-slot` job, until they go stale at 10:43 and 11:47 UTC)
+  and was cancelled, as was the dispatched deploy 35836957021 of that head once the operator asked
+  for the branch to carry `main` (2026-09-23 08:30 UTC). The branch merged `main` again as
+  a64b57dc (PRs #334 and #336; prettier, lint, coverage 85.91% functions, 3901 tests and Spotless
+  green on the merged tree) and pushed it; the dispatched deploy 35838093200 to `ci-set2` is the head's proof. Its `test`
+  run 35838071472 is red on the file PR #338 formatted (merged 2a4f0354); the branch takes
+  `main` once that deploy ends, a merge that touches no deploy path, so the deploy's proof stands. The suite's ci and prod variants need a sandbox agent authorisation the simulator
   shortcut has no equivalent for, so they run only when one exists. **Source**: the rows named.
   **Owner**: Claude Code. **Model**: Sonnet and Haiku. **Size**: ~16 files.
 - [ ] **PU-7. Practice licence build.** PU-7a to PU-7l are on `main`. In flight on
