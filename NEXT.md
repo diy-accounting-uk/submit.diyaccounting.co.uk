@@ -237,6 +237,10 @@ Shared facts for the analytics rows (B52d, B52e, B52l, B52m): the prod Athena da
 
 ## Machine-only
 
+- [ ] **CS-1. Confirmation statement fixtures.** Save the `ConfirmationAndVerificationStatement-v1-0` schema set, the CompanyData and PaymentPeriods schemas, and the published examples under `fixtures/companies-house-xmlgw/` from `xmlgw.companieshouse.gov.uk/v1-0/schema/` and `/examples/`. The form since 2025-11-18 is `ConfirmationAndVerificationStatement`; `ConfirmationStatement-v1-3` has no verification block. **Source**: `PLAN_COMPANIES_HOUSE_CONFIRMATION_STATEMENT.md` (its Tasks table carries the files). **Owner**: Claude Code. **Model**: Haiku. **Size**: 12 files.
+
+- [ ] **CS-H2d. Draft the confirmation-statement email to the XML team.** Write `../DRAFT_EMAIL_XMLGW_CS01.md` with the plan's Q1 (which endpoint and credentials test the 2025-11-18 schemas: Companies House said on 2025-11-04 to use `https://xmlgw-sandpit-staging.companieshouse.gov.uk/v1-0/xmlgw/Gateway` with live presenter credentials, package reference 0012 and GatewayTest 1; and test company data for `CompanyDataRequest`), Q2 (shareholders on a no-change statement, reject 11686) and Q4 (authorisation tests and the package reference for the form). It follows O34d on the same thread. Changes nothing committed. **Source**: `PLAN_COMPANIES_HOUSE_CONFIRMATION_STATEMENT.md` (its Tasks table carries the files). **Owner**: Claude Code. **Model**: Haiku. **Size**: 0 files.
+
 - [ ] **F2o. DIYA's book: the directors' loan reaches the balance sheet.** The report engine's
   directors' loan row (`../spreadsheets.diyaccounting.co.uk/app/lib/calculators/ltd.js` line 1601)
   reads only bank lines carrying `diya-gl:bankCode` `DL` on a declared bank account; the £1,000
@@ -281,6 +285,12 @@ Shared facts for the analytics rows (B52d, B52e, B52l, B52m): the prod Athena da
 
 ## Human-driven
 
+- [ ] **CS-H1. Apply for a Companies House credit account.** Presenter E0000052288 was issued for accounts and fee-free documents only; a confirmation statement's £50 fee needs a credit account. Complete the credit account application, send it to `chdfinance@companieshouse.gov.uk`, ask for it to be linked to E0000052288 (up to 5 working days), and keep the account number in the credentials store. **Source**: `PLAN_COMPANIES_HOUSE_CONFIRMATION_STATEMENT.md` (its Tasks table carries the files). **Owner**: Operator. **Model**: none. **Size**: 0 files.
+
+- [ ] **CS-H3. Directors' personal codes and register dates of birth.** Both directors' 11-character Companies House personal codes and their register dates of birth; typed on the page at filing time, never stored. Shares runbook task B's blocker (a director's code for the 5 October statement). **Source**: `PLAN_COMPANIES_HOUSE_CONFIRMATION_STATEMENT.md` (its Tasks table carries the files). **Owner**: Operator. **Model**: none. **Size**: 0 files.
+
+- [ ] **CS-H5. Choose how the £50 fee is charged.** Pick A (pass the fee through), B (inside the subscription) or C (fee plus a margin) from the plan's "The fee path", and write the choice into CS-10's row. **Source**: `PLAN_COMPANIES_HOUSE_CONFIRMATION_STATEMENT.md` (its Tasks table carries the files). **Owner**: Operator. **Model**: none. **Size**: 0 files.
+
 - [ ] **OCS. The confirmation statement, due 5 October 2026.** Made up to 21 September 2026;
   DIY Accounting Limited 06846849 last filed a CS01 on 25 October 2025
   (<https://find-and-update.company-information.service.gov.uk/company/06846849/filing-history>).
@@ -301,6 +311,36 @@ Shared facts for the analytics rows (B52d, B52e, B52l, B52m): the prod Athena da
   none. **Size**: 0 files.
 
 ## Blocked
+
+- [ ] **CS-H2. Send the confirmation-statement email.** Send `../DRAFT_EMAIL_XMLGW_CS01.md` on the `xml@companieshouse.gov.uk` thread after O34d, and paste the answers into CS-9's row. Blocked on CS-H2d. **Source**: `PLAN_COMPANIES_HOUSE_CONFIRMATION_STATEMENT.md` (its Tasks table carries the files). **Owner**: Operator. **Model**: none. **Size**: 0 files.
+
+- [ ] **CS-2. Envelopes and the body builder.** A generalised `buildFormSubmission` and the CS01, CompanyData and PaymentPeriods builders and parsers in `app/services/companiesHouseXmlGateway.js`, plus `companiesHouseConfirmationStatementXml.js` with the XSD-order check. Blocked on CS-1. **Source**: `PLAN_COMPANIES_HOUSE_CONFIRMATION_STATEMENT.md` (its Tasks table carries the files). **Owner**: Claude Code. **Model**: Sonnet. **Size**: 4 files.
+
+- [ ] **CS-3. Simulator for the confirmation statement.** The three new request classes in `app/http-simulator/routes/companies-house-xmlgw.js` and a `confirmation-statement` scenario. Blocked on CS-2. **Source**: `PLAN_COMPANIES_HOUSE_CONFIRMATION_STATEMENT.md` (its Tasks table carries the files). **Owner**: Claude Code. **Model**: Sonnet. **Size**: 4 files.
+
+- [ ] **CS-4. Confirmation statement Lambdas and the shared poll.** Six Lambdas (officers and PSC proxies, filing data, preview, submit, poll) and `pollSubmission` extracted to `app/services/companiesHouseSubmissionStatus.js`, the accounts poll moved onto it. Over 25 files with its tests: a two-agent chain. Blocked on CS-2 and CS-3. **Source**: `PLAN_COMPANIES_HOUSE_CONFIRMATION_STATEMENT.md` (its Tasks table carries the files). **Owner**: Claude Code. **Model**: Sonnet. **Size**: 17 files.
+
+- [ ] **CS-5. Confirmation statement CDK.** The six Lambdas in `CompaniesHouseStack.java` with their grants, names, props and stack test. Blocked on CS-4. **Source**: `PLAN_COMPANIES_HOUSE_CONFIRMATION_STATEMENT.md` (its Tasks table carries the files). **Owner**: Claude Code. **Model**: Sonnet. **Size**: 5 files.
+
+- [ ] **CS-6. Confirmation statement page, catalogue and API docs.** `web/public/companies-house/fileConfirmationStatement.html`, the services, the `file-confirmation-statement` activity (ci only) and `openapi.json`. Blocked on CS-4. **Source**: `PLAN_COMPANIES_HOUSE_CONFIRMATION_STATEMENT.md` (its Tasks table carries the files). **Owner**: Claude Code. **Model**: Sonnet. **Size**: 5 files.
+
+- [ ] **CS-7. Confirmation statement behaviour suite.** `test:fileConfirmationStatementBehaviour-*`. Blocked on CS-6. **Source**: `PLAN_COMPANIES_HOUSE_CONFIRMATION_STATEMENT.md` (its Tasks table carries the files). **Owner**: Claude Code. **Model**: Sonnet. **Size**: 4 files.
+
+- [ ] **CS-8. Confirmation statement MCP tools.** Four tools in `mcp/lib/submit-tools.js`. Blocked on CS-4. **Source**: `PLAN_COMPANIES_HOUSE_CONFIRMATION_STATEMENT.md` (its Tasks table carries the files). **Owner**: Claude Code. **Model**: Sonnet. **Size**: 4 files.
+
+- [ ] **CS-9. Confirmation statement sandbox proof.** On the endpoint CS-H2's answer names: a CompanyDataRequest, a no-change statement, a SIC change, one with `Shareholdings`, one with a blank director code, each polled to a terminal state and pinned in the simulator; settles Q2 and Q3. Blocked on CS-5, CS-7, CS-H1 and CS-H2; machine-ask when it runs (live credentials). **Source**: `PLAN_COMPANIES_HOUSE_CONFIRMATION_STATEMENT.md` (its Tasks table carries the files). **Owner**: Claude Code. **Model**: Sonnet. **Size**: 3 files.
+
+- [ ] **CS-10. Confirmation statement fee collection.** Build the option CS-H5 picks. Blocked on CS-H5 and CS-4. **Source**: `PLAN_COMPANIES_HOUSE_CONFIRMATION_STATEMENT.md` (its Tasks table carries the files). **Owner**: Claude Code. **Model**: Sonnet. **Size**: ~5 files.
+
+- [ ] **CS-11. Confirmation statement prod launch.** `prod` on the activity, prod gateway values, `compliance.toml` rows for the credit account and the authorisation. Shares BACKLOG 34c steps 3 and 4 with the accounts launch. Blocked on CS-9, CS-H4 and CS-H6. **Source**: `PLAN_COMPANIES_HOUSE_CONFIRMATION_STATEMENT.md` (its Tasks table carries the files). **Owner**: Claude Code. **Model**: Haiku. **Size**: 5 files.
+
+- [ ] **CS-12. Identity-verification answers into the confirmation statement.** Apply V1 to V4 from Cowork's `../REPORT_CH_IDENTITY_VERIFICATION.md` (asked 2026-09-23) to the page and the XML builder. Blocked on that report and CS-6. **Source**: `PLAN_COMPANIES_HOUSE_CONFIRMATION_STATEMENT.md` (its Tasks table carries the files). **Owner**: Claude Code. **Model**: Sonnet. **Size**: 3 files.
+
+- [ ] **CS-13. PSC verification statement (VS01).** A builder over `PSCVerificationStatement-v1-0.xsd`, a submit and poll Lambda pair, a result-view section for each director who is also a PSC. Blocked on CS-9 and the report's V4. **Source**: `PLAN_COMPANIES_HOUSE_CONFIRMATION_STATEMENT.md` (its Tasks table carries the files). **Owner**: Claude Code. **Model**: Sonnet. **Size**: ~8 files.
+
+- [ ] **CS-H4. Software authorisation for the confirmation statement.** The XML team tests CS-9's submissions and issues the package reference for the form. Blocked on CS-9. **Source**: `PLAN_COMPANIES_HOUSE_CONFIRMATION_STATEMENT.md` (its Tasks table carries the files). **Owner**: Operator. **Model**: none. **Size**: 0 files.
+
+- [ ] **CS-H6. Go for the prod confirmation statement.** Give the go for a statement for 06846849 through Submit (a fee-free second statement in the 2026-27 payment period, after the 5 October one by WebFiling), knowing it moves the next review date. Blocked on CS-11, CS-H3 and CS-H4. **Source**: `PLAN_COMPANIES_HOUSE_CONFIRMATION_STATEMENT.md` (its Tasks table carries the files). **Owner**: Operator. **Model**: none. **Size**: 0 files.
 
 - [ ] **OF2d. Copy DIYA's book into Drive.** Blocked on F2l and F2o (refunds not yet netted; the directors' loan and members register not yet final). The book is in
   `../staging/2026-2027/book/` (`book.toml`, `lines.jsonl` with 488 lines, `VERIFICATION.md`, and `book-diya-gl.zip` for the spreadsheets MCP):
