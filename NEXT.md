@@ -381,6 +381,17 @@ Shared facts for the analytics rows (B52d, B52e, B52l, B52m): the prod Athena da
   to cover the practice licence's client data; note the date in that row. PU-7n waits on this
   alone. **Source**: operator 2026-09-22. **Owner**: Operator. **Model**: none. **Size**: 0 files.
 
+- [ ] **OB52h. Basic access for the Ads API project.** `infra/google/ads/ads-forecast.js` (on
+  `claude/b83-board`) gets `DEVELOPER_TOKEN_NOT_APPROVED`, "This method is not allowed for use with
+  explorer access", from `KeywordPlanIdeaService`; the Cloud project `diyaccounting-ga4` holds
+  Explorer access, which serves `googleAds:search` only. Since 2026-09-09 the access level sits on
+  the Cloud project: complete brand verification for `diyaccounting-ga4` (Google Auth Platform,
+  Branding, <https://console.cloud.google.com/auth/branding?project=diyaccounting-ga4>), then on the
+  Google Ads API overview page
+  (<https://console.cloud.google.com/apis/api/googleads.googleapis.com/overview?project=diyaccounting-ga4>)
+  expand "Apply for next access level" and apply for Basic. B52h's live proof follows.
+  **Source**: B52h's run 2026-09-23. **Owner**: Operator. **Model**: none. **Size**: 0 files.
+
 - [ ] **O34d. Send the XML Gateway email.** Send `../DRAFT_EMAIL_XMLGW_000004.md` from `antony@diyaccounting.co.uk`
   as a reply on the `xml@companieshouse.gov.uk` thread, and paste the answer into B34.6c's row when
   it comes. **Source**: BACKLOG 34d. **Owner**: Operator. **Model**: none. **Size**: 0 files.
