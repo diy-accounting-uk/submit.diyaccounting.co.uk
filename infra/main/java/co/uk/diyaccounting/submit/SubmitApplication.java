@@ -85,14 +85,16 @@ public class SubmitApplication {
         public String feedbackEngagementEnabled;
         public String stripeSecretKeyArn;
         public String stripeTestSecretKeyArn;
-        public String stripePriceIdResidentPro;
-        public String stripeTestPriceIdResidentPro;
         public String stripePriceIdResidentVat;
         public String stripeTestPriceIdResidentVat;
         public String stripePriceIdResidentYear;
         public String stripeTestPriceIdResidentYear;
         public String stripePriceIdResidentMonth;
         public String stripeTestPriceIdResidentMonth;
+        public String stripePriceIdResidentProYear;
+        public String stripeTestPriceIdResidentProYear;
+        public String stripePriceIdResidentProMonth;
+        public String stripeTestPriceIdResidentProMonth;
         public String stripeWebhookSecretArn;
         public String stripeTestWebhookSecretArn;
         public String githubAppId;
@@ -248,14 +250,6 @@ public class SubmitApplication {
                 "STRIPE_TEST_SECRET_KEY_ARN",
                 appProps.stripeTestSecretKeyArn,
                 "(from stripeTestSecretKeyArn in cdk.json)");
-        var stripePriceIdResidentPro = envOr(
-                "STRIPE_PRICE_ID_RESIDENT_PRO",
-                appProps.stripePriceIdResidentPro,
-                "(from stripePriceIdResidentPro in cdk.json)");
-        var stripeTestPriceIdResidentPro = envOr(
-                "STRIPE_TEST_PRICE_ID_RESIDENT_PRO",
-                appProps.stripeTestPriceIdResidentPro,
-                "(from stripeTestPriceIdResidentPro in cdk.json)");
         var stripePriceIdResidentVat = envOr(
                 "STRIPE_PRICE_ID_RESIDENT_VAT",
                 appProps.stripePriceIdResidentVat,
@@ -280,6 +274,22 @@ public class SubmitApplication {
                 "STRIPE_TEST_PRICE_ID_RESIDENT_MONTH",
                 appProps.stripeTestPriceIdResidentMonth,
                 "(from stripeTestPriceIdResidentMonth in cdk.json)");
+        var stripePriceIdResidentProYear = envOr(
+                "STRIPE_PRICE_ID_RESIDENT_PRO_YEAR",
+                appProps.stripePriceIdResidentProYear,
+                "(from stripePriceIdResidentProYear in cdk.json)");
+        var stripeTestPriceIdResidentProYear = envOr(
+                "STRIPE_TEST_PRICE_ID_RESIDENT_PRO_YEAR",
+                appProps.stripeTestPriceIdResidentProYear,
+                "(from stripeTestPriceIdResidentProYear in cdk.json)");
+        var stripePriceIdResidentProMonth = envOr(
+                "STRIPE_PRICE_ID_RESIDENT_PRO_MONTH",
+                appProps.stripePriceIdResidentProMonth,
+                "(from stripePriceIdResidentProMonth in cdk.json)");
+        var stripeTestPriceIdResidentProMonth = envOr(
+                "STRIPE_TEST_PRICE_ID_RESIDENT_PRO_MONTH",
+                appProps.stripeTestPriceIdResidentProMonth,
+                "(from stripeTestPriceIdResidentProMonth in cdk.json)");
         var stripeWebhookSecretArn = envOr(
                 "STRIPE_WEBHOOK_SECRET_ARN",
                 appProps.stripeWebhookSecretArn,
@@ -447,9 +457,6 @@ public class SubmitApplication {
                         .baseImageTag(baseImageTag)
                         .stripeSecretKeyArn(stripeSecretKeyArn != null ? stripeSecretKeyArn : "")
                         .stripeTestSecretKeyArn(stripeTestSecretKeyArn != null ? stripeTestSecretKeyArn : "")
-                        .stripePriceIdResidentPro(stripePriceIdResidentPro != null ? stripePriceIdResidentPro : "")
-                        .stripeTestPriceIdResidentPro(
-                                stripeTestPriceIdResidentPro != null ? stripeTestPriceIdResidentPro : "")
                         .stripePriceIdResidentVat(stripePriceIdResidentVat != null ? stripePriceIdResidentVat : "")
                         .stripeTestPriceIdResidentVat(
                                 stripeTestPriceIdResidentVat != null ? stripeTestPriceIdResidentVat : "")
@@ -460,6 +467,14 @@ public class SubmitApplication {
                                 stripePriceIdResidentMonth != null ? stripePriceIdResidentMonth : "")
                         .stripeTestPriceIdResidentMonth(
                                 stripeTestPriceIdResidentMonth != null ? stripeTestPriceIdResidentMonth : "")
+                        .stripePriceIdResidentProYear(
+                                stripePriceIdResidentProYear != null ? stripePriceIdResidentProYear : "")
+                        .stripeTestPriceIdResidentProYear(
+                                stripeTestPriceIdResidentProYear != null ? stripeTestPriceIdResidentProYear : "")
+                        .stripePriceIdResidentProMonth(
+                                stripePriceIdResidentProMonth != null ? stripePriceIdResidentProMonth : "")
+                        .stripeTestPriceIdResidentProMonth(
+                                stripeTestPriceIdResidentProMonth != null ? stripeTestPriceIdResidentProMonth : "")
                         .baseUrl(sharedNames.publicBaseUrl)
                         .billingReturnUrlOrigins(billingReturnUrlOrigins)
                         .build());

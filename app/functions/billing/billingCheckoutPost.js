@@ -41,7 +41,7 @@ export function apiEndpoint(app) {
 
 /**
  * Resolve the Stripe price ID for a bundle and checkout interval.
- * Env var pattern: STRIPE_[TEST_]PRICE_ID_RESIDENT_PRO for a bundle with a single price,
+ * Env var pattern: STRIPE_[TEST_]PRICE_ID_RESIDENT_VAT for a bundle with a single price,
  * STRIPE_[TEST_]PRICE_ID_RESIDENT_YEAR / _RESIDENT_MONTH for a bundle carrying more than one.
  */
 function resolveStripePriceId(bundle, stripeInterval, isSynthetic) {
