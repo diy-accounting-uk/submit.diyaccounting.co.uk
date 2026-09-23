@@ -44,14 +44,21 @@ vi.mock("@aws-sdk/client-s3", () => ({
 import {
   handler,
   buildWindowedSql,
+  buildDailySeriesSql,
   computeTrend,
   toObservationWindows,
+  toDailySeries,
   buildSnapshot,
   writeSnapshot,
   parseResultSet,
   runAthenaQuery,
   OBJECTIVE_DEFINITIONS,
 } from "@app/functions/analytics/operatorSnapshotPublish.js";
+
+const DAILY_SERIES_OBSERVATION_COUNT = OBJECTIVE_DEFINITIONS.reduce(
+  (sum, objective) => sum + objective.observations.filter((observation) => observation.dailySeries).length,
+  0,
+);
 
 function varchar(value) {
   return value === null ? {} : { VarCharValue: value };
@@ -61,15 +68,33 @@ function resultSetOf(header, row) {
   return { Rows: [{ Data: header.map(varchar) }, { Data: row.map(varchar) }] };
 }
 
-function mockAllQueriesSucceedWith(row) {
+function resultSetOfRows(header, rows) {
+  return { Rows: [{ Data: header.map(varchar) }, ...rows.map((row) => ({ Data: row.map(varchar) }))] };
+}
+
+// A daily-series query is told apart from a windowed one by its own "AS day" column alias
+// (buildDailySeriesSql's marker, never present in buildWindowedSql's output), tracked against
+// the execution id its StartQueryExecutionCommand call returned.
+function mockAllQueriesSucceedWith(windowedRow, dailyRows = [["2026-09-01", "3"]]) {
+  let counter = 0;
+  const kindByExecutionId = {};
   mockAthenaSend.mockImplementation((command) => {
     switch (command.constructor.name) {
-      case "StartQueryExecutionCommand":
-        return Promise.resolve({ QueryExecutionId: "qid" });
+      case "StartQueryExecutionCommand": {
+        counter += 1;
+        const executionId = `qid-${counter}`;
+        kindByExecutionId[executionId] = command.input.QueryString.includes("AS day") ? "daily" : "windowed";
+        return Promise.resolve({ QueryExecutionId: executionId });
+      }
       case "GetQueryExecutionCommand":
         return Promise.resolve({ QueryExecution: { Status: { State: "SUCCEEDED" } } });
-      case "GetQueryResultsCommand":
-        return Promise.resolve({ ResultSet: resultSetOf(["last_30", "prev_30", "last_90", "prev_90"], row) });
+      case "GetQueryResultsCommand": {
+        const kind = kindByExecutionId[command.input.QueryExecutionId];
+        if (kind === "daily") {
+          return Promise.resolve({ ResultSet: resultSetOfRows(["day", "value"], dailyRows) });
+        }
+        return Promise.resolve({ ResultSet: resultSetOf(["last_30", "prev_30", "last_90", "prev_90"], windowedRow) });
+      }
       default:
         throw new Error(`unexpected command ${command.constructor.name}`);
     }
@@ -176,6 +201,35 @@ describe("operatorSnapshotPublish", () => {
     });
   });
 
+  describe("buildDailySeriesSql", () => {
+    test("groups by day over the trailing 30 days", () => {
+      const sql = buildDailySeriesSql({
+        view: "v_visitors_by_kind_daily",
+        dayColumn: "day",
+        valueExpr: "sessions",
+        aggregation: "sum",
+        where: "visitor_kind = 'human'",
+      });
+      expect(sql).toContain("SELECT day AS day");
+      expect(sql).toContain("sum(sessions) AS value");
+      expect(sql).toContain("FROM   v_visitors_by_kind_daily");
+      expect(sql).toContain("WHERE  day > date_add('day', -30, current_date) AND visitor_kind = 'human'");
+      expect(sql).toContain("GROUP BY day");
+      expect(sql).toContain("ORDER BY day");
+    });
+
+    test("keeps the trailing-30-day window without an observation filter", () => {
+      const sql = buildDailySeriesSql({
+        view: "v_visitors_by_kind_daily",
+        dayColumn: "day",
+        valueExpr: "sessions",
+        aggregation: "sum",
+      });
+      expect(sql).toContain("WHERE  day > date_add('day', -30, current_date)");
+      expect(sql).not.toContain("AND");
+    });
+  });
+
   describe("computeTrend", () => {
     test("is null when either side is missing", () => {
       expect(computeTrend(null, 10)).toBeNull();
@@ -208,6 +262,25 @@ describe("operatorSnapshotPublish", () => {
     });
   });
 
+  describe("toDailySeries", () => {
+    test("reads each row's day and value", () => {
+      expect(
+        toDailySeries([
+          { day: "2026-09-01", value: "12" },
+          { day: "2026-09-02", value: "7" },
+        ]),
+      ).toEqual([
+        { day: "2026-09-01", value: 12 },
+        { day: "2026-09-02", value: 7 },
+      ]);
+    });
+
+    test("reads no rows as an empty series", () => {
+      expect(toDailySeries(undefined)).toEqual([]);
+      expect(toDailySeries([])).toEqual([]);
+    });
+  });
+
   describe("parseResultSet and runAthenaQuery", () => {
     test("parseResultSet maps the header row onto the data row", () => {
       const resultSet = resultSetOf(["last_30", "prev_30", "last_90", "prev_90"], ["1", "2", "3", "4"]);
@@ -236,7 +309,7 @@ describe("operatorSnapshotPublish", () => {
 
       const observationCount = OBJECTIVE_DEFINITIONS.reduce((sum, o) => sum + o.observations.length, 0);
       const startCalls = mockAthenaSend.mock.calls.filter(([command]) => command.constructor.name === "StartQueryExecutionCommand");
-      expect(startCalls).toHaveLength(observationCount);
+      expect(startCalls).toHaveLength(observationCount + DAILY_SERIES_OBSERVATION_COUNT);
 
       expect(snapshot.environment).toBe("test");
       expect(snapshot.objectives).toHaveLength(8);
@@ -296,6 +369,45 @@ describe("operatorSnapshotPublish", () => {
       expect(sqlStatements.some((sql) => sql.includes("visitor_kind = 'human'"))).toBe(true);
       expect(sqlStatements.some((sql) => sql.includes("visitor_kind = 'bot'"))).toBe(true);
       expect(sqlStatements.some((sql) => sql.includes("visitor_kind = 'synthetic'"))).toBe(true);
+    });
+
+    test("attaches a daily series to the three visitor-kind observations only", async () => {
+      const dailyRows = [
+        ["2026-09-01", "12"],
+        ["2026-09-02", "9"],
+      ];
+      mockAllQueriesSucceedWith(["10", "5", "30", "20"], dailyRows);
+
+      const context = {
+        envName: "test",
+        region: "eu-west-2",
+        athenaWorkGroupName: "test-env-analytics",
+        githubRepo: "diy-accounting-uk/submit.diyaccounting.co.uk",
+        ga4PropertyId: "523400333",
+      };
+      const snapshot = await buildSnapshot({ workGroup: "wg", database: "db", context });
+
+      const conversion = snapshot.objectives.find((o) => o.id === "conversion-to-submission");
+      for (const id of ["sessions-human", "sessions-bot", "sessions-synthetic"]) {
+        const observation = conversion.observations.find((o) => o.id === id);
+        expect(observation.dailySeries).toEqual([
+          { day: "2026-09-01", value: 12 },
+          { day: "2026-09-02", value: 9 },
+        ]);
+      }
+
+      const withoutDailySeries = conversion.observations.filter(
+        (o) => !["sessions-human", "sessions-bot", "sessions-synthetic"].includes(o.id),
+      );
+      expect(withoutDailySeries.length).toBeGreaterThan(0);
+      for (const observation of withoutDailySeries) {
+        expect(observation.dailySeries).toBeUndefined();
+      }
+
+      const uptime = snapshot.objectives.find((o) => o.id === "uptime");
+      for (const observation of uptime.observations) {
+        expect(observation.dailySeries).toBeUndefined();
+      }
     });
 
     test("a failing observation's query answers null instead of failing the whole snapshot", async () => {
