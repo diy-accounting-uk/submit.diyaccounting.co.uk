@@ -1,0 +1,19 @@
+{
+  "entry": [
+    "app/bin/server.js",
+    "app/functions/**/*.js",
+    "scripts/**/*.{js,mjs}",
+    "infra/google/**/*.js",
+    "infra/stripe/**/*.js",
+    ".github/actions/**/*.mjs",
+    "web/public/**/*.js",
+    "behaviour-tests/**/*.js",
+    "app/unit-tests/**/*.js",
+    "app/system-tests/**/*.js",
+    "web/unit-tests/**/*.js",
+    "web/browser-tests/**/*.js",
+    "mcp/package.json"
+  ],
+  "project": ["**/*.js", "**/*.mjs", "**/*.cjs"],
+  "ignore": ["web/public-simulator/**"]
+}
