@@ -18,8 +18,8 @@ PR; the operator merges.
 
 **Prod runs deployment prod-5086803** (PR #333's merge deploy 35821860017, green at 06:31 UTC).
 **ci**: `ci-set1` is last-known-good (PR #334's push deploy 35822161136, green at 06:23 UTC).
-PR #336's push deploy 35826770865 is in flight. PR #335's deploy was red only on
-`diyaGlSubscriptionBehaviour`'s book limit, which `main` now fixes. Open pull
+PR #336's push deploy 35826770865 is green (07:21 UTC); PR #335's push deploy of ec4b22f5 is in
+flight. Open pull
 requests: #334 (`claude/b80-board`, head f4770e0c),
 #335 (`claude/b81-board`, head 858c8cd3), #336 (`claude/b82-board`, head c450180d).
 
@@ -50,8 +50,9 @@ and stop. One branch is driven green at a time. Lifted only by the operator in t
   stacks on `ci-set1` because PR #333's dispatched redeploy, named for the same slot, ran on the
   set at the same time (a dispatch with an explicit slot name bypasses the claim); the rerun on `ci-set1` passed every stack and every
   probe but `diyaGlSubscriptionBehaviour`, which fails on the book limit PR #333's product fix
-  removes and this branch does not carry; the branch merged `main` as 71738aa2 (clean; lint, 3898 tests and Spotless green on the merged
-  tree) and pushed it; its push deploy 35826770865 (06:26 UTC) is the head's proof: B34j
+  removes and this branch does not carry; the branch merged `main` as 71738aa2 and its push deploy 35826770865 passed every stack and
+  every probe (07:21 UTC); every workflow on the head is green, so the PR waits for the operator's
+  merge or the wake word: B34j
   (a9e2e920, the privacy notice's row for practice client filing, with a browser test) and PU-7e
   (e4302a96 and c450180d: `tokensGranted = "unlimited"` on `resident-pro`, exempt in
   enforcement, the webhook refresh and the bundle read, shown as unlimited on the usage page,
@@ -76,7 +77,8 @@ and stop. One branch is driven green at a time. Lifted only by the operator in t
   rerun claimed `ci-set2` at 23:05 UTC once PR #334's claim went stale: every stack and 12 of the 13
   probes passed, and `diyaGlSubscriptionBehaviour` failed with `book-limit-reached` (job
   106980081292), the defect PR #333's third commit fixes and this branch does not carry. The
-  branch takes `main` (50868030) and redeploys for its own green once PR #334's deploy has ended. The suite's ci and prod variants need a sandbox agent authorisation the simulator
+  branch merged `main` as ec4b22f5 (clean; lint, 3894 tests and Spotless green on the merged tree)
+  and pushed it; its push deploy is the head's proof. The suite's ci and prod variants need a sandbox agent authorisation the simulator
   shortcut has no equivalent for, so they run only when one exists. **Source**: the rows named.
   **Owner**: Claude Code. **Model**: Sonnet and Haiku. **Size**: ~16 files.
 - [ ] **PU-7. Practice licence build.** PU-7a to PU-7l are on `main`. In flight on
