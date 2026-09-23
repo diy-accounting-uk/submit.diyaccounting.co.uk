@@ -45,9 +45,6 @@ Shared facts for the analytics rows (B52d, B52e, B52l, B52m): the prod Athena da
 
 ## In flight
 
-**COOL-DOWN is on since 2026-09-23T19:29:15Z.** No new board rows except a degradation. Agents commit
-and stop. One branch is driven green at a time. Lifted only by the operator in their own words.
-
 ## Machine-only
 
 - [ ] **B30bh. Record a source location in memory when the operator names it.** Five operator
