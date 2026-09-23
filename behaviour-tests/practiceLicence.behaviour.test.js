@@ -137,7 +137,9 @@ test("A practice adds two clients and submits a VAT return for each through run_
   /*  SIGN IN + GRANT RESIDENT PRO — a real checkout (or its simulator  */
   /*  auto-complete), so the bundle carries an active subscription      */
   /*  status: the practice-client-scope check needs that, not just the  */
-  /*  bundle's presence (app/services/diyaGlEntitlement.js).            */
+  /*  bundle's presence (app/services/diyaGlEntitlement.js). resident-  */
+  /*  pro is visible directly (enable=always, allocation=on-           */
+  /*  subscription) — no pass needed.                                  */
   /* ****************************************************************** */
   await goToHomePageExpectNotLoggedIn(page, baseUrl, screenshotPath);
   await clickLogIn(page, screenshotPath);
@@ -145,7 +147,7 @@ test("A practice adds two clients and submits a VAT return for each through run_
   await verifyLoggedInStatus(page, screenshotPath);
   await consentToDataCollection(page, screenshotPath);
   await goToBundlesPage(page, screenshotPath);
-  await ensureBundleViaCheckout(page, "resident-pro", screenshotPath, { testPass: true });
+  await ensureBundleViaCheckout(page, "resident-pro", screenshotPath, { skipPass: true });
   await goToHomePageUsingMainNav(page, screenshotPath);
 
   /* ******************************************************************* */

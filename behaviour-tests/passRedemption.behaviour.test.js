@@ -23,7 +23,13 @@ import {
   logOutAndExpectToBeLoggedOut,
   verifyLoggedInStatus,
 } from "./steps/behaviour-login-steps.js";
-import { goToBundlesPage, clearBundles, verifyBundleApiResponse, ensureBundleViaPassApi } from "./steps/behaviour-bundle-steps.js";
+import {
+  goToBundlesPage,
+  clearBundles,
+  verifyBundleApiResponse,
+  ensureBundleViaCheckout,
+  verifySubscriptionManagement,
+} from "./steps/behaviour-bundle-steps.js";
 import { exportAllTables } from "./helpers/dynamodb-export.js";
 import {
   appendTraceparentTxt,
@@ -416,7 +422,7 @@ test("Click through: Pass redemption grants bundle", async ({ page }, testInfo) 
   }
 });
 
-test("Click through: Resident-pro pass shows Subscribe button (on-pass-on-subscription)", async ({ page }, testInfo) => {
+test("Click through: Resident-pro subscribes directly, no pass required (on-subscription)", async ({ page }, testInfo) => {
   const testUrl = baseUrl;
 
   addOnPageLogging(page);
@@ -458,79 +464,30 @@ test("Click through: Resident-pro pass shows Subscribe button (on-pass-on-subscr
   await clearBundles(page, screenshotPath);
   await page.waitForTimeout(2_000);
 
-  // --- Step 1: Verify clean state - resident-pro shows Pass required ---
-  await page.screenshot({ path: `${screenshotPath}/${timestamp()}-pro-pass-01-clean-state.png` });
-  const passRequiredBtn = page.locator('button[data-disabled-reason="on-pass"]');
+  // --- Step 1: resident-pro shows a Subscribe button directly, no pass needed ---
+  await page.screenshot({ path: `${screenshotPath}/${timestamp()}-pro-sub-01-clean-state.png` });
+  const passRequiredBtn = page.locator('button[data-disabled-reason="on-pass"][data-bundle-id="resident-pro"]');
   const passRequiredVisible = await passRequiredBtn
     .first()
     .isVisible({ timeout: 5000 })
     .catch(() => false);
-  console.log(`[pro-pass-test]: Pass required button visible: ${passRequiredVisible}`);
+  console.log(`[pro-sub-test]: Pass required button visible: ${passRequiredVisible} (expected: false)`);
+  expect(passRequiredVisible).toBe(false);
 
-  // --- Step 2: Create a resident-pro pass via admin API ---
-  const createResult = await page.evaluate(async () => {
-    try {
-      const response = await fetch("/api/v1/pass/admin", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          passTypeId: "resident-pro",
-          bundleId: "resident-pro",
-          validityPeriod: "P1D",
-          maxUses: 1,
-          createdBy: "pass-behaviour-test",
-          testPass: true,
-        }),
-      });
-      const body = await response.json();
-      return { ok: response.ok, status: response.status, code: body?.code, body };
-    } catch (err) {
-      return { ok: false, error: err.message };
-    }
-  });
+  // --- Step 2: Verify the annual Subscribe button and the monthly text link ---
+  const annualBtn = page.locator('button[data-subscribe="true"][data-bundle-id="resident-pro"][data-interval="annual"]');
+  await expect(annualBtn.first()).toBeVisible({ timeout: 10000 });
+  const annualBtnText = await annualBtn.first().textContent();
+  console.log(`[pro-sub-test]: Annual subscribe button text: ${annualBtnText}`);
+  expect(annualBtnText).toContain("199");
+  expect(annualBtnText).toContain("Resident Pro");
 
-  console.log(`[pro-pass-test]: Pass creation result: ${JSON.stringify(createResult)}`);
-  expect(createResult.ok).toBe(true);
-  expect(createResult.code).toBeTruthy();
-
-  const passCode = createResult.code;
-  console.log(`[pro-pass-test]: Created resident-pro pass with code: ${passCode}`);
-
-  // --- Step 3: Enter pass code and validate ---
-  const passInput = page.locator("#passInput");
-  await expect(passInput).toBeVisible({ timeout: 5000 });
-  await passInput.fill(passCode);
-  await page.screenshot({ path: `${screenshotPath}/${timestamp()}-pro-pass-02-code-entered.png` });
-
-  const redeemBtn = page.locator("#redeemPassBtn");
-  await expect(redeemBtn).toBeVisible({ timeout: 5000 });
-  await redeemBtn.click();
-  console.log("[pro-pass-test]: Clicked Redeem Pass button");
-
-  // --- Step 4: Verify Subscribe button appears (not Request button) ---
-  const passStatus = page.locator("#passStatus");
-  await expect(passStatus).toBeVisible({ timeout: 15000 });
-  await page.waitForTimeout(2000);
-  await page.screenshot({ path: `${screenshotPath}/${timestamp()}-pro-pass-03-validation-status.png` });
-
-  const statusText = await passStatus.textContent();
-  console.log(`[pro-pass-test]: Pass status message: ${statusText}`);
-
-  // For on-pass-on-subscription bundles, the Subscribe button should appear for resident-pro specifically
-  const subscribeBtn = page.locator('button[data-subscribe="true"][data-bundle-id="resident-pro"]');
-  const subscribeBtnVisible = await subscribeBtn
-    .first()
-    .isVisible({ timeout: 10000 })
-    .catch(() => false);
-  console.log(`[pro-pass-test]: Subscribe button visible for resident-pro: ${subscribeBtnVisible}`);
-  expect(subscribeBtnVisible).toBe(true);
-  await page.screenshot({ path: `${screenshotPath}/${timestamp()}-pro-pass-04-subscribe-button.png` });
-
-  // Verify the Subscribe button has pricing info and bundle name
-  const subscribeBtnText = await subscribeBtn.first().textContent();
-  console.log(`[pro-pass-test]: Subscribe button text: ${subscribeBtnText}`);
-  expect(subscribeBtnText).toContain("9.99");
-  expect(subscribeBtnText).toContain("Resident Pro");
+  const monthlyLink = page.locator('button[data-subscribe="true"][data-bundle-id="resident-pro"][data-interval="monthly"]');
+  await expect(monthlyLink.first()).toBeVisible({ timeout: 5000 });
+  const monthlyLinkText = await monthlyLink.first().textContent();
+  console.log(`[pro-sub-test]: Monthly subscribe link text: ${monthlyLinkText}`);
+  expect(monthlyLinkText).toContain("19.99");
+  await page.screenshot({ path: `${screenshotPath}/${timestamp()}-pro-sub-02-subscribe-buttons.png` });
 
   // Verify NO "Request Resident Pro" button (subscription flow, not direct grant)
   const requestBtn = page.locator('button.service-btn:has-text("Request Resident Pro")');
@@ -538,8 +495,12 @@ test("Click through: Resident-pro pass shows Subscribe button (on-pass-on-subscr
     .first()
     .isVisible({ timeout: 2000 })
     .catch(() => false);
-  console.log(`[pro-pass-test]: Request button visible: ${requestBtnVisible} (expected: false)`);
+  console.log(`[pro-sub-test]: Request button visible: ${requestBtnVisible} (expected: false)`);
   expect(requestBtnVisible).toBe(false);
+
+  // --- Step 3: Subscribe through checkout, no pass step first ---
+  await ensureBundleViaCheckout(page, "resident-pro", screenshotPath, { skipPass: true });
+  await verifySubscriptionManagement(page, "Resident Pro", screenshotPath);
 
   /* ****************** */
   /*  Extract user sub  */
@@ -560,8 +521,8 @@ test("Click through: Resident-pro pass shows Subscribe button (on-pass-on-subscr
   const testContext = {
     testId: "passRedemptionBehaviour",
     name: testInfo.title,
-    title: "Resident Pro Pass Redemption — Subscribe Button (App UI)",
-    description: "Creates a resident-pro pass, validates it, verifies Subscribe button appears for on-pass-on-subscription bundle.",
+    title: "Resident Pro Direct Subscription (App UI)",
+    description: "Verifies resident-pro's Subscribe button appears directly with no pass, then subscribes through checkout.",
     hmrcApi: null,
     env: {
       envName,
@@ -577,7 +538,6 @@ test("Click through: Resident-pro pass shows Subscribe button (on-pass-on-subscr
       userSub,
       observedTraceparent,
       testUrl,
-      passCode,
     },
     artefactsDir: outputDir,
     screenshotPath,

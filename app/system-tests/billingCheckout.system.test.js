@@ -26,7 +26,7 @@ describe("System: Billing Checkout against Stripe Simulator", () => {
     // Point Stripe SDK at the local simulator
     process.env.STRIPE_SECRET_KEY = "sk_test_system_test";
     process.env.STRIPE_API_BASE_URL = `http://127.0.0.1:${simulatorPort}`;
-    process.env.STRIPE_PRICE_ID_RESIDENT_PRO = "price_test_system";
+    process.env.STRIPE_PRICE_ID_RESIDENT_PRO_YEAR = "price_test_system";
     process.env.DIY_SUBMIT_BASE_URL = "https://test-submit.diyaccounting.co.uk/";
     process.env.USER_SUB_HASH_SALT = '{"current":"v1","versions":{"v1":"test-salt-for-system-tests"}}';
   });

@@ -146,13 +146,28 @@ describe("productCatalogHelper", () => {
     expect(isActivityAvailable(catalog, "file-micro-entity-accounts", "default")).toBe(false);
   });
 
-  it("resident-pro and resident-vat each carry one monthly Stripe price", () => {
+  it("resident-vat carries one monthly Stripe price", () => {
+    const catalog = parseCatalog(tomlText);
+    const residentVat = getCatalogBundleById(catalog, "resident-vat");
+    expect(getBundlePrices(residentVat)).toEqual([{ interval: "month", amount: 99, currency: "gbp", default: true }]);
+  });
+
+  it("resident-pro is always visible, on-subscription, and carries the annual and monthly prices, annual default", () => {
     const catalog = parseCatalog(tomlText);
     const residentPro = getCatalogBundleById(catalog, "resident-pro");
-    const residentVat = getCatalogBundleById(catalog, "resident-vat");
-
-    expect(getBundlePrices(residentPro)).toEqual([{ interval: "month", amount: 999, currency: "gbp", default: true }]);
-    expect(getBundlePrices(residentVat)).toEqual([{ interval: "month", amount: 99, currency: "gbp", default: true }]);
+    expect(residentPro).toMatchObject({
+      levelName: "Pro",
+      enable: "always",
+      hidden: false,
+      allocation: "on-subscription",
+      tokensGranted: "unlimited",
+    });
+    expect(getBundlePrices(residentPro)).toEqual([
+      { interval: "year", amount: 19900, currency: "gbp", default: true },
+      { interval: "month", amount: 1999, currency: "gbp", default: false },
+    ]);
+    expect(getBundlePriceForInterval(residentPro)).toMatchObject({ interval: "year", amount: 19900 });
+    expect(getBundlePriceForInterval(residentPro, "month")).toMatchObject({ interval: "month", amount: 1999 });
   });
 
   it("resident-pro carries an unlimited token grant and no refresh interval, the practice licence", () => {
