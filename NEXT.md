@@ -260,6 +260,22 @@ Shared facts for the analytics rows (B52d, B52e, B52l, B52m): the prod Athena da
 
 ## Machine-ask
 
+- [ ] **PU-7n. The practice licence launch.** Operator, 2026-09-22: `resident-pro` at £199 a
+  year and £19.99 a month, the monthly price shown only on `bundles.html` (the DIYA-GL page shows
+  annual prices alone, for `resident` too). `web/public/submit.catalogue.toml`'s `resident-pro`
+  block (line 208: `enable = "on-pass"`, `hidden = true`, `allocation = "on-pass-on-subscription"`,
+  one monthly price of 999) flips to `enable = "always"`, `hidden = false`,
+  `allocation = "on-subscription"` with the two prices on its prices table, then
+  `stripe-catalogue-sync` test and live for the price ids into `.env.ci` and `.env.prod`
+  (machine-ask for the live run); a practice page nav link is added to
+  `web/public/widgets/page-chrome.js` (it has none today); the four ci probes that reach
+  `resident-pro` through a pass are updated in the same change; the DIYA-GL page
+  (`../spreadsheets.diyaccounting.co.uk/web/diya-gl.co.uk/public/index.html`, whose tier list at
+  line 73 shows `resident` at £39 a year alone) gains a `resident-pro` line at £199 a year, in
+  that repository's own PR. The operator gave the go on 2026-09-23 (the ICO fee register records no processing
+  purposes, so ZB070902 needs no change). **Source**: `PLAN_PRICE_UPDATE.md` §(d); operator 2026-09-22 and 2026-09-23 (go). **Owner**: Claude
+  Code. **Model**: Sonnet. **Size**: ~9 files.
+
 ## Human-driven
 
 - [ ] **OCS. The confirmation statement, due 5 October 2026.** Made up to 21 September 2026;
@@ -270,10 +286,6 @@ Shared facts for the analytics rows (B52d, B52e, B52l, B52m): the prod Athena da
   if it is a test value; then supply each director-PSC's personal code within 14 days of the
   statement date. Steps are task B of `../NEXT_OPERATOR_RUNBOOK.md`. **Owner**: Operator.
   **Model**: none. **Size**: 0 files.
-
-- [ ] **OPU7n. Go for the practice licence launch.** Say go when `resident-pro` should go on sale at
-  £199 a year and £19.99 a month (the catalogue flip, the nav link, the Stripe live prices, PU-7n).
-  **Owner**: Operator. **Model**: none. **Size**: 0 files.
 
 - [ ] **O34d. Send the XML Gateway email.** Send `../DRAFT_EMAIL_XMLGW_000004.md` from `antony@diyaccounting.co.uk`
   as a reply on the `xml@companieshouse.gov.uk` thread, and paste the answer into B34.6c's row when
@@ -399,22 +411,6 @@ Shared facts for the analytics rows (B52d, B52e, B52l, B52m): the prod Athena da
   spreadsheets repository's existing reconciliation harness rather than a new check; nothing
   automated writes to Google Drive. Blocked on OF2d. **Source**: `../PLAN_FINANCE_AUTOMATION.md`
   phase 2. **Owner**: Claude Code. **Model**: Sonnet. **Size**: ~3 files.
-
-- [ ] **PU-7n. The practice licence launch.** Operator, 2026-09-22: `resident-pro` at £199 a
-  year and £19.99 a month, the monthly price shown only on `bundles.html` (the DIYA-GL page shows
-  annual prices alone, for `resident` too). `web/public/submit.catalogue.toml`'s `resident-pro`
-  block (line 208: `enable = "on-pass"`, `hidden = true`, `allocation = "on-pass-on-subscription"`,
-  one monthly price of 999) flips to `enable = "always"`, `hidden = false`,
-  `allocation = "on-subscription"` with the two prices on its prices table, then
-  `stripe-catalogue-sync` test and live for the price ids into `.env.ci` and `.env.prod`
-  (machine-ask for the live run); a practice page nav link is added to
-  `web/public/widgets/page-chrome.js` (it has none today); the four ci probes that reach
-  `resident-pro` through a pass are updated in the same change; the DIYA-GL page
-  (`../spreadsheets.diyaccounting.co.uk/web/diya-gl.co.uk/public/index.html`, whose tier list at
-  line 73 shows `resident` at £39 a year alone) gains a `resident-pro` line at £199 a year, in
-  that repository's own PR. Blocked on OPU7n, the operator's go for the launch (the ICO fee register
-  records no processing purposes, so ZB070902 needs no change). **Source**: `PLAN_PRICE_UPDATE.md` §(d); operator 2026-09-22. **Owner**: Claude
-  Code. **Model**: Sonnet. **Size**: ~9 files.
 
 - [ ] **OF2. DIYA's book saved to the DIYA cloud.** With the operator signed in through B61's
   sign-in, `save_book` writes F2d's verified book to the DIYA cloud, which is B52i's unblock event.
