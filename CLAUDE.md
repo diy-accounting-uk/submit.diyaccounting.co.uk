@@ -54,10 +54,10 @@ stripped after sessions kept accreting status notes and "tidy up X if wanted" li
 
 **Primary documentation**: See `REPORT_REPOSITORY_CONTENTS.md` for complete architecture, npm scripts, AWS stacks, and directory structure.
 
-**Capability index**: See `REPORT_CAPABILITIES.md` for what the repository does, one entry per capability.
-- Areas are `##` headings (site, HMRC, Companies House, billing, operations, analytics, MCP, developer workflow).
-- Capabilities are `###` headings, each with a short outline and a `Files:` line.
-- Grep a heading (e.g. `grep -n "^### " REPORT_CAPABILITIES.md`) to find where a capability is implemented.
+**Capability index**: before you add a script, workflow, Lambda, check, sync, report, alarm, page or skill, look in `REPORT_CAPABILITIES.md` (the `capabilities` skill says how). Use or extend what it lists.
+- The Index at the top lists every capability as id, name and "use when".
+- Each entry (`#### <ID> <name>`) gives Use when, Does, Run (the command), Entry (the code), Files, Keywords.
+- `grep -n -i '<word>' REPORT_CAPABILITIES.md`, or the Keywords section, finds an entry by word.
 
 **Other AI assistants in this repo**:
 - `.github/copilot-instructions.md` - GitHub Copilot (code review focus)
@@ -78,6 +78,7 @@ Skills live at `.claude/skills/<name>/SKILL.md`.
 - `.claude/skills/clean/SKILL.md` — gather stale deployments, merged branches, worktrees of merged branches, logs and test artefacts, and build output; ask once; remove every agreed category in one go; then fetch, switch to main and pull when nothing is in progress; invoke as `/clean`
 - `.claude/skills/vat-submission-failure-alarm-user-lookup/SKILL.md` — from a submission-failure alarm, find the customer, what HMRC said and whether they wrote in, read-only and without scanning a customer table
 - `.claude/skills/ads-advisor/SKILL.md` — answer questions about Google Ads performance, forecast clicks for a daily budget, and propose bidding strategy changes from live account data
+- `.claude/skills/capabilities/SKILL.md` — find the tooling the repository already has before building any, and keep `REPORT_CAPABILITIES.md` current; invoke as `/capabilities`
 
 ## Permission Handling
 
