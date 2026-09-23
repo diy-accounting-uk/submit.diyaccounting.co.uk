@@ -233,7 +233,10 @@ Shared facts for the analytics rows (B52d, B52e, B52l, B52m): the prod Athena da
   operator's own subscription are test purchases, reversed out of sales; (d) the £2.28 cashback
   is earned on PayPal purchases, a credit against purchases. Post each on the account named; if
   (a)'s £1,000 does not bring the DLA to exactly zero, report the difference rather than forcing
-  it. Add `[[members]]` to `book.toml` from the Companies House register (the confirmation
+  it. First, the opening balances at 1 April 2026 are the closing balances of the year ended
+  31 March 2026, read with diya-gl from the 2025-26 workbook set in
+  `../drive/DIY Accounting Limited/finance/2025-2026 accounts/` (operator, 2026-09-23); the
+  current `[openingBalances]` came from the superseded 1 March draft. Add `[[members]]` to `book.toml` from the Companies House register (the confirmation
   statement of 2025-10-25; share capital £100) so `RegisterofMembers` passes. Rebuild, re-run the
   report, update `VERIFICATION.md`. (b) and (d) are purchases credit notes: their totals read
   right once F2l's engine change covers purchases. **Source**: F2k's report; operator
