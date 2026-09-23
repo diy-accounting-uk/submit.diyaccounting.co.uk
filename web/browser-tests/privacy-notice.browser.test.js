@@ -59,11 +59,15 @@ test.describe("Privacy Notice", () => {
 
     // Find the Purposes of Processing table by looking for the table that contains
     // both "Purpose" and "Legal Basis" headers in the thead, which uniquely identifies it
-    const purposesTable = page.locator("table").filter({
-      has: page.locator("th").filter({ hasText: "Purpose" }),
-    }).filter({
-      has: page.locator("th").filter({ hasText: "Legal Basis" }),
-    }).last();
+    const purposesTable = page
+      .locator("table")
+      .filter({
+        has: page.locator("th").filter({ hasText: "Purpose" }),
+      })
+      .filter({
+        has: page.locator("th").filter({ hasText: "Legal Basis" }),
+      })
+      .last();
 
     await expect(purposesTable).toBeVisible();
 
