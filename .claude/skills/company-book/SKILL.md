@@ -43,7 +43,7 @@ The parsers live in `mcp/lib/finance/` (run `npm ci` in `mcp/` first):
 | NatWest | `bank-lines.js` | `bankLinesFromCsv(text, { accountMainID })`, `closingBalance(text)` |
 | Stripe | `stripe-lines.js` | `stripeLinesFromTransactions`, `stripePayoutLines`, `reconcileStripeMonth` |
 | PayPal | `paypal-statement-lines.js` | `paypalLinesFromStatementPdf(transactionsPdf, { ...accounts, statementPdfPath })`, `reconcilePaypalMonth({ transactionsText, statementText })`; needs `pdftotext` (poppler) |
-| Supplier invoices | `mail-invoices.js` | its `runCorpus` option points at the corpus CLI when run from a worktree |
+| Supplier invoices | `mail-invoices.js` | `invoiceLinesForPeriod({ from, to, suppliers })`; finds the corpus CLI from a main checkout or a worktree; a "Payment schedule.pdf" attachment gives one line per instalment |
 
 Validate with `validateBook` and `validateLines` from `@diy-accounting-uk/diya-gl`
 (`dist/app/lib/diya-gl-schema.js`).
