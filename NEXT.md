@@ -80,6 +80,36 @@ Shared facts for the analytics rows (B52d, B52e, B52l, B52m): the prod Athena da
 
 ## Machine-only
 
+- [ ] **B30az. A ci slot set self-destructs while it is last-known-good.** `ci-set1` (created
+  09:35 UTC on 2026-09-23, last-known-good since PR #335's dispatch) lost its
+  `SelfDestructStack` at 12:45 and every other stack by 13:04, while
+  `/submit/ci/last-known-good-deployment` still named it; b84's first deploy 35863587199 claimed
+  the slot at 12:55 and failed in `deploy AccountStack` with "Stack … is in DELETE_IN_PROGRESS
+  state and can not be updated". `app/functions/infra/selfDestruct.js` deletes on its schedule
+  with no check of last-known-good or of a live slot claim (it only releases the slot after,
+  line 190), and a redeploy of a slot set does not move the timer, which is anchored to the
+  set's first creation. **Problem**: the ci apex's set disappears on a timer, and any deploy that
+  claims its slot in that window races the teardown. **Fixed when**: the self-destruct Lambda
+  reads `/submit/ci/last-known-good-deployment` and `/submit/ci/slots/<slot>` before deleting,
+  skips (and reschedules itself by the delay) when its set is last-known-good or claimed by an
+  unfinished run (`slot-claim-active.mjs`'s rule, B30at), with unit tests in
+  `app/unit-tests/functions/selfDestruct.test.js`; proof is a week with no deploy failing on
+  `DELETE_IN_PROGRESS`. **Source**: runs 35863587199 and 35862205311 (the operator's
+  refused `destroy-ci` dispatch at 12:42 for the same set). **Owner**: Claude Code. **Model**:
+  Sonnet. **Size**: ~3 files.
+
+- [ ] **B30ba. One push starts two deploys of the same head.** The push of `claude/b84-board` at
+  12:55 UTC on 2026-09-23 (head `ec28d64b`) started `deploy` twice (35863587199 and
+  35863589011, one second apart), and `test` and CodeQL twice; both deploys ran against
+  `ci-set1` at once. **Problem**: two deploys of one head are pure cost and can race each other on
+  one set. **Fixed when**: `deploy.yml`'s `cancel-superseded-push-deploy` job (line 242) also
+  cancels a push-triggered deploy when an older in-progress or queued `deploy` run exists for the
+  same branch and head SHA (keep the older), and a push that GitHub delivers twice runs one
+  deploy; proof is the next new-branch push showing one deploy run. Read that job first: it
+  already cancels a push deploy covered by a named dispatch. **Source**: runs 35863587199,
+  35863589011, 35863585902, 35863588138. **Owner**: Claude Code. **Model**: Haiku. **Size**:
+  1 file.
+
 - [ ] **B52j. The `ads-advisor` skill.** `.claude/skills/ads-advisor/SKILL.md`: how to run B52g
   and B52h, how to read CTR, CPC, conversion rate and cost per session against the funnel's
   break-even cost per session (£0.36, `PLAN_ONE_STOP_DASHBOARD.md` D17) and the reinvestment
