@@ -49,7 +49,10 @@ step.
   prod suites took the superseded path (`.github/workflows/probe-test.yml` line 521) and ended
   green with no report, but `upload-web-test-results` (line 818) runs on
   `generate-test-reports == 'true'` alone and its report step (lines 922 to 924) failed with
-  "Downloaded test report not found", so the run is red for a suite nothing ran. Add
+  "Downloaded test report not found", so the run is red for a suite nothing ran. **Problem**: a
+  scheduled probe run goes red whenever it coincides with a `main` deploy, and the red says nothing
+  about prod. **Fixed when**: a scheduled `probe-test` run whose suites are superseded ends green
+  with every upload job skipped, shown by the next such coincidence. Add
   `&& needs.behaviour-test.outputs.superseded != 'true'` to that job's `if`, the guard the
   probe-row step already uses (line 759). Proof: `prettier --check` on the file, a js-yaml parse,
   and the next scheduled run that coincides with a `main` deploy ending green. **Source**: run
@@ -65,9 +68,84 @@ step.
   bucket at its edge two days on. Change the period to one hour (the nightly runs once at 03:17
   UTC, so an hourly `Errors` sum of 1 or more fires within the hour and clears the next);
   `OperatorSnapshotPublishTest.java` (line 101) asserts the name and metric only, so add
-  `Period: 3600` to that `objectLike`. Proof: `./mvnw -q test -Dtest=OperatorSnapshotPublishTest`
+  `Period: 3600` to that `objectLike`. **Problem**: one night's
+  errors open a second alarm issue two days later and a triage run reads it as a recurring
+  failure. **Fixed when**: the alarm's period is one hour in the synthesised template and no
+  issue opens for a day with zero `Errors` datapoints, shown over the seven nights after the
+  deploy. Proof: `./mvnw -q test -Dtest=OperatorSnapshotPublishTest`
   and the synthesised alarm's `Period`. **Source**: issue #337; alarm history 2026-09-17 and
   2026-09-23. **Owner**: Claude Code. **Model**: Haiku. **Size**: ~2 files.
+
+- [ ] **B85. The removal block overrides an agent worktree's lock.** **Problem**: `git worktree
+  remove --force` refuses a worktree an agent locked ("cannot remove a locked working tree"), so
+  the operator's pasted block stops part-way and the rest of it, the branch deletions included,
+  never runs; 5 of the session's 15 removal pastes failed this way. **Fixed when**: the block
+  every render prints (`.claude/skills/board/SKILL.md` Part 5, line 180 onward, and the do-next
+  skill's hand-off at `.claude/skills/do-next/SKILL.md` line 225) uses `worktree remove --force
+  --force` for every `agent-*` worktree, and a pasted block removes every listed worktree and
+  branch in one run. **Source**: session report yQdSoM, suggestion 9. **Owner**: Claude Code.
+  **Model**: Haiku. **Size**: 2 files.
+
+- [ ] **B30ay. A named ci deployment outside the slot pool cannot prove a signed-in probe.**
+  **Problem**: `gh workflow run deploy.yml -f deployment-name=<name>` builds a full set under any
+  name (`.github/workflows/deploy.yml` input at line 63; the pool bypass at line 497), but only
+  `ci-set1`, `ci-set2` and the apex are the ci Cognito client's callback hosts
+  (`SubmitSharedNames.java` line 1278), so every probe that signs in fails with
+  `redirect_mismatch`; `ci-b79-probe` and `ci-b80-probe` cost two runs, about 150 job-minutes,
+  and two sets that stood 12 hours. **Fixed when**: the `names` job fails fast, before any stack
+  job, when a ci `deployment-name` is neither `ci-set1` nor `ci-set2` and `skipTestScenarios` is
+  not `true`, with a message naming the pool; proof is one dispatch with `-f deployment-name=ci-x`
+  that ends in under two minutes with that message, and one with `-f deployment-name=ci-set2`
+  that proceeds. **Source**: session report yQdSoM, suggestion 4; memory note on named ci
+  deploys. **Owner**: Claude Code. **Model**: Haiku. **Size**: 1 file.
+
+- [ ] **AS1a. Coverage thresholds sit one point under the measurement.** **Problem**: AS1 set
+  `vitest.config.js` (lines 75 to 81) to the floor of one measured run (76/68/86/77), so the first
+  merge that moved a figure by a tenth of a point (functions 86.x to 85.9 when PR #335 took
+  `main`) turned the branch's `test` run red for a reason unrelated to its change, costing one CI
+  test run and two local coverage runs. **Fixed when**: each threshold is the measured value on
+  `main` at the time of the change minus one whole point (today 75/67/84/76, re-measured by
+  `npm run test:coverage` on the branch), the file carries a one-line comment stating that rule,
+  and a merge that moves a figure by under a point leaves `npm run test:coverage` green. **Source**:
+  session report yQdSoM, suggestion 6; run 35831691533. **Owner**: Claude Code. **Model**: Haiku.
+  **Size**: 1 file.
+
+- [ ] **B84. `/auto-merge` runs a merged PR's new gates on each remaining candidate.** **Problem**:
+  PR #334 added the prettier check to `test.yml` and PR #336 added an unformatted file; each was
+  green on its own head, and their merges together turned `main`'s `test` run red for 47 minutes
+  and cost hotfix PR #338 and two red test runs (about 140 job-minutes). The skill's Part 5
+  (`.claude/skills/auto-merge/SKILL.md` line 171) checks only that the candidates' changed files
+  do not intersect the merged PR's. **Fixed when**: Part 5 also lists the gates the merged PR added
+  or changed in `test.yml` (a new job or step running `prettier`, `eslint`, `spotless`, a coverage
+  threshold) and runs each locally on the candidate's tree merged with `origin/main` before
+  merging it, reporting `gate <name> red on #<n>` and leaving that PR open with its fix as agent
+  work; proof is a dry run over a PR pair built the same way that reports the red gate. **Source**:
+  session report yQdSoM, suggestion 3; runs 35837284696 and 35838071472. **Owner**: Claude Code.
+  **Model**: Sonnet. **Size**: 1 file.
+
+- [ ] **B72a. Video capture on deploy records only what will be published.** **Problem**:
+  `video-capture-on-deploy.yml` (`.github/workflows/video-capture-on-deploy.yml`, trigger at line
+  25, scene check at line 99) dispatched 14 captures in the session, 195 job-minutes over 31 runs,
+  because the batches touched pages that scene scripts declare (the practice page, `bundles.html`),
+  and none of those recordings was published: publishing is the operator's `npm run video:publish`,
+  run once per release. **Fixed when**: the on-deploy path records a scene only when its page
+  changed and `videos/publish.json` marks that scene `publish: true`, records each scene at most
+  once a day, and a `main` deploy touching no such page ends the workflow in under a minute with
+  "nothing to record"; proof is the next `main` deploy of a docs-plus-code batch ending that way and
+  a dispatch with `head-sha` still recording every scene. **Source**: session report yQdSoM,
+  suggestion 1; BACKLOG 72. **Owner**: Claude Code. **Model**: Sonnet. **Size**: ~1 file.
+
+- [ ] **B30ax. The sweep runs only when a set is old enough to sweep.** **Problem**:
+  `destroy-ci.yml` runs on every `deploy.yml` completion as cover for GitHub dropping the cron's
+  slots (line 43), and each run assumes two roles, lists two regions and Route 53, and usually
+  destroys nothing: 65 runs and 315 job-minutes in the session, about 250 of them on runs that
+  deleted no set. **Fixed when**: `deploy.yml`'s last job (which already holds the ci role) lists
+  the `-app-SelfDestructStack` stacks and calls the sweep only when one is older than
+  `SELF_DESTRUCT_SWEEP_MIN_AGE_HOURS` (8) and is not the last-known-good set, and the
+  `workflow_run` trigger in `destroy-ci.yml` goes; proof is a day of deploys in which every
+  `destroy-ci` run deletes at least one set, and a set past its age still gone within an hour of
+  the next deploy. Shares `destroy-ci.yml` with B30at; land B30at first. **Source**: session
+  report yQdSoM, suggestion 2. **Owner**: Claude Code. **Model**: Sonnet. **Size**: ~2 files.
 
 - [ ] **B30at. The sweep destroys a slot set a deploy is using.** PR #334's push deploy set
   `/submit/ci/last-known-good-deployment` to `ci-set2` at 18:23 UTC when its stacks succeeded
@@ -78,9 +156,13 @@ step.
   deploying it", then `ERR_NAME_NOT_RESOLVED` on every probe). The sweep's `wait-for-ci-deploys`
   step (line 12) waits only for runs older than itself. Before destroying each set, the sweep
   reads `/submit/ci/slots/<slot>` and skips a set whose claim names a run still `in_progress` or
-  `queued` (`gh run view`), and the two-slot pool's sets are never swept while claimed. Proof: a
-  sweep dispatched with `-f sweep-for-stacks=true` while a branch deploy holds a slot logs the
-  skip and leaves the set. **Source**: runs 35766864248 and 35773445604; BACKLOG 30. **Owner**:
+  `queued` (`gh run view`), and the two-slot pool's sets are never swept while claimed. **Problem**: a
+  deploy that has claimed a slot can lose its stacks to the sweep started by another deploy's
+  completion, and every probe of that run then fails for a reason unrelated to the branch.
+  **Fixed when**: a sweep dispatched with `-f sweep-for-stacks=true` while a branch deploy
+  holds a slot logs the skip and leaves the set standing, and no deploy in the following week
+  fails with "the stack disappeared while we were deploying it". **Source**: runs 35766864248
+  and 35773445604; BACKLOG 30; session report yQdSoM. **Owner**:
   Claude Code. **Model**: Sonnet. **Size**: ~2 files.
 
 - [ ] **B52f. Web vitals on all three sites.** The page-experience panel wants LCP, INP and CLS
