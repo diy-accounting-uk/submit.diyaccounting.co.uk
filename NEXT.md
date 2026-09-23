@@ -245,7 +245,7 @@ Shared facts for the analytics rows (B52d, B52e, B52l, B52m): the prod Athena da
   account code there) as a bank account with its lines, split the director's £1,000 receipt
   (operator, 2026-09-23: the directors' loan is to read zero for now): £443.29 as a `DL` bank line
   clearing the opening −£443.29, and £556.71 to the book's suspense account (take its code from
-  the chart; the operator will reconcile it against Polycode's management fee, OF2p). Replace the
+  the chart). Replace the
   members register and share capital with the 2025-26 set's (`Companysecretary.xlsx` and the
   closing balance sheet in `../drive/DIY Accounting Limited/finance/2025-2026 accounts/`; operator:
   "same as the previous year"). Rebuild, re-run the report, update `VERIFICATION.md`. Then OF2's
@@ -280,12 +280,6 @@ Shared facts for the analytics rows (B52d, B52e, B52l, B52m): the prod Athena da
   Code. **Model**: Sonnet. **Size**: ~9 files.
 
 ## Human-driven
-
-- [ ] **OF2p. Where the £556.71 of the director's £1,000 belongs.** F2o posts £443.29 of the
-  director's £1,000 to clear the directors' loan and holds £556.71 in suspense. Check it against
-  Polycode's accounts (part may settle the management fee) and write the account for each part
-  into the book's `VERIFICATION.md` or a new row. **Owner**: Operator. **Model**: none. **Size**: 0
-  files.
 
 - [ ] **OCS. The confirmation statement, due 5 October 2026.** Made up to 21 September 2026;
   DIY Accounting Limited 06846849 last filed a CS01 on 25 October 2025
