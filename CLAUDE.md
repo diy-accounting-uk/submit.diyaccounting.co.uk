@@ -79,6 +79,7 @@ Skills live at `.claude/skills/<name>/SKILL.md`.
 - `.claude/skills/vat-submission-failure-alarm-user-lookup/SKILL.md` — from a submission-failure alarm, find the customer, what HMRC said and whether they wrote in, read-only and without scanning a customer table
 - `.claude/skills/ads-advisor/SKILL.md` — answer questions about Google Ads performance, forecast clicks for a daily budget, and propose bidding strategy changes from live account data
 - `.claude/skills/capabilities/SKILL.md` — find the tooling the repository already has before building any, and keep `REPORT_CAPABILITIES.md` current; invoke as `/capabilities`
+- `.claude/skills/itsa-readiness/SKILL.md` — say whether the Income Tax (MTD) recognition email can go to HMRC, check by check with the evidence; invoke as `/itsa-readiness`
 
 ## Permission Handling
 

@@ -90,6 +90,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
     - [HMRC-35](#hmrc-35-spike-test-the-itsa-sandbox-oauth-and-business-details-flow) Spike-test the ITSA sandbox OAuth and business-details flow: use when the sandbox registration, OAuth redirect and fraud-prevention headers need a standalone Business Details proof.
     - [HMRC-36](#hmrc-36-provide-itsa-behaviour-test-step-helpers) Provide ITSA behaviour-test step helpers: use when an ITSA behaviour-test spec needs a shared init, fill, submit or verify step.
     - [HMRC-37](#hmrc-37-plan-the-hmrc-mtd-vat-and-itsa-rollout) Plan the HMRC MTD VAT and ITSA rollout: use when the path to HMRC production approval or the ITSA phase 2 build needs a plan.
+    - [HMRC-38](#hmrc-38-check-readiness-for-the-itsa-recognition-email) Check readiness for the ITSA recognition email: use when the operator asks whether the Income Tax (MTD) recognition email can go to HMRC, or names a send day.
 - **[Companies House filing](#companies-house-filing-ch)**
   - [OAuth and identity](#oauth-and-identity-ch)
     - [CH-01](#ch-01-exchange-a-companies-house-oauth-token) Exchange a Companies House OAuth token: use when a filing journey has an authorization code and needs an access token for the session.
@@ -727,7 +728,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - [ITSA year-end processing](#itsa-year-end-processing-hmrc): [HMRC-16](#hmrc-16-trigger-and-adjust-the-business-source-adjustable-summary) Trigger and adjust the Business Source Adjustable Summary · [HMRC-17](#hmrc-17-manage-itsa-losses-and-claims) Manage ITSA losses and claims · [HMRC-18](#hmrc-18-manage-itsa-tax-liability-adjustments) Manage ITSA tax liability adjustments · [HMRC-19](#hmrc-19-calculate-itsa-tax-liability) Calculate ITSA tax liability · [HMRC-20](#hmrc-20-retrieve-itsa-crystallisation-obligations) Retrieve ITSA crystallisation obligations · [HMRC-21](#hmrc-21-submit-the-itsa-final-declaration) Submit the ITSA final declaration
 - [Receipts and HMRC authentication](#receipts-and-hmrc-authentication-hmrc): [HMRC-22](#hmrc-22-store-and-retrieve-hmrc-submission-receipts) Store and retrieve HMRC submission receipts · [HMRC-23](#hmrc-23-exchange-an-hmrc-oauth-code-for-a-token) Exchange an HMRC OAuth code for a token · [HMRC-24](#hmrc-24-verify-hmrc-agent-authorisation-for-a-client) Verify HMRC agent authorisation for a client
 - [HMRC API plumbing](#hmrc-api-plumbing-hmrc): [HMRC-25](#hmrc-25-build-hmrc-fraud-prevention-headers) Build HMRC fraud-prevention headers · [HMRC-26](#hmrc-26-monitor-hmrc-fraud-prevention-header-compliance) Monitor HMRC fraud-prevention header compliance · [HMRC-27](#hmrc-27-validate-hmrc-identifiers-dates-and-amounts) Validate HMRC identifiers, dates and amounts · [HMRC-28](#hmrc-28-format-and-match-hmrc-obligations) Format and match HMRC obligations · [HMRC-29](#hmrc-29-call-the-hmrc-api) Call the HMRC API · [HMRC-30](#hmrc-30-persist-async-hmrc-api-request-state) Persist async HMRC API request state
-- [HMRC infrastructure and test tooling](#hmrc-infrastructure-and-test-tooling-hmrc): [HMRC-31](#hmrc-31-wire-hmrc-lambda-handlers-into-cdk-stacks) Wire HMRC Lambda handlers into CDK stacks · [HMRC-32](#hmrc-32-register-and-verify-hmrc-developer-hub-application-config) Register and verify HMRC Developer Hub application config · [HMRC-33](#hmrc-33-drive-hmrcs-sandbox-authorisation-flow-for-test-scripts) Drive HMRC's sandbox authorisation flow for test scripts · [HMRC-34](#hmrc-34-file-a-full-itsa-tax-year-in-sandbox) File a full ITSA tax year in sandbox · [HMRC-35](#hmrc-35-spike-test-the-itsa-sandbox-oauth-and-business-details-flow) Spike-test the ITSA sandbox OAuth and business-details flow · [HMRC-36](#hmrc-36-provide-itsa-behaviour-test-step-helpers) Provide ITSA behaviour-test step helpers · [HMRC-37](#hmrc-37-plan-the-hmrc-mtd-vat-and-itsa-rollout) Plan the HMRC MTD VAT and ITSA rollout
+- [HMRC infrastructure and test tooling](#hmrc-infrastructure-and-test-tooling-hmrc): [HMRC-31](#hmrc-31-wire-hmrc-lambda-handlers-into-cdk-stacks) Wire HMRC Lambda handlers into CDK stacks · [HMRC-32](#hmrc-32-register-and-verify-hmrc-developer-hub-application-config) Register and verify HMRC Developer Hub application config · [HMRC-33](#hmrc-33-drive-hmrcs-sandbox-authorisation-flow-for-test-scripts) Drive HMRC's sandbox authorisation flow for test scripts · [HMRC-34](#hmrc-34-file-a-full-itsa-tax-year-in-sandbox) File a full ITSA tax year in sandbox · [HMRC-35](#hmrc-35-spike-test-the-itsa-sandbox-oauth-and-business-details-flow) Spike-test the ITSA sandbox OAuth and business-details flow · [HMRC-36](#hmrc-36-provide-itsa-behaviour-test-step-helpers) Provide ITSA behaviour-test step helpers · [HMRC-37](#hmrc-37-plan-the-hmrc-mtd-vat-and-itsa-rollout) Plan the HMRC MTD VAT and ITSA rollout · [HMRC-38](#hmrc-38-check-readiness-for-the-itsa-recognition-email) Check readiness for the ITSA recognition email
 <!-- /generated:area HMRC -->
 
 ### VAT filing (HMRC)
@@ -1100,6 +1101,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - [HMRC-35](#hmrc-35-spike-test-the-itsa-sandbox-oauth-and-business-details-flow) Spike-test the ITSA sandbox OAuth and business-details flow
 - [HMRC-36](#hmrc-36-provide-itsa-behaviour-test-step-helpers) Provide ITSA behaviour-test step helpers
 - [HMRC-37](#hmrc-37-plan-the-hmrc-mtd-vat-and-itsa-rollout) Plan the HMRC MTD VAT and ITSA rollout
+- [HMRC-38](#hmrc-38-check-readiness-for-the-itsa-recognition-email) Check readiness for the ITSA recognition email
 <!-- /generated:group hmrc-infrastructure-and-test-tooling-hmrc -->
 
 #### HMRC-31 Wire HMRC Lambda handlers into CDK stacks
@@ -1171,6 +1173,16 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - **Files:** .github/agents/mtd-vat-roadmap.agent.md, PLAN_ITSA_PHASE_2.md
 - **Keywords:** hmrc production approval, mtd vat roadmap, agent persona, itsa phase 2 plan, gap analysis
 - **Related:** HMRC-01, HMRC-21
+
+#### HMRC-38 Check readiness for the ITSA recognition email
+
+- **Use when:** the operator asks whether the Income Tax (MTD) recognition email can go to HMRC, or names a send day.
+- **Does:** The itsa-readiness skill checks each minimum standard in the approvals checklist against the code and tests. It checks the sandbox year ran within HMRC's 14-day log window and the fraud header validation is clean. It reports ready, ready after named actions, or the blockers.
+- **Run:** `/itsa-readiness`
+- **Entry:** `.claude/skills/itsa-readiness/SKILL.md`
+- **Files:** .claude/skills/itsa-readiness/SKILL.md, _developers/hmrc/ITSA_PRODUCTION_APPROVALS_CHECKLIST.md, _developers/hmrc/ITSA_PHASE_2_SANDBOX.md, _developers/hmrc/hmrc_questionnaire_itsa_pass_diy_accounting_limited_v1.md, _developers/hmrc/DRAFT_EMAIL_ITSA_RECOGNITION.md, _developers/hmrc/ITSA_MINIMUM_FUNCTIONALITY_STANDARDS.md
+- **Keywords:** itsa readiness, recognition email, production approval, sdst, minimum functionality standards, evidence, send day, 14-day window
+- **Related:** HMRC-34, HMRC-37
 
 ## Companies House filing (CH)
 
@@ -4801,6 +4813,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 ## Keywords
 
 <!-- generated:keywords -->
+- 14-day window: [HMRC-38](#hmrc-38-check-readiness-for-the-itsa-recognition-email)
 - 202 accepted: [SITE-09](#site-09-track-and-poll-async-api-requests)
 - 202 poll: [MCP-07](#mcp-07-file-vat-returns-and-accounts-via-api)
 - 401 retry: [BILL-34](#bill-34-prefetch-and-retry-a-cognito-token-refresh)
@@ -5447,6 +5460,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - eventbridge: [OPS-13](#ops-13-auto-destroy-stale-ci-deployments), [OPS-70](#ops-70-forward-operational-activity-events-to-telegram), [DATA-01](#data-01-publish-activity-events-to-the-bus)
 - eventbridge scheduler: [DATA-08](#data-08-copy-the-aws-focus-cost-export), [DATA-22](#data-22-orchestrate-the-nightly-ingestion-workflow)
 - events_* export: [DATA-39](#data-39-sync-ga4-in-bigquery-scheduled-queries)
+- evidence: [HMRC-38](#hmrc-38-check-readiness-for-the-itsa-recognition-email)
 - evidence links: [OPS-97](#ops-97-compile-the-compliance-audit-report)
 - exclude paths: [OPS-30](#ops-30-run-codeql-security-scanning)
 - existing tooling: [DEV-43](#dev-43-find-existing-tooling-before-building-any)
@@ -5719,6 +5733,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - itsa periods: [HMRC-12](#hmrc-12-submit-and-manage-self-employment-periodic-updates)
 - itsa phase 2 plan: [HMRC-37](#hmrc-37-plan-the-hmrc-mtd-vat-and-itsa-rollout)
 - itsa property: [HMRC-14](#hmrc-14-submit-and-manage-uk-property-periodic-updates)
+- itsa readiness: [HMRC-38](#hmrc-38-check-readiness-for-the-itsa-recognition-email)
 - itsa receipt: [HMRC-22](#hmrc-22-store-and-retrieve-hmrc-submission-receipts)
 - itsa sandbox: [HMRC-34](#hmrc-34-file-a-full-itsa-tax-year-in-sandbox)
 - itsa sandbox spike: [HMRC-35](#hmrc-35-spike-test-the-itsa-sandbox-oauth-and-business-details-flow)
@@ -5850,6 +5865,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - migration: [BILL-40](#bill-40-migrate-the-hashed-sub-salt), [BILL-41](#bill-41-backfill-the-stripe-test-mode-qualifier)
 - migration runner: [OPS-16](#ops-16-run-dynamodb-data-migrations)
 - milestones: [MCP-14](#mcp-14-document-the-submission-mcps-plan-and-tool-reference)
+- minimum functionality standards: [HMRC-38](#hmrc-38-check-readiness-for-the-itsa-recognition-email)
 - mock billing: [SITE-08](#site-08-bootstrap-the-app-server), [DEV-07](#dev-07-simulate-the-public-demos-billing-and-oauth)
 - mock oauth: [SITE-08](#site-08-bootstrap-the-app-server), [DEV-07](#dev-07-simulate-the-public-demos-billing-and-oauth)
 - mock server: [DEV-01](#dev-01-run-the-http-simulator-server), [DEV-18](#dev-18-provide-shared-unitsystem-test-fixtures)
@@ -6085,6 +6101,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - product catalogue: [BILL-35](#bill-35-load-and-query-the-productactivity-catalogue)
 - product demos: [OPS-94](#ops-94-play-demo-videos-on-the-public-site)
 - product sync: [DEV-39](#dev-39-sync-stripe-products-and-prices-from-the-catalogue)
+- production approval: [HMRC-38](#hmrc-38-check-readiness-for-the-itsa-recognition-email)
 - project.toml: [DATA-41](#data-41-assert-gcp-billing-budget-and-stray-project)
 - project.toml principals: [DATA-45](#data-45-apply-ga4-and-gcp-iam-role-bindings)
 - project.toml services: [DATA-40](#data-40-enable-required-google-cloud-apis)
@@ -6137,6 +6154,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - receipt: [HMRC-01](#hmrc-01-submit-a-vat-return)
 - receipts: [DATA-04](#data-04-stream-dynamodb-table-changes-into-the-lake)
 - receipts page: [HMRC-22](#hmrc-22-store-and-retrieve-hmrc-submission-receipts)
+- recognition email: [HMRC-38](#hmrc-38-check-readiness-for-the-itsa-recognition-email)
 - reconcile: [BILL-05](#bill-05-reconcile-bundle-capacity-counters), [MCP-05](#mcp-05-derive-vat-figures-via-mcp-tools)
 - reconcile stripe: [MCP-13](#mcp-13-import-stripe-transaction-and-payout-lines)
 - reconciliation: [DATA-48](#data-48-stage-paypal-transactions-for-reconciliation), [MCP-10](#mcp-10-import-a-natwest-bank-statement-into-diya-gl-lines)
@@ -6275,6 +6293,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - screen reader: [OPS-95](#ops-95-generate-wcag-accessibility-compliance-rows)
 - screenshot captions: [DEV-19](#dev-19-provide-shared-behaviour-test-fixtures-and-steps)
 - scripted demo: [DEV-11](#dev-11-practice-the-vat-journey-in-the-browser-embedded-simulator)
+- sdst: [HMRC-38](#hmrc-38-check-readiness-for-the-itsa-recognition-email)
 - se-derivations: [MCP-06](#mcp-06-derive-itsa-quarterly-and-annual-submission-figures)
 - search: [CH-03](#ch-03-search-the-companies-house-register)
 - search campaign create: [DATA-32](#data-32-sync-the-google-ads-account)
@@ -6309,6 +6328,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - self-employment bsas: [HMRC-16](#hmrc-16-trigger-and-adjust-the-business-source-adjustable-summary)
 - self-employment period: [HMRC-12](#hmrc-12-submit-and-manage-self-employment-periodic-updates)
 - self-pacing: [DEV-30](#dev-30-run-the-delivery-cycle-unattended)
+- send day: [HMRC-38](#hmrc-38-check-readiness-for-the-itsa-recognition-email)
 - sensitive fields: [OPS-81](#ops-81-mask-and-redact-sensitive-data-from-logs)
 - sensitivepathscan: [OPS-74](#ops-74-detect-waf-blocked-scan-attacks)
 - session beacon: [SITE-04](#site-04-track-visits-via-session-beacon)
