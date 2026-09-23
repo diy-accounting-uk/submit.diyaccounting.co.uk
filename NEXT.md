@@ -17,9 +17,9 @@ Haiku; the lowest tier that fits). Anything touching code goes through a `claude
 PR; the operator merges.
 
 **Prod runs deployment prod-cdbc557**.
-**ci**: `ci-set2` is last-known-good (PR #335's rerun 35775629294 rebuilt it at 23:05 UTC);
-`ci-set1` is being rebuilt by PR #334's dispatched deploy 35801175335 (00:14 UTC); its slot
-claim (PR #336's failed run) goes stale at 00:57. Open pull requests: #333
+**ci**: `ci-set1` is last-known-good (PR #334's dispatched deploy 35801175335 rebuilt it at
+00:14 UTC); `ci-set2` carries PR #335's content. Every open pull request's deploy is red only on
+`diyaGlSubscriptionBehaviour`'s book limit, which PR #333 fixes. Open pull requests: #333
 (`claude/b79-developers`, head 3e7255af, green), #334 (`claude/b80-board`, head f4770e0c),
 #335 (`claude/b81-board`, head 858c8cd3), #336 (`claude/b82-board`, head c450180d).
 
@@ -90,8 +90,10 @@ and stop. One branch is driven green at a time. Lifted only by the operator in t
   comments), AS6 and AS5 (prettier and Spotless checks in `test.yml`, with the 218 files they reformat; the
   lint job as a baseline ratchet at zero errors). Its `test` run is green on head f4770e0c (the prettier fix), but no deploy has run on that
   head: the last deploy 35761188691 (9b633159) failed, and the two commits since touch no deploy
-  path. Its dispatched deploy 35801175335 to `ci-set1` (00:14 UTC, after the set's self-destruct)
-  is the head's proof and runs now; it is the branch driven under cool-down. **Source**: the
+  path. Its dispatched deploy 35801175335 to `ci-set1` (00:14 UTC) passed every stack and every
+  probe but `diyaGlSubscriptionBehaviour`, red with `book-limit-reached` (job 106996738920), the
+  defect PR #333 fixes and this branch does not carry; after #333 merges, the branch takes `main`
+  and redeploys for its own green. **Source**: the
   rows named. **Owner**: Claude Code. **Model**: Sonnet and Haiku. **Size**: ~10 files plus the
   directives.
 
