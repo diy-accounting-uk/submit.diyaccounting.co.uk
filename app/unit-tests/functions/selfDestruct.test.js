@@ -339,11 +339,12 @@ describe("functions/infra/selfDestruct", () => {
     expect(deleteParameterCalls).toEqual([]);
   });
 
-  it("skips deletion when this deployment is the environment's last-known-good", async () => {
+  it("skips deletion when this deployment is the environment's last-known-good within its protection window", async () => {
     process.env.LAST_KNOWN_GOOD_PARAMETER_NAME = "/submit/ci/last-known-good-deployment";
+    process.env.LAST_KNOWN_GOOD_PROTECTION_HOURS = "12";
     mockSsmSend.mockImplementation((cmd) => {
       if (cmd.constructor.name === "GetParameterCommand" && cmd.input.Name === "/submit/ci/last-known-good-deployment") {
-        return Promise.resolve({ Parameter: { Value: "ci-branch" } });
+        return Promise.resolve({ Parameter: { Value: "ci-branch", LastModifiedDate: new Date() } });
       }
       return Promise.reject(Object.assign(new Error("Parameter not found"), { name: "ParameterNotFound" }));
     });
@@ -357,6 +358,144 @@ describe("functions/infra/selfDestruct", () => {
     expect(body.reason).toMatch(/last-known-good/);
     expect(deleteStackCalls).toEqual([]);
     expect(describedStackNames).toEqual([]);
+    expect(mockSsmSend.mock.calls.map(([cmd]) => cmd).some((cmd) => cmd.constructor.name === "PutParameterCommand")).toBe(false);
+
+    delete process.env.LAST_KNOWN_GOOD_PARAMETER_NAME;
+    delete process.env.LAST_KNOWN_GOOD_PROTECTION_HOURS;
+  });
+
+  it("destroys, having first cleared the last-known-good pointer to None, once the pointer's set goes past the protection window", async () => {
+    process.env.LAST_KNOWN_GOOD_PARAMETER_NAME = "/submit/ci/last-known-good-deployment";
+    process.env.LAST_KNOWN_GOOD_PROTECTION_HOURS = "12";
+    stackStatusScript = { "self-destruct": ["CREATE_COMPLETE", "CREATE_COMPLETE", "CREATE_COMPLETE"] };
+    const callOrder = [];
+    mockSsmSend.mockImplementation((cmd) => {
+      if (cmd.constructor.name === "GetParameterCommand" && cmd.input.Name === "/submit/ci/last-known-good-deployment") {
+        return Promise.resolve({
+          Parameter: { Value: "ci-branch", LastModifiedDate: new Date(Date.now() - 13 * 60 * 60 * 1000) },
+        });
+      }
+      if (cmd.constructor.name === "PutParameterCommand" && cmd.input.Name === "/submit/ci/last-known-good-deployment") {
+        callOrder.push({ type: "put", input: cmd.input });
+        return Promise.resolve({});
+      }
+      if (cmd.constructor.name === "PutParameterCommand") {
+        return Promise.resolve({});
+      }
+      return Promise.reject(Object.assign(new Error("Parameter not found"), { name: "ParameterNotFound" }));
+    });
+    const originalCFSend = MockCFClient.prototype.send;
+    MockCFClient.prototype.send = async function (cmd) {
+      if (cmd.constructor.name === "DeleteStackCommand") callOrder.push({ type: "delete", input: cmd.input });
+      return originalCFSend.call(this, cmd);
+    };
+
+    const { ingestHandler } = await import("@app/functions/infra/selfDestruct.js");
+    const res = await ingestHandler(makeEvent(), { getRemainingTimeInMillis: () => 900000 });
+
+    MockCFClient.prototype.send = originalCFSend;
+
+    expect(res.statusCode).toBe(200);
+    const body = JSON.parse(res.body);
+    expect(body.message).toMatch(/Self-destruct sequence completed/);
+    expect(deleteStackCalls).toEqual([{ StackName: "self-destruct" }]);
+    expect(callOrder[0]).toEqual({
+      type: "put",
+      input: { Name: "/submit/ci/last-known-good-deployment", Value: "None", Type: "String", Overwrite: true },
+    });
+    expect(callOrder[1]).toEqual({ type: "delete", input: { StackName: "self-destruct" } });
+
+    delete process.env.LAST_KNOWN_GOOD_PARAMETER_NAME;
+    delete process.env.LAST_KNOWN_GOOD_PROTECTION_HOURS;
+  });
+
+  it("destroys without writing the pointer when it names a different deployment", async () => {
+    process.env.LAST_KNOWN_GOOD_PARAMETER_NAME = "/submit/ci/last-known-good-deployment";
+    process.env.LAST_KNOWN_GOOD_PROTECTION_HOURS = "12";
+    stackStatusScript = { "self-destruct": ["CREATE_COMPLETE", "CREATE_COMPLETE", "CREATE_COMPLETE"] };
+    mockSsmSend.mockImplementation((cmd) => {
+      if (cmd.constructor.name === "GetParameterCommand" && cmd.input.Name === "/submit/ci/last-known-good-deployment") {
+        return Promise.resolve({ Parameter: { Value: "ci-other", LastModifiedDate: new Date() } });
+      }
+      return Promise.reject(Object.assign(new Error("Parameter not found"), { name: "ParameterNotFound" }));
+    });
+
+    const { ingestHandler } = await import("@app/functions/infra/selfDestruct.js");
+    const res = await ingestHandler(makeEvent(), { getRemainingTimeInMillis: () => 900000 });
+
+    expect(res.statusCode).toBe(200);
+    const body = JSON.parse(res.body);
+    expect(body.message).toMatch(/Self-destruct sequence completed/);
+    expect(deleteStackCalls).toEqual([{ StackName: "self-destruct" }]);
+    expect(
+      mockSsmSend.mock.calls
+        .map(([cmd]) => cmd)
+        .some((cmd) => cmd.constructor.name === "PutParameterCommand" && cmd.input.Name === "/submit/ci/last-known-good-deployment"),
+    ).toBe(false);
+
+    delete process.env.LAST_KNOWN_GOOD_PARAMETER_NAME;
+    delete process.env.LAST_KNOWN_GOOD_PROTECTION_HOURS;
+  });
+
+  it("skips deletion when the last-known-good pointer cannot be read, rather than treating it as absent", async () => {
+    process.env.LAST_KNOWN_GOOD_PARAMETER_NAME = "/submit/ci/last-known-good-deployment";
+    process.env.LAST_KNOWN_GOOD_PROTECTION_HOURS = "12";
+    mockSsmSend.mockImplementation((cmd) => {
+      if (cmd.constructor.name === "GetParameterCommand" && cmd.input.Name === "/submit/ci/last-known-good-deployment") {
+        return Promise.reject(new Error("SSM throttled"));
+      }
+      return Promise.reject(Object.assign(new Error("Parameter not found"), { name: "ParameterNotFound" }));
+    });
+
+    const { ingestHandler } = await import("@app/functions/infra/selfDestruct.js");
+    const res = await ingestHandler(makeEvent(), { getRemainingTimeInMillis: () => 900000 });
+
+    expect(res.statusCode).toBe(200);
+    const body = JSON.parse(res.body);
+    expect(body.message).toBe("Self-destruct sequence skipped");
+    expect(body.reason).toMatch(/could not read.*SSM throttled/);
+    expect(deleteStackCalls).toEqual([]);
+
+    delete process.env.LAST_KNOWN_GOOD_PARAMETER_NAME;
+    delete process.env.LAST_KNOWN_GOOD_PROTECTION_HOURS;
+  });
+
+  it("deletes nothing when clearing the expired last-known-good pointer fails", async () => {
+    process.env.LAST_KNOWN_GOOD_PARAMETER_NAME = "/submit/ci/last-known-good-deployment";
+    process.env.LAST_KNOWN_GOOD_PROTECTION_HOURS = "12";
+    stackStatusScript = { "self-destruct": ["CREATE_COMPLETE", "CREATE_COMPLETE", "CREATE_COMPLETE"] };
+    mockSsmSend.mockImplementation((cmd) => {
+      if (cmd.constructor.name === "GetParameterCommand" && cmd.input.Name === "/submit/ci/last-known-good-deployment") {
+        return Promise.resolve({
+          Parameter: { Value: "ci-branch", LastModifiedDate: new Date(Date.now() - 13 * 60 * 60 * 1000) },
+        });
+      }
+      if (cmd.constructor.name === "PutParameterCommand") {
+        return Promise.reject(new Error("AccessDenied"));
+      }
+      return Promise.reject(Object.assign(new Error("Parameter not found"), { name: "ParameterNotFound" }));
+    });
+
+    const { ingestHandler } = await import("@app/functions/infra/selfDestruct.js");
+    const res = await ingestHandler(makeEvent(), { getRemainingTimeInMillis: () => 900000 });
+
+    expect(res.statusCode).toBe(500);
+    expect(deleteStackCalls).toEqual([]);
+
+    delete process.env.LAST_KNOWN_GOOD_PARAMETER_NAME;
+    delete process.env.LAST_KNOWN_GOOD_PROTECTION_HOURS;
+  });
+
+  it("throws rather than defaulting when the last-known-good protection window env var is missing", async () => {
+    process.env.LAST_KNOWN_GOOD_PARAMETER_NAME = "/submit/ci/last-known-good-deployment";
+
+    const { ingestHandler } = await import("@app/functions/infra/selfDestruct.js");
+    const res = await ingestHandler(makeEvent(), { getRemainingTimeInMillis: () => 900000 });
+
+    expect(res.statusCode).toBe(500);
+    const body = JSON.parse(res.body);
+    expect(body.error).toMatch(/LAST_KNOWN_GOOD_PROTECTION_HOURS must be a positive number/);
+    expect(deleteStackCalls).toEqual([]);
 
     delete process.env.LAST_KNOWN_GOOD_PARAMETER_NAME;
   });

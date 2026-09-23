@@ -94,6 +94,10 @@ class SelfDestructStackTest {
                 "/submit/ci/last-known-good-deployment",
                 variables.get("LAST_KNOWN_GOOD_PARAMETER_NAME"),
                 "self-destruct must know the environment's last-known-good parameter name to check it before deleting anything");
+        assertEquals(
+                "12",
+                variables.get("LAST_KNOWN_GOOD_PROTECTION_HOURS"),
+                "self-destruct must know how long the last-known-good pointer protects the set it names");
     }
 
     @Test
@@ -122,27 +126,28 @@ class SelfDestructStackTest {
 
     @Test
     @SuppressWarnings("unchecked")
-    void selfDestructRoleCanReadOnlyItsOwnEnvironmentsLastKnownGoodPointer() {
+    void selfDestructRoleCanReadAndClearOnlyItsOwnEnvironmentsLastKnownGoodPointer() {
         SelfDestructStack selfDestructStack = synthSelfDestructStack();
         Template template = Template.fromStack(selfDestructStack);
 
         List<Map<String, Object>> statements =
-                findPolicyStatementsContainingSid(template, "ReadLastKnownGoodDeployment");
+                findPolicyStatementsContainingSid(template, "ReadAndClearLastKnownGoodDeployment");
         Map<String, Object> statement = statements.stream()
-                .filter(s -> "ReadLastKnownGoodDeployment".equals(s.get("Sid")))
+                .filter(s -> "ReadAndClearLastKnownGoodDeployment".equals(s.get("Sid")))
                 .findFirst()
                 .orElseThrow();
 
         assertEquals(
-                "ssm:GetParameter",
+                List.of("ssm:GetParameter", "ssm:PutParameter"),
                 statement.get("Action"),
                 "the self-destruct role must be able to read the environment's last-known-good pointer "
-                        + "before deleting anything");
+                        + "before deleting anything, and clear it once the set it names goes past its "
+                        + "protection window");
         String resource = (String) statement.get("Resource");
         assertTrue(
                 resource.endsWith("parameter/submit/ci/last-known-good-deployment"),
                 "expected the ci environment's last-known-good parameter, got " + resource);
-        assertFalse(resource.equals("*"), "the last-known-good read grant must not be a bare wildcard");
+        assertFalse(resource.equals("*"), "the last-known-good read/clear grant must not be a bare wildcard");
     }
 
     @Test
