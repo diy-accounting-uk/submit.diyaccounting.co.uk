@@ -81,6 +81,12 @@ Shared facts for the analytics rows (B52d, B52e, B52l, B52m): the prod Athena da
   secretsmanager describe-secret --secret-id <id>`; both were absent on 2026-09-23). Then F1b runs.
   **Owner**: Claude Code. **Model**: Haiku. **Size**: 1 file.
 
+- [ ] **CS1. `compliance.toml`'s presenter status is current.** The `companies-house-presenter`
+  item (line 30) says test-account activation is pending; the test presenter 66666727000 was
+  issued 2026-09-11 and its ci secrets set 2026-09-12. Update `description`, `status` and `date`,
+  `compliance.yml` reads it (REPORT_CAPABILITIES OPS-38); a TOML parse is the proof.
+  **Owner**: Claude Code. **Model**: Haiku. **Size**: 1 file.
+
 - [ ] **B30bf. A parser brief carries one real month and its expected residual.** The PayPal
   statement parser took 4 rounds (0.67M tokens) because the activity-summary parse was overwritten
   by a later bare heading and no fixture caught it. In `.claude/skills/refine/SKILL.md` pass 2 and
@@ -131,6 +137,36 @@ Shared facts for the analytics rows (B52d, B52e, B52l, B52m): the prod Athena da
   and in `.claude/skills/ads-advisor/SKILL.md` say to quote the match type and ceiling with any
   forecast. **Owner**: Claude Code. **Model**: Haiku. **Size**: 3 files.
 
+- [ ] **F2h. `mail-invoices.js` finds the workspace from a worktree.** `WORKSPACE_ROOT` in
+  `mcp/lib/finance/mail-invoices.js` (line 21) is four directories above the file, which from
+  `.claude/worktrees/<name>/` lands inside `submit.diyaccounting.co.uk/`, so `CORPUS_BIN` and
+  `CORPUS_CONFIG` (lines 22 to 23) miss and F2d needed a `runCorpus` override. Replace it with an
+  upward walk from the file's directory, capped at 8 levels, that accepts the first directory
+  whose basename equals a configured name and which holds `index/corpus.toml`; the name is a
+  config property, `"config": { "workspaceDirName": "diy-accounting-limited" }` in
+  `mcp/package.json`, read by the module. No match within the cap throws, naming the start path,
+  the cap and the name. Cases in `mcp/test/mail-invoices.test.js`: the main checkout, a worktree
+  path, a path with no such directory. **Source**: operator 2026-09-23 (option a
+  with a cap and the configured name). **Owner**: Claude Code. **Model**: Haiku. **Size**: 3
+  files.
+
+- [ ] **F2i. Direct debits confirmed from a payment schedule.** `invoiceLinesForPeriod` in
+  `mcp/lib/finance/mail-invoices.js` (line 165) takes one total per document
+  (`findInvoiceTotal`, line 105), so a schedule of dated instalments posts nothing. Hiscox's
+  "Payment schedule.pdf" is indexed in the corpus as an attachment section
+  (`--- attachment: Payment schedule.pdf ---` in `corpus doc mail-antony
+  2026/6/12/19eba6fef669188c.eml`): a `Date  Amount` header, then rows `08/08/2026  £10.12`, and
+  "If your payment collection date falls on a weekend or a bank holiday, we'll collect it the next
+  working day". Add a schedule extractor: a document with a "Payment schedule" section yields
+  (date, amount) instalments; each instalment inside the period becomes one `purchases` line to
+  the supplier's account, dated on the collection day, matched to the bank's direct debit of the
+  same amount dated on the scheduled day or up to 4 days after. Proof: March to August 2026 gives
+  £9.17 March to July (the 2025 schedule, `2025/6/12/19762c6fb3568039.eml`) and £10.12 on
+  10 August, the figures `../staging/2026-2027/book/VERIFICATION.md` (line 68) cites by hand, to
+  account 5700. Cases in `mcp/test/mail-invoices.test.js` over the recorded attachment text.
+  Shares `mail-invoices.js` with F2h: one agent, F2h first. **Source**: `PARKED.md`; operator
+  2026-09-23 (option a). **Owner**: Claude Code. **Model**: Sonnet. **Size**: 2 files.
+
 - [ ] **ITSA8. The diversion note for income the build does not cover.** Row 8 of
   `_developers/hmrc/ITSA_PRODUCTION_APPROVALS_CHECKLIST.md` is "Not evidenced": a customer with
   foreign property or other income is not told where to finish their return. Worse,
@@ -144,6 +180,26 @@ Shared facts for the analytics rows (B52d, B52e, B52l, B52m): the prod Athena da
   obligations and losses cover it. **Owner**:
   Claude Code. **Model**: Sonnet. **Size**: ~3 files.
 
+- [ ] **B30bi. The ci last-known-good set goes 12 hours after its promotion.** `findSkipReason`
+  in `app/functions/infra/selfDestruct.js` (line 137) skips every self-destruct fire while
+  `/submit/ci/last-known-good-deployment` names the set, so `ci-set1` stands until another ci
+  deploy passes (about $15 a month: 5 provisioned-concurrency configs, 2 canaries, 3 alarms).
+  Protect the set only while the parameter's `LastModifiedDate` (from the same `GetParameter`
+  call, `readSsmParameter` line 114) is under 12 hours old; `deploy.yml`'s
+  `set-last-known-good-deployment` (line 3093) rewrites it on each promotion, so the clock runs
+  from the last promotion. The protection window is an env var set in
+  `infra/main/java/co/uk/diyaccounting/submit/stacks/SelfDestructStack.java` beside
+  `LAST_KNOWN_GOOD_PARAMETER_NAME` (line 245), value 12. When the set is destroyed past the
+  window, write `None` to the parameter first (the value `deploy.yml` line 513 and
+  `destroy-ci.yml` line 565 treat as no set), so a skip-deploy run never resolves to a destroyed
+  set; grant `ssm:PutParameter` on that parameter in the policy at line 210, which grants
+  `ssm:GetParameter` today. An unreadable parameter stays protection. The schedule fires every 4
+  hours from creation, so the set goes 12 to 16 hours after promotion. Cases in
+  `app/unit-tests/functions/selfDestruct.test.js` (inside the window, past it, the `None` write,
+  unreadable), and `infra/test/java/co/uk/diyaccounting/submit/stacks/SelfDestructStackTest.java` for the env var and the grant (sid `ReadLastKnownGoodDeployment`); `./mvnw clean verify`
+  once. Prod never deploys a `SelfDestructStack`, so prod is unaffected. **Source**: operator
+  2026-09-23 (option A, 12 hours). **Owner**: Claude Code. **Model**: Sonnet. **Size**: ~4 files.
+
 - [ ] **B30bc. A PII scan on every push, docs included.** GitHub secret scanning with push
   protection and non-provider patterns is on for this repository, so provider tokens and private
   keys are blocked at push already; nothing scans what a push adds for personal data. Add
@@ -152,7 +208,12 @@ Shared facts for the analytics rows (B52d, B52e, B52l, B52m): the prod Athena da
   exports (`DENY_PATTERNS`, line 19: email, NINO, UTR, VRN, EORI, AWS keys, JWTs, bearer tokens,
   IP addresses), with an allow-list for addresses and ids the repository publishes on purpose. Fail on a hit and print
   the file, line and label, never the matched value. Extend `redact-triage-output.mjs` or a
-  sibling script with tests, as the capabilities rule asks. Adding `content scan` to the ruleset's
+  sibling script with tests, as the capabilities rule asks.
+  Proof, on a branch with an open PR, as two separate Markdown-only pushes: one changing a
+  root `.md` file, one changing a `.claude/skills/*/SKILL.md`; each push runs `content scan` on
+  its head (push and pull_request), and with B30bb's dispatches the PR reaches `CLEAN`. A third
+  push adding a seeded fake NINO to a `.md` fails the scan with file, line and label; revert it.
+  Record the run ids in OB30bc's row. Adding `content scan` to the ruleset's
   required checks is OB30bc. **Owner**: Claude Code. **Model**: Sonnet. **Size**: ~4 files.
 
 - [ ] **ITSA13. WCAG 2.1 AA evidence for the 19 ITSA pages.** Row 13 of the checklist is "Not
@@ -188,11 +249,6 @@ Shared facts for the analytics rows (B52d, B52e, B52l, B52m): the prod Athena da
   `finance/2026-2027 accounts/`. That copy is OF2's input. **Owner**: Operator. **Model**: none.
   **Size**: 0 files.
 
-- [ ] **OB30bc. Make the content scan a required check.** After B30bc merges, add `content scan` to
-  the required status checks of ruleset 16057564
-  (<https://github.com/diy-accounting-uk/submit.diyaccounting.co.uk/rules/16057564>), so no PR merges
-  past a secret or PII hit. **Owner**: Operator. **Model**: none. **Size**: 0 files.
-
 - [ ] **OPU7n. Go for the practice licence launch.** Say go when `resident-pro` should go on sale at
   £199 a year and £19.99 a month (the catalogue flip, the nav link, the Stripe live prices, PU-7n).
   **Owner**: Operator. **Model**: none. **Size**: 0 files.
@@ -208,6 +264,13 @@ Shared facts for the analytics rows (B52d, B52e, B52l, B52m): the prod Athena da
   none. **Size**: 0 files.
 
 ## Blocked
+
+- [ ] **OB30bc. Make the content scan a required check.** Add `content scan` to the required
+  status checks of ruleset 16057564
+  (<https://github.com/diy-accounting-uk/submit.diyaccounting.co.uk/rules/16057564>), so no PR
+  merges past a PII hit. Blocked on B30bc's merge and its proof: both docs-only pushes (a root
+  `.md`, a skill) ran `content scan` and the PR reached `CLEAN`. **Owner**: Operator.
+  **Model**: none. **Size**: 0 files.
 
 - [ ] **B30at1. The sweep's claim check, proven.** Needs a claimed set that is not last-known-good
   (the sweep keeps the last-known-good set before it reads any claim): the next time two branches
