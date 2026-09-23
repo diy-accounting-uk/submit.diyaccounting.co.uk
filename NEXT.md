@@ -255,7 +255,7 @@ Shared facts for the analytics rows (B52d, B52e, B52l, B52m): the prod Athena da
 
 - [ ] **CS-1. Confirmation statement fixtures.** Save the `ConfirmationAndVerificationStatement-v1-0` schema set and `ConfirmationStatement-v1-3.xsd` (the statement reverts to it once every officer is verified), the CompanyData and PaymentPeriods schemas, and the published examples under `fixtures/companies-house-xmlgw/` from `xmlgw.companieshouse.gov.uk/v1-0/schema/` and `/examples/`. The form since 2025-11-18 is `ConfirmationAndVerificationStatement`; `ConfirmationStatement-v1-3` has no verification block. `app/unit-tests/licenceHeaders.test.js` (line 34) already exempts `fixtures/companies-house-xmlgw/` from the licence header; the accounts fixtures there (`GetSubmissionStatus_response.xml`) show the naming. Needs network access to `xmlgw.companieshouse.gov.uk`. **Source**: `PLAN_COMPANIES_HOUSE_CONFIRMATION_STATEMENT.md` (its Tasks table carries the files). **Owner**: Claude Code. **Model**: Haiku. **Size**: 12 files.
 
-- [ ] **CS-H2d. Draft the confirmation-statement email to the XML team.** Write `../DRAFT_EMAIL_XMLGW_CS01.md` with the plan's Q1 (which endpoint and credentials test the 2025-11-18 schemas: Companies House said on 2025-11-04 to use `https://xmlgw-sandpit-staging.companieshouse.gov.uk/v1-0/xmlgw/Gateway` with live presenter credentials, package reference 0012 and GatewayTest 1; and test company data for `CompanyDataRequest`), Q2 (shareholders on a no-change statement, reject 11686) Q4 (authorisation tests and the package reference for the form), and whether Submit presenting a customer's filing under E0000052288 counts as filing for clients (ACSP; `../REPORT_CH_IDENTITY_VERIFICATION.md` V6). It follows O34d on the same thread. Changes nothing committed. **Source**: `PLAN_COMPANIES_HOUSE_CONFIRMATION_STATEMENT.md` (its Tasks table carries the files). **Owner**: Claude Code. **Model**: Haiku. **Size**: 0 files.
+- [ ] **CS-H2d. Draft the confirmation-statement email to the XML team.** Write `../DRAFT_EMAIL_XMLGW_CS01.md` with the plan's Q1 (which endpoint and credentials test the 2025-11-18 schemas: Companies House said on 2025-11-04 to use `https://xmlgw-sandpit-staging.companieshouse.gov.uk/v1-0/xmlgw/Gateway` with live presenter credentials, package reference 0012 and GatewayTest 1; and test company data for `CompanyDataRequest`), Q2 (shareholders on a no-change statement, reject 11686) Q4 (authorisation tests and the package reference for the form), and whether Submit presenting a customer's filing under E0000052288 counts as filing for clients (ACSP; `../REPORT_CH_IDENTITY_VERIFICATION.md` V6). It follows the 2026-09-23 23:22 email on the same thread. Changes nothing committed. **Source**: `PLAN_COMPANIES_HOUSE_CONFIRMATION_STATEMENT.md` (its Tasks table carries the files). **Owner**: Claude Code. **Model**: Haiku. **Size**: 0 files.
 
 - [ ] **F2n. The finance parsers code lines from the label map.** `bank-lines.js` (`bankCodeFor`,
   line 104) codes a line from the statement's type alone, and `paypal-statement-lines.js` and
@@ -286,10 +286,6 @@ Shared facts for the analytics rows (B52d, B52e, B52l, B52m): the prod Athena da
   statement date. Steps are task B of `../NEXT_OPERATOR_RUNBOOK.md`. File this one by WebFiling: Submit's confirmation statement (the CS rows) is not built, and CS-H6's prod proof is a fee-free second statement after this one. The personal codes are CS-H3's too. **Owner**: Operator.
   **Model**: none. **Size**: 0 files.
 
-- [ ] **O34d. Send the XML Gateway email.** Send `../DRAFT_EMAIL_XMLGW_000004.md` from `antony@diyaccounting.co.uk`
-  as a reply on the `xml@companieshouse.gov.uk` thread, and paste the answer into B34.6c's row when
-  it comes. The draft names test presenter 66666727000, the id on the ci environment, and carries the three polls of 2026-09-23 with the redacted request and response (`../XMLGW_000004_POLL_2026-09-23.md`). CS-H2's confirmation-statement questions follow on the same thread. **Source**: BACKLOG 34b. **Owner**: Operator. **Model**: none. **Size**: 0 files.
-
 - [ ] **O11. The ITSA send day.** Name the day the recognition email goes, write it into B11.T10's
   row, and on that day send `_developers/hmrc/DRAFT_EMAIL_ITSA_RECOGNITION.md` to
   `SDSTeam@hmrc.gov.uk`, then `_developers/hmrc/DRAFT_EMAIL_ITSA_PRODUCTION_CREDENTIALS.md` when
@@ -298,7 +294,7 @@ Shared facts for the analytics rows (B52d, B52e, B52l, B52m): the prod Athena da
 
 ## Blocked
 
-- [ ] **CS-H2. Send the confirmation-statement email.** Send `../DRAFT_EMAIL_XMLGW_CS01.md` on the `xml@companieshouse.gov.uk` thread after O34d, and paste the answers into CS-9's row. Blocked on CS-H2d. **Source**: `PLAN_COMPANIES_HOUSE_CONFIRMATION_STATEMENT.md` (its Tasks table carries the files). **Owner**: Operator. **Model**: none. **Size**: 0 files.
+- [ ] **CS-H2. Send the confirmation-statement email.** Send `../DRAFT_EMAIL_XMLGW_CS01.md` on the `xml@companieshouse.gov.uk` thread, and paste the answers into CS-9's row. Blocked on CS-H2d. **Source**: `PLAN_COMPANIES_HOUSE_CONFIRMATION_STATEMENT.md` (its Tasks table carries the files). **Owner**: Operator. **Model**: none. **Size**: 0 files.
 
 - [ ] **CS-2. Envelopes and the body builder.** A generalised `buildFormSubmission` and the CS01, CompanyData and PaymentPeriods builders and parsers in `app/services/companiesHouseXmlGateway.js`, plus `companiesHouseConfirmationStatementXml.js` with the XSD-order check. Blocked on CS-1. **Source**: `PLAN_COMPANIES_HOUSE_CONFIRMATION_STATEMENT.md` (its Tasks table carries the files). **Owner**: Claude Code. **Model**: Sonnet. **Size**: 4 files.
 
@@ -371,12 +367,14 @@ Shared facts for the analytics rows (B52d, B52e, B52l, B52m): the prod Athena da
   BACKLOG 11; `PLAN_ITSA_PHASE_2.md` T10. **Owner**: Claude Code. **Model**: Haiku. **Size**:
   ~1 file.
 
-- [ ] **B34.6c. Companies House accounts filing: the sandbox proof.** When O34d's answer says
-  lookups are enabled: poll 000004 through `GET /api/v1/companies-house/accounts/000004` on a
+- [ ] **B34.6c. Companies House accounts filing: the sandbox proof.** The XML team was asked on 2026-09-23 23:22 (from antony@, subject "Submission 000004 status and
+  GetSubmissionStatus query") whether 000004 was accepted and whether lookups are enabled for test
+  presenter 66666727000. When the answer says they are: poll 000004 through `GET /api/v1/companies-house/accounts/000004` on a
   standing ci set and pin the returned `StatusCode` and any rejections as a case in
   `app/unit-tests/functions/companiesHouseAccountsGet.test.js`. The prod catalogue listing is
   BACKLOG 34c's: prod carries no `COMPANIES_HOUSE_XMLGW_URI` and no presenter secret ARNs. Blocked
-  on O34d's answer. **Source**: BACKLOG 34b. **Owner**: Claude Code. **Model**: Sonnet. **Size**:
+  on the XML team's reply; the request and response for 1790201546927 are in
+  `../XMLGW_000004_POLL_2026-09-23.md` if they ask. **Source**: BACKLOG 34b. **Owner**: Claude Code. **Model**: Sonnet. **Size**:
   ~1 file.
 
 - [ ] **B52l. The optimiser over the raw export.** A notebook over `../analytics/prod/` (pulled by
