@@ -48,24 +48,6 @@ Shared facts for the analytics rows (B52d, B52e, B52l, B52m): the prod Athena da
 **COOL-DOWN is on since 2026-09-23T19:29:15Z.** No new board rows except a degradation. Agents commit
 and stop. One branch is driven green at a time. Lifted only by the operator in their own words.
 
-- [ ] **F2d. DIYA's book, assembled and verified.** The lines from F2a (Stripe), F2g1 (PayPal statements),
-  `mcp/lib/finance/bank-lines.js` over the NatWest statements in the Drive mirror
-  (`../drive/DIY Accounting Limited/finance/2025-2026 accounts/bank/` for March,
-  `../drive/DIY Accounting Limited/finance/2026-2027 accounts/bank/` for April to August, CSV and
-  PDF per month, named `<Current|Savings> <account> <dd-mm-yyyy> to <dd-mm-yyyy>` or with a hyphen
-  between the dates; April's current account also has a 1–10 April part-month file, which the
-  full-month file supersedes) and `mcp/lib/finance/mail-invoices.js`,
-  plus `mcp/lib/finance/book-from-workbook.js`'s `book.toml` for 1 March to 31 August 2026,
-  validated with `validateBook` and `validateLines` from the diya-gl package, written under
-  `../staging/2026-2027/book/` (private); March 2026 matched line for line against the completed
-  2025-26 workbook (the control), every month's bank closing balance equal to the statement's,
-  gross income and fees separate, no hold posted, each check a line in
-  `../staging/2026-2027/book/VERIFICATION.md`. F2a's `mcp/lib/finance/stripe-lines.js` is on `main`.
-  The operator copies the book and `VERIFICATION.md` into Drive (operator, 2026-09-23). An agent is assembling it now (cool-down: it finishes the step it is on,
-  writes what it has and stops); F2g1's PayPal parser is on `main` (PR #345).
-  **Source**: `../PLAN_FINANCE_AUTOMATION.md` phase 2 and its verification. **Owner**: Claude Code.
-  **Model**: Sonnet. **Size**: ~2 files.
-
 - [ ] **B30at1. The sweep's claim check, proven.** Needs a claimed set that is not last-known-good
   (the sweep keeps the last-known-good set before it reads any claim): the next time two branches
   deploy at once, `gh workflow run destroy-ci.yml -f sweep-for-stacks=true` while the second holds
@@ -130,6 +112,17 @@ and stop. One branch is driven green at a time. Lifted only by the operator in t
 ## Machine-ask
 
 ## Human-driven
+
+- [ ] **OF2d. Review DIYA's book and copy it into Drive.** The book for 1 March to 31 August 2026
+  is in `../staging/2026-2027/book/` (`book.toml`, `lines.jsonl` with 488 lines, `VERIFICATION.md`).
+  Bank closing balances match every statement to the penny; Stripe (6 months) and PayPal (April to
+  August) reconcile with no residual; `validateBook` and `validateLines` pass; March matches the
+  2025-26 workbook except purchases 5301, £7.43 lower, which is March's Stripe fee posted
+  separately. One decision: the £200 March bank payment to Polycode Limited ("2025-2026
+  HOSTING") has no line in the 2025-26 workbook and is posted as a bank movement only; the
+  alternative books it to purchases 5800 (+£200 March purchases). Say which, then copy the three
+  files into Drive under `finance/2026-2027 accounts/`. That copy is OF2's input. **Owner**:
+  Operator. **Model**: none. **Size**: 0 files.
 
 - [ ] **OB30bc. Make the content scan a required check.** After B30bc merges, add `content scan` to
   the required status checks of ruleset 16057564
@@ -226,7 +219,7 @@ and stop. One branch is driven green at a time. Lifted only by the operator in t
 - [ ] **F2e. The MCP writes a populated spreadsheets package.** A tool in `mcp/lib/finance/` that
   takes the book and lines and writes a DIY Accounting spreadsheets package, reconciled under the
   spreadsheets repository's existing reconciliation harness rather than a new check; nothing
-  automated writes to Google Drive. Blocked on F2d. **Source**: `../PLAN_FINANCE_AUTOMATION.md`
+  automated writes to Google Drive. Blocked on OF2d. **Source**: `../PLAN_FINANCE_AUTOMATION.md`
   phase 2. **Owner**: Claude Code. **Model**: Sonnet. **Size**: ~3 files.
 
 - [ ] **PU-7n. The practice licence launch.** Operator, 2026-09-22: `resident-pro` at £199 a
@@ -247,7 +240,7 @@ and stop. One branch is driven green at a time. Lifted only by the operator in t
 
 - [ ] **OF2. DIYA's book saved to the DIYA cloud.** With the operator signed in through B61's
   sign-in, `save_book` writes F2d's verified book to the DIYA cloud, which is B52i's unblock event.
-  Blocked on F2d. **Source**: `../PLAN_FINANCE_AUTOMATION.md` phase 2. **Owner**: Claude
+  Blocked on OF2d. **Source**: `../PLAN_FINANCE_AUTOMATION.md` phase 2. **Owner**: Claude
   Code; the operator signs in. **Model**: Haiku. **Size**: 0 files.
 
 ## Discipline
