@@ -387,6 +387,7 @@ describe("stripeReconcile", () => {
       );
       expect(mockChargesList).toHaveBeenCalledWith(
         expect.objectContaining({ created: { gte: expectedWindow.gte, lt: expectedWindow.lt } }),
+        { apiVersion: "2024-12-18.acacia" },
       );
 
       const keys = mockS3Send.mock.calls.map((call) => call[0].input.Key);
@@ -445,7 +446,9 @@ describe("stripeReconcile", () => {
 
       await handler({ date: "2026-08-20" });
 
-      expect(mockChargesList).toHaveBeenCalledWith(expect.objectContaining({ expand: ["data.invoice"] }));
+      expect(mockChargesList).toHaveBeenCalledWith(expect.objectContaining({ expand: ["data.invoice"] }), {
+        apiVersion: "2024-12-18.acacia",
+      });
 
       const chargesCall = mockS3Send.mock.calls.find((call) => call[0].input.Key.includes("/stripe_charges/"));
       const body = gunzipSync(chargesCall[0].input.Body).toString("utf8");

@@ -16,6 +16,8 @@ import TOML from "@iarna/toml";
 import { S3Client, PutObjectCommand } from "@aws-sdk/client-s3";
 import { createLogger } from "../../lib/logger.js";
 import { getStripeClient } from "../../lib/stripeClient.js";
+
+const CHARGE_API_VERSION = "2024-12-18.acacia";
 import { initializeSalt, hashSub } from "../../services/subHasher.js";
 
 const logger = createLogger({ source: "app/functions/analytics/stripeReconcile.js" });
@@ -310,7 +312,10 @@ export async function handler(event = {}) {
   // expand data.invoice: a subscription-mode checkout carries no bundle metadata on the charge
   // itself (Stripe refuses payment_intent_data in that mode), so the charge's invoice is the
   // only way to reach the subscription that does carry it.
-  const rawCharges = await listAllPages((params) => stripe.charges.list(params), {
+  // Charges are read at a pinned API version: from 2025-03-31.basil a charge carries no
+  // `invoice`, and an invoice no top-level `subscription`, so the account's default version
+  // returns every subscription charge with nothing to resolve.
+  const rawCharges = await listAllPages((params) => stripe.charges.list(params, { apiVersion: CHARGE_API_VERSION }), {
     created: { gte, lt },
     expand: ["data.invoice"],
   });
