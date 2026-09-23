@@ -16,10 +16,11 @@ runs), and for Claude Code steps the **Model** a sub-agent should use (Fable > O
 Haiku; the lowest tier that fits). Anything touching code goes through a `claude/*` branch and
 PR; the operator merges.
 
-**Prod runs deployment prod-cdbc557**.
-**ci**: no set is standing (every set self-destructed by 04:01 UTC); `main`'s deploy 35821860017
-(PR #333's merge 50868030, 05:18 UTC) rebuilds one. The three open pull requests' deploys were
-red only on `diyaGlSubscriptionBehaviour`'s book limit, which `main` now fixes. Open pull
+**Prod runs deployment prod-5086803** (PR #333's merge; `prod-cdbc557` is being destroyed by that deploy since 06:11 UTC).
+**ci**: `ci-set1` is last-known-good (PR #334's push deploy 35822161136, green at 06:23 UTC).
+`main`'s deploy 35821860017 (PR #333's merge 50868030) passed its ci probes and prod stacks and
+is destroying the previous prod set since 06:11. PR #335's deploy was red only on
+`diyaGlSubscriptionBehaviour`'s book limit, which `main` now fixes. Open pull
 requests: #334 (`claude/b80-board`, head f4770e0c),
 #335 (`claude/b81-board`, head 858c8cd3), #336 (`claude/b82-board`, head c450180d).
 
@@ -50,8 +51,8 @@ and stop. One branch is driven green at a time. Lifted only by the operator in t
   stacks on `ci-set1` because PR #333's dispatched redeploy, named for the same slot, ran on the
   set at the same time (a dispatch with an explicit slot name bypasses the claim); the rerun on `ci-set1` passed every stack and every
   probe but `diyaGlSubscriptionBehaviour`, which fails on the book limit PR #333's product fix
-  removes and this branch does not carry; the branch takes `main` (50868030) and
-  redeploys for its own green once PR #334's deploy has ended: B34j
+  removes and this branch does not carry; the branch merged `main` as 71738aa2 (clean); lint, `npm test` and Spotless run on the merged
+  tree, then one push and its deploy: B34j
   (a9e2e920, the privacy notice's row for practice client filing, with a browser test) and PU-7e
   (e4302a96 and c450180d: `tokensGranted = "unlimited"` on `resident-pro`, exempt in
   enforcement, the webhook refresh and the bundle read, shown as unlimited on the usage page,
@@ -92,9 +93,10 @@ and stop. One branch is driven green at a time. Lifted only by the operator in t
   head: the last deploy 35761188691 (9b633159) failed, and the two commits since touch no deploy
   path. Its dispatched deploy 35801175335 to `ci-set1` (00:14 UTC) passed every stack and every
   probe but `diyaGlSubscriptionBehaviour`, red with `book-limit-reached` (job 106996738920), the
-  defect `main` now fixes (PR #333). The branch merged `main` as 93279af1 (operator, 2026-09-23:
-  one conflict, the `isBookVisible` import); lint, `npm test` and Spotless run on the merged tree,
-  then one push and its deploy. **Source**: the
+  defect `main` now fixes (PR #333). The branch merged `main` as 93279af1 (one conflict, the
+  `isBookVisible` import) and pushed as 337c3f4e; its push deploy 35822161136 on `ci-set1` passed
+  every stack and every probe, and every workflow on the head is green: the PR is mergeable and
+  clean, held for the operator's merge or the wake word. **Source**: the
   rows named. **Owner**: Claude Code. **Model**: Sonnet and Haiku. **Size**: ~10 files plus the
   directives.
 
