@@ -54,6 +54,11 @@ stripped after sessions kept accreting status notes and "tidy up X if wanted" li
 
 **Primary documentation**: See `REPORT_REPOSITORY_CONTENTS.md` for complete architecture, npm scripts, AWS stacks, and directory structure.
 
+**Capability index**: See `REPORT_CAPABILITIES.md` for what the repository does, one entry per capability.
+- Areas are `##` headings (site, HMRC, Companies House, billing, operations, analytics, MCP, developer workflow).
+- Capabilities are `###` headings, each with a short outline and a `Files:` line.
+- Grep a heading (e.g. `grep -n "^### " REPORT_CAPABILITIES.md`) to find where a capability is implemented.
+
 **Other AI assistants in this repo**:
 - `.github/copilot-instructions.md` - GitHub Copilot (code review focus)
 
