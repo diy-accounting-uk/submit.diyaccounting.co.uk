@@ -27,6 +27,7 @@ import {
   goToBundlesPage,
   clearBundles,
   verifyBundleApiResponse,
+  ensureBundlePresent,
   ensureBundleViaCheckout,
   verifySubscriptionManagement,
 } from "./steps/behaviour-bundle-steps.js";
@@ -499,6 +500,9 @@ test("Click through: Resident-pro subscribes directly, no pass required (on-subs
   expect(requestBtnVisible).toBe(false);
 
   // --- Step 3: Subscribe through checkout, no pass step first ---
+  // Checkout picks Stripe test mode only when one of the user's bundles carries the synthetic
+  // qualifier; a test-pass Day pass gives it one, so this probe never opens a live checkout on prod.
+  await ensureBundlePresent(page, "Day pass", screenshotPath, { testPass: true });
   await ensureBundleViaCheckout(page, "resident-pro", screenshotPath, { skipPass: true });
   await verifySubscriptionManagement(page, "Resident Pro", screenshotPath);
 
