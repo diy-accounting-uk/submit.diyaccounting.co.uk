@@ -16,7 +16,7 @@ runs), and for Claude Code steps the **Model** a sub-agent should use (Fable > O
 Haiku; the lowest tier that fits). Anything touching code goes through a `claude/*` branch and
 PR; the operator merges.
 
-**Prod runs deployment prod-1031515** (PR #350's merge deploy, run 35987630397; the confirmation statement activity is listed on ci only).
+**Prod runs deployment prod-0fdfb15** (PR #351's merge deploy, run 36001311936; the confirmation statement activity is listed on ci only).
 **ci**: `ci-set1` is last-known-good (built 2026-09-24 10:02 UTC by the b92 branch deploy) and the only ci set standing.
 No pull request is open in this repository or its siblings.
 
@@ -44,12 +44,6 @@ Shared facts for the analytics rows (B52d, B52e, B52l, B52m): the prod Athena da
 `ATHENA_WORK_GROUP_NAME` (lines 103 to 104).
 
 ## In flight
-
-- [ ] **CS-7. Confirmation statement behaviour suite.** `test:fileConfirmationStatementBehaviour-*`. **Source**: `PLAN_COMPANIES_HOUSE_CONFIRMATION_STATEMENT.md` (its Tasks table carries the files). **Owner**: Claude Code. **Model**: Sonnet. **Size**: 4 files.
-  In flight: PR #351 (`claude/b93-board`), redeploying at `985494aa` (the page escapes register and gateway data, CodeQL alert 74); the accounts suite fix and both suites in `test.yml` ride with it.
-
-- [ ] **CS-12. Identity-verification answers into the confirmation statement.** Apply V1 to V4 from Cowork's `../REPORT_CH_IDENTITY_VERIFICATION.md` (written 2026-09-23; the plan's table carries the answers) to the page and the XML builder: every director needs a code, `OtherForenames` required, the schema chosen from each officer's `identity_verification_details`. Also: the shareholdings editor on `fileConfirmationStatement.html` takes one shareholder per holding; add joint holders. **Source**: `PLAN_COMPANIES_HOUSE_CONFIRMATION_STATEMENT.md` (its Tasks table carries the files). **Owner**: Claude Code. **Model**: Sonnet. **Size**: 3 files.
-  In flight: PR #351 (`claude/b93-board`), redeploying at `985494aa`.
 
 ## Machine-only
 
