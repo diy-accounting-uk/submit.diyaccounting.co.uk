@@ -64,8 +64,8 @@ are not startable; leave them.
 
 `/do-next`'s shape, sized by these rules:
 
-- **One batch branch per wave** (`claude/b<n>-board`, its own worktree under
-  `.claude/worktrees/b<n>`), every agent worktree branched from it, `NEXT.md` never on it.
+- **One batch branch per wave** (`claude/<codename>-<theme>`, named as `/do-next` says, its own worktree under
+  `.claude/worktrees/<codename>`), every agent worktree branched from it, `NEXT.md` never on it.
   A worktree for an analysis or review agent branches from `origin/main` after a fetch; the brief names that commit.
 - **One agent per row.** Rows that share a file go to one agent in one brief, in the order the
   plan fixes, a commit per row. A row over about 25 files is a two-agent chain (design, then

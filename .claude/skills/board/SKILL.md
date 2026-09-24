@@ -187,9 +187,9 @@ failure does not stop the rest. Use `--force --force` on worktree remove to over
 ```
 ! git worktree remove --force --force /path/to/worktree1; git worktree remove --force --force /path/to/worktree2
 ```
-Branch names follow `CLAUDE.md`: the integration branch is `claude/b<n>-board`, a track branch
+Branch names follow `CLAUDE.md`: the integration branch is `claude/<codename>-<theme>` (`/do-next` names it), a track branch
 `claude/<ns>-<n>-<topic>` or `claude/<ns>-<topic>`, the distinctive part right after `claude/`.
-A branch named the old way (`claude/board-batch-<n>`, a generic preamble, a series number at
+A branch named the old way (`claude/board-batch-<n>`, `claude/b<n>-board`, a generic preamble, a series number at
 the end) gets a note in `Action`: rename before its next push.
 
 ## Rules

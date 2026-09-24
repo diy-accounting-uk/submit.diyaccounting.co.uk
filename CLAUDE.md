@@ -104,10 +104,12 @@ via diff) is available through the operator's `.claude/settings.json` allowlist;
 an operator decision, not Claude's to make.
 
 Branch naming: `claude/<ns>-<n>-<topic>` for one of a series, `claude/<ns>-<topic>` otherwise.
-`<ns>` is a short tag for the area (`ltd`, `itsa`, `vat`, `ops`, `cdk`, `docs`; `b` for a board
-batch), `<n>` the series number, `<topic>` one or two words. A narrow branch dropdown shows only
-the first characters after `claude/`, so they carry the distinction: `claude/ltd-1-ch-file`,
-`claude/ltd-2-ch-file`, `claude/ltd-hmrc-submit`, `claude/b7-board`. Never a generic preamble
+`<ns>` is a short tag for the area (`ltd`, `itsa`, `vat`, `ops`, `cdk`, `docs`), `<n>` the series
+number, `<topic>` one or two words. A board batch is `claude/<codename>-<theme>`: the next code name
+from `/do-next`'s list, taken in alphabetical order, then the batch's dominant theme
+(`claude/arclight-pricing`, `claude/impulse-itsa`). A narrow branch dropdown shows only the first
+characters after `claude/`, so they carry the distinction: `claude/ltd-1-ch-file`,
+`claude/ltd-2-ch-file`, `claude/ltd-hmrc-submit`, `claude/impulse-itsa`. Never a generic preamble
 or a series number at the end (`claude/a-few-batches-1`,
 `claude/consistent-preamble-hiding-specificity`).
 
@@ -789,10 +791,12 @@ would merge and changes nothing.
   are pure cost and contention.
 
 **Branch naming**: `claude/<ns>-<n>-<topic>` for one of a series, `claude/<ns>-<topic>` otherwise.
-`<ns>` is a short tag for the area (`ltd`, `itsa`, `vat`, `ops`, `cdk`, `docs`; `b` for a board
-batch), `<n>` the series number, `<topic>` one or two words. A narrow branch dropdown shows only
-the first characters after `claude/`, so they carry the distinction: `claude/ltd-1-ch-file`,
-`claude/ltd-2-ch-file`, `claude/ltd-hmrc-submit`, `claude/b7-board`. Never a generic preamble
+`<ns>` is a short tag for the area (`ltd`, `itsa`, `vat`, `ops`, `cdk`, `docs`), `<n>` the series
+number, `<topic>` one or two words. A board batch is `claude/<codename>-<theme>`: the next code name
+from `/do-next`'s list, taken in alphabetical order, then the batch's dominant theme
+(`claude/arclight-pricing`, `claude/impulse-itsa`). A narrow branch dropdown shows only the first
+characters after `claude/`, so they carry the distinction: `claude/ltd-1-ch-file`,
+`claude/ltd-2-ch-file`, `claude/ltd-hmrc-submit`, `claude/impulse-itsa`. Never a generic preamble
 or a series number at the end (`claude/a-few-batches-1`,
 `claude/consistent-preamble-hiding-specificity`).
 
