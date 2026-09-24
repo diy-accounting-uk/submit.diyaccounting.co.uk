@@ -3,12 +3,20 @@
 
 // app/http-simulator/routes/companies-house-xmlgw.js
 // Companies House XML Gateway simulator.
-// Handles: POST /v1-0/xmlgw/Gateway (both Class=Accounts submissions and
-//          Class=GetSubmissionStatus polls arrive at the same endpoint)
+// Handles: POST /v1-0/xmlgw/Gateway - Class=Accounts and Class=ConfirmationAndVerificationStatement
+//          (or ConfirmationStatement) submissions, Class=CompanyDataRequest and
+//          Class=PaymentPeriodsRequest reads, and Class=GetSubmissionStatus polls for any of them,
+//          all arrive at the same endpoint.
 
 import express from "express";
 import { parseXmlDocument, firstElementText, firstElement, allElements, escapeXmlText } from "../../lib/xmlDom.js";
 import { submitAccounts, pollStatus } from "../scenarios/accounts-filing.js";
+import {
+  requestCompanyData,
+  requestPaymentPeriods,
+  submitConfirmationStatement,
+  pollConfirmationStatement,
+} from "../scenarios/confirmation-statement.js";
 
 const GATEWAY_PATH = "/v1-0/xmlgw/Gateway";
 
@@ -71,6 +79,93 @@ function buildSubmissionStatusBodyXml(status) {
   return `<SubmissionStatus><Status><SubmissionNumber>${escapeXmlText(status.submissionNumber)}</SubmissionNumber><StatusCode>${
     status.statusCode
   }</StatusCode>${status.companyNumber ? `<CompanyNumber>${escapeXmlText(status.companyNumber)}</CompanyNumber>` : ""}${rejectionsXml}</Status></SubmissionStatus>`;
+}
+
+const REGISTERED_OFFICE_ADDRESS_FIELDS = [
+  ["premise", "Premise"],
+  ["street", "Street"],
+  ["thoroughfare", "Thoroughfare"],
+  ["postTown", "PostTown"],
+  ["county", "County"],
+  ["country", "Country"],
+  ["postcode", "Postcode"],
+];
+
+function buildRegisteredOfficeAddressXml(address) {
+  if (!address) {
+    return "";
+  }
+  return REGISTERED_OFFICE_ADDRESS_FIELDS.filter(([field]) => address[field])
+    .map(([field, tag]) => `<${tag}>${escapeXmlText(address[field])}</${tag}>`)
+    .join("");
+}
+
+// CompanyDataDirectorType (and its Secretary equivalent) carries more than this - a service
+// address, nationality, a residential address - the simulator emits only the fields
+// parseCompanyDataResponse() reads, matching how the accounts scenario below stands in for the
+// gateway's own business logic rather than its full schema shape.
+function buildOfficerXml(officer) {
+  const tag = officer.role === "secretary" ? "Secretary" : "Director";
+  return `<${tag}><Person><Forename>${escapeXmlText(officer.forename)}</Forename><Surname>${escapeXmlText(officer.surname)}</Surname><DOB>${
+    officer.dob
+  }</DOB></Person><AppointmentDate>${officer.appointmentDate}</AppointmentDate></${tag}>`;
+}
+
+function buildStatementOfCapitalXml(statementOfCapital) {
+  const sharesXml = (statementOfCapital.shares || [])
+    .map(
+      (share) =>
+        `<Shares><ShareClass>${escapeXmlText(share.shareClass)}</ShareClass><PrescribedParticulars>${escapeXmlText(
+          share.prescribedParticulars,
+        )}</PrescribedParticulars><NumShares>${share.numShares}</NumShares><AggregateNominalValue>${
+          share.aggregateNominalValue
+        }</AggregateNominalValue></Shares>`,
+    )
+    .join("");
+  return `<StatementOfCapital><Capital><TotalAmountUnpaid>${statementOfCapital.totalAmountUnpaid}</TotalAmountUnpaid><TotalNumberOfIssuedShares>${
+    statementOfCapital.totalNumberOfIssuedShares
+  }</TotalNumberOfIssuedShares><ShareCurrency>${escapeXmlText(
+    statementOfCapital.shareCurrency,
+  )}</ShareCurrency><TotalAggregateNominalValue>${statementOfCapital.totalAggregateNominalValue}</TotalAggregateNominalValue>${sharesXml}</Capital></StatementOfCapital>`;
+}
+
+function buildShareholdingXml(shareholding) {
+  const shareholdersXml = (shareholding.shareholders || [])
+    .map(
+      (shareholder) =>
+        `<Shareholders><Name><Surname>${escapeXmlText(shareholder.surname)}</Surname><Forename>${escapeXmlText(
+          shareholder.forename,
+        )}</Forename></Name></Shareholders>`,
+    )
+    .join("");
+  return `<Shareholdings><ShareClass>${escapeXmlText(shareholding.shareClass)}</ShareClass><NumberHeld>${
+    shareholding.numberHeld
+  }</NumberHeld>${shareholdersXml}</Shareholdings>`;
+}
+
+function buildCompanyDataBodyXml(company) {
+  const officersXml = (company.officers || []).map(buildOfficerXml).join("");
+  const sicCodesXml = (company.sicCodes || []).map((code) => `<SICCode>${escapeXmlText(code)}</SICCode>`).join("");
+  const statementOfCapitalXml = company.statementOfCapital ? buildStatementOfCapitalXml(company.statementOfCapital) : "";
+  const shareholdingsXml = (company.shareholdings || []).map(buildShareholdingXml).join("");
+
+  return `<CompanyData xmlns="http://xmlgw.companieshouse.gov.uk"><CompanyNumber>${escapeXmlText(
+    company.companyNumber,
+  )}</CompanyNumber><CompanyName>${escapeXmlText(company.companyName)}</CompanyName><CompanyCategory>${escapeXmlText(
+    company.companyCategory,
+  )}</CompanyCategory><Jurisdiction>${escapeXmlText(company.jurisdiction)}</Jurisdiction><TradingOnMarket>${
+    company.tradingOnMarket
+  }</TradingOnMarket><DTR5Applies>${company.dtr5Applies}</DTR5Applies><MadeUpDate>${company.madeUpDate}</MadeUpDate><NextDueDate>${
+    company.nextDueDate
+  }</NextDueDate><RegisteredOfficeAddress>${buildRegisteredOfficeAddressXml(
+    company.registeredOfficeAddress,
+  )}</RegisteredOfficeAddress><RegisteredEmailAddress>${escapeXmlText(
+    company.registeredEmailAddress,
+  )}</RegisteredEmailAddress><SICCodes>${sicCodesXml}</SICCodes><Officers>${officersXml}</Officers>${statementOfCapitalXml}${shareholdingsXml}</CompanyData>`;
+}
+
+function buildPaymentPeriodsBodyXml(periodPaid) {
+  return `<PaymentPeriods xmlns="http://xmlgw.companieshouse.gov.uk"><PaymentPeriod><StartDate>2025-09-22</StartDate><EndDate>2026-09-21</EndDate><PeriodPaid>${periodPaid}</PeriodPaid></PaymentPeriod></PaymentPeriods>`;
 }
 
 // Every published error code the simulator can return here also has to name where the missing
@@ -144,6 +239,10 @@ function handleAccounts(document, { senderIdHash, authValueHash, scenario }) {
   };
 }
 
+function isNoTransactionFound(outcome) {
+  return outcome.errors && outcome.errors.length === 1 && outcome.errors[0].text === "No Transaction Found";
+}
+
 function handleGetSubmissionStatus(document, { senderIdHash, authValueHash, scenario }) {
   const getSubmissionStatus = firstElement(document, "GetSubmissionStatus");
   if (!getSubmissionStatus) {
@@ -159,7 +258,14 @@ function handleGetSubmissionStatus(document, { senderIdHash, authValueHash, scen
     return schemaFailureFor("Body/GetSubmissionStatus/SubmissionNumber");
   }
 
-  const outcome = pollStatus({ senderIdHash, authValueHash, submissionNumber, scenario });
+  // Submission numbers are unique across the whole presenter (one shared counter backs every
+  // form), so at most one of the two registries ever carries a given number: try accounts first,
+  // and only consult the confirmation statement registry when accounts genuinely has no record.
+  const accountsOutcome = pollStatus({ senderIdHash, authValueHash, submissionNumber, scenario });
+  const outcome = isNoTransactionFound(accountsOutcome)
+    ? (pollConfirmationStatement({ senderIdHash, authValueHash, submissionNumber, scenario }) ?? accountsOutcome)
+    : accountsOutcome;
+
   if (outcome.errors) {
     return { errors: outcome.errors };
   }
@@ -167,6 +273,79 @@ function handleGetSubmissionStatus(document, { senderIdHash, authValueHash, scen
     qualifier: "response",
     bodyXml: buildSubmissionStatusBodyXml(outcome),
   };
+}
+
+function handleConfirmationStatement(document, { senderIdHash, authValueHash, scenario }) {
+  const formHeader = firstElement(document, "FormHeader");
+  if (!formHeader) {
+    return schemaFailureFor("Body/FormSubmission/FormHeader");
+  }
+
+  const companyNumber = firstElementText(formHeader, "CompanyNumber");
+  const companyName = firstElementText(formHeader, "CompanyName");
+  const formIdentifier = firstElementText(formHeader, "FormIdentifier");
+  const submissionNumber = firstElementText(formHeader, "SubmissionNumber");
+
+  if (!companyNumber) return schemaFailureFor("Body/FormSubmission/FormHeader/CompanyNumber");
+  if (!companyName) return schemaFailureFor("Body/FormSubmission/FormHeader/CompanyName");
+  if (!formIdentifier) return schemaFailureFor("Body/FormSubmission/FormHeader/FormIdentifier");
+  if (!submissionNumber) return schemaFailureFor("Body/FormSubmission/FormHeader/SubmissionNumber");
+
+  const statementElement =
+    firstElement(document, "ConfirmationAndVerificationStatement") || firstElement(document, "ConfirmationStatement");
+  if (!statementElement) {
+    return schemaFailureFor("Body/FormSubmission/Form");
+  }
+  if (!firstElementText(statementElement, "ReviewDate")) {
+    return schemaFailureFor("Body/FormSubmission/Form/ReviewDate");
+  }
+
+  const outcome = submitConfirmationStatement({ senderIdHash, authValueHash, submissionNumber, companyNumber, scenario });
+  if (outcome.errors) {
+    return { errors: outcome.errors };
+  }
+  return {
+    qualifier: "acknowledgement",
+    gatewayTimestamp: outcome.gatewayTimestamp,
+    pollInterval: outcome.pollInterval,
+    bodyXml: "",
+  };
+}
+
+function handleCompanyDataRequest(document, { senderIdHash, authValueHash, scenario }) {
+  const companyDataRequest = firstElement(document, "CompanyDataRequest");
+  if (!companyDataRequest) {
+    return schemaFailureFor("Body/CompanyDataRequest");
+  }
+
+  const companyNumber = firstElementText(companyDataRequest, "CompanyNumber");
+  const companyAuthenticationCode = firstElementText(companyDataRequest, "CompanyAuthenticationCode");
+  if (!companyNumber) return schemaFailureFor("Body/CompanyDataRequest/CompanyNumber");
+  if (!companyAuthenticationCode) return schemaFailureFor("Body/CompanyDataRequest/CompanyAuthenticationCode");
+
+  const outcome = requestCompanyData({ senderIdHash, authValueHash, companyNumber, companyAuthenticationCode, scenario });
+  if (outcome.errors) {
+    return { errors: outcome.errors };
+  }
+  return { qualifier: "response", bodyXml: buildCompanyDataBodyXml(outcome.company) };
+}
+
+function handlePaymentPeriodsRequest(document, { senderIdHash, authValueHash, scenario }) {
+  const paymentPeriodsRequest = firstElement(document, "PaymentPeriodsRequest");
+  if (!paymentPeriodsRequest) {
+    return schemaFailureFor("Body/PaymentPeriodsRequest");
+  }
+
+  const companyNumber = firstElementText(paymentPeriodsRequest, "CompanyNumber");
+  const companyAuthenticationCode = firstElementText(paymentPeriodsRequest, "CompanyAuthenticationCode");
+  if (!companyNumber) return schemaFailureFor("Body/PaymentPeriodsRequest/CompanyNumber");
+  if (!companyAuthenticationCode) return schemaFailureFor("Body/PaymentPeriodsRequest/CompanyAuthenticationCode");
+
+  const outcome = requestPaymentPeriods({ senderIdHash, authValueHash, companyNumber, companyAuthenticationCode, scenario });
+  if (outcome.errors) {
+    return { errors: outcome.errors };
+  }
+  return { qualifier: "response", bodyXml: buildPaymentPeriodsBodyXml(outcome.periodPaid) };
 }
 
 export function apiEndpoint(app) {
@@ -207,6 +386,12 @@ export function apiEndpoint(app) {
     let outcome;
     if (requestClass === "Accounts") {
       outcome = handleAccounts(document, { ...credentials, scenario: govTestScenario });
+    } else if (requestClass === "ConfirmationAndVerificationStatement" || requestClass === "ConfirmationStatement") {
+      outcome = handleConfirmationStatement(document, { ...credentials, scenario: govTestScenario });
+    } else if (requestClass === "CompanyDataRequest") {
+      outcome = handleCompanyDataRequest(document, { ...credentials, scenario: govTestScenario });
+    } else if (requestClass === "PaymentPeriodsRequest") {
+      outcome = handlePaymentPeriodsRequest(document, { ...credentials, scenario: govTestScenario });
     } else if (requestClass === "GetSubmissionStatus") {
       outcome = handleGetSubmissionStatus(document, { ...credentials, scenario: govTestScenario });
     } else {
