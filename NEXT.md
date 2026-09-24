@@ -17,7 +17,7 @@ Haiku; the lowest tier that fits). Anything touching code goes through a `claude
 PR; the operator merges.
 
 **Prod runs deployment prod-3703ecf** (PR #347's merge deploy; #348 changed only a behaviour test).
-**ci**: `ci-set1` is last-known-good and the only ci set standing; `ci-set2` was swept.
+**ci**: `ci-set2` is last-known-good (promoted 2026-09-24 00:09 UTC by the b90 deploy) and the only ci set standing. It was built from `claude/b90-board`, whose self-destruct predates B30bi's 12-hour rule, so it stays until the next ci deploy replaces it.
 No pull request is open in this repository or its siblings.
 
 The board runs in five sections, in this order: **in flight** (a branch, a pull request or a run
@@ -85,6 +85,12 @@ Shared facts for the analytics rows (B52d, B52e, B52l, B52m): the prod Athena da
 ## Machine-ask
 
 ## Human-driven
+
+- [ ] **OB30bk. Delete the orphaned prod origin bucket.** `prod-dd95c16-app-edgestac-proddd95c16apporiginbuck-rjpb9unlblmi`
+  (created 2026-09-20) outlived its deployment: no `prod-dd95c16` stack stands, the bucket is
+  empty, and no other destroyed set left one. Run
+  `aws --profile submit-prod s3api delete-bucket --bucket prod-dd95c16-app-edgestac-proddd95c16apporiginbuck-rjpb9unlblmi`.
+  **Owner**: Operator. **Model**: none. **Size**: 0 files.
 
 - [ ] **O11. The ITSA send day.** Operator, 2026-09-23: the day after PR #346 merges, which is 2026-09-24 (#346
   merged 2026-09-23 23:25 UTC; checklist rows 8 and 13 are evidenced on `main`; the 2026-09-21
