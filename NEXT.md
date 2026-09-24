@@ -59,10 +59,13 @@ Shared facts for the analytics rows (B52d, B52e, B52l, B52m): the prod Athena da
   In flight: spreadsheets `claude/fin-reconcile-book` (`6e89f1a72`, `1c127a54b`: `--packages-dir`, `--book`, and the Ltd calculator's payslips page gated on `scenario.payroll`; DIYA's package reconciles 1,444 of 1,444), pushing, then its PR.
 
 - [ ] **CS-2. Envelopes and the body builder.** A generalised `buildFormSubmission` and the CS01, CompanyData and PaymentPeriods builders and parsers in `app/services/companiesHouseXmlGateway.js`, plus `companiesHouseConfirmationStatementXml.js` with the XSD-order check. **Source**: `PLAN_COMPANIES_HOUSE_CONFIRMATION_STATEMENT.md` (its Tasks table carries the files). **Owner**: Claude Code. **Model**: Sonnet. **Size**: 4 files. The schemas are in `fixtures/companies-house-xmlgw/` (22 files, on `main`).
-  In flight: a Sonnet agent doing CS-2 then CS-3, batch `claude/b92-board`.
+  In flight: on `claude/b92-board` (CS-2 `a65d01b9`, CS-3 `7784bcd0`); its PR opens with CS-4.
 
 - [ ] **CS-3. Simulator for the confirmation statement.** The three new request classes in `app/http-simulator/routes/companies-house-xmlgw.js` and a `confirmation-statement` scenario. **Source**: `PLAN_COMPANIES_HOUSE_CONFIRMATION_STATEMENT.md` (its Tasks table carries the files). **Owner**: Claude Code. **Model**: Sonnet. **Size**: 4 files.
-  In flight: a Sonnet agent doing CS-2 then CS-3, batch `claude/b92-board`.
+  In flight: on `claude/b92-board` (CS-2 `a65d01b9`, CS-3 `7784bcd0`); its PR opens with CS-4.
+
+- [ ] **CS-4. Confirmation statement Lambdas and the shared poll.** Six Lambdas (officers and PSC proxies, filing data, preview, submit, poll) and `pollSubmission` extracted to `app/services/companiesHouseSubmissionStatus.js`, the accounts poll (`app/functions/companies-house/companiesHouseAccountsGet.js`) moved onto it. 17 files with tests: one agent. **Source**: `PLAN_COMPANIES_HOUSE_CONFIRMATION_STATEMENT.md` (its Tasks table carries the files). **Owner**: Claude Code. **Model**: Sonnet. **Size**: 17 files.
+  In flight: a Sonnet agent on batch `claude/b92-board`.
 
 ## Machine-only
 
@@ -118,8 +121,6 @@ Shared facts for the analytics rows (B52d, B52e, B52l, B52m): the prod Athena da
 - [ ] **CS-H2. Send the confirmation-statement email.** Send `../DRAFT_EMAIL_XMLGW_CS01.md` on the `xml@companieshouse.gov.uk` thread, and paste the answers into CS-9's row. **Source**: `PLAN_COMPANIES_HOUSE_CONFIRMATION_STATEMENT.md` (its Tasks table carries the files). **Owner**: Operator. **Model**: none. **Size**: 0 files.
 
 ## Blocked
-
-- [ ] **CS-4. Confirmation statement Lambdas and the shared poll.** Six Lambdas (officers and PSC proxies, filing data, preview, submit, poll) and `pollSubmission` extracted to `app/services/companiesHouseSubmissionStatus.js`, the accounts poll (`app/functions/companies-house/companiesHouseAccountsGet.js`) moved onto it. 17 files with tests: one agent. Blocked on CS-2 and CS-3. **Source**: `PLAN_COMPANIES_HOUSE_CONFIRMATION_STATEMENT.md` (its Tasks table carries the files). **Owner**: Claude Code. **Model**: Sonnet. **Size**: 17 files.
 
 - [ ] **CS-5. Confirmation statement CDK.** The six Lambdas in `infra/main/java/co/uk/diyaccounting/submit/stacks/CompaniesHouseStack.java` with their grants, names and props; cases in `infra/test/java/co/uk/diyaccounting/submit/stacks/CompaniesHouseStackTest.java`; `./mvnw clean verify`. Blocked on CS-4. **Source**: `PLAN_COMPANIES_HOUSE_CONFIRMATION_STATEMENT.md` (its Tasks table carries the files). **Owner**: Claude Code. **Model**: Sonnet. **Size**: 5 files.
 
