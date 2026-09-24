@@ -69,17 +69,28 @@ export function isUnlimitedTokenGrant(tokensGranted) {
   return tokensGranted === UNLIMITED_TOKENS_GRANTED;
 }
 
-// A bundle's Stripe prices from its `[[bundles.prices]]` table: one row per interval, one
-// row carrying `default = true`. A row missing its amount, currency or interval is dropped
-// rather than surfaced as a price with a missing field.
+// Shared validation for a `[[bundles.prices]]` or `[[activities.prices]]` table: one row per
+// interval, one row carrying `default = true`. A row missing its amount, currency or interval
+// is dropped rather than surfaced as a price with a missing field.
+function parsePriceRows(prices) {
+  if (!Array.isArray(prices) || prices.length === 0) return [];
+  return prices
+    .filter((p) => Number.isFinite(p.amount) && typeof p.currency === "string" && typeof p.interval === "string")
+    .map((p) => ({ interval: p.interval, amount: p.amount, currency: p.currency, default: p.default === true }));
+}
+
+// A bundle's Stripe prices from its `[[bundles.prices]]` table.
 export function getBundlePrices(bundle) {
   if (!bundle) return [];
-  if (Array.isArray(bundle.prices) && bundle.prices.length > 0) {
-    return bundle.prices
-      .filter((p) => Number.isFinite(p.amount) && typeof p.currency === "string" && typeof p.interval === "string")
-      .map((p) => ({ interval: p.interval, amount: p.amount, currency: p.currency, default: p.default === true }));
-  }
-  return [];
+  return parsePriceRows(bundle.prices);
+}
+
+// An activity's Stripe prices from its `[[activities.prices]]` table, same shape and
+// validation as a bundle's. A per-filing activity price carries `interval = "submission"`
+// marking a one-off charge rather than a subscription period.
+export function getActivityPrices(activity) {
+  if (!activity) return [];
+  return parsePriceRows(activity.prices);
 }
 
 // The one price a checkout for this bundle should use for the given interval ("year" or

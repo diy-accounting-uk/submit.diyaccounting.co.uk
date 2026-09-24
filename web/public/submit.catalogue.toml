@@ -444,6 +444,20 @@ metered = true
 paths = ["companies-house/fileConfirmationStatement.html", "^/api/v1/companies-house/confirmation-statement.*", "^/api/v1/companies-house/company/[^/]+/(officers|persons-with-significant-control|filing-data)$"]
 environments = ["local", "test", "simulator", "proxy", "ci"]
 
+# prices
+# ======
+# A per-filing price, same row shape as [[bundles.prices]], but interval = "submission"
+# marks a one-off charge rather than a subscription period.
+[[activities.prices]]
+interval = "submission"
+amount = 6135
+currency = "gbp"
+default = true
+# (Companies House fee + Stripe fee) x 1.2. Companies House fee is £50 (5000p). Stripe's
+# standard UK card rate is 1.5% + 20p, charged on the price itself: P = 1.2 x (5000 + 0.015P + 20),
+# so 0.982P = 6024, P = 6024 / 0.982 = 6134.42, rounded up to 6135 (£61.35). Change amount here
+# when either fee changes.
+
 [[activities]]
 id = "diya-gl-storage"
 name = "Save DIYA-GL books"

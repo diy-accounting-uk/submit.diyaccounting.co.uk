@@ -15,6 +15,7 @@ import {
   getStripeSubscriptionBundles,
   getBundlePrices,
   getBundlePriceForInterval,
+  getActivityPrices,
   isUnlimitedTokenGrant,
 } from "../../services/productCatalog.js";
 import { dotenvConfigIfNotBlank } from "@app/lib/env.js";
@@ -154,6 +155,19 @@ describe("productCatalogHelper", () => {
     expect(isActivityAvailable(catalog, "file-confirmation-statement", "default")).toBe(false);
     expect(activity.environments).toEqual(["local", "test", "simulator", "proxy", "ci"]);
     expect(activity.environments).not.toContain("prod");
+  });
+
+  it("file-confirmation-statement carries a one-off per-submission price", () => {
+    const catalog = parseCatalog(tomlText);
+    const activity = catalog.activities.find((a) => a.id === "file-confirmation-statement");
+    expect(getActivityPrices(activity)).toEqual([{ interval: "submission", amount: 6135, currency: "gbp", default: true }]);
+  });
+
+  it("getActivityPrices returns nothing for an activity with no price fields", () => {
+    const catalog = parseCatalog(tomlText);
+    const activity = catalog.activities.find((a) => a.id === "file-micro-entity-accounts");
+    expect(getActivityPrices(activity)).toEqual([]);
+    expect(getActivityPrices(null)).toEqual([]);
   });
 
   it("resident-vat carries one monthly Stripe price", () => {
