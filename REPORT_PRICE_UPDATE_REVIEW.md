@@ -1,7 +1,7 @@
 <!-- SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0 -->
 <!-- Copyright (C) 2006-2026 DIY Accounting Limited -->
 
-# Review of PLAN_PRICE_UPDATE.md: breakeven, the funnel as measured, and the models
+# Review of ../developers/submit/archive/PLAN_PRICE_UPDATE.md: breakeven, the funnel as measured, and the models
 
 > Written 2026-09-21 from the nightly export at `analytics/prod/2026-09-20/`, Athena queries in
 > workgroup `prod-env-analytics` (database `prod_env_analytics`), Cost Explorer for `submit-prod`

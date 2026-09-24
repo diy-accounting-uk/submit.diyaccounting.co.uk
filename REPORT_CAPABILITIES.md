@@ -1910,10 +1910,10 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 #### BILL-44 Document the price-update project
 
 - **Use when:** researching why the pricing or bundle catalogue was changed the way it was.
-- **Does:** PLAN_PRICE_UPDATE.md and REPORT_PRICE_UPDATE_REVIEW.md record the plan and review for the pricing update project. This area's billing and entitlement code implements that project's bundle-catalogue changes.
+- **Does:** ../developers/submit/archive/PLAN_PRICE_UPDATE.md and REPORT_PRICE_UPDATE_REVIEW.md record the plan and review for the pricing update project. This area's billing and entitlement code implements that project's bundle-catalogue changes.
 - **Run:** no command; see Does and Entry
-- **Entry:** `PLAN_PRICE_UPDATE.md`; `REPORT_PRICE_UPDATE_REVIEW.md`
-- **Files:** PLAN_PRICE_UPDATE.md, REPORT_PRICE_UPDATE_REVIEW.md
+- **Entry:** `../developers/submit/archive/PLAN_PRICE_UPDATE.md`; `REPORT_PRICE_UPDATE_REVIEW.md`
+- **Files:** ../developers/submit/archive/PLAN_PRICE_UPDATE.md, REPORT_PRICE_UPDATE_REVIEW.md
 - **Keywords:** price update, plan, review, bundle catalogue, pricing project
 - **Related:** BILL-35, BILL-30
 
