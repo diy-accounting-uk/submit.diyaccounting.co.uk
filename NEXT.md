@@ -45,6 +45,15 @@ Shared facts for the analytics rows (B52d, B52e, B52l, B52m): the prod Athena da
 
 ## In flight
 
+- [ ] **SP-ghcr. The diya-gl 1.2.34 image never reached GHCR.** Spreadsheets deploy run 35981677188
+  (the PR #140 merge, `cba4b0bf8`) published 1.2.34 to npm, then the GHCR push failed (`unknown
+  blob`), so the tag, the release record and the version roll did not run. A rerun cannot push the
+  image: `publish-diya-gl.yml` gates every image step on the version being absent from npm. Fix: an
+  `image` output from a GHCR check, the image steps on `publish || image`; then dispatch
+  `publish-diya-gl.yml` on main to push the 1.2.34 image and finish the tag and roll. **Owner**:
+  Claude Code. **Model**: Sonnet. **Size**: 1 file (spreadsheets).
+  In flight: a Sonnet agent on spreadsheets `claude/ops-ghcr-backfill`.
+
 - [ ] **CS-2. Envelopes and the body builder.** A generalised `buildFormSubmission` and the CS01, CompanyData and PaymentPeriods builders and parsers in `app/services/companiesHouseXmlGateway.js`, plus `companiesHouseConfirmationStatementXml.js` with the XSD-order check. **Source**: `PLAN_COMPANIES_HOUSE_CONFIRMATION_STATEMENT.md` (its Tasks table carries the files). **Owner**: Claude Code. **Model**: Sonnet. **Size**: 4 files. The schemas are in `fixtures/companies-house-xmlgw/` (22 files, on `main`).
   In flight: PR #350 (`claude/b92-board`), CI running.
 
