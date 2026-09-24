@@ -43,6 +43,7 @@ The parsers live in `mcp/lib/finance/` (run `npm ci` in `mcp/` first):
 | NatWest | `bank-lines.js` | `bankLinesFromCsv(text, { accountMainID, labels })` returns `{ lines, unlabelled }`; `closingBalance(text)` |
 | Stripe | `stripe-lines.js` | `stripeLinesFromTransactions(transactions, { ..., labels })` returns `{ lines, unlabelled }`; `stripePayoutLines`, `reconcileStripeMonth` |
 | PayPal | `paypal-statement-lines.js` | `paypalLinesFromStatementPdf(transactionsPdf, { ...accounts, statementPdfPath, labels })` returns `{ lines, unlabelled }`; `reconcilePaypalMonth({ transactionsText, statementText })`; needs `pdftotext` (poppler) |
+| PayPal (API) | `paypal-lines.js` | `paypalLinesFromTransactions(transactions, { ...accounts, labels })` over `scripts/finance/paypal-stage.js`'s staged JSON returns `{ lines, unlabelled }` |
 | Supplier invoices | `mail-invoices.js` | `invoiceLinesForPeriod({ from, to, suppliers })`; finds the corpus CLI from a main checkout or a worktree; a "Payment schedule.pdf" attachment gives one line per instalment |
 
 The label map at `staging/labels/diya-labels.toml` carries the recurring payee/description rules

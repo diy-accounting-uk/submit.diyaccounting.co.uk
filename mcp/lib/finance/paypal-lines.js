@@ -63,6 +63,8 @@ import { validateLines } from "@diy-accounting-uk/diya-gl/dist/app/lib/diya-gl-s
 
 import { isCurrencyConversionOrTransfer, isHoldCandidate, isReleaseCandidate } from "./paypal-statement-lines.js";
 
+import { matchLabel } from "./labels.js";
+
 function compact(line) {
   return Object.fromEntries(Object.entries(line).filter(([, value]) => value !== undefined));
 }
@@ -186,12 +188,12 @@ function resolvesToAHold(adapted, byId) {
   return referenced !== undefined && HOLD_EVENT_CODES.has(referenced.code);
 }
 
-function receiptGrossLine(adapted, { salesAccountMainID, taxCode }) {
+function receiptGrossLine(adapted, { sourceJournalID, accountMainID, taxCode }) {
   return compact({
     entryNumber: `PAYPAL-${adapted.id}`,
-    sourceJournalID: "sales",
+    sourceJournalID,
     postingDate: adapted.date,
-    accountMainID: salesAccountMainID,
+    accountMainID,
     amount: Math.abs(adapted.gross),
     amountCurrency: adapted.currency,
     documentType: "receipt",
@@ -202,12 +204,12 @@ function receiptGrossLine(adapted, { salesAccountMainID, taxCode }) {
   });
 }
 
-function billGrossLine(adapted, { purchasesAccountMainID, taxCode }) {
+function billGrossLine(adapted, { sourceJournalID, accountMainID, taxCode }) {
   return compact({
     entryNumber: `PAYPAL-${adapted.id}`,
-    sourceJournalID: "purchases",
+    sourceJournalID,
     postingDate: adapted.date,
-    accountMainID: purchasesAccountMainID,
+    accountMainID,
     amount: Math.abs(adapted.gross),
     amountCurrency: adapted.currency,
     documentType: "invoice",
@@ -258,13 +260,21 @@ function feeLine(adapted, { feeAccountMainID, taxCode }) {
  * bonus or a settled "Other" that is not, in fact, a hold's release posts as
  * a purchases credit note; every other settled record posts by its own
  * gross's sign, receipt (sales) or bill (purchases), with its own fee, if
- * any, posted to purchases and never netted into the gross.
+ * any, posted to purchases and never netted into the gross. A label rule
+ * (see labels.js) matching a receipt's or bill's own description sets its
+ * gross line's sourceJournalID, accountMainID and taxCode in place of that
+ * default; a receipt or bill no rule matches keeps the default and is also
+ * listed in unlabelled. The fee line is never redirected.
  * @param {Array<Object>} transactions - raw transaction_details objects, one
  *   staged month's page (or every page concatenated)
- * @param {{salesAccountMainID: string, purchasesAccountMainID: string, feeAccountMainID: string, taxCode?: string}} options
- * @returns {Array<Object>} validated diya-gl lines
+ * @param {{salesAccountMainID: string, purchasesAccountMainID: string, feeAccountMainID: string, taxCode?: string, labels?: Object}} options
+ * @returns {{lines: Array<Object>, unlabelled: Array<Object>}} validated
+ *   diya-gl lines, and the receipts and bills no label rule matched
  */
-export function paypalLinesFromTransactions(transactions, { salesAccountMainID, purchasesAccountMainID, feeAccountMainID, taxCode } = {}) {
+export function paypalLinesFromTransactions(
+  transactions,
+  { salesAccountMainID, purchasesAccountMainID, feeAccountMainID, taxCode, labels } = {},
+) {
   if (!salesAccountMainID) throw new Error("salesAccountMainID is required");
   if (!purchasesAccountMainID) throw new Error("purchasesAccountMainID is required");
   if (!feeAccountMainID) throw new Error("feeAccountMainID is required");
@@ -273,6 +283,7 @@ export function paypalLinesFromTransactions(transactions, { salesAccountMainID, 
   const byId = new Map(adaptedRecords.map((adapted) => [adapted.id, adapted]));
   nameAmbiguousReleases(adaptedRecords, byId);
 
+  const unlabelled = [];
   const lines = [];
   for (const adapted of adaptedRecords) {
     if (adapted.status !== "Completed") continue;
@@ -282,10 +293,18 @@ export function paypalLinesFromTransactions(transactions, { salesAccountMainID, 
 
     if (CREDIT_NOTE_EVENT_CODES.has(adapted.code)) {
       lines.push(creditNoteLine(adapted, { purchasesAccountMainID, taxCode }));
-    } else if (adapted.gross >= 0) {
-      lines.push(receiptGrossLine(adapted, { salesAccountMainID, taxCode }));
     } else {
-      lines.push(billGrossLine(adapted, { purchasesAccountMainID, taxCode }));
+      const rule = matchLabel(adapted.description, labels);
+      if (labels && !rule) {
+        unlabelled.push(adapted);
+      }
+      const isReceipt = adapted.gross >= 0;
+      const coding = {
+        sourceJournalID: rule?.sourceJournalID ?? (isReceipt ? "sales" : "purchases"),
+        accountMainID: rule?.accountMainID ?? (isReceipt ? salesAccountMainID : purchasesAccountMainID),
+        taxCode: rule?.taxCode ?? taxCode,
+      };
+      lines.push(isReceipt ? receiptGrossLine(adapted, coding) : billGrossLine(adapted, coding));
     }
     if (adapted.fee !== 0) {
       lines.push(feeLine(adapted, { feeAccountMainID, taxCode }));
@@ -298,9 +317,15 @@ export function paypalLinesFromTransactions(transactions, { salesAccountMainID, 
       purchases: { [purchasesAccountMainID]: {}, [feeAccountMainID]: {} },
     },
   };
+  for (const line of lines) {
+    if (!book.accounts[line.sourceJournalID]) {
+      book.accounts[line.sourceJournalID] = {};
+    }
+    book.accounts[line.sourceJournalID][line.accountMainID] = {};
+  }
   const { valid, errors } = validateLines(lines, book);
   if (!valid) {
     throw new Error(`PayPal transaction lines failed validation:\n${errors.join("\n")}`);
   }
-  return lines;
+  return { lines, unlabelled };
 }

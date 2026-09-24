@@ -138,7 +138,7 @@ const OPTIONS = { salesAccountMainID: SALES_ACCOUNT, purchasesAccountMainID: PUR
 
 describe("paypalLinesFromTransactions", () => {
   it("emits a sales receipt for the gross amount and a purchases receipt for the fee, from a settled receipt", () => {
-    const lines = paypalLinesFromTransactions([DONATION], OPTIONS);
+    const { lines } = paypalLinesFromTransactions([DONATION], OPTIONS);
 
     expect(lines).toHaveLength(2);
     expect(lines[0]).toMatchObject({
@@ -163,7 +163,7 @@ describe("paypalLinesFromTransactions", () => {
   });
 
   it("emits a purchases invoice for a settled bill payment's negative gross", () => {
-    const lines = paypalLinesFromTransactions([BILL_PAYMENT], OPTIONS);
+    const { lines } = paypalLinesFromTransactions([BILL_PAYMENT], OPTIONS);
 
     expect(lines).toHaveLength(1);
     expect(lines[0]).toMatchObject({
@@ -178,27 +178,27 @@ describe("paypalLinesFromTransactions", () => {
   });
 
   it("excludes a currency conversion", () => {
-    expect(paypalLinesFromTransactions([CURRENCY_CONVERSION], OPTIONS)).toEqual([]);
+    expect(paypalLinesFromTransactions([CURRENCY_CONVERSION], OPTIONS).lines).toEqual([]);
   });
 
   it("excludes a bank deposit to the PayPal account", () => {
-    expect(paypalLinesFromTransactions([BANK_DEPOSIT], OPTIONS)).toEqual([]);
+    expect(paypalLinesFromTransactions([BANK_DEPOSIT], OPTIONS).lines).toEqual([]);
   });
 
   it("excludes a withdrawal to the linked bank account", () => {
-    expect(paypalLinesFromTransactions([WITHDRAWAL], OPTIONS)).toEqual([]);
+    expect(paypalLinesFromTransactions([WITHDRAWAL], OPTIONS).lines).toEqual([]);
   });
 
   it("excludes a hold placement and its own settled release", () => {
-    expect(paypalLinesFromTransactions([HOLD, HOLD_RELEASE], OPTIONS)).toEqual([]);
+    expect(paypalLinesFromTransactions([HOLD, HOLD_RELEASE], OPTIONS).lines).toEqual([]);
   });
 
   it("excludes a still-pending record", () => {
-    expect(paypalLinesFromTransactions([PENDING], OPTIONS)).toEqual([]);
+    expect(paypalLinesFromTransactions([PENDING], OPTIONS).lines).toEqual([]);
   });
 
   it("posts a debit card cashback bonus as a purchases credit note", () => {
-    const lines = paypalLinesFromTransactions([CASHBACK], OPTIONS);
+    const { lines } = paypalLinesFromTransactions([CASHBACK], OPTIONS);
 
     expect(lines).toHaveLength(1);
     expect(lines[0]).toMatchObject({
@@ -211,7 +211,7 @@ describe("paypalLinesFromTransactions", () => {
   });
 
   it("excludes a hold-sized debit and posts its later 'Other' credit as a purchases credit note when the 'Other' references an ordinary purchase, not that debit", () => {
-    const lines = paypalLinesFromTransactions([HOLD_LIKE_DEBIT, ORDINARY_PURCHASE, AMBIGUOUS_OTHER], OPTIONS);
+    const { lines } = paypalLinesFromTransactions([HOLD_LIKE_DEBIT, ORDINARY_PURCHASE, AMBIGUOUS_OTHER], OPTIONS);
 
     expect(lines.some((line) => line.documentReference === "TXN-HOLDLIKE-1")).toBe(false);
     const purchaseLine = lines.find((line) => line.documentReference === "TXN-PURCHASE-1");
@@ -244,7 +244,7 @@ describe("paypalLinesFromTransactions", () => {
   });
 
   it("emits lines that validate against the diya-gl lines schema", () => {
-    const lines = paypalLinesFromTransactions(ALL_RECORDS, OPTIONS);
+    const { lines } = paypalLinesFromTransactions(ALL_RECORDS, OPTIONS);
     const book = {
       accounts: {
         sales: { [SALES_ACCOUNT]: {} },
@@ -254,5 +254,44 @@ describe("paypalLinesFromTransactions", () => {
     const result = validateLines(lines, book);
     expect(result.errors).toEqual([]);
     expect(result.valid).toBe(true);
+  });
+});
+
+describe("paypalLinesFromTransactions with labels", () => {
+  const LABELS = {
+    rule: [
+      { pattern: "Test Donor", sourceJournalID: "sales", accountMainID: "4002", taxCode: "OS" },
+      { pattern: "Test Cloud Vendor", sourceJournalID: "purchases", accountMainID: "5302" },
+    ],
+  };
+
+  it("sets a matched receipt's gross line account, sourceJournalID and taxCode from the rule, and leaves its fee line alone", () => {
+    const { lines, unlabelled } = paypalLinesFromTransactions([DONATION], { ...OPTIONS, labels: LABELS });
+
+    expect(lines[0]).toMatchObject({ sourceJournalID: "sales", accountMainID: "4002", taxCode: "OS" });
+    expect(lines[1]).toMatchObject({ sourceJournalID: "purchases", accountMainID: FEE_ACCOUNT });
+    expect(unlabelled).toEqual([]);
+  });
+
+  it("sets a matched bill's gross line account from the rule", () => {
+    const { lines } = paypalLinesFromTransactions([BILL_PAYMENT], { ...OPTIONS, labels: LABELS });
+
+    expect(lines[0]).toMatchObject({ sourceJournalID: "purchases", accountMainID: "5302" });
+  });
+
+  it("leaves an unmatched receipt on the default sales account and lists it in unlabelled", () => {
+    const { lines, unlabelled } = paypalLinesFromTransactions([DONATION], {
+      ...OPTIONS,
+      labels: { rule: [{ pattern: "Nobody Here", sourceJournalID: "sales", accountMainID: "4002" }] },
+    });
+
+    expect(lines[0]).toMatchObject({ sourceJournalID: "sales", accountMainID: SALES_ACCOUNT });
+    expect(unlabelled.map((adapted) => adapted.id)).toEqual(["TXN-DONATION-1"]);
+  });
+
+  it("returns an empty unlabelled list when no labels are given", () => {
+    const { unlabelled } = paypalLinesFromTransactions(ALL_RECORDS, OPTIONS);
+
+    expect(unlabelled).toEqual([]);
   });
 });
