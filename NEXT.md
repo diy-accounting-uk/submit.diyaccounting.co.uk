@@ -45,14 +45,6 @@ Shared facts for the analytics rows (B52d, B52e, B52l, B52m): the prod Athena da
 
 ## In flight
 
-- [ ] **PU-7n. The practice licence launch: the DIYA-GL page line.** Submit's side merged in PR #347
-  (2026-09-24; live prices year `price_1UIyyPCD0Ld2ukzIHeO99d6G`, month
-  `price_1UIyyPCD0Ld2ukzIQefbnWMO`). Remaining: spreadsheets PR #139 adds a hidden `tier-resident-pro` line at £199 a year to
-  `../spreadsheets.diyaccounting.co.uk/web/diya-gl.co.uk/public/index.html`; merge it when green.
-  **Source**: `PLAN_PRICE_UPDATE.md` §(d); operator 2026-09-22 and 2026-09-23 (go). **Owner**: Claude
-  Code. **Model**: Haiku. **Size**: 2 files.
-  In flight: spreadsheets PR #139 (`claude/diya-gl-resident-pro`), checks running.
-
 - [ ] **F2e. The MCP writes a populated spreadsheets package.** `write_finance_package`
   (`mcp/lib/finance/package-writer.js`, over diya-gl's `saveWorkbookFiles`) is on `main`.
   Remaining: the reconciliation. `../spreadsheets.diyaccounting.co.uk/app/bin/reconcile.js` fixes
