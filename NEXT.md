@@ -47,6 +47,10 @@ Shared facts for the analytics rows (B52d, B52e, B52l, B52m): the prod Athena da
 
 ## Machine-only
 
+- [ ] **ITSA-R3. Four ITSA suites time out on the simulator.** Run 2026-09-24: each waits 452 s with no status and no spinner, then times out. `itsaAnnualSubmission` waits for "Annual Submission edit form", `itsaFinalDeclaration` for "Final Declaration calculation retrieved", `itsaLossesAndClaims` for "Losses and Claims edit form", `itsaSelfEmploymentPeriod` for "Quarterly update result". The same shape in four suites points at one cause upstream of the forms (the business picker, a shared step, or a simulator route); diagnose that first. `itsaBusinessDetails` and `itsaObligations` pass. The approvals checklist cites these suites (`_developers/hmrc/ITSA_PRODUCTION_APPROVALS_CHECKLIST.md` lines 34 to 46). Blocks O11. **Owner**: Claude Code. **Model**: Sonnet. **Size**: —.
+
+- [ ] **ITSA-R4. The simulator lacks HMRC's test-support create-business route.** `itsaUkPropertyAnnualSubmission` and `itsaUkPropertyPeriod` fail at their first step: `[HMRC Test Business] Create business failed: 404 Not Found - {"code":"NOT_FOUND","message":"Route not found: POST /individuals/self-assessment-test-support/business/{nino}"}` (run 2026-09-24). Add the route to `app/http-simulator/` on the shape HMRC's Self Assessment Test Support API documents, or point the suites' simulator lane at the route that exists. Blocks O11. **Owner**: Claude Code. **Model**: Sonnet. **Size**: ~2 files.
+
 - [ ] **SR-1. Background test commands run under bash.** A background Bash call runs under zsh, which does not split an unquoted `$VAR` into words: the O11 browser proof step passed thirteen test names as one argument and Playwright found no tests (2026-09-24, about an hour lost). Put the rule where every session and brief reads it: `CLAUDE.md`'s "Always tee to a file before filtering" section and `.claude/skills/do-next/SKILL.md`'s brief constants ("a background command that expands a list runs under `bash -c`"), beside the existing memory note for monitor scripts. **Source**: session report VWPXGf. **Owner**: Claude Code. **Model**: Haiku. **Size**: 2 files.
 
 - [ ] **SR-2. Dependent rows are sequenced.** CS-7 and CS-12 were dispatched in parallel although CS-7's steps fill fields CS-12 added to `web/public/companies-house/fileConfirmationStatement.html`; a third agent (0.22M tokens) reconciled them. In `.claude/skills/refine/SKILL.md` pass 3 and `.claude/skills/do-next/SKILL.md`'s wave sizing: two rows that touch the same page or module run in sequence in one agent, or the later brief carries the earlier row's changes. **Source**: session report VWPXGf. **Owner**: Claude Code. **Model**: Haiku. **Size**: 2 files.
@@ -56,17 +60,6 @@ Shared facts for the analytics rows (B52d, B52e, B52l, B52m): the prod Athena da
 - [ ] **SR-4. A lint rule for unescaped HTML on `web/public`.** CodeQL alert 74 (DOM text reinterpreted as HTML) cost PR #351 a 169 job-minute redeploy and about 55 minutes, and the same page held 15 more unescaped interpolations. `eslint.config.js` lints `web/public/**/*.js` (line 82) but not the inline scripts in `web/public/**/*.html`, where the finding was. Add `eslint-plugin-html` and `eslint-plugin-no-unsanitized` for `web/public`, run it over the existing pages, and record the count; if it finds more than the lint job's ratchet allows (`.eslint-baseline.json`), raise the baseline to the measured count so the gate blocks new findings only. **Source**: session report VWPXGf. **Owner**: Claude Code. **Model**: Sonnet. **Size**: ~4 files.
 
 - [ ] **SR-5. The spreadsheets pre-push hook stops refusing its own regenerated file (spreadsheets).** Two pushes in one session (PU-7n and F2e's harness) ran the full browser tier, 65 and 43 minutes, for 2-file and 6-file changes, then refused the push because the test router rewrote `app/lib/provenance-data.js` from the locally installed diya-gl engine version (`../spreadsheets.diyaccounting.co.uk/.githooks/pre-push`, lines 89 and 124; `scripts/build-provenance-data.mjs`; `scripts/test-scope.mjs`). Make the router leave `provenance-data.js` alone when only the local engine version differs, and scope the browser tier to the changed pages. **Source**: session report VWPXGf. **Owner**: Claude Code. **Model**: Sonnet. **Size**: ~3 files (spreadsheets).
-
-- [ ] **ITSA-R1. The ITSA proof suites green and in CI.** Two suites the approvals checklist cites
-  fail on the simulator (2026-09-24): `itsaAnnualSubmission` times out after 452 s waiting for
-  "Annual Submission edit form", and `itsaFinalDeclaration` after 452 s waiting for "Final Declaration
-  calculation retrieved"; in both the page shows no status and no spinner. None of the eight
-  `test:itsa*Behaviour-simulator` suites is in `.github/workflows/test.yml`'s simulator jobs (the VAT
-  suites are, from line 725), and `deploy.yml` runs six of them on ci only (from line 2784), skipping
-  prod; annual submission and final declaration run nowhere. Diagnose and fix both suites at the
-  layer that broke, add all eight to `test.yml`'s simulator jobs on the VAT jobs' pattern, and run
-  the checklist's browser proof tests (`_developers/hmrc/ITSA_PRODUCTION_APPROVALS_CHECKLIST.md`
-  lines 34 to 46) green. Blocks O11. **Owner**: Claude Code. **Model**: Sonnet. **Size**: ~4 files.
 
 - [ ] **ITSA-R2. The sandbox year with a real multi-factor header.** `scripts/itsa-sandbox-year.js`
   builds its fraud headers from a synthetic event (line 593) with no MFA, so HMRC's validator warns
@@ -111,6 +104,8 @@ Shared facts for the analytics rows (B52d, B52e, B52l, B52m): the prod Athena da
 
 ## Blocked
 
+- [ ] **ITSA-R1. The eight ITSA suites in CI.** None of the eight `test:itsa*Behaviour-simulator` suites is in `.github/workflows/test.yml`'s simulator jobs (the VAT suites are, from line 725); `deploy.yml` runs six on ci only (from line 2784) and skips prod; annual submission and final declaration run nowhere. Add all eight on the VAT jobs' pattern once ITSA-R3 and ITSA-R4 make them pass. Blocked on ITSA-R3 and ITSA-R4. **Owner**: Claude Code. **Model**: Sonnet. **Size**: 1 file.
+
 - [ ] **CS-H1. Companies House credit account: the account number.** The application went to
   `chdfinance@companieshouse.gov.uk` on 2026-09-24 (form at `../DIY Accounting Limited - CH account 2026-09-24.pdf`,
   email `../DRAFT_EMAIL_CH_CREDIT_ACCOUNT.md`), asking for the account to be linked to presenter E0000052288.
@@ -122,7 +117,7 @@ Shared facts for the analytics rows (B52d, B52e, B52l, B52m): the prod Athena da
   merged 2026-09-23 23:25 UTC; checklist rows 8 and 13 are evidenced on `main`; the 2026-09-21
   sandbox run is inside HMRC's 14 days). On that day send `_developers/hmrc/DRAFT_EMAIL_ITSA_RECOGNITION.md` to
   `SDSTeam@hmrc.gov.uk`, then `_developers/hmrc/DRAFT_EMAIL_ITSA_PRODUCTION_CREDENTIALS.md` when
-  SDST answers. Blocked on ITSA-R1 and ITSA-R2 (the proof suites, and a validator with no warning). **Source**: BACKLOG 11; `PLAN_ITSA_PHASE_2.md` T10. **Owner**: Operator. **Model**:
+  SDST answers. Blocked on ITSA-R1, ITSA-R2, ITSA-R3 and ITSA-R4 (the proof suites passing and in CI, and a validator with no warning). **Source**: BACKLOG 11; `PLAN_ITSA_PHASE_2.md` T10. **Owner**: Operator. **Model**:
   none. **Size**: 0 files.
 
 - [ ] **CS-10b. Charging for a single submission.** A general capability, not confirmation-statement
