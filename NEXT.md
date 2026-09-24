@@ -47,6 +47,8 @@ Shared facts for the analytics rows (B52d, B52e, B52l, B52m): the prod Athena da
 
 ## Machine-only
 
+- [ ] **B62. CLS and RUM coverage for the page-experience panel.** Add Cumulative Layout Shift to submit's RUM client, and RUM to the spreadsheets site, so the page-experience panel covers the three sites the GA4 linker already joins. Submit half: the RUM telemetries in `web/public` (the `rum:*` meta tags on every page, e.g. `web/public/companies-house/fileConfirmationStatement.html` lines 17 to 20). Spreadsheets half: a RUM app monitor in its CDK and the client on its pages. **Source**: BACKLOG 62; `PLAN_ONE_STOP_DASHBOARD.md` D3. **Owner**: Claude Code. **Model**: Sonnet. **Size**: ~6 files across both repositories.
+
 - [ ] **SR-6. Code comments stop citing plan documents.** `PLAN_PRICE_UPDATE.md` moved to `../developers/submit/archive/` (2026-09-24), and 26 code comments and test names still cite it as `PLAN_PRICE_UPDATE.md (d)` (`git grep -n PLAN_PRICE_UPDATE -- app mcp infra`), against the rule that comments and test names never reference a plan. Rewrite each to say what the code does, with no plan reference, in one PR; no behaviour change. **Owner**: Claude Code. **Model**: Haiku. **Size**: ~20 files.
 
 - [ ] **ITSA-R3. Four ITSA suites time out on the simulator.** Run 2026-09-24: each waits 452 s with no status and no spinner, then times out. `itsaAnnualSubmission` waits for "Annual Submission edit form", `itsaFinalDeclaration` for "Final Declaration calculation retrieved", `itsaLossesAndClaims` for "Losses and Claims edit form", `itsaSelfEmploymentPeriod` for "Quarterly update result". The same shape in four suites points at one cause upstream of the forms (the business picker, a shared step, or a simulator route); diagnose that first. `itsaBusinessDetails` and `itsaObligations` pass. The approvals checklist cites these suites (`_developers/hmrc/ITSA_PRODUCTION_APPROVALS_CHECKLIST.md` lines 34 to 46). Blocks O11. **Owner**: Claude Code. **Model**: Sonnet. **Size**: —.
@@ -200,6 +202,10 @@ Shared facts for the analytics rows (B52d, B52e, B52l, B52m): the prod Athena da
   panel carrying revenue (BACKLOG 43, from 2026-10-02). **Source**: BACKLOG
   52m; `PLAN_ONE_STOP_DASHBOARD.md` D17. **Owner**: Claude Code. **Model**: Sonnet. **Size**: ~3
   files.
+
+- [ ] **O34c. Companies House clears the presenter for live accounts filing.** BACKLOG 34c steps 2 and 3, after B34.6c's sandbox proof: ask the XML team (`xml@companieshouse.gov.uk`) to clear presenter E0000052288 for the live service and issue the live package reference (the test one is 0012); then set the live presenter id, presenter code and `COMPANIES_HOUSE_PACKAGE_REFERENCE` on GitHub's `prod` environment (Settings, Environments, prod), which `deploy-environment.yml` carries into Secrets Manager. Blocked on B34.6c. **Source**: BACKLOG 34c. **Owner**: Operator. **Model**: none. **Size**: 0 files.
+
+- [ ] **B34c. Companies House accounts filing launched on prod.** BACKLOG 34c steps 4 to 6: `CompaniesHouseStack.java` sets the prod values (`COMPANIES_HOUSE_GATEWAY_TEST=false`, the live package reference) instead of leaving them unset; one filing on the prod lane for a company the operator controls, polled to a terminal state; `prod` added to `file-micro-entity-accounts`' `environments` and `resident`'s listing in `web/public/submit.catalogue.toml`, with the activity page and the accounts video no longer calling it a sandbox preview. Blocked on B34.6c and O34c. **Source**: BACKLOG 34c. **Owner**: Claude Code. **Model**: Sonnet. **Size**: ~5 files.
 
 ## Discipline
 
