@@ -87,12 +87,9 @@ Posting rules:
 - `stripePayoutLines` exists for `reconcileStripeMonth`'s own proof figures, not for a line this
   book keeps: the NatWest current-account CSV already carries the same payout as a BAC receipt
   (same date, same amount), and posting both counts the payout twice.
-- The engine has no way yet to net a Stripe refund or dispute against turnover: a sales-journal
-  line's amount is schema-fixed to zero or more, and nothing reads `documentType`, so a
-  `credit-note` line still adds to turnover instead of reducing it. Posting the refund is still
-  correct; the turnover figure it feeds stays overstated by twice the refunded amount (once for
-  never cancelling the original sale, once for adding again) until the engine gains a way to net
-  it (a spreadsheets change, not a parser one).
+- A refund or supplier credit note posts as its own line with `documentType: "credit-note"`;
+  diya-gl 1.2.32 and later subtract it from sales or purchases (bad debts 4005 and asset disposals
+  4006 keep their own sign).
 
 Glue code for a run goes in the session's scratchpad, not the repository. A defect in a committed
 parser is fixed in the parser, with a test, on a branch.

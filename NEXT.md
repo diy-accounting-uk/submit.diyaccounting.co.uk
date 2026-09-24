@@ -48,196 +48,6 @@ Shared facts for the analytics rows (B52d, B52e, B52l, B52m): the prod Athena da
 **COOL-DOWN is on since 2026-09-23T23:07:44Z.** No new board rows except a degradation. Agents commit
 and stop. One branch is driven green at a time. Lifted only by the operator in their own words.
 
-- [ ] **B30be. Refine pass 2 names the call site and the forbidden patterns.** On `claude/b89-board`, PR #346. The coordinator
-  corrected 6 agent results on 2026-09-23 (knip deleting a used file, a Stripe API pin on every
-  client, a `GITHUB_ENV` name clash, a compatibility alias, a stack-update heuristic, a
-  `.dockerignore` excluding `infra/`). In `.claude/skills/refine/SKILL.md` pass 2 (`## Pass 2 —
-  feasibility`, line 52), require every
-  brief to name the exact call site (file:line) the change lands on, and to list the patterns the
-  rules forbid that the change could reach: aliases, a setting applied wider than the call that
-  needs it, whole-tree formatting or deletion tools, broad ignore rules. **Source**: session
-  report Mc+ncD. **Owner**: Claude Code. **Model**: Haiku. **Size**: 1 file.
-
-- [ ] **OF1a. PayPal client id read from a variable.** On `claude/b89-board`, PR #346. The operator created the live app
-  `diya-finance` and put `PAYPAL_CLIENT_SECRET` on the `prod` environment as a secret and
-  `PAYPAL_CLIENT_ID` as a variable (2026-09-23). `.github/workflows/deploy-environment.yml`'s step
-  "Create secret in AWS from secrets.PAYPAL_CLIENT_ID" (line 339) reads `secrets.PAYPAL_CLIENT_ID`,
-  so it would skip. Change it to `vars.PAYPAL_CLIENT_ID` (and its step name), keep the secret step.
-  The merge's push to `main` runs `deploy-environment.yml` itself (the workflow's own path is in
-  its `push.paths`); confirm that run's environment is prod, and only if it is not, dispatch
-  `gh workflow run deploy-environment.yml --ref main -f environment-name=prod`. Then confirm
-  `prod/submit/paypal/client_id` and `client_secret` exist (`aws --profile submit-prod
-  secretsmanager describe-secret --secret-id <id>`; both were absent on 2026-09-23). Then F1b runs.
-  **Owner**: Claude Code. **Model**: Haiku. **Size**: 1 file.
-
-- [ ] **CS1. `compliance.toml`'s presenter status is current.** On `claude/b89-board`, PR #346. The `companies-house-presenter`
-  item (line 30) says test-account activation is pending; the test presenter 66666727000 was
-  issued 2026-09-11 and its ci secrets set 2026-09-12. Update `description`, `status` and `date`,
-  `compliance.yml` reads it (REPORT_CAPABILITIES OPS-38); a TOML parse is the proof.
-  **Owner**: Claude Code. **Model**: Haiku. **Size**: 1 file.
-
-- [ ] **B30bf. A parser brief carries one real month and its expected residual.** On `claude/b89-board`, PR #346. The PayPal
-  statement parser took 4 rounds (0.67M tokens) because the activity-summary parse was overwritten
-  by a later bare heading and no fixture caught it. In `.claude/skills/refine/SKILL.md` pass 2 and
-  `.claude/skills/company-book/SKILL.md`'s `## Build` (line 32), require a parser brief to name one real
-  source month (its path under `../drive/…/finance/`) and the expected reconciliation residual
-  (0) as the first test. Shares `refine/SKILL.md` with B30be: one agent; the `company-book/SKILL.md` line lands in F2k's agent. **Source**: session
-  report Mc+ncD. **Owner**: Claude Code. **Model**: Haiku. **Size**: 2 files.
-
-- [ ] **B30bb. A Markdown-only push leaves a PR blocked.** On `claude/b89-board`, PR #346. The proof on #346 showed a dispatched `test.yml` does not count (GitHub leaves workflow_dispatch suites out of a PR's rollup); an agent is changing `test.yml` to run on every push and skip its heavy jobs on a Markdown-only one, which satisfies the required checks. `main`'s ruleset (16057564) requires
-  `Check commit signatures`, `npm test`, `maven test`, `eslint` and `CodeQL` on the PR head, but
-  `.github/workflows/codeql.yml` ignores `**.md` on push and pull_request (lines 19 and 23) and has
-  no `workflow_dispatch`, and `test.yml` skips a Markdown-only push too (line 57; it already has
-  `workflow_dispatch`, line 8); PR #344's head `5175ec17` (a skill file) sat `BLOCKED` until the
-  branch was moved back. `Check commit signatures` comes from `verify-commit-signatures.yml` on
-  `pull_request`, so it runs. Add `workflow_dispatch` to `codeql.yml` (the analyze job's `if:` at
-  line 42 already admits it), and in `.claude/skills/auto-merge/SKILL.md` a step after the
-  `gh pr list` read (line 47): when the PR head changes only `.md` files and a required check is
-  missing, dispatch `test.yml` and `codeql.yml` on the head (`gh workflow run <file> --ref
-  <headRef>`) and wait for them. Proof: a Markdown-only commit on a
-  PR reaches `CLEAN` after the dispatches. Saves about 20 minutes and a force-push per Markdown-only
-  head (session report Mc+ncD). Same agent as B30bc. **Owner**: Claude Code. **Model**:
-  Sonnet. **Size**: 2 files.
-
-- [ ] **B30bd. Worker agents start no agents.** On `claude/b89-board`, PR #346. The capabilities-report agent forked itself
-  recursively on 2026-09-23: 0.78M tokens reported, more unreported, and duplicate writers whose
-  errors had to be relayed and corrected. In `.claude/skills/do-next/SKILL.md` and
-  `.claude/skills/iterate/SKILL.md`, make every worker brief say it must not call the `Agent` tool
-  or fork, and that only the coordinator fans out; a brief whose work needs splitting is split by
-  the coordinator before dispatch. **Source**: session report Mc+ncD. **Owner**: Claude Code.
-  **Model**: Haiku. **Size**: 2 files.
-
-- [ ] **B30bg. Sibling-repository worktrees push in one attempt.** Skill part on `claude/b89-board`, PR #346; the hook part merged in spreadsheets PR #137. The spreadsheets push on
-  2026-09-23 took 3 attempts, one of them a 41-minute run: the worktree had an empty
-  `node_modules`, and `../spreadsheets.diyaccounting.co.uk/.githooks/pre-push` wrote about 100
-  generated files (and changed `provenance-data.js`) that then sat uncommitted. In
-  `.claude/skills/do-next/SKILL.md`, make a sibling-repository brief symlink the main checkout's
-  `node_modules` into its worktree; in the spreadsheets repository, make the pre-push hook fail
-  with the list of files it wrote when `git status --porcelain` is not clean after
-  `node scripts/test-scope.mjs --base "$base"` runs (both calls, lines 127 and 132, today end the
-  hook with that command's exit status) (a branch and PR there). Shares `do-next/SKILL.md` with B30bd: one agent. **Source**: session report
-  Mc+ncD. **Owner**: Claude Code. **Model**: Sonnet. **Size**: 2 files (one per repository).
-
-- [ ] **B52h2. Forecast Search at a match type and a bid ceiling.** On `claude/b89-board`, PR #346. `infra/google/ads/ads-forecast.js`
-  sends every keyword as `BROAD` with no maximum cost per click (line 155), so the forecast of
-  2026-09-23 read £38 a click for £50 a day. Add `--match-type <EXACT|PHRASE|BROAD>` and
-  `--cpc-ceiling-gbp <n>` (the API's field is `maxCpcBidCeilingMicros` inside
-  `maximizeClicksBiddingStrategy`, line 154), with cases in `app/unit-tests/scripts/adsForecast.test.js`,
-  and in `.claude/skills/ads-advisor/SKILL.md` say to quote the match type and ceiling with any
-  forecast. **Owner**: Claude Code. **Model**: Haiku. **Size**: 3 files.
-
-- [ ] **F2h. `mail-invoices.js` finds the workspace from a worktree.** On `claude/b89-board`, PR #346. `WORKSPACE_ROOT` in
-  `mcp/lib/finance/mail-invoices.js` (line 21) is four directories above the file, which from
-  `.claude/worktrees/<name>/` lands inside `submit.diyaccounting.co.uk/`, so `CORPUS_BIN` and
-  `CORPUS_CONFIG` (lines 22 to 23) miss and F2d needed a `runCorpus` override. Replace it with an
-  upward walk from the file's directory, capped at 8 levels, that accepts the first directory
-  whose basename equals a configured name and which holds `index/corpus.toml`; the name is a
-  config property, `"config": { "workspaceDirName": "diy-accounting-limited" }` in
-  `mcp/package.json`, read by the module. No match within the cap throws, naming the start path,
-  the cap and the name. Cases in `mcp/test/mail-invoices.test.js`: the main checkout, a worktree
-  path, a path with no such directory. **Source**: operator 2026-09-23 (option a
-  with a cap and the configured name). **Owner**: Claude Code. **Model**: Haiku. **Size**: 3
-  files.
-
-- [ ] **F2i. Direct debits confirmed from a payment schedule.** On `claude/b89-board`, PR #346. `invoiceLinesForPeriod` in
-  `mcp/lib/finance/mail-invoices.js` (line 165) takes one total per document
-  (`findInvoiceTotal`, line 105), so a schedule of dated instalments posts nothing. Hiscox's
-  "Payment schedule.pdf" is indexed in the corpus as an attachment section
-  (`--- attachment: Payment schedule.pdf ---` in `corpus doc mail-antony
-  2026/6/12/19eba6fef669188c.eml`): a `Date  Amount` header, then rows `08/08/2026  £10.12`, and
-  "If your payment collection date falls on a weekend or a bank holiday, we'll collect it the next
-  working day". Add a schedule extractor: a document with a "Payment schedule" section yields
-  (date, amount) instalments; each instalment inside the period becomes one `purchases` line to
-  the supplier's account, dated on the collection day, matched to the bank's direct debit of the
-  same amount dated on the scheduled day or up to 4 days after. Proof: March to August 2026 gives
-  £9.17 March to July (the 2025 schedule, `2025/6/12/19762c6fb3568039.eml`) and £10.12 on
-  10 August, the figures `../staging/2026-2027/book/VERIFICATION.md` (line 68) cites by hand, to
-  account 5700. Cases in `mcp/test/mail-invoices.test.js` over the recorded attachment text.
-  Shares `mail-invoices.js` with F2h: one agent, F2h first. **Source**: `PARKED.md`; operator
-  2026-09-23 (option a). **Owner**: Claude Code. **Model**: Sonnet. **Size**: 2 files.
-
-- [ ] **ITSA8. The diversion note for income the build does not cover.** On `claude/b89-board`, PR #346. Row 8 of
-  `_developers/hmrc/ITSA_PRODUCTION_APPROVALS_CHECKLIST.md` is "Not evidenced": a customer with
-  foreign property or other income is not told where to finish their return. Worse,
-  `applyPickedBusinessToLinks` in `web/public/hmrc/itsa/dashboard.html` (line 295) routes every
-  type that is not `self-employment` to the `ukProperty*` pages, so a picked `foreign-property`
-  business is sent to UK property forms. Make a `foreign-property` pick show the diversion note and
-  no step 3 to 8 links, add the note beside the picker (line 331), cover both in
-  `web/browser-tests/itsaDashboard.browser.test.js` (its `page.route` pattern, line 45), and mark
-  row 8 (checklist line 41) evidenced with the file and line. `obligations.html` (line 74) and
-  `lossesAndClaims.html` (line 76) offer `foreign-property` as a type; leave them, HMRC's
-  obligations and losses cover it. **Owner**:
-  Claude Code. **Model**: Sonnet. **Size**: ~3 files.
-
-- [ ] **B30bi. The ci last-known-good set goes 12 hours after its promotion.** On `claude/b89-board`, PR #346. `findSkipReason`
-  in `app/functions/infra/selfDestruct.js` (line 137) skips every self-destruct fire while
-  `/submit/ci/last-known-good-deployment` names the set, so `ci-set1` stands until another ci
-  deploy passes (about $15 a month: 5 provisioned-concurrency configs, 2 canaries, 3 alarms).
-  Protect the set only while the parameter's `LastModifiedDate` (from the same `GetParameter`
-  call, `readSsmParameter` line 114) is under 12 hours old; `deploy.yml`'s
-  `set-last-known-good-deployment` (line 3093) rewrites it on each promotion, so the clock runs
-  from the last promotion. The protection window is an env var set in
-  `infra/main/java/co/uk/diyaccounting/submit/stacks/SelfDestructStack.java` beside
-  `LAST_KNOWN_GOOD_PARAMETER_NAME` (line 245), value 12. When the set is destroyed past the
-  window, write `None` to the parameter first (the value `deploy.yml` line 513 and
-  `destroy-ci.yml` line 565 treat as no set), so a skip-deploy run never resolves to a destroyed
-  set; grant `ssm:PutParameter` on that parameter in the policy at line 210, which grants
-  `ssm:GetParameter` today. An unreadable parameter stays protection. The schedule fires every 4
-  hours from creation, so the set goes 12 to 16 hours after promotion. Cases in
-  `app/unit-tests/functions/selfDestruct.test.js` (inside the window, past it, the `None` write,
-  unreadable), and `infra/test/java/co/uk/diyaccounting/submit/stacks/SelfDestructStackTest.java` for the env var and the grant (sid `ReadLastKnownGoodDeployment`); `./mvnw clean verify`
-  once. Prod never deploys a `SelfDestructStack`, so prod is unaffected. **Source**: operator
-  2026-09-23 (option A, 12 hours). **Owner**: Claude Code. **Model**: Sonnet. **Size**: ~4 files.
-
-- [ ] **ITSA13. WCAG 2.1 AA evidence for the 19 ITSA pages.** On `claude/b89-board`, PR #346. Row 13 of the checklist is "Not
-  evidenced": no scan names any of the 19 pages under `web/public/hmrc/itsa/`. Three lists carry
-  the scanned pages: `scripts/axe-quickscan.mjs`'s `PAGES` (line 12; run as `node
-  scripts/axe-quickscan.mjs <baseUrl> wcag2a,wcag2aa,wcag21a,wcag21aa`), `package.json`'s
-  `accessibility:axe-*` URL lists (lines 328 to 330), and `.pa11yci.{proxy,ci,prod}.json`, which
-  `.github/workflows/compliance.yml`'s pa11y job runs (line 151). Add the 19 pages to all of them.
-  Signed out, a page scans only its empty state; scan the populated state too with a browser test
-  that serves the page as `web/browser-tests/itsaDashboard.browser.test.js` does (`page.route`,
-  line 45) and injects `node_modules/axe-core/axe.min.js` (installed). Fix what either finds and
-  record the result in the checklist (row 13, line 46) and `REPORT_ACCESSIBILITY_PENETRATION.md`.
-  **Owner**: Claude Code. **Model**: Sonnet. **Size**: ~8 files.
-
-- [ ] **B30bc. A PII scan on every push, docs included.** On `claude/b89-board`, PR #346: its own patterns, zero hits on the current tree, personal data exempt in test directories; the two committed public IPs it found are redacted. The PR-level proof below runs once the branch's deploy ends. GitHub secret scanning with push
-  protection and non-provider patterns is on for this repository, so provider tokens and private
-  keys are blocked at push already; nothing scans what a push adds for personal data. Add
-  `.github/workflows/content-scan.yml` on push (every branch, no path filter) and pull_request: scan
-  the lines the push or PR adds with the patterns `scripts/redact-triage-output.mjs` already
-  exports (`DENY_PATTERNS`, line 19: email, NINO, UTR, VRN, EORI, AWS keys, JWTs, bearer tokens,
-  IP addresses), with an allow-list for addresses and ids the repository publishes on purpose. Fail on a hit and print
-  the file, line and label, never the matched value. Extend `redact-triage-output.mjs` or a
-  sibling script with tests, as the capabilities rule asks.
-  Proof, on a branch with an open PR, as two separate Markdown-only pushes: one changing a
-  root `.md` file, one changing a `.claude/skills/*/SKILL.md`; each push runs `content scan` on
-  its head (push and pull_request), and with B30bb's dispatches the PR reaches `CLEAN`. A third
-  push adding a seeded fake NINO to a `.md` fails the scan with file, line and label; revert it.
-  Record the run ids in OB30bc's row. Adding `content scan` to the ruleset's
-  required checks is OB30bc. **Owner**: Claude Code. **Model**: Sonnet. **Size**: ~4 files.
-
-- [ ] **F2k. DIYA's book rebuilt so diya-gl reads it.** On `claude/b89-board`, PR #346: bank lines carry
-  `debitCreditCode`, `book-from-workbook.js` emits the opening journal and the opening `BC` bank
-  lines, and `periodCoveredEnd` is the fiscal year end (2027-03-31). The rebuilt book (1 April to
-  31 August 2026, 452 lines) is in `../staging/2026-2027/book/`: 0 book-check failures, bank 1200
-  and 1210 close at £1,624.90 and £271.69, Stripe residual 0, opening balance sheet populated. The
-  superseded book is in `../staging/2026-2027/book-2026-09-23-superseded/`. Remainders: F2l, OF2k,
-  F2m. **Source**: Cowork inbox 2026-09-23T20:46:44Z. **Owner**: Claude Code. **Model**: Sonnet.
-  **Size**: 5 files.
-
-- [ ] **F2l. The engine nets a credit note against turnover.** In flight: spreadsheets PR #138 (`claude/gl-creditnote-net`), purchases credit notes included; merging it publishes the engine. The diya-gl schema fixes a line's
-  `amount` at `minimum: 0` (`../spreadsheets.diyaccounting.co.uk/web/spreadsheets.diyaccounting.co.uk/public/schema/diya-gl-lines-v2.schema.json`
-  lines 69 to 72) and nothing reads `documentType`: `computeGrossSales`
-  (`app/lib/scenario-extractor.js` line 536), `salesTotal` (`app/lib/book-checks.js` line 326) and
-  `totalsByCode` add a `sales` line with `documentType: "credit-note"` as a sale. Make those three
-  subtract it, with cases over a sale and its refund in the same month, in a spreadsheets branch
-  and PR; the release carries it to `@diy-accounting-uk/diya-gl`. DIYA's April book carries two
-  Stripe refunds (£10.98 gross), so turnover reads £18.30 net too high until this lands; then
-  rebuild the zip and re-run the report (F2k's glue is in the session scratchpad; the steps are in
-  the company-book skill). **Source**: F2k's diagnosis. **Owner**: Claude Code. **Model**: Sonnet.
-  **Size**: ~4 files.
-
 - [ ] **PU-7n. The practice licence launch.** On `claude/b90-board` (catalogue, nav, probes, the CDK price-id wiring; live prices created 2026-09-23 on the operator's go: year `price_1UIyyPCD0Ld2ukzIHeO99d6G`, month `price_1UIyyPCD0Ld2ukzIQefbnWMO`); the batch's suites run before its push. The DIYA-GL line is spreadsheets branch `claude/diya-gl-resident-pro`. Operator, 2026-09-22: `resident-pro` at £199 a
   year and £19.99 a month, the monthly price shown only on `bundles.html` (the DIYA-GL page shows
   annual prices alone, for `resident` too). `web/public/submit.catalogue.toml`'s `resident-pro`
@@ -255,6 +65,19 @@ and stop. One branch is driven green at a time. Lifted only by the operator in t
   Code. **Model**: Sonnet. **Size**: ~9 files.
 
 ## Machine-only
+
+- [ ] **F1b. PayPal's six months staged.** Run `scripts/finance/paypal-stage.js` (the credential
+  read from Secrets Manager `prod/submit/paypal/client_id` and `prod/submit/paypal/client_secret`
+  with `AWS_PROFILE=submit-prod`) for each month from March to August 2026, writing
+  `../staging/<year-end>/paypal/<yyyy-mm-dd>-paypal-transactions.json`. F2g reads the output.
+  **Source**: `../PLAN_FINANCE_AUTOMATION.md` route 1. **Owner**: Claude Code.
+  **Model**: Haiku. **Size**: 0 files.
+
+- [ ] **F2e. The MCP writes a populated spreadsheets package.** A tool in `mcp/lib/finance/` that
+  takes the book and lines and writes a DIY Accounting spreadsheets package, reconciled under the
+  spreadsheets repository's existing reconciliation harness rather than a new check; nothing
+  automated writes to Google Drive. **Source**: `../PLAN_FINANCE_AUTOMATION.md`
+  phase 2. **Owner**: Claude Code. **Model**: Sonnet. **Size**: ~3 files.
 
 - [ ] **CS-1. Confirmation statement fixtures.** Save the `ConfirmationAndVerificationStatement-v1-0` schema set and `ConfirmationStatement-v1-3.xsd` (the statement reverts to it once every officer is verified), the CompanyData and PaymentPeriods schemas, and the published examples under `fixtures/companies-house-xmlgw/` from `xmlgw.companieshouse.gov.uk/v1-0/schema/` and `/examples/`. The form since 2025-11-18 is `ConfirmationAndVerificationStatement`; `ConfirmationStatement-v1-3` has no verification block. `app/unit-tests/licenceHeaders.test.js` (line 34) already exempts `fixtures/companies-house-xmlgw/` from the licence header; the accounts fixtures there (`GetSubmissionStatus_response.xml`) show the naming. Needs network access to `xmlgw.companieshouse.gov.uk`. **Source**: `PLAN_COMPANIES_HOUSE_CONFIRMATION_STATEMENT.md` (its Tasks table carries the files). **Owner**: Claude Code. **Model**: Haiku. **Size**: 12 files.
 
@@ -274,6 +97,30 @@ and stop. One branch is driven green at a time. Lifted only by the operator in t
 
 ## Human-driven
 
+- [ ] **O11. The ITSA send day.** Operator, 2026-09-23: the day after PR #346 merges, which is 2026-09-24 (#346
+  merged 2026-09-23 23:25 UTC; checklist rows 8 and 13 are evidenced on `main`; the 2026-09-21
+  sandbox run is inside HMRC's 14 days). On that day send `_developers/hmrc/DRAFT_EMAIL_ITSA_RECOGNITION.md` to
+  `SDSTeam@hmrc.gov.uk`, then `_developers/hmrc/DRAFT_EMAIL_ITSA_PRODUCTION_CREDENTIALS.md` when
+  SDST answers. **Source**: BACKLOG 11; `PLAN_ITSA_PHASE_2.md` T10. **Owner**: Operator. **Model**:
+  none. **Size**: 0 files.
+
+- [ ] **OB30bc. Make the content scan a required check.** Add `content scan` to the required
+  status checks of ruleset 16057564
+  (<https://github.com/diy-accounting-uk/submit.diyaccounting.co.uk/rules/16057564>), so no PR
+  merges past a PII hit. B30bc merged in PR #346 (2026-09-23); on #346 a root `.md` push and a skill push each ran
+  `content scan`, and the Markdown-only head reached `CLEAN`. **Owner**: Operator.
+  **Model**: none. **Size**: 0 files.
+
+- [ ] **OF2. DIYA's book saved to the DIYA cloud.** The operator saved F2k's book from the
+  DIYA-GL web app on 2026-09-23 22:51 (signed in as the operator's personal Google address;
+  company "DIY Accounting Limited", ltd, 2026-04-01 to 2027-03-31, version 1). That book predates
+  the corrections and sits in the 35-day sandbox, expiring about 2026-10-28. The final book is
+  `../staging/2026-2027/book/book-diya-gl.zip` (453 lines; on diya-gl 1.2.32: 0 book-check and 0
+  report failures, turnover £2,294.82, directors' loan 0.00, bank 1200 £1,624.90, 1210 £271.69).
+  Save it as a new version of the same company, and keep it past 35 days (a Resident subscription
+  or a comp on the account that holds it). **Source**: `../PLAN_FINANCE_AUTOMATION.md` phase 2. **Owner**: Operator.
+  **Model**: none. **Size**: 0 files.
+
 - [ ] **CS-H1. Apply for a Companies House credit account.** Presenter E0000052288 was issued for accounts and fee-free documents only; a confirmation statement's £50 fee needs a credit account. Complete the credit account application, send it to `chdfinance@companieshouse.gov.uk`, ask for it to be linked to E0000052288 (up to 5 working days), and keep the account number in the credentials store. **Source**: `PLAN_COMPANIES_HOUSE_CONFIRMATION_STATEMENT.md` (its Tasks table carries the files). **Owner**: Operator. **Model**: none. **Size**: 0 files.
 
 - [ ] **CS-H3. Directors' personal codes and register dates of birth.** All three directors' 11-character Companies House personal codes, register dates of birth and full names with middle names (`OtherForenames` is enforced); typed on the page at filing time, never stored. The same codes file the 5 October statement by WebFiling (OCS, runbook task B), so collect them once. **Source**: `PLAN_COMPANIES_HOUSE_CONFIRMATION_STATEMENT.md` (its Tasks table carries the files). **Owner**: Operator. **Model**: none. **Size**: 0 files.
@@ -290,13 +137,6 @@ and stop. One branch is driven green at a time. Lifted only by the operator in t
   **Model**: none. **Size**: 0 files.
 
 ## Blocked
-
-- [ ] **O11. The ITSA send day.** Operator, 2026-09-23: the day after PR #346 merges (so checklist
-  rows 8 and 13 read evidenced), inside the 14-day window that the 2026-09-21 sandbox run keeps open
-  to 5 October. Claude Code writes the date here and into B11.T10's row when #346 merges. On that day send `_developers/hmrc/DRAFT_EMAIL_ITSA_RECOGNITION.md` to
-  `SDSTeam@hmrc.gov.uk`, then `_developers/hmrc/DRAFT_EMAIL_ITSA_PRODUCTION_CREDENTIALS.md` when
-  SDST answers. **Source**: BACKLOG 11; `PLAN_ITSA_PHASE_2.md` T10. **Owner**: Operator. **Model**:
-  none. **Size**: 0 files.
 
 - [ ] **CS-H2. Send the confirmation-statement email.** Send `../DRAFT_EMAIL_XMLGW_CS01.md` on the `xml@companieshouse.gov.uk` thread, and paste the answers into CS-9's row. Blocked on CS-H2d. **Source**: `PLAN_COMPANIES_HOUSE_CONFIRMATION_STATEMENT.md` (its Tasks table carries the files). **Owner**: Operator. **Model**: none. **Size**: 0 files.
 
@@ -328,25 +168,11 @@ and stop. One branch is driven green at a time. Lifted only by the operator in t
 
 - [ ] **CS-H6. Go for the prod confirmation statement.** Give the go for a statement for 06846849 through Submit (a fee-free second statement in the 2026-27 payment period, after the 5 October one by WebFiling), knowing it moves the next review date. Blocked on CS-11, CS-H3 and CS-H4. **Source**: `PLAN_COMPANIES_HOUSE_CONFIRMATION_STATEMENT.md` (its Tasks table carries the files). **Owner**: Operator. **Model**: none. **Size**: 0 files.
 
-- [ ] **OB30bc. Make the content scan a required check.** Add `content scan` to the required
-  status checks of ruleset 16057564
-  (<https://github.com/diy-accounting-uk/submit.diyaccounting.co.uk/rules/16057564>), so no PR
-  merges past a PII hit. Blocked on B30bc's merge and its proof: both docs-only pushes (a root
-  `.md`, a skill) ran `content scan` and the PR reached `CLEAN`. **Owner**: Operator.
-  **Model**: none. **Size**: 0 files.
-
 - [ ] **B30at1. The sweep's claim check, proven.** Needs a claimed set that is not last-known-good
   (the sweep keeps the last-known-good set before it reads any claim): the next time two branches
   deploy at once, `gh workflow run destroy-ci.yml -f sweep-for-stacks=true` while the second holds
   `ci-set2`, and its log shows "stays: claimed by run". Blocked on two branches deploying at once. **Owner**: Claude Code. **Model**: Haiku.
   **Size**: 0 files.
-
-- [ ] **F1b. PayPal's six months staged.** Run `scripts/finance/paypal-stage.js` (the credential
-  read from Secrets Manager `prod/submit/paypal/client_id` and `prod/submit/paypal/client_secret`
-  with `AWS_PROFILE=submit-prod`) for each month from March to August 2026, writing
-  `../staging/<year-end>/paypal/<yyyy-mm-dd>-paypal-transactions.json`. F2g reads the output.
-  Blocked on OF1a. **Source**: `../PLAN_FINANCE_AUTOMATION.md` route 1. **Owner**: Claude Code.
-  **Model**: Haiku. **Size**: 0 files.
 
 - [ ] **F2g. PayPal transactions into diya-gl lines.** `mcp/lib/finance/paypal-lines.js` over
   F1b's staged files, on `mcp/lib/finance/stripe-lines.js`'s pattern. The statement route,
@@ -361,15 +187,6 @@ and stop. One branch is driven green at a time. Lifted only by the operator in t
   `../staging/2026-2027/book/lines.jsonl`.
   Blocked on F1b. **Source**: `../PLAN_FINANCE_AUTOMATION.md` phase 2. **Owner**: Claude Code.
   **Model**: Sonnet. **Size**: ~2 files.
-
-- [ ] **B11.T10. ITSA phase 2: the testing evidence inside the window.** Within the 14 days before
-  the day O11 names, re-run `scripts/itsa-sandbox-year.js` for 2023-24, 2025-26 and 2026-27 (the
-  command in `_developers/hmrc/ITSA_PHASE_2_SANDBOX.md` "The command", lines 66 to 80, output
-  under `../itsa-sandbox/<tax-year>/`) and update the "Testing in the last two weeks" row of
-  `_developers/hmrc/hmrc_questionnaire_itsa_pass_diy_accounting_limited_v1.md` (line 28, today
-  "2026-09-21 (`5f2ff46a`)") with the run dates and commit. Blocked on O11's day: the day after PR #346 merges; no re-run is needed if that falls on or before 5 October (the 2026-09-21 run's 14 days). **Source**:
-  BACKLOG 11; `PLAN_ITSA_PHASE_2.md` T10. **Owner**: Claude Code. **Model**: Haiku. **Size**:
-  ~1 file.
 
 - [ ] **B34.6c. Companies House accounts filing: the sandbox proof.** The XML team was asked on 2026-09-23 22:22 UTC in a new thread (from antony@, subject "Submission 000004 status and
   GetSubmissionStatus query") whether 000004 was accepted and whether lookups are enabled for test
@@ -418,21 +235,6 @@ and stop. One branch is driven green at a time. Lifted only by the operator in t
   `operatorSnapshotPublish.js`, and a block above `renderSnapshot`'s objectives in
   `web/public/operator/dashboard.html`. Blocked on OF2 (DIYA's final book saved to the DIYA cloud and kept past the 35-day sandbox). **Source**: BACKLOG 52i; `PLAN_ONE_STOP_DASHBOARD.md` D10. **Owner**:
   Claude Code. **Model**: Sonnet. **Size**: ~4 files.
-
-- [ ] **F2e. The MCP writes a populated spreadsheets package.** A tool in `mcp/lib/finance/` that
-  takes the book and lines and writes a DIY Accounting spreadsheets package, reconciled under the
-  spreadsheets repository's existing reconciliation harness rather than a new check; nothing
-  automated writes to Google Drive. Blocked on F2l (the engine that nets refunds). **Source**: `../PLAN_FINANCE_AUTOMATION.md`
-  phase 2. **Owner**: Claude Code. **Model**: Sonnet. **Size**: ~3 files.
-
-- [ ] **OF2. DIYA's book saved to the DIYA cloud.** The operator saved F2k's book from the
-  DIYA-GL web app on 2026-09-23 22:51 (signed in as the operator's personal Google address;
-  company "DIY Accounting Limited", ltd, 2026-04-01 to 2027-03-31, version 1). That book predates
-  F2m (turnover £2,901.07 divided by 1.2, members register empty) and sits in the 35-day sandbox,
-  expiring about 2026-10-28. Remaining: save the final book (a new version of the same company) and
-  keep it past 35 days (a Resident subscription or a comp on the account that holds it). Blocked
-  on F2l (spreadsheets PR #138; its release republishes the engine that reads the book). **Source**: `../PLAN_FINANCE_AUTOMATION.md` phase 2. **Owner**: Operator.
-  **Model**: none. **Size**: 0 files.
 
 ## Discipline
 
