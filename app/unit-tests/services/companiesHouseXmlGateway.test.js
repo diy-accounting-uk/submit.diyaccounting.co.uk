@@ -370,6 +370,32 @@ describe("services/companiesHouseXmlGateway", () => {
       const xml = `<?xml version="1.0"?><GovTalkMessage xmlns="http://www.govtalk.gov.uk/CM/envelope"><Body></Body></GovTalkMessage>`;
       expect(parseCompanyDataResponse(xml)).toBeUndefined();
     });
+
+    test("parses statementOfCapital in the shape buildConfirmationStatementBody's builder takes", () => {
+      const result = parseCompanyDataResponse(COMPANY_DATA_RESPONSE_FIXTURE);
+      expect(result.statementOfCapital).toMatchObject({
+        totalAmountUnpaid: "1",
+        totalNumberOfIssuedShares: "1",
+        shareCurrency: "GBP",
+        totalAggregateNominalValue: "1",
+      });
+      expect(result.statementOfCapital.shares).toEqual([
+        { shareClass: "Ordinary", prescribedParticulars: "BLAH BLAH BLAH", numShares: "1", aggregateNominalValue: "1" },
+      ]);
+    });
+
+    test("parses shareholdings, including a plain Surname/Forename shareholder name and address", () => {
+      const result = parseCompanyDataResponse(COMPANY_DATA_RESPONSE_FIXTURE);
+      expect(result.shareholdings).toHaveLength(1);
+      expect(result.shareholdings[0]).toMatchObject({ shareClass: "Ordinary", numberHeld: "1" });
+      expect(result.shareholdings[0].shareholders).toEqual([
+        {
+          surname: "Grover",
+          forename: "Philip",
+          address: { premise: "21", street: "My Street", postTown: "Cardiff", country: "GBR" },
+        },
+      ]);
+    });
   });
 
   describe("parsePaymentPeriodsResponse", () => {

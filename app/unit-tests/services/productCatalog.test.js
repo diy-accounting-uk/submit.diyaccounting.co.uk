@@ -146,6 +146,16 @@ describe("productCatalogHelper", () => {
     expect(isActivityAvailable(catalog, "file-micro-entity-accounts", "default")).toBe(false);
   });
 
+  it("file-confirmation-statement activity should be granted by resident and resident-pro, ci only", () => {
+    const catalog = parseCatalog(tomlText);
+    const activity = catalog.activities.find((a) => a.id === "file-confirmation-statement");
+    expect(bundlesForActivity(catalog, "file-confirmation-statement")).toEqual(["resident", "resident-pro"]);
+    expect(isActivityAvailable(catalog, "file-confirmation-statement", "resident")).toBe(true);
+    expect(isActivityAvailable(catalog, "file-confirmation-statement", "default")).toBe(false);
+    expect(activity.environments).toEqual(["local", "test", "simulator", "proxy", "ci"]);
+    expect(activity.environments).not.toContain("prod");
+  });
+
   it("resident-vat carries one monthly Stripe price", () => {
     const catalog = parseCatalog(tomlText);
     const residentVat = getCatalogBundleById(catalog, "resident-vat");

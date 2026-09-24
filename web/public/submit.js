@@ -34,7 +34,13 @@ import { checkAuthStatus, checkTokenExpiry, ensureSession } from "./lib/services
 import { authorizedFetch, fetchWithIdToken, handle403Error, executeAsyncRequestPolling } from "./lib/services/api-client.js";
 import { submitVat, getGovClientHeaders, getClientIP, getIPViaWebRTC } from "./lib/services/hmrc-service.js";
 import { bundlesForActivity, activitiesForBundle, isActivityAvailable, fetchCatalogText } from "./lib/services/catalog-service.js";
-import { searchCompanies, getCompanyProfile, normaliseCompanyNumber } from "./lib/services/companies-house-service.js";
+import {
+  searchCompanies,
+  getCompanyProfile,
+  getOfficers,
+  getPscs,
+  normaliseCompanyNumber,
+} from "./lib/services/companies-house-service.js";
 // Not aliased on import: scripts/bundle-for-tests.js strips import statements with a plain
 // regex rather than a real module resolver, so an "as" rename here would vanish along with the
 // import line while the window assignments below (which need the DIY Accounting Submit name)
@@ -54,6 +60,12 @@ import {
   submitMicroEntityAccounts,
   pollMicroEntityAccounts,
 } from "./lib/services/companies-house-filing-service.js";
+import {
+  getConfirmationStatementFilingData,
+  previewConfirmationStatement,
+  submitConfirmationStatement,
+  pollConfirmationStatement,
+} from "./lib/services/companies-house-confirmation-service.js";
 
 // Debug widgets initial setup
 // Visibility is controlled by developer-mode.js toggle, but we set up hrefs here
@@ -372,6 +384,8 @@ if (typeof window !== "undefined") {
   // Companies House service
   window.searchCompanies = searchCompanies;
   window.getCompanyProfile = getCompanyProfile;
+  window.getOfficers = getOfficers;
+  window.getPscs = getPscs;
   window.normaliseCompanyNumber = normaliseCompanyNumber;
 
   // Companies House filing service
@@ -388,6 +402,12 @@ if (typeof window !== "undefined") {
   window.previewMicroEntityAccounts = previewMicroEntityAccounts;
   window.submitMicroEntityAccounts = submitMicroEntityAccounts;
   window.pollMicroEntityAccounts = pollMicroEntityAccounts;
+
+  // Companies House confirmation statement service
+  window.getConfirmationStatementFilingData = getConfirmationStatementFilingData;
+  window.previewConfirmationStatement = previewConfirmationStatement;
+  window.submitConfirmationStatement = submitConfirmationStatement;
+  window.pollConfirmationStatement = pollConfirmationStatement;
 
   // RUM functions
   window.hasRumConsent = hasRumConsent;

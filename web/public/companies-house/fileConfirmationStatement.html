@@ -1,0 +1,729 @@
+<!doctype html>
+<!-- SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0 -->
+<!-- Copyright (C) 2006-2026 DIY Accounting Limited -->
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <title>File Confirmation Statement - DIY Accounting Submit</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link rel="icon" href="/favicon.ico" sizes="any" />
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+    <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png" />
+    <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16.png" />
+    <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" />
+    <link rel="manifest" href="/site.webmanifest" />
+    <link rel="stylesheet" href="../submit.css" />
+    <!-- CloudWatch RUM configuration placeholders; replace values during deployment -->
+    <meta name="rum:appMonitorId" content="${RUM_APP_MONITOR_ID}" />
+    <meta name="rum:region" content="${AWS_REGION}" />
+    <meta name="rum:identityPoolId" content="${RUM_IDENTITY_POOL_ID}" />
+    <meta name="rum:guestRoleArn" content="${RUM_GUEST_ROLE_ARN}" />
+    <script src="../lib/analytics.js"></script>
+  </head>
+  <body>
+    <a href="#mainContent" class="skip-link">Skip to main content</a>
+    <header>
+      <p class="chrome-fallback"><a href="../">DIY Accounting Submit</a></p>
+      <h1>File Confirmation Statement</h1>
+      <p class="subtitle">File a company's annual confirmation statement (CS01) with Companies House</p>
+    </header>
+
+    <main id="mainContent">
+      <div id="statusMessagesContainer" role="alert" aria-live="polite"></div>
+
+      <div id="loadingSpinner" class="spinner" style="display: none"></div>
+
+      <!-- View 1: which company -->
+      <div id="companyView" class="form-container">
+        <h2>Which company?</h2>
+        <form id="companyForm">
+          <div class="form-group">
+            <label for="companyNumber">Company number</label>
+            <p id="companyNumber-hint" class="hint">
+              The 8-character company number, for example 00000001. Not sure of the number?
+              <a href="companySearch.html">Search Companies House</a> for it first.
+            </p>
+            <input
+              type="text"
+              id="companyNumber"
+              name="companyNumber"
+              required
+              value=""
+              placeholder="e.g., 00000001"
+              aria-describedby="companyNumber-hint"
+              spellcheck="false"
+            />
+          </div>
+          <button type="submit" id="companyLookupBtn" class="btn">Look up company</button>
+        </form>
+      </div>
+
+      <!-- View 2: company authentication code -->
+      <div id="authView" class="form-container" style="display: none">
+        <h2><span id="authCompanyName"></span> (<span id="authCompanyNumber"></span>)</h2>
+        <p>
+          Next confirmation statement due <strong id="authNextDue"></strong>, made up to <strong id="authNextMadeUpTo"></strong>. This is
+          not the company you meant? <a href="#" id="changeCompanyLink">Change company</a>.
+        </p>
+
+        <h3>Current directors on the public register</h3>
+        <table class="data-table" id="publicOfficersTable">
+          <thead>
+            <tr>
+              <th>Name</th>
+              <th>Role</th>
+              <th>Appointed</th>
+              <th>Identity verification</th>
+            </tr>
+          </thead>
+          <tbody id="publicOfficersBody"></tbody>
+        </table>
+
+        <h3>Persons with significant control</h3>
+        <table class="data-table" id="publicPscsTable">
+          <thead>
+            <tr>
+              <th>Name</th>
+              <th>Nature of control</th>
+              <th>Notified</th>
+            </tr>
+          </thead>
+          <tbody id="publicPscsBody"></tbody>
+        </table>
+
+        <form id="authForm">
+          <div class="form-group">
+            <label for="companyAuthCode">Company authentication code</label>
+            <p id="companyAuthCode-hint" class="hint">
+              The 6 to 8 character code Companies House issued for this company. Not stored - used only for this filing.
+            </p>
+            <input
+              type="text"
+              id="companyAuthCode"
+              name="companyAuthCode"
+              required
+              minlength="6"
+              maxlength="8"
+              aria-describedby="companyAuthCode-hint"
+              spellcheck="false"
+            />
+          </div>
+          <button type="submit" id="authSubmitBtn" class="btn">Read register data</button>
+        </form>
+      </div>
+
+      <!-- View 3: review and change -->
+      <div id="reviewView" class="form-container" style="display: none">
+        <h2>Review and change</h2>
+        <form id="reviewForm">
+          <h3>Review date</h3>
+          <div class="form-group">
+            <label for="reviewDate">Confirmation statement date</label>
+            <input type="date" id="reviewDate" name="reviewDate" required />
+          </div>
+
+          <h3>SIC codes</h3>
+          <div class="form-group">
+            <label for="sicCodes">SIC codes (comma-separated, up to four)</label>
+            <input type="text" id="sicCodes" name="sicCodes" spellcheck="false" />
+          </div>
+
+          <h3>Statement of capital</h3>
+          <p class="hint">Sent only when a value below differs from the register.</p>
+          <div class="form-group">
+            <label for="totalAmountUnpaid">Total amount unpaid</label>
+            <input type="number" id="totalAmountUnpaid" name="totalAmountUnpaid" step="1" min="0" />
+          </div>
+          <div class="form-group">
+            <label for="totalNumberOfIssuedShares">Total number of issued shares</label>
+            <input type="number" id="totalNumberOfIssuedShares" name="totalNumberOfIssuedShares" step="1" min="0" />
+          </div>
+          <div class="form-group">
+            <label for="shareCurrency">Share currency</label>
+            <input type="text" id="shareCurrency" name="shareCurrency" spellcheck="false" />
+          </div>
+          <div class="form-group">
+            <label for="totalAggregateNominalValue">Total aggregate nominal value</label>
+            <input type="number" id="totalAggregateNominalValue" name="totalAggregateNominalValue" step="1" min="0" />
+          </div>
+          <div id="shareClassesContainer"></div>
+          <button type="button" id="addShareClassBtn" class="btn-small">Add share class</button>
+
+          <h3>Shareholdings</h3>
+          <div id="shareholdingsContainer"></div>
+          <button type="button" id="addShareholdingBtn" class="btn-small">Add shareholding</button>
+
+          <h3>Registered email address</h3>
+          <div class="form-group">
+            <label for="registeredEmailAddress">Registered email address</label>
+            <input type="email" id="registeredEmailAddress" name="registeredEmailAddress" spellcheck="false" />
+          </div>
+
+          <h3>Trading on a regulated market</h3>
+          <p>This company does not trade on a regulated market, so DTR5 does not apply. Both are filed as false.</p>
+
+          <h3>Lawful purpose statement</h3>
+          <div class="form-group">
+            <input type="checkbox" id="lawfulPurposeStatement" name="lawfulPurposeStatement" required />
+            <label for="lawfulPurposeStatement" style="display: inline; font-weight: normal">
+              The company confirms that the intended future activities of the company are lawful.
+            </label>
+          </div>
+
+          <h3>Director identity verification</h3>
+          <p class="hint">
+            Every current director must have verified their identity with Companies House and enter their 11-character personal code below.
+            A blank row stops this statement being submitted.
+            <a href="https://www.gov.uk/guidance/verify-your-identity-for-companies-house">How to verify identity</a>.
+          </p>
+          <div id="directorRowsContainer"></div>
+
+          <h3>Filing fee</h3>
+          <p id="feeMessage" class="hint"></p>
+
+          <button type="submit" id="previewBtn" class="btn">Preview confirmation statement</button>
+        </form>
+      </div>
+
+      <!-- View 4: preview -->
+      <div id="previewView" class="results-container" style="display: none">
+        <h2>Preview</h2>
+        <p>This is the statement that will be filed. Nothing has been submitted to Companies House yet.</p>
+        <pre id="previewXml" class="ixbrl-preview"></pre>
+        <div class="form-group" id="govTestScenarioGroup" style="display: none">
+          <label for="govTestScenario">Gov-Test-Scenario</label>
+          <input type="text" id="govTestScenario" name="govTestScenario" spellcheck="false" />
+        </div>
+        <div class="button-group">
+          <button type="button" id="backToReviewBtn" class="secondary-button">Back</button>
+          <button type="button" id="submitFilingBtn" class="btn">Submit to Companies House</button>
+        </div>
+      </div>
+
+      <!-- View 5: result -->
+      <div id="resultView" class="results-container" style="display: none">
+        <h2>Filing result</h2>
+        <div id="filingResult"></div>
+        <div id="rejections" style="display: none"></div>
+        <div id="pscFollowUp" style="display: none"></div>
+        <div class="button-group">
+          <button type="button" id="startAgainBtn" class="secondary-button" style="display: none">Start a new filing</button>
+        </div>
+      </div>
+    </main>
+
+    <footer data-footer="activity"></footer>
+
+    <script src="../widgets/page-chrome.js"></script>
+    <script src="../lib/env-loader.js"></script>
+    <script src="../lib/auth-url-builder.js"></script>
+    <script type="module" src="../submit.js"></script>
+    <script src="../developer-mode.js"></script>
+    <script src="../lib/request-cache.js"></script>
+    <script src="../lib/toml-parser.js"></script>
+    <script src="../widgets/entitlement-status.js"></script>
+    <script src="../widgets/auth-status.js"></script>
+    <script src="../widgets/status-messages.js"></script>
+    <script>
+      // File confirmation statement: companyView -> authView -> reviewView -> previewView ->
+      // resultView. No Companies House OAuth token: the filing goes through the XML Gateway with
+      // the operator's presenter credentials, so only the Cognito id token is needed to reach the
+      // API. Both the company authentication code and every director's personal code live only in
+      // this page's own variables - never in localStorage or sessionStorage - and are sent again on
+      // submit, the same rule the micro-entity accounts page follows for its own authentication code.
+
+      let company = null;
+      let companyAuthCode = "";
+      let filingData = null;
+      let originalSicCodes = [];
+      let originalStatementOfCapital = null;
+      let originalShareholdings = [];
+      let originalRegisteredEmailAddress = "";
+      let currentDirectors = [];
+      let shareClassRowCount = 0;
+      let shareholdingRowCount = 0;
+
+      function views() {
+        return {
+          companyView: document.getElementById("companyView"),
+          authView: document.getElementById("authView"),
+          reviewView: document.getElementById("reviewView"),
+          previewView: document.getElementById("previewView"),
+          resultView: document.getElementById("resultView"),
+        };
+      }
+
+      function showView(name) {
+        const all = views();
+        Object.keys(all).forEach((key) => {
+          all[key].style.display = key === name ? "block" : "none";
+        });
+      }
+
+      function textOrDash(value) {
+        return value === undefined || value === null || value === "" ? "-" : value;
+      }
+
+      function officerDisplayName(officer) {
+        if (officer.type === "corporate") {
+          return officer.corporateName || officer.name || "";
+        }
+        return officer.name || [officer.forename, officer.surname].filter(Boolean).join(" ");
+      }
+
+      function renderPublicOfficers(officers) {
+        const body = document.getElementById("publicOfficersBody");
+        body.innerHTML = (officers || [])
+          .filter((officer) => !officer.resignedOn)
+          .map(
+            (officer) =>
+              `<tr><td>${officerDisplayName(officer)}</td><td>${textOrDash(officer.officerRole)}</td><td>${textOrDash(
+                officer.appointedOn,
+              )}</td><td>${officer.identityVerificationDetails ? "Verified" : "Not verified"}</td></tr>`,
+          )
+          .join("");
+      }
+
+      function renderPublicPscs(pscs) {
+        const body = document.getElementById("publicPscsBody");
+        body.innerHTML = (pscs || [])
+          .filter((psc) => !psc.ceasedOn)
+          .map(
+            (psc) =>
+              `<tr><td>${textOrDash(psc.name)}</td><td>${textOrDash((psc.naturesOfControl || []).join(", "))}</td><td>${textOrDash(
+                psc.notifiedOn,
+              )}</td></tr>`,
+          )
+          .join("");
+      }
+
+      async function handleCompanySubmit(event) {
+        event.preventDefault();
+        const companyNumber = window.normaliseCompanyNumber(document.getElementById("companyNumber").value);
+        if (!companyNumber) {
+          showStatus("Please enter a company number.", "error");
+          return;
+        }
+
+        showLoading();
+        hideStatus();
+        try {
+          const profile = await window.getCompanyProfile(companyNumber);
+          if (profile.companyStatus !== "active" || profile.companyType !== "ltd") {
+            showStatus("Only an active private company limited by shares can file a confirmation statement here.", "error");
+            return;
+          }
+
+          const [officersResult, pscsResult] = await Promise.all([window.getOfficers(companyNumber), window.getPscs(companyNumber)]);
+
+          company = profile;
+          document.getElementById("authCompanyName").textContent = company.companyName;
+          document.getElementById("authCompanyNumber").textContent = company.companyNumber;
+          document.getElementById("authNextDue").textContent = textOrDash(company.confirmationStatementNextDue);
+          document.getElementById("authNextMadeUpTo").textContent = textOrDash(company.confirmationStatementNextMadeUpTo);
+          renderPublicOfficers(officersResult.officers);
+          renderPublicPscs(pscsResult.pscs);
+          showView("authView");
+        } catch (error) {
+          console.error("Failed to look up the company:", error);
+          showStatus(error.message || "Failed to look up the company.", "error");
+        } finally {
+          hideLoading();
+        }
+      }
+
+      function shareClassRowHtml(index, share = {}) {
+        return `
+          <fieldset class="form-group" data-share-class-row="${index}">
+            <legend>Share class ${index + 1}</legend>
+            <label for="shareClass-${index}">Share class</label>
+            <input type="text" id="shareClass-${index}" value="${share.shareClass || ""}" />
+            <label for="prescribedParticulars-${index}">Prescribed particulars</label>
+            <input type="text" id="prescribedParticulars-${index}" value="${share.prescribedParticulars || ""}" />
+            <label for="numShares-${index}">Number of shares</label>
+            <input type="number" id="numShares-${index}" step="1" min="0" value="${share.numShares || ""}" />
+            <label for="aggregateNominalValue-${index}">Aggregate nominal value</label>
+            <input type="number" id="aggregateNominalValue-${index}" step="1" min="0" value="${share.aggregateNominalValue || ""}" />
+            <button type="button" class="btn-small remove-share-class-row">Remove</button>
+          </fieldset>`;
+      }
+
+      function addShareClassRow(share = {}) {
+        const container = document.getElementById("shareClassesContainer");
+        const index = shareClassRowCount++;
+        container.insertAdjacentHTML("beforeend", shareClassRowHtml(index, share));
+        container.querySelector(`[data-share-class-row="${index}"] .remove-share-class-row`).addEventListener("click", (event) => {
+          event.target.closest("[data-share-class-row]").remove();
+        });
+      }
+
+      function shareholdingRowHtml(index, holding = {}) {
+        const shareholder = (holding.shareholders && holding.shareholders[0]) || {};
+        const address = shareholder.address || {};
+        return `
+          <fieldset class="form-group" data-shareholding-row="${index}">
+            <legend>Shareholding ${index + 1}</legend>
+            <label for="holdingShareClass-${index}">Share class</label>
+            <input type="text" id="holdingShareClass-${index}" value="${holding.shareClass || ""}" />
+            <label for="holdingNumberHeld-${index}">Number held</label>
+            <input type="number" id="holdingNumberHeld-${index}" step="1" min="0" value="${holding.numberHeld || ""}" />
+            <label for="holderSurname-${index}">Shareholder surname</label>
+            <input type="text" id="holderSurname-${index}" value="${shareholder.surname || ""}" />
+            <label for="holderForename-${index}">Shareholder forename</label>
+            <input type="text" id="holderForename-${index}" value="${shareholder.forename || ""}" />
+            <label for="holderAmalgamatedName-${index}">Or amalgamated name (used instead of surname/forename)</label>
+            <input type="text" id="holderAmalgamatedName-${index}" value="${shareholder.amalgamatedName || ""}" />
+            <label for="holderPremise-${index}">Premise</label>
+            <input type="text" id="holderPremise-${index}" value="${address.premise || ""}" />
+            <label for="holderStreet-${index}">Street</label>
+            <input type="text" id="holderStreet-${index}" value="${address.street || ""}" />
+            <label for="holderPostTown-${index}">Post town</label>
+            <input type="text" id="holderPostTown-${index}" value="${address.postTown || ""}" />
+            <label for="holderPostcode-${index}">Postcode</label>
+            <input type="text" id="holderPostcode-${index}" value="${address.postcode || ""}" />
+            <label for="holderCountry-${index}">Country</label>
+            <input type="text" id="holderCountry-${index}" value="${address.country || ""}" />
+            <button type="button" class="btn-small remove-shareholding-row">Remove</button>
+          </fieldset>`;
+      }
+
+      function addShareholdingRow(holding = {}) {
+        const container = document.getElementById("shareholdingsContainer");
+        const index = shareholdingRowCount++;
+        container.insertAdjacentHTML("beforeend", shareholdingRowHtml(index, holding));
+        container.querySelector(`[data-shareholding-row="${index}"] .remove-shareholding-row`).addEventListener("click", (event) => {
+          event.target.closest("[data-shareholding-row]").remove();
+        });
+      }
+
+      function directorRowHtml(index, director) {
+        return `
+          <fieldset class="form-group" data-director-row="${index}">
+            <legend>${director.forename || ""} ${director.surname || ""} (${director.dob || "no date of birth on record"})</legend>
+            <label for="directorPersonalCode-${index}">Companies House personal code</label>
+            <input type="text" id="directorPersonalCode-${index}" maxlength="11" spellcheck="false" />
+            <label for="directorNameMismatchReason-${index}">Name mismatch reason (only if the verified name differs)</label>
+            <input type="text" id="directorNameMismatchReason-${index}" spellcheck="false" />
+          </fieldset>`;
+      }
+
+      function renderDirectorRows(directors) {
+        currentDirectors = directors;
+        const container = document.getElementById("directorRowsContainer");
+        container.innerHTML = directors.map((director, index) => directorRowHtml(index, director)).join("");
+      }
+
+      function renderShareClasses(shares) {
+        document.getElementById("shareClassesContainer").innerHTML = "";
+        shareClassRowCount = 0;
+        (shares || []).forEach((share) => addShareClassRow(share));
+      }
+
+      function renderShareholdings(shareholdings) {
+        document.getElementById("shareholdingsContainer").innerHTML = "";
+        shareholdingRowCount = 0;
+        (shareholdings || []).forEach((holding) => addShareholdingRow(holding));
+      }
+
+      async function handleAuthSubmit(event) {
+        event.preventDefault();
+        const enteredCode = document.getElementById("companyAuthCode").value.trim();
+        if (enteredCode.length < 6 || enteredCode.length > 8) {
+          showStatus("Enter the 6 to 8 character company authentication code.", "error");
+          return;
+        }
+        const madeUpDate = company.confirmationStatementNextMadeUpTo;
+        if (!madeUpDate) {
+          showStatus("Companies House has not published a next confirmation statement date for this company.", "error");
+          return;
+        }
+
+        showLoading();
+        hideStatus();
+        try {
+          filingData = await window.getConfirmationStatementFilingData(company.companyNumber, {
+            companyAuthCode: enteredCode,
+            madeUpDate,
+          });
+          companyAuthCode = enteredCode;
+
+          originalSicCodes = filingData.sicCodes || [];
+          originalStatementOfCapital = filingData.statementOfCapital || null;
+          originalShareholdings = filingData.shareholdings || [];
+          originalRegisteredEmailAddress = filingData.registeredEmailAddress || "";
+
+          document.getElementById("reviewDate").value = company.confirmationStatementNextMadeUpTo;
+          document.getElementById("reviewDate").max = new Date().toISOString().slice(0, 10);
+          document.getElementById("sicCodes").value = originalSicCodes.join(", ");
+          document.getElementById("registeredEmailAddress").value = originalRegisteredEmailAddress;
+          document.getElementById("totalAmountUnpaid").value = originalStatementOfCapital?.totalAmountUnpaid || "";
+          document.getElementById("totalNumberOfIssuedShares").value = originalStatementOfCapital?.totalNumberOfIssuedShares || "";
+          document.getElementById("shareCurrency").value = originalStatementOfCapital?.shareCurrency || "";
+          document.getElementById("totalAggregateNominalValue").value = originalStatementOfCapital?.totalAggregateNominalValue || "";
+          renderShareClasses(originalStatementOfCapital?.shares || []);
+          renderShareholdings(originalShareholdings);
+
+          const currentDirectorOfficers = (filingData.officers || []).filter(
+            (officer) => officer.role === "director" && !officer.resignationDate,
+          );
+          renderDirectorRows(currentDirectorOfficers);
+
+          const feePaid = filingData.paymentPeriodPaid === true;
+          document.getElementById("feeMessage").textContent = feePaid
+            ? "No fee: this payment period is already paid."
+            : "£50 will be charged to the Companies House credit account.";
+
+          showView("reviewView");
+        } catch (error) {
+          console.error("Failed to read the confirmation statement filing data:", error);
+          showStatus(error.message || "Failed to read the confirmation statement filing data.", "error");
+        } finally {
+          hideLoading();
+        }
+      }
+
+      function deepEqual(a, b) {
+        return JSON.stringify(a) === JSON.stringify(b);
+      }
+
+      function readShareClasses() {
+        return Array.from(document.querySelectorAll("[data-share-class-row]")).map((row) => {
+          const index = row.getAttribute("data-share-class-row");
+          return {
+            shareClass: document.getElementById(`shareClass-${index}`).value.trim(),
+            prescribedParticulars: document.getElementById(`prescribedParticulars-${index}`).value.trim(),
+            numShares: Number(document.getElementById(`numShares-${index}`).value || 0),
+            aggregateNominalValue: Number(document.getElementById(`aggregateNominalValue-${index}`).value || 0),
+          };
+        });
+      }
+
+      function readStatementOfCapital() {
+        const totalAmountUnpaid = document.getElementById("totalAmountUnpaid").value;
+        const totalNumberOfIssuedShares = document.getElementById("totalNumberOfIssuedShares").value;
+        const shareCurrency = document.getElementById("shareCurrency").value.trim();
+        const totalAggregateNominalValue = document.getElementById("totalAggregateNominalValue").value;
+        const shares = readShareClasses();
+        if (!totalNumberOfIssuedShares && !shareCurrency && shares.length === 0) {
+          return null;
+        }
+        return {
+          totalAmountUnpaid: Number(totalAmountUnpaid || 0),
+          totalNumberOfIssuedShares: Number(totalNumberOfIssuedShares || 0),
+          shareCurrency,
+          totalAggregateNominalValue: Number(totalAggregateNominalValue || 0),
+          shares,
+        };
+      }
+
+      function readShareholdings() {
+        return Array.from(document.querySelectorAll("[data-shareholding-row]")).map((row) => {
+          const index = row.getAttribute("data-shareholding-row");
+          const amalgamatedName = document.getElementById(`holderAmalgamatedName-${index}`).value.trim();
+          const surname = document.getElementById(`holderSurname-${index}`).value.trim();
+          const forename = document.getElementById(`holderForename-${index}`).value.trim();
+          const address = {
+            premise: document.getElementById(`holderPremise-${index}`).value.trim(),
+            street: document.getElementById(`holderStreet-${index}`).value.trim(),
+            postTown: document.getElementById(`holderPostTown-${index}`).value.trim(),
+            postcode: document.getElementById(`holderPostcode-${index}`).value.trim(),
+            country: document.getElementById(`holderCountry-${index}`).value.trim(),
+          };
+          const shareholder = amalgamatedName ? { amalgamatedName, address } : { surname, forename, address };
+          return {
+            shareClass: document.getElementById(`holdingShareClass-${index}`).value.trim(),
+            numberHeld: Number(document.getElementById(`holdingNumberHeld-${index}`).value || 0),
+            shareholders: [shareholder],
+          };
+        });
+      }
+
+      function readDirectors() {
+        return currentDirectors.map((director, index) => ({
+          forename: director.forename,
+          surname: director.surname,
+          dob: director.dob,
+          personalCode: document.getElementById(`directorPersonalCode-${index}`).value.trim(),
+          nameMismatchReason: document.getElementById(`directorNameMismatchReason-${index}`).value.trim() || undefined,
+        }));
+      }
+
+      function buildStatementPayload() {
+        const sicCodes = document
+          .getElementById("sicCodes")
+          .value.split(",")
+          .map((code) => code.trim())
+          .filter(Boolean);
+        const statementOfCapital = readStatementOfCapital();
+        const shareholdings = readShareholdings();
+        const registeredEmailAddress = document.getElementById("registeredEmailAddress").value.trim();
+
+        const payload = {
+          companyNumber: company.companyNumber,
+          companyName: company.companyName,
+          dateSigned: new Date().toISOString().slice(0, 10),
+          reviewDate: document.getElementById("reviewDate").value,
+          lawfulPurposeStatementAccepted: document.getElementById("lawfulPurposeStatement").checked,
+          directors: readDirectors(),
+        };
+
+        if (!deepEqual(sicCodes, originalSicCodes)) {
+          payload.sicCodes = sicCodes;
+        }
+        if (!deepEqual(statementOfCapital, originalStatementOfCapital)) {
+          payload.statementOfCapital = statementOfCapital;
+        }
+        if (!deepEqual(shareholdings, originalShareholdings)) {
+          payload.shareholdings = shareholdings;
+        }
+        if (registeredEmailAddress && registeredEmailAddress !== originalRegisteredEmailAddress) {
+          payload.registeredEmailAddress = registeredEmailAddress;
+        }
+
+        return payload;
+      }
+
+      function validateReviewForm(payload) {
+        if (!payload.reviewDate) {
+          showStatus("Enter the confirmation statement date.", "error");
+          return false;
+        }
+        if (!payload.lawfulPurposeStatementAccepted) {
+          showStatus("The lawful purpose statement must be accepted before previewing.", "error");
+          return false;
+        }
+        if (payload.directors.length === 0) {
+          showStatus("At least one current director's verification statement is required.", "error");
+          return false;
+        }
+        const unverified = payload.directors.find((director) => director.personalCode.length !== 11);
+        if (unverified) {
+          showStatus(
+            `${unverified.forename || ""} ${unverified.surname || ""} must verify their identity with Companies House and enter their 11-character personal code before this statement can be submitted.`,
+            "error",
+          );
+          return false;
+        }
+        return true;
+      }
+
+      async function handleReviewFormSubmit(event) {
+        event.preventDefault();
+        const payload = buildStatementPayload();
+        if (!validateReviewForm(payload)) {
+          return;
+        }
+
+        showLoading();
+        hideStatus();
+        try {
+          const preview = await window.previewConfirmationStatement(payload);
+          document.getElementById("previewXml").textContent = preview.confirmationStatementXml;
+          showView("previewView");
+        } catch (error) {
+          console.error("Failed to render the confirmation statement preview:", error);
+          showStatus(error.message || "Failed to render the confirmation statement preview.", "error");
+        } finally {
+          hideLoading();
+        }
+      }
+
+      function renderRejections(rejections) {
+        const container = document.getElementById("rejections");
+        if (!rejections || rejections.length === 0) {
+          container.style.display = "none";
+          return;
+        }
+        container.style.display = "block";
+        container.innerHTML = rejections.map((entry) => `<p>${entry.rejectCode}: ${entry.description}</p>`).join("\n");
+      }
+
+      function renderPscFollowUp() {
+        const container = document.getElementById("pscFollowUp");
+        container.style.display = "block";
+        container.innerHTML =
+          "<p>Each director who is also a person with significant control has 14 days from the day after the review date " +
+          "to verify their identity through the PSC service.</p>";
+      }
+
+      async function pollUntilSettled(submissionNumber, extraHeaders = {}) {
+        for (let attempt = 0; attempt < 20; attempt++) {
+          const result = await window.pollConfirmationStatement(submissionNumber, extraHeaders);
+          if (result.statusCode === "ACCEPT" || result.statusCode === "REJECT") {
+            return result;
+          }
+          document.getElementById("filingResult").innerHTML =
+            `<p>Submission <strong>${submissionNumber}</strong> is <strong>${result.statusCode}</strong>. Checking again...</p>`;
+          await new Promise((resolve) => setTimeout(resolve, 500));
+        }
+        return window.pollConfirmationStatement(submissionNumber, extraHeaders);
+      }
+
+      async function handleSubmitFiling() {
+        showLoading();
+        hideStatus();
+        try {
+          const payload = { ...buildStatementPayload(), companyAuthCode };
+          const govTestScenario = document.getElementById("govTestScenario").value.trim();
+          const govTestScenarioHeaders = govTestScenario ? { "Gov-Test-Scenario": govTestScenario } : {};
+          const submission = await window.submitConfirmationStatement(payload, govTestScenarioHeaders);
+          document.getElementById("filingResult").innerHTML =
+            `<p>Submission <strong>${submission.submissionNumber}</strong> accepted by the gateway at ${submission.gatewayTimestamp}. Waiting for Companies House...</p>`;
+          showView("resultView");
+
+          const outcome = await pollUntilSettled(submission.submissionNumber, govTestScenarioHeaders);
+          document.getElementById("filingResult").innerHTML =
+            `<p>Submission <strong>${outcome.submissionNumber}</strong> was <strong>${outcome.statusCode}</strong>.</p>`;
+          renderRejections(outcome.rejections);
+          if (outcome.statusCode === "ACCEPT") {
+            renderPscFollowUp();
+          }
+          document.getElementById("startAgainBtn").style.display = "inline-block";
+        } catch (error) {
+          console.error("Companies House confirmation statement filing failed:", error);
+          showStatus(error.message || "Failed to file the confirmation statement with Companies House.", "error");
+        } finally {
+          hideLoading();
+        }
+      }
+
+      function updateGovTestScenarioVisibility() {
+        const developerModeEnabled = sessionStorage.getItem("showDeveloperOptions") === "true";
+        document.getElementById("govTestScenarioGroup").style.display = developerModeEnabled ? "block" : "none";
+      }
+      updateGovTestScenarioVisibility();
+      window.addEventListener("developer-mode-changed", updateGovTestScenarioVisibility);
+
+      function startAgain() {
+        company = null;
+        companyAuthCode = "";
+        filingData = null;
+        currentDirectors = [];
+        document.getElementById("companyForm").reset();
+        document.getElementById("authForm").reset();
+        document.getElementById("reviewForm").reset();
+        document.getElementById("directorRowsContainer").innerHTML = "";
+        document.getElementById("shareClassesContainer").innerHTML = "";
+        document.getElementById("shareholdingsContainer").innerHTML = "";
+        document.getElementById("rejections").style.display = "none";
+        document.getElementById("pscFollowUp").style.display = "none";
+        document.getElementById("startAgainBtn").style.display = "none";
+        hideStatus();
+        showView("companyView");
+      }
+
+      document.getElementById("companyForm").addEventListener("submit", handleCompanySubmit);
+      document.getElementById("authForm").addEventListener("submit", handleAuthSubmit);
+      document.getElementById("reviewForm").addEventListener("submit", handleReviewFormSubmit);
+      document.getElementById("addShareClassBtn").addEventListener("click", () => addShareClassRow());
+      document.getElementById("addShareholdingBtn").addEventListener("click", () => addShareholdingRow());
+      document.getElementById("backToReviewBtn").addEventListener("click", () => showView("reviewView"));
+      document.getElementById("submitFilingBtn").addEventListener("click", handleSubmitFiling);
+      document.getElementById("startAgainBtn").addEventListener("click", startAgain);
+      document.getElementById("changeCompanyLink").addEventListener("click", (event) => {
+        event.preventDefault();
+        showView("companyView");
+      });
+    </script>
+  </body>
+</html>

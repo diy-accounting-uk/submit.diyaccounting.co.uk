@@ -506,6 +506,72 @@ function parseOfficerElement(officerElement, role) {
   };
 }
 
+// A share class row inside StatementOfCapital/Capital: matches buildStatementOfCapitalXml's
+// `shares` field shape exactly, so a form can be pre-filled with the register's own values and
+// resubmitted through the same builder unchanged.
+function parseShareClassElement(sharesElement) {
+  return {
+    shareClass: firstElementText(sharesElement, "ShareClass"),
+    prescribedParticulars: firstElementText(sharesElement, "PrescribedParticulars"),
+    numShares: firstElementText(sharesElement, "NumShares"),
+    aggregateNominalValue: firstElementText(sharesElement, "AggregateNominalValue"),
+  };
+}
+
+function parseStatementOfCapitalElement(statementOfCapitalElement) {
+  const capitalElement = firstElement(statementOfCapitalElement, "Capital");
+  if (!capitalElement) {
+    return undefined;
+  }
+  return {
+    totalAmountUnpaid: firstElementText(capitalElement, "TotalAmountUnpaid"),
+    totalNumberOfIssuedShares: firstElementText(capitalElement, "TotalNumberOfIssuedShares"),
+    shareCurrency: firstElementText(capitalElement, "ShareCurrency"),
+    totalAggregateNominalValue: firstElementText(capitalElement, "TotalAggregateNominalValue"),
+    shares: allElements(capitalElement, "Shares").map(parseShareClassElement),
+  };
+}
+
+// A shareholder's Name is either a Surname/Forename pair or a single AmalgamatedName, matching
+// buildShareholderNameXml's two shapes.
+function parseShareholderNameElement(nameElement) {
+  if (!nameElement) {
+    return {};
+  }
+  const amalgamatedName = firstElementText(nameElement, "AmalgamatedName");
+  if (amalgamatedName) {
+    return { amalgamatedName };
+  }
+  return {
+    surname: firstElementText(nameElement, "Surname"),
+    forename: firstElementText(nameElement, "Forename"),
+  };
+}
+
+function parseShareholderElement(shareholderElement) {
+  return {
+    ...parseShareholderNameElement(firstElement(shareholderElement, "Name")),
+    address: parseAddressElement(firstElement(shareholderElement, "Address")),
+  };
+}
+
+function parseTransferElement(transferElement) {
+  return {
+    dateOfTransfer: firstElementText(transferElement, "DateOfTransfer"),
+    numberSharesTransferred: firstElementText(transferElement, "NumberSharesTransferred"),
+  };
+}
+
+// One Shareholdings element per share class, matching buildShareholdingXml's input shape.
+function parseShareholdingElement(shareholdingElement) {
+  return {
+    shareClass: firstElementText(shareholdingElement, "ShareClass"),
+    numberHeld: firstElementText(shareholdingElement, "NumberHeld"),
+    transfers: allElements(shareholdingElement, "Transfers").map(parseTransferElement),
+    shareholders: allElements(shareholdingElement, "Shareholders").map(parseShareholderElement),
+  };
+}
+
 /**
  * Parse a CompanyDataRequest answer (the register data a confirmation statement form is built
  * from) into a plain object.
@@ -535,6 +601,8 @@ export function parseCompanyDataResponse(xml) {
     registeredOfficeAddress: parseAddressElement(firstElement(companyDataElement, "RegisteredOfficeAddress")),
     registeredEmailAddress: firstElementText(companyDataElement, "RegisteredEmailAddress"),
     sicCodes: sicCodesElement ? allElements(sicCodesElement, "SICCode").map((element) => element.textContent) : [],
+    statementOfCapital: parseStatementOfCapitalElement(firstElement(companyDataElement, "StatementOfCapital")),
+    shareholdings: allElements(companyDataElement, "Shareholdings").map(parseShareholdingElement),
     officers: [
       ...allElements(companyDataElement, "Director").map((element) => parseOfficerElement(element, "director")),
       ...allElements(companyDataElement, "Secretary").map((element) => parseOfficerElement(element, "secretary")),

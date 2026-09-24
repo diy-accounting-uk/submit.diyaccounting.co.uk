@@ -772,6 +772,13 @@
         "operationId" : "postCompaniesHouseAccounts"
       }
     },
+    "/companies-house/confirmation-statement" : {
+      "post" : {
+        "summary" : "Submit a confirmation statement filing",
+        "description" : "Builds the ConfirmationAndVerificationStatement and submits it through the Companies House XML Gateway",
+        "operationId" : "postCompaniesHouseConfirmationStatement"
+      }
+    },
     "/pass/admin" : {
       "post" : {
         "summary" : "Generate a new pass",
@@ -842,6 +849,22 @@
         "summary" : "Poll a micro-entity accounts filing",
         "description" : "Polls the Companies House XML Gateway for the outcome of a submitted accounts filing",
         "operationId" : "getCompaniesHouseAccounts",
+        "parameters" : [ {
+          "name" : "submissionNumber",
+          "in" : "path",
+          "required" : true,
+          "description" : "The 6-character submission number",
+          "schema" : {
+            "type" : "string"
+          }
+        } ]
+      }
+    },
+    "/companies-house/confirmation-statement/{submissionNumber}" : {
+      "get" : {
+        "summary" : "Poll a confirmation statement filing",
+        "description" : "Polls the Companies House XML Gateway for the outcome of a submitted confirmation statement",
+        "operationId" : "getCompaniesHouseConfirmationStatement",
         "parameters" : [ {
           "name" : "submissionNumber",
           "in" : "path",
@@ -1446,6 +1469,54 @@
         "summary" : "Get a Companies House company profile",
         "description" : "Retrieves the Companies House profile for a company number",
         "operationId" : "getCompanyProfile",
+        "parameters" : [ {
+          "name" : "companyNumber",
+          "in" : "path",
+          "required" : true,
+          "description" : "The 8-character company number",
+          "schema" : {
+            "type" : "string"
+          }
+        } ]
+      }
+    },
+    "/companies-house/company/{companyNumber}/officers" : {
+      "get" : {
+        "summary" : "Get a company's officers",
+        "description" : "Retrieves the current and resigned officers for a company number, including identity verification details where the register carries them",
+        "operationId" : "getCompaniesHouseOfficers",
+        "parameters" : [ {
+          "name" : "companyNumber",
+          "in" : "path",
+          "required" : true,
+          "description" : "The 8-character company number",
+          "schema" : {
+            "type" : "string"
+          }
+        } ]
+      }
+    },
+    "/companies-house/company/{companyNumber}/persons-with-significant-control" : {
+      "get" : {
+        "summary" : "Get a company's persons with significant control",
+        "description" : "Retrieves the current and ceased persons with significant control for a company number",
+        "operationId" : "getCompaniesHousePscs",
+        "parameters" : [ {
+          "name" : "companyNumber",
+          "in" : "path",
+          "required" : true,
+          "description" : "The 8-character company number",
+          "schema" : {
+            "type" : "string"
+          }
+        } ]
+      }
+    },
+    "/companies-house/company/{companyNumber}/filing-data" : {
+      "post" : {
+        "summary" : "Read confirmation statement filing data",
+        "description" : "Reads the register data a confirmation statement form is built from (CompanyDataRequest and PaymentPeriodsRequest) using the company authentication code",
+        "operationId" : "postCompaniesHouseFilingData",
         "parameters" : [ {
           "name" : "companyNumber",
           "in" : "path",
@@ -2255,6 +2326,13 @@
         "summary" : "Preview a micro-entity accounts filing",
         "description" : "Renders the FRS 105 micro-entity iXBRL from the balance sheet without submitting it",
         "operationId" : "previewCompaniesHouseAccounts"
+      }
+    },
+    "/companies-house/confirmation-statement/preview" : {
+      "post" : {
+        "summary" : "Preview a confirmation statement filing",
+        "description" : "Renders the ConfirmationAndVerificationStatement body from the form's answers, with every director's personal code masked, without submitting it",
+        "operationId" : "previewCompaniesHouseConfirmationStatement"
       }
     },
     "/hmrc/vat/obligation" : {
