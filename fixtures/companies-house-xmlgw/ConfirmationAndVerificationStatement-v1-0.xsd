@@ -1,0 +1,135 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<xs:schema xmlns="http://xmlgw.companieshouse.gov.uk" xmlns:xs="http://www.w3.org/2001/XMLSchema" targetNamespace="http://xmlgw.companieshouse.gov.uk" elementFormDefault="qualified" attributeFormDefault="unqualified" version="0.1" id="ConfirmationAndVerificationStatement">
+	<xs:include schemaLocation="../baseTypes-v3-7.xsd"/>
+	<xs:include schemaLocation="../PSCBaseTypes-v1-4.xsd"/>
+	<xs:element name="ConfirmationAndVerificationStatement">
+		<xs:annotation>
+			<xs:documentation>For optional fields a full data set must be provided if, and only if, a change has been made since the last confirmation.</xs:documentation>
+		</xs:annotation>
+		<xs:complexType>
+			<xs:sequence>
+				<xs:element name="TradingOnMarket" type="xs:boolean" minOccurs="0"/>
+				<xs:element name="DTR5Applies" type="xs:boolean" minOccurs="0">
+					<xs:annotation>
+						<xs:documentation>Disclosure Transparency Rules Chapter 5 applies - if TradingOnMarket = False this must be false</xs:documentation>
+					</xs:annotation>
+				</xs:element>
+				<xs:element name="PSCExemptAsTradingOnRegulatedMarket" type="xs:boolean" minOccurs="0">
+					<xs:annotation>
+						<xs:documentation>The company is exempt from the requirement to obtain information and keep a PSC register because the company has voting shares admitted to trading on an EU regulated market</xs:documentation>
+					</xs:annotation>
+				</xs:element>
+				<xs:element name="PSCExemptAsSharesAdmittedOnMarket" type="xs:boolean" minOccurs="0">
+					<xs:annotation>
+						<xs:documentation>The company is exempt from the requirement to obtain information and keep a PSC register because the company has voting shares admitted to trading on a market listed in Schedule 1 of the Register of People with Significant Control Regulations 2016</xs:documentation>
+					</xs:annotation>
+				</xs:element>
+				<xs:element name="PSCExemptAsTradingOnUKRegulatedMarket" type="xs:boolean" minOccurs="0">
+					<xs:annotation>
+						<xs:documentation>The company is exempt from the requirement to obtain information and keep a register of its PSC because the company has voting shares admitted to trading on a UK regulated market </xs:documentation>
+					</xs:annotation>
+				</xs:element>
+				<xs:element name="ReviewDate" type="xs:date">
+					<xs:annotation>
+						<xs:documentation>Date for which the statement is being made. Must not be a future date.</xs:documentation>
+					</xs:annotation>
+				</xs:element>
+				<xs:element ref="SICCodes" minOccurs="0"/>
+				<xs:element name="StatementOfCapital" type="StatementOfCapitalType" minOccurs="0">
+					<xs:annotation>
+						<xs:appinfo>NumShares and ShareValue == MANDATORY</xs:appinfo>
+					</xs:annotation>
+				</xs:element>
+				<xs:element name="Shareholdings" minOccurs="0" maxOccurs="unbounded">
+					<xs:annotation>
+						<xs:documentation>Maximum 5000 Shareholdings Allowed</xs:documentation>
+					</xs:annotation>
+					<xs:complexType>
+						<xs:sequence>
+							<xs:element ref="ShareClass"/>
+							<xs:element name="NumberHeld">
+								<xs:annotation>
+									<xs:documentation>Number of share held in this class</xs:documentation>
+								</xs:annotation>
+								<xs:simpleType>
+									<xs:restriction base="xs:decimal">
+										<xs:minInclusive value="0"/>
+										<xs:maxInclusive value="999999999999999.999999"/>
+										<xs:fractionDigits value="6"/>
+									</xs:restriction>
+								</xs:simpleType>
+							</xs:element>
+							<xs:element name="Transfers" minOccurs="0" maxOccurs="200">
+								<xs:complexType>
+									<xs:sequence>
+										<xs:element name="DateOfTransfer" type="xs:date"/>
+										<xs:element name="NumberSharesTransferred">
+											<xs:simpleType>
+												<xs:restriction base="xs:decimal">
+													<xs:maxInclusive value="999999999999999.999999"/>
+													<xs:fractionDigits value="6"/>
+													<xs:minExclusive value="0"/>
+												</xs:restriction>
+											</xs:simpleType>
+										</xs:element>
+									</xs:sequence>
+								</xs:complexType>
+							</xs:element>
+							<xs:element name="Shareholders" maxOccurs="10">
+								<xs:complexType>
+									<xs:sequence>
+										<xs:element name="Name">
+											<xs:complexType>
+												<xs:choice>
+													<xs:sequence>
+														<xs:element ref="Surname"/>
+														<xs:element ref="Forename" minOccurs="0"/>
+													</xs:sequence>
+													<xs:element name="AmalgamatedName">
+														<xs:annotation>
+															<xs:documentation>Used where it is not possible to seperate the shareholder name into surname and forename</xs:documentation>
+														</xs:annotation>
+														<xs:simpleType>
+															<xs:restriction base="nonEmptyString">
+																<xs:maxLength value="160"/>
+															</xs:restriction>
+														</xs:simpleType>
+													</xs:element>
+												</xs:choice>
+											</xs:complexType>
+										</xs:element>
+										<xs:element name="Address" type="AddressBaseType" minOccurs="0"/>
+									</xs:sequence>
+								</xs:complexType>
+							</xs:element>
+						</xs:sequence>
+					</xs:complexType>
+				</xs:element>
+				<xs:element name="RegisteredEmailAddress" type="RegisteredEmailAddress" minOccurs="0"/>
+				<xs:element name="AcceptLawfulPurposeStatement" type="AcceptLawfulPurposeStatement" minOccurs="0"/>
+				<xs:element name="StateConfirmation">
+					<xs:annotation>
+						<xs:documentation>Statement required for every Confirmation Statement, to affirm all filings are up to date or are being made with this submission.</xs:documentation>
+					</xs:annotation>
+					<xs:simpleType>
+						<xs:restriction base="xs:string">
+							<xs:length value="4"/>
+							<xs:whiteSpace value="collapse"/>
+							<xs:enumeration value="true"/>
+						</xs:restriction>
+					</xs:simpleType>
+				</xs:element>
+				<xs:element name="VerificationStatement">
+					<xs:complexType>
+						<xs:sequence>
+							<xs:choice>
+								<xs:element name="Director" type="VerificationDirectorType" maxOccurs="unbounded" />
+								<xs:element name="Member" type="VerificationMemberType" maxOccurs="unbounded" />
+							</xs:choice>
+						</xs:sequence>
+					</xs:complexType>
+				</xs:element>
+			</xs:sequence>
+		</xs:complexType>
+	</xs:element>
+</xs:schema>

@@ -167,6 +167,18 @@ describe("personal data: checked outside test directories and /fixtures/ paths",
     expect(hits).toEqual([]);
   });
 
+  test("an email in the root fixtures directory passes, as it does in a nested /fixtures/ path", () => {
+    const text = "<RegisteredEmailAddress>a.customer@some-real-firm.co.uk</RegisteredEmailAddress>";
+    const hits = scanEntries(
+      [
+        { file: "fixtures/companies-house-xmlgw/Example.xml", lineNumber: 1, text },
+        { file: "app/test-data/fixtures/Example.xml", lineNumber: 1, text },
+      ],
+      [],
+    );
+    expect(hits).toEqual([]);
+  });
+
   test("one line can produce more than one hit", () => {
     const diff = diffAdding("NOTES.md", "contact a.customer@some-real-firm.co.uk nino AB123456C");
     const hits = scanDiff(diff, []);

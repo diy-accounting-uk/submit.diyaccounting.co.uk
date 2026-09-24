@@ -16,6 +16,8 @@
 
 import { validateLines } from "@diy-accounting-uk/diya-gl/dist/app/lib/diya-gl-schema.js";
 
+import { matchLabel } from "./labels.js";
+
 const HEADER_PREFIX = "Date,Type,Description,Value,Balance";
 
 const MONTHS = {
@@ -98,12 +100,13 @@ function parseRows(text) {
   });
 }
 
-// The statement's own Type column does not say which direction the money
-// moved; a bank charge is always a payment, but BAC, DPC, D/D and POS all
-// occur on both sides of the account across a year. The sign of Value is
-// what the bank workbook's own receipt/payment columns key off, so it
-// decides the diya-gl:bankCode here too: a generic debtor receipt for
-// money in, a generic creditor payment for money out. INT is the savings account's
+// The fallback used when no label rule matches a line's description. The
+// statement's own Type column does not say which direction the money moved;
+// a bank charge is always a payment, but BAC, DPC, D/D and POS all occur on
+// both sides of the account across a year. The sign of Value is what the
+// bank workbook's own receipt/payment columns key off, so it decides the
+// diya-gl:bankCode here too: a generic debtor receipt for money in, a
+// generic creditor payment for money out. INT is the savings account's
 // interest, money in.
 function bankCodeFor(type, value) {
   if (type === "CHG") {
@@ -124,35 +127,51 @@ function debitCreditCodeFor(value) {
 
 /**
  * Parses a NatWest current account CSV export into validated diya-gl bank
- * lines, one per statement transaction.
+ * lines, one per statement transaction. A label rule matching a line's own
+ * description sets its diya-gl:bankCode and taxCode; a line no rule matches
+ * keeps bankCodeFor's coding and is also listed in unlabelled.
  * @param {string} text - the raw CSV file content
- * @param {{accountMainID: string}} options - the book.toml bank account this statement books to
- * @returns {Array<Object>} validated diya-gl lines
+ * @param {{accountMainID: string, labels?: Object}} options - accountMainID is
+ *   the book.toml bank account this statement books to; labels is a parsed
+ *   label map (see labels.js)
+ * @returns {{lines: Array<Object>, unlabelled: Array<Object>}} validated
+ *   diya-gl lines, and the statement rows no label rule matched
  */
-export function bankLinesFromCsv(text, { accountMainID }) {
+export function bankLinesFromCsv(text, { accountMainID, labels } = {}) {
   if (!accountMainID) {
     throw new Error("accountMainID is required");
   }
   const rows = parseRows(text);
-  const lines = rows.map((row, index) => ({
-    "entryNumber": `BANK-${row.date}-${index + 1}`,
-    "sourceJournalID": "bank",
-    "postingDate": row.date,
-    accountMainID,
-    "amount": Math.abs(row.value),
-    "documentType": "bank-statement",
-    "detailComment": row.description,
-    "diya-gl:bankCode": bankCodeFor(row.type, row.value),
-    "diya-gl:bankAccountID": accountMainID,
-    "debitCreditCode": debitCreditCodeFor(row.value),
-  }));
+  const unlabelled = [];
+  const lines = rows.map((row, index) => {
+    const rule = matchLabel(row.description, labels);
+    if (labels && !rule) {
+      unlabelled.push(row);
+    }
+    const line = {
+      "entryNumber": `BANK-${row.date}-${index + 1}`,
+      "sourceJournalID": "bank",
+      "postingDate": row.date,
+      accountMainID,
+      "amount": Math.abs(row.value),
+      "documentType": "bank-statement",
+      "detailComment": row.description,
+      "diya-gl:bankCode": rule?.["diya-gl:bankCode"] ?? bankCodeFor(row.type, row.value),
+      "diya-gl:bankAccountID": accountMainID,
+      "debitCreditCode": debitCreditCodeFor(row.value),
+    };
+    if (rule?.taxCode !== undefined) {
+      line.taxCode = rule.taxCode;
+    }
+    return line;
+  });
 
   const book = { accounts: { bank: { [accountMainID]: {} } } };
   const { valid, errors } = validateLines(lines, book);
   if (!valid) {
     throw new Error(`Bank statement lines failed validation:\n${errors.join("\n")}`);
   }
-  return lines;
+  return { lines, unlabelled };
 }
 
 /**

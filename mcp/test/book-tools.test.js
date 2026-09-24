@@ -135,6 +135,7 @@ describe("the server", () => {
       "save_book",
       "submit_micro_entity_accounts",
       "submit_vat_return",
+      "write_finance_package",
     ]);
     expect(SAVE_FORMATS).toEqual(["diya-gl-dir", "diya-gl-zip", "json", "xlsx", "zip"]);
     const server = createServer();

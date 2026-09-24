@@ -9,9 +9,13 @@
 //
 // A settled receipt posts gross to sales and its fee, if any, to purchases,
 // never netted, the same split stripe-lines.js uses for a Stripe charge. A
-// settled bill or card payment posts its full gross to purchases. Every
-// other row on a PayPal statement is scaffolding around those two events,
-// not a transaction of its own, and is left unposted:
+// settled bill or card payment posts its full gross to purchases. An
+// optional label map (see labels.js) can redirect a record's gross line to a
+// different account, on the strength of its own description, in place of
+// that default; the fee line is never redirected, since it is PayPal's own
+// charge, not the payee's. Every other row on a PayPal statement is
+// scaffolding around those two events, not a transaction of its own, and is
+// left unposted:
 //   - a currency conversion -- moves money between the wallet's own
 //     currency pots, no sale or purchase behind it
 //   - a transfer to or from the linked bank account ("Bank deposit to
@@ -39,6 +43,8 @@ import { execFile } from "node:child_process";
 import { promisify } from "node:util";
 
 import { validateLines } from "@diy-accounting-uk/diya-gl/dist/app/lib/diya-gl-schema.js";
+
+import { matchLabel } from "./labels.js";
 
 const execFileAsync = promisify(execFile);
 
@@ -386,12 +392,12 @@ function isPostable(record, chosenReleaseIds) {
   return true;
 }
 
-function receiptGrossLine(record, { salesAccountMainID, taxCode }) {
+function receiptGrossLine(record, { sourceJournalID, accountMainID, taxCode }) {
   return compact({
     entryNumber: `PAYPAL-${record.id}`,
-    sourceJournalID: "sales",
+    sourceJournalID,
     postingDate: record.date,
-    accountMainID: salesAccountMainID,
+    accountMainID,
     amount: Math.abs(record.gross),
     amountCurrency: record.currency,
     documentType: "receipt",
@@ -402,12 +408,12 @@ function receiptGrossLine(record, { salesAccountMainID, taxCode }) {
   });
 }
 
-function billGrossLine(record, { purchasesAccountMainID, taxCode }) {
+function billGrossLine(record, { sourceJournalID, accountMainID, taxCode }) {
   return compact({
     entryNumber: `PAYPAL-${record.id}`,
-    sourceJournalID: "purchases",
+    sourceJournalID,
     postingDate: record.date,
-    accountMainID: purchasesAccountMainID,
+    accountMainID,
     amount: Math.abs(record.gross),
     amountCurrency: record.currency,
     documentType: "invoice",
@@ -448,16 +454,23 @@ function feeLine(record, { feeAccountMainID, taxCode }) {
  * currency's own Releases figure, and without it every "Reversal of ..." /
  * "Void of ..." row still excludes (PayPal's own unambiguous label) but
  * every "Other: ..." row posts, since nothing here can then tell a real
- * movement from a release that merely shares its amount.
+ * movement from a release that merely shares its amount. A label rule
+ * matching a postable record's own description sets its sourceJournalID,
+ * accountMainID and taxCode in place of the default sales/purchases account
+ * above; a record no rule matches keeps that default and is also listed in
+ * unlabelled. The fee line always posts to feeAccountMainID, whatever the
+ * gross line's own rule -- the fee is PayPal's own charge, not the payee's.
  * @param {string} text - pdftotext -layout output for the statement PDF being posted
- * @param {{salesAccountMainID: string, purchasesAccountMainID: string, feeAccountMainID: string, taxCode?: string, statementText?: string}} options
+ * @param {{salesAccountMainID: string, purchasesAccountMainID: string, feeAccountMainID: string, taxCode?: string, statementText?: string, labels?: Object}} options
  *   statementText - this same month's statement.PDF text, read for its
- *   Activity Summary's Releases figure; see chooseReleaseRows
- * @returns {Array<Object>} validated diya-gl lines
+ *   Activity Summary's Releases figure; see chooseReleaseRows; labels - a
+ *   parsed label map (see labels.js)
+ * @returns {{lines: Array<Object>, unlabelled: Array<Object>}} validated
+ *   diya-gl lines, and the postable records no label rule matched
  */
 export function paypalLinesFromStatementText(
   text,
-  { salesAccountMainID, purchasesAccountMainID, feeAccountMainID, taxCode, statementText } = {},
+  { salesAccountMainID, purchasesAccountMainID, feeAccountMainID, taxCode, statementText, labels } = {},
 ) {
   if (!salesAccountMainID) throw new Error("salesAccountMainID is required");
   if (!purchasesAccountMainID) throw new Error("purchasesAccountMainID is required");
@@ -482,14 +495,32 @@ export function paypalLinesFromStatementText(
     for (const id of releaseIds) chosenReleaseIds.add(id);
   }
 
+  const unlabelled = [];
   const lines = [];
   for (const record of records) {
     if (!isPostable(record, chosenReleaseIds)) continue;
 
+    const rule = matchLabel(record.description, labels);
+    if (labels && !rule) {
+      unlabelled.push(record);
+    }
+
     if (record.gross >= 0) {
-      lines.push(receiptGrossLine(record, { salesAccountMainID, taxCode }));
+      lines.push(
+        receiptGrossLine(record, {
+          sourceJournalID: rule?.sourceJournalID ?? "sales",
+          accountMainID: rule?.accountMainID ?? salesAccountMainID,
+          taxCode: rule?.taxCode ?? taxCode,
+        }),
+      );
     } else {
-      lines.push(billGrossLine(record, { purchasesAccountMainID, taxCode }));
+      lines.push(
+        billGrossLine(record, {
+          sourceJournalID: rule?.sourceJournalID ?? "purchases",
+          accountMainID: rule?.accountMainID ?? purchasesAccountMainID,
+          taxCode: rule?.taxCode ?? taxCode,
+        }),
+      );
     }
     if (record.fee !== 0) {
       lines.push(feeLine(record, { feeAccountMainID, taxCode }));
@@ -502,11 +533,17 @@ export function paypalLinesFromStatementText(
       purchases: { [purchasesAccountMainID]: {}, [feeAccountMainID]: {} },
     },
   };
+  for (const line of lines) {
+    if (!book.accounts[line.sourceJournalID]) {
+      book.accounts[line.sourceJournalID] = {};
+    }
+    book.accounts[line.sourceJournalID][line.accountMainID] = {};
+  }
   const { valid, errors } = validateLines(lines, book);
   if (!valid) {
     throw new Error(`PayPal statement lines failed validation:\n${errors.join("\n")}`);
   }
-  return lines;
+  return { lines, unlabelled };
 }
 
 /**
@@ -516,11 +553,13 @@ export function paypalLinesFromStatementText(
  * functions so the parsing itself, paypalLinesFromStatementText, runs in
  * tests on recorded text fixtures without poppler installed.
  * @param {string} pdfPath - path to the PayPal "Transaction History" PDF
- * @param {{salesAccountMainID: string, purchasesAccountMainID: string, feeAccountMainID: string, taxCode?: string, statementPdfPath?: string}} options
+ * @param {{salesAccountMainID: string, purchasesAccountMainID: string, feeAccountMainID: string, taxCode?: string, statementPdfPath?: string, labels?: Object}} options
  *   statementPdfPath - path to this same month's statement.PDF; see
- *   paypalLinesFromStatementText's statementText
+ *   paypalLinesFromStatementText's statementText; labels - a parsed label
+ *   map (see labels.js), passed through to paypalLinesFromStatementText
  * @param {{runPdftotext?: (pdfPath: string) => Promise<string>}} [deps]
- * @returns {Promise<Array<Object>>} validated diya-gl lines
+ * @returns {Promise<{lines: Array<Object>, unlabelled: Array<Object>}>} validated
+ *   diya-gl lines, and the postable records no label rule matched
  */
 export async function paypalLinesFromStatementPdf(
   pdfPath,

@@ -5,12 +5,18 @@
 // into validated diya-gl lines. A charge's gross amount and its Stripe fee
 // are never netted: the gross posts to sales, the fee posts to purchases,
 // so the P&L carries income and cost separately rather than the net that
-// actually reaches the bank. A refund or a dispute reverses the sales side
-// as a credit note. A payout posts to bank, dated to when it lands
-// (arrival_date), for the caller to match against the NatWest statement's
-// own BAC line for that date -- the same account bankLinesFromCsv books to.
+// actually reaches the bank. An optional label map (see labels.js) can
+// redirect a charge's gross line to a different account, on the strength of
+// its own billing name, in place of that default; the fee line is never
+// redirected, since it is Stripe's own charge, not the payer's. A refund or
+// a dispute reverses the sales side as a credit note. A payout posts to
+// bank, dated to when it lands (arrival_date), for the caller to match
+// against the NatWest statement's own BAC line for that date -- the same
+// account bankLinesFromCsv books to.
 
 import { validateLines } from "@diy-accounting-uk/diya-gl/dist/app/lib/diya-gl-schema.js";
+
+import { matchLabel } from "./labels.js";
 
 function isoDateFromUnixSeconds(seconds) {
   return new Date(seconds * 1000).toISOString().slice(0, 10);
@@ -24,18 +30,22 @@ function compact(line) {
   return Object.fromEntries(Object.entries(line).filter(([, value]) => value !== undefined));
 }
 
-function chargeGrossLine(txn, { salesAccountMainID, taxCode }) {
+function chargeDescription(txn) {
+  return (txn.source || {}).billing_details?.name || "Stripe charge";
+}
+
+function chargeGrossLine(txn, { sourceJournalID, accountMainID, taxCode }) {
   const source = txn.source || {};
   return compact({
     entryNumber: `STRIPE-${txn.id}`,
-    sourceJournalID: "sales",
+    sourceJournalID,
     postingDate: isoDateFromUnixSeconds(txn.created),
-    accountMainID: salesAccountMainID,
+    accountMainID,
     amount: toPounds(txn.amount),
     amountCurrency: txn.currency.toUpperCase(),
     documentType: "receipt",
     documentReference: source.id,
-    detailComment: source.billing_details?.name || "Stripe charge",
+    detailComment: chargeDescription(txn),
     paymentMethod: "online-payment",
     taxCode: taxCode,
   });
@@ -99,12 +109,19 @@ function reversalLine(txn, { salesAccountMainID, taxCode }) {
  * a standalone fee (no charge behind it, e.g. a Billing usage fee) becomes
  * a purchases receipt on its own. A payout's own balance transaction is
  * skipped here -- it is staged separately and turned into a bank line by
- * stripePayoutLines -- so posting it here as well would double it.
+ * stripePayoutLines -- so posting it here as well would double it. A label
+ * rule matching a charge's own billing name sets its sourceJournalID,
+ * accountMainID and taxCode in place of the default sales account above; a
+ * charge no rule matches keeps that default and is also listed in
+ * unlabelled. The fee line always posts to feeAccountMainID, whatever the
+ * charge's own rule -- the fee is Stripe's own charge, not the payer's.
  * @param {Array<Object>} transactions - raw Stripe balance_transaction objects
- * @param {{salesAccountMainID: string, feeAccountMainID: string, taxCode?: string}} options
- * @returns {Array<Object>} validated diya-gl lines
+ * @param {{salesAccountMainID: string, feeAccountMainID: string, taxCode?: string, labels?: Object}} options
+ *   labels - a parsed label map (see labels.js)
+ * @returns {{lines: Array<Object>, unlabelled: Array<Object>}} validated
+ *   diya-gl lines, and the charges no label rule matched
  */
-export function stripeLinesFromTransactions(transactions, { salesAccountMainID, feeAccountMainID, taxCode } = {}) {
+export function stripeLinesFromTransactions(transactions, { salesAccountMainID, feeAccountMainID, taxCode, labels } = {}) {
   if (!salesAccountMainID) {
     throw new Error("salesAccountMainID is required");
   }
@@ -112,15 +129,27 @@ export function stripeLinesFromTransactions(transactions, { salesAccountMainID, 
     throw new Error("feeAccountMainID is required");
   }
 
+  const unlabelled = [];
   const lines = [];
   for (const txn of transactions) {
     switch (txn.reporting_category) {
-      case "charge":
-        lines.push(chargeGrossLine(txn, { salesAccountMainID, taxCode }));
+      case "charge": {
+        const rule = matchLabel(chargeDescription(txn), labels);
+        if (labels && !rule) {
+          unlabelled.push(txn);
+        }
+        lines.push(
+          chargeGrossLine(txn, {
+            sourceJournalID: rule?.sourceJournalID ?? "sales",
+            accountMainID: rule?.accountMainID ?? salesAccountMainID,
+            taxCode: rule?.taxCode ?? taxCode,
+          }),
+        );
         if (txn.fee > 0) {
           lines.push(chargeFeeLine(txn, { feeAccountMainID, taxCode }));
         }
         break;
+      }
       case "fee":
         lines.push(standaloneFeeLine(txn, { feeAccountMainID, taxCode }));
         break;
@@ -136,11 +165,17 @@ export function stripeLinesFromTransactions(transactions, { salesAccountMainID, 
   }
 
   const book = { accounts: { sales: { [salesAccountMainID]: {} }, purchases: { [feeAccountMainID]: {} } } };
+  for (const line of lines) {
+    if (!book.accounts[line.sourceJournalID]) {
+      book.accounts[line.sourceJournalID] = {};
+    }
+    book.accounts[line.sourceJournalID][line.accountMainID] = {};
+  }
   const { valid, errors } = validateLines(lines, book);
   if (!valid) {
     throw new Error(`Stripe transaction lines failed validation:\n${errors.join("\n")}`);
   }
-  return lines;
+  return { lines, unlabelled };
 }
 
 /**

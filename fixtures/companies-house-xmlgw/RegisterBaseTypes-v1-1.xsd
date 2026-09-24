@@ -1,0 +1,105 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema" xmlns="http://xmlgw.companieshouse.gov.uk" targetNamespace="http://xmlgw.companieshouse.gov.uk" elementFormDefault="qualified" attributeFormDefault="unqualified" version="1.1" id="RegisterBaseTypes">
+	<xs:complexType name="CompanyMemberType">
+		<xs:sequence>
+			<xs:element name="MemberClass" minOccurs="0">
+				<xs:annotation>
+					<xs:documentation>The class, if any, designated to this Member.</xs:documentation>
+				</xs:annotation>
+				<xs:simpleType>
+					<xs:restriction base="nonEmptyString">
+						<xs:maxLength value="50"/>
+					</xs:restriction>
+				</xs:simpleType>
+			</xs:element>
+			<xs:element name="Name" type="CompanyMemberNameType"/>
+			<xs:element name="Address" type="AddressBaseType">
+				<xs:annotation>
+					<xs:documentation>Contact address of Member</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+		</xs:sequence>
+	</xs:complexType>
+	<xs:complexType name="SharesOrStockHeldType">
+		<xs:choice>
+			<xs:element name="SharesHeld">
+				<xs:complexType>
+					<xs:complexContent>
+						<xs:extension base="SharesType">
+							<xs:sequence>
+								<xs:element ref="AmountPaidUp">
+									<xs:annotation>
+										<xs:documentation>GBP only</xs:documentation>
+									</xs:annotation>
+								</xs:element>
+							</xs:sequence>
+						</xs:extension>
+					</xs:complexContent>
+				</xs:complexType>
+			</xs:element>
+			<xs:element name="StockHeld">
+				<xs:complexType>
+					<xs:sequence>
+						<xs:element name="StockClass">
+							<xs:simpleType>
+								<xs:restriction base="nonEmptyString">
+									<xs:maxLength value="50"/>
+								</xs:restriction>
+							</xs:simpleType>
+						</xs:element>
+						<xs:element name="AmountHeld">
+							<xs:simpleType>
+								<xs:restriction base="xs:decimal">
+									<xs:minExclusive value="0"/>
+									<xs:maxInclusive value="999999999999999.999999"/>
+									<xs:fractionDigits value="6"/>
+								</xs:restriction>
+							</xs:simpleType>
+						</xs:element>
+						<xs:element name="Currency" type="iso3currency" minOccurs="0"/>
+					</xs:sequence>
+				</xs:complexType>
+			</xs:element>
+		</xs:choice>
+	</xs:complexType>
+	<xs:complexType name="SharesType">
+		<xs:sequence>
+			<xs:element ref="NumShares"/>
+			<xs:element ref="ShareClass"/>
+			<xs:element name="ShareReference" minOccurs="0">
+				<xs:annotation>
+					<xs:documentation>Share Number or Reference, if any.</xs:documentation>
+				</xs:annotation>
+				<xs:simpleType>
+					<xs:restriction base="nonEmptyString">
+						<xs:maxLength value="100"/>
+					</xs:restriction>
+				</xs:simpleType>
+			</xs:element>
+		</xs:sequence>
+	</xs:complexType>
+	<xs:complexType name="CompanyMemberNameType">
+		<xs:choice>
+			<xs:sequence>
+				<xs:element ref="Surname"/>
+				<xs:element ref="Forename"/>
+			</xs:sequence>
+			<xs:element ref="CorporateName"/>
+		</xs:choice>
+	</xs:complexType>
+	<xs:element name="DateRegisteredAsMember" type="xs:date">
+		<xs:annotation>
+			<xs:documentation>The date a member became a member.</xs:documentation>
+		</xs:annotation>
+	</xs:element>
+	<xs:element name="DateCeasedToBeMember" type="xs:date">
+		<xs:annotation>
+			<xs:documentation>Date the member ceased to be a member.</xs:documentation>
+		</xs:annotation>
+	</xs:element>
+	<xs:simpleType name="RegisterTypeType">
+		<xs:restriction base="xs:string">
+			<xs:enumeration value="MEMBERS"/>
+		</xs:restriction>
+	</xs:simpleType>
+</xs:schema>

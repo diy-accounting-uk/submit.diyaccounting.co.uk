@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- edited with XMLSpy v2009 sp1 (http://www.altova.com) by Suzanne Wadden (Companies House) -->
+<xs:schema xmlns="http://xmlgw.companieshouse.gov.uk" xmlns:xs="http://www.w3.org/2001/XMLSchema" targetNamespace="http://xmlgw.companieshouse.gov.uk" elementFormDefault="qualified" attributeFormDefault="unqualified" version="1.0" id="ConfirmationStatementPaymentPeriods">
+	<xs:include schemaLocation="baseTypes-v3-1.xsd"/>
+	<xs:element name="PaymentPeriods">
+		<xs:complexType>
+			<xs:sequence>
+				<xs:element name="PaymentPeriod" minOccurs="0" maxOccurs="unbounded">
+					<xs:complexType>
+						<xs:sequence>
+							<xs:element ref="StartDate"/>
+							<xs:element ref="EndDate"/>
+							<xs:element name="PeriodPaid" type="xs:boolean"/>
+						</xs:sequence>
+					</xs:complexType>
+				</xs:element>
+			</xs:sequence>
+		</xs:complexType>
+	</xs:element>
+	<xs:element name="PaymentPeriodsRequest">
+		<xs:annotation>
+			<xs:documentation>Confirmation statement payment periods request</xs:documentation>
+		</xs:annotation>
+		<xs:complexType>
+			<xs:sequence>
+				<xs:element ref="CompanyNumber"/>
+				<xs:element name="CompanyType" minOccurs="0">
+					<xs:annotation>
+						<xs:documentation>The Company Type Prefix</xs:documentation>
+					</xs:annotation>
+					<xs:simpleType>
+						<xs:restriction base="xs:string">
+							<xs:enumeration value="EW"/>
+							<xs:enumeration value="SC"/>
+							<xs:enumeration value="NI"/>
+							<xs:enumeration value="R"/>
+							<xs:enumeration value="OC"/>
+							<xs:enumeration value="SO"/>
+							<xs:enumeration value="NC"/>
+						</xs:restriction>
+					</xs:simpleType>
+				</xs:element>
+				<xs:element ref="CompanyAuthenticationCode"/>
+			</xs:sequence>
+		</xs:complexType>
+	</xs:element>
+</xs:schema>

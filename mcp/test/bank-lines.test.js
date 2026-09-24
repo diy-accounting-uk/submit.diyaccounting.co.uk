@@ -18,7 +18,7 @@ const STATEMENT = readFileSync(join(FIXTURES, "bank-statement.csv"), "utf8");
 
 describe("bankLinesFromCsv", () => {
   it("emits one validated line per statement transaction", () => {
-    const lines = bankLinesFromCsv(STATEMENT, { accountMainID: "1200" });
+    const { lines } = bankLinesFromCsv(STATEMENT, { accountMainID: "1200" });
     expect(lines).toHaveLength(7);
     for (const line of lines) {
       expect(line.sourceJournalID).toBe("bank");
@@ -31,7 +31,7 @@ describe("bankLinesFromCsv", () => {
   });
 
   it("carries the statement's own posting dates and amounts, oldest to newest", () => {
-    const lines = bankLinesFromCsv(STATEMENT, { accountMainID: "1200" });
+    const { lines } = bankLinesFromCsv(STATEMENT, { accountMainID: "1200" });
     const byDate = [...lines].sort((a, b) => a.postingDate.localeCompare(b.postingDate));
     expect(byDate.map((line) => [line.postingDate, line.amount])).toEqual([
       ["2026-03-01", 955.0],
@@ -45,13 +45,13 @@ describe("bankLinesFromCsv", () => {
   });
 
   it("codes a bank charge as B regardless of direction", () => {
-    const lines = bankLinesFromCsv(STATEMENT, { accountMainID: "1200" });
+    const { lines } = bankLinesFromCsv(STATEMENT, { accountMainID: "1200" });
     const charge = lines.find((line) => line.postingDate === "2026-03-31");
     expect(charge["diya-gl:bankCode"]).toBe("B");
   });
 
   it("codes money in as a receipt and money out as a payment for a type seen on both sides", () => {
-    const lines = bankLinesFromCsv(STATEMENT, { accountMainID: "1200" });
+    const { lines } = bankLinesFromCsv(STATEMENT, { accountMainID: "1200" });
     const refund = lines.find((line) => line.postingDate === "2026-03-15");
     const hosting = lines.find((line) => line.postingDate === "2026-03-10");
     expect(refund["diya-gl:bankCode"]).toBe("DR");
@@ -61,7 +61,7 @@ describe("bankLinesFromCsv", () => {
   });
 
   it("sets debitCreditCode C for a bank charge, which is always money out", () => {
-    const lines = bankLinesFromCsv(STATEMENT, { accountMainID: "1200" });
+    const { lines } = bankLinesFromCsv(STATEMENT, { accountMainID: "1200" });
     const charge = lines.find((line) => line.postingDate === "2026-03-31");
     expect(charge.debitCreditCode).toBe("C");
   });
@@ -71,7 +71,9 @@ describe("bankLinesFromCsv", () => {
       "Date,Type,Description,Value,Balance,Account Name,Account Number",
       '30 Jan 2026,INT,"30JAN GRS 00000000",0.19,246.64,SAVINGS ACCOUNT,000000-00000000',
     ].join("\n");
-    const [line] = bankLinesFromCsv(savings, { accountMainID: "1210" });
+    const {
+      lines: [line],
+    } = bankLinesFromCsv(savings, { accountMainID: "1210" });
     expect(line["diya-gl:bankCode"]).toBe("DR");
     expect(line.debitCreditCode).toBe("D");
     expect(line.amount).toBeCloseTo(0.19, 2);
@@ -91,13 +93,44 @@ describe("bankLinesFromCsv", () => {
   });
 });
 
+describe("bankLinesFromCsv with labels", () => {
+  const LABELS = {
+    rule: [{ "pattern": "WIDGET SUPPLIES", "diya-gl:bankCode": "CR", "taxCode": "OS" }],
+  };
+
+  it("sets the matched line's bankCode and taxCode from the rule, overriding bankCodeFor", () => {
+    const { lines } = bankLinesFromCsv(STATEMENT, { accountMainID: "1200", labels: LABELS });
+    // The refund is positive, so bankCodeFor alone would code it DR; the rule forces CR.
+    const refund = lines.find((line) => line.postingDate === "2026-03-15");
+    expect(refund["diya-gl:bankCode"]).toBe("CR");
+    expect(refund.taxCode).toBe("OS");
+  });
+
+  it("leaves an unmatched line coded as bankCodeFor would code it, and lists it in unlabelled", () => {
+    const { lines, unlabelled } = bankLinesFromCsv(STATEMENT, { accountMainID: "1200", labels: LABELS });
+    const insurance = lines.find((line) => line.postingDate === "2026-03-20");
+    expect(insurance["diya-gl:bankCode"]).toBe("CR");
+    expect(insurance.taxCode).toBeUndefined();
+    expect(unlabelled.some((row) => row.description.includes("ACME INSURANCE"))).toBe(true);
+    expect(unlabelled.some((row) => row.description.includes("WIDGET SUPPLIES"))).toBe(false);
+  });
+
+  it("behaves exactly as today when no labels are given: bankCodeFor's own coding, no taxCode, unlabelled empty", () => {
+    const { lines, unlabelled } = bankLinesFromCsv(STATEMENT, { accountMainID: "1200" });
+    const refund = lines.find((line) => line.postingDate === "2026-03-15");
+    expect(refund["diya-gl:bankCode"]).toBe("DR");
+    expect(lines.every((line) => line.taxCode === undefined)).toBe(true);
+    expect(unlabelled).toEqual([]);
+  });
+});
+
 describe("closingBalance", () => {
   it("returns the balance carried by the most recent transaction", () => {
     expect(closingBalance(STATEMENT)).toBe(1000.0);
   });
 
   it("matches the last running balance computed from the emitted lines", () => {
-    const lines = bankLinesFromCsv(STATEMENT, { accountMainID: "1200" });
+    const { lines } = bankLinesFromCsv(STATEMENT, { accountMainID: "1200" });
     const byDate = [...lines].sort((a, b) => a.postingDate.localeCompare(b.postingDate));
     let running = 0;
     for (const line of byDate) {
