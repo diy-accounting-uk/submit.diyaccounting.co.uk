@@ -47,6 +47,18 @@ Shared facts for the analytics rows (B52d, B52e, B52l, B52m): the prod Athena da
 
 ## Machine-only
 
+- [ ] **CS-10a. The per-submission price in the product catalogue.** Give activities a price the way
+  bundles have one: `[[activities.prices]]` under `id = "file-confirmation-statement"` in
+  `web/public/submit.catalogue.toml` (line 438), on the shape of `[[bundles.prices]]` (line 154:
+  `interval`, `amount`, `currency`, `default`), with `interval = "submission"` marking a one-off charge
+  per filing. Amount £61.35 (6135 pence): `(Companies House fee + Stripe fee) × 1.2` with the fee £50 and Stripe's standard UK card rate of 1.5% + 20p charged on the price itself, so P = 1.2 × (5000 + 0.015P + 20), P = 6024 / 0.982 = 6134.4, rounded up; the formula goes in the row's comment so a fee change is one edit.
+  Parse and validate it in `app/services/productCatalog.js` (its tests in
+  `app/unit-tests/services/productCatalog.test.js`), and teach `infra/stripe/lib/stripeCatalogue.js`
+  and `infra/stripe/stripe-sync.js` to create a one-off (non-recurring) Stripe price for an activity
+  price, in test mode; the live price lands with CS-11 through `stripe-catalogue-sync`. The page and
+  the charge flow are CS-10b and CS-10c. **Source**: `PLAN_COMPANIES_HOUSE_CONFIRMATION_STATEMENT.md`
+  "The fee path"; operator 2026-09-24. **Owner**: Claude Code. **Model**: Sonnet. **Size**: ~6 files.
+
 - [ ] **B52i. The company P&L and balance sheet on the dashboard.** The company's diya-gl book,
   derived nightly and rendered above the eight objectives beside the last set filed at Companies
   House. Shape: a nightly Lambda beside `app/functions/analytics/` calling `mcp/lib/accounts-tools.js`
@@ -81,8 +93,6 @@ Shared facts for the analytics rows (B52d, B52e, B52l, B52m): the prod Athena da
   `content scan`, and the Markdown-only head reached `CLEAN`. **Owner**: Operator.
   **Model**: none. **Size**: 0 files.
 
-- [ ] **CS-H5. Choose how the £50 fee is charged.** Pick A (pass the fee through), B (inside the subscription) or C (fee plus a margin) from the plan's "The fee path", and write the choice into CS-10's row. **Source**: `PLAN_COMPANIES_HOUSE_CONFIRMATION_STATEMENT.md` (its Tasks table carries the files). **Owner**: Operator. **Model**: none. **Size**: 0 files.
-
 - [ ] **OCS. The confirmation statement, due 5 October 2026.** Made up to 21 September 2026;
   DIY Accounting Limited 06846849 last filed a CS01 on 25 October 2025
   (<https://find-and-update.company-information.service.gov.uk/company/06846849/filing-history>).
@@ -103,9 +113,32 @@ Shared facts for the analytics rows (B52d, B52e, B52l, B52m): the prod Athena da
 
 ## Blocked
 
-- [ ] **CS-9. Confirmation statement sandbox proof.** On the endpoint CS-H2's answer names: a CompanyDataRequest, a no-change statement, a SIC change, one with `Shareholdings`, one with a blank director code, each polled to a terminal state and pinned in the simulator; settles Q2 and Q3. Blocked on CS-5, CS-7, CS-H1 and CS-H2; machine-ask when it runs (live credentials). **Source**: `PLAN_COMPANIES_HOUSE_CONFIRMATION_STATEMENT.md` (its Tasks table carries the files). **Owner**: Claude Code. **Model**: Sonnet. **Size**: 3 files.
+- [ ] **CS-10b. Charging for a single submission.** A general capability, not confirmation-statement
+  specific: a route that opens a Stripe Checkout Session in `payment` mode for an activity's
+  `interval = "submission"` price (on `app/functions/billing/billingCheckoutPost.js`'s pattern, which
+  opens `subscription` mode for bundles), carrying the activity id and a subject key (for the
+  confirmation statement, company number and review date) in the session metadata; `billingWebhookPost.js`
+  records the paid charge on `checkout.session.completed` in `payment` mode; a service
+  `app/services/activityCharges.js` with `hasPaidCharge(userSub, activityId, subjectKey)` and a way to
+  mark a charge used, so one payment covers one filing. The route in `app/bin/server.js` and in CDK
+  beside the billing routes; the storage on the existing billing tables' pattern (design the record
+  first: a new DynamoDB table in the data stack, or rows in an existing billing table). Unit tests for
+  the route, the webhook branch and the service. Blocked on CS-10a (the price it charges).
+  **Source**: `PLAN_COMPANIES_HOUSE_CONFIRMATION_STATEMENT.md` "The fee path". **Owner**: Claude Code.
+  **Model**: Sonnet. **Size**: ~10 files.
 
-- [ ] **CS-10. Confirmation statement fee collection.** Build the option CS-H5 picks. Blocked on CS-H5 and CS-4. **Source**: `PLAN_COMPANIES_HOUSE_CONFIRMATION_STATEMENT.md` (its Tasks table carries the files). **Owner**: Claude Code. **Model**: Sonnet. **Size**: ~5 files.
+- [ ] **CS-10c. The charge in the confirmation statement journey.** On
+  `web/public/companies-house/fileConfirmationStatement.html`: when `PaymentPeriodsRequest` says the
+  fee is due, the preview shows £61.35 and "Pay and submit" opens CS-10b's checkout; the return lands
+  back on the preview and submits. `app/functions/companies-house/companiesHouseConfirmationStatementPost.js`
+  refuses a fee-due submission without an unused paid charge for the company and review date (JSON
+  402), marks the charge used on acceptance by the gateway, and keeps `COMPANIES_HOUSE_CS_FEE_MODE=operator`
+  for the operator's own company. A browser test for both fee states, and a
+  `fileConfirmationStatementBehaviour` case paying with a Stripe test card on the simulator. Blocked
+  on CS-10b. **Source**: `PLAN_COMPANIES_HOUSE_CONFIRMATION_STATEMENT.md` "The fee path". **Owner**:
+  Claude Code. **Model**: Sonnet. **Size**: ~6 files.
+
+- [ ] **CS-9. Confirmation statement sandbox proof.** On the endpoint CS-H2's answer names: a CompanyDataRequest, a no-change statement, a SIC change, one with `Shareholdings`, one with a blank director code, each polled to a terminal state and pinned in the simulator; settles Q2 and Q3. Blocked on CS-5, CS-7, CS-H1 and CS-H2; machine-ask when it runs (live credentials). **Source**: `PLAN_COMPANIES_HOUSE_CONFIRMATION_STATEMENT.md` (its Tasks table carries the files). **Owner**: Claude Code. **Model**: Sonnet. **Size**: 3 files.
 
 - [ ] **CS-11. Confirmation statement prod launch.** `prod` on the activity, prod gateway values, `compliance.toml` rows for the credit account and the authorisation. Shares BACKLOG 34c steps 3 and 4 with the accounts launch. Blocked on CS-9, CS-H4 and CS-H6. **Source**: `PLAN_COMPANIES_HOUSE_CONFIRMATION_STATEMENT.md` (its Tasks table carries the files). **Owner**: Claude Code. **Model**: Haiku. **Size**: 5 files.
 
