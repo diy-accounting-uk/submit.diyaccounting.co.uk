@@ -42,9 +42,9 @@ import software.constructs.Construct;
 public class SelfDestructStack extends Stack {
 
     // How long the environment's last-known-good pointer protects the set it names from
-    // self-destruct, measured from the pointer's own LastModifiedDate. Past this window the
-    // pointer no longer blocks the schedule, so the set it names goes 12 to 16 hours after its
-    // promotion (up to one schedule interval beyond the window itself).
+    // self-destruct, measured from the pointer's own LastModifiedDate. The pointer's protection
+    // ends 12 hours after promotion; the set goes at the first schedule firing after that, within
+    // one delay interval.
     private static final int LAST_KNOWN_GOOD_PROTECTION_HOURS = 12;
 
     public final Role functionRole;
@@ -300,10 +300,11 @@ public class SelfDestructStack extends Stack {
 
         String ruleName = generateIamCompatibleName(props.resourceNamePrefix(), "sd-schedule");
 
-        // Hour field using anchored start hour with /delayHours if it divides 24; otherwise single fixed hour (no true
-        // interval possible)
+        // Hour field: when delayHours divides 24, use (startHour % delayHours)/delayHours to wrap past
+        // midnight; otherwise use a single fixed hour since no true interval is possible.
         String hourExpression = (24 % props.selfDestructDelayHours() == 0)
-                ? props.selfDestructStartDatetime().getHour() + "/" + props.selfDestructDelayHours()
+                ? (props.selfDestructStartDatetime().getHour() % props.selfDestructDelayHours()) + "/"
+                        + props.selfDestructDelayHours()
                 : String.valueOf(props.selfDestructStartDatetime().getHour());
         Schedule cron = Schedule.cron(CronOptions.builder()
                 .minute(String.valueOf(props.selfDestructStartDatetime().getMinute()))
