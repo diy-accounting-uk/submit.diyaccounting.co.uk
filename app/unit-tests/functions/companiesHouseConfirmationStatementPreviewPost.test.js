@@ -67,10 +67,13 @@ function buildStatementBody(overrides = {}) {
     dateSigned: "2026-09-24",
     reviewDate: "2025-09-21",
     lawfulPurposeStatementAccepted: true,
-    directors: [{ personalCode: "AB1234CD56E", forename: "ALICE", surname: "EXAMPLE", dob: "1970-01-01" }],
+    directors: [{ personalCode: "AB1234CD56E", forename: "ALICE", otherForenames: "MARGARET", surname: "EXAMPLE", dob: "1970-01-01" }],
     ...overrides,
   };
 }
+
+const VERIFIED_OFFICER = { identityVerificationDetails: { appointment_verification_end_on: "9999-12-31" } };
+const UNVERIFIED_OFFICER = { identityVerificationDetails: { appointment_verification_end_on: null } };
 
 function buildEvent({ body = buildStatementBody(), headers = {}, authorizer, method = "POST" } = {}) {
   const options = {
@@ -132,6 +135,33 @@ describe("companiesHouseConfirmationStatementPreviewPost ingestHandler", () => {
   test("rejects when the lawful purpose statement is not accepted", async () => {
     const response = await companiesHouseConfirmationStatementPreviewPostHandler(
       buildEvent({ body: buildStatementBody({ lawfulPurposeStatementAccepted: false }) }),
+    );
+    expect(response.statusCode).toBe(400);
+  });
+
+  test("renders ConfirmationStatement (v1-3) with no directors when every officer is already verified", async () => {
+    const response = await companiesHouseConfirmationStatementPreviewPostHandler(
+      buildEvent({ body: buildStatementBody({ directors: undefined, officers: [VERIFIED_OFFICER, VERIFIED_OFFICER] }) }),
+    );
+    expect(response.statusCode).toBe(200);
+    const body = parseResponseBody(response);
+    expect(body.confirmationStatementXml).toMatch(/^<ConfirmationStatement /);
+    expect(body.confirmationStatementXml).not.toContain("VerificationStatement");
+  });
+
+  test("renders ConfirmationAndVerificationStatement (v1-0) when an officer is unverified", async () => {
+    const response = await companiesHouseConfirmationStatementPreviewPostHandler(
+      buildEvent({ body: buildStatementBody({ officers: [VERIFIED_OFFICER, UNVERIFIED_OFFICER] }) }),
+    );
+    expect(response.statusCode).toBe(200);
+    const body = parseResponseBody(response);
+    expect(body.confirmationStatementXml).toMatch(/^<ConfirmationAndVerificationStatement /);
+    expect(body.confirmationStatementXml).toContain("<VerificationStatement>");
+  });
+
+  test("rejects officers that are not an array", async () => {
+    const response = await companiesHouseConfirmationStatementPreviewPostHandler(
+      buildEvent({ body: buildStatementBody({ officers: "not-an-array" }) }),
     );
     expect(response.statusCode).toBe(400);
   });

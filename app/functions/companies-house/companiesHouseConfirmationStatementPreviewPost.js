@@ -75,6 +75,7 @@ export async function ingestHandler(event) {
         shareholdings: statement.shareholdings,
         registeredEmailAddress: statement.registeredEmailAddress,
         directors: statement.directors,
+        officers: statement.officers,
       }),
     );
   } catch (error) {

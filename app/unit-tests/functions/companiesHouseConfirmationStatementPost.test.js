@@ -81,10 +81,13 @@ function buildStatementBody(overrides = {}) {
     dateSigned: "2026-09-24",
     reviewDate: "2025-09-21",
     lawfulPurposeStatementAccepted: true,
-    directors: [{ personalCode: "AB1234CD56E", forename: "ALICE", surname: "EXAMPLE", dob: "1970-01-01" }],
+    directors: [{ personalCode: "AB1234CD56E", forename: "ALICE", otherForenames: "MARGARET", surname: "EXAMPLE", dob: "1970-01-01" }],
     ...overrides,
   };
 }
+
+const VERIFIED_OFFICER = { identityVerificationDetails: { appointment_verification_end_on: "9999-12-31" } };
+const UNVERIFIED_OFFICER = { identityVerificationDetails: { appointment_verification_end_on: null } };
 
 function buildEvent({ body = buildStatementBody(), headers = {}, authorizer, method = "POST" } = {}) {
   const options = {
@@ -162,6 +165,48 @@ describe("companiesHouseConfirmationStatementPost ingestHandler", () => {
     await companiesHouseConfirmationStatementPostHandler(buildEvent());
     const [submissionArgs] = mockBuildConfirmationStatementSubmission.mock.calls[0];
     expect(submissionArgs.gatewayTest).toBe(true);
+  });
+
+  test("submits ConfirmationStatement (v1-3) with no directors when every officer is already verified", async () => {
+    const response = await companiesHouseConfirmationStatementPostHandler(
+      buildEvent({
+        body: buildStatementBody({ directors: undefined, officers: [VERIFIED_OFFICER, VERIFIED_OFFICER] }),
+      }),
+    );
+    expect(response.statusCode).toBe(201);
+
+    const [submissionArgs] = mockBuildConfirmationStatementSubmission.mock.calls[0];
+    expect(submissionArgs.formIdentifier).toBe("ConfirmationStatement");
+    expect(submissionArgs.statementXml).toMatch(/^<ConfirmationStatement /);
+    expect(submissionArgs.statementXml).not.toContain("VerificationStatement");
+  });
+
+  test("submits ConfirmationAndVerificationStatement (v1-0) with the directors' codes when an officer is unverified", async () => {
+    const response = await companiesHouseConfirmationStatementPostHandler(
+      buildEvent({ body: buildStatementBody({ officers: [VERIFIED_OFFICER, UNVERIFIED_OFFICER] }) }),
+    );
+    expect(response.statusCode).toBe(201);
+
+    const [submissionArgs] = mockBuildConfirmationStatementSubmission.mock.calls[0];
+    expect(submissionArgs.formIdentifier).toBe("ConfirmationAndVerificationStatement");
+    expect(submissionArgs.statementXml).toMatch(/^<ConfirmationAndVerificationStatement /);
+    expect(submissionArgs.statementXml).toContain("<VerificationStatement>");
+  });
+
+  test("rejects officers that are not an array", async () => {
+    const response = await companiesHouseConfirmationStatementPostHandler(
+      buildEvent({ body: buildStatementBody({ officers: "not-an-array" }) }),
+    );
+    expect(response.statusCode).toBe(400);
+    expect(mockPostToGateway).not.toHaveBeenCalled();
+  });
+
+  test("rejects an officers entry that is not an object", async () => {
+    const response = await companiesHouseConfirmationStatementPostHandler(
+      buildEvent({ body: buildStatementBody({ officers: [VERIFIED_OFFICER, "not-an-object"] }) }),
+    );
+    expect(response.statusCode).toBe(400);
+    expect(mockPostToGateway).not.toHaveBeenCalled();
   });
 
   test("rejects a company authentication code that is too short", async () => {

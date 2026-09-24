@@ -172,9 +172,13 @@
 
           <h3>Director identity verification</h3>
           <p class="hint">
-            Every current director must have verified their identity with Companies House and enter their 11-character personal code below.
-            A blank row stops this statement being submitted.
+            Every current director must have verified their identity with Companies House, and this statement needs their full name as
+            verified (including any other forenames) and their 11-character personal code. A blank row stops this statement being submitted.
             <a href="https://www.gov.uk/guidance/verify-your-identity-for-companies-house">How to verify identity</a>.
+          </p>
+          <p class="hint">
+            If someone else's code is needed to complete this filing, the company's directors can share their codes with whoever files -
+            Submit sends a code only with this filing and keeps no copy of it.
           </p>
           <div id="directorRowsContainer"></div>
 
@@ -240,6 +244,7 @@
       let originalShareholdings = [];
       let originalRegisteredEmailAddress = "";
       let currentDirectors = [];
+      let currentOfficers = [];
       let shareClassRowCount = 0;
       let shareholdingRowCount = 0;
 
@@ -317,6 +322,9 @@
           const [officersResult, pscsResult] = await Promise.all([window.getOfficers(companyNumber), window.getPscs(companyNumber)]);
 
           company = profile;
+          // Current officers' identity_verification_details, sent with the statement so the
+          // builder can pick ConfirmationAndVerificationStatement-v1-0 or ConfirmationStatement-v1-3.
+          currentOfficers = (officersResult.officers || []).filter((officer) => !officer.resignedOn);
           document.getElementById("authCompanyName").textContent = company.companyName;
           document.getElementById("authCompanyNumber").textContent = company.companyNumber;
           document.getElementById("authNextDue").textContent = textOrDash(company.confirmationStatementNextDue);
@@ -357,9 +365,39 @@
         });
       }
 
-      function shareholdingRowHtml(index, holding = {}) {
-        const shareholder = (holding.shareholders && holding.shareholders[0]) || {};
+      const MAX_JOINT_HOLDERS_PER_SHAREHOLDING = 10;
+
+      function jointHolderRowHtml(holdingIndex, shareholderIndex, shareholder = {}) {
         const address = shareholder.address || {};
+        const suffix = `${holdingIndex}-${shareholderIndex}`;
+        return `
+          <fieldset class="form-group" data-shareholder-row="${suffix}">
+            <legend>Joint holder ${shareholderIndex + 1}</legend>
+            <label for="holderSurname-${suffix}">Shareholder surname</label>
+            <input type="text" id="holderSurname-${suffix}" value="${shareholder.surname || ""}" />
+            <label for="holderForename-${suffix}">Shareholder forename</label>
+            <input type="text" id="holderForename-${suffix}" value="${shareholder.forename || ""}" />
+            <label for="holderAmalgamatedName-${suffix}">Or amalgamated name (used instead of surname/forename)</label>
+            <input type="text" id="holderAmalgamatedName-${suffix}" value="${shareholder.amalgamatedName || ""}" />
+            <label for="holderPremise-${suffix}">Premise</label>
+            <input type="text" id="holderPremise-${suffix}" value="${address.premise || ""}" />
+            <label for="holderStreet-${suffix}">Street</label>
+            <input type="text" id="holderStreet-${suffix}" value="${address.street || ""}" />
+            <label for="holderPostTown-${suffix}">Post town</label>
+            <input type="text" id="holderPostTown-${suffix}" value="${address.postTown || ""}" />
+            <label for="holderPostcode-${suffix}">Postcode</label>
+            <input type="text" id="holderPostcode-${suffix}" value="${address.postcode || ""}" />
+            <label for="holderCountry-${suffix}">Country</label>
+            <input type="text" id="holderCountry-${suffix}" value="${address.country || ""}" />
+            <button type="button" class="btn-small remove-joint-holder-row" data-holding-index="${holdingIndex}">Remove joint holder</button>
+          </fieldset>`;
+      }
+
+      function shareholdingRowHtml(index, holding = {}) {
+        const shareholders = holding.shareholders && holding.shareholders.length > 0 ? holding.shareholders : [{}];
+        const jointHoldersHtml = shareholders
+          .map((shareholder, shareholderIndex) => jointHolderRowHtml(index, shareholderIndex, shareholder))
+          .join("");
         return `
           <fieldset class="form-group" data-shareholding-row="${index}">
             <legend>Shareholding ${index + 1}</legend>
@@ -367,23 +405,10 @@
             <input type="text" id="holdingShareClass-${index}" value="${holding.shareClass || ""}" />
             <label for="holdingNumberHeld-${index}">Number held</label>
             <input type="number" id="holdingNumberHeld-${index}" step="1" min="0" value="${holding.numberHeld || ""}" />
-            <label for="holderSurname-${index}">Shareholder surname</label>
-            <input type="text" id="holderSurname-${index}" value="${shareholder.surname || ""}" />
-            <label for="holderForename-${index}">Shareholder forename</label>
-            <input type="text" id="holderForename-${index}" value="${shareholder.forename || ""}" />
-            <label for="holderAmalgamatedName-${index}">Or amalgamated name (used instead of surname/forename)</label>
-            <input type="text" id="holderAmalgamatedName-${index}" value="${shareholder.amalgamatedName || ""}" />
-            <label for="holderPremise-${index}">Premise</label>
-            <input type="text" id="holderPremise-${index}" value="${address.premise || ""}" />
-            <label for="holderStreet-${index}">Street</label>
-            <input type="text" id="holderStreet-${index}" value="${address.street || ""}" />
-            <label for="holderPostTown-${index}">Post town</label>
-            <input type="text" id="holderPostTown-${index}" value="${address.postTown || ""}" />
-            <label for="holderPostcode-${index}">Postcode</label>
-            <input type="text" id="holderPostcode-${index}" value="${address.postcode || ""}" />
-            <label for="holderCountry-${index}">Country</label>
-            <input type="text" id="holderCountry-${index}" value="${address.country || ""}" />
-            <button type="button" class="btn-small remove-shareholding-row">Remove</button>
+            <p class="hint">A holding held jointly carries every joint holder below, up to ${MAX_JOINT_HOLDERS_PER_SHAREHOLDING}.</p>
+            <div class="joint-holders-container" data-holding-index="${index}">${jointHoldersHtml}</div>
+            <button type="button" class="btn-small add-joint-holder-row" data-holding-index="${index}">Add joint holder</button>
+            <button type="button" class="btn-small remove-shareholding-row">Remove shareholding</button>
           </fieldset>`;
       }
 
@@ -400,9 +425,13 @@
         return `
           <fieldset class="form-group" data-director-row="${index}">
             <legend>${director.forename || ""} ${director.surname || ""} (${director.dob || "no date of birth on record"})</legend>
+            <label for="directorOtherForenames-${index}">Other forenames</label>
+            <p class="hint">Every middle name on the register. Companies House matches the director by the full name - leaving one out rejects the filing.</p>
+            <input type="text" id="directorOtherForenames-${index}" value="${director.otherForenames || ""}" spellcheck="false" />
             <label for="directorPersonalCode-${index}">Companies House personal code</label>
             <input type="text" id="directorPersonalCode-${index}" maxlength="11" spellcheck="false" />
-            <label for="directorNameMismatchReason-${index}">Name mismatch reason (only if the verified name differs)</label>
+            <label for="directorNameMismatchReason-${index}">Name mismatch reason</label>
+            <p class="hint">Only when the name this director verified under differs from the register name above.</p>
             <input type="text" id="directorNameMismatchReason-${index}" spellcheck="false" />
           </fieldset>`;
       }
@@ -516,24 +545,32 @@
         };
       }
 
+      function readJointHolders(holdingIndex) {
+        return Array.from(
+          document.querySelectorAll(`.joint-holders-container[data-holding-index="${holdingIndex}"] [data-shareholder-row]`),
+        ).map((row) => {
+          const suffix = row.getAttribute("data-shareholder-row");
+          const amalgamatedName = document.getElementById(`holderAmalgamatedName-${suffix}`).value.trim();
+          const surname = document.getElementById(`holderSurname-${suffix}`).value.trim();
+          const forename = document.getElementById(`holderForename-${suffix}`).value.trim();
+          const address = {
+            premise: document.getElementById(`holderPremise-${suffix}`).value.trim(),
+            street: document.getElementById(`holderStreet-${suffix}`).value.trim(),
+            postTown: document.getElementById(`holderPostTown-${suffix}`).value.trim(),
+            postcode: document.getElementById(`holderPostcode-${suffix}`).value.trim(),
+            country: document.getElementById(`holderCountry-${suffix}`).value.trim(),
+          };
+          return amalgamatedName ? { amalgamatedName, address } : { surname, forename, address };
+        });
+      }
+
       function readShareholdings() {
         return Array.from(document.querySelectorAll("[data-shareholding-row]")).map((row) => {
           const index = row.getAttribute("data-shareholding-row");
-          const amalgamatedName = document.getElementById(`holderAmalgamatedName-${index}`).value.trim();
-          const surname = document.getElementById(`holderSurname-${index}`).value.trim();
-          const forename = document.getElementById(`holderForename-${index}`).value.trim();
-          const address = {
-            premise: document.getElementById(`holderPremise-${index}`).value.trim(),
-            street: document.getElementById(`holderStreet-${index}`).value.trim(),
-            postTown: document.getElementById(`holderPostTown-${index}`).value.trim(),
-            postcode: document.getElementById(`holderPostcode-${index}`).value.trim(),
-            country: document.getElementById(`holderCountry-${index}`).value.trim(),
-          };
-          const shareholder = amalgamatedName ? { amalgamatedName, address } : { surname, forename, address };
           return {
             shareClass: document.getElementById(`holdingShareClass-${index}`).value.trim(),
             numberHeld: Number(document.getElementById(`holdingNumberHeld-${index}`).value || 0),
-            shareholders: [shareholder],
+            shareholders: readJointHolders(index),
           };
         });
       }
@@ -541,6 +578,7 @@
       function readDirectors() {
         return currentDirectors.map((director, index) => ({
           forename: director.forename,
+          otherForenames: document.getElementById(`directorOtherForenames-${index}`).value.trim(),
           surname: director.surname,
           dob: director.dob,
           personalCode: document.getElementById(`directorPersonalCode-${index}`).value.trim(),
@@ -565,6 +603,7 @@
           reviewDate: document.getElementById("reviewDate").value,
           lawfulPurposeStatementAccepted: document.getElementById("lawfulPurposeStatement").checked,
           directors: readDirectors(),
+          officers: currentOfficers.map((officer) => ({ identityVerificationDetails: officer.identityVerificationDetails })),
         };
 
         if (!deepEqual(sicCodes, originalSicCodes)) {
@@ -596,10 +635,10 @@
           showStatus("At least one current director's verification statement is required.", "error");
           return false;
         }
-        const unverified = payload.directors.find((director) => director.personalCode.length !== 11);
-        if (unverified) {
+        const blankRow = payload.directors.find((director) => director.personalCode.length !== 11 || !director.otherForenames);
+        if (blankRow) {
           showStatus(
-            `${unverified.forename || ""} ${unverified.surname || ""} must verify their identity with Companies House and enter their 11-character personal code before this statement can be submitted.`,
+            `${blankRow.forename || ""} ${blankRow.surname || ""} must verify their identity with Companies House, and this statement needs their other forenames and their 11-character personal code before it can be submitted.`,
             "error",
           );
           return false;
@@ -642,8 +681,9 @@
         const container = document.getElementById("pscFollowUp");
         container.style.display = "block";
         container.innerHTML =
-          "<p>Each director who is also a person with significant control has 14 days from the day after the review date " +
-          "to verify their identity through the PSC service.</p>";
+          "<p>This statement does not carry PSC verification. Each director who is also a person with significant control has " +
+          "14 days from the day after the review date to supply their personal code separately, through " +
+          '<a href="https://www.gov.uk/guidance/provide-psc-verification">the PSC verification service</a>.</p>';
       }
 
       async function pollUntilSettled(submissionNumber, extraHeaders = {}) {
@@ -699,6 +739,7 @@
         companyAuthCode = "";
         filingData = null;
         currentDirectors = [];
+        currentOfficers = [];
         document.getElementById("companyForm").reset();
         document.getElementById("authForm").reset();
         document.getElementById("reviewForm").reset();
@@ -717,6 +758,21 @@
       document.getElementById("reviewForm").addEventListener("submit", handleReviewFormSubmit);
       document.getElementById("addShareClassBtn").addEventListener("click", () => addShareClassRow());
       document.getElementById("addShareholdingBtn").addEventListener("click", () => addShareholdingRow());
+      document.getElementById("shareholdingsContainer").addEventListener("click", (event) => {
+        if (event.target.classList.contains("add-joint-holder-row")) {
+          const holdingIndex = event.target.getAttribute("data-holding-index");
+          const jointHoldersContainer = document.querySelector(`.joint-holders-container[data-holding-index="${holdingIndex}"]`);
+          const nextShareholderIndex = jointHoldersContainer.querySelectorAll("[data-shareholder-row]").length;
+          if (nextShareholderIndex >= MAX_JOINT_HOLDERS_PER_SHAREHOLDING) {
+            showStatus(`A shareholding may carry at most ${MAX_JOINT_HOLDERS_PER_SHAREHOLDING} joint holders.`, "error");
+            return;
+          }
+          jointHoldersContainer.insertAdjacentHTML("beforeend", jointHolderRowHtml(holdingIndex, nextShareholderIndex));
+        }
+        if (event.target.classList.contains("remove-joint-holder-row")) {
+          event.target.closest("[data-shareholder-row]").remove();
+        }
+      });
       document.getElementById("backToReviewBtn").addEventListener("click", () => showView("reviewView"));
       document.getElementById("submitFilingBtn").addEventListener("click", handleSubmitFiling);
       document.getElementById("startAgainBtn").addEventListener("click", startAgain);
