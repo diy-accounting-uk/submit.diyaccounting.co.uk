@@ -20,7 +20,10 @@ const DEFAULT_XML_GATEWAY_URI = "https://xmlgw.companieshouse.gov.uk/v1-0/xmlgw/
 
 // The atomic counter backing allocateSubmissionNumber() lives in the same async-requests table
 // the Lambda records the submission itself under (COMPANIES_HOUSE_ACCOUNTS_ASYNC_REQUESTS_TABLE_NAME),
-// keyed apart from any real request id so it never collides with one.
+// keyed apart from any real request id so it never collides with one. Submission numbers are
+// unique per presenter across every form (accounts, confirmation statements, ...), so every form
+// draws from this one counter; the key's own "accounts-submission-number-counter" text stays as
+// the item's id, because renaming it would restart numbering and collide with numbers already used.
 const SUBMISSION_NUMBER_COUNTER_KEY = { hashedSub: "companies-house-xmlgw", requestId: "accounts-submission-number-counter" };
 
 let secretsClient = null;
@@ -130,7 +133,9 @@ function buildEnvelopeXml({ requestClass, transactionId, gatewayTest, presenterI
 }
 
 /**
- * Build the GovTalk envelope for an Accounts submission.
+ * Build the GovTalk envelope for a FormSubmission: FormHeader, DateSigned, and either a Form body
+ * (a form's own XML, e.g. the ConfirmationAndVerificationStatement element) or a Document (a
+ * base64 attachment, e.g. iXBRL accounts), matching FormSubmission-v2-11.xsd's own sequence.
  *
  * @param {object} input
  * @param {string} input.presenterId
@@ -141,6 +146,76 @@ function buildEnvelopeXml({ requestClass, transactionId, gatewayTest, presenterI
  * @param {string} [input.packageReference] - the value Companies House's XML team issues per
  *   environment (the test service and the live service each expect a different one); the caller
  *   resolves it from configuration, defaulting to blank only when a caller has none to give
+ * @param {string} input.formIdentifier - the form's FormIdentifier and GovTalk Class, e.g.
+ *   "Accounts" or "ConfirmationAndVerificationStatement"
+ * @param {string} input.submissionNumber - exactly 6 characters
+ * @param {string} input.dateSigned - ISO date the director signed
+ * @param {string} [input.formXml] - the form's own XML, sent inside Form
+ * @param {object} [input.document] - sent inside Document when given
+ * @param {string} input.document.data - the attachment's content, already base64-encoded
+ * @param {string} input.document.date
+ * @param {string} input.document.filename
+ * @param {string} input.document.contentType
+ * @param {string} input.document.category
+ * @param {string} [input.transactionId] - defaults to the current epoch milliseconds
+ * @param {boolean} [input.gatewayTest] - true against the test service
+ * @returns {string} the envelope XML
+ */
+export function buildFormSubmission({
+  presenterId,
+  presenterCode,
+  companyNumber,
+  companyName,
+  companyAuthenticationCode,
+  packageReference = "",
+  formIdentifier,
+  submissionNumber,
+  dateSigned,
+  formXml = "",
+  document,
+  transactionId = String(Date.now()),
+  gatewayTest = false,
+}) {
+  const documentXml = document
+    ? `
+      <Document>
+        <Data>${document.data}</Data>
+        <Date>${document.date}</Date>
+        <Filename>${escapeXmlText(document.filename)}</Filename>
+        <ContentType>${escapeXmlText(document.contentType)}</ContentType>
+        <Category>${escapeXmlText(document.category)}</Category>
+      </Document>`
+    : "";
+
+  const bodyXml = `<FormSubmission xmlns="http://xmlgw.companieshouse.gov.uk/Header">
+      <FormHeader>
+        <CompanyNumber>${escapeXmlText(companyNumber)}</CompanyNumber>
+        <CompanyName>${escapeXmlText(companyName)}</CompanyName>
+        <CompanyAuthenticationCode>${escapeXmlText(companyAuthenticationCode)}</CompanyAuthenticationCode>
+        <PackageReference>${escapeXmlText(packageReference)}</PackageReference>
+        <FormIdentifier>${escapeXmlText(formIdentifier)}</FormIdentifier>
+        <SubmissionNumber>${escapeXmlText(submissionNumber)}</SubmissionNumber>
+      </FormHeader>
+      <DateSigned>${dateSigned}</DateSigned>
+      <Form>
+      ${formXml}
+      </Form>${documentXml}
+    </FormSubmission>`;
+
+  return buildEnvelopeXml({ requestClass: formIdentifier, transactionId, gatewayTest, presenterId, presenterCode, bodyXml });
+}
+
+/**
+ * Build the GovTalk envelope for an Accounts submission: a FormSubmission whose Document carries
+ * the base64-encoded iXBRL.
+ *
+ * @param {object} input
+ * @param {string} input.presenterId
+ * @param {string} input.presenterCode
+ * @param {string} input.companyNumber
+ * @param {string} input.companyName
+ * @param {string} input.companyAuthenticationCode
+ * @param {string} [input.packageReference]
  * @param {string} input.submissionNumber - exactly 6 characters
  * @param {string} input.dateSigned - ISO date the director signed
  * @param {string} input.ixbrl - the generated iXBRL document, not yet base64-encoded
@@ -165,28 +240,144 @@ export function buildAccountsSubmission({
 }) {
   const data = Buffer.from(ixbrl, "utf8").toString("base64");
 
-  const bodyXml = `<FormSubmission xmlns="http://xmlgw.companieshouse.gov.uk/Header">
-      <FormHeader>
-        <CompanyNumber>${escapeXmlText(companyNumber)}</CompanyNumber>
-        <CompanyName>${escapeXmlText(companyName)}</CompanyName>
-        <CompanyAuthenticationCode>${escapeXmlText(companyAuthenticationCode)}</CompanyAuthenticationCode>
-        <PackageReference>${escapeXmlText(packageReference)}</PackageReference>
-        <FormIdentifier>Accounts</FormIdentifier>
-        <SubmissionNumber>${escapeXmlText(submissionNumber)}</SubmissionNumber>
-      </FormHeader>
-      <DateSigned>${dateSigned}</DateSigned>
-      <Form>
-      </Form>
-      <Document>
-        <Data>${data}</Data>
-        <Date>${dateSigned}</Date>
-        <Filename>${escapeXmlText(filename)}</Filename>
-        <ContentType>application/xml</ContentType>
-        <Category>ACCOUNTS</Category>
-      </Document>
-    </FormSubmission>`;
+  return buildFormSubmission({
+    presenterId,
+    presenterCode,
+    companyNumber,
+    companyName,
+    companyAuthenticationCode,
+    packageReference,
+    formIdentifier: "Accounts",
+    submissionNumber,
+    dateSigned,
+    document: { data, date: dateSigned, filename, contentType: "application/xml", category: "ACCOUNTS" },
+    transactionId,
+    gatewayTest,
+  });
+}
 
-  return buildEnvelopeXml({ requestClass: "Accounts", transactionId, gatewayTest, presenterId, presenterCode, bodyXml });
+/**
+ * Build the GovTalk envelope for a confirmation statement submission: a FormSubmission whose Form
+ * carries the already-built ConfirmationAndVerificationStatement (or, once every officer is
+ * verified, ConfirmationStatement) element.
+ *
+ * @param {object} input
+ * @param {string} input.presenterId
+ * @param {string} input.presenterCode
+ * @param {string} input.companyNumber
+ * @param {string} input.companyName
+ * @param {string} input.companyAuthenticationCode
+ * @param {string} [input.packageReference]
+ * @param {string} input.submissionNumber - exactly 6 characters
+ * @param {string} input.dateSigned - ISO date the director signed
+ * @param {string} input.statementXml - the built ConfirmationAndVerificationStatement element,
+ *   e.g. from companiesHouseConfirmationStatementXml.js's buildConfirmationStatementBody()
+ * @param {string} [input.formIdentifier] - "ConfirmationAndVerificationStatement" or, once every
+ *   officer is verified, "ConfirmationStatement"
+ * @param {string} [input.transactionId] - defaults to the current epoch milliseconds
+ * @param {boolean} [input.gatewayTest] - true against the test service
+ * @returns {string} the envelope XML
+ */
+export function buildConfirmationStatementSubmission({
+  presenterId,
+  presenterCode,
+  companyNumber,
+  companyName,
+  companyAuthenticationCode,
+  packageReference = "",
+  submissionNumber,
+  dateSigned,
+  statementXml,
+  formIdentifier = "ConfirmationAndVerificationStatement",
+  transactionId = String(Date.now()),
+  gatewayTest = false,
+}) {
+  return buildFormSubmission({
+    presenterId,
+    presenterCode,
+    companyNumber,
+    companyName,
+    companyAuthenticationCode,
+    packageReference,
+    formIdentifier,
+    submissionNumber,
+    dateSigned,
+    formXml: statementXml,
+    transactionId,
+    gatewayTest,
+  });
+}
+
+/**
+ * Build the GovTalk envelope for a CompanyDataRequest: the pre-populated register data a
+ * confirmation statement form is built from (MadeUpDate, NextDueDate, SIC codes, officers, PSCs,
+ * statement of capital, shareholdings, registered email), free and synchronous.
+ *
+ * @param {object} input
+ * @param {string} input.presenterId
+ * @param {string} input.presenterCode
+ * @param {string} input.companyNumber
+ * @param {string} input.companyAuthenticationCode - the company's own authentication code, not
+ *   the presenter's
+ * @param {string} [input.companyType] - the company type prefix (EW, SC, NI, R, OC, SO, NC)
+ * @param {string} input.madeUpDate
+ * @param {string} [input.transactionId] - defaults to the current epoch milliseconds
+ * @param {boolean} [input.gatewayTest] - true against the test service
+ * @returns {string} the envelope XML
+ */
+export function buildCompanyDataRequest({
+  presenterId,
+  presenterCode,
+  companyNumber,
+  companyAuthenticationCode,
+  companyType,
+  madeUpDate,
+  transactionId = String(Date.now()),
+  gatewayTest = false,
+}) {
+  const companyTypeXml = companyType ? `\n      <CompanyType>${escapeXmlText(companyType)}</CompanyType>` : "";
+
+  const bodyXml = `<CompanyDataRequest xmlns="http://xmlgw.companieshouse.gov.uk" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://xmlgw.companieshouse.gov.uk http://xmlgw.companieshouse.gov.uk/v1-0/schema/CompanyData-v3-6.xsd">
+      <CompanyNumber>${escapeXmlText(companyNumber)}</CompanyNumber>${companyTypeXml}
+      <CompanyAuthenticationCode>${escapeXmlText(companyAuthenticationCode)}</CompanyAuthenticationCode>
+      <MadeUpDate>${madeUpDate}</MadeUpDate>
+    </CompanyDataRequest>`;
+
+  return buildEnvelopeXml({ requestClass: "CompanyDataRequest", transactionId, gatewayTest, presenterId, presenterCode, bodyXml });
+}
+
+/**
+ * Build the GovTalk envelope for a PaymentPeriodsRequest: whether the confirmation statement's
+ * payment period is already paid, free and synchronous.
+ *
+ * @param {object} input
+ * @param {string} input.presenterId
+ * @param {string} input.presenterCode
+ * @param {string} input.companyNumber
+ * @param {string} input.companyAuthenticationCode - the company's own authentication code, not
+ *   the presenter's
+ * @param {string} [input.companyType] - the company type prefix (EW, SC, NI, R, OC, SO, NC)
+ * @param {string} [input.transactionId] - defaults to the current epoch milliseconds
+ * @param {boolean} [input.gatewayTest] - true against the test service
+ * @returns {string} the envelope XML
+ */
+export function buildPaymentPeriodsRequest({
+  presenterId,
+  presenterCode,
+  companyNumber,
+  companyAuthenticationCode,
+  companyType,
+  transactionId = String(Date.now()),
+  gatewayTest = false,
+}) {
+  const companyTypeXml = companyType ? `\n      <CompanyType>${escapeXmlText(companyType)}</CompanyType>` : "";
+
+  const bodyXml = `<PaymentPeriodsRequest xmlns="http://xmlgw.companieshouse.gov.uk" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://xmlgw.companieshouse.gov.uk http://xmlgw.companieshouse.gov.uk/v1-0/schema/PaymentPeriods-v1-0.xsd">
+      <CompanyNumber>${escapeXmlText(companyNumber)}</CompanyNumber>${companyTypeXml}
+      <CompanyAuthenticationCode>${escapeXmlText(companyAuthenticationCode)}</CompanyAuthenticationCode>
+    </PaymentPeriodsRequest>`;
+
+  return buildEnvelopeXml({ requestClass: "PaymentPeriodsRequest", transactionId, gatewayTest, presenterId, presenterCode, bodyXml });
 }
 
 /**
@@ -271,6 +462,108 @@ export function parseGatewayResponse(xml) {
     errors,
     statuses,
   };
+}
+
+function parseAddressElement(addressElement) {
+  if (!addressElement) {
+    return undefined;
+  }
+  return {
+    premise: firstElementText(addressElement, "Premise"),
+    street: firstElementText(addressElement, "Street"),
+    thoroughfare: firstElementText(addressElement, "Thoroughfare"),
+    postTown: firstElementText(addressElement, "PostTown"),
+    county: firstElementText(addressElement, "County"),
+    country: firstElementText(addressElement, "Country"),
+    postcode: firstElementText(addressElement, "Postcode"),
+  };
+}
+
+function parseOfficerElement(officerElement, role) {
+  const personElement = firstElement(officerElement, "Person");
+  const appointmentDate = firstElementText(officerElement, "AppointmentDate");
+  const resignationDate = firstElementText(officerElement, "ResignationDate");
+  if (personElement) {
+    return {
+      role,
+      type: "person",
+      forename: firstElementText(personElement, "Forename"),
+      surname: firstElementText(personElement, "Surname"),
+      dob: firstElementText(personElement, "DOB"),
+      nationality: firstElementText(personElement, "Nationality"),
+      countryOfResidence: firstElementText(personElement, "CountryOfResidence"),
+      appointmentDate,
+      resignationDate,
+    };
+  }
+  const corporateElement = firstElement(officerElement, "Corporate");
+  return {
+    role,
+    type: "corporate",
+    corporateName: firstElementText(corporateElement, "CorporateName"),
+    appointmentDate,
+    resignationDate,
+  };
+}
+
+/**
+ * Parse a CompanyDataRequest answer (the register data a confirmation statement form is built
+ * from) into a plain object.
+ *
+ * @param {string} xml
+ * @returns {object|undefined} undefined when the response carries no CompanyData element (e.g. a
+ *   GovTalkErrors-only response; the caller reads parseGatewayResponse()'s errors for that case)
+ */
+export function parseCompanyDataResponse(xml) {
+  const document = parseXmlDocument(xml);
+  const companyDataElement = firstElement(document, "CompanyData");
+  if (!companyDataElement) {
+    return undefined;
+  }
+
+  const sicCodesElement = firstElement(companyDataElement, "SICCodes");
+
+  return {
+    companyNumber: firstElementText(companyDataElement, "CompanyNumber"),
+    companyName: firstElementText(companyDataElement, "CompanyName"),
+    companyCategory: firstElementText(companyDataElement, "CompanyCategory"),
+    jurisdiction: firstElementText(companyDataElement, "Jurisdiction"),
+    tradingOnMarket: firstElementText(companyDataElement, "TradingOnMarket") === "true",
+    dtr5Applies: firstElementText(companyDataElement, "DTR5Applies") === "true",
+    madeUpDate: firstElementText(companyDataElement, "MadeUpDate"),
+    nextDueDate: firstElementText(companyDataElement, "NextDueDate"),
+    registeredOfficeAddress: parseAddressElement(firstElement(companyDataElement, "RegisteredOfficeAddress")),
+    registeredEmailAddress: firstElementText(companyDataElement, "RegisteredEmailAddress"),
+    sicCodes: sicCodesElement ? allElements(sicCodesElement, "SICCode").map((element) => element.textContent) : [],
+    officers: [
+      ...allElements(companyDataElement, "Director").map((element) => parseOfficerElement(element, "director")),
+      ...allElements(companyDataElement, "Secretary").map((element) => parseOfficerElement(element, "secretary")),
+    ],
+  };
+}
+
+/**
+ * Parse a PaymentPeriods answer (whether the confirmation statement's payment period is already
+ * paid) into a plain object.
+ *
+ * @param {string} xml
+ * @returns {{periods: Array<{startDate: string|undefined, endDate: string|undefined, periodPaid: boolean}>}|undefined}
+ *   undefined when the response carries no PaymentPeriods element
+ */
+export function parsePaymentPeriodsResponse(xml) {
+  const document = parseXmlDocument(xml);
+  const paymentPeriodsElement = firstElement(document, "PaymentPeriods");
+  if (!paymentPeriodsElement) {
+    return undefined;
+  }
+
+  const periods = allElements(paymentPeriodsElement, "PaymentPeriod").map((periodElement) => ({
+    startDate: firstElementText(periodElement, "StartDate"),
+    endDate: firstElementText(periodElement, "EndDate"),
+    periodPaid: firstElementText(periodElement, "PeriodPaid") === "true",
+  }));
+
+  return { periods };
 }
 
 /**

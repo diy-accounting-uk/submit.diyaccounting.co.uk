@@ -48,9 +48,15 @@ vi.mock("@app/lib/dynamoDbClient.js", () => ({
 
 const {
   hashPresenterCredential,
+  buildFormSubmission,
   buildAccountsSubmission,
+  buildConfirmationStatementSubmission,
+  buildCompanyDataRequest,
+  buildPaymentPeriodsRequest,
   buildStatusRequest,
   parseGatewayResponse,
+  parseCompanyDataResponse,
+  parsePaymentPeriodsResponse,
   allocateSubmissionNumber,
   postToGateway,
   getXmlGatewayUri,
@@ -68,6 +74,18 @@ const GET_SUBMISSION_STATUS_REQUEST_FIXTURE = readFileSync(
 );
 const GET_SUBMISSION_STATUS_REJECT_RESPONSE_FIXTURE = readFileSync(
   new URL("../../../fixtures/companies-house-xmlgw/GetSubmissionStatus_reject_response_GovTalkErrors.xml", import.meta.url),
+  "utf8",
+);
+const CONFIRMATION_AND_VERIFICATION_STATEMENT_FIXTURE = readFileSync(
+  new URL("../../../fixtures/companies-house-xmlgw/ConfirmationAndVerificationStatement.xml", import.meta.url),
+  "utf8",
+);
+const COMPANY_DATA_RESPONSE_FIXTURE = readFileSync(
+  new URL("../../../fixtures/companies-house-xmlgw/CompanyDataResponse_v3-6.xml", import.meta.url),
+  "utf8",
+);
+const COMPANY_DATA_REQUEST_FIXTURE = readFileSync(
+  new URL("../../../fixtures/companies-house-xmlgw/CompanyDataRequest_v3-3.xml", import.meta.url),
   "utf8",
 );
 
@@ -160,6 +178,224 @@ describe("services/companiesHouseXmlGateway", () => {
       const document = parseXmlDocument(xml);
       expect(document.getElementsByTagName("Authority")).toHaveLength(0);
       expect(document.getElementsByTagName("Designation")).toHaveLength(0);
+    });
+  });
+
+  describe("buildFormSubmission", () => {
+    const baseInput = {
+      presenterId: "12345678901",
+      presenterCode: "SimTest1",
+      companyNumber: "02706061",
+      companyName: "TEST COMPANY LIMITED",
+      companyAuthenticationCode: "ABC123",
+      formIdentifier: "ConfirmationAndVerificationStatement",
+      submissionNumber: "AAA001",
+      dateSigned: "2026-06-30",
+      formXml: "<ConfirmationAndVerificationStatement><ReviewDate>2026-06-30</ReviewDate></ConfirmationAndVerificationStatement>",
+      transactionId: "1700000000000",
+    };
+
+    test("carries FormIdentifier and Class as the given formIdentifier", () => {
+      const xml = buildFormSubmission(baseInput);
+      const document = parseXmlDocument(xml);
+      expect(firstElementText(document, "Class")).toBe("ConfirmationAndVerificationStatement");
+      expect(firstElementText(document, "FormIdentifier")).toBe("ConfirmationAndVerificationStatement");
+    });
+
+    test("carries the given formXml inside Form and no Document when none is given", () => {
+      const xml = buildFormSubmission(baseInput);
+      const document = parseXmlDocument(xml);
+      expect(firstElementText(document, "ReviewDate")).toBe("2026-06-30");
+      expect(document.getElementsByTagName("Document")).toHaveLength(0);
+    });
+
+    test("carries a given document inside Document", () => {
+      const xml = buildFormSubmission({
+        ...baseInput,
+        formIdentifier: "Accounts",
+        formXml: "",
+        document: { data: "ZGF0YQ==", date: "2026-06-30", filename: "Accounts.xml", contentType: "application/xml", category: "ACCOUNTS" },
+      });
+      const document = parseXmlDocument(xml);
+      expect(firstElementText(document, "Data")).toBe("ZGF0YQ==");
+      expect(firstElementText(document, "Category")).toBe("ACCOUNTS");
+    });
+  });
+
+  describe("buildConfirmationStatementSubmission", () => {
+    const baseInput = {
+      presenterId: "12345678901",
+      presenterCode: "SimTest1",
+      companyNumber: "11111111",
+      companyName: "EXAMPLE COMPANY",
+      companyAuthenticationCode: "123456",
+      submissionNumber: "AAA001",
+      dateSigned: "2024-08-30",
+      statementXml:
+        '<ConfirmationAndVerificationStatement xmlns="http://xmlgw.companieshouse.gov.uk"><ReviewDate>2024-08-30</ReviewDate><StateConfirmation>true</StateConfirmation></ConfirmationAndVerificationStatement>',
+      transactionId: "1700000000000",
+    };
+
+    test("matches the shape of the published ConfirmationAndVerificationStatement.xml example", () => {
+      const xml = buildConfirmationStatementSubmission(baseInput);
+      const document = parseXmlDocument(xml);
+      const exampleDocument = parseXmlDocument(CONFIRMATION_AND_VERIFICATION_STATEMENT_FIXTURE);
+
+      expect(firstElementText(document, "Qualifier")).toBe("request");
+      expect(firstElement(document, "ConfirmationAndVerificationStatement")).toBeTruthy();
+      expect(firstElement(exampleDocument, "ConfirmationAndVerificationStatement")).toBeTruthy();
+      expect(firstElementText(document, "CompanyNumber")).toBe("11111111");
+      expect(firstElementText(document, "SubmissionNumber")).toBe("AAA001");
+    });
+
+    test("defaults formIdentifier to ConfirmationAndVerificationStatement", () => {
+      const xml = buildConfirmationStatementSubmission(baseInput);
+      const document = parseXmlDocument(xml);
+      expect(firstElementText(document, "Class")).toBe("ConfirmationAndVerificationStatement");
+      expect(firstElementText(document, "FormIdentifier")).toBe("ConfirmationAndVerificationStatement");
+    });
+
+    test("carries an overridden formIdentifier once every officer is verified", () => {
+      const xml = buildConfirmationStatementSubmission({ ...baseInput, formIdentifier: "ConfirmationStatement" });
+      const document = parseXmlDocument(xml);
+      expect(firstElementText(document, "Class")).toBe("ConfirmationStatement");
+      expect(firstElementText(document, "FormIdentifier")).toBe("ConfirmationStatement");
+    });
+
+    test("carries no Document element", () => {
+      const xml = buildConfirmationStatementSubmission(baseInput);
+      expect(parseXmlDocument(xml).getElementsByTagName("Document")).toHaveLength(0);
+    });
+  });
+
+  describe("buildCompanyDataRequest", () => {
+    const baseInput = {
+      presenterId: "12345678901",
+      presenterCode: "SimTest1",
+      companyNumber: "01234567",
+      companyAuthenticationCode: "AUTH01",
+      madeUpDate: "2016-05-13",
+      transactionId: "1",
+    };
+
+    test("matches the shape of the published CompanyDataRequest_v3-3.xml example", () => {
+      const xml = buildCompanyDataRequest(baseInput);
+      const document = parseXmlDocument(xml);
+      const exampleDocument = parseXmlDocument(COMPANY_DATA_REQUEST_FIXTURE);
+
+      expect(firstElementText(document, "Class")).toBe(firstElementText(exampleDocument, "Class"));
+      expect(firstElement(document, "CompanyDataRequest")).toBeTruthy();
+      expect(firstElementText(document, "CompanyNumber")).toBe("01234567");
+      expect(firstElementText(document, "CompanyAuthenticationCode")).toBe("AUTH01");
+      expect(firstElementText(document, "MadeUpDate")).toBe("2016-05-13");
+    });
+
+    test("hashes the presenter id and code into SenderID and Authentication/Value, not the company authentication code", () => {
+      const xml = buildCompanyDataRequest(baseInput);
+      const document = parseXmlDocument(xml);
+      expect(firstElementText(document, "SenderID")).toBe(hashPresenterCredential(baseInput.presenterId));
+      expect(firstElementText(document, "Value")).toBe(hashPresenterCredential(baseInput.presenterCode));
+      expect(firstElementText(document, "CompanyAuthenticationCode")).toBe("AUTH01");
+    });
+
+    test("carries CompanyType only when given", () => {
+      expect(parseXmlDocument(buildCompanyDataRequest(baseInput)).getElementsByTagName("CompanyType")).toHaveLength(0);
+      const withType = buildCompanyDataRequest({ ...baseInput, companyType: "EW" });
+      expect(firstElementText(parseXmlDocument(withType), "CompanyType")).toBe("EW");
+    });
+  });
+
+  describe("buildPaymentPeriodsRequest", () => {
+    const baseInput = {
+      presenterId: "12345678901",
+      presenterCode: "SimTest1",
+      companyNumber: "01234567",
+      companyAuthenticationCode: "AUTH01",
+      transactionId: "1",
+    };
+
+    test("carries Class and the request body's own element", () => {
+      const xml = buildPaymentPeriodsRequest(baseInput);
+      const document = parseXmlDocument(xml);
+      expect(firstElementText(document, "Class")).toBe("PaymentPeriodsRequest");
+      expect(firstElement(document, "PaymentPeriodsRequest")).toBeTruthy();
+      expect(firstElementText(document, "CompanyNumber")).toBe("01234567");
+      expect(firstElementText(document, "CompanyAuthenticationCode")).toBe("AUTH01");
+    });
+
+    test("carries no MadeUpDate: PaymentPeriodsRequest has none", () => {
+      const xml = buildPaymentPeriodsRequest(baseInput);
+      expect(parseXmlDocument(xml).getElementsByTagName("MadeUpDate")).toHaveLength(0);
+    });
+  });
+
+  describe("parseCompanyDataResponse", () => {
+    test("parses the published CompanyDataResponse_v3-6.xml example's CompanyData element", () => {
+      const result = parseCompanyDataResponse(COMPANY_DATA_RESPONSE_FIXTURE);
+      expect(result).toMatchObject({
+        companyNumber: "12345678",
+        companyName: "TEST COMPANY SERVICES PLC",
+        companyCategory: "PLC",
+        jurisdiction: "EW",
+        tradingOnMarket: false,
+        dtr5Applies: false,
+        madeUpDate: "2006-04-13",
+        nextDueDate: "2008-08-27",
+        registeredEmailAddress: "test@email.co.uk",
+      });
+      expect(result.registeredOfficeAddress).toMatchObject({
+        premise: "55",
+        street: "Station Approach",
+        postTown: "Bromley",
+        postcode: "BR2 7EB",
+      });
+      expect(result.sicCodes).toEqual(["6603", "1234"]);
+    });
+
+    test("parses officers, distinguishing person and corporate directors and secretaries", () => {
+      const result = parseCompanyDataResponse(COMPANY_DATA_RESPONSE_FIXTURE);
+      expect(result.officers).toHaveLength(4);
+      expect(result.officers[0]).toMatchObject({
+        role: "director",
+        type: "person",
+        forename: "Philip",
+        surname: "Grover",
+        dob: "1942-04-21",
+      });
+      expect(result.officers[1]).toMatchObject({ role: "director", type: "corporate", corporateName: "Gogga Ltd" });
+      expect(result.officers[3]).toMatchObject({ role: "secretary", type: "person", forename: "Monica", surname: "Brown" });
+    });
+
+    test("returns undefined when the response carries no CompanyData element", () => {
+      const xml = `<?xml version="1.0"?><GovTalkMessage xmlns="http://www.govtalk.gov.uk/CM/envelope"><Body></Body></GovTalkMessage>`;
+      expect(parseCompanyDataResponse(xml)).toBeUndefined();
+    });
+  });
+
+  describe("parsePaymentPeriodsResponse", () => {
+    const PAYMENT_PERIODS_RESPONSE = `<?xml version="1.0"?>
+<GovTalkMessage xmlns="http://www.govtalk.gov.uk/CM/envelope">
+  <Header><MessageDetails><Class>PaymentPeriodsRequest</Class><Qualifier>response</Qualifier><TransactionID>1</TransactionID></MessageDetails></Header>
+  <GovTalkDetails><Keys/></GovTalkDetails>
+  <Body>
+    <PaymentPeriods xmlns="http://xmlgw.companieshouse.gov.uk">
+      <PaymentPeriod><StartDate>2025-09-22</StartDate><EndDate>2026-09-21</EndDate><PeriodPaid>false</PeriodPaid></PaymentPeriod>
+      <PaymentPeriod><StartDate>2024-09-22</StartDate><EndDate>2025-09-21</EndDate><PeriodPaid>true</PeriodPaid></PaymentPeriod>
+    </PaymentPeriods>
+  </Body>
+</GovTalkMessage>`;
+
+    test("parses each PaymentPeriod's dates and paid flag", () => {
+      const result = parsePaymentPeriodsResponse(PAYMENT_PERIODS_RESPONSE);
+      expect(result.periods).toEqual([
+        { startDate: "2025-09-22", endDate: "2026-09-21", periodPaid: false },
+        { startDate: "2024-09-22", endDate: "2025-09-21", periodPaid: true },
+      ]);
+    });
+
+    test("returns undefined when the response carries no PaymentPeriods element", () => {
+      const xml = `<?xml version="1.0"?><GovTalkMessage xmlns="http://www.govtalk.gov.uk/CM/envelope"><Body></Body></GovTalkMessage>`;
+      expect(parsePaymentPeriodsResponse(xml)).toBeUndefined();
     });
   });
 
