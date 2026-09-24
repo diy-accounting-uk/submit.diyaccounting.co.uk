@@ -47,6 +47,16 @@ Shared facts for the analytics rows (B52d, B52e, B52l, B52m): the prod Athena da
 
 ## Machine-only
 
+- [ ] **B52i. The company P&L and balance sheet on the dashboard.** The company's diya-gl book,
+  derived nightly and rendered above the eight objectives beside the last set filed at Companies
+  House. Shape: a nightly Lambda beside `app/functions/analytics/` calling `mcp/lib/accounts-tools.js`
+  `derive_micro_entity_accounts` over the cloud book, writing JSON lines to `curated/finance/` with
+  a Glue table on `Ga4DailyTables.java`'s pattern, one observation set in
+  `operatorSnapshotPublish.js`, and a block above `renderSnapshot`'s objectives in
+  `web/public/operator/dashboard.html`. **Source**: BACKLOG 52i; `PLAN_ONE_STOP_DASHBOARD.md` D10. **Owner**:
+  Claude Code. **Model**: Sonnet. **Size**: ~4 files.
+  DIYA's final book is in the DIYA cloud (OF2, 2026-09-24); `mcp/lib/book-tools.js` `openBook` (line 134) already reads it over `GET /api/v1/books/{bookId}/versions/latest`, so the nightly Lambda needs a service identity for that route: design that first.
+
 ## Machine-ask
 
 ## Human-driven
@@ -71,20 +81,6 @@ Shared facts for the analytics rows (B52d, B52e, B52l, B52m): the prod Athena da
   `content scan`, and the Markdown-only head reached `CLEAN`. **Owner**: Operator.
   **Model**: none. **Size**: 0 files.
 
-- [ ] **OF2. DIYA's book saved to the DIYA cloud.** The operator saved F2k's book from the
-  DIYA-GL web app on 2026-09-23 22:51 (signed in as the operator's personal Google address;
-  company "DIY Accounting Limited", ltd, 2026-04-01 to 2027-03-31, version 1). That book predates
-  the corrections and sits in the 35-day sandbox, expiring about 2026-10-28. The final book is
-  `../staging/2026-2027/book/book-diya-gl.zip` (453 lines; on diya-gl 1.2.32: 0 book-check and 0
-  report failures, turnover £2,294.82, directors' loan 0.00, bank 1200 £1,624.90, 1210 £271.69).
-  Save it as a new version of the same company, and keep it past 35 days (a Resident subscription
-  or a comp on the account that holds it). **Source**: `../PLAN_FINANCE_AUTOMATION.md` phase 2. **Owner**: Operator.
-  **Model**: none. **Size**: 0 files.
-
-- [ ] **CS-H1. Apply for a Companies House credit account.** Presenter E0000052288 was issued for accounts and fee-free documents only; a confirmation statement's £50 fee needs a credit account. Complete the credit account application, send it to `chdfinance@companieshouse.gov.uk`, ask for it to be linked to E0000052288 (up to 5 working days), and keep the account number in the credentials store. **Source**: `PLAN_COMPANIES_HOUSE_CONFIRMATION_STATEMENT.md` (its Tasks table carries the files). **Owner**: Operator. **Model**: none. **Size**: 0 files.
-
-- [ ] **CS-H3. Directors' personal codes and register dates of birth.** All three directors' 11-character Companies House personal codes, register dates of birth and full names with middle names (`OtherForenames` is enforced); typed on the page at filing time, never stored. The same codes file the 5 October statement by WebFiling (OCS, runbook task B), so collect them once. **Source**: `PLAN_COMPANIES_HOUSE_CONFIRMATION_STATEMENT.md` (its Tasks table carries the files). **Owner**: Operator. **Model**: none. **Size**: 0 files.
-
 - [ ] **CS-H5. Choose how the £50 fee is charged.** Pick A (pass the fee through), B (inside the subscription) or C (fee plus a margin) from the plan's "The fee path", and write the choice into CS-10's row. **Source**: `PLAN_COMPANIES_HOUSE_CONFIRMATION_STATEMENT.md` (its Tasks table carries the files). **Owner**: Operator. **Model**: none. **Size**: 0 files.
 
 - [ ] **OCS. The confirmation statement, due 5 October 2026.** Made up to 21 September 2026;
@@ -93,10 +89,17 @@ Shared facts for the analytics rows (B52d, B52e, B52l, B52m): the prod Athena da
   Before filing, confirm the registered email address the 13 September update (reference
   123168-928517-893411) left on the register is the one the company keeps, and file a second update
   if it is a test value; then supply each director-PSC's personal code within 14 days of the
-  statement date. Steps are task B of `../NEXT_OPERATOR_RUNBOOK.md`. File this one by WebFiling: Submit's confirmation statement (the CS rows) is not built, and CS-H6's prod proof is a fee-free second statement after this one. The personal codes are CS-H3's too. **Owner**: Operator.
+  statement date. Steps are task B of `../NEXT_OPERATOR_RUNBOOK.md`. File this one by WebFiling: Submit's confirmation statement (the CS rows) is not built, and CS-H6's prod proof is a fee-free second statement after this one. **Owner**: Operator.
   **Model**: none. **Size**: 0 files.
 
 - [ ] **CS-H2. Send the confirmation-statement email.** Send `../DRAFT_EMAIL_XMLGW_CS01.md` on the `xml@companieshouse.gov.uk` thread, and paste the answers into CS-9's row. **Source**: `PLAN_COMPANIES_HOUSE_CONFIRMATION_STATEMENT.md` (its Tasks table carries the files). **Owner**: Operator. **Model**: none. **Size**: 0 files.
+
+- [ ] **CS-H1. Companies House credit account: the account number.** The application went to
+  `chdfinance@companieshouse.gov.uk` on 2026-09-24 (form at `../DIY Accounting Limited - CH account 2026-09-24.pdf`,
+  email `../DRAFT_EMAIL_CH_CREDIT_ACCOUNT.md`), asking for the account to be linked to presenter E0000052288.
+  Companies House takes up to 5 working days (by 2026-10-01). When the account number arrives, keep it in the
+  credentials store and say so here; CS-9 then needs only CS-H2's answer. **Owner**: Operator. **Model**: none.
+  **Size**: 0 files.
 
 ## Blocked
 
@@ -110,7 +113,7 @@ Shared facts for the analytics rows (B52d, B52e, B52l, B52m): the prod Athena da
 
 - [ ] **CS-H4. Software authorisation for the confirmation statement.** The XML team tests CS-9's submissions and issues the package reference for the form. Blocked on CS-9. **Source**: `PLAN_COMPANIES_HOUSE_CONFIRMATION_STATEMENT.md` (its Tasks table carries the files). **Owner**: Operator. **Model**: none. **Size**: 0 files.
 
-- [ ] **CS-H6. Go for the prod confirmation statement.** Give the go for a statement for 06846849 through Submit (a fee-free second statement in the 2026-27 payment period, after the 5 October one by WebFiling), knowing it moves the next review date. Blocked on CS-11, CS-H3 and CS-H4. **Source**: `PLAN_COMPANIES_HOUSE_CONFIRMATION_STATEMENT.md` (its Tasks table carries the files). **Owner**: Operator. **Model**: none. **Size**: 0 files.
+- [ ] **CS-H6. Go for the prod confirmation statement.** Give the go for a statement for 06846849 through Submit (a fee-free second statement in the 2026-27 payment period, after the 5 October one by WebFiling), knowing it moves the next review date. Blocked on CS-11 and CS-H4 (the directors' codes are ready). **Source**: `PLAN_COMPANIES_HOUSE_CONFIRMATION_STATEMENT.md` (its Tasks table carries the files). **Owner**: Operator. **Model**: none. **Size**: 0 files.
 
 - [ ] **B30at1. The sweep's claim check, proven.** Needs a claimed set that is not last-known-good
   (the sweep keeps the last-known-good set before it reads any claim): the next time two branches
@@ -156,15 +159,6 @@ Shared facts for the analytics rows (B52d, B52e, B52l, B52m): the prod Athena da
   panel carrying revenue (BACKLOG 43, from 2026-10-02). **Source**: BACKLOG
   52m; `PLAN_ONE_STOP_DASHBOARD.md` D17. **Owner**: Claude Code. **Model**: Sonnet. **Size**: ~3
   files.
-
-- [ ] **B52i. The company P&L and balance sheet on the dashboard.** The company's diya-gl book,
-  derived nightly and rendered above the eight objectives beside the last set filed at Companies
-  House. Shape: a nightly Lambda beside `app/functions/analytics/` calling `mcp/lib/accounts-tools.js`
-  `derive_micro_entity_accounts` over the cloud book, writing JSON lines to `curated/finance/` with
-  a Glue table on `Ga4DailyTables.java`'s pattern, one observation set in
-  `operatorSnapshotPublish.js`, and a block above `renderSnapshot`'s objectives in
-  `web/public/operator/dashboard.html`. Blocked on OF2 (DIYA's final book saved to the DIYA cloud and kept past the 35-day sandbox). **Source**: BACKLOG 52i; `PLAN_ONE_STOP_DASHBOARD.md` D10. **Owner**:
-  Claude Code. **Model**: Sonnet. **Size**: ~4 files.
 
 ## Discipline
 
