@@ -39,6 +39,15 @@ vi.mock("@app/functions/account/bundlePost.js", () => ({
   grantBundle: (...args) => mockGrantBundle(...args),
 }));
 
+// Mock the catalogue lookup so the "on-pass-on-subscription" branch is exercised against a
+// fixed synthetic bundle, independent of whichever real bundle in the live catalogue carries
+// that allocation today.
+vi.mock("@app/services/productCatalog.js", () => ({
+  loadCatalogFromRoot: () => ({
+    bundles: [{ id: "test-subscription-bundle", allocation: "on-pass-on-subscription" }],
+  }),
+}));
+
 import { ingestHandler } from "@app/functions/account/passPost.js";
 
 dotenvConfigIfNotBlank({ path: ".env.test" });
@@ -75,7 +84,7 @@ describe("passPost", () => {
   test("returns requiresSubscription for on-pass-on-subscription bundles", async () => {
     mockRedeemPass.mockResolvedValue({
       valid: true,
-      bundleId: "resident-pro",
+      bundleId: "test-subscription-bundle",
       pass: { testPass: false },
     });
 
@@ -87,7 +96,7 @@ describe("passPost", () => {
     expect(body.redeemed).toBe(false);
     expect(body.valid).toBe(true);
     expect(body.requiresSubscription).toBe(true);
-    expect(body.bundleId).toBe("resident-pro");
+    expect(body.bundleId).toBe("test-subscription-bundle");
     expect(body.testPass).toBe(false);
     // Should NOT have called grantBundle
     expect(mockGrantBundle).not.toHaveBeenCalled();
@@ -96,7 +105,7 @@ describe("passPost", () => {
   test("returns testPass true in requiresSubscription response for test passes", async () => {
     mockRedeemPass.mockResolvedValue({
       valid: true,
-      bundleId: "resident-pro",
+      bundleId: "test-subscription-bundle",
       pass: { testPass: true },
     });
 

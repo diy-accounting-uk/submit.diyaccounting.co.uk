@@ -554,6 +554,34 @@ class SubmitApplicationCdkResourceTest {
         assertHasEnvironmentVariable(billingStackTemplate, checkoutFunctionName, "STRIPE_TEST_PRICE_ID_RESIDENT_MONTH");
     }
 
+    @Test
+    @SetEnvironmentVariable.SetEnvironmentVariables({
+        @SetEnvironmentVariable(key = "STRIPE_PRICE_ID_RESIDENT_PRO_YEAR", value = "price_live_resident_pro_year"),
+        @SetEnvironmentVariable(key = "STRIPE_PRICE_ID_RESIDENT_PRO_MONTH", value = "price_live_resident_pro_month"),
+        @SetEnvironmentVariable(key = "STRIPE_TEST_PRICE_ID_RESIDENT_PRO_YEAR", value = "price_test_resident_pro_year"),
+        @SetEnvironmentVariable(
+                key = "STRIPE_TEST_PRICE_ID_RESIDENT_PRO_MONTH",
+                value = "price_test_resident_pro_month"),
+    })
+    void residentProBundlePriceIdsReachTheCheckoutLambdaWhenSet() throws IOException {
+        Path cdkJsonPath = Path.of("cdk-application/cdk.json").toAbsolutePath();
+        Map<String, Object> ctx = buildContextPropertyMapFromCdkJsonPath(cdkJsonPath);
+        App app = new App(AppProps.builder().context(ctx).build());
+        SubmitApplication.SubmitApplicationProps appProps = SubmitApplication.loadAppProps(app, "cdk-application/");
+
+        var submitApplication = new SubmitApplication(app, appProps);
+        Template billingStackTemplate = Template.fromStack(submitApplication.billingStack);
+        String checkoutFunctionName =
+                submitApplication.billingStack.billingCheckoutPostLambdaProps.ingestFunctionName();
+
+        assertHasEnvironmentVariable(billingStackTemplate, checkoutFunctionName, "STRIPE_PRICE_ID_RESIDENT_PRO_YEAR");
+        assertHasEnvironmentVariable(billingStackTemplate, checkoutFunctionName, "STRIPE_PRICE_ID_RESIDENT_PRO_MONTH");
+        assertHasEnvironmentVariable(
+                billingStackTemplate, checkoutFunctionName, "STRIPE_TEST_PRICE_ID_RESIDENT_PRO_YEAR");
+        assertHasEnvironmentVariable(
+                billingStackTemplate, checkoutFunctionName, "STRIPE_TEST_PRICE_ID_RESIDENT_PRO_MONTH");
+    }
+
     /**
      * A DIYA-GL book write carries a zip far larger than the 8KB CloudFront lets WAF inspect, so
      * the managed SizeRestrictions_BODY rule blocked every save before it reached API Gateway. The

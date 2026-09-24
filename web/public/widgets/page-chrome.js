@@ -37,6 +37,7 @@
     { label: "Activities", target: "" },
     { label: "Receipts", target: "hmrc/receipt/receipts.html" },
     { label: "Bundles", target: "bundles.html" },
+    { label: "Practice", target: "practice.html" },
     { label: "Spreadsheets", target: "spreadsheets.html" },
   ];
 

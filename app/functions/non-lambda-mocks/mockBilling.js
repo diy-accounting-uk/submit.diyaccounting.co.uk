@@ -3,7 +3,7 @@
 
 // app/functions/non-lambda-mocks/mockBilling.js
 // Mock billing endpoints for simulator environment — fakes Stripe like mock OAuth fakes login.
-// When Stripe is not configured (no STRIPE_PRICE_ID_RESIDENT_PRO), these endpoints auto-complete checkout
+// When Stripe is not configured (no STRIPE_PRICE_ID_RESIDENT_PRO_YEAR), these endpoints auto-complete checkout
 // by granting the bundle and redirecting to the success URL.
 
 import { createLogger } from "../../lib/logger.js";

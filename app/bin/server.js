@@ -276,7 +276,7 @@ if (process.env.TEST_AUTH_PROVIDER === "mock" || process.env.TEST_AUTH_PROVIDER 
 }
 // Register mock billing routes when Stripe is not configured (simulator environment)
 // Must be registered BEFORE real billing endpoints so Express matches mock routes first
-if (!process.env.STRIPE_PRICE_ID_RESIDENT_PRO && !process.env.STRIPE_TEST_PRICE_ID_RESIDENT_PRO) {
+if (!process.env.STRIPE_PRICE_ID_RESIDENT_PRO_YEAR && !process.env.STRIPE_TEST_PRICE_ID_RESIDENT_PRO_YEAR) {
   mockBillingApiEndpoint(app);
 }
 bundleGetApiEndpoint(app);

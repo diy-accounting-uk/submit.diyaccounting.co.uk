@@ -83,17 +83,7 @@ public class BillingStack extends Stack {
         }
 
         @Value.Default
-        default String stripePriceIdResidentPro() {
-            return "";
-        }
-
-        @Value.Default
         default String stripeTestSecretKeyArn() {
-            return "";
-        }
-
-        @Value.Default
-        default String stripeTestPriceIdResidentPro() {
             return "";
         }
 
@@ -129,6 +119,26 @@ public class BillingStack extends Stack {
 
         @Value.Default
         default String stripeTestPriceIdResidentMonth() {
+            return "";
+        }
+
+        @Value.Default
+        default String stripePriceIdResidentProYear() {
+            return "";
+        }
+
+        @Value.Default
+        default String stripeTestPriceIdResidentProYear() {
+            return "";
+        }
+
+        @Value.Default
+        default String stripePriceIdResidentProMonth() {
+            return "";
+        }
+
+        @Value.Default
+        default String stripeTestPriceIdResidentProMonth() {
             return "";
         }
 
@@ -188,15 +198,6 @@ public class BillingStack extends Stack {
                 && !props.stripeTestSecretKeyArn().isBlank()) {
             billingCheckoutPostLambdaEnv.with("STRIPE_TEST_SECRET_KEY_ARN", props.stripeTestSecretKeyArn());
         }
-        if (props.stripePriceIdResidentPro() != null
-                && !props.stripePriceIdResidentPro().isBlank()) {
-            billingCheckoutPostLambdaEnv.with("STRIPE_PRICE_ID_RESIDENT_PRO", props.stripePriceIdResidentPro());
-        }
-        if (props.stripeTestPriceIdResidentPro() != null
-                && !props.stripeTestPriceIdResidentPro().isBlank()) {
-            billingCheckoutPostLambdaEnv.with(
-                    "STRIPE_TEST_PRICE_ID_RESIDENT_PRO", props.stripeTestPriceIdResidentPro());
-        }
         if (props.stripePriceIdResidentVat() != null
                 && !props.stripePriceIdResidentVat().isBlank()) {
             billingCheckoutPostLambdaEnv.with("STRIPE_PRICE_ID_RESIDENT_VAT", props.stripePriceIdResidentVat());
@@ -223,6 +224,26 @@ public class BillingStack extends Stack {
                 && !props.stripeTestPriceIdResidentMonth().isBlank()) {
             billingCheckoutPostLambdaEnv.with(
                     "STRIPE_TEST_PRICE_ID_RESIDENT_MONTH", props.stripeTestPriceIdResidentMonth());
+        }
+        if (props.stripePriceIdResidentProYear() != null
+                && !props.stripePriceIdResidentProYear().isBlank()) {
+            billingCheckoutPostLambdaEnv.with(
+                    "STRIPE_PRICE_ID_RESIDENT_PRO_YEAR", props.stripePriceIdResidentProYear());
+        }
+        if (props.stripeTestPriceIdResidentProYear() != null
+                && !props.stripeTestPriceIdResidentProYear().isBlank()) {
+            billingCheckoutPostLambdaEnv.with(
+                    "STRIPE_TEST_PRICE_ID_RESIDENT_PRO_YEAR", props.stripeTestPriceIdResidentProYear());
+        }
+        if (props.stripePriceIdResidentProMonth() != null
+                && !props.stripePriceIdResidentProMonth().isBlank()) {
+            billingCheckoutPostLambdaEnv.with(
+                    "STRIPE_PRICE_ID_RESIDENT_PRO_MONTH", props.stripePriceIdResidentProMonth());
+        }
+        if (props.stripeTestPriceIdResidentProMonth() != null
+                && !props.stripeTestPriceIdResidentProMonth().isBlank()) {
+            billingCheckoutPostLambdaEnv.with(
+                    "STRIPE_TEST_PRICE_ID_RESIDENT_PRO_MONTH", props.stripeTestPriceIdResidentProMonth());
         }
         if (props.baseUrl() != null && !props.baseUrl().isBlank()) {
             billingCheckoutPostLambdaEnv.with("DIY_SUBMIT_BASE_URL", props.baseUrl());

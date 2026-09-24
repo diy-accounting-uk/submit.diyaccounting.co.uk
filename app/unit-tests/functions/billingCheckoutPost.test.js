@@ -75,8 +75,8 @@ describe("billingCheckoutPost", () => {
     });
     process.env.ENVIRONMENT_NAME = "test";
     process.env.STRIPE_SECRET_KEY = "sk_test_mock";
-    process.env.STRIPE_PRICE_ID_RESIDENT_PRO = "price_test_123";
-    process.env.STRIPE_TEST_PRICE_ID_RESIDENT_PRO = "price_test_synthetic_456";
+    process.env.STRIPE_PRICE_ID_RESIDENT_PRO_YEAR = "price_test_123";
+    process.env.STRIPE_TEST_PRICE_ID_RESIDENT_PRO_YEAR = "price_test_synthetic_456";
     process.env.DIY_SUBMIT_BASE_URL = "https://test-submit.diyaccounting.co.uk/";
     process.env.USER_SUB_HASH_SALT = '{"current":"v1","versions":{"v1":"test-salt-for-unit-tests"}}';
     process.env.BILLING_RETURN_URL_ORIGINS = "https://ci.diya-gl.co.uk,http://localhost:3001";
@@ -166,7 +166,7 @@ describe("billingCheckoutPost", () => {
   });
 
   test("returns 500 when no price ID configured", async () => {
-    delete process.env.STRIPE_PRICE_ID_RESIDENT_PRO;
+    delete process.env.STRIPE_PRICE_ID_RESIDENT_PRO_YEAR;
     const event = buildEventWithToken(validToken);
     const result = await ingestHandler(event);
     expect(result.statusCode).toBe(500);
@@ -181,7 +181,7 @@ describe("billingCheckoutPost", () => {
     expect(result.statusCode).toBe(500);
   });
 
-  test("uses STRIPE_TEST_PRICE_ID_RESIDENT_PRO when synthetic flag is set in request body", async () => {
+  test("uses STRIPE_TEST_PRICE_ID_RESIDENT_PRO_YEAR when synthetic flag is set in request body", async () => {
     const event = buildEventWithToken(validToken, { synthetic: true });
     await ingestHandler(event);
 
@@ -189,7 +189,7 @@ describe("billingCheckoutPost", () => {
     expect(params.line_items[0].price).toBe("price_test_synthetic_456");
   });
 
-  test("uses STRIPE_PRICE_ID_RESIDENT_PRO when no synthetic flag", async () => {
+  test("uses STRIPE_PRICE_ID_RESIDENT_PRO_YEAR by default (annual) when no synthetic flag", async () => {
     const event = buildEventWithToken(validToken, { bundleId: "resident-pro" });
     await ingestHandler(event);
 
@@ -197,7 +197,16 @@ describe("billingCheckoutPost", () => {
     expect(params.line_items[0].price).toBe("price_test_123");
   });
 
-  test("uses STRIPE_TEST_PRICE_ID_RESIDENT_PRO when user has synthetic bundle qualifier (no explicit flag needed)", async () => {
+  test("uses STRIPE_PRICE_ID_RESIDENT_PRO_MONTH when the interval is monthly", async () => {
+    process.env.STRIPE_PRICE_ID_RESIDENT_PRO_MONTH = "price_pro_monthly_789";
+    const event = buildEventWithToken(validToken, { bundleId: "resident-pro", interval: "monthly" });
+    await ingestHandler(event);
+
+    const params = mockCheckoutSessionsCreate.mock.calls[0][0];
+    expect(params.line_items[0].price).toBe("price_pro_monthly_789");
+  });
+
+  test("uses STRIPE_TEST_PRICE_ID_RESIDENT_PRO_YEAR when user has synthetic bundle qualifier (no explicit flag needed)", async () => {
     mockGetUserBundles.mockResolvedValue([{ bundleId: "resident-pro", qualifiers: { synthetic: true } }]);
     const event = buildEventWithToken(validToken, { bundleId: "resident-pro" });
     await ingestHandler(event);

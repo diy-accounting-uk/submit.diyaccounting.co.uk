@@ -296,7 +296,7 @@ export async function runLocalHttpServer(runTestServer, httpServerPort) {
  * @returns {Promise<{secret: string, kill: Function}|null>}
  */
 export async function runStripeListen(webhookUrl) {
-  const usesRealStripe = !!(process.env.STRIPE_PRICE_ID_RESIDENT_PRO || process.env.STRIPE_TEST_PRICE_ID_RESIDENT_PRO);
+  const usesRealStripe = !!(process.env.STRIPE_PRICE_ID_RESIDENT_PRO_YEAR || process.env.STRIPE_TEST_PRICE_ID_RESIDENT_PRO_YEAR);
   if (!usesRealStripe) {
     logger.info("[stripe-listen]: Skipping stripe listen — no Stripe price IDs configured (simulator/mock billing)");
     return null;
