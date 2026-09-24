@@ -9,17 +9,19 @@ import { dotenvConfigIfNotBlank } from "@app/lib/env.js";
 import {
   addOnPageLogging,
   getEnvVarAndLog,
+  isSyntheticMode,
   runLocalDynamoDb,
   runLocalHttpServer,
   runLocalOAuth2Server,
 } from "../helpers/behaviour-helpers.js";
-import { consentToDataCollection, goToHomePageExpectNotLoggedIn } from "../steps/behaviour-steps.js";
+import { consentToDataCollection, goToHomePage, goToHomePageExpectNotLoggedIn } from "../steps/behaviour-steps.js";
 import {
   clickLogIn,
   loginWithCognitoOrMockAuth,
   verifyLoggedInStatus,
   logOutAndExpectToBeLoggedOut,
 } from "../steps/behaviour-login-steps.js";
+import { ensureBundlePresent, goToBundlesPage } from "../steps/behaviour-bundle-steps.js";
 import {
   goToFileMicroEntityAccounts,
   enterCompanyNumberAndLookUp,
@@ -150,6 +152,12 @@ test("Click through: file micro-entity accounts end to end and see the filing ac
   await verifyLoggedInStatus(page, screenshotPath);
   await consentToDataCollection(page, screenshotPath);
 
+  await goToBundlesPage(page, screenshotPath);
+  if (isSyntheticMode()) {
+    await ensureBundlePresent(page, "Resident", screenshotPath, { testPass: true });
+  }
+  await goToHomePage(page, screenshotPath);
+
   await goToFileMicroEntityAccounts(page, screenshotPath);
   await enterCompanyNumberAndLookUp(page, companyNumber, screenshotPath);
   await verifyCompanyLookedUp(page, companyName, companyNumber, screenshotPath);
@@ -175,6 +183,12 @@ test("Click through: file micro-entity accounts shows the reject reason Companie
   await loginWithCognitoOrMockAuth(page, testAuthProvider, testAuthUsername, screenshotPath, testAuthPassword);
   await verifyLoggedInStatus(page, screenshotPath);
   await consentToDataCollection(page, screenshotPath);
+
+  await goToBundlesPage(page, screenshotPath);
+  if (isSyntheticMode()) {
+    await ensureBundlePresent(page, "Resident", screenshotPath, { testPass: true });
+  }
+  await goToHomePage(page, screenshotPath);
 
   await goToFileMicroEntityAccounts(page, screenshotPath);
   await enterCompanyNumberAndLookUp(page, companyNumber, screenshotPath);
