@@ -37,8 +37,7 @@ const SERVICE_IDENTIFIER = {
 /**
  * Reads a client's authorisation state for one HMRC service. The stored status is a cache: when
  * a pending invitation is on file it is re-read from HMRC; otherwise HMRC's own relationships
- * endpoint answers whether an authority already exists (PLAN_PRICE_UPDATE.md (d), "The
- * authorisation flow", "a relationship already in place").
+ * endpoint answers whether an authority already exists.
  */
 export async function ingestHandler(event) {
   await initializeSalt();

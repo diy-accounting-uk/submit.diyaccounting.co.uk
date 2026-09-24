@@ -6,9 +6,8 @@
 // the Ltd engine's published balance sheet (PubBalSht) and for the prior
 // year from the book's opening balance, rounded to whole pounds so the
 // filing endpoint's own check (capital and reserves equals net assets)
-// holds. The mapping is written out in PLAN_SUBMISSION_MCP.md ("From a book
-// to the seven FRS 105 lines"); nothing here computes a balance the engine
-// has not already computed.
+// holds. The filing maps seven FRS 105 lines from book balances; nothing
+// here computes a balance the engine has not already computed.
 
 import { calculatedResultsFor } from "@diy-accounting-uk/diya-gl/dist/app/bin/export.js";
 import { diyaGlToScenario } from "@diy-accounting-uk/diya-gl/dist/app/lib/diya-gl-loader.js";

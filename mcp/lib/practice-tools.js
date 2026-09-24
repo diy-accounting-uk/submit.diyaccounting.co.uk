@@ -6,7 +6,7 @@
 // client_authorisation_status), and moving a book to a client's book set. Unlike the rest of
 // this server's tools, these reach DIY Accounting Submit's own API rather than the local
 // filesystem: a client row lives in the deployed backend's DynamoDB table and a client's book
-// set in its S3 storage (PLAN_PRICE_UPDATE.md (d)), never on this machine.
+// set in its S3 storage, never on this machine.
 //
 // list_clients, add_client, invite_client and client_authorisation_status call
 // submit-tools.js's callSubmitApi and requireField rather than a second HTTP layer of their

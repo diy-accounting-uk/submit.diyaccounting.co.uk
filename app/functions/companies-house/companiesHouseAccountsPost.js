@@ -38,9 +38,9 @@ import { isClientAuthorisedForService } from "../../lib/hmrcAgentAuthorisation.j
 const logger = createLogger({ source: "app/functions/companies-house/companiesHouseAccountsPost.js" });
 
 // The Agent Authorisation API only names HMRC services (MTD-VAT, MTD-IT); Companies House has no
-// equivalent delegated-authority flow yet (PLAN_PRICE_UPDATE.md (d) does not name one), so this
-// key is reserved for when one exists. Until a route sets it, no client-scoped filing can pass
-// the check below - the safe default for an authorisation this service has never granted.
+// equivalent delegated-authority flow yet, so this key is reserved for when one exists. Until a
+// route sets it, no client-scoped filing can pass the check below - the safe default for an
+// authorisation this service has never granted.
 const AGENT_AUTHORISATION_SERVICE = "CH-ACCOUNTS";
 
 const MIN_COMPANY_AUTH_CODE_LENGTH = 6;
@@ -80,8 +80,8 @@ export function extractAndValidateAccountsParameters(event, errorMessages, { req
     statementsAccepted,
   } = parsedBody;
 
-  // A client-scoped request (PLAN_PRICE_UPDATE.md (d)) resolves its company number from the
-  // client row instead, so the body's own companyNumber is neither required nor validated here.
+  // A client-scoped request resolves its company number from the client row instead, so the
+  // body's own companyNumber is neither required nor validated here.
   let normalisedCompanyNumber;
   if (!clientId) {
     const { valid: companyNumberValid, normalised } = isValidCompanyNumber(companyNumber);
@@ -210,8 +210,8 @@ export async function ingestHandler(event) {
   const { request } = extractRequest(event);
   const responseHeaders = { "Content-Type": "application/json" };
 
-  // A practice acting for a client (PLAN_PRICE_UPDATE.md (d)) names the client instead of a
-  // company number; read early so it can be passed into bundle enforcement's own practice check.
+  // A practice acting for a client names the client instead of a company number; read early
+  // so it can be passed into bundle enforcement's own practice check.
   const clientId = parseRequestBody(event)?.clientId || undefined;
 
   let userSub;

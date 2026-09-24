@@ -91,8 +91,8 @@ function cloudTrailInsightsQuery(logGroupNamePrefixes, eventName) {
   return lines.join("\n");
 }
 
-// Ordered: the first matching rule wins. See PLAN_ALARM_EVIDENCE_AND_TRIAGE.md
-// Part 2.2 for the table this array implements.
+// Ordered: the first matching rule wins. Rules are tried in this order; the first match
+// determines the evidence triage path.
 export const EVIDENCE_RULES = [
   {
     id: 1,

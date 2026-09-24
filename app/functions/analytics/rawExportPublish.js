@@ -5,9 +5,8 @@
 //
 // Nightly job that writes one CSV per Athena view and one JSON per one-stop-dashboard objective
 // to s3://<lake>/exports/<env>/<date>/, so every figure on the objectives page is readable by
-// Claude without the page (see PLAN_ONE_STOP_DASHBOARD.md's "Raw data for indexing" section).
-// scripts/analytics-pull.sh syncs that prefix down to analytics/<env>/ at the workspace root,
-// where index/corpus.toml's `analytics` source picks it up.
+// Claude without the page. scripts/analytics-pull.sh syncs that prefix down to analytics/<env>/
+// at the workspace root, where index/corpus.toml's `analytics` source picks it up.
 //
 // VIEW_NAMES has to be kept in step with BusinessViews.java's VIEWS list by hand: the two live
 // in different languages, so nothing enforces the match at build time.
@@ -43,11 +42,11 @@ export const VIEW_NAMES = [
   "v_compliance_status",
 ];
 
-// One entry per PLAN_ONE_STOP_DASHBOARD.md objective, in the order its table lists them. `views`
-// names the views already built for it; `levers` is the plan table's own text for that column,
+// One entry per one-stop-dashboard objective, in the order its table lists them. `views`
+// names the views already built for it; `levers` is the dashboard table's own text for that column,
 // carried verbatim so the export needs no separate source of truth for it. `target` stays null
-// until B52g sets one from a baseline month - a null target is a true "not set yet", not a
-// zero that would read as a target of zero.
+// until a baseline month is set from which to calculate one - a null target is a true "not set yet",
+// not a zero that would read as a target of zero.
 export const OBJECTIVES = [
   {
     objective: "Uptime",

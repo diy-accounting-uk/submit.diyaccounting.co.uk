@@ -39,7 +39,7 @@ import { initializeSalt } from "../../services/subHasher.js";
 import { publishActivityEvent } from "../../lib/activityAlert.js";
 import { isClientAuthorisedForService } from "../../lib/hmrcAgentAuthorisation.js";
 
-// The Agent Authorisation API's service identifier for VAT (PLAN_PRICE_UPDATE.md (d)).
+// The Agent Authorisation API's service identifier for VAT.
 const AGENT_AUTHORISATION_SERVICE = "MTD-VAT";
 
 const logger = createLogger({ source: "app/functions/hmrc/hmrcVatObligationGet.js" });
@@ -125,8 +125,8 @@ export async function ingestHandler(event) {
 
   let errorMessages = [];
 
-  // A practice acting for a client (PLAN_PRICE_UPDATE.md (d)) names the client instead of a VRN;
-  // read early so it can be passed into bundle enforcement's own practice check.
+  // A practice acting for a client names the client instead of a VRN; read early so it can be
+  // passed into bundle enforcement's own practice check.
   const clientId = event.queryStringParameters?.clientId || undefined;
 
   // Bundle enforcement

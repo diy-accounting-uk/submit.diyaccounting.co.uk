@@ -330,11 +330,10 @@ export class DestinationBookExistsError extends Error {
 }
 
 /**
- * Moves a book from the practice's own book set to a client's (PLAN_PRICE_UPDATE.md (d),
- * "Migration from sole trader to practice"). Copies every object under the source prefix
- * (metadata.json and every kept version) to the destination prefix, verifying each copy's ETag
- * against the source before any delete, then deletes the source keys. Refuses when the
- * destination already holds a book with this id, or when the source book doesn't exist.
+ * Moves a book from the practice's own book set to a client's. Copies every object under the
+ * source prefix (metadata.json and every kept version) to the destination prefix, verifying each
+ * copy's ETag against the source before any delete, then deletes the source keys. Refuses when
+ * the destination already holds a book with this id, or when the source book doesn't exist.
  *
  * @param {string} practiceSub - the practice's raw Cognito sub
  * @param {string} clientId
@@ -401,9 +400,9 @@ export async function moveBookToClient(practiceSub, clientId, bookId) {
  * always use the current version directly via `hashSub` and never call this.
  *
  * When `clientId` is given, the prefix is the practice's own hashed sub plus a client segment
- * (`{hashedSub}/clients/{clientId}`), per PLAN_PRICE_UPDATE.md (d)'s data model: a client's book
- * set lives under `users/{hashedSub}/clients/{clientId}/books/{bookId}/`, so passing the extended
- * prefix through unchanged to `bookPrefix`/`metadataKey`/`listBooks` is enough. The caller is
+ * (`{hashedSub}/clients/{clientId}`): a client's book set lives under
+ * `users/{hashedSub}/clients/{clientId}/books/{bookId}/`, so passing the extended prefix
+ * through unchanged to `bookPrefix`/`metadataKey`/`listBooks` is enough. The caller is
  * responsible for checking the client belongs to the signed-in practice before calling this.
  *
  * @param {string} sub - the raw Cognito sub

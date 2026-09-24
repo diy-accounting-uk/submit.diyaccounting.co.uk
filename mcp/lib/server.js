@@ -3,8 +3,8 @@
 
 // server.js -- the submission MCP server, written once over the MCP SDK's
 // transport abstraction so the stdio surface (bin/diya-submit-mcp.js) and
-// the hosted streamable-HTTP surface (plan row M4) register the same tools
-// against the same session. PLAN_SUBMISSION_MCP.md is the plan of record.
+// the hosted streamable-HTTP surface register the same tools against the
+// same session.
 
 import { readFileSync } from "node:fs";
 import { dirname, resolve } from "node:path";
@@ -353,10 +353,9 @@ export const TOOLS = {
   },
   move_book_to_client: {
     description:
-      "Move one of the practice's own books to a client's book set (PLAN_PRICE_UPDATE.md (d), migration from sole " +
-      "trader to practice). Calls DIY Accounting Submit's own move route, which copies the book and every kept " +
-      "version, verifies each copy, then deletes the source. Refuses when the client already has a book with this " +
-      "id, or the practice has no such book of its own.",
+      "Move one of the practice's own books to a client's book set (during migration from sole trader to practice). " +
+      "Calls DIY Accounting Submit's own move route, which copies the book and every kept version, verifies each copy, " +
+      "then deletes the source. Refuses when the client already has a book with this id, or the practice has no such book of its own.",
     inputSchema: {
       clientId: z.string().describe("The client's id"),
       bookId: z.string().describe("The book's id, one of the practice's own"),
@@ -365,9 +364,8 @@ export const TOOLS = {
   },
   list_clients: {
     description:
-      "The signed-in practice's own client list (PLAN_PRICE_UPDATE.md (d)), over the deployed API: each client's id, " +
-      "display name, identifiers (VRN, NINO, UTR, company number) and current HMRC authorisation state per service. " +
-      "Archived clients are excluded.",
+      "The signed-in practice's own client list over the deployed API: each client's id, display name, identifiers " +
+      "(VRN, NINO, UTR, company number) and current HMRC authorisation state per service. Archived clients are excluded.",
     inputSchema: {},
     handler: listClients,
   },

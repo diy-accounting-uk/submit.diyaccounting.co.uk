@@ -1,13 +1,13 @@
 // SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0
 // Copyright (C) 2006-2026 DIY Accounting Limited
 
-// auth.js -- the submission MCP's own stdio sign-in (PLAN_SUBMISSION_MCP.md M3): authorization
-// code with PKCE on a loopback redirect, the flow every CLI uses. signIn() opens the pool's
-// hosted UI with a code challenge, catches the code on the first free port of the loopback
-// listener's range (IdentityStack.java's mcpUserPoolClient, ports 49152 to 49159), exchanges it
-// at the token endpoint, and keeps the refresh token under ~/.config/diya-submit/ mode 600.
-// accessToken() hands out the cached id token, refreshing it silently (no browser) once it is
-// close to expiry. Neither function stores an HMRC or Companies House credential; those are a
+// auth.js -- the submission MCP's own stdio sign-in: authorization code with PKCE on a loopback
+// redirect, the flow every CLI uses. signIn() opens the pool's hosted UI with a code challenge,
+// catches the code on the first free port of the loopback listener's range (IdentityStack.java's
+// mcpUserPoolClient, ports 49152 to 49159), exchanges it at the token endpoint, and keeps the
+// refresh token under ~/.config/diya-submit/ mode 600. accessToken() hands out the cached id
+// token, refreshing it silently (no browser) once it is close to expiry. Neither function stores
+// an HMRC or Companies House credential; those are a
 // different tool's own session state (submit-tools.js), never this one's.
 //
 // Configuration comes from the environment: DIYA_SUBMIT_AUTH_DOMAIN (the pool's hosted UI
