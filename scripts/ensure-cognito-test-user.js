@@ -81,7 +81,7 @@ export function laneSlug(lane) {
   return slug;
 }
 
-function durableTestUserEmail(lane) {
+export function durableTestUserEmail(lane) {
   return `synthetic-${laneSlug(lane)}@test.diyaccounting.co.uk`;
 }
 
@@ -162,16 +162,18 @@ async function enrolTotpDevice(cognitoClient, associateInput, verifyInputWithout
   return { totpSecret, session: verifyResponse.Session };
 }
 
-// Logs the user in and returns an access token plus, when this call is the one that enrolled the
-// device (no stored secret existed yet, so there was nothing to answer a SOFTWARE_TOKEN_MFA
-// challenge with), the new TOTP secret. When the user already had a device and this call
-// answered the challenge with it, totpSecret is undefined and the caller enrols a fresh one to
-// rotate.
+// Logs the user in and returns an access token and an ID token plus, when this call is the one
+// that enrolled the device (no stored secret existed yet, so there was nothing to answer a
+// SOFTWARE_TOKEN_MFA challenge with), the new TOTP secret. When the user already had a device
+// and this call answered the challenge with it, totpSecret is undefined and the caller enrols a
+// fresh one to rotate. The ID token carries the claims a real sign-in's ID token would -
+// custom:mfa_method and auth_time - so a caller that only needs to sign in, not rotate the
+// device, can build the same Gov-Client-Multi-Factor header a live customer's request would.
 //
 // Returns { needsRecreate: true } when the pool challenges SOFTWARE_TOKEN_MFA and no stored
 // secret exists for this lane: the existing device cannot be answered or removed, so the caller
 // must delete and recreate the user.
-async function logInAndAnswerChallenge(cognitoClient, secretsClient, { userPoolClientId, testEmail, testPassword, secretName }) {
+export async function logInAndAnswerChallenge(cognitoClient, secretsClient, { userPoolClientId, testEmail, testPassword, secretName }) {
   const authResponse = await cognitoClient.send(
     new InitiateAuthCommand({
       ClientId: userPoolClientId,
@@ -182,7 +184,10 @@ async function logInAndAnswerChallenge(cognitoClient, secretsClient, { userPoolC
 
   if (authResponse.AuthenticationResult?.AccessToken) {
     console.log("Authenticated with no MFA challenge (no device enrolled yet)");
-    return { accessToken: authResponse.AuthenticationResult.AccessToken };
+    return {
+      accessToken: authResponse.AuthenticationResult.AccessToken,
+      idToken: authResponse.AuthenticationResult.IdToken,
+    };
   }
 
   if (authResponse.ChallengeName === "MFA_SETUP") {
@@ -208,7 +213,11 @@ async function logInAndAnswerChallenge(cognitoClient, secretsClient, { userPoolC
       );
     }
 
-    return { accessToken: respondResponse.AuthenticationResult.AccessToken, totpSecret };
+    return {
+      accessToken: respondResponse.AuthenticationResult.AccessToken,
+      idToken: respondResponse.AuthenticationResult.IdToken,
+      totpSecret,
+    };
   }
 
   if (authResponse.ChallengeName === "SOFTWARE_TOKEN_MFA") {
@@ -235,7 +244,10 @@ async function logInAndAnswerChallenge(cognitoClient, secretsClient, { userPoolC
       );
     }
 
-    return { accessToken: respondResponse.AuthenticationResult.AccessToken };
+    return {
+      accessToken: respondResponse.AuthenticationResult.AccessToken,
+      idToken: respondResponse.AuthenticationResult.IdToken,
+    };
   }
 
   throw new Error(`Expected tokens but got unhandled challenge: ${authResponse.ChallengeName || "unknown"}`);

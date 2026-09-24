@@ -16,12 +16,24 @@ import {
   buildTestBusinessRequestBody,
   buildTestPropertyBusinessRequestBody,
   buildItsaStatusRequestBody,
+  buildCognitoAuthorizerContext,
   isFraudHeaderValidationClean,
   isLossesAndAdjustmentsSupportedTaxYear,
   bothBusinessesInCalculationIncomeSources,
   evaluateLossClaimsReadBack,
   evaluateSuspendTemporalValidationsHeaderOnWrites,
 } from "../../../scripts/itsa-sandbox-year.js";
+
+// A minimal, unsigned JWT carrying only the claims buildCognitoAuthorizerContext reads - this
+// script trusts the token because it just received it directly from Cognito's own sign-in
+// response, not from the network, so a real signature is not part of what's under test here.
+function makeIdToken(claims) {
+  const header = Buffer.from(JSON.stringify({ alg: "none", typ: "JWT" }))
+    .toString("base64")
+    .replace(/=+$/g, "");
+  const payload = Buffer.from(JSON.stringify(claims)).toString("base64").replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/g, "");
+  return `${header}.${payload}.`;
+}
 
 describe("extractCheckpointId", () => {
   test("reads checkpointId directly", () => {
@@ -189,13 +201,13 @@ describe("isFraudHeaderValidationClean", () => {
     expect(isFraudHeaderValidationClean({ code: "VALID_HEADERS" })).toBe(true);
   });
 
-  test("is clean when the only warning names gov-client-multi-factor", () => {
+  test("is not clean when HMRC reports any warning, including gov-client-multi-factor", () => {
     const body = {
       code: "POTENTIALLY_INVALID_HEADERS",
       warnings: [{ code: "POTENTIALLY_INVALID_HEADER", message: "missing", headers: ["gov-client-multi-factor"] }],
     };
 
-    expect(isFraudHeaderValidationClean(body)).toBe(true);
+    expect(isFraudHeaderValidationClean(body)).toBe(false);
   });
 
   test("is not clean when a warning names a different header", () => {
@@ -212,14 +224,37 @@ describe("isFraudHeaderValidationClean", () => {
 
     expect(isFraudHeaderValidationClean(body)).toBe(false);
   });
+});
 
-  test("is not clean when a warning mixes an acceptable and an unacceptable header", () => {
-    const body = {
-      code: "POTENTIALLY_INVALID_HEADERS",
-      warnings: [{ code: "POTENTIALLY_INVALID_HEADER", message: "mixed", headers: ["gov-client-multi-factor", "gov-client-user-ids"] }],
-    };
+describe("buildCognitoAuthorizerContext", () => {
+  test("reads sub, custom:mfa_method as mfa_method, and auth_time from the ID token", () => {
+    const idToken = makeIdToken({ "sub": "cognito-sub-123", "custom:mfa_method": "TOTP", "auth_time": 1_700_000_000 });
 
-    expect(isFraudHeaderValidationClean(body)).toBe(false);
+    expect(buildCognitoAuthorizerContext(idToken)).toEqual({
+      sub: "cognito-sub-123",
+      mfa_method: "TOTP",
+      auth_time: "1700000000",
+    });
+  });
+
+  test("carries an undefined mfa_method and auth_time when the token has neither claim", () => {
+    const idToken = makeIdToken({ sub: "cognito-sub-456" });
+
+    expect(buildCognitoAuthorizerContext(idToken)).toEqual({
+      sub: "cognito-sub-456",
+      mfa_method: undefined,
+      auth_time: undefined,
+    });
+  });
+
+  test("throws when the token does not decode to a payload with a sub claim", () => {
+    const idToken = makeIdToken({ "custom:mfa_method": "TOTP" });
+
+    expect(() => buildCognitoAuthorizerContext(idToken)).toThrow(/sub claim/);
+  });
+
+  test("throws when the token is not a well-formed JWT", () => {
+    expect(() => buildCognitoAuthorizerContext("not-a-jwt")).toThrow(/sub claim/);
   });
 });
 

@@ -25,6 +25,7 @@ import {
   getStoredTotpSecret,
   storeTotpSecret,
   rotateTestUserMfa,
+  logInAndAnswerChallenge,
 } from "../../../scripts/ensure-cognito-test-user.js";
 
 // otpauth generates a real code from whatever secret it's handed, so these tests use a fixed,
@@ -275,5 +276,102 @@ describe("rotateTestUserMfa", () => {
     cognito.send.mockResolvedValueOnce({ ChallengeName: "NEW_PASSWORD_REQUIRED", Session: "session-1" });
 
     await expect(rotateTestUserMfa(cognito, secrets, baseArgs)).rejects.toThrow(/NEW_PASSWORD_REQUIRED/);
+  });
+});
+
+describe("logInAndAnswerChallenge", () => {
+  const baseArgs = {
+    userPoolClientId: "client123",
+    testEmail: "synthetic-local@test.diyaccounting.co.uk",
+    testPassword: "TestPassword123#",
+    secretName: "ci/submit/test/local/totp-secret",
+  };
+
+  afterEach(() => vi.restoreAllMocks());
+
+  test("no MFA challenge: returns the access token and the ID token", async () => {
+    const cognito = fakeClient();
+    const secrets = fakeClient();
+    cognito.send.mockResolvedValueOnce({
+      AuthenticationResult: { AccessToken: "access-token-1", IdToken: "id-token-1" },
+    });
+
+    const result = await logInAndAnswerChallenge(cognito, secrets, baseArgs);
+
+    expect(result).toEqual({ accessToken: "access-token-1", idToken: "id-token-1" });
+  });
+
+  test("MFA_SETUP challenge: returns the access token, the ID token and the freshly enrolled secret", async () => {
+    const cognito = fakeClient();
+    const secrets = fakeClient();
+
+    cognito.send.mockImplementation(async (command) => {
+      if (command instanceof InitiateAuthCommand) {
+        return { ChallengeName: "MFA_SETUP", Session: "session-1" };
+      }
+      if (command instanceof AssociateSoftwareTokenCommand) {
+        return { SecretCode: A_STORED_SECRET, Session: "session-2" };
+      }
+      if (command instanceof VerifySoftwareTokenCommand) {
+        return { Status: "SUCCESS", Session: "session-3" };
+      }
+      if (command instanceof RespondToAuthChallengeCommand) {
+        return { AuthenticationResult: { AccessToken: "access-token-2", IdToken: "id-token-2" } };
+      }
+      throw new Error(`Unexpected Cognito command: ${command.constructor.name}`);
+    });
+
+    const result = await logInAndAnswerChallenge(cognito, secrets, baseArgs);
+
+    expect(result).toEqual({ accessToken: "access-token-2", idToken: "id-token-2", totpSecret: A_STORED_SECRET });
+  });
+
+  test("SOFTWARE_TOKEN_MFA challenge with a stored secret: answers it and returns the ID token, with no rotation", async () => {
+    const cognito = fakeClient();
+    const secrets = fakeClient();
+
+    cognito.send.mockImplementation(async (command) => {
+      if (command instanceof InitiateAuthCommand) {
+        return { ChallengeName: "SOFTWARE_TOKEN_MFA", Session: "session-1" };
+      }
+      if (command instanceof RespondToAuthChallengeCommand) {
+        expect(command.input.ChallengeResponses.SOFTWARE_TOKEN_MFA_CODE).toMatch(/^\d{6}$/);
+        return { AuthenticationResult: { AccessToken: "access-token-3", IdToken: "id-token-3" } };
+      }
+      throw new Error(`Unexpected Cognito command: ${command.constructor.name}`);
+    });
+    secrets.send.mockImplementation(async (command) => {
+      if (command instanceof GetSecretValueCommand) return { SecretString: A_STORED_SECRET };
+      throw new Error(`Unexpected Secrets Manager command: ${command.constructor.name}`);
+    });
+
+    const result = await logInAndAnswerChallenge(cognito, secrets, baseArgs);
+
+    expect(result).toEqual({ accessToken: "access-token-3", idToken: "id-token-3" });
+    // Only signs in: never associates, verifies or sets an MFA preference for a device that's
+    // already enrolled.
+    expect(cognito.send).toHaveBeenCalledTimes(2);
+  });
+
+  test("SOFTWARE_TOKEN_MFA challenge with no stored secret: reports needsRecreate instead of guessing a code", async () => {
+    const cognito = fakeClient();
+    const secrets = fakeClient();
+
+    cognito.send.mockResolvedValueOnce({ ChallengeName: "SOFTWARE_TOKEN_MFA", Session: "session-1" });
+    const notFound = new Error("not found");
+    notFound.name = "ResourceNotFoundException";
+    secrets.send.mockRejectedValueOnce(notFound);
+
+    const result = await logInAndAnswerChallenge(cognito, secrets, baseArgs);
+
+    expect(result).toEqual({ needsRecreate: true });
+  });
+
+  test("throws when the pool answers with tokens neither directly nor via a recognised challenge", async () => {
+    const cognito = fakeClient();
+    const secrets = fakeClient();
+    cognito.send.mockResolvedValueOnce({ ChallengeName: "NEW_PASSWORD_REQUIRED", Session: "session-1" });
+
+    await expect(logInAndAnswerChallenge(cognito, secrets, baseArgs)).rejects.toThrow(/NEW_PASSWORD_REQUIRED/);
   });
 });

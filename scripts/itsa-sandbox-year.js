@@ -53,6 +53,16 @@
  *   ITSA_SANDBOX_SCOPE             OAuth scope to request (default
  *                                  "read:self-assessment write:self-assessment")
  *   ITSA_SANDBOX_HEADFUL           set to "true" to watch the browser
+ *   ITSA_SANDBOX_COGNITO_PASSWORD  current password of the durable Cognito test lane's user
+ *                                  this script signs in as to build a real
+ *                                  Gov-Client-Multi-Factor header - see scripts/
+ *                                  ensure-cognito-test-user.js for how that lane's password and
+ *                                  TOTP device are issued
+ *   ITSA_SANDBOX_COGNITO_ENVIRONMENT  environment whose IdentityStack and Secrets Manager TOTP
+ *                                  secret to use (default "ci")
+ *   ITSA_SANDBOX_COGNITO_LANE      the durable test lane to sign in as (default "local", the
+ *                                  lane scripts/enable-cognito-native-test.js also rotates for
+ *                                  local/manual testing)
  *
  * Nothing here prints or writes a token, a password or a client secret.
  */
@@ -63,10 +73,15 @@ import { fileURLToPath } from "node:url";
 import { resolve, dirname } from "node:path";
 import { execSync } from "node:child_process";
 import dotenv from "dotenv";
+import { CloudFormationClient, DescribeStacksCommand } from "@aws-sdk/client-cloudformation";
+import { CognitoIdentityProviderClient } from "@aws-sdk/client-cognito-identity-provider";
+import { SecretsManagerClient } from "@aws-sdk/client-secrets-manager";
 
 import { buildFraudHeaders, detectVendorPublicIp } from "../app/lib/buildFraudHeaders.js";
+import { decodeJwtNoVerify } from "../app/lib/jwtHelper.js";
 import { initializeSalt } from "../app/services/subHasher.js";
 import { buildHmrcHeaders } from "../app/services/hmrcApi.js";
+import { logInAndAnswerChallenge, durableTestUserEmail, totpSecretName } from "./ensure-cognito-test-user.js";
 import { getAuthorizationCode, buildAuthorizeUrl } from "./lib/hmrcAuthorizationCode.js";
 import { prepareTokenExchangeRequest } from "../app/functions/hmrc/hmrcTokenPost.js";
 import { resolveItsaSubmissionModel } from "../app/lib/hmrcValidation.js";
@@ -90,8 +105,8 @@ const CALCULATION_RETRIEVE_MAX_ATTEMPTS = 5;
 const CALCULATION_RETRIEVE_RETRY_DELAY_MS = 3000;
 
 // The Business Source Adjustable Summary retrieve endpoint answers not-found with no
-// Gov-Test-Scenario header, even for a genuinely stateful sandbox business - documented in
-// PLAN_ITSA_PHASE_2.md's BSAS section. SELF_EMPLOYMENT_PROFIT is the scenario named there.
+// Gov-Test-Scenario header, even for a genuinely stateful sandbox business. SELF_EMPLOYMENT_PROFIT
+// makes it answer HMRC's canned self-employment example instead.
 const BSAS_RETRIEVE_SCENARIO = "SELF_EMPLOYMENT_PROFIT";
 
 // The UK property equivalent of BSAS_RETRIEVE_SCENARIO, from the same scenario table.
@@ -99,8 +114,8 @@ const BSAS_UK_PROPERTY_RETRIEVE_SCENARIO = "UK_PROPERTY_PROFIT";
 
 // Business Details and ITSA status answer a static canned example with no Gov-Test-Scenario
 // header, not the business or status this script just created through the test-support API.
-// STATEFUL is the scenario documented (_developers/hmrc/ITSA_SPIKE.md's Business Details
-// section, PLAN_ITSA_PHASE_2.md's ITSA status section) to read the test-support state back.
+// STATEFUL reads the test-support state back instead - documented for Business Details in
+// _developers/hmrc/ITSA_SPIKE.md, and confirmed here for ITSA status too.
 const STATEFUL_SCENARIO = "STATEFUL";
 
 // Self Employment Business 5.0's period-create default (no Gov-Test-Scenario header) simulates
@@ -119,12 +134,6 @@ const THROTTLE_RETRY_DELAY_MS = 20000;
 // Gov-Test-Scenario table is a fixed list of named canned examples plus DYNAMIC, which the
 // spec says makes the response's date fields track the requested tax year.
 const CALCULATION_RETRIEVE_SCENARIO = "DYNAMIC";
-
-// _developers/hmrc/ITSA_SPIKE.md's own sandbox run recorded exactly one validator warning that
-// a synthetic test user can never clear: gov-client-multi-factor, because the sandbox sign-in
-// page takes a user id and a password with no second factor. That is what "clean" means for
-// this test user - a live customer signs in through Cognito with TOTP and carries the header.
-const KNOWN_ACCEPTABLE_WARNING_HEADERS = ["gov-client-multi-factor"];
 
 const transcript = [];
 
@@ -384,22 +393,17 @@ export function evaluateSuspendTemporalValidationsHeaderOnWrites(transcript) {
 }
 
 /**
- * Whether a fraud prevention header validator response counts as clean for a sandbox test
- * user. "Clean" here matches what _developers/hmrc/ITSA_SPIKE.md's earlier sandbox run
- * established, not a literal VALID_HEADERS code: no errors, and every warning names only
- * headers a synthetic sign-in can never supply (currently just gov-client-multi-factor).
+ * Whether a fraud prevention header validator response counts as clean: no errors and no
+ * warnings at all. This run signs in through Cognito with TOTP and builds
+ * Gov-Client-Multi-Factor from that sign-in's own ID token, the way a live customer's request
+ * does, so nothing this script sends is exempt from HMRC's validator.
  * @param {Object} validationBody - the parsed body of a GET .../fraud-prevention-headers/validate call
  * @returns {boolean}
  */
 export function isFraudHeaderValidationClean(validationBody) {
   const errors = validationBody?.errors || [];
   if (errors.length > 0) return false;
-  if (validationBody?.code === "VALID_HEADERS") return true;
-  if (validationBody?.code !== "POTENTIALLY_INVALID_HEADERS") return false;
-  const warnings = validationBody?.warnings || [];
-  return warnings.every((warning) =>
-    (warning.headers || []).every((header) => KNOWN_ACCEPTABLE_WARNING_HEADERS.includes(String(header).toLowerCase())),
-  );
+  return validationBody?.code === "VALID_HEADERS";
 }
 
 /** The test-support "create a business" request body for one self-employment business. */
@@ -427,8 +431,8 @@ export function buildTestPropertyBusinessRequestBody() {
 
 /**
  * The test-support "create or amend ITSA status" request body. "MTD Mandated" with
- * "Sign up - return available" is this script's own choice of test data (PLAN_ITSA_PHASE_2.md
- * does not prescribe one) - see the runbook for how to change it.
+ * "Sign up - return available" is this script's own choice of test data - see
+ * _developers/hmrc/ITSA_PHASE_2_SANDBOX.md for how to change it.
  */
 export function buildItsaStatusRequestBody() {
   return {
@@ -448,8 +452,15 @@ export function buildItsaStatusRequestBody() {
  * which proved this flow against the same HMRC sandbox application.
  */
 
-/** Headers a browser would send us, which buildFraudHeaders turns into Gov-Client-* values. */
-function buildSyntheticEvent(clientPublicIp) {
+/**
+ * Headers a browser would send us, which buildFraudHeaders turns into Gov-Client-* values.
+ * requestContext.authorizer.lambda carries a real Cognito sign-in's claims, the same flat shape
+ * customAuthorizer.js puts there for a live request, so buildServerMultiFactorHeader builds
+ * Gov-Client-Multi-Factor from it exactly as it would for a customer.
+ * @param {string} clientPublicIp
+ * @param {{sub: string, mfa_method?: string, auth_time?: string}} cognitoAuthorizerContext
+ */
+function buildSyntheticEvent(clientPublicIp, cognitoAuthorizerContext) {
   return {
     headers: {
       "x-forwarded-for": clientPublicIp,
@@ -461,8 +472,68 @@ function buildSyntheticEvent(clientPublicIp) {
       "Gov-Client-Timezone": "UTC+00:00",
       "Gov-Client-Window-Size": "width=1512&height=857",
     },
-    requestContext: { authorizer: { lambda: { sub: `itsa-sandbox-year-${randomUUID()}` } } },
+    requestContext: { authorizer: { lambda: cognitoAuthorizerContext } },
   };
+}
+
+/**
+ * Turn a Cognito ID token into the flat authorizer context buildServerMultiFactorHeader reads:
+ * sub, mfa_method (from the custom:mfa_method claim the Pre Token Generation trigger sets for a
+ * TOTP sign-in) and auth_time. Not verified - this script already trusts the token because it
+ * just received it directly from Cognito's own InitiateAuth/RespondToAuthChallenge response, the
+ * same trust boundary customAuthorizer.js's cryptographic verification exists to establish for a
+ * token arriving over the network instead.
+ * @param {string} idToken
+ * @returns {{sub: string, mfa_method?: string, auth_time?: string}}
+ */
+export function buildCognitoAuthorizerContext(idToken) {
+  const payload = decodeJwtNoVerify(idToken);
+  if (!payload?.sub) {
+    throw new Error("Cognito ID token did not decode to a payload with a sub claim");
+  }
+  return {
+    sub: payload.sub,
+    mfa_method: payload["custom:mfa_method"],
+    auth_time: payload.auth_time !== undefined ? String(payload.auth_time) : undefined,
+  };
+}
+
+/**
+ * Sign the durable Cognito test lane's user in with its stored TOTP device and return the ID
+ * token, so this run's Gov-Client-Multi-Factor header comes from a real sign-in the way a live
+ * customer's does. Only signs in - never creates, deletes or rotates the user, so a lane with no
+ * enrolled device or no stored secret throws rather than fixing itself up.
+ * @param {{environment: string, lane: string, password: string}} params
+ * @returns {Promise<string>} the ID token
+ */
+async function signInCognitoTestLane({ environment, lane, password }) {
+  const stackName = `${environment}-env-IdentityStack`;
+  const stack = (await new CloudFormationClient({}).send(new DescribeStacksCommand({ StackName: stackName }))).Stacks?.[0];
+  const userPoolClientId = stack?.Outputs?.find((output) => output.OutputKey === "UserPoolClientId")?.OutputValue;
+  if (!userPoolClientId) {
+    throw new Error(`No UserPoolClientId output on stack ${stackName}`);
+  }
+
+  const testEmail = durableTestUserEmail(lane);
+  const secretName = totpSecretName(environment, lane);
+  const loginResult = await logInAndAnswerChallenge(new CognitoIdentityProviderClient({}), new SecretsManagerClient({}), {
+    userPoolClientId,
+    testEmail,
+    testPassword: password,
+    secretName,
+  });
+
+  if (loginResult.needsRecreate) {
+    throw new Error(
+      `Cognito test lane "${lane}" in ${environment} has no stored TOTP secret at ${secretName} to answer its ` +
+        `SOFTWARE_TOKEN_MFA challenge with, and this script only signs in - it does not create, delete or ` +
+        `rotate the durable test user ${testEmail}.`,
+    );
+  }
+  if (!loginResult.idToken) {
+    throw new Error(`Cognito sign-in for ${testEmail} returned no ID token`);
+  }
+  return loginResult.idToken;
 }
 
 /**
@@ -546,6 +617,9 @@ async function main() {
     throw new Error(`ITSA_SANDBOX_TAX_YEAR must look like "2023-24", got "${taxYear}"`);
   }
   const scope = process.env.ITSA_SANDBOX_SCOPE || "read:self-assessment write:self-assessment";
+  const cognitoPassword = requireEnv("ITSA_SANDBOX_COGNITO_PASSWORD");
+  const cognitoEnvironment = process.env.ITSA_SANDBOX_COGNITO_ENVIRONMENT || "ci";
+  const cognitoLane = process.env.ITSA_SANDBOX_COGNITO_LANE || "local";
   const outDir = process.env.ITSA_SANDBOX_OUT_DIR || resolveDefaultOutDir(taxYear);
   mkdirSync(outDir, { recursive: true });
   const checkpointFile = `${outDir}/checkpoint-id.txt`;
@@ -587,10 +661,18 @@ async function main() {
 
   // Phase 2: build the same fraud prevention headers a real request would carry, once, and
   // reuse them for every call in this run - the validator call at the end checks this exact set.
+  // Signing in through Cognito first means Gov-Client-Multi-Factor comes from a real ID token's
+  // claims, the way buildServerMultiFactorHeader builds it for a live customer's request.
+  const idToken = await signInCognitoTestLane({ environment: cognitoEnvironment, lane: cognitoLane, password: cognitoPassword });
+  const cognitoAuthorizerContext = buildCognitoAuthorizerContext(idToken);
+  record("cognito-sign-in", { lane: cognitoLane, sub: cognitoAuthorizerContext.sub, mfaMethod: cognitoAuthorizerContext.mfa_method });
+
   const vendorPublicIp = await detectVendorPublicIp();
   process.env.USER_SUB_HASH_SALT = JSON.stringify({ current: "itsa-sandbox-year", versions: { "itsa-sandbox-year": randomUUID() } });
   await initializeSalt();
-  const { govClientHeaders } = buildFraudHeaders(buildSyntheticEvent(vendorPublicIp), { bundleIds: ["resident"] });
+  const { govClientHeaders } = buildFraudHeaders(buildSyntheticEvent(vendorPublicIp, cognitoAuthorizerContext), {
+    bundleIds: ["resident"],
+  });
   record("fraud-headers", { headerNames: Object.keys(govClientHeaders).sort() });
 
   const hmrcHeaders = (apiVersion, testScenario) =>

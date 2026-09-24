@@ -62,12 +62,19 @@ diagnostic.
   Individual Losses, Individuals Tax Liability Adjustments and Self Assessment Individual
   Details, alongside the Business Details subscription the phase 1 spike already proved. Only
   the Developer Hub account holder can add a subscription; a script cannot.
+- The `ci` environment's `local` Cognito test lane (`synthetic-local@test.diyaccounting.co.uk`)
+  enrolled with a TOTP device whose secret is stored at
+  `ci/submit/test/local/totp-secret` in Secrets Manager, and that user's current password. The
+  script signs this lane in to build a real `Gov-Client-Multi-Factor` header - it does not
+  create, delete or rotate the user, so run `scripts/ensure-cognito-test-user.js ci local`
+  (or `npm run test:enableCognitoNative`) first to get a current password and a stored secret.
 
 ## The command
 
 ```bash
 ITSA_SANDBOX_TEST_USER_FILE=./hmrc-test-user.json \
 ITSA_SANDBOX_TAX_YEAR=2023-24 \
+ITSA_SANDBOX_COGNITO_PASSWORD=<the local lane's current password> \
 scripts/proxy-secrets.sh node scripts/itsa-sandbox-year.js
 ```
 
@@ -118,7 +125,7 @@ to workspace root, outside the repository).
 | Loss claims and tax liability adjustments read back | read from the four GETs above, no extra call | printed as `loss claims read back: <true\|false>`, or `skipped (tax year before 2026-27)` when the sequence above did not run |
 | Every losses/adjustments write's own header | read from each PUT's own request headers, no extra call | printed as `suspend-temporal-validations on every losses and adjustments write: <true\|false>`, or `skipped (tax year before 2026-27)` |
 | Final declaration | `POST .../calculations/{nino}/self-assessment/{taxYear}/{calculationId}/final-declaration` | `204` |
-| Validator | `GET .../test/fraud-prevention-headers/validate` | no errors; the only acceptable warning names `gov-client-multi-factor` |
+| Validator | `GET .../test/fraud-prevention-headers/validate` | `VALID_HEADERS`, no errors and no warnings |
 
 The script throws on any other status, with HMRC's response body in the error, rather than
 skip a step or fall back to a guess - except a `429 MESSAGE_THROTTLED_OUT`, which it retries
