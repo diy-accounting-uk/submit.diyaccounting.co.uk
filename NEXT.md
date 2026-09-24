@@ -45,19 +45,6 @@ Shared facts for the analytics rows (B52d, B52e, B52l, B52m): the prod Athena da
 
 ## In flight
 
-- [ ] **F2e. The MCP writes a populated spreadsheets package.** `write_finance_package`
-  (`mcp/lib/finance/package-writer.js`, over diya-gl's `saveWorkbookFiles`) is on `main`.
-  Remaining: the reconciliation. `../spreadsheets.diyaccounting.co.uk/app/bin/reconcile.js` fixes
-  `PACKAGES_DIR` to that repository's `packages/` and re-derives every cell from its own scenario
-  fixtures (`app/test/fixtures/*.toml`) over a blank template, so a populated package shows the
-  book's opening, VAT-due and bank-opening figures as anomalies (on the BrickWork Pro Ltd fixture:
-  1 of 3 ltd scenarios clean, 7 failing checks). In spreadsheets: a `--packages-dir` option and a
-  mode that checks a populated package's cells against the book it was written from; then run it
-  over `write_finance_package`'s output for DIYA's book (`../staging/2026-2027/book/`). Nothing
-  automated writes to Google Drive. **Source**: `../PLAN_FINANCE_AUTOMATION.md` phase 2 and
-  Verification. **Owner**: Claude Code. **Model**: Sonnet. **Size**: ~3 files (spreadsheets).
-  In flight: spreadsheets PR #140 (`claude/fin-reconcile-book`: `--packages-dir`, `--book`, and the Ltd calculator's payslips page gated on `scenario.payroll`; DIYA's package reconciles 1,444 of 1,444), checks running.
-
 - [ ] **CS-2. Envelopes and the body builder.** A generalised `buildFormSubmission` and the CS01, CompanyData and PaymentPeriods builders and parsers in `app/services/companiesHouseXmlGateway.js`, plus `companiesHouseConfirmationStatementXml.js` with the XSD-order check. **Source**: `PLAN_COMPANIES_HOUSE_CONFIRMATION_STATEMENT.md` (its Tasks table carries the files). **Owner**: Claude Code. **Model**: Sonnet. **Size**: 4 files. The schemas are in `fixtures/companies-house-xmlgw/` (22 files, on `main`).
   In flight: on `claude/b92-board` (CS-2 `a65d01b9`, CS-3 `7784bcd0`); its PR opens with CS-5, CS-6 and CS-8.
 
@@ -139,7 +126,7 @@ Shared facts for the analytics rows (B52d, B52e, B52l, B52m): the prod Athena da
 
 - [ ] **CS-11. Confirmation statement prod launch.** `prod` on the activity, prod gateway values, `compliance.toml` rows for the credit account and the authorisation. Shares BACKLOG 34c steps 3 and 4 with the accounts launch. Blocked on CS-9, CS-H4 and CS-H6. **Source**: `PLAN_COMPANIES_HOUSE_CONFIRMATION_STATEMENT.md` (its Tasks table carries the files). **Owner**: Claude Code. **Model**: Haiku. **Size**: 5 files.
 
-- [ ] **CS-12. Identity-verification answers into the confirmation statement.** Apply V1 to V4 from Cowork's `../REPORT_CH_IDENTITY_VERIFICATION.md` (written 2026-09-23; the plan's table carries the answers) to the page and the XML builder: every director needs a code, `OtherForenames` required, the schema chosen from each officer's `identity_verification_details`. Blocked on CS-6. **Source**: `PLAN_COMPANIES_HOUSE_CONFIRMATION_STATEMENT.md` (its Tasks table carries the files). **Owner**: Claude Code. **Model**: Sonnet. **Size**: 3 files.
+- [ ] **CS-12. Identity-verification answers into the confirmation statement.** Apply V1 to V4 from Cowork's `../REPORT_CH_IDENTITY_VERIFICATION.md` (written 2026-09-23; the plan's table carries the answers) to the page and the XML builder: every director needs a code, `OtherForenames` required, the schema chosen from each officer's `identity_verification_details`. Also: the shareholdings editor on `fileConfirmationStatement.html` takes one shareholder per holding; add joint holders. Blocked on CS-6. **Source**: `PLAN_COMPANIES_HOUSE_CONFIRMATION_STATEMENT.md` (its Tasks table carries the files). **Owner**: Claude Code. **Model**: Sonnet. **Size**: 3 files.
 
 - [ ] **CS-13. PSC verification statement (VS01).** A builder over `PSCVerificationStatement-v1-0.xsd`, a submit and poll Lambda pair, a result-view section for each director who is also a PSC, filed after the statement inside the window starting the day after the review date (the report's V4). Blocked on CS-9. **Source**: `PLAN_COMPANIES_HOUSE_CONFIRMATION_STATEMENT.md` (its Tasks table carries the files). **Owner**: Claude Code. **Model**: Sonnet. **Size**: ~8 files.
 
