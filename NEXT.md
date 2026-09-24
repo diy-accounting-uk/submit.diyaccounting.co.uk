@@ -48,6 +48,14 @@ Shared facts for the analytics rows (B52d, B52e, B52l, B52m): the prod Athena da
 **COOL-DOWN is on since 2026-09-23T23:07:44Z.** No new board rows except a degradation. Agents commit
 and stop. One branch is driven green at a time. Lifted only by the operator in their own words.
 
+- [ ] **B30bj. The prod resident-pro probe opens a live checkout.** In flight: PR #348
+  (`claude/ops-probe-resident-pro`). The rewritten `resident-pro` test in
+  `behaviour-tests/passRedemption.behaviour.test.js` skipped the pass, so its synthetic user had no
+  synthetic bundle and `billingCheckoutPost.js` (lines 96-99) opened a live Stripe checkout on prod
+  (deploy 35942092607; card declined, nothing charged). The fix redeems a test-pass Day pass first.
+  Proven by the probe on its merge deploy. **Source**: #347's main deploy. **Owner**: Claude Code.
+  **Model**: Haiku. **Size**: 1 file.
+
 ## Machine-only
 
 - [ ] **PU-7n. The practice licence launch: the DIYA-GL page line.** Submit's side merged in PR #347
