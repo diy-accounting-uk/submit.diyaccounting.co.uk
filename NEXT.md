@@ -45,6 +45,8 @@ Shared facts for the analytics rows (B52d, B52e, B52l, B52m): the prod Athena da
 
 ## In flight
 
+## Machine-only
+
 - [ ] **ITSA-R1. The ITSA proof suites green and in CI.** Two suites the approvals checklist cites
   fail on the simulator (2026-09-24): `itsaAnnualSubmission` times out after 452 s waiting for
   "Annual Submission edit form", and `itsaFinalDeclaration` after 452 s waiting for "Final Declaration
@@ -55,7 +57,6 @@ Shared facts for the analytics rows (B52d, B52e, B52l, B52m): the prod Athena da
   layer that broke, add all eight to `test.yml`'s simulator jobs on the VAT jobs' pattern, and run
   the checklist's browser proof tests (`_developers/hmrc/ITSA_PRODUCTION_APPROVALS_CHECKLIST.md`
   lines 34 to 46) green. Blocks O11. **Owner**: Claude Code. **Model**: Sonnet. **Size**: ~4 files.
-  In flight: a Sonnet agent.
 
 - [ ] **ITSA-R2. The sandbox year with a real multi-factor header.** `scripts/itsa-sandbox-year.js`
   builds its fraud headers from a synthetic event (line 593) with no MFA, so HMRC's validator warns
@@ -69,9 +70,6 @@ Shared facts for the analytics rows (B52d, B52e, B52l, B52m): the prod Athena da
   `ITSA_PHASE_2_SANDBOX.md` and the questionnaire's "Testing in the last two weeks" row. Change the
   recognition email's MFA sentence (`_developers/hmrc/DRAFT_EMAIL_ITSA_RECOGNITION.md` line 49) to
   the clean result. Blocks O11. **Owner**: Claude Code. **Model**: Sonnet. **Size**: ~4 files.
-  In flight: a Sonnet agent.
-
-## Machine-only
 
 - [ ] **CS-10a. The per-submission price in the product catalogue.** Give activities a price the way
   bundles have one: `[[activities.prices]]` under `id = "file-confirmation-statement"` in
