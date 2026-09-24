@@ -16,7 +16,7 @@ runs), and for Claude Code steps the **Model** a sub-agent should use (Fable > O
 Haiku; the lowest tier that fits). Anything touching code goes through a `claude/*` branch and
 PR; the operator merges.
 
-**Prod runs deployment prod-d458f02** (PR #343's merge deploy; #344 and #345 changed no deployed code).
+**Prod runs deployment prod-1a2d1c8** (PR #346's merge deploy; PR #347's merge deploy is running).
 **ci**: `ci-set1` is last-known-good and the only ci set standing; `ci-set2` was swept.
 No pull request is open in this repository or its siblings.
 
@@ -48,23 +48,15 @@ Shared facts for the analytics rows (B52d, B52e, B52l, B52m): the prod Athena da
 **COOL-DOWN is on since 2026-09-23T23:07:44Z.** No new board rows except a degradation. Agents commit
 and stop. One branch is driven green at a time. Lifted only by the operator in their own words.
 
-- [ ] **PU-7n. The practice licence launch.** On `claude/b90-board` (catalogue, nav, probes, the CDK price-id wiring; live prices created 2026-09-23 on the operator's go: year `price_1UIyyPCD0Ld2ukzIHeO99d6G`, month `price_1UIyyPCD0Ld2ukzIQefbnWMO`); the batch's suites run before its push. The DIYA-GL line is spreadsheets branch `claude/diya-gl-resident-pro`. Operator, 2026-09-22: `resident-pro` at £199 a
-  year and £19.99 a month, the monthly price shown only on `bundles.html` (the DIYA-GL page shows
-  annual prices alone, for `resident` too). `web/public/submit.catalogue.toml`'s `resident-pro`
-  block (line 208: `enable = "on-pass"`, `hidden = true`, `allocation = "on-pass-on-subscription"`,
-  one monthly price of 999) flips to `enable = "always"`, `hidden = false`,
-  `allocation = "on-subscription"` with the two prices on its prices table, then
-  `stripe-catalogue-sync` test and live for the price ids into `.env.ci` and `.env.prod`
-  (machine-ask for the live run); a practice page nav link is added to
-  `web/public/widgets/page-chrome.js` (it has none today); the four ci probes that reach
-  `resident-pro` through a pass are updated in the same change; the DIYA-GL page
-  (`../spreadsheets.diyaccounting.co.uk/web/diya-gl.co.uk/public/index.html`, whose tier list at
-  line 73 shows `resident` at £39 a year alone) gains a `resident-pro` line at £199 a year, in
-  that repository's own PR. The operator gave the go on 2026-09-23 (the ICO fee register records no processing
-  purposes, so ZB070902 needs no change). **Source**: `PLAN_PRICE_UPDATE.md` §(d); operator 2026-09-22 and 2026-09-23 (go). **Owner**: Claude
-  Code. **Model**: Sonnet. **Size**: ~9 files.
-
 ## Machine-only
+
+- [ ] **PU-7n. The practice licence launch: the DIYA-GL page line.** Submit's side merged in PR #347
+  (2026-09-24; live prices year `price_1UIyyPCD0Ld2ukzIHeO99d6G`, month
+  `price_1UIyyPCD0Ld2ukzIQefbnWMO`). Remaining: the spreadsheets branch `claude/diya-gl-resident-pro`
+  (commit `3b135eef0`, local, not pushed) adds a hidden `tier-resident-pro` line at £199 a year to
+  `../spreadsheets.diyaccounting.co.uk/web/diya-gl.co.uk/public/index.html`; push it and open its PR.
+  **Source**: `PLAN_PRICE_UPDATE.md` §(d); operator 2026-09-22 and 2026-09-23 (go). **Owner**: Claude
+  Code. **Model**: Haiku. **Size**: 2 files.
 
 - [ ] **F1b. PayPal's six months staged.** Run `scripts/finance/paypal-stage.js` (the credential
   read from Secrets Manager `prod/submit/paypal/client_id` and `prod/submit/paypal/client_secret`
