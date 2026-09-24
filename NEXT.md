@@ -45,8 +45,6 @@ Shared facts for the analytics rows (B52d, B52e, B52l, B52m): the prod Athena da
 
 ## In flight
 
-## Machine-only
-
 - [ ] **PU-7n. The practice licence launch: the DIYA-GL page line.** Submit's side merged in PR #347
   (2026-09-24; live prices year `price_1UIyyPCD0Ld2ukzIHeO99d6G`, month
   `price_1UIyyPCD0Ld2ukzIQefbnWMO`). Remaining: the spreadsheets branch `claude/diya-gl-resident-pro`
@@ -54,6 +52,7 @@ Shared facts for the analytics rows (B52d, B52e, B52l, B52m): the prod Athena da
   `../spreadsheets.diyaccounting.co.uk/web/diya-gl.co.uk/public/index.html`; push it and open its PR.
   **Source**: `PLAN_PRICE_UPDATE.md` §(d); operator 2026-09-22 and 2026-09-23 (go). **Owner**: Claude
   Code. **Model**: Haiku. **Size**: 2 files.
+  In flight: pushing `claude/diya-gl-resident-pro`, then its PR.
 
 - [ ] **F1b. PayPal's six months staged.** Run `scripts/finance/paypal-stage.js` (the credential
   read from Secrets Manager `prod/submit/paypal/client_id` and `prod/submit/paypal/client_secret`
@@ -61,19 +60,23 @@ Shared facts for the analytics rows (B52d, B52e, B52l, B52m): the prod Athena da
   `../staging/<year-end>/paypal/<yyyy-mm-dd>-paypal-transactions.json`. F2g reads the output.
   **Source**: `../PLAN_FINANCE_AUTOMATION.md` route 1. **Owner**: Claude Code.
   **Model**: Haiku. **Size**: 0 files.
+  In flight: a Haiku agent running the six months.
 
 - [ ] **F2e. The MCP writes a populated spreadsheets package.** A tool in `mcp/lib/finance/` that
   takes the book and lines and writes a DIY Accounting spreadsheets package, reconciled under the
   spreadsheets repository's existing reconciliation harness rather than a new check; nothing
   automated writes to Google Drive. **Source**: `../PLAN_FINANCE_AUTOMATION.md`
   phase 2. **Owner**: Claude Code. **Model**: Sonnet. **Size**: ~3 files.
+  In flight: a Sonnet agent in the b91 wave (batch `claude/b91-board`).
 
 - [ ] **CS-1. Confirmation statement fixtures.** Save the `ConfirmationAndVerificationStatement-v1-0` schema set and `ConfirmationStatement-v1-3.xsd` (the statement reverts to it once every officer is verified), the CompanyData and PaymentPeriods schemas, and the published examples under `fixtures/companies-house-xmlgw/` from `xmlgw.companieshouse.gov.uk/v1-0/schema/` and `/examples/`. The form since 2025-11-18 is `ConfirmationAndVerificationStatement`; `ConfirmationStatement-v1-3` has no verification block. `app/unit-tests/licenceHeaders.test.js` (line 34) already exempts `fixtures/companies-house-xmlgw/` from the licence header; the accounts fixtures there (`GetSubmissionStatus_response.xml`) show the naming. Needs network access to `xmlgw.companieshouse.gov.uk`. **Source**: `PLAN_COMPANIES_HOUSE_CONFIRMATION_STATEMENT.md` (its Tasks table carries the files). **Owner**: Claude Code. **Model**: Haiku. **Size**: 12 files.
+  In flight: a Haiku agent in the b91 wave (batch `claude/b91-board`).
 
 - [ ] **CS-H2d. Draft the confirmation-statement email to the XML team.** Write `../DRAFT_EMAIL_XMLGW_CS01.md` with the plan's Q1 (which endpoint and credentials test the 2025-11-18 schemas: Companies House said on 2025-11-04 to use `https://xmlgw-sandpit-staging.companieshouse.gov.uk/v1-0/xmlgw/Gateway` with live presenter credentials, package reference 0012 and GatewayTest 1; and test company data for `CompanyDataRequest`), Q2 (shareholders on a no-change statement, reject 11686) Q4 (authorisation tests and the package reference for the form), and whether Submit presenting a customer's filing under E0000052288 counts as filing for clients (ACSP; `../REPORT_CH_IDENTITY_VERIFICATION.md` V6). It goes on the new thread of the 2026-09-23 22:22 UTC email. Changes nothing committed. **Source**: `PLAN_COMPANIES_HOUSE_CONFIRMATION_STATEMENT.md` (its Tasks table carries the files). **Owner**: Claude Code. **Model**: Haiku. **Size**: 0 files.
+  In flight: a Haiku agent writing the draft.
 
 - [ ] **F2n. The finance parsers code lines from the label map.** `bank-lines.js` (`bankCodeFor`,
-  line 104) codes a line from the statement's type alone, and `paypal-statement-lines.js` and
+  line 108) codes a line from the statement's type alone, and `paypal-statement-lines.js` and
   `stripe-lines.js` post every receipt to sales. Give each an optional `labels` input, the map F2m
   writes to `../staging/labels/diya-labels.toml` (read by the caller and passed in, so the
   parsers stay pure and the repository holds no payee data), that sets account, bank code and VAT
@@ -81,6 +84,9 @@ Shared facts for the analytics rows (B52d, B52e, B52l, B52m): the prod Athena da
   `unlabelled` list. Tests over a synthetic map. The company-book skill's Build section names
   the map and the refresh from the prior year's workbooks. The map exists: `../staging/labels/diya-labels.toml` (12 rules, 11 payee patterns from the 2025-26 set).
   **Source**: operator 2026-09-23. **Owner**: Claude Code. **Model**: Sonnet. **Size**: ~7 files.
+  In flight: a Sonnet agent in the b91 wave (batch `claude/b91-board`).
+
+## Machine-only
 
 ## Machine-ask
 
