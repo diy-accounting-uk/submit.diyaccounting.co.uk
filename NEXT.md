@@ -38,7 +38,7 @@ console action — comes before any code. Operator items are briefed in
 names its model: the lowest tier that fits (Fable > Opus > Sonnet > Haiku), or `none` for a human
 step.
 
-Shared facts for the analytics rows (B52d, B52e, B52l, B52m): the prod Athena database is
+Shared facts for the analytics rows (B52i, B52l, B52m): the prod Athena database is
 `prod_env_analytics` and the workgroup `prod-env-analytics` (eu-west-2, `AWS_PROFILE=submit-prod`);
 `OperatorSnapshotPublish.java` passes them to the Lambda as `GLUE_DATABASE_NAME` and
 `ATHENA_WORK_GROUP_NAME` (lines 103 to 104).
@@ -47,19 +47,23 @@ Shared facts for the analytics rows (B52d, B52e, B52l, B52m): the prod Athena da
 
 ## Machine-only
 
-- [ ] **ITSA-R4. The simulator lacks HMRC's test-support create-business route.** `itsaUkPropertyAnnualSubmission` and `itsaUkPropertyPeriod` fail at their first step: `[HMRC Test Business] Create business failed: 404 Not Found - {"code":"NOT_FOUND","message":"Route not found: POST /individuals/self-assessment-test-support/business/{nino}"}` (run 2026-09-24). Add the route to `app/http-simulator/` on the shape HMRC's Self Assessment Test Support API documents, or point the suites' simulator lane at the route that exists. Blocks O11. **Owner**: Claude Code. **Model**: Sonnet. **Size**: ~2 files.
+- [ ] **ITSA-R4. The simulator lacks HMRC's test-support create-business route.** `itsaUkPropertyAnnualSubmission` and `itsaUkPropertyPeriod` fail at their first step: `[HMRC Test Business] Create business failed: 404 Not Found - {"code":"NOT_FOUND","message":"Route not found: POST /individuals/self-assessment-test-support/business/{nino}"}` (run 2026-09-24). The caller is `createHmrcTestBusiness` in `behaviour-tests/helpers/behaviour-helpers.js` (line 1172): it walks the simulator's authorize page (that part passes), POSTs `buildTestSupportBusinessBody`'s body (line 1141) to `/individuals/self-assessment-test-support/business/{nino}` and needs `{ businessId }` back (line 1238), then POSTs `/individuals/self-assessment-test-support/itsa-status/{nino}/{taxYear}` (line 1246), which the simulator also lacks. The suites then file against that `businessId` (`itsaUkPropertyPeriod.behaviour.test.js` line 289), so a created business has to persist: record it in `app/http-simulator/state/store.js` and have `app/http-simulator/routes/itsa-business-details.js`'s list (line 23) return it for that NINO, and `routes/itsa-status.js` answer the status set. Both routes in a new `app/http-simulator/routes/itsa-test-support.js` registered beside the others; a unit test per route under `app/unit-tests/http-simulator/routes/` on `companies-house-xmlgw.test.js`'s pattern. Runs in one agent with ITSA-R3, R4 first, because both touch the simulator's ITSA routes and R3's first suspect is the business picker that reads the same list. Blocks O11. **Owner**: Claude Code. **Model**: Sonnet. **Size**: ~4 files.
 
 - [ ] **ITSA-R2. The sandbox year with a real multi-factor header.** `scripts/itsa-sandbox-year.js`
-  builds its fraud headers from a synthetic event (line 593) with no MFA, so HMRC's validator warns
+  builds its fraud headers from `buildSyntheticEvent` (line 452, called at line 593) with no MFA, so HMRC's validator warns
   on `gov-client-multi-factor` (`_developers/hmrc/ITSA_PHASE_2_SANDBOX.md` line 296) and the script
   accepts it (`KNOWN_ACCEPTABLE_WARNING_HEADERS`, line 127). Operator, 2026-09-24: clear it. Sign the
   lane's durable test user in through Cognito native auth with its TOTP (the secret is in Secrets
-  Manager, `scripts/ensure-cognito-test-user.js` `totpSecretName`, line 93), build
-  `Gov-Client-Multi-Factor` from that sign-in the way `app/lib/buildFraudHeaders.js` does from the
-  authorizer context (line 64), drop the acceptable-warning allowance so only a clean validator
+  Manager, `scripts/ensure-cognito-test-user.js` `totpSecretName`, line 93). The sign-in exists:
+  `logInAndAnswerChallenge` (line 174) answers `SOFTWARE_TOKEN_MFA`, but returns only the access
+  token (lines 185, 211, 238); export it and return the ID token too. Decode the ID token and put `sub`,
+  `custom:mfa_method` (as `mfa_method`, "TOTP") and `auth_time` into the synthetic event's
+  `requestContext.authorizer.lambda` (line 464), so `app/lib/buildFraudHeaders.js`
+  `buildServerMultiFactorHeader` (line 64) builds `Gov-Client-Multi-Factor` from it as it does for a
+  real request; reads Secrets Manager, so `aws --profile submit-ci sts get-caller-identity` first, drop the acceptable-warning allowance so only a clean validator
   passes, then re-run 2023-24, 2025-26 and 2026-27 and record the run, the date and the commit in
   `ITSA_PHASE_2_SANDBOX.md` and the questionnaire's "Testing in the last two weeks" row. Change the
-  recognition email's MFA sentence (`_developers/hmrc/DRAFT_EMAIL_ITSA_RECOGNITION.md` line 49) to
+  recognition email's MFA sentence (`_developers/hmrc/DRAFT_EMAIL_ITSA_RECOGNITION.md` lines 49 to 51) to
   the clean result. Blocks O11. **Owner**: Claude Code. **Model**: Sonnet. **Size**: ~4 files.
 
 - [ ] **CS-10a. The per-submission price in the product catalogue.** Give activities a price the way
@@ -67,16 +71,21 @@ Shared facts for the analytics rows (B52d, B52e, B52l, B52m): the prod Athena da
   `web/public/submit.catalogue.toml` (line 438), on the shape of `[[bundles.prices]]` (line 154:
   `interval`, `amount`, `currency`, `default`), with `interval = "submission"` marking a one-off charge
   per filing. Amount £61.35 (6135 pence): `(Companies House fee + Stripe fee) × 1.2` with the fee £50 and Stripe's standard UK card rate of 1.5% + 20p charged on the price itself, so P = 1.2 × (5000 + 0.015P + 20), P = 6024 / 0.982 = 6134.4, rounded up; the formula goes in the row's comment so a fee change is one edit.
-  Parse and validate it in `app/services/productCatalog.js` (its tests in
-  `app/unit-tests/services/productCatalog.test.js`), and teach `infra/stripe/lib/stripeCatalogue.js`
-  and `infra/stripe/stripe-sync.js` to create a one-off (non-recurring) Stripe price for an activity
-  price, in test mode; the live price lands with CS-11 through `stripe-catalogue-sync`. The page and
+  Parse and validate it in `app/services/productCatalog.js` beside `getBundlePrices` (line 75; its
+  tests in `app/unit-tests/services/productCatalog.test.js`), and teach
+  `infra/stripe/lib/stripeCatalogue.js` `buildStripeProductsFromCatalog` (line 19) and
+  `infra/stripe/stripe-sync.js` to plan a one-off Stripe price for an activity price: the price
+  lookup (line 305) filters `type: "recurring"` and the create (line 320) always sets `recurring`, so
+  both branch on `interval = "submission"`; `computeEnvUpdates` (line 254) names the env var row.
+  Tests in `app/unit-tests/scripts/stripeSync.test.js`. The agent runs the sync as a plan only; the
+  `--apply` in test mode is a Stripe write the operator approves after merge, and the live price
+  lands with CS-11 through `stripe-catalogue-sync`. The page and
   the charge flow are CS-10b and CS-10c. **Source**: `PLAN_COMPANIES_HOUSE_CONFIRMATION_STATEMENT.md`
   "The fee path"; operator 2026-09-24. **Owner**: Claude Code. **Model**: Sonnet. **Size**: ~6 files.
 
-- [ ] **B62. CLS and RUM coverage for the page-experience panel.** Add Cumulative Layout Shift to submit's RUM client, and RUM to the spreadsheets site, so the page-experience panel covers the three sites the GA4 linker already joins. Submit half: the RUM telemetries in `web/public` (the `rum:*` meta tags on every page, e.g. `web/public/companies-house/fileConfirmationStatement.html` lines 17 to 20). Spreadsheets half: a RUM app monitor in its CDK and the client on its pages. **Source**: BACKLOG 62; `PLAN_ONE_STOP_DASHBOARD.md` D3. **Owner**: Claude Code. **Model**: Sonnet. **Size**: ~6 files across both repositories.
+- [ ] **B62. RUM data from the gateway site.** The page-experience panel's CLS and RUM widgets exist for all three sites (`infra/main/java/co/uk/diyaccounting/submit/stacks/ObservabilityStack.java` rows 1 to 1c, lines 597 to 730), and submit (`prod-env-rum`) and spreadsheets (`spreadsheets-web`, us-east-1) both record CLS. The gateway's app monitor `gateway-web` (account 283165661847, us-east-1, linked to prod's OAM sink) has recorded no RUM metric since its client merged (`../www.diyaccounting.co.uk` PR #33, 2026-09-23; `web/www.diyaccounting.co.uk/public/lib/analytics.js`). Diagnose first: `aws --profile gateway cloudwatch get-metric-statistics --region us-east-1 --namespace AWS/RUM --metric-name SessionCount --dimensions Name=application_name,Value=gateway-web --start-time <a week ago> --end-time <now> --period 604800 --statistics Sum`, then whether the deployed page requests `cwr.js`, the monitor's domain list against `diyaccounting.co.uk`, and the CSP's `connect-src` for `dataplane.rum.us-east-1.amazonaws.com`; fix the layer that fails in the www repository. **Source**: BACKLOG 62; `PLAN_ONE_STOP_DASHBOARD.md` D3. **Owner**: Claude Code. **Model**: Sonnet. **Size**: ~2 files (www).
 
-- [ ] **ITSA-R3. Four ITSA suites time out on the simulator.** Run 2026-09-24: each waits 452 s with no status and no spinner, then times out. `itsaAnnualSubmission` waits for "Annual Submission edit form", `itsaFinalDeclaration` for "Final Declaration calculation retrieved", `itsaLossesAndClaims` for "Losses and Claims edit form", `itsaSelfEmploymentPeriod` for "Quarterly update result". The same shape in four suites points at one cause upstream of the forms (the business picker, a shared step, or a simulator route); diagnose that first. `itsaBusinessDetails` and `itsaObligations` pass. The approvals checklist cites these suites (`_developers/hmrc/ITSA_PRODUCTION_APPROVALS_CHECKLIST.md` lines 34 to 46). Blocks O11. **Owner**: Claude Code. **Model**: Sonnet. **Size**: —.
+- [ ] **ITSA-R3. Four ITSA suites time out on the simulator.** Run 2026-09-24: each waits 452 s with no status and no spinner, then times out. `itsaAnnualSubmission` waits for "Annual Submission edit form", `itsaFinalDeclaration` for "Final Declaration calculation retrieved", `itsaLossesAndClaims` for "Losses and Claims edit form", `itsaSelfEmploymentPeriod` for "Quarterly update result". The same shape in four suites points at one cause upstream of the forms (the business picker, a shared step, or a simulator route); diagnose that first: `npm run test:itsaAnnualSubmissionBehaviour-simulator`, then its log `itsaAnnualSubmissionBehaviour.log` and the screenshots under `target/`. Runs in the same agent as ITSA-R4, after it (the business picker reads `routes/itsa-business-details.js`, which R4 changes). `itsaBusinessDetails` and `itsaObligations` pass. The approvals checklist cites these suites (`_developers/hmrc/ITSA_PRODUCTION_APPROVALS_CHECKLIST.md` lines 34 to 46). Blocks O11. **Owner**: Claude Code. **Model**: Sonnet. **Size**: —.
 
 - [ ] **B52i. The company P&L and balance sheet on the dashboard.** The company's diya-gl book,
   derived nightly and rendered above the eight objectives beside the last set filed at Companies
@@ -85,12 +94,12 @@ Shared facts for the analytics rows (B52d, B52e, B52l, B52m): the prod Athena da
   a Glue table on `Ga4DailyTables.java`'s pattern, one observation set in
   `operatorSnapshotPublish.js`, and a block above `renderSnapshot`'s objectives in
   `web/public/operator/dashboard.html`. **Source**: BACKLOG 52i; `PLAN_ONE_STOP_DASHBOARD.md` D10. **Owner**:
-  Claude Code. **Model**: Sonnet. **Size**: ~4 files.
-  DIYA's final book is in the DIYA cloud (OF2, 2026-09-24); `mcp/lib/book-tools.js` `openBook` (line 134) already reads it over `GET /api/v1/books/{bookId}/versions/latest`, so the nightly Lambda needs a service identity for that route: design that first.
+  Claude Code. **Model**: Opus for the service identity, Sonnet for the build. **Size**: ~4 files.
+  DIYA's final book is in the DIYA cloud (OF2, 2026-09-24); `mcp/lib/book-tools.js` `openBook` (line 134) already reads it over `GET /api/v1/books/{bookId}/versions/latest`, so the nightly Lambda needs a service identity for that route: design that first (Opus), then the Lambda, table and panel (Sonnet).
 
-- [ ] **SR-1. Background test commands run under bash.** A background Bash call runs under zsh, which does not split an unquoted `$VAR` into words: the O11 browser proof step passed thirteen test names as one argument and Playwright found no tests (2026-09-24, about an hour lost). Put the rule where every session and brief reads it: `CLAUDE.md`'s "Always tee to a file before filtering" section and `.claude/skills/do-next/SKILL.md`'s brief constants ("a background command that expands a list runs under `bash -c`"), beside the existing memory note for monitor scripts. **Source**: session report VWPXGf. **Owner**: Claude Code. **Model**: Haiku. **Size**: 2 files.
+- [ ] **SR-1. Background test commands run under bash.** A background Bash call runs under zsh, which does not split an unquoted `$VAR` into words: the O11 browser proof step passed thirteen test names as one argument and Playwright found no tests (2026-09-24, about an hour lost). Put the rule where every session and brief reads it: `CLAUDE.md`'s "Always tee to a file before filtering" section (line 619) and the brief list in `.claude/skills/do-next/SKILL.md` (from line 140; "a background command that expands a list runs under `bash -c`"), beside the existing memory note for monitor scripts. **Source**: session report VWPXGf. **Owner**: Claude Code. **Model**: Haiku. **Size**: 2 files.
 
-- [ ] **SR-2. Dependent rows are sequenced.** CS-7 and CS-12 were dispatched in parallel although CS-7's steps fill fields CS-12 added to `web/public/companies-house/fileConfirmationStatement.html`; a third agent (0.22M tokens) reconciled them. In `.claude/skills/refine/SKILL.md` pass 3 and `.claude/skills/do-next/SKILL.md`'s wave sizing: two rows that touch the same page or module run in sequence in one agent, or the later brief carries the earlier row's changes. **Source**: session report VWPXGf. **Owner**: Claude Code. **Model**: Haiku. **Size**: 2 files.
+- [ ] **SR-2. Dependent rows are sequenced.** CS-7 and CS-12 were dispatched in parallel although CS-7's steps fill fields CS-12 added to `web/public/companies-house/fileConfirmationStatement.html`; a third agent (0.22M tokens) reconciled them. In `.claude/skills/refine/SKILL.md` "Pass 3 — context" (line 101) and `.claude/skills/do-next/SKILL.md`'s wave sizing (lines 98 to 126): two rows that touch the same page or module run in sequence in one agent, or the later brief carries the earlier row's changes. **Source**: session report VWPXGf. **Owner**: Claude Code. **Model**: Haiku. **Size**: 2 files.
 
 - [ ] **SR-3. The XML Gateway poll saves the raw and masked exchange.** The 000004 reply to the XML team took three drafts and two extra gateway calls, because the poll (scratch scripts under the session scratchpad) saved only masked XML bodies: no HTTP headers, no raw copy, and the masking hid the empty `Value` the gateway echoes. A committed `scripts/companies-house-xmlgw-poll.js` over `app/services/companiesHouseXmlGateway.js`'s `buildStatusRequest` and `resolvePresenterCredentials` that writes, per call, the request and response with the HTTP request line, headers and body, raw and masked (masking only non-empty credential fields), to a directory outside the repository; a unit test over the masking. **Source**: session report VWPXGf. **Owner**: Claude Code. **Model**: Sonnet. **Size**: ~3 files.
 
@@ -98,7 +107,9 @@ Shared facts for the analytics rows (B52d, B52e, B52l, B52m): the prod Athena da
 
 - [ ] **SR-4. A lint rule for unescaped HTML on `web/public`.** CodeQL alert 74 (DOM text reinterpreted as HTML) cost PR #351 a 169 job-minute redeploy and about 55 minutes, and the same page held 15 more unescaped interpolations. `eslint.config.js` lints `web/public/**/*.js` (line 82) but not the inline scripts in `web/public/**/*.html`, where the finding was. Add `eslint-plugin-html` and `eslint-plugin-no-unsanitized` for `web/public`, run it over the existing pages, and record the count; if it finds more than the lint job's ratchet allows (`.eslint-baseline.json`), raise the baseline to the measured count so the gate blocks new findings only. **Source**: session report VWPXGf. **Owner**: Claude Code. **Model**: Sonnet. **Size**: ~4 files.
 
-- [ ] **SR-6. Code comments stop citing plan documents.** `PLAN_PRICE_UPDATE.md` moved to `../developers/submit/archive/` (2026-09-24), and 26 code comments and test names still cite it as `PLAN_PRICE_UPDATE.md (d)` (`git grep -n PLAN_PRICE_UPDATE -- app mcp infra`), against the rule that comments and test names never reference a plan. Rewrite each to say what the code does, with no plan reference, in one PR; no behaviour change. **Owner**: Claude Code. **Model**: Haiku. **Size**: ~20 files.
+- [ ] **SR-6a. Code comments stop citing plan documents: app, mcp, web, behaviour-tests.** 80 lines in 54 files cite a `PLAN_*.md` (`git grep -n -E 'PLAN_[A-Z0-9_]+\.md' -- app mcp infra web/public scripts behaviour-tests .github ':!*.md'`), 35 of them `PLAN_PRICE_UPDATE.md (d)`, which moved to `../developers/submit/archive/`; the rule is that comments and test names never reference a plan. This half: the 26 files under `app/`, `mcp/`, `web/public/` and `behaviour-tests/`, including three `describe` names (`companiesHouseAccountsPost.test.js` line 260, `hmrcVatObligationGet.test.js` line 285, `hmrcVatReturnPost.test.js` line 440) and two MCP tool descriptions in `mcp/lib/server.js` (lines 356 and 368). Rewrite each to say what the code does; no behaviour change; `npm run linting` on the files touched. **Owner**: Claude Code. **Model**: Haiku. **Size**: 26 files.
+
+- [ ] **SR-6b. Code comments stop citing plan documents: infra, scripts, workflows.** SR-6a's other half: the 28 files under `infra/`, `scripts/` and `.github/`, including a SQL view header (`infra/main/resources/analytics/views/v_cost_vs_target_monthly.sql` line 5) and an operator-facing `echo` in `scripts/aws-accounts/backup-prod-for-migration.sh` (line 309). Java files: `./mvnw spotless:apply` reformats files the row does not own, so format only the files touched; `prettier --check` on the workflow. Lands on SR-6a's branch or after it. **Owner**: Claude Code. **Model**: Haiku. **Size**: 28 files.
 
 ## Machine-ask
 
@@ -117,12 +128,7 @@ Shared facts for the analytics rows (B52d, B52e, B52l, B52m): the prod Athena da
   credentials store and say so here; CS-9 then needs only CS-H2's answer. **Owner**: Operator. **Model**: none.
   **Size**: 0 files.
 
-- [ ] **O11. The ITSA send day.** Operator, 2026-09-23: the day after PR #346 merges, which is 2026-09-24 (#346
-  merged 2026-09-23 23:25 UTC; checklist rows 8 and 13 are evidenced on `main`; the 2026-09-21
-  sandbox run is inside HMRC's 14 days). On that day send `_developers/hmrc/DRAFT_EMAIL_ITSA_RECOGNITION.md` to
-  `SDSTeam@hmrc.gov.uk`, then `_developers/hmrc/DRAFT_EMAIL_ITSA_PRODUCTION_CREDENTIALS.md` when
-  SDST answers. Blocked on ITSA-R1, ITSA-R2, ITSA-R3 and ITSA-R4 (the proof suites passing and in CI, and a validator with no warning). **Source**: BACKLOG 11; `PLAN_ITSA_PHASE_2.md` T10. **Owner**: Operator. **Model**:
-  none. **Size**: 0 files.
+- [ ] **O11. The ITSA send day.** The day after ITSA-R1 to ITSA-R4 land (the proof suites passing and in CI, and a validator with no warning). Send `_developers/hmrc/DRAFT_EMAIL_ITSA_RECOGNITION.md` to `SDSTeam@hmrc.gov.uk`, then `_developers/hmrc/DRAFT_EMAIL_ITSA_PRODUCTION_CREDENTIALS.md` when SDST answers. The sandbox year must be inside HMRC's 14 days on the send day: the 2026-09-21 run lapses after 2026-10-05, and ITSA-R2's re-run replaces it. Blocked on ITSA-R1, ITSA-R2, ITSA-R3 and ITSA-R4. **Source**: BACKLOG 11; `PLAN_ITSA_PHASE_2.md` T10. **Owner**: Operator. **Model**: none. **Size**: 0 files.
 
 - [ ] **CS-10b. Charging for a single submission.** A general capability, not confirmation-statement
   specific: a route that opens a Stripe Checkout Session in `payment` mode for an activity's
@@ -157,7 +163,7 @@ Shared facts for the analytics rows (B52d, B52e, B52l, B52m): the prod Athena da
 
 - [ ] **CS-H4. Software authorisation for the confirmation statement.** The XML team tests CS-9's submissions and issues the package reference for the form. Blocked on CS-9. **Source**: `PLAN_COMPANIES_HOUSE_CONFIRMATION_STATEMENT.md` (its Tasks table carries the files). **Owner**: Operator. **Model**: none. **Size**: 0 files.
 
-- [ ] **CS-H6. Go for the prod confirmation statement.** Give the go for a second, fee-free statement for 06846849 through Submit in the 2026-27 payment period (the 2026-09-21 statement went by WebFiling), knowing it moves the next review date. Blocked on CS-11 and CS-H4 (the directors' codes are ready). **Source**: `PLAN_COMPANIES_HOUSE_CONFIRMATION_STATEMENT.md` (its Tasks table carries the files). **Owner**: Operator. **Model**: none. **Size**: 0 files.
+- [ ] **CS-H6. Go for the prod confirmation statement.** Give the go for a second, fee-free statement for 06846849 through Submit in the 2026-27 payment period (the statement for the 2026-09-21 review date went by WebFiling on 2026-09-24, submission 119-158484, accepted), knowing it moves the next review date. Blocked on CS-11 and CS-H4 (the directors' codes are ready). **Source**: `PLAN_COMPANIES_HOUSE_CONFIRMATION_STATEMENT.md` (its Tasks table carries the files). **Owner**: Operator. **Model**: none. **Size**: 0 files.
 
 - [ ] **B30at1. The sweep's claim check, proven.** Needs a claimed set that is not last-known-good
   (the sweep keeps the last-known-good set before it reads any claim): the next time two branches
