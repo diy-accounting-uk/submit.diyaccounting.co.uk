@@ -1,0 +1,33 @@
+{
+  "companyNumber": "12345678",
+  "companyName": "Brickwork Pro Ltd",
+  "companyCategory": "Private Limited Company",
+  "jurisdiction": "England/Wales",
+  "tradingOnMarket": false,
+  "dtr5Applies": false,
+  "madeUpDate": "2026-03-01",
+  "nextDueDate": "2027-03-15",
+  "registeredOfficeAddress": {
+    "premise": "1",
+    "street": "Brick Lane",
+    "postTown": "London",
+    "postcode": "E1 6QL"
+  },
+  "registeredEmailAddress": "director@brickworkpro.example",
+  "sicCodes": ["43390"],
+  "officers": [
+    {
+      "role": "director",
+      "type": "person",
+      "forename": "Jo",
+      "surname": "Brick",
+      "dob": "1980-04",
+      "nationality": "British",
+      "countryOfResidence": "United Kingdom",
+      "appointmentDate": "2020-01-01",
+      "resignationDate": null
+    }
+  ],
+  "paymentPeriods": [{ "startDate": "2026-03-16", "endDate": "2027-03-15", "periodPaid": false }],
+  "paymentPeriodPaid": false
+}

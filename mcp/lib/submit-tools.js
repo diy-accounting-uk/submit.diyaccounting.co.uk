@@ -287,3 +287,102 @@ export async function pollAccountsSubmission(_session, params = {}) {
   const submissionNumber = requireField("poll_accounts_submission", params, "submissionNumber");
   return callSubmitApi(`/api/v1/companies-house/accounts/${encodeURIComponent(submissionNumber)}`);
 }
+
+/**
+ * get_confirmation_statement_data: the register data a confirmation statement form is built
+ * from — MadeUpDate, NextDueDate, SIC codes, RegisteredEmailAddress, officers, PSCs,
+ * StatementOfCapital, Shareholdings, TradingOnMarket, DTR5Applies, the PSC exemption flags, and
+ * paymentPeriods/paymentPeriodPaid — over the deployed API. Confirmation statement routes never
+ * resolve a company from a practice client's row, so this tool takes companyNumber only, not
+ * clientId. Takes the company authentication code on this one call only; it is not stored.
+ * @param {Object} _session
+ * @param {{companyNumber: string, companyAuthCode: string, madeUpDate: string, companyType?: string}} params
+ */
+export async function getConfirmationStatementData(_session, params = {}) {
+  const companyNumber = requireField("get_confirmation_statement_data", params, "companyNumber");
+  const companyAuthCode = requireField("get_confirmation_statement_data", params, "companyAuthCode");
+  const madeUpDate = requireField("get_confirmation_statement_data", params, "madeUpDate");
+  const { companyType } = params;
+
+  return callSubmitApi(`/api/v1/companies-house/company/${encodeURIComponent(companyNumber)}/filing-data`, {
+    method: "POST",
+    body: { companyAuthCode, madeUpDate, ...(companyType !== undefined ? { companyType } : {}) },
+  });
+}
+
+/**
+ * The body both companies-house/confirmation-statement routes take, common to the preview and the
+ * submit calls; the submit call adds companyAuthCode on top. Confirmation statement routes never
+ * resolve a company from a practice client's row, unlike the accounts routes, so companyNumber is
+ * always required.
+ */
+function confirmationStatementFilingBody(toolName, params) {
+  const companyNumber = requireField(toolName, params, "companyNumber");
+  const companyName = requireField(toolName, params, "companyName");
+  const dateSigned = requireField(toolName, params, "dateSigned");
+  const reviewDate = requireField(toolName, params, "reviewDate");
+  const directors = requireField(toolName, params, "directors");
+  if (!Array.isArray(directors) || directors.length === 0) {
+    throw new Error(`${toolName} requires at least one director`);
+  }
+  if (params.lawfulPurposeStatementAccepted !== true) {
+    throw new Error(`${toolName} requires lawfulPurposeStatementAccepted to be accepted`);
+  }
+  const { sicCodes, statementOfCapital, shareholdings, registeredEmailAddress } = params;
+  return {
+    companyNumber,
+    companyName,
+    dateSigned,
+    reviewDate,
+    directors,
+    lawfulPurposeStatementAccepted: true,
+    ...(sicCodes !== undefined ? { sicCodes } : {}),
+    ...(statementOfCapital !== undefined ? { statementOfCapital } : {}),
+    ...(shareholdings !== undefined ? { shareholdings } : {}),
+    ...(registeredEmailAddress !== undefined ? { registeredEmailAddress } : {}),
+  };
+}
+
+/**
+ * preview_confirmation_statement: the rendered ConfirmationAndVerificationStatement body for
+ * confirmed answers, without reaching the Companies House XML Gateway. Every director's personal
+ * code is masked in the rendered body before it leaves the route.
+ * @param {Object} _session
+ * @param {{companyNumber: string, companyName: string, dateSigned: string, reviewDate: string,
+ *   sicCodes?: string[], statementOfCapital?: Object, shareholdings?: Object[],
+ *   registeredEmailAddress?: string, lawfulPurposeStatementAccepted: true,
+ *   directors: {forename: string, surname: string, dob: string, personalCode: string}[]}} params
+ */
+export async function previewConfirmationStatement(_session, params = {}) {
+  const body = confirmationStatementFilingBody("preview_confirmation_statement", params);
+  return callSubmitApi("/api/v1/companies-house/confirmation-statement/preview", { method: "POST", body });
+}
+
+/**
+ * submit_confirmation_statement: files confirmed answers with the company authentication code
+ * (6 to 8 characters — Companies House's own format, checked by the route, not by this tool) and
+ * every director's personal code (11 characters each, carried on the directors array). Returns
+ * {submissionNumber, gatewayTimestamp, pollInterval}; poll_confirmation_statement takes the
+ * submissionNumber to reach the filing's outcome. This route answers synchronously (200/201),
+ * unlike list_vat_obligations and submit_vat_return.
+ * @param {Object} _session
+ * @param {Object} params - as previewConfirmationStatement, plus companyAuthCode
+ */
+export async function submitConfirmationStatement(_session, params = {}) {
+  const companyAuthCode = requireField("submit_confirmation_statement", params, "companyAuthCode");
+  const body = confirmationStatementFilingBody("submit_confirmation_statement", params);
+  return callSubmitApi("/api/v1/companies-house/confirmation-statement", { method: "POST", body: { ...body, companyAuthCode } });
+}
+
+/**
+ * poll_confirmation_statement: the filing's outcome — {submissionNumber, statusCode,
+ * companyNumber, rejections}, where statusCode is "PENDING" while Companies House has not
+ * answered yet, "ACCEPT" once filed (with a receiptId added), or "REJECT" with rejections
+ * carrying the reasons.
+ * @param {Object} _session
+ * @param {{submissionNumber: string}} params
+ */
+export async function pollConfirmationStatement(_session, params = {}) {
+  const submissionNumber = requireField("poll_confirmation_statement", params, "submissionNumber");
+  return callSubmitApi(`/api/v1/companies-house/confirmation-statement/${encodeURIComponent(submissionNumber)}`);
+}

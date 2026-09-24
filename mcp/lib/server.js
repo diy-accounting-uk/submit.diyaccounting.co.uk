@@ -27,6 +27,10 @@ import {
   previewMicroEntityAccounts,
   submitMicroEntityAccounts,
   pollAccountsSubmission,
+  getConfirmationStatementData,
+  previewConfirmationStatement,
+  submitConfirmationStatement,
+  pollConfirmationStatement,
 } from "./submit-tools.js";
 
 const PACKAGE_JSON = resolve(dirname(fileURLToPath(import.meta.url)), "..", "package.json");
@@ -66,6 +70,66 @@ const accountsFilingInputSchema = {
       microEntityProvisions: z.boolean(),
     })
     .describe("Every micro-entity exemption statement, confirmed true by the user before filing"),
+};
+
+const confirmationStatementDirectorSchema = z.object({
+  title: z.string().optional(),
+  forename: z.string(),
+  otherForenames: z.string().optional(),
+  surname: z.string(),
+  dob: z.string().describe("YYYY-MM-DD"),
+  personalCode: z.string().describe("The director's 11-character Companies House personal code"),
+  nameMismatchReason: z.string().optional().describe("Required when the director's register name differs from Companies House's own"),
+});
+
+const confirmationStatementFilingInputSchema = {
+  companyNumber: z.string().describe("The 8-character Companies House company number"),
+  companyName: z.string().describe("The registered company name"),
+  dateSigned: z.string().describe("The date the statement is signed, YYYY-MM-DD"),
+  reviewDate: z.string().describe("The confirmation statement's review date, YYYY-MM-DD, not in the future"),
+  sicCodes: z.array(z.string()).max(4).optional().describe("Up to 4 SIC codes; sent only when they have changed"),
+  statementOfCapital: z
+    .object({
+      totalAmountUnpaid: z.number(),
+      totalNumberOfIssuedShares: z.number(),
+      shareCurrency: z.string(),
+      totalAggregateNominalValue: z.number(),
+      shares: z.array(
+        z.object({
+          shareClass: z.string(),
+          prescribedParticulars: z.string(),
+          numShares: z.number(),
+          aggregateNominalValue: z.number(),
+        }),
+      ),
+    })
+    .optional()
+    .describe("Sent only when the statement of capital has changed"),
+  shareholdings: z
+    .array(
+      z.object({
+        shareClass: z.string(),
+        numberHeld: z.number(),
+        transfers: z.array(z.object({ dateOfTransfer: z.string(), numberSharesTransferred: z.number() })).optional(),
+        shareholders: z
+          .array(
+            z.object({
+              amalgamatedName: z.string().optional(),
+              forename: z.string().optional(),
+              surname: z.string().optional(),
+              address: z.record(z.string(), z.string()).optional(),
+            }),
+          )
+          .optional(),
+      }),
+    )
+    .optional()
+    .describe("Sent only when Companies House requires it (a new shareholding, or on request)"),
+  registeredEmailAddress: z.string().optional().describe("Sent only when it has changed"),
+  lawfulPurposeStatementAccepted: z
+    .literal(true)
+    .describe("The user's confirmation that the company's intended future activities are lawful"),
+  directors: z.array(confirmationStatementDirectorSchema).describe("One verification statement row per current director"),
 };
 
 function asToolResult(value) {
@@ -246,6 +310,46 @@ export const TOOLS = {
       submissionNumber: z.string().describe("The 6-character submission number"),
     },
     handler: pollAccountsSubmission,
+  },
+  get_confirmation_statement_data: {
+    description:
+      "The register data a confirmation statement form is built from -- MadeUpDate, NextDueDate, SIC codes, " +
+      "RegisteredEmailAddress, officers, PSCs, StatementOfCapital, Shareholdings, TradingOnMarket, DTR5Applies, the PSC " +
+      "exemption flags, and whether the payment period is paid -- over the deployed API. Takes the company " +
+      "authentication code on this one call only; it is not stored.",
+    inputSchema: {
+      companyNumber: z.string().describe("The 8-character Companies House company number"),
+      companyAuthCode: z.string().describe("The company's Companies House authentication code"),
+      madeUpDate: z.string().describe("The confirmation statement's made-up date, YYYY-MM-DD"),
+      companyType: z.string().optional().describe("The company type, when the gateway needs it to resolve the request"),
+    },
+    handler: getConfirmationStatementData,
+  },
+  preview_confirmation_statement: {
+    description:
+      "The rendered ConfirmationAndVerificationStatement body for confirmed answers, over the deployed API. Never " +
+      "reaches the Companies House XML Gateway; every director's personal code is masked in the rendered body before " +
+      "it leaves the route.",
+    inputSchema: confirmationStatementFilingInputSchema,
+    handler: previewConfirmationStatement,
+  },
+  submit_confirmation_statement: {
+    description:
+      "Files a confirmed confirmation statement through the Companies House XML Gateway, over the deployed API; " +
+      "returns the submission number. Takes the company authentication code and every director's personal code on " +
+      "this one call only; neither is stored.",
+    inputSchema: {
+      ...confirmationStatementFilingInputSchema,
+      companyAuthCode: z.string().describe("The company's Companies House authentication code"),
+    },
+    handler: submitConfirmationStatement,
+  },
+  poll_confirmation_statement: {
+    description: "Accepted, rejected with reasons, or pending, for a submitted confirmation statement filing, over the deployed API.",
+    inputSchema: {
+      submissionNumber: z.string().describe("The 6-character submission number"),
+    },
+    handler: pollConfirmationStatement,
   },
   move_book_to_client: {
     description:
