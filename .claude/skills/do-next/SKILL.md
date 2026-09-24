@@ -140,6 +140,8 @@ next item would have to share a file with one already dispatched.
    when the regions are genuinely disjoint and both briefs say so. Where a plan already fixes an
    order — the DIYA-GL naming chain, the ITSA shared spine — that order is the specification.
 
+   Rows that touch the same page or module run in sequence in one agent or the later brief carries the earlier row's changes, so dependencies do not require a reconciliation pass.
+
    A brief this size needs one extra instruction: if the total is more than the agent can finish,
    commit what is done and report exactly where it stopped. A clean stopping point mid-sequence is
    recoverable; a rushed tail is not.
@@ -180,6 +182,7 @@ A fresh agent carries none of your context, so the brief stands alone. Every bri
   change twice and the inventory before a merge has to catch it.
 - **A wait is a `sleep` loop inside one Bash call with a timeout**, never a Monitor or a backgrounded
   wait, because an agent that hands its wait to a Monitor ends its turn and never resumes.
+- **A background command that expands a list runs under `bash -c`**, because the shell where a background command runs is not bash and does not split unquoted variables into words.
 - **What it owns and what it must not touch**, with the reason. Where another agent in the same
   wave is nearby, name it.
 - **For a brief that touches a workflow, three facts about called workflows and one instruction.**
