@@ -23,9 +23,16 @@ import { writeFinancePackage } from "../lib/finance/package-writer.js";
 const MODULE_DIR = dirname(fileURLToPath(import.meta.url));
 const BOOK_PATH = resolve(MODULE_DIR, "fixtures", "brickwork-pro-ltd-vat");
 
+// A workspace checkout reads the templates from the sibling spreadsheets repository; CI has no
+// workspace, so templatePackagePath stays undefined and the tool fetches them from the live site.
 let templatePackagePath;
 beforeAll(() => {
-  const workspaceRoot = findWorkspaceRoot(MODULE_DIR, "diy-accounting-limited", existsSync);
+  let workspaceRoot;
+  try {
+    workspaceRoot = findWorkspaceRoot(MODULE_DIR, "diy-accounting-limited", existsSync);
+  } catch {
+    return;
+  }
   templatePackagePath = resolve(workspaceRoot, "spreadsheets.diyaccounting.co.uk", "app");
 });
 

@@ -147,7 +147,7 @@ const PERSONAL_DATA_PATTERNS = [
 
 function isExemptFromPersonalDataScan(file) {
   if (!file) return false;
-  if (file.includes("/fixtures/")) return true;
+  if (file.startsWith("fixtures/") || file.includes("/fixtures/")) return true;
   // npm rewrites every package-lock.json wholesale on each dependency update, and its content
   // is third-party package metadata (a maintainer's own published contact address, say), never
   // something a contributor authors here.
