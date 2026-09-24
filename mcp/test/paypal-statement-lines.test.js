@@ -181,7 +181,7 @@ describe("settlesElsewhere", () => {
 
 describe("paypalLinesFromStatementText", () => {
   it("posts a completed bill payment's gross to purchases", () => {
-    const lines = paypalLinesFromStatementText(STATEMENT, ACCOUNTS);
+    const { lines } = paypalLinesFromStatementText(STATEMENT, ACCOUNTS);
     const googleCloud = lines.find((line) => line.documentReference === "TESTID0001AAAAAAAA");
     expect(googleCloud).toMatchObject({
       sourceJournalID: "purchases",
@@ -195,7 +195,7 @@ describe("paypalLinesFromStatementText", () => {
   });
 
   it("posts a completed receipt's gross to sales and its fee to purchases, never netted", () => {
-    const lines = paypalLinesFromStatementText(STATEMENT, ACCOUNTS);
+    const { lines } = paypalLinesFromStatementText(STATEMENT, ACCOUNTS);
     const gross = lines.find((line) => line.documentReference === "TESTID0005EEEEEEEE" && line.sourceJournalID === "sales");
     const fee = lines.find((line) => line.entryNumber === "PAYPAL-TESTID0005EEEEEEEE-FEE");
     expect(gross).toMatchObject({ sourceJournalID: "sales", documentType: "receipt", accountMainID: SALES_ACCOUNT, amount: 10.0 });
@@ -203,28 +203,28 @@ describe("paypalLinesFromStatementText", () => {
   });
 
   it("excludes a hold and its reversal", () => {
-    const lines = paypalLinesFromStatementText(STATEMENT, ACCOUNTS);
+    const { lines } = paypalLinesFromStatementText(STATEMENT, ACCOUNTS);
     expect(lines.some((line) => line.documentReference === "TESTID0002BBBBBBBB")).toBe(false);
     expect(lines.some((line) => line.documentReference === "TESTID0003CCCCCCCC")).toBe(false);
   });
 
   it("excludes a pending authorisation", () => {
-    const lines = paypalLinesFromStatementText(STATEMENT, ACCOUNTS);
+    const { lines } = paypalLinesFromStatementText(STATEMENT, ACCOUNTS);
     expect(lines.some((line) => line.documentReference === "TESTID0004DDDDDDDD")).toBe(false);
   });
 
   it("excludes a withdrawal to the linked bank account", () => {
-    const lines = paypalLinesFromStatementText(STATEMENT, ACCOUNTS);
+    const { lines } = paypalLinesFromStatementText(STATEMENT, ACCOUNTS);
     expect(lines.some((line) => line.documentReference === "TESTID0006FFFFFFFF")).toBe(false);
   });
 
   it("emits exactly the lines a completed bill payment, a completed receipt and its fee carry", () => {
-    const lines = paypalLinesFromStatementText(STATEMENT, ACCOUNTS);
+    const { lines } = paypalLinesFromStatementText(STATEMENT, ACCOUNTS);
     expect(lines).toHaveLength(3);
   });
 
   it("emits lines that validate against the diya-gl lines schema", () => {
-    const lines = paypalLinesFromStatementText(STATEMENT, ACCOUNTS);
+    const { lines } = paypalLinesFromStatementText(STATEMENT, ACCOUNTS);
     const book = { accounts: { sales: { [SALES_ACCOUNT]: {} }, purchases: { [PURCHASES_ACCOUNT]: {}, [FEE_ACCOUNT]: {} } } };
     const result = validateLines(lines, book);
     expect(result.errors).toEqual([]);
@@ -254,7 +254,7 @@ describe("paypalLinesFromStatementText", () => {
       { date: "02/06/2026", description: "General Hold", status: "Completed", gross: -20.0, id: "OTH0001" },
       { date: "02/06/2026", description: "Other: AWS EMEA", status: "Completed", gross: 20.0, id: "OTH0002" },
     ]);
-    const lines = paypalLinesFromStatementText(text, ACCOUNTS);
+    const { lines } = paypalLinesFromStatementText(text, ACCOUNTS);
     expect(lines.some((line) => line.documentReference === "OTH0002")).toBe(true);
   });
 
@@ -265,7 +265,7 @@ describe("paypalLinesFromStatementText", () => {
     ]);
     const activity = activitySummaryText(["GBP"], [["Releases", [20.0]]]);
 
-    const lines = paypalLinesFromStatementText(text, { ...ACCOUNTS, statementText: activity });
+    const { lines } = paypalLinesFromStatementText(text, { ...ACCOUNTS, statementText: activity });
     expect(lines.some((line) => line.documentReference === "OTH0004")).toBe(false);
   });
 
@@ -279,8 +279,83 @@ describe("paypalLinesFromStatementText", () => {
     ]);
     const activity = activitySummaryText(["GBP"], [["Releases", [0.0]]]);
 
-    const lines = paypalLinesFromStatementText(text, { ...ACCOUNTS, statementText: activity });
+    const { lines } = paypalLinesFromStatementText(text, { ...ACCOUNTS, statementText: activity });
     expect(lines.some((line) => line.documentReference === "OTH0006")).toBe(true);
+  });
+});
+
+describe("paypalLinesFromStatementText with labels", () => {
+  const LABELS = {
+    rule: [
+      { pattern: "WIDGET DONATION", sourceJournalID: "sales", accountMainID: "4002", taxCode: "OS" },
+      { pattern: "WIDGET SUPPLIES", sourceJournalID: "purchases", accountMainID: "5302", taxCode: "OS" },
+    ],
+  };
+
+  it("sets a matched receipt's account, sourceJournalID and taxCode from the rule, in place of salesAccountMainID", () => {
+    const text = statementText([
+      { date: "02/06/2026", description: "Donation Payment: Widget Donation Drive", status: "Completed", gross: 25.0, id: "LBL0001" },
+    ]);
+
+    const { lines } = paypalLinesFromStatementText(text, { ...ACCOUNTS, labels: LABELS });
+
+    const line = lines.find((entry) => entry.documentReference === "LBL0001");
+    expect(line).toMatchObject({ sourceJournalID: "sales", accountMainID: "4002", taxCode: "OS" });
+  });
+
+  it("sets a matched bill's account, sourceJournalID and taxCode from the rule, in place of purchasesAccountMainID", () => {
+    const text = statementText([
+      { date: "02/06/2026", description: "Payment: Widget Supplies Co", status: "Completed", gross: -12.5, id: "LBL0002" },
+    ]);
+
+    const { lines } = paypalLinesFromStatementText(text, { ...ACCOUNTS, labels: LABELS });
+
+    const line = lines.find((entry) => entry.documentReference === "LBL0002");
+    expect(line).toMatchObject({ sourceJournalID: "purchases", accountMainID: "5302", taxCode: "OS" });
+  });
+
+  it("leaves an unmatched record posting to the default sales account, and lists it in unlabelled", () => {
+    const text = statementText([
+      { date: "02/06/2026", description: "Donation Payment: A N Other", status: "Completed", gross: 8.0, id: "LBL0003" },
+    ]);
+
+    const { lines, unlabelled } = paypalLinesFromStatementText(text, { ...ACCOUNTS, labels: LABELS });
+
+    const line = lines.find((entry) => entry.documentReference === "LBL0003");
+    expect(line).toMatchObject({ sourceJournalID: "sales", accountMainID: SALES_ACCOUNT });
+    expect(unlabelled).toHaveLength(1);
+    expect(unlabelled[0].id).toBe("LBL0003");
+  });
+
+  it("never redirects the fee line, whatever the gross line's own rule", () => {
+    const text = statementText([
+      {
+        date: "02/06/2026",
+        description: "Donation Payment: Widget Donation Drive",
+        status: "Completed",
+        gross: 25.0,
+        fee: -1.2,
+        id: "LBL0004",
+      },
+    ]);
+
+    const { lines } = paypalLinesFromStatementText(text, { ...ACCOUNTS, labels: LABELS });
+
+    const fee = lines.find((entry) => entry.entryNumber === "PAYPAL-LBL0004-FEE");
+    expect(fee).toMatchObject({ sourceJournalID: "purchases", accountMainID: FEE_ACCOUNT });
+  });
+
+  it("behaves exactly as today when no labels are given", () => {
+    const text = statementText([
+      { date: "02/06/2026", description: "Donation Payment: Widget Donation Drive", status: "Completed", gross: 25.0, id: "LBL0005" },
+    ]);
+
+    const { lines, unlabelled } = paypalLinesFromStatementText(text, ACCOUNTS);
+
+    const line = lines.find((entry) => entry.documentReference === "LBL0005");
+    expect(line).toMatchObject({ sourceJournalID: "sales", accountMainID: SALES_ACCOUNT });
+    expect(line.taxCode).toBeUndefined();
+    expect(unlabelled).toEqual([]);
   });
 });
 
@@ -354,7 +429,7 @@ describe("reconcilePaypalMonth", () => {
 describe("paypalLinesFromStatementPdf", () => {
   it("renders the PDF with pdftotext and parses the result", async () => {
     const runPdftotext = vi.fn().mockResolvedValue(STATEMENT);
-    const lines = await paypalLinesFromStatementPdf("2026-06 PayPal - transactions.PDF", ACCOUNTS, { runPdftotext });
+    const { lines } = await paypalLinesFromStatementPdf("2026-06 PayPal - transactions.PDF", ACCOUNTS, { runPdftotext });
 
     expect(runPdftotext).toHaveBeenCalledWith("2026-06 PayPal - transactions.PDF");
     expect(lines).toHaveLength(3);
@@ -368,7 +443,7 @@ describe("paypalLinesFromStatementPdf", () => {
     const activity = activitySummaryText(["GBP"], [["Releases", [20.0]]]);
     const runPdftotext = vi.fn().mockImplementation(async (path) => (path === "statement.pdf" ? activity : transactionsText));
 
-    const lines = await paypalLinesFromStatementPdf(
+    const { lines } = await paypalLinesFromStatementPdf(
       "transactions.pdf",
       { ...ACCOUNTS, statementPdfPath: "statement.pdf" },
       { runPdftotext },

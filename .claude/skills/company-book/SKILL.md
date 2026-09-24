@@ -40,10 +40,17 @@ The parsers live in `mcp/lib/finance/` (run `npm ci` in `mcp/` first):
 | Source | Module | Call |
 |---|---|---|
 | Opening balances and chart of accounts | `book-from-workbook.js` | `bookFromWorkbookSet` over the prior year's workbook set; `openingJournalLines(book)` and `openingBankBalanceLines(book)` to turn its `openingBalances` into the lines the engine reads |
-| NatWest | `bank-lines.js` | `bankLinesFromCsv(text, { accountMainID })`, `closingBalance(text)` |
-| Stripe | `stripe-lines.js` | `stripeLinesFromTransactions`, `stripePayoutLines`, `reconcileStripeMonth` |
-| PayPal | `paypal-statement-lines.js` | `paypalLinesFromStatementPdf(transactionsPdf, { ...accounts, statementPdfPath })`, `reconcilePaypalMonth({ transactionsText, statementText })`; needs `pdftotext` (poppler) |
+| NatWest | `bank-lines.js` | `bankLinesFromCsv(text, { accountMainID, labels })` returns `{ lines, unlabelled }`; `closingBalance(text)` |
+| Stripe | `stripe-lines.js` | `stripeLinesFromTransactions(transactions, { ..., labels })` returns `{ lines, unlabelled }`; `stripePayoutLines`, `reconcileStripeMonth` |
+| PayPal | `paypal-statement-lines.js` | `paypalLinesFromStatementPdf(transactionsPdf, { ...accounts, statementPdfPath, labels })` returns `{ lines, unlabelled }`; `reconcilePaypalMonth({ transactionsText, statementText })`; needs `pdftotext` (poppler) |
 | Supplier invoices | `mail-invoices.js` | `invoiceLinesForPeriod({ from, to, suppliers })`; finds the corpus CLI from a main checkout or a worktree; a "Payment schedule.pdf" attachment gives one line per instalment |
+
+The label map at `staging/labels/diya-labels.toml` carries the recurring payee/description rules
+these three parsers key their coding on, refreshed from the prior year's workbooks. Parse it with
+a TOML library and pass the parsed object as `labels`; a rule matching a line's description sets
+its account, journal and VAT code, and a line no rule matches falls back to the parser's own
+default coding and comes back in `unlabelled` for review. The parsers hold no payee data
+themselves -- only the caller reads the map.
 
 Validate with `validateBook` and `validateLines` from `@diy-accounting-uk/diya-gl`
 (`dist/app/lib/diya-gl-schema.js`).

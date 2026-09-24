@@ -63,7 +63,7 @@ const BANK_ACCOUNT = "1200";
 
 describe("stripeLinesFromTransactions", () => {
   it("emits a sales receipt for the gross amount and a purchases receipt for the fee, from one charge", () => {
-    const lines = stripeLinesFromTransactions([CHARGE], { salesAccountMainID: SALES_ACCOUNT, feeAccountMainID: FEE_ACCOUNT });
+    const { lines } = stripeLinesFromTransactions([CHARGE], { salesAccountMainID: SALES_ACCOUNT, feeAccountMainID: FEE_ACCOUNT });
 
     expect(lines).toHaveLength(2);
     expect(lines[0]).toMatchObject({
@@ -87,7 +87,7 @@ describe("stripeLinesFromTransactions", () => {
   });
 
   it("emits a sales credit note for a refund", () => {
-    const lines = stripeLinesFromTransactions([REFUND], { salesAccountMainID: SALES_ACCOUNT, feeAccountMainID: FEE_ACCOUNT });
+    const { lines } = stripeLinesFromTransactions([REFUND], { salesAccountMainID: SALES_ACCOUNT, feeAccountMainID: FEE_ACCOUNT });
 
     expect(lines).toHaveLength(1);
     expect(lines[0]).toMatchObject({
@@ -102,7 +102,7 @@ describe("stripeLinesFromTransactions", () => {
   });
 
   it("skips a payout's own balance transaction, leaving it to stripePayoutLines", () => {
-    const lines = stripeLinesFromTransactions(MONTH_TRANSACTIONS, { salesAccountMainID: SALES_ACCOUNT, feeAccountMainID: FEE_ACCOUNT });
+    const { lines } = stripeLinesFromTransactions(MONTH_TRANSACTIONS, { salesAccountMainID: SALES_ACCOUNT, feeAccountMainID: FEE_ACCOUNT });
 
     expect(lines).toHaveLength(3);
     expect(lines.some((line) => line.documentReference === "po_test_1")).toBe(false);
@@ -124,11 +124,78 @@ describe("stripeLinesFromTransactions", () => {
   });
 
   it("emits lines that validate against the diya-gl lines schema", () => {
-    const lines = stripeLinesFromTransactions(MONTH_TRANSACTIONS, { salesAccountMainID: SALES_ACCOUNT, feeAccountMainID: FEE_ACCOUNT });
+    const { lines } = stripeLinesFromTransactions(MONTH_TRANSACTIONS, { salesAccountMainID: SALES_ACCOUNT, feeAccountMainID: FEE_ACCOUNT });
     const book = { accounts: { sales: { [SALES_ACCOUNT]: {} }, purchases: { [FEE_ACCOUNT]: {} } } };
     const result = validateLines(lines, book);
     expect(result.errors).toEqual([]);
     expect(result.valid).toBe(true);
+  });
+});
+
+describe("stripeLinesFromTransactions with labels", () => {
+  const LABELS = {
+    rule: [{ pattern: "Widget Donations", sourceJournalID: "sales", accountMainID: "4002", taxCode: "OS" }],
+  };
+
+  it("sets a matched charge's account, sourceJournalID and taxCode from the rule, in place of salesAccountMainID", () => {
+    const charge = {
+      ...CHARGE,
+      id: "txn_lbl_1",
+      source: { id: "ch_lbl_1", object: "charge", billing_details: { name: "Widget Donations Ltd" } },
+    };
+
+    const { lines } = stripeLinesFromTransactions([charge], {
+      salesAccountMainID: SALES_ACCOUNT,
+      feeAccountMainID: FEE_ACCOUNT,
+      labels: LABELS,
+    });
+
+    const gross = lines.find((line) => line.documentReference === "ch_lbl_1");
+    expect(gross).toMatchObject({ sourceJournalID: "sales", accountMainID: "4002", taxCode: "OS" });
+  });
+
+  it("never redirects the fee line, whatever the charge's own rule", () => {
+    const charge = {
+      ...CHARGE,
+      id: "txn_lbl_2",
+      source: { id: "ch_lbl_2", object: "charge", billing_details: { name: "Widget Donations Ltd" } },
+    };
+
+    const { lines } = stripeLinesFromTransactions([charge], {
+      salesAccountMainID: SALES_ACCOUNT,
+      feeAccountMainID: FEE_ACCOUNT,
+      labels: LABELS,
+    });
+
+    const fee = lines.find((line) => line.entryNumber === "STRIPE-txn_lbl_2-FEE");
+    expect(fee).toMatchObject({ sourceJournalID: "purchases", accountMainID: FEE_ACCOUNT });
+  });
+
+  it("leaves an unmatched charge posting to the default sales account, and lists it in unlabelled", () => {
+    const charge = { ...CHARGE, id: "txn_lbl_3", source: { id: "ch_lbl_3", object: "charge", billing_details: { name: "A N Other" } } };
+
+    const { lines, unlabelled } = stripeLinesFromTransactions([charge], {
+      salesAccountMainID: SALES_ACCOUNT,
+      feeAccountMainID: FEE_ACCOUNT,
+      labels: LABELS,
+    });
+
+    const gross = lines.find((line) => line.documentReference === "ch_lbl_3");
+    expect(gross).toMatchObject({ sourceJournalID: "sales", accountMainID: SALES_ACCOUNT });
+    expect(unlabelled).toHaveLength(1);
+    expect(unlabelled[0].id).toBe("txn_lbl_3");
+  });
+
+  it("behaves exactly as today when no labels are given", () => {
+    const { lines, unlabelled } = stripeLinesFromTransactions([CHARGE], {
+      salesAccountMainID: SALES_ACCOUNT,
+      feeAccountMainID: FEE_ACCOUNT,
+    });
+
+    const gross = lines.find((line) => line.documentReference === "ch_test_1");
+    expect(gross).toMatchObject({ sourceJournalID: "sales", accountMainID: SALES_ACCOUNT });
+    expect(gross.taxCode).toBeUndefined();
+    expect(unlabelled).toEqual([]);
   });
 });
 
