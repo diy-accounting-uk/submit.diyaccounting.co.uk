@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0
 // Copyright (C) 2006-2026 DIY Accounting Limited
 
-// behaviour-tests/companiesHouse/fileMicroEntityAccounts.behaviour.test.js
+// behaviour-tests/companiesHouse/fileConfirmationStatement.behaviour.test.js
 
 import { test } from "../helpers/playwrightTestWithout.js";
 import fs from "node:fs";
@@ -23,21 +23,26 @@ import {
 } from "../steps/behaviour-login-steps.js";
 import { ensureBundlePresent, goToBundlesPage } from "../steps/behaviour-bundle-steps.js";
 import {
-  goToFileMicroEntityAccounts,
+  confirmationStatementCompanyFixture,
+  resolveConfirmationStatementCompanyAuthCode,
+  goToFileConfirmationStatement,
   enterCompanyNumberAndLookUp,
   verifyCompanyLookedUp,
-  fillInAccountsForm,
-  previewAccounts,
+  enterCompanyAuthCodeAndReadRegister,
+  verifyReviewFormPopulated,
+  tryPreviewWithBlankPersonalCodes,
+  fillInDirectorPersonalCodes,
+  acceptLawfulPurposeStatement,
+  previewConfirmationStatement,
   setGovTestScenario,
-  enterCompanyAuthCodeAndSubmit,
+  submitConfirmationStatementFiling,
   verifyFilingAccepted,
   verifyFilingRejected,
-} from "../steps/behaviour-companies-house-accounts-steps.js";
-import { companiesHouseLookupFixture } from "../steps/behaviour-companies-house-filing-steps.js";
+} from "../steps/behaviour-companies-house-confirmation-steps.js";
 
 dotenvConfigIfNotBlank({ path: ".env" }); // Not checked in, real credentials for the ci/prod lanes
 
-const screenshotPath = "target/behaviour-test-results/screenshots/file-micro-entity-accounts-behaviour-test";
+const screenshotPath = "target/behaviour-test-results/screenshots/file-confirmation-statement-behaviour-test";
 
 const originalEnv = { ...process.env };
 
@@ -54,48 +59,8 @@ const bundleTableName = getEnvVarAndLog("bundleTableName", "BUNDLE_DYNAMODB_TABL
 const hmrcApiRequestsTableName = getEnvVarAndLog("hmrcApiRequestsTableName", "HMRC_API_REQUESTS_DYNAMODB_TABLE_NAME", null);
 const receiptsTableName = getEnvVarAndLog("receiptsTableName", "RECEIPTS_DYNAMODB_TABLE_NAME", null);
 
-const { companyNumber, companyName } = companiesHouseLookupFixture(envFilePath);
-
-function balancedYear({ fixedAssets, currentAssets, creditorsWithinOneYear, calledUpShareCapital, profitAndLossAccount }) {
-  const creditorsAfterOneYear = 0;
-  const capitalAndReserves = fixedAssets + (currentAssets - creditorsWithinOneYear) - creditorsAfterOneYear;
-  return {
-    fixedAssets,
-    currentAssets,
-    creditorsWithinOneYear,
-    creditorsAfterOneYear,
-    calledUpShareCapital,
-    profitAndLossAccount,
-    capitalAndReserves,
-  };
-}
-
-function buildAccounts() {
-  return {
-    periodStart: "2025-01-01",
-    periodEnd: "2025-12-31",
-    balanceSheet: {
-      currentYear: balancedYear({
-        fixedAssets: 1000,
-        currentAssets: 5000,
-        creditorsWithinOneYear: 2000,
-        calledUpShareCapital: 100,
-        profitAndLossAccount: 3900,
-      }),
-      priorYear: balancedYear({
-        fixedAssets: 900,
-        currentAssets: 3500,
-        creditorsWithinOneYear: 1500,
-        calledUpShareCapital: 100,
-        profitAndLossAccount: 1900,
-      }),
-    },
-    averageEmployees: 2,
-    director: { name: "Jo Director", dateApproved: "2026-01-15" },
-  };
-}
-
-const companyAuthCode = "AB12CD";
+const { companyNumber, companyName } = confirmationStatementCompanyFixture(envFilePath);
+const companyAuthCode = resolveConfirmationStatementCompanyAuthCode(envFilePath);
 
 let mockOAuth2Process;
 let serverProcess;
@@ -104,7 +69,7 @@ let dynamoControl;
 test.setTimeout(300_000);
 
 test.beforeEach(async ({}, testInfo) => {
-  testInfo.annotations.push({ type: "test-id", description: "fileMicroEntityAccountsBehaviour" });
+  testInfo.annotations.push({ type: "test-id", description: "fileConfirmationStatementBehaviour" });
 });
 
 test.beforeAll(async () => {
@@ -137,7 +102,7 @@ test.afterAll(async () => {
   } catch {}
 });
 
-test("Click through: file micro-entity accounts end to end and see the filing accepted", async ({ page }, testInfo) => {
+test("Click through: file a confirmation statement end to end and see the filing accepted", async ({ page }, testInfo) => {
   const testUrl = baseUrl;
 
   addOnPageLogging(page);
@@ -158,18 +123,21 @@ test("Click through: file micro-entity accounts end to end and see the filing ac
   }
   await goToHomePage(page, screenshotPath);
 
-  await goToFileMicroEntityAccounts(page, screenshotPath);
+  await goToFileConfirmationStatement(page, screenshotPath);
   await enterCompanyNumberAndLookUp(page, companyNumber, screenshotPath);
   await verifyCompanyLookedUp(page, companyName, companyNumber, screenshotPath);
-  await fillInAccountsForm(page, buildAccounts(), screenshotPath);
-  await previewAccounts(page, screenshotPath);
-  await enterCompanyAuthCodeAndSubmit(page, companyAuthCode, screenshotPath);
+  await enterCompanyAuthCodeAndReadRegister(page, companyAuthCode, screenshotPath);
+  await verifyReviewFormPopulated(page, screenshotPath);
+  await fillInDirectorPersonalCodes(page, undefined, screenshotPath);
+  await acceptLawfulPurposeStatement(page, screenshotPath);
+  await previewConfirmationStatement(page, screenshotPath);
+  await submitConfirmationStatementFiling(page, screenshotPath);
   await verifyFilingAccepted(page, screenshotPath);
 
   await logOutAndExpectToBeLoggedOut(page, screenshotPath);
 });
 
-test("Click through: file micro-entity accounts shows the reject reason Companies House returns", async ({ page }, testInfo) => {
+test("Click through: file a confirmation statement shows the reject reason Companies House returns", async ({ page }, testInfo) => {
   const testUrl = baseUrl;
 
   addOnPageLogging(page);
@@ -190,14 +158,50 @@ test("Click through: file micro-entity accounts shows the reject reason Companie
   }
   await goToHomePage(page, screenshotPath);
 
-  await goToFileMicroEntityAccounts(page, screenshotPath);
+  await goToFileConfirmationStatement(page, screenshotPath);
   await enterCompanyNumberAndLookUp(page, companyNumber, screenshotPath);
   await verifyCompanyLookedUp(page, companyName, companyNumber, screenshotPath);
-  await fillInAccountsForm(page, buildAccounts(), screenshotPath);
-  await previewAccounts(page, screenshotPath);
-  await setGovTestScenario(page, "ACCOUNTS_REJECTED", screenshotPath);
-  await enterCompanyAuthCodeAndSubmit(page, companyAuthCode, screenshotPath);
-  await verifyFilingRejected(page, "1", screenshotPath);
+  await enterCompanyAuthCodeAndReadRegister(page, companyAuthCode, screenshotPath);
+  await verifyReviewFormPopulated(page, screenshotPath);
+  await fillInDirectorPersonalCodes(page, undefined, screenshotPath);
+  await acceptLawfulPurposeStatement(page, screenshotPath);
+  await previewConfirmationStatement(page, screenshotPath);
+  await setGovTestScenario(page, "CS_SHAREHOLDERS_REQUIRED", screenshotPath);
+  await submitConfirmationStatementFiling(page, screenshotPath);
+  await verifyFilingRejected(page, "11686", screenshotPath);
+
+  await logOutAndExpectToBeLoggedOut(page, screenshotPath);
+});
+
+test("Click through: file a confirmation statement blocks submission when a director's personal code is blank", async ({
+  page,
+}, testInfo) => {
+  const testUrl = baseUrl;
+
+  addOnPageLogging(page);
+
+  const outputDir = testInfo.outputPath("");
+  fs.mkdirSync(outputDir, { recursive: true });
+
+  await goToHomePageExpectNotLoggedIn(page, testUrl, screenshotPath);
+
+  await clickLogIn(page, screenshotPath);
+  await loginWithCognitoOrMockAuth(page, testAuthProvider, testAuthUsername, screenshotPath, testAuthPassword);
+  await verifyLoggedInStatus(page, screenshotPath);
+  await consentToDataCollection(page, screenshotPath);
+
+  await goToBundlesPage(page, screenshotPath);
+  if (isSyntheticMode()) {
+    await ensureBundlePresent(page, "Resident", screenshotPath, { testPass: true });
+  }
+  await goToHomePage(page, screenshotPath);
+
+  await goToFileConfirmationStatement(page, screenshotPath);
+  await enterCompanyNumberAndLookUp(page, companyNumber, screenshotPath);
+  await verifyCompanyLookedUp(page, companyName, companyNumber, screenshotPath);
+  await enterCompanyAuthCodeAndReadRegister(page, companyAuthCode, screenshotPath);
+  await verifyReviewFormPopulated(page, screenshotPath);
+  await tryPreviewWithBlankPersonalCodes(page, screenshotPath);
 
   await logOutAndExpectToBeLoggedOut(page, screenshotPath);
 });

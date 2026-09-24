@@ -23,7 +23,10 @@ import { registerLambdaRoute } from "../../lib/httpServerToLambdaAdaptor.js";
 import { enforceBundles } from "../../services/bundleManagement.js";
 import { isValidCompanyNumber, http403ForbiddenFromBundleEnforcement } from "../../services/companiesHouseApi.js";
 import { isValidIsoDate } from "../../lib/hmrcValidation.js";
-import { buildConfirmationStatementBody } from "../../services/companiesHouseConfirmationStatementXml.js";
+import {
+  buildConfirmationStatementBody,
+  selectConfirmationStatementSchema,
+} from "../../services/companiesHouseConfirmationStatementXml.js";
 import {
   buildConfirmationStatementSubmission,
   allocateSubmissionNumber,
@@ -41,6 +44,7 @@ const MIN_COMPANY_AUTH_CODE_LENGTH = 6;
 const MAX_COMPANY_AUTH_CODE_LENGTH = 8;
 const PERSONAL_CODE_LENGTH = 11;
 const MAX_SIC_CODES = 4;
+const MAX_OFFICERS = 50;
 
 // Server hook for Express app, and construction of a Lambda-like event from HTTP request)
 /* v8 ignore start */
@@ -49,6 +53,36 @@ export function apiEndpoint(app) {
   registerLambdaRoute(app, "head", "/api/v1/companies-house/confirmation-statement", ingestHandler);
 }
 /* v8 ignore stop */
+
+function validateOfficers(officers, errorMessages) {
+  if (officers !== undefined && (!Array.isArray(officers) || officers.length > MAX_OFFICERS)) {
+    errorMessages.push(`Invalid officers - must be an array of at most ${MAX_OFFICERS} entries`);
+    return;
+  }
+  for (const officer of officers || []) {
+    if (!officer || typeof officer !== "object" || Array.isArray(officer)) {
+      errorMessages.push("Every officer entry must be an object");
+    }
+  }
+}
+
+function validateDirectors(directors, errorMessages) {
+  if (!Array.isArray(directors) || directors.length === 0) {
+    errorMessages.push("At least one director's verification statement is required");
+  }
+  for (const director of directors || []) {
+    const personalCode = typeof director?.personalCode === "string" ? director.personalCode.trim() : "";
+    if (personalCode.length !== PERSONAL_CODE_LENGTH) {
+      errorMessages.push(`Invalid director personalCode - must be ${PERSONAL_CODE_LENGTH} characters`);
+    }
+    if (!director?.forename || !director?.surname) {
+      errorMessages.push("Every director requires a forename and surname");
+    }
+    if (!director?.dob || !isValidIsoDate(director.dob)) {
+      errorMessages.push("Every director requires a valid date of birth (YYYY-MM-DD)");
+    }
+  }
+}
 
 // Extracts and validates a confirmation statement request. Shared with the preview Lambda, which
 // never needs the company authentication code because it never reaches the gateway.
@@ -66,6 +100,7 @@ export function extractAndValidateConfirmationStatementParameters(event, errorMe
     registeredEmailAddress,
     lawfulPurposeStatementAccepted,
     directors,
+    officers,
   } = parsedBody;
 
   const { valid: companyNumberValid, normalised: normalisedCompanyNumber } = isValidCompanyNumber(companyNumber);
@@ -111,20 +146,14 @@ export function extractAndValidateConfirmationStatementParameters(event, errorMe
     errorMessages.push("The user must accept the lawful purpose statement");
   }
 
-  if (!Array.isArray(directors) || directors.length === 0) {
-    errorMessages.push("At least one director's verification statement is required");
-  }
-  for (const director of directors || []) {
-    const personalCode = typeof director?.personalCode === "string" ? director.personalCode.trim() : "";
-    if (personalCode.length !== PERSONAL_CODE_LENGTH) {
-      errorMessages.push(`Invalid director personalCode - must be ${PERSONAL_CODE_LENGTH} characters`);
-    }
-    if (!director?.forename || !director?.surname) {
-      errorMessages.push("Every director requires a forename and surname");
-    }
-    if (!director?.dob || !isValidIsoDate(director.dob)) {
-      errorMessages.push("Every director requires a valid date of birth (YYYY-MM-DD)");
-    }
+  validateOfficers(officers, errorMessages);
+
+  // Directors carry a verification statement only for ConfirmationAndVerificationStatement-v1-0 -
+  // once every officer is verified the statement uses ConfirmationStatement-v1-3, which carries no
+  // verification block, so no director row is required.
+  const requiresVerificationStatement = selectConfirmationStatementSchema(officers).rootElement === "ConfirmationAndVerificationStatement";
+  if (requiresVerificationStatement) {
+    validateDirectors(directors, errorMessages);
   }
 
   return {
@@ -138,6 +167,7 @@ export function extractAndValidateConfirmationStatementParameters(event, errorMe
     shareholdings,
     registeredEmailAddress,
     directors,
+    officers,
   };
 }
 
@@ -198,7 +228,11 @@ export async function ingestHandler(event) {
       shareholdings: statement.shareholdings,
       registeredEmailAddress: statement.registeredEmailAddress,
       directors: statement.directors,
+      officers: statement.officers,
     });
+    // The envelope's FormIdentifier must name the same schema the body was built against, or the
+    // gateway rejects the submission with error 604.
+    const { rootElement: formIdentifier } = selectConfirmationStatementSchema(statement.officers);
 
     submissionNumber = await allocateSubmissionNumber();
     const { presenterId, presenterCode } = await resolvePresenterCredentials();
@@ -212,6 +246,7 @@ export async function ingestHandler(event) {
       companyName: statement.companyName,
       companyAuthenticationCode: statement.companyAuthCode,
       packageReference,
+      formIdentifier,
       submissionNumber,
       dateSigned: statement.dateSigned,
       statementXml,

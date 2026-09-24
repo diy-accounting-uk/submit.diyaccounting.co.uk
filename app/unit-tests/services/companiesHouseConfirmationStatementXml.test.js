@@ -10,7 +10,10 @@ import {
   buildConfirmationStatementBody,
   readConfirmationStatementElementOrder,
   assertConfirmationStatementElementOrder,
+  isOfficerIdentityVerified,
+  selectConfirmationStatementSchema,
   CONFIRMATION_STATEMENT_ELEMENT_ORDER,
+  CONFIRMATION_STATEMENT_V1_3_ELEMENT_ORDER,
 } from "@app/services/companiesHouseConfirmationStatementXml.js";
 
 const FIXTURES_DIR = new URL("../../../fixtures/companies-house-xmlgw/", import.meta.url);
@@ -19,11 +22,15 @@ const CONFIRMATION_AND_VERIFICATION_STATEMENT_XSD = readFileSync(
   new URL("ConfirmationAndVerificationStatement-v1-0.xsd", FIXTURES_DIR),
   "utf8",
 );
+const CONFIRMATION_STATEMENT_V1_3_XSD = readFileSync(new URL("ConfirmationStatement-v1-3.xsd", FIXTURES_DIR), "utf8");
 const CONFIRMATION_AND_VERIFICATION_STATEMENT_EXAMPLE = readFileSync(
   new URL("ConfirmationAndVerificationStatement.xml", FIXTURES_DIR),
   "utf8",
 );
 const SIC_AND_SHAREHOLDER_CHANGE_EXAMPLE = readFileSync(new URL("ConfirmationStatementSICAndShareholderChange.xml", FIXTURES_DIR), "utf8");
+
+const VERIFIED_OFFICER = { identityVerificationDetails: { appointment_verification_end_on: "9999-12-31" } };
+const UNVERIFIED_OFFICER = { identityVerificationDetails: { appointment_verification_end_on: null } };
 
 const BASE_INPUT = {
   reviewDate: "2024-08-30",
@@ -235,6 +242,106 @@ describe("services/companiesHouseConfirmationStatementXml", () => {
         expect(() =>
           buildConfirmationStatementBody({ ...BASE_INPUT, shareholdings: [{ numberHeld: "1", shareholders: [{ surname: "A" }] }] }),
         ).toThrow("a shareholding must carry a share class");
+      });
+
+      test("throws when a director carries no OtherForenames", () => {
+        expect(() =>
+          buildConfirmationStatementBody({ ...BASE_INPUT, directors: [{ ...BASE_INPUT.directors[0], otherForenames: undefined }] }),
+        ).toThrow("OtherForenames is required");
+      });
+
+      test("throws when a shareholding carries more than ten joint holders", () => {
+        const shareholders = Array.from({ length: 11 }, (_unused, index) => ({ surname: `HOLDER${index}` }));
+        expect(() =>
+          buildConfirmationStatementBody({ ...BASE_INPUT, shareholdings: [{ shareClass: "ORDINARY", numberHeld: "11", shareholders }] }),
+        ).toThrow("at most 10 joint holders are allowed per shareholding");
+      });
+    });
+
+    describe("joint holders", () => {
+      test("carries every joint holder of a shareholding as its own Shareholders element", () => {
+        const xml = buildConfirmationStatementBody({
+          ...BASE_INPUT,
+          shareholdings: [
+            {
+              shareClass: "ORDINARY",
+              numberHeld: "10",
+              shareholders: [
+                { surname: "CARTWRIGHT", forename: "ANTONY" },
+                { surname: "CARTWRIGHT", forename: "SAMANTHA" },
+              ],
+            },
+          ],
+        });
+        const document = parseXmlDocument(xml);
+        const holders = allElements(document, "Shareholders");
+        expect(holders).toHaveLength(2);
+        expect(firstElementText(holders[0], "Forename")).toBe("ANTONY");
+        expect(firstElementText(holders[1], "Forename")).toBe("SAMANTHA");
+      });
+    });
+
+    describe("schema choice", () => {
+      test("isOfficerIdentityVerified reads appointment_verification_end_on 9999-12-31 as verified", () => {
+        expect(isOfficerIdentityVerified(VERIFIED_OFFICER)).toBe(true);
+        expect(isOfficerIdentityVerified(UNVERIFIED_OFFICER)).toBe(false);
+        expect(isOfficerIdentityVerified({})).toBe(false);
+        expect(isOfficerIdentityVerified(undefined)).toBe(false);
+      });
+
+      test("selectConfirmationStatementSchema picks ConfirmationAndVerificationStatement-v1-0 while any officer is unverified", () => {
+        expect(selectConfirmationStatementSchema([VERIFIED_OFFICER, UNVERIFIED_OFFICER])).toEqual({
+          rootElement: "ConfirmationAndVerificationStatement",
+          xsdFile: "ConfirmationAndVerificationStatement-v1-0.xsd",
+        });
+      });
+
+      test("selectConfirmationStatementSchema picks ConfirmationAndVerificationStatement-v1-0 when no officers are given", () => {
+        expect(selectConfirmationStatementSchema(undefined)).toEqual({
+          rootElement: "ConfirmationAndVerificationStatement",
+          xsdFile: "ConfirmationAndVerificationStatement-v1-0.xsd",
+        });
+        expect(selectConfirmationStatementSchema([])).toEqual({
+          rootElement: "ConfirmationAndVerificationStatement",
+          xsdFile: "ConfirmationAndVerificationStatement-v1-0.xsd",
+        });
+      });
+
+      test("selectConfirmationStatementSchema picks ConfirmationStatement-v1-3 once every officer is verified", () => {
+        expect(selectConfirmationStatementSchema([VERIFIED_OFFICER, VERIFIED_OFFICER])).toEqual({
+          rootElement: "ConfirmationStatement",
+          xsdFile: "ConfirmationStatement-v1-3.xsd",
+        });
+      });
+
+      test("builds ConfirmationAndVerificationStatement with a VerificationStatement when an officer is unverified", () => {
+        const xml = buildConfirmationStatementBody({ ...BASE_INPUT, officers: [VERIFIED_OFFICER, UNVERIFIED_OFFICER] });
+        const document = parseXmlDocument(xml);
+        expect(document.documentElement.tagName).toBe("ConfirmationAndVerificationStatement");
+        expect(xml).toContain("ConfirmationAndVerificationStatement-v1-0.xsd");
+        expect(document.getElementsByTagName("VerificationStatement")).toHaveLength(1);
+      });
+
+      test("builds ConfirmationStatement with no VerificationStatement once every officer is verified, and needs no directors", () => {
+        const xml = buildConfirmationStatementBody({
+          reviewDate: "2024-08-30",
+          officers: [VERIFIED_OFFICER, VERIFIED_OFFICER],
+        });
+        const document = parseXmlDocument(xml);
+        expect(document.documentElement.tagName).toBe("ConfirmationStatement");
+        expect(xml).toContain("ConfirmationStatement-v1-3.xsd");
+        expect(document.getElementsByTagName("VerificationStatement")).toHaveLength(0);
+      });
+
+      test("the ConfirmationStatement-v1-3 body passes its own element order, read from the checked-in XSD", () => {
+        const xml = buildConfirmationStatementBody({
+          reviewDate: "2024-08-30",
+          officers: [VERIFIED_OFFICER],
+        });
+        expect(readConfirmationStatementElementOrder(CONFIRMATION_STATEMENT_V1_3_XSD, "ConfirmationStatement")).toEqual(
+          CONFIRMATION_STATEMENT_V1_3_ELEMENT_ORDER,
+        );
+        expect(() => assertConfirmationStatementElementOrder(xml, CONFIRMATION_STATEMENT_V1_3_ELEMENT_ORDER)).not.toThrow();
       });
     });
   });

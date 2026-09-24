@@ -210,6 +210,7 @@ test.describe("File Confirmation Statement page", () => {
     await lookUpCompany(page);
     await enterAuthCode(page);
     await acceptLawfulPurposeStatement(page);
+    await page.fill("#directorOtherForenames-0", "ELIZABETH");
     // Deliberately leave directorPersonalCode-0 blank.
     await page.click("#previewBtn");
     await delay(200);
@@ -219,7 +220,7 @@ test.describe("File Confirmation Statement page", () => {
     expect(messages.some((m) => m.message.includes("personal code"))).toBe(true);
   });
 
-  test("moves to the preview view once every director carries a personal code", async ({ page }) => {
+  test("blocks the preview when a director's other forenames are left blank", async ({ page }) => {
     setupPage(page);
     await setupRoutes(page);
     await loadPage(page);
@@ -227,6 +228,25 @@ test.describe("File Confirmation Statement page", () => {
     await lookUpCompany(page);
     await enterAuthCode(page);
     await acceptLawfulPurposeStatement(page);
+    await page.fill("#directorPersonalCode-0", "AB123456789");
+    // Deliberately leave directorOtherForenames-0 blank.
+    await page.click("#previewBtn");
+    await delay(200);
+
+    await expect(page.locator("#previewView")).toBeHidden();
+    const messages = await page.evaluate(() => window.__statusMessages);
+    expect(messages.some((m) => m.message.includes("other forenames"))).toBe(true);
+  });
+
+  test("moves to the preview view once every director carries other forenames and a personal code", async ({ page }) => {
+    setupPage(page);
+    await setupRoutes(page);
+    await loadPage(page);
+
+    await lookUpCompany(page);
+    await enterAuthCode(page);
+    await acceptLawfulPurposeStatement(page);
+    await page.fill("#directorOtherForenames-0", "ELIZABETH");
     await page.fill("#directorPersonalCode-0", "AB123456789");
     await page.click("#previewBtn");
     await delay(200);
@@ -236,6 +256,7 @@ test.describe("File Confirmation Statement page", () => {
     const previewCalls = await page.evaluate(() => window.__previewCalls);
     expect(previewCalls).toHaveLength(1);
     expect(previewCalls[0].directors[0].personalCode).toBe("AB123456789");
+    expect(previewCalls[0].directors[0].otherForenames).toBe("ELIZABETH");
   });
 
   test("shows the accepted filing result and the PSC follow-up after submitting", async ({ page }) => {
@@ -246,6 +267,7 @@ test.describe("File Confirmation Statement page", () => {
     await lookUpCompany(page);
     await enterAuthCode(page);
     await acceptLawfulPurposeStatement(page);
+    await page.fill("#directorOtherForenames-0", "ELIZABETH");
     await page.fill("#directorPersonalCode-0", "AB123456789");
     await page.click("#previewBtn");
     await delay(200);
@@ -256,8 +278,48 @@ test.describe("File Confirmation Statement page", () => {
     await expect(page.locator("#resultView")).toBeVisible();
     await expect(page.locator("#filingResult")).toContainText("ACCEPT");
     await expect(page.locator("#pscFollowUp")).toBeVisible();
+    await expect(page.locator("#pscFollowUp")).toContainText("PSC verification service");
     const submitCalls = await page.evaluate(() => window.__submitCalls);
     expect(submitCalls).toHaveLength(1);
     expect(submitCalls[0].companyAuthCode).toBe("AB123456");
+  });
+
+  test("adds and removes a joint holder on a shareholding", async ({ page }) => {
+    setupPage(page);
+    await setupRoutes(page);
+    await loadPage(page);
+
+    await lookUpCompany(page);
+    await enterAuthCode(page);
+
+    await page.click("#addShareholdingBtn");
+    await expect(page.locator('[data-shareholder-row="0-0"]')).toBeVisible();
+    await expect(page.locator('[data-shareholder-row="0-1"]')).toBeHidden();
+
+    await page.fill("#holdingShareClass-0", "ORDINARY");
+    await page.fill("#holdingNumberHeld-0", "10");
+    await page.fill("#holderSurname-0-0", "CARTWRIGHT");
+    await page.fill("#holderForename-0-0", "ANTONY");
+
+    await page.click('.add-joint-holder-row[data-holding-index="0"]');
+    await expect(page.locator('[data-shareholder-row="0-1"]')).toBeVisible();
+    await page.fill("#holderSurname-0-1", "CARTWRIGHT");
+    await page.fill("#holderForename-0-1", "SAMANTHA");
+
+    await page.click('[data-shareholder-row="0-0"] .remove-joint-holder-row');
+    await expect(page.locator('[data-shareholder-row="0-0"]')).toBeHidden();
+    await expect(page.locator('[data-shareholder-row="0-1"]')).toBeVisible();
+
+    await acceptLawfulPurposeStatement(page);
+    await page.fill("#directorOtherForenames-0", "ELIZABETH");
+    await page.fill("#directorPersonalCode-0", "AB123456789");
+    await page.click("#previewBtn");
+    await delay(200);
+
+    const previewCalls = await page.evaluate(() => window.__previewCalls);
+    expect(previewCalls).toHaveLength(1);
+    expect(previewCalls[0].shareholdings).toHaveLength(1);
+    expect(previewCalls[0].shareholdings[0].shareholders).toHaveLength(1);
+    expect(previewCalls[0].shareholdings[0].shareholders[0].forename).toBe("SAMANTHA");
   });
 });
