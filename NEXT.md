@@ -99,14 +99,14 @@ Shared facts for the analytics rows (B52d, B52e, B52l, B52m): the prod Athena da
 
 - [ ] **CS-H2. Send the confirmation-statement email.** Send `../DRAFT_EMAIL_XMLGW_CS01.md` on the `xml@companieshouse.gov.uk` thread, and paste the answers into CS-9's row. **Source**: `PLAN_COMPANIES_HOUSE_CONFIRMATION_STATEMENT.md` (its Tasks table carries the files). **Owner**: Operator. **Model**: none. **Size**: 0 files.
 
+## Blocked
+
 - [ ] **CS-H1. Companies House credit account: the account number.** The application went to
   `chdfinance@companieshouse.gov.uk` on 2026-09-24 (form at `../DIY Accounting Limited - CH account 2026-09-24.pdf`,
   email `../DRAFT_EMAIL_CH_CREDIT_ACCOUNT.md`), asking for the account to be linked to presenter E0000052288.
   Companies House takes up to 5 working days (by 2026-10-01). When the account number arrives, keep it in the
   credentials store and say so here; CS-9 then needs only CS-H2's answer. **Owner**: Operator. **Model**: none.
   **Size**: 0 files.
-
-## Blocked
 
 - [ ] **O11. The ITSA send day.** Operator, 2026-09-23: the day after PR #346 merges, which is 2026-09-24 (#346
   merged 2026-09-23 23:25 UTC; checklist rows 8 and 13 are evidenced on `main`; the 2026-09-21
