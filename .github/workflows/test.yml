@@ -236,12 +236,19 @@ jobs:
             echo "eslint could not run (exit ${eslint_exit}) — see the job log above for the crash, not 0 findings." >> "$GITHUB_STEP_SUMMARY"
             echo "ran=false" >> "$GITHUB_OUTPUT"
           else
-            errors=$(printf '%s' "$eslint_json" | jq '[.[].messages[] | select(.severity == 2)] | length')
-            warnings=$(printf '%s' "$eslint_json" | jq '[.[].messages[] | select(.severity == 1)] | length')
-            echo "eslint reports ${errors} error(s) and ${warnings} warning(s) across the repository." >> "$GITHUB_STEP_SUMMARY"
+            # no-unsanitized/* (web/public HTML inline scripts and JS) is tracked as its own
+            # ratchet below, separately from every other rule, so a fix there can never mask
+            # a new finding from an unrelated rule anywhere else in the repository.
+            errors=$(printf '%s' "$eslint_json" | jq '[.[].messages[] | select(.severity == 2) | select(.ruleId | startswith("no-unsanitized/") | not)] | length')
+            warnings=$(printf '%s' "$eslint_json" | jq '[.[].messages[] | select(.severity == 1) | select(.ruleId | startswith("no-unsanitized/") | not)] | length')
+            unsanitized_errors=$(printf '%s' "$eslint_json" | jq '[.[].messages[] | select(.severity == 2) | select(.ruleId | startswith("no-unsanitized/"))] | length')
+            unsanitized_warnings=$(printf '%s' "$eslint_json" | jq '[.[].messages[] | select(.severity == 1) | select(.ruleId | startswith("no-unsanitized/"))] | length')
+            echo "eslint reports ${errors} error(s) and ${warnings} warning(s) across the repository, plus ${unsanitized_errors} no-unsanitized error(s) and ${unsanitized_warnings} no-unsanitized warning(s) in web/public." >> "$GITHUB_STEP_SUMMARY"
             echo "ran=true" >> "$GITHUB_OUTPUT"
             echo "errors=${errors}" >> "$GITHUB_OUTPUT"
             echo "warnings=${warnings}" >> "$GITHUB_OUTPUT"
+            echo "unsanitized_errors=${unsanitized_errors}" >> "$GITHUB_OUTPUT"
+            echo "unsanitized_warnings=${unsanitized_warnings}" >> "$GITHUB_OUTPUT"
           fi
           echo "This step never fails; the gate below covers the files this change touches." >> "$GITHUB_STEP_SUMMARY"
 
@@ -262,6 +269,26 @@ jobs:
             echo "Findings dropped below the baseline. Commit this as the new .eslint-baseline.json:" >> "$GITHUB_STEP_SUMMARY"
             echo '```json' >> "$GITHUB_STEP_SUMMARY"
             printf '{\n  "errors": %s,\n  "warnings": %s\n}\n' "$current_errors" "$current_warnings" >> "$GITHUB_STEP_SUMMARY"
+            echo '```' >> "$GITHUB_STEP_SUMMARY"
+          fi
+
+      - name: Ratchet the web/public unsanitized-HTML count against the baseline
+        if: steps.repo-count.outputs.ran == 'true'
+        run: |
+          current_errors='${{ steps.repo-count.outputs.unsanitized_errors }}'
+          current_warnings='${{ steps.repo-count.outputs.unsanitized_warnings }}'
+          baseline_errors=$(jq '.unsanitizedErrors' .eslint-baseline.json)
+          baseline_warnings=$(jq '.unsanitizedWarnings' .eslint-baseline.json)
+          echo "no-unsanitized baseline: ${baseline_errors} error(s), ${baseline_warnings} warning(s) (.eslint-baseline.json)." >> "$GITHUB_STEP_SUMMARY"
+          echo "no-unsanitized current: ${current_errors} error(s), ${current_warnings} warning(s)." >> "$GITHUB_STEP_SUMMARY"
+          if [ "$current_errors" -gt "$baseline_errors" ]; then
+            echo "no-unsanitized error count in web/public rose from ${baseline_errors} to ${current_errors}. Fix the new unsanitized DOM write, or lower the baseline only by fixing findings, never by raising the number." >> "$GITHUB_STEP_SUMMARY"
+            exit 1
+          fi
+          if [ "$current_errors" -lt "$baseline_errors" ] || [ "$current_warnings" -lt "$baseline_warnings" ]; then
+            echo "no-unsanitized findings dropped below the baseline. Commit this as the new .eslint-baseline.json unsanitizedErrors/unsanitizedWarnings:" >> "$GITHUB_STEP_SUMMARY"
+            echo '```json' >> "$GITHUB_STEP_SUMMARY"
+            printf '{\n  "unsanitizedErrors": %s,\n  "unsanitizedWarnings": %s\n}\n' "$current_errors" "$current_warnings" >> "$GITHUB_STEP_SUMMARY"
             echo '```' >> "$GITHUB_STEP_SUMMARY"
           fi
 

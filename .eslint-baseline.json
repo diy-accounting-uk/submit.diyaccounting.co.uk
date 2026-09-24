@@ -1,4 +1,6 @@
 {
   "errors": 0,
-  "warnings": 0
+  "warnings": 0,
+  "unsanitizedErrors": 64,
+  "unsanitizedWarnings": 0
 }

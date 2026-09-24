@@ -10,17 +10,26 @@ import security from "eslint-plugin-security";
 import sonarjs from "eslint-plugin-sonarjs";
 import react from "eslint-plugin-react";
 import importPlugin from "eslint-plugin-import";
+import html from "eslint-plugin-html";
+import noUnsanitized from "eslint-plugin-no-unsanitized";
 
-const modifiedGoogleConfig = { ...google, rules: { ...google.rules } };
+const modifiedGoogleConfig = { ...google, rules: { ...google.rules }, ignores: ["**/*.html"] };
 delete modifiedGoogleConfig.rules["valid-jsdoc"];
 delete modifiedGoogleConfig.rules["require-jsdoc"];
 
+// eslint-plugin-html extracts inline <script> content and lints it under the
+// enclosing .html filename. Every config block below has no "files" glob of
+// its own, so without this exclusion each would also apply to that extracted
+// content the moment any block starts matching .html files.
+const notHtml = ["**/*.html"];
+
 /** @type {import('eslint').Linter.FlatConfig[]} */
 export default [
-  js.configs.recommended,
+  { ...js.configs.recommended, ignores: notHtml },
   modifiedGoogleConfig,
-  eslintPluginPrettierRecommended,
+  { ...eslintPluginPrettierRecommended, ignores: notHtml },
   {
+    ignores: notHtml,
     plugins: {
       promise,
       security,
@@ -112,6 +121,32 @@ export default [
     files: ["**/lib/analytics.js"],
     rules: {
       "prefer-rest-params": "off",
+    },
+  },
+  // Guard against DOM XSS via unsanitized HTML, in the submit site's inline
+  // page scripts and its shared JS (CodeQL alert 74: DOM text reinterpreted as HTML)
+  {
+    files: ["web/public/**/*.html"],
+    plugins: { html, "no-unsanitized": noUnsanitized },
+    languageOptions: {
+      globals: {
+        ...globals.browser,
+        ...globals.node,
+        dataLayer: "writable",
+        gtag: "writable",
+      },
+    },
+    rules: {
+      "no-unsanitized/property": "error",
+      "no-unsanitized/method": "error",
+    },
+  },
+  {
+    files: ["web/public/**/*.js"],
+    plugins: { "no-unsanitized": noUnsanitized },
+    rules: {
+      "no-unsanitized/property": "error",
+      "no-unsanitized/method": "error",
     },
   },
   {
