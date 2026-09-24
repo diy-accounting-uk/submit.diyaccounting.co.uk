@@ -16,7 +16,7 @@ runs), and for Claude Code steps the **Model** a sub-agent should use (Fable > O
 Haiku; the lowest tier that fits). Anything touching code goes through a `claude/*` branch and
 PR; the operator merges.
 
-**Prod runs deployment prod-1a2d1c8** (PR #346's merge deploy; PR #347's merge deploy is running).
+**Prod runs deployment prod-3703ecf** (PR #347's merge deploy; #348 changed only a behaviour test).
 **ci**: `ci-set1` is last-known-good and the only ci set standing; `ci-set2` was swept.
 No pull request is open in this repository or its siblings.
 
@@ -44,17 +44,6 @@ Shared facts for the analytics rows (B52d, B52e, B52l, B52m): the prod Athena da
 `ATHENA_WORK_GROUP_NAME` (lines 103 to 104).
 
 ## In flight
-
-**COOL-DOWN is on since 2026-09-23T23:07:44Z.** No new board rows except a degradation. Agents commit
-and stop. One branch is driven green at a time. Lifted only by the operator in their own words.
-
-- [ ] **B30bj. The prod resident-pro probe opens a live checkout.** In flight: PR #348
-  (`claude/ops-probe-resident-pro`). The rewritten `resident-pro` test in
-  `behaviour-tests/passRedemption.behaviour.test.js` skipped the pass, so its synthetic user had no
-  synthetic bundle and `billingCheckoutPost.js` (lines 96-99) opened a live Stripe checkout on prod
-  (deploy 35942092607; card declined, nothing charged). The fix redeems a test-pass Day pass first.
-  Proven by the probe on its merge deploy. **Source**: #347's main deploy. **Owner**: Claude Code.
-  **Model**: Haiku. **Size**: 1 file.
 
 ## Machine-only
 
