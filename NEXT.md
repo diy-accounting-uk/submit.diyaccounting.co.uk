@@ -74,9 +74,11 @@ Shared facts for the analytics rows (B52d, B52e, B52l, B52m): the prod Athena da
 ## Human-driven
 
 - [ ] **OB30bk. Delete the orphaned prod origin bucket.** `prod-dd95c16-app-edgestac-proddd95c16apporiginbuck-rjpb9unlblmi`
-  (created 2026-09-20) outlived its deployment: no `prod-dd95c16` stack stands, the bucket is
-  empty, and no other destroyed set left one. Run
-  `aws --profile submit-prod s3api delete-bucket --bucket prod-dd95c16-app-edgestac-proddd95c16apporiginbuck-rjpb9unlblmi`.
+  (created 2026-09-20) outlived its deployment: no `prod-dd95c16` stack stands. It holds 30 objects,
+  94 MB, all Playwright test reports under `tests/` from that deploy; versioning is off. Empty it,
+  then delete it:
+  `aws --profile submit-prod s3 rm s3://prod-dd95c16-app-edgestac-proddd95c16apporiginbuck-rjpb9unlblmi --recursive`
+  then `aws --profile submit-prod s3api delete-bucket --bucket prod-dd95c16-app-edgestac-proddd95c16apporiginbuck-rjpb9unlblmi`.
   **Owner**: Operator. **Model**: none. **Size**: 0 files.
 
 - [ ] **O11. The ITSA send day.** Operator, 2026-09-23: the day after PR #346 merges, which is 2026-09-24 (#346
@@ -91,15 +93,6 @@ Shared facts for the analytics rows (B52d, B52e, B52l, B52m): the prod Athena da
   (<https://github.com/diy-accounting-uk/submit.diyaccounting.co.uk/rules/16057564>), so no PR
   merges past a PII hit. B30bc merged in PR #346 (2026-09-23); on #346 a root `.md` push and a skill push each ran
   `content scan`, and the Markdown-only head reached `CLEAN`. **Owner**: Operator.
-  **Model**: none. **Size**: 0 files.
-
-- [ ] **OCS. The confirmation statement, due 5 October 2026.** Made up to 21 September 2026;
-  DIY Accounting Limited 06846849 last filed a CS01 on 25 October 2025
-  (<https://find-and-update.company-information.service.gov.uk/company/06846849/filing-history>).
-  Before filing, confirm the registered email address the 13 September update (reference
-  123168-928517-893411) left on the register is the one the company keeps, and file a second update
-  if it is a test value; then supply each director-PSC's personal code within 14 days of the
-  statement date. Steps are task B of `../NEXT_OPERATOR_RUNBOOK.md`. File this one by WebFiling: Submit's confirmation statement (the CS rows) is not built, and CS-H6's prod proof is a fee-free second statement after this one. **Owner**: Operator.
   **Model**: none. **Size**: 0 files.
 
 - [ ] **CS-H2. Send the confirmation-statement email.** Send `../DRAFT_EMAIL_XMLGW_CS01.md` on the `xml@companieshouse.gov.uk` thread, and paste the answers into CS-9's row. **Source**: `PLAN_COMPANIES_HOUSE_CONFIRMATION_STATEMENT.md` (its Tasks table carries the files). **Owner**: Operator. **Model**: none. **Size**: 0 files.
@@ -146,7 +139,7 @@ Shared facts for the analytics rows (B52d, B52e, B52l, B52m): the prod Athena da
 
 - [ ] **CS-H4. Software authorisation for the confirmation statement.** The XML team tests CS-9's submissions and issues the package reference for the form. Blocked on CS-9. **Source**: `PLAN_COMPANIES_HOUSE_CONFIRMATION_STATEMENT.md` (its Tasks table carries the files). **Owner**: Operator. **Model**: none. **Size**: 0 files.
 
-- [ ] **CS-H6. Go for the prod confirmation statement.** Give the go for a statement for 06846849 through Submit (a fee-free second statement in the 2026-27 payment period, after the 5 October one by WebFiling), knowing it moves the next review date. Blocked on CS-11 and CS-H4 (the directors' codes are ready). **Source**: `PLAN_COMPANIES_HOUSE_CONFIRMATION_STATEMENT.md` (its Tasks table carries the files). **Owner**: Operator. **Model**: none. **Size**: 0 files.
+- [ ] **CS-H6. Go for the prod confirmation statement.** Give the go for a second, fee-free statement for 06846849 through Submit in the 2026-27 payment period (the 2026-09-21 statement went by WebFiling), knowing it moves the next review date. Blocked on CS-11 and CS-H4 (the directors' codes are ready). **Source**: `PLAN_COMPANIES_HOUSE_CONFIRMATION_STATEMENT.md` (its Tasks table carries the files). **Owner**: Operator. **Model**: none. **Size**: 0 files.
 
 - [ ] **B30at1. The sweep's claim check, proven.** Needs a claimed set that is not last-known-good
   (the sweep keeps the last-known-good set before it reads any claim): the next time two branches
