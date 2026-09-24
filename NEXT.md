@@ -54,14 +54,6 @@ Shared facts for the analytics rows (B52d, B52e, B52l, B52m): the prod Athena da
   Code. **Model**: Haiku. **Size**: 2 files.
   In flight: pushing `claude/diya-gl-resident-pro`, then its PR.
 
-- [ ] **F1b. PayPal's six months staged.** Run `scripts/finance/paypal-stage.js` (the credential
-  read from Secrets Manager `prod/submit/paypal/client_id` and `prod/submit/paypal/client_secret`
-  with `AWS_PROFILE=submit-prod`) for each month from March to August 2026, writing
-  `../staging/<year-end>/paypal/<yyyy-mm-dd>-paypal-transactions.json`. F2g reads the output.
-  **Source**: `../PLAN_FINANCE_AUTOMATION.md` route 1. **Owner**: Claude Code.
-  **Model**: Haiku. **Size**: 0 files.
-  In flight: a Haiku agent running the six months.
-
 - [ ] **F2e. The MCP writes a populated spreadsheets package.** A tool in `mcp/lib/finance/` that
   takes the book and lines and writes a DIY Accounting spreadsheets package, reconciled under the
   spreadsheets repository's existing reconciliation harness rather than a new check; nothing
@@ -72,9 +64,6 @@ Shared facts for the analytics rows (B52d, B52e, B52l, B52m): the prod Athena da
 - [ ] **CS-1. Confirmation statement fixtures.** Save the `ConfirmationAndVerificationStatement-v1-0` schema set and `ConfirmationStatement-v1-3.xsd` (the statement reverts to it once every officer is verified), the CompanyData and PaymentPeriods schemas, and the published examples under `fixtures/companies-house-xmlgw/` from `xmlgw.companieshouse.gov.uk/v1-0/schema/` and `/examples/`. The form since 2025-11-18 is `ConfirmationAndVerificationStatement`; `ConfirmationStatement-v1-3` has no verification block. `app/unit-tests/licenceHeaders.test.js` (line 34) already exempts `fixtures/companies-house-xmlgw/` from the licence header; the accounts fixtures there (`GetSubmissionStatus_response.xml`) show the naming. Needs network access to `xmlgw.companieshouse.gov.uk`. **Source**: `PLAN_COMPANIES_HOUSE_CONFIRMATION_STATEMENT.md` (its Tasks table carries the files). **Owner**: Claude Code. **Model**: Haiku. **Size**: 12 files.
   In flight: a Haiku agent in the b91 wave (batch `claude/b91-board`).
 
-- [ ] **CS-H2d. Draft the confirmation-statement email to the XML team.** Write `../DRAFT_EMAIL_XMLGW_CS01.md` with the plan's Q1 (which endpoint and credentials test the 2025-11-18 schemas: Companies House said on 2025-11-04 to use `https://xmlgw-sandpit-staging.companieshouse.gov.uk/v1-0/xmlgw/Gateway` with live presenter credentials, package reference 0012 and GatewayTest 1; and test company data for `CompanyDataRequest`), Q2 (shareholders on a no-change statement, reject 11686) Q4 (authorisation tests and the package reference for the form), and whether Submit presenting a customer's filing under E0000052288 counts as filing for clients (ACSP; `../REPORT_CH_IDENTITY_VERIFICATION.md` V6). It goes on the new thread of the 2026-09-23 22:22 UTC email. Changes nothing committed. **Source**: `PLAN_COMPANIES_HOUSE_CONFIRMATION_STATEMENT.md` (its Tasks table carries the files). **Owner**: Claude Code. **Model**: Haiku. **Size**: 0 files.
-  In flight: a Haiku agent writing the draft.
-
 - [ ] **F2n. The finance parsers code lines from the label map.** `bank-lines.js` (`bankCodeFor`,
   line 108) codes a line from the statement's type alone, and `paypal-statement-lines.js` and
   `stripe-lines.js` post every receipt to sales. Give each an optional `labels` input, the map F2m
@@ -84,6 +73,21 @@ Shared facts for the analytics rows (B52d, B52e, B52l, B52m): the prod Athena da
   `unlabelled` list. Tests over a synthetic map. The company-book skill's Build section names
   the map and the refresh from the prior year's workbooks. The map exists: `../staging/labels/diya-labels.toml` (12 rules, 11 payee patterns from the 2025-26 set).
   **Source**: operator 2026-09-23. **Owner**: Claude Code. **Model**: Sonnet. **Size**: ~7 files.
+  In flight: a Sonnet agent in the b91 wave (batch `claude/b91-board`).
+
+- [ ] **F2g. PayPal transactions into diya-gl lines.** `mcp/lib/finance/paypal-lines.js` over
+  the staged API files (`../staging/2025-2026/paypal/2026-03-31-paypal-transactions.json` and `../staging/2026-2027/paypal/2026-0[4-8]-*-paypal-transactions.json`, 129 transactions), on `mcp/lib/finance/stripe-lines.js`'s pattern. The statement route,
+  `mcp/lib/finance/paypal-statement-lines.js`, already applies the rules this route needs
+  (settled only; holds and their releases unposted, `isHoldCandidate` line 288 and
+  `isReleaseCandidate` line 301; a receipt gross to `sales` with its fee to `purchases`; bank
+  transfers and currency conversions unposted, `isCurrencyConversionOrTransfer` line 274): reuse
+  those functions where the API's record shape allows. A bill payment is `purchases` matched to
+  the mailbox invoice (`mcp/lib/finance/mail-invoices.js`). Validated with `validateLines`; a unit
+  test over a recorded page; the proof is that the API route's `sales` and `purchases` lines for
+  March to August 2026 equal the PayPal lines the statement route wrote into
+  `../staging/2026-2027/book/lines.jsonl`.
+  **Source**: `../PLAN_FINANCE_AUTOMATION.md` phase 2. **Owner**: Claude Code.
+  **Model**: Sonnet. **Size**: ~2 files.
   In flight: a Sonnet agent in the b91 wave (batch `claude/b91-board`).
 
 ## Machine-only
@@ -137,9 +141,9 @@ Shared facts for the analytics rows (B52d, B52e, B52l, B52m): the prod Athena da
   statement date. Steps are task B of `../NEXT_OPERATOR_RUNBOOK.md`. File this one by WebFiling: Submit's confirmation statement (the CS rows) is not built, and CS-H6's prod proof is a fee-free second statement after this one. The personal codes are CS-H3's too. **Owner**: Operator.
   **Model**: none. **Size**: 0 files.
 
-## Blocked
+- [ ] **CS-H2. Send the confirmation-statement email.** Send `../DRAFT_EMAIL_XMLGW_CS01.md` on the `xml@companieshouse.gov.uk` thread, and paste the answers into CS-9's row. **Source**: `PLAN_COMPANIES_HOUSE_CONFIRMATION_STATEMENT.md` (its Tasks table carries the files). **Owner**: Operator. **Model**: none. **Size**: 0 files.
 
-- [ ] **CS-H2. Send the confirmation-statement email.** Send `../DRAFT_EMAIL_XMLGW_CS01.md` on the `xml@companieshouse.gov.uk` thread, and paste the answers into CS-9's row. Blocked on CS-H2d. **Source**: `PLAN_COMPANIES_HOUSE_CONFIRMATION_STATEMENT.md` (its Tasks table carries the files). **Owner**: Operator. **Model**: none. **Size**: 0 files.
+## Blocked
 
 - [ ] **CS-2. Envelopes and the body builder.** A generalised `buildFormSubmission` and the CS01, CompanyData and PaymentPeriods builders and parsers in `app/services/companiesHouseXmlGateway.js`, plus `companiesHouseConfirmationStatementXml.js` with the XSD-order check. Blocked on CS-1. **Source**: `PLAN_COMPANIES_HOUSE_CONFIRMATION_STATEMENT.md` (its Tasks table carries the files). **Owner**: Claude Code. **Model**: Sonnet. **Size**: 4 files.
 
@@ -174,20 +178,6 @@ Shared facts for the analytics rows (B52d, B52e, B52l, B52m): the prod Athena da
   deploy at once, `gh workflow run destroy-ci.yml -f sweep-for-stacks=true` while the second holds
   `ci-set2`, and its log shows "stays: claimed by run". Blocked on two branches deploying at once. **Owner**: Claude Code. **Model**: Haiku.
   **Size**: 0 files.
-
-- [ ] **F2g. PayPal transactions into diya-gl lines.** `mcp/lib/finance/paypal-lines.js` over
-  F1b's staged files, on `mcp/lib/finance/stripe-lines.js`'s pattern. The statement route,
-  `mcp/lib/finance/paypal-statement-lines.js`, already applies the rules this route needs
-  (settled only; holds and their releases unposted, `isHoldCandidate` line 288 and
-  `isReleaseCandidate` line 301; a receipt gross to `sales` with its fee to `purchases`; bank
-  transfers and currency conversions unposted, `isCurrencyConversionOrTransfer` line 274): reuse
-  those functions where the API's record shape allows. A bill payment is `purchases` matched to
-  the mailbox invoice (`mcp/lib/finance/mail-invoices.js`). Validated with `validateLines`; a unit
-  test over a recorded page; the proof is that the API route's `sales` and `purchases` lines for
-  March to August 2026 equal the PayPal lines the statement route wrote into
-  `../staging/2026-2027/book/lines.jsonl`.
-  Blocked on F1b. **Source**: `../PLAN_FINANCE_AUTOMATION.md` phase 2. **Owner**: Claude Code.
-  **Model**: Sonnet. **Size**: ~2 files.
 
 - [ ] **B34.6c. Companies House accounts filing: the sandbox proof.** The XML team was asked on 2026-09-23 22:22 UTC in a new thread (from antony@, subject "Submission 000004 status and
   GetSubmissionStatus query") whether 000004 was accepted and whether lookups are enabled for test
