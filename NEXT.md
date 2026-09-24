@@ -52,7 +52,7 @@ Shared facts for the analytics rows (B52d, B52e, B52l, B52m): the prod Athena da
   `../spreadsheets.diyaccounting.co.uk/web/diya-gl.co.uk/public/index.html`; push it and open its PR.
   **Source**: `PLAN_PRICE_UPDATE.md` §(d); operator 2026-09-22 and 2026-09-23 (go). **Owner**: Claude
   Code. **Model**: Haiku. **Size**: 2 files.
-  In flight: pushing `claude/diya-gl-resident-pro`, then its PR.
+  In flight: spreadsheets PR #139 (`claude/diya-gl-resident-pro`), checks running.
 
 - [ ] **F2e. The MCP writes a populated spreadsheets package.** `write_finance_package`
   (`mcp/lib/finance/package-writer.js`, over diya-gl's `saveWorkbookFiles`) is on `claude/b91-board`.
@@ -65,10 +65,10 @@ Shared facts for the analytics rows (B52d, B52e, B52l, B52m): the prod Athena da
   over `write_finance_package`'s output for DIYA's book (`../staging/2026-2027/book/`). Nothing
   automated writes to Google Drive. **Source**: `../PLAN_FINANCE_AUTOMATION.md` phase 2 and
   Verification. **Owner**: Claude Code. **Model**: Sonnet. **Size**: ~3 files (spreadsheets).
-  In flight: the submit half on the b91 batch; the harness half by a Sonnet agent on spreadsheets `claude/fin-reconcile-book`.
+  In flight: the submit half on PR #349 (`claude/b91-board`). The harness half is spreadsheets `claude/fin-reconcile-book` (local, `6e89f1a72`: `--packages-dir` and `--book`; DIYA's package passes 1,441 of 1,444 checks), with an agent gating `app/lib/calculators/ltd.js`'s payslips print page on `scenario.payroll` for the other 3.
 
 - [ ] **CS-1. Confirmation statement fixtures.** Save the `ConfirmationAndVerificationStatement-v1-0` schema set and `ConfirmationStatement-v1-3.xsd` (the statement reverts to it once every officer is verified), the CompanyData and PaymentPeriods schemas, and the published examples under `fixtures/companies-house-xmlgw/` from `xmlgw.companieshouse.gov.uk/v1-0/schema/` and `/examples/`. The form since 2025-11-18 is `ConfirmationAndVerificationStatement`; `ConfirmationStatement-v1-3` has no verification block. `app/unit-tests/licenceHeaders.test.js` (line 34) already exempts `fixtures/companies-house-xmlgw/` from the licence header; the accounts fixtures there (`GetSubmissionStatus_response.xml`) show the naming. Needs network access to `xmlgw.companieshouse.gov.uk`. **Source**: `PLAN_COMPANIES_HOUSE_CONFIRMATION_STATEMENT.md` (its Tasks table carries the files). **Owner**: Claude Code. **Model**: Haiku. **Size**: 12 files.
-  In flight: a Haiku agent in the b91 wave (batch `claude/b91-board`).
+  In flight: PR #349 (`claude/b91-board`), CI running.
 
 - [ ] **F2n. The finance parsers code lines from the label map.** `bank-lines.js` (`bankCodeFor`,
   line 108) codes a line from the statement's type alone, and `paypal-statement-lines.js` and
@@ -79,7 +79,7 @@ Shared facts for the analytics rows (B52d, B52e, B52l, B52m): the prod Athena da
   `unlabelled` list. Tests over a synthetic map. The company-book skill's Build section names
   the map and the refresh from the prior year's workbooks. The map exists: `../staging/labels/diya-labels.toml` (12 rules, 11 payee patterns from the 2025-26 set).
   **Source**: operator 2026-09-23. **Owner**: Claude Code. **Model**: Sonnet. **Size**: ~7 files.
-  In flight: a Sonnet agent in the b91 wave (batch `claude/b91-board`).
+  In flight: PR #349 (`claude/b91-board`), CI running.
 
 - [ ] **F2g. PayPal transactions into diya-gl lines.** `mcp/lib/finance/paypal-lines.js` over
   the staged API files (`../staging/2025-2026/paypal/2026-03-31-paypal-transactions.json` and `../staging/2026-2027/paypal/2026-0[4-8]-*-paypal-transactions.json`, 129 transactions), on `mcp/lib/finance/stripe-lines.js`'s pattern. The statement route,
@@ -94,7 +94,7 @@ Shared facts for the analytics rows (B52d, B52e, B52l, B52m): the prod Athena da
   `../staging/2026-2027/book/lines.jsonl`.
   **Source**: `../PLAN_FINANCE_AUTOMATION.md` phase 2. **Owner**: Claude Code.
   **Model**: Sonnet. **Size**: ~2 files.
-  In flight: a Sonnet agent in the b91 wave (batch `claude/b91-board`).
+  In flight: PR #349 (`claude/b91-board`), CI running.
 
 ## Machine-only
 
