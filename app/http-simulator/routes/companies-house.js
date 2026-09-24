@@ -6,12 +6,13 @@
 // (transactions, registered office address, registered email address). Both sides share this
 // one route file, matching the single stack the CDK side wires them into.
 // Handles: GET /search/companies, GET /company/{companyNumber}, GET
-// /company/{companyNumber}/registered-office-address, GET
+// /company/{companyNumber}/registered-office-address, GET /company/{companyNumber}/officers, GET
+// /company/{companyNumber}/persons-with-significant-control, GET
 // /registered-email-address/company/{companyNumber}/eligibility, POST /transactions, GET/PUT
 // /transactions/{id}, POST /transactions/{id}/registered-office-address, POST
 // /transactions/{id}/registered-email-address
 
-import { getCompany, searchCompanies } from "../scenarios/companies.js";
+import { getCompany, searchCompanies, getOfficers, getPscs } from "../scenarios/companies.js";
 import {
   getRegisteredOfficeAddress,
   getEligibilityStatusCode,
@@ -93,6 +94,44 @@ export function apiEndpoint(app) {
     }
 
     res.json(address);
+  });
+
+  // GET /company/{companyNumber}/officers - public register read, API key authenticated in the
+  // real service.
+  app.get("/company/:companyNumber/officers", (req, res) => {
+    const { companyNumber } = req.params;
+
+    console.log(`[http-simulator:companies-house] GET /company/${companyNumber}/officers`);
+
+    if (!req.headers.authorization) {
+      return res.status(401).json({ errors: [{ error: "invalid-authorization-header", type: "ch:service" }] });
+    }
+
+    const result = getOfficers(companyNumber);
+    if (!result) {
+      return res.status(404).json({ errors: [{ error: "officers-not-found", type: "ch:service" }] });
+    }
+
+    res.json(result);
+  });
+
+  // GET /company/{companyNumber}/persons-with-significant-control - public register read, API key
+  // authenticated in the real service.
+  app.get("/company/:companyNumber/persons-with-significant-control", (req, res) => {
+    const { companyNumber } = req.params;
+
+    console.log(`[http-simulator:companies-house] GET /company/${companyNumber}/persons-with-significant-control`);
+
+    if (!req.headers.authorization) {
+      return res.status(401).json({ errors: [{ error: "invalid-authorization-header", type: "ch:service" }] });
+    }
+
+    const result = getPscs(companyNumber);
+    if (!result) {
+      return res.status(404).json({ errors: [{ error: "persons-with-significant-control-not-found", type: "ch:service" }] });
+    }
+
+    res.json(result);
   });
 
   // GET /registered-email-address/company/{companyNumber}/eligibility - OAuth authorised, needs
