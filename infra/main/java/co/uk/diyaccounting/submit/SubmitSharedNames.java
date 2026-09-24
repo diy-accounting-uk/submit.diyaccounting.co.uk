@@ -1703,7 +1703,7 @@ public class SubmitSharedNames {
                 List.of(new ApiParameter("clientId", "path", true, "The client's id"))));
 
         // Practice client authorisation invite POST Lambda: creates an HMRC Agent Authorisation
-        // invitation for a client (PLAN_PRICE_UPDATE.md (d), "The authorisation flow").
+        // invitation for a client.
         this.practiceClientAuthorisationInvitePostLambdaHttpMethod = HttpMethod.POST;
         this.practiceClientAuthorisationInvitePostLambdaUrlPath =
                 "/api/v1/practice/clients/{clientId}/authorisation/invitations";
@@ -4645,9 +4645,8 @@ public class SubmitSharedNames {
                 List.of(new ApiParameter("bookId", "path", true, "The book's id"))));
 
         // Practice client book move POST Lambda: copies one of the practice's own books to a
-        // client's book set and deletes the source (PLAN_PRICE_UPDATE.md (d), "Migration from
-        // sole trader to practice"). Standard JWT auth like the other practice routes, not the
-        // books authoriser, since the caller here is always the practice itself.
+        // client's book set and deletes the source. Standard JWT auth like the other practice
+        // routes, not the books authoriser, since the caller here is always the practice itself.
         this.practiceClientBookMovePostLambdaHttpMethod = HttpMethod.POST;
         this.practiceClientBookMovePostLambdaUrlPath = "/api/v1/practice/clients/{clientId}/books/{bookId}/move";
         this.practiceClientBookMovePostLambdaJwtAuthorizer = true;

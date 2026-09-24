@@ -7,7 +7,6 @@
 #
 # Restores the user sub hash salt to a new account from a source account.
 # Copies both the Secrets Manager secret and the system#config DynamoDB item.
-# Part of Phase 1.4 (PLAN_ACCOUNT_SEPARATION.md step 1.4.18).
 #
 # The salt is the MOST CRITICAL piece of data in the system. Without it, all
 # user data (hashed by sub) becomes inaccessible. Three recovery paths exist:

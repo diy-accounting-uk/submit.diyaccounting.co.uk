@@ -515,7 +515,7 @@ public class BillingStack extends Stack {
                 this.billingRecoverPostLambda.getNode().getId());
 
         // Billing Webhook POST Lambda has been moved to the env-level BillingWebhookStack
-        // (always available, independent of app deployments). See PLAN_BILLING_WEBHOOK_TO_ENV.md.
+        // (always available, independent of app deployments).
 
         Lambda.stackHealthAlarm(
                 this,

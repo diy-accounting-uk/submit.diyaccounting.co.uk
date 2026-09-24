@@ -127,8 +127,8 @@ public class DiyaGlStack extends Stack {
                 props.sharedNames().bundlesTableName);
 
         // Lookup existing DynamoDB Practice Clients Table: every books route here takes an
-        // optional clientId (PLAN_PRICE_UPDATE.md (d)) and checks it belongs to the caller via
-        // getClient before resolving the client's book prefix.
+        // optional clientId and checks it belongs to the caller via getClient before resolving
+        // the client's book prefix.
         ITable practiceClientsTable = Table.fromTableName(
                 this,
                 "ImportedPracticeClientsTable-%s".formatted(props.deploymentName()),

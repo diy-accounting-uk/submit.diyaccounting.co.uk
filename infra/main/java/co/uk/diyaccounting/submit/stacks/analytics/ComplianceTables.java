@@ -18,10 +18,9 @@ import software.constructs.Construct;
  * one row per page per tool per WCAG standard from {@code compliance.yml}'s pa11y and axe runs,
  * and {@code compliance_fraud_headers}, one row per month from
  * {@code data/compliance/fraud-prevention-headers/<YYYY-MM>.json} (written by {@code
- * scripts/fraud-header-email-check.js}, see {@code PLAN_FRAUD_HEADER_EMAIL_CHECK.md}). Both
- * tables are written by a workflow step through {@code .github/actions/dora-row}, not by a
- * Lambda: the source data already exists as a file, and the composite action already does one
- * put per row.
+ * scripts/fraud-header-email-check.js}). Both tables are written by a workflow step through
+ * {@code .github/actions/dora-row}, not by a Lambda: the source data already exists as a file,
+ * and the composite action already does one put per row.
  *
  * <p>Modelled line for line on {@link WorkflowRunTables}: one {@code dt} partition-projection
  * column (type {@code date}, format {@code yyyy-MM-dd}), so a new day's object is queryable the

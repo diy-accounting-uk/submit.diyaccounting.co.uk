@@ -861,9 +861,8 @@ public class AnalyticsStack extends Stack {
 
         // ============================================================================
         // Cost: the nightly copy of the management account's FOCUS export, and this
-        // account's own budget and (prod only) anomaly monitor. B52e / PLAN_ONE_STOP_DASHBOARD.md
-        // row D7; the export itself lives in the management account (see CostExportStack, the
-        // cdk-cost app).
+        // account's own budget and (prod only) anomaly monitor. The export itself lives in the
+        // management account (see CostExportStack, the cdk-cost app).
         // ============================================================================
         new CostFocusIngestion(
                 this,

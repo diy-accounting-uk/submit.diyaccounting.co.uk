@@ -25,8 +25,8 @@ import software.amazon.awscdk.services.s3.BucketEncryption;
 
 /**
  * Exercises {@link CloudFrontAccessLogs} in a standalone test stack rather than through
- * {@code AnalyticsStack}: this construct is not wired into any owned stack yet (see
- * PLAN_USAGE_DATA_PIPELINE.md WP-11), so the wiring test lives here until it lands.
+ * {@code AnalyticsStack}: this construct is not wired into any owned stack yet, so the wiring
+ * test lives here until it lands.
  */
 class CloudFrontAccessLogsTest {
 

@@ -40,11 +40,9 @@ import software.constructs.Construct;
 
 /**
  * One Step Functions state machine, started by one EventBridge Scheduler schedule, replacing the
- * five independent EventBridge rules and five DLQs the ingestion and analytics jobs used before
- * this phase. {@code PLAN_USAGE_DATA_PIPELINE.md:1122} named this exact trigger for moving to
- * Step Functions: the metrics publish ran whether or not the ingestion jobs succeeded, so a
- * failed Stripe pull put a false zero on the dashboard with only the Lambda errors alarm saying
- * otherwise.
+ * five independent EventBridge rules and five DLQs the ingestion and analytics jobs used before.
+ * Step Functions ensures the metrics publish runs only after the ingestion jobs succeed: a failed
+ * Stripe pull no longer puts a false zero on the dashboard.
  *
  * <p>Definition: a {@code Parallel} branch runs the five ingestion jobs (Stripe reconciliation,
  * GA4 report pull, GA4 event export pull, GA4 daily aggregate pull, operator effort pull) at

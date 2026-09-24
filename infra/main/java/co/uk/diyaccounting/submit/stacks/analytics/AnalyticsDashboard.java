@@ -55,9 +55,9 @@ import software.constructs.Construct;
  * final step, after the ingestion jobs and the data quality run, so a failed ingestion stops the
  * publish rather than the publish running regardless and putting a false zero on the dashboard.
  *
- * <p>CloudWatch over QuickSight is the design's cost call (see PLAN_USAGE_DATA_PIPELINE.md's
- * WP-7 section): about $9/month all in, reusing the alarm and Telegram routing that already
- * exist, against QuickSight's $9-24 per author per month before any reader.
+ * <p>CloudWatch over QuickSight is the design's cost call: about $9/month all in, reusing the
+ * alarm and Telegram routing that already exist, against QuickSight's $9-24 per author per month
+ * before any reader.
  */
 public class AnalyticsDashboard extends Construct {
 
@@ -231,12 +231,11 @@ public class AnalyticsDashboard extends Construct {
         // ============================================================================
         // Dashboard
         //
-        // Laid out by objective, in the order PLAN_ONE_STOP_DASHBOARD.md's objective table
-        // lists them (uptime, conversion to submission, conversion to paid, running cost),
-        // each objective's widgets under its own heading. HMRC authentications, bundle
-        // operations, sign-ups and bundle grants moved here from the operations dashboard,
-        // which counted them as Lambda invocations of the live deployment - a fair proxy on
-        // the day but wrong as history, since a deploy renames the functions.
+        // Laid out by objective (uptime, conversion to submission, conversion to paid, running
+        // cost), each objective's widgets under its own heading. HMRC authentications, bundle
+        // operations, sign-ups and bundle grants moved here from the operations dashboard, which
+        // counted them as Lambda invocations of the live deployment - a fair proxy on the day but
+        // wrong as history, since a deploy renames the functions.
         // ============================================================================
         var dashboardName = sharedNames.envResourceNamePrefix + "-analytics";
         var dashboardRows = new ArrayList<List<IWidget>>();

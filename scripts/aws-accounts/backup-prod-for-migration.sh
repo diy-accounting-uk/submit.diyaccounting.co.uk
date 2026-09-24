@@ -6,7 +6,6 @@
 # scripts/aws-accounts/backup-prod-for-migration.sh
 #
 # Creates on-demand DynamoDB backups and exports salt metadata for account migration.
-# Part of Phase 1.4 preparation (PLAN_ACCOUNT_SEPARATION.md step 1.4.1).
 #
 # Usage:
 #   ./scripts/aws-accounts/backup-prod-for-migration.sh --profile <profile> [--env <environment>]
@@ -306,4 +305,4 @@ echo "Next steps:"
 echo "  1. Verify backups are AVAILABLE: aws dynamodb list-backups --profile ${PROFILE} --table-name ${ENV}-env-bundles --region ${REGION}"
 echo "  2. Export the salt value securely (see Step 3 instructions above)"
 echo "  3. Run ./scripts/aws-accounts/list-prod-secrets.sh to document all secrets"
-echo "  4. Proceed with account creation (PLAN_ACCOUNT_SEPARATION.md Phase 1.4)"
+echo "  4. Proceed with account creation and migration"

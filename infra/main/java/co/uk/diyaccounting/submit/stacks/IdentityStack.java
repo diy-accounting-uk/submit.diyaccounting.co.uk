@@ -307,11 +307,11 @@ public class IdentityStack extends Stack {
                 .build();
 
         // MCP User Pool Client
-        // A third client on the same pool for the submission MCP's stdio surfaces
-        // (PLAN_SUBMISSION_MCP.md M3): authorization code with PKCE on a loopback redirect, the
-        // flow every CLI uses, no client secret. Cognito needs an exact callback URL match, so
-        // every port in the loopback listener's range is registered on both hostnames a listener
-        // can bind (127.0.0.1 and localhost) rather than one fixed port.
+        // A third client on the same pool for the submission MCP's stdio surfaces.
+        // Uses authorization code with PKCE on a loopback redirect, the flow every CLI uses, no
+        // client secret. Cognito needs an exact callback URL match, so every port in the loopback
+        // listener's range is registered on both hostnames a listener can bind (127.0.0.1 and
+        // localhost) rather than one fixed port.
         this.mcpUserPoolClient = UserPoolClient.Builder.create(this, props.resourceNamePrefix() + "-McpUserPoolClient")
                 .userPool(userPool)
                 .userPoolClientName(props.resourceNamePrefix() + "-mcp-client")
