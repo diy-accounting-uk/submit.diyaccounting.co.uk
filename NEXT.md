@@ -46,10 +46,10 @@ Shared facts for the analytics rows (B52d, B52e, B52l, B52m): the prod Athena da
 ## In flight
 
 - [ ] **CS-7. Confirmation statement behaviour suite.** `test:fileConfirmationStatementBehaviour-*`. **Source**: `PLAN_COMPANIES_HOUSE_CONFIRMATION_STATEMENT.md` (its Tasks table carries the files). **Owner**: Claude Code. **Model**: Sonnet. **Size**: 4 files.
-  In flight: on `claude/b93-board` (`bbd4369c`); an agent is making it and the accounts suite pass on the simulator and adding both to the CI simulator matrix.
+  In flight: PR #351 (`claude/b93-board`), CI running; the accounts suite fix and both suites in `test.yml` ride with it.
 
 - [ ] **CS-12. Identity-verification answers into the confirmation statement.** Apply V1 to V4 from Cowork's `../REPORT_CH_IDENTITY_VERIFICATION.md` (written 2026-09-23; the plan's table carries the answers) to the page and the XML builder: every director needs a code, `OtherForenames` required, the schema chosen from each officer's `identity_verification_details`. Also: the shareholdings editor on `fileConfirmationStatement.html` takes one shareholder per holding; add joint holders. **Source**: `PLAN_COMPANIES_HOUSE_CONFIRMATION_STATEMENT.md` (its Tasks table carries the files). **Owner**: Claude Code. **Model**: Sonnet. **Size**: 3 files.
-  In flight: on `claude/b93-board` (`994b6f74`); pushes with CS-7.
+  In flight: PR #351 (`claude/b93-board`), CI running.
 
 ## Machine-only
 
