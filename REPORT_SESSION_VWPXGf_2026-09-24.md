@@ -3,80 +3,91 @@
 
 # Session report VWPXGf, 2026-09-24
 
-Session `session_018ammFSHtXRV6JkS8CnQB6E`, 2026-09-23 about 20:15 UTC (first commit 20:24) to
-2026-09-24 06:25 UTC, about 10 hours 10 minutes.
+Session `session_018ammFSHtXRV6JkS8CnQB6E`, 2026-09-23 about 20:15 UTC to 2026-09-24 14:40 UTC, in
+two segments split by a `/clear`: segment 1 to 06:25 (measured in this file's previous version,
+`fec7105d`), segment 2 from 06:31 (measured for this version).
 
 ## Result
 
-3 PRs merged here (#346 with 15 rows, #347 the practice licence launch, #348 a prod probe fix) and
-2 in spreadsheets (#137 the pre-push hook, #138 credit notes net in the engine, released as diya-gl
-1.2.32). 62 session commits on `main`. 27 board rows closed (15 of them rows open at the start, 12
-opened and closed within the session). Hand-written change: 2,632 lines added and 304 removed
-across 55 files (code, tests, workflows, config), 578 lines of Markdown; 54 lines of generated
-fixtures. Prod serves `prod-3703ecf`. The board: 35 rows open, none in flight, 6 machine-only rows
-ready, 8 operator rows ready, 21 blocked (most of them the new confirmation-statement build).
+6 PRs merged here (#346, #347, #348, #349, #350, #351) and 5 in spreadsheets (#137, #138, #139,
+#140, #141). 99 session commits on `main` (62 and 37). 43 board rows closed (27 and 16). Hand-written
+change: about 11,760 lines added and 580 removed in code, tests, workflows and skills (2,632/304 and
+9,126/274); 22 Companies House schema and example files downloaded as fixtures (9,773 lines); 78
+lines of generated `openapi.json`. Prod serves `prod-0fdfb15`, carrying the whole confirmation
+statement build (CS-1 to CS-8, CS-12), listed on ci only. The board: 20 rows open, none in flight,
+no machine-only row ready, 9 operator rows ready, 11 blocked.
 
 ## Method
 
 I use Claude Code as a coordinator. I write the plan and the rules into the repo; it refines the
-board, dispatches agents in parallel on separate worktrees, lands their commits on one batch
-branch, and merges what passes every gate. I make the decisions it can't: which accounts a receipt
-belongs to, when the ITSA email goes, the live Stripe prices, the merges during a cool-down, and
-anything that files against my own company. In this session that landed 17 board rows across two
-PRs and a same-night prod hotfix, rebuilt DIY Accounting Limited's own book to zero failing checks,
-launched the practice licence, and designed the confirmation-statement filing, for about $35 of
-tokens (estimated). Today the refine-then-wave loop became reliable, and my next areas to develop
-are proof on prod paths before merge (two of three prod issues surfaced only after merge) and
-keeping concurrent ci deploys off the same test users.
+board, dispatches agents in parallel on separate worktrees, lands their commits on one batch branch
+per wave, and merges what passes every gate. I make the decisions it can't: the fee model, the
+sends to HMRC and Companies House, anything that files against my own company, deletes, or spends
+money. In the second segment that took the confirmation statement from fixtures to a built,
+tested, deployed (ci-listed) feature across three waves, reconciled my company's book as a real
+spreadsheets package at 1,444 of 1,444 checks, and recovered a half-published diya-gl release,
+with six operator messages, all commands. Today the wave-per-dependency-level loop became
+reliable, and my next areas to develop are the pre-push hook's cost in spreadsheets and catching
+browser-security findings before CI does.
 
 ## What worked
 
-| Efficiency | Measured | Mechanism |
+| Efficiency | Figure (segment 2) | Mechanism |
 |---|---|---|
-| Elapsed time | 14 rows from dispatch (20:52 UTC) to prod (`prod-1a2d1c8`, about 00:55 UTC), about 4 hours | `/refine` before the wave: every brief carried file:line anchors, so 8 of 10 agents landed on first report |
-| LLM cost | 4.53M sub-agent tokens across 19 agent runs, about $15 (estimated); main session about $20 (estimated) | Lowest tier that fits: 3 Haiku, 13 Sonnet, 1 Opus (brief reconciliation), 1 Fable (the CS01 design) |
-| GitHub Actions | 1,729 job-minutes over 107 runs (deploy 768, test 660) | One batch branch per wave, one deploy per head; the docs-only pushes went straight to `main` |
-| AWS | 4 branch deploys, 2 prod deploys; one ci set (`ci-set2`, created 2026-09-23 23:27 UTC) standing; no spare prod set | Named ci slots and the self-destruct stack; `destroy previous` on each prod deploy |
-| Operator input | About 38 messages (counted from the transcript, approximate): 10 decisions, 9 questions, 8 slash commands, 5 corrections, 3 pastes of commands the session could not run, 3 new requirements | `AskUserQuestion` for the two decisions the board carried (O11's day, the live Stripe go); decisions written into rows the same turn |
-| Quality | Content scan found and removed two committed public IP addresses; the B30bb proof exposed that dispatched runs never count toward required checks, fixed before merge | Proofs run on the real PR (docs-only pushes, a dispatched CodeQL) instead of assumed |
+| Elapsed | 3 waves, each dispatch to prod about 3 hours (b92 08:27 to 11:30, b93 11:05 to 14:10) | One batch branch per wave; the next wave branched from the open PR's head (b93 from b92) so it built while the previous deploy ran |
+| Operator input | 6 messages, all commands (`/iterate`, 4 `/board`, `/session-report`); 0 corrections, 0 pastes | `/iterate` under `/loop`; the board as the only interface; every blocked command printed with `!` |
+| LLM | 16 agents, 4.12M sub-agent tokens: 3 Haiku (0.28M), 13 Sonnet (3.84M), no Opus | Lowest tier per row; the coordinator reviewed diffs and fixed small defects on the batch instead of re-dispatching |
+| Quality | 4 defects caught before merge: a global vitest timeout, a committed `node_modules` symlink, the schema choice not wired through the Lambdas, 15 unescaped HTML interpolations | Read-the-diff-before-landing; "don't narrow scope" folded each adjacent bug into its row |
+| Recovery | diya-gl 1.2.34 image, tag and roll recovered in one PR and one dispatch | The fix keyed the image step on the registry, the way the finish step already keyed on the tag |
+| GitHub Actions | 2,553 job-minutes (2,036 submit, 517 spreadsheets), 141 runs | B30bb's changes job kept docs-only `test` runs to 86 job-minutes across 33 runs |
 
 ## Room for improvement
 
 | Loss | Size | Cause | Improvement |
 |---|---|---|---|
-| A prod probe opened a live Stripe checkout after merge | 1 failed main deploy (run 35942092607), a hotfix PR (#348), a manual prod probe, about 1 hour 30 minutes | The rewritten `resident-pro` probe skipped the test pass, so the user carried no synthetic qualifier; ci passes either way because ci uses test keys | A probe that reaches checkout asserts the session id starts `cs_test_`, so ci fails the same way prod would |
-| Required checks missing on a Markdown-only head | 2 extra CI rounds and a third agent (197,758 tokens), about 2 hours | B30bb assumed a dispatched `test.yml` satisfies required checks; GitHub leaves `workflow_dispatch` suites out of a PR's rollup | Verify the platform semantics a mechanism relies on before building it (recorded in `/refine`'s caught list) |
-| Actionlint failed on an undeclared `vars.*` | 1 branch deploy lost to one job, one redeploy, about 1 hour | OF1a's brief named prettier and a YAML parse, not actionlint with `test.yml`'s ignore set | Every workflow brief runs actionlint exactly as `validate workflow syntax` does |
-| The PII scan's first build | 161,623 tokens of rework | The brief reused the redactor's `DENY_PATTERNS`, greedy by design; 2,489 hits on the tree | A scan or gate brief states its target figure on the current tree (zero hits) as its first proof |
-| The book rebuilt three times | 3 agent rounds (F2k 376,228, F2m 314,251, F2o 326,608 tokens) and 4 operator corrections | Opening balances, labels, VAT status and the members register each surfaced after a build | The company-book skill's Build section reads the prior year's workbook set first (memory written; skill update pending) |
-| Concurrent ci deploys shared test users | 1 probe failure and a rerun on #347 | b89 and b90 deployed at the same time against shared Cognito lane users | Serialise branch deploys, or give each ci slot its own lane user |
-| The practice licence agent stopped short of the CDK wiring | 1 extra agent round (107,348 tokens) | The agent judged the env-var wiring separate work | A brief that adds env vars names the stack that passes them to the Lambda |
-| SSO expired mid-session | 2 operator logins; prod facts unreadable for about 1 hour | The 8 to 12 hour window ran out overnight | Read every AWS fact a cycle needs while the token is fresh, and ask for the login before a wave, not after |
+| b93 redeploy for CodeQL alert 74 | 169 job-min, about 55 min to merge | The page interpolated register data into HTML unescaped; only CI's CodeQL saw it | A DOM-XSS lint rule (`eslint-plugin-no-unsanitized`) on `web/public` in the lint gate, and "escape every interpolation" in page briefs |
+| Spreadsheets pre-push hook | 108 min of local runs (65 and 43) for a 2-file and a 6-file change, each followed by a refused push | The hook runs the browser tier for small changes, and its router rewrites `app/lib/provenance-data.js` from the installed engine version, which the hook then refuses | Make the router leave `provenance-data.js` alone when only the local engine differs; scope the browser tier to the changed pages |
+| CS-7 built before CS-12 | 1 extra agent, 0.22M tokens | Two rows dispatched in parallel although CS-7's steps depend on CS-12's form fields | Sequence rows whose files touch the same page, or give the later brief the earlier row's field changes |
+| CS-12 left the schema choice unwired | 1 resume, about 5 min | The brief's file list excluded the Lambdas the feature needed | Briefs name the call sites a new function must reach, not only the files it lives in |
+| Monitor misreports | 6 wakes checked by hand (4 stale reds, 2 early "all terminal" tallies) | `watch-ci.sh` reads each workflow's latest run in a window, not the current head's, and misses a delegated deploy | Key the tally on the current head's runs, and include `deploy` runs whose `headSha` is the head |
+| Mistyped tag SHA | 1 failed publish run, about 8 min | A ten-character SHA typed by hand | Resolve every SHA with `git rev-parse` before passing it to a workflow input |
+| Docs push over a merge's runs | 1 cancelled `test` run on `fcd84d59` | The board push waited on a check that read an empty result as idle | Push board commits only after the merge head's runs are terminal, by head, not by a count |
+| SSO expired before the last render | Part 4 unverified, OB30bk undone | The token lasted about 8 hours | Read every AWS fact a render needs in the first hours of the window |
 
 ## Placement
 
-Scales constructed from published figures; each anchor cited.
+Scales are constructed from the cited anchors; the positions are this session's measured figures.
 
-| Efficiency | This session | Anchor |
+| Efficiency | Anchor | This session |
 |---|---|---|
-| Deployment frequency | 2 prod deploys in about 10 hours | Elite DORA teams deploy on demand, multiple times a day ([Koalr, 2026](https://koalr.com/blog/dora-metrics-benchmarks)) |
-| Lead time for changes | About 4 hours from dispatch to prod | Elite target under one day ([DX, 2026](https://getdx.com/blog/dora-metrics/)) |
-| LLM cost | About $35 for 20 rows landed, about $1.75 a row (estimated) | $0.03 to $2.60 per agent task ([Firecrawl, 2026](https://www.firecrawl.dev/blog/best-ai-coding-agents)); $481 per developer per month at the 90th percentile ([LinearB, 2026](https://linearb.io/resources/ai-engineering-productivity-gap)) |
+| Lead time | DORA 2026 elite: under a day, often under an hour ([CI/CD Watch](https://cicd.watch/blog/dora-metrics-benchmarks-2026), [Taskade](https://www.taskade.com/blog/dora-metrics-explained)) | About 3 hours dispatch to prod per wave: inside elite's one-day line |
+| Deploy frequency | DORA 2026 elite: on demand, several a day ([Keploy](https://keploy.io/blog/community/how-to-improve-dora-metrics)) | 2 prod deploys and 3 ci deploys in segment 2: elite |
+| LLM cost | Claude Code about $13 per developer per active day, 90% under $30 ([Claude Code docs](https://code.claude.com/docs/en/costs), [Tokenade](https://tokenade.net/en/stats/ai-coding-cost-per-developer)) | Estimated $95 to $110 for segment 2 (below): 3 to 4 times the 90th percentile, for a team's worth of throughput |
 
-GitHub Actions: the repository is public, so the 1,729 job-minutes bill nothing; at GitHub's
-published Linux 2-core rate of $0.008 a minute a private repository would pay about $13.83.
-The workflows make no metered LLM call.
+## Costs
+
+- **LLM, estimated.** Sub-agents: 3.84M Sonnet and 0.28M Haiku tokens; at an assumed 85% cache
+  read, about $6 at list rates. Main session: about 250 turns over a context that grew to about
+  650k tokens, about 50M cache-read tokens and 0.15M output, about $90 at Opus-class list rates
+  ($1.50/M cache read, $75/M output). The subscription's marginal cost is nil. Segment 1: about $35.
+- **GitHub Actions.** Both repositories are public, so billed $0; at the private Linux rate
+  ($0.008/min) the 2,553 job-minutes would be $20.42. Six `deploy` runs at 163 to 171 job-minutes
+  each were 999 of them.
+- **AWS.** 3 ci deploys (b92 once, b93 twice) onto `ci-set1`; `ci-set2` stood from 23:27 until the
+  12:34 sweep. 2 prod sets built (`prod-1031515`, destroyed about 14:30; `prod-0fdfb15`, live);
+  each old set stood about 30 minutes beside its successor, about $0.05 at $35.28 a month. Not
+  measured further. The workflows make no metered LLM call.
 
 ## Suggested improvements
 
-Ranked by value; time losses rank above token losses, because a lost hour holds a merge and a
-prod deploy, while the token losses are single-digit dollars.
-
-1. A probe that reaches Stripe checkout asserts a `cs_test_` session: removes a failed prod deploy and a hotfix round, about 1 hour 30 minutes.
-2. Check the platform semantics a gate relies on before building it: removes about 2 hours and 197,758 tokens (now in `/refine`'s caught list).
-3. Workflow briefs run actionlint with `test.yml`'s ignore set: removes a lost deploy, about 1 hour.
-4. Ask for `aws sso login` before a wave when the token is older than 6 hours: removes about 1 hour of unreadable prod facts.
-5. Company-book skill: read the prior year's workbook set before any build: removes about 2 rebuild rounds (641,000 tokens) and 4 operator corrections.
-6. Serialise branch deploys, or one lane user per ci slot: removes a contention failure and rerun per concurrent pair (B30at1 exercises the same case).
-7. Scan and gate briefs state the target figure on the current tree: removes a rework round, about 161,623 tokens.
-8. Briefs that add env vars name the stack that wires them: removes an agent round, about 107,348 tokens.
+1. The spreadsheets router leaves `provenance-data.js` alone for a local engine difference, and the
+   browser tier covers only changed pages: removes about 108 minutes and 2 refused pushes a session.
+2. A DOM-XSS lint rule on `web/public` in the lint gate: removes a 169 job-minute redeploy and about
+   55 minutes per finding. Ranks below 1 because it fires less often.
+3. `watch-ci.sh` tallies the current head's runs, delegated deploys included: removes 6 manual checks.
+4. Dependent rows are sequenced, or the later brief carries the earlier row's changes: removes 1
+   agent (0.22M tokens) per pair.
+5. Briefs name the call sites a new function must reach: removes 1 resume per feature.
+6. SHAs are resolved with `git rev-parse` before any workflow input: removes 1 failed run.
+7. Board pushes wait on the merge head's terminal runs: removes 1 cancelled `test` run.
+8. AWS facts are read early in the SSO window: keeps Part 4 and operator AWS rows verifiable to the end.
