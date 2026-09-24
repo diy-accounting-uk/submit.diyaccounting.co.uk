@@ -80,13 +80,6 @@ Shared facts for the analytics rows (B52d, B52e, B52l, B52m): the prod Athena da
   SDST answers. **Source**: BACKLOG 11; `PLAN_ITSA_PHASE_2.md` T10. **Owner**: Operator. **Model**:
   none. **Size**: 0 files.
 
-- [ ] **OB30bc. Make the content scan a required check.** Add `content scan` to the required
-  status checks of ruleset 16057564
-  (<https://github.com/diy-accounting-uk/submit.diyaccounting.co.uk/rules/16057564>), so no PR
-  merges past a PII hit. B30bc merged in PR #346 (2026-09-23); on #346 a root `.md` push and a skill push each ran
-  `content scan`, and the Markdown-only head reached `CLEAN`. **Owner**: Operator.
-  **Model**: none. **Size**: 0 files.
-
 - [ ] **CS-H2. Send the confirmation-statement email.** Send `../DRAFT_EMAIL_XMLGW_CS01.md` on the `xml@companieshouse.gov.uk` thread, and paste the answers into CS-9's row. **Source**: `PLAN_COMPANIES_HOUSE_CONFIRMATION_STATEMENT.md` (its Tasks table carries the files). **Owner**: Operator. **Model**: none. **Size**: 0 files.
 
 - [ ] **CS-H1. Companies House credit account: the account number.** The application went to
