@@ -45,6 +45,32 @@ Shared facts for the analytics rows (B52d, B52e, B52l, B52m): the prod Athena da
 
 ## In flight
 
+- [ ] **ITSA-R1. The ITSA proof suites green and in CI.** Two suites the approvals checklist cites
+  fail on the simulator (2026-09-24): `itsaAnnualSubmission` times out after 452 s waiting for
+  "Annual Submission edit form", and `itsaFinalDeclaration` after 452 s waiting for "Final Declaration
+  calculation retrieved"; in both the page shows no status and no spinner. None of the eight
+  `test:itsa*Behaviour-simulator` suites is in `.github/workflows/test.yml`'s simulator jobs (the VAT
+  suites are, from line 725), and `deploy.yml` runs six of them on ci only (from line 2784), skipping
+  prod; annual submission and final declaration run nowhere. Diagnose and fix both suites at the
+  layer that broke, add all eight to `test.yml`'s simulator jobs on the VAT jobs' pattern, and run
+  the checklist's browser proof tests (`_developers/hmrc/ITSA_PRODUCTION_APPROVALS_CHECKLIST.md`
+  lines 34 to 46) green. Blocks O11. **Owner**: Claude Code. **Model**: Sonnet. **Size**: ~4 files.
+  In flight: a Sonnet agent.
+
+- [ ] **ITSA-R2. The sandbox year with a real multi-factor header.** `scripts/itsa-sandbox-year.js`
+  builds its fraud headers from a synthetic event (line 593) with no MFA, so HMRC's validator warns
+  on `gov-client-multi-factor` (`_developers/hmrc/ITSA_PHASE_2_SANDBOX.md` line 296) and the script
+  accepts it (`KNOWN_ACCEPTABLE_WARNING_HEADERS`, line 127). Operator, 2026-09-24: clear it. Sign the
+  lane's durable test user in through Cognito native auth with its TOTP (the secret is in Secrets
+  Manager, `scripts/ensure-cognito-test-user.js` `totpSecretName`, line 93), build
+  `Gov-Client-Multi-Factor` from that sign-in the way `app/lib/buildFraudHeaders.js` does from the
+  authorizer context (line 64), drop the acceptable-warning allowance so only a clean validator
+  passes, then re-run 2023-24, 2025-26 and 2026-27 and record the run, the date and the commit in
+  `ITSA_PHASE_2_SANDBOX.md` and the questionnaire's "Testing in the last two weeks" row. Change the
+  recognition email's MFA sentence (`_developers/hmrc/DRAFT_EMAIL_ITSA_RECOGNITION.md` line 49) to
+  the clean result. Blocks O11. **Owner**: Claude Code. **Model**: Sonnet. **Size**: ~4 files.
+  In flight: a Sonnet agent.
+
 ## Machine-only
 
 - [ ] **CS-10a. The per-submission price in the product catalogue.** Give activities a price the way
@@ -73,13 +99,6 @@ Shared facts for the analytics rows (B52d, B52e, B52l, B52m): the prod Athena da
 
 ## Human-driven
 
-- [ ] **O11. The ITSA send day.** Operator, 2026-09-23: the day after PR #346 merges, which is 2026-09-24 (#346
-  merged 2026-09-23 23:25 UTC; checklist rows 8 and 13 are evidenced on `main`; the 2026-09-21
-  sandbox run is inside HMRC's 14 days). On that day send `_developers/hmrc/DRAFT_EMAIL_ITSA_RECOGNITION.md` to
-  `SDSTeam@hmrc.gov.uk`, then `_developers/hmrc/DRAFT_EMAIL_ITSA_PRODUCTION_CREDENTIALS.md` when
-  SDST answers. **Source**: BACKLOG 11; `PLAN_ITSA_PHASE_2.md` T10. **Owner**: Operator. **Model**:
-  none. **Size**: 0 files.
-
 - [ ] **CS-H2. Send the confirmation-statement email.** Send `../DRAFT_EMAIL_XMLGW_CS01.md` on the `xml@companieshouse.gov.uk` thread, and paste the answers into CS-9's row. **Source**: `PLAN_COMPANIES_HOUSE_CONFIRMATION_STATEMENT.md` (its Tasks table carries the files). **Owner**: Operator. **Model**: none. **Size**: 0 files.
 
 - [ ] **CS-H1. Companies House credit account: the account number.** The application went to
@@ -90,6 +109,13 @@ Shared facts for the analytics rows (B52d, B52e, B52l, B52m): the prod Athena da
   **Size**: 0 files.
 
 ## Blocked
+
+- [ ] **O11. The ITSA send day.** Operator, 2026-09-23: the day after PR #346 merges, which is 2026-09-24 (#346
+  merged 2026-09-23 23:25 UTC; checklist rows 8 and 13 are evidenced on `main`; the 2026-09-21
+  sandbox run is inside HMRC's 14 days). On that day send `_developers/hmrc/DRAFT_EMAIL_ITSA_RECOGNITION.md` to
+  `SDSTeam@hmrc.gov.uk`, then `_developers/hmrc/DRAFT_EMAIL_ITSA_PRODUCTION_CREDENTIALS.md` when
+  SDST answers. Blocked on ITSA-R1 and ITSA-R2 (the proof suites, and a validator with no warning). **Source**: BACKLOG 11; `PLAN_ITSA_PHASE_2.md` T10. **Owner**: Operator. **Model**:
+  none. **Size**: 0 files.
 
 - [ ] **CS-10b. Charging for a single submission.** A general capability, not confirmation-statement
   specific: a route that opens a Stripe Checkout Session in `payment` mode for an activity's
