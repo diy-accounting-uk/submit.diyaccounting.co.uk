@@ -138,8 +138,7 @@ Shared facts for the analytics rows (B52d, B52e, B52l, B52m): the prod Athena da
   standing ci set and pin the returned `StatusCode` and any rejections as a case in
   `app/unit-tests/functions/companiesHouseAccountsGet.test.js`. The prod catalogue listing is
   BACKLOG 34c's: prod carries no `COMPANIES_HOUSE_XMLGW_URI` and no presenter secret ARNs. Blocked
-  on the XML team's reply; the request and response for 1790201546927 are in
-  `../XMLGW_000004_POLL_2026-09-23.md` if they ask. **Source**: BACKLOG 34b. **Owner**: Claude Code. **Model**: Sonnet. **Size**:
+  on the XML team's reply. They asked for the request and response on 2026-09-24; the reply went the same day with transactions 1790285530232 (9999) and 1790285532345 (502), masked (`../DRAFT_EMAIL_XMLGW_000004_REPLY.md`; the unmasked set, from the 21:42 run, is `../DRAFT_EMAIL_XMLGW_000004_REPLY_UNMASKED.md`). In the 9999 response the gateway echoes `Method` CHMD5 with an empty `Value`. **Source**: BACKLOG 34b. **Owner**: Claude Code. **Model**: Sonnet. **Size**:
   ~1 file.
 
 - [ ] **B52l. The optimiser over the raw export.** A notebook over `../analytics/prod/` (pulled by
