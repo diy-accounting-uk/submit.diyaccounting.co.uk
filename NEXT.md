@@ -73,14 +73,6 @@ Shared facts for the analytics rows (B52d, B52e, B52l, B52m): the prod Athena da
 
 ## Human-driven
 
-- [ ] **OB30bk. Delete the orphaned prod origin bucket.** `prod-dd95c16-app-edgestac-proddd95c16apporiginbuck-rjpb9unlblmi`
-  (created 2026-09-20) outlived its deployment: no `prod-dd95c16` stack stands. It holds 30 objects,
-  94 MB, all Playwright test reports under `tests/` from that deploy; versioning is off. Empty it,
-  then delete it:
-  `aws --profile submit-prod s3 rm s3://prod-dd95c16-app-edgestac-proddd95c16apporiginbuck-rjpb9unlblmi --recursive`
-  then `aws --profile submit-prod s3api delete-bucket --bucket prod-dd95c16-app-edgestac-proddd95c16apporiginbuck-rjpb9unlblmi`.
-  **Owner**: Operator. **Model**: none. **Size**: 0 files.
-
 - [ ] **O11. The ITSA send day.** Operator, 2026-09-23: the day after PR #346 merges, which is 2026-09-24 (#346
   merged 2026-09-23 23:25 UTC; checklist rows 8 and 13 are evidenced on `main`; the 2026-09-21
   sandbox run is inside HMRC's 14 days). On that day send `_developers/hmrc/DRAFT_EMAIL_ITSA_RECOGNITION.md` to
