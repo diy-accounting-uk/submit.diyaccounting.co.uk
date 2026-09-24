@@ -52,7 +52,7 @@ Shared facts for the analytics rows (B52d, B52e, B52l, B52m): the prod Athena da
   `image` output from a GHCR check, the image steps on `publish || image`; then dispatch
   `publish-diya-gl.yml` on main to push the 1.2.34 image and finish the tag and roll. **Owner**:
   Claude Code. **Model**: Sonnet. **Size**: 1 file (spreadsheets).
-  In flight: a Sonnet agent on spreadsheets `claude/ops-ghcr-backfill`.
+  In flight: spreadsheets PR #141 (`claude/ops-ghcr-backfill`), checks running.
 
 - [ ] **CS-2. Envelopes and the body builder.** A generalised `buildFormSubmission` and the CS01, CompanyData and PaymentPeriods builders and parsers in `app/services/companiesHouseXmlGateway.js`, plus `companiesHouseConfirmationStatementXml.js` with the XSD-order check. **Source**: `PLAN_COMPANIES_HOUSE_CONFIRMATION_STATEMENT.md` (its Tasks table carries the files). **Owner**: Claude Code. **Model**: Sonnet. **Size**: 4 files. The schemas are in `fixtures/companies-house-xmlgw/` (22 files, on `main`).
   In flight: PR #350 (`claude/b92-board`), CI running.
@@ -71,6 +71,12 @@ Shared facts for the analytics rows (B52d, B52e, B52l, B52m): the prod Athena da
 
 - [ ] **CS-8. Confirmation statement MCP tools.** Four tools in `mcp/lib/submit-tools.js`. **Source**: `PLAN_COMPANIES_HOUSE_CONFIRMATION_STATEMENT.md` (its Tasks table carries the files). **Owner**: Claude Code. **Model**: Sonnet. **Size**: 4 files.
   In flight: PR #350 (`claude/b92-board`), CI running.
+
+- [ ] **CS-7. Confirmation statement behaviour suite.** `test:fileConfirmationStatementBehaviour-*`. **Source**: `PLAN_COMPANIES_HOUSE_CONFIRMATION_STATEMENT.md` (its Tasks table carries the files). **Owner**: Claude Code. **Model**: Sonnet. **Size**: 4 files.
+  In flight: a Sonnet agent on batch `claude/b93-board` (branched from `claude/b92-board`; pushes after PR #350 merges).
+
+- [ ] **CS-12. Identity-verification answers into the confirmation statement.** Apply V1 to V4 from Cowork's `../REPORT_CH_IDENTITY_VERIFICATION.md` (written 2026-09-23; the plan's table carries the answers) to the page and the XML builder: every director needs a code, `OtherForenames` required, the schema chosen from each officer's `identity_verification_details`. Also: the shareholdings editor on `fileConfirmationStatement.html` takes one shareholder per holding; add joint holders. **Source**: `PLAN_COMPANIES_HOUSE_CONFIRMATION_STATEMENT.md` (its Tasks table carries the files). **Owner**: Claude Code. **Model**: Sonnet. **Size**: 3 files.
+  In flight: a Sonnet agent on batch `claude/b93-board` (branched from `claude/b92-board`; pushes after PR #350 merges).
 
 ## Machine-only
 
@@ -127,15 +133,11 @@ Shared facts for the analytics rows (B52d, B52e, B52l, B52m): the prod Athena da
 
 ## Blocked
 
-- [ ] **CS-7. Confirmation statement behaviour suite.** `test:fileConfirmationStatementBehaviour-*`. Blocked on CS-6. **Source**: `PLAN_COMPANIES_HOUSE_CONFIRMATION_STATEMENT.md` (its Tasks table carries the files). **Owner**: Claude Code. **Model**: Sonnet. **Size**: 4 files.
-
 - [ ] **CS-9. Confirmation statement sandbox proof.** On the endpoint CS-H2's answer names: a CompanyDataRequest, a no-change statement, a SIC change, one with `Shareholdings`, one with a blank director code, each polled to a terminal state and pinned in the simulator; settles Q2 and Q3. Blocked on CS-5, CS-7, CS-H1 and CS-H2; machine-ask when it runs (live credentials). **Source**: `PLAN_COMPANIES_HOUSE_CONFIRMATION_STATEMENT.md` (its Tasks table carries the files). **Owner**: Claude Code. **Model**: Sonnet. **Size**: 3 files.
 
 - [ ] **CS-10. Confirmation statement fee collection.** Build the option CS-H5 picks. Blocked on CS-H5 and CS-4. **Source**: `PLAN_COMPANIES_HOUSE_CONFIRMATION_STATEMENT.md` (its Tasks table carries the files). **Owner**: Claude Code. **Model**: Sonnet. **Size**: ~5 files.
 
 - [ ] **CS-11. Confirmation statement prod launch.** `prod` on the activity, prod gateway values, `compliance.toml` rows for the credit account and the authorisation. Shares BACKLOG 34c steps 3 and 4 with the accounts launch. Blocked on CS-9, CS-H4 and CS-H6. **Source**: `PLAN_COMPANIES_HOUSE_CONFIRMATION_STATEMENT.md` (its Tasks table carries the files). **Owner**: Claude Code. **Model**: Haiku. **Size**: 5 files.
-
-- [ ] **CS-12. Identity-verification answers into the confirmation statement.** Apply V1 to V4 from Cowork's `../REPORT_CH_IDENTITY_VERIFICATION.md` (written 2026-09-23; the plan's table carries the answers) to the page and the XML builder: every director needs a code, `OtherForenames` required, the schema chosen from each officer's `identity_verification_details`. Also: the shareholdings editor on `fileConfirmationStatement.html` takes one shareholder per holding; add joint holders. Blocked on CS-6. **Source**: `PLAN_COMPANIES_HOUSE_CONFIRMATION_STATEMENT.md` (its Tasks table carries the files). **Owner**: Claude Code. **Model**: Sonnet. **Size**: 3 files.
 
 - [ ] **CS-13. PSC verification statement (VS01).** A builder over `PSCVerificationStatement-v1-0.xsd`, a submit and poll Lambda pair, a result-view section for each director who is also a PSC, filed after the statement inside the window starting the day after the review date (the report's V4). Blocked on CS-9. **Source**: `PLAN_COMPANIES_HOUSE_CONFIRMATION_STATEMENT.md` (its Tasks table carries the files). **Owner**: Claude Code. **Model**: Sonnet. **Size**: ~8 files.
 
