@@ -25,6 +25,9 @@ const SIMULATOR_COMPANY_AUTH_CODE = "SIMCS01";
 /** An 11-character personal code, the length the review form checks for and nothing more. */
 export const TEST_DIRECTOR_PERSONAL_CODE = "AAAAAAAAAAA";
 
+/** The other forenames value the review form requires per director row before it will preview. */
+export const TEST_DIRECTOR_OTHER_FORENAMES = "MIDDLENAME";
+
 /**
  * The company the confirmation statement journey looks up. The simulator answers for its fixture
  * company under 06846849; every other lane reads the live public data API, where the record
@@ -125,9 +128,12 @@ export async function fillInDirectorPersonalCodes(
   personalCode = TEST_DIRECTOR_PERSONAL_CODE,
   screenshotPath = defaultScreenshotPath,
 ) {
-  await test.step("The user enters each current director's Companies House personal code", async () => {
+  await test.step("The user enters each current director's other forenames and Companies House personal code", async () => {
     const directorRows = await page.locator("[data-director-row]").all();
     for (let index = 0; index < directorRows.length; index++) {
+      await loggedFill(page, `#directorOtherForenames-${index}`, TEST_DIRECTOR_OTHER_FORENAMES, `Director ${index + 1} other forenames`, {
+        screenshotPath,
+      });
       await loggedFill(page, `#directorPersonalCode-${index}`, personalCode, `Director ${index + 1} personal code`, { screenshotPath });
     }
     await page.screenshot({ path: `${screenshotPath}/${timestamp()}-01-personal-codes-entered.png` });
