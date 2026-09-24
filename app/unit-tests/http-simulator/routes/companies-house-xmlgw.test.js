@@ -9,6 +9,11 @@ import express from "express";
 import request from "supertest";
 import { apiEndpoint, GATEWAY_PATH } from "@app/http-simulator/routes/companies-house-xmlgw.js";
 import { resetAccountsFilings, SIMULATOR_PRESENTER_ID, SIMULATOR_PRESENTER_CODE } from "@app/http-simulator/scenarios/accounts-filing.js";
+import {
+  resetConfirmationStatementFilings,
+  FIXTURE_COMPANY_NUMBER,
+  FIXTURE_COMPANY_AUTHENTICATION_CODE,
+} from "@app/http-simulator/scenarios/confirmation-statement.js";
 import { parseXmlDocument, firstElementText, allElements } from "@app/lib/xmlDom.js";
 
 function md5Lowercase(value) {
@@ -104,6 +109,133 @@ function statusEnvelope({ senderId = VALID_SENDER_ID, authValue = VALID_AUTH_VAL
 </GovTalkMessage>`;
 }
 
+function confirmationStatementEnvelope({
+  senderId = VALID_SENDER_ID,
+  authValue = VALID_AUTH_VALUE,
+  submissionNumber = "CS0001",
+  companyNumber = FIXTURE_COMPANY_NUMBER,
+  formIdentifier = "ConfirmationAndVerificationStatement",
+} = {}) {
+  return `<?xml version="1.0" encoding="UTF-8"?>
+<GovTalkMessage xmlns="http://www.govtalk.gov.uk/CM/envelope">
+  <EnvelopeVersion>1.0</EnvelopeVersion>
+  <Header>
+    <MessageDetails>
+      <Class>${formIdentifier}</Class>
+      <Qualifier>request</Qualifier>
+      <TransactionID>1</TransactionID>
+    </MessageDetails>
+    <SenderDetails>
+      <IDAuthentication>
+        <SenderID>${senderId}</SenderID>
+        <Authentication>
+          <Method>clear</Method>
+          <Value>${authValue}</Value>
+        </Authentication>
+      </IDAuthentication>
+    </SenderDetails>
+  </Header>
+  <GovTalkDetails>
+    <Keys/>
+  </GovTalkDetails>
+  <Body>
+    <FormSubmission xmlns="http://xmlgw.companieshouse.gov.uk/Header">
+      <FormHeader>
+        <CompanyNumber>${companyNumber}</CompanyNumber>
+        <CompanyName>EXAMPLE CONFIRMATION STATEMENT LIMITED</CompanyName>
+        <CompanyAuthenticationCode>${FIXTURE_COMPANY_AUTHENTICATION_CODE}</CompanyAuthenticationCode>
+        <PackageReference></PackageReference>
+        <FormIdentifier>${formIdentifier}</FormIdentifier>
+        <SubmissionNumber>${submissionNumber}</SubmissionNumber>
+      </FormHeader>
+      <DateSigned>2026-09-22</DateSigned>
+      <Form>
+      <${formIdentifier} xmlns="http://xmlgw.companieshouse.gov.uk">
+        <ReviewDate>2026-09-21</ReviewDate>
+        <AcceptLawfulPurposeStatement>true</AcceptLawfulPurposeStatement>
+        <StateConfirmation>true</StateConfirmation>
+      </${formIdentifier}>
+      </Form>
+    </FormSubmission>
+  </Body>
+</GovTalkMessage>`;
+}
+
+function companyDataRequestEnvelope({
+  senderId = VALID_SENDER_ID,
+  authValue = VALID_AUTH_VALUE,
+  companyNumber = FIXTURE_COMPANY_NUMBER,
+  companyAuthenticationCode = FIXTURE_COMPANY_AUTHENTICATION_CODE,
+} = {}) {
+  return `<?xml version="1.0" encoding="UTF-8"?>
+<GovTalkMessage xmlns="http://www.govtalk.gov.uk/CM/envelope">
+  <EnvelopeVersion>1.0</EnvelopeVersion>
+  <Header>
+    <MessageDetails>
+      <Class>CompanyDataRequest</Class>
+      <Qualifier>request</Qualifier>
+      <TransactionID>1</TransactionID>
+    </MessageDetails>
+    <SenderDetails>
+      <IDAuthentication>
+        <SenderID>${senderId}</SenderID>
+        <Authentication>
+          <Method>clear</Method>
+          <Value>${authValue}</Value>
+        </Authentication>
+      </IDAuthentication>
+    </SenderDetails>
+  </Header>
+  <GovTalkDetails>
+    <Keys/>
+  </GovTalkDetails>
+  <Body>
+    <CompanyDataRequest xmlns="http://xmlgw.companieshouse.gov.uk">
+      <CompanyNumber>${companyNumber}</CompanyNumber>
+      <CompanyAuthenticationCode>${companyAuthenticationCode}</CompanyAuthenticationCode>
+      <MadeUpDate>2026-09-21</MadeUpDate>
+    </CompanyDataRequest>
+  </Body>
+</GovTalkMessage>`;
+}
+
+function paymentPeriodsRequestEnvelope({
+  senderId = VALID_SENDER_ID,
+  authValue = VALID_AUTH_VALUE,
+  companyNumber = FIXTURE_COMPANY_NUMBER,
+  companyAuthenticationCode = FIXTURE_COMPANY_AUTHENTICATION_CODE,
+} = {}) {
+  return `<?xml version="1.0" encoding="UTF-8"?>
+<GovTalkMessage xmlns="http://www.govtalk.gov.uk/CM/envelope">
+  <EnvelopeVersion>1.0</EnvelopeVersion>
+  <Header>
+    <MessageDetails>
+      <Class>PaymentPeriodsRequest</Class>
+      <Qualifier>request</Qualifier>
+      <TransactionID>1</TransactionID>
+    </MessageDetails>
+    <SenderDetails>
+      <IDAuthentication>
+        <SenderID>${senderId}</SenderID>
+        <Authentication>
+          <Method>clear</Method>
+          <Value>${authValue}</Value>
+        </Authentication>
+      </IDAuthentication>
+    </SenderDetails>
+  </Header>
+  <GovTalkDetails>
+    <Keys/>
+  </GovTalkDetails>
+  <Body>
+    <PaymentPeriodsRequest xmlns="http://xmlgw.companieshouse.gov.uk">
+      <CompanyNumber>${companyNumber}</CompanyNumber>
+      <CompanyAuthenticationCode>${companyAuthenticationCode}</CompanyAuthenticationCode>
+    </PaymentPeriodsRequest>
+  </Body>
+</GovTalkMessage>`;
+}
+
 function buildApp() {
   const app = express();
   app.use(express.json());
@@ -117,6 +249,7 @@ describe("http-simulator/routes/companies-house-xmlgw", () => {
 
   beforeEach(() => {
     resetAccountsFilings();
+    resetConfirmationStatementFilings();
     app = buildApp();
   });
 
@@ -287,5 +420,201 @@ describe("http-simulator/routes/companies-house-xmlgw", () => {
 
     const document = parseXmlDocument(response.text);
     expect(firstElementText(document, "Text")).toBe("No Transaction Found");
+  });
+
+  describe("CompanyDataRequest", () => {
+    test("answers the fixture company's CompanyData", async () => {
+      const response = await request(app).post(GATEWAY_PATH).set("Content-Type", "text/xml").send(companyDataRequestEnvelope());
+
+      const document = parseXmlDocument(response.text);
+      expect(firstElementText(document, "Qualifier")).toBe("response");
+      expect(firstElementText(document, "CompanyNumber")).toBe(FIXTURE_COMPANY_NUMBER);
+      expect(allElements(document, "Director")).toHaveLength(2);
+      expect(allElements(document, "SICCode").map((el) => el.textContent)).toEqual(["69201", "69202"]);
+    });
+
+    test("rejects a company authentication code that does not match the fixture", async () => {
+      const response = await request(app)
+        .post(GATEWAY_PATH)
+        .set("Content-Type", "text/xml")
+        .send(companyDataRequestEnvelope({ companyAuthenticationCode: "WRONGCODE" }));
+
+      const document = parseXmlDocument(response.text);
+      expect(firstElementText(document, "Number")).toBe("604");
+    });
+
+    test("Gov-Test-Scenario AUTH_FAILURE overrides valid credentials with a 502", async () => {
+      const response = await request(app)
+        .post(GATEWAY_PATH)
+        .set("Content-Type", "text/xml")
+        .set("Gov-Test-Scenario", "AUTH_FAILURE")
+        .send(companyDataRequestEnvelope());
+
+      const document = parseXmlDocument(response.text);
+      expect(firstElementText(document, "Number")).toBe("502");
+    });
+  });
+
+  describe("PaymentPeriodsRequest", () => {
+    test("answers PeriodPaid false by default", async () => {
+      const response = await request(app).post(GATEWAY_PATH).set("Content-Type", "text/xml").send(paymentPeriodsRequestEnvelope());
+
+      const document = parseXmlDocument(response.text);
+      expect(firstElementText(document, "Qualifier")).toBe("response");
+      expect(firstElementText(document, "PeriodPaid")).toBe("false");
+    });
+
+    test("Gov-Test-Scenario CS_PERIOD_PAID answers PeriodPaid true", async () => {
+      const response = await request(app)
+        .post(GATEWAY_PATH)
+        .set("Content-Type", "text/xml")
+        .set("Gov-Test-Scenario", "CS_PERIOD_PAID")
+        .send(paymentPeriodsRequestEnvelope());
+
+      const document = parseXmlDocument(response.text);
+      expect(firstElementText(document, "PeriodPaid")).toBe("true");
+    });
+  });
+
+  describe("confirmation statement submission and poll", () => {
+    test("acknowledges a valid ConfirmationAndVerificationStatement submission", async () => {
+      const response = await request(app).post(GATEWAY_PATH).set("Content-Type", "text/xml").send(confirmationStatementEnvelope());
+
+      expect(response.status).toBe(200);
+      const document = parseXmlDocument(response.text);
+      expect(firstElementText(document, "Qualifier")).toBe("acknowledgement");
+      expect(allElements(document, "GovTalkErrors")).toHaveLength(0);
+    });
+
+    test("acknowledges a ConfirmationStatement submission once every officer is verified", async () => {
+      const response = await request(app)
+        .post(GATEWAY_PATH)
+        .set("Content-Type", "text/xml")
+        .send(confirmationStatementEnvelope({ submissionNumber: "CS0002", formIdentifier: "ConfirmationStatement" }));
+
+      const document = parseXmlDocument(response.text);
+      expect(firstElementText(document, "Qualifier")).toBe("acknowledgement");
+    });
+
+    test("rejects a submission missing a required FormHeader element", async () => {
+      const missingCompanyName = confirmationStatementEnvelope().replace(
+        "<CompanyName>EXAMPLE CONFIRMATION STATEMENT LIMITED</CompanyName>",
+        "",
+      );
+      const response = await request(app).post(GATEWAY_PATH).set("Content-Type", "text/xml").send(missingCompanyName);
+
+      const document = parseXmlDocument(response.text);
+      expect(firstElementText(document, "Number")).toBe("604");
+      expect(firstElementText(document, "Location")).toBe("Body/FormSubmission/FormHeader/CompanyName");
+    });
+
+    test("rejects a submission whose ReviewDate is missing", async () => {
+      const missingReviewDate = confirmationStatementEnvelope().replace("<ReviewDate>2026-09-21</ReviewDate>", "");
+      const response = await request(app).post(GATEWAY_PATH).set("Content-Type", "text/xml").send(missingReviewDate);
+
+      const document = parseXmlDocument(response.text);
+      expect(firstElementText(document, "Number")).toBe("604");
+      expect(firstElementText(document, "Location")).toBe("Body/FormSubmission/Form/ReviewDate");
+    });
+
+    test("Gov-Test-Scenario CS_DUPLICATE_SHAREHOLDING returns a fatal 9999 at submission", async () => {
+      const response = await request(app)
+        .post(GATEWAY_PATH)
+        .set("Content-Type", "text/xml")
+        .set("Gov-Test-Scenario", "CS_DUPLICATE_SHAREHOLDING")
+        .send(confirmationStatementEnvelope({ submissionNumber: "CS0003" }));
+
+      const document = parseXmlDocument(response.text);
+      expect(firstElementText(document, "Number")).toBe("9999");
+      expect(firstElementText(document, "Text")).toBe("Duplicate ShareholdingId");
+    });
+
+    test("Gov-Test-Scenario CS_INSUFFICIENT_FUNDS returns a fatal 5006 at submission", async () => {
+      const response = await request(app)
+        .post(GATEWAY_PATH)
+        .set("Content-Type", "text/xml")
+        .set("Gov-Test-Scenario", "CS_INSUFFICIENT_FUNDS")
+        .send(confirmationStatementEnvelope({ submissionNumber: "CS0004" }));
+
+      const document = parseXmlDocument(response.text);
+      expect(firstElementText(document, "Number")).toBe("5006");
+    });
+
+    test("polls PENDING then ACCEPT for a confirmation statement submission, through the same GetSubmissionStatus poll accounts uses", async () => {
+      await request(app)
+        .post(GATEWAY_PATH)
+        .set("Content-Type", "text/xml")
+        .send(confirmationStatementEnvelope({ submissionNumber: "CS0005" }));
+
+      const firstPoll = await request(app)
+        .post(GATEWAY_PATH)
+        .set("Content-Type", "text/xml")
+        .send(statusEnvelope({ submissionNumber: "CS0005" }));
+      expect(firstElementText(parseXmlDocument(firstPoll.text), "StatusCode")).toBe("PENDING");
+
+      const secondPoll = await request(app)
+        .post(GATEWAY_PATH)
+        .set("Content-Type", "text/xml")
+        .send(statusEnvelope({ submissionNumber: "CS0005" }));
+      expect(firstElementText(parseXmlDocument(secondPoll.text), "StatusCode")).toBe("ACCEPT");
+    });
+
+    test("Gov-Test-Scenario CS_SHAREHOLDERS_REQUIRED rejects with RejectCode 11686 at poll", async () => {
+      await request(app)
+        .post(GATEWAY_PATH)
+        .set("Content-Type", "text/xml")
+        .send(confirmationStatementEnvelope({ submissionNumber: "CS0006" }));
+
+      const response = await request(app)
+        .post(GATEWAY_PATH)
+        .set("Content-Type", "text/xml")
+        .set("Gov-Test-Scenario", "CS_SHAREHOLDERS_REQUIRED")
+        .send(statusEnvelope({ submissionNumber: "CS0006" }));
+
+      const document = parseXmlDocument(response.text);
+      expect(firstElementText(document, "StatusCode")).toBe("REJECT");
+      expect(firstElementText(document, "RejectCode")).toBe("11686");
+    });
+
+    test("Gov-Test-Scenario CS_DIRECTOR_NOT_VERIFIED rejects naming the director", async () => {
+      await request(app)
+        .post(GATEWAY_PATH)
+        .set("Content-Type", "text/xml")
+        .send(confirmationStatementEnvelope({ submissionNumber: "CS0007" }));
+
+      const response = await request(app)
+        .post(GATEWAY_PATH)
+        .set("Content-Type", "text/xml")
+        .set("Gov-Test-Scenario", "CS_DIRECTOR_NOT_VERIFIED")
+        .send(statusEnvelope({ submissionNumber: "CS0007" }));
+
+      const document = parseXmlDocument(response.text);
+      expect(firstElementText(document, "StatusCode")).toBe("REJECT");
+      expect(firstElementText(document, "RejectCode")).toBe("12604");
+      expect(firstElementText(document, "Description")).toContain("ALICE EXAMPLE");
+    });
+
+    test("an accounts submission number and a confirmation statement submission number poll independently", async () => {
+      await request(app)
+        .post(GATEWAY_PATH)
+        .set("Content-Type", "text/xml")
+        .send(accountsEnvelope({ submissionNumber: "MIXED1" }));
+      await request(app)
+        .post(GATEWAY_PATH)
+        .set("Content-Type", "text/xml")
+        .send(confirmationStatementEnvelope({ submissionNumber: "MIXED2" }));
+
+      const accountsPoll = await request(app)
+        .post(GATEWAY_PATH)
+        .set("Content-Type", "text/xml")
+        .send(statusEnvelope({ submissionNumber: "MIXED1" }));
+      const confirmationStatementPoll = await request(app)
+        .post(GATEWAY_PATH)
+        .set("Content-Type", "text/xml")
+        .send(statusEnvelope({ submissionNumber: "MIXED2" }));
+
+      expect(firstElementText(parseXmlDocument(accountsPoll.text), "StatusCode")).toBe("PENDING");
+      expect(firstElementText(parseXmlDocument(confirmationStatementPoll.text), "StatusCode")).toBe("PENDING");
+    });
   });
 });

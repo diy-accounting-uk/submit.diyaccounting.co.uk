@@ -98,8 +98,8 @@ class SubmitApplicationCdkResourceTest {
 
         infof("Created stack:", submitApplication.companiesHouseStack.getStackName());
         Template companiesHouseStackTemplate = Template.fromStack(submitApplication.companiesHouseStack);
-        companiesHouseStackTemplate.resourceCountIs("AWS::Lambda::Function", 13);
-        assertStackHealthAlarm(companiesHouseStackTemplate, 13, 0, routedPrefixes);
+        companiesHouseStackTemplate.resourceCountIs("AWS::Lambda::Function", 19);
+        assertStackHealthAlarm(companiesHouseStackTemplate, 19, 0, routedPrefixes);
 
         // Every route that can carry a clientId resolves it via enforceBundles -> getClient(),
         // which needs the practice clients table name on the Lambda's own environment. Regression
@@ -253,6 +253,25 @@ class SubmitApplicationCdkResourceTest {
         apiStackTemplate.hasResourceProperties(
                 "AWS::ApiGatewayV2::Route",
                 Map.of("RouteKey", "GET /api/v1/companies-house/accounts/{submissionNumber}"));
+        apiStackTemplate.hasResourceProperties(
+                "AWS::ApiGatewayV2::Route",
+                Map.of("RouteKey", "GET /api/v1/companies-house/company/{companyNumber}/officers"));
+        apiStackTemplate.hasResourceProperties(
+                "AWS::ApiGatewayV2::Route",
+                Map.of(
+                        "RouteKey",
+                        "GET /api/v1/companies-house/company/{companyNumber}/persons-with-significant-control"));
+        apiStackTemplate.hasResourceProperties(
+                "AWS::ApiGatewayV2::Route",
+                Map.of("RouteKey", "POST /api/v1/companies-house/company/{companyNumber}/filing-data"));
+        apiStackTemplate.hasResourceProperties(
+                "AWS::ApiGatewayV2::Route",
+                Map.of("RouteKey", "POST /api/v1/companies-house/confirmation-statement/preview"));
+        apiStackTemplate.hasResourceProperties(
+                "AWS::ApiGatewayV2::Route", Map.of("RouteKey", "POST /api/v1/companies-house/confirmation-statement"));
+        apiStackTemplate.hasResourceProperties(
+                "AWS::ApiGatewayV2::Route",
+                Map.of("RouteKey", "GET /api/v1/companies-house/confirmation-statement/{submissionNumber}"));
         // The new diya-gl paths are the primary routes; the old books paths are served alongside
         // them permanently, since the spreadsheets site's cloud.js keeps calling the old paths.
         apiStackTemplate.hasResourceProperties("AWS::ApiGatewayV2::Route", Map.of("RouteKey", "GET /api/v1/diya-gl"));
@@ -311,8 +330,11 @@ class SubmitApplicationCdkResourceTest {
         // method routes + 1 auto-HEAD, since auto-HEAD is added once per path regardless of which
         // method registers it first), for another 3 routes, bringing the total to 151 + 3 = 154.
         // POST /api/v1/practice/clients/{clientId}/books/{bookId}/move adds its own route plus
-        // its own auto-HEAD route, since no other method shares that path, for 154 + 2 = 156.
-        apiStackTemplate.resourceCountIs("AWS::ApiGatewayV2::Route", 156);
+        // its own auto-HEAD route, since no other method shares that path, for 154 + 2 = 156. The
+        // six confirmation statement routes (officers, PSCs, filing-data, preview, submit, poll)
+        // each sit on their own unshared path, adding six primary routes plus six auto-HEAD
+        // routes, for 156 + 12 = 168.
+        apiStackTemplate.resourceCountIs("AWS::ApiGatewayV2::Route", 168);
 
         // Dashboard moved to environment-level ObservabilityStack
         infof("Created stack:", submitApplication.opsStack.getStackName());

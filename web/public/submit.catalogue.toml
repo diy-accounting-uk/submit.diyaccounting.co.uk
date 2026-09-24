@@ -435,6 +435,16 @@ paths = ["companies-house/fileMicroEntityAccounts.html", "^/api/v1/companies-hou
 environments = ["local", "test", "simulator", "proxy", "ci"]
 
 [[activities]]
+id = "file-confirmation-statement"
+name = "File Confirmation Statement (Companies House)"
+display = "on-entitlement"
+bundles = ["resident", "resident-pro"]
+tokenCost = 1
+metered = true
+paths = ["companies-house/fileConfirmationStatement.html", "^/api/v1/companies-house/confirmation-statement.*", "^/api/v1/companies-house/company/[^/]+/(officers|persons-with-significant-control|filing-data)$"]
+environments = ["local", "test", "simulator", "proxy", "ci"]
+
+[[activities]]
 id = "diya-gl-storage"
 name = "Save DIYA-GL books"
 display = "on-entitlement"

@@ -1,11 +1,9 @@
 // SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0
 // Copyright (C) 2006-2026 DIY Accounting Limited
 
-// app/functions/companies-house/companiesHouseAccountsGet.js
-// Polls the Companies House XML Gateway for the outcome of a submitted accounts filing. The
-// gateway itself is the source of truth for status, so every call polls it directly rather than
-// trusting a cached "already accepted" record; an accepted filing writes a receipt so it lands on
-// the existing receipts page.
+// app/functions/companies-house/companiesHouseConfirmationStatementGet.js
+// Polls the Companies House XML Gateway for the outcome of a submitted confirmation statement,
+// through the poll logic companiesHouseAccountsGet.js shares via companiesHouseSubmissionStatus.js.
 
 import {
   extractRequest,
@@ -26,8 +24,8 @@ const SUBMISSION_NUMBER_LENGTH = 6;
 // Server hook for Express app, and construction of a Lambda-like event from HTTP request)
 /* v8 ignore start */
 export function apiEndpoint(app) {
-  registerLambdaRoute(app, "get", "/api/v1/companies-house/accounts/:submissionNumber", ingestHandler);
-  registerLambdaRoute(app, "head", "/api/v1/companies-house/accounts/:submissionNumber", ingestHandler);
+  registerLambdaRoute(app, "get", "/api/v1/companies-house/confirmation-statement/:submissionNumber", ingestHandler);
+  registerLambdaRoute(app, "head", "/api/v1/companies-house/confirmation-statement/:submissionNumber", ingestHandler);
 }
 /* v8 ignore stop */
 
@@ -77,9 +75,9 @@ export async function ingestHandler(event) {
     userSub,
     submissionNumber,
     govTestScenario,
-    kind: "accounts",
-    acceptedEvent: "companies-house-accounts-accepted",
-    acceptedSummary: "Companies House micro-entity accounts accepted",
+    kind: "confirmation-statement",
+    acceptedEvent: "companies-house-confirmation-statement-accepted",
+    acceptedSummary: "Companies House confirmation statement accepted",
   });
 
   if (result.errors) {

@@ -18,6 +18,10 @@ import {
   previewMicroEntityAccounts,
   submitMicroEntityAccounts,
   pollAccountsSubmission,
+  getConfirmationStatementData,
+  previewConfirmationStatement,
+  submitConfirmationStatement,
+  pollConfirmationStatement,
 } from "../lib/submit-tools.js";
 import { TOOLS } from "../lib/server.js";
 
@@ -36,6 +40,11 @@ const PREVIEW_MICRO_ENTITY_ACCOUNTS_RESPONSE = fixture("preview-micro-entity-acc
 const SUBMIT_MICRO_ENTITY_ACCOUNTS_RESPONSE = fixture("submit-micro-entity-accounts.response.json");
 const POLL_ACCOUNTS_SUBMISSION_PENDING_RESPONSE = fixture("poll-accounts-submission.pending.response.json");
 const POLL_ACCOUNTS_SUBMISSION_ACCEPTED_RESPONSE = fixture("poll-accounts-submission.accepted.response.json");
+const CONFIRMATION_STATEMENT_DATA_RESPONSE = fixture("confirmation-statement-data.response.json");
+const PREVIEW_CONFIRMATION_STATEMENT_RESPONSE = fixture("preview-confirmation-statement.response.json");
+const SUBMIT_CONFIRMATION_STATEMENT_RESPONSE = fixture("submit-confirmation-statement.response.json");
+const POLL_CONFIRMATION_STATEMENT_PENDING_RESPONSE = fixture("poll-confirmation-statement.pending.response.json");
+const POLL_CONFIRMATION_STATEMENT_ACCEPTED_RESPONSE = fixture("poll-confirmation-statement.accepted.response.json");
 const ASYNC_ACCEPTED = fixture("async-accepted.response.json");
 
 // Mimics the fetch Headers object (case-insensitive .get) that the real 202 responses carry.
@@ -76,6 +85,15 @@ const ACCOUNTS_PARAMS = {
     directorsResponsibilities: true,
     microEntityProvisions: true,
   },
+};
+
+const CONFIRMATION_STATEMENT_PARAMS = {
+  companyNumber: "12345678",
+  companyName: "Brickwork Pro Ltd",
+  dateSigned: "2026-03-01",
+  reviewDate: "2026-03-01",
+  lawfulPurposeStatementAccepted: true,
+  directors: [{ forename: "Jo", surname: "Brick", dob: "1980-04-12", personalCode: "AB123CD45E" }],
 };
 
 describe("submit-tools", () => {
@@ -433,14 +451,202 @@ describe("submit-tools", () => {
     });
   });
 
+  describe("get_confirmation_statement_data", () => {
+    it("posts the authentication code and made-up date and returns the register data", async () => {
+      const mockFetch = vi.fn().mockResolvedValueOnce(jsonResponse(200, CONFIRMATION_STATEMENT_DATA_RESPONSE));
+      vi.stubGlobal("fetch", mockFetch);
+
+      const result = await getConfirmationStatementData(
+        {},
+        { companyNumber: "12345678", companyAuthCode: "Sim0123", madeUpDate: "2026-03-01" },
+      );
+
+      expect(result).toEqual(CONFIRMATION_STATEMENT_DATA_RESPONSE);
+      expect(result.paymentPeriodPaid).toBe(false);
+      const [url, init] = mockFetch.mock.calls[0];
+      expect(url).toBe("https://submit.diyaccounting.co.uk/api/v1/companies-house/company/12345678/filing-data");
+      expect(init.method).toBe("POST");
+      expect(init.headers["Authorization"]).toBe("Bearer session-access-token");
+      const body = JSON.parse(init.body);
+      expect(body.companyAuthCode).toBe("Sim0123");
+      expect(body.madeUpDate).toBe("2026-03-01");
+    });
+
+    it("requires companyNumber", async () => {
+      await expect(getConfirmationStatementData({}, { companyAuthCode: "Sim0123", madeUpDate: "2026-03-01" })).rejects.toThrow(
+        "companyNumber",
+      );
+    });
+
+    it("requires companyAuthCode", async () => {
+      await expect(getConfirmationStatementData({}, { companyNumber: "12345678", madeUpDate: "2026-03-01" })).rejects.toThrow(
+        "companyAuthCode",
+      );
+    });
+
+    it("requires madeUpDate", async () => {
+      await expect(getConfirmationStatementData({}, { companyNumber: "12345678", companyAuthCode: "Sim0123" })).rejects.toThrow(
+        "madeUpDate",
+      );
+    });
+
+    it("carries companyType through when given", async () => {
+      const mockFetch = vi.fn().mockResolvedValueOnce(jsonResponse(200, CONFIRMATION_STATEMENT_DATA_RESPONSE));
+      vi.stubGlobal("fetch", mockFetch);
+
+      await getConfirmationStatementData(
+        {},
+        { companyNumber: "12345678", companyAuthCode: "Sim0123", madeUpDate: "2026-03-01", companyType: "plc" },
+      );
+
+      const body = JSON.parse(mockFetch.mock.calls[0][1].body);
+      expect(body.companyType).toBe("plc");
+    });
+  });
+
+  describe("preview_confirmation_statement", () => {
+    it("posts the form body and returns the rendered statement", async () => {
+      const mockFetch = vi.fn().mockResolvedValueOnce(jsonResponse(200, PREVIEW_CONFIRMATION_STATEMENT_RESPONSE));
+      vi.stubGlobal("fetch", mockFetch);
+
+      const result = await previewConfirmationStatement({}, CONFIRMATION_STATEMENT_PARAMS);
+
+      expect(result).toEqual(PREVIEW_CONFIRMATION_STATEMENT_RESPONSE);
+      expect(result.confirmationStatementXml).toContain("ConfirmationAndVerificationStatement");
+      const [url, init] = mockFetch.mock.calls[0];
+      expect(url).toBe("https://submit.diyaccounting.co.uk/api/v1/companies-house/confirmation-statement/preview");
+      expect(init.headers["Authorization"]).toBe("Bearer session-access-token");
+      const body = JSON.parse(init.body);
+      expect(body.companyAuthCode).toBeUndefined();
+      expect(body.directors[0].personalCode).toBe("AB123CD45E");
+    });
+
+    it("requires at least one director", async () => {
+      await expect(previewConfirmationStatement({}, { ...CONFIRMATION_STATEMENT_PARAMS, directors: [] })).rejects.toThrow("director");
+    });
+
+    it("requires lawfulPurposeStatementAccepted to be accepted", async () => {
+      await expect(
+        previewConfirmationStatement({}, { ...CONFIRMATION_STATEMENT_PARAMS, lawfulPurposeStatementAccepted: false }),
+      ).rejects.toThrow("lawfulPurposeStatementAccepted");
+    });
+
+    it("requires companyNumber", async () => {
+      const withoutCompanyNumber = { ...CONFIRMATION_STATEMENT_PARAMS };
+      delete withoutCompanyNumber.companyNumber;
+      await expect(previewConfirmationStatement({}, withoutCompanyNumber)).rejects.toThrow("companyNumber");
+    });
+
+    it("carries sicCodes, statementOfCapital, shareholdings and registeredEmailAddress through when given", async () => {
+      const mockFetch = vi.fn().mockResolvedValueOnce(jsonResponse(200, PREVIEW_CONFIRMATION_STATEMENT_RESPONSE));
+      vi.stubGlobal("fetch", mockFetch);
+
+      await previewConfirmationStatement(
+        {},
+        {
+          ...CONFIRMATION_STATEMENT_PARAMS,
+          sicCodes: ["43390"],
+          statementOfCapital: {
+            totalAmountUnpaid: 0,
+            totalNumberOfIssuedShares: 100,
+            shareCurrency: "GBP",
+            totalAggregateNominalValue: 100,
+            shares: [{ shareClass: "Ordinary", prescribedParticulars: "", numShares: 100, aggregateNominalValue: 100 }],
+          },
+          shareholdings: [{ shareClass: "Ordinary", numberHeld: 100 }],
+          registeredEmailAddress: "director@brickworkpro.example",
+        },
+      );
+
+      const body = JSON.parse(mockFetch.mock.calls[0][1].body);
+      expect(body.sicCodes).toEqual(["43390"]);
+      expect(body.statementOfCapital.totalNumberOfIssuedShares).toBe(100);
+      expect(body.shareholdings[0].shareClass).toBe("Ordinary");
+      expect(body.registeredEmailAddress).toBe("director@brickworkpro.example");
+    });
+  });
+
+  describe("submit_confirmation_statement", () => {
+    it("posts the form body with the company authentication code and returns the submission number", async () => {
+      const mockFetch = vi.fn().mockResolvedValueOnce(jsonResponse(201, SUBMIT_CONFIRMATION_STATEMENT_RESPONSE));
+      vi.stubGlobal("fetch", mockFetch);
+
+      const result = await submitConfirmationStatement({}, { ...CONFIRMATION_STATEMENT_PARAMS, companyAuthCode: "Sim0123" });
+
+      expect(result).toEqual(SUBMIT_CONFIRMATION_STATEMENT_RESPONSE);
+      const [url, init] = mockFetch.mock.calls[0];
+      expect(url).toBe("https://submit.diyaccounting.co.uk/api/v1/companies-house/confirmation-statement");
+      const body = JSON.parse(init.body);
+      expect(body.companyAuthCode).toBe("Sim0123");
+      expect(body.directors[0].personalCode).toBe("AB123CD45E");
+    });
+
+    it("requires companyAuthCode", async () => {
+      await expect(submitConfirmationStatement({}, CONFIRMATION_STATEMENT_PARAMS)).rejects.toThrow("companyAuthCode");
+    });
+
+    it("requires at least one director", async () => {
+      await expect(
+        submitConfirmationStatement({}, { ...CONFIRMATION_STATEMENT_PARAMS, directors: [], companyAuthCode: "Sim0123" }),
+      ).rejects.toThrow("director");
+    });
+
+    it("polls a 202 to completion before returning the submission number", async () => {
+      vi.useFakeTimers();
+      const mockFetch = vi
+        .fn()
+        .mockResolvedValueOnce(acceptedResponse())
+        .mockResolvedValueOnce(jsonResponse(201, SUBMIT_CONFIRMATION_STATEMENT_RESPONSE));
+      vi.stubGlobal("fetch", mockFetch);
+
+      const promise = submitConfirmationStatement({}, { ...CONFIRMATION_STATEMENT_PARAMS, companyAuthCode: "Sim0123" });
+      await vi.runAllTimersAsync();
+      const result = await promise;
+
+      expect(result).toEqual(SUBMIT_CONFIRMATION_STATEMENT_RESPONSE);
+      expect(mockFetch).toHaveBeenCalledTimes(2);
+    });
+  });
+
+  describe("poll_confirmation_statement", () => {
+    it("gets the filing outcome by submission number, pending before Companies House answers", async () => {
+      const mockFetch = vi.fn().mockResolvedValueOnce(jsonResponse(200, POLL_CONFIRMATION_STATEMENT_PENDING_RESPONSE));
+      vi.stubGlobal("fetch", mockFetch);
+
+      const result = await pollConfirmationStatement({}, { submissionNumber: "000002" });
+
+      expect(result).toEqual(POLL_CONFIRMATION_STATEMENT_PENDING_RESPONSE);
+      expect(result.statusCode).toBe("PENDING");
+      expect(mockFetch.mock.calls[0][0]).toBe("https://submit.diyaccounting.co.uk/api/v1/companies-house/confirmation-statement/000002");
+    });
+
+    it("carries a receiptId once the filing is accepted", async () => {
+      const mockFetch = vi.fn().mockResolvedValueOnce(jsonResponse(200, POLL_CONFIRMATION_STATEMENT_ACCEPTED_RESPONSE));
+      vi.stubGlobal("fetch", mockFetch);
+
+      const result = await pollConfirmationStatement({}, { submissionNumber: "000002" });
+
+      expect(result.statusCode).toBe("ACCEPT");
+      expect(result.receiptId).toBe(POLL_CONFIRMATION_STATEMENT_ACCEPTED_RESPONSE.receiptId);
+    });
+
+    it("requires submissionNumber", async () => {
+      await expect(pollConfirmationStatement({}, {})).rejects.toThrow("submissionNumber");
+    });
+  });
+
   describe("server registration", () => {
-    it("registers all six tools with their handlers", () => {
+    it("registers all ten tools with their handlers", () => {
       expect(TOOLS.list_vat_obligations.handler).toBe(listVatObligations);
       expect(TOOLS.submit_vat_return.handler).toBe(submitVatReturn);
       expect(TOOLS.get_vat_receipt.handler).toBe(getVatReceipt);
       expect(TOOLS.preview_micro_entity_accounts.handler).toBe(previewMicroEntityAccounts);
       expect(TOOLS.submit_micro_entity_accounts.handler).toBe(submitMicroEntityAccounts);
       expect(TOOLS.poll_accounts_submission.handler).toBe(pollAccountsSubmission);
+      expect(TOOLS.get_confirmation_statement_data.handler).toBe(getConfirmationStatementData);
+      expect(TOOLS.preview_confirmation_statement.handler).toBe(previewConfirmationStatement);
+      expect(TOOLS.submit_confirmation_statement.handler).toBe(submitConfirmationStatement);
+      expect(TOOLS.poll_confirmation_statement.handler).toBe(pollConfirmationStatement);
     });
   });
 });

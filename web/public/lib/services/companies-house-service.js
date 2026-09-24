@@ -71,9 +71,46 @@ export async function getCompanyProfile(companyNumber) {
   return body;
 }
 
+/**
+ * Get a company's current and resigned officers, so a confirmation statement journey can show
+ * every current director - and whether the register already carries their identity verification -
+ * before the customer types anything secret.
+ * @param {string} companyNumber
+ * @returns {Promise<{companyNumber: string, activeCount: number, resignedCount: number, officers: object[]}>}
+ */
+export async function getOfficers(companyNumber) {
+  const response = await fetchWithIdToken(`/api/v1/companies-house/company/${normaliseCompanyNumber(companyNumber)}/officers`, {
+    method: "GET",
+  });
+  const body = await response.json();
+  if (!response.ok) {
+    throw await errorFromResponse(response, body);
+  }
+  return body;
+}
+
+/**
+ * Get a company's persons with significant control.
+ * @param {string} companyNumber
+ * @returns {Promise<{companyNumber: string, activeCount: number, ceasedCount: number, pscs: object[]}>}
+ */
+export async function getPscs(companyNumber) {
+  const response = await fetchWithIdToken(
+    `/api/v1/companies-house/company/${normaliseCompanyNumber(companyNumber)}/persons-with-significant-control`,
+    { method: "GET" },
+  );
+  const body = await response.json();
+  if (!response.ok) {
+    throw await errorFromResponse(response, body);
+  }
+  return body;
+}
+
 // Export on window for backward compatibility
 if (typeof window !== "undefined") {
   window.searchCompanies = searchCompanies;
   window.getCompanyProfile = getCompanyProfile;
+  window.getOfficers = getOfficers;
+  window.getPscs = getPscs;
   window.normaliseCompanyNumber = normaliseCompanyNumber;
 }

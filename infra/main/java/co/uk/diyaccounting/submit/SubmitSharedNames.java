@@ -1017,6 +1017,60 @@ public class SubmitSharedNames {
     public boolean companiesHouseAccountsGetLambdaJwtAuthorizer;
     public boolean companiesHouseAccountsGetLambdaCustomAuthorizer;
 
+    public String companiesHouseOfficersGetIngestLambdaHandler;
+    public String companiesHouseOfficersGetIngestLambdaFunctionName;
+    public String companiesHouseOfficersGetIngestLambdaArn;
+    public String companiesHouseOfficersGetIngestProvisionedConcurrencyLambdaAliasArn;
+    public HttpMethod companiesHouseOfficersGetLambdaHttpMethod;
+    public String companiesHouseOfficersGetLambdaUrlPath;
+    public boolean companiesHouseOfficersGetLambdaJwtAuthorizer;
+    public boolean companiesHouseOfficersGetLambdaCustomAuthorizer;
+
+    public String companiesHousePscGetIngestLambdaHandler;
+    public String companiesHousePscGetIngestLambdaFunctionName;
+    public String companiesHousePscGetIngestLambdaArn;
+    public String companiesHousePscGetIngestProvisionedConcurrencyLambdaAliasArn;
+    public HttpMethod companiesHousePscGetLambdaHttpMethod;
+    public String companiesHousePscGetLambdaUrlPath;
+    public boolean companiesHousePscGetLambdaJwtAuthorizer;
+    public boolean companiesHousePscGetLambdaCustomAuthorizer;
+
+    public String companiesHouseFilingDataPostIngestLambdaHandler;
+    public String companiesHouseFilingDataPostIngestLambdaFunctionName;
+    public String companiesHouseFilingDataPostIngestLambdaArn;
+    public String companiesHouseFilingDataPostIngestProvisionedConcurrencyLambdaAliasArn;
+    public HttpMethod companiesHouseFilingDataPostLambdaHttpMethod;
+    public String companiesHouseFilingDataPostLambdaUrlPath;
+    public boolean companiesHouseFilingDataPostLambdaJwtAuthorizer;
+    public boolean companiesHouseFilingDataPostLambdaCustomAuthorizer;
+
+    public String companiesHouseConfirmationStatementPreviewPostIngestLambdaHandler;
+    public String companiesHouseConfirmationStatementPreviewPostIngestLambdaFunctionName;
+    public String companiesHouseConfirmationStatementPreviewPostIngestLambdaArn;
+    public String companiesHouseConfirmationStatementPreviewPostIngestProvisionedConcurrencyLambdaAliasArn;
+    public HttpMethod companiesHouseConfirmationStatementPreviewPostLambdaHttpMethod;
+    public String companiesHouseConfirmationStatementPreviewPostLambdaUrlPath;
+    public boolean companiesHouseConfirmationStatementPreviewPostLambdaJwtAuthorizer;
+    public boolean companiesHouseConfirmationStatementPreviewPostLambdaCustomAuthorizer;
+
+    public String companiesHouseConfirmationStatementPostIngestLambdaHandler;
+    public String companiesHouseConfirmationStatementPostIngestLambdaFunctionName;
+    public String companiesHouseConfirmationStatementPostIngestLambdaArn;
+    public String companiesHouseConfirmationStatementPostIngestProvisionedConcurrencyLambdaAliasArn;
+    public HttpMethod companiesHouseConfirmationStatementPostLambdaHttpMethod;
+    public String companiesHouseConfirmationStatementPostLambdaUrlPath;
+    public boolean companiesHouseConfirmationStatementPostLambdaJwtAuthorizer;
+    public boolean companiesHouseConfirmationStatementPostLambdaCustomAuthorizer;
+
+    public String companiesHouseConfirmationStatementGetIngestLambdaHandler;
+    public String companiesHouseConfirmationStatementGetIngestLambdaFunctionName;
+    public String companiesHouseConfirmationStatementGetIngestLambdaArn;
+    public String companiesHouseConfirmationStatementGetIngestProvisionedConcurrencyLambdaAliasArn;
+    public HttpMethod companiesHouseConfirmationStatementGetLambdaHttpMethod;
+    public String companiesHouseConfirmationStatementGetLambdaUrlPath;
+    public boolean companiesHouseConfirmationStatementGetLambdaJwtAuthorizer;
+    public boolean companiesHouseConfirmationStatementGetLambdaCustomAuthorizer;
+
     public String supportTicketPostIngestLambdaHandler;
     public String supportTicketPostIngestLambdaFunctionName;
     public String supportTicketPostIngestLambdaArn;
@@ -4019,6 +4073,166 @@ public class SubmitSharedNames {
                 "Poll a micro-entity accounts filing",
                 "Polls the Companies House XML Gateway for the outcome of a submitted accounts filing",
                 "getCompaniesHouseAccounts",
+                List.of(new ApiParameter("submissionNumber", "path", true, "The 6-character submission number"))));
+
+        this.companiesHouseOfficersGetLambdaHttpMethod = HttpMethod.GET;
+        this.companiesHouseOfficersGetLambdaUrlPath = "/api/v1/companies-house/company/{companyNumber}/officers";
+        this.companiesHouseOfficersGetLambdaJwtAuthorizer = true;
+        this.companiesHouseOfficersGetLambdaCustomAuthorizer = false;
+        var companiesHouseOfficersGetLambdaHandlerName = "companiesHouseOfficersGet.ingestHandler";
+        var companiesHouseOfficersGetLambdaHandlerDashed =
+                ResourceNameUtils.convertCamelCaseToDashSeparated(companiesHouseOfficersGetLambdaHandlerName);
+        this.companiesHouseOfficersGetIngestLambdaFunctionName =
+                "%s-%s".formatted(this.appResourceNamePrefix, companiesHouseOfficersGetLambdaHandlerDashed);
+        this.companiesHouseOfficersGetIngestLambdaHandler =
+                "%s/companies-house/%s".formatted(appLambdaHandlerPrefix, companiesHouseOfficersGetLambdaHandlerName);
+        this.companiesHouseOfficersGetIngestLambdaArn =
+                "%s-%s".formatted(appLambdaArnPrefix, companiesHouseOfficersGetLambdaHandlerDashed);
+        this.companiesHouseOfficersGetIngestProvisionedConcurrencyLambdaAliasArn =
+                "%s:%s".formatted(this.companiesHouseOfficersGetIngestLambdaArn, this.provisionedConcurrencyAliasName);
+        publishedApiLambdas.add(new PublishedLambda(
+                this.companiesHouseOfficersGetLambdaHttpMethod,
+                this.companiesHouseOfficersGetLambdaUrlPath,
+                "Get a company's officers",
+                "Retrieves the current and resigned officers for a company number, with whatever identity "
+                        + "verification detail the register already holds",
+                "getCompanyOfficers",
+                List.of(new ApiParameter("companyNumber", "path", true, "The 8-character company number"))));
+
+        this.companiesHousePscGetLambdaHttpMethod = HttpMethod.GET;
+        this.companiesHousePscGetLambdaUrlPath =
+                "/api/v1/companies-house/company/{companyNumber}/persons-with-significant-control";
+        this.companiesHousePscGetLambdaJwtAuthorizer = true;
+        this.companiesHousePscGetLambdaCustomAuthorizer = false;
+        var companiesHousePscGetLambdaHandlerName = "companiesHousePscGet.ingestHandler";
+        var companiesHousePscGetLambdaHandlerDashed =
+                ResourceNameUtils.convertCamelCaseToDashSeparated(companiesHousePscGetLambdaHandlerName);
+        this.companiesHousePscGetIngestLambdaFunctionName =
+                "%s-%s".formatted(this.appResourceNamePrefix, companiesHousePscGetLambdaHandlerDashed);
+        this.companiesHousePscGetIngestLambdaHandler =
+                "%s/companies-house/%s".formatted(appLambdaHandlerPrefix, companiesHousePscGetLambdaHandlerName);
+        this.companiesHousePscGetIngestLambdaArn =
+                "%s-%s".formatted(appLambdaArnPrefix, companiesHousePscGetLambdaHandlerDashed);
+        this.companiesHousePscGetIngestProvisionedConcurrencyLambdaAliasArn =
+                "%s:%s".formatted(this.companiesHousePscGetIngestLambdaArn, this.provisionedConcurrencyAliasName);
+        publishedApiLambdas.add(new PublishedLambda(
+                this.companiesHousePscGetLambdaHttpMethod,
+                this.companiesHousePscGetLambdaUrlPath,
+                "Get a company's persons with significant control",
+                "Retrieves the active and ceased persons with significant control for a company number",
+                "getCompanyPersonsWithSignificantControl",
+                List.of(new ApiParameter("companyNumber", "path", true, "The 8-character company number"))));
+
+        this.companiesHouseFilingDataPostLambdaHttpMethod = HttpMethod.POST;
+        this.companiesHouseFilingDataPostLambdaUrlPath = "/api/v1/companies-house/company/{companyNumber}/filing-data";
+        this.companiesHouseFilingDataPostLambdaJwtAuthorizer = true;
+        this.companiesHouseFilingDataPostLambdaCustomAuthorizer = false;
+        var companiesHouseFilingDataPostLambdaHandlerName = "companiesHouseFilingDataPost.ingestHandler";
+        var companiesHouseFilingDataPostLambdaHandlerDashed =
+                ResourceNameUtils.convertCamelCaseToDashSeparated(companiesHouseFilingDataPostLambdaHandlerName);
+        this.companiesHouseFilingDataPostIngestLambdaFunctionName =
+                "%s-%s".formatted(this.appResourceNamePrefix, companiesHouseFilingDataPostLambdaHandlerDashed);
+        this.companiesHouseFilingDataPostIngestLambdaHandler = "%s/companies-house/%s"
+                .formatted(appLambdaHandlerPrefix, companiesHouseFilingDataPostLambdaHandlerName);
+        this.companiesHouseFilingDataPostIngestLambdaArn =
+                "%s-%s".formatted(appLambdaArnPrefix, companiesHouseFilingDataPostLambdaHandlerDashed);
+        this.companiesHouseFilingDataPostIngestProvisionedConcurrencyLambdaAliasArn = "%s:%s"
+                .formatted(this.companiesHouseFilingDataPostIngestLambdaArn, this.provisionedConcurrencyAliasName);
+        publishedApiLambdas.add(new PublishedLambda(
+                this.companiesHouseFilingDataPostLambdaHttpMethod,
+                this.companiesHouseFilingDataPostLambdaUrlPath,
+                "Read confirmation statement filing data",
+                "Reads the registered details, officers due for confirmation, and whether this period is "
+                        + "already paid, that a confirmation statement form is built from",
+                "postCompaniesHouseFilingData",
+                List.of(new ApiParameter("companyNumber", "path", true, "The 8-character company number"))));
+
+        this.companiesHouseConfirmationStatementPreviewPostLambdaHttpMethod = HttpMethod.POST;
+        this.companiesHouseConfirmationStatementPreviewPostLambdaUrlPath =
+                "/api/v1/companies-house/confirmation-statement/preview";
+        this.companiesHouseConfirmationStatementPreviewPostLambdaJwtAuthorizer = true;
+        this.companiesHouseConfirmationStatementPreviewPostLambdaCustomAuthorizer = false;
+        var companiesHouseConfirmationStatementPreviewPostLambdaHandlerName =
+                "companiesHouseConfirmationStatementPreviewPost.ingestHandler";
+        // AWS Lambda function names cap at 64 characters. The full dashed handler name (with the
+        // resource name prefix) can push past that for a long deployment name, so the deployed
+        // function name drops "post" - the route only ever answers to POST, so the word carries no
+        // extra information; the handler entry point above keeps its full, self-documenting name.
+        var companiesHouseConfirmationStatementPreviewPostLambdaHandlerDashed =
+                "companies-house-confirmation-statement-preview";
+        this.companiesHouseConfirmationStatementPreviewPostIngestLambdaFunctionName = "%s-%s"
+                .formatted(
+                        this.appResourceNamePrefix, companiesHouseConfirmationStatementPreviewPostLambdaHandlerDashed);
+        this.companiesHouseConfirmationStatementPreviewPostIngestLambdaHandler = "%s/companies-house/%s"
+                .formatted(appLambdaHandlerPrefix, companiesHouseConfirmationStatementPreviewPostLambdaHandlerName);
+        this.companiesHouseConfirmationStatementPreviewPostIngestLambdaArn = "%s-%s"
+                .formatted(appLambdaArnPrefix, companiesHouseConfirmationStatementPreviewPostLambdaHandlerDashed);
+        this.companiesHouseConfirmationStatementPreviewPostIngestProvisionedConcurrencyLambdaAliasArn = "%s:%s"
+                .formatted(
+                        this.companiesHouseConfirmationStatementPreviewPostIngestLambdaArn,
+                        this.provisionedConcurrencyAliasName);
+        publishedApiLambdas.add(new PublishedLambda(
+                this.companiesHouseConfirmationStatementPreviewPostLambdaHttpMethod,
+                this.companiesHouseConfirmationStatementPreviewPostLambdaUrlPath,
+                "Preview a confirmation statement filing",
+                "Renders the ConfirmationAndVerificationStatement body from the form's answers without "
+                        + "submitting it",
+                "previewCompaniesHouseConfirmationStatement"));
+
+        this.companiesHouseConfirmationStatementPostLambdaHttpMethod = HttpMethod.POST;
+        this.companiesHouseConfirmationStatementPostLambdaUrlPath = "/api/v1/companies-house/confirmation-statement";
+        this.companiesHouseConfirmationStatementPostLambdaJwtAuthorizer = true;
+        this.companiesHouseConfirmationStatementPostLambdaCustomAuthorizer = false;
+        var companiesHouseConfirmationStatementPostLambdaHandlerName =
+                "companiesHouseConfirmationStatementPost.ingestHandler";
+        var companiesHouseConfirmationStatementPostLambdaHandlerDashed =
+                ResourceNameUtils.convertCamelCaseToDashSeparated(
+                        companiesHouseConfirmationStatementPostLambdaHandlerName);
+        this.companiesHouseConfirmationStatementPostIngestLambdaFunctionName = "%s-%s"
+                .formatted(this.appResourceNamePrefix, companiesHouseConfirmationStatementPostLambdaHandlerDashed);
+        this.companiesHouseConfirmationStatementPostIngestLambdaHandler = "%s/companies-house/%s"
+                .formatted(appLambdaHandlerPrefix, companiesHouseConfirmationStatementPostLambdaHandlerName);
+        this.companiesHouseConfirmationStatementPostIngestLambdaArn =
+                "%s-%s".formatted(appLambdaArnPrefix, companiesHouseConfirmationStatementPostLambdaHandlerDashed);
+        this.companiesHouseConfirmationStatementPostIngestProvisionedConcurrencyLambdaAliasArn = "%s:%s"
+                .formatted(
+                        this.companiesHouseConfirmationStatementPostIngestLambdaArn,
+                        this.provisionedConcurrencyAliasName);
+        publishedApiLambdas.add(new PublishedLambda(
+                this.companiesHouseConfirmationStatementPostLambdaHttpMethod,
+                this.companiesHouseConfirmationStatementPostLambdaUrlPath,
+                "Submit a confirmation statement filing",
+                "Builds the ConfirmationAndVerificationStatement body and submits it through the Companies "
+                        + "House XML Gateway",
+                "postCompaniesHouseConfirmationStatement"));
+
+        this.companiesHouseConfirmationStatementGetLambdaHttpMethod = HttpMethod.GET;
+        this.companiesHouseConfirmationStatementGetLambdaUrlPath =
+                "/api/v1/companies-house/confirmation-statement/{submissionNumber}";
+        this.companiesHouseConfirmationStatementGetLambdaJwtAuthorizer = true;
+        this.companiesHouseConfirmationStatementGetLambdaCustomAuthorizer = false;
+        var companiesHouseConfirmationStatementGetLambdaHandlerName =
+                "companiesHouseConfirmationStatementGet.ingestHandler";
+        var companiesHouseConfirmationStatementGetLambdaHandlerDashed =
+                ResourceNameUtils.convertCamelCaseToDashSeparated(
+                        companiesHouseConfirmationStatementGetLambdaHandlerName);
+        this.companiesHouseConfirmationStatementGetIngestLambdaFunctionName = "%s-%s"
+                .formatted(this.appResourceNamePrefix, companiesHouseConfirmationStatementGetLambdaHandlerDashed);
+        this.companiesHouseConfirmationStatementGetIngestLambdaHandler = "%s/companies-house/%s"
+                .formatted(appLambdaHandlerPrefix, companiesHouseConfirmationStatementGetLambdaHandlerName);
+        this.companiesHouseConfirmationStatementGetIngestLambdaArn =
+                "%s-%s".formatted(appLambdaArnPrefix, companiesHouseConfirmationStatementGetLambdaHandlerDashed);
+        this.companiesHouseConfirmationStatementGetIngestProvisionedConcurrencyLambdaAliasArn = "%s:%s"
+                .formatted(
+                        this.companiesHouseConfirmationStatementGetIngestLambdaArn,
+                        this.provisionedConcurrencyAliasName);
+        publishedApiLambdas.add(new PublishedLambda(
+                this.companiesHouseConfirmationStatementGetLambdaHttpMethod,
+                this.companiesHouseConfirmationStatementGetLambdaUrlPath,
+                "Poll a confirmation statement filing",
+                "Polls the Companies House XML Gateway for the outcome of a submitted confirmation statement "
+                        + "filing",
+                "getCompaniesHouseConfirmationStatement",
                 List.of(new ApiParameter("submissionNumber", "path", true, "The 6-character submission number"))));
 
         this.supportTicketPostLambdaHttpMethod = HttpMethod.POST;
