@@ -1,0 +1,242 @@
+<GovTalkMessage xmlns="http://www.govtalk.gov.uk/CM/envelope"
+xmlns:dsig="http://www.w3.org/2000/09/xmldsig#"
+xmlns:gt="http://www.govtalk.gov.uk/schemas/govtalk/core"
+xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+xsi:schemaLocation="http://www.govtalk.gov.uk/CM/envelope
+http://xmlgw.companieshouse.gov.uk/v2-1/schema/Egov_ch-v2-0.xsd">
+<EnvelopeVersion>1.0</EnvelopeVersion>
+<Header>
+	<MessageDetails>
+		<Class>CompanyDataRequest</Class>
+		<Qualifier>request</Qualifier>
+		<TransactionID>1</TransactionID>
+		<GatewayTimestamp>2008-06-12T14:25:17-00:00</GatewayTimestamp>
+	</MessageDetails>
+	<SenderDetails>
+		<IDAuthentication>
+			<SenderID>????????</SenderID>
+			<Authentication>
+				<Method>CHMD5</Method>
+				<Value />
+			</Authentication>
+		</IDAuthentication>
+	</SenderDetails>
+</Header>
+<GovTalkDetails>
+	<Keys />
+</GovTalkDetails>
+<Body>
+	<CompanyData xmlns="http://xmlgw.companieshouse.gov.uk"
+		xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+		xsi:schemaLocation="http://xmlgw.companieshouse.gov.uk http://xmlgw.companieshouse.gov.uk/v2-1/schema/CompanyData-v3-6.xsd">
+		<CompanyNumber>12345678</CompanyNumber>
+		<CompanyName>TEST COMPANY SERVICES PLC</CompanyName>
+		<CompanyCategory>PLC</CompanyCategory>
+		<Jurisdiction>EW</Jurisdiction>
+		<TradingOnMarket>false</TradingOnMarket>
+		<DTR5Applies>false</DTR5Applies>
+		<PSCExemptAsTradingOnRegulatedMarket>false</PSCExemptAsTradingOnRegulatedMarket>
+		<PSCExemptAsSharesAdmittedOnMarket>false</PSCExemptAsSharesAdmittedOnMarket>
+		<PSCExemptAsTradingOnUKRegulatedMarket>false</PSCExemptAsTradingOnUKRegulatedMarket>
+		<MadeUpDate>2006-04-13</MadeUpDate>
+		<NextDueDate>2008-08-27</NextDueDate>
+		<RegisteredOfficeAddress>
+			<Premise>55</Premise>
+			<Street>Station Approach</Street>
+			<Thoroughfare>Hayes</Thoroughfare>
+			<PostTown>Bromley</PostTown>
+			<County>Kent</County>
+			<Country>GB-ENG</Country>
+			<Postcode>BR2 7EB</Postcode>
+		</RegisteredOfficeAddress>
+		<RegisteredEmailAddress>test@email.co.uk</RegisteredEmailAddress>
+		<SailAddress>
+			<Premise>21</Premise>
+			<Street>Daniels &amp; Co Llp No 1</Street>
+			<Thoroughfare>The Courtyard Campus Way</Thoroughfare>
+			<PostTown>Gillingham Business Park</PostTown>
+			<County>Gillingham Kent</County>
+			<Country>GB-ENG</Country>
+			<Postcode>ME8 0NZ</Postcode>
+		</SailAddress>
+		<SailRecords>
+			<RecordType>MEMBER</RecordType>
+		</SailRecords>
+		<SICCodes>
+			<SICCode>6603</SICCode>
+			<SICCode>1234</SICCode>
+			<!-- <SICText>BLAH BLAH BALH</SICText>  -->
+		</SICCodes>
+		<Officers>
+			<Director>
+				<Person>
+					<Forename>Philip</Forename>
+					<Surname>Grover</Surname>
+					<ServiceAddress>
+						<Address>
+							<Premise>38</Premise>
+							<Street>Harding Close</Street>
+							<Thoroughfare>Hadlow</Thoroughfare>
+							<PostTown>Tonbridge</PostTown>
+							<County>Kent</County>
+							<Country>GB-ENG</Country>
+							<Postcode>TN11 0EQ</Postcode>
+						</Address>
+					</ServiceAddress>
+					<DOB>1942-04-21</DOB>
+					<Nationality>British</Nationality>
+					<CountryOfResidence>UK</CountryOfResidence>
+					<ResidentialAddress>
+						<Address>
+							<Premise>38</Premise>
+							<Street>Harding Close</Street>
+							<Thoroughfare>Hadlow</Thoroughfare>
+							<PostTown>Tonbridge</PostTown>
+							<County>Kent</County>
+							<Country>GB-ENG</Country>
+							<Postcode>TN11 0EQ</Postcode>
+						</Address>
+					</ResidentialAddress>
+				</Person>
+				<AppointmentDate>1990-01-01</AppointmentDate>
+			</Director>
+			<Director>
+				<Corporate>
+					<CorporateName>Gogga Ltd</CorporateName>
+					<Address>
+						<Premise>21</Premise>
+						<Street>My street</Street>
+						<PostTown>Cardiff</PostTown>
+						<Country>USA</Country>
+						<Postcode>CF99 9AA</Postcode>
+					</Address>
+					<CompanyIdentification>
+						<NonEEA>
+							<PlaceRegistered>USA</PlaceRegistered>
+							<RegistrationNumber>1234567</RegistrationNumber>
+							<LawGoverned>USA</LawGoverned>
+							<LegalForm>BLAH BLAH BALH BLAH ................</LegalForm>
+						</NonEEA>
+					</CompanyIdentification>
+				</Corporate>
+				<AppointmentDate>1990-01-01</AppointmentDate>
+			</Director>
+			<Director>
+				<Person>
+					<Forename>Monica</Forename>
+					<Surname>Crown</Surname>
+					<ServiceAddress>
+						<SameAsRegisteredOffice>true</SameAsRegisteredOffice>
+					</ServiceAddress>
+					<DOB>1960-04-16</DOB>
+					<Nationality>British</Nationality>
+					<CountryOfResidence>UK</CountryOfResidence>
+					<ResidentialAddress>
+						<Address>
+							<Premise>38</Premise>
+							<Street>Harding Close</Street>
+							<Thoroughfare>Hadlow</Thoroughfare>
+							<PostTown>Tonbridge</PostTown>
+							<County>Kent</County>
+							<Country>GB-ENG</Country>
+							<Postcode>TN11 0EQ</Postcode>
+						</Address>
+					</ResidentialAddress>
+				</Person>
+				<AppointmentDate>1990-01-01</AppointmentDate>
+			</Director>
+			<Secretary>
+				<Person>
+					<Forename>Monica</Forename>
+					<Surname>Brown</Surname>
+					<ServiceAddress>
+						<Address>
+							<Premise>28</Premise>
+							<Street>Sandiland Crescent</Street>
+							<PostTown>Ashworth</PostTown>
+							<County>Kent</County>
+							<Country>GBR</Country>
+							<Postcode>BR2 7DR</Postcode>
+						</Address>
+					</ServiceAddress>
+				</Person>
+				<AppointmentDate>1990-01-01</AppointmentDate>
+			</Secretary>
+		</Officers>
+		<PSCs>
+			<PSC>
+				<PSCStatementNotification>PSC_DETAILS_NOT_CONFIRMED</PSCStatementNotification>
+			</PSC>
+			<PSC>
+				<PSCLinkedStatementNotification>
+					<Statement>PSC_HAS_FAILED_TO_CONFIRM_CHANGED_DETAILS</Statement>
+					<Individual>
+						<Surname>Glover</Surname>
+						<Forename>Tom</Forename>
+						<PartialDOB>
+							<Month>01</Month>
+							<Year>1990</Year>
+						</PartialDOB>
+					</Individual>
+				</PSCLinkedStatementNotification>
+			</PSC>
+			<PSC>
+				<PSCNotification>
+					<Corporate>
+						<CorporateName>Developers R US</CorporateName>
+						<Address>
+							<Premise>1</Premise>
+							<Street>High Street</Street>
+							<PostTown>Toy Town</PostTown>
+							<Country>GBR</Country>
+						</Address>
+						<PSCCompanyIdentification>
+							<LawGoverned>39 rules</LawGoverned>
+							<LegalForm>AB form</LegalForm>
+						</PSCCompanyIdentification>
+					</Corporate>
+					<NatureOfControls>
+						<NatureOfControl>OWNERSHIPOFSHARES_25TO50PERCENT</NatureOfControl>
+					</NatureOfControls>
+					<NotificationDate>2016-02-01</NotificationDate>
+				</PSCNotification>
+			</PSC>
+		</PSCs>
+		<StatementOfCapital>
+			<Capital>
+				<TotalAmountUnpaid>1</TotalAmountUnpaid>
+				<TotalNumberOfIssuedShares>1</TotalNumberOfIssuedShares>
+				<ShareCurrency>GBP</ShareCurrency>
+				<TotalAggregateNominalValue>1</TotalAggregateNominalValue>
+				<Shares>
+					<ShareClass>Ordinary</ShareClass>
+					<PrescribedParticulars>BLAH BLAH BLAH</PrescribedParticulars>
+					<NumShares>1</NumShares>
+					<AggregateNominalValue>1</AggregateNominalValue>
+				</Shares>
+			</Capital>
+		</StatementOfCapital>
+		<Shareholdings>
+			<ShareClass>Ordinary</ShareClass>
+			<NumberHeld>1</NumberHeld>
+			<Shareholders>
+				<Name>
+					<Surname>Grover</Surname>
+					<Forename>Philip</Forename>
+				</Name>
+				<Address>
+					<Premise>21</Premise>
+					<Street>My Street</Street>
+					<PostTown>Cardiff</PostTown>
+					<Country>GBR</Country>
+				</Address>
+			</Shareholders>
+		</Shareholdings>
+		<Registers>
+			<HeldOnPublicRecord>
+				<RegisterType> MEMBER</RegisterType>
+			</HeldOnPublicRecord>
+		</Registers>
+	</CompanyData>
+</Body>
+</GovTalkMessage>

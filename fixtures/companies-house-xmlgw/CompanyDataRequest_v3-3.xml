@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<GovTalkMessage xsi:schemaLocation="http://www.govtalk.gov.uk/CM/envelope http://xmlgw.companieshouse.gov.uk/v2-1/schema/Egov_ch-v2-0.xsd" xmlns="http://www.govtalk.gov.uk/CM/envelope" xmlns:dsig="http://www.w3.org/2000/09/xmldsig#" xmlns:gt="http://www.govtalk.gov.uk/schemas/govtalk/core" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+	<EnvelopeVersion>1.0</EnvelopeVersion>
+	<Header>
+		<MessageDetails>
+			<Class>CompanyDataRequest</Class>
+			<Qualifier>request</Qualifier>
+			<TransactionID>1</TransactionID>
+			<GatewayTest>1</GatewayTest>
+		</MessageDetails>
+		<SenderDetails>
+			<IDAuthentication>
+				<SenderID>??????????</SenderID>
+				<Authentication>
+					<Method>clear</Method>
+					<Value>??????????</Value>
+				</Authentication>
+			</IDAuthentication>
+		</SenderDetails>
+	</Header>
+	<GovTalkDetails>
+		<Keys/>
+	</GovTalkDetails>
+	<Body>
+		<CompanyDataRequest xmlns="http://xmlgw.companieshouse.gov.uk" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://xmlgw.companieshouse.gov.uk http://xmlgw.companieshouse.gov.uk/v2-1/schema/CompanyData-v3-3.xsd">
+			<CompanyNumber>01234567</CompanyNumber>
+			<CompanyAuthenticationCode>AUTH01</CompanyAuthenticationCode>
+			<MadeUpDate>2016-05-13</MadeUpDate>
+		</CompanyDataRequest>
+	</Body>
+</GovTalkMessage>

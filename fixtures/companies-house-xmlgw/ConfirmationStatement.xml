@@ -1,0 +1,17 @@
+<FormSubmission xmlns="http://xmlgw.companieshouse.gov.uk/Header" xmlns:bs="http://xmlgw.companieshouse.gov.uk" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://xmlgw.companieshouse.gov.uk/Header http://xmlgw.companieshouse.gov.uk/v1-0/schema/forms/FormSubmission-v2-9.xsd">
+    <FormHeader>
+        <CompanyNumber>11111111</CompanyNumber>
+        <CompanyName>EXAMPLE COMPANY</CompanyName>
+        <CompanyAuthenticationCode>123456</CompanyAuthenticationCode>
+        <PackageReference>9999</PackageReference>
+        <FormIdentifier>ConfirmationStatement</FormIdentifier>
+        <SubmissionNumber>BBBBBB</SubmissionNumber>
+    </FormHeader>
+    <DateSigned>2015-07-01</DateSigned>
+    <Form>
+        <ConfirmationStatement xmlns="http://xmlgw.companieshouse.gov.uk" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://xmlgw.companieshouse.gov.uk http://xmlgw.companieshouse.gov.uk/v1-0/schema/forms/ConfirmationStatement-v1-0.xsd">
+            <ReviewDate>2015-08-30</ReviewDate>
+            <StateConfirmation>true</StateConfirmation>
+        </ConfirmationStatement>
+    </Form>
+</FormSubmission>

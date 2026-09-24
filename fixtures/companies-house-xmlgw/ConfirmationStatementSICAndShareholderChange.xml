@@ -1,0 +1,70 @@
+<FormSubmission xmlns="http://xmlgw.companieshouse.gov.uk/Header" xmlns:bs="http://xmlgw.companieshouse.gov.uk" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://xmlgw.companieshouse.gov.uk/Header http://xmlgw.companieshouse.gov.uk/v1-0/schema/forms/FormSubmission-v2-11.xsd">
+  <FormHeader>
+    <CompanyNumber>11111111</CompanyNumber>
+    <CompanyName>EXAMPLE COMPANY</CompanyName>
+    <CompanyAuthenticationCode>222222</CompanyAuthenticationCode>
+    <PackageReference>9999</PackageReference>
+    <FormIdentifier>ConfirmationStatement</FormIdentifier>
+    <SubmissionNumber>000-033764</SubmissionNumber>
+  </FormHeader>
+  <DateSigned>2022-01-26</DateSigned>
+  <Form>
+    <ConfirmationStatement xmlns="http://xmlgw.companieshouse.gov.uk" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://xmlgw.companieshouse.gov.uk http://xmlgw.companieshouse.gov.uk/v1-0/schema/forms/ConfirmationStatement-v1-2.xsd">
+      <ReviewDate>2016-09-18</ReviewDate>
+      <SICCodes>
+        <SICCode>15200</SICCode>
+        <SICCode>41100</SICCode>
+      </SICCodes>
+      <StatementOfCapital>
+        <Capital>
+          <TotalAmountUnpaid>0</TotalAmountUnpaid>
+          <TotalNumberOfIssuedShares>100</TotalNumberOfIssuedShares>
+          <ShareCurrency>GBP</ShareCurrency>
+          <TotalAggregateNominalValue>100</TotalAggregateNominalValue>
+          <Shares>
+            <ShareClass>ORDINARY</ShareClass>
+            <PrescribedParticulars>ORDINARY SHARES WITH EACH SHARE BEING ENTITLED TO ONE VOTE IN ANY CIRCUMSTANCES AND PARI PASSU TO DIVIDEND PAYMENTS, EACH SHA
+RE IS ENTITLED TO PARTICIPATE IN A DISTRIBUTION ARISING FROM A WINDING UP OF THE COMPANY</PrescribedParticulars>
+            <NumShares>100</NumShares>
+            <AggregateNominalValue>100</AggregateNominalValue>
+          </Shares>
+        </Capital>
+      </StatementOfCapital>
+      <Shareholdings>
+        <ShareClass>ORDINARY</ShareClass>
+        <NumberHeld>10</NumberHeld>
+        <Shareholders>
+          <Name>
+            <Surname>CONGRESSPERSONLIQUOR</Surname>
+            <Forename>JACKET</Forename>
+          </Name>
+        </Shareholders>
+      </Shareholdings>
+      <Shareholdings>
+        <ShareClass>ORDINARY</ShareClass>
+        <NumberHeld>80</NumberHeld>
+        <Transfers>
+          <DateOfTransfer>2016-01-01</DateOfTransfer>
+          <NumberSharesTransferred>10</NumberSharesTransferred>
+        </Transfers>
+        <Shareholders>
+          <Name>
+            <Surname>CONGRESSPERSONLIQUOR</Surname>
+            <Forename>FAXRIVULET</Forename>
+          </Name>
+        </Shareholders>
+      </Shareholdings>
+      <Shareholdings>
+        <ShareClass>ORDINARY</ShareClass>
+        <NumberHeld>10</NumberHeld>
+        <Shareholders>
+          <Name>
+            <Surname>CONGRESSPERSONLIQUOR</Surname>
+            <Forename>LEWIS</Forename>
+          </Name>
+        </Shareholders>
+      </Shareholdings>
+      <StateConfirmation>true</StateConfirmation>
+    </ConfirmationStatement>
+  </Form>
+</FormSubmission>

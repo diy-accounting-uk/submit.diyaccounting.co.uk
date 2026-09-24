@@ -1,0 +1,37 @@
+<FormSubmission xmlns="http://xmlgw.companieshouse.gov.uk/Header" xmlns:bs="http://xmlgw.companieshouse.gov.uk" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://xmlgw.companieshouse.gov.uk/Header http://xmlgw.companieshouse.gov.uk/v1-0/schema/forms/FormSubmission-v2-9.xsd">
+    <FormHeader>
+        <CompanyNumber>11111111</CompanyNumber>
+        <CompanyName>EXAMPLE COMPANY</CompanyName>
+        <CompanyAuthenticationCode>123456</CompanyAuthenticationCode>
+        <PackageReference>9999</PackageReference>
+        <FormIdentifier>ConfirmationStatement</FormIdentifier>
+        <SubmissionNumber>BBBBBB</SubmissionNumber>
+    </FormHeader>
+    <DateSigned>2015-07-01</DateSigned>
+    <Form>
+        <ConfirmationAndVerificationStatement xmlns="http://xmlgw.companieshouse.gov.uk" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://xmlgw.companieshouse.gov.uk http://xmlgw.companieshouse.gov.uk/v1-0/schema/forms/ConfirmationAndVerificationStatement-v1-0.xsd">
+            <ReviewDate>2024-08-30</ReviewDate>
+            <RegisteredEmailAddress>test@test.com</RegisteredEmailAddress>
+            <AcceptLawfulPurposeStatement>true</AcceptLawfulPurposeStatement>
+            <StateConfirmation>true</StateConfirmation>
+            <VerificationStatement>
+                <Director>
+                    <Person>
+                        <Title>MR</Title>
+                        <Forename>PERSON</Forename>
+                        <OtherForenames>OTHER</OtherForenames>
+                        <Surname>NAME</Surname>
+                        <DOB>1967-08-13</DOB>
+                        <VerificationDetails>
+                            <CompaniesHousePersonalCode>12345678951</CompaniesHousePersonalCode>
+                            <VerificationStatements>
+                                <VerificationStatementForIndividual>INDIVIDUAL_VERIFIED</VerificationStatementForIndividual>
+                            </VerificationStatements>
+                            <NameMismatchReason>LEGALLY_CHANGED</NameMismatchReason>
+                        </VerificationDetails>
+                    </Person>
+                </Director>
+            </VerificationStatement>
+        </ConfirmationAndVerificationStatement>
+    </Form>
+</FormSubmission>
