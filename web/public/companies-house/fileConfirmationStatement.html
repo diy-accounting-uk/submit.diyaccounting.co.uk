@@ -265,8 +265,17 @@
         });
       }
 
+      function escapeHtml(value) {
+        return String(value ?? "")
+          .replace(/&/g, "&amp;")
+          .replace(/</g, "&lt;")
+          .replace(/>/g, "&gt;")
+          .replace(/"/g, "&quot;")
+          .replace(/'/g, "&#39;");
+      }
+
       function textOrDash(value) {
-        return value === undefined || value === null || value === "" ? "-" : value;
+        return value === undefined || value === null || value === "" ? "-" : escapeHtml(value);
       }
 
       function officerDisplayName(officer) {
@@ -282,7 +291,7 @@
           .filter((officer) => !officer.resignedOn)
           .map(
             (officer) =>
-              `<tr><td>${officerDisplayName(officer)}</td><td>${textOrDash(officer.officerRole)}</td><td>${textOrDash(
+              `<tr><td>${escapeHtml(officerDisplayName(officer))}</td><td>${textOrDash(officer.officerRole)}</td><td>${textOrDash(
                 officer.appointedOn,
               )}</td><td>${officer.identityVerificationDetails ? "Verified" : "Not verified"}</td></tr>`,
           )
@@ -345,13 +354,13 @@
           <fieldset class="form-group" data-share-class-row="${index}">
             <legend>Share class ${index + 1}</legend>
             <label for="shareClass-${index}">Share class</label>
-            <input type="text" id="shareClass-${index}" value="${share.shareClass || ""}" />
+            <input type="text" id="shareClass-${index}" value="${escapeHtml(share.shareClass || "")}" />
             <label for="prescribedParticulars-${index}">Prescribed particulars</label>
-            <input type="text" id="prescribedParticulars-${index}" value="${share.prescribedParticulars || ""}" />
+            <input type="text" id="prescribedParticulars-${index}" value="${escapeHtml(share.prescribedParticulars || "")}" />
             <label for="numShares-${index}">Number of shares</label>
-            <input type="number" id="numShares-${index}" step="1" min="0" value="${share.numShares || ""}" />
+            <input type="number" id="numShares-${index}" step="1" min="0" value="${escapeHtml(share.numShares || "")}" />
             <label for="aggregateNominalValue-${index}">Aggregate nominal value</label>
-            <input type="number" id="aggregateNominalValue-${index}" step="1" min="0" value="${share.aggregateNominalValue || ""}" />
+            <input type="number" id="aggregateNominalValue-${index}" step="1" min="0" value="${escapeHtml(share.aggregateNominalValue || "")}" />
             <button type="button" class="btn-small remove-share-class-row">Remove</button>
           </fieldset>`;
       }
@@ -374,21 +383,21 @@
           <fieldset class="form-group" data-shareholder-row="${suffix}">
             <legend>Joint holder ${shareholderIndex + 1}</legend>
             <label for="holderSurname-${suffix}">Shareholder surname</label>
-            <input type="text" id="holderSurname-${suffix}" value="${shareholder.surname || ""}" />
+            <input type="text" id="holderSurname-${suffix}" value="${escapeHtml(shareholder.surname || "")}" />
             <label for="holderForename-${suffix}">Shareholder forename</label>
-            <input type="text" id="holderForename-${suffix}" value="${shareholder.forename || ""}" />
+            <input type="text" id="holderForename-${suffix}" value="${escapeHtml(shareholder.forename || "")}" />
             <label for="holderAmalgamatedName-${suffix}">Or amalgamated name (used instead of surname/forename)</label>
-            <input type="text" id="holderAmalgamatedName-${suffix}" value="${shareholder.amalgamatedName || ""}" />
+            <input type="text" id="holderAmalgamatedName-${suffix}" value="${escapeHtml(shareholder.amalgamatedName || "")}" />
             <label for="holderPremise-${suffix}">Premise</label>
-            <input type="text" id="holderPremise-${suffix}" value="${address.premise || ""}" />
+            <input type="text" id="holderPremise-${suffix}" value="${escapeHtml(address.premise || "")}" />
             <label for="holderStreet-${suffix}">Street</label>
-            <input type="text" id="holderStreet-${suffix}" value="${address.street || ""}" />
+            <input type="text" id="holderStreet-${suffix}" value="${escapeHtml(address.street || "")}" />
             <label for="holderPostTown-${suffix}">Post town</label>
-            <input type="text" id="holderPostTown-${suffix}" value="${address.postTown || ""}" />
+            <input type="text" id="holderPostTown-${suffix}" value="${escapeHtml(address.postTown || "")}" />
             <label for="holderPostcode-${suffix}">Postcode</label>
-            <input type="text" id="holderPostcode-${suffix}" value="${address.postcode || ""}" />
+            <input type="text" id="holderPostcode-${suffix}" value="${escapeHtml(address.postcode || "")}" />
             <label for="holderCountry-${suffix}">Country</label>
-            <input type="text" id="holderCountry-${suffix}" value="${address.country || ""}" />
+            <input type="text" id="holderCountry-${suffix}" value="${escapeHtml(address.country || "")}" />
             <button type="button" class="btn-small remove-joint-holder-row" data-holding-index="${holdingIndex}">Remove joint holder</button>
           </fieldset>`;
       }
@@ -402,9 +411,9 @@
           <fieldset class="form-group" data-shareholding-row="${index}">
             <legend>Shareholding ${index + 1}</legend>
             <label for="holdingShareClass-${index}">Share class</label>
-            <input type="text" id="holdingShareClass-${index}" value="${holding.shareClass || ""}" />
+            <input type="text" id="holdingShareClass-${index}" value="${escapeHtml(holding.shareClass || "")}" />
             <label for="holdingNumberHeld-${index}">Number held</label>
-            <input type="number" id="holdingNumberHeld-${index}" step="1" min="0" value="${holding.numberHeld || ""}" />
+            <input type="number" id="holdingNumberHeld-${index}" step="1" min="0" value="${escapeHtml(holding.numberHeld || "")}" />
             <p class="hint">A holding held jointly carries every joint holder below, up to ${MAX_JOINT_HOLDERS_PER_SHAREHOLDING}.</p>
             <div class="joint-holders-container" data-holding-index="${index}">${jointHoldersHtml}</div>
             <button type="button" class="btn-small add-joint-holder-row" data-holding-index="${index}">Add joint holder</button>
@@ -424,10 +433,10 @@
       function directorRowHtml(index, director) {
         return `
           <fieldset class="form-group" data-director-row="${index}">
-            <legend>${director.forename || ""} ${director.surname || ""} (${director.dob || "no date of birth on record"})</legend>
+            <legend>${escapeHtml(director.forename || "")} ${escapeHtml(director.surname || "")} (${escapeHtml(director.dob || "no date of birth on record")})</legend>
             <label for="directorOtherForenames-${index}">Other forenames</label>
             <p class="hint">Every middle name on the register. Companies House matches the director by the full name - leaving one out rejects the filing.</p>
-            <input type="text" id="directorOtherForenames-${index}" value="${director.otherForenames || ""}" spellcheck="false" />
+            <input type="text" id="directorOtherForenames-${index}" value="${escapeHtml(director.otherForenames || "")}" spellcheck="false" />
             <label for="directorPersonalCode-${index}">Companies House personal code</label>
             <input type="text" id="directorPersonalCode-${index}" maxlength="11" spellcheck="false" />
             <label for="directorNameMismatchReason-${index}">Name mismatch reason</label>
@@ -674,7 +683,9 @@
           return;
         }
         container.style.display = "block";
-        container.innerHTML = rejections.map((entry) => `<p>${entry.rejectCode}: ${entry.description}</p>`).join("\n");
+        container.innerHTML = rejections
+          .map((entry) => `<p>${escapeHtml(entry.rejectCode)}: ${escapeHtml(entry.description)}</p>`)
+          .join("\n");
       }
 
       function renderPscFollowUp() {
@@ -693,7 +704,7 @@
             return result;
           }
           document.getElementById("filingResult").innerHTML =
-            `<p>Submission <strong>${submissionNumber}</strong> is <strong>${result.statusCode}</strong>. Checking again...</p>`;
+            `<p>Submission <strong>${escapeHtml(submissionNumber)}</strong> is <strong>${escapeHtml(result.statusCode)}</strong>. Checking again...</p>`;
           await new Promise((resolve) => setTimeout(resolve, 500));
         }
         return window.pollConfirmationStatement(submissionNumber, extraHeaders);
@@ -708,12 +719,12 @@
           const govTestScenarioHeaders = govTestScenario ? { "Gov-Test-Scenario": govTestScenario } : {};
           const submission = await window.submitConfirmationStatement(payload, govTestScenarioHeaders);
           document.getElementById("filingResult").innerHTML =
-            `<p>Submission <strong>${submission.submissionNumber}</strong> accepted by the gateway at ${submission.gatewayTimestamp}. Waiting for Companies House...</p>`;
+            `<p>Submission <strong>${escapeHtml(submission.submissionNumber)}</strong> accepted by the gateway at ${escapeHtml(submission.gatewayTimestamp)}. Waiting for Companies House...</p>`;
           showView("resultView");
 
           const outcome = await pollUntilSettled(submission.submissionNumber, govTestScenarioHeaders);
           document.getElementById("filingResult").innerHTML =
-            `<p>Submission <strong>${outcome.submissionNumber}</strong> was <strong>${outcome.statusCode}</strong>.</p>`;
+            `<p>Submission <strong>${escapeHtml(outcome.submissionNumber)}</strong> was <strong>${escapeHtml(outcome.statusCode)}</strong>.</p>`;
           renderRejections(outcome.rejections);
           if (outcome.statusCode === "ACCEPT") {
             renderPscFollowUp();
@@ -760,7 +771,8 @@
       document.getElementById("addShareholdingBtn").addEventListener("click", () => addShareholdingRow());
       document.getElementById("shareholdingsContainer").addEventListener("click", (event) => {
         if (event.target.classList.contains("add-joint-holder-row")) {
-          const holdingIndex = event.target.getAttribute("data-holding-index");
+          const holdingIndex = Number.parseInt(event.target.getAttribute("data-holding-index"), 10);
+          if (!Number.isInteger(holdingIndex)) return;
           const jointHoldersContainer = document.querySelector(`.joint-holders-container[data-holding-index="${holdingIndex}"]`);
           const nextShareholderIndex = jointHoldersContainer.querySelectorAll("[data-shareholder-row]").length;
           if (nextShareholderIndex >= MAX_JOINT_HOLDERS_PER_SHAREHOLDING) {
