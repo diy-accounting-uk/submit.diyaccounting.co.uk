@@ -14,6 +14,7 @@ import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
 
 import { createSession, openBook, saveBook, SAVE_FORMATS } from "./book-tools.js";
+import { writeFinancePackage } from "./finance/package-writer.js";
 import { deriveMicroEntityAccounts } from "./accounts-tools.js";
 import { deriveVatReturn } from "./vat-tools.js";
 import { registerItsaTools } from "./itsa-tools.js";
@@ -115,6 +116,26 @@ export const TOOLS = {
       clientId: z.string().optional().describe("A practice client's id, to save into that client's book set"),
     },
     handler: saveBook,
+  },
+  write_finance_package: {
+    description:
+      "Writes a diya-gl book and its lines as the unzipped spreadsheets package directory a completed year's package " +
+      "holds: one workbook for a single-file product (Basic Sole Trader, Taxi Driver), the whole named set for a " +
+      "multi-file one (Self Employed, Company), under outputDir in a directory named the product's own way. Reads the " +
+      "book from bookPath (a diya-gl-dir, or any file open_book reads) or from book and lines given directly; does not " +
+      "touch the session's own loaded book. Reads the workbook templates from templatePackagePath (the spreadsheets " +
+      "repository's app/ directory) when given, otherwise fetches them from spreadsheets.diyaccounting.co.uk on first use.",
+    inputSchema: {
+      bookPath: z.string().optional().describe("Path to the book: a directory of book.toml + lines.jsonl, or one file the engine reads"),
+      book: z.record(z.string(), z.any()).optional().describe("A parsed book.toml, instead of bookPath"),
+      lines: z.array(z.record(z.string(), z.any())).optional().describe("Parsed lines.jsonl entries, instead of bookPath"),
+      templatePackagePath: z
+        .string()
+        .optional()
+        .describe("The spreadsheets repository's app/ directory, read directly instead of fetching templates over the network"),
+      outputDir: z.string().describe("The directory the package's own named directory is written under"),
+    },
+    handler: (_session, params) => writeFinancePackage(params),
   },
   derive_vat_return: {
     description:
