@@ -1464,6 +1464,80 @@ jobs:
           retention-days: 7
           path: target/behaviour-test-results/
 
+  behaviour-test-simulator-file-confirmation-statement:
+    if: ${{ needs.changes.outputs.code == 'true' }}
+    name: 'simulator - fileConfirmationStatementBehaviour'
+    runs-on: ubuntu-24.04
+    container:
+      image: mcr.microsoft.com/playwright:v${{ needs.playwright-version.outputs.version }}-jammy
+    needs:
+      - changes
+      - names
+      - playwright-version
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+      - name: Setup Node
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: |
+          npm ci --ignore-scripts
+        env:
+          PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD: 1
+
+      - name: Run behaviour test
+        run: npm run test:fileConfirmationStatementBehaviour-simulator
+
+      - name: Upload artifacts
+        if: ${{ !cancelled() }}
+        continue-on-error: true
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
+        with:
+          name: behaviour-test-simulator-file-confirmation-statement
+          retention-days: 7
+          path: target/behaviour-test-results/
+
+  behaviour-test-simulator-file-micro-entity-accounts:
+    if: ${{ needs.changes.outputs.code == 'true' }}
+    name: 'simulator - fileMicroEntityAccountsBehaviour'
+    runs-on: ubuntu-24.04
+    container:
+      image: mcr.microsoft.com/playwright:v${{ needs.playwright-version.outputs.version }}-jammy
+    needs:
+      - changes
+      - names
+      - playwright-version
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+      - name: Setup Node
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: |
+          npm ci --ignore-scripts
+        env:
+          PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD: 1
+
+      - name: Run behaviour test
+        run: npm run test:fileMicroEntityAccountsBehaviour-simulator
+
+      - name: Upload artifacts
+        if: ${{ !cancelled() }}
+        continue-on-error: true
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
+        with:
+          name: behaviour-test-simulator-file-micro-entity-accounts
+          retention-days: 7
+          path: target/behaviour-test-results/
+
   # Proxy behaviour test - requires Docker and HMRC sandbox secrets
   # Uses manual Playwright install (not container) because Docker is needed for mock-oauth2-server
   behaviour-test-proxy-submit-vat:
