@@ -47,15 +47,14 @@ Shared facts for the analytics rows (B52d, B52e, B52l, B52m): the prod Athena da
 
 - [ ] **PU-7n. The practice licence launch: the DIYA-GL page line.** Submit's side merged in PR #347
   (2026-09-24; live prices year `price_1UIyyPCD0Ld2ukzIHeO99d6G`, month
-  `price_1UIyyPCD0Ld2ukzIQefbnWMO`). Remaining: the spreadsheets branch `claude/diya-gl-resident-pro`
-  (commit `3b135eef0`, local, not pushed) adds a hidden `tier-resident-pro` line at £199 a year to
-  `../spreadsheets.diyaccounting.co.uk/web/diya-gl.co.uk/public/index.html`; push it and open its PR.
+  `price_1UIyyPCD0Ld2ukzIQefbnWMO`). Remaining: spreadsheets PR #139 adds a hidden `tier-resident-pro` line at £199 a year to
+  `../spreadsheets.diyaccounting.co.uk/web/diya-gl.co.uk/public/index.html`; merge it when green.
   **Source**: `PLAN_PRICE_UPDATE.md` §(d); operator 2026-09-22 and 2026-09-23 (go). **Owner**: Claude
   Code. **Model**: Haiku. **Size**: 2 files.
   In flight: spreadsheets PR #139 (`claude/diya-gl-resident-pro`), checks running.
 
 - [ ] **F2e. The MCP writes a populated spreadsheets package.** `write_finance_package`
-  (`mcp/lib/finance/package-writer.js`, over diya-gl's `saveWorkbookFiles`) is on `claude/b91-board`.
+  (`mcp/lib/finance/package-writer.js`, over diya-gl's `saveWorkbookFiles`) is on `main`.
   Remaining: the reconciliation. `../spreadsheets.diyaccounting.co.uk/app/bin/reconcile.js` fixes
   `PACKAGES_DIR` to that repository's `packages/` and re-derives every cell from its own scenario
   fixtures (`app/test/fixtures/*.toml`) over a blank template, so a populated package shows the
@@ -65,36 +64,13 @@ Shared facts for the analytics rows (B52d, B52e, B52l, B52m): the prod Athena da
   over `write_finance_package`'s output for DIYA's book (`../staging/2026-2027/book/`). Nothing
   automated writes to Google Drive. **Source**: `../PLAN_FINANCE_AUTOMATION.md` phase 2 and
   Verification. **Owner**: Claude Code. **Model**: Sonnet. **Size**: ~3 files (spreadsheets).
-  In flight: the submit half on PR #349 (`claude/b91-board`). The harness half is spreadsheets `claude/fin-reconcile-book` (local, `6e89f1a72`: `--packages-dir` and `--book`; DIYA's package passes 1,441 of 1,444 checks), with an agent gating `app/lib/calculators/ltd.js`'s payslips print page on `scenario.payroll` for the other 3.
+  In flight: spreadsheets `claude/fin-reconcile-book` (`6e89f1a72`, `1c127a54b`: `--packages-dir`, `--book`, and the Ltd calculator's payslips page gated on `scenario.payroll`; DIYA's package reconciles 1,444 of 1,444), pushing, then its PR.
 
-- [ ] **CS-1. Confirmation statement fixtures.** Save the `ConfirmationAndVerificationStatement-v1-0` schema set and `ConfirmationStatement-v1-3.xsd` (the statement reverts to it once every officer is verified), the CompanyData and PaymentPeriods schemas, and the published examples under `fixtures/companies-house-xmlgw/` from `xmlgw.companieshouse.gov.uk/v1-0/schema/` and `/examples/`. The form since 2025-11-18 is `ConfirmationAndVerificationStatement`; `ConfirmationStatement-v1-3` has no verification block. `app/unit-tests/licenceHeaders.test.js` (line 34) already exempts `fixtures/companies-house-xmlgw/` from the licence header; the accounts fixtures there (`GetSubmissionStatus_response.xml`) show the naming. Needs network access to `xmlgw.companieshouse.gov.uk`. **Source**: `PLAN_COMPANIES_HOUSE_CONFIRMATION_STATEMENT.md` (its Tasks table carries the files). **Owner**: Claude Code. **Model**: Haiku. **Size**: 12 files.
-  In flight: PR #349 (`claude/b91-board`), CI running.
+- [ ] **CS-2. Envelopes and the body builder.** A generalised `buildFormSubmission` and the CS01, CompanyData and PaymentPeriods builders and parsers in `app/services/companiesHouseXmlGateway.js`, plus `companiesHouseConfirmationStatementXml.js` with the XSD-order check. **Source**: `PLAN_COMPANIES_HOUSE_CONFIRMATION_STATEMENT.md` (its Tasks table carries the files). **Owner**: Claude Code. **Model**: Sonnet. **Size**: 4 files. The schemas are in `fixtures/companies-house-xmlgw/` (22 files, on `main`).
+  In flight: a Sonnet agent doing CS-2 then CS-3, batch `claude/b92-board`.
 
-- [ ] **F2n. The finance parsers code lines from the label map.** `bank-lines.js` (`bankCodeFor`,
-  line 108) codes a line from the statement's type alone, and `paypal-statement-lines.js` and
-  `stripe-lines.js` post every receipt to sales. Give each an optional `labels` input, the map F2m
-  writes to `../staging/labels/diya-labels.toml` (read by the caller and passed in, so the
-  parsers stay pure and the repository holds no payee data), that sets account, bank code and VAT
-  code for a matching description; an unmatched line keeps today's coding and is returned in an
-  `unlabelled` list. Tests over a synthetic map. The company-book skill's Build section names
-  the map and the refresh from the prior year's workbooks. The map exists: `../staging/labels/diya-labels.toml` (12 rules, 11 payee patterns from the 2025-26 set).
-  **Source**: operator 2026-09-23. **Owner**: Claude Code. **Model**: Sonnet. **Size**: ~7 files.
-  In flight: PR #349 (`claude/b91-board`), CI running.
-
-- [ ] **F2g. PayPal transactions into diya-gl lines.** `mcp/lib/finance/paypal-lines.js` over
-  the staged API files (`../staging/2025-2026/paypal/2026-03-31-paypal-transactions.json` and `../staging/2026-2027/paypal/2026-0[4-8]-*-paypal-transactions.json`, 129 transactions), on `mcp/lib/finance/stripe-lines.js`'s pattern. The statement route,
-  `mcp/lib/finance/paypal-statement-lines.js`, already applies the rules this route needs
-  (settled only; holds and their releases unposted, `isHoldCandidate` line 288 and
-  `isReleaseCandidate` line 301; a receipt gross to `sales` with its fee to `purchases`; bank
-  transfers and currency conversions unposted, `isCurrencyConversionOrTransfer` line 274): reuse
-  those functions where the API's record shape allows. A bill payment is `purchases` matched to
-  the mailbox invoice (`mcp/lib/finance/mail-invoices.js`). Validated with `validateLines`; a unit
-  test over a recorded page; the proof is that the API route's `sales` and `purchases` lines for
-  March to August 2026 equal the PayPal lines the statement route wrote into
-  `../staging/2026-2027/book/lines.jsonl`.
-  **Source**: `../PLAN_FINANCE_AUTOMATION.md` phase 2. **Owner**: Claude Code.
-  **Model**: Sonnet. **Size**: ~2 files.
-  In flight: PR #349 (`claude/b91-board`), CI running.
+- [ ] **CS-3. Simulator for the confirmation statement.** The three new request classes in `app/http-simulator/routes/companies-house-xmlgw.js` and a `confirmation-statement` scenario. **Source**: `PLAN_COMPANIES_HOUSE_CONFIRMATION_STATEMENT.md` (its Tasks table carries the files). **Owner**: Claude Code. **Model**: Sonnet. **Size**: 4 files.
+  In flight: a Sonnet agent doing CS-2 then CS-3, batch `claude/b92-board`.
 
 ## Machine-only
 
@@ -150,10 +126,6 @@ Shared facts for the analytics rows (B52d, B52e, B52l, B52m): the prod Athena da
 - [ ] **CS-H2. Send the confirmation-statement email.** Send `../DRAFT_EMAIL_XMLGW_CS01.md` on the `xml@companieshouse.gov.uk` thread, and paste the answers into CS-9's row. **Source**: `PLAN_COMPANIES_HOUSE_CONFIRMATION_STATEMENT.md` (its Tasks table carries the files). **Owner**: Operator. **Model**: none. **Size**: 0 files.
 
 ## Blocked
-
-- [ ] **CS-2. Envelopes and the body builder.** A generalised `buildFormSubmission` and the CS01, CompanyData and PaymentPeriods builders and parsers in `app/services/companiesHouseXmlGateway.js`, plus `companiesHouseConfirmationStatementXml.js` with the XSD-order check. Blocked on CS-1. **Source**: `PLAN_COMPANIES_HOUSE_CONFIRMATION_STATEMENT.md` (its Tasks table carries the files). **Owner**: Claude Code. **Model**: Sonnet. **Size**: 4 files.
-
-- [ ] **CS-3. Simulator for the confirmation statement.** The three new request classes in `app/http-simulator/routes/companies-house-xmlgw.js` and a `confirmation-statement` scenario. Blocked on CS-2. **Source**: `PLAN_COMPANIES_HOUSE_CONFIRMATION_STATEMENT.md` (its Tasks table carries the files). **Owner**: Claude Code. **Model**: Sonnet. **Size**: 4 files.
 
 - [ ] **CS-4. Confirmation statement Lambdas and the shared poll.** Six Lambdas (officers and PSC proxies, filing data, preview, submit, poll) and `pollSubmission` extracted to `app/services/companiesHouseSubmissionStatus.js`, the accounts poll (`app/functions/companies-house/companiesHouseAccountsGet.js`) moved onto it. 17 files with tests: one agent. Blocked on CS-2 and CS-3. **Source**: `PLAN_COMPANIES_HOUSE_CONFIRMATION_STATEMENT.md` (its Tasks table carries the files). **Owner**: Claude Code. **Model**: Sonnet. **Size**: 17 files.
 
