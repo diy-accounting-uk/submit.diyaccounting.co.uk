@@ -16,7 +16,7 @@ runs), and for Claude Code steps the **Model** a sub-agent should use (Fable > O
 Haiku; the lowest tier that fits). Anything touching code goes through a `claude/*` branch and
 PR; the operator merges.
 
-**Prod runs deployment prod-3703ecf** (PR #347's merge deploy). PR #350's merge deploy (`10315152`, run 35987630397) is in progress.
+**Prod runs deployment prod-1031515** (PR #350's merge deploy, run 35987630397; the confirmation statement activity is listed on ci only).
 **ci**: `ci-set1` is last-known-good (built 2026-09-24 10:02 UTC by the b92 branch deploy, apex promoted by run 35987276069). `ci-set2` (built 2026-09-23 23:27 from `claude/b90-board`) still stands and is no longer last-known-good, so the 12:34 UTC `destroy-ci` sweep takes it.
 No pull request is open in this repository or its siblings.
 
