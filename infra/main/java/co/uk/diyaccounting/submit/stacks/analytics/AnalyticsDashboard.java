@@ -338,6 +338,23 @@ public class AnalyticsDashboard extends Construct {
                 .width(24)
                 .height(4)
                 .build()));
+        dashboardRows.add(List.of(
+                GraphWidget.Builder.create()
+                        .title("Sign-Ins by App Client")
+                        .left(List.of(search("SignIns", "AppClient")))
+                        .width(12)
+                        .height(6)
+                        .build(),
+                // The lake's SignIns metric comes from the Pre Token Generation trigger's own
+                // publish, so this Cognito metric is the reconcile line: the same total should
+                // move together with it, not an exact match (the trigger path drops failed
+                // sign-ins, which Cognito counts too).
+                GraphWidget.Builder.create()
+                        .title("Cognito Sign-Ins and Refreshes by Client (reconcile)")
+                        .left(List.of(cognitoSearch("SignInSuccesses"), cognitoSearch("TokenRefreshSuccesses")))
+                        .width(12)
+                        .height(6)
+                        .build()));
 
         dashboardRows.add(List.of(heading("Conversion to paid")));
         dashboardRows.add(List.of(
@@ -451,6 +468,22 @@ public class AnalyticsDashboard extends Construct {
                         "SEARCH('{%s,%s} MetricName=\"%s\"', 'Sum', 86400)",
                         METRICS_NAMESPACE, dimensionName, metricName))
                 .label(metricName + " by " + dimensionName)
+                .period(Duration.hours(24))
+                .build();
+    }
+
+    /**
+     * A SEARCH expression over {@code AWS/Cognito}'s own {@code SignInSuccesses} and {@code
+     * TokenRefreshSuccesses} metrics, by {@code UserPoolClient}: Cognito's count of the same
+     * sign-ins and refreshes the lake's {@code SignIns} metric derives from the Pre Token
+     * Generation trigger, published under a different namespace with no CDK-known client ids to
+     * enumerate at synth time.
+     */
+    private static MathExpression cognitoSearch(String metricName) {
+        return MathExpression.Builder.create()
+                .expression(String.format(
+                        "SEARCH('{AWS/Cognito,UserPool,UserPoolClient} MetricName=\"%s\"', 'Sum', 86400)", metricName))
+                .label(metricName + " by UserPoolClient")
                 .period(Duration.hours(24))
                 .build();
     }

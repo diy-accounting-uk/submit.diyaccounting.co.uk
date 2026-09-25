@@ -114,6 +114,24 @@ describe("activityEventTransform", () => {
     expect(row.client_id).toBe("client-abc");
   });
 
+  test("promotes the app client and session id from a sign-in event", async () => {
+    const detail = { ...loginDetail, appClient: "books", sessionId: "session-abc" };
+
+    const result = await handler({ records: [{ recordId: "r1", data: encode(envelope(detail)) }] });
+    const row = JSON.parse(decode(result.records[0].data));
+
+    expect(row.app_client).toBe("books");
+    expect(row.session_id).toBe("session-abc");
+  });
+
+  test("leaves app client and session id null for an event carrying neither", async () => {
+    const result = await handler({ records: [{ recordId: "r1", data: encode(envelope(loginDetail)) }] });
+    const row = JSON.parse(decode(result.records[0].data));
+
+    expect(row.app_client).toBeNull();
+    expect(row.session_id).toBeNull();
+  });
+
   test("round-trips the original detail into detail_json", async () => {
     const detail = { ...loginDetail, somethingNotYetPromoted: { nested: true, count: 3 } };
     const result = await handler({ records: [{ recordId: "r1", data: encode(envelope(detail)) }] });

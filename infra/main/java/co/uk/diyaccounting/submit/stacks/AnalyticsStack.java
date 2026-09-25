@@ -1053,7 +1053,9 @@ public class AnalyticsStack extends Stack {
                         "hmrc_status",
                         "client_id",
                         "env",
-                        "detail_json")
+                        "detail_json",
+                        "app_client",
+                        "session_id")
                 .stream()
                 .map(name -> CfnTable.ColumnProperty.builder()
                         .name(name)
@@ -1099,7 +1101,9 @@ public class AnalyticsStack extends Stack {
                         "hmrc_status",
                         "client_id",
                         "env",
-                        "detail_json")
+                        "detail_json",
+                        "app_client",
+                        "session_id")
                 .forEach(name -> columns.add(CfnTable.ColumnProperty.builder()
                         .name(name)
                         .type("string")

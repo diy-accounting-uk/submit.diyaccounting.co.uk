@@ -146,6 +146,15 @@ class AnalyticsDashboardTest {
         assertTrue(dashboardBody.contains("StripePaidCharges"));
         assertTrue(dashboardBody.contains("ActivityActivations"));
 
+        // SI-2b: sign-ins by app client, plus Cognito's own counts as the reconcile line.
+        assertTrue(dashboardBody.contains("SignIns"));
+        assertTrue(dashboardBody.contains("AWS/Cognito"));
+        assertTrue(dashboardBody.contains("SignInSuccesses"));
+        assertTrue(dashboardBody.contains("TokenRefreshSuccesses"));
+        int signInsIndex = dashboardBody.indexOf("SignIns");
+        assertTrue(signInsIndex > submissionIndex, "expected sign-ins under Conversion to submission");
+        assertTrue(signInsIndex < paidIndex, "expected sign-ins before Conversion to paid");
+
         // B52d panels: the uptime SLI, alarms by family and DORA delivery metrics sit under
         // Uptime; completions by activity and sessions by channel sit under Conversion to
         // submission, all above their heading's next objective.

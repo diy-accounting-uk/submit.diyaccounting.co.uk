@@ -40,7 +40,7 @@ export const METRIC_DEFINITIONS = [
     unit: "Count",
     valueColumn: "active_users",
     dimension: null,
-    sql: (day) => `SELECT active_users FROM v_active_users_daily WHERE day = DATE '${day}'`,
+    sql: (day) => `SELECT active_users FROM v_active_users_daily WHERE day = DATE '${day}' AND app_client = 'submit'`,
   },
   {
     metricName: "Submissions",
@@ -64,6 +64,13 @@ export const METRIC_DEFINITIONS = [
     valueColumn: "conversion",
     dimension: null,
     sql: (day) => `SELECT conversion FROM v_login_to_submission_funnel WHERE cohort_day = DATE '${day}'`,
+  },
+  {
+    metricName: "SignIns",
+    unit: "Count",
+    valueColumn: "sign_ins",
+    dimension: { name: "AppClient", column: "app_client" },
+    sql: (day) => `SELECT app_client, sum(sign_ins) AS sign_ins FROM v_sign_ins_daily WHERE day = DATE '${day}' GROUP BY app_client`,
   },
   {
     metricName: "PassesIssued",

@@ -40,6 +40,7 @@ export const VIEW_NAMES = [
   "v_subscription_cancellations_daily",
   "v_operator_interventions_daily",
   "v_compliance_status",
+  "v_sign_ins_daily",
 ];
 
 // One entry per one-stop-dashboard objective, in the order its table lists them. `views`
