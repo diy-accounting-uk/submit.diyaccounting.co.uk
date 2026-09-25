@@ -34,6 +34,26 @@ vi.mock("@app/data/dynamoDbPracticeClientRepository.js", () => ({
   getClient: vi.fn(),
 }));
 
+const mockPublishActivityEvent = vi.fn().mockResolvedValue({ published: true });
+vi.mock("@app/lib/activityAlert.js", async (importOriginal) => {
+  const actual = await importOriginal();
+  return { ...actual, publishActivityEvent: (...args) => mockPublishActivityEvent(...args) };
+});
+
+const mockSsmSend = vi.fn();
+vi.mock("@aws-sdk/client-ssm", () => ({
+  SSMClient: class {
+    send(...args) {
+      return mockSsmSend(...args);
+    }
+  },
+  GetParameterCommand: class {
+    constructor(input) {
+      this.input = input;
+    }
+  },
+}));
+
 const { ingestHandler } = await import("../../functions/diyaGl/diyaGlDelete.js");
 const { _setTestSalt, _clearSalt } = await import("../../services/subHasher.js");
 const { hashSub } = await import("../../services/subHasher.js");
@@ -45,13 +65,18 @@ function jsonBody(object) {
   return { transformToString: async () => JSON.stringify(object) };
 }
 
-function buildAuthenticatedEvent({ sub = "test-sub", bookId = BOOK_ID, clientId } = {}) {
+function buildAuthenticatedEvent({ sub = "test-sub", bookId = BOOK_ID, clientId, appClientId } = {}) {
   return buildLambdaEvent({
     method: "DELETE",
     path: `/api/v1/books/${bookId}`,
     pathParameters: { bookId },
     queryStringParameters: clientId ? { clientId } : null,
-    authorizer: buildJwtAuthorizerContext(sub),
+    authorizer: buildJwtAuthorizerContext(
+      sub,
+      "test",
+      "test@test.submit.diyaccounting.co.uk",
+      appClientId ? { client_id: appClientId } : {},
+    ),
   });
 }
 
@@ -59,6 +84,8 @@ describe("diyaGlDelete", () => {
   beforeEach(() => {
     mockS3Send.mockReset();
     getClient.mockReset();
+    mockPublishActivityEvent.mockClear();
+    mockSsmSend.mockReset();
     process.env.DIYA_GL_BUCKET_NAME = "test-books-bucket";
     _setTestSalt("test-salt");
   });
@@ -94,6 +121,47 @@ describe("diyaGlDelete", () => {
 
     expect(result.statusCode).toBe(200);
     expect(JSON.parse(result.body)).toEqual({ bookId: BOOK_ID, deletedObjects: 4 });
+  });
+
+  test("publishes book-deleted with the product, retention and resolved app client", async () => {
+    const hashedSub = hashSub("test-sub");
+    const metadataKey = `users/${hashedSub}/books/${BOOK_ID}/metadata.json`;
+    const objects = [metadataKey, `users/${hashedSub}/books/${BOOK_ID}/v1.zip`];
+    mockS3Send.mockImplementation((command) => {
+      if (command.constructor.name === "GetObjectCommand") {
+        if (command.input.Key === metadataKey) {
+          return { ETag: '"meta-etag"', Body: jsonBody({ bookId: BOOK_ID, product: "vat", retention: "sandbox" }) };
+        }
+        const error = new Error("not found");
+        error.name = "NoSuchKey";
+        throw error;
+      }
+      if (command.constructor.name === "ListObjectsV2Command") {
+        return { Contents: objects.map((Key) => ({ Key })) };
+      }
+      if (command.constructor.name === "DeleteObjectsCommand") {
+        return { Deleted: command.input.Delete.Objects };
+      }
+      throw new Error(`Unexpected command ${command.constructor.name}`);
+    });
+    mockSsmSend.mockImplementation((command) => {
+      if (command.input.Name === "/submit/ci/submit-app-client-id") {
+        return Promise.resolve({ Parameter: { Value: "submit-client-id" } });
+      }
+      return Promise.reject(new Error("unexpected parameter"));
+    });
+    process.env.ENVIRONMENT_NAME = "ci";
+
+    const result = await ingestHandler(buildAuthenticatedEvent({ appClientId: "submit-client-id" }));
+
+    expect(result.statusCode).toBe(200);
+    expect(mockPublishActivityEvent).toHaveBeenCalledWith(
+      expect.objectContaining({
+        event: "book-deleted",
+        appClient: "submit",
+        detail: expect.objectContaining({ product: "vat", retention: "sandbox" }),
+      }),
+    );
   });
 
   test("404s an unknown book", async () => {

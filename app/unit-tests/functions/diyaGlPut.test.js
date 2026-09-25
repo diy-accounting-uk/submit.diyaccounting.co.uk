@@ -98,6 +98,26 @@ vi.mock("@app/data/dynamoDbPracticeClientRepository.js", () => ({
   getClient: vi.fn(),
 }));
 
+const mockPublishActivityEvent = vi.fn().mockResolvedValue({ published: true });
+vi.mock("@app/lib/activityAlert.js", async (importOriginal) => {
+  const actual = await importOriginal();
+  return { ...actual, publishActivityEvent: (...args) => mockPublishActivityEvent(...args) };
+});
+
+const mockSsmSend = vi.fn();
+vi.mock("@aws-sdk/client-ssm", () => ({
+  SSMClient: class {
+    send(...args) {
+      return mockSsmSend(...args);
+    }
+  },
+  GetParameterCommand: class {
+    constructor(input) {
+      this.input = input;
+    }
+  },
+}));
+
 const { getUserBundles } = await import("@app/data/dynamoDbBundleRepository.js");
 const { getClient } = await import("@app/data/dynamoDbPracticeClientRepository.js");
 const { ingestHandler } = await import("../../functions/diyaGl/diyaGlPut.js");
@@ -109,7 +129,7 @@ function jsonBody(object) {
   return { transformToString: async () => JSON.stringify(object) };
 }
 
-function buildPutEvent({ sub = "test-sub", bookId = BOOK_ID, body, ifMatch, clientId } = {}) {
+function buildPutEvent({ sub = "test-sub", bookId = BOOK_ID, body, ifMatch, clientId, appClientId } = {}) {
   const requestBody = {
     title: "Precision Code Ltd",
     product: "ltd",
@@ -126,7 +146,12 @@ function buildPutEvent({ sub = "test-sub", bookId = BOOK_ID, body, ifMatch, clie
     pathParameters: { bookId },
     headers: ifMatch !== undefined ? { "if-match": ifMatch } : {},
     body: requestBody,
-    authorizer: buildJwtAuthorizerContext(sub),
+    authorizer: buildJwtAuthorizerContext(
+      sub,
+      "test",
+      "test@test.submit.diyaccounting.co.uk",
+      appClientId ? { client_id: appClientId } : {},
+    ),
   });
 }
 
@@ -142,6 +167,8 @@ describe("diyaGlPut", () => {
   beforeEach(() => {
     mockS3Send.mockReset();
     getClient.mockReset();
+    mockPublishActivityEvent.mockClear();
+    mockSsmSend.mockReset();
     process.env.DIYA_GL_BUCKET_NAME = "test-books-bucket";
     process.env.DIYA_GL_ALLOWED_ORIGINS = "https://spreadsheets.diyaccounting.co.uk";
     process.env.DIYA_GL_MAX_BYTES = "2097152";
@@ -189,6 +216,40 @@ describe("diyaGlPut", () => {
     expect(Date.parse(body.metadata.expiresAt) - Date.parse(body.metadata.updatedAt)).toBe(35 * 24 * 60 * 60 * 1000);
     expect(v1PutInput.Tagging).toBe("retention=sandbox");
     expect(metaPutInput.Tagging).toBe("retention=sandbox");
+  });
+
+  test("publishes book-saved with the product, retention, version and resolved app client", async () => {
+    const metaKey = metadataKeyFor("test-sub", BOOK_ID);
+    const v1Key = versionKeyFor("test-sub", BOOK_ID, 1);
+    mockS3Send.mockImplementation((command) => {
+      if (command.kind === "get" && command.input.Key === metaKey) {
+        const error = new Error("not found");
+        error.name = "NoSuchKey";
+        throw error;
+      }
+      if (command.kind === "list") return { CommonPrefixes: [] };
+      if (command.kind === "put" && command.input.Key === v1Key) return { ETag: '"zip-v1-etag"' };
+      if (command.kind === "put" && command.input.Key === metaKey) return { ETag: '"meta-v1-etag"' };
+      throw new Error(`Unexpected command ${command.kind} ${command.input.Key}`);
+    });
+    mockSsmSend.mockImplementation((command) => {
+      if (command.input.Name === "/submit/ci/spreadsheets-diya-gl-app-client-id") {
+        return Promise.resolve({ Parameter: { Value: "books-client-id" } });
+      }
+      return Promise.reject(new Error("unexpected parameter"));
+    });
+    process.env.ENVIRONMENT_NAME = "ci";
+
+    const result = await ingestHandler(buildPutEvent({ appClientId: "books-client-id" }));
+
+    expect(result.statusCode).toBe(200);
+    expect(mockPublishActivityEvent).toHaveBeenCalledWith(
+      expect.objectContaining({
+        event: "book-saved",
+        appClient: "books",
+        detail: expect.objectContaining({ product: "ltd", retention: "sandbox", version: 1 }),
+      }),
+    );
   });
 
   test("gives a resident save a null expiresAt and the resident tag, when the tier is on and the caller is subscribed", async () => {

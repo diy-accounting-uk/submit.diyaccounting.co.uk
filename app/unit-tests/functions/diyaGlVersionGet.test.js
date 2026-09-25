@@ -28,6 +28,26 @@ vi.mock("@app/data/dynamoDbPracticeClientRepository.js", () => ({
   getClient: vi.fn(),
 }));
 
+const mockPublishActivityEvent = vi.fn().mockResolvedValue({ published: true });
+vi.mock("@app/lib/activityAlert.js", async (importOriginal) => {
+  const actual = await importOriginal();
+  return { ...actual, publishActivityEvent: (...args) => mockPublishActivityEvent(...args) };
+});
+
+const mockSsmSend = vi.fn();
+vi.mock("@aws-sdk/client-ssm", () => ({
+  SSMClient: class {
+    send(...args) {
+      return mockSsmSend(...args);
+    }
+  },
+  GetParameterCommand: class {
+    constructor(input) {
+      this.input = input;
+    }
+  },
+}));
+
 const { getUserBundles } = await import("@app/data/dynamoDbBundleRepository.js");
 const { getClient } = await import("@app/data/dynamoDbPracticeClientRepository.js");
 const { ingestHandler } = await import("../../functions/diyaGl/diyaGlVersionGet.js");
@@ -44,14 +64,19 @@ function bytesBody(buffer) {
   return { transformToByteArray: async () => new Uint8Array(buffer) };
 }
 
-function buildAuthenticatedEvent({ sub = "test-sub", bookId = BOOK_ID, version = "latest", headers = {}, clientId } = {}) {
+function buildAuthenticatedEvent({ sub = "test-sub", bookId = BOOK_ID, version = "latest", headers = {}, clientId, appClientId } = {}) {
   return buildLambdaEvent({
     method: "GET",
     path: `/api/v1/books/${bookId}/versions/${version}`,
     pathParameters: { bookId, version },
     queryStringParameters: clientId ? { clientId } : null,
     headers,
-    authorizer: buildJwtAuthorizerContext(sub),
+    authorizer: buildJwtAuthorizerContext(
+      sub,
+      "test",
+      "test@test.submit.diyaccounting.co.uk",
+      appClientId ? { client_id: appClientId } : {},
+    ),
   });
 }
 
@@ -59,6 +84,8 @@ describe("diyaGlVersionGet", () => {
   beforeEach(() => {
     mockS3Send.mockReset();
     getClient.mockReset();
+    mockPublishActivityEvent.mockClear();
+    mockSsmSend.mockReset();
     process.env.DIYA_GL_BUCKET_NAME = "test-books-bucket";
     process.env.DIYA_GL_ALLOWED_ORIGINS = "https://spreadsheets.diyaccounting.co.uk";
     delete process.env.DIYA_GL_RESIDENT_TIER;
@@ -90,6 +117,41 @@ describe("diyaGlVersionGet", () => {
     expect(body.version).toBe(3);
     expect(body.etag).toBe("zip-etag");
     expect(Buffer.from(body.zipBase64, "base64").toString()).toBe("zip-bytes");
+  });
+
+  test("publishes book-opened with the product, retention, version and resolved app client", async () => {
+    const hashedSub = hashSub("test-sub");
+    const metadata = { bookId: BOOK_ID, latestVersion: 3, latestETag: "abc", product: "ltd", retention: "resident" };
+    mockS3Send.mockImplementation((command) => {
+      const key = command.input.Key;
+      if (key === `users/${hashedSub}/books/${BOOK_ID}/metadata.json`) {
+        return { ETag: '"meta-etag"', Body: jsonBody(metadata) };
+      }
+      if (key === `users/${hashedSub}/books/${BOOK_ID}/v3.zip`) {
+        return { ETag: '"zip-etag"', Body: bytesBody(Buffer.from("zip-bytes")) };
+      }
+      const error = new Error("not found");
+      error.name = "NoSuchKey";
+      throw error;
+    });
+    mockSsmSend.mockImplementation((command) => {
+      if (command.input.Name === "/submit/ci/mcp-app-client-id") {
+        return Promise.resolve({ Parameter: { Value: "mcp-client-id" } });
+      }
+      return Promise.reject(new Error("unexpected parameter"));
+    });
+    process.env.ENVIRONMENT_NAME = "ci";
+
+    const result = await ingestHandler(buildAuthenticatedEvent({ appClientId: "mcp-client-id" }));
+
+    expect(result.statusCode).toBe(200);
+    expect(mockPublishActivityEvent).toHaveBeenCalledWith(
+      expect.objectContaining({
+        event: "book-opened",
+        appClient: "mcp",
+        detail: expect.objectContaining({ product: "ltd", retention: "resident", version: 3 }),
+      }),
+    );
   });
 
   test("404s an unknown book", async () => {

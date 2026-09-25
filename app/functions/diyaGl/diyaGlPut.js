@@ -21,6 +21,8 @@ import {
 import { registerLambdaRoute } from "../../lib/httpServerToLambdaAdaptor.js";
 import { respondWithDiyaGlCors } from "../../lib/diyaGlCors.js";
 import { initializeSalt } from "../../services/subHasher.js";
+import { resolveAppClient } from "../../lib/appClientResolver.js";
+import { publishActivityEvent } from "../../lib/activityAlert.js";
 import { entitlementFor } from "../../services/diyaGlEntitlement.js";
 import { listZipMemberNames, isDiyaGlPackage, NotAZipError } from "../../lib/zipMembers.js";
 import {
@@ -353,6 +355,16 @@ export async function ingestHandler(event) {
           throw retryError;
         }
       }
+
+      const appClient = await resolveAppClient(user.appClientId);
+      await publishActivityEvent({
+        event: "book-saved",
+        summary: `Book saved: ${fields.product}`,
+        userSub: user.sub,
+        appClient,
+        clientId,
+        detail: { product: fields.product, retention: metadata.retention, version: metadata.latestVersion },
+      });
 
       return http200OkResponse({
         request,
