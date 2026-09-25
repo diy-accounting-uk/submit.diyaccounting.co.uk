@@ -125,10 +125,10 @@ class SubmitApplicationCdkResourceTest {
         // practiceClientAuthorisationGet(1), practiceClientAuthorisationInviteDelete(1),
         // interestPost(1), passGet(1), passPost(1), passAdminPost(1),
         // passGeneratePost(1), passMyPassesGet(1), bundleCapacityReconcile(1), sessionBeaconPost(1),
-        // sessionSignOutPost(1)
+        // sessionSignOutPost(1), activityStartedPost(1)
         Template accountStackTemplate = Template.fromStack(submitApplication.accountStack);
-        accountStackTemplate.resourceCountIs("AWS::Lambda::Function", 22);
-        assertStackHealthAlarm(accountStackTemplate, 20, 2, routedPrefixes);
+        accountStackTemplate.resourceCountIs("AWS::Lambda::Function", 23);
+        assertStackHealthAlarm(accountStackTemplate, 21, 2, routedPrefixes);
 
         // Regression guard: bundleGet performs lazy token refresh via dynamodb:UpdateItem on the
         // bundles table (see app/functions/account/bundleGet.js resetTokens). Its grant on
@@ -340,8 +340,9 @@ class SubmitApplicationCdkResourceTest {
         // POST /api/v1/session/sign-out adds its own route, its own auto-HEAD route, and an
         // unauthenticated OPTIONS preflight route (every Cognito app client's origin needs the
         // cross-origin browser preflight to reach a route with no authoriser, the same reason
-        // the books routes get one), for 170 + 3 = 173.
-        apiStackTemplate.resourceCountIs("AWS::ApiGatewayV2::Route", 173);
+        // the books routes get one), for 170 + 3 = 173. POST /api/v1/activity/started adds its own
+        // route plus its own auto-HEAD route, for 173 + 2 = 175.
+        apiStackTemplate.resourceCountIs("AWS::ApiGatewayV2::Route", 175);
 
         // Dashboard moved to environment-level ObservabilityStack
         infof("Created stack:", submitApplication.opsStack.getStackName());
