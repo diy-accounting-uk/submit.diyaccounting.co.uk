@@ -48,6 +48,9 @@ export const TTL_PRESETS = {
   // Security state: bundle-endpoint rate-limit buckets outlive their one-minute window
   // slightly, so a burst spanning the boundary still has both buckets to read.
   FIVE_MINUTES: { minutes: 5 },
+  // Security state: a sign-in session item outlives any session it tracks, so a session
+  // resumed after a long gap still has its prior lastIssuedAt to compare against.
+  THIRTY_DAYS: { days: 30 },
 };
 
 /**
@@ -94,6 +97,14 @@ export function calculateOneHourTtl(baseDate) {
  */
 export function fiveMinuteTtl() {
   return calculateTtl(new Date(), TTL_PRESETS.FIVE_MINUTES).ttl;
+}
+
+/**
+ * TTL (Unix epoch seconds) for a security-state sign-in session item, thirty days from now.
+ * @returns {number}
+ */
+export function thirtyDayTtl() {
+  return calculateTtl(new Date(), TTL_PRESETS.THIRTY_DAYS).ttl;
 }
 
 /**

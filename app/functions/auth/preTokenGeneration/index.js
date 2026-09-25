@@ -7,8 +7,15 @@
 // and cognito:preferred_mfa_setting is not passed in event.request.userAttributes.
 
 import { CognitoIdentityProviderClient, AdminGetUserCommand } from "@aws-sdk/client-cognito-identity-provider";
+import { LambdaClient, InvokeCommand } from "@aws-sdk/client-lambda";
 
 const client = new CognitoIdentityProviderClient();
+const lambdaClient = new LambdaClient();
+
+// Cognito's own trigger timeout (IdentityStack.java sets this Lambda's timeout to 5 seconds), so
+// the invoke below must return well inside it. InvocationType "Event" doesn't wait for the target
+// to finish, so this bound is only for the SDK call that hands the invocation off.
+const SIGN_IN_ACTIVITY_INVOKE_TIMEOUT_MS = 2000;
 
 export const handler = async (event) => {
   const userPoolId = event.userPoolId;
@@ -42,5 +49,41 @@ export const handler = async (event) => {
     console.error("Failed to look up user MFA setting:", error.message);
   }
 
+  await triggerSignInActivityPublish(event);
+
   return event;
 };
+
+/**
+ * Hand this token issue off to the signInActivityPublish Lambda, fire-and-forget. Never throws
+ * and never blocks the token: a failed or slow invoke is logged and swallowed, so a sign-in or
+ * refresh always completes even when the activity pipeline is unavailable.
+ *
+ * @param {Object} event - the Pre Token Generation event
+ */
+async function triggerSignInActivityPublish(event) {
+  const functionName = process.env.SIGN_IN_ACTIVITY_FUNCTION_NAME;
+  if (!functionName) return;
+
+  try {
+    await lambdaClient.send(
+      new InvokeCommand({
+        FunctionName: functionName,
+        InvocationType: "Event",
+        Payload: Buffer.from(
+          JSON.stringify({
+            triggerSource: event.triggerSource,
+            clientId: event.callerContext?.clientId,
+            userName: event.userName,
+            sub: event.request?.userAttributes?.sub,
+            email: event.request?.userAttributes?.email,
+            identities: event.request?.userAttributes?.identities,
+          }),
+        ),
+      }),
+      { abortSignal: AbortSignal.timeout(SIGN_IN_ACTIVITY_INVOKE_TIMEOUT_MS) },
+    );
+  } catch (error) {
+    console.error("Failed to invoke signInActivityPublish:", error.message);
+  }
+}

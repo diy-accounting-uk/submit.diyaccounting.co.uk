@@ -38,11 +38,24 @@ const ebClient = new EventBridgeClient({ region: resolveActivityBusRegion() });
  * @param {string} [params.flow] - Flow classification
  * @param {string} [params.userSub] - Raw sub of the authenticated user; hashed before it reaches the event, never logged raw
  * @param {string} [params.clientId] - The practice's client id when the submission was client-scoped; absent otherwise
+ * @param {string} [params.appClient] - The Cognito app client the sign-in or refresh happened on ("submit", "books", "mcp")
+ * @param {string} [params.sessionId] - Opaque session id from the sign-in session rule; absent for non-session events
  * @param {Object} [params.detail] - Additional detail fields
  * @returns {Promise<{published: boolean, error?: string}>} published is false when
  *   ACTIVITY_BUS_NAME was unset (skipped) or the EventBridge send failed (error holds the message)
  */
-export async function publishActivityEvent({ event, site = "submit", summary, actor, flow, userSub, clientId, detail = {} }) {
+export async function publishActivityEvent({
+  event,
+  site = "submit",
+  summary,
+  actor,
+  flow,
+  userSub,
+  clientId,
+  appClient,
+  sessionId,
+  detail = {},
+}) {
   const busName = process.env.ACTIVITY_BUS_NAME;
   if (!busName) {
     logger.info({ message: "ACTIVITY_BUS_NAME not set, skipping activity event", event });
@@ -73,6 +86,8 @@ export async function publishActivityEvent({ event, site = "submit", summary, ac
               ...(requestId ? { requestId } : {}),
               ...(hashedSub ? { hashedSub } : {}),
               ...(clientId ? { clientId } : {}),
+              ...(appClient ? { appClient } : {}),
+              ...(sessionId ? { sessionId } : {}),
               ...detail,
             }),
           },

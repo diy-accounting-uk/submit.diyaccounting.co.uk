@@ -14,6 +14,16 @@ vi.mock("@aws-sdk/client-cognito-identity-provider", () => ({
   }),
 }));
 
+const mockLambdaSend = vi.fn().mockResolvedValue({});
+vi.mock("@aws-sdk/client-lambda", () => ({
+  LambdaClient: vi.fn(function () {
+    return { send: mockLambdaSend };
+  }),
+  InvokeCommand: vi.fn(function (params) {
+    return { input: params };
+  }),
+}));
+
 const { handler } = await import("@app/functions/auth/preTokenGeneration/index.js");
 
 function buildEvent(triggerSource = "TokenGeneration_HostedAuth") {
@@ -23,6 +33,7 @@ function buildEvent(triggerSource = "TokenGeneration_HostedAuth") {
     region: "eu-west-2",
     userPoolId: "eu-west-2_test",
     userName: "test-user-sub",
+    callerContext: { clientId: "test-client-id" },
     request: {
       userAttributes: {
         sub: "test-user-sub",
@@ -35,8 +46,13 @@ function buildEvent(triggerSource = "TokenGeneration_HostedAuth") {
 }
 
 describe("preTokenGeneration", () => {
+  const originalEnv = { ...process.env };
+
   beforeEach(() => {
     mockSend.mockReset();
+    mockLambdaSend.mockReset();
+    mockLambdaSend.mockResolvedValue({});
+    process.env = { ...originalEnv, SIGN_IN_ACTIVITY_FUNCTION_NAME: "test-sign-in-activity-publish" };
   });
 
   it("should add custom:mfa_method=TOTP when user has SOFTWARE_TOKEN_MFA configured", async () => {
@@ -99,6 +115,49 @@ describe("preTokenGeneration", () => {
     expect(command.input).toEqual({
       UserPoolId: "eu-west-2_test",
       Username: "test-user-sub",
+    });
+  });
+
+  describe("signInActivityPublish invoke", () => {
+    it("invokes the sign-in activity function asynchronously with the trigger's identity", async () => {
+      mockSend.mockResolvedValue({ PreferredMfaSetting: undefined });
+      const event = buildEvent("TokenGeneration_RefreshTokens");
+
+      await handler(event);
+
+      expect(mockLambdaSend).toHaveBeenCalledOnce();
+      const command = mockLambdaSend.mock.calls[0][0];
+      expect(command.input.FunctionName).toBe("test-sign-in-activity-publish");
+      expect(command.input.InvocationType).toBe("Event");
+      const payload = JSON.parse(Buffer.from(command.input.Payload).toString("utf-8"));
+      expect(payload).toEqual({
+        triggerSource: "TokenGeneration_RefreshTokens",
+        clientId: "test-client-id",
+        userName: "test-user-sub",
+        sub: "test-user-sub",
+        email: "test@test.diyaccounting.co.uk",
+        identities: undefined,
+      });
+    });
+
+    it("still returns the event when the invoke rejects", async () => {
+      mockSend.mockResolvedValue({ PreferredMfaSetting: undefined });
+      mockLambdaSend.mockRejectedValue(new Error("Lambda unavailable"));
+      const event = buildEvent();
+
+      const result = await handler(event);
+
+      expect(result).toBe(event);
+    });
+
+    it("skips the invoke when SIGN_IN_ACTIVITY_FUNCTION_NAME is unset", async () => {
+      delete process.env.SIGN_IN_ACTIVITY_FUNCTION_NAME;
+      mockSend.mockResolvedValue({ PreferredMfaSetting: undefined });
+      const event = buildEvent();
+
+      await handler(event);
+
+      expect(mockLambdaSend).not.toHaveBeenCalled();
     });
   });
 });

@@ -4,15 +4,16 @@
 // app/data/dynamoDbSecurityStateRepository.js
 //
 // Repository for the {env}-env-security-state table (issue #10 data-theft detection).
-// One table, three item shapes distinguished by stateKey prefix:
+// One table, four item shapes distinguished by stateKey prefix:
 //   rate#{hashedSub}#{minute}         - bundle-endpoint burst counters (bundleGet.js)
 //   supportticket#{ipHash}#{minute}   - support-ticket rate limit (supportTicketPost.js)
 //   geo#{hashedSub}                   - mid-session country state (customAuthorizer.js)
+//   session#{hashedSub}#{appClient}   - sign-in session state (signInActivityPublish.js)
 // Every item carries a short TTL; none of it is customer data.
 
 import { createLogger } from "../lib/logger.js";
 import { executeDynamoDbCommand, getResourceName } from "../lib/dynamoDbClient.js";
-import { fiveMinuteTtl, calculateOneHourTtl } from "../lib/dateUtils.js";
+import { fiveMinuteTtl, calculateOneHourTtl, thirtyDayTtl } from "../lib/dateUtils.js";
 
 const logger = createLogger({ source: "app/data/dynamoDbSecurityStateRepository.js" });
 
@@ -97,4 +98,76 @@ export async function putSessionGeo(hashedSub, { country, revokedAt }) {
   );
 
   logger.info({ message: "Session geo written", hashedSub, country, revoked: revokedAt !== undefined });
+}
+
+/**
+ * Reads the stored sign-in session item for a user and app client.
+ *
+ * @param {string} hashedSub
+ * @param {string} appClient
+ * @returns {Promise<{lastIssuedAt?: number, sessionId?: string, sessionStartedAt?: number}|null>} null when no item exists
+ */
+export async function getSignInSession(hashedSub, appClient) {
+  const tableName = getResourceName("SECURITY_STATE_DYNAMODB_TABLE_NAME");
+
+  const result = await executeDynamoDbCommand(
+    (module) =>
+      new module.GetCommand({
+        TableName: tableName,
+        Key: { stateKey: `session#${hashedSub}#${appClient}` },
+      }),
+  );
+
+  return result.Item || null;
+}
+
+/**
+ * Writes the sign-in session item for a user and app client, always refreshing the
+ * thirty-day TTL.
+ *
+ * @param {string} hashedSub
+ * @param {string} appClient
+ * @param {Object} fields
+ * @param {number} fields.lastIssuedAt - epoch milliseconds of this token issue
+ * @param {string} fields.sessionId
+ * @param {number} fields.sessionStartedAt - epoch milliseconds the session started
+ */
+export async function putSignInSession(hashedSub, appClient, { lastIssuedAt, sessionId, sessionStartedAt }) {
+  const tableName = getResourceName("SECURITY_STATE_DYNAMODB_TABLE_NAME");
+
+  await executeDynamoDbCommand(
+    (module) =>
+      new module.PutCommand({
+        TableName: tableName,
+        Item: {
+          stateKey: `session#${hashedSub}#${appClient}`,
+          lastIssuedAt,
+          sessionId,
+          sessionStartedAt,
+          ttl: thirtyDayTtl(),
+        },
+      }),
+  );
+
+  logger.info({ message: "Sign-in session written", hashedSub, appClient, sessionId });
+}
+
+/**
+ * Deletes the sign-in session item for a user and app client, on sign-out.
+ *
+ * @param {string} hashedSub
+ * @param {string} appClient
+ */
+export async function deleteSignInSession(hashedSub, appClient) {
+  const tableName = getResourceName("SECURITY_STATE_DYNAMODB_TABLE_NAME");
+
+  await executeDynamoDbCommand(
+    (module) =>
+      new module.DeleteCommand({
+        TableName: tableName,
+        Key: { stateKey: `session#${hashedSub}#${appClient}` },
+      }),
+  );
+
+  logger.info({ message: "Sign-in session deleted", hashedSub, appClient });
 }

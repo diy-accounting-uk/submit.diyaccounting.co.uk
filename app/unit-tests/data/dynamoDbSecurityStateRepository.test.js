@@ -23,11 +23,17 @@ vi.mock("@aws-sdk/lib-dynamodb", () => {
       this.input = input;
     }
   }
+  class DeleteCommand {
+    constructor(input) {
+      this.input = input;
+    }
+  }
   return {
     DynamoDBDocumentClient: { from: () => ({ send: mockSend }) },
     UpdateCommand,
     GetCommand,
     PutCommand,
+    DeleteCommand,
   };
 });
 
@@ -161,5 +167,67 @@ describe("dynamoDbSecurityStateRepository", () => {
 
     const command = mockSend.mock.calls[0][0];
     expect(command.input.Item).not.toHaveProperty("revokedAt");
+  });
+
+  test("getSignInSession keys the item as session#<hash>#<appClient> and returns the stored item", async () => {
+    const { getSignInSession } = await import("../../../app/data/dynamoDbSecurityStateRepository.js");
+    mockSend.mockResolvedValue({ Item: { stateKey: "session#hashed-abc#submit", lastIssuedAt: 1700000000000 } });
+
+    const item = await getSignInSession("hashed-abc", "submit");
+
+    expect(mockSend).toHaveBeenCalledTimes(1);
+    const command = mockSend.mock.calls[0][0];
+    const { GetCommand } = await import("@aws-sdk/lib-dynamodb");
+    expect(command).toBeInstanceOf(GetCommand);
+    expect(command.input.TableName).toBe("test-security-state");
+    expect(command.input.Key).toEqual({ stateKey: "session#hashed-abc#submit" });
+    expect(item).toEqual({ stateKey: "session#hashed-abc#submit", lastIssuedAt: 1700000000000 });
+  });
+
+  test("getSignInSession returns null when no item exists", async () => {
+    const { getSignInSession } = await import("../../../app/data/dynamoDbSecurityStateRepository.js");
+    mockSend.mockResolvedValue({});
+
+    const item = await getSignInSession("hashed-abc", "submit");
+
+    expect(item).toBeNull();
+  });
+
+  test("putSignInSession writes lastIssuedAt, sessionId, sessionStartedAt and a fresh thirty-day TTL", async () => {
+    const { putSignInSession } = await import("../../../app/data/dynamoDbSecurityStateRepository.js");
+    mockSend.mockResolvedValue({});
+
+    await putSignInSession("hashed-abc", "books", {
+      lastIssuedAt: 1700000000000,
+      sessionId: "session-id-1",
+      sessionStartedAt: 1699999000000,
+    });
+
+    expect(mockSend).toHaveBeenCalledTimes(1);
+    const command = mockSend.mock.calls[0][0];
+    const { PutCommand } = await import("@aws-sdk/lib-dynamodb");
+    expect(command).toBeInstanceOf(PutCommand);
+    expect(command.input.TableName).toBe("test-security-state");
+    expect(command.input.Item).toEqual({
+      stateKey: "session#hashed-abc#books",
+      lastIssuedAt: 1700000000000,
+      sessionId: "session-id-1",
+      sessionStartedAt: 1699999000000,
+      ttl: expect.any(Number),
+    });
+  });
+
+  test("deleteSignInSession keys the item as session#<hash>#<appClient>", async () => {
+    const { deleteSignInSession } = await import("../../../app/data/dynamoDbSecurityStateRepository.js");
+    mockSend.mockResolvedValue({});
+
+    await deleteSignInSession("hashed-abc", "mcp");
+
+    expect(mockSend).toHaveBeenCalledTimes(1);
+    const command = mockSend.mock.calls[0][0];
+    const { DeleteCommand } = await import("@aws-sdk/lib-dynamodb");
+    expect(command).toBeInstanceOf(DeleteCommand);
+    expect(command.input.TableName).toBe("test-security-state");
+    expect(command.input.Key).toEqual({ stateKey: "session#hashed-abc#mcp" });
   });
 });
