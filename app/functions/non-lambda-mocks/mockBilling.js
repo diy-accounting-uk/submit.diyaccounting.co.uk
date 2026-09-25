@@ -116,6 +116,70 @@ export function apiEndpoint(app) {
     res.redirect(target);
   });
 
+  // Mock activity checkout session — a one-off per-filing charge (not a bundle subscription),
+  // e.g. the confirmation statement fee. Returns a local auto-complete URL instead of a Stripe
+  // hosted page, same shape as the bundle checkout mock above.
+  app.post("/api/v1/billing/activity-checkout", async (req, res) => {
+    const baseUrl = process.env.DIY_SUBMIT_BASE_URL || "http://localhost:3000/";
+    const activityId = req.body?.activityId;
+    const subjectKey = req.body?.subjectKey;
+    const returnTo = req.body?.returnTo;
+    if (!activityId || !subjectKey) {
+      res.status(400).json({ message: "Missing activityId or subjectKey" });
+      return;
+    }
+    const sessionId = `sim_ac_${Date.now()}`;
+
+    let userSub = "";
+    try {
+      const { decodeJwtToken } = await import("../../lib/jwtHelper.js");
+      const decoded = decodeJwtToken(req.headers);
+      userSub = decoded.sub || "";
+    } catch {
+      logger.warn({ message: "Mock activity checkout session: could not decode JWT, charge grant may fail" });
+    }
+
+    const params = new URLSearchParams({
+      session: sessionId,
+      activityId,
+      subjectKey,
+      ...(userSub && { sub: userSub }),
+      ...(returnTo && { returnTo }),
+    });
+    const checkoutUrl = `${baseUrl}simulator/activity-checkout?${params}`;
+    logger.info({ message: "Mock activity checkout session created", sessionId, activityId, subjectKey, checkoutUrl });
+    res.json({ checkoutUrl });
+  });
+
+  // Mock activity checkout completion — records the paid charge (activityCharges.js) and
+  // redirects to the success URL, mirroring the bundle checkout auto-complete above.
+  app.get("/simulator/activity-checkout", async (req, res) => {
+    const { activityId, subjectKey, sub: userSub, returnTo } = req.query;
+    logger.info({ message: "Mock activity checkout auto-completing", activityId, subjectKey, userSub });
+
+    if (userSub && activityId && subjectKey) {
+      try {
+        const { hashSub, initializeSalt } = await import("../../services/subHasher.js");
+        const { recordPaidChargeByHashedSub } = await import("../../services/activityCharges.js");
+
+        await initializeSalt();
+        const hashedSub = hashSub(userSub);
+        await recordPaidChargeByHashedSub(hashedSub, activityId, subjectKey, { stripeCheckoutSessionId: `sim_ac_${Date.now()}` });
+        logger.info({ message: "Mock activity checkout recorded paid charge", activityId, subjectKey });
+      } catch (error) {
+        logger.warn({ message: "Mock activity checkout: charge recording failed", error: error.message });
+      }
+    } else {
+      logger.warn({ message: "Mock activity checkout: missing activityId/subjectKey/sub, cannot record charge" });
+    }
+
+    const baseUrl = process.env.DIY_SUBMIT_BASE_URL || "http://localhost:3000/";
+    const allowedReturnTo = resolveAllowedReturnTo(returnTo);
+    const sessionParam = "&session_id=sim_ac_complete";
+    const target = allowedReturnTo ? `${allowedReturnTo}?checkout=success${sessionParam}` : `${baseUrl}?checkout=success${sessionParam}`;
+    res.redirect(target);
+  });
+
   // Mock billing portal — redirects back to bundles page
   app.get("/api/v1/billing/portal", (req, res) => {
     const baseUrl = process.env.DIY_SUBMIT_BASE_URL || "http://localhost:3000/";

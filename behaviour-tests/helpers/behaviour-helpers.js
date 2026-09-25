@@ -11,6 +11,7 @@ import {
   ensurePassesTableExists,
   ensureCapacityTableExists,
   ensurePracticeClientsTableExists,
+  ensureActivityChargesTableExists,
 } from "@app/bin/dynamodb.js";
 import { spawn } from "child_process";
 import { checkIfServerIsRunning } from "./serverHelper.js";
@@ -243,6 +244,9 @@ export async function runLocalDynamoDb(runDynamoDb, bundleTableName, hmrcApiRequ
 
     const companiesHouseAccountsAsyncTable = process.env.COMPANIES_HOUSE_ACCOUNTS_ASYNC_REQUESTS_TABLE_NAME;
     if (companiesHouseAccountsAsyncTable) await ensureAsyncRequestsTableExists(companiesHouseAccountsAsyncTable, endpoint);
+
+    const activityChargesTable = process.env.ACTIVITY_CHARGES_DYNAMODB_TABLE_NAME;
+    if (activityChargesTable) await ensureActivityChargesTableExists(activityChargesTable, endpoint);
   } else {
     endpoint = process.env.AWS_ENDPOINT_URL_DYNAMODB || undefined;
     logger.info(`[dynamodb]: Not starting dynalite (TEST_DYNAMODB=${runDynamoDb}); using existing endpoint ${endpoint}`);
