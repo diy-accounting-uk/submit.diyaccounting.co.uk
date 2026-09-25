@@ -11,5 +11,6 @@ export {
   linesFromPublishedBalanceSheet,
   linesFromOpeningBalance,
   roundForFiling,
+  profitAndLossFromPublishedAccount,
   deriveMicroEntityAccounts,
 } from "../../app/services/microEntityAccounts.js";

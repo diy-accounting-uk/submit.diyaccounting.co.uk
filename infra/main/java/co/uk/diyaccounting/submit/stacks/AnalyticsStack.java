@@ -17,6 +17,7 @@ import co.uk.diyaccounting.submit.stacks.analytics.AlarmStateChangeDelivery;
 import co.uk.diyaccounting.submit.stacks.analytics.AnalyticsDashboard;
 import co.uk.diyaccounting.submit.stacks.analytics.BusinessViews;
 import co.uk.diyaccounting.submit.stacks.analytics.CloudFrontAccessLogs;
+import co.uk.diyaccounting.submit.stacks.analytics.CompanyBookTables;
 import co.uk.diyaccounting.submit.stacks.analytics.ComplianceTables;
 import co.uk.diyaccounting.submit.stacks.analytics.CostBudgetsAndAnomalyMonitor;
 import co.uk.diyaccounting.submit.stacks.analytics.CostFocusIngestion;
@@ -469,6 +470,15 @@ public class AnalyticsStack extends Stack {
         operatorEffortTables.workflowRunsTable.addResourceDependency(this.glueDatabase);
         operatorEffortTables.issueEventsTable.addResourceDependency(this.glueDatabase);
         operatorEffortTables.commitsTable.addResourceDependency(this.glueDatabase);
+
+        var companyBookTables = new CompanyBookTables(
+                this,
+                CompanyBookTables.CompanyBookTablesProps.builder()
+                        .idPrefix(prefix)
+                        .databaseName(sharedNames.glueDatabaseName)
+                        .lakeBucketName(sharedNames.analyticsLakeBucketName)
+                        .build());
+        companyBookTables.companyAccountsTable.addResourceDependency(this.glueDatabase);
 
         var complianceTables = new ComplianceTables(
                 this,

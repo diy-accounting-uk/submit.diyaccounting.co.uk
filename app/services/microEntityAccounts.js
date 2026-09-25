@@ -79,6 +79,23 @@ function sumValues(object) {
 }
 
 /**
+ * The three headline P&L figures for the financial year, from the engine's published profit
+ * and loss account. Turnover and profit are rounded to whole pounds first and costs is their
+ * difference, so turnover minus costs equals profit exactly rather than drifting from separate
+ * roundings of cost of sales, administrative expenses and tax.
+ * @param {Object} sheet - results["PubP&L"]
+ */
+export function profitAndLossFromPublishedAccount(sheet) {
+  if (!sheet)
+    throw new Error(
+      "The book's product carries no published profit and loss account; only a Company (ltd) book answers micro-entity accounts",
+    );
+  const turnover = Math.round(sheet.F9 ?? 0);
+  const profit = Math.round(sheet.F51 ?? 0);
+  return { turnover, costs: turnover - profit, profit };
+}
+
+/**
  * The seven lines, unrounded, from the book's opening balance (the figures
  * the engine's OpenAccounts sheet shows). Refuses an opening balance whose
  * assets do not equal its liabilities and equity.
@@ -175,6 +192,7 @@ export async function deriveMicroEntityAccounts(session) {
   const prior = linesFromOpeningBalance(scenario.opening_balance);
   const currentYear = roundForFiling(current);
   const priorYear = roundForFiling(prior);
+  const profitAndLoss = profitAndLossFromPublishedAccount(results["PubP&L"]);
 
   const capitalReserve = scenario.opening_balance?.capital_reserves || 0;
   const notes = [
@@ -195,6 +213,7 @@ export async function deriveMicroEntityAccounts(session) {
     averageNumberOfEmployees: (book.employees ?? []).length,
     directorName: book.directors?.[0]?.name ?? null,
     dormant: false,
+    profitAndLoss,
     balanceSheet: { currentYear, priorYear },
     derivation: {
       currentYear: { sheet: "PubBalSht", lines: rounded(current) },

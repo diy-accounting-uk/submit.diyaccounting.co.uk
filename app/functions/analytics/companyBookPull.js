@@ -4,11 +4,11 @@
 // app/functions/analytics/companyBookPull.js
 //
 // Nightly job that reads DIY Accounting Limited's own resident diya-gl book straight off S3
-// (COMPANY_BOOK_ID under COMPANY_BOOK_OWNER_PREFIX, the values PLAN_ONE_STOP_DASHBOARD.md's
-// "D10 build" section names), derives the seven FRS 105 balance-sheet lines the accounts filing
-// takes, and writes one observation to the lake so the operator dashboard can show the company's
-// own P&L and balance sheet. The job's IAM role can only s3:GetObject under that one book's
-// prefix; it carries no user identity, no salt and never calls the HTTP diya-gl route.
+// (COMPANY_BOOK_ID under COMPANY_BOOK_OWNER_PREFIX), derives the seven FRS 105 balance-sheet
+// lines the accounts filing takes and the published profit and loss account's turnover, costs
+// and profit, and writes one observation to the lake so the operator dashboard can show the
+// company's own P&L and balance sheet. The job's IAM role can only s3:GetObject under that one
+// book's prefix; it carries no user identity, no salt and never calls the HTTP diya-gl route.
 //
 // A missing book, a non-resident book, or a book that fails to parse throws rather than writing a
 // partial or stale observation: the Telegram alarm on this job's errors is the right outcome, not
