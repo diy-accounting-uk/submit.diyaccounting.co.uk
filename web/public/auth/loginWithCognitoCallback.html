@@ -220,9 +220,22 @@
           );
 
           console.log("User authenticated successfully using Cognito:", userEmail || "no email provided");
-          // GA4: login event after successful Cognito authentication
+          // GA4: login event after successful Cognito authentication. method names the
+          // identity provider Cognito recorded (e.g. "Google"), or "cognito" for a native
+          // email/password user -- identities is a JSON string for a federated user, absent
+          // for a native one.
           if (typeof gtag === "function") {
-            gtag("event", "login", { method: "cognito" });
+            let loginMethod = "cognito";
+            try {
+              const identities =
+                typeof idTokenPayload.identities === "string" ? JSON.parse(idTokenPayload.identities) : idTokenPayload.identities;
+              if (Array.isArray(identities) && identities[0] && identities[0].providerName) {
+                loginMethod = identities[0].providerName;
+              }
+            } catch {
+              // malformed identities claim: fall back to "cognito"
+            }
+            gtag("event", "login", { method: loginMethod });
           }
           showStatus("Authenticated successfully. Fetching bundles...", "info");
 

@@ -186,46 +186,48 @@
     }
   }
 
-  // Read the identity provider Cognito recorded in the ID token, so a logout reads
-  // the same way its login did ("via Google").
-  function readIdentityProvider() {
+  // End the session server-side before the tokens are cleared: revoke the refresh token
+  // (Cognito's /oauth2/revoke, so a copied refresh token stops working) and tell the
+  // authenticated sign-out route to publish "logout" and delete the session item. Both are
+  // keepalive fetches, not navigator.sendBeacon, because sendBeacon carries no custom
+  // headers and the sign-out route needs the caller's Authorization header.
+  async function revokeAndSignOut() {
+    let env;
     try {
-      const idToken = localStorage.getItem("cognitoIdToken");
-      if (!idToken) return "";
-      let encoded = idToken.split(".")[1].replace(/-/g, "+").replace(/_/g, "/");
-      while (encoded.length % 4 !== 0) encoded += "=";
-      const payload = JSON.parse(atob(encoded));
-      // Cognito sends the identities claim as a JSON string for federated users
-      const identities = typeof payload.identities === "string" ? JSON.parse(payload.identities) : payload.identities;
-      return (Array.isArray(identities) && identities[0] && identities[0].providerName) || "";
+      env = (await window.envReady) || {};
     } catch {
-      return "";
+      env = {};
     }
-  }
 
-  // Tell the activity bus the user is leaving. Sent before storage is cleared and as a
-  // beacon, because the next line of logout() navigates away to Cognito.
-  function sendLogoutBeacon() {
-    try {
-      const userInfo = JSON.parse(localStorage.getItem("userInfo") || "null");
-      if (!userInfo) return;
-      const body = JSON.stringify({
-        event: "logout",
-        email: userInfo.email || "",
-        provider: readIdentityProvider(),
-      });
-      if (navigator.sendBeacon) {
-        navigator.sendBeacon("/api/v1/session/beacon", new Blob([body], { type: "application/json" }));
-        return;
+    const refreshToken = localStorage.getItem("cognitoRefreshToken");
+    if (refreshToken && env.COGNITO_BASE_URI && env.COGNITO_CLIENT_ID) {
+      try {
+        await fetch(env.COGNITO_BASE_URI.replace(/\/$/, "") + "/oauth2/revoke", {
+          method: "POST",
+          headers: { "Content-Type": "application/x-www-form-urlencoded" },
+          body: "token=" + encodeURIComponent(refreshToken) + "&client_id=" + encodeURIComponent(env.COGNITO_CLIENT_ID),
+          keepalive: true,
+        });
+      } catch {
+        // revoke failures are expected (offline, ad blockers) -- local sign-out still proceeds
       }
-      fetch("/api/v1/session/beacon", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body,
-        keepalive: true,
-      });
-    } catch {
-      // beacon failures are expected (ad blockers, offline)
+    }
+
+    const accessToken = localStorage.getItem("cognitoAccessToken");
+    if (accessToken) {
+      try {
+        await fetch("/api/v1/session/sign-out", {
+          method: "POST",
+          headers: { Authorization: "Bearer " + accessToken },
+          keepalive: true,
+        });
+      } catch {
+        // sign-out failures are expected (offline, ad blockers) -- local sign-out still proceeds
+      }
+    }
+
+    if (typeof gtag === "function") {
+      gtag("event", "logout");
     }
   }
 
@@ -238,7 +240,7 @@
 
     console.log("Logging out user");
 
-    sendLogoutBeacon();
+    await revokeAndSignOut();
 
     // Clear Cognito tokens and user info from localStorage
     localStorage.removeItem("cognitoAccessToken");

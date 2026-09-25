@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0
 // Copyright (C) 2006-2026 DIY Accounting Limited
 
-// web/unit-tests/auth-logout-beacon.test.js
+// web/unit-tests/auth-logout-sign-out.test.js
 
 import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
 import fs from "node:fs";
@@ -9,28 +9,20 @@ import path from "node:path";
 
 const widgetSource = fs.readFileSync(path.join(process.cwd(), "web/public/widgets/auth-status.js"), "utf-8");
 
-const b64url = (obj) => Buffer.from(JSON.stringify(obj)).toString("base64url");
-
-function idTokenWith(payload) {
-  return `${b64url({ alg: "none" })}.${b64url(payload)}.`;
-}
-
-describe("logout beacon", () => {
-  let beacons;
+describe("logout revoke and sign-out", () => {
   let store;
+  let fetchMock;
+  let gtagMock;
 
   function loadWidget() {
     // eslint-disable-next-line no-new-func
     new Function(widgetSource)();
   }
 
-  function beaconBodies() {
-    return beacons.map(({ body }) => JSON.parse(body));
-  }
-
   beforeEach(() => {
-    beacons = [];
     store = {};
+    fetchMock = vi.fn().mockResolvedValue({ ok: true });
+    gtagMock = vi.fn();
 
     const localStorageStub = {
       getItem: (key) => (key in store ? store[key] : null),
@@ -49,22 +41,8 @@ describe("logout beacon", () => {
 
     vi.stubGlobal("localStorage", localStorageStub);
     vi.stubGlobal("sessionStorage", sessionStorageStub);
-    vi.stubGlobal(
-      "Blob",
-      class {
-        constructor(parts, options) {
-          this.parts = parts;
-          this.type = options?.type;
-        }
-      },
-    );
-    vi.stubGlobal("navigator", {
-      sendBeacon: (url, blob) => {
-        beacons.push({ url, type: blob.type, body: blob.parts.join("") });
-        return true;
-      },
-    });
-    vi.stubGlobal("atob", (value) => Buffer.from(value, "base64").toString("binary"));
+    vi.stubGlobal("fetch", fetchMock);
+    vi.stubGlobal("gtag", gtagMock);
     vi.stubGlobal("document", {
       readyState: "complete",
       documentElement: { dataset: { simulator: "true" } },
@@ -76,6 +54,7 @@ describe("logout beacon", () => {
       addEventListener: () => {},
       localStorage: localStorageStub,
       sessionStorage: sessionStorageStub,
+      envReady: Promise.resolve({ COGNITO_BASE_URI: "https://auth.example.com/", COGNITO_CLIENT_ID: "client123" }),
     });
   });
 
@@ -83,55 +62,81 @@ describe("logout beacon", () => {
     vi.unstubAllGlobals();
   });
 
-  it("reports the account that is leaving, with the provider it signed in through", async () => {
+  it("revokes the refresh token at Cognito before the stored session is cleared", async () => {
     store.userInfo = JSON.stringify({ sub: "abc", email: "someone@example.com" });
-    store.cognitoIdToken = idTokenWith({ identities: [{ providerName: "Google" }] });
+    store.cognitoRefreshToken = "the-refresh-token";
     loadWidget();
 
     await globalThis.window.AuthStatus.logout();
 
-    expect(beacons).toHaveLength(1);
-    expect(beacons[0].url).toBe("/api/v1/session/beacon");
-    expect(beacons[0].type).toBe("application/json");
-    expect(beaconBodies()[0]).toEqual({ event: "logout", email: "someone@example.com", provider: "Google" });
+    const revokeCall = fetchMock.mock.calls.find(([url]) => url === "https://auth.example.com/oauth2/revoke");
+    expect(revokeCall).toBeDefined();
+    expect(revokeCall[1].method).toBe("POST");
+    expect(revokeCall[1].keepalive).toBe(true);
+    expect(revokeCall[1].body).toBe("token=the-refresh-token&client_id=client123");
   });
 
-  it("reads the provider when Cognito sends the identities claim as a JSON string", async () => {
-    store.userInfo = JSON.stringify({ sub: "abc", email: "someone@gmail.com" });
-    store.cognitoIdToken = idTokenWith({ identities: JSON.stringify([{ providerName: "Google", userId: "123" }]) });
-    loadWidget();
-
-    await globalThis.window.AuthStatus.logout();
-
-    expect(beaconBodies()[0].provider).toBe("Google");
-  });
-
-  it("still reports a logout when the ID token names no provider", async () => {
+  it("posts to the sign-out route with the access token, keepalive", async () => {
     store.userInfo = JSON.stringify({ sub: "abc", email: "someone@example.com" });
-    store.cognitoIdToken = idTokenWith({ sub: "abc" });
+    store.cognitoAccessToken = "the-access-token";
     loadWidget();
 
     await globalThis.window.AuthStatus.logout();
 
-    expect(beaconBodies()[0]).toEqual({ event: "logout", email: "someone@example.com", provider: "" });
+    const signOutCall = fetchMock.mock.calls.find(([url]) => url === "/api/v1/session/sign-out");
+    expect(signOutCall).toBeDefined();
+    expect(signOutCall[1].method).toBe("POST");
+    expect(signOutCall[1].keepalive).toBe(true);
+    expect(signOutCall[1].headers.Authorization).toBe("Bearer the-access-token");
   });
 
-  it("sends nothing when no one is signed in", async () => {
+  it("skips the revoke call when there is no refresh token to revoke", async () => {
+    store.cognitoAccessToken = "the-access-token";
     loadWidget();
 
     await globalThis.window.AuthStatus.logout();
 
-    expect(beacons).toHaveLength(0);
+    expect(fetchMock.mock.calls.some(([url]) => url === "https://auth.example.com/oauth2/revoke")).toBe(false);
   });
 
-  it("sends the beacon before the stored session is cleared", async () => {
-    store.userInfo = JSON.stringify({ sub: "abc", email: "someone@example.com" });
+  it("skips the sign-out call when there is no access token", async () => {
+    store.cognitoRefreshToken = "the-refresh-token";
     loadWidget();
 
     await globalThis.window.AuthStatus.logout();
 
-    expect(beaconBodies()[0].email).toBe("someone@example.com");
-    expect(globalThis.localStorage.getItem("userInfo")).toBeNull();
+    expect(fetchMock.mock.calls.some(([url]) => url === "/api/v1/session/sign-out")).toBe(false);
+  });
+
+  it("pushes a GA4 logout event", async () => {
+    loadWidget();
+
+    await globalThis.window.AuthStatus.logout();
+
+    expect(gtagMock).toHaveBeenCalledWith("event", "logout");
+  });
+
+  it("reads the tokens before the stored session is cleared", async () => {
+    store.cognitoAccessToken = "the-access-token";
+    store.cognitoRefreshToken = "the-refresh-token";
+    loadWidget();
+
+    await globalThis.window.AuthStatus.logout();
+
+    expect(fetchMock.mock.calls.some(([url]) => url === "/api/v1/session/sign-out")).toBe(true);
+    expect(globalThis.localStorage.getItem("cognitoAccessToken")).toBeNull();
+    expect(globalThis.localStorage.getItem("cognitoRefreshToken")).toBeNull();
+  });
+
+  it("still clears the stored session when the revoke and sign-out calls fail", async () => {
+    store.cognitoAccessToken = "the-access-token";
+    store.cognitoRefreshToken = "the-refresh-token";
+    fetchMock.mockRejectedValue(new Error("offline"));
+    loadWidget();
+
+    await globalThis.window.AuthStatus.logout();
+
+    expect(globalThis.localStorage.getItem("cognitoAccessToken")).toBeNull();
   });
 
   describe("outside the simulator, without env-loader.js on the page", () => {
@@ -139,6 +144,7 @@ describe("logout beacon", () => {
       // Not every page that carries auth-status.js also loads env-loader.js, so
       // window.envReady can be undefined here — logout() must not depend on it.
       globalThis.document.documentElement.dataset.simulator = "false";
+      delete globalThis.window.envReady;
     });
 
     it("still clears the stored session and reloads when window.envReady was never set", async () => {
