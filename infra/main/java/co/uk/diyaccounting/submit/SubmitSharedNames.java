@@ -129,6 +129,7 @@ public class SubmitSharedNames {
     public String bundleCapacityTableName;
     public String activityBusName;
     public String subscriptionsTableName;
+    public String activityChargesTableName;
     public String practiceClientsTableName;
     public String securityStateTableName;
     public String alarmIssueLockTableName;
@@ -1161,6 +1162,15 @@ public class SubmitSharedNames {
     public boolean billingCheckoutPostLambdaJwtAuthorizer;
     public boolean billingCheckoutPostLambdaCustomAuthorizer;
 
+    public String billingActivityCheckoutPostIngestLambdaHandler;
+    public String billingActivityCheckoutPostIngestLambdaFunctionName;
+    public String billingActivityCheckoutPostIngestLambdaArn;
+    public String billingActivityCheckoutPostIngestProvisionedConcurrencyLambdaAliasArn;
+    public HttpMethod billingActivityCheckoutPostLambdaHttpMethod;
+    public String billingActivityCheckoutPostLambdaUrlPath;
+    public boolean billingActivityCheckoutPostLambdaJwtAuthorizer;
+    public boolean billingActivityCheckoutPostLambdaCustomAuthorizer;
+
     public String billingCheckoutSessionGetIngestLambdaHandler;
     public String billingCheckoutSessionGetIngestLambdaFunctionName;
     public String billingCheckoutSessionGetIngestLambdaArn;
@@ -1503,6 +1513,7 @@ public class SubmitSharedNames {
         this.bundleCapacityTableName = "%s-bundle-capacity".formatted(this.envResourceNamePrefix);
         this.activityBusName = "%s-activity-bus".formatted(this.envResourceNamePrefix);
         this.subscriptionsTableName = "%s-subscriptions".formatted(this.envResourceNamePrefix);
+        this.activityChargesTableName = "%s-activity-charges".formatted(this.envResourceNamePrefix);
         this.practiceClientsTableName = "%s-practice-clients".formatted(this.envResourceNamePrefix);
         this.securityStateTableName = "%s-security-state".formatted(this.envResourceNamePrefix);
         this.alarmIssueLockTableName = "%s-alarm-issue-locks".formatted(this.envResourceNamePrefix);
@@ -4452,6 +4463,30 @@ public class SubmitSharedNames {
                 "Create billing checkout session",
                 "Creates a Stripe checkout session for subscription",
                 "createCheckoutSession"));
+
+        // Billing Activity Checkout POST Lambda (JWT auth) — a one-off `payment` mode charge for
+        // an activity's per-filing price, distinct from billingCheckoutPost's `subscription` mode.
+        this.billingActivityCheckoutPostLambdaHttpMethod = HttpMethod.POST;
+        this.billingActivityCheckoutPostLambdaUrlPath = "/api/v1/billing/activity-checkout";
+        this.billingActivityCheckoutPostLambdaJwtAuthorizer = false;
+        this.billingActivityCheckoutPostLambdaCustomAuthorizer = false;
+        var billingActivityCheckoutPostLambdaHandlerName = "billingActivityCheckoutPost.ingestHandler";
+        var billingActivityCheckoutPostLambdaHandlerDashed =
+                ResourceNameUtils.convertCamelCaseToDashSeparated(billingActivityCheckoutPostLambdaHandlerName);
+        this.billingActivityCheckoutPostIngestLambdaFunctionName =
+                "%s-%s".formatted(this.appResourceNamePrefix, billingActivityCheckoutPostLambdaHandlerDashed);
+        this.billingActivityCheckoutPostIngestLambdaHandler =
+                "%s/billing/%s".formatted(appLambdaHandlerPrefix, billingActivityCheckoutPostLambdaHandlerName);
+        this.billingActivityCheckoutPostIngestLambdaArn =
+                "%s-%s".formatted(appLambdaArnPrefix, billingActivityCheckoutPostLambdaHandlerDashed);
+        this.billingActivityCheckoutPostIngestProvisionedConcurrencyLambdaAliasArn = "%s:%s"
+                .formatted(this.billingActivityCheckoutPostIngestLambdaArn, this.provisionedConcurrencyAliasName);
+        publishedApiLambdas.add(new PublishedLambda(
+                this.billingActivityCheckoutPostLambdaHttpMethod,
+                this.billingActivityCheckoutPostLambdaUrlPath,
+                "Create activity checkout session",
+                "Creates a Stripe checkout session for a one-off activity charge",
+                "createActivityCheckoutSession"));
 
         // Billing Checkout Session GET Lambda (JWT auth)
         this.billingCheckoutSessionGetLambdaHttpMethod = HttpMethod.GET;

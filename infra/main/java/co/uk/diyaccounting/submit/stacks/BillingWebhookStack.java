@@ -137,12 +137,15 @@ public class BillingWebhookStack extends Stack {
         ITable bundlesTable = Table.fromTableName(this, "BundlesTable", props.sharedNames().bundlesTableName);
         ITable subscriptionsTable =
                 Table.fromTableName(this, "SubscriptionsTable", props.sharedNames().subscriptionsTableName);
+        ITable activityChargesTable =
+                Table.fromTableName(this, "ActivityChargesTable", props.sharedNames().activityChargesTableName);
         String activityBusArn =
                 "arn:aws:events:%s:%s:event-bus/%s".formatted(region, account, props.sharedNames().activityBusName);
 
         var lambdaEnv = new PopulatedMap<String, String>()
                 .with("SUBSCRIPTIONS_DYNAMODB_TABLE_NAME", subscriptionsTable.getTableName())
                 .with("BUNDLE_DYNAMODB_TABLE_NAME", bundlesTable.getTableName())
+                .with("ACTIVITY_CHARGES_DYNAMODB_TABLE_NAME", activityChargesTable.getTableName())
                 .with("ACTIVITY_BUS_NAME", props.sharedNames().activityBusName)
                 .with("ENVIRONMENT_NAME", props.envName());
         if (props.stripeSecretKeyArn() != null && !props.stripeSecretKeyArn().isBlank()) {
@@ -192,6 +195,10 @@ public class BillingWebhookStack extends Stack {
         // Grant DynamoDB access
         subscriptionsTable.grant(webhookFunction, "dynamodb:GetItem", "dynamodb:PutItem", "dynamodb:UpdateItem");
         bundlesTable.grant(webhookFunction, "dynamodb:PutItem", "dynamodb:UpdateItem");
+        // PutItem only - recordPaidChargeByHashedSub's conditional put is the only write this
+        // webhook makes to activity charges; marking a charge used happens on the activity's own
+        // consuming route, not here.
+        activityChargesTable.grant(webhookFunction, "dynamodb:PutItem");
 
         // Grant sub hash salt access
         SubHashSaltHelper.grantSaltAccess(webhookFunction, region, account, props.envName());

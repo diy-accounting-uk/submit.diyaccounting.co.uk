@@ -88,6 +88,7 @@ import { apiEndpoint as passGeneratePostApiEndpoint } from "../functions/account
 import { apiEndpoint as passMyPassesGetApiEndpoint } from "../functions/account/passMyPassesGet.js";
 import { apiEndpoint as interestPostApiEndpoint } from "../functions/account/interestPost.js";
 import { apiEndpoint as sessionBeaconPostApiEndpoint } from "../functions/account/sessionBeaconPost.js";
+import { apiEndpoint as billingActivityCheckoutPostApiEndpoint } from "../functions/billing/billingActivityCheckoutPost.js";
 import { apiEndpoint as billingCheckoutPostApiEndpoint } from "../functions/billing/billingCheckoutPost.js";
 import { apiEndpoint as billingCheckoutSessionGetApiEndpoint } from "../functions/billing/billingCheckoutSessionGet.js";
 import { apiEndpoint as billingPortalGetApiEndpoint } from "../functions/billing/billingPortalGet.js";
@@ -360,6 +361,7 @@ passGeneratePostApiEndpoint(app);
 passMyPassesGetApiEndpoint(app);
 interestPostApiEndpoint(app);
 sessionBeaconPostApiEndpoint(app);
+billingActivityCheckoutPostApiEndpoint(app);
 billingCheckoutPostApiEndpoint(app);
 billingCheckoutSessionGetApiEndpoint(app);
 billingPortalGetApiEndpoint(app);

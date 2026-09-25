@@ -77,6 +77,7 @@ public class DataStack extends Stack {
     public ITable passesTable;
     public ITable bundleCapacityTable;
     public ITable subscriptionsTable;
+    public ITable activityChargesTable;
     public ITable practiceClientsTable;
     public ITable securityStateTable;
     public ITable alarmIssueLockTable;
@@ -867,6 +868,20 @@ public class DataStack extends Stack {
                 props.resourceNamePrefix() + "-Subscriptions", props.sharedNames().subscriptionsTableName);
         infof("Ensured subscriptions DynamoDB table with name %s", props.sharedNames().subscriptionsTableName);
 
+        // Activity charges table: one payment covers one filing. Partition key is the user's
+        // hashed sub, sort key is "charge#{activityId}#{subjectKey}" (e.g. the confirmation
+        // statement's company number and review date joined into one string). Kept separate from
+        // the bundles table rather than a sort-key-prefixed row there: a charge is a different item
+        // shape (no bundleId, no tokensGranted) and the bundles table's bundleId-expiry-index GSI
+        // and getUserBundles() both assume every item under a hashedSub is a bundle.
+        this.activityChargesTable = ensureTable(
+                this,
+                props.resourceNamePrefix() + "-ActivityChargesTable",
+                props.sharedNames().activityChargesTableName,
+                "hashedSub",
+                "chargeKey");
+        infof("Ensured activity charges DynamoDB table with name %s", props.sharedNames().activityChargesTableName);
+
         // Practice clients table: partition key is the practice's hashed sub, sort key is the
         // client's ULID. No index reads clientId on its own, so a client is reachable only
         // through the practice that owns it.
@@ -1255,6 +1270,8 @@ public class DataStack extends Stack {
         cfnOutput(this, "PracticeClientsTableName", this.practiceClientsTable.getTableName());
         cfnOutput(this, "PracticeClientsTableArn", this.practiceClientsTable.getTableArn());
         cfnOutput(this, "SubscriptionsTableStreamArn", subscriptionsStreamArn);
+        cfnOutput(this, "ActivityChargesTableName", this.activityChargesTable.getTableName());
+        cfnOutput(this, "ActivityChargesTableArn", this.activityChargesTable.getTableArn());
         cfnOutput(this, "SecurityStateTableName", this.securityStateTable.getTableName());
         cfnOutput(this, "SecurityStateTableArn", this.securityStateTable.getTableArn());
         cfnOutput(this, "AlarmIssueLockTableName", this.alarmIssueLockTable.getTableName());

@@ -21,6 +21,13 @@
     "description" : "DIY Accounting Submit API documentation"
   } ],
   "paths" : {
+    "/billing/activity-checkout" : {
+      "post" : {
+        "summary" : "Create activity checkout session",
+        "description" : "Creates a Stripe checkout session for a one-off activity charge",
+        "operationId" : "createActivityCheckoutSession"
+      }
+    },
     "/pass/my-passes" : {
       "get" : {
         "summary" : "List generated passes",

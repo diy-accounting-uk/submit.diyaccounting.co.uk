@@ -202,6 +202,7 @@ class DataStackTest {
             dataStack.passesTable.getTableName(),
             dataStack.bundleCapacityTable.getTableName(),
             dataStack.subscriptionsTable.getTableName(),
+            dataStack.activityChargesTable.getTableName(),
             dataStack.practiceClientsTable.getTableName(),
             dataStack.securityStateTable.getTableName(),
             dataStack.alarmIssueLockTable.getTableName(),
