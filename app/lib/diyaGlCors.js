@@ -12,7 +12,7 @@ import { extractRequest, getHeader, http500ServerErrorResponse } from "./httpRes
 
 const logger = createLogger({ source: "app/lib/diyaGlCors.js" });
 
-const ALLOWED_METHODS = "GET, PUT, DELETE, OPTIONS";
+const ALLOWED_METHODS = "GET, POST, PUT, DELETE, OPTIONS";
 const ALLOWED_HEADERS = "authorization, content-type, if-match, x-request-id, x-correlationid";
 
 /**

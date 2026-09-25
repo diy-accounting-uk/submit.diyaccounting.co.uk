@@ -12,6 +12,7 @@ import {
   ensureCapacityTableExists,
   ensurePracticeClientsTableExists,
   ensureActivityChargesTableExists,
+  ensureSecurityStateTableExists,
 } from "@app/bin/dynamodb.js";
 import { spawn } from "child_process";
 import { checkIfServerIsRunning } from "./serverHelper.js";
@@ -247,6 +248,9 @@ export async function runLocalDynamoDb(runDynamoDb, bundleTableName, hmrcApiRequ
 
     const activityChargesTable = process.env.ACTIVITY_CHARGES_DYNAMODB_TABLE_NAME;
     if (activityChargesTable) await ensureActivityChargesTableExists(activityChargesTable, endpoint);
+
+    const securityStateTable = process.env.SECURITY_STATE_DYNAMODB_TABLE_NAME;
+    if (securityStateTable) await ensureSecurityStateTableExists(securityStateTable, endpoint);
   } else {
     endpoint = process.env.AWS_ENDPOINT_URL_DYNAMODB || undefined;
     logger.info(`[dynamodb]: Not starting dynalite (TEST_DYNAMODB=${runDynamoDb}); using existing endpoint ${endpoint}`);

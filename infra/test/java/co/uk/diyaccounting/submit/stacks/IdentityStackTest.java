@@ -320,6 +320,86 @@ class IdentityStackTest {
     }
 
     @Test
+    void submitClientIdIsPublishedAsAnSsmParameter() {
+        IdentityStack stack = synthIdentityStack("ci");
+        Template template = Template.fromStack(stack);
+
+        template.hasResourceProperties(
+                "AWS::SSM::Parameter", Match.objectLike(Map.of("Name", "/submit/ci/submit-app-client-id")));
+    }
+
+    @Test
+    void preTokenGenerationFunctionCanInvokeTheSignInActivityPublishFunctionAndCarriesItsName() {
+        IdentityStack stack = synthIdentityStack("ci");
+        Template template = Template.fromStack(stack);
+
+        String expectedFunctionArn = "arn:aws:lambda:eu-west-2:111111111111:function:ci-env-sign-in-activity-publish";
+
+        template.hasResourceProperties(
+                "AWS::Lambda::Function",
+                Match.objectLike(Map.of(
+                        "FunctionName",
+                        Match.stringLikeRegexp(".*-pre-token-generation$"),
+                        "Environment",
+                        Match.objectLike(Map.of(
+                                "Variables",
+                                Match.objectLike(Map.of(
+                                        "SIGN_IN_ACTIVITY_FUNCTION_NAME", "ci-env-sign-in-activity-publish")))))));
+
+        Set<String> grantedResources = new HashSet<>();
+        for (Map<String, Object> statement : policyStatementsForPreTokenGeneration(template)) {
+            var action = statement.get("Action");
+            boolean isInvoke = action instanceof List<?> actions
+                    ? actions.stream().anyMatch(a -> "lambda:InvokeFunction".equals(a))
+                    : "lambda:InvokeFunction".equals(action);
+            if (!isInvoke) continue;
+
+            var resource = statement.get("Resource");
+            if (resource instanceof List<?> resources) {
+                resources.forEach(r -> grantedResources.add(String.valueOf(r)));
+            } else {
+                grantedResources.add(String.valueOf(resource));
+            }
+        }
+
+        assertTrue(
+                grantedResources.contains(expectedFunctionArn),
+                "expected an InvokeFunction grant on " + expectedFunctionArn);
+    }
+
+    @SuppressWarnings("unchecked")
+    private static List<Map<String, Object>> policyStatementsForPreTokenGeneration(Template template) {
+        String roleLogicalId = null;
+        for (var entry : template.findResources("AWS::Lambda::Function").entrySet()) {
+            var properties = (Map<String, Object>) entry.getValue().get("Properties");
+            if (String.valueOf(properties.get("FunctionName")).endsWith("-pre-token-generation")) {
+                var role = (Map<String, Object>) properties.get("Role");
+                var getAtt = (List<Object>) role.get("Fn::GetAtt");
+                roleLogicalId = String.valueOf(getAtt.get(0));
+                break;
+            }
+        }
+        if (roleLogicalId == null) throw new AssertionError("no pre-token-generation Lambda function found");
+
+        List<Map<String, Object>> statements = new java.util.ArrayList<>();
+        for (Map<String, Object> policy :
+                template.findResources("AWS::IAM::Policy").values()) {
+            var properties = (Map<String, Object>) policy.get("Properties");
+            var roles = (List<Object>) properties.get("Roles");
+            String finalRoleLogicalId = roleLogicalId;
+            boolean belongsToFunction = roles.stream().anyMatch(r -> {
+                if (!(r instanceof Map<?, ?> ref)) return false;
+                return finalRoleLogicalId.equals(String.valueOf(ref.get("Ref")));
+            });
+            if (!belongsToFunction) continue;
+
+            var document = (Map<String, Object>) properties.get("PolicyDocument");
+            statements.addAll((List<Map<String, Object>>) document.get("Statement"));
+        }
+        return statements;
+    }
+
+    @Test
     void spreadsheetsBehaviourRoleNameIsFixedPerEnvironment() {
         Template ciTemplate = Template.fromStack(synthIdentityStack("ci"));
         ciTemplate.hasResourceProperties(

@@ -104,9 +104,34 @@ class AnalyticsStackTest {
                                 Match.objectLike(
                                         Map.of("classification", "parquet", "projection.enabled", "true")))))));
 
+        // app_client and session_id are appended at the end of both column lists, on both
+        // tables, so existing Parquet data stays readable.
+        var expectAppClientAndSessionIdColumns = Match.arrayWith(List.of(
+                Match.objectLike(Map.of("Name", "app_client", "Type", "string")),
+                Match.objectLike(Map.of("Name", "session_id", "Type", "string"))));
+        analytics.hasResourceProperties(
+                "AWS::Glue::Table",
+                Match.objectLike(Map.of(
+                        "TableInput",
+                        Match.objectLike(Map.of(
+                                "Name",
+                                "activity_events",
+                                "StorageDescriptor",
+                                Match.objectLike(Map.of("Columns", expectAppClientAndSessionIdColumns)))))));
+        analytics.hasResourceProperties(
+                "AWS::Glue::Table",
+                Match.objectLike(Map.of(
+                        "TableInput",
+                        Match.objectLike(Map.of(
+                                "Name",
+                                "activity_events_raw",
+                                "StorageDescriptor",
+                                Match.objectLike(Map.of("Columns", expectAppClientAndSessionIdColumns)))))));
+
         // Two saved queries: the spike's day-one query, plus the union view's definition kept
-        // here for reference (the custom resource below is what actually creates the view).
-        analytics.resourceCountIs("AWS::Athena::NamedQuery", 28);
+        // here for reference (the custom resource below is what actually creates the view). One
+        // more named query per BusinessViews view, including v_sign_ins_daily.
+        analytics.resourceCountIs("AWS::Athena::NamedQuery", 29);
 
         // The view itself is created by a one-shot custom resource, not a hand-built VIRTUAL_VIEW.
         var customResources = analytics.findResources("Custom::AWS");

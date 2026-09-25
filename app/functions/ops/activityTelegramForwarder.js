@@ -90,6 +90,12 @@ export function resolveTargetChatIds(detail, chatConfig) {
   const flow = detail.flow || "";
   const requestId = detail.requestId || "";
 
+  // A refresh inside a live session (sessionKind "continued") reaches the lake only: it is
+  // routine, not a signal a customer or operator needs to see.
+  if (detail.event === "token-refresh" && detail.sessionKind === "continued") {
+    return [];
+  }
+
   // Test-prefixed requestId always routes to test channel
   if (requestId.startsWith("test_")) {
     return chatConfig.test ? [chatConfig.test] : [];

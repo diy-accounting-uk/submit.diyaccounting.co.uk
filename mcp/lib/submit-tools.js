@@ -6,27 +6,29 @@
 // service's own HMRC and Companies House routes. Like practice-tools.js, these reach DIY
 // Accounting Submit's deployed API rather than the local filesystem or the engine.
 //
-// Configuration comes from the environment: DIYA_SUBMIT_BASE_URL (the deployed site's base URL)
-// and DIYA_SUBMIT_ACCESS_TOKEN (the signed-in user's own session bearer token). Two routes here
+// Configuration comes from the environment: DIYA_SUBMIT_BASE_URL (the deployed site's base URL).
+// The session bearer is the MCP's own sign-in (auth.js's accessToken(), the Cognito access token
+// its client_id claim names as the MCP client -- ApiStack.java's main and custom authorisers
+// both accept it, the same way they accept the Submit web client's). Two routes here
 // (list_vat_obligations, submit_vat_return) sit behind the API's custom Lambda authoriser, whose
 // identity source is the X-Authorization header (ApiStack.java), which frees the plain
 // Authorization header for the HMRC access token those two routes read directly
 // (hmrcVatObligationGet.js reads it from the header; hmrcVatReturnPost.js takes it as the body's
-// accessToken field). Every other route here sits behind the standard Cognito JWT authoriser, so
-// the session bearer goes in the plain Authorization header, as practice-tools.js sends it.
+// accessToken field). Those two routes also carry X-Id-Token (auth.js's idToken()), so the
+// custom authoriser can build Gov-Client-Multi-Factor from a verified claim rather than finding
+// none (see app/functions/auth/customAuthorizer.js's extractMfaContext). Every other route here
+// sits behind the standard Cognito JWT authoriser, so the session bearer goes in the plain
+// Authorization header, as practice-tools.js sends it.
 //
-// Obtaining the session bearer and the HMRC access token is outside this tool's scope.
+// Obtaining the HMRC access token remains outside this tool's scope; run sign_in first to
+// establish the MCP's own session bearer.
+
+import { accessToken as mcpAccessToken, idToken as mcpIdToken } from "./auth.js";
 
 function baseUrl() {
   const value = process.env.DIYA_SUBMIT_BASE_URL;
   if (!value) throw new Error("DIYA_SUBMIT_BASE_URL is not set");
   return value.replace(/\/$/, "");
-}
-
-function sessionToken() {
-  const value = process.env.DIYA_SUBMIT_ACCESS_TOKEN;
-  if (!value) throw new Error("DIYA_SUBMIT_ACCESS_TOKEN is not set");
-  return value;
 }
 
 export function requireField(toolName, params, key) {
@@ -69,12 +71,14 @@ async function pollUntilSettled(url, requestInit, firstResponse) {
 }
 
 /**
- * Calls one of this service's own API routes with the session bearer token, over the custom
- * authoriser's X-Authorization header when customAuthorizer is set, or the standard Authorization
- * header otherwise; extra headers (an HMRC access token, Gov-Test-Scenario, hmrcAccount) merge in
- * on top and are never overwritten by the session header. A 202 response is polled to a terminal
- * status before this returns (see pollUntilSettled); a poll that never settles throws with the
- * poll URL in the message rather than returning a partial result.
+ * Calls one of this service's own API routes with the MCP's own session bearer (auth.js's
+ * accessToken()), over the custom authoriser's X-Authorization header when customAuthorizer is
+ * set, or the standard Authorization header otherwise; extra headers (an HMRC access token,
+ * Gov-Test-Scenario, hmrcAccount) merge in on top and are never overwritten by the session
+ * header. A customAuthorizer call also carries X-Id-Token (auth.js's idToken()), which
+ * customAuthorizer.js reads to build Gov-Client-Multi-Factor server-side. A 202 response is
+ * polled to a terminal status before this returns (see pollUntilSettled); a poll that never
+ * settles throws with the poll URL in the message rather than returning a partial result.
  * Exported so practice-tools.js's client tools (list_clients, add_client, invite_client,
  * client_authorisation_status) call the same routes over the same HTTP layer rather than a
  * second one of their own.
@@ -83,7 +87,12 @@ async function pollUntilSettled(url, requestInit, firstResponse) {
  */
 export async function callSubmitApi(path, { method = "GET", body, headers = {}, customAuthorizer = false } = {}) {
   const sessionHeaderName = customAuthorizer ? "X-Authorization" : "Authorization";
-  const finalHeaders = { [sessionHeaderName]: `Bearer ${sessionToken()}`, "x-initial-request": "true", ...headers };
+  const finalHeaders = {
+    [sessionHeaderName]: `Bearer ${await mcpAccessToken()}`,
+    ...(customAuthorizer ? { "X-Id-Token": await mcpIdToken() } : {}),
+    "x-initial-request": "true",
+    ...headers,
+  };
   if (body !== undefined) finalHeaders["Content-Type"] = "application/json";
   const url = `${baseUrl()}${path}`;
   const requestInit = { method, headers: finalHeaders, body: body !== undefined ? JSON.stringify(body) : undefined };

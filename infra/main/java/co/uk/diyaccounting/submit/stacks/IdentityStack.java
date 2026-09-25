@@ -223,6 +223,8 @@ public class IdentityStack extends Stack {
                 .timeout(Duration.seconds(5))
                 .memorySize(128)
                 .logGroup(preTokenGenLogGroup.logGroup())
+                .environment(Map.of(
+                        "SIGN_IN_ACTIVITY_FUNCTION_NAME", props.sharedNames().signInActivityPublishLambdaFunctionName))
                 .build();
         preTokenGenFunction.getNode().addDependency(preTokenGenLogGroup.ensureResource());
         this.userPool.addTrigger(UserPoolOperation.PRE_TOKEN_GENERATION, preTokenGenFunction);
@@ -233,6 +235,13 @@ public class IdentityStack extends Stack {
                 .resources(List.of(String.format(
                         "arn:aws:cognito-idp:%s:%s:userpool/*",
                         props.getEnv().getRegion(), props.getEnv().getAccount())))
+                .build());
+        // Grant the fire-and-forget invoke of the enrichment Lambda in ActivityStack, built from
+        // its name string (like the AdminGetUser grant above) so this stack takes no dependency
+        // on ActivityStack for the function's ARN.
+        preTokenGenFunction.addToRolePolicy(PolicyStatement.Builder.create()
+                .actions(List.of("lambda:InvokeFunction"))
+                .resources(List.of(props.sharedNames().signInActivityPublishLambdaArn))
                 .build());
 
         // Google IdP
@@ -275,6 +284,12 @@ public class IdentityStack extends Stack {
         this.identityProviders
                 .values()
                 .forEach(idp -> this.userPoolClient.getNode().addDependency(idp));
+
+        var submitUserPoolClientIdParameterName = "/submit/%s/submit-app-client-id".formatted(props.envName());
+        StringParameter.Builder.create(this, props.resourceNamePrefix() + "-SubmitUserPoolClientIdParameter")
+                .parameterName(submitUserPoolClientIdParameterName)
+                .stringValue(this.userPoolClient.getUserPoolClientId())
+                .build();
 
         // Books User Pool Client
         // A second client on the same pool for the spreadsheets site's DIYA-GL pages. Sign-in stays

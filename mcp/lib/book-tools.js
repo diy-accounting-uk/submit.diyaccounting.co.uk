@@ -24,7 +24,7 @@ import { loadTaxDataForBook, productOf, savePackageZip, saveWorkbook } from "@di
 import { PRODUCTS, productModule } from "@diy-accounting-uk/diya-gl/dist/app/lib/products.js";
 import { stampBook } from "@diy-accounting-uk/diya-gl/dist/app/lib/provenance.js";
 
-import { accessToken as mcpAccessToken } from "./auth.js";
+import { idToken as mcpAccessToken } from "./auth.js";
 
 export const SAVE_FORMATS = ["diya-gl-dir", "diya-gl-zip", "json", "xlsx", "zip"];
 

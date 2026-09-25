@@ -16,6 +16,8 @@ import {
 import { registerLambdaRoute } from "../../lib/httpServerToLambdaAdaptor.js";
 import { respondWithDiyaGlCors } from "../../lib/diyaGlCors.js";
 import { initializeSalt } from "../../services/subHasher.js";
+import { resolveAppClient } from "../../lib/appClientResolver.js";
+import { publishActivityEvent } from "../../lib/activityAlert.js";
 import { entitlementFor, lapsedResidentExpiresAt } from "../../services/diyaGlEntitlement.js";
 import { isValidBookId, resolveOwnerPrefix, readMetadata, getVersion } from "../../data/s3DiyaGlRepository.js";
 import { getClient } from "../../data/dynamoDbPracticeClientRepository.js";
@@ -150,6 +152,16 @@ export async function ingestHandler(event) {
         }
         throw error;
       }
+
+      const appClient = await resolveAppClient(user.appClientId);
+      await publishActivityEvent({
+        event: "book-opened",
+        summary: `Book opened: ${metadata.product}`,
+        userSub: user.sub,
+        appClient,
+        clientId,
+        detail: { product: metadata.product, retention: metadata.retention, version },
+      });
 
       return http200OkResponse({
         request,

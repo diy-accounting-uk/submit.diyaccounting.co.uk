@@ -16,6 +16,8 @@ import {
 import { registerLambdaRoute } from "../../lib/httpServerToLambdaAdaptor.js";
 import { respondWithDiyaGlCors } from "../../lib/diyaGlCors.js";
 import { initializeSalt } from "../../services/subHasher.js";
+import { resolveAppClient } from "../../lib/appClientResolver.js";
+import { publishActivityEvent } from "../../lib/activityAlert.js";
 import { isValidBookId, resolveOwnerPrefix, readMetadata, deleteBook } from "../../data/s3DiyaGlRepository.js";
 import { getClient } from "../../data/dynamoDbPracticeClientRepository.js";
 
@@ -80,6 +82,16 @@ export async function ingestHandler(event) {
       }
 
       const deletedObjects = await deleteBook(ownerPrefix, bookId);
+
+      const appClient = await resolveAppClient(user.appClientId);
+      await publishActivityEvent({
+        event: "book-deleted",
+        summary: `Book deleted: ${existing.metadata.product}`,
+        userSub: user.sub,
+        appClient,
+        clientId,
+        detail: { product: existing.metadata.product, retention: existing.metadata.retention },
+      });
 
       return http200OkResponse({
         request,

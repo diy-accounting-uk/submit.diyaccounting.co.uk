@@ -12,12 +12,15 @@ import co.uk.diyaccounting.submit.SubmitSharedNames;
 import co.uk.diyaccounting.submit.constructs.Lambda;
 import co.uk.diyaccounting.submit.constructs.LambdaProps;
 import co.uk.diyaccounting.submit.utils.PopulatedMap;
+import co.uk.diyaccounting.submit.utils.SubHashSaltHelper;
 import java.util.List;
 import org.immutables.value.Value;
 import software.amazon.awscdk.Duration;
 import software.amazon.awscdk.Environment;
 import software.amazon.awscdk.Stack;
 import software.amazon.awscdk.StackProps;
+import software.amazon.awscdk.services.dynamodb.ITable;
+import software.amazon.awscdk.services.dynamodb.Table;
 import software.amazon.awscdk.services.events.EventBus;
 import software.amazon.awscdk.services.events.EventPattern;
 import software.amazon.awscdk.services.events.Rule;
@@ -30,6 +33,7 @@ public class ActivityStack extends Stack {
 
     public final EventBus activityBus;
     public final Lambda telegramForwarderLambda;
+    public final Lambda signInActivityPublishLambda;
 
     @Value.Immutable
     public interface ActivityStackProps extends StackProps, SubmitStackProps {
@@ -183,7 +187,69 @@ public class ActivityStack extends Stack {
 
         cfnOutput(this, "TelegramForwarderLambdaArn", this.telegramForwarderLambda.ingestLambda.getFunctionArn());
 
-        Lambda.stackHealthAlarm(this, props.resourceNamePrefix(), "activity", List.of(this.telegramForwarderLambda));
+        // ============================================================================
+        // Sign-In Activity Publish Lambda (Pre Token Generation trigger's fire-and-forget target)
+        // ============================================================================
+        // IdentityStack's Pre Token Generation trigger invokes this Lambda directly (an IAM
+        // identity-based lambda:InvokeFunction grant on its own role, not an EventBridge rule
+        // here), for every sign-in and refresh on every app client. It enriches the event with
+        // the app client name, the session rule and the hashed sub, then publishes to this
+        // stack's own activity bus like every other publisher.
+        var signInActivityPublishEnv = new PopulatedMap<String, String>()
+                .with("ENVIRONMENT_NAME", props.envName())
+                .with("ACTIVITY_BUS_NAME", this.activityBus.getEventBusName());
+        this.signInActivityPublishLambda = new Lambda(
+                this,
+                LambdaProps.builder()
+                        .idPrefix(props.sharedNames().signInActivityPublishLambdaFunctionName)
+                        .baseImageTag(props.baseImageTag())
+                        .ecrRepositoryName(props.sharedNames().ecrRepositoryName)
+                        .ecrRepositoryArn(props.sharedNames().ecrRepositoryArn)
+                        .ingestFunctionName(props.sharedNames().signInActivityPublishLambdaFunctionName)
+                        .ingestHandler(props.sharedNames().signInActivityPublishLambdaHandler)
+                        .ingestLambdaArn(props.sharedNames().signInActivityPublishLambdaArn)
+                        .ingestProvisionedConcurrencyAliasArn(
+                                props.sharedNames().signInActivityPublishProvisionedConcurrencyLambdaAliasArn)
+                        .ingestProvisionedConcurrency(0)
+                        .ingestLambdaTimeout(Duration.seconds(10))
+                        .provisionedConcurrencyAliasName(props.sharedNames().provisionedConcurrencyAliasName)
+                        .environment(signInActivityPublishEnv)
+                        .errorsAlarmEvaluationPeriods(3)
+                        .errorsAlarmDatapointsToAlarm(2)
+                        .build());
+
+        // Read the three app-client-id parameters IdentityStack writes, to map a Cognito
+        // client id to "submit", "books" or "mcp".
+        this.signInActivityPublishLambda.ingestLambda.addToRolePolicy(PolicyStatement.Builder.create()
+                .sid("ReadAppClientIdParameters")
+                .effect(Effect.ALLOW)
+                .actions(List.of("ssm:GetParameter"))
+                .resources(List.of(
+                        "arn:aws:ssm:%s:%s:parameter/submit/%s/submit-app-client-id"
+                                .formatted(this.getRegion(), this.getAccount(), props.envName()),
+                        "arn:aws:ssm:%s:%s:parameter/submit/%s/spreadsheets-diya-gl-app-client-id"
+                                .formatted(this.getRegion(), this.getAccount(), props.envName()),
+                        "arn:aws:ssm:%s:%s:parameter/submit/%s/mcp-app-client-id"
+                                .formatted(this.getRegion(), this.getAccount(), props.envName())))
+                .build());
+
+        // Read and write the session#{hashedSub}#{appClient} item the session rule keeps.
+        ITable securityStateTable =
+                Table.fromTableName(this, "ImportedSecurityStateTable", props.sharedNames().securityStateTableName);
+        securityStateTable.grant(this.signInActivityPublishLambda.ingestLambda, "dynamodb:GetItem", "dynamodb:PutItem");
+
+        // Hash the user's sub the same way every other activity publisher does.
+        SubHashSaltHelper.grantSaltAccess(
+                this.signInActivityPublishLambda.ingestLambda, this.getRegion(), this.getAccount(), props.envName());
+
+        cfnOutput(
+                this, "SignInActivityPublishLambdaArn", this.signInActivityPublishLambda.ingestLambda.getFunctionArn());
+
+        Lambda.stackHealthAlarm(
+                this,
+                props.resourceNamePrefix(),
+                "activity",
+                List.of(this.telegramForwarderLambda, this.signInActivityPublishLambda));
 
         infof("ActivityStack %s created successfully for %s", this.getNode().getId(), props.resourceNamePrefix());
     }

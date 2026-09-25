@@ -175,7 +175,11 @@ public class BusinessViews extends Construct {
                     "v_cost_vs_target_monthly",
                     "Each month's billed cost against the steady-state target",
                     List.of("v_cost_daily"),
-                    List.of("v_cost_daily")));
+                    List.of("v_cost_daily")),
+            new ViewDefinition(
+                    "v_sign_ins_daily",
+                    "Sign-ins and refreshes each day, by app client, event and actor",
+                    List.of("activity_events_all")));
 
     public final List<CfnNamedQuery> namedQueries = new ArrayList<>();
     public final List<CustomResource> viewResources = new ArrayList<>();

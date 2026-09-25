@@ -17,6 +17,8 @@ import {
 } from "../../lib/httpResponseHelper.js";
 import { registerLambdaRoute } from "../../lib/httpServerToLambdaAdaptor.js";
 import { initializeSalt } from "../../services/subHasher.js";
+import { resolveAppClient } from "../../lib/appClientResolver.js";
+import { publishActivityEvent } from "../../lib/activityAlert.js";
 import { getClient } from "../../data/dynamoDbPracticeClientRepository.js";
 import { isValidBookId, moveBookToClient, BookNotFoundError, DestinationBookExistsError } from "../../data/s3DiyaGlRepository.js";
 
@@ -65,6 +67,16 @@ export async function ingestHandler(event) {
     }
 
     const result = await moveBookToClient(user.sub, clientId, bookId);
+
+    const appClient = await resolveAppClient(user.appClientId);
+    await publishActivityEvent({
+      event: "book-moved",
+      summary: `Book moved to client: ${bookId}`,
+      userSub: user.sub,
+      appClient,
+      clientId,
+      detail: { bookId, movedObjectCount: result.movedObjectCount },
+    });
 
     return http200OkResponse({ request, headers: responseHeaders, data: result });
   } catch (error) {

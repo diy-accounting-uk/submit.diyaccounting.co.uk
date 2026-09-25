@@ -136,6 +136,8 @@ describe("the server", () => {
       "preview_micro_entity_accounts",
       "run_for_clients",
       "save_book",
+      "sign_in",
+      "sign_out",
       "submit_confirmation_statement",
       "submit_micro_entity_accounts",
       "submit_vat_return",

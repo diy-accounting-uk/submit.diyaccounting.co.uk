@@ -119,15 +119,16 @@ class SubmitApplicationCdkResourceTest {
                 "PRACTICE_CLIENTS_DYNAMODB_TABLE_NAME");
 
         infof("Created stack:", submitApplication.accountStack.getStackName());
-        // 21 Lambdas: bundleGet(1), bundlePost(2), bundleDelete(2), operatorSnapshotGet(1),
+        // 22 Lambdas: bundleGet(1), bundlePost(2), bundleDelete(2), operatorSnapshotGet(1),
         // practiceClientsListGet(1), practiceClientsPost(1), practiceClientGet(1),
         // practiceClientDelete(1), practiceClientAuthorisationInvitePost(1),
         // practiceClientAuthorisationGet(1), practiceClientAuthorisationInviteDelete(1),
         // interestPost(1), passGet(1), passPost(1), passAdminPost(1),
-        // passGeneratePost(1), passMyPassesGet(1), bundleCapacityReconcile(1), sessionBeaconPost(1)
+        // passGeneratePost(1), passMyPassesGet(1), bundleCapacityReconcile(1), sessionBeaconPost(1),
+        // sessionSignOutPost(1)
         Template accountStackTemplate = Template.fromStack(submitApplication.accountStack);
-        accountStackTemplate.resourceCountIs("AWS::Lambda::Function", 21);
-        assertStackHealthAlarm(accountStackTemplate, 19, 2, routedPrefixes);
+        accountStackTemplate.resourceCountIs("AWS::Lambda::Function", 22);
+        assertStackHealthAlarm(accountStackTemplate, 20, 2, routedPrefixes);
 
         // Regression guard: bundleGet performs lazy token refresh via dynamodb:UpdateItem on the
         // bundles table (see app/functions/account/bundleGet.js resetTokens). Its grant on
@@ -336,7 +337,11 @@ class SubmitApplicationCdkResourceTest {
         // each sit on their own unshared path, adding six primary routes plus six auto-HEAD
         // routes, for 156 + 12 = 168. POST /api/v1/billing/activity-checkout adds its own route
         // plus its own auto-HEAD route, since no other method shares that path, for 168 + 2 = 170.
-        apiStackTemplate.resourceCountIs("AWS::ApiGatewayV2::Route", 170);
+        // POST /api/v1/session/sign-out adds its own route, its own auto-HEAD route, and an
+        // unauthenticated OPTIONS preflight route (every Cognito app client's origin needs the
+        // cross-origin browser preflight to reach a route with no authoriser, the same reason
+        // the books routes get one), for 170 + 3 = 173.
+        apiStackTemplate.resourceCountIs("AWS::ApiGatewayV2::Route", 173);
 
         // Dashboard moved to environment-level ObservabilityStack
         infof("Created stack:", submitApplication.opsStack.getStackName());
@@ -552,6 +557,96 @@ class SubmitApplicationCdkResourceTest {
                                 List.of(
                                         "tt-witheight-cognito-books-client-id",
                                         "tt-witheight-cognito-mcp-client-id"))))));
+    }
+
+    @Test
+    @SetEnvironmentVariable(key = "COGNITO_MCP_CLIENT_ID", value = "tt-witheight-cognito-mcp-client-id")
+    void customAuthorizerLambdaCarriesTheMcpClientIdWhenSet() throws IOException {
+        Path cdkJsonPath = Path.of("cdk-application/cdk.json").toAbsolutePath();
+        Map<String, Object> ctx = buildContextPropertyMapFromCdkJsonPath(cdkJsonPath);
+        App app = new App(AppProps.builder().context(ctx).build());
+        SubmitApplication.SubmitApplicationProps appProps = SubmitApplication.loadAppProps(app, "cdk-application/");
+
+        var submitApplication = new SubmitApplication(app, appProps);
+        Template authStackTemplate = Template.fromStack(submitApplication.authStack);
+
+        assertHasEnvironmentVariable(
+                authStackTemplate,
+                submitApplication.authStack.customAuthorizerLambdaProps.ingestFunctionName(),
+                "COGNITO_MCP_CLIENT_ID");
+    }
+
+    @Test
+    void customAuthorizerLambdaCarriesNoMcpClientIdEnvVarWhenUnset() throws IOException {
+        Path cdkJsonPath = Path.of("cdk-application/cdk.json").toAbsolutePath();
+        Map<String, Object> ctx = buildContextPropertyMapFromCdkJsonPath(cdkJsonPath);
+        App app = new App(AppProps.builder().context(ctx).build());
+        SubmitApplication.SubmitApplicationProps appProps = SubmitApplication.loadAppProps(app, "cdk-application/");
+
+        var submitApplication = new SubmitApplication(app, appProps);
+        Template authStackTemplate = Template.fromStack(submitApplication.authStack);
+        String functionName = submitApplication.authStack.customAuthorizerLambdaProps.ingestFunctionName();
+
+        var functions = authStackTemplate.findResources("AWS::Lambda::Function").values().stream()
+                .map(resource -> (Map<String, Object>) resource.get("Properties"))
+                .filter(properties ->
+                        String.valueOf(properties.get("FunctionName")).equals(functionName))
+                .toList();
+        org.junit.jupiter.api.Assertions.assertEquals(1, functions.size());
+        var environment = (Map<String, Object>) functions.get(0).get("Environment");
+        var variables = (Map<String, Object>) environment.get("Variables");
+        org.junit.jupiter.api.Assertions.assertFalse(variables.containsKey("COGNITO_MCP_CLIENT_ID"));
+    }
+
+    @Test
+    @SetEnvironmentVariable(key = "COGNITO_MCP_CLIENT_ID", value = "tt-witheight-cognito-mcp-client-id")
+    void hmrcStackLambdaCarriesTheMcpClientIdWhenSet() throws IOException {
+        Path cdkJsonPath = Path.of("cdk-application/cdk.json").toAbsolutePath();
+        Map<String, Object> ctx = buildContextPropertyMapFromCdkJsonPath(cdkJsonPath);
+        App app = new App(AppProps.builder().context(ctx).build());
+        SubmitApplication.SubmitApplicationProps appProps = SubmitApplication.loadAppProps(app, "cdk-application/");
+
+        var submitApplication = new SubmitApplication(app, appProps);
+        Template hmrcStackTemplate = Template.fromStack(submitApplication.hmrcStack);
+
+        assertHasEnvironmentVariable(
+                hmrcStackTemplate,
+                submitApplication.hmrcStack.hmrcVatReturnPostLambdaProps.ingestFunctionName(),
+                "COGNITO_MCP_CLIENT_ID");
+    }
+
+    @Test
+    @SetEnvironmentVariable(key = "COGNITO_MCP_CLIENT_ID", value = "tt-witheight-cognito-mcp-client-id")
+    void hmrcItsaStackLambdaCarriesTheMcpClientIdWhenSet() throws IOException {
+        Path cdkJsonPath = Path.of("cdk-application/cdk.json").toAbsolutePath();
+        Map<String, Object> ctx = buildContextPropertyMapFromCdkJsonPath(cdkJsonPath);
+        App app = new App(AppProps.builder().context(ctx).build());
+        SubmitApplication.SubmitApplicationProps appProps = SubmitApplication.loadAppProps(app, "cdk-application/");
+
+        var submitApplication = new SubmitApplication(app, appProps);
+        Template hmrcItsaStackTemplate = Template.fromStack(submitApplication.hmrcItsaStack);
+
+        assertHasEnvironmentVariable(
+                hmrcItsaStackTemplate,
+                submitApplication.hmrcItsaStack.hmrcItsaUkPropertyPeriodPostLambdaProps.ingestFunctionName(),
+                "COGNITO_MCP_CLIENT_ID");
+    }
+
+    @Test
+    @SetEnvironmentVariable(key = "COGNITO_MCP_CLIENT_ID", value = "tt-witheight-cognito-mcp-client-id")
+    void accountStackPracticeClientAuthorisationLambdaCarriesTheMcpClientIdWhenSet() throws IOException {
+        Path cdkJsonPath = Path.of("cdk-application/cdk.json").toAbsolutePath();
+        Map<String, Object> ctx = buildContextPropertyMapFromCdkJsonPath(cdkJsonPath);
+        App app = new App(AppProps.builder().context(ctx).build());
+        SubmitApplication.SubmitApplicationProps appProps = SubmitApplication.loadAppProps(app, "cdk-application/");
+
+        var submitApplication = new SubmitApplication(app, appProps);
+        Template accountStackTemplate = Template.fromStack(submitApplication.accountStack);
+
+        assertHasEnvironmentVariable(
+                accountStackTemplate,
+                submitApplication.accountStack.practiceClientAuthorisationGetLambdaProps.ingestFunctionName(),
+                "COGNITO_MCP_CLIENT_ID");
     }
 
     @Test

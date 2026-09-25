@@ -283,6 +283,24 @@ describe("lib/activityAlert", () => {
       const detail = JSON.parse(mockSend.mock.calls[0][0].input.Entries[0].Detail);
       expect(detail.clientId).toBeUndefined();
     });
+
+    test("carries the app client and session id when the event is a sign-in or refresh", async () => {
+      process.env.ACTIVITY_BUS_NAME = "test-bus";
+      await publishActivityEvent({ event: "login", summary: "Login", appClient: "books", sessionId: "session-id-1" });
+
+      const detail = JSON.parse(mockSend.mock.calls[0][0].input.Entries[0].Detail);
+      expect(detail.appClient).toBe("books");
+      expect(detail.sessionId).toBe("session-id-1");
+    });
+
+    test("omits the app client and session id when not given", async () => {
+      process.env.ACTIVITY_BUS_NAME = "test-bus";
+      await publishActivityEvent({ event: "vat-return-submitted", summary: "VAT return submitted" });
+
+      const detail = JSON.parse(mockSend.mock.calls[0][0].input.Entries[0].Detail);
+      expect(detail.appClient).toBeUndefined();
+      expect(detail.sessionId).toBeUndefined();
+    });
   });
 
   describe("resolveActivityBusRegion", () => {

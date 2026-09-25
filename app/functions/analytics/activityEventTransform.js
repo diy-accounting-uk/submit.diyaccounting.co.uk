@@ -65,6 +65,8 @@ export function flattenEnvelope(envelope) {
     client_id: detail.clientId ?? null,
     env: process.env.ENVIRONMENT_NAME ?? null,
     detail_json: JSON.stringify(detail),
+    app_client: detail.appClient ?? null,
+    session_id: detail.sessionId ?? null,
   };
 }
 

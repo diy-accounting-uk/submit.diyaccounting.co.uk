@@ -18,6 +18,20 @@ const logger = createLogger({ source: "app/functions/auth/customAuthorizer.js" }
 // Cache the verifier instance across Lambda invocations
 let verifier = null;
 
+/**
+ * The client ids this authorizer accepts: the main Submit client, plus the submission MCP's
+ * own client once COGNITO_MCP_CLIENT_ID is set (Decisions 4 -- the MCP's HMRC and Companies
+ * House calls authenticate with its own sign-in instead of a copied Submit token). Blank until
+ * the deploy wiring sets it, so an unset value changes nothing here.
+ *
+ * @returns {string[]}
+ */
+function acceptedClientIds() {
+  const ids = [process.env.COGNITO_USER_POOL_CLIENT_ID];
+  if (process.env.COGNITO_MCP_CLIENT_ID) ids.push(process.env.COGNITO_MCP_CLIENT_ID);
+  return ids.filter(Boolean);
+}
+
 // A second verifier, for the ID token sent alongside the access token in X-Id-Token (see
 // hmrc-service.js's getGovClientHeaders). The access token authorizes the request; the ID token
 // is only ever used to read custom:mfa_method and identities for the O28 Gov-Client-Multi-Factor
@@ -46,7 +60,7 @@ function getVerifier() {
     verifier = CognitoJwtVerifier.create({
       userPoolId: userPoolId,
       tokenUse: "access",
-      clientId: clientId,
+      clientId: acceptedClientIds(),
     });
 
     logger.info({
@@ -70,7 +84,7 @@ function getIdTokenVerifier() {
     idTokenVerifier = CognitoJwtVerifier.create({
       userPoolId: userPoolId,
       tokenUse: "id",
-      clientId: clientId,
+      clientId: acceptedClientIds(),
     });
   }
   return idTokenVerifier;

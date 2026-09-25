@@ -17,6 +17,9 @@
 // ever sets - so a third, throwaway client is invited once purely to record the ARN, then
 // archived before the two real clients are listed, so it never appears in run_for_clients' rows.
 
+import { mkdtempSync, rmSync, writeFileSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
 import { test } from "./helpers/playwrightTestWithout.js";
 import { expect } from "@playwright/test";
 import { dotenvConfigIfNotBlank } from "@app/lib/env.js";
@@ -84,6 +87,7 @@ const OPEN_OBLIGATION_PERIOD = { periodStart: "2017-04-01", periodEnd: "2017-06-
 let mockOAuth2Process;
 let serverProcess;
 let dynamoControl;
+let mcpCredentialsDir;
 
 test.setTimeout(300_000);
 
@@ -109,6 +113,7 @@ test.afterAll(async () => {
   try {
     await dynamoControl?.stop?.();
   } catch {}
+  if (mcpCredentialsDir) rmSync(mcpCredentialsDir, { recursive: true, force: true });
 });
 
 test("A practice adds two clients and submits a VAT return for each through run_for_clients", async ({ page }) => {
@@ -170,13 +175,40 @@ test("A practice adds two clients and submits a VAT return for each through run_
   expect(hmrcAccessToken, "no HMRC access token was minted by the page-driven submission").toBeTruthy();
   const practiceSessionToken = await page.evaluate(() => localStorage.getItem("cognitoAccessToken"));
   expect(practiceSessionToken, "no Cognito access token was found after sign-in").toBeTruthy();
+  const practiceIdToken = await page.evaluate(() => localStorage.getItem("cognitoIdToken"));
+  expect(practiceIdToken, "no Cognito id token was found after sign-in").toBeTruthy();
+  // The simulator's mock token endpoint (app/functions/non-lambda-mocks/mockTokenPost.js) issues
+  // no refresh token, so loginWithMockCallback.html never stores one; a real Cognito exchange
+  // (proxy, ci, prod) always does. auth.js's cachedOrRefreshed only checks this field is present
+  // before serving the cached access/id token below, and this test's tokens never approach their
+  // expiry, so a placeholder stands in for the simulator lane without ever being sent anywhere.
+  const practiceRefreshToken = (await page.evaluate(() => localStorage.getItem("cognitoRefreshToken"))) || "unused-in-this-lane";
 
   /* ***************************************************************** */
   /*  EVERYTHING FROM HERE RUNS THROUGH THE MCP'S OWN LIBRARY CALLS,   */
-  /*  THE SAME FUNCTIONS THE MCP SERVER ITSELF CALLS.                  */
+  /*  THE SAME FUNCTIONS THE MCP SERVER ITSELF CALLS. auth.js's        */
+  /*  accessToken()/idToken() read a signed-in session from            */
+  /*  DIYA_SUBMIT_CONFIG_DIR's credentials.json (overridable for       */
+  /*  tests), so the MCP is signed in here by writing the practice     */
+  /*  user's own page-driven tokens into a test-scoped copy of that    */
+  /*  file, the same shape signIn() itself writes (mcp/test/auth.test  */
+  /*  .js). The expiry is set comfortably ahead so accessToken() and   */
+  /*  idToken() serve the cached values without a refresh call.        */
   /* ***************************************************************** */
   process.env.DIYA_SUBMIT_BASE_URL = baseUrl;
-  process.env.DIYA_SUBMIT_ACCESS_TOKEN = practiceSessionToken;
+  mcpCredentialsDir = mkdtempSync(join(tmpdir(), "diya-submit-mcp-practice-licence-"));
+  process.env.DIYA_SUBMIT_CONFIG_DIR = mcpCredentialsDir;
+  const tokenExpiresAt = Date.now() + 3600_000;
+  writeFileSync(
+    join(mcpCredentialsDir, "credentials.json"),
+    JSON.stringify({
+      refreshToken: practiceRefreshToken,
+      idToken: practiceIdToken,
+      idTokenExpiresAt: tokenExpiresAt,
+      accessToken: practiceSessionToken,
+      accessTokenExpiresAt: tokenExpiresAt,
+    }),
+  );
   const session = {};
 
   // A throwaway client, invited once so the invite endpoint records the practice's ARN. Its own

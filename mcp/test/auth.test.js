@@ -1,11 +1,12 @@
 // SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0
 // Copyright (C) 2006-2026 DIY Accounting Limited
 
-// auth.test.js -- signIn's loopback PKCE flow and accessToken's cache/refresh, with the token
-// endpoint mocked and the browser launch stubbed; the loopback listener itself is real, since it
-// is the one piece Cognito's exact-match callback URLs actually depend on.
+// auth.test.js -- signIn's loopback PKCE flow, idToken's and accessToken's cache/refresh, and
+// signOut's revoke-then-sign-out-then-delete, with the token endpoint mocked and the browser
+// launch stubbed; the loopback listener itself is real, since it is the one piece Cognito's
+// exact-match callback URLs actually depend on.
 
-import { mkdtempSync, readFileSync, rmSync, statSync, writeFileSync } from "node:fs";
+import { existsSync, mkdtempSync, readFileSync, rmSync, statSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
@@ -13,9 +14,11 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 const spawnMock = vi.fn(() => ({ unref: vi.fn() }));
 vi.mock("node:child_process", () => ({ spawn: (...args) => spawnMock(...args) }));
 
-const { accessToken, signIn } = await import("../lib/auth.js");
+const { accessToken, idToken, signIn, signOut } = await import("../lib/auth.js");
+const { TOOLS } = await import("../lib/server.js");
 
 const AUTH_DOMAIN = "https://ci-auth.diyaccounting.co.uk";
+const BASE_URL = "https://ci.submit.diyaccounting.co.uk";
 const CLIENT_ID = "test-mcp-client-id";
 
 function jsonResponse(status, body) {
@@ -45,6 +48,7 @@ describe("auth", () => {
     process.env.DIYA_SUBMIT_CONFIG_DIR = configDir;
     process.env.DIYA_SUBMIT_AUTH_DOMAIN = AUTH_DOMAIN;
     process.env.DIYA_SUBMIT_MCP_CLIENT_ID = CLIENT_ID;
+    process.env.DIYA_SUBMIT_BASE_URL = BASE_URL;
     spawnMock.mockClear();
   });
 
@@ -53,6 +57,7 @@ describe("auth", () => {
     delete process.env.DIYA_SUBMIT_CONFIG_DIR;
     delete process.env.DIYA_SUBMIT_AUTH_DOMAIN;
     delete process.env.DIYA_SUBMIT_MCP_CLIENT_ID;
+    delete process.env.DIYA_SUBMIT_BASE_URL;
     vi.unstubAllGlobals();
   });
 
@@ -60,6 +65,7 @@ describe("auth", () => {
     it("opens the hosted UI with a PKCE challenge, catches the code on the loopback listener, and stores the refresh token mode 600", async () => {
       const mockFetch = stubTokenEndpoint(200, {
         id_token: "id-token-1",
+        access_token: "access-token-1",
         refresh_token: "refresh-token-1",
         expires_in: 3600,
         token_type: "Bearer",
@@ -102,6 +108,8 @@ describe("auth", () => {
       expect(stored.refreshToken).toBe("refresh-token-1");
       expect(stored.idToken).toBe("id-token-1");
       expect(stored.idTokenExpiresAt).toBeGreaterThan(Date.now());
+      expect(stored.accessToken).toBe("access-token-1");
+      expect(stored.accessTokenExpiresAt).toBeGreaterThan(Date.now());
       expect(statSync(credentialsPath).mode & 0o777).toBe(0o600);
     });
 
@@ -135,9 +143,9 @@ describe("auth", () => {
     });
   });
 
-  describe("accessToken", () => {
+  describe("idToken", () => {
     it("requires signIn to have run first", async () => {
-      await expect(accessToken()).rejects.toThrow(/Not signed in/);
+      await expect(idToken()).rejects.toThrow(/Not signed in/);
     });
 
     it("answers the cached id token without a network call while it is not near expiry", async () => {
@@ -148,7 +156,7 @@ describe("auth", () => {
       const mockFetch = vi.fn();
       vi.stubGlobal("fetch", mockFetch);
 
-      const token = await accessToken();
+      const token = await idToken();
 
       expect(token).toBe("cached-id-token");
       expect(mockFetch).not.toHaveBeenCalled();
@@ -162,7 +170,7 @@ describe("auth", () => {
       const mockFetch = vi.fn().mockResolvedValueOnce(jsonResponse(200, { id_token: "fresh-id-token", expires_in: 3600 }));
       vi.stubGlobal("fetch", mockFetch);
 
-      const token = await accessToken();
+      const token = await idToken();
 
       expect(token).toBe("fresh-id-token");
       const [tokenUrl, tokenInit] = mockFetch.mock.calls[0];
@@ -186,7 +194,142 @@ describe("auth", () => {
         .mockResolvedValueOnce(jsonResponse(400, { error: "invalid_grant", error_description: "Refresh Token has expired" }));
       vi.stubGlobal("fetch", mockFetch);
 
-      await expect(accessToken()).rejects.toThrow("Refresh Token has expired");
+      await expect(idToken()).rejects.toThrow("Refresh Token has expired");
+    });
+  });
+
+  describe("accessToken", () => {
+    it("requires signIn to have run first", async () => {
+      await expect(accessToken()).rejects.toThrow(/Not signed in/);
+    });
+
+    it("answers the cached access token without a network call while it is not near expiry", async () => {
+      writeFileSync(
+        join(configDir, "credentials.json"),
+        JSON.stringify({
+          refreshToken: "refresh-token-1",
+          accessToken: "cached-access-token",
+          accessTokenExpiresAt: Date.now() + 3600_000,
+        }),
+      );
+      const mockFetch = vi.fn();
+      vi.stubGlobal("fetch", mockFetch);
+
+      const token = await accessToken();
+
+      expect(token).toBe("cached-access-token");
+      expect(mockFetch).not.toHaveBeenCalled();
+    });
+
+    it("refreshes silently once the cached access token is near expiry", async () => {
+      writeFileSync(
+        join(configDir, "credentials.json"),
+        JSON.stringify({
+          refreshToken: "refresh-token-1",
+          accessToken: "stale-access-token",
+          accessTokenExpiresAt: Date.now() + 1000,
+        }),
+      );
+      const mockFetch = vi.fn().mockResolvedValueOnce(jsonResponse(200, { access_token: "fresh-access-token", expires_in: 3600 }));
+      vi.stubGlobal("fetch", mockFetch);
+
+      const token = await accessToken();
+
+      expect(token).toBe("fresh-access-token");
+      const stored = JSON.parse(readFileSync(join(configDir, "credentials.json"), "utf8"));
+      expect(stored.accessToken).toBe("fresh-access-token");
+    });
+  });
+
+  describe("signOut", () => {
+    function credentialsPath() {
+      return join(configDir, "credentials.json");
+    }
+
+    it("revokes the refresh token, posts to the sign-out route, and deletes the credentials file", async () => {
+      writeFileSync(
+        credentialsPath(),
+        JSON.stringify({ refreshToken: "refresh-token-1", accessToken: "access-token-1", idToken: "id-token-1" }),
+      );
+      const mockFetch = vi.fn().mockResolvedValue(jsonResponse(200, {}));
+      vi.stubGlobal("fetch", mockFetch);
+
+      const result = await signOut();
+
+      expect(result).toEqual({ signedOut: true });
+      const [revokeUrl, revokeInit] = mockFetch.mock.calls.find(([url]) => url === `${AUTH_DOMAIN}/oauth2/revoke`);
+      expect(revokeUrl).toBe(`${AUTH_DOMAIN}/oauth2/revoke`);
+      const revokeBody = new URLSearchParams(revokeInit.body);
+      expect(revokeBody.get("token")).toBe("refresh-token-1");
+      expect(revokeBody.get("client_id")).toBe(CLIENT_ID);
+
+      const [signOutUrl, signOutInit] = mockFetch.mock.calls.find(([url]) => url === `${BASE_URL}/api/v1/session/sign-out`);
+      expect(signOutUrl).toBe(`${BASE_URL}/api/v1/session/sign-out`);
+      expect(signOutInit.headers.Authorization).toBe("Bearer access-token-1");
+
+      expect(existsSync(credentialsPath())).toBe(false);
+    });
+
+    it("still deletes the credentials file when the revoke and sign-out calls fail", async () => {
+      writeFileSync(
+        credentialsPath(),
+        JSON.stringify({ refreshToken: "refresh-token-1", accessToken: "access-token-1", idToken: "id-token-1" }),
+      );
+      vi.stubGlobal("fetch", vi.fn().mockRejectedValue(new Error("offline")));
+
+      const result = await signOut();
+
+      expect(result).toEqual({ signedOut: true });
+      expect(existsSync(credentialsPath())).toBe(false);
+    });
+
+    it("is a no-op on the network when there are no stored credentials", async () => {
+      const mockFetch = vi.fn();
+      vi.stubGlobal("fetch", mockFetch);
+
+      const result = await signOut();
+
+      expect(result).toEqual({ signedOut: true });
+      expect(mockFetch).not.toHaveBeenCalled();
+    });
+  });
+
+  describe("server registration", () => {
+    it("registers sign_in and sign_out with no inputs", () => {
+      expect(TOOLS.sign_in.handler).not.toBeUndefined();
+      expect(TOOLS.sign_in.inputSchema).toEqual({});
+      expect(TOOLS.sign_out.handler).not.toBeUndefined();
+      expect(TOOLS.sign_out.inputSchema).toEqual({});
+    });
+
+    it("sign_in's handler calls signIn", async () => {
+      const mockFetch = stubTokenEndpoint(200, {
+        id_token: "id-token-1",
+        access_token: "access-token-1",
+        refresh_token: "refresh-token-1",
+        expires_in: 3600,
+      });
+      const handlerPromise = TOOLS.sign_in.handler({}, {});
+      await new Promise((resolve) => setTimeout(resolve, 50));
+      const openedUrl = new URL(spawnMock.mock.calls[0][1].at(-1));
+      const redirectUri = new URL(openedUrl.searchParams.get("redirect_uri"));
+      const state = openedUrl.searchParams.get("state");
+
+      await fetch(`${redirectUri.toString()}?code=auth-code-1&state=${encodeURIComponent(state)}`);
+      const result = await handlerPromise;
+
+      expect(result).toEqual({ signedIn: true });
+      expect(mockFetch.mock.calls.some(([url]) => url === `${AUTH_DOMAIN}/oauth2/token`)).toBe(true);
+    });
+
+    it("sign_out's handler calls signOut", async () => {
+      writeFileSync(join(configDir, "credentials.json"), JSON.stringify({ refreshToken: "refresh-token-1" }));
+      vi.stubGlobal("fetch", vi.fn().mockResolvedValue(jsonResponse(200, {})));
+
+      const result = await TOOLS.sign_out.handler({}, {});
+
+      expect(result).toEqual({ signedOut: true });
+      expect(existsSync(join(configDir, "credentials.json"))).toBe(false);
     });
   });
 });

@@ -11,6 +11,11 @@ import { fileURLToPath } from "node:url";
 
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
+vi.mock("../lib/auth.js", () => ({
+  accessToken: vi.fn().mockResolvedValue("practice-access-token"),
+  idToken: vi.fn().mockResolvedValue("practice-id-token"),
+}));
+
 import { runForClients, RUN_FOR_CLIENTS_TOOLS } from "../lib/batch-tools.js";
 import { TOOLS } from "../lib/server.js";
 
@@ -30,12 +35,10 @@ const [CLIENT_A, CLIENT_B, CLIENT_C] = LIST_CLIENTS_RESPONSE.clients;
 describe("run_for_clients", () => {
   beforeEach(() => {
     process.env.DIYA_SUBMIT_BASE_URL = "https://submit.diyaccounting.co.uk/";
-    process.env.DIYA_SUBMIT_ACCESS_TOKEN = "practice-access-token";
   });
 
   afterEach(() => {
     delete process.env.DIYA_SUBMIT_BASE_URL;
-    delete process.env.DIYA_SUBMIT_ACCESS_TOKEN;
     vi.unstubAllGlobals();
   });
 

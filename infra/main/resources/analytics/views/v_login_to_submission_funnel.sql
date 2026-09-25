@@ -14,6 +14,7 @@ WITH active AS (
   SELECT hashed_sub, date(event_ts) AS cohort_day
   FROM   activity_events_all
   WHERE  actor = 'customer' AND hashed_sub IS NOT NULL
+    AND  coalesce(app_client, 'submit') = 'submit'
   GROUP  BY hashed_sub, date(event_ts)),
 subs AS (
   SELECT hashed_sub, event_ts AS submission_ts

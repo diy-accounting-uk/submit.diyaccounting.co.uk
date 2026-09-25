@@ -100,6 +100,17 @@ describe("activityTelegramForwarder", () => {
   });
 
   describe("resolveTargetChatIds", () => {
+    // A refresh inside a live session goes to the lake only, never Telegram.
+    test("routes a continued token-refresh to no chat, even for a customer", () => {
+      const detail = { event: "token-refresh", sessionKind: "continued", actor: "customer", flow: "user-journey" };
+      expect(resolveTargetChatIds(detail, CHAT_CONFIG)).toEqual([]);
+    });
+
+    test("routes a resumed session's token-refresh normally, since sessionKind is not continued", () => {
+      const detail = { event: "session-resumed", sessionKind: "resumed", actor: "customer", flow: "user-journey" };
+      expect(resolveTargetChatIds(detail, CHAT_CONFIG)).toEqual(["@diy_ci_live"]);
+    });
+
     // User journey routing
     test("routes test-user events to test channel", () => {
       const detail = { actor: "test-user", flow: "user-journey" };
