@@ -229,6 +229,8 @@ A fresh agent carries none of your context, so the brief stands alone. Every bri
   unrelated tests fail on a missing file. Then the unit, system or browser tests its change
   reaches, or `./mvnw clean verify` for `infra/`. No behaviour tier inside a worktree: that needs a
   live environment and belongs to the deploy.
+- **A gate or threshold a CI job enforces is set from runs on that job's runner.** When a row
+  changes one, the brief says to dispatch the job and read its scores first.
 - **A report-back contract**: what it changed and why, what it deliberately did not do, any
   adjacent bug it found with file and line, the exact commands run with counts, and its commit
   SHAs.

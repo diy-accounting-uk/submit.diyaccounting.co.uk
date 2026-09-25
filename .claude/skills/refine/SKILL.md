@@ -78,6 +78,8 @@ have to discover to finish. Then put that in the brief. The checks that paid for
 - **Limits the change can hit.** A stack near CloudFormation's 500 resources, a redirect-URI cap at
   HMRC, a concurrency group two runs share: name it and the headroom, because the ci deploy is
   where it fails otherwise.
+- **A gate or threshold a CI job enforces is set from runs on that job's runner.** When a row
+  changes one, dispatch the job and read its scores first before writing the row.
 - **The call site and forbidden patterns.** A brief must name the exact call site (file:line) the
   change lands on, and list the patterns the rules forbid that the change could reach: compatibility
   aliases, a setting applied wider than the call that needs it, whole-tree formatting or deletion
