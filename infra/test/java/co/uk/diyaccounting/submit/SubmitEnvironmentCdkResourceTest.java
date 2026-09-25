@@ -198,13 +198,14 @@ class SubmitEnvironmentCdkResourceTest {
         // hardcoded below).
         List<String> envRoutedPrefixes = List.of("test-env-");
 
-        // 8c) Activity stack: one Telegram forwarder Lambda and the one bus-wide catch-all rule
+        // 8c) Activity stack: the Telegram forwarder Lambda and the one bus-wide catch-all rule
         // that targets it, shared by every deployment's OpsStack instead of one copy per
         // deployment (each deployment's own alarm-state-change and stack-status rules still
         // target this same imported Lambda; that stays covered by OpsStackTest since OpsStack
-        // isn't synthesized here).
+        // isn't synthesized here), plus the sign-in activity publish Lambda the Pre Token
+        // Generation trigger invokes directly (no EventBridge rule of its own).
         Template activity = Template.fromStack(env.activityStack);
-        activity.resourceCountIs("AWS::Lambda::Function", 1);
+        activity.resourceCountIs("AWS::Lambda::Function", 2);
         activity.resourceCountIs("AWS::Events::Rule", 1);
         activity.hasResourceProperties(
                 "AWS::Events::Rule",
@@ -213,7 +214,7 @@ class SubmitEnvironmentCdkResourceTest {
                         "test-env-activity-telegram",
                         "EventPattern",
                         Match.objectLike(Map.of("detail-type", List.of("ActivityEvent"))))));
-        SubmitApplicationCdkResourceTest.assertStackHealthAlarm(activity, 1, 0, envRoutedPrefixes);
+        SubmitApplicationCdkResourceTest.assertStackHealthAlarm(activity, 2, 0, envRoutedPrefixes);
 
         // The Telegram forwarder reads a deployment's alarm-silence marker so a deployment
         // mid-teardown's ALARM events are dropped instead of forwarded.
