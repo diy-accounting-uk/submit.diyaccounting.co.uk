@@ -150,9 +150,11 @@ class AccountStackTest {
         boolean readsAppClientIdParameters = statementsForRole.stream().anyMatch(statement -> {
             Object action = statement.get("Action");
             Object resource = statement.get("Resource");
-            return String.valueOf(action).contains("ssm:GetParameter") && String.valueOf(resource).contains("mcp-app-client-id");
+            return String.valueOf(action).contains("ssm:GetParameter")
+                    && String.valueOf(resource).contains("mcp-app-client-id");
         });
-        assertEquals(true, readsAppClientIdParameters, "the sign-out Lambda must read the three app-client-id parameters");
+        assertEquals(
+                true, readsAppClientIdParameters, "the sign-out Lambda must read the three app-client-id parameters");
 
         boolean deletesSessionItem = statementsForRole.stream()
                 .anyMatch(statement -> String.valueOf(statement.get("Action")).contains("dynamodb:DeleteItem"));

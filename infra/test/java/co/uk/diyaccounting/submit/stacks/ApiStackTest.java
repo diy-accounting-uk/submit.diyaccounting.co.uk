@@ -143,7 +143,11 @@ class ApiStackTest {
                         .cloudTrailEnabled("false")
                         .sharedNames(sharedNames)
                         .lambdaFunctions(List.of(
-                                regularRoute, booksPutRoute, booksDeleteRoute, billingCheckoutRoute, sessionSignOutRoute))
+                                regularRoute,
+                                booksPutRoute,
+                                booksDeleteRoute,
+                                billingCheckoutRoute,
+                                sessionSignOutRoute))
                         .userPoolId("eu-west-2_123456789")
                         .userPoolClientId(USER_POOL_CLIENT_ID)
                         .booksUserPoolClientId(BOOKS_USER_POOL_CLIENT_ID)
@@ -194,13 +198,16 @@ class ApiStackTest {
                                 "JwtConfiguration",
                                 Map.of(
                                         "Audience",
-                                        List.of(USER_POOL_CLIENT_ID, BOOKS_USER_POOL_CLIENT_ID, MCP_USER_POOL_CLIENT_ID)))));
+                                        List.of(
+                                                USER_POOL_CLIENT_ID,
+                                                BOOKS_USER_POOL_CLIENT_ID,
+                                                MCP_USER_POOL_CLIENT_ID)))));
         assertEquals(1, allClientsAuthorizers.size(), "expected exactly one all-clients authoriser");
-        String allClientsAuthorizerId = allClientsAuthorizers.keySet().iterator().next();
+        String allClientsAuthorizerId =
+                allClientsAuthorizers.keySet().iterator().next();
 
         var signOutRoutes = template.findResources(
-                "AWS::ApiGatewayV2::Route",
-                Map.of("Properties", Map.of("RouteKey", "POST /api/v1/session/sign-out")));
+                "AWS::ApiGatewayV2::Route", Map.of("Properties", Map.of("RouteKey", "POST /api/v1/session/sign-out")));
         assertEquals(1, signOutRoutes.size());
         assertEquals(
                 allClientsAuthorizerId,
@@ -241,8 +248,7 @@ class ApiStackTest {
         String billingAuthorizerId =
                 refOf(((Map<?, ?>) checkoutRoutes.values().iterator().next()).get("Properties"), "AuthorizerId");
         assertEquals(
-                List.of(USER_POOL_CLIENT_ID, BOOKS_USER_POOL_CLIENT_ID),
-                jwtAudienceOf(template, billingAuthorizerId));
+                List.of(USER_POOL_CLIENT_ID, BOOKS_USER_POOL_CLIENT_ID), jwtAudienceOf(template, billingAuthorizerId));
 
         // Without an mcpUserPoolClientId configured, the all-clients authoriser accepts this
         // same pair of audiences, but it must still be a construct of its own: two routes each
@@ -377,7 +383,8 @@ class ApiStackTest {
         Template template = Template.fromStack(stack);
 
         var optionsRoutes = template.findResources(
-                "AWS::ApiGatewayV2::Route", Map.of("Properties", Map.of("RouteKey", "OPTIONS /api/v1/session/sign-out")));
+                "AWS::ApiGatewayV2::Route",
+                Map.of("Properties", Map.of("RouteKey", "OPTIONS /api/v1/session/sign-out")));
         assertEquals(1, optionsRoutes.size());
 
         @SuppressWarnings("unchecked")

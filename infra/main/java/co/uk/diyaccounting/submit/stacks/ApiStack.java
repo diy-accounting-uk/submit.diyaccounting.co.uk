@@ -344,7 +344,8 @@ public class ApiStack extends Stack {
         // sign-out route is the one route every client must reach, since a token from any of
         // the three clients names a session that route has to end. mcpUserPoolClientId joins
         // the list the same way it joins the books audience above, only when non-blank.
-        var allClientsAudience = new java.util.ArrayList<String>(List.of(props.userPoolClientId(), props.booksUserPoolClientId()));
+        var allClientsAudience =
+                new java.util.ArrayList<String>(List.of(props.userPoolClientId(), props.booksUserPoolClientId()));
         if (props.mcpUserPoolClientId() != null && !props.mcpUserPoolClientId().isBlank()) {
             allClientsAudience.add(props.mcpUserPoolClientId());
         }

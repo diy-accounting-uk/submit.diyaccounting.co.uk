@@ -589,7 +589,8 @@ class SubmitApplicationCdkResourceTest {
 
         var functions = authStackTemplate.findResources("AWS::Lambda::Function").values().stream()
                 .map(resource -> (Map<String, Object>) resource.get("Properties"))
-                .filter(properties -> String.valueOf(properties.get("FunctionName")).equals(functionName))
+                .filter(properties ->
+                        String.valueOf(properties.get("FunctionName")).equals(functionName))
                 .toList();
         org.junit.jupiter.api.Assertions.assertEquals(1, functions.size());
         var environment = (Map<String, Object>) functions.get(0).get("Environment");
