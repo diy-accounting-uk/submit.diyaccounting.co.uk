@@ -368,6 +368,7 @@ public class SubmitApplication {
                         .hmrcSandboxClientId(appProps.hmrcSandboxClientId)
                         .hmrcSandboxClientSecretArn(hmrcSandboxClientSecretArn)
                         .cognitoUserPoolId(cognitoUserPoolId)
+                        .mcpUserPoolClientId(cognitoMcpUserPoolClientId)
                         .build());
 
         // Create the HmrcItsaStack - the ITSA Lambdas added after HmrcStack reached
@@ -389,6 +390,7 @@ public class SubmitApplication {
                         .baseImageTag(baseImageTag)
                         .hmrcBaseUri(appProps.hmrcBaseUri)
                         .hmrcSandboxBaseUri(appProps.hmrcSandboxBaseUri)
+                        .mcpUserPoolClientId(cognitoMcpUserPoolClientId)
                         .build());
 
         // Create the CompaniesHouseStack
@@ -449,6 +451,7 @@ public class SubmitApplication {
                                         ? appProps.hmrcAgentAuthorisationBaseUri
                                         : "")
                         .booksAllowedOrigins(booksAllowedOrigins)
+                        .mcpUserPoolClientId(cognitoMcpUserPoolClientId)
                         .build());
 
         // Create the BillingStack

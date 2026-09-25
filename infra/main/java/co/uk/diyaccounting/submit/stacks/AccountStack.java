@@ -206,6 +206,15 @@ public class AccountStack extends Stack {
             return "";
         }
 
+        // The submission MCP's own client: read by the three practiceClientAuthorisation*
+        // Lambdas' buildFraudHeaders call so an MCP-issued access token answers
+        // DESKTOP_APP_VIA_SERVER instead of WEB_APP_VIA_SERVER. Blank until the deploy wiring
+        // sets it, the same way the other stacks' own mcpUserPoolClientId props start.
+        @Value.Default
+        default String mcpUserPoolClientId() {
+            return "";
+        }
+
         static ImmutableAccountStackProps.Builder builder() {
             return ImmutableAccountStackProps.builder();
         }
@@ -737,6 +746,9 @@ public class AccountStack extends Stack {
         // plus the HMRC call itself.
         var practiceClientAuthorisationLambdaEnv = new PopulatedMap<>(practiceClientsLambdaEnv)
                 .with("HMRC_AGENT_AUTHORISATION_BASE_URI", props.hmrcAgentAuthorisationBaseUri());
+        if (props.mcpUserPoolClientId() != null && !props.mcpUserPoolClientId().isBlank()) {
+            practiceClientAuthorisationLambdaEnv.with("COGNITO_MCP_CLIENT_ID", props.mcpUserPoolClientId());
+        }
 
         var practiceClientAuthorisationInvitePostApiLambda = new ApiLambda(
                 this,

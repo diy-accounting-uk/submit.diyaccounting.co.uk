@@ -599,6 +599,57 @@ class SubmitApplicationCdkResourceTest {
     }
 
     @Test
+    @SetEnvironmentVariable(key = "COGNITO_MCP_CLIENT_ID", value = "tt-witheight-cognito-mcp-client-id")
+    void hmrcStackLambdaCarriesTheMcpClientIdWhenSet() throws IOException {
+        Path cdkJsonPath = Path.of("cdk-application/cdk.json").toAbsolutePath();
+        Map<String, Object> ctx = buildContextPropertyMapFromCdkJsonPath(cdkJsonPath);
+        App app = new App(AppProps.builder().context(ctx).build());
+        SubmitApplication.SubmitApplicationProps appProps = SubmitApplication.loadAppProps(app, "cdk-application/");
+
+        var submitApplication = new SubmitApplication(app, appProps);
+        Template hmrcStackTemplate = Template.fromStack(submitApplication.hmrcStack);
+
+        assertHasEnvironmentVariable(
+                hmrcStackTemplate,
+                submitApplication.hmrcStack.hmrcVatReturnPostLambdaProps.ingestFunctionName(),
+                "COGNITO_MCP_CLIENT_ID");
+    }
+
+    @Test
+    @SetEnvironmentVariable(key = "COGNITO_MCP_CLIENT_ID", value = "tt-witheight-cognito-mcp-client-id")
+    void hmrcItsaStackLambdaCarriesTheMcpClientIdWhenSet() throws IOException {
+        Path cdkJsonPath = Path.of("cdk-application/cdk.json").toAbsolutePath();
+        Map<String, Object> ctx = buildContextPropertyMapFromCdkJsonPath(cdkJsonPath);
+        App app = new App(AppProps.builder().context(ctx).build());
+        SubmitApplication.SubmitApplicationProps appProps = SubmitApplication.loadAppProps(app, "cdk-application/");
+
+        var submitApplication = new SubmitApplication(app, appProps);
+        Template hmrcItsaStackTemplate = Template.fromStack(submitApplication.hmrcItsaStack);
+
+        assertHasEnvironmentVariable(
+                hmrcItsaStackTemplate,
+                submitApplication.hmrcItsaStack.hmrcItsaUkPropertyPeriodPostLambdaProps.ingestFunctionName(),
+                "COGNITO_MCP_CLIENT_ID");
+    }
+
+    @Test
+    @SetEnvironmentVariable(key = "COGNITO_MCP_CLIENT_ID", value = "tt-witheight-cognito-mcp-client-id")
+    void accountStackPracticeClientAuthorisationLambdaCarriesTheMcpClientIdWhenSet() throws IOException {
+        Path cdkJsonPath = Path.of("cdk-application/cdk.json").toAbsolutePath();
+        Map<String, Object> ctx = buildContextPropertyMapFromCdkJsonPath(cdkJsonPath);
+        App app = new App(AppProps.builder().context(ctx).build());
+        SubmitApplication.SubmitApplicationProps appProps = SubmitApplication.loadAppProps(app, "cdk-application/");
+
+        var submitApplication = new SubmitApplication(app, appProps);
+        Template accountStackTemplate = Template.fromStack(submitApplication.accountStack);
+
+        assertHasEnvironmentVariable(
+                accountStackTemplate,
+                submitApplication.accountStack.practiceClientAuthorisationGetLambdaProps.ingestFunctionName(),
+                "COGNITO_MCP_CLIENT_ID");
+    }
+
+    @Test
     @SetEnvironmentVariable.SetEnvironmentVariables({
         @SetEnvironmentVariable(key = "STRIPE_PRICE_ID_RESIDENT_YEAR", value = "price_live_resident_year"),
         @SetEnvironmentVariable(key = "STRIPE_PRICE_ID_RESIDENT_MONTH", value = "price_live_resident_month"),
