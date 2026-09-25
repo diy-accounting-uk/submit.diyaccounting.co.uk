@@ -13,6 +13,8 @@ import co.uk.diyaccounting.submit.stacks.analytics.NightlyIngestionWorkflow;
 import co.uk.diyaccounting.submit.utils.PopulatedMap;
 import co.uk.diyaccounting.submit.utils.SubHashSaltHelper;
 import java.util.List;
+import java.util.Optional;
+import java.util.regex.Pattern;
 import org.immutables.value.Value;
 import software.amazon.awscdk.Duration;
 import software.amazon.awscdk.Environment;
@@ -54,6 +56,12 @@ public class IngestionStack extends Stack {
 
     public final IBucket lakeBucket;
     public final String glueDatabaseName;
+
+    // Matches app/data/s3DiyaGlRepository.js's BOOK_ID_PATTERN and the owner prefix's shape
+    // (subHasher.js's HMAC-SHA256 hex digest).
+    private static final Pattern BOOK_ID_PATTERN =
+            Pattern.compile("^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$");
+    private static final Pattern OWNER_PREFIX_PATTERN = Pattern.compile("^[0-9a-f]{64}$");
 
     @Value.Immutable
     public interface IngestionStackProps extends StackProps, SubmitStackProps {
@@ -155,6 +163,20 @@ public class IngestionStack extends Stack {
         @Value.Default
         default String githubRepo() {
             return "diy-accounting-uk/submit.diyaccounting.co.uk";
+        }
+
+        // The company's own diya-gl book, from the GitHub Environment variables
+        // SUBMIT_COMPANY_BOOK_ID and SUBMIT_COMPANY_BOOK_OWNER_PREFIX. No cdk.json fallback:
+        // unset means no company book pull job and no diya-gl grant. Defaulted to blank so a
+        // caller that has not been updated to pass them yet still compiles.
+        @Value.Default
+        default String companyBookId() {
+            return "";
+        }
+
+        @Value.Default
+        default String companyBookOwnerPrefix() {
+            return "";
         }
 
         // The Google Cloud project number and service account behind infra/google/gcp/identity.toml; the
@@ -579,6 +601,93 @@ public class IngestionStack extends Stack {
                 "Pull yesterday's GitHub Actions runs, issue events and commits into the analytics lake");
 
         // ============================================================================
+        // Company book pull job: DIY Accounting Limited's own resident diya-gl book, read
+        // straight off S3 under its own IAM role. No user identity, no salt, no DynamoDB and no
+        // s3:ListBucket - a missing key returns AccessDenied and the job throws, which is the
+        // failure we want. Created only when both COMPANY_BOOK_ID and COMPANY_BOOK_OWNER_PREFIX
+        // are configured; a malformed value fails synth instead of producing a wildcard grant.
+        // ============================================================================
+        var companyBookId = props.companyBookId();
+        var companyBookOwnerPrefix = props.companyBookOwnerPrefix();
+        var companyBookConfigured = companyBookId != null
+                && !companyBookId.isBlank()
+                && companyBookOwnerPrefix != null
+                && !companyBookOwnerPrefix.isBlank();
+
+        if (companyBookId != null
+                && !companyBookId.isBlank()
+                && !BOOK_ID_PATTERN.matcher(companyBookId).matches()) {
+            throw new IllegalStateException("companyBookId must be a v4 UUID (see SUBMIT_COMPANY_BOOK_ID)");
+        }
+        if (companyBookOwnerPrefix != null
+                && !companyBookOwnerPrefix.isBlank()
+                && !OWNER_PREFIX_PATTERN.matcher(companyBookOwnerPrefix).matches()) {
+            throw new IllegalStateException(
+                    "companyBookOwnerPrefix must be 64 lowercase hex characters (see SUBMIT_COMPANY_BOOK_OWNER_PREFIX)");
+        }
+
+        Function companyBookPullLambda = null;
+        if (companyBookConfigured) {
+            var companyBookPullFunctionName = prefix + "-company-book-pull";
+
+            var companyBookPullEnv = new PopulatedMap<String, String>()
+                    .with("ENVIRONMENT_NAME", props.envName())
+                    .with("ANALYTICS_LAKE_BUCKET_NAME", sharedNames.analyticsLakeBucketName)
+                    .with("DIYA_GL_BUCKET_NAME", sharedNames.diyaGlBucketName)
+                    .with("COMPANY_BOOK_ID", companyBookId)
+                    .with("COMPANY_BOOK_OWNER_PREFIX", companyBookOwnerPrefix);
+
+            IRepository companyBookPullRepository = Repository.fromRepositoryAttributes(
+                    this,
+                    prefix + "-CompanyBookPull-EcrRepo",
+                    RepositoryAttributes.builder()
+                            .repositoryArn(sharedNames.ecrRepositoryArn)
+                            .repositoryName(sharedNames.ecrRepositoryName)
+                            .build());
+
+            // Same exposure as the other jobs above: env-scoped, stable function name - use the
+            // idempotent create-if-missing path, not a plain LogGroup.
+            var companyBookPullLogGroup = ensureLogGroupWithDependency(
+                    this, prefix + "-CompanyBookPullLogGroup", "/aws/lambda/" + companyBookPullFunctionName);
+
+            companyBookPullLambda = DockerImageFunction.Builder.create(this, prefix + "-CompanyBookPullFn")
+                    .functionName(companyBookPullFunctionName)
+                    .code(DockerImageCode.fromEcr(
+                            companyBookPullRepository,
+                            EcrImageCodeProps.builder()
+                                    .tagOrDigest(props.baseImageTag())
+                                    .cmd(List.of("app/functions/analytics/companyBookPull.handler"))
+                                    .build()))
+                    .timeout(Duration.minutes(5))
+                    .memorySize(512)
+                    .architecture(Architecture.ARM_64)
+                    .environment(companyBookPullEnv)
+                    .logGroup(companyBookPullLogGroup.logGroup())
+                    .build();
+            companyBookPullLambda.getNode().addDependency(companyBookPullLogGroup.ensureResource());
+
+            // Only the one book's own prefix, not the whole bucket: no s3:ListBucket either, so
+            // a missing key throws AccessDenied instead of the job silently finding nothing.
+            companyBookPullLambda.addToRolePolicy(PolicyStatement.Builder.create()
+                    .effect(Effect.ALLOW)
+                    .actions(List.of("s3:GetObject"))
+                    .resources(List.of("arn:aws:s3:::%s/users/%s/books/%s/*"
+                            .formatted(sharedNames.diyaGlBucketName, companyBookOwnerPrefix, companyBookId)))
+                    .build());
+            companyBookPullLambda.addToRolePolicy(PolicyStatement.Builder.create()
+                    .effect(Effect.ALLOW)
+                    .actions(List.of("s3:PutObject"))
+                    .resources(List.of(this.lakeBucket.getBucketArn() + "/curated/finance/*"))
+                    .build());
+
+            registerIngestionJob(
+                    "CompanyBookPull",
+                    companyBookPullFunctionName,
+                    companyBookPullLambda,
+                    "Derive the company's FRS 105 balance-sheet lines from its own diya-gl book into the analytics lake");
+        }
+
+        // ============================================================================
         // Nightly orchestration: one Step Functions state machine, one EventBridge Scheduler
         // schedule, replacing the five independent rules and DLQs the jobs used before this
         // machine existed
@@ -605,6 +714,7 @@ public class IngestionStack extends Stack {
                         .ga4EventExportPullLambda(ga4EventExportPullLambda)
                         .ga4DailyPullLambda(ga4DailyPullLambda)
                         .operatorEffortPullLambda(operatorEffortPullLambda)
+                        .companyBookPullLambda(Optional.ofNullable(companyBookPullLambda))
                         .dataQualityRunLambda(dataQualityRunLambda)
                         .metricsPublishLambda(metricsPublishLambda)
                         .rawExportPublishLambda(rawExportPublishLambda)

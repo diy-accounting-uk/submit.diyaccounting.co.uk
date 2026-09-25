@@ -208,6 +208,10 @@ public class SubmitEnvironment {
                 "GITHUB_APP_INSTALLATION_ID",
                 appProps.githubAppInstallationId,
                 "(from githubAppInstallationId in cdk.json)");
+        // The company's own diya-gl book, for IngestionStack's company book pull job. GitHub
+        // Environment variables only, no cdk.json fallback: unset means no job and no grant.
+        var companyBookId = envOr("COMPANY_BOOK_ID", "");
+        var companyBookOwnerPrefix = envOr("COMPANY_BOOK_OWNER_PREFIX", "");
         var scanDetection404PerMinute = Integer.parseInt(envOr(
                 "SCAN_DETECTION_404_PER_MINUTE",
                 appProps.scanDetection404PerMinute == null || appProps.scanDetection404PerMinute.isBlank()
@@ -467,6 +471,8 @@ public class SubmitEnvironment {
                         .ga4BigQueryLocation(ga4BigQueryLocation != null ? ga4BigQueryLocation : "")
                         .githubAppId(githubAppId != null ? githubAppId : "")
                         .githubAppInstallationId(githubAppInstallationId != null ? githubAppInstallationId : "")
+                        .companyBookId(companyBookId != null ? companyBookId : "")
+                        .companyBookOwnerPrefix(companyBookOwnerPrefix != null ? companyBookOwnerPrefix : "")
                         .build());
         this.ingestionStack.addStackDependency(this.analyticsStack);
 

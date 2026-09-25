@@ -6,6 +6,7 @@
 package co.uk.diyaccounting.submit.stacks.analytics;
 
 import java.util.List;
+import java.util.Optional;
 import org.immutables.value.Value;
 import software.amazon.awscdk.Duration;
 import software.amazon.awscdk.RemovalPolicy;
@@ -95,6 +96,13 @@ public class NightlyIngestionWorkflow {
 
         IFunction operatorEffortPullLambda();
 
+        /**
+         * The company book pull job's Lambda, present only when {@code IngestionStack} built it
+         * (both {@code companyBookId} and {@code companyBookOwnerPrefix} configured). Its branch
+         * is added to the parallel state only when this is present.
+         */
+        Optional<IFunction> companyBookPullLambda();
+
         /** Imported by name from {@code AnalyticsStack}: {@code DataQuality.runLambda}. */
         IFunction dataQualityRunLambda();
 
@@ -140,6 +148,9 @@ public class NightlyIngestionWorkflow {
                 prefix + "-Nightly-OperatorEffortPull",
                 "operator effort pull",
                 props.operatorEffortPullLambda()));
+        props.companyBookPullLambda()
+                .ifPresent(companyBookPullLambda -> ingestionParallel.branch(buildTask(
+                        scope, prefix + "-Nightly-CompanyBookPull", "company book pull", companyBookPullLambda)));
 
         var dataQualityTask =
                 buildTask(scope, prefix + "-Nightly-DataQuality", "data quality run", props.dataQualityRunLambda());

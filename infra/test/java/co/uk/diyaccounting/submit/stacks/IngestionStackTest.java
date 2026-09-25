@@ -117,6 +117,38 @@ class IngestionStackTest {
                 app, "TestIngestionStack-githubapp-" + (githubAppId == null ? "unset" : "set"), builder.build());
     }
 
+    private static final String COMPANY_BOOK_ID = "11111111-2222-4333-8444-555555555555";
+    private static final String COMPANY_BOOK_OWNER_PREFIX = "a".repeat(64);
+
+    private static IngestionStack synthIngestionStackWithCompanyBook(
+            String testId, String companyBookId, String companyBookOwnerPrefix) {
+        App app = new App();
+        SubmitSharedNames sharedNames = SubmitSharedNames.forDocs();
+
+        var builder = IngestionStack.IngestionStackProps.builder()
+                .env(Environment.builder()
+                        .account("111111111111")
+                        .region("eu-west-2")
+                        .build())
+                .crossRegionReferences(false)
+                .envName("docs")
+                .deploymentName("docs")
+                .resourceNamePrefix(sharedNames.envResourceNamePrefix)
+                .cloudTrailEnabled("false")
+                .sharedNames(sharedNames)
+                .baseImageTag("latest")
+                .ga4PropertyId("999000111")
+                .ga4BigQueryProjectId("docs-ga4");
+        if (companyBookId != null) {
+            builder.companyBookId(companyBookId);
+        }
+        if (companyBookOwnerPrefix != null) {
+            builder.companyBookOwnerPrefix(companyBookOwnerPrefix);
+        }
+
+        return new IngestionStack(app, "TestIngestionStack-companybook-" + testId, builder.build());
+    }
+
     @Test
     void stackWiresTheStripeAndBothGa4JobsByDefault() {
         IngestionStack ingestionStack = synthIngestionStack();
@@ -497,5 +529,136 @@ class IngestionStackTest {
                 "AWS::Lambda::Function", Map.of("Properties", Map.of("FunctionName", "docs-env-ga4-report-pull")));
         var env = environmentVariablesOf(reportPull);
         assertTrue(((String) env.get("GOOGLE_WIF_AUDIENCE")).endsWith("/providers/aws-docs"));
+    }
+
+    @Test
+    void companyBookPullJobAndDiyaGlGrantExistOnlyWhenBothValuesAreConfigured() {
+        Template unconfigured = Template.fromStack(synthIngestionStackWithCompanyBook("unconfigured", null, null));
+
+        unconfigured.resourceCountIs("AWS::Lambda::Function", 6);
+        assertEquals(
+                0,
+                unconfigured
+                        .findResources(
+                                "AWS::Lambda::Function",
+                                Map.of("Properties", Map.of("FunctionName", "docs-env-company-book-pull")))
+                        .size());
+        assertEquals(0, actionResources(unconfigured, "s3:GetObject").size());
+
+        var definitionText = joinedDefinitionString(unconfigured);
+        assertFalse(
+                definitionText.contains("\"company book pull\":{"),
+                "the unconfigured workflow should keep its five parallel branches, no sixth");
+
+        Template configured = Template.fromStack(
+                synthIngestionStackWithCompanyBook("configured", COMPANY_BOOK_ID, COMPANY_BOOK_OWNER_PREFIX));
+
+        configured.resourceCountIs("AWS::Lambda::Function", 7);
+        assertEquals(
+                1,
+                configured
+                        .findResources(
+                                "AWS::Lambda::Function",
+                                Map.of("Properties", Map.of("FunctionName", "docs-env-company-book-pull")))
+                        .size());
+        assertTrue(
+                joinedDefinitionString(configured).contains("\"company book pull\":{"),
+                "the configured workflow should carry a sixth branch for the company book pull job");
+    }
+
+    @Test
+    void companyBookPullCanOnlyGetItsOwnBookPrefixAndPutObjectsUnderCuratedFinance() {
+        Template template = Template.fromStack(
+                synthIngestionStackWithCompanyBook("scoped", COMPANY_BOOK_ID, COMPANY_BOOK_OWNER_PREFIX));
+
+        var getObjectResources = actionResources(template, "s3:GetObject");
+        assertEquals(
+                List.of("arn:aws:s3:::docs-env-diya-gl-111111111111/users/" + COMPANY_BOOK_OWNER_PREFIX + "/books/"
+                        + COMPANY_BOOK_ID + "/*"),
+                getObjectResources);
+
+        var putObjectResources = actionResources(template, "s3:PutObject");
+        assertTrue(
+                putObjectResources.stream().anyMatch(resource -> resource.endsWith("/curated/finance/*")),
+                "expected an s3:PutObject statement scoped to .../curated/finance/*: " + putObjectResources);
+    }
+
+    @Test
+    void companyBookPullFunctionGetsNoListBucketAndNoSecretGrant() {
+        Template template = Template.fromStack(
+                synthIngestionStackWithCompanyBook("noextras", COMPANY_BOOK_ID, COMPANY_BOOK_OWNER_PREFIX));
+
+        assertEquals(0, actionResources(template, "s3:ListBucket").size());
+        assertTrue(
+                actionResources(template, "secretsmanager:GetSecretValue").stream()
+                        .noneMatch(resource -> resource.contains("diya-gl")),
+                "the company book pull job's role should carry no secret grant");
+    }
+
+    @Test
+    void malformedCompanyBookIdOrOwnerPrefixFailsSynth() {
+        assertThrows(
+                IllegalStateException.class,
+                () -> synthIngestionStackWithCompanyBook("bad-id", "not-a-uuid", COMPANY_BOOK_OWNER_PREFIX),
+                "a malformed companyBookId must fail synth, not silently produce a wrong grant");
+        assertThrows(
+                IllegalStateException.class,
+                () -> synthIngestionStackWithCompanyBook("bad-prefix", COMPANY_BOOK_ID, "TOO-SHORT"),
+                "a malformed companyBookOwnerPrefix must fail synth, not silently produce a wrong grant");
+    }
+
+    @SuppressWarnings("unchecked")
+    private static List<String> actionResources(Template template, String action) {
+        var policies = template.findResources("AWS::IAM::Policy");
+        return policies.values().stream()
+                .map(policy -> (Map<String, Object>) policy.get("Properties"))
+                .map(properties -> (Map<String, Object>) properties.get("PolicyDocument"))
+                .flatMap(document -> ((List<Map<String, Object>>) document.get("Statement")).stream())
+                .filter(statement -> action.equals(statement.get("Action")))
+                .map(statement -> resourceAsString(statement.get("Resource")))
+                .filter(resource -> resource != null)
+                .toList();
+    }
+
+    @SuppressWarnings("unchecked")
+    private static String resourceAsString(Object resource) {
+        if (resource instanceof String s) {
+            return s;
+        }
+        if (resource instanceof Map<?, ?> map) {
+            var join = (List<Object>) map.get("Fn::Join");
+            if (join == null || join.size() < 2) return null;
+            var parts = (List<Object>) join.get(1);
+            var builder = new StringBuilder();
+            for (Object part : parts) {
+                if (part instanceof String s) {
+                    builder.append(s);
+                }
+            }
+            return builder.toString();
+        }
+        return null;
+    }
+
+    @SuppressWarnings("unchecked")
+    private static String joinedDefinitionString(Template template) {
+        var stateMachines = template.findResources("AWS::StepFunctions::StateMachine");
+        assertEquals(1, stateMachines.size());
+        var resource = stateMachines.values().iterator().next();
+        var properties = (Map<String, Object>) resource.get("Properties");
+        var definitionString = properties.get("DefinitionString");
+        if (definitionString instanceof String s) {
+            return s;
+        }
+        var join = (Map<String, Object>) definitionString;
+        var parts = (List<Object>) join.get("Fn::Join");
+        var pieces = (List<Object>) parts.get(1);
+        var builder = new StringBuilder();
+        for (Object piece : pieces) {
+            if (piece instanceof String s) {
+                builder.append(s);
+            }
+        }
+        return builder.toString();
     }
 }
