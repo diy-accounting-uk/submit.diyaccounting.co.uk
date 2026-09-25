@@ -41,6 +41,7 @@ import {
 } from "./steps/behaviour-hmrc-itsa-steps.js";
 import {
   acceptCookiesHmrc,
+  completeHmrcReauthIfPresented,
   fillInHmrcAuth,
   goToHmrcAuth,
   grantPermissionHmrcAuth,
@@ -280,6 +281,9 @@ test("Click through: Load and save ITSA Losses and Claims with HMRC", async ({ p
     screenshotPath,
   );
   await submitItsaLossesLoadForm(page, screenshotPath);
+  // Losses and Claims needs write:self-assessment; Business Details above only granted
+  // read:self-assessment, so the Load click just cleared that token and asked HMRC for a wider one.
+  await completeHmrcReauthIfPresented(page, testUsername, testPassword, screenshotPath);
   await verifyItsaLossesLoadResults(page, screenshotPath);
 
   await fillInItsaLossesEdits(page, { currentYearLosses: 1000 }, screenshotPath);

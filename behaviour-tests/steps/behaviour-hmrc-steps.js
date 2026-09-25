@@ -115,3 +115,30 @@ export async function grantPermissionHmrcAuth(page, screenshotPath = defaultScre
     await page.screenshot({ path: `${screenshotPath}/${timestamp()}-03-give-permission-hmrc-auth.png` });
   });
 }
+
+/**
+ * Walk a second HMRC consent if the click just before this landed on one.
+ *
+ * The catalogue grants each ITSA page only the scopes its own activity needs
+ * (web/public/submit.catalogue.toml), so a read-only page like Business Details carries a token
+ * that a write page (Annual Submission, Losses and Claims, a quarterly update, Final
+ * Declaration) finds insufficient on its first submit. The app then clears that token and
+ * redirects to HMRC for a wider grant - the same full walk the suite already made once for the
+ * read-only page, requiring credentials again because this is a new authorization request, not a
+ * refresh of the old one. A page that already holds a sufficient token makes no such redirect, so
+ * this is a no-op then.
+ */
+export async function completeHmrcReauthIfPresented(page, hmrcTestUsername, hmrcTestPassword, screenshotPath = defaultScreenshotPath) {
+  await test.step("If the last click needed a wider HMRC grant, walk through it again", async () => {
+    const continueButton = page.getByRole("button", { name: "Continue" });
+    if (!(await continueButton.isVisible().catch(() => false))) {
+      return;
+    }
+    await acceptCookiesHmrc(page, screenshotPath);
+    await goToHmrcAuth(page, screenshotPath);
+    await initHmrcAuth(page, screenshotPath);
+    await fillInHmrcAuth(page, hmrcTestUsername, hmrcTestPassword, screenshotPath);
+    await submitHmrcAuth(page, screenshotPath);
+    await grantPermissionHmrcAuth(page, screenshotPath);
+  });
+}
