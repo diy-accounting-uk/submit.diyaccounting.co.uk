@@ -280,6 +280,29 @@ class ApiStackTest {
     }
 
     @Test
+    void aRegularRouteAcceptsEitherTheMainOrTheMcpClientOnceAnMcpClientIdIsConfigured() {
+        ApiStack stack = synthApiStack(MCP_USER_POOL_CLIENT_ID);
+        Template template = Template.fromStack(stack);
+
+        var mainAuthorizers = template.findResources(
+                "AWS::ApiGatewayV2::Authorizer",
+                Map.of(
+                        "Properties",
+                        Map.of(
+                                "JwtConfiguration",
+                                Map.of("Audience", List.of(USER_POOL_CLIENT_ID, MCP_USER_POOL_CLIENT_ID)))));
+        assertEquals(1, mainAuthorizers.size(), "expected exactly one main authoriser accepting both audiences");
+        String mainAuthorizerId = mainAuthorizers.keySet().iterator().next();
+
+        var regularRoutes = template.findResources(
+                "AWS::ApiGatewayV2::Route", Map.of("Properties", Map.of("RouteKey", "GET /api/v1/regular")));
+        assertEquals(1, regularRoutes.size());
+        assertEquals(
+                mainAuthorizerId,
+                refOf(((Map<?, ?>) regularRoutes.values().iterator().next()).get("Properties"), "AuthorizerId"));
+    }
+
+    @Test
     void theHttpApiCarriesCorsForAnAllowListedOriginSoAnAuthoriserRejection401AlsoGetsIt() {
         ApiStack stack = synthApiStack();
         Template template = Template.fromStack(stack);

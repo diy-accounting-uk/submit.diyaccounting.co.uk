@@ -302,9 +302,19 @@ public class ApiStack extends Stack {
 
         // Create authorizers to selectively apply to routes
         String issuer = "https://cognito-idp.%s.amazonaws.com/%s".formatted(getRegion(), props.userPoolId());
+        // The submission MCP's own client reaches the same VAT and Companies House routes the
+        // Submit web client reaches, for the same signed-in user (route-level authorisation
+        // keys off sub, never off which client issued the token) -- so its audience joins this
+        // authoriser's own rather than getting a separate one, the same pattern
+        // cloudBookAudience below uses. Blank until the deploy wiring sets mcpUserPoolClientId,
+        // so an unset value changes nothing here.
+        var mainAudience = new java.util.ArrayList<String>(List.of(props.userPoolClientId()));
+        if (props.mcpUserPoolClientId() != null && !props.mcpUserPoolClientId().isBlank()) {
+            mainAudience.add(props.mcpUserPoolClientId());
+        }
         HttpJwtAuthorizer jwtAuthorizer = HttpJwtAuthorizer.Builder.create(
                         props.resourceNamePrefix() + "-CognitoAuthorizer", issuer)
-                .jwtAudience(List.of(props.userPoolClientId()))
+                .jwtAudience(mainAudience)
                 .build();
 
         // Same user pool, same issuer, but a books-client-scoped audience: a books token must
