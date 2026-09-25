@@ -96,6 +96,10 @@ public class AccountStack extends Stack {
     public Function interestPostLambda;
     public ILogGroup interestPostLambdaLogGroup;
 
+    public AbstractApiLambdaProps activityStartedPostLambdaProps;
+    public Function activityStartedPostLambda;
+    public ILogGroup activityStartedPostLambdaLogGroup;
+
     public AbstractApiLambdaProps passGetLambdaProps;
     public Function passGetLambda;
     public ILogGroup passGetLambdaLogGroup;
@@ -1003,6 +1007,68 @@ public class AccountStack extends Stack {
         } else {
             infof("Skipping Feedback Engagement Lambda - feedbackEngagementEnabled is false");
         }
+
+        // ============================================================================
+        // Activity Started POST Lambda (JWT auth - an activity's primary button was clicked)
+        // ============================================================================
+        var activityStartedPostLambdaEnv = new PopulatedMap<String, String>()
+                .with("ACTIVITY_BUS_NAME", props.sharedNames().activityBusName)
+                .with("ENVIRONMENT_NAME", props.envName());
+        var activityStartedPostApiLambda = new ApiLambda(
+                this,
+                ApiLambdaProps.builder()
+                        .idPrefix(props.sharedNames().activityStartedPostIngestLambdaFunctionName)
+                        .baseImageTag(props.baseImageTag())
+                        .ecrRepositoryName(props.sharedNames().ecrRepositoryName)
+                        .ecrRepositoryArn(props.sharedNames().ecrRepositoryArn)
+                        .ingestFunctionName(props.sharedNames().activityStartedPostIngestLambdaFunctionName)
+                        .ingestHandler(props.sharedNames().activityStartedPostIngestLambdaHandler)
+                        .ingestLambdaArn(props.sharedNames().activityStartedPostIngestLambdaArn)
+                        .ingestProvisionedConcurrencyAliasArn(
+                                props.sharedNames().activityStartedPostIngestProvisionedConcurrencyLambdaAliasArn)
+                        .ingestProvisionedConcurrency(0)
+                        .provisionedConcurrencyAliasName(props.sharedNames().provisionedConcurrencyAliasName)
+                        .httpMethod(props.sharedNames().activityStartedPostLambdaHttpMethod)
+                        .urlPath(props.sharedNames().activityStartedPostLambdaUrlPath)
+                        .jwtAuthorizer(props.sharedNames().activityStartedPostLambdaJwtAuthorizer)
+                        .customAuthorizer(props.sharedNames().activityStartedPostLambdaCustomAuthorizer)
+                        .environment(activityStartedPostLambdaEnv)
+                        .build());
+        healthCheckedFunctions.add(activityStartedPostApiLambda);
+        this.activityStartedPostLambdaProps = activityStartedPostApiLambda.apiProps;
+        this.activityStartedPostLambda = activityStartedPostApiLambda.ingestLambda;
+        this.activityStartedPostLambdaLogGroup = activityStartedPostApiLambda.logGroup;
+        this.lambdaFunctionProps.add(this.activityStartedPostLambdaProps);
+
+        // Read the three app-client-id parameters IdentityStack writes, to map the caller's
+        // verified client id to "submit", "books" or "mcp" (app/lib/appClientResolver.js), the
+        // same read the sign-out route grants itself.
+        this.activityStartedPostLambda.addToRolePolicy(PolicyStatement.Builder.create()
+                .sid("ReadAppClientIdParameters")
+                .effect(Effect.ALLOW)
+                .actions(List.of("ssm:GetParameter"))
+                .resources(List.of(
+                        "arn:aws:ssm:%s:%s:parameter/submit/%s/submit-app-client-id"
+                                .formatted(region, account, props.envName()),
+                        "arn:aws:ssm:%s:%s:parameter/submit/%s/spreadsheets-diya-gl-app-client-id"
+                                .formatted(region, account, props.envName()),
+                        "arn:aws:ssm:%s:%s:parameter/submit/%s/mcp-app-client-id"
+                                .formatted(region, account, props.envName())))
+                .build());
+
+        SubHashSaltHelper.grantSaltAccess(this.activityStartedPostLambda, region, account, props.envName());
+
+        this.activityStartedPostLambda.addToRolePolicy(PolicyStatement.Builder.create()
+                .effect(Effect.ALLOW)
+                .actions(List.of("events:PutEvents"))
+                .resources(List.of(activityBusArn))
+                .build());
+
+        infof(
+                "Created Activity Started POST Lambda %s",
+                this.activityStartedPostLambda.getNode().getId());
+
+        cfnOutput(this, "ActivityStartedPostLambdaArn", this.activityStartedPostLambda.getFunctionArn());
 
         // ============================================================================
         // Pass GET Lambda (public, no auth)

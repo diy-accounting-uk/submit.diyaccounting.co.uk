@@ -268,6 +268,38 @@ function bootstrapRumConfigFromMeta() {
   }
 }
 
+// Fires "activity-started" for the operator dashboard's started/completed table
+// (activityStartedPost.js) when an activity's primary button is clicked. Listens at the
+// document level (delegated, not per-button) so a page's own JS never needs to wire this up.
+// Fire-and-forget, keepalive: this must never delay or block the button's own click handler --
+// a previous change elsewhere in this app awaited a fetch before navigating and hung headless
+// Chrome, so this neither awaits the fetch nor calls preventDefault.
+function handleActivityStartClick(event) {
+  const target = event.target && event.target.closest ? event.target.closest("[data-activity-start]") : null;
+  if (!target) return;
+  const activityId = target.getAttribute("data-activity-start");
+  if (!activityId) return;
+
+  let accessToken;
+  try {
+    accessToken = localStorage.getItem("cognitoAccessToken");
+  } catch (error) {
+    console.warn("Failed to read access token for activity-started beacon:", error);
+    return;
+  }
+  if (!accessToken) return;
+
+  fetch("/api/v1/activity/started", {
+    method: "POST",
+    headers: { "Content-Type": "application/json", "Authorization": "Bearer " + accessToken },
+    body: JSON.stringify({ activityId }),
+    keepalive: true,
+  }).catch(() => {
+    // Best-effort: an activity-started beacon failure (offline, ad blockers) never blocks the
+    // button's own action.
+  });
+}
+
 function ensurePrivacyLink() {
   const anchors = Array.from(document.querySelectorAll('footer a[href$="privacy.html"]'));
   if (anchors.length) return;
@@ -282,6 +314,7 @@ function ensurePrivacyLink() {
 
 // Wire up on load
 if (typeof window !== "undefined" && typeof document !== "undefined") {
+  document.addEventListener("click", handleActivityStartClick);
   if (document.readyState === "loading") {
     document.addEventListener("DOMContentLoaded", () => {
       ensurePrivacyLink();
