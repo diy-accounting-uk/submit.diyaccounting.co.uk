@@ -3,7 +3,7 @@
 
 import { describe, test, expect } from "vitest";
 
-import { resolveAlarmEvidence, extractCompositeChildFunctionNames } from "@app/lib/alarmEvidence.js";
+import { resolveAlarmEvidence, extractCompositeChildFunctionNames, extractCompositeChildAlarms } from "@app/lib/alarmEvidence.js";
 import { alarmFamilyKey } from "@app/lib/alarmName.js";
 
 describe("resolveAlarmEvidence", () => {
@@ -280,6 +280,57 @@ describe("resolveAlarmEvidence", () => {
     ]);
   });
 
+  test("rule 14: a duplicated child function name (one alarm per suffix) is deduped to one log group prefix", () => {
+    const evidence = resolveAlarmEvidence({
+      alarmName: "prod-env-activity-stack-health",
+      familyKey: alarmFamilyKey("prod-env-activity-stack-health"),
+      env: "prod",
+      deployment: "prod-d9ef3c9",
+      namespace: null,
+      metricName: null,
+      dimensions: {},
+      compositeChildFunctionNames: [
+        "prod-env-activity-telegram-forwarder",
+        "prod-env-activity-telegram-forwarder",
+        "prod-env-sign-in-activity-publish",
+        "prod-env-sign-in-activity-publish",
+      ],
+    });
+
+    expect(evidence.ruleId).toBe(14);
+    expect(evidence.logGroupNamePrefixes).toEqual([
+      "/aws/lambda/prod-env-activity-telegram-forwarder",
+      "/aws/lambda/prod-env-sign-in-activity-publish",
+    ]);
+    expect(evidence.triggeringLogGroupNamePrefixes).toEqual([]);
+  });
+
+  test("rule 14: the triggering child's log group is named first and marked in triggeringLogGroupNamePrefixes", () => {
+    const evidence = resolveAlarmEvidence({
+      alarmName: "prod-env-activity-stack-health",
+      familyKey: alarmFamilyKey("prod-env-activity-stack-health"),
+      env: "prod",
+      deployment: "prod-d9ef3c9",
+      namespace: null,
+      metricName: null,
+      dimensions: {},
+      compositeChildFunctionNames: [
+        "prod-env-activity-telegram-forwarder",
+        "prod-env-activity-telegram-forwarder",
+        "prod-env-sign-in-activity-publish",
+        "prod-env-sign-in-activity-publish",
+      ],
+      triggeringChildFunctionNames: ["prod-env-sign-in-activity-publish"],
+    });
+
+    expect(evidence.logGroupNamePrefixes).toEqual([
+      "/aws/lambda/prod-env-sign-in-activity-publish",
+      "/aws/lambda/prod-env-activity-telegram-forwarder",
+    ]);
+    expect(evidence.triggeringLogGroupNamePrefixes).toEqual(["/aws/lambda/prod-env-sign-in-activity-publish"]);
+    expect(evidence.insightsQuery).toMatch(/^SOURCE logGroups\(namePrefix: \['\/aws\/lambda\/prod-env-sign-in-activity-publish'/);
+  });
+
   test("the same composite alarm with an empty child list widens to rule 15's deployment prefix and sets noEvidenceReason", () => {
     const evidence = resolveAlarmEvidence({
       alarmName: "prod-0f68ed8-app-hmrc-stack-health",
@@ -372,5 +423,33 @@ describe("extractCompositeChildFunctionNames", () => {
   test("returns [] for an empty or missing AlarmRule", () => {
     expect(extractCompositeChildFunctionNames("")).toEqual([]);
     expect(extractCompositeChildFunctionNames(undefined)).toEqual([]);
+  });
+});
+
+describe("extractCompositeChildAlarms", () => {
+  test("pairs each child's own alarm name with the function name behind it", () => {
+    const alarmRule =
+      'ALARM("arn:aws:cloudwatch:eu-west-2:367191799875:alarm:check-prod-0f68ed8-app-hmrc-vat-return-post-errors") ' +
+      'OR ALARM("arn:aws:cloudwatch:eu-west-2:367191799875:alarm:check-prod-0f68ed8-app-hmrc-vat-return-post-log-errors")';
+
+    expect(extractCompositeChildAlarms(alarmRule)).toEqual([
+      { alarmName: "check-prod-0f68ed8-app-hmrc-vat-return-post-errors", functionName: "prod-0f68ed8-app-hmrc-vat-return-post" },
+      { alarmName: "check-prod-0f68ed8-app-hmrc-vat-return-post-log-errors", functionName: "prod-0f68ed8-app-hmrc-vat-return-post" },
+    ]);
+  });
+
+  test("drops a -not-empty or -message-age child, because a queue is not a log group", () => {
+    const alarmRule =
+      'ALARM("arn:aws:cloudwatch:eu-west-2:367191799875:alarm:check-prod-0f68ed8-app-hmrc-vat-return-post-errors") ' +
+      'OR ALARM("arn:aws:cloudwatch:eu-west-2:367191799875:alarm:check-prod-0f68ed8-app-hmrc-vat-return-post-async-queue-not-empty")';
+
+    expect(extractCompositeChildAlarms(alarmRule)).toEqual([
+      { alarmName: "check-prod-0f68ed8-app-hmrc-vat-return-post-errors", functionName: "prod-0f68ed8-app-hmrc-vat-return-post" },
+    ]);
+  });
+
+  test("returns [] for an empty or missing AlarmRule", () => {
+    expect(extractCompositeChildAlarms("")).toEqual([]);
+    expect(extractCompositeChildAlarms(undefined)).toEqual([]);
   });
 });

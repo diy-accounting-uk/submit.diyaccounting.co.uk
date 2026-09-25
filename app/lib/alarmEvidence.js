@@ -38,20 +38,30 @@ const CLOUDTRAIL_EVENT_NAMES = {
 };
 
 /**
- * Extract the Lambda function names behind a composite alarm from its raw
- * AlarmRule string (CompositeAlarms[0].AlarmRule from DescribeAlarms). A
- * queue or DLQ capture ("-not-empty", "-message-age") is dropped: it names
+ * Extract the child alarms behind a composite alarm from its raw AlarmRule
+ * string (CompositeAlarms[0].AlarmRule from DescribeAlarms): each child's
+ * own alarm name alongside the Lambda function name behind it, so a caller
+ * can query each child's current state to find which one actually alarmed.
+ * A queue or DLQ capture ("-not-empty", "-message-age") is dropped: it names
  * a resource with no Lambda log group.
  */
-export function extractCompositeChildFunctionNames(alarmRule) {
+export function extractCompositeChildAlarms(alarmRule) {
   if (!alarmRule) return [];
-  const names = [];
+  const children = [];
   for (const match of alarmRule.matchAll(COMPOSITE_CHILD_PATTERN)) {
     const [, functionName, suffix] = match;
     if (LOG_GROUP_QUEUE_SUFFIXES.has(suffix)) continue;
-    names.push(functionName);
+    children.push({ alarmName: `check-${functionName}-${suffix}`, functionName });
   }
-  return names;
+  return children;
+}
+
+/**
+ * The Lambda function names behind a composite alarm's children. See
+ * extractCompositeChildAlarms for the child alarm names themselves.
+ */
+export function extractCompositeChildFunctionNames(alarmRule) {
+  return extractCompositeChildAlarms(alarmRule).map((child) => child.functionName);
 }
 
 function parseFamilyParts(familyKey) {
@@ -335,10 +345,20 @@ export function resolveAlarmEvidence({
   metricName,
   dimensions,
   compositeChildFunctionNames,
+  triggeringChildFunctionNames,
 }) {
   const familyParts = parseFamilyParts(familyKey);
-  const safeChildNames = Array.isArray(compositeChildFunctionNames) ? compositeChildFunctionNames : [];
-  const compositeWidened = Boolean(familyParts?.suffix.endsWith("-stack-health")) && safeChildNames.length === 0;
+  const rawChildNames = Array.isArray(compositeChildFunctionNames) ? compositeChildFunctionNames : [];
+  const rawTriggeringNames = Array.isArray(triggeringChildFunctionNames) ? triggeringChildFunctionNames : [];
+  const compositeWidened = Boolean(familyParts?.suffix.endsWith("-stack-health")) && rawChildNames.length === 0;
+
+  // A composite ORs several "check-" alarms together (one per suffix a function carries, e.g.
+  // both "-errors" and "-log-errors"), so the same function name can appear more than once and
+  // only the child(ren) actually in ALARM caused the composite to fire. Dedupe here, with any
+  // confirmed-triggering name first, so rule 14's log group prefixes and Insights query name the
+  // right function first and never repeat a log group.
+  const triggeringNamesPresent = rawTriggeringNames.filter((name) => rawChildNames.includes(name));
+  const safeChildNames = [...new Set([...triggeringNamesPresent, ...rawChildNames])];
 
   const ctx = {
     alarmName,
@@ -350,6 +370,7 @@ export function resolveAlarmEvidence({
     metricName: metricName || null,
     dimensions: dimensions || {},
     compositeChildFunctionNames: safeChildNames,
+    triggeringChildFunctionNames: [...new Set(triggeringNamesPresent)],
     compositeWidened,
   };
 
@@ -357,6 +378,7 @@ export function resolveAlarmEvidence({
   const built = rule.build(ctx);
 
   const logGroupNamePrefixes = built.logGroupNamePrefixes || [];
+  const triggeringLogGroupNamePrefixes = ctx.triggeringChildFunctionNames.map((name) => `/aws/lambda/${name}`);
   let noEvidenceReason;
   if (built.noEvidenceReason !== undefined) {
     noEvidenceReason = built.noEvidenceReason;
@@ -369,6 +391,7 @@ export function resolveAlarmEvidence({
   return {
     ruleId: rule.id,
     logGroupNamePrefixes,
+    triggeringLogGroupNamePrefixes,
     tableNames: built.tableNames || [],
     xrayFilterExpression: built.xrayFilterExpression || null,
     insightsQuery: built.insightsQuery || null,
