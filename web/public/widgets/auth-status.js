@@ -186,11 +186,16 @@
     }
   }
 
-  // End the session server-side before the tokens are cleared: revoke the refresh token
-  // (Cognito's /oauth2/revoke, so a copied refresh token stops working) and tell the
-  // authenticated sign-out route to publish "logout" and delete the session item. Both are
-  // keepalive fetches, not navigator.sendBeacon, because sendBeacon carries no custom
-  // headers and the sign-out route needs the caller's Authorization header.
+  // End the session server-side: revoke the refresh token (Cognito's /oauth2/revoke, so a
+  // copied refresh token stops working) and tell the authenticated sign-out route to publish
+  // "logout" and delete the session item. Both are keepalive fetches, not navigator.sendBeacon,
+  // because sendBeacon carries no custom headers and the sign-out route needs the caller's
+  // Authorization header. The fetch calls are started here but not awaited to completion --
+  // only awaited to *being sent* (env lookup, then the synchronous fetch() call that puts the
+  // request in flight). logout() below awaits this function so both requests are in flight
+  // before it returns, then relies on keepalive to carry them through the reload/redirect that
+  // follows; awaiting a fetch's response there instead stalls that navigation for no benefit,
+  // since keepalive already guarantees delivery survives the page going away.
   async function revokeAndSignOut() {
     let env;
     try {
@@ -201,29 +206,25 @@
 
     const refreshToken = localStorage.getItem("cognitoRefreshToken");
     if (refreshToken && env.COGNITO_BASE_URI && env.COGNITO_CLIENT_ID) {
-      try {
-        await fetch(env.COGNITO_BASE_URI.replace(/\/$/, "") + "/oauth2/revoke", {
-          method: "POST",
-          headers: { "Content-Type": "application/x-www-form-urlencoded" },
-          body: "token=" + encodeURIComponent(refreshToken) + "&client_id=" + encodeURIComponent(env.COGNITO_CLIENT_ID),
-          keepalive: true,
-        });
-      } catch {
+      fetch(env.COGNITO_BASE_URI.replace(/\/$/, "") + "/oauth2/revoke", {
+        method: "POST",
+        headers: { "Content-Type": "application/x-www-form-urlencoded" },
+        body: "token=" + encodeURIComponent(refreshToken) + "&client_id=" + encodeURIComponent(env.COGNITO_CLIENT_ID),
+        keepalive: true,
+      }).catch(() => {
         // revoke failures are expected (offline, ad blockers) -- local sign-out still proceeds
-      }
+      });
     }
 
     const accessToken = localStorage.getItem("cognitoAccessToken");
     if (accessToken) {
-      try {
-        await fetch("/api/v1/session/sign-out", {
-          method: "POST",
-          headers: { Authorization: "Bearer " + accessToken },
-          keepalive: true,
-        });
-      } catch {
+      fetch("/api/v1/session/sign-out", {
+        method: "POST",
+        headers: { Authorization: "Bearer " + accessToken },
+        keepalive: true,
+      }).catch(() => {
         // sign-out failures are expected (offline, ad blockers) -- local sign-out still proceeds
-      }
+      });
     }
 
     if (typeof gtag === "function") {
