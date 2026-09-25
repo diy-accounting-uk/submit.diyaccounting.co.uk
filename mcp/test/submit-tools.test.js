@@ -11,6 +11,11 @@ import { fileURLToPath } from "node:url";
 
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
+vi.mock("../lib/auth.js", () => ({
+  accessToken: vi.fn().mockResolvedValue("session-access-token"),
+  idToken: vi.fn().mockResolvedValue("session-id-token"),
+}));
+
 import {
   listVatObligations,
   submitVatReturn,
@@ -99,12 +104,10 @@ const CONFIRMATION_STATEMENT_PARAMS = {
 describe("submit-tools", () => {
   beforeEach(() => {
     process.env.DIYA_SUBMIT_BASE_URL = "https://submit.diyaccounting.co.uk/";
-    process.env.DIYA_SUBMIT_ACCESS_TOKEN = "session-access-token";
   });
 
   afterEach(() => {
     delete process.env.DIYA_SUBMIT_BASE_URL;
-    delete process.env.DIYA_SUBMIT_ACCESS_TOKEN;
     vi.unstubAllGlobals();
     vi.useRealTimers();
   });
@@ -121,6 +124,7 @@ describe("submit-tools", () => {
       expect(url).toBe(`https://submit.diyaccounting.co.uk/api/v1/hmrc/vat/obligation?vrn=${VRN}&status=O`);
       expect(init.headers["X-Authorization"]).toBe("Bearer session-access-token");
       expect(init.headers["Authorization"]).toBe(`Bearer ${HMRC_ACCESS_TOKEN}`);
+      expect(init.headers["X-Id-Token"]).toBe("session-id-token");
       expect(init.headers["x-initial-request"]).toBe("true");
     });
 
@@ -233,6 +237,7 @@ describe("submit-tools", () => {
       expect(init.method).toBe("POST");
       expect(init.headers["X-Authorization"]).toBe("Bearer session-access-token");
       expect(init.headers["Authorization"]).toBeUndefined();
+      expect(init.headers["X-Id-Token"]).toBe("session-id-token");
       const body = JSON.parse(init.body);
       expect(body.accessToken).toBe(HMRC_ACCESS_TOKEN);
       expect(body.vatNumber).toBe(VRN);

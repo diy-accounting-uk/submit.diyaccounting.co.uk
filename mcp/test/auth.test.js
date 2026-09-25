@@ -229,9 +229,7 @@ describe("auth", () => {
           accessTokenExpiresAt: Date.now() + 1000,
         }),
       );
-      const mockFetch = vi
-        .fn()
-        .mockResolvedValueOnce(jsonResponse(200, { access_token: "fresh-access-token", expires_in: 3600 }));
+      const mockFetch = vi.fn().mockResolvedValueOnce(jsonResponse(200, { access_token: "fresh-access-token", expires_in: 3600 }));
       vi.stubGlobal("fetch", mockFetch);
 
       const token = await accessToken();
@@ -276,10 +274,7 @@ describe("auth", () => {
         credentialsPath(),
         JSON.stringify({ refreshToken: "refresh-token-1", accessToken: "access-token-1", idToken: "id-token-1" }),
       );
-      vi.stubGlobal(
-        "fetch",
-        vi.fn().mockRejectedValue(new Error("offline")),
-      );
+      vi.stubGlobal("fetch", vi.fn().mockRejectedValue(new Error("offline")));
 
       const result = await signOut();
 

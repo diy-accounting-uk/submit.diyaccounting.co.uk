@@ -13,21 +13,16 @@
 // own; move_book_to_client predates that and keeps its own small fetch below.
 //
 // Configuration comes from the environment: DIYA_SUBMIT_BASE_URL (the deployed site's base URL,
-// e.g. https://submit.diyaccounting.co.uk/) and DIYA_SUBMIT_ACCESS_TOKEN (the signed-in
-// practice's own session bearer token). Obtaining that token is outside this tool's scope.
+// e.g. https://submit.diyaccounting.co.uk/). The session bearer is the MCP's own sign-in
+// (auth.js's accessToken()); run sign_in first to establish it.
 
 import { callSubmitApi, requireField } from "./submit-tools.js";
+import { accessToken as mcpAccessToken } from "./auth.js";
 
 function baseUrl() {
   const value = process.env.DIYA_SUBMIT_BASE_URL;
   if (!value) throw new Error("DIYA_SUBMIT_BASE_URL is not set");
   return value.replace(/\/$/, "");
-}
-
-function accessToken() {
-  const value = process.env.DIYA_SUBMIT_ACCESS_TOKEN;
-  if (!value) throw new Error("DIYA_SUBMIT_ACCESS_TOKEN is not set");
-  return value;
 }
 
 /**
@@ -47,7 +42,7 @@ export async function moveBookToClient(_session, { clientId, bookId } = {}) {
   const url = `${baseUrl()}/api/v1/practice/clients/${encodeURIComponent(clientId)}/books/${encodeURIComponent(bookId)}/move`;
   const response = await fetch(url, {
     method: "POST",
-    headers: { Authorization: `Bearer ${accessToken()}` },
+    headers: { Authorization: `Bearer ${await mcpAccessToken()}` },
   });
   const body = await response.json().catch(() => ({}));
   if (!response.ok) {

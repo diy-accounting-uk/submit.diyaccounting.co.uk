@@ -11,6 +11,13 @@ import { fileURLToPath } from "node:url";
 
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
+const mockAccessToken = vi.fn().mockResolvedValue("practice-access-token");
+const mockIdToken = vi.fn().mockResolvedValue("practice-id-token");
+vi.mock("../lib/auth.js", () => ({
+  accessToken: (...args) => mockAccessToken(...args),
+  idToken: (...args) => mockIdToken(...args),
+}));
+
 import { moveBookToClient, listClients, addClient, inviteClient, clientAuthorisationStatus } from "../lib/practice-tools.js";
 import { TOOLS } from "../lib/server.js";
 
@@ -34,12 +41,11 @@ const CLIENT_AUTHORISATION_STATUS_RESPONSE = fixture("client-authorisation-statu
 describe("practice-tools move_book_to_client", () => {
   beforeEach(() => {
     process.env.DIYA_SUBMIT_BASE_URL = "https://submit.diyaccounting.co.uk/";
-    process.env.DIYA_SUBMIT_ACCESS_TOKEN = "practice-access-token";
+    mockAccessToken.mockClear().mockResolvedValue("practice-access-token");
   });
 
   afterEach(() => {
     delete process.env.DIYA_SUBMIT_BASE_URL;
-    delete process.env.DIYA_SUBMIT_ACCESS_TOKEN;
     vi.unstubAllGlobals();
   });
 
@@ -95,9 +101,9 @@ describe("practice-tools move_book_to_client", () => {
     await expect(moveBookToClient({}, { clientId: CLIENT_ID, bookId: BOOK_ID })).rejects.toThrow("DIYA_SUBMIT_BASE_URL");
   });
 
-  it("requires DIYA_SUBMIT_ACCESS_TOKEN to be configured", async () => {
-    delete process.env.DIYA_SUBMIT_ACCESS_TOKEN;
-    await expect(moveBookToClient({}, { clientId: CLIENT_ID, bookId: BOOK_ID })).rejects.toThrow("DIYA_SUBMIT_ACCESS_TOKEN");
+  it("propagates auth.js's not-signed-in error", async () => {
+    mockAccessToken.mockRejectedValueOnce(new Error("Not signed in to DIY Accounting Submit. Run signIn() first."));
+    await expect(moveBookToClient({}, { clientId: CLIENT_ID, bookId: BOOK_ID })).rejects.toThrow("Not signed in");
   });
 
   it("is registered on the server as move_book_to_client", () => {
@@ -110,12 +116,12 @@ describe("practice-tools move_book_to_client", () => {
 describe("practice-tools client tools", () => {
   beforeEach(() => {
     process.env.DIYA_SUBMIT_BASE_URL = "https://submit.diyaccounting.co.uk/";
-    process.env.DIYA_SUBMIT_ACCESS_TOKEN = "practice-access-token";
+    mockAccessToken.mockClear().mockResolvedValue("practice-access-token");
+    mockIdToken.mockClear().mockResolvedValue("practice-id-token");
   });
 
   afterEach(() => {
     delete process.env.DIYA_SUBMIT_BASE_URL;
-    delete process.env.DIYA_SUBMIT_ACCESS_TOKEN;
     vi.unstubAllGlobals();
   });
 
@@ -255,6 +261,7 @@ describe("practice-tools client tools", () => {
       expect(url).toBe(`https://submit.diyaccounting.co.uk/api/v1/practice/clients/${CLIENT_ID}/authorisation?service=MTD-VAT`);
       expect(init.headers["X-Authorization"]).toBe("Bearer practice-access-token");
       expect(init.headers.Authorization).toBe("Bearer hmrc-access-token");
+      expect(init.headers["X-Id-Token"]).toBe("practice-id-token");
     });
 
     it("requires clientId, service and hmrcAccessToken", async () => {
