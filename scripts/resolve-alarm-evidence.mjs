@@ -28,7 +28,8 @@ import { fileURLToPath } from "node:url";
 import { CloudWatchClient, DescribeAlarmsCommand } from "@aws-sdk/client-cloudwatch";
 
 import { alarmFamilyKey, resolveAlarmEnv } from "../app/lib/alarmName.js";
-import { resolveAlarmEvidence, extractCompositeChildFunctionNames } from "../app/lib/alarmEvidence.js";
+import { resolveAlarmEvidence, extractCompositeChildAlarms } from "../app/lib/alarmEvidence.js";
+import { resolveTriggeringChildFunctionNames } from "../app/lib/alarmCompositeState.js";
 import { resolveAlarmWindow } from "../app/lib/alarmWindow.js";
 import { buildLogsInsightsLink, buildXRayTraceSearchLink } from "../app/lib/consoleLinks.js";
 import { resolveDeploymentSlug } from "../app/functions/ops/alarmToGithubIssue.js";
@@ -118,12 +119,15 @@ async function resolveFromLiveAlarm({ alarmName, region }) {
       timestamp: (compositeAlarm.StateTransitionTimestamp || new Date()).toISOString(),
       periodSeconds: null,
     });
+    const children = extractCompositeChildAlarms(compositeAlarm.AlarmRule);
+    const triggeringChildFunctionNames = await resolveTriggeringChildFunctionNames({ children, region });
     return {
       found: true,
       namespace: null,
       metricName: null,
       dimensions: {},
-      compositeChildFunctionNames: extractCompositeChildFunctionNames(compositeAlarm.AlarmRule),
+      compositeChildFunctionNames: children.map((child) => child.functionName),
+      triggeringChildFunctionNames,
       window,
     };
   }
@@ -149,7 +153,7 @@ async function resolveFromLiveAlarm({ alarmName, region }) {
     periodSeconds: metricAlarm.Period || null,
   });
 
-  return { found: true, namespace, metricName, dimensions, compositeChildFunctionNames: [], window };
+  return { found: true, namespace, metricName, dimensions, compositeChildFunctionNames: [], triggeringChildFunctionNames: [], window };
 }
 
 /**
@@ -200,9 +204,23 @@ export async function main(argv) {
   let metricName;
   let dimensions;
   let compositeChildFunctionNames;
+  let triggeringChildFunctionNames;
   let window;
+  let deploymentLive = null;
+  let liveDeployment = null;
 
   if (opts.fromAlarm) {
+    // Answers "is the deployment named above still the one live in this environment", read
+    // straight from the same SSM parameter the deploy pipeline updates, so the evidence file
+    // states it as a fact rather than leaving the triage agent to infer it (and risk calling a
+    // live set retired) from the alarm's own age or an assumption about deploy cadence. Passing
+    // no alarm name forces the SSM lookup rather than the deployment-slug-in-the-name shortcut,
+    // since this answers "what deployment is live right now", not "what deployment does this
+    // alarm's own name carries". Only queried in --from-alarm mode: the explicit-inputs mode
+    // documented above makes no AWS calls at all.
+    liveDeployment = await resolveDeploymentSlug({ alarmName: undefined, env });
+    deploymentLive = Boolean(deployment) && liveDeployment === deployment;
+
     const liveAlarm = await resolveFromLiveAlarm({ alarmName: opts.alarmName, region: opts.region });
     if (!liveAlarm.found) {
       const output = buildNotFoundEvidence({
@@ -212,15 +230,18 @@ export async function main(argv) {
         deployment,
         region: opts.region,
       });
+      output.deploymentLive = deploymentLive;
+      output.liveDeployment = liveDeployment;
       console.log(JSON.stringify(output, null, 2));
       return output;
     }
-    ({ namespace, metricName, dimensions, compositeChildFunctionNames, window } = liveAlarm);
+    ({ namespace, metricName, dimensions, compositeChildFunctionNames, triggeringChildFunctionNames, window } = liveAlarm);
   } else {
     namespace = opts.namespace || null;
     metricName = opts.metricName || null;
     dimensions = JSON.parse(opts.dimensions);
     compositeChildFunctionNames = [];
+    triggeringChildFunctionNames = [];
     window = { startIso: opts.start, endIso: opts.end };
   }
 
@@ -233,6 +254,7 @@ export async function main(argv) {
     metricName,
     dimensions,
     compositeChildFunctionNames,
+    triggeringChildFunctionNames,
   });
 
   const logsInsightsUrl = buildLogsInsightsLink({
@@ -248,7 +270,7 @@ export async function main(argv) {
     filterExpression: evidence.xrayFilterExpression,
   });
 
-  const output = { ...evidence, logsInsightsUrl, xrayUrl, alarmFound: true };
+  const output = { ...evidence, logsInsightsUrl, xrayUrl, alarmFound: true, deploymentLive, liveDeployment };
   console.log(JSON.stringify(output, null, 2));
   return output;
 }

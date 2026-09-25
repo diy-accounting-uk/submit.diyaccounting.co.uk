@@ -76,7 +76,7 @@ import {
   createGitHubIssue,
   commentOnGitHubIssue,
   resolveDeploymentSlug,
-  resolveCompositeChildFunctionNames,
+  resolveCompositeChildAlarmState,
   handler,
 } from "@app/functions/ops/alarmToGithubIssue.js";
 import { alarmFamilyKey } from "@app/lib/alarmName.js";
@@ -340,9 +340,9 @@ describe("alarmToGithubIssue", () => {
       mockSsmSend.mockReset();
     });
 
-    test("returns the slug from a deployment-scoped alarm name and makes no SSM call", async () => {
+    test("returns the env-prefixed deployment name from a deployment-scoped alarm name and makes no SSM call", async () => {
       const slug = await resolveDeploymentSlug({ alarmName: "prod-9050bb5-app-api-5xx", env: "prod" });
-      expect(slug).toBe("9050bb5");
+      expect(slug).toBe("prod-9050bb5");
       expect(mockSsmSend).not.toHaveBeenCalled();
     });
 
@@ -376,37 +376,68 @@ describe("alarmToGithubIssue", () => {
     });
   });
 
-  describe("resolveCompositeChildFunctionNames", () => {
+  describe("resolveCompositeChildAlarmState", () => {
     afterEach(() => {
       mockCloudWatchSend.mockReset();
     });
 
-    test("parses a real AlarmRule string into function names", async () => {
-      mockCloudWatchSend.mockResolvedValue({
-        CompositeAlarms: [
-          {
-            AlarmRule: 'ALARM("arn:aws:cloudwatch:eu-west-2:367191799875:alarm:check-prod-0f68ed8-app-hmrc-vat-return-post-errors")',
-          },
-        ],
+    test("parses a real AlarmRule string into function names when no child is currently ALARM", async () => {
+      mockCloudWatchSend.mockImplementation((command) => {
+        if (command.input.AlarmTypes?.includes("CompositeAlarm")) {
+          return Promise.resolve({
+            CompositeAlarms: [
+              {
+                AlarmRule: 'ALARM("arn:aws:cloudwatch:eu-west-2:367191799875:alarm:check-prod-0f68ed8-app-hmrc-vat-return-post-errors")',
+              },
+            ],
+          });
+        }
+        return Promise.resolve({ MetricAlarms: [{ AlarmName: "check-prod-0f68ed8-app-hmrc-vat-return-post-errors", StateValue: "OK" }] });
       });
 
-      const names = await resolveCompositeChildFunctionNames({
+      const state = await resolveCompositeChildAlarmState({
         region: "eu-west-2",
         alarmName: "prod-0f68ed8-app-hmrc-stack-health",
       });
 
-      expect(names).toEqual(["prod-0f68ed8-app-hmrc-vat-return-post"]);
+      expect(state.childFunctionNames).toEqual(["prod-0f68ed8-app-hmrc-vat-return-post"]);
+      expect(state.triggeringChildFunctionNames).toEqual([]);
     });
 
-    test("returns [] and logs a warning when DescribeAlarms rejects", async () => {
+    test("names the child actually in ALARM among several the AlarmRule lists", async () => {
+      const alarmRule =
+        'ALARM("arn:aws:cloudwatch:eu-west-2:972912397388:alarm:check-prod-env-activity-telegram-forwarder-errors") ' +
+        'OR ALARM("arn:aws:cloudwatch:eu-west-2:972912397388:alarm:check-prod-env-sign-in-activity-publish-log-errors")';
+      mockCloudWatchSend.mockImplementation((command) => {
+        if (command.input.AlarmTypes?.includes("CompositeAlarm")) {
+          return Promise.resolve({ CompositeAlarms: [{ AlarmRule: alarmRule }] });
+        }
+        return Promise.resolve({
+          MetricAlarms: [
+            { AlarmName: "check-prod-env-activity-telegram-forwarder-errors", StateValue: "OK" },
+            { AlarmName: "check-prod-env-sign-in-activity-publish-log-errors", StateValue: "ALARM" },
+          ],
+        });
+      });
+
+      const state = await resolveCompositeChildAlarmState({
+        region: "eu-west-2",
+        alarmName: "prod-env-activity-stack-health",
+      });
+
+      expect(state.childFunctionNames).toEqual(["prod-env-activity-telegram-forwarder", "prod-env-sign-in-activity-publish"]);
+      expect(state.triggeringChildFunctionNames).toEqual(["prod-env-sign-in-activity-publish"]);
+    });
+
+    test("returns empty arrays and logs a warning when DescribeAlarms rejects", async () => {
       mockCloudWatchSend.mockRejectedValue(new Error("boom"));
 
-      const names = await resolveCompositeChildFunctionNames({
+      const state = await resolveCompositeChildAlarmState({
         region: "eu-west-2",
         alarmName: "prod-0f68ed8-app-hmrc-stack-health",
       });
 
-      expect(names).toEqual([]);
+      expect(state).toEqual({ childFunctionNames: [], triggeringChildFunctionNames: [] });
     });
   });
 

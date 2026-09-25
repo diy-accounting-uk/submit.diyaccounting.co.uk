@@ -29,6 +29,18 @@ retired or self-destructed) and the log group prefix given is a best guess, not 
 source — triage from the alarm facts above and whatever log lines you can still find under that
 prefix, and say plainly in your answer that the alarm itself is gone.
 
+If this alarm is a composite (a "-stack-health" family), `logGroupNamePrefixes` can list more than
+one function: it is every child the composite's rule ORs together, not all of them necessarily
+broken. When `triggeringLogGroupNamePrefixes` is non-empty, it names the function(s) actually in
+ALARM right now — start your investigation there, and only look at the other log groups if that
+one turns up nothing. When it is empty, no child could be confirmed ALARM at evidence time (it may
+have cleared), so treat every log group in `logGroupNamePrefixes` as equally worth checking.
+
+`deploymentLive` and `liveDeployment` in the evidence file say whether the deployment named above
+(`${DEPLOYMENT_NAME}`) is still the one live in this environment, read straight from SSM at the
+moment the evidence was built. Trust that field over any inference from the alarm's own age: never
+write that a deployment has been retired unless `deploymentLive` is `false`.
+
 Your job is to answer three questions and stop:
 
 1. What broke? Name the function or resource and quote the shape of the failure, not a customer's

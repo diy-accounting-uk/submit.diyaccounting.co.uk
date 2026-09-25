@@ -19,6 +19,24 @@ vi.mock("@aws-sdk/client-cloudwatch", () => ({
   },
 }));
 
+// Backs resolveDeploymentSlug's SSM lookup, which --from-alarm mode now always makes once to
+// learn the environment's live deployment. "prod-d9ef3c9" is the default so every existing
+// "prod-…" test below resolves the same cached value regardless of call order (resolveDeploymentSlug
+// caches per environment for the life of the module).
+const mockSsmSend = vi.fn();
+vi.mock("@aws-sdk/client-ssm", () => ({
+  SSMClient: class {
+    send(...args) {
+      return mockSsmSend(...args);
+    }
+  },
+  GetParameterCommand: class {
+    constructor(input) {
+      this.input = input;
+    }
+  },
+}));
+
 import { main } from "../../../scripts/resolve-alarm-evidence.mjs";
 
 describe("resolve-alarm-evidence.mjs main --from-alarm", () => {
@@ -28,6 +46,8 @@ describe("resolve-alarm-evidence.mjs main --from-alarm", () => {
   beforeEach(() => {
     logSpy = vi.spyOn(console, "log").mockImplementation(() => {});
     mockCloudWatchSend.mockReset();
+    mockSsmSend.mockReset();
+    mockSsmSend.mockResolvedValue({ Parameter: { Value: "prod-d9ef3c9" } });
     delete process.env.ALARM_WINDOW;
   });
 
@@ -79,6 +99,85 @@ describe("resolve-alarm-evidence.mjs main --from-alarm", () => {
     // ("-stack-health") alarm would come back empty even when it exists unless both are asked for.
     const [describeAlarmsCommand] = mockCloudWatchSend.mock.calls[0];
     expect(describeAlarmsCommand.input.AlarmTypes).toEqual(expect.arrayContaining(["CompositeAlarm", "MetricAlarm"]));
+  });
+
+  test("composite alarm: names the triggering child's log group first, dedupes the rest, and confirms the named deployment is live", async () => {
+    // Reproduces prod-env-activity-stack-health (issue #355, run 36109684922): a composite whose
+    // AlarmRule carries both an "-errors" and a "-log-errors" child for two functions, where only
+    // check-prod-env-sign-in-activity-publish-log-errors was actually in ALARM.
+    const alarmRule =
+      'ALARM("arn:aws:cloudwatch:eu-west-2:972912397388:alarm:check-prod-env-activity-telegram-forwarder-errors") ' +
+      'OR ALARM("arn:aws:cloudwatch:eu-west-2:972912397388:alarm:check-prod-env-activity-telegram-forwarder-log-errors") ' +
+      'OR ALARM("arn:aws:cloudwatch:eu-west-2:972912397388:alarm:check-prod-env-sign-in-activity-publish-errors") ' +
+      'OR ALARM("arn:aws:cloudwatch:eu-west-2:972912397388:alarm:check-prod-env-sign-in-activity-publish-log-errors")';
+
+    mockCloudWatchSend.mockImplementation((command) => {
+      const alarmNames = command.input.AlarmNames || [];
+      if (alarmNames.includes("prod-env-activity-stack-health")) {
+        return Promise.resolve({
+          MetricAlarms: [],
+          CompositeAlarms: [{ AlarmRule: alarmRule, StateTransitionTimestamp: new Date("2026-09-25T07:50:04.058Z") }],
+        });
+      }
+      // The per-child DescribeAlarms call this fix adds: only the sign-in-activity-publish
+      // log-errors check is ALARM, the other three are OK.
+      return Promise.resolve({
+        MetricAlarms: [
+          { AlarmName: "check-prod-env-activity-telegram-forwarder-errors", StateValue: "OK" },
+          { AlarmName: "check-prod-env-activity-telegram-forwarder-log-errors", StateValue: "OK" },
+          { AlarmName: "check-prod-env-sign-in-activity-publish-errors", StateValue: "OK" },
+          { AlarmName: "check-prod-env-sign-in-activity-publish-log-errors", StateValue: "ALARM" },
+        ],
+      });
+    });
+
+    const output = await main([
+      "--alarm-name",
+      "prod-env-activity-stack-health",
+      "--deployment",
+      "prod-d9ef3c9",
+      "--region",
+      "eu-west-2",
+      "--from-alarm",
+    ]);
+
+    expect(output.alarmFound).toBe(true);
+    expect(output.logGroupNamePrefixes).toEqual([
+      "/aws/lambda/prod-env-sign-in-activity-publish",
+      "/aws/lambda/prod-env-activity-telegram-forwarder",
+    ]);
+    expect(output.triggeringLogGroupNamePrefixes).toEqual(["/aws/lambda/prod-env-sign-in-activity-publish"]);
+    expect(output.deploymentLive).toBe(true);
+    expect(output.liveDeployment).toBe("prod-d9ef3c9");
+  });
+
+  test("the named deployment is reported not live when it differs from SSM's last-known-good deployment", async () => {
+    mockSsmSend.mockResolvedValueOnce({ Parameter: { Value: "ci-newer5678" } });
+    mockCloudWatchSend.mockResolvedValue({
+      MetricAlarms: [
+        {
+          Namespace: "AWS/Lambda",
+          MetricName: "Errors",
+          Dimensions: [{ Name: "FunctionName", Value: "ci-abc1234-app-hmrc-vat-return-post" }],
+          StateUpdatedTimestamp: new Date("2026-09-06T10:00:00.000Z"),
+          Period: 300,
+        },
+      ],
+      CompositeAlarms: [],
+    });
+
+    const output = await main([
+      "--alarm-name",
+      "ci-abc1234-app-hmrc-vat-return-post-errors",
+      "--deployment",
+      "ci-abc1234",
+      "--region",
+      "eu-west-2",
+      "--from-alarm",
+    ]);
+
+    expect(output.deploymentLive).toBe(false);
+    expect(output.liveDeployment).toBe("ci-newer5678");
   });
 
   test("alarm not found: writes fallback evidence with alarmFound false and exits without throwing", async () => {
