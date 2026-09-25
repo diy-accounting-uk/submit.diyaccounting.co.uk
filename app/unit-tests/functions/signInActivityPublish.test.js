@@ -38,9 +38,8 @@ vi.mock("@app/data/dynamoDbSecurityStateRepository.js", () => ({
   putSignInSession: (...args) => mockPutSignInSession(...args),
 }));
 
-const { handler, classifySignInEvent, extractProvider, SESSION_RESUME_THRESHOLD_MS } = await import(
-  "@app/functions/auth/signInActivityPublish.js"
-);
+const { handler, classifySignInEvent, extractProvider, SESSION_RESUME_THRESHOLD_MS } =
+  await import("@app/functions/auth/signInActivityPublish.js");
 const { hashSub } = await import("@app/services/subHasher.js");
 
 function ssmParam(value) {
