@@ -558,6 +558,44 @@ class SubmitApplicationCdkResourceTest {
     }
 
     @Test
+    @SetEnvironmentVariable(key = "COGNITO_MCP_CLIENT_ID", value = "tt-witheight-cognito-mcp-client-id")
+    void customAuthorizerLambdaCarriesTheMcpClientIdWhenSet() throws IOException {
+        Path cdkJsonPath = Path.of("cdk-application/cdk.json").toAbsolutePath();
+        Map<String, Object> ctx = buildContextPropertyMapFromCdkJsonPath(cdkJsonPath);
+        App app = new App(AppProps.builder().context(ctx).build());
+        SubmitApplication.SubmitApplicationProps appProps = SubmitApplication.loadAppProps(app, "cdk-application/");
+
+        var submitApplication = new SubmitApplication(app, appProps);
+        Template authStackTemplate = Template.fromStack(submitApplication.authStack);
+
+        assertHasEnvironmentVariable(
+                authStackTemplate,
+                submitApplication.authStack.customAuthorizerLambdaProps.ingestFunctionName(),
+                "COGNITO_MCP_CLIENT_ID");
+    }
+
+    @Test
+    void customAuthorizerLambdaCarriesNoMcpClientIdEnvVarWhenUnset() throws IOException {
+        Path cdkJsonPath = Path.of("cdk-application/cdk.json").toAbsolutePath();
+        Map<String, Object> ctx = buildContextPropertyMapFromCdkJsonPath(cdkJsonPath);
+        App app = new App(AppProps.builder().context(ctx).build());
+        SubmitApplication.SubmitApplicationProps appProps = SubmitApplication.loadAppProps(app, "cdk-application/");
+
+        var submitApplication = new SubmitApplication(app, appProps);
+        Template authStackTemplate = Template.fromStack(submitApplication.authStack);
+        String functionName = submitApplication.authStack.customAuthorizerLambdaProps.ingestFunctionName();
+
+        var functions = authStackTemplate.findResources("AWS::Lambda::Function").values().stream()
+                .map(resource -> (Map<String, Object>) resource.get("Properties"))
+                .filter(properties -> String.valueOf(properties.get("FunctionName")).equals(functionName))
+                .toList();
+        org.junit.jupiter.api.Assertions.assertEquals(1, functions.size());
+        var environment = (Map<String, Object>) functions.get(0).get("Environment");
+        var variables = (Map<String, Object>) environment.get("Variables");
+        org.junit.jupiter.api.Assertions.assertFalse(variables.containsKey("COGNITO_MCP_CLIENT_ID"));
+    }
+
+    @Test
     @SetEnvironmentVariable.SetEnvironmentVariables({
         @SetEnvironmentVariable(key = "STRIPE_PRICE_ID_RESIDENT_YEAR", value = "price_live_resident_year"),
         @SetEnvironmentVariable(key = "STRIPE_PRICE_ID_RESIDENT_MONTH", value = "price_live_resident_month"),

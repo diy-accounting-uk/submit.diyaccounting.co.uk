@@ -183,8 +183,19 @@ export function buildFraudHeaders(event, options = {}) {
     });
   }
 
-  // 5. Connection method – WEB_APP_VIA_SERVER for both client and vendor
-  headers["Gov-Client-Connection-Method"] = "WEB_APP_VIA_SERVER";
+  // 5. Connection method. HMRC's fraud-prevention spec (developer.service.hmrc.gov.uk/guides/
+  // fraud-prevention/connection-method/) offers eight values; the two that fit here are
+  // WEB_APP_VIA_SERVER ("your application is web based, connecting to HMRC through
+  // intermediary servers") for the browser, and DESKTOP_APP_VIA_SERVER ("your application is
+  // installed on a desktop connecting to HMRC through intermediary servers") for the
+  // submission MCP: a process the user runs on their own machine, which calls this server,
+  // which calls HMRC -- never the browser client, and never HMRC directly. The access token's
+  // client_id claim (flattened into context by customAuthorizer.js for every route this
+  // authorizer protects) names which Cognito app client signed in; only the MCP's own client
+  // gets DESKTOP_APP_VIA_SERVER, so a copied Submit token still reads as WEB_APP_VIA_SERVER.
+  const mcpClientId = process.env.COGNITO_MCP_CLIENT_ID;
+  headers["Gov-Client-Connection-Method"] =
+    mcpClientId && authzCtx?.client_id === mcpClientId ? "DESKTOP_APP_VIA_SERVER" : "WEB_APP_VIA_SERVER";
 
   // 6. Vendor public IP – the Lambda's outbound IP (detected at cold start)
   // MUST NOT fall back to publicClientIp — HMRC rejects submissions where vendor IP = client IP

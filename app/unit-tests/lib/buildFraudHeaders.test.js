@@ -89,6 +89,51 @@ describe("buildFraudHeaders", () => {
     expect(headers["Gov-Client-Connection-Method"]).toBe("WEB_APP_VIA_SERVER");
   });
 
+  describe("connection method for the submission MCP", () => {
+    const originalEnv = process.env.COGNITO_MCP_CLIENT_ID;
+
+    afterEach(() => {
+      if (originalEnv === undefined) delete process.env.COGNITO_MCP_CLIENT_ID;
+      else process.env.COGNITO_MCP_CLIENT_ID = originalEnv;
+    });
+
+    it("sets DESKTOP_APP_VIA_SERVER when the caller's client_id is the MCP's own", () => {
+      process.env.COGNITO_MCP_CLIENT_ID = "mcp-client-id";
+      const event = {
+        headers: { "x-forwarded-for": "198.51.100.1" },
+        requestContext: { authorizer: { lambda: { sub: "cognito-user-abc123", client_id: "mcp-client-id" } } },
+      };
+
+      const { govClientHeaders: headers } = buildFraudHeaders(event);
+
+      expect(headers["Gov-Client-Connection-Method"]).toBe("DESKTOP_APP_VIA_SERVER");
+    });
+
+    it("keeps WEB_APP_VIA_SERVER for a Submit-client caller once COGNITO_MCP_CLIENT_ID is set", () => {
+      process.env.COGNITO_MCP_CLIENT_ID = "mcp-client-id";
+      const event = {
+        headers: { "x-forwarded-for": "198.51.100.1" },
+        requestContext: { authorizer: { lambda: { sub: "cognito-user-abc123", client_id: "submit-client-id" } } },
+      };
+
+      const { govClientHeaders: headers } = buildFraudHeaders(event);
+
+      expect(headers["Gov-Client-Connection-Method"]).toBe("WEB_APP_VIA_SERVER");
+    });
+
+    it("keeps WEB_APP_VIA_SERVER for the MCP's client_id when COGNITO_MCP_CLIENT_ID is unset", () => {
+      delete process.env.COGNITO_MCP_CLIENT_ID;
+      const event = {
+        headers: { "x-forwarded-for": "198.51.100.1" },
+        requestContext: { authorizer: { lambda: { sub: "cognito-user-abc123", client_id: "mcp-client-id" } } },
+      };
+
+      const { govClientHeaders: headers } = buildFraudHeaders(event);
+
+      expect(headers["Gov-Client-Connection-Method"]).toBe("WEB_APP_VIA_SERVER");
+    });
+  });
+
   it("should extract user ID from custom Lambda authorizer context", () => {
     // Matches the actual format from customAuthorizer.js generateAllowPolicy():
     // context: { sub, username, email, ... } placed at authorizer.lambda by API Gateway

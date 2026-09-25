@@ -16,7 +16,7 @@
 
 import { createHash, randomBytes } from "node:crypto";
 import { spawn } from "node:child_process";
-import { chmodSync, existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
+import { chmodSync, existsSync, mkdirSync, readFileSync, unlinkSync, writeFileSync } from "node:fs";
 import { createServer } from "node:http";
 import { homedir } from "node:os";
 import { join } from "node:path";
@@ -41,6 +41,12 @@ function clientId() {
   const value = process.env.DIYA_SUBMIT_MCP_CLIENT_ID;
   if (!value) throw new Error("DIYA_SUBMIT_MCP_CLIENT_ID is not set");
   return value;
+}
+
+function baseUrl() {
+  const value = process.env.DIYA_SUBMIT_BASE_URL;
+  if (!value) throw new Error("DIYA_SUBMIT_BASE_URL is not set");
+  return value.replace(/\/$/, "");
 }
 
 // Overridable for tests only; production never sets DIYA_SUBMIT_CONFIG_DIR and always keeps the
@@ -198,10 +204,15 @@ async function requestToken(params) {
 
 function storeTokens(tokens, previousRefreshToken) {
   const refreshToken = tokens.refresh_token || previousRefreshToken;
+  // Cognito issues the id and access tokens together with the same lifetime, so one
+  // expires_in covers both.
+  const expiresAt = Date.now() + tokens.expires_in * 1000;
   const credentials = {
     refreshToken,
     idToken: tokens.id_token,
-    idTokenExpiresAt: Date.now() + tokens.expires_in * 1000,
+    idTokenExpiresAt: expiresAt,
+    accessToken: tokens.access_token,
+    accessTokenExpiresAt: expiresAt,
   };
   writeCredentials(credentials);
   return credentials;
@@ -246,18 +257,19 @@ export async function signIn() {
 }
 
 /**
- * accessToken: the id token every other MCP tool call sends on. Answers the cached one while it
- * still has more than REFRESH_SKEW_MS left, otherwise spends the stored refresh token on a silent
- * token-endpoint call (no browser) and caches the result before answering.
+ * Reads the stored credentials, refreshing them (a silent, no-browser token-endpoint call)
+ * whenever the requested token has less than REFRESH_SKEW_MS left, or none is cached yet.
+ * @param {"idToken"|"accessToken"} tokenField
+ * @param {"idTokenExpiresAt"|"accessTokenExpiresAt"} expiresAtField
  * @returns {Promise<string>}
  */
-export async function accessToken() {
+async function cachedOrRefreshed(tokenField, expiresAtField) {
   const credentials = readCredentials();
   if (!credentials?.refreshToken) {
     throw new Error("Not signed in to DIY Accounting Submit. Run signIn() first.");
   }
-  if (credentials.idToken && credentials.idTokenExpiresAt > Date.now() + REFRESH_SKEW_MS) {
-    return credentials.idToken;
+  if (credentials[tokenField] && credentials[expiresAtField] > Date.now() + REFRESH_SKEW_MS) {
+    return credentials[tokenField];
   }
   const tokens = await requestToken({
     grant_type: "refresh_token",
@@ -265,5 +277,66 @@ export async function accessToken() {
     refresh_token: credentials.refreshToken,
   });
   const updated = storeTokens(tokens, credentials.refreshToken);
-  return updated.idToken;
+  return updated[tokenField];
+}
+
+/**
+ * idToken: the id token book-tools.js sends on for the cloud book routes (their native JWT
+ * authoriser accepts either an access token's client_id or an id token's aud claim). Answers
+ * the cached one while it still has more than REFRESH_SKEW_MS left, otherwise refreshes first.
+ * @returns {Promise<string>}
+ */
+export async function idToken() {
+  return cachedOrRefreshed("idToken", "idTokenExpiresAt");
+}
+
+/**
+ * accessToken: the MCP's own Cognito access token, for the custom Lambda authoriser's
+ * X-Authorization header (submit-tools.js's HMRC and Companies House calls) and for the plain
+ * Authorization header the sign-out route's all-clients JWT authoriser reads. Answers the
+ * cached one while it still has more than REFRESH_SKEW_MS left, otherwise refreshes first.
+ * @returns {Promise<string>}
+ */
+export async function accessToken() {
+  return cachedOrRefreshed("accessToken", "accessTokenExpiresAt");
+}
+
+/**
+ * signOut: revokes the refresh token at Cognito, tells the authenticated sign-out route to
+ * publish "logout" and delete the session item, then deletes the local credentials file.
+ * Best-effort on the network calls -- a revoke or sign-out failure (offline, an already-expired
+ * token) still leaves the local credentials gone, since the whole point is that this machine no
+ * longer holds a usable session.
+ * @returns {Promise<{signedOut: true}>}
+ */
+export async function signOut() {
+  const credentials = readCredentials();
+
+  if (credentials?.refreshToken) {
+    try {
+      await fetch(`${authDomain()}/oauth2/revoke`, {
+        method: "POST",
+        headers: { "Content-Type": "application/x-www-form-urlencoded" },
+        body: new URLSearchParams({ token: credentials.refreshToken, client_id: clientId() }).toString(),
+      });
+    } catch (error) {
+      console.error(`Revoking the refresh token failed (continuing sign-out): ${error.message}`);
+    }
+  }
+
+  if (credentials?.accessToken) {
+    try {
+      await fetch(`${baseUrl()}/api/v1/session/sign-out`, {
+        method: "POST",
+        headers: { Authorization: `Bearer ${credentials.accessToken}` },
+      });
+    } catch (error) {
+      console.error(`Calling the sign-out route failed (continuing sign-out): ${error.message}`);
+    }
+  }
+
+  const path = credentialsPath();
+  if (existsSync(path)) unlinkSync(path);
+
+  return { signedOut: true };
 }

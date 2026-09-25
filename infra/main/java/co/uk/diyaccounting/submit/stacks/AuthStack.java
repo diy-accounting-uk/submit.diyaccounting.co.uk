@@ -79,6 +79,16 @@ public class AuthStack extends Stack {
 
         String cognitoUserPoolClientId();
 
+        // The submission MCP's own client: once set, the custom authorizer accepts an access
+        // token issued to either this client or the main Submit client, so the MCP's HMRC and
+        // Companies House calls authenticate with its own sign-in instead of a copied Submit
+        // token. Blank until the deploy wiring sets it, the same way the other stacks' own
+        // mcpUserPoolClientId props start.
+        @Value.Default
+        default String mcpUserPoolClientId() {
+            return "";
+        }
+
         // Optional test access token for local/dev testing without real Cognito interaction
         Optional<String> optionalTestAccessToken(); //
 
@@ -184,6 +194,9 @@ public class AuthStack extends Stack {
                 .with("SECURITY_STATE_DYNAMODB_TABLE_NAME", securityStateTable.getTableName())
                 .with("ACTIVITY_BUS_NAME", props.sharedNames().activityBusName)
                 .with("ENVIRONMENT_NAME", props.envName());
+        if (props.mcpUserPoolClientId() != null && !props.mcpUserPoolClientId().isBlank()) {
+            customAuthorizerLambdaEnv.with("COGNITO_MCP_CLIENT_ID", props.mcpUserPoolClientId());
+        }
         var customAuthorizerLambda = new ApiLambda(
                 this,
                 ApiLambdaProps.builder()

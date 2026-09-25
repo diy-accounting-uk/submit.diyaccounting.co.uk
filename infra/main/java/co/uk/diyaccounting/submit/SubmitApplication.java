@@ -342,6 +342,7 @@ public class SubmitApplication {
                         .cognitoClientId(cognitoUserPoolClientId)
                         .cognitoUserPoolId(cognitoUserPoolId)
                         .cognitoUserPoolClientId(cognitoUserPoolClientId)
+                        .mcpUserPoolClientId(cognitoMcpUserPoolClientId)
                         .build());
 
         // Create the HmrcStack
