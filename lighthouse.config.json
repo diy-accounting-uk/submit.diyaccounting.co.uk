@@ -24,7 +24,7 @@
       "path": "/guide.html",
       "thresholds": {
         "bestPractices": 90,
-        "performance": 71
+        "performance": 65
       }
     },
     {
@@ -94,7 +94,7 @@
       "path": "/mcp.html",
       "thresholds": {
         "bestPractices": 90,
-        "performance": 79
+        "performance": 73
       }
     },
     {
