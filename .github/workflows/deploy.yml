@@ -2064,7 +2064,7 @@ jobs:
   #     phase: 'post-deploy'
 
   enable-native-auth:
-    if: ${{ !cancelled() && (github.event_name != 'schedule' || needs.names.outputs.live-head-is-current != 'true' || needs.params.outputs.isSkippingDeploy == 'true') }}
+    if: ${{ !cancelled() && needs.names.result == 'success' && (github.event_name != 'schedule' || needs.names.outputs.live-head-is-current != 'true' || needs.params.outputs.isSkippingDeploy == 'true') }}
     name: 'enable native auth for behaviour tests'
     needs:
       - params
@@ -3060,7 +3060,7 @@ jobs:
       HMRC_SANDBOX_CLIENT_SECRET: ${{ secrets.HMRC_SANDBOX_CLIENT_SECRET }}
 
   disable-native-auth:
-    if: ${{ !cancelled() && (github.event_name != 'schedule' || needs.names.outputs.live-head-is-current != 'true' || needs.params.outputs.isSkippingDeploy == 'true') }}
+    if: ${{ !cancelled() && needs.names.result == 'success' && (github.event_name != 'schedule' || needs.names.outputs.live-head-is-current != 'true' || needs.params.outputs.isSkippingDeploy == 'true') }}
     name: 'disable native auth after behaviour tests'
     needs:
       - params
@@ -3158,7 +3158,7 @@ jobs:
     # 2026-09-01/02 - three EdgeStack bugs blocked set-origins for hours while this job
     # kept advancing the SSM pointer regardless).
     # On ci set-origins does not run at all, so the requirement is prod's alone.
-    if: ${{ !cancelled() && needs.web-test.result == 'success' && (needs.names.outputs.environment-name != 'prod' || needs.set-origins.result == 'success') }}
+    if: ${{ !cancelled() && needs.names.result == 'success' && needs.web-test.result == 'success' && (needs.names.outputs.environment-name != 'prod' || needs.set-origins.result == 'success') }}
     name: 'set last known good deployment'
     needs:
       - names
