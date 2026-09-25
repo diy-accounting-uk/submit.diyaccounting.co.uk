@@ -26,6 +26,10 @@ on:
         type: boolean
         description: 'Whether to sweep for leftover stacks (true) or select by deployment name (false)'
         required: false
+      sweep-min-age-hours:
+        description: 'Minimum age in hours a swept set must reach (default 8); 0 lets a sweep reach the slot-claim check on a set a run is deploying now'
+        required: false
+        default: ''
   workflow_call:
     inputs:
       deployment-name:
@@ -333,7 +337,11 @@ jobs:
           PUBLIC_DEPLOYMENT_NAMES="${{ steps.public-deployment-names.outputs.public-deployment-names }}"
           PUBLISHED_DEPLOYMENT_NAMES="${{ steps.published-deployment-names.outputs.published-deployment-names }}"
           DEPLOYED_DEPLOYMENT_NAMES="${{ steps.deployed-deployment-names.outputs.deployed-deployment-names }}"
-          SELF_DESTRUCT_SWEEP_MIN_AGE_HOURS="${{ env.SELF_DESTRUCT_SWEEP_MIN_AGE_HOURS }}"
+          SELF_DESTRUCT_SWEEP_MIN_AGE_HOURS="${{ inputs.sweep-min-age-hours || env.SELF_DESTRUCT_SWEEP_MIN_AGE_HOURS }}"
+          if ! [[ "$SELF_DESTRUCT_SWEEP_MIN_AGE_HOURS" =~ ^[0-9]+$ ]]; then
+            echo "::error::sweep-min-age-hours must be a whole number of hours, got '$SELF_DESTRUCT_SWEEP_MIN_AGE_HOURS'"
+            exit 1
+          fi
 
           ACTIVE_CLAIM_AWS_CLI="$(command -v aws)"
           export ACTIVE_CLAIM_AWS_CLI

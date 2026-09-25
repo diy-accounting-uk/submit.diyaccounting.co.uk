@@ -229,6 +229,8 @@ A fresh agent carries none of your context, so the brief stands alone. Every bri
   unrelated tests fail on a missing file. Then the unit, system or browser tests its change
   reaches, or `./mvnw clean verify` for `infra/`. No behaviour tier inside a worktree: that needs a
   live environment and belongs to the deploy.
+- **A gate or threshold a CI job enforces is set from runs on that job's runner.** When a row
+  changes one, the brief says to dispatch the job and read its scores first.
 - **A report-back contract**: what it changed and why, what it deliberately did not do, any
   adjacent bug it found with file and line, the exact commands run with counts, and its commit
   SHAs.
@@ -281,7 +283,9 @@ Before any push, check **every** deploy workflow for that branch — this repo h
 into a running deploy. Confirm they are finished by reading the runs, not by assuming elapsed time.
 
 Before the first push of a batch, run the full local suite once: `npm test` and `./mvnw clean
-verify`. That is the moment the change becomes someone else's problem.
+verify`. Then run `npm run test:<suite>Behaviour-simulator` for every suite whose routes, pages or
+helpers the batch changed, serially (at least `auth`, `bundle`, `postVatReturn` and `practiceLicence`
+when the batch touched auth, sign-in or practice code). That is the moment the change becomes someone else's problem.
 
 Raise the PR as soon as the branch is testing and deploying, so its checks and its description grow
 together. Keep the description honest about what each item actually turned out to be — a row's
