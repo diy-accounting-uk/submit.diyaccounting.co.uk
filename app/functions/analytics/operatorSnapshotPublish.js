@@ -20,8 +20,47 @@ import {
   buildGithubActionsWorkflowLink,
   buildGa4ReportsLink,
 } from "../../lib/consoleLinks.js";
+import { loadCatalogFromRoot, isActivityListedInEnvironment } from "../../services/productCatalog.js";
 
 const logger = createLogger({ source: "app/functions/analytics/operatorSnapshotPublish.js" });
+
+/**
+ * One started and one completed observation per prod-listed catalogue activity
+ * (web/public/submit.catalogue.toml), generated here rather than hand-listed so a new prod
+ * listing joins the operator dashboard's activities table (renderActivities in dashboard.html)
+ * with no change to this file. The pair share their activity id as an "id::started"/
+ * "id::completed" suffix, which is how the page pairs them back into one table row.
+ *
+ * @returns {Array<object>} observation definitions, two per prod-listed activity
+ */
+function buildActivityObservations() {
+  const catalog = loadCatalogFromRoot();
+  const activities = (catalog.activities || []).filter((activity) => isActivityListedInEnvironment(activity, "prod"));
+  return activities.flatMap((activity) => [
+    {
+      id: `${activity.id}::started`,
+      label: `${activity.name} — started`,
+      unit: "count",
+      view: "v_activity_started_daily",
+      dayColumn: "day",
+      valueExpr: "starts",
+      aggregation: "sum",
+      where: `activity = '${activity.id}'`,
+      deepLink: (ctx) => buildAthenaSavedQueryLink(ctx.region, ctx.athenaWorkGroupName),
+    },
+    {
+      id: `${activity.id}::completed`,
+      label: `${activity.name} — completed`,
+      unit: "count",
+      view: "v_submissions_by_activity_daily",
+      dayColumn: "day",
+      valueExpr: "completions",
+      aggregation: "sum",
+      where: `activity = '${activity.id}'`,
+      deepLink: (ctx) => buildAthenaSavedQueryLink(ctx.region, ctx.athenaWorkGroupName),
+    },
+  ]);
+}
 
 /**
  * Every observation names a view under infra/main/resources/analytics/views (security's
@@ -545,6 +584,14 @@ export const OBJECTIVE_DEFINITIONS = [
         deepLink: (ctx) => buildAthenaSavedQueryLink(ctx.region, ctx.athenaWorkGroupName),
       },
     ],
+  },
+  {
+    // Not one of the page's eight objectives (OBJECTIVE_ORDER in dashboard.html), the same way
+    // company-accounts sits outside them above: renderActivities reads this objective's
+    // observations into its own started/completed table instead of the generic trend table.
+    id: "activity-started-and-completed",
+    name: "Activity started and completed",
+    observations: buildActivityObservations(),
   },
 ];
 

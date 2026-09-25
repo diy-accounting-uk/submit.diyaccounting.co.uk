@@ -107,6 +107,29 @@
         </table>
       </section>
 
+      <section id="activitiesPanel" class="objective" hidden>
+        <h2>Activity started and completed</h2>
+        <p class="subtitle">Each activity's primary button clicked, and how often it went on to complete</p>
+        <table class="observations" id="activitiesTable">
+          <thead>
+            <tr>
+              <th rowspan="2">Activity</th>
+              <th colspan="3">Started</th>
+              <th colspan="3">Completed</th>
+            </tr>
+            <tr>
+              <th>Last 30 days</th>
+              <th>Trend</th>
+              <th>Last 90 days</th>
+              <th>Last 30 days</th>
+              <th>Trend</th>
+              <th>Last 90 days</th>
+            </tr>
+          </thead>
+          <tbody id="activitiesBody"></tbody>
+        </table>
+      </section>
+
       <div id="objectivesContainer"></div>
 
       <section id="visitorsPanel" class="objective">
@@ -372,6 +395,80 @@
         COMPANY_BALANCE_SHEET_ROWS.forEach(([id, label]) => bsBody.appendChild(renderCompanyAccountsRow(observationsById, id, label)));
       }
 
+      function activityCountCell(observation, key) {
+        const cell = document.createElement("td");
+        cell.textContent = formatValue("count", observation && observation[key] && observation[key].value);
+        return cell;
+      }
+
+      function activityTrendCell(observation) {
+        const trend = formatTrend(observation && observation.last30 && observation.last30.trend);
+        const cell = document.createElement("td");
+        cell.textContent = trend.text;
+        cell.className = trend.className;
+        return cell;
+      }
+
+      // The pair's own label carries " — started"/" — completed" (operatorSnapshotPublish.js);
+      // stripping it back off here is what turns the pair into one row's activity name, rather
+      // than the page carrying its own copy of every catalogue activity's display name.
+      function activityDisplayName(activityId, started, completed) {
+        if (started) return started.label.replace(/ — started$/, "");
+        if (completed) return completed.label.replace(/ — completed$/, "");
+        return activityId;
+      }
+
+      function renderActivitiesRow(activityId, started, completed) {
+        const row = document.createElement("tr");
+        row.className = "activity-row";
+        row.dataset.activityId = activityId;
+
+        const labelCell = document.createElement("td");
+        labelCell.textContent = activityDisplayName(activityId, started, completed);
+        row.appendChild(labelCell);
+
+        row.appendChild(activityCountCell(started, "last30"));
+        row.appendChild(activityTrendCell(started));
+        row.appendChild(activityCountCell(started, "last90"));
+        row.appendChild(activityCountCell(completed, "last30"));
+        row.appendChild(activityTrendCell(completed));
+        row.appendChild(activityCountCell(completed, "last90"));
+
+        return row;
+      }
+
+      // Every prod-listed catalogue activity is already in the snapshot (buildActivityObservations
+      // in operatorSnapshotPublish.js reads submit.catalogue.toml at publish time), so this page
+      // pairs the "id::started"/"id::completed" observations it is given back into one row per
+      // activity id rather than reading the catalogue itself.
+      function renderActivities(snapshot) {
+        const panel = document.getElementById("activitiesPanel");
+        const objective = (snapshot.objectives || []).find((candidate) => candidate.id === "activity-started-and-completed") || {
+          observations: [],
+        };
+
+        const byActivityId = {};
+        objective.observations.forEach((observation) => {
+          const [activityId, kind] = observation.id.split("::");
+          if (!byActivityId[activityId]) byActivityId[activityId] = {};
+          byActivityId[activityId][kind] = observation;
+        });
+
+        const activityIds = Object.keys(byActivityId).sort();
+        if (activityIds.length === 0) {
+          panel.hidden = true;
+          return;
+        }
+        panel.hidden = false;
+
+        const body = document.getElementById("activitiesBody");
+        body.innerHTML = "";
+        activityIds.forEach((activityId) => {
+          const pair = byActivityId[activityId];
+          body.appendChild(renderActivitiesRow(activityId, pair.started, pair.completed));
+        });
+      }
+
       function renderSnapshot(snapshot) {
         const meta = document.getElementById("snapshotMeta");
         meta.textContent = "Generated " + snapshot.generatedAt + " for " + snapshot.environment;
@@ -453,6 +550,7 @@
           const snapshot = await fetchJson("/api/v1/operator/snapshot");
           renderSnapshot(snapshot);
           renderCompanyAccounts(snapshot);
+          renderActivities(snapshot);
           renderVisitors(snapshot);
         } catch (error) {
           if (error.status === 403) {

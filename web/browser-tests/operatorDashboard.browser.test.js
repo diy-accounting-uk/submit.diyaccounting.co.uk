@@ -158,7 +158,48 @@ const FIXTURE_SNAPSHOT = {
         },
       ],
     },
+    {
+      id: "activity-started-and-completed",
+      name: "Activity started and completed",
+      observations: [
+        {
+          id: "submit-vat::started",
+          label: "Submit VAT (HMRC) — started",
+          unit: "count",
+          last30: { value: 40, trend: 0.1 },
+          last90: { value: 110, trend: 0.05 },
+        },
+        {
+          id: "submit-vat::completed",
+          label: "Submit VAT (HMRC) — completed",
+          unit: "count",
+          last30: { value: 22, trend: -0.05 },
+          last90: { value: 60, trend: 0.02 },
+        },
+        {
+          id: "bundle::started",
+          label: "View and edit your bundles — started",
+          unit: "count",
+          last30: { value: 31, trend: 0 },
+          last90: { value: 90, trend: 0 },
+        },
+        {
+          id: "bundle::completed",
+          label: "View and edit your bundles — completed",
+          unit: "count",
+          last30: { value: 31, trend: 0 },
+          last90: { value: 90, trend: 0 },
+        },
+      ],
+    },
   ],
+};
+
+const FIXTURE_SNAPSHOT_NO_ACTIVITIES = {
+  ...FIXTURE_SNAPSHOT,
+  objectives: FIXTURE_SNAPSHOT.objectives.map((objective) =>
+    objective.id === "activity-started-and-completed" ? { ...objective, observations: [] } : objective,
+  ),
 };
 
 const FIXTURE_SNAPSHOT_NO_COMPANY_BOOK = {
@@ -326,6 +367,33 @@ test.describe("Operator Dashboard", () => {
     await loadDashboard(page);
 
     await expect(page.locator("#companyAccountsPanel")).toBeHidden();
+  });
+
+  test("shows one row per activity, with the started and completed windows and trend", async ({ page }) => {
+    await setupRoutes(page);
+    await loadDashboard(page);
+
+    const panel = page.locator("#activitiesPanel");
+    await expect(panel).toBeVisible();
+
+    const vatRow = panel.locator('.activity-row[data-activity-id="submit-vat"]');
+    await expect(vatRow.locator("td").nth(0)).toHaveText("Submit VAT (HMRC)");
+    await expect(vatRow.locator("td").nth(1)).toHaveText("40"); // started, last 30
+    await expect(vatRow.locator("td").nth(2)).toHaveText("↑ 10.0%"); // started trend
+    await expect(vatRow.locator("td").nth(3)).toHaveText("110"); // started, last 90
+    await expect(vatRow.locator("td").nth(4)).toHaveText("22"); // completed, last 30
+    await expect(vatRow.locator("td").nth(5)).toHaveText("↓ 5.0%"); // completed trend
+    await expect(vatRow.locator("td").nth(6)).toHaveText("60"); // completed, last 90
+
+    const bundleRow = panel.locator('.activity-row[data-activity-id="bundle"]');
+    await expect(bundleRow.locator("td").nth(0)).toHaveText("View and edit your bundles");
+  });
+
+  test("hides the activities panel when the snapshot carries no activity observations", async ({ page }) => {
+    await setupRoutes(page, { snapshotBody: FIXTURE_SNAPSHOT_NO_ACTIVITIES });
+    await loadDashboard(page);
+
+    await expect(page.locator("#activitiesPanel")).toBeHidden();
   });
 
   test("names the operator pass on a 403", async ({ page }) => {
