@@ -45,8 +45,6 @@ Shared facts for the analytics rows (SR-11, B52l, B52m): the prod Athena databas
 
 ## In flight
 
-- [ ] **B30p. `deploy.yml`'s post-deploy jobs fail after `names` fails.** When the slot claim in `names` timed out (run 36178253507 attempt 1: "No ci slot freed up in 30 minutes" with three branches deploying at once), `enable-native-auth` (line 2066), `disable-native-auth` (line 3062) and `set-last-known-good-deployment` (line 3154) still ran and failed (`grep: .env.: No such file or directory`, the environment name empty), three extra reds on one cause. Add `needs.names.result == 'success'` to each job's `if:`, keeping the rest of each condition. `prettier --check`, a js-yaml parse and actionlint with CI's flags. Branch `claude/horizon-ops`, PR #364; remaining: its checks and `/auto-merge`. **Source**: run 36178253507. **Owner**: Claude Code. **Model**: Haiku. **Size**: 1 file.
-
 ## Machine-only
 
 - [ ] **B30o. Prove the operator snapshot publish finishes (alarm #361, closed by PR #362).** PR #362 merged as `397962b0`; `prod-env-operator-snapshot-publish` carries a 900 s timeout and image `env-analytics-397962b0…` since 2026-09-25 21:03 UTC. Remaining: the next run (the 03:15 UTC schedule on 2026-09-26, or an operator invoke) reports a duration under 900 s with `Status` absent, and the operator dashboard's Activities tab shows the table; read with `aws --profile submit-prod logs filter-log-events --log-group-name /aws/lambda/prod-env-operator-snapshot-publish --filter-pattern REPORT`. A timeout again reopens #361. **Source**: alarm #361; BACKLOG 30. **Owner**: Claude Code. **Model**: Haiku. **Size**: 0 files.
