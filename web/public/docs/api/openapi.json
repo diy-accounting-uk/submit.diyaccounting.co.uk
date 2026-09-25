@@ -1418,6 +1418,13 @@
         }
       }
     },
+    "/activity/started" : {
+      "post" : {
+        "summary" : "Record an activity started",
+        "description" : "Publishes an activity-started event for the authenticated user's activity id, clicked from that activity's primary button",
+        "operationId" : "recordActivityStarted"
+      }
+    },
     "/hmrc/itsa/obligations/crystallisation" : {
       "get" : {
         "summary" : "Retrieve ITSA final declaration obligations",
