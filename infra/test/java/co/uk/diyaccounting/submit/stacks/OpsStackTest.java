@@ -144,6 +144,52 @@ class OpsStackTest {
 
     @Test
     @SuppressWarnings("unchecked")
+    void alarmToGithubIssueLambdaCanReadTheEnvironmentsLiveDeployment() {
+        // Both the issue body's own deployment-liveness line and its evidence links depend on
+        // this grant: resolveDeploymentSlug (app/functions/ops/alarmToGithubIssue.js) reads this
+        // exact parameter, unconditionally now, to say whether the deployment named on the alarm
+        // is still the one live in the environment.
+        OpsStack opsStack = synthOpsStack("prod", TEST_GITHUB_APP_ID, null);
+        Template template = Template.fromStack(opsStack);
+
+        List<Map<String, Object>> statements =
+                findPolicyStatementsContainingSid(template, "ReadLastKnownGoodDeployment");
+        Map<String, Object> statement = statements.stream()
+                .filter(s -> "ReadLastKnownGoodDeployment".equals(s.get("Sid")))
+                .findFirst()
+                .orElseThrow();
+
+        assertEquals("ssm:GetParameter", statement.get("Action"));
+        String resource = (String) statement.get("Resource");
+        assertTrue(
+                resource.endsWith("parameter/submit/prod/last-known-good-deployment"),
+                "expected the prod last-known-good-deployment parameter, got " + resource);
+    }
+
+    @Test
+    @SuppressWarnings("unchecked")
+    void alarmToGithubIssueLambdaCanDescribeACompositeAlarmsChildAlarms() {
+        // resolveCompositeChildAlarmState (app/functions/ops/alarmToGithubIssue.js) makes two
+        // DescribeAlarms calls for a "-stack-health" composite: the composite's own AlarmRule,
+        // then each child's current state to find which one actually fired. DescribeAlarms
+        // supports no resource-level permission (see the grant's own comment in OpsStack), so one
+        // wildcard statement covers both calls; this test guards that it is not narrowed to
+        // something DescribeAlarms would then always deny.
+        OpsStack opsStack = synthOpsStack("prod", TEST_GITHUB_APP_ID, null);
+        Template template = Template.fromStack(opsStack);
+
+        List<Map<String, Object>> statements = findPolicyStatementsContainingSid(template, "ReadCompositeAlarmRules");
+        Map<String, Object> statement = statements.stream()
+                .filter(s -> "ReadCompositeAlarmRules".equals(s.get("Sid")))
+                .findFirst()
+                .orElseThrow();
+
+        assertEquals("cloudwatch:DescribeAlarms", statement.get("Action"));
+        assertEquals("*", statement.get("Resource"));
+    }
+
+    @Test
+    @SuppressWarnings("unchecked")
     void alarmToGithubIssueLambdaHasReservedConcurrencyOfOne() {
         // Serialises this deployment's own invocations, so one invocation's create always
         // finishes before the next one's list runs (see #210/#212). It does not reach a second

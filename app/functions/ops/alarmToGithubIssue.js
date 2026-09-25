@@ -40,7 +40,8 @@ import { createLogger } from "../../lib/logger.js";
 import { alarmFamilyKey, alarmDeploymentSlug, resolveAlarmEnv } from "../../lib/alarmName.js";
 import { isDeploymentSilenced } from "../../lib/alarmSilence.js";
 import { claimAlarmStateChange } from "../../data/dynamoDbAlarmIssueLockRepository.js";
-import { resolveAlarmEvidence, extractCompositeChildFunctionNames } from "../../lib/alarmEvidence.js";
+import { resolveAlarmEvidence, extractCompositeChildAlarms } from "../../lib/alarmEvidence.js";
+import { resolveTriggeringChildFunctionNames } from "../../lib/alarmCompositeState.js";
 import { resolveAlarmWindow } from "../../lib/alarmWindow.js";
 import { buildAlarmConsoleLink, buildLogsInsightsLink, buildXRayTraceSearchLink } from "../../lib/consoleLinks.js";
 import { appendAutomationDisclosure } from "../../lib/gitHubHelpers.js";
@@ -121,22 +122,23 @@ export function resolveAlarmDetail(event) {
 const DEPLOYMENT_SLUG_PATTERN = /^(ci|prod)-([^-]+)-app-/;
 
 /**
- * The deployment slug this alarm belongs to: read straight off the alarm
- * name when it carries one, otherwise the environment's last-known-good
- * deployment from SSM (an environment-scoped alarm, e.g. a submission
- * failure, still points at the deployment whose Lambda wrote the logs).
- * The SSM answer is cached per container: it changes only on a deploy, and
- * every alarm in the same invocation environment shares it.
+ * The env-prefixed deployment name this alarm belongs to (e.g. "prod-0f68ed8"),
+ * read straight off the alarm name when it carries one, otherwise the
+ * environment's last-known-good deployment from SSM (an environment-scoped
+ * alarm, e.g. a submission failure, still points at the deployment whose
+ * Lambda wrote the logs). The SSM answer is cached per container: it
+ * changes only on a deploy, and every alarm in the same invocation
+ * environment shares it.
  *
  * The parameter names "None" (the sweeper's sentinel for "no deployment is
  * live", see destroy-ci.yml/destroy-prod.yml) and a missing parameter both
- * resolve to a null slug, the same as an environment-scoped alarm firing
- * with nothing live: the evidence links widen to the environment prefix
- * instead of a deployment slug that would match no log group.
+ * resolve to a null deployment name, the same as an environment-scoped alarm
+ * firing with nothing live: the evidence links widen to the environment
+ * prefix instead of a deployment name that would match no log group.
  */
 export async function resolveDeploymentSlug({ alarmName, env }) {
   const match = (alarmName || "").match(DEPLOYMENT_SLUG_PATTERN);
-  if (match) return match[2];
+  if (match) return `${match[1]}-${match[2]}`;
 
   if (cachedDeploymentSlugs.has(env)) return cachedDeploymentSlugs.get(env);
 
@@ -161,24 +163,31 @@ export async function resolveDeploymentSlug({ alarmName, env }) {
 
 /**
  * A "-stack-health" alarm is a composite with no metric of its own; its
- * children are named in its AlarmRule. Returns [] and logs a warning
- * rather than throwing, so a DescribeAlarms failure widens the evidence to
- * the deployment or environment prefix (see alarmEvidence.js rules 15/16)
- * instead of failing issue creation.
+ * children are named in its AlarmRule, and only the one(s) actually in
+ * ALARM caused it to fire. Two DescribeAlarms calls: the composite's own
+ * AlarmRule, then each child's current state (resolveTriggeringChildFunctionNames
+ * in app/lib/alarmCompositeState.js, shared with scripts/resolve-alarm-evidence.mjs's
+ * triage evidence so the two paths cannot disagree about which function fired).
+ * Returns empty arrays and logs a warning rather than throwing, so a
+ * DescribeAlarms failure widens the evidence to the deployment or
+ * environment prefix (see alarmEvidence.js rules 15/16) instead of failing
+ * issue creation.
  */
-export async function resolveCompositeChildFunctionNames({ region, alarmName }) {
+export async function resolveCompositeChildAlarmState({ region, alarmName }) {
   try {
     const cloudwatchClient = new CloudWatchClient({ region });
     const result = await cloudwatchClient.send(new DescribeAlarmsCommand({ AlarmNames: [alarmName], AlarmTypes: ["CompositeAlarm"] }));
     const alarmRule = result.CompositeAlarms?.[0]?.AlarmRule;
-    return extractCompositeChildFunctionNames(alarmRule);
+    const children = extractCompositeChildAlarms(alarmRule);
+    const triggeringChildFunctionNames = await resolveTriggeringChildFunctionNames({ children, region });
+    return { childFunctionNames: children.map((child) => child.functionName), triggeringChildFunctionNames };
   } catch (error) {
     logger.warn({
       message: "Failed to resolve composite alarm's child function names, widening evidence links",
       alarmName,
       error: error.message,
     });
-    return [];
+    return { childFunctionNames: [], triggeringChildFunctionNames: [] };
   }
 }
 
@@ -186,12 +195,17 @@ export function buildIssueTitle(alarmName) {
   return `[ALARM] ${alarmName}`;
 }
 
+function renderLogGroupList(evidence) {
+  const triggering = new Set(evidence.triggeringLogGroupNamePrefixes || []);
+  return evidence.logGroupNamePrefixes.map((name) => (triggering.has(name) ? `\`${name}\` (triggering)` : `\`${name}\``)).join(", ");
+}
+
 function renderEvidenceSection({ alarmConsoleLink, logsInsightsLink, xrayLink, evidence }) {
   const lines = ["### Evidence", ""];
   lines.push(`- [CloudWatch alarm](${alarmConsoleLink})`);
 
   if (logsInsightsLink) {
-    lines.push(`- [Logs Insights for this window](${logsInsightsLink}) — \`${evidence.logGroupNamePrefixes.join(", ")}\``);
+    lines.push(`- [Logs Insights for this window](${logsInsightsLink}) — ${renderLogGroupList(evidence)}`);
   } else if (evidence.noEvidenceReason) {
     lines.push(`- No log group applies: ${evidence.noEvidenceReason}`);
   }
@@ -216,6 +230,15 @@ function renderWindowLine(window) {
   return `**Window:** ${window.startIso} to ${window.endIso} (period ${window.periodSeconds}s × ${window.evaluatedPeriods}, margin ${window.marginSeconds}s)`;
 }
 
+// A separate line, never appended to the "**Deployment:**" line: alarm-triage.yml's "Read the
+// alarm out of the issue body" step takes everything after "**Deployment:** " on that line as
+// the deployment name verbatim, so anything else on it would corrupt what the triage workflow
+// resolves as DEPLOYMENT_NAME.
+function renderDeploymentLiveLine(deploymentLive, liveDeployment) {
+  if (deploymentLive !== false) return null;
+  return `**Deployment live:** no (last-known-good is ${liveDeployment || "none"})`;
+}
+
 export function buildIssueBody({
   alarmName,
   familyKey,
@@ -225,6 +248,8 @@ export function buildIssueBody({
   timestamp,
   region,
   deployment,
+  deploymentLive,
+  liveDeployment,
   window,
   evidence,
   links,
@@ -237,6 +262,8 @@ export function buildIssueBody({
   if (window) headerLines.push(renderWindowLine(window));
   headerLines.push(`**Region:** ${region}`);
   if (deployment) headerLines.push(`**Deployment:** ${deployment}`);
+  const deploymentLiveLine = renderDeploymentLiveLine(deploymentLive, liveDeployment);
+  if (deploymentLiveLine) headerLines.push(deploymentLiveLine);
 
   const evidenceSection = renderEvidenceSection({
     alarmConsoleLink: links.alarmConsole,
@@ -254,7 +281,19 @@ Every link needs a signed-in AWS session. Nothing from the logs is copied here.`
   return appendAutomationDisclosure(body);
 }
 
-export function buildCommentBody({ alarmName, state, previousState, reason, timestamp, window, evidence, links }) {
+export function buildCommentBody({
+  alarmName,
+  state,
+  previousState,
+  reason,
+  timestamp,
+  deployment,
+  deploymentLive,
+  liveDeployment,
+  window,
+  evidence,
+  links,
+}) {
   const reasonSuffix = reason ? ` (${reason})` : "";
   const headerLines = [
     `Alarm state changed again: ${previousState} → ${state}${reasonSuffix} at ${timestamp}.`,
@@ -262,6 +301,9 @@ export function buildCommentBody({ alarmName, state, previousState, reason, time
     `**Alarm:** ${alarmName}`,
   ];
   if (window) headerLines.push(renderWindowLine(window));
+  if (deployment) headerLines.push(`**Deployment:** ${deployment}`);
+  const deploymentLiveLine = renderDeploymentLiveLine(deploymentLive, liveDeployment);
+  if (deploymentLiveLine) headerLines.push(deploymentLiveLine);
 
   const evidenceSection = renderEvidenceSection({
     alarmConsoleLink: links.alarmConsole,
@@ -428,9 +470,16 @@ export async function handler(event) {
   const familyKey = alarmFamilyKey(alarm.alarmName);
 
   const deployment = await resolveDeploymentSlug({ alarmName: alarm.alarmName, env });
-  const compositeChildFunctionNames = familyKey.endsWith("-stack-health")
-    ? await resolveCompositeChildFunctionNames({ region: alarm.region, alarmName: alarm.alarmName })
-    : [];
+  // Answers "is the deployment above still the one live in this environment", read straight
+  // from the same SSM parameter the deploy pipeline updates, so the issue states it as a fact
+  // instead of leaving a reader to infer it from the alarm's own age.
+  const liveDeployment = await resolveDeploymentSlug({ alarmName: undefined, env });
+  const deploymentLive = Boolean(deployment) && liveDeployment === deployment;
+
+  const compositeChildAlarmState = familyKey.endsWith("-stack-health")
+    ? await resolveCompositeChildAlarmState({ region: alarm.region, alarmName: alarm.alarmName })
+    : { childFunctionNames: [], triggeringChildFunctionNames: [] };
+  const { childFunctionNames: compositeChildFunctionNames, triggeringChildFunctionNames } = compositeChildAlarmState;
 
   const window = resolveAlarmWindow({
     reasonData: alarm.reasonData,
@@ -447,6 +496,7 @@ export async function handler(event) {
     metricName: alarm.metricName,
     dimensions: alarm.dimensions,
     compositeChildFunctionNames,
+    triggeringChildFunctionNames,
   });
 
   const links = {
@@ -474,6 +524,8 @@ export async function handler(event) {
     timestamp: alarm.timestamp,
     region: alarm.region,
     deployment,
+    deploymentLive,
+    liveDeployment,
     window,
     evidence,
     links,

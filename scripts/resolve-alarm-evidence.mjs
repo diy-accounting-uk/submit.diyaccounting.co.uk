@@ -29,6 +29,7 @@ import { CloudWatchClient, DescribeAlarmsCommand } from "@aws-sdk/client-cloudwa
 
 import { alarmFamilyKey, resolveAlarmEnv } from "../app/lib/alarmName.js";
 import { resolveAlarmEvidence, extractCompositeChildAlarms } from "../app/lib/alarmEvidence.js";
+import { resolveTriggeringChildFunctionNames } from "../app/lib/alarmCompositeState.js";
 import { resolveAlarmWindow } from "../app/lib/alarmWindow.js";
 import { buildLogsInsightsLink, buildXRayTraceSearchLink } from "../app/lib/consoleLinks.js";
 import { resolveDeploymentSlug } from "../app/functions/ops/alarmToGithubIssue.js";
@@ -84,32 +85,6 @@ export function parseArgs(argv) {
     throw new Error("--start and --end are required unless --from-alarm is given");
   }
   return opts;
-}
-
-/**
- * A composite's AlarmRule ORs several "check-" alarms together, but only
- * the child(ren) actually in ALARM caused the composite to fire. Reads each
- * child's own current state with one DescribeAlarms call and returns the
- * function names behind whichever are ALARM right now, so the evidence can
- * name the triggering function first instead of every child the rule lists.
- * Returns [] rather than throwing on a DescribeAlarms failure or when no
- * child is currently ALARM (it may have cleared since), so the evidence
- * still widens to every child instead of losing the run.
- */
-async function resolveTriggeringChildFunctionNames({ children, region }) {
-  if (children.length === 0) return [];
-  try {
-    const cloudwatchClient = new CloudWatchClient({ region });
-    const result = await cloudwatchClient.send(
-      new DescribeAlarmsCommand({ AlarmNames: children.map((child) => child.alarmName), AlarmTypes: ["MetricAlarm"] }),
-    );
-    const alarmingNames = new Set(
-      (result.MetricAlarms || []).filter((alarm) => alarm.StateValue === "ALARM").map((alarm) => alarm.AlarmName),
-    );
-    return children.filter((child) => alarmingNames.has(child.alarmName)).map((child) => child.functionName);
-  } catch {
-    return [];
-  }
 }
 
 /**
