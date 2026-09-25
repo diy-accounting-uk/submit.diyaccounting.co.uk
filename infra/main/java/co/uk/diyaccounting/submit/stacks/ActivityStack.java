@@ -197,7 +197,8 @@ public class ActivityStack extends Stack {
         // stack's own activity bus like every other publisher.
         var signInActivityPublishEnv = new PopulatedMap<String, String>()
                 .with("ENVIRONMENT_NAME", props.envName())
-                .with("ACTIVITY_BUS_NAME", this.activityBus.getEventBusName());
+                .with("ACTIVITY_BUS_NAME", this.activityBus.getEventBusName())
+                .with("SECURITY_STATE_DYNAMODB_TABLE_NAME", props.sharedNames().securityStateTableName);
         this.signInActivityPublishLambda = new Lambda(
                 this,
                 LambdaProps.builder()

@@ -28,7 +28,7 @@ import software.amazon.awscdk.services.s3.Bucket;
  */
 class BusinessViewsTest {
 
-    private static final int VIEW_COUNT = 27;
+    private static final int VIEW_COUNT = 28;
 
     private Template synthBusinessViews() {
         var sharedNames = SubmitSharedNames.forDocs();
@@ -110,6 +110,7 @@ class BusinessViewsTest {
                 "v_ga4_funnel_daily",
                 "v_purchase_reconciliation_daily",
                 "v_submissions_by_activity_daily",
+                "v_activity_started_daily",
                 "v_traffic_sources_daily",
                 "v_availability_sli_daily",
                 "v_alarm_state_changes_daily",

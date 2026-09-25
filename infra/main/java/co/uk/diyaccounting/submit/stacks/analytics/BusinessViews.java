@@ -121,6 +121,10 @@ public class BusinessViews extends Construct {
                     "Completions each day by activity (VAT, ITSA, Companies House), not VAT only",
                     List.of("activity_events_all")),
             new ViewDefinition(
+                    "v_activity_started_daily",
+                    "Activity starts each day, by catalogue activity id (an activity's primary button clicked)",
+                    List.of("activity_events_all")),
+            new ViewDefinition(
                     "v_traffic_sources_daily", "Sessions each day, by GA4 channel group", List.of("ga4_traffic")),
             new ViewDefinition(
                     "v_visitors_by_kind_daily",

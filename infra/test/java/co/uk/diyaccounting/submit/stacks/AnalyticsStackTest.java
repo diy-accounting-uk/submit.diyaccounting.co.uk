@@ -130,8 +130,8 @@ class AnalyticsStackTest {
 
         // Two saved queries: the spike's day-one query, plus the union view's definition kept
         // here for reference (the custom resource below is what actually creates the view). One
-        // more named query per BusinessViews view, including v_sign_ins_daily.
-        analytics.resourceCountIs("AWS::Athena::NamedQuery", 29);
+        // more named query per BusinessViews view, including v_activity_started_daily.
+        analytics.resourceCountIs("AWS::Athena::NamedQuery", 30);
 
         // The view itself is created by a one-shot custom resource, not a hand-built VIRTUAL_VIEW.
         var customResources = analytics.findResources("Custom::AWS");

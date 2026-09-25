@@ -1055,7 +1055,8 @@ public class AnalyticsStack extends Stack {
                         "env",
                         "detail_json",
                         "app_client",
-                        "session_id")
+                        "session_id",
+                        "activity_id")
                 .stream()
                 .map(name -> CfnTable.ColumnProperty.builder()
                         .name(name)
@@ -1103,7 +1104,8 @@ public class AnalyticsStack extends Stack {
                         "env",
                         "detail_json",
                         "app_client",
-                        "session_id")
+                        "session_id",
+                        "activity_id")
                 .forEach(name -> columns.add(CfnTable.ColumnProperty.builder()
                         .name(name)
                         .type("string")

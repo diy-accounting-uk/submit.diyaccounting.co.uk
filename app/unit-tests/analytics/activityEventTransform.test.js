@@ -132,6 +132,22 @@ describe("activityEventTransform", () => {
     expect(row.session_id).toBeNull();
   });
 
+  test("promotes the activity id from an activity-started event", async () => {
+    const detail = { ...loginDetail, event: "activity-started", activityId: "submit-vat" };
+
+    const result = await handler({ records: [{ recordId: "r1", data: encode(envelope(detail)) }] });
+    const row = JSON.parse(decode(result.records[0].data));
+
+    expect(row.activity_id).toBe("submit-vat");
+  });
+
+  test("leaves activity id null for an event carrying none", async () => {
+    const result = await handler({ records: [{ recordId: "r1", data: encode(envelope(loginDetail)) }] });
+    const row = JSON.parse(decode(result.records[0].data));
+
+    expect(row.activity_id).toBeNull();
+  });
+
   test("round-trips the original detail into detail_json", async () => {
     const detail = { ...loginDetail, somethingNotYetPromoted: { nested: true, count: 3 } };
     const result = await handler({ records: [{ recordId: "r1", data: encode(envelope(detail)) }] });

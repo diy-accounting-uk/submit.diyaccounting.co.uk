@@ -54,6 +54,7 @@ import {
   runAthenaQuery,
   OBJECTIVE_DEFINITIONS,
 } from "@app/functions/analytics/operatorSnapshotPublish.js";
+import { loadCatalogFromRoot, isActivityListedInEnvironment } from "@app/services/productCatalog.js";
 
 const DAILY_SERIES_OBSERVATION_COUNT = OBJECTIVE_DEFINITIONS.reduce(
   (sum, objective) => sum + objective.observations.filter((observation) => observation.dailySeries).length,
@@ -336,7 +337,7 @@ describe("operatorSnapshotPublish", () => {
       expect(startCalls).toHaveLength(observationCount + DAILY_SERIES_OBSERVATION_COUNT);
 
       expect(snapshot.environment).toBe("test");
-      expect(snapshot.objectives).toHaveLength(9);
+      expect(snapshot.objectives).toHaveLength(10);
 
       const uptime = snapshot.objectives.find((o) => o.id === "uptime");
       expect(uptime.observations.length).toBeGreaterThan(0);
@@ -520,6 +521,39 @@ describe("operatorSnapshotPublish", () => {
       }
       expect(snapshot.failedObservationCount).toBe(0);
     });
+
+    test("the activity-started-and-completed observation set has a started and completed pair for every prod-listed catalogue activity", async () => {
+      mockAllQueriesSucceedWith(["4", "3", "9", "7"]);
+
+      const context = {
+        envName: "test",
+        region: "eu-west-2",
+        athenaWorkGroupName: "test-env-analytics",
+        githubRepo: "diy-accounting-uk/submit.diyaccounting.co.uk",
+        ga4PropertyId: "523400333",
+      };
+      const snapshot = await buildSnapshot({ workGroup: "wg", database: "db", context });
+
+      const activities = snapshot.objectives.find((o) => o.id === "activity-started-and-completed");
+      const catalog = loadCatalogFromRoot();
+      const prodActivityIds = (catalog.activities || [])
+        .filter((activity) => isActivityListedInEnvironment(activity, "prod"))
+        .map((activity) => activity.id);
+
+      expect(prodActivityIds.length).toBeGreaterThan(0);
+      expect(activities.observations).toHaveLength(prodActivityIds.length * 2);
+      for (const activityId of prodActivityIds) {
+        expect(activities.observations.some((o) => o.id === `${activityId}::started`)).toBe(true);
+        expect(activities.observations.some((o) => o.id === `${activityId}::completed`)).toBe(true);
+      }
+      for (const observation of activities.observations) {
+        expect(observation.deepLink).toEqual(expect.any(String));
+      }
+
+      // self-employed is catalogued but not listed in prod (environments excludes it) -- its
+      // pair must not appear, or a non-prod activity would silently join the operator's table.
+      expect(activities.observations.some((o) => o.id === "self-employed::started")).toBe(false);
+    });
   });
 
   describe("writeSnapshot", () => {
@@ -547,7 +581,7 @@ describe("operatorSnapshotPublish", () => {
 
       const result = await handler();
 
-      expect(result).toEqual({ environment: "test", objectives: 9 });
+      expect(result).toEqual({ environment: "test", objectives: 10 });
       expect(mockS3Send).toHaveBeenCalledTimes(2);
     });
 

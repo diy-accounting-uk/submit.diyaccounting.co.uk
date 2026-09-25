@@ -99,6 +99,22 @@ class ActivityStackTest {
     }
 
     @Test
+    void signInActivityPublishIsToldTheSecurityStateTableName() {
+        Template template = Template.fromStack(synthActivityStack());
+
+        template.hasResourceProperties(
+                "AWS::Lambda::Function",
+                Match.objectLike(Map.of(
+                        "FunctionName",
+                        "ci-env-sign-in-activity-publish",
+                        "Environment",
+                        Map.of(
+                                "Variables",
+                                Match.objectLike(
+                                        Map.of("SECURITY_STATE_DYNAMODB_TABLE_NAME", "ci-env-security-state"))))));
+    }
+
+    @Test
     void signInActivityPublishGetsSaltSecretAccess() {
         Template template = Template.fromStack(synthActivityStack());
 

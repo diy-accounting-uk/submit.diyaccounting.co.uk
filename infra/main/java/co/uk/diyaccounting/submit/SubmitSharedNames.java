@@ -1097,6 +1097,15 @@ public class SubmitSharedNames {
     public boolean interestPostLambdaJwtAuthorizer;
     public boolean interestPostLambdaCustomAuthorizer;
 
+    public String activityStartedPostIngestLambdaHandler;
+    public String activityStartedPostIngestLambdaFunctionName;
+    public String activityStartedPostIngestLambdaArn;
+    public String activityStartedPostIngestProvisionedConcurrencyLambdaAliasArn;
+    public HttpMethod activityStartedPostLambdaHttpMethod;
+    public String activityStartedPostLambdaUrlPath;
+    public boolean activityStartedPostLambdaJwtAuthorizer;
+    public boolean activityStartedPostLambdaCustomAuthorizer;
+
     public String passGetIngestLambdaHandler;
     public String passGetIngestLambdaFunctionName;
     public String passGetIngestLambdaArn;
@@ -4314,6 +4323,30 @@ public class SubmitSharedNames {
                 "Register feedback engagement",
                 "Publishes the authenticated user's email to an SNS topic for feedback engagement",
                 "registerInterest"));
+
+        // Activity Started POST Lambda (JWT auth - an activity's primary button was clicked)
+        this.activityStartedPostLambdaHttpMethod = HttpMethod.POST;
+        this.activityStartedPostLambdaUrlPath = "/api/v1/activity/started";
+        this.activityStartedPostLambdaJwtAuthorizer = true;
+        this.activityStartedPostLambdaCustomAuthorizer = false;
+        var activityStartedPostLambdaHandlerName = "activityStartedPost.ingestHandler";
+        var activityStartedPostLambdaHandlerDashed =
+                ResourceNameUtils.convertCamelCaseToDashSeparated(activityStartedPostLambdaHandlerName);
+        this.activityStartedPostIngestLambdaFunctionName =
+                "%s-%s".formatted(this.appResourceNamePrefix, activityStartedPostLambdaHandlerDashed);
+        this.activityStartedPostIngestLambdaHandler =
+                "%s/account/%s".formatted(appLambdaHandlerPrefix, activityStartedPostLambdaHandlerName);
+        this.activityStartedPostIngestLambdaArn =
+                "%s-%s".formatted(appLambdaArnPrefix, activityStartedPostLambdaHandlerDashed);
+        this.activityStartedPostIngestProvisionedConcurrencyLambdaAliasArn =
+                "%s:%s".formatted(this.activityStartedPostIngestLambdaArn, this.provisionedConcurrencyAliasName);
+        publishedApiLambdas.add(new PublishedLambda(
+                this.activityStartedPostLambdaHttpMethod,
+                this.activityStartedPostLambdaUrlPath,
+                "Record an activity started",
+                "Publishes an activity-started event for the authenticated user's activity id, "
+                        + "clicked from that activity's primary button",
+                "recordActivityStarted"));
 
         // Pass GET Lambda (public, no auth)
         this.passGetLambdaHttpMethod = HttpMethod.GET;
