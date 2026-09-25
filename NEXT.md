@@ -16,7 +16,7 @@ runs), and for Claude Code steps the **Model** a sub-agent should use (Fable > O
 Haiku; the lowest tier that fits). Anything touching code goes through a `claude/*` branch and
 PR; the operator merges.
 
-**Prod runs deployment prod-397962b** (PR #362's merge deploy, run 36188171621, 2026-09-25; the confirmation statement activity is listed on ci only).
+**Prod runs deployment prod-a8703b3** (PR #364's merge deploy, run 36198078131, 2026-09-25; the confirmation statement activity is listed on ci only).
 **ci**: `ci-set2` is last-known-good (built 2026-09-25 20:17 UTC by PR #363's deploy) and the only ci set standing.
 No pull request is open in this repository or its siblings.
 
