@@ -48,15 +48,14 @@ on:
       HMRC_SANDBOX_CLIENT_SECRET:
         required: false
 
-  # Every push runs this workflow, because main's ruleset requires its npm test, maven test and
-  # eslint contexts on every pull request. A docs-only push still needs those three contexts to
-  # exist on the head commit, so there is no paths-ignore here: the `changes` job below decides
-  # per push whether the heavy jobs actually run or report 'skipped', which still satisfies a
-  # required check.
+  # Every branch push runs this workflow because the ruleset requires its contexts on pull
+  # requests. Main is excluded because deploy.yml calls this workflow for every main head it
+  # deploys, and the nightly schedule covers main heads deploy.yml skips.
   push:
     branches:
       - '**'
       - '!gh_pages'
+      - '!main'
   schedule:
     - cron: '23 4 * * *'
 
