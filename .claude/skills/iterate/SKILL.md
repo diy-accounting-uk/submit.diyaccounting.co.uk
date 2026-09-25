@@ -93,7 +93,10 @@ are not startable; leave them.
   code, is fixed on the batch, not sent back.
 - **Once per batch before its first push**: `./mvnw clean verify` and then `npm test` on the
   merged tree, serially in one background command, because the two run concurrently push the load
-  average past 100 and vitest files time out. Then one push, one PR whose body says what each row turned out
+  average past 100 and vitest files time out. Then run `npm run test:<suite>Behaviour-simulator`
+  for every suite whose routes, pages or helpers the batch changed, serially (e.g. `auth`, `bundle`,
+  `postVatReturn`, `practiceLicence` when the batch touched auth, sign-in or practice code).
+  Then one push, one PR whose body says what each row turned out
   to be, and `/watch`.
 
 ### 3. Watch
