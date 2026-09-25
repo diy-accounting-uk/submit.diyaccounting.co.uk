@@ -1341,6 +1341,7 @@ public class AccountStack extends Stack {
                         .jwtAuthorizer(false)
                         .customAuthorizer(false)
                         .allClientsJwtAuthorizer(true)
+                        .optionsPreflightRoute(true)
                         .environment(sessionSignOutPostLambdaEnv)
                         .build());
         healthCheckedFunctions.add(sessionSignOutPostApiLambda);

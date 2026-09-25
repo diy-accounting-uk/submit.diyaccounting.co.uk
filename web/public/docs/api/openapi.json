@@ -920,6 +920,13 @@
         } ]
       }
     },
+    "/session/sign-out" : {
+      "post" : {
+        "summary" : "Session sign-out",
+        "description" : "Ends the caller's sign-in session on every Cognito app client",
+        "operationId" : "sessionSignOut"
+      }
+    },
     "/session/beacon" : {
       "post" : {
         "summary" : "Session beacon",

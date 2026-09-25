@@ -337,9 +337,11 @@ class SubmitApplicationCdkResourceTest {
         // each sit on their own unshared path, adding six primary routes plus six auto-HEAD
         // routes, for 156 + 12 = 168. POST /api/v1/billing/activity-checkout adds its own route
         // plus its own auto-HEAD route, since no other method shares that path, for 168 + 2 = 170.
-        // POST /api/v1/session/sign-out adds its own route plus its own auto-HEAD route, since
-        // no other method shares that path, for 170 + 2 = 172.
-        apiStackTemplate.resourceCountIs("AWS::ApiGatewayV2::Route", 172);
+        // POST /api/v1/session/sign-out adds its own route, its own auto-HEAD route, and an
+        // unauthenticated OPTIONS preflight route (every Cognito app client's origin needs the
+        // cross-origin browser preflight to reach a route with no authoriser, the same reason
+        // the books routes get one), for 170 + 3 = 173.
+        apiStackTemplate.resourceCountIs("AWS::ApiGatewayV2::Route", 173);
 
         // Dashboard moved to environment-level ObservabilityStack
         infof("Created stack:", submitApplication.opsStack.getStackName());

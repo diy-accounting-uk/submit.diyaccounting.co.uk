@@ -125,6 +125,7 @@ class ApiStackTest {
                 .jwtAuthorizer(false)
                 .customAuthorizer(false)
                 .allClientsJwtAuthorizer(true)
+                .optionsPreflightRoute(true)
                 .build();
 
         return new ApiStack(
@@ -363,6 +364,21 @@ class ApiStackTest {
         var optionsRoutes = template.findResources(
                 "AWS::ApiGatewayV2::Route", Map.of("Properties", Map.of("RouteKey", "OPTIONS /api/v1/books/{bookId}")));
         assertEquals(1, optionsRoutes.size(), "PUT and DELETE share one path, so only one OPTIONS route");
+
+        @SuppressWarnings("unchecked")
+        var properties = (Map<String, Object>)
+                ((Map<?, ?>) optionsRoutes.values().iterator().next()).get("Properties");
+        assertFalse(properties.containsKey("AuthorizerId"), "OPTIONS preflight must not require an authorizer");
+    }
+
+    @Test
+    void theSignOutRouteAlsoGetsAnUnauthenticatedOptionsPreflightRoute() {
+        ApiStack stack = synthApiStack();
+        Template template = Template.fromStack(stack);
+
+        var optionsRoutes = template.findResources(
+                "AWS::ApiGatewayV2::Route", Map.of("Properties", Map.of("RouteKey", "OPTIONS /api/v1/session/sign-out")));
+        assertEquals(1, optionsRoutes.size());
 
         @SuppressWarnings("unchecked")
         var properties = (Map<String, Object>)
