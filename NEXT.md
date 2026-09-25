@@ -45,6 +45,8 @@ Shared facts for the analytics rows (SR-11, B52l, B52m): the prod Athena databas
 
 ## In flight
 
+- [ ] **B30o. The operator snapshot publish times out (alarm #361).** Branch `claude/ops-snapshot-concurrency`, PR #362. The activities objective added 32 Athena queries run in series; `prod-env-operator-snapshot-publish` went from 143 to 159 s to its 300 s timeout (2026-09-25 18:06 UTC), so no snapshot publishes and the Activities tab stays hidden. The PR runs five observations at a time in order and raises the timeout to 15 minutes. Remaining: merge before the 03:15 UTC schedule on 2026-09-26, `main`'s `deploy-environment.yml` updates the Lambda, one invocation completes with the `activity-started-and-completed` objective in the snapshot, then close #361. **Source**: alarm #361; BACKLOG 30. **Owner**: Claude Code. **Model**: Sonnet. **Size**: 3 files.
+
 - [ ] **CS-10d. The confirmation-statement price in Stripe test mode.** Branch `claude/cs-stripe-price`, PR #360: test product `prod_VKI0w2q9h1Y1j7` and one-off price `price_1UJdQsFdFHdRoTOjLV1R8z25` (£61.35) created on 2026-09-25 and written into `.env.ci`, `.env.prod` (test name), `.env.proxy` and `.env.proxyRunning`. Remaining: the branch's ci deploy, then prove `POST /api/v1/billing/activity-checkout` for `file-confirmation-statement` returns a `checkout.stripe.com` URL on a sign-in-capable ci set. The live price lands with CS-11. **Owner**: Claude Code. **Model**: Sonnet. **Size**: 4 files.
 
 ## Machine-only
