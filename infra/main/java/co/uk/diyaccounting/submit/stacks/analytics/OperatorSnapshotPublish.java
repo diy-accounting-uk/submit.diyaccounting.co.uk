@@ -124,7 +124,7 @@ public class OperatorSnapshotPublish extends Construct {
                                 .tagOrDigest(props.baseImageTag())
                                 .cmd(List.of("app/functions/analytics/operatorSnapshotPublish.handler"))
                                 .build()))
-                .timeout(Duration.minutes(5))
+                .timeout(Duration.minutes(15))
                 .memorySize(256)
                 .architecture(Architecture.ARM_64)
                 .environment(environment)

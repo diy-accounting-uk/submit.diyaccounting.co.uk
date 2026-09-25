@@ -49,6 +49,7 @@ import {
   toObservationWindows,
   toDailySeries,
   buildSnapshot,
+  mapInOrderWithConcurrency,
   writeSnapshot,
   parseResultSet,
   runAthenaQuery,
@@ -316,6 +317,27 @@ describe("operatorSnapshotPublish", () => {
       mockAllQueriesSucceedWith(["1", "2", "3", "4"]);
       const rows = await runAthenaQuery({ workGroup: "wg", database: "db", sql: "SELECT 1" });
       expect(rows).toEqual([{ last_30: "1", prev_30: "2", last_90: "3", prev_90: "4" }]);
+    });
+  });
+
+  describe("mapInOrderWithConcurrency", () => {
+    test("returns results in input order while never running more than the limit at once", async () => {
+      let running = 0;
+      let peak = 0;
+      const delays = [30, 5, 20, 1, 15, 10, 2];
+      const results = await mapInOrderWithConcurrency(delays, 3, async (delay) => {
+        running += 1;
+        peak = Math.max(peak, running);
+        await new Promise((resolve) => setTimeout(resolve, delay));
+        running -= 1;
+        return delay * 2;
+      });
+      expect(results).toEqual(delays.map((delay) => delay * 2));
+      expect(peak).toBe(3);
+    });
+
+    test("answers an empty list with an empty list", async () => {
+      expect(await mapInOrderWithConcurrency([], 5, async () => 1)).toEqual([]);
     });
   });
 
