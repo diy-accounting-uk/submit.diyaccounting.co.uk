@@ -169,10 +169,12 @@ public class BusinessViews extends Construct {
             new ViewDefinition(
                     "v_cost_per_submission_daily",
                     "The day's cost divided by the day's completed submissions",
+                    List.of("v_cost_daily", "v_submissions_by_activity_daily"),
                     List.of("v_cost_daily", "v_submissions_by_activity_daily")),
             new ViewDefinition(
                     "v_cost_vs_target_monthly",
                     "Each month's billed cost against the steady-state target",
+                    List.of("v_cost_daily"),
                     List.of("v_cost_daily")),
             new ViewDefinition(
                     "v_sign_ins_daily",
@@ -328,7 +330,14 @@ public class BusinessViews extends Construct {
         // reading v_ga4_funnel_daily) needs an explicit dependency edge, added below once both
         // resources exist. VIEWS is declared with every dependency earlier in the list than its
         // dependent, so a single forward pass suffices.
+        var viewNames = VIEWS.stream().map(ViewDefinition::name).toList();
         for (ViewDefinition view : VIEWS) {
+            for (String readTable : view.readTables()) {
+                if (viewNames.contains(readTable) && !view.dependsOnViews().contains(readTable)) {
+                    throw new IllegalStateException(view.name() + " reads the sibling view " + readTable
+                            + " but does not list it in dependsOnViews, so CloudFormation may update it first");
+                }
+            }
             var sql = loadResourceText("analytics/views/" + view.name() + ".sql");
             var queryName = view.name().replace('_', '-');
 

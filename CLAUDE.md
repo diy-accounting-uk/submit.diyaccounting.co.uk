@@ -628,6 +628,8 @@ You still get the quick glance, and the full output stays on disk when the part 
 
 Redirecting also changes what a tool prints. Vitest and Playwright both detect a non-TTY and switch reporter: per-file progress stops, and the summary arrives only at the end. So a log that is empty part-way through says nothing about whether the run is progressing, and treating its silence as a symptom sends you diagnosing a stall that is not there. The process table answers it in one call — a live child, or CPU time moving. `head` is the worst case: once it has its N lines the producer gets SIGPIPE and is killed part-way through, reporting like a clean run. And a command you have already seen run long goes to the background, full stop — waiting uses the task-wait mechanism, never a foreground sleep loop.
 
+**A background Bash call runs under zsh, which does not split an unquoted `$VAR` into words when passed as arguments.** Put background commands that expand variable lists under `bash -c` or use quoted arrays, because the shell where the background command runs is not bash.
+
 ### Concurrent sessions — Cowork and Claude Code share this folder
 
 This directory is mounted by Claude Desktop (chat projects and Cowork sessions) **and** worked in by Claude Code terminal sessions — started here at the workspace root or inside any repo subdirectory. Whichever kind of session you are, assume you are not the only writer:

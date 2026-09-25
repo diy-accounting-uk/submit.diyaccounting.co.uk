@@ -93,8 +93,7 @@ class CompanyBookTablesTest {
                         Match.objectLike(Map.of(
                                 "StorageDescriptor",
                                 Match.objectLike(Map.of(
-                                        "Location",
-                                        "s3://docs-env-analytics-lake-111111111111/curated/finance/")))))));
+                                        "Location", "s3://docs-env-analytics-lake-111111111111/curated/finance/")))))));
     }
 
     @Test
@@ -109,11 +108,12 @@ class CompanyBookTablesTest {
                                 "StorageDescriptor",
                                 Match.objectLike(Map.of(
                                         "Columns",
-                                        Match.arrayWith(List.of(
-                                                Map.of("Name", "date", "Type", "string"),
-                                                Map.of("Name", "bookid", "Type", "string"),
-                                                Map.of("Name", "latestversion", "Type", "bigint"),
-                                                Map.of("Name", "latestetag", "Type", "string"))))))))));
+                                        Match.arrayWith(
+                                                List.of(
+                                                        Map.of("Name", "date", "Type", "string"),
+                                                        Map.of("Name", "bookid", "Type", "string"),
+                                                        Map.of("Name", "latestversion", "Type", "bigint"),
+                                                        Map.of("Name", "latestetag", "Type", "string"))))))))));
     }
 
     @Test
@@ -122,18 +122,24 @@ class CompanyBookTablesTest {
 
         template.hasResourceProperties(
                 "AWS::Glue::Table",
-                Match.objectLike(Map.of(
-                        "TableInput",
-                        Match.objectLike(Map.of(
-                                "StorageDescriptor",
-                                Match.objectLike(Map.of(
-                                        "Columns",
-                                        Match.arrayWith(List.of(Match.objectLike(Map.of(
-                                                "Name",
-                                                "accounts",
-                                                "Type",
-                                                Match.stringLikeRegexp(
-                                                        ".*profitandloss:struct<turnover:bigint,costs:bigint,profit:bigint>.*balancesheet:struct<currentyear:struct<fixedassets:bigint.*"))))))))))));
+                Match.objectLike(
+                        Map.of(
+                                "TableInput",
+                                Match.objectLike(
+                                        Map.of(
+                                                "StorageDescriptor",
+                                                Match.objectLike(
+                                                        Map.of(
+                                                                "Columns",
+                                                                Match.arrayWith(
+                                                                        List.of(
+                                                                                Match.objectLike(
+                                                                                        Map.of(
+                                                                                                "Name",
+                                                                                                "accounts",
+                                                                                                "Type",
+                                                                                                Match.stringLikeRegexp(
+                                                                                                        ".*profitandloss:struct<turnover:bigint,costs:bigint,profit:bigint>.*balancesheet:struct<currentyear:struct<fixedassets:bigint.*"))))))))))));
     }
 
     @Test

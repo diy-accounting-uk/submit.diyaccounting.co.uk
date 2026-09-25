@@ -10,6 +10,8 @@
 import { expect, test } from "@playwright/test";
 import { loggedClick, loggedFill, timestamp } from "../helpers/behaviour-helpers.js";
 import { isCompaniesHouseSimulatorLane } from "./behaviour-companies-house-filing-steps.js";
+import { hashSub, initializeSalt } from "@app/services/subHasher.js";
+import { buildChargeKey, deleteActivityCharge } from "@app/data/dynamoDbActivityChargeRepository.js";
 
 const defaultScreenshotPath = "target/behaviour-test-results/screenshots/behaviour-companies-house-confirmation-steps";
 
@@ -155,6 +157,91 @@ export async function previewConfirmationStatement(page, screenshotPath = defaul
     const preview = await page.locator("#previewXml").textContent();
     expect(preview).toContain("ConfirmationAndVerificationStatement");
     await page.screenshot({ path: `${screenshotPath}/${timestamp()}-01-preview.png` });
+  });
+}
+
+/**
+ * The simulator answers one fixture company at one fixed review date (see
+ * confirmation-statement.js's FIXTURE_COMPANY), so every test in this file that pays the fee
+ * shares the same activity charge key. A charge moves paid -> used on a successful submission
+ * (activityCharges.js), so the next test's own payment step must clear that record first or it
+ * finds an already-used charge and the fee gate never opens for it.
+ */
+async function resetConfirmationStatementCharge(page, companyNumber, reviewDate) {
+  const userSub = await page.evaluate(() => {
+    const token = localStorage.getItem("cognitoIdToken");
+    if (!token) return null;
+    try {
+      return JSON.parse(atob(token.split(".")[1])).sub;
+    } catch {
+      return null;
+    }
+  });
+  if (!userSub) return;
+  await initializeSalt();
+  const hashedSub = hashSub(userSub);
+  const chargeKey = buildChargeKey("file-confirmation-statement", `${companyNumber}:${reviewDate}`);
+  await deleteActivityCharge(hashedSub, chargeKey);
+}
+
+/**
+ * Pays the per-filing fee directly through the activity-checkout API and its local auto-complete
+ * route (CS-10b/CS-10c), without driving the "Pay and submit" UI journey. Lets a test that is
+ * really exercising something else (the accepted-filing happy path, a submission reject reason)
+ * get past the fee gate without needing its own Gov-Test-Scenario to also mean "period paid" -
+ * the dedicated payment behaviour test drives the real UI checkout journey instead.
+ */
+export async function payConfirmationStatementFeeDirectly(page, { companyNumber, reviewDate }, screenshotPath = defaultScreenshotPath) {
+  await test.step(`The confirmation statement fee for ${companyNumber}/${reviewDate} is paid directly`, async () => {
+    await resetConfirmationStatementCharge(page, companyNumber, reviewDate);
+    const result = await page.evaluate(
+      async ({ companyNumber, reviewDate }) => {
+        const idToken = localStorage.getItem("cognitoIdToken");
+        const subjectKey = `${companyNumber}:${reviewDate}`;
+        const checkoutResponse = await fetch("/api/v1/billing/activity-checkout", {
+          method: "POST",
+          headers: { "Content-Type": "application/json", "Authorization": `Bearer ${idToken}` },
+          body: JSON.stringify({ activityId: "file-confirmation-statement", subjectKey }),
+        });
+        const checkoutBody = await checkoutResponse.json().catch(() => ({}));
+        if (!checkoutResponse.ok || !checkoutBody.checkoutUrl) {
+          return { ok: false, checkoutBody };
+        }
+        await fetch(checkoutBody.checkoutUrl);
+        return { ok: true, checkoutUrl: checkoutBody.checkoutUrl };
+      },
+      { companyNumber, reviewDate },
+    );
+    if (!result.ok) {
+      throw new Error(`Failed to pay the confirmation statement fee directly: ${JSON.stringify(result.checkoutBody)}`);
+    }
+    await page.screenshot({ path: `${screenshotPath}/${timestamp()}-fee-paid-directly.png` });
+  });
+}
+
+/**
+ * Drives the "Pay and submit" checkout journey through the simulator's auto-completing checkout
+ * route: clicks the preview's submit button, follows the redirect to the simulator checkout and
+ * back, then re-enters the company authentication code the return trip does not carry (see
+ * fileConfirmationStatement.html's own note on why the code and the personal codes are never
+ * stored across that round trip).
+ */
+export async function payAndSubmitViaSimulatorCheckout(
+  page,
+  { companyAuthCode, companyNumber, reviewDate },
+  screenshotPath = defaultScreenshotPath,
+) {
+  await test.step("The user pays the confirmation statement fee via the simulator checkout and resumes the filing", async () => {
+    await resetConfirmationStatementCharge(page, companyNumber, reviewDate);
+    await loggedClick(page, "#submitFilingBtn", "Starting the checkout for the confirmation statement fee", { screenshotPath });
+    await page.waitForURL(/checkout=success/, { timeout: 30000 });
+    await page.screenshot({ path: `${screenshotPath}/${timestamp()}-01-checkout-returned.png` });
+
+    await expect(page.locator("#authView")).toBeVisible({ timeout: 15000 });
+    await expect(page.locator("#statusMessagesContainer")).toContainText("Payment received", { timeout: 15000 });
+    await page.screenshot({ path: `${screenshotPath}/${timestamp()}-01-resumed-after-payment.png` });
+
+    await enterCompanyAuthCodeAndReadRegister(page, companyAuthCode, screenshotPath);
   });
 }
 

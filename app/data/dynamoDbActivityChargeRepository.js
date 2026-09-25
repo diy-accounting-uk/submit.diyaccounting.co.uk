@@ -48,6 +48,19 @@ export async function putActivityChargeIfAbsent(hashedSub, chargeKey, charge) {
   }
 }
 
+export async function deleteActivityCharge(hashedSub, chargeKey) {
+  const tableName = getResourceName("ACTIVITY_CHARGES_DYNAMODB_TABLE_NAME");
+  logger.info({ message: `deleteActivityCharge [table: ${tableName}]`, hashedSub, chargeKey });
+
+  await executeDynamoDbCommand(
+    (module) =>
+      new module.DeleteCommand({
+        TableName: tableName,
+        Key: { hashedSub, chargeKey },
+      }),
+  );
+}
+
 export async function getActivityCharge(hashedSub, chargeKey) {
   const tableName = getResourceName("ACTIVITY_CHARGES_DYNAMODB_TABLE_NAME");
 

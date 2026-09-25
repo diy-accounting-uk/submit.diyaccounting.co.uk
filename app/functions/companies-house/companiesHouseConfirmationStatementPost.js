@@ -15,6 +15,7 @@ import {
   buildValidationError,
   http200OkResponse,
   http201CreatedResponse,
+  http402PaymentRequiredResponse,
   http500ServerErrorResponse,
   getHeader,
 } from "../../lib/httpResponseHelper.js";
@@ -29,6 +30,8 @@ import {
 } from "../../services/companiesHouseConfirmationStatementXml.js";
 import {
   buildConfirmationStatementSubmission,
+  buildPaymentPeriodsRequest,
+  parsePaymentPeriodsResponse,
   allocateSubmissionNumber,
   resolvePresenterCredentials,
   postToGateway,
@@ -37,6 +40,7 @@ import {
 import { putAsyncRequest } from "../../data/dynamoDbAsyncRequestRepository.js";
 import { publishActivityEvent, publishActivityFailureEvent, resolveActorClass } from "../../lib/activityAlert.js";
 import { initializeSalt } from "../../services/subHasher.js";
+import { hasPaidCharge, markChargeUsed } from "../../services/activityCharges.js";
 
 const logger = createLogger({ source: "app/functions/companies-house/companiesHouseConfirmationStatementPost.js" });
 
@@ -45,6 +49,15 @@ const MAX_COMPANY_AUTH_CODE_LENGTH = 8;
 const PERSONAL_CODE_LENGTH = 11;
 const MAX_SIC_CODES = 4;
 const MAX_OFFICERS = 50;
+
+// Matches the activity id file-confirmation-statement carries in submit.catalogue.toml, and the
+// subjectKey the fileConfirmationStatement.html journey sends billingActivityCheckoutPost.js when
+// it opens the per-filing Stripe Checkout Session.
+const CONFIRMATION_STATEMENT_ACTIVITY_ID = "file-confirmation-statement";
+
+function buildConfirmationStatementChargeSubjectKey(companyNumber, reviewDate) {
+  return `${companyNumber}:${reviewDate}`;
+}
 
 // Server hook for Express app, and construction of a Lambda-like event from HTTP request)
 /* v8 ignore start */
@@ -221,6 +234,57 @@ export async function ingestHandler(event) {
 
   let submissionNumber;
   try {
+    const { presenterId, presenterCode } = await resolvePresenterCredentials();
+    const gatewayHeaders = govTestScenario ? { "Gov-Test-Scenario": govTestScenario } : {};
+    const subjectKey = buildConfirmationStatementChargeSubjectKey(statement.companyNumber, statement.reviewDate);
+
+    // COMPANIES_HOUSE_CS_FEE_MODE=operator skips the charge gate entirely: the operator's own
+    // company's fee lands on DIY Accounting's own Companies House credit account, not on Stripe.
+    let shouldMarkChargeUsed = false;
+    if (process.env.COMPANIES_HOUSE_CS_FEE_MODE !== "operator") {
+      const paymentPeriodsXml = buildPaymentPeriodsRequest({
+        presenterId,
+        presenterCode,
+        companyNumber: statement.companyNumber,
+        companyAuthenticationCode: statement.companyAuthCode,
+        gatewayTest,
+      });
+      // Never carries the caller's own Gov-Test-Scenario: that header drives the outcome of the
+      // submission this fee check gates, and this is our own gate, not part of what a developer
+      // is testing when they set it.
+      const paymentPeriodsGatewayResponse = await postToGateway(paymentPeriodsXml, {});
+      const paymentPeriodsParsed = parseGatewayResponse(paymentPeriodsGatewayResponse.data);
+
+      if (paymentPeriodsParsed.errors?.length) {
+        logger.warn({
+          message: "Companies House rejected the PaymentPeriodsRequest",
+          companyNumber: statement.companyNumber,
+          errors: paymentPeriodsParsed.errors,
+        });
+        return http500ServerErrorResponse({
+          request,
+          headers: { ...responseHeaders },
+          message: "Companies House rejected the payment periods request",
+          error: { errors: paymentPeriodsParsed.errors },
+        });
+      }
+
+      const paymentPeriods = parsePaymentPeriodsResponse(paymentPeriodsGatewayResponse.data);
+      const paymentPeriodPaid = paymentPeriods?.periods?.[0]?.periodPaid ?? false;
+
+      if (!paymentPeriodPaid) {
+        if (!(await hasPaidCharge(userSub, CONFIRMATION_STATEMENT_ACTIVITY_ID, subjectKey))) {
+          return http402PaymentRequiredResponse({
+            request,
+            headers: { ...responseHeaders },
+            message: "This confirmation statement's payment period carries a fee - pay before submitting",
+            error: { code: "fee-due" },
+          });
+        }
+        shouldMarkChargeUsed = true;
+      }
+    }
+
     const statementXml = buildConfirmationStatementBody({
       reviewDate: statement.reviewDate,
       sicCodes: statement.sicCodes,
@@ -235,7 +299,6 @@ export async function ingestHandler(event) {
     const { rootElement: formIdentifier } = selectConfirmationStatementSchema(statement.officers);
 
     submissionNumber = await allocateSubmissionNumber();
-    const { presenterId, presenterCode } = await resolvePresenterCredentials();
 
     await putAsyncRequest(userSub, submissionNumber, "pending", null, asyncRequestsTableName);
 
@@ -253,7 +316,7 @@ export async function ingestHandler(event) {
       gatewayTest,
     });
 
-    const gatewayResponse = await postToGateway(submissionXml, govTestScenario ? { "Gov-Test-Scenario": govTestScenario } : {});
+    const gatewayResponse = await postToGateway(submissionXml, gatewayHeaders);
     const parsed = parseGatewayResponse(gatewayResponse.data);
 
     if (parsed.errors?.length) {
@@ -270,6 +333,10 @@ export async function ingestHandler(event) {
         message: "Companies House rejected the confirmation statement submission envelope",
         error: { submissionNumber, errors: parsed.errors },
       });
+    }
+
+    if (shouldMarkChargeUsed) {
+      await markChargeUsed(userSub, CONFIRMATION_STATEMENT_ACTIVITY_ID, subjectKey);
     }
 
     await publishActivityEvent({

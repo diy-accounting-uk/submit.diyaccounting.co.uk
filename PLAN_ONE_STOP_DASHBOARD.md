@@ -5,7 +5,7 @@
 
 Status: open, drafted 2026-09-07, reshaped the same evening around objectives, levers and
 experiments, then widened to eight objectives with the optimisation and reinvestment loop. D1, D5 to D9
-and D11 to D15 are on main; D2 and D3 in part (BACKLOG 66, 62); D4, D10, D16 and D17 open (BACKLOG 67,
+and D11 to D15 are on main, D3 too; D2 in part (BACKLOG 66); D4, D10, D16 and D17 open (BACKLOG 67,
 52i, 52l, 52m).
 Backlog row 52; NEXT.md B52a is the first row.
 
@@ -592,6 +592,195 @@ takes a target per table and the Lambda reads one `GLUE_DATA_QUALITY_TARGETS` JS
 `IsComplete` on the timestamp column, and for alarms `ColumnValues "state" in
 ["ALARM","OK","INSUFFICIENT_DATA"]`. `{prefix}-data-quality-rules-failed` is dimensioned by
 ruleset name, so the same loop builds one alarm per target and `DataQualityTest` asserts three.
+
+## D10 build: the book reader's identity
+
+### Recommendation
+
+Option (a). The nightly job reads the book's two S3 objects directly, with its own IAM role. That
+role can `s3:GetObject` under one prefix: `users/{ownerPrefix}/books/{bookId}/`. It never calls
+the HTTP route. It has no Cognito identity, no token and no salt.
+
+### What the route does today
+
+- The route handler is `app/functions/diyaGl/diyaGlVersionGet.js`. It is served on both
+  `/api/v1/diya-gl/...` and `/api/v1/books/:bookId/versions/:version` (line 29).
+- It takes `sub` from the JWT claims (line 61, through `extractUserFromAuthorizerContext`,
+  `app/lib/httpResponseHelper.js:339`). There is no separate owner check. The owner check is the
+  key itself: `resolveOwnerPrefix(user.sub, bookId)` (line 96) hashes the caller's sub, so a
+  caller can only reach books under its own hash.
+- It reads `metadata.json`, applies the sandbox expiry and resident lapse rules (lines 108-127),
+  resolves `latest` to `metadata.latestVersion` (line 50), and returns `v{n}.zip` as base64
+  (line 161).
+- Storage is S3 only, no DynamoDB. The bucket is `{env}-env-diya-gl-{account}`
+  (`infra/main/java/co/uk/diyaccounting/submit/SubmitSharedNames.java:1509`), created in
+  `DataStack.java:923`. SSE-S3, so no KMS grant is needed. The keys are
+  `users/{ownerPrefix}/books/{bookId}/metadata.json` and `.../v{n}.zip`
+  (`app/data/s3DiyaGlRepository.js:49-59`).
+- `ownerPrefix` is `HMAC-SHA256(salt, sub)` (`app/services/subHasher.js:141-155`). After a salt
+  rotation nothing moves. `resolveOwnerPrefix` (`s3DiyaGlRepository.js:416-435`) falls back to
+  older salt versions, so the save route (`diyaGlPut.js`) keeps writing an existing book under
+  its first prefix. The prefix is stable for the life of the book.
+- The authoriser is `booksJwtAuthorizer` (`infra/main/java/co/uk/diyaccounting/submit/stacks/ApiStack.java:311-318`).
+  It accepts the books client and the MCP client audiences. All three Cognito clients in
+  `IdentityStack.java` (lines 258, 284, 315) are public clients with `generateSecret(false)`. The
+  pool has no resource server and no client-credentials client.
+
+### Why not (b) or (c)
+
+- **(b) machine client.** A client-credentials access token's `sub` is the app client id. So
+  `hashSub(sub)` points at an empty prefix. To make it work, the handler would need a branch that
+  maps a custom scope to the operator's sub. That adds an impersonation path to a public route.
+  It also needs a resource server, a confidential client with a secret to rotate, and Cognito M2M
+  billing. It reads the same bytes as (a) with more parts in the path.
+- **(c) the service user's refresh token.** This is a human token, which the brief rules out. It
+  also reaches every book the operator owns, not one. It stops working when the client's
+  refresh-token validity runs out or on a global sign-out (`scripts/force-logout-all-users.sh`), so
+  a person has to renew it.
+- **(a)** follows the existing pattern for server-side jobs. The Stripe reconcile job
+  (`infra/main/java/co/uk/diyaccounting/submit/stacks/IngestionStack.java:220-290`) is a plain
+  `DockerImageFunction` with its own role, one `s3:PutObject` scoped to `curated/stripe/*`
+  (line 262), and one scoped secret grant. It uses no user identity.
+
+What (a) gives up: the route's resident-lapse rule (`diyaGlVersionGet.js:117-127`). The job reads
+the company's own book. A lapsed subscription on the company's own account should not blank the
+board, so this loss is acceptable. The job keeps the other rule itself: it refuses a book whose
+`metadata.retention` is `sandbox`. The bucket's `expire-sandbox` lifecycle rule
+(`DataStack.java:941`) deletes a sandbox book 37 days after it is written.
+
+### Config values
+
+| Name | Value | Where it lives |
+|---|---|---|
+| `COMPANY_BOOK_ID` | the book's v4 UUID | GitHub Environment variable `SUBMIT_COMPANY_BOOK_ID` on `prod` |
+| `COMPANY_BOOK_OWNER_PREFIX` | the 64-hex owner prefix, no `users/` and no slash | GitHub Environment variable `SUBMIT_COMPANY_BOOK_OWNER_PREFIX` on `prod` |
+
+- Put neither value in `cdk.json` or `.env.prod`, because the repository is public. Neither value
+  is a credential: IAM guards the objects. Keeping both out of the repository costs nothing.
+- The job stores the owner prefix, not the sub. With the sub it would need the salt secret and
+  read access to every user's prefix to resolve it, because `resolveOwnerPrefix` has to probe
+  `metadata.json` under each salt version. The pinned prefix needs neither.
+- To get both values, run one read-only command. The book id comes from the OF2 upload (the
+  operator's `open_book` call, or `GET /api/v1/books` with their token):
+
+  ```
+  aws --profile submit-prod s3 ls s3://prod-env-diya-gl-972912397388/users/ --recursive | tee /tmp/diya-gl-keys.txt | grep '<bookId>/metadata.json'
+  ```
+
+  The path segment after `users/` is `COMPANY_BOOK_OWNER_PREFIX`. Then set the variables:
+
+  ```
+  gh variable set SUBMIT_COMPANY_BOOK_ID --env prod --repo diy-accounting-uk/submit.diyaccounting.co.uk --body '<bookId>'
+  gh variable set SUBMIT_COMPANY_BOOK_OWNER_PREFIX --env prod --repo diy-accounting-uk/submit.diyaccounting.co.uk --body '<ownerPrefix>'
+  ```
+
+### Resources and IAM
+
+The job is built in `IngestionStack`, the home of the env-scoped nightly jobs. It is not built in
+`AnalyticsStack`. `AnalyticsStack` gets the Glue table only.
+
+- Function `{env}-env-company-book-pull`. It is a `DockerImageFunction` from the shared ECR repo
+  with cmd `app/functions/analytics/companyBookPull.handler`, ARM64, 512 MB and a 5-minute
+  timeout. Its log group comes from `ensureLogGroupWithDependency`, the same as
+  `IngestionStack.java:244`.
+- Environment: `ENVIRONMENT_NAME`, `ANALYTICS_LAKE_BUCKET_NAME`, `DIYA_GL_BUCKET_NAME`
+  (`sharedNames.diyaGlBucketName`), `COMPANY_BOOK_ID`, `COMPANY_BOOK_OWNER_PREFIX`.
+- The only two role statements:
+
+  ```json
+  { "Effect": "Allow", "Action": "s3:GetObject",
+    "Resource": "arn:aws:s3:::{env}-env-diya-gl-{account}/users/{ownerPrefix}/books/{bookId}/*" }
+  { "Effect": "Allow", "Action": "s3:PutObject",
+    "Resource": "arn:aws:s3:::{env}-env-analytics-lake.../curated/finance/*" }
+  ```
+
+  Build the lake ARN from `this.lakeBucket.getBucketArn()`, as at line 262.
+- The role gets no `s3:ListBucket`, no `GetObjectVersion`, no salt grant (`SubHashSaltHelper`) and
+  no DynamoDB grant. Without `ListBucket`, a missing key returns `AccessDenied` and the job throws.
+  That is the failure we want.
+- The function is registered with `registerIngestionJob("CompanyBookPull", ...)` (line 635) for
+  the errors alarm. It is added as one more branch of `NightlyIngestionWorkflow`'s parallel state
+  (`stacks/analytics/NightlyIngestionWorkflow.java:122-144`). The prop is
+  `Optional<IFunction> companyBookPullLambda()`, and the branch is added only when the prop is
+  present.
+- The whole block, the function and both statements, is created only when both config values are
+  non-blank.
+- Validate at synth. When `COMPANY_BOOK_ID` is set and does not match the v4 UUID pattern
+  (`s3DiyaGlRepository.js:17`), throw `IllegalStateException`. Do the same when
+  `COMPANY_BOOK_OWNER_PREFIX` is not `^[0-9a-f]{64}$`. A bad value then fails the build instead of
+  producing a wildcard or a wrong grant.
+
+### The handler
+
+`app/functions/analytics/companyBookPull.js`:
+
+1. Call `readMetadata(ownerPrefix, bookId)` and then
+   `getVersion(ownerPrefix, bookId, metadata.latestVersion)` from `app/data/s3DiyaGlRepository.js`.
+   Both take the prefix directly and read the bucket from `DIYA_GL_BUCKET_NAME`.
+2. Throw when the metadata is missing. Throw when `retention !== "resident"`.
+3. Unzip with `readBookSource` and derive with `deriveMicroEntityAccounts`, as
+   `mcp/lib/book-tools.js:113` and `mcp/lib/accounts-tools.js:160` do.
+4. Write one JSON line to `curated/finance/dt=<date>/company-accounts.json`. The line includes
+   `latestVersion` and `latestETag`, so a row can be traced to the book version it came from.
+
+The Lambda image cannot import that code today. The Dockerfile (lines 40-50) copies `app/` only.
+`@diy-accounting-uk/diya-gl` is a dependency of `mcp/package.json:22` only. The build must fix
+both:
+
+- add `@diy-accounting-uk/diya-gl` at the same pinned version to the root `package.json`;
+- move the derivation that `accounts-tools.js` exports into `app/services/`, and have
+  `accounts-tools.js` import it from there. Do not copy it: the no-duplicate and no-alias rules
+  both apply.
+
+### Files to change
+
+| File | Change |
+|---|---|
+| `app/functions/analytics/companyBookPull.js` | new handler |
+| `app/services/microEntityAccounts.js` | the derivation moved from `mcp/lib/accounts-tools.js`, which then imports it |
+| `package.json` | add `@diy-accounting-uk/diya-gl` |
+| `infra/main/java/.../stacks/IngestionStack.java` | two props, the function, the two statements, `registerIngestionJob`, the workflow prop |
+| `infra/main/java/.../stacks/analytics/NightlyIngestionWorkflow.java` | the optional branch |
+| `infra/main/java/.../SubmitEnvironment.java` | `envOr("COMPANY_BOOK_ID", "")` and `envOr("COMPANY_BOOK_OWNER_PREFIX", "")`, passed with the null guard used at line 457 |
+| `.github/workflows/deploy-environment.yml` | on the IngestionStack job's `env:` (around line 1181): `COMPANY_BOOK_ID: ${{ vars.SUBMIT_COMPANY_BOOK_ID }}` and `COMPANY_BOOK_OWNER_PREFIX: ${{ vars.SUBMIT_COMPANY_BOOK_OWNER_PREFIX }}` |
+| `REPORT_CAPABILITIES.md` | one entry for the job |
+
+The Glue table, the snapshot observation and the dashboard block are the rest of B52i. They do not
+touch identity.
+
+### Tests
+
+- `app/unit-tests/analytics/companyBookPull.test.js`, with the S3 client mocked as in
+  `ga4DailyPull.test.js`. Cases:
+  - It reads `metadata.json`, then `v{latestVersion}.zip`, and only keys under the configured
+    prefix.
+  - It throws on missing metadata.
+  - It throws on `retention: "sandbox"`.
+  - It throws when either env var is blank.
+  - It writes one line under `curated/finance/` that carries the version and ETag.
+- The existing `mcp/test` accounts tests still pass after the move.
+- `infra/test/java/.../stacks/IngestionStackTest.java`, following the configured/unconfigured
+  pair at lines 154 and 210:
+  - Unconfigured: no `company-book-pull` function, no diya-gl statement in any policy, and the
+    workflow has five parallel branches.
+  - Configured: exactly one `s3:GetObject` on
+    `arn:aws:s3:::<bucket>/users/<prefix>/books/<bookId>/*` (no `*` in the prefix or book
+    segments) and one `s3:PutObject` on `curated/finance/*`.
+  - Configured: no `s3:ListBucket` and no `secretsmanager:GetSecretValue` on the function's role.
+  - A malformed book id or prefix fails synth.
+- `app/unit-tests/deployEnvironmentWorkflowPaths.test.js` still passes. Add
+  `SubmitEnvironment.java` and `NightlyIngestionWorkflow.java` to its path filter if they are not
+  there already.
+
+### The prod/ci difference
+
+- Prod sets both GitHub Environment variables. The job runs nightly against
+  `prod-env-diya-gl-972912397388`.
+- ci leaves both unset. `ci-env-IngestionStack` then has no book job, no diya-gl grant and a
+  five-branch nightly workflow, because the company's book exists only in prod.
+- The configured path is proved by the CDK test and the unit tests. Its first live run is prod's
+  next nightly execution after the deploy. To exercise it in ci, set the two ci variables to a
+  resident book owned by the `synthetic-local` test user. No code changes.
 
 ## Verification
 
