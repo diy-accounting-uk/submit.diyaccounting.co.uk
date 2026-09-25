@@ -14,6 +14,7 @@ import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
 
 import { createSession, openBook, saveBook, SAVE_FORMATS } from "./book-tools.js";
+import { signIn, signOut } from "./auth.js";
 import { writeFinancePackage } from "./finance/package-writer.js";
 import { deriveMicroEntityAccounts } from "./accounts-tools.js";
 import { deriveVatReturn } from "./vat-tools.js";
@@ -146,6 +147,25 @@ function asToolError(err) {
  * without a transport.
  */
 export const TOOLS = {
+  sign_in: {
+    description:
+      "Sign in to DIY Accounting Submit as the MCP's own Cognito app client: opens the pool's hosted UI in the " +
+      "operator's browser (or prints the URL, when it cannot open one) with a PKCE code challenge, catches the " +
+      "authorization code on a loopback listener, and stores the refresh token under " +
+      "~/.config/diya-submit/credentials.json mode 600. Every tool that reaches the deployed API (the VAT, " +
+      "Companies House, practice and cloud-book tools) uses the resulting session; run this once before any of " +
+      "them, and again after a sign_out or once the stored refresh token has expired.",
+    inputSchema: {},
+    handler: (_session, _params) => signIn(),
+  },
+  sign_out: {
+    description:
+      "Ends the MCP's own session: revokes the refresh token at Cognito, tells DIY Accounting Submit's sign-out " +
+      "route to close it server-side too, then deletes the local credentials file. Best-effort on both network " +
+      "calls, so it still clears the local session when offline or the token is already expired.",
+    inputSchema: {},
+    handler: (_session, _params) => signOut(),
+  },
   open_book: {
     description:
       "Open a diya-gl book from the filesystem: a directory holding book.toml and lines.jsonl, or a single file " +

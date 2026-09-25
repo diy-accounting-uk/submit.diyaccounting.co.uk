@@ -15,6 +15,7 @@ const spawnMock = vi.fn(() => ({ unref: vi.fn() }));
 vi.mock("node:child_process", () => ({ spawn: (...args) => spawnMock(...args) }));
 
 const { accessToken, idToken, signIn, signOut } = await import("../lib/auth.js");
+const { TOOLS } = await import("../lib/server.js");
 
 const AUTH_DOMAIN = "https://ci-auth.diyaccounting.co.uk";
 const BASE_URL = "https://ci.submit.diyaccounting.co.uk";
@@ -290,6 +291,45 @@ describe("auth", () => {
 
       expect(result).toEqual({ signedOut: true });
       expect(mockFetch).not.toHaveBeenCalled();
+    });
+  });
+
+  describe("server registration", () => {
+    it("registers sign_in and sign_out with no inputs", () => {
+      expect(TOOLS.sign_in.handler).not.toBeUndefined();
+      expect(TOOLS.sign_in.inputSchema).toEqual({});
+      expect(TOOLS.sign_out.handler).not.toBeUndefined();
+      expect(TOOLS.sign_out.inputSchema).toEqual({});
+    });
+
+    it("sign_in's handler calls signIn", async () => {
+      const mockFetch = stubTokenEndpoint(200, {
+        id_token: "id-token-1",
+        access_token: "access-token-1",
+        refresh_token: "refresh-token-1",
+        expires_in: 3600,
+      });
+      const handlerPromise = TOOLS.sign_in.handler({}, {});
+      await new Promise((resolve) => setTimeout(resolve, 50));
+      const openedUrl = new URL(spawnMock.mock.calls[0][1].at(-1));
+      const redirectUri = new URL(openedUrl.searchParams.get("redirect_uri"));
+      const state = openedUrl.searchParams.get("state");
+
+      await fetch(`${redirectUri.toString()}?code=auth-code-1&state=${encodeURIComponent(state)}`);
+      const result = await handlerPromise;
+
+      expect(result).toEqual({ signedIn: true });
+      expect(mockFetch.mock.calls.some(([url]) => url === `${AUTH_DOMAIN}/oauth2/token`)).toBe(true);
+    });
+
+    it("sign_out's handler calls signOut", async () => {
+      writeFileSync(join(configDir, "credentials.json"), JSON.stringify({ refreshToken: "refresh-token-1" }));
+      vi.stubGlobal("fetch", vi.fn().mockResolvedValue(jsonResponse(200, {})));
+
+      const result = await TOOLS.sign_out.handler({}, {});
+
+      expect(result).toEqual({ signedOut: true });
+      expect(existsSync(join(configDir, "credentials.json"))).toBe(false);
     });
   });
 });
