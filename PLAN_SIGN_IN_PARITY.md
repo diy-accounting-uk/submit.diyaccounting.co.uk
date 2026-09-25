@@ -163,7 +163,7 @@ All four rows use Sonnet. Brief for every row: merge `claude/arclight-itsa` firs
 - `app/data/dynamoDbSecurityStateRepository.js`: `getSignInSession` and `putSignInSession` beside `getSessionGeo` (line 57), plus `deleteSignInSession` for SI-2c.
 - `app/lib/activityAlert.js`: new `appClient` and `sessionId` parameters, written into the detail (lines 66 to 77) when set. Update the JSDoc at line 33.
 - `app/functions/auth/cognitoTokenPost.js`: delete lines 88 to 101, `extractUserInfoFromResponse` (line 111) and the now-unused imports (line 11).
-- `app/functions/ops/activityTelegramForwarder.js`: `token-refresh` with `sessionKind: "continued"` goes to no chat (see open question 3).
+- `app/functions/ops/activityTelegramForwarder.js`: `token-refresh` with `sessionKind: "continued"` goes to no chat (plan "Decisions" 3).
 - `infra/.../stacks/IdentityStack.java`: after line 235, grant `lambda:InvokeFunction` on the enrichment function ARN built from its name string (no token reference, so no cycle) and set the environment variable. Next to line 304, write `/submit/{env}/submit-app-client-id`.
 - `infra/.../stacks/ActivityStack.java`: the enrichment Lambda, built like the forwarder at line 123. Grant SSM read on the three client-id parameters, read-write on the security state table, the salt secret read that other activity publishers have, and an errors alarm.
 - `infra/.../SubmitSharedNames.java`: the function name, handler and ARN, next to `activityTelegramForwarderLambdaFunctionName`.
@@ -176,7 +176,7 @@ All four rows use Sonnet. Brief for every row: merge `claude/arclight-itsa` firs
 - `infra/.../stacks/AnalyticsStack.java` lines 1043 and 1091: append the two columns to both lists, at the end, so Parquet stays compatible.
 - `infra/main/resources/analytics/views/activity_events_all.sql` lines 7 to 9 and 15 to 17: select the two columns.
 - `v_login_to_submission_funnel.sql` line 16: add `AND coalesce(app_client, 'submit') = 'submit'`.
-- `v_active_users_daily.sql`: group by `coalesce(app_client, 'submit')` (see open question 2).
+- `v_active_users_daily.sql`: group by `coalesce(app_client, 'submit')` (plan "Decisions" 2).
 - New `v_sign_ins_daily.sql`: count by day, `app_client`, `event` and `actor`. Register it in `infra/.../stacks/analytics/BusinessViews.java`.
 - `AnalyticsDashboard.java` near line 337: a sign-ins panel from the new view, and a second panel of `AWS/Cognito` `SignInSuccesses` and `TokenRefreshSuccesses` by `UserPoolClient` as the reconcile line.
 - Tests: the transform test, `AnalyticsStackTest` (columns), `AnalyticsDashboardTest`, `app/unit-tests/analytics/rawExportPublish.test.js` if the view list changes. Run `./mvnw clean verify`.
