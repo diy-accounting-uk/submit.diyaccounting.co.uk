@@ -199,9 +199,11 @@ All four rows use Sonnet. Brief for every row: merge `claude/arclight-itsa` firs
 - Check `infra/main/resources/diya-gl-security-headers.json` `connect-src` covers the Submit API and the hosted UI `/oauth2/revoke` (it already covers `/oauth2/token`).
 - Tests: `web/unit-tests/diya-gl-events.test.js`, `web/unit-tests/analytics.test.js`, `web/browser-tests/diya-gl-cloud.browser.test.js` (login and logout events, revoke and sign-out calls on sign-out). Lands after SI-2c is live in ci, because the sign-out route must exist.
 
-## Open questions
+## Decisions
 
-1. Where the client goes. Recommended: a new `appClient` detail field and an `app_client` column, leaving `site` as `"submit"`. The alternative is `site` set to `"diya-gl"` or `"mcp"`. That needs no new column and labels Telegram lines by product, but it changes the EventBridge `Source` and mixes "which site" with "which client".
-2. Active users. Recommended: split by client. The alternative is counting books and MCP users in one active-user total with Submit.
-3. `token-refresh` inside a live session. Recommended: lake only, no Telegram. The alternative keeps it in the LIVE channel, as Submit's refreshes are today.
-4. R10, the MCP's HMRC and Companies House calls. Option (a) keeps the borrowed Submit token and leaves `Gov-Client-Multi-Factor` missing on MCP submissions. Option (b) moves them to the MCP's own sign-in: `customAuthorizer.js` accepts the MCP client id, and the MCP sends its access token plus `X-Id-Token`. Option (b) also means deciding the MCP's `Gov-Client-Connection-Method`, which is `WEB_APP_VIA_SERVER` today (`buildFraudHeaders.js` line 187). It is not in the build rows until chosen.
+Operator, 2026-09-25:
+
+1. The app client is a new `appClient` detail field and an `app_client` lake column; `site` stays `"submit"`.
+2. Active users are split by app client.
+3. A `token-refresh` inside a live session goes to the lake only, not Telegram.
+4. The MCP's HMRC and Companies House calls move to the MCP's own sign-in: `customAuthorizer.js` accepts the MCP client id and the MCP sends its access token with `X-Id-Token`, so `Gov-Client-Multi-Factor` is present. The MCP's `Gov-Client-Connection-Method` is chosen in SI-2c's brief from HMRC's connection-method list (`buildFraudHeaders.js` line 187 sets `WEB_APP_VIA_SERVER` today).
