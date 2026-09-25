@@ -754,12 +754,29 @@ const nullObservationWindows = { last30: { value: null, trend: null }, last90: {
  * @param {{workGroup: string, database: string, context: object}} params
  * @returns {Promise<object>}
  */
+// Each observation is one or two Athena queries of a few seconds each; run in series, the
+// activities objective's per-activity pairs took the run past the Lambda's timeout.
+const OBSERVATION_QUERY_CONCURRENCY = 5;
+
+export async function mapInOrderWithConcurrency(items, concurrency, mapItem) {
+  const results = new Array(items.length);
+  let nextIndex = 0;
+  async function worker() {
+    while (nextIndex < items.length) {
+      const index = nextIndex;
+      nextIndex += 1;
+      results[index] = await mapItem(items[index]);
+    }
+  }
+  await Promise.all(Array.from({ length: Math.min(concurrency, items.length) }, worker));
+  return results;
+}
+
 export async function buildSnapshot({ workGroup, database, context }) {
   const objectives = [];
   let failedObservationCount = 0;
   for (const objective of OBJECTIVE_DEFINITIONS) {
-    const observations = [];
-    for (const observation of objective.observations) {
+    const observations = await mapInOrderWithConcurrency(objective.observations, OBSERVATION_QUERY_CONCURRENCY, async (observation) => {
       let windows = nullObservationWindows;
       let dailySeries = [];
       try {
@@ -792,8 +809,8 @@ export async function buildSnapshot({ workGroup, database, context }) {
       if (observation.dailySeries) {
         observationResult.dailySeries = dailySeries;
       }
-      observations.push(observationResult);
-    }
+      return observationResult;
+    });
     objectives.push({ id: objective.id, name: objective.name, observations });
   }
 
