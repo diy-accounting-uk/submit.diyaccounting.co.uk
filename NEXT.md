@@ -45,9 +45,9 @@ Shared facts for the analytics rows (B52i, B52l, B52m): the prod Athena database
 
 ## In flight
 
-## Machine-only
+- [ ] **B30bm. Alarm triage names the wrong function and calls a live deployment retired.** The triage comment on issue #355 (run 36109684922) diagnosed `activityTelegramForwarder` although the alarm was `check-prod-env-sign-in-activity-publish-log-errors`, and said `prod-d9ef3c9` had been retired when it is prod's live set; its Logs Insights query listed each log group twice. Fix the evidence step so the log group comes from the alarm's own metric filter (the alarm name carries the function), the live-set check reads `/submit/prod/last-known-good-deployment`, and duplicate log groups are removed; a unit test over the evidence builder with this alarm's name. **Source**: issue #355. **Owner**: Claude Code. **Model**: Sonnet. **Size**: ~3 files. **In flight**: `claude/dynamo-triage`, PR #356.
 
-- [ ] **B30bm. Alarm triage names the wrong function and calls a live deployment retired.** The triage comment on issue #355 (run 36109684922) diagnosed `activityTelegramForwarder` although the alarm was `check-prod-env-sign-in-activity-publish-log-errors`, and said `prod-d9ef3c9` had been retired when it is prod's live set; its Logs Insights query listed each log group twice. Fix the evidence step so the log group comes from the alarm's own metric filter (the alarm name carries the function), the live-set check reads `/submit/prod/last-known-good-deployment`, and duplicate log groups are removed; a unit test over the evidence builder with this alarm's name. **Source**: issue #355. **Owner**: Claude Code. **Model**: Sonnet. **Size**: ~3 files.
+## Machine-only
 
 - [ ] **SI-2d. Spreadsheets: DIYA-GL's GA4 sign-in events and tagging.** `PLAN_SIGN_IN_PARITY.md` "SI-2d", in `../spreadsheets.diyaccounting.co.uk`: GA4 `login` and `logout` and `visitor_kind` on the DIYA-GL pages, the sign-out calling Submit's new route. The Submit side is on `main` (PR #353, 2026-09-25): the sign-out route `POST /api/v1/session/sign-out`, the book events and the sign-in events; `main`'s deploy of #353 is green (prod `prod-2c66ef3`). **Owner**: Claude Code. **Model**: Sonnet. **Size**: ~8 files (spreadsheets).
 
