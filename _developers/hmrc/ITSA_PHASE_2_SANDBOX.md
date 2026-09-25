@@ -485,3 +485,24 @@ The cumulative period PUT bodies (`self-employment-cumulative-period-1` etc.,
 `uk-property-cumulative-period-1` etc.) and the UK property annual submission (`200 {}`) matched
 `routes/itsa-self-employment-cumulative.js`, `routes/itsa-uk-property-cumulative.js` and
 `routes/itsa-uk-property-annual.js` exactly - no change.
+
+### Three years with a real Gov-Client-Multi-Factor header
+
+2026-09-25, commit `e8f6d942`: `2023-24`, `2025-26` and `2026-27` each ran against the `ci`
+environment's `local` Cognito test lane, signed in with its real TOTP device, so every request
+carried a genuine `Gov-Client-Multi-Factor` header rather than the client-only value earlier runs
+sent. The fraud prevention header validator answered `VALID_HEADERS` on all three runs, no errors
+and no warnings - the earlier runs' one warning (`gov-client-multi-factor`) is gone.
+
+The stored `hmrc-test-user.json` at the start of this run answered `Invalid user ID or password`
+on HMRC's own sign-in page, twelve times over, until the flow ran out of steps -
+`getAuthorizationCode` (`scripts/lib/hmrcAuthorizationCode.js`) now screenshots and dumps the DOM
+on that path too, the same as the no-action-found path already did, which is what showed the
+error text. A fresh `HMRC_TEST_USER_SERVICE_NAMES=mtd-income-tax scripts/proxy-secrets.sh node
+scripts/create-hmrc-test-user.js` cleared it; the stored file had drifted from what HMRC's sandbox
+held, not a defect in this script.
+
+Transcripts:
+- `../itsa-sandbox/2023-24/itsa-sandbox-year-transcript.json`
+- `../itsa-sandbox/2025-26/itsa-sandbox-year-transcript.json`
+- `../itsa-sandbox/2026-27/itsa-sandbox-year-transcript.json`

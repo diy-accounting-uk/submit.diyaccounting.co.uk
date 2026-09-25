@@ -46,9 +46,8 @@ summaries for 2025-26 and 2026-27. Each run filed four quarterly updates for eac
 annual submission, a triggered and adjusted business source adjustable summary, an intent-to-finalise
 calculation and a final declaration that answered 204. For 2026-27, we filed loss claims for both
 businesses and tax liability adjustments, each with the required `suspend-temporal-validations` header.
-The fraud prevention header validator reports no errors on the same header set; its one warning is
-`gov-client-multi-factor`, which we are closing by requiring multi-factor authentication for every
-account.
+The fraud prevention header validator reports no errors and no warnings on the same header set,
+including a real `Gov-Client-Multi-Factor` header from the account's own multi-factor sign-in.
 
 Two things we would like your guidance on:
 
