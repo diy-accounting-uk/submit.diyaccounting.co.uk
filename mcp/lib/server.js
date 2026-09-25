@@ -171,7 +171,7 @@ export const TOOLS = {
       "Open a diya-gl book from the filesystem: a directory holding book.toml and lines.jsonl, or a single file " +
       "(a DIY Accounting workbook, a package zip, a diya-gl zip, or a diya-gl JSON file). With cloud: true, opens " +
       "bookId from the DIYA cloud instead (a practice client's own book with clientId), signed in via auth.js's " +
-      "accessToken(). Answers the product, the entity, the period covered, the line count and the book checks " +
+      "idToken(). Answers the product, the entity, the period covered, the line count and the book checks " +
       "summary. Replaces the session's loaded book.",
     inputSchema: {
       path: z
@@ -190,7 +190,7 @@ export const TOOLS = {
       "directory; the default for a path with no extension), diya-gl-zip, json, xlsx (the product's recalculating " +
       "workbook) and zip (the product's package). xlsx and zip fetch the template from spreadsheets.diyaccounting.co.uk " +
       "on first use. With cloud: true, writes to the DIYA cloud by bookId instead (a practice client's book set with " +
-      "clientId), signed in via auth.js's accessToken(); carries the if-match etag from the session's last cloud " +
+      "clientId), signed in via auth.js's idToken(); carries the if-match etag from the session's last cloud " +
       "open or save of the same bookId.",
     inputSchema: {
       path: z.string().optional().describe("Where to write: a directory for diya-gl-dir, otherwise a file path; unused with cloud"),
