@@ -61,4 +61,26 @@ describe("appClientResolver", () => {
       expect(await resolveAppClient("submit-client-id")).toBe("submit-client-id");
     });
   });
+
+  describe("local lanes (test, simulator, proxy)", () => {
+    test.each(["test", "simulator", "proxy"])("resolves from COGNITO_CLIENT_ID without calling SSM (%s)", async (envName) => {
+      process.env = { ...originalEnv, ENVIRONMENT_NAME: envName, COGNITO_CLIENT_ID: "local-submit-client-id" };
+      expect(await resolveAppClient("local-submit-client-id")).toBe("submit");
+      expect(mockSsmSend).not.toHaveBeenCalled();
+    });
+
+    test("resolves from COGNITO_MCP_CLIENT_ID without calling SSM", async () => {
+      process.env = { ...originalEnv, ENVIRONMENT_NAME: "proxy", COGNITO_MCP_CLIENT_ID: "local-mcp-client-id" };
+      expect(await resolveAppClient("local-mcp-client-id")).toBe("mcp");
+      expect(mockSsmSend).not.toHaveBeenCalled();
+    });
+
+    test("returns the raw client id when it isn't configured locally", async () => {
+      process.env = { ...originalEnv, ENVIRONMENT_NAME: "simulator" };
+      delete process.env.COGNITO_CLIENT_ID;
+      delete process.env.COGNITO_MCP_CLIENT_ID;
+      expect(await resolveAppClient("debugger")).toBe("debugger");
+      expect(mockSsmSend).not.toHaveBeenCalled();
+    });
+  });
 });
