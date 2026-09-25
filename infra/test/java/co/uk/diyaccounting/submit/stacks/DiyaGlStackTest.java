@@ -373,7 +373,8 @@ class DiyaGlStackTest {
                     .filter(statement -> {
                         Object resource = statement.get("Resource");
                         return resource instanceof List<?> resources
-                                && resources.stream().anyMatch(r -> String.valueOf(r).contains("app-client-id"));
+                                && resources.stream()
+                                        .anyMatch(r -> String.valueOf(r).contains("app-client-id"));
                     })
                     .toList();
 

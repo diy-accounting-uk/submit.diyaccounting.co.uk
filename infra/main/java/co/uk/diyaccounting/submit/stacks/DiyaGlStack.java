@@ -480,7 +480,8 @@ public class DiyaGlStack extends Stack {
      * IdentityStack, to map the caller's verified client id to "submit", "spreadsheets-diya-gl" or
      * "mcp" (app/lib/appClientResolver.js).
      */
-    private static void grantAppClientIdParameterAccess(Function lambda, String region, String account, String envName) {
+    private static void grantAppClientIdParameterAccess(
+            Function lambda, String region, String account, String envName) {
         lambda.addToRolePolicy(PolicyStatement.Builder.create()
                 .sid("ReadAppClientIdParameters")
                 .effect(Effect.ALLOW)
@@ -490,8 +491,7 @@ public class DiyaGlStack extends Stack {
                                 .formatted(region, account, envName),
                         "arn:aws:ssm:%s:%s:parameter/submit/%s/spreadsheets-diya-gl-app-client-id"
                                 .formatted(region, account, envName),
-                        "arn:aws:ssm:%s:%s:parameter/submit/%s/mcp-app-client-id"
-                                .formatted(region, account, envName)))
+                        "arn:aws:ssm:%s:%s:parameter/submit/%s/mcp-app-client-id".formatted(region, account, envName)))
                 .build());
     }
 
