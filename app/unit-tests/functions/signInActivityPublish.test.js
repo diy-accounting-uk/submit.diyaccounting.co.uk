@@ -38,8 +38,9 @@ vi.mock("@app/data/dynamoDbSecurityStateRepository.js", () => ({
   putSignInSession: (...args) => mockPutSignInSession(...args),
 }));
 
-const { handler, classifySignInEvent, extractProvider, resolveAppClient, SESSION_RESUME_THRESHOLD_MS } =
-  await import("@app/functions/auth/signInActivityPublish.js");
+const { handler, classifySignInEvent, extractProvider, SESSION_RESUME_THRESHOLD_MS } = await import(
+  "@app/functions/auth/signInActivityPublish.js"
+);
 const { hashSub } = await import("@app/services/subHasher.js");
 
 function ssmParam(value) {
@@ -70,22 +71,6 @@ describe("signInActivityPublish", () => {
 
   afterEach(() => {
     process.env = originalEnv;
-  });
-
-  describe("resolveAppClient", () => {
-    test("maps each app client id to its name", async () => {
-      expect(await resolveAppClient("submit-client-id")).toBe("submit");
-      expect(await resolveAppClient("books-client-id")).toBe("books");
-      expect(await resolveAppClient("mcp-client-id")).toBe("mcp");
-    });
-
-    test("returns the raw client id when it matches none of the three", async () => {
-      expect(await resolveAppClient("unknown-client-id")).toBe("unknown-client-id");
-    });
-
-    test("returns undefined when no client id is given", async () => {
-      expect(await resolveAppClient(undefined)).toBeUndefined();
-    });
   });
 
   describe("extractProvider", () => {

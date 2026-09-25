@@ -9,65 +9,15 @@
 // "The session rule") and publishes the activity event both the lake and Telegram read.
 
 import crypto from "crypto";
-import { SSMClient, GetParameterCommand } from "@aws-sdk/client-ssm";
-import { createLogger } from "../../lib/logger.js";
 import { publishActivityEvent, classifyActor, maskEmail } from "../../lib/activityAlert.js";
+import { resolveAppClient } from "../../lib/appClientResolver.js";
 import { initializeSalt, hashSub, isSaltInitialized } from "../../services/subHasher.js";
 import { getSignInSession, putSignInSession } from "../../data/dynamoDbSecurityStateRepository.js";
-
-const logger = createLogger({ source: "app/functions/auth/signInActivityPublish.js" });
-
-const ssmClient = new SSMClient({ region: process.env.AWS_REGION || "eu-west-2" });
 
 // A refresh starts a new session when the previous token issue is older than the access-token
 // lifetime (60 minutes, the Cognito default) plus 5 minutes' grace: the old tokens lapsed and
 // nothing kept the session alive.
 export const SESSION_RESUME_THRESHOLD_MS = (60 + 5) * 60 * 1000;
-
-/**
- * Read the three app-client-id SSM parameters IdentityStack writes and build a map from
- * Cognito app client id to the app client name. Read at invocation time rather than cached in
- * an environment variable: a trigger environment variable holding client ids would make a
- * CloudFormation cycle (the trigger's own function is created before the clients it would need
- * to name).
- *
- * @returns {Promise<Object<string, string>>} clientId -> "submit" | "books" | "mcp"
- */
-export async function loadAppClientIdMap() {
-  const envName = process.env.ENVIRONMENT_NAME;
-  const parameterNames = {
-    submit: `/submit/${envName}/submit-app-client-id`,
-    books: `/submit/${envName}/spreadsheets-diya-gl-app-client-id`,
-    mcp: `/submit/${envName}/mcp-app-client-id`,
-  };
-
-  const map = {};
-  await Promise.all(
-    Object.entries(parameterNames).map(async ([appClient, parameterName]) => {
-      try {
-        const result = await ssmClient.send(new GetParameterCommand({ Name: parameterName }));
-        if (result.Parameter?.Value) map[result.Parameter.Value] = appClient;
-      } catch (error) {
-        logger.warn({ message: "Failed to read app client id parameter", parameterName, error: error.message });
-      }
-    }),
-  );
-  return map;
-}
-
-/**
- * Resolve the Cognito app client id to the app client name. A client id this map doesn't
- * recognise (a new client added since the parameters were last read, or a stale cache) is
- * reported as-is, so it stays visible rather than silently dropped.
- *
- * @param {string} [clientId]
- * @returns {Promise<string|undefined>}
- */
-export async function resolveAppClient(clientId) {
-  if (!clientId) return undefined;
-  const map = await loadAppClientIdMap();
-  return map[clientId] || clientId;
-}
 
 /**
  * Extract the identity provider name from a Cognito `identities` attribute, which is a JSON
