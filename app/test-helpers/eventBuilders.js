@@ -53,7 +53,12 @@ export function buildAuthorizerContext(sub = "test-sub", username = "test", emai
  * Build authorizer context matching HTTP API JWT authorizer structure
  * (claims at event.requestContext.authorizer.jwt.claims)
  */
-export function buildJwtAuthorizerContext(sub = "test-sub", username = "test", email = "test@test.submit.diyaccounting.co.uk") {
+export function buildJwtAuthorizerContext(
+  sub = "test-sub",
+  username = "test",
+  email = "test@test.submit.diyaccounting.co.uk",
+  extraClaims = {},
+) {
   return {
     authorizer: {
       jwt: {
@@ -61,6 +66,7 @@ export function buildJwtAuthorizerContext(sub = "test-sub", username = "test", e
           "sub": sub,
           "cognito:username": username,
           "email": email,
+          ...extraClaims,
         },
         scopes: [],
       },

@@ -173,7 +173,11 @@ public class ApiStack extends Stack {
                 .corsPreflight(CorsPreflightOptions.builder()
                         .allowOrigins(diyaGlAllowedOrigins)
                         .allowMethods(List.of(
-                                CorsHttpMethod.GET, CorsHttpMethod.PUT, CorsHttpMethod.DELETE, CorsHttpMethod.OPTIONS))
+                                CorsHttpMethod.GET,
+                                CorsHttpMethod.POST,
+                                CorsHttpMethod.PUT,
+                                CorsHttpMethod.DELETE,
+                                CorsHttpMethod.OPTIONS))
                         .allowHeaders(
                                 List.of("authorization", "content-type", "if-match", "x-request-id", "x-correlationid"))
                         // API Gateway stores expose-header names lowercase; matching that here
@@ -326,6 +330,19 @@ public class ApiStack extends Stack {
                 .jwtAudience(List.of(props.userPoolClientId(), props.booksUserPoolClientId()))
                 .build();
 
+        // Same user pool and issuer again, with every configured client's audience: the
+        // sign-out route is the one route every client must reach, since a token from any of
+        // the three clients names a session that route has to end. mcpUserPoolClientId joins
+        // the list the same way it joins the books audience above, only when non-blank.
+        var allClientsAudience = new java.util.ArrayList<String>(List.of(props.userPoolClientId(), props.booksUserPoolClientId()));
+        if (props.mcpUserPoolClientId() != null && !props.mcpUserPoolClientId().isBlank()) {
+            allClientsAudience.add(props.mcpUserPoolClientId());
+        }
+        HttpJwtAuthorizer allClientsJwtAuthorizer = HttpJwtAuthorizer.Builder.create(
+                        props.resourceNamePrefix() + "-AllClientsCognitoAuthorizer", issuer)
+                .jwtAudience(allClientsAudience)
+                .build();
+
         // Create custom Lambda authorizer for X-Authorization header
         IFunction customAuthorizerLambda = Function.fromFunctionAttributes(
                 this,
@@ -376,6 +393,7 @@ public class ApiStack extends Stack {
                     jwtAuthorizer,
                     booksJwtAuthorizer,
                     billingJwtAuthorizer,
+                    allClientsJwtAuthorizer,
                     customAuthorizer,
                     createdRouteKeys,
                     firstCreatorByRoute);
@@ -465,6 +483,7 @@ public class ApiStack extends Stack {
             HttpJwtAuthorizer jwtAuthorizer,
             HttpJwtAuthorizer booksJwtAuthorizer,
             HttpJwtAuthorizer billingJwtAuthorizer,
+            HttpJwtAuthorizer allClientsJwtAuthorizer,
             HttpLambdaAuthorizer customAuthorizer,
             java.util.Set<String> createdRouteKeys,
             java.util.Map<String, String> firstCreatorByRoute) {
@@ -510,6 +529,13 @@ public class ApiStack extends Stack {
                     .routeKey(routeKey)
                     .integration(integration)
                     .authorizer(booksJwtAuthorizer)
+                    .build();
+        } else if (apiLambdaProps.allClientsJwtAuthorizer()) {
+            HttpRoute.Builder.create(this, routeId)
+                    .httpApi(this.httpApi)
+                    .routeKey(routeKey)
+                    .integration(integration)
+                    .authorizer(allClientsJwtAuthorizer)
                     .build();
         } else if (apiLambdaProps.customAuthorizer()) {
             HttpRoute.Builder.create(this, routeId)
@@ -569,6 +595,13 @@ public class ApiStack extends Stack {
                             .routeKey(headRouteKey)
                             .integration(integration)
                             .authorizer(booksJwtAuthorizer)
+                            .build();
+                } else if (apiLambdaProps.allClientsJwtAuthorizer()) {
+                    HttpRoute.Builder.create(this, headRouteId)
+                            .httpApi(this.httpApi)
+                            .routeKey(headRouteKey)
+                            .integration(integration)
+                            .authorizer(allClientsJwtAuthorizer)
                             .build();
                 } else if (apiLambdaProps.customAuthorizer()) {
                     HttpRoute.Builder.create(this, headRouteId)

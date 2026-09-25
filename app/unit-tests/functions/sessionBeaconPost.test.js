@@ -48,32 +48,8 @@ describe("sessionBeaconPost ingestHandler", () => {
     expect(mockPublishActivityEvent.mock.calls[0][0].userSub).toBeUndefined();
   });
 
-  it("publishes a logout event classified from the account that is leaving", async () => {
-    const response = await ingestHandler(buildBeaconEvent({ event: "logout", email: "customer@gmail.com", provider: "Google" }));
-
-    expect(response.statusCode).toBe(200);
-    expect(mockPublishActivityEvent).toHaveBeenCalledWith(
-      expect.objectContaining({
-        event: "logout",
-        summary: "Logout via Google: c***@gmail.com",
-        actor: "customer",
-        flow: "user-journey",
-      }),
-    );
-  });
-
-  it("classifies a test account's logout the same way its login was classified", async () => {
-    await ingestHandler(buildBeaconEvent({ event: "logout", email: "test-abc@test.diyaccounting.co.uk", provider: "" }));
-
-    expect(mockPublishActivityEvent).toHaveBeenCalledWith(
-      expect.objectContaining({ event: "logout", summary: "Logout: t***@test.diyaccounting.co.uk", actor: "test-user" }),
-    );
-  });
-
   it("ignores a beacon from a crawler", async () => {
-    const response = await ingestHandler(
-      buildBeaconEvent({ event: "logout", email: "customer@gmail.com" }, { "user-agent": "Googlebot/2.1" }),
-    );
+    const response = await ingestHandler(buildBeaconEvent({ page: "/index.html" }, { "user-agent": "Googlebot/2.1" }));
 
     expect(response.statusCode).toBe(200);
     expect(mockPublishActivityEvent).not.toHaveBeenCalled();

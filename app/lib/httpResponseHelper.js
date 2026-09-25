@@ -358,6 +358,9 @@ export function extractUserFromAuthorizerContext(event) {
       username: ctx["cognito:username"] || ctx.username || ctx.sub,
       email: ctx.email || "",
       scope: ctx.scope || ctx.scopes || "",
+      // Cognito access tokens carry client_id, not aud; an ID token carries aud instead. Either
+      // one names the app client the caller signed in on -- see app/lib/appClientResolver.js.
+      appClientId: ctx.client_id || ctx.aud || "",
     };
   }
   return null;

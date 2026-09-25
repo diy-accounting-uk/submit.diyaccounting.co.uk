@@ -7,7 +7,7 @@ import { createLogger } from "../../lib/logger.js";
 import { extractRequest, http200OkResponse, getHeader } from "../../lib/httpResponseHelper.js";
 import { registerLambdaRoute } from "../../lib/httpServerToLambdaAdaptor.js";
 import { classifyVisitor } from "../../lib/visitorClassifier.js";
-import { publishActivityEvent, classifyActor, maskEmail } from "../../lib/activityAlert.js";
+import { publishActivityEvent } from "../../lib/activityAlert.js";
 
 const logger = createLogger({ source: "app/functions/account/sessionBeaconPost.js" });
 
@@ -36,23 +36,6 @@ export async function ingestHandler(event) {
     body = JSON.parse(event.body || "{}") || {};
   } catch {
     // ignore parse errors
-  }
-
-  if (body.event === "logout") {
-    // Logout is classified from the account that is leaving, the way login is, so a session
-    // reads as one pair of events from the same actor.
-    const email = typeof body.email === "string" ? body.email : "";
-    const provider = typeof body.provider === "string" ? body.provider : "";
-    const providerLabel = provider ? ` via ${provider}` : "";
-    const emailLabel = email ? `: ${maskEmail(email)}` : "";
-    await publishActivityEvent({
-      event: "logout",
-      summary: `Logout${providerLabel}${emailLabel}`,
-      actor: classifyActor(email),
-      flow: "user-journey",
-      detail: { country },
-    });
-    return http200OkResponse({ request, headers: { "Content-Type": "application/json" }, data: { ok: true } });
   }
 
   const page = body.page || "/";

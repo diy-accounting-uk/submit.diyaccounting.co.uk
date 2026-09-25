@@ -33,6 +33,14 @@ public interface AbstractApiLambdaProps extends AbstractLambdaProps {
         return false;
     }
 
+    /** True for a route every Cognito app client must reach (the sign-out route): authorised
+     * by the fourth JWT authoriser, which accepts the main, books and MCP client audiences,
+     * ahead of {@link #booksJwtAuthorizer()} and {@link #jwtAuthorizer()}. */
+    @Value.Default
+    default boolean allClientsJwtAuthorizer() {
+        return false;
+    }
+
     /** True to also create an unauthenticated OPTIONS route on the same path, for CORS
      * preflight, answered by the same integration as the primary route. */
     @Value.Default

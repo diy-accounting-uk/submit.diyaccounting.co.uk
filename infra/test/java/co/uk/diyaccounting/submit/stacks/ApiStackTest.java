@@ -109,6 +109,24 @@ class ApiStackTest {
                 .billingJwtAuthorizer(true)
                 .build();
 
+        var sessionSignOutRoute = ApiLambdaProps.builder()
+                .idPrefix("session-sign-out")
+                .ingestFunctionName("test-session-sign-out-fn")
+                .ingestHandler("app/functions/account/sessionSignOutPost.ingestHandler")
+                .ingestLambdaArn("arn:aws:lambda:eu-west-2:111111111111:function:test-session-sign-out-fn")
+                .ingestProvisionedConcurrencyAliasArn(
+                        "arn:aws:lambda:eu-west-2:111111111111:function:test-session-sign-out-fn:pc")
+                .provisionedConcurrencyAliasName("pc")
+                .baseImageTag("latest")
+                .ecrRepositoryName(sharedNames.ecrRepositoryName)
+                .ecrRepositoryArn(sharedNames.ecrRepositoryArn)
+                .httpMethod(HttpMethod.POST)
+                .urlPath("/api/v1/session/sign-out")
+                .jwtAuthorizer(false)
+                .customAuthorizer(false)
+                .allClientsJwtAuthorizer(true)
+                .build();
+
         return new ApiStack(
                 app,
                 "TestApiStack",
@@ -123,7 +141,8 @@ class ApiStackTest {
                         .resourceNamePrefix(sharedNames.appResourceNamePrefix)
                         .cloudTrailEnabled("false")
                         .sharedNames(sharedNames)
-                        .lambdaFunctions(List.of(regularRoute, booksPutRoute, booksDeleteRoute, billingCheckoutRoute))
+                        .lambdaFunctions(List.of(
+                                regularRoute, booksPutRoute, booksDeleteRoute, billingCheckoutRoute, sessionSignOutRoute))
                         .userPoolId("eu-west-2_123456789")
                         .userPoolClientId(USER_POOL_CLIENT_ID)
                         .booksUserPoolClientId(BOOKS_USER_POOL_CLIENT_ID)
@@ -138,11 +157,11 @@ class ApiStackTest {
     }
 
     @Test
-    void createsThreeJwtAuthorisersScopedToMainBooksAndBothClientIds() {
+    void createsFourJwtAuthorisersScopedToMainBooksBillingAndAllClientIds() {
         ApiStack stack = synthApiStack();
         Template template = Template.fromStack(stack);
 
-        template.resourceCountIs("AWS::ApiGatewayV2::Authorizer", 3);
+        template.resourceCountIs("AWS::ApiGatewayV2::Authorizer", 4);
         template.hasResourceProperties(
                 "AWS::ApiGatewayV2::Authorizer",
                 Match.objectLike(Map.of(
@@ -157,6 +176,34 @@ class ApiStackTest {
                         "JwtConfiguration",
                         Match.objectLike(
                                 Map.of("Audience", List.of(USER_POOL_CLIENT_ID, BOOKS_USER_POOL_CLIENT_ID))))));
+        // The billing and all-clients authorisers share this same two-client audience until an
+        // mcpUserPoolClientId is configured, but both still count toward the 4 asserted above.
+    }
+
+    @Test
+    void aSignOutRouteIsAuthorisedByTheAllClientsAuthoriserAcceptingEveryClientId() {
+        ApiStack stack = synthApiStack(MCP_USER_POOL_CLIENT_ID);
+        Template template = Template.fromStack(stack);
+
+        var allClientsAuthorizers = template.findResources(
+                "AWS::ApiGatewayV2::Authorizer",
+                Map.of(
+                        "Properties",
+                        Map.of(
+                                "JwtConfiguration",
+                                Map.of(
+                                        "Audience",
+                                        List.of(USER_POOL_CLIENT_ID, BOOKS_USER_POOL_CLIENT_ID, MCP_USER_POOL_CLIENT_ID)))));
+        assertEquals(1, allClientsAuthorizers.size(), "expected exactly one all-clients authoriser");
+        String allClientsAuthorizerId = allClientsAuthorizers.keySet().iterator().next();
+
+        var signOutRoutes = template.findResources(
+                "AWS::ApiGatewayV2::Route",
+                Map.of("Properties", Map.of("RouteKey", "POST /api/v1/session/sign-out")));
+        assertEquals(1, signOutRoutes.size());
+        assertEquals(
+                allClientsAuthorizerId,
+                refOf(((Map<?, ?>) signOutRoutes.values().iterator().next()).get("Properties"), "AuthorizerId"));
     }
 
     @Test
@@ -183,26 +230,30 @@ class ApiStackTest {
     }
 
     @Test
-    void aBillingRouteIsAuthorisedByTheBillingAuthoriserAcceptingBothAudiences() {
+    void aBillingRouteIsAuthorisedByItsOwnAuthoriserAcceptingBothAudiencesSeparateFromTheAllClientsOne() {
         ApiStack stack = synthApiStack();
         Template template = Template.fromStack(stack);
-
-        var billingAuthorizers = template.findResources(
-                "AWS::ApiGatewayV2::Authorizer",
-                Map.of(
-                        "Properties",
-                        Map.of(
-                                "JwtConfiguration",
-                                Map.of("Audience", List.of(USER_POOL_CLIENT_ID, BOOKS_USER_POOL_CLIENT_ID)))));
-        assertEquals(1, billingAuthorizers.size(), "expected exactly one billing authoriser with both audiences");
-        String billingAuthorizerId = billingAuthorizers.keySet().iterator().next();
 
         var checkoutRoutes = template.findResources(
                 "AWS::ApiGatewayV2::Route", Map.of("Properties", Map.of("RouteKey", "POST /api/v1/billing/checkout")));
         assertEquals(1, checkoutRoutes.size());
+        String billingAuthorizerId =
+                refOf(((Map<?, ?>) checkoutRoutes.values().iterator().next()).get("Properties"), "AuthorizerId");
         assertEquals(
-                billingAuthorizerId,
-                refOf(((Map<?, ?>) checkoutRoutes.values().iterator().next()).get("Properties"), "AuthorizerId"));
+                List.of(USER_POOL_CLIENT_ID, BOOKS_USER_POOL_CLIENT_ID),
+                jwtAudienceOf(template, billingAuthorizerId));
+
+        // Without an mcpUserPoolClientId configured, the all-clients authoriser accepts this
+        // same pair of audiences, but it must still be a construct of its own: two routes each
+        // get their own authoriser even when today's audience lists happen to match.
+        var signOutRoutes = template.findResources(
+                "AWS::ApiGatewayV2::Route", Map.of("Properties", Map.of("RouteKey", "POST /api/v1/session/sign-out")));
+        assertEquals(1, signOutRoutes.size());
+        String allClientsAuthorizerId =
+                refOf(((Map<?, ?>) signOutRoutes.values().iterator().next()).get("Properties"), "AuthorizerId");
+        assertTrue(
+                !billingAuthorizerId.equals(allClientsAuthorizerId),
+                "expected the billing and all-clients routes to use distinct authoriser resources");
     }
 
     @Test
@@ -311,5 +362,15 @@ class ApiStackTest {
         assertTrue(properties.containsKey(key), "expected property " + key);
         var ref = (Map<String, Object>) properties.get(key);
         return (String) ref.get("Ref");
+    }
+
+    @SuppressWarnings("unchecked")
+    private static List<String> jwtAudienceOf(Template template, String authorizerLogicalId) {
+        var authorizers = template.findResources("AWS::ApiGatewayV2::Authorizer");
+        var authorizer = (Map<String, Object>) authorizers.get(authorizerLogicalId);
+        assertTrue(authorizer != null, "expected an authorizer with logical id " + authorizerLogicalId);
+        var properties = (Map<String, Object>) authorizer.get("Properties");
+        var jwtConfiguration = (Map<String, Object>) properties.get("JwtConfiguration");
+        return (List<String>) jwtConfiguration.get("Audience");
     }
 }
