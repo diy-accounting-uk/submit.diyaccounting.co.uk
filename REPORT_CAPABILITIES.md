@@ -326,6 +326,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
     - [DATA-07](#data-07-pull-github-operator-effort-data) Pull GitHub operator-effort data: use when workflow runs, issue events or commits must be pulled into the lake for the operator-effort views.
     - [DATA-08](#data-08-copy-the-aws-focus-cost-export) Copy the AWS FOCUS cost export: use when the management account's FOCUS cost export must land in this account's lake for cost views.
     - [DATA-09](#data-09-reconcile-stripe-payments-into-the-lake) Reconcile Stripe payments into the lake: use when the previous day's Stripe balance transactions, charges or subscriptions must land in the lake.
+    - [DATA-52](#data-52-pull-the-companys-own-diya-gl-book-into-the-lake) Pull the company's own diya-gl book into the lake: use when DIY Accounting Limited's own P&L and balance sheet must land in the lake from its resident diya-gl book.
   - [Lake infrastructure, quality and cost](#lake-infrastructure-quality-and-cost-data)
     - [DATA-10](#data-10-create-or-replace-athena-business-views) Create or replace Athena business views: use when a new or changed Athena view under infra/main/resources/analytics/views must deploy with the stack.
     - [DATA-11](#data-11-run-glue-data-quality-checks) Run Glue Data Quality checks: use when new lake partitions must be registered and a Glue Data Quality ruleset run must be started.
@@ -3487,7 +3488,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 ## Analytics and finance (DATA)
 
 <!-- generated:area DATA -->
-- [Lake ingestion](#lake-ingestion-data): [DATA-01](#data-01-publish-activity-events-to-the-bus) Publish activity events to the bus · [DATA-02](#data-02-transform-activity-events-into-lake-rows) Transform activity events into lake rows · [DATA-03](#data-03-transform-alarm-state-changes-into-lake-rows) Transform alarm state changes into lake rows · [DATA-04](#data-04-stream-dynamodb-table-changes-into-the-lake) Stream DynamoDB table changes into the lake · [DATA-05](#data-05-pull-ga4-daily-bigquery-aggregate-tables) Pull GA4 daily BigQuery aggregate tables · [DATA-06](#data-06-pull-ga4-reports-and-bigquery-event-export) Pull GA4 reports and BigQuery event export · [DATA-07](#data-07-pull-github-operator-effort-data) Pull GitHub operator-effort data · [DATA-08](#data-08-copy-the-aws-focus-cost-export) Copy the AWS FOCUS cost export · [DATA-09](#data-09-reconcile-stripe-payments-into-the-lake) Reconcile Stripe payments into the lake
+- [Lake ingestion](#lake-ingestion-data): [DATA-01](#data-01-publish-activity-events-to-the-bus) Publish activity events to the bus · [DATA-02](#data-02-transform-activity-events-into-lake-rows) Transform activity events into lake rows · [DATA-03](#data-03-transform-alarm-state-changes-into-lake-rows) Transform alarm state changes into lake rows · [DATA-04](#data-04-stream-dynamodb-table-changes-into-the-lake) Stream DynamoDB table changes into the lake · [DATA-05](#data-05-pull-ga4-daily-bigquery-aggregate-tables) Pull GA4 daily BigQuery aggregate tables · [DATA-06](#data-06-pull-ga4-reports-and-bigquery-event-export) Pull GA4 reports and BigQuery event export · [DATA-07](#data-07-pull-github-operator-effort-data) Pull GitHub operator-effort data · [DATA-08](#data-08-copy-the-aws-focus-cost-export) Copy the AWS FOCUS cost export · [DATA-09](#data-09-reconcile-stripe-payments-into-the-lake) Reconcile Stripe payments into the lake · [DATA-52](#data-52-pull-the-companys-own-diya-gl-book-into-the-lake) Pull the company's own diya-gl book into the lake
 - [Lake infrastructure, quality and cost](#lake-infrastructure-quality-and-cost-data): [DATA-10](#data-10-create-or-replace-athena-business-views) Create or replace Athena business views · [DATA-11](#data-11-run-glue-data-quality-checks) Run Glue Data Quality checks · [DATA-12](#data-12-provision-the-analytics-lake-and-athena-workgroup) Provision the analytics lake and Athena workgroup · [DATA-13](#data-13-catalogue-cloudfront-access-logs-for-athena) Catalogue CloudFront access logs for Athena · [DATA-14](#data-14-catalogue-compliance-findings-for-the-dashboard) Catalogue compliance findings for the dashboard · [DATA-15](#data-15-catalogue-workflow-probe-and-agent-run-data) Catalogue workflow, probe and agent run data · [DATA-16](#data-16-alert-on-cost-budget-and-anomaly-thresholds) Alert on cost budget and anomaly thresholds · [DATA-17](#data-17-export-aws-billing-data-in-focus-format) Export AWS billing data in FOCUS format
 - [Nightly publish and orchestration](#nightly-publish-and-orchestration-data): [DATA-18](#data-18-publish-the-nightly-operator-dashboard-snapshot) Publish the nightly operator dashboard snapshot · [DATA-19](#data-19-serve-the-operator-dashboard-snapshot-via-the-api) Serve the operator dashboard snapshot via the API · [DATA-20](#data-20-publish-the-nightly-raw-export-for-indexing) Publish the nightly raw export for indexing · [DATA-21](#data-21-publish-nightly-business-metrics-to-cloudwatch) Publish nightly business metrics to CloudWatch · [DATA-22](#data-22-orchestrate-the-nightly-ingestion-workflow) Orchestrate the nightly ingestion workflow
 - [Site-side analytics and RUM](#site-side-analytics-and-rum-data): [DATA-23](#data-23-classify-visitor-kind-as-human-bot-or-synthetic) Classify visitor kind as human, bot or synthetic · [DATA-24](#data-24-load-ga4-analytics-on-site-pages) Load GA4 analytics on site pages · [DATA-25](#data-25-configure-and-gate-cloudwatch-rum) Configure and gate CloudWatch RUM · [DATA-26](#data-26-render-the-operator-objectives-dashboard) Render the operator objectives dashboard
@@ -3509,6 +3510,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - [DATA-07](#data-07-pull-github-operator-effort-data) Pull GitHub operator-effort data
 - [DATA-08](#data-08-copy-the-aws-focus-cost-export) Copy the AWS FOCUS cost export
 - [DATA-09](#data-09-reconcile-stripe-payments-into-the-lake) Reconcile Stripe payments into the lake
+- [DATA-52](#data-52-pull-the-companys-own-diya-gl-book-into-the-lake) Pull the company's own diya-gl book into the lake
 <!-- /generated:group lake-ingestion-data -->
 
 #### DATA-01 Publish activity events to the bus
@@ -3599,6 +3601,16 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - **Files:** app/functions/analytics/stripeReconcile.js, app/unit-tests/analytics/stripeReconcile.test.js, infra/main/java/co/uk/diyaccounting/submit/stacks/analytics/StripeReconciliationTables.java, infra/test/java/co/uk/diyaccounting/submit/stacks/analytics/StripeReconciliationTablesTest.java
 - **Keywords:** stripe reconciliation, balance transactions, charges, subscriptions snapshot, customer id hashing, revenue view, curated stripe
 - **Related:** DATA-40
+
+#### DATA-52 Pull the company's own diya-gl book into the lake
+
+- **Use when:** DIY Accounting Limited's own P&L and balance sheet must land in the lake from its resident diya-gl book.
+- **Does:** companyBookPull.js reads the book named by COMPANY_BOOK_ID under COMPANY_BOOK_OWNER_PREFIX straight off S3, with an IAM role scoped to that one book's prefix only, no user identity and no salt. It derives the seven FRS 105 balance-sheet lines through app/services/microEntityAccounts.js and writes one NDJSON line under curated/finance/. The job and its grant exist only when both values are configured; a malformed value fails synth.
+- **Run:** no command; see Does and Entry
+- **Entry:** `app/functions/analytics/companyBookPull.js:handler`
+- **Files:** app/functions/analytics/companyBookPull.js, app/unit-tests/analytics/companyBookPull.test.js, app/services/microEntityAccounts.js, infra/main/java/co/uk/diyaccounting/submit/stacks/IngestionStack.java, infra/test/java/co/uk/diyaccounting/submit/stacks/IngestionStackTest.java, infra/main/java/co/uk/diyaccounting/submit/stacks/analytics/NightlyIngestionWorkflow.java
+- **Keywords:** company book pull, diya-gl book, frs 105, balance sheet, micro-entity accounts, curated finance, company book id, company book owner prefix
+- **Related:** DATA-09
 
 ### Lake infrastructure, quality and cost (DATA)
 
@@ -4155,12 +4167,12 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 #### MCP-04 Derive micro-entity accounts figures for Companies House filing
 
 - **Use when:** a Company (ltd) book's FRS 105 balance-sheet lines are needed before a Companies House accounts filing.
-- **Does:** deriveMicroEntityAccounts in mcp/lib/accounts-tools.js reads the current year from the engine's published balance sheet, PubBalSht. It reads the prior year from the book's opening balance. It checks each sheet balances before rounding both years to whole pounds.
+- **Does:** deriveMicroEntityAccounts in app/services/microEntityAccounts.js reads the current year from the engine's published balance sheet, PubBalSht. It reads the prior year from the book's opening balance. It checks each sheet balances before rounding both years to whole pounds. mcp/lib/accounts-tools.js re-exports it for the derive_micro_entity_accounts tool; DATA-52's nightly company book pull imports the same function.
 - **Run:** no command; see Does and Entry
-- **Entry:** `mcp/lib/accounts-tools.js:deriveMicroEntityAccounts`
-- **Files:** mcp/lib/accounts-tools.js, mcp/test/accounts-tools.test.js
+- **Entry:** `app/services/microEntityAccounts.js:deriveMicroEntityAccounts`
+- **Files:** app/services/microEntityAccounts.js, mcp/lib/accounts-tools.js, mcp/test/accounts-tools.test.js
 - **Keywords:** derive_micro_entity_accounts, frs 105, balance sheet, companies house, micro-entity, pubbalsht, accounts filing
-- **Related:** MCP-03, MCP-08
+- **Related:** MCP-03, MCP-08, DATA-52
 
 #### MCP-05 Derive VAT figures via MCP tools
 
@@ -5005,7 +5017,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - backup roles: [OPS-102](#ops-102-verify-the-multi-account-aws-setup), [OPS-104](#ops-104-set-up-cross-account-backup-iam-roles)
 - backup salt: [OPS-44](#ops-44-hash-and-rotate-the-subject-id-salt)
 - backup vault: [OPS-48](#ops-48-verify-backup-health-daily), [OPS-104](#ops-104-set-up-cross-account-backup-iam-roles), [OPS-109](#ops-109-disaster-recovery-restore-into-a-new-prod-account), [OPS-111](#ops-111-provision-cross-account-backup-vaults-and-plans)
-- balance sheet: [CH-07](#ch-07-preview-micro-entity-accounts-before-filing), [MCP-04](#mcp-04-derive-micro-entity-accounts-figures-for-companies-house-filing)
+- balance sheet: [CH-07](#ch-07-preview-micro-entity-accounts-before-filing), [DATA-52](#data-52-pull-the-companys-own-diya-gl-book-into-the-lake), [MCP-04](#mcp-04-derive-micro-entity-accounts-figures-for-companies-house-filing)
 - balance transactions: [DATA-09](#data-09-reconcile-stripe-payments-into-the-lake), [MCP-13](#mcp-13-import-stripe-transaction-and-payout-lines)
 - bank line: [DATA-51](#data-51-turn-staged-stripe-activity-into-diya-gl-lines)
 - bank statement import: [MCP-10](#mcp-10-import-a-natwest-bank-statement-into-diya-gl-lines)
@@ -5219,6 +5231,9 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - companies house accounts: [MCP-07](#mcp-07-file-vat-returns-and-accounts-via-api)
 - company accounts: [MCP-17](#mcp-17-build-and-hand-over-the-companys-own-book)
 - company background page: [SITE-11](#site-11-promote-sibling-products-and-partners)
+- company book id: [DATA-52](#data-52-pull-the-companys-own-diya-gl-book-into-the-lake)
+- company book owner prefix: [DATA-52](#data-52-pull-the-companys-own-diya-gl-book-into-the-lake)
+- company book pull: [DATA-52](#data-52-pull-the-companys-own-diya-gl-book-into-the-lake)
 - company number: [CH-04](#ch-04-fetch-a-company-profile)
 - company package: [MCP-11](#mcp-11-seed-a-book-from-a-workbook-set)
 - company profile: [CH-04](#ch-04-fetch-a-company-profile)
@@ -5312,6 +5327,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - ctr: [DATA-34](#data-34-report-google-ads-campaign-performance)
 - cumulative model: [HMRC-12](#hmrc-12-submit-and-manage-self-employment-periodic-updates), [HMRC-14](#hmrc-14-submit-and-manage-uk-property-periodic-updates), [HMRC-27](#hmrc-27-validate-hmrc-identifiers-dates-and-amounts), [HMRC-34](#hmrc-34-file-a-full-itsa-tax-year-in-sandbox)
 - curated cost: [DATA-08](#data-08-copy-the-aws-focus-cost-export)
+- curated finance: [DATA-52](#data-52-pull-the-companys-own-diya-gl-book-into-the-lake)
 - curated stripe: [DATA-09](#data-09-reconcile-stripe-payments-into-the-lake)
 - custom error page: [OPS-131](#ops-131-serve-cloudfront-custom-error-pages)
 - custom resource: [OPS-132](#ops-132-enable-dynamodb-pitr-on-deploy)
@@ -5397,6 +5413,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - distribution: [OPS-73](#ops-73-detect-404-scan-rate-attacks)
 - diya-gl: [BILL-15](#bill-15-move-a-book-to-a-client), [BILL-17](#bill-17-upload-a-diya-gl-book), [BILL-18](#bill-18-delete-a-diya-gl-book), [BILL-19](#bill-19-list-a-users-diya-gl-books), [BILL-20](#bill-20-fetch-a-versioned-diya-gl-book), [BILL-21](#bill-21-sweep-lapsed-diya-gl-books), [BILL-22](#bill-22-check-diya-gl-retention-entitlement), [BILL-23](#bill-23-store-diya-gl-books-in-s3), [MCP-03](#mcp-03-load-and-save-diya-gl-books-via-mcp)
 - diya-gl bank lines: [MCP-10](#mcp-10-import-a-natwest-bank-statement-into-diya-gl-lines)
+- diya-gl book: [DATA-52](#data-52-pull-the-companys-own-diya-gl-book-into-the-lake)
 - diya-gl lines: [DATA-51](#data-51-turn-staged-stripe-activity-into-diya-gl-lines), [MCP-13](#mcp-13-import-stripe-transaction-and-payout-lines)
 - diya-gl stack: [BILL-39](#bill-39-cdk-diya-gl-stack)
 - diya-gl-mcp: [MCP-17](#mcp-17-build-and-hand-over-the-companys-own-book)
@@ -5555,7 +5572,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - fresh project bootstrap: [DATA-40](#data-40-enable-required-google-cloud-apis)
 - frontend bundle: [BILL-43](#bill-43-build-the-frontend-test-bundle)
 - frs 102: [CH-13](#ch-13-map-the-frc-ixbrl-taxonomy-and-validate-accounts)
-- frs 105: [CH-07](#ch-07-preview-micro-entity-accounts-before-filing), [CH-13](#ch-13-map-the-frc-ixbrl-taxonomy-and-validate-accounts), [MCP-04](#mcp-04-derive-micro-entity-accounts-figures-for-companies-house-filing)
+- frs 105: [CH-07](#ch-07-preview-micro-entity-accounts-before-filing), [CH-13](#ch-13-map-the-frc-ixbrl-taxonomy-and-validate-accounts), [DATA-52](#data-52-pull-the-companys-own-diya-gl-book-into-the-lake), [MCP-04](#mcp-04-derive-micro-entity-accounts-figures-for-companies-house-filing)
 - full deploy: [OPS-06](#ops-06-run-the-full-deployment-pipeline)
 - full tax year: [HMRC-34](#hmrc-34-file-a-full-itsa-tax-year-in-sandbox)
 - fullscreen: [OPS-94](#ops-94-play-demo-videos-on-the-public-site)
@@ -5892,7 +5909,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - mfa claim: [SITE-01](#site-01-sign-customers-in-via-cognito)
 - mfa context: [SITE-02](#site-02-verify-jwts-at-the-api-gateway)
 - micro-entity: [MCP-04](#mcp-04-derive-micro-entity-accounts-figures-for-companies-house-filing)
-- micro-entity accounts: [CH-07](#ch-07-preview-micro-entity-accounts-before-filing), [CH-08](#ch-08-file-micro-entity-accounts-to-companies-house)
+- micro-entity accounts: [CH-07](#ch-07-preview-micro-entity-accounts-before-filing), [CH-08](#ch-08-file-micro-entity-accounts-to-companies-house), [DATA-52](#data-52-pull-the-companys-own-diya-gl-book-into-the-lake)
 - migration: [BILL-40](#bill-40-migrate-the-hashed-sub-salt), [BILL-41](#bill-41-backfill-the-stripe-test-mode-qualifier)
 - migration runner: [OPS-16](#ops-16-run-dynamodb-data-migrations)
 - milestones: [MCP-14](#mcp-14-document-the-submission-mcps-plan-and-tool-reference)

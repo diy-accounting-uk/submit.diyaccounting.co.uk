@@ -7,7 +7,6 @@
 #
 # Copies Secrets Manager secrets from one AWS account to another.
 # Dry-run by default. Requires --execute to actually copy.
-# Part of Phase 1.4 (PLAN_ACCOUNT_SEPARATION.md step 1.4.10).
 #
 # Usage:
 #   ./scripts/aws-accounts/copy-secrets-to-account.sh --source-profile <profile> --target-profile <profile> [--env <env>] [--execute]

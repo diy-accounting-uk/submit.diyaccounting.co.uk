@@ -197,10 +197,9 @@ export async function enforceBundles(event, options = {}) {
     matchedBundleIds,
   });
 
-  // A client-scoped request (PLAN_PRICE_UPDATE.md (d), "Security boundaries") needs the
-  // practice's own active resident-pro subscription, and the client row must exist under this
-  // same practice and not be archived - the same rule diyaGlEntitlement.js applies to a client's
-  // book set, reused here rather than duplicated.
+  // A client-scoped request needs the practice's own active resident-pro subscription, and the
+  // client row must exist under this same practice and not be archived - the same rule
+  // diyaGlEntitlement.js applies to a client's book set, reused here rather than duplicated.
   let client = null;
   if (clientId) {
     if (!hasActiveResidentProBundle(subscribedBundles)) {

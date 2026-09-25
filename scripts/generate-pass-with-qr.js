@@ -36,7 +36,7 @@ async function main() {
   const email = process.env.EMAIL || undefined;
   const notes = process.env.NOTES || undefined;
   const createdBy = process.env.CREATED_BY || "manual";
-  const passUrlHost = process.env.PASS_URL_HOST || "ci.submit.diyaccounting.co.uk";
+  const passUrlHost = process.env.PASS_URL_HOST || "ci-submit.diyaccounting.co.uk";
   const testPass = process.env.TEST_PASS === "true";
 
   console.log(`Generating ${quantity} ${passTypeId} pass(es) with QR codes...`);

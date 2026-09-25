@@ -34,11 +34,10 @@ import software.amazon.awscdk.services.s3.IBucket;
 import software.constructs.Construct;
 
 /**
- * The nightly Lambda behind the one-stop objectives dashboard (B52g): reads the B52d views and
- * writes one JSON snapshot per environment to {@code s3://<lake>/snapshots/<env>/latest.json},
- * plus a dated copy, organised by the eight objectives {@code PLAN_ONE_STOP_DASHBOARD.md}
- * names. {@code operatorSnapshotGet.js} (the API read route) only ever reads what this writes;
- * it never queries Athena itself.
+ * The nightly Lambda behind the one-stop objectives dashboard: reads the views and writes one
+ * JSON snapshot per environment to {@code s3://<lake>/snapshots/<env>/latest.json}, plus a dated
+ * copy, organised by the eight objectives. {@code operatorSnapshotGet.js} (the API read route)
+ * only ever reads what this writes; it never queries Athena itself.
  *
  * <p>Not a {@code Stack}: lives inside {@code AnalyticsStack}, matching {@link
  * AnalyticsDashboard}'s {@code metricsPublishLambda}, which this construct is modelled on. Its

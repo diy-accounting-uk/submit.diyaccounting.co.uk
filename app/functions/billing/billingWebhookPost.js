@@ -11,6 +11,7 @@ import { putBundleByHashedSub, updateBundleSubscriptionFields, resetTokensByHash
 import { initializeSalt } from "../../services/subHasher.js";
 import { putSubscription, getSubscription, updateSubscription } from "../../data/dynamoDbSubscriptionRepository.js";
 import { loadCatalogFromRoot, isUnlimitedTokenGrant } from "../../services/productCatalog.js";
+import { recordPaidChargeByHashedSub } from "../../services/activityCharges.js";
 import { publishActivityEvent, maskEmail, classifyActor } from "../../lib/activityAlert.js";
 
 const logger = createLogger({ source: "app/functions/billing/billingWebhookPost.js" });
@@ -184,6 +185,39 @@ async function handleCheckoutComplete(session, { test = false } = {}) {
     // checkout metadata — pass it straight through in detail rather than via
     // userSub, which would hash it a second time.
     detail: { bundleId, subscriptionId, hashedSub },
+  });
+}
+
+// A Checkout Session in `payment` mode is a one-off activity charge (billingActivityCheckoutPost.js),
+// not a bundle subscription — handleCheckoutComplete handles `subscription` mode; the ingestHandler
+// switch below routes to this instead when session.mode is "payment".
+async function handleActivityChargeComplete(session) {
+  const hashedSub = session.metadata?.hashedSub;
+  const activityId = session.metadata?.activityId;
+  const subjectKey = session.metadata?.subjectKey;
+
+  if (!hashedSub || !activityId || !subjectKey) {
+    logger.error({ message: "checkout.session.completed (payment mode) missing metadata", sessionId: session.id });
+    return;
+  }
+
+  logger.info({ message: "Processing activity charge checkout.session.completed", hashedSub, activityId, sessionId: session.id });
+
+  const recorded = await recordPaidChargeByHashedSub(hashedSub, activityId, subjectKey, {
+    stripeSessionId: session.id,
+    stripePaymentIntentId: session.payment_intent || null,
+    amount: session.amount_total ?? null,
+    currency: session.currency ?? null,
+  });
+
+  const customerEmail = session.customer_email || session.customer_details?.email || "";
+  await publishActivityEvent({
+    event: "activity-charge-paid",
+    site: "submit",
+    summary: `Activity charge paid: ${activityId} for ${maskEmail(customerEmail)}`,
+    actor: classifyActor(customerEmail),
+    flow: "user-journey",
+    detail: { activityId, subjectKey, hashedSub, recorded },
   });
 }
 
@@ -426,9 +460,15 @@ export async function ingestHandler(event) {
   // Route events to handlers
   try {
     switch (stripeEvent.type) {
-      case "checkout.session.completed":
-        await handleCheckoutComplete(stripeEvent.data.object, { test });
+      case "checkout.session.completed": {
+        const session = stripeEvent.data.object;
+        if (session.mode === "payment") {
+          await handleActivityChargeComplete(session);
+        } else {
+          await handleCheckoutComplete(session, { test });
+        }
         break;
+      }
       case "invoice.paid":
         await handleInvoicePaid(stripeEvent.data.object, { test });
         break;

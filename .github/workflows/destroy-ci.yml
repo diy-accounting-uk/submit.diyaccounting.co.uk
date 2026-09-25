@@ -248,13 +248,13 @@ jobs:
           output-credentials: true
           retry-max-attempts: 3
 
-      # Get the deployment name that ci.submit.diyaccounting.co.uk aliases to in Route 53
+      # Get the deployment name that ci-submit.diyaccounting.co.uk aliases to in Route 53
       - name: Get the public record names
         id: public-deployment-names
         run: |
           echo 'Getting Route 53 hosted zone for diyaccounting.co.uk.'
           ROOT_ZONE='diyaccounting.co.uk.'
-          PRIMARY_NAME='ci.submit.diyaccounting.co.uk.'
+          PRIMARY_NAME='ci-submit.diyaccounting.co.uk.'
           PUBLIC_DEPLOYMENT_NAMES=''
 
           ZONE_ID=$(aws route53 list-hosted-zones-by-name \

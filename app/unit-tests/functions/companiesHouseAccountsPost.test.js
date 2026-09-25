@@ -257,7 +257,7 @@ describe("companiesHouseAccountsPost ingestHandler", () => {
   });
 });
 
-describe("companiesHouseAccountsPost client-scoped requests (PLAN_PRICE_UPDATE.md (d))", () => {
+describe("companiesHouseAccountsPost client-scoped requests", () => {
   const CLIENT_TABLE = "test-practice-clients-table";
 
   function mockPracticeAndClient(clientItem) {

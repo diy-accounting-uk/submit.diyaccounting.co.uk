@@ -89,6 +89,13 @@ vi.mock("@app/data/dynamoDbSubscriptionRepository.js", () => ({
   updateSubscription: (...args) => mockUpdateSubscription(...args),
 }));
 
+// Mock DynamoDB activity charge repository (activityCharges.js's data layer)
+const mockPutActivityChargeIfAbsent = vi.fn();
+vi.mock("@app/data/dynamoDbActivityChargeRepository.js", () => ({
+  buildChargeKey: (activityId, subjectKey) => `charge#${activityId}#${subjectKey}`,
+  putActivityChargeIfAbsent: (...args) => mockPutActivityChargeIfAbsent(...args),
+}));
+
 import { ingestHandler } from "@app/functions/billing/billingWebhookPost.js";
 
 dotenvConfigIfNotBlank({ path: ".env.test" });
@@ -128,6 +135,30 @@ function buildCheckoutSessionPayload(overrides = {}) {
   };
 }
 
+function buildActivityChargeSessionPayload(overrides = {}) {
+  return {
+    id: "evt_test_activity_charge",
+    type: "checkout.session.completed",
+    data: {
+      object: {
+        id: "cs_test_activity_charge",
+        mode: "payment",
+        customer: "cus_test_activity",
+        customer_email: "user@example.com",
+        amount_total: 6135,
+        currency: "gbp",
+        payment_intent: "pi_test_activity_charge",
+        metadata: {
+          hashedSub: "hashed_sub_value",
+          activityId: "file-confirmation-statement",
+          subjectKey: "12345678#2026-01-01",
+        },
+        ...overrides,
+      },
+    },
+  };
+}
+
 function activityEventsNamed(name) {
   return mockEventBridgeSend.mock.calls
     .map((call) => JSON.parse(call[0].input.Entries[0].Detail))
@@ -147,8 +178,10 @@ describe("billingWebhookPost", () => {
     mockUpdateSubscription.mockReset();
     mockUpdateBundleSubscriptionFields.mockReset();
     mockResetTokensByHashedSub.mockReset();
+    mockPutActivityChargeIfAbsent.mockReset();
     mockEventBridgeSend.mockClear();
 
+    mockPutActivityChargeIfAbsent.mockResolvedValue(true);
     mockPutBundleByHashedSub.mockResolvedValue(undefined);
     mockPutSubscription.mockResolvedValue(undefined);
     mockUpdateSubscription.mockResolvedValue(undefined);
@@ -1083,5 +1116,52 @@ describe("billingWebhookPost", () => {
     const events = activityEventsNamed("dispute-created");
     expect(events).toHaveLength(1);
     expect(events[0].hashedSub).toBeNull();
+  });
+
+  test("returns 200 and records a paid activity charge on checkout.session.completed in payment mode", async () => {
+    const payload = buildActivityChargeSessionPayload();
+    mockWebhooksConstructEvent.mockReturnValue(payload);
+
+    const result = await ingestHandler(buildWebhookEvent(payload));
+
+    expect(result.statusCode).toBe(200);
+    expect(mockPutActivityChargeIfAbsent).toHaveBeenCalledTimes(1);
+    const [hashedSub, chargeKey, charge] = mockPutActivityChargeIfAbsent.mock.calls[0];
+    expect(hashedSub).toBe("hashed_sub_value");
+    expect(chargeKey).toBe("charge#file-confirmation-statement#12345678#2026-01-01");
+    expect(charge.status).toBe("paid");
+    expect(charge.stripeSessionId).toBe("cs_test_activity_charge");
+    expect(charge.stripePaymentIntentId).toBe("pi_test_activity_charge");
+    expect(charge.amount).toBe(6135);
+    expect(charge.currency).toBe("gbp");
+
+    // A payment-mode session never grants a bundle - that is handleCheckoutComplete's job.
+    expect(mockPutBundleByHashedSub).not.toHaveBeenCalled();
+
+    const events = activityEventsNamed("activity-charge-paid");
+    expect(events).toHaveLength(1);
+    expect(events[0].hashedSub).toBe("hashed_sub_value");
+    expect(events[0].activityId).toBe("file-confirmation-statement");
+  });
+
+  test("does not record an activity charge a second time when Stripe retries the same event", async () => {
+    mockPutActivityChargeIfAbsent.mockResolvedValue(false);
+    const payload = buildActivityChargeSessionPayload();
+    mockWebhooksConstructEvent.mockReturnValue(payload);
+
+    const result = await ingestHandler(buildWebhookEvent(payload));
+
+    expect(result.statusCode).toBe(200);
+    expect(mockPutActivityChargeIfAbsent).toHaveBeenCalledTimes(1);
+  });
+
+  test("logs and skips an activity charge session missing required metadata", async () => {
+    const payload = buildActivityChargeSessionPayload({ metadata: { hashedSub: "hashed_sub_value" } });
+    mockWebhooksConstructEvent.mockReturnValue(payload);
+
+    const result = await ingestHandler(buildWebhookEvent(payload));
+
+    expect(result.statusCode).toBe(200);
+    expect(mockPutActivityChargeIfAbsent).not.toHaveBeenCalled();
   });
 });

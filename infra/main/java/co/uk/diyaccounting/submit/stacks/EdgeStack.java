@@ -985,8 +985,7 @@ public class EdgeStack extends Stack {
                 // origin request policy is the only place that can add it).
                 // all() forwards ALL viewer headers including Host. API Gateway HTTP API v2
                 // routes by path, not Host, so this should be safe. If 403 errors occur,
-                // fall back to denyList("Host") and use API Gateway custom domain instead
-                // (see PLAN_HMRC_FRAUD_PREVENTION_HEADERS.md Approach 3).
+                // fall back to denyList("Host") and use API Gateway custom domain instead.
                 .headerBehavior(
                         OriginRequestHeaderBehavior.all("CloudFront-Viewer-Address", "CloudFront-Viewer-Country"))
                 .queryStringBehavior(OriginRequestQueryStringBehavior.all())

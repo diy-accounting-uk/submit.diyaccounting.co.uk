@@ -7,7 +7,6 @@
 #
 # Lists all Secrets Manager secrets and KMS keys/aliases in the current account.
 # Does NOT print secret values. Output is useful for copy-secrets-to-account.sh.
-# Part of Phase 1.4 preparation (PLAN_ACCOUNT_SEPARATION.md step 1.4.2).
 #
 # Usage:
 #   ./scripts/aws-accounts/list-prod-secrets.sh --profile <profile> [--env <environment>]

@@ -8,11 +8,11 @@
 // DIYA_GL_RESIDENT_TIER gates whether the resident tier is offered at all on this environment;
 // off, every caller gets the sandbox tier without a bundle read.
 //
-// A caller passing a clientId is a practice reading or writing a client's book set
-// (PLAN_PRICE_UPDATE.md (d)): the retention then turns on the practice's own resident-pro
-// subscription rather than on any bundle held on the client's behalf, and on the client row
-// existing under that same practice. Neither condition met, the client-scoped request falls back
-// to the sandbox tier exactly as an unsubscribed caller's own books do.
+// A caller passing a clientId is a practice reading or writing a client's book set: the
+// retention then turns on the practice's own resident-pro subscription rather than on any
+// bundle held on the client's behalf, and on the client row existing under that same practice.
+// Neither condition met, the client-scoped request falls back to the sandbox tier exactly as
+// an unsubscribed caller's own books do.
 
 import { createLogger } from "../lib/logger.js";
 import { initializeSalt } from "./subHasher.js";
@@ -30,9 +30,8 @@ const PRACTICE_BUNDLE_ID = "resident-pro";
 const LAPSED_RESIDENT_GRACE_MS = 30 * 24 * 60 * 60 * 1000;
 
 /**
- * Whether the given bundle list carries an active, unexpired resident-pro subscription: the one
- * rule that decides a practice's own entitlement (PLAN_PRICE_UPDATE.md (d), "Security boundaries",
- * "a request carrying a client id needs an active resident-pro"). Shared with
+ * Whether the given bundle list carries an active, unexpired resident-pro subscription: the
+ * one rule that decides a practice's own entitlement for client-scoped requests. Shared with
  * `bundleManagement.enforceBundles` so the two never diverge.
  *
  * @param {object[]} bundles - as returned by `getUserBundles`

@@ -282,7 +282,7 @@ describe("hmrcVatObligationGet ingestHandler", () => {
     expect(JSON.parse(response.body)).toEqual(obligations);
   });
 
-  describe("client-scoped requests (PLAN_PRICE_UPDATE.md (d))", () => {
+  describe("client-scoped requests", () => {
     const CLIENT_TABLE = "test-practice-clients-table";
 
     function mockPracticeAndClient(clientItem) {

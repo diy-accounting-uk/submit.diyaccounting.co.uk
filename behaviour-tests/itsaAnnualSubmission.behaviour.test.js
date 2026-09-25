@@ -41,6 +41,7 @@ import {
 } from "./steps/behaviour-hmrc-itsa-steps.js";
 import {
   acceptCookiesHmrc,
+  completeHmrcReauthIfPresented,
   fillInHmrcAuth,
   goToHmrcAuth,
   grantPermissionHmrcAuth,
@@ -276,6 +277,9 @@ test("Click through: Load and save an ITSA Annual Submission with HMRC", async (
   await initItsaAnnualSubmission(page, screenshotPath);
   await fillInItsaAnnualLoad(page, { hmrcNino: testNino, businessId, taxYear, runFraudPreventionHeaderValidation }, screenshotPath);
   await submitItsaAnnualLoadForm(page, screenshotPath);
+  // Annual Submission needs write:self-assessment; Business Details above only granted
+  // read:self-assessment, so the Load click just cleared that token and asked HMRC for a wider one.
+  await completeHmrcReauthIfPresented(page, testUsername, testPassword, screenshotPath);
   await verifyItsaAnnualLoadResults(page, screenshotPath);
 
   await fillInItsaAnnualEdits(page, { basisAdjustment: 250, allowanceType: "trading", tradingIncomeAllowance: 1000 }, screenshotPath);

@@ -94,7 +94,87 @@ const FIXTURE_SNAPSHOT = {
     { id: "retention", name: "Retention", observations: [] },
     { id: "operator-effort", name: "Operator effort", observations: [] },
     { id: "compliance", name: "Compliance", observations: [] },
+    {
+      id: "company-accounts",
+      name: "Company accounts",
+      observations: [
+        {
+          id: "company-turnover",
+          label: "Turnover",
+          unit: "gbp",
+          last30: { value: 120000, trend: 0.1 },
+          last90: { value: 350000, trend: 0.05 },
+        },
+        { id: "company-costs", label: "Costs", unit: "gbp", last30: { value: 95000, trend: 0.02 }, last90: { value: 280000, trend: 0.01 } },
+        { id: "company-profit", label: "Profit", unit: "gbp", last30: { value: 25000, trend: 0.2 }, last90: { value: 70000, trend: 0.1 } },
+        {
+          id: "company-fixed-assets",
+          label: "Fixed assets",
+          unit: "gbp",
+          last30: { value: 5000, trend: 0 },
+          last90: { value: 5000, trend: 0 },
+        },
+        {
+          id: "company-current-assets",
+          label: "Current assets",
+          unit: "gbp",
+          last30: { value: 40000, trend: 0 },
+          last90: { value: 40000, trend: 0 },
+        },
+        {
+          id: "company-creditors-within-one-year",
+          label: "Creditors: within one year",
+          unit: "gbp",
+          last30: { value: 8000, trend: 0 },
+          last90: { value: 8000, trend: 0 },
+        },
+        {
+          id: "company-creditors-after-one-year",
+          label: "Creditors: after one year",
+          unit: "gbp",
+          last30: { value: 0, trend: null },
+          last90: { value: 0, trend: null },
+        },
+        {
+          id: "company-called-up-share-capital",
+          label: "Called up share capital",
+          unit: "gbp",
+          last30: { value: 100, trend: 0 },
+          last90: { value: 100, trend: 0 },
+        },
+        {
+          id: "company-profit-and-loss-account",
+          label: "Profit and loss account",
+          unit: "gbp",
+          last30: { value: 36900, trend: 0.15 },
+          last90: { value: 36900, trend: 0.15 },
+        },
+        {
+          id: "company-capital-and-reserves",
+          label: "Capital and reserves",
+          unit: "gbp",
+          last30: { value: 37000, trend: 0.15 },
+          last90: { value: 37000, trend: 0.15 },
+        },
+      ],
+    },
   ],
+};
+
+const FIXTURE_SNAPSHOT_NO_COMPANY_BOOK = {
+  ...FIXTURE_SNAPSHOT,
+  objectives: FIXTURE_SNAPSHOT.objectives.map((objective) =>
+    objective.id === "company-accounts"
+      ? {
+          ...objective,
+          observations: objective.observations.map((observation) => ({
+            ...observation,
+            last30: { value: null, trend: null },
+            last90: { value: null, trend: null },
+          })),
+        }
+      : objective,
+  ),
 };
 
 const FIXTURE_EXPERIMENTS = {
@@ -222,6 +302,30 @@ test.describe("Operator Dashboard", () => {
 
     const section = page.locator('.objective[data-objective-id="low-running-cost"]');
     await expect(section.locator(".objective-empty")).toHaveText("No observations yet.");
+  });
+
+  test("shows the company's turnover, profit and balance sheet lines above the eight objectives", async ({ page }) => {
+    await setupRoutes(page);
+    await loadDashboard(page);
+
+    const panel = page.locator("#companyAccountsPanel");
+    await expect(panel).toBeVisible();
+
+    const turnoverRow = panel.locator('.company-accounts-row[data-observation-id="company-turnover"]');
+    await expect(turnoverRow.locator("td").nth(1)).toHaveText("£120000.00");
+
+    const profitRow = panel.locator('.company-accounts-row[data-observation-id="company-profit"]');
+    await expect(profitRow.locator("td").nth(1)).toHaveText("£25000.00");
+
+    const capitalAndReservesRow = panel.locator('.company-accounts-row[data-observation-id="company-capital-and-reserves"]');
+    await expect(capitalAndReservesRow.locator("td").nth(1)).toHaveText("£37000.00");
+  });
+
+  test("hides the company accounts panel while the book pull job is off", async ({ page }) => {
+    await setupRoutes(page, { snapshotBody: FIXTURE_SNAPSHOT_NO_COMPANY_BOOK });
+    await loadDashboard(page);
+
+    await expect(page.locator("#companyAccountsPanel")).toBeHidden();
   });
 
   test("names the operator pass on a 403", async ({ page }) => {

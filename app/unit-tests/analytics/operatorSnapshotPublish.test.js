@@ -127,6 +127,30 @@ function mockQueriesWithOneFailing(failingViewFragment, row) {
   });
 }
 
+// Every query succeeds; the row it answers with is looked up by the first key in `rowsByFragment`
+// whose text appears in the query's SQL (e.g. an observation's own valueExpr), falling back to
+// `defaultRow` for every other observation.
+function mockQueriesWithRowsByFragment(rowsByFragment, defaultRow) {
+  const fragments = Object.keys(rowsByFragment);
+  mockAthenaSend.mockImplementation((command) => {
+    switch (command.constructor.name) {
+      case "StartQueryExecutionCommand": {
+        const fragment = fragments.find((key) => command.input.QueryString.includes(key));
+        return Promise.resolve({ QueryExecutionId: fragment ? `qid-${fragment}` : "qid-default" });
+      }
+      case "GetQueryExecutionCommand":
+        return Promise.resolve({ QueryExecution: { Status: { State: "SUCCEEDED" } } });
+      case "GetQueryResultsCommand": {
+        const fragment = fragments.find((key) => command.input.QueryExecutionId === `qid-${key}`);
+        const row = fragment ? rowsByFragment[fragment] : defaultRow;
+        return Promise.resolve({ ResultSet: resultSetOf(["last_30", "prev_30", "last_90", "prev_90"], row) });
+      }
+      default:
+        throw new Error(`unexpected command ${command.constructor.name}`);
+    }
+  });
+}
+
 describe("operatorSnapshotPublish", () => {
   beforeEach(() => {
     mockAthenaSend.mockReset();
@@ -312,7 +336,7 @@ describe("operatorSnapshotPublish", () => {
       expect(startCalls).toHaveLength(observationCount + DAILY_SERIES_OBSERVATION_COUNT);
 
       expect(snapshot.environment).toBe("test");
-      expect(snapshot.objectives).toHaveLength(8);
+      expect(snapshot.objectives).toHaveLength(9);
 
       const uptime = snapshot.objectives.find((o) => o.id === "uptime");
       expect(uptime.observations.length).toBeGreaterThan(0);
@@ -359,6 +383,7 @@ describe("operatorSnapshotPublish", () => {
         "FROM   v_operator_interventions_daily",
         "FROM   v_agent_runs_daily",
         "FROM   v_compliance_status",
+        "FROM   company_accounts",
       ];
       for (const fragment of expectedFragments) {
         expect(sqlStatements.some((sql) => sql.includes(fragment))).toBe(true);
@@ -440,6 +465,61 @@ describe("operatorSnapshotPublish", () => {
 
       expect(snapshot.failedObservationCount).toBe(1);
     });
+
+    test("the company-accounts observation set reads turnover, profit and the balance sheet lines", async () => {
+      mockQueriesWithRowsByFragment(
+        {
+          "accounts.profitandloss.turnover": ["120000", "100000", "120000", "100000"],
+          "accounts.profitandloss.profit": ["15000", "12000", "15000", "12000"],
+          "accounts.balancesheet.currentyear.fixedassets": ["5000", "5000", "5000", "5000"],
+          "accounts.balancesheet.currentyear.capitalandreserves": ["20000", "18000", "20000", "18000"],
+        },
+        ["1", "1", "1", "1"],
+      );
+
+      const context = {
+        envName: "test",
+        region: "eu-west-2",
+        athenaWorkGroupName: "test-env-analytics",
+        githubRepo: "diy-accounting-uk/submit.diyaccounting.co.uk",
+        ga4PropertyId: "523400333",
+      };
+      const snapshot = await buildSnapshot({ workGroup: "wg", database: "db", context });
+
+      const companyAccounts = snapshot.objectives.find((o) => o.id === "company-accounts");
+      expect(companyAccounts.observations).toHaveLength(10);
+
+      const byId = Object.fromEntries(companyAccounts.observations.map((o) => [o.id, o]));
+      expect(byId["company-turnover"].last30.value).toBe(120000);
+      expect(byId["company-profit"].last30.value).toBe(15000);
+      expect(byId["company-fixed-assets"].last30.value).toBe(5000);
+      expect(byId["company-capital-and-reserves"].last30.value).toBe(20000);
+      for (const observation of companyAccounts.observations) {
+        expect(observation.deepLink).toEqual(expect.any(String));
+      }
+      expect(snapshot.failedObservationCount).toBe(0);
+    });
+
+    test("the company-accounts observation set answers every value as null while the book pull job is off", async () => {
+      mockQueriesWithRowsByFragment({ "FROM   company_accounts": [null, null, null, null] }, ["1", "1", "1", "1"]);
+
+      const context = {
+        envName: "test",
+        region: "eu-west-2",
+        athenaWorkGroupName: "test-env-analytics",
+        githubRepo: "diy-accounting-uk/submit.diyaccounting.co.uk",
+        ga4PropertyId: "523400333",
+      };
+      const snapshot = await buildSnapshot({ workGroup: "wg", database: "db", context });
+
+      const companyAccounts = snapshot.objectives.find((o) => o.id === "company-accounts");
+      expect(companyAccounts.observations).toHaveLength(10);
+      for (const observation of companyAccounts.observations) {
+        expect(observation.last30).toEqual({ value: null, trend: null });
+        expect(observation.last90).toEqual({ value: null, trend: null });
+      }
+      expect(snapshot.failedObservationCount).toBe(0);
+    });
   });
 
   describe("writeSnapshot", () => {
@@ -467,7 +547,7 @@ describe("operatorSnapshotPublish", () => {
 
       const result = await handler();
 
-      expect(result).toEqual({ environment: "test", objectives: 8 });
+      expect(result).toEqual({ environment: "test", objectives: 9 });
       expect(mockS3Send).toHaveBeenCalledTimes(2);
     });
 

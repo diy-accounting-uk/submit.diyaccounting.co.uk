@@ -129,6 +129,7 @@ public class SubmitSharedNames {
     public String bundleCapacityTableName;
     public String activityBusName;
     public String subscriptionsTableName;
+    public String activityChargesTableName;
     public String practiceClientsTableName;
     public String securityStateTableName;
     public String alarmIssueLockTableName;
@@ -1161,6 +1162,15 @@ public class SubmitSharedNames {
     public boolean billingCheckoutPostLambdaJwtAuthorizer;
     public boolean billingCheckoutPostLambdaCustomAuthorizer;
 
+    public String billingActivityCheckoutPostIngestLambdaHandler;
+    public String billingActivityCheckoutPostIngestLambdaFunctionName;
+    public String billingActivityCheckoutPostIngestLambdaArn;
+    public String billingActivityCheckoutPostIngestProvisionedConcurrencyLambdaAliasArn;
+    public HttpMethod billingActivityCheckoutPostLambdaHttpMethod;
+    public String billingActivityCheckoutPostLambdaUrlPath;
+    public boolean billingActivityCheckoutPostLambdaJwtAuthorizer;
+    public boolean billingActivityCheckoutPostLambdaCustomAuthorizer;
+
     public String billingCheckoutSessionGetIngestLambdaHandler;
     public String billingCheckoutSessionGetIngestLambdaFunctionName;
     public String billingCheckoutSessionGetIngestLambdaArn;
@@ -1503,6 +1513,7 @@ public class SubmitSharedNames {
         this.bundleCapacityTableName = "%s-bundle-capacity".formatted(this.envResourceNamePrefix);
         this.activityBusName = "%s-activity-bus".formatted(this.envResourceNamePrefix);
         this.subscriptionsTableName = "%s-subscriptions".formatted(this.envResourceNamePrefix);
+        this.activityChargesTableName = "%s-activity-charges".formatted(this.envResourceNamePrefix);
         this.practiceClientsTableName = "%s-practice-clients".formatted(this.envResourceNamePrefix);
         this.securityStateTableName = "%s-security-state".formatted(this.envResourceNamePrefix);
         this.alarmIssueLockTableName = "%s-alarm-issue-locks".formatted(this.envResourceNamePrefix);
@@ -1703,7 +1714,7 @@ public class SubmitSharedNames {
                 List.of(new ApiParameter("clientId", "path", true, "The client's id"))));
 
         // Practice client authorisation invite POST Lambda: creates an HMRC Agent Authorisation
-        // invitation for a client (PLAN_PRICE_UPDATE.md (d), "The authorisation flow").
+        // invitation for a client.
         this.practiceClientAuthorisationInvitePostLambdaHttpMethod = HttpMethod.POST;
         this.practiceClientAuthorisationInvitePostLambdaUrlPath =
                 "/api/v1/practice/clients/{clientId}/authorisation/invitations";
@@ -4453,6 +4464,30 @@ public class SubmitSharedNames {
                 "Creates a Stripe checkout session for subscription",
                 "createCheckoutSession"));
 
+        // Billing Activity Checkout POST Lambda (JWT auth) — a one-off `payment` mode charge for
+        // an activity's per-filing price, distinct from billingCheckoutPost's `subscription` mode.
+        this.billingActivityCheckoutPostLambdaHttpMethod = HttpMethod.POST;
+        this.billingActivityCheckoutPostLambdaUrlPath = "/api/v1/billing/activity-checkout";
+        this.billingActivityCheckoutPostLambdaJwtAuthorizer = false;
+        this.billingActivityCheckoutPostLambdaCustomAuthorizer = false;
+        var billingActivityCheckoutPostLambdaHandlerName = "billingActivityCheckoutPost.ingestHandler";
+        var billingActivityCheckoutPostLambdaHandlerDashed =
+                ResourceNameUtils.convertCamelCaseToDashSeparated(billingActivityCheckoutPostLambdaHandlerName);
+        this.billingActivityCheckoutPostIngestLambdaFunctionName =
+                "%s-%s".formatted(this.appResourceNamePrefix, billingActivityCheckoutPostLambdaHandlerDashed);
+        this.billingActivityCheckoutPostIngestLambdaHandler =
+                "%s/billing/%s".formatted(appLambdaHandlerPrefix, billingActivityCheckoutPostLambdaHandlerName);
+        this.billingActivityCheckoutPostIngestLambdaArn =
+                "%s-%s".formatted(appLambdaArnPrefix, billingActivityCheckoutPostLambdaHandlerDashed);
+        this.billingActivityCheckoutPostIngestProvisionedConcurrencyLambdaAliasArn = "%s:%s"
+                .formatted(this.billingActivityCheckoutPostIngestLambdaArn, this.provisionedConcurrencyAliasName);
+        publishedApiLambdas.add(new PublishedLambda(
+                this.billingActivityCheckoutPostLambdaHttpMethod,
+                this.billingActivityCheckoutPostLambdaUrlPath,
+                "Create activity checkout session",
+                "Creates a Stripe checkout session for a one-off activity charge",
+                "createActivityCheckoutSession"));
+
         // Billing Checkout Session GET Lambda (JWT auth)
         this.billingCheckoutSessionGetLambdaHttpMethod = HttpMethod.GET;
         this.billingCheckoutSessionGetLambdaUrlPath = "/api/v1/billing/checkout/{id}";
@@ -4645,9 +4680,8 @@ public class SubmitSharedNames {
                 List.of(new ApiParameter("bookId", "path", true, "The book's id"))));
 
         // Practice client book move POST Lambda: copies one of the practice's own books to a
-        // client's book set and deletes the source (PLAN_PRICE_UPDATE.md (d), "Migration from
-        // sole trader to practice"). Standard JWT auth like the other practice routes, not the
-        // books authoriser, since the caller here is always the practice itself.
+        // client's book set and deletes the source. Standard JWT auth like the other practice
+        // routes, not the books authoriser, since the caller here is always the practice itself.
         this.practiceClientBookMovePostLambdaHttpMethod = HttpMethod.POST;
         this.practiceClientBookMovePostLambdaUrlPath = "/api/v1/practice/clients/{clientId}/books/{bookId}/move";
         this.practiceClientBookMovePostLambdaJwtAuthorizer = true;

@@ -39,6 +39,7 @@ import {
 } from "./steps/behaviour-hmrc-itsa-steps.js";
 import {
   acceptCookiesHmrc,
+  completeHmrcReauthIfPresented,
   fillInHmrcAuth,
   goToHmrcAuth,
   grantPermissionHmrcAuth,
@@ -257,6 +258,10 @@ test("Click through: Trigger a calculation and file an ITSA Final Declaration wi
 
   await goToFinalDeclarationFromCalculation(page, screenshotPath);
   await submitItsaFinalDeclarationRetrieveForm(page, screenshotPath);
+  // Final Declaration needs write:self-assessment; Tax Calculation above only granted
+  // read:self-assessment, so the Retrieve click just cleared that token and asked HMRC for a
+  // wider one.
+  await completeHmrcReauthIfPresented(page, testUsername, testPassword, screenshotPath);
   await verifyItsaFinalDeclarationRetrieveResults(page, screenshotPath);
   await tickAndSubmitItsaFinalDeclaration(page, screenshotPath);
   await verifyItsaFinalDeclarationResults(page, screenshotPath);

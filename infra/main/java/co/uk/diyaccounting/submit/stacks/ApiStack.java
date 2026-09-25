@@ -102,10 +102,10 @@ public class ApiStack extends Stack {
             return "";
         }
 
-        // The submission MCP's own client (PLAN_SUBMISSION_MCP.md M3): its token must reach the
-        // same cloud book routes the books client reaches, so its audience joins the books
-        // authoriser's own rather than getting a route of its own. Blank until the deploy wiring
-        // sets it, the same way booksUserPoolClientId started.
+        // The submission MCP's own client: its token must reach the same cloud book routes the
+        // books client reaches, so its audience joins the books authoriser's own rather than
+        // getting a route of its own. Blank until the deploy wiring sets it, the same way
+        // booksUserPoolClientId started.
         @Value.Default
         default String mcpUserPoolClientId() {
             return "";
@@ -305,9 +305,9 @@ public class ApiStack extends Stack {
 
         // Same user pool, same issuer, but a books-client-scoped audience: a books token must
         // never be accepted on the VAT or Companies House routes, and vice versa. The submission
-        // MCP's own client (PLAN_SUBMISSION_MCP.md M3) reaches the same cloud book routes, so its
-        // audience joins this authoriser's own rather than getting a separate one; blank until the
-        // deploy wiring sets mcpUserPoolClientId, so an unset value changes nothing here.
+        // MCP's own client reaches the same cloud book routes, so its audience joins this
+        // authoriser's own rather than getting a separate one; blank until the deploy wiring sets
+        // mcpUserPoolClientId, so an unset value changes nothing here.
         var cloudBookAudience = new java.util.ArrayList<String>(List.of(props.booksUserPoolClientId()));
         if (props.mcpUserPoolClientId() != null && !props.mcpUserPoolClientId().isBlank()) {
             cloudBookAudience.add(props.mcpUserPoolClientId());

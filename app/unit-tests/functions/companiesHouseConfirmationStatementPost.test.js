@@ -57,16 +57,29 @@ vi.mock("@aws-sdk/client-eventbridge", () => ({
 }));
 
 const mockBuildConfirmationStatementSubmission = vi.fn();
+const mockBuildPaymentPeriodsRequest = vi.fn();
+const mockParsePaymentPeriodsResponse = vi.fn();
 const mockAllocateSubmissionNumber = vi.fn();
 const mockResolvePresenterCredentials = vi.fn();
 const mockPostToGateway = vi.fn();
 const mockParseGatewayResponse = vi.fn();
 vi.mock("@app/services/companiesHouseXmlGateway.js", () => ({
   buildConfirmationStatementSubmission: (...args) => mockBuildConfirmationStatementSubmission(...args),
+  buildPaymentPeriodsRequest: (...args) => mockBuildPaymentPeriodsRequest(...args),
+  parsePaymentPeriodsResponse: (...args) => mockParsePaymentPeriodsResponse(...args),
   allocateSubmissionNumber: (...args) => mockAllocateSubmissionNumber(...args),
   postToGateway: (...args) => mockPostToGateway(...args),
   parseGatewayResponse: (...args) => mockParseGatewayResponse(...args),
   resolvePresenterCredentials: (...args) => mockResolvePresenterCredentials(...args),
+}));
+
+// Mock the activity charges service - hasPaidCharge guards a fee-due submission (402 without a
+// paid charge), markChargeUsed spends it once the gateway accepts the envelope.
+const mockHasPaidCharge = vi.fn();
+const mockMarkChargeUsed = vi.fn();
+vi.mock("@app/services/activityCharges.js", () => ({
+  hasPaidCharge: (...args) => mockHasPaidCharge(...args),
+  markChargeUsed: (...args) => mockMarkChargeUsed(...args),
 }));
 
 import { ingestHandler as companiesHouseConfirmationStatementPostHandler } from "@app/functions/companies-house/companiesHouseConfirmationStatementPost.js";
@@ -102,6 +115,7 @@ function buildEvent({ body = buildStatementBody(), headers = {}, authorizer, met
 
 describe("companiesHouseConfirmationStatementPost ingestHandler", () => {
   beforeEach(() => {
+    delete process.env.COMPANIES_HOUSE_CS_FEE_MODE;
     Object.assign(
       process.env,
       setupTestEnv({
@@ -123,8 +137,14 @@ describe("companiesHouseConfirmationStatementPost ingestHandler", () => {
     mockAllocateSubmissionNumber.mockResolvedValue("00001A");
     mockResolvePresenterCredentials.mockResolvedValue({ presenterId: "presenter-id", presenterCode: "presenter-code" });
     mockBuildConfirmationStatementSubmission.mockReturnValue("<GovTalkMessage>submission</GovTalkMessage>");
+    mockBuildPaymentPeriodsRequest.mockReturnValue("<GovTalkMessage>PaymentPeriodsRequest</GovTalkMessage>");
+    // Payment period already paid by default, so the fee gate does not apply unless a test says
+    // otherwise - hasPaidCharge/markChargeUsed are then never reached.
+    mockParsePaymentPeriodsResponse.mockReturnValue({ periods: [{ periodPaid: true }] });
     mockPostToGateway.mockResolvedValue({ ok: true, status: 200, data: "<GovTalkMessage>ack</GovTalkMessage>", headers: {}, duration: 1 });
     mockParseGatewayResponse.mockReturnValue({ errors: [], statuses: [], gatewayTimestamp: "2026-09-24T10:00:00Z", pollInterval: 1 });
+    mockHasPaidCharge.mockResolvedValue(true);
+    mockMarkChargeUsed.mockResolvedValue(true);
   });
 
   test("builds the statement body, submits the envelope and returns the submission number", async () => {
@@ -236,13 +256,52 @@ describe("companiesHouseConfirmationStatementPost ingestHandler", () => {
   });
 
   test("marks the submission failed and returns 500 when the gateway rejects the envelope", async () => {
-    mockParseGatewayResponse.mockReturnValue({
-      errors: [{ raisedBy: "Gateway", number: 5006, type: "fatal", text: "Insufficient Funds" }],
-    });
+    mockParseGatewayResponse
+      .mockReturnValueOnce({ errors: [], statuses: [], gatewayTimestamp: "2026-09-24T10:00:00Z", pollInterval: 1 }) // PaymentPeriodsRequest
+      .mockReturnValueOnce({
+        errors: [{ raisedBy: "Gateway", number: 5006, type: "fatal", text: "Insufficient Funds" }],
+      }); // submission
     const response = await companiesHouseConfirmationStatementPostHandler(buildEvent());
     expect(response.statusCode).toBe(500);
     const body = parseResponseBody(response);
     expect(body.errors[0].number).toBe(5006);
+  });
+
+  test("returns 402 when the payment period is unpaid and no activity charge has been paid", async () => {
+    mockParsePaymentPeriodsResponse.mockReturnValue({ periods: [{ periodPaid: false }] });
+    mockHasPaidCharge.mockResolvedValue(false);
+    const response = await companiesHouseConfirmationStatementPostHandler(buildEvent());
+    expect(response.statusCode).toBe(402);
+    const body = parseResponseBody(response);
+    expect(body.code).toBe("fee-due");
+    expect(mockHasPaidCharge).toHaveBeenCalledWith(expect.any(String), "file-confirmation-statement", "06846849:2025-09-21");
+    expect(mockBuildConfirmationStatementSubmission).not.toHaveBeenCalled();
+  });
+
+  test("submits and marks the activity charge used when the payment period is unpaid but already paid for", async () => {
+    mockParsePaymentPeriodsResponse.mockReturnValue({ periods: [{ periodPaid: false }] });
+    mockHasPaidCharge.mockResolvedValue(true);
+    const response = await companiesHouseConfirmationStatementPostHandler(buildEvent());
+    expect(response.statusCode).toBe(201);
+    expect(mockMarkChargeUsed).toHaveBeenCalledWith(expect.any(String), "file-confirmation-statement", "06846849:2025-09-21");
+  });
+
+  test("does not mark a charge used when the payment period was already paid through Companies House", async () => {
+    mockParsePaymentPeriodsResponse.mockReturnValue({ periods: [{ periodPaid: true }] });
+    const response = await companiesHouseConfirmationStatementPostHandler(buildEvent());
+    expect(response.statusCode).toBe(201);
+    expect(mockHasPaidCharge).not.toHaveBeenCalled();
+    expect(mockMarkChargeUsed).not.toHaveBeenCalled();
+  });
+
+  test("skips the fee gate entirely when COMPANIES_HOUSE_CS_FEE_MODE is operator", async () => {
+    process.env.COMPANIES_HOUSE_CS_FEE_MODE = "operator";
+    mockParsePaymentPeriodsResponse.mockReturnValue({ periods: [{ periodPaid: false }] });
+    const response = await companiesHouseConfirmationStatementPostHandler(buildEvent());
+    expect(response.statusCode).toBe(201);
+    expect(mockBuildPaymentPeriodsRequest).not.toHaveBeenCalled();
+    expect(mockHasPaidCharge).not.toHaveBeenCalled();
+    expect(mockMarkChargeUsed).not.toHaveBeenCalled();
   });
 
   test("returns 401 when the Cognito bearer token is missing", async () => {

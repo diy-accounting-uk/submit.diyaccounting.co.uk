@@ -2949,6 +2949,62 @@ jobs:
     secrets:
       HMRC_SANDBOX_CLIENT_SECRET: ${{ secrets.HMRC_SANDBOX_CLIENT_SECRET }}
 
+  web-test-itsa-annual-submission-synthetic:
+    # Gated to non-prod environments until examined.
+    if: ${{ !cancelled() && needs.params.outputs.skipTestScenarios != 'true' && needs.names.outputs.environment-name == 'ci' && (github.event_name != 'schedule' || needs.names.outputs.live-head-is-current != 'true' || needs.params.outputs.isSkippingDeploy == 'true') }}
+    name: 'itsaAnnualSubmissionBehaviour-${{ needs.names.outputs.environment-name }} via probe test'
+    needs:
+      - params
+      - names
+      - set-origins
+      - enable-native-auth
+      #- web-test-auth
+      #- web-test-token-enforcement
+      #- web-test-payment
+      #- web-test
+      - verify-api
+    uses: ./.github/workflows/probe-test.yml
+    permissions:
+      contents: read
+      packages: read
+      id-token: write
+    with:
+      environment-name: ${{ needs.names.outputs.environment-name }}
+      deployment-name: ${{ needs.names.outputs.deployment-name }}
+      behaviour-test-suite: 'itsaAnnualSubmissionBehaviour'
+      generate-test-reports: 'false'
+      skip-native-auth-disable: 'true'
+    secrets:
+      HMRC_SANDBOX_CLIENT_SECRET: ${{ secrets.HMRC_SANDBOX_CLIENT_SECRET }}
+
+  web-test-itsa-final-declaration-synthetic:
+    # Gated to non-prod environments until examined.
+    if: ${{ !cancelled() && needs.params.outputs.skipTestScenarios != 'true' && needs.names.outputs.environment-name == 'ci' && (github.event_name != 'schedule' || needs.names.outputs.live-head-is-current != 'true' || needs.params.outputs.isSkippingDeploy == 'true') }}
+    name: 'itsaFinalDeclarationBehaviour-${{ needs.names.outputs.environment-name }} via probe test'
+    needs:
+      - params
+      - names
+      - set-origins
+      - enable-native-auth
+      #- web-test-auth
+      #- web-test-token-enforcement
+      #- web-test-payment
+      #- web-test
+      - verify-api
+    uses: ./.github/workflows/probe-test.yml
+    permissions:
+      contents: read
+      packages: read
+      id-token: write
+    with:
+      environment-name: ${{ needs.names.outputs.environment-name }}
+      deployment-name: ${{ needs.names.outputs.deployment-name }}
+      behaviour-test-suite: 'itsaFinalDeclarationBehaviour'
+      generate-test-reports: 'false'
+      skip-native-auth-disable: 'true'
+    secrets:
+      HMRC_SANDBOX_CLIENT_SECRET: ${{ secrets.HMRC_SANDBOX_CLIENT_SECRET }}
+
   web-test-simulator:
     if: ${{ !cancelled() && (github.event_name != 'schedule' || needs.names.outputs.live-head-is-current != 'true' || needs.params.outputs.isSkippingDeploy == 'true') }}
     name: 'simulatorBehaviour-${{ needs.names.outputs.environment-name }} via probe test'
@@ -3034,6 +3090,11 @@ jobs:
       - web-test-itsa-business-details-synthetic
       - web-test-itsa-obligations-synthetic
       - web-test-itsa-self-employment-period-synthetic
+      - web-test-itsa-uk-property-period-synthetic
+      - web-test-itsa-uk-property-annual-synthetic
+      - web-test-itsa-losses-and-claims-synthetic
+      - web-test-itsa-annual-submission-synthetic
+      - web-test-itsa-final-declaration-synthetic
       - web-test-vatSchemes-synthetic
       - web-test-simulator
       - web-test-generate-pass-activity

@@ -210,6 +210,14 @@ public class CompaniesHouseStack extends Stack {
                 "ImportedPracticeClientsTable-%s".formatted(props.deploymentName()),
                 props.sharedNames().practiceClientsTableName);
 
+        // Lookup existing DynamoDB Activity Charges Table - the confirmation statement submit
+        // Lambda checks and marks a per-filing Stripe charge before it accepts a fee-due
+        // submission (activityCharges.js).
+        ITable activityChargesTable = Table.fromTableName(
+                this,
+                "ImportedActivityChargesTable-%s".formatted(props.deploymentName()),
+                props.sharedNames().activityChargesTableName);
+
         this.lambdaFunctionProps = new java.util.ArrayList<>();
 
         // Region and account for Secrets Manager access
@@ -953,6 +961,7 @@ public class CompaniesHouseStack extends Stack {
                 .with(
                         "COMPANIES_HOUSE_ACCOUNTS_ASYNC_REQUESTS_TABLE_NAME",
                         companiesHouseAccountsAsyncRequestsTable.getTableName())
+                .with("ACTIVITY_CHARGES_DYNAMODB_TABLE_NAME", activityChargesTable.getTableName())
                 .with("COMPANIES_HOUSE_GATEWAY_TEST", gatewayTestFlag(props));
         withPresenterSecretArns(companiesHouseConfirmationStatementPostLambdaEnv, props);
         if (XML_GATEWAY_TEST_ENV_NAME.equals(props.envName())) {
@@ -1002,6 +1011,8 @@ public class CompaniesHouseStack extends Stack {
                 false);
         grantCompaniesHousePresenterSecretsAccess(this.companiesHouseConfirmationStatementPostLambda, props);
         companiesHouseAccountsAsyncRequestsTable.grant(
+                this.companiesHouseConfirmationStatementPostLambda, "dynamodb:GetItem", "dynamodb:UpdateItem");
+        activityChargesTable.grant(
                 this.companiesHouseConfirmationStatementPostLambda, "dynamodb:GetItem", "dynamodb:UpdateItem");
 
         var companiesHouseConfirmationStatementGetLambdaEnv = xmlGatewayFilingLambdaEnv(props)

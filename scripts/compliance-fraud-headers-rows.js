@@ -5,11 +5,9 @@
 // scripts/compliance-fraud-headers-rows.js
 //
 // Turns data/compliance/fraud-prevention-headers/<YYYY-MM>.json decision records (written by
-// scripts/fraud-header-email-check.js, see PLAN_FRAUD_HEADER_EMAIL_CHECK.md) into
-// newline-delimited JSON rows for compliance_fraud_headers, one row per month on file. Writes
-// NDJSON to stdout, so the workflow step pipes this straight into
-// .github/actions/dora-row's `row` input. An empty directory (B22's launchd agent has not run
-// yet, or this is a fresh checkout) produces no rows rather than an error.
+// scripts/fraud-header-email-check.js) into newline-delimited JSON rows for compliance_fraud_headers,
+// one row per month on file. Writes NDJSON to stdout, so the workflow step pipes this straight into
+// .github/actions/dora-row's `row` input. An empty directory produces no rows rather than an error.
 //
 // Usage: node scripts/compliance-fraud-headers-rows.js <checkedAt> [directory]
 

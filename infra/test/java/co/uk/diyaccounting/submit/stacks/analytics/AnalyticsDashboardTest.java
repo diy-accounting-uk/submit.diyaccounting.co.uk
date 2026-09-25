@@ -121,8 +121,8 @@ class AnalyticsDashboardTest {
         // rather than trying to decode the join at the template layer.
         assertTrue(dashboardBody.contains("Submit/Analytics"), "dashboard should read the Submit/Analytics namespace");
 
-        // One heading per objective, in the order PLAN_ONE_STOP_DASHBOARD.md's objective table
-        // lists them.
+        // One heading per objective, in order: Uptime, Conversion to submission, Conversion to paid,
+        // Running cost.
         int uptimeIndex = dashboardBody.indexOf("## Uptime");
         int submissionIndex = dashboardBody.indexOf("## Conversion to submission");
         int paidIndex = dashboardBody.indexOf("## Conversion to paid");

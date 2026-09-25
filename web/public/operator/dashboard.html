@@ -84,6 +84,29 @@
 
       <p id="snapshotMeta"></p>
 
+      <section id="companyAccountsPanel" class="objective" hidden>
+        <h2>Company accounts</h2>
+        <p class="subtitle">The company's own resident diya-gl book, derived nightly</p>
+        <table class="observations" id="companyProfitAndLossTable">
+          <thead>
+            <tr>
+              <th>Profit and loss</th>
+              <th>Amount</th>
+            </tr>
+          </thead>
+          <tbody id="companyProfitAndLossBody"></tbody>
+        </table>
+        <table class="observations" id="companyBalanceSheetTable">
+          <thead>
+            <tr>
+              <th>Balance sheet</th>
+              <th>Amount</th>
+            </tr>
+          </thead>
+          <tbody id="companyBalanceSheetBody"></tbody>
+        </table>
+      </section>
+
       <div id="objectivesContainer"></div>
 
       <section id="visitorsPanel" class="objective">
@@ -147,6 +170,25 @@
         "retention",
         "operator-effort",
         "compliance",
+      ];
+
+      // Not one of the eight above: operatorSnapshotPublish.js still queries these through the
+      // same buildSnapshot loop, so they arrive in snapshot.objectives under "company-accounts",
+      // but renderCompanyAccounts reads them into their own block instead of a generic trend
+      // table.
+      const COMPANY_PROFIT_AND_LOSS_ROWS = [
+        ["company-turnover", "Turnover"],
+        ["company-costs", "Costs"],
+        ["company-profit", "Profit"],
+      ];
+      const COMPANY_BALANCE_SHEET_ROWS = [
+        ["company-fixed-assets", "Fixed assets"],
+        ["company-current-assets", "Current assets"],
+        ["company-creditors-within-one-year", "Creditors: within one year"],
+        ["company-creditors-after-one-year", "Creditors: after one year"],
+        ["company-called-up-share-capital", "Called up share capital"],
+        ["company-profit-and-loss-account", "Profit and loss account"],
+        ["company-capital-and-reserves", "Capital and reserves"],
       ];
 
       function formatValue(unit, value) {
@@ -280,6 +322,56 @@
           });
       }
 
+      function renderCompanyAccountsRow(observationsById, id, label) {
+        const row = document.createElement("tr");
+        row.className = "company-accounts-row";
+        row.dataset.observationId = id;
+
+        const labelCell = document.createElement("td");
+        labelCell.textContent = label;
+        row.appendChild(labelCell);
+
+        const observation = observationsById[id];
+        const valueCell = document.createElement("td");
+        valueCell.textContent = formatValue("gbp", observation && observation.last30 && observation.last30.value);
+        row.appendChild(valueCell);
+
+        return row;
+      }
+
+      // company_accounts (CompanyBookTables.java) carries no rows until the book is named, so
+      // an empty table answers every observation with a null value rather than failing the
+      // query; that reads here as nothing to show, not an error, so the whole panel stays
+      // hidden rather than rendering a table of dashes.
+      function renderCompanyAccounts(snapshot) {
+        const panel = document.getElementById("companyAccountsPanel");
+        const objective = (snapshot.objectives || []).find((candidate) => candidate.id === "company-accounts") || {
+          observations: [],
+        };
+        const observationsById = {};
+        objective.observations.forEach((observation) => {
+          observationsById[observation.id] = observation;
+        });
+
+        const hasFigures = [...COMPANY_PROFIT_AND_LOSS_ROWS, ...COMPANY_BALANCE_SHEET_ROWS].some(([id]) => {
+          const observation = observationsById[id];
+          return Boolean(observation && observation.last30 && observation.last30.value !== null && observation.last30.value !== undefined);
+        });
+        if (!hasFigures) {
+          panel.hidden = true;
+          return;
+        }
+        panel.hidden = false;
+
+        const plBody = document.getElementById("companyProfitAndLossBody");
+        plBody.innerHTML = "";
+        COMPANY_PROFIT_AND_LOSS_ROWS.forEach(([id, label]) => plBody.appendChild(renderCompanyAccountsRow(observationsById, id, label)));
+
+        const bsBody = document.getElementById("companyBalanceSheetBody");
+        bsBody.innerHTML = "";
+        COMPANY_BALANCE_SHEET_ROWS.forEach(([id, label]) => bsBody.appendChild(renderCompanyAccountsRow(observationsById, id, label)));
+      }
+
       function renderSnapshot(snapshot) {
         const meta = document.getElementById("snapshotMeta");
         meta.textContent = "Generated " + snapshot.generatedAt + " for " + snapshot.environment;
@@ -360,6 +452,7 @@
         try {
           const snapshot = await fetchJson("/api/v1/operator/snapshot");
           renderSnapshot(snapshot);
+          renderCompanyAccounts(snapshot);
           renderVisitors(snapshot);
         } catch (error) {
           if (error.status === 403) {

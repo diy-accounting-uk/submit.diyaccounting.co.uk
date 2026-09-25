@@ -7,6 +7,7 @@
 
 import { randomUUID } from "crypto";
 import { getBusinessDetailsForScenario } from "../scenarios/business-details.js";
+import { getTestSupportBusinesses } from "../state/store.js";
 
 /**
  * Validate National Insurance number format (two letters, six digits, one suffix letter).
@@ -33,7 +34,7 @@ export function apiEndpoint(app) {
       });
     }
 
-    const result = getBusinessDetailsForScenario(govTestScenario);
+    const result = getBusinessDetailsForScenario(govTestScenario, getTestSupportBusinesses(nino));
 
     if (result.status) {
       return res.status(result.status).json(result.body);

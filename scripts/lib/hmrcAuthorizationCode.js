@@ -107,7 +107,9 @@ export async function getAuthorizationCode({ authorizeUrl, redirectUri, userId, 
       );
     }
 
-    throw new Error("Authorisation flow did not reach the redirect uri within 12 steps");
+    await page.screenshot({ path: `${outDir}/timeout-final.png`, fullPage: true });
+    writeFileSync(`${outDir}/timeout-final.html`, await page.content());
+    throw new Error(`Authorisation flow did not reach the redirect uri within 12 steps visited=${JSON.stringify(visited)}`);
   } finally {
     await browser.close();
   }

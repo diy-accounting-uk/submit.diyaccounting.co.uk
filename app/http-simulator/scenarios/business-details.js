@@ -12,7 +12,7 @@ import { randomUUID } from "crypto";
  * that takes a businessId (Obligations, Self Employment Business) validates against this
  * shape, so a business list the simulator hands out must match it.
  */
-function generateBusinessId() {
+export function generateBusinessId() {
   const letters = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
   const middleChar = letters[Math.floor(Math.random() * letters.length)];
   const digits = randomUUID().replace(/-/g, "").replace(/[a-f]/g, "").padEnd(11, "0").slice(0, 11);
@@ -85,10 +85,16 @@ const errorScenarios = {
  * STATEFUL falls through to the same default list: this simulator has no per-user
  * mutable state to track across a submission and retrieval cycle.
  * @param {string|undefined} scenario - Gov-Test-Scenario header value
+ * @param {Object[]} [testSupportBusinesses] - businesses created for this NINO through the Self
+ *   Assessment Test Support API; returned in place of the synthesised default list when a request
+ *   carries no scenario, since a business a run created is the one it needs to file against.
  * @returns {Object} - {listOfBusinesses: [...]} or {status, body} for errors
  */
-export function getBusinessDetailsForScenario(scenario) {
+export function getBusinessDetailsForScenario(scenario, testSupportBusinesses) {
   if (!scenario) {
+    if (testSupportBusinesses && testSupportBusinesses.length > 0) {
+      return { listOfBusinesses: testSupportBusinesses };
+    }
     return { listOfBusinesses: defaultBusinesses() };
   }
 

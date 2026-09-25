@@ -42,6 +42,7 @@ import {
 } from "./steps/behaviour-hmrc-itsa-steps.js";
 import {
   acceptCookiesHmrc,
+  completeHmrcReauthIfPresented,
   fillInHmrcAuth,
   goToHmrcAuth,
   grantPermissionHmrcAuth,
@@ -294,6 +295,10 @@ test("Click through: Load and save a UK Property Annual Submission with HMRC", a
     screenshotPath,
   );
   await submitItsaUkPropertyAnnualLoadForm(page, screenshotPath);
+  // UK Property Annual Submission needs write:self-assessment; Business Details above only
+  // granted read:self-assessment, so the Load click just cleared that token and asked HMRC for a
+  // wider one.
+  await completeHmrcReauthIfPresented(page, testUsername, testPassword, screenshotPath);
   await verifyItsaUkPropertyAnnualLoadResults(page, screenshotPath);
 
   // The annual submission this page loads is canned and already carries a private use adjustment,

@@ -32,9 +32,8 @@ import software.constructs.Construct;
 /**
  * The nightly raw export: one CSV per Athena view and one JSON per one-stop-dashboard objective,
  * written to {@code s3://<lake>/exports/<env>/<date>/} so every figure on the objectives page is
- * readable by Claude without the page (see {@code PLAN_ONE_STOP_DASHBOARD.md}'s "Raw data for
- * indexing" section). {@code scripts/analytics-pull.sh} syncs that prefix down to
- * {@code analytics/<env>/} at the workspace root, where {@code index/corpus.toml}'s
+ * readable by Claude without the page. {@code scripts/analytics-pull.sh} syncs that prefix down
+ * to {@code analytics/<env>/} at the workspace root, where {@code index/corpus.toml}'s
  * {@code analytics} source picks it up.
  *
  * <p>Not a {@link software.constructs.Construct} subclass itself, matching {@link

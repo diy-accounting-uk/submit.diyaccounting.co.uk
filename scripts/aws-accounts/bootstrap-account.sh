@@ -7,7 +7,6 @@
 #
 # Bootstraps a new AWS account for CDK deployments and GitHub Actions OIDC.
 # Creates: CDK bootstrap stacks, OIDC provider, github-actions-role, deployment-role.
-# Part of Phase 1 (PLAN_ACCOUNT_SEPARATION.md steps 1.x.3-1.x.5).
 #
 # Usage:
 #   ./scripts/aws-accounts/bootstrap-account.sh --account-id <id> --account-name <name> --profile <profile>

@@ -52,7 +52,6 @@ cap = 100
 # Renewal refreshes the existing allocation's expiry rather than creating a duplicate.
 # The GET /api/v1/bundle response includes bundleCapacityAvailable: true/false for each
 # catalog bundle so the UI can show availability without exposing exact take-up numbers.
-# Implementation: Phase 2.9 in PLAN_PASSES_V2.md
 timeout = "P1D"
 # DONE: 1. Comment out for closed beta with production credentials validated by HMRC  <<<<---- WE ARE HERE 4th FEB 2026
 #listedInEnvironments = ["local", "test", "proxy", "proxyRunning", "ci"]
@@ -444,6 +443,20 @@ metered = true
 paths = ["companies-house/fileConfirmationStatement.html", "^/api/v1/companies-house/confirmation-statement.*", "^/api/v1/companies-house/company/[^/]+/(officers|persons-with-significant-control|filing-data)$"]
 environments = ["local", "test", "simulator", "proxy", "ci"]
 
+# prices
+# ======
+# A per-filing price, same row shape as [[bundles.prices]], but interval = "submission"
+# marks a one-off charge rather than a subscription period.
+[[activities.prices]]
+interval = "submission"
+amount = 6135
+currency = "gbp"
+default = true
+# (Companies House fee + Stripe fee) x 1.2. Companies House fee is £50 (5000p). Stripe's
+# standard UK card rate is 1.5% + 20p, charged on the price itself: P = 1.2 x (5000 + 0.015P + 20),
+# so 0.982P = 6024, P = 6024 / 0.982 = 6134.42, rounded up to 6135 (£61.35). Change amount here
+# when either fee changes.
+
 [[activities]]
 id = "diya-gl-storage"
 name = "Save DIYA-GL books"
@@ -477,7 +490,6 @@ metered = true
 # =====================
 # Time-limited (7 days), unlimited capacity (100 uses).
 # Encourages short digital campaigns (social media, email, messaging).
-# See PLAN_GENERATE_PASS_ACTIVITY.md
 paths = ["passes/generate-digital.html", "^/api/v1/pass/generate$"]
 
 [[activities]]
@@ -491,7 +503,6 @@ metered = true
 # ======================
 # Usage-limited (10 uses), unlimited time.
 # Encourages continued display on merchandise (t-shirts, mugs).
-# See PLAN_GENERATE_PASS_ACTIVITY.md
 paths = ["passes/generate-physical.html", "^/api/v1/pass/generate$"]
 
 [[activities]]

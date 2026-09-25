@@ -29,9 +29,8 @@ export function apiEndpoint(app) {
 /* v8 ignore stop */
 
 /**
- * Moves one of the practice's own books to a client's book set (PLAN_PRICE_UPDATE.md (d),
- * "Migration from sole trader to practice"). The client must belong to the signed-in practice;
- * the book must be one of the practice's own, not already under any client.
+ * Moves one of the practice's own books to a client's book set. The client must belong to the
+ * signed-in practice; the book must be one of the practice's own, not already under any client.
  */
 export async function ingestHandler(event) {
   await initializeSalt();

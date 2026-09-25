@@ -9,8 +9,7 @@
 import { createHash } from "crypto";
 
 // Fixed test presenter credentials for the simulator, standing in for the real ones Companies
-// House issues by email (see PLAN_COMPANIES_HOUSE_ACCOUNTS_FILING.md, board item O16). Every
-// caller against the simulator authenticates with these.
+// House issues by email. Every caller against the simulator authenticates with these.
 export const SIMULATOR_PRESENTER_ID = "12345678901";
 export const SIMULATOR_PRESENTER_CODE = "SimTest1";
 

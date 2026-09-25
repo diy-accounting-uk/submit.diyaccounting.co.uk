@@ -194,6 +194,7 @@
         <h2>Preview</h2>
         <p>This is the statement that will be filed. Nothing has been submitted to Companies House yet.</p>
         <pre id="previewXml" class="ixbrl-preview"></pre>
+        <p id="previewFeeMessage" class="hint" style="display: none"></p>
         <div class="form-group" id="govTestScenarioGroup" style="display: none">
           <label for="govTestScenario">Gov-Test-Scenario</label>
           <input type="text" id="govTestScenario" name="govTestScenario" spellcheck="false" />
@@ -235,6 +236,15 @@
       // API. Both the company authentication code and every director's personal code live only in
       // this page's own variables - never in localStorage or sessionStorage - and are sent again on
       // submit, the same rule the micro-entity accounts page follows for its own authentication code.
+
+      // Matches the activity id file-confirmation-statement carries in submit.catalogue.toml, and
+      // its [[activities.prices]] amount - keep both in step with that row if the price changes.
+      const CONFIRMATION_STATEMENT_ACTIVITY_ID = "file-confirmation-statement";
+      const CONFIRMATION_STATEMENT_FEE_DISPLAY = "£61.35";
+      // Non-secret: the company number a checkout redirect is resumed for. The company
+      // authentication code and every director's personal code are never written here - see the
+      // note above - so a return from checkout re-collects them through the normal authView step.
+      const CHECKOUT_RESUME_KEY = "companiesHouseConfirmationStatementResumeCompanyNumber";
 
       let company = null;
       let companyAuthCode = "";
@@ -318,7 +328,10 @@
           showStatus("Please enter a company number.", "error");
           return;
         }
+        await lookUpCompany(companyNumber);
+      }
 
+      async function lookUpCompany(companyNumber) {
         showLoading();
         hideStatus();
         try {
@@ -509,7 +522,7 @@
           const feePaid = filingData.paymentPeriodPaid === true;
           document.getElementById("feeMessage").textContent = feePaid
             ? "No fee: this payment period is already paid."
-            : "£50 will be charged to the Companies House credit account.";
+            : "A fee applies for this payment period - the amount is shown before you submit.";
 
           showView("reviewView");
         } catch (error) {
@@ -667,6 +680,18 @@
         try {
           const preview = await window.previewConfirmationStatement(payload);
           document.getElementById("previewXml").textContent = preview.confirmationStatementXml;
+
+          // filingData.paymentPeriodPaid only reflects Companies House's own PaymentPeriodsRequest
+          // answer at the time the register data was read - the 402 handled in handleSubmitFiling
+          // is the actual gate, re-checked fresh at submit time.
+          const feeDue = filingData?.paymentPeriodPaid !== true;
+          const previewFeeMessage = document.getElementById("previewFeeMessage");
+          previewFeeMessage.style.display = feeDue ? "block" : "none";
+          previewFeeMessage.textContent = feeDue
+            ? `${CONFIRMATION_STATEMENT_FEE_DISPLAY} will be charged before this is submitted to Companies House.`
+            : "";
+          document.getElementById("submitFilingBtn").textContent = feeDue ? "Pay and submit" : "Submit to Companies House";
+
           showView("previewView");
         } catch (error) {
           console.error("Failed to render the confirmation statement preview:", error);
@@ -713,8 +738,9 @@
       async function handleSubmitFiling() {
         showLoading();
         hideStatus();
+        let payload;
         try {
-          const payload = { ...buildStatementPayload(), companyAuthCode };
+          payload = { ...buildStatementPayload(), companyAuthCode };
           const govTestScenario = document.getElementById("govTestScenario").value.trim();
           const govTestScenarioHeaders = govTestScenario ? { "Gov-Test-Scenario": govTestScenario } : {};
           const submission = await window.submitConfirmationStatement(payload, govTestScenarioHeaders);
@@ -731,10 +757,55 @@
           }
           document.getElementById("startAgainBtn").style.display = "inline-block";
         } catch (error) {
+          // A fresh 402 from the submit route (the payment period is unpaid and no activity
+          // charge has been paid for this company/reviewDate) sends the customer to Stripe
+          // Checkout instead of showing an error - this is the live gate, independent of
+          // filingData.paymentPeriodPaid, which can be stale by the time the customer submits.
+          if (error.status === 402 && payload) {
+            await startActivityCheckout(payload.companyNumber, payload.reviewDate);
+            return;
+          }
           console.error("Companies House confirmation statement filing failed:", error);
           showStatus(error.message || "Failed to file the confirmation statement with Companies House.", "error");
         } finally {
           hideLoading();
+        }
+      }
+
+      // Opens a Stripe Checkout Session for this one filing's fee. Checkout is a full top-level
+      // redirect, so it clears every in-memory variable this page holds - the company
+      // authentication code and the directors' personal codes are never written to storage to
+      // survive that round trip, so the return (see resumeAfterActivityCheckout below) re-collects
+      // them through the normal authView step rather than resuming mid-form.
+      async function startActivityCheckout(companyNumber, reviewDate) {
+        showLoading();
+        try {
+          const subjectKey = `${companyNumber}:${reviewDate}`;
+          const returnTo = `${window.location.origin}${window.location.pathname}`;
+          const response = await window.fetchWithIdToken("/api/v1/billing/activity-checkout", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ activityId: CONFIRMATION_STATEMENT_ACTIVITY_ID, subjectKey, returnTo }),
+          });
+          const body = await response.json().catch(() => ({}));
+          if (!response.ok || !body.checkoutUrl) {
+            showStatus(`Failed to start payment: ${body.message || body.error || "Unknown error"}`, "error");
+            return;
+          }
+          sessionStorage.setItem(CHECKOUT_RESUME_KEY, companyNumber);
+          window.location.href = body.checkoutUrl;
+        } catch (error) {
+          console.error("Failed to start the confirmation statement payment:", error);
+          showStatus(error.message || "Failed to start payment.", "error");
+        } finally {
+          hideLoading();
+        }
+      }
+
+      async function resumeAfterActivityCheckout(companyNumber) {
+        await lookUpCompany(companyNumber);
+        if (company) {
+          showStatus("Payment received for this filing. Enter the company authentication code to finish it.", "success");
         }
       }
 
@@ -760,8 +831,44 @@
         document.getElementById("rejections").style.display = "none";
         document.getElementById("pscFollowUp").style.display = "none";
         document.getElementById("startAgainBtn").style.display = "none";
+        document.getElementById("previewFeeMessage").style.display = "none";
+        document.getElementById("submitFilingBtn").textContent = "Submit to Companies House";
         hideStatus();
         showView("companyView");
+      }
+
+      // A Stripe Checkout redirect is a full top-level navigation, so it lands back here as a
+      // fresh page load - resume the journey from the checkout query params rather than any
+      // in-memory state, which this reload has already lost. Waits for submit.js (the module
+      // script that defines window.getCompanyProfile and friends) the same way
+      // changeRegisteredEmail.html's resumePendingFilingIfReady does, since a plain script runs
+      // before a type="module" script has finished.
+      function resumeAfterCheckoutIfReady() {
+        const params = new URLSearchParams(window.location.search);
+        const checkoutResult = params.get("checkout");
+        if (!checkoutResult) return;
+
+        const url = new URL(window.location);
+        url.searchParams.delete("checkout");
+        url.searchParams.delete("session_id");
+        window.history.replaceState({}, "", url);
+
+        if (checkoutResult !== "success") {
+          showStatus("Payment was not completed. Choose Pay and submit again when ready.", "warning");
+          return;
+        }
+
+        const pendingCompanyNumber = sessionStorage.getItem(CHECKOUT_RESUME_KEY);
+        sessionStorage.removeItem(CHECKOUT_RESUME_KEY);
+        if (pendingCompanyNumber) {
+          resumeAfterActivityCheckout(pendingCompanyNumber);
+        }
+      }
+
+      if (window.__submitReady__) {
+        resumeAfterCheckoutIfReady();
+      } else {
+        document.addEventListener("submit-ready", resumeAfterCheckoutIfReady, { once: true });
       }
 
       document.getElementById("companyForm").addEventListener("submit", handleCompanySubmit);

@@ -24,6 +24,7 @@ import {
   deriveMicroEntityAccounts,
   linesFromOpeningBalance,
   linesFromPublishedBalanceSheet,
+  profitAndLossFromPublishedAccount,
   roundForFiling,
 } from "../lib/accounts-tools.js";
 import { createSession, openBook } from "../lib/book-tools.js";
@@ -116,6 +117,14 @@ describe("derive_micro_entity_accounts", () => {
         expect(Math.abs(answer.derivation.currentYear.lines.capitalAndReserves - results.PubBalSht.F39)).toBeLessThan(0.01);
         expect(answer.derivation.priorYear.lines.calledUpShareCapital).toBe(results.OpenAccounts.E33);
       });
+
+      it("answers turnover, costs and profit from the published profit and loss account, in whole pounds", () => {
+        const pl = results["PubP&L"];
+        expect(answer.profitAndLoss.turnover).toBe(Math.round(pl.F9));
+        expect(answer.profitAndLoss.profit).toBe(Math.round(pl.F51));
+        expect(answer.profitAndLoss.turnover - answer.profitAndLoss.costs).toBe(answer.profitAndLoss.profit);
+        for (const value of Object.values(answer.profitAndLoss)) expect(Number.isInteger(value)).toBe(true);
+      });
     });
   }
 
@@ -148,6 +157,15 @@ describe("derive_micro_entity_accounts", () => {
       /does not balance: net assets 140 against shareholders' funds 120/,
     );
     expect(() => linesFromPublishedBalanceSheet(undefined)).toThrow(/no published balance sheet/);
+  });
+
+  it("derives turnover, costs and profit from a published profit and loss account", () => {
+    expect(profitAndLossFromPublishedAccount({ F9: 10000.4, F51: 2000.6 })).toEqual({
+      turnover: 10000,
+      costs: 7999,
+      profit: 2001,
+    });
+    expect(() => profitAndLossFromPublishedAccount(undefined)).toThrow(/no published profit and loss account/);
   });
 
   it("refuses an opening balance whose assets do not equal its liabilities and equity", () => {

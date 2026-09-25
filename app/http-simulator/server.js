@@ -15,6 +15,7 @@ import { apiEndpoint as vatPaymentsEndpoint } from "./routes/vat-payments.js";
 import { apiEndpoint as vatPenaltiesEndpoint } from "./routes/vat-penalties.js";
 import { apiEndpoint as agentAuthorisationEndpoint } from "./routes/agent-authorisation.js";
 import { apiEndpoint as itsaBusinessDetailsEndpoint } from "./routes/itsa-business-details.js";
+import { apiEndpoint as itsaTestSupportEndpoint } from "./routes/itsa-test-support.js";
 import { apiEndpoint as itsaObligationsEndpoint } from "./routes/itsa-obligations.js";
 import { apiEndpoint as itsaSelfEmploymentPeriodEndpoint } from "./routes/itsa-self-employment-period.js";
 import { apiEndpoint as itsaSelfEmploymentPeriodsEndpoint } from "./routes/itsa-self-employment-periods.js";
@@ -85,6 +86,7 @@ export function createApp() {
   vatPenaltiesEndpoint(app);
   agentAuthorisationEndpoint(app);
   itsaBusinessDetailsEndpoint(app);
+  itsaTestSupportEndpoint(app);
   itsaObligationsEndpoint(app);
   itsaSelfEmploymentPeriodEndpoint(app);
   itsaSelfEmploymentPeriodsEndpoint(app);

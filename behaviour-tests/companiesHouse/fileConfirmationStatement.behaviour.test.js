@@ -38,7 +38,10 @@ import {
   submitConfirmationStatementFiling,
   verifyFilingAccepted,
   verifyFilingRejected,
+  payConfirmationStatementFeeDirectly,
+  payAndSubmitViaSimulatorCheckout,
 } from "../steps/behaviour-companies-house-confirmation-steps.js";
+import { isCompaniesHouseSimulatorLane } from "../steps/behaviour-companies-house-filing-steps.js";
 
 dotenvConfigIfNotBlank({ path: ".env" }); // Not checked in, real credentials for the ci/prod lanes
 
@@ -61,6 +64,11 @@ const receiptsTableName = getEnvVarAndLog("receiptsTableName", "RECEIPTS_DYNAMOD
 
 const { companyNumber, companyName } = confirmationStatementCompanyFixture(envFilePath);
 const companyAuthCode = resolveConfirmationStatementCompanyAuthCode(envFilePath);
+// The simulator's PaymentPeriodsRequest answers unpaid unless the caller sends its own
+// Gov-Test-Scenario, which the submit route's fee-gate check never forwards (that header is for
+// the submission itself) - so every simulator-lane submit needs the fee paid first. Outside the
+// simulator this filing is on the operator's own company, covered by COMPANIES_HOUSE_CS_FEE_MODE.
+const simulatorLane = isCompaniesHouseSimulatorLane(envFilePath);
 
 let mockOAuth2Process;
 let serverProcess;
@@ -82,6 +90,13 @@ test.beforeAll(async () => {
   process.env = {
     ...originalEnv,
   };
+  // Unset outside a real deployment (CDK wires it from DiyaGlStack's allowed origins plus this
+  // deployment's own origin - see billingReturnUrl.js) - the local server needs its own origin
+  // listed so the checkout redirect in payAndSubmitViaSimulatorCheckout lands back on this page
+  // rather than falling back to the site root.
+  if (baseUrl) {
+    process.env.BILLING_RETURN_URL_ORIGINS = new URL(baseUrl).origin;
+  }
 
   dynamoControl = await runLocalDynamoDb(runDynamoDb, bundleTableName, hmrcApiRequestsTableName, receiptsTableName);
   mockOAuth2Process = await runLocalOAuth2Server(runMockOAuth2);
@@ -128,6 +143,10 @@ test("Click through: file a confirmation statement end to end and see the filing
   await verifyCompanyLookedUp(page, companyName, companyNumber, screenshotPath);
   await enterCompanyAuthCodeAndReadRegister(page, companyAuthCode, screenshotPath);
   await verifyReviewFormPopulated(page, screenshotPath);
+  if (simulatorLane) {
+    const reviewDate = await page.locator("#reviewDate").inputValue();
+    await payConfirmationStatementFeeDirectly(page, { companyNumber, reviewDate }, screenshotPath);
+  }
   await fillInDirectorPersonalCodes(page, undefined, screenshotPath);
   await acceptLawfulPurposeStatement(page, screenshotPath);
   await previewConfirmationStatement(page, screenshotPath);
@@ -163,6 +182,10 @@ test("Click through: file a confirmation statement shows the reject reason Compa
   await verifyCompanyLookedUp(page, companyName, companyNumber, screenshotPath);
   await enterCompanyAuthCodeAndReadRegister(page, companyAuthCode, screenshotPath);
   await verifyReviewFormPopulated(page, screenshotPath);
+  if (simulatorLane) {
+    const reviewDate = await page.locator("#reviewDate").inputValue();
+    await payConfirmationStatementFeeDirectly(page, { companyNumber, reviewDate }, screenshotPath);
+  }
   await fillInDirectorPersonalCodes(page, undefined, screenshotPath);
   await acceptLawfulPurposeStatement(page, screenshotPath);
   await previewConfirmationStatement(page, screenshotPath);
@@ -202,6 +225,53 @@ test("Click through: file a confirmation statement blocks submission when a dire
   await enterCompanyAuthCodeAndReadRegister(page, companyAuthCode, screenshotPath);
   await verifyReviewFormPopulated(page, screenshotPath);
   await tryPreviewWithBlankPersonalCodes(page, screenshotPath);
+
+  await logOutAndExpectToBeLoggedOut(page, screenshotPath);
+});
+
+test("Click through: file a confirmation statement pays the fee via checkout and sees the filing accepted", async ({ page }, testInfo) => {
+  test.skip(!simulatorLane, "Only the simulator lane auto-completes a Stripe checkout without a real card.");
+
+  const testUrl = baseUrl;
+
+  addOnPageLogging(page);
+
+  const outputDir = testInfo.outputPath("");
+  fs.mkdirSync(outputDir, { recursive: true });
+
+  await goToHomePageExpectNotLoggedIn(page, testUrl, screenshotPath);
+
+  await clickLogIn(page, screenshotPath);
+  await loginWithCognitoOrMockAuth(page, testAuthProvider, testAuthUsername, screenshotPath, testAuthPassword);
+  await verifyLoggedInStatus(page, screenshotPath);
+  await consentToDataCollection(page, screenshotPath);
+
+  await goToBundlesPage(page, screenshotPath);
+  if (isSyntheticMode()) {
+    await ensureBundlePresent(page, "Resident", screenshotPath, { testPass: true });
+  }
+  await goToHomePage(page, screenshotPath);
+
+  await goToFileConfirmationStatement(page, screenshotPath);
+  await enterCompanyNumberAndLookUp(page, companyNumber, screenshotPath);
+  await verifyCompanyLookedUp(page, companyName, companyNumber, screenshotPath);
+  await enterCompanyAuthCodeAndReadRegister(page, companyAuthCode, screenshotPath);
+  await verifyReviewFormPopulated(page, screenshotPath);
+  await fillInDirectorPersonalCodes(page, undefined, screenshotPath);
+  await acceptLawfulPurposeStatement(page, screenshotPath);
+  await previewConfirmationStatement(page, screenshotPath);
+
+  // Fee due, no charge paid yet: "Pay and submit" redirects to the simulator's auto-completing
+  // checkout and back, landing on authView - the company authentication code is never carried
+  // across that round trip, so it is entered again before the filing resumes.
+  const reviewDate = await page.locator("#reviewDate").inputValue();
+  await payAndSubmitViaSimulatorCheckout(page, { companyAuthCode, companyNumber, reviewDate }, screenshotPath);
+  await verifyReviewFormPopulated(page, screenshotPath);
+  await fillInDirectorPersonalCodes(page, undefined, screenshotPath);
+  await acceptLawfulPurposeStatement(page, screenshotPath);
+  await previewConfirmationStatement(page, screenshotPath);
+  await submitConfirmationStatementFiling(page, screenshotPath);
+  await verifyFilingAccepted(page, screenshotPath);
 
   await logOutAndExpectToBeLoggedOut(page, screenshotPath);
 });

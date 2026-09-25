@@ -51,9 +51,12 @@ test.describe("File Confirmation Statement page", () => {
     });
   }
 
-  async function setupRoutes(page, { profile = COMPANY_PROFILE, lookupError = null } = {}) {
+  async function setupRoutes(
+    page,
+    { profile = COMPANY_PROFILE, lookupError = null, filingData = FILING_DATA, feeDueOnSubmit = false } = {},
+  ) {
     await page.addInitScript(
-      ({ profileArg, lookupErrorArg, officersArg, pscsArg, filingDataArg }) => {
+      ({ profileArg, lookupErrorArg, officersArg, pscsArg, filingDataArg, feeDueOnSubmitArg }) => {
         window.showStatus = window.showStatus || (() => {});
         window.hideStatus = window.hideStatus || (() => {});
         window.showLoading = window.showLoading || (() => {});
@@ -75,6 +78,17 @@ test.describe("File Confirmation Statement page", () => {
         window.__filingDataCalls = [];
         window.__previewCalls = [];
         window.__submitCalls = [];
+
+        window.fetchWithIdToken = (url, options = {}) => {
+          if (String(url).includes("/api/v1/billing/activity-checkout")) {
+            const body = JSON.parse(options.body || "{}");
+            const checkoutUrl = `http://localhost:3000/simulator/activity-checkout?activityId=${encodeURIComponent(
+              body.activityId,
+            )}&subjectKey=${encodeURIComponent(body.subjectKey)}`;
+            return Promise.resolve({ ok: true, status: 200, json: () => Promise.resolve({ checkoutUrl }) });
+          }
+          return Promise.resolve({ ok: true, status: 200, json: () => Promise.resolve({}) });
+        };
 
         window.getCompanyProfile = () => {
           if (lookupErrorArg) {
@@ -98,12 +112,24 @@ test.describe("File Confirmation Statement page", () => {
         };
         window.submitConfirmationStatement = (statement) => {
           window.__submitCalls.push(statement);
+          if (feeDueOnSubmitArg) {
+            const error = new Error("Payment required");
+            error.status = 402;
+            return Promise.reject(error);
+          }
           return Promise.resolve({ submissionNumber: "ABC123", gatewayTimestamp: "2026-09-24T00:00:00Z" });
         };
         window.pollConfirmationStatement = (submissionNumber) =>
           Promise.resolve({ submissionNumber, statusCode: "ACCEPT", rejections: [] });
       },
-      { profileArg: profile, lookupErrorArg: lookupError, officersArg: OFFICERS_RESULT, pscsArg: PSCS_RESULT, filingDataArg: FILING_DATA },
+      {
+        profileArg: profile,
+        lookupErrorArg: lookupError,
+        officersArg: OFFICERS_RESULT,
+        pscsArg: PSCS_RESULT,
+        filingDataArg: filingData,
+        feeDueOnSubmitArg: feeDueOnSubmit,
+      },
     );
 
     const modifiedHtml = pageHtmlContent.replace("<head>", '<head><base href="http://localhost:3000/companies-house/">');
@@ -114,6 +140,16 @@ test.describe("File Confirmation Statement page", () => {
 
     await page.route("**/*.js", async (route) => {
       await route.fulfill({ status: 200, contentType: "application/javascript", body: "" });
+    });
+
+    // Stands in for the real Stripe/simulator checkout page: records the redirect's query params
+    // on the Node side (the browser context that recorded __submitCalls etc. is gone once the
+    // page navigates here) and serves a trivial page so the navigation resolves.
+    page.activityCheckoutRequests = [];
+    await page.route("**/simulator/activity-checkout*", async (route) => {
+      const url = new URL(route.request().url());
+      page.activityCheckoutRequests.push(Object.fromEntries(url.searchParams));
+      await route.fulfill({ status: 200, contentType: "text/html", body: "<html><body>mock checkout</body></html>" });
     });
   }
 
@@ -257,6 +293,83 @@ test.describe("File Confirmation Statement page", () => {
     expect(previewCalls).toHaveLength(1);
     expect(previewCalls[0].directors[0].personalCode).toBe("AB123456789");
     expect(previewCalls[0].directors[0].otherForenames).toBe("ELIZABETH");
+  });
+
+  test("shows the fee amount and a 'Pay and submit' label on the preview when the payment period is unpaid", async ({ page }) => {
+    setupPage(page);
+    await setupRoutes(page, { filingData: { ...FILING_DATA, paymentPeriodPaid: false } });
+    await loadPage(page);
+
+    await lookUpCompany(page);
+    await enterAuthCode(page);
+    await acceptLawfulPurposeStatement(page);
+    await page.fill("#directorOtherForenames-0", "ELIZABETH");
+    await page.fill("#directorPersonalCode-0", "AB123456789");
+    await page.click("#previewBtn");
+    await delay(200);
+
+    await expect(page.locator("#previewFeeMessage")).toBeVisible();
+    await expect(page.locator("#previewFeeMessage")).toContainText("£61.35");
+    await expect(page.locator("#submitFilingBtn")).toHaveText("Pay and submit");
+  });
+
+  test("shows no fee message and the normal submit label on the preview when the payment period is already paid", async ({ page }) => {
+    setupPage(page);
+    await setupRoutes(page, { filingData: { ...FILING_DATA, paymentPeriodPaid: true } });
+    await loadPage(page);
+
+    await lookUpCompany(page);
+    await enterAuthCode(page);
+    await acceptLawfulPurposeStatement(page);
+    await page.fill("#directorOtherForenames-0", "ELIZABETH");
+    await page.fill("#directorPersonalCode-0", "AB123456789");
+    await page.click("#previewBtn");
+    await delay(200);
+
+    await expect(page.locator("#previewFeeMessage")).toBeHidden();
+    await expect(page.locator("#submitFilingBtn")).toHaveText("Submit to Companies House");
+  });
+
+  test("starts a checkout when the submit route refuses a fee-due filing", async ({ page }) => {
+    setupPage(page);
+    await setupRoutes(page, { filingData: { ...FILING_DATA, paymentPeriodPaid: false }, feeDueOnSubmit: true });
+    await loadPage(page);
+
+    await lookUpCompany(page);
+    await enterAuthCode(page);
+    await acceptLawfulPurposeStatement(page);
+    await page.fill("#directorOtherForenames-0", "ELIZABETH");
+    await page.fill("#directorPersonalCode-0", "AB123456789");
+    await page.click("#previewBtn");
+    await delay(200);
+
+    await page.click("#submitFilingBtn");
+    await page.waitForURL(/simulator\/activity-checkout/, { timeout: 10_000 });
+
+    expect(page.activityCheckoutRequests).toHaveLength(1);
+    expect(page.activityCheckoutRequests[0].activityId).toBe("file-confirmation-statement");
+    expect(page.activityCheckoutRequests[0].subjectKey).toBe("00000001:2026-09-21");
+    const resumeCompanyNumber = await page.evaluate(() => sessionStorage.getItem("companiesHouseConfirmationStatementResumeCompanyNumber"));
+    expect(resumeCompanyNumber).toBe("00000001");
+  });
+
+  test("resumes the lookup and shows a payment-received banner when returning from checkout", async ({ page }) => {
+    setupPage(page);
+    await setupRoutes(page);
+    await loadPage(page);
+    await page.evaluate(() => sessionStorage.setItem("companiesHouseConfirmationStatementResumeCompanyNumber", "00000001"));
+
+    await page.goto("http://localhost:3000/companies-house/fileConfirmationStatement.html?checkout=success&session_id=sim_1", {
+      waitUntil: "domcontentloaded",
+    });
+    await delay(300);
+
+    await expect(page.locator("#authView")).toBeVisible();
+    const messages = await page.evaluate(() => window.__statusMessages);
+    expect(messages.some((m) => m.message.includes("Payment received"))).toBe(true);
+    expect(page.url()).not.toContain("checkout=success");
+    const resumeCompanyNumber = await page.evaluate(() => sessionStorage.getItem("companiesHouseConfirmationStatementResumeCompanyNumber"));
+    expect(resumeCompanyNumber).toBeNull();
   });
 
   test("shows the accepted filing result and the PSC follow-up after submitting", async ({ page }) => {

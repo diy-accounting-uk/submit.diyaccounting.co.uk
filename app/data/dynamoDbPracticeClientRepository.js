@@ -3,9 +3,9 @@
 
 // app/data/dynamoDbPracticeClientRepository.js
 //
-// The practice's client list (PLAN_PRICE_UPDATE.md (d), "The data model"): partition key is the
-// practice's hashed sub, sort key is the client's ULID. No index reads clientId on its own, so a
-// client is reachable only through the practice that owns it.
+// The practice's client list: partition key is the practice's hashed sub, sort key is the
+// client's ULID. No index reads clientId on its own, so a client is reachable only through the
+// practice that owns it.
 
 import { createLogger } from "../lib/logger.js";
 import { hashSub } from "../services/subHasher.js";
@@ -160,9 +160,8 @@ export async function listClients(practiceSub, { includeArchived = false } = {})
 
 /**
  * Archives a client: sets archivedAt rather than deleting the row, so the client list and its
- * book sets survive a lapse and reappear on resubscribe (PLAN_PRICE_UPDATE.md (d), "Migration
- * from sole trader to practice"). Archiving a client id that does not belong to this practice, or
- * does not exist, throws rather than silently succeeding.
+ * book sets survive a lapse and reappear on resubscribe. Archiving a client id that does not
+ * belong to this practice, or does not exist, throws rather than silently succeeding.
  *
  * @param {string} practiceSub - the practice's raw Cognito sub
  * @param {string} clientId
@@ -216,8 +215,7 @@ export async function getPracticeArn(practiceSub) {
 
 /**
  * Stores the practice's HMRC agent reference number (ARN) on its profile row, creating the row
- * on first use. No client credential is ever stored alongside it (PLAN_PRICE_UPDATE.md (d), "The
- * authorisation flow").
+ * on first use. No client credential is ever stored alongside it.
  *
  * @param {string} practiceSub - the practice's raw Cognito sub
  * @param {string} arn
@@ -244,10 +242,9 @@ export async function setPracticeArn(practiceSub, arn) {
 }
 
 /**
- * Writes one HMRC service's authorisation state onto a client row (PLAN_PRICE_UPDATE.md (d), "The
- * authorisation flow": "we store the ARN on the practice, and per client the service, the
- * invitation id, the last status and when we read it"). Refuses when the client does not belong
- * to this practice.
+ * Writes one HMRC service's authorisation state onto a client row: the ARN is stored on the
+ * practice, and per client the service, the invitation id, the last status and when it was read.
+ * Refuses when the client does not belong to this practice.
  *
  * @param {string} practiceSub - the practice's raw Cognito sub
  * @param {string} clientId

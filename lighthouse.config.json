@@ -1,0 +1,21 @@
+{
+  "defaultThresholds": { "performance": 80, "accessibility": 95, "seo": 95, "bestPractices": 95 },
+  "urls": [
+    { "path": "/", "thresholds": { "performance": 67, "bestPractices": 92 } },
+    { "path": "/about.html", "thresholds": { "bestPractices": 92 } },
+    { "path": "/guide.html", "thresholds": { "bestPractices": 92 } },
+    { "path": "/help.html", "thresholds": { "performance": 70, "bestPractices": 92 } },
+    { "path": "/spreadsheets.html", "thresholds": { "performance": 53, "bestPractices": 92 } },
+    { "path": "/bundles.html", "thresholds": { "performance": 62, "bestPractices": 92 } },
+    { "path": "/practice.html", "thresholds": { "performance": 77, "bestPractices": 92 } },
+    { "path": "/diy-accounting-spreadsheets.html", "thresholds": { "performance": 60, "bestPractices": 92 } },
+    { "path": "/diy-accounting-limited.html", "thresholds": { "performance": 78, "bestPractices": 88 } },
+    { "path": "/policybee.html", "thresholds": { "bestPractices": 92 } },
+    { "path": "/simulator.html", "thresholds": { "bestPractices": 92 } },
+    { "path": "/videos.html", "thresholds": { "performance": 69, "bestPractices": 92 } },
+    { "path": "/mcp.html", "thresholds": { "bestPractices": 92 } },
+    { "path": "/privacy.html", "thresholds": { "performance": 79, "bestPractices": 92 } },
+    { "path": "/terms.html", "thresholds": { "performance": 79, "bestPractices": 92 } },
+    { "path": "/accessibility.html", "thresholds": { "performance": 77, "bestPractices": 92 } }
+  ]
+}

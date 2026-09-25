@@ -3,10 +3,9 @@
 
 // app/lib/hmrcAgentAuthorisation.js
 //
-// Client for HMRC's Agent Authorisation API (PLAN_PRICE_UPDATE.md (d), "The authorisation
-// flow"). The practice's own HMRC access token carries the ASA enrolment; HMRC resolves the
-// delegated relationship from the client's identifier sent on each call, so no client credential
-// is ever stored or sent by this service.
+// Client for HMRC's Agent Authorisation API. The practice's own HMRC access token carries
+// the ASA enrolment; HMRC resolves the delegated relationship from the client's identifier
+// sent on each call, so no client credential is ever stored or sent by this service.
 
 import { createLogger, context } from "./logger.js";
 import {
@@ -142,8 +141,8 @@ const AUTHORISED_STATUSES = new Set(["authorised", "accepted"]);
 
 /**
  * Whether a practice's client row carries a granted authorisation for one service. Read by every
- * client-scoped submission route (PLAN_PRICE_UPDATE.md (d), "Security boundaries") so a
- * submission never reaches HMRC on a client the practice was never authorised for.
+ * client-scoped submission route to ensure a submission never reaches HMRC on a client the
+ * practice was never authorised for.
  *
  * @param {object|null} client - a practice-clients row, as `dynamoDbPracticeClientRepository.getClient` returns it
  * @param {string} service - e.g. "MTD-VAT" or "MTD-IT"

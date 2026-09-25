@@ -19,7 +19,7 @@
  *   - accessibility/pa11y-report.txt
  *   - accessibility/axe-results.json
  *   - accessibility/axe-wcag22-results.json
- *   - accessibility/lighthouse-results.json
+ *   - accessibility/lighthouse-multi-results.json
  *   - penetration/eslint-security.txt
  *   - penetration/npm-audit.json
  *   - penetration/retire.json
@@ -212,9 +212,47 @@ function parseRetireResults(retireJson) {
   return { total: high + medium + low, high, medium, low, found: true };
 }
 
+// scripts/lighthouse-multi.js's aggregate output: { results: [{ path, scores, thresholds, pass }] },
+// one entry per sitemap URL. The summary fields below are the worst score per category across
+// every URL, so the top-level status reflects the least-compliant page, not an average that
+// could hide one failing page behind many passing ones.
+function parseLighthouseMultiResults(lighthouseMultiJson) {
+  const entries = lighthouseMultiJson.results;
+  if (!Array.isArray(entries) || entries.length === 0) {
+    return { performance: 0, accessibility: 0, bestPractices: 0, seo: 0, found: false, perUrl: [] };
+  }
+
+  const perUrl = entries.map((entry) => ({
+    path: entry.path,
+    performance: entry.scores?.performance ?? 0,
+    accessibility: entry.scores?.accessibility ?? 0,
+    bestPractices: entry.scores?.bestPractices ?? 0,
+    seo: entry.scores?.seo ?? 0,
+    pass: entry.pass !== false,
+  }));
+  const worst = (key) => Math.min(...perUrl.map((entry) => entry[key]));
+
+  return {
+    performance: worst("performance"),
+    accessibility: worst("accessibility"),
+    bestPractices: worst("bestPractices"),
+    seo: worst("seo"),
+    found: true,
+    perUrl,
+  };
+}
+
 function parseLighthouseResults(lighthouseJson) {
-  if (!lighthouseJson || !lighthouseJson.categories) {
-    return { performance: 0, accessibility: 0, bestPractices: 0, seo: 0, found: false };
+  if (!lighthouseJson) {
+    return { performance: 0, accessibility: 0, bestPractices: 0, seo: 0, found: false, perUrl: [] };
+  }
+
+  if (Array.isArray(lighthouseJson.results)) {
+    return parseLighthouseMultiResults(lighthouseJson);
+  }
+
+  if (!lighthouseJson.categories) {
+    return { performance: 0, accessibility: 0, bestPractices: 0, seo: 0, found: false, perUrl: [] };
   }
 
   const categories = lighthouseJson.categories;
@@ -224,6 +262,7 @@ function parseLighthouseResults(lighthouseJson) {
     bestPractices: Math.round((categories["best-practices"]?.score || 0) * 100),
     seo: Math.round((categories.seo?.score || 0) * 100),
     found: true,
+    perUrl: [],
   };
 }
 
@@ -331,6 +370,7 @@ function generateReport(sourceFiles) {
   const axeJson = readJsonFile(join(accessibilityDir, "axe-results.json"));
   const axeWcag22Json = readJsonFile(join(accessibilityDir, "axe-wcag22-results.json"));
   const lighthouseJson = readJsonFile(join(accessibilityDir, "lighthouse-results.json"));
+  const lighthouseMultiJson = readJsonFile(join(accessibilityDir, "lighthouse-multi-results.json"));
   const textSpacingJson = readJsonFile(join(accessibilityDir, "text-spacing-results.json"));
   const retireJson = readJsonFile(join(penetrationDir, "retire.json"));
   const zapJson = readJsonFile(join(penetrationDir, "zap-report.json"));
@@ -342,7 +382,8 @@ function generateReport(sourceFiles) {
   const pa11y = parsePa11yReport(pa11yText);
   const axe = parseAxeResults(axeJson);
   const axeWcag22 = parseAxeResults(axeWcag22Json);
-  const lighthouse = parseLighthouseResults(lighthouseJson);
+  // The multi-URL run (every sitemap page) takes priority over the single-page run.
+  const lighthouse = parseLighthouseResults(lighthouseMultiJson || lighthouseJson);
   const textSpacing = parseTextSpacingResults(textSpacingJson);
   const retire = parseRetireResults(retireJson);
   const zap = parseZapResults(zapJson);
@@ -566,15 +607,25 @@ ${axeWcag22.violationDetails.map((v) => `| ${v.id} | ${v.impact} | ${v.descripti
 
 ${
   lighthouse.found
-    ? `| Category | Score |
+    ? `${lighthouse.perUrl.length > 0 ? `Worst score across ${lighthouse.perUrl.length} audited pages:\n\n` : ""}| Category | Score |
 |----------|-------|
 | Accessibility | ${lighthouse.accessibility}% |
 | Performance | ${lighthouse.performance}% |
 | Best Practices | ${lighthouse.bestPractices}% |
 | SEO | ${lighthouse.seo}% |
 
-**Status**: ${statusIcon(lighthouse.accessibility >= 90)} ${lighthouse.accessibility >= 90 ? "Accessibility score meets threshold (90%+)" : "Accessibility score below 90% threshold"}`
-    : "⚠️ Report not found: `web/public/tests/accessibility/lighthouse-results.json`"
+**Status**: ${statusIcon(lighthouse.accessibility >= 90)} ${lighthouse.accessibility >= 90 ? "Accessibility score meets threshold (90%+)" : "Accessibility score below 90% threshold"}${
+        lighthouse.perUrl.length > 0
+          ? `
+
+#### Per-page scores
+
+| Page | Performance | Accessibility | Best Practices | SEO | Gate |
+|------|-------------|----------------|-----------------|-----|------|
+${lighthouse.perUrl.map((p) => `| ${p.path} | ${p.performance}% | ${p.accessibility}% | ${p.bestPractices}% | ${p.seo}% | ${statusIcon(p.pass)} |`).join("\n")}`
+          : ""
+      }`
+    : "⚠️ Report not found: `web/public/tests/accessibility/lighthouse-multi-results.json`"
 }
 
 ### 2.5 Text Spacing (WCAG 1.4.12)
@@ -621,7 +672,7 @@ ${textSpacing.failedPages.map((p) => `| ${p.url.replace(targetUrl, "") || "/"} |
 | Pa11y | web/public/tests/accessibility/pa11y-report.txt | ${pa11y.found ? "✅ Found" : "❌ Missing"} |
 | axe-core | web/public/tests/accessibility/axe-results.json | ${axe.found ? "✅ Found" : "❌ Missing"} |
 | axe-core (WCAG 2.2) | web/public/tests/accessibility/axe-wcag22-results.json | ${axeWcag22.found ? "✅ Found" : "❌ Missing"} |
-| Lighthouse | web/public/tests/accessibility/lighthouse-results.json | ${lighthouse.found ? "✅ Found" : "❌ Missing"} |
+| Lighthouse | web/public/tests/accessibility/lighthouse-multi-results.json | ${lighthouse.found ? "✅ Found" : "❌ Missing"} |
 | Text Spacing | web/public/tests/accessibility/text-spacing-results.json | ${textSpacing.found ? "✅ Found" : "❌ Missing"} |
 
 ---
@@ -650,7 +701,7 @@ function main() {
     join(accessibilityDir, "pa11y-report.txt"),
     join(accessibilityDir, "axe-results.json"),
     join(accessibilityDir, "axe-wcag22-results.json"),
-    join(accessibilityDir, "lighthouse-results.json"),
+    join(accessibilityDir, "lighthouse-multi-results.json"),
     join(accessibilityDir, "text-spacing-results.json"),
   ];
 

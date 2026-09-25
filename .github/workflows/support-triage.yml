@@ -6,16 +6,15 @@ run-name: "support triage for #${{ inputs.issue-number || github.event.issue.num
 
 # Matches a support ticket against this repository's own FAQ and guide pages and labels it - it
 # never reaches CloudWatch, DynamoDB, Cognito or Athena, and it never closes the issue (only a
-# person does, see PLAN_REPOSITORY_AUTOMATION.md P1). It chains into the same read-only role
-# alarm-triage.yml uses (see ObservabilityStack.java's alarmTriageRole) purely for the Bedrock
-# model invocation and the guardrail's SSM parameters that the shared publish-filter action needs;
-# that role's explicit deny already covers every customer-data service, so no new grant is needed
-# for a triage that never looks at customer data. The ticket that triggers this workflow is opened
-# either by the support-ticket Lambda's own GitHub App installation token (an unauthenticated
-# public form) or by a person filling in the issue form, so the issue body is treated as data
-# throughout, never as instructions - see prompts/support-triage.md. Public replies stay written
-# by a person (PLAN_REPOSITORY_AUTOMATION.md Q8): this workflow drafts one into the run's step
-# summary and never posts it to the issue.
+# person closes issues). It chains into the same read-only role alarm-triage.yml uses (see
+# ObservabilityStack.java's alarmTriageRole) purely for the Bedrock model invocation and the
+# guardrail's SSM parameters that the shared publish-filter action needs; that role's explicit
+# deny already covers every customer-data service, so no new grant is needed for a triage that
+# never looks at customer data. The ticket that triggers this workflow is opened either by the
+# support-ticket Lambda's own GitHub App installation token (an unauthenticated public form) or
+# by a person filling in the issue form, so the issue body is treated as data throughout, never
+# as instructions - see prompts/support-triage.md. Public replies stay written by a person: this
+# workflow drafts one into the run's step summary and never posts it to the issue.
 
 on:
   issues:
@@ -315,8 +314,7 @@ jobs:
 
       # The filtered file holds all three sections plus the closing byline. Only the matched
       # article and the label, plus the byline, go on the issue - the drafted reply is kept off
-      # it for a person to read and send by hand (prompts/support-triage.md,
-      # PLAN_REPOSITORY_AUTOMATION.md P1 and Q8). A missing "## Drafted reply" heading means the
+      # it for a person to read and send by hand. A missing "## Drafted reply" heading means the
       # split cannot be trusted to have kept the reply out of the public half, so this fails the
       # run rather than posting anything.
       - name: Split the public comment from the drafted reply

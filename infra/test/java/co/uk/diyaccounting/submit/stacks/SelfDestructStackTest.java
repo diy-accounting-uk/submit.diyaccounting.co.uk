@@ -22,6 +22,10 @@ import software.amazon.awscdk.assertions.Template;
 class SelfDestructStackTest {
 
     private static SelfDestructStack synthSelfDestructStack() {
+        return synthSelfDestructStack("2026-01-01T00:00:00Z", 6);
+    }
+
+    private static SelfDestructStack synthSelfDestructStack(String startDatetime, int delayHours) {
         App app = new App();
         SubmitSharedNames.SubmitSharedNamesProps sharedNamesProps = new SubmitSharedNames.SubmitSharedNamesProps();
         sharedNamesProps.hostedZoneName = "example.com";
@@ -45,8 +49,8 @@ class SelfDestructStackTest {
                 .sharedNames(sharedNames)
                 .baseImageTag("latest")
                 .selfDestructLogGroupName(sharedNames.ew2SelfDestructLogGroupName)
-                .selfDestructStartDatetime(ZonedDateTime.parse("2026-01-01T00:00:00Z"))
-                .selfDestructDelayHours(6)
+                .selfDestructStartDatetime(ZonedDateTime.parse(startDatetime))
+                .selfDestructDelayHours(delayHours)
                 .isApplicationStack(true)
                 .build();
 
@@ -171,6 +175,36 @@ class SelfDestructStackTest {
                 resource.endsWith("parameter/submit/ci/alarm-silence/*"),
                 "expected the ci alarm-silence prefix, got " + resource);
         assertFalse(resource.equals("*"), "the alarm-silence grant must not be a bare wildcard");
+    }
+
+    @Test
+    void selfDestructScheduleWrapsHourPastMidnightForStartAt16UTC() {
+        SelfDestructStack selfDestructStack = synthSelfDestructStack("2026-01-01T16:16:00Z", 4);
+        Template template = Template.fromStack(selfDestructStack);
+
+        var rules = template.findResources("AWS::Events::Rule");
+        assertEquals(1, rules.size(), "expected exactly one EventBridge rule");
+
+        var rule = (Map<?, ?>) rules.values().iterator().next();
+        var properties = (Map<?, ?>) rule.get("Properties");
+        String scheduleExpression = (String) properties.get("ScheduleExpression");
+
+        assertEquals("cron(16 0/4 * * ? *)", scheduleExpression, "schedule should wrap past midnight with hour 0/4");
+    }
+
+    @Test
+    void selfDestructScheduleWrapsHourPastMidnightForStartAt02UTC() {
+        SelfDestructStack selfDestructStack = synthSelfDestructStack("2026-01-01T02:30:00Z", 4);
+        Template template = Template.fromStack(selfDestructStack);
+
+        var rules = template.findResources("AWS::Events::Rule");
+        assertEquals(1, rules.size(), "expected exactly one EventBridge rule");
+
+        var rule = (Map<?, ?>) rules.values().iterator().next();
+        var properties = (Map<?, ?>) rule.get("Properties");
+        String scheduleExpression = (String) properties.get("ScheduleExpression");
+
+        assertEquals("cron(30 2/4 * * ? *)", scheduleExpression, "schedule should wrap past midnight with hour 2/4");
     }
 
     /**

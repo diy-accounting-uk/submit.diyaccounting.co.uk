@@ -157,8 +157,8 @@ public class AccountStack extends Stack {
 
         String cognitoUserPoolArn();
 
-        // Base URI for HMRC's Agent Authorisation API (PLAN_PRICE_UPDATE.md (d), "The
-        // authorisation flow"), read by the three practiceClientAuthorisation* Lambdas below.
+        // Base URI for HMRC's Agent Authorisation API, read by the three practiceClientAuthorisation*
+        // Lambdas below.
         String hmrcAgentAuthorisationBaseUri();
 
         // GitHub App configuration for the support-ticket Lambda (diya-ops, see
@@ -721,8 +721,8 @@ public class AccountStack extends Stack {
                 props.sharedNames().practiceClientDeleteIngestLambdaHandler);
 
         // Practice client authorisation: three single-Lambda routes calling out to HMRC's Agent
-        // Authorisation API (PLAN_PRICE_UPDATE.md (d), "The authorisation flow"). Each still reads
-        // or writes only the caller's own hashedSub partition, plus the HMRC call itself.
+        // Authorisation API. Each still reads or writes only the caller's own hashedSub partition,
+        // plus the HMRC call itself.
         var practiceClientAuthorisationLambdaEnv = new PopulatedMap<>(practiceClientsLambdaEnv)
                 .with("HMRC_AGENT_AUTHORISATION_BASE_URI", props.hmrcAgentAuthorisationBaseUri());
 

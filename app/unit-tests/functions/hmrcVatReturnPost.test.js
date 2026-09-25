@@ -437,7 +437,7 @@ describe("hmrcVatReturnPost ingestHandler", () => {
   });
 });
 
-describe("hmrcVatReturnPost client-scoped requests (PLAN_PRICE_UPDATE.md (d))", () => {
+describe("hmrcVatReturnPost client-scoped requests", () => {
   const CLIENT_TABLE = "test-practice-clients-table";
 
   function mockPracticeAndClient(clientItem) {

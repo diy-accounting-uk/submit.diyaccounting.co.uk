@@ -84,6 +84,16 @@ export function http403ForbiddenResponse({ request, headers, message, error }) {
   });
 }
 
+export function http402PaymentRequiredResponse({ request, headers, message, error }) {
+  return httpResponse({
+    statusCode: 402,
+    request,
+    headers,
+    data: { message, ...error },
+    levelledLogger: logger.warn.bind(logger),
+  });
+}
+
 export function http409ConflictResponse({ request, headers, message, error }) {
   return httpResponse({
     statusCode: 409,

@@ -9,7 +9,7 @@
 // NOTE: These tests serve as a specification. They will fail until the backend
 // endpoints (POST /api/v1/pass/generate, GET /api/v1/pass/my-passes) and
 // frontend pages (passes/generate-digital.html, passes/generate-physical.html)
-// are implemented. See PLAN_GENERATE_PASS_ACTIVITY.md for the full plan.
+// are implemented.
 
 import { test } from "./helpers/playwrightTestWithout.js";
 import { expect } from "@playwright/test";

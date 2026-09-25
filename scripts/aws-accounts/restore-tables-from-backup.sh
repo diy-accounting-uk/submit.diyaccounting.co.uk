@@ -7,11 +7,9 @@
 #
 # Copies DynamoDB table data from one account to another (cross-account migration).
 # Uses scan + batch-write-item since on-demand DynamoDB backups cannot be restored
-# cross-account (AWS Backup cross-account copy requires Phase 3 vault setup).
+# cross-account.
 #
 # The target tables must already exist (created by DataStack deployment).
-#
-# Part of Phase 1.4 (PLAN_ACCOUNT_SEPARATION.md step 1.4.17).
 #
 # Usage:
 #   ./scripts/aws-accounts/restore-tables-from-backup.sh \

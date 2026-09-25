@@ -174,11 +174,12 @@ class SubmitApplicationCdkResourceTest {
         }
 
         infof("Created stack:", submitApplication.billingStack.getStackName());
-        // 4 Lambdas: billingCheckoutPost(1), billingCheckoutSessionGet(1), billingPortalGet(1), billingRecoverPost(1)
+        // 5 Lambdas: billingCheckoutPost(1), billingActivityCheckoutPost(1), billingCheckoutSessionGet(1),
+        // billingPortalGet(1), billingRecoverPost(1)
         // billingWebhookPost moved to env-level BillingWebhookStack
         Template billingStackTemplate = Template.fromStack(submitApplication.billingStack);
-        billingStackTemplate.resourceCountIs("AWS::Lambda::Function", 4);
-        assertStackHealthAlarm(billingStackTemplate, 4, 0, routedPrefixes);
+        billingStackTemplate.resourceCountIs("AWS::Lambda::Function", 5);
+        assertStackHealthAlarm(billingStackTemplate, 5, 0, routedPrefixes);
 
         infof("Created stack:", submitApplication.apiStack.getStackName());
         Template apiStackTemplate = Template.fromStack(submitApplication.apiStack);
@@ -333,8 +334,9 @@ class SubmitApplicationCdkResourceTest {
         // its own auto-HEAD route, since no other method shares that path, for 154 + 2 = 156. The
         // six confirmation statement routes (officers, PSCs, filing-data, preview, submit, poll)
         // each sit on their own unshared path, adding six primary routes plus six auto-HEAD
-        // routes, for 156 + 12 = 168.
-        apiStackTemplate.resourceCountIs("AWS::ApiGatewayV2::Route", 168);
+        // routes, for 156 + 12 = 168. POST /api/v1/billing/activity-checkout adds its own route
+        // plus its own auto-HEAD route, since no other method shares that path, for 168 + 2 = 170.
+        apiStackTemplate.resourceCountIs("AWS::ApiGatewayV2::Route", 170);
 
         // Dashboard moved to environment-level ObservabilityStack
         infof("Created stack:", submitApplication.opsStack.getStackName());

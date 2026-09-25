@@ -29,8 +29,7 @@ import {
 const logger = createLogger({ source: "app/functions/billing/billingCheckoutPost.js" });
 
 // A checkout request names an interval as "annual" or "monthly"; the catalogue's prices
-// use Stripe's own interval names ("year", "month"). Annual is the default per
-// PLAN_PRICE_UPDATE.md decision 3.
+// use Stripe's own interval names ("year", "month"). Annual is the default billing interval.
 const CHECKOUT_INTERVALS = { annual: "year", monthly: "month" };
 
 /* v8 ignore start */

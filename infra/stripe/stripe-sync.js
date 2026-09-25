@@ -296,20 +296,28 @@ async function findOrCreateProduct(stripe, bundleId, name, description, apply) {
   return product;
 }
 
+// A price with interval = "submission" is a one-off per-filing charge, not a subscription:
+// it lists and creates as a Stripe "one_time" price with no recurring block, rather than
+// "recurring" on the named interval.
 async function findOrCreatePrice(stripe, productId, bundleId, unitAmount, currency, interval, apply) {
+  const isOneOff = interval === "submission";
+  const label = isOneOff ? `${unitAmount} ${currency} one-off` : `${unitAmount} ${currency}/${interval}`;
+
   if (productId === "(plan, not created)") {
-    console.log(`  price ${bundleId}: would create ${unitAmount} ${currency}/${interval}`);
+    console.log(`  price ${bundleId}: would create ${label}`);
     return { id: "(plan, not created)" };
   }
 
-  const prices = await stripe.prices.list({ product: productId, active: true, type: "recurring" });
-  const existing = prices.data.find((p) => p.unit_amount === unitAmount && p.currency === currency && p.recurring?.interval === interval);
+  const prices = await stripe.prices.list({ product: productId, active: true, type: isOneOff ? "one_time" : "recurring" });
+  const existing = prices.data.find(
+    (p) => p.unit_amount === unitAmount && p.currency === currency && (isOneOff ? !p.recurring : p.recurring?.interval === interval),
+  );
   if (existing) {
     console.log(`  price ${bundleId}: exists (${existing.id})`);
     return existing;
   }
 
-  console.log(`  price ${bundleId}: ${apply ? "creating" : "would create"} ${unitAmount} ${currency}/${interval}`);
+  console.log(`  price ${bundleId}: ${apply ? "creating" : "would create"} ${label}`);
   if (!apply) {
     return { id: "(plan, not created)" };
   }
@@ -317,7 +325,7 @@ async function findOrCreatePrice(stripe, productId, bundleId, unitAmount, curren
     product: productId,
     unit_amount: unitAmount,
     currency,
-    recurring: { interval },
+    ...(isOneOff ? {} : { recurring: { interval } }),
     metadata: { bundleId },
   });
   console.log(`    created ${price.id}`);

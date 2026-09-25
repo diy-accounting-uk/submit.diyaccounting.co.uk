@@ -95,6 +95,8 @@ public class SubmitApplication {
         public String stripeTestPriceIdResidentProYear;
         public String stripePriceIdResidentProMonth;
         public String stripeTestPriceIdResidentProMonth;
+        public String stripePriceIdFileConfirmationStatement;
+        public String stripeTestPriceIdFileConfirmationStatement;
         public String stripeWebhookSecretArn;
         public String stripeTestWebhookSecretArn;
         public String githubAppId;
@@ -290,6 +292,14 @@ public class SubmitApplication {
                 "STRIPE_TEST_PRICE_ID_RESIDENT_PRO_MONTH",
                 appProps.stripeTestPriceIdResidentProMonth,
                 "(from stripeTestPriceIdResidentProMonth in cdk.json)");
+        var stripePriceIdFileConfirmationStatement = envOr(
+                "STRIPE_PRICE_ID_FILE_CONFIRMATION_STATEMENT",
+                appProps.stripePriceIdFileConfirmationStatement,
+                "(from stripePriceIdFileConfirmationStatement in cdk.json)");
+        var stripeTestPriceIdFileConfirmationStatement = envOr(
+                "STRIPE_TEST_PRICE_ID_FILE_CONFIRMATION_STATEMENT",
+                appProps.stripeTestPriceIdFileConfirmationStatement,
+                "(from stripeTestPriceIdFileConfirmationStatement in cdk.json)");
         var stripeWebhookSecretArn = envOr(
                 "STRIPE_WEBHOOK_SECRET_ARN",
                 appProps.stripeWebhookSecretArn,
@@ -475,6 +485,14 @@ public class SubmitApplication {
                                 stripePriceIdResidentProMonth != null ? stripePriceIdResidentProMonth : "")
                         .stripeTestPriceIdResidentProMonth(
                                 stripeTestPriceIdResidentProMonth != null ? stripeTestPriceIdResidentProMonth : "")
+                        .stripePriceIdFileConfirmationStatement(
+                                stripePriceIdFileConfirmationStatement != null
+                                        ? stripePriceIdFileConfirmationStatement
+                                        : "")
+                        .stripeTestPriceIdFileConfirmationStatement(
+                                stripeTestPriceIdFileConfirmationStatement != null
+                                        ? stripeTestPriceIdFileConfirmationStatement
+                                        : "")
                         .baseUrl(sharedNames.publicBaseUrl)
                         .billingReturnUrlOrigins(billingReturnUrlOrigins)
                         .build());

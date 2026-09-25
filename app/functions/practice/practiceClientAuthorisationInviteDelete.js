@@ -32,9 +32,9 @@ export function apiEndpoint(app) {
 const SUPPORTED_SERVICES = ["MTD-VAT", "MTD-IT"];
 
 /**
- * Cancels a client's pending invitation. Cancelling an invitation is the practice's own act
- * (PLAN_PRICE_UPDATE.md (d), "Migration from sole trader to practice"), so it never touches an
- * already-accepted relationship - only a pending invitation held on the client row.
+ * Cancels a client's pending invitation. Cancelling an invitation is the practice's own act,
+ * so it never touches an already-accepted relationship - only a pending invitation held on
+ * the client row.
  */
 export async function ingestHandler(event) {
   await initializeSalt();

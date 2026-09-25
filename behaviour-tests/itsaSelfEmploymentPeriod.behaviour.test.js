@@ -38,6 +38,7 @@ import {
 } from "./steps/behaviour-hmrc-itsa-steps.js";
 import {
   acceptCookiesHmrc,
+  completeHmrcReauthIfPresented,
   fillInHmrcAuth,
   goToHmrcAuth,
   grantPermissionHmrcAuth,
@@ -298,6 +299,9 @@ test("Click through: File an ITSA Quarterly Update with HMRC", async ({ page }, 
     screenshotPath,
   );
   await submitItsaSelfEmploymentPeriodForm(page, screenshotPath);
+  // The quarterly update needs write:self-assessment; Business Details above only granted
+  // read:self-assessment, so this click just cleared that token and asked HMRC for a wider one.
+  await completeHmrcReauthIfPresented(page, testUsername, testPassword, screenshotPath);
 
   await verifyItsaSelfEmploymentPeriodResults(page, screenshotPath);
   await goToHomePageUsingMainNav(page, screenshotPath);

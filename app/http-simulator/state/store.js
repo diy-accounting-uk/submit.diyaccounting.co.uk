@@ -11,6 +11,8 @@ const state = {
   authorizationCodes: new Map(),
   // Tokens keyed by access token value
   tokens: new Map(),
+  // Businesses created through the Self Assessment Test Support API, keyed by normalised NINO
+  testSupportBusinesses: new Map(),
 };
 
 /**
@@ -20,6 +22,7 @@ export function reset() {
   state.submittedReturns.clear();
   state.authorizationCodes.clear();
   state.tokens.clear();
+  state.testSupportBusinesses.clear();
 }
 
 /**
@@ -81,6 +84,32 @@ export function storeToken(accessToken, data) {
  */
 export function getToken(accessToken) {
   return state.tokens.get(accessToken);
+}
+
+function normaliseNino(nino) {
+  return String(nino).replace(/\s+/g, "").toUpperCase();
+}
+
+/**
+ * Record a business created through the Self Assessment Test Support API against a NINO, so the
+ * ITSA Business Details list can hand it back to the run that created it.
+ * @param {string} nino - National Insurance number
+ * @param {Object} business - the business, carrying at least businessId and typeOfBusiness
+ */
+export function addTestSupportBusiness(nino, business) {
+  const key = normaliseNino(nino);
+  const businesses = state.testSupportBusinesses.get(key) || [];
+  businesses.push(business);
+  state.testSupportBusinesses.set(key, businesses);
+}
+
+/**
+ * Get every business created through the Self Assessment Test Support API for a NINO.
+ * @param {string} nino - National Insurance number
+ * @returns {Object[]}
+ */
+export function getTestSupportBusinesses(nino) {
+  return state.testSupportBusinesses.get(normaliseNino(nino)) || [];
 }
 
 export default state;

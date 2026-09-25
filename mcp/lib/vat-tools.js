@@ -4,9 +4,8 @@
 // vat-tools.js -- derive_vat_return: the nine VAT boxes for one obligation
 // period, read from the Ltd engine's own Vatreturns.xlsx!Vatinterface
 // results, with the HMRC field names, HMRC's rounding, and the journal
-// lines that fed each box. The mapping is written out in
-// PLAN_SUBMISSION_MCP.md ("From a book to the nine VAT boxes"); nothing here
-// computes VAT that the engine has not already computed.
+// lines that fed each box. The filing maps nine VAT boxes from book
+// balances; nothing here computes VAT that the engine has not already computed.
 
 import { calculatedResultsFor } from "@diy-accounting-uk/diya-gl/dist/app/bin/export.js";
 import { loadTaxDataForBook } from "@diy-accounting-uk/diya-gl/dist/app/lib/product-workbook.js";

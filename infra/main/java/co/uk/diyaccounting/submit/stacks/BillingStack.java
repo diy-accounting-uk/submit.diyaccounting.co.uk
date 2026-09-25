@@ -34,6 +34,10 @@ public class BillingStack extends Stack {
     public Function billingCheckoutPostLambda;
     public ILogGroup billingCheckoutPostLambdaLogGroup;
 
+    public AbstractApiLambdaProps billingActivityCheckoutPostLambdaProps;
+    public Function billingActivityCheckoutPostLambda;
+    public ILogGroup billingActivityCheckoutPostLambdaLogGroup;
+
     public AbstractApiLambdaProps billingCheckoutSessionGetLambdaProps;
     public Function billingCheckoutSessionGetLambda;
     public ILogGroup billingCheckoutSessionGetLambdaLogGroup;
@@ -147,6 +151,16 @@ public class BillingStack extends Stack {
             return "";
         }
 
+        @Value.Default
+        default String stripePriceIdFileConfirmationStatement() {
+            return "";
+        }
+
+        @Value.Default
+        default String stripeTestPriceIdFileConfirmationStatement() {
+            return "";
+        }
+
         static ImmutableBillingStackProps.Builder builder() {
             return ImmutableBillingStackProps.builder();
         }
@@ -170,6 +184,12 @@ public class BillingStack extends Stack {
                 this,
                 "ImportedBundlesTable-%s".formatted(props.deploymentName()),
                 props.sharedNames().bundlesTableName);
+
+        // Lookup existing DynamoDB Activity Charges Table
+        ITable activityChargesTable = Table.fromTableName(
+                this,
+                "ImportedActivityChargesTable-%s".formatted(props.deploymentName()),
+                props.sharedNames().activityChargesTableName);
 
         // Lambdas
 
@@ -315,6 +335,101 @@ public class BillingStack extends Stack {
         infof(
                 "Created Billing Checkout POST Lambda %s",
                 this.billingCheckoutPostLambda.getNode().getId());
+
+        // ============================================================================
+        // Billing Activity Checkout POST Lambda (JWT auth) — one-off `payment` mode charge for
+        // an activity's per-filing price, e.g. STRIPE_PRICE_ID_FILE_CONFIRMATION_STATEMENT.
+        // ============================================================================
+        var billingActivityCheckoutPostLambdaEnv = new PopulatedMap<String, String>()
+                .with("BUNDLE_DYNAMODB_TABLE_NAME", bundlesTable.getTableName())
+                .with("ACTIVITY_CHARGES_DYNAMODB_TABLE_NAME", activityChargesTable.getTableName())
+                .with("ACTIVITY_BUS_NAME", props.sharedNames().activityBusName)
+                .with("ENVIRONMENT_NAME", props.envName());
+        if (props.stripeSecretKeyArn() != null && !props.stripeSecretKeyArn().isBlank()) {
+            billingActivityCheckoutPostLambdaEnv.with("STRIPE_SECRET_KEY_ARN", props.stripeSecretKeyArn());
+        }
+        if (props.stripeTestSecretKeyArn() != null
+                && !props.stripeTestSecretKeyArn().isBlank()) {
+            billingActivityCheckoutPostLambdaEnv.with("STRIPE_TEST_SECRET_KEY_ARN", props.stripeTestSecretKeyArn());
+        }
+        if (props.stripePriceIdFileConfirmationStatement() != null
+                && !props.stripePriceIdFileConfirmationStatement().isBlank()) {
+            billingActivityCheckoutPostLambdaEnv.with(
+                    "STRIPE_PRICE_ID_FILE_CONFIRMATION_STATEMENT", props.stripePriceIdFileConfirmationStatement());
+        }
+        if (props.stripeTestPriceIdFileConfirmationStatement() != null
+                && !props.stripeTestPriceIdFileConfirmationStatement().isBlank()) {
+            billingActivityCheckoutPostLambdaEnv.with(
+                    "STRIPE_TEST_PRICE_ID_FILE_CONFIRMATION_STATEMENT",
+                    props.stripeTestPriceIdFileConfirmationStatement());
+        }
+        if (props.baseUrl() != null && !props.baseUrl().isBlank()) {
+            billingActivityCheckoutPostLambdaEnv.with("DIY_SUBMIT_BASE_URL", props.baseUrl());
+        }
+        if (props.billingReturnUrlOrigins() != null
+                && !props.billingReturnUrlOrigins().isBlank()) {
+            billingActivityCheckoutPostLambdaEnv.with("BILLING_RETURN_URL_ORIGINS", props.billingReturnUrlOrigins());
+        }
+        var billingActivityCheckoutPostApiLambda = new ApiLambda(
+                this,
+                ApiLambdaProps.builder()
+                        .idPrefix(props.sharedNames().billingActivityCheckoutPostIngestLambdaFunctionName)
+                        .baseImageTag(props.baseImageTag())
+                        .ecrRepositoryName(props.sharedNames().ecrRepositoryName)
+                        .ecrRepositoryArn(props.sharedNames().ecrRepositoryArn)
+                        .ingestFunctionName(props.sharedNames().billingActivityCheckoutPostIngestLambdaFunctionName)
+                        .ingestHandler(props.sharedNames().billingActivityCheckoutPostIngestLambdaHandler)
+                        .ingestLambdaArn(props.sharedNames().billingActivityCheckoutPostIngestLambdaArn)
+                        .ingestProvisionedConcurrencyAliasArn(props.sharedNames()
+                                .billingActivityCheckoutPostIngestProvisionedConcurrencyLambdaAliasArn)
+                        .ingestProvisionedConcurrency(0)
+                        .provisionedConcurrencyAliasName(props.sharedNames().provisionedConcurrencyAliasName)
+                        .httpMethod(props.sharedNames().billingActivityCheckoutPostLambdaHttpMethod)
+                        .urlPath(props.sharedNames().billingActivityCheckoutPostLambdaUrlPath)
+                        .jwtAuthorizer(false)
+                        .customAuthorizer(props.sharedNames().billingActivityCheckoutPostLambdaCustomAuthorizer)
+                        .billingJwtAuthorizer(true)
+                        .environment(billingActivityCheckoutPostLambdaEnv)
+                        .build());
+        this.billingActivityCheckoutPostLambdaProps = billingActivityCheckoutPostApiLambda.apiProps;
+        this.billingActivityCheckoutPostLambda = billingActivityCheckoutPostApiLambda.ingestLambda;
+        this.billingActivityCheckoutPostLambdaLogGroup = billingActivityCheckoutPostApiLambda.logGroup;
+        this.lambdaFunctionProps.add(this.billingActivityCheckoutPostLambdaProps);
+        // Query on bundles: the same synthetic-bundle-qualifier auto-detection as billingCheckoutPost.
+        bundlesTable.grant(this.billingActivityCheckoutPostLambda, "dynamodb:Query");
+        // GetItem on activity charges: hasPaidCharge() refuses a second charge for an already-paid
+        // activity/subject pair. No PutItem here - only the webhook records a paid charge.
+        activityChargesTable.grant(this.billingActivityCheckoutPostLambda, "dynamodb:GetItem");
+        SubHashSaltHelper.grantSaltAccess(this.billingActivityCheckoutPostLambda, region, account, props.envName());
+        this.billingActivityCheckoutPostLambda.addToRolePolicy(PolicyStatement.Builder.create()
+                .effect(Effect.ALLOW)
+                .actions(List.of("events:PutEvents"))
+                .resources(List.of(activityBusArn))
+                .build());
+        if (props.stripeSecretKeyArn() != null && !props.stripeSecretKeyArn().isBlank()) {
+            var stripeSecretArnWithWildcard = props.stripeSecretKeyArn().endsWith("*")
+                    ? props.stripeSecretKeyArn()
+                    : props.stripeSecretKeyArn() + "-*";
+            this.billingActivityCheckoutPostLambda.addToRolePolicy(PolicyStatement.Builder.create()
+                    .effect(Effect.ALLOW)
+                    .actions(List.of("secretsmanager:GetSecretValue"))
+                    .resources(List.of(stripeSecretArnWithWildcard))
+                    .build());
+        }
+        if (props.stripeTestSecretKeyArn() != null
+                && !props.stripeTestSecretKeyArn().isBlank()) {
+            var stripeTestSecretArnWithWildcard = props.stripeTestSecretKeyArn().endsWith("*")
+                    ? props.stripeTestSecretKeyArn()
+                    : props.stripeTestSecretKeyArn() + "-*";
+            this.billingActivityCheckoutPostLambda.addToRolePolicy(PolicyStatement.Builder.create()
+                    .effect(Effect.ALLOW)
+                    .actions(List.of("secretsmanager:GetSecretValue"))
+                    .resources(List.of(stripeTestSecretArnWithWildcard))
+                    .build());
+        }
+        infof(
+                "Created Billing Activity Checkout POST Lambda %s",
+                this.billingActivityCheckoutPostLambda.getNode().getId());
 
         // ============================================================================
         // Billing Checkout Session GET Lambda (JWT auth)
@@ -515,7 +630,7 @@ public class BillingStack extends Stack {
                 this.billingRecoverPostLambda.getNode().getId());
 
         // Billing Webhook POST Lambda has been moved to the env-level BillingWebhookStack
-        // (always available, independent of app deployments). See PLAN_BILLING_WEBHOOK_TO_ENV.md.
+        // (always available, independent of app deployments).
 
         Lambda.stackHealthAlarm(
                 this,
@@ -523,11 +638,14 @@ public class BillingStack extends Stack {
                 "billing",
                 List.of(
                         billingCheckoutPostApiLambda,
+                        billingActivityCheckoutPostApiLambda,
                         billingCheckoutSessionGetApiLambda,
                         billingPortalGetApiLambda,
                         billingRecoverPostApiLambda));
 
         cfnOutput(this, "BillingCheckoutPostLambdaArn", this.billingCheckoutPostLambda.getFunctionArn());
+        cfnOutput(
+                this, "BillingActivityCheckoutPostLambdaArn", this.billingActivityCheckoutPostLambda.getFunctionArn());
         cfnOutput(this, "BillingCheckoutSessionGetLambdaArn", this.billingCheckoutSessionGetLambda.getFunctionArn());
         cfnOutput(this, "BillingPortalGetLambdaArn", this.billingPortalGetLambda.getFunctionArn());
         cfnOutput(this, "BillingRecoverPostLambdaArn", this.billingRecoverPostLambda.getFunctionArn());

@@ -150,6 +150,26 @@ class BusinessViewsTest {
                 "expected the cancellations view to filter out test-user and probe actors: " + sql);
     }
 
+    @Test
+    void costDailyViewKeepsOnlyTheLatestPartitionPerBillingPeriod() {
+        Template template = synthBusinessViews();
+
+        var sql = sqlForView(template, "v_cost_daily");
+        assertTrue(
+                sql.contains("max(dt)") && sql.contains("billing_period_start"),
+                "expected v_cost_daily to keep only the latest dt per billing_period_start: " + sql);
+    }
+
+    @Test
+    void costVsTargetMonthlyViewComparesOnlySubmitProdsAccount() {
+        Template template = synthBusinessViews();
+
+        var sql = sqlForView(template, "v_cost_vs_target_monthly");
+        assertTrue(
+                sql.contains("sub_account_id") && sql.contains("972912397388"),
+                "expected v_cost_vs_target_monthly to filter to submit-prod's account: " + sql);
+    }
+
     private static String sqlForView(Template template, String viewName) {
         var customResources = template.findResources("Custom::AthenaView");
         for (var resource : customResources.values()) {

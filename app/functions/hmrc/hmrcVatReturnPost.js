@@ -55,7 +55,7 @@ import { isClientAuthorisedForService } from "../../lib/hmrcAgentAuthorisation.j
 
 const logger = createLogger({ source: "app/functions/hmrc/hmrcVatReturnPost.js" });
 
-// The Agent Authorisation API's service identifier for VAT (PLAN_PRICE_UPDATE.md (d)).
+// The Agent Authorisation API's service identifier for VAT.
 const AGENT_AUTHORISATION_SERVICE = "MTD-VAT";
 
 const MAX_WAIT_MS = 25000;
@@ -130,8 +130,8 @@ export function extractAndValidateParameters(event, errorMessages) {
   const parsedBody = parseRequestBody(event);
   const {
     vatNumber,
-    // A practice acting for a client (PLAN_PRICE_UPDATE.md (d)): resolves the VRN from the
-    // client row instead of vatNumber above.
+    // A practice acting for a client resolves the VRN from the client row instead of
+    // vatNumber above.
     clientId,
     // Period dates for server-side resolution via obligations API
     periodStart,
@@ -445,8 +445,8 @@ export async function ingestHandler(event) {
 
   let errorMessages = [];
 
-  // A practice acting for a client (PLAN_PRICE_UPDATE.md (d)) names the client instead of a VRN;
-  // read early so it can be passed into bundle enforcement's own practice check.
+  // A practice acting for a client names the client instead of a VRN; read early so it can be
+  // passed into bundle enforcement's own practice check.
   const clientId = parseRequestBody(event)?.clientId || undefined;
 
   // Bundle enforcement
