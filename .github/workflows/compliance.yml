@@ -246,9 +246,17 @@ jobs:
         timeout-minutes: 6
         env:
           NPM_CONFIG_FETCH_RETRIES: "3"
-      - name: Run accessibility:lighthouse-${{ needs.names.outputs.environment-name }}
-        run: npm run accessibility:lighthouse-${{ needs.names.outputs.environment-name }}
+      - name: Run accessibility:lighthouse-multi-${{ needs.names.outputs.environment-name }}
+        run: npm run accessibility:lighthouse-multi-${{ needs.names.outputs.environment-name }}
         continue-on-error: true
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
+        with:
+          name: lighthouse-multi-results
+          path: |
+            web/public/tests/accessibility/lighthouse-multi-results.json
+            web/public/tests/accessibility/lighthouse/
+          retention-days: 7
+          if-no-files-found: ignore
 
   # Penetration checks (run in parallel)
   penetration-eslint:

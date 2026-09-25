@@ -286,6 +286,8 @@ fabric.properties
 # as workflow artifacts) but that BucketDeployment ships to the public site
 /web/public/tests/accessibility/axe-results.json
 /web/public/tests/accessibility/axe-wcag22-results.json
+/web/public/tests/accessibility/lighthouse-multi-results.json
+/web/public/tests/accessibility/lighthouse/
 
 # Project files
 /json
