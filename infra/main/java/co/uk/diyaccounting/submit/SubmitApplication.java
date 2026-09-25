@@ -447,6 +447,7 @@ public class SubmitApplication {
                                 appProps.hmrcAgentAuthorisationBaseUri != null
                                         ? appProps.hmrcAgentAuthorisationBaseUri
                                         : "")
+                        .booksAllowedOrigins(booksAllowedOrigins)
                         .build());
 
         // Create the BillingStack

@@ -40,7 +40,8 @@ class AccountStackTest {
                 .sharedNames(sharedNames)
                 .baseImageTag("latest")
                 .cognitoUserPoolArn("arn:aws:cognito-idp:eu-west-2:111111111111:userpool/eu-west-2_TestPool")
-                .hmrcAgentAuthorisationBaseUri("https://test-api.service.hmrc.gov.uk");
+                .hmrcAgentAuthorisationBaseUri("https://test-api.service.hmrc.gov.uk")
+                .booksAllowedOrigins("https://ci.diya-gl.co.uk");
         if (githubAppId != null) {
             builder.githubAppId(githubAppId).githubAppInstallationId(TEST_GITHUB_APP_INSTALLATION_ID);
         }
@@ -121,6 +122,41 @@ class AccountStackTest {
                 1,
                 saltSecretReadResources.size(),
                 "the operator snapshot GET Lambda's own role must be able to read the user-sub-hash-salt secret");
+    }
+
+    @Test
+    @SuppressWarnings("unchecked")
+    void sessionSignOutLambdaCanReadTheAppClientIdParametersAndDeleteTheSessionItem() {
+        AccountStack stack = synthAccountStack(null);
+        Template template = Template.fromStack(stack);
+
+        var signOutFunctions = template.findResources("AWS::Lambda::Function").values().stream()
+                .map(resource -> (Map<String, Object>) resource.get("Properties"))
+                .filter(properties ->
+                        String.valueOf(properties.get("FunctionName")).contains("session-sign-out-post"))
+                .toList();
+        assertEquals(1, signOutFunctions.size(), "expected exactly one session-sign-out-post Lambda");
+        var roleRef = (Map<String, Object>) signOutFunctions.get(0).get("Role");
+        var roleLogicalId = String.valueOf(((List<Object>) roleRef.get("Fn::GetAtt")).get(0));
+
+        var statementsForRole = template.findResources("AWS::IAM::Policy").values().stream()
+                .map(policy -> (Map<String, Object>) policy.get("Properties"))
+                .filter(properties -> ((List<Map<String, Object>>) properties.get("Roles"))
+                        .stream().anyMatch(role -> roleLogicalId.equals(String.valueOf(role.get("Ref")))))
+                .map(properties -> (Map<String, Object>) properties.get("PolicyDocument"))
+                .flatMap(document -> ((List<Map<String, Object>>) document.get("Statement")).stream())
+                .toList();
+
+        boolean readsAppClientIdParameters = statementsForRole.stream().anyMatch(statement -> {
+            Object action = statement.get("Action");
+            Object resource = statement.get("Resource");
+            return String.valueOf(action).contains("ssm:GetParameter") && String.valueOf(resource).contains("mcp-app-client-id");
+        });
+        assertEquals(true, readsAppClientIdParameters, "the sign-out Lambda must read the three app-client-id parameters");
+
+        boolean deletesSessionItem = statementsForRole.stream()
+                .anyMatch(statement -> String.valueOf(statement.get("Action")).contains("dynamodb:DeleteItem"));
+        assertEquals(true, deletesSessionItem, "the sign-out Lambda must be able to delete the session item");
     }
 
     // Every Secrets Manager read this stack grants on a GitHub token; the salt and email-hash

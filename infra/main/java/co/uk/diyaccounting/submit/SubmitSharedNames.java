@@ -1159,6 +1159,14 @@ public class SubmitSharedNames {
     public boolean sessionBeaconPostLambdaJwtAuthorizer;
     public boolean sessionBeaconPostLambdaCustomAuthorizer;
 
+    // Session Sign-Out POST Lambda (authenticated, all three Cognito clients)
+    public String sessionSignOutPostIngestLambdaHandler;
+    public String sessionSignOutPostIngestLambdaFunctionName;
+    public String sessionSignOutPostIngestLambdaArn;
+    public String sessionSignOutPostIngestProvisionedConcurrencyLambdaAliasArn;
+    public HttpMethod sessionSignOutPostLambdaHttpMethod;
+    public String sessionSignOutPostLambdaUrlPath;
+
     // Billing Lambda names
     public String billingCheckoutPostIngestLambdaHandler;
     public String billingCheckoutPostIngestLambdaFunctionName;
@@ -4457,6 +4465,29 @@ public class SubmitSharedNames {
                 "Session beacon",
                 "Records a new browser session for activity monitoring",
                 "sessionBeacon"));
+
+        // Session Sign-Out POST Lambda (behind ApiStack's allClientsJwtAuthorizer, set directly
+        // at the call site in AccountStack.java, the same way billingJwtAuthorizer and
+        // booksJwtAuthorizer are -- so no boolean flag here).
+        this.sessionSignOutPostLambdaHttpMethod = HttpMethod.POST;
+        this.sessionSignOutPostLambdaUrlPath = "/api/v1/session/sign-out";
+        var sessionSignOutPostLambdaHandlerName = "sessionSignOutPost.ingestHandler";
+        var sessionSignOutPostLambdaHandlerDashed =
+                ResourceNameUtils.convertCamelCaseToDashSeparated(sessionSignOutPostLambdaHandlerName);
+        this.sessionSignOutPostIngestLambdaFunctionName =
+                "%s-%s".formatted(this.appResourceNamePrefix, sessionSignOutPostLambdaHandlerDashed);
+        this.sessionSignOutPostIngestLambdaHandler =
+                "%s/account/%s".formatted(appLambdaHandlerPrefix, sessionSignOutPostLambdaHandlerName);
+        this.sessionSignOutPostIngestLambdaArn =
+                "%s-%s".formatted(appLambdaArnPrefix, sessionSignOutPostLambdaHandlerDashed);
+        this.sessionSignOutPostIngestProvisionedConcurrencyLambdaAliasArn =
+                "%s:%s".formatted(this.sessionSignOutPostIngestLambdaArn, this.provisionedConcurrencyAliasName);
+        publishedApiLambdas.add(new PublishedLambda(
+                this.sessionSignOutPostLambdaHttpMethod,
+                this.sessionSignOutPostLambdaUrlPath,
+                "Session sign-out",
+                "Ends the caller's sign-in session on every Cognito app client",
+                "sessionSignOut"));
 
         // Billing Checkout POST Lambda (billing JWT auth: main and books client audiences)
         this.billingCheckoutPostLambdaHttpMethod = HttpMethod.POST;

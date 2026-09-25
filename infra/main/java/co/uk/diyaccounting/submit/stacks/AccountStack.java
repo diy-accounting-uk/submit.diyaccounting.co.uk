@@ -124,6 +124,10 @@ public class AccountStack extends Stack {
     public Function sessionBeaconPostLambda;
     public ILogGroup sessionBeaconPostLambdaLogGroup;
 
+    public AbstractApiLambdaProps sessionSignOutPostLambdaProps;
+    public Function sessionSignOutPostLambda;
+    public ILogGroup sessionSignOutPostLambdaLogGroup;
+
     public List<AbstractApiLambdaProps> lambdaFunctionProps;
 
     @Value.Immutable
@@ -192,6 +196,14 @@ public class AccountStack extends Stack {
         @Value.Default
         default boolean feedbackEngagementEnabled() {
             return true;
+        }
+
+        // The sign-out route's own CORS allow-list (DiyaGlStack's DIYA_GL_ALLOWED_ORIGINS, see
+        // diyaGlCors.js): the books client calls it cross-origin from the DIYA-GL pages, so it
+        // needs the same allow-list those routes use.
+        @Value.Default
+        default String booksAllowedOrigins() {
+            return "";
         }
 
         static ImmutableAccountStackProps.Builder builder() {
@@ -1302,6 +1314,71 @@ public class AccountStack extends Stack {
                 "Created Session Beacon POST Lambda %s",
                 this.sessionBeaconPostLambda.getNode().getId());
 
+        // ============================================================================
+        // Session Sign-Out POST Lambda (all-clients JWT auth, see ApiStack)
+        // ============================================================================
+        var sessionSignOutPostLambdaEnv = new PopulatedMap<String, String>()
+                .with("ACTIVITY_BUS_NAME", props.sharedNames().activityBusName)
+                .with("ENVIRONMENT_NAME", props.envName())
+                .with("SECURITY_STATE_DYNAMODB_TABLE_NAME", securityStateTable.getTableName())
+                .with("DIYA_GL_ALLOWED_ORIGINS", props.booksAllowedOrigins());
+        var sessionSignOutPostApiLambda = new ApiLambda(
+                this,
+                ApiLambdaProps.builder()
+                        .idPrefix(props.sharedNames().sessionSignOutPostIngestLambdaFunctionName)
+                        .baseImageTag(props.baseImageTag())
+                        .ecrRepositoryName(props.sharedNames().ecrRepositoryName)
+                        .ecrRepositoryArn(props.sharedNames().ecrRepositoryArn)
+                        .ingestFunctionName(props.sharedNames().sessionSignOutPostIngestLambdaFunctionName)
+                        .ingestHandler(props.sharedNames().sessionSignOutPostIngestLambdaHandler)
+                        .ingestLambdaArn(props.sharedNames().sessionSignOutPostIngestLambdaArn)
+                        .ingestProvisionedConcurrencyAliasArn(
+                                props.sharedNames().sessionSignOutPostIngestProvisionedConcurrencyLambdaAliasArn)
+                        .ingestProvisionedConcurrency(0)
+                        .provisionedConcurrencyAliasName(props.sharedNames().provisionedConcurrencyAliasName)
+                        .httpMethod(props.sharedNames().sessionSignOutPostLambdaHttpMethod)
+                        .urlPath(props.sharedNames().sessionSignOutPostLambdaUrlPath)
+                        .jwtAuthorizer(false)
+                        .customAuthorizer(false)
+                        .allClientsJwtAuthorizer(true)
+                        .environment(sessionSignOutPostLambdaEnv)
+                        .build());
+        healthCheckedFunctions.add(sessionSignOutPostApiLambda);
+        this.sessionSignOutPostLambdaProps = sessionSignOutPostApiLambda.apiProps;
+        this.sessionSignOutPostLambda = sessionSignOutPostApiLambda.ingestLambda;
+        this.sessionSignOutPostLambdaLogGroup = sessionSignOutPostApiLambda.logGroup;
+        this.lambdaFunctionProps.add(this.sessionSignOutPostLambdaProps);
+
+        // Read the three app-client-id parameters IdentityStack writes, to map the caller's
+        // verified client id to "submit", "books" or "mcp" (app/lib/appClientResolver.js).
+        this.sessionSignOutPostLambda.addToRolePolicy(PolicyStatement.Builder.create()
+                .sid("ReadAppClientIdParameters")
+                .effect(Effect.ALLOW)
+                .actions(List.of("ssm:GetParameter"))
+                .resources(List.of(
+                        "arn:aws:ssm:%s:%s:parameter/submit/%s/submit-app-client-id"
+                                .formatted(region, account, props.envName()),
+                        "arn:aws:ssm:%s:%s:parameter/submit/%s/spreadsheets-diya-gl-app-client-id"
+                                .formatted(region, account, props.envName()),
+                        "arn:aws:ssm:%s:%s:parameter/submit/%s/mcp-app-client-id"
+                                .formatted(region, account, props.envName())))
+                .build());
+
+        // Read the session item to carry its sessionId onto the logout event, then delete it.
+        securityStateTable.grant(this.sessionSignOutPostLambda, "dynamodb:GetItem", "dynamodb:DeleteItem");
+
+        SubHashSaltHelper.grantSaltAccess(this.sessionSignOutPostLambda, region, account, props.envName());
+
+        this.sessionSignOutPostLambda.addToRolePolicy(PolicyStatement.Builder.create()
+                .effect(Effect.ALLOW)
+                .actions(List.of("events:PutEvents"))
+                .resources(List.of(activityBusArn))
+                .build());
+
+        infof(
+                "Created Session Sign-Out POST Lambda %s",
+                this.sessionSignOutPostLambda.getNode().getId());
+
         Lambda.stackHealthAlarm(this, props.resourceNamePrefix(), "account", healthCheckedFunctions);
 
         cfnOutput(this, "GetBundlesLambdaArn", this.bundleGetLambda.getFunctionArn());
@@ -1314,6 +1391,7 @@ public class AccountStack extends Stack {
         cfnOutput(this, "PassMyPassesGetLambdaArn", this.passMyPassesGetLambda.getFunctionArn());
         cfnOutput(this, "BundleCapacityReconcileLambdaArn", this.bundleCapacityReconcileLambda.getFunctionArn());
         cfnOutput(this, "SessionBeaconPostLambdaArn", this.sessionBeaconPostLambda.getFunctionArn());
+        cfnOutput(this, "SessionSignOutPostLambdaArn", this.sessionSignOutPostLambda.getFunctionArn());
 
         infof(
                 "AccountStack %s created successfully for %s",

@@ -119,15 +119,16 @@ class SubmitApplicationCdkResourceTest {
                 "PRACTICE_CLIENTS_DYNAMODB_TABLE_NAME");
 
         infof("Created stack:", submitApplication.accountStack.getStackName());
-        // 21 Lambdas: bundleGet(1), bundlePost(2), bundleDelete(2), operatorSnapshotGet(1),
+        // 22 Lambdas: bundleGet(1), bundlePost(2), bundleDelete(2), operatorSnapshotGet(1),
         // practiceClientsListGet(1), practiceClientsPost(1), practiceClientGet(1),
         // practiceClientDelete(1), practiceClientAuthorisationInvitePost(1),
         // practiceClientAuthorisationGet(1), practiceClientAuthorisationInviteDelete(1),
         // interestPost(1), passGet(1), passPost(1), passAdminPost(1),
-        // passGeneratePost(1), passMyPassesGet(1), bundleCapacityReconcile(1), sessionBeaconPost(1)
+        // passGeneratePost(1), passMyPassesGet(1), bundleCapacityReconcile(1), sessionBeaconPost(1),
+        // sessionSignOutPost(1)
         Template accountStackTemplate = Template.fromStack(submitApplication.accountStack);
-        accountStackTemplate.resourceCountIs("AWS::Lambda::Function", 21);
-        assertStackHealthAlarm(accountStackTemplate, 19, 2, routedPrefixes);
+        accountStackTemplate.resourceCountIs("AWS::Lambda::Function", 22);
+        assertStackHealthAlarm(accountStackTemplate, 20, 2, routedPrefixes);
 
         // Regression guard: bundleGet performs lazy token refresh via dynamodb:UpdateItem on the
         // bundles table (see app/functions/account/bundleGet.js resetTokens). Its grant on
@@ -336,7 +337,9 @@ class SubmitApplicationCdkResourceTest {
         // each sit on their own unshared path, adding six primary routes plus six auto-HEAD
         // routes, for 156 + 12 = 168. POST /api/v1/billing/activity-checkout adds its own route
         // plus its own auto-HEAD route, since no other method shares that path, for 168 + 2 = 170.
-        apiStackTemplate.resourceCountIs("AWS::ApiGatewayV2::Route", 170);
+        // POST /api/v1/session/sign-out adds its own route plus its own auto-HEAD route, since
+        // no other method shares that path, for 170 + 2 = 172.
+        apiStackTemplate.resourceCountIs("AWS::ApiGatewayV2::Route", 172);
 
         // Dashboard moved to environment-level ObservabilityStack
         infof("Created stack:", submitApplication.opsStack.getStackName());
