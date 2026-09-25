@@ -239,6 +239,7 @@ public class DiyaGlStack extends Stack {
         bundlesTable.grant(this.diyaGlVersionGetLambda, "dynamodb:Query");
         practiceClientsTable.grant(this.diyaGlVersionGetLambda, "dynamodb:GetItem");
         SubHashSaltHelper.grantSaltAccess(this.diyaGlVersionGetLambda, region, account, props.envName());
+        grantAppClientIdParameterAccess(this.diyaGlVersionGetLambda, region, account, props.envName());
         infof(
                 "Created DIYA-GL Version GET Lambda %s",
                 this.diyaGlVersionGetLambda.getNode().getId());
@@ -298,6 +299,7 @@ public class DiyaGlStack extends Stack {
         bundlesTable.grant(this.diyaGlPutLambda, "dynamodb:Query");
         practiceClientsTable.grant(this.diyaGlPutLambda, "dynamodb:GetItem");
         SubHashSaltHelper.grantSaltAccess(this.diyaGlPutLambda, region, account, props.envName());
+        grantAppClientIdParameterAccess(this.diyaGlPutLambda, region, account, props.envName());
         infof("Created DIYA-GL PUT Lambda %s", this.diyaGlPutLambda.getNode().getId());
 
         // ============================================================================
@@ -343,6 +345,7 @@ public class DiyaGlStack extends Stack {
                 .build());
         practiceClientsTable.grant(this.diyaGlDeleteLambda, "dynamodb:GetItem");
         SubHashSaltHelper.grantSaltAccess(this.diyaGlDeleteLambda, region, account, props.envName());
+        grantAppClientIdParameterAccess(this.diyaGlDeleteLambda, region, account, props.envName());
         infof(
                 "Created DIYA-GL DELETE Lambda %s",
                 this.diyaGlDeleteLambda.getNode().getId());
@@ -387,6 +390,7 @@ public class DiyaGlStack extends Stack {
                 .build());
         practiceClientsTable.grant(this.practiceClientBookMovePostLambda, "dynamodb:GetItem");
         SubHashSaltHelper.grantSaltAccess(this.practiceClientBookMovePostLambda, region, account, props.envName());
+        grantAppClientIdParameterAccess(this.practiceClientBookMovePostLambda, region, account, props.envName());
         infof(
                 "Created Practice Client Book Move Lambda %s",
                 this.practiceClientBookMovePostLambda.getNode().getId());
@@ -469,6 +473,26 @@ public class DiyaGlStack extends Stack {
         infof(
                 "DiyaGlStack %s created successfully for %s",
                 this.getNode().getId(), props.sharedNames().dashedDeploymentDomainName);
+    }
+
+    /**
+     * Grants the Lambda role permission to read the three app-client-id parameters written by
+     * IdentityStack, to map the caller's verified client id to "submit", "spreadsheets-diya-gl" or
+     * "mcp" (app/lib/appClientResolver.js).
+     */
+    private static void grantAppClientIdParameterAccess(
+            Function lambda, String region, String account, String envName) {
+        lambda.addToRolePolicy(PolicyStatement.Builder.create()
+                .sid("ReadAppClientIdParameters")
+                .effect(Effect.ALLOW)
+                .actions(List.of("ssm:GetParameter"))
+                .resources(List.of(
+                        "arn:aws:ssm:%s:%s:parameter/submit/%s/submit-app-client-id"
+                                .formatted(region, account, envName),
+                        "arn:aws:ssm:%s:%s:parameter/submit/%s/spreadsheets-diya-gl-app-client-id"
+                                .formatted(region, account, envName),
+                        "arn:aws:ssm:%s:%s:parameter/submit/%s/mcp-app-client-id".formatted(region, account, envName)))
+                .build());
     }
 
     /**

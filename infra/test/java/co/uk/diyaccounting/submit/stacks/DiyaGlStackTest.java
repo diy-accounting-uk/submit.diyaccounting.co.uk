@@ -357,6 +357,51 @@ class DiyaGlStackTest {
         template.resourceCountIs("AWS::Events::Rule", 0);
     }
 
+    @Test
+    void eachOfTheFourAppClientIdReaderFunctionsGetsAccessToExactlyTheThreeAppClientIdParameters() {
+        DiyaGlStack stack = synthDiyaGlStack();
+        Template template = Template.fromStack(stack);
+
+        for (String functionName : List.of(
+                stack.diyaGlPutLambdaProps.ingestFunctionName(),
+                stack.diyaGlDeleteLambdaProps.ingestFunctionName(),
+                stack.diyaGlVersionGetLambdaProps.ingestFunctionName(),
+                stack.practiceClientBookMovePostLambdaProps.ingestFunctionName())) {
+            var statements = iamStatementsForFunction(template, functionName);
+            var appClientIdStatements = statements.stream()
+                    .filter(statement -> actionsOf(statement).contains("ssm:GetParameter"))
+                    .filter(statement -> {
+                        Object resource = statement.get("Resource");
+                        return resource instanceof List<?> resources
+                                && resources.stream()
+                                        .anyMatch(r -> String.valueOf(r).contains("app-client-id"));
+                    })
+                    .toList();
+
+            assertEquals(
+                    1,
+                    appClientIdStatements.size(),
+                    functionName + " should have exactly one statement for app-client-id parameters");
+
+            var resources = (List<?>) appClientIdStatements.get(0).get("Resource");
+            assertEquals(
+                    3,
+                    resources.size(),
+                    functionName + " should have access to exactly three app-client-id parameters");
+
+            var resourceStrings = resources.stream().map(String::valueOf).toList();
+            assertTrue(
+                    resourceStrings.stream().anyMatch(r -> r.contains("submit-app-client-id")),
+                    functionName + " should have access to submit-app-client-id");
+            assertTrue(
+                    resourceStrings.stream().anyMatch(r -> r.contains("spreadsheets-diya-gl-app-client-id")),
+                    functionName + " should have access to spreadsheets-diya-gl-app-client-id");
+            assertTrue(
+                    resourceStrings.stream().anyMatch(r -> r.contains("mcp-app-client-id")),
+                    functionName + " should have access to mcp-app-client-id");
+        }
+    }
+
     @SuppressWarnings("unchecked")
     private static List<String> actionsOf(Map<String, Object> statement) {
         Object action = statement.get("Action");
