@@ -488,9 +488,14 @@ public class OpsStack extends Stack {
         infof("Created default bus rules for CloudFormation and CloudWatch alarm events");
 
         // ============================================================================
-        // Synthetic Canaries (if baseUrl provided)
+        // Synthetic Canaries (prod only)
         // ============================================================================
-        if (props.baseUrl() != null && !props.baseUrl().isBlank()) {
+        // ci already gets end-to-end coverage from the deploy pipeline's own behaviour-test run
+        // against the fresh set, and a canary outage is caught independently by the env-level
+        // GithubProbeAlarm (see ObservabilityStack), which exercises the same site on its own
+        // schedule. Continuous per-deployment canaries earn their cost only for the one
+        // deployment that runs for the whole month.
+        if (props.baseUrl() != null && !props.baseUrl().isBlank() && "prod".equals(props.envName())) {
             createSyntheticCanaries(props);
         }
 

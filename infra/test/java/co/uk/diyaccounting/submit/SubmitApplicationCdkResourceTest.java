@@ -352,12 +352,10 @@ class SubmitApplicationCdkResourceTest {
         // health alarm.
         opsStackTemplateForRouting.resourceCountIs("AWS::CloudWatch::CompositeAlarm", 0);
 
-        // Both canaries run on the hour, half an hour off probe-test.yml's `57 */4 * * *`, so
-        // the two never check the site in the same window and the offset cannot drift.
-        opsStackTemplateForRouting.resourceCountIs("AWS::Synthetics::Canary", 2);
-        opsStackTemplateForRouting.hasResourceProperties(
-                "AWS::Synthetics::Canary",
-                Match.objectLike(Map.of("Schedule", Match.objectLike(Map.of("Expression", "cron(27 * * * ? *)")))));
+        // The Synthetics canaries are prod-only (OpsStackTest covers both sides of that gate);
+        // this environment's own deploy pipeline runs behaviour tests against every fresh set
+        // instead.
+        opsStackTemplateForRouting.resourceCountIs("AWS::Synthetics::Canary", 0);
 
         infof("Created stack:", submitApplication.edgeStack.getStackName());
         Template edgeStackTemplate = Template.fromStack(submitApplication.edgeStack);

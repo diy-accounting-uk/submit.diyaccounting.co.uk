@@ -124,6 +124,22 @@ class OpsStackTest {
     }
 
     @Test
+    void synthesizesNoCanaryInCiEvenWithABaseUrl() {
+        OpsStack opsStack = synthOpsStack("ci", null, "https://ci-branch.submit.diyaccounting.co.uk/");
+        Template template = Template.fromStack(opsStack);
+
+        template.resourceCountIs("AWS::Synthetics::Canary", 0);
+    }
+
+    @Test
+    void synthesizesBothCanariesInProd() {
+        OpsStack opsStack = synthOpsStack("prod", null, "https://submit.diyaccounting.co.uk/");
+        Template template = Template.fromStack(opsStack);
+
+        template.resourceCountIs("AWS::Synthetics::Canary", 2);
+    }
+
+    @Test
     @SuppressWarnings("unchecked")
     void alarmToGithubIssueLambdaCanReadOnlyItsOwnEnvironmentsAlarmSilenceParameters() {
         OpsStack opsStack = synthOpsStack("prod", TEST_GITHUB_APP_ID, null);
