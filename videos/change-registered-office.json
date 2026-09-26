@@ -173,6 +173,13 @@
           "headline": "File with the sandbox",
           "keyWord": "sandbox"
         },
+        {
+          "action": "companiesHouseAuthorise",
+          "caption": "Sign in to Companies House and say yes once.",
+          "headline": "Grant Companies House access",
+          "keyWord": "Grant",
+          "timeoutMs": 60000
+        },
         { "action": "hold", "ms": 500 }
       ]
     },

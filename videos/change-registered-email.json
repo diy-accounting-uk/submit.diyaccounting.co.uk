@@ -107,6 +107,13 @@
           "headline": "Check eligibility first",
           "keyWord": "eligibility"
         },
+        {
+          "action": "companiesHouseAuthorise",
+          "caption": "Sign in to Companies House and say yes once.",
+          "headline": "Grant Companies House access",
+          "keyWord": "Grant",
+          "timeoutMs": 60000
+        },
         { "action": "await", "until": "#formView", "label": "Checking eligibility" },
         { "action": "hold", "ms": 500 }
       ]

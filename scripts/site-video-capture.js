@@ -190,6 +190,8 @@ function describeStep(step, waitMs, values, now) {
       return `takes out the ${step.bundle} bundle${waitSuffix}`;
     case "hmrcAuthorise":
       return `signs in at HMRC and grants authority${waitSuffix}`;
+    case "companiesHouseAuthorise":
+      return `signs in at Companies House and grants authority${waitSuffix}`;
     case "submitReturn":
       return `submits a VAT return${waitSuffix}`;
     default:
@@ -197,13 +199,30 @@ function describeStep(step, waitMs, values, now) {
   }
 }
 
-const WAIT_CAPABLE_ACTIONS = new Set(["goto", "click", "await", "login", "consent", "ensureBundle", "hmrcAuthorise"]);
+const WAIT_CAPABLE_ACTIONS = new Set([
+  "goto",
+  "click",
+  "await",
+  "login",
+  "consent",
+  "ensureBundle",
+  "hmrcAuthorise",
+  "companiesHouseAuthorise",
+]);
 
 // Journey actions end wherever the identity provider or HMRC sent them, which can be the URL they
 // started on. Every other action is judged by whether the URL moved. Either way the overlay was
 // reinstalled from scratch by the navigation, so the chapter label, the suppressed elements and
 // the caption all have to be put back.
-const ALWAYS_NAVIGATING_ACTIONS = new Set(["goto", "login", "consent", "ensureBundle", "hmrcAuthorise", "submitReturn"]);
+const ALWAYS_NAVIGATING_ACTIONS = new Set([
+  "goto",
+  "login",
+  "consent",
+  "ensureBundle",
+  "hmrcAuthorise",
+  "companiesHouseAuthorise",
+  "submitReturn",
+]);
 
 // Actions whose handler resolves a real target and moves the pointer to it (actions.js's
 // pointAndReturnRect) — the only ones that can hand a headline its target's actual box through

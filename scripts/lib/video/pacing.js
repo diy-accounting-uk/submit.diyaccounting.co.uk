@@ -18,7 +18,8 @@ const GROUP_PAUSE_KEY = {
 // runs (group 1, applied directly with perCharMs, not through this table) and then settles with
 // group 2 like any other completed action. "await" measures a real wait and then settles with
 // the group 2 residual, and so do the journey actions (login, consent, ensureBundle,
-// hmrcAuthorise), which spend most of their time waiting on a backend or an identity provider.
+// hmrcAuthorise, companiesHouseAuthorise), which spend most of their time waiting on a backend
+// or an identity provider.
 // Actions with no group of their own (caption, hold, still) return null: their timing is either
 // explicit (hold's ms) or carried by the caption/still write itself.
 const STEP_GROUP = {
@@ -37,6 +38,7 @@ const STEP_GROUP = {
   consent: 2,
   ensureBundle: 2,
   hmrcAuthorise: 2,
+  companiesHouseAuthorise: 2,
   submitReturn: 2,
   caption: null,
   hold: null,
