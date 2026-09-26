@@ -106,7 +106,7 @@ A fact one row's check turned up usually serves another row. Add it to every row
 sentence, and name the other row:
 
 - rows that share a file (`skip-deploy-check`, `IdentityStack.java`'s host lists,
-  `PLAN_COMPANIES_HOUSE_CONFIRMATION_STATEMENT.md`) say so in both places, so the wave puts them in one agent or lands the
+  `PLAN_COMPANIES_HOUSE.md`) say so in both places, so the wave puts them in one agent or lands the
   second on the first;
 - rows that touch the same page or module run in sequence in one agent, or the later brief carries the earlier row's changes, so the dependencies land in one commit or the second agent sees the first agent's work.
 - rows over the same data name the same facts once each (the Athena database and workgroup, the

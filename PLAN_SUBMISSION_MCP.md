@@ -94,7 +94,7 @@ it to Companies House on 2026-09-07 as the source of the test filings.
 5. **HMRC and Companies House credentials never enter the MCP session as text.** HMRC's OAuth
    grant stays a browser step the tool returns a link for, and the token lands in the same
    per-user store the site uses. The company authentication code for the accounts filing is
-   passed on the one call that needs it and is not stored, as `PLAN_COMPANIES_HOUSE_ACCOUNTS_FILING.md`
+   passed on the one call that needs it and is not stored, as `PLAN_COMPANIES_HOUSE.md`
    already requires.
 6. **The figures are derived, shown, and confirmed before anything is filed.** A submit tool
    takes the figures the derive tool returned, not a book, so the model and the user see and
@@ -274,5 +274,5 @@ the operator wants the alternative.
   needs are that plan's backlog rows, not this plan's.
 - `PLAN_ONE_STOP_DASHBOARD.md` shows the company's own P&L and balance sheet by running the
   same derivation over the company's own book.
-- `PLAN_COMPANIES_HOUSE_ACCOUNTS_FILING.md`, `../developers/submit/archive/PLAN_DIYA_GL_STORAGE.md`,
+- `PLAN_COMPANIES_HOUSE.md`, `../developers/submit/archive/PLAN_DIYA_GL_STORAGE.md`,
   `_developers/CSV_VAT_RETURN_CONTRACT.md`.
