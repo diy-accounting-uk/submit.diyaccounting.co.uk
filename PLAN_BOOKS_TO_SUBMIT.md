@@ -261,8 +261,11 @@ confirm brand verification. They replace LP-24a's steps 1 to 4.
    and the apex will not get Drive; tests stub Google there.
 5. **Bundle size.** The engine bundle loaded on three activity pages. Load it on first use of the
    card, not on page load.
-6. **Google Sheets conversions.** A workbook a customer opened in Google Sheets may be a native
-   Sheet. Export it as xlsx through Drive, or refuse with a message? Operator to choose.
+6. **Google Sheets conversions.** Decided by the operator, 2026-09-26: this plan stores and
+   retrieves DIY Accounting authored files only (a diya-gl zip, a spreadsheets `.xlsx` or package
+   zip, a books zip). A file Drive holds as a native Google Sheet is refused with a message asking
+   for the DIY Accounting file, because a converted Sheet does not reliably convert back to the
+   workbook the reader expects. Native Sheets support is its own plan, `PLAN_GOOGLE_SHEETS.md`.
 7. **Period mismatch.** A VAT book whose periods straddle HMRC's obligation dates
    (`PLAN_SUBMISSION_MCP.md`, dependencies table) fills nothing. The message must say which
    periods the book covers.
