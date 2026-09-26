@@ -156,12 +156,14 @@ The schema gains a `dropFile` step (path, target) that the recorder plays as a r
 visible file card, so the viewer sees the drop. The Drive button is shown, and not used, because
 the capture has no Google account.
 
-## Decisions to make
+## Decisions
+
+The operator accepted every recommendation below on 2026-09-26; each "Recommend" line is the decision.
 
 1. **Where the parse and the derivation run.**
    - (a) In the browser: a Submit esbuild bundle of the diya-gl engine plus the three derivations.
    - (b) On the server: a new `POST /api/v1/books/derive` Lambda taking the file.
-   - Recommend (a). The book stays in the browser, the diya-gl page already runs the same read
+   - Decided: (a). The book stays in the browser, the diya-gl page already runs the same read
      in the browser, and there is no new Lambda, upload limit or data-retention question.
 2. **Where the three derivations live.**
    - (a) Stay in `mcp/lib/`; Submit bundles them for the browser, and journey B hands over the
@@ -169,7 +171,7 @@ the capture has no Google account.
    - (b) Move into the diya-gl package as exported functions (`deriveVatReturn`,
      `deriveItsaQuarterlyUpdate`, `deriveItsaAnnualSubmission`); the MCP, the Submit bundle and
      the diya-gl page all import them.
-   - Recommend (b). One mapping for three callers; the diya-gl page can show the figures before
+   - Decided: (b). One mapping for three callers; the diya-gl page can show the figures before
      the jump. The cost is a package release per mapping fix.
 3. **How journey B hands over.**
    - (a) URL fragment, moved to Submit's `sessionStorage` on arrival.
@@ -178,7 +180,7 @@ the capture has no Google account.
      alive through sign-in and a handshake on both sides.
    - (d) A short-lived server object behind a one-time id: survives everything, but puts figures
      on the server before the customer has chosen to file.
-   - Recommend (a). Figures are a few hundred bytes, the fragment never reaches a server or a log,
+   - Decided: (a). Figures are a few hundred bytes, the fragment never reaches a server or a log,
      and it survives the sign-in redirect once stored.
 4. **Which Google OAuth client the browser uses.**
    - (a) The Cognito sign-in client (`oauth.toml:16-24`), with JavaScript origins added; this is
@@ -186,7 +188,7 @@ the capture has no Google account.
    - (b) A new web client in the same project, JavaScript origins only, never given a secret,
      recorded in `oauth.toml` as `purpose = "drive_browser"`.
    - (c) A new project with its own consent screen, e.g. branded DIYA-GL.
-   - Recommend (b). The sign-in client's configuration stays untouched, and staying in the same
+   - Decided: (b). The sign-in client's configuration stays untouched, and staying in the same
      project keeps one consent screen and, if Google ties `drive.file` grants to the project as
      expected, lets Submit's Picker and the diya-gl page see each other's files. LP-24a changes
      to name this client.
@@ -195,19 +197,19 @@ the capture has no Google account.
      customer picked.
    - (b) `drive.readonly` or `drive`. Restricted; any server storage or transmission of the data
      brings a third-party security assessment.
-   - Recommend (a). It covers every journey here.
+   - Decided: (a). It covers every journey here.
 6. **Privacy line.**
    - (a) The book never leaves the browser; only the figures filed with HMRC reach Submit.
    - (b) Allow a server-side parse for large or odd files.
-   - Recommend (a), stated on the privacy page and in the drop-zone copy.
+   - Decided: (a), stated on the privacy page and in the drop-zone copy.
 7. **Which Submit pages get the drop zone first.**
    - (a) VAT return, ITSA quarterly update, ITSA annual submission.
    - (b) Also UK property periods and the micro-entity accounts filing.
-   - Recommend (a) now; (b) as follow-on rows once the shared widget exists.
+   - Decided: (a) now; (b) as follow-on rows once the shared widget exists.
 8. **The existing JSON import on the annual submission page.**
    - (a) Keep it as a fourth accepted kind in the new card.
    - (b) Remove it once the card reads books directly.
-   - Recommend (a): the MCP writes that JSON and customers using the MCP still need it.
+   - Decided: (a): the MCP writes that JSON and customers using the MCP still need it.
 
 ## Tasks
 
