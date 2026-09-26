@@ -67,6 +67,7 @@ import {
   pollConfirmationStatement,
 } from "./lib/services/companies-house-confirmation-service.js";
 import { submitPscVerificationStatement, pollPscVerificationStatement } from "./lib/services/companies-house-psc-verification-service.js";
+import { describeGovTalkError, describeGovTalkErrors } from "./lib/services/companies-house-error-messages.js";
 
 // Debug widgets initial setup
 // Visibility is controlled by developer-mode.js toggle, but we set up hrefs here
@@ -446,6 +447,10 @@ if (typeof window !== "undefined") {
   // Companies House PSC verification statement service
   window.submitPscVerificationStatement = submitPscVerificationStatement;
   window.pollPscVerificationStatement = pollPscVerificationStatement;
+
+  // Companies House GovTalkErrors plain-word map
+  window.describeGovTalkError = describeGovTalkError;
+  window.describeGovTalkErrors = describeGovTalkErrors;
 
   // RUM functions
   window.hasRumConsent = hasRumConsent;

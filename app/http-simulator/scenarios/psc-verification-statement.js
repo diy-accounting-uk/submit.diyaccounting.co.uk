@@ -36,6 +36,32 @@ function schemaFailureError(text, location) {
   };
 }
 
+// Observed against the real test service (CS-A3, 2026-09-26): a FormSubmission whose root element
+// carries no xsi:schemaLocation is answered with this error, and a CompanyAuthenticationCode over
+// 8 characters (baseTypes-v3-6.xsd's own maxLength facet) with this one.
+const INVALID_SCHEMA_URI_ERROR = {
+  raisedBy: "PSCVerificationStatement",
+  number: 505,
+  type: "fatal",
+  text: "Invalid schema URI supplied",
+};
+
+const AUTH_CODE_TOO_LONG_ERROR = {
+  raisedBy: "CH_XML_Gateway",
+  number: 100,
+  type: "fatal",
+  text: "XML failed schema validation: Invalid XML: Datatype error: Type:InvalidDatatypeValueException, Message:Value exceeds maximum length facet of '8'.",
+};
+
+// The test presenter's account was not set up correctly (B34.6c): every GetSubmissionStatus poll
+// answers this instead of a Status block, whatever the submission's real outcome would have been.
+const PRESENTER_ID_MISSING_ERROR = {
+  raisedBy: "Gateway",
+  number: 9999,
+  type: "fatal",
+  text: "No presenter ID supplied",
+};
+
 let submissions = new Map();
 let usedSubmissionNumbers = new Set();
 
@@ -63,6 +89,12 @@ export function submitPscVerificationStatement({ senderIdHash, authValueHash, su
   if (scenario === "SCHEMA_FAILURE") {
     return { errors: [schemaFailureError("Invalid Request - Request XML contains missing fields or invalid data")] };
   }
+  if (scenario === "INVALID_SCHEMA_URI") {
+    return { errors: [INVALID_SCHEMA_URI_ERROR] };
+  }
+  if (scenario === "AUTH_CODE_TOO_LONG") {
+    return { errors: [AUTH_CODE_TOO_LONG_ERROR] };
+  }
   if (!submissionNumber || submissionNumber.length !== 6) {
     return {
       errors: [schemaFailureError("Invalid Request - Request XML contains missing fields or invalid data", "SubmissionNumber")],
@@ -86,6 +118,9 @@ export function submitPscVerificationStatement({ senderIdHash, authValueHash, su
 export function pollPscVerificationStatement({ senderIdHash, authValueHash, submissionNumber, scenario }) {
   if (!isAuthenticated({ senderIdHash, authValueHash }) || scenario === "AUTH_FAILURE") {
     return { errors: [AUTHORISATION_FAILURE_ERROR] };
+  }
+  if (scenario === "PRESENTER_ID_MISSING") {
+    return { errors: [PRESENTER_ID_MISSING_ERROR] };
   }
 
   const record = submissions.get(submissionNumber);

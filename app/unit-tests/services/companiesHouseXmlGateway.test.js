@@ -221,6 +221,19 @@ describe("services/companiesHouseXmlGateway", () => {
       expect(firstElementText(document, "Data")).toBe("ZGF0YQ==");
       expect(firstElementText(document, "Category")).toBe("ACCOUNTS");
     });
+
+    test("carries FormSubmission's own xsi:schemaLocation, matching the published examples", () => {
+      // fixtures/companies-house-xmlgw/ConfirmationStatementSICAndShareholderChange.xml (a
+      // published Companies House example using this same FormSubmission-v2-11.xsd) carries this
+      // exact attribute on its root FormSubmission element. Without it the gateway answers error
+      // 505 "Invalid schema URI supplied" on every form buildFormSubmission submits.
+      const xml = buildFormSubmission(baseInput);
+      const document = parseXmlDocument(xml);
+      const formSubmission = firstElement(document, "FormSubmission");
+      expect(formSubmission.getAttribute("xsi:schemaLocation")).toBe(
+        "http://xmlgw.companieshouse.gov.uk/Header http://xmlgw.companieshouse.gov.uk/v1-0/schema/forms/FormSubmission-v2-11.xsd",
+      );
+    });
   });
 
   describe("buildConfirmationStatementSubmission", () => {
