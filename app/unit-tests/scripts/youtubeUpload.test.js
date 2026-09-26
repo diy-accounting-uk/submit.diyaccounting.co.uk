@@ -21,6 +21,7 @@ import {
   recordVideoId,
   buildVideoResource,
   resolveDeclaredStatus,
+  resolvePrivacyStatus,
   resolveQuotaProject,
   resolveClientCredentials,
   storeClientCredentials,
@@ -39,6 +40,7 @@ import {
   planStatusSync,
   applyStatusSync,
   runStatusSync,
+  flipUploadedVideosPublic,
 } from "../../../scripts/youtube-upload.js";
 
 function makeTempDir() {
@@ -185,6 +187,16 @@ describe("resolveDeclaredStatus", () => {
   });
 });
 
+describe("resolvePrivacyStatus", () => {
+  test("falls back to the caller's default when the entry declares no privacyStatus", () => {
+    expect(resolvePrivacyStatus({ embeddable: true }, "unlisted")).toBe("unlisted");
+  });
+
+  test("uses the entry's own declared privacyStatus over the caller's default", () => {
+    expect(resolvePrivacyStatus({ embeddable: true, privacyStatus: "unlisted" }, "public")).toBe("unlisted");
+  });
+});
+
 describe("buildVideoResource", () => {
   const entry = { title: "A title", description: "A description", tags: ["a", "b"], categoryId: "27" };
   const declaredStatus = { embeddable: true, publicStatsViewable: true, selfDeclaredMadeForKids: false, license: "youtube" };
@@ -211,6 +223,11 @@ describe("buildVideoResource", () => {
       selfDeclaredMadeForKids: false,
       license: "youtube",
     });
+  });
+
+  test("uses the entry's own declared privacyStatus over the publicVideo branch", () => {
+    const pinnedStatus = { ...declaredStatus, privacyStatus: "unlisted" };
+    expect(buildVideoResource(entry, { publicVideo: true, declaredStatus: pinnedStatus }).status.privacyStatus).toBe("unlisted");
   });
 });
 
@@ -644,6 +661,36 @@ describe("publishEntry", () => {
   const list = { videos: [{ id: "clip", publish: true, videoId: null }] };
   const entry = list.videos[0];
 
+  test("passes the entry's declared status, including any privacyStatus override, to the upload", async () => {
+    const pinnedList = {
+      status: { embeddable: true },
+      videos: [{ id: "clip", publish: true, videoId: null, status: { privacyStatus: "unlisted" } }],
+    };
+    const pinnedEntry = pinnedList.videos[0];
+    const uploadVideoImpl = vi.fn().mockResolvedValue("yt-new");
+
+    await publishEntry({
+      entry: pinnedEntry,
+      list: pinnedList,
+      accessToken: "token",
+      quotaProject: "p",
+      publicVideo: true,
+      uploadVideoImpl,
+      uploadCaptionImpl: vi.fn(),
+      savePublishListImpl: vi.fn(),
+      copyVideosManifestImpl: vi.fn(),
+      log: () => {},
+    });
+
+    expect(uploadVideoImpl).toHaveBeenCalledWith({
+      entry: pinnedEntry,
+      accessToken: "token",
+      quotaProject: "p",
+      publicVideo: true,
+      declaredStatus: { embeddable: true, privacyStatus: "unlisted" },
+    });
+  });
+
   test("records the video id on disk, copies the manifest into web/public, then uploads the caption", async () => {
     const order = [];
     const uploadVideoImpl = vi.fn().mockResolvedValue("yt-new");
@@ -888,6 +935,57 @@ describe("applyStatusSync", () => {
     });
 
     expect(setVideoStatusImpl.mock.calls[0][0].privacyStatus).toBe("unlisted");
+  });
+});
+
+describe("flipUploadedVideosPublic", () => {
+  test("flips an entry with no declared privacy to public", async () => {
+    const list = { videos: [{ id: "a", publish: true, videoId: "yt-a" }] };
+    const setVideoStatusImpl = vi.fn().mockResolvedValue({ privacyStatus: "public" });
+
+    await flipUploadedVideosPublic({ list, accessToken: "token", quotaProject: "p", setVideoStatusImpl, log: () => {} });
+
+    expect(setVideoStatusImpl).toHaveBeenCalledWith({
+      videoId: "yt-a",
+      privacyStatus: "public",
+      declaredStatus: {},
+      accessToken: "token",
+      quotaProject: "p",
+    });
+  });
+
+  test("keeps an entry's own declared privacy instead of forcing it public", async () => {
+    const list = {
+      status: { embeddable: true },
+      videos: [{ id: "a", publish: true, videoId: "yt-a", status: { privacyStatus: "unlisted" } }],
+    };
+    const setVideoStatusImpl = vi.fn().mockResolvedValue({ privacyStatus: "unlisted" });
+
+    await flipUploadedVideosPublic({ list, accessToken: "token", quotaProject: "p", setVideoStatusImpl, log: () => {} });
+
+    expect(setVideoStatusImpl).toHaveBeenCalledWith({
+      videoId: "yt-a",
+      privacyStatus: "unlisted",
+      declaredStatus: { embeddable: true, privacyStatus: "unlisted" },
+      accessToken: "token",
+      quotaProject: "p",
+    });
+  });
+
+  test("only flips entries that are marked for publishing and already uploaded", async () => {
+    const list = {
+      videos: [
+        { id: "not-published", publish: false, videoId: "yt-a" },
+        { id: "not-uploaded", publish: true, videoId: null },
+        { id: "ready", publish: true, videoId: "yt-ready" },
+      ],
+    };
+    const setVideoStatusImpl = vi.fn().mockResolvedValue({ privacyStatus: "public" });
+
+    await flipUploadedVideosPublic({ list, accessToken: "token", quotaProject: "p", setVideoStatusImpl, log: () => {} });
+
+    expect(setVideoStatusImpl).toHaveBeenCalledTimes(1);
+    expect(setVideoStatusImpl.mock.calls[0][0].videoId).toBe("yt-ready");
   });
 });
 

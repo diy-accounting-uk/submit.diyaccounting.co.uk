@@ -155,7 +155,13 @@ export function resolveDeclaredStatus(list, entry) {
   return { ...(list.status ?? {}), ...(entry.status ?? {}) };
 }
 
-export function buildVideoResource(entry, { publicVideo, declaredStatus }) {
+// An entry can pin its own privacyStatus inside its declared status (e.g. to keep one video
+// unlisted on purpose); the caller's own default applies only when the entry declares none.
+export function resolvePrivacyStatus(declaredStatus, fallbackPrivacyStatus) {
+  return declaredStatus.privacyStatus ?? fallbackPrivacyStatus;
+}
+
+export function buildVideoResource(entry, { publicVideo, declaredStatus = {} }) {
   return {
     snippet: {
       title: entry.title,
@@ -164,8 +170,8 @@ export function buildVideoResource(entry, { publicVideo, declaredStatus }) {
       categoryId: entry.categoryId,
     },
     status: {
-      privacyStatus: publicVideo ? "public" : "unlisted",
       ...declaredStatus,
+      privacyStatus: resolvePrivacyStatus(declaredStatus, publicVideo ? "public" : "unlisted"),
     },
   };
 }
@@ -595,7 +601,7 @@ export async function applyStatusSync({
     const entry = list.videos.find((video) => video.videoId === videoId);
     const declaredStatus = resolveDeclaredStatus(list, entry);
     const live = liveStatusesById[videoId] ?? {};
-    const privacyStatus = declaredStatus.privacyStatus ?? live.privacyStatus;
+    const privacyStatus = resolvePrivacyStatus(declaredStatus, live.privacyStatus);
     const status = await setVideoStatusImpl({ videoId, privacyStatus, declaredStatus, accessToken, quotaProject });
     log(`${entry.id} https://youtu.be/${videoId} updated: ${JSON.stringify(status)}`);
   }
@@ -711,6 +717,25 @@ export async function publishEntry({
   return recorded;
 }
 
+/**
+ * Flip every already-uploaded entry to public, unless the entry's own declared status pins a
+ * different privacyStatus, in which case that wins.
+ */
+export async function flipUploadedVideosPublic({
+  list,
+  accessToken,
+  quotaProject,
+  setVideoStatusImpl = setVideoStatus,
+  log = console.log,
+}) {
+  for (const entry of selectUploadedVideos(list)) {
+    const declaredStatus = resolveDeclaredStatus(list, entry);
+    const privacyStatus = resolvePrivacyStatus(declaredStatus, "public");
+    const status = await setVideoStatusImpl({ videoId: entry.videoId, privacyStatus, declaredStatus, accessToken, quotaProject });
+    log(`${entry.id} https://youtu.be/${entry.videoId} is now ${status.privacyStatus}`);
+  }
+}
+
 export async function main() {
   const { publicVideo, check, syncStatus, apply, clientFile, storeClient } = parseArgs(process.argv.slice(2));
 
@@ -742,11 +767,7 @@ export async function main() {
       console.log("Nothing to upload: every publish:true entry already has a videoId.");
       return;
     }
-    for (const entry of selectUploadedVideos(list)) {
-      const declaredStatus = resolveDeclaredStatus(list, entry);
-      const status = await setVideoStatus({ videoId: entry.videoId, privacyStatus: "public", declaredStatus, accessToken, quotaProject });
-      console.log(`${entry.id} https://youtu.be/${entry.videoId} is now ${status.privacyStatus}`);
-    }
+    await flipUploadedVideosPublic({ list, accessToken, quotaProject });
     return;
   }
 
