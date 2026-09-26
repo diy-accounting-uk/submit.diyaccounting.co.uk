@@ -237,7 +237,11 @@ confirm brand verification. They replace LP-24a's steps 1 to 4.
 ## Risks and open questions
 
 1. **Project of the sign-in client.** Project number 670010122633 is recorded, not the project
-   id. Whether it is `diyaccounting-ga4` or another project decides where BS5 lands.
+   id. It is not `diyaccounting-ga4` (958354756046): the GA4 service account gets 403 on
+   `projects.get` for it (checked 2026-09-26 through `scripts/gcp-as-sso.sh`), so it is a separate
+   project the service account has no role in. Its id decides where BS5 lands, and whether the
+   Drive client is created as code there needs a role for the service account in
+   `analytics/google-roles.toml` first.
 2. **`drive.file` across two sites.** Expected: a file created under one client in a project is
    visible to another client in the same project. To prove in BS9 before BS6 relies on it.
 3. **Brand verification.** Google asks every external production app to pass brand
