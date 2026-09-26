@@ -125,6 +125,7 @@ describe("services/companiesHouseXmlGateway", () => {
       companyNumber: "02706061",
       companyName: "TEST COMPANY LIMITED",
       companyAuthenticationCode: "ABC123",
+      packageReference: "0012",
       submissionNumber: "AAA001",
       dateSigned: "2026-06-30",
       ixbrl: "<html>accounts</html>",
@@ -189,6 +190,7 @@ describe("services/companiesHouseXmlGateway", () => {
       companyNumber: "02706061",
       companyName: "TEST COMPANY LIMITED",
       companyAuthenticationCode: "ABC123",
+      packageReference: "0012",
       formIdentifier: "ConfirmationAndVerificationStatement",
       submissionNumber: "AAA001",
       dateSigned: "2026-06-30",
@@ -234,6 +236,16 @@ describe("services/companiesHouseXmlGateway", () => {
         "http://xmlgw.companieshouse.gov.uk/Header http://xmlgw.companieshouse.gov.uk/v1-0/schema/forms/FormSubmission-v2-11.xsd",
       );
     });
+
+    test("refuses a missing packageReference", () => {
+      const input = { ...baseInput };
+      delete input.packageReference;
+      expect(() => buildFormSubmission(input)).toThrow(/packageReference/);
+    });
+
+    test("refuses a blank packageReference", () => {
+      expect(() => buildFormSubmission({ ...baseInput, packageReference: "   " })).toThrow(/packageReference/);
+    });
   });
 
   describe("buildConfirmationStatementSubmission", () => {
@@ -243,6 +255,7 @@ describe("services/companiesHouseXmlGateway", () => {
       companyNumber: "11111111",
       companyName: "EXAMPLE COMPANY",
       companyAuthenticationCode: "123456",
+      packageReference: "0012",
       submissionNumber: "AAA001",
       dateSigned: "2024-08-30",
       statementXml:
@@ -289,6 +302,7 @@ describe("services/companiesHouseXmlGateway", () => {
       companyNumber: "11111111",
       companyName: "EXAMPLE COMPANY",
       companyAuthenticationCode: "123456",
+      packageReference: "0012",
       submissionNumber: "AAA001",
       dateSigned: "2024-08-30",
       statementXml:
@@ -696,6 +710,7 @@ describe("services/companiesHouseXmlGateway", () => {
         companyNumber: "02706061",
         companyName: "TEST COMPANY LIMITED",
         companyAuthenticationCode: "ABC123",
+        packageReference: "0012",
         submissionNumber: "GWY001",
         dateSigned: "2026-06-30",
         ixbrl: "<html>accounts</html>",
@@ -726,6 +741,7 @@ describe("services/companiesHouseXmlGateway", () => {
         companyNumber: "02706061",
         companyName: "TEST COMPANY LIMITED",
         companyAuthenticationCode: "ABC123",
+        packageReference: "0012",
         submissionNumber: "GWY002",
         dateSigned: "2026-06-30",
         ixbrl: "<html>accounts</html>",

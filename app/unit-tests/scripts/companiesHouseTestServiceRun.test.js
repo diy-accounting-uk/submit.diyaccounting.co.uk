@@ -141,6 +141,7 @@ describe("runCases against the Companies House XML Gateway simulator", () => {
     process.env.COMPANIES_HOUSE_XMLGW_URI = `${simulator.baseUrl}/v1-0/xmlgw/Gateway`;
     process.env.COMPANIES_HOUSE_PRESENTER_ID = SIMULATOR_PRESENTER_ID;
     process.env.COMPANIES_HOUSE_PRESENTER_CODE = SIMULATOR_PRESENTER_CODE;
+    process.env.COMPANIES_HOUSE_PACKAGE_REFERENCE = "0012";
   });
 
   afterAll(async () => {
@@ -148,6 +149,7 @@ describe("runCases against the Companies House XML Gateway simulator", () => {
     delete process.env.COMPANIES_HOUSE_XMLGW_URI;
     delete process.env.COMPANIES_HOUSE_PRESENTER_ID;
     delete process.env.COMPANIES_HOUSE_PRESENTER_CODE;
+    delete process.env.COMPANIES_HOUSE_PACKAGE_REFERENCE;
   });
 
   beforeEach(() => {
@@ -276,6 +278,24 @@ describe("runCases against the Companies House XML Gateway simulator", () => {
     expect(entries[0].observedStatus).toBe("OK");
     expect(entries[0].exchanges).toHaveLength(1);
     expect(parseGatewayResponse(entries[0].exchanges[0].responseXml).errors).toEqual([]);
+  });
+
+  test("carries COMPANIES_HOUSE_PACKAGE_REFERENCE into the submitted envelope's PackageReference", async () => {
+    const cases = [baseCase({ name: "package-reference-case", expectedOutcome: { status: "ACCEPT", pinned: true } })];
+
+    const { entries } = await runCases(cases, outDir, { sleepFn: fastSleep });
+
+    const submitExchange = entries[0].exchanges.find((exchange) => exchange.label === "submit");
+    expect(submitExchange.requestXml).toContain("<PackageReference>0012</PackageReference>");
+  });
+
+  test("fails fast when COMPANIES_HOUSE_PACKAGE_REFERENCE is missing", async () => {
+    delete process.env.COMPANIES_HOUSE_PACKAGE_REFERENCE;
+    const cases = [baseCase({ name: "no-package-reference-case", expectedOutcome: { status: "ACCEPT", pinned: true } })];
+
+    await expect(runCases(cases, outDir, { sleepFn: fastSleep })).rejects.toThrow(/COMPANIES_HOUSE_PACKAGE_REFERENCE/);
+
+    process.env.COMPANIES_HOUSE_PACKAGE_REFERENCE = "0012";
   });
 
   test("running a single named case with --case only runs that one", async () => {
