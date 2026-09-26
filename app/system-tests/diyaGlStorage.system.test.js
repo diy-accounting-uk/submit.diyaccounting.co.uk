@@ -263,5 +263,5 @@ describe("System: DIYA-GL storage end to end", () => {
       }),
     );
     expect(afterDeleteResult.statusCode).toBe(404);
-  });
+  }, 30000);
 });

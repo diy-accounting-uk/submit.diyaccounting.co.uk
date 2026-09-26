@@ -1294,6 +1294,12 @@ public class SubmitSharedNames {
     public String alarmToGithubIssueLambdaArn;
     public String alarmToGithubIssueProvisionedConcurrencyLambdaAliasArn;
 
+    // Alarm-to-operator-SMS Lambda (SNS subscriber on OpsStack's alertTopic, not API)
+    public String alarmSmsForwardLambdaHandler;
+    public String alarmSmsForwardLambdaFunctionName;
+    public String alarmSmsForwardLambdaArn;
+    public String alarmSmsForwardProvisionedConcurrencyLambdaAliasArn;
+
     public String selfDestructLambdaHandler;
     public String selfDestructLambdaFunctionName;
     public String selfDestructLambdaArn;
@@ -4799,6 +4805,18 @@ public class SubmitSharedNames {
         this.alarmToGithubIssueLambdaArn = "%s-%s".formatted(appLambdaArnPrefix, alarmToGithubIssueLambdaHandlerDashed);
         this.alarmToGithubIssueProvisionedConcurrencyLambdaAliasArn =
                 "%s:%s".formatted(this.alarmToGithubIssueLambdaArn, this.provisionedConcurrencyAliasName);
+
+        // Alarm-to-operator-SMS Lambda (SNS subscriber, not API)
+        var alarmSmsForwardLambdaHandlerName = "alarmSmsForward.handler";
+        var alarmSmsForwardLambdaHandlerDashed =
+                ResourceNameUtils.convertCamelCaseToDashSeparated(alarmSmsForwardLambdaHandlerName);
+        this.alarmSmsForwardLambdaFunctionName =
+                "%s-%s".formatted(this.appResourceNamePrefix, alarmSmsForwardLambdaHandlerDashed);
+        this.alarmSmsForwardLambdaHandler =
+                "%s/ops/%s".formatted(appLambdaHandlerPrefix, alarmSmsForwardLambdaHandlerName);
+        this.alarmSmsForwardLambdaArn = "%s-%s".formatted(appLambdaArnPrefix, alarmSmsForwardLambdaHandlerDashed);
+        this.alarmSmsForwardProvisionedConcurrencyLambdaAliasArn =
+                "%s:%s".formatted(this.alarmSmsForwardLambdaArn, this.provisionedConcurrencyAliasName);
 
         var appSelfDestructLambdaHandlerName = "selfDestruct.ingestHandler";
         var appSelfDestructLambdaHandlerDashed =

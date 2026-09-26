@@ -51,6 +51,7 @@ import software.amazon.awscdk.services.s3.BucketEncryption;
 import software.amazon.awscdk.services.s3.LifecycleRule;
 import software.amazon.awscdk.services.sns.Topic;
 import software.amazon.awscdk.services.sns.subscriptions.EmailSubscription;
+import software.amazon.awscdk.services.sns.subscriptions.LambdaSubscription;
 import software.amazon.awscdk.services.synthetics.ArtifactsBucketLocation;
 import software.amazon.awscdk.services.synthetics.Canary;
 import software.amazon.awscdk.services.synthetics.Code;
@@ -61,6 +62,13 @@ import software.amazon.awscdk.services.synthetics.Test;
 import software.constructs.Construct;
 
 public class OpsStack extends Stack {
+
+    // The GB alphanumeric sender ID set up by hand in submit-prod (see
+    // .claude/skills/text-antony-submit-prod/SKILL.md's setup section). Fixed, not a prop: it
+    // names one specific AWS End User Messaging SMS resource this account owns, not a
+    // per-deployment or per-environment value.
+    private static final String OPERATOR_SMS_SENDER_ID = "DIYACCT";
+    private static final String OPERATOR_SMS_SENDER_ID_COUNTRY = "GB";
 
     public final Topic alertTopic;
     public Canary healthCanary;
@@ -310,6 +318,95 @@ public class OpsStack extends Stack {
             infof(
                     "Created Alarm-to-GitHub-Issue Lambda %s for repo %s",
                     alarmToGithubIssueLambdaConstruct.ingestLambda.getNode().getId(), props.opsGithubRepo());
+        }
+
+        // ============================================================================
+        // Alarm-to-operator-SMS Lambda + SNS subscription (prod only)
+        // ============================================================================
+        // Texts the operator's mobile through AWS End User Messaging SMS whenever the health or
+        // API canary alarm changes state, so a prod loss of service reaches the operator even
+        // when nobody is watching GitHub or Telegram. Subscribed directly to alertTopic (which
+        // only ever carries these two canary alarms' ALARM and OK actions, see
+        // createSyntheticCanaries below), not routed through the AlarmStateChangeRule the other
+        // ops Lambdas share: `aws sns publish --phone-number` accepted messages that never
+        // arrived at the operator's handset, and only the SendTextMessage API, called with the
+        // registered sender ID, delivered (see .claude/skills/text-antony-submit-prod/SKILL.md),
+        // so this Lambda needs the SNS notification's own shape, not the EventBridge one.
+        // ci is excluded: a ci deployment self-destructs within hours, and a text for it would
+        // reach the operator about an environment that is already gone by the time they read it.
+        if ("prod".equals(props.envName())) {
+            var alarmSmsForwardEnv = new PopulatedMap<String, String>()
+                    .with("ENVIRONMENT_NAME", props.envName())
+                    .with(
+                            "OPERATOR_SMS_NUMBER_PARAMETER_NAME",
+                            "/submit/%s/operator-sms-number".formatted(props.envName()))
+                    .with("SMS_ORIGINATION_IDENTITY", OPERATOR_SMS_SENDER_ID);
+            var alarmSmsForwardLambdaConstruct = new Lambda(
+                    this,
+                    LambdaProps.builder()
+                            .idPrefix(props.sharedNames().alarmSmsForwardLambdaFunctionName)
+                            .baseImageTag(props.baseImageTag())
+                            .ecrRepositoryName(props.sharedNames().ecrRepositoryName)
+                            .ecrRepositoryArn(props.sharedNames().ecrRepositoryArn)
+                            .ingestFunctionName(props.sharedNames().alarmSmsForwardLambdaFunctionName)
+                            .ingestHandler(props.sharedNames().alarmSmsForwardLambdaHandler)
+                            .ingestLambdaArn(props.sharedNames().alarmSmsForwardLambdaArn)
+                            .ingestProvisionedConcurrencyAliasArn(
+                                    props.sharedNames().alarmSmsForwardProvisionedConcurrencyLambdaAliasArn)
+                            .ingestProvisionedConcurrency(0)
+                            .ingestLambdaTimeout(Duration.seconds(10))
+                            .provisionedConcurrencyAliasName(props.sharedNames().provisionedConcurrencyAliasName)
+                            .environment(alarmSmsForwardEnv)
+                            .build());
+            healthCheckedFunctions.add(alarmSmsForwardLambdaConstruct);
+            IFunction alarmSmsForwardLambda = alarmSmsForwardLambdaConstruct.ingestLambda;
+
+            this.alertTopic.addSubscription(new LambdaSubscription(alarmSmsForwardLambda));
+
+            // The operator's number, SecureString under the default aws/ssm key. Read is scoped
+            // to this one parameter; ssm:GetParameter carries no resource-level condition keys of
+            // its own, so the parameter ARN is the only narrowing available.
+            alarmSmsForwardLambda.addToRolePolicy(PolicyStatement.Builder.create()
+                    .sid("ReadOperatorSmsNumber")
+                    .effect(Effect.ALLOW)
+                    .actions(List.of("ssm:GetParameter"))
+                    .resources(List.of("arn:aws:ssm:%s:%s:parameter/submit/%s/operator-sms-number"
+                            .formatted(this.getRegion(), this.getAccount(), props.envName())))
+                    .build());
+
+            // Decrypts that SecureString. The default aws/ssm key has no ARN this stack can name
+            // without a runtime lookup, so the resource is "*" narrowed by ViaService: AWS's own
+            // documented least-privilege form for the account's default SSM key (see the AWS
+            // Systems Manager User Guide's SecureString IAM example).
+            alarmSmsForwardLambda.addToRolePolicy(PolicyStatement.Builder.create()
+                    .sid("DecryptOperatorSmsNumber")
+                    .effect(Effect.ALLOW)
+                    .actions(List.of("kms:Decrypt"))
+                    .resources(List.of("*"))
+                    .conditions(Map.of(
+                            "StringEquals",
+                            Map.of("kms:ViaService", "ssm.%s.amazonaws.com".formatted(this.getRegion()))))
+                    .build());
+
+            // SendTextMessage supports a resource-level permission on the sender identity it
+            // sends from (see the AWS End User Messaging SMS service authorization reference);
+            // scoping to that ARN rather than "*" means this role can send from DIYACCT only.
+            alarmSmsForwardLambda.addToRolePolicy(PolicyStatement.Builder.create()
+                    .sid("SendOperatorSms")
+                    .effect(Effect.ALLOW)
+                    .actions(List.of("sms-voice:SendTextMessage"))
+                    .resources(List.of("arn:aws:sms-voice:%s:%s:sender-id/%s/%s"
+                            .formatted(
+                                    this.getRegion(),
+                                    this.getAccount(),
+                                    OPERATOR_SMS_SENDER_ID,
+                                    OPERATOR_SMS_SENDER_ID_COUNTRY)))
+                    .build());
+
+            cfnOutput(this, "AlarmSmsForwardLambdaArn", alarmSmsForwardLambda.getFunctionArn());
+            infof(
+                    "Created Alarm-to-operator-SMS Lambda %s",
+                    alarmSmsForwardLambdaConstruct.ingestLambda.getNode().getId());
         }
 
         // Only when this stack built a Lambda construct of its own: the alarm-to-GitHub-issue

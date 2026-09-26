@@ -49,7 +49,7 @@ function getSlotRecord(region, slot) {
   return JSON.parse(parsed.Parameter.Value);
 }
 
-async function fetchRunStatus(repository, runId, token) {
+export async function fetchRunStatus(repository, runId, token) {
   const response = await fetch(`https://api.github.com/repos/${repository}/actions/runs/${runId}`, {
     headers: {
       Authorization: `Bearer ${token}`,
