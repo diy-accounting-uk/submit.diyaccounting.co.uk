@@ -2,7 +2,7 @@
   "$schema": "./scene-script.schema.json",
   "name": "itsa-year",
   "title": "A whole Income Tax year, quarter to declaration",
-  "description": "A signed-in walk through Making Tax Digital for Income Tax across a full tax year: sign in, take out Resident, pick a business, file a quarterly update for a self-employment business and for a UK property business, then close the year out with the annual submission, losses and claims, the tax calculation and the final declaration.",
+  "description": "A signed-in walk through Making Tax Digital for Income Tax across a full tax year: sign in, take out Resident, pick a business, file a quarterly update for a self-employment business and for a UK property business, then close the year out with the annual submission, its adjustable summary adjustments, losses and claims, the tax calculation and the final declaration.",
   "auth": "user",
   "pages": [
     "web/public/index.html",
@@ -13,6 +13,7 @@
     "web/public/hmrc/itsa/selfEmploymentPeriod.html",
     "web/public/hmrc/itsa/ukPropertyPeriod.html",
     "web/public/hmrc/itsa/annualSubmission.html",
+    "web/public/hmrc/itsa/adjustments.html",
     "web/public/hmrc/itsa/lossesAndClaims.html",
     "web/public/hmrc/itsa/taxCalculation.html",
     "web/public/hmrc/itsa/finalDeclaration.html"
@@ -281,6 +282,44 @@
           "label": "Waiting for HMRC",
           "timeoutMs": 60000,
           "caption": "HMRC accepts the annual submission."
+        },
+        { "action": "hold", "ms": 500 }
+      ]
+    },
+    {
+      "id": "adjustments",
+      "chapter": "Year end: adjustable summary",
+      "still": true,
+      "steps": [
+        {
+          "action": "goto",
+          "url": "/hmrc/itsa/adjustments.html",
+          "waitFor": "#itsaBsasTriggerForm",
+          "caption": "HMRC works out a business source adjustable summary from the quarters filed."
+        },
+        { "action": "type", "target": "#nino", "text": "{{hmrcNino}}", "clear": true, "secret": true },
+        { "action": "fill", "target": "#businessId", "value": "XBIS00000000001" },
+        { "action": "fill", "target": "#taxYear", "value": "2024-25" },
+        { "action": "fill", "target": "#accountingPeriodStartDate", "value": "2024-04-06" },
+        { "action": "fill", "target": "#accountingPeriodEndDate", "value": "2025-04-05" },
+        { "action": "click", "target": "#triggerBtn", "caption": "Trigger the summary and read what HMRC calculated." },
+        {
+          "action": "await",
+          "until": "#summaryContainer",
+          "label": "Waiting for HMRC",
+          "timeoutMs": 60000,
+          "caption": "Turnover, expenses and the net profit HMRC worked out."
+        },
+        { "action": "point", "target": "#summaryDetails", "dwellMs": 500 },
+        { "action": "fill", "target": "#adjustTurnover", "value": "1100", "caption": "Change a figure if HMRC's version is wrong." },
+        { "action": "fill", "target": "#adjustCostOfGoods", "value": "160" },
+        { "action": "click", "target": "#submitAdjustmentBtn" },
+        {
+          "action": "await",
+          "until": "#adjustmentResults",
+          "label": "Waiting for HMRC",
+          "timeoutMs": 60000,
+          "caption": "HMRC accepts the adjustment."
         },
         { "action": "hold", "ms": 500 }
       ]
