@@ -52,7 +52,9 @@
           "action": "goto",
           "url": "/",
           "waitFor": "#mainContent",
-          "caption": "You can send a VAT return straight to HMRC."
+          "caption": "You can send a VAT return straight to HMRC.",
+          "headline": "Submit your VAT return",
+          "keyWord": "Submit"
         },
         {
           "action": "caption",
@@ -74,11 +76,15 @@
         {
           "action": "click",
           "target": "a.login-link",
-          "caption": "Sign in with the account you already use."
+          "caption": "Sign in with the account you already use.",
+          "headline": "Sign in first",
+          "keyWord": "Sign"
         },
         {
           "action": "login",
-          "caption": "Your account keeps your submissions in one place."
+          "caption": "Your account keeps your submissions in one place.",
+          "headline": "Confirm your identity",
+          "keyWord": "identity"
         },
         { "action": "consent" },
         { "action": "hold", "ms": 600 }
@@ -93,19 +99,25 @@
         {
           "action": "click",
           "target": { "role": "link", "name": "Bundles" },
-          "caption": "Bundles decide which activities you can run."
+          "caption": "Bundles decide which activities you can run.",
+          "headline": "Open your bundles",
+          "keyWord": "bundles"
         },
         {
           "action": "ensureBundle",
           "bundle": "Day pass",
           "testPass": true,
-          "caption": "A day pass opens the VAT activities for a day."
+          "caption": "A day pass opens the VAT activities for a day.",
+          "headline": "Get a day pass",
+          "keyWord": "pass"
         },
         { "action": "hold", "ms": 700 },
         {
           "action": "click",
           "target": { "role": "link", "name": "Activities" },
-          "caption": "Every activity starts from the home page."
+          "caption": "Every activity starts from the home page.",
+          "headline": "Go to activities",
+          "keyWord": "activities"
         },
         {
           "action": "await",
@@ -123,7 +135,9 @@
         {
           "action": "click",
           "target": "button:has-text('VAT Obligations (HMRC)')",
-          "caption": "Ask HMRC what you still owe before you submit."
+          "caption": "Ask HMRC what you still owe before you submit.",
+          "headline": "Check what you owe",
+          "keyWord": "owe"
         },
         { "action": "await", "until": "#vatObligationsForm", "label": "Opening the obligations form" },
         {
@@ -131,13 +145,17 @@
           "target": "#vrn",
           "text": "{{hmrcVatNumber}}",
           "clear": true,
-          "caption": "Type the VAT registration number."
+          "caption": "Type the VAT registration number.",
+          "headline": "Enter your VAT number",
+          "keyWord": "number"
         },
         {
           "action": "fill",
           "target": "#fromDate",
           "value": "{{monthsAgo:11}}",
-          "caption": "Then the stretch of time to look at."
+          "caption": "Then the stretch of time to look at.",
+          "headline": "Choose the start date",
+          "keyWord": "start"
         },
         { "action": "fill", "target": "#toDate", "value": "{{today}}" },
         { "action": "hold", "ms": 700 }
@@ -151,11 +169,15 @@
         {
           "action": "click",
           "target": "#retrieveBtn",
-          "caption": "The first request sends you to HMRC to grant access."
+          "caption": "The first request sends you to HMRC to grant access.",
+          "headline": "Ask HMRC for access",
+          "keyWord": "access"
         },
         {
           "action": "hmrcAuthorise",
           "caption": "Sign in to HMRC and say yes once.",
+          "headline": "Grant HMRC access",
+          "keyWord": "Grant",
           "timeoutMs": 60000
         },
         { "action": "hold", "ms": 500 }
@@ -171,7 +193,9 @@
           "until": "#obligationsResults",
           "label": "Waiting for HMRC",
           "timeoutMs": 180000,
-          "caption": "HMRC answers with every period it holds."
+          "caption": "HMRC answers with every period it holds.",
+          "headline": "HMRC sends the answer",
+          "keyWord": "answer"
         },
         { "action": "scroll", "target": "#obligationsTable" },
         { "action": "hold", "ms": 1000 },
@@ -179,6 +203,8 @@
           "action": "point",
           "target": "#obligationsTable",
           "caption": "An open period is still waiting for a return.",
+          "headline": "Find the open period",
+          "keyWord": "open",
           "dwellMs": 600
         },
         { "action": "hold", "ms": 1200 }
@@ -192,7 +218,9 @@
         {
           "action": "click",
           "target": { "role": "button", "name": "Submit Return" },
-          "caption": "Start a return for that open period."
+          "caption": "Start a return for that open period.",
+          "headline": "Start the return",
+          "keyWord": "Start"
         },
         { "action": "await", "until": "#vatSubmissionForm", "label": "Opening the submission form" },
         {
@@ -200,19 +228,25 @@
           "target": "#vatDueSales",
           "text": "1000.00",
           "clear": true,
-          "caption": "Box 1 is the VAT due on your sales."
+          "caption": "Box 1 is the VAT due on your sales.",
+          "headline": "Box 1, VAT on sales",
+          "keyWord": "sales"
         },
         {
           "action": "type",
           "target": "#vatDueAcquisitions",
           "text": "0.00",
           "clear": true,
-          "caption": "Box 2 is VAT on EU acquisitions, usually zero now."
+          "caption": "Box 2 is VAT on EU acquisitions, usually zero now.",
+          "headline": "Box 2, usually zero",
+          "keyWord": "zero"
         },
         {
           "action": "point",
           "target": "#totalVatDue",
           "caption": "Box 3 adds boxes 1 and 2 for you.",
+          "headline": "Box 3 adds it up",
+          "keyWord": "adds",
           "dwellMs": 500
         },
         {
@@ -220,12 +254,16 @@
           "target": "#vatReclaimedCurrPeriod",
           "text": "200.00",
           "clear": true,
-          "caption": "Box 4 is VAT you can reclaim on purchases."
+          "caption": "Box 4 is VAT you can reclaim on purchases.",
+          "headline": "Box 4, VAT reclaimed",
+          "keyWord": "reclaimed"
         },
         {
           "action": "point",
           "target": "#netVatDue",
           "caption": "Box 5 works out what you owe overall.",
+          "headline": "Box 5, the net total",
+          "keyWord": "net",
           "dwellMs": 500
         },
         {
@@ -233,21 +271,27 @@
           "target": "#totalValueSalesExVAT",
           "text": "5000",
           "clear": true,
-          "caption": "Box 6 is your total sales, without VAT."
+          "caption": "Box 6 is your total sales, without VAT.",
+          "headline": "Box 6, total sales",
+          "keyWord": "sales"
         },
         {
           "action": "type",
           "target": "#totalValuePurchasesExVAT",
           "text": "1000",
           "clear": true,
-          "caption": "Box 7 is your total purchases, without VAT."
+          "caption": "Box 7 is your total purchases, without VAT.",
+          "headline": "Box 7, total purchases",
+          "keyWord": "purchases"
         },
         {
           "action": "type",
           "target": "#totalValueGoodsSuppliedExVAT",
           "text": "0",
           "clear": true,
-          "caption": "Boxes 8 and 9 cover EU trade, usually zero now."
+          "caption": "Boxes 8 and 9 cover EU trade, usually zero now.",
+          "headline": "Boxes 8 and 9, EU trade",
+          "keyWord": "EU"
         },
         {
           "action": "type",
@@ -258,7 +302,9 @@
         {
           "action": "click",
           "target": "#declaration",
-          "caption": "Tick the declaration to confirm the return is accurate."
+          "caption": "Tick the declaration to confirm the return is accurate.",
+          "headline": "Confirm the declaration",
+          "keyWord": "declaration"
         },
         { "action": "hold", "ms": 700 }
       ]
@@ -271,11 +317,15 @@
         {
           "action": "click",
           "target": "#submitBtn",
-          "caption": "Submitting needs a wider grant, so HMRC asks once more."
+          "caption": "Submitting needs a wider grant, so HMRC asks once more.",
+          "headline": "HMRC asks once more",
+          "keyWord": "once"
         },
         {
           "action": "hmrcAuthorise",
           "caption": "Sign in to HMRC and say yes again.",
+          "headline": "Grant HMRC access again",
+          "keyWord": "again",
           "timeoutMs": 60000
         },
         { "action": "hold", "ms": 500 }
@@ -291,7 +341,9 @@
           "until": "#receiptDisplay",
           "label": "Waiting for HMRC",
           "timeoutMs": 60000,
-          "caption": "HMRC confirms the return is filed."
+          "caption": "HMRC confirms the return is filed.",
+          "headline": "HMRC confirms it's filed",
+          "keyWord": "filed"
         },
         { "action": "scroll", "target": "#receiptDisplay" },
         { "action": "hold", "ms": 1500 },
@@ -299,6 +351,8 @@
           "action": "point",
           "target": "#receiptDisplay",
           "caption": "The receipt is your record that it went through.",
+          "headline": "Keep your receipt",
+          "keyWord": "receipt",
           "dwellMs": 600
         },
         { "action": "hold", "ms": 2500 },

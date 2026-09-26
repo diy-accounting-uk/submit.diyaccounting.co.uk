@@ -117,7 +117,9 @@
         {
           "action": "caption",
           "text": "It opens Stripe's own billing portal — Cancel plan ends it.",
-          "holdMs": 2500
+          "holdMs": 2500,
+          "headline": "Cancel plan ends it",
+          "keyWord": "Cancel"
         },
         { "action": "hold", "ms": 600 }
       ]

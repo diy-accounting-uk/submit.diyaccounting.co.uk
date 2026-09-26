@@ -52,7 +52,9 @@
           "action": "goto",
           "url": "/",
           "waitFor": "#mainContent",
-          "caption": "This is a sandbox preview against Companies House's test filing service, not a live filing."
+          "caption": "This is a sandbox preview against Companies House's test filing service, not a live filing.",
+          "headline": "A sandbox preview",
+          "keyWord": "sandbox"
         },
         {
           "action": "caption",
@@ -74,11 +76,15 @@
         {
           "action": "click",
           "target": "a.login-link",
-          "caption": "Sign in with the account you already use."
+          "caption": "Sign in with the account you already use.",
+          "headline": "Sign in first",
+          "keyWord": "Sign"
         },
         {
           "action": "login",
-          "caption": "Your account keeps your filings in one place."
+          "caption": "Your account keeps your filings in one place.",
+          "headline": "Confirm your identity",
+          "keyWord": "identity"
         },
         { "action": "consent" },
         { "action": "hold", "ms": 600 }
@@ -93,19 +99,25 @@
         {
           "action": "click",
           "target": { "role": "link", "name": "Bundles" },
-          "caption": "Bundles decide which activities you can run."
+          "caption": "Bundles decide which activities you can run.",
+          "headline": "Open your bundles",
+          "keyWord": "bundles"
         },
         {
           "action": "ensureBundle",
           "bundle": "Resident Ltd",
           "testPass": true,
-          "caption": "Resident Ltd opens the micro-entity accounts filing."
+          "caption": "Resident Ltd opens the micro-entity accounts filing.",
+          "headline": "Unlock micro-entity filing",
+          "keyWord": "micro-entity"
         },
         { "action": "hold", "ms": 700 },
         {
           "action": "click",
           "target": { "role": "link", "name": "Activities" },
-          "caption": "Every activity starts from the home page."
+          "caption": "Every activity starts from the home page.",
+          "headline": "Go to activities",
+          "keyWord": "activities"
         },
         {
           "action": "await",
@@ -124,7 +136,9 @@
           "action": "click",
           "target": { "role": "button", "name": "File Micro-entity Accounts (Companies House)" },
           "expectsNavigation": true,
-          "caption": "Open File Micro-entity Accounts to find the company."
+          "caption": "Open File Micro-entity Accounts to find the company.",
+          "headline": "Find the company",
+          "keyWord": "company"
         },
         { "action": "await", "until": "#companyForm", "label": "Opening the company lookup form" },
         {
@@ -132,15 +146,26 @@
           "target": "#companyNumber",
           "text": "06846849",
           "clear": true,
-          "caption": "Type the company number."
+          "caption": "Type the company number.",
+          "headline": "Enter the company number",
+          "keyWord": "number"
         },
         {
           "action": "click",
           "target": "#companyLookupBtn",
-          "caption": "Look up the company with Companies House."
+          "caption": "Look up the company with Companies House.",
+          "headline": "Look up the company",
+          "keyWord": "company"
         },
         { "action": "await", "until": "#formView", "label": "Looking up the company" },
-        { "action": "point", "target": "#formCompanyName", "caption": "Companies House confirms the company name.", "dwellMs": 400 },
+        {
+          "action": "point",
+          "target": "#formCompanyName",
+          "caption": "Companies House confirms the company name.",
+          "headline": "Confirm the company name",
+          "keyWord": "name",
+          "dwellMs": 400
+        },
         { "action": "hold", "ms": 700 }
       ]
     },
@@ -153,14 +178,18 @@
           "action": "fill",
           "target": "#periodStart",
           "value": "{{yearsAgo:1}}",
-          "caption": "Set the accounting period."
+          "caption": "Set the accounting period.",
+          "headline": "Set the accounting period",
+          "keyWord": "period"
         },
         { "action": "fill", "target": "#periodEnd", "value": "{{daysAgo:1}}" },
         {
           "action": "fill",
           "target": "#currentFixedAssets",
           "value": "1000",
-          "caption": "Enter this year's balance sheet, then last year's for comparison."
+          "caption": "Enter this year's balance sheet, then last year's for comparison.",
+          "headline": "This year, then last year",
+          "keyWord": "year"
         },
         { "action": "fill", "target": "#currentCurrentAssets", "value": "5000" },
         { "action": "fill", "target": "#currentCreditorsWithinOneYear", "value": "2000" },
@@ -171,6 +200,8 @@
           "action": "point",
           "target": "#currentYearTotals",
           "caption": "This checks net assets against capital and reserves.",
+          "headline": "Net assets must balance",
+          "keyWord": "balance",
           "dwellMs": 500
         },
         { "action": "fill", "target": "#priorFixedAssets", "value": "900" },
@@ -184,13 +215,17 @@
           "action": "type",
           "target": "#directorName",
           "text": "Jo Director",
-          "caption": "Name the director approving the accounts."
+          "caption": "Name the director approving the accounts.",
+          "headline": "Name the approving director",
+          "keyWord": "director"
         },
         { "action": "fill", "target": "#directorDateApproved", "value": "{{today}}" },
         {
           "action": "click",
           "target": "#statementSection477Exemption",
-          "caption": "Accept the four statutory statements."
+          "caption": "Accept the four statutory statements.",
+          "headline": "Accept the statements",
+          "keyWord": "statements"
         },
         { "action": "click", "target": "#statementMembersNotRequiredAudit" },
         { "action": "click", "target": "#statementDirectorsResponsibilities" },
@@ -206,13 +241,17 @@
         {
           "action": "click",
           "target": "#previewBtn",
-          "caption": "Preview the iXBRL before anything is filed."
+          "caption": "Preview the iXBRL before anything is filed.",
+          "headline": "Preview the iXBRL",
+          "keyWord": "iXBRL"
         },
         { "action": "await", "until": "#previewView", "label": "Rendering the preview" },
         {
           "action": "point",
           "target": "#previewIxbrl",
           "caption": "This is the XML that will be filed. Nothing has gone to Companies House yet.",
+          "headline": "Nothing filed yet",
+          "keyWord": "yet",
           "dwellMs": 600
         },
         { "action": "hold", "ms": 1000 }
@@ -229,12 +268,16 @@
           "text": "AB12CD",
           "clear": true,
           "secret": true,
-          "caption": "Type the company's Companies House authentication code."
+          "caption": "Type the company's Companies House authentication code.",
+          "headline": "Enter the auth code",
+          "keyWord": "code"
         },
         {
           "action": "click",
           "target": "#submitFilingBtn",
-          "caption": "Submit the filing to Companies House's sandbox."
+          "caption": "Submit the filing to Companies House's sandbox.",
+          "headline": "Submit to the sandbox",
+          "keyWord": "sandbox"
         },
         { "action": "await", "until": "#resultView", "label": "Submitting the filing" },
         { "action": "hold", "ms": 500 }
@@ -250,12 +293,16 @@
           "until": "#filingResult:has-text('ACCEPT')",
           "label": "Waiting for Companies House",
           "timeoutMs": 60000,
-          "caption": "Companies House settles on an outcome."
+          "caption": "Companies House settles on an outcome.",
+          "headline": "Companies House decides",
+          "keyWord": "decides"
         },
         {
           "action": "point",
           "target": "#filingResult",
           "caption": "The filing is accepted.",
+          "headline": "The filing is accepted",
+          "keyWord": "accepted",
           "dwellMs": 600
         },
         { "action": "hold", "ms": 2500 },

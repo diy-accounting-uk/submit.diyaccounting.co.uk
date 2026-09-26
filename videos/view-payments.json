@@ -46,7 +46,9 @@
           "action": "goto",
           "url": "/",
           "waitFor": "#mainContent",
-          "caption": "HMRC keeps a record of the VAT payments it has received."
+          "caption": "HMRC keeps a record of the VAT payments it has received.",
+          "headline": "See your VAT payments",
+          "keyWord": "payments"
         },
         {
           "action": "caption",
@@ -68,11 +70,15 @@
         {
           "action": "click",
           "target": "a.login-link",
-          "caption": "Sign in with the account you already use."
+          "caption": "Sign in with the account you already use.",
+          "headline": "Sign in first",
+          "keyWord": "Sign"
         },
         {
           "action": "login",
-          "caption": "Your account keeps your submissions in one place."
+          "caption": "Your account keeps your submissions in one place.",
+          "headline": "Confirm your identity",
+          "keyWord": "identity"
         },
         { "action": "consent" },
         { "action": "hold", "ms": 600 }
@@ -87,19 +93,25 @@
         {
           "action": "click",
           "target": { "role": "link", "name": "Bundles" },
-          "caption": "Bundles decide which activities you can run."
+          "caption": "Bundles decide which activities you can run.",
+          "headline": "Open your bundles",
+          "keyWord": "bundles"
         },
         {
           "action": "ensureBundle",
           "bundle": "Day pass",
           "testPass": true,
-          "caption": "A day pass opens the VAT activities for a day."
+          "caption": "A day pass opens the VAT activities for a day.",
+          "headline": "Get a day pass",
+          "keyWord": "pass"
         },
         { "action": "hold", "ms": 700 },
         {
           "action": "click",
           "target": { "role": "link", "name": "Activities" },
-          "caption": "Every activity starts from the home page."
+          "caption": "Every activity starts from the home page.",
+          "headline": "Go to activities",
+          "keyWord": "activities"
         },
         {
           "action": "await",
@@ -117,7 +129,9 @@
         {
           "action": "click",
           "target": "button:has-text('VAT Payments (HMRC)')",
-          "caption": "Open VAT Payments to ask what HMRC has recorded."
+          "caption": "Open VAT Payments to ask what HMRC has recorded.",
+          "headline": "Open VAT Payments",
+          "keyWord": "Payments"
         },
         { "action": "await", "until": "#vatPaymentsForm", "label": "Opening the payments form" },
         {
@@ -125,13 +139,17 @@
           "target": "#vrn",
           "text": "{{hmrcVatNumber}}",
           "clear": true,
-          "caption": "Type the VAT registration number."
+          "caption": "Type the VAT registration number.",
+          "headline": "Enter your VAT number",
+          "keyWord": "number"
         },
         {
           "action": "fill",
           "target": "#fromDate",
           "value": "{{monthsAgo:11}}",
-          "caption": "Then the stretch of time to check."
+          "caption": "Then the stretch of time to check.",
+          "headline": "Choose the start date",
+          "keyWord": "start"
         },
         { "action": "fill", "target": "#toDate", "value": "{{today}}" },
         { "action": "hold", "ms": 700 }
@@ -145,11 +163,15 @@
         {
           "action": "click",
           "target": "#retrieveBtn",
-          "caption": "The first request sends you to HMRC to grant access."
+          "caption": "The first request sends you to HMRC to grant access.",
+          "headline": "Ask HMRC for access",
+          "keyWord": "access"
         },
         {
           "action": "hmrcAuthorise",
           "caption": "Sign in to HMRC and say yes once.",
+          "headline": "Grant HMRC access",
+          "keyWord": "Grant",
           "timeoutMs": 60000
         },
         { "action": "hold", "ms": 500 }
@@ -165,7 +187,9 @@
           "until": "#paymentsResults",
           "label": "Waiting for HMRC",
           "timeoutMs": 180000,
-          "caption": "HMRC answers with whatever payments it has on file."
+          "caption": "HMRC answers with whatever payments it has on file.",
+          "headline": "HMRC sends the answer",
+          "keyWord": "answer"
         },
         { "action": "scroll", "target": "#paymentsTable" },
         { "action": "hold", "ms": 1500 },
@@ -173,6 +197,8 @@
           "action": "point",
           "target": "#paymentsTable",
           "caption": "Any payment against the account shows here, with its date.",
+          "headline": "Read each payment",
+          "keyWord": "payment",
           "dwellMs": 600
         },
         { "action": "hold", "ms": 2500 },

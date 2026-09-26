@@ -122,7 +122,9 @@
         {
           "action": "click",
           "target": "#companyLookupBtn",
-          "caption": "Companies House confirms the next statement due."
+          "caption": "Companies House confirms the next statement due.",
+          "headline": "Confirm the next statement",
+          "keyWord": "statement"
         },
         { "action": "await", "until": "#authView", "label": "Looking up the company" },
         { "action": "hold", "ms": 700 }

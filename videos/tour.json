@@ -52,19 +52,25 @@
           "action": "goto",
           "url": "/",
           "waitFor": "#mainContent",
-          "caption": "DIY Accounting Submit files VAT returns straight to HMRC."
+          "caption": "DIY Accounting Submit files VAT returns straight to HMRC.",
+          "headline": "File VAT returns here",
+          "keyWord": "File"
         },
         { "action": "point", "target": { "role": "heading", "name": "DIY Accounting Submit" }, "dwellMs": 300 },
         {
           "action": "scroll",
           "target": "#dynamicActivities",
-          "caption": "Everything you can do is listed on the home page."
+          "caption": "Everything you can do is listed on the home page.",
+          "headline": "See every activity",
+          "keyWord": "activity"
         },
         { "action": "point", "target": "#dynamicActivities button:first-of-type" },
         {
           "action": "scroll",
           "target": { "text": "reviews on Google" },
-          "caption": "DIY Accounting has run VAT submissions for years."
+          "caption": "DIY Accounting has run VAT submissions for years.",
+          "headline": "Years of VAT submissions",
+          "keyWord": "Years"
         },
         { "action": "hold", "ms": 600 }
       ]
@@ -77,7 +83,9 @@
         {
           "action": "point",
           "target": "a.info-link[href='about.html']",
-          "caption": "The info icon is the way in to everything explanatory."
+          "caption": "The info icon is the way in to everything explanatory.",
+          "headline": "Find the info icon",
+          "keyWord": "info"
         },
         { "action": "click", "target": "a.info-link[href='about.html']" },
         { "action": "scroll", "target": { "text": "Why Choose DIY Accounting Submit?" } },
@@ -85,7 +93,9 @@
         {
           "action": "scroll",
           "target": { "text": "Ready to Submit Your VAT Return?" },
-          "caption": "Making Tax Digital compliant and recognised by HMRC."
+          "caption": "Making Tax Digital compliant and recognised by HMRC.",
+          "headline": "Recognised by HMRC",
+          "keyWord": "Recognised"
         },
         { "action": "hold", "ms": 600 }
       ]
@@ -98,20 +108,26 @@
         {
           "action": "click",
           "target": { "role": "link", "name": "User Guide" },
-          "caption": "The user guide walks through a return in three steps."
+          "caption": "The user guide walks through a return in three steps.",
+          "headline": "Three steps to submit",
+          "keyWord": "three"
         },
         { "action": "scroll", "target": { "text": "Submit your VAT return in 3 steps" } },
         { "action": "hold", "ms": 900 },
         {
           "action": "scroll",
           "target": "#obligations",
-          "caption": "It also covers obligations, liabilities, payments and penalties."
+          "caption": "It also covers obligations, liabilities, payments and penalties.",
+          "headline": "Covers every VAT activity",
+          "keyWord": "activity"
         },
         { "action": "hold", "ms": 500 },
         {
           "action": "scroll",
           "target": "#receipts",
-          "caption": "Every submission leaves a receipt you can find again."
+          "caption": "Every submission leaves a receipt you can find again.",
+          "headline": "Keep every receipt",
+          "keyWord": "receipt"
         },
         { "action": "hold", "ms": 700 }
       ]
@@ -125,14 +141,18 @@
         {
           "action": "click",
           "target": { "role": "link", "name": "Help & FAQs" },
-          "caption": "The help page answers the questions people actually ask."
+          "caption": "The help page answers the questions people actually ask.",
+          "headline": "Real questions answered",
+          "keyWord": "answered"
         },
         { "action": "click", "target": "#faq-search" },
         {
           "action": "type",
           "target": "#faq-search",
           "text": "receipt",
-          "caption": "Type a word to filter the questions."
+          "caption": "Type a word to filter the questions.",
+          "headline": "Search the questions",
+          "keyWord": "Search"
         },
         { "action": "hold", "ms": 1000 },
         { "action": "point", "target": "#faq-list" },
@@ -140,7 +160,9 @@
         {
           "action": "scroll",
           "target": "#open-support-form",
-          "caption": "If nothing fits, the support form reaches a person."
+          "caption": "If nothing fits, the support form reaches a person.",
+          "headline": "Reach a real person",
+          "keyWord": "person"
         },
         { "action": "hold", "ms": 600 }
       ]
@@ -153,13 +175,21 @@
         {
           "action": "click",
           "target": { "role": "link", "name": "Bundles" },
-          "caption": "Bundles decide what you can run and how many submissions you get."
+          "caption": "Bundles decide what you can run and how many submissions you get.",
+          "headline": "Choose your bundle",
+          "keyWord": "bundle"
         },
         { "action": "await", "until": "#catalogBundles .service-item", "label": "Loading bundles" },
         { "action": "scroll", "target": "#catalogBundles" },
         { "action": "point", "target": "#catalogBundles .service-item:first-of-type" },
         { "action": "hold", "ms": 800 },
-        { "action": "scroll", "target": "#passEntryForm", "caption": "Got a pass? Redeem it here." },
+        {
+          "action": "scroll",
+          "target": "#passEntryForm",
+          "caption": "Got a pass? Redeem it here.",
+          "headline": "Redeem your pass",
+          "keyWord": "pass"
+        },
         { "action": "hold", "ms": 600 }
       ]
     },
@@ -172,17 +202,27 @@
         {
           "action": "click",
           "target": { "role": "link", "name": "accessibility" },
-          "caption": "We publish an accessibility statement and the reports behind it."
+          "caption": "We publish an accessibility statement and the reports behind it.",
+          "headline": "Read our accessibility statement",
+          "keyWord": "accessibility"
         },
         { "action": "scroll", "target": { "text": "Conformance Status" } },
         { "action": "hold", "ms": 750 },
         {
           "action": "scroll",
           "target": { "text": "Known Limitations" },
-          "caption": "Including what still does not work."
+          "caption": "Including what still does not work.",
+          "headline": "Known limitations, listed",
+          "keyWord": "limitations"
         },
         { "action": "hold", "ms": 750 },
-        { "action": "scroll", "to": "top", "caption": "Start at submit.diyaccounting.co.uk." },
+        {
+          "action": "scroll",
+          "to": "top",
+          "caption": "Start at submit.diyaccounting.co.uk.",
+          "headline": "Start at our site",
+          "keyWord": "Start"
+        },
         { "action": "hold", "ms": 1000 }
       ]
     }
