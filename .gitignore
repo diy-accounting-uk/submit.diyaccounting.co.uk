@@ -376,9 +376,6 @@ CLAUDE.local.md
 # Generated test bundle
 web/public/submit.bundle.js
 
-# Generated simulator build output
-web/public-simulator/
-web/public/simulator-local.js
 /getVatObligationsBehaviour.output.txt
 
 # Generated QR codes (produced by generate-pass workflow, uploaded as artifacts)

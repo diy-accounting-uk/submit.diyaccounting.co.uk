@@ -14,6 +14,5 @@
     "web/browser-tests/**/*.js",
     "mcp/package.json"
   ],
-  "project": ["**/*.js", "**/*.mjs", "**/*.cjs"],
-  "ignore": ["web/public-simulator/**"]
+  "project": ["**/*.js", "**/*.mjs", "**/*.cjs"]
 }

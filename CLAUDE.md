@@ -345,10 +345,6 @@ npm run test:submitVatBehaviour-ci
 
 **Important**: Lean deploy creates CloudFormation drift (intentional). The next full `deploy.yml` run reconciles all state via CDK.
 
-## Simulator Website (CRITICAL)
-
-**Never edit files in `web/public-simulator/` directly.** This directory is an automated export/build of the main site in `web/public/`. All changes must be made in `web/public/` and the simulator version will be regenerated from it. Editing the simulator files directly will result in changes being overwritten on the next build.
-
 ## Code Quality Rules
 
 See the shared conventions section at the end of this file for shared rules. Additional submit-specific rules:

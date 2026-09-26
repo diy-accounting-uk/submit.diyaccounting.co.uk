@@ -321,14 +321,6 @@
         const active = new Set();
         const isLoggedIn = !!localStorage.getItem("cognitoIdToken");
 
-        // In simulator mode, grant all bundles so all activities are accessible
-        if (document.documentElement.dataset.simulator === "true" && catalog.bundles) {
-          for (const bundle of catalog.bundles) {
-            active.add(bundle.id);
-          }
-          return Array.from(active);
-        }
-
         // Add automatic bundles for authenticated users
         if (catalog.bundles && isLoggedIn) {
           for (const bundle of catalog.bundles) {

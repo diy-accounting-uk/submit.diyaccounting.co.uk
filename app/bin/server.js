@@ -195,7 +195,7 @@ app.use((req, res, next) => {
     // img-src needs the wildcard, not just https://www.google-analytics.com: GA4's /g/collect
     // beacon lands on a region-specific subdomain (e.g. region1.google-analytics.com), which the
     // literal host doesn't match and CSP then silently drops the pixel.
-    "default-src 'self'; script-src 'self' 'unsafe-inline' https://client.rum.us-east-1.amazonaws.com https://www.googletagmanager.com; style-src 'self' 'unsafe-inline'; img-src 'self' data: https://avatars.githubusercontent.com https://*.google-analytics.com https://www.googletagmanager.com; font-src 'self'; connect-src 'self' https://*.hmrc.gov.uk https://*.amazoncognito.com https://dataplane.rum.eu-west-2.amazonaws.com https://cognito-identity.eu-west-2.amazonaws.com https://sts.eu-west-2.amazonaws.com https://*.google-analytics.com https://www.googletagmanager.com; frame-src 'self' https://simulator.submit.diyaccounting.co.uk; frame-ancestors 'none'; form-action 'self'",
+    "default-src 'self'; script-src 'self' 'unsafe-inline' https://client.rum.us-east-1.amazonaws.com https://www.googletagmanager.com; style-src 'self' 'unsafe-inline'; img-src 'self' data: https://avatars.githubusercontent.com https://*.google-analytics.com https://www.googletagmanager.com; font-src 'self'; connect-src 'self' https://*.hmrc.gov.uk https://*.amazoncognito.com https://dataplane.rum.eu-west-2.amazonaws.com https://cognito-identity.eu-west-2.amazonaws.com https://sts.eu-west-2.amazonaws.com https://*.google-analytics.com https://www.googletagmanager.com; frame-src 'self' https://www.youtube-nocookie.com; frame-ancestors 'none'; form-action 'self'",
   );
   // Cross-Origin-Opener-Policy: Isolates browsing context (Spectre mitigation)
   res.setHeader("Cross-Origin-Opener-Policy", "same-origin");
@@ -258,26 +258,6 @@ app.get("/auth/login-mock-addon.js", (req, res) => {
 });
 
 app.use(express.static(path.join(__dirname, "../../web/public"), { dotfiles: "allow" }));
-
-// Serve simulator build at /sim/ sub-path for same-origin iframe embedding
-// Only available when web/public-simulator/ exists (after npm run build:simulator)
-const simulatorPublicPath = path.join(__dirname, "../../web/public-simulator");
-if (fs.existsSync(simulatorPublicPath)) {
-  // Override security headers for /sim/ routes to allow framing from same origin
-  app.use("/sim", (req, res, next) => {
-    res.setHeader("X-Frame-Options", "SAMEORIGIN");
-    res.setHeader(
-      "Content-Security-Policy",
-      "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self'; connect-src 'self'; frame-ancestors 'self'; form-action 'self'",
-    );
-    next();
-  });
-  app.use("/sim", express.static(simulatorPublicPath, { dotfiles: "allow" }));
-  // SPA fallback for /sim/ routes
-  app.get("/sim/{*path}", (req, res) => {
-    res.sendFile(path.join(simulatorPublicPath, "index.html"), { dotfiles: "allow" });
-  });
-}
 
 // Register mock OAuth routes in mock/simulator auth environments
 if (process.env.TEST_AUTH_PROVIDER === "mock" || process.env.TEST_AUTH_PROVIDER === "simulator") {

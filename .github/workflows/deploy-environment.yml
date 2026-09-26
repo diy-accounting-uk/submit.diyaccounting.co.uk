@@ -8,7 +8,7 @@ concurrency:
   # This workflow deploys the shared `{env}-env-*` stacks: one ObservabilityStack, one
   # DataStack, one IdentityStack, and so on, per environment — not per branch, not per commit.
   # Two branches that both touch a watched infra path (an env stack's Java source, cdk.json,
-  # web/public, the holding page) would otherwise deploy to the identical stack at once and hit
+  # the holding page) would otherwise deploy to the identical stack at once and hit
   # CloudFormation's "Stack is in UPDATE_IN_PROGRESS state" error, which is what happened to the
   # sibling spreadsheets repo. This workflow has no wait-for-ci-deploys step of its own, so the
   # group always resolves to the effective environment (the explicit input when a
@@ -73,7 +73,6 @@ on:
       # The view SQL is read into the stack at synth by BusinessViews.loadResourceText, so a
       # change to a .sql file changes the deployed view and has to redeploy the stack.
       - 'infra/main/resources/analytics/**'
-      - 'infra/main/java/co/uk/diyaccounting/submit/stacks/SimulatorStack.java'
       - 'infra/main/java/co/uk/diyaccounting/submit/stacks/EcrStack.java'
       - 'infra/main/java/co/uk/diyaccounting/submit/stacks/ScanDetectionStack.java'
       - 'infra/main/java/co/uk/diyaccounting/submit/stacks/SecurityDetectionStack.java'
@@ -81,10 +80,6 @@ on:
       - 'app/functions/analytics/**'
       # Activity Telegram forwarder Lambda source
       - 'app/functions/ops/activityTelegramForwarder.js'
-      # Simulator source code. build-simulator.js reads web/public and writes
-      # web/public-simulator, which is gitignored, so only the source can appear
-      # in a push and only the source belongs in this list.
-      - 'web/public/**'
       # Holding page source
       - 'web/holding/**'
       # Shared utilities and entry point
@@ -1448,84 +1443,6 @@ jobs:
             --attribute-mapping "$CURRENT_ATTRS"
 
           echo "Google Identity Provider updated with new secret"
-
-  deploy-simulator:
-    name: 'deploy simulator'
-    needs:
-      - names
-      - create-secrets
-    runs-on: ubuntu-24.04
-    environment: ${{ needs.names.outputs.environment-name }}
-    permissions:
-      id-token: write
-      contents: read
-    steps:
-
-      - name: Configure AWS role via GitHub OIDC
-        uses: aws-actions/configure-aws-credentials@e1253824e5c10ff9df46874f81ed3ec929e19cfd # v6
-        with:
-          role-to-assume: ${{ vars.SUBMIT_ACTIONS_ROLE_ARN }}
-          aws-region: ${{ env.AWS_REGION }}
-          role-chaining: false
-          audience: sts.amazonaws.com
-          role-skip-session-tagging: true
-          output-credentials: true
-          retry-max-attempts: 3
-
-      - name: Assume AWS deployment role
-        uses: aws-actions/configure-aws-credentials@e1253824e5c10ff9df46874f81ed3ec929e19cfd # v6
-        with:
-          role-to-assume: ${{ vars.SUBMIT_DEPLOY_ROLE_ARN }}
-          aws-region: ${{ env.AWS_REGION }}
-          role-chaining: true
-          audience: sts.amazonaws.com
-          role-skip-session-tagging: true
-          output-credentials: true
-          retry-max-attempts: 3
-
-      - name: Checkout
-        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
-      - name: Setup Node
-        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7
-        with:
-          node-version: ${{ env.NODE_VERSION }}
-          cache: 'npm'
-
-      - name: Node dependencies
-        run: timeout 120 npm ci --prefer-offline || { sleep 30; timeout 180 npm ci; }
-        timeout-minutes: 6
-        env:
-          NPM_CONFIG_FETCH_RETRIES: "3"
-
-      - name: Build simulator
-        run: npm run build:simulator
-
-      - uses: actions/setup-java@b6effb05e454b25005698d916606bdc6ffcbf961 # v5
-        with:
-          distribution: 'temurin'
-          java-version: ${{ env.JAVA_VERSION }}
-          cache: 'maven'
-
-      - name: Deploy Simulator stack (CDK)
-        run: |
-          ./mvnw --errors clean verify -DskipTests -Dmaven.compiler.source=${{ env.JAVA_VERSION }} -Dmaven.compiler.target=${{ env.JAVA_VERSION }} \
-            && cd cdk-environment \
-            && cat ../.env.${{ needs.names.outputs.environment-name }} \
-            && npx dotenv -e ../.env.${{ needs.names.outputs.environment-name }} -- \
-              npx cdk deploy \
-                ${{ needs.names.outputs.environment-name }}-env-SimulatorStack \
-                --exclusively \
-                --require-approval never \
-                --ci true \
-                --no-notices \
-                --concurrency 4 \
-                --asset-parallelism \
-                --outputs-file ../cdk-submit-environment.out/cdk-outputs-simulator.json \
-            && cd .. \
-          ;
-        env:
-          ENVIRONMENT_NAME: ${{ needs.names.outputs.environment-name }}
-          DEPLOYMENT_NAME: ${{ needs.names.outputs.environment-name }}
 
   deploy-billing-webhook:
     name: 'deploy billing webhook'

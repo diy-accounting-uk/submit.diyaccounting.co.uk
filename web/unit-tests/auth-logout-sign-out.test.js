@@ -45,7 +45,7 @@ describe("logout revoke and sign-out", () => {
     vi.stubGlobal("gtag", gtagMock);
     vi.stubGlobal("document", {
       readyState: "complete",
-      documentElement: { dataset: { simulator: "true" } },
+      documentElement: { dataset: {} },
       querySelector: () => null,
       addEventListener: () => {},
     });
@@ -139,11 +139,10 @@ describe("logout revoke and sign-out", () => {
     expect(globalThis.localStorage.getItem("cognitoAccessToken")).toBeNull();
   });
 
-  describe("outside the simulator, without env-loader.js on the page", () => {
+  describe("without env-loader.js on the page", () => {
     beforeEach(() => {
       // Not every page that carries auth-status.js also loads env-loader.js, so
       // window.envReady can be undefined here — logout() must not depend on it.
-      globalThis.document.documentElement.dataset.simulator = "false";
       delete globalThis.window.envReady;
     });
 

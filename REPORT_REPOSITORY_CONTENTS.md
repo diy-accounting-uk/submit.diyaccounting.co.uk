@@ -205,7 +205,6 @@ Created once per environment by `deploy-environment.yml`:
 | EcrStack | ECR repositories (eu-west-2 and us-east-1) |
 | ActivityStack | Activity/subscription management |
 | HoldingStack | S3 bucket and CloudFront for the holding page |
-| SimulatorStack | Lambda (Web Adapter) and CloudFront for the public demo simulator |
 | IdentityStack | Cognito user pool |
 | BackupStack | Cross-account backup configuration |
 
@@ -395,7 +394,7 @@ The proxy mode tests are the gold standard for CI validation, because they use r
 
 | Path | Purpose |
 |------|---------|
-| `bin/` | Entry point scripts (server.js, simulator-server.js, dynamodb.js, main.js, provision-user.mjs) |
+| `bin/` | Entry point scripts (server.js, dynamodb.js, main.js, provision-user.mjs) |
 | `data/` | DynamoDB repository implementations |
 | `functions/auth/` | Authentication Lambdas (customAuthorizer, cognitoTokenPost) |
 | `functions/hmrc/` | HMRC API Lambdas (obligations, returns, receipts, token exchange) |
@@ -483,7 +482,6 @@ Lightweight mock server for local development:
 | Path | Purpose |
 |------|---------|
 | `public/` | Static website files served by S3/CloudFront |
-| `public-simulator/` | Simulator variant (copy of public with simulator-specific overrides) |
 | `holding/` | Holding page (maintenance mode) |
 | `unit-tests/` | Vitest frontend unit tests |
 | `browser-tests/` | Playwright browser tests |
@@ -549,7 +547,6 @@ Lightweight mock server for local development:
 | `entitlement-status.js` | Bundle entitlement indicator |
 | `status-messages.js` | Toast/status message display |
 | `loading-spinner.js` | Loading indicator |
-| `simulator-bridge.js` | Simulator mode bridge |
 | `localstorage-viewer.js` | Developer localStorage inspector |
 | `view-source-link.js` | View source link for developers |
 | `error-page.js` | Custom error page handler |
@@ -631,9 +628,7 @@ Head-injected scripts for early API prefetching:
 
 | Script | Purpose |
 |--------|---------|
-| `build-simulator.js` | Build simulator site from public site |
 | `build-sitemaps.cjs` | Build XML sitemaps |
-| `simulator-lambda-server.mjs` | Lambda server for simulator |
 | `start-simulator.sh` | Start simulator mode |
 | `start-proxy.sh` | Start proxy mode |
 | `deploy-app.js` | Lean app deployment (Lambda + S3 without CDK) |

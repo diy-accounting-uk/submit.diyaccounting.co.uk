@@ -41,8 +41,6 @@
     "update-to-latest": "npx npm-check-updates --upgrade --enginesNode --verbose --install always",
     "update-to-greatest": "npx npm-check-updates --upgrade --enginesNode --target greatest --verbose --install always --reject 'alpha'",
     "update:java": "./scripts/update-java.sh",
-    "build:simulator": "node scripts/build-simulator.js",
-    "simulator:server": "node app/bin/simulator-server.js",
     "bundle": "node scripts/bundle-for-tests.js",
     "videos:manifest": "node scripts/copy-videos-manifest.js",
     "pretest": "npm run bundle",

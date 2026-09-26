@@ -125,8 +125,8 @@ number of agents. Keep adding independent workstreams while independent work rem
 next item would have to share a file with one already dispatched.
 
 1. **Sequence the board.** Take the unblocked items in board order. Group them by where they live:
-   `infra/**` (Java CDK), `app/functions/**` and their tests, `web/public/**` (never
-   `web/public-simulator/`, it is a generated export), `web/browser-tests/`, `behaviour-tests/`,
+   `infra/**` (Java CDK), `app/functions/**` and their tests, `web/public/**`,
+   `web/browser-tests/`, `behaviour-tests/`,
    `.github/workflows/**` and `.github/actions/**`, `scripts/**`, and the root `PLAN_*.md` and
    `REPORT_*.md` documents.
 2. **Items that share a file are one workstream, so give them to one agent in one brief.** Not one

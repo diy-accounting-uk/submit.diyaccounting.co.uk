@@ -265,14 +265,6 @@
     sessionStorage.removeItem("postLoginRedirect");
     sessionStorage.removeItem("passValidation");
 
-    // In simulator mode, navigate to activities page instead of reloading
-    // (demo credentials are re-injected on each page load)
-    if (document.documentElement.dataset.simulator === "true") {
-      const pathPrefix = window.location.pathname.startsWith("/sim/") ? "/sim/" : "/";
-      window.location.href = window.location.origin + pathPrefix;
-      return;
-    }
-
     // Redirect to Cognito logout endpoint to invalidate session. window.envReady is
     // undefined on a page that never loaded env-loader.js, and rejects when /submit.env
     // failed to fetch — either way the local sign-out above must still stand, so resolve

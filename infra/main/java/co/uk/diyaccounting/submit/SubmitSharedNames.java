@@ -63,16 +63,15 @@ public class SubmitSharedNames {
     public String hostedZoneName;
     public String deploymentDomainName;
     // Each ci slot host is registered by hand with Cognito, HMRC and Companies House, so a branch
-    // deploy that claims a slot completes its sign-ins on its own host instead of the shared apex,
-    // and the simulator lets that host frame it. Two slots, because the HMRC and Companies House
-    // sandbox applications both reached their redirect-URI cap at ci-set2. Keep in step with
-    // claim-ci-slot's slot-count default. Empty on prod.
+    // deploy that claims a slot completes its sign-ins on its own host instead of the shared apex.
+    // Two slots, because the HMRC and Companies House sandbox applications both reached their
+    // redirect-URI cap at ci-set2. Keep in step with claim-ci-slot's slot-count default. Empty on
+    // prod.
     public List<String> ciSlotHostNames;
     public String envDomainName;
     public String publicDomainName;
     public String cognitoDomainName;
     public String holdingDomainName;
-    public String simulatorDomainName;
     public String billingDomainName;
     public String baseUrl;
     public String envBaseUrl;
@@ -153,7 +152,6 @@ public class SubmitSharedNames {
     public String holdingStackId;
     public String backupStackId;
     public String activityStackId;
-    public String simulatorStackId;
     public String billingWebhookStackId;
     public String ecrStackId;
     public String ue1EcrStackId;
@@ -1372,7 +1370,6 @@ public class SubmitSharedNames {
         this.holdingDomainName = "prod".equals(props.envName)
                 ? "holding.%s.%s".formatted(props.subDomainName, props.hostedZoneName)
                 : "%s-holding.%s.%s".formatted(props.envName, props.subDomainName, props.hostedZoneName);
-        this.simulatorDomainName = "%s-simulator.%s".formatted(props.envName, props.hostedZoneName);
         this.billingDomainName = "%s-billing.%s.%s".formatted(props.envName, props.subDomainName, props.hostedZoneName);
         this.deploymentDomainName = "%s.%s.%s"
                 .formatted(
@@ -1409,7 +1406,6 @@ public class SubmitSharedNames {
         this.holdingStackId = "%s-env-HoldingStack".formatted(props.envName);
         this.backupStackId = "%s-env-BackupStack".formatted(props.envName);
         this.activityStackId = "%s-env-ActivityStack".formatted(props.envName);
-        this.simulatorStackId = "%s-env-SimulatorStack".formatted(props.envName);
         this.billingWebhookStackId = "%s-env-BillingWebhookStack".formatted(props.envName);
         this.ecrStackId = "%s-env-EcrStack".formatted(props.envName);
         this.ue1EcrStackId = "%s-env-EcrUE1Stack".formatted(props.envName);

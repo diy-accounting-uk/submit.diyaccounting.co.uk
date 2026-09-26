@@ -80,8 +80,6 @@ export default [
       // Exclude non-production directories
       "_developers/",
       "reference/",
-      // Simulator is auto-generated from web/public/ - never edit directly
-      "web/public-simulator/",
     ],
   },
 ];
