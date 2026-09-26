@@ -314,6 +314,7 @@ public class TableChangeDelivery extends Construct {
                 columns.add(column("granted_at", "string"));
                 columns.add(column("expires_at", "string"));
                 columns.add(column("ttl", "bigint"));
+                columns.add(column("actor", "string"));
             }
             case "subscriptions" -> {
                 columns.add(column("hashed_sub", "string"));
@@ -333,6 +334,7 @@ public class TableChangeDelivery extends Construct {
                 columns.add(column("updated_at", "string"));
                 columns.add(column("use_count", "bigint"));
                 columns.add(column("revoked_at", "string"));
+                columns.add(column("actor", "string"));
             }
             default -> throw new IllegalArgumentException("No Glue columns declared for table kind: " + kind);
         }

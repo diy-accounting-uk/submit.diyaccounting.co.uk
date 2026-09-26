@@ -189,20 +189,25 @@ class BusinessViewsTest {
                         && sql.contains("'synthetic'"),
                 "expected the signup view to filter out test-user, probe and synthetic actors: " + sql);
         assertTrue(
+                sql.contains("min_by(actor"),
+                "expected the signup view to prefer dynamo_bundles' own actor column: " + sql);
+        assertTrue(
                 sql.contains("'bundle-granted'") && sql.contains("'subscription-activated'"),
-                "expected the signup view to resolve actor from the bundle-granted or"
-                        + " subscription-activated activity event, since dynamo_bundles carries no actor of its"
-                        + " own: " + sql);
+                "expected the signup view to fall back to the bundle-granted or subscription-activated"
+                        + " activity event for a bundle item with no actor of its own: " + sql);
     }
 
     @Test
-    void passRedemptionsViewExcludesAutomatedTestPassTypes() {
+    void passRedemptionsViewExcludesAutomatedTestPassTypesAndActors() {
         Template template = synthBusinessViews();
 
         var sql = sqlForView(template, "v_pass_redemptions_daily");
         assertTrue(
                 sql.contains("NOT LIKE '%-test-pass'"),
                 "expected the redemptions view to exclude pass types named with the automated-test suffix: " + sql);
+        assertTrue(
+                sql.contains("'test-user'") && sql.contains("'probe'") && sql.contains("'synthetic'"),
+                "expected the redemptions view to also filter redemptions by the pass item's own actor: " + sql);
     }
 
     @Test

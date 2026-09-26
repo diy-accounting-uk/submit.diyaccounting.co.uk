@@ -157,6 +157,29 @@ describe("passService", () => {
 
       expect(pass.issuedBy).toBe("user#abc123");
     });
+
+    it("should set actor when supplied", () => {
+      const pass = buildPassRecord({
+        passTypeId: "day-guest-test-pass",
+        bundleId: "day-guest",
+        validityPeriod: "P7D",
+        createdBy: "admin",
+        actor: "customer",
+      });
+
+      expect(pass.actor).toBe("customer");
+    });
+
+    it("should omit actor when not supplied", () => {
+      const pass = buildPassRecord({
+        passTypeId: "day-guest-test-pass",
+        bundleId: "day-guest",
+        validityPeriod: "P7D",
+        createdBy: "admin",
+      });
+
+      expect(pass.actor).toBeUndefined();
+    });
   });
 
   describe("createPass", () => {

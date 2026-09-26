@@ -15,13 +15,15 @@
 -- before computing the lag left that first (and usually only) modify with no previous row to
 -- compare against, so passes_redeemed was always zero.
 --
--- dynamo_passes carries no actor and no requestId: an admin-issued pass (passAdminPost.js)
--- never records who called it, so a redemption cannot be told apart from a real customer's the
--- way passes_issued (above) already can from the activity event's own actor. The one signal
--- available on this table today is the pass type id itself: submit.passes.toml suffixes an
--- automated-test type with "-test-pass" (day-guest-test-pass, resident-pro-test-pass,
--- resident-vat-test-pass), so those are excluded here; a production type id (day-guest,
--- resident-vat, invited-guest) still mixes real and test-lane redemptions.
+-- dynamo_passes carries its own actor from the write that created it, constant across every
+-- later change record for the same pass (redemption and revocation each SET only their own
+-- fields, so the actor set at creation rides along on the item's later change records too). A
+-- pass issued before that write shipped has no actor on the item, so this also keeps the
+-- pass-type-id suffix filter: submit.passes.toml suffixes an automated-test type with
+-- "-test-pass" (day-guest-test-pass, resident-pro-test-pass, resident-vat-test-pass), so those
+-- are excluded here regardless of actor; a production type id (day-guest, resident-vat,
+-- invited-guest) issued before the actor column existed still mixes real and test-lane
+-- redemptions.
 CREATE OR REPLACE VIEW v_pass_redemptions_daily AS
 WITH issued AS (
   SELECT date(event_ts) AS day,
@@ -35,6 +37,7 @@ pass_history AS (
          change_type,
          pass_type_id,
          use_count,
+         actor,
          lag(use_count) OVER (PARTITION BY pass_id ORDER BY change_ts) AS previous_use_count
   FROM   dynamo_passes
   WHERE  pass_type_id NOT LIKE '%-test-pass'),
@@ -44,6 +47,7 @@ redeemed AS (
          count(*) AS passes_redeemed
   FROM   pass_history
   WHERE  change_type = 'MODIFY' AND previous_use_count IS NOT NULL AND use_count > previous_use_count
+    AND  coalesce(actor, 'customer') NOT IN ('test-user', 'probe', 'synthetic')
   GROUP  BY 1, 2)
 SELECT coalesce(issued.day, redeemed.day) AS day,
        coalesce(issued.pass_type_id, redeemed.pass_type_id) AS pass_type_id,

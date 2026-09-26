@@ -167,6 +167,7 @@ describe("passGeneratePost", () => {
         issuedBy: "hashed_test-user-sub",
         createdBy: "user",
         notes: "My note",
+        actor: "customer",
       }),
     );
   });

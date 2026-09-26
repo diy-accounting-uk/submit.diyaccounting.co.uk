@@ -926,6 +926,8 @@ describe("billingWebhookPost", () => {
     expect(events[0].actor).toBe("customer");
     const [subscriptionRecord] = mockPutSubscription.mock.calls[0];
     expect(subscriptionRecord.actor).toBe("customer");
+    const [, bundleRecord] = mockPutBundleByHashedSub.mock.calls[0];
+    expect(bundleRecord.actor).toBe("customer");
   });
 
   test("checkout.session.completed classifies actor as test-user for a synthetic lane's email", async () => {
@@ -938,6 +940,8 @@ describe("billingWebhookPost", () => {
     expect(events[0].actor).toBe("test-user");
     const [subscriptionRecord] = mockPutSubscription.mock.calls[0];
     expect(subscriptionRecord.actor).toBe("test-user");
+    const [, bundleRecord] = mockPutBundleByHashedSub.mock.calls[0];
+    expect(bundleRecord.actor).toBe("test-user");
   });
 
   test("invoice.paid publishes subscription-renewed with hashedSub in detail", async () => {

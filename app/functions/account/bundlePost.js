@@ -403,7 +403,10 @@ export async function grantBundle(
       })
     : null;
   const expiryStr = expiry ? expiry.toISOString().slice(0, 10) : "";
-  const newBundle = { bundleId: requestedBundle, expiry: expiryStr };
+  // decodedToken flows here unchanged from both the synchronous ingestHandler and the SQS
+  // workerHandler (see the same classification below, on the activity event), so the item
+  // itself carries the same actor as whichever path granted it.
+  const newBundle = { bundleId: requestedBundle, expiry: expiryStr, actor: classifyActor(decodedToken?.email) };
   const effectiveQualifiers = grantQualifiers || (Object.keys(qualifiers).length > 0 ? qualifiers : undefined);
   if (effectiveQualifiers && Object.keys(effectiveQualifiers).length > 0) {
     newBundle.qualifiers = effectiveQualifiers;
