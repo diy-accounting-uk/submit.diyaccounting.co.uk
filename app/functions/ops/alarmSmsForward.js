@@ -53,7 +53,7 @@ async function resolveOperatorNumber() {
  * not valid JSON is a genuine platform anomaly and is left to throw.
  *
  * @param {{Sns?: {Message?: string}}} record
- * @returns {{alarmName: string, newState: string, stateChangeTime: string}|null}
+ * @returns {{alarmName: string, newState: string, oldState: string, stateChangeTime: string}|null}
  */
 export function parseAlarmSnsRecord(record) {
   const sns = record?.Sns;
@@ -63,6 +63,7 @@ export function parseAlarmSnsRecord(record) {
   return {
     alarmName: notification.AlarmName,
     newState: notification.NewStateValue,
+    oldState: notification.OldStateValue,
     stateChangeTime: notification.StateChangeTime,
   };
 }
@@ -111,6 +112,19 @@ export function buildMessageBody({ alarmName, newState, stateChangeTime, environ
  * SNS-subscribed handler. A send failure (from the SDK call itself) is left to throw, so it
  * shows up on the Lambda's own Errors metric rather than being swallowed here.
  */
+/**
+ * Every deployment creates these alarms afresh, and each one's first evaluation moves it from
+ * INSUFFICIENT_DATA to OK, which fires the OK action. Only an ALARM, or an OK that ends one, is
+ * news to the operator; the rest would spend the account's monthly text budget on every deploy.
+ *
+ * @param {{newState: string, oldState: string}} alarm
+ * @returns {boolean}
+ */
+export function isOperatorWorthy({ newState, oldState }) {
+  if (newState === "ALARM") return true;
+  return newState === "OK" && oldState === "ALARM";
+}
+
 export async function handler(event) {
   const environmentName = process.env.ENVIRONMENT_NAME;
   if (!environmentName) throw new Error("ENVIRONMENT_NAME environment variable is required");
@@ -118,7 +132,10 @@ export async function handler(event) {
   const originationIdentity = process.env.SMS_ORIGINATION_IDENTITY;
   if (!originationIdentity) throw new Error("SMS_ORIGINATION_IDENTITY environment variable is required");
 
-  const alarms = (event.Records ?? []).map(parseAlarmSnsRecord).filter((alarm) => alarm !== null);
+  const alarms = (event.Records ?? [])
+    .map(parseAlarmSnsRecord)
+    .filter((alarm) => alarm !== null)
+    .filter(isOperatorWorthy);
 
   for (const alarm of alarms) {
     const messageBody = buildMessageBody({ ...alarm, environmentName });
