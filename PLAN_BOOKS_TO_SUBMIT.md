@@ -137,7 +137,14 @@ entitlement first and label the menu item with what the bundle allows.
 4. "Open from Google Drive" lists the folder (as today) and adds the Picker, so a book saved
    elsewhere or uploaded by hand opens too. The same button opens an `.xlsx` or package zip the
    customer keeps in Drive.
-5. The S3 store (`diya-gl-storage`) stays a Resident feature. Drive does not depend on it.
+5. The DIYA cloud store retires (operator, 2026-09-26: "Google Drive will be browser only from
+   here"): the `diya-gl-storage` activity, the `/api/v1/books` and `/api/v1/diya-gl` routes, the
+   `app/functions/diyaGl/` Lambdas (put, list, version, delete, lapse sweep), their wiring in
+   `AccountStack.java`, `ApiStack.java`, `DataStack.java`, `BackupStack.java`,
+   `SubmitSharedNames.java`, and the bucket `prod-env-diya-gl-972912397388`, which held 20 objects
+   (214 KB) on 2026-09-26. Before the bucket goes, its owners are found and each gets their books
+   back (a download link, or a copy sent to them), and the spreadsheets site's `cloud.js` stops
+   calling the store.
 
 The code change is the gate at `drive.js:81-83` and the merged list in `cloud.js`: Drive stands
 alone when there is no Cognito session. The console steps in LP-24a still apply, with the
@@ -226,6 +233,7 @@ The operator accepted every recommendation below on 2026-09-26; each "Recommend"
 | BS9 | Journey C: Drive offered without a Cognito session; Picker for "Open from Google Drive"; spec cases updated | spreadsheets `drive.js`, `cloud.js`, `shell.js`, `web/browser-tests/diya-gl-drive.browser.test.js` | ~5 | Sonnet | BS5 |
 | BS10 | `cloud-config.js` `googleClientId` set per host, and the Picker key | spreadsheets `cloud-config.js` | ~1 | Haiku | BS5 |
 | BS11 | Privacy page: Drive, `drive.file`, the book stays in the browser | `web/public/privacy.html`, spreadsheets privacy copy | ~2 | Haiku | decision 6 |
+| BS15 | Retire the DIYA cloud store: find the owners of the 20 objects in `prod-env-diya-gl-972912397388` and return their books; remove the `diya-gl-storage` activity, the `/api/v1/books` and `/api/v1/diya-gl` routes, the `app/functions/diyaGl/` Lambdas and their stack wiring; empty and delete the bucket through CDK | `app/functions/diyaGl/*`, `app/services/diyaGlEntitlement.js`, `app/services/bundleManagement.js`, `AccountStack.java`, `ApiStack.java`, `DataStack.java`, `BackupStack.java`, `SubmitSharedNames.java`, `web/public/submit.catalogue.toml`, the system test | ~16 | Opus (retirement order and data return), then Sonnet | BS6 (Drive live first), the owners' books returned |
 | BS12 | Scene-script `dropFile` step and recorder support | `videos/scene-script.schema.json`, the capture runner | ~3 | Sonnet | — |
 | BS13 | The two scene scripts, recorded on ci, added to `videos/publish.json` | `videos/vat-from-books.json`, `videos/itsa-quarterly-from-books.json`, `videos/publish.json` | ~3 | Sonnet | BS3, BS12 |
 | BS14 | Simulator behaviour cases: drop a fixture on VAT and ITSA quarterly, submit, receipt | `behaviour-tests/` (VAT and ITSA suites) | ~2 | Sonnet | BS3 |
