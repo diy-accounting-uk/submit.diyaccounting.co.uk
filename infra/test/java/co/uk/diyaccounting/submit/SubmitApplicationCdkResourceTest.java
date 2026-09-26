@@ -98,7 +98,7 @@ class SubmitApplicationCdkResourceTest {
 
         infof("Created stack:", submitApplication.companiesHouseStack.getStackName());
         Template companiesHouseStackTemplate = Template.fromStack(submitApplication.companiesHouseStack);
-        companiesHouseStackTemplate.resourceCountIs("AWS::Lambda::Function", 19);
+        companiesHouseStackTemplate.resourceCountIs("AWS::Lambda::Function", 21);
         assertStackHealthAlarm(companiesHouseStackTemplate, 19, 0, routedPrefixes);
 
         // Every route that can carry a clientId resolves it via enforceBundles -> getClient(),
