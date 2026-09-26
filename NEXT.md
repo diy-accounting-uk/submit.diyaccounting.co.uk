@@ -38,11 +38,6 @@ console action — comes before any code. Operator items are briefed in
 names its model: the lowest tier that fits (Fable > Opus > Sonnet > Haiku), or `none` for a human
 step.
 
-Shared facts for the analytics rows (SR-11, B52l, B52m): the prod Athena database is
-`prod_env_analytics` and the workgroup `prod-env-analytics` (eu-west-2, `AWS_PROFILE=submit-prod`);
-`OperatorSnapshotPublish.java` passes them to the Lambda as `GLUE_DATABASE_NAME` and
-`ATHENA_WORK_GROUP_NAME` (lines 102 to 103).
-
 ## In flight
 
 ## Machine-only
@@ -71,35 +66,6 @@ Shared facts for the analytics rows (SR-11, B52l, B52m): the prod Athena databas
   BACKLOG 34c's: prod carries no `COMPANIES_HOUSE_XMLGW_URI` and no presenter secret ARNs. Blocked
   on IT at Companies House: the XML team answered on 2026-09-25 13:59 that the test presenter's account "was not set up successfully, causing the error", and will reply when IT answers. They asked for the request and response on 2026-09-24; the reply went the same day with transactions 1790285530232 (9999) and 1790285532345 (502), masked (`../DRAFT_EMAIL_XMLGW_000004_REPLY.md`; the unmasked set, from the 21:42 run, is `../DRAFT_EMAIL_XMLGW_000004_REPLY_UNMASKED.md`). In the 9999 response the gateway echoes `Method` CHMD5 with an empty `Value`. **Source**: BACKLOG 34b. **Owner**: Claude Code. **Model**: Sonnet. **Size**:
   ~1 file.
-
-- [ ] **B52l. The optimiser over the raw export.** A notebook over `../analytics/prod/` (pulled by
-  `scripts/analytics-pull.sh`, one CSV per view in `app/functions/analytics/rawExportPublish.js`'s
-  `VIEW_NAMES` (line 20)): per-block correlations, the block models fitted (linear cost from
-  `v_cost_daily`, log-linear funnels from `v_login_to_submission_funnel` and `v_ga4_funnel_daily`,
-  Hill curves for spend), levers ranked by effect per unit cost, and the next experiment proposed
-  with its predicted effect and interval as a row ready for `experiments.toml`; Bayesian
-  optimisation for the continuous knobs and a Thompson-sampling bandit for allocations once
-  experiments exist. The model design as a section under `PLAN_ONE_STOP_DASHBOARD.md` D16 first,
-  then the notebook, then one line per objective on `web/public/operator/dashboard.html`. Blocked
-  until three months of nightly export exist under `exports/prod/`: first written 2026-09-10, so
-  the gate is 2026-12-10, checked with `aws --profile submit-prod s3 ls
-  s3://prod-env-analytics-lake-<account>/exports/prod/`. **Source**: BACKLOG 52l;
-  `PLAN_ONE_STOP_DASHBOARD.md` D16. **Owner**: Claude Code. **Model**: Opus for the models, Sonnet
-  for the notebook. **Size**: ~3 files.
-
-- [ ] **B52m. The reinvestment loop.** Trailing income, reserve, budget, return per pound and payback
-  as one block on `web/public/operator/dashboard.html`, fed by observations over `v_revenue_daily`
-  and `v_cost_vs_target_monthly` in `operatorSnapshotPublish.js`; the reinvestment fraction as a
-  lever with the reserve floor (operator, 2026-09-22: the fraction is 20% of trailing income, the
-  reserve floor £2,000, one experiment may take at most 10% of the budget unless the operator
-  names a larger share for it, and the trailing window is 30 days); paid traffic and article boosts as `experiments.toml` rows with
-  on-off or geographic controls; GA4 conversion import from the Ads account, which exists as code
-  (`infra/google/ads/ads.toml`: customer `8142685080`, four conversion actions imported from GA4
-  events, one Performance Max campaign); the cost-per-session ceiling PU-15 wrote into D17 is the
-  starting bid ceiling. Blocked on B52l's fitted models (the return-per-pound figure), the cost
-  panel carrying revenue (BACKLOG 43, from 2026-10-02). **Source**: BACKLOG
-  52m; `PLAN_ONE_STOP_DASHBOARD.md` D17. **Owner**: Claude Code. **Model**: Sonnet. **Size**: ~3
-  files.
 
 - [ ] **B34c. Companies House accounts filing launched on prod.** BACKLOG 34c steps 4 to 6: `CompaniesHouseStack.java` sets the prod values (`COMPANIES_HOUSE_GATEWAY_TEST=false`, the live package reference) instead of leaving them unset; one filing on the prod lane for a company the operator controls, polled to a terminal state; `prod` added to `file-micro-entity-accounts`' `environments` and `resident`'s listing in `web/public/submit.catalogue.toml`, with the activity page and the accounts video no longer calling it a sandbox preview. Blocked on B34.6c and O34c. **Source**: BACKLOG 34c. **Owner**: Claude Code. **Model**: Sonnet. **Size**: ~5 files.
 
