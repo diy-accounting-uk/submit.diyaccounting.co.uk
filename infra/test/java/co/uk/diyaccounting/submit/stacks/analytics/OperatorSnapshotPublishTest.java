@@ -9,6 +9,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import co.uk.diyaccounting.submit.SubmitSharedNames;
+import java.util.List;
 import java.util.Map;
 import org.junit.jupiter.api.Test;
 import software.amazon.awscdk.App;
@@ -59,31 +60,67 @@ class OperatorSnapshotPublishTest {
     }
 
     @Test
-    void createsOneLambdaOneScheduleAndOneAlarm() {
-        Template template = synthOperatorSnapshotPublish("prod");
+    void prodGetsTwoSchedulesCiGetsOneAndBothShareOneLambdaAndOneAlarm() {
+        Template prodTemplate = synthOperatorSnapshotPublish("prod");
 
         // The function name is stable across every redeploy of this env-scoped stack, so its
         // log group goes through the idempotent AwsCustomResource path, adding a second Lambda
-        // function: the shared create-if-missing/retention singleton provider.
-        template.resourceCountIs("AWS::Lambda::Function", 2);
-        template.resourceCountIs("AWS::Events::Rule", 1);
-        template.resourceCountIs("AWS::CloudWatch::Alarm", 1);
-        template.resourceCountIs("AWS::S3::Bucket", 0);
+        // function: the shared create-if-missing/retention singleton provider. Two Rules target
+        // that one function: the full nightly run and the hourly activity-only run.
+        prodTemplate.resourceCountIs("AWS::Lambda::Function", 2);
+        prodTemplate.resourceCountIs("AWS::Events::Rule", 2);
+        prodTemplate.resourceCountIs("AWS::CloudWatch::Alarm", 1);
+        prodTemplate.resourceCountIs("AWS::S3::Bucket", 0);
 
-        template.hasResourceProperties(
+        prodTemplate.hasResourceProperties(
                 "AWS::Lambda::Function",
                 Match.objectLike(Map.of("FunctionName", "docs-env-operator-snapshot-publish")));
+
+        Template ciTemplate = synthOperatorSnapshotPublish("ci");
+        ciTemplate.resourceCountIs("AWS::Events::Rule", 1);
     }
 
     @Test
-    void prodRunsDailyAndCiRunsWeekly() {
+    void prodRunsDailyAndCiRunsWeeklyBothWithModeFull() {
         var prodTemplate = synthOperatorSnapshotPublish("prod");
         prodTemplate.hasResourceProperties(
-                "AWS::Events::Rule", Match.objectLike(Map.of("ScheduleExpression", "cron(15 3 * * ? *)")));
+                "AWS::Events::Rule",
+                Match.objectLike(Map.of(
+                        "ScheduleExpression",
+                        "cron(15 3 * * ? *)",
+                        "Targets",
+                        Match.arrayWith(List.of(Match.objectLike(Map.of("Input", "{\"mode\":\"full\"}")))))));
 
         var ciTemplate = synthOperatorSnapshotPublish("ci");
         ciTemplate.hasResourceProperties(
-                "AWS::Events::Rule", Match.objectLike(Map.of("ScheduleExpression", "cron(15 3 ? * MON *)")));
+                "AWS::Events::Rule",
+                Match.objectLike(Map.of(
+                        "ScheduleExpression",
+                        "cron(15 3 ? * MON *)",
+                        "Targets",
+                        Match.arrayWith(List.of(Match.objectLike(Map.of("Input", "{\"mode\":\"full\"}")))))));
+    }
+
+    @Test
+    void prodOnlyRunsTheActivityOnlyScheduleHourlyWithModeActivityOnly() {
+        var prodTemplate = synthOperatorSnapshotPublish("prod");
+        prodTemplate.hasResourceProperties(
+                "AWS::Events::Rule",
+                Match.objectLike(Map.of(
+                        "ScheduleExpression",
+                        "rate(1 hour)",
+                        "Targets",
+                        Match.arrayWith(List.of(Match.objectLike(Map.of("Input", "{\"mode\":\"activity-only\"}")))))));
+
+        var ciTemplate = synthOperatorSnapshotPublish("ci");
+        var ciRules = ciTemplate.findResources("AWS::Events::Rule");
+        assertTrue(
+                ciRules.values().stream().noneMatch(rule -> {
+                    @SuppressWarnings("unchecked")
+                    var properties = (Map<String, Object>) rule.get("Properties");
+                    return "rate(1 hour)".equals(properties.get("ScheduleExpression"));
+                }),
+                "expected ci to have no hourly activity-only schedule");
     }
 
     @Test

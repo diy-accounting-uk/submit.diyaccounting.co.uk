@@ -28,7 +28,7 @@ import software.amazon.awscdk.services.s3.Bucket;
  */
 class BusinessViewsTest {
 
-    private static final int VIEW_COUNT = 28;
+    private static final int VIEW_COUNT = 30;
 
     private Template synthBusinessViews() {
         var sharedNames = SubmitSharedNames.forDocs();
@@ -111,6 +111,8 @@ class BusinessViewsTest {
                 "v_purchase_reconciliation_daily",
                 "v_submissions_by_activity_daily",
                 "v_activity_started_daily",
+                "v_activity_started_hourly",
+                "v_submissions_by_activity_hourly",
                 "v_traffic_sources_daily",
                 "v_availability_sli_daily",
                 "v_alarm_state_changes_daily",
@@ -148,7 +150,10 @@ class BusinessViewsTest {
 
         var sql = sqlForView(template, "v_subscription_cancellations_daily");
         assertTrue(
-                sql.contains("actor") && sql.contains("'test-user'") && sql.contains("'probe'") && sql.contains("'synthetic'"),
+                sql.contains("actor")
+                        && sql.contains("'test-user'")
+                        && sql.contains("'probe'")
+                        && sql.contains("'synthetic'"),
                 "expected the cancellations view to filter out test-user, probe and synthetic actors: " + sql);
         assertTrue(
                 sql.contains("activity_events_all"),
@@ -162,7 +167,10 @@ class BusinessViewsTest {
 
         var sql = sqlForView(template, "v_subscription_renewals_daily");
         assertTrue(
-                sql.contains("actor") && sql.contains("'test-user'") && sql.contains("'probe'") && sql.contains("'synthetic'"),
+                sql.contains("actor")
+                        && sql.contains("'test-user'")
+                        && sql.contains("'probe'")
+                        && sql.contains("'synthetic'"),
                 "expected the renewals view to filter out test-user, probe and synthetic actors: " + sql);
         assertTrue(
                 sql.contains("activity_events_all"),
@@ -175,7 +183,10 @@ class BusinessViewsTest {
 
         var sql = sqlForView(template, "v_signup_to_first_submission");
         assertTrue(
-                sql.contains("actor") && sql.contains("'test-user'") && sql.contains("'probe'") && sql.contains("'synthetic'"),
+                sql.contains("actor")
+                        && sql.contains("'test-user'")
+                        && sql.contains("'probe'")
+                        && sql.contains("'synthetic'"),
                 "expected the signup view to filter out test-user, probe and synthetic actors: " + sql);
         assertTrue(
                 sql.contains("'bundle-granted'") && sql.contains("'subscription-activated'"),

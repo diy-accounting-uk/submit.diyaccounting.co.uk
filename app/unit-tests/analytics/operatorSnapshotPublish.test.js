@@ -39,16 +39,24 @@ vi.mock("@aws-sdk/client-s3", () => ({
       this.input = input;
     }
   },
+  GetObjectCommand: class {
+    constructor(input) {
+      this.input = input;
+    }
+  },
 }));
 
 import {
   handler,
   buildWindowedSql,
   buildDailySeriesSql,
+  buildActivityFastWindowSql,
   computeTrend,
   toObservationWindows,
   toDailySeries,
+  toActivityFastWindows,
   buildSnapshot,
+  mergeActivityFastWindows,
   mapInOrderWithConcurrency,
   writeSnapshot,
   parseResultSet,
@@ -59,6 +67,11 @@ import { loadCatalogFromRoot, isActivityListedInEnvironment } from "@app/service
 
 const DAILY_SERIES_OBSERVATION_COUNT = OBJECTIVE_DEFINITIONS.reduce(
   (sum, objective) => sum + objective.observations.filter((observation) => observation.dailySeries).length,
+  0,
+);
+
+const FAST_WINDOW_OBSERVATION_COUNT = OBJECTIVE_DEFINITIONS.reduce(
+  (sum, objective) => sum + objective.observations.filter((observation) => observation.fastWindowView).length,
   0,
 );
 
@@ -356,7 +369,9 @@ describe("operatorSnapshotPublish", () => {
 
       const observationCount = OBJECTIVE_DEFINITIONS.reduce((sum, o) => sum + o.observations.length, 0);
       const startCalls = mockAthenaSend.mock.calls.filter(([command]) => command.constructor.name === "StartQueryExecutionCommand");
-      expect(startCalls).toHaveLength(observationCount + DAILY_SERIES_OBSERVATION_COUNT);
+      // Every activity observation fires one more query than a plain windowed observation: its
+      // own fast-window (Last 1 hour/1 day/7 days) query alongside the 30/90-day one.
+      expect(startCalls).toHaveLength(observationCount + DAILY_SERIES_OBSERVATION_COUNT + FAST_WINDOW_OBSERVATION_COUNT);
 
       expect(snapshot.environment).toBe("test");
       expect(snapshot.objectives).toHaveLength(10);
@@ -592,26 +607,280 @@ describe("operatorSnapshotPublish", () => {
     });
   });
 
+  describe("buildActivityFastWindowSql", () => {
+    test("builds the three no-trend aggregates against the hourly view", () => {
+      const sql = buildActivityFastWindowSql({
+        fastWindowView: "v_activity_started_hourly",
+        fastWindowColumn: "hour",
+        valueExpr: "starts",
+        aggregation: "sum",
+        where: "activity = 'submit-vat'",
+      });
+      expect(sql).toContain("FROM   v_activity_started_hourly");
+      expect(sql).toContain("sum(CASE WHEN hour > date_add('hour', -1, current_timestamp) THEN starts END) AS last_1h");
+      expect(sql).toContain("sum(CASE WHEN hour > date_add('day', -1, current_timestamp) THEN starts END) AS last_1d");
+      expect(sql).toContain("sum(CASE WHEN hour > date_add('day', -7, current_timestamp) THEN starts END) AS last_7d");
+      expect(sql).toContain("WHERE  activity = 'submit-vat'");
+      expect(sql).not.toContain("prev_");
+      expect(sql).not.toContain("last_30");
+    });
+  });
+
+  describe("toActivityFastWindows", () => {
+    test("reads the three columns, each with no trend", () => {
+      expect(toActivityFastWindows({ last_1h: "1", last_1d: "4", last_7d: "20" })).toEqual({
+        last1h: { value: 1 },
+        last1d: { value: 4 },
+        last7d: { value: 20 },
+      });
+    });
+
+    test("reads a missing row as every window null", () => {
+      expect(toActivityFastWindows(undefined)).toEqual({
+        last1h: { value: null },
+        last1d: { value: null },
+        last7d: { value: null },
+      });
+    });
+  });
+
+  describe("buildSnapshot with objectiveIds and fastWindowOnly", () => {
+    test("objectiveIds restricts the run to the named objectives only", async () => {
+      mockAllQueriesSucceedWith(["10", "5", "30", "20"]);
+
+      const context = {
+        envName: "test",
+        region: "eu-west-2",
+        athenaWorkGroupName: "test-env-analytics",
+        githubRepo: "r",
+        ga4PropertyId: null,
+      };
+      const snapshot = await buildSnapshot({ workGroup: "wg", database: "db", context, objectiveIds: ["uptime"] });
+
+      expect(snapshot.objectives).toHaveLength(1);
+      expect(snapshot.objectives[0].id).toBe("uptime");
+    });
+
+    test("fastWindowOnly runs only the fast-window query and answers id plus the three windows, nothing else", async () => {
+      mockAthenaSend.mockImplementation((command) => {
+        switch (command.constructor.name) {
+          case "StartQueryExecutionCommand":
+            return Promise.resolve({ QueryExecutionId: "qid" });
+          case "GetQueryExecutionCommand":
+            return Promise.resolve({ QueryExecution: { Status: { State: "SUCCEEDED" } } });
+          case "GetQueryResultsCommand":
+            return Promise.resolve({ ResultSet: resultSetOf(["last_1h", "last_1d", "last_7d"], ["1", "3", "12"]) });
+          default:
+            throw new Error(`unexpected command ${command.constructor.name}`);
+        }
+      });
+
+      const context = {
+        envName: "test",
+        region: "eu-west-2",
+        athenaWorkGroupName: "test-env-analytics",
+        githubRepo: "r",
+        ga4PropertyId: null,
+      };
+      const patch = await buildSnapshot({
+        workGroup: "wg",
+        database: "db",
+        context,
+        objectiveIds: ["activity-started-and-completed"],
+        fastWindowOnly: true,
+      });
+
+      const startCalls = mockAthenaSend.mock.calls.filter(([command]) => command.constructor.name === "StartQueryExecutionCommand");
+      expect(startCalls).toHaveLength(FAST_WINDOW_OBSERVATION_COUNT);
+
+      const activities = patch.objectives.find((o) => o.id === "activity-started-and-completed");
+      const observation = activities.observations.find((o) => o.id === "submit-vat::started");
+      expect(observation).toEqual({ id: "submit-vat::started", last1h: { value: 1 }, last1d: { value: 3 }, last7d: { value: 12 } });
+      expect(observation.label).toBeUndefined();
+      expect(observation.last30).toBeUndefined();
+      expect(observation.deepLink).toBeUndefined();
+    });
+  });
+
+  describe("mergeActivityFastWindows", () => {
+    const existingSnapshot = {
+      generatedAt: "2026-09-25T03:15:00.000Z",
+      environment: "test",
+      objectives: [
+        {
+          id: "uptime",
+          name: "Uptime",
+          observations: [{ id: "probe-pass-rate", last30: { value: 0.99, trend: 0 }, last90: { value: 0.98, trend: 0.01 } }],
+        },
+        {
+          id: "activity-started-and-completed",
+          name: "Activity started and completed",
+          observations: [
+            {
+              id: "submit-vat::started",
+              label: "Submit VAT (HMRC) — started",
+              unit: "count",
+              last30: { value: 40, trend: 0.1 },
+              last90: { value: 110, trend: 0.05 },
+              deepLink: "https://example.com/activities",
+            },
+            {
+              id: "bundle::started",
+              label: "View and edit your bundles — started",
+              unit: "count",
+              last30: { value: 31, trend: 0 },
+              last90: { value: 90, trend: 0 },
+              deepLink: "https://example.com/activities",
+            },
+          ],
+        },
+      ],
+      failedObservationCount: 0,
+    };
+
+    test("overlays only the matching observations' fast windows, leaving their other fields and every other objective untouched", () => {
+      const patchSnapshot = {
+        generatedAt: "2026-09-26T09:00:00.000Z",
+        environment: "test",
+        objectives: [
+          {
+            id: "activity-started-and-completed",
+            name: "Activity started and completed",
+            observations: [{ id: "submit-vat::started", last1h: { value: 1 }, last1d: { value: 3 }, last7d: { value: 12 } }],
+          },
+        ],
+        failedObservationCount: 0,
+      };
+
+      const merged = mergeActivityFastWindows(existingSnapshot, patchSnapshot);
+
+      expect(merged.generatedAt).toBe("2026-09-26T09:00:00.000Z");
+      expect(merged.objectives.find((o) => o.id === "uptime")).toEqual(existingSnapshot.objectives[0]);
+
+      const activities = merged.objectives.find((o) => o.id === "activity-started-and-completed");
+      const vatStarted = activities.observations.find((o) => o.id === "submit-vat::started");
+      expect(vatStarted).toEqual({
+        id: "submit-vat::started",
+        label: "Submit VAT (HMRC) — started",
+        unit: "count",
+        last30: { value: 40, trend: 0.1 },
+        last90: { value: 110, trend: 0.05 },
+        deepLink: "https://example.com/activities",
+        last1h: { value: 1 },
+        last1d: { value: 3 },
+        last7d: { value: 12 },
+      });
+
+      // Not named in the patch (its own fast-window query failed this run): left exactly as it was.
+      const bundleStarted = activities.observations.find((o) => o.id === "bundle::started");
+      expect(bundleStarted).toEqual(existingSnapshot.objectives[1].observations[1]);
+    });
+
+    test("carries the patch's failedObservationCount, not the existing snapshot's", () => {
+      const patchSnapshot = {
+        generatedAt: "2026-09-26T09:00:00.000Z",
+        environment: "test",
+        objectives: [{ id: "activity-started-and-completed", name: "Activity started and completed", observations: [] }],
+        failedObservationCount: 2,
+      };
+
+      const merged = mergeActivityFastWindows(existingSnapshot, patchSnapshot);
+      expect(merged.failedObservationCount).toBe(2);
+    });
+  });
+
   describe("handler", () => {
-    test("requires its environment variables", async () => {
+    test("requires its environment variables before it ever looks at event.mode", async () => {
       delete process.env.ANALYTICS_LAKE_BUCKET_NAME;
       await expect(handler()).rejects.toThrow(/ANALYTICS_LAKE_BUCKET_NAME/);
     });
 
-    test("builds and writes a snapshot", async () => {
+    test("requires event.mode to be full or activity-only", async () => {
+      await expect(handler()).rejects.toThrow(/event\.mode/);
+      await expect(handler({ mode: "nightly" })).rejects.toThrow(/event\.mode/);
+    });
+
+    test("mode full builds and writes a whole snapshot", async () => {
       mockAllQueriesSucceedWith(["10", "5", "30", "20"]);
 
-      const result = await handler();
+      const result = await handler({ mode: "full" });
 
       expect(result).toEqual({ environment: "test", objectives: 10 });
       expect(mockS3Send).toHaveBeenCalledTimes(2);
     });
 
-    test("still publishes the snapshot but rejects when an observation failed, so the Lambda's Errors metric still fires", async () => {
+    test("mode full still publishes the snapshot but rejects when an observation failed, so the Lambda's Errors metric still fires", async () => {
       mockQueriesWithOneFailing("guardduty_findings", ["10", "5", "30", "20"]);
 
-      await expect(handler()).rejects.toThrow(/1 observation/);
+      await expect(handler({ mode: "full" })).rejects.toThrow(/1 observation/);
       expect(mockS3Send).toHaveBeenCalledTimes(2);
+    });
+
+    test("mode activity-only reads the latest snapshot, patches only the fast windows, and writes the merged result", async () => {
+      const existingSnapshot = {
+        generatedAt: "2026-09-25T03:15:00.000Z",
+        environment: "test",
+        objectives: [
+          {
+            id: "activity-started-and-completed",
+            name: "Activity started and completed",
+            observations: [
+              {
+                id: "submit-vat::started",
+                label: "Submit VAT (HMRC) — started",
+                unit: "count",
+                last30: { value: 40, trend: 0.1 },
+                last90: { value: 110, trend: 0.05 },
+                deepLink: "https://example.com/activities",
+              },
+            ],
+          },
+        ],
+        failedObservationCount: 0,
+      };
+
+      mockS3Send.mockImplementation((command) => {
+        if (command.constructor.name === "GetObjectCommand") {
+          return Promise.resolve({ Body: { transformToString: async () => JSON.stringify(existingSnapshot) } });
+        }
+        return Promise.resolve({});
+      });
+      mockAthenaSend.mockImplementation((command) => {
+        switch (command.constructor.name) {
+          case "StartQueryExecutionCommand":
+            return Promise.resolve({ QueryExecutionId: "qid" });
+          case "GetQueryExecutionCommand":
+            return Promise.resolve({ QueryExecution: { Status: { State: "SUCCEEDED" } } });
+          case "GetQueryResultsCommand":
+            return Promise.resolve({ ResultSet: resultSetOf(["last_1h", "last_1d", "last_7d"], ["1", "3", "12"]) });
+          default:
+            throw new Error(`unexpected command ${command.constructor.name}`);
+        }
+      });
+
+      const result = await handler({ mode: "activity-only" });
+
+      expect(result).toEqual({ environment: "test", objectives: 1 });
+
+      const putCalls = mockS3Send.mock.calls.filter(([command]) => command.constructor.name === "PutObjectCommand");
+      expect(putCalls).toHaveLength(2);
+      const writtenSnapshot = JSON.parse(putCalls[0][0].input.Body);
+      const vatStarted = writtenSnapshot.objectives[0].observations.find((o) => o.id === "submit-vat::started");
+      expect(vatStarted.last1h).toEqual({ value: 1 });
+      expect(vatStarted.last30).toEqual({ value: 40, trend: 0.1 });
+    });
+
+    test("mode activity-only refuses to patch onto nothing when the full run has never published", async () => {
+      mockS3Send.mockImplementation((command) => {
+        if (command.constructor.name === "GetObjectCommand") {
+          const error = new Error("The specified key does not exist.");
+          error.name = "NoSuchKey";
+          return Promise.reject(error);
+        }
+        return Promise.resolve({});
+      });
+
+      await expect(handler({ mode: "activity-only" })).rejects.toThrow(/full run/);
     });
   });
 });

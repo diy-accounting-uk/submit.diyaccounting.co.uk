@@ -125,6 +125,16 @@ public class BusinessViews extends Construct {
                     "Activity starts each day, by catalogue activity id (an activity's primary button clicked)",
                     List.of("activity_events_all")),
             new ViewDefinition(
+                    "v_activity_started_hourly",
+                    "Activity starts each hour, by catalogue activity id: feeds the operator dashboard's Last 1"
+                            + " hour and Last 1 day activity columns, which a day-grain view cannot answer",
+                    List.of("activity_events_all")),
+            new ViewDefinition(
+                    "v_submissions_by_activity_hourly",
+                    "Completions each hour by activity: feeds the operator dashboard's Last 1 hour and Last 1"
+                            + " day activity columns, which a day-grain view cannot answer",
+                    List.of("activity_events_all")),
+            new ViewDefinition(
                     "v_traffic_sources_daily", "Sessions each day, by GA4 channel group", List.of("ga4_traffic")),
             new ViewDefinition(
                     "v_visitors_by_kind_daily",
