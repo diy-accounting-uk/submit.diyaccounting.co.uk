@@ -11,6 +11,7 @@
 import fs from "fs";
 import path from "path";
 import { fileURLToPath } from "url";
+import { placeHeadline } from "./headlinePlacement.js";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const runtimeSource = fs.readFileSync(path.join(__dirname, "overlay-runtime.js"), "utf8");
@@ -41,6 +42,15 @@ export async function typeChar(page, rect) {
 
 export async function caption(page, text) {
   return svcCall(page, "caption", text);
+}
+
+// rect is the step's target box (or null for a step with no target); viewport is the script's
+// own {width, height}. The placement — clear of rect, above or below it, inside the frame — is
+// computed here in Node (headlinePlacement.js, unit-tested) rather than in overlay-runtime.js,
+// which is a self-contained browser-side IIFE with no imports and so cannot be tested directly.
+export async function headline(page, text, keyWord, rect, viewport) {
+  if (!text) return svcCall(page, "headline", null, null, null);
+  return svcCall(page, "headline", text, keyWord || null, placeHeadline(rect, viewport));
 }
 
 export async function chapter(page, text) {

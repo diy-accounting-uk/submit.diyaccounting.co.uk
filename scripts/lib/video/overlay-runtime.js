@@ -38,6 +38,7 @@
     trailCanvas,
     trailCtx,
     captionBox,
+    headlineBox,
     chapterLabel,
     heartbeatEl,
     timerPill,
@@ -87,6 +88,19 @@
       "font:40px/56px -apple-system,Segoe UI,Roboto,sans-serif;color:#fff;text-align:center;" +
       "opacity:0;transition:opacity 250ms ease;white-space:pre-line;";
     root.appendChild(captionBox);
+
+    // The headline tag — a short callout label anchored beside the element a step acts on,
+    // distinct from captionBox's wide subtitle bar: a compact, left-accented tag rather than a
+    // full-width bottom panel, so the two tracks never read as the same thing twice. Static once
+    // shown (opacity only, matching every other cue here) — the one animated thing about it is
+    // its single key word's colour, never a repeat, per WCAG SC 2.3.1.
+    headlineBox = document.createElement("div");
+    headlineBox.style.cssText =
+      "position:absolute;transform:translateX(-50%);max-width:680px;padding:12px 20px;border-radius:8px;" +
+      `background:rgba(12,14,18,0.82);border:1px solid rgba(255,255,255,0.25);border-left:3px solid ${ACCENT};` +
+      "font:700 30px/38px -apple-system,Segoe UI,Roboto,sans-serif;color:#fff;text-align:center;" +
+      "opacity:0;transition:opacity 220ms ease;white-space:normal;";
+    root.appendChild(headlineBox);
 
     timerPill = document.createElement("div");
     timerPill.style.cssText =
@@ -310,6 +324,40 @@
     log("caption", { text });
   }
 
+  // placement: {centerX, top, maxWidth} in CSS px, computed in Node by headlinePlacement.js
+  // (clear of the step's target, inside the frame) — this only ever renders what it is given.
+  // keyWord is matched word by word against the headline's own words (case-insensitive, with
+  // leading/trailing punctuation stripped), not as a substring, so it never lights up a word
+  // that merely contains it.
+  function headline(text, keyWord, placement) {
+    if (!root) return log("headline-skipped-not-ready", { text });
+    if (!text) {
+      headlineBox.style.opacity = "0";
+      return;
+    }
+    headlineBox.textContent = "";
+    const keyLower = keyWord ? keyWord.toLowerCase() : null;
+    const words = text.split(/\s+/).filter(Boolean);
+    words.forEach((word, i) => {
+      const bare = word.replace(/^[^0-9a-z]+|[^0-9a-z]+$/gi, "").toLowerCase();
+      const span = document.createElement("span");
+      span.textContent = word;
+      if (keyLower && bare === keyLower) {
+        span.style.color = "#ffd166";
+        span.style.fontWeight = "800";
+      }
+      headlineBox.appendChild(span);
+      if (i < words.length - 1) headlineBox.appendChild(document.createTextNode(" "));
+    });
+    if (placement) {
+      headlineBox.style.left = `${placement.centerX}px`;
+      headlineBox.style.top = `${placement.top}px`;
+      headlineBox.style.maxWidth = `${placement.maxWidth}px`;
+    }
+    headlineBox.style.opacity = "1";
+    log("headline", { text, keyWord: keyLower, placement });
+  }
+
   function chapter(text) {
     if (!root) return log("chapter-skipped-not-ready", { text });
     chapterLabel.textContent = text;
@@ -404,6 +452,7 @@
     typeChar,
     highlight,
     caption,
+    headline,
     chapter,
     timerStart,
     timerSetCompressing,

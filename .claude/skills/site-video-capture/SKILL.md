@@ -21,6 +21,34 @@ Open `videos/<name>.json` before touching anything else. Every target, caption a
 value lives there. `videos/tour.json` is the worked example: an unauthenticated walk
 through the site. `videos/scene-script.schema.json` documents the format.
 
+## Step 1a — the burned-in headline is not the caption
+
+Every step's `caption` goes into the `.vtt` and the transcript — the full narration, read by a
+screen reader or a viewer with sound off. A step can also carry a `headline` (three to six
+words) and an optional `keyWord`: a short, burned-in callout tag the video itself shows, styled
+and positioned so it never reads as the same thing as the caption twice.
+
+- **Write it or leave it out.** A step with no `headline` shows no burned-in line — there is no
+  fallback to the caption text. Keep it to three to six words; the tag is a single line.
+- **`keyWord` names one word already in the headline**, matched whole-word and
+  case-insensitively (not a substring), and shown in the tag's accent colour. Omit it for a
+  headline with nothing to single out.
+- **Placement is automatic.** For a step whose action resolves a real target on the page
+  (`click`, `point`, `type`, `fill`, `select`, `highlight`), the tag places itself above or below
+  that target's box — never over it — once the pointer has actually arrived there
+  (`scripts/lib/video/headlinePlacement.js`, unit-tested). Every other step's headline (`goto`,
+  `await`, `login`, `hmrcAuthorise`, a bare `caption` step, …) shows against no target, in a
+  fixed band below the chapter label.
+- **Style**: a compact dark tag (not the caption's wide bottom bar), left-accented in the
+  overlay's own blue, bold white text with the key word in the timer pill's amber — reusing the
+  two colours already in the overlay rather than adding a third. Static once shown: the only
+  motion is the entrance fade, matching every other cue here (WCAG SC 2.3.1 — nothing flashes).
+- **Prove it** by rendering a step's headline against a real target with
+  `scripts/lib/video/overlay.js`'s `headline()` export and screenshotting after the fade settles
+  (its CSS transition is ~220ms — a screenshot taken immediately after the call can catch it
+  mid-fade; the real capture never does, because every step's own pacing already waits longer
+  than that before anything else happens).
+
 ## Step 2 — iterate locally against a local instance
 
 Serve `web/public` statically and point the script at it. No Docker, no AWS:
@@ -195,7 +223,9 @@ already visually lossless at this content's motion level, so file size decided.
 - `scripts/lib/video/pacing.js` — the three pacing groups, wait subtraction, time
   compression for a wait past six seconds, caption minimum hold.
 - `scripts/lib/video/overlay-runtime.js` / `overlay.js` — the in-page pointer, trail,
-  caption box, timer pill and chapter label.
+  caption box, headline tag, timer pill and chapter label.
+- `scripts/lib/video/headlinePlacement.js` — pure placement math for the headline tag (above
+  or below its target, clear of it, inside the frame), unit-tested with no browser.
 - `scripts/lib/video/capture.js` / `encode.js` — CDP screencast capture and the ffmpeg
   concat-demuxer encode (constant frame rate, H.264 High, closed GOP, faststart). See
   "Capture and encode settings" above for the resolution, frame rate and CRF defaults.

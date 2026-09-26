@@ -26,6 +26,7 @@ import { groupFor, pauseForGroup, residualAfterWait, captionMinMs, compressionFo
 import {
   installOverlay,
   caption as overlayCaption,
+  headline as overlayHeadline,
   chapter as overlayChapter,
   suppress as overlaySuppress,
   readEvents,
@@ -198,6 +199,12 @@ const WAIT_CAPABLE_ACTIONS = new Set(["goto", "click", "await", "login", "consen
 // the caption all have to be put back.
 const ALWAYS_NAVIGATING_ACTIONS = new Set(["goto", "login", "consent", "ensureBundle", "hmrcAuthorise", "submitReturn"]);
 
+// Actions whose handler resolves a real target and moves the pointer to it (actions.js's
+// pointAndReturnRect) — the only ones that can hand a headline its target's actual box through
+// ctx.onTargetRect. Every other action's headline, if it has one, places against no target at
+// all (headlinePlacement.js's "default" anchor).
+const TARGET_RECT_ACTIONS = new Set(["click", "point", "type", "fill", "select", "highlight"]);
+
 async function main() {
   const args = parseArgs(process.argv.slice(2));
   const scriptPath = path.resolve(args.script);
@@ -357,6 +364,7 @@ async function main() {
           now,
           journey,
           waitPhase: waitPhaseCtl.run,
+          onTargetRect: null,
         };
         const startMs = elapsed();
         const frameStart = capture?.frames.length ?? null;
@@ -378,6 +386,25 @@ async function main() {
             maxLines: script.captions.maxLines,
             _minMs: minMs,
           });
+        }
+
+        // A step with no headline shows no burned-in line — never a fallback to the caption
+        // text. For a step that resolves a real target (TARGET_RECT_ACTIONS), the headline waits
+        // for onTargetRect below, which fires once the pointer has actually arrived there — the
+        // earliest point its real, post-scroll box is known, so the tag can sit clear of it.
+        // Every other step's headline (if it has one) shows immediately against no target at
+        // all, the same as goto's own caption does after its navigation lands.
+        let headlineHideAt = null;
+        const holdHeadline = (text, keyWord, rect) => {
+          const minMs = fastForward ? 0 : captionMinMs(text, script.captions);
+          headlineHideAt = () => elapsed() + minMs;
+          return overlayHeadline(page, text, keyWord, rect, script.viewport);
+        };
+        const showHeadlineBeforeAction = !offCamera && step.headline && step.action !== "goto" && !TARGET_RECT_ACTIONS.has(step.action);
+        if (showHeadlineBeforeAction) {
+          await holdHeadline(step.headline, step.keyWord, null);
+        } else if (!offCamera && step.headline && TARGET_RECT_ACTIONS.has(step.action)) {
+          ctx.onTargetRect = (rect) => holdHeadline(step.headline, step.keyWord, rect);
         }
 
         let waitMs = 0;
@@ -437,6 +464,12 @@ async function main() {
                   });
                 }
               }
+              // A real navigation replaces the whole document, so even a headline already shown
+              // by onTargetRect before the navigation started (a click that also navigates) is
+              // gone from the fresh one and has to be put back, the same as the chapter label
+              // and the caption above. Against no target: whatever box a locator resolved to on
+              // the old page means nothing on the new one.
+              if (step.headline) await holdHeadline(step.headline, step.keyWord, null);
             }
           }
         }
@@ -454,6 +487,12 @@ async function main() {
           await overlayCaption(page, null);
           const last = captionEvents[captionEvents.length - 1];
           last.endMs = elapsed();
+        }
+
+        if (headlineHideAt) {
+          const remaining = headlineHideAt() - elapsed();
+          if (remaining > 0) await new Promise((resolve) => setTimeout(resolve, remaining));
+          await overlayHeadline(page, null, null, null, script.viewport);
         }
 
         // Only a WAIT_CAPABLE_ACTIONS step can navigate or draw the timer pill, so this is the
