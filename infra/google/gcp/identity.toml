@@ -60,14 +60,16 @@ display_name = "GitHub Actions + submit Lambdas"
     "attribute.account" = "assertion.account"
     "attribute.aws_role" = "assertion.arn.extract('assumed-role/{role}/')"
 
-  # The same three Lambdas in the submit-prod account.
+  # The same three Lambdas in the submit-prod account, plus the operator's own AWS SSO session
+  # (arn:aws:sts::972912397388:assumed-role/AWSReservedSSO_AdministratorAccess_<id>/<user>), so a
+  # local session can reach Google through this same provider with no service-account key.
   [[workload_identity_pool.provider]]
   id = "aws-prod"
   display_name = "submit-prod analytics Lambdas"
   type = "aws"
   account_id = "972912397388"
   github_environment = "prod"
-  attribute_condition = 'attribute.aws_role.contains("Ga4ReportPullFn") || attribute.aws_role.contains("Ga4EventExportPullFn") || attribute.aws_role.contains("Ga4DailyPullFn")'
+  attribute_condition = 'attribute.aws_role.contains("Ga4ReportPullFn") || attribute.aws_role.contains("Ga4EventExportPullFn") || attribute.aws_role.contains("Ga4DailyPullFn") || attribute.aws_role.contains("AWSReservedSSO_AdministratorAccess")'
   principal_set = "attribute.account/972912397388"
 
     [workload_identity_pool.provider.attribute_mapping]
