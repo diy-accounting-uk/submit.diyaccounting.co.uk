@@ -7,7 +7,15 @@ import { describe, test, expect } from "vitest";
 import fs from "node:fs";
 import path from "node:path";
 
-import { parseArgs, parseConfig, loadQueries, buildPlan, CONFIG_PATH } from "../../../infra/google/ga4/ga4-bigquery-sync.js";
+import {
+  parseArgs,
+  parseConfig,
+  loadQueries,
+  buildPlan,
+  transferConfigBody,
+  SCHEDULE_TIME_ZONE,
+  CONFIG_PATH,
+} from "../../../infra/google/ga4/ga4-bigquery-sync.js";
 
 const REPO_ROOT = process.cwd();
 
@@ -151,6 +159,7 @@ describe("buildPlan", () => {
         name: "projects/diyaccounting-ga4/locations/europe-west2/transferConfigs/abc",
         displayName: query.name,
         schedule: query.schedule,
+        scheduleOptions: { timeZone: SCHEDULE_TIME_ZONE },
         params: {
           query: query.sql,
           destination_table_name_template: query.destinationTable,
@@ -170,6 +179,24 @@ describe("buildPlan", () => {
         transferConfigName: transferConfigs[0].name,
       },
     ]);
+  });
+
+  test("plans an update when the live config has no pinned time zone", () => {
+    const transferConfigs = [
+      {
+        name: "projects/diyaccounting-ga4/locations/europe-west2/transferConfigs/abc",
+        displayName: query.name,
+        schedule: query.schedule,
+        params: {
+          query: query.sql,
+          destination_table_name_template: query.destinationTable,
+          write_disposition: query.writeDisposition,
+          partitioning_field: query.partitionField,
+        },
+      },
+    ];
+    const plan = buildPlan({ dataset, queries: [query], datasetExists: true, transferConfigs });
+    expect(plan.queries[0].action).toBe("update");
   });
 
   test("plans an update when the live query text has drifted from the file", () => {
@@ -210,6 +237,23 @@ describe("buildPlan", () => {
   });
 });
 
+describe("transferConfigBody", () => {
+  test("pins the schedule to UTC", () => {
+    const dataset = { projectId: "diyaccounting-ga4", datasetId: "ga4_daily", location: "europe-west2", description: "" };
+    const query = {
+      name: "sessions_by_host_source_daily",
+      destinationTable: "sessions_by_host_source_daily",
+      partitionField: "day",
+      writeDisposition: "WRITE_TRUNCATE",
+      schedule: "every day 01:00",
+      sql: "SELECT 1",
+    };
+    const body = transferConfigBody(dataset, query);
+    expect(body.schedule).toBe("every day 01:00");
+    expect(body.scheduleOptions).toEqual({ timeZone: SCHEDULE_TIME_ZONE });
+  });
+});
+
 describe("the real config file", () => {
   const config = parseConfig(fs.readFileSync(path.join(REPO_ROOT, CONFIG_PATH), "utf-8"));
 
@@ -240,6 +284,25 @@ describe("the real config file", () => {
     for (const query of config.queries) {
       expect(query.writeDisposition).toBe("WRITE_TRUNCATE");
       expect(query.partitionField).toBe("day");
+    }
+  });
+
+  // The AWS nightly pull (infra/main/java/.../NightlyIngestionWorkflow.java) reads whatever this
+  // query has already written for its target day. Scheduled to run later in the UTC day, it
+  // would read that target day's write before this query ever makes it, and would never look
+  // again: this query never revisits a day once its own current_date() moves past it.
+  const AWS_NIGHTLY_PULL_UTC_MINUTES = 2 * 60 + 15;
+
+  function scheduleUtcMinutes(schedule) {
+    const match = /^every day (\d{2}):(\d{2})$/.exec(schedule);
+    expect(match, `unrecognised schedule string "${schedule}"`).not.toBeNull();
+    const [, hour, minute] = match;
+    return Number(hour) * 60 + Number(minute);
+  }
+
+  test("every query's UTC schedule runs before the AWS nightly pull's 02:15 UTC", () => {
+    for (const query of config.queries) {
+      expect(scheduleUtcMinutes(query.schedule)).toBeLessThan(AWS_NIGHTLY_PULL_UTC_MINUTES);
     }
   });
 });

@@ -50,6 +50,7 @@ export function addDuration(date, duration) {
  * @param {string} [params.createdBy] - Creator identifier
  * @param {string} [params.issuedBy] - User who spent tokens to issue (null for admin-created)
  * @param {string} [params.notes] - Optional admin notes
+ * @param {string} [params.actor] - Actor classification of the caller that issued this pass
  * @returns {Object} The pass record ready for DynamoDB
  */
 export function buildPassRecord({
@@ -65,6 +66,7 @@ export function buildPassRecord({
   createdBy,
   issuedBy,
   notes,
+  actor,
 }) {
   const now = new Date().toISOString();
   const code = generatePassphrase(4);
@@ -118,6 +120,7 @@ export function buildPassRecord({
   if (createdBy) record.createdBy = createdBy;
   if (issuedBy) record.issuedBy = issuedBy;
   if (notes) record.notes = notes;
+  if (actor) record.actor = actor;
   return record;
 }
 

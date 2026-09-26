@@ -106,6 +106,7 @@ describe("projectFields whitelists", () => {
       createdAt: "2026-01-01T00:00:00.000Z",
       expiry: "2026-02-01T00:00:00.000Z",
       ttl: 1800000000,
+      actor: "customer",
       stripeCustomerId: "cus_probe",
       tokensGranted: 999,
     };
@@ -116,9 +117,22 @@ describe("projectFields whitelists", () => {
       granted_at: "2026-01-01T00:00:00.000Z",
       expires_at: "2026-02-01T00:00:00.000Z",
       ttl: 1800000000,
+      actor: "customer",
     });
     expect(Object.values(row)).not.toContain("cus_probe");
     expect(Object.values(row)).not.toContain(999);
+  });
+
+  test("bundles: actor is null when the item carries none", () => {
+    const image = {
+      hashedSub: "hash-2b",
+      bundleId: "resident-pro",
+      createdAt: "2026-01-01T00:00:00.000Z",
+      expiry: "2026-02-01T00:00:00.000Z",
+      ttl: 1800000000,
+    };
+    const row = projectFields("bundles", image, null, "INSERT");
+    expect(row.actor).toBeNull();
   });
 
   test("subscriptions: derives subscription_id from pk and drops the Stripe customer id", () => {
@@ -168,6 +182,7 @@ describe("projectFields whitelists", () => {
       updatedAt: "2026-01-02T00:00:00.000Z",
       useCount: 1,
       revokedAt: null,
+      actor: "customer",
       notes: "should never appear",
     };
     const row = projectFields("passes", image, null, "MODIFY");
@@ -181,6 +196,7 @@ describe("projectFields whitelists", () => {
       updated_at: "2026-01-02T00:00:00.000Z",
       use_count: 1,
       revoked_at: null,
+      actor: "customer",
     });
     expect(Object.values(row)).not.toContain("pass#SECRET-CODE-1");
     expect(Object.values(row)).not.toContain("should never appear");

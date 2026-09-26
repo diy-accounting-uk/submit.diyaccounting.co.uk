@@ -17,7 +17,7 @@ import { registerLambdaRoute } from "../../lib/httpServerToLambdaAdaptor.js";
 import { initializeSalt, hashSub } from "../../services/subHasher.js";
 import { createPass } from "../../services/passService.js";
 import { consumeTokenForActivity } from "../../services/tokenEnforcement.js";
-import { publishActivityEvent } from "../../lib/activityAlert.js";
+import { publishActivityEvent, classifyActor } from "../../lib/activityAlert.js";
 import { loadPassTypesFromRoot, getPassTypeById, loadCatalogFromRoot } from "../../services/productCatalog.js";
 import { decodeJwtToken } from "../../lib/jwtHelper.js";
 
@@ -96,6 +96,7 @@ export async function ingestHandler(event) {
       issuedBy: hashedSub,
       createdBy: "user",
       notes,
+      actor: classifyActor(decodedToken?.email),
     });
 
     logger.info({ message: "User pass created", passTypeId, code: pass.code });

@@ -6,23 +6,27 @@
  *
  * Runs a fixed list of Companies House XML Gateway test-service cases end to end - a
  * CompanyDataRequest, a PaymentPeriodsRequest, several confirmation statement variants (a
- * no-change statement, a SIC change, one with Shareholdings, a registered email change) and the
- * negative cases the assumed software-authorisation criteria ask for (a blank director code, a
- * wrong company authentication code) - and writes an evidence log a human can hand to Companies
- * House's XML team or fold into the CS-A4 evidence pack.
+ * no-change statement, a SIC change, one with Shareholdings, a registered email change), one PSC
+ * verification statement for a director who is also a PSC, and the negative cases the assumed
+ * software-authorisation criteria ask for (a blank director or PSC code, a wrong company
+ * authentication code) - and writes an evidence log a human can hand to Companies House's XML
+ * team or fold into the CS-A4 evidence pack.
  *
  * Builds every envelope from companiesHouseXmlGateway.js's own exports
  * (buildCompanyDataRequest, buildPaymentPeriodsRequest, buildConfirmationStatementSubmission,
- * buildStatusRequest, parseGatewayResponse, allocateSubmissionNumber, redactPresenterCredentials,
- * postToGateway) and companiesHouseConfirmationStatementXml.js's buildConfirmationStatementBody -
- * this script duplicates neither the envelope logic nor the confirmation statement body builder.
- * Reuses companies-house-xmlgw-poll.js's own out-of-repository check (assertOutsideRepository,
+ * buildPscVerificationStatementSubmission, buildStatusRequest, parseGatewayResponse,
+ * allocateSubmissionNumber, redactPresenterCredentials, postToGateway),
+ * companiesHouseConfirmationStatementXml.js's buildConfirmationStatementBody and
+ * companiesHousePscVerificationStatementXml.js's buildPscVerificationStatementBody - this script
+ * duplicates neither the envelope logic nor either form's body builder. Reuses
+ * companies-house-xmlgw-poll.js's own out-of-repository check (assertOutsideRepository,
  * resolveRepoRoot) rather than re-deriving it.
  *
- * A confirmation statement case is submitted once and then polled, honouring the PollInterval
- * the gateway's own acknowledgement (or a later poll response) announces, until the gateway
- * answers a terminal StatusCode (ACCEPT or REJECT) or a GovTalkErrors block. The test service
- * currently answers GetSubmissionStatus with GovTalkErrors 9999 "No presenter ID supplied" for
+ * A confirmation statement or PSC verification statement case is submitted once and then polled,
+ * honouring the PollInterval the gateway's own acknowledgement (or a later poll response)
+ * announces, until the gateway answers a terminal StatusCode (ACCEPT or REJECT) or a GovTalkErrors
+ * block. The test service currently answers GetSubmissionStatus with GovTalkErrors 9999 "No
+ * presenter ID supplied" for
  * every poll (B34.6c's blocker) - that is recorded as the case's observed outcome, not thrown as
  * a crash, so one broken poll never stops the rest of the run. A CompanyDataRequest or
  * PaymentPeriodsRequest is free and synchronous: it is never polled.
@@ -57,6 +61,7 @@ import {
   buildCompanyDataRequest,
   buildPaymentPeriodsRequest,
   buildConfirmationStatementSubmission,
+  buildPscVerificationStatementSubmission,
   buildStatusRequest,
   parseGatewayResponse,
   resolvePresenterCredentials,
@@ -68,6 +73,7 @@ import {
   buildConfirmationStatementBody,
   selectConfirmationStatementSchema,
 } from "../app/services/companiesHouseConfirmationStatementXml.js";
+import { buildPscVerificationStatementBody } from "../app/services/companiesHousePscVerificationStatementXml.js";
 import { assertOutsideRepository, resolveRepoRoot } from "./companies-house-xmlgw-poll.js";
 
 // Bounds on the confirmation statement poll loop, so a case that never reaches a terminal state
@@ -159,6 +165,21 @@ export function blankFirstDirectorPersonalCode(statementXml) {
   );
 }
 
+/**
+ * Deliberately blank a PSC verification statement's own CompaniesHousePersonalCode, the same way
+ * blankFirstDirectorPersonalCode() does for a confirmation statement's director - the harness's
+ * own negative case for VS01. buildPscVerificationStatementBody() itself refuses to build this, so
+ * the harness corrupts a validly built body afterwards.
+ * @param {string} statementXml
+ * @returns {string}
+ */
+export function blankPersonalCode(statementXml) {
+  return statementXml.replace(
+    /<CompaniesHousePersonalCode>[^<]*<\/CompaniesHousePersonalCode>/,
+    "<CompaniesHousePersonalCode></CompaniesHousePersonalCode>",
+  );
+}
+
 function nowIso() {
   return new Date().toISOString();
 }
@@ -178,6 +199,65 @@ async function sendEnvelope({ label, xml, exchanges, govTestScenario }) {
   const response = await postToGateway(xml, extraHeaders);
   exchanges.push(redactExchange(label, xml, response));
   return { response, parsed: parseGatewayResponse(response.data) };
+}
+
+/**
+ * Poll one submission (a confirmation statement or a PSC verification statement, the same
+ * GetSubmissionStatus request either way) from its submit acknowledgement to a terminal state:
+ * a GovTalkErrors block, an ACCEPT or REJECT Status, or this loop's own bounds giving up first.
+ * Mutates `exchanges` and `transactionIds` with every poll made.
+ * @param {object} submitParsed - parseGatewayResponse() of the submit call's own response
+ * @param {string} submissionNumber
+ * @param {object} context - presenterId, presenterCode, gatewayTest, sleepFn
+ * @param {object} caseDef - only its govTestScenario is read
+ * @param {object[]} exchanges - appended to in place
+ * @param {string[]} transactionIds - appended to in place
+ * @returns {Promise<{terminal: boolean, status: string, errors?: Array, rejections?: Array}>}
+ */
+async function pollUntilTerminal(
+  submitParsed,
+  submissionNumber,
+  { presenterId, presenterCode, gatewayTest, sleepFn = sleep },
+  caseDef,
+  exchanges,
+  transactionIds,
+) {
+  // A submission the gateway rejects outright (a GovTalkErrors block on the acknowledgement
+  // itself) is already terminal; an ordinary acknowledgement carries no Status block yet, so it
+  // always needs at least one poll - decidePollStep only applies to an actual poll response.
+  let terminal =
+    submitParsed.errors && submitParsed.errors.length > 0
+      ? { terminal: true, status: "GOVTALK_ERROR", errors: submitParsed.errors }
+      : { terminal: false, status: "PENDING" };
+
+  let delayMs = nextPollDelayMs(submitParsed, DEFAULT_POLL_INTERVAL_MS);
+  const pollStartedAt = Date.now();
+  let attempts = 0;
+
+  while (!terminal.terminal) {
+    attempts += 1;
+    if (attempts > MAX_POLL_ATTEMPTS || Date.now() - pollStartedAt > MAX_POLL_WALL_CLOCK_MS) {
+      terminal = { terminal: true, status: "POLL_TIMEOUT" };
+      break;
+    }
+
+    await sleepFn(delayMs);
+
+    const pollTransactionId = String(Date.now());
+    transactionIds.push(pollTransactionId);
+    const pollXml = buildStatusRequest({ presenterId, presenterCode, submissionNumber, transactionId: pollTransactionId, gatewayTest });
+    const { parsed: pollParsed } = await sendEnvelope({
+      label: `poll-${attempts}`,
+      xml: pollXml,
+      exchanges,
+      govTestScenario: caseDef.govTestScenario,
+    });
+
+    terminal = decidePollStep(pollParsed, submissionNumber);
+    delayMs = nextPollDelayMs(pollParsed, delayMs);
+  }
+
+  return terminal;
 }
 
 /**
@@ -229,7 +309,8 @@ async function runSyncCase(caseDef, { presenterId, presenterCode, gatewayTest })
  * Run one confirmation statement case: allocate a submission number, submit, and - unless the
  * submission itself answered a GovTalkErrors block - poll to a terminal state.
  */
-async function runConfirmationStatementCase(caseDef, { presenterId, presenterCode, gatewayTest, sleepFn = sleep }) {
+async function runConfirmationStatementCase(caseDef, context) {
+  const { presenterId, presenterCode, gatewayTest } = context;
   const exchanges = [];
   const transactionIds = [];
   const submissionNumber = await allocateSubmissionNumber();
@@ -265,40 +346,7 @@ async function runConfirmationStatementCase(caseDef, { presenterId, presenterCod
     govTestScenario: caseDef.govTestScenario,
   });
 
-  // A submission the gateway rejects outright (a GovTalkErrors block on the acknowledgement
-  // itself) is already terminal; an ordinary acknowledgement carries no Status block yet, so it
-  // always needs at least one poll - decidePollStep only applies to an actual poll response.
-  let terminal =
-    submitParsed.errors && submitParsed.errors.length > 0
-      ? { terminal: true, status: "GOVTALK_ERROR", errors: submitParsed.errors }
-      : { terminal: false, status: "PENDING" };
-
-  let delayMs = nextPollDelayMs(submitParsed, DEFAULT_POLL_INTERVAL_MS);
-  const pollStartedAt = Date.now();
-  let attempts = 0;
-
-  while (!terminal.terminal) {
-    attempts += 1;
-    if (attempts > MAX_POLL_ATTEMPTS || Date.now() - pollStartedAt > MAX_POLL_WALL_CLOCK_MS) {
-      terminal = { terminal: true, status: "POLL_TIMEOUT" };
-      break;
-    }
-
-    await sleepFn(delayMs);
-
-    const pollTransactionId = String(Date.now());
-    transactionIds.push(pollTransactionId);
-    const pollXml = buildStatusRequest({ presenterId, presenterCode, submissionNumber, transactionId: pollTransactionId, gatewayTest });
-    const { parsed: pollParsed } = await sendEnvelope({
-      label: `poll-${attempts}`,
-      xml: pollXml,
-      exchanges,
-      govTestScenario: caseDef.govTestScenario,
-    });
-
-    terminal = decidePollStep(pollParsed, submissionNumber);
-    delayMs = nextPollDelayMs(pollParsed, delayMs);
-  }
+  const terminal = await pollUntilTerminal(submitParsed, submissionNumber, context, caseDef, exchanges, transactionIds);
 
   return {
     case: caseDef.name,
@@ -314,9 +362,74 @@ async function runConfirmationStatementCase(caseDef, { presenterId, presenterCod
   };
 }
 
+/**
+ * Run one PSC verification statement case: allocate a submission number, submit the one
+ * director-PSC's Individual body, and - unless the submission itself answered a GovTalkErrors
+ * block - poll to a terminal state, the same way runConfirmationStatementCase() does.
+ */
+async function runPscVerificationStatementCase(caseDef, context) {
+  const { presenterId, presenterCode, gatewayTest } = context;
+  const exchanges = [];
+  const transactionIds = [];
+  const submissionNumber = await allocateSubmissionNumber();
+
+  const individual = caseDef.individual || {};
+  let statementXml = buildPscVerificationStatementBody(individual);
+  if (caseDef.corruptPersonalCode) {
+    statementXml = blankPersonalCode(statementXml);
+  }
+
+  const submitTransactionId = String(Date.now());
+  transactionIds.push(submitTransactionId);
+  const submitXml = buildPscVerificationStatementSubmission({
+    presenterId,
+    presenterCode,
+    companyNumber: caseDef.companyNumber,
+    companyName: caseDef.companyName,
+    companyAuthenticationCode: caseDef.companyAuthenticationCode,
+    submissionNumber,
+    dateSigned: caseDef.dateSigned,
+    statementXml,
+    transactionId: submitTransactionId,
+    gatewayTest,
+  });
+
+  const submittedAt = nowIso();
+  const { parsed: submitParsed } = await sendEnvelope({
+    label: "submit",
+    xml: submitXml,
+    exchanges,
+    govTestScenario: caseDef.govTestScenario,
+  });
+
+  const terminal = await pollUntilTerminal(submitParsed, submissionNumber, context, caseDef, exchanges, transactionIds);
+
+  return {
+    case: caseDef.name,
+    type: caseDef.type,
+    requestClass: "PSCVerificationStatement",
+    submissionNumber,
+    transactionIds,
+    timestamps: { submittedAt, terminalAt: nowIso() },
+    observedStatus: terminal.status,
+    errors: terminal.errors || [],
+    rejections: terminal.rejections || [],
+    exchanges,
+  };
+}
+
+function runnerFor(caseType) {
+  if (caseType === "confirmationStatement") {
+    return runConfirmationStatementCase;
+  }
+  if (caseType === "pscVerificationStatement") {
+    return runPscVerificationStatementCase;
+  }
+  return runSyncCase;
+}
+
 async function runCase(caseDef, context) {
-  const entry =
-    caseDef.type === "confirmationStatement" ? await runConfirmationStatementCase(caseDef, context) : await runSyncCase(caseDef, context);
+  const entry = await runnerFor(caseDef.type)(caseDef, context);
 
   return {
     ...entry,

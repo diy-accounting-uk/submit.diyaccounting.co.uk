@@ -96,6 +96,8 @@ export function apiEndpoint(app) {
           subscriptionStatus: "active",
           currentPeriodEnd: periodEnd,
           cancelAtPeriodEnd: false,
+          // The simulator's own mock checkout, never a real customer.
+          actor: "synthetic",
         };
 
         await putBundle(userSub, bundleRecord);

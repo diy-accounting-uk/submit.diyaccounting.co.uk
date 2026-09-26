@@ -451,6 +451,20 @@ describe("bundlePost ingestHandler", () => {
     expect(detail.actor).toBe("customer");
   });
 
+  test("stores the classified actor on the bundle item itself, not just the activity event", async () => {
+    const token = makeIdToken("real-customer-item-sub", { email: "real.customer@example.com" });
+    const event = buildEventWithToken(token, { bundleId: "day-guest" });
+    event.headers["x-wait-time-ms"] = "30000";
+
+    await bundlePostHandler(event);
+
+    const bundlePutCalls = mockSend.mock.calls.filter(
+      (call) => call[0] instanceof MockPutCommand && call[0].input.Item?.bundleId === "day-guest",
+    );
+    expect(bundlePutCalls).toHaveLength(1);
+    expect(bundlePutCalls[0][0].input.Item.actor).toBe("customer");
+  });
+
   // ============================================================================
   // Error Handling Tests (500)
   // ============================================================================

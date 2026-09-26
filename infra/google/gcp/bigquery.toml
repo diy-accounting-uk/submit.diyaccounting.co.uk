@@ -16,6 +16,12 @@
 # per run, so a rerun for the same day is idempotent. The nightly lake job copies these tables
 # alongside the Athena views.
 #
+# `schedule` runs in UTC (ga4-bigquery-sync.js pins scheduleOptions.timeZone) and must land
+# before the AWS nightly pull's own 02:15 UTC cron
+# (infra/main/java/.../NightlyIngestionWorkflow.java): the lake job reads the same target day
+# this query writes, so if the write hasn't happened yet when the lake job runs, it finds no
+# rows for that day and never looks again.
+#
 # The service account (ga4-report-pull@diyaccounting-ga4.iam.gserviceaccount.com) already
 # holds Owner on this project via infra/google/gcp/project.toml, which covers creating the
 # dataset and the scheduled queries.
@@ -34,7 +40,7 @@ sql_file = "infra/google/gcp/bigquery/sessions_by_host_source_daily.sql"
 destination_table = "sessions_by_host_source_daily"
 partition_field = "day"
 write_disposition = "WRITE_TRUNCATE"
-schedule = "every day 04:30"
+schedule = "every day 01:00"
 
 [[queries]]
 name = "funnel_steps_daily"
@@ -44,7 +50,7 @@ sql_file = "infra/google/gcp/bigquery/funnel_steps_daily.sql"
 destination_table = "funnel_steps_daily"
 partition_field = "day"
 write_disposition = "WRITE_TRUNCATE"
-schedule = "every day 04:30"
+schedule = "every day 01:00"
 
 [[queries]]
 name = "key_events_daily"
@@ -54,7 +60,7 @@ sql_file = "infra/google/gcp/bigquery/key_events_daily.sql"
 destination_table = "key_events_daily"
 partition_field = "day"
 write_disposition = "WRITE_TRUNCATE"
-schedule = "every day 04:30"
+schedule = "every day 01:00"
 
 [[queries]]
 name = "downloads_by_product_daily"
@@ -64,4 +70,4 @@ sql_file = "infra/google/gcp/bigquery/downloads_by_product_daily.sql"
 destination_table = "downloads_by_product_daily"
 partition_field = "day"
 write_disposition = "WRITE_TRUNCATE"
-schedule = "every day 04:30"
+schedule = "every day 01:00"

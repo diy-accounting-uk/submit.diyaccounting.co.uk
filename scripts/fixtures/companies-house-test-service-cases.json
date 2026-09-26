@@ -3,23 +3,23 @@
     "name": "company-data-request",
     "type": "companyDataRequest",
     "companyNumber": "00001350",
-    "companyAuthenticationCode": "TESTCODE001",
+    "companyAuthenticationCode": "AUTH01",
     "madeUpDate": "2026-09-21",
     "expectedOutcome": {
-      "status": "OK",
+      "status": "GOVTALK_ERROR",
       "pinned": false,
-      "note": "CompanyDataRequest answered for this company on the 2026-09-26 probe; companyAuthenticationCode is a placeholder CS-A3 pins from the first live run."
+      "note": "No real company authentication code for 00001350 is on record; companyAuthenticationCode is the shortest valid-length placeholder (6-8 chars, baseTypes-v3-6.xsd), so the gateway is expected to answer an authentication rejection, not OK. CS-A3 pins the real outcome once a real code is known."
     }
   },
   {
     "name": "payment-periods-request",
     "type": "paymentPeriodsRequest",
     "companyNumber": "03176906",
-    "companyAuthenticationCode": "TESTCODE002",
+    "companyAuthenticationCode": "AUTH02",
     "expectedOutcome": {
-      "status": "OK",
+      "status": "GOVTALK_ERROR",
       "pinned": false,
-      "note": "Not yet probed live; companyAuthenticationCode is a placeholder. CS-A3 pins the real outcome."
+      "note": "No real company authentication code for 03176906 is on record; companyAuthenticationCode is the shortest valid-length placeholder (6-8 chars, baseTypes-v3-6.xsd), so the gateway is expected to answer an authentication rejection, not OK. CS-A3 pins the real outcome once a real code is known."
     }
   },
   {
@@ -27,7 +27,7 @@
     "type": "confirmationStatement",
     "companyNumber": "03176906",
     "companyName": "MILLENNIUM STADIUM PLC",
-    "companyAuthenticationCode": "TESTCODE003",
+    "companyAuthenticationCode": "AUTH03",
     "statement": {
       "reviewDate": "2026-09-21",
       "directors": [
@@ -37,7 +37,7 @@
     "expectedOutcome": {
       "status": "GOVTALK_ERROR",
       "pinned": false,
-      "note": "GetSubmissionStatus answers GovTalkErrors 9999 'No presenter ID supplied' for every poll today (B34.6c); CS-A3 pins the real ACCEPT/REJECT once that is fixed."
+      "note": "companyAuthenticationCode is a placeholder, no real code for 03176906 is on record, so the gateway is expected to reject on authentication rather than reach GetSubmissionStatus's 9999 'No presenter ID supplied' blocker (B34.6c). CS-A3 pins the real outcome."
     }
   },
   {
@@ -45,7 +45,7 @@
     "type": "confirmationStatement",
     "companyNumber": "03176906",
     "companyName": "MILLENNIUM STADIUM PLC",
-    "companyAuthenticationCode": "TESTCODE004",
+    "companyAuthenticationCode": "AUTH04",
     "statement": {
       "reviewDate": "2026-09-21",
       "sicCodes": ["93110"],
@@ -56,7 +56,7 @@
     "expectedOutcome": {
       "status": "GOVTALK_ERROR",
       "pinned": false,
-      "note": "GetSubmissionStatus answers GovTalkErrors 9999 for every poll today (B34.6c); CS-A3 pins the real outcome."
+      "note": "companyAuthenticationCode is a placeholder, no real code for 03176906 is on record. CS-A3 pins the real outcome."
     }
   },
   {
@@ -64,7 +64,7 @@
     "type": "confirmationStatement",
     "companyNumber": "03176906",
     "companyName": "MILLENNIUM STADIUM PLC",
-    "companyAuthenticationCode": "TESTCODE005",
+    "companyAuthenticationCode": "AUTH05",
     "statement": {
       "reviewDate": "2026-09-21",
       "shareholdings": [{ "shareClass": "Ordinary", "numberHeld": "50000", "shareholders": [{ "surname": "WELSH RUGBY UNION LTD" }] }],
@@ -75,7 +75,7 @@
     "expectedOutcome": {
       "status": "GOVTALK_ERROR",
       "pinned": false,
-      "note": "GetSubmissionStatus answers GovTalkErrors 9999 for every poll today (B34.6c); CS-A3 pins the real outcome. Settles Q2 once pinned."
+      "note": "companyAuthenticationCode is a placeholder, no real code for 03176906 is on record. CS-A3 pins the real outcome. Settles Q2 once pinned."
     }
   },
   {
@@ -83,7 +83,7 @@
     "type": "confirmationStatement",
     "companyNumber": "03176906",
     "companyName": "MILLENNIUM STADIUM PLC",
-    "companyAuthenticationCode": "TESTCODE006",
+    "companyAuthenticationCode": "AUTH06",
     "statement": {
       "reviewDate": "2026-09-21",
       "registeredEmailAddress": "confirmation-statement-test@example.com",
@@ -94,7 +94,7 @@
     "expectedOutcome": {
       "status": "GOVTALK_ERROR",
       "pinned": false,
-      "note": "GetSubmissionStatus answers GovTalkErrors 9999 for every poll today (B34.6c); CS-A3 pins the real outcome."
+      "note": "companyAuthenticationCode is a placeholder, no real code for 03176906 is on record. CS-A3 pins the real outcome."
     }
   },
   {
@@ -102,7 +102,7 @@
     "type": "confirmationStatement",
     "companyNumber": "03176906",
     "companyName": "MILLENNIUM STADIUM PLC",
-    "companyAuthenticationCode": "TESTCODE007",
+    "companyAuthenticationCode": "AUTH07",
     "statement": {
       "reviewDate": "2026-09-21",
       "directors": [
@@ -113,7 +113,7 @@
     "expectedOutcome": {
       "status": "GOVTALK_ERROR",
       "pinned": false,
-      "note": "Today's 9999 poll blocker (B34.6c) masks whatever reject the gateway would otherwise give for a blank director code. CS-A3 pins the real reject code and settles Q3."
+      "note": "Blanks the first director's personal code; expects a schema-validation reject on that field. companyAuthenticationCode is a placeholder, no real code for 03176906 is on record, so the observed reject may instead name the authentication code until a real one is known. CS-A3 pins the real reject code and settles Q3."
     }
   },
   {
@@ -121,7 +121,7 @@
     "type": "confirmationStatement",
     "companyNumber": "03176906",
     "companyName": "MILLENNIUM STADIUM PLC",
-    "companyAuthenticationCode": "WRONGCODE00",
+    "companyAuthenticationCode": "WRONG1",
     "statement": {
       "reviewDate": "2026-09-21",
       "directors": [
@@ -131,7 +131,7 @@
     "expectedOutcome": {
       "status": "GOVTALK_ERROR",
       "pinned": false,
-      "note": "companyAuthenticationCode is deliberately wrong. Today's 9999 poll blocker (B34.6c) masks whatever reject code this gets; CS-A3 pins the real one."
+      "note": "companyAuthenticationCode is deliberately a different placeholder from the other cases', to prove the gateway rejects a mismatched code. CS-A3 pins the real reject code."
     }
   },
   {
@@ -139,7 +139,7 @@
     "type": "confirmationStatement",
     "companyNumber": "03176906",
     "companyName": "MILLENNIUM STADIUM PLC",
-    "companyAuthenticationCode": "TESTCODE008",
+    "companyAuthenticationCode": "AUTH08",
     "statement": {
       "reviewDate": "2026-09-21",
       "officers": [{ "identityVerificationDetails": { "appointment_verification_end_on": "9999-12-31" } }]
@@ -147,7 +147,50 @@
     "expectedOutcome": {
       "status": "GOVTALK_ERROR",
       "pinned": false,
-      "note": "Forces ConfirmationStatement-v1-3 (no verification block) for schema coverage; whether the test company's real officers are all verified is unconfirmed, and today's 9999 poll blocker (B34.6c) hides the outcome either way. CS-A3 pins it."
+      "note": "Forces ConfirmationStatement-v1-3 (no verification block) for schema coverage; whether the test company's real officers are all verified is unconfirmed, and companyAuthenticationCode is a placeholder with no real code for 03176906 on record. CS-A3 pins it."
+    }
+  },
+  {
+    "name": "psc-verification-statement-director-psc",
+    "type": "pscVerificationStatement",
+    "companyNumber": "04549236",
+    "companyName": "MORGAN TECHNICAL LIMITED",
+    "companyAuthenticationCode": "AUTH09",
+    "dateSigned": "2026-09-22",
+    "individual": {
+      "surname": "MORGAN",
+      "forename": "Alan",
+      "otherForenames": "James",
+      "dobMonth": 4,
+      "dobYear": 1964,
+      "personalCode": "12345678951"
+    },
+    "expectedOutcome": {
+      "status": "GOVTALK_ERROR",
+      "pinned": false,
+      "note": "Alan James Morgan is company 04549236's one director and its one individual PSC (find-and-update.company-information.service.gov.uk, 2026-09-26), the director-PSC case CS-13b asks for. companyAuthenticationCode is a placeholder, no real code for 04549236 is on record. The weekly run pins the real outcome."
+    }
+  },
+  {
+    "name": "psc-verification-statement-blank-code",
+    "type": "pscVerificationStatement",
+    "companyNumber": "04549236",
+    "companyName": "MORGAN TECHNICAL LIMITED",
+    "companyAuthenticationCode": "AUTH10",
+    "dateSigned": "2026-09-22",
+    "individual": {
+      "surname": "MORGAN",
+      "forename": "Alan",
+      "otherForenames": "James",
+      "dobMonth": 4,
+      "dobYear": 1964,
+      "personalCode": "12345678951"
+    },
+    "corruptPersonalCode": true,
+    "expectedOutcome": {
+      "status": "GOVTALK_ERROR",
+      "pinned": false,
+      "note": "Blanks the PSC's own personal code; expects a schema-validation reject on that field. companyAuthenticationCode is a placeholder, no real code for 04549236 is on record, so the observed reject may instead name the authentication code until a real one is known. CS-A3 pins the real reject code."
     }
   }
 ]

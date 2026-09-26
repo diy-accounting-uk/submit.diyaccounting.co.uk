@@ -3,7 +3,7 @@
 
 # ITSA pass over the two HMRC questionnaires
 
-**Version 1, 16 September 2026.** The VAT answers are in
+**Version 1, 16 September 2026; WCAG rows updated 26 September 2026.** The VAT answers are in
 `hmrc_questionnaire_1_software_developer_checklist_diy_accounting_limited_v2.md` and
 `hmrc_questionnaire_2_WCAG_2.1_AA_diy_accounting_limited_v2.md`. This file answers the same
 questions for the Income Tax (MTD) journey and says where the ITSA answer differs from the VAT one.
@@ -30,21 +30,20 @@ Company, contact and product details are unchanged from the VAT questionnaires.
 | UK standards | Yes | Yes. Same pages, styles and formats as VAT | |
 | White label | No | No | |
 | GDPR | Yes, ICO ZB070902 | Yes, the same registration. ITSA receipts follow the VAT receipts' 7-year retention | `app/data/` receipt repositories |
-| WCAG | Yes, 0 violations on 21 pages | Not evidenced for the 19 ITSA pages: the scan's page list carries no ITSA page. Add them to `scripts/axe-quickscan.mjs` and re-run before sending | Checklist row 13 |
+| WCAG | Yes, 0 violations on 21 pages | Yes. `scripts/axe-quickscan.mjs` covers all 44 pages including the 19 ITSA pages: 0 violations, 958 passes (2026-09-23, repeated 2026-09-26). `web/browser-tests/itsaAccessibility.browser.test.js` scans the 19 ITSA pages with forms loaded and results shown: 0 violations | Checklist row 13; `REPORT_ACCESSIBILITY_PENETRATION.md` |
 
 ## Questionnaire 2: WCAG 2.1 AA
 
-The VAT questionnaire answers every criterion "Supports" for the VAT pages with the January 2026
-scan as evidence. The ITSA pages share the header, footer, form styles, hint pattern and error
-summary of the VAT pages, so each criterion's answer is expected to carry over. The scan has not
-run over them, so no criterion can be marked "Supports" for ITSA yet.
+The VAT questionnaire answers every criterion "Supports" for the VAT pages. The 19 ITSA pages under
+`web/public/hmrc/itsa/` use the same header, footer, form styles, hint pattern and error summary,
+and the automated scans now cover them:
 
-What produces the evidence:
+- `scripts/axe-quickscan.mjs`, signed-out state: 0 violations, 958 passes over 44 pages, the 19
+  ITSA pages among them (2026-09-23, repeated 2026-09-26).
+- `web/browser-tests/itsaAccessibility.browser.test.js`, populated state (forms loaded, results
+  shown), axe-core 4.9: 0 violations on all 19.
+- One contrast failure the first scan found (`dashboard.html`'s `.dashboard-divider`, 4.47:1) was
+  fixed to 5.74:1.
 
-1. Add the 19 pages under `web/public/hmrc/itsa/` to the `PAGES` list in
-   `scripts/axe-quickscan.mjs`.
-2. Run the accessibility suite (`npm run accessibility:*` scripts) against ci or prod.
-3. Re-generate `REPORT_ACCESSIBILITY_PENETRATION.md` and update the "Testing Summary" table of
-   questionnaire 2 with the new page count and results.
-
-Until then the ITSA answer to questionnaire 2 is "not evidenced" on every row.
+The ITSA answer to questionnaire 2 is "Supports" on the same criteria and the same basis as the
+VAT answers, with the scans above as the evidence.
