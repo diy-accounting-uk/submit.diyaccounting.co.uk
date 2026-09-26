@@ -9,7 +9,7 @@ description: Send the operator a text message (SMS) from the submit-prod AWS acc
 # text-antony-submit-prod
 
 Sends one SMS to the operator's mobile from `submit-prod` (972912397388), eu-west-2, through
-Amazon SNS. The number lives in the SecureString parameter `/submit/prod/operator-sms-number`,
+AWS End User Messaging SMS from the sender ID `DIYACCT`. The number lives in the SecureString parameter `/submit/prod/operator-sms-number`,
 never in this repository, which is public.
 
 Invoking this skill is the operator's go for the send. A send the session decides on by itself
@@ -29,21 +29,22 @@ Invoking this skill is the operator's go for the send. A send the session decide
 export AWS_PROFILE=submit-prod AWS_REGION=eu-west-2
 number=$(aws ssm get-parameter --name /submit/prod/operator-sms-number --with-decryption \
   --query Parameter.Value --output text)
-aws sns publish --phone-number "$number" --message "<message>" \
-  --message-attributes '{"AWS.SNS.SMS.SMSType":{"DataType":"String","StringValue":"Transactional"},"AWS.SNS.SMS.SenderID":{"DataType":"String","StringValue":"DIYAcct"}}' \
-  --query MessageId --output text
+aws pinpoint-sms-voice-v2 send-text-message --destination-phone-number "$number" \
+  --origination-identity DIYACCT --message-type TRANSACTIONAL \
+  --message-body "<message>" --query MessageId --output text
 ```
 
-A `MessageId` back means SNS accepted it, not that the phone received it. Delivery shows in the
-SNS delivery-status logs when they are turned on, and in the operator's reply.
+A `MessageId` back means the service accepted it, not that the phone received it; the operator's
+reply confirms delivery. `aws sns publish --phone-number` is not the path: on 2026-09-26 it
+returned message ids for two texts that never arrived, while this call arrived first time.
 
 ## When it fails
 
 | Error | Cause | Fix |
 |---|---|---|
 | `ParameterNotFound` | The number was never stored | The operator runs the setup below |
-| `AuthorizationError` or `OptedOut` on publish | The account is in the SMS sandbox and the number is not verified, or the number opted out | Setup step 3; `aws sns list-phone-numbers-opted-out` |
-| `Throttling` / nothing arrives after a spend-limit message | `MonthlySpendLimit` (1 USD by default) reached | Raise it: `aws sns set-sms-attributes --attributes MonthlySpendLimit=<usd>` |
+| `ValidationException` or `AccessDeniedException` on send | The account is in the SMS sandbox and the number is not verified, or the number opted out | Setup step 3; `aws pinpoint-sms-voice-v2 describe-opted-out-numbers --opt-out-list-name Default` |
+| `ServiceQuotaExceededException` / nothing arrives | The 1 USD monthly text spend limit reached | `aws pinpoint-sms-voice-v2 describe-spend-limits`; raising it is a support request while the account tier is `SANDBOX` |
 
 ## Setup (once, the operator's AWS writes; done 2026-09-26)
 
