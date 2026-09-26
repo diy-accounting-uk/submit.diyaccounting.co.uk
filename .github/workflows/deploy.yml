@@ -544,6 +544,7 @@ jobs:
         with:
           github-ref: ${{ github.ref }}
           run-id: ${{ github.run_id }}
+          github-token: ${{ github.token }}
           self-destruct-delay-hours: ${{ env.SELF_DESTRUCT_DELAY_HOURS }}
 
       - name: Compute deployment name and environment

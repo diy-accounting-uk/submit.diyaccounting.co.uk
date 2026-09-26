@@ -10,12 +10,17 @@
 //
 // Each slot's claim record lives at /submit/ci/slots/<slot> as
 // {"ref": "<github.ref>", "runId": "<id>", "claimedAt": "<ISO>"}. A slot is free when its
-// parameter is absent, when its ref is this run's own (a redeploy wins its slot back), or when
-// its claim has outlived this deployment's own self-destruct delay plus one hour - by then the
+// parameter is absent, when its ref is this run's own (a redeploy wins its slot back), when its
+// claim has outlived this deployment's own self-destruct delay plus one hour - by then the
 // deployment that held it is gone even if none of its release paths (deploy.yml's own
-// release-ci-slot job, destroy-ci.yml, or selfDestruct.js) ran. release-ci-slot.mjs releases a
-// deploy.yml run's own claim as soon as that run ends, pass or fail, so this staleness rule is
-// the backstop for a run that never reaches its own release job at all, not the everyday path.
+// release-ci-slot job, destroy-ci.yml, or selfDestruct.js) ran - or when the claim's own run has
+// finished and the slot is not the environment's current last-known-good deployment. That last
+// rule covers a run that reaches release-ci-slot.mjs but is left in place because it was the
+// last-known-good deployment at the time: once last-known-good later moves to another slot, this
+// one's finished claim no longer has to wait out the staleness window. release-ci-slot.mjs
+// releases a deploy.yml run's own claim as soon as that run ends, pass or fail, unless it is
+// still last-known-good, so the staleness rule remains the backstop for a run that never reaches
+// its own release job at all, not the everyday path.
 //
 // No compare-and-swap exists for a plain SSM String parameter, so the create-only path (a
 // currently absent slot) is the only atomic claim here: `put-parameter` with no --overwrite
@@ -28,7 +33,10 @@
 import { spawnSync } from "node:child_process";
 import { appendFileSync } from "node:fs";
 
+import { claimIsActive, fetchRunStatus } from "./slot-claim-active.mjs";
+
 const PARAMETER_PATH_PREFIX = "/submit/ci/slots/";
+const LAST_KNOWN_GOOD_PARAMETER = "/submit/ci/last-known-good-deployment";
 
 export function slotNames(prefix, count) {
   return Array.from({ length: count }, (_, i) => `${prefix}${i + 1}`);
@@ -38,12 +46,17 @@ export function parameterName(slot) {
   return `${PARAMETER_PATH_PREFIX}${slot}`;
 }
 
-export function isSlotFree(record, { ref, nowMs, staleAfterMs }) {
+// runFinished carries the third state a raw run status collapses into: true (the run has
+// finished), false (still queued or in progress) or null (its status could not be determined).
+// Only a definite true frees the slot early, and only when the slot is not last-known-good -
+// null and false are both held, matching claimIsActive's own "unknown means still spoken for".
+export function isSlotFree(record, { ref, nowMs, staleAfterMs, slot, runFinished, lastKnownGood }) {
   if (!record) return true;
   if (record.ref === ref) return true;
   const claimedAtMs = Date.parse(record.claimedAt);
   if (Number.isNaN(claimedAtMs)) return true;
-  return nowMs - claimedAtMs > staleAfterMs;
+  if (nowMs - claimedAtMs > staleAfterMs) return true;
+  return runFinished === true && slot !== lastKnownGood;
 }
 
 export function describeSlot(slot, record) {
@@ -69,6 +82,30 @@ function getSlotRecord(region, slot) {
   }
   const parsed = JSON.parse(result.stdout);
   return JSON.parse(parsed.Parameter.Value);
+}
+
+function getLastKnownGoodDeployment(region) {
+  const result = runAws(["ssm", "get-parameter", "--name", LAST_KNOWN_GOOD_PARAMETER, "--region", region, "--output", "json"]);
+  if (result.status !== 0) {
+    if (/ParameterNotFound/.test(result.stderr || "")) return null;
+    throw new Error(`aws ssm get-parameter ${LAST_KNOWN_GOOD_PARAMETER} failed: ${result.stderr || result.error?.message}`);
+  }
+  const parsed = JSON.parse(result.stdout);
+  return parsed.Parameter.Value;
+}
+
+// A failure here must not free a slot whose run is genuinely still going, so any error (a rate
+// limit, a network blip) resolves to null - "unknown", which isSlotFree treats the same as
+// "still running" - and is logged rather than thrown, so one slot's lookup trouble doesn't stop
+// the claim loop from trying the others.
+async function resolveRunFinished(repository, runId, token) {
+  try {
+    const status = await fetchRunStatus(repository, runId, token);
+    return !claimIsActive(status);
+  } catch (error) {
+    console.error(`Could not read run ${runId}'s status (${error.message}); treating its slot claim as still active`);
+    return null;
+  }
 }
 
 function tryClaimAbsentSlot(region, slot, value) {
@@ -113,9 +150,13 @@ async function main() {
   const pollSeconds = Number(process.env.CLAIM_CI_SLOT_POLL_SECONDS || 60);
   const ceilingSeconds = Number(process.env.CLAIM_CI_SLOT_CEILING_SECONDS || 1800);
   const region = process.env.AWS_REGION || "eu-west-2";
+  const repository = process.env.GITHUB_REPOSITORY;
+  const token = process.env.CLAIM_CI_SLOT_GITHUB_TOKEN;
 
-  if (!ref || !runId || Number.isNaN(delayHours)) {
-    throw new Error("CLAIM_CI_SLOT_GITHUB_REF, CLAIM_CI_SLOT_RUN_ID and CLAIM_CI_SLOT_DELAY_HOURS must be set");
+  if (!ref || !runId || Number.isNaN(delayHours) || !repository || !token) {
+    throw new Error(
+      "CLAIM_CI_SLOT_GITHUB_REF, CLAIM_CI_SLOT_RUN_ID, CLAIM_CI_SLOT_DELAY_HOURS, GITHUB_REPOSITORY and CLAIM_CI_SLOT_GITHUB_TOKEN must be set",
+    );
   }
 
   const staleAfterMs = (delayHours + 1) * 60 * 60 * 1000;
@@ -123,13 +164,20 @@ async function main() {
   const startedAt = Date.now();
 
   for (;;) {
-    const records = slots.map((slot) => ({ slot, record: getSlotRecord(region, slot) }));
+    const slotRecords = slots.map((slot) => ({ slot, record: getSlotRecord(region, slot) }));
+    const lastKnownGood = getLastKnownGoodDeployment(region);
     const nowMs = Date.now();
     const nowIso = new Date(nowMs).toISOString();
     const value = JSON.stringify({ ref, runId, claimedAt: nowIso });
 
-    for (const { slot, record } of records) {
-      if (!isSlotFree(record, { ref, nowMs, staleAfterMs })) continue;
+    const records = [];
+    for (const { slot, record } of slotRecords) {
+      const runFinished = record && record.ref !== ref ? await resolveRunFinished(repository, record.runId, token) : null;
+      records.push({ slot, record, free: isSlotFree(record, { ref, nowMs, staleAfterMs, slot, runFinished, lastKnownGood }) });
+    }
+
+    for (const { slot, record, free } of records) {
+      if (!free) continue;
 
       if (record === null) {
         if (tryClaimAbsentSlot(region, slot, value)) {

@@ -14,6 +14,9 @@ inputs:
   run-id:
     description: "This run's github.run_id, stored in the slot's claim record for diagnostics only."
     required: true
+  github-token:
+    description: "Token with actions:read, used to check whether a held slot's claiming run has finished."
+    required: true
   self-destruct-delay-hours:
     description: >
       This deployment's self-destruct delay. A slot's claim is stale, and so free, once
@@ -59,6 +62,7 @@ runs:
       env:
         CLAIM_CI_SLOT_GITHUB_REF: ${{ inputs.github-ref }}
         CLAIM_CI_SLOT_RUN_ID: ${{ inputs.run-id }}
+        CLAIM_CI_SLOT_GITHUB_TOKEN: ${{ inputs.github-token }}
         CLAIM_CI_SLOT_DELAY_HOURS: ${{ inputs.self-destruct-delay-hours }}
         CLAIM_CI_SLOT_SLOT_COUNT: ${{ inputs.slot-count }}
         CLAIM_CI_SLOT_SLOT_PREFIX: ${{ inputs.slot-prefix }}
