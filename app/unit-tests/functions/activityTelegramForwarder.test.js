@@ -111,6 +111,33 @@ describe("activityTelegramForwarder", () => {
       expect(resolveTargetChatIds(detail, CHAT_CONFIG)).toEqual(["@diy_ci_live"]);
     });
 
+    // A page load reaches the lake only: it fires on every visit and carries no signal of its own.
+    test("routes a new-session event to no chat, even for a customer", () => {
+      const detail = { event: "new-session", actor: "customer", flow: "user-journey" };
+      expect(resolveTargetChatIds(detail, CHAT_CONFIG)).toEqual([]);
+    });
+
+    test("routes a new-session event to no chat, even with a test_ requestId", () => {
+      const detail = { event: "new-session", actor: "customer", flow: "user-journey", requestId: "test_abc-123" };
+      expect(resolveTargetChatIds(detail, CHAT_CONFIG)).toEqual([]);
+    });
+
+    // The HMRC OAuth token exchange is an internal step inside a submission, not a signal.
+    test("routes an hmrc-token-exchanged event to no chat, even for a customer", () => {
+      const detail = { event: "hmrc-token-exchanged", actor: "customer", flow: "user-journey" };
+      expect(resolveTargetChatIds(detail, CHAT_CONFIG)).toEqual([]);
+    });
+
+    test("routes an hmrc-token-exchanged event to no chat, even with a test_ requestId", () => {
+      const detail = { event: "hmrc-token-exchanged", actor: "test-user", flow: "user-journey", requestId: "test_abc-123" };
+      expect(resolveTargetChatIds(detail, CHAT_CONFIG)).toEqual([]);
+    });
+
+    test("does not stop the token exchange's own failure event", () => {
+      const detail = { event: "hmrc-token-exchange-failed", actor: "customer", flow: "user-journey" };
+      expect(resolveTargetChatIds(detail, CHAT_CONFIG)).toEqual(["@diy_ci_live"]);
+    });
+
     // User journey routing
     test("routes test-user events to test channel", () => {
       const detail = { actor: "test-user", flow: "user-journey" };
