@@ -256,8 +256,13 @@ confirm brand verification. They replace LP-24a's steps 1 to 4.
 7. **Period mismatch.** A VAT book whose periods straddle HMRC's obligation dates
    (`PLAN_SUBMISSION_MCP.md`, dependencies table) fills nothing. The message must say which
    periods the book covers.
-8. **Journey C and the Resident bundle.** The launch plan puts Drive in the £39 Resident bundle
-   (`../spreadsheets/PLAN_DIYA_GL_LAUNCH.md:354-356`). This plan makes Drive free. Confirm.
+8. **Journey C and the Resident bundle.** Decided by the operator, 2026-09-26: Drive is free and
+   needs no Submit sign-in. Saving a book to the customer's own Drive from the page costs DIY
+   Accounting one page download, the same as a local file, and a Drive store tied to a Submit
+   account gives the same experience while making DIY Accounting a party to the customer's
+   Drive access. The subscriber gate at `drive.js:77-83` goes, and the launch plan's Resident
+   bundle (`../spreadsheets/PLAN_DIYA_GL_LAUNCH.md:354-356`) drops Drive; the spreadsheets
+   repository makes that change.
 9. **Headless Google.** No test Google account signs in headlessly, so consent, Picker and
    upload are checked by hand after a prod deploy, as LP-24 already plans.
 
