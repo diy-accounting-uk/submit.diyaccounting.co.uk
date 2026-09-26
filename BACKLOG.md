@@ -30,7 +30,8 @@ truthfully on its own. Machine-ask and human-driven steps are briefed at the wor
   book-limit and probe-cleanup fixes.
 - **Open alarm issues**: none (#313 and #337 closed; the alarm's period is B30au).
 - **Both `/api/v1/books` and `/api/v1/diya-gl` are permanent** by operator decision of 2026-09-10.
-- **Date-gated**: 43 from 2026-10-02; 48 the week of 2026-11-29; 52l from 2026-12-10.
+- **Date-gated**: 43 from 2026-10-02; 48 the week of 2026-11-29; 52l from 2026-12-10; 82 from
+  2027-04.
 - **Tier 2**: 11's phase 2 has T7b.1 to T7b.7 and the recognition pack's evidence on main, the
   send (T10) remaining; 34b waits on Companies House's answer about status lookups (NEXT.md O34d); 62 waits on
   the spreadsheets repository's OAM link.
@@ -95,7 +96,7 @@ Each row names what has to happen before it can start.
 | 76 | The merge gate's remaining rules: P10's shape rules (a minimum open-to-merge delay, a diff-size ceiling on a non-empty body, one author email, a merges-per-day cap), the full P2 authorship check (author and committer resolve to the owner, forks rejected, on top of the signature check `verify-commit-signatures.yml` already makes), P4's refusal to auto-merge a PR tied to another GitHub user's issue, and the rollout staged docs-only first. | PLAN_REPOSITORY_AUTOMATION.md Phase 2, P2, P4, P10 | M | Autonomy. The rules that make human-free auto-merge (row 73) safe to switch on. |
 | 77 | The run-budget guard generalised from `alarm-triage.yml` to every agent path (the agentic-lib workflows and any later one), one composite action with the budget as an input. | PLAN_REPOSITORY_AUTOMATION.md Phase 3 | S | Autonomy. One spend ceiling for every unattended run instead of one workflow's. |
 | 78 | Support replies graduate from drafts: measure the acceptance rate of the drafted replies (row 71), then let one settled-answer class auto-send once its rate clears a named bar. | PLAN_REPOSITORY_AUTOMATION.md Phase 4 | M | Autonomy. The first customer-facing send with nobody watching, gated on evidence. |
-| 82 | ACSP registration for filing on behalf of others: customers file the confirmation statement and PSC verification statement through Submit, either under our presenter once DIY Accounting Limited is an ACSP (AML supervision, a director's identity verification, £55) or under their own presenter accounts, which suits a paid MCP integration. Starts after HMRC and Companies House filing run end to end; ACSP registration for others is required no sooner than November 2027. | PLAN_COMPANIES_HOUSE_ACSP.md | L | Revenue. The customer half of Companies House filing; prod lists it to operators only until then. |
+| 82 | **From 2027-04.** ACSP registration for filing on behalf of others: register DIY Accounting Limited as an ACSP (AML supervision, a director's identity verification, £55) so Submit can keep filing customers' confirmation statements and PSC verification statements under our own presenter once Companies House requires it, no sooner than November 2027, at least six months' notice. Filing under a customer's own presenter, or under ours before registration is required, is `PLAN_COMPANIES_HOUSE.md`'s CS-P1 and CS-11b. | PLAN_COMPANIES_HOUSE_ACSP.md | L | Revenue. Keeps our-presenter customer filing, already live, lawful once Companies House requires ACSP. |
 
 ## Tier 4: hardening and compliance
 

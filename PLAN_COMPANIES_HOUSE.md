@@ -19,26 +19,21 @@ repository used to carry.
 > Companies House test criteria, build to them, exercise them continuously, and submit the
 > evidence (operator, 2026-09-26)
 
-> own filings now, customers later ... November 2027 is more than a year away (operator,
-> 2026-09-26)
+> Customers file now, under our presenter; ACSP registration itself waits (no sooner than
+> November 2027, at least six months' notice) (operator, 2026-09-26)
 
 ## Scope
 
-The goal of this plan is for DIY Accounting Limited to file its own confirmation statement and
-PSC verification statements through Submit, under its own credit-account presenter. On prod these
-activities are open to operators only, gated the way the operator dashboard is (CS-11b). This
-also lets the operator automate the company's own Companies House admin.
+DIY Accounting Limited files its own confirmation statement, PSC verification statements and
+micro-entity accounts through Submit, under its own credit-account presenter. Customers get the
+same filings on prod as soon as each is ready, under the same presenter. This is lawful until
+Companies House requires ACSP registration for filing on behalf of others (no sooner than November
+2027, at least six months' notice; `PLAN_COMPANIES_HOUSE_ACSP.md` covers that registration and the
+near-term alternative of filing under a customer's own presenter, CS-P1).
 
-Customer filing returns when HMRC and Companies House filing both run end to end without the
-operator. Filing for customers under our presenter makes us an ACSP once Companies House requires
-it; that work and the customer-facing confirmation statement listing live in
-`PLAN_COMPANIES_HOUSE_ACSP.md`.
-
-**Open decision for the operator: accounts filing.** B34c lists micro-entity accounts for
-`resident` customers on prod under our presenter. Either keep that (customers file accounts under
-our presenter now; accounts carry no fee, so no credit account use), or make accounts operator-only
-on prod like the confirmation statement. B34c and O34c keep their current scope until the operator
-chooses.
+CS-11b (the confirmation statement) and B34c/O34c (accounts) are each a customer prod launch: the
+catalogue listing, the live Stripe price, and one proof filing on the operator's own company
+first.
 
 ## Where each filing stands
 
@@ -48,8 +43,8 @@ chooses.
 | Registered office change | REST, OAuth as the company's user, no presenter | proven | live, proven on DIY Accounting Limited | free |
 | Registered email change | REST, OAuth as the company's user, no presenter | proven | live, proven on DIY Accounting Limited | free |
 | Micro-entity accounts | XML Gateway, presenter id + code, package reference | test presenter 66666727000: 000004 acknowledged 2026-09-13; status lookups fail until Companies House IT fixes the test account (B34.6c) | the credit-account presenter: authenticates on the live gateway since 2026-09-26; needs live clearance and the live package reference (O34c), then B34c | no Companies House fee; customer pays `resident-ltd` 99p a month (listed on ci only) |
-| Confirmation statement | XML Gateway, as above | test presenter 66666727000: endpoint and schemas confirmed 2026-09-26; not run (CS-A2) | the credit-account presenter: needs the test harness (CS-A2), its scheduled runs (CS-A3), software authorisation (CS-A4), then CS-11b, operator-only | £50 Companies House fee debited from the credit account behind the credit-account presenter; the operator's own filings skip the Stripe charge (operator fee mode, CS-11a); the customer price (£61.35, Stripe test price) stays on ci |
-| PSC verification statement (VS01) | XML Gateway, as above | test presenter 66666727000: CS-13b | the credit-account presenter: after CS-13a and CS-13b, operator-only | Companies House fee to check |
+| Confirmation statement | XML Gateway, as above | test presenter 66666727000: endpoint and schemas confirmed 2026-09-26; not run (CS-A2) | the credit-account presenter: needs the test harness (CS-A2), its scheduled runs (CS-A3), software authorisation (CS-A4), then CS-11b (the operator's own proof filing, then customers) | our presenter: customer pays £61.35 by Stripe, Companies House charges the £50 fee to the credit account behind the presenter; the operator's own filings skip the Stripe charge (operator fee mode, CS-11a); own presenter (CS-P1): Companies House charges £50 to the customer's own credit account, no Submit fee |
+| PSC verification statement (VS01) | XML Gateway, as above | test presenter 66666727000: CS-13b | the credit-account presenter: after CS-13a and CS-13b | Companies House fee to check |
 
 **Presenters**
 
@@ -73,6 +68,7 @@ flowchart LR
     CSA2[CS-A2 harness] --> CSA3[CS-A3 scheduled runs]
     CSA3 --> CSA4[CS-A4 evidence to the XML team]
     CSA4 --> CS11b[CS-11b]
+    CS11b --> CSP1[CS-P1]
     CSA2 --> CS13b[CS-13b]
     CS13a[CS-13a] --> CS13b
     CS11a[CS-11a] --> CS11b
@@ -89,6 +85,7 @@ flowchart LR
 - CS-A4: blocked by CS-A3 (a scheduled run inside the last 14 days)
 - CS-11a: blocked by nothing (the fee-mode CDK wiring)
 - CS-11b: blocked by CS-A4 and CS-11a
+- CS-P1: blocked by CS-11b (it adds a second payment path to the journey CS-11b launches)
 - CS-13a: blocked by nothing (its fixture landed with CS-1, closed)
 - CS-13b: blocked by CS-13a and CS-A2
 - 34e, 34f, 34g: blocked by a design row that still needs writing. BACKLOG.md cites "NEXT.md
@@ -182,11 +179,12 @@ prompt for each director-PSC.
 
 **The fee.** £50 with the first statement of a 12-month payment period (£110 paper), since 1
 February 2026, debited from the credit account behind the presenter — nothing in the envelope
-carries payment; `PaymentPeriodsRequest` says whether this submission is due. On ci, Submit
-recovers it from the customer by Stripe Checkout before submitting, at (Companies House fee +
-Stripe fee) × 1.2: £61.35 for the £50 fee (Stripe test price). On prod the operator files in
-operator fee mode, which skips the charge (CS-11a); the live customer price belongs to
-`PLAN_COMPANIES_HOUSE_ACSP.md`.
+carries payment; `PaymentPeriodsRequest` says whether this submission is due. Submit recovers its
+own charge from the customer by Stripe Checkout before submitting, at (Companies House fee +
+Stripe fee) × 1.2: £61.35 for the £50 fee. The operator's own filings skip the Stripe charge
+(operator fee mode, CS-11a); CS-11b takes the £61.35 customer price to prod. A customer filing
+under their own presenter (CS-P1) pays Companies House's £50 fee directly and Submit charges
+nothing.
 
 **Verification answers** (Cowork's `../REPORT_CH_IDENTITY_VERIFICATION.md`, 2026-09-23):
 
@@ -197,7 +195,7 @@ operator fee mode, which skips the charge (CS-11a); the live customer price belo
 | V3 | The company may pass its directors' codes to whoever files; Submit takes them at filing time and stores none |
 | V4 | PSC codes cannot go in the statement — they go through the PSC web service or `PSCVerificationStatement-v1-0.xsd`, after the statement, inside the window starting the day after the review date |
 | V5 | DIYA has three directors, all PSCs, each with a middle name |
-| V6 | No ACSP is needed for DIYA's own filing, which is this plan's scope. Filing for customers under our presenter needs ACSP registration once Companies House requires it, no earlier than November 2027; `PLAN_COMPANIES_HOUSE_ACSP.md` carries the rule, its sources and the own-presenter alternative |
+| V6 | No ACSP is needed for filing under our own presenter, the operator's or a customer's, until Companies House requires it, no earlier than November 2027; `PLAN_COMPANIES_HOUSE_ACSP.md` carries the rule and its sources. Filing under a customer's own presenter (CS-P1, below) needs no ACSP at any date |
 
 **Open questions**
 
@@ -207,6 +205,32 @@ operator fee mode, which skips the charge (CS-11a); the live customer price belo
 | Q2 | Does a no-change statement pass without `Shareholdings`, or must every statement from a private company carry the full holder list? | CS-A2 |
 | Q3 | Does the test service accept a statement whose director has no code, and what reject code names an unverified director? | CS-A2 |
 | Q4 | Software authorisation for the form: Companies House publishes no test count or checklist. We build to the assumed criteria below and send the evidence (CS-A4); whether the live package reference from O34c covers this form is answered by the XML team's reply | CS-A4 |
+
+## Filing under a customer's own presenter (CS-P1)
+
+A customer can give their own Companies House presenter id and authentication code instead of
+Submit's. Submit then presents under their presenter, Companies House charges the £50 confirmation
+statement fee to the customer's own credit account (a fee-bearing filing through software needs a
+credit account behind the presenter — [GOV.UK, apply to file using
+software](https://www.gov.uk/guidance/apply-to-file-with-companies-house-using-software)), and
+Submit charges nothing. This is outside ACSP: Companies House's rule needs ACSP when a provider is
+responsible for paying and engaging with Companies House, not when a client uses their own account
+(`PLAN_COMPANIES_HOUSE_ACSP.md`).
+
+Design points to settle:
+
+- Credentials entered per filing, never stored, by default; an encrypted per-user store is a later
+  option, only if a reason turns up for one.
+- How the page asks for and explains the credit-account requirement.
+- `PaymentPeriodsRequest` still decides whether a fee is due, under either presenter.
+- The Stripe checkout is skipped at the same fee gate operator mode already uses
+  (`app/functions/companies-house/companiesHouseConfirmationStatementPost.js` line ~244).
+- Micro-entity accounts carry no fee, so this option there only changes whose presenter shows on
+  the filing.
+
+Companies House offers no MCP or agent tool for filing. An MCP integration that files under the
+customer's own presenter is a feature this option opens up for paid subscribers, alongside the
+submission MCP (`PLAN_SUBMISSION_MCP.md`).
 
 ## Software authorisation: assumed criteria
 
@@ -290,7 +314,8 @@ reference date changes.
 | CS-13a | Build the PSC verification statement: XML builder, submit and poll Lambdas, simulator class, tests, result-view section | ~8 | Sonnet | nothing | Machine-only |
 | CS-13b | The PSC verification statement's cases in the CS-A2 harness, run by CS-A3 | ~2 | Sonnet | CS-13a, CS-A2 | Blocked |
 | CS-11a | `COMPANIES_HOUSE_CS_FEE_MODE` as a `CompaniesHouseStack.java` prop, set to `operator` only where the environment config names it, so operator mode is reachable when deployed | ~2 | Haiku | none | Machine-only |
-| CS-11b | Operator-only on prod: an activity field that replaces `bundles` with `["operator"]` in named environments, `prod` on the confirmation statement activity, prod gateway values and the live package reference, the operator-mode proof filing, `compliance.toml` rows | ~7 | Sonnet | CS-A4, CS-11a | Blocked |
+| CS-11b | Customer prod launch: `prod` on the confirmation statement activity's `environments`, the live Stripe price for the £61.35 fee, prod gateway values and the live package reference, the operator's own proof filing first, `compliance.toml` rows | ~7 | Sonnet | CS-A4, CS-11a | Blocked |
+| CS-P1 | Filing under a customer's own presenter: the page option, storing no credentials, the credit-account explanation, skipping the Stripe checkout at the existing fee gate | ~5 | Sonnet | CS-11b | Blocked |
 
 ## Sources
 

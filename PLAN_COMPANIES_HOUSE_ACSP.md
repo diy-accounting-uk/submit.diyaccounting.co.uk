@@ -3,21 +3,24 @@
 
 # PLAN: ACSP registration for filing on behalf of others
 
-Customer-facing Companies House filing that costs a fee: the confirmation statement and the PSC
-verification statement filed by Submit's customers for their own companies. `PLAN_COMPANIES_HOUSE.md`
-covers DIY Accounting Limited's own filings; this plan holds everything about filing for others.
-BACKLOG row 82.
+Registering DIY Accounting Limited as an ACSP so Submit can keep filing customers' confirmation
+statements and PSC verification statements under our own presenter once Companies House requires
+it. `PLAN_COMPANIES_HOUSE.md` covers filing itself: the operator's own filings, and since
+2026-09-26 customers' too, both lawful under our presenter before that requirement lands, plus the
+near-term alternative of filing under a customer's own presenter (CS-P1). BACKLOG row 82.
+
+**Starts 2027-04**, to be ready for the earliest possible requirement date (November 2027). Watch
+Companies House's six-month notice — the date has slipped once already, from spring 2026, and may
+slip again.
 
 ## User assertions
 
-> Scope: own filings now, customers later. November 2027 is more than a year away.
-> (operator, 2026-09-26)
+> Companies House filing opens to customers now, under our presenter, as each filing is ready.
+> ACSP registration for filing on behalf of others starts no sooner than November 2027, at least
+> six months' notice. (operator, 2026-09-26)
 
-> customers file under their own presenter accounts ... which is outside ACSP and suits an MCP
-> integration Submit could offer paid subscribers because Companies House offers no such direct
-> tool (operator, 2026-09-26)
-
-> customer filing returns when HMRC and Companies House filing are automated end to end
+> A customer filing under their own presenter account is outside ACSP, and suits a paid MCP
+> integration Submit could offer, since Companies House offers no such direct tool.
 > (operator, 2026-09-26)
 
 ## The rule
@@ -61,42 +64,20 @@ account is the first case. Customers filing under their own presenter accounts i
 - **Fee.** £55 to register
   ([blog, 2025-03-13](https://companieshouse.blog.gov.uk/2025/03/13/third-party-providers-get-ready-to-register-as-an-authorised-corporate-service-provider)).
 - **Ongoing.** Companies House can suspend or remove an ACSP that loses AML supervision.
+- **The filing path itself does not change.** Customer filing under our presenter is already live
+  under `PLAN_COMPANIES_HOUSE.md`; registration keeps it lawful. Software authorisation carries
+  over, the same forms and the same live package reference.
 
-## The own-presenter route
+## Filing under a customer's own presenter
 
-Each customer files under their own Companies House presenter account. That keeps Submit outside
-the ACSP rule. Each customer needs:
-
-- a presenter account (free; [GOV.UK, apply to file using software](https://www.gov.uk/guidance/apply-to-file-with-companies-house-using-software));
-- a way to pay fees: a Companies House credit account, which that page names for fee-bearing
-  filings such as the confirmation statement. Whether the XML Gateway takes a card payment per
-  filing is an open question for the XML team.
-
-Companies House offers no MCP or agent tool for filing. An MCP integration that files under the
-customer's own presenter is a feature Submit could offer paid subscribers, alongside the submission
-MCP (`PLAN_SUBMISSION_MCP.md`).
-
-## What Submit would need (horizons)
-
-- Per-customer presenter credentials: the presenter id and code stored encrypted per user (KMS),
-  used only at filing time, never logged. Today the presenter comes from one Secrets Manager secret
-  per environment (`resolvePresenterCredentials`, `app/services/companiesHouseXmlGateway.js`).
-- A per-customer fee path: the customer's own credit account behind their presenter, with
-  `PaymentPeriodsRequest` telling them whether a fee is due. Submit's Stripe charge then covers
-  only Submit's own price.
-- Or, under ACSP registration, our presenter and credit account with the customer charged by
-  Stripe at (Companies House fee + Stripe fee) × 1.2, £61.35 for the £50 fee. The Stripe test
-  price and the charging path exist on ci today.
-- The customer listing of the confirmation statement and PSC verification statement on prod, for
-  `resident` and `resident-pro` (today listed on ci only; prod is operator-only under
-  `PLAN_COMPANIES_HOUSE.md`), with the live Stripe price.
-- Software authorisation carries over: the same forms and the same live package reference.
+Each customer files under their own Companies House presenter account instead of ours. That keeps
+Submit outside the ACSP rule at any date. `PLAN_COMPANIES_HOUSE.md`'s CS-P1 carries the design and
+the build.
 
 ## Open questions
 
 | Id | Question |
 |---|---|
-| A1 | Which route first: ACSP registration with our presenter, or customers' own presenters? |
 | A2 | Does the XML Gateway take a fee from anything other than the presenter's credit account? |
 | A3 | Once Companies House settles who a "presenter" is, does software filing under the customer's own presenter still fall outside it? Ask the XML team when this plan becomes active |
 
