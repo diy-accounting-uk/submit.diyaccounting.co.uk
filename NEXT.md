@@ -76,6 +76,10 @@ step.
 
 ## Machine-only
 
+- [ ] **O11e. The ITSA recognition evidence folder and assertion table.** The operator wants every claim in `_developers/hmrc/DRAFT_EMAIL_ITSA_RECOGNITION.md` backed by evidence they can open. Build `../itsa-recognition-evidence/` at the workspace root (private; the transcripts carry sandbox identifiers): a `README.md` whose table lists each sentence the email asserts, the evidence file for it, and how the operator can check it (a page, a command, a transcript line), marking any claim with no proof; one folder per claim holding extracts from `../itsa-sandbox/<year>/itsa-sandbox-year-transcript.json` (2023-24, 2025-26, 2026-27, run 2026-09-25) such as each final declaration's 204 and the fraud header validator's `VALID_HEADERS`, the named tests' output, `scripts/axe-quickscan.mjs` results for the 19 pages under `web/public/hmrc/itsa/`, and screenshots of the pages the claim names (from a local simulator run). Sources: `_developers/hmrc/ITSA_PRODUCTION_APPROVALS_CHECKLIST.md`, `ITSA_PHASE_2_SANDBOX.md`, the questionnaires and `WCAG_2.2_AA_EVIDENCE.md`. Nothing in the repository changes. **Source**: operator, 2026-09-26. **Owner**: Claude Code. **Model**: Sonnet. **Size**: 0 files.
+
+- [ ] **O11v. A video of the whole ITSA year.** The two ITSA scene scripts (`videos/itsa-business-details.json`, `videos/itsa-quarterly-update.json`) stop at the quarterly update form; the last good recording is run 34904726583 (ci, 2026-09-14), and both prod recordings on 2026-09-20 failed. Write `videos/itsa-year.json` for the full journey on `web/public/hmrc/itsa/dashboard.html`: quarterly updates for both businesses, annual submission, adjustments, losses, the calculation with its disclaimer, the final declaration; iterate locally against the simulator per `.claude/skills/site-video-capture/SKILL.md`, add it to `video-capture.yml`'s `script` options, then record it against ci after merge. For the operator's review, uploaded unlisted by the operator (`video-publish` skill), never published. **Source**: operator, 2026-09-26. **Owner**: Claude Code. **Model**: Sonnet. **Size**: ~2 files.
+
 ## Machine-ask
 
 ## Human-driven
