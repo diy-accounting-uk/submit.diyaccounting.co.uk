@@ -226,7 +226,7 @@ reference date changes.
 | B34.6c | Poll test submission 000004 once Companies House IT confirms the test presenter account works; pin the returned `StatusCode` as a case in `companiesHouseAccountsGet.test.js` | ~1 | Sonnet | Companies House IT | Blocked |
 | O34c | Ask the XML team to clear the credit-account presenter for live accounts filing and issue the live package reference; set the live presenter id, code and package reference on GitHub's `prod` environment | 0 | none | B34.6c | Blocked |
 | B34c | `CompaniesHouseStack.java` sets the prod gateway values; one accounts filing on the prod lane for the operator's own company, polled to a terminal state; `prod` added to the activity's `environments` and `resident`'s listing | ~5 | Sonnet | B34.6c, O34c | Blocked |
-| CS-H2 | Send `../DRAFT_EMAIL_XMLGW_CS01.md` on the `xml@companieshouse.gov.uk` thread (Q1, Q2, Q4); paste the answers into CS-9's row | 0 | none | nothing | Human-driven |
+| CS-H2 | Send `../DRAFT_EMAIL_XMLGW_CS01.md` to `xml@companieshouse.gov.uk` as a new thread (Q1, Q4); paste the answers into CS-9's row; Q2 and Q3 are settled by CS-9's sandbox cases | 0 | none | nothing | Human-driven |
 | CS-9 | Sandbox proof: a `CompanyDataRequest`, a no-change statement, a SIC change, one with `Shareholdings`, one with a blank director code, each polled to a terminal state and pinned in the simulator; settles Q2 and Q3 | 3 | Sonnet | CS-H2 | Blocked |
 | CS-H4 | The XML team tests CS-9's submissions and issues the package reference for the confirmation statement | 0 | none | CS-9 | Blocked |
 | CS-13a | Build the PSC verification statement: XML builder, submit and poll Lambdas, simulator class, tests, result-view section | ~8 | Sonnet | nothing | Machine-only |
