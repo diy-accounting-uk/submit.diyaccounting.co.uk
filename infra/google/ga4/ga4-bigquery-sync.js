@@ -31,6 +31,12 @@ const DATA_TRANSFER_V1 = "https://bigquerydatatransfer.googleapis.com/v1";
 const BIGQUERY_SCOPE = "https://www.googleapis.com/auth/bigquery";
 const CLOUD_PLATFORM_SCOPE = "https://www.googleapis.com/auth/cloud-platform";
 
+// Every query's SQL computes its target day with current_date(), which BigQuery evaluates in
+// UTC; pinning the transfer config's own schedule to UTC too keeps "the hour it runs" and "the
+// day it computes" in the same clock, so a query written to run before the AWS nightly pull
+// (infra/main/java/.../NightlyIngestionWorkflow.java's 02:15 UTC cron) actually does.
+export const SCHEDULE_TIME_ZONE = "UTC";
+
 export const CONFIG_PATH = "infra/google/gcp/bigquery.toml";
 
 export function parseArgs(argv) {
@@ -119,7 +125,8 @@ export function loadQueries(config, repoRoot) {
  * @param {(ReturnType<typeof parseConfig>["queries"][number] & {sql: string})[]} input.queries
  * @param {boolean} input.datasetExists
  * @param {{displayName: string, name: string, params: {query?: string, destination_table_name_template?: string,
- *   write_disposition?: string, partitioning_field?: string}, schedule?: string}[]} [input.transferConfigs]
+ *   write_disposition?: string, partitioning_field?: string}, schedule?: string,
+ *   scheduleOptions?: {timeZone?: string}}[]} [input.transferConfigs]
  *   - the project's live scheduled_query transfer configs, in any dataset
  * @returns {{dataset: object, queries: object[]}}
  */
@@ -138,7 +145,8 @@ export function buildPlan({ dataset, queries, datasetExists, transferConfigs = [
       existing.params?.destination_table_name_template === query.destinationTable &&
       existing.params?.write_disposition === query.writeDisposition &&
       existing.params?.partitioning_field === query.partitionField &&
-      existing.schedule === query.schedule;
+      existing.schedule === query.schedule &&
+      existing.scheduleOptions?.timeZone === SCHEDULE_TIME_ZONE;
     return {
       action: inSync ? "noop" : "update",
       name: query.name,
@@ -208,12 +216,13 @@ async function listTransferConfigs(client, projectId, location) {
   return configs;
 }
 
-function transferConfigBody(dataset, query) {
+export function transferConfigBody(dataset, query) {
   return {
     displayName: query.name,
     dataSourceId: "scheduled_query",
     destinationDatasetId: dataset.datasetId,
     schedule: query.schedule,
+    scheduleOptions: { timeZone: SCHEDULE_TIME_ZONE },
     params: {
       query: query.sql,
       destination_table_name_template: query.destinationTable,
@@ -236,7 +245,7 @@ async function updateTransferConfig(client, transferConfigName, dataset, query) 
   const { data } = await client.request({
     url: `${DATA_TRANSFER_V1}/${transferConfigName}`,
     method: "PATCH",
-    params: { updateMask: "schedule,params" },
+    params: { updateMask: "schedule,scheduleOptions,params" },
     data: transferConfigBody(dataset, query),
   });
   return data;
