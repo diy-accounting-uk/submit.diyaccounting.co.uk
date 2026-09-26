@@ -335,7 +335,10 @@ async function main() {
     for (let sceneIndex = 0; sceneIndex < script.scenes.length; sceneIndex++) {
       const scene = script.scenes[sceneIndex];
       const offCamera = scene.offCamera === true;
-      const fastForward = selectedSceneIds ? !selectedSceneIds.has(scene.id) : false;
+      // A script can mark a scene fastForward: true so it always runs sped up on every
+      // recording (a repeated preamble such as sign-in and day pass) — the same zero-pacing
+      // treatment --scene gives an unselected scene, but never turned off by omitting --scene.
+      const fastForward = scene.fastForward === true || (selectedSceneIds ? !selectedSceneIds.has(scene.id) : false);
       const pacing = offCamera || fastForward ? scalePacing(script.pacing, 0) : scaledPacing;
 
       let offCameraStartedAt = null;

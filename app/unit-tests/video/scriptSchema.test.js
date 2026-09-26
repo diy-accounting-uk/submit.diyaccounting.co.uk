@@ -124,6 +124,25 @@ describe("offCamera scenes", () => {
   });
 });
 
+describe("fastForward scenes", () => {
+  const withScene = (sceneOverrides) =>
+    baseScript({
+      scenes: [{ id: "home", chapter: "Home", steps: [{ action: "goto", url: "/" }], ...sceneOverrides }],
+    });
+
+  test("accepts a scene marked fastForward: true", () => {
+    expect(() => validateScript(withScene({ fastForward: true }))).not.toThrow();
+  });
+
+  test("accepts a scene with no fastForward field at all", () => {
+    expect(() => validateScript(withScene({}))).not.toThrow();
+  });
+
+  test("rejects a non-boolean fastForward value", () => {
+    expect(() => validateScript(withScene({ fastForward: "yes" }))).toThrow(/fastForward/);
+  });
+});
+
 describe("hmrcServices", () => {
   test("is optional, defaulting elsewhere to mtd-vat", () => {
     expect(() => validateScript(baseScript())).not.toThrow();

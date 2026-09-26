@@ -46,12 +46,20 @@
       "id": "home",
       "chapter": "Home",
       "still": true,
+      "fastForward": true,
       "steps": [
         {
           "action": "goto",
           "url": "/",
           "waitFor": "#mainContent",
           "caption": "This is a sandbox preview against Companies House's test filing service, not a live filing."
+        },
+        {
+          "action": "caption",
+          "text": "See the full sign-in walkthrough in our sign-in video.",
+          "holdMs": 1200,
+          "headline": "Sign in, faster",
+          "keyWord": "faster"
         },
         { "action": "point", "target": { "role": "heading", "name": "DIY Accounting Submit" }, "dwellMs": 300 },
         { "action": "hold", "ms": 600 }
@@ -61,6 +69,7 @@
       "id": "sign-in",
       "chapter": "Sign in",
       "still": true,
+      "fastForward": true,
       "steps": [
         {
           "action": "click",
@@ -79,6 +88,7 @@
       "id": "subscription",
       "chapter": "Resident Ltd",
       "still": true,
+      "fastForward": true,
       "steps": [
         {
           "action": "click",
@@ -96,6 +106,11 @@
           "action": "click",
           "target": { "role": "link", "name": "Activities" },
           "caption": "Every activity starts from the home page."
+        },
+        {
+          "action": "await",
+          "until": "button:has-text('File Micro-entity Accounts (Companies House)')",
+          "label": "Waiting for the subscription to unlock the activity"
         },
         { "action": "hold", "ms": 500 }
       ]

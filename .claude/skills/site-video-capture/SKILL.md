@@ -148,6 +148,25 @@ figures, tick the declaration, the write:vat scope authorise with HMRC, and the 
 never a hard-coded period key. `videos/view-return.json` uses it between an on-camera obligations
 query and a second one, so the return it then opens on camera is real.
 
+## Step 2c — a fastForward preamble
+
+Mark a scene `"fastForward": true` when every video repeats it and a viewer has already seen it
+in full — signing in, taking out a day pass or a subscription. The scene stays on camera (unlike
+`offCamera`, it never leaves the viewer wondering what happened): frames keep capturing, and its
+chapter label, captions and headlines still show, each held at its minimum instead of its full
+reading time. It is the same zero-pacing treatment a CLI `--scene` run gives a scene it did not
+select, just switched on by the script itself rather than by the command line, so it applies on
+every recording, not just this one run. `videos/sign-in.json` is the canonical, full-pace video
+for the walkthrough itself; every other signed-in script fast-forwards the same three scenes and
+carries one caption pointing at it (`"See the full sign-in ... walkthrough in our sign-in
+video."`).
+
+A scene marked `fastForward` still has to leave the page in a state the *next* scene can rely on
+— ensureBundle's grant, for instance, is asynchronous, and a plain `click` step never waits for
+its target to exist (a missing target is a hard failure, immediately, not a retry). Close a
+fast-forwarded scene that unlocks something with an `await` for the thing the next scene's first
+click needs, so the real backend catches up before the pacing gets zeroed away under it.
+
 ## Step 3 — record for real against the proxy variant or a deployment
 
 ```bash
@@ -183,6 +202,17 @@ stills all travel together. A script whose `auth` is `user` runs against **prod 
 sandbox account**, writing rows as the synthetic test user — never point it at a real customer
 account. The workflow turns Cognito native auth on for the run and off again afterwards, and
 rotates the synthetic user's password and one-time code device first.
+
+## Step 5a — YouTube chapters
+
+```bash
+node scripts/video-chapters.mjs target/videos/<name>/<name>.timeline.json videos/<name>.json
+```
+
+Prints one `HH:MM:SS Chapter name` line per on-camera scene, from the run's own
+`timeline.json` — never hand-typed, so it cannot drift from what the video actually shows after
+a re-recording changes a scene's order or timing. Paste the lines under the video's description
+in `videos/publish.json` (see `videos/PUBLISH.md`).
 
 ## Step 6 — publish accessibly
 
@@ -229,4 +259,6 @@ already visually lossless at this content's motion level, so file size decided.
 - `scripts/lib/video/capture.js` / `encode.js` — CDP screencast capture and the ffmpeg
   concat-demuxer encode (constant frame rate, H.264 High, closed GOP, faststart). See
   "Capture and encode settings" above for the resolution, frame rate and CRF defaults.
+- `scripts/lib/video/chapters.js` / `scripts/video-chapters.mjs` — Step 5a's chapter lines,
+  built from a run's own `timeline.json` and the scene script's chapter labels.
 - `.github/workflows/video-capture.yml` — the real recording, dispatched by hand.

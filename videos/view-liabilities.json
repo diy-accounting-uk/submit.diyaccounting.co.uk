@@ -40,12 +40,20 @@
       "id": "home",
       "chapter": "Home",
       "still": true,
+      "fastForward": true,
       "steps": [
         {
           "action": "goto",
           "url": "/",
           "waitFor": "#mainContent",
           "caption": "HMRC keeps a running total of what you owe on VAT."
+        },
+        {
+          "action": "caption",
+          "text": "See the full sign-in and day pass walkthrough in our sign-in video.",
+          "holdMs": 1200,
+          "headline": "Sign in and day pass, faster",
+          "keyWord": "faster"
         },
         { "action": "point", "target": { "role": "heading", "name": "DIY Accounting Submit" }, "dwellMs": 300 },
         { "action": "hold", "ms": 600 }
@@ -55,6 +63,7 @@
       "id": "sign-in",
       "chapter": "Sign in",
       "still": true,
+      "fastForward": true,
       "steps": [
         {
           "action": "click",
@@ -73,6 +82,7 @@
       "id": "day-pass",
       "chapter": "Day pass",
       "still": true,
+      "fastForward": true,
       "steps": [
         {
           "action": "click",
@@ -90,6 +100,11 @@
           "action": "click",
           "target": { "role": "link", "name": "Activities" },
           "caption": "Every activity starts from the home page."
+        },
+        {
+          "action": "await",
+          "until": "button:has-text('VAT Liabilities (HMRC)')",
+          "label": "Waiting for the day pass to unlock the activity"
         },
         { "action": "hold", "ms": 500 }
       ]

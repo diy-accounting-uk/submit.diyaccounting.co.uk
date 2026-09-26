@@ -116,6 +116,10 @@
           "type": "boolean",
           "description": "Runs the scene's steps with zero pacing, no captions, no chapter label and no stills, and pauses frame capture for its duration, so nothing from it reaches the encoded video, the vtt or the transcript. Its steps still land in the timeline (each carrying offCamera: true) so the acceptance checks can see them, but the timing checks skip timer and residual expectations for them. For a real step the video does not need to show, such as submitting a return before viewing it."
         },
+        "fastForward": {
+          "type": "boolean",
+          "description": "Runs the scene's steps with zero pacing, the same treatment a CLI --scene run gives an unselected scene, but stays on camera: frames keep capturing, and the chapter label and any caption or headline still show, each held for only its minimum. No still is taken, same as a CLI-selected fast-forward. For a preamble every video repeats, such as signing in and taking a day pass, so the viewer sees it happen, faster, rather than sitting through it at full pace again."
+        },
         "steps": {
           "type": "array",
           "minItems": 1,
