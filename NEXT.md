@@ -40,8 +40,6 @@ step.
 
 ## In flight
 
-- [ ] **B30s. A failed stack deploy prints CloudFormation's own state.** Branch `claude/juniper-ops`, PR #367. Diagnosis of run 36217785873: CloudFormation issued the stuck alarm's `PutMetricAlarm` two hours after marking it in progress (299 calls, 0 errors, no throttling), and the job died at AWS's one-hour cap on a chained role session. The PR adds failure-path steps to `deploy-cdk-stack.yml` that re-authenticate and print the stack's status and latest non-complete events in either region. Remaining: its checks and `/auto-merge`. **Source**: deploy run 36217785873. **Owner**: Claude Code. **Model**: Sonnet. **Size**: 1 file.
-
 ## Machine-only
 
 ## Machine-ask
