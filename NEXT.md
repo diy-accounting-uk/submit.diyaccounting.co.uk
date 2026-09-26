@@ -66,8 +66,6 @@ step.
 
 - [ ] **CS-H2. Send the confirmation-statement email.** Send `../DRAFT_EMAIL_XMLGW_CS01.md` on the `xml@companieshouse.gov.uk` thread, and paste the answers into CS-9's row. **Source**: `PLAN_COMPANIES_HOUSE.md` (its Tasks table carries the files). **Owner**: Operator. **Model**: none. **Size**: 0 files.
 
-- [ ] **CS-H6. Go for the prod confirmation statement.** Give the go for a second, fee-free statement for 06846849 through Submit in the 2026-27 payment period (the statement for the 2026-09-21 review date went by WebFiling on 2026-09-24, submission 119-158484, accepted), knowing it moves the next review date. The decision can be given now; the filing it approves runs in CS-11b (the directors' codes are ready). **Source**: `PLAN_COMPANIES_HOUSE.md` (its Tasks table carries the files). **Owner**: Operator. **Model**: none. **Size**: 0 files.
-
 - [ ] **O11. The ITSA send day.** The proof is on `main` (PR #352, 2026-09-25): the eight ITSA suites pass on the simulator and run in CI, and the sandbox year ran clean on 2023-24, 2025-26 and 2026-27 on 2026-09-25 with a real `Gov-Client-Multi-Factor` header (`VALID_HEADERS`, no warnings), inside HMRC's 14 days until 2026-10-09. Send `_developers/hmrc/DRAFT_EMAIL_ITSA_RECOGNITION.md` to `SDSTeam@hmrc.gov.uk` from the operator's address (prod-23d9a7e carries PR #352), then `_developers/hmrc/DRAFT_EMAIL_ITSA_PRODUCTION_CREDENTIALS.md` when SDST answers. **Source**: BACKLOG 11; `PLAN_ITSA_PHASE_2.md` T10. **Owner**: Operator. **Model**: none. **Size**: 0 files.
 
 ## Blocked
@@ -80,7 +78,7 @@ step.
 
 - [ ] **CS-13b. PSC verification statement (VS01): the sandbox proof.** The sandbox proof against the test service. Blocked on CS-9. **Source**: `PLAN_COMPANIES_HOUSE.md` (its Tasks table carries the files). **Owner**: Claude Code. **Model**: Sonnet. **Size**: ~1 file.
 
-- [ ] **CS-11b. Confirmation statement prod launch.** `prod` on the activity (unlisted until the proof passes), prod gateway values and the live package reference from CS-H4, the operator-mode proof filing for 06846849 under CS-H6's go, then the listing and `compliance.toml` rows for the credit account and the authorisation. Shares BACKLOG 34c steps 3 and 4 with the accounts launch. Blocked on CS-9, CS-H4, CS-11a and CS-H6. **Source**: `PLAN_COMPANIES_HOUSE.md`. **Owner**: Claude Code. **Model**: Haiku. **Size**: ~4 files.
+- [ ] **CS-11b. Confirmation statement prod launch.** `prod` on the activity (unlisted until the proof passes), prod gateway values and the live package reference from CS-H4, the operator-mode proof filing: a second, fee-free statement for 06846849 in the 2026-27 payment period (the operator approved it; it moves the next review date to about a year after the filing day), then the listing and `compliance.toml` rows for the credit account and the authorisation. Shares BACKLOG 34c steps 3 and 4 with the accounts launch. Blocked on CS-9, CS-H4 and CS-11a. **Source**: `PLAN_COMPANIES_HOUSE.md`. **Owner**: Claude Code. **Model**: Haiku. **Size**: ~4 files.
 
 - [ ] **B34.6c. Companies House accounts filing: the sandbox proof.** The XML team was asked on 2026-09-23 22:22 UTC in a new thread (from antony@, subject "Submission 000004 status and
   GetSubmissionStatus query") whether 000004 was accepted and whether lookups are enabled for test
