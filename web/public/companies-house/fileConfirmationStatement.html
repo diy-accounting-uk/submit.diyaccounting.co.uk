@@ -759,29 +759,61 @@
           return;
         }
         container.style.display = "block";
-        container.innerHTML =
-          "<h3>PSC verification</h3><p>Companies House verifies a person with significant control separately from the confirmation " +
+        const heading = document.createElement("h3");
+        heading.textContent = "PSC verification";
+        const explanation = document.createElement("p");
+        explanation.textContent =
+          "Companies House verifies a person with significant control separately from the confirmation " +
           "statement, through a PSC verification statement filed after this one, inside the window starting the day after the " +
-          "review date. Enter each person's own PSC personal code below to file theirs now.</p>" +
-          matches
-            .map(({ director, index, psc }) => {
-              const displayName = [director.forename, director.surname].filter(Boolean).join(" ") || psc.name;
-              return `
-                <fieldset class="form-group" data-psc-follow-up-row="${index}">
-                  <legend>${escapeHtml(displayName)}</legend>
-                  <label for="pscPersonalCode-${index}">PSC personal code</label>
-                  <input type="text" id="pscPersonalCode-${index}" maxlength="11" spellcheck="false" />
-                  <div class="button-group">
-                    <button type="button" class="secondary-button" data-psc-verify-index="${index}">Submit PSC verification statement</button>
-                  </div>
-                  <div id="pscVerifyResult-${index}"></div>
-                </fieldset>`;
-            })
-            .join("");
+          "review date. Enter each person's own PSC personal code below to file theirs now.";
+        container.replaceChildren(heading, explanation, ...matches.map((match) => buildPscFollowUpRow(match, matches)));
+      }
 
-        container.querySelectorAll("[data-psc-verify-index]").forEach((button) => {
-          button.addEventListener("click", () => handlePscVerificationSubmit(Number(button.dataset.pscVerifyIndex), matches));
-        });
+      function buildPscFollowUpRow({ director, index, psc }, matches) {
+        const fieldset = document.createElement("fieldset");
+        fieldset.className = "form-group";
+        fieldset.dataset.pscFollowUpRow = String(index);
+        const legend = document.createElement("legend");
+        legend.textContent = [director.forename, director.surname].filter(Boolean).join(" ") || psc.name;
+        const label = document.createElement("label");
+        label.htmlFor = `pscPersonalCode-${index}`;
+        label.textContent = "PSC personal code";
+        const input = document.createElement("input");
+        input.type = "text";
+        input.id = `pscPersonalCode-${index}`;
+        input.maxLength = 11;
+        input.spellcheck = false;
+        const buttonGroup = document.createElement("div");
+        buttonGroup.className = "button-group";
+        const button = document.createElement("button");
+        button.type = "button";
+        button.className = "secondary-button";
+        button.dataset.pscVerifyIndex = String(index);
+        button.textContent = "Submit PSC verification statement";
+        button.addEventListener("click", () => handlePscVerificationSubmit(index, matches));
+        buttonGroup.append(button);
+        const result = document.createElement("div");
+        result.id = `pscVerifyResult-${index}`;
+        fieldset.append(legend, label, input, buttonGroup, result);
+        return fieldset;
+      }
+
+      // Each part is plain text or { strong: text }; built with text nodes so nothing is parsed as HTML.
+      function buildParagraph(parts, className) {
+        const paragraph = document.createElement("p");
+        if (className) {
+          paragraph.className = className;
+        }
+        for (const part of parts) {
+          if (typeof part === "string") {
+            paragraph.append(part);
+          } else {
+            const strong = document.createElement("strong");
+            strong.textContent = String(part.strong ?? "");
+            paragraph.append(strong);
+          }
+        }
+        return paragraph;
       }
 
       async function pollPscVerificationUntilSettled(submissionNumber) {
@@ -803,7 +835,7 @@
         const resultContainer = document.getElementById(`pscVerifyResult-${index}`);
         const personalCode = document.getElementById(`pscPersonalCode-${index}`).value.trim();
         if (personalCode.length !== 11) {
-          resultContainer.innerHTML = `<p class="error">The PSC personal code must be 11 characters.</p>`;
+          resultContainer.replaceChildren(buildParagraph(["The PSC personal code must be 11 characters."], "error"));
           return;
         }
         showLoading();
@@ -823,17 +855,21 @@
             personalCode,
           };
           const submission = await window.submitPscVerificationStatement(payload);
-          resultContainer.innerHTML = `<p>Submission <strong>${escapeHtml(submission.submissionNumber)}</strong> accepted by the gateway. Waiting for Companies House...</p>`;
+          resultContainer.replaceChildren(
+            buildParagraph([
+              "Submission ",
+              { strong: submission.submissionNumber },
+              " accepted by the gateway. Waiting for Companies House...",
+            ]),
+          );
           const outcome = await pollPscVerificationUntilSettled(submission.submissionNumber);
-          resultContainer.innerHTML = `<p>Submission <strong>${escapeHtml(outcome.submissionNumber)}</strong> was <strong>${escapeHtml(outcome.statusCode)}</strong>.</p>`;
-          if (outcome.rejections?.length) {
-            resultContainer.innerHTML += outcome.rejections
-              .map((rejection) => `<p>${escapeHtml(rejection.rejectCode)}: ${escapeHtml(rejection.description)}</p>`)
-              .join("\n");
-          }
+          resultContainer.replaceChildren(
+            buildParagraph(["Submission ", { strong: outcome.submissionNumber }, " was ", { strong: outcome.statusCode }, "."]),
+            ...(outcome.rejections || []).map((rejection) => buildParagraph([`${rejection.rejectCode}: ${rejection.description}`])),
+          );
         } catch (error) {
           console.error("PSC verification statement filing failed:", error);
-          resultContainer.innerHTML = `<p class="error">${escapeHtml(error.message || "Failed to file the PSC verification statement.")}</p>`;
+          resultContainer.replaceChildren(buildParagraph([error.message || "Failed to file the PSC verification statement."], "error"));
         } finally {
           hideLoading();
         }
