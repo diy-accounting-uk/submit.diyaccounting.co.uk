@@ -23,7 +23,7 @@ repository used to carry.
 | Registered office change | REST, OAuth as the company's user, no presenter | proven | live, proven on DIY Accounting Limited | free |
 | Registered email change | REST, OAuth as the company's user, no presenter | proven | live, proven on DIY Accounting Limited | free |
 | Micro-entity accounts | XML Gateway, presenter id + code, package reference | test presenter 66666727000: 000004 acknowledged 2026-09-13; status lookups fail until Companies House IT fixes the test account (B34.6c) | the credit-account presenter: authenticates on the live gateway since 2026-09-26; needs live clearance and the live package reference (O34c), then B34c | no Companies House fee; customer pays `resident-ltd` 99p a month (listed on ci only) |
-| Confirmation statement | XML Gateway, as above | test presenter 66666727000: not run; needs the endpoint from CS-H2's email (CS-9) | the credit-account presenter: needs CS-9, software authorisation (CS-H4), then CS-11b | £50 Companies House fee debited from the credit account behind the credit-account presenter; customer pays £61.35 by Stripe (test price done; live price with CS-11b) |
+| Confirmation statement | XML Gateway, as above | test presenter 66666727000: endpoint and schemas confirmed 2026-09-26; not run (CS-9) | the credit-account presenter: needs CS-9, software authorisation (CS-H4), then CS-11b | £50 Companies House fee debited from the credit account behind the credit-account presenter; customer pays £61.35 by Stripe (test price done; live price with CS-11b) |
 | PSC verification statement (VS01) | XML Gateway, as above | test presenter 66666727000: CS-13b | the credit-account presenter: after CS-13a and CS-13b | Companies House fee to check |
 
 **Presenters**
@@ -45,7 +45,8 @@ flowchart LR
     B346c --> O34c
     B346c --> B34c
     O34c --> B34c
-    CSH2[CS-H2] --> CS9[CS-9]
+    CSH2[CS-H2] --> CSH4
+    CS9[CS-9]
     CS9 --> CSH4[CS-H4]
     CS9 --> CS13b[CS-13b]
     CS9 --> CS11b[CS-11b]
@@ -61,8 +62,8 @@ flowchart LR
 - O34c: blocked by B34.6c
 - B34c: blocked by B34.6c and O34c
 - CS-H2: blocked by nothing, ready to send
-- CS-9: blocked by CS-H2
-- CS-H4: blocked by CS-9
+- CS-9: blocked by nothing (test service, test presenter and the schemas confirmed by probe on 2026-09-26)
+- CS-H4: blocked by CS-9 and CS-H2
 - CS-11a: blocked by nothing (the fee-mode CDK wiring)
 - CS-11b: blocked by CS-9, CS-H4 and CS-11a
 - CS-13a: blocked by nothing (its fixture landed with CS-1, closed)
@@ -70,10 +71,6 @@ flowchart LR
 - 34e, 34f, 34g: blocked by a design row that still needs writing. BACKLOG.md cites "NEXT.md
   B34.8" as the row that designs them; that label is closed against unrelated work (lifting the
   company-lookup page to prod) and is not on `NEXT.md`, so the design row does not exist yet.
-
-Stale edges dropped from the graph: CS-9 citing CS-5 and CS-7 as blockers (both closed, on `main`)
-and CS-9 citing CS-H1 (closed 2026-09-26, when the credit-account presenter authenticated on the
-live gateway).
 
 ## Operator dates
 
@@ -176,13 +173,13 @@ CS-10d, closed); the live price lands with CS-11b.
 | V3 | The company may pass its directors' codes to whoever files; Submit takes them at filing time and stores none |
 | V4 | PSC codes cannot go in the statement — they go through the PSC web service or `PSCVerificationStatement-v1-0.xsd`, after the statement, inside the window starting the day after the review date |
 | V5 | DIYA has three directors, all PSCs, each with a middle name |
-| V6 | No ACSP is needed for DIYA's own filing. Filing for clients needs ACSP no earlier than November 2027; presenter measures no earlier than November 2026. Whether Submit presenting a customer's filing under the presenter's own account counts as filing for clients is Q1 |
+| V6 | No ACSP is needed for DIYA's own filing. Companies House's published rule for software providers: an ACSP is needed when the provider delivers filings for its clients through its software and is responsible for paying and engaging with Companies House; not when clients use the software with their own Companies House accounts. Submit presenting customers' filings under its presenter and paying from its credit account matches the first case, so ACSP registration applies once it is required for filing on behalf of others, no earlier than November 2027 with six months' notice. The alternative that avoids it: customers file under their own presenter accounts. CS-H2 asks the XML team to confirm |
 
 **Open questions**
 
 | Id | Question | Owner |
 |---|---|---|
-| Q1 | Which endpoint and credentials test `ConfirmationAndVerificationStatement` today — the test service, or a sandpit staging host with the live presenter — and what company data does `CompanyDataRequest` answer there? Also whether presenting a customer's filing this way counts as filing for clients (V6) | Operator, by email (CS-H2) |
+| Q1 | Where to test: answered by probe on 2026-09-26. The test service `https://xmlgw.companieshouse.gov.uk/v1-0/xmlgw/Gateway` with `GatewayTest` 1 and the test presenter accepts `ConfirmationAndVerificationStatement-v1-0` and `PSCVerificationStatement-v1-0` (its `/SchemaStatus`) and answers `CompanyDataRequest` for 00001350, 04549236, 06060501, 03950344, 04615520, 01966794; the live presenter is refused there; the sandpit staging host with the live presenter validates schemas only | CS-9 |
 | Q2 | Does a no-change statement pass without `Shareholdings`, or must every statement from a private company carry the full holder list? | CS-9 |
 | Q3 | Does the test service accept a statement whose director has no code, and what reject code names an unverified director? | CS-9 |
 | Q4 | Software authorisation for the form: how many CS01 tests, and whether the accounts package reference covers it or a second one is issued | Operator (CS-H4) |
@@ -227,7 +224,7 @@ reference date changes.
 | O34c | Ask the XML team to clear the credit-account presenter for live accounts filing and issue the live package reference; set the live presenter id, code and package reference on GitHub's `prod` environment | 0 | none | B34.6c | Blocked |
 | B34c | `CompaniesHouseStack.java` sets the prod gateway values; one accounts filing on the prod lane for the operator's own company, polled to a terminal state; `prod` added to the activity's `environments` and `resident`'s listing | ~5 | Sonnet | B34.6c, O34c | Blocked |
 | CS-H2 | Send `../DRAFT_EMAIL_XMLGW_CS01.md` to `xml@companieshouse.gov.uk` as a new thread (Q1, Q4); paste the answers into CS-9's row; Q2 and Q3 are settled by CS-9's sandbox cases | 0 | none | nothing | Human-driven |
-| CS-9 | Sandbox proof: a `CompanyDataRequest`, a no-change statement, a SIC change, one with `Shareholdings`, one with a blank director code, each polled to a terminal state and pinned in the simulator; settles Q2 and Q3 | 3 | Sonnet | CS-H2 | Blocked |
+| CS-9 | Sandbox proof: a `CompanyDataRequest`, a no-change statement, a SIC change, one with `Shareholdings`, one with a blank director code, each polled to a terminal state and pinned in the simulator; settles Q2 and Q3 | 3 | Sonnet | none | Machine-only |
 | CS-H4 | The XML team tests CS-9's submissions and issues the package reference for the confirmation statement | 0 | none | CS-9 | Blocked |
 | CS-13a | Build the PSC verification statement: XML builder, submit and poll Lambdas, simulator class, tests, result-view section | ~8 | Sonnet | nothing | Machine-only |
 | CS-13b | Sandbox proof of the PSC verification statement against the test service | ~1 | Sonnet | CS-9 | Blocked |
