@@ -40,6 +40,8 @@ step.
 
 ## In flight
 
+- [ ] **B30s. `main`'s deploy of PR #365 stalled on a CloudWatch alarm in `prod-8c41629-app-HmrcItsaStack`.** Run 36217785873: the stack reached 280/283 resources at 04:57 UTC; `prod8c41629apphmrcitsabsasukpropertygetQueueMessageAgeAlarmB9D60FAD` has sat at CREATE_IN_PROGRESS since 04:53:45 with no "Resource creation Initiated" event, and the job failed at 05:53 on `ExpiredToken` (the OIDC session outlived by the wait). Six other `prod-8c41629` stacks are CREATE_COMPLETE; origins, apex and destroy-previous were skipped, so prod still serves `prod-a8703b3`. When the stack settles: CREATE_COMPLETE → `gh run rerun 36217785873 --failed`; a failure or rollback → the operator runs `gh workflow run destroy-prod.yml -f deployment-name=prod-8c41629`, then `main` redeploys. Then find why one alarm create hung (CloudTrail `PutMetricAlarm` for that alarm name around 04:53; the account holds about 660 alarms) and whether the deploy job should outlive a one-hour token. B30q's prod SMS Lambda ships with this set. **Source**: deploy run 36217785873. **Owner**: Claude Code. **Model**: Sonnet. **Size**: 0 files.
+
 ## Machine-only
 
 ## Machine-ask
