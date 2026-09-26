@@ -62,12 +62,10 @@ are not startable; leave them.
 
 ### 2. Wave
 
-Before pushing a branch deployment, read the ci slot parameters to ensure every slot is not claimed
-by a running deploy: `aws --profile submit-ci ssm get-parameters-by-path --path /submit/ci/slots`.
-An absent parameter is a free slot; a parameter naming a running `deploy.yml` run holds the slot.
-Hold the push while every slot is claimed; `main` deploys to prod and takes no ci slot. When all
-slots are free or only `ci-set1` or `ci-set2` is claimed without a running run on its stacks,
-proceed with the push.
+Before a push that starts a branch deploy, read the ci slots:
+`aws --profile submit-ci ssm get-parameters-by-path --path /submit/ci/slots`. An absent parameter
+is a free slot; a parameter naming a running `deploy.yml` run holds its slot. Hold the push while
+every slot is held; `main` deploys to prod and takes no ci slot.
 
 `/do-next`'s shape, sized by these rules:
 
