@@ -49,6 +49,7 @@ public class CloudFrontAccessLogs {
     // Standard CloudFront access-log (v2) field set. c_ip is personal data under UK GDPR; the
     // table description below says so and no view built on this table may select it.
     private static final List<String> FIELD_ORDER = List.of(
+            "distribution_id",
             "date",
             "time",
             "x_edge_location",
