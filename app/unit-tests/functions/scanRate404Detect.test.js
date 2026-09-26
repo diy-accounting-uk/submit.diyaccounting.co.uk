@@ -6,8 +6,12 @@
 import { describe, test, expect, vi, beforeEach } from "vitest";
 
 const mockS3Send = vi.fn();
+const mockS3ClientConstructor = vi.fn();
 vi.mock("@aws-sdk/client-s3", () => ({
   S3Client: class {
+    constructor(config) {
+      mockS3ClientConstructor(config);
+    }
     send(...args) {
       return mockS3Send(...args);
     }
@@ -67,6 +71,7 @@ function commonPrefixesResponse(ids, { truncated = false } = {}) {
 describe("functions/security/scanRate404Detect", () => {
   beforeEach(() => {
     mockS3Send.mockReset();
+    mockS3ClientConstructor.mockReset();
     mockSsmSend.mockReset();
     mockPublishActivityEvent.mockClear();
     mockRunAthenaQuery.mockReset();
@@ -155,6 +160,28 @@ describe("functions/security/scanRate404Detect", () => {
   });
 
   describe("handler", () => {
+    test("retries throttled S3 listing adaptively before failing the cycle", async () => {
+      vi.resetModules();
+      mockS3ClientConstructor.mockClear();
+
+      const { handler: handlerFresh, discoverDistributionIds: discoverDistributionIdsFresh } =
+        await import("@app/functions/security/scanRate404Detect.js");
+
+      mockS3Send.mockResolvedValueOnce(commonPrefixesResponse(["EDFXAMPLE1"]));
+      mockSsmSend.mockResolvedValueOnce({ Parameter: undefined }).mockResolvedValueOnce({});
+      mockRunAthenaQuery.mockResolvedValueOnce([]);
+
+      await handlerFresh({ now: "2026-08-31T10:20:00Z" });
+
+      expect(mockS3ClientConstructor).toHaveBeenCalledWith(
+        expect.objectContaining({
+          region: "eu-west-2",
+          maxAttempts: 6,
+          retryMode: "adaptive",
+        }),
+      );
+    });
+
     test("a first run with no stored parameter starts ten minutes back", async () => {
       mockS3Send.mockResolvedValueOnce(commonPrefixesResponse(["EDFXAMPLE1"]));
       mockSsmSend.mockResolvedValueOnce({ Parameter: undefined }).mockResolvedValueOnce({});

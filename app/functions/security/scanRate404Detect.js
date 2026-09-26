@@ -31,7 +31,11 @@ let cachedSsmClient = null;
 
 function getS3Client() {
   if (!cachedS3Client) {
-    cachedS3Client = new S3Client({ region: process.env.AWS_REGION || "eu-west-2" });
+    cachedS3Client = new S3Client({
+      region: process.env.AWS_REGION || "eu-west-2",
+      maxAttempts: 6,
+      retryMode: "adaptive",
+    });
   }
   return cachedS3Client;
 }

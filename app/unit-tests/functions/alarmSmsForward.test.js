@@ -87,6 +87,7 @@ describe("functions/ops/alarmSmsForward", () => {
       expect(parsed).toEqual({
         alarmName: "prod-a1b2c3d-ops-health-failed",
         newState: "ALARM",
+        oldState: "OK",
         stateChangeTime: "2026-09-26T02:15:32.123+0000",
       });
     });
@@ -169,13 +170,29 @@ describe("functions/ops/alarmSmsForward", () => {
       mockSmsSend.mockResolvedValue({ MessageId: "msg-1" });
 
       await handler(snsAlarmEvent([alarmNotification()]));
-      await handler(snsAlarmEvent([alarmNotification({ NewStateValue: "OK" })]));
+      await handler(snsAlarmEvent([alarmNotification({ NewStateValue: "OK", OldStateValue: "ALARM" })]));
 
       expect(mockSsmSend).toHaveBeenCalledTimes(1);
       const getParameterInput = mockSsmSend.mock.calls[0][0].input;
       expect(getParameterInput.Name).toBe("/submit/prod/operator-sms-number");
       expect(getParameterInput.WithDecryption).toBe(true);
       expect(mockSmsSend).toHaveBeenCalledTimes(2);
+    });
+
+    test("texts an OK that ends an ALARM", async () => {
+      mockSmsSend.mockResolvedValue({ MessageId: "msg-1" });
+
+      const result = await handler(snsAlarmEvent([alarmNotification({ NewStateValue: "OK", OldStateValue: "ALARM" })]));
+
+      expect(result.sent).toBe(1);
+      expect(mockSmsSend).toHaveBeenCalledTimes(1);
+    });
+
+    test("stays silent for a new alarm's first OK after a deployment", async () => {
+      const result = await handler(snsAlarmEvent([alarmNotification({ NewStateValue: "OK", OldStateValue: "INSUFFICIENT_DATA" })]));
+
+      expect(result.sent).toBe(0);
+      expect(mockSmsSend).not.toHaveBeenCalled();
     });
 
     test("sends one text per alarm state-change record and returns the count sent", async () => {
