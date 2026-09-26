@@ -7,7 +7,7 @@ Registering DIY Accounting Limited as an ACSP so Submit can keep filing customer
 statements and PSC verification statements under our own presenter once Companies House requires
 it. `PLAN_COMPANIES_HOUSE.md` covers filing itself: the operator's own filings, and since
 2026-09-26 customers' too, both lawful under our presenter before that requirement lands, plus the
-near-term alternative of filing under a customer's own presenter (CS-P1). BACKLOG row 82.
+near-term alternative of filing under a customer's own presenter (CS-P1).
 
 **Starts 2027-04**, to be ready for the earliest possible requirement date (November 2027). Watch
 Companies House's six-month notice — the date has slipped once already, from spring 2026, and may
