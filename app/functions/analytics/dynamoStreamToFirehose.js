@@ -51,6 +51,7 @@ function projectBundle(image) {
     granted_at: image.createdAt ?? null,
     expires_at: image.expiry ?? null,
     ttl: image.ttl ?? null,
+    actor: image.actor ?? null,
   };
 }
 
@@ -92,6 +93,7 @@ function projectPass(image) {
     updated_at: image.updatedAt ?? null,
     use_count: image.useCount ?? null,
     revoked_at: image.revokedAt ?? null,
+    actor: image.actor ?? null,
   };
 }
 

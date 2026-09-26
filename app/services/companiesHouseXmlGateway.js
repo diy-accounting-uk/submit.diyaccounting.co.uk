@@ -137,6 +137,12 @@ function buildEnvelopeXml({ requestClass, transactionId, gatewayTest, presenterI
  * (a form's own XML, e.g. the ConfirmationAndVerificationStatement element) or a Document (a
  * base64 attachment, e.g. iXBRL accounts), matching FormSubmission-v2-11.xsd's own sequence.
  *
+ * The root FormSubmission element carries its own xsi:schemaLocation, naming
+ * FormSubmission-v2-11.xsd, exactly as every published Companies House example
+ * (fixtures/companies-house-xmlgw/ConfirmationStatement*.xml, ConfirmationAndVerificationStatement.xml)
+ * shows it. Without it the gateway answers error 505 "Invalid schema URI supplied" on every form
+ * this function submits, even though the inner Form element's own schemaLocation is correct.
+ *
  * @param {object} input
  * @param {string} input.presenterId
  * @param {string} input.presenterCode
@@ -187,7 +193,7 @@ export function buildFormSubmission({
       </Document>`
     : "";
 
-  const bodyXml = `<FormSubmission xmlns="http://xmlgw.companieshouse.gov.uk/Header">
+  const bodyXml = `<FormSubmission xmlns="http://xmlgw.companieshouse.gov.uk/Header" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://xmlgw.companieshouse.gov.uk/Header http://xmlgw.companieshouse.gov.uk/v1-0/schema/forms/FormSubmission-v2-11.xsd">
       <FormHeader>
         <CompanyNumber>${escapeXmlText(companyNumber)}</CompanyNumber>
         <CompanyName>${escapeXmlText(companyName)}</CompanyName>

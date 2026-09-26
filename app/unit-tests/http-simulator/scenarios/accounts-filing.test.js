@@ -63,6 +63,16 @@ describe("http-simulator/scenarios/accounts-filing", () => {
       const result = submitAccounts({ ...VALID, submissionNumber: "AAA003", scenario: "SCHEMA_FAILURE" });
       expect(result.errors[0]).toMatchObject({ number: 604 });
     });
+
+    test("Gov-Test-Scenario INVALID_SCHEMA_URI answers error 505, as the test service did for a FormSubmission with no outer schemaLocation", () => {
+      const result = submitAccounts({ ...VALID, submissionNumber: "AAA005", scenario: "INVALID_SCHEMA_URI" });
+      expect(result.errors[0]).toMatchObject({ number: 505, text: "Invalid schema URI supplied" });
+    });
+
+    test("Gov-Test-Scenario AUTH_CODE_TOO_LONG answers error 100, as the test service did for an 11-character company authentication code", () => {
+      const result = submitAccounts({ ...VALID, submissionNumber: "AAA006", scenario: "AUTH_CODE_TOO_LONG" });
+      expect(result.errors[0]).toMatchObject({ number: 100 });
+    });
   });
 
   describe("pollStatus", () => {
@@ -96,6 +106,12 @@ describe("http-simulator/scenarios/accounts-filing", () => {
       submitAccounts({ ...VALID, submissionNumber: "AAA004" });
       const result = pollStatus({ ...VALID, submissionNumber: "AAA004", scenario: "AUTH_FAILURE" });
       expect(result.errors[0]).toMatchObject({ number: 502 });
+    });
+
+    test("Gov-Test-Scenario PRESENTER_ID_MISSING answers error 9999, as the test presenter's broken account does (B34.6c)", () => {
+      submitAccounts({ ...VALID, submissionNumber: "AAA007" });
+      const result = pollStatus({ ...VALID, submissionNumber: "AAA007", scenario: "PRESENTER_ID_MISSING" });
+      expect(result.errors[0]).toMatchObject({ number: 9999, text: "No presenter ID supplied" });
     });
   });
 });

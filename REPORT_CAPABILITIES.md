@@ -371,6 +371,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
     - [DATA-45](#data-45-apply-ga4-and-gcp-iam-role-bindings) Apply GA4 and GCP IAM role bindings: use when a principal's GA4 Analytics Admin access or GCP Resource Manager IAM bindings must match project.toml.
     - [DATA-46](#data-46-configure-the-youtube-channel-as-code) Configure the YouTube channel as code: use when the channel scripts/youtube-upload.js targets needs declaring or checking without a recorded channel id.
     - [DATA-47](#data-47-authenticate-google-cloud-scripts-via-federated-credentials) Authenticate Google Cloud scripts via federated credentials: use when any infra/google script needs a Google Cloud client without a stored service-account key.
+    - [DATA-53](#data-53-reach-google-cloud-from-a-local-session-via-aws-sso) Reach Google Cloud from a local session via AWS SSO: use when a read-only Google Cloud or BigQuery script must run from a local session with no service-account key on disk.
   - [Finance staging and reconciliation](#finance-staging-and-reconciliation-data)
     - [DATA-48](#data-48-stage-paypal-transactions-for-reconciliation) Stage PayPal transactions for reconciliation: use when one month's PayPal transactions must be pulled and staged for reconciliation.
     - [DATA-49](#data-49-stage-stripe-transactions-for-reconciliation) Stage Stripe transactions for reconciliation: use when one month's Stripe balance transactions and payouts must be pulled and staged for accounts reconciliation.
@@ -3504,7 +3505,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - [Site-side analytics and RUM](#site-side-analytics-and-rum-data): [DATA-23](#data-23-classify-visitor-kind-as-human-bot-or-synthetic) Classify visitor kind as human, bot or synthetic · [DATA-24](#data-24-load-ga4-analytics-on-site-pages) Load GA4 analytics on site pages · [DATA-25](#data-25-configure-and-gate-cloudwatch-rum) Configure and gate CloudWatch RUM · [DATA-26](#data-26-render-the-operator-objectives-dashboard) Render the operator objectives dashboard
 - [SQL views](#sql-views-data): [DATA-27](#data-27-sql-views-activity-and-traffic) SQL views: activity and traffic · [DATA-28](#data-28-sql-views-revenue-and-subscription) SQL views: revenue and subscription · [DATA-29](#data-29-sql-views-submission-and-compliance) SQL views: submission and compliance · [DATA-30](#data-30-sql-views-cost) SQL views: cost · [DATA-31](#data-31-sql-views-dora-and-operations) SQL views: DORA and operations
 - [Google Ads administration](#google-ads-administration-data): [DATA-32](#data-32-sync-the-google-ads-account) Sync the Google Ads account · [DATA-33](#data-33-read-the-google-ads-account-inventory) Read the Google Ads account inventory · [DATA-34](#data-34-report-google-ads-campaign-performance) Report Google Ads campaign performance · [DATA-35](#data-35-forecast-google-ads-keyword-performance) Forecast Google Ads keyword performance · [DATA-36](#data-36-answer-google-ads-questions-from-live-data) Answer Google Ads questions from live data
-- [Google Cloud and GA4 administration](#google-cloud-and-ga4-administration-data): [DATA-37](#data-37-federate-lambda-credentials-to-google-cloud) Federate Lambda credentials to Google Cloud · [DATA-38](#data-38-sync-ga4-properties-streams-and-key-events) Sync GA4 properties, streams and key events · [DATA-39](#data-39-sync-ga4-in-bigquery-scheduled-queries) Sync GA4-in-BigQuery scheduled queries · [DATA-40](#data-40-enable-required-google-cloud-apis) Enable required Google Cloud APIs · [DATA-41](#data-41-assert-gcp-billing-budget-and-stray-project) Assert GCP billing budget and stray project · [DATA-42](#data-42-sync-gcp-workload-identity-and-org-policy) Sync GCP workload identity and org policy · [DATA-43](#data-43-read-the-google-cloud-and-ga4-inventory) Read the Google Cloud and GA4 inventory · [DATA-44](#data-44-assert-google-oauth-client-configuration) Assert Google OAuth client configuration · [DATA-45](#data-45-apply-ga4-and-gcp-iam-role-bindings) Apply GA4 and GCP IAM role bindings · [DATA-46](#data-46-configure-the-youtube-channel-as-code) Configure the YouTube channel as code · [DATA-47](#data-47-authenticate-google-cloud-scripts-via-federated-credentials) Authenticate Google Cloud scripts via federated credentials
+- [Google Cloud and GA4 administration](#google-cloud-and-ga4-administration-data): [DATA-37](#data-37-federate-lambda-credentials-to-google-cloud) Federate Lambda credentials to Google Cloud · [DATA-38](#data-38-sync-ga4-properties-streams-and-key-events) Sync GA4 properties, streams and key events · [DATA-39](#data-39-sync-ga4-in-bigquery-scheduled-queries) Sync GA4-in-BigQuery scheduled queries · [DATA-40](#data-40-enable-required-google-cloud-apis) Enable required Google Cloud APIs · [DATA-41](#data-41-assert-gcp-billing-budget-and-stray-project) Assert GCP billing budget and stray project · [DATA-42](#data-42-sync-gcp-workload-identity-and-org-policy) Sync GCP workload identity and org policy · [DATA-43](#data-43-read-the-google-cloud-and-ga4-inventory) Read the Google Cloud and GA4 inventory · [DATA-44](#data-44-assert-google-oauth-client-configuration) Assert Google OAuth client configuration · [DATA-45](#data-45-apply-ga4-and-gcp-iam-role-bindings) Apply GA4 and GCP IAM role bindings · [DATA-46](#data-46-configure-the-youtube-channel-as-code) Configure the YouTube channel as code · [DATA-47](#data-47-authenticate-google-cloud-scripts-via-federated-credentials) Authenticate Google Cloud scripts via federated credentials · [DATA-53](#data-53-reach-google-cloud-from-a-local-session-via-aws-sso) Reach Google Cloud from a local session via AWS SSO
 - [Finance staging and reconciliation](#finance-staging-and-reconciliation-data): [DATA-48](#data-48-stage-paypal-transactions-for-reconciliation) Stage PayPal transactions for reconciliation · [DATA-49](#data-49-stage-stripe-transactions-for-reconciliation) Stage Stripe transactions for reconciliation · [DATA-50](#data-50-resolve-finance-staging-directory-paths) Resolve finance staging directory paths · [DATA-51](#data-51-turn-staged-stripe-activity-into-diya-gl-lines) Turn staged Stripe activity into diya-gl lines
 <!-- /generated:area DATA -->
 
@@ -3957,6 +3958,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - [DATA-45](#data-45-apply-ga4-and-gcp-iam-role-bindings) Apply GA4 and GCP IAM role bindings
 - [DATA-46](#data-46-configure-the-youtube-channel-as-code) Configure the YouTube channel as code
 - [DATA-47](#data-47-authenticate-google-cloud-scripts-via-federated-credentials) Authenticate Google Cloud scripts via federated credentials
+- [DATA-53](#data-53-reach-google-cloud-from-a-local-session-via-aws-sso) Reach Google Cloud from a local session via AWS SSO
 <!-- /generated:group google-cloud-and-ga4-administration-data -->
 
 #### DATA-37 Federate Lambda credentials to Google Cloud
@@ -4068,6 +4070,16 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - **Files:** infra/google/lib/googleAuth.js, app/unit-tests/scripts/googleAuth.test.js
 - **Keywords:** google auth helper, google_application_credentials, oidc exchange, no service account key, shared auth client
 - **Related:** DATA-37
+
+#### DATA-53 Reach Google Cloud from a local session via AWS SSO
+
+- **Use when:** a read-only Google Cloud or BigQuery script must run from a local session with no service-account key on disk.
+- **Does:** gcp-as-sso.sh runs a command with the AWS SSO session's credentials, from `aws configure export-credentials`, exported only into that child process, plus GOOGLE_APPLICATION_CREDENTIALS pointing at the matching committed external-account config. identity.toml's submit-prod provider accepts the operator's AWSReservedSSO_AdministratorAccess role alongside the analytics Lambdas' roles.
+- **Run:** `scripts/gcp-as-sso.sh node scripts/<read-only-script>.js`; `scripts/gcp-as-sso.sh --profile submit-ci node scripts/<script>.js`
+- **Entry:** `scripts/gcp-as-sso.sh:`
+- **Files:** scripts/gcp-as-sso.sh, infra/google/gcp/identity.toml, infra/google/gcp/credentials/aws-prod.json
+- **Keywords:** aws sso, no key file, google application credentials, workload identity federation, local session, bigquery
+- **Related:** DATA-37, DATA-42
 
 ### Finance staging and reconciliation (DATA)
 
@@ -5010,6 +5022,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - aws organization: [OPS-99](#ops-99-bootstrap-the-aws-organization-structure)
 - aws sdk: [OPS-82](#ops-82-provide-a-shared-dynamodb-client)
 - aws security credentials supplier: [DATA-37](#data-37-federate-lambda-credentials-to-google-cloud)
+- aws sso: [DATA-53](#data-53-reach-google-cloud-from-a-local-session-via-aws-sso)
 - aws sts assume-role: [OPS-69](#ops-69-assume-and-clear-local-aws-deployment-credentials)
 - aws-jwt-verify: [SITE-02](#site-02-verify-jwts-at-the-api-gateway)
 - aws_costs.md: [OPS-59](#ops-59-track-and-analyze-aws-spending)
@@ -5046,7 +5059,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - behaviour tests: [OPS-26](#ops-26-run-the-automated-test-suite-in-ci)
 - betaanalyticsdataclient: [DATA-06](#data-06-pull-ga4-reports-and-bigquery-event-export)
 - bidding optimisation: [DATA-36](#data-36-answer-google-ads-questions-from-live-data)
-- bigquery: [DEV-19](#dev-19-provide-shared-behaviour-test-fixtures-and-steps)
+- bigquery: [DATA-53](#data-53-reach-google-cloud-from-a-local-session-via-aws-sso), [DEV-19](#dev-19-provide-shared-behaviour-test-fixtures-and-steps)
 - bigquery dataset: [OPS-67](#ops-67-apply-google-cloud--ga4-infrastructure)
 - bigquery datasets: [DATA-43](#data-43-read-the-google-cloud-and-ga4-inventory)
 - bigquery link: [DATA-38](#data-38-sync-ga4-properties-streams-and-key-events)
@@ -5644,6 +5657,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - google ads inventory: [DATA-33](#data-33-read-the-google-ads-account-inventory)
 - google ads report: [DATA-34](#data-34-report-google-ads-campaign-performance)
 - google ads sync: [DATA-32](#data-32-sync-the-google-ads-account)
+- google application credentials: [DATA-53](#data-53-reach-google-cloud-from-a-local-session-via-aws-sso)
 - google auth helper: [DATA-47](#data-47-authenticate-google-cloud-scripts-via-federated-credentials)
 - google cloud apply: [OPS-67](#ops-67-apply-google-cloud--ga4-infrastructure)
 - google cloud inventory: [DATA-43](#data-43-read-the-google-cloud-and-ga4-inventory)
@@ -5865,6 +5879,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - local login: [DEV-02](#dev-02-simulate-local-app-oauth)
 - local server: [DEV-01](#dev-01-run-the-http-simulator-server)
 - local server routing: [SITE-06](#site-06-adapt-lambda-handlers-to-express-routes)
+- local session: [DATA-53](#data-53-reach-google-cloud-from-a-local-session-via-aws-sso)
 - local tls: [DEV-15](#dev-15-fetch-and-publish-proxy-variant-secrets)
 - localstorage wrapper: [SITE-16](#site-16-configure-the-frontend-via-toml-and-env-libraries)
 - lock: [OPS-71](#ops-71-create-github-issues-from-cloudwatch-alarms)
@@ -5971,6 +5986,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - nightly publish: [DATA-18](#data-18-publish-the-nightly-operator-dashboard-snapshot)
 - nino: [HMRC-09](#hmrc-09-retrieve-itsa-business-details), [HMRC-27](#hmrc-27-validate-hmrc-identifiers-dates-and-amounts), [DEV-06](#dev-06-simulate-hmrc-test-user-provisioning-and-api-docs)
 - no charge: [BILL-07](#bill-07-admin-issue-a-pass)
+- no key file: [DATA-53](#data-53-reach-google-cloud-from-a-local-session-via-aws-sso)
 - no mcp server claim: [MCP-15](#mcp-15-disclaim-an-mcp-server-on-the-marketing-site)
 - no service account key: [DATA-47](#data-47-authenticate-google-cloud-scripts-via-federated-credentials)
 - no stored key: [DATA-37](#data-37-federate-lambda-credentials-to-google-cloud)
@@ -6719,7 +6735,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - workflow permissions: [OPS-33](#ops-33-enforce-workflow-to-workflow-permission-grants)
 - workflow_dispatch: [BILL-11](#bill-11-generate-admin-passes-from-cli-or-workflow), [OPS-01](#ops-01-cancel-superseded-push-triggered-deploys)
 - workload identity: [OPS-67](#ops-67-apply-google-cloud--ga4-infrastructure)
-- workload identity federation: [DATA-06](#data-06-pull-ga4-reports-and-bigquery-event-export), [DATA-37](#data-37-federate-lambda-credentials-to-google-cloud)
+- workload identity federation: [DATA-06](#data-06-pull-ga4-reports-and-bigquery-event-export), [DATA-37](#data-37-federate-lambda-credentials-to-google-cloud), [DATA-53](#data-53-reach-google-cloud-from-a-local-session-via-aws-sso)
 - workload identity pool: [DATA-42](#data-42-sync-gcp-workload-identity-and-org-policy)
 - workspace mirror: [DATA-20](#data-20-publish-the-nightly-raw-export-for-indexing)
 - worktree catalogue: [DEV-32](#dev-32-merge-every-pr-that-is-ready)

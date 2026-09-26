@@ -115,9 +115,9 @@ async function handleCheckoutComplete(session, { test = false } = {}) {
 
   // Stripe's own livemode flag mostly tracks synthetic vs real traffic (probe lanes only
   // ever check out with test-mode price ids) but it is not the same signal every other
-  // activity event now classifies by, and it says nothing on the subscription record
-  // itself. Derive actor from the customer's email, the same rule as everywhere else, and
-  // store it on the record so the later lifecycle events on this subscription (and the
+  // activity event now classifies by, and it says nothing on the subscription or bundle
+  // record itself. Derive actor from the customer's email, the same rule as everywhere else,
+  // and store it on both records so the later lifecycle events on this subscription (and the
   // DynamoDB stream projection to analytics) can read it back without knowing Stripe mode.
   const actor = classifyActor(customerEmail);
 
@@ -153,6 +153,7 @@ async function handleCheckoutComplete(session, { test = false } = {}) {
     subscriptionStatus: "active",
     currentPeriodEnd: currentPeriodEnd || null,
     cancelAtPeriodEnd: false,
+    actor,
   };
 
   await putBundleByHashedSub(hashedSub, bundleRecord);

@@ -14,7 +14,7 @@ import {
 } from "../../lib/httpResponseHelper.js";
 import { registerLambdaRoute } from "../../lib/httpServerToLambdaAdaptor.js";
 import { createPass } from "../../services/passService.js";
-import { publishActivityEvent } from "../../lib/activityAlert.js";
+import { publishActivityEvent, classifyActor } from "../../lib/activityAlert.js";
 import { loadPassTypesFromRoot, getPassTypeById } from "../../services/productCatalog.js";
 
 const logger = createLogger({ source: "app/functions/account/passAdminPost.js" });
@@ -89,6 +89,10 @@ export async function ingestHandler(event) {
       restrictedToEmail,
       createdBy: createdBy || "admin",
       notes,
+      // This route carries no JWT authorizer, so no caller email ever reaches it; classifyActor
+      // with no email resolves to "system", the same call an authenticated route makes with its
+      // decoded token's email.
+      actor: classifyActor(undefined),
     });
 
     logger.info({ message: "Admin pass created", passTypeId, bundleId });
