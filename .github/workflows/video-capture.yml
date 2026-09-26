@@ -42,6 +42,16 @@ on:
           - 'itsa-quarterly-update'
           - 'itsa-year'
           - 'file-micro-entity-accounts'
+          - 'sign-in'
+          - 'tokens'
+          - 'subscription-management'
+          - 'company-lookup'
+          - 'change-registered-office'
+          - 'change-registered-email'
+          - 'my-receipts'
+          - 'generate-pass-digital'
+          - 'generate-pass-physical'
+          - 'file-confirmation-statement'
         default: 'tour'
       environment-name:
         type: choice
