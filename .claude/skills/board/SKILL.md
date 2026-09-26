@@ -52,11 +52,26 @@ combined row). Columns:
 
 Rows run in board order: **in-flight rows first, whatever their class, at the top of the
 table**, then **machine-only, then machine-ask, then human-driven, then blocked**. Within
-a group, rows run by tier, an alarm or a pipeline failure counting as
-tier 1 whether or not a backlog row carries it, then the untiered; within a tier, the rows
-that can start run by the size of the change, fewest files first, read from `Size` (a row
-without a count follows the counted ones); equal sizes keep
-`NEXT.md`'s order. Never group rows by backlog number.
+a group, a row that other rows wait on comes first, the most rows unblocked (counted through
+the chain: CS-H2 unblocks CS-9, which unblocks CS-11 and CS-13b) ahead of fewer, because
+clearing it is what lets the board move; then rows by tier, an alarm or a pipeline failure
+counting as tier 1 whether or not a backlog row carries it, then the untiered; within a
+tier, the rows that can start run by the size of the change, fewest files first, read from
+`Size` (a row without a count follows the counted ones); equal sizes keep `NEXT.md`'s
+order. In the blocked group the same rule runs on the chain: a row whose blockers are
+closest to clearing comes first. Never group rows by backlog number.
+
+**Check the declared blockers before ordering.** Every "Blocked on …" names rows, dates or
+outside events. For each named row: is it still on `NEXT.md` or open in `BACKLOG.md`? A
+blocker that has closed (its row gone, its PR merged, its date passed) is stale; a blocker
+the board contradicts (the named row is itself described as done or unblocked elsewhere on
+the board, or a newer row supersedes it) is stale too. A row whose every blocker is stale
+moves to the section its class dictates; a row with some stale blockers keeps only the live
+ones. A date blocker counts as live until the date. An outside event (a reply, an email)
+stays live until something on the board or in the repository records it. List the stale
+blockers you removed after the lists, one line each, and write the corrected blocker lines
+back to `NEXT.md` with the rest of the write-back. A row that names another row as unblocked
+by it says so in its `Status` (`unblocks CS-9`).
 
 - `#`: the backlog row number (`44`), the NEXT.md label (`B14a`), or both (`B44/44`).
   Backlog row numbers are NOT GitHub issue numbers — never conflate them.
