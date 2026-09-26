@@ -43,7 +43,7 @@ first.
 | Registered office change | REST, OAuth as the company's user, no presenter | proven | live, proven on DIY Accounting Limited | free |
 | Registered email change | REST, OAuth as the company's user, no presenter | proven | live, proven on DIY Accounting Limited | free |
 | Micro-entity accounts | XML Gateway, presenter id + code, package reference | test presenter 66666727000: 000004 acknowledged 2026-09-13; status lookups fail until Companies House IT fixes the test account (B34.6c) | the credit-account presenter: authenticates on the live gateway since 2026-09-26; needs live clearance and the live package reference (O34c), then B34c | no Companies House fee; customer pays `resident-ltd` 99p a month (listed on ci only) |
-| Confirmation statement | XML Gateway, as above | test presenter 66666727000: endpoint and schemas confirmed 2026-09-26; not run (CS-A2) | the credit-account presenter: needs the test harness (CS-A2), its scheduled runs (CS-A3), software authorisation (CS-A4), then CS-11b (the operator's own proof filing, then customers) | our presenter: customer pays £61.35 by Stripe, Companies House charges the £50 fee to the credit account behind the presenter; the operator's own filings skip the Stripe charge (operator fee mode, CS-11a); own presenter (CS-P1): Companies House charges £50 to the customer's own credit account, no Submit fee |
+| Confirmation statement | XML Gateway, as above | test presenter 66666727000: endpoint and schemas confirmed 2026-09-26; not run (CS-A2) | the credit-account presenter: needs the test harness (CS-A2), its scheduled runs (CS-A3), software authorisation (CS-A4), then CS-11b (the operator's own proof filing, then customers) | our presenter: customer pays £61.35 by Stripe, Companies House charges the £50 fee to the credit account behind the presenter; the operator's own filings skip the Stripe charge (the fee waiver for listed company numbers, CS-11a); own presenter (CS-P1): Companies House charges £50 to the customer's own credit account, no Submit fee |
 | PSC verification statement (VS01) | XML Gateway, as above | test presenter 66666727000: CS-13b | the credit-account presenter: after CS-13a and CS-13b | Companies House fee to check |
 
 **Presenters**
@@ -65,8 +65,9 @@ flowchart LR
     B346c --> O34c
     B346c --> B34c
     O34c --> B34c
-    CSA2[CS-A2 harness] --> CSA3[CS-A3 scheduled runs]
+    CSA2[CS-A2 harness and weekly workflow] --> CSA3[CS-A3 first live run, pinned]
     CSA3 --> CSA4[CS-A4 evidence to the XML team]
+    CHIT --> CSA4
     CSA4 --> CS11b[CS-11b]
     CS11b --> CSP1[CS-P1]
     CSA2 --> CS13b[CS-13b]
@@ -81,9 +82,9 @@ flowchart LR
 - O34c: blocked by B34.6c
 - B34c: blocked by B34.6c and O34c
 - CS-A2: blocked by nothing (the criteria below are defined)
-- CS-A3: blocked by CS-A2
-- CS-A4: blocked by CS-A3 (a scheduled run inside the last 14 days)
-- CS-11a: blocked by nothing (the fee-mode CDK wiring)
+- CS-A3: blocked by CS-A2 (the first dispatch of its workflow on `main`)
+- CS-A4: blocked by CS-A3 and by Companies House IT (`GetSubmissionStatus` answers 9999 until the test presenter is repaired, so no case reaches a terminal status)
+- CS-11a: blocked by nothing (the fee waiver scoped to listed company numbers, wired through CDK)
 - CS-11b: blocked by CS-A4 and CS-11a
 - CS-P1: blocked by CS-11b (it adds a second payment path to the journey CS-11b launches)
 - CS-13a: blocked by nothing (its fixture landed with CS-1, closed)
@@ -182,7 +183,7 @@ February 2026, debited from the credit account behind the presenter — nothing 
 carries payment; `PaymentPeriodsRequest` says whether this submission is due. Submit recovers its
 own charge from the customer by Stripe Checkout before submitting, at (Companies House fee +
 Stripe fee) × 1.2: £61.35 for the £50 fee. The operator's own filings skip the Stripe charge
-(operator fee mode, CS-11a); CS-11b takes the £61.35 customer price to prod. A customer filing
+(the fee waiver for listed company numbers, CS-11a); CS-11b takes the £61.35 customer price to prod. A customer filing
 under their own presenter (CS-P1) pays Companies House's £50 fee directly and Submit charges
 nothing.
 
@@ -223,8 +224,8 @@ Design points to settle:
   option, only if a reason turns up for one.
 - How the page asks for and explains the credit-account requirement.
 - `PaymentPeriodsRequest` still decides whether a fee is due, under either presenter.
-- The Stripe checkout is skipped at the same fee gate operator mode already uses
-  (`app/functions/companies-house/companiesHouseConfirmationStatementPost.js` line ~244).
+- The Stripe checkout is skipped at the same fee gate CS-11a's company list skips
+  (`app/functions/companies-house/companiesHouseConfirmationStatementPost.js` line 244).
 - Micro-entity accounts carry no fee, so this option there only changes whose presenter shows on
   the filing.
 
@@ -259,7 +260,7 @@ and send the evidence.
 | 5 | Schema chosen by officer verification state (`ConfirmationAndVerificationStatement-v1-0` or `ConfirmationStatement-v1-3`) | Resending the verification block gives reject 12682 | One case per schema where test data allows; unit tests of the chooser |
 | 6 | Error paths handled and shown to the user in plain words: `GovTalkErrors`, reject codes, 502, 5003, 5006 and 9984, 9999 | HMRC questionnaire 1 Q12 (error testing, "beneficial"); forum threads show 9999 and 502 as the common failures | Negative harness cases (blank director code, wrong company authentication code); simulator pins; unit tests of the message map |
 | 7 | Polling honours `PollInterval`, handles `PENDING` and `PARKED`, stops at `ACCEPT` or `REJECT` | Gateway interface; submissions stuck at pending in December 2025 (forum "Filing issue resolved") | The poll timings in the evidence log |
-| 8 | Testing is recent when reviewed | HMRC questionnaire 1 Q11 (tests in the last 14 days, logs kept 14 days); Companies House publishes no retention period | A scheduled run at least weekly (CS-A3); the pack cites a run inside 14 days |
+| 8 | Testing is recent when reviewed | HMRC questionnaire 1 Q11 (tests in the last 14 days, logs kept 14 days); Companies House publishes no retention period | A scheduled run at least weekly (CS-A2's workflow); the pack cites a run inside 14 days |
 | 9 | Credentials and codes never logged or stored | HMRC data protection section; this plan's rule that authentication and personal codes are typed, sent once and never stored | `redactPresenterCredentials` tests; only redacted exchanges in artefacts |
 | 10 | Declarations shown before submit (lawful purpose, the statement of confirmation) | HMRC questionnaire 1 Q10 (legal declaration); the schema requires both as `true` | Browser test of `fileConfirmationStatement.html`; a screenshot in the pack |
 | 11 | Filing page meets WCAG 2.1 AA | HMRC questionnaire 2; Companies House publishes no such test | `scripts/axe-quickscan.mjs` over the filing page, 0 violations |
@@ -275,7 +276,7 @@ The PSC verification statement joins rows 1 to 9 once CS-13a lands (CS-13b).
 `buildPscVerificationStatementSubmission` over `PSCVerificationStatement-v1-0.xsd` (its fixture
 landed with CS-1), a submit and poll Lambda pair through the shared `pollSubmission`, a simulator
 class, tests, and a result-view section on the confirmation statement page for each director-PSC —
-machine-only, nothing blocks it. CS-13b: its cases in the CS-A2 harness, run by CS-A3, blocked
+machine-only, nothing blocks it. CS-13b: its cases in the CS-A2 harness, run by its weekly workflow, blocked
 by CS-13a and CS-A2.
 
 **FRS 102 section 1A small-company accounts (34e), dormant company accounts (34f), and CT600
@@ -308,12 +309,12 @@ reference date changes.
 | B34.6c | Poll test submission 000004 once Companies House IT confirms the test presenter account works; pin the returned `StatusCode` as a case in `companiesHouseAccountsGet.test.js` | ~1 | Sonnet | Companies House IT | Blocked |
 | O34c | Ask the XML team to clear the credit-account presenter for live accounts filing and issue the live package reference; set the live presenter id, code and package reference on GitHub's `prod` environment | 0 | none | B34.6c | Blocked |
 | B34c | `CompaniesHouseStack.java` sets the prod gateway values; one accounts filing on the prod lane for the operator's own company, polled to a terminal state; `prod` added to the activity's `environments` and `resident`'s listing | ~5 | Sonnet | B34.6c, O34c | Blocked |
-| CS-A2 | Test-service harness: every statement variant and error path as a case, starting with a `CompanyDataRequest`, a no-change statement, a SIC change, one with `Shareholdings` and one with a blank director code; each polled to a terminal state, an evidence log, simulator pins, the reject-code message map; settles Q2 and Q3 | ~7 | Sonnet | nothing | Machine-only |
-| CS-A3 | `companies-house-test-service.yml`: the harness weekly and on dispatch, redacted exchanges and the evidence log as run artefacts | ~2 | Sonnet | CS-A2 | Blocked |
-| CS-A4 | Claude Code assembles the evidence pack from a CS-A3 run inside 14 days; the operator sends it to `xml@companieshouse.gov.uk` and asks for the live package reference for the confirmation statement | 0 | Sonnet | CS-A3 | Blocked |
+| CS-A2 | Test-service harness: every statement variant and error path as a case, starting with a `CompanyDataRequest`, a no-change statement, a SIC change, one with `Shareholdings` and one with a blank director code; each polled to a terminal state, an evidence log; `companies-house-test-service.yml` runs it weekly and on dispatch, redacted exchanges and the evidence log as run artefacts | ~5 | Sonnet | nothing | Machine-only |
+| CS-A3 | The workflow's first dispatch on `main`; every observed response pinned in the simulator and the reject-code message map; settles Q2 and Q3 | ~3 | Sonnet | CS-A2 | Blocked |
+| CS-A4 | Claude Code assembles the evidence pack from a `companies-house-test-service.yml` run inside 14 days; the operator sends it to `xml@companieshouse.gov.uk` and asks for the live package reference for the confirmation statement | 0 | Sonnet | CS-A3, Companies House IT | Blocked |
 | CS-13a | Build the PSC verification statement: XML builder, submit and poll Lambdas, simulator class, tests, result-view section | ~8 | Sonnet | nothing | Machine-only |
-| CS-13b | The PSC verification statement's cases in the CS-A2 harness, run by CS-A3 | ~2 | Sonnet | CS-13a, CS-A2 | Blocked |
-| CS-11a | `COMPANIES_HOUSE_CS_FEE_MODE` as a `CompaniesHouseStack.java` prop, set to `operator` only where the environment config names it, so operator mode is reachable when deployed | ~2 | Haiku | none | Machine-only |
+| CS-13b | The PSC verification statement's cases in the CS-A2 harness, run by its weekly workflow | ~2 | Sonnet | CS-13a, CS-A2 | Blocked |
+| CS-11a | `COMPANIES_HOUSE_CS_FEE_WAIVED_COMPANY_NUMBERS` in place of `COMPANIES_HOUSE_CS_FEE_MODE`, carried from `.env.prod` through a `CompaniesHouseStack.java` prop, so only the operator's own company skips the Stripe fee | ~6 | Sonnet | none | Machine-only |
 | CS-11b | Customer prod launch: `prod` on the confirmation statement activity's `environments`, the live Stripe price for the £61.35 fee, prod gateway values and the live package reference, the operator's own proof filing first, `compliance.toml` rows | ~7 | Sonnet | CS-A4, CS-11a | Blocked |
 | CS-P1 | Filing under a customer's own presenter: the page option, storing no credentials, the credit-account explanation, skipping the Stripe checkout at the existing fee gate | ~5 | Sonnet | CS-11b | Blocked |
 
