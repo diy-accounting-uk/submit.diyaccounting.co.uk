@@ -149,5 +149,48 @@
       "pinned": false,
       "note": "Forces ConfirmationStatement-v1-3 (no verification block) for schema coverage; whether the test company's real officers are all verified is unconfirmed, and companyAuthenticationCode is a placeholder with no real code for 03176906 on record. CS-A3 pins it."
     }
+  },
+  {
+    "name": "psc-verification-statement-director-psc",
+    "type": "pscVerificationStatement",
+    "companyNumber": "04549236",
+    "companyName": "MORGAN TECHNICAL LIMITED",
+    "companyAuthenticationCode": "AUTH09",
+    "dateSigned": "2026-09-22",
+    "individual": {
+      "surname": "MORGAN",
+      "forename": "Alan",
+      "otherForenames": "James",
+      "dobMonth": 4,
+      "dobYear": 1964,
+      "personalCode": "12345678951"
+    },
+    "expectedOutcome": {
+      "status": "GOVTALK_ERROR",
+      "pinned": false,
+      "note": "Alan James Morgan is company 04549236's one director and its one individual PSC (find-and-update.company-information.service.gov.uk, 2026-09-26), the director-PSC case CS-13b asks for. companyAuthenticationCode is a placeholder, no real code for 04549236 is on record. The weekly run pins the real outcome."
+    }
+  },
+  {
+    "name": "psc-verification-statement-blank-code",
+    "type": "pscVerificationStatement",
+    "companyNumber": "04549236",
+    "companyName": "MORGAN TECHNICAL LIMITED",
+    "companyAuthenticationCode": "AUTH10",
+    "dateSigned": "2026-09-22",
+    "individual": {
+      "surname": "MORGAN",
+      "forename": "Alan",
+      "otherForenames": "James",
+      "dobMonth": 4,
+      "dobYear": 1964,
+      "personalCode": "12345678951"
+    },
+    "corruptPersonalCode": true,
+    "expectedOutcome": {
+      "status": "GOVTALK_ERROR",
+      "pinned": false,
+      "note": "Blanks the PSC's own personal code; expects a schema-validation reject on that field. companyAuthenticationCode is a placeholder, no real code for 04549236 is on record, so the observed reject may instead name the authentication code until a real one is known. CS-A3 pins the real reject code."
+    }
   }
 ]
