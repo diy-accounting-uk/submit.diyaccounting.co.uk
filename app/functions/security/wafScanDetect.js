@@ -5,9 +5,18 @@
 //
 // Subscribed to the WAF access log group's blocks-only CloudWatch Logs subscription filter
 // (EdgeStack.java). Each invocation carries one gzipped, base64-encoded batch of log records;
-// this handler turns every record blocked by the SensitivePathScan rule into one ActivityEvent,
-// so a sensitive-path scan (/.env, /wp-admin, and the rest of the regex pattern set) reaches the
-// ops Telegram chat within the delay AWS WAF's own log delivery adds.
+// this handler turns every record blocked by the SensitivePathScan rule into ActivityEvents, one
+// per source IP in the batch summarising every distinct path it hit, so a sensitive-path scan
+// (/.env, /wp-admin, and the rest of the regex pattern set) reaches the ops Telegram chat as one
+// message per source per batch instead of one per path.
+//
+// This groups only within one invocation's own batch of log records: the Lambda holds no state
+// between invocations, so a scan whose requests land in separate CloudWatch Logs deliveries (the
+// subscription filter can split a fast burst across a few deliveries a few seconds apart) still
+// produces one message per delivery. Collapsing those into one message per real-world burst needs
+// a store that survives between invocations (e.g. a DynamoDB item per clientIp with a short TTL,
+// incremented per delivery) plus a decision on when a burst has ended enough to flush a summary;
+// neither exists here today.
 
 import { gunzipSync } from "zlib";
 import { publishActivityEvent } from "../../lib/activityAlert.js";
@@ -33,9 +42,11 @@ export function decodeSubscriptionPayload(base64GzipData) {
  * record this rule did not terminate, so a caller can filter with a plain truthiness check.
  *
  * @param {string} message - one `logEvents[].message`, a JSON-encoded WAF log record
- * @returns {{terminatingRuleId: string, method: string, uri: string, clientIp: string, country: string, requestId: string}|null}
+ * @param {number} [timestamp] - the enclosing `logEvents[].timestamp` (epoch ms), carried through
+ *   so a caller can size the batch's own time span; absent from the WAF record itself
+ * @returns {{terminatingRuleId: string, method: string, uri: string, clientIp: string, country: string, requestId: string, timestamp: number|null}|null}
  */
-export function parseWafLogRecord(message) {
+export function parseWafLogRecord(message, timestamp = null) {
   let record;
   try {
     record = JSON.parse(message);
@@ -54,32 +65,69 @@ export function parseWafLogRecord(message) {
     clientIp: httpRequest.clientIp ?? "unknown",
     country: httpRequest.country ?? "??",
     requestId: httpRequest.requestId ?? null,
+    timestamp,
   };
 }
 
 /**
- * De-duplicate parsed records by client IP plus URI, so a scanner hitting many paths in one
- * batch produces one event per path, not one per record. Order is preserved: the first record
- * seen for a given (clientIp, uri) pair is the one reported.
+ * Group parsed records by client IP, so a scanner hitting many paths from one address in one
+ * batch produces one summary instead of one message per path. Each group's `uris` de-duplicates
+ * repeated hits to the same path; `firstTimestamp`/`lastTimestamp` span every hit seen for that
+ * IP (not just the de-duplicated ones), so the summary's duration reflects the whole batch.
+ * Order is preserved: the first client IP seen is the first group returned.
  *
  * @param {ReturnType<typeof parseWafLogRecord>[]} records
- * @returns {ReturnType<typeof parseWafLogRecord>[]}
+ * @returns {{clientIp: string, country: string, uris: string[], firstTimestamp: number|null, lastTimestamp: number|null}[]}
  */
-export function dedupeByIpAndUri(records) {
-  const seen = new Set();
-  const deduped = [];
+export function groupByClientIp(records) {
+  const order = [];
+  const groups = new Map();
+
   for (const record of records) {
-    const key = `${record.clientIp}#${record.uri}`;
-    if (seen.has(key)) continue;
-    seen.add(key);
-    deduped.push(record);
+    let group = groups.get(record.clientIp);
+    if (!group) {
+      group = { clientIp: record.clientIp, country: record.country, uris: new Set(), firstTimestamp: null, lastTimestamp: null };
+      groups.set(record.clientIp, group);
+      order.push(record.clientIp);
+    }
+    group.uris.add(record.uri);
+    if (typeof record.timestamp === "number") {
+      if (group.firstTimestamp === null || record.timestamp < group.firstTimestamp) group.firstTimestamp = record.timestamp;
+      if (group.lastTimestamp === null || record.timestamp > group.lastTimestamp) group.lastTimestamp = record.timestamp;
+    }
   }
-  return deduped;
+
+  return order.map((clientIp) => {
+    const group = groups.get(clientIp);
+    return {
+      clientIp,
+      country: group.country,
+      uris: Array.from(group.uris),
+      firstTimestamp: group.firstTimestamp,
+      lastTimestamp: group.lastTimestamp,
+    };
+  });
 }
 
 /**
- * Decode the subscription filter payload, keep only SensitivePathScan blocks, de-duplicate by
- * (clientIp, uri), and publish one ActivityEvent per unique hit.
+ * Render a group's batch span as "in Ns", or "" when the batch carried only one timestamp (or
+ * none), so a single-hit summary doesn't claim a zero-second duration.
+ *
+ * @param {{firstTimestamp: number|null, lastTimestamp: number|null}} group
+ * @returns {string}
+ */
+function durationSuffix(group) {
+  if (group.firstTimestamp === null || group.lastTimestamp === null) return "";
+  const seconds = Math.round((group.lastTimestamp - group.firstTimestamp) / 1000);
+  if (seconds <= 0) return "";
+  return ` in ${seconds}s`;
+}
+
+/**
+ * Decode the subscription filter payload, keep only SensitivePathScan blocks, group by client
+ * IP, and publish one ActivityEvent per source address summarising every distinct path it hit in
+ * this batch. See the module comment for why this groups within one batch, not one real-world
+ * burst.
  *
  * @param {{awslogs: {data: string}}} event
  * @returns {Promise<{published: number}>}
@@ -88,26 +136,29 @@ export async function handler(event) {
   const deployment = process.env.DEPLOYMENT_NAME ?? process.env.ENVIRONMENT_NAME ?? "unknown";
 
   const payload = decodeSubscriptionPayload(event.awslogs.data);
-  const parsed = (payload.logEvents ?? []).map((logEvent) => parseWafLogRecord(logEvent.message)).filter((record) => record !== null);
-  const deduped = dedupeByIpAndUri(parsed);
+  const parsed = (payload.logEvents ?? [])
+    .map((logEvent) => parseWafLogRecord(logEvent.message, logEvent.timestamp))
+    .filter((record) => record !== null);
+  const groups = groupByClientIp(parsed);
 
-  for (const record of deduped) {
+  for (const group of groups) {
+    const pathWord = group.uris.length === 1 ? "path" : "paths";
     await publishActivityEvent({
       event: "scan-detected",
       flow: "operational",
-      summary: `Scan blocked: ${record.method} ${record.uri} from ${record.clientIp} (${record.country}) on ${deployment}`,
+      summary: `Scan blocked: ${group.uris.length} sensitive ${pathWord} from ${group.clientIp} (${group.country}) on ${deployment}${durationSuffix(group)}`,
       detail: {
-        rule: record.terminatingRuleId,
-        uri: record.uri,
-        clientIp: record.clientIp,
-        country: record.country,
+        rule: SENSITIVE_PATH_RULE_ID,
+        clientIp: group.clientIp,
+        country: group.country,
         deployment,
-        requestId: record.requestId,
+        uriCount: group.uris.length,
+        uris: group.uris,
       },
     });
   }
 
-  logger.info({ message: "WAF scan-detect run complete", recordsSeen: parsed.length, published: deduped.length });
+  logger.info({ message: "WAF scan-detect run complete", recordsSeen: parsed.length, published: groups.length });
 
-  return { published: deduped.length };
+  return { published: groups.length };
 }
