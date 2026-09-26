@@ -6,7 +6,6 @@
 package co.uk.diyaccounting.submit.stacks;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import co.uk.diyaccounting.submit.SubmitSharedNames;
@@ -55,18 +54,17 @@ class DiyaGlStackTest {
     }
 
     @Test
-    void stackWiresFourApiLambdasPlusTheLapseSweeperWhenResidentTierEnabled() {
+    void stackWiresFiveApiLambdas() {
         DiyaGlStack stack = synthDiyaGlStack();
         Template template = Template.fromStack(stack);
 
-        template.resourceCountIs("AWS::Lambda::Function", 6);
+        template.resourceCountIs("AWS::Lambda::Function", 5);
         for (String functionName : List.of(
                 stack.diyaGlListGetLambdaProps.ingestFunctionName(),
                 stack.diyaGlVersionGetLambdaProps.ingestFunctionName(),
                 stack.diyaGlPutLambdaProps.ingestFunctionName(),
                 stack.diyaGlDeleteLambdaProps.ingestFunctionName(),
-                stack.practiceClientBookMovePostLambdaProps.ingestFunctionName(),
-                stack.diyaGlLapseSweepLambdaProps.ingestFunctionName())) {
+                stack.practiceClientBookMovePostLambdaProps.ingestFunctionName())) {
             template.hasResourceProperties(
                     "AWS::Lambda::Function", Match.objectLike(Map.of("FunctionName", functionName)));
         }
@@ -120,30 +118,50 @@ class DiyaGlStackTest {
     }
 
     @Test
-    void theListAndVersionFunctionsGetBundleAccessForTheLapseRule() {
+    void theListFunctionGetsBundleAccessForItsEntitlementResponse() {
         DiyaGlStack stack = synthDiyaGlStack();
         Template template = Template.fromStack(stack);
+        String functionName = stack.diyaGlListGetLambdaProps.ingestFunctionName();
 
-        for (String functionName : List.of(
-                stack.diyaGlListGetLambdaProps.ingestFunctionName(),
-                stack.diyaGlVersionGetLambdaProps.ingestFunctionName())) {
-            template.hasResourceProperties(
-                    "AWS::Lambda::Function",
-                    Match.objectLike(Map.of(
-                            "FunctionName",
-                            functionName,
-                            "Environment",
-                            Match.objectLike(Map.of(
-                                    "Variables",
-                                    Match.objectLike(Map.of(
-                                            "DIYA_GL_RESIDENT_TIER", "true",
-                                            "DIYA_GL_BUNDLE_ID", "resident",
-                                            "BUNDLE_DYNAMODB_TABLE_NAME", "docs-env-bundles")))))));
-            assertTrue(
-                    iamStatementsForFunction(template, functionName).stream()
-                            .anyMatch(statement -> actionsOf(statement).contains("dynamodb:Query")),
-                    "expected " + functionName + " to have dynamodb:Query on the bundles table");
-        }
+        template.hasResourceProperties(
+                "AWS::Lambda::Function",
+                Match.objectLike(Map.of(
+                        "FunctionName",
+                        functionName,
+                        "Environment",
+                        Match.objectLike(Map.of(
+                                "Variables",
+                                Match.objectLike(Map.of(
+                                        "DIYA_GL_RESIDENT_TIER", "true",
+                                        "DIYA_GL_BUNDLE_ID", "resident",
+                                        "BUNDLE_DYNAMODB_TABLE_NAME", "docs-env-bundles")))))));
+        assertTrue(
+                iamStatementsForFunction(template, functionName).stream()
+                        .anyMatch(statement -> actionsOf(statement).contains("dynamodb:Query")),
+                "expected " + functionName + " to have dynamodb:Query on the bundles table");
+    }
+
+    @Test
+    void theVersionFunctionGetsNoBundleAccessSinceTheBookMetadataCarriesItsOwnTier() {
+        DiyaGlStack stack = synthDiyaGlStack();
+        Template template = Template.fromStack(stack);
+        String functionName = stack.diyaGlVersionGetLambdaProps.ingestFunctionName();
+
+        template.hasResourceProperties(
+                "AWS::Lambda::Function",
+                Match.objectLike(Map.of(
+                        "FunctionName",
+                        functionName,
+                        "Environment",
+                        Match.objectLike(Map.of(
+                                "Variables",
+                                Match.objectLike(Map.of(
+                                        "DIYA_GL_BUCKET_NAME", DIYA_GL_BUCKET_NAME,
+                                        "ENVIRONMENT_NAME", "docs")))))));
+        assertTrue(
+                iamStatementsForFunction(template, functionName).stream()
+                        .noneMatch(statement -> actionsOf(statement).contains("dynamodb:Query")),
+                "expected " + functionName + " to have no bundles-table access");
     }
 
     @Test
@@ -313,48 +331,27 @@ class DiyaGlStackTest {
     }
 
     @Test
-    void theLapseSweepFunctionGetsItsEnvironmentAndScheduleAndBundleQueryAccess() {
+    void noScheduledRuleAndNoDeleteAccessOutsideTheDeleteAndMoveRoutes() {
         DiyaGlStack stack = synthDiyaGlStack();
         Template template = Template.fromStack(stack);
-        String functionName = stack.diyaGlLapseSweepLambdaProps.ingestFunctionName();
 
-        template.hasResourceProperties(
-                "AWS::Lambda::Function",
-                Match.objectLike(Map.of(
-                        "FunctionName",
-                        functionName,
-                        "Environment",
-                        Match.objectLike(Map.of(
-                                "Variables",
-                                Match.objectLike(Map.of(
-                                        "DIYA_GL_BUCKET_NAME", DIYA_GL_BUCKET_NAME,
-                                        "BUNDLE_DYNAMODB_TABLE_NAME", "docs-env-bundles",
-                                        "DIYA_GL_BUNDLE_ID", "resident",
-                                        "DIYA_GL_LAPSE_GRACE_DAYS", "30",
-                                        "ENVIRONMENT_NAME", "docs")))))));
-
-        template.hasResourceProperties(
-                "AWS::Events::Rule",
-                Match.objectLike(Map.of("Name", functionName + "-schedule", "ScheduleExpression", "rate(1 day)")));
-
-        assertTrue(
-                iamStatementsForFunction(template, functionName).stream()
-                        .anyMatch(statement -> actionsOf(statement).contains("dynamodb:Query")),
-                "expected the lapse sweep function to have dynamodb:Query on the bundles table");
-        assertTrue(
-                iamStatementsForFunction(template, functionName).stream()
-                        .anyMatch(statement -> actionsOf(statement).contains("s3:DeleteObject")),
-                "expected the lapse sweep function to have s3:DeleteObject");
+        template.resourceCountIs("AWS::Events::Rule", 0);
+        for (String functionName : List.of(
+                stack.diyaGlListGetLambdaProps.ingestFunctionName(), stack.diyaGlVersionGetLambdaProps.ingestFunctionName())) {
+            assertTrue(
+                    iamStatementsForFunction(template, functionName).stream()
+                            .noneMatch(statement -> actionsOf(statement).contains("s3:DeleteObject")),
+                    functionName + " should have no s3:DeleteObject: only PUT (pruning old versions), DELETE "
+                            + "and the book move route remove diya-gl objects, plus the bucket's own lifecycle rules");
+        }
     }
 
     @Test
-    void noLapseSweepFunctionWhenResidentTierIsDisabled() {
+    void sameLambdaCountRegardlessOfTheResidentTierFlag() {
         DiyaGlStack stack = synthDiyaGlStack(false);
         Template template = Template.fromStack(stack);
 
-        assertNull(stack.diyaGlLapseSweepLambdaProps);
         template.resourceCountIs("AWS::Lambda::Function", 5);
-        template.resourceCountIs("AWS::Events::Rule", 0);
     }
 
     @Test

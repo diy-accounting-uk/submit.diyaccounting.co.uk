@@ -27,7 +27,12 @@ const DEFAULT_DIYA_GL_BUNDLE_IDS = ["resident"];
 // The one bundle that grants a practice the resident tier for its clients' books.
 const PRACTICE_BUNDLE_ID = "resident-pro";
 
-const LAPSED_RESIDENT_GRACE_MS = 30 * 24 * 60 * 60 * 1000;
+// How long a sandbox book stays visible after its last save, or after the billing webhook moves
+// a lapsed Resident (or resident-pro client) book onto this tier: the window a resubscribe can
+// beat before the bucket's own `expire-sandbox` lifecycle rule (37 days) deletes the objects.
+// Shared between diyaGlPut.js (a new sandbox book) and billingWebhookPost.js (a lapsed one), so
+// the two can never drift apart.
+export const SANDBOX_RETENTION_MS = 35 * 24 * 60 * 60 * 1000;
 
 /**
  * Whether the given bundle list carries an active, unexpired resident-pro subscription: the
@@ -42,17 +47,6 @@ export function hasActiveResidentProBundle(bundles) {
   const isActive = practiceBundle?.subscriptionStatus === "active";
   const isUnexpired = practiceBundle?.expiry ? Date.parse(practiceBundle.expiry) > Date.now() : true;
   return Boolean(practiceBundle && isActive && isUnexpired);
-}
-
-/**
- * A lapsed subscriber's resident books expire 30 days after the bundle's own expiry, rather than
- * immediately: the grace period a resubscribe can beat before the sweeper (DG-3c) removes them.
- *
- * @param {string} bundleExpiry - an entitlement's `expiry` field, an ISO date string
- * @returns {string} an ISO date string, `bundleExpiry` plus 30 days
- */
-export function lapsedResidentExpiresAt(bundleExpiry) {
-  return new Date(Date.parse(bundleExpiry) + LAPSED_RESIDENT_GRACE_MS).toISOString();
 }
 
 /**

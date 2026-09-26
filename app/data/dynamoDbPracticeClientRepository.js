@@ -159,6 +159,37 @@ export async function listClients(practiceSub, { includeArchived = false } = {})
 }
 
 /**
+ * Lists a practice's clients by its hashed sub directly, for a caller that only ever sees the
+ * hashed value and never the practice's raw Cognito sub - the Stripe billing webhook, which
+ * grants and lapses bundles by hashedSub alone. Same filtering as `listClients`.
+ *
+ * @param {string} hashedSub
+ * @param {object} [options]
+ * @param {boolean} [options.includeArchived=false]
+ * @returns {Promise<object[]>}
+ */
+export async function listClientsByHashedSub(hashedSub, { includeArchived = false } = {}) {
+  const tableName = getResourceName("PRACTICE_CLIENTS_DYNAMODB_TABLE_NAME");
+  logger.info({ message: `listClientsByHashedSub [table: ${tableName}]`, hashedSub });
+
+  const response = await executeDynamoDbCommand(
+    (module) =>
+      new module.QueryCommand({
+        TableName: tableName,
+        KeyConditionExpression: "hashedSub = :hashedSub",
+        ExpressionAttributeValues: {
+          ":hashedSub": hashedSub,
+        },
+      }),
+  );
+
+  const items = (response.Items || []).filter((item) => item.clientId !== PROFILE_CLIENT_ID);
+  logger.info({ message: "Queried DynamoDB for practice clients by hashedSub", hashedSub, itemCount: items.length });
+
+  return includeArchived ? items : items.filter((item) => !item.archivedAt);
+}
+
+/**
  * Archives a client: sets archivedAt rather than deleting the row, so the client list and its
  * book sets survive a lapse and reappear on resubscribe. Archiving a client id that does not
  * belong to this practice, or does not exist, throws rather than silently succeeding.

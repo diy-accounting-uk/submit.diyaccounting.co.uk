@@ -23,7 +23,7 @@ import { respondWithDiyaGlCors } from "../../lib/diyaGlCors.js";
 import { initializeSalt } from "../../services/subHasher.js";
 import { resolveAppClient } from "../../lib/appClientResolver.js";
 import { publishActivityEvent } from "../../lib/activityAlert.js";
-import { entitlementFor } from "../../services/diyaGlEntitlement.js";
+import { entitlementFor, SANDBOX_RETENTION_MS } from "../../services/diyaGlEntitlement.js";
 import { listZipMemberNames, isDiyaGlPackage, NotAZipError } from "../../lib/zipMembers.js";
 import {
   isValidBookId,
@@ -137,8 +137,6 @@ function validatePutBody(body) {
 function isPreconditionFailed(error) {
   return error?.name === "PreconditionFailed";
 }
-
-const SANDBOX_RETENTION_MS = 35 * 24 * 60 * 60 * 1000;
 
 /**
  * Writes the next version's zip and metadata in one attempt. Throws WriteRaceError when an S3

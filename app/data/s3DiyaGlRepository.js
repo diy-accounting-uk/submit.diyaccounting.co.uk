@@ -395,6 +395,114 @@ export async function moveBookToClient(practiceSub, clientId, bookId) {
 }
 
 /**
+ * Copies every object under a book's prefix onto itself, replacing its `retention` tag: the
+ * metadata sidecar and every kept zip version. A copy gets a new creation date, so the bucket's
+ * lifecycle clock (which counts an object's age from its creation, not from a tag change)
+ * restarts under the new tag. Objects in one listing page are copied concurrently, since a book
+ * carries at most DIYA_GL_VERSIONS_KEPT + 1 objects and S3 sets no meaningful per-object limit
+ * on that.
+ *
+ * @param {string} ownerPrefix
+ * @param {string} bookId
+ * @param {string} retention - "sandbox" or "resident"
+ * @returns {Promise<number>} the number of objects retagged
+ */
+export async function retagBookObjects(ownerPrefix, bookId, retention) {
+  const client = await getS3Client();
+  const { ListObjectsV2Command, CopyObjectCommand } = await import("@aws-sdk/client-s3");
+  const bucket = getResourceName("DIYA_GL_BUCKET_NAME", true);
+  const prefix = bookPrefix(ownerPrefix, bookId);
+
+  let retaggedCount = 0;
+  let continuationToken;
+  do {
+    const listResponse = await client.send(
+      new ListObjectsV2Command({ Bucket: bucket, Prefix: prefix, ContinuationToken: continuationToken }),
+    );
+    const objects = listResponse.Contents || [];
+    await Promise.all(
+      objects.map((object) =>
+        client.send(
+          new CopyObjectCommand({
+            Bucket: bucket,
+            CopySource: `${bucket}/${object.Key}`,
+            Key: object.Key,
+            MetadataDirective: "COPY",
+            TaggingDirective: "REPLACE",
+            Tagging: "retention=" + retention,
+          }),
+        ),
+      ),
+    );
+    retaggedCount += objects.length;
+    continuationToken = listResponse.NextContinuationToken;
+  } while (continuationToken);
+
+  return retaggedCount;
+}
+
+/**
+ * Moves every one of an owner's currently visible books off its current retention tier onto a
+ * new one: retags the book's own S3 objects (`retagBookObjects`, so the bucket's lifecycle clock
+ * restarts under the new tag) and rewrites the book's own metadata content, since `listBooks` and
+ * the version GET read `retention`/`expiresAt` from that content, never from the S3 tag alone.
+ *
+ * Called from the billing webhook when a Resident (or a practice's resident-pro) subscription
+ * lapses or is reactivated: moving to "sandbox" with an `expiresAt` set puts a book onto the
+ * bucket's existing sandbox lifecycle rule; moving to "resident" with no `expiresAt` takes it off.
+ * Every currently visible book not already on the target tier is moved — a sandbox book that
+ * predates any subscription is picked up by a reactivation exactly as a lapsed one is, which
+ * matches what the book's next save would set anyway.
+ *
+ * A book whose metadata changes concurrently (its ETag no longer matches after the retag) is left
+ * retagged at the S3 level but with its old metadata content: logged and skipped rather than
+ * clobbering the concurrent write, since the next save through `diyaGlPut.js` corrects its
+ * retention from the caller's live entitlement regardless.
+ *
+ * @param {string} ownerPrefix
+ * @param {string} retention - "sandbox" or "resident"
+ * @param {object} [options]
+ * @param {string|null} [options.expiresAt] - written into each changed book's metadata
+ * @returns {Promise<{bookId: string, objectCount: number}[]>} one entry per book actually changed
+ */
+export async function setOwnerBooksRetention(ownerPrefix, retention, { expiresAt = null } = {}) {
+  const books = (await listBooks(ownerPrefix)).filter((book) => isBookVisible(book) && book.retention !== retention);
+
+  const changed = [];
+  for (const book of books) {
+    const objectCount = await retagBookObjects(ownerPrefix, book.bookId, retention);
+
+    const metadataResult = await readMetadata(ownerPrefix, book.bookId);
+    if (!metadataResult) {
+      logger.warn({ message: "Book metadata vanished mid-retag", ownerPrefix, bookId: book.bookId });
+      continue;
+    }
+    try {
+      await writeMetadata({
+        ownerPrefix,
+        bookId: book.bookId,
+        metadata: { ...metadataResult.metadata, retention, expiresAt },
+        retention,
+        ifMatch: metadataResult.metaETag,
+      });
+    } catch (error) {
+      if (error?.name !== "PreconditionFailed") {
+        throw error;
+      }
+      logger.warn({
+        message: "Book metadata changed concurrently during a retention move, leaving it to the next save",
+        ownerPrefix,
+        bookId: book.bookId,
+      });
+      continue;
+    }
+
+    changed.push({ bookId: book.bookId, objectCount });
+  }
+  return changed;
+}
+
+/**
  * Resolves the S3 key prefix for a caller's books, following the same salt-rotation fallback as
  * `getUserBundles`: the current salt version first, then each previous version in turn. Writes
  * always use the current version directly via `hashSub` and never call this.

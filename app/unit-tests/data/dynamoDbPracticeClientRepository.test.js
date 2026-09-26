@@ -61,8 +61,17 @@ vi.mock("@app/services/subHasher.js", () => ({
   hashSub: vi.fn((sub) => `hashed-${sub}`),
 }));
 
-const { createClient, getClient, listClients, archiveClient, generateClientId, getPracticeArn, setPracticeArn, setClientAuthorisation } =
-  await import("@app/data/dynamoDbPracticeClientRepository.js");
+const {
+  createClient,
+  getClient,
+  listClients,
+  listClientsByHashedSub,
+  archiveClient,
+  generateClientId,
+  getPracticeArn,
+  setPracticeArn,
+  setClientAuthorisation,
+} = await import("@app/data/dynamoDbPracticeClientRepository.js");
 
 describe("data/dynamoDbPracticeClientRepository", () => {
   beforeEach(() => {
@@ -151,6 +160,31 @@ describe("data/dynamoDbPracticeClientRepository", () => {
     const clients = await listClients("practice-sub", { includeArchived: true });
 
     expect(clients.map((client) => client.clientId)).toEqual(["active", "archived"]);
+  });
+
+  test("listClientsByHashedSub queries by the given hashed sub directly, with no hashSub call", async () => {
+    mockSend.mockResolvedValueOnce({ Items: [{ clientId: "c1", archivedAt: null }] });
+
+    const clients = await listClientsByHashedSub("hash-from-webhook");
+
+    expect(mockQueryCommand.mock.calls[0][0].ExpressionAttributeValues).toEqual({
+      ":hashedSub": "hash-from-webhook",
+    });
+    expect(clients.map((client) => client.clientId)).toEqual(["c1"]);
+  });
+
+  test("listClientsByHashedSub excludes archived clients by default and the profile row always", async () => {
+    mockSend.mockResolvedValueOnce({
+      Items: [
+        { clientId: "practice#profile", arn: "TARN0000001" },
+        { clientId: "active", archivedAt: null },
+        { clientId: "archived", archivedAt: "2026-01-01T00:00:00.000Z" },
+      ],
+    });
+
+    const clients = await listClientsByHashedSub("hash-from-webhook");
+
+    expect(clients.map((client) => client.clientId)).toEqual(["active"]);
   });
 
   test("archiveClient sets archivedAt and returns the updated row", async () => {

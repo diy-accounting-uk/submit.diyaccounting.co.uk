@@ -13,7 +13,7 @@ vi.mock("@app/data/dynamoDbPracticeClientRepository.js", () => ({
 
 const { getUserBundles } = await import("@app/data/dynamoDbBundleRepository.js");
 const { getClient } = await import("@app/data/dynamoDbPracticeClientRepository.js");
-const { entitlementFor, lapsedResidentExpiresAt, hasActiveResidentProBundle } = await import("../../services/diyaGlEntitlement.js");
+const { entitlementFor, hasActiveResidentProBundle } = await import("../../services/diyaGlEntitlement.js");
 const { _setTestSalt, _clearSalt } = await import("../../services/subHasher.js");
 
 function restoreEnv(key, value) {
@@ -186,15 +186,5 @@ describe("hasActiveResidentProBundle", () => {
 
   test("is false when resident-pro is held but not active", () => {
     expect(hasActiveResidentProBundle([{ bundleId: "resident-pro", subscriptionStatus: "canceled" }])).toBe(false);
-  });
-});
-
-describe("lapsedResidentExpiresAt", () => {
-  test("adds 30 days to the bundle's own expiry", () => {
-    const bundleExpiry = "2026-01-01T00:00:00.000Z";
-
-    const result = lapsedResidentExpiresAt(bundleExpiry);
-
-    expect(result).toBe("2026-01-31T00:00:00.000Z");
   });
 });

@@ -20,10 +20,6 @@ vi.mock("@aws-sdk/client-s3", () => {
   return { S3Client, GetObjectCommand };
 });
 
-vi.mock("@app/data/dynamoDbBundleRepository.js", () => ({
-  getUserBundles: vi.fn().mockResolvedValue([]),
-}));
-
 vi.mock("@app/data/dynamoDbPracticeClientRepository.js", () => ({
   getClient: vi.fn(),
 }));
@@ -48,7 +44,6 @@ vi.mock("@aws-sdk/client-ssm", () => ({
   },
 }));
 
-const { getUserBundles } = await import("@app/data/dynamoDbBundleRepository.js");
 const { getClient } = await import("@app/data/dynamoDbPracticeClientRepository.js");
 const { ingestHandler } = await import("../../functions/diyaGl/diyaGlVersionGet.js");
 const { _setTestSalt, _clearSalt } = await import("../../services/subHasher.js");
@@ -88,8 +83,6 @@ describe("diyaGlVersionGet", () => {
     mockSsmSend.mockReset();
     process.env.DIYA_GL_BUCKET_NAME = "test-books-bucket";
     process.env.DIYA_GL_ALLOWED_ORIGINS = "https://spreadsheets.diyaccounting.co.uk";
-    delete process.env.DIYA_GL_RESIDENT_TIER;
-    getUserBundles.mockReset().mockResolvedValue([]);
     _setTestSalt("test-salt");
   });
 
@@ -220,21 +213,20 @@ describe("diyaGlVersionGet", () => {
     expect(JSON.parse(result.body).code).toBe("book-expired");
   });
 
-  test("404s book-expired for a resident book past the lapse grace under an expired subscription", async () => {
-    process.env.DIYA_GL_RESIDENT_TIER = "true";
-    getUserBundles.mockResolvedValue([
-      {
-        bundleId: "resident",
-        subscriptionStatus: "canceled",
-        expiry: new Date(Date.now() - 40 * 24 * 60 * 60 * 1000).toISOString(),
-      },
-    ]);
+  test("serves a resident book whose subscription has lapsed but whose metadata still reads resident", async () => {
+    // The billing webhook moves a lapsed subscriber's books to the sandbox tier at the moment
+    // the subscription lapses; a book still reading "resident" here carries no expiresAt to
+    // check against, so this route trusts the book's own metadata rather than checking the
+    // caller's live entitlement a second time.
     const hashedSub = hashSub("test-sub");
     const metadata = { bookId: BOOK_ID, latestVersion: 1, retention: "resident", expiresAt: null };
     mockS3Send.mockImplementation((command) => {
       const key = command.input.Key;
       if (key === `users/${hashedSub}/books/${BOOK_ID}/metadata.json`) {
         return { ETag: '"meta-etag"', Body: jsonBody(metadata) };
+      }
+      if (key === `users/${hashedSub}/books/${BOOK_ID}/v1.zip`) {
+        return { ETag: '"zip-etag"', Body: bytesBody(Buffer.from("zip-bytes")) };
       }
       const error = new Error("not found");
       error.name = "NoSuchKey";
@@ -243,8 +235,7 @@ describe("diyaGlVersionGet", () => {
 
     const result = await ingestHandler(buildAuthenticatedEvent({}));
 
-    expect(result.statusCode).toBe(404);
-    expect(JSON.parse(result.body).code).toBe("book-expired");
+    expect(result.statusCode).toBe(200);
   });
 
   test("400s an invalid bookId", async () => {
