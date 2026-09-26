@@ -70,6 +70,8 @@ step.
 
 - [ ] **DB4. The dashboard's human, bot and synthetic session rows are blank.** `sessions_by_host_source_daily` (the source of `v_visitors_by_kind_daily`) has never held a row. Find why `app/functions/analytics/ga4DailyPull.js` writes nothing there (its BigQuery query, the lake prefix it writes, the Glue table's location and projection, the schedule and its logs in submit-prod) and fix the layer found, with a test. **Source**: DB1, 2026-09-26. **Owner**: Claude Code. **Model**: Sonnet. **Size**: ~3 files.
 
+- [ ] **GCP1. Google access from a session through AWS SSO, with no key file.** Writing the GA4 service-account key (`prod/submit/ga4/service_account`) to disk is blocked by auto mode as credential materialization, and three blocks in a row stop an agent on an operator prompt (2026-09-26, DB4). In `infra/google/gcp/identity.toml`, extend the submit-prod provider's `attribute_condition` (line 70) with `|| attribute.aws_role.contains("AWSReservedSSO_AdministratorAccess")` (the operator's role is `AWSReservedSSO_AdministratorAccess_88cf4f996ac93525`), and commit beside it an external-account credential config (no secret) that exchanges the caller's AWS credentials for a short-lived Google token through that provider and impersonates `ga4-report-pull@diyaccounting-ga4.iam.gserviceaccount.com`, used as `AWS_PROFILE=submit-prod GOOGLE_APPLICATION_CREDENTIALS=<file>`. Put it in `infra/google/gcp/credentials/` beside the existing configs and follow their shape. `google-apply.yml` applies the provider change on merge; prove it after merge with one read-only BigQuery query from the session. **Source**: operator, 2026-09-26. **Owner**: Claude Code. **Model**: Sonnet. **Size**: ~3 files.
+
 ## Machine-ask
 
 ## Human-driven
