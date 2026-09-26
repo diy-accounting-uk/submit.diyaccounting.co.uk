@@ -21,7 +21,7 @@ import { chromium } from "playwright";
 import fs from "fs";
 import path from "path";
 
-import { validateScript } from "./lib/video/scriptSchema.js";
+import { validateScript, effectiveScaleFactor } from "./lib/video/scriptSchema.js";
 import { groupFor, pauseForGroup, residualAfterWait, captionMinMs, compressionFor } from "./lib/video/pacing.js";
 import {
   installOverlay,
@@ -213,6 +213,12 @@ async function main() {
   const fps = args.fps || script.fps;
   const unscaledPacing = script.pacing;
   const scaledPacing = scalePacing(script.pacing, args.speed);
+  // The CSS layout stays at the script's viewport; only the backing store renders denser, so a
+  // 1920x1080 layout captures as 3840x2160 frames at the default scale factor and every caption
+  // and overlay pixel stays crisp once YouTube re-encodes.
+  const scaleFactor = effectiveScaleFactor(script);
+  const frameWidth = script.viewport.width * scaleFactor;
+  const frameHeight = script.viewport.height * scaleFactor;
 
   // One clock for the whole run, so a date placeholder resolves to the same day in the browser,
   // the transcript and the timeline even if the recording straddles midnight.
@@ -254,7 +260,7 @@ async function main() {
   const browser = await chromium.launch({ headless: !args.headed });
   const context = await browser.newContext({
     viewport: script.viewport,
-    deviceScaleFactor: script.deviceScaleFactor || 1,
+    deviceScaleFactor: scaleFactor,
     // Same marker playwright.config.js appends for every behaviour-test and probe run
     // (app/lib/visitorClassifier.js), so a recording against a real deployment tags as
     // synthetic rather than a human visitor.
@@ -280,8 +286,8 @@ async function main() {
     ? createCapture(args.capture, {
         page,
         framesDir,
-        maxWidth: script.viewport.width,
-        maxHeight: script.viewport.height,
+        maxWidth: frameWidth,
+        maxHeight: frameHeight,
       })
     : null;
   if (capture) await capture.start();
@@ -567,8 +573,8 @@ async function main() {
       manifestPath,
       outputPath,
       fps,
-      width: script.viewport.width,
-      height: script.viewport.height,
+      width: frameWidth,
+      height: frameHeight,
     });
     console.log(`Wrote ${outputPath}`);
     if (!args.keepFrames) {

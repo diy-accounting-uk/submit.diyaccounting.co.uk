@@ -62,10 +62,19 @@ function runOrThrow(bin, args, opts = {}) {
   return result;
 }
 
-// The encode command from design section 6.2: constant 60fps, H.264 High, a closed GOP at half
-// the frame rate, two B-frames, CABAC, BT.709 tags, faststart. No overlay is drawn by ffmpeg —
-// everything visible was already drawn in the page, so it survives into the stills too.
-export function encodeVideo({ ffmpegBin, manifestPath, outputPath, fps, width, height }) {
+// The encode command from design section 6.2: constant frame rate, H.264 High, a closed GOP at
+// half the frame rate, two B-frames, CABAC, BT.709 tags, faststart. No overlay is drawn by
+// ffmpeg — everything visible was already drawn in the page, so it survives into the stills too.
+//
+// crf 12 with -tune animation is the measured default for this content: on a 3840x2160, 30fps,
+// 3492-frame capture (videos/view-obligations.json against the simulator), crf 12/animation gave
+// the smallest file of the four combinations tried (crf 10/12 x stillimage/animation) at an SSIM
+// against the source frames indistinguishable from the other three (0.99965, against 0.99962 to
+// 0.99970) — every combination is already visually lossless at this content's motion level, so
+// size decides. width/height are the frames' own captured resolution (the CSS viewport times
+// deviceScaleFactor), not a fixed 1080p target, so YouTube's re-encode always has the
+// higher-resolution source to draw its 4K delivery ladder from.
+export function encodeVideo({ ffmpegBin, manifestPath, outputPath, fps, width, height, crf = 12, tune = "animation" }) {
   const args = [
     "-y",
     "-f",
@@ -86,8 +95,10 @@ export function encodeVideo({ ffmpegBin, manifestPath, outputPath, fps, width, h
     "high",
     "-preset",
     "slow",
+    "-tune",
+    tune,
     "-crf",
-    "18",
+    String(crf),
     "-g",
     String(Math.round(fps / 2)),
     "-keyint_min",

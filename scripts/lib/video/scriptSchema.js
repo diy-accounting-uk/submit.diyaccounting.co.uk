@@ -61,6 +61,15 @@ const ALLOWED_HMRC_SERVICES = new Set(["mtd-vat", "mtd-income-tax"]);
 // existing script needs no change.
 const ALLOWED_ENVIRONMENTS = new Set(["ci", "prod"]);
 
+// Frames render at this multiple of the CSS viewport (3840x2160 for a 1920x1080 layout) unless
+// a script overrides deviceScaleFactor, so YouTube's re-encode draws its higher-bitrate ladder
+// from a 4K source instead of a 1080p one.
+export const DEFAULT_DEVICE_SCALE_FACTOR = 2;
+
+export function effectiveScaleFactor(script) {
+  return script.deviceScaleFactor || DEFAULT_DEVICE_SCALE_FACTOR;
+}
+
 function fail(path, message) {
   throw new Error(`scene script invalid at ${path}: ${message}`);
 }

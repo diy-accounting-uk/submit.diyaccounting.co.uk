@@ -11,9 +11,9 @@ description: Record a video of the real site for a human audience from a scene s
 A scene script (`videos/<name>.json`) is the edit surface. A UI change means editing the
 script and rerunning, never editing the mp4. `scripts/site-video-capture.js` drives a real
 browser through the script with Playwright, draws a pointer, trail and captions with an
-in-page overlay, captures the session with CDP screencast, and encodes a constant-60fps
-H.264 mp4 with ffmpeg. Every run also writes a `.vtt`, a `.transcript.md` and per-scene
-stills alongside the mp4.
+in-page overlay, captures the session with CDP screencast at 3840x2160, and encodes a
+constant-frame-rate H.264 mp4 with ffmpeg. Every run also writes a `.vtt`, a `.transcript.md`
+and per-scene stills alongside the mp4.
 
 ## Step 1 — read the scene script first
 
@@ -166,6 +166,25 @@ autoplay, so SC 1.4.2 and 2.2.2 stay out of the embedder's problem.
 Captions and the video title follow `plain-prose`: short sentences, read aloud before
 committing.
 
+## Capture and encode settings
+
+Frames render at the CSS viewport (1920x1080) times `deviceScaleFactor`, default 2, so a script
+captures 3840x2160 frames unless it sets its own value. The browser lays out the page at the same
+CSS size either way; only the backing store gets denser, so every caption and form field stays
+sharp once YouTube re-encodes a 4K upload instead of stretching a 1080p one.
+
+`fps` is a required field on every script. 30 is the default across the published scripts; a
+script sets 60 only when a scene's own motion needs it. The captured frame count is set by the
+page's actual redraws, not by this field — it only controls the constant-rate timeline the encode
+resamples onto.
+
+The encode is H.264 High, yuv420p, faststart, at the frames' own captured resolution (never
+downscaled to a fixed target). `crf 12` with `-tune animation` is the measured default: on a
+3840x2160, 30fps, 3492-frame capture (`videos/view-obligations.json` against the simulator), it
+gave the smallest file of the four combinations tried (crf 10/12 × stillimage/animation) at an
+SSIM against the source frames indistinguishable from the other three — every combination was
+already visually lossless at this content's motion level, so file size decided.
+
 ## Reference
 
 - `videos/scene-script.schema.json` — the format: scenes, steps, targets, pacing, captions.
@@ -178,5 +197,6 @@ committing.
 - `scripts/lib/video/overlay-runtime.js` / `overlay.js` — the in-page pointer, trail,
   caption box, timer pill and chapter label.
 - `scripts/lib/video/capture.js` / `encode.js` — CDP screencast capture and the ffmpeg
-  concat-demuxer encode (constant 60fps, H.264 High, closed GOP, faststart).
+  concat-demuxer encode (constant frame rate, H.264 High, closed GOP, faststart). See
+  "Capture and encode settings" above for the resolution, frame rate and CRF defaults.
 - `.github/workflows/video-capture.yml` — the real recording, dispatched by hand.
