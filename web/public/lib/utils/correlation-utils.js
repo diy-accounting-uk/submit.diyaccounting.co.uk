@@ -36,6 +36,21 @@ export function getOrCreateTraceparent() {
 }
 
 /**
+ * Read the session's requestIdPrefix (e.g. "test_", set by the behaviour-test suites so every
+ * API call they make is identifiable). Callers that mint a request ID outside the normal
+ * per-call path -- prepareRedirect included -- must apply this themselves, since nothing else
+ * does it for them.
+ * @returns {string}
+ */
+function getRequestIdPrefix() {
+  try {
+    return window.sessionStorage?.getItem?.("requestIdPrefix") || "";
+  } catch {
+    return "";
+  }
+}
+
+/**
  * Generate a unique request ID
  * @returns {string} Request ID
  */
@@ -129,11 +144,15 @@ export function getLastXRequestIdSeenAt() {
 }
 
 /**
- * Prepare a request ID for a redirect
+ * Prepare a request ID for a redirect. Carries the session's requestIdPrefix (e.g. "test_")
+ * through the redirect: without it, a synthetic or test session that redirects away (the HMRC
+ * OAuth authorize page) and back loses its prefix on the first request after the return --
+ * nextRedirectRequestId() hands back this ID verbatim instead of falling through to the
+ * prefixed generator.
  * @returns {string} Request ID
  */
 export function prepareRedirect() {
-  const id = generateRequestId();
+  const id = getRequestIdPrefix() + generateRequestId();
   try {
     window.sessionStorage?.setItem?.("redirectXRequestId", id);
   } catch (err) {
@@ -185,8 +204,7 @@ export function installCorrelationInterceptor() {
         if (!existingRid) {
           let requestId = nextRedirectRequestId();
           if (!requestId) {
-            const prefix = window.sessionStorage?.getItem?.("requestIdPrefix") || "";
-            requestId = prefix + generateRequestId();
+            requestId = getRequestIdPrefix() + generateRequestId();
           }
           headerObject["x-request-id"] = requestId;
         }
