@@ -8,7 +8,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta
       name="description"
-      content="DIY Accounting Submit does not have a Model Context Protocol (MCP) server. This page explains what MCP is and how to use the product today."
+      content="The diya-gl MCP server is available now. The submission MCP for VAT and Companies House filings is coming soon."
     />
     <link rel="canonical" href="https://submit.diyaccounting.co.uk/mcp.html" />
     <link rel="icon" href="/favicon.ico" sizes="any" />
@@ -84,6 +84,47 @@
         background: #e8f0fe;
       }
 
+      .mcp-status {
+        display: inline-block;
+        font-size: 0.85rem;
+        font-weight: 500;
+        padding: 0.2rem 0.6rem;
+        border-radius: 4px;
+        margin-bottom: 0.75rem;
+      }
+
+      .mcp-status-available {
+        background: #e6f4ea;
+        color: #1e7e34;
+      }
+
+      .mcp-status-coming-soon {
+        background: #f8f9fa;
+        color: #666;
+      }
+
+      .mcp-intro pre {
+        background: #f8f9fa;
+        border-radius: 6px;
+        padding: 0.75rem 1rem;
+        overflow-x: auto;
+        margin-bottom: 1rem;
+      }
+
+      .mcp-intro dl {
+        margin: 0 0 1rem 0;
+      }
+
+      .mcp-intro dt {
+        font-weight: 600;
+        color: var(--color-text-primary);
+      }
+
+      .mcp-intro dd {
+        margin: 0 0 0.75rem 0;
+        color: var(--color-text-secondary);
+      }
+
       @media (max-width: 600px) {
         .mcp-page {
           padding: 0.5rem;
@@ -96,7 +137,7 @@
     <header>
       <p class="chrome-fallback"><a href="./">DIY Accounting Submit</a></p>
       <h1>MCP Server</h1>
-      <p class="subtitle">A note on the Model Context Protocol</p>
+      <p class="subtitle">Available now, and coming soon</p>
     </header>
 
     <main id="mainContent">
@@ -111,15 +152,70 @@
             connect devices, MCP provides a standardised way to connect AI assistants to external systems.
           </p>
           <p>
-            DIY Accounting Submit does not have an MCP server. We looked into building one and decided not to. You can use every VAT feature
-            through the web app, or call the REST API directly.
+            Two MCP servers exist for DIY Accounting's own tools: the diya-gl MCP server for reading and editing a book, available now, and
+            the submission MCP for filing VAT returns and Companies House accounts, coming soon. You can use every VAT feature through the
+            web app, or call the REST API directly, whichever MCP server you use.
           </p>
+        </div>
+
+        <div class="mcp-intro">
+          <span class="mcp-status mcp-status-available">Available now</span>
+          <h2>The diya-gl MCP server</h2>
+          <p>
+            <code>diya-gl-mcp</code> reads and edits a DIYA-GL book &mdash; the small set of files behind a DIY Accounting Spreadsheets
+            workbook &mdash; from an MCP client such as Claude Desktop or Claude Code. It comes from the
+            <a href="https://spreadsheets.diyaccounting.co.uk/" target="_blank" rel="noopener">DIY Accounting Spreadsheets</a> product, in
+            the <code>@diy-accounting-uk/diya-gl</code> npm package.
+          </p>
+          <p>Install it:</p>
+          <pre><code>npm install -g @diy-accounting-uk/diya-gl</code></pre>
+          <p>Run it:</p>
+          <pre><code>diya-gl mcp</code></pre>
+          <p>Point an MCP client at <code>diya-gl-mcp</code> (or <code>diya-gl mcp</code>) with no arguments. Four tools:</p>
+          <dl>
+            <dt><code>extract_book</code></dt>
+            <dd>Loads a workbook or package zip into a book, its computed report, and its checks and warnings.</dd>
+            <dt><code>report</code></dt>
+            <dd>Works out the figures, report sections and compliance checks for the book that is loaded.</dd>
+            <dt><code>edit_lines</code></dt>
+            <dd>Applies one named change to the book's transaction lines and returns the recalculated figures.</dd>
+            <dt><code>save_workbook</code></dt>
+            <dd>Writes the book back out as a workbook, a package zip, a diya-gl zip, or a JSON file.</dd>
+          </dl>
+        </div>
+
+        <div class="mcp-intro">
+          <span class="mcp-status mcp-status-coming-soon">Coming soon</span>
+          <h2>The submission MCP</h2>
+          <p>
+            The submission MCP will take a customer's book and file the two submissions this service makes: the VAT return to HMRC and the
+            micro-entity accounts to Companies House. It works out the figures a filing needs, shows them for confirmation, and only then
+            sends the filing.
+          </p>
+          <p>It will do:</p>
+          <ul>
+            <li>Open a book from a file or from the DIYA cloud, and save it back.</li>
+            <li>List a business's open and fulfilled VAT obligations.</li>
+            <li>Work out the nine VAT return boxes for a period, and show which lines fed each box.</li>
+            <li>File a confirmed VAT return with HMRC, and fetch the stored receipt.</li>
+            <li>Work out the seven micro-entity accounts figures for the current and prior year.</li>
+            <li>Preview the filing before it is sent, and check it against the public accounts validator.</li>
+            <li>File confirmed accounts with Companies House, and check on the filing's outcome.</li>
+          </ul>
+          <p>It will run on three surfaces:</p>
+          <ul>
+            <li>The npm package, used from the command line or as a local web page.</li>
+            <li>The same package as a Docker image, for anyone who does not want to install Node.</li>
+            <li>A hosted version, reachable from a chat client such as Claude Desktop, signed in with the same account as the web app.</li>
+          </ul>
+          <p>The full plan is in <code>PLAN_SUBMISSION_MCP.md</code>.</p>
         </div>
 
         <div class="mcp-links">
           <h2>About MCP</h2>
           <p>The Model Context Protocol is an open-source standard maintained by the community.</p>
           <a href="https://modelcontextprotocol.io/" target="_blank" rel="noopener"> Visit modelcontextprotocol.io </a>
+          <p><a href="videos.html">Watch the walkthrough videos</a></p>
         </div>
       </div>
     </main>
