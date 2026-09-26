@@ -40,10 +40,12 @@ export async function ingestHandler(event) {
 
   const page = body.page || "/";
 
+  const actorByVisitorType = { "ai-agent": "ai-agent", "synthetic": "synthetic" };
+
   await publishActivityEvent({
     event: "new-session",
     summary: `New session: ${visitorType} from ${country}`,
-    actor: visitorType === "ai-agent" ? "ai-agent" : "visitor",
+    actor: actorByVisitorType[visitorType] || "visitor",
     flow: "user-journey",
     detail: {
       visitorType,

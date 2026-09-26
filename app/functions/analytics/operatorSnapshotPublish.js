@@ -3,12 +3,15 @@
 
 // app/functions/analytics/operatorSnapshotPublish.js
 //
-// Nightly job that reads the analytics views behind the one-stop objectives dashboard and
-// writes one JSON snapshot per environment: the trailing 30 and 90 days for each of the eight
-// objectives' observations, each carrying its value, its trend against the prior comparable
-// period, and a deep link to where the operator can see more. The API route
-// (operatorSnapshotGet.js) only ever reads what this Lambda writes; it never queries Athena
-// itself, so the dashboard stays fast even while a query here is slow.
+// Nightly (prod) or weekly (ci) job that reads the analytics views behind the one-stop
+// objectives dashboard and writes one JSON snapshot per environment: the trailing 30 and 90
+// days for each of the eight objectives' observations, each carrying its value, its trend
+// against the prior comparable period, and a deep link to where the operator can see more.
+// An hourly "activity-only" run (prod only) refreshes just the activities objective's Last 1
+// hour/1 day/7 days columns in between, patching them onto that snapshot rather than rebuilding
+// it — see handler()'s mode branch. The API route (operatorSnapshotGet.js) only ever reads what
+// this Lambda writes; it never queries Athena itself, so the dashboard stays fast even while a
+// query here is slow.
 
 import { AthenaClient, StartQueryExecutionCommand, GetQueryExecutionCommand, GetQueryResultsCommand } from "@aws-sdk/client-athena";
 import { S3Client, PutObjectCommand } from "@aws-sdk/client-s3";
@@ -21,8 +24,12 @@ import {
   buildGa4ReportsLink,
 } from "../../lib/consoleLinks.js";
 import { loadCatalogFromRoot, isActivityListedInEnvironment } from "../../services/productCatalog.js";
+import { readLatestSnapshot } from "./operatorSnapshotGet.js";
 
 const logger = createLogger({ source: "app/functions/analytics/operatorSnapshotPublish.js" });
+
+// The one objective an "activity-only" run refreshes: see handler()'s mode branch.
+const ACTIVITY_OBJECTIVE_ID = "activity-started-and-completed";
 
 /**
  * One started and one completed observation per prod-listed catalogue activity
@@ -46,6 +53,11 @@ function buildActivityObservations() {
       valueExpr: "starts",
       aggregation: "sum",
       where: `activity = '${activity.id}'`,
+      // v_activity_started_daily groups by whole calendar day, which cannot answer a trailing
+      // 1-hour or 1-day window accurately (see v_activity_started_hourly.sql), so the fast
+      // columns read from the hourly view instead, in the same query shape.
+      fastWindowView: "v_activity_started_hourly",
+      fastWindowColumn: "hour",
       deepLink: (ctx) => buildAthenaSavedQueryLink(ctx.region, ctx.athenaWorkGroupName),
     },
     {
@@ -57,6 +69,8 @@ function buildActivityObservations() {
       valueExpr: "completions",
       aggregation: "sum",
       where: `activity = '${activity.id}'`,
+      fastWindowView: "v_submissions_by_activity_hourly",
+      fastWindowColumn: "hour",
       deepLink: (ctx) => buildAthenaSavedQueryLink(ctx.region, ctx.athenaWorkGroupName),
     },
   ]);
@@ -711,6 +725,25 @@ export function buildDailySeriesSql({ view, dayColumn, valueExpr, aggregation, w
   );
 }
 
+/**
+ * The three fast, no-trend columns on the operator dashboard's Activities table (Last 1 hour,
+ * Last 1 day, Last 7 days), computed against an hourly-grain view rather than
+ * buildWindowedSql's `dayColumn`: a column truncated to a whole calendar day always reads as
+ * "today" or "not today" against an hour-old cutoff, never a genuine trailing hour.
+ *
+ * @param {{fastWindowView: string, fastWindowColumn: string, valueExpr: string, aggregation: string, where?: string}} observation
+ * @returns {string}
+ */
+export function buildActivityFastWindowSql({ fastWindowView, fastWindowColumn, valueExpr, aggregation, where }) {
+  const whereClause = where ? `\nWHERE  ${where}` : "";
+  return (
+    `SELECT ${aggregation}(CASE WHEN ${fastWindowColumn} > date_add('hour', -1, current_timestamp) THEN ${valueExpr} END) AS last_1h,\n` +
+    `       ${aggregation}(CASE WHEN ${fastWindowColumn} > date_add('day', -1, current_timestamp) THEN ${valueExpr} END) AS last_1d,\n` +
+    `       ${aggregation}(CASE WHEN ${fastWindowColumn} > date_add('day', -7, current_timestamp) THEN ${valueExpr} END) AS last_7d\n` +
+    `FROM   ${fastWindowView}${whereClause}`
+  );
+}
+
 function toNumberOrNull(value) {
   if (value === null || value === undefined) return null;
   return Number(value);
@@ -718,6 +751,14 @@ function toNumberOrNull(value) {
 
 export function toDailySeries(rows) {
   return (rows || []).map((row) => ({ day: row.day, value: toNumberOrNull(row.value) }));
+}
+
+export function toActivityFastWindows(row) {
+  return {
+    last1h: { value: toNumberOrNull(row?.last_1h) },
+    last1d: { value: toNumberOrNull(row?.last_1d) },
+    last7d: { value: toNumberOrNull(row?.last_7d) },
+  };
 }
 
 /**
@@ -751,7 +792,19 @@ const nullObservationWindows = { last30: { value: null, trend: null }, last90: {
  * stop the other objectives publishing. Each failure is logged at warn level and counted in the
  * returned snapshot's failedObservationCount, so the caller can still surface it.
  *
- * @param {{workGroup: string, database: string, context: object}} params
+ * `objectiveIds`, when given, builds only those objectives instead of every one in
+ * OBJECTIVE_DEFINITIONS — the activity-only run's way of refreshing just the activities
+ * objective without re-running the other seven.
+ *
+ * `fastWindowOnly` skips the 30/90-day buildWindowedSql query entirely (and dailySeries with
+ * it) and answers only each observation's `id` plus its last1h/last1d/last7d fields, for an
+ * observation that carries a `fastWindowView` (only the activity objective's observations do).
+ * The result is a patch to merge onto an existing snapshot with mergeActivityFastWindows, not a
+ * standalone snapshot: it carries no label, unit or deepLink, and every non-activity objective
+ * comes back with a full observation list but no queries actually run for it (see
+ * OBJECTIVE_DEFINITIONS filtering above) unless objectiveIds also names it.
+ *
+ * @param {{workGroup: string, database: string, context: object, objectiveIds?: string[], fastWindowOnly?: boolean}} params
  * @returns {Promise<object>}
  */
 // Each observation is one or two Athena queries of a few seconds each; run in series, the
@@ -772,22 +825,35 @@ export async function mapInOrderWithConcurrency(items, concurrency, mapItem) {
   return results;
 }
 
-export async function buildSnapshot({ workGroup, database, context }) {
+export async function buildSnapshot({ workGroup, database, context, objectiveIds, fastWindowOnly = false }) {
+  const objectiveDefinitions = objectiveIds
+    ? OBJECTIVE_DEFINITIONS.filter((objective) => objectiveIds.includes(objective.id))
+    : OBJECTIVE_DEFINITIONS;
+
   const objectives = [];
   let failedObservationCount = 0;
-  for (const objective of OBJECTIVE_DEFINITIONS) {
+  for (const objective of objectiveDefinitions) {
     const observations = await mapInOrderWithConcurrency(objective.observations, OBSERVATION_QUERY_CONCURRENCY, async (observation) => {
       let windows = nullObservationWindows;
       let dailySeries = [];
+      let fastWindows = {};
       try {
-        const sql = buildWindowedSql(observation);
-        const rows = await runAthenaQuery({ workGroup, database, sql });
-        windows = toObservationWindows(rows[0]);
+        if (!fastWindowOnly) {
+          const sql = buildWindowedSql(observation);
+          const rows = await runAthenaQuery({ workGroup, database, sql });
+          windows = toObservationWindows(rows[0]);
 
-        if (observation.dailySeries) {
-          const dailySql = buildDailySeriesSql(observation);
-          const dailyRows = await runAthenaQuery({ workGroup, database, sql: dailySql });
-          dailySeries = toDailySeries(dailyRows);
+          if (observation.dailySeries) {
+            const dailySql = buildDailySeriesSql(observation);
+            const dailyRows = await runAthenaQuery({ workGroup, database, sql: dailySql });
+            dailySeries = toDailySeries(dailyRows);
+          }
+        }
+
+        if (observation.fastWindowView) {
+          const fastSql = buildActivityFastWindowSql(observation);
+          const fastRows = await runAthenaQuery({ workGroup, database, sql: fastSql });
+          fastWindows = toActivityFastWindows(fastRows[0]);
         }
       } catch (error) {
         failedObservationCount += 1;
@@ -798,6 +864,10 @@ export async function buildSnapshot({ workGroup, database, context }) {
           error: error.message,
         });
       }
+
+      if (fastWindowOnly) {
+        return { id: observation.id, ...fastWindows };
+      }
       const observationResult = {
         id: observation.id,
         label: observation.label,
@@ -805,6 +875,7 @@ export async function buildSnapshot({ workGroup, database, context }) {
         last30: windows.last30,
         last90: windows.last90,
         deepLink: observation.deepLink(context),
+        ...fastWindows,
       };
       if (observation.dailySeries) {
         observationResult.dailySeries = dailySeries;
@@ -819,6 +890,41 @@ export async function buildSnapshot({ workGroup, database, context }) {
     environment: context.envName,
     objectives,
     failedObservationCount,
+  };
+}
+
+/**
+ * Patches an existing snapshot's activity objective with a fastWindowOnly-built patch,
+ * overlaying only the patched observations' last1h/last1d/last7d fields and leaving every
+ * other field on every other observation — and every other objective entirely — untouched.
+ * This is what lets the hourly activity-only run refresh three columns without blanking the
+ * other seven objectives, which only the nightly full run recomputes.
+ *
+ * @param {object} existingSnapshot - the snapshot read back from snapshots/<env>/latest.json
+ * @param {object} patchSnapshot - buildSnapshot's result with objectiveIds: [ACTIVITY_OBJECTIVE_ID], fastWindowOnly: true
+ * @returns {object}
+ */
+export function mergeActivityFastWindows(existingSnapshot, patchSnapshot) {
+  const patchObjective = patchSnapshot.objectives.find((objective) => objective.id === ACTIVITY_OBJECTIVE_ID);
+  const patchById = new Map((patchObjective?.observations ?? []).map((patch) => [patch.id, patch]));
+
+  const objectives = (existingSnapshot.objectives ?? []).map((objective) => {
+    if (objective.id !== ACTIVITY_OBJECTIVE_ID) return objective;
+    return {
+      ...objective,
+      observations: objective.observations.map((observation) => {
+        const patch = patchById.get(observation.id);
+        if (!patch) return observation;
+        return { ...observation, last1h: patch.last1h, last1d: patch.last1d, last7d: patch.last7d };
+      }),
+    };
+  });
+
+  return {
+    ...existingSnapshot,
+    generatedAt: patchSnapshot.generatedAt,
+    objectives,
+    failedObservationCount: patchSnapshot.failedObservationCount,
   };
 }
 
@@ -851,7 +957,14 @@ export async function writeSnapshot({ bucket, envName, snapshot }) {
   );
 }
 
-export async function handler() {
+/**
+ * `event.mode` picks what this invocation refreshes: "full" rebuilds every objective the way
+ * this Lambda always has (the nightly and weekly schedules); "activity-only" runs only the
+ * activities objective's fast-window queries and patches them onto the existing snapshot (the
+ * hourly schedule). There is no default: a schedule that forgot to set it is a configuration
+ * bug, not a case to guess at.
+ */
+export async function handler(event) {
   const envName = process.env.ENVIRONMENT_NAME;
   const workGroup = process.env.ATHENA_WORK_GROUP_NAME;
   const database = process.env.GLUE_DATABASE_NAME;
@@ -861,6 +974,11 @@ export async function handler() {
   if (!database) throw new Error("GLUE_DATABASE_NAME environment variable is required");
   if (!lakeBucket) throw new Error("ANALYTICS_LAKE_BUCKET_NAME environment variable is required");
 
+  const mode = event?.mode;
+  if (mode !== "full" && mode !== "activity-only") {
+    throw new Error(`event.mode must be "full" or "activity-only", got: ${JSON.stringify(mode)}`);
+  }
+
   const context = {
     envName,
     region: process.env.AWS_REGION || "eu-west-2",
@@ -869,12 +987,29 @@ export async function handler() {
     ga4PropertyId: process.env.GA4_PROPERTY_ID || null,
   };
 
-  const snapshot = await buildSnapshot({ workGroup, database, context });
+  let snapshot;
+  if (mode === "full") {
+    snapshot = await buildSnapshot({ workGroup, database, context });
+  } else {
+    const existing = await readLatestSnapshot();
+    if (!existing) {
+      throw new Error("No existing snapshot to patch in activity-only mode; the full run has not published one yet");
+    }
+    const patch = await buildSnapshot({
+      workGroup,
+      database,
+      context,
+      objectiveIds: [ACTIVITY_OBJECTIVE_ID],
+      fastWindowOnly: true,
+    });
+    snapshot = mergeActivityFastWindows(existing, patch);
+  }
   await writeSnapshot({ bucket: lakeBucket, envName, snapshot });
 
   logger.info({
     message: "Operator snapshot published",
     environment: envName,
+    mode,
     objectives: snapshot.objectives.length,
     failedObservations: snapshot.failedObservationCount,
   });

@@ -1889,6 +1889,22 @@
         } ]
       }
     },
+    "/companies-house/psc-verification-statement/{submissionNumber}" : {
+      "get" : {
+        "summary" : "Poll a PSC verification statement filing",
+        "description" : "Polls the Companies House XML Gateway for the outcome of a submitted PSC verification statement filing",
+        "operationId" : "getCompaniesHousePscVerificationStatement",
+        "parameters" : [ {
+          "name" : "submissionNumber",
+          "in" : "path",
+          "required" : true,
+          "description" : "The 6-character submission number",
+          "schema" : {
+            "type" : "string"
+          }
+        } ]
+      }
+    },
     "/hmrc/itsa/calculation/trigger" : {
       "post" : {
         "summary" : "Trigger an ITSA tax calculation",
@@ -2710,6 +2726,13 @@
             "description" : "Request accepted for processing (async)"
           }
         }
+      }
+    },
+    "/companies-house/psc-verification-statement" : {
+      "post" : {
+        "summary" : "Submit a PSC verification statement filing",
+        "description" : "Builds the PSCVerificationStatement body and submits it through the Companies House XML Gateway, one director who is also a person with significant control at a time",
+        "operationId" : "postCompaniesHousePscVerificationStatement"
       }
     },
     "/companies-house/company/{companyNumber}/registered-office-address" : {

@@ -1,0 +1,153 @@
+[
+  {
+    "name": "company-data-request",
+    "type": "companyDataRequest",
+    "companyNumber": "00001350",
+    "companyAuthenticationCode": "TESTCODE001",
+    "madeUpDate": "2026-09-21",
+    "expectedOutcome": {
+      "status": "OK",
+      "pinned": false,
+      "note": "CompanyDataRequest answered for this company on the 2026-09-26 probe; companyAuthenticationCode is a placeholder CS-A3 pins from the first live run."
+    }
+  },
+  {
+    "name": "payment-periods-request",
+    "type": "paymentPeriodsRequest",
+    "companyNumber": "03176906",
+    "companyAuthenticationCode": "TESTCODE002",
+    "expectedOutcome": {
+      "status": "OK",
+      "pinned": false,
+      "note": "Not yet probed live; companyAuthenticationCode is a placeholder. CS-A3 pins the real outcome."
+    }
+  },
+  {
+    "name": "confirmation-statement-no-change",
+    "type": "confirmationStatement",
+    "companyNumber": "03176906",
+    "companyName": "MILLENNIUM STADIUM PLC",
+    "companyAuthenticationCode": "TESTCODE003",
+    "statement": {
+      "reviewDate": "2026-09-21",
+      "directors": [
+        { "forename": "Maldwyn", "otherForenames": "Maldwyn", "surname": "BEYNON", "dob": "1932-12-03", "personalCode": "12345678951" }
+      ]
+    },
+    "expectedOutcome": {
+      "status": "GOVTALK_ERROR",
+      "pinned": false,
+      "note": "GetSubmissionStatus answers GovTalkErrors 9999 'No presenter ID supplied' for every poll today (B34.6c); CS-A3 pins the real ACCEPT/REJECT once that is fixed."
+    }
+  },
+  {
+    "name": "confirmation-statement-sic-change",
+    "type": "confirmationStatement",
+    "companyNumber": "03176906",
+    "companyName": "MILLENNIUM STADIUM PLC",
+    "companyAuthenticationCode": "TESTCODE004",
+    "statement": {
+      "reviewDate": "2026-09-21",
+      "sicCodes": ["93110"],
+      "directors": [
+        { "forename": "Maldwyn", "otherForenames": "Maldwyn", "surname": "BEYNON", "dob": "1932-12-03", "personalCode": "12345678951" }
+      ]
+    },
+    "expectedOutcome": {
+      "status": "GOVTALK_ERROR",
+      "pinned": false,
+      "note": "GetSubmissionStatus answers GovTalkErrors 9999 for every poll today (B34.6c); CS-A3 pins the real outcome."
+    }
+  },
+  {
+    "name": "confirmation-statement-shareholdings",
+    "type": "confirmationStatement",
+    "companyNumber": "03176906",
+    "companyName": "MILLENNIUM STADIUM PLC",
+    "companyAuthenticationCode": "TESTCODE005",
+    "statement": {
+      "reviewDate": "2026-09-21",
+      "shareholdings": [{ "shareClass": "Ordinary", "numberHeld": "50000", "shareholders": [{ "surname": "WELSH RUGBY UNION LTD" }] }],
+      "directors": [
+        { "forename": "Maldwyn", "otherForenames": "Maldwyn", "surname": "BEYNON", "dob": "1932-12-03", "personalCode": "12345678951" }
+      ]
+    },
+    "expectedOutcome": {
+      "status": "GOVTALK_ERROR",
+      "pinned": false,
+      "note": "GetSubmissionStatus answers GovTalkErrors 9999 for every poll today (B34.6c); CS-A3 pins the real outcome. Settles Q2 once pinned."
+    }
+  },
+  {
+    "name": "confirmation-statement-registered-email-change",
+    "type": "confirmationStatement",
+    "companyNumber": "03176906",
+    "companyName": "MILLENNIUM STADIUM PLC",
+    "companyAuthenticationCode": "TESTCODE006",
+    "statement": {
+      "reviewDate": "2026-09-21",
+      "registeredEmailAddress": "confirmation-statement-test@example.com",
+      "directors": [
+        { "forename": "Maldwyn", "otherForenames": "Maldwyn", "surname": "BEYNON", "dob": "1932-12-03", "personalCode": "12345678951" }
+      ]
+    },
+    "expectedOutcome": {
+      "status": "GOVTALK_ERROR",
+      "pinned": false,
+      "note": "GetSubmissionStatus answers GovTalkErrors 9999 for every poll today (B34.6c); CS-A3 pins the real outcome."
+    }
+  },
+  {
+    "name": "confirmation-statement-blank-director-code",
+    "type": "confirmationStatement",
+    "companyNumber": "03176906",
+    "companyName": "MILLENNIUM STADIUM PLC",
+    "companyAuthenticationCode": "TESTCODE007",
+    "statement": {
+      "reviewDate": "2026-09-21",
+      "directors": [
+        { "forename": "Maldwyn", "otherForenames": "Maldwyn", "surname": "BEYNON", "dob": "1932-12-03", "personalCode": "12345678951" }
+      ]
+    },
+    "corruptFirstDirectorPersonalCode": true,
+    "expectedOutcome": {
+      "status": "GOVTALK_ERROR",
+      "pinned": false,
+      "note": "Today's 9999 poll blocker (B34.6c) masks whatever reject the gateway would otherwise give for a blank director code. CS-A3 pins the real reject code and settles Q3."
+    }
+  },
+  {
+    "name": "confirmation-statement-wrong-company-authentication-code",
+    "type": "confirmationStatement",
+    "companyNumber": "03176906",
+    "companyName": "MILLENNIUM STADIUM PLC",
+    "companyAuthenticationCode": "WRONGCODE00",
+    "statement": {
+      "reviewDate": "2026-09-21",
+      "directors": [
+        { "forename": "Maldwyn", "otherForenames": "Maldwyn", "surname": "BEYNON", "dob": "1932-12-03", "personalCode": "12345678951" }
+      ]
+    },
+    "expectedOutcome": {
+      "status": "GOVTALK_ERROR",
+      "pinned": false,
+      "note": "companyAuthenticationCode is deliberately wrong. Today's 9999 poll blocker (B34.6c) masks whatever reject code this gets; CS-A3 pins the real one."
+    }
+  },
+  {
+    "name": "confirmation-statement-v1-3-schema",
+    "type": "confirmationStatement",
+    "companyNumber": "03176906",
+    "companyName": "MILLENNIUM STADIUM PLC",
+    "companyAuthenticationCode": "TESTCODE008",
+    "statement": {
+      "reviewDate": "2026-09-21",
+      "officers": [{ "identityVerificationDetails": { "appointment_verification_end_on": "9999-12-31" } }]
+    },
+    "expectedOutcome": {
+      "status": "GOVTALK_ERROR",
+      "pinned": false,
+      "note": "Forces ConfirmationStatement-v1-3 (no verification block) for schema coverage; whether the test company's real officers are all verified is unconfirmed, and today's 9999 poll blocker (B34.6c) hides the outcome either way. CS-A3 pins it."
+    }
+  }
+]

@@ -62,6 +62,11 @@ are not startable; leave them.
 
 ### 2. Wave
 
+Before a push that starts a branch deploy, read the ci slots:
+`aws --profile submit-ci ssm get-parameters-by-path --path /submit/ci/slots`. An absent parameter
+is a free slot; a parameter naming a running `deploy.yml` run holds its slot. Hold the push while
+every slot is held; `main` deploys to prod and takes no ci slot.
+
 `/do-next`'s shape, sized by these rules:
 
 - **One batch branch per wave** (`claude/<codename>-<theme>`, named as `/do-next` says, its own worktree under
@@ -147,6 +152,11 @@ an AWS write outside a workflow, and a Cognito or Step Functions invocation are 
 Print each as one fenced block with the `!` prefix at the moment it arises, collect them again in
 the next board's Part 5, and carry on; nothing waits on them. Never ask another session to run
 one.
+
+When a denied command must fire inside a window (e.g., a `destroy-ci.yml` dispatch with forced
+sweep options during a branch deploy), hand the operator a wait-then-run script rather than the
+bare command. `scripts/ci-claim-check-proof.sh` waits until a ci slot is claimed by a running
+deployment with stacks standing, then dispatches `destroy-ci.yml` and prints the sweep results.
 
 ## Report
 

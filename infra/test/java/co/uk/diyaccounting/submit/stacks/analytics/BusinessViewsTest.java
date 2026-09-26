@@ -28,7 +28,7 @@ import software.amazon.awscdk.services.s3.Bucket;
  */
 class BusinessViewsTest {
 
-    private static final int VIEW_COUNT = 28;
+    private static final int VIEW_COUNT = 30;
 
     private Template synthBusinessViews() {
         var sharedNames = SubmitSharedNames.forDocs();
@@ -111,6 +111,8 @@ class BusinessViewsTest {
                 "v_purchase_reconciliation_daily",
                 "v_submissions_by_activity_daily",
                 "v_activity_started_daily",
+                "v_activity_started_hourly",
+                "v_submissions_by_activity_hourly",
                 "v_traffic_sources_daily",
                 "v_availability_sli_daily",
                 "v_alarm_state_changes_daily",
@@ -148,8 +150,59 @@ class BusinessViewsTest {
 
         var sql = sqlForView(template, "v_subscription_cancellations_daily");
         assertTrue(
-                sql.contains("actor") && sql.contains("'test-user'") && sql.contains("'probe'"),
-                "expected the cancellations view to filter out test-user and probe actors: " + sql);
+                sql.contains("actor")
+                        && sql.contains("'test-user'")
+                        && sql.contains("'probe'")
+                        && sql.contains("'synthetic'"),
+                "expected the cancellations view to filter out test-user, probe and synthetic actors: " + sql);
+        assertTrue(
+                sql.contains("activity_events_all"),
+                "expected the cancellations view to resolve actor from activity_events_all rather than the"
+                        + " subscription item's own (unreliable) actor column: " + sql);
+    }
+
+    @Test
+    void subscriptionRenewalsViewExcludesTestProbeAndSyntheticActors() {
+        Template template = synthBusinessViews();
+
+        var sql = sqlForView(template, "v_subscription_renewals_daily");
+        assertTrue(
+                sql.contains("actor")
+                        && sql.contains("'test-user'")
+                        && sql.contains("'probe'")
+                        && sql.contains("'synthetic'"),
+                "expected the renewals view to filter out test-user, probe and synthetic actors: " + sql);
+        assertTrue(
+                sql.contains("activity_events_all"),
+                "expected the renewals view to resolve actor from activity_events_all: " + sql);
+    }
+
+    @Test
+    void signupToFirstSubmissionViewExcludesTestProbeAndSyntheticActors() {
+        Template template = synthBusinessViews();
+
+        var sql = sqlForView(template, "v_signup_to_first_submission");
+        assertTrue(
+                sql.contains("actor")
+                        && sql.contains("'test-user'")
+                        && sql.contains("'probe'")
+                        && sql.contains("'synthetic'"),
+                "expected the signup view to filter out test-user, probe and synthetic actors: " + sql);
+        assertTrue(
+                sql.contains("'bundle-granted'") && sql.contains("'subscription-activated'"),
+                "expected the signup view to resolve actor from the bundle-granted or"
+                        + " subscription-activated activity event, since dynamo_bundles carries no actor of its"
+                        + " own: " + sql);
+    }
+
+    @Test
+    void passRedemptionsViewExcludesAutomatedTestPassTypes() {
+        Template template = synthBusinessViews();
+
+        var sql = sqlForView(template, "v_pass_redemptions_daily");
+        assertTrue(
+                sql.contains("NOT LIKE '%-test-pass'"),
+                "expected the redemptions view to exclude pass types named with the automated-test suffix: " + sql);
     }
 
     @Test

@@ -166,6 +166,9 @@ const FIXTURE_SNAPSHOT = {
           id: "submit-vat::started",
           label: "Submit VAT (HMRC) — started",
           unit: "count",
+          last1h: { value: 1 },
+          last1d: { value: 3 },
+          last7d: { value: 12 },
           last30: { value: 40, trend: 0.1 },
           last90: { value: 110, trend: 0.05 },
         },
@@ -173,6 +176,9 @@ const FIXTURE_SNAPSHOT = {
           id: "submit-vat::completed",
           label: "Submit VAT (HMRC) — completed",
           unit: "count",
+          last1h: { value: 0 },
+          last1d: { value: 2 },
+          last7d: { value: 8 },
           last30: { value: 22, trend: -0.05 },
           last90: { value: 60, trend: 0.02 },
         },
@@ -378,12 +384,18 @@ test.describe("Operator Dashboard", () => {
 
     const vatRow = panel.locator('.activity-row[data-activity-id="submit-vat"]');
     await expect(vatRow.locator("td").nth(0)).toHaveText("Submit VAT (HMRC)");
-    await expect(vatRow.locator("td").nth(1)).toHaveText("40"); // started, last 30
-    await expect(vatRow.locator("td").nth(2)).toHaveText("↑ 10.0%"); // started trend
-    await expect(vatRow.locator("td").nth(3)).toHaveText("110"); // started, last 90
-    await expect(vatRow.locator("td").nth(4)).toHaveText("22"); // completed, last 30
-    await expect(vatRow.locator("td").nth(5)).toHaveText("↓ 5.0%"); // completed trend
-    await expect(vatRow.locator("td").nth(6)).toHaveText("60"); // completed, last 90
+    await expect(vatRow.locator("td").nth(1)).toHaveText("1"); // started, last 1 hour
+    await expect(vatRow.locator("td").nth(2)).toHaveText("3"); // started, last 1 day
+    await expect(vatRow.locator("td").nth(3)).toHaveText("12"); // started, last 7 days
+    await expect(vatRow.locator("td").nth(4)).toHaveText("40"); // started, last 30
+    await expect(vatRow.locator("td").nth(5)).toHaveText("↑ 10.0%"); // started trend
+    await expect(vatRow.locator("td").nth(6)).toHaveText("110"); // started, last 90
+    await expect(vatRow.locator("td").nth(7)).toHaveText("0"); // completed, last 1 hour
+    await expect(vatRow.locator("td").nth(8)).toHaveText("2"); // completed, last 1 day
+    await expect(vatRow.locator("td").nth(9)).toHaveText("8"); // completed, last 7 days
+    await expect(vatRow.locator("td").nth(10)).toHaveText("22"); // completed, last 30
+    await expect(vatRow.locator("td").nth(11)).toHaveText("↓ 5.0%"); // completed trend
+    await expect(vatRow.locator("td").nth(12)).toHaveText("60"); // completed, last 90
 
     const bundleRow = panel.locator('.activity-row[data-activity-id="bundle"]');
     await expect(bundleRow.locator("td").nth(0)).toHaveText("View and edit your bundles");

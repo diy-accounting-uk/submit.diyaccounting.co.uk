@@ -14,6 +14,7 @@ import {
   FIXTURE_COMPANY_NUMBER,
   FIXTURE_COMPANY_AUTHENTICATION_CODE,
 } from "@app/http-simulator/scenarios/confirmation-statement.js";
+import { resetPscVerificationStatementFilings } from "@app/http-simulator/scenarios/psc-verification-statement.js";
 import { parseXmlDocument, firstElementText, allElements } from "@app/lib/xmlDom.js";
 
 function md5Lowercase(value) {
@@ -161,6 +162,63 @@ function confirmationStatementEnvelope({
 </GovTalkMessage>`;
 }
 
+function pscVerificationStatementEnvelope({
+  senderId = VALID_SENDER_ID,
+  authValue = VALID_AUTH_VALUE,
+  submissionNumber = "VS0001",
+  companyNumber = FIXTURE_COMPANY_NUMBER,
+} = {}) {
+  return `<?xml version="1.0" encoding="UTF-8"?>
+<GovTalkMessage xmlns="http://www.govtalk.gov.uk/CM/envelope">
+  <EnvelopeVersion>1.0</EnvelopeVersion>
+  <Header>
+    <MessageDetails>
+      <Class>PSCVerificationStatement</Class>
+      <Qualifier>request</Qualifier>
+      <TransactionID>1</TransactionID>
+    </MessageDetails>
+    <SenderDetails>
+      <IDAuthentication>
+        <SenderID>${senderId}</SenderID>
+        <Authentication>
+          <Method>clear</Method>
+          <Value>${authValue}</Value>
+        </Authentication>
+      </IDAuthentication>
+    </SenderDetails>
+  </Header>
+  <GovTalkDetails>
+    <Keys/>
+  </GovTalkDetails>
+  <Body>
+    <FormSubmission xmlns="http://xmlgw.companieshouse.gov.uk/Header">
+      <FormHeader>
+        <CompanyNumber>${companyNumber}</CompanyNumber>
+        <CompanyName>EXAMPLE CONFIRMATION STATEMENT LIMITED</CompanyName>
+        <CompanyAuthenticationCode>${FIXTURE_COMPANY_AUTHENTICATION_CODE}</CompanyAuthenticationCode>
+        <PackageReference></PackageReference>
+        <FormIdentifier>PSCVerificationStatement</FormIdentifier>
+        <SubmissionNumber>${submissionNumber}</SubmissionNumber>
+      </FormHeader>
+      <DateSigned>2026-09-22</DateSigned>
+      <Form>
+      <PSCVerificationStatement xmlns="http://xmlgw.companieshouse.gov.uk">
+        <Individual>
+          <Surname>EXAMPLE</Surname>
+          <Change>
+            <VerificationDetails>
+              <CompaniesHousePersonalCode>AB1234CD56E</CompaniesHousePersonalCode>
+              <VerificationStatements><VerificationStatementForIndividual>INDIVIDUAL_VERIFIED</VerificationStatementForIndividual></VerificationStatements>
+            </VerificationDetails>
+          </Change>
+        </Individual>
+      </PSCVerificationStatement>
+      </Form>
+    </FormSubmission>
+  </Body>
+</GovTalkMessage>`;
+}
+
 function companyDataRequestEnvelope({
   senderId = VALID_SENDER_ID,
   authValue = VALID_AUTH_VALUE,
@@ -250,6 +308,7 @@ describe("http-simulator/routes/companies-house-xmlgw", () => {
   beforeEach(() => {
     resetAccountsFilings();
     resetConfirmationStatementFilings();
+    resetPscVerificationStatementFilings();
     app = buildApp();
   });
 
@@ -615,6 +674,89 @@ describe("http-simulator/routes/companies-house-xmlgw", () => {
 
       expect(firstElementText(parseXmlDocument(accountsPoll.text), "StatusCode")).toBe("PENDING");
       expect(firstElementText(parseXmlDocument(confirmationStatementPoll.text), "StatusCode")).toBe("PENDING");
+    });
+  });
+
+  describe("PSC verification statement submission and poll", () => {
+    test("acknowledges a valid PSCVerificationStatement submission", async () => {
+      const response = await request(app).post(GATEWAY_PATH).set("Content-Type", "text/xml").send(pscVerificationStatementEnvelope());
+
+      expect(response.status).toBe(200);
+      const document = parseXmlDocument(response.text);
+      expect(firstElementText(document, "Qualifier")).toBe("acknowledgement");
+      expect(allElements(document, "GovTalkErrors")).toHaveLength(0);
+    });
+
+    test("rejects a submission missing a required FormHeader element", async () => {
+      const missingCompanyName = pscVerificationStatementEnvelope().replace(
+        "<CompanyName>EXAMPLE CONFIRMATION STATEMENT LIMITED</CompanyName>",
+        "",
+      );
+      const response = await request(app).post(GATEWAY_PATH).set("Content-Type", "text/xml").send(missingCompanyName);
+
+      const document = parseXmlDocument(response.text);
+      expect(firstElementText(document, "Number")).toBe("604");
+      expect(firstElementText(document, "Location")).toBe("Body/FormSubmission/FormHeader/CompanyName");
+    });
+
+    test("rejects a submission whose Individual element is missing", async () => {
+      const missingIndividual = pscVerificationStatementEnvelope().replace(/<Individual>[\s\S]*<\/Individual>/, "");
+      const response = await request(app).post(GATEWAY_PATH).set("Content-Type", "text/xml").send(missingIndividual);
+
+      const document = parseXmlDocument(response.text);
+      expect(firstElementText(document, "Number")).toBe("604");
+      expect(firstElementText(document, "Location")).toBe("Body/FormSubmission/Form/Individual");
+    });
+
+    test("polls PENDING then ACCEPT", async () => {
+      await request(app)
+        .post(GATEWAY_PATH)
+        .set("Content-Type", "text/xml")
+        .send(pscVerificationStatementEnvelope({ submissionNumber: "VS0002" }));
+
+      const firstPoll = await request(app)
+        .post(GATEWAY_PATH)
+        .set("Content-Type", "text/xml")
+        .send(statusEnvelope({ submissionNumber: "VS0002" }));
+      const secondPoll = await request(app)
+        .post(GATEWAY_PATH)
+        .set("Content-Type", "text/xml")
+        .send(statusEnvelope({ submissionNumber: "VS0002" }));
+
+      expect(firstElementText(parseXmlDocument(firstPoll.text), "StatusCode")).toBe("PENDING");
+      expect(firstElementText(parseXmlDocument(secondPoll.text), "StatusCode")).toBe("ACCEPT");
+    });
+
+    test("an accounts submission number, a confirmation statement submission number and a PSC verification statement submission number poll independently", async () => {
+      await request(app)
+        .post(GATEWAY_PATH)
+        .set("Content-Type", "text/xml")
+        .send(accountsEnvelope({ submissionNumber: "MIXED3" }));
+      await request(app)
+        .post(GATEWAY_PATH)
+        .set("Content-Type", "text/xml")
+        .send(confirmationStatementEnvelope({ submissionNumber: "MIXED4" }));
+      await request(app)
+        .post(GATEWAY_PATH)
+        .set("Content-Type", "text/xml")
+        .send(pscVerificationStatementEnvelope({ submissionNumber: "MIXED5" }));
+
+      const accountsPoll = await request(app)
+        .post(GATEWAY_PATH)
+        .set("Content-Type", "text/xml")
+        .send(statusEnvelope({ submissionNumber: "MIXED3" }));
+      const confirmationStatementPoll = await request(app)
+        .post(GATEWAY_PATH)
+        .set("Content-Type", "text/xml")
+        .send(statusEnvelope({ submissionNumber: "MIXED4" }));
+      const pscVerificationStatementPoll = await request(app)
+        .post(GATEWAY_PATH)
+        .set("Content-Type", "text/xml")
+        .send(statusEnvelope({ submissionNumber: "MIXED5" }));
+
+      expect(firstElementText(parseXmlDocument(accountsPoll.text), "StatusCode")).toBe("PENDING");
+      expect(firstElementText(parseXmlDocument(confirmationStatementPoll.text), "StatusCode")).toBe("PENDING");
+      expect(firstElementText(parseXmlDocument(pscVerificationStatementPoll.text), "StatusCode")).toBe("PENDING");
     });
   });
 });

@@ -98,8 +98,8 @@ class SubmitApplicationCdkResourceTest {
 
         infof("Created stack:", submitApplication.companiesHouseStack.getStackName());
         Template companiesHouseStackTemplate = Template.fromStack(submitApplication.companiesHouseStack);
-        companiesHouseStackTemplate.resourceCountIs("AWS::Lambda::Function", 19);
-        assertStackHealthAlarm(companiesHouseStackTemplate, 19, 0, routedPrefixes);
+        companiesHouseStackTemplate.resourceCountIs("AWS::Lambda::Function", 21);
+        assertStackHealthAlarm(companiesHouseStackTemplate, 21, 0, routedPrefixes);
 
         // Every route that can carry a clientId resolves it via enforceBundles -> getClient(),
         // which needs the practice clients table name on the Lambda's own environment. Regression
@@ -342,7 +342,7 @@ class SubmitApplicationCdkResourceTest {
         // cross-origin browser preflight to reach a route with no authoriser, the same reason
         // the books routes get one), for 170 + 3 = 173. POST /api/v1/activity/started adds its own
         // route plus its own auto-HEAD route, for 173 + 2 = 175.
-        apiStackTemplate.resourceCountIs("AWS::ApiGatewayV2::Route", 175);
+        apiStackTemplate.resourceCountIs("AWS::ApiGatewayV2::Route", 179);
 
         // Dashboard moved to environment-level ObservabilityStack
         infof("Created stack:", submitApplication.opsStack.getStackName());
@@ -352,12 +352,10 @@ class SubmitApplicationCdkResourceTest {
         // health alarm.
         opsStackTemplateForRouting.resourceCountIs("AWS::CloudWatch::CompositeAlarm", 0);
 
-        // Both canaries run on the hour, half an hour off probe-test.yml's `57 */4 * * *`, so
-        // the two never check the site in the same window and the offset cannot drift.
-        opsStackTemplateForRouting.resourceCountIs("AWS::Synthetics::Canary", 2);
-        opsStackTemplateForRouting.hasResourceProperties(
-                "AWS::Synthetics::Canary",
-                Match.objectLike(Map.of("Schedule", Match.objectLike(Map.of("Expression", "cron(27 * * * ? *)")))));
+        // The Synthetics canaries are prod-only (OpsStackTest covers both sides of that gate);
+        // this environment's own deploy pipeline runs behaviour tests against every fresh set
+        // instead.
+        opsStackTemplateForRouting.resourceCountIs("AWS::Synthetics::Canary", 0);
 
         infof("Created stack:", submitApplication.edgeStack.getStackName());
         Template edgeStackTemplate = Template.fromStack(submitApplication.edgeStack);

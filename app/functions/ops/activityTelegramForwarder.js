@@ -96,6 +96,14 @@ export function resolveTargetChatIds(detail, chatConfig) {
     return [];
   }
 
+  // A page load and an HMRC OAuth token exchange are internal steps inside a customer's own
+  // journey, not signals in their own right: they reach the lake only, whatever the actor or
+  // requestId. Sign-up, first submission, payment and failure events publish their own event
+  // names and still route below.
+  if (detail.event === "new-session" || detail.event === "hmrc-token-exchanged") {
+    return [];
+  }
+
   // Test-prefixed requestId always routes to test channel
   if (requestId.startsWith("test_")) {
     return chatConfig.test ? [chatConfig.test] : [];
@@ -114,7 +122,7 @@ export function resolveTargetChatIds(detail, chatConfig) {
     return chatConfig.live ? [chatConfig.live] : [];
   }
 
-  // test-user, probe, ci-pipeline, system → test channel
+  // test-user, probe, ci-pipeline, system, synthetic → test channel
   return chatConfig.test ? [chatConfig.test] : [];
 }
 

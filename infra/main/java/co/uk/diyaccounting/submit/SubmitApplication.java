@@ -70,6 +70,7 @@ public class SubmitApplication {
         public String companiesHouseXmlGatewayUri;
         public String companiesHousePresenterIdArn;
         public String companiesHousePresenterCodeArn;
+        public String companiesHouseCsFeeWaivedCompanyNumbers;
         public String baseImageTag;
         public String selfDestructDelayHours;
         public String userPoolArn;
@@ -231,6 +232,10 @@ public class SubmitApplication {
                 "COMPANIES_HOUSE_PRESENTER_CODE_ARN",
                 appProps.companiesHousePresenterCodeArn,
                 "(from companiesHousePresenterCodeArn in cdk.json)");
+        var companiesHouseCsFeeWaivedCompanyNumbers = envOr(
+                "COMPANIES_HOUSE_CS_FEE_WAIVED_COMPANY_NUMBERS",
+                appProps.companiesHouseCsFeeWaivedCompanyNumbers,
+                "(from companiesHouseCsFeeWaivedCompanyNumbers in cdk.json)");
         var baseImageTag = envOr("BASE_IMAGE_TAG", appProps.baseImageTag, "(from baseImageTag in cdk.json)");
         var selfDestructDelayHoursString = envOr(
                 "SELF_DESTRUCT_DELAY_HOURS",
@@ -424,6 +429,10 @@ public class SubmitApplication {
                                 companiesHousePresenterIdArn != null ? companiesHousePresenterIdArn : "")
                         .companiesHousePresenterCodeArn(
                                 companiesHousePresenterCodeArn != null ? companiesHousePresenterCodeArn : "")
+                        .companiesHouseCsFeeWaivedCompanyNumbers(
+                                companiesHouseCsFeeWaivedCompanyNumbers != null
+                                        ? companiesHouseCsFeeWaivedCompanyNumbers
+                                        : "")
                         .build());
 
         // Create the AccountStack

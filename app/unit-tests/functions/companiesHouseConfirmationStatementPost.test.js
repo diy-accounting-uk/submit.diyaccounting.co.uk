@@ -115,7 +115,7 @@ function buildEvent({ body = buildStatementBody(), headers = {}, authorizer, met
 
 describe("companiesHouseConfirmationStatementPost ingestHandler", () => {
   beforeEach(() => {
-    delete process.env.COMPANIES_HOUSE_CS_FEE_MODE;
+    delete process.env.COMPANIES_HOUSE_CS_FEE_WAIVED_COMPANY_NUMBERS;
     Object.assign(
       process.env,
       setupTestEnv({
@@ -294,14 +294,42 @@ describe("companiesHouseConfirmationStatementPost ingestHandler", () => {
     expect(mockMarkChargeUsed).not.toHaveBeenCalled();
   });
 
-  test("skips the fee gate entirely when COMPANIES_HOUSE_CS_FEE_MODE is operator", async () => {
-    process.env.COMPANIES_HOUSE_CS_FEE_MODE = "operator";
+  test("skips the fee gate entirely when the company number is in COMPANIES_HOUSE_CS_FEE_WAIVED_COMPANY_NUMBERS", async () => {
+    process.env.COMPANIES_HOUSE_CS_FEE_WAIVED_COMPANY_NUMBERS = "06846849";
     mockParsePaymentPeriodsResponse.mockReturnValue({ periods: [{ periodPaid: false }] });
     const response = await companiesHouseConfirmationStatementPostHandler(buildEvent());
     expect(response.statusCode).toBe(201);
     expect(mockBuildPaymentPeriodsRequest).not.toHaveBeenCalled();
     expect(mockHasPaidCharge).not.toHaveBeenCalled();
     expect(mockMarkChargeUsed).not.toHaveBeenCalled();
+  });
+
+  test("skips the fee gate when the company number is one of several in the comma-separated list, with whitespace tolerated", async () => {
+    process.env.COMPANIES_HOUSE_CS_FEE_WAIVED_COMPANY_NUMBERS = "01234567, 06846849 ,07654321";
+    mockParsePaymentPeriodsResponse.mockReturnValue({ periods: [{ periodPaid: false }] });
+    const response = await companiesHouseConfirmationStatementPostHandler(buildEvent());
+    expect(response.statusCode).toBe(201);
+    expect(mockBuildPaymentPeriodsRequest).not.toHaveBeenCalled();
+    expect(mockHasPaidCharge).not.toHaveBeenCalled();
+    expect(mockMarkChargeUsed).not.toHaveBeenCalled();
+  });
+
+  test("does not skip the fee gate for a company number not in COMPANIES_HOUSE_CS_FEE_WAIVED_COMPANY_NUMBERS", async () => {
+    process.env.COMPANIES_HOUSE_CS_FEE_WAIVED_COMPANY_NUMBERS = "01234567";
+    mockParsePaymentPeriodsResponse.mockReturnValue({ periods: [{ periodPaid: false }] });
+    mockHasPaidCharge.mockResolvedValue(false);
+    const response = await companiesHouseConfirmationStatementPostHandler(buildEvent());
+    expect(response.statusCode).toBe(402);
+    expect(mockBuildPaymentPeriodsRequest).toHaveBeenCalled();
+  });
+
+  test("waives nothing when COMPANIES_HOUSE_CS_FEE_WAIVED_COMPANY_NUMBERS is unset or empty", async () => {
+    delete process.env.COMPANIES_HOUSE_CS_FEE_WAIVED_COMPANY_NUMBERS;
+    mockParsePaymentPeriodsResponse.mockReturnValue({ periods: [{ periodPaid: false }] });
+    mockHasPaidCharge.mockResolvedValue(false);
+    const response = await companiesHouseConfirmationStatementPostHandler(buildEvent());
+    expect(response.statusCode).toBe(402);
+    expect(mockBuildPaymentPeriodsRequest).toHaveBeenCalled();
   });
 
   test("returns 401 when the Cognito bearer token is missing", async () => {

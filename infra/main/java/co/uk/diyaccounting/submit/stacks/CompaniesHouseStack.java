@@ -122,6 +122,14 @@ public class CompaniesHouseStack extends Stack {
     public Function companiesHouseConfirmationStatementGetLambda;
     public ILogGroup companiesHouseConfirmationStatementGetLambdaLogGroup;
 
+    public AbstractApiLambdaProps companiesHousePscVerificationStatementPostLambdaProps;
+    public Function companiesHousePscVerificationStatementPostLambda;
+    public ILogGroup companiesHousePscVerificationStatementPostLambdaLogGroup;
+
+    public AbstractApiLambdaProps companiesHousePscVerificationStatementGetLambdaProps;
+    public Function companiesHousePscVerificationStatementGetLambda;
+    public ILogGroup companiesHousePscVerificationStatementGetLambdaLogGroup;
+
     public List<AbstractApiLambdaProps> lambdaFunctionProps;
 
     @Value.Immutable
@@ -167,6 +175,8 @@ public class CompaniesHouseStack extends Stack {
         String companiesHousePresenterIdArn();
 
         String companiesHousePresenterCodeArn();
+
+        String companiesHouseCsFeeWaivedCompanyNumbers();
 
         @Override
         SubmitSharedNames sharedNames();
@@ -968,6 +978,12 @@ public class CompaniesHouseStack extends Stack {
             companiesHouseConfirmationStatementPostLambdaEnv.with(
                     "COMPANIES_HOUSE_PACKAGE_REFERENCE", XML_GATEWAY_TEST_PACKAGE_REFERENCE);
         }
+        // Scoped to the operator's own company numbers so the waiver never reaches a customer's
+        // filing once the activity lists on prod - blank everywhere except .env.prod.
+        if (StringUtils.isNotBlank(props.companiesHouseCsFeeWaivedCompanyNumbers())) {
+            companiesHouseConfirmationStatementPostLambdaEnv.with(
+                    "COMPANIES_HOUSE_CS_FEE_WAIVED_COMPANY_NUMBERS", props.companiesHouseCsFeeWaivedCompanyNumbers());
+        }
         var companiesHouseConfirmationStatementPostLambdaUrlOrigin = new ApiLambda(
                 this,
                 ApiLambdaProps.builder()
@@ -1068,6 +1084,117 @@ public class CompaniesHouseStack extends Stack {
         companiesHouseAccountsAsyncRequestsTable.grant(
                 this.companiesHouseConfirmationStatementGetLambda, "dynamodb:GetItem", "dynamodb:UpdateItem");
 
+        var companiesHousePscVerificationStatementPostLambdaEnv = xmlGatewayFilingLambdaEnv(props)
+                .with(
+                        "COMPANIES_HOUSE_ACCOUNTS_ASYNC_REQUESTS_TABLE_NAME",
+                        companiesHouseAccountsAsyncRequestsTable.getTableName())
+                .with("COMPANIES_HOUSE_GATEWAY_TEST", gatewayTestFlag(props));
+        withPresenterSecretArns(companiesHousePscVerificationStatementPostLambdaEnv, props);
+        if (XML_GATEWAY_TEST_ENV_NAME.equals(props.envName())) {
+            companiesHousePscVerificationStatementPostLambdaEnv.with(
+                    "COMPANIES_HOUSE_PACKAGE_REFERENCE", XML_GATEWAY_TEST_PACKAGE_REFERENCE);
+        }
+        var companiesHousePscVerificationStatementPostLambdaUrlOrigin = new ApiLambda(
+                this,
+                ApiLambdaProps.builder()
+                        .idPrefix(
+                                props.sharedNames().companiesHousePscVerificationStatementPostIngestLambdaFunctionName)
+                        .baseImageTag(props.baseImageTag())
+                        .ecrRepositoryName(props.sharedNames().ecrRepositoryName)
+                        .ecrRepositoryArn(props.sharedNames().ecrRepositoryArn)
+                        .ingestFunctionName(
+                                props.sharedNames().companiesHousePscVerificationStatementPostIngestLambdaFunctionName)
+                        .ingestHandler(
+                                props.sharedNames().companiesHousePscVerificationStatementPostIngestLambdaHandler)
+                        .ingestLambdaArn(props.sharedNames().companiesHousePscVerificationStatementPostIngestLambdaArn)
+                        .ingestProvisionedConcurrencyAliasArn(props.sharedNames()
+                                .companiesHousePscVerificationStatementPostIngestProvisionedConcurrencyLambdaAliasArn)
+                        .ingestMemorySize(256)
+                        .provisionedConcurrencyAliasName(props.sharedNames().provisionedConcurrencyAliasName)
+                        .httpMethod(props.sharedNames().companiesHousePscVerificationStatementPostLambdaHttpMethod)
+                        .urlPath(props.sharedNames().companiesHousePscVerificationStatementPostLambdaUrlPath)
+                        .jwtAuthorizer(
+                                props.sharedNames().companiesHousePscVerificationStatementPostLambdaJwtAuthorizer)
+                        .customAuthorizer(
+                                props.sharedNames().companiesHousePscVerificationStatementPostLambdaCustomAuthorizer)
+                        .environment(companiesHousePscVerificationStatementPostLambdaEnv)
+                        .build());
+        this.companiesHousePscVerificationStatementPostLambdaProps =
+                companiesHousePscVerificationStatementPostLambdaUrlOrigin.apiProps;
+        this.companiesHousePscVerificationStatementPostLambda =
+                companiesHousePscVerificationStatementPostLambdaUrlOrigin.ingestLambda;
+        this.companiesHousePscVerificationStatementPostLambdaLogGroup =
+                companiesHousePscVerificationStatementPostLambdaUrlOrigin.logGroup;
+        this.lambdaFunctionProps.add(this.companiesHousePscVerificationStatementPostLambdaProps);
+        infof(
+                "Created Lambda %s for Companies House PSC verification statement submit with ingestHandler %s",
+                this.companiesHousePscVerificationStatementPostLambda.getNode().getId(),
+                props.sharedNames().companiesHousePscVerificationStatementPostIngestLambdaHandler);
+        grantCompaniesHouseLambdaAccess(
+                this.companiesHousePscVerificationStatementPostLambda,
+                bundlesTable,
+                region,
+                account,
+                props,
+                activityBusArn,
+                false);
+        grantCompaniesHousePresenterSecretsAccess(this.companiesHousePscVerificationStatementPostLambda, props);
+        companiesHouseAccountsAsyncRequestsTable.grant(
+                this.companiesHousePscVerificationStatementPostLambda, "dynamodb:GetItem", "dynamodb:UpdateItem");
+
+        var companiesHousePscVerificationStatementGetLambdaEnv = xmlGatewayFilingLambdaEnv(props)
+                .with("RECEIPTS_DYNAMODB_TABLE_NAME", receiptsTable.getTableName())
+                .with(
+                        "COMPANIES_HOUSE_ACCOUNTS_ASYNC_REQUESTS_TABLE_NAME",
+                        companiesHouseAccountsAsyncRequestsTable.getTableName())
+                .with("COMPANIES_HOUSE_GATEWAY_TEST", gatewayTestFlag(props));
+        withPresenterSecretArns(companiesHousePscVerificationStatementGetLambdaEnv, props);
+        var companiesHousePscVerificationStatementGetLambdaUrlOrigin = new ApiLambda(
+                this,
+                ApiLambdaProps.builder()
+                        .idPrefix(props.sharedNames().companiesHousePscVerificationStatementGetIngestLambdaFunctionName)
+                        .baseImageTag(props.baseImageTag())
+                        .ecrRepositoryName(props.sharedNames().ecrRepositoryName)
+                        .ecrRepositoryArn(props.sharedNames().ecrRepositoryArn)
+                        .ingestFunctionName(
+                                props.sharedNames().companiesHousePscVerificationStatementGetIngestLambdaFunctionName)
+                        .ingestHandler(props.sharedNames().companiesHousePscVerificationStatementGetIngestLambdaHandler)
+                        .ingestLambdaArn(props.sharedNames().companiesHousePscVerificationStatementGetIngestLambdaArn)
+                        .ingestProvisionedConcurrencyAliasArn(props.sharedNames()
+                                .companiesHousePscVerificationStatementGetIngestProvisionedConcurrencyLambdaAliasArn)
+                        .ingestMemorySize(256)
+                        .provisionedConcurrencyAliasName(props.sharedNames().provisionedConcurrencyAliasName)
+                        .httpMethod(props.sharedNames().companiesHousePscVerificationStatementGetLambdaHttpMethod)
+                        .urlPath(props.sharedNames().companiesHousePscVerificationStatementGetLambdaUrlPath)
+                        .jwtAuthorizer(props.sharedNames().companiesHousePscVerificationStatementGetLambdaJwtAuthorizer)
+                        .customAuthorizer(
+                                props.sharedNames().companiesHousePscVerificationStatementGetLambdaCustomAuthorizer)
+                        .environment(companiesHousePscVerificationStatementGetLambdaEnv)
+                        .build());
+        this.companiesHousePscVerificationStatementGetLambdaProps =
+                companiesHousePscVerificationStatementGetLambdaUrlOrigin.apiProps;
+        this.companiesHousePscVerificationStatementGetLambda =
+                companiesHousePscVerificationStatementGetLambdaUrlOrigin.ingestLambda;
+        this.companiesHousePscVerificationStatementGetLambdaLogGroup =
+                companiesHousePscVerificationStatementGetLambdaUrlOrigin.logGroup;
+        this.lambdaFunctionProps.add(this.companiesHousePscVerificationStatementGetLambdaProps);
+        infof(
+                "Created Lambda %s for Companies House PSC verification statement poll with ingestHandler %s",
+                this.companiesHousePscVerificationStatementGetLambda.getNode().getId(),
+                props.sharedNames().companiesHousePscVerificationStatementGetIngestLambdaHandler);
+        grantCompaniesHouseLambdaAccess(
+                this.companiesHousePscVerificationStatementGetLambda,
+                bundlesTable,
+                region,
+                account,
+                props,
+                activityBusArn,
+                false);
+        grantCompaniesHousePresenterSecretsAccess(this.companiesHousePscVerificationStatementGetLambda, props);
+        receiptsTable.grant(this.companiesHousePscVerificationStatementGetLambda, "dynamodb:PutItem");
+        companiesHouseAccountsAsyncRequestsTable.grant(
+                this.companiesHousePscVerificationStatementGetLambda, "dynamodb:GetItem", "dynamodb:UpdateItem");
+
         Lambda.stackHealthAlarm(
                 this,
                 props.resourceNamePrefix(),
@@ -1091,7 +1218,9 @@ public class CompaniesHouseStack extends Stack {
                         companiesHouseFilingDataPostLambdaUrlOrigin,
                         companiesHouseConfirmationStatementPreviewPostLambdaUrlOrigin,
                         companiesHouseConfirmationStatementPostLambdaUrlOrigin,
-                        companiesHouseConfirmationStatementGetLambdaUrlOrigin));
+                        companiesHouseConfirmationStatementGetLambdaUrlOrigin,
+                        companiesHousePscVerificationStatementPostLambdaUrlOrigin,
+                        companiesHousePscVerificationStatementGetLambdaUrlOrigin));
 
         cfnOutput(this, "CompaniesHouseSearchGetLambdaArn", this.companiesHouseSearchGetLambda.getFunctionArn());
         cfnOutput(this, "CompaniesHouseCompanyGetLambdaArn", this.companiesHouseCompanyGetLambda.getFunctionArn());
@@ -1148,6 +1277,14 @@ public class CompaniesHouseStack extends Stack {
                 this,
                 "CompaniesHouseConfirmationStatementGetLambdaArn",
                 this.companiesHouseConfirmationStatementGetLambda.getFunctionArn());
+        cfnOutput(
+                this,
+                "CompaniesHousePscVerificationStatementPostLambdaArn",
+                this.companiesHousePscVerificationStatementPostLambda.getFunctionArn());
+        cfnOutput(
+                this,
+                "CompaniesHousePscVerificationStatementGetLambdaArn",
+                this.companiesHousePscVerificationStatementGetLambda.getFunctionArn());
 
         infof(
                 "CompaniesHouseStack %s created successfully for %s",

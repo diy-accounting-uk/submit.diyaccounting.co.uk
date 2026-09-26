@@ -84,6 +84,15 @@ have to discover to finish. Then put that in the brief. The checks that paid for
   change lands on, and list the patterns the rules forbid that the change could reach: compatibility
   aliases, a setting applied wider than the call that needs it, whole-tree formatting or deletion
   tools, broad ignore rules.
+- **Shell scripts name `/bin/bash` 3.2.** A brief for a shell script names the runtime, asks for
+  `/bin/bash -n` and `shellcheck` before commit, and avoids bash-4+ features (associative arrays,
+  `mapfile`, `${var,,}`). Test on macOS or in CI that runs `/bin/bash 3.2`.
+- **Query briefs carry the schema source.** A brief for an SQL query names the table's column
+  list from its schema source (e.g. `AnalyticsStack.java` `buildActivityEventColumns` for
+  `activity_events`), asks for an `EXPLAIN` against ci to verify the plan, and states the projected
+  scan size and estimated cost.
+- **Test allow-lists are scoped to the case.** An allow-list that exempts a test case names only
+  that case and never exempts a whole class, module or pattern.
 - **The model**, the lowest that fits, from the work not the label: a one-file mechanical edit or
   a dispatch-and-read is Haiku; a bounded change against an existing pattern is Sonnet; a design a
   Sonnet then builds from, or a change to a deploy's ordering and rollback, is Opus. A row over

@@ -256,11 +256,17 @@ public class ObservabilityStack extends Stack {
             cfnOutput(this, "TrailArn", this.trail.getTrailArn());
         }
 
-        // Log group for self-destruct operations (idempotent creation)
+        // Log group for self-destruct operations (idempotent creation). Shared across every
+        // deployment in the environment, so it keeps the environment's configured retention
+        // rather than the helper default of three days for the same reason as the API access
+        // log group below: it is the evidence behind the self-destruct log-errors alarm, and
+        // three days was not enough to read the 2026-09-19 to 23 firings by the time they were
+        // audited.
         this.selfDestructLogGroup = ensureLogGroupWithDependency(
                         this,
                         props.resourceNamePrefix() + "-SelfDestructLogGroup",
-                        props.sharedNames().ew2SelfDestructLogGroupName)
+                        props.sharedNames().ew2SelfDestructLogGroupName,
+                        props.accessLogGroupRetentionPeriodDays())
                 .logGroup();
 
         // API Gateway access log group with env-stable name (idempotent creation). It keeps the

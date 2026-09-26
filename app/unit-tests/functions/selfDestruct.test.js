@@ -90,13 +90,17 @@ vi.mock("@aws-sdk/client-cloudwatch-logs", () => {
   return { CloudWatchLogsClient: MockLogsClient, DescribeLogGroupsCommand, DeleteLogGroupCommand };
 });
 
-// Mock S3 client to simulate the origin bucket not existing yet (EdgeStack still creating it)
+// Mock S3 client to simulate the origin bucket not existing yet (EdgeStack still creating it).
+// Tests that need a different ListObjectsV2Command failure override this before importing the
+// handler.
+function makeNoSuchBucketError() {
+  return Object.assign(new Error("The specified bucket does not exist"), { name: "NoSuchBucket" });
+}
+let listObjectsV2Error = makeNoSuchBucketError();
 class MockS3Client {
   async send(cmd) {
     if (cmd.constructor.name === "ListObjectsV2Command") {
-      const err = new Error("The specified bucket does not exist");
-      err.name = "NoSuchBucket";
-      throw err;
+      throw listObjectsV2Error;
     }
     if (cmd.constructor.name === "GetBucketLocationCommand") {
       return { LocationConstraint: "eu-west-2" };
@@ -188,6 +192,7 @@ describe("functions/infra/selfDestruct", () => {
     deleteStackCalls.length = 0;
     stackStatusScript = {};
     stackUpdateTimes = {};
+    listObjectsV2Error = makeNoSuchBucketError();
     vi.useRealTimers();
     mockSsmSend.mockRejectedValue(Object.assign(new Error("Parameter not found"), { name: "ParameterNotFound" }));
     mockCloudWatchSend.mockResolvedValue({ MetricAlarms: [], CompositeAlarms: [] });
@@ -630,6 +635,39 @@ describe("functions/infra/selfDestruct", () => {
     expect(res.statusCode).toBe(200);
     expect(warnSpy).toHaveBeenCalledWith(expect.stringContaining("ci-branch-origin-bucket does not exist yet, nothing to empty"));
     expect(errorSpy).not.toHaveBeenCalled();
+
+    delete process.env.EDGE_ORIGIN_BUCKET;
+  });
+
+  it("warns, not errors, when the origin bucket answers a wrong-region redirect on a young deployment", async () => {
+    process.env.EDGE_ORIGIN_BUCKET = "ci-branch-origin-bucket";
+    listObjectsV2Error = Object.assign(
+      new Error("The bucket you are attempting to access must be addressed using the specified endpoint"),
+      { name: "PermanentRedirect" },
+    );
+    const errorSpy = vi.spyOn(console, "error");
+    const warnSpy = vi.spyOn(console, "warn");
+
+    const { ingestHandler } = await import("@app/functions/infra/selfDestruct.js");
+    const res = await ingestHandler(makeEvent(), { getRemainingTimeInMillis: () => 900000 });
+
+    expect(res.statusCode).toBe(200);
+    expect(warnSpy).toHaveBeenCalledWith(expect.stringContaining("ci-branch-origin-bucket not addressable in the resolved region yet"));
+    expect(errorSpy).not.toHaveBeenCalled();
+
+    delete process.env.EDGE_ORIGIN_BUCKET;
+  });
+
+  it("still errors on a bucket-emptying failure that is neither a missing bucket nor a region redirect", async () => {
+    process.env.EDGE_ORIGIN_BUCKET = "ci-branch-origin-bucket";
+    listObjectsV2Error = Object.assign(new Error("Access Denied"), { name: "AccessDenied" });
+    const errorSpy = vi.spyOn(console, "error");
+
+    const { ingestHandler } = await import("@app/functions/infra/selfDestruct.js");
+    const res = await ingestHandler(makeEvent(), { getRemainingTimeInMillis: () => 900000 });
+
+    expect(res.statusCode).toBe(200);
+    expect(errorSpy).toHaveBeenCalledWith(expect.stringContaining("Error retrieving bucket contents for bucket ci-branch-origin-bucket"));
 
     delete process.env.EDGE_ORIGIN_BUCKET;
   });

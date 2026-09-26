@@ -114,13 +114,19 @@
           <thead>
             <tr>
               <th rowspan="2">Activity</th>
-              <th colspan="3">Started</th>
-              <th colspan="3">Completed</th>
+              <th colspan="6">Started</th>
+              <th colspan="6">Completed</th>
             </tr>
             <tr>
+              <th>Last 1 hour</th>
+              <th>Last 1 day</th>
+              <th>Last 7 days</th>
               <th>Last 30 days</th>
               <th>Trend</th>
               <th>Last 90 days</th>
+              <th>Last 1 hour</th>
+              <th>Last 1 day</th>
+              <th>Last 7 days</th>
               <th>Last 30 days</th>
               <th>Trend</th>
               <th>Last 90 days</th>
@@ -427,9 +433,20 @@
         labelCell.textContent = activityDisplayName(activityId, started, completed);
         row.appendChild(labelCell);
 
+        // Last 1 hour/1 day/7 days carry no trend: they are refreshed by the hourly
+        // activity-only publish, which patches only these three fields onto whatever the last
+        // nightly full publish wrote for last30/last90, so this row can mix a very fresh count
+        // with a day-old trend.
+        row.appendChild(activityCountCell(started, "last1h"));
+        row.appendChild(activityCountCell(started, "last1d"));
+        row.appendChild(activityCountCell(started, "last7d"));
         row.appendChild(activityCountCell(started, "last30"));
         row.appendChild(activityTrendCell(started));
         row.appendChild(activityCountCell(started, "last90"));
+
+        row.appendChild(activityCountCell(completed, "last1h"));
+        row.appendChild(activityCountCell(completed, "last1d"));
+        row.appendChild(activityCountCell(completed, "last7d"));
         row.appendChild(activityCountCell(completed, "last30"));
         row.appendChild(activityTrendCell(completed));
         row.appendChild(activityCountCell(completed, "last90"));

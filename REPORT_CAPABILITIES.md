@@ -2176,6 +2176,16 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - **Keywords:** destroy prod, teardown prod deployment, manual destroy, prod stacks, destroy-prod.yml, tear down deployment
 - **Related:** OPS-13
 
+#### OPS-14a Wait for a CI slot, then sweep stale stacks
+
+- **Use when:** a branch deploy needs to clean up stale stacks while slots are claimed.
+- **Does:** ci-claim-check-proof.sh polls the SSO slot parameters until one is claimed by a running deployment with standing stacks, then dispatches destroy-ci.yml with forced sweep and prints the "Skipping" results.
+- **Run:** `scripts/ci-claim-check-proof.sh [--timeout-minutes N] [--set ci-set1|ci-set2]`
+- **Entry:** `scripts/ci-claim-check-proof.sh`
+- **Files:** scripts/ci-claim-check-proof.sh
+- **Keywords:** ci slot, wait for slot, destroy stale stacks, sweep-min-age-hours, ci-set, claim check
+- **Related:** OPS-10, OPS-13
+
 #### OPS-15 Serialize lane test-user rotation jobs
 
 - **Use when:** a new workflow job rotates a lane's durable test user, to avoid two jobs racing it.

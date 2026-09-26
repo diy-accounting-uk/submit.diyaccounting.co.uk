@@ -51,6 +51,7 @@ const {
   buildFormSubmission,
   buildAccountsSubmission,
   buildConfirmationStatementSubmission,
+  buildPscVerificationStatementSubmission,
   buildCompanyDataRequest,
   buildPaymentPeriodsRequest,
   buildStatusRequest,
@@ -264,6 +265,38 @@ describe("services/companiesHouseXmlGateway", () => {
 
     test("carries no Document element", () => {
       const xml = buildConfirmationStatementSubmission(baseInput);
+      expect(parseXmlDocument(xml).getElementsByTagName("Document")).toHaveLength(0);
+    });
+  });
+
+  describe("buildPscVerificationStatementSubmission", () => {
+    const baseInput = {
+      presenterId: "12345678901",
+      presenterCode: "SimTest1",
+      companyNumber: "11111111",
+      companyName: "EXAMPLE COMPANY",
+      companyAuthenticationCode: "123456",
+      submissionNumber: "AAA001",
+      dateSigned: "2024-08-30",
+      statementXml:
+        '<PSCVerificationStatement xmlns="http://xmlgw.companieshouse.gov.uk"><Individual><Surname>EXAMPLE</Surname><Change/></Individual></PSCVerificationStatement>',
+      transactionId: "1700000000000",
+    };
+
+    test("wraps the built PSCVerificationStatement element in a FormSubmission envelope", () => {
+      const xml = buildPscVerificationStatementSubmission(baseInput);
+      const document = parseXmlDocument(xml);
+
+      expect(firstElementText(document, "Qualifier")).toBe("request");
+      expect(firstElementText(document, "Class")).toBe("PSCVerificationStatement");
+      expect(firstElementText(document, "FormIdentifier")).toBe("PSCVerificationStatement");
+      expect(firstElement(document, "PSCVerificationStatement")).toBeTruthy();
+      expect(firstElementText(document, "CompanyNumber")).toBe("11111111");
+      expect(firstElementText(document, "SubmissionNumber")).toBe("AAA001");
+    });
+
+    test("carries no Document element", () => {
+      const xml = buildPscVerificationStatementSubmission(baseInput);
       expect(parseXmlDocument(xml).getElementsByTagName("Document")).toHaveLength(0);
     });
   });

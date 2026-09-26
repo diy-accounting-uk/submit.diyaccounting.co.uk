@@ -51,6 +51,24 @@ describe("lib/visitorClassifier", () => {
     });
   });
 
+  describe("synthetic (our own automated browsers)", () => {
+    test("detects the Playwright suite marker appended to a real Chrome user agent", () => {
+      expect(
+        classifyVisitor(
+          "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36 DIYAccountingProbe/1",
+        ),
+      ).toBe("synthetic");
+    });
+
+    test("detects the CloudWatch Synthetics canary user agent", () => {
+      expect(classifyVisitor("DIYAccounting-Probe-Monitor/1.0")).toBe("synthetic");
+    });
+
+    test("is case-insensitive", () => {
+      expect(classifyVisitor("mozilla/5.0 diyaccountingprobe/2")).toBe("synthetic");
+    });
+  });
+
   describe("standard browsers (human)", () => {
     test("Chrome on Windows", () => {
       expect(classifyVisitor("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 Chrome/120.0.0.0 Safari/537.36")).toBe("human");

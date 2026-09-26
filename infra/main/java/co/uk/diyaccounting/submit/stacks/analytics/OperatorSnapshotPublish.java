@@ -9,6 +9,7 @@ import static co.uk.diyaccounting.submit.utils.KindCdk.ensureLogGroupWithDepende
 
 import co.uk.diyaccounting.submit.utils.PopulatedMap;
 import java.util.List;
+import java.util.Map;
 import org.immutables.value.Value;
 import software.amazon.awscdk.Duration;
 import software.amazon.awscdk.Stack;
@@ -21,6 +22,7 @@ import software.amazon.awscdk.services.ecr.Repository;
 import software.amazon.awscdk.services.ecr.RepositoryAttributes;
 import software.amazon.awscdk.services.events.CronOptions;
 import software.amazon.awscdk.services.events.Rule;
+import software.amazon.awscdk.services.events.RuleTargetInput;
 import software.amazon.awscdk.services.events.Schedule;
 import software.amazon.awscdk.services.events.targets.LambdaFunction;
 import software.amazon.awscdk.services.iam.Effect;
@@ -34,23 +36,29 @@ import software.amazon.awscdk.services.s3.IBucket;
 import software.constructs.Construct;
 
 /**
- * The nightly Lambda behind the one-stop objectives dashboard: reads the views and writes one
- * JSON snapshot per environment to {@code s3://<lake>/snapshots/<env>/latest.json}, plus a dated
+ * The Lambda behind the one-stop objectives dashboard: reads the views and writes one JSON
+ * snapshot per environment to {@code s3://<lake>/snapshots/<env>/latest.json}, plus a dated
  * copy, organised by the eight objectives. {@code operatorSnapshotGet.js} (the API read route)
- * only ever reads what this writes; it never queries Athena itself.
+ * only ever reads what this writes; it never queries Athena itself. Two schedules share this one
+ * function: a nightly (prod) or weekly (ci) run rebuilds every objective ({@code schedule}), and
+ * an hourly, prod-only run refreshes just the activities objective's fast columns ({@code
+ * activityOnlySchedule}) — {@code event.mode} tells the handler which.
  *
  * <p>Not a {@code Stack}: lives inside {@code AnalyticsStack}, matching {@link
  * AnalyticsDashboard}'s {@code metricsPublishLambda}, which this construct is modelled on. Its
- * own {@link Rule} and {@link Schedule} rather than a step in {@code NightlyIngestionWorkflow}:
+ * own {@link Rule}s and {@link Schedule}s rather than a step in {@code NightlyIngestionWorkflow}:
  * that state machine belongs to the ingestion jobs and the single-day metrics publish, and this
- * Lambda reads trailing 30- and 90-day windows over the same views once ingestion has already
- * landed the day, not once per ingested day.
+ * Lambda reads trailing windows over the same views once ingestion has already landed the day,
+ * not once per ingested day.
  */
 public class OperatorSnapshotPublish extends Construct {
 
     public final Function snapshotPublishLambda;
     public final Alarm errorsAlarm;
     public final Rule schedule;
+
+    /** Null outside prod: only prod gets the hourly activity-only refresh. */
+    public final Rule activityOnlySchedule;
 
     @Value.Immutable
     public interface OperatorSnapshotPublishProps {
@@ -188,7 +196,9 @@ public class OperatorSnapshotPublish extends Construct {
         // ============================================================================
         // Schedule: prod nightly, ci weekly - the same cadence split
         // NightlyIngestionWorkflow uses for the third-party ingestion calls, so a trailing
-        // window read runs no more often in ci than the data underneath it changes.
+        // window read runs no more often in ci than the data underneath it changes. Every
+        // target sets event.mode explicitly (the Lambda has no default for it) so a schedule
+        // that forgot to set it fails loudly instead of silently running the wrong mode.
         // ============================================================================
         var cronOptions = isProd
                 ? CronOptions.builder().minute("15").hour("3").build()
@@ -199,8 +209,26 @@ public class OperatorSnapshotPublish extends Construct {
                 .description("Publish the operator objectives snapshot")
                 .schedule(Schedule.cron(cronOptions))
                 .targets(List.of(LambdaFunction.Builder.create(this.snapshotPublishLambda)
+                        .event(RuleTargetInput.fromObject(Map.of("mode", "full")))
                         .build()))
                 .build();
+
+        // Activity-only: prod only. Measured against prod_env_analytics (2026-09-26), the 32
+        // activity queries this run makes are all far under Athena's per-query bytes-scanned
+        // minimum, so query count alone sets the cost: roughly $1.15/month for Athena plus a few
+        // cents of Lambda time at this hourly cadence. A 15-minute cadence measured at roughly
+        // $4.6/month, over the operator's $1-2/month ceiling for that faster cadence, so this
+        // stays hourly rather than quarter-hourly.
+        this.activityOnlySchedule = isProd
+                ? Rule.Builder.create(this, prefix + "-OperatorSnapshotPublishActivityOnlySchedule")
+                        .ruleName(functionName + "-activity-only-schedule")
+                        .description("Refresh the operator dashboard's Last 1 hour/1 day/7 days activity columns")
+                        .schedule(Schedule.rate(Duration.hours(1)))
+                        .targets(List.of(LambdaFunction.Builder.create(this.snapshotPublishLambda)
+                                .event(RuleTargetInput.fromObject(Map.of("mode", "activity-only")))
+                                .build()))
+                        .build()
+                : null;
 
         // ============================================================================
         // Alarm

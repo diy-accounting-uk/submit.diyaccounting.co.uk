@@ -104,7 +104,7 @@ public class BusinessViews extends Construct {
             new ViewDefinition(
                     "v_signup_to_first_submission",
                     "Time from a new account's first bundle grant to its first submission",
-                    List.of("dynamo_bundles", "dynamo_receipts")),
+                    List.of("dynamo_bundles", "dynamo_receipts", "activity_events_all")),
             new ViewDefinition(
                     "v_traffic_by_country_daily", "Sessions each day, by country", List.of("activity_events_all")),
             new ViewDefinition(
@@ -123,6 +123,16 @@ public class BusinessViews extends Construct {
             new ViewDefinition(
                     "v_activity_started_daily",
                     "Activity starts each day, by catalogue activity id (an activity's primary button clicked)",
+                    List.of("activity_events_all")),
+            new ViewDefinition(
+                    "v_activity_started_hourly",
+                    "Activity starts each hour, by catalogue activity id: feeds the operator dashboard's Last 1"
+                            + " hour and Last 1 day activity columns, which a day-grain view cannot answer",
+                    List.of("activity_events_all")),
+            new ViewDefinition(
+                    "v_submissions_by_activity_hourly",
+                    "Completions each hour by activity: feeds the operator dashboard's Last 1 hour and Last 1"
+                            + " day activity columns, which a day-grain view cannot answer",
                     List.of("activity_events_all")),
             new ViewDefinition(
                     "v_traffic_sources_daily", "Sessions each day, by GA4 channel group", List.of("ga4_traffic")),
@@ -149,11 +159,11 @@ public class BusinessViews extends Construct {
             new ViewDefinition(
                     "v_subscription_renewals_daily",
                     "Subscriptions that renewed each day, by bundle",
-                    List.of("dynamo_subscriptions")),
+                    List.of("dynamo_subscriptions", "activity_events_all")),
             new ViewDefinition(
                     "v_subscription_cancellations_daily",
                     "Subscriptions cancelled each day, by bundle",
-                    List.of("dynamo_subscriptions")),
+                    List.of("dynamo_subscriptions", "activity_events_all")),
             new ViewDefinition(
                     "v_operator_interventions_daily",
                     "Operator interventions each day, by kind: dispatches, issue comments and commits",

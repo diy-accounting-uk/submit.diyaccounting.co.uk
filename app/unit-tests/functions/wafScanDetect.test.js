@@ -11,7 +11,7 @@ vi.mock("@app/lib/activityAlert.js", () => ({
   publishActivityEvent: (...args) => mockPublishActivityEvent(...args),
 }));
 
-import { handler, decodeSubscriptionPayload, parseWafLogRecord, dedupeByIpAndUri } from "@app/functions/security/wafScanDetect.js";
+import { handler, decodeSubscriptionPayload, parseWafLogRecord, groupByClientIp } from "@app/functions/security/wafScanDetect.js";
 
 function wafLogRecord(overrides = {}) {
   return {
@@ -61,8 +61,8 @@ describe("functions/security/wafScanDetect", () => {
   });
 
   describe("parseWafLogRecord", () => {
-    test("extracts method, uri, ip and country for a SensitivePathScan block", () => {
-      const parsed = parseWafLogRecord(JSON.stringify(wafLogRecord()));
+    test("extracts method, uri, ip, country and the enclosing timestamp for a SensitivePathScan block", () => {
+      const parsed = parseWafLogRecord(JSON.stringify(wafLogRecord()), 1700000000000);
       expect(parsed).toEqual({
         terminatingRuleId: "SensitivePathScan",
         method: "GET",
@@ -70,6 +70,7 @@ describe("functions/security/wafScanDetect", () => {
         clientIp: "203.0.113.9",
         country: "US",
         requestId: "req-1",
+        timestamp: 1700000000000,
       });
     });
 
@@ -83,15 +84,35 @@ describe("functions/security/wafScanDetect", () => {
     });
   });
 
-  describe("dedupeByIpAndUri", () => {
-    test("keeps one record per (clientIp, uri) pair", () => {
+  describe("groupByClientIp", () => {
+    test("groups repeated hits to the same path from one IP into one entry", () => {
       const records = [
-        parseWafLogRecord(JSON.stringify(wafLogRecord({ httpRequest: { ...wafLogRecord().httpRequest, uri: "/.env" } }))),
-        parseWafLogRecord(JSON.stringify(wafLogRecord({ httpRequest: { ...wafLogRecord().httpRequest, uri: "/.env" } }))),
-        parseWafLogRecord(JSON.stringify(wafLogRecord({ httpRequest: { ...wafLogRecord().httpRequest, uri: "/.git/config" } }))),
+        parseWafLogRecord(JSON.stringify(wafLogRecord({ httpRequest: { ...wafLogRecord().httpRequest, uri: "/.env" } })), 1000),
+        parseWafLogRecord(JSON.stringify(wafLogRecord({ httpRequest: { ...wafLogRecord().httpRequest, uri: "/.env" } })), 2000),
+        parseWafLogRecord(JSON.stringify(wafLogRecord({ httpRequest: { ...wafLogRecord().httpRequest, uri: "/.git/config" } })), 3000),
       ];
-      const deduped = dedupeByIpAndUri(records);
-      expect(deduped).toHaveLength(2);
+      const groups = groupByClientIp(records);
+      expect(groups).toHaveLength(1);
+      expect(groups[0].uris.sort()).toEqual(["/.env", "/.git/config"]);
+    });
+
+    test("spans first and last timestamp across every hit for an IP, not just the de-duplicated paths", () => {
+      const records = [
+        parseWafLogRecord(JSON.stringify(wafLogRecord({ httpRequest: { ...wafLogRecord().httpRequest, uri: "/.env" } })), 1000),
+        parseWafLogRecord(JSON.stringify(wafLogRecord({ httpRequest: { ...wafLogRecord().httpRequest, uri: "/.env" } })), 5000),
+      ];
+      const groups = groupByClientIp(records);
+      expect(groups[0].firstTimestamp).toBe(1000);
+      expect(groups[0].lastTimestamp).toBe(5000);
+    });
+
+    test("keeps separate IPs as separate groups, in first-seen order", () => {
+      const records = [
+        parseWafLogRecord(JSON.stringify(wafLogRecord({ httpRequest: { ...wafLogRecord().httpRequest, clientIp: "198.51.100.4" } })), 1000),
+        parseWafLogRecord(JSON.stringify(wafLogRecord({ httpRequest: { ...wafLogRecord().httpRequest, clientIp: "203.0.113.9" } })), 1000),
+      ];
+      const groups = groupByClientIp(records);
+      expect(groups.map((g) => g.clientIp)).toEqual(["198.51.100.4", "203.0.113.9"]);
     });
   });
 
@@ -104,17 +125,33 @@ describe("functions/security/wafScanDetect", () => {
       expect(mockPublishActivityEvent).toHaveBeenCalledTimes(1);
     });
 
-    test("the event carries the client IP, the URI and the deployment name", async () => {
+    test("the event carries the client IP, the path count and the deployment name", async () => {
       const data = subscriptionPayload([wafLogRecord()]);
       await handler({ awslogs: { data } });
 
       const call = mockPublishActivityEvent.mock.calls[0][0];
       expect(call.detail.clientIp).toBe("203.0.113.9");
-      expect(call.detail.uri).toBe("/.env");
+      expect(call.detail.uris).toEqual(["/.env"]);
+      expect(call.detail.uriCount).toBe(1);
       expect(call.detail.deployment).toBe("ci-test");
+      expect(call.summary).toBe("Scan blocked: 1 sensitive path from 203.0.113.9 (US) on ci-test");
     });
 
-    test("two records for the same IP and URI produce one event", async () => {
+    test("one IP scanning many paths in one batch produces one event naming the count", async () => {
+      const data = subscriptionPayload([
+        wafLogRecord({ httpRequest: { ...wafLogRecord().httpRequest, uri: "/.env" } }),
+        wafLogRecord({ httpRequest: { ...wafLogRecord().httpRequest, uri: "/.git/config" } }),
+        wafLogRecord({ httpRequest: { ...wafLogRecord().httpRequest, uri: "/.aws/credentials" } }),
+      ]);
+      await handler({ awslogs: { data } });
+
+      expect(mockPublishActivityEvent).toHaveBeenCalledTimes(1);
+      const call = mockPublishActivityEvent.mock.calls[0][0];
+      expect(call.detail.uriCount).toBe(3);
+      expect(call.summary).toBe("Scan blocked: 3 sensitive paths from 203.0.113.9 (US) on ci-test");
+    });
+
+    test("two records for the same IP and URI still produce one event", async () => {
       const data = subscriptionPayload([wafLogRecord(), wafLogRecord()]);
       await handler({ awslogs: { data } });
 

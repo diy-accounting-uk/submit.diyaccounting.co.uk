@@ -255,6 +255,11 @@ async function main() {
   const context = await browser.newContext({
     viewport: script.viewport,
     deviceScaleFactor: script.deviceScaleFactor || 1,
+    // Same marker playwright.config.js appends for every behaviour-test and probe run
+    // (app/lib/visitorClassifier.js), so a recording against a real deployment tags as
+    // synthetic rather than a human visitor.
+    userAgent:
+      "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36 DIYAccountingProbe/1",
   });
   await context.route("**/*", (route) => {
     const url = route.request().url();

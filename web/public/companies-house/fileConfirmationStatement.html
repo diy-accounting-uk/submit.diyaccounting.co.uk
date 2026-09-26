@@ -255,6 +255,7 @@
       let originalRegisteredEmailAddress = "";
       let currentDirectors = [];
       let currentOfficers = [];
+      let currentPscs = [];
       let shareClassRowCount = 0;
       let shareholdingRowCount = 0;
 
@@ -347,6 +348,7 @@
           // Current officers' identity_verification_details, sent with the statement so the
           // builder can pick ConfirmationAndVerificationStatement-v1-0 or ConfirmationStatement-v1-3.
           currentOfficers = (officersResult.officers || []).filter((officer) => !officer.resignedOn);
+          currentPscs = (pscsResult.pscs || []).filter((psc) => !psc.ceasedOn);
           document.getElementById("authCompanyName").textContent = company.companyName;
           document.getElementById("authCompanyNumber").textContent = company.companyNumber;
           document.getElementById("authNextDue").textContent = textOrDash(company.confirmationStatementNextDue);
@@ -713,13 +715,164 @@
           .join("\n");
       }
 
+      // A director and a PSC are separate Companies House registers with no shared identifier, so
+      // a director's own name is matched against each PSC's name: the surname and at least one
+      // other name word (a forename or one of the other forenames) must both appear in the PSC's
+      // name text. Good enough to flag the common case (the same natural person holds both roles)
+      // without claiming certainty a human filer should still check.
+      function namesLikelyMatchPsc(pscName, director) {
+        const pscTokens = String(pscName || "")
+          .toLowerCase()
+          .split(/\s+/)
+          .filter(Boolean);
+        const surname = String(director.surname || "").toLowerCase();
+        if (!surname || !pscTokens.includes(surname)) {
+          return false;
+        }
+        const otherNameTokens = [director.forename, director.otherForenames]
+          .filter(Boolean)
+          .join(" ")
+          .toLowerCase()
+          .split(/\s+/)
+          .filter(Boolean);
+        return otherNameTokens.some((token) => pscTokens.includes(token));
+      }
+
+      function directorPscMatches() {
+        return currentDirectors
+          .map((director, index) => ({
+            director,
+            index,
+            psc: currentPscs.find(
+              (psc) => psc.kind === "individual-person-with-significant-control" && namesLikelyMatchPsc(psc.name, director),
+            ),
+          }))
+          .filter((entry) => entry.psc);
+      }
+
       function renderPscFollowUp() {
         const container = document.getElementById("pscFollowUp");
+        const matches = directorPscMatches();
+        if (matches.length === 0) {
+          container.style.display = "none";
+          container.innerHTML = "";
+          return;
+        }
         container.style.display = "block";
-        container.innerHTML =
-          "<p>This statement does not carry PSC verification. Each director who is also a person with significant control has " +
-          "14 days from the day after the review date to supply their personal code separately, through " +
-          '<a href="https://www.gov.uk/guidance/provide-psc-verification">the PSC verification service</a>.</p>';
+        const heading = document.createElement("h3");
+        heading.textContent = "PSC verification";
+        const explanation = document.createElement("p");
+        explanation.textContent =
+          "Companies House verifies a person with significant control separately from the confirmation " +
+          "statement, through a PSC verification statement filed after this one, inside the window starting the day after the " +
+          "review date. Enter each person's own PSC personal code below to file theirs now.";
+        container.replaceChildren(heading, explanation, ...matches.map((match) => buildPscFollowUpRow(match, matches)));
+      }
+
+      function buildPscFollowUpRow({ director, index, psc }, matches) {
+        const fieldset = document.createElement("fieldset");
+        fieldset.className = "form-group";
+        fieldset.dataset.pscFollowUpRow = String(index);
+        const legend = document.createElement("legend");
+        legend.textContent = [director.forename, director.surname].filter(Boolean).join(" ") || psc.name;
+        const label = document.createElement("label");
+        label.htmlFor = `pscPersonalCode-${index}`;
+        label.textContent = "PSC personal code";
+        const input = document.createElement("input");
+        input.type = "text";
+        input.id = `pscPersonalCode-${index}`;
+        input.maxLength = 11;
+        input.spellcheck = false;
+        const buttonGroup = document.createElement("div");
+        buttonGroup.className = "button-group";
+        const button = document.createElement("button");
+        button.type = "button";
+        button.className = "secondary-button";
+        button.dataset.pscVerifyIndex = String(index);
+        button.textContent = "Submit PSC verification statement";
+        button.addEventListener("click", () => handlePscVerificationSubmit(index, matches));
+        buttonGroup.append(button);
+        const result = document.createElement("div");
+        result.id = `pscVerifyResult-${index}`;
+        fieldset.append(legend, label, input, buttonGroup, result);
+        return fieldset;
+      }
+
+      // Each part is plain text or { strong: text }; built with text nodes so nothing is parsed as HTML.
+      function buildParagraph(parts, className) {
+        const paragraph = document.createElement("p");
+        if (className) {
+          paragraph.className = className;
+        }
+        for (const part of parts) {
+          if (typeof part === "string") {
+            paragraph.append(part);
+          } else {
+            const strong = document.createElement("strong");
+            strong.textContent = String(part.strong ?? "");
+            paragraph.append(strong);
+          }
+        }
+        return paragraph;
+      }
+
+      async function pollPscVerificationUntilSettled(submissionNumber) {
+        for (let attempt = 0; attempt < 20; attempt++) {
+          const result = await window.pollPscVerificationStatement(submissionNumber);
+          if (result.statusCode === "ACCEPT" || result.statusCode === "REJECT") {
+            return result;
+          }
+          await new Promise((resolve) => setTimeout(resolve, 500));
+        }
+        return window.pollPscVerificationStatement(submissionNumber);
+      }
+
+      async function handlePscVerificationSubmit(index, matches) {
+        const entry = matches.find((candidate) => candidate.index === index);
+        if (!entry) {
+          return;
+        }
+        const resultContainer = document.getElementById(`pscVerifyResult-${index}`);
+        const personalCode = document.getElementById(`pscPersonalCode-${index}`).value.trim();
+        if (personalCode.length !== 11) {
+          resultContainer.replaceChildren(buildParagraph(["The PSC personal code must be 11 characters."], "error"));
+          return;
+        }
+        showLoading();
+        try {
+          const { director, psc } = entry;
+          const payload = {
+            companyNumber: company.companyNumber,
+            companyName: company.companyName,
+            companyAuthCode,
+            dateSigned: new Date().toISOString().slice(0, 10),
+            title: director.title,
+            forename: director.forename,
+            otherForenames: director.otherForenames,
+            surname: director.surname,
+            dobMonth: psc.dateOfBirth?.month,
+            dobYear: psc.dateOfBirth?.year,
+            personalCode,
+          };
+          const submission = await window.submitPscVerificationStatement(payload);
+          resultContainer.replaceChildren(
+            buildParagraph([
+              "Submission ",
+              { strong: submission.submissionNumber },
+              " accepted by the gateway. Waiting for Companies House...",
+            ]),
+          );
+          const outcome = await pollPscVerificationUntilSettled(submission.submissionNumber);
+          resultContainer.replaceChildren(
+            buildParagraph(["Submission ", { strong: outcome.submissionNumber }, " was ", { strong: outcome.statusCode }, "."]),
+            ...(outcome.rejections || []).map((rejection) => buildParagraph([`${rejection.rejectCode}: ${rejection.description}`])),
+          );
+        } catch (error) {
+          console.error("PSC verification statement filing failed:", error);
+          resultContainer.replaceChildren(buildParagraph([error.message || "Failed to file the PSC verification statement."], "error"));
+        } finally {
+          hideLoading();
+        }
       }
 
       async function pollUntilSettled(submissionNumber, extraHeaders = {}) {
@@ -822,6 +975,7 @@
         filingData = null;
         currentDirectors = [];
         currentOfficers = [];
+        currentPscs = [];
         document.getElementById("companyForm").reset();
         document.getElementById("authForm").reset();
         document.getElementById("reviewForm").reset();

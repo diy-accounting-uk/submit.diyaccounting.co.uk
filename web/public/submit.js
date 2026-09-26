@@ -66,6 +66,7 @@ import {
   submitConfirmationStatement,
   pollConfirmationStatement,
 } from "./lib/services/companies-house-confirmation-service.js";
+import { submitPscVerificationStatement, pollPscVerificationStatement } from "./lib/services/companies-house-psc-verification-service.js";
 
 // Debug widgets initial setup
 // Visibility is controlled by developer-mode.js toggle, but we set up hrefs here
@@ -441,6 +442,10 @@ if (typeof window !== "undefined") {
   window.previewConfirmationStatement = previewConfirmationStatement;
   window.submitConfirmationStatement = submitConfirmationStatement;
   window.pollConfirmationStatement = pollConfirmationStatement;
+
+  // Companies House PSC verification statement service
+  window.submitPscVerificationStatement = submitPscVerificationStatement;
+  window.pollPscVerificationStatement = pollPscVerificationStatement;
 
   // RUM functions
   window.hasRumConsent = hasRumConsent;

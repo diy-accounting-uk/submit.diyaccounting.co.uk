@@ -3,10 +3,10 @@
 
 // app/http-simulator/routes/companies-house-xmlgw.js
 // Companies House XML Gateway simulator.
-// Handles: POST /v1-0/xmlgw/Gateway - Class=Accounts and Class=ConfirmationAndVerificationStatement
-//          (or ConfirmationStatement) submissions, Class=CompanyDataRequest and
-//          Class=PaymentPeriodsRequest reads, and Class=GetSubmissionStatus polls for any of them,
-//          all arrive at the same endpoint.
+// Handles: POST /v1-0/xmlgw/Gateway - Class=Accounts, Class=ConfirmationAndVerificationStatement
+//          (or ConfirmationStatement) and Class=PSCVerificationStatement submissions,
+//          Class=CompanyDataRequest and Class=PaymentPeriodsRequest reads, and
+//          Class=GetSubmissionStatus polls for any of them, all arrive at the same endpoint.
 
 import express from "express";
 import { parseXmlDocument, firstElementText, firstElement, allElements, escapeXmlText } from "../../lib/xmlDom.js";
@@ -17,6 +17,7 @@ import {
   submitConfirmationStatement,
   pollConfirmationStatement,
 } from "../scenarios/confirmation-statement.js";
+import { submitPscVerificationStatement, pollPscVerificationStatement } from "../scenarios/psc-verification-statement.js";
 
 const GATEWAY_PATH = "/v1-0/xmlgw/Gateway";
 
@@ -259,12 +260,16 @@ function handleGetSubmissionStatus(document, { senderIdHash, authValueHash, scen
   }
 
   // Submission numbers are unique across the whole presenter (one shared counter backs every
-  // form), so at most one of the two registries ever carries a given number: try accounts first,
-  // and only consult the confirmation statement registry when accounts genuinely has no record.
+  // form), so at most one of the three registries ever carries a given number: try accounts
+  // first, then the confirmation statement, and only consult the PSC verification statement
+  // registry when both of those genuinely have no record.
   const accountsOutcome = pollStatus({ senderIdHash, authValueHash, submissionNumber, scenario });
-  const outcome = isNoTransactionFound(accountsOutcome)
+  const confirmationStatementOutcome = isNoTransactionFound(accountsOutcome)
     ? (pollConfirmationStatement({ senderIdHash, authValueHash, submissionNumber, scenario }) ?? accountsOutcome)
     : accountsOutcome;
+  const outcome = isNoTransactionFound(confirmationStatementOutcome)
+    ? (pollPscVerificationStatement({ senderIdHash, authValueHash, submissionNumber, scenario }) ?? confirmationStatementOutcome)
+    : confirmationStatementOutcome;
 
   if (outcome.errors) {
     return { errors: outcome.errors };
@@ -301,6 +306,42 @@ function handleConfirmationStatement(document, { senderIdHash, authValueHash, sc
   }
 
   const outcome = submitConfirmationStatement({ senderIdHash, authValueHash, submissionNumber, companyNumber, scenario });
+  if (outcome.errors) {
+    return { errors: outcome.errors };
+  }
+  return {
+    qualifier: "acknowledgement",
+    gatewayTimestamp: outcome.gatewayTimestamp,
+    pollInterval: outcome.pollInterval,
+    bodyXml: "",
+  };
+}
+
+function handlePscVerificationStatement(document, { senderIdHash, authValueHash, scenario }) {
+  const formHeader = firstElement(document, "FormHeader");
+  if (!formHeader) {
+    return schemaFailureFor("Body/FormSubmission/FormHeader");
+  }
+
+  const companyNumber = firstElementText(formHeader, "CompanyNumber");
+  const companyName = firstElementText(formHeader, "CompanyName");
+  const formIdentifier = firstElementText(formHeader, "FormIdentifier");
+  const submissionNumber = firstElementText(formHeader, "SubmissionNumber");
+
+  if (!companyNumber) return schemaFailureFor("Body/FormSubmission/FormHeader/CompanyNumber");
+  if (!companyName) return schemaFailureFor("Body/FormSubmission/FormHeader/CompanyName");
+  if (!formIdentifier) return schemaFailureFor("Body/FormSubmission/FormHeader/FormIdentifier");
+  if (!submissionNumber) return schemaFailureFor("Body/FormSubmission/FormHeader/SubmissionNumber");
+
+  const statementElement = firstElement(document, "PSCVerificationStatement");
+  if (!statementElement) {
+    return schemaFailureFor("Body/FormSubmission/Form");
+  }
+  if (!firstElement(statementElement, "Individual")) {
+    return schemaFailureFor("Body/FormSubmission/Form/Individual");
+  }
+
+  const outcome = submitPscVerificationStatement({ senderIdHash, authValueHash, submissionNumber, companyNumber, scenario });
   if (outcome.errors) {
     return { errors: outcome.errors };
   }
@@ -388,6 +429,8 @@ export function apiEndpoint(app) {
       outcome = handleAccounts(document, { ...credentials, scenario: govTestScenario });
     } else if (requestClass === "ConfirmationAndVerificationStatement" || requestClass === "ConfirmationStatement") {
       outcome = handleConfirmationStatement(document, { ...credentials, scenario: govTestScenario });
+    } else if (requestClass === "PSCVerificationStatement") {
+      outcome = handlePscVerificationStatement(document, { ...credentials, scenario: govTestScenario });
     } else if (requestClass === "CompanyDataRequest") {
       outcome = handleCompanyDataRequest(document, { ...credentials, scenario: govTestScenario });
     } else if (requestClass === "PaymentPeriodsRequest") {
