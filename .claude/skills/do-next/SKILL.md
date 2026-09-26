@@ -273,6 +273,10 @@ someone counts the rows. Split on the row boundary, filter by row key, and rejoi
 
 **Push once per wave, not once per workstream.** Gather what has landed and push it together.
 
+Before the push, read the ci slot parameters: `aws --profile submit-ci ssm get-parameters-by-path --path /submit/ci/slots`.
+An absent parameter is a free slot; hold the push while every slot is claimed by a running deploy.
+`main` deploys to prod and takes no ci slot.
+
 When a named `deploy.yml` dispatch already covers the branch's head, cancel the push-triggered
 deploy of the same head in its first minute (before any stack job): two deploys of one head are
 pure cost and contention. A local sync with `main` costs nothing and can happen any time; only the
