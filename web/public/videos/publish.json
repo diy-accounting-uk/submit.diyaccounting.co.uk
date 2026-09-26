@@ -1,6 +1,12 @@
 {
   "$schema": "https://developers.google.com/youtube/v3/docs/videos/insert",
   "channel": "https://www.youtube.com/@DIYAccountingSubmit",
+  "status": {
+    "embeddable": true,
+    "publicStatsViewable": true,
+    "selfDeclaredMadeForKids": false,
+    "license": "youtube"
+  },
   "videos": [
     {
       "id": "view-obligations",

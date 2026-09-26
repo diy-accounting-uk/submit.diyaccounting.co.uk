@@ -265,7 +265,6 @@ public class PublishStack extends Stack {
                         "/terms.html",
                         "/.well-known/security.txt",
                         "/site.webmanifest",
-                        "/simulator.html",
                         "/developer-mode.js"))
                 .retainOnDelete(true)
                 .logGroup(webDeploymentLogGroup)

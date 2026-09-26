@@ -59,6 +59,10 @@ import software.amazon.awscdk.services.cloudwatch.Alarm;
 import software.amazon.awscdk.services.cloudwatch.ComparisonOperator;
 import software.amazon.awscdk.services.cloudwatch.Metric;
 import software.amazon.awscdk.services.cloudwatch.TreatMissingData;
+import software.amazon.awscdk.services.dynamodb.Attribute;
+import software.amazon.awscdk.services.dynamodb.AttributeType;
+import software.amazon.awscdk.services.dynamodb.BillingMode;
+import software.amazon.awscdk.services.dynamodb.Table;
 import software.amazon.awscdk.services.events.EventBus;
 import software.amazon.awscdk.services.events.EventPattern;
 import software.amazon.awscdk.services.events.IEventBus;
@@ -692,11 +696,13 @@ public class EdgeStack extends Stack {
         // blocked record into one ActivityEvent, published cross-region onto the eu-west-2
         // activity bus (this stack, like the whole edge, is us-east-1).
         var wafScanDetectFunctionName = props.resourceNamePrefix() + "-waf-scan-detect";
+        var wafScanBurstsTableName = props.resourceNamePrefix() + "-waf-scan-bursts";
         var wafScanDetectEnv = new PopulatedMap<String, String>()
                 .with("ENVIRONMENT_NAME", props.envName())
                 .with("DEPLOYMENT_NAME", props.deploymentName())
                 .with("ACTIVITY_BUS_NAME", props.sharedNames().activityBusName)
-                .with("ACTIVITY_BUS_REGION", "eu-west-2");
+                .with("ACTIVITY_BUS_REGION", "eu-west-2")
+                .with("WAF_SCAN_BURST_DYNAMODB_TABLE_NAME", wafScanBurstsTableName);
 
         var wafScanDetectLambda = new Lambda(
                 this,
@@ -732,9 +738,28 @@ public class EdgeStack extends Stack {
                 .filterPattern(FilterPattern.literal("{ $.terminatingRuleId = \"SensitivePathScan\" }"))
                 .build();
 
+        // Burst-window table for wafScanDetect.js: one item per client IP, so a scan whose
+        // requests land in separate CloudWatch Logs deliveries (the subscription filter can split
+        // a fast burst across a few deliveries a few seconds apart) still sends one Telegram
+        // message per real-world burst rather than one per delivery. DESTROY, unlike DataStack's
+        // persistent tables, because this stack (like every application-tier stack) is
+        // per-deployment: a fresh WAF gets a fresh table, and none of this state needs to outlive
+        // its own deployment.
+        var wafScanBurstsTable = Table.Builder.create(this, props.resourceNamePrefix() + "-WafScanBurstsTable")
+                .tableName(wafScanBurstsTableName)
+                .partitionKey(Attribute.builder()
+                        .name("clientIp")
+                        .type(AttributeType.STRING)
+                        .build())
+                .billingMode(BillingMode.PAY_PER_REQUEST)
+                .timeToLiveAttribute("ttl")
+                .removalPolicy(RemovalPolicy.DESTROY)
+                .build();
+        wafScanBurstsTable.grant(wafScanDetectLambda.ingestLambda, "dynamodb:UpdateItem");
+
         infof(
-                "Created WAF logging (blocks only) and scan-detect Lambda %s subscribed to it",
-                wafScanDetectLambda.ingestLambda.getNode().getId());
+                "Created WAF logging (blocks only), scan-detect Lambda %s subscribed to it, and its burst table %s",
+                wafScanDetectLambda.ingestLambda.getNode().getId(), wafScanBurstsTableName);
 
         Lambda.stackHealthAlarm(this, props.resourceNamePrefix(), "edge", List.of(wafScanDetectLambda));
 
@@ -1056,9 +1081,10 @@ public class EdgeStack extends Stack {
         // CloudFront access logs, v2 delivery: lands Parquet directly in the shared analytics
         // lake so Athena can query it without a crawler. This is set up here rather than in
         // AnalyticsStack because only this app stack knows this deployment's distribution ARN;
-        // the lake bucket's resource policy (granted in CloudFrontAccessLogs) accepts writes
-        // from every deployment's distribution, and the Glue table's injected distribution_id
-        // partition tells them apart.
+        // the lake bucket's resource policy (granted in CloudFrontAccessLogs) accepts writes from
+        // every deployment's distribution. The suffix path below carries no distribution
+        // identifier, so every deployment's delivery writes into the same date-partitioned tree
+        // and a release doesn't start history over (see CloudFrontAccessLogs' class comment).
         IBucket analyticsLakeBucket = Bucket.fromBucketName(
                 this,
                 props.resourceNamePrefix() + "-AnalyticsLakeBucketRef",
@@ -1093,9 +1119,12 @@ public class EdgeStack extends Stack {
                         // *** must exactly match the Name above ***
                         .deliverySourceName(cfAccessLogsSourceName)
                         .deliveryDestinationArn(cfAccessLogsDestination.getAttrArn())
-                        // Only the service's own variables are valid here; with the Hive option on it renders
-                        // them as distributionid=.../year=.../month=.../day=... itself.
-                        .s3SuffixPath("{distributionid}/{yyyy}/{MM}/{dd}/")
+                        // Date only, deliberately no {distributionid}: AWS supports any subset of
+                        // its partitioning variables (a distribution ID is not mandatory), and
+                        // every deployment's distribution writing to the same date tree is what
+                        // lets a 30-day query span a release. With the Hive option on this
+                        // renders as year=.../month=.../day=... itself.
+                        .s3SuffixPath("{yyyy}/{MM}/{dd}/")
                         .s3EnableHiveCompatiblePath(true)
                         .build());
         // *** enforce creation order so source exists before delivery ***

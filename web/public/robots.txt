@@ -14,7 +14,6 @@ Allow: /bundles.html
 Allow: /diy-accounting-spreadsheets.html
 Allow: /diy-accounting-limited.html
 Allow: /policybee.html
-Allow: /simulator.html
 Allow: /mcp.html
 Allow: /videos.html
 Allow: /privacy.html
