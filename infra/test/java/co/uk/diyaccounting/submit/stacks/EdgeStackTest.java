@@ -104,4 +104,15 @@ class EdgeStackTest {
                                         "WAF_SCAN_BURST_DYNAMODB_TABLE_NAME",
                                         Match.stringLikeRegexp(".*-waf-scan-bursts"))))))));
     }
+
+    @Test
+    void cloudFrontAccessLogsDeliveryPartitionsByDateOnlySoHistorySurvivesAcrossReleases() {
+        Template template = Template.fromStack(synthEdgeStack());
+
+        template.hasResourceProperties(
+                "AWS::Logs::Delivery",
+                Match.objectLike(Map.of("S3SuffixPath", "{yyyy}/{MM}/{dd}/", "S3EnableHiveCompatiblePath", true)));
+
+        assertTrue(!template.toJSON().toString().contains("distributionid"));
+    }
 }

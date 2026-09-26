@@ -1081,9 +1081,10 @@ public class EdgeStack extends Stack {
         // CloudFront access logs, v2 delivery: lands Parquet directly in the shared analytics
         // lake so Athena can query it without a crawler. This is set up here rather than in
         // AnalyticsStack because only this app stack knows this deployment's distribution ARN;
-        // the lake bucket's resource policy (granted in CloudFrontAccessLogs) accepts writes
-        // from every deployment's distribution, and the Glue table's injected distribution_id
-        // partition tells them apart.
+        // the lake bucket's resource policy (granted in CloudFrontAccessLogs) accepts writes from
+        // every deployment's distribution. The suffix path below carries no distribution
+        // identifier, so every deployment's delivery writes into the same date-partitioned tree
+        // and a release doesn't start history over (see CloudFrontAccessLogs' class comment).
         IBucket analyticsLakeBucket = Bucket.fromBucketName(
                 this,
                 props.resourceNamePrefix() + "-AnalyticsLakeBucketRef",
@@ -1118,9 +1119,12 @@ public class EdgeStack extends Stack {
                         // *** must exactly match the Name above ***
                         .deliverySourceName(cfAccessLogsSourceName)
                         .deliveryDestinationArn(cfAccessLogsDestination.getAttrArn())
-                        // Only the service's own variables are valid here; with the Hive option on it renders
-                        // them as distributionid=.../year=.../month=.../day=... itself.
-                        .s3SuffixPath("{distributionid}/{yyyy}/{MM}/{dd}/")
+                        // Date only, deliberately no {distributionid}: AWS supports any subset of
+                        // its partitioning variables (a distribution ID is not mandatory), and
+                        // every deployment's distribution writing to the same date tree is what
+                        // lets a 30-day query span a release. With the Hive option on this
+                        // renders as year=.../month=.../day=... itself.
+                        .s3SuffixPath("{yyyy}/{MM}/{dd}/")
                         .s3EnableHiveCompatiblePath(true)
                         .build());
         // *** enforce creation order so source exists before delivery ***

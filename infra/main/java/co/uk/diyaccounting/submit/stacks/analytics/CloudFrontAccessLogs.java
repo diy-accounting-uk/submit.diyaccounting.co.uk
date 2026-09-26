@@ -25,17 +25,21 @@ import software.constructs.Construct;
  * CloudFront access-log resources shared by every deployment in one environment.
  *
  * <p>Holds the Glue table and lake-bucket policy that let Athena query the Parquet objects
- * CloudWatch Logs delivery (v2) writes at {@code raw/cloudfront/distributionid=<id>/year=
- * .../month=.../day=.../}. Environment-scoped rather than tied to one deployment, because a
- * deployment's app stacks (EdgeStack included, along with its CloudFront distribution) are
- * destroyed and recreated on every release.
+ * CloudWatch Logs delivery (v2) writes at {@code raw/cloudfront/year=.../month=.../day=.../}.
+ * Environment-scoped rather than tied to one deployment, because a deployment's app stacks
+ * (EdgeStack included, along with its CloudFront distribution) are destroyed and recreated on
+ * every release.
  *
  * <p>The delivery source/destination/delivery resources that subscribe one specific distribution
  * to that v2 delivery are deliberately NOT created here. This construct is instantiated from
  * {@code AnalyticsStack}, which is environment-scoped and synthesised without knowledge of any
  * deployment's distribution ID. Each deployment's {@code EdgeStack} creates its own delivery,
- * pointed at the lake bucket this construct authorises to receive it; the Glue table's injected
- * {@code distribution_id} partition is what lets every deployment's logs land in one catalog.
+ * pointed at the lake bucket this construct authorises to receive it. The table is partitioned by
+ * date only, not by distribution: every release gets a brand new CloudFront distribution (and so
+ * a brand new distribution ID), and a distribution-ID partition would fragment history at every
+ * release into a partition only that release's own queries would think to ask for. cs_host and
+ * x_host_header carry the deployment's own hostname in every row, for a query that wants to tell
+ * releases apart.
  */
 public class CloudFrontAccessLogs {
 
@@ -147,16 +151,18 @@ public class CloudFrontAccessLogs {
         // ============================================================================
         // Glue catalog: cloudfront_requests over raw/cloudfront/, partition projection
         // ============================================================================
-        // No crawler: projection computes year/month/day partitions, and distribution_id is
-        // "injected" so a query names the distribution it wants rather than the table listing
-        // every distribution that has ever written to it.
+        // No crawler: projection computes year/month/day partitions from a formula, so a query
+        // that names a date range needs no partition list refresh, whatever distribution wrote
+        // that day's rows. distribution_id is deliberately not a partition key (see the class
+        // comment): EdgeStack's delivery writes every deployment's logs to the same
+        // year=.../month=.../day=.../ tree, so this table's date range already covers every
+        // release without listing distribution IDs anywhere.
         var location = "s3://%s/%s".formatted(props.lakeBucketName(), RAW_PREFIX);
 
         var tableParameters = new LinkedHashMap<String, String>();
         tableParameters.put("classification", "parquet");
         tableParameters.put("has_encrypted_data", "false");
         tableParameters.put("projection.enabled", "true");
-        tableParameters.put("projection.distribution_id.type", "injected");
         tableParameters.put("projection.year.type", "integer");
         tableParameters.put("projection.year.range", "2026,2035");
         tableParameters.put("projection.month.type", "integer");
@@ -165,9 +171,7 @@ public class CloudFrontAccessLogs {
         tableParameters.put("projection.day.type", "integer");
         tableParameters.put("projection.day.range", "1,31");
         tableParameters.put("projection.day.digits", "2");
-        tableParameters.put(
-                "storage.location.template",
-                location + "distributionid=${distribution_id}/year=${year}/month=${month}/day=${day}/");
+        tableParameters.put("storage.location.template", location + "year=${year}/month=${month}/day=${day}/");
 
         this.table = CfnTable.Builder.create(scope, prefix + "-CloudFrontRequestsTable")
                 .catalogId(account)
@@ -180,10 +184,6 @@ public class CloudFrontAccessLogs {
                         .tableType("EXTERNAL_TABLE")
                         .parameters(tableParameters)
                         .partitionKeys(List.of(
-                                CfnTable.ColumnProperty.builder()
-                                        .name("distribution_id")
-                                        .type("string")
-                                        .build(),
                                 CfnTable.ColumnProperty.builder()
                                         .name("year")
                                         .type("int")

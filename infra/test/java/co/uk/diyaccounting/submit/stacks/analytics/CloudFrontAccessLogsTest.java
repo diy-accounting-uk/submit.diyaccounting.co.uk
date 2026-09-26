@@ -85,7 +85,7 @@ class CloudFrontAccessLogsTest {
     }
 
     @Test
-    void shouldCatalogueCloudFrontRequestsWithProjectionAndAnInjectedDistributionPartition() {
+    void shouldCatalogueCloudFrontRequestsPartitionedByDateOnlySoHistorySurvivesAcrossReleases() {
         var sharedNames = SubmitSharedNames.forDocs();
         Template template = synth(sharedNames);
 
@@ -100,13 +100,29 @@ class CloudFrontAccessLogsTest {
                                 "Name",
                                 "cloudfront_requests",
                                 "Parameters",
-                                Match.objectLike(Map.of(
-                                        "classification", "parquet",
-                                        "projection.enabled", "true",
-                                        "projection.distribution_id.type", "injected")),
+                                Match.objectLike(
+                                        Map.of(
+                                                "classification",
+                                                "parquet",
+                                                "projection.enabled",
+                                                "true",
+                                                "storage.location.template",
+                                                Match.stringLikeRegexp(
+                                                        ".*raw/cloudfront/year=\\$\\{year\\}/month=\\$\\{month\\}/day=\\$\\{day\\}/"))),
                                 "PartitionKeys",
-                                Match.arrayWith(List.of(
-                                        Match.objectLike(Map.of("Name", "distribution_id", "Type", "string")))))))));
+                                List.of(
+                                        Map.of("Name", "year", "Type", "int"),
+                                        Map.of("Name", "month", "Type", "int"),
+                                        Map.of("Name", "day", "Type", "int")))))));
+
+        // No distribution_id partition anywhere in the table: every deployment's delivery lands
+        // in the same date tree, so a query naming a date range is never scoped to one release.
+        String templateJson = template.toJSON().toString();
+        assertFalse(
+                templateJson.contains("distribution_id"), "expected no distribution_id partition or projection key");
+        assertFalse(
+                templateJson.contains("distributionid="),
+                "expected no distributionid= path segment in the table's location");
     }
 
     @Test
