@@ -57,7 +57,7 @@ Its project number is 670010122633 (`oauth.toml:18`). The consent screen brand i
 enabled-API list of `diyaccounting-ga4` (`infra/google/gcp/project.toml:25-43`). The Submit CSP
 allows scripts from itself, RUM and Tag Manager only, and frames from itself, YouTube and the
 simulator only (`infra/main/java/co/uk/diyaccounting/submit/stacks/EdgeStack.java:792-802`).
-`PLAN_SIGN_IN_PARITY.md:41` lists the diya-gl Drive store as a third-party grant, off while
+`../developers/submit/archive/PLAN_SIGN_IN_PARITY.md` (line 41) lists the diya-gl Drive store as a third-party grant, off while
 `googleClientId` is null.
 
 **The diya-gl pages (spreadsheets repo).**
