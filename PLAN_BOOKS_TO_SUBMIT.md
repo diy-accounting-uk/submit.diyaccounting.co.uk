@@ -85,6 +85,13 @@ constants).
 and the videos are new work. The shared piece for A and B is a browser build of the
 derivations.
 
+## Where a book is kept
+
+| Who | Where they can keep a book |
+|---|---|
+| Anyone, not signed in to Submit | Their own device (open, download) and their own Google Drive, through their browser's own Google sign-in |
+| A signed-in Submit user | All of the above, plus the DIYA cloud store on S3: a free sandbox tier kept 35 days (`app/functions/diyaGl/diyaGlPut.js:141`, the bucket's `expire-sandbox` rule at `DataStack.java:956`), or the resident tier kept while the Resident subscription runs and for 30 days after it lapses (`app/services/diyaGlEntitlement.js:30`, `diyaGlLapseSweep.js`); a practice's clients' books follow the practice's Resident Pro subscription |
+
 ## The journeys
 
 ### A. Populate an activity page from a file
