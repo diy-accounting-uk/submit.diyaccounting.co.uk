@@ -1,13 +1,13 @@
 ---
 name: refine
-description: Refine every open row on NEXT.md in the main context before a wave is dispatched — check each reference against origin/main, make each brief complete enough for its sub-agent and pick the lowest model that fits, share the facts one row's check turns up with every row they help, and split the human step out of any row that mixes one with machine work — then write the file back and render /board. Invoke when the operator asks for a readiness, feasibility or context pass over the board, or says "refine the board".
+description: Refine every open row on NEXT.md in the main context before a wave is dispatched — check each reference against origin/main, make each brief complete enough for its sub-agent and pick the lowest model that fits, share the facts one row's check turns up with every row they help, split the human step out of any row that mixes one with machine work, and test every declared dependency (live, stale, cyclic, or splittable so part of the row can start) — then write the file back and render /board. Invoke when the operator asks for a readiness, feasibility or context pass over the board, or says "refine the board".
 ---
 <!-- SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0 -->
 <!-- Copyright (C) 2006-2026 DIY Accounting Limited -->
 
 # refine
 
-Four passes over `NEXT.md`, in the main context and with no sub-agents, then the write-back and
+Five passes over `NEXT.md`, in the main context and with no sub-agents, then the write-back and
 `/board`. A sub-agent reads only its brief; every fact it would otherwise have to rediscover costs
 tokens, and every fact it gets wrong costs a redeploy. The passes move that discovery into one
 place, once.
@@ -134,6 +134,32 @@ waits, and the board reads it as one blocked lump. Split it:
   truly cannot proceed, and its blocker line names only the human row.
 - A row whose every step is human stays whole (`O17`, `F1d`). A row whose only human step is
   merging its PR is machine-only already.
+
+## Pass 5 — dependencies
+
+Every "Blocked on …" and every row another row names as its blocker is a claim about the
+present. Test each one:
+
+- **Live or stale.** A blocker is live while its row is open on `NEXT.md` or in `BACKLOG.md`,
+  its date is in the future, or the outside event it waits for (a reply, a send) has no record
+  yet in the repository, the board, the mail mirror or the inboxes. It is stale when its row has
+  closed, its PR merged, its date passed, or something on the board says it happened. Remove a
+  stale blocker from the row; a row left with no live blocker moves to its class's section.
+- **Cycles.** Two rows that each name the other (a config row and the go it needs, say) cannot
+  both be first. Split the part each needs from the other so the chain runs one way: the config
+  that must exist before the go, then the go, then the listing that follows it.
+- **Splittable.** A row blocked for one step can often do the rest now: the build before its
+  sandbox proof, the fixture-backed code before the credential, the draft before the send. Split
+  it into a ready row and a blocked row (`CS-13a` builds, `CS-13b` proves); the blocked row
+  names only what it truly waits on.
+- **Missing links.** A blocker that names a row nobody has written (a design row a backlog entry
+  cites, a label that closed on other work) is a gap: write the row, or rewrite the blocker to
+  what it stood for.
+- **Where a plan keeps the graph** (a `## Dependency graph` section, as `PLAN_COMPANIES_HOUSE.md`
+  does), update it in the same commit so the plan and the board say the same thing.
+
+Record each change in the commit message: the stale blockers removed, the cycles broken, the
+splits made.
 
 ## Write-back
 
