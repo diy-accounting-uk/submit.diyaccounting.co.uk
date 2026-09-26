@@ -12,7 +12,6 @@ import static co.uk.diyaccounting.submit.utils.KindCdk.ensureLogGroupWithDepende
 import co.uk.diyaccounting.submit.SubmitSharedNames;
 import co.uk.diyaccounting.submit.utils.PopulatedMap;
 import java.util.List;
-import java.util.Map;
 import org.immutables.value.Value;
 import software.amazon.awscdk.Duration;
 import software.amazon.awscdk.Environment;
@@ -112,7 +111,6 @@ public class ScanDetectionStack extends Stack {
 
         var environment = new PopulatedMap<String, String>()
                 .with("ENVIRONMENT_NAME", props.envName())
-                .with("ANALYTICS_LAKE_BUCKET_NAME", sharedNames.analyticsLakeBucketName)
                 .with("ATHENA_WORK_GROUP_NAME", sharedNames.athenaWorkGroupName)
                 .with("GLUE_DATABASE_NAME", sharedNames.glueDatabaseName)
                 .with("SCAN_DETECTION_404_PER_MINUTE", String.valueOf(props.scanDetection404PerMinute()))
@@ -148,17 +146,6 @@ public class ScanDetectionStack extends Stack {
                 .logGroup(logGroup.logGroup())
                 .build();
         this.scanRate404DetectFunction.getNode().addDependency(logGroup.ensureResource());
-
-        // Discover distributions: partition projection means Athena cannot enumerate them itself,
-        // so the Lambda lists the lake's raw/cloudfront/ common prefixes. Scoped to that one
-        // prefix, not the whole bucket. cloudfront:ListDistributions is not an option here: it
-        // only accepts Resource: "*", which this repo's IAM checks reject.
-        this.scanRate404DetectFunction.addToRolePolicy(PolicyStatement.Builder.create()
-                .effect(Effect.ALLOW)
-                .actions(List.of("s3:ListBucket"))
-                .resources(List.of(lakeBucketArn(sharedNames.analyticsLakeBucketName)))
-                .conditions(Map.of("StringLike", Map.of("s3:prefix", "raw/cloudfront/*")))
-                .build());
 
         // The high-water mark: one SSM parameter, standard tier. Parameter Store rather than
         // DynamoDB, so this security job never writes to a table SecurityDetectionStack's own
@@ -200,8 +187,8 @@ public class ScanDetectionStack extends Stack {
                 .resources(List.of(resultsBucketArn(sharedNames.analyticsResultsBucketName)))
                 .build());
 
-        // Athena reads the Parquet data itself from the lake, under the same prefix this Lambda
-        // lists above.
+        // Athena reads the Parquet data itself from the lake, under the raw/cloudfront/ prefix
+        // every deployment's delivery writes into.
         this.scanRate404DetectFunction.addToRolePolicy(PolicyStatement.Builder.create()
                 .effect(Effect.ALLOW)
                 .actions(List.of("s3:GetObject"))
