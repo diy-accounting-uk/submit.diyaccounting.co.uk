@@ -142,10 +142,14 @@ export function assertOutsideRepository(outDir, repoRoot) {
   }
 }
 
-function resolveRepoRoot() {
-  // The git common dir points to .git in the main checkout even when running from a worktree
-  // (scripts/itsa-sandbox-year.js's resolveDefaultOutDir relies on the same fact) - its parent
-  // is the repository root.
+/**
+ * The repository root: the git common dir points to .git in the main checkout even when running
+ * from a worktree (scripts/itsa-sandbox-year.js's resolveDefaultOutDir relies on the same fact),
+ * so its parent is the repository root. Exported so scripts/companies-house-test-service-run.js
+ * can reuse this instead of re-deriving it.
+ * @returns {string}
+ */
+export function resolveRepoRoot() {
   const gitCommonDir = execSync("git rev-parse --git-common-dir", { cwd: process.cwd(), encoding: "utf8" }).trim();
   return dirname(resolve(process.cwd(), gitCommonDir));
 }
