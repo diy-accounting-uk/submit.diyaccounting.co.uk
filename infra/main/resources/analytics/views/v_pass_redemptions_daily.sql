@@ -14,6 +14,14 @@
 -- use_count it needs to compare against is the insert's starting 0. Filtering to modifies
 -- before computing the lag left that first (and usually only) modify with no previous row to
 -- compare against, so passes_redeemed was always zero.
+--
+-- dynamo_passes carries no actor and no requestId: an admin-issued pass (passAdminPost.js)
+-- never records who called it, so a redemption cannot be told apart from a real customer's the
+-- way passes_issued (above) already can from the activity event's own actor. The one signal
+-- available on this table today is the pass type id itself: submit.passes.toml suffixes an
+-- automated-test type with "-test-pass" (day-guest-test-pass, resident-pro-test-pass,
+-- resident-vat-test-pass), so those are excluded here; a production type id (day-guest,
+-- resident-vat, invited-guest) still mixes real and test-lane redemptions.
 CREATE OR REPLACE VIEW v_pass_redemptions_daily AS
 WITH issued AS (
   SELECT date(event_ts) AS day,
@@ -28,7 +36,8 @@ pass_history AS (
          pass_type_id,
          use_count,
          lag(use_count) OVER (PARTITION BY pass_id ORDER BY change_ts) AS previous_use_count
-  FROM   dynamo_passes),
+  FROM   dynamo_passes
+  WHERE  pass_type_id NOT LIKE '%-test-pass'),
 redeemed AS (
   SELECT date(change_ts) AS day,
          pass_type_id,
