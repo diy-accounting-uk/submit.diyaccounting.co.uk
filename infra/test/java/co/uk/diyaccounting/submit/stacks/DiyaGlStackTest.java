@@ -156,8 +156,7 @@ class DiyaGlStackTest {
                         Match.objectLike(Map.of(
                                 "Variables",
                                 Match.objectLike(Map.of(
-                                        "DIYA_GL_BUCKET_NAME", DIYA_GL_BUCKET_NAME,
-                                        "ENVIRONMENT_NAME", "docs")))))));
+                                        "DIYA_GL_BUCKET_NAME", DIYA_GL_BUCKET_NAME, "ENVIRONMENT_NAME", "docs")))))));
         assertTrue(
                 iamStatementsForFunction(template, functionName).stream()
                         .noneMatch(statement -> actionsOf(statement).contains("dynamodb:Query")),
@@ -337,7 +336,8 @@ class DiyaGlStackTest {
 
         template.resourceCountIs("AWS::Events::Rule", 0);
         for (String functionName : List.of(
-                stack.diyaGlListGetLambdaProps.ingestFunctionName(), stack.diyaGlVersionGetLambdaProps.ingestFunctionName())) {
+                stack.diyaGlListGetLambdaProps.ingestFunctionName(),
+                stack.diyaGlVersionGetLambdaProps.ingestFunctionName())) {
             assertTrue(
                     iamStatementsForFunction(template, functionName).stream()
                             .noneMatch(statement -> actionsOf(statement).contains("s3:DeleteObject")),
