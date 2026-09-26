@@ -13,7 +13,6 @@ import {
   loadQueries,
   buildPlan,
   transferConfigBody,
-  SCHEDULE_TIME_ZONE,
   CONFIG_PATH,
 } from "../../../infra/google/ga4/ga4-bigquery-sync.js";
 
@@ -159,7 +158,6 @@ describe("buildPlan", () => {
         name: "projects/diyaccounting-ga4/locations/europe-west2/transferConfigs/abc",
         displayName: query.name,
         schedule: query.schedule,
-        scheduleOptions: { timeZone: SCHEDULE_TIME_ZONE },
         params: {
           query: query.sql,
           destination_table_name_template: query.destinationTable,
@@ -179,24 +177,6 @@ describe("buildPlan", () => {
         transferConfigName: transferConfigs[0].name,
       },
     ]);
-  });
-
-  test("plans an update when the live config has no pinned time zone", () => {
-    const transferConfigs = [
-      {
-        name: "projects/diyaccounting-ga4/locations/europe-west2/transferConfigs/abc",
-        displayName: query.name,
-        schedule: query.schedule,
-        params: {
-          query: query.sql,
-          destination_table_name_template: query.destinationTable,
-          write_disposition: query.writeDisposition,
-          partitioning_field: query.partitionField,
-        },
-      },
-    ];
-    const plan = buildPlan({ dataset, queries: [query], datasetExists: true, transferConfigs });
-    expect(plan.queries[0].action).toBe("update");
   });
 
   test("plans an update when the live query text has drifted from the file", () => {
@@ -250,7 +230,7 @@ describe("transferConfigBody", () => {
     };
     const body = transferConfigBody(dataset, query);
     expect(body.schedule).toBe("every day 01:00");
-    expect(body.scheduleOptions).toEqual({ timeZone: SCHEDULE_TIME_ZONE });
+    expect(body).not.toHaveProperty("scheduleOptions");
   });
 });
 

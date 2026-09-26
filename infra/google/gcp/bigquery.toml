@@ -16,7 +16,7 @@
 # per run, so a rerun for the same day is idempotent. The nightly lake job copies these tables
 # alongside the Athena views.
 #
-# `schedule` runs in UTC (ga4-bigquery-sync.js pins scheduleOptions.timeZone) and must land
+# `schedule` runs in UTC (the Data Transfer Service reads schedule times as UTC) and must land
 # before the AWS nightly pull's own 02:15 UTC cron
 # (infra/main/java/.../NightlyIngestionWorkflow.java): the lake job reads the same target day
 # this query writes, so if the write hasn't happened yet when the lake job runs, it finds no
