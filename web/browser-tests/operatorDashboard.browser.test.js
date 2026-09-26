@@ -433,6 +433,52 @@ test.describe("Operator Dashboard", () => {
     await expect(experiment).toContainText("2026-09-30");
   });
 
+  test.describe("wide-window layout", () => {
+    async function eachObservationsTableFitsItsCard(page) {
+      const tableCount = await page.locator("table.observations").count();
+      for (let i = 0; i < tableCount; i++) {
+        const table = page.locator("table.observations").nth(i);
+        const card = table.locator("xpath=ancestor::*[contains(@class, 'objective')][1]");
+        const tableBox = await table.boundingBox();
+        const cardBox = await card.boundingBox();
+        const cardScrolls = await card.evaluate((el) => el.scrollWidth > el.clientWidth);
+        expect(tableBox.x + tableBox.width <= cardBox.x + cardBox.width + 1 || cardScrolls).toBe(true);
+      }
+    }
+
+    test("keeps every activities table header on one line at 1920px wide", async ({ page }) => {
+      await page.setViewportSize({ width: 1920, height: 1080 });
+      await setupRoutes(page);
+      await loadDashboard(page);
+
+      // Excludes the rowspan="2" Activity header: it spans both header rows by design, so its
+      // own height is naturally about double a single-row header's, unrelated to wrapping.
+      const headerCells = page.locator("#activitiesTable thead th:not([rowspan])");
+      const count = await headerCells.count();
+      for (let i = 0; i < count; i++) {
+        const cell = headerCells.nth(i);
+        await expect(cell).toHaveCSS("white-space", "nowrap");
+        const fontSize = await cell.evaluate((el) => parseFloat(getComputedStyle(el).fontSize));
+        const box = await cell.boundingBox();
+        // A single nowrap line plus its 0.4em top/bottom padding; two lines would be roughly
+        // double this, so the threshold sits well below a two-line height.
+        expect(box.height).toBeLessThanOrEqual(fontSize * 2.5);
+      }
+
+      await eachObservationsTableFitsItsCard(page);
+      await page.screenshot({ path: "target/dashboard-1920.png", fullPage: true });
+    });
+
+    test("keeps every table inside its card, scrolling instead of overflowing, at 390px wide", async ({ page }) => {
+      await page.setViewportSize({ width: 390, height: 844 });
+      await setupRoutes(page);
+      await loadDashboard(page);
+
+      await eachObservationsTableFitsItsCard(page);
+      await page.screenshot({ path: "target/dashboard-390.png", fullPage: true });
+    });
+  });
+
   test.describe("sign-in navigation", () => {
     test("shows a signed-out header with a login link", async ({ page }) => {
       await setupRoutes(page, { snapshotStatus: 403, snapshotBody: FORBIDDEN_BODY });

@@ -23,7 +23,6 @@ set -euo pipefail
 
 ENV_NAME="${1:-ci}"
 REGION="${AWS_REGION:-eu-west-2}"
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
 ACCOUNT="$(aws sts get-caller-identity --query Account --output text)"
 LAKE="${ENV_NAME}-env-analytics-lake-${ACCOUNT}"
@@ -49,52 +48,6 @@ for (let i = 6; i >= 0; i--) {
   console.log(d.toISOString().slice(0, 10));
 }
 ')
-
-# --- resolve the CloudFront distribution id -------------------------------------------------
-# cloudfront_requests partitions on distribution_id as "injected" (see CloudFrontAccessLogs.java),
-# which means the Glue catalog never lists a value: a query has to name the distribution it
-# wants. Same resolution deploy-app.js uses for CloudFront invalidation: SSM
-# last-known-good-deployment, then the deployment's EdgeStack DistributionId output. Falls back
-# to the newest live EdgeStack in this environment if the SSM pointer names a deployment whose
-# stack no longer exists.
-resolve_distribution_id() {
-  local deployment origin edge_stack dist_id
-
-  deployment="$(aws ssm get-parameter --name "/submit/${ENV_NAME}/last-known-good-deployment" \
-    --query 'Parameter.Value' --output text 2>/dev/null || echo "")"
-
-  if [ -n "${deployment}" ] && [ "${deployment}" != "None" ]; then
-    origin="${deployment}.submit.diyaccounting.co.uk"
-    edge_stack="${deployment}-app-EdgeStack"
-    dist_id="$("${SCRIPT_DIR}/lookup-cloudfront-distribution.sh" "${origin}" "${edge_stack}" 2>/dev/null || echo "")"
-    if [ -n "${dist_id}" ]; then
-      echo "${dist_id}"
-      return 0
-    fi
-    echo "WARN: SSM /submit/${ENV_NAME}/last-known-good-deployment names '${deployment}', but stack ${edge_stack} does not exist (or has no live distribution). Falling back to a live EdgeStack scan." >&2
-  else
-    echo "WARN: no SSM parameter /submit/${ENV_NAME}/last-known-good-deployment. Falling back to a live EdgeStack scan." >&2
-  fi
-
-  edge_stack="$(aws cloudformation list-stacks --region us-east-1 \
-    --query "StackSummaries[?starts_with(StackName, '${ENV_NAME}-') && ends_with(StackName, '-app-EdgeStack') && StackStatus != 'DELETE_COMPLETE'] | [0].StackName" \
-    --output text 2>/dev/null || echo "")"
-  if [ -z "${edge_stack}" ] || [ "${edge_stack}" = "None" ]; then
-    return 1
-  fi
-  deployment="${edge_stack%-app-EdgeStack}"
-  origin="${deployment}.submit.diyaccounting.co.uk"
-  echo "Using live EdgeStack ${edge_stack} (deployment ${deployment}) instead" >&2
-  "${SCRIPT_DIR}/lookup-cloudfront-distribution.sh" "${origin}" "${edge_stack}"
-}
-
-DISTRIBUTION_ID="$(resolve_distribution_id || echo "")"
-if [ -n "${DISTRIBUTION_ID}" ]; then
-  echo "CloudFront distribution: ${DISTRIBUTION_ID}"
-else
-  echo "WARN: could not resolve a CloudFront distribution id; cloudfront_requests will be skipped."
-fi
-echo ""
 
 # Runs one query to a terminal state and prints its result rows as TSV (no header). Exits
 # non-zero, with the state change reason, on anything other than SUCCEEDED.
@@ -181,14 +134,6 @@ check_source() {
   else
     local where
     where="$(build_ymd_predicate)"
-    if [ "${table}" = "cloudfront_requests" ]; then
-      if [ -z "${DISTRIBUTION_ID}" ]; then
-        echo "SKIPPED: no CloudFront distribution id resolved."
-        echo ""
-        return 0
-      fi
-      where="distribution_id = '${DISTRIBUTION_ID}' AND (${where})"
-    fi
     query="SELECT year, month, day, count(*) FROM ${DATABASE}.${table} WHERE ${where} GROUP BY year, month, day ORDER BY year, month, day"
   fi
 
@@ -275,7 +220,7 @@ check_source "Table changes: passes"        "dynamo_passes"        "ymd" "curate
 check_source "Stripe charges"         "stripe_charges"       "dt"  "curated/stripe/stripe_charges/dt="        "optional"
 check_source "Stripe subscriptions"   "stripe_subscriptions" "dt"  "curated/stripe/stripe_subscriptions/dt="  "required"
 check_source "GA4 traffic"            "ga4_traffic"           "dt"  "curated/ga4/report=traffic/dt="           "required"
-check_source "CloudFront requests"    "cloudfront_requests"  "ymd" "raw/cloudfront/distributionid=${DISTRIBUTION_ID}/" "required"
+check_source "CloudFront requests"    "cloudfront_requests"  "ymd" "raw/cloudfront/"                                    "required"
 
 if [ "${OVERALL_STATUS}" -eq 0 ]; then
   echo "PASS: every source has at least one partition in the last seven days, and every required source shows a non-zero day."

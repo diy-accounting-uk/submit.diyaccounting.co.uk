@@ -50,6 +50,7 @@
  *   COMPANIES_HOUSE_XMLGW_URI                          - defaults to the real gateway
  *   COMPANIES_HOUSE_GATEWAY_TEST                        - "true" sets GatewayTest in the envelope
  *   COMPANIES_HOUSE_ACCOUNTS_ASYNC_REQUESTS_TABLE_NAME  - allocateSubmissionNumber's counter table
+ *   COMPANIES_HOUSE_PACKAGE_REFERENCE                   - required; missing or blank fails fast
  *
  * Exits non-zero when any case's observed outcome does not match its fixture's expectedOutcome.
  */
@@ -75,6 +76,7 @@ import {
 } from "../app/services/companiesHouseConfirmationStatementXml.js";
 import { buildPscVerificationStatementBody } from "../app/services/companiesHousePscVerificationStatementXml.js";
 import { assertOutsideRepository, resolveRepoRoot } from "./companies-house-xmlgw-poll.js";
+import { validateEnv } from "../app/lib/env.js";
 
 // Bounds on the confirmation statement poll loop, so a case that never reaches a terminal state
 // (and never returns a GovTalkErrors block either) cannot hang the run forever.
@@ -310,7 +312,7 @@ async function runSyncCase(caseDef, { presenterId, presenterCode, gatewayTest })
  * submission itself answered a GovTalkErrors block - poll to a terminal state.
  */
 async function runConfirmationStatementCase(caseDef, context) {
-  const { presenterId, presenterCode, gatewayTest } = context;
+  const { presenterId, presenterCode, gatewayTest, packageReference } = context;
   const exchanges = [];
   const transactionIds = [];
   const submissionNumber = await allocateSubmissionNumber();
@@ -330,6 +332,7 @@ async function runConfirmationStatementCase(caseDef, context) {
     companyNumber: caseDef.companyNumber,
     companyName: caseDef.companyName,
     companyAuthenticationCode: caseDef.companyAuthenticationCode,
+    packageReference,
     submissionNumber,
     dateSigned: statement.reviewDate,
     statementXml,
@@ -368,7 +371,7 @@ async function runConfirmationStatementCase(caseDef, context) {
  * block - poll to a terminal state, the same way runConfirmationStatementCase() does.
  */
 async function runPscVerificationStatementCase(caseDef, context) {
-  const { presenterId, presenterCode, gatewayTest } = context;
+  const { presenterId, presenterCode, gatewayTest, packageReference } = context;
   const exchanges = [];
   const transactionIds = [];
   const submissionNumber = await allocateSubmissionNumber();
@@ -387,6 +390,7 @@ async function runPscVerificationStatementCase(caseDef, context) {
     companyNumber: caseDef.companyNumber,
     companyName: caseDef.companyName,
     companyAuthenticationCode: caseDef.companyAuthenticationCode,
+    packageReference,
     submissionNumber,
     dateSigned: caseDef.dateSigned,
     statementXml,
@@ -482,9 +486,12 @@ export async function runCases(cases, outDir, { caseName, sleepFn } = {}) {
     throw new Error(`No case named "${caseName}" in the fixture`);
   }
 
+  validateEnv(["COMPANIES_HOUSE_PACKAGE_REFERENCE"]);
+  const packageReference = process.env.COMPANIES_HOUSE_PACKAGE_REFERENCE;
+
   const { presenterId, presenterCode } = await resolvePresenterCredentials();
   const gatewayTest = process.env.COMPANIES_HOUSE_GATEWAY_TEST === "true";
-  const context = { presenterId, presenterCode, gatewayTest, sleepFn };
+  const context = { presenterId, presenterCode, gatewayTest, packageReference, sleepFn };
 
   // Cases run one at a time, not concurrently: allocateSubmissionNumber()'s atomic counter and
   // the gateway's own increasing-transaction-id rule (criterion 3) both depend on that ordering,

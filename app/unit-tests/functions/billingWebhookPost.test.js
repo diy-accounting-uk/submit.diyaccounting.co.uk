@@ -96,6 +96,17 @@ vi.mock("@app/data/dynamoDbActivityChargeRepository.js", () => ({
   putActivityChargeIfAbsent: (...args) => mockPutActivityChargeIfAbsent(...args),
 }));
 
+// Mock the diya-gl book retention move (S3) and the practice client list (DynamoDB)
+const mockSetOwnerBooksRetention = vi.fn();
+vi.mock("@app/data/s3DiyaGlRepository.js", () => ({
+  setOwnerBooksRetention: (...args) => mockSetOwnerBooksRetention(...args),
+}));
+
+const mockListClientsByHashedSub = vi.fn();
+vi.mock("@app/data/dynamoDbPracticeClientRepository.js", () => ({
+  listClientsByHashedSub: (...args) => mockListClientsByHashedSub(...args),
+}));
+
 import { ingestHandler } from "@app/functions/billing/billingWebhookPost.js";
 
 dotenvConfigIfNotBlank({ path: ".env.test" });
@@ -179,9 +190,13 @@ describe("billingWebhookPost", () => {
     mockUpdateBundleSubscriptionFields.mockReset();
     mockResetTokensByHashedSub.mockReset();
     mockPutActivityChargeIfAbsent.mockReset();
+    mockSetOwnerBooksRetention.mockReset();
+    mockListClientsByHashedSub.mockReset();
     mockEventBridgeSend.mockClear();
 
     mockPutActivityChargeIfAbsent.mockResolvedValue(true);
+    mockSetOwnerBooksRetention.mockResolvedValue([]);
+    mockListClientsByHashedSub.mockResolvedValue([]);
     mockPutBundleByHashedSub.mockResolvedValue(undefined);
     mockPutSubscription.mockResolvedValue(undefined);
     mockUpdateSubscription.mockResolvedValue(undefined);
@@ -545,6 +560,111 @@ describe("billingWebhookPost", () => {
       cancelAtPeriodEnd: false,
     });
     expect(mockUpdateSubscription).toHaveBeenCalledWith("stripe#sub_test_456", expect.objectContaining({ status: "canceled" }));
+  });
+
+  function buildSubscriptionDeletedPayload(subscriptionId = "sub_test_456") {
+    return {
+      id: "evt_test_sub_delete",
+      type: "customer.subscription.deleted",
+      data: { object: { id: subscriptionId } },
+    };
+  }
+
+  test("customer.subscription.deleted for the personal resident bundle moves the owner's books to sandbox", async () => {
+    mockGetSubscription.mockResolvedValue({ pk: "stripe#sub_test_456", hashedSub: "hashed_sub_value", bundleId: "resident" });
+    const payload = buildSubscriptionDeletedPayload();
+    mockWebhooksConstructEvent.mockReturnValue(payload);
+
+    const result = await ingestHandler(buildWebhookEvent(payload));
+
+    expect(result.statusCode).toBe(200);
+    expect(mockSetOwnerBooksRetention).toHaveBeenCalledTimes(1);
+    expect(mockSetOwnerBooksRetention).toHaveBeenCalledWith("hashed_sub_value", "sandbox", { expiresAt: expect.any(String) });
+    expect(mockListClientsByHashedSub).not.toHaveBeenCalled();
+  });
+
+  test("customer.subscription.deleted for a practice's resident-pro bundle moves every client's books to sandbox", async () => {
+    mockGetSubscription.mockResolvedValue({ pk: "stripe#sub_test_456", hashedSub: "hashed_sub_value", bundleId: "resident-pro" });
+    mockListClientsByHashedSub.mockResolvedValue([{ clientId: "client-1" }, { clientId: "client-2" }]);
+    const payload = buildSubscriptionDeletedPayload();
+    mockWebhooksConstructEvent.mockReturnValue(payload);
+
+    const result = await ingestHandler(buildWebhookEvent(payload));
+
+    expect(result.statusCode).toBe(200);
+    expect(mockListClientsByHashedSub).toHaveBeenCalledWith("hashed_sub_value");
+    expect(mockSetOwnerBooksRetention).toHaveBeenCalledTimes(2);
+    const ownerPrefixes = mockSetOwnerBooksRetention.mock.calls.map((call) => call[0]).sort();
+    expect(ownerPrefixes).toEqual(["hashed_sub_value/clients/client-1", "hashed_sub_value/clients/client-2"]);
+    for (const call of mockSetOwnerBooksRetention.mock.calls) {
+      expect(call[1]).toBe("sandbox");
+      expect(call[2]).toEqual({ expiresAt: expect.any(String) });
+    }
+  });
+
+  test("a replayed customer.subscription.deleted moves nothing further once every book is already sandboxed", async () => {
+    mockGetSubscription.mockResolvedValue({ pk: "stripe#sub_test_456", hashedSub: "hashed_sub_value", bundleId: "resident" });
+    // setOwnerBooksRetention itself already answers [] once nothing is left to move - the
+    // handler carries no separate replay guard, so this proves the whole round-trip is a no-op.
+    mockSetOwnerBooksRetention.mockResolvedValue([]);
+    const payload = buildSubscriptionDeletedPayload();
+    mockWebhooksConstructEvent.mockReturnValue(payload);
+
+    const first = await ingestHandler(buildWebhookEvent(payload));
+    const second = await ingestHandler(buildWebhookEvent(payload));
+
+    expect(first.statusCode).toBe(200);
+    expect(second.statusCode).toBe(200);
+    expect(mockSetOwnerBooksRetention).toHaveBeenCalledTimes(2);
+    expect(mockUpdateBundleSubscriptionFields).toHaveBeenCalledTimes(2);
+  });
+
+  test("checkout.session.completed for the personal resident bundle restores the owner's sandboxed books", async () => {
+    const payload = buildCheckoutSessionPayload({ metadata: { hashedSub: "hashed_sub_value", bundleId: "resident" } });
+    mockWebhooksConstructEvent.mockReturnValue(payload);
+
+    const result = await ingestHandler(buildWebhookEvent(payload));
+
+    expect(result.statusCode).toBe(200);
+    expect(mockSetOwnerBooksRetention).toHaveBeenCalledTimes(1);
+    expect(mockSetOwnerBooksRetention).toHaveBeenCalledWith("hashed_sub_value", "resident");
+    expect(mockListClientsByHashedSub).not.toHaveBeenCalled();
+  });
+
+  test("checkout.session.completed for a practice's resident-pro bundle restores every client's sandboxed books", async () => {
+    mockListClientsByHashedSub.mockResolvedValue([{ clientId: "client-1" }]);
+    const payload = buildCheckoutSessionPayload({ metadata: { hashedSub: "hashed_sub_value", bundleId: "resident-pro" } });
+    mockWebhooksConstructEvent.mockReturnValue(payload);
+
+    const result = await ingestHandler(buildWebhookEvent(payload));
+
+    expect(result.statusCode).toBe(200);
+    expect(mockListClientsByHashedSub).toHaveBeenCalledWith("hashed_sub_value");
+    expect(mockSetOwnerBooksRetention).toHaveBeenCalledWith("hashed_sub_value/clients/client-1", "resident");
+  });
+
+  test("checkout.session.completed for a bundle outside diya-gl touches no book retention", async () => {
+    const payload = buildCheckoutSessionPayload({ metadata: { hashedSub: "hashed_sub_value", bundleId: "resident-vat" } });
+    mockWebhooksConstructEvent.mockReturnValue(payload);
+
+    const result = await ingestHandler(buildWebhookEvent(payload));
+
+    expect(result.statusCode).toBe(200);
+    expect(mockSetOwnerBooksRetention).not.toHaveBeenCalled();
+    expect(mockListClientsByHashedSub).not.toHaveBeenCalled();
+  });
+
+  test("a replayed checkout.session.completed restores nothing further once every book is already resident", async () => {
+    const payload = buildCheckoutSessionPayload({ metadata: { hashedSub: "hashed_sub_value", bundleId: "resident" } });
+    mockWebhooksConstructEvent.mockReturnValue(payload);
+
+    const first = await ingestHandler(buildWebhookEvent(payload));
+    const second = await ingestHandler(buildWebhookEvent(payload));
+
+    expect(first.statusCode).toBe(200);
+    expect(second.statusCode).toBe(200);
+    expect(mockSetOwnerBooksRetention).toHaveBeenCalledTimes(2);
+    expect(mockPutBundleByHashedSub).toHaveBeenCalledTimes(2);
   });
 
   test("returns 200 for unhandled event types", async () => {

@@ -234,6 +234,21 @@ for H7.
 | M5 | Distribution: `npm publish` from this repo on a tag, the Docker image on GHCR, `web/public/mcp.html` rewritten as the real instructions | M2; H7 on the spreadsheets board for the dependency | Claude Code, Haiku |
 | M6 | The Companies House proof: BrickWork Pro's derived accounts filed to the XML Gateway test service through the MCP | M2; NEXT.md B34.6c | Claude Code, Sonnet |
 | M7 | The VAT proof: a derived return filed through the MCP against HMRC's sandbox with the existing test user | M2 | Claude Code, Sonnet |
+| M8 | A video for the npm CLI, a video for the Docker image, and a video for the hosted MCP, published as each surface ships | M4 for the hosted video; M5 for the npm and Docker videos | Claude Code, Haiku |
+
+## Videos
+
+A video for each surface, published as that surface ships: the npm CLI, the Docker image, and
+the hosted MCP in a chat client.
+
+The npm CLI and the Docker image run the same stdio server, so both videos are captured through
+the [MCP Inspector](https://github.com/modelcontextprotocol/inspector)'s web UI, driven by a
+scripted tool call against the BrickWork Pro Ltd example, the way MCP2 captures the diya-gl
+server. The hosted MCP has no scriptable client yet, so its video is a manual recording in a
+chat client such as Claude Desktop.
+
+Each video is added to `videos/publish.json` and appears on `videos.html` and on `mcp.html`'s
+submission MCP section once its surface ships.
 
 ## Verification
 
@@ -247,6 +262,8 @@ for H7.
 - The behaviour suites `fileMicroEntityAccountsBehaviour` and `submitVatBehaviour` are
   unchanged: the MCP calls the same endpoints, so their coverage is the endpoints' coverage.
 - No credential appears in a tool result, a log line or a saved book.
+- A video for each shipped surface (npm CLI, Docker, hosted MCP) is live on `videos.html` and on
+  `mcp.html`.
 
 ## Dependencies outside this repository
 

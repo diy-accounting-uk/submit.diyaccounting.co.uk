@@ -118,10 +118,13 @@ describe("diyaGlListGet", () => {
     expect(JSON.parse(result.body).books.map((b) => b.bookId)).toEqual(["book-live"]);
   });
 
-  test("reports the lapse expiry for a resident book under an expired subscription", async () => {
+  test("reports the caller's expired entitlement, leaving each book's own metadata untouched", async () => {
     process.env.DIYA_GL_RESIDENT_TIER = "true";
     const bundleExpiry = "2026-01-01T00:00:00.000Z";
     getUserBundles.mockResolvedValue([{ bundleId: "resident", subscriptionStatus: "canceled", expiry: bundleExpiry }]);
+    // The billing webhook moves a lapsed subscriber's books to the sandbox tier and sets their
+    // own expiresAt at the moment the subscription lapses, so a book still reading "resident"
+    // here (e.g. before the webhook has run) is reported as-is rather than patched on the fly.
     const residentBook = { bookId: "book-resident", updatedAt: "2025-12-01T00:00:00.000Z", retention: "resident", expiresAt: null };
     mockS3Send.mockImplementation((command) =>
       handleCommand(command, { commonPrefixes: ["book-resident"], metadataByBookId: { "book-resident": residentBook } }),
@@ -132,7 +135,7 @@ describe("diyaGlListGet", () => {
     expect(result.statusCode).toBe(200);
     const responseBody = JSON.parse(result.body);
     expect(responseBody.entitlement).toEqual({ reason: "expired", expiry: bundleExpiry, residentTier: true });
-    expect(responseBody.books[0].expiresAt).toBe("2026-01-31T00:00:00.000Z");
+    expect(responseBody.books[0].expiresAt).toBeNull();
   });
 
   test("rejects an unauthenticated call", async () => {

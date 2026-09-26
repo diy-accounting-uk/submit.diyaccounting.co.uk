@@ -13,8 +13,123 @@ import { putSubscription, getSubscription, updateSubscription } from "../../data
 import { loadCatalogFromRoot, isUnlimitedTokenGrant } from "../../services/productCatalog.js";
 import { recordPaidChargeByHashedSub } from "../../services/activityCharges.js";
 import { publishActivityEvent, maskEmail, classifyActor } from "../../lib/activityAlert.js";
+import { SANDBOX_RETENTION_MS } from "../../services/diyaGlEntitlement.js";
+import { setOwnerBooksRetention } from "../../data/s3DiyaGlRepository.js";
+import { listClientsByHashedSub } from "../../data/dynamoDbPracticeClientRepository.js";
 
 const logger = createLogger({ source: "app/functions/billing/billingWebhookPost.js" });
+
+// The bundle that grants the personal DIYA-GL resident tier, and the one that grants it for a
+// practice's clients' books. Kept local rather than imported from diyaGlEntitlement.js, which
+// reads them from the deployment's own env vars - the webhook has no per-deployment override.
+const DIYA_GL_PERSONAL_BUNDLE_ID = "resident";
+const DIYA_GL_PRACTICE_BUNDLE_ID = "resident-pro";
+
+// How many of a practice's clients are retagged at once on a resident-pro lapse or reactivation.
+// Bounds the number of concurrent S3 calls a large practice would otherwise issue in one burst,
+// without serialising client after client.
+const CLIENT_BOOK_RETENTION_CONCURRENCY = 5;
+
+/**
+ * Runs `fn` over `items` with at most `limit` calls in flight at once.
+ *
+ * @param {Array} items
+ * @param {number} limit
+ * @param {(item: any) => Promise<void>} fn
+ */
+async function mapWithConcurrency(items, limit, fn) {
+  let nextIndex = 0;
+  async function worker() {
+    while (nextIndex < items.length) {
+      const item = items[nextIndex++];
+      await fn(item);
+    }
+  }
+  await Promise.all(Array.from({ length: Math.min(limit, items.length) }, worker));
+}
+
+/**
+ * Moves an owner's currently resident books onto the sandbox tier, with the same `expiresAt` a
+ * newly-saved sandbox book gets, so the bucket's existing lifecycle rule expires them 37 days
+ * later unless a resubscribe restores them first.
+ *
+ * @param {string} ownerPrefix - the owner's hashed sub, or a practice client's extended prefix
+ */
+async function moveBooksToSandboxTier(ownerPrefix) {
+  const expiresAt = new Date(Date.now() + SANDBOX_RETENTION_MS).toISOString();
+  return setOwnerBooksRetention(ownerPrefix, "sandbox", { expiresAt });
+}
+
+/**
+ * On `customer.subscription.deleted` for the personal Resident bundle, moves the owner's own
+ * resident books to the sandbox tier.
+ *
+ * @param {string} hashedSub
+ */
+async function lapseResidentBooks(hashedSub) {
+  const changed = await moveBooksToSandboxTier(hashedSub);
+  if (changed.length > 0) {
+    logger.info({ message: "Resident books moved to sandbox tier after subscription lapse", hashedSub, bookCount: changed.length });
+  }
+}
+
+/**
+ * On `customer.subscription.deleted` for a practice's resident-pro bundle, moves every one of the
+ * practice's clients' resident books to the sandbox tier. A practice's own books are never
+ * resident-pro-scoped (see diyaGlEntitlement.js), so only client book sets are touched.
+ *
+ * @param {string} hashedSub - the practice's hashed sub
+ */
+async function lapsePracticeClientBooks(hashedSub) {
+  const clients = await listClientsByHashedSub(hashedSub);
+  await mapWithConcurrency(clients, CLIENT_BOOK_RETENTION_CONCURRENCY, async (client) => {
+    const changed = await moveBooksToSandboxTier(`${hashedSub}/clients/${client.clientId}`);
+    if (changed.length > 0) {
+      logger.info({
+        message: "Practice client's resident books moved to sandbox tier after resident-pro lapse",
+        hashedSub,
+        clientId: client.clientId,
+        bookCount: changed.length,
+      });
+    }
+  });
+}
+
+/**
+ * On a checkout that activates the personal Resident bundle, restores the owner's currently
+ * visible sandbox books to the resident tier (clearing `expiresAt`) - inside the sandbox
+ * lifecycle window this reclaims a book a lapse moved there; a book already sandboxed before any
+ * subscription is reclaimed the same way, matching what its next save would set anyway.
+ *
+ * @param {string} hashedSub
+ */
+async function restoreResidentBooks(hashedSub) {
+  const changed = await setOwnerBooksRetention(hashedSub, "resident");
+  if (changed.length > 0) {
+    logger.info({ message: "Sandbox books restored to resident tier on subscription", hashedSub, bookCount: changed.length });
+  }
+}
+
+/**
+ * On a checkout that activates a practice's resident-pro bundle, restores every one of the
+ * practice's clients' currently visible sandbox books to the resident tier.
+ *
+ * @param {string} hashedSub - the practice's hashed sub
+ */
+async function restorePracticeClientBooks(hashedSub) {
+  const clients = await listClientsByHashedSub(hashedSub);
+  await mapWithConcurrency(clients, CLIENT_BOOK_RETENTION_CONCURRENCY, async (client) => {
+    const changed = await setOwnerBooksRetention(`${hashedSub}/clients/${client.clientId}`, "resident");
+    if (changed.length > 0) {
+      logger.info({
+        message: "Practice client's sandbox books restored to resident tier on resident-pro subscription",
+        hashedSub,
+        clientId: client.clientId,
+        bookCount: changed.length,
+      });
+    }
+  });
+}
 
 /* v8 ignore start */
 export function apiEndpoint(app) {
@@ -158,6 +273,14 @@ async function handleCheckoutComplete(session, { test = false } = {}) {
 
   await putBundleByHashedSub(hashedSub, bundleRecord);
   logger.info({ message: "Bundle granted via webhook", hashedSub, bundleId, tokensGranted });
+
+  // A checkout is how a lapsed subscriber resubscribes (Stripe issues a new subscription id
+  // rather than reviving the deleted one), so this is also where a sandboxed book gets restored.
+  if (bundleId === DIYA_GL_PERSONAL_BUNDLE_ID) {
+    await restoreResidentBooks(hashedSub);
+  } else if (bundleId === DIYA_GL_PRACTICE_BUNDLE_ID) {
+    await restorePracticeClientBooks(hashedSub);
+  }
 
   // Store subscription record for audit trail
   if (subscriptionId) {
@@ -358,6 +481,12 @@ async function handleSubscriptionDeleted(subscription, { test = false } = {}) {
     status: "canceled",
     canceledAt: new Date().toISOString(),
   });
+
+  if (bundleId === DIYA_GL_PERSONAL_BUNDLE_ID) {
+    await lapseResidentBooks(hashedSub);
+  } else if (bundleId === DIYA_GL_PRACTICE_BUNDLE_ID) {
+    await lapsePracticeClientBooks(hashedSub);
+  }
 
   logger.info({ message: "Subscription canceled", hashedSub, bundleId });
 

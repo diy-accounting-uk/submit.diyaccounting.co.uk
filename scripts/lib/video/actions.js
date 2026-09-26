@@ -71,9 +71,14 @@ async function requireLocator(page, step, ctx) {
   return locator;
 }
 
-async function pointAndReturnRect(page, locator) {
+// onRect, when given, fires once the target's real (post-scroll) box is known and the pointer
+// has arrived there — the earliest moment a headline overlay can be placed clear of it, since
+// placing one off the rect resolved before requireLocator's scrollIntoViewIfNeeded would anchor
+// it to wherever the element used to be, not where the viewer is about to see it acted on.
+async function pointAndReturnRect(page, locator, onRect) {
   const rect = await overlay.rectOf(locator);
   await overlay.pointTo(page, rect.left + rect.width / 2, rect.top + rect.height / 2);
+  if (onRect) await onRect(rect);
   return rect;
 }
 
@@ -105,7 +110,7 @@ async function doGoto(page, step, ctx) {
 
 async function doClick(page, step, ctx) {
   const locator = await requireLocator(page, step, ctx);
-  const rect = await pointAndReturnRect(page, locator);
+  const rect = await pointAndReturnRect(page, locator, ctx.onTargetRect);
   await overlay.click(page, rect);
   // The pointer animation and the ripple above already took at least 450ms of on-screen motion;
   // the wait phase brackets only the click itself, or the pill would arm during that motion
@@ -133,14 +138,14 @@ async function doClick(page, step, ctx) {
 
 async function doPoint(page, step, ctx) {
   const locator = await requireLocator(page, step, ctx);
-  const rect = await pointAndReturnRect(page, locator);
+  const rect = await pointAndReturnRect(page, locator, ctx.onTargetRect);
   if (step.dwellMs) await new Promise((resolve) => setTimeout(resolve, step.dwellMs));
   return { waitMs: 0, rect };
 }
 
 async function doType(page, step, ctx) {
   const locator = await requireLocator(page, step, ctx);
-  const rect = await pointAndReturnRect(page, locator);
+  const rect = await pointAndReturnRect(page, locator, ctx.onTargetRect);
   const text = substituteValues(step.text, ctx.values, ctx.now);
   const totalTypingMs = text.length * ctx.pacing.perCharMs;
   await overlay.highlight(page, rect, totalTypingMs + 200);
@@ -160,7 +165,7 @@ async function doType(page, step, ctx) {
 // filling the form in.
 async function doFill(page, step, ctx) {
   const locator = await requireLocator(page, step, ctx);
-  const rect = await pointAndReturnRect(page, locator);
+  const rect = await pointAndReturnRect(page, locator, ctx.onTargetRect);
   const value = substituteValues(step.value, ctx.values, ctx.now);
   const holdMs = step.holdMs ?? 600;
   await overlay.highlight(page, rect, holdMs);
@@ -181,7 +186,7 @@ async function doTab(page) {
 
 async function doSelect(page, step, ctx) {
   const locator = await requireLocator(page, step, ctx);
-  const rect = await pointAndReturnRect(page, locator);
+  const rect = await pointAndReturnRect(page, locator, ctx.onTargetRect);
   await overlay.highlight(page, rect, 400);
   await locator.selectOption(step.value);
   return { waitMs: 0, rect };
@@ -223,7 +228,7 @@ async function doScroll(page, step, ctx) {
 
 async function doHighlight(page, step, ctx) {
   const locator = await requireLocator(page, step, ctx);
-  const rect = await pointAndReturnRect(page, locator);
+  const rect = await pointAndReturnRect(page, locator, ctx.onTargetRect);
   const holdMs = step.holdMs ?? 1000;
   await overlay.highlight(page, rect, holdMs);
   await new Promise((resolve) => setTimeout(resolve, holdMs));

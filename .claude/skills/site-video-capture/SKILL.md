@@ -11,15 +11,43 @@ description: Record a video of the real site for a human audience from a scene s
 A scene script (`videos/<name>.json`) is the edit surface. A UI change means editing the
 script and rerunning, never editing the mp4. `scripts/site-video-capture.js` drives a real
 browser through the script with Playwright, draws a pointer, trail and captions with an
-in-page overlay, captures the session with CDP screencast, and encodes a constant-60fps
-H.264 mp4 with ffmpeg. Every run also writes a `.vtt`, a `.transcript.md` and per-scene
-stills alongside the mp4.
+in-page overlay, captures the session with CDP screencast at 3840x2160, and encodes a
+constant-frame-rate H.264 mp4 with ffmpeg. Every run also writes a `.vtt`, a `.transcript.md`
+and per-scene stills alongside the mp4.
 
 ## Step 1 — read the scene script first
 
 Open `videos/<name>.json` before touching anything else. Every target, caption and pacing
 value lives there. `videos/tour.json` is the worked example: an unauthenticated walk
 through the site. `videos/scene-script.schema.json` documents the format.
+
+## Step 1a — the burned-in headline is not the caption
+
+Every step's `caption` goes into the `.vtt` and the transcript — the full narration, read by a
+screen reader or a viewer with sound off. A step can also carry a `headline` (three to six
+words) and an optional `keyWord`: a short, burned-in callout tag the video itself shows, styled
+and positioned so it never reads as the same thing as the caption twice.
+
+- **Write it or leave it out.** A step with no `headline` shows no burned-in line — there is no
+  fallback to the caption text. Keep it to three to six words; the tag is a single line.
+- **`keyWord` names one word already in the headline**, matched whole-word and
+  case-insensitively (not a substring), and shown in the tag's accent colour. Omit it for a
+  headline with nothing to single out.
+- **Placement is automatic.** For a step whose action resolves a real target on the page
+  (`click`, `point`, `type`, `fill`, `select`, `highlight`), the tag places itself above or below
+  that target's box — never over it — once the pointer has actually arrived there
+  (`scripts/lib/video/headlinePlacement.js`, unit-tested). Every other step's headline (`goto`,
+  `await`, `login`, `hmrcAuthorise`, a bare `caption` step, …) shows against no target, in a
+  fixed band below the chapter label.
+- **Style**: a compact dark tag (not the caption's wide bottom bar), left-accented in the
+  overlay's own blue, bold white text with the key word in the timer pill's amber — reusing the
+  two colours already in the overlay rather than adding a third. Static once shown: the only
+  motion is the entrance fade, matching every other cue here (WCAG SC 2.3.1 — nothing flashes).
+- **Prove it** by rendering a step's headline against a real target with
+  `scripts/lib/video/overlay.js`'s `headline()` export and screenshotting after the fade settles
+  (its CSS transition is ~220ms — a screenshot taken immediately after the call can catch it
+  mid-fade; the real capture never does, because every step's own pacing already waits longer
+  than that before anything else happens).
 
 ## Step 2 — iterate locally against a local instance
 
@@ -166,6 +194,25 @@ autoplay, so SC 1.4.2 and 2.2.2 stay out of the embedder's problem.
 Captions and the video title follow `plain-prose`: short sentences, read aloud before
 committing.
 
+## Capture and encode settings
+
+Frames render at the CSS viewport (1920x1080) times `deviceScaleFactor`, default 2, so a script
+captures 3840x2160 frames unless it sets its own value. The browser lays out the page at the same
+CSS size either way; only the backing store gets denser, so every caption and form field stays
+sharp once YouTube re-encodes a 4K upload instead of stretching a 1080p one.
+
+`fps` is a required field on every script. 30 is the default across the published scripts; a
+script sets 60 only when a scene's own motion needs it. The captured frame count is set by the
+page's actual redraws, not by this field — it only controls the constant-rate timeline the encode
+resamples onto.
+
+The encode is H.264 High, yuv420p, faststart, at the frames' own captured resolution (never
+downscaled to a fixed target). `crf 12` with `-tune animation` is the measured default: on a
+3840x2160, 30fps, 3492-frame capture (`videos/view-obligations.json` against the simulator), it
+gave the smallest file of the four combinations tried (crf 10/12 × stillimage/animation) at an
+SSIM against the source frames indistinguishable from the other three — every combination was
+already visually lossless at this content's motion level, so file size decided.
+
 ## Reference
 
 - `videos/scene-script.schema.json` — the format: scenes, steps, targets, pacing, captions.
@@ -176,7 +223,10 @@ committing.
 - `scripts/lib/video/pacing.js` — the three pacing groups, wait subtraction, time
   compression for a wait past six seconds, caption minimum hold.
 - `scripts/lib/video/overlay-runtime.js` / `overlay.js` — the in-page pointer, trail,
-  caption box, timer pill and chapter label.
+  caption box, headline tag, timer pill and chapter label.
+- `scripts/lib/video/headlinePlacement.js` — pure placement math for the headline tag (above
+  or below its target, clear of it, inside the frame), unit-tested with no browser.
 - `scripts/lib/video/capture.js` / `encode.js` — CDP screencast capture and the ffmpeg
-  concat-demuxer encode (constant 60fps, H.264 High, closed GOP, faststart).
+  concat-demuxer encode (constant frame rate, H.264 High, closed GOP, faststart). See
+  "Capture and encode settings" above for the resolution, frame rate and CRF defaults.
 - `.github/workflows/video-capture.yml` — the real recording, dispatched by hand.

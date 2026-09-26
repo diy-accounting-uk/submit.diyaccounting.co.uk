@@ -20,7 +20,7 @@
 import fs from "fs";
 import path from "path";
 import { spawnSync } from "child_process";
-import { validateScript } from "./lib/video/scriptSchema.js";
+import { validateScript, effectiveScaleFactor } from "./lib/video/scriptSchema.js";
 import { resolveFfmpegBinary } from "./lib/video/encode.js";
 import { checkTimings, checkTimerMarkers, checkTypingCadence } from "./lib/video/checks.js";
 
@@ -116,10 +116,15 @@ function main() {
     const probe = parseProbe(report);
     console.log("ffmpeg probe:", JSON.stringify(probe, null, 2));
 
-    if (probe.width !== script.viewport.width || probe.height !== script.viewport.height) {
+    // The frame carries the CSS viewport times deviceScaleFactor, not the viewport alone — a
+    // 1920x1080 layout captures as 3840x2160 at the default scale factor.
+    const scaleFactor = effectiveScaleFactor(script);
+    const expectedWidth = script.viewport.width * scaleFactor;
+    const expectedHeight = script.viewport.height * scaleFactor;
+    if (probe.width !== expectedWidth || probe.height !== expectedHeight) {
       failures.push({
         check: "resolution",
-        expected: `${script.viewport.width}x${script.viewport.height}`,
+        expected: `${expectedWidth}x${expectedHeight}`,
         actual: `${probe.width}x${probe.height}`,
       });
     }

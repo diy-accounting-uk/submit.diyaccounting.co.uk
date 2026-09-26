@@ -21,11 +21,12 @@ import { chromium } from "playwright";
 import fs from "fs";
 import path from "path";
 
-import { validateScript } from "./lib/video/scriptSchema.js";
+import { validateScript, effectiveScaleFactor } from "./lib/video/scriptSchema.js";
 import { groupFor, pauseForGroup, residualAfterWait, captionMinMs, compressionFor } from "./lib/video/pacing.js";
 import {
   installOverlay,
   caption as overlayCaption,
+  headline as overlayHeadline,
   chapter as overlayChapter,
   suppress as overlaySuppress,
   readEvents,
@@ -198,6 +199,12 @@ const WAIT_CAPABLE_ACTIONS = new Set(["goto", "click", "await", "login", "consen
 // the caption all have to be put back.
 const ALWAYS_NAVIGATING_ACTIONS = new Set(["goto", "login", "consent", "ensureBundle", "hmrcAuthorise", "submitReturn"]);
 
+// Actions whose handler resolves a real target and moves the pointer to it (actions.js's
+// pointAndReturnRect) — the only ones that can hand a headline its target's actual box through
+// ctx.onTargetRect. Every other action's headline, if it has one, places against no target at
+// all (headlinePlacement.js's "default" anchor).
+const TARGET_RECT_ACTIONS = new Set(["click", "point", "type", "fill", "select", "highlight"]);
+
 async function main() {
   const args = parseArgs(process.argv.slice(2));
   const scriptPath = path.resolve(args.script);
@@ -213,6 +220,12 @@ async function main() {
   const fps = args.fps || script.fps;
   const unscaledPacing = script.pacing;
   const scaledPacing = scalePacing(script.pacing, args.speed);
+  // The CSS layout stays at the script's viewport; only the backing store renders denser, so a
+  // 1920x1080 layout captures as 3840x2160 frames at the default scale factor and every caption
+  // and overlay pixel stays crisp once YouTube re-encodes.
+  const scaleFactor = effectiveScaleFactor(script);
+  const frameWidth = script.viewport.width * scaleFactor;
+  const frameHeight = script.viewport.height * scaleFactor;
 
   // One clock for the whole run, so a date placeholder resolves to the same day in the browser,
   // the transcript and the timeline even if the recording straddles midnight.
@@ -254,7 +267,7 @@ async function main() {
   const browser = await chromium.launch({ headless: !args.headed });
   const context = await browser.newContext({
     viewport: script.viewport,
-    deviceScaleFactor: script.deviceScaleFactor || 1,
+    deviceScaleFactor: scaleFactor,
     // Same marker playwright.config.js appends for every behaviour-test and probe run
     // (app/lib/visitorClassifier.js), so a recording against a real deployment tags as
     // synthetic rather than a human visitor.
@@ -280,8 +293,8 @@ async function main() {
     ? createCapture(args.capture, {
         page,
         framesDir,
-        maxWidth: script.viewport.width,
-        maxHeight: script.viewport.height,
+        maxWidth: frameWidth,
+        maxHeight: frameHeight,
       })
     : null;
   if (capture) await capture.start();
@@ -351,6 +364,7 @@ async function main() {
           now,
           journey,
           waitPhase: waitPhaseCtl.run,
+          onTargetRect: null,
         };
         const startMs = elapsed();
         const frameStart = capture?.frames.length ?? null;
@@ -372,6 +386,25 @@ async function main() {
             maxLines: script.captions.maxLines,
             _minMs: minMs,
           });
+        }
+
+        // A step with no headline shows no burned-in line — never a fallback to the caption
+        // text. For a step that resolves a real target (TARGET_RECT_ACTIONS), the headline waits
+        // for onTargetRect below, which fires once the pointer has actually arrived there — the
+        // earliest point its real, post-scroll box is known, so the tag can sit clear of it.
+        // Every other step's headline (if it has one) shows immediately against no target at
+        // all, the same as goto's own caption does after its navigation lands.
+        let headlineHideAt = null;
+        const holdHeadline = (text, keyWord, rect) => {
+          const minMs = fastForward ? 0 : captionMinMs(text, script.captions);
+          headlineHideAt = () => elapsed() + minMs;
+          return overlayHeadline(page, text, keyWord, rect, script.viewport);
+        };
+        const showHeadlineBeforeAction = !offCamera && step.headline && step.action !== "goto" && !TARGET_RECT_ACTIONS.has(step.action);
+        if (showHeadlineBeforeAction) {
+          await holdHeadline(step.headline, step.keyWord, null);
+        } else if (!offCamera && step.headline && TARGET_RECT_ACTIONS.has(step.action)) {
+          ctx.onTargetRect = (rect) => holdHeadline(step.headline, step.keyWord, rect);
         }
 
         let waitMs = 0;
@@ -431,6 +464,12 @@ async function main() {
                   });
                 }
               }
+              // A real navigation replaces the whole document, so even a headline already shown
+              // by onTargetRect before the navigation started (a click that also navigates) is
+              // gone from the fresh one and has to be put back, the same as the chapter label
+              // and the caption above. Against no target: whatever box a locator resolved to on
+              // the old page means nothing on the new one.
+              if (step.headline) await holdHeadline(step.headline, step.keyWord, null);
             }
           }
         }
@@ -448,6 +487,12 @@ async function main() {
           await overlayCaption(page, null);
           const last = captionEvents[captionEvents.length - 1];
           last.endMs = elapsed();
+        }
+
+        if (headlineHideAt) {
+          const remaining = headlineHideAt() - elapsed();
+          if (remaining > 0) await new Promise((resolve) => setTimeout(resolve, remaining));
+          await overlayHeadline(page, null, null, null, script.viewport);
         }
 
         // Only a WAIT_CAPABLE_ACTIONS step can navigate or draw the timer pill, so this is the
@@ -567,8 +612,8 @@ async function main() {
       manifestPath,
       outputPath,
       fps,
-      width: script.viewport.width,
-      height: script.viewport.height,
+      width: frameWidth,
+      height: frameHeight,
     });
     console.log(`Wrote ${outputPath}`);
     if (!args.keepFrames) {

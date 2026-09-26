@@ -5,8 +5,8 @@
 //
 // EventBridge target for the Pre Token Generation trigger's fire-and-forget invoke. Every
 // sign-in and refresh, on every app client, arrives here, so this is the single place that
-// tells a fresh sign-in from a resumed session from a routine refresh (see PLAN_SIGN_IN_PARITY.md
-// "The session rule") and publishes the activity event both the lake and Telegram read.
+// tells a fresh sign-in from a resumed session from a routine refresh and publishes the
+// activity event both the lake and Telegram read.
 
 import crypto from "crypto";
 import { publishActivityEvent, classifyActor, maskEmail } from "../../lib/activityAlert.js";
@@ -39,7 +39,10 @@ export function extractProvider(identities) {
 
 /**
  * Classify a Pre Token Generation `triggerSource` and prior session state into the sign-in
- * event this token issue represents. See PLAN_SIGN_IN_PARITY.md "The session rule".
+ * event this token issue represents. Any trigger other than a refresh is a fresh sign-in. A
+ * refresh resumes a session when the previous token issue for the same user and app client is
+ * older than the access-token lifetime (60 minutes) plus 5 minutes' grace, so the old tokens
+ * lapsed with nothing keeping the session alive; otherwise it continues the session.
  *
  * @param {string} triggerSource
  * @param {{lastIssuedAt?: number, sessionId?: string, sessionStartedAt?: number}|null} priorSession

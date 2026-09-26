@@ -22,12 +22,21 @@
     <meta name="rum:guestRoleArn" content="${RUM_GUEST_ROLE_ARN}" />
     <script src="../lib/analytics.js"></script>
     <style>
+      /* This page carries its own width: the shared body { max-width: var(--max-width-content) }
+         rule in submit.css (800px) is right for prose pages, but the tables here (up to 13
+         columns) need the full window width to read comfortably without wrapping every header. */
+      body.page-wide {
+        max-width: none;
+      }
       .objective {
         background: white;
         border-radius: var(--radius-lg);
         box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
         padding: var(--spacing-lg);
         margin: 0 0 var(--spacing-lg) 0;
+        /* Narrow-screen fallback: a table wider than its card scrolls inside the card
+           rather than pushing the card, and so the page, wider than the viewport. */
+        overflow-x: auto;
       }
       .objective h2 {
         margin: 0 0 0.75em 0;
@@ -46,6 +55,9 @@
         text-align: left;
         padding: 0.4em 0.6em;
         border-bottom: 1px solid #eee;
+      }
+      table.observations th {
+        white-space: nowrap;
       }
       .trend-up {
         color: #1a7f37;
@@ -69,9 +81,62 @@
         font-size: 0.9em;
         margin: 0 0 var(--spacing-lg) 0;
       }
+
+      /* Activity column: wide enough that a long catalogue name (e.g. "Change Registered
+         Email Address (Companies House)") sits on one or two lines, not six. */
+      #activitiesTable th:first-child,
+      #activitiesTable td:first-child {
+        min-width: 18em;
+      }
+      /* Group headers ("Started"/"Completed") stay centred over their span; the leaf headers
+         and every count cell right-align to match the numbers they carry. */
+      #activitiesTable thead tr:first-child th:not(:first-child) {
+        text-align: center;
+      }
+      #activitiesTable thead tr:last-child th,
+      #activitiesTable tbody td:not(:first-child) {
+        text-align: right;
+        font-variant-numeric: tabular-nums;
+      }
+      /* Divider between the Started and Completed column groups. */
+      #activitiesTable thead tr:first-child th:nth-child(3),
+      #activitiesTable thead tr:last-child th:nth-child(7),
+      #activitiesTable tbody td:nth-child(8) {
+        border-left: 2px solid var(--color-brand-primary);
+      }
+
+      #companyProfitAndLossTable th:nth-child(2),
+      #companyProfitAndLossTable td:nth-child(2),
+      #companyBalanceSheetTable th:nth-child(2),
+      #companyBalanceSheetTable td:nth-child(2),
+      #visitorsTable th:not(:first-child),
+      #visitorsTable td:not(:first-child),
+      #objectivesContainer table.observations th:nth-child(2),
+      #objectivesContainer table.observations td:nth-child(2),
+      #objectivesContainer table.observations th:nth-child(4),
+      #objectivesContainer table.observations td:nth-child(4) {
+        text-align: right;
+        font-variant-numeric: tabular-nums;
+      }
+
+      /* On a wide screen the visitors table (4 narrow columns) and the experiments list sit
+         side by side instead of each spanning the full, now much wider, page. */
+      .side-panels {
+        display: grid;
+        grid-template-columns: 1fr;
+        gap: var(--spacing-lg);
+      }
+      @media (min-width: 1000px) {
+        .side-panels {
+          grid-template-columns: minmax(280px, 420px) 1fr;
+        }
+        .side-panels .objective {
+          margin-bottom: 0;
+        }
+      }
     </style>
   </head>
-  <body>
+  <body class="page-wide">
     <a href="#mainContent" class="skip-link">Skip to main content</a>
     <header>
       <p class="chrome-fallback"><a href="../">DIY Accounting Submit</a></p>
@@ -138,25 +203,27 @@
 
       <div id="objectivesContainer"></div>
 
-      <section id="visitorsPanel" class="objective">
-        <h2>Visitors</h2>
-        <table class="observations" id="visitorsTable">
-          <thead>
-            <tr>
-              <th>Day</th>
-              <th>Human</th>
-              <th>Bot</th>
-              <th>Synthetic</th>
-            </tr>
-          </thead>
-          <tbody id="visitorsBody"></tbody>
-        </table>
-      </section>
+      <div class="side-panels">
+        <section id="visitorsPanel" class="objective">
+          <h2>Visitors</h2>
+          <table class="observations" id="visitorsTable">
+            <thead>
+              <tr>
+                <th>Day</th>
+                <th>Human</th>
+                <th>Bot</th>
+                <th>Synthetic</th>
+              </tr>
+            </thead>
+            <tbody id="visitorsBody"></tbody>
+          </table>
+        </section>
 
-      <section id="experimentsPanel" class="objective">
-        <h2>Experiments</h2>
-        <ul id="experimentsList"></ul>
-      </section>
+        <section id="experimentsPanel" class="objective">
+          <h2>Experiments</h2>
+          <ul id="experimentsList"></ul>
+        </section>
+      </div>
     </main>
 
     <footer data-footer="full"></footer>

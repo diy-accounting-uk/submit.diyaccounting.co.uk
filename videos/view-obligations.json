@@ -6,8 +6,8 @@
   "auth": "user",
   "pages": ["web/public/index.html", "web/public/auth/login.html", "web/public/bundles.html", "web/public/hmrc/vat/vatObligations.html"],
   "viewport": { "width": 1920, "height": 1080 },
-  "deviceScaleFactor": 1,
-  "fps": 60,
+  "deviceScaleFactor": 2,
+  "fps": 30,
 
   "pacing": {
     "perCharMs": 90,
@@ -45,7 +45,9 @@
           "action": "goto",
           "url": "/",
           "waitFor": "#mainContent",
-          "caption": "HMRC keeps a list of the VAT periods you owe."
+          "caption": "HMRC keeps a list of the VAT periods you owe.",
+          "headline": "See your VAT periods",
+          "keyWord": "periods"
         },
         { "action": "point", "target": { "role": "heading", "name": "DIY Accounting Submit" }, "dwellMs": 300 },
         { "action": "hold", "ms": 600 }
@@ -59,11 +61,15 @@
         {
           "action": "click",
           "target": "a.login-link",
-          "caption": "Sign in with the account you already use."
+          "caption": "Sign in with the account you already use.",
+          "headline": "Sign in first",
+          "keyWord": "Sign"
         },
         {
           "action": "login",
-          "caption": "Your account keeps your submissions in one place."
+          "caption": "Your account keeps your submissions in one place.",
+          "headline": "Confirm your identity",
+          "keyWord": "identity"
         },
         { "action": "consent" },
         { "action": "hold", "ms": 600 }
@@ -77,19 +83,25 @@
         {
           "action": "click",
           "target": { "role": "link", "name": "Bundles" },
-          "caption": "Bundles decide which activities you can run."
+          "caption": "Bundles decide which activities you can run.",
+          "headline": "Open your bundles",
+          "keyWord": "bundles"
         },
         {
           "action": "ensureBundle",
           "bundle": "Day pass",
           "testPass": true,
-          "caption": "A day pass opens the VAT activities for a day."
+          "caption": "A day pass opens the VAT activities for a day.",
+          "headline": "Get a day pass",
+          "keyWord": "pass"
         },
         { "action": "hold", "ms": 700 },
         {
           "action": "click",
           "target": { "role": "link", "name": "Activities" },
-          "caption": "Every activity starts from the home page."
+          "caption": "Every activity starts from the home page.",
+          "headline": "Go to activities",
+          "keyWord": "activities"
         },
         { "action": "hold", "ms": 500 }
       ]
@@ -102,7 +114,9 @@
         {
           "action": "click",
           "target": "button:has-text('VAT Obligations (HMRC)')",
-          "caption": "Open VAT Obligations to ask HMRC what is due."
+          "caption": "Open VAT Obligations to ask HMRC what is due.",
+          "headline": "Open VAT Obligations",
+          "keyWord": "Obligations"
         },
         { "action": "await", "until": "#vatObligationsForm", "label": "Opening the obligations form" },
         {
@@ -110,13 +124,17 @@
           "target": "#vrn",
           "text": "{{hmrcVatNumber}}",
           "clear": true,
-          "caption": "Type the VAT registration number."
+          "caption": "Type the VAT registration number.",
+          "headline": "Enter your VAT number",
+          "keyWord": "number"
         },
         {
           "action": "fill",
           "target": "#fromDate",
           "value": "{{monthsAgo:11}}",
-          "caption": "Then the stretch of time to look at."
+          "caption": "Then the stretch of time to look at.",
+          "headline": "Choose the start date",
+          "keyWord": "start"
         },
         { "action": "fill", "target": "#toDate", "value": "{{today}}" },
         { "action": "hold", "ms": 700 }
@@ -130,11 +148,15 @@
         {
           "action": "click",
           "target": "#retrieveBtn",
-          "caption": "The first request sends you to HMRC to grant access."
+          "caption": "The first request sends you to HMRC to grant access.",
+          "headline": "Ask HMRC for access",
+          "keyWord": "access"
         },
         {
           "action": "hmrcAuthorise",
           "caption": "Sign in to HMRC and say yes once.",
+          "headline": "Grant HMRC access",
+          "keyWord": "Grant",
           "timeoutMs": 60000
         },
         { "action": "hold", "ms": 500 }
@@ -150,7 +172,9 @@
           "until": "#obligationsResults",
           "label": "Waiting for HMRC",
           "timeoutMs": 180000,
-          "caption": "HMRC answers with the periods it is expecting."
+          "caption": "HMRC answers with the periods it is expecting.",
+          "headline": "HMRC sends the answer",
+          "keyWord": "answer"
         },
         { "action": "scroll", "target": "#obligationsTable" },
         { "action": "hold", "ms": 1500 },
@@ -158,6 +182,8 @@
           "action": "point",
           "target": "#obligationsTable",
           "caption": "Each row is a period, its due date and its status.",
+          "headline": "Read each VAT period",
+          "keyWord": "period",
           "dwellMs": 600
         },
         { "action": "hold", "ms": 2500 },

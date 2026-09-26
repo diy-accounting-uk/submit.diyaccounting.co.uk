@@ -5,8 +5,8 @@
 //
 // Authenticated sign-out for all three Cognito app clients (submit, books, mcp), behind the
 // all-clients JWT authoriser (ApiStack.java). Publishes the "logout" activity event this
-// client's session item names, then deletes that item -- see PLAN_SIGN_IN_PARITY.md "The
-// session rule".
+// client's session item names (`session#{hashedSub}#{appClient}` in the security state table),
+// then deletes that item.
 
 import { createLogger } from "../../lib/logger.js";
 import { extractUserFromAuthorizerContext, http200OkResponse, http401UnauthorizedResponse } from "../../lib/httpResponseHelper.js";

@@ -4,24 +4,8 @@
 // app/unit-tests/functions/scanRate404Detect.test.js
 
 import { describe, test, expect, vi, beforeEach } from "vitest";
-
-const mockS3Send = vi.fn();
-const mockS3ClientConstructor = vi.fn();
-vi.mock("@aws-sdk/client-s3", () => ({
-  S3Client: class {
-    constructor(config) {
-      mockS3ClientConstructor(config);
-    }
-    send(...args) {
-      return mockS3Send(...args);
-    }
-  },
-  ListObjectsV2Command: class {
-    constructor(input) {
-      this.input = input;
-    }
-  },
-}));
+import { readFileSync } from "node:fs";
+import { fileURLToPath } from "node:url";
 
 const mockSsmSend = vi.fn();
 vi.mock("@aws-sdk/client-ssm", () => ({
@@ -54,29 +38,59 @@ vi.mock("@app/functions/analytics/analyticsMetricsPublish.js", () => ({
 
 import {
   handler,
-  discoverDistributionIds,
   readHighWaterMark,
   datesInWindow,
   buildQuery,
   highWaterMarkParameterName,
 } from "@app/functions/security/scanRate404Detect.js";
 
-function commonPrefixesResponse(ids, { truncated = false } = {}) {
-  return {
-    CommonPrefixes: ids.map((id) => ({ Prefix: `raw/cloudfront/distributionid=${id}/` })),
-    IsTruncated: truncated,
-  };
+/**
+ * The Glue table's real column set, read from the same source CloudFrontAccessLogs.java builds
+ * the table from, so a future edit that drifts the query away from the table fails here instead
+ * of at Athena's COLUMN_NOT_FOUND.
+ *
+ * @returns {string[]}
+ */
+function tableColumnsFromJava() {
+  const testDir = fileURLToPath(new URL(".", import.meta.url));
+  const javaSource = readFileSync(
+    `${testDir}/../../../infra/main/java/co/uk/diyaccounting/submit/stacks/analytics/CloudFrontAccessLogs.java`,
+    "utf8",
+  );
+  const fieldOrderMatch = /FIELD_ORDER\s*=\s*List\.of\(([\s\S]*?)\);/.exec(javaSource);
+  if (!fieldOrderMatch) throw new Error("Could not find FIELD_ORDER in CloudFrontAccessLogs.java");
+  return [...fieldOrderMatch[1].matchAll(/"([a-z_]+)"/g)].map((match) => match[1]);
 }
+
+// Bareword lowercase identifiers in the query template that are not table columns: SQL keywords,
+// functions, the table name, and this query's own output aliases.
+const NON_COLUMN_IDENTIFIERS = new Set([
+  "select",
+  "from",
+  "where",
+  "and",
+  "or",
+  "group",
+  "by",
+  "having",
+  "count",
+  "as",
+  "in",
+  "not",
+  "like",
+  "substr",
+  "concat",
+  "cloudfront_requests",
+  "minute",
+  "hits",
+]);
 
 describe("functions/security/scanRate404Detect", () => {
   beforeEach(() => {
-    mockS3Send.mockReset();
-    mockS3ClientConstructor.mockReset();
     mockSsmSend.mockReset();
     mockPublishActivityEvent.mockClear();
     mockRunAthenaQuery.mockReset();
     process.env.ENVIRONMENT_NAME = "ci";
-    process.env.ANALYTICS_LAKE_BUCKET_NAME = "ci-env-analytics-lake-111111111111";
     process.env.ATHENA_WORK_GROUP_NAME = "ci-env-analytics";
     process.env.GLUE_DATABASE_NAME = "ci_env_analytics";
     delete process.env.SCAN_DETECTION_404_PER_MINUTE;
@@ -85,28 +99,6 @@ describe("functions/security/scanRate404Detect", () => {
   describe("highWaterMarkParameterName", () => {
     test("is scoped to the environment", () => {
       expect(highWaterMarkParameterName()).toBe("/ci/submit/scan-detection/last-evaluated-minute");
-    });
-  });
-
-  describe("discoverDistributionIds", () => {
-    test("parses distribution ids out of distributionid= common prefixes", async () => {
-      mockS3Send.mockResolvedValueOnce(commonPrefixesResponse(["EDFXAMPLE1", "EDFXAMPLE2"]));
-
-      const ids = await discoverDistributionIds({ bucket: "lake-bucket" });
-
-      expect(ids).toEqual(["EDFXAMPLE1", "EDFXAMPLE2"]);
-      expect(mockS3Send).toHaveBeenCalledTimes(1);
-    });
-
-    test("pages through a truncated listing", async () => {
-      mockS3Send
-        .mockResolvedValueOnce({ ...commonPrefixesResponse(["EDFXAMPLE1"], { truncated: true }), NextContinuationToken: "tok" })
-        .mockResolvedValueOnce(commonPrefixesResponse(["EDFXAMPLE2"]));
-
-      const ids = await discoverDistributionIds({ bucket: "lake-bucket" });
-
-      expect(ids).toEqual(["EDFXAMPLE1", "EDFXAMPLE2"]);
-      expect(mockS3Send).toHaveBeenCalledTimes(2);
     });
   });
 
@@ -142,48 +134,43 @@ describe("functions/security/scanRate404Detect", () => {
   });
 
   describe("buildQuery", () => {
-    test("keeps date and time double-quoted and excludes the probe user agent", () => {
-      const sql = buildQuery({
-        distributionIds: ["EDFXAMPLE1"],
-        dateStr: "2026-08-31",
-        startExclusive: new Date("2026-08-31T10:00:00Z"),
-        endInclusive: new Date("2026-08-31T10:05:00Z"),
-        threshold: 20,
-      });
+    const baseParams = {
+      dateStr: "2026-08-31",
+      startExclusive: new Date("2026-08-31T10:00:00Z"),
+      endInclusive: new Date("2026-08-31T10:05:00Z"),
+      threshold: 20,
+    };
+
+    test("keeps date and time double-quoted, groups by host, and excludes the probe user agent", () => {
+      const sql = buildQuery(baseParams);
 
       expect(sql).toContain('"date"');
       expect(sql).toContain('"time"');
+      expect(sql).toContain("cs_host");
+      expect(sql).not.toContain("distribution_id");
       expect(sql).toContain("NOT LIKE '%DIYAccountingProbe%'");
       expect(sql).toContain("year  = 2026 AND month = 8 AND day = 31");
       expect(sql).toContain("HAVING   count(*) > 20");
     });
+
+    test("references only columns present in the Glue table plus its date partition keys", () => {
+      const sql = buildQuery(baseParams);
+      const tableColumns = new Set([...tableColumnsFromJava(), "year", "month", "day"]);
+
+      const identifiers = new Set(
+        [...sql.matchAll(/"([a-z_]+)"|\b([a-z][a-z0-9_]*)\b/g)]
+          .map((match) => match[1] ?? match[2])
+          .filter((identifier) => !NON_COLUMN_IDENTIFIERS.has(identifier)),
+      );
+
+      for (const identifier of identifiers) {
+        expect(tableColumns.has(identifier), `"${identifier}" is not a cloudfront_requests column or partition key`).toBe(true);
+      }
+    });
   });
 
   describe("handler", () => {
-    test("retries throttled S3 listing adaptively before failing the cycle", async () => {
-      vi.resetModules();
-      mockS3ClientConstructor.mockClear();
-
-      const { handler: handlerFresh, discoverDistributionIds: discoverDistributionIdsFresh } =
-        await import("@app/functions/security/scanRate404Detect.js");
-
-      mockS3Send.mockResolvedValueOnce(commonPrefixesResponse(["EDFXAMPLE1"]));
-      mockSsmSend.mockResolvedValueOnce({ Parameter: undefined }).mockResolvedValueOnce({});
-      mockRunAthenaQuery.mockResolvedValueOnce([]);
-
-      await handlerFresh({ now: "2026-08-31T10:20:00Z" });
-
-      expect(mockS3ClientConstructor).toHaveBeenCalledWith(
-        expect.objectContaining({
-          region: "eu-west-2",
-          maxAttempts: 6,
-          retryMode: "adaptive",
-        }),
-      );
-    });
-
     test("a first run with no stored parameter starts ten minutes back", async () => {
-      mockS3Send.mockResolvedValueOnce(commonPrefixesResponse(["EDFXAMPLE1"]));
       mockSsmSend.mockResolvedValueOnce({ Parameter: undefined }).mockResolvedValueOnce({});
       mockRunAthenaQuery.mockResolvedValueOnce([]);
 
@@ -196,7 +183,6 @@ describe("functions/security/scanRate404Detect", () => {
     });
 
     test("the query window starts at the stored high-water mark and ends five minutes back", async () => {
-      mockS3Send.mockResolvedValueOnce(commonPrefixesResponse(["EDFXAMPLE1"]));
       mockSsmSend.mockResolvedValueOnce({ Parameter: { Value: "2026-08-31T10:00" } }).mockResolvedValueOnce({});
       mockRunAthenaQuery.mockResolvedValueOnce([]);
 
@@ -208,7 +194,6 @@ describe("functions/security/scanRate404Detect", () => {
     });
 
     test("a window spanning midnight produces one query per date", async () => {
-      mockS3Send.mockResolvedValueOnce(commonPrefixesResponse(["EDFXAMPLE1"]));
       mockSsmSend.mockResolvedValueOnce({ Parameter: { Value: "2026-08-31T23:50" } }).mockResolvedValueOnce({});
       mockRunAthenaQuery.mockResolvedValue([]);
 
@@ -217,11 +202,10 @@ describe("functions/security/scanRate404Detect", () => {
       expect(mockRunAthenaQuery).toHaveBeenCalledTimes(2);
     });
 
-    test("each returned row produces one ActivityEvent carrying the IP, the count and the distribution id", async () => {
-      mockS3Send.mockResolvedValueOnce(commonPrefixesResponse(["EDFXAMPLE1"]));
+    test("each returned row produces one ActivityEvent carrying the IP, the count and the host", async () => {
       mockSsmSend.mockResolvedValueOnce({ Parameter: { Value: "2026-08-31T10:00" } }).mockResolvedValueOnce({});
       mockRunAthenaQuery.mockResolvedValueOnce([
-        { distribution_id: "EDFXAMPLE1", c_ip: "203.0.113.9", minute: "2026-08-31T10:03", hits: "27" },
+        { cs_host: "ci-set1.submit.diyaccounting.co.uk", c_ip: "203.0.113.9", minute: "2026-08-31T10:03", hits: "27" },
       ]);
 
       await handler({ now: "2026-08-31T10:20:00Z" });
@@ -230,15 +214,14 @@ describe("functions/security/scanRate404Detect", () => {
       const call = mockPublishActivityEvent.mock.calls[0][0];
       expect(call.detail.clientIp).toBe("203.0.113.9");
       expect(call.detail.hits).toBe(27);
-      expect(call.detail.distributionId).toBe("EDFXAMPLE1");
+      expect(call.detail.host).toBe("ci-set1.submit.diyaccounting.co.uk");
       expect(call.flow).toBe("operational");
     });
 
     test("the high-water mark advances only after publishing succeeds", async () => {
-      mockS3Send.mockResolvedValueOnce(commonPrefixesResponse(["EDFXAMPLE1"]));
       mockSsmSend.mockResolvedValueOnce({ Parameter: { Value: "2026-08-31T10:00" } }).mockResolvedValueOnce({});
       mockRunAthenaQuery.mockResolvedValueOnce([
-        { distribution_id: "EDFXAMPLE1", c_ip: "203.0.113.9", minute: "2026-08-31T10:03", hits: "27" },
+        { cs_host: "ci-set1.submit.diyaccounting.co.uk", c_ip: "203.0.113.9", minute: "2026-08-31T10:03", hits: "27" },
       ]);
 
       await handler({ now: "2026-08-31T10:20:00Z" });
@@ -249,10 +232,9 @@ describe("functions/security/scanRate404Detect", () => {
     });
 
     test("a publish failure leaves the stored mark unchanged", async () => {
-      mockS3Send.mockResolvedValueOnce(commonPrefixesResponse(["EDFXAMPLE1"]));
       mockSsmSend.mockResolvedValueOnce({ Parameter: { Value: "2026-08-31T10:00" } });
       mockRunAthenaQuery.mockResolvedValueOnce([
-        { distribution_id: "EDFXAMPLE1", c_ip: "203.0.113.9", minute: "2026-08-31T10:03", hits: "27" },
+        { cs_host: "ci-set1.submit.diyaccounting.co.uk", c_ip: "203.0.113.9", minute: "2026-08-31T10:03", hits: "27" },
       ]);
       mockPublishActivityEvent.mockRejectedValueOnce(new Error("EventBridge unavailable"));
 

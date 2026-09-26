@@ -18,7 +18,6 @@ import { respondWithDiyaGlCors } from "../../lib/diyaGlCors.js";
 import { initializeSalt } from "../../services/subHasher.js";
 import { resolveAppClient } from "../../lib/appClientResolver.js";
 import { publishActivityEvent } from "../../lib/activityAlert.js";
-import { entitlementFor, lapsedResidentExpiresAt } from "../../services/diyaGlEntitlement.js";
 import { isValidBookId, resolveOwnerPrefix, readMetadata, getVersion } from "../../data/s3DiyaGlRepository.js";
 import { getClient } from "../../data/dynamoDbPracticeClientRepository.js";
 
@@ -107,25 +106,17 @@ export async function ingestHandler(event) {
       }
       const { metadata } = metadataResult;
 
-      if (metadata.retention === "sandbox") {
-        if (metadata.expiresAt && Date.parse(metadata.expiresAt) <= Date.now()) {
-          return http404NotFoundResponse({
-            request,
-            headers: corsHeaders,
-            message: "book-expired",
-            error: { code: "book-expired" },
-          });
-        }
-      } else if (metadata.retention === "resident") {
-        const entitlement = await entitlementFor(user.sub, clientId);
-        if (entitlement.reason === "expired" && Date.parse(lapsedResidentExpiresAt(entitlement.expiry)) <= Date.now()) {
-          return http404NotFoundResponse({
-            request,
-            headers: corsHeaders,
-            message: "book-expired",
-            error: { code: "book-expired" },
-          });
-        }
+      // A lapsed Resident subscription moves its books onto the sandbox tier at the moment it
+      // lapses (the billing webhook), with `expiresAt` set the same way a new sandbox book gets
+      // one - so the object's own metadata carries the whole answer here, with no separate live
+      // entitlement check for a "resident" book still inside its grace window.
+      if (metadata.retention === "sandbox" && metadata.expiresAt && Date.parse(metadata.expiresAt) <= Date.now()) {
+        return http404NotFoundResponse({
+          request,
+          headers: corsHeaders,
+          message: "book-expired",
+          error: { code: "book-expired" },
+        });
       }
 
       const version = resolveVersionParam(event.pathParameters?.version, metadata);

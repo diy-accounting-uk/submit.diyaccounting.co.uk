@@ -16,8 +16,8 @@
     "width": 1920,
     "height": 1080
   },
-  "deviceScaleFactor": 1,
-  "fps": 60,
+  "deviceScaleFactor": 2,
+  "fps": 30,
   "pacing": {
     "perCharMs": 90,
     "betweenActionsMs": 700,

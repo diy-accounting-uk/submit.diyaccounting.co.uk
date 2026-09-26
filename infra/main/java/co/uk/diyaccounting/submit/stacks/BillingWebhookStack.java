@@ -139,14 +139,24 @@ public class BillingWebhookStack extends Stack {
                 Table.fromTableName(this, "SubscriptionsTable", props.sharedNames().subscriptionsTableName);
         ITable activityChargesTable =
                 Table.fromTableName(this, "ActivityChargesTable", props.sharedNames().activityChargesTableName);
+        ITable practiceClientsTable =
+                Table.fromTableName(this, "PracticeClientsTable", props.sharedNames().practiceClientsTableName);
         String activityBusArn =
                 "arn:aws:events:%s:%s:event-bus/%s".formatted(region, account, props.sharedNames().activityBusName);
+
+        // A Resident (or resident-pro practice) subscription lapsing or being reactivated moves
+        // the owner's (or each of a practice's clients') diya-gl books between the resident and
+        // sandbox tiers - see setOwnerBooksRetention in s3DiyaGlRepository.js.
+        String diyaGlBucketArn = "arn:aws:s3:::" + props.sharedNames().diyaGlBucketName;
+        String booksObjectsArnPattern = diyaGlBucketArn + "/users/*/books/*";
 
         var lambdaEnv = new PopulatedMap<String, String>()
                 .with("SUBSCRIPTIONS_DYNAMODB_TABLE_NAME", subscriptionsTable.getTableName())
                 .with("BUNDLE_DYNAMODB_TABLE_NAME", bundlesTable.getTableName())
                 .with("ACTIVITY_CHARGES_DYNAMODB_TABLE_NAME", activityChargesTable.getTableName())
                 .with("ACTIVITY_BUS_NAME", props.sharedNames().activityBusName)
+                .with("PRACTICE_CLIENTS_DYNAMODB_TABLE_NAME", practiceClientsTable.getTableName())
+                .with("DIYA_GL_BUCKET_NAME", props.sharedNames().diyaGlBucketName)
                 .with("ENVIRONMENT_NAME", props.envName());
         if (props.stripeSecretKeyArn() != null && !props.stripeSecretKeyArn().isBlank()) {
             lambdaEnv.with("STRIPE_SECRET_KEY_ARN", props.stripeSecretKeyArn());
@@ -199,6 +209,23 @@ public class BillingWebhookStack extends Stack {
         // webhook makes to activity charges; marking a charge used happens on the activity's own
         // consuming route, not here.
         activityChargesTable.grant(webhookFunction, "dynamodb:PutItem");
+        // Query only - listClientsByHashedSub, to find a practice's clients on a resident-pro
+        // lapse or reactivation.
+        practiceClientsTable.grant(webhookFunction, "dynamodb:Query");
+
+        // Grant diya-gl book retention moves: retagBookObjects (CopyObject, self to self) needs
+        // GetObject on the source and PutObject/PutObjectTagging on the destination, which are
+        // the same object; setOwnerBooksRetention also lists and rewrites metadata.json content.
+        webhookFunction.addToRolePolicy(PolicyStatement.Builder.create()
+                .effect(Effect.ALLOW)
+                .actions(List.of("s3:ListBucket"))
+                .resources(List.of(diyaGlBucketArn))
+                .build());
+        webhookFunction.addToRolePolicy(PolicyStatement.Builder.create()
+                .effect(Effect.ALLOW)
+                .actions(List.of("s3:GetObject", "s3:PutObject", "s3:PutObjectTagging"))
+                .resources(List.of(booksObjectsArnPattern))
+                .build());
 
         // Grant sub hash salt access
         SubHashSaltHelper.grantSaltAccess(webhookFunction, region, account, props.envName());

@@ -149,9 +149,11 @@ function buildEnvelopeXml({ requestClass, transactionId, gatewayTest, presenterI
  * @param {string} input.companyNumber
  * @param {string} input.companyName
  * @param {string} input.companyAuthenticationCode
- * @param {string} [input.packageReference] - the value Companies House's XML team issues per
+ * @param {string} input.packageReference - the value Companies House's XML team issues per
  *   environment (the test service and the live service each expect a different one); the caller
- *   resolves it from configuration, defaulting to blank only when a caller has none to give
+ *   resolves it from configuration. A blank or missing value throws rather than reaching the
+ *   gateway, which otherwise answers every case with error 9999 "The package reference '' is
+ *   invalid".
  * @param {string} input.formIdentifier - the form's FormIdentifier and GovTalk Class, e.g.
  *   "Accounts" or "ConfirmationAndVerificationStatement"
  * @param {string} input.submissionNumber - exactly 6 characters
@@ -173,7 +175,7 @@ export function buildFormSubmission({
   companyNumber,
   companyName,
   companyAuthenticationCode,
-  packageReference = "",
+  packageReference,
   formIdentifier,
   submissionNumber,
   dateSigned,
@@ -182,6 +184,10 @@ export function buildFormSubmission({
   transactionId = String(Date.now()),
   gatewayTest = false,
 }) {
+  if (!packageReference || !packageReference.trim()) {
+    throw new Error(`Missing or blank packageReference for FormSubmission ${formIdentifier}`);
+  }
+
   const documentXml = document
     ? `
       <Document>
@@ -221,7 +227,7 @@ export function buildFormSubmission({
  * @param {string} input.companyNumber
  * @param {string} input.companyName
  * @param {string} input.companyAuthenticationCode
- * @param {string} [input.packageReference]
+ * @param {string} input.packageReference
  * @param {string} input.submissionNumber - exactly 6 characters
  * @param {string} input.dateSigned - ISO date the director signed
  * @param {string} input.ixbrl - the generated iXBRL document, not yet base64-encoded
@@ -236,7 +242,7 @@ export function buildAccountsSubmission({
   companyNumber,
   companyName,
   companyAuthenticationCode,
-  packageReference = "",
+  packageReference,
   submissionNumber,
   dateSigned,
   ixbrl,
@@ -273,7 +279,7 @@ export function buildAccountsSubmission({
  * @param {string} input.companyNumber
  * @param {string} input.companyName
  * @param {string} input.companyAuthenticationCode
- * @param {string} [input.packageReference]
+ * @param {string} input.packageReference
  * @param {string} input.submissionNumber - exactly 6 characters
  * @param {string} input.dateSigned - ISO date the director signed
  * @param {string} input.statementXml - the built ConfirmationAndVerificationStatement element,
@@ -290,7 +296,7 @@ export function buildConfirmationStatementSubmission({
   companyNumber,
   companyName,
   companyAuthenticationCode,
-  packageReference = "",
+  packageReference,
   submissionNumber,
   dateSigned,
   statementXml,
@@ -326,7 +332,7 @@ export function buildConfirmationStatementSubmission({
  * @param {string} input.companyNumber
  * @param {string} input.companyName
  * @param {string} input.companyAuthenticationCode
- * @param {string} [input.packageReference]
+ * @param {string} input.packageReference
  * @param {string} input.submissionNumber - exactly 6 characters
  * @param {string} input.dateSigned - ISO date the PSC's verification was signed
  * @param {string} input.statementXml - the built PSCVerificationStatement element, e.g. from
@@ -341,7 +347,7 @@ export function buildPscVerificationStatementSubmission({
   companyNumber,
   companyName,
   companyAuthenticationCode,
-  packageReference = "",
+  packageReference,
   submissionNumber,
   dateSigned,
   statementXml,
