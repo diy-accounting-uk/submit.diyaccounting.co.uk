@@ -560,6 +560,13 @@ async function emptyBucket(bucketName) {
       // young deployment, not a failure, so it is logged at warn rather than error.
       if (error.name === "NoSuchBucket" || error.message?.includes("does not exist")) {
         console.warn(`Bucket ${bucketName} does not exist yet, nothing to empty: ${error.message}`);
+      } else if (error.name === "PermanentRedirect") {
+        // The same young-deployment race has a second shape: resolveBucketRegion() above
+        // already swallows its own GetBucketLocation failure and falls back to a default
+        // region when the bucket does not exist yet. If EdgeStack finishes creating the
+        // bucket in a different region between that fallback and this list call, S3 answers
+        // the wrong-region client with PermanentRedirect rather than NoSuchBucket.
+        console.warn(`Bucket ${bucketName} not addressable in the resolved region yet: ${error.message}`);
       } else {
         console.error(`Error retrieving bucket contents for bucket ${bucketName}: ${error.message}`);
         console.log(`Error retrieving bucket contents for bucket ${bucketName}: stack trace: ${error.stack}`);

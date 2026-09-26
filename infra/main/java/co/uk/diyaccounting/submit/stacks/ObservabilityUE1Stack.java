@@ -99,18 +99,24 @@ public class ObservabilityUE1Stack extends Stack {
                         .crossRegionReferences(stackProps != null ? stackProps.getCrossRegionReferences() : null)
                         .build());
 
-        // Log Group for CloudFront access logs (idempotent creation)
+        // Log Group for CloudFront access logs (idempotent creation). Keeps the environment's
+        // configured retention rather than the helper default of three days, same reason as the
+        // eu-west-2 API access log group: it is the evidence behind its alarms.
         this.distributionAccessLogGroup = ensureLogGroupWithDependency(
                         this,
                         props.resourceNamePrefix() + "-DistributionAccessLogGroup",
-                        props.sharedNames().distributionAccessLogGroupName)
+                        props.sharedNames().distributionAccessLogGroupName,
+                        props.logGroupRetentionPeriodDays())
                 .logGroup();
 
-        // Log group for self-destruct operations (idempotent creation)
+        // Log group for self-destruct operations (idempotent creation). Shared across every
+        // deployment in the environment; keeps the environment's configured retention for the
+        // same reason (it is the evidence behind the self-destruct log-errors alarm).
         this.selfDestructLogGroup = ensureLogGroupWithDependency(
                         this,
                         props.resourceNamePrefix() + "-SelfDestructLogGroup",
-                        props.sharedNames().ue1SelfDestructLogGroupName)
+                        props.sharedNames().ue1SelfDestructLogGroupName,
+                        props.logGroupRetentionPeriodDays())
                 .logGroup();
         infof(
                 "ObservabilityStack %s created successfully for %s",
