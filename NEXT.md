@@ -46,6 +46,8 @@ step.
 
 ## Machine-only
 
+- [ ] **B30u. CloudWatch cost anomaly in submit-ci, 2026-09-22 to 24.** AWS Cost Anomaly Detection (monitor `org-service-spend`, AWS managed, reported to the management account 887764105431 because it watches the organisation) flagged AmazonCloudWatch in member account 367191799875 (submit-ci), eu-west-2: total impact $15.97 over 3 days, max $5.97 a day, from `EUW2-CW:AlarmMonitorUsage` ($2.93) and `EUW2-CW:MetricMonitorUsage` ($2.05); last detected 2026-09-24, though ci deployed heavily again on 2026-09-25 and 26. Measure with read-only calls: Cost Explorer daily CloudWatch cost by usage type for submit-ci since 2026-09-01 (`aws --profile management ce get-cost-and-usage` with a LINKED_ACCOUNT filter, or `--profile submit-ci`), the alarm count per ci set (`aws --profile submit-ci cloudwatch describe-alarms` grouped by the `ci-setN-app-` prefix; prod carries about 660 alarms across its env and one app set), and whether destroyed sets leave alarms or custom metrics behind (alarms named for sets no longer standing). Then propose the cut: fewer per-Lambda alarms on ci sets (the ci alarms feed no one), alarms removed with their set, or both, as a row with the files; BACKLOG 30 (alarm cuts) and 43 (cost) are the homes. **Source**: AWS anomaly email, 2026-09-25. **Owner**: Claude Code. **Model**: Sonnet. **Size**: 0 files.
+
 ## Machine-ask
 
 ## Human-driven
