@@ -261,4 +261,7 @@ already visually lossless at this content's motion level, so file size decided.
   "Capture and encode settings" above for the resolution, frame rate and CRF defaults.
 - `scripts/lib/video/chapters.js` / `scripts/video-chapters.mjs` — Step 5a's chapter lines,
   built from a run's own `timeline.json` and the scene script's chapter labels.
+- `scripts/lib/video/videoCoverageAllowList.js` / `app/unit-tests/video/videoCoverage.test.js`
+  — the reasoned exceptions to "every prod-listed activity has a scene script", and the check
+  itself.
 - `.github/workflows/video-capture.yml` — the real recording, dispatched by hand.

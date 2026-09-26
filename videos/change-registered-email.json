@@ -1,0 +1,181 @@
+{
+  "$schema": "./scene-script.schema.json",
+  "name": "change-registered-email",
+  "title": "Change a company's registered email address",
+  "description": "A signed-in walk through changing a registered email address: check eligibility, enter the new address, review it, then file with Companies House's sandbox.",
+  "auth": "user",
+  "pages": ["web/public/index.html", "web/public/auth/login.html", "web/public/companies-house/changeRegisteredEmail.html"],
+  "viewport": { "width": 1920, "height": 1080 },
+  "deviceScaleFactor": 2,
+  "fps": 30,
+
+  "pacing": {
+    "perCharMs": 90,
+    "betweenActionsMs": 700,
+    "aroundMotionMs": 600,
+    "minResidualMs": 150,
+    "timerThresholdMs": 250,
+    "timerFullScaleMs": 5000,
+    "waitCompressionAfterMs": 6000,
+    "waitCompressionFactor": 8
+  },
+
+  "captions": {
+    "fontPx": 40,
+    "lineHeightPx": 56,
+    "maxLines": 2,
+    "maxCharsPerLine": 46,
+    "charsPerSecond": 15,
+    "minMs": 1500,
+    "fadeMs": 250,
+    "safeArea": { "topPct": 5, "bottomPct": 5, "sidePct": 12.5 }
+  },
+
+  "suppress": ["#feedbackEngagementBanner", "#feedbackEngagementSection"],
+
+  "finalHoldMs": 3000,
+
+  "scenes": [
+    {
+      "id": "home",
+      "chapter": "Home",
+      "still": true,
+      "fastForward": true,
+      "steps": [
+        {
+          "action": "goto",
+          "url": "/",
+          "waitFor": "#mainContent",
+          "caption": "A company can also change its registered email address with Companies House.",
+          "headline": "Change a registered email",
+          "keyWord": "email"
+        },
+        {
+          "action": "caption",
+          "text": "See the full sign-in walkthrough in our sign-in video.",
+          "holdMs": 1200,
+          "headline": "Sign in, faster",
+          "keyWord": "faster"
+        },
+        { "action": "hold", "ms": 300 }
+      ]
+    },
+    {
+      "id": "sign-in",
+      "chapter": "Sign in",
+      "still": true,
+      "fastForward": true,
+      "steps": [
+        { "action": "click", "target": "a.login-link" },
+        { "action": "login" },
+        { "action": "consent" },
+        {
+          "action": "await",
+          "until": "button:has-text('Change Registered Email Address (Companies House)')",
+          "label": "Waiting for the activity to appear"
+        },
+        { "action": "hold", "ms": 500 }
+      ]
+    },
+    {
+      "id": "company-lookup",
+      "chapter": "Which company?",
+      "still": true,
+      "steps": [
+        {
+          "action": "click",
+          "target": { "role": "button", "name": "Change Registered Email Address (Companies House)" },
+          "expectsNavigation": true,
+          "caption": "Open Change Registered Email Address to find the company.",
+          "headline": "Open the activity",
+          "keyWord": "email"
+        },
+        { "action": "await", "until": "#companyForm", "label": "Opening the company lookup form" },
+        {
+          "action": "type",
+          "target": "#companyNumber",
+          "text": "06846849",
+          "clear": true,
+          "caption": "Type the company number.",
+          "headline": "Enter the company number",
+          "keyWord": "number"
+        },
+        {
+          "action": "click",
+          "target": "#companyLookupBtn",
+          "caption": "This checks eligibility at Companies House."
+        },
+        { "action": "await", "until": "#formView", "label": "Checking eligibility" },
+        { "action": "hold", "ms": 500 }
+      ]
+    },
+    {
+      "id": "new-email",
+      "chapter": "The new address",
+      "still": true,
+      "steps": [
+        {
+          "action": "type",
+          "target": "#registeredEmailAddress",
+          "text": "office@example.com",
+          "caption": "Type the new registered email address.",
+          "headline": "Enter the new address",
+          "keyWord": "address"
+        },
+        {
+          "action": "click",
+          "target": "#acceptEmailStatement",
+          "caption": "Confirm the company is likely to notice mail sent there."
+        },
+        {
+          "action": "click",
+          "target": "#continueBtn",
+          "caption": "Review before anything is filed."
+        },
+        { "action": "hold", "ms": 700 }
+      ]
+    },
+    {
+      "id": "review",
+      "chapter": "Review",
+      "still": true,
+      "steps": [
+        {
+          "action": "await",
+          "until": "#reviewView",
+          "label": "Loading the review",
+          "caption": "Nothing has gone to Companies House yet.",
+          "headline": "Review before filing",
+          "keyWord": "Review"
+        },
+        { "action": "point", "target": "#reviewEmailAddress", "dwellMs": 400 },
+        {
+          "action": "click",
+          "target": "#submitFilingBtn",
+          "caption": "File the change with Companies House."
+        },
+        { "action": "hold", "ms": 500 }
+      ]
+    },
+    {
+      "id": "result",
+      "chapter": "The outcome",
+      "still": true,
+      "steps": [
+        {
+          "action": "await",
+          "until": "#resultView",
+          "label": "Waiting for Companies House",
+          "timeoutMs": 60000,
+          "caption": "Companies House settles on an outcome.",
+          "headline": "The filing outcome",
+          "keyWord": "outcome"
+        },
+        { "action": "point", "target": "#filingResult", "dwellMs": 500 },
+        { "action": "hold", "ms": 1500 },
+        { "action": "still", "name": "change-registered-email-result" },
+        { "action": "hold", "ms": 1500 }
+      ]
+    }
+  ]
+}
