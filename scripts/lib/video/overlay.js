@@ -20,8 +20,26 @@ export async function installOverlay(page) {
   await page.addInitScript({ content: runtimeSource });
 }
 
+function isExecutionContextDestroyed(err) {
+  return err instanceof Error && /Execution context was destroyed/.test(err.message);
+}
+
+// A step whose own action navigates (or whose predecessor's did) can still have its overlay
+// call in flight against the document being torn down — the "Execution context was destroyed"
+// Playwright throws when evaluate races a navigation. Caught here rather than upstream, since
+// every overlay call (caption, headline, chapter, click, ...) shares this one path down into
+// the page. One retry, after the new document reaches its own load state: overlay-runtime.js
+// reinstalls window.__svc via addInitScript on every navigation, so the retry lands once that
+// document is ready rather than racing it a second time. Any other error, or a second failure
+// on the retry itself, still throws — the repo rule is throw, don't skip.
 export async function svcCall(page, method, ...args) {
-  return page.evaluate(([m, a]) => window.__svc[m](...a), [method, args]);
+  try {
+    return await page.evaluate(([m, a]) => window.__svc[m](...a), [method, args]);
+  } catch (err) {
+    if (!isExecutionContextDestroyed(err)) throw err;
+    await page.waitForLoadState("domcontentloaded");
+    return page.evaluate(([m, a]) => window.__svc[m](...a), [method, args]);
+  }
 }
 
 export async function pointTo(page, x, y) {
