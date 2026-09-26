@@ -1,6 +1,6 @@
 ---
 name: text-antony-submit-prod
-description: Send the operator a text message (SMS) from the submit-prod AWS account through Amazon SNS. Invoke when the operator says "text me", "send me a text", "SMS me", or asks to be told by text when something finishes or breaks.
+description: Send the operator a text message (SMS) from the submit-prod AWS account through AWS End User Messaging SMS. Invoke when the operator says "text me", "send me a text", "SMS me", or asks to be told by text when something finishes or breaks.
 ---
 
 <!-- SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0 -->
