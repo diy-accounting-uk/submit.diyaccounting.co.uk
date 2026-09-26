@@ -458,6 +458,15 @@ default = true
 # when either fee changes.
 
 [[activities]]
+id = "file-psc-verification-statement"
+name = "File PSC Verification Statement (Companies House)"
+display = "on-entitlement"
+bundles = ["resident", "resident-pro"]
+metered = false
+paths = ["^/api/v1/companies-house/psc-verification-statement.*"]
+environments = ["local", "test", "simulator", "proxy", "ci"]
+
+[[activities]]
 id = "diya-gl-storage"
 name = "Save DIYA-GL books"
 display = "on-entitlement"

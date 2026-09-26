@@ -7,6 +7,7 @@ package co.uk.diyaccounting.submit.stacks;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import co.uk.diyaccounting.submit.SubmitSharedNames;
 import java.util.List;
@@ -168,11 +169,11 @@ class CompaniesHouseStackTest {
     }
 
     @Test
-    void stackWiresNineteenLambdas() {
+    void stackWiresTwentyOneLambdas() {
         CompaniesHouseStack stack = synthCompaniesHouseStack();
         Template template = Template.fromStack(stack);
 
-        template.resourceCountIs("AWS::Lambda::Function", 19);
+        template.resourceCountIs("AWS::Lambda::Function", 21);
         for (String functionName : List.of(
                 stack.companiesHouseSearchGetLambdaProps.ingestFunctionName(),
                 stack.companiesHouseCompanyGetLambdaProps.ingestFunctionName(),
@@ -192,7 +193,9 @@ class CompaniesHouseStackTest {
                 stack.companiesHouseFilingDataPostLambdaProps.ingestFunctionName(),
                 stack.companiesHouseConfirmationStatementPreviewPostLambdaProps.ingestFunctionName(),
                 stack.companiesHouseConfirmationStatementPostLambdaProps.ingestFunctionName(),
-                stack.companiesHouseConfirmationStatementGetLambdaProps.ingestFunctionName())) {
+                stack.companiesHouseConfirmationStatementGetLambdaProps.ingestFunctionName(),
+                stack.companiesHousePscVerificationStatementPostLambdaProps.ingestFunctionName(),
+                stack.companiesHousePscVerificationStatementGetLambdaProps.ingestFunctionName())) {
             template.hasResourceProperties(
                     "AWS::Lambda::Function", Match.objectLike(Map.of("FunctionName", functionName)));
         }
@@ -295,10 +298,10 @@ class CompaniesHouseStackTest {
     }
 
     @Test
-    void lambdaFunctionPropsExposesAllNineteenForApiStackToConsume() {
+    void lambdaFunctionPropsExposesAllTwentyOneForApiStackToConsume() {
         CompaniesHouseStack stack = synthCompaniesHouseStack();
 
-        assertEquals(19, stack.lambdaFunctionProps.size());
+        assertEquals(21, stack.lambdaFunctionProps.size());
         assertEquals(
                 List.of(
                         "/api/v1/companies-house/search",
@@ -319,7 +322,9 @@ class CompaniesHouseStackTest {
                         "/api/v1/companies-house/company/{companyNumber}/filing-data",
                         "/api/v1/companies-house/confirmation-statement/preview",
                         "/api/v1/companies-house/confirmation-statement",
-                        "/api/v1/companies-house/confirmation-statement/{submissionNumber}"),
+                        "/api/v1/companies-house/confirmation-statement/{submissionNumber}",
+                        "/api/v1/companies-house/psc-verification-statement",
+                        "/api/v1/companies-house/psc-verification-statement/{submissionNumber}"),
                 stack.lambdaFunctionProps.stream().map(p -> p.urlPath()).toList());
     }
 
@@ -431,15 +436,15 @@ class CompaniesHouseStackTest {
     }
 
     @Test
-    void lookupAndFilingLambdasQueryBundlesAndAllNineteenLambdasPublishActivityEvents() {
+    void lookupAndFilingLambdasQueryBundlesAndAllTwentyOneLambdasPublishActivityEvents() {
         CompaniesHouseStack stack = synthCompaniesHouseStack();
         Template template = Template.fromStack(stack);
 
         // Every Lambda except the token exchange queries the bundles table: the two company
         // lookup routes, the registered office address read, the six filing routes, the three
-        // accounts routes, and the six confirmation statement routes, all gated by
-        // enforceBundles(). The token exchange has no authorizer and so no user to check a bundle
-        // entitlement against.
+        // accounts routes, the six confirmation statement routes, and the two PSC verification
+        // statement routes, all gated by enforceBundles(). The token exchange has no authorizer
+        // and so no user to check a bundle entitlement against.
         template.resourcePropertiesCountIs(
                 "AWS::IAM::Policy",
                 Match.objectLike(Map.of(
@@ -447,7 +452,7 @@ class CompaniesHouseStackTest {
                         Match.objectLike(Map.of(
                                 "Statement",
                                 Match.arrayWith(List.of(Match.objectLike(Map.of("Action", "dynamodb:Query")))))))),
-                18);
+                20);
         template.resourcePropertiesCountIs(
                 "AWS::IAM::Policy",
                 Match.objectLike(Map.of(
@@ -455,7 +460,7 @@ class CompaniesHouseStackTest {
                         Match.objectLike(Map.of(
                                 "Statement",
                                 Match.arrayWith(List.of(Match.objectLike(Map.of("Action", "events:PutEvents")))))))),
-                19);
+                21);
     }
 
     @Test
@@ -571,7 +576,7 @@ class CompaniesHouseStackTest {
     }
 
     @Test
-    void stackHealthAlarmCoversAllNineteenLambdas() {
+    void stackHealthAlarmCoversTheCompaniesHouseLambdas() {
         CompaniesHouseStack stack = synthCompaniesHouseStack();
         Template template = Template.fromStack(stack);
 
@@ -624,7 +629,9 @@ class CompaniesHouseStackTest {
                 stack.companiesHouseFilingDataPostLambdaProps.ingestFunctionName(),
                 stack.companiesHouseConfirmationStatementPreviewPostLambdaProps.ingestFunctionName(),
                 stack.companiesHouseConfirmationStatementPostLambdaProps.ingestFunctionName(),
-                stack.companiesHouseConfirmationStatementGetLambdaProps.ingestFunctionName())) {
+                stack.companiesHouseConfirmationStatementGetLambdaProps.ingestFunctionName(),
+                stack.companiesHousePscVerificationStatementPostLambdaProps.ingestFunctionName(),
+                stack.companiesHousePscVerificationStatementGetLambdaProps.ingestFunctionName())) {
             var functions = template.findResources(
                     "AWS::Lambda::Function", Map.of("Properties", Map.of("FunctionName", functionName)));
             assertEquals(1, functions.size());
@@ -646,7 +653,9 @@ class CompaniesHouseStackTest {
                 stack.companiesHouseFilingDataPostLambdaProps.ingestFunctionName(),
                 stack.companiesHouseConfirmationStatementPreviewPostLambdaProps.ingestFunctionName(),
                 stack.companiesHouseConfirmationStatementPostLambdaProps.ingestFunctionName(),
-                stack.companiesHouseConfirmationStatementGetLambdaProps.ingestFunctionName())) {
+                stack.companiesHouseConfirmationStatementGetLambdaProps.ingestFunctionName(),
+                stack.companiesHousePscVerificationStatementPostLambdaProps.ingestFunctionName(),
+                stack.companiesHousePscVerificationStatementGetLambdaProps.ingestFunctionName())) {
             var functions = template.findResources(
                     "AWS::Lambda::Function", Map.of("Properties", Map.of("FunctionName", functionName)));
             assertEquals(1, functions.size());
@@ -720,6 +729,35 @@ class CompaniesHouseStackTest {
     }
 
     @Test
+    void pscVerificationStatementRoutesCarryTheirDesignedPathsMethodsAndJwtOnlyAuthorizer() {
+        CompaniesHouseStack stack = synthCompaniesHouseStack();
+
+        assertEquals(HttpMethod.POST, stack.companiesHousePscVerificationStatementPostLambdaProps.httpMethod());
+        assertEquals(
+                "/api/v1/companies-house/psc-verification-statement",
+                stack.companiesHousePscVerificationStatementPostLambdaProps.urlPath());
+        assertEquals(HttpMethod.GET, stack.companiesHousePscVerificationStatementGetLambdaProps.httpMethod());
+        assertEquals(
+                "/api/v1/companies-house/psc-verification-statement/{submissionNumber}",
+                stack.companiesHousePscVerificationStatementGetLambdaProps.urlPath());
+
+        // Neither carries a Companies House OAuth token, so both sit behind the JWT authorizer
+        // alone, the same as the confirmation statement's own submit and poll routes.
+        for (var props : List.of(
+                stack.companiesHousePscVerificationStatementPostLambdaProps,
+                stack.companiesHousePscVerificationStatementGetLambdaProps)) {
+            assertEquals(
+                    true,
+                    props.jwtAuthorizer(),
+                    "PSC verification statement route " + props.urlPath() + " must use the JWT authorizer");
+            assertEquals(
+                    false,
+                    props.customAuthorizer(),
+                    "PSC verification statement route " + props.urlPath() + " must not use the custom authorizer");
+        }
+    }
+
+    @Test
     void ciEnablesGatewayTestOnEveryGatewayRouteAndSetsThePackageReferenceOnEachSubmitRouteOnly() {
         CompaniesHouseStack stack = synthCompaniesHouseStackForEnv("ci");
         Template template = Template.fromStack(stack);
@@ -729,7 +767,9 @@ class CompaniesHouseStackTest {
                 stack.companiesHouseAccountsGetLambdaProps.ingestFunctionName(),
                 stack.companiesHouseFilingDataPostLambdaProps.ingestFunctionName(),
                 stack.companiesHouseConfirmationStatementPostLambdaProps.ingestFunctionName(),
-                stack.companiesHouseConfirmationStatementGetLambdaProps.ingestFunctionName())) {
+                stack.companiesHouseConfirmationStatementGetLambdaProps.ingestFunctionName(),
+                stack.companiesHousePscVerificationStatementPostLambdaProps.ingestFunctionName(),
+                stack.companiesHousePscVerificationStatementGetLambdaProps.ingestFunctionName())) {
             var functions = template.findResources(
                     "AWS::Lambda::Function", Map.of("Properties", Map.of("FunctionName", functionName)));
             assertEquals(1, functions.size());
@@ -739,17 +779,19 @@ class CompaniesHouseStackTest {
 
         for (String functionName : List.of(
                 stack.companiesHouseAccountsPostLambdaProps.ingestFunctionName(),
-                stack.companiesHouseConfirmationStatementPostLambdaProps.ingestFunctionName())) {
+                stack.companiesHouseConfirmationStatementPostLambdaProps.ingestFunctionName(),
+                stack.companiesHousePscVerificationStatementPostLambdaProps.ingestFunctionName())) {
             var functions = template.findResources(
                     "AWS::Lambda::Function", Map.of("Properties", Map.of("FunctionName", functionName)));
             assertEquals("0012", environmentVariablesOf(functions).get("COMPANIES_HOUSE_PACKAGE_REFERENCE"));
         }
 
-        // The two poll routes and the filing-data lookup have no PackageReference field to carry -
-        // only a submission does.
+        // The three poll routes and the filing-data lookup have no PackageReference field to
+        // carry - only a submission does.
         for (String functionName : List.of(
                 stack.companiesHouseAccountsGetLambdaProps.ingestFunctionName(),
                 stack.companiesHouseConfirmationStatementGetLambdaProps.ingestFunctionName(),
+                stack.companiesHousePscVerificationStatementGetLambdaProps.ingestFunctionName(),
                 stack.companiesHouseFilingDataPostLambdaProps.ingestFunctionName())) {
             var functions = template.findResources(
                     "AWS::Lambda::Function", Map.of("Properties", Map.of("FunctionName", functionName)));
@@ -778,7 +820,9 @@ class CompaniesHouseStackTest {
                 stack.companiesHouseAccountsGetLambdaProps.ingestFunctionName(),
                 stack.companiesHouseFilingDataPostLambdaProps.ingestFunctionName(),
                 stack.companiesHouseConfirmationStatementPostLambdaProps.ingestFunctionName(),
-                stack.companiesHouseConfirmationStatementGetLambdaProps.ingestFunctionName())) {
+                stack.companiesHouseConfirmationStatementGetLambdaProps.ingestFunctionName(),
+                stack.companiesHousePscVerificationStatementPostLambdaProps.ingestFunctionName(),
+                stack.companiesHousePscVerificationStatementGetLambdaProps.ingestFunctionName())) {
             var functions = template.findResources(
                     "AWS::Lambda::Function", Map.of("Properties", Map.of("FunctionName", functionName)));
             assertEquals(1, functions.size());
@@ -803,7 +847,8 @@ class CompaniesHouseStackTest {
                                         waived.companiesHouseConfirmationStatementPostLambdaProps
                                                 .ingestFunctionName())));
         assertEquals(
-                "06846849", environmentVariablesOf(waivedFunctions).get("COMPANIES_HOUSE_CS_FEE_WAIVED_COMPANY_NUMBERS"));
+                "06846849",
+                environmentVariablesOf(waivedFunctions).get("COMPANIES_HOUSE_CS_FEE_WAIVED_COMPANY_NUMBERS"));
 
         CompaniesHouseStack unwaived = synthCompaniesHouseStackForEnv("ci");
         var unwaivedFunctions = Template.fromStack(unwaived)
@@ -824,9 +869,10 @@ class CompaniesHouseStackTest {
         CompaniesHouseStack stack = synthCompaniesHouseStack("", "", PRESENTER_ID_ARN, PRESENTER_CODE_ARN);
         Template template = Template.fromStack(stack);
 
-        // The wildcard suffix Secrets Manager requires, granted to exactly the five Lambda roles
+        // The wildcard suffix Secrets Manager requires, granted to exactly the seven Lambda roles
         // that reach the gateway (accounts submit/poll, filing-data, confirmation statement
-        // submit/poll) for each of the two presenter secrets.
+        // submit/poll, PSC verification statement submit/poll) for each of the two presenter
+        // secrets.
         template.resourcePropertiesCountIs(
                 "AWS::IAM::Policy",
                 Match.objectLike(Map.of(
@@ -838,7 +884,7 @@ class CompaniesHouseStackTest {
                                         "secretsmanager:GetSecretValue",
                                         "Resource",
                                         PRESENTER_ID_ARN + "-*")))))))),
-                5);
+                7);
         template.resourcePropertiesCountIs(
                 "AWS::IAM::Policy",
                 Match.objectLike(Map.of(
@@ -850,7 +896,7 @@ class CompaniesHouseStackTest {
                                         "secretsmanager:GetSecretValue",
                                         "Resource",
                                         PRESENTER_CODE_ARN + "-*")))))))),
-                5);
+                7);
     }
 
     @Test
@@ -863,7 +909,9 @@ class CompaniesHouseStackTest {
                 stack.companiesHouseAccountsGetLambdaProps.ingestFunctionName(),
                 stack.companiesHouseFilingDataPostLambdaProps.ingestFunctionName(),
                 stack.companiesHouseConfirmationStatementPostLambdaProps.ingestFunctionName(),
-                stack.companiesHouseConfirmationStatementGetLambdaProps.ingestFunctionName())) {
+                stack.companiesHouseConfirmationStatementGetLambdaProps.ingestFunctionName(),
+                stack.companiesHousePscVerificationStatementPostLambdaProps.ingestFunctionName(),
+                stack.companiesHousePscVerificationStatementGetLambdaProps.ingestFunctionName())) {
             var functions = template.findResources(
                     "AWS::Lambda::Function", Map.of("Properties", Map.of("FunctionName", functionName)));
             assertEquals(1, functions.size());
@@ -927,6 +975,26 @@ class CompaniesHouseStackTest {
                                         "Resource",
                                         Match.stringLikeRegexp(".*presenter_code.*"))))))))),
                 0);
+    }
+
+    // CloudFormation refuses a stack past 500 resources. Every filing form this plan adds another
+    // Lambda pair to (CS-13a's PSC verification statement, the horizons this stack is likely to
+    // grow into next) pushes this stack's own count up, so this guards the room left before that
+    // wall, rather than waiting to hit it during a real deploy.
+    @Test
+    void stackStaysWellUnderTheCloudFormationFiveHundredResourceLimit() {
+        CompaniesHouseStack stack = synthCompaniesHouseStack();
+        Map<String, Object> resources = resourcesOf(Template.fromStack(stack));
+        assertTrue(
+                resources.size() < 500,
+                "CompaniesHouseStack synths " + resources.size()
+                        + " resources, approaching CloudFormation's 500-per-stack limit");
+    }
+
+    @SuppressWarnings("unchecked")
+    private static Map<String, Object> resourcesOf(Template template) {
+        Map<String, Object> json = (Map<String, Object>) template.toJSON();
+        return (Map<String, Object>) json.get("Resources");
     }
 
     @SuppressWarnings("unchecked")

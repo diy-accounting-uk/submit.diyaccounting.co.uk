@@ -309,6 +309,56 @@ export function buildConfirmationStatementSubmission({
 }
 
 /**
+ * Build the GovTalk envelope for a PSC verification statement submission: a FormSubmission whose
+ * Form carries the already-built PSCVerificationStatement element - one director who is also a
+ * person with significant control, filed separately from the confirmation statement's own
+ * VerificationStatement.
+ *
+ * @param {object} input
+ * @param {string} input.presenterId
+ * @param {string} input.presenterCode
+ * @param {string} input.companyNumber
+ * @param {string} input.companyName
+ * @param {string} input.companyAuthenticationCode
+ * @param {string} [input.packageReference]
+ * @param {string} input.submissionNumber - exactly 6 characters
+ * @param {string} input.dateSigned - ISO date the PSC's verification was signed
+ * @param {string} input.statementXml - the built PSCVerificationStatement element, e.g. from
+ *   companiesHousePscVerificationStatementXml.js's buildPscVerificationStatementBody()
+ * @param {string} [input.transactionId] - defaults to the current epoch milliseconds
+ * @param {boolean} [input.gatewayTest] - true against the test service
+ * @returns {string} the envelope XML
+ */
+export function buildPscVerificationStatementSubmission({
+  presenterId,
+  presenterCode,
+  companyNumber,
+  companyName,
+  companyAuthenticationCode,
+  packageReference = "",
+  submissionNumber,
+  dateSigned,
+  statementXml,
+  transactionId = String(Date.now()),
+  gatewayTest = false,
+}) {
+  return buildFormSubmission({
+    presenterId,
+    presenterCode,
+    companyNumber,
+    companyName,
+    companyAuthenticationCode,
+    packageReference,
+    formIdentifier: "PSCVerificationStatement",
+    submissionNumber,
+    dateSigned,
+    formXml: statementXml,
+    transactionId,
+    gatewayTest,
+  });
+}
+
+/**
  * Build the GovTalk envelope for a CompanyDataRequest: the pre-populated register data a
  * confirmation statement form is built from (MadeUpDate, NextDueDate, SIC codes, officers, PSCs,
  * statement of capital, shareholdings, registered email), free and synchronous.

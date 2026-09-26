@@ -25,7 +25,15 @@ const OFFICERS_RESULT = {
 };
 
 const PSCS_RESULT = {
-  pscs: [{ name: "Jane Doe", naturesOfControl: ["ownership-of-shares-25-to-50-percent"], notifiedOn: "2020-01-01" }],
+  pscs: [
+    {
+      name: "Jane Doe",
+      kind: "individual-person-with-significant-control",
+      naturesOfControl: ["ownership-of-shares-25-to-50-percent"],
+      notifiedOn: "2020-01-01",
+      dateOfBirth: { month: 1, year: 1980 },
+    },
+  ],
 };
 
 const FILING_DATA = {
@@ -120,6 +128,14 @@ test.describe("File Confirmation Statement page", () => {
           return Promise.resolve({ submissionNumber: "ABC123", gatewayTimestamp: "2026-09-24T00:00:00Z" });
         };
         window.pollConfirmationStatement = (submissionNumber) =>
+          Promise.resolve({ submissionNumber, statusCode: "ACCEPT", rejections: [] });
+
+        window.__pscVerificationSubmitCalls = [];
+        window.submitPscVerificationStatement = (statement) => {
+          window.__pscVerificationSubmitCalls.push(statement);
+          return Promise.resolve({ submissionNumber: "VS0001", gatewayTimestamp: "2026-09-24T00:00:00Z" });
+        };
+        window.pollPscVerificationStatement = (submissionNumber) =>
           Promise.resolve({ submissionNumber, statusCode: "ACCEPT", rejections: [] });
       },
       {
@@ -391,10 +407,27 @@ test.describe("File Confirmation Statement page", () => {
     await expect(page.locator("#resultView")).toBeVisible();
     await expect(page.locator("#filingResult")).toContainText("ACCEPT");
     await expect(page.locator("#pscFollowUp")).toBeVisible();
-    await expect(page.locator("#pscFollowUp")).toContainText("PSC verification service");
+    await expect(page.locator('[data-psc-follow-up-row="0"]')).toContainText("Jane Doe");
     const submitCalls = await page.evaluate(() => window.__submitCalls);
     expect(submitCalls).toHaveLength(1);
     expect(submitCalls[0].companyAuthCode).toBe("AB123456");
+
+    await page.fill("#pscPersonalCode-0", "AB1234CD56E");
+    await page.click('[data-psc-verify-index="0"]');
+    await delay(300);
+
+    await expect(page.locator("#pscVerifyResult-0")).toContainText("ACCEPT");
+    const pscSubmitCalls = await page.evaluate(() => window.__pscVerificationSubmitCalls);
+    expect(pscSubmitCalls).toHaveLength(1);
+    expect(pscSubmitCalls[0]).toMatchObject({
+      companyNumber: "00000001",
+      companyAuthCode: "AB123456",
+      surname: "Doe",
+      forename: "Jane",
+      personalCode: "AB1234CD56E",
+      dobMonth: 1,
+      dobYear: 1980,
+    });
   });
 
   test("adds and removes a joint holder on a shareholding", async ({ page }) => {

@@ -1079,6 +1079,24 @@ public class SubmitSharedNames {
     public boolean companiesHouseConfirmationStatementGetLambdaJwtAuthorizer;
     public boolean companiesHouseConfirmationStatementGetLambdaCustomAuthorizer;
 
+    public String companiesHousePscVerificationStatementPostIngestLambdaHandler;
+    public String companiesHousePscVerificationStatementPostIngestLambdaFunctionName;
+    public String companiesHousePscVerificationStatementPostIngestLambdaArn;
+    public String companiesHousePscVerificationStatementPostIngestProvisionedConcurrencyLambdaAliasArn;
+    public HttpMethod companiesHousePscVerificationStatementPostLambdaHttpMethod;
+    public String companiesHousePscVerificationStatementPostLambdaUrlPath;
+    public boolean companiesHousePscVerificationStatementPostLambdaJwtAuthorizer;
+    public boolean companiesHousePscVerificationStatementPostLambdaCustomAuthorizer;
+
+    public String companiesHousePscVerificationStatementGetIngestLambdaHandler;
+    public String companiesHousePscVerificationStatementGetIngestLambdaFunctionName;
+    public String companiesHousePscVerificationStatementGetIngestLambdaArn;
+    public String companiesHousePscVerificationStatementGetIngestProvisionedConcurrencyLambdaAliasArn;
+    public HttpMethod companiesHousePscVerificationStatementGetLambdaHttpMethod;
+    public String companiesHousePscVerificationStatementGetLambdaUrlPath;
+    public boolean companiesHousePscVerificationStatementGetLambdaJwtAuthorizer;
+    public boolean companiesHousePscVerificationStatementGetLambdaCustomAuthorizer;
+
     public String supportTicketPostIngestLambdaHandler;
     public String supportTicketPostIngestLambdaFunctionName;
     public String supportTicketPostIngestLambdaArn;
@@ -4284,6 +4302,63 @@ public class SubmitSharedNames {
                 "Polls the Companies House XML Gateway for the outcome of a submitted confirmation statement "
                         + "filing",
                 "getCompaniesHouseConfirmationStatement",
+                List.of(new ApiParameter("submissionNumber", "path", true, "The 6-character submission number"))));
+
+        this.companiesHousePscVerificationStatementPostLambdaHttpMethod = HttpMethod.POST;
+        this.companiesHousePscVerificationStatementPostLambdaUrlPath =
+                "/api/v1/companies-house/psc-verification-statement";
+        this.companiesHousePscVerificationStatementPostLambdaJwtAuthorizer = true;
+        this.companiesHousePscVerificationStatementPostLambdaCustomAuthorizer = false;
+        var companiesHousePscVerificationStatementPostLambdaHandlerName =
+                "companiesHousePscVerificationStatementPost.ingestHandler";
+        var companiesHousePscVerificationStatementPostLambdaHandlerDashed =
+                ResourceNameUtils.convertCamelCaseToDashSeparated(
+                        companiesHousePscVerificationStatementPostLambdaHandlerName);
+        this.companiesHousePscVerificationStatementPostIngestLambdaFunctionName = "%s-%s"
+                .formatted(this.appResourceNamePrefix, companiesHousePscVerificationStatementPostLambdaHandlerDashed);
+        this.companiesHousePscVerificationStatementPostIngestLambdaHandler = "%s/companies-house/%s"
+                .formatted(appLambdaHandlerPrefix, companiesHousePscVerificationStatementPostLambdaHandlerName);
+        this.companiesHousePscVerificationStatementPostIngestLambdaArn =
+                "%s-%s".formatted(appLambdaArnPrefix, companiesHousePscVerificationStatementPostLambdaHandlerDashed);
+        this.companiesHousePscVerificationStatementPostIngestProvisionedConcurrencyLambdaAliasArn = "%s:%s"
+                .formatted(
+                        this.companiesHousePscVerificationStatementPostIngestLambdaArn,
+                        this.provisionedConcurrencyAliasName);
+        publishedApiLambdas.add(new PublishedLambda(
+                this.companiesHousePscVerificationStatementPostLambdaHttpMethod,
+                this.companiesHousePscVerificationStatementPostLambdaUrlPath,
+                "Submit a PSC verification statement filing",
+                "Builds the PSCVerificationStatement body and submits it through the Companies House XML "
+                        + "Gateway, one director who is also a person with significant control at a time",
+                "postCompaniesHousePscVerificationStatement"));
+
+        this.companiesHousePscVerificationStatementGetLambdaHttpMethod = HttpMethod.GET;
+        this.companiesHousePscVerificationStatementGetLambdaUrlPath =
+                "/api/v1/companies-house/psc-verification-statement/{submissionNumber}";
+        this.companiesHousePscVerificationStatementGetLambdaJwtAuthorizer = true;
+        this.companiesHousePscVerificationStatementGetLambdaCustomAuthorizer = false;
+        var companiesHousePscVerificationStatementGetLambdaHandlerName =
+                "companiesHousePscVerificationStatementGet.ingestHandler";
+        var companiesHousePscVerificationStatementGetLambdaHandlerDashed =
+                ResourceNameUtils.convertCamelCaseToDashSeparated(
+                        companiesHousePscVerificationStatementGetLambdaHandlerName);
+        this.companiesHousePscVerificationStatementGetIngestLambdaFunctionName = "%s-%s"
+                .formatted(this.appResourceNamePrefix, companiesHousePscVerificationStatementGetLambdaHandlerDashed);
+        this.companiesHousePscVerificationStatementGetIngestLambdaHandler = "%s/companies-house/%s"
+                .formatted(appLambdaHandlerPrefix, companiesHousePscVerificationStatementGetLambdaHandlerName);
+        this.companiesHousePscVerificationStatementGetIngestLambdaArn =
+                "%s-%s".formatted(appLambdaArnPrefix, companiesHousePscVerificationStatementGetLambdaHandlerDashed);
+        this.companiesHousePscVerificationStatementGetIngestProvisionedConcurrencyLambdaAliasArn = "%s:%s"
+                .formatted(
+                        this.companiesHousePscVerificationStatementGetIngestLambdaArn,
+                        this.provisionedConcurrencyAliasName);
+        publishedApiLambdas.add(new PublishedLambda(
+                this.companiesHousePscVerificationStatementGetLambdaHttpMethod,
+                this.companiesHousePscVerificationStatementGetLambdaUrlPath,
+                "Poll a PSC verification statement filing",
+                "Polls the Companies House XML Gateway for the outcome of a submitted PSC verification "
+                        + "statement filing",
+                "getCompaniesHousePscVerificationStatement",
                 List.of(new ApiParameter("submissionNumber", "path", true, "The 6-character submission number"))));
 
         this.supportTicketPostLambdaHttpMethod = HttpMethod.POST;
