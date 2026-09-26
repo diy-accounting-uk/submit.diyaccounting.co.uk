@@ -59,6 +59,10 @@ import software.amazon.awscdk.services.cloudwatch.Alarm;
 import software.amazon.awscdk.services.cloudwatch.ComparisonOperator;
 import software.amazon.awscdk.services.cloudwatch.Metric;
 import software.amazon.awscdk.services.cloudwatch.TreatMissingData;
+import software.amazon.awscdk.services.dynamodb.Attribute;
+import software.amazon.awscdk.services.dynamodb.AttributeType;
+import software.amazon.awscdk.services.dynamodb.BillingMode;
+import software.amazon.awscdk.services.dynamodb.Table;
 import software.amazon.awscdk.services.events.EventBus;
 import software.amazon.awscdk.services.events.EventPattern;
 import software.amazon.awscdk.services.events.IEventBus;
@@ -692,11 +696,13 @@ public class EdgeStack extends Stack {
         // blocked record into one ActivityEvent, published cross-region onto the eu-west-2
         // activity bus (this stack, like the whole edge, is us-east-1).
         var wafScanDetectFunctionName = props.resourceNamePrefix() + "-waf-scan-detect";
+        var wafScanBurstsTableName = props.resourceNamePrefix() + "-waf-scan-bursts";
         var wafScanDetectEnv = new PopulatedMap<String, String>()
                 .with("ENVIRONMENT_NAME", props.envName())
                 .with("DEPLOYMENT_NAME", props.deploymentName())
                 .with("ACTIVITY_BUS_NAME", props.sharedNames().activityBusName)
-                .with("ACTIVITY_BUS_REGION", "eu-west-2");
+                .with("ACTIVITY_BUS_REGION", "eu-west-2")
+                .with("WAF_SCAN_BURST_DYNAMODB_TABLE_NAME", wafScanBurstsTableName);
 
         var wafScanDetectLambda = new Lambda(
                 this,
@@ -732,9 +738,28 @@ public class EdgeStack extends Stack {
                 .filterPattern(FilterPattern.literal("{ $.terminatingRuleId = \"SensitivePathScan\" }"))
                 .build();
 
+        // Burst-window table for wafScanDetect.js: one item per client IP, so a scan whose
+        // requests land in separate CloudWatch Logs deliveries (the subscription filter can split
+        // a fast burst across a few deliveries a few seconds apart) still sends one Telegram
+        // message per real-world burst rather than one per delivery. DESTROY, unlike DataStack's
+        // persistent tables, because this stack (like every application-tier stack) is
+        // per-deployment: a fresh WAF gets a fresh table, and none of this state needs to outlive
+        // its own deployment.
+        var wafScanBurstsTable = Table.Builder.create(this, props.resourceNamePrefix() + "-WafScanBurstsTable")
+                .tableName(wafScanBurstsTableName)
+                .partitionKey(Attribute.builder()
+                        .name("clientIp")
+                        .type(AttributeType.STRING)
+                        .build())
+                .billingMode(BillingMode.PAY_PER_REQUEST)
+                .timeToLiveAttribute("ttl")
+                .removalPolicy(RemovalPolicy.DESTROY)
+                .build();
+        wafScanBurstsTable.grant(wafScanDetectLambda.ingestLambda, "dynamodb:UpdateItem");
+
         infof(
-                "Created WAF logging (blocks only) and scan-detect Lambda %s subscribed to it",
-                wafScanDetectLambda.ingestLambda.getNode().getId());
+                "Created WAF logging (blocks only), scan-detect Lambda %s subscribed to it, and its burst table %s",
+                wafScanDetectLambda.ingestLambda.getNode().getId(), wafScanBurstsTableName);
 
         Lambda.stackHealthAlarm(this, props.resourceNamePrefix(), "edge", List.of(wafScanDetectLambda));
 
