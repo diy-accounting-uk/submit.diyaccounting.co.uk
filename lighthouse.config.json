@@ -77,13 +77,6 @@
       }
     },
     {
-      "path": "/simulator.html",
-      "thresholds": {
-        "bestPractices": 90,
-        "performance": 74
-      }
-    },
-    {
       "path": "/videos.html",
       "thresholds": {
         "performance": 52,

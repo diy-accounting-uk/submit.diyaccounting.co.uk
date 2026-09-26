@@ -10,17 +10,16 @@
 // (/.env, /wp-admin, and the rest of the regex pattern set) reaches the ops Telegram chat as one
 // message per source per batch instead of one per path.
 //
-// This groups only within one invocation's own batch of log records: the Lambda holds no state
-// between invocations, so a scan whose requests land in separate CloudWatch Logs deliveries (the
-// subscription filter can split a fast burst across a few deliveries a few seconds apart) still
-// produces one message per delivery. Collapsing those into one message per real-world burst needs
-// a store that survives between invocations (e.g. a DynamoDB item per clientIp with a short TTL,
-// incremented per delivery) plus a decision on when a burst has ended enough to flush a summary;
-// neither exists here today.
+// Grouping within one invocation's own batch is not enough on its own: the subscription filter
+// can split a fast burst across a few CloudWatch Logs deliveries a few seconds apart, and each
+// delivery is a separate invocation. dynamoDbWafScanBurstRepository.js holds a per-clientIp
+// window across invocations, so only the delivery that opens a burst's window publishes; later
+// deliveries inside the same window just add to its count.
 
 import { gunzipSync } from "zlib";
 import { publishActivityEvent } from "../../lib/activityAlert.js";
 import { createLogger } from "../../lib/logger.js";
+import { openOrExtendBurstWindow } from "../../data/dynamoDbWafScanBurstRepository.js";
 
 const logger = createLogger({ source: "app/functions/security/wafScanDetect.js" });
 
@@ -72,12 +71,13 @@ export function parseWafLogRecord(message, timestamp = null) {
 /**
  * Group parsed records by client IP, so a scanner hitting many paths from one address in one
  * batch produces one summary instead of one message per path. Each group's `uris` de-duplicates
- * repeated hits to the same path; `firstTimestamp`/`lastTimestamp` span every hit seen for that
- * IP (not just the de-duplicated ones), so the summary's duration reflects the whole batch.
- * Order is preserved: the first client IP seen is the first group returned.
+ * repeated hits to the same path; `hitCount` counts every record seen for that IP, duplicates
+ * included, for the burst window's running total. `firstTimestamp`/`lastTimestamp` span every
+ * hit seen for that IP (not just the de-duplicated ones), so the summary's duration reflects the
+ * whole batch. Order is preserved: the first client IP seen is the first group returned.
  *
  * @param {ReturnType<typeof parseWafLogRecord>[]} records
- * @returns {{clientIp: string, country: string, uris: string[], firstTimestamp: number|null, lastTimestamp: number|null}[]}
+ * @returns {{clientIp: string, country: string, uris: string[], hitCount: number, firstTimestamp: number|null, lastTimestamp: number|null}[]}
  */
 export function groupByClientIp(records) {
   const order = [];
@@ -86,11 +86,19 @@ export function groupByClientIp(records) {
   for (const record of records) {
     let group = groups.get(record.clientIp);
     if (!group) {
-      group = { clientIp: record.clientIp, country: record.country, uris: new Set(), firstTimestamp: null, lastTimestamp: null };
+      group = {
+        clientIp: record.clientIp,
+        country: record.country,
+        uris: new Set(),
+        hitCount: 0,
+        firstTimestamp: null,
+        lastTimestamp: null,
+      };
       groups.set(record.clientIp, group);
       order.push(record.clientIp);
     }
     group.uris.add(record.uri);
+    group.hitCount += 1;
     if (typeof record.timestamp === "number") {
       if (group.firstTimestamp === null || record.timestamp < group.firstTimestamp) group.firstTimestamp = record.timestamp;
       if (group.lastTimestamp === null || record.timestamp > group.lastTimestamp) group.lastTimestamp = record.timestamp;
@@ -103,6 +111,7 @@ export function groupByClientIp(records) {
       clientIp,
       country: group.country,
       uris: Array.from(group.uris),
+      hitCount: group.hitCount,
       firstTimestamp: group.firstTimestamp,
       lastTimestamp: group.lastTimestamp,
     };
@@ -125,9 +134,10 @@ function durationSuffix(group) {
 
 /**
  * Decode the subscription filter payload, keep only SensitivePathScan blocks, group by client
- * IP, and publish one ActivityEvent per source address summarising every distinct path it hit in
- * this batch. See the module comment for why this groups within one batch, not one real-world
- * burst.
+ * IP, and publish one ActivityEvent per source address that opens a new burst window,
+ * summarising every distinct path it hit in this batch. A source already inside an open window
+ * (opened by an earlier delivery of the same real-world burst) only adds its hits to the
+ * window's count; see dynamoDbWafScanBurstRepository.js.
  *
  * @param {{awslogs: {data: string}}} event
  * @returns {Promise<{published: number}>}
@@ -141,7 +151,14 @@ export async function handler(event) {
     .filter((record) => record !== null);
   const groups = groupByClientIp(parsed);
 
+  let published = 0;
   for (const group of groups) {
+    const { isNewBurst } = await openOrExtendBurstWindow({ clientIp: group.clientIp, hitCount: group.hitCount });
+    if (!isNewBurst) {
+      logger.info({ message: "WAF scan burst already alerted, only counted", clientIp: group.clientIp });
+      continue;
+    }
+
     const pathWord = group.uris.length === 1 ? "path" : "paths";
     await publishActivityEvent({
       event: "scan-detected",
@@ -156,9 +173,10 @@ export async function handler(event) {
         uris: group.uris,
       },
     });
+    published += 1;
   }
 
-  logger.info({ message: "WAF scan-detect run complete", recordsSeen: parsed.length, published: groups.length });
+  logger.info({ message: "WAF scan-detect run complete", recordsSeen: parsed.length, published });
 
-  return { published: groups.length };
+  return { published };
 }

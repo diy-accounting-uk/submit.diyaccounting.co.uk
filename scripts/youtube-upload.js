@@ -7,6 +7,7 @@
 //
 // Usage: node scripts/youtube-upload.js [--check] [--public] [--client-file <path>]
 //        node scripts/youtube-upload.js --store-client <path>
+//        node scripts/youtube-upload.js --sync-status [--apply]
 //
 // Credentials come from an OAuth client of our own (type Desktop app), created once in the
 // Google Cloud console — see videos/PUBLISH.md. Google blocks gcloud's own OAuth client from
@@ -39,6 +40,11 @@
 // Uploads are unlisted by default. Pass --public to upload publicly, or, when everything is
 // already uploaded, to switch the uploaded videos to public.
 // Re-running is safe: an entry that already carries a videoId is skipped.
+//
+// --sync-status compares the status videos/publish.json declares (embeddable,
+// publicStatsViewable, selfDeclaredMadeForKids, license) against what YouTube actually has
+// recorded for every entry with a videoId, and prints the differences. Nothing is written
+// until --apply is also given.
 
 import fs from "fs";
 import path from "path";
@@ -95,6 +101,8 @@ export function parseArgs(argv) {
   return {
     publicVideo: argv.includes("--public"),
     check: argv.includes("--check"),
+    syncStatus: argv.includes("--sync-status"),
+    apply: argv.includes("--apply"),
     clientFile: readFlagValue(argv, "--client-file"),
     storeClient: readFlagValue(argv, "--store-client"),
   };
@@ -139,7 +147,21 @@ export function recordVideoId(list, id, videoId) {
   return { ...list, videos: list.videos.map((entry) => (entry.id === id ? { ...entry, videoId } : entry)) };
 }
 
-export function buildVideoResource(entry, { publicVideo }) {
+// videos/publish.json declares the status every video should carry (embeddable,
+// publicStatsViewable, selfDeclaredMadeForKids, license) as a top-level default, overridable
+// per entry. Privacy is not part of the declared status: the caller decides it (unlisted at
+// upload, public on --public, preserved from live on --sync-status).
+export function resolveDeclaredStatus(list, entry) {
+  return { ...(list.status ?? {}), ...(entry.status ?? {}) };
+}
+
+// An entry can pin its own privacyStatus inside its declared status (e.g. to keep one video
+// unlisted on purpose); the caller's own default applies only when the entry declares none.
+export function resolvePrivacyStatus(declaredStatus, fallbackPrivacyStatus) {
+  return declaredStatus.privacyStatus ?? fallbackPrivacyStatus;
+}
+
+export function buildVideoResource(entry, { publicVideo, declaredStatus = {} }) {
   return {
     snippet: {
       title: entry.title,
@@ -148,8 +170,8 @@ export function buildVideoResource(entry, { publicVideo }) {
       categoryId: entry.categoryId,
     },
     status: {
-      privacyStatus: publicVideo ? "public" : "unlisted",
-      selfDeclaredMadeForKids: false,
+      ...declaredStatus,
+      privacyStatus: resolvePrivacyStatus(declaredStatus, publicVideo ? "public" : "unlisted"),
     },
   };
 }
@@ -444,8 +466,15 @@ async function initiateResumableUpload({ accessToken, quotaProject, resource, fi
   return location;
 }
 
-export async function uploadVideo({ entry, accessToken, quotaProject = resolveQuotaProject(), publicVideo, fetchImpl = fetch }) {
-  const resource = buildVideoResource(entry, { publicVideo });
+export async function uploadVideo({
+  entry,
+  accessToken,
+  quotaProject = resolveQuotaProject(),
+  publicVideo,
+  declaredStatus,
+  fetchImpl = fetch,
+}) {
+  const resource = buildVideoResource(entry, { publicVideo, declaredStatus });
   const fileSize = fs.statSync(entry.videoFile).size;
   const uploadUrl = await initiateResumableUpload({ accessToken, quotaProject, resource, fileSize, mimeType: "video/mp4", fetchImpl });
   const response = await fetchImpl(uploadUrl, {
@@ -475,7 +504,16 @@ function buildMultipartRelated(parts) {
   return { body: Buffer.concat(segments), contentType: `multipart/related; boundary=${boundary}` };
 }
 
-export async function setVideoPrivacy({ videoId, privacyStatus, accessToken, quotaProject = resolveQuotaProject(), fetchImpl = fetch }) {
+// videos.update replaces the whole status part with what's sent, so every call here carries
+// every declared field, not just the one that changed, or YouTube resets the rest to defaults.
+export async function setVideoStatus({
+  videoId,
+  privacyStatus,
+  declaredStatus = {},
+  accessToken,
+  quotaProject = resolveQuotaProject(),
+  fetchImpl = fetch,
+}) {
   const response = await fetchImpl(`${VIDEOS_ENDPOINT}?part=status`, {
     method: "PUT",
     headers: {
@@ -483,12 +521,121 @@ export async function setVideoPrivacy({ videoId, privacyStatus, accessToken, quo
       "Content-Type": "application/json",
       "x-goog-user-project": quotaProject,
     },
-    body: JSON.stringify({ id: videoId, status: { privacyStatus } }),
+    body: JSON.stringify({ id: videoId, status: { ...declaredStatus, privacyStatus } }),
   });
   if (!response.ok) {
     throw new Error(`Setting ${videoId} to ${privacyStatus} failed: ${response.status} ${await response.text()}`);
   }
-  return (await response.json()).status.privacyStatus;
+  return (await response.json()).status;
+}
+
+const VIDEO_STATUS_BATCH_SIZE = 50;
+
+function chunkIntoBatches(items, size) {
+  const batches = [];
+  for (let i = 0; i < items.length; i += size) {
+    batches.push(items.slice(i, i + size));
+  }
+  return batches;
+}
+
+/**
+ * Look up the live status of every given video id, batched at up to 50 ids per call (the
+ * videos.list limit).
+ *
+ * @returns {Promise<Record<string, object>>} the video's status part, keyed by video id
+ */
+export async function fetchVideoStatuses({ videoIds, accessToken, quotaProject = resolveQuotaProject(), fetchImpl = fetch }) {
+  const statusesById = {};
+  for (const batch of chunkIntoBatches(videoIds, VIDEO_STATUS_BATCH_SIZE)) {
+    const response = await fetchImpl(`${VIDEOS_ENDPOINT}?part=status&id=${batch.join(",")}`, {
+      headers: { "Authorization": `Bearer ${accessToken}`, "x-goog-user-project": quotaProject },
+    });
+    if (!response.ok) {
+      throw new Error(`Failed to look up video status for ${batch.join(",")}: ${response.status} ${await response.text()}`);
+    }
+    const data = await response.json();
+    for (const item of data.items ?? []) {
+      statusesById[item.id] = item.status;
+    }
+  }
+  return statusesById;
+}
+
+/**
+ * Compare each entry's declared status fields against what YouTube actually has recorded.
+ * Pure, so it is unit tested; the network call that produces `liveStatusesById` is not.
+ *
+ * @returns {Array<{id: string, videoId: string, field: string, live: unknown, declared: unknown}>}
+ */
+export function planStatusSync({ list, liveStatusesById }) {
+  const plan = [];
+  for (const entry of list.videos.filter((video) => video.videoId)) {
+    const declared = resolveDeclaredStatus(list, entry);
+    const live = liveStatusesById[entry.videoId] ?? {};
+    for (const [field, declaredValue] of Object.entries(declared)) {
+      if (live[field] !== declaredValue) {
+        plan.push({ id: entry.id, videoId: entry.videoId, field, live: live[field], declared: declaredValue });
+      }
+    }
+  }
+  return plan;
+}
+
+/**
+ * Write the declared status to every video the plan found out of sync, one PUT per video
+ * (not per field). Privacy is preserved from the video's live status unless the entry
+ * declares its own privacyStatus.
+ */
+export async function applyStatusSync({
+  list,
+  liveStatusesById,
+  accessToken,
+  quotaProject,
+  setVideoStatusImpl = setVideoStatus,
+  log = console.log,
+}) {
+  const plan = planStatusSync({ list, liveStatusesById });
+  const videoIdsToUpdate = [...new Set(plan.map((change) => change.videoId))];
+  for (const videoId of videoIdsToUpdate) {
+    const entry = list.videos.find((video) => video.videoId === videoId);
+    const declaredStatus = resolveDeclaredStatus(list, entry);
+    const live = liveStatusesById[videoId] ?? {};
+    const privacyStatus = resolvePrivacyStatus(declaredStatus, live.privacyStatus);
+    const status = await setVideoStatusImpl({ videoId, privacyStatus, declaredStatus, accessToken, quotaProject });
+    log(`${entry.id} https://youtu.be/${videoId} updated: ${JSON.stringify(status)}`);
+  }
+  return videoIdsToUpdate;
+}
+
+/**
+ * The --sync-status mode: fetch live status for every entry with a videoId, plan the
+ * differences against videos/publish.json, print the plan, and apply it only when asked.
+ */
+export async function runStatusSync({
+  list,
+  accessToken,
+  quotaProject,
+  apply,
+  fetchVideoStatusesImpl = fetchVideoStatuses,
+  applyStatusSyncImpl = applyStatusSync,
+  log = console.log,
+  printPlan = (plan) => console.table(plan.map(({ id, field, live, declared }) => ({ id, field, live, declared }))),
+}) {
+  const videoIds = list.videos.filter((entry) => entry.videoId).map((entry) => entry.videoId);
+  const liveStatusesById = await fetchVideoStatusesImpl({ videoIds, accessToken, quotaProject });
+  const plan = planStatusSync({ list, liveStatusesById });
+  if (plan.length === 0) {
+    log("Every video's status matches videos/publish.json.");
+    return plan;
+  }
+  printPlan(plan);
+  if (apply) {
+    await applyStatusSyncImpl({ list, liveStatusesById, accessToken, quotaProject });
+  } else {
+    log("Plan only. Re-run with --apply to write these changes.");
+  }
+  return plan;
 }
 
 // YouTube indexes a freshly uploaded video asynchronously: a caption POST a second after the
@@ -558,7 +705,8 @@ export async function publishEntry({
   log = console.log,
 }) {
   log(`Uploading ${entry.id} (${publicVideo ? "public" : "unlisted"})...`);
-  const videoId = await uploadVideoImpl({ entry, accessToken, quotaProject, publicVideo });
+  const declaredStatus = resolveDeclaredStatus(list, entry);
+  const videoId = await uploadVideoImpl({ entry, accessToken, quotaProject, publicVideo, declaredStatus });
   log(`  video id: ${videoId}`);
   const recorded = recordVideoId(list, entry.id, videoId);
   savePublishListImpl(recorded);
@@ -569,8 +717,27 @@ export async function publishEntry({
   return recorded;
 }
 
+/**
+ * Flip every already-uploaded entry to public, unless the entry's own declared status pins a
+ * different privacyStatus, in which case that wins.
+ */
+export async function flipUploadedVideosPublic({
+  list,
+  accessToken,
+  quotaProject,
+  setVideoStatusImpl = setVideoStatus,
+  log = console.log,
+}) {
+  for (const entry of selectUploadedVideos(list)) {
+    const declaredStatus = resolveDeclaredStatus(list, entry);
+    const privacyStatus = resolvePrivacyStatus(declaredStatus, "public");
+    const status = await setVideoStatusImpl({ videoId: entry.videoId, privacyStatus, declaredStatus, accessToken, quotaProject });
+    log(`${entry.id} https://youtu.be/${entry.videoId} is now ${status.privacyStatus}`);
+  }
+}
+
 export async function main() {
-  const { publicVideo, check, clientFile, storeClient } = parseArgs(process.argv.slice(2));
+  const { publicVideo, check, syncStatus, apply, clientFile, storeClient } = parseArgs(process.argv.slice(2));
 
   if (storeClient) {
     await storeClientCredentials({ clientFile: storeClient });
@@ -588,16 +755,19 @@ export async function main() {
   }
 
   let list = loadPublishList();
+
+  if (syncStatus) {
+    await runStatusSync({ list, accessToken, quotaProject, apply });
+    return;
+  }
+
   const pending = selectPendingUploads(list);
   if (pending.length === 0) {
     if (!publicVideo) {
       console.log("Nothing to upload: every publish:true entry already has a videoId.");
       return;
     }
-    for (const entry of selectUploadedVideos(list)) {
-      const status = await setVideoPrivacy({ videoId: entry.videoId, privacyStatus: "public", accessToken, quotaProject });
-      console.log(`${entry.id} https://youtu.be/${entry.videoId} is now ${status}`);
-    }
+    await flipUploadedVideosPublic({ list, accessToken, quotaProject });
     return;
   }
 

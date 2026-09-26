@@ -268,14 +268,6 @@ export default defineConfig({
       },
     },
     {
-      name: "simulatorBehaviour",
-      testDir: "behaviour-tests",
-      testMatch: ["**/simulator.behaviour.test.js"],
-      workers: 1,
-      outputDir: "./target/behaviour-test-results/",
-      timeout: 300_000,
-    },
-    {
       name: "companiesHouseBehaviour",
       testDir: "behaviour-tests",
       testMatch: ["**/companiesHouse.behaviour.test.js"],
@@ -329,14 +321,6 @@ export default defineConfig({
       testMatch: ["**/fileConfirmationStatement.behaviour.test.js"],
       workers: 1,
       outputDir: "./target/behaviour-test-results/",
-      timeout: 300_000,
-    },
-    {
-      name: "captureDemo",
-      testDir: "behaviour-tests",
-      testMatch: ["**/captureDemo.behaviour.test.js"],
-      workers: 1,
-      outputDir: "./target/demo-videos/",
       timeout: 300_000,
     },
     {

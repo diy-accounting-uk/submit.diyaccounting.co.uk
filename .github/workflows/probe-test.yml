@@ -52,7 +52,6 @@ on:
           - 'helpBehaviour'
           - 'vatValidationBehaviour'
           - 'vatSchemesBehaviour'
-          - 'simulatorBehaviour'
           - 'generatePassActivityBehaviour'
           - 'paymentBehaviour'
           - 'companiesHouseBehaviour'

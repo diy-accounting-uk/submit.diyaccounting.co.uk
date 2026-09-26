@@ -119,6 +119,22 @@ npm run video:publish -- --public
 flips the uploaded entries to public. Never run `--public` before the operator has watched
 the unlisted uploads.
 
+## Step 6 — check the declared status is what YouTube actually has
+
+`videos/publish.json` declares the status every video should carry (`embeddable`,
+`publicStatsViewable`, `selfDeclaredMadeForKids`, `license`); `videos.update` replaces the
+whole status part on any write, so a partial update elsewhere can silently reset one of these
+to its default. Check for drift, then fix it:
+
+```bash
+node scripts/youtube-upload.js --sync-status
+node scripts/youtube-upload.js --sync-status --apply
+```
+
+The first command only prints a plan table of what differs, live versus declared; the second
+writes the declared status to every video the plan found out of sync. Same credentials as
+Step 4; nothing is written without `--apply`.
+
 ## Metadata rules
 
 Titles under 70 characters, product name first ("DIY Accounting Submit: view your VAT

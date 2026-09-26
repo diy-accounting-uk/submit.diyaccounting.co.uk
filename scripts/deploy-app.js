@@ -72,7 +72,6 @@ const CLOUDFRONT_INVALIDATION_PATHS = [
   "/submit.version.txt",
   "/terms.html",
   "/site.webmanifest",
-  "/simulator.html",
   "/developer-mode.js",
 ];
 

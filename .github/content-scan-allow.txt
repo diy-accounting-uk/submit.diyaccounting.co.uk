@@ -68,11 +68,9 @@ GB123456123456
 # HMRC's own documented example VRN in the vendored reference/hmrc-txm-fph-validator-api spec.
 107794340
 
-# Placeholder VRNs in this repository's own demo/prefetch code: an all-zero sentinel
-# (web/public/prefetch/prefetch-hmrc-vat-return-get-head.js) and the guided-tour fill value
-# (web/public/widgets/simulator-journeys.js).
+# An all-zero placeholder VRN sentinel in this repository's own prefetch code
+# (web/public/prefetch/prefetch-hmrc-vat-return-get-head.js).
 000000000
-123456789
 
 # The sandbox test VRN and two accessibility-node ids that coincidentally sit near the word
 # "Vat" in web/public/tests/test-report-web-test-local.json, a committed Playwright test report.

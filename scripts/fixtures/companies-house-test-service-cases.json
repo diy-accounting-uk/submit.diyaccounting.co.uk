@@ -6,9 +6,9 @@
     "companyAuthenticationCode": "AUTH01",
     "madeUpDate": "2026-09-21",
     "expectedOutcome": {
-      "status": "GOVTALK_ERROR",
-      "pinned": false,
-      "note": "No real company authentication code for 00001350 is on record; companyAuthenticationCode is the shortest valid-length placeholder (6-8 chars, baseTypes-v3-6.xsd), so the gateway is expected to answer an authentication rejection, not OK. CS-A3 pins the real outcome once a real code is known."
+      "status": "OK",
+      "pinned": true,
+      "note": "Observed OK on the test service, run 36264617953 (2026-09-26)."
     }
   },
   {
@@ -17,9 +17,9 @@
     "companyNumber": "03176906",
     "companyAuthenticationCode": "AUTH02",
     "expectedOutcome": {
-      "status": "GOVTALK_ERROR",
-      "pinned": false,
-      "note": "No real company authentication code for 03176906 is on record; companyAuthenticationCode is the shortest valid-length placeholder (6-8 chars, baseTypes-v3-6.xsd), so the gateway is expected to answer an authentication rejection, not OK. CS-A3 pins the real outcome once a real code is known."
+      "status": "OK",
+      "pinned": true,
+      "note": "Observed OK on the test service, run 36264617953 (2026-09-26)."
     }
   },
   {
@@ -112,8 +112,8 @@
     "corruptFirstDirectorPersonalCode": true,
     "expectedOutcome": {
       "status": "GOVTALK_ERROR",
-      "pinned": false,
-      "note": "Blanks the first director's personal code; expects a schema-validation reject on that field. companyAuthenticationCode is a placeholder, no real code for 03176906 is on record, so the observed reject may instead name the authentication code until a real one is known. CS-A3 pins the real reject code and settles Q3."
+      "pinned": true,
+      "note": "Observed error 100 (schema validation) on the test service, run 36264617953 (2026-09-26)."
     }
   },
   {
@@ -189,8 +189,8 @@
     "corruptPersonalCode": true,
     "expectedOutcome": {
       "status": "GOVTALK_ERROR",
-      "pinned": false,
-      "note": "Blanks the PSC's own personal code; expects a schema-validation reject on that field. companyAuthenticationCode is a placeholder, no real code for 04549236 is on record, so the observed reject may instead name the authentication code until a real one is known. CS-A3 pins the real reject code."
+      "pinned": true,
+      "note": "Observed error 100 (schema validation) on the test service, run 36264617953 (2026-09-26)."
     }
   }
 ]

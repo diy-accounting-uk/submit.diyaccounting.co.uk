@@ -136,10 +136,8 @@ npm run test:submitVatBehaviour-proxy
 | `tokenEnforcement.behaviour.test.js` | Token consumption and exhaustion |
 | `help.behaviour.test.js` | Help page functionality |
 | `compliance.behaviour.test.js` | Compliance checks |
-| `simulator.behaviour.test.js` | Simulator mode |
 | `generatePassActivity.behaviour.test.js` | Pass generation activity |
 | `payment.behaviour.test.js` | Stripe payment flow |
-| `captureDemo.behaviour.test.js` | Demo video capture |
 
 ### Maven Commands
 
@@ -207,7 +205,7 @@ Created once per environment by `deploy-environment.yml`:
 | EcrStack | ECR repositories (eu-west-2 and us-east-1) |
 | ActivityStack | Activity/subscription management |
 | HoldingStack | S3 bucket and CloudFront for the holding page |
-| SimulatorStack | S3 bucket and CloudFront for simulator site |
+| SimulatorStack | Lambda (Web Adapter) and CloudFront for the public demo simulator |
 | IdentityStack | Cognito user pool |
 | BackupStack | Cross-account backup configuration |
 
@@ -499,7 +497,6 @@ Lightweight mock server for local development:
 | `bundles.html` | Bundle management + pass redemption UI |
 | `guide.html` | User guide |
 | `help.html` | Help and FAQ page |
-| `simulator.html` | Simulator mode landing page |
 | `mcp.html` | MCP server information |
 | `privacy.html` | Privacy policy |
 | `terms.html` | Terms of service |
@@ -553,7 +550,6 @@ Lightweight mock server for local development:
 | `status-messages.js` | Toast/status message display |
 | `loading-spinner.js` | Loading indicator |
 | `simulator-bridge.js` | Simulator mode bridge |
-| `simulator-journeys.js` | Simulator predefined journeys |
 | `localstorage-viewer.js` | Developer localStorage inspector |
 | `view-source-link.js` | View source link for developers |
 | `error-page.js` | Custom error page handler |

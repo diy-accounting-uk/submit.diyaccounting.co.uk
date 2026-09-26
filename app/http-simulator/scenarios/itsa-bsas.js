@@ -176,10 +176,10 @@ const NOT_FOUND_RESPONSE = {
 };
 
 /**
- * Get the retrieve-a-self-employment-BSAS response for a Gov-Test-Scenario header. HMRC's own
- * sandbox answers not-found when no scenario header is sent at all - the default here matches
- * that exactly, unlike every other ITSA retrieve endpoint's simulator, which defaults to a
- * success body.
+ * Get the retrieve-a-self-employment-BSAS response for a Gov-Test-Scenario header. No header
+ * answers the calculationId the trigger just returned with a success body, the way HMRC's own
+ * sandbox answers a retrieve straight after a trigger, and the way every other ITSA retrieve
+ * endpoint's simulator already defaults.
  * @param {string|undefined} scenario - Gov-Test-Scenario header value
  * @param {string} nino
  * @param {string} calculationId
@@ -187,7 +187,7 @@ const NOT_FOUND_RESPONSE = {
  * @returns {{bsas: object}|{status: number, body: object}}
  */
 export function getBsasSelfEmploymentForScenario(scenario, nino, calculationId, taxYear) {
-  if (!scenario) return NOT_FOUND_RESPONSE;
+  if (!scenario) return { bsas: profitSummary(nino, calculationId, taxYear) };
 
   const scenarioUpper = scenario.toUpperCase();
   if (scenarioUpper === "STATEFUL") return { bsas: profitSummary(nino, calculationId, taxYear) };
@@ -324,8 +324,8 @@ const ukPropertyRetrieveErrorScenarios = {
 };
 
 /**
- * Get the retrieve-a-UK-property-BSAS response for a Gov-Test-Scenario header. The default here
- * is not-found, exactly as the self-employment retrieve's default is.
+ * Get the retrieve-a-UK-property-BSAS response for a Gov-Test-Scenario header. No header answers
+ * with a success body, exactly as the self-employment retrieve's default does.
  * @param {string|undefined} scenario - Gov-Test-Scenario header value
  * @param {string} nino
  * @param {string} calculationId
@@ -333,7 +333,7 @@ const ukPropertyRetrieveErrorScenarios = {
  * @returns {{bsas: object}|{status: number, body: object}}
  */
 export function getBsasUkPropertyForScenario(scenario, nino, calculationId, taxYear) {
-  if (!scenario) return NOT_FOUND_RESPONSE;
+  if (!scenario) return { bsas: ukPropertyProfitSummary(nino, calculationId, taxYear) };
 
   const scenarioUpper = scenario.toUpperCase();
   if (scenarioUpper === "STATEFUL") return { bsas: ukPropertyProfitSummary(nino, calculationId, taxYear) };

@@ -11,6 +11,11 @@ vi.mock("@app/lib/activityAlert.js", () => ({
   publishActivityEvent: (...args) => mockPublishActivityEvent(...args),
 }));
 
+const mockOpenOrExtendBurstWindow = vi.fn().mockResolvedValue({ isNewBurst: true, hitCount: 1 });
+vi.mock("@app/data/dynamoDbWafScanBurstRepository.js", () => ({
+  openOrExtendBurstWindow: (...args) => mockOpenOrExtendBurstWindow(...args),
+}));
+
 import { handler, decodeSubscriptionPayload, parseWafLogRecord, groupByClientIp } from "@app/functions/security/wafScanDetect.js";
 
 function wafLogRecord(overrides = {}) {
@@ -48,6 +53,8 @@ function subscriptionPayload(records) {
 describe("functions/security/wafScanDetect", () => {
   beforeEach(() => {
     mockPublishActivityEvent.mockClear();
+    mockOpenOrExtendBurstWindow.mockClear();
+    mockOpenOrExtendBurstWindow.mockResolvedValue({ isNewBurst: true, hitCount: 1 });
     process.env.DEPLOYMENT_NAME = "ci-test";
   });
 
@@ -180,6 +187,40 @@ describe("functions/security/wafScanDetect", () => {
       await handler({ awslogs: { data } });
 
       expect(mockPublishActivityEvent).toHaveBeenCalledTimes(2);
+    });
+
+    test("opens a burst window per group with the group's client IP and hit count", async () => {
+      const data = subscriptionPayload([wafLogRecord(), wafLogRecord()]);
+      await handler({ awslogs: { data } });
+
+      expect(mockOpenOrExtendBurstWindow).toHaveBeenCalledTimes(1);
+      expect(mockOpenOrExtendBurstWindow).toHaveBeenCalledWith({ clientIp: "203.0.113.9", hitCount: 2 });
+    });
+
+    test("a delivery landing inside an already-open burst window publishes nothing", async () => {
+      mockOpenOrExtendBurstWindow.mockResolvedValue({ isNewBurst: false, hitCount: 9 });
+      const data = subscriptionPayload([wafLogRecord()]);
+
+      const result = await handler({ awslogs: { data } });
+
+      expect(mockPublishActivityEvent).not.toHaveBeenCalled();
+      expect(result.published).toBe(0);
+    });
+
+    test("one IP opening a window and another still inside one publishes only for the opener", async () => {
+      mockOpenOrExtendBurstWindow.mockImplementation(async ({ clientIp }) =>
+        clientIp === "203.0.113.9" ? { isNewBurst: true, hitCount: 1 } : { isNewBurst: false, hitCount: 5 },
+      );
+      const data = subscriptionPayload([
+        wafLogRecord({ httpRequest: { ...wafLogRecord().httpRequest, clientIp: "203.0.113.9" } }),
+        wafLogRecord({ httpRequest: { ...wafLogRecord().httpRequest, clientIp: "198.51.100.4" } }),
+      ]);
+
+      const result = await handler({ awslogs: { data } });
+
+      expect(result.published).toBe(1);
+      expect(mockPublishActivityEvent).toHaveBeenCalledTimes(1);
+      expect(mockPublishActivityEvent.mock.calls[0][0].detail.clientIp).toBe("203.0.113.9");
     });
   });
 });

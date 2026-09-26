@@ -414,7 +414,6 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
     - [DEV-09](#dev-09-simulate-hmrc-itsa-mtd-api) Simulate HMRC ITSA MTD API: use when a test needs Making Tax Digital for Income Tax Self Assessment endpoints without a real HMRC call.
   - [Public demo simulator deployment & practice UI](#public-demo-simulator-deployment--practice-ui-dev)
     - [DEV-10](#dev-10-deploy-the-public-demo-simulator) Deploy the public demo simulator: use when the public read-only demo of the app needs deploying or its static build regenerating.
-    - [DEV-11](#dev-11-practice-the-vat-journey-in-the-browser-embedded-simulator) Practice the VAT journey in the browser-embedded simulator: use when a demo or onboarding page needs a scripted, no-live-HMRC-calls VAT submission walkthrough.
     - [DEV-12](#dev-12-prove-the-client-status-stack-and-fetchauth) Prove the client status-stack and fetch/auth: use when a change touches the status-stack state machine, core fetch/auth logic, or the simulator's iframe controls.
     - [DEV-13](#dev-13-generate-the-openapi-spec-from-cdk-route-definitions) Generate the OpenAPI spec from CDK route definitions: use when the API's OpenAPI document must reflect the real API Gateway routes without a hand-maintained list.
   - [Local dev environment & secrets](#local-dev-environment--secrets-dev)
@@ -2764,10 +2763,10 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 #### OPS-88 Orchestrate demo-video recording journeys
 
 - **Use when:** a new or changed product journey needs a recorded demo video driven end to end by Playwright.
-- **Does:** capture-demo-videos.js and site-video-capture.js drive Playwright through a scene script (videos/*.json) end to end. journey.js stands up the local services and mints the HMRC sandbox test user a logged-in scene needs. behaviourSteps.js bridges into the same step functions the behaviour tests use, via appAliasHook.js's @app/* resolution. actions.js dispatches each scene step to a Playwright locator, waitPhase.js brackets the real network wait, pacing.js computes the pause and wait-compression timing, and values.js resolves placeholders such as VAT number, NINO and dates.
-- **Run:** `node scripts/site-video-capture.js --script videos/<name>.json`; `npx dotenv -e .env.simulator -- node scripts/capture-demo-videos.js`; `npm run video:tour-proxy`; `npm run video:view-obligations-ci`; `npm run video:submit-return-prod`; `npm run video:itsa-business-details-ci`
-- **Entry:** `scripts/site-video-capture.js`; `scripts/capture-demo-videos.js`; `scripts/lib/video/journey.js`
-- **Files:** scripts/capture-demo-videos.js, scripts/site-video-capture.js, scripts/lib/video/capture.js, scripts/lib/video/journey.js, scripts/lib/video/behaviourSteps.js, scripts/lib/video/appAliasHook.js, scripts/lib/video/actions.js, scripts/lib/video/waitPhase.js, scripts/lib/video/pacing.js, scripts/lib/video/values.js, app/unit-tests/video/journey.test.js, app/unit-tests/video/pacing.test.js, app/unit-tests/video/waitPhase.test.js, app/unit-tests/video/values.test.js, behaviour-tests/captureDemo.behaviour.test.js
+- **Does:** site-video-capture.js drives Playwright through a scene script (videos/*.json) end to end. journey.js stands up the local services and mints the HMRC sandbox test user a logged-in scene needs. behaviourSteps.js bridges into the same step functions the behaviour tests use, via appAliasHook.js's @app/* resolution. actions.js dispatches each scene step to a Playwright locator, waitPhase.js brackets the real network wait, pacing.js computes the pause and wait-compression timing, and values.js resolves placeholders such as VAT number, NINO and dates.
+- **Run:** `node scripts/site-video-capture.js --script videos/<name>.json`; `npm run video:tour-proxy`; `npm run video:view-obligations-ci`; `npm run video:submit-return-prod`; `npm run video:itsa-business-details-ci`
+- **Entry:** `scripts/site-video-capture.js`; `scripts/lib/video/journey.js`
+- **Files:** scripts/site-video-capture.js, scripts/lib/video/capture.js, scripts/lib/video/journey.js, scripts/lib/video/behaviourSteps.js, scripts/lib/video/appAliasHook.js, scripts/lib/video/actions.js, scripts/lib/video/waitPhase.js, scripts/lib/video/pacing.js, scripts/lib/video/values.js, app/unit-tests/video/journey.test.js, app/unit-tests/video/pacing.test.js, app/unit-tests/video/waitPhase.test.js, app/unit-tests/video/values.test.js
 - **Keywords:** video capture, playwright, scene script, demo video, journey, hmrc sandbox test user, recording
 - **Related:** OPS-89, OPS-90, OPS-91, OPS-92
 
@@ -4356,7 +4355,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 <!-- generated:area DEV -->
 - [Simulator server & OAuth mocks](#simulator-server--oauth-mocks-dev): [DEV-01](#dev-01-run-the-http-simulator-server) Run the HTTP simulator server · [DEV-02](#dev-02-simulate-local-app-oauth) Simulate local app OAuth · [DEV-03](#dev-03-simulate-hmrc-oauth) Simulate HMRC OAuth · [DEV-04](#dev-04-simulate-companies-house-identity-and-filing) Simulate Companies House identity and filing · [DEV-05](#dev-05-simulate-hmrc-agent-authorisation-and-fraud-prevention-headers) Simulate HMRC Agent Authorisation and fraud-prevention headers · [DEV-06](#dev-06-simulate-hmrc-test-user-provisioning-and-api-docs) Simulate HMRC test-user provisioning and API docs · [DEV-07](#dev-07-simulate-the-public-demos-billing-and-oauth) Simulate the public demo's billing and OAuth
 - [Simulator tax APIs](#simulator-tax-apis-dev): [DEV-08](#dev-08-simulate-hmrc-vat-mtd-api) Simulate HMRC VAT MTD API · [DEV-09](#dev-09-simulate-hmrc-itsa-mtd-api) Simulate HMRC ITSA MTD API
-- [Public demo simulator deployment & practice UI](#public-demo-simulator-deployment--practice-ui-dev): [DEV-10](#dev-10-deploy-the-public-demo-simulator) Deploy the public demo simulator · [DEV-11](#dev-11-practice-the-vat-journey-in-the-browser-embedded-simulator) Practice the VAT journey in the browser-embedded simulator · [DEV-12](#dev-12-prove-the-client-status-stack-and-fetchauth) Prove the client status-stack and fetch/auth · [DEV-13](#dev-13-generate-the-openapi-spec-from-cdk-route-definitions) Generate the OpenAPI spec from CDK route definitions
+- [Public demo simulator deployment & practice UI](#public-demo-simulator-deployment--practice-ui-dev): [DEV-10](#dev-10-deploy-the-public-demo-simulator) Deploy the public demo simulator · [DEV-12](#dev-12-prove-the-client-status-stack-and-fetchauth) Prove the client status-stack and fetch/auth · [DEV-13](#dev-13-generate-the-openapi-spec-from-cdk-route-definitions) Generate the OpenAPI spec from CDK route definitions
 - [Local dev environment & secrets](#local-dev-environment--secrets-dev): [DEV-14](#dev-14-start-the-proxy-and-simulator-local-dev-environments) Start the proxy and simulator local dev environments · [DEV-15](#dev-15-fetch-and-publish-proxy-variant-secrets) Fetch and publish proxy-variant secrets · [DEV-16](#dev-16-manage-the-durable-cognito-test-user-lifecycle) Manage the durable Cognito test-user lifecycle
 - [Test fixtures, reports & DynamoDB export](#test-fixtures-reports--dynamodb-export-dev): [DEV-17](#dev-17-export-and-embed-dynamodb-test-state-in-reports) Export and embed DynamoDB test state in reports · [DEV-18](#dev-18-provide-shared-unitsystem-test-fixtures) Provide shared unit/system-test fixtures · [DEV-19](#dev-19-provide-shared-behaviour-test-fixtures-and-steps) Provide shared behaviour-test fixtures and steps · [DEV-20](#dev-20-check-spdx-licence-headers) Check SPDX licence headers · [DEV-21](#dev-21-verify-module-wiring-and-repository-shape) Verify module wiring and repository shape
 - [Build hygiene, toolchain & docs](#build-hygiene-toolchain--docs-dev): [DEV-22](#dev-22-clean-and-update-local-build-state) Clean and update local build state · [DEV-23](#dev-23-configure-the-test-and-lint-toolchains) Configure the test and lint toolchains · [DEV-24](#dev-24-document-developer-setup-and-repository-conventions) Document developer setup and repository conventions · [DEV-25](#dev-25-maintain-the-specialist-agent-prompt-library) Maintain the specialist agent prompt library · [DEV-26](#dev-26-enforce-claude-code-conventions-via-rules-and-hooks) Enforce Claude Code conventions via rules and hooks
@@ -4443,7 +4442,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - **Entry:** `app/functions/non-lambda-mocks/mockAuthUrlGet.js:ingestHandler`; `app/functions/non-lambda-mocks/mockTokenPost.js:apiEndpoint`; `app/functions/non-lambda-mocks/mockBilling.js:apiEndpoint`
 - **Files:** app/functions/non-lambda-mocks/mockAuthUrlGet.js, app/functions/non-lambda-mocks/mockTokenPost.js, app/functions/non-lambda-mocks/mockBilling.js
 - **Keywords:** public demo, mock billing, mock stripe, mock oauth, cors, pna, bundle auto-grant, non-lambda mocks
-- **Related:** DEV-10, DEV-11
+- **Related:** DEV-10
 
 ### Simulator tax APIs (DEV)
 
@@ -4476,7 +4475,6 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 
 <!-- generated:group public-demo-simulator-deployment--practice-ui-dev -->
 - [DEV-10](#dev-10-deploy-the-public-demo-simulator) Deploy the public demo simulator
-- [DEV-11](#dev-11-practice-the-vat-journey-in-the-browser-embedded-simulator) Practice the VAT journey in the browser-embedded simulator
 - [DEV-12](#dev-12-prove-the-client-status-stack-and-fetchauth) Prove the client status-stack and fetch/auth
 - [DEV-13](#dev-13-generate-the-openapi-spec-from-cdk-route-definitions) Generate the OpenAPI spec from CDK route definitions
 <!-- /generated:group public-demo-simulator-deployment--practice-ui-dev -->
@@ -4489,27 +4487,17 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - **Entry:** `infra/main/java/co/uk/diyaccounting/submit/stacks/SimulatorStack.java:SimulatorStack`; `scripts/build-simulator.js:buildSimulator`; `scripts/simulator-lambda-server.mjs:handleRequest`
 - **Files:** infra/main/java/co/uk/diyaccounting/submit/stacks/SimulatorStack.java, scripts/build-simulator.js, scripts/simulator-lambda-server.mjs
 - **Keywords:** public demo, simulator deployment, lambda function url, cloudfront, web/public-simulator, storage namespace, demo banner, noindex
-- **Related:** DEV-01, DEV-11
-
-#### DEV-11 Practice the VAT journey in the browser-embedded simulator
-
-- **Use when:** a demo or onboarding page needs a scripted, no-live-HMRC-calls VAT submission walkthrough.
-- **Does:** simulator.html is the standalone practice interface for the VAT submission flow. The SimulatorJourney class drives scripted click-through demos, using simulator-bridge.js to relay postMessage commands across the iframe boundary. test-data-generator.js generates placeholder VRNs, NINOs and period keys for these demos.
-- **Run:** `import { SimulatorJourney, journeySubmitVat, journeyViewObligations } from "web/public/widgets/simulator-journeys.js"`
-- **Entry:** `web/public/simulator.html`; `web/public/widgets/simulator-journeys.js:SimulatorJourney`; `web/public/widgets/simulator-bridge.js`
-- **Files:** web/public/simulator.html, web/public/widgets/simulator-bridge.js, web/public/widgets/simulator-journeys.js, web/public/lib/test-data-generator.js, web/unit-tests/test-data-generator.test.js
-- **Keywords:** simulator practice, vat journey, iframe bridge, postmessage, scripted demo, test data generator, click-through
-- **Related:** DEV-10, DEV-12
+- **Related:** DEV-01
 
 #### DEV-12 Prove the client status-stack and fetch/auth
 
 - **Use when:** a change touches the status-stack state machine, core fetch/auth logic, or the simulator's iframe controls.
-- **Does:** Playwright component and DOM tests exercise the status-stack state machine and the core fetch and auth logic. They also cover the test-data-link page and the simulator's iframe and journey controls. ITSA business-details and VAT-obligations page tests live with HMRC filing, not here.
-- **Run:** `npx playwright test web/browser-tests/chromium.client.status-stack.test.js`; `npx playwright test web/browser-tests/chromium.client.test.js`; `npm run test:submitVatBehaviour-proxy -- --grep simulator`
-- **Entry:** `web/browser-tests/chromium.client.status-stack.test.js`; `web/browser-tests/chromium.client.test.js`; `behaviour-tests/simulator.behaviour.test.js`
-- **Files:** web/browser-tests/chromium.client.status-stack.test.js, web/browser-tests/chromium.client.test.js, web/browser-tests/test-data-link.browser.test.js, behaviour-tests/simulator.behaviour.test.js
-- **Keywords:** status stack, browser test, client fetch, auth logic, test-data-link, simulator behaviour test, playwright component test
-- **Related:** DEV-11, DEV-25
+- **Does:** Playwright component and DOM tests exercise the status-stack state machine and the core fetch and auth logic. They also cover the test-data-link page. ITSA business-details and VAT-obligations page tests live with HMRC filing, not here.
+- **Run:** `npx playwright test web/browser-tests/chromium.client.status-stack.test.js`; `npx playwright test web/browser-tests/chromium.client.test.js`
+- **Entry:** `web/browser-tests/chromium.client.status-stack.test.js`; `web/browser-tests/chromium.client.test.js`
+- **Files:** web/browser-tests/chromium.client.status-stack.test.js, web/browser-tests/chromium.client.test.js, web/browser-tests/test-data-link.browser.test.js
+- **Keywords:** status stack, browser test, client fetch, auth logic, test-data-link, playwright component test
+- **Related:** DEV-25
 
 #### DEV-13 Generate the OpenAPI spec from CDK route definitions
 
@@ -5200,7 +5188,6 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - clean build: [DEV-22](#dev-22-clean-and-update-local-build-state)
 - cleanup test users: [OPS-12](#ops-12-clean-up-expired-test-users)
 - cli: [BILL-11](#bill-11-generate-admin-passes-from-cli-or-workflow)
-- click-through: [DEV-11](#dev-11-practice-the-vat-journey-in-the-browser-embedded-simulator)
 - client: [BILL-12](#bill-12-invite-a-client-to-authorise-agent-access), [BILL-13](#bill-13-check-a-clients-authorisation-status), [BILL-14](#bill-14-cancel-a-pending-client-authorisation-invite), [BILL-15](#bill-15-move-a-book-to-a-client)
 - client fetch: [DEV-12](#dev-12-prove-the-client-status-stack-and-fetchauth)
 - client id: [HMRC-32](#hmrc-32-register-and-verify-hmrc-developer-hub-application-config), [CH-02](#ch-02-verify-the-companies-house-oauth-app-configuration)
@@ -5764,7 +5751,6 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - identity provider: [OPS-101](#ops-101-set-up-github-oidc-deployment-roles)
 - identity-sandbox: [CH-02](#ch-02-verify-the-companies-house-oauth-app-configuration)
 - identity.toml: [DATA-37](#data-37-federate-lambda-credentials-to-google-cloud), [DATA-42](#data-42-sync-gcp-workload-identity-and-org-policy)
-- iframe bridge: [DEV-11](#dev-11-practice-the-vat-journey-in-the-browser-embedded-simulator)
 - import prior year: [HMRC-13](#hmrc-13-submit-and-manage-the-self-employment-annual-summary)
 - in flight: [DEV-27](#dev-27-render-the-open-work-board)
 - in-memory store: [DEV-01](#dev-01-run-the-http-simulator-server)
@@ -6140,7 +6126,6 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - post-deploy recording: [OPS-52](#ops-52-auto-record-demo-videos-on-prod-deploy)
 - post-deploy validation: [OPS-27](#ops-27-run-probe-tests-against-deployed-environments)
 - post-mortem: [DEV-17](#dev-17-export-and-embed-dynamodb-test-state-in-reports)
-- postmessage: [DEV-11](#dev-11-practice-the-vat-journey-in-the-browser-embedded-simulator)
 - pr agent: [OPS-57](#ops-57-dispatch-agentic-lib-board-backlog-and-pr-agents)
 - pr merge gate: [DEV-32](#dev-32-merge-every-pr-that-is-ready)
 - pr readiness: [OPS-134](#ops-134-monitor-github-actions-ci-from-the-cli)
@@ -6369,7 +6354,6 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - schema change: [OPS-16](#ops-16-run-dynamodb-data-migrations)
 - screen reader: [OPS-95](#ops-95-generate-wcag-accessibility-compliance-rows)
 - screenshot captions: [DEV-19](#dev-19-provide-shared-behaviour-test-fixtures-and-steps)
-- scripted demo: [DEV-11](#dev-11-practice-the-vat-journey-in-the-browser-embedded-simulator)
 - sdst: [HMRC-38](#hmrc-38-check-readiness-for-the-itsa-recognition-email)
 - se-derivations: [MCP-06](#mcp-06-derive-itsa-quarterly-and-annual-submission-figures)
 - search: [CH-03](#ch-03-search-the-companies-house-register)
@@ -6430,10 +6414,8 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - signing controls: [OPS-63](#ops-63-report-identity-audit-findings)
 - signup to first submission: [DATA-29](#data-29-sql-views-submission-and-compliance)
 - silent local failure: [OPS-47](#ops-47-check-fraud-prevention-header-record-freshness)
-- simulator behaviour test: [DEV-12](#dev-12-prove-the-client-status-stack-and-fetchauth)
 - simulator build: [SITE-08](#site-08-bootstrap-the-app-server)
 - simulator deployment: [DEV-10](#dev-10-deploy-the-public-demo-simulator)
-- simulator practice: [DEV-11](#dev-11-practice-the-vat-journey-in-the-browser-embedded-simulator)
 - single stack deploy: [OPS-08](#ops-08-deploy-a-single-cdk-stack-on-demand)
 - site map: [SITE-12](#site-12-map-the-site-structure)
 - site-video-capture: [OPS-52](#ops-52-auto-record-demo-videos-on-prod-deploy)
@@ -6561,7 +6543,6 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - terms: [SITE-10](#site-10-serve-general-site-pages)
 - test bundle: [BILL-43](#bill-43-build-the-frontend-test-bundle)
 - test company: [CH-12](#ch-12-generate-synthetic-test-companies)
-- test data generator: [DEV-11](#dev-11-practice-the-vat-journey-in-the-browser-embedded-simulator)
 - test discovery: [DEV-23](#dev-23-configure-the-test-and-lint-toolchains)
 - test helpers: [DEV-18](#dev-18-provide-shared-unitsystem-test-fixtures)
 - test mode: [BILL-25](#bill-25-retrieve-a-stripe-checkout-sessions-status)
@@ -6660,7 +6641,6 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - vat box config: [HMRC-07](#hmrc-07-build-and-validate-9-box-vat-return-data)
 - vat boxes: [MCP-05](#mcp-05-derive-vat-figures-via-mcp-tools)
 - vat endpoints: [OPS-112](#ops-112-provision-the-api-gateway-stack)
-- vat journey: [DEV-11](#dev-11-practice-the-vat-journey-in-the-browser-embedded-simulator)
 - vat liabilities: [HMRC-04](#hmrc-04-retrieve-vat-liabilities)
 - vat logic: [OPS-97](#ops-97-compile-the-compliance-audit-report)
 - vat mtd: [DEV-08](#dev-08-simulate-hmrc-vat-mtd-api)

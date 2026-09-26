@@ -98,6 +98,7 @@ jobs:
           COMPANIES_HOUSE_PRESENTER_ID_ARN: ${{ steps.env-ci.outputs.presenter-id-arn }}
           COMPANIES_HOUSE_PRESENTER_CODE_ARN: ${{ steps.env-ci.outputs.presenter-code-arn }}
           COMPANIES_HOUSE_GATEWAY_TEST: 'true'
+          COMPANIES_HOUSE_PACKAGE_REFERENCE: '0012'
           COMPANIES_HOUSE_ACCOUNTS_ASYNC_REQUESTS_TABLE_NAME: 'ci-env-companies-house-accounts-async-requests'
 
       - name: Write the case table to the step summary

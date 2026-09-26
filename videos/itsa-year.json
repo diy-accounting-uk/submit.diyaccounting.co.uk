@@ -1,0 +1,438 @@
+{
+  "$schema": "./scene-script.schema.json",
+  "name": "itsa-year",
+  "title": "A whole Income Tax year, quarter to declaration",
+  "description": "A signed-in walk through Making Tax Digital for Income Tax across a full tax year: sign in, take out Resident, pick a business, file a quarterly update for a self-employment business and for a UK property business, then close the year out with the annual submission, its adjustable summary adjustments, losses and claims, the tax calculation and the final declaration.",
+  "auth": "user",
+  "pages": [
+    "web/public/index.html",
+    "web/public/auth/login.html",
+    "web/public/bundles.html",
+    "web/public/hmrc/itsa/dashboard.html",
+    "web/public/hmrc/itsa/businessDetails.html",
+    "web/public/hmrc/itsa/selfEmploymentPeriod.html",
+    "web/public/hmrc/itsa/ukPropertyPeriod.html",
+    "web/public/hmrc/itsa/annualSubmission.html",
+    "web/public/hmrc/itsa/adjustments.html",
+    "web/public/hmrc/itsa/lossesAndClaims.html",
+    "web/public/hmrc/itsa/taxCalculation.html",
+    "web/public/hmrc/itsa/finalDeclaration.html"
+  ],
+  "hmrcServices": ["mtd-vat", "mtd-income-tax"],
+  "environments": ["ci"],
+  "viewport": { "width": 1920, "height": 1080 },
+  "deviceScaleFactor": 1,
+  "fps": 60,
+
+  "pacing": {
+    "perCharMs": 80,
+    "betweenActionsMs": 500,
+    "aroundMotionMs": 500,
+    "minResidualMs": 120,
+    "timerThresholdMs": 250,
+    "timerFullScaleMs": 5000,
+    "waitCompressionAfterMs": 6000,
+    "waitCompressionFactor": 8
+  },
+
+  "captions": {
+    "fontPx": 40,
+    "lineHeightPx": 56,
+    "maxLines": 2,
+    "maxCharsPerLine": 46,
+    "charsPerSecond": 16,
+    "minMs": 1200,
+    "fadeMs": 200,
+    "safeArea": { "topPct": 5, "bottomPct": 5, "sidePct": 12.5 }
+  },
+
+  "suppress": ["#feedbackEngagementBanner", "#feedbackEngagementSection"],
+
+  "finalHoldMs": 2500,
+
+  "scenes": [
+    {
+      "id": "home",
+      "chapter": "Home",
+      "still": true,
+      "steps": [
+        {
+          "action": "goto",
+          "url": "/",
+          "waitFor": "#mainContent",
+          "caption": "This is a sandbox preview against HMRC's test service, not a live filing."
+        },
+        { "action": "point", "target": { "role": "heading", "name": "DIY Accounting Submit" }, "dwellMs": 300 },
+        { "action": "hold", "ms": 400 }
+      ]
+    },
+    {
+      "id": "sign-in",
+      "chapter": "Sign in",
+      "still": true,
+      "steps": [
+        { "action": "click", "target": "a.login-link", "caption": "Sign in with the account you already use." },
+        { "action": "login", "caption": "Your account keeps a whole year's filings in one place." },
+        { "action": "consent" },
+        { "action": "hold", "ms": 400 }
+      ]
+    },
+    {
+      "id": "subscription",
+      "chapter": "Resident",
+      "still": true,
+      "steps": [
+        { "action": "click", "target": { "role": "link", "name": "Bundles" }, "caption": "Bundles decide which activities you can run." },
+        {
+          "action": "ensureBundle",
+          "bundle": "Resident",
+          "testPass": true,
+          "caption": "Resident opens the Self Assessment activities."
+        },
+        { "action": "hold", "ms": 500 },
+        { "action": "click", "target": { "role": "link", "name": "Activities" }, "caption": "Every activity starts from the home page." },
+        {
+          "action": "click",
+          "target": ".developer-mode-toggle",
+          "caption": "One switch, so this run can ask HMRC's sandbox for two kinds of business."
+        },
+        { "action": "hold", "ms": 400 }
+      ]
+    },
+    {
+      "id": "business-picker",
+      "chapter": "The dashboard's business picker",
+      "still": true,
+      "steps": [
+        {
+          "action": "click",
+          "target": { "role": "button", "name": "Self Assessment (HMRC)" },
+          "expectsNavigation": true,
+          "caption": "Making Tax Digital for Income Tax starts from one dashboard."
+        },
+        { "action": "await", "until": "#businessPickerForm", "label": "Opening the ITSA dashboard" },
+        {
+          "action": "type",
+          "target": "#nino",
+          "text": "{{hmrcNino}}",
+          "clear": true,
+          "secret": true,
+          "caption": "Type the National Insurance number HMRC asks for."
+        },
+        {
+          "action": "click",
+          "target": "#findBusinessesBtn",
+          "caption": "Ask HMRC which businesses it holds against that number."
+        },
+        { "action": "hmrcAuthorise", "caption": "Sign in to HMRC and say yes once, for the whole year.", "timeoutMs": 60000 },
+        {
+          "action": "await",
+          "until": "#businessPickerResults",
+          "label": "Waiting for HMRC",
+          "timeoutMs": 60000,
+          "caption": "HMRC answers with the businesses behind this Self Assessment."
+        },
+        { "action": "point", "target": "#businessPickerList", "caption": "Each business carries an ID.", "dwellMs": 500 },
+        { "action": "hold", "ms": 600 }
+      ]
+    },
+    {
+      "id": "business-details",
+      "chapter": "Both businesses",
+      "still": true,
+      "steps": [
+        {
+          "action": "goto",
+          "url": "/hmrc/itsa/dashboard.html",
+          "waitFor": "#businessPickerForm",
+          "caption": "This year has a self-employment and a UK property business."
+        },
+        {
+          "action": "click",
+          "target": { "role": "link", "name": "Go to Business Details" },
+          "caption": "Business Details lists every business by type."
+        },
+        { "action": "await", "until": "#itsaBusinessDetailsForm", "label": "Opening the business details form" },
+        {
+          "action": "select",
+          "target": "#testScenario",
+          "value": "BUSINESS_AND_PROPERTY",
+          "caption": "This sandbox account holds a self-employment and a property business."
+        },
+        {
+          "action": "type",
+          "target": "#nino",
+          "text": "{{hmrcNino}}",
+          "clear": true,
+          "secret": true,
+          "caption": "The same National Insurance number, every business."
+        },
+        { "action": "click", "target": "#retrieveBtn", "caption": "The scope granted a moment ago still covers this." },
+        {
+          "action": "await",
+          "until": "#businessDetailsResults",
+          "label": "Waiting for HMRC",
+          "timeoutMs": 60000,
+          "caption": "HMRC answers with both businesses and their IDs."
+        },
+        { "action": "scroll", "target": "#businessDetailsTable" },
+        {
+          "action": "point",
+          "target": "#businessDetailsTable",
+          "caption": "One quarterly update form per business type, all year.",
+          "dwellMs": 600
+        },
+        { "action": "still", "name": "itsa-year-businesses" },
+        { "action": "hold", "ms": 600 }
+      ]
+    },
+    {
+      "id": "quarterly-update-self-employment",
+      "chapter": "Quarter: self-employment",
+      "still": true,
+      "steps": [
+        {
+          "action": "goto",
+          "url": "/hmrc/itsa/selfEmploymentPeriod.html",
+          "waitFor": "#itsaSelfEmploymentPeriodForm",
+          "caption": "First quarter, the self-employment business."
+        },
+        { "action": "type", "target": "#nino", "text": "{{hmrcNino}}", "clear": true, "secret": true },
+        {
+          "action": "fill",
+          "target": "#businessId",
+          "value": "XBIS00000000001",
+          "caption": "This business's ID, from Business Details."
+        },
+        { "action": "fill", "target": "#taxYear", "value": "2024-25", "caption": "The tax year this quarter falls in." },
+        { "action": "fill", "target": "#periodStartDate", "value": "2024-04-06" },
+        { "action": "fill", "target": "#periodEndDate", "value": "2024-07-05" },
+        { "action": "fill", "target": "#turnover", "value": "1000", "caption": "Then the quarter's income and expenses." },
+        { "action": "fill", "target": "#costOfGoods", "value": "150" },
+        { "action": "hold", "ms": 500 },
+        { "action": "click", "target": "#submitBtn", "caption": "File it with HMRC." },
+        {
+          "action": "await",
+          "until": "#selfEmploymentPeriodResults",
+          "label": "Waiting for HMRC",
+          "timeoutMs": 60000,
+          "caption": "HMRC accepts the period summary."
+        },
+        { "action": "still", "name": "itsa-year-self-employment-quarter" },
+        { "action": "hold", "ms": 500 }
+      ]
+    },
+    {
+      "id": "quarterly-update-uk-property",
+      "chapter": "Quarter: UK property",
+      "still": true,
+      "steps": [
+        {
+          "action": "goto",
+          "url": "/hmrc/itsa/ukPropertyPeriod.html",
+          "waitFor": "#itsaUkPropertyPeriodForm",
+          "caption": "Same quarter, the UK property business - its own form."
+        },
+        { "action": "type", "target": "#nino", "text": "{{hmrcNino}}", "clear": true, "secret": true },
+        { "action": "fill", "target": "#businessId", "value": "XPIS00000000002", "caption": "The property business's own ID." },
+        { "action": "fill", "target": "#taxYear", "value": "2024-25" },
+        { "action": "fill", "target": "#fromDate", "value": "2024-04-06" },
+        { "action": "fill", "target": "#toDate", "value": "2024-07-05" },
+        { "action": "fill", "target": "#periodAmount", "value": "800", "caption": "Rent received, and the expenses against it." },
+        { "action": "fill", "target": "#repairsAndMaintenance", "value": "100" },
+        { "action": "hold", "ms": 500 },
+        { "action": "click", "target": "#submitBtn", "caption": "File it with HMRC." },
+        {
+          "action": "await",
+          "until": "#ukPropertyPeriodResults",
+          "label": "Waiting for HMRC",
+          "timeoutMs": 60000,
+          "caption": "Both businesses now have this quarter on file."
+        },
+        { "action": "still", "name": "itsa-year-uk-property-quarter" },
+        { "action": "hold", "ms": 500 }
+      ]
+    },
+    {
+      "id": "annual-submission",
+      "chapter": "Year end: annual submission",
+      "still": true,
+      "steps": [
+        {
+          "action": "goto",
+          "url": "/hmrc/itsa/annualSubmission.html",
+          "waitFor": "#itsaAnnualLoadForm",
+          "caption": "Once every quarter is in, the year-end steps start here."
+        },
+        { "action": "type", "target": "#nino", "text": "{{hmrcNino}}", "clear": true, "secret": true },
+        { "action": "fill", "target": "#businessId", "value": "XBIS00000000001" },
+        { "action": "fill", "target": "#taxYear", "value": "2024-25" },
+        { "action": "click", "target": "#loadBtn", "caption": "Load what HMRC already holds for the year." },
+        { "action": "await", "until": "#annualEditForm", "label": "Loading the annual submission" },
+        {
+          "action": "click",
+          "target": "#allowanceTypeTrading",
+          "caption": "Claim the trading income allowance instead of itemised ones."
+        },
+        { "action": "fill", "target": "#tradingIncomeAllowance", "value": "1000" },
+        { "action": "click", "target": "#saveBtn", "caption": "Save the year's allowances and adjustments." },
+        {
+          "action": "await",
+          "until": "#annualSubmissionResults",
+          "label": "Waiting for HMRC",
+          "timeoutMs": 60000,
+          "caption": "HMRC accepts the annual submission."
+        },
+        { "action": "hold", "ms": 500 }
+      ]
+    },
+    {
+      "id": "adjustments",
+      "chapter": "Year end: adjustable summary",
+      "still": true,
+      "steps": [
+        {
+          "action": "goto",
+          "url": "/hmrc/itsa/adjustments.html",
+          "waitFor": "#itsaBsasTriggerForm",
+          "caption": "HMRC works out a business source adjustable summary from the quarters filed."
+        },
+        { "action": "type", "target": "#nino", "text": "{{hmrcNino}}", "clear": true, "secret": true },
+        { "action": "fill", "target": "#businessId", "value": "XBIS00000000001" },
+        { "action": "fill", "target": "#taxYear", "value": "2024-25" },
+        { "action": "fill", "target": "#accountingPeriodStartDate", "value": "2024-04-06" },
+        { "action": "fill", "target": "#accountingPeriodEndDate", "value": "2025-04-05" },
+        { "action": "click", "target": "#triggerBtn", "caption": "Trigger the summary and read what HMRC calculated." },
+        {
+          "action": "await",
+          "until": "#summaryContainer",
+          "label": "Waiting for HMRC",
+          "timeoutMs": 60000,
+          "caption": "Turnover, expenses and the net profit HMRC worked out."
+        },
+        { "action": "point", "target": "#summaryDetails", "dwellMs": 500 },
+        { "action": "fill", "target": "#adjustTurnover", "value": "1100", "caption": "Change a figure if HMRC's version is wrong." },
+        { "action": "fill", "target": "#adjustCostOfGoods", "value": "160" },
+        { "action": "click", "target": "#submitAdjustmentBtn" },
+        {
+          "action": "await",
+          "until": "#adjustmentResults",
+          "label": "Waiting for HMRC",
+          "timeoutMs": 60000,
+          "caption": "HMRC accepts the adjustment."
+        },
+        { "action": "hold", "ms": 500 }
+      ]
+    },
+    {
+      "id": "losses-and-claims",
+      "chapter": "Year end: losses and claims",
+      "still": true,
+      "steps": [
+        {
+          "action": "goto",
+          "url": "/hmrc/itsa/lossesAndClaims.html",
+          "waitFor": "#itsaLossesLoadForm",
+          "caption": "A loss this year, or from an earlier year, is claimed here."
+        },
+        { "action": "type", "target": "#nino", "text": "{{hmrcNino}}", "clear": true, "secret": true },
+        { "action": "fill", "target": "#businessId", "value": "XBIS00000000001" },
+        { "action": "fill", "target": "#taxYear", "value": "2024-25" },
+        { "action": "click", "target": "#loadBtn", "caption": "Load this business's loss position for the year." },
+        { "action": "await", "until": "#lossesEditForm", "label": "Loading losses and claims" },
+        {
+          "action": "fill",
+          "target": "#currentYearLosses",
+          "value": "200",
+          "caption": "This year's loss, carried forward to next year."
+        },
+        { "action": "click", "target": "#saveBtn" },
+        {
+          "action": "await",
+          "until": "#lossesResults",
+          "label": "Waiting for HMRC",
+          "timeoutMs": 60000,
+          "caption": "HMRC accepts the claim."
+        },
+        { "action": "hold", "ms": 500 }
+      ]
+    },
+    {
+      "id": "tax-calculation",
+      "chapter": "Tax calculation",
+      "still": true,
+      "steps": [
+        {
+          "action": "goto",
+          "url": "/hmrc/itsa/taxCalculation.html",
+          "waitFor": "#itsaCalculationTriggerForm",
+          "caption": "With every business and the year-end steps in, HMRC can calculate."
+        },
+        { "action": "type", "target": "#nino", "text": "{{hmrcNino}}", "clear": true, "secret": true },
+        { "action": "fill", "target": "#taxYear", "value": "2024-25" },
+        {
+          "action": "select",
+          "target": "#calculationType",
+          "value": "intent-to-finalise",
+          "caption": "Intent to finalise is the calculation the final declaration confirms."
+        },
+        { "action": "click", "target": "#triggerBtn" },
+        {
+          "action": "await",
+          "until": "#calculationResults",
+          "label": "Calculating",
+          "timeoutMs": 60000,
+          "caption": "HMRC shows this disclaimer before any figure."
+        },
+        { "action": "point", "target": "#calculationDisclaimer", "caption": "It is an estimate, and it can still change.", "dwellMs": 700 },
+        {
+          "action": "point",
+          "target": "#totalIncomeTaxAndNicsDue",
+          "caption": "What the whole tax year owes, across both businesses.",
+          "dwellMs": 700
+        },
+        { "action": "still", "name": "itsa-year-tax-calculation" },
+        { "action": "hold", "ms": 500 }
+      ]
+    },
+    {
+      "id": "final-declaration",
+      "chapter": "Final declaration",
+      "still": true,
+      "steps": [
+        {
+          "action": "click",
+          "target": { "role": "link", "name": "Continue to Final Declaration" },
+          "caption": "The last step confirms this calculation and files the return."
+        },
+        { "action": "await", "until": "#itsaFinalDeclarationRetrieveForm", "label": "Opening the final declaration form" },
+        { "action": "click", "target": "#retrieveBtn", "caption": "Retrieve the calculation this declaration confirms." },
+        {
+          "action": "await",
+          "until": "#declarationContainer",
+          "label": "Waiting for HMRC",
+          "timeoutMs": 60000,
+          "caption": "The same disclaimer, and every business HMRC counted."
+        },
+        { "action": "scroll", "target": "#businessesList" },
+        { "action": "point", "target": "#businessesList", "dwellMs": 600 },
+        {
+          "action": "click",
+          "target": "#declarationTick",
+          "caption": "I confirm this information is correct and complete to the best of my knowledge."
+        },
+        { "action": "hold", "ms": 700 },
+        { "action": "click", "target": "#submitDeclarationBtn", "caption": "File the return for the whole year." },
+        {
+          "action": "await",
+          "until": "#finalDeclarationResults",
+          "label": "Waiting for HMRC",
+          "timeoutMs": 60000,
+          "caption": "HMRC accepts the final declaration. The year is filed."
+        },
+        { "action": "still", "name": "itsa-year-final-declaration" },
+        { "action": "hold", "ms": 1200 }
+      ]
+    }
+  ]
+}
