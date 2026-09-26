@@ -256,7 +256,14 @@ class OpsStackTest {
         OpsStack opsStack = synthOpsStack("prod", null, null);
         Template template = Template.fromStack(opsStack);
 
-        Map<String, Map<String, Object>> metricFilters = template.findResources("AWS::Logs::MetricFilter");
+        // Scoped to the TokenChargeUnpaid* logical ids: a prod OpsStack also builds its own
+        // Lambda constructs (e.g. alarm-sms-forward), each carrying its own LogErrorsMetricFilter
+        // (see Lambda.java), so an unscoped count of every AWS::Logs::MetricFilter in the stack
+        // would couple this test to how many other Lambdas OpsStack happens to build.
+        Map<String, Map<String, Object>> metricFilters =
+                template.findResources("AWS::Logs::MetricFilter").entrySet().stream()
+                        .filter(entry -> entry.getKey().contains("TokenChargeUnpaid"))
+                        .collect(java.util.stream.Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
         assertEquals(
                 12,
                 metricFilters.size(),
@@ -285,6 +292,92 @@ class OpsStackTest {
         assertTrue(
                 logGroupNames.stream().anyMatch(name -> name.contains("hmrc-itsa-final-declaration-post")),
                 "expected a metric filter on an ITSA final declaration log group, got " + logGroupNames);
+    }
+
+    @Test
+    @SuppressWarnings("unchecked")
+    void alarmSmsForwardLambdaIsSubscribedToTheAlertTopicInProd() {
+        OpsStack opsStack = synthOpsStack("prod", null, null);
+        Template template = Template.fromStack(opsStack);
+
+        var matching = template.findResources("AWS::Lambda::Function").entrySet().stream()
+                .filter(entry -> {
+                    var properties = (Map<String, Object>) entry.getValue().get("Properties");
+                    return String.valueOf(properties.get("FunctionName")).contains("alarm-sms-forward");
+                })
+                .toList();
+        assertEquals(1, matching.size(), "expected exactly one alarm-sms-forward Lambda function");
+
+        var subscriptions = template.findResources("AWS::SNS::Subscription").values().stream()
+                .map(resource -> (Map<String, Object>) resource.get("Properties"))
+                .filter(properties -> "lambda".equals(properties.get("Protocol")))
+                .toList();
+        assertEquals(
+                1,
+                subscriptions.size(),
+                "expected exactly one lambda subscription on the alert topic, got " + subscriptions);
+    }
+
+    @Test
+    @SuppressWarnings("unchecked")
+    void alarmSmsForwardLambdaIsAbsentInCi() {
+        OpsStack opsStack = synthOpsStack("ci", TEST_GITHUB_APP_ID, null);
+        Template template = Template.fromStack(opsStack);
+
+        var matching = template.findResources("AWS::Lambda::Function").entrySet().stream()
+                .filter(entry -> {
+                    var properties = (Map<String, Object>) entry.getValue().get("Properties");
+                    return String.valueOf(properties.get("FunctionName")).contains("alarm-sms-forward");
+                })
+                .toList();
+        assertEquals(
+                List.of(), matching, "a ci deployment self-destructs within hours, so it must never text the operator");
+    }
+
+    @Test
+    @SuppressWarnings("unchecked")
+    void alarmSmsForwardLambdaCanSendFromTheRegisteredSenderIdOnly() {
+        OpsStack opsStack = synthOpsStack("prod", null, null);
+        Template template = Template.fromStack(opsStack);
+
+        List<Map<String, Object>> statements = findPolicyStatementsContainingSid(template, "SendOperatorSms");
+        Map<String, Object> statement = statements.stream()
+                .filter(s -> "SendOperatorSms".equals(s.get("Sid")))
+                .findFirst()
+                .orElseThrow();
+
+        assertEquals("sms-voice:SendTextMessage", statement.get("Action"));
+        String resource = (String) statement.get("Resource");
+        assertTrue(resource.endsWith("sender-id/DIYACCT/GB"), "expected the DIYACCT/GB sender-id ARN, got " + resource);
+    }
+
+    @Test
+    @SuppressWarnings("unchecked")
+    void alarmSmsForwardLambdaCanReadAndDecryptOnlyTheProdOperatorNumberParameter() {
+        OpsStack opsStack = synthOpsStack("prod", null, null);
+        Template template = Template.fromStack(opsStack);
+
+        List<Map<String, Object>> readStatements = findPolicyStatementsContainingSid(template, "ReadOperatorSmsNumber");
+        Map<String, Object> readStatement = readStatements.stream()
+                .filter(s -> "ReadOperatorSmsNumber".equals(s.get("Sid")))
+                .findFirst()
+                .orElseThrow();
+        assertEquals("ssm:GetParameter", readStatement.get("Action"));
+        assertTrue(
+                ((String) readStatement.get("Resource")).endsWith("parameter/submit/prod/operator-sms-number"),
+                "expected the prod operator-sms-number parameter, got " + readStatement.get("Resource"));
+
+        List<Map<String, Object>> decryptStatements =
+                findPolicyStatementsContainingSid(template, "DecryptOperatorSmsNumber");
+        Map<String, Object> decryptStatement = decryptStatements.stream()
+                .filter(s -> "DecryptOperatorSmsNumber".equals(s.get("Sid")))
+                .findFirst()
+                .orElseThrow();
+        assertEquals("kms:Decrypt", decryptStatement.get("Action"));
+        assertEquals("*", decryptStatement.get("Resource"));
+        var condition = (Map<String, Object>) decryptStatement.get("Condition");
+        var stringEquals = (Map<String, Object>) condition.get("StringEquals");
+        assertEquals("ssm.eu-west-2.amazonaws.com", stringEquals.get("kms:ViaService"));
     }
 
     @SuppressWarnings("unchecked")
