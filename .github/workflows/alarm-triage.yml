@@ -410,7 +410,6 @@ jobs:
         env:
           GH_TOKEN: ${{ steps.app-token.outputs.token }}
           ANSWERING_MODEL_ID: ${{ steps.select-result.outputs.model-id }}
-          AGENT_APP_SLUG: ${{ steps.app-token.outputs.app-slug }}
         run: |
           set -euo pipefail
           awk '/^```diff$/ { flag=1; next } /^```$/ { if (flag) exit } flag' "${{ steps.publish-filter.outputs.output-file }}" > triage-change.patch
@@ -426,25 +425,23 @@ jobs:
             exit 0
           fi
           BRANCH="claude/triage-${ISSUE_NUMBER}"
+          BASE_SHA=$(git rev-parse HEAD)
           git switch -c "$BRANCH"
           git apply triage-change.patch
           rm triage-change.patch
-          git add -A
-          # Commit identity is the diya-agent App's own bot user, not github-actions[bot]: the
-          # App mints its own push/PR token above, so the commit should read as the App's, not
-          # the default Actions identity. The numeric id is looked up at run time because it is
-          # not one of create-github-app-token's outputs.
-          AGENT_USER_ID=$(gh api "/users/${AGENT_APP_SLUG}[bot]" --jq .id)
           # Unattended-run attribution: Co-Authored-By and Claude-Model are the same trailers a
           # terminal session writes; Claude-Run replaces Claude-Session because nobody is watching
           # this run (see CLAUDE.md, "Commit attribution"). printf, not a quoted multi-line
           # string, so the trailer lines land at column 0 rather than inheriting this script's
           # indentation.
-          COMMIT_MSG=$(printf 'Alarm triage for #%s: %s\n\nCo-Authored-By: Claude <noreply@anthropic.com>\nClaude-Model: %s\nClaude-Run: %s' \
-            "$ISSUE_NUMBER" "$ALARM_NAME" "$ANSWERING_MODEL_ID" "$RUN_URL")
-          git -c user.name="${AGENT_APP_SLUG}[bot]" -c user.email="${AGENT_USER_ID}+${AGENT_APP_SLUG}[bot]@users.noreply.github.com" \
-            commit -m "$COMMIT_MSG"
-          git push origin "$BRANCH"
+          printf 'Alarm triage for #%s: %s\n\nCo-Authored-By: Claude <noreply@anthropic.com>\nClaude-Model: %s\nClaude-Run: %s' \
+            "$ISSUE_NUMBER" "$ALARM_NAME" "$ANSWERING_MODEL_ID" "$RUN_URL" > /tmp/commit-message.txt
+          # Commits through the GitHub API with the App's own token, not `git commit` + `git
+          # push`, so the commit is the App's own signed, verified identity rather than an
+          # unsigned local commit (see verify-commit-signatures.yml, which has no exemption for
+          # this App and should not need one).
+          scripts/github-api-commit.sh --repo "${{ github.repository }}" --branch "$BRANCH" \
+            --base-sha "$BASE_SHA" --message-file /tmp/commit-message.txt
           PR_BODY=$(printf 'Draft from the alarm-triage workflow for #%s. Not reviewed by a human. Closes nothing.\n\nCo-Authored-By: Claude <noreply@anthropic.com>\nClaude-Model: %s\nClaude-Run: %s' \
             "$ISSUE_NUMBER" "$ANSWERING_MODEL_ID" "$RUN_URL")
           PR_URL=$(gh pr create --draft --base main --head "$BRANCH" \
