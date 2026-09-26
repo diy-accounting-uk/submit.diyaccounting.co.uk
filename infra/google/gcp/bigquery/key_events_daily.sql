@@ -2,11 +2,11 @@
 -- Copyright (C) 2006-2026 DIY Accounting Limited
 
 -- Key events for one day of the GA4 export, by hostname. The four events are read from what
--- each site sends: a "purchase" on submit.diyaccounting.co.uk is a subscription, "file_download"
--- (GA4's enhanced measurement of a zip link) is a download, and "submit_vat_return" is a filed
--- VAT return. A donation is its own "donate" event; the "purchase" branch for
--- spreadsheets.diyaccounting.co.uk stays until that site's emitter moves off "purchase" too.
--- Add a row to the CASE below when a new key event or submission type is wired up.
+-- each site sends: a "purchase" on submit.diyaccounting.co.uk is a subscription, "runner_download"
+-- (the download key event infra/google/ga4/analytics.toml declares) is a download, and
+-- "submit_vat_return" is a filed VAT return. A donation is its own "donate" event; the "purchase"
+-- branch for spreadsheets.diyaccounting.co.uk stays until that site's emitter moves off "purchase"
+-- too. Add a row to the CASE below when a new key event or submission type is wired up.
 SELECT day,
        hostname,
        key_event,
@@ -21,11 +21,11 @@ FROM (
            WHEN event_name = 'purchase' AND device.web_info.hostname = 'spreadsheets.diyaccounting.co.uk' THEN 'donate'
            WHEN event_name = 'donate' THEN 'donate'
            WHEN event_name = 'submit_vat_return' THEN 'submit'
-           WHEN event_name = 'file_download'     THEN 'download'
+           WHEN event_name = 'runner_download'   THEN 'download'
          END AS key_event
   FROM   `diyaccounting-ga4.analytics_523400333.events_*`
   WHERE  _TABLE_SUFFIX = format_date('%Y%m%d', date_sub(current_date(), interval 2 day))
-    AND  event_name IN ('purchase', 'donate', 'submit_vat_return', 'file_download')
+    AND  event_name IN ('purchase', 'donate', 'submit_vat_return', 'runner_download')
 )
 WHERE  key_event IS NOT NULL
 GROUP  BY 1, 2, 3
