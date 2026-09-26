@@ -20,6 +20,7 @@ import {
   selectPendingUploads,
   recordVideoId,
   buildVideoResource,
+  resolveDeclaredStatus,
   resolveQuotaProject,
   resolveClientCredentials,
   storeClientCredentials,
@@ -33,7 +34,11 @@ import {
   publishEntry,
   CAPTION_RETRY_DELAYS_MS,
   selectUploadedVideos,
-  setVideoPrivacy,
+  setVideoStatus,
+  fetchVideoStatuses,
+  planStatusSync,
+  applyStatusSync,
+  runStatusSync,
 } from "../../../scripts/youtube-upload.js";
 
 function makeTempDir() {
@@ -49,14 +54,27 @@ function fakeSmClient() {
 }
 
 describe("parseArgs", () => {
-  test("defaults to unlisted, no check, no client file or store", () => {
-    expect(parseArgs([])).toEqual({ publicVideo: false, check: false, clientFile: undefined, storeClient: undefined });
+  test("defaults to unlisted, no check, no sync, no client file or store", () => {
+    expect(parseArgs([])).toEqual({
+      publicVideo: false,
+      check: false,
+      syncStatus: false,
+      apply: false,
+      clientFile: undefined,
+      storeClient: undefined,
+    });
   });
   test("reads --public", () => {
     expect(parseArgs(["--public"]).publicVideo).toBe(true);
   });
   test("reads --check", () => {
     expect(parseArgs(["--check"]).check).toBe(true);
+  });
+  test("reads --sync-status", () => {
+    expect(parseArgs(["--sync-status"]).syncStatus).toBe(true);
+  });
+  test("reads --apply", () => {
+    expect(parseArgs(["--sync-status", "--apply"]).apply).toBe(true);
   });
   test("reads --client-file with its path", () => {
     expect(parseArgs(["--client-file", "/tmp/client.json"]).clientFile).toBe("/tmp/client.json");
@@ -150,20 +168,49 @@ describe("recordVideoId", () => {
   });
 });
 
+describe("resolveDeclaredStatus", () => {
+  test("returns the list-level default when the entry declares nothing of its own", () => {
+    const list = { status: { embeddable: true, license: "youtube" } };
+    expect(resolveDeclaredStatus(list, {})).toEqual({ embeddable: true, license: "youtube" });
+  });
+
+  test("lets an entry override one field of the list-level default", () => {
+    const list = { status: { embeddable: true, publicStatsViewable: true } };
+    const entry = { status: { publicStatsViewable: false } };
+    expect(resolveDeclaredStatus(list, entry)).toEqual({ embeddable: true, publicStatsViewable: false });
+  });
+
+  test("returns an empty status when neither the list nor the entry declares one", () => {
+    expect(resolveDeclaredStatus({}, {})).toEqual({});
+  });
+});
+
 describe("buildVideoResource", () => {
   const entry = { title: "A title", description: "A description", tags: ["a", "b"], categoryId: "27" };
+  const declaredStatus = { embeddable: true, publicStatsViewable: true, selfDeclaredMadeForKids: false, license: "youtube" };
 
   test("defaults to unlisted", () => {
-    expect(buildVideoResource(entry, { publicVideo: false }).status.privacyStatus).toBe("unlisted");
+    expect(buildVideoResource(entry, { publicVideo: false, declaredStatus }).status.privacyStatus).toBe("unlisted");
   });
 
   test("uses public when asked", () => {
-    expect(buildVideoResource(entry, { publicVideo: true }).status.privacyStatus).toBe("public");
+    expect(buildVideoResource(entry, { publicVideo: true, declaredStatus }).status.privacyStatus).toBe("public");
   });
 
   test("carries the title, description, tags and category into the snippet", () => {
-    const resource = buildVideoResource(entry, { publicVideo: false });
+    const resource = buildVideoResource(entry, { publicVideo: false, declaredStatus });
     expect(resource.snippet).toEqual({ title: "A title", description: "A description", tags: ["a", "b"], categoryId: "27" });
+  });
+
+  test("carries every declared status field, not just privacy", () => {
+    const resource = buildVideoResource(entry, { publicVideo: false, declaredStatus });
+    expect(resource.status).toEqual({
+      privacyStatus: "unlisted",
+      embeddable: true,
+      publicStatsViewable: true,
+      selfDeclaredMadeForKids: false,
+      license: "youtube",
+    });
   });
 });
 
@@ -435,6 +482,8 @@ describe("uploadVideo", () => {
   beforeEach(() => (dir = makeTempDir()));
   afterEach(() => fs.rmSync(dir, { recursive: true, force: true }));
 
+  const declaredStatus = { embeddable: true, publicStatsViewable: true, selfDeclaredMadeForKids: false, license: "youtube" };
+
   test("starts a resumable upload then PUTs the file bytes, returning the video id", async () => {
     const videoFile = path.join(dir, "clip.mp4");
     fs.writeFileSync(videoFile, "fake video bytes");
@@ -445,12 +494,48 @@ describe("uploadVideo", () => {
       .mockResolvedValueOnce({ ok: true, headers: new Headers({ location: "https://upload.example/session-1" }) })
       .mockResolvedValueOnce({ ok: true, json: async () => ({ id: "yt-video-id" }) });
 
-    const videoId = await uploadVideo({ entry, accessToken: "token", quotaProject: "diyaccounting-ga4", publicVideo: false, fetchImpl });
+    const videoId = await uploadVideo({
+      entry,
+      accessToken: "token",
+      quotaProject: "diyaccounting-ga4",
+      publicVideo: false,
+      declaredStatus,
+      fetchImpl,
+    });
 
     expect(videoId).toBe("yt-video-id");
     expect(fetchImpl).toHaveBeenCalledTimes(2);
     expect(fetchImpl.mock.calls[1][0]).toBe("https://upload.example/session-1");
     expect(fetchImpl.mock.calls[0][1].headers["x-goog-user-project"]).toBe("diyaccounting-ga4");
+  });
+
+  test("carries the full declared status in the upload resource, not just privacy", async () => {
+    const videoFile = path.join(dir, "clip.mp4");
+    fs.writeFileSync(videoFile, "fake video bytes");
+    const entry = { id: "clip", videoFile, title: "t", description: "d", tags: [], categoryId: "27" };
+
+    const fetchImpl = vi
+      .fn()
+      .mockResolvedValueOnce({ ok: true, headers: new Headers({ location: "https://upload.example/session-1" }) })
+      .mockResolvedValueOnce({ ok: true, json: async () => ({ id: "yt-video-id" }) });
+
+    await uploadVideo({
+      entry,
+      accessToken: "token",
+      quotaProject: "diyaccounting-ga4",
+      publicVideo: false,
+      declaredStatus,
+      fetchImpl,
+    });
+
+    const body = JSON.parse(fetchImpl.mock.calls[0][1].body);
+    expect(body.status).toEqual({
+      privacyStatus: "unlisted",
+      embeddable: true,
+      publicStatsViewable: true,
+      selfDeclaredMadeForKids: false,
+      license: "youtube",
+    });
   });
 
   test("fails loudly when the resumable session has no Location header", async () => {
@@ -626,31 +711,245 @@ describe("selectUploadedVideos", () => {
   });
 });
 
-describe("setVideoPrivacy", () => {
+describe("setVideoStatus", () => {
+  const declaredStatus = { embeddable: true, publicStatsViewable: true, selfDeclaredMadeForKids: false, license: "youtube" };
+
   test("puts the new privacy status on the video and returns what YouTube recorded", async () => {
     const fetchImpl = vi.fn().mockResolvedValue({ ok: true, json: async () => ({ status: { privacyStatus: "public" } }) });
 
-    const status = await setVideoPrivacy({
+    const status = await setVideoStatus({
       videoId: "yt-a",
       privacyStatus: "public",
+      declaredStatus,
       accessToken: "token",
       quotaProject: "diyaccounting-ga4",
       fetchImpl,
     });
 
-    expect(status).toBe("public");
+    expect(status).toEqual({ privacyStatus: "public" });
     const [url, options] = fetchImpl.mock.calls[0];
     expect(url).toContain("/videos?part=status");
     expect(options.method).toBe("PUT");
     expect(options.headers["x-goog-user-project"]).toBe("diyaccounting-ga4");
-    expect(JSON.parse(options.body)).toEqual({ id: "yt-a", status: { privacyStatus: "public" } });
+  });
+
+  test("carries every declared field in the update body, not just privacy", async () => {
+    const fetchImpl = vi.fn().mockResolvedValue({ ok: true, json: async () => ({ status: {} }) });
+
+    await setVideoStatus({
+      videoId: "yt-a",
+      privacyStatus: "public",
+      declaredStatus,
+      accessToken: "token",
+      quotaProject: "diyaccounting-ga4",
+      fetchImpl,
+    });
+
+    const [, options] = fetchImpl.mock.calls[0];
+    expect(JSON.parse(options.body)).toEqual({
+      id: "yt-a",
+      status: {
+        embeddable: true,
+        publicStatsViewable: true,
+        selfDeclaredMadeForKids: false,
+        license: "youtube",
+        privacyStatus: "public",
+      },
+    });
   });
 
   test("throws with YouTube's answer when the update is refused", async () => {
     const fetchImpl = vi.fn().mockResolvedValue({ ok: false, status: 403, text: async () => "forbidden" });
 
     await expect(
-      setVideoPrivacy({ videoId: "yt-a", privacyStatus: "public", accessToken: "token", quotaProject: "diyaccounting-ga4", fetchImpl }),
+      setVideoStatus({
+        videoId: "yt-a",
+        privacyStatus: "public",
+        declaredStatus,
+        accessToken: "token",
+        quotaProject: "diyaccounting-ga4",
+        fetchImpl,
+      }),
     ).rejects.toThrow("403 forbidden");
+  });
+});
+
+describe("fetchVideoStatuses", () => {
+  test("looks up the status of every given video id in one call", async () => {
+    const fetchImpl = vi.fn().mockResolvedValue({
+      ok: true,
+      json: async () => ({
+        items: [
+          { id: "a", status: { embeddable: true } },
+          { id: "b", status: { embeddable: false } },
+        ],
+      }),
+    });
+
+    const statuses = await fetchVideoStatuses({ videoIds: ["a", "b"], accessToken: "token", quotaProject: "p", fetchImpl });
+
+    expect(statuses).toEqual({ a: { embeddable: true }, b: { embeddable: false } });
+    expect(fetchImpl).toHaveBeenCalledTimes(1);
+    expect(fetchImpl.mock.calls[0][0]).toContain("id=a,b");
+  });
+
+  test("batches more than 50 ids into separate calls", async () => {
+    const videoIds = Array.from({ length: 51 }, (_, i) => `v${i}`);
+    const fetchImpl = vi.fn().mockResolvedValue({ ok: true, json: async () => ({ items: [] }) });
+
+    await fetchVideoStatuses({ videoIds, accessToken: "token", quotaProject: "p", fetchImpl });
+
+    expect(fetchImpl).toHaveBeenCalledTimes(2);
+    expect(fetchImpl.mock.calls[0][0]).toContain(videoIds.slice(0, 50).join(","));
+    expect(fetchImpl.mock.calls[1][0]).toContain("v50");
+  });
+
+  test("fails loudly naming the batch when the lookup is refused", async () => {
+    const fetchImpl = vi.fn().mockResolvedValue({ ok: false, status: 403, text: async () => "forbidden" });
+
+    await expect(fetchVideoStatuses({ videoIds: ["a"], accessToken: "token", quotaProject: "p", fetchImpl })).rejects.toThrow(
+      "403 forbidden",
+    );
+  });
+});
+
+describe("planStatusSync", () => {
+  const list = {
+    status: { embeddable: true, publicStatsViewable: true, selfDeclaredMadeForKids: false, license: "youtube" },
+    videos: [
+      { id: "in-sync", videoId: "yt-in-sync", publish: true },
+      { id: "drifted", videoId: "yt-drifted", publish: true },
+      { id: "not-uploaded", videoId: null, publish: true },
+    ],
+  };
+
+  test("plans a difference for a field the live video doesn't match", () => {
+    const liveStatusesById = {
+      "yt-in-sync": { embeddable: true, publicStatsViewable: true, selfDeclaredMadeForKids: false, license: "youtube" },
+      "yt-drifted": { embeddable: false, publicStatsViewable: true, selfDeclaredMadeForKids: false, license: "youtube" },
+    };
+
+    expect(planStatusSync({ list, liveStatusesById })).toEqual([
+      { id: "drifted", videoId: "yt-drifted", field: "embeddable", live: false, declared: true },
+    ]);
+  });
+
+  test("leaves an in-sync video alone", () => {
+    const liveStatusesById = {
+      "yt-in-sync": { embeddable: true, publicStatsViewable: true, selfDeclaredMadeForKids: false, license: "youtube" },
+      "yt-drifted": { embeddable: true, publicStatsViewable: true, selfDeclaredMadeForKids: false, license: "youtube" },
+    };
+
+    expect(planStatusSync({ list, liveStatusesById })).toEqual([]);
+  });
+
+  test("skips entries with no videoId", () => {
+    expect(planStatusSync({ list, liveStatusesById: {} }).some((change) => change.id === "not-uploaded")).toBe(false);
+  });
+});
+
+describe("applyStatusSync", () => {
+  const list = {
+    status: { embeddable: true, license: "youtube" },
+    videos: [{ id: "drifted", videoId: "yt-drifted", publish: true }],
+  };
+
+  test("writes the declared status, preserving the live privacy status", async () => {
+    const liveStatusesById = { "yt-drifted": { embeddable: false, license: "youtube", privacyStatus: "public" } };
+    const setVideoStatusImpl = vi.fn().mockResolvedValue({});
+
+    await applyStatusSync({ list, liveStatusesById, accessToken: "token", quotaProject: "p", setVideoStatusImpl, log: () => {} });
+
+    expect(setVideoStatusImpl).toHaveBeenCalledTimes(1);
+    expect(setVideoStatusImpl).toHaveBeenCalledWith({
+      videoId: "yt-drifted",
+      privacyStatus: "public",
+      declaredStatus: { embeddable: true, license: "youtube" },
+      accessToken: "token",
+      quotaProject: "p",
+    });
+  });
+
+  test("uses the entry's own declared privacy when it has one", async () => {
+    const entryList = {
+      status: { embeddable: true, license: "youtube" },
+      videos: [{ id: "drifted", videoId: "yt-drifted", publish: true, status: { privacyStatus: "unlisted" } }],
+    };
+    const liveStatusesById = { "yt-drifted": { embeddable: false, license: "youtube", privacyStatus: "public" } };
+    const setVideoStatusImpl = vi.fn().mockResolvedValue({});
+
+    await applyStatusSync({
+      list: entryList,
+      liveStatusesById,
+      accessToken: "token",
+      quotaProject: "p",
+      setVideoStatusImpl,
+      log: () => {},
+    });
+
+    expect(setVideoStatusImpl.mock.calls[0][0].privacyStatus).toBe("unlisted");
+  });
+});
+
+describe("runStatusSync", () => {
+  const list = {
+    status: { embeddable: true },
+    videos: [{ id: "drifted", videoId: "yt-drifted", publish: true }],
+  };
+
+  test("plans only, and does not apply, when --apply is not given", async () => {
+    const fetchVideoStatusesImpl = vi.fn().mockResolvedValue({ "yt-drifted": { embeddable: false } });
+    const applyStatusSyncImpl = vi.fn();
+
+    const plan = await runStatusSync({
+      list,
+      accessToken: "token",
+      quotaProject: "p",
+      apply: false,
+      fetchVideoStatusesImpl,
+      applyStatusSyncImpl,
+      log: () => {},
+      printPlan: () => {},
+    });
+
+    expect(plan).toEqual([{ id: "drifted", videoId: "yt-drifted", field: "embeddable", live: false, declared: true }]);
+    expect(applyStatusSyncImpl).not.toHaveBeenCalled();
+  });
+
+  test("applies the plan when --apply is given", async () => {
+    const fetchVideoStatusesImpl = vi.fn().mockResolvedValue({ "yt-drifted": { embeddable: false } });
+    const applyStatusSyncImpl = vi.fn().mockResolvedValue(["yt-drifted"]);
+
+    await runStatusSync({
+      list,
+      accessToken: "token",
+      quotaProject: "p",
+      apply: true,
+      fetchVideoStatusesImpl,
+      applyStatusSyncImpl,
+      log: () => {},
+      printPlan: () => {},
+    });
+
+    expect(applyStatusSyncImpl).toHaveBeenCalledTimes(1);
+  });
+
+  test("leaves an in-sync video alone: no plan, no apply", async () => {
+    const fetchVideoStatusesImpl = vi.fn().mockResolvedValue({ "yt-drifted": { embeddable: true } });
+    const applyStatusSyncImpl = vi.fn();
+
+    const plan = await runStatusSync({
+      list,
+      accessToken: "token",
+      quotaProject: "p",
+      apply: true,
+      fetchVideoStatusesImpl,
+      applyStatusSyncImpl,
+      log: () => {},
+      printPlan: () => {},
+    });
+
+    expect(plan).toEqual([]);
+    expect(applyStatusSyncImpl).not.toHaveBeenCalled();
   });
 });
