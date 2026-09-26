@@ -122,6 +122,11 @@ describe("activityTelegramForwarder", () => {
       expect(resolveTargetChatIds(detail, CHAT_CONFIG)).toEqual(["@diy_ci_test"]);
     });
 
+    test("routes synthetic events to test channel, not live", () => {
+      const detail = { actor: "synthetic", flow: "user-journey" };
+      expect(resolveTargetChatIds(detail, CHAT_CONFIG)).toEqual(["@diy_ci_test"]);
+    });
+
     test("routes customer events to live channel", () => {
       const detail = { actor: "customer", flow: "user-journey" };
       expect(resolveTargetChatIds(detail, CHAT_CONFIG)).toEqual(["@diy_ci_live"]);

@@ -54,4 +54,26 @@ describe("sessionBeaconPost ingestHandler", () => {
     expect(response.statusCode).toBe(200);
     expect(mockPublishActivityEvent).not.toHaveBeenCalled();
   });
+
+  it("tags a session carrying the behaviour-test probe marker as synthetic, not visitor", async () => {
+    const response = await ingestHandler(
+      buildBeaconEvent(
+        { page: "/index.html" },
+        {
+          "user-agent":
+            "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36 DIYAccountingProbe/1",
+        },
+      ),
+    );
+
+    expect(response.statusCode).toBe(200);
+    expect(mockPublishActivityEvent).toHaveBeenCalledWith(expect.objectContaining({ event: "new-session", actor: "synthetic" }));
+    expect(mockPublishActivityEvent.mock.calls[0][0].detail.visitorType).toBe("synthetic");
+  });
+
+  it("tags a session carrying the CloudWatch Synthetics canary marker as synthetic, not visitor", async () => {
+    await ingestHandler(buildBeaconEvent({ page: "/index.html" }, { "user-agent": "DIYAccounting-Probe-Monitor/1.0" }));
+
+    expect(mockPublishActivityEvent).toHaveBeenCalledWith(expect.objectContaining({ actor: "synthetic" }));
+  });
 });
