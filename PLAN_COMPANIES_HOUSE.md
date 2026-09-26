@@ -23,7 +23,7 @@ repository used to carry.
 | Registered office change | REST, OAuth as the company's user, no presenter | proven | live, proven on DIY Accounting Limited | free |
 | Registered email change | REST, OAuth as the company's user, no presenter | proven | live, proven on DIY Accounting Limited | free |
 | Micro-entity accounts | XML Gateway, presenter id + code, package reference | test presenter 66666727000: 000004 acknowledged 2026-09-13; status lookups fail until Companies House IT fixes the test account (B34.6c) | the credit-account presenter: authenticates on the live gateway since 2026-09-26; needs live clearance and the live package reference (O34c), then B34c | no Companies House fee; customer pays `resident-ltd` 99p a month (listed on ci only) |
-| Confirmation statement | XML Gateway, as above | test presenter 66666727000: not run; needs the endpoint from CS-H2's email (CS-9) | the credit-account presenter: needs CS-9, software authorisation (CS-H4), the operator's go (CS-H6), then CS-11 | £50 Companies House fee debited from the credit account behind the credit-account presenter; customer pays £61.35 by Stripe (test price done; live price with CS-11) |
+| Confirmation statement | XML Gateway, as above | test presenter 66666727000: not run; needs the endpoint from CS-H2's email (CS-9) | the credit-account presenter: needs CS-9, software authorisation (CS-H4), the operator's go (CS-H6), then CS-11b | £50 Companies House fee debited from the credit account behind the credit-account presenter; customer pays £61.35 by Stripe (test price done; live price with CS-11b) |
 | PSC verification statement (VS01) | XML Gateway, as above | test presenter 66666727000: CS-13b | the credit-account presenter: after CS-13a and CS-13b | Companies House fee to check |
 
 **Presenters**
@@ -48,11 +48,10 @@ flowchart LR
     CSH2[CS-H2] --> CS9[CS-9]
     CS9 --> CSH4[CS-H4]
     CS9 --> CS13b[CS-13b]
-    CS9 --> CS11[CS-11]
-    CSH4 --> CS11
-    CSH4 --> CSH6[CS-H6]
-    CS11 --> CSH6
-    CSH6 --> CS11
+    CS9 --> CS11b[CS-11b]
+    CSH4 --> CS11b
+    CS11a[CS-11a] --> CS11b
+    CSH6[CS-H6] --> CS11b
     Design[design row: not yet written] --> Row34e[34e]
     Design --> Row34f[34f]
     Design --> Row34g[34g]
@@ -65,18 +64,14 @@ flowchart LR
 - CS-H2: blocked by nothing, ready to send
 - CS-9: blocked by CS-H2
 - CS-H4: blocked by CS-9
-- CS-11: blocked by CS-9, CS-H4 and CS-H6
-- CS-H6: blocked by CS-11 and CS-H4
+- CS-11a: blocked by nothing (the fee-mode CDK wiring)
+- CS-11b: blocked by CS-9, CS-H4, CS-11a and CS-H6
+- CS-H6: blocked by nothing (a decision the operator can give now; the filing it approves runs in CS-11b)
 - CS-13a: blocked by nothing (its fixture landed with CS-1, closed)
 - CS-13b: blocked by CS-9
 - 34e, 34f, 34g: blocked by a design row that still needs writing. BACKLOG.md cites "NEXT.md
   B34.8" as the row that designs them; that label is closed against unrelated work (lifting the
   company-lookup page to prod) and is not on `NEXT.md`, so the design row does not exist yet.
-
-CS-11 and CS-H6 cite each other as blockers on `NEXT.md`. In practice CS-11's prod config values
-(gateway URI, presenter ARNs, fee mode) must land before CS-H6's proof filing can run, and CS-11's
-customer-facing half (the catalogue listing, the `compliance.toml` rows) follows CS-H6's proof —
-the row lumps both halves together.
 
 Stale edges dropped from the graph: CS-9 citing CS-5 and CS-7 as blockers (both closed, on `main`)
 and CS-9 citing CS-H1 (closed 2026-09-26, when the credit-account presenter authenticated on the
@@ -172,7 +167,7 @@ February 2026, debited from the credit account behind the presenter — nothing 
 carries payment; `PaymentPeriodsRequest` says whether this submission is due. Submit recovers it
 from the customer by Stripe Checkout before submitting, at (Companies House fee + Stripe fee) ×
 1.2: £61.35 for the £50 fee. The Stripe test price and the charging path are live (CS-10a to
-CS-10d, closed); the live price lands with CS-11.
+CS-10d, closed); the live price lands with CS-11b.
 
 **Verification answers** (Cowork's `../REPORT_CH_IDENTITY_VERIFICATION.md`, 2026-09-23):
 
@@ -238,5 +233,6 @@ reference date changes.
 | CS-H4 | The XML team tests CS-9's submissions and issues the package reference for the confirmation statement | 0 | none | CS-9 | Blocked |
 | CS-13a | Build the PSC verification statement: XML builder, submit and poll Lambdas, simulator class, tests, result-view section | ~8 | Sonnet | nothing | Machine-only |
 | CS-13b | Sandbox proof of the PSC verification statement against the test service | ~1 | Sonnet | CS-9 | Blocked |
-| CS-11 | `prod` on the confirmation statement activity, prod gateway values, `COMPANIES_HOUSE_CS_FEE_MODE=operator` wired through the CDK, `compliance.toml` rows for the credit account and the authorisation | 5 | Haiku | CS-9, CS-H4, CS-H6 | Blocked |
-| CS-H6 | Give the go for a second, fee-free confirmation statement for 06846849 through Submit in the 2026-27 payment period | 0 | none | CS-11, CS-H4 | Blocked |
+| CS-11a | `COMPANIES_HOUSE_CS_FEE_MODE` as a `CompaniesHouseStack.java` prop, set to `operator` only where the environment config names it, so operator mode is reachable when deployed | ~2 | Haiku | none | Machine-only |
+| CS-11b | `prod` on the confirmation statement activity, prod gateway values and the live package reference, the operator-mode proof filing, `compliance.toml` rows for the credit account and the authorisation | ~4 | Haiku | CS-9, CS-H4, CS-11a, CS-H6 | Blocked |
+| CS-H6 | Give the go for a second, fee-free confirmation statement for 06846849 through Submit in the 2026-27 payment period | 0 | none | none | Human-driven |
