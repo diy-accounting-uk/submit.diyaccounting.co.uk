@@ -40,9 +40,9 @@ step.
 
 ## In flight
 
-## Machine-only
+- [ ] **B30s. A failed stack deploy prints CloudFormation's own state.** Branch `claude/juniper-ops`, PR #367. Diagnosis of run 36217785873: CloudFormation issued the stuck alarm's `PutMetricAlarm` two hours after marking it in progress (299 calls, 0 errors, no throttling), and the job died at AWS's one-hour cap on a chained role session. The PR adds failure-path steps to `deploy-cdk-stack.yml` that re-authenticate and print the stack's status and latest non-complete events in either region. Remaining: its checks and `/auto-merge`. **Source**: deploy run 36217785873. **Owner**: Claude Code. **Model**: Sonnet. **Size**: 1 file.
 
-- [ ] **B30s. Why one CloudWatch alarm create held `prod-8c41629-app-HmrcItsaStack` for two hours.** `main`'s deploy of PR #365 (run 36217785873) failed on `ExpiredToken` at 05:53 UTC while `prod8c41629apphmrcitsabsasukpropertygetQueueMessageAgeAlarmB9D60FAD` sat at CREATE_IN_PROGRESS from 04:53:45 with no "Resource creation Initiated" event; the stack reached CREATE_COMPLETE at 06:54:57 and a re-run of the failed jobs finished the deploy. Find the cause in CloudTrail (`PutMetricAlarm` events for that alarm name, 04:53 to 06:55, throttling or errors; the account holds about 660 alarms) and decide whether `deploy-cdk-stack.yml` should refresh its OIDC credentials, or wait with a timeout shorter than the token, so a slow stack fails with its own reason. **Source**: deploy run 36217785873. **Owner**: Claude Code. **Model**: Sonnet. **Size**: ~1 file.
+## Machine-only
 
 ## Machine-ask
 
