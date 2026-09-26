@@ -247,6 +247,18 @@ describe("companiesHouseConfirmationStatementPost ingestHandler", () => {
     expect(mockPostToGateway).not.toHaveBeenCalled();
   });
 
+  test("rejects a director's personal code that is all digits", async () => {
+    const response = await companiesHouseConfirmationStatementPostHandler(
+      buildEvent({
+        body: buildStatementBody({
+          directors: [{ personalCode: "12345678951", forename: "ALICE", surname: "EXAMPLE", dob: "1970-01-01" }],
+        }),
+      }),
+    );
+    expect(response.statusCode).toBe(400);
+    expect(mockPostToGateway).not.toHaveBeenCalled();
+  });
+
   test("rejects more than four SIC codes", async () => {
     const response = await companiesHouseConfirmationStatementPostHandler(
       buildEvent({ body: buildStatementBody({ sicCodes: ["11111", "22222", "33333", "44444", "55555"] }) }),

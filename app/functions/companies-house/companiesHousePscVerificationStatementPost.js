@@ -22,7 +22,11 @@ import {
 import { validateEnv } from "../../lib/env.js";
 import { registerLambdaRoute } from "../../lib/httpServerToLambdaAdaptor.js";
 import { enforceBundles } from "../../services/bundleManagement.js";
-import { isValidCompanyNumber, http403ForbiddenFromBundleEnforcement } from "../../services/companiesHouseApi.js";
+import {
+  isValidCompanyNumber,
+  isValidCompaniesHousePersonalCode,
+  http403ForbiddenFromBundleEnforcement,
+} from "../../services/companiesHouseApi.js";
 import { isValidIsoDate } from "../../lib/hmrcValidation.js";
 import { buildPscVerificationStatementBody } from "../../services/companiesHousePscVerificationStatementXml.js";
 import {
@@ -40,7 +44,6 @@ const logger = createLogger({ source: "app/functions/companies-house/companiesHo
 
 const MIN_COMPANY_AUTH_CODE_LENGTH = 6;
 const MAX_COMPANY_AUTH_CODE_LENGTH = 8;
-const PERSONAL_CODE_LENGTH = 11;
 
 // Server hook for Express app, and construction of a Lambda-like event from HTTP request)
 /* v8 ignore start */
@@ -90,9 +93,9 @@ export function extractAndValidateParameters(event, errorMessages) {
     errorMessages.push("Missing surname");
   }
 
-  const trimmedPersonalCode = typeof personalCode === "string" ? personalCode.trim() : "";
-  if (trimmedPersonalCode.length !== PERSONAL_CODE_LENGTH) {
-    errorMessages.push(`Invalid personalCode - must be ${PERSONAL_CODE_LENGTH} characters`);
+  const { valid: personalCodeValid, normalised: normalisedPersonalCode } = isValidCompaniesHousePersonalCode(personalCode);
+  if (!personalCodeValid) {
+    errorMessages.push("Invalid personalCode - must be the 11-character Companies House personal code, letters and digits");
   }
 
   if (dobMonth !== undefined && (dobMonth < 1 || dobMonth > 12)) {
@@ -110,7 +113,7 @@ export function extractAndValidateParameters(event, errorMessages) {
     surname,
     dobMonth,
     dobYear,
-    personalCode: trimmedPersonalCode,
+    personalCode: normalisedPersonalCode,
   };
 }
 

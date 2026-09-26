@@ -185,6 +185,14 @@ describe("companiesHousePscVerificationStatementPost ingestHandler", () => {
     expect(mockPostToGateway).not.toHaveBeenCalled();
   });
 
+  test("rejects a personal code that is all digits", async () => {
+    const response = await companiesHousePscVerificationStatementPostHandler(
+      buildEvent({ body: buildStatementBody({ personalCode: "12345678951" }) }),
+    );
+    expect(response.statusCode).toBe(400);
+    expect(mockPostToGateway).not.toHaveBeenCalled();
+  });
+
   test("rejects a missing surname", async () => {
     const response = await companiesHousePscVerificationStatementPostHandler(
       buildEvent({ body: buildStatementBody({ surname: undefined }) }),
