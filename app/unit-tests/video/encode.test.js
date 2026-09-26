@@ -4,7 +4,7 @@
 // app/unit-tests/video/encode.test.js
 
 import { describe, test, expect } from "vitest";
-import { frameFileName, buildManifest } from "../../../scripts/lib/video/encode.js";
+import { frameFileName, buildManifest, buildNarrationMixArgs, muxNarrationArgs } from "../../../scripts/lib/video/encode.js";
 
 describe("frameFileName", () => {
   test("pads to six digits", () => {
@@ -51,5 +51,67 @@ describe("buildManifest", () => {
       { index: 2, tMs: 50 },
     ];
     expect(() => buildManifest(frames, 1000)).toThrow(/negative duration/);
+  });
+});
+
+describe("buildNarrationMixArgs", () => {
+  test("delays each clip to its own startMs, then mixes them onto one track", () => {
+    const clips = [
+      { path: "a.mp3", startMs: 0 },
+      { path: "b.mp3", startMs: 1500 },
+    ];
+    const args = buildNarrationMixArgs({ clips, outputPath: "out.wav" });
+    expect(args).toEqual([
+      "-y",
+      "-i",
+      "a.mp3",
+      "-i",
+      "b.mp3",
+      "-filter_complex",
+      "[0:a]adelay=0:all=1[a0];[1:a]adelay=1500:all=1[a1];[a0][a1]amix=inputs=2:duration=longest:dropout_transition=0[aout]",
+      "-map",
+      "[aout]",
+      "out.wav",
+    ]);
+  });
+
+  test("rounds a fractional startMs, and never delays by a negative amount", () => {
+    const clips = [
+      { path: "a.mp3", startMs: -5 },
+      { path: "b.mp3", startMs: 12.6 },
+    ];
+    const args = buildNarrationMixArgs({ clips, outputPath: "out.wav" });
+    expect(args).toContain(
+      "[0:a]adelay=0:all=1[a0];[1:a]adelay=13:all=1[a1];[a0][a1]amix=inputs=2:duration=longest:dropout_transition=0[aout]",
+    );
+  });
+
+  test("throws on an empty clip list", () => {
+    expect(() => buildNarrationMixArgs({ clips: [], outputPath: "out.wav" })).toThrow(/at least one narration clip/);
+  });
+});
+
+describe("muxNarrationArgs", () => {
+  test("copies the video stream and re-encodes only the mixed audio as aac", () => {
+    const args = muxNarrationArgs({ videoPath: "video.mp4", narrationTrackPath: "mix.wav", outputPath: "out.mp4" });
+    expect(args).toEqual([
+      "-y",
+      "-i",
+      "video.mp4",
+      "-i",
+      "mix.wav",
+      "-map",
+      "0:v:0",
+      "-map",
+      "1:a:0",
+      "-c:v",
+      "copy",
+      "-c:a",
+      "aac",
+      "-b:a",
+      "128k",
+      "-shortest",
+      "out.mp4",
+    ]);
   });
 });

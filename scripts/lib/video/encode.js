@@ -140,3 +140,54 @@ export function buildContactSheet({ ffmpegBin, stillPaths, outputPath, columns =
   ];
   return runOrThrow(ffmpegBin, args);
 }
+
+// design: VID5 narration. clips: [{ path, startMs }] in any order, one mp3 per captioned step.
+// adelay pads the start of each clip with silence up to its own startMs; amix sums the delayed
+// tracks, so every gap where nothing is speaking is silence rather than a clip sliding forward
+// to fill it. Pure argument-building (no fs, no spawn) so the filter graph is unit-tested
+// without ffmpeg; muxNarrationArgs and the two ffmpeg calls below are what actually run it.
+export function buildNarrationMixArgs({ clips, outputPath }) {
+  if (!Array.isArray(clips) || clips.length === 0) {
+    throw new Error("buildNarrationMixArgs: at least one narration clip is required");
+  }
+  const inputs = clips.flatMap((clip) => ["-i", clip.path]);
+  const delayed = clips.map((clip, index) => `[${index}:a]adelay=${Math.max(0, Math.round(clip.startMs))}:all=1[a${index}]`);
+  const mixInputs = clips.map((_, index) => `[a${index}]`).join("");
+  const filter = `${delayed.join(";")};${mixInputs}amix=inputs=${clips.length}:duration=longest:dropout_transition=0[aout]`;
+  return ["-y", ...inputs, "-filter_complex", filter, "-map", "[aout]", outputPath];
+}
+
+export function mixNarrationTrack({ ffmpegBin, clips, outputPath }) {
+  return runOrThrow(ffmpegBin, buildNarrationMixArgs({ clips, outputPath }));
+}
+
+// design: VID5 narration. Adds the mixed narration track to the silent video as its AAC audio
+// stream, re-encoding no video frame -- -c:v copy keeps the H.264 stream buildManifest and
+// encodeVideo already produced untouched. -shortest matches the audio to whichever track is
+// shorter, which is always the video: the mix's own last clip ends at or before the video's
+// finalHoldMs tail, since every clip's startMs came from the same timeline.
+export function muxNarrationArgs({ videoPath, narrationTrackPath, outputPath }) {
+  return [
+    "-y",
+    "-i",
+    videoPath,
+    "-i",
+    narrationTrackPath,
+    "-map",
+    "0:v:0",
+    "-map",
+    "1:a:0",
+    "-c:v",
+    "copy",
+    "-c:a",
+    "aac",
+    "-b:a",
+    "128k",
+    "-shortest",
+    outputPath,
+  ];
+}
+
+export function muxNarration({ ffmpegBin, videoPath, narrationTrackPath, outputPath }) {
+  return runOrThrow(ffmpegBin, muxNarrationArgs({ videoPath, narrationTrackPath, outputPath }));
+}

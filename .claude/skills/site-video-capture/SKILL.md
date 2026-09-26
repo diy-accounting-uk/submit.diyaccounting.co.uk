@@ -203,6 +203,22 @@ sandbox account**, writing rows as the synthetic test user — never point it at
 account. The workflow turns Cognito native auth on for the run and off again afterwards, and
 rotates the synthetic user's password and one-time code device first.
 
+## Step 4a — narration
+
+Every captioned step is spoken by an Amazon Polly neural British English voice (`Amy` by
+default — `aws polly describe-voices --language-code en-GB` lists the others), synthesised
+during the capture itself: the scene holds each caption for the clip's own duration, not the
+reading-speed estimate `pacing.js`'s `captionMinMs` uses when narration is off. The audio is
+mixed onto one continuous track (silence everywhere nothing is speaking) and muxed onto the mp4
+as its AAC stream, so the mp4 alone carries sound — no separate audio file ships. `--no-narration`
+skips it for a fast local loop (`--stills-only` always skips it too, since there is no video to
+hold open or mux onto). Credentials are read from the ambient AWS environment (`AWS_PROFILE`),
+the same as any other `aws` CLI call; `video-capture.yml`'s role chain already carries
+`polly:SynthesizeSpeech`.
+
+A fast-forwarded or off-camera step is never narrated — nothing holds it open regardless, so
+there is no line to speak for it.
+
 ## Step 5a — YouTube chapters
 
 ```bash
@@ -257,8 +273,12 @@ already visually lossless at this content's motion level, so file size decided.
 - `scripts/lib/video/headlinePlacement.js` — pure placement math for the headline tag (above
   or below its target, clear of it, inside the frame), unit-tested with no browser.
 - `scripts/lib/video/capture.js` / `encode.js` — CDP screencast capture and the ffmpeg
-  concat-demuxer encode (constant frame rate, H.264 High, closed GOP, faststart). See
-  "Capture and encode settings" above for the resolution, frame rate and CRF defaults.
+  concat-demuxer encode (constant frame rate, H.264 High, closed GOP, faststart), plus the
+  narration mix (`adelay`/`amix`) and mux (`-c:v copy`, AAC audio). See "Capture and encode
+  settings" above for the resolution, frame rate and CRF defaults.
+- `scripts/lib/video/narration.js` — Amazon Polly synthesis and the ffmpeg duration probe
+  behind Step 4a, both shelled through the `aws` and `ffmpeg` binaries rather than an SDK
+  package, since `node_modules` here is shared across every worktree.
 - `scripts/lib/video/chapters.js` / `scripts/video-chapters.mjs` — Step 5a's chapter lines,
   built from a run's own `timeline.json` and the scene script's chapter labels.
 - `scripts/lib/video/videoCoverageAllowList.js` / `app/unit-tests/video/videoCoverage.test.js`
