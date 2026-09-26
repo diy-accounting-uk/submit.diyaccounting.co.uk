@@ -558,7 +558,6 @@
 ./web/public/favicon.svg
 ./web/public/widgets/simulator-bridge.js
 ./web/public/widgets/status-messages.js
-./web/public/widgets/simulator-journeys.js
 ./web/public/widgets/pass-redeemer.js
 ./web/public/widgets/view-source-link.js
 ./web/public/widgets/error-page.js
@@ -877,7 +876,6 @@
 ./scripts/stripe-cancel-subscription.js
 ./scripts/create-hmrc-test-user.js
 ./scripts/build-simulator.js
-./scripts/capture-demo-videos.js
 ./scripts/generate-pass-with-qr.js
 ./scripts/add-bundle.sh
 ./scripts/generate-test-reports.js
@@ -938,7 +936,6 @@
 ./behaviour-tests/help.behaviour.test.js
 ./behaviour-tests/bundles.behaviour.test.js
 ./behaviour-tests/tokenRefresh.behaviour.test.js
-./behaviour-tests/captureDemo.behaviour.test.js
 ./behaviour-tests/vatValidation.behaviour.test.js
 ./behaviour-tests/auth.behaviour.test.js
 ./behaviour-tests/compliance.behaviour.test.js
@@ -952,7 +949,6 @@
 ./behaviour-tests/steps/behaviour-login-steps.js
 ./behaviour-tests/generatePassActivity.behaviour.test.js
 ./behaviour-tests/postVatReturnFraudPreventionHeaders.behaviour.test.js
-./behaviour-tests/simulator.behaviour.test.js
 ./behaviour-tests/submitVat.behaviour.test.js
 ./behaviour-tests/postVatReturn.behaviour.test.js
 ./behaviour-tests/getVatObligations.behaviour.test.js
