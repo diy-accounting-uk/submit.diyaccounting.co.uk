@@ -332,6 +332,14 @@ async function main() {
   });
 
   const page = await context.newPage();
+  // Raises the default action timeout (Playwright's own default is 30000ms) for this
+  // capture-only page alone — playwright.config.js's timeout for the real behaviour-test and
+  // probe suites is untouched. deviceScaleFactor 2 makes every page.screenshot() call in the
+  // shared behaviour-tests/steps files (reused here via behaviourSteps.js) capture 4x the
+  // pixels of the old 1x default, and a concurrent CDP screencast capture competes for the same
+  // renderer on a loaded CI runner — seen for real as a page.screenshot() timeout in
+  // verifyLoggedInStatus on the ci itsa-year capture.
+  page.setDefaultTimeout(60000);
   if (addOnPageLogging) addOnPageLogging(page);
   await installOverlay(page);
   if (installCredentialFieldMask) await installCredentialFieldMask(page);
