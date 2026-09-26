@@ -43,6 +43,7 @@
     "companiesHouseXmlGatewayUri": "",
     "companiesHousePresenterIdArn": "",
     "companiesHousePresenterCodeArn": "",
+    "companiesHouseCsFeeWaivedCompanyNumbers": "",
     "googleClientId": "670010122633-j177nir959n1tdnd891uqsgj6fkrj6b1.apps.googleusercontent.com",
     "selfDestructDelayHours": "2",
     "certificateArn": "arn:aws:acm:us-east-1:972912397388:certificate/e465ad23-baf8-4b5c-94a4-33f73a266ec6",

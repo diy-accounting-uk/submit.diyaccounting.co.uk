@@ -48,7 +48,6 @@ DIYA_GL_BUNDLE_ID      app/services/diyaGlEntitlement.js:82, ternary falling bac
 HMRC_BASE_URI          app/services/bundleManagement.js:126 destructuring default; app/services/hmrcApi.js:41 ternary on hmrcAccount
 HMRC_SANDBOX_BASE_URI  app/services/hmrcApi.js:41/140/291, ternary/`||` default of "https://test-api.service.hmrc.gov.uk"
 ACTIVITY_BUS_NAME      app/lib/activityAlert.js:59-63, `if (!busName)` logs and returns `{ published: false }` -- never throws
-COMPANIES_HOUSE_CS_FEE_MODE  app/functions/companies-house/companiesHouseConfirmationStatementPost.js:244, `!== "operator"`; an operator-set manual override, never wired by CDK by design
 
 # --- CDK-conditional: only added to Environment.Variables when the deployment configures the feature (bucket a, at the stack level) ---
 GITHUB_APP_ID                     IngestionStack.java:539-546, only when props.githubAppId() is non-blank

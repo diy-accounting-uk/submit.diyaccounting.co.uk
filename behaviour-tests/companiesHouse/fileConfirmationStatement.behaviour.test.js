@@ -67,7 +67,8 @@ const companyAuthCode = resolveConfirmationStatementCompanyAuthCode(envFilePath)
 // The simulator's PaymentPeriodsRequest answers unpaid unless the caller sends its own
 // Gov-Test-Scenario, which the submit route's fee-gate check never forwards (that header is for
 // the submission itself) - so every simulator-lane submit needs the fee paid first. Outside the
-// simulator this filing is on the operator's own company, covered by COMPANIES_HOUSE_CS_FEE_MODE.
+// simulator this filing is on the operator's own company, covered by
+// COMPANIES_HOUSE_CS_FEE_WAIVED_COMPANY_NUMBERS.
 const simulatorLane = isCompaniesHouseSimulatorLane(envFilePath);
 
 let mockOAuth2Process;

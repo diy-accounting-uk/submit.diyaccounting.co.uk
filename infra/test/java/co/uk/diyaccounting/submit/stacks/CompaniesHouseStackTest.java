@@ -77,6 +77,7 @@ class CompaniesHouseStackTest {
                         .companiesHouseXmlGatewayUri("https://xmlgw.companieshouse.gov.uk/v1-0/xmlgw/Gateway")
                         .companiesHousePresenterIdArn(companiesHousePresenterIdArn)
                         .companiesHousePresenterCodeArn(companiesHousePresenterCodeArn)
+                        .companiesHouseCsFeeWaivedCompanyNumbers("")
                         .build());
     }
 
@@ -84,6 +85,11 @@ class CompaniesHouseStackTest {
     // this isolates what changes in the accounts Lambdas' environment between deployment
     // environments.
     private static CompaniesHouseStack synthCompaniesHouseStackForEnv(String envName) {
+        return synthCompaniesHouseStackForEnv(envName, "");
+    }
+
+    private static CompaniesHouseStack synthCompaniesHouseStackForEnv(
+            String envName, String companiesHouseCsFeeWaivedCompanyNumbers) {
         App app = new App();
         SubmitSharedNames sharedNames = SubmitSharedNames.forDocs();
 
@@ -111,6 +117,7 @@ class CompaniesHouseStackTest {
                         .companiesHouseXmlGatewayUri("https://xmlgw.companieshouse.gov.uk/v1-0/xmlgw/Gateway")
                         .companiesHousePresenterIdArn(PRESENTER_ID_ARN)
                         .companiesHousePresenterCodeArn(PRESENTER_CODE_ARN)
+                        .companiesHouseCsFeeWaivedCompanyNumbers(companiesHouseCsFeeWaivedCompanyNumbers)
                         .build());
     }
 
@@ -146,6 +153,7 @@ class CompaniesHouseStackTest {
                         .companiesHouseXmlGatewayUri("")
                         .companiesHousePresenterIdArn("")
                         .companiesHousePresenterCodeArn("")
+                        .companiesHouseCsFeeWaivedCompanyNumbers("")
                         .build());
     }
 
@@ -780,6 +788,35 @@ class CompaniesHouseStackTest {
                     env.containsKey("COMPANIES_HOUSE_PACKAGE_REFERENCE"),
                     "the live package reference is not yet known, so it must stay unset rather than submit blank");
         }
+    }
+
+    @Test
+    void confirmationStatementPostLambdaCarriesTheFeeWaiverListOnlyWhenConfigured() {
+        CompaniesHouseStack waived = synthCompaniesHouseStackForEnv("prod", "06846849");
+        var waivedFunctions = Template.fromStack(waived)
+                .findResources(
+                        "AWS::Lambda::Function",
+                        Map.of(
+                                "Properties",
+                                Map.of(
+                                        "FunctionName",
+                                        waived.companiesHouseConfirmationStatementPostLambdaProps
+                                                .ingestFunctionName())));
+        assertEquals(
+                "06846849", environmentVariablesOf(waivedFunctions).get("COMPANIES_HOUSE_CS_FEE_WAIVED_COMPANY_NUMBERS"));
+
+        CompaniesHouseStack unwaived = synthCompaniesHouseStackForEnv("ci");
+        var unwaivedFunctions = Template.fromStack(unwaived)
+                .findResources(
+                        "AWS::Lambda::Function",
+                        Map.of(
+                                "Properties",
+                                Map.of(
+                                        "FunctionName",
+                                        unwaived.companiesHouseConfirmationStatementPostLambdaProps
+                                                .ingestFunctionName())));
+        assertFalse(
+                environmentVariablesOf(unwaivedFunctions).containsKey("COMPANIES_HOUSE_CS_FEE_WAIVED_COMPANY_NUMBERS"));
     }
 
     @Test

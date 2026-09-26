@@ -5,8 +5,10 @@
 
 package co.uk.diyaccounting.submit;
 
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
+import co.uk.diyaccounting.submit.stacks.CompaniesHouseStack;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.io.IOException;
@@ -28,6 +30,7 @@ import org.junit.jupiter.api.Test;
 import org.junitpioneer.jupiter.SetEnvironmentVariable;
 import software.amazon.awscdk.App;
 import software.amazon.awscdk.AppProps;
+import software.amazon.awscdk.Environment;
 import software.amazon.awscdk.Stack;
 import software.amazon.awscdk.assertions.Template;
 
@@ -133,6 +136,59 @@ class LambdaEnvironmentWiringCdkResourceTest {
         app.synth();
 
         assertEveryImageLambdaIsWired(collectStacks(env));
+    }
+
+    // COMPANIES_HOUSE_CS_FEE_WAIVED_COMPANY_NUMBERS is set only in .env.prod (CS-11a): the ci
+    // deployment this test's cdk.json defaults mirror must carry no value on the confirmation
+    // statement submit Lambda, so the waiver can never reach a customer's filing.
+    @Test
+    @SuppressWarnings("unchecked")
+    void confirmationStatementPostLambdaCarriesNoFeeWaiverOnCi() {
+        App app = new App();
+        SubmitSharedNames sharedNames = SubmitSharedNames.forDocs();
+
+        CompaniesHouseStack stack = new CompaniesHouseStack(
+                app,
+                "TestCompaniesHouseStackCi",
+                CompaniesHouseStack.CompaniesHouseStackProps.builder()
+                        .env(Environment.builder()
+                                .account("111111111111")
+                                .region("eu-west-2")
+                                .build())
+                        .crossRegionReferences(false)
+                        .envName("ci")
+                        .deploymentName("ci")
+                        .resourceNamePrefix(sharedNames.appResourceNamePrefix)
+                        .cloudTrailEnabled("false")
+                        .sharedNames(sharedNames)
+                        .baseImageTag("latest")
+                        .companiesHouseBaseUri("https://api.company-information.service.gov.uk")
+                        .companiesHouseApiKeyArn("")
+                        .companiesHouseFilingBaseUri("https://api-sandbox.company-information.service.gov.uk")
+                        .companiesHouseIdentityBaseUri("https://identity-sandbox.company-information.service.gov.uk")
+                        .companiesHouseClientId("test-companies-house-client-id")
+                        .companiesHouseClientSecretArn("")
+                        .companiesHouseXmlGatewayUri("https://xmlgw.companieshouse.gov.uk/v1-0/xmlgw/Gateway")
+                        .companiesHousePresenterIdArn("")
+                        .companiesHousePresenterCodeArn("")
+                        .companiesHouseCsFeeWaivedCompanyNumbers("")
+                        .build());
+
+        Template template = Template.fromStack(stack);
+        Map<String, Map<String, Object>> functions = template.findResources(
+                "AWS::Lambda::Function",
+                Map.of(
+                        "Properties",
+                        Map.of(
+                                "FunctionName",
+                                stack.companiesHouseConfirmationStatementPostLambdaProps.ingestFunctionName())));
+        assertTrue(functions.size() == 1, "expected exactly one confirmation statement submit Lambda");
+
+        Map<String, Object> properties =
+                (Map<String, Object>) functions.values().iterator().next().get("Properties");
+        Map<String, Object> environment = (Map<String, Object>) properties.get("Environment");
+        Map<String, Object> variables = (Map<String, Object>) environment.get("Variables");
+        assertFalse(variables.containsKey("COMPANIES_HOUSE_CS_FEE_WAIVED_COMPANY_NUMBERS"));
     }
 
     /** Every public {@link Stack}-typed field an application object carries, in declaration order. */

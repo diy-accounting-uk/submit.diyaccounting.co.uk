@@ -59,6 +59,17 @@ function buildConfirmationStatementChargeSubjectKey(companyNumber, reviewDate) {
   return `${companyNumber}:${reviewDate}`;
 }
 
+// COMPANIES_HOUSE_CS_FEE_WAIVED_COMPANY_NUMBERS lists the company numbers whose confirmation
+// statement fee lands on DIY Accounting's own Companies House credit account, not on Stripe -
+// scoped to specific companies so a value set for the operator's own filings never waives a
+// customer's fee.
+function parseFeeWaivedCompanyNumbers(rawValue) {
+  return (rawValue || "")
+    .split(",")
+    .map((companyNumber) => companyNumber.trim())
+    .filter((companyNumber) => companyNumber.length > 0);
+}
+
 // Server hook for Express app, and construction of a Lambda-like event from HTTP request)
 /* v8 ignore start */
 export function apiEndpoint(app) {
@@ -238,10 +249,9 @@ export async function ingestHandler(event) {
     const gatewayHeaders = govTestScenario ? { "Gov-Test-Scenario": govTestScenario } : {};
     const subjectKey = buildConfirmationStatementChargeSubjectKey(statement.companyNumber, statement.reviewDate);
 
-    // COMPANIES_HOUSE_CS_FEE_MODE=operator skips the charge gate entirely: the operator's own
-    // company's fee lands on DIY Accounting's own Companies House credit account, not on Stripe.
+    const feeWaivedCompanyNumbers = parseFeeWaivedCompanyNumbers(process.env.COMPANIES_HOUSE_CS_FEE_WAIVED_COMPANY_NUMBERS || "");
     let shouldMarkChargeUsed = false;
-    if (process.env.COMPANIES_HOUSE_CS_FEE_MODE !== "operator") {
+    if (!feeWaivedCompanyNumbers.includes(statement.companyNumber)) {
       const paymentPeriodsXml = buildPaymentPeriodsRequest({
         presenterId,
         presenterCode,

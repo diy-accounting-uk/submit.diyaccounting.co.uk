@@ -168,6 +168,8 @@ public class CompaniesHouseStack extends Stack {
 
         String companiesHousePresenterCodeArn();
 
+        String companiesHouseCsFeeWaivedCompanyNumbers();
+
         @Override
         SubmitSharedNames sharedNames();
 
@@ -967,6 +969,12 @@ public class CompaniesHouseStack extends Stack {
         if (XML_GATEWAY_TEST_ENV_NAME.equals(props.envName())) {
             companiesHouseConfirmationStatementPostLambdaEnv.with(
                     "COMPANIES_HOUSE_PACKAGE_REFERENCE", XML_GATEWAY_TEST_PACKAGE_REFERENCE);
+        }
+        // Scoped to the operator's own company numbers so the waiver never reaches a customer's
+        // filing once the activity lists on prod - blank everywhere except .env.prod.
+        if (StringUtils.isNotBlank(props.companiesHouseCsFeeWaivedCompanyNumbers())) {
+            companiesHouseConfirmationStatementPostLambdaEnv.with(
+                    "COMPANIES_HOUSE_CS_FEE_WAIVED_COMPANY_NUMBERS", props.companiesHouseCsFeeWaivedCompanyNumbers());
         }
         var companiesHouseConfirmationStatementPostLambdaUrlOrigin = new ApiLambda(
                 this,
