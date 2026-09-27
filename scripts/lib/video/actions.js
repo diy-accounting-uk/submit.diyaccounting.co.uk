@@ -28,22 +28,15 @@ function behaviourSteps() {
   return behaviourStepsModule;
 }
 
-// The behaviour step functions write their own debug screenshots (every one named with a
-// `path`) purely for a Playwright test run's own artifacts — a capture never reads them. Handing
-// them the real page races those writes against the running CDP screencast session on the same
-// target, which the screencast capture's own design notes already flag as unreliable in a CI
-// container; a page.screenshot() call that never resolves there has been the direct cause of a
-// capture hanging until its outer timeout. Every other page method still reaches the real page,
-// rebound to it (not to this proxy) so a Playwright internal method using a private class field
-// still finds it on `this`.
+// Behaviour steps write debug screenshots (each with a `path`) that a capture never reads; on CI
+// they can hang against the running screencast, so they become no-ops. Methods bind to the real
+// page so Playwright's private fields resolve.
 export function withoutDebugScreenshots(page) {
   return new Proxy(page, {
     get(target, prop) {
       if (prop === "screenshot") {
         return async (options = {}) => (options && options.path ? undefined : target.screenshot(options));
       }
-      // Read straight off target (never through the proxy as receiver) so a getter or method
-      // relying on the class's own private fields still resolves them against the real instance.
       const value = target[prop];
       return typeof value === "function" ? value.bind(target) : value;
     },
