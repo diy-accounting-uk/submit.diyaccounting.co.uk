@@ -10,17 +10,19 @@ run-name: "record ${{ inputs.script }} video"
 # procedure — local iteration first, then this workflow for the real recording.
 
 concurrency:
-  # This workflow toggles Cognito native auth during recording. Two runs targeting the same
-  # environment can interfere: if one toggles native auth on and gets cancelled before disabling
-  # it, the other will find it already on. Key the group on the environment being recorded, not
-  # the branch triggering it, so that workflow_dispatch calls targeting prod from any branch
-  # serialize with each other and with deploy/deploy-app runs modifying the same Cognito setting.
-  # When deployment-name is given, use it (often reused across branches for targeted re-records);
-  # otherwise resolve the effective environment from the explicit input or branch.
+  # This workflow toggles Cognito native auth during recording. Serialising same-environment
+  # video-capture runs against each other still avoids wasting a run on a recording that a newer
+  # one will supersede; the hold-native-auth action (see its own enable/disable steps below)
+  # is what keeps this workflow's toggle from racing deploy.yml, deploy-app.yml or probe-test.yml
+  # over the same Cognito setting. Key the group on the environment being recorded, not the
+  # branch triggering it, so that workflow_dispatch calls targeting prod from any branch
+  # serialize with each other. When deployment-name is given, use it (often reused across
+  # branches for targeted re-records); otherwise resolve the effective environment from the
+  # explicit input or branch.
   group: video-capture-${{ inputs.deployment-name || (inputs.environment-name && inputs.environment-name != '(auto)' && inputs.environment-name) || (github.ref == 'refs/heads/main' && 'prod' || 'ci') }}
-  # Capture runs consume time and resources but make no infrastructure changes: the Cognito
-  # toggle is transient and can be reset via the standalone disable script if a run cancels
-  # mid-flight. Newer captures targeting the same environment supersede older ones.
+  # Capture runs consume time and resources but make no infrastructure changes; a cancelled run's
+  # native-auth hold is dropped as stale by the next enable or disable call anywhere for the
+  # environment. Newer captures targeting the same environment supersede older ones.
   cancel-in-progress: true
 
 on:
@@ -254,7 +256,14 @@ jobs:
 
       - name: Enable native auth on Cognito Hosted UI
         if: ${{ steps.script-auth.outputs.auth == 'user' }}
-        run: node scripts/toggle-cognito-native-auth.js enable "${{ needs.names.outputs.environment-name }}"
+        uses: './.github/actions/hold-native-auth'
+        with:
+          mode: enable
+          environment-name: ${{ needs.names.outputs.environment-name }}
+          holder-id: ${{ github.run_id }}
+          run-id: ${{ github.run_id }}
+          workflow: ${{ github.workflow }}
+          github-token: ${{ github.token }}
 
       - name: Ensure Cognito test user
         id: cognito-test-user
@@ -311,7 +320,14 @@ jobs:
 
       - name: Disable native auth on Cognito Hosted UI
         if: ${{ !cancelled() && steps.script-auth.outputs.auth == 'user' && needs.params.outputs.skip-native-auth-disable != 'true' }}
-        run: node scripts/toggle-cognito-native-auth.js disable "${{ needs.names.outputs.environment-name }}"
+        uses: './.github/actions/hold-native-auth'
+        with:
+          mode: disable
+          environment-name: ${{ needs.names.outputs.environment-name }}
+          holder-id: ${{ github.run_id }}
+          run-id: ${{ github.run_id }}
+          workflow: ${{ github.workflow }}
+          github-token: ${{ github.token }}
 
       - name: List artefacts
         if: ${{ !cancelled() }}

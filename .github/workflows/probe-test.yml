@@ -395,16 +395,35 @@ jobs:
           output-credentials: true
           retry-max-attempts: 3
 
-      - name: Enable native auth on Cognito Hosted UI
+      - name: Read TEST_AUTH_PROVIDER
+        id: auth-provider
         shell: bash
         run: |
           ENV_FILE=".env.${{ needs.names.outputs.environment-name }}"
           PROVIDER=$(grep -E '^TEST_AUTH_PROVIDER=' "$ENV_FILE" | tail -n1 | cut -d'=' -f2)
-          if [ "$PROVIDER" = "cognito-native" ]; then
-            node scripts/toggle-cognito-native-auth.js enable "${{ needs.names.outputs.environment-name }}"
-          else
-            echo "Skipping native auth toggle (TEST_AUTH_PROVIDER=${PROVIDER:-unset})"
-          fi
+          echo "provider=${PROVIDER:-unset}" | tee -a "$GITHUB_OUTPUT"
+
+      # skip-native-auth-disable means a caller (deploy.yml) already holds native auth on for
+      # the whole run and will disable it once every job that depends on that hold has finished;
+      # this call's own enable is then a defensive, idempotent no-op and registers no hold of its
+      # own, because nothing here will ever call disable to release one.
+      - name: Enable native auth on Cognito Hosted UI (caller holds the disable)
+        if: ${{ steps.auth-provider.outputs.provider == 'cognito-native' && needs.params.outputs.skip-native-auth-disable == 'true' }}
+        run: node scripts/toggle-cognito-native-auth.js enable "${{ needs.names.outputs.environment-name }}"
+
+      # Otherwise this matrix leg owns its own enable/disable pair, so it registers its own
+      # hold, keyed by matrix leg (not just the run id: several suites in one scheduled run's
+      # matrix each toggle around their own test independently).
+      - name: Enable native auth on Cognito Hosted UI
+        if: ${{ steps.auth-provider.outputs.provider == 'cognito-native' && needs.params.outputs.skip-native-auth-disable != 'true' }}
+        uses: './.github/actions/hold-native-auth'
+        with:
+          mode: enable
+          environment-name: ${{ needs.names.outputs.environment-name }}
+          holder-id: ${{ github.run_id }}-${{ strategy.job-index }}
+          run-id: ${{ github.run_id }}
+          workflow: ${{ github.workflow }}
+          github-token: ${{ github.token }}
 
       - name: Ensure Cognito test user
         id: cognito-test-user
@@ -641,17 +660,19 @@ jobs:
           output-credentials: true
           retry-max-attempts: 3
 
+      # Releases the hold this leg's own enable step registered (same holder-id: run id plus
+      # matrix leg index). Native auth turns off here only once no other hold on this
+      # environment remains, elsewhere in this run's matrix or in another workflow's run.
       - name: Disable native auth on Cognito Hosted UI
-        if: ${{ !cancelled() && needs.params.outputs.skip-native-auth-disable != 'true' && needs.params.outputs.skip-cleanup != 'true' }}
-        shell: bash
-        run: |
-          ENV_FILE=".env.${{ needs.names.outputs.environment-name }}"
-          PROVIDER=$(grep -E '^TEST_AUTH_PROVIDER=' "$ENV_FILE" | tail -n1 | cut -d'=' -f2)
-          if [ "$PROVIDER" = "cognito-native" ]; then
-            node scripts/toggle-cognito-native-auth.js disable "${{ needs.names.outputs.environment-name }}"
-          else
-            echo "Skipping native auth toggle (TEST_AUTH_PROVIDER=${PROVIDER:-unset})"
-          fi
+        if: ${{ !cancelled() && needs.params.outputs.skip-native-auth-disable != 'true' && needs.params.outputs.skip-cleanup != 'true' && steps.auth-provider.outputs.provider == 'cognito-native' }}
+        uses: './.github/actions/hold-native-auth'
+        with:
+          mode: disable
+          environment-name: ${{ needs.names.outputs.environment-name }}
+          holder-id: ${{ github.run_id }}-${{ strategy.job-index }}
+          run-id: ${{ github.run_id }}
+          workflow: ${{ github.workflow }}
+          github-token: ${{ github.token }}
 
       - name: Export DynamoDB data for test users
         if: ${{ !cancelled() && needs.params.outputs.generate-test-reports == 'true' && steps.wait-before-navigate.outputs.deploy-in-progress != 'true' && steps.wait-before-retry.outputs.deploy-in-progress != 'true' }}
