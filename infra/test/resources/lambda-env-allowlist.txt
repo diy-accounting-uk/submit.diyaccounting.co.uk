@@ -25,6 +25,7 @@ NODE_ENV           `!== "test"` guard in app/lib/operators.js, app/services/subH
 
 # --- local-dev/test overrides whose real path is Secrets Manager or a coded default (bucket a) ---
 USER_SUB_HASH_SALT         app/services/subHasher.js:79 truthy guard; prod path reads Secrets Manager via ENVIRONMENT_NAME
+OPERATOR_EMAILS            app/lib/operators.js truthy guard; prod path reads Secrets Manager via ENVIRONMENT_NAME
 COGNITO_CLIENT_ID          app/lib/appClientResolver.js:32 truthy guard, local-lane map only
 COGNITO_MCP_CLIENT_ID      app/lib/appClientResolver.js:33 and app/lib/buildFraudHeaders.js:196, both truthy-guarded; wired only on the 4 functions SubmitApplicationCdkResourceTest's MCP-client-id tests cover
 TEST_FORCE_UNAUTHORIZED_TOKEN   app/services/hmrcApi.js:92, `=== "true"`; test-only escape hatch, never set in ci/prod

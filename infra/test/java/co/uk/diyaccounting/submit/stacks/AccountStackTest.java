@@ -126,6 +126,42 @@ class AccountStackTest {
 
     @Test
     @SuppressWarnings("unchecked")
+    void bundleGetAndOperatorSnapshotGetLambdasCanReadOperatorEmailsSecret() {
+        AccountStack stack = synthAccountStack(null);
+        Template template = Template.fromStack(stack);
+
+        for (String functionNameFragment : List.of("bundle-get", "operator-snapshot-get")) {
+            var functions = template.findResources("AWS::Lambda::Function").values().stream()
+                    .map(resource -> (Map<String, Object>) resource.get("Properties"))
+                    .filter(properties -> String.valueOf(properties.get("FunctionName")).contains(functionNameFragment))
+                    .toList();
+            assertEquals(1, functions.size(), "expected exactly one " + functionNameFragment + " Lambda");
+            var roleRef = (Map<String, Object>) functions.get(0).get("Role");
+            var roleLogicalId = String.valueOf(((List<Object>) roleRef.get("Fn::GetAtt")).get(0));
+
+            var operatorEmailsSecretReadResources = template.findResources("AWS::IAM::Policy").values().stream()
+                    .map(policy -> (Map<String, Object>) policy.get("Properties"))
+                    .filter(properties -> ((List<Map<String, Object>>) properties.get("Roles"))
+                            .stream().anyMatch(role -> roleLogicalId.equals(String.valueOf(role.get("Ref")))))
+                    .map(properties -> (Map<String, Object>) properties.get("PolicyDocument"))
+                    .flatMap(document -> ((List<Map<String, Object>>) document.get("Statement")).stream())
+                    .filter(statement ->
+                            String.valueOf(statement.get("Action")).contains("secretsmanager:GetSecretValue"))
+                    .map(statement -> statement.get("Resource"))
+                    .flatMap(resource -> resource instanceof List<?> list
+                            ? list.stream().map(String::valueOf)
+                            : Stream.of(String.valueOf(resource)))
+                    .filter(resource -> resource.contains("/submit/operator-emails"))
+                    .toList();
+            assertEquals(
+                    1,
+                    operatorEmailsSecretReadResources.size(),
+                    "the " + functionNameFragment + " Lambda's own role must be able to read the operator-emails secret");
+        }
+    }
+
+    @Test
+    @SuppressWarnings("unchecked")
     void sessionSignOutLambdaCanReadTheAppClientIdParametersAndDeleteTheSessionItem() {
         AccountStack stack = synthAccountStack(null);
         Template template = Template.fromStack(stack);

@@ -401,6 +401,28 @@ class CompaniesHouseStackTest {
     }
 
     @Test
+    void everyGrantCompaniesHouseLambdaAccessLambdaCanReadTheOperatorEmailsSecretAndTheTokenLambdaCannot() {
+        CompaniesHouseStack stack = synthCompaniesHouseStack();
+        Template template = Template.fromStack(stack);
+
+        // Every Companies House Lambda routed through grantCompaniesHouseLambdaAccess (all read
+        // and write endpoints except the OAuth token exchange) can read the operator-emails
+        // secret: enforceBundles() calls isOperatorEmail() on every request.
+        template.resourcePropertiesCountIs(
+                "AWS::IAM::Policy",
+                Match.objectLike(Map.of(
+                        "PolicyDocument",
+                        Match.objectLike(Map.of(
+                                "Statement",
+                                Match.arrayWith(List.of(Match.objectLike(Map.of(
+                                        "Action",
+                                        "secretsmanager:GetSecretValue",
+                                        "Resource",
+                                        Match.stringLikeRegexp(".*docs/submit/operator-emails.*"))))))))),
+                20);
+    }
+
+    @Test
     void filingLambdasCarryTheFilingBaseUri() {
         CompaniesHouseStack stack = synthCompaniesHouseStack();
         Template template = Template.fromStack(stack);

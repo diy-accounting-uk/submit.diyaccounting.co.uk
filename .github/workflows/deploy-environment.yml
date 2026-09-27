@@ -370,6 +370,14 @@ jobs:
             "${{ needs.names.outputs.environment-name }}/submit/github/ops_app_private_key" \
             "$SECRET_VALUE"
 
+      - name: Create secret in AWS from secrets.OPERATOR_EMAILS
+        run: |
+          scripts/put-secret-with-rotation-tag.sh \
+            "${{ needs.names.outputs.environment-name }}/submit/operator-emails" \
+            "${{ secrets.OPERATOR_EMAILS }}"
+        env:
+          AWS_REGION: ${{ env.AWS_REGION }}
+
       - name: Create user sub hash salt (if not exists)
         run: |
           SECRET_NAME="${{ needs.names.outputs.environment-name }}/submit/user-sub-hash-salt"

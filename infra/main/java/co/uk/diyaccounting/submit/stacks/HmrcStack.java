@@ -16,6 +16,7 @@ import co.uk.diyaccounting.submit.constructs.AsyncApiLambda;
 import co.uk.diyaccounting.submit.constructs.AsyncApiLambdaProps;
 import co.uk.diyaccounting.submit.constructs.Lambda;
 import co.uk.diyaccounting.submit.utils.PopulatedMap;
+import co.uk.diyaccounting.submit.utils.OperatorEmailsHelper;
 import co.uk.diyaccounting.submit.utils.SubHashSaltHelper;
 import java.util.List;
 import org.immutables.value.Value;
@@ -536,6 +537,9 @@ public class HmrcStack extends Stack {
                     // Grant access to user sub hash salt secret in Secrets Manager
                     SubHashSaltHelper.grantSaltAccess(fn, region, account, props.envName());
 
+                    // enforceBundles() grants the operator bundle to an email on the operator list
+                    OperatorEmailsHelper.grantOperatorEmailsAccess(fn, region, account, props.envName());
+
                     // Grant EventBridge PutEvents permission
                     fn.addToRolePolicy(PolicyStatement.Builder.create()
                             .effect(Effect.ALLOW)
@@ -620,6 +624,9 @@ public class HmrcStack extends Stack {
                     // Grant access to user sub hash salt secret in Secrets Manager
                     SubHashSaltHelper.grantSaltAccess(fn, region, account, props.envName());
 
+                    // enforceBundles() grants the operator bundle to an email on the operator list
+                    OperatorEmailsHelper.grantOperatorEmailsAccess(fn, region, account, props.envName());
+
                     // Grant EventBridge PutEvents permission
                     fn.addToRolePolicy(PolicyStatement.Builder.create()
                             .effect(Effect.ALLOW)
@@ -703,6 +710,9 @@ public class HmrcStack extends Stack {
                     // Grant access to user sub hash salt secret in Secrets Manager
                     SubHashSaltHelper.grantSaltAccess(fn, region, account, props.envName());
 
+                    // enforceBundles() grants the operator bundle to an email on the operator list
+                    OperatorEmailsHelper.grantOperatorEmailsAccess(fn, region, account, props.envName());
+
                     // Grant EventBridge PutEvents permission
                     fn.addToRolePolicy(PolicyStatement.Builder.create()
                             .effect(Effect.ALLOW)
@@ -781,6 +791,9 @@ public class HmrcStack extends Stack {
 
                     // Grant access to user sub hash salt secret in Secrets Manager
                     SubHashSaltHelper.grantSaltAccess(fn, region, account, props.envName());
+
+                    // enforceBundles() grants the operator bundle to an email on the operator list
+                    OperatorEmailsHelper.grantOperatorEmailsAccess(fn, region, account, props.envName());
 
                     // Grant EventBridge PutEvents permission
                     fn.addToRolePolicy(PolicyStatement.Builder.create()
@@ -861,6 +874,9 @@ public class HmrcStack extends Stack {
                     // Grant access to user sub hash salt secret in Secrets Manager
                     SubHashSaltHelper.grantSaltAccess(fn, region, account, props.envName());
 
+                    // enforceBundles() grants the operator bundle to an email on the operator list
+                    OperatorEmailsHelper.grantOperatorEmailsAccess(fn, region, account, props.envName());
+
                     // Grant EventBridge PutEvents permission
                     fn.addToRolePolicy(PolicyStatement.Builder.create()
                             .effect(Effect.ALLOW)
@@ -938,6 +954,9 @@ public class HmrcStack extends Stack {
 
                     // Grant access to user sub hash salt secret in Secrets Manager
                     SubHashSaltHelper.grantSaltAccess(fn, region, account, props.envName());
+
+                    // enforceBundles() grants the operator bundle to an email on the operator list
+                    OperatorEmailsHelper.grantOperatorEmailsAccess(fn, region, account, props.envName());
 
                     // Grant EventBridge PutEvents permission
                     fn.addToRolePolicy(PolicyStatement.Builder.create()
@@ -1020,6 +1039,9 @@ public class HmrcStack extends Stack {
                     // Grant access to user sub hash salt secret in Secrets Manager
                     SubHashSaltHelper.grantSaltAccess(fn, region, account, props.envName());
 
+                    // enforceBundles() grants the operator bundle to an email on the operator list
+                    OperatorEmailsHelper.grantOperatorEmailsAccess(fn, region, account, props.envName());
+
                     // Grant EventBridge PutEvents permission
                     fn.addToRolePolicy(PolicyStatement.Builder.create()
                             .effect(Effect.ALLOW)
@@ -1098,6 +1120,9 @@ public class HmrcStack extends Stack {
 
                     // Grant access to user sub hash salt secret in Secrets Manager
                     SubHashSaltHelper.grantSaltAccess(fn, region, account, props.envName());
+
+                    // enforceBundles() grants the operator bundle to an email on the operator list
+                    OperatorEmailsHelper.grantOperatorEmailsAccess(fn, region, account, props.envName());
 
                     // Grant EventBridge PutEvents permission
                     fn.addToRolePolicy(PolicyStatement.Builder.create()
@@ -1187,6 +1212,9 @@ public class HmrcStack extends Stack {
                     // Grant access to user sub hash salt secret in Secrets Manager
                     SubHashSaltHelper.grantSaltAccess(fn, region, account, props.envName());
 
+                    // enforceBundles() grants the operator bundle to an email on the operator list
+                    OperatorEmailsHelper.grantOperatorEmailsAccess(fn, region, account, props.envName());
+
                     // Grant EventBridge PutEvents permission
                     fn.addToRolePolicy(PolicyStatement.Builder.create()
                             .effect(Effect.ALLOW)
@@ -1273,6 +1301,9 @@ public class HmrcStack extends Stack {
                     // Grant access to user sub hash salt secret in Secrets Manager
                     SubHashSaltHelper.grantSaltAccess(fn, region, account, props.envName());
 
+                    // enforceBundles() grants the operator bundle to an email on the operator list
+                    OperatorEmailsHelper.grantOperatorEmailsAccess(fn, region, account, props.envName());
+
                     // Grant EventBridge PutEvents permission
                     fn.addToRolePolicy(PolicyStatement.Builder.create()
                             .effect(Effect.ALLOW)
@@ -1355,6 +1386,9 @@ public class HmrcStack extends Stack {
 
                     // Grant access to user sub hash salt secret in Secrets Manager
                     SubHashSaltHelper.grantSaltAccess(fn, region, account, props.envName());
+
+                    // enforceBundles() grants the operator bundle to an email on the operator list
+                    OperatorEmailsHelper.grantOperatorEmailsAccess(fn, region, account, props.envName());
 
                     // Grant EventBridge PutEvents permission
                     fn.addToRolePolicy(PolicyStatement.Builder.create()
@@ -1441,6 +1475,9 @@ public class HmrcStack extends Stack {
                     // Grant access to user sub hash salt secret in Secrets Manager
                     SubHashSaltHelper.grantSaltAccess(fn, region, account, props.envName());
 
+                    // enforceBundles() grants the operator bundle to an email on the operator list
+                    OperatorEmailsHelper.grantOperatorEmailsAccess(fn, region, account, props.envName());
+
                     // Grant EventBridge PutEvents permission
                     fn.addToRolePolicy(PolicyStatement.Builder.create()
                             .effect(Effect.ALLOW)
@@ -1523,6 +1560,9 @@ public class HmrcStack extends Stack {
 
                     // Grant access to user sub hash salt secret in Secrets Manager
                     SubHashSaltHelper.grantSaltAccess(fn, region, account, props.envName());
+
+                    // enforceBundles() grants the operator bundle to an email on the operator list
+                    OperatorEmailsHelper.grantOperatorEmailsAccess(fn, region, account, props.envName());
 
                     // Grant EventBridge PutEvents permission
                     fn.addToRolePolicy(PolicyStatement.Builder.create()
@@ -1610,6 +1650,9 @@ public class HmrcStack extends Stack {
 
                     // Grant access to user sub hash salt secret in Secrets Manager
                     SubHashSaltHelper.grantSaltAccess(fn, region, account, props.envName());
+
+                    // enforceBundles() grants the operator bundle to an email on the operator list
+                    OperatorEmailsHelper.grantOperatorEmailsAccess(fn, region, account, props.envName());
 
                     // Grant EventBridge PutEvents permission
                     fn.addToRolePolicy(PolicyStatement.Builder.create()
@@ -1701,6 +1744,9 @@ public class HmrcStack extends Stack {
                     // Grant access to user sub hash salt secret in Secrets Manager
                     SubHashSaltHelper.grantSaltAccess(fn, region, account, props.envName());
 
+                    // enforceBundles() grants the operator bundle to an email on the operator list
+                    OperatorEmailsHelper.grantOperatorEmailsAccess(fn, region, account, props.envName());
+
                     // Grant EventBridge PutEvents permission
                     fn.addToRolePolicy(PolicyStatement.Builder.create()
                             .effect(Effect.ALLOW)
@@ -1779,6 +1825,9 @@ public class HmrcStack extends Stack {
 
                     // Grant access to user sub hash salt secret in Secrets Manager
                     SubHashSaltHelper.grantSaltAccess(fn, region, account, props.envName());
+
+                    // enforceBundles() grants the operator bundle to an email on the operator list
+                    OperatorEmailsHelper.grantOperatorEmailsAccess(fn, region, account, props.envName());
 
                     // Grant EventBridge PutEvents permission
                     fn.addToRolePolicy(PolicyStatement.Builder.create()
@@ -1859,6 +1908,9 @@ public class HmrcStack extends Stack {
 
                     // Grant access to user sub hash salt secret in Secrets Manager
                     SubHashSaltHelper.grantSaltAccess(fn, region, account, props.envName());
+
+                    // enforceBundles() grants the operator bundle to an email on the operator list
+                    OperatorEmailsHelper.grantOperatorEmailsAccess(fn, region, account, props.envName());
 
                     // Grant EventBridge PutEvents permission
                     fn.addToRolePolicy(PolicyStatement.Builder.create()
@@ -1942,6 +1994,9 @@ public class HmrcStack extends Stack {
 
                     // Grant access to user sub hash salt secret in Secrets Manager
                     SubHashSaltHelper.grantSaltAccess(fn, region, account, props.envName());
+
+                    // enforceBundles() grants the operator bundle to an email on the operator list
+                    OperatorEmailsHelper.grantOperatorEmailsAccess(fn, region, account, props.envName());
 
                     // Grant EventBridge PutEvents permission
                     fn.addToRolePolicy(PolicyStatement.Builder.create()
@@ -2035,6 +2090,9 @@ public class HmrcStack extends Stack {
                     // Grant access to user sub hash salt secret in Secrets Manager
                     SubHashSaltHelper.grantSaltAccess(fn, region, account, props.envName());
 
+                    // enforceBundles() grants the operator bundle to an email on the operator list
+                    OperatorEmailsHelper.grantOperatorEmailsAccess(fn, region, account, props.envName());
+
                     // Grant EventBridge PutEvents permission
                     fn.addToRolePolicy(PolicyStatement.Builder.create()
                             .effect(Effect.ALLOW)
@@ -2118,6 +2176,9 @@ public class HmrcStack extends Stack {
                     // Grant access to user sub hash salt secret in Secrets Manager
                     SubHashSaltHelper.grantSaltAccess(fn, region, account, props.envName());
 
+                    // enforceBundles() grants the operator bundle to an email on the operator list
+                    OperatorEmailsHelper.grantOperatorEmailsAccess(fn, region, account, props.envName());
+
                     // Grant EventBridge PutEvents permission
                     fn.addToRolePolicy(PolicyStatement.Builder.create()
                             .effect(Effect.ALLOW)
@@ -2196,6 +2257,9 @@ public class HmrcStack extends Stack {
 
                     // Grant access to user sub hash salt secret in Secrets Manager
                     SubHashSaltHelper.grantSaltAccess(fn, region, account, props.envName());
+
+                    // enforceBundles() grants the operator bundle to an email on the operator list
+                    OperatorEmailsHelper.grantOperatorEmailsAccess(fn, region, account, props.envName());
 
                     // Grant EventBridge PutEvents permission
                     fn.addToRolePolicy(PolicyStatement.Builder.create()
@@ -2282,6 +2346,9 @@ public class HmrcStack extends Stack {
 
                     // Grant access to user sub hash salt secret in Secrets Manager
                     SubHashSaltHelper.grantSaltAccess(fn, region, account, props.envName());
+
+                    // enforceBundles() grants the operator bundle to an email on the operator list
+                    OperatorEmailsHelper.grantOperatorEmailsAccess(fn, region, account, props.envName());
 
                     // Grant EventBridge PutEvents permission
                     fn.addToRolePolicy(PolicyStatement.Builder.create()
