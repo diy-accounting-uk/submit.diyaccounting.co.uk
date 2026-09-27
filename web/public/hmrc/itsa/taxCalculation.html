@@ -227,7 +227,7 @@
           // unrelated to what was actually triggered, so its calculationType never matches.
           const continueLink = document.getElementById("continueToFinalDeclaration");
           if (calculationType === "intent-to-finalise") {
-            const params = new URLSearchParams({ nino, taxYear, calculationId: calculation.metadata.calculationId });
+            const params = new URLSearchParams({ nino, taxYear, calculationId: calculation.metadata.calculationId, calculationType });
             document.getElementById("continueToFinalDeclarationLink").href = `finalDeclaration.html?${params}`;
             continueLink.style.display = "block";
           } else {

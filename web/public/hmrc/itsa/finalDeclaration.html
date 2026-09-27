@@ -184,6 +184,7 @@
       let retrievedNino = "";
       let retrievedTaxYear = "";
       let retrievedCalculationId = "";
+      let requestedCalculationType = "";
 
       function initializePage() {
         const hmrcAccount = sessionStorage.getItem("hmrcAccount");
@@ -206,6 +207,12 @@
         if (params.get("nino")) document.getElementById("nino").value = params.get("nino").toUpperCase();
         if (params.get("taxYear")) document.getElementById("taxYear").value = params.get("taxYear");
         if (params.get("calculationId")) document.getElementById("calculationId").value = params.get("calculationId");
+        // Carried from the Tax Calculation page, which already confirmed intent-to-finalise -
+        // HMRC's sandbox retrieve response is a fixed example unrelated to what was actually
+        // triggered, so its own calculationType can't be trusted for a calculation reached this
+        // way. A calculationId typed in directly carries no such confirmation, so this stays
+        // empty and the check below falls back to HMRC's retrieved metadata.
+        requestedCalculationType = params.get("calculationType") || "";
 
         document.getElementById("declarationTick").addEventListener("change", updateSubmitEnabled);
       }
@@ -214,7 +221,7 @@
       // agreed to on screen and what gets sent to HMRC must be the same thing.
       function updateSubmitEnabled() {
         const ticked = document.getElementById("declarationTick").checked;
-        const isFinaliseType = retrievedCalculation?.metadata?.calculationType === "intent-to-finalise";
+        const isFinaliseType = (requestedCalculationType || retrievedCalculation?.metadata?.calculationType) === "intent-to-finalise";
         document.getElementById("submitDeclarationBtn").disabled = !(ticked && isFinaliseType);
       }
 
@@ -272,11 +279,14 @@
         document.getElementById("calculationIdDisplay").textContent = `Calculation ID: ${calculation.metadata?.calculationId || "-"}`;
 
         // The final declaration only ever confirms an intent-to-finalise calculation - anything
-        // else (an in-year estimate, say) is refused here rather than sent to HMRC.
+        // else (an in-year estimate, say) is refused here rather than sent to HMRC. Prefer the
+        // type carried from the Tax Calculation page (see initializePage) over HMRC's own
+        // retrieved metadata, which the sandbox's default scenario echoes as a fixed example.
+        const effectiveCalculationType = requestedCalculationType || calculation.metadata?.calculationType;
         const notReady = document.getElementById("notReadyForDeclaration");
         const declarationSection = document.getElementById("declarationSection");
-        if (calculation.metadata?.calculationType !== "intent-to-finalise") {
-          notReady.textContent = `This calculation is a ${calculation.metadata?.calculationType || "different"} calculation, not an intent to finalise. Trigger an intent to finalise calculation before declaring.`;
+        if (effectiveCalculationType !== "intent-to-finalise") {
+          notReady.textContent = `This calculation is a ${effectiveCalculationType || "different"} calculation, not an intent to finalise. Trigger an intent to finalise calculation before declaring.`;
           notReady.style.display = "block";
           declarationSection.style.display = "none";
         } else {

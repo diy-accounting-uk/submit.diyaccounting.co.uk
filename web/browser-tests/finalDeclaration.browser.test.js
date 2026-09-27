@@ -128,6 +128,35 @@ window.getGovClientHeaders = window.getGovClientHeaders || function(){ return Pr
     await expect(page.locator("#declarationSection")).toBeHidden();
   });
 
+  test("trusts the calculationType carried from the Tax Calculation page over HMRC's own retrieved metadata", async ({ page }) => {
+    // HMRC's sandbox default retrieve response is a fixed example that always echoes a
+    // different calculationType - the link from Tax Calculation carries the confirmed type so
+    // this page doesn't refuse a calculation it already knows is intent-to-finalise.
+    await loadPage(
+      page,
+      "http://localhost:3000/hmrc/itsa/finalDeclaration.html?nino=AB123456C&taxYear=2023-24&calculationId=calc-5&calculationType=intent-to-finalise",
+    );
+    await page.evaluate(() => {
+      document.getElementById("declarationContainer").style.display = "block";
+    });
+
+    await page.evaluate(() => {
+      window.displayCalculation({
+        metadata: { calculationId: "calc-5", calculationType: "intent-to-amend" },
+        calculation: {
+          taxCalculation: { totalIncomeTaxAndNicsDue: 1900, incomeTax: {}, nics: {}, totalTaxDeducted: 0 },
+          allowancesAndDeductions: {},
+        },
+      });
+    });
+
+    await expect(page.locator("#notReadyForDeclaration")).toBeHidden();
+    await expect(page.locator("#declarationSection")).toBeVisible();
+
+    await page.locator("#declarationTick").check();
+    await expect(page.locator("#submitDeclarationBtn")).toBeEnabled();
+  });
+
   test("shows the calculationId it is about to confirm", async ({ page }) => {
     await loadPage(page);
 
