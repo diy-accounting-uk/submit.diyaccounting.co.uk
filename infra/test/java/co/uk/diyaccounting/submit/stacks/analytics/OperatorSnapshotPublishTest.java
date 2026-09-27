@@ -102,13 +102,13 @@ class OperatorSnapshotPublishTest {
     }
 
     @Test
-    void prodOnlyRunsTheActivityOnlyScheduleHourlyWithModeActivityOnly() {
+    void prodOnlyRunsTheActivityOnlyScheduleHourlyAtMinute45WithModeActivityOnly() {
         var prodTemplate = synthOperatorSnapshotPublish("prod");
         prodTemplate.hasResourceProperties(
                 "AWS::Events::Rule",
                 Match.objectLike(Map.of(
                         "ScheduleExpression",
-                        "rate(1 hour)",
+                        "cron(45 * * * ? *)",
                         "Targets",
                         Match.arrayWith(List.of(Match.objectLike(Map.of("Input", "{\"mode\":\"activity-only\"}")))))));
 
@@ -118,7 +118,7 @@ class OperatorSnapshotPublishTest {
                 ciRules.values().stream().noneMatch(rule -> {
                     @SuppressWarnings("unchecked")
                     var properties = (Map<String, Object>) rule.get("Properties");
-                    return "rate(1 hour)".equals(properties.get("ScheduleExpression"));
+                    return "cron(45 * * * ? *)".equals(properties.get("ScheduleExpression"));
                 }),
                 "expected ci to have no hourly activity-only schedule");
     }

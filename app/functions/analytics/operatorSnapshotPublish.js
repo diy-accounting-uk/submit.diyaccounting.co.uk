@@ -667,21 +667,40 @@ export function parseResultSet(resultSet) {
   });
 }
 
+// Athena marks HIVE_S3_THROTTLING as not retryable, but it is S3 refusing the listing rate of
+// the moment, so the same query started again after a pause normally succeeds.
+function isS3Throttling(error) {
+  return error.message.includes("HIVE_S3_THROTTLING");
+}
+
 export async function runAthenaQuery({ workGroup, database, sql }) {
   const athenaClient = getAthenaClient();
+  const maxThrottleRetries = Number(process.env.ATHENA_THROTTLE_MAX_RETRIES || 2);
+  const throttleBackoffMs = Number(process.env.ATHENA_THROTTLE_BACKOFF_MS || 10000);
 
-  const { QueryExecutionId } = await athenaClient.send(
-    new StartQueryExecutionCommand({
-      QueryString: sql,
-      QueryExecutionContext: { Database: database },
-      WorkGroup: workGroup,
-    }),
-  );
+  for (let retry = 0; ; retry += 1) {
+    const { QueryExecutionId } = await athenaClient.send(
+      new StartQueryExecutionCommand({
+        QueryString: sql,
+        QueryExecutionContext: { Database: database },
+        WorkGroup: workGroup,
+      }),
+    );
 
-  await pollUntilTerminal(athenaClient, QueryExecutionId);
+    try {
+      await pollUntilTerminal(athenaClient, QueryExecutionId);
+    } catch (error) {
+      if (retry < maxThrottleRetries && isS3Throttling(error)) {
+        logger.warn({ message: "Athena query throttled by S3, starting it again", queryExecutionId: QueryExecutionId, retry: retry + 1 });
+        await sleep(throttleBackoffMs * 2 ** retry);
+        continue;
+      }
+      throw error;
+    }
 
-  const { ResultSet } = await athenaClient.send(new GetQueryResultsCommand({ QueryExecutionId }));
-  return parseResultSet(ResultSet);
+    const { ResultSet } = await athenaClient.send(new GetQueryResultsCommand({ QueryExecutionId }));
+    return parseResultSet(ResultSet);
+  }
 }
 
 /**

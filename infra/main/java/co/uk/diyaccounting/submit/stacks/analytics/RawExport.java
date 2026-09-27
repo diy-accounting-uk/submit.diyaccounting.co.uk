@@ -120,7 +120,9 @@ public class RawExport extends Construct {
                                 .tagOrDigest(props.baseImageTag())
                                 .cmd(List.of("app/functions/analytics/rawExportPublish.handler"))
                                 .build()))
-                .timeout(Duration.minutes(5))
+                // 23 views run one after another take about 135 seconds alone; queries that
+                // share the activity-event listing with another job slow several-fold.
+                .timeout(Duration.minutes(10))
                 .memorySize(512)
                 .architecture(Architecture.ARM_64)
                 .environment(environment)

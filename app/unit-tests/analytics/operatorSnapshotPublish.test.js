@@ -178,6 +178,7 @@ describe("operatorSnapshotPublish", () => {
     process.env.ANALYTICS_LAKE_BUCKET_NAME = "test-env-analytics-lake";
     process.env.ATHENA_POLL_INTERVAL_MS = "1";
     process.env.ATHENA_POLL_MAX_ATTEMPTS = "3";
+    process.env.ATHENA_THROTTLE_BACKOFF_MS = "1";
   });
 
   afterEach(() => {
@@ -187,6 +188,7 @@ describe("operatorSnapshotPublish", () => {
     delete process.env.ANALYTICS_LAKE_BUCKET_NAME;
     delete process.env.ATHENA_POLL_INTERVAL_MS;
     delete process.env.ATHENA_POLL_MAX_ATTEMPTS;
+    delete process.env.ATHENA_THROTTLE_BACKOFF_MS;
     delete process.env.GA4_PROPERTY_ID;
     vi.restoreAllMocks();
   });
@@ -330,6 +332,52 @@ describe("operatorSnapshotPublish", () => {
       mockAllQueriesSucceedWith(["1", "2", "3", "4"]);
       const rows = await runAthenaQuery({ workGroup: "wg", database: "db", sql: "SELECT 1" });
       expect(rows).toEqual([{ last_30: "1", prev_30: "2", last_90: "3", prev_90: "4" }]);
+    });
+
+    // The first `throttledStarts` executions fail with S3 throttling; every later one succeeds.
+    function mockThrottledThenSucceeding(throttledStarts) {
+      let starts = 0;
+      mockAthenaSend.mockImplementation((command) => {
+        switch (command.constructor.name) {
+          case "StartQueryExecutionCommand":
+            starts += 1;
+            return Promise.resolve({ QueryExecutionId: `qid-${starts}` });
+          case "GetQueryExecutionCommand": {
+            const start = Number(command.input.QueryExecutionId.slice(4));
+            if (start <= throttledStarts) {
+              return Promise.resolve({
+                QueryExecution: { Status: { State: "FAILED", StateChangeReason: "HIVE_S3_THROTTLING: Please reduce your request rate." } },
+              });
+            }
+            return Promise.resolve({ QueryExecution: { Status: { State: "SUCCEEDED" } } });
+          }
+          case "GetQueryResultsCommand":
+            return Promise.resolve({ ResultSet: resultSetOf(["value"], ["7"]) });
+          default:
+            throw new Error(`unexpected command ${command.constructor.name}`);
+        }
+      });
+      return () => starts;
+    }
+
+    test("runAthenaQuery starts a query again when S3 throttled it", async () => {
+      const startCount = mockThrottledThenSucceeding(2);
+      const rows = await runAthenaQuery({ workGroup: "wg", database: "db", sql: "SELECT 1" });
+      expect(rows).toEqual([{ value: "7" }]);
+      expect(startCount()).toBe(3);
+    });
+
+    test("runAthenaQuery gives up after its throttling retries", async () => {
+      const startCount = mockThrottledThenSucceeding(3);
+      await expect(runAthenaQuery({ workGroup: "wg", database: "db", sql: "SELECT 1" })).rejects.toThrow("HIVE_S3_THROTTLING");
+      expect(startCount()).toBe(3);
+    });
+
+    test("runAthenaQuery does not start a query again for any other failure", async () => {
+      mockQueriesWithOneFailing("SELECT 1", ["1", "2", "3", "4"]);
+      await expect(runAthenaQuery({ workGroup: "wg", database: "db", sql: "SELECT 1" })).rejects.toThrow("TABLE_NOT_FOUND");
+      const starts = mockAthenaSend.mock.calls.filter(([command]) => command.constructor.name === "StartQueryExecutionCommand");
+      expect(starts).toHaveLength(1);
     });
   });
 

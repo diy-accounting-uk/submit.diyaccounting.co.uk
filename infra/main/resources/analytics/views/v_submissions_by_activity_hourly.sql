@@ -3,7 +3,7 @@
 
 -- Same rows as v_submissions_by_activity_daily, grouped by hour instead of day: see
 -- v_activity_started_hourly.sql for why the dashboard's Last 1 hour and Last 1 day columns
--- cannot read that day-grain view's own "day" column.
+-- cannot read that day-grain view's own "day" column, and for its 8-day partition predicate.
 CREATE OR REPLACE VIEW v_submissions_by_activity_hourly AS
 SELECT hour, activity, outcome, client_id,
        count(*)                   AS completions,
@@ -26,6 +26,8 @@ FROM  (SELECT date_trunc('hour', event_ts) AS hour, hashed_sub, client_id,
                 WHEN event = 'pass-generated' AND pass_type_id = 'physical-pass' THEN 'generate-pass-physical'
               END AS activity
        FROM   activity_events_all
-       WHERE  actor = 'customer')
+       WHERE  actor = 'customer'
+              AND concat(cast(year AS varchar), lpad(cast(month AS varchar), 2, '0'), lpad(cast(day AS varchar), 2, '0'))
+                  >= date_format(current_date - interval '8' day, '%Y%m%d'))
 WHERE  activity IS NOT NULL
 GROUP  BY 1, 2, 3, 4
