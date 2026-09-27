@@ -16,7 +16,7 @@ runs), and for Claude Code steps the **Model** a sub-agent should use (Fable > O
 Haiku; the lowest tier that fits). Anything touching code goes through a `claude/*` branch and
 PR; the operator merges.
 
-**Prod runs deployment prod-2975eeb** (PR #379's merge deploy, run 36289824140, 2026-09-27, which set it last-known-good although `tokenEnforcementBehaviour-prod` failed: B30t; read from the deploy because the AWS SSO token has expired).
+**Prod runs deployment prod-d19cd6d** (PR #380's merge deploy, run 36295592006, 2026-09-27, every prod suite green including `tokenEnforcementBehaviour-prod`; PR #385's merge deploy is running; read from the deploy because the AWS SSO token has expired).
 **ci**: `ci-set1` is last-known-good; its slot is still claimed by the closed #374's failed deploy (run 36270437933, claimed 21:07 UTC, frees after five hours). PR #375's deploy (run 36275108431) is running.
 
 The board runs in five sections, in this order: **in flight** (a branch, a pull request or a run
@@ -38,8 +38,6 @@ names its model: the lowest tier that fits (Fable > Opus > Sonnet > Haiku), or `
 step.
 
 ## In flight
-
-- [ ] **PRB2. A branch-delete destroy tears down a ci slot another deploy has claimed.** Merging PR #379 auto-deleted `claude/ricochet-probe`; `destroy-ci.yml` run 36289825325 (02:53 to 03:30 UTC) resolved its slot `ci-set1` once at the start and deleted every `ci-set1-app-*` stack; PR #382's deploy run 36290929223 claimed the freed slot at 03:16 and failed with "the stack disappeared while we were deploying it". Every merge carries this risk while another branch deploys. On `claude/umbra-ops` (PR #385), commits d8980f49, 8671c9b1: `destroy-ci.yml` and the self-destruct Lambda each hold the slot while tearing it down (`hold-ci-slot.mjs`; a Lambda hold is judged by age) and release only their own hold. Until it merges, a PR merge waits for any other branch's deploy to finish. **Source**: deploy run 36290929223, 2026-09-27. **Owner**: Claude Code. **Model**: Sonnet. **Size**: ~4 files.
 
 - [ ] **VID7. Narration calls Polly through the SDK.** On `claude/tempest-video` (PR #382; deploy run 36290929223 passed on its re-run), commit 5e9617e5: `scripts/lib/video/narration.js` swaps `aws polly synthesize-speech` for `@aws-sdk/client-polly`, so captures run in the Playwright container, which has no AWS CLI (run 36286118252: `spawnSync aws ENOENT`). Remainder: merge; O11v re-dispatches. **Source**: capture run 36286118252, 2026-09-27. **Owner**: Claude Code. **Model**: Sonnet. **Size**: ~5 files.
 
