@@ -16,7 +16,6 @@
       <excludeFolder url="file://$MODULE_DIR$/coverage" />
       <excludeFolder url="file://$MODULE_DIR$/test-reports" />
       <excludeFolder url="file://$MODULE_DIR$/test-results" />
-      <excludeFolder url="file://$MODULE_DIR$/web/public-simulator" />
       <excludeFolder url="file://$MODULE_DIR$/web/public/tests/test-reports/web-test-local/html-report/data" />
       <excludeFolder url="file://$MODULE_DIR$/web/public/tests/test-reports/web-test-local/html-report/trace" />
     </content>

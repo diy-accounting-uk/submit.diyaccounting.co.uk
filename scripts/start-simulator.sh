@@ -24,9 +24,6 @@ cleanup() {
 
 trap cleanup INT TERM EXIT
 
-echo 'Building simulator static files...' >&2
-npm run build:simulator
-
 # dynalite and the HTTP simulator each pick an ephemeral (OS-assigned) port and log it on
 # startup, so two of this script can run side by side without colliding. Their output is
 # captured to a log file so the chosen port can be read back, and tailed in the background so

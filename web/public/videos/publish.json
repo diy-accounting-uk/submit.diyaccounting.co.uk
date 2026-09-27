@@ -111,6 +111,30 @@
       "tags": ["DIY Accounting", "Self Assessment", "HMRC", "Making Tax Digital", "ITSA"],
       "categoryId": "27",
       "videoId": "4cc-VxzjmnQ"
+    },
+    {
+      "id": "sign-in",
+      "publish": true,
+      "title": "DIY Accounting Submit: sign in and take out a day pass",
+      "description": "DIY Accounting Submit is a free tool for sending VAT returns to HMRC under Making Tax Digital. This video shows the part every other activity starts with: signing in through Cognito's Hosted UI (Google sign-in follows the same page) and taking out a day pass so the VAT activities unlock. It's a real recording of the live product, not a mockup or a design draft. Try it yourself at https://submit.diyaccounting.co.uk.",
+      "tags": ["DIY Accounting", "sign in", "day pass", "HMRC", "Making Tax Digital"],
+      "categoryId": "27"
+    },
+    {
+      "id": "tokens",
+      "publish": true,
+      "title": "DIY Accounting Submit: what an activity costs and what's left",
+      "description": "DIY Accounting Submit is a free tool for sending VAT returns to HMRC under Making Tax Digital. This video shows the token balance every account carries: what a bundle grants, what each metered activity spends, and what happens when the balance runs out. It's a real recording of the live product, not a mockup or a design draft. Try it yourself at https://submit.diyaccounting.co.uk.",
+      "tags": ["DIY Accounting", "tokens", "token usage", "HMRC", "Making Tax Digital"],
+      "categoryId": "27"
+    },
+    {
+      "id": "subscription-management",
+      "publish": true,
+      "title": "DIY Accounting Submit: subscribe, see it, cancel",
+      "description": "DIY Accounting Submit is a free tool for sending VAT returns to HMRC under Making Tax Digital. This video shows a subscription bundle: what Subscribe starts through Stripe's own checkout, where an active subscription shows once it's running, and how Stripe's billing portal ends it. It's a real recording of the live product, not a mockup or a design draft. Try it yourself at https://submit.diyaccounting.co.uk.",
+      "tags": ["DIY Accounting", "subscription", "billing", "HMRC", "Making Tax Digital"],
+      "categoryId": "27"
     }
   ]
 }

@@ -28,8 +28,5 @@ Disallow: /errors/
 Disallow: /tests/
 Disallow: /docs/
 
-# Block embedded simulator content (duplicate of main site, served at /sim/ in local dev)
-Disallow: /sim/
-
 # Sitemap location
 Sitemap: https://submit.diyaccounting.co.uk/sitemap.xml

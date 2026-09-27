@@ -23,7 +23,6 @@ import co.uk.diyaccounting.submit.stacks.ObservabilityUE1Stack;
 import co.uk.diyaccounting.submit.stacks.ScanDetectionStack;
 import co.uk.diyaccounting.submit.stacks.SecurityBaselineStack;
 import co.uk.diyaccounting.submit.stacks.SecurityDetectionStack;
-import co.uk.diyaccounting.submit.stacks.SimulatorStack;
 import co.uk.diyaccounting.submit.stacks.security.SecurityLakeStack;
 import co.uk.diyaccounting.submit.utils.KindCdk;
 import java.lang.reflect.Field;
@@ -47,7 +46,6 @@ public class SubmitEnvironment {
     public final IngestionStack ingestionStack;
     public final IdentityStack identityStack;
     public final HoldingStack holdingStack;
-    public final SimulatorStack simulatorStack;
     public final BillingWebhookStack billingWebhookStack;
     public final EcrStack ecrStack;
     public final EcrStack ue1EcrStack;
@@ -71,8 +69,6 @@ public class SubmitEnvironment {
         public String securityServicesEnabled;
         public String authCertificateArn;
         public String holdingCertificateArn;
-        public String simulatorCertificateArn;
-        public String simulatorCodePath;
         public String regionalCertificateArn;
         public String stripeSecretKeyArn;
         public String stripeTestSecretKeyArn;
@@ -169,10 +165,6 @@ public class SubmitEnvironment {
                 "HOLDING_CERTIFICATE_ARN", appProps.holdingCertificateArn, "(from holdingCertificateArn in cdk.json)");
         var holdingDocRootPath =
                 envOr("HOLDING_DOC_ROOT_PATH", appProps.holdingDocRootPath, "(from holdingDocRootPath in cdk.json)");
-        var simulatorCertificateArn = envOr(
-                "SIMULATOR_CERTIFICATE_ARN",
-                appProps.simulatorCertificateArn,
-                "(from simulatorCertificateArn in cdk.json)");
         var regionalCertificateArn = envOr(
                 "REGIONAL_CERTIFICATE_ARN",
                 appProps.regionalCertificateArn,
@@ -528,41 +520,6 @@ public class SubmitEnvironment {
             warnf(
                     "Skipping HoldingStack synthesis: HOLDING_CERTIFICATE_ARN not set (issue it with request-holding-cert.yml)");
             this.holdingStack = null;
-        }
-
-        // Create SimulatorStack for public demo simulator (only if the code path exists)
-        var simulatorCodePath = envOr("SIMULATOR_CODE_PATH", appProps.simulatorCodePath, "web/public-simulator");
-        var simulatorBaseUrl = "https://%s".formatted(sharedNames.simulatorDomainName);
-        var simulatorCodeDir = Paths.get(simulatorCodePath).toFile();
-        if (simulatorCodeDir.exists() && simulatorCodeDir.isDirectory()) {
-            infof(
-                    "Synthesizing stack %s for deployment %s to environment %s",
-                    sharedNames.simulatorStackId, deploymentName, envName);
-            this.simulatorStack = new SimulatorStack(
-                    app,
-                    sharedNames.simulatorStackId,
-                    SimulatorStack.SimulatorStackProps.builder()
-                            .env(primaryEnv)
-                            .crossRegionReferences(false)
-                            .envName(envName)
-                            .deploymentName(deploymentName)
-                            .resourceNamePrefix(sharedNames.envResourceNamePrefix)
-                            .cloudTrailEnabled(cloudTrailEnabled)
-                            .sharedNames(sharedNames)
-                            .simulatorCodePath(simulatorCodePath)
-                            .simulatorBaseUrl(simulatorBaseUrl)
-                            .hostedZoneName(appProps.hostedZoneName)
-                            .hostedZoneId(appProps.hostedZoneId)
-                            .certificateArn(
-                                    simulatorCertificateArn != null && !simulatorCertificateArn.isBlank()
-                                            ? simulatorCertificateArn
-                                            : certificateArn)
-                            .build());
-        } else {
-            warnf(
-                    "Skipping SimulatorStack synthesis - simulator code path %s does not exist (run 'npm run build:simulator' first)",
-                    simulatorCodePath);
-            this.simulatorStack = null;
         }
 
         // Create BillingWebhookStack for always-available Stripe webhook endpoint

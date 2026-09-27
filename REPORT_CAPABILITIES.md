@@ -413,8 +413,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
     - [DEV-08](#dev-08-simulate-hmrc-vat-mtd-api) Simulate HMRC VAT MTD API: use when a test needs VAT returns, obligations, liabilities, payments or penalties without a real HMRC call.
     - [DEV-09](#dev-09-simulate-hmrc-itsa-mtd-api) Simulate HMRC ITSA MTD API: use when a test needs Making Tax Digital for Income Tax Self Assessment endpoints without a real HMRC call.
   - [Public demo simulator deployment & practice UI](#public-demo-simulator-deployment--practice-ui-dev)
-    - [DEV-10](#dev-10-deploy-the-public-demo-simulator) Deploy the public demo simulator: use when the public read-only demo of the app needs deploying or its static build regenerating.
-    - [DEV-12](#dev-12-prove-the-client-status-stack-and-fetchauth) Prove the client status-stack and fetch/auth: use when a change touches the status-stack state machine, core fetch/auth logic, or the simulator's iframe controls.
+    - [DEV-12](#dev-12-prove-the-client-status-stack-and-fetchauth) Prove the client status-stack and fetch/auth: use when a change touches the status-stack state machine, core fetch/auth logic.
     - [DEV-13](#dev-13-generate-the-openapi-spec-from-cdk-route-definitions) Generate the OpenAPI spec from CDK route definitions: use when the API's OpenAPI document must reflect the real API Gateway routes without a hand-maintained list.
   - [Local dev environment & secrets](#local-dev-environment--secrets-dev)
     - [DEV-14](#dev-14-start-the-proxy-and-simulator-local-dev-environments) Start the proxy and simulator local dev environments: use when starting local development against native HTTPS with Docker, or a Docker-free simulator variant.
@@ -560,11 +559,11 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 #### SITE-08 Bootstrap the app server
 
 - **Use when:** running the site locally against a full Express server instead of deployed Lambdas.
-- **Does:** app/bin/server.js is the Express dev and local server. It registers every Lambda-style endpoint through the adaptor, serves HTTPS locally, sets the CSP header, serves the simulator build under /sim/, and wires mock OAuth and billing routes when real Cognito or Stripe are unavailable.
+- **Does:** app/bin/server.js is the Express dev and local server. It registers every Lambda-style endpoint through the adaptor, serves HTTPS locally, sets the CSP header, and wires mock OAuth and billing routes when real Cognito or Stripe are unavailable.
 - **Run:** `npm run start`; `npm run start:simulator`
 - **Entry:** `app/bin/server.js`
 - **Files:** app/index.js, app/bin/server.js, app/bin/main.js, app/unit-tests/bin/server.test.js, app/unit-tests/main.test.js
-- **Keywords:** express server, local dev server, https local, csp header, simulator build, mock oauth, mock billing
+- **Keywords:** express server, local dev server, https local, csp header, mock oauth, mock billing
 - **Related:** SITE-06
 
 #### SITE-09 Track and poll async API requests
@@ -4355,7 +4354,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 <!-- generated:area DEV -->
 - [Simulator server & OAuth mocks](#simulator-server--oauth-mocks-dev): [DEV-01](#dev-01-run-the-http-simulator-server) Run the HTTP simulator server · [DEV-02](#dev-02-simulate-local-app-oauth) Simulate local app OAuth · [DEV-03](#dev-03-simulate-hmrc-oauth) Simulate HMRC OAuth · [DEV-04](#dev-04-simulate-companies-house-identity-and-filing) Simulate Companies House identity and filing · [DEV-05](#dev-05-simulate-hmrc-agent-authorisation-and-fraud-prevention-headers) Simulate HMRC Agent Authorisation and fraud-prevention headers · [DEV-06](#dev-06-simulate-hmrc-test-user-provisioning-and-api-docs) Simulate HMRC test-user provisioning and API docs · [DEV-07](#dev-07-simulate-the-public-demos-billing-and-oauth) Simulate the public demo's billing and OAuth
 - [Simulator tax APIs](#simulator-tax-apis-dev): [DEV-08](#dev-08-simulate-hmrc-vat-mtd-api) Simulate HMRC VAT MTD API · [DEV-09](#dev-09-simulate-hmrc-itsa-mtd-api) Simulate HMRC ITSA MTD API
-- [Public demo simulator deployment & practice UI](#public-demo-simulator-deployment--practice-ui-dev): [DEV-10](#dev-10-deploy-the-public-demo-simulator) Deploy the public demo simulator · [DEV-12](#dev-12-prove-the-client-status-stack-and-fetchauth) Prove the client status-stack and fetch/auth · [DEV-13](#dev-13-generate-the-openapi-spec-from-cdk-route-definitions) Generate the OpenAPI spec from CDK route definitions
+- [Public demo simulator deployment & practice UI](#public-demo-simulator-deployment--practice-ui-dev): [DEV-12](#dev-12-prove-the-client-status-stack-and-fetchauth) Prove the client status-stack and fetch/auth · [DEV-13](#dev-13-generate-the-openapi-spec-from-cdk-route-definitions) Generate the OpenAPI spec from CDK route definitions
 - [Local dev environment & secrets](#local-dev-environment--secrets-dev): [DEV-14](#dev-14-start-the-proxy-and-simulator-local-dev-environments) Start the proxy and simulator local dev environments · [DEV-15](#dev-15-fetch-and-publish-proxy-variant-secrets) Fetch and publish proxy-variant secrets · [DEV-16](#dev-16-manage-the-durable-cognito-test-user-lifecycle) Manage the durable Cognito test-user lifecycle
 - [Test fixtures, reports & DynamoDB export](#test-fixtures-reports--dynamodb-export-dev): [DEV-17](#dev-17-export-and-embed-dynamodb-test-state-in-reports) Export and embed DynamoDB test state in reports · [DEV-18](#dev-18-provide-shared-unitsystem-test-fixtures) Provide shared unit/system-test fixtures · [DEV-19](#dev-19-provide-shared-behaviour-test-fixtures-and-steps) Provide shared behaviour-test fixtures and steps · [DEV-20](#dev-20-check-spdx-licence-headers) Check SPDX licence headers · [DEV-21](#dev-21-verify-module-wiring-and-repository-shape) Verify module wiring and repository shape
 - [Build hygiene, toolchain & docs](#build-hygiene-toolchain--docs-dev): [DEV-22](#dev-22-clean-and-update-local-build-state) Clean and update local build state · [DEV-23](#dev-23-configure-the-test-and-lint-toolchains) Configure the test and lint toolchains · [DEV-24](#dev-24-document-developer-setup-and-repository-conventions) Document developer setup and repository conventions · [DEV-25](#dev-25-maintain-the-specialist-agent-prompt-library) Maintain the specialist agent prompt library · [DEV-26](#dev-26-enforce-claude-code-conventions-via-rules-and-hooks) Enforce Claude Code conventions via rules and hooks
@@ -4378,9 +4377,9 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 
 - **Use when:** local or CI tests need HMRC, Companies House or Stripe endpoints without real calls.
 - **Does:** startSimulator starts an Express app and registers every simulator route in a fixed order. createApp answers a health check at GET /health. A shared in-memory store holds submitted returns, authorization codes and tokens, and resets between tests.
-- **Run:** `import { startSimulator } from "app/http-simulator/index.js"`; `node app/bin/simulator-server.js`
-- **Entry:** `app/http-simulator/index.js:startSimulator`; `app/http-simulator/server.js:createApp`; `app/bin/simulator-server.js`
-- **Files:** app/http-simulator/index.js, app/http-simulator/server.js, app/http-simulator/state/store.js, app/bin/simulator-server.js, app/system-tests/hmrcSimulator.system.test.js, app/system-tests/runLocalHttpServer.system.test.js, app/system-tests/runLocalOAuth2Server.system.test.js, app/system-tests/runLocalDynamoDb.system.test.js
+- **Run:** `import { startSimulator } from "app/http-simulator/index.js"`; `npm run simulator`
+- **Entry:** `app/http-simulator/index.js:startSimulator`; `app/http-simulator/server.js:createApp`
+- **Files:** app/http-simulator/index.js, app/http-simulator/server.js, app/http-simulator/state/store.js, app/system-tests/hmrcSimulator.system.test.js, app/system-tests/runLocalHttpServer.system.test.js, app/system-tests/runLocalOAuth2Server.system.test.js, app/system-tests/runLocalDynamoDb.system.test.js
 - **Keywords:** http simulator, mock server, express, local server, in-memory store, fixtures, sandbox, system test
 - **Related:** DEV-02, DEV-03, DEV-14
 
@@ -4442,7 +4441,6 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - **Entry:** `app/functions/non-lambda-mocks/mockAuthUrlGet.js:ingestHandler`; `app/functions/non-lambda-mocks/mockTokenPost.js:apiEndpoint`; `app/functions/non-lambda-mocks/mockBilling.js:apiEndpoint`
 - **Files:** app/functions/non-lambda-mocks/mockAuthUrlGet.js, app/functions/non-lambda-mocks/mockTokenPost.js, app/functions/non-lambda-mocks/mockBilling.js
 - **Keywords:** public demo, mock billing, mock stripe, mock oauth, cors, pna, bundle auto-grant, non-lambda mocks
-- **Related:** DEV-10
 
 ### Simulator tax APIs (DEV)
 
@@ -4474,24 +4472,13 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 ### Public demo simulator deployment & practice UI (DEV)
 
 <!-- generated:group public-demo-simulator-deployment--practice-ui-dev -->
-- [DEV-10](#dev-10-deploy-the-public-demo-simulator) Deploy the public demo simulator
 - [DEV-12](#dev-12-prove-the-client-status-stack-and-fetchauth) Prove the client status-stack and fetch/auth
 - [DEV-13](#dev-13-generate-the-openapi-spec-from-cdk-route-definitions) Generate the OpenAPI spec from CDK route definitions
 <!-- /generated:group public-demo-simulator-deployment--practice-ui-dev -->
 
-#### DEV-10 Deploy the public demo simulator
-
-- **Use when:** the public read-only demo of the app needs deploying or its static build regenerating.
-- **Does:** SimulatorStack deploys the demo as a Lambda behind a Function URL and CloudFront, with no production secrets, at {env}-simulator.submit.diyaccounting.co.uk. build-simulator.js copies web/public to web/public-simulator, adding a demo banner, noindex tags and a storage-namespace proxy. simulator-lambda-server.mjs is the dependency-free Node server that serves the built files and mock HMRC endpoints in that deployment.
-- **Run:** `node scripts/build-simulator.js`; `node scripts/simulator-lambda-server.mjs`
-- **Entry:** `infra/main/java/co/uk/diyaccounting/submit/stacks/SimulatorStack.java:SimulatorStack`; `scripts/build-simulator.js:buildSimulator`; `scripts/simulator-lambda-server.mjs:handleRequest`
-- **Files:** infra/main/java/co/uk/diyaccounting/submit/stacks/SimulatorStack.java, scripts/build-simulator.js, scripts/simulator-lambda-server.mjs
-- **Keywords:** public demo, simulator deployment, lambda function url, cloudfront, web/public-simulator, storage namespace, demo banner, noindex
-- **Related:** DEV-01
-
 #### DEV-12 Prove the client status-stack and fetch/auth
 
-- **Use when:** a change touches the status-stack state machine, core fetch/auth logic, or the simulator's iframe controls.
+- **Use when:** a change touches the status-stack state machine, core fetch/auth logic.
 - **Does:** Playwright component and DOM tests exercise the status-stack state machine and the core fetch and auth logic. They also cover the test-data-link page. ITSA business-details and VAT-obligations page tests live with HMRC filing, not here.
 - **Run:** `npx playwright test web/browser-tests/chromium.client.status-stack.test.js`; `npx playwright test web/browser-tests/chromium.client.test.js`
 - **Entry:** `web/browser-tests/chromium.client.status-stack.test.js`; `web/browser-tests/chromium.client.test.js`
@@ -5199,7 +5186,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - cloud book: [MCP-03](#mcp-03-load-and-save-diya-gl-books-via-mcp)
 - cloudformation: [OPS-136](#ops-136-retrieve-cloudformation-stack-outputs)
 - cloudformation drift: [OPS-07](#ops-07-lean-deploy-app-code-to-lambda-and-s3), [OPS-32](#ops-32-detect-cloudformation-drift)
-- cloudfront: [OPS-03](#ops-03-look-up-aws-resources-by-domain-convention), [OPS-115](#ops-115-provision-the-edgecloudfront-stack), [DEV-10](#dev-10-deploy-the-public-demo-simulator)
+- cloudfront: [OPS-03](#ops-03-look-up-aws-resources-by-domain-convention), [OPS-115](#ops-115-provision-the-edgecloudfront-stack)
 - cloudfront access logs: [DATA-13](#data-13-catalogue-cloudfront-access-logs-for-athena)
 - cloudfront alias: [OPS-04](#ops-04-update-route53cloudfront-origins-for-a-domain), [OPS-127](#ops-127-upsert-route53-alias-records-via-custom-resource)
 - cloudfront cutover: [OPS-05](#ops-05-promote-a-ci-deployment-to-the-ci-apex)
@@ -5376,7 +5363,6 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - delete user data: [OPS-40](#ops-40-delete-a-customers-data-for-gdpr-erasure)
 - deletebook: [BILL-18](#bill-18-delete-a-diya-gl-book)
 - delivery cycle: [DEV-30](#dev-30-run-the-delivery-cycle-unattended)
-- demo banner: [DEV-10](#dev-10-deploy-the-public-demo-simulator)
 - demo video: [OPS-52](#ops-52-auto-record-demo-videos-on-prod-deploy), [OPS-88](#ops-88-orchestrate-demo-video-recording-journeys), [DEV-40](#dev-40-record-a-product-demo-video)
 - deny patterns: [OPS-17](#ops-17-redact-and-gate-unattended-agent-output-before-publishing)
 - dependabot: [OPS-36](#ops-36-configure-dependabot-dependency-updates)
@@ -5818,7 +5804,6 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - lambda: [CH-14](#ch-14-provision-the-companies-house-cdk-stack)
 - lambda errors alarm: [DATA-22](#data-22-orchestrate-the-nightly-ingestion-workflow)
 - lambda event: [SITE-06](#site-06-adapt-lambda-handlers-to-express-routes)
-- lambda function url: [DEV-10](#dev-10-deploy-the-public-demo-simulator)
 - lambda image: [OPS-114](#ops-114-provision-ecr-image-repositories)
 - lambda integration: [OPS-112](#ops-112-provision-the-api-gateway-stack)
 - lambda names: [OPS-125](#ops-125-name-and-tag-cdk-resources-consistently)
@@ -5981,7 +5966,6 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - no-quibble: [BILL-31](#bill-31-configure-stripe-account-policies)
 - node-qrcode: [SITE-19](#site-19-generate-qr-codes)
 - node_modules reset: [DEV-22](#dev-22-clean-and-update-local-build-state)
-- noindex: [DEV-10](#dev-10-deploy-the-public-demo-simulator)
 - non-lambda mocks: [DEV-07](#dev-07-simulate-the-public-demos-billing-and-oauth)
 - non-main branch: [OPS-11](#ops-11-queue-ci-branch-deploys-in-creation-order)
 - not implemented: [BILL-27](#bill-27-recover-an-abandoned-checkout)
@@ -6177,7 +6161,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - proxy secrets: [DEV-15](#dev-15-fetch-and-publish-proxy-variant-secrets)
 - proxy variant: [DEV-14](#dev-14-start-the-proxy-and-simulator-local-dev-environments)
 - pubbalsht: [MCP-04](#mcp-04-derive-micro-entity-accounts-figures-for-companies-house-filing)
-- public demo: [DEV-07](#dev-07-simulate-the-public-demos-billing-and-oauth), [DEV-10](#dev-10-deploy-the-public-demo-simulator)
+- public demo: [DEV-07](#dev-07-simulate-the-public-demos-billing-and-oauth)
 - public site: [OPS-94](#ops-94-play-demo-videos-on-the-public-site), [MCP-15](#mcp-15-disclaim-an-mcp-server-on-the-marketing-site)
 - public video: [OPS-93](#ops-93-publish-demo-videos-to-youtube)
 - publish artifacts: [OPS-51](#ops-51-publish-build-artifacts-and-documentation)
@@ -6414,8 +6398,6 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - signing controls: [OPS-63](#ops-63-report-identity-audit-findings)
 - signup to first submission: [DATA-29](#data-29-sql-views-submission-and-compliance)
 - silent local failure: [OPS-47](#ops-47-check-fraud-prevention-header-record-freshness)
-- simulator build: [SITE-08](#site-08-bootstrap-the-app-server)
-- simulator deployment: [DEV-10](#dev-10-deploy-the-public-demo-simulator)
 - single stack deploy: [OPS-08](#ops-08-deploy-a-single-cdk-stack-on-demand)
 - site map: [SITE-12](#site-12-map-the-site-structure)
 - site-video-capture: [OPS-52](#ops-52-auto-record-demo-videos-on-prod-deploy)
@@ -6458,7 +6440,6 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - step definitions: [HMRC-36](#hmrc-36-provide-itsa-behaviour-test-step-helpers)
 - step functions: [DATA-22](#data-22-orchestrate-the-nightly-ingestion-workflow)
 - stop agents: [OPS-19](#ops-19-kill-switch-to-stop-unattended-agent-workflows)
-- storage namespace: [DEV-10](#dev-10-deploy-the-public-demo-simulator)
 - storage tiering: [OPS-128](#ops-128-generate-s3-lifecycle-rules-for-storage-tiering)
 - strategy: [SITE-20](#site-20-document-business-governance-and-positioning)
 - stray project: [DATA-41](#data-41-assert-gcp-billing-budget-and-stray-project)
@@ -6697,7 +6678,6 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - wcag standard: [DATA-14](#data-14-catalogue-compliance-findings-for-the-dashboard)
 - web assets: [OPS-120](#ops-120-provision-the-publish-stack)
 - web-test-local: [DEV-17](#dev-17-export-and-embed-dynamodb-test-state-in-reports)
-- web/public-simulator: [DEV-10](#dev-10-deploy-the-public-demo-simulator)
 - webhook: [BILL-28](#bill-28-process-stripe-webhook-events)
 - webhook endpoints: [BILL-30](#bill-30-sync-the-stripe-productprice-catalogue)
 - webhook signing secret: [BILL-32](#bill-32-provision-stripe-secrets)
@@ -6752,7 +6732,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 
 The entries come from a per-file walk of the repository.
 
-- **Files.** `git ls-files` filtered to `.js`, `.mjs`, `.java`, `.yml`, `.toml`, `.sh`, `.html`, `.sql` and `.md`, excluding `reference/`, `web/public/tests/`, `web/public/docs/`, `web/public-simulator/` and `_developers/hmrc/`: 1,295 files at the first build.
+- **Files.** `git ls-files` filtered to `.js`, `.mjs`, `.java`, `.yml`, `.toml`, `.sh`, `.html`, `.sql` and `.md`, excluding `reference/`, `web/public/tests/`, `web/public/docs/` and `_developers/hmrc/`: 1,295 files at the first build.
 - **Walk.** 13 batches balanced by line count; one agent per batch wrote one JSON line per file (`{"file", "capabilities": [{"name", "outline"}]}`) to `target/capabilities/batch-NN.jsonl`.
 - **Grouping.** One pass merged each Lambda with its test, CDK wiring, page and behaviour test into one capability, sorted them into the eight areas, and checked each outline against its source.
 - **Fields.** One agent per area rewrote each capability into the fields above, grouped it, and checked every Run command against `package.json`, the workflow's `workflow_dispatch` inputs, or the script's own argument parsing.

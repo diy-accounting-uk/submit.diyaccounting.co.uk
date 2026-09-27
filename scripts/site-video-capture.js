@@ -34,10 +34,11 @@ import {
 import { executeAction, SceneStepError } from "./lib/video/actions.js";
 import { createWaitPhase } from "./lib/video/waitPhase.js";
 import { createCapture } from "./lib/video/capture.js";
-import { writeManifest, resolveFfmpegBinary, encodeVideo, buildContactSheet } from "./lib/video/encode.js";
+import { writeManifest, resolveFfmpegBinary, encodeVideo, buildContactSheet, mixNarrationTrack, muxNarration } from "./lib/video/encode.js";
 import { writeVtt, writeTranscript, writeTimeline } from "./lib/video/captions.js";
 import { substituteValues } from "./lib/video/values.js";
 import { collectSecrets, assertNoSecrets } from "./lib/video/secrets.js";
+import { synthesizeSpeech, audioDurationMs } from "./lib/video/narration.js";
 
 const ANALYTICS_URL_FRAGMENTS = ["google-analytics", "googletagmanager", "analytics.js", "gtag/js", "client.rum"];
 
@@ -54,6 +55,7 @@ function parseArgs(argv) {
     noEncode: false,
     keepFrames: false,
     headed: false,
+    narration: true,
   };
   for (let i = 0; i < argv.length; i++) {
     const arg = argv[i];
@@ -91,6 +93,9 @@ function parseArgs(argv) {
       case "--headed":
         args.headed = true;
         break;
+      case "--no-narration":
+        args.narration = false;
+        break;
       case "--help":
         printHelp();
         process.exit(0);
@@ -119,6 +124,7 @@ Options:
   --no-encode            capture frames but skip the ffmpeg encode
   --keep-frames          do not delete frames/ after encode
   --headed               watch it run locally
+  --no-narration         skip Amazon Polly narration (default: on, unless --stills-only)
   --help                 this message`);
 }
 
@@ -214,8 +220,32 @@ async function main() {
   const outDir = path.resolve(args.out || path.join("target/videos", script.name));
   const framesDir = path.join(outDir, "frames");
   const stillsDir = path.join(outDir, "stills");
+  const narrationDir = path.join(outDir, "narration");
   fs.mkdirSync(outDir, { recursive: true });
   fs.mkdirSync(stillsDir, { recursive: true });
+
+  // Narration reaches only a real recording: --stills-only never encodes a video, so there is
+  // nothing to hold a scene open for and nothing to mux the audio onto.
+  const narrationEnabled = args.narration && !args.stillsOnly;
+  const narrationClips = [];
+  let narrationFfmpegBin = null;
+  let narrationIndex = 0;
+  if (narrationEnabled) {
+    fs.mkdirSync(narrationDir, { recursive: true });
+    narrationFfmpegBin = resolveFfmpegBinary();
+  }
+  // Falls back to the reading-speed estimate (pacing.js's captionMinMs) when narration is off,
+  // or for a fastForward/off-camera step, which never calls this at all (see the call sites
+  // below) -- a sped-through preamble has no line to hold for. Every other captioned step's
+  // hold becomes the real spoken duration of its own caption text: "held until its line has
+  // been spoken", not a reading-speed guess of how long that would take.
+  async function resolveCaptionHold(text) {
+    if (!narrationEnabled) return { minMs: captionMinMs(text, script.captions), audioPath: null };
+    const audioPath = path.join(narrationDir, `caption-${narrationIndex++}.mp3`);
+    synthesizeSpeech({ text, outputPath: audioPath });
+    const minMs = audioDurationMs(narrationFfmpegBin, audioPath);
+    return { minMs, audioPath };
+  }
 
   const fps = args.fps || script.fps;
   const unscaledPacing = script.pacing;
@@ -335,7 +365,10 @@ async function main() {
     for (let sceneIndex = 0; sceneIndex < script.scenes.length; sceneIndex++) {
       const scene = script.scenes[sceneIndex];
       const offCamera = scene.offCamera === true;
-      const fastForward = selectedSceneIds ? !selectedSceneIds.has(scene.id) : false;
+      // A script can mark a scene fastForward: true so it always runs sped up on every
+      // recording (a repeated preamble such as sign-in and day pass) — the same zero-pacing
+      // treatment --scene gives an unselected scene, but never turned off by omitting --scene.
+      const fastForward = scene.fastForward === true || (selectedSceneIds ? !selectedSceneIds.has(scene.id) : false);
       const pacing = offCamera || fastForward ? scalePacing(script.pacing, 0) : scaledPacing;
 
       let offCameraStartedAt = null;
@@ -377,7 +410,9 @@ async function main() {
         let captionHideAt = null;
         if (showCaptionBeforeAction) {
           await overlayCaption(page, step.caption);
-          const minMs = fastForward ? 0 : captionMinMs(step.caption, script.captions);
+          const hold = fastForward ? { minMs: 0, audioPath: null } : await resolveCaptionHold(step.caption);
+          if (hold.audioPath) narrationClips.push({ path: hold.audioPath, startMs });
+          const minMs = hold.minMs;
           captionHideAt = () => elapsed() + minMs;
           captionEvents.push({
             startMs,
@@ -412,7 +447,16 @@ async function main() {
         let timerShown = false;
         if (step.action === "caption") {
           if (!offCamera) {
-            const minMs = fastForward ? 0 : step.holdMs || captionMinMs(step.text, script.captions);
+            // narration replaces the author's own holdMs guess with the real spoken duration
+            // when it is on; holdMs is the fallback only when narration is off (or the scene is
+            // fast-forwarded), the same as pacing.js's reading-speed estimate is elsewhere.
+            const hold = fastForward
+              ? { minMs: 0, audioPath: null }
+              : narrationEnabled
+                ? await resolveCaptionHold(step.text)
+                : { minMs: step.holdMs || captionMinMs(step.text, script.captions), audioPath: null };
+            if (hold.audioPath) narrationClips.push({ path: hold.audioPath, startMs });
+            const minMs = hold.minMs;
             await overlayCaption(page, step.text);
             await new Promise((resolve) => setTimeout(resolve, minMs));
             await overlayCaption(page, null);
@@ -453,7 +497,9 @@ async function main() {
               if (step.caption) {
                 await overlayCaption(page, step.caption);
                 if (!captionHideAt) {
-                  const minMs = fastForward ? 0 : captionMinMs(step.caption, script.captions);
+                  const hold = fastForward ? { minMs: 0, audioPath: null } : await resolveCaptionHold(step.caption);
+                  if (hold.audioPath) narrationClips.push({ path: hold.audioPath, startMs });
+                  const minMs = hold.minMs;
                   captionHideAt = () => elapsed() + minMs;
                   captionEvents.push({
                     startMs,
@@ -618,6 +664,16 @@ async function main() {
     console.log(`Wrote ${outputPath}`);
     if (!args.keepFrames) {
       fs.rmSync(framesDir, { recursive: true, force: true });
+    }
+
+    if (narrationClips.length > 0) {
+      const narrationTrackPath = path.join(outDir, `${script.name}.narration.wav`);
+      const narratedOutputPath = path.join(outDir, `${script.name}.narrated.mp4`);
+      console.log(`\nMixing ${narrationClips.length} narration clips -> ${narrationTrackPath}`);
+      mixNarrationTrack({ ffmpegBin, clips: narrationClips, outputPath: narrationTrackPath });
+      muxNarration({ ffmpegBin, videoPath: outputPath, narrationTrackPath, outputPath: narratedOutputPath });
+      fs.renameSync(narratedOutputPath, outputPath);
+      console.log(`Muxed narration onto ${outputPath}`);
     }
   }
 

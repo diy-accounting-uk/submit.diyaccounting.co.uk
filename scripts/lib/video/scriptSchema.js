@@ -110,6 +110,7 @@ function validateScene(scene, index, auth) {
   if (!scene || typeof scene !== "object") fail(path, "scene must be an object");
   requireKeys(scene, ["id", "chapter", "steps"], path);
   if ("offCamera" in scene && typeof scene.offCamera !== "boolean") fail(`${path}.offCamera`, "must be a boolean");
+  if ("fastForward" in scene && typeof scene.fastForward !== "boolean") fail(`${path}.fastForward`, "must be a boolean");
   if (!Array.isArray(scene.steps) || scene.steps.length === 0) fail(`${path}.steps`, "must be a non-empty array");
   scene.steps.forEach((step, stepIndex) => validateStep(step, path, scene.id, stepIndex, auth));
 }

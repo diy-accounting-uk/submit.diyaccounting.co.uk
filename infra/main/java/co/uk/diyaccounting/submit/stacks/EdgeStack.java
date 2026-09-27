@@ -823,8 +823,7 @@ public class EdgeStack extends Stack {
                                         // which the literal host doesn't match and CSP then silently drops the pixel.
                                         + "img-src 'self' data: https://avatars.githubusercontent.com https://*.google-analytics.com https://analytics.google.com https://*.analytics.google.com https://stats.g.doubleclick.net https://www.googletagmanager.com; "
                                         + "style-src 'self' 'unsafe-inline'; "
-                                        + "frame-src 'self' https://www.youtube-nocookie.com https://"
-                                        + props.sharedNames().simulatorDomainName + "; "
+                                        + "frame-src 'self' https://www.youtube-nocookie.com; "
                                         + "frame-ancestors 'none'; "
                                         + "form-action 'self';")
                                 .override(true)
@@ -870,7 +869,7 @@ public class EdgeStack extends Stack {
                                         .header("Cross-Origin-Embedder-Policy")
                                         // Security scanner please leave
                                         .value("unsafe-none")
-                                        // Necessary for the simulator iframe to load
+                                        // Necessary for the YouTube iframe to load
                                         .override(true)
                                         .build(),
                                 ResponseCustomHeader.builder()
@@ -903,8 +902,7 @@ public class EdgeStack extends Stack {
                                         + "connect-src 'self' https://dataplane.rum.eu-west-2.amazonaws.com https://cognito-identity.eu-west-2.amazonaws.com https://sts.eu-west-2.amazonaws.com https://*.google-analytics.com https://analytics.google.com https://*.analytics.google.com https://stats.g.doubleclick.net https://www.googletagmanager.com; "
                                         + "img-src 'self' data: https://avatars.githubusercontent.com https://*.google-analytics.com https://analytics.google.com https://*.analytics.google.com https://stats.g.doubleclick.net https://www.googletagmanager.com; "
                                         + "style-src 'self' 'unsafe-inline'; "
-                                        + "frame-src 'self' https://www.youtube-nocookie.com https://"
-                                        + props.sharedNames().simulatorDomainName + "; "
+                                        + "frame-src 'self' https://www.youtube-nocookie.com; "
                                         + "frame-ancestors 'none'; "
                                         + "form-action 'self';")
                                 .override(true)

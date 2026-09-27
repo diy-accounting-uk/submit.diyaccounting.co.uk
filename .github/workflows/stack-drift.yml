@@ -272,7 +272,6 @@ jobs:
             "${ENV_NAME}-env-IdentityStack" \
             "${ENV_NAME}-env-BackupStack" \
             "${ENV_NAME}-env-ActivityStack" \
-            "${ENV_NAME}-env-SimulatorStack" \
             "${ENV_NAME}-env-EcrStack"; do
             detect_drift "$STACK" "eu-west-2"
           done

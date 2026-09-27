@@ -176,8 +176,6 @@ export default [
       "web/browser-tests/",
       // Generated test reports (Playwright HTML reports contain bundled JS)
       "web/public/tests/",
-      // Generated simulator build (gitignored, copied from web/public at build time)
-      "web/public-simulator/",
       // Auto-generated CloudFront Function (built by scripts/build-gateway-redirects.cjs)
       "web/www.diyaccounting.co.uk/redirect-function.js",
       // Reference examples for UK Government form field standards

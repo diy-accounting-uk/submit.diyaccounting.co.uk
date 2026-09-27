@@ -28,7 +28,6 @@ const EXCLUDED_PATH_PREFIXES = [
   // A slash command with no front matter takes its description from its first
   // line, so a header there renames the command in every listing.
   ".claude/commands/",
-  "web/public-simulator/",
   "web/public/tests/",
   "web/public/docs/api/",
   "fixtures/companies-house-xmlgw/",

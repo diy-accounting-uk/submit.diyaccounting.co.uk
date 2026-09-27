@@ -27,14 +27,13 @@ printf '%s' "$SESSION_ID" | shasum -a 256 | cut -d' ' -f1 | xxd -r -p | base64 |
 Run these before writing a line. Tee each to a file under the scratchpad before filtering.
 
 **Output.** Session commits, PRs, and the diff, with generated output separated from
-hand-written change. `web/public-simulator/` is a generated export of `web/public/`, and
-`_developers/*.md` reports written at the end of an investigation are prose, not code; count
-both apart:
+hand-written change. `_developers/*.md` reports written at the end of an investigation are
+prose, not code; count them apart:
 
 ```bash
 git log --since="<session start ISO>" --format='%h' --grep="<session id>" --no-merges | wc -l
 gh pr list --state merged --search "<session id>" --json number,title,mergedAt
-git diff --shortstat <main at session start>..<main now> -- . ':!web/public-simulator' ':!_developers' ':!fixtures'
+git diff --shortstat <main at session start>..<main now> -- . ':!_developers' ':!fixtures'
 git diff --shortstat <main at session start>..<main now>
 ```
 

@@ -49,12 +49,20 @@
       "id": "home",
       "chapter": "Home",
       "still": true,
+      "fastForward": true,
       "steps": [
         {
           "action": "goto",
           "url": "/",
           "waitFor": "#mainContent",
           "caption": "You can look up a VAT return you already sent HMRC."
+        },
+        {
+          "action": "caption",
+          "text": "See the full sign-in and day pass walkthrough in our sign-in video.",
+          "holdMs": 1200,
+          "headline": "Sign in and day pass, faster",
+          "keyWord": "faster"
         },
         {
           "action": "point",
@@ -74,6 +82,7 @@
       "id": "sign-in",
       "chapter": "Sign in",
       "still": true,
+      "fastForward": true,
       "steps": [
         {
           "action": "click",
@@ -97,6 +106,7 @@
       "id": "day-pass",
       "chapter": "Day pass",
       "still": true,
+      "fastForward": true,
       "steps": [
         {
           "action": "click",
@@ -123,6 +133,11 @@
             "name": "Activities"
           },
           "caption": "Every activity starts from the home page."
+        },
+        {
+          "action": "await",
+          "until": "button:has-text('VAT Obligations (HMRC)')",
+          "label": "Waiting for the day pass to unlock the activity"
         },
         {
           "action": "hold",

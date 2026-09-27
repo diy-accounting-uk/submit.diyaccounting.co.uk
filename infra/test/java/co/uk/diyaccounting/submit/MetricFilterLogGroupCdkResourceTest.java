@@ -141,11 +141,10 @@ class MetricFilterLogGroupCdkResourceTest {
                 env.identityStack,
                 env.ecrStack,
                 env.ue1EcrStack));
-        // holdingStack, simulatorStack and billingWebhookStack are created only when their own
+        // holdingStack and billingWebhookStack are created only when their own
         // context config is present (see SubmitEnvironment.java), so this fixture's context may
-        // leave any of them null.
+        // leave either of them null.
         if (env.holdingStack != null) stacks.add(env.holdingStack);
-        if (env.simulatorStack != null) stacks.add(env.simulatorStack);
         if (env.billingWebhookStack != null) stacks.add(env.billingWebhookStack);
 
         assertEveryMetricFilterNamesACreatedLogGroup(stacks);
