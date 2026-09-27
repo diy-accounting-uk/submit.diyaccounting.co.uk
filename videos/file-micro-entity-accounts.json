@@ -52,7 +52,7 @@
           "action": "goto",
           "url": "/",
           "waitFor": "#mainContent",
-          "caption": "This is a sandbox preview against Companies House's test filing service, not a live filing.",
+          "caption": "A sandbox preview against Companies House's test filing service.",
           "headline": "A sandbox preview",
           "keyWord": "sandbox"
         },
