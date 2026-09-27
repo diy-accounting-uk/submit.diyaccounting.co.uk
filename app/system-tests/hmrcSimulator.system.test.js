@@ -1036,14 +1036,14 @@ describe("HTTP Simulator", () => {
       expect(data.code).toBe("RULE_REQUEST_CANNOT_BE_FULFILLED");
     });
 
-    it("should answer a summary with no Gov-Test-Scenario header on retrieve, as HMRC's sandbox does", async () => {
+    it("should answer no data found with no Gov-Test-Scenario header on retrieve, as HMRC's sandbox does", async () => {
       const response = await fetch(
         `${baseUrl}/individuals/self-assessment/adjustable-summary/AB123456C/self-employment/f2fb30e5-4ab6-4a29-b3c1-c7264259ff1c/2023-24`,
         { headers: { Accept: "application/vnd.hmrc.7.0+json", Authorization: "Bearer test-token" } },
       );
-      expect(response.status).toBe(200);
+      expect(response.status).toBe(404);
       const data = await response.json();
-      expect(data.adjustableSummaryCalculation).toBeDefined();
+      expect(data.code).toBe("MATCHING_RESOURCE_NOT_FOUND");
     });
 
     it("should retrieve a profit summary for SELF_EMPLOYMENT_PROFIT", async () => {
@@ -1171,13 +1171,13 @@ describe("HTTP Simulator", () => {
       expect(typeof data.calculationId).toBe("string");
     });
 
-    it("should answer a summary with no Gov-Test-Scenario header on the UK property retrieve, as HMRC's sandbox does", async () => {
+    it("should answer no data found with no Gov-Test-Scenario header on the UK property retrieve, as HMRC's sandbox does", async () => {
       const response = await fetch(
         `${baseUrl}/individuals/self-assessment/adjustable-summary/AB123456C/uk-property/f2fb30e5-4ab6-4a29-b3c1-c7264259ff1c/2023-24`,
       );
-      expect(response.status).toBe(200);
+      expect(response.status).toBe(404);
       const data = await response.json();
-      expect(data.adjustableSummaryCalculation).toBeDefined();
+      expect(data.code).toBe("MATCHING_RESOURCE_NOT_FOUND");
     });
 
     it("should retrieve a profit summary for UK_PROPERTY_PROFIT, using the adjustable summary's own income labels", async () => {

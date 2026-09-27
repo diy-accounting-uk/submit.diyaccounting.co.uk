@@ -20,15 +20,6 @@ test.describe("ITSA Adjustments - Form", () => {
   });
 
   async function loadPage(page) {
-    await page.route("**/*.js", async (route) => {
-      const request = route.request();
-      if (request.resourceType() === "script") {
-        await route.fulfill({ status: 200, contentType: "application/javascript", body: "" });
-      } else {
-        await route.continue();
-      }
-    });
-
     const modifiedHtml = htmlContent.replace("<head>", '<head><base href="http://localhost:3000/hmrc/itsa/">').replace(
       "<body>",
       `<body><script>
@@ -41,10 +32,22 @@ window.getGovClientHeaders = window.getGovClientHeaders || function(){ return Pr
 </script>`,
     );
 
-    await page.setContent(modifiedHtml, {
-      url: "http://localhost:3000/hmrc/itsa/adjustments.html",
-      waitUntil: "domcontentloaded",
+    // Served through a real navigation (not page.setContent) so the document gets a committed
+    // http://localhost:3000 origin - session storage throws a SecurityError on a document that
+    // was never actually navigated to.
+    await page.route("**/hmrc/itsa/adjustments.html", async (route) => {
+      await route.fulfill({ status: 200, contentType: "text/html", body: modifiedHtml });
     });
+    await page.route("**/*.js", async (route) => {
+      const request = route.request();
+      if (request.resourceType() === "script") {
+        await route.fulfill({ status: 200, contentType: "application/javascript", body: "" });
+      } else {
+        await route.continue();
+      }
+    });
+
+    await page.goto("http://localhost:3000/hmrc/itsa/adjustments.html", { waitUntil: "domcontentloaded" });
     await delay(200);
   }
 
@@ -105,7 +108,7 @@ window.getGovClientHeaders = window.getGovClientHeaders || function(){ return Pr
         }
         return { adjustableSummaryCalculation: { netProfit: 6000 } };
       };
-      const bsas = await window.retrieveSummary("AB123456C", "calc-id", "2024-25", "token", 0, 0);
+      const bsas = await window.retrieveSummary("AB123456C", "calc-id", "2024-25", "token", null, 0, 0);
       return { calls, netProfit: bsas.adjustableSummaryCalculation.netProfit };
     });
 
@@ -123,7 +126,7 @@ window.getGovClientHeaders = window.getGovClientHeaders || function(){ return Pr
         throw notReadyYet;
       };
       try {
-        await window.retrieveSummary("AB123456C", "calc-id", "2024-25", "token", 0, 0);
+        await window.retrieveSummary("AB123456C", "calc-id", "2024-25", "token", null, 0, 0);
         return "resolved";
       } catch (error) {
         return error.status;
@@ -131,5 +134,79 @@ window.getGovClientHeaders = window.getGovClientHeaders || function(){ return Pr
     });
 
     expect(status).toBe(404);
+  });
+
+  test("retrieveSummary sends a canned success scenario for a synthetic run with no explicit test scenario", async ({ page }) => {
+    await loadPage(page);
+
+    const receivedScenario = await page.evaluate(async () => {
+      sessionStorage.setItem("hmrcAccount", "synthetic");
+      let receivedScenario;
+      window.getBsasSelfEmployment = async (
+        nino,
+        calculationId,
+        taxYear,
+        accessToken,
+        govClientHeaders,
+        runFraudPreventionHeaderValidation,
+        testScenario,
+      ) => {
+        receivedScenario = testScenario;
+        return { adjustableSummaryCalculation: { netProfit: 6000 } };
+      };
+      await window.retrieveSummary("AB123456C", "calc-id", "2024-25", "token", null, 0, 0);
+      return receivedScenario;
+    });
+
+    expect(receivedScenario).toBe("SELF_EMPLOYMENT_PROFIT");
+  });
+
+  test("retrieveSummary sends no test scenario for a live run with no explicit test scenario", async ({ page }) => {
+    await loadPage(page);
+
+    const receivedScenario = await page.evaluate(async () => {
+      let receivedScenario = "unset";
+      window.getBsasSelfEmployment = async (
+        nino,
+        calculationId,
+        taxYear,
+        accessToken,
+        govClientHeaders,
+        runFraudPreventionHeaderValidation,
+        testScenario,
+      ) => {
+        receivedScenario = testScenario;
+        return { adjustableSummaryCalculation: { netProfit: 6000 } };
+      };
+      await window.retrieveSummary("AB123456C", "calc-id", "2024-25", "token", null, 0, 0);
+      return receivedScenario;
+    });
+
+    expect(receivedScenario).toBeNull();
+  });
+
+  test("retrieveSummary passes an explicit test scenario through unchanged", async ({ page }) => {
+    await loadPage(page);
+
+    const receivedScenario = await page.evaluate(async () => {
+      sessionStorage.setItem("hmrcAccount", "synthetic");
+      let receivedScenario;
+      window.getBsasSelfEmployment = async (
+        nino,
+        calculationId,
+        taxYear,
+        accessToken,
+        govClientHeaders,
+        runFraudPreventionHeaderValidation,
+        testScenario,
+      ) => {
+        receivedScenario = testScenario;
+        return { adjustableSummaryCalculation: { netProfit: 6000 } };
+      };
+      await window.retrieveSummary("AB123456C", "calc-id", "2024-25", "token", "STATEFUL", 0, 0);
+      return receivedScenario;
+    });
+
+    expect(receivedScenario).toBe("STATEFUL");
   });
 });
