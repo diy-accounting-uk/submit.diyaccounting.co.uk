@@ -16,7 +16,7 @@ runs), and for Claude Code steps the **Model** a sub-agent should use (Fable > O
 Haiku; the lowest tier that fits). Anything touching code goes through a `claude/*` branch and
 PR; the operator merges.
 
-**Prod runs deployment prod-64b82c3** (PR #399's merge deploy, run 36344700324, 2026-09-27).
+**Prod runs deployment prod-74f0235** (PR #400's merge deploy, run 36354067129, 2026-09-27). prod-64b82c3 is a spare set; its removal is the operator's `gh workflow run destroy-prod.yml -f deployment-name=prod-64b82c3`.
 **ci**: `ci-set1` is last-known-good (created 19:04 UTC 2026-09-27); `ci-set2` (14:49 UTC) is past its 4-hour self-destruct and goes on the next `destroy-ci.yml` sweep.
 
 The board runs in five sections, in this order: **in flight** (a branch, a pull request or a run
