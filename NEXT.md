@@ -45,8 +45,6 @@ step.
 
 - [ ] **B30s. Alarm #383: operator snapshot queries throttled and timed out.** `/aws/lambda/prod-env-operator-snapshot-publish` at 03:25 UTC: two observation queries never finished after 90 polls (243e5ef4…, v_activity_started_daily; 8d00f04c…, v_submissions_by_activity_daily) and one failed `HIVE_S3_THROTTLING` (S3 503). The triage draft #384 (an empty-result guard) was closed as wrong. On `claude/vortex-lake` with B30r commits a46ca065 and 8bd874c5 (batch verify running). Remainder: merge; close #383 with the next clean run. **Source**: alarm #383, 2026-09-27. **Owner**: Claude Code. **Model**: Opus. **Size**: —.
 
-- [ ] **OSIM2. The retired simulator stacks finish deleting.** The operator approved the deletes on 2026-09-27: the four Route53 alias records are deleted (change C00507123NDEY7JM0380I; the ACM validation CNAMEs stay for the shared certificates), `ci-env-SimulatorStack` is deleting and `prod-env-SimulatorStack` follows (background wait), and `web/public-simulator` is removed from the main checkout. Remainder: both stacks reach DELETE_COMPLETE. **Source**: SIM2. **Owner**: Claude Code. **Model**: Haiku. **Size**: 0 files.
-
 - [ ] **VID7. Narration calls Polly through the SDK.** On `claude/tempest-video` (PR #382; deploy run 36290929223 passed on its re-run), commit 5e9617e5: `scripts/lib/video/narration.js` swaps `aws polly synthesize-speech` for `@aws-sdk/client-polly`, so captures run in the Playwright container, which has no AWS CLI (run 36286118252: `spawnSync aws ENOENT`). Remainder: merge; O11v re-dispatches. **Source**: capture run 36286118252, 2026-09-27. **Owner**: Claude Code. **Model**: Sonnet. **Size**: ~5 files.
 
 ## Machine-only
