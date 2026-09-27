@@ -127,18 +127,75 @@ export async function grantPermissionHmrcAuth(page, screenshotPath = defaultScre
  * read-only page, requiring credentials again because this is a new authorization request, not a
  * refresh of the old one. A page that already holds a sufficient token makes no such redirect, so
  * this is a no-op then.
+ *
+ * The redirect to HMRC's sandbox is a real, variable-length round trip (seen anywhere from a few
+ * seconds to tens of seconds against the live sandbox), so the entry check waits for the browser
+ * to actually leave the app's origin rather than testing an HMRC element for instant visibility -
+ * an instant check races the redirect and reads "not there yet" as "not needed". Once off the
+ * app's origin, HMRC's own pages can arrive in any order depending on whether the sandbox still
+ * holds a signed-in session (straight to consent, or straight to the permission grant, skipping
+ * sign-in entirely) - each step re-detects whichever page is now showing instead of assuming a
+ * fixed sequence.
  */
 export async function completeHmrcReauthIfPresented(page, hmrcTestUsername, hmrcTestPassword, screenshotPath = defaultScreenshotPath) {
   await test.step("If the last click needed a wider HMRC grant, walk through it again", async () => {
-    const continueButton = page.getByRole("button", { name: "Continue" });
-    if (!(await continueButton.isVisible().catch(() => false))) {
+    const appOrigin = new URL(page.url()).origin;
+    const leftAppOrigin = await page
+      .waitForURL((url) => url.origin !== appOrigin, { timeout: 10_000 })
+      .then(() => true)
+      .catch(() => false);
+    if (!leftAppOrigin) {
       return;
     }
-    await acceptCookiesHmrc(page, screenshotPath);
-    await goToHmrcAuth(page, screenshotPath);
-    await initHmrcAuth(page, screenshotPath);
-    await fillInHmrcAuth(page, hmrcTestUsername, hmrcTestPassword, screenshotPath);
-    await submitHmrcAuth(page, screenshotPath);
-    await grantPermissionHmrcAuth(page, screenshotPath);
+
+    const maxSteps = 10;
+    for (let step = 0; step < maxSteps; step += 1) {
+      // A redirect click lands on a chain of HTTP redirects, so the url settles before the dom
+      // does; wait for the network to go quiet before reading what's on the page.
+      await page.waitForLoadState("networkidle", { timeout: 30_000 }).catch(() => {});
+      if (new URL(page.url()).origin === appOrigin) {
+        return;
+      }
+      await acceptCookiesHmrc(page, screenshotPath);
+
+      if (
+        await page
+          .locator("#userId")
+          .isVisible()
+          .catch(() => false)
+      ) {
+        await fillInHmrcAuth(page, hmrcTestUsername, hmrcTestPassword, screenshotPath);
+        await submitHmrcAuth(page, screenshotPath);
+      } else if (
+        await page
+          .locator("#givePermission")
+          .isVisible()
+          .catch(() => false)
+      ) {
+        await grantPermissionHmrcAuth(page, screenshotPath);
+      } else if (
+        await page
+          .getByRole("button", { name: "Sign in to the HMRC online service" })
+          .isVisible()
+          .catch(() => false)
+      ) {
+        await initHmrcAuth(page, screenshotPath);
+      } else if (
+        await page
+          .getByRole("button", { name: "Continue" })
+          .isVisible()
+          .catch(() => false)
+      ) {
+        await goToHmrcAuth(page, screenshotPath);
+      }
+      // None recognised: still mid-redirect. Loop back to the networkidle wait rather than
+      // sleeping a fixed duration - the next settle is the pacing.
+    }
+
+    if (new URL(page.url()).origin === appOrigin) {
+      return;
+    }
+    await page.screenshot({ path: `${screenshotPath}/${timestamp()}-00-reauth-stuck.png` });
+    throw new Error(`completeHmrcReauthIfPresented: did not return from HMRC within ${maxSteps} steps (stuck at ${page.url()})`);
   });
 }
