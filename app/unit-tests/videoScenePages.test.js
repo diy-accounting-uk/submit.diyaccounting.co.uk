@@ -12,6 +12,10 @@
 // carries no page path at all, so a script's own text cannot confirm which page a click lands
 // on. That mapping was worked out by hand from the site's shared chrome and its activity
 // catalogue, not by reading the script alone.
+//
+// A script that declares "localApp" targets a different local tool entirely, not the submit
+// site, so its "pages" are the repo files whose change should prompt a re-recording (a fixture,
+// a config) rather than web/public/ paths — still non-empty, still required to exist.
 
 import fs from "node:fs";
 import path from "node:path";
@@ -36,7 +40,7 @@ describe("every scene script's declared pages", () => {
     expect(script.pages.length).toBeGreaterThan(0);
   });
 
-  test.each(scriptNames)("%s's pages all start with web/public/", (name) => {
+  test.each(scriptNames.filter((name) => !readSceneScript(name).localApp))("%s's pages all start with web/public/", (name) => {
     for (const page of readSceneScript(name).pages) {
       expect(page.startsWith("web/public/")).toBe(true);
     }

@@ -79,6 +79,43 @@ describe("auth", () => {
   });
 });
 
+describe("localApp", () => {
+  const withLocalApp = (localApp) => baseScript({ localApp });
+
+  test("accepts a well-formed declaration", () => {
+    expect(() =>
+      validateScript(withLocalApp({ command: "npx some-tool --web", url: "http://127.0.0.1:9999", readyPattern: "up and running" })),
+    ).not.toThrow();
+  });
+
+  test("accepts an optional readyTimeoutMs", () => {
+    expect(() =>
+      validateScript(
+        withLocalApp({
+          command: "npx some-tool --web",
+          url: "http://127.0.0.1:9999",
+          readyPattern: "up and running",
+          readyTimeoutMs: 60000,
+        }),
+      ),
+    ).not.toThrow();
+  });
+
+  test("requires command, url and readyPattern", () => {
+    expect(() => validateScript(withLocalApp({ url: "http://127.0.0.1:9999", readyPattern: "ready" }))).toThrow(/command/);
+    expect(() => validateScript(withLocalApp({ command: "npx some-tool", readyPattern: "ready" }))).toThrow(/url/);
+    expect(() => validateScript(withLocalApp({ command: "npx some-tool", url: "http://127.0.0.1:9999" }))).toThrow(/readyPattern/);
+  });
+
+  test("rejects a non-numeric readyTimeoutMs", () => {
+    expect(() =>
+      validateScript(
+        withLocalApp({ command: "npx some-tool", url: "http://127.0.0.1:9999", readyPattern: "ready", readyTimeoutMs: "60000" }),
+      ),
+    ).toThrow(/readyTimeoutMs/);
+  });
+});
+
 describe("journey actions", () => {
   const withStep = (auth, step) =>
     baseScript({ auth, scenes: [{ id: "home", chapter: "Home", steps: [{ action: "goto", url: "/" }, step] }] });

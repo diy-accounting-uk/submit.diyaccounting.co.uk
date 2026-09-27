@@ -49,6 +49,19 @@ and positioned so it never reads as the same thing as the caption twice.
   mid-fade; the real capture never does, because every step's own pacing already waits longer
   than that before anything else happens).
 
+## Step 1b — a non-site target
+
+A scene script's target is normally the submit site itself (`--base-url`). A script whose target
+is a different local tool entirely — `videos/mcp-diya-gl.json` records MCP Inspector's web UI
+driving diya-gl's MCP server — declares a top-level `localApp` instead: a `command` to start, the
+`url` its web UI serves, and a `readyPattern` to match against the command's own stdout/stderr
+before the run treats it as ready (`readyTimeoutMs` overrides the 30s default). The capture starts
+it, uses its `url` as the base url when `--base-url` was not given, and stops it when the run
+ends. `videos/mcp-diya-gl.json` also shows the pattern for a target whose interactive controls are
+not plain HTML: a Mantine switch's accessible `role=switch` element sits under a track span that
+intercepts a direct click, so that scene's target is a CSS selector on the label instead
+(`.mantine-Switch-root`), with a `note` explaining why.
+
 ## Step 2 — iterate locally against a local instance
 
 Serve `web/public` statically and point the script at it. No Docker, no AWS:

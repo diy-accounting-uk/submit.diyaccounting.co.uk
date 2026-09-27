@@ -54,6 +54,7 @@ on:
           - 'generate-pass-digital'
           - 'generate-pass-physical'
           - 'file-confirmation-statement'
+          - 'mcp-diya-gl'
         default: 'tour'
       environment-name:
         type: choice
@@ -119,8 +120,29 @@ jobs:
       skip-native-auth-disable: ${{ steps.normalise.outputs.skip-native-auth-disable }}
       github-environment: ${{ steps.normalise.outputs.github-environment }}
 
-  names:
+  script-meta:
+    # A scene script that declares "localApp" (scripts/lib/video/localApp.js) records a local
+    # tool of its own, not the submit site, so it needs no deployment, no AWS account and no
+    # environment at all. Read that out of the script itself before the names job spends an AWS
+    # role assumption and an SSM lookup on a deployment this recording will never use.
     needs: params
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+      - name: Read scene script localApp
+        id: meta
+        run: |
+          HAS_LOCAL_APP=$(node -p "!!(require('./videos/${{ needs.params.outputs.script }}.json').localApp)")
+          echo "has-local-app=${HAS_LOCAL_APP}" | tee -a "$GITHUB_OUTPUT"
+    outputs:
+      has-local-app: ${{ steps.meta.outputs.has-local-app }}
+
+  names:
+    needs:
+      - params
+      - script-meta
+    if: ${{ needs.script-meta.outputs.has-local-app != 'true' }}
     runs-on: ubuntu-24.04
     environment: ${{ needs.params.outputs.github-environment }}
     steps:
@@ -198,8 +220,13 @@ jobs:
     name: 'capture ${{ needs.params.outputs.script }}-${{ needs.names.outputs.environment-name }}'
     needs:
       - params
+      - script-meta
       - names
       - playwright-version
+    # The default `if: success()` would skip this job too once names is skipped (a skipped
+    # dependency is not a success) — names only skips for a localApp script (see script-meta
+    # above), which is not a failure this job should inherit.
+    if: ${{ !cancelled() && needs.script-meta.result == 'success' && (needs.names.result == 'success' || needs.names.result == 'skipped') }}
     runs-on: ubuntu-24.04
     container: mcr.microsoft.com/playwright:v${{ needs.playwright-version.outputs.version }}-jammy
     environment: ${{ needs.params.outputs.github-environment }}
@@ -281,6 +308,9 @@ jobs:
         run: node scripts/ensure-cognito-test-user.js "${{ needs.names.outputs.environment-name }}" videoCapture
 
       - name: Configure AWS role via GitHub OIDC (for the capture)
+        # Only a submit-site recording needs AWS: last-known-good lookup, native auth, the HMRC
+        # sandbox secret. A localApp script (script-meta above) never touches submit's AWS account.
+        if: ${{ needs.script-meta.outputs.has-local-app != 'true' }}
         uses: aws-actions/configure-aws-credentials@e1253824e5c10ff9df46874f81ed3ec929e19cfd # v6
         with:
           role-to-assume: ${{ vars.SUBMIT_ACTIONS_ROLE_ARN }}
@@ -292,6 +322,7 @@ jobs:
           retry-max-attempts: 3
 
       - name: Assume AWS deployment role (for the capture)
+        if: ${{ needs.script-meta.outputs.has-local-app != 'true' }}
         uses: aws-actions/configure-aws-credentials@e1253824e5c10ff9df46874f81ed3ec929e19cfd # v6
         with:
           role-to-assume: ${{ vars.SUBMIT_DEPLOY_ROLE_ARN }}
@@ -312,8 +343,9 @@ jobs:
           # Cognito's registered redirect_uri is the apex, so sign-in only completes there.
           # The names job fails the run before this step if an explicit deployment-name input
           # is not the environment's last-known-good, so by this point the apex is guaranteed
-          # to serve whichever deployment is being recorded.
-          DIY_SUBMIT_BASE_URL: ${{ needs.names.outputs.public-url }}
+          # to serve whichever deployment is being recorded. Empty for a localApp script, which
+          # supplies its own base url once its own local app is up (scripts/lib/video/localApp.js).
+          DIY_SUBMIT_BASE_URL: ${{ needs.script-meta.outputs.has-local-app == 'true' && '' || needs.names.outputs.public-url }}
           HMRC_ACCOUNT: synthetic
           # HMRC_SANDBOX_CLIENT_ID is a test application credential - not a production secret
           HMRC_SANDBOX_CLIENT_ID: 'uqMHA6RsDGGa7h8EG2VqfqAmv4tV'

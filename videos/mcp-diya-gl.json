@@ -1,0 +1,157 @@
+{
+  "$schema": "./scene-script.schema.json",
+  "name": "mcp-diya-gl",
+  "title": "diya-gl's MCP server, inspected",
+  "description": "A look under the hood: the diya-gl accounting engine answering a developer tool (MCP Inspector) over the Model Context Protocol, reading a real example set of accounts.",
+  "auth": "none",
+  "pages": ["videos/fixtures/diya-gl-taxi-driver.xlsx", "videos/fixtures/mcp-inspector-config.json"],
+  "viewport": { "width": 1920, "height": 1080 },
+  "deviceScaleFactor": 2,
+  "fps": 30,
+
+  "localApp": {
+    "command": "DANGEROUSLY_OMIT_AUTH=true CLIENT_PORT=6274 npx -y @modelcontextprotocol/inspector --web --config videos/fixtures/mcp-inspector-config.json --server diya-gl",
+    "url": "http://127.0.0.1:6274",
+    "readyPattern": "MCP Inspector Web is up and running",
+    "readyTimeoutMs": 60000
+  },
+
+  "pacing": {
+    "perCharMs": 90,
+    "betweenActionsMs": 700,
+    "aroundMotionMs": 600,
+    "minResidualMs": 150,
+    "timerThresholdMs": 250,
+    "timerFullScaleMs": 5000,
+    "waitCompressionAfterMs": 6000,
+    "waitCompressionFactor": 8
+  },
+
+  "captions": {
+    "fontPx": 40,
+    "lineHeightPx": 56,
+    "maxLines": 2,
+    "maxCharsPerLine": 46,
+    "charsPerSecond": 15,
+    "minMs": 1500,
+    "fadeMs": 250,
+    "safeArea": { "topPct": 5, "bottomPct": 5, "sidePct": 12.5 }
+  },
+
+  "finalHoldMs": 3000,
+
+  "scenes": [
+    {
+      "id": "connect",
+      "chapter": "Connecting to the server",
+      "still": true,
+      "steps": [
+        {
+          "action": "goto",
+          "url": "/",
+          "waitFor": "text=diya-gl",
+          "caption": "diya-gl runs your accounts. This tool watches it work, step by step.",
+          "headline": "A developer's view of diya-gl",
+          "keyWord": "diya-gl"
+        },
+        {
+          "action": "click",
+          "target": ".mantine-Switch-root",
+          "caption": "Switching it on starts diya-gl and opens a channel to it.",
+          "headline": "Connect to the server",
+          "keyWord": "Connect",
+          "note": "The accessible switch (role switch, aria-label 'Connect or disconnect \"diya-gl\"') sits under its own track span, which intercepts a direct click; the enclosing .mantine-Switch-root label does not."
+        },
+        {
+          "action": "await",
+          "until": "input[role=\"switch\"][data-checked=\"true\"]",
+          "label": "the connection to come up",
+          "caption": "Connected. diya-gl just listed the tools it offers.",
+          "headline": "Now connected",
+          "keyWord": "connected"
+        }
+      ]
+    },
+    {
+      "id": "tools",
+      "chapter": "What the server offers",
+      "still": true,
+      "steps": [
+        {
+          "action": "click",
+          "target": { "text": "Tools" },
+          "caption": "Four tools: extract_book, report, edit_lines, save_workbook.",
+          "headline": "See the four tools",
+          "keyWord": "tools"
+        },
+        {
+          "action": "click",
+          "target": { "role": "button", "name": "extract_book" },
+          "caption": "extract_book reads a set of accounts and hands back the figures.",
+          "headline": "Open extract_book",
+          "keyWord": "extract_book"
+        }
+      ]
+    },
+    {
+      "id": "extract-book",
+      "chapter": "Reading a set of accounts",
+      "still": true,
+      "steps": [
+        {
+          "action": "fill",
+          "target": ".mantine-InputWrapper-root:has-text(\"path *\") input",
+          "value": "videos/fixtures/diya-gl-taxi-driver.xlsx",
+          "caption": "A real example: a taxi driver's own accounts spreadsheet.",
+          "headline": "Point it at a workbook",
+          "keyWord": "workbook",
+          "note": "fill, not type: this is a plain path value, not text worth watching a viewer's eye type character by character, and the Mantine input's own keystroke handling runs well past this repo's typingCadence tolerance."
+        },
+        {
+          "action": "click",
+          "target": { "role": "button", "name": "Execute Tool" },
+          "caption": "Running it turns the spreadsheet into structured data.",
+          "headline": "Extract the book",
+          "keyWord": "Extract"
+        },
+        {
+          "action": "await",
+          "until": "text=organizationIdentifier",
+          "label": "the extracted book to come back",
+          "caption": "The whole book comes back as data, ready to check or change.",
+          "headline": "The book comes back as data",
+          "keyWord": "book"
+        }
+      ]
+    },
+    {
+      "id": "figures",
+      "chapter": "The figures diya-gl computes",
+      "still": true,
+      "steps": [
+        {
+          "action": "click",
+          "target": { "role": "button", "name": "report" },
+          "caption": "report runs the same sums diya-gl uses to fill in the workbook.",
+          "headline": "Open the report tool",
+          "keyWord": "report"
+        },
+        {
+          "action": "click",
+          "target": { "role": "button", "name": "Execute Tool" },
+          "caption": "It reuses the book this session already extracted.",
+          "headline": "Compute the figures",
+          "keyWord": "Compute"
+        },
+        {
+          "action": "await",
+          "until": "text=engineVersion",
+          "label": "the computed figures to come back",
+          "caption": "Every figure and check comes back the same way, however it's called.",
+          "headline": "The figures come back",
+          "keyWord": "figures"
+        }
+      ]
+    }
+  ]
+}

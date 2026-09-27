@@ -2763,11 +2763,11 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 #### OPS-88 Orchestrate demo-video recording journeys
 
 - **Use when:** a new or changed product journey needs a recorded demo video driven end to end by Playwright.
-- **Does:** site-video-capture.js drives Playwright through a scene script (videos/*.json) end to end. journey.js stands up the local services and mints the HMRC sandbox test user a logged-in scene needs. behaviourSteps.js bridges into the same step functions the behaviour tests use, via appAliasHook.js's @app/* resolution. actions.js dispatches each scene step to a Playwright locator, waitPhase.js brackets the real network wait, pacing.js computes the pause and wait-compression timing, and values.js resolves placeholders such as VAT number, NINO and dates.
-- **Run:** `node scripts/site-video-capture.js --script videos/<name>.json`; `npm run video:tour-proxy`; `npm run video:view-obligations-ci`; `npm run video:submit-return-prod`; `npm run video:itsa-business-details-ci`
+- **Does:** site-video-capture.js drives Playwright through a scene script (videos/*.json) end to end. journey.js stands up the local services and mints the HMRC sandbox test user a logged-in scene needs. localApp.js starts a scene script's declared `localApp` instead — a command, the url its web UI serves, and a readiness pattern — for a script whose target is a different local tool entirely rather than the submit site (videos/mcp-diya-gl.json records MCP Inspector driving diya-gl's MCP server this way). behaviourSteps.js bridges into the same step functions the behaviour tests use, via appAliasHook.js's @app/* resolution. actions.js dispatches each scene step to a Playwright locator, waitPhase.js brackets the real network wait, pacing.js computes the pause and wait-compression timing, and values.js resolves placeholders such as VAT number, NINO and dates.
+- **Run:** `node scripts/site-video-capture.js --script videos/<name>.json`; `npm run video:tour-proxy`; `npm run video:view-obligations-ci`; `npm run video:submit-return-prod`; `npm run video:itsa-business-details-ci`; `npm run video:mcp-diya-gl`
 - **Entry:** `scripts/site-video-capture.js`; `scripts/lib/video/journey.js`
-- **Files:** scripts/site-video-capture.js, scripts/lib/video/capture.js, scripts/lib/video/journey.js, scripts/lib/video/behaviourSteps.js, scripts/lib/video/appAliasHook.js, scripts/lib/video/actions.js, scripts/lib/video/waitPhase.js, scripts/lib/video/pacing.js, scripts/lib/video/values.js, app/unit-tests/video/journey.test.js, app/unit-tests/video/pacing.test.js, app/unit-tests/video/waitPhase.test.js, app/unit-tests/video/values.test.js
-- **Keywords:** video capture, playwright, scene script, demo video, journey, hmrc sandbox test user, recording
+- **Files:** scripts/site-video-capture.js, scripts/lib/video/capture.js, scripts/lib/video/journey.js, scripts/lib/video/localApp.js, scripts/lib/video/behaviourSteps.js, scripts/lib/video/appAliasHook.js, scripts/lib/video/actions.js, scripts/lib/video/waitPhase.js, scripts/lib/video/pacing.js, scripts/lib/video/values.js, app/unit-tests/video/journey.test.js, app/unit-tests/video/localApp.test.js, app/unit-tests/video/pacing.test.js, app/unit-tests/video/waitPhase.test.js, app/unit-tests/video/values.test.js
+- **Keywords:** video capture, playwright, scene script, demo video, journey, hmrc sandbox test user, recording, mcp inspector, local app
 - **Related:** OPS-89, OPS-90, OPS-91, OPS-92
 
 #### OPS-89 Overlay pointer and caption cues on video
@@ -5861,6 +5861,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - live mode: [BILL-25](#bill-25-retrieve-a-stripe-checkout-sessions-status)
 - llm voice tells: [DEV-38](#dev-38-write-plain-human-prose)
 - loading spinner: [SITE-14](#site-14-render-page-chrome-and-widgets)
+- local app: [OPS-88](#ops-88-orchestrate-demo-video-recording-journeys)
 - local aws credentials: [OPS-69](#ops-69-assume-and-clear-local-aws-deployment-credentials)
 - local dev: [DEV-14](#dev-14-start-the-proxy-and-simulator-local-dev-environments)
 - local dev server: [SITE-08](#site-08-bootstrap-the-app-server)
@@ -5905,6 +5906,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - mcp auth: [MCP-02](#mcp-02-authenticate-mcp-sessions-via-cognito)
 - mcp book tools: [MCP-03](#mcp-03-load-and-save-diya-gl-books-via-mcp)
 - mcp disclaimer: [MCP-15](#mcp-15-disclaim-an-mcp-server-on-the-marketing-site)
+- mcp inspector: [OPS-88](#ops-88-orchestrate-demo-video-recording-journeys)
 - mcp readme: [MCP-14](#mcp-14-document-the-submission-mcps-plan-and-tool-reference)
 - mcp server: [MCP-01](#mcp-01-expose-the-submission-mcp-server-and-tools)
 - mcp tools: [MCP-01](#mcp-01-expose-the-submission-mcp-server-and-tools)

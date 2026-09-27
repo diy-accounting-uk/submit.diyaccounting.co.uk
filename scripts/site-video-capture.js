@@ -105,7 +105,9 @@ function parseArgs(argv) {
     }
   }
   if (!args.script) throw new Error("--script <path> is required");
-  if (!args.baseUrl) throw new Error("--base-url <url> is required (or set DIY_SUBMIT_BASE_URL)");
+  // --base-url is otherwise required, but a scene script that declares "localApp" supplies its
+  // own base url once that app is up (see main()'s localApp handling below), so the check for
+  // that case waits until the script itself has been read.
   return args;
 }
 
@@ -114,7 +116,7 @@ function printHelp() {
 
 Options:
   --script <path>      scene script JSON (required)
-  --base-url <url>     site to record (required, or DIY_SUBMIT_BASE_URL)
+  --base-url <url>     site to record (required, or DIY_SUBMIT_BASE_URL, unless the script declares "localApp")
   --out <dir>           output directory (default: target/videos/<name>)
   --fps <n>              override the output frame rate
   --speed <x>           scale all three pacing groups (default 1.0)
@@ -235,6 +237,21 @@ async function main() {
   const scriptPath = path.resolve(args.script);
   const rawScript = JSON.parse(fs.readFileSync(scriptPath, "utf8"));
   const script = validateScript(rawScript);
+
+  // A scene script whose target is not the submit site at all (an MCP Inspector session, say)
+  // names the local app it needs in "localApp": a command, the url its web UI serves once it is
+  // ready, and a pattern to match against the command's own output before treating it as ready.
+  // Its url becomes this run's base url when --base-url was not given explicitly, exactly like
+  // journey.js's startLocalServices does for a logged-in submit scene, generalised to any command.
+  let localApp = { stop: async () => {} };
+  if (script.localApp) {
+    const { startLocalApp } = await import("./lib/video/localApp.js");
+    localApp = await startLocalApp(script.localApp);
+    args.baseUrl = args.baseUrl || localApp.url;
+  }
+  if (!args.baseUrl) {
+    throw new Error('--base-url <url> is required (or set DIY_SUBMIT_BASE_URL, or declare "localApp" in the scene script)');
+  }
 
   const outDir = path.resolve(args.out || path.join("target/videos", script.name));
   const framesDir = path.join(outDir, "frames");
@@ -630,6 +647,7 @@ async function main() {
     if (capture) await capture.stop();
     await browser.close();
     await localServices.stop();
+    await localApp.stop();
   }
 
   // Close each caption event still missing an endMs (a caption whose hold never resolved because
