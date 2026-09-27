@@ -43,6 +43,39 @@ window.authorizedFetch = window.authorizedFetch || function(){ return Promise.re
   await delay(200);
 }
 
+// loadPage()'s synthetic setContent document throws a SecurityError the moment a later
+// page.evaluate() reads sessionStorage (see itsaAccessibility.browser.test.js's loadItsaPage
+// for the same issue on dashboard.html) - route+goto gives the page a real origin instead.
+async function loadPageAtRealOrigin(page, html, url) {
+  await page.route("**/*.js", async (route) => {
+    const request = route.request();
+    if (request.resourceType() === "script") {
+      await route.fulfill({ status: 200, contentType: "application/javascript", body: "" });
+    } else {
+      await route.continue();
+    }
+  });
+
+  const modifiedHtml = html.replace(
+    "<body>",
+    `<body><script>
+window.showStatus = window.showStatus || function(){};
+window.hideStatus = window.hideStatus || function(){};
+window.showLoading = window.showLoading || function(){};
+window.hideLoading = window.hideLoading || function(){};
+window.generateRandomState = window.generateRandomState || function(){ return "test-state"; };
+window.getGovClientHeaders = window.getGovClientHeaders || function(){ return Promise.resolve({}); };
+window.authorizedFetch = window.authorizedFetch || function(){ return Promise.resolve({ ok: true, json: function(){ return Promise.resolve({}); }}); };
+</script>`,
+  );
+
+  await page.route(url, async (route) => {
+    await route.fulfill({ status: 200, contentType: "text/html", body: modifiedHtml });
+  });
+  await page.goto(url, { waitUntil: "domcontentloaded" });
+  await delay(200);
+}
+
 test.describe("ITSA Losses and Claims - Form", () => {
   let html;
 
@@ -122,6 +155,40 @@ test.describe("ITSA Losses and Claims - Form", () => {
     await page.locator("#previousYearGeneralIncome").fill("200");
     await page.locator("#previousYearGeneralIncome").dispatchEvent("input");
     await expect(page.locator("#preferenceOrderSection")).toBeVisible();
+  });
+
+  // Load needs a wider HMRC scope than Business Details granted, so ticking this checkbox
+  // and clicking Load can be followed by HMRC's own reauthorisation redirect, which reloads
+  // the page and resets the checkbox to unchecked (plain DOM state, not sessionStorage) -
+  // the reload is simulated directly since sessionStorage, unlike that DOM state, survives it.
+  test("keeps the suspend-temporal-validations tick across a reauth reload", async ({ page }) => {
+    await loadPageAtRealOrigin(page, html, "http://localhost:3000/hmrc/itsa/lossesAndClaims.html");
+
+    await page.evaluate(() => {
+      document.getElementById("suspendTemporalValidations").checked = true;
+      window.persistSuspendTemporalValidations();
+    });
+
+    // HMRC's reauthorisation redirect reloads the page from scratch, resetting the checkbox
+    // to its default unchecked DOM state - simulated directly here, since sessionStorage
+    // (unlike that DOM state) survives the round trip.
+    await page.evaluate(() => {
+      document.getElementById("suspendTemporalValidations").checked = false;
+    });
+    await expect(page.locator("#suspendTemporalValidations")).not.toBeChecked();
+
+    await page.evaluate(() => window.restoreSuspendTemporalValidations());
+
+    await expect(page.locator("#suspendTemporalValidations")).toBeChecked();
+  });
+
+  test("does not tick suspend-temporal-validations back on when it was never ticked", async ({ page }) => {
+    await loadPageAtRealOrigin(page, html, "http://localhost:3000/hmrc/itsa/lossesAndClaims.html");
+
+    await page.evaluate(() => window.persistSuspendTemporalValidations());
+    await page.evaluate(() => window.restoreSuspendTemporalValidations());
+
+    await expect(page.locator("#suspendTemporalValidations")).not.toBeChecked();
   });
 });
 

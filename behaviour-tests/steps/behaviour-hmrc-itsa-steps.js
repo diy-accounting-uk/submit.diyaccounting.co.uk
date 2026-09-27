@@ -986,14 +986,15 @@ export async function initItsaLossesAndClaims(page, screenshotPath = defaultScre
 
 export async function fillInItsaLossesLoad(page, lossesQuery = {}, screenshotPath = defaultScreenshotPath) {
   await test.step("The user fills in the Losses and Claims load form", async () => {
-    const { hmrcNino, businessId, typeOfBusiness, taxYear, testScenario, runFraudPreventionHeaderValidation } = lossesQuery || {};
+    const { hmrcNino, businessId, typeOfBusiness, taxYear, testScenario, runFraudPreventionHeaderValidation, suspendTemporalValidations } =
+      lossesQuery || {};
     await loggedFill(page, "#nino", hmrcNino, "Entering National Insurance number", { screenshotPath });
     if (businessId) await loggedFill(page, "#businessId", businessId, "Entering business ID", { screenshotPath });
     if (typeOfBusiness) await loggedSelectOption(page, "#typeOfBusiness", typeOfBusiness, "the business type", { screenshotPath });
     if (taxYear) await loggedFill(page, "#taxYear", taxYear, "Entering tax year", { screenshotPath });
     await page.waitForTimeout(50);
 
-    if (testScenario || runFraudPreventionHeaderValidation) {
+    if (testScenario || runFraudPreventionHeaderValidation || suspendTemporalValidations) {
       if (isSyntheticMode()) {
         await page.waitForFunction(() => sessionStorage.getItem("hmrcAccount") === "synthetic", { timeout: 10000 });
       }
@@ -1009,6 +1010,9 @@ export async function fillInItsaLossesLoad(page, lossesQuery = {}, screenshotPat
       }
       if (runFraudPreventionHeaderValidation) {
         await page.locator("#runFraudPreventionHeaderValidation").check();
+      }
+      if (suspendTemporalValidations) {
+        await page.locator("#suspendTemporalValidations").check();
       }
     }
 
@@ -1042,19 +1046,10 @@ export async function verifyItsaLossesLoadResults(page, screenshotPath = default
 
 export async function fillInItsaLossesEdits(page, lossesEdits = {}, screenshotPath = defaultScreenshotPath) {
   await test.step("The user enters a loss to carry forward", async () => {
-    const { currentYearLosses, suspendTemporalValidations } = lossesEdits || {};
+    const { currentYearLosses } = lossesEdits || {};
     if (currentYearLosses !== undefined) {
       await loggedFill(page, "#currentYearLosses", String(currentYearLosses), "Entering this year's loss to carry forward", {
         screenshotPath,
-      });
-    }
-    if (suspendTemporalValidations) {
-      // The checkbox lives in the load-criteria form, which HMRC's own re-authorisation
-      // redirect (read scope to read+write, on Load) reloads the page and wipes clean - set it
-      // again here, once the reload is behind us and the edit form is what Save will read.
-      await page.evaluate(() => {
-        const el = document.getElementById("suspendTemporalValidations");
-        if (el) el.checked = true;
       });
     }
     await page.screenshot({ path: `${screenshotPath}/${timestamp()}-losses-edits-filled.png` });

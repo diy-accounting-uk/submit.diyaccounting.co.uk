@@ -277,7 +277,14 @@ test("Click through: Load and save ITSA Losses and Claims with HMRC", async ({ p
   await initItsaLossesAndClaims(page, screenshotPath);
   await fillInItsaLossesLoad(
     page,
-    { hmrcNino: testNino, businessId, typeOfBusiness: "self-employment", taxYear, runFraudPreventionHeaderValidation },
+    {
+      hmrcNino: testNino,
+      businessId,
+      typeOfBusiness: "self-employment",
+      taxYear,
+      runFraudPreventionHeaderValidation,
+      suspendTemporalValidations: true,
+    },
     screenshotPath,
   );
   await submitItsaLossesLoadForm(page, screenshotPath);
@@ -286,7 +293,7 @@ test("Click through: Load and save ITSA Losses and Claims with HMRC", async ({ p
   await completeHmrcReauthIfPresented(page, testUsername, testPassword, screenshotPath);
   await verifyItsaLossesLoadResults(page, screenshotPath);
 
-  await fillInItsaLossesEdits(page, { currentYearLosses: 1000, suspendTemporalValidations: true }, screenshotPath);
+  await fillInItsaLossesEdits(page, { currentYearLosses: 1000 }, screenshotPath);
   await submitItsaLossesSaveForm(page, screenshotPath);
   await verifyItsaLossesSaveResults(page, screenshotPath);
 
