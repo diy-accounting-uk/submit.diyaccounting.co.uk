@@ -205,13 +205,16 @@
           const navContents = document.getElementById("videoContents");
           if (navContents) {
             const ul = navContents.querySelector("ul");
-            ul.innerHTML = videos
-              .map((video) => {
-                const id = escapeHtml(video.id);
-                const title = escapeHtml(video.title);
-                return `<li><a href="#${id}">${title}</a></li>`;
-              })
-              .join("\n");
+            ul.replaceChildren(
+              ...videos.map((video) => {
+                const link = document.createElement("a");
+                link.href = `#${video.id}`;
+                link.textContent = video.title;
+                const item = document.createElement("li");
+                item.append(link);
+                return item;
+              }),
+            );
             navContents.hidden = false;
           }
 
