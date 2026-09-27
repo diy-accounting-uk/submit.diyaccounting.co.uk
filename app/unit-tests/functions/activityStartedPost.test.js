@@ -30,12 +30,15 @@ vi.mock("@aws-sdk/client-ssm", () => ({
 const { ingestHandler } = await import("@app/functions/account/activityStartedPost.js");
 const { _setTestSalt } = await import("@app/services/subHasher.js");
 
-function buildActivityStartedEvent({ activityId = "submit-vat", sub = "test-sub", clientId = "submit-client-id" } = {}) {
+// The access token this endpoint authenticates on carries no email claim (only an ID token
+// does -- see customAuthorizer.js's tokenUse: "access" verifier), so every real customer's
+// authorizer context has an empty email, matching this default.
+function buildActivityStartedEvent({ activityId = "submit-vat", sub = "test-sub", clientId = "submit-client-id", email = "" } = {}) {
   return buildLambdaEvent({
     method: "POST",
     path: "/api/v1/activity/started",
     body: { activityId },
-    authorizer: buildJwtAuthorizerContext(sub, "test", "customer@example.com", { client_id: clientId }),
+    authorizer: buildJwtAuthorizerContext(sub, "test", email, { client_id: clientId }),
   });
 }
 
@@ -80,19 +83,29 @@ describe("activityStartedPost ingestHandler", () => {
     expect(response.statusCode).toBe(400);
   });
 
-  test("publishes activity-started with the hashed sub, the actor and the activity id", async () => {
+  test("publishes activity-started with the hashed sub and the activity id, and no actor override", async () => {
     const response = await ingestHandler(buildActivityStartedEvent({ activityId: "submit-vat", clientId: "submit-client-id" }));
 
     expect(response.statusCode).toBe(200);
     expect(mockPublishActivityEvent).toHaveBeenCalledWith(
       expect.objectContaining({
         event: "activity-started",
-        actor: "customer",
         userSub: "test-sub",
         appClient: "submit",
         detail: { activityId: "submit-vat" },
       }),
     );
+    // No explicit actor: an access token carries no email claim, so classifying by user.email
+    // here would call every real customer "system" instead of leaving it to
+    // publishActivityEvent's own resolveActorClass fallback, which defaults to "customer".
+    const [call] = mockPublishActivityEvent.mock.calls;
+    expect(call[0]).not.toHaveProperty("actor");
+  });
+
+  test("still no actor override when the authorizer context does carry an email", async () => {
+    await ingestHandler(buildActivityStartedEvent({ activityId: "submit-vat", email: "customer@example.com" }));
+    const [call] = mockPublishActivityEvent.mock.calls;
+    expect(call[0]).not.toHaveProperty("actor");
   });
 
   test("classifies the app client from the books client id", async () => {
