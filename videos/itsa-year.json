@@ -497,6 +497,13 @@
         { "action": "fill", "target": "#taxYear", "value": "2026-27" },
         {
           "action": "click",
+          "target": "#suspendTemporalValidations",
+          "caption": "The sandbox's current tax year hasn't really ended, so suspend that check.",
+          "headline": "Suspend the tax year check",
+          "keyWord": "Suspend"
+        },
+        {
+          "action": "click",
           "target": "#loadBtn",
           "caption": "Load this business's loss position for the year.",
           "headline": "Load the loss position",
@@ -510,13 +517,6 @@
           "caption": "This year's loss, carried forward to next year.",
           "headline": "Carry the loss forward",
           "keyWord": "loss"
-        },
-        {
-          "action": "click",
-          "target": "#suspendTemporalValidations",
-          "caption": "The sandbox's current tax year hasn't really ended, so suspend that check.",
-          "headline": "Suspend the tax year check",
-          "keyWord": "Suspend"
         },
         { "action": "click", "target": "#saveBtn" },
         {

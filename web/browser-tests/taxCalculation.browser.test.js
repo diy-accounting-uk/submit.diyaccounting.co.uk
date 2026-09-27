@@ -98,6 +98,7 @@ window.getGovClientHeaders = window.getGovClientHeaders || function(){ return Pr
         },
         "AB123456C",
         "2023-24",
+        "in-year",
       );
     });
 
@@ -126,11 +127,41 @@ window.getGovClientHeaders = window.getGovClientHeaders || function(){ return Pr
         },
         "AB123456C",
         "2023-24",
+        "intent-to-finalise",
       );
     });
 
     await expect(page.locator("#continueToFinalDeclaration")).toBeVisible();
     await expect(page.locator("#continueToFinalDeclarationLink")).toHaveAttribute("href", /calculationId=calc-1/);
+  });
+
+  test("hides the continue-to-final-declaration link when the requested type wasn't intent-to-finalise, even if HMRC's response echoes a different type", async ({
+    page,
+  }) => {
+    await loadPage(page);
+    await page.evaluate(() => {
+      document.getElementById("calculationResults").style.display = "block";
+    });
+
+    await page.evaluate(() => {
+      // HMRC's sandbox default retrieve response is a fixed example unrelated to the trigger,
+      // so its own calculationType can't be trusted to gate this link.
+      window.displayCalculation(
+        {
+          metadata: { calculationId: "calc-4", calculationType: "intent-to-finalise" },
+          calculation: {
+            taxCalculation: { totalIncomeTaxAndNicsDue: 1900, incomeTax: {}, nics: {}, totalTaxDeducted: 0 },
+            allowancesAndDeductions: {},
+          },
+          messages: { errors: [], warnings: [], info: [] },
+        },
+        "AB123456C",
+        "2023-24",
+        "in-year",
+      );
+    });
+
+    await expect(page.locator("#continueToFinalDeclaration")).toBeHidden();
   });
 
   // A customer with one business sees one row; a mixed customer sees one row per business, so
@@ -168,6 +199,7 @@ window.getGovClientHeaders = window.getGovClientHeaders || function(){ return Pr
         },
         "AB123456C",
         "2023-24",
+        "in-year",
       );
     });
 
@@ -193,6 +225,7 @@ window.getGovClientHeaders = window.getGovClientHeaders || function(){ return Pr
         },
         "AB123456C",
         "2023-24",
+        "in-year",
       );
     });
 

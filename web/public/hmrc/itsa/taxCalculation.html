@@ -198,7 +198,7 @@
         return div.innerHTML;
       }
 
-      function displayCalculation(calculation, nino, taxYear) {
+      function displayCalculation(calculation, nino, taxYear, calculationType) {
         const figures = document.getElementById("calculationFigures");
         const messagesContainer = document.getElementById("calculationMessages");
         const calc = calculation?.calculation;
@@ -222,8 +222,11 @@
 
           document.getElementById("calculationIdDisplay").textContent = `Calculation ID: ${calculation.metadata?.calculationId || "-"}`;
 
+          // Gate on the calculationType the customer requested, not HMRC's echoed metadata -
+          // the sandbox's default (no Gov-Test-Scenario) retrieve response is a fixed example
+          // unrelated to what was actually triggered, so its calculationType never matches.
           const continueLink = document.getElementById("continueToFinalDeclaration");
-          if (calculation.metadata?.calculationType === "intent-to-finalise") {
+          if (calculationType === "intent-to-finalise") {
             const params = new URLSearchParams({ nino, taxYear, calculationId: calculation.metadata.calculationId });
             document.getElementById("continueToFinalDeclarationLink").href = `finalDeclaration.html?${params}`;
             continueLink.style.display = "block";
@@ -327,7 +330,7 @@
         hideStatus();
         showStatus("Calculating... this can take a few seconds.", "info");
         const calculation = await runCalculationTrigger(calculationDetails, testScenario, runFraudPreventionHeaderValidation, accessToken);
-        displayCalculation(calculation, calculationDetails.nino, calculationDetails.taxYear);
+        displayCalculation(calculation, calculationDetails.nino, calculationDetails.taxYear, calculationDetails.calculationType);
         document.getElementById("triggerForm").style.display = "none";
         document.getElementById("calculationResults").style.display = "block";
         hideStatus();
