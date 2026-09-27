@@ -340,6 +340,11 @@ jobs:
           # HMRC_SANDBOX_CLIENT_ID is a test application credential - not a production secret
           HMRC_SANDBOX_CLIENT_ID: 'uqMHA6RsDGGa7h8EG2VqfqAmv4tV'
           HMRC_SANDBOX_CLIENT_SECRET: ${{ secrets.HMRC_SANDBOX_CLIENT_SECRET }}
+          # The Companies House scripts sign in to the real Companies House sandbox on ci.
+          COMPANIES_HOUSE_SANDBOX_API_KEY: ${{ secrets.COMPANIES_HOUSE_SANDBOX_API_KEY }}
+          TEST_COMPANIES_HOUSE_USER_ID: ${{ vars.TEST_COMPANIES_HOUSE_USER_ID }}
+          TEST_COMPANIES_HOUSE_PASSWORD: ${{ secrets.TEST_COMPANIES_HOUSE_PASSWORD }}
+          TEST_COMPANIES_HOUSE_TOTP_SECRET: ${{ secrets.TEST_COMPANIES_HOUSE_TOTP_SECRET }}
           TEST_AUTH_PROVIDER: cognito-native
           TEST_AUTH_USERNAME: ${{ steps.cognito-test-user.outputs.test-auth-username }}
           TEST_AUTH_PASSWORD: ${{ steps.cognito-test-user.outputs.test-auth-password }}
