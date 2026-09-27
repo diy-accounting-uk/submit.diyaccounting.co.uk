@@ -97,3 +97,15 @@ export function compressionFor(waitMs, cfg) {
     onScreenMs: cfg.waitCompressionAfterMs + compressedOnScreenMs,
   };
 }
+
+// Section 4.7: the tail hold left to pad once capture stops. site-video-capture.js sleeps for
+// the full finalHoldMs in real time before stopping capture, so a page that keeps repainting
+// through that sleep (a running animation, a blinking caret left in a focused field) already has
+// real frames covering some or all of it — lastFrameTMs lands partway or all the way through the
+// hold already. Adding the configured finalHoldMs again on top, unconditionally, would then hold
+// twice: once for those real frames, once more for the manifest's own synthetic pad. This is what
+// is actually left to pad after the last real frame, never negative, so a fully static tail (the
+// ordinary case) still gets the full configured hold and an animated one gets none of it twice.
+export function remainingFinalHoldMs(elapsedMs, finalHoldMs, lastFrameTMs) {
+  return Math.max(0, elapsedMs + finalHoldMs - lastFrameTMs);
+}

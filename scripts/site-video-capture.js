@@ -22,7 +22,7 @@ import fs from "fs";
 import path from "path";
 
 import { validateScript, effectiveScaleFactor } from "./lib/video/scriptSchema.js";
-import { groupFor, pauseForGroup, residualAfterWait, captionMinMs, compressionFor } from "./lib/video/pacing.js";
+import { groupFor, pauseForGroup, residualAfterWait, captionMinMs, compressionFor, remainingFinalHoldMs } from "./lib/video/pacing.js";
 import {
   installOverlay,
   caption as overlayCaption,
@@ -693,9 +693,15 @@ async function main() {
 
   if (encodeEnabled && capture) {
     const manifestPath = path.join(framesDir, "manifest.txt");
+    // A page that keeps repainting into the finalHoldMs sleep above (an animation, a caret left
+    // blinking in a focused field) already has real frames covering some of that hold; padding
+    // the configured finalHoldMs on top unconditionally would hold twice. tailHoldMs is what
+    // remains to pad after the last real frame's own timestamp.
+    const lastFrameTMs = capture.frames.length ? capture.frames[capture.frames.length - 1].tMs : 0;
+    const tailHoldMs = remainingFinalHoldMs(elapsedMs, script.finalHoldMs, lastFrameTMs);
     // Frame paths in the manifest are resolved by ffmpeg relative to the manifest file's own
     // directory (framesDir itself), so they need no "frames/" prefix here.
-    writeManifest(manifestPath, capture.frames, script.finalHoldMs, ".");
+    writeManifest(manifestPath, capture.frames, tailHoldMs, ".");
     const ffmpegBin = resolveFfmpegBinary();
     const outputPath = path.join(outDir, `${script.name}.mp4`);
     console.log(`\nEncoding ${capture.frames.length} frames -> ${outputPath}`);
