@@ -19,9 +19,31 @@
 //    deploy.yml can wait for deploy-environment.yml: both are triggered by the same push and can
 //    be created in either order a few hundred milliseconds apart, so "older than me" isn't a
 //    reliable filter for this pairing the way it is for same-workflow ci branch races.
+//
+// 'older' mode also excludes an older run whose only unfinished job is itself a queued call into
+// destroy-ci.yml (deploy.yml's "sweep ci for a stale set" job). That job cannot start until it
+// acquires destroy-ci.yml's own `destroy-ci` concurrency group, so a destroy-ci.yml run that
+// already holds that group and waits here for the older run to finish would wait forever: the
+// older run can't finish until the group frees, and the group won't free until this run finishes
+// waiting. Once a run's only remaining job is that queued call, it can't race whatever this run
+// is about to do either - it hasn't started, and can't until the group lets it - so waiting for
+// it serves no purpose and only risks this deadlock.
 
 const DEFAULT_WORKFLOWS = ["deploy.yml", "deploy-app.yml", "destroy-ci.yml", "video-capture.yml"];
 const UNFINISHED = new Set(["in_progress", "queued", "pending", "waiting", "requested"]);
+
+// Job names whose entire remaining work is a `uses:` call into destroy-ci.yml. Keep in step with
+// deploy.yml's `sweep-ci` job (name: 'sweep ci for a stale set') - the only caller of
+// destroy-ci.yml today.
+const DESTROY_CI_CALLER_JOB_NAMES = new Set(["sweep ci for a stale set"]);
+
+// True when a run has unfinished work, but every one of its unfinished jobs is a queued call into
+// destroy-ci.yml. An empty or fully-finished job list answers false: nothing here says the run's
+// remaining work is safe to ignore, so the caller falls back to treating it as still blocking.
+export function blockedOnlyByDestroyCiCallerJobs(jobs) {
+  const unfinishedJobs = (jobs || []).filter((job) => UNFINISHED.has(job.status));
+  return unfinishedJobs.length > 0 && unfinishedJobs.every((job) => DESTROY_CI_CALLER_JOB_NAMES.has(job.name));
+}
 
 const token = process.env.GH_TOKEN;
 const repository = process.env.GITHUB_REPOSITORY;
@@ -50,13 +72,25 @@ async function github(path) {
   return response.json();
 }
 
-export function olderUnfinishedRuns(runs, currentCreatedAt, currentId) {
-  return runs
+async function fetchJobs(runId) {
+  const page = await github(`/actions/runs/${runId}/jobs?per_page=100`);
+  return page.jobs || [];
+}
+
+export async function olderUnfinishedRuns(runs, currentCreatedAt, currentId) {
+  const candidates = runs
     .filter((run) => run.head_branch !== "main")
     .filter((run) => UNFINISHED.has(run.status))
     .filter((run) => String(run.id) !== String(currentId))
-    .filter((run) => run.created_at < currentCreatedAt)
-    .map((run) => `${run.name}#${run.id} (${run.head_branch}, created ${run.created_at})`);
+    .filter((run) => run.created_at < currentCreatedAt);
+
+  const stillBlocking = [];
+  for (const run of candidates) {
+    const jobs = await fetchJobs(run.id);
+    if (blockedOnlyByDestroyCiCallerJobs(jobs)) continue;
+    stillBlocking.push(`${run.name}#${run.id} (${run.head_branch}, created ${run.created_at})`);
+  }
+  return stillBlocking;
 }
 
 // Same branch-based resolution deploy-environment.yml's own `params` job falls back to when a
@@ -83,7 +117,7 @@ async function listUnfinishedRuns(currentCreatedAt) {
     if (matchMode === "environment") {
       found.push(...sameEnvironmentUnfinishedRuns(runs, targetEnvironment, currentRunId));
     } else {
-      found.push(...olderUnfinishedRuns(runs, currentCreatedAt, currentRunId));
+      found.push(...(await olderUnfinishedRuns(runs, currentCreatedAt, currentRunId)));
     }
   }
   return found;
