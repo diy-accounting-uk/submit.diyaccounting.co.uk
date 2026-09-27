@@ -88,6 +88,18 @@
       "default": ["ci", "prod"],
       "description": "Where this script can be recorded. Defaults to [\"ci\", \"prod\"] when absent. An activity absent from prod records against a ci set instead: declare [\"ci\"] so the on-deploy dispatcher, which only ever targets prod, leaves this script out."
     },
+    "localApp": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["command", "url", "readyPattern"],
+      "description": "Starts a local app this recording needs, that is not the submit site itself (an MCP Inspector session over a stdio server, say). `command` is run as its own process group; `url` becomes the recording's base url once `readyPattern` matches the command's own stdout/stderr, or the run fails after `readyTimeoutMs` (default 30000). `--base-url` is optional when a script declares this and stays a plain override when given. The app is stopped when the run ends, on success or failure.",
+      "properties": {
+        "command": { "type": "string", "minLength": 1 },
+        "url": { "type": "string", "minLength": 1 },
+        "readyPattern": { "type": "string", "minLength": 1 },
+        "readyTimeoutMs": { "type": "number", "exclusiveMinimum": 0 }
+      }
+    },
     "suppress": { "type": "array", "items": { "type": "string", "minLength": 1 } },
     "finalHoldMs": { "type": "number", "minimum": 0 },
     "hmrcServices": {

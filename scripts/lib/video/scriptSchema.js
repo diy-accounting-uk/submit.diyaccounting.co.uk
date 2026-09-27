@@ -140,6 +140,24 @@ export function validateScript(script) {
     }
   }
 
+  if ("localApp" in script) {
+    const localAppPath = "localApp";
+    if (!script.localApp || typeof script.localApp !== "object") fail(localAppPath, "must be an object");
+    requireKeys(script.localApp, ["command", "url", "readyPattern"], localAppPath);
+    if (typeof script.localApp.command !== "string" || script.localApp.command.length === 0) {
+      fail(`${localAppPath}.command`, "must be a non-empty string");
+    }
+    if (typeof script.localApp.url !== "string" || script.localApp.url.length === 0) {
+      fail(`${localAppPath}.url`, "must be a non-empty string");
+    }
+    if (typeof script.localApp.readyPattern !== "string" || script.localApp.readyPattern.length === 0) {
+      fail(`${localAppPath}.readyPattern`, "must be a non-empty string");
+    }
+    if ("readyTimeoutMs" in script.localApp && typeof script.localApp.readyTimeoutMs !== "number") {
+      fail(`${localAppPath}.readyTimeoutMs`, "must be a number");
+    }
+  }
+
   if ("environments" in script) {
     if (!Array.isArray(script.environments) || script.environments.length === 0) {
       fail("environments", "must be a non-empty array of environment names");

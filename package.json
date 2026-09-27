@@ -109,6 +109,7 @@
     "video:change-registered-email-proxy": "bash -c 'set -o pipefail; npx dotenv -e .env.proxy -- node scripts/site-video-capture.js --script videos/change-registered-email.json \"$@\" 2>&1 | tee videoCapture-proxy.log' _",
     "video:change-registered-email-ci": "bash -c 'set -o pipefail; npx dotenv -e .env.ci -- node scripts/site-video-capture.js --script videos/change-registered-email.json \"$@\" 2>&1 | tee videoCapture-ci.log' _",
     "video:change-registered-email-prod": "bash -c 'set -o pipefail; npx dotenv -e .env.prod -- node scripts/site-video-capture.js --script videos/change-registered-email.json \"$@\" 2>&1 | tee videoCapture-prod.log' _",
+    "video:mcp-diya-gl": "bash -c 'set -o pipefail; node scripts/site-video-capture.js --script videos/mcp-diya-gl.json \"$@\" 2>&1 | tee videoCapture-mcp-diya-gl.log' _",
     "video:publish": "node scripts/youtube-upload.js",
     "test:allBehaviour": "bash -c 'set -o pipefail; playwright test --project=allBehaviour 2>&1 | tee allBehaviour.log'",
     "test:allBehaviour-proxy": "bash -c 'set -o pipefail; npx dotenv -e .env.proxy -- npm run test:allBehaviour 2>&1 | tee allBehaviour-proxy.log'",

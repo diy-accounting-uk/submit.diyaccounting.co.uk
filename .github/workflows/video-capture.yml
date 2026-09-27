@@ -54,6 +54,7 @@ on:
           - 'generate-pass-digital'
           - 'generate-pass-physical'
           - 'file-confirmation-statement'
+          - 'mcp-diya-gl'
         default: 'tour'
       environment-name:
         type: choice
@@ -119,8 +120,26 @@ jobs:
       skip-native-auth-disable: ${{ steps.normalise.outputs.skip-native-auth-disable }}
       github-environment: ${{ steps.normalise.outputs.github-environment }}
 
-  names:
+  script-meta:
+    # A scene script with "localApp" records a local tool, so the names job's deployment lookup is skipped.
     needs: params
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+      - name: Read scene script localApp
+        id: meta
+        run: |
+          HAS_LOCAL_APP=$(node -p "!!(require('./videos/${{ needs.params.outputs.script }}.json').localApp)")
+          echo "has-local-app=${HAS_LOCAL_APP}" | tee -a "$GITHUB_OUTPUT"
+    outputs:
+      has-local-app: ${{ steps.meta.outputs.has-local-app }}
+
+  names:
+    needs:
+      - params
+      - script-meta
+    if: ${{ needs.script-meta.outputs.has-local-app != 'true' }}
     runs-on: ubuntu-24.04
     environment: ${{ needs.params.outputs.github-environment }}
     steps:
@@ -198,8 +217,11 @@ jobs:
     name: 'capture ${{ needs.params.outputs.script }}-${{ needs.names.outputs.environment-name }}'
     needs:
       - params
+      - script-meta
       - names
       - playwright-version
+    # names is skipped for a localApp script; the default success() would skip this job with it.
+    if: ${{ !cancelled() && needs.script-meta.result == 'success' && (needs.names.result == 'success' || needs.names.result == 'skipped') }}
     runs-on: ubuntu-24.04
     container: mcr.microsoft.com/playwright:v${{ needs.playwright-version.outputs.version }}-jammy
     environment: ${{ needs.params.outputs.github-environment }}
@@ -312,8 +334,8 @@ jobs:
           # Cognito's registered redirect_uri is the apex, so sign-in only completes there.
           # The names job fails the run before this step if an explicit deployment-name input
           # is not the environment's last-known-good, so by this point the apex is guaranteed
-          # to serve whichever deployment is being recorded.
-          DIY_SUBMIT_BASE_URL: ${{ needs.names.outputs.public-url }}
+          # to serve whichever deployment is being recorded. A localApp script supplies its own.
+          DIY_SUBMIT_BASE_URL: ${{ needs.script-meta.outputs.has-local-app == 'true' && '' || needs.names.outputs.public-url }}
           HMRC_ACCOUNT: synthetic
           # HMRC_SANDBOX_CLIENT_ID is a test application credential - not a production secret
           HMRC_SANDBOX_CLIENT_ID: 'uqMHA6RsDGGa7h8EG2VqfqAmv4tV'
