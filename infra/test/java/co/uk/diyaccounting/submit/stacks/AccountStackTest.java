@@ -133,7 +133,8 @@ class AccountStackTest {
         for (String functionNameFragment : List.of("bundle-get", "operator-snapshot-get")) {
             var functions = template.findResources("AWS::Lambda::Function").values().stream()
                     .map(resource -> (Map<String, Object>) resource.get("Properties"))
-                    .filter(properties -> String.valueOf(properties.get("FunctionName")).contains(functionNameFragment))
+                    .filter(properties ->
+                            String.valueOf(properties.get("FunctionName")).contains(functionNameFragment))
                     .toList();
             assertEquals(1, functions.size(), "expected exactly one " + functionNameFragment + " Lambda");
             var roleRef = (Map<String, Object>) functions.get(0).get("Role");
@@ -156,7 +157,8 @@ class AccountStackTest {
             assertEquals(
                     1,
                     operatorEmailsSecretReadResources.size(),
-                    "the " + functionNameFragment + " Lambda's own role must be able to read the operator-emails secret");
+                    "the " + functionNameFragment
+                            + " Lambda's own role must be able to read the operator-emails secret");
         }
     }
 

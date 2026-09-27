@@ -18,8 +18,8 @@ import co.uk.diyaccounting.submit.constructs.AsyncApiLambdaProps;
 import co.uk.diyaccounting.submit.constructs.Lambda;
 import co.uk.diyaccounting.submit.constructs.LambdaProps;
 import co.uk.diyaccounting.submit.utils.EmailHashSecretHelper;
-import co.uk.diyaccounting.submit.utils.PopulatedMap;
 import co.uk.diyaccounting.submit.utils.OperatorEmailsHelper;
+import co.uk.diyaccounting.submit.utils.PopulatedMap;
 import co.uk.diyaccounting.submit.utils.SubHashSaltHelper;
 import java.util.ArrayList;
 import java.util.List;
@@ -607,7 +607,8 @@ public class AccountStack extends Stack {
         SubHashSaltHelper.grantSaltAccess(this.operatorSnapshotGetLambda, region, account, props.envName());
         // operatorSnapshotGet's enforceBundles() call grants the operator bundle to an email on
         // the operator list
-        OperatorEmailsHelper.grantOperatorEmailsAccess(this.operatorSnapshotGetLambda, region, account, props.envName());
+        OperatorEmailsHelper.grantOperatorEmailsAccess(
+                this.operatorSnapshotGetLambda, region, account, props.envName());
         this.operatorSnapshotGetLambda.addToRolePolicy(PolicyStatement.Builder.create()
                 .effect(Effect.ALLOW)
                 .actions(List.of("s3:GetObject"))
