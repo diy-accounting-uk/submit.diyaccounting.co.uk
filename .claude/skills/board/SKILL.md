@@ -127,9 +127,25 @@ by it says so in its `Status` (`unblocks CS-9`).
   else `—`.
 
 **Part 2 — one list per backlog tier below Tier 1** (whatever tiers the file
-currently has), each headed `**Tier N**`, one line per item, items separated by ` · `.
-Each entry: row number, short name, then a parenthesised compact status and issue ref
-if any, e.g. `10 ITSA phase 1 (blocked on 10a; #16, #20)`.
+currently has), each headed `**Tier N**`, then one item per line as a list, sorted by state
+(`done`, then `in-flight`, then `ready`, then `blocked`) and by row number within a state
+(numeric part first, then the letter suffix: 30, 30a, 34, 34b, 82a). Each line: the backlog row number, a short name, then a bracketed status
+of three fields, then the item's issue refs if any:
+
+```
+- 10 ITSA phase 1 [B10.4, blocked, NEXT.md & BACKLOG.md & PLAN_ITSA_PHASE_2.md] #16, #20
+- 53 Secret rotation [B53a, in-flight, NEXT.md & BACKLOG.md]
+- 49 Google IaC [49, ready, BACKLOG.md]
+```
+
+- Field 1, the label: the `NEXT.md` label that carries the row when there is one (`B53a`,
+  `O11`, `B34c`), else the backlog row number.
+- Field 2, the state, exactly one of `done`, `in-flight`, `ready`, `blocked`, by the same
+  tests Part 1 uses (`done` when the work has landed and the row only waits to be removed
+  from the backlog; `blocked` names nothing more here, since Part 1 or the row carries the
+  blocker).
+- Field 3, where the item is written, from `NEXT.md`, `BACKLOG.md` and the `PLAN_*.md`
+  file that owns it (by name), joined with ` & `; check by grep, never from memory.
 
 **Part 3 — the open alarm issues, grouped.** Run
 `gh issue list --state open --label alarm --limit 200 --json number,title,createdAt,updatedAt`
