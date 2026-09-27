@@ -192,15 +192,17 @@ public class SelfDestructStack extends Stack {
                                                                         this.getAccount(),
                                                                         props.deploymentName())))
                                                 .build(),
-                                        // Read this deployment's own ci slot claim before deleting anything (so
-                                        // a set an unfinished deploy just claimed is left alone), then free the
-                                        // claim alongside the stacks it held, so a slot's next claimant does not
-                                        // wait out a full self-destruct cycle for a release destroy-ci.yml never
-                                        // got to run.
+                                        // Read this deployment's own ci slot claim before deleting anything
+                                        // (so a set an unfinished deploy just claimed is left alone), write
+                                        // this run's own hold over it so a deploy claim attempt during the
+                                        // teardown sees the slot as held, then free the claim alongside the
+                                        // stacks it held, so a slot's next claimant does not wait out a full
+                                        // self-destruct cycle for a release destroy-ci.yml never got to run.
                                         PolicyStatement.Builder.create()
-                                                .sid("ReadAndReleaseCiSlot")
+                                                .sid("ReadHoldAndReleaseCiSlot")
                                                 .effect(Effect.ALLOW)
-                                                .actions(List.of("ssm:GetParameter", "ssm:DeleteParameter"))
+                                                .actions(List.of(
+                                                        "ssm:GetParameter", "ssm:PutParameter", "ssm:DeleteParameter"))
                                                 .resources(List.of("arn:aws:ssm:%s:%s:parameter/submit/%s/slots/%s"
                                                         .formatted(
                                                                 this.getRegion(),

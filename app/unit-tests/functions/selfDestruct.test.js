@@ -183,6 +183,37 @@ function makeEvent() {
   };
 }
 
+const SLOT_PARAMETER_NAME = "/submit/ci/slots/ci-set1";
+// This deployment's fakeContext across every test carries no awsRequestId, so the hold's
+// holderId is always this fixed string - deterministic and safe to assert against directly.
+const HOLDER_ID = "unknown-request:ci-branch";
+
+// The default SSM double for the ci slot parameter: Get answers whatever the last Put (or an
+// explicit Delete) left behind, so a test's hold-then-release round trip behaves the way real
+// SSM does without each test tracking state of its own. Every other parameter name still answers
+// "not found" unless a test overrides it. Tests that need a specific claim already in place at
+// hold time set slotParameterValue directly before calling ingestHandler.
+let slotParameterValue = null;
+function defaultSsmHandler(cmd) {
+  if (cmd.input?.Name === SLOT_PARAMETER_NAME) {
+    if (cmd.constructor.name === "GetParameterCommand") {
+      if (slotParameterValue === null) {
+        return Promise.reject(Object.assign(new Error("Parameter not found"), { name: "ParameterNotFound" }));
+      }
+      return Promise.resolve({ Parameter: { Value: slotParameterValue } });
+    }
+    if (cmd.constructor.name === "PutParameterCommand") {
+      slotParameterValue = cmd.input.Value;
+      return Promise.resolve({});
+    }
+    if (cmd.constructor.name === "DeleteParameterCommand") {
+      slotParameterValue = null;
+      return Promise.resolve({});
+    }
+  }
+  return Promise.reject(Object.assign(new Error("Parameter not found"), { name: "ParameterNotFound" }));
+}
+
 describe("functions/infra/selfDestruct", () => {
   beforeEach(() => {
     vi.resetAllMocks();
@@ -193,8 +224,9 @@ describe("functions/infra/selfDestruct", () => {
     stackStatusScript = {};
     stackUpdateTimes = {};
     listObjectsV2Error = makeNoSuchBucketError();
+    slotParameterValue = null;
     vi.useRealTimers();
-    mockSsmSend.mockRejectedValue(Object.assign(new Error("Parameter not found"), { name: "ParameterNotFound" }));
+    mockSsmSend.mockImplementation(defaultSsmHandler);
     mockCloudWatchSend.mockResolvedValue({ MetricAlarms: [], CompositeAlarms: [] });
     Object.assign(process.env, {
       DEPLOYMENT_NAME: "ci-branch",
@@ -310,20 +342,85 @@ describe("functions/infra/selfDestruct", () => {
     expect(body.results.find((r) => r.stackName === "self-destruct")).toBeUndefined();
   });
 
-  it("releases the ci slot parameter once every stack deletes cleanly", async () => {
+  it("holds the ci slot before tearing anything down, then releases it once every stack deletes cleanly", async () => {
+    const { ingestHandler } = await import("@app/functions/infra/selfDestruct.js");
+    const res = await ingestHandler(makeEvent(), { getRemainingTimeInMillis: () => 900000 });
+
+    expect(res.statusCode).toBe(200);
+    const putParameterCalls = mockSsmSend.mock.calls
+      .map(([cmd]) => cmd)
+      .filter((cmd) => cmd.constructor.name === "PutParameterCommand" && cmd.input.Name === SLOT_PARAMETER_NAME);
+    expect(putParameterCalls).toHaveLength(1);
+    expect(putParameterCalls[0].input.Overwrite).toBe(true);
+    expect(JSON.parse(putParameterCalls[0].input.Value)).toMatchObject({ ref: "self-destruct", runId: HOLDER_ID });
+
+    const deleteParameterCalls = mockSsmSend.mock.calls
+      .map(([cmd]) => cmd)
+      .filter((cmd) => cmd.constructor.name === "DeleteParameterCommand");
+    expect(deleteParameterCalls).toEqual([{ input: { Name: SLOT_PARAMETER_NAME } }]);
+    expect(slotParameterValue).toBeNull();
+  });
+
+  it("skips the teardown when a fresh read before the hold finds a different active claim", async () => {
+    // findSkipReason's own read (via ACTIVE_CLAIM_WINDOW_MS) sees nothing, but by the time the
+    // hold does its own fresh read, a deploy has claimed the slot in the gap between the two.
+    let getCalls = 0;
     mockSsmSend.mockImplementation((cmd) => {
-      if (cmd.constructor.name === "DeleteParameterCommand") return Promise.resolve({});
-      return Promise.reject(Object.assign(new Error("Parameter not found"), { name: "ParameterNotFound" }));
+      if (cmd.input?.Name === SLOT_PARAMETER_NAME && cmd.constructor.name === "GetParameterCommand") {
+        getCalls += 1;
+        if (getCalls === 1) {
+          return Promise.reject(Object.assign(new Error("Parameter not found"), { name: "ParameterNotFound" }));
+        }
+        return Promise.resolve({
+          Parameter: {
+            Value: JSON.stringify({ ref: "refs/heads/claude/other-branch", runId: "99999", claimedAt: new Date().toISOString() }),
+          },
+        });
+      }
+      return defaultSsmHandler(cmd);
     });
 
     const { ingestHandler } = await import("@app/functions/infra/selfDestruct.js");
     const res = await ingestHandler(makeEvent(), { getRemainingTimeInMillis: () => 900000 });
 
     expect(res.statusCode).toBe(200);
+    const body = JSON.parse(res.body);
+    expect(body.message).toBe("Self-destruct sequence skipped");
+    expect(body.reason).toMatch(new RegExp(SLOT_PARAMETER_NAME.replace(/\//g, "\\/")));
+    expect(deleteStackCalls).toEqual([]);
+    expect(mockSsmSend.mock.calls.map(([cmd]) => cmd).some((cmd) => cmd.constructor.name === "PutParameterCommand")).toBe(false);
+  });
+
+  it("leaves the ci slot claim in place when a different claimant has taken it before release", async () => {
+    // findSkipReason's own read and the hold's fresh read (calls 1 and 2) both see the slot free,
+    // but by the time release re-reads it (call 3), some other run's own claim is in its place -
+    // release must not delete that claim.
+    let getCalls = 0;
+    mockSsmSend.mockImplementation((cmd) => {
+      if (cmd.input?.Name === SLOT_PARAMETER_NAME && cmd.constructor.name === "GetParameterCommand") {
+        getCalls += 1;
+        if (getCalls <= 2) {
+          return Promise.reject(Object.assign(new Error("Parameter not found"), { name: "ParameterNotFound" }));
+        }
+        return Promise.resolve({
+          Parameter: {
+            Value: JSON.stringify({ ref: "refs/heads/claude/new-claimant", runId: "77777", claimedAt: new Date().toISOString() }),
+          },
+        });
+      }
+      return defaultSsmHandler(cmd);
+    });
+
+    const { ingestHandler } = await import("@app/functions/infra/selfDestruct.js");
+    const res = await ingestHandler(makeEvent(), { getRemainingTimeInMillis: () => 900000 });
+
+    expect(res.statusCode).toBe(200);
+    const body = JSON.parse(res.body);
+    expect(body.message).toMatch(/Self-destruct sequence completed/);
     const deleteParameterCalls = mockSsmSend.mock.calls
       .map(([cmd]) => cmd)
       .filter((cmd) => cmd.constructor.name === "DeleteParameterCommand");
-    expect(deleteParameterCalls).toEqual([{ input: { Name: "/submit/ci/slots/ci-set1" } }]);
+    expect(deleteParameterCalls).toEqual([]);
   });
 
   it("does not release the ci slot when a stack fails to delete", async () => {
@@ -422,7 +519,7 @@ describe("functions/infra/selfDestruct", () => {
       if (cmd.constructor.name === "GetParameterCommand" && cmd.input.Name === "/submit/ci/last-known-good-deployment") {
         return Promise.resolve({ Parameter: { Value: "ci-other", LastModifiedDate: new Date() } });
       }
-      return Promise.reject(Object.assign(new Error("Parameter not found"), { name: "ParameterNotFound" }));
+      return defaultSsmHandler(cmd);
     });
 
     const { ingestHandler } = await import("@app/functions/infra/selfDestruct.js");
@@ -534,7 +631,9 @@ describe("functions/infra/selfDestruct", () => {
           Parameter: { Value: JSON.stringify({ ref: "refs/heads/main", runId: "1", claimedAt: "2020-01-01T00:00:00.000Z" }) },
         });
       }
-      if (cmd.constructor.name === "DeleteParameterCommand") return Promise.resolve({});
+      if (cmd.constructor.name === "PutParameterCommand" || cmd.constructor.name === "DeleteParameterCommand") {
+        return Promise.resolve({});
+      }
       return Promise.reject(Object.assign(new Error("Parameter not found"), { name: "ParameterNotFound" }));
     });
 
@@ -594,12 +693,12 @@ describe("functions/infra/selfDestruct", () => {
     mockSsmSend.mockImplementation((cmd) => {
       if (describedStackNames.length === 0) ssmCalledBeforeFirstDescribe = true;
       // Only the alarm-silence marker is unreadable here; the last-known-good and ci-slot
-      // parameters this test does not care about answer "not found" as usual, so the deployment
-      // is not protected and the deletion this test asserts on still goes ahead.
+      // parameters this test does not care about behave as usual (defaultSsmHandler), so the
+      // deployment is not protected and the deletion this test asserts on still goes ahead.
       if (cmd.input?.Name === "/submit/ci/alarm-silence/branch") {
         return Promise.reject(new Error("SSM unavailable"));
       }
-      return Promise.reject(Object.assign(new Error("Parameter not found"), { name: "ParameterNotFound" }));
+      return defaultSsmHandler(cmd);
     });
 
     const { ingestHandler } = await import("@app/functions/infra/selfDestruct.js");

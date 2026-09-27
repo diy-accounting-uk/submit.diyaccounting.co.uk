@@ -837,6 +837,27 @@ jobs:
           fi
           echo "[$DEPLOYMENT] matches $STACK_COUNT stack(s); proceeding"
 
+      # Everything below through 'Delete leftover Lambda log groups' can take long enough (older
+      # deploys to wait out, roles to assume, the Maven jar to build) for a new deploy.yml run to
+      # see this slot as free, claim it and start deploying into it while this job is still
+      # working through that list. Writing this destroy run's own claim record here, before any
+      # of that, makes claim-ci-slot.mjs treat the slot as held by this run for as long as it
+      # stays in progress, the same way it already treats any other run's own claim - closing the
+      # gap that let a live deploy's stacks be deleted out from under it.
+      - name: Hold the ci slot before destroying it
+        id: hold-slot
+        if: ${{ !cancelled() && steps.confirm-stacks.outcome == 'success' }}
+        shell: bash
+        env:
+          HOLD_CI_SLOT_GITHUB_TOKEN: ${{ github.token }}
+          HOLD_CI_SLOT_SLOT: ${{ needs.names.outputs.deployment-name }}
+          HOLD_CI_SLOT_RUN_ID: ${{ github.run_id }}
+          HOLD_CI_SLOT_DELETED_REF: ${{ (github.event_name == 'delete' && format('refs/heads/{0}', github.event.ref)) || '' }}
+        run: |
+          HOLD_CI_SLOT_AWS_CLI="$(command -v aws)"
+          export HOLD_CI_SLOT_AWS_CLI
+          node "${GITHUB_WORKSPACE}/.github/actions/claim-ci-slot/hold-ci-slot.mjs"
+
       - name: Node dependencies
         if: ${{ !cancelled() && steps.refuse.outputs.keep-live-set != 'true' }}
         run: timeout 120 npm ci --prefer-offline || { sleep 30; timeout 180 npm ci; }
@@ -892,10 +913,12 @@ jobs:
       # exactly what would let a failed 'Refuse to destroy' (or a failed 'Confirm the deployment
       # has stacks to destroy') run straight into stack deletion. Every step from here through
       # 'Delete leftover Lambda log groups' also requires `steps.confirm-stacks.outcome ==
-      # 'success'` — true only when both the refusal and the stack-count check above it succeeded.
-      # Never widen these `if` guards back to bare `!cancelled()`.
+      # 'success'` and `steps.hold-slot.outputs.held != 'false'` — the second is false only when
+      # the hold step above found some other run's claim still active on the slot; 'true' (this
+      # run won the hold) and 'skip' (not a pooled slot, nothing to hold) both proceed. Never
+      # widen these `if` guards back to bare `!cancelled()`.
       - name: Lookup Cognito from domain convention
-        if: ${{ !cancelled() && steps.confirm-stacks.outcome == 'success' }}
+        if: ${{ !cancelled() && steps.confirm-stacks.outcome == 'success' && steps.hold-slot.outputs.held != 'false' }}
         id: lookup
         uses: './.github/actions/lookup-resources'
         with:
@@ -906,7 +929,7 @@ jobs:
           lenient-diya-gl-client-lookup: 'true'
 
       - name: Empty origin bucket
-        if: ${{ !cancelled() && steps.confirm-stacks.outcome == 'success' }}
+        if: ${{ !cancelled() && steps.confirm-stacks.outcome == 'success' && steps.hold-slot.outputs.held != 'false' }}
         shell: bash
         run: |
           EDGE_STACK="${{ needs.names.outputs.deployment-name }}-app-EdgeStack"
@@ -923,7 +946,7 @@ jobs:
           fi
 
       - name: Clean up external API Gateway custom domain mappings
-        if: ${{ !cancelled() && steps.confirm-stacks.outcome == 'success' }}
+        if: ${{ !cancelled() && steps.confirm-stacks.outcome == 'success' && steps.hold-slot.outputs.held != 'false' }}
         shell: bash
         run: |
           set +e  # Best-effort cleanup
@@ -960,7 +983,7 @@ jobs:
           echo "API Gateway custom domain mapping cleanup complete"
 
       - name: Delete stacks in dependency order
-        if: ${{ !cancelled() && steps.confirm-stacks.outcome == 'success' }}
+        if: ${{ !cancelled() && steps.confirm-stacks.outcome == 'success' && steps.hold-slot.outputs.held != 'false' }}
         shell: bash
         run: |
           DEPLOYMENT="${{ needs.names.outputs.deployment-name }}"
@@ -1012,7 +1035,7 @@ jobs:
           echo "=== Stack deletion complete ==="
 
       - name: CDK destroy (cleanup pass)
-        if: ${{ !cancelled() && steps.confirm-stacks.outcome == 'success' }}
+        if: ${{ !cancelled() && steps.confirm-stacks.outcome == 'success' && steps.hold-slot.outputs.held != 'false' }}
         run: |
           cd cdk-application && \
             npx dotenv -e ../.env.ci -- \
@@ -1034,7 +1057,7 @@ jobs:
           HTTP_API_URL: 'https://placeholder'
 
       - name: Retry DELETE_FAILED stacks
-        if: ${{ !cancelled() && steps.confirm-stacks.outcome == 'success' }}
+        if: ${{ !cancelled() && steps.confirm-stacks.outcome == 'success' && steps.hold-slot.outputs.held != 'false' }}
         shell: bash
         run: |
           DEPLOYMENT="${{ needs.names.outputs.deployment-name }}"
@@ -1061,7 +1084,7 @@ jobs:
           done
 
       - name: CDK stacks after
-        if: ${{ !cancelled() && steps.confirm-stacks.outcome == 'success' }}
+        if: ${{ !cancelled() && steps.confirm-stacks.outcome == 'success' && steps.hold-slot.outputs.held != 'false' }}
         run: |
           aws cloudformation describe-stacks --region eu-west-2 --query "Stacks[].StackName" --output text | tr '\t' '\n' | sort
           aws cloudformation describe-stacks --region us-east-1 --query "Stacks[].StackName" --output text | tr '\t' '\n' | sort
@@ -1069,7 +1092,7 @@ jobs:
       # CDK custom-resource provider Lambdas create their own log groups outside the stacks, so
       # they survive stack deletion with no retention.
       - name: Delete leftover Lambda log groups
-        if: ${{ !cancelled() && steps.confirm-stacks.outcome == 'success' }}
+        if: ${{ !cancelled() && steps.confirm-stacks.outcome == 'success' && steps.hold-slot.outputs.held != 'false' }}
         shell: bash
         env:
           DEPLOYMENT: ${{ needs.names.outputs.deployment-name }}
@@ -1099,17 +1122,33 @@ jobs:
       # one, so the delete is a harmless no-op for it. This also runs on the keep-live-set path:
       # the set stays up, but the slot record still names a branch that no longer exists, so it
       # is released the same way a same-ref redeploy would reclaim it, letting the next claimant
-      # take the slot over on its own redeploy.
+      # take the slot over on its own redeploy - that path releases unconditionally, on the
+      # strength of the refuse step already having found the record stale (naming a deleted
+      # branch), not because this run holds it.
+      #
+      # On the confirm-stacks path this run may have won the hold above, so release-ci-slot.mjs
+      # is used instead of a raw delete: it only deletes the parameter when it still names this
+      # run's own id, matching deploy.yml's own release step. That keeps this step safe to run
+      # `always()` - on a cancelled or failed job just as much as a clean one - without ever
+      # deleting a claim some other run has since won.
       - name: Release the ci slot
-        if: ${{ !cancelled() && (steps.confirm-stacks.outcome == 'success' || steps.refuse.outputs.keep-live-set == 'true') }}
+        if: ${{ always() && (steps.confirm-stacks.outcome == 'success' || steps.refuse.outputs.keep-live-set == 'true') }}
         shell: bash
         env:
           DEPLOYMENT: ${{ needs.names.outputs.deployment-name }}
         run: |
           if [[ "$DEPLOYMENT" =~ ^ci-set[0-9]+$ ]]; then
-            aws ssm delete-parameter --name "/submit/ci/slots/${DEPLOYMENT}" \
-              && echo "Released slot ${DEPLOYMENT}" \
-              || echo "No slot parameter for ${DEPLOYMENT} to release"
+            if [ "${{ steps.refuse.outputs.keep-live-set }}" = "true" ]; then
+              aws ssm delete-parameter --name "/submit/ci/slots/${DEPLOYMENT}" \
+                && echo "Released slot ${DEPLOYMENT}" \
+                || echo "No slot parameter for ${DEPLOYMENT} to release"
+            else
+              RELEASE_CI_SLOT_AWS_CLI="$(command -v aws)"
+              export RELEASE_CI_SLOT_AWS_CLI
+              RELEASE_CI_SLOT_DEPLOYMENT_NAME="$DEPLOYMENT" \
+              RELEASE_CI_SLOT_RUN_ID="${{ github.run_id }}" \
+                node "${GITHUB_WORKSPACE}/.github/actions/claim-ci-slot/release-ci-slot.mjs"
+            fi
           else
             echo "${DEPLOYMENT} holds no ci slot, nothing to release"
           fi
