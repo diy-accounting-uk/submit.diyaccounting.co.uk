@@ -12,6 +12,12 @@
 // Any failure to read the slot record or the run's status is treated as an active claim: the cost
 // of an unnecessary sweep skip is a set surviving one extra pass, the cost of a wrong "not active"
 // is the stacks-deleted-mid-deploy failure this script exists to prevent.
+//
+// A self-destruct Lambda's own hold on a slot (selfDestruct.js) carries no GitHub Actions run
+// behind it - its claim record names ref SELF_DESTRUCT_REF and a Lambda request id as runId, so
+// querying the Actions API for that id only ever 404s and would be misread as "finished" by
+// claimIsActive. Age against SELF_DESTRUCT_MAX_RUNTIME_MS, the Lambda's own timeout plus a
+// buffer, stands in for the run-status check for that one kind of holder.
 
 import { spawnSync } from "node:child_process";
 
@@ -21,12 +27,28 @@ const PARAMETER_PATH_PREFIX = "/submit/ci/slots/";
 // before GitHub marks it completed, and every one of them means the slot is still spoken for.
 const UNFINISHED_RUN_STATUSES = new Set(["in_progress", "queued", "pending", "waiting", "requested"]);
 
+export const SELF_DESTRUCT_REF = "self-destruct";
+
+// The self-destruct Lambda's own timeout (15 minutes, see LambdaProps.ingestLambdaTimeout in
+// SelfDestructStack.java) plus a buffer for the surrounding invocation overhead.
+export const SELF_DESTRUCT_MAX_RUNTIME_MS = 20 * 60 * 1000;
+
 export function parameterName(slot) {
   return `${PARAMETER_PATH_PREFIX}${slot}`;
 }
 
 export function claimIsActive(runStatus) {
   return UNFINISHED_RUN_STATUSES.has(runStatus);
+}
+
+// Whether a self-destruct hold (record.ref === SELF_DESTRUCT_REF) is still within its own
+// possible runtime, given nowMs. An unparseable claimedAt is treated as not active - the same
+// "cannot verify, but this is our own claim's malformed edge case" default claimIsActive(null)
+// takes for a run GitHub cannot find.
+export function selfDestructClaimIsActive(record, nowMs) {
+  const claimedAtMs = Date.parse(record.claimedAt);
+  if (Number.isNaN(claimedAtMs)) return false;
+  return nowMs - claimedAtMs <= SELF_DESTRUCT_MAX_RUNTIME_MS;
 }
 
 // The caller resolves the CLI to an absolute path before this script runs, so the spawn never
@@ -70,6 +92,15 @@ async function checkSlot(slot, region, repository, token) {
   if (!record) {
     console.error(`${slot}: no claim record, nothing to protect`);
     return false;
+  }
+  if (record.ref === SELF_DESTRUCT_REF) {
+    const active = selfDestructClaimIsActive(record, Date.now());
+    console.error(
+      active
+        ? `[${slot}] stays: held by its own self-destruct, claimed ${record.claimedAt}`
+        : `${slot}: self-destruct claim from ${record.claimedAt} has outlived its own runtime, not active`,
+    );
+    return active;
   }
   const runStatus = await fetchRunStatus(repository, record.runId, token);
   const active = claimIsActive(runStatus);

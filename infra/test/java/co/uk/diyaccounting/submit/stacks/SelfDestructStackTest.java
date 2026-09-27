@@ -106,21 +106,23 @@ class SelfDestructStackTest {
 
     @Test
     @SuppressWarnings("unchecked")
-    void selfDestructRoleCanReadAndReleaseOnlyItsOwnCiSlot() {
+    void selfDestructRoleCanReadHoldAndReleaseOnlyItsOwnCiSlot() {
         SelfDestructStack selfDestructStack = synthSelfDestructStack();
         Template template = Template.fromStack(selfDestructStack);
 
-        List<Map<String, Object>> statements = findPolicyStatementsContainingSid(template, "ReadAndReleaseCiSlot");
+        List<Map<String, Object>> statements =
+                findPolicyStatementsContainingSid(template, "ReadHoldAndReleaseCiSlot");
         Map<String, Object> statement = statements.stream()
-                .filter(s -> "ReadAndReleaseCiSlot".equals(s.get("Sid")))
+                .filter(s -> "ReadHoldAndReleaseCiSlot".equals(s.get("Sid")))
                 .findFirst()
                 .orElseThrow();
 
         assertEquals(
-                List.of("ssm:GetParameter", "ssm:DeleteParameter"),
+                List.of("ssm:GetParameter", "ssm:PutParameter", "ssm:DeleteParameter"),
                 statement.get("Action"),
-                "the self-destruct role must be able to read its own ci slot claim before deleting anything, "
-                        + "and release the claim once it does");
+                "the self-destruct role must be able to read its own ci slot claim before deleting "
+                        + "anything, write its own hold over it before tearing anything down, and release "
+                        + "the claim once it does");
         String resource = (String) statement.get("Resource");
         assertTrue(
                 resource.endsWith("parameter/submit/ci/slots/ci-selfdestructtest"),

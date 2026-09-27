@@ -56,16 +56,112 @@ async function getCloudWatchClient() {
   return cloudWatchClient;
 }
 
+// The ref stored in this deployment's own hold on its ci slot, so claim-ci-slot.mjs and
+// destroy-ci.yml's sweep can recognise it as a self-destruct hold rather than a deploy's own
+// claim (see slot-claim-active.mjs's SELF_DESTRUCT_REF, which must stay the same string).
+const HOLD_REF = "self-destruct";
+
 /**
- * Free this deployment's ci slot claim once its stacks are confirmed gone,
- * so the slot's next claimant does not wait out a stale claim that destroy-ci.yml never got to
- * release. Released only after every stack deletes cleanly (the caller's guard), the same
- * ordering destroy-ci.yml uses, so a slot is never handed to a new claimant while this
- * deployment's stacks might still be mid-teardown. Never throws: a release failure must not
+ * Whether it is safe for this self-destruct run to write its own hold over the slot's current
+ * claim: the slot is unclaimed, or the existing claim's own claimedAt is unparseable (treated as
+ * free, matching how every other reader of a slot claim in this repo treats a claim it cannot
+ * parse), or the claim has already outlived ACTIVE_CLAIM_WINDOW_MS - findSkipReason's own test
+ * for "still active". This Lambda has no path to the GitHub Actions API to ask a claiming run's
+ * own status directly (unlike claim-ci-slot.mjs's deploy claims), so age against that window is
+ * the whole test here, not a fallback for it.
+ */
+function isSafeToHoldSlot(record, nowMs) {
+  if (!record) return true;
+  const claimedAtMs = record.claimedAt ? Date.parse(record.claimedAt) : NaN;
+  if (Number.isNaN(claimedAtMs)) return true;
+  return nowMs - claimedAtMs >= ACTIVE_CLAIM_WINDOW_MS;
+}
+
+/**
+ * Write this self-destruct run's own hold over the slot before tearing anything down, so a
+ * deploy.yml claim attempt during the minutes this teardown takes sees the slot as held and
+ * moves on instead of deploying into a set that is disappearing under it. Read-verify like
+ * claim-ci-slot.mjs's own reclaim path: the fresh read here is separate from findSkipReason's
+ * earlier one, so a claim taken in the gap between them is still caught. Returns whether the
+ * hold was taken; never throws - an unreadable parameter or a failed write both mean this run
+ * must not proceed, exactly like a claim it can see is still active.
+ */
+async function holdSlot(parameterName, holderId, nowMs) {
+  const current = await readSsmParameter(parameterName);
+  if (current.unreadable) {
+    console.log(`Could not read ${parameterName} before holding it (${current.error.message}); treating it as held`);
+    return false;
+  }
+  let record = null;
+  if (current.found && current.value) {
+    try {
+      record = JSON.parse(current.value);
+    } catch {
+      record = null;
+    }
+  }
+  if (!isSafeToHoldSlot(record, nowMs)) {
+    console.log(
+      `Not holding ${parameterName}: claimed by run ${record.runId} since ${record.claimedAt}, still within the active-claim window`,
+    );
+    return false;
+  }
+  try {
+    const { PutParameterCommand } = await import("@aws-sdk/client-ssm");
+    const value = JSON.stringify({ ref: HOLD_REF, runId: holderId, claimedAt: new Date(nowMs).toISOString() });
+    await (await getSsmClient()).send(new PutParameterCommand({ Name: parameterName, Value: value, Type: "String", Overwrite: true }));
+    console.log(`Held ${parameterName} for this self-destruct (${holderId})`);
+    return true;
+  } catch (error) {
+    console.log(`Error holding ${parameterName} for this self-destruct: ${error.message}`);
+    return false;
+  }
+}
+
+/**
+ * True when a slot's current record still names this self-destruct run's own hold - nothing has
+ * reclaimed or redeployed it since. False for an absent record (nothing to release) and for a
+ * record naming a different holder (not this run's claim to release), matching
+ * release-ci-slot.mjs's own shouldReleaseSlot.
+ */
+function shouldReleaseHeldSlot(record, holderId) {
+  if (!record) return false;
+  return record.runId === holderId;
+}
+
+/**
+ * Free this deployment's ci slot claim once its stacks are confirmed gone, so the slot's next
+ * claimant does not wait out a stale claim that destroy-ci.yml never got to release. Released
+ * only after every stack deletes cleanly (the caller's guard), the same ordering destroy-ci.yml
+ * uses, so a slot is never handed to a new claimant while this deployment's stacks might still
+ * be mid-teardown. Verified against holderId first, so a claim some other run has taken since
+ * (this deployment's own retry, or a fresh claimant after a hold this run never actually won) is
+ * left alone rather than deleted out from under it. Never throws: a release failure must not
  * fail the self-destruct sequence behind it.
  */
-async function releaseSlot(parameterName) {
+async function releaseSlot(parameterName, holderId) {
   try {
+    const current = await readSsmParameter(parameterName);
+    if (current.unreadable) {
+      console.log(`Could not read ${parameterName} before releasing it (${current.error.message}); leaving it in place`);
+      return;
+    }
+    if (!current.found || !current.value) {
+      console.log(`Ci slot parameter ${parameterName} already released`);
+      return;
+    }
+    let record = null;
+    try {
+      record = JSON.parse(current.value);
+    } catch {
+      record = null;
+    }
+    if (!shouldReleaseHeldSlot(record, holderId)) {
+      console.log(
+        `Ci slot parameter ${parameterName} is now held by ${record?.runId ?? "someone else"}, not this self-destruct (${holderId}); leaving it`,
+      );
+      return;
+    }
     const { DeleteParameterCommand } = await import("@aws-sdk/client-ssm");
     await (await getSsmClient()).send(new DeleteParameterCommand({ Name: parameterName }));
     console.log(`Released ci slot parameter ${parameterName}`);
@@ -283,6 +379,29 @@ export async function ingestHandler(event, context) {
       await clearLastKnownGoodPointer(process.env.LAST_KNOWN_GOOD_PARAMETER_NAME);
     }
 
+    // An id for this one invocation, carried in the hold's own claim record so releaseSlot can
+    // later verify the hold is still this run's before deleting it.
+    const holderId = `${context.awsRequestId || "unknown-request"}:${process.env.DEPLOYMENT_NAME || "unknown-deployment"}`;
+
+    // Hold the slot before anything else runs, so a deploy.yml claim attempt during this
+    // teardown sees the slot as held rather than free. A fresh read here, separate from
+    // findSkipReason's own read above, catches a claim taken in the gap between the two.
+    if (process.env.SLOT_PARAMETER_NAME) {
+      const held = await holdSlot(process.env.SLOT_PARAMETER_NAME, holderId, Date.now());
+      if (!held) {
+        const reason = `ci slot ${process.env.SLOT_PARAMETER_NAME} is held by another active claim`;
+        console.log(`skip: ${reason}`);
+        return http200OkResponse({
+          request,
+          data: {
+            message: "Self-destruct sequence skipped",
+            reason,
+            timestamp: new Date().toISOString(),
+          },
+        });
+      }
+    }
+
     if (process.env.DEPLOYMENT_NAME) {
       await silenceDeploymentAlarms(process.env.DEPLOYMENT_NAME);
     }
@@ -334,7 +453,7 @@ export async function ingestHandler(event, context) {
     }
 
     if (process.env.SLOT_PARAMETER_NAME && results.every((r) => r.status !== "error")) {
-      await releaseSlot(process.env.SLOT_PARAMETER_NAME);
+      await releaseSlot(process.env.SLOT_PARAMETER_NAME, holderId);
     }
 
     // Delete self-destruct stack last if no errors

@@ -23,7 +23,7 @@
 import { spawnSync } from "node:child_process";
 import { appendFileSync } from "node:fs";
 
-import { claimIsActive, fetchRunStatus } from "./slot-claim-active.mjs";
+import { claimIsActive, fetchRunStatus, SELF_DESTRUCT_REF, selfDestructClaimIsActive } from "./slot-claim-active.mjs";
 
 const PARAMETER_PATH_PREFIX = "/submit/ci/slots/";
 const HELD_BY_DESTROY_REF = "destroy-ci";
@@ -89,13 +89,18 @@ function holdExistingSlot(region, slot, value) {
 // A failure here must not let a hold proceed against a slot whose run is genuinely still going,
 // so any error (a rate limit, a network blip) resolves to null - "unknown", which
 // isSlotSafeToHold treats the same as "still running", matching claim-ci-slot.mjs's own
-// resolveRunFinished.
-async function resolveRunFinished(repository, runId, token) {
+// resolveRunFinished. A self-destruct hold (record.ref === SELF_DESTRUCT_REF) has no GitHub
+// Actions run behind its runId, so age against its own maximum runtime stands in for the
+// run-status check for that one kind of holder, also matching claim-ci-slot.mjs.
+async function resolveRunFinished(repository, record, token, nowMs) {
+  if (record.ref === SELF_DESTRUCT_REF) {
+    return !selfDestructClaimIsActive(record, nowMs);
+  }
   try {
-    const status = await fetchRunStatus(repository, runId, token);
+    const status = await fetchRunStatus(repository, record.runId, token);
     return !claimIsActive(status);
   } catch (error) {
-    console.error(`Could not read run ${runId}'s status (${error.message}); treating its slot claim as still active`);
+    console.error(`Could not read run ${record.runId}'s status (${error.message}); treating its slot claim as still active`);
     return null;
   }
 }
@@ -116,14 +121,15 @@ async function main() {
     throw new Error("HOLD_CI_SLOT_SLOT, HOLD_CI_SLOT_RUN_ID, GITHUB_REPOSITORY and HOLD_CI_SLOT_GITHUB_TOKEN must be set");
   }
 
-  if (!/^ci-set[0-9]+$/.test(slot)) {
+  if (!/^ci-set\d+$/.test(slot)) {
     console.log(`${slot} holds no ci slot, nothing to hold`);
     writeHeldOutput("skip");
     return;
   }
 
   const record = getSlotRecord(region, slot);
-  const runFinished = record ? await resolveRunFinished(repository, record.runId, token) : null;
+  const nowMs = Date.now();
+  const runFinished = record ? await resolveRunFinished(repository, record, token, nowMs) : null;
 
   if (!isSlotSafeToHold(record, { deletedRef, runFinished })) {
     console.error(`Not holding ${slot}: its claim names run ${record.runId}, which is still active`);
