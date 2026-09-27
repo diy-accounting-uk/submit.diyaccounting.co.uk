@@ -163,15 +163,9 @@ export function mixNarrationTrack({ ffmpegBin, clips, outputPath }) {
 
 // design: VID5 narration. Adds the mixed narration track to the silent video as its AAC audio
 // stream, re-encoding no video frame -- -c:v copy keeps the H.264 stream buildManifest and
-// encodeVideo already produced untouched. The video is always the master duration: a fastForward
-// scene (site-video-capture.js's scalePacing(pacing, 0)) speaks no narration for its own captions
-// at all, so the mix's last clip can end well before the video's true end, not just at or before
-// it. -shortest would then trim the finished mp4 to the mix's shorter length, cutting real frames
-// off the end -- omitted so the output always runs the video's own length, with silence over
-// whatever tail the narration doesn't cover. -movflags +faststart is repeated here because this
-// remux, not encodeVideo's own, produces the file site-video-capture.js ships: without it here,
-// ffmpeg's default remux writes moov after mdat and the faststart check fails on the delivered
-// mp4 even though the silent intermediate had it.
+// encodeVideo already produced untouched. The video sets the duration: a fast-forwarded scene has
+// no narration, so the mix can end early and -shortest would cut real frames. This remux writes
+// the shipped file, so it repeats +faststart.
 export function muxNarrationArgs({ videoPath, narrationTrackPath, outputPath }) {
   return [
     "-y",

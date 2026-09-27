@@ -19,10 +19,7 @@ export function checkTimings(timelineSteps, script) {
     // enforces does not apply to it.
     if (step.offCamera) continue;
     if (step.group === 2 || step.group === 3) {
-      // A fast-forwarded scene (scriptSchema's "fastForward") captures every step at zero
-      // pacing (site-video-capture.js's scalePacing(script.pacing, 0)), which scales
-      // minResidualMs to 0 along with the rest -- the configured script.pacing.minResidualMs
-      // floor never applied to it at capture time, so it does not apply to the expectation here.
+      // A fast-forwarded scene captures at zero pacing, so the minResidualMs floor never applied.
       const pacingForStep = step.fastForward ? { ...script.pacing, minResidualMs: 0 } : script.pacing;
       const expectedResidual = residualAfterWait(step.configuredMs, step.waitMs, pacingForStep);
       const diff = Math.abs(expectedResidual - step.residualMs);

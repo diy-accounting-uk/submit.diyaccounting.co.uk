@@ -47,11 +47,7 @@ export function wrapCaptionLines(text, maxCharsPerLine, maxLines) {
   return lines;
 }
 
-// A "caption" step's own on-screen text lives in step.text, since step.caption on that action is
-// unused (the required field is "text" — see scriptSchema.js's caption: ["text"]). Every other
-// action's optional caption line lives in step.caption instead. A transcript entry built by
-// reading step.caption regardless of the action always finds nothing for a "caption" step, so
-// its cue reaches the vtt (built from the same text via captionEvents) but never the transcript.
+// A "caption" action keeps its text in step.text; every other action in step.caption.
 export function captionTextForStep(step) {
   return (step.action === "caption" ? step.text : step.caption) || null;
 }
