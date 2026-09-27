@@ -77,6 +77,15 @@ class RawExportTest {
     }
 
     @Test
+    void publishLambdaHasTenMinutesForEveryViewInSeries() {
+        Template template = synthRawExport();
+
+        template.hasResourceProperties(
+                "AWS::Lambda::Function",
+                Match.objectLike(Map.of("FunctionName", "docs-env-raw-export-publish", "Timeout", 600)));
+    }
+
+    @Test
     void publishLambdaIsGrantedOnlyItsOwnExportsPrefix() {
         Template template = synthRawExport();
 
