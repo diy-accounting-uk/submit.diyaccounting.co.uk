@@ -60,7 +60,14 @@ function getS3Client() {
 
 // activity_events, alarm_state_changes, dora_runs and cost_focus partition on a single
 // dt=YYYY-MM-DD level; a target not listed here defaults to year=*/month=*/day=*.
-const DT_PARTITIONED_TABLES = new Set(["activity_events", "alarm_state_changes", "dora_runs", "cost_focus"]);
+const DT_PARTITIONED_TABLES = new Set([
+  "activity_events",
+  "alarm_state_changes",
+  "dora_runs",
+  "cost_focus",
+  "compliance_accessibility",
+  "compliance_fraud_headers",
+]);
 
 /**
  * Required environment configuration for the run, read once so a missing variable fails fast
