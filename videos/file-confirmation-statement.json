@@ -2,7 +2,7 @@
   "$schema": "./scene-script.schema.json",
   "name": "file-confirmation-statement",
   "title": "Start a company's confirmation statement",
-  "description": "A signed-in walk through starting a confirmation statement: sign in, take out Resident Ltd, look up a company, and read its officers and PSCs from Companies House's register.",
+  "description": "A signed-in walk through starting a confirmation statement: sign in, take out Resident, look up a company, and read its officers and PSCs from Companies House's register.",
   "auth": "user",
   "pages": [
     "web/public/index.html",
@@ -80,12 +80,12 @@
     },
     {
       "id": "subscription",
-      "chapter": "Resident Ltd",
+      "chapter": "Resident",
       "still": true,
       "fastForward": true,
       "steps": [
         { "action": "click", "target": { "role": "link", "name": "Bundles" } },
-        { "action": "ensureBundle", "bundle": "Resident Ltd", "testPass": true },
+        { "action": "ensureBundle", "bundle": "Resident", "testPass": true },
         { "action": "hold", "ms": 700 },
         { "action": "click", "target": { "role": "link", "name": "Activities" } },
         {
