@@ -3,18 +3,19 @@
 
 // scripts/lib/video/narration.js
 //
-// Per-caption narration audio from Amazon Polly (design: VID5), shelled out through the `aws`
-// CLI rather than the @aws-sdk/client-polly package: this repo's node_modules is shared across
-// every worktree, so a script here adds no new dependency to it. audioDurationMs reads the
-// clip back with ffmpeg's own probe (this repo already depends on ffmpeg-static; adding
-// ffprobe-static just to read a duration would be a second binary for one number).
+// Per-caption narration audio from Amazon Polly (design: VID5), through @aws-sdk/client-polly's
+// PollyClient. audioDurationMs reads the clip back with ffmpeg's own probe (this repo already
+// depends on ffmpeg-static; adding ffprobe-static just to read a duration would be a second
+// binary for one number).
 //
 // synthesizeSpeech and audioDurationMs are the only two functions here that leave the process —
-// a real `aws polly synthesize-speech` call and a real ffmpeg probe. Everything the capture does
-// with their results (deciding how long to hold a caption, laying clips onto the timeline) is
-// pure arithmetic, tested without either.
+// a real Polly SynthesizeSpeech call and a real ffmpeg probe. Everything the capture does with
+// their results (deciding how long to hold a caption, laying clips onto the timeline) is pure
+// arithmetic, tested without either.
 
-import { spawnSync } from "child_process";
+import fs from "node:fs";
+import { spawnSync } from "node:child_process";
+import { PollyClient, SynthesizeSpeechCommand } from "@aws-sdk/client-polly";
 
 // Neural British English voices Amazon Polly offers today (aws polly describe-voices
 // --language-code en-GB): Emma and Amy (female, neural), Brian and Arthur (male, neural), Brian
@@ -23,35 +24,44 @@ import { spawnSync } from "child_process";
 export const DEFAULT_VOICE_ID = "Amy";
 export const DEFAULT_ENGINE = "neural";
 
-function runOrThrow(bin, args, label) {
-  const result = spawnSync(bin, args, { encoding: "utf8" });
-  if (result.error) throw result.error;
-  if (result.status !== 0) {
-    throw new Error(`${label} (${bin} ${args.join(" ")}) exited ${result.status}\n${result.stderr || result.stdout}`);
+let cachedPollyClient = null;
+
+function getPollyClient() {
+  if (!cachedPollyClient) {
+    cachedPollyClient = new PollyClient({ region: process.env.AWS_REGION || "eu-west-2" });
   }
-  return result;
+  return cachedPollyClient;
 }
 
-// Writes the synthesised speech straight to outputPath (the CLI's own <outfile> argument), one
-// AWS call per caption. profile is the AWS CLI profile name (e.g. "submit-ci"); undefined uses
-// whatever credentials are already in the environment, the way video-capture.yml's assumed role
-// does.
-export function synthesizeSpeech({ text, outputPath, voiceId = DEFAULT_VOICE_ID, engine = DEFAULT_ENGINE, profile }) {
-  const args = [
-    ...(profile ? ["--profile", profile] : []),
-    "polly",
-    "synthesize-speech",
-    "--text",
-    text,
-    "--voice-id",
-    voiceId,
-    "--engine",
-    engine,
-    "--output-format",
-    "mp3",
-    outputPath,
-  ];
-  runOrThrow("aws", args, "synthesizeSpeech");
+// Synthesises one caption's speech and writes it to outputPath, one Polly call per caption.
+// Credentials and region come from the ambient AWS environment — env vars, or the role
+// video-capture.yml's OIDC steps assume — resolved by the SDK's own default provider chain, the
+// same chain the CLI it replaces used. sceneId names the scene in the thrown error when Polly
+// rejects the call (missing credentials, throttling, a bad voice id) — nothing else here says
+// which caption failed.
+export async function synthesizeSpeech({
+  text,
+  outputPath,
+  voiceId = DEFAULT_VOICE_ID,
+  engine = DEFAULT_ENGINE,
+  sceneId,
+  client = getPollyClient(),
+}) {
+  let response;
+  try {
+    response = await client.send(
+      new SynthesizeSpeechCommand({
+        Text: text,
+        VoiceId: voiceId,
+        Engine: engine,
+        OutputFormat: "mp3",
+      }),
+    );
+  } catch (error) {
+    throw new Error(`narration failed for scene "${sceneId ?? "unknown"}" (Polly SynthesizeSpeech): ${error.message}`, { cause: error });
+  }
+  const audio = await response.AudioStream.transformToByteArray();
+  fs.writeFileSync(outputPath, audio);
 }
 
 // Parses ffmpeg's own stderr probe line ("Duration: 00:00:03.45, ...") rather than shelling out

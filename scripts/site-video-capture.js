@@ -258,10 +258,10 @@ async function main() {
   // below) -- a sped-through preamble has no line to hold for. Every other captioned step's
   // hold becomes the real spoken duration of its own caption text: "held until its line has
   // been spoken", not a reading-speed guess of how long that would take.
-  async function resolveCaptionHold(text) {
+  async function resolveCaptionHold(text, sceneId) {
     if (!narrationEnabled) return { minMs: captionMinMs(text, script.captions), audioPath: null };
     const audioPath = path.join(narrationDir, `caption-${narrationIndex++}.mp3`);
-    synthesizeSpeech({ text, outputPath: audioPath });
+    await synthesizeSpeech({ text, outputPath: audioPath, sceneId });
     const minMs = audioDurationMs(narrationFfmpegBin, audioPath);
     return { minMs, audioPath };
   }
@@ -437,7 +437,7 @@ async function main() {
         let captionHideAt = null;
         if (showCaptionBeforeAction) {
           await overlayCaption(page, step.caption);
-          const hold = fastForward ? { minMs: 0, audioPath: null } : await resolveCaptionHold(step.caption);
+          const hold = fastForward ? { minMs: 0, audioPath: null } : await resolveCaptionHold(step.caption, scene.id);
           if (hold.audioPath) narrationClips.push({ path: hold.audioPath, startMs });
           const minMs = hold.minMs;
           captionHideAt = () => elapsed() + minMs;
@@ -480,7 +480,7 @@ async function main() {
             const hold = fastForward
               ? { minMs: 0, audioPath: null }
               : narrationEnabled
-                ? await resolveCaptionHold(step.text)
+                ? await resolveCaptionHold(step.text, scene.id)
                 : { minMs: step.holdMs || captionMinMs(step.text, script.captions), audioPath: null };
             if (hold.audioPath) narrationClips.push({ path: hold.audioPath, startMs });
             const minMs = hold.minMs;
@@ -524,7 +524,7 @@ async function main() {
               if (step.caption) {
                 await overlayCaption(page, step.caption);
                 if (!captionHideAt) {
-                  const hold = fastForward ? { minMs: 0, audioPath: null } : await resolveCaptionHold(step.caption);
+                  const hold = fastForward ? { minMs: 0, audioPath: null } : await resolveCaptionHold(step.caption, scene.id);
                   if (hold.audioPath) narrationClips.push({ path: hold.audioPath, startMs });
                   const minMs = hold.minMs;
                   captionHideAt = () => elapsed() + minMs;
