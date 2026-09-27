@@ -23,7 +23,7 @@ const BASE_INPUT = {
   surname: "EXAMPLE",
   dobMonth: 1,
   dobYear: 1970,
-  personalCode: "AB1234CD56E",
+  personalCode: "CWMPS832223",
 };
 
 describe("services/companiesHousePscVerificationStatementXml", () => {
@@ -83,13 +83,13 @@ describe("services/companiesHousePscVerificationStatementXml", () => {
       expect(firstElementText(document, "OtherForenames")).toBe("MARGARET");
       expect(firstElementText(document, "Month")).toBe("1");
       expect(firstElementText(document, "Year")).toBe("1970");
-      expect(firstElementText(document, "CompaniesHousePersonalCode")).toBe("AB1234CD56E");
+      expect(firstElementText(document, "CompaniesHousePersonalCode")).toBe("CWMPS832223");
       expect(firstElementText(document, "VerificationStatementForIndividual")).toBe("INDIVIDUAL_VERIFIED");
       expect(firstElement(document, "NameMismatchReason")).toBeUndefined();
     });
 
     test("omits Title, Forename, OtherForenames, PartialDOB and NameMismatchReason when not given", () => {
-      const xml = buildPscVerificationStatementBody({ surname: "EXAMPLE", personalCode: "AB1234CD56E" });
+      const xml = buildPscVerificationStatementBody({ surname: "EXAMPLE", personalCode: "CWMPS832223" });
       const document = parseXmlDocument(xml);
 
       expect(firstElement(document, "Title")).toBeUndefined();

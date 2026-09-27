@@ -67,7 +67,7 @@ function buildStatementBody(overrides = {}) {
     dateSigned: "2026-09-24",
     reviewDate: "2025-09-21",
     lawfulPurposeStatementAccepted: true,
-    directors: [{ personalCode: "AB1234CD56E", forename: "ALICE", otherForenames: "MARGARET", surname: "EXAMPLE", dob: "1970-01-01" }],
+    directors: [{ personalCode: "CWMPS832223", forename: "ALICE", otherForenames: "MARGARET", surname: "EXAMPLE", dob: "1970-01-01" }],
     ...overrides,
   };
 }
@@ -106,7 +106,7 @@ describe("companiesHouseConfirmationStatementPreviewPost ingestHandler", () => {
     const body = parseResponseBody(response);
     expect(body.confirmationStatementXml).toContain("<ConfirmationAndVerificationStatement");
     expect(body.confirmationStatementXml).toContain("<ReviewDate>2025-09-21</ReviewDate>");
-    expect(body.confirmationStatementXml).not.toContain("AB1234CD56E");
+    expect(body.confirmationStatementXml).not.toContain("CWMPS832223");
     expect(body.confirmationStatementXml).toContain("<CompaniesHousePersonalCode>***********</CompaniesHousePersonalCode>");
   });
 

@@ -246,12 +246,13 @@
       // note above - so a return from checkout re-collects them through the normal authView step.
       const CHECKOUT_RESUME_KEY = "companiesHouseConfirmationStatementResumeCompanyNumber";
 
-      // Companies House shows a personal code with two hyphens for readability (e.g.
-      // AB1-23CD-4EF4) but the XML Gateway takes 11 characters with none - a pasted code needs
-      // its hyphens stripped before the length or format check runs. The same check runs server
-      // side (companiesHouseApi.js's isValidCompaniesHousePersonalCode); it exists here too so a
-      // wrongly formatted code (e.g. all digits) is caught before a submit round trip.
-      const PERSONAL_CODE_PATTERN = /^(?=[A-Z0-9]{11}$)(?=[A-Z0-9]*[A-Z])(?=[A-Z0-9]*\d)[A-Z0-9]{11}$/;
+      // Companies House shows a personal code grouped with hyphens for readability but the XML
+      // Gateway takes 11 characters with none - a pasted code needs its hyphens stripped before
+      // the length or format check runs. A real code is 5 or 6 uppercase letters followed by 6 or
+      // 5 digits (e.g. CWMPS832223); the same check runs server side (companiesHouseApi.js's
+      // isValidCompaniesHousePersonalCode); it exists here too so a wrongly formatted code (e.g.
+      // letters and digits interleaved) is caught before a submit round trip.
+      const PERSONAL_CODE_PATTERN = /^(?=[A-Z0-9]{11}$)[A-Z]{5,6}\d{5,6}$/;
 
       function normalisePersonalCode(rawValue) {
         return (rawValue || "").trim().toUpperCase().replace(/-/g, "");
