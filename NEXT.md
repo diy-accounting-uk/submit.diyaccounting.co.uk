@@ -16,7 +16,7 @@ runs), and for Claude Code steps the **Model** a sub-agent should use (Fable > O
 Haiku; the lowest tier that fits). Anything touching code goes through a `claude/*` branch and
 PR; the operator merges.
 
-**Prod runs deployment prod-d747c5f** (PR #392's merge deploy, run 36329638207, 2026-09-27).
+**Prod runs deployment prod-64b82c3** (PR #399's merge deploy, run 36344700324, 2026-09-27).
 **ci**: `ci-set2` is last-known-good and the only ci set standing (the teardown of the deleted xenon branch removed `ci-set1`, no longer live).
 
 The board runs in five sections, in this order: **in flight** (a branch, a pull request or a run
