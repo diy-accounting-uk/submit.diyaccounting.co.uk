@@ -734,16 +734,24 @@ jobs:
           output-credentials: true
           retry-max-attempts: 3
 
-      - name: Enable native auth on Cognito Hosted UI
+      - name: Read TEST_AUTH_PROVIDER
+        id: auth-provider
         shell: bash
         run: |
           ENV_FILE=".env.${{ needs.names.outputs.environment-name }}"
           PROVIDER=$(grep -E '^TEST_AUTH_PROVIDER=' "$ENV_FILE" | tail -n1 | cut -d'=' -f2)
-          if [ "$PROVIDER" = "cognito-native" ]; then
-            node scripts/toggle-cognito-native-auth.js enable "${{ needs.names.outputs.environment-name }}"
-          else
-            echo "Skipping native auth toggle (TEST_AUTH_PROVIDER=${PROVIDER:-unset})"
-          fi
+          echo "provider=${PROVIDER:-unset}" | tee -a "$GITHUB_OUTPUT"
+
+      - name: Enable native auth on Cognito Hosted UI
+        if: ${{ steps.auth-provider.outputs.provider == 'cognito-native' }}
+        uses: './.github/actions/hold-native-auth'
+        with:
+          mode: enable
+          environment-name: ${{ needs.names.outputs.environment-name }}
+          holder-id: ${{ github.run_id }}
+          run-id: ${{ github.run_id }}
+          workflow: ${{ github.workflow }}
+          github-token: ${{ github.token }}
 
       - name: Ensure Cognito test user
         id: cognito-test-user
@@ -799,17 +807,25 @@ jobs:
           output-credentials: true
           retry-max-attempts: 3
 
-      - name: Disable native auth on Cognito Hosted UI
+      - name: Read TEST_AUTH_PROVIDER (cleanup)
+        id: auth-provider-cleanup
         if: ${{ !cancelled() && needs.params.outputs.skip-cleanup != 'true' }}
         shell: bash
         run: |
           ENV_FILE=".env.${{ needs.names.outputs.environment-name }}"
           PROVIDER=$(grep -E '^TEST_AUTH_PROVIDER=' "$ENV_FILE" | tail -n1 | cut -d'=' -f2)
-          if [ "$PROVIDER" = "cognito-native" ]; then
-            node scripts/toggle-cognito-native-auth.js disable "${{ needs.names.outputs.environment-name }}"
-          else
-            echo "Skipping native auth toggle (TEST_AUTH_PROVIDER=${PROVIDER:-unset})"
-          fi
+          echo "provider=${PROVIDER:-unset}" | tee -a "$GITHUB_OUTPUT"
+
+      - name: Disable native auth on Cognito Hosted UI
+        if: ${{ !cancelled() && needs.params.outputs.skip-cleanup != 'true' && steps.auth-provider-cleanup.outputs.provider == 'cognito-native' }}
+        uses: './.github/actions/hold-native-auth'
+        with:
+          mode: disable
+          environment-name: ${{ needs.names.outputs.environment-name }}
+          holder-id: ${{ github.run_id }}
+          run-id: ${{ github.run_id }}
+          workflow: ${{ github.workflow }}
+          github-token: ${{ github.token }}
 
       - name: Upload test artifacts
         if: ${{ !cancelled() }}
