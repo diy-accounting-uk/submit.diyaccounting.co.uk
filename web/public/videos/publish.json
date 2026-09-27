@@ -122,7 +122,8 @@
       "title": "DIY Accounting Submit: sign in and take out a day pass",
       "description": "DIY Accounting Submit is a free tool for sending VAT returns to HMRC under Making Tax Digital. This video shows the part every other activity starts with: signing in through Cognito's Hosted UI (Google sign-in follows the same page) and taking out a day pass so the VAT activities unlock. It's a real recording of the live product, not a mockup or a design draft. Try it yourself at https://submit.diyaccounting.co.uk.",
       "tags": ["DIY Accounting", "sign in", "day pass", "HMRC", "Making Tax Digital"],
-      "categoryId": "27"
+      "categoryId": "27",
+      "videoId": "KlE-WsTdXNk"
     },
     {
       "id": "tokens",
@@ -134,7 +135,8 @@
       "title": "DIY Accounting Submit: what an activity costs and what's left",
       "description": "DIY Accounting Submit is a free tool for sending VAT returns to HMRC under Making Tax Digital. This video shows the token balance every account carries: what a bundle grants, what each metered activity spends, and what happens when the balance runs out. It's a real recording of the live product, not a mockup or a design draft. Try it yourself at https://submit.diyaccounting.co.uk.",
       "tags": ["DIY Accounting", "tokens", "token usage", "HMRC", "Making Tax Digital"],
-      "categoryId": "27"
+      "categoryId": "27",
+      "videoId": "sjVInlzIJ8I"
     },
     {
       "id": "subscription-management",
@@ -146,7 +148,8 @@
       "title": "DIY Accounting Submit: subscribe, see it, cancel",
       "description": "DIY Accounting Submit is a free tool for sending VAT returns to HMRC under Making Tax Digital. This video shows a subscription bundle: what Subscribe starts through Stripe's own checkout, where an active subscription shows once it's running, and how Stripe's billing portal ends it. It's a real recording of the live product, not a mockup or a design draft. Try it yourself at https://submit.diyaccounting.co.uk.",
       "tags": ["DIY Accounting", "subscription", "billing", "HMRC", "Making Tax Digital"],
-      "categoryId": "27"
+      "categoryId": "27",
+      "videoId": "EVleSA65QxY"
     },
     {
       "id": "tour",
@@ -158,7 +161,8 @@
       "title": "DIY Accounting Submit: a tour of the site",
       "description": "DIY Accounting Submit is a free tool for sending VAT returns to HMRC under Making Tax Digital. This video is an unauthenticated tour of the site: what it does, how to use it, the bundles that unlock each activity, and where to find help and accessibility information. It's a real recording of the live product, not a mockup or a design draft. Try it yourself at https://submit.diyaccounting.co.uk.",
       "tags": ["DIY Accounting", "tour", "overview", "HMRC", "Making Tax Digital"],
-      "categoryId": "27"
+      "categoryId": "27",
+      "videoId": "YsD3M6q1ujc"
     },
     {
       "id": "my-receipts",
@@ -170,7 +174,8 @@
       "title": "DIY Accounting Submit: find a submission receipt again",
       "description": "DIY Accounting Submit is a free tool for sending VAT returns to HMRC under Making Tax Digital. This video shows a signed-in walk through submission receipts: submitting a VAT return, then finding and opening its receipt from the account's receipt history. It's a real recording of the live product, not a mockup or a design draft. Try it yourself at https://submit.diyaccounting.co.uk.",
       "tags": ["DIY Accounting", "receipts", "VAT return", "HMRC", "Making Tax Digital"],
-      "categoryId": "27"
+      "categoryId": "27",
+      "videoId": "eo3L-iKbW-k"
     },
     {
       "id": "generate-pass-digital",
@@ -182,7 +187,8 @@
       "title": "DIY Accounting Submit: generate a digital pass to give away",
       "description": "DIY Accounting Submit is a free tool for sending VAT returns to HMRC under Making Tax Digital. This video shows generating a digital pass: a shareable link that gives whoever redeems it free VAT submission access for 7 days. It's a real recording of the live product, not a mockup or a design draft. Try it yourself at https://submit.diyaccounting.co.uk.",
       "tags": ["DIY Accounting", "digital pass", "day pass", "HMRC", "Making Tax Digital"],
-      "categoryId": "27"
+      "categoryId": "27",
+      "videoId": "dYiXj4yYTsU"
     },
     {
       "id": "generate-pass-physical",
@@ -194,7 +200,8 @@
       "title": "DIY Accounting Submit: generate a physical pass to print",
       "description": "DIY Accounting Submit is a free tool for sending VAT returns to HMRC under Making Tax Digital. This video shows generating a physical pass: a code for merchandise or print that gives whoever redeems it free VAT submission access. It's a real recording of the live product, not a mockup or a design draft. Try it yourself at https://submit.diyaccounting.co.uk.",
       "tags": ["DIY Accounting", "physical pass", "merchandise", "HMRC", "Making Tax Digital"],
-      "categoryId": "27"
+      "categoryId": "27",
+      "videoId": "rc18cG2DVyo"
     },
     {
       "id": "company-lookup",
@@ -206,7 +213,8 @@
       "title": "DIY Accounting Submit: look up a company at Companies House",
       "description": "DIY Accounting Submit is a free tool for sending VAT returns to HMRC under Making Tax Digital, and for looking up companies at Companies House. This video shows searching for a company by name or number and reading back its Companies House profile: status, incorporation date and registered address. It's a real recording of the live product, not a mockup or a design draft. Try it yourself at https://submit.diyaccounting.co.uk.",
       "tags": ["DIY Accounting", "Companies House", "company lookup", "company search"],
-      "categoryId": "27"
+      "categoryId": "27",
+      "videoId": "k7LIHmu9Y5Y"
     },
     {
       "id": "file-confirmation-statement",
@@ -218,7 +226,8 @@
       "title": "DIY Accounting Submit: start a company's confirmation statement",
       "description": "DIY Accounting Submit is a free tool for filing with Companies House and HMRC. This video shows starting a confirmation statement (CS01): sign in, take out Resident, look up a company, then read its directors and persons with significant control from Companies House's register. It's a real recording of the live product, not a mockup or a design draft. Try it yourself at https://submit.diyaccounting.co.uk.",
       "tags": ["DIY Accounting", "Companies House", "confirmation statement", "CS01"],
-      "categoryId": "27"
+      "categoryId": "27",
+      "videoId": "7uXrC35uQFA"
     }
   ]
 }
