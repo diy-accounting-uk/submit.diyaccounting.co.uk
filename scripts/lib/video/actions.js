@@ -28,6 +28,21 @@ function behaviourSteps() {
   return behaviourStepsModule;
 }
 
+// Behaviour steps write debug screenshots (each with a `path`) that a capture never reads; on CI
+// they can hang against the running screencast, so they become no-ops. Methods bind to the real
+// page so Playwright's private fields resolve.
+export function withoutDebugScreenshots(page) {
+  return new Proxy(page, {
+    get(target, prop) {
+      if (prop === "screenshot") {
+        return async (options = {}) => (options && options.path ? undefined : target.screenshot(options));
+      }
+      const value = target[prop];
+      return typeof value === "function" ? value.bind(target) : value;
+    },
+  });
+}
+
 export class SceneStepError extends Error {
   constructor(message, { sceneId, stepIndex, target }) {
     super(message);
@@ -268,28 +283,37 @@ function requireJourney(step, ctx) {
 async function doLogin(page, step, ctx) {
   const steps = await behaviourSteps();
   const journey = requireJourney(step, ctx);
+  const capturePage = withoutDebugScreenshots(page);
   const start = Date.now();
   // Entering credentials is on-camera content, a person filling in a form, not a wait. Only the
   // round trip back to the app once they are submitted has nothing to show on screen.
-  await steps.loginWithCognitoOrMockAuth(page, journey.authProvider, journey.authUsername, ctx.stepScreenshotDir, journey.authPassword);
-  await ctx.waitPhase(() => steps.verifyLoggedInStatus(page, ctx.stepScreenshotDir));
+  await steps.loginWithCognitoOrMockAuth(
+    capturePage,
+    journey.authProvider,
+    journey.authUsername,
+    ctx.stepScreenshotDir,
+    journey.authPassword,
+  );
+  await ctx.waitPhase(() => steps.verifyLoggedInStatus(capturePage, ctx.stepScreenshotDir));
   return { waitMs: Date.now() - start, rect: null };
 }
 
 async function doConsent(page, step, ctx) {
   const steps = await behaviourSteps();
+  const capturePage = withoutDebugScreenshots(page);
   const start = Date.now();
-  await ctx.waitPhase(() => steps.consentToDataCollection(page, ctx.stepScreenshotDir));
+  await ctx.waitPhase(() => steps.consentToDataCollection(capturePage, ctx.stepScreenshotDir));
   return { waitMs: Date.now() - start, rect: null };
 }
 
 async function doEnsureBundle(page, step, ctx) {
   const steps = await behaviourSteps();
+  const capturePage = withoutDebugScreenshots(page);
   const start = Date.now();
   // The whole call is the pass-granting round trip (create pass, redeem, poll for allocation) —
   // there is no on-camera interaction ahead of it to protect the pill from.
   await ctx.waitPhase(() =>
-    steps.ensureBundlePresent(page, step.bundle, ctx.stepScreenshotDir, {
+    steps.ensureBundlePresent(capturePage, step.bundle, ctx.stepScreenshotDir, {
       testPass: step.testPass === true,
       isHidden: step.hidden === true,
     }),
@@ -304,6 +328,7 @@ async function doEnsureBundle(page, step, ctx) {
 // on camera — a person signing in and granting access, not a wait.
 async function waitForHmrcRedirectAndAuthorise(page, step, ctx, journey, actionName, tokenDescription) {
   const steps = await behaviourSteps();
+  const capturePage = withoutDebugScreenshots(page);
   const appOrigin = new URL(ctx.baseUrl).origin;
   try {
     await ctx.waitPhase(() => page.waitForURL((url) => new URL(url).origin !== appOrigin, { timeout: step.timeoutMs || ctx.timeoutMs }));
@@ -315,12 +340,12 @@ async function waitForHmrcRedirectAndAuthorise(page, step, ctx, journey, actionN
       { sceneId: ctx.sceneId, stepIndex: ctx.stepIndex, target: null },
     );
   }
-  await steps.acceptCookiesHmrc(page, ctx.stepScreenshotDir);
-  await steps.goToHmrcAuth(page, ctx.stepScreenshotDir);
-  await steps.initHmrcAuth(page, ctx.stepScreenshotDir);
-  await steps.fillInHmrcAuth(page, journey.hmrcUser.username, journey.hmrcUser.password, ctx.stepScreenshotDir);
-  await steps.submitHmrcAuth(page, ctx.stepScreenshotDir);
-  await steps.grantPermissionHmrcAuth(page, ctx.stepScreenshotDir);
+  await steps.acceptCookiesHmrc(capturePage, ctx.stepScreenshotDir);
+  await steps.goToHmrcAuth(capturePage, ctx.stepScreenshotDir);
+  await steps.initHmrcAuth(capturePage, ctx.stepScreenshotDir);
+  await steps.fillInHmrcAuth(capturePage, journey.hmrcUser.username, journey.hmrcUser.password, ctx.stepScreenshotDir);
+  await steps.submitHmrcAuth(capturePage, ctx.stepScreenshotDir);
+  await steps.grantPermissionHmrcAuth(capturePage, ctx.stepScreenshotDir);
 }
 
 async function doHmrcAuthorise(page, step, ctx) {
@@ -337,6 +362,7 @@ async function doHmrcAuthorise(page, step, ctx) {
 // the run's environment, the same variables the behaviour tests read.
 async function doCompaniesHouseAuthorise(page, step, ctx) {
   const steps = await behaviourSteps();
+  const capturePage = withoutDebugScreenshots(page);
   const start = Date.now();
   const appOrigin = new URL(ctx.baseUrl).origin;
   try {
@@ -350,7 +376,7 @@ async function doCompaniesHouseAuthorise(page, step, ctx) {
     );
   }
   const credentials = steps.resolveCompaniesHouseSignInCredentials(undefined, process.env.DIY_SUBMIT_ENV_FILEPATH);
-  await steps.authoriseWithCompaniesHouse(page, credentials, ctx.stepScreenshotDir);
+  await steps.authoriseWithCompaniesHouse(capturePage, credentials, ctx.stepScreenshotDir);
   return { waitMs: Date.now() - start, rect: null };
 }
 
@@ -386,18 +412,19 @@ async function publishSubmittedPeriod(page, ctx) {
 async function doSubmitReturn(page, step, ctx) {
   const steps = await behaviourSteps();
   const journey = requireJourney(step, ctx);
+  const capturePage = withoutDebugScreenshots(page);
   const start = Date.now();
 
-  await steps.goToHomePageUsingMainNav(page, ctx.stepScreenshotDir);
-  await steps.initSubmitVat(page, ctx.stepScreenshotDir);
-  await steps.fillInVat(page, journey.hmrcUser.vatNumber, undefined, "1000.00", null, false, ctx.stepScreenshotDir, true);
+  await steps.goToHomePageUsingMainNav(capturePage, ctx.stepScreenshotDir);
+  await steps.initSubmitVat(capturePage, ctx.stepScreenshotDir);
+  await steps.fillInVat(capturePage, journey.hmrcUser.vatNumber, undefined, "1000.00", null, false, ctx.stepScreenshotDir, true);
   await publishSubmittedPeriod(page, ctx);
-  await steps.submitFormVat(page, ctx.stepScreenshotDir);
+  await steps.submitFormVat(capturePage, ctx.stepScreenshotDir);
 
   await waitForHmrcRedirectAndAuthorise(page, step, ctx, journey, "submitReturn", "a write:vat token");
 
-  await steps.completeVat(page, ctx.baseUrl, null, ctx.stepScreenshotDir);
-  await steps.verifyVatSubmission(page, null, ctx.stepScreenshotDir);
+  await steps.completeVat(capturePage, ctx.baseUrl, null, ctx.stepScreenshotDir);
+  await steps.verifyVatSubmission(capturePage, null, ctx.stepScreenshotDir);
   await disableDeveloperMode(page);
 
   return { waitMs: Date.now() - start, rect: null };
