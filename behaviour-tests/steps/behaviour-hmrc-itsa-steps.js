@@ -1042,10 +1042,19 @@ export async function verifyItsaLossesLoadResults(page, screenshotPath = default
 
 export async function fillInItsaLossesEdits(page, lossesEdits = {}, screenshotPath = defaultScreenshotPath) {
   await test.step("The user enters a loss to carry forward", async () => {
-    const { currentYearLosses } = lossesEdits || {};
+    const { currentYearLosses, suspendTemporalValidations } = lossesEdits || {};
     if (currentYearLosses !== undefined) {
       await loggedFill(page, "#currentYearLosses", String(currentYearLosses), "Entering this year's loss to carry forward", {
         screenshotPath,
+      });
+    }
+    if (suspendTemporalValidations) {
+      // The checkbox lives in the load-criteria form, which HMRC's own re-authorisation
+      // redirect (read scope to read+write, on Load) reloads the page and wipes clean - set it
+      // again here, once the reload is behind us and the edit form is what Save will read.
+      await page.evaluate(() => {
+        const el = document.getElementById("suspendTemporalValidations");
+        if (el) el.checked = true;
       });
     }
     await page.screenshot({ path: `${screenshotPath}/${timestamp()}-losses-edits-filled.png` });
