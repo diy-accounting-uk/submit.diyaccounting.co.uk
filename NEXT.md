@@ -16,8 +16,8 @@ runs), and for Claude Code steps the **Model** a sub-agent should use (Fable > O
 Haiku; the lowest tier that fits). Anything touching code goes through a `claude/*` branch and
 PR; the operator merges.
 
-**Prod runs deployment prod-f32f2d4** (PR #382's merge deploy, run 36301572873, 2026-09-27).
-**ci**: `ci-set1` is last-known-good (created 03:57 UTC); `ci-set2` is claimed by PR #382's finished deploy (run 36290929223).
+**Prod runs deployment prod-d4b70bb** (PR #388's merge deploy, 2026-09-27).
+**ci**: `ci-set1` is last-known-good; `ci-set1` and `ci-set2` both stand (10 stacks each); no branch deploy is running.
 
 The board runs in five sections, in this order: **in flight** (a branch, a pull request or a run
 in motion, each named in the row), **machine-only**, **machine-ask**, **human-driven**,
@@ -49,9 +49,9 @@ step.
 
 - [ ] **SIM3. The root repository still names the simulator hosts.** Root repository PR #34 (`claude/sim3-simulator-names`, dbc4e83; `./mvnw clean verify` passes). Remainder: its checks pass and it merges. `../root.diyaccounting.co.uk/scripts/aws-accounts/cleanup-zone.sh` (lines 202 to 204, the zone records it preserves) and `../root.diyaccounting.co.uk/infra/main/java/co/uk/diyaccounting/root/SubmitSharedNames.java` (`simulatorDomainName` line 69 and 428, `simulatorStackId` 111 and 450) name `ci-simulator`/`prod-simulator`, whose records OSIM2 deleted. Remove them in the root repository (its own branch and PR; `./mvnw clean verify` there). **Source**: SIM2, 2026-09-27. **Owner**: Claude Code. **Model**: Haiku. **Size**: ~2 files.
 
-- [ ] **O11v. A video of the whole ITSA year.** PR #382 merged (f32f2d4b), so narration no longer needs the AWS CLI. `video-capture.yml` run 36304777013 records `itsa-year` against ci (one capture runs at a time: a second dispatch cancels the first). Remainder: that capture passes; Claude Code uploads it unlisted if the operator approves, as for OVID1. **Source**: operator, 2026-09-26. **Owner**: Claude Code. **Model**: Haiku. **Size**: 0 files.
-
 ## Machine-only
+
+- [ ] **O11v. A video of the whole ITSA year.** `video-capture.yml` run 36304777013 (itsa-year, ci, 2026-09-27 08:00 UTC) signed in, narrated and recorded four scenes (business details, both quarterly updates, the annual submission), then failed in scene `adjustments` step 7: `"#summaryContainer" never appeared (locator.waitFor: Timeout 60000ms exceeded)`, against HMRC's sandbox. Read that run's still and console log for the adjustable-summary page (`web/public/hmrc/itsa/adjustments.html`) and the BSAS calls it made (the sandbox answered BSAS retrieve 200 with no scenario header earlier in this work, and the simulator was aligned to that), fix the page or the scene script (`videos/itsa-year.json`), prove the scene with `--scene adjustments --stills-only` on the simulator, then re-dispatch against ci; the operator approves the unlisted upload. **Source**: operator, 2026-09-26. **Owner**: Claude Code. **Model**: Sonnet. **Size**: ~2 files.
 
 - [ ] **B30u1. Drop the empty `activity_events_raw` from the lake.** `raw/activity-events/` holds 0 objects in prod and ci, yet `activity_events_all` unions it, doubling every activity view's partition listing (B30u design, 2026-09-27: planning is about 5.5 s of each daily view's 6 to 12 s, about 1.5 ms per projected partition, 3,720 per table). Remove the raw table and the `analyticsParquetCutoverDate` substitution from `AnalyticsStack.java` (about lines 502 to 548), make `infra/main/resources/analytics/views/activity_events_all.sql` read the curated table only, update `AnalyticsStackTest.java`; `./mvnw clean verify` (`AnalyticsStackTest`, `BusinessViewsTest`). After deploy: `glue get-table activity_events_raw` is not found, and the next snapshot's counts match the night before. **Source**: B30u design. **Owner**: Claude Code. **Model**: Sonnet. **Size**: 3 files.
 
