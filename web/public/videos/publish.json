@@ -237,7 +237,8 @@
       "title": "DIY Accounting Submit: change registered office address (sandbox)",
       "description": "DIY Accounting Submit is a free tool for filing with Companies House and HMRC. This video shows changing a company's registered office address: look up the current address, enter the new one, review it, then file with Companies House. This is a sandbox preview, recorded against a local simulator, not a live filing. Try the VAT side of the product now at https://submit.diyaccounting.co.uk.",
       "tags": ["DIY Accounting", "Companies House", "registered office", "sandbox"],
-      "categoryId": "27"
+      "categoryId": "27",
+      "videoId": "hxl5x2hztgw"
     },
     {
       "id": "change-registered-email",
