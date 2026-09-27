@@ -4,7 +4,14 @@
 // app/unit-tests/video/pacing.test.js
 
 import { describe, test, expect } from "vitest";
-import { groupFor, pauseForGroup, residualAfterWait, captionMinMs, compressionFor } from "../../../scripts/lib/video/pacing.js";
+import {
+  groupFor,
+  pauseForGroup,
+  residualAfterWait,
+  captionMinMs,
+  compressionFor,
+  remainingFinalHoldMs,
+} from "../../../scripts/lib/video/pacing.js";
 
 const cfg = {
   perCharMs: 90,
@@ -100,5 +107,23 @@ describe("compressionFor", () => {
     // 6s in full, plus (40s - 6s) / 8 = 4.25s compressed = 10.25s on screen.
     const result = compressionFor(40000, cfg);
     expect(result.onScreenMs).toBeCloseTo(10250, 0);
+  });
+});
+
+describe("remainingFinalHoldMs", () => {
+  test("a static tail with no new frames gets the full configured hold", () => {
+    expect(remainingFinalHoldMs(58090, 3000, 58090)).toBe(3000);
+  });
+
+  test("a tail that kept repainting through the whole hold gets none of it again", () => {
+    expect(remainingFinalHoldMs(58090, 3000, 61090)).toBe(0);
+  });
+
+  test("a tail that repainted for part of the hold gets only what is left", () => {
+    expect(remainingFinalHoldMs(58090, 3000, 60000)).toBe(1090);
+  });
+
+  test("never goes negative when a frame lands past the intended end", () => {
+    expect(remainingFinalHoldMs(58090, 3000, 62000)).toBe(0);
   });
 });

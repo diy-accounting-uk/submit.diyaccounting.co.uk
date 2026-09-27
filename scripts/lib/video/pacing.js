@@ -97,3 +97,9 @@ export function compressionFor(waitMs, cfg) {
     onScreenMs: cfg.waitCompressionAfterMs + compressedOnScreenMs,
   };
 }
+
+// The tail hold still owed after the last real frame: a page that repaints during the final
+// hold sleep already has frames covering part of it.
+export function remainingFinalHoldMs(elapsedMs, finalHoldMs, lastFrameTMs) {
+  return Math.max(0, elapsedMs + finalHoldMs - lastFrameTMs);
+}
