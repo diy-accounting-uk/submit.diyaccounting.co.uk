@@ -463,6 +463,23 @@
           }
         },
         {
+          "if": { "properties": { "action": { "const": "companiesHouseAuthorise" } } },
+          "then": {
+            "additionalProperties": false,
+            "required": ["action"],
+            "description": "Walks Companies House's own sign-in-and-permission page: userId, password, company authentication code, one submit, back to the site. Place it directly after the step that triggers the redirect. The simulator lane's canned user and code come from resolveCompaniesHouseSignInCredentials; a real lane needs TEST_COMPANIES_HOUSE_USER_ID and TEST_COMPANIES_HOUSE_PASSWORD. Needs auth \"user\".",
+            "properties": {
+              "action": {},
+              "timeoutMs": { "type": "number", "exclusiveMinimum": 0 },
+              "caption": { "type": "string" },
+              "headline": { "type": "string", "minLength": 1 },
+              "keyWord": { "type": "string", "minLength": 1 },
+              "pauseMs": { "type": "number", "minimum": 0 },
+              "note": { "type": "string" }
+            }
+          }
+        },
+        {
           "if": { "properties": { "action": { "const": "submitReturn" } } },
           "then": {
             "additionalProperties": false,

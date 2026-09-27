@@ -13,6 +13,7 @@
 // window starting the day after the review date.
 
 import { parseXmlDocument, firstElement, allElements, escapeXmlText } from "../lib/xmlDom.js";
+import { isValidCompaniesHousePersonalCode } from "./companiesHouseApi.js";
 
 function localName(element) {
   return element.tagName.includes(":") ? element.tagName.split(":").pop() : element.tagName;
@@ -135,8 +136,8 @@ export function buildPscVerificationStatementBody({
   if (!surname) {
     throw new Error("surname is required");
   }
-  if (!personalCode || personalCode.length !== 11) {
-    throw new Error("the PSC's Companies House personal code must be 11 characters");
+  if (!isValidCompaniesHousePersonalCode(personalCode).valid) {
+    throw new Error("the PSC's Companies House personal code must be the 11-character letters-and-digits code");
   }
 
   const titleXml = title ? `<Title>${escapeXmlText(title)}</Title>` : "";

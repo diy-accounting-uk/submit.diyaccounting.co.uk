@@ -190,6 +190,8 @@ function describeStep(step, waitMs, values, now) {
       return `takes out the ${step.bundle} bundle${waitSuffix}`;
     case "hmrcAuthorise":
       return `signs in at HMRC and grants authority${waitSuffix}`;
+    case "companiesHouseAuthorise":
+      return `signs in at Companies House and grants authority${waitSuffix}`;
     case "submitReturn":
       return `submits a VAT return${waitSuffix}`;
     default:
@@ -197,13 +199,30 @@ function describeStep(step, waitMs, values, now) {
   }
 }
 
-const WAIT_CAPABLE_ACTIONS = new Set(["goto", "click", "await", "login", "consent", "ensureBundle", "hmrcAuthorise"]);
+const WAIT_CAPABLE_ACTIONS = new Set([
+  "goto",
+  "click",
+  "await",
+  "login",
+  "consent",
+  "ensureBundle",
+  "hmrcAuthorise",
+  "companiesHouseAuthorise",
+]);
 
 // Journey actions end wherever the identity provider or HMRC sent them, which can be the URL they
 // started on. Every other action is judged by whether the URL moved. Either way the overlay was
 // reinstalled from scratch by the navigation, so the chapter label, the suppressed elements and
 // the caption all have to be put back.
-const ALWAYS_NAVIGATING_ACTIONS = new Set(["goto", "login", "consent", "ensureBundle", "hmrcAuthorise", "submitReturn"]);
+const ALWAYS_NAVIGATING_ACTIONS = new Set([
+  "goto",
+  "login",
+  "consent",
+  "ensureBundle",
+  "hmrcAuthorise",
+  "companiesHouseAuthorise",
+  "submitReturn",
+]);
 
 // Actions whose handler resolves a real target and moves the pointer to it (actions.js's
 // pointAndReturnRect) — the only ones that can hand a headline its target's actual box through
@@ -313,6 +332,14 @@ async function main() {
   });
 
   const page = await context.newPage();
+  // Raises the default action timeout (Playwright's own default is 30000ms) for this
+  // capture-only page alone — playwright.config.js's timeout for the real behaviour-test and
+  // probe suites is untouched. deviceScaleFactor 2 makes every page.screenshot() call in the
+  // shared behaviour-tests/steps files (reused here via behaviourSteps.js) capture 4x the
+  // pixels of the old 1x default, and a concurrent CDP screencast capture competes for the same
+  // renderer on a loaded CI runner — seen for real as a page.screenshot() timeout in
+  // verifyLoggedInStatus on the ci itsa-year capture.
+  page.setDefaultTimeout(60000);
   if (addOnPageLogging) addOnPageLogging(page);
   await installOverlay(page);
   if (installCredentialFieldMask) await installCredentialFieldMask(page);

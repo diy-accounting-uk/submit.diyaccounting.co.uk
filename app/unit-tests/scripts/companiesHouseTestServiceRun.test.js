@@ -173,7 +173,7 @@ describe("runCases against the Companies House XML Gateway simulator", () => {
     companyAuthenticationCode: FIXTURE_COMPANY_AUTHENTICATION_CODE,
     statement: {
       reviewDate: "2025-09-21",
-      directors: [{ forename: "Alice", otherForenames: "Alice", surname: "Example", dob: "1970-01-01", personalCode: "12345678951" }],
+      directors: [{ forename: "Alice", otherForenames: "Alice", surname: "Example", dob: "1970-01-01", personalCode: "AB1234CD56E" }],
     },
     ...overrides,
   });

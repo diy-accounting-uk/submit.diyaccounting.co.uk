@@ -41,7 +41,7 @@ const BASE_INPUT = {
       otherForenames: "OTHER",
       surname: "NAME",
       dob: "1967-08-13",
-      personalCode: "12345678951",
+      personalCode: "AB1234CD56E",
       nameMismatchReason: "LEGALLY_CHANGED",
     },
   ],
@@ -99,9 +99,10 @@ describe("services/companiesHouseConfirmationStatementXml", () => {
       expect(firstElementText(director, "OtherForenames")).toBe(firstElementText(exampleDirector, "OtherForenames"));
       expect(firstElementText(director, "Surname")).toBe(firstElementText(exampleDirector, "Surname"));
       expect(firstElementText(director, "DOB")).toBe(firstElementText(exampleDirector, "DOB"));
-      expect(firstElementText(director, "CompaniesHousePersonalCode")).toBe(
-        firstElementText(exampleDirector, "CompaniesHousePersonalCode"),
-      );
+      // The published example's own CompaniesHousePersonalCode ("12345678951") is an illustrative
+      // placeholder, not a format-conforming code (see the personal-code format tests below), so
+      // this checks the builder carries through what it was given rather than matching that value.
+      expect(firstElementText(director, "CompaniesHousePersonalCode")).toBe(BASE_INPUT.directors[0].personalCode);
       expect(firstElementText(director, "VerificationStatementForIndividual")).toBe("INDIVIDUAL_VERIFIED");
       expect(firstElementText(director, "NameMismatchReason")).toBe(firstElementText(exampleDirector, "NameMismatchReason"));
     });
@@ -126,6 +127,14 @@ describe("services/companiesHouseConfirmationStatementXml", () => {
       const document = parseXmlDocument(xml);
       expect(firstElementText(document, "TradingOnMarket")).toBe("false");
       expect(firstElementText(document, "DTR5Applies")).toBe("false");
+    });
+
+    test("sends all three PSC exemption elements false alongside TradingOnMarket and DTR5Applies", () => {
+      const xml = buildConfirmationStatementBody(BASE_INPUT);
+      const document = parseXmlDocument(xml);
+      expect(firstElementText(document, "PSCExemptAsTradingOnRegulatedMarket")).toBe("false");
+      expect(firstElementText(document, "PSCExemptAsSharesAdmittedOnMarket")).toBe("false");
+      expect(firstElementText(document, "PSCExemptAsTradingOnUKRegulatedMarket")).toBe("false");
     });
 
     test("sends RegisteredEmailAddress only when given", () => {
@@ -229,13 +238,19 @@ describe("services/companiesHouseConfirmationStatementXml", () => {
       test("throws when a director's personal code is not 11 characters", () => {
         expect(() =>
           buildConfirmationStatementBody({ ...BASE_INPUT, directors: [{ ...BASE_INPUT.directors[0], personalCode: "TOOSHORT" }] }),
-        ).toThrow("Companies House personal code must be 11 characters");
+        ).toThrow("Companies House personal code must be the 11-character letters-and-digits code");
+      });
+
+      test("throws when a director's personal code is all digits", () => {
+        expect(() =>
+          buildConfirmationStatementBody({ ...BASE_INPUT, directors: [{ ...BASE_INPUT.directors[0], personalCode: "12345678951" }] }),
+        ).toThrow("Companies House personal code must be the 11-character letters-and-digits code");
       });
 
       test("throws when a director has no code at all", () => {
         expect(() =>
           buildConfirmationStatementBody({ ...BASE_INPUT, directors: [{ ...BASE_INPUT.directors[0], personalCode: undefined }] }),
-        ).toThrow("Companies House personal code must be 11 characters");
+        ).toThrow("Companies House personal code must be the 11-character letters-and-digits code");
       });
 
       test("throws when a shareholding carries no share class", () => {

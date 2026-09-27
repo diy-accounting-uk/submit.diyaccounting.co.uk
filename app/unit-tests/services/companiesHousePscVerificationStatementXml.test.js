@@ -111,7 +111,13 @@ describe("services/companiesHousePscVerificationStatementXml", () => {
 
     test("throws when the personal code is not 11 characters", () => {
       expect(() => buildPscVerificationStatementBody({ ...BASE_INPUT, personalCode: "TOOSHORT" })).toThrow(
-        "the PSC's Companies House personal code must be 11 characters",
+        "the PSC's Companies House personal code must be the 11-character letters-and-digits code",
+      );
+    });
+
+    test("throws when the personal code is all digits", () => {
+      expect(() => buildPscVerificationStatementBody({ ...BASE_INPUT, personalCode: "12345678951" })).toThrow(
+        "the PSC's Companies House personal code must be the 11-character letters-and-digits code",
       );
     });
   });

@@ -66,8 +66,19 @@
       "still": true,
       "fastForward": true,
       "steps": [
-        { "action": "click", "target": "a.login-link", "caption": "Sign in with the account you already use." },
-        { "action": "login", "caption": "Your account keeps your lookups in one place." },
+        {
+          "action": "click",
+          "target": "a.login-link",
+          "caption": "Sign in with the account you already use.",
+          "headline": "Sign in first",
+          "keyWord": "Sign"
+        },
+        {
+          "action": "login",
+          "caption": "Your account keeps your lookups in one place.",
+          "headline": "Confirm your identity",
+          "keyWord": "identity"
+        },
         { "action": "consent" },
         {
           "action": "await",
@@ -102,7 +113,9 @@
         {
           "action": "click",
           "target": "#searchBtn",
-          "caption": "Companies House answers with a profile."
+          "caption": "Companies House answers with a profile.",
+          "headline": "Companies House answers",
+          "keyWord": "answers"
         },
         { "action": "hold", "ms": 700 }
       ]

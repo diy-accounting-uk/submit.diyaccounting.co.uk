@@ -15,6 +15,7 @@
 // the schema for the company's current state.
 
 import { parseXmlDocument, allElements, escapeXmlText } from "../lib/xmlDom.js";
+import { isValidCompaniesHousePersonalCode } from "./companiesHouseApi.js";
 
 // The ConfirmationAndVerificationStatement element's own xs:sequence, in schema order. Read
 // directly from fixtures/companies-house-xmlgw/ConfirmationAndVerificationStatement-v1-0.xsd by
@@ -205,8 +206,10 @@ function buildShareholdingXml({ shareClass, numberHeld, transfers, shareholders 
 }
 
 function buildVerificationDirectorXml({ title, forename, otherForenames, surname, dob, personalCode, nameMismatchReason }) {
-  if (!personalCode || personalCode.length !== 11) {
-    throw new Error(`director ${surname || forename || ""}'s Companies House personal code must be 11 characters`);
+  if (!isValidCompaniesHousePersonalCode(personalCode).valid) {
+    throw new Error(
+      `director ${surname || forename || ""}'s Companies House personal code must be the 11-character letters-and-digits code`,
+    );
   }
   if (!otherForenames) {
     throw new Error(
@@ -282,7 +285,18 @@ export function buildConfirmationStatementBody({
     throw new Error("at least one director's verification statement is required");
   }
 
-  const parts = ["<TradingOnMarket>false</TradingOnMarket>", "<DTR5Applies>false</DTR5Applies>", `<ReviewDate>${reviewDate}</ReviewDate>`];
+  // The schema's business rule (observed as GovTalk error 9999) requires every
+  // PSCExemptAsTradingOnRegulatedMarket/PSCExemptAsSharesAdmittedOnMarket/PSCExemptAsTradingOnUKRegulatedMarket
+  // element once TradingOnMarket or DTR5Applies carries a value. None of the three PSC exemptions
+  // applies while DTR5Applies is false, so all three are sent as false alongside it.
+  const parts = [
+    "<TradingOnMarket>false</TradingOnMarket>",
+    "<DTR5Applies>false</DTR5Applies>",
+    "<PSCExemptAsTradingOnRegulatedMarket>false</PSCExemptAsTradingOnRegulatedMarket>",
+    "<PSCExemptAsSharesAdmittedOnMarket>false</PSCExemptAsSharesAdmittedOnMarket>",
+    "<PSCExemptAsTradingOnUKRegulatedMarket>false</PSCExemptAsTradingOnUKRegulatedMarket>",
+    `<ReviewDate>${reviewDate}</ReviewDate>`,
+  ];
 
   if (sicCodes && sicCodes.length > 0) {
     const sicCodesXml = sicCodes.map(buildSicCodeXml).join("");

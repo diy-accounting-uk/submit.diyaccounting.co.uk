@@ -22,7 +22,11 @@ import {
 import { validateEnv } from "../../lib/env.js";
 import { registerLambdaRoute } from "../../lib/httpServerToLambdaAdaptor.js";
 import { enforceBundles } from "../../services/bundleManagement.js";
-import { isValidCompanyNumber, http403ForbiddenFromBundleEnforcement } from "../../services/companiesHouseApi.js";
+import {
+  isValidCompanyNumber,
+  isValidCompaniesHousePersonalCode,
+  http403ForbiddenFromBundleEnforcement,
+} from "../../services/companiesHouseApi.js";
 import { isValidIsoDate } from "../../lib/hmrcValidation.js";
 import {
   buildConfirmationStatementBody,
@@ -46,7 +50,6 @@ const logger = createLogger({ source: "app/functions/companies-house/companiesHo
 
 const MIN_COMPANY_AUTH_CODE_LENGTH = 6;
 const MAX_COMPANY_AUTH_CODE_LENGTH = 8;
-const PERSONAL_CODE_LENGTH = 11;
 const MAX_SIC_CODES = 4;
 const MAX_OFFICERS = 50;
 
@@ -90,14 +93,18 @@ function validateOfficers(officers, errorMessages) {
   }
 }
 
-function validateDirectors(directors, errorMessages) {
+// Normalises each director's personal code to the 11-character form the XML Gateway accepts
+// (uppercase, hyphens stripped) and reports every code that still isn't 11 letters-and-digits once
+// normalised - the shape behind GovTalk error 9999 "Invalid CompaniesHousePersonalCode format".
+function validateAndNormaliseDirectors(directors, errorMessages) {
   if (!Array.isArray(directors) || directors.length === 0) {
     errorMessages.push("At least one director's verification statement is required");
+    return directors;
   }
-  for (const director of directors || []) {
-    const personalCode = typeof director?.personalCode === "string" ? director.personalCode.trim() : "";
-    if (personalCode.length !== PERSONAL_CODE_LENGTH) {
-      errorMessages.push(`Invalid director personalCode - must be ${PERSONAL_CODE_LENGTH} characters`);
+  return directors.map((director) => {
+    const { valid: personalCodeValid, normalised: normalisedPersonalCode } = isValidCompaniesHousePersonalCode(director?.personalCode);
+    if (!personalCodeValid) {
+      errorMessages.push("Invalid director personalCode - must be the 11-character Companies House personal code, letters and digits");
     }
     if (!director?.forename || !director?.surname) {
       errorMessages.push("Every director requires a forename and surname");
@@ -105,7 +112,8 @@ function validateDirectors(directors, errorMessages) {
     if (!director?.dob || !isValidIsoDate(director.dob)) {
       errorMessages.push("Every director requires a valid date of birth (YYYY-MM-DD)");
     }
-  }
+    return { ...director, personalCode: normalisedPersonalCode };
+  });
 }
 
 // Extracts and validates a confirmation statement request. Shared with the preview Lambda, which
@@ -176,9 +184,7 @@ export function extractAndValidateConfirmationStatementParameters(event, errorMe
   // once every officer is verified the statement uses ConfirmationStatement-v1-3, which carries no
   // verification block, so no director row is required.
   const requiresVerificationStatement = selectConfirmationStatementSchema(officers).rootElement === "ConfirmationAndVerificationStatement";
-  if (requiresVerificationStatement) {
-    validateDirectors(directors, errorMessages);
-  }
+  const normalisedDirectors = requiresVerificationStatement ? validateAndNormaliseDirectors(directors, errorMessages) : directors;
 
   return {
     companyNumber: normalisedCompanyNumber,
@@ -190,7 +196,7 @@ export function extractAndValidateConfirmationStatementParameters(event, errorMe
     statementOfCapital,
     shareholdings,
     registeredEmailAddress,
-    directors,
+    directors: normalisedDirectors,
     officers,
   };
 }

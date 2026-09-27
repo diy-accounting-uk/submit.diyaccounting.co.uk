@@ -122,6 +122,22 @@ class ScanDetectionStackTest {
     }
 
     @Test
+    void lambdaCanListTheCloudFrontPrefixForAthena() {
+        Template template = Template.fromStack(synthScanDetectionStack());
+        template.hasResourceProperties(
+                "AWS::IAM::Policy",
+                Match.objectLike(Map.of(
+                        "PolicyDocument",
+                        Match.objectLike(Map.of(
+                                "Statement",
+                                Match.arrayWith(List.of(Match.objectLike(Map.of(
+                                        "Action",
+                                        "s3:ListBucket",
+                                        "Condition",
+                                        Map.of("StringLike", Map.of("s3:prefix", "raw/cloudfront/*")))))))))));
+    }
+
+    @Test
     void noIamStatementGrantsOnEveryResource() {
         Template template = Template.fromStack(synthScanDetectionStack());
         var offenders = new ArrayList<String>();

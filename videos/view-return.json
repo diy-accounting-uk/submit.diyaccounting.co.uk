@@ -55,7 +55,9 @@
           "action": "goto",
           "url": "/",
           "waitFor": "#mainContent",
-          "caption": "You can look up a VAT return you already sent HMRC."
+          "caption": "You can look up a VAT return you already sent HMRC.",
+          "headline": "See a submitted return",
+          "keyWord": "submitted"
         },
         {
           "action": "caption",
@@ -87,11 +89,15 @@
         {
           "action": "click",
           "target": "a.login-link",
-          "caption": "Sign in with the account you already use."
+          "caption": "Sign in with the account you already use.",
+          "headline": "Sign in first",
+          "keyWord": "Sign"
         },
         {
           "action": "login",
-          "caption": "Your account keeps your submissions in one place."
+          "caption": "Your account keeps your submissions in one place.",
+          "headline": "Confirm your identity",
+          "keyWord": "identity"
         },
         {
           "action": "consent"
@@ -114,13 +120,17 @@
             "role": "link",
             "name": "Bundles"
           },
-          "caption": "Bundles decide which activities you can run."
+          "caption": "Bundles decide which activities you can run.",
+          "headline": "Open your bundles",
+          "keyWord": "bundles"
         },
         {
           "action": "ensureBundle",
           "bundle": "Day pass",
           "testPass": true,
-          "caption": "A day pass opens the VAT activities for a day."
+          "caption": "A day pass opens the VAT activities for a day.",
+          "headline": "Get a day pass",
+          "keyWord": "pass"
         },
         {
           "action": "hold",
@@ -132,7 +142,9 @@
             "role": "link",
             "name": "Activities"
           },
-          "caption": "Every activity starts from the home page."
+          "caption": "Every activity starts from the home page.",
+          "headline": "Go to activities",
+          "keyWord": "activities"
         },
         {
           "action": "await",
@@ -153,7 +165,9 @@
         {
           "action": "click",
           "target": "button:has-text('VAT Obligations (HMRC)')",
-          "caption": "First ask HMRC which periods it holds."
+          "caption": "First ask HMRC which periods it holds.",
+          "headline": "Ask which periods",
+          "keyWord": "periods"
         },
         {
           "action": "await",
@@ -165,13 +179,17 @@
           "target": "#vrn",
           "text": "{{hmrcVatNumber}}",
           "clear": true,
-          "caption": "Type the VAT registration number."
+          "caption": "Type the VAT registration number.",
+          "headline": "Enter your VAT number",
+          "keyWord": "number"
         },
         {
           "action": "fill",
           "target": "#fromDate",
           "value": "{{monthsAgo:11}}",
-          "caption": "Then the stretch of time to look at."
+          "caption": "Then the stretch of time to look at.",
+          "headline": "Choose the start date",
+          "keyWord": "start"
         },
         {
           "action": "fill",
@@ -192,11 +210,15 @@
         {
           "action": "click",
           "target": "#retrieveBtn",
-          "caption": "The first request sends you to HMRC to grant access."
+          "caption": "The first request sends you to HMRC to grant access.",
+          "headline": "Ask HMRC for access",
+          "keyWord": "access"
         },
         {
           "action": "hmrcAuthorise",
           "caption": "Sign in to HMRC and say yes once.",
+          "headline": "Grant HMRC access",
+          "keyWord": "Grant",
           "timeoutMs": 60000
         },
         {
@@ -215,7 +237,9 @@
           "until": "#obligationsResults",
           "label": "Waiting for HMRC",
           "timeoutMs": 180000,
-          "caption": "HMRC answers with every period it holds."
+          "caption": "HMRC answers with every period it holds.",
+          "headline": "HMRC sends the answer",
+          "keyWord": "answer"
         },
         {
           "action": "scroll",
@@ -229,6 +253,8 @@
           "action": "point",
           "target": "#obligationsTable",
           "caption": "One of these periods is still open, waiting for a return.",
+          "headline": "Find the open period",
+          "keyWord": "open",
           "dwellMs": 600
         },
         {
@@ -266,7 +292,9 @@
             "role": "link",
             "name": "Activities"
           },
-          "caption": "Back to the activities, to ask again."
+          "caption": "Back to the activities, to ask again.",
+          "headline": "Back to activities",
+          "keyWord": "activities"
         },
         {
           "action": "hold",
@@ -275,7 +303,9 @@
         {
           "action": "click",
           "target": "button:has-text('VAT Obligations (HMRC)')",
-          "caption": "Ask HMRC the same question again."
+          "caption": "Ask HMRC the same question again.",
+          "headline": "Ask HMRC again",
+          "keyWord": "again"
         },
         {
           "action": "await",
@@ -287,7 +317,9 @@
           "target": "#vrn",
           "text": "{{hmrcVatNumber}}",
           "clear": true,
-          "caption": "The same VAT registration number."
+          "caption": "The same VAT registration number.",
+          "headline": "Same VAT number",
+          "keyWord": "number"
         },
         {
           "action": "fill",
@@ -306,14 +338,18 @@
         {
           "action": "click",
           "target": "#retrieveBtn",
-          "caption": "This time no HMRC sign-in is needed."
+          "caption": "This time no HMRC sign-in is needed.",
+          "headline": "No sign-in needed",
+          "keyWord": "needed"
         },
         {
           "action": "await",
           "until": "#obligationsResults",
           "label": "Waiting for HMRC",
           "timeoutMs": 60000,
-          "caption": "The periods on file, after the submission."
+          "caption": "The periods on file, after the submission.",
+          "headline": "Periods after filing",
+          "keyWord": "filing"
         },
         {
           "action": "scroll",
@@ -336,7 +372,9 @@
             "role": "link",
             "name": "Activities"
           },
-          "caption": "Back to the activities, to view a return."
+          "caption": "Back to the activities, to view a return.",
+          "headline": "Back to activities",
+          "keyWord": "activities"
         },
         {
           "action": "hold",
@@ -345,7 +383,9 @@
         {
           "action": "click",
           "target": "button:has-text('View VAT Return (HMRC)')",
-          "caption": "Ask to see a return you've already sent."
+          "caption": "Ask to see a return you've already sent.",
+          "headline": "Open View VAT Return",
+          "keyWord": "View"
         },
         {
           "action": "await",
@@ -357,13 +397,17 @@
           "target": "#vrn",
           "text": "{{hmrcVatNumber}}",
           "clear": true,
-          "caption": "The same VAT registration number."
+          "caption": "The same VAT registration number.",
+          "headline": "Same VAT number",
+          "keyWord": "number"
         },
         {
           "action": "fill",
           "target": "#periodStart",
           "value": "{{submittedPeriodStart}}",
-          "caption": "Then the period you want to read back."
+          "caption": "Then the period you want to read back.",
+          "headline": "Choose the period",
+          "keyWord": "period"
         },
         {
           "action": "fill",
@@ -377,14 +421,18 @@
         {
           "action": "click",
           "target": "#retrieveBtn",
-          "caption": "The same HMRC access already covers this."
+          "caption": "The same HMRC access already covers this.",
+          "headline": "Same access covers this",
+          "keyWord": "access"
         },
         {
           "action": "await",
           "until": "#returnResults",
           "label": "Waiting for HMRC",
           "timeoutMs": 450000,
-          "caption": "HMRC sends back exactly what was filed."
+          "caption": "HMRC sends back exactly what was filed.",
+          "headline": "HMRC sends the return",
+          "keyWord": "return"
         },
         {
           "action": "scroll",
@@ -398,6 +446,8 @@
           "action": "point",
           "target": "#returnDetails",
           "caption": "All nine boxes, just as they were submitted.",
+          "headline": "Read all nine boxes",
+          "keyWord": "nine",
           "dwellMs": 600
         },
         {

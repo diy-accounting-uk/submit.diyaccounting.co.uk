@@ -103,10 +103,19 @@
         {
           "action": "click",
           "target": "#companyLookupBtn",
-          "caption": "This looks up the current address at Companies House."
+          "caption": "This looks up the current address at Companies House.",
+          "headline": "Look up the address",
+          "keyWord": "address"
         },
         { "action": "await", "until": "#formView", "label": "Looking up the current address" },
-        { "action": "point", "target": "#currentAddressList", "caption": "This is the address on file today.", "dwellMs": 400 },
+        {
+          "action": "point",
+          "target": "#currentAddressList",
+          "caption": "This is the address on file today.",
+          "headline": "The address on file",
+          "keyWord": "address",
+          "dwellMs": 400
+        },
         { "action": "hold", "ms": 700 }
       ]
     },
@@ -129,12 +138,16 @@
         {
           "action": "click",
           "target": "#acceptOfficeStatement",
-          "caption": "Confirm the address is one the company can be reached at."
+          "caption": "Confirm the address is one the company can be reached at.",
+          "headline": "Confirm it's reachable",
+          "keyWord": "reachable"
         },
         {
           "action": "click",
           "target": "#continueBtn",
-          "caption": "Review before anything is filed."
+          "caption": "Review before anything is filed.",
+          "headline": "Review before filing",
+          "keyWord": "Review"
         },
         { "action": "hold", "ms": 700 }
       ]
@@ -156,7 +169,16 @@
         {
           "action": "click",
           "target": "#submitFilingBtn",
-          "caption": "File the change with Companies House's sandbox."
+          "caption": "File the change with Companies House's sandbox.",
+          "headline": "File with the sandbox",
+          "keyWord": "sandbox"
+        },
+        {
+          "action": "companiesHouseAuthorise",
+          "caption": "Sign in to Companies House and say yes once.",
+          "headline": "Grant Companies House access",
+          "keyWord": "Grant",
+          "timeoutMs": 60000
         },
         { "action": "hold", "ms": 500 }
       ]

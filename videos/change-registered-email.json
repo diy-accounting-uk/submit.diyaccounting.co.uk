@@ -103,7 +103,16 @@
         {
           "action": "click",
           "target": "#companyLookupBtn",
-          "caption": "This checks eligibility at Companies House."
+          "caption": "This checks eligibility at Companies House.",
+          "headline": "Check eligibility first",
+          "keyWord": "eligibility"
+        },
+        {
+          "action": "companiesHouseAuthorise",
+          "caption": "Sign in to Companies House and say yes once.",
+          "headline": "Grant Companies House access",
+          "keyWord": "Grant",
+          "timeoutMs": 60000
         },
         { "action": "await", "until": "#formView", "label": "Checking eligibility" },
         { "action": "hold", "ms": 500 }
@@ -125,12 +134,16 @@
         {
           "action": "click",
           "target": "#acceptEmailStatement",
-          "caption": "Confirm the company is likely to notice mail sent there."
+          "caption": "Confirm the company is likely to notice mail sent there.",
+          "headline": "Confirm the company will notice",
+          "keyWord": "notice"
         },
         {
           "action": "click",
           "target": "#continueBtn",
-          "caption": "Review before anything is filed."
+          "caption": "Review before anything is filed.",
+          "headline": "Review before filing",
+          "keyWord": "Review"
         },
         { "action": "hold", "ms": 700 }
       ]
@@ -152,7 +165,9 @@
         {
           "action": "click",
           "target": "#submitFilingBtn",
-          "caption": "File the change with Companies House."
+          "caption": "File the change with Companies House.",
+          "headline": "File the change",
+          "keyWord": "File"
         },
         { "action": "hold", "ms": 500 }
       ]

@@ -46,7 +46,9 @@
           "action": "goto",
           "url": "/",
           "waitFor": "#mainContent",
-          "caption": "HMRC can charge a penalty for a late VAT return or payment."
+          "caption": "HMRC can charge a penalty for a late VAT return or payment.",
+          "headline": "Check for penalty points",
+          "keyWord": "penalty"
         },
         {
           "action": "caption",
@@ -68,11 +70,15 @@
         {
           "action": "click",
           "target": "a.login-link",
-          "caption": "Sign in with the account you already use."
+          "caption": "Sign in with the account you already use.",
+          "headline": "Sign in first",
+          "keyWord": "Sign"
         },
         {
           "action": "login",
-          "caption": "Your account keeps your submissions in one place."
+          "caption": "Your account keeps your submissions in one place.",
+          "headline": "Confirm your identity",
+          "keyWord": "identity"
         },
         { "action": "consent" },
         { "action": "hold", "ms": 600 }
@@ -87,19 +93,25 @@
         {
           "action": "click",
           "target": { "role": "link", "name": "Bundles" },
-          "caption": "Bundles decide which activities you can run."
+          "caption": "Bundles decide which activities you can run.",
+          "headline": "Open your bundles",
+          "keyWord": "bundles"
         },
         {
           "action": "ensureBundle",
           "bundle": "Day pass",
           "testPass": true,
-          "caption": "A day pass opens the VAT activities for a day."
+          "caption": "A day pass opens the VAT activities for a day.",
+          "headline": "Get a day pass",
+          "keyWord": "pass"
         },
         { "action": "hold", "ms": 700 },
         {
           "action": "click",
           "target": { "role": "link", "name": "Activities" },
-          "caption": "Every activity starts from the home page."
+          "caption": "Every activity starts from the home page.",
+          "headline": "Go to activities",
+          "keyWord": "activities"
         },
         {
           "action": "await",
@@ -117,7 +129,9 @@
         {
           "action": "click",
           "target": "button:has-text('VAT Penalties (HMRC)')",
-          "caption": "Open VAT Penalties to check for penalty points."
+          "caption": "Open VAT Penalties to check for penalty points.",
+          "headline": "Open VAT Penalties",
+          "keyWord": "Penalties"
         },
         { "action": "await", "until": "#vatPenaltiesForm", "label": "Opening the penalties form" },
         {
@@ -125,7 +139,9 @@
           "target": "#vrn",
           "text": "{{hmrcVatNumber}}",
           "clear": true,
-          "caption": "Type the VAT registration number. There is no date range to set."
+          "caption": "Type the VAT registration number. There is no date range to set.",
+          "headline": "Enter your VAT number",
+          "keyWord": "number"
         },
         { "action": "hold", "ms": 700 }
       ]
@@ -138,11 +154,15 @@
         {
           "action": "click",
           "target": "#retrieveBtn",
-          "caption": "The first request sends you to HMRC to grant access."
+          "caption": "The first request sends you to HMRC to grant access.",
+          "headline": "Ask HMRC for access",
+          "keyWord": "access"
         },
         {
           "action": "hmrcAuthorise",
           "caption": "Sign in to HMRC and say yes once.",
+          "headline": "Grant HMRC access",
+          "keyWord": "Grant",
           "timeoutMs": 60000
         },
         { "action": "hold", "ms": 500 }
@@ -158,7 +178,9 @@
           "until": "#penaltiesResults",
           "label": "Waiting for HMRC",
           "timeoutMs": 180000,
-          "caption": "HMRC answers for the last 24 months."
+          "caption": "HMRC answers for the last 24 months.",
+          "headline": "HMRC sends the answer",
+          "keyWord": "answer"
         },
         { "action": "scroll", "target": "#penaltiesResults" },
         { "action": "hold", "ms": 1500 },
@@ -166,6 +188,8 @@
           "action": "point",
           "target": "#penaltiesResults",
           "caption": "Any penalty points or charges show here.",
+          "headline": "Read any penalty points",
+          "keyWord": "penalty",
           "dwellMs": 600
         },
         { "action": "hold", "ms": 2500 },
