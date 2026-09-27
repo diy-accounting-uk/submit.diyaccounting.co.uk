@@ -202,9 +202,7 @@ public class SelfDestructStack extends Stack {
                                                 .sid("ReadHoldAndReleaseCiSlot")
                                                 .effect(Effect.ALLOW)
                                                 .actions(List.of(
-                                                        "ssm:GetParameter",
-                                                        "ssm:PutParameter",
-                                                        "ssm:DeleteParameter"))
+                                                        "ssm:GetParameter", "ssm:PutParameter", "ssm:DeleteParameter"))
                                                 .resources(List.of("arn:aws:ssm:%s:%s:parameter/submit/%s/slots/%s"
                                                         .formatted(
                                                                 this.getRegion(),

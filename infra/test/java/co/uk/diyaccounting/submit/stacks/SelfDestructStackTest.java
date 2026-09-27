@@ -110,8 +110,7 @@ class SelfDestructStackTest {
         SelfDestructStack selfDestructStack = synthSelfDestructStack();
         Template template = Template.fromStack(selfDestructStack);
 
-        List<Map<String, Object>> statements =
-                findPolicyStatementsContainingSid(template, "ReadHoldAndReleaseCiSlot");
+        List<Map<String, Object>> statements = findPolicyStatementsContainingSid(template, "ReadHoldAndReleaseCiSlot");
         Map<String, Object> statement = statements.stream()
                 .filter(s -> "ReadHoldAndReleaseCiSlot".equals(s.get("Sid")))
                 .findFirst()
