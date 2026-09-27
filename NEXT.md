@@ -16,8 +16,8 @@ runs), and for Claude Code steps the **Model** a sub-agent should use (Fable > O
 Haiku; the lowest tier that fits). Anything touching code goes through a `claude/*` branch and
 PR; the operator merges.
 
-**Prod runs deployment prod-d19cd6d** (PR #380's merge deploy, run 36295592006, 2026-09-27, every prod suite green; PR #385's merge deploy is running).
-**ci**: `ci-set1` is last-known-good; its slot is still claimed by the closed #374's failed deploy (run 36270437933, claimed 21:07 UTC, frees after five hours). PR #375's deploy (run 36275108431) is running.
+**Prod runs deployment prod-d19cd6d** (PR #380's merge deploy, run 36295592006, 2026-09-27, every prod suite green; PR #385's merge deploy is running and has built `prod-33b7ae3`).
+**ci**: `ci-set1` is last-known-good (created 03:57 UTC); `ci-set2` is claimed by PR #382's finished deploy (run 36290929223).
 
 The board runs in five sections, in this order: **in flight** (a branch, a pull request or a run
 in motion, each named in the row), **machine-only**, **machine-ask**, **human-driven**,
@@ -47,7 +47,9 @@ step.
 
 ## Machine-only
 
-- [ ] **PRB1. Close #372 and #377 with the first clean scheduled prod probe.** The native-auth holder list merged in PR #379 (2975eeb2). Remainder: after `main`'s deploy of it, the next scheduled `probe-test.yml` run on `main` that overlaps nothing red; close both issues with its link. **Source**: #372, #377, 2026-09-27. **Owner**: Claude Code. **Model**: Haiku. **Size**: 0 files.
+- [ ] **DB4. The dashboard's human, bot and synthetic session rows are blank.** `google-apply.yml` run 36269483427 on `main` (e6d75b3d) updated the four scheduled queries to 01:00 UTC. Remainder (the 2026-09-27 02:15 UTC pull has run): read the four tables with `scripts/gcp-as-sso.sh` (they held 2, 1, 2 and 9 rows on 2026-09-26) and the dashboard's session rows; a blank row then goes back to the query named in `analytics/`. **Source**: DB1, 2026-09-26. **Owner**: Claude Code. **Model**: Sonnet. **Size**: ~3 files.
+
+- [ ] **PRB1. Close #377 with the first clean scheduled prod probe.** The native-auth holder list merged in PR #379 (2975eeb2). Remainder: after `main`'s deploy of it, the next scheduled `probe-test.yml` run on `main` that overlaps nothing red; close #377 with its link (#372 is already closed); scheduled run 36298509348 (05:53 UTC) is the first since the fix. **Source**: #372, #377, 2026-09-27. **Owner**: Claude Code. **Model**: Haiku. **Size**: 0 files.
 
 - [ ] **MCP2. A video of the diya-gl MCP server at work, on videos.html.** Record the spreadsheets repository's MCP server (`diya-gl-mcp`) extracting a book and deriving figures, driven by a scene script through a browser MCP client the capture can control (the MCP Inspector's web UI, `npx @modelcontextprotocol/inspector`), against a sample workbook from `../spreadsheets.diyaccounting.co.uk/examples/`; add it to `videos/publish.json` so `videos.html` shows it. A chat-client recording (Claude Desktop) reads better to a customer but cannot be scripted headlessly; it can follow as a manual recording. After MCP1 and VID1 to VID3. **Source**: operator, 2026-09-26. **Owner**: Claude Code. **Model**: Sonnet. **Size**: ~3 files.
 
@@ -80,8 +82,6 @@ step.
 - [ ] **CS-13b. PSC verification statement (VS01): the test-service proof.** Harness run 36295600451: the director-PSC case for 04549236 passes the gateway at submit and its status poll answers 9999 `No presenter ID supplied` (the test-presenter fault, as CS-A3); the blank-code case is pinned at error 100. Remainder: pin the director-PSC case's outcome with CS-A3's next run. Blocked on Companies House fixing the test presenter account (B34.6c). **Source**: `PLAN_COMPANIES_HOUSE.md`. **Owner**: Claude Code. **Model**: Sonnet. **Size**: ~1 file.
 
 - [ ] **O11v. A video of the whole ITSA year.** `video-capture.yml` run 36286118252 on `main` signed in (VID6's fixes hold) and then stopped at the first narrated scene: `spawnSync aws ENOENT`, because VID5's narration shells out to the AWS CLI and the Playwright capture container has none. VID7 carries the fix. Remainder: after VID7 lands, re-dispatch `itsa-year` against ci; then the operator uploads it unlisted. Blocked on VID7. **Source**: operator, 2026-09-26. **Owner**: Claude Code. **Model**: Haiku. **Size**: 0 files.
-
-- [ ] **DB4. The dashboard's human, bot and synthetic session rows are blank.** `google-apply.yml` run 36269483427 on `main` (e6d75b3d) updated the four scheduled queries to 01:00 UTC. Remainder, after the lake's 2026-09-27 02:15 UTC pull: read the four tables with `scripts/gcp-as-sso.sh` (they held 2, 1, 2 and 9 rows on 2026-09-26) and the dashboard's session rows; a blank row then goes back to the query named in `analytics/`. Blocked on 2026-09-27 02:15 UTC. **Source**: DB1, 2026-09-26. **Owner**: Claude Code. **Model**: Sonnet. **Size**: ~3 files.
 
 - [ ] **CS-A4. Software authorisation: send the evidence.** Claude Code assembles the pack from a `companies-house-test-service.yml` run inside the last 14 days, against `PLAN_COMPANIES_HOUSE.md`'s criteria table: product and forms, one line per case with its submission number and outcome, the run link, the page's axe result (`scripts/axe-quickscan.mjs`), a declaration screenshot, contact. It drafts the email at the workspace root. The operator sends it to `xml@companieshouse.gov.uk` from their own address and asks for the live package reference for the confirmation statement (or confirmation that the accounts reference from O34c covers it), then sets it on GitHub's `prod` environment. Every case needs a terminal `ACCEPT` or `REJECT`, which `GetSubmissionStatus` cannot return while it answers 9999 (B34.6c's blocker). Blocked on CS-A3 and on Companies House IT repairing the test presenter. **Source**: `PLAN_COMPANIES_HOUSE.md`. **Owner**: Claude Code (the pack), Operator (the send). **Model**: Sonnet. **Size**: 0 files.
 
