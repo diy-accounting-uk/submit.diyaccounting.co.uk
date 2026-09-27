@@ -16,7 +16,7 @@ runs), and for Claude Code steps the **Model** a sub-agent should use (Fable > O
 Haiku; the lowest tier that fits). Anything touching code goes through a `claude/*` branch and
 PR; the operator merges.
 
-**Prod runs deployment prod-33b7ae3** (PR #385's merge deploy, run 36298508750, 2026-09-27; PR #382's merge deploy is running).
+**Prod runs deployment prod-f32f2d4** (PR #382's merge deploy, run 36301572873, 2026-09-27).
 **ci**: `ci-set1` is last-known-good (created 03:57 UTC); `ci-set2` is claimed by PR #382's finished deploy (run 36290929223).
 
 The board runs in five sections, in this order: **in flight** (a branch, a pull request or a run
@@ -38,6 +38,8 @@ names its model: the lowest tier that fits (Fable > Opus > Sonnet > Haiku), or `
 step.
 
 ## In flight
+
+- [ ] **PRB4. A branch-delete teardown and a branch deploy wait on each other.** `destroy-ci.yml` run 36301573707 (the delete of claude/tempest-video at 06:56 UTC 2026-09-27) held destroy-ci's fixed concurrency group and waited 40 minutes at "Wait for older ci deploy runs to finish" for PR #388's deploy run 36301422421, whose `sweep ci for a stale set` job (a `workflow_call` of destroy-ci.yml) waited for that same group. Cancelled by hand to release both. The wait also sits before the slot hold, so the hold never ran. On `claude/wyvern-ops` (agent working). Remainder: merge; until then, cancel any branch-delete teardown that waits more than 15 minutes on a deploy whose sweep is pending. **Source**: runs 36301573707, 36301422421, 2026-09-27. **Owner**: Claude Code. **Model**: Sonnet. **Size**: ~3 files.
 
 - [ ] **OVID1. Read how YouTube serves a 4K upload.** VID1 is on `main` (PR #375). PR #382 merged (f32f2d4b); `video-capture.yml` run 36301588552 records `video-capture.yml` with `view-obligations` against ci; then Claude Code fetches the mp4 from the run and uploads it unlisted with `scripts/youtube-upload.js` (the operator approved Claude doing this upload, 2026-09-27); the operator then opens it on YouTube at 1080p and at 4K and reads "Stats for nerds" (codec, resolution), and the winning settings go into the `site-video-capture` skill. **Source**: operator, 2026-09-26. **Owner**: Claude Code (capture, upload), operator (reading). **Model**: Haiku. **Size**: 0 files.
 
