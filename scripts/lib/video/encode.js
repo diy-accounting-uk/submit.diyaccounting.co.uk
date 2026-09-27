@@ -163,9 +163,9 @@ export function mixNarrationTrack({ ffmpegBin, clips, outputPath }) {
 
 // design: VID5 narration. Adds the mixed narration track to the silent video as its AAC audio
 // stream, re-encoding no video frame -- -c:v copy keeps the H.264 stream buildManifest and
-// encodeVideo already produced untouched. -shortest matches the audio to whichever track is
-// shorter, which is always the video: the mix's own last clip ends at or before the video's
-// finalHoldMs tail, since every clip's startMs came from the same timeline.
+// encodeVideo already produced untouched. The video sets the duration: a fast-forwarded scene has
+// no narration, so the mix can end early and -shortest would cut real frames. This remux writes
+// the shipped file, so it repeats +faststart.
 export function muxNarrationArgs({ videoPath, narrationTrackPath, outputPath }) {
   return [
     "-y",
@@ -183,7 +183,8 @@ export function muxNarrationArgs({ videoPath, narrationTrackPath, outputPath }) 
     "aac",
     "-b:a",
     "128k",
-    "-shortest",
+    "-movflags",
+    "+faststart",
     outputPath,
   ];
 }

@@ -47,6 +47,11 @@ export function wrapCaptionLines(text, maxCharsPerLine, maxLines) {
   return lines;
 }
 
+// A "caption" action keeps its text in step.text; every other action in step.caption.
+export function captionTextForStep(step) {
+  return (step.action === "caption" ? step.text : step.caption) || null;
+}
+
 export function buildVttCue(index, startMs, endMs, lines) {
   return `${index}\n${formatVttTimestamp(startMs)} --> ${formatVttTimestamp(endMs)}\n${lines.join("\n")}\n`;
 }

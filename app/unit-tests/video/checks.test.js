@@ -44,6 +44,18 @@ describe("checkTimings", () => {
     const offCameraStep = step({ offCamera: true, waitMs: 100, residualMs: 0 });
     expect(checkTimings([offCameraStep], script)).toEqual([]);
   });
+
+  test("expects a zero residual for a fast-forwarded step, not the configured minResidualMs floor", () => {
+    const fastForwardStep = step({ fastForward: true, configuredMs: 0, waitMs: 0, residualMs: 0 });
+    expect(checkTimings([fastForwardStep], script)).toEqual([]);
+  });
+
+  test("still fails a fast-forwarded step whose recorded residual is not the zeroed formula's result", () => {
+    const fastForwardStep = step({ fastForward: true, configuredMs: 0, waitMs: 0, residualMs: 150 });
+    const failures = checkTimings([fastForwardStep], script);
+    expect(failures).toHaveLength(1);
+    expect(failures[0]).toMatchObject({ check: "residualAfterWait", expected: 0, actual: 150 });
+  });
 });
 
 describe("checkTimerMarkers", () => {

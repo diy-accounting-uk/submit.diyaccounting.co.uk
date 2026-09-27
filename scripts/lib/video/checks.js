@@ -19,7 +19,9 @@ export function checkTimings(timelineSteps, script) {
     // enforces does not apply to it.
     if (step.offCamera) continue;
     if (step.group === 2 || step.group === 3) {
-      const expectedResidual = residualAfterWait(step.configuredMs, step.waitMs, script.pacing);
+      // A fast-forwarded scene captures at zero pacing, so the minResidualMs floor never applied.
+      const pacingForStep = step.fastForward ? { ...script.pacing, minResidualMs: 0 } : script.pacing;
+      const expectedResidual = residualAfterWait(step.configuredMs, step.waitMs, pacingForStep);
       const diff = Math.abs(expectedResidual - step.residualMs);
       if (diff > 60) {
         failures.push({
