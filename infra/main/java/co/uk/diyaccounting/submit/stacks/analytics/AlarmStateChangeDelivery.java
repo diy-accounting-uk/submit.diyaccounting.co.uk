@@ -191,10 +191,9 @@ public class AlarmStateChangeDelivery extends Construct {
                         CfnDeliveryStream.ExtendedS3DestinationConfigurationProperty.builder()
                                 .bucketArn(lakeBucket.getBucketArn())
                                 .roleArn(firehoseRole.getRoleArn())
-                                .prefix(CURATED_PREFIX
-                                        + "year=!{timestamp:yyyy}/month=!{timestamp:MM}/day=!{timestamp:dd}/")
+                                .prefix(CURATED_PREFIX + "dt=!{timestamp:yyyy-MM-dd}/")
                                 .errorOutputPrefix("errors/alarm-state-changes/!{firehose:error-output-type}/"
-                                        + "year=!{timestamp:yyyy}/month=!{timestamp:MM}/day=!{timestamp:dd}/")
+                                        + "dt=!{timestamp:yyyy-MM-dd}/")
                                 .bufferingHints(CfnDeliveryStream.BufferingHintsProperty.builder()
                                         .intervalInSeconds(900)
                                         .sizeInMBs(128)
@@ -288,8 +287,8 @@ public class AlarmStateChangeDelivery extends Construct {
 
     /**
      * Columns match {@code alarmStateChangeTransform.js}'s flattened row exactly. Partition
-     * projection over year/month/day, the same shape {@link TableChangeDelivery#buildGlueTable}
-     * uses.
+     * projection over a single {@code dt} date column, the same shape {@link
+     * TableChangeDelivery#buildGlueTable} uses.
      */
     private CfnTable buildGlueTable(AlarmStateChangeDeliveryProps props, String prefix) {
         var location = "s3://%s/%s".formatted(props.lakeBucket().getBucketName(), CURATED_PREFIX);
@@ -298,15 +297,12 @@ public class AlarmStateChangeDelivery extends Construct {
         tableParameters.put("classification", "parquet");
         tableParameters.put("has_encrypted_data", "false");
         tableParameters.put("projection.enabled", "true");
-        tableParameters.put("projection.year.type", "integer");
-        tableParameters.put("projection.year.range", "2026,2035");
-        tableParameters.put("projection.month.type", "integer");
-        tableParameters.put("projection.month.range", "1,12");
-        tableParameters.put("projection.month.digits", "2");
-        tableParameters.put("projection.day.type", "integer");
-        tableParameters.put("projection.day.range", "1,31");
-        tableParameters.put("projection.day.digits", "2");
-        tableParameters.put("storage.location.template", location + "year=${year}/month=${month}/day=${day}/");
+        tableParameters.put("projection.dt.type", "date");
+        tableParameters.put("projection.dt.format", "yyyy-MM-dd");
+        tableParameters.put("projection.dt.range", "2026-08-01,NOW");
+        tableParameters.put("projection.dt.interval", "1");
+        tableParameters.put("projection.dt.interval.unit", "DAYS");
+        tableParameters.put("storage.location.template", location + "dt=${dt}/");
 
         return CfnTable.Builder.create(this, prefix + "-AlarmStateChangesGlueTable")
                 .catalogId(Stack.of(this).getAccount())
@@ -316,19 +312,10 @@ public class AlarmStateChangeDelivery extends Construct {
                         .description("CloudWatch alarm state changes for this environment's alarms")
                         .tableType("EXTERNAL_TABLE")
                         .parameters(tableParameters)
-                        .partitionKeys(List.of(
-                                CfnTable.ColumnProperty.builder()
-                                        .name("year")
-                                        .type("int")
-                                        .build(),
-                                CfnTable.ColumnProperty.builder()
-                                        .name("month")
-                                        .type("int")
-                                        .build(),
-                                CfnTable.ColumnProperty.builder()
-                                        .name("day")
-                                        .type("int")
-                                        .build()))
+                        .partitionKeys(List.of(CfnTable.ColumnProperty.builder()
+                                .name("dt")
+                                .type("date")
+                                .build()))
                         .storageDescriptor(CfnTable.StorageDescriptorProperty.builder()
                                 .location(location)
                                 .inputFormat("org.apache.hadoop.hive.ql.io.parquet.MapredParquetInputFormat")

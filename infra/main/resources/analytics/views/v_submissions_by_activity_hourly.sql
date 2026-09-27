@@ -27,7 +27,6 @@ FROM  (SELECT date_trunc('hour', event_ts) AS hour, hashed_sub, client_id,
               END AS activity
        FROM   activity_events_all
        WHERE  actor = 'customer'
-              AND concat(cast(year AS varchar), lpad(cast(month AS varchar), 2, '0'), lpad(cast(day AS varchar), 2, '0'))
-                  >= date_format(current_date - interval '8' day, '%Y%m%d'))
+              AND dt >= current_date - interval '8' day)
 WHERE  activity IS NOT NULL
 GROUP  BY 1, 2, 3, 4

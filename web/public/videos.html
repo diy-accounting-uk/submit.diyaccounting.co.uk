@@ -108,6 +108,10 @@
           </p>
         </div>
 
+        <nav id="videoContents" aria-label="Contents" hidden>
+          <h2>Contents</h2>
+          <ul></ul>
+        </nav>
         <div id="videoList" aria-live="polite">
           <p class="service-description">Loading videos...</p>
         </div>
@@ -197,6 +201,22 @@
             return;
           }
           container.innerHTML = videos.map(sectionHtml).join("\n");
+
+          const navContents = document.getElementById("videoContents");
+          if (navContents) {
+            const ul = navContents.querySelector("ul");
+            ul.replaceChildren(
+              ...videos.map((video) => {
+                const link = document.createElement("a");
+                link.href = `#${video.id}`;
+                link.textContent = video.title;
+                const item = document.createElement("li");
+                item.append(link);
+                return item;
+              }),
+            );
+            navContents.hidden = false;
+          }
 
           container.querySelectorAll("button.copy-link").forEach((button) => {
             button.addEventListener("click", async () => {

@@ -173,7 +173,7 @@ describe("dataQualityRun", () => {
         roleArn: "arn:aws:iam::111111111111:role/ci-env-data-quality-run",
         lakeBucketName: "ci-env-analytics-lake-111111111111",
         curatedPrefix: "curated/activity-events/",
-        partitionScheme: "year-month-day",
+        partitionScheme: "dt",
       });
     });
 
@@ -188,8 +188,24 @@ describe("dataQualityRun", () => {
       expect(config.partitionScheme).toBe("dt");
     });
 
-    test("selects the year-month-day partition scheme for alarm_state_changes", () => {
+    test("selects the dt partition scheme for alarm_state_changes", () => {
       const config = buildTargetConfig(VALID_SHARED_CONFIG, VALID_TARGETS[1]);
+      expect(config.partitionScheme).toBe("dt");
+    });
+
+    test("selects the dt partition scheme for both compliance tables", () => {
+      for (const [table, curatedPrefix] of [
+        ["compliance_accessibility", "curated/compliance/accessibility/"],
+        ["compliance_fraud_headers", "curated/compliance/fraud-headers/"],
+      ]) {
+        const config = buildTargetConfig(VALID_SHARED_CONFIG, { table, ruleset: `ci_env_${table}_dq`, curatedPrefix });
+        expect(config.partitionScheme).toBe("dt");
+      }
+    });
+
+    test("selects the year-month-day partition scheme for a target not in DT_PARTITIONED_TABLES", () => {
+      const otherTarget = { table: "some_year_month_day_table", ruleset: "ci_env_other_dq", curatedPrefix: "curated/other/" };
+      const config = buildTargetConfig(VALID_SHARED_CONFIG, otherTarget);
       expect(config.partitionScheme).toBe("year-month-day");
     });
   });

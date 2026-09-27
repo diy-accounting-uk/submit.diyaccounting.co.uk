@@ -161,7 +161,7 @@
   function movePointerImmediate(x, y) {
     pointerX = x;
     pointerY = y;
-    if (!pointerEl) return; // overlay not built yet (see the ready(buildDom) note below)
+    if (!pointerEl) return; // overlay not built yet (see the ensureDom note below)
     pointerEl.style.left = `${x}px`;
     pointerEl.style.top = `${y}px`;
     ringEl.style.left = `${x}px`;
@@ -230,6 +230,7 @@
   // Quadratic Bezier with a slight arc, eased in/out — borrowed from ghost-cursor's curve idea,
   // without its randomised jitter/overshoot (which exists to defeat bot detection).
   async function pointTo(x, y) {
+    ensureDom();
     const x0 = pointerX,
       y0 = pointerY;
     const dx = x - x0,
@@ -261,6 +262,7 @@
   }
 
   async function click(rect) {
+    ensureDom();
     if (!root) return log("click-skipped-not-ready", { rect });
     const cx = rect.left + rect.width / 2;
     const cy = rect.top + rect.height / 2;
@@ -281,6 +283,7 @@
   }
 
   function highlight(rect, holdMs) {
+    ensureDom();
     if (!root) return log("highlight-skipped-not-ready", { rect, holdMs });
     const box = document.createElement("div");
     box.style.cssText =
@@ -299,6 +302,7 @@
   }
 
   function typeChar(rect) {
+    ensureDom();
     if (!root) return log("typeChar-skipped-not-ready", { rect });
     const cx = rect.left + rect.width - 6;
     const cy = rect.top + rect.height / 2;
@@ -314,6 +318,7 @@
   }
 
   function caption(text) {
+    ensureDom();
     if (!root) return log("caption-skipped-not-ready", { text });
     if (!text) {
       captionBox.style.opacity = "0";
@@ -330,6 +335,7 @@
   // leading/trailing punctuation stripped), not as a substring, so it never lights up a word
   // that merely contains it.
   function headline(text, keyWord, placement) {
+    ensureDom();
     if (!root) return log("headline-skipped-not-ready", { text });
     if (!text) {
       headlineBox.style.opacity = "0";
@@ -359,6 +365,7 @@
   }
 
   function chapter(text) {
+    ensureDom();
     if (!root) return log("chapter-skipped-not-ready", { text });
     chapterLabel.textContent = text;
     chapterLabel.style.opacity = text ? "1" : "0";
@@ -369,6 +376,7 @@
   let timerFullScaleMs = 5000;
 
   function timerStart(label, fullScaleMs) {
+    ensureDom();
     if (!root) return log("timerStart-skipped-not-ready", { label });
     timerFullScaleMs = fullScaleMs || 5000;
     timerStartedAt = performance.now();
@@ -391,12 +399,14 @@
   }
 
   function timerSetCompressing(active) {
+    ensureDom();
     if (!root) return log("timerCompression-skipped-not-ready", { active });
     timerCompressionEl.style.opacity = active ? "1" : "0";
     log("timerCompression", { active });
   }
 
   async function timerStop() {
+    ensureDom();
     if (!root) return log("timerStop-skipped-not-ready", {});
     if (timerRaf) cancelAnimationFrame(timerRaf);
     timerBarEl.style.background = SUCCESS;
@@ -439,12 +449,23 @@
     if (trailCanvas) resizeTrailCanvas();
   });
 
-  // document.documentElement does not exist yet at the point an addInitScript-injected script
-  // runs (it runs at document creation, before the parser has produced an <html> element), so
-  // the DOM build waits for DOMContentLoaded. Every __svc method below no-ops if called before
-  // that — root is undefined — rather than throwing: a step running under --scene fast-forward's
-  // near-zero pacing can legitimately call an overlay method microseconds after a navigation.
-  ready(buildDom);
+  // Idempotent: builds the overlay's DOM the first time any method needs it, and rebuilds it
+  // whenever the existing root has come loose from the document — the redirect back from an
+  // identity provider's hosted UI can land a call on a document this script has not finished (or
+  // has not yet started) drawing on. buildDom() only attaches root to documentElement as its very
+  // last step, so a build that threw partway through — or one that simply has not run yet — both
+  // show up here as "root missing or not connected", and both get the same fresh rebuild. A
+  // document.documentElement that does not exist yet (the instant an addInitScript-injected
+  // script starts, before the parser has produced an <html> element) is left for the next call:
+  // every __svc method's own not-ready guard covers that no-op.
+  function ensureDom() {
+    if (root && root.isConnected) return;
+    if (root && root.parentNode) root.parentNode.removeChild(root);
+    if (!document.documentElement) return;
+    buildDom();
+  }
+
+  ready(ensureDom);
 
   window.__svc = {
     pointTo,

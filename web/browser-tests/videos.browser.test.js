@@ -92,6 +92,23 @@ test.describe("videos.html", () => {
   });
 });
 
+test("the contents list links to every video section", async ({ page }) => {
+  await serveRealSite(page);
+  await page.goto("http://localhost:3000/videos.html", { waitUntil: "domcontentloaded" });
+
+  const contentLinks = page.locator("#videoContents a");
+  const sections = page.locator("section.video-section");
+
+  await expect(contentLinks).toHaveCount(EMBEDDED.length);
+
+  const sectionIds = await sections.evaluateAll((els) => els.map((el) => el.id));
+  const linkHrefs = await contentLinks.evaluateAll((els) => els.map((el) => el.getAttribute("href").split("#")[1]));
+
+  linkHrefs.forEach((href) => {
+    expect(sectionIds).toContain(href);
+  });
+});
+
 test.describe("about.html", () => {
   test("carries the Watch the walkthroughs button linking to videos.html", async ({ page }) => {
     await serveRealSite(page);

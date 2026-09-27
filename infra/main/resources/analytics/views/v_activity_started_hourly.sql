@@ -6,13 +6,12 @@
 -- day-grain "day" column compared against "1 hour ago" only ever reads as "today" or "not
 -- today", never a genuine trailing hour, so those two columns read from this view instead.
 -- The partition predicate keeps it to the last 8 days: the dashboard reads at most 7, and
--- without it every query lists every projected year/month/day prefix of both base tables.
+-- without it every query lists every projected dt prefix the base table carries.
 CREATE OR REPLACE VIEW v_activity_started_hourly AS
 SELECT date_trunc('hour', event_ts) AS hour, activity_id AS activity, app_client,
        count(*)                   AS starts,
        count(DISTINCT hashed_sub) AS customers
 FROM   activity_events_all
 WHERE  actor = 'customer' AND event = 'activity-started' AND activity_id IS NOT NULL
-       AND concat(cast(year AS varchar), lpad(cast(month AS varchar), 2, '0'), lpad(cast(day AS varchar), 2, '0'))
-           >= date_format(current_date - interval '8' day, '%Y%m%d')
+       AND dt >= current_date - interval '8' day
 GROUP  BY 1, 2, 3
