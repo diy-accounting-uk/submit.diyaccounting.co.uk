@@ -55,7 +55,9 @@
           "action": "goto",
           "url": "/",
           "waitFor": "#mainContent",
-          "caption": "This is a sandbox preview against HMRC's test service, not a live filing."
+          "caption": "This is a sandbox preview against HMRC's test service, not a live filing.",
+          "headline": "A sandbox preview",
+          "keyWord": "sandbox"
         },
         {
           "action": "caption",
@@ -77,11 +79,15 @@
         {
           "action": "click",
           "target": "a.login-link",
-          "caption": "Sign in with the account you already use."
+          "caption": "Sign in with the account you already use.",
+          "headline": "Sign in first",
+          "keyWord": "Sign"
         },
         {
           "action": "login",
-          "caption": "Your account keeps your filings in one place."
+          "caption": "Your account keeps your filings in one place.",
+          "headline": "Confirm your identity",
+          "keyWord": "identity"
         },
         { "action": "consent" },
         { "action": "hold", "ms": 600 }
@@ -96,19 +102,25 @@
         {
           "action": "click",
           "target": { "role": "link", "name": "Bundles" },
-          "caption": "Bundles decide which activities you can run."
+          "caption": "Bundles decide which activities you can run.",
+          "headline": "Open your bundles",
+          "keyWord": "bundles"
         },
         {
           "action": "ensureBundle",
           "bundle": "Resident",
           "testPass": true,
-          "caption": "Resident opens the Self Assessment activities."
+          "caption": "Resident opens the Self Assessment activities.",
+          "headline": "Unlock Self Assessment",
+          "keyWord": "Self"
         },
         { "action": "hold", "ms": 700 },
         {
           "action": "click",
           "target": { "role": "link", "name": "Activities" },
-          "caption": "Every activity starts from the home page."
+          "caption": "Every activity starts from the home page.",
+          "headline": "Go to activities",
+          "keyWord": "activities"
         },
         {
           "action": "await",
@@ -127,7 +139,9 @@
           "action": "click",
           "target": { "role": "button", "name": "Self Assessment (HMRC)" },
           "expectsNavigation": true,
-          "caption": "Making Tax Digital for Income Tax starts from one dashboard."
+          "caption": "Making Tax Digital for Income Tax starts from one dashboard.",
+          "headline": "One dashboard for MTD",
+          "keyWord": "dashboard"
         },
         { "action": "await", "until": "#businessPickerForm", "label": "Opening the ITSA dashboard" },
         {
@@ -136,16 +150,22 @@
           "text": "{{hmrcNino}}",
           "clear": true,
           "secret": true,
-          "caption": "Type the National Insurance number HMRC asks for."
+          "caption": "Type the National Insurance number HMRC asks for.",
+          "headline": "Enter your NI number",
+          "keyWord": "NI"
         },
         {
           "action": "click",
           "target": "#findBusinessesBtn",
-          "caption": "Ask HMRC which businesses it holds against that number."
+          "caption": "Ask HMRC which businesses it holds against that number.",
+          "headline": "Ask HMRC for businesses",
+          "keyWord": "businesses"
         },
         {
           "action": "hmrcAuthorise",
           "caption": "Sign in to HMRC and say yes once.",
+          "headline": "Grant HMRC access",
+          "keyWord": "Grant",
           "timeoutMs": 60000
         },
         {
@@ -153,12 +173,16 @@
           "until": "#businessPickerResults",
           "label": "Waiting for HMRC",
           "timeoutMs": 60000,
-          "caption": "HMRC answers with every business behind this Self Assessment."
+          "caption": "HMRC answers with every business behind this Self Assessment.",
+          "headline": "HMRC lists your businesses",
+          "keyWord": "businesses"
         },
         {
           "action": "point",
           "target": "#businessPickerList",
           "caption": "Each business carries an ID. Every later filing needs it.",
+          "headline": "Note each business ID",
+          "keyWord": "ID",
           "dwellMs": 600
         },
         { "action": "hold", "ms": 1500 },
@@ -174,7 +198,9 @@
         {
           "action": "click",
           "target": { "role": "link", "name": "Go to Obligations" },
-          "caption": "Obligations groups the open and fulfilled quarters by business."
+          "caption": "Obligations groups the open and fulfilled quarters by business.",
+          "headline": "See quarters by business",
+          "keyWord": "quarters"
         },
         { "action": "await", "until": "#itsaObligationsForm", "label": "Opening the obligations form" },
         {
@@ -183,19 +209,25 @@
           "text": "{{hmrcNino}}",
           "clear": true,
           "secret": true,
-          "caption": "The same National Insurance number, every business."
+          "caption": "The same National Insurance number, every business.",
+          "headline": "Same NI number",
+          "keyWord": "NI"
         },
         {
           "action": "click",
           "target": "#retrieveBtn",
-          "caption": "The read:self-assessment access from before still counts."
+          "caption": "The read:self-assessment access from before still counts.",
+          "headline": "Same access still counts",
+          "keyWord": "access"
         },
         {
           "action": "await",
           "until": "#obligationsResults",
           "label": "Waiting for HMRC",
           "timeoutMs": 60000,
-          "caption": "HMRC answers with each quarter's due date and status."
+          "caption": "HMRC answers with each quarter's due date and status.",
+          "headline": "Due dates and status",
+          "keyWord": "status"
         },
         { "action": "scroll", "target": "#obligationsTable" },
         { "action": "hold", "ms": 1000 },
@@ -203,6 +235,8 @@
           "action": "point",
           "target": "#obligationsTable",
           "caption": "Open means a quarterly update is still owed.",
+          "headline": "Open means still owed",
+          "keyWord": "Open",
           "dwellMs": 600
         },
         { "action": "hold", "ms": 2000 },
@@ -219,12 +253,16 @@
           "action": "goto",
           "url": "/hmrc/itsa/dashboard.html",
           "waitFor": "#businessPickerForm",
-          "caption": "Back to the dashboard to open the filing form."
+          "caption": "Back to the dashboard to open the filing form.",
+          "headline": "Back to the dashboard",
+          "keyWord": "dashboard"
         },
         {
           "action": "click",
           "target": { "role": "link", "name": "Go to File a Quarterly Update" },
-          "caption": "This is the form an open quarter is filed on."
+          "caption": "This is the form an open quarter is filed on.",
+          "headline": "File the open quarter",
+          "keyWord": "quarter"
         },
         { "action": "await", "until": "#itsaSelfEmploymentPeriodForm", "label": "Opening the quarterly update form" },
         {
@@ -233,19 +271,25 @@
           "text": "{{hmrcNino}}",
           "clear": true,
           "secret": true,
-          "caption": "The National Insurance number carries over."
+          "caption": "The National Insurance number carries over.",
+          "headline": "NI number carries over",
+          "keyWord": "NI"
         },
         {
           "action": "point",
           "target": "#businessId",
           "caption": "The business ID from a moment ago goes here.",
+          "headline": "Same business ID",
+          "keyWord": "ID",
           "dwellMs": 600
         },
         {
           "action": "fill",
           "target": "#taxYear",
           "value": "2024-25",
-          "caption": "Then the tax year this quarter falls in."
+          "caption": "Then the tax year this quarter falls in.",
+          "headline": "Choose the tax year",
+          "keyWord": "year"
         },
         { "action": "fill", "target": "#periodStartDate", "value": "2024-04-06" },
         { "action": "fill", "target": "#periodEndDate", "value": "2024-07-05" },
@@ -253,7 +297,9 @@
           "action": "fill",
           "target": "#turnover",
           "value": "1000",
-          "caption": "And the quarter's income and expenses."
+          "caption": "And the quarter's income and expenses.",
+          "headline": "Income and expenses",
+          "keyWord": "expenses"
         },
         { "action": "hold", "ms": 1500 },
         { "action": "still", "name": "itsa-quarterly-update-form" },

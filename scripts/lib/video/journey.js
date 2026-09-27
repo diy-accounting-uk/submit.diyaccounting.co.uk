@@ -107,20 +107,35 @@ export async function resolveHmrcTestUser(env, hmrcServices = ["mtd-vat"]) {
   };
 }
 
-export async function installCredentialFieldMask(page) {
-  await page.addInitScript(
-    ({ selectors }) => {
-      const apply = () => {
-        for (const field of document.querySelectorAll(selectors)) {
-          field.style.setProperty("-webkit-text-security", "disc");
-          field.style.setProperty("text-security", "disc");
-          field.style.setProperty("color", "transparent");
-          field.style.setProperty("text-shadow", "0 0 10px rgba(0,0,0,0.85)");
-        }
-      };
-      document.addEventListener("DOMContentLoaded", apply);
+// The browser-side body of installCredentialFieldMask's addInitScript, exported on its own so
+// it can run against a fake document in a unit test with no browser at all — the same reason
+// headlinePlacement.js's pure math sits outside overlay-runtime.js.
+export function credentialFieldMaskInitScript({ selectors }) {
+  const apply = () => {
+    for (const field of document.querySelectorAll(selectors)) {
+      field.style.setProperty("-webkit-text-security", "disc");
+      field.style.setProperty("text-security", "disc");
+      field.style.setProperty("color", "transparent");
+      field.style.setProperty("text-shadow", "0 0 10px rgba(0,0,0,0.85)");
+    }
+  };
+  document.addEventListener("DOMContentLoaded", apply);
+  // An init script runs at the very start of a new document, sometimes before the browser has
+  // parsed <html> itself, so document.documentElement can still be null the instant this runs —
+  // Playwright then throws "Failed to execute 'observe' on 'MutationObserver': parameter 1 is
+  // not of type 'Node'" into the page's own console, repeatedly, on every navigation through an
+  // identity provider's hosted UI and back. Retry on the next animation frame until the root
+  // element exists, rather than letting the observer call fail.
+  const observeRoot = () => {
+    if (document.documentElement) {
       new MutationObserver(apply).observe(document.documentElement, { childList: true, subtree: true });
-    },
-    { selectors: ONE_TIME_CODE_FIELDS },
-  );
+    } else {
+      requestAnimationFrame(observeRoot);
+    }
+  };
+  observeRoot();
+}
+
+export async function installCredentialFieldMask(page) {
+  await page.addInitScript(credentialFieldMaskInitScript, { selectors: ONE_TIME_CODE_FIELDS });
 }

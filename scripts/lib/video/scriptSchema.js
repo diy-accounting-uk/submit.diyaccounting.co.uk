@@ -46,12 +46,13 @@ const STEP_REQUIRED_FIELDS = {
   consent: [],
   ensureBundle: ["bundle"],
   hmrcAuthorise: [],
+  companiesHouseAuthorise: [],
   submitReturn: [],
 };
 
 // Actions that run one of the behaviour tests' journey step functions. They drive credentials
 // and a real identity provider, so a script may only use them once it has declared auth "user".
-const USER_ONLY_ACTIONS = new Set(["login", "consent", "ensureBundle", "hmrcAuthorise", "submitReturn"]);
+const USER_ONLY_ACTIONS = new Set(["login", "consent", "ensureBundle", "hmrcAuthorise", "companiesHouseAuthorise", "submitReturn"]);
 
 // HMRC sandbox services a script may ask its minted test user to be enrolled in. Defaults to
 // ["mtd-vat"] when a script omits the field, so an existing VAT-only script needs no change.

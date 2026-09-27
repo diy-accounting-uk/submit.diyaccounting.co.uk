@@ -330,6 +330,30 @@ async function doHmrcAuthorise(page, step, ctx) {
   return { waitMs: Date.now() - start, rect: null };
 }
 
+// The redirect to Companies House's own sign-in-and-permission page, then the one form that
+// grants it (userId, password, company authentication code) — one screen, unlike HMRC's four.
+// The simulator lane's canned user and code come from resolveCompaniesHouseSignInCredentials
+// itself; a real lane needs TEST_COMPANIES_HOUSE_USER_ID and TEST_COMPANIES_HOUSE_PASSWORD in
+// the run's environment, the same variables the behaviour tests read.
+async function doCompaniesHouseAuthorise(page, step, ctx) {
+  const steps = await behaviourSteps();
+  const start = Date.now();
+  const appOrigin = new URL(ctx.baseUrl).origin;
+  try {
+    await ctx.waitPhase(() => page.waitForURL((url) => new URL(url).origin !== appOrigin, { timeout: step.timeoutMs || ctx.timeoutMs }));
+  } catch (err) {
+    await writeFailureStill(page, ctx);
+    throw new SceneStepError(
+      `scene "${ctx.sceneId}" step ${ctx.stepIndex} (companiesHouseAuthorise): the browser stayed on ${appOrigin}, so Companies House never asked for authority. ` +
+        `A run whose account already holds Companies House authority skips the authorise page; record with a fresh filing (${err.message})`,
+      { sceneId: ctx.sceneId, stepIndex: ctx.stepIndex, target: null },
+    );
+  }
+  const credentials = steps.resolveCompaniesHouseSignInCredentials(undefined, process.env.DIY_SUBMIT_ENV_FILEPATH);
+  await steps.authoriseWithCompaniesHouse(page, credentials, ctx.stepScreenshotDir);
+  return { waitMs: Date.now() - start, rect: null };
+}
+
 // Reads the period the submit form is about to file and publishes it to the run's placeholder
 // values. Read from the form rather than taken from the step, so it is the period actually
 // filed and not one the script hoped for.
@@ -406,6 +430,7 @@ const HANDLERS = {
   consent: doConsent,
   ensureBundle: doEnsureBundle,
   hmrcAuthorise: doHmrcAuthorise,
+  companiesHouseAuthorise: doCompaniesHouseAuthorise,
   submitReturn: doSubmitReturn,
 };
 

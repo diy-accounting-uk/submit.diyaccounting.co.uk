@@ -31,7 +31,7 @@
     "statement": {
       "reviewDate": "2026-09-21",
       "directors": [
-        { "forename": "Maldwyn", "otherForenames": "Maldwyn", "surname": "BEYNON", "dob": "1932-12-03", "personalCode": "12345678951" }
+        { "forename": "Maldwyn", "otherForenames": "Maldwyn", "surname": "BEYNON", "dob": "1932-12-03", "personalCode": "AB1234CD56E" }
       ]
     },
     "expectedOutcome": {
@@ -50,7 +50,7 @@
       "reviewDate": "2026-09-21",
       "sicCodes": ["93110"],
       "directors": [
-        { "forename": "Maldwyn", "otherForenames": "Maldwyn", "surname": "BEYNON", "dob": "1932-12-03", "personalCode": "12345678951" }
+        { "forename": "Maldwyn", "otherForenames": "Maldwyn", "surname": "BEYNON", "dob": "1932-12-03", "personalCode": "AB1234CD56E" }
       ]
     },
     "expectedOutcome": {
@@ -69,7 +69,7 @@
       "reviewDate": "2026-09-21",
       "shareholdings": [{ "shareClass": "Ordinary", "numberHeld": "50000", "shareholders": [{ "surname": "WELSH RUGBY UNION LTD" }] }],
       "directors": [
-        { "forename": "Maldwyn", "otherForenames": "Maldwyn", "surname": "BEYNON", "dob": "1932-12-03", "personalCode": "12345678951" }
+        { "forename": "Maldwyn", "otherForenames": "Maldwyn", "surname": "BEYNON", "dob": "1932-12-03", "personalCode": "AB1234CD56E" }
       ]
     },
     "expectedOutcome": {
@@ -88,7 +88,7 @@
       "reviewDate": "2026-09-21",
       "registeredEmailAddress": "confirmation-statement-test@example.com",
       "directors": [
-        { "forename": "Maldwyn", "otherForenames": "Maldwyn", "surname": "BEYNON", "dob": "1932-12-03", "personalCode": "12345678951" }
+        { "forename": "Maldwyn", "otherForenames": "Maldwyn", "surname": "BEYNON", "dob": "1932-12-03", "personalCode": "AB1234CD56E" }
       ]
     },
     "expectedOutcome": {
@@ -106,7 +106,7 @@
     "statement": {
       "reviewDate": "2026-09-21",
       "directors": [
-        { "forename": "Maldwyn", "otherForenames": "Maldwyn", "surname": "BEYNON", "dob": "1932-12-03", "personalCode": "12345678951" }
+        { "forename": "Maldwyn", "otherForenames": "Maldwyn", "surname": "BEYNON", "dob": "1932-12-03", "personalCode": "AB1234CD56E" }
       ]
     },
     "corruptFirstDirectorPersonalCode": true,
@@ -125,7 +125,7 @@
     "statement": {
       "reviewDate": "2026-09-21",
       "directors": [
-        { "forename": "Maldwyn", "otherForenames": "Maldwyn", "surname": "BEYNON", "dob": "1932-12-03", "personalCode": "12345678951" }
+        { "forename": "Maldwyn", "otherForenames": "Maldwyn", "surname": "BEYNON", "dob": "1932-12-03", "personalCode": "AB1234CD56E" }
       ]
     },
     "expectedOutcome": {
@@ -163,7 +163,7 @@
       "otherForenames": "James",
       "dobMonth": 4,
       "dobYear": 1964,
-      "personalCode": "12345678951"
+      "personalCode": "AB1234CD56E"
     },
     "expectedOutcome": {
       "status": "GOVTALK_ERROR",
@@ -184,7 +184,7 @@
       "otherForenames": "James",
       "dobMonth": 4,
       "dobYear": 1964,
-      "personalCode": "12345678951"
+      "personalCode": "AB1234CD56E"
     },
     "corruptPersonalCode": true,
     "expectedOutcome": {

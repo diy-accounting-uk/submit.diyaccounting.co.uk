@@ -101,6 +101,22 @@ export function isValidCompanyNumber(value) {
   return { valid: /^[A-Z0-9]{8}$/.test(normalised), normalised };
 }
 
+// Companies House issues a personal code once an individual's identity is verified: 11 characters,
+// a mix of uppercase letters and digits, shown to the individual with two hyphens for readability
+// (e.g. AB1-23CD-4EF4) but sent to the XML Gateway without them. Companies House does not publish a
+// fixed letter/digit sequence - only the length and the mix - so this checks that much and rejects
+// an all-digit or all-letter string, the shape behind GovTalk error 9999 "Invalid
+// CompaniesHousePersonalCode format".
+const PERSONAL_CODE_PATTERN = /^(?=[A-Z0-9]{11}$)(?=[A-Z0-9]*[A-Z])(?=[A-Z0-9]*\d)[A-Z0-9]{11}$/;
+
+export function isValidCompaniesHousePersonalCode(value) {
+  if (value === undefined || value === null) {
+    return { valid: false, normalised: "" };
+  }
+  const normalised = String(value).trim().toUpperCase().replace(/-/g, "");
+  return { valid: PERSONAL_CODE_PATTERN.test(normalised), normalised };
+}
+
 // Maps enforceBundles() failures to HTTP responses. Duplicated rather than imported from the
 // VAT API's own client module, so this module pulls in no unrelated request-signing code.
 export function http403ForbiddenFromBundleEnforcement(error, request) {

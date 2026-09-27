@@ -114,7 +114,9 @@
         {
           "action": "click",
           "target": "#generatePassBtn",
-          "caption": "Companies House and HMRC never see who redeems it."
+          "caption": "Companies House and HMRC never see who redeems it.",
+          "headline": "Always redeemed anonymously",
+          "keyWord": "anonymously"
         },
         { "action": "await", "until": "#passResult", "label": "Generating the pass" },
         {

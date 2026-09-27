@@ -12,6 +12,7 @@ import static co.uk.diyaccounting.submit.utils.KindCdk.ensureLogGroupWithDepende
 import co.uk.diyaccounting.submit.SubmitSharedNames;
 import co.uk.diyaccounting.submit.utils.PopulatedMap;
 import java.util.List;
+import java.util.Map;
 import org.immutables.value.Value;
 import software.amazon.awscdk.Duration;
 import software.amazon.awscdk.Environment;
@@ -146,6 +147,16 @@ public class ScanDetectionStack extends Stack {
                 .logGroup(logGroup.logGroup())
                 .build();
         this.scanRate404DetectFunction.getNode().addDependency(logGroup.ensureResource());
+
+        // Athena lists the table's partition prefixes under the caller's own credentials before it
+        // reads a file, so the Lambda needs s3:ListBucket on the lake, scoped to the CloudFront
+        // prefix rather than the whole bucket.
+        this.scanRate404DetectFunction.addToRolePolicy(PolicyStatement.Builder.create()
+                .effect(Effect.ALLOW)
+                .actions(List.of("s3:ListBucket"))
+                .resources(List.of(lakeBucketArn(sharedNames.analyticsLakeBucketName)))
+                .conditions(Map.of("StringLike", Map.of("s3:prefix", "raw/cloudfront/*")))
+                .build());
 
         // The high-water mark: one SSM parameter, standard tier. Parameter Store rather than
         // DynamoDB, so this security job never writes to a table SecurityDetectionStack's own

@@ -58,6 +58,22 @@ const registeredOfficeAddresses = new Map([
       country: "United Kingdom",
     },
   ],
+  [
+    // Matches companies.js's own "06846849" entry, the number the confirmation statement
+    // journey's public register lookup and its XML Gateway fixture already share, so the
+    // registered office and registered email address journeys can look the same company up.
+    "06846849",
+    {
+      etag: "simulator-etag-06846849",
+      premises: "1",
+      address_line_1: "1 Example Street",
+      address_line_2: "",
+      locality: "London",
+      region: "",
+      postal_code: "AB1 2CD",
+      country: "England",
+    },
+  ],
 ]);
 
 const transactions = new Map();

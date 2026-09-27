@@ -246,6 +246,21 @@
       // note above - so a return from checkout re-collects them through the normal authView step.
       const CHECKOUT_RESUME_KEY = "companiesHouseConfirmationStatementResumeCompanyNumber";
 
+      // Companies House shows a personal code with two hyphens for readability (e.g.
+      // AB1-23CD-4EF4) but the XML Gateway takes 11 characters with none - a pasted code needs
+      // its hyphens stripped before the length or format check runs. The same check runs server
+      // side (companiesHouseApi.js's isValidCompaniesHousePersonalCode); it exists here too so a
+      // wrongly formatted code (e.g. all digits) is caught before a submit round trip.
+      const PERSONAL_CODE_PATTERN = /^(?=[A-Z0-9]{11}$)(?=[A-Z0-9]*[A-Z])(?=[A-Z0-9]*\d)[A-Z0-9]{11}$/;
+
+      function normalisePersonalCode(rawValue) {
+        return (rawValue || "").trim().toUpperCase().replace(/-/g, "");
+      }
+
+      function isValidPersonalCode(rawValue) {
+        return PERSONAL_CODE_PATTERN.test(normalisePersonalCode(rawValue));
+      }
+
       let company = null;
       let companyAuthCode = "";
       let filingData = null;
@@ -453,7 +468,7 @@
             <p class="hint">Every middle name on the register. Companies House matches the director by the full name - leaving one out rejects the filing.</p>
             <input type="text" id="directorOtherForenames-${index}" value="${escapeHtml(director.otherForenames || "")}" spellcheck="false" />
             <label for="directorPersonalCode-${index}">Companies House personal code</label>
-            <input type="text" id="directorPersonalCode-${index}" maxlength="11" spellcheck="false" />
+            <input type="text" id="directorPersonalCode-${index}" maxlength="13" spellcheck="false" />
             <label for="directorNameMismatchReason-${index}">Name mismatch reason</label>
             <p class="hint">Only when the name this director verified under differs from the register name above.</p>
             <input type="text" id="directorNameMismatchReason-${index}" spellcheck="false" />
@@ -605,7 +620,7 @@
           otherForenames: document.getElementById(`directorOtherForenames-${index}`).value.trim(),
           surname: director.surname,
           dob: director.dob,
-          personalCode: document.getElementById(`directorPersonalCode-${index}`).value.trim(),
+          personalCode: normalisePersonalCode(document.getElementById(`directorPersonalCode-${index}`).value),
           nameMismatchReason: document.getElementById(`directorNameMismatchReason-${index}`).value.trim() || undefined,
         }));
       }
@@ -659,10 +674,10 @@
           showStatus("At least one current director's verification statement is required.", "error");
           return false;
         }
-        const blankRow = payload.directors.find((director) => director.personalCode.length !== 11 || !director.otherForenames);
+        const blankRow = payload.directors.find((director) => !isValidPersonalCode(director.personalCode) || !director.otherForenames);
         if (blankRow) {
           showStatus(
-            `${blankRow.forename || ""} ${blankRow.surname || ""} must verify their identity with Companies House, and this statement needs their other forenames and their 11-character personal code before it can be submitted.`,
+            `${blankRow.forename || ""} ${blankRow.surname || ""} must verify their identity with Companies House, and this statement needs their other forenames and their 11-character personal code (letters and digits) before it can be submitted.`,
             "error",
           );
           return false;
@@ -844,9 +859,11 @@
           return;
         }
         const resultContainer = document.getElementById(`pscVerifyResult-${index}`);
-        const personalCode = document.getElementById(`pscPersonalCode-${index}`).value.trim();
-        if (personalCode.length !== 11) {
-          resultContainer.replaceChildren(buildParagraph(["The PSC personal code must be 11 characters."], "error"));
+        const personalCode = normalisePersonalCode(document.getElementById(`pscPersonalCode-${index}`).value);
+        if (!isValidPersonalCode(personalCode)) {
+          resultContainer.replaceChildren(
+            buildParagraph(["The PSC personal code must be the 11-character Companies House personal code, letters and digits."], "error"),
+          );
           return;
         }
         showLoading();
