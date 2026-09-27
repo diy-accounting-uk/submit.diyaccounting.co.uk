@@ -737,7 +737,9 @@ export async function getBsasSelfEmployment(
     }
     const message = `Failed to retrieve the year-end summary. Remote call failed: GET ${url} - Status: ${response.status} ${response.statusText} - Body: ${JSON.stringify(responseJson)}`;
     console.error(message);
-    throw new Error(message);
+    const error = new Error(message);
+    error.status = response.status;
+    throw error;
   }
   return responseJson;
 }
@@ -949,7 +951,9 @@ export async function getBsasUkProperty(
     }
     const message = `Failed to retrieve the year-end summary. Remote call failed: GET ${url} - Status: ${response.status} ${response.statusText} - Body: ${JSON.stringify(responseJson)}`;
     console.error(message);
-    throw new Error(message);
+    const error = new Error(message);
+    error.status = response.status;
+    throw error;
   }
   return responseJson;
 }
