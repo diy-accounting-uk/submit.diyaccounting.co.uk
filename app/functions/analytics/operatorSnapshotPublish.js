@@ -841,7 +841,7 @@ export async function buildSnapshot({ workGroup, database, context, objectiveIds
         if (!fastWindowOnly) {
           const sql = buildWindowedSql(observation);
           const rows = await runAthenaQuery({ workGroup, database, sql });
-          windows = toObservationWindows(rows[0]);
+          windows = rows.length > 0 ? toObservationWindows(rows[0]) : nullObservationWindows;
 
           if (observation.dailySeries) {
             const dailySql = buildDailySeriesSql(observation);
