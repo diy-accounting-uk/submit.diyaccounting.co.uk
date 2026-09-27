@@ -864,23 +864,39 @@ jobs:
         env:
           NPM_CONFIG_FETCH_RETRIES: "3"
 
+      # The producer (behaviour-test) job is matrixed by suite, so its outputs (including
+      # `superseded`) collapse to one value across matrix legs rather than one per suite, and
+      # this job's own top-level `if:` on that output cannot tell which suite actually ran.
+      # A suite whose leg was superseded (an in-progress main deploy gating the apex) or that
+      # otherwise produced no results uploads no artifact under that name; downloading it here
+      # must not fail the job, or a green scheduled probe reads red.
       - name: Download artifacts - ${{ matrix.suite }}
+        id: download-artifacts
         if: ${{ !cancelled() }}
+        continue-on-error: true
         uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8
         with:
           name: ${{ matrix.suite }}-artifacts
           path: |
             target/behaviour-test-results/${{ matrix.suite }}/
 
+      - name: Note ${{ matrix.suite }} produced no artifacts
+        if: ${{ !cancelled() && steps.download-artifacts.outcome == 'failure' }}
+        shell: bash
+        run: |
+          echo "No ${{ matrix.suite }}-artifacts artifact was found (the suite's behaviour-test leg produced none); nothing to publish for ${{ matrix.suite }}." >> "$GITHUB_STEP_SUMMARY"
+
       - name: List downloaded artefacts
-        if: ${{ !cancelled() }}
+        if: ${{ !cancelled() && steps.download-artifacts.outcome == 'success' }}
         shell: bash
         run: |
           echo "Behaviour test results files:"
           find target/behaviour-test-results/ -type f -exec ls -l {} \;
 
       - name: Download reports - ${{ matrix.suite }}
-        if: ${{ !cancelled() }}
+        id: download-reports
+        if: ${{ !cancelled() && steps.download-artifacts.outcome == 'success' }}
+        continue-on-error: true
         uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8
         with:
           name: ${{ matrix.suite }}-reports
@@ -888,14 +904,14 @@ jobs:
             target/test-reports/${{ matrix.suite }}/
 
       - name: List downloaded reports
-        if: ${{ !cancelled() }}
+        if: ${{ !cancelled() && steps.download-reports.outcome == 'success' }}
         shell: bash
         run: |
           echo "Test report files:"
           find target/test-reports/ -type f -exec ls -l {} \;
 
       - name: Configure AWS role via GitHub OIDC
-        if: ${{ !cancelled() }}
+        if: ${{ !cancelled() && steps.download-artifacts.outcome == 'success' }}
         uses: aws-actions/configure-aws-credentials@e1253824e5c10ff9df46874f81ed3ec929e19cfd # v6
         with:
           role-to-assume: ${{ vars.SUBMIT_ACTIONS_ROLE_ARN }}
@@ -907,7 +923,7 @@ jobs:
           retry-max-attempts: 3
 
       - name: Assume AWS deployment role
-        if: ${{ !cancelled() }}
+        if: ${{ !cancelled() && steps.download-artifacts.outcome == 'success' }}
         uses: aws-actions/configure-aws-credentials@e1253824e5c10ff9df46874f81ed3ec929e19cfd # v6
         with:
           role-to-assume: ${{ vars.SUBMIT_DEPLOY_ROLE_ARN }}
@@ -919,7 +935,7 @@ jobs:
           retry-max-attempts: 3
 
       - name: Lookup origin bucket name from EdgeStack
-        if: ${{ !cancelled() }}
+        if: ${{ !cancelled() && steps.download-artifacts.outcome == 'success' }}
         id: lookup-bucket
         shell: bash
         run: |
@@ -937,7 +953,7 @@ jobs:
           fi
 
       - name: Check downloaded test report exists
-        if: ${{ !cancelled() && steps.lookup-bucket.outputs.BUCKET_NAME != '' }}
+        if: ${{ !cancelled() && steps.download-artifacts.outcome == 'success' && steps.lookup-bucket.outputs.BUCKET_NAME != '' }}
         shell: bash
         run: |
           REPORT_PATH="target/behaviour-test-results/${{ matrix.suite }}/test-report-${{ matrix.suite }}.json"
@@ -953,7 +969,7 @@ jobs:
           echo "Found test report: ${REPORT_PATH}"
 
       - name: Publish test results to local directory and upload to S3
-        if: ${{ !cancelled() && steps.lookup-bucket.outputs.BUCKET_NAME != '' }}
+        if: ${{ !cancelled() && steps.download-artifacts.outcome == 'success' && steps.lookup-bucket.outputs.BUCKET_NAME != '' }}
         env:
           BUCKET_NAME: ${{ steps.lookup-bucket.outputs.BUCKET_NAME }}
         shell: bash

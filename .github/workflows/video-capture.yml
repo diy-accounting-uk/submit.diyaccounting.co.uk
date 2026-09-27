@@ -280,6 +280,28 @@ jobs:
         if: ${{ steps.script-auth.outputs.auth == 'user' }}
         run: node scripts/ensure-cognito-test-user.js "${{ needs.names.outputs.environment-name }}" videoCapture
 
+      - name: Configure AWS role via GitHub OIDC (for the capture)
+        uses: aws-actions/configure-aws-credentials@e1253824e5c10ff9df46874f81ed3ec929e19cfd # v6
+        with:
+          role-to-assume: ${{ vars.SUBMIT_ACTIONS_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+          role-chaining: false
+          audience: sts.amazonaws.com
+          role-skip-session-tagging: true
+          output-credentials: true
+          retry-max-attempts: 3
+
+      - name: Assume AWS deployment role (for the capture)
+        uses: aws-actions/configure-aws-credentials@e1253824e5c10ff9df46874f81ed3ec929e19cfd # v6
+        with:
+          role-to-assume: ${{ vars.SUBMIT_DEPLOY_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+          role-chaining: true
+          audience: sts.amazonaws.com
+          role-skip-session-tagging: true
+          output-credentials: true
+          retry-max-attempts: 3
+
       - name: 'Record ${{ needs.params.outputs.script }}'
         run: |
           node scripts/site-video-capture.js \

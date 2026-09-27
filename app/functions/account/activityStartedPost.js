@@ -20,7 +20,7 @@ import { registerLambdaRoute } from "../../lib/httpServerToLambdaAdaptor.js";
 import { resolveAppClient } from "../../lib/appClientResolver.js";
 import { initializeSalt } from "../../services/subHasher.js";
 import { loadCatalogFromRoot } from "../../services/productCatalog.js";
-import { publishActivityEvent, classifyActor } from "../../lib/activityAlert.js";
+import { publishActivityEvent } from "../../lib/activityAlert.js";
 
 const logger = createLogger({ source: "app/functions/account/activityStartedPost.js" });
 
@@ -59,10 +59,14 @@ export async function ingestHandler(event) {
   await initializeSalt();
   const appClient = await resolveAppClient(user.appClientId);
 
+  // No explicit actor: the access token this endpoint authenticates on carries no email claim
+  // (only an ID token does), so classifying by user.email here would call every real customer
+  // "system". publishActivityEvent's own resolveActorClass falls through the same email/probe
+  // check every other activity event uses, then defaults to "customer" -- the same path
+  // vat-return-submitted and the rest of the estate rely on.
   await publishActivityEvent({
     event: "activity-started",
     summary: `Activity started: ${activityId}`,
-    actor: classifyActor(user.email),
     userSub: user.sub,
     appClient,
     detail: { activityId },
