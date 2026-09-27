@@ -228,6 +228,48 @@
       "tags": ["DIY Accounting", "Companies House", "confirmation statement", "CS01"],
       "categoryId": "27",
       "videoId": "7uXrC35uQFA"
+    },
+    {
+      "id": "change-registered-office",
+      "publish": true,
+      "videoFile": "target/videos/local-change-registered-office/change-registered-office.mp4",
+      "captionFile": "target/videos/local-change-registered-office/change-registered-office.vtt",
+      "title": "DIY Accounting Submit: change registered office address (sandbox)",
+      "description": "DIY Accounting Submit is a free tool for filing with Companies House and HMRC. This video shows changing a company's registered office address: look up the current address, enter the new one, review it, then file with Companies House. This is a sandbox preview, recorded against a local simulator, not a live filing. Try the VAT side of the product now at https://submit.diyaccounting.co.uk.",
+      "tags": ["DIY Accounting", "Companies House", "registered office", "sandbox"],
+      "categoryId": "27"
+    },
+    {
+      "id": "change-registered-email",
+      "publish": true,
+      "videoFile": "target/videos/local-change-registered-email/change-registered-email.mp4",
+      "captionFile": "target/videos/local-change-registered-email/change-registered-email.vtt",
+      "title": "DIY Accounting Submit: change registered email address (sandbox)",
+      "description": "DIY Accounting Submit is a free tool for filing with Companies House and HMRC. This video shows changing a company's registered email address: check eligibility, enter the new address, review it, then file with Companies House. This is a sandbox preview, recorded against a local simulator, not a live filing. Try the VAT side of the product now at https://submit.diyaccounting.co.uk.",
+      "tags": ["DIY Accounting", "Companies House", "registered email", "sandbox"],
+      "categoryId": "27"
+    },
+    {
+      "id": "file-micro-entity-accounts",
+      "publish": true,
+      "videoFile": "target/videos/local-file-micro-entity-accounts/file-micro-entity-accounts.mp4",
+      "captionFile": "target/videos/local-file-micro-entity-accounts/file-micro-entity-accounts.vtt",
+      "title": "DIY Accounting Submit: file micro-entity accounts (sandbox)",
+      "description": "DIY Accounting Submit is a free tool for filing with Companies House and HMRC. This video shows filing a company's FRS 105 micro-entity accounts: sign in, take out Resident, look up a company, fill in the balance sheet, preview the iXBRL, and file it with Companies House. This is a sandbox preview, recorded against a local simulator, not a live filing. Try the VAT side of the product now at https://submit.diyaccounting.co.uk.",
+      "tags": ["DIY Accounting", "Companies House", "micro-entity accounts", "sandbox"],
+      "categoryId": "27"
+    },
+    {
+      "id": "mcp-diya-gl",
+      "publish": true,
+      "sourceRun": 36334808802,
+      "sourceArtifact": "video-mcp-diya-gl-",
+      "videoFile": "target/videos/video-mcp-diya-gl-ci/mcp-diya-gl.mp4",
+      "captionFile": "target/videos/video-mcp-diya-gl-ci/mcp-diya-gl.vtt",
+      "title": "DIY Accounting Submit: diya-gl's MCP server, inspected",
+      "description": "diya-gl is DIY Accounting's open-source bookkeeping engine. This video looks under the hood: an MCP Inspector session driving diya-gl's Model Context Protocol server, extracting a real example set of accounts and reading back its report, transactions and account balances. Try DIY Accounting Submit's VAT side of the product at https://submit.diyaccounting.co.uk.",
+      "tags": ["DIY Accounting", "diya-gl", "MCP", "Model Context Protocol", "developer tools"],
+      "categoryId": "27"
     }
   ]
 }
