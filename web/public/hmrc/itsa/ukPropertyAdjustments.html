@@ -194,9 +194,20 @@
         return await triggerBsas(triggerDetails, accessToken, govClientHeaders, runFraudPreventionHeaderValidation, testScenario);
       }
 
-      async function retrieveSummary(nino, calculationId, taxYear, accessToken) {
+      // HMRC's BSAS retrieve endpoint is not stateful in the sandbox - it does not read back what
+      // the trigger endpoint just created, and its documented default (no Gov-Test-Scenario
+      // header) is "no data found". A synthetic run with no explicit test scenario needs a named
+      // success scenario; a live account must never carry a sandbox-only header.
+      async function retrieveSummary(nino, calculationId, taxYear, accessToken, testScenario) {
         const govClientHeaders = await getGovClientHeaders();
-        return await getBsasUkProperty(nino, calculationId, taxYear, accessToken, govClientHeaders, false, "UK_PROPERTY_PROFIT");
+        let hmrcAccount;
+        try {
+          hmrcAccount = sessionStorage.getItem("hmrcAccount");
+        } catch (error) {
+          console.warn("Failed to read hmrcAccount from sessionStorage:", error.message);
+        }
+        const retrieveTestScenario = testScenario || (hmrcAccount === "synthetic" ? "UK_PROPERTY_PROFIT" : null);
+        return await getBsasUkProperty(nino, calculationId, taxYear, accessToken, govClientHeaders, false, retrieveTestScenario);
       }
 
       async function submitAdjustment(adjustDetails, testScenario, runFraudPreventionHeaderValidation, accessToken) {
@@ -266,7 +277,7 @@
         triggeredCalculationId = triggerResult.calculationId;
 
         showStatus("Retrieving year-end summary...", "info");
-        const bsas = await retrieveSummary(triggeredNino, triggeredCalculationId, triggeredTaxYear, accessToken);
+        const bsas = await retrieveSummary(triggeredNino, triggeredCalculationId, triggeredTaxYear, accessToken, testScenario);
         displaySummary(bsas);
         document.getElementById("triggerForm").style.display = "none";
         document.getElementById("summaryContainer").style.display = "block";
