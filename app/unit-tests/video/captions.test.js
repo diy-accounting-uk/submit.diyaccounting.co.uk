@@ -4,7 +4,32 @@
 // app/unit-tests/video/captions.test.js
 
 import { describe, test, expect } from "vitest";
-import { formatVttTimestamp, wrapCaptionLines, buildVttCue, buildVtt, buildTranscript } from "../../../scripts/lib/video/captions.js";
+import {
+  formatVttTimestamp,
+  wrapCaptionLines,
+  buildVttCue,
+  buildVtt,
+  buildTranscript,
+  captionTextForStep,
+} from "../../../scripts/lib/video/captions.js";
+
+describe("captionTextForStep", () => {
+  test("reads a 'caption' action's text from step.text", () => {
+    expect(captionTextForStep({ action: "caption", text: "See the full walkthrough." })).toBe("See the full walkthrough.");
+  });
+
+  test("reads any other action's caption from step.caption", () => {
+    expect(captionTextForStep({ action: "click", caption: "Sign in first." })).toBe("Sign in first.");
+  });
+
+  test("ignores a stray step.caption on a 'caption' action and reads step.text instead", () => {
+    expect(captionTextForStep({ action: "caption", text: "Hello", caption: "unused" })).toBe("Hello");
+  });
+
+  test("returns null for a step with no caption text at all", () => {
+    expect(captionTextForStep({ action: "hold" })).toBeNull();
+  });
+});
 
 describe("formatVttTimestamp", () => {
   test("formats sub-second, minute and hour boundaries", () => {

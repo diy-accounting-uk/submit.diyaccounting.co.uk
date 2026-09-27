@@ -110,8 +110,19 @@ describe("muxNarrationArgs", () => {
       "aac",
       "-b:a",
       "128k",
-      "-shortest",
+      "-movflags",
+      "+faststart",
       "out.mp4",
     ]);
+  });
+
+  test("never passes -shortest, so a narration track shorter than the video cannot trim the output", () => {
+    const args = muxNarrationArgs({ videoPath: "video.mp4", narrationTrackPath: "mix.wav", outputPath: "out.mp4" });
+    expect(args).not.toContain("-shortest");
+  });
+
+  test("keeps +faststart on the remux, since this is the mp4 site-video-capture.js ships", () => {
+    const args = muxNarrationArgs({ videoPath: "video.mp4", narrationTrackPath: "mix.wav", outputPath: "out.mp4" });
+    expect(args).toContain("+faststart");
   });
 });

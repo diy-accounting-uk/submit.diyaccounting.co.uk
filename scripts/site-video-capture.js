@@ -35,7 +35,7 @@ import { executeAction, SceneStepError } from "./lib/video/actions.js";
 import { createWaitPhase } from "./lib/video/waitPhase.js";
 import { createCapture } from "./lib/video/capture.js";
 import { writeManifest, resolveFfmpegBinary, encodeVideo, buildContactSheet, mixNarrationTrack, muxNarration } from "./lib/video/encode.js";
-import { writeVtt, writeTranscript, writeTimeline } from "./lib/video/captions.js";
+import { writeVtt, writeTranscript, writeTimeline, captionTextForStep } from "./lib/video/captions.js";
 import { substituteValues } from "./lib/video/values.js";
 import { collectSecrets, assertNoSecrets } from "./lib/video/secrets.js";
 import { synthesizeSpeech, audioDurationMs } from "./lib/video/narration.js";
@@ -595,7 +595,7 @@ async function main() {
         const description = describeStep(step, waitMs, values, now);
         // An off-camera step names nothing a viewer sees: it never reaches the transcript, so it
         // never has to describe itself in words a reader would notice weren't on screen.
-        if (!offCamera) entries.push({ caption: step.caption || null, description, note: step.note || null });
+        if (!offCamera) entries.push({ caption: captionTextForStep(step), description, note: step.note || null });
 
         const compression = WAIT_CAPABLE_ACTIONS.has(step.action) ? compressionFor(waitMs, unscaledPacing) : null;
 
@@ -603,6 +603,7 @@ async function main() {
           sceneId: scene.id,
           stepIndex,
           offCamera,
+          fastForward,
           action: step.action,
           group,
           configuredMs: group ? pauseForGroup(group, pacing) : null,
