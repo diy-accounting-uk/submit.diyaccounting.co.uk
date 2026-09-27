@@ -89,26 +89,33 @@ Give the batch branch its own worktree (`.claude/worktrees/<codename>`) and leav
 
 ### Naming the batch
 
-The batch branch is `claude/<codename>-<theme>`. The code name is the one after the last batch's in
-this list, wrapping from `zephyr` back to `arclight`; the theme is one or two lowercase words for the
-area most of the batch's rows touch (`itsa`, `pricing`, `ch-filing`, `ops`, `cdk`, `docs`). Example:
-`claude/arclight-pricing`, then `claude/blizzard-itsa`.
+The batch branch is `claude/<codename>-<theme>`. The code names live in `CODENAMES.txt` at the
+repository root: 26 lines, one per first letter from `a` to `z`, nine names per line in
+alphabetical order, no two sharing their first five letters. The code name is taken from the line
+after the last batch's letter, wrapping from `z` back to `a`: the first name on that line that no
+batch has used yet. The theme is one or two lowercase words for the area most of the batch's rows
+touch (`itsa`, `pricing`, `ch-filing`, `ops`, `cdk`, `docs`). Example: `claude/arclight-pricing`,
+then `claude/basalt-itsa`.
 
-`arclight` `blizzard` `cyclone` `dynamo` `eclipse` `falcon` `galileo` `horizon` `impulse` `juniper`
-`kraken` `lynx` `mirage` `nebula` `orion` `pulsar` `quasar` `ricochet` `sphinx` `tempest` `umbra`
-`vortex` `wyvern` `xenon` `yahtzee` `zephyr`
+The letters keep batches sorting in the order they ran within a round; the nine names per letter
+give nine rounds before a name repeats. Names are single lowercase words: a branch name never
+reaches an AWS resource name whole (`get-names` keeps five cleaned characters and a hash), so the
+only limit is the branch dropdown. Add names to a line in alphabetical order when a line runs out.
 
-One name per letter, so the batches sort in the order they ran until the list wraps. The names come
-from https://shockwaveinnovations.com/code-names/, kept to single lowercase words: a branch name
-never reaches an AWS resource name whole (`get-names` keeps five cleaned characters and a hash), so
-the only limit is the branch dropdown. Find the last batch's name with:
+Find the last batch's name, then the next one:
 
 ```bash
-{ git branch -a --format='%(refname:short)'; git log origin/main --merges --format=%s -n 200; } \
-  | grep -oE 'claude/[a-z]+-' | sed -e 's#claude/##' -e 's/-$//' | awk 'NR==FNR{l[$1]=1;next} ($1 in l){print; exit}' <(printf '%s\n' arclight blizzard cyclone dynamo eclipse falcon galileo horizon impulse juniper kraken lynx mirage nebula orion pulsar quasar ricochet sphinx tempest umbra vortex wyvern xenon yahtzee zephyr) -
+used=$(git for-each-ref --sort=-committerdate --format='%(refname:short) %(subject)' refs/heads refs/remotes/origin \
+  | cat - <(git log origin/main --merges --format=%s -n 400) \
+  | grep -oE 'claude/[a-z]+-' | sed -e 's#claude/##' -e 's/-$//')
+last=$(printf '%s\n' "$used" | awk 'NR==FNR{for(i=1;i<=NF;i++) n[$i]=1; next} ($1 in n){print; exit}' CODENAMES.txt -)
+letter=$(printf '%s' "${last:-z}" | cut -c1)
+line=$(( ( $(printf '%d' "'$letter") - 96 ) % 26 + 1 ))
+sed -n "${line}p" CODENAMES.txt | tr ' ' '\n' | grep -vxF -f <(printf '%s\n' "$used") | head -1
 ```
 
-No match means none has run yet: start at `arclight`. The batch's worktree is named for its code name.
+No match for the last batch means none has run yet: start at the `a` line. The batch's worktree is
+named for its code name.
 
 **`NEXT.md` never travels on the batch branch.** The board is maintained on `main` under the
 docs exception. A second copy on the branch guarantees a conflict at merge time, and two sub-agents
