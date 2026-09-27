@@ -1,0 +1,61 @@
+# SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0
+# Copyright (C) 2006-2026 DIY Accounting Limited
+
+name: 'Hold native auth'
+description: >
+  Registers or releases this call's hold on an environment's Cognito native-auth toggle before
+  calling scripts/toggle-cognito-native-auth.js, so a disable never turns native auth off while
+  another workflow run (or another matrix leg of this same run) still holds it. The caller
+  decides when TEST_AUTH_PROVIDER makes this relevant at all (via this step's own `if:`); this
+  action always touches the holders list and the toggle script when it runs.
+inputs:
+  mode:
+    description: "'enable' to add this holder and turn native auth on; 'disable' to remove this holder and turn native auth off only once no holder remains."
+    required: true
+  environment-name:
+    description: 'Environment whose Cognito Hosted UI client(s) this call toggles, e.g. ci or prod.'
+    required: true
+  holder-id:
+    description: >
+      This hold's own key in the holders list, unique within the environment for as long as it
+      is held - a plain run id for a job whose own enable and disable jobs bracket every other
+      job that reuses the hold, or a run id plus a matrix leg index for a job that enables and
+      disables around its own test without any other job depending on it.
+    required: true
+  run-id:
+    description: "This hold's github.run_id, stored in the holder record and used to drop the hold once that run has finished."
+    required: true
+  github-token:
+    description: 'Token with actions:read, used to check whether a held run has finished.'
+    required: true
+  workflow:
+    description: 'github.workflow, stored in the holder record for diagnostics only.'
+    required: false
+    default: ''
+  client:
+    description: "Which UserPoolClient(s) to toggle: 'app', 'diya-gl' or 'both'."
+    required: false
+    default: 'both'
+  stale-after-hours:
+    description: 'Hours after which a holder is dropped even when its run status cannot be read.'
+    required: false
+    default: '4'
+runs:
+  using: 'composite'
+  steps:
+    - name: 'Hold native auth (${{ inputs.mode }}) on ${{ inputs.environment-name }}'
+      shell: bash
+      env:
+        HOLD_NATIVE_AUTH_MODE: ${{ inputs.mode }}
+        HOLD_NATIVE_AUTH_ENVIRONMENT_NAME: ${{ inputs.environment-name }}
+        HOLD_NATIVE_AUTH_HOLDER_ID: ${{ inputs.holder-id }}
+        HOLD_NATIVE_AUTH_RUN_ID: ${{ inputs.run-id }}
+        HOLD_NATIVE_AUTH_WORKFLOW: ${{ inputs.workflow }}
+        HOLD_NATIVE_AUTH_CLIENT: ${{ inputs.client }}
+        HOLD_NATIVE_AUTH_STALE_AFTER_HOURS: ${{ inputs.stale-after-hours }}
+        HOLD_NATIVE_AUTH_GITHUB_TOKEN: ${{ inputs.github-token }}
+      # The github.action_path and github.workspace expressions expand to the runner's host
+      # paths, which a container job cannot see - the probe-test.yml behaviour-test job runs
+      # inside the Playwright container. GITHUB_WORKSPACE set inside the step is the checkout's
+      # path wherever the step runs, matching wait-for-main-deploy and claim-ci-slot.
+      run: node "${GITHUB_WORKSPACE}/.github/actions/hold-native-auth/hold-native-auth.mjs"

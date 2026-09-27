@@ -2111,16 +2111,28 @@ jobs:
           output-credentials: true
           retry-max-attempts: 3
 
-      - name: Enable native auth on Cognito Hosted UI
+      - name: Read TEST_AUTH_PROVIDER
+        id: auth-provider
         shell: bash
         run: |
           ENV_FILE=".env.${{ needs.names.outputs.environment-name }}"
           PROVIDER=$(grep -E '^TEST_AUTH_PROVIDER=' "$ENV_FILE" | tail -n1 | cut -d'=' -f2)
-          if [ "$PROVIDER" = "cognito-native" ]; then
-            node scripts/toggle-cognito-native-auth.js enable "${{ needs.names.outputs.environment-name }}"
-          else
-            echo "Skipping native auth toggle (TEST_AUTH_PROVIDER=${PROVIDER:-unset})"
-          fi
+          echo "provider=${PROVIDER:-unset}" | tee -a "$GITHUB_OUTPUT"
+
+      # Holds this whole run's need for native auth: every web-test-* job below reuses this
+      # hold rather than registering its own, and disable-native-auth (which needs every one of
+      # them) releases it. Keyed on the run id alone because deploy.yml's own job graph already
+      # serialises this job before every job that depends on the hold.
+      - name: Enable native auth on Cognito Hosted UI
+        if: ${{ steps.auth-provider.outputs.provider == 'cognito-native' }}
+        uses: './.github/actions/hold-native-auth'
+        with:
+          mode: enable
+          environment-name: ${{ needs.names.outputs.environment-name }}
+          holder-id: ${{ github.run_id }}
+          run-id: ${{ github.run_id }}
+          workflow: ${{ github.workflow }}
+          github-token: ${{ github.token }}
 
       # Each suite rotates its own durable Cognito user via probe-test.yml. One user per
       # suite, so parallel suites never clear each other's bundles or each other's password.
@@ -3111,17 +3123,28 @@ jobs:
           output-credentials: true
           retry-max-attempts: 3
 
-      - name: Disable native auth on Cognito Hosted UI
+      - name: Read TEST_AUTH_PROVIDER
+        id: auth-provider
         if: ${{ needs.params.outputs.skipCleanup != 'true' && needs.names.outputs.environment-name != 'ci' }}
         shell: bash
         run: |
           ENV_FILE=".env.${{ needs.names.outputs.environment-name }}"
           PROVIDER=$(grep -E '^TEST_AUTH_PROVIDER=' "$ENV_FILE" | tail -n1 | cut -d'=' -f2)
-          if [ "$PROVIDER" = "cognito-native" ]; then
-            node scripts/toggle-cognito-native-auth.js disable "${{ needs.names.outputs.environment-name }}"
-          else
-            echo "Skipping native auth toggle (TEST_AUTH_PROVIDER=${PROVIDER:-unset})"
-          fi
+          echo "provider=${PROVIDER:-unset}" | tee -a "$GITHUB_OUTPUT"
+
+      # Releases the hold this run's enable-native-auth job registered. Native auth turns off
+      # here only once no other run's hold remains; while one does, this job still succeeds and
+      # whichever hold is released last performs the real disable.
+      - name: Disable native auth on Cognito Hosted UI
+        if: ${{ needs.params.outputs.skipCleanup != 'true' && needs.names.outputs.environment-name != 'ci' && steps.auth-provider.outputs.provider == 'cognito-native' }}
+        uses: './.github/actions/hold-native-auth'
+        with:
+          mode: disable
+          environment-name: ${{ needs.names.outputs.environment-name }}
+          holder-id: ${{ github.run_id }}
+          run-id: ${{ github.run_id }}
+          workflow: ${{ github.workflow }}
+          github-token: ${{ github.token }}
 
   # Set the deployment name as the last known good deployment for this environment in a parameter store parameter
   set-last-known-good-deployment:
