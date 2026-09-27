@@ -94,7 +94,7 @@ class AlarmStateChangeDeliveryTest {
                         "ExtendedS3DestinationConfiguration",
                         Match.objectLike(Map.of(
                                 "Prefix",
-                                Match.stringLikeRegexp("^curated/alarm-state-changes/.*"),
+                                Match.stringLikeRegexp("^curated/alarm-state-changes/dt=!\\{timestamp:yyyy-MM-dd\\}/$"),
                                 "CompressionFormat",
                                 "UNCOMPRESSED",
                                 "DataFormatConversionConfiguration",
@@ -139,6 +139,25 @@ class AlarmStateChangeDeliveryTest {
                 "detail_json")) {
             assertTrue(columnNames.contains(expectedName), "missing column " + expectedName + " in " + columnNames);
         }
+    }
+
+    @Test
+    @SuppressWarnings("unchecked")
+    void glueTableUsesADtDatePartitionInsteadOfYearMonthDay() {
+        Template template = synthAlarmStateChangeDelivery();
+
+        var tables = template.findResources("AWS::Glue::Table");
+        var resource = tables.values().iterator().next();
+        var properties = (Map<String, Object>) resource.get("Properties");
+        var tableInput = (Map<String, Object>) properties.get("TableInput");
+        var partitionKeys = (List<Map<String, Object>>) tableInput.get("PartitionKeys");
+        assertTrue(partitionKeys.size() == 1, "expected one partition key: " + partitionKeys);
+        assertTrue("dt".equals(partitionKeys.get(0).get("Name")));
+        assertTrue("date".equals(partitionKeys.get(0).get("Type")));
+
+        var parameters = (Map<String, Object>) tableInput.get("Parameters");
+        assertTrue("date".equals(parameters.get("projection.dt.type")));
+        assertTrue(String.valueOf(parameters.get("storage.location.template")).endsWith("dt=${dt}/"));
     }
 
     @Test

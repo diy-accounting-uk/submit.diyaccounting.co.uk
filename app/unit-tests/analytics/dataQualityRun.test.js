@@ -173,7 +173,7 @@ describe("dataQualityRun", () => {
         roleArn: "arn:aws:iam::111111111111:role/ci-env-data-quality-run",
         lakeBucketName: "ci-env-analytics-lake-111111111111",
         curatedPrefix: "curated/activity-events/",
-        partitionScheme: "year-month-day",
+        partitionScheme: "dt",
       });
     });
 
@@ -188,8 +188,18 @@ describe("dataQualityRun", () => {
       expect(config.partitionScheme).toBe("dt");
     });
 
-    test("selects the year-month-day partition scheme for alarm_state_changes", () => {
+    test("selects the dt partition scheme for alarm_state_changes", () => {
       const config = buildTargetConfig(VALID_SHARED_CONFIG, VALID_TARGETS[1]);
+      expect(config.partitionScheme).toBe("dt");
+    });
+
+    test("selects the year-month-day partition scheme for a target not in DT_PARTITIONED_TABLES", () => {
+      const complianceTarget = {
+        table: "compliance_accessibility",
+        ruleset: "ci_env_compliance_accessibility_dq",
+        curatedPrefix: "curated/compliance/accessibility/",
+      };
+      const config = buildTargetConfig(VALID_SHARED_CONFIG, complianceTarget);
       expect(config.partitionScheme).toBe("year-month-day");
     });
   });

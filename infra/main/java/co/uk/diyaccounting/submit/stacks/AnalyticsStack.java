@@ -255,10 +255,9 @@ public class AnalyticsStack extends Stack {
                         CfnDeliveryStream.ExtendedS3DestinationConfigurationProperty.builder()
                                 .bucketArn(this.lakeBucket.getBucketArn())
                                 .roleArn(firehoseRole.getRoleArn())
-                                .prefix(ACTIVITY_EVENTS_CURATED_PREFIX
-                                        + "year=!{timestamp:yyyy}/month=!{timestamp:MM}/day=!{timestamp:dd}/")
-                                .errorOutputPrefix(
-                                        "errors/activity-events/!{firehose:error-output-type}/year=!{timestamp:yyyy}/month=!{timestamp:MM}/day=!{timestamp:dd}/")
+                                .prefix(ACTIVITY_EVENTS_CURATED_PREFIX + "dt=!{timestamp:yyyy-MM-dd}/")
+                                .errorOutputPrefix("errors/activity-events/!{firehose:error-output-type}/"
+                                        + "dt=!{timestamp:yyyy-MM-dd}/")
                                 .bufferingHints(CfnDeliveryStream.BufferingHintsProperty.builder()
                                         .intervalInSeconds(900)
                                         .sizeInMBs(128)
@@ -498,16 +497,12 @@ public class AnalyticsStack extends Stack {
         curatedTableParameters.put("classification", "parquet");
         curatedTableParameters.put("has_encrypted_data", "false");
         curatedTableParameters.put("projection.enabled", "true");
-        curatedTableParameters.put("projection.year.type", "integer");
-        curatedTableParameters.put("projection.year.range", "2026,2035");
-        curatedTableParameters.put("projection.month.type", "integer");
-        curatedTableParameters.put("projection.month.range", "1,12");
-        curatedTableParameters.put("projection.month.digits", "2");
-        curatedTableParameters.put("projection.day.type", "integer");
-        curatedTableParameters.put("projection.day.range", "1,31");
-        curatedTableParameters.put("projection.day.digits", "2");
-        curatedTableParameters.put(
-                "storage.location.template", curatedLocation + "year=${year}/month=${month}/day=${day}/");
+        curatedTableParameters.put("projection.dt.type", "date");
+        curatedTableParameters.put("projection.dt.format", "yyyy-MM-dd");
+        curatedTableParameters.put("projection.dt.range", "2026-08-01,NOW");
+        curatedTableParameters.put("projection.dt.interval", "1");
+        curatedTableParameters.put("projection.dt.interval.unit", "DAYS");
+        curatedTableParameters.put("storage.location.template", curatedLocation + "dt=${dt}/");
 
         var curatedActivityEventsTable = CfnTable.Builder.create(this, prefix + "-ActivityEventsCuratedTable")
                 .catalogId(this.getAccount())
@@ -517,19 +512,10 @@ public class AnalyticsStack extends Stack {
                         .description("Activity events converted to Parquet by Firehose, typed columns")
                         .tableType("EXTERNAL_TABLE")
                         .parameters(curatedTableParameters)
-                        .partitionKeys(List.of(
-                                CfnTable.ColumnProperty.builder()
-                                        .name("year")
-                                        .type("int")
-                                        .build(),
-                                CfnTable.ColumnProperty.builder()
-                                        .name("month")
-                                        .type("int")
-                                        .build(),
-                                CfnTable.ColumnProperty.builder()
-                                        .name("day")
-                                        .type("int")
-                                        .build()))
+                        .partitionKeys(List.of(CfnTable.ColumnProperty.builder()
+                                .name("dt")
+                                .type("date")
+                                .build()))
                         .storageDescriptor(CfnTable.StorageDescriptorProperty.builder()
                                 .location(curatedLocation)
                                 .inputFormat("org.apache.hadoop.hive.ql.io.parquet.MapredParquetInputFormat")
@@ -606,7 +592,7 @@ public class AnalyticsStack extends Stack {
                                actor,
                                count(*) AS events
                         FROM   %s.%s
-                        WHERE  year >= 2026
+                        WHERE  dt >= DATE '2026-08-01'
                         GROUP  BY 1, 2, 3
                         ORDER  BY 1 DESC, 4 DESC
                         """

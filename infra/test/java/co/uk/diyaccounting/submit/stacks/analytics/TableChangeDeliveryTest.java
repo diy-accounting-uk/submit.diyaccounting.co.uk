@@ -110,11 +110,33 @@ class TableChangeDeliveryTest {
                         "ExtendedS3DestinationConfiguration",
                         Match.objectLike(Map.of(
                                 "Prefix",
-                                Match.stringLikeRegexp("^curated/tables/receipts/.*"),
+                                Match.stringLikeRegexp("^curated/tables/receipts/dt=!\\{timestamp:yyyy-MM-dd\\}/$"),
                                 "CompressionFormat",
                                 "UNCOMPRESSED",
                                 "DataFormatConversionConfiguration",
                                 Match.objectLike(Map.of("Enabled", true)))))));
+    }
+
+    @Test
+    @SuppressWarnings("unchecked")
+    void glueTablesUseADtDatePartitionInsteadOfYearMonthDay() {
+        Template template = synthTableChangeDelivery();
+
+        var tables = template.findResources("AWS::Glue::Table");
+        assertTrue(tables.size() == 4, "expected exactly four Glue tables: " + tables.keySet());
+        for (var resource : tables.values()) {
+            var properties = (Map<String, Object>) resource.get("Properties");
+            var tableInput = (Map<String, Object>) properties.get("TableInput");
+            var partitionKeys = (List<Map<String, Object>>) tableInput.get("PartitionKeys");
+            assertEquals(1, partitionKeys.size(), "expected one partition key: " + partitionKeys);
+            assertEquals("dt", partitionKeys.get(0).get("Name"));
+            assertEquals("date", partitionKeys.get(0).get("Type"));
+
+            var parameters = (Map<String, Object>) tableInput.get("Parameters");
+            assertEquals("date", parameters.get("projection.dt.type"));
+            assertTrue(
+                    String.valueOf(parameters.get("storage.location.template")).endsWith("dt=${dt}/"));
+        }
     }
 
     @Test

@@ -100,8 +100,24 @@ class AnalyticsStackTest {
                                 "Name",
                                 "activity_events",
                                 "Parameters",
-                                Match.objectLike(
-                                        Map.of("classification", "parquet", "projection.enabled", "true")))))));
+                                Match.objectLike(Map.of(
+                                        "classification",
+                                        "parquet",
+                                        "projection.enabled",
+                                        "true",
+                                        "projection.dt.type",
+                                        "date")))))));
+
+        // The curated table partitions on a single dt date column, not year/month/day.
+        analytics.hasResourceProperties(
+                "AWS::Glue::Table",
+                Match.objectLike(Map.of(
+                        "TableInput",
+                        Match.objectLike(Map.of(
+                                "Name",
+                                "activity_events",
+                                "PartitionKeys",
+                                Match.arrayWith(List.of(Match.objectLike(Map.of("Name", "dt", "Type", "date")))))))));
 
         // app_client and session_id are appended at the end of the column list, so existing
         // Parquet data stays readable.
