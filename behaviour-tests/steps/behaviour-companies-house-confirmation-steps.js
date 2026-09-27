@@ -25,7 +25,7 @@ const SIMULATOR_COMPANY_NAME = "EXAMPLE CONFIRMATION STATEMENT LIMITED";
 const SIMULATOR_COMPANY_AUTH_CODE = "SIMCS01";
 
 /** An 11-character personal code in the letters-and-digits format the review form checks for. */
-export const TEST_DIRECTOR_PERSONAL_CODE = "AB1234CD56E";
+export const TEST_DIRECTOR_PERSONAL_CODE = "CWMPS832223";
 
 /** The other forenames value the review form requires per director row before it will preview. */
 export const TEST_DIRECTOR_OTHER_FORENAMES = "MIDDLENAME";

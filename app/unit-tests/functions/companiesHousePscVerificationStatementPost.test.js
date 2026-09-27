@@ -85,7 +85,7 @@ function buildStatementBody(overrides = {}) {
     surname: "EXAMPLE",
     dobMonth: 1,
     dobYear: 1970,
-    personalCode: "AB1234CD56E",
+    personalCode: "CWMPS832223",
     ...overrides,
   };
 }
@@ -150,7 +150,7 @@ describe("companiesHousePscVerificationStatementPost ingestHandler", () => {
       gatewayTest: false,
     });
     expect(submissionArgs.statementXml).toContain("<Surname>EXAMPLE</Surname>");
-    expect(submissionArgs.statementXml).toContain("<CompaniesHousePersonalCode>AB1234CD56E</CompaniesHousePersonalCode>");
+    expect(submissionArgs.statementXml).toContain("<CompaniesHousePersonalCode>CWMPS832223</CompaniesHousePersonalCode>");
 
     expect(mockPostToGateway).toHaveBeenCalledWith("<GovTalkMessage>submission</GovTalkMessage>", {});
   });

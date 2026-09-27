@@ -207,7 +207,7 @@ function pscVerificationStatementEnvelope({
           <Surname>EXAMPLE</Surname>
           <Change>
             <VerificationDetails>
-              <CompaniesHousePersonalCode>AB1234CD56E</CompaniesHousePersonalCode>
+              <CompaniesHousePersonalCode>CWMPS832223</CompaniesHousePersonalCode>
               <VerificationStatements><VerificationStatementForIndividual>INDIVIDUAL_VERIFIED</VerificationStatementForIndividual></VerificationStatements>
             </VerificationDetails>
           </Change>

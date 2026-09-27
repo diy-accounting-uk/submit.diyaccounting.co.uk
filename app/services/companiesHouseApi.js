@@ -102,12 +102,13 @@ export function isValidCompanyNumber(value) {
 }
 
 // Companies House issues a personal code once an individual's identity is verified: 11 characters,
-// a mix of uppercase letters and digits, shown to the individual with two hyphens for readability
-// (e.g. AB1-23CD-4EF4) but sent to the XML Gateway without them. Companies House does not publish a
-// fixed letter/digit sequence - only the length and the mix - so this checks that much and rejects
-// an all-digit or all-letter string, the shape behind GovTalk error 9999 "Invalid
+// a run of 5 or 6 uppercase letters followed by a run of 6 or 5 digits (e.g. CWMPS832223, the
+// Companies House XML Gateway forum's own confirmed-working test-service code), sent to the XML
+// Gateway without the hyphens the individual sees it grouped with. Companies House does not
+// publish a formal specification for the shape, so this follows the observed one; a code with
+// letters and digits interleaved is the shape behind GovTalk error 9999 "Invalid
 // CompaniesHousePersonalCode format".
-const PERSONAL_CODE_PATTERN = /^(?=[A-Z0-9]{11}$)(?=[A-Z0-9]*[A-Z])(?=[A-Z0-9]*\d)[A-Z0-9]{11}$/;
+const PERSONAL_CODE_PATTERN = /^(?=[A-Z0-9]{11}$)[A-Z]{5,6}\d{5,6}$/;
 
 export function isValidCompaniesHousePersonalCode(value) {
   if (value === undefined || value === null) {

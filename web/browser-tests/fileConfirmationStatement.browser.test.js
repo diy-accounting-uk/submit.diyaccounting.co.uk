@@ -280,7 +280,7 @@ test.describe("File Confirmation Statement page", () => {
     await lookUpCompany(page);
     await enterAuthCode(page);
     await acceptLawfulPurposeStatement(page);
-    await page.fill("#directorPersonalCode-0", "AB123456789");
+    await page.fill("#directorPersonalCode-0", "CWMPS832223");
     // Deliberately leave directorOtherForenames-0 blank.
     await page.click("#previewBtn");
     await delay(200);
@@ -299,7 +299,7 @@ test.describe("File Confirmation Statement page", () => {
     await enterAuthCode(page);
     await acceptLawfulPurposeStatement(page);
     await page.fill("#directorOtherForenames-0", "ELIZABETH");
-    await page.fill("#directorPersonalCode-0", "AB123456789");
+    await page.fill("#directorPersonalCode-0", "CWMPS832223");
     await page.click("#previewBtn");
     await delay(200);
 
@@ -307,7 +307,7 @@ test.describe("File Confirmation Statement page", () => {
     await expect(page.locator("#previewXml")).toContainText("ConfirmationAndVerificationStatement");
     const previewCalls = await page.evaluate(() => window.__previewCalls);
     expect(previewCalls).toHaveLength(1);
-    expect(previewCalls[0].directors[0].personalCode).toBe("AB123456789");
+    expect(previewCalls[0].directors[0].personalCode).toBe("CWMPS832223");
     expect(previewCalls[0].directors[0].otherForenames).toBe("ELIZABETH");
   });
 
@@ -320,7 +320,7 @@ test.describe("File Confirmation Statement page", () => {
     await enterAuthCode(page);
     await acceptLawfulPurposeStatement(page);
     await page.fill("#directorOtherForenames-0", "ELIZABETH");
-    await page.fill("#directorPersonalCode-0", "AB123456789");
+    await page.fill("#directorPersonalCode-0", "CWMPS832223");
     await page.click("#previewBtn");
     await delay(200);
 
@@ -338,7 +338,7 @@ test.describe("File Confirmation Statement page", () => {
     await enterAuthCode(page);
     await acceptLawfulPurposeStatement(page);
     await page.fill("#directorOtherForenames-0", "ELIZABETH");
-    await page.fill("#directorPersonalCode-0", "AB123456789");
+    await page.fill("#directorPersonalCode-0", "CWMPS832223");
     await page.click("#previewBtn");
     await delay(200);
 
@@ -355,7 +355,7 @@ test.describe("File Confirmation Statement page", () => {
     await enterAuthCode(page);
     await acceptLawfulPurposeStatement(page);
     await page.fill("#directorOtherForenames-0", "ELIZABETH");
-    await page.fill("#directorPersonalCode-0", "AB123456789");
+    await page.fill("#directorPersonalCode-0", "CWMPS832223");
     await page.click("#previewBtn");
     await delay(200);
 
@@ -397,7 +397,7 @@ test.describe("File Confirmation Statement page", () => {
     await enterAuthCode(page);
     await acceptLawfulPurposeStatement(page);
     await page.fill("#directorOtherForenames-0", "ELIZABETH");
-    await page.fill("#directorPersonalCode-0", "AB123456789");
+    await page.fill("#directorPersonalCode-0", "CWMPS832223");
     await page.click("#previewBtn");
     await delay(200);
 
@@ -412,7 +412,7 @@ test.describe("File Confirmation Statement page", () => {
     expect(submitCalls).toHaveLength(1);
     expect(submitCalls[0].companyAuthCode).toBe("AB123456");
 
-    await page.fill("#pscPersonalCode-0", "AB1234CD56E");
+    await page.fill("#pscPersonalCode-0", "CWMPS832223");
     await page.click('[data-psc-verify-index="0"]');
     await delay(300);
 
@@ -424,7 +424,7 @@ test.describe("File Confirmation Statement page", () => {
       companyAuthCode: "AB123456",
       surname: "Doe",
       forename: "Jane",
-      personalCode: "AB1234CD56E",
+      personalCode: "CWMPS832223",
       dobMonth: 1,
       dobYear: 1980,
     });
@@ -458,7 +458,7 @@ test.describe("File Confirmation Statement page", () => {
 
     await acceptLawfulPurposeStatement(page);
     await page.fill("#directorOtherForenames-0", "ELIZABETH");
-    await page.fill("#directorPersonalCode-0", "AB123456789");
+    await page.fill("#directorPersonalCode-0", "CWMPS832223");
     await page.click("#previewBtn");
     await delay(200);
 

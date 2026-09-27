@@ -41,7 +41,7 @@ const BASE_INPUT = {
       otherForenames: "OTHER",
       surname: "NAME",
       dob: "1967-08-13",
-      personalCode: "AB1234CD56E",
+      personalCode: "CWMPS832223",
       nameMismatchReason: "LEGALLY_CHANGED",
     },
   ],
