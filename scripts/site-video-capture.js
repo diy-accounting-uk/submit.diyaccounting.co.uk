@@ -693,10 +693,6 @@ async function main() {
 
   if (encodeEnabled && capture) {
     const manifestPath = path.join(framesDir, "manifest.txt");
-    // A page that keeps repainting into the finalHoldMs sleep above (an animation, a caret left
-    // blinking in a focused field) already has real frames covering some of that hold; padding
-    // the configured finalHoldMs on top unconditionally would hold twice. tailHoldMs is what
-    // remains to pad after the last real frame's own timestamp.
     const lastFrameTMs = capture.frames.length ? capture.frames[capture.frames.length - 1].tMs : 0;
     const tailHoldMs = remainingFinalHoldMs(elapsedMs, script.finalHoldMs, lastFrameTMs);
     // Frame paths in the manifest are resolved by ffmpeg relative to the manifest file's own
