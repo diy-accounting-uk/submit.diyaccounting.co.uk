@@ -232,6 +232,39 @@ const ALWAYS_NAVIGATING_ACTIONS = new Set([
 // all (headlinePlacement.js's "default" anchor).
 const TARGET_RECT_ACTIONS = new Set(["click", "point", "type", "fill", "select", "highlight"]);
 
+// The ordered list of (text, sceneId) pairs the scene loop's three resolveCaptionHold call
+// sites will ask Polly for: a "caption" action step names its own text; any other step with a
+// caption names that, unless the step is a goto whose caption is instead resolved after
+// navigation (site-video-capture design, the doGoto branch) — from resolveCaptionHold's point
+// of view the same one call either way. offCamera and fastForward scenes hold nothing, so they
+// call it for neither.
+function narrationRequestsFor(script, selectedSceneIds) {
+  const requests = [];
+  for (const scene of script.scenes) {
+    if (scene.offCamera === true) continue;
+    const fastForward = scene.fastForward === true || (selectedSceneIds ? !selectedSceneIds.has(scene.id) : false);
+    if (fastForward) continue;
+    for (const step of scene.steps) {
+      if (step.action === "caption") requests.push({ text: step.text, sceneId: scene.id });
+      else if (step.caption) requests.push({ text: step.caption, sceneId: scene.id });
+    }
+  }
+  return requests;
+}
+
+// Synthesises every caption's narration up front, each into the exact numbered file
+// resolveCaptionHold would otherwise request live (caption-0.mp3, caption-1.mp3, ...), so the
+// scene loop finds them already there. One at a time, and before this run's own browser, local
+// server and dynalite start — see the call site for why.
+async function prefetchNarration(script, selectedSceneIds, narrationDir) {
+  const requests = narrationRequestsFor(script, selectedSceneIds);
+  let index = 0;
+  for (const { text, sceneId } of requests) {
+    const outputPath = path.join(narrationDir, `caption-${index++}.mp3`);
+    if (!fs.existsSync(outputPath)) await synthesizeSpeech({ text, outputPath, sceneId });
+  }
+}
+
 async function main() {
   const args = parseArgs(process.argv.slice(2));
   const scriptPath = path.resolve(args.script);
@@ -266,9 +299,20 @@ async function main() {
   const narrationClips = [];
   let narrationFfmpegBin = null;
   let narrationIndex = 0;
+  const selectedSceneIds = args.scene ? new Set(args.scene) : null;
   if (narrationEnabled) {
     fs.mkdirSync(narrationDir, { recursive: true });
     narrationFfmpegBin = resolveFfmpegBinary();
+    // Every Polly call this run will make, before the browser, the local server and dynalite
+    // start: alongside that concurrent work the same call has failed outright (an HTTP/2
+    // protocol error) or hung with no response at all, while the identical call made here,
+    // before any of it is running, has not. Captions carry no {{...}} placeholder (only typed
+    // and filled field values do — see values.js), so every caption's final text is already
+    // known from the script alone; this mirrors the fastForward/offCamera/caption-action
+    // selection the scene loop below applies at its own three resolveCaptionHold call sites, in
+    // the same order, so the numbered files it writes are the ones resolveCaptionHold finds
+    // already there and does not re-request.
+    await prefetchNarration(script, selectedSceneIds, narrationDir);
   }
   // Falls back to the reading-speed estimate (pacing.js's captionMinMs) when narration is off,
   // or for a fastForward/off-camera step, which never calls this at all (see the call sites
@@ -278,7 +322,7 @@ async function main() {
   async function resolveCaptionHold(text, sceneId) {
     if (!narrationEnabled) return { minMs: captionMinMs(text, script.captions), audioPath: null };
     const audioPath = path.join(narrationDir, `caption-${narrationIndex++}.mp3`);
-    await synthesizeSpeech({ text, outputPath: audioPath, sceneId });
+    if (!fs.existsSync(audioPath)) await synthesizeSpeech({ text, outputPath: audioPath, sceneId });
     const minMs = audioDurationMs(narrationFfmpegBin, audioPath);
     return { minMs, audioPath };
   }
@@ -373,7 +417,6 @@ async function main() {
     : null;
   if (capture) await capture.start();
 
-  const selectedSceneIds = args.scene ? new Set(args.scene) : null;
   const stepRecords = [];
   const captionEvents = [];
   const sceneRecords = [];

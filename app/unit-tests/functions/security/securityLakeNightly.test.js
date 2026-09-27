@@ -367,4 +367,44 @@ last_rotated = ""
       expect.objectContaining({ secret_name: "missing/secret", found: false }),
     ]);
   });
+
+  test("buildRotationRows skips a github-store entry", async () => {
+    const tomlPath = writeTempToml(`
+[[secret]]
+name = "stripe/secret_key"
+console = "Stripe"
+last_rotated = ""
+
+[[secret]]
+name = "RELEASE_PAT"
+console = "GitHub"
+last_rotated = "2026-09-16"
+store = "github"
+location = "repo"
+`);
+    const send = vi.fn().mockResolvedValueOnce({ Tags: [{ Key: "rotated-at", Value: "2026-08-01" }] });
+    const rows = await buildRotationRows({ send }, tomlPath, "ci", "2026-09-08", new Date("2026-09-08T00:00:00Z"));
+    expect(send).toHaveBeenCalledTimes(1);
+    expect(rows).toEqual([expect.objectContaining({ secret_name: "stripe/secret_key", found: true })]);
+  });
+
+  test("buildRotationRows skips a ci-only entry in prod and includes it in ci", async () => {
+    const tomlPath = writeTempToml(`
+[[secret]]
+name = "companies-house/presenter_code"
+console = "Companies House"
+last_rotated = "2026-09-12"
+environments = ["ci"]
+`);
+
+    const sendForProd = vi.fn();
+    const prodRows = await buildRotationRows({ send: sendForProd }, tomlPath, "prod", "2026-09-08", new Date("2026-09-08T00:00:00Z"));
+    expect(sendForProd).not.toHaveBeenCalled();
+    expect(prodRows).toEqual([expect.objectContaining({ zero_findings: true })]);
+
+    const sendForCi = vi.fn().mockResolvedValueOnce({ Tags: [{ Key: "rotated-at", Value: "2026-09-12" }] });
+    const ciRows = await buildRotationRows({ send: sendForCi }, tomlPath, "ci", "2026-09-08", new Date("2026-09-08T00:00:00Z"));
+    expect(sendForCi).toHaveBeenCalledTimes(1);
+    expect(ciRows).toEqual([expect.objectContaining({ secret_name: "companies-house/presenter_code", found: true })]);
+  });
 });

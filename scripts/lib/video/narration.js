@@ -14,8 +14,10 @@
 // arithmetic, tested without either.
 
 import fs from "node:fs";
+import path from "node:path";
+import { fileURLToPath } from "node:url";
 import { spawnSync } from "node:child_process";
-import { PollyClient, SynthesizeSpeechCommand } from "@aws-sdk/client-polly";
+import { SynthesizeSpeechCommand } from "@aws-sdk/client-polly";
 
 // Neural British English voices Amazon Polly offers today (aws polly describe-voices
 // --language-code en-GB): Emma and Amy (female, neural), Brian and Arthur (male, neural), Brian
@@ -24,13 +26,39 @@ import { PollyClient, SynthesizeSpeechCommand } from "@aws-sdk/client-polly";
 export const DEFAULT_VOICE_ID = "Amy";
 export const DEFAULT_ENGINE = "neural";
 
-let cachedPollyClient = null;
+const POLLY_CHILD_SCRIPT = path.join(path.dirname(fileURLToPath(import.meta.url)), "pollySynthesizeChild.mjs");
+const NARRATION_RETRY_ATTEMPTS = 8;
 
-function getPollyClient() {
-  if (!cachedPollyClient) {
-    cachedPollyClient = new PollyClient({ region: process.env.AWS_REGION || "eu-west-2" });
+// A caption's speech, in a child process of its own — see pollySynthesizeChild.mjs for why: the
+// same in-process PollyClient call fails reliably alongside this capture script's other
+// concurrent work (a local server, dynalite, a screencast-recording browser), and a fresh process
+// carries none of whatever that concurrent work leaves broken. Retries (each a new process) cover
+// an ordinary transient failure — throttling, a dropped connection — on top of that.
+function synthesizeSpeechInChildProcess({ text, outputPath, voiceId, engine, sceneId }) {
+  const region = process.env.AWS_REGION || "eu-west-2";
+  let lastError;
+  for (let attempt = 1; attempt <= NARRATION_RETRY_ATTEMPTS; attempt += 1) {
+    const result = spawnSync(process.execPath, [POLLY_CHILD_SCRIPT], {
+      env: {
+        ...process.env,
+        POLLY_TEXT: text,
+        POLLY_OUTPUT_PATH: outputPath,
+        POLLY_VOICE_ID: voiceId,
+        POLLY_ENGINE: engine,
+        POLLY_REGION: region,
+      },
+      encoding: "utf8",
+      // Backstop for the child's own 20s watchdog: if that never fires (its event loop wedged
+      // rather than merely waiting on the network), this still bounds the wait.
+      timeout: 30000,
+      killSignal: "SIGKILL",
+    });
+    if (result.status === 0) return;
+    lastError = new Error((result.stderr || result.error?.message || `pollySynthesizeChild exited ${result.status}`).trim());
   }
-  return cachedPollyClient;
+  throw new Error(`narration failed for scene "${sceneId ?? "unknown"}" (Polly SynthesizeSpeech): ${lastError.message}`, {
+    cause: lastError,
+  });
 }
 
 // Synthesises one caption's speech and writes it to outputPath, one Polly call per caption.
@@ -39,14 +67,14 @@ function getPollyClient() {
 // same chain the CLI it replaces used. sceneId names the scene in the thrown error when Polly
 // rejects the call (missing credentials, throttling, a bad voice id) — nothing else here says
 // which caption failed.
-export async function synthesizeSpeech({
-  text,
-  outputPath,
-  voiceId = DEFAULT_VOICE_ID,
-  engine = DEFAULT_ENGINE,
-  sceneId,
-  client = getPollyClient(),
-}) {
+//
+// A caller-supplied client (only ever a test double here) calls Polly in this process directly;
+// with none given, the real path runs in a child process instead (see above).
+export async function synthesizeSpeech({ text, outputPath, voiceId = DEFAULT_VOICE_ID, engine = DEFAULT_ENGINE, sceneId, client }) {
+  if (!client) {
+    synthesizeSpeechInChildProcess({ text, outputPath, voiceId, engine, sceneId });
+    return;
+  }
   let response;
   try {
     response = await client.send(

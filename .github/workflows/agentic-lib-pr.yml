@@ -59,11 +59,16 @@ permissions:
   id-token: write # OIDC, chained into the alarm-triage role for Bedrock
   contents: read
   pull-requests: read
+  actions: read # the runs API the budget guard reads
 
 env:
   NODE_VERSION: '24'
   AWS_REGION: 'eu-west-2'
   CLAUDE_CODE_VERSION: '2.0.30'
+  # The one place this number is written, same convention as alarm-triage.yml's own budget.
+  # The commented schedule below is hourly (24 runs a day); this leaves headroom for a manual
+  # dispatch on top of it.
+  AUTO_MERGE_BUDGET_PER_DAY: '30'
 
 jobs:
   auto-merge:
@@ -105,8 +110,24 @@ jobs:
           fetch-depth: 0
           persist-credentials: false
 
+      # The budget guard is a local action; the checkout above already put the full repository
+      # on disk, so this reuses it rather than adding a sparse checkout of its own.
+      - name: Stop once ${{ env.AUTO_MERGE_BUDGET_PER_DAY }} auto-merge runs have already posted a result today
+        id: budget-guard
+        uses: ./.github/actions/agent-run-budget
+        with:
+          workflow-file: agentic-lib-pr.yml
+          job-name: auto-merge
+          step-name: Require a usable result
+          budget: ${{ env.AUTO_MERGE_BUDGET_PER_DAY }}
+
+      - name: Record that the daily run budget is spent
+        if: steps.budget-guard.outputs.over-budget == 'true'
+        run: |
+          echo "Auto-merge run skipped: the budget of ${{ env.AUTO_MERGE_BUDGET_PER_DAY }} runs per 24 hours is already used (${{ steps.budget-guard.outputs.count }} posted a result since ${{ steps.budget-guard.outputs.since }})." | tee -a "$GITHUB_STEP_SUMMARY"
+
       - name: Refuse to run against a fork
-        if: inputs.pr-number != ''
+        if: inputs.pr-number != '' && steps.budget-guard.outputs.over-budget == 'false'
         env:
           GH_TOKEN: ${{ github.token }}
           PR: ${{ inputs.pr-number }}
@@ -120,11 +141,13 @@ jobs:
           fi
 
       - name: Set up Node
+        if: steps.budget-guard.outputs.over-budget == 'false'
         uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7
         with:
           node-version: ${{ env.NODE_VERSION }}
 
       - name: Configure AWS role via GitHub OIDC
+        if: steps.budget-guard.outputs.over-budget == 'false'
         uses: aws-actions/configure-aws-credentials@e1253824e5c10ff9df46874f81ed3ec929e19cfd # v6
         with:
           role-to-assume: ${{ vars.SUBMIT_ACTIONS_ROLE_ARN }}
@@ -139,6 +162,7 @@ jobs:
       # plain actions role above has no bedrock:InvokeModel - only the alarm-triage role does
       # (ObservabilityStack.java), so this job chains into it exactly as alarm-triage.yml does.
       - name: Assume the read-only alarm triage role
+        if: steps.budget-guard.outputs.over-budget == 'false'
         uses: aws-actions/configure-aws-credentials@e1253824e5c10ff9df46874f81ed3ec929e19cfd # v6
         with:
           role-to-assume: ${{ vars.SUBMIT_ALARM_TRIAGE_ROLE_ARN }}
@@ -150,14 +174,17 @@ jobs:
           retry-max-attempts: 3
 
       - name: Stop when the agent kill switch is on
+        if: steps.budget-guard.outputs.over-budget == 'false'
         uses: ./.github/actions/agent-kill-switch
         with:
           environment-name: ci
 
       - name: Install Claude Code
+        if: steps.budget-guard.outputs.over-budget == 'false'
         run: npm install -g "@anthropic-ai/claude-code@${CLAUDE_CODE_VERSION}"
 
       - name: Run the auto-merge skill
+        if: steps.budget-guard.outputs.over-budget == 'false'
         id: run
         env:
           CLAUDE_CODE_USE_BEDROCK: '1'

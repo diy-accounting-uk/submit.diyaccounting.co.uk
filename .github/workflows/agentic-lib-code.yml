@@ -63,6 +63,8 @@ env:
   NODE_VERSION: '24'
   AWS_REGION: 'eu-west-2'
   CLAUDE_CODE_VERSION: '2.0.30'
+  # The one place this number is written, same convention as alarm-triage.yml's own budget.
+  DO_NEXT_BUDGET_PER_DAY: '6'
   OUT_DIR: '/tmp/do-next-out'
   # From the dispatch input, or from the issue event once that trigger is on.
   ISSUE_NUMBER: ${{ inputs.issue-number || github.event.issue.number || '' }}
@@ -110,22 +112,44 @@ jobs:
           fetch-depth: 0
           token: ${{ secrets.AGENT_TOKEN || github.token }}
 
+      # The budget guard is a local action; the checkout above already put the full repository
+      # on disk, so this reuses it rather than adding a sparse checkout of its own.
+      - name: Stop once ${{ env.DO_NEXT_BUDGET_PER_DAY }} do-next runs have already posted a result today
+        id: budget-guard
+        uses: ./.github/actions/agent-run-budget
+        with:
+          workflow-file: agentic-lib-code.yml
+          job-name: do-next
+          step-name: Open the pull request
+          budget: ${{ env.DO_NEXT_BUDGET_PER_DAY }}
+
+      - name: Record that the daily run budget is spent
+        if: steps.budget-guard.outputs.over-budget == 'true'
+        run: |
+          echo "Do-next run skipped: the budget of ${{ env.DO_NEXT_BUDGET_PER_DAY }} runs per 24 hours is already used (${{ steps.budget-guard.outputs.count }} posted a result since ${{ steps.budget-guard.outputs.since }})." | tee -a "$GITHUB_STEP_SUMMARY"
+
       # The agent commits its own work (`git commit` is in its allow-list) but has no push tool
       # and no `git config` tool, so this identity has to exist before it runs or every commit
       # fails with "Please tell me who you are". "Claude <noreply@anthropic.com>" is the same
       # identity every commit's `Co-Authored-By` trailer already names.
       - name: Configure the commit identity
+        if: steps.budget-guard.outputs.over-budget == 'false'
         run: |
           set -euo pipefail
           git config user.name "Claude"
           git config user.email "noreply@anthropic.com"
 
       - name: Set up Node
+        if: steps.budget-guard.outputs.over-budget == 'false'
         uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7
         with:
           node-version: ${{ env.NODE_VERSION }}
 
+      # Unconditional (not gated on the budget outcome): this and the role assumption after it
+      # exist so a budget-skipped run can still write the ledger row at the end of this job,
+      # same convention as alarm-remedy-close.yml and support-triage.yml.
       - name: Configure AWS role via GitHub OIDC
+        if: always()
         uses: aws-actions/configure-aws-credentials@e1253824e5c10ff9df46874f81ed3ec929e19cfd # v6
         with:
           role-to-assume: ${{ vars.SUBMIT_ACTIONS_ROLE_ARN }}
@@ -140,6 +164,7 @@ jobs:
       # (ObservabilityStack.java) - so the agent below, which runs on Bedrock, needs this chain
       # exactly as alarm-triage.yml does.
       - name: Assume the read-only alarm triage role
+        if: always()
         uses: aws-actions/configure-aws-credentials@e1253824e5c10ff9df46874f81ed3ec929e19cfd # v6
         with:
           role-to-assume: ${{ vars.SUBMIT_ALARM_TRIAGE_ROLE_ARN }}
@@ -154,20 +179,24 @@ jobs:
       # model, and a prod-facing agent path reads the prod flag from a job carrying that
       # environment instead.
       - name: Stop when the agent kill switch is on
+        if: steps.budget-guard.outputs.over-budget == 'false'
         id: kill-switch
         uses: ./.github/actions/agent-kill-switch
         with:
           environment-name: ci
 
       - name: Install dependencies
+        if: steps.budget-guard.outputs.over-budget == 'false'
         run: timeout 120 npm ci --prefer-offline || { sleep 30; timeout 180 npm ci; }
 
       - name: Install Claude Code
+        if: steps.budget-guard.outputs.over-budget == 'false'
         run: npm install -g "@anthropic-ai/claude-code@${CLAUDE_CODE_VERSION}"
 
       # Pull down what earlier incomplete runs left behind, so the agent can read them as files
       # rather than spending its budget on API calls. It still decides which, if any, to resume.
       - name: Collect the artifacts of recent incomplete runs
+        if: steps.budget-guard.outputs.over-budget == 'false'
         env:
           GH_TOKEN: ${{ github.token }}
           RESUME_FROM: ${{ inputs.resume-from }}
@@ -194,7 +223,7 @@ jobs:
       # and body go into the brief as the task; the body is written by whoever opened the issue,
       # so the brief marks it as a description of work, never as a change to the rules above it.
       - name: Read the issue this run works
-        if: env.ISSUE_NUMBER != ''
+        if: env.ISSUE_NUMBER != '' && steps.budget-guard.outputs.over-budget == 'false'
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
@@ -211,10 +240,12 @@ jobs:
       # So the pull-request step below can tell what the agent actually added, regardless of
       # whether it committed, only edited files, or did both.
       - name: Record the tree before the agent runs
+        if: steps.budget-guard.outputs.over-budget == 'false'
         id: before
         run: echo "sha=$(git rev-parse HEAD)" | tee -a "$GITHUB_OUTPUT"
 
       - name: Run the agent
+        if: steps.budget-guard.outputs.over-budget == 'false'
         id: run
         env:
           CLAUDE_CODE_USE_BEDROCK: '1'
@@ -477,7 +508,9 @@ jobs:
         id: ledger-outcome
         run: |
           set -euo pipefail
-          if [ "${{ steps.kill-switch.conclusion }}" = "failure" ]; then
+          if [ "${{ steps.budget-guard.outputs.over-budget }}" = "true" ]; then
+            OUTCOME=skipped-budget
+          elif [ "${{ steps.kill-switch.conclusion }}" = "failure" ]; then
             OUTCOME=skipped-kill-switch
           elif [ "${{ steps.run.conclusion }}" = "failure" ]; then
             OUTCOME=no-answer
