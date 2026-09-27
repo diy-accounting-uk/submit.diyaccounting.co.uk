@@ -127,8 +127,9 @@ by it says so in its `Status` (`unblocks CS-9`).
   else `—`.
 
 **Part 2 — one list per backlog tier below Tier 1** (whatever tiers the file
-currently has), each headed `**Tier N**`, then one item per line as a list, in the
-tier's own order. Each line: the backlog row number, a short name, then a bracketed status
+currently has), each headed `**Tier N**`, then one item per line as a list, sorted by state
+(`done`, then `in-flight`, then `ready`, then `blocked`) and by row number within a state
+(numeric part first, then the letter suffix: 30, 30a, 34, 34b, 82a). Each line: the backlog row number, a short name, then a bracketed status
 of three fields, then the item's issue refs if any:
 
 ```
