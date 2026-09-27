@@ -71,6 +71,14 @@ step.
 
 - [ ] **VID14g. Video (partial): what a carry-back claim saves (tax liability adjustments).** `taxLiabilityAdjustments.html`, after a carry-back claim. Titled "(partial)" while VID10c fixes the losses scene. **Source**: operator, 2026-09-27. **Owner**: Claude Code. **Model**: Sonnet. **Size**: ~2 files.
 
+- [ ] **B30a. Re-run the alarm audit (BACKLOG 30a).** Recount `../developers/submit/ALARM_AUDIT_2026-09.md`'s figures over the seven days to 2026-09-27 (alarm histories from `aws cloudwatch describe-alarm-history` on both accounts, deploy runs from `gh run list --workflow deploy.yml`), compare the families that fired against its 90-day baseline, and write the result as a dated section of that file; name each family to cut or tune with its evidence, which becomes BACKLOG 30's work. Read-only AWS. **Source**: BACKLOG 30a. **Owner**: Claude Code. **Model**: Sonnet. **Size**: ~1 file (outside the repository).
+
+- [ ] **B82a. Reasoned job filter, proof of concept (BACKLOG 82a).** A `select-jobs` job at the head of `test.yml`, after its params job, calling `claude -p` with the invocation context, the diff since the last green run and the jobs' descriptions, answering which skippable jobs to skip with a reason each; its answer only adds to the mechanical `paths:`/`changes` skips, a malformed or failed answer runs everything, `main` never calls it, and each decision is saved as an artifact (model id, prompt hash, inputs, answer). Proof: a dispatch on a branch with a docs-only diff and one with an app diff. The full brief is BACKLOG 82a. **Source**: operator, 2026-09-27. **Owner**: Claude Code. **Model**: Sonnet. **Size**: ~3 files.
+
+- [ ] **B39. Multi-URL Lighthouse thresholds and flakiness (BACKLOG 39, issue #13).** `compliance.yml`'s `accessibility-lighthouse` job runs `npm run accessibility:lighthouse-multi-<env>` and uploads `lighthouse-multi-results` without a gate. Set the proposed score thresholds (performance 80, accessibility 95, best practices 95, SEO 95) as a failing gate from the scores its last ten runs actually produced on the runner (read their artifacts first; a threshold the runner cannot meet is a flake, so set each at or below its observed floor and say so), run it weekly against prod, and generate the URL list from `web/public/sitemap.xml` if one exists. **Source**: BACKLOG 39; #13. **Owner**: Claude Code. **Model**: Sonnet. **Size**: ~3 files.
+
+- [ ] **B76. The merge gate's remaining rules (BACKLOG 76).** P10's shape rules (a minimum open-to-merge delay, a diff-size ceiling on a non-empty body, one author email, a merges-per-day cap), the full P2 authorship check (author and committer resolve to the owner, forks rejected, on top of `verify-commit-signatures.yml`), and P4's refusal to auto-merge a PR tied to another GitHub user's issue, rolled out docs-only first, per `PLAN_REPOSITORY_AUTOMATION.md` Phase 2. **Source**: BACKLOG 76. **Owner**: Claude Code. **Model**: Sonnet. **Size**: ~4 files.
+
 ## Machine-ask
 
 ## Human-driven
@@ -82,6 +90,18 @@ step.
 - [ ] **O11. The ITSA send day.** The proof is on `main` (PR #352, 2026-09-25): the eight ITSA suites pass on the simulator and run in CI, and the sandbox year ran clean on 2023-24, 2025-26 and 2026-27 on 2026-09-25 with a real `Gov-Client-Multi-Factor` header (`VALID_HEADERS`, no warnings), inside HMRC's 14 days until 2026-10-09. Evidence for every claim in the email, with how to check each, is in `../itsa-recognition-evidence/README.md`. Send `_developers/hmrc/DRAFT_EMAIL_ITSA_RECOGNITION.md` to `SDSTeam@hmrc.gov.uk` from the operator's address (prod-23d9a7e carries PR #352), then `_developers/hmrc/DRAFT_EMAIL_ITSA_PRODUCTION_CREDENTIALS.md` when SDST answers. **Source**: BACKLOG 11; `PLAN_ITSA_PHASE_2.md` T10. **Owner**: Operator. **Model**: none. **Size**: 0 files.
 
 ## Blocked
+
+- [ ] **B43. Cost optimisation after the first renewal (BACKLOG 43).** From 2026-10-02: confirm the renewal refreshes tokens (`subscription-renewed` published), check the bill against the steady-state target ($64.77 a month before VAT) on the cost panel's `v_cost_vs_target_monthly`, and the GCP billing account holding the GA4 export (`../developers/submit/archive/PLAN_COST_OPTIMISATION.md`). Blocked on the date, 2026-10-02. **Source**: BACKLOG 43. **Owner**: Claude Code. **Model**: Haiku. **Size**: 0 files.
+
+- [ ] **B82b. Reasoned job filter, dual-run trial (BACKLOG 82b).** Advisory mode on branch pushes to `deploy.yml` first, then `test.yml`; every job still runs; misses compared through B82a's saved artifacts; the bar is zero missed failures across at least 50 advised skips per job class. Blocked on B82a. **Source**: operator, 2026-09-27. **Owner**: Claude Code. **Model**: Sonnet. **Size**: ~2 files.
+
+- [ ] **B82c. Reasoned job filter, gradual rollout (BACKLOG 82c).** Enforce per workflow and job class, unit-level first, deploy stacks last, each kept while misses stay at zero; `main` stays on a full run. Blocked on B82b. **Source**: operator, 2026-09-27. **Owner**: Claude Code. **Model**: Sonnet. **Size**: ~3 files.
+
+- [ ] **B82d. Reasoned job filter, rules from evidence (BACKLOG 82d).** Turn repeated skips in B82b's records into mechanical `paths:`/`changes` rules by PR. Blocked on B82b. **Source**: operator, 2026-09-27. **Owner**: Claude Code. **Model**: Sonnet. **Size**: ~1 file.
+
+- [ ] **B80. Replies to YouTube comments (BACKLOG 80).** Model-drafted replies sent from the channel once BACKLOG 78's acceptance-rate gate exists (`PLAN_REPOSITORY_AUTOMATION.md` Phase 5). Blocked on BACKLOG 78 (support replies graduating from drafts). **Source**: BACKLOG 80. **Owner**: Claude Code. **Model**: Sonnet. **Size**: ~3 files.
+
+- [ ] **B52i. The company P&L and balance sheet on the dashboard (BACKLOG 52i).** The company's diya-gl book, saved to the DIYA cloud by `../PLAN_FINANCE_AUTOMATION.md` phase 2 and derived nightly with the Ltd engine through `PLAN_SUBMISSION_MCP.md` M1 and M3, rendered above the eight objectives beside the last set filed at Companies House (`PLAN_ONE_STOP_DASHBOARD.md` D10). Blocked on the finance plan's phases 1 and 2 and on BACKLOG 61 (M3). **Source**: BACKLOG 52i. **Owner**: Claude Code. **Model**: Sonnet. **Size**: ~6 files.
 
 - [ ] **VID14z. Re-record the partial ITSA videos complete.** Once VID10c's whole-year video publishes: re-record VID14e, VID14f, VID14g and VID10a's itsa-year-part through to a completed submission, drop "(partial)" from their titles, replace their entries in `videos/publish.json`, and set the partial uploads to unlisted. Blocked on VID10c. **Source**: operator, 2026-09-27. **Owner**: Claude Code. **Model**: Sonnet. **Size**: ~4 files.
 
