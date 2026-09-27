@@ -92,13 +92,14 @@ Give the batch branch its own worktree (`.claude/worktrees/<codename>`) and leav
 The batch branch is `claude/<codename>-<theme>`. The code names live in `CODENAMES.txt` at the
 repository root: 26 lines, one per first letter from `a` to `z`, nine names per line in
 alphabetical order, no two sharing their first five letters. The code name is taken from the line
-after the last batch's letter, wrapping from `z` back to `a`: the first name on that line that no
-batch has used yet. The theme is one or two lowercase words for the area most of the batch's rows
+after the last batch's letter, wrapping from `z` back to `a`, so the letters run in alphabetical
+order; the name is picked at random from the names on that line that no batch has used yet. The theme is one or two lowercase words for the area most of the batch's rows
 touch (`itsa`, `pricing`, `ch-filing`, `ops`, `cdk`, `docs`). Example: `claude/arclight-pricing`,
 then `claude/basalt-itsa`.
 
-The letters keep batches sorting in the order they ran within a round; the nine names per letter
-give nine rounds before a name repeats. Names are single lowercase words: a branch name never
+The letters keep batches sorting in the order they ran within a round; the random pick keeps one
+round's names from reading as a fixed sequence; the nine names per letter give nine rounds before
+a line runs out. Names are single lowercase words: a branch name never
 reaches an AWS resource name whole (`get-names` keeps five cleaned characters and a hash), so the
 only limit is the branch dropdown. Add names to a line in alphabetical order when a line runs out.
 
@@ -111,10 +112,12 @@ used=$(git for-each-ref --sort=-committerdate --format='%(refname:short) %(subje
 last=$(printf '%s\n' "$used" | awk 'NR==FNR{for(i=1;i<=NF;i++) n[$i]=1; next} ($1 in n){print; exit}' CODENAMES.txt -)
 letter=$(printf '%s' "${last:-z}" | cut -c1)
 line=$(( ( $(printf '%d' "'$letter") - 96 ) % 26 + 1 ))
-sed -n "${line}p" CODENAMES.txt | tr ' ' '\n' | grep -vxF -f <(printf '%s\n' "$used") | head -1
+sed -n "${line}p" CODENAMES.txt | tr ' ' '\n' | grep -vxF -f <(printf '%s\n' "$used") \
+  | awk 'BEGIN{srand()} {n[NR]=$0} END{if (NR) print n[int(rand()*NR)+1]}'
 ```
 
-No match for the last batch means none has run yet: start at the `a` line. The batch's worktree is
+No match for the last batch means none has run yet: start at the `a` line. An empty result means
+every name on that line has been used: add names to it before naming the batch. The batch's worktree is
 named for its code name.
 
 **`NEXT.md` never travels on the batch branch.** The board is maintained on `main` under the
