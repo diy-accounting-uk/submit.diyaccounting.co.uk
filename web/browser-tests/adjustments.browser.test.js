@@ -90,4 +90,46 @@ window.getGovClientHeaders = window.getGovClientHeaders || function(){ return Pr
     await expect(summaryDetails).toContainText("10000");
     await expect(summaryDetails).toContainText("6000");
   });
+
+  test("retrieveSummary retries while HMRC answers the triggered summary is not ready yet", async ({ page }) => {
+    await loadPage(page);
+
+    const result = await page.evaluate(async () => {
+      let calls = 0;
+      window.getBsasSelfEmployment = async () => {
+        calls += 1;
+        if (calls < 3) {
+          const notReadyYet = new Error("Matching resource not found");
+          notReadyYet.status = 404;
+          throw notReadyYet;
+        }
+        return { adjustableSummaryCalculation: { netProfit: 6000 } };
+      };
+      const bsas = await window.retrieveSummary("AB123456C", "calc-id", "2024-25", "token", 0, 0);
+      return { calls, netProfit: bsas.adjustableSummaryCalculation.netProfit };
+    });
+
+    expect(result.calls).toBe(3);
+    expect(result.netProfit).toBe(6000);
+  });
+
+  test("retrieveSummary gives up once every attempt answers not ready yet", async ({ page }) => {
+    await loadPage(page);
+
+    const status = await page.evaluate(async () => {
+      window.getBsasSelfEmployment = async () => {
+        const notReadyYet = new Error("Matching resource not found");
+        notReadyYet.status = 404;
+        throw notReadyYet;
+      };
+      try {
+        await window.retrieveSummary("AB123456C", "calc-id", "2024-25", "token", 0, 0);
+        return "resolved";
+      } catch (error) {
+        return error.status;
+      }
+    });
+
+    expect(status).toBe(404);
+  });
 });

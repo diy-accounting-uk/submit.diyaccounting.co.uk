@@ -1,0 +1,102 @@
+# SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0
+# Copyright (C) 2006-2026 DIY Accounting Limited
+
+name: analytics-dt-relayout
+run-name: "analytics dt relayout (${{ inputs.environment }}, dry-run=${{ inputs.dry-run }})"
+
+concurrency:
+  group: analytics-dt-relayout-${{ inputs.environment }}
+  cancel-in-progress: false
+
+on:
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: 'Environment to relayout'
+        required: true
+        type: choice
+        options:
+          - ci
+          - prod
+      dry-run:
+        description: 'Print the mapping and counts only, copy and delete nothing'
+        required: true
+        type: boolean
+        default: true
+      before:
+        description: 'Only relayout days strictly before this date (YYYY-MM-DD); empty relayouts every day'
+        required: false
+        type: string
+        default: ''
+
+permissions:
+  id-token: write
+  contents: read
+
+env:
+  AWS_REGION: 'eu-west-2'
+
+jobs:
+  relayout:
+    runs-on: ubuntu-24.04
+    environment: ${{ inputs.environment }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+
+      - name: Configure AWS role via GitHub OIDC
+        uses: aws-actions/configure-aws-credentials@e1253824e5c10ff9df46874f81ed3ec929e19cfd # v6
+        with:
+          role-to-assume: ${{ vars.SUBMIT_ACTIONS_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+          role-chaining: false
+          audience: sts.amazonaws.com
+          role-skip-session-tagging: true
+          output-credentials: true
+          retry-max-attempts: 3
+
+      - name: Assume AWS deployment role
+        uses: aws-actions/configure-aws-credentials@e1253824e5c10ff9df46874f81ed3ec929e19cfd # v6
+        with:
+          role-to-assume: ${{ vars.SUBMIT_DEPLOY_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+          role-chaining: true
+          audience: sts.amazonaws.com
+          role-skip-session-tagging: true
+          output-credentials: true
+          retry-max-attempts: 3
+
+      - name: Relayout
+        id: relayout
+        run: |
+          ARGS=(--env "${{ inputs.environment }}")
+          if [ "${{ inputs.dry-run }}" = "true" ]; then
+            ARGS+=(--dry-run)
+          fi
+          if [ -n "${{ inputs.before }}" ]; then
+            ARGS+=(--before "${{ inputs.before }}")
+          fi
+          scripts/analytics-dt-relayout.sh "${ARGS[@]}" | tee analytics-dt-relayout.log
+
+      - name: Generate step summary
+        if: always()
+        run: |
+          {
+            echo "# Analytics dt Relayout"
+            echo ""
+            echo "**Environment**: ${{ inputs.environment }}"
+            echo "**Dry run**: ${{ inputs.dry-run }}"
+            echo "**Before**: ${{ inputs.before || '(none, every day)' }}"
+            echo ""
+            echo '```'
+            grep -E "^(Environment|Account|Lake bucket|Database|Before|Mode|===|  .*object\(s\)|  .*partition|total objects mapped|copied .* object|dry run:)" analytics-dt-relayout.log || true
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Upload full mapping log
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
+        with:
+          name: analytics-dt-relayout-${{ inputs.environment }}-${{ github.run_id }}
+          path: analytics-dt-relayout.log
+          retention-days: 90

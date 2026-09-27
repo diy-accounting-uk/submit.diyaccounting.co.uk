@@ -75,8 +75,8 @@ class AnalyticsStackTest {
 
         Template analytics = Template.fromStack(env.analyticsStack);
 
-        // The delivery stream now converts to Parquet under curated/activity-events/, buffered
-        // wider than the JSON spike, with no destination-side compression on top of Parquet's own.
+        // The delivery stream converts to Parquet under curated/activity-events/, with no
+        // destination-side compression on top of Parquet's own.
         analytics.hasResourceProperties(
                 "AWS::KinesisFirehose::DeliveryStream",
                 Match.objectLike(Map.of(
@@ -91,8 +91,7 @@ class AnalyticsStackTest {
                                 "DataFormatConversionConfiguration",
                                 Match.objectLike(Map.of("Enabled", true)))))));
 
-        // Two Glue tables: the JSON spike table stays queryable, the typed Parquet table is new.
-        analytics.resourceCountIs("AWS::Glue::Table", 29);
+        analytics.resourceCountIs("AWS::Glue::Table", 28);
         analytics.hasResourceProperties(
                 "AWS::Glue::Table",
                 Match.objectLike(Map.of(
@@ -104,8 +103,8 @@ class AnalyticsStackTest {
                                 Match.objectLike(
                                         Map.of("classification", "parquet", "projection.enabled", "true")))))));
 
-        // app_client and session_id are appended at the end of both column lists, on both
-        // tables, so existing Parquet data stays readable.
+        // app_client and session_id are appended at the end of the column list, so existing
+        // Parquet data stays readable.
         var expectAppClientAndSessionIdColumns = Match.arrayWith(List.of(
                 Match.objectLike(Map.of("Name", "app_client", "Type", "string")),
                 Match.objectLike(Map.of("Name", "session_id", "Type", "string"))));
@@ -118,20 +117,11 @@ class AnalyticsStackTest {
                                 "activity_events",
                                 "StorageDescriptor",
                                 Match.objectLike(Map.of("Columns", expectAppClientAndSessionIdColumns)))))));
-        analytics.hasResourceProperties(
-                "AWS::Glue::Table",
-                Match.objectLike(Map.of(
-                        "TableInput",
-                        Match.objectLike(Map.of(
-                                "Name",
-                                "activity_events_raw",
-                                "StorageDescriptor",
-                                Match.objectLike(Map.of("Columns", expectAppClientAndSessionIdColumns)))))));
 
-        // Two saved queries: the spike's day-one query, plus the union view's definition kept
-        // here for reference (the custom resource below is what actually creates the view). One
-        // more named query per BusinessViews view, including v_activity_started_daily and its
-        // hourly counterpart, v_activity_started_hourly.
+        // The per-day saved query, plus the union view's definition kept here for reference
+        // (the custom resource below is what actually creates the view). One more named query
+        // per BusinessViews view, including v_activity_started_daily and its hourly
+        // counterpart, v_activity_started_hourly.
         analytics.resourceCountIs("AWS::Athena::NamedQuery", 32);
 
         // The view itself is created by a one-shot custom resource, not a hand-built VIRTUAL_VIEW.

@@ -8,7 +8,6 @@ package co.uk.diyaccounting.submit.stacks;
 import static co.uk.diyaccounting.submit.utils.Kind.infof;
 import static co.uk.diyaccounting.submit.utils.KindCdk.cfnOutput;
 import static co.uk.diyaccounting.submit.utils.KindCdk.ensureAwsCustomResourceProviderLogGroup;
-import static co.uk.diyaccounting.submit.utils.KindCdk.getContextValueString;
 
 import co.uk.diyaccounting.submit.SubmitSharedNames;
 import co.uk.diyaccounting.submit.constructs.Lambda;
@@ -37,9 +36,6 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.UncheckedIOException;
 import java.nio.charset.StandardCharsets;
-import java.time.LocalDate;
-import java.time.ZoneOffset;
-import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -92,8 +88,6 @@ import software.constructs.Construct;
  */
 public class AnalyticsStack extends Stack {
 
-    private static final String ACTIVITY_EVENTS_RAW_PREFIX = "raw/activity-events/";
-    private static final String ACTIVITY_EVENTS_TABLE_NAME = "activity_events_raw";
     private static final String ACTIVITY_EVENTS_CURATED_PREFIX = "curated/activity-events/";
     private static final String ACTIVITY_EVENTS_CURATED_TABLE_NAME = "activity_events";
     private static final String SBOM_ARCHIVE_PREFIX = "archive/security/sbom/";
@@ -253,9 +247,7 @@ public class AnalyticsStack extends Stack {
                 .build());
 
         // Buffering at 900s and 128 MiB: Parquet's per-file overhead makes many small files
-        // actively bad, and fifteen-minute latency is irrelevant to a daily dashboard. The spike's
-        // JSON stays in place at raw/activity-events/ and stays queryable; this stream now writes
-        // only the curated Parquet copy going forward.
+        // actively bad, and fifteen-minute latency is irrelevant to a daily dashboard.
         this.activityEventsStream = CfnDeliveryStream.Builder.create(this, prefix + "-ActivityEventsStream")
                 .deliveryStreamName(sharedNames.activityEventsDeliveryStreamName)
                 .deliveryStreamType("DirectPut")
@@ -499,61 +491,6 @@ public class AnalyticsStack extends Stack {
                         .build());
         costFocusTables.costFocusTable.addResourceDependency(this.glueDatabase);
 
-        var rawLocation = "s3://%s/%s".formatted(sharedNames.analyticsLakeBucketName, ACTIVITY_EVENTS_RAW_PREFIX);
-
-        // Partition projection replaces a crawler: no MSCK REPAIR, no partition-registration
-        // job and no crawler on the bill.
-        var tableParameters = new java.util.LinkedHashMap<String, String>();
-        tableParameters.put("classification", "json");
-        tableParameters.put("compressionType", "gzip");
-        tableParameters.put("has_encrypted_data", "false");
-        tableParameters.put("projection.enabled", "true");
-        tableParameters.put("projection.year.type", "integer");
-        tableParameters.put("projection.year.range", "2026,2035");
-        tableParameters.put("projection.month.type", "integer");
-        tableParameters.put("projection.month.range", "1,12");
-        tableParameters.put("projection.month.digits", "2");
-        tableParameters.put("projection.day.type", "integer");
-        tableParameters.put("projection.day.range", "1,31");
-        tableParameters.put("projection.day.digits", "2");
-        tableParameters.put("storage.location.template", rawLocation + "year=${year}/month=${month}/day=${day}/");
-
-        var activityEventsTable = CfnTable.Builder.create(this, prefix + "-ActivityEventsTable")
-                .catalogId(this.getAccount())
-                .databaseName(sharedNames.glueDatabaseName)
-                .tableInput(CfnTable.TableInputProperty.builder()
-                        .name(ACTIVITY_EVENTS_TABLE_NAME)
-                        .description("Activity events as delivered by Firehose, one JSON object per line")
-                        .tableType("EXTERNAL_TABLE")
-                        .parameters(tableParameters)
-                        .partitionKeys(List.of(
-                                CfnTable.ColumnProperty.builder()
-                                        .name("year")
-                                        .type("int")
-                                        .build(),
-                                CfnTable.ColumnProperty.builder()
-                                        .name("month")
-                                        .type("int")
-                                        .build(),
-                                CfnTable.ColumnProperty.builder()
-                                        .name("day")
-                                        .type("int")
-                                        .build()))
-                        .storageDescriptor(CfnTable.StorageDescriptorProperty.builder()
-                                .location(rawLocation)
-                                .inputFormat("org.apache.hadoop.mapred.TextInputFormat")
-                                .outputFormat("org.apache.hadoop.hive.ql.io.HiveIgnoreKeyTextOutputFormat")
-                                .compressed(true)
-                                .serdeInfo(CfnTable.SerdeInfoProperty.builder()
-                                        .serializationLibrary("org.openx.data.jsonserde.JsonSerDe")
-                                        .parameters(Map.of("ignore.malformed.json", "true"))
-                                        .build())
-                                .columns(buildActivityEventColumns())
-                                .build())
-                        .build())
-                .build();
-        activityEventsTable.addResourceDependency(this.glueDatabase);
-
         var curatedLocation =
                 "s3://%s/%s".formatted(sharedNames.analyticsLakeBucketName, ACTIVITY_EVENTS_CURATED_PREFIX);
 
@@ -673,21 +610,19 @@ public class AnalyticsStack extends Stack {
                         GROUP  BY 1, 2, 3
                         ORDER  BY 1 DESC, 4 DESC
                         """
-                                .formatted(sharedNames.glueDatabaseName, ACTIVITY_EVENTS_TABLE_NAME))
+                                .formatted(sharedNames.glueDatabaseName, ACTIVITY_EVENTS_CURATED_TABLE_NAME))
                 .build();
         eventsPerDayQuery.addResourceDependency(this.workGroup);
         eventsPerDayQuery.addResourceDependency(this.glueDatabase);
 
         // ============================================================================
-        // Union view: activity_events_all reads both eras so WP-6 queries never change
+        // Union view: activity_events_all wraps the curated table so WP-6 queries never
+        // need to change if another base table joins it later
         // ============================================================================
         // Presto views are Glue tables of type VIRTUAL_VIEW with a fiddly base64 payload to
         // hand-build. A one-shot AwsCustomResource running the CREATE OR REPLACE VIEW statement
         // keeps the SQL readable in the repo and is idempotent on every redeploy.
-        var defaultCutoverDate = LocalDate.now(ZoneOffset.UTC).format(DateTimeFormatter.BASIC_ISO_DATE);
-        var cutoverDate = getContextValueString(this, "analyticsParquetCutoverDate", defaultCutoverDate);
-        var unionViewSql =
-                loadResourceText("analytics/views/activity_events_all.sql").replace("__CUTOVER_DATE__", cutoverDate);
+        var unionViewSql = loadResourceText("analytics/views/activity_events_all.sql");
 
         var unionViewDefinitionQuery = CfnNamedQuery.Builder.create(this, prefix + "-ActivityEventsAllViewQuery")
                 .name("activity-events-all-view-definition")
@@ -698,7 +633,6 @@ public class AnalyticsStack extends Stack {
                 .queryString(unionViewSql)
                 .build();
         unionViewDefinitionQuery.addResourceDependency(this.workGroup);
-        unionViewDefinitionQuery.addResourceDependency(activityEventsTable);
         unionViewDefinitionQuery.addResourceDependency(curatedActivityEventsTable);
 
         var createUnionViewCall = AwsSdkCall.builder()
@@ -733,7 +667,6 @@ public class AnalyticsStack extends Stack {
                                 .resources(List.of(
                                         glueCatalogArn(),
                                         glueDatabaseArn(sharedNames.glueDatabaseName),
-                                        glueTableArn(sharedNames.glueDatabaseName, ACTIVITY_EVENTS_TABLE_NAME),
                                         glueTableArn(sharedNames.glueDatabaseName, ACTIVITY_EVENTS_CURATED_TABLE_NAME),
                                         glueTableArn(sharedNames.glueDatabaseName, ACTIVITY_EVENTS_UNION_VIEW_NAME)))
                                 .build(),
@@ -752,7 +685,6 @@ public class AnalyticsStack extends Stack {
                 .build();
         createUnionViewResource.getNode().addDependency(unionViewGrant);
         createUnionViewResource.getNode().addDependency(this.workGroup);
-        createUnionViewResource.getNode().addDependency(activityEventsTable);
         createUnionViewResource.getNode().addDependency(curatedActivityEventsTable);
 
         var businessViews = new BusinessViews(
@@ -948,12 +880,6 @@ public class AnalyticsStack extends Stack {
     static List<LifecycleRule> buildLakeLifecycleRules(boolean isProd) {
         var rules = new ArrayList<LifecycleRule>();
 
-        rules.add(LifecycleRule.builder()
-                .id("expire-raw-activity-events")
-                .prefix(ACTIVITY_EVENTS_RAW_PREFIX)
-                .expiration(Duration.days(isProd ? 90 : 14))
-                .build());
-
         // user_pseudo_id in the GA4 BigQuery event export is pseudonymous personal data under UK
         // GDPR, so this prefix gets a dedicated, shorter expiration than the rest of curated/:
         // 400 days matches the CloudFront raw log retention, well inside the 800-day default.
@@ -1030,44 +956,9 @@ public class AnalyticsStack extends Stack {
         return rules;
     }
 
-    private static List<CfnTable.ColumnProperty> buildActivityEventColumns() {
-        return List.of(
-                        "event_id",
-                        "event_ts",
-                        "ingest_ts",
-                        "event",
-                        "site",
-                        "summary",
-                        "actor",
-                        "flow",
-                        "outcome",
-                        "failure",
-                        "request_id",
-                        "hashed_sub",
-                        "bundle_id",
-                        "pass_type_id",
-                        "subscription_id",
-                        "visitor_type",
-                        "country",
-                        "page",
-                        "hmrc_status",
-                        "client_id",
-                        "env",
-                        "detail_json",
-                        "app_client",
-                        "session_id",
-                        "activity_id")
-                .stream()
-                .map(name -> CfnTable.ColumnProperty.builder()
-                        .name(name)
-                        .type("string")
-                        .build())
-                .toList();
-    }
-
     /**
-     * Same columns as {@link #buildActivityEventColumns()}, typed for Parquet: event_ts and
-     * ingest_ts become timestamp columns, everything else stays string.
+     * event_ts and ingest_ts are typed timestamp columns for Parquet; everything else stays
+     * string.
      */
     private static List<CfnTable.ColumnProperty> buildCuratedActivityEventColumns() {
         var columns = new ArrayList<CfnTable.ColumnProperty>();

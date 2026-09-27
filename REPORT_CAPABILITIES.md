@@ -330,6 +330,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
   - [Lake infrastructure, quality and cost](#lake-infrastructure-quality-and-cost-data)
     - [DATA-10](#data-10-create-or-replace-athena-business-views) Create or replace Athena business views: use when a new or changed Athena view under infra/main/resources/analytics/views must deploy with the stack.
     - [DATA-11](#data-11-run-glue-data-quality-checks) Run Glue Data Quality checks: use when new lake partitions must be registered and a Glue Data Quality ruleset run must be started.
+    - [DATA-54](#data-54-relayout-the-lakes-yearmonthday-objects-into-dt-prefixes) Relayout the lake's year/month/day objects into dt= prefixes: use when a curated table's Firehose prefix moves from year=/month=/day= to dt=, and the old S3 objects and registered partitions must be copied and cleared for the days already written.
     - [DATA-12](#data-12-provision-the-analytics-lake-and-athena-workgroup) Provision the analytics lake and Athena workgroup: use when a new analytics construct needs the shared lake bucket, Glue database or Athena workgroup.
     - [DATA-13](#data-13-catalogue-cloudfront-access-logs-for-athena) Catalogue CloudFront access logs for Athena: use when CloudFront access logs must be queryable by Athena for the traffic views.
     - [DATA-14](#data-14-catalogue-compliance-findings-for-the-dashboard) Catalogue compliance findings for the dashboard: use when accessibility or fraud-header check output must be queryable for the compliance panel.
@@ -3498,7 +3499,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 
 <!-- generated:area DATA -->
 - [Lake ingestion](#lake-ingestion-data): [DATA-01](#data-01-publish-activity-events-to-the-bus) Publish activity events to the bus · [DATA-02](#data-02-transform-activity-events-into-lake-rows) Transform activity events into lake rows · [DATA-03](#data-03-transform-alarm-state-changes-into-lake-rows) Transform alarm state changes into lake rows · [DATA-04](#data-04-stream-dynamodb-table-changes-into-the-lake) Stream DynamoDB table changes into the lake · [DATA-05](#data-05-pull-ga4-daily-bigquery-aggregate-tables) Pull GA4 daily BigQuery aggregate tables · [DATA-06](#data-06-pull-ga4-reports-and-bigquery-event-export) Pull GA4 reports and BigQuery event export · [DATA-07](#data-07-pull-github-operator-effort-data) Pull GitHub operator-effort data · [DATA-08](#data-08-copy-the-aws-focus-cost-export) Copy the AWS FOCUS cost export · [DATA-09](#data-09-reconcile-stripe-payments-into-the-lake) Reconcile Stripe payments into the lake · [DATA-52](#data-52-pull-the-companys-own-diya-gl-book-into-the-lake) Pull the company's own diya-gl book into the lake
-- [Lake infrastructure, quality and cost](#lake-infrastructure-quality-and-cost-data): [DATA-10](#data-10-create-or-replace-athena-business-views) Create or replace Athena business views · [DATA-11](#data-11-run-glue-data-quality-checks) Run Glue Data Quality checks · [DATA-12](#data-12-provision-the-analytics-lake-and-athena-workgroup) Provision the analytics lake and Athena workgroup · [DATA-13](#data-13-catalogue-cloudfront-access-logs-for-athena) Catalogue CloudFront access logs for Athena · [DATA-14](#data-14-catalogue-compliance-findings-for-the-dashboard) Catalogue compliance findings for the dashboard · [DATA-15](#data-15-catalogue-workflow-probe-and-agent-run-data) Catalogue workflow, probe and agent run data · [DATA-16](#data-16-alert-on-cost-budget-and-anomaly-thresholds) Alert on cost budget and anomaly thresholds · [DATA-17](#data-17-export-aws-billing-data-in-focus-format) Export AWS billing data in FOCUS format
+- [Lake infrastructure, quality and cost](#lake-infrastructure-quality-and-cost-data): [DATA-10](#data-10-create-or-replace-athena-business-views) Create or replace Athena business views · [DATA-11](#data-11-run-glue-data-quality-checks) Run Glue Data Quality checks · [DATA-54](#data-54-relayout-the-lakes-yearmonthday-objects-into-dt-prefixes) Relayout the lake's year/month/day objects into dt= prefixes · [DATA-12](#data-12-provision-the-analytics-lake-and-athena-workgroup) Provision the analytics lake and Athena workgroup · [DATA-13](#data-13-catalogue-cloudfront-access-logs-for-athena) Catalogue CloudFront access logs for Athena · [DATA-14](#data-14-catalogue-compliance-findings-for-the-dashboard) Catalogue compliance findings for the dashboard · [DATA-15](#data-15-catalogue-workflow-probe-and-agent-run-data) Catalogue workflow, probe and agent run data · [DATA-16](#data-16-alert-on-cost-budget-and-anomaly-thresholds) Alert on cost budget and anomaly thresholds · [DATA-17](#data-17-export-aws-billing-data-in-focus-format) Export AWS billing data in FOCUS format
 - [Nightly publish and orchestration](#nightly-publish-and-orchestration-data): [DATA-18](#data-18-publish-the-nightly-operator-dashboard-snapshot) Publish the nightly operator dashboard snapshot · [DATA-19](#data-19-serve-the-operator-dashboard-snapshot-via-the-api) Serve the operator dashboard snapshot via the API · [DATA-20](#data-20-publish-the-nightly-raw-export-for-indexing) Publish the nightly raw export for indexing · [DATA-21](#data-21-publish-nightly-business-metrics-to-cloudwatch) Publish nightly business metrics to CloudWatch · [DATA-22](#data-22-orchestrate-the-nightly-ingestion-workflow) Orchestrate the nightly ingestion workflow
 - [Site-side analytics and RUM](#site-side-analytics-and-rum-data): [DATA-23](#data-23-classify-visitor-kind-as-human-bot-or-synthetic) Classify visitor kind as human, bot or synthetic · [DATA-24](#data-24-load-ga4-analytics-on-site-pages) Load GA4 analytics on site pages · [DATA-25](#data-25-configure-and-gate-cloudwatch-rum) Configure and gate CloudWatch RUM · [DATA-26](#data-26-render-the-operator-objectives-dashboard) Render the operator objectives dashboard
 - [SQL views](#sql-views-data): [DATA-27](#data-27-sql-views-activity-and-traffic) SQL views: activity and traffic · [DATA-28](#data-28-sql-views-revenue-and-subscription) SQL views: revenue and subscription · [DATA-29](#data-29-sql-views-submission-and-compliance) SQL views: submission and compliance · [DATA-30](#data-30-sql-views-cost) SQL views: cost · [DATA-31](#data-31-sql-views-dora-and-operations) SQL views: DORA and operations
@@ -3626,6 +3627,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 <!-- generated:group lake-infrastructure-quality-and-cost-data -->
 - [DATA-10](#data-10-create-or-replace-athena-business-views) Create or replace Athena business views
 - [DATA-11](#data-11-run-glue-data-quality-checks) Run Glue Data Quality checks
+- [DATA-54](#data-54-relayout-the-lakes-yearmonthday-objects-into-dt-prefixes) Relayout the lake's year/month/day objects into dt= prefixes
 - [DATA-12](#data-12-provision-the-analytics-lake-and-athena-workgroup) Provision the analytics lake and Athena workgroup
 - [DATA-13](#data-13-catalogue-cloudfront-access-logs-for-athena) Catalogue CloudFront access logs for Athena
 - [DATA-14](#data-14-catalogue-compliance-findings-for-the-dashboard) Catalogue compliance findings for the dashboard
@@ -3653,6 +3655,16 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - **Files:** app/functions/analytics/dataQualityRun.js, app/unit-tests/analytics/dataQualityRun.test.js, infra/main/java/co/uk/diyaccounting/submit/stacks/analytics/DataQuality.java, infra/test/java/co/uk/diyaccounting/submit/stacks/analytics/DataQualityTest.java
 - **Keywords:** glue data quality, ruleset evaluation, partition registration, failed rules metric, activity_events, alarm_state_changes, dora_runs
 - **Related:** DATA-14
+
+#### DATA-54 Relayout the lake's year/month/day objects into dt= prefixes
+
+- **Use when:** a curated table's Firehose prefix moves from year=/month=/day= to dt=, and the old S3 objects and registered partitions must be copied and cleared for the days already written.
+- **Does:** analytics-dt-relayout.sh lists each curated/<dataset>/year=Y/month=M/day=D/ object under activity-events, alarm-state-changes and the four dynamo_* tables, copies it with aws s3api copy-object (metadata and content type preserved, idempotent on rerun) to the matching dt=Y-M-D/ key, then removes the registered activity_events and alarm_state_changes partitions whose day was copied with glue batch-delete-partition. --dry-run prints the mapping and counts only; --before <date> limits which days are relayouted. The old year/month/day objects are left for the lifecycle rule.
+- **Run:** `scripts/analytics-dt-relayout.sh --env ci|prod [--dry-run] [--before YYYY-MM-DD]`; `gh workflow run analytics-dt-relayout.yml -f environment=ci -f dry-run=true`
+- **Entry:** `scripts/analytics-dt-relayout.sh:build_mapping`; `scripts/analytics-dt-relayout.sh:delete_relayouted_partitions`
+- **Files:** scripts/analytics-dt-relayout.sh, .github/workflows/analytics-dt-relayout.yml
+- **Keywords:** dt relayout, year month day, dt prefix, partition projection, batch-delete-partition, curated prefix, lake relayout
+- **Related:** DATA-11, DATA-12, DATA-15
 
 #### DATA-12 Provision the analytics lake and Athena workgroup
 
@@ -5024,6 +5036,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - batch processing: [OPS-87](#ops-87-process-sqs-message-batches-in-lambda-workers)
 - batch scan update: [OPS-43](#ops-43-rotate-stored-email-address-hashes)
 - batch tools: [MCP-09](#mcp-09-run-a-client-scoped-tool-across-every-practice-client)
+- batch-delete-partition: [DATA-54](#data-54-relayout-the-lakes-yearmonthday-objects-into-dt-prefixes)
 - batchitemfailure: [DATA-04](#data-04-stream-dynamodb-table-changes-into-the-lake)
 - bcmdataexports: [DATA-17](#data-17-export-aws-billing-data-in-focus-format)
 - bedrock: [OPS-17](#ops-17-redact-and-gate-unattended-agent-output-before-publishing), [OPS-18](#ops-18-run-alarm-and-support-triage), [OPS-72](#ops-72-forward-bedrock-budget-alerts)
@@ -5325,6 +5338,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - cumulative model: [HMRC-12](#hmrc-12-submit-and-manage-self-employment-periodic-updates), [HMRC-14](#hmrc-14-submit-and-manage-uk-property-periodic-updates), [HMRC-27](#hmrc-27-validate-hmrc-identifiers-dates-and-amounts), [HMRC-34](#hmrc-34-file-a-full-itsa-tax-year-in-sandbox)
 - curated cost: [DATA-08](#data-08-copy-the-aws-focus-cost-export)
 - curated finance: [DATA-52](#data-52-pull-the-companys-own-diya-gl-book-into-the-lake)
+- curated prefix: [DATA-54](#data-54-relayout-the-lakes-yearmonthday-objects-into-dt-prefixes)
 - curated stripe: [DATA-09](#data-09-reconcile-stripe-payments-into-the-lake)
 - custom error page: [OPS-131](#ops-131-serve-cloudfront-custom-error-pages)
 - custom resource: [OPS-132](#ops-132-enable-dynamodb-pitr-on-deploy)
@@ -5441,6 +5455,8 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - dry run: [BILL-41](#bill-41-backfill-the-stripe-test-mode-qualifier), [OPS-16](#ops-16-run-dynamodb-data-migrations), [OPS-40](#ops-40-delete-a-customers-data-for-gdpr-erasure), [OPS-106](#ops-106-replicate-secrets-across-aws-accounts)
 - dt partition: [DATA-05](#data-05-pull-ga4-daily-bigquery-aggregate-tables)
 - dt partition projection: [DATA-15](#data-15-catalogue-workflow-probe-and-agent-run-data)
+- dt prefix: [DATA-54](#data-54-relayout-the-lakes-yearmonthday-objects-into-dt-prefixes)
+- dt relayout: [DATA-54](#data-54-relayout-the-lakes-yearmonthday-objects-into-dt-prefixes)
 - due dates: [HMRC-03](#hmrc-03-retrieve-vat-obligations), [HMRC-10](#hmrc-10-retrieve-itsa-obligations)
 - duplicate mechanism: [DEV-43](#dev-43-find-existing-tooling-before-building-any)
 - durable user: [DEV-16](#dev-16-manage-the-durable-cognito-test-user-lifecycle)
@@ -5801,6 +5817,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - kinesis firehose: [DATA-02](#data-02-transform-activity-events-into-lake-rows)
 - kms keys: [OPS-107](#ops-107-list-production-secrets-manager-entries)
 - lake bucket: [DATA-12](#data-12-provision-the-analytics-lake-and-athena-workgroup)
+- lake relayout: [DATA-54](#data-54-relayout-the-lakes-yearmonthday-objects-into-dt-prefixes)
 - lambda: [CH-14](#ch-14-provision-the-companies-house-cdk-stack)
 - lambda errors alarm: [DATA-22](#data-22-orchestrate-the-nightly-ingestion-workflow)
 - lambda event: [SITE-06](#site-06-adapt-lambda-handlers-to-express-routes)
@@ -6044,6 +6061,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - parquet: [DATA-02](#data-02-transform-activity-events-into-lake-rows)
 - parseisodurationtodate: [BILL-42](#bill-42-parse-iso-8601-durations-for-expiry)
 - partial batch failure: [OPS-87](#ops-87-process-sqs-message-batches-in-lambda-workers)
+- partition projection: [DATA-54](#data-54-relayout-the-lakes-yearmonthday-objects-into-dt-prefixes)
 - partition registration: [DATA-11](#data-11-run-glue-data-quality-checks)
 - pass: [BILL-06](#bill-06-generate-a-token-charged-pass), [BILL-07](#bill-07-admin-issue-a-pass), [BILL-08](#bill-08-check-a-passs-validity), [BILL-09](#bill-09-list-a-users-issued-passes), [BILL-10](#bill-10-redeem-a-pass), [BILL-11](#bill-11-generate-admin-passes-from-cli-or-workflow)
 - pass generation: [SITE-19](#site-19-generate-qr-codes)
@@ -6715,6 +6733,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - xmldom: [CH-11](#ch-11-parse-xml-safely)
 - xxe: [CH-11](#ch-11-parse-xml-safely)
 - yaml syntax: [OPS-34](#ops-34-validate-github-actions-workflow-files)
+- year month day: [DATA-54](#data-54-relayout-the-lakes-yearmonthday-objects-into-dt-prefixes)
 - year-end: [HMRC-13](#hmrc-13-submit-and-manage-the-self-employment-annual-summary)
 - year-end calculation: [HMRC-16](#hmrc-16-trigger-and-adjust-the-business-source-adjustable-summary)
 - year-end summary: [HMRC-15](#hmrc-15-submit-and-manage-the-uk-property-annual-summary)
