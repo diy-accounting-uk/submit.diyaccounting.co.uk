@@ -16,7 +16,7 @@ runs), and for Claude Code steps the **Model** a sub-agent should use (Fable > O
 Haiku; the lowest tier that fits). Anything touching code goes through a `claude/*` branch and
 PR; the operator merges.
 
-**Prod runs deployment prod-a6d1637** (PR #376's merge deploy, run 36282119917, 2026-09-27; PR #378's merge deploy is running).
+**Prod runs deployment prod-c85d120** (PR #378's merge deploy, run 36286063010, 2026-09-27; PR #379's merge deploy is running; the AWS SSO token expired at about 01:30 UTC, so the set name is read from the deploy, not SSM).
 **ci**: `ci-set1` is last-known-good; its slot is still claimed by the closed #374's failed deploy (run 36270437933, claimed 21:07 UTC, frees after five hours). PR #375's deploy (run 36275108431) is running.
 
 The board runs in five sections, in this order: **in flight** (a branch, a pull request or a run
@@ -45,9 +45,9 @@ step.
 
 - [ ] **CS-13b. PSC verification statement (VS01): the test-service proof.** Merged in PR #370 (b85f83e6): two VS01 cases for test company 04549236 (Alan James Morgan, director and PSC), one with a blank personal code; the blank-code case is pinned (error 100) on `claude/nebula-itsa`. Remainder: the other case is pinned from harness run 36278150942 with CS-A3's. **Source**: `PLAN_COMPANIES_HOUSE.md`. **Owner**: Claude Code. **Model**: Sonnet. **Size**: ~1 file.
 
-- [ ] **PRB1. The scheduled prod probe fails whenever a `main` deploy turns native auth off mid-run (#372, #377).** Probe run 36278688448: `submitVatBehaviour-prod` started 23:54:15 UTC, and `main`'s deploy run 36278113593 ran `disable native auth after behaviour tests` at 23:55:13, so the Hosted UI sent sign-in to Google. Run 36266172964 at 19:54 failed the same way inside deploy run 36264578175. Both workflows toggle the prod app client's `SupportedIdentityProviders` with no shared holder. On `claude/ricochet-probe` (PR #379, synced with `main` after #378), commit bb60e409; its branch deploy 36284576022 registered a ci holder and enabled native auth through the new action: `.github/actions/hold-native-auth` keeps `/submit/<env>/native-auth-holders`; every enable joins, every disable leaves, and native auth goes off only when the list is empty (stale holders dropped when their run has finished or after four hours). The race: `wait-for-main-deploy.mjs` stops gating at the deploy's "set origins" job, and the deploy's disable job runs later; the probe's matrix legs also toggled independently. Remainder: merge; close #372 and #377 with the next clean scheduled probe. **Source**: #372, #377, 2026-09-27. **Owner**: Claude Code. **Model**: Sonnet. **Size**: ~6 files.
-
 ## Machine-only
+
+- [ ] **PRB1. Close #372 and #377 with the first clean scheduled prod probe.** The native-auth holder list merged in PR #379 (2975eeb2). Remainder: after `main`'s deploy of it, the next scheduled `probe-test.yml` run on `main` that overlaps nothing red; close both issues with its link. **Source**: #372, #377, 2026-09-27. **Owner**: Claude Code. **Model**: Haiku. **Size**: 0 files.
 
 - [ ] **SEC2. Confirm 404 scan detection runs clean on prod.** The `s3:ListBucket` fix merged in PR #378 (c85d120f). Remainder: after `main`'s deploy of it reaches prod, read `/aws/lambda/prod-env-scan-detect-404` for a run with no error; close any alarm issue the permission error opened with that log line. **Source**: alarm #373, 2026-09-27. **Owner**: Claude Code. **Model**: Haiku. **Size**: 0 files.
 
