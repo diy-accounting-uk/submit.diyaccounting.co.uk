@@ -279,13 +279,13 @@
         {
           "action": "fill",
           "target": "#taxYear",
-          "value": "2024-25",
+          "value": "2026-27",
           "caption": "The tax year this quarter falls in.",
           "headline": "Choose the tax year",
           "keyWord": "year"
         },
-        { "action": "fill", "target": "#periodStartDate", "value": "2024-04-06" },
-        { "action": "fill", "target": "#periodEndDate", "value": "2024-07-05" },
+        { "action": "fill", "target": "#periodStartDate", "value": "2026-04-06" },
+        { "action": "fill", "target": "#periodEndDate", "value": "2026-07-05" },
         {
           "action": "fill",
           "target": "#turnover",
@@ -338,9 +338,9 @@
           "headline": "The property ID",
           "keyWord": "property"
         },
-        { "action": "fill", "target": "#taxYear", "value": "2024-25" },
-        { "action": "fill", "target": "#fromDate", "value": "2024-04-06" },
-        { "action": "fill", "target": "#toDate", "value": "2024-07-05" },
+        { "action": "fill", "target": "#taxYear", "value": "2026-27" },
+        { "action": "fill", "target": "#fromDate", "value": "2026-04-06" },
+        { "action": "fill", "target": "#toDate", "value": "2026-07-05" },
         {
           "action": "fill",
           "target": "#periodAmount",
@@ -386,7 +386,7 @@
         },
         { "action": "type", "target": "#nino", "text": "{{hmrcNino}}", "clear": true, "secret": true },
         { "action": "fill", "target": "#businessId", "value": "XBIS00000000001" },
-        { "action": "fill", "target": "#taxYear", "value": "2024-25" },
+        { "action": "fill", "target": "#taxYear", "value": "2026-27" },
         {
           "action": "click",
           "target": "#loadBtn",
@@ -437,9 +437,9 @@
         },
         { "action": "type", "target": "#nino", "text": "{{hmrcNino}}", "clear": true, "secret": true },
         { "action": "fill", "target": "#businessId", "value": "XBIS00000000001" },
-        { "action": "fill", "target": "#taxYear", "value": "2024-25" },
-        { "action": "fill", "target": "#accountingPeriodStartDate", "value": "2024-04-06" },
-        { "action": "fill", "target": "#accountingPeriodEndDate", "value": "2025-04-05" },
+        { "action": "fill", "target": "#taxYear", "value": "2026-27" },
+        { "action": "fill", "target": "#accountingPeriodStartDate", "value": "2026-04-06" },
+        { "action": "fill", "target": "#accountingPeriodEndDate", "value": "2027-04-05" },
         {
           "action": "click",
           "target": "#triggerBtn",
@@ -494,7 +494,7 @@
         },
         { "action": "type", "target": "#nino", "text": "{{hmrcNino}}", "clear": true, "secret": true },
         { "action": "fill", "target": "#businessId", "value": "XBIS00000000001" },
-        { "action": "fill", "target": "#taxYear", "value": "2024-25" },
+        { "action": "fill", "target": "#taxYear", "value": "2026-27" },
         {
           "action": "click",
           "target": "#loadBtn",
@@ -510,6 +510,13 @@
           "caption": "This year's loss, carried forward to next year.",
           "headline": "Carry the loss forward",
           "keyWord": "loss"
+        },
+        {
+          "action": "click",
+          "target": "#suspendTemporalValidations",
+          "caption": "The sandbox's current tax year hasn't really ended, so suspend that check.",
+          "headline": "Suspend the tax year check",
+          "keyWord": "Suspend"
         },
         { "action": "click", "target": "#saveBtn" },
         {
@@ -538,7 +545,7 @@
           "keyWord": "calculate"
         },
         { "action": "type", "target": "#nino", "text": "{{hmrcNino}}", "clear": true, "secret": true },
-        { "action": "fill", "target": "#taxYear", "value": "2024-25" },
+        { "action": "fill", "target": "#taxYear", "value": "2026-27" },
         {
           "action": "select",
           "target": "#calculationType",

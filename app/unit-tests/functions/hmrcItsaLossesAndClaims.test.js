@@ -303,6 +303,20 @@ describe("hmrcItsaLossesAndClaims handlers", () => {
       // repo treats it (see http404NotFoundFromHmrcResponse).
       expect(response.statusCode).toBe(404);
     });
+
+    test("returns a 400 when HMRC rejects the tax year, not a 500", async () => {
+      mockHmrcError(mockFetch, 400, { code: "RULE_TAX_YEAR_NOT_SUPPORTED" });
+      const event = buildHmrcEvent({
+        queryStringParameters: { nino: VALID_NINO, businessId: VALID_BUSINESS_ID, taxYear: VALID_TAX_YEAR },
+        headers: { authorization: "Bearer test-token" },
+      });
+      const response = await hmrcItsaLossesAndClaimsGetHandler(event);
+      // HMRC's own 400 (a rejected request) is a client error, the way VAT's GET handlers
+      // treat it (see http400BadRequestFromHmrcResponse) - not our fault, so not a 500.
+      expect(response.statusCode).toBe(400);
+      const body = parseResponseBody(response);
+      expect(body.hmrcResponseCode).toBe(400);
+    });
   });
 
   describe("DELETE", () => {
