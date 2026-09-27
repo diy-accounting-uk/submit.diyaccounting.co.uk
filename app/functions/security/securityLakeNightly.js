@@ -474,6 +474,8 @@ export async function buildRotationRows(client, tomlPath, envName, dateStr, now 
   const entries = readRotationToml(tomlPath);
   const rows = [];
   for (const entry of entries) {
+    if ((entry.store ?? "aws") !== "aws") continue;
+    if (entry.environments && !entry.environments.includes(envName)) continue;
     const secretId = `${envName}/submit/${entry.name}`;
     const tags = await describeSecretTags(client, secretId);
     if (tags === null) {
