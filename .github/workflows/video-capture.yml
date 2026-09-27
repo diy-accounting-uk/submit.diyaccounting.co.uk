@@ -43,6 +43,7 @@ on:
           - 'itsa-business-details'
           - 'itsa-quarterly-update'
           - 'itsa-year'
+          - 'itsa-year-part'
           - 'file-micro-entity-accounts'
           - 'sign-in'
           - 'tokens'

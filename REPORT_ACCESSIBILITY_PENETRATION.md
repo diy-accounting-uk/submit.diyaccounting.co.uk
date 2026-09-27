@@ -249,8 +249,8 @@ Scanned with `--omit=dev` — only production dependencies affect compliance sta
 
 ### 2.6 ITSA pages (WCAG 2.1 AA)
 
-The 19 pages under `web/public/hmrc/itsa/` are not yet in the `.pa11yci.*.json` / Lighthouse /
-text-spacing runs this report otherwise covers. Two ad-hoc checks stand in until they are, run
+The 19 pages under `web/public/hmrc/itsa/` are in `scripts/axe-quickscan.mjs` and the three
+`.pa11yci.*.json` files; this report's generated sections predate them. Two checks cover them, run
 2026-09-23 with axe-core 4.9.1 (tags `wcag2a,wcag2aa,wcag21a,wcag21aa`):
 
 | Check | Pages | Violations | Passes |
