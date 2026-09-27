@@ -129,33 +129,36 @@ export async function grantPermissionHmrcAuth(page, screenshotPath = defaultScre
  * this is a no-op then.
  *
  * The redirect to HMRC's sandbox is a real, variable-length round trip (seen anywhere from a few
- * seconds to tens of seconds against the live sandbox), so the entry check waits for the browser
- * to actually leave the app's origin rather than testing an HMRC element for instant visibility -
- * an instant check races the redirect and reads "not there yet" as "not needed". Once off the
- * app's origin, HMRC's own pages can arrive in any order depending on whether the sandbox still
- * holds a signed-in session (straight to consent, or straight to the permission grant, skipping
- * sign-in entirely) - each step re-detects whichever page is now showing instead of assuming a
- * fixed sequence.
+ * seconds to tens of seconds against the live sandbox), so the entry check waits for one of
+ * HMRC's own pages to actually show up rather than testing an HMRC element for instant visibility
+ * - an instant check races the redirect and reads "not there yet" as "not needed". The wait is
+ * keyed off HMRC's own controls, not a change of origin: by the time this runs the redirect can
+ * already have finished (the round trip is sometimes faster than the click that triggered it
+ * returns), so the "current" origin at entry is not reliably the app's. Once one of HMRC's pages
+ * is showing, the rest can arrive in any order depending on whether the sandbox still holds a
+ * signed-in session (straight to consent, or straight to the permission grant, skipping sign-in
+ * entirely) - each step re-detects whichever page is now showing instead of assuming a fixed
+ * sequence, and stops as soon as none of HMRC's controls are showing any more (back at the app).
  */
 export async function completeHmrcReauthIfPresented(page, hmrcTestUsername, hmrcTestPassword, screenshotPath = defaultScreenshotPath) {
   await test.step("If the last click needed a wider HMRC grant, walk through it again", async () => {
-    const appOrigin = new URL(page.url()).origin;
-    const leftAppOrigin = await page
-      .waitForURL((url) => url.origin !== appOrigin, { timeout: 10_000 })
+    const anyHmrcControl = page
+      .locator("#userId")
+      .or(page.locator("#givePermission"))
+      .or(page.getByRole("button", { name: "Sign in to the HMRC online service" }))
+      .or(page.getByRole("button", { name: "Continue" }));
+
+    const reauthStarted = await anyHmrcControl
+      .first()
+      .waitFor({ state: "visible", timeout: 60_000 })
       .then(() => true)
       .catch(() => false);
-    if (!leftAppOrigin) {
+    if (!reauthStarted) {
       return;
     }
 
     const maxSteps = 10;
     for (let step = 0; step < maxSteps; step += 1) {
-      // A redirect click lands on a chain of HTTP redirects, so the url settles before the dom
-      // does; wait for the network to go quiet before reading what's on the page.
-      await page.waitForLoadState("networkidle", { timeout: 30_000 }).catch(() => {});
-      if (new URL(page.url()).origin === appOrigin) {
-        return;
-      }
       await acceptCookiesHmrc(page, screenshotPath);
 
       if (
@@ -173,6 +176,7 @@ export async function completeHmrcReauthIfPresented(page, hmrcTestUsername, hmrc
           .catch(() => false)
       ) {
         await grantPermissionHmrcAuth(page, screenshotPath);
+        return; // grantPermissionHmrcAuth already waits for the redirect back to the app.
       } else if (
         await page
           .getByRole("button", { name: "Sign in to the HMRC online service" })
@@ -187,15 +191,12 @@ export async function completeHmrcReauthIfPresented(page, hmrcTestUsername, hmrc
           .catch(() => false)
       ) {
         await goToHmrcAuth(page, screenshotPath);
+      } else {
+        return; // none of HMRC's controls showing any more - back at the app.
       }
-      // None recognised: still mid-redirect. Loop back to the networkidle wait rather than
-      // sleeping a fixed duration - the next settle is the pacing.
     }
 
-    if (new URL(page.url()).origin === appOrigin) {
-      return;
-    }
     await page.screenshot({ path: `${screenshotPath}/${timestamp()}-00-reauth-stuck.png` });
-    throw new Error(`completeHmrcReauthIfPresented: did not return from HMRC within ${maxSteps} steps (stuck at ${page.url()})`);
+    throw new Error(`completeHmrcReauthIfPresented: did not finish the HMRC walk within ${maxSteps} steps (stuck at ${page.url()})`);
   });
 }
