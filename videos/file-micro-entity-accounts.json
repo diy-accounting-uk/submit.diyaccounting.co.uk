@@ -2,7 +2,7 @@
   "$schema": "./scene-script.schema.json",
   "name": "file-micro-entity-accounts",
   "title": "File a company's micro-entity accounts with Companies House",
-  "description": "A signed-in walk through filing micro-entity accounts: sign in, take out Resident Ltd, look up a company, fill in the balance sheet, preview the iXBRL, and file it with Companies House's sandbox.",
+  "description": "A signed-in walk through filing micro-entity accounts: sign in, take out Resident, look up a company, fill in the balance sheet, preview the iXBRL, and file it with Companies House's sandbox.",
   "auth": "user",
   "pages": [
     "web/public/index.html",
@@ -92,7 +92,7 @@
     },
     {
       "id": "subscription",
-      "chapter": "Resident Ltd",
+      "chapter": "Resident",
       "still": true,
       "fastForward": true,
       "steps": [
@@ -105,9 +105,9 @@
         },
         {
           "action": "ensureBundle",
-          "bundle": "Resident Ltd",
+          "bundle": "Resident",
           "testPass": true,
-          "caption": "Resident Ltd opens the micro-entity accounts filing.",
+          "caption": "Resident opens the micro-entity accounts filing.",
           "headline": "Unlock micro-entity filing",
           "keyWord": "micro-entity"
         },
