@@ -207,14 +207,15 @@ rotates the synthetic user's password and one-time code device first.
 
 Every captioned step is spoken by an Amazon Polly neural British English voice (`Amy` by
 default — `aws polly describe-voices --language-code en-GB` lists the others), synthesised
-during the capture itself: the scene holds each caption for the clip's own duration, not the
-reading-speed estimate `pacing.js`'s `captionMinMs` uses when narration is off. The audio is
-mixed onto one continuous track (silence everywhere nothing is speaking) and muxed onto the mp4
-as its AAC stream, so the mp4 alone carries sound — no separate audio file ships. `--no-narration`
-skips it for a fast local loop (`--stills-only` always skips it too, since there is no video to
-hold open or mux onto). Credentials are read from the ambient AWS environment (`AWS_PROFILE`),
-the same as any other `aws` CLI call; `video-capture.yml`'s role chain already carries
-`polly:SynthesizeSpeech`.
+during the capture itself through `@aws-sdk/client-polly`'s `PollyClient`: the scene holds each
+caption for the clip's own duration, not the reading-speed estimate `pacing.js`'s `captionMinMs`
+uses when narration is off. The audio is mixed onto one continuous track (silence everywhere
+nothing is speaking) and muxed onto the mp4 as its AAC stream, so the mp4 alone carries sound —
+no separate audio file ships. `--no-narration` skips it for a fast local loop (`--stills-only`
+always skips it too, since there is no video to hold open or mux onto). Credentials and region
+are resolved by the SDK's own default provider chain — env vars, or the assumed role
+`video-capture.yml`'s OIDC steps put there, which already carries `polly:SynthesizeSpeech` — so
+the capture container needs no `aws` CLI binary.
 
 A fast-forwarded or off-camera step is never narrated — nothing holds it open regardless, so
 there is no line to speak for it.
