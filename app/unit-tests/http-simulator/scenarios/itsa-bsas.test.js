@@ -12,16 +12,13 @@ const TAX_YEAR = "2024-25";
 
 describe("http-simulator/scenarios/itsa-bsas", () => {
   describe("getBsasSelfEmploymentForScenario", () => {
-    test("no scenario header answers success with the triggered calculation id", () => {
+    test("no scenario header answers no data found", () => {
       const result = getBsasSelfEmploymentForScenario(undefined, NINO, CALCULATION_ID, TAX_YEAR);
-      expect(result.status).toBeUndefined();
-      expect(result.bsas.metadata.calculationId).toBe(CALCULATION_ID);
-      expect(result.bsas.metadata.nino).toBe(NINO);
-      expect(result.bsas.metadata.taxYear).toBe(TAX_YEAR);
-      expect(result.bsas.adjustableSummaryCalculation.netProfit).toBe(6000);
+      expect(result.status).toBe(404);
+      expect(result.body.code).toBe("MATCHING_RESOURCE_NOT_FOUND");
     });
 
-    test("STATEFUL answers the same success body as no scenario", () => {
+    test("STATEFUL answers a success body", () => {
       const result = getBsasSelfEmploymentForScenario("STATEFUL", NINO, CALCULATION_ID, TAX_YEAR);
       expect(result.bsas.metadata.calculationId).toBe(CALCULATION_ID);
       expect(result.bsas.adjustableSummaryCalculation.netProfit).toBe(6000);
@@ -73,16 +70,13 @@ describe("http-simulator/scenarios/itsa-bsas", () => {
   });
 
   describe("getBsasUkPropertyForScenario", () => {
-    test("no scenario header answers success with the triggered calculation id", () => {
+    test("no scenario header answers no data found", () => {
       const result = getBsasUkPropertyForScenario(undefined, NINO, CALCULATION_ID, TAX_YEAR);
-      expect(result.status).toBeUndefined();
-      expect(result.bsas.metadata.calculationId).toBe(CALCULATION_ID);
-      expect(result.bsas.metadata.nino).toBe(NINO);
-      expect(result.bsas.metadata.taxYear).toBe(TAX_YEAR);
-      expect(result.bsas.adjustableSummaryCalculation.netProfit).toBe(6000);
+      expect(result.status).toBe(404);
+      expect(result.body.code).toBe("MATCHING_RESOURCE_NOT_FOUND");
     });
 
-    test("STATEFUL answers the same success body as no scenario", () => {
+    test("STATEFUL answers a success body", () => {
       const result = getBsasUkPropertyForScenario("STATEFUL", NINO, CALCULATION_ID, TAX_YEAR);
       expect(result.bsas.metadata.calculationId).toBe(CALCULATION_ID);
       expect(result.bsas.adjustableSummaryCalculation.netProfit).toBe(6000);
