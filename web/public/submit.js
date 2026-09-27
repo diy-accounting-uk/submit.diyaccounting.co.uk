@@ -221,7 +221,7 @@ async function maybeInitRum() {
         console.warn("Failed to load RUM client:", e);
       };
       document.head.appendChild(z);
-    })("cwr", c.appMonitorId, "0.1.0", c.region, "https://client.rum.us-east-1.amazonaws.com/1.25.0/cwr.js", {
+    })("cwr", c.appMonitorId, "0.1.0", c.region, `https://client.rum.${c.region}.amazonaws.com/1.25.0/cwr.js`, {
       sessionSampleRate: c.sessionSampleRate ?? 1,
       guestRoleArn: c.guestRoleArn,
       identityPoolId: c.identityPoolId,
