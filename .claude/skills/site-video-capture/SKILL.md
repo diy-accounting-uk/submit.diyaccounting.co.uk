@@ -262,7 +262,7 @@ CSS size either way; only the backing store gets denser, so every caption and fo
 sharp once YouTube re-encodes a 4K upload instead of stretching a 1080p one.
 
 YouTube serves a 4K upload as VP9 at every tier. The H.264 3840x2160 test upload
-(https://youtu.be/W-nKFdBIj3Y, capture run 36334326190) played on 2026-09-28 as VP9 profile 0,
+(capture run 36334326190) played on 2026-09-28 as VP9 profile 0,
 8-bit, bt709, with opus audio, at both 1080p (itag 248, 1920x1080@30) and 2160p (itag 313,
 3840x2160@30), with 0 and 1 dropped frames. Keep the 3840x2160 capture and the H.264 encode
 below; YouTube's VP9 re-encode serves both tiers.
