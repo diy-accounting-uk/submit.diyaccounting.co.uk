@@ -32,10 +32,6 @@ function areaPageForGroup(group) {
   return AREA_PAGES[group] ?? "videos.html";
 }
 
-function escapeHtml(text) {
-  return String(text ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]);
-}
-
 // The section heading keeps the full title; only a Contents link drops the prefix every title
 // repeats, since the page's own heading already says whose product this is.
 function contentsLinkText(title) {
@@ -112,29 +108,54 @@ function shareLink(video) {
   return new URL(areaLinkHref(video), window.location.href).toString();
 }
 
-function sectionHtml(video) {
-  const id = escapeHtml(video.id);
-  const embedSrc = EMBED_BASE + encodeURIComponent(video.videoId);
-  return `
-    <section class="video-section" id="${id}" data-video-id="${escapeHtml(video.videoId)}">
-      <h2>${escapeHtml(video.title)}</h2>
-      <p>${escapeHtml(firstTwoSentences(video.description))}</p>
-      <div class="video-frame">
-        <iframe
-          src="${embedSrc}"
-          title="${escapeHtml(video.title)}"
-          loading="lazy"
-          allow="accelerometer; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
-          referrerpolicy="strict-origin-when-cross-origin"
-          allowfullscreen
-        ></iframe>
-      </div>
-      <div class="video-share">
-        <a class="video-link" href="${escapeHtml(areaLinkHref(video))}">Link to this video</a>
-        <button type="button" class="btn btn-small copy-link" data-target="${id}">Copy link</button>
-        <span class="copied" hidden>Copied</span>
-      </div>
-    </section>`;
+function sectionElement(video) {
+  const section = document.createElement("section");
+  section.className = "video-section";
+  section.id = video.id;
+  section.dataset.videoId = video.videoId;
+
+  const heading = document.createElement("h2");
+  heading.textContent = video.title;
+  const summary = document.createElement("p");
+  summary.textContent = firstTwoSentences(video.description);
+
+  const frame = document.createElement("div");
+  frame.className = "video-frame";
+  const iframe = document.createElement("iframe");
+  iframe.src = EMBED_BASE + encodeURIComponent(video.videoId);
+  iframe.title = video.title;
+  iframe.loading = "lazy";
+  iframe.allow = "accelerometer; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share";
+  iframe.referrerPolicy = "strict-origin-when-cross-origin";
+  iframe.allowFullscreen = true;
+  frame.append(iframe);
+
+  const share = document.createElement("div");
+  share.className = "video-share";
+  const link = document.createElement("a");
+  link.className = "video-link";
+  link.href = areaLinkHref(video);
+  link.textContent = "Link to this video";
+  const button = document.createElement("button");
+  button.type = "button";
+  button.className = "btn btn-small copy-link";
+  button.dataset.target = video.id;
+  button.textContent = "Copy link";
+  const copied = document.createElement("span");
+  copied.className = "copied";
+  copied.hidden = true;
+  copied.textContent = "Copied";
+  share.append(link, button, copied);
+
+  section.append(heading, summary, frame, share);
+  return section;
+}
+
+function messageElement(text) {
+  const message = document.createElement("p");
+  message.className = "service-description";
+  message.textContent = text;
+  return message;
 }
 
 function wireCopyButtons(container, videosById) {
@@ -181,13 +202,13 @@ export async function renderVideoPage({ mode, group }) {
     if (!response.ok) throw new Error(`HTTP ${response.status}`);
     manifest = await response.json();
   } catch (err) {
-    container.innerHTML = '<p class="service-description">The video list could not be loaded.</p>';
+    container.replaceChildren(messageElement("The video list could not be loaded."));
     console.error("[video-pages.js] manifest load failed:", err);
     return;
   }
   const videos = (manifest.videos || []).filter((v) => v && v.videoId);
   if (videos.length === 0) {
-    container.innerHTML = '<p class="service-description">No videos are published yet.</p>';
+    container.replaceChildren(messageElement("No videos are published yet."));
     return;
   }
 
@@ -201,9 +222,9 @@ export async function renderVideoPage({ mode, group }) {
   const pageVideos = mode === "area" ? videos.filter((v) => v.group === group) : videos.filter((v) => FEATURED_IDS.includes(v.id));
 
   if (pageVideos.length === 0) {
-    container.innerHTML = '<p class="service-description">No videos are published yet.</p>';
+    container.replaceChildren(messageElement("No videos are published yet."));
   } else {
-    container.innerHTML = pageVideos.map(sectionHtml).join("\n");
+    container.replaceChildren(...pageVideos.map(sectionElement));
     // The index also shows each featured video's own area, so a reader who arrives on one
     // doesn't have to scroll back up to the full contents to find the rest of it.
     if (mode === "index") {
