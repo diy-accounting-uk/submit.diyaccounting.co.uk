@@ -353,7 +353,8 @@ on the reader's Drive with the Drive API's `drive.file` scope (files the app cre
 the rest of the Drive), lists the books there, and opens one back into the page. Versions are
 Drive's own revision history, so the S3 sidecar's version list does not need a twin. This is the
 ownership promise in cloud form: the file sits in a store the reader already pays for and can
-open without this site. Both stores, S3 and Drive, are carried by the one Resident bundle at
+open without this site. Saving to Drive is free and browser-only: no Submit sign-in, no bundle
+(`PLAN_BOOKS_TO_SUBMIT.md`, open question 8). S3 storage is what the Resident bundle carries, at
 £39 a year (`../developers/submit/archive/PLAN_PRICE_UPDATE.md`), which replaces the 99p
 `resident-diya-gl` tier §3 priced; the sandbox rung stays free. Task LP-24.
 
@@ -776,22 +777,17 @@ appear for an `active-subscription` entitlement and are absent otherwise, the de
 Consent, the upload, the revisions and the folder need a Google account that can sign in
 headlessly, so until one exists the operator checks those on their own Drive after a prod deploy.
 
-**Operator steps.** All seven are the operator's. Submit changes nothing: `IdentityStack.java`
-keeps `List.of("email", "openid", "profile")` on the Google IdP.
+**Operator steps.** Decided by `PLAN_BOOKS_TO_SUBMIT.md` (decision 4, open question 8): Drive
+needs no Submit sign-in, so it runs on its own web client, JavaScript origins only, never
+Submit's Cognito sign-in client, which is untouched (`IdentityStack.java` keeps
+`List.of("email", "openid", "profile")` on the Google IdP). That client, the Drive and Picker
+APIs, the `drive.file` consent scope and a Picker API key are created as code beside Submit's
+BS5 (`infra/google/gcp/oauth.toml`); its own operator steps carry the console actions the code
+cannot reach. Two steps stay here, once that client exists:
 
-1. Open the credentials page of the Google Cloud project that holds Submit's OAuth client:
-   `https://console.cloud.google.com/apis/credentials`
-2. Open that OAuth 2.0 Client ID and add `https://diya-gl.co.uk` and `https://ci.diya-gl.co.uk`
-   to Authorised JavaScript origins, then save. The redirect URIs stay as they are.
-3. Enable the Drive API on the same project:
-   `https://console.cloud.google.com/apis/library/drive.googleapis.com`
-4. Add the scope `https://www.googleapis.com/auth/drive.file` on the consent screen:
-   `https://console.cloud.google.com/apis/credentials/consent`. It is a non-sensitive scope, so
-   it asks for no security assessment.
-5. Check the publishing status on that same screen reads In production.
-6. Post the client id from step 2 in the chat; it is a public identifier and goes into
-   `cloud-config.js` beside the Cognito client id.
-7. After the prod deploy, save a book to Drive from your own account and check the folder, the
+1. Post the client id in the chat; it is a public identifier and goes into `cloud-config.js`'s
+   `googleClientId` beside the Cognito client id.
+2. After the prod deploy, save a book to Drive from your own account and check the folder, the
    file and a second revision at `https://drive.google.com/drive/my-drive`
 
 ## Donations: the sandbox and the events
