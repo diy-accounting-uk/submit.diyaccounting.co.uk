@@ -341,16 +341,28 @@ async function generateDenyPolicy(routeArn) {
  *
  * @param {Object} params
  * @param {string|null} params.countryHeader - CloudFront-Viewer-Country, or null/undefined
- * @param {{country?: string, revokedAt?: number}|null} params.storedItem - the geo#{hashedSub} item, or null
+ * @param {{country?: string, authTime?: number, revokedAt?: number, ttl?: number}|null} params.storedItem - the geo#{hashedSub} item, or null
  * @param {number} params.tokenIat - the verified token's iat claim, epoch seconds
+ * @param {number} [params.tokenAuthTime] - the verified token's auth_time claim: when its sign-in happened
  * @param {number} [params.nowEpochSeconds] - defaults to the current time
- * @returns {{decision: "allow"|"deny", reason?: string, write?: {country: string, revokedAt?: number}, globalSignOut?: boolean, activityEvent?: boolean}}
+ * @returns {{decision: "allow"|"deny", reason?: string, write?: {country: string, authTime?: number, revokedAt?: number}, globalSignOut?: boolean, activityEvent?: boolean}}
  */
-export function evaluateCountryChange({ countryHeader, storedItem, tokenIat, nowEpochSeconds = Math.floor(Date.now() / 1000) }) {
+export function evaluateCountryChange({
+  countryHeader,
+  storedItem: storedOrLapsedItem,
+  tokenIat,
+  tokenAuthTime,
+  nowEpochSeconds = Math.floor(Date.now() / 1000),
+}) {
   // No country header: local, simulator and direct API Gateway calls carry none. Skip the check.
   if (!countryHeader) {
     return { decision: "allow" };
   }
+
+  // DynamoDB deletes a lapsed item some time after its TTL, and reads return it until then.
+  const storedItem = storedOrLapsedItem?.ttl !== undefined && storedOrLapsedItem.ttl <= nowEpochSeconds ? null : storedOrLapsedItem;
+  const withAuthTime = (fields) => (tokenAuthTime !== undefined ? { ...fields, authTime: tokenAuthTime } : fields);
+  const keptRevocation = storedItem?.revokedAt !== undefined ? { revokedAt: storedItem.revokedAt } : {};
 
   // A replay of a stolen token has an iat older than the last revocation: deny until the
   // item's TTL expires, by which time the token itself has expired too.
@@ -360,11 +372,21 @@ export function evaluateCountryChange({ countryHeader, storedItem, tokenIat, now
 
   // First request from this consumer: record the baseline country and allow.
   if (!storedItem?.country) {
-    return { decision: "allow", write: { country: countryHeader } };
+    return { decision: "allow", write: withAuthTime({ country: countryHeader }) };
   }
 
-  // Same country as last seen: allow, no write needed.
+  // A sign-in newer than the one the stored country belongs to starts a new session, so its
+  // country is a new baseline. A token from an older sign-in still meets the country check.
+  const baselineAt = storedItem.authTime ?? storedItem.revokedAt;
+  if (tokenAuthTime !== undefined && baselineAt !== undefined && tokenAuthTime > baselineAt) {
+    return { decision: "allow", write: withAuthTime({ country: countryHeader, ...keptRevocation }) };
+  }
+
+  // Same country as last seen: allow, recording the sign-in time once when the item lacks it.
   if (storedItem.country === countryHeader) {
+    if (tokenAuthTime !== undefined && storedItem.authTime === undefined) {
+      return { decision: "allow", write: withAuthTime({ country: countryHeader, ...keptRevocation }) };
+    }
     return { decision: "allow" };
   }
 
@@ -400,7 +422,7 @@ async function checkCountryChange(payload, countryHeader) {
 
   const hashedSub = hashSub(payload.sub);
   const storedItem = await getSessionGeo(hashedSub);
-  const result = evaluateCountryChange({ countryHeader, storedItem, tokenIat: payload.iat });
+  const result = evaluateCountryChange({ countryHeader, storedItem, tokenIat: payload.iat, tokenAuthTime: payload.auth_time });
 
   if (result.write) {
     await putSessionGeo(hashedSub, result.write);

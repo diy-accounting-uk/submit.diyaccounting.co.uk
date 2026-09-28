@@ -168,7 +168,9 @@ async function doType(page, step, ctx) {
   await locator.click();
   for (const char of text) {
     await page.keyboard.type(char);
-    await overlay.typeChar(page, rect);
+    // An off-camera or fast-forward scene types at zero pacing; its keystrokes carry no cadence,
+    // so they leave no typeChar event for checkTypingCadence to average in.
+    if (ctx.pacing.perCharMs > 0) await overlay.typeChar(page, rect);
     await new Promise((resolve) => setTimeout(resolve, ctx.pacing.perCharMs));
   }
   return { waitMs: 0, rect };

@@ -246,6 +246,72 @@ describe("functions/auth/customAuthorizer", () => {
     });
   });
 
+  describe("evaluateCountryChange across sign-ins", () => {
+    it("takes a newer sign-in's country as the new baseline and keeps the revocation", async () => {
+      const { evaluateCountryChange } = await import("@app/functions/auth/customAuthorizer.js");
+      const result = evaluateCountryChange({
+        countryHeader: "US",
+        storedItem: { country: "DE", authTime: 1000, revokedAt: 900 },
+        tokenIat: 2000,
+        tokenAuthTime: 2000,
+      });
+      expect(result).toEqual({ decision: "allow", write: { country: "US", authTime: 2000, revokedAt: 900 } });
+    });
+
+    it("takes a sign-in after a revocation as the new baseline when the item has no sign-in time", async () => {
+      const { evaluateCountryChange } = await import("@app/functions/auth/customAuthorizer.js");
+      const result = evaluateCountryChange({
+        countryHeader: "US",
+        storedItem: { country: "DE", revokedAt: 5000 },
+        tokenIat: 6000,
+        tokenAuthTime: 6000,
+      });
+      expect(result).toEqual({ decision: "allow", write: { country: "US", authTime: 6000, revokedAt: 5000 } });
+    });
+
+    it("denies a token from an older sign-in used from another country", async () => {
+      const { evaluateCountryChange } = await import("@app/functions/auth/customAuthorizer.js");
+      const result = evaluateCountryChange({
+        countryHeader: "FR",
+        storedItem: { country: "GB", authTime: 2000 },
+        tokenIat: 2500,
+        tokenAuthTime: 1000,
+        nowEpochSeconds: 3000,
+      });
+      expect(result.decision).toBe("deny");
+      expect(result.reason).toBe("country-changed");
+    });
+
+    it("denies a token from the same sign-in used from another country", async () => {
+      const { evaluateCountryChange } = await import("@app/functions/auth/customAuthorizer.js");
+      const result = evaluateCountryChange({
+        countryHeader: "FR",
+        storedItem: { country: "GB", authTime: 2000 },
+        tokenIat: 2500,
+        tokenAuthTime: 2000,
+        nowEpochSeconds: 3000,
+      });
+      expect(result.decision).toBe("deny");
+    });
+
+    it("records the sign-in time on a same-country request when the item lacks it", async () => {
+      const { evaluateCountryChange } = await import("@app/functions/auth/customAuthorizer.js");
+      const result = evaluateCountryChange({ countryHeader: "GB", storedItem: { country: "GB" }, tokenIat: 1000, tokenAuthTime: 1000 });
+      expect(result).toEqual({ decision: "allow", write: { country: "GB", authTime: 1000 } });
+    });
+
+    it("treats an item past its TTL as absent", async () => {
+      const { evaluateCountryChange } = await import("@app/functions/auth/customAuthorizer.js");
+      const result = evaluateCountryChange({
+        countryHeader: "US",
+        storedItem: { country: "DE", ttl: 4000 },
+        tokenIat: 5000,
+        nowEpochSeconds: 5000,
+      });
+      expect(result).toEqual({ decision: "allow", write: { country: "US" } });
+    });
+  });
+
   describe("mid-session country change (ingestHandler integration)", () => {
     beforeEach(() => {
       process.env.SECURITY_STATE_DYNAMODB_TABLE_NAME = "test-security-state";
