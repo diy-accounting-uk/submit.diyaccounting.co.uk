@@ -72,6 +72,9 @@ Clarification (operator, 2026-09-28), on the referral scheme:
 
 ("Resolute" is Revolut, Revolut Business.)
 
+> Q11 subscriptions plus donations. Q12 100% until > 1000 subscribers, then drop to 50%. I’ll
+> review this later: “Send the enquiry to Plaid and Yapily from your address (MK-36)”
+
 The goal is paid Submit subscribers. YouTube subscribers, followers and visits count only as
 steps towards that.
 
@@ -102,15 +105,28 @@ every subscriber is `resident`, 129 if every one is `resident-vat`, 7 if every o
 `resident-pro`. A is stated at the VAT mix because Income Tax is not yet live; B and C at the
 ITSA mix (at the VAT mix, B is £3,010 MRR and £36,100 ARR; C is £60,200 MRR and £723,000 ARR).
 
-The spend rule (bootstrapped, no cash introduced). Campaign spend in a month is capped at half of
-the previous month's net subscription revenue above £100: cap = 50% × max(0, net − £100). The cap
-covers every fixed marketing cost: Google Ads budget above the floor, any platform fee, any flat
-creator fee, any paid listing. Two things sit outside it: referral commissions, because they are
-paid from the referred customer's own payments after the refund window and never in advance; and
-the £1 a day Search floor the operator chose in Q4 (about £30 a month), the one standing exception,
-because its purpose is to watch how visitors use the site. Until A the cap is £0 and the floor is
-the whole campaign budget. Q11 asks whether donations join the pool; Q12 asks whether the share is
-50% or 100%.
+The spend rule (bootstrapped, no cash introduced; operator, Q11 and Q12). The pool is the previous
+month's net subscription revenue plus net donations. Campaign spend in a month is capped at the
+whole of the pool above £100 while the active paid base is 1,000 or under, and at half of it
+after: cap = share × max(0, pool − £100), share = 100% until the base exceeds 1,000, then 50%. The
+cap covers every fixed marketing cost: Google Ads budget above the floor, any platform fee, any
+flat creator fee, any paid listing. Two things sit outside it: referral commissions, because they
+are paid from the referred customer's own payments after the refund window and never in advance;
+and the £1 a day Search floor the operator chose in Q4 (about £30 a month), because its purpose is
+to watch how visitors use the site. Donations put the cap above zero from the first month: £195 in
+the 30 days to 2026-09-28 across 9 charges (dossier §1, Athena `v_revenue_daily`), £190 after
+Stripe fees, one month's reading, so the cap today is about £90 a month and every figure below
+assumes donations hold at that level. Milestone A stays defined on subscription revenue alone:
+net subscription revenue of £100 a month, with donations left to the spreadsheets site's own
+costs.
+
+| Active paid base (ITSA mix) | Pool a month | Share | Cap a month | Additions it buys at £30 each |
+| ---: | ---: | ---: | ---: | ---: |
+| today (under 10) | £190 donations + under £5 | 100% | about £90 | 3 |
+| 35 (A) | £358 | 100% | £258 | 8 |
+| 300 | £1,627 | 100% | £1,527 | 51 |
+| 1,000 (B) | £4,980 | 100% to 1,000; 50% past it | £4,880, then £2,440 | 163, then 81 |
+| 5,000 | £24,140 | 50% | £12,020 | 400 |
 
 One metric decides every channel: paid subscribers it produced, per pound and per operator hour.
 Nothing measures that today, so the first work is the rails that carry a visitor's source through
@@ -178,11 +194,11 @@ before spending an hour on any channel.
 | M5 | The one view | `v_paid_subscribers_by_channel`: live Stripe charges on the three bundles, joined by hashed sub to the acquisition map, by month, source and bundle, with the active base, MRR and ARR at the actual mix. Plus the renewal view fixed to read `subscription-renewed`, so churn by channel follows. | DATA-28 |
 | M6 | Ads conversion import | A nightly job uploads each live charge with a stored `gclid` as an offline conversion. Ads then counts 100% of purchases instead of the 13% GA4 consents. | DATA-32, DATA-22 |
 | M7 | Video links | `videos/publish.json` gains a tagged link per video; the uploader writes it into the description and re-syncs the published ones. Nightly pull of YouTube Analytics (views, traffic sources, retention) into the lake. | OPS-93, DEV-41, DATA-46 |
-| M8 | Cost, hours and the cap | `marketing.toml`: one row per channel per month, cash spent and operator hours. The dashboard divides paid subscribers by both and shows the spend cap from the previous month's net revenue beside the spend. | DATA-26, SITE-21 |
+| M8 | Cost, hours and the cap | `marketing.toml`: one row per channel per month, cash spent and operator hours. The dashboard divides paid subscribers by both and shows the spend cap from the previous month's pool (net subscriptions plus donations) beside the spend. | DATA-26, SITE-21 |
 | M9 | Human denominator | The visitor-kind view returns human sessions, so per-channel purchase rates have a denominator. | DATA-23, DATA-27 |
 | M10 | Search Console | Nightly pull of impressions, clicks and queries per page, for the content channel. | DATA-06 sibling |
 
-M1 to M5 gate everything. M6 gates any Ads spend above the £1 a day floor. M7 gates new videos.
+M1 to M5 gate everything. M6 gates any Ads spend above the £1 a day floor, so the cap's first use (about £90 a month) waits on M6, due 7 November 2026. M7 gates new videos.
 M8 is the operator's ten minutes a month. Each channel launch is a row in `experiments.toml`
 (SITE-21).
 
@@ -199,7 +215,7 @@ figure is an assumption it says so.
 | 3 | Search and the support corpus | £0 | 5 to check tax content | 4 | 7 Aug 2027 |
 | 4 | YouTube | £0 | 0 | 3 | 7 Aug 2027 |
 | 5 | Submit's referral scheme, casual tier | 30% commission from money received; Connect fees per payout | 1 a month | 5 | 7 May 2027 |
-| 6 | Google Ads, Search | £30 a month floor, then the cap | 0 | 2 | 7 May 2027 |
+| 6 | Google Ads, Search | £30 a month floor, then the cap (about £90 a month today) | 0 | 3 | 7 May 2027 |
 | 7 | Submit's referral scheme, creator tier | the same commission; £0 up front | 3 per creator | 3 | 7 Nov 2027 |
 | 8 | Integration partners and backlinks for diya-gl | £0 | 2 for applications | 2 | 7 Aug 2027 |
 | 9 | LinkedIn, company page | £0 | 1 a month | 1 | 7 Aug 2027 |
@@ -513,17 +529,18 @@ Changes.
    income tax software", "file vat return without accountant"; GB only. Bidding
    `maximize_clicks`; the conversion action stays recorded for measurement.
 2. Performance Max paused (Q4).
-3. Budget £1 a day, the floor, until milestone A. Above the floor the cap decides: the nightly
-   governor (MK-42) sets the daily budget from the previous month's net revenue, concentrated on
-   the 1st to the 7th of each month. Once M6 has counted five conversions, bidding moves to target
-   CPA £30.
+3. Budget £1 a day, the floor, until M6 runs (7 November 2026). Then the cap decides: the nightly
+   governor (MK-42) sets the daily budget from the previous month's pool, about £90 a month at
+   today's donations, so about £3 a day concentrated on the 1st to the 7th of each month. Once M6
+   has counted five conversions, bidding moves to target CPA £30.
 
-Cost. £30 a month at the floor; then the cap.
+Cost. £30 a month at the floor; about £120 a month from November 2026 (floor plus cap); then the
+cap as it grows.
 
 Leading indicator. Sessions from `google / cpc` and what they do on the site (pages, logins);
 imported conversions a month once M6 runs; cost per imported conversion.
 
-Target. 2 paid subscribers by 7 May 2027 at under £30 each.
+Target. 3 paid subscribers by 7 May 2027 at under £30 each; if the cap's £90 a month of clicks converts at the site's 0.28%, the channel adds about 4 a month and A comes forward to 7 May 2027.
 
 Stop rule. Over a quarter with 500 or more clicks, cost per imported conversion above £60: back
 to the floor. Under 0.15% click-to-purchase over the same window: back to the floor and the
@@ -609,8 +626,8 @@ offer.
 Recommendation. Do ranks 1, 2 and 5 now (£0, machine-only). Apply to the Stripe Partner Ecosystem
 and build the Stripe App in horizon A. Zapier after the cloud store API is stable. Send the two
 aggregator enquiries now (MK-36); the Tide, Starling and Revolut Business feeds and their listings
-wait on those terms and on the cap covering the aggregator's fee, which at £150 a month is about
-65 active subscribers at the ITSA mix. The Starling and Revolut customer-token routes can come
+wait on those terms and on the cap covering the aggregator's fee, which at £150 a month is a pool
+of £250: about 21 active subscribers at the VAT mix, 13 at the ITSA mix, above today's donations. The Starling and Revolut customer-token routes can come
 first if the terms say the customer's own token is the customer's own access.
 
 First steps.
@@ -761,28 +778,33 @@ work in 3.1 and a listing that sends buyers at a deadline would have to deliver.
 Today: 900 to 1,250 sessions a month. A fits inside today's traffic if the rate holds at £39; B
 needs five to twenty times today's traffic; C needs a population-scale channel.
 
-The cap through the horizons (ITSA mix, 50% share): at A about £0; at 300 subscribers about £670
-a month; at 1,000 about £2,350, which at a £30 cost per acquisition is 78 additions a month, more
-than the 68 that B needs; at 5,000 about £11,900, 398 additions at £30. C needs 806, so from B
-onward the cost per acquisition has to fall under £15 or the unpaid channels carry the rest.
+The cap through the horizons (the table under the spend rule; ITSA mix, donations flat at £190
+net): about £90 a month today; £258 at A; £1,527 at 300 subscribers, 51 additions at a £30 cost
+per acquisition; £4,880 at 1,000, 163 additions, so the cap alone at £30 covers B's 68 a month
+from about 400 subscribers; £2,440 once the base passes 1,000 and the share drops to 50%;
+£12,020 at 5,000, 400 additions. C needs 806, so from B onward the cost per acquisition has to
+fall under £15 or the unpaid channels carry the rest.
 
 #### Horizon A: operating break-even, 35 active paid subscribers by 7 August 2027
 
-Campaign spend is the £1 a day floor and nothing else (the spend rule), so every channel in this
-horizon is free: 3.1 (own properties), 3.2 (HMRC free-version flag, the Income Tax finder if O11
-lands), 3.3 (deadline pages, the ten articles), 3.4 (tagged, re-titled videos, Shorts), 3.5 in
-full on Connect Express at £0 before a payout, 3.6 at the floor, 3.7 ranks 1, 2 and 5
+Campaign spend is the £1 a day floor plus the cap, about £90 a month from donations, and the
+cap's one use in this horizon is Google Ads Search above the floor from 7 November 2026 (3.6,
+gated on M6). Every other channel is free: 3.1 (own properties), 3.2 (HMRC free-version flag, the
+Income Tax finder if O11 lands), 3.3 (deadline pages, the ten articles), 3.4 (tagged, re-titled
+videos, Shorts), 3.5 in full on Connect Express at £0 before a payout, 3.7 ranks 1, 2 and 5
 (registries, bank CSV imports), 3.8's kit, 3.9's company page. Four additions a month at 0.28% is
 1,410 sessions; the 3.1 conversion work is what makes A reachable inside the 900 to 1,250 the site
-has. If Income Tax filing goes live in production inside this horizon, A becomes 21 at the ITSA
-mix and the date moves forward.
+has, and £90 a month of Search clicks at £0.06 is another 1,500 sessions, about 4 additions a month
+if they convert at the site's rate. If they do, A comes forward to 7 May 2027; the 7 Aug 2027 date
+assumes they convert at half that. If Income Tax filing goes live in production inside this
+horizon, A becomes 21 at the ITSA mix and the date moves forward again.
 
 | Checkpoint | Date | Active paid | Leading indicators |
 | --- | --- | ---: | --- |
 | Rails live | 7 Nov 2026 | 2 | every paid subscriber has a source; first reading of the £39 purchase rate; 8 listings live |
 | Content and referral | 31 Jan 2027 | 8 | 100 organic sessions a month on the new pages; 5 affiliates approved; 30 tagged YouTube sessions a month; the kit's first two sets live |
 | Second Income Tax quarter | 7 May 2027 | 20 | `resident-vat` review due 28 March 2027 done; Stripe App submitted |
-| A | 7 Aug 2027 | 35 | net subscription revenue £100 a month; the spend cap opens |
+| A | 7 Aug 2027 (7 May 2027 if the Search clicks convert at 0.28%) | 35 | net subscription revenue £100 a month; the cap about £258 a month |
 
 If the 7 November reading of the £39 rate is under 0.15%, every hour moves to 3.1 and A's date
 moves to 7 November 2027.
@@ -795,8 +817,10 @@ over-£20,000 cohort from April 2028. The finder sends buyers at the deadline, w
 traffic that has converted so far, and it moves the mix from VAT to ITSA, which raises revenue
 per subscriber from £2.88 to £4.79 net. Search content for the Income Tax queries the same
 people type. The referral scheme with the kit, so bookkeepers and creators recruit themselves at
-no cost until they earn. Google Ads Search above the floor as the cap grows: about £670 a month at
-300 subscribers, about £2,350 at 1,000, which at £30 a subscriber is 78 additions a month. The
+no cost until they earn. Google Ads Search as the cap grows: about £1,527 a month at 300
+subscribers, 51 additions at £30 each; about £4,880 at 1,000, 163 additions, so from about 400
+subscribers the cap alone funds B's 68 a month and money stops being B's constraint; the finder
+listing and the purchase rate are. The
 practice channel (`resident-pro`, the passes, the bookkeeper article) adds subscribers in fives
 and lifts the mix.
 
@@ -821,9 +845,10 @@ or a small share of the Income Tax finder, which lists far fewer products today.
 §4 (one operator hour per 50 subscribers a month) is 400 hours a month at C.
 
 What carries it. The Income Tax and VAT finders as the organic base; the referral scheme with the
-cap funding Ads and, if the operator later chooses, creator fees (at 5,000 subscribers the cap is
-about £11,900 a month, 398 additions at £30 each; C needs 806, so the cost per acquisition has to
-fall under £15 or the unpaid channels carry the rest); the practice channel at scale, where one
+cap funding Ads and, if the operator later chooses, creator fees (at 5,000 subscribers the cap at
+the 50% share is about £12,020 a month, 400 additions at £30 each; C needs 806, so the cost per
+acquisition has to fall under £15 or the unpaid channels carry the rest); the practice channel at
+scale, where one
 practice brings a client list.
 
 Open problems, each a horizon with no design yet in this plan:
@@ -893,7 +918,7 @@ not used (Q1: donation-only).
 | MK-38 | 3.5: `referrals.toml` declaring the programme (tiers, the 30% rate, the 12-month term, the 90/180 window, the 30-day hold, the £20 minimum) read by the ledger and the transfer run; the Connect Express account-link onboarding flow (`/api/v1/affiliates`) that writes the `affiliate#<code>` item on completion (BILL-24 pattern) | machine-only | ~6 | Opus |
 | MK-39 | 3.5: enable Connect on the live Stripe account, Express account type, GBP payouts; the platform settings the onboarding flow needs | human-driven | 0 | none |
 | MK-40 | 3.5: the affiliate stats page on Submit (clicks, sign-ups, conversions, commission due, held and paid) from our own attribution data, signed in through the affiliate's code; links to Stripe's Express payout dashboard | machine-only | ~5 | Sonnet |
-| MK-41 | The spend rule on the dashboard: previous month's net subscription revenue, the cap, the floor, and actual campaign spend from `marketing.toml` and the Ads report (DATA-26, DATA-34) | machine-only | ~3 | Sonnet |
+| MK-41 | The spend rule on the dashboard: previous month's pool (net subscriptions plus net donations), the share (100% to 1,000 active, then 50%), the cap, the floor, and actual campaign spend from `marketing.toml` and the Ads report (DATA-26, DATA-28, DATA-34) | machine-only | ~3 | Sonnet |
 | MK-42 | 3.6: the nightly Ads budget governor: sets the Search campaign's daily budget from the cap and the floor, concentrated on the 1st to the 7th, through `ads-sync.js`; reads the floor from the `reserve_floor` parameter `ads.toml` already names (DATA-32) | machine-only | ~4 | Sonnet |
 | MK-43 | The milestone panel: active paid base, MRR, ARR and the mix against A, B and C; the `resident-vat` review date 28 March 2027 shown until it passes (DATA-26, DATA-28) | machine-only | ~3 | Sonnet |
 | MK-44 | Horizon C: a plan for the accountant and practice channel (per-client pricing above `resident-pro`, the partner tier of the referral scheme, the member channels) as `PLAN_PRACTICE_CHANNEL.md`, from the practice page, MCP-08 and MCP-09 | machine-ask | 1 | Opus |
@@ -917,5 +942,5 @@ not used (Q1: donation-only).
 | Q8 | What counts as a paid subscriber for the targets | (a) `resident` and `resident-pro` only, `resident-vat` closed to new buyers; (b) all three counted, `resident-vat` kept open | (b) a mix of the three; `resident-vat` open until at least 28 March 2027, then a review; more `resident-pro` expected after the ITSA launch |
 | Q9 | The account-information question for a bank feed | (a) one written enquiry to a regulatory adviser now; (b) hold every bank integration until 50 paid subscribers and ask then; (c) ask two aggregators for agent and partner terms first (MK-36), an adviser only if the terms leave diya-gl regulated | (c) ask two aggregators first, Plaid and Yapily, for Tide, Starling and Revolut Business, with PayPal and Stripe on their own APIs; the usual pattern: small UK accounting apps run as an agent of, or under the permissions of, an FCA-authorised aggregator (August under Plaid Financial Ltd); larger ones register as an AISP (FreeAgent) |
 | Q10 | The referral platform | (a) Dub Partners; (b) Rewardful Growth; (c) Tolt Growth; (d) in-house on Stripe Connect Express | (d) in-house on Stripe Connect Express; Dub, then Rewardful, as the fallback past about 50 affiliates |
-| Q11 | The spend pool | (a) net subscription revenue only; (b) net subscription revenue plus donations (£195 in the last 30 days), which would open the cap now | open |
-| Q12 | The cap's share of net revenue above £100 | (a) 50%, half retained as margin; (b) 100%, every pound above running costs reinvested until B | open |
+| Q11 | The spend pool | (a) net subscription revenue only; (b) net subscription revenue plus donations (£195 in the last 30 days), which opens the cap now | (b) subscriptions plus donations |
+| Q12 | The cap's share of the pool above £100 | (a) 50%, half retained as margin; (b) 100%, every pound above running costs reinvested until B | (b) 100% until the active paid base exceeds 1,000, then 50%; the operator reviews later |
