@@ -610,6 +610,31 @@ if (import.meta.url === `file://${process.argv[1]}`) {
     if (hmrcItsaTaxLiabilityAdjustmentsDeleteAsyncRequestsTableName) {
       await ensureAsyncRequestsTableExists(hmrcItsaTaxLiabilityAdjustmentsDeleteAsyncRequestsTableName, endpoint);
     }
+    const hmrcItsaCrystallisationObligationsGetAsyncRequestsTableName =
+      process.env.HMRC_ITSA_CRYSTALLISATION_OBLIGATIONS_GET_ASYNC_REQUESTS_TABLE_NAME;
+    if (hmrcItsaCrystallisationObligationsGetAsyncRequestsTableName) {
+      await ensureAsyncRequestsTableExists(hmrcItsaCrystallisationObligationsGetAsyncRequestsTableName, endpoint);
+    }
+    const hmrcItsaStatusGetAsyncRequestsTableName = process.env.HMRC_ITSA_STATUS_GET_ASYNC_REQUESTS_TABLE_NAME;
+    if (hmrcItsaStatusGetAsyncRequestsTableName) {
+      await ensureAsyncRequestsTableExists(hmrcItsaStatusGetAsyncRequestsTableName, endpoint);
+    }
+    const hmrcItsaBsasTriggerPostAsyncRequestsTableName = process.env.HMRC_ITSA_BSAS_TRIGGER_POST_ASYNC_REQUESTS_TABLE_NAME;
+    if (hmrcItsaBsasTriggerPostAsyncRequestsTableName) {
+      await ensureAsyncRequestsTableExists(hmrcItsaBsasTriggerPostAsyncRequestsTableName, endpoint);
+    }
+    const hmrcItsaCalculationTriggerPostAsyncRequestsTableName = process.env.HMRC_ITSA_CALCULATION_TRIGGER_POST_ASYNC_REQUESTS_TABLE_NAME;
+    if (hmrcItsaCalculationTriggerPostAsyncRequestsTableName) {
+      await ensureAsyncRequestsTableExists(hmrcItsaCalculationTriggerPostAsyncRequestsTableName, endpoint);
+    }
+    const hmrcItsaCalculationGetAsyncRequestsTableName = process.env.HMRC_ITSA_CALCULATION_GET_ASYNC_REQUESTS_TABLE_NAME;
+    if (hmrcItsaCalculationGetAsyncRequestsTableName) {
+      await ensureAsyncRequestsTableExists(hmrcItsaCalculationGetAsyncRequestsTableName, endpoint);
+    }
+    const hmrcItsaFinalDeclarationPostAsyncRequestsTableName = process.env.HMRC_ITSA_FINAL_DECLARATION_POST_ASYNC_REQUESTS_TABLE_NAME;
+    if (hmrcItsaFinalDeclarationPostAsyncRequestsTableName) {
+      await ensureAsyncRequestsTableExists(hmrcItsaFinalDeclarationPostAsyncRequestsTableName, endpoint);
+    }
     const companiesHouseAccountsAsyncRequestsTableName = process.env.COMPANIES_HOUSE_ACCOUNTS_ASYNC_REQUESTS_TABLE_NAME;
     if (companiesHouseAccountsAsyncRequestsTableName) {
       await ensureAsyncRequestsTableExists(companiesHouseAccountsAsyncRequestsTableName, endpoint);

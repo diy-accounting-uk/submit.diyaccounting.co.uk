@@ -21,6 +21,7 @@ import {
   extractHmrcAccessTokenFromLambdaEvent,
   http403ForbiddenFromHmrcResponse,
   http404NotFoundFromHmrcResponse,
+  http400BadRequestFromHmrcResponse,
   http500ServerErrorFromHmrcResponse,
   http403ForbiddenFromBundleEnforcement,
   validateFraudPreventionHeaders,
@@ -265,6 +266,7 @@ export async function ingestHandler(event) {
     const status = result.hmrcResponse.status;
     if (status === 403) return http403ForbiddenFromHmrcResponse(hmrcAccessToken, result.hmrcResponse, responseHeaders);
     if (status === 404) return http404NotFoundFromHmrcResponse(request, result.hmrcResponse, responseHeaders);
+    if (status === 400) return http400BadRequestFromHmrcResponse(request, result.hmrcResponse, responseHeaders);
     return http500ServerErrorFromHmrcResponse(request, result.hmrcResponse, responseHeaders);
   }
 
