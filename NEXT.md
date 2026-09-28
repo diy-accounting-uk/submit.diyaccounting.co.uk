@@ -93,8 +93,6 @@ step.
 
 ## Human-driven
 
-- [ ] **MK-36. Ask Plaid and Yapily for their partner terms.** Send, after the operator reviews it, the enquiry drafted in `PLAN_MARKETING_STRATEGY.md` §3.7 from the operator's address to Plaid and Yapily: agent or partner terms that keep diya-gl out of the regulated account-information activity, coverage of Tide, Starling and Revolut Business, and price at our volume. Record the answers in §3.7; MK-49 (the bank feed) waits on them. **Source**: `PLAN_MARKETING_STRATEGY.md` §5 MK-36. **Owner**: Operator. **Model**: none. **Size**: 0 files.
-
 - [ ] **LP-25a. Bank referral: the partner programme.** Pick the partner programme, sign up, and supply the referral link and the disclosure wording; write both into LP-25b. **Source**: `PLAN_DIYA_GL_LAUNCH.md`. **Owner**: Operator. **Model**: none. **Size**: 0 files.
 
 - [ ] **O11. The ITSA send day.** The proof is on `main` (PR #352, 2026-09-25): the eight ITSA suites pass on the simulator and run in CI, and the sandbox year ran clean on 2023-24, 2025-26 and 2026-27 on 2026-09-25 with a real `Gov-Client-Multi-Factor` header (`VALID_HEADERS`, no warnings), inside HMRC's 14 days until 2026-10-09. Evidence for every claim in the email, with how to check each, is in `../itsa-recognition-evidence/README.md`. Send `_developers/hmrc/DRAFT_EMAIL_ITSA_RECOGNITION.md` to `SDSTeam@hmrc.gov.uk` from the operator's address (prod-23d9a7e carries PR #352), then `_developers/hmrc/DRAFT_EMAIL_ITSA_PRODUCTION_CREDENTIALS.md` when SDST answers. **Source**: BACKLOG 11; `PLAN_ITSA_PHASE_2.md` T10. **Owner**: Operator. **Model**: none. **Size**: 0 files.
