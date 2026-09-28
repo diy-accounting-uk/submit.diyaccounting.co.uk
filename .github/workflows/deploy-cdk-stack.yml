@@ -325,10 +325,11 @@ jobs:
         run: |
           STACK_NAME="${{ needs.names.outputs.deployment-name }}-app-${{ needs.params.outputs.stackName }}"
           echo "Checking for existing COMPLETE stack: $STACK_NAME"
+          # The CLI pages and applies --query per page; count the names across every page.
           COUNT=$(aws cloudformation list-stacks \
             --stack-status-filter CREATE_COMPLETE UPDATE_COMPLETE \
-            --query "length(StackSummaries[?StackName=='${STACK_NAME}'])" \
-            --output text)
+            --query "StackSummaries[?StackName=='${STACK_NAME}'].StackName" \
+            --output text | wc -w | tr -d ' ')
           if [ "$COUNT" -ge 1 ]; then
             echo "skipStaticStackDeployment=true" >> "$GITHUB_OUTPUT"
           else

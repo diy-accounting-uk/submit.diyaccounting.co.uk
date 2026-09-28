@@ -827,8 +827,11 @@ jobs:
           set -euo pipefail
           STACK_COUNT=0
           for REGION in eu-west-2 us-east-1; do
-            REGION_COUNT=$(aws cloudformation describe-stacks --region "$REGION" \
-              --query "length(Stacks[?starts_with(StackName, '${DEPLOYMENT}-')])" --output text 2>/dev/null || echo "0")
+            # The CLI pages and applies --query per page, so a length() prints one count per page;
+            # counting the names across every page gives one number.
+            REGION_NAMES=$(aws cloudformation describe-stacks --region "$REGION" \
+              --query "Stacks[?starts_with(StackName, '${DEPLOYMENT}-')].StackName" --output text 2>/dev/null || true)
+            REGION_COUNT=$(echo "$REGION_NAMES" | wc -w | tr -d ' ')
             echo "Found $REGION_COUNT stack(s) for [$DEPLOYMENT] in $REGION"
             STACK_COUNT=$((STACK_COUNT + REGION_COUNT))
           done
