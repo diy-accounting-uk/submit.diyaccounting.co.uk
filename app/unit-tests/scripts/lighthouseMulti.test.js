@@ -4,7 +4,7 @@
 import { describe, test, expect } from "vitest";
 import {
   parseSitemapPaths,
-  findDriftingPaths,
+  urlConfigsFromSitemap,
   resolveThresholds,
   slugForPath,
   scoresFromLhr,
@@ -21,12 +21,24 @@ describe("lighthouse-multi", () => {
     expect(parseSitemapPaths(xml)).toEqual(["/", "/about.html"]);
   });
 
-  test("findDriftingPaths names sitemap paths the config does not cover", () => {
-    expect(findDriftingPaths(["/", "/about.html", "/new-page.html"], ["/", "/about.html"])).toEqual(["/new-page.html"]);
+  test("urlConfigsFromSitemap carries over a config override for a sitemap path", () => {
+    const configuredUrls = [{ path: "/about.html", thresholds: { performance: 67 } }];
+    expect(urlConfigsFromSitemap(["/", "/about.html"], configuredUrls)).toEqual([
+      { path: "/" },
+      { path: "/about.html", thresholds: { performance: 67 } },
+    ]);
   });
 
-  test("findDriftingPaths returns an empty array when the config covers every sitemap path", () => {
-    expect(findDriftingPaths(["/", "/about.html"], ["/", "/about.html", "/extra.html"])).toEqual([]);
+  test("urlConfigsFromSitemap drops a config entry whose path left the sitemap", () => {
+    const configuredUrls = [
+      { path: "/", thresholds: { performance: 50 } },
+      { path: "/removed.html", thresholds: { performance: 40 } },
+    ];
+    expect(urlConfigsFromSitemap(["/"], configuredUrls)).toEqual([{ path: "/", thresholds: { performance: 50 } }]);
+  });
+
+  test("urlConfigsFromSitemap defaults a sitemap path with no config entry", () => {
+    expect(urlConfigsFromSitemap(["/new-page.html"], [])).toEqual([{ path: "/new-page.html" }]);
   });
 
   test("resolveThresholds merges a URL's overrides onto the defaults", () => {

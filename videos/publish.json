@@ -10,6 +10,7 @@
   "videos": [
     {
       "id": "view-obligations",
+      "group": "vat",
       "publish": true,
       "sourceRun": 33952515598,
       "sourceArtifact": "video-view-obligations-prod",
@@ -23,6 +24,7 @@
     },
     {
       "id": "submit-return",
+      "group": "vat",
       "publish": true,
       "sourceRun": 33953044775,
       "sourceArtifact": "video-submit-return-prod",
@@ -36,6 +38,7 @@
     },
     {
       "id": "view-return",
+      "group": "vat",
       "publish": true,
       "sourceRun": 34058244686,
       "sourceArtifact": "video-view-return-prod",
@@ -49,6 +52,7 @@
     },
     {
       "id": "view-liabilities",
+      "group": "vat",
       "publish": true,
       "sourceRun": 34651931632,
       "sourceArtifact": "video-view-liabilities-prod",
@@ -62,6 +66,7 @@
     },
     {
       "id": "view-payments",
+      "group": "vat",
       "publish": true,
       "sourceRun": 34689643435,
       "sourceArtifact": "video-view-payments-prod",
@@ -75,6 +80,7 @@
     },
     {
       "id": "view-penalties",
+      "group": "vat",
       "publish": true,
       "sourceRun": 34689889022,
       "sourceArtifact": "video-view-penalties-prod",
@@ -88,6 +94,7 @@
     },
     {
       "id": "itsa-quarterly-update",
+      "group": "itsa",
       "publish": true,
       "sourceRun": 34904726583,
       "sourceArtifact": "video-itsa-quarterly-update-ci",
@@ -101,6 +108,7 @@
     },
     {
       "id": "itsa-business-details",
+      "group": "itsa",
       "publish": true,
       "sourceRun": 34904243853,
       "sourceArtifact": "video-itsa-business-details-ci",
@@ -114,6 +122,7 @@
     },
     {
       "id": "sign-in",
+      "group": "account",
       "publish": true,
       "sourceRun": 36335179057,
       "sourceArtifact": "video-sign-in-ci",
@@ -127,6 +136,7 @@
     },
     {
       "id": "tokens",
+      "group": "account",
       "publish": true,
       "sourceRun": 36335609989,
       "sourceArtifact": "video-tokens-ci",
@@ -140,6 +150,7 @@
     },
     {
       "id": "subscription-management",
+      "group": "account",
       "publish": true,
       "sourceRun": 36336006786,
       "sourceArtifact": "video-subscription-management-ci",
@@ -153,6 +164,7 @@
     },
     {
       "id": "tour",
+      "group": "account",
       "publish": true,
       "sourceRun": 36336402811,
       "sourceArtifact": "video-tour-ci",
@@ -166,6 +178,7 @@
     },
     {
       "id": "my-receipts",
+      "group": "account",
       "publish": true,
       "sourceRun": 36337817350,
       "sourceArtifact": "video-my-receipts-ci",
@@ -179,6 +192,7 @@
     },
     {
       "id": "generate-pass-digital",
+      "group": "account",
       "publish": true,
       "sourceRun": 36338206722,
       "sourceArtifact": "video-generate-pass-digital-ci",
@@ -192,6 +206,7 @@
     },
     {
       "id": "generate-pass-physical",
+      "group": "account",
       "publish": true,
       "sourceRun": 36338595073,
       "sourceArtifact": "video-generate-pass-physical-ci",
@@ -205,6 +220,7 @@
     },
     {
       "id": "company-lookup",
+      "group": "companies-house",
       "publish": true,
       "sourceRun": 36340310985,
       "sourceArtifact": "video-company-lookup-ci",
@@ -218,6 +234,7 @@
     },
     {
       "id": "file-confirmation-statement",
+      "group": "companies-house",
       "publish": true,
       "sourceRun": 36342001524,
       "sourceArtifact": "video-file-confirmation-statement-ci",
@@ -231,6 +248,7 @@
     },
     {
       "id": "change-registered-office",
+      "group": "companies-house",
       "publish": true,
       "videoFile": "target/videos/local-change-registered-office/change-registered-office.mp4",
       "captionFile": "target/videos/local-change-registered-office/change-registered-office.vtt",
@@ -242,6 +260,7 @@
     },
     {
       "id": "change-registered-email",
+      "group": "companies-house",
       "publish": true,
       "videoFile": "target/videos/local-change-registered-email/change-registered-email.mp4",
       "captionFile": "target/videos/local-change-registered-email/change-registered-email.vtt",
@@ -252,6 +271,7 @@
     },
     {
       "id": "file-micro-entity-accounts",
+      "group": "companies-house",
       "publish": true,
       "videoFile": "target/videos/local-file-micro-entity-accounts/file-micro-entity-accounts.mp4",
       "captionFile": "target/videos/local-file-micro-entity-accounts/file-micro-entity-accounts.vtt",
@@ -262,6 +282,7 @@
     },
     {
       "id": "mcp-diya-gl",
+      "group": "account",
       "publish": true,
       "sourceRun": 36334808802,
       "sourceArtifact": "video-mcp-diya-gl-",

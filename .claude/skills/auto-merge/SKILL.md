@@ -117,6 +117,9 @@ A PR is eligible for the workflow check only when **all** of these hold:
 5. `mergeable` is not `CONFLICTING`.
 6. The PR's head SHA equals the branch tip on origin. A merge takes the head it was last updated
    against; anything pushed after that is left behind, and this batch has lost commits that way.
+7. `node scripts/merge-gate.mjs --repo diy-accounting-uk/submit.diyaccounting.co.uk --pr-number <n>
+   --at-merge` exits zero. Its exit code blocks a Markdown-only PR; for any other PR its failures
+   are informational only — read its report and note it in Part 7, and merge anyway.
 
 Say which gate stopped each ineligible PR. "Not ready" without a reason is useless to the operator.
 

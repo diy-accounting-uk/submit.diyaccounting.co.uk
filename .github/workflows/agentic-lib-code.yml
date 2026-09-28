@@ -119,7 +119,7 @@ jobs:
         uses: ./.github/actions/agent-run-budget
         with:
           workflow-file: agentic-lib-code.yml
-          job-name: do-next
+          job-name: do next
           step-name: Open the pull request
           budget: ${{ env.DO_NEXT_BUDGET_PER_DAY }}
 

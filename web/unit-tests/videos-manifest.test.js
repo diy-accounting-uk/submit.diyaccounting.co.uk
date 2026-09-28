@@ -29,6 +29,8 @@ describe("videos manifest published to the site", () => {
       expect(video.title.length).toBeGreaterThan(0);
       expect(typeof video.description).toBe("string");
       expect(video.description.length).toBeGreaterThan(0);
+      expect(typeof video.group).toBe("string");
+      expect(video.group.length).toBeGreaterThan(0);
     }
   });
 });

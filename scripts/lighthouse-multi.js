@@ -6,7 +6,9 @@
  * Multi-URL Lighthouse
  *
  * Audits every URL in web/public/sitemap.xml for performance, accessibility, SEO and
- * best-practices, against the gates in lighthouse.config.json. Runs a bounded number of
+ * best-practices, against the gates in lighthouse.config.json (a per-path entry there overrides
+ * the defaults; a sitemap path with no entry gets the defaults). When the sitemap file is
+ * missing, falls back to auditing exactly the config's own url list. Runs a bounded number of
  * `lighthouse` CLI processes at a time (each audit gets its own Chrome, so this avoids the
  * global performance-mark state the Lighthouse Node API shares across concurrent in-process
  * runs), writes one HTML report per URL, and writes an aggregate JSON summary consumed by
@@ -29,7 +31,7 @@
  * lookup), e.g. Playwright's bundled Chromium for a local run.
  */
 
-import { readFileSync, writeFileSync, mkdirSync } from "node:fs";
+import { readFileSync, writeFileSync, mkdirSync, existsSync } from "node:fs";
 import { join, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
 import { spawn } from "node:child_process";
@@ -53,15 +55,17 @@ export function parseSitemapPaths(xml) {
 }
 
 /**
- * Sitemap paths the config's url list does not cover.
+ * Builds one url-config per sitemap path, carrying over the config's threshold override for
+ * that path when one exists. A config entry whose path is no longer in the sitemap is dropped;
+ * a sitemap path with no config entry is audited against the default thresholds.
  *
  * @param {string[]} sitemapPaths
- * @param {string[]} configuredPaths
- * @returns {string[]}
+ * @param {{path: string, thresholds?: object}[]} configuredUrls
+ * @returns {{path: string, thresholds?: object}[]}
  */
-export function findDriftingPaths(sitemapPaths, configuredPaths) {
-  const configured = new Set(configuredPaths);
-  return sitemapPaths.filter((path) => !configured.has(path));
+export function urlConfigsFromSitemap(sitemapPaths, configuredUrls) {
+  const overridesByPath = new Map(configuredUrls.map((url) => [url.path, url]));
+  return sitemapPaths.map((path) => overridesByPath.get(path) ?? { path });
 }
 
 /**
@@ -196,20 +200,10 @@ async function main() {
     process.exit(1);
   }
 
-  const sitemapXml = readFileSync(options.sitemap, "utf8");
-  const sitemapPaths = parseSitemapPaths(sitemapXml);
   const config = JSON.parse(readFileSync(options.config, "utf8"));
-  const configuredPaths = config.urls.map((u) => u.path);
-
-  const drifting = findDriftingPaths(sitemapPaths, configuredPaths);
-  if (drifting.length > 0) {
-    process.stderr.write(
-      `lighthouse-multi: ${options.sitemap} has ${drifting.length} URL(s) missing from ${options.config}: ${drifting.join(", ")}\n`,
-    );
-    process.exit(1);
-  }
-
-  const urlConfigs = config.urls.filter((u) => sitemapPaths.includes(u.path));
+  const urlConfigs = existsSync(options.sitemap)
+    ? urlConfigsFromSitemap(parseSitemapPaths(readFileSync(options.sitemap, "utf8")), config.urls)
+    : config.urls;
 
   mkdirSync(options.outputDir, { recursive: true });
 

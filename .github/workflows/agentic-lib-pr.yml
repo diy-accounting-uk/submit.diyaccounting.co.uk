@@ -117,7 +117,7 @@ jobs:
         uses: ./.github/actions/agent-run-budget
         with:
           workflow-file: agentic-lib-pr.yml
-          job-name: auto-merge
+          job-name: auto merge
           step-name: Require a usable result
           budget: ${{ env.AUTO_MERGE_BUDGET_PER_DAY }}
 

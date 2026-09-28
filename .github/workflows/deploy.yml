@@ -687,6 +687,7 @@ jobs:
       contents: read
       packages: read
       id-token: write
+      actions: read
     with:
       environment-name: ${{ needs.names.outputs.environment-name }}
       deployment-name: ${{ needs.names.outputs.deployment-name }}
