@@ -1638,11 +1638,9 @@ public class HmrcStack extends Stack {
 
         // Grant the ITSA self-employment annual submission Lambda and its worker permission to access DynamoDB Bundles
         // Table.
-        // No token consumption here (the annual submission is free), so Query is enough - unlike
-        // the quarterly update Lambdas, which also need UpdateItem to consume a token.
         List.of(this.hmrcItsaSelfEmploymentAnnualPutLambda, hmrcItsaSelfEmploymentAnnualPutLambdaUrlOrigin.workerLambda)
                 .forEach(fn -> {
-                    bundlesTable.grant(fn, "dynamodb:Query");
+                    bundlesTable.grant(fn, "dynamodb:Query", "dynamodb:UpdateItem");
                     hmrcApiRequestsTable.grant(fn, "dynamodb:PutItem");
                     receiptsTable.grant(fn, "dynamodb:PutItem");
                     hmrcItsaSelfEmploymentAnnualPutAsyncRequestsTable.grant(

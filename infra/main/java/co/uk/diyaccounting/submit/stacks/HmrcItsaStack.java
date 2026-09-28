@@ -757,7 +757,7 @@ public class HmrcItsaStack extends Stack {
         // Table
         List.of(this.hmrcItsaUkPropertyAnnualPutLambda, hmrcItsaUkPropertyAnnualPutLambdaUrlOrigin.workerLambda)
                 .forEach(fn -> {
-                    bundlesTable.grant(fn, "dynamodb:Query");
+                    bundlesTable.grant(fn, "dynamodb:Query", "dynamodb:UpdateItem");
                     hmrcApiRequestsTable.grant(fn, "dynamodb:PutItem");
                     receiptsTable.grant(fn, "dynamodb:PutItem");
                     hmrcItsaUkPropertyAnnualPutAsyncRequestsTable.grant(fn, "dynamodb:GetItem", "dynamodb:UpdateItem");
@@ -1102,7 +1102,7 @@ public class HmrcItsaStack extends Stack {
         // Table
         List.of(this.hmrcItsaLossesAndClaimsPutLambda, hmrcItsaLossesAndClaimsPutLambdaUrlOrigin.workerLambda)
                 .forEach(fn -> {
-                    bundlesTable.grant(fn, "dynamodb:Query");
+                    bundlesTable.grant(fn, "dynamodb:Query", "dynamodb:UpdateItem");
                     hmrcApiRequestsTable.grant(fn, "dynamodb:PutItem");
                     receiptsTable.grant(fn, "dynamodb:PutItem");
                     hmrcItsaLossesAndClaimsPutAsyncRequestsTable.grant(fn, "dynamodb:GetItem", "dynamodb:UpdateItem");
@@ -1188,7 +1188,7 @@ public class HmrcItsaStack extends Stack {
         // Table
         List.of(this.hmrcItsaLossesAndClaimsDeleteLambda, hmrcItsaLossesAndClaimsDeleteLambdaUrlOrigin.workerLambda)
                 .forEach(fn -> {
-                    bundlesTable.grant(fn, "dynamodb:Query");
+                    bundlesTable.grant(fn, "dynamodb:Query", "dynamodb:UpdateItem");
                     hmrcApiRequestsTable.grant(fn, "dynamodb:PutItem");
                     hmrcItsaLossesAndClaimsDeleteAsyncRequestsTable.grant(
                             fn, "dynamodb:GetItem", "dynamodb:UpdateItem");
@@ -1371,7 +1371,7 @@ public class HmrcItsaStack extends Stack {
                         this.hmrcItsaTaxLiabilityAdjustmentsPutLambda,
                         hmrcItsaTaxLiabilityAdjustmentsPutLambdaUrlOrigin.workerLambda)
                 .forEach(fn -> {
-                    bundlesTable.grant(fn, "dynamodb:Query");
+                    bundlesTable.grant(fn, "dynamodb:Query", "dynamodb:UpdateItem");
                     hmrcApiRequestsTable.grant(fn, "dynamodb:PutItem");
                     receiptsTable.grant(fn, "dynamodb:PutItem");
                     hmrcItsaTaxLiabilityAdjustmentsPutAsyncRequestsTable.grant(
@@ -1466,7 +1466,7 @@ public class HmrcItsaStack extends Stack {
                         this.hmrcItsaTaxLiabilityAdjustmentsDeleteLambda,
                         hmrcItsaTaxLiabilityAdjustmentsDeleteLambdaUrlOrigin.workerLambda)
                 .forEach(fn -> {
-                    bundlesTable.grant(fn, "dynamodb:Query");
+                    bundlesTable.grant(fn, "dynamodb:Query", "dynamodb:UpdateItem");
                     hmrcApiRequestsTable.grant(fn, "dynamodb:PutItem");
                     hmrcItsaTaxLiabilityAdjustmentsDeleteAsyncRequestsTable.grant(
                             fn, "dynamodb:GetItem", "dynamodb:UpdateItem");
