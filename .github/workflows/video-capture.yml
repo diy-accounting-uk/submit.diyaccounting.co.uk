@@ -56,6 +56,13 @@ on:
           - 'generate-pass-physical'
           - 'file-confirmation-statement'
           - 'mcp-diya-gl'
+          - 'itsa-loss-claims'
+          - 'itsa-foreign-property-losses'
+          - 'itsa-carry-back-adjustments'
+          - 'itsa-self-employment-amend'
+          - 'itsa-uk-property-year'
+          - 'itsa-annual-from-book'
+          - 'itsa-in-year-estimate'
         default: 'tour'
       environment-name:
         type: choice

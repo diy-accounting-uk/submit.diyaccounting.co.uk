@@ -196,6 +196,7 @@ export function sanitizeCharge(
     failure_code: charge.failure_code ?? null,
     customer: hashCustomerId(charge.customer),
     invoice: resolveId(charge.invoice),
+    livemode: charge.livemode ?? null,
     bundle_id: resolveChargeBundleId(
       charge,
       invoiceToSubscription,
@@ -220,6 +221,7 @@ export function sanitizeSubscription(subscription) {
     price_id: item?.price?.id ?? null,
     unit_amount: item?.price?.unit_amount ?? null,
     bundle_id: subscription.metadata?.bundleId ?? null,
+    actor: subscription.metadata?.actor ?? null,
   };
 }
 

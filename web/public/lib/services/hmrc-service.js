@@ -6,6 +6,22 @@
 import { authorizedFetch } from "./api-client.js";
 
 /**
+ * HMRC's ITSA cumulative period retrieve (property Business v6.0, and the BSAS retrieve
+ * alongside it) is not stateful in the sandbox - its documented default with no Gov-Test-Scenario
+ * header is "no data found", so a synthetic run with nothing chosen needs a named scenario to see
+ * anything at all. A live account must never carry a sandbox-only header, and an explicit choice
+ * (a developer testing panel's own selection) always wins over the fallback.
+ * @param {string|null|undefined} explicitTestScenario - the caller's own chosen scenario, if any
+ * @param {string|null|undefined} hmrcAccount - "synthetic" or "live" (or unset)
+ * @param {string} fallbackScenario - the Gov-Test-Scenario value to send when synthetic and nothing was chosen
+ * @returns {string|null}
+ */
+export function resolveSyntheticTestScenario(explicitTestScenario, hmrcAccount, fallbackScenario) {
+  if (explicitTestScenario) return explicitTestScenario;
+  return hmrcAccount === "synthetic" ? fallbackScenario : null;
+}
+
+/**
  * Check if a string is a valid IPv4 address
  * @param {string} token - String to check
  * @returns {boolean} True if valid IPv4
@@ -1401,6 +1417,7 @@ export async function putTaxLiabilityAdjustments(
 
 // Export on window for backward compatibility
 if (typeof window !== "undefined") {
+  window.resolveSyntheticTestScenario = resolveSyntheticTestScenario;
   window.submitVat = submitVat;
   window.getGovClientHeaders = getGovClientHeaders;
   window.getClientIP = getClientIP;

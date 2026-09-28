@@ -340,7 +340,7 @@ npm run deploy:app-prod
 2. Builds ARM64 Docker image and pushes to ECR (eu-west-2 + us-east-1)
 3. Updates all Lambda functions (update code, publish version, update `pc` alias)
 4. Syncs web assets to S3 (with RUM injection, submit.env generation)
-5. Invalidates CloudFront (same 43 paths as PublishStack)
+5. Invalidates CloudFront (same 49 paths as PublishStack)
 
 **Verify after lean deploy:**
 ```bash

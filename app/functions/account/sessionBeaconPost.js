@@ -11,6 +11,19 @@ import { publishActivityEvent } from "../../lib/activityAlert.js";
 
 const logger = createLogger({ source: "app/functions/account/sessionBeaconPost.js" });
 
+// Landing-attribution fields session-beacon.js carries from analytics.js's localStorage
+// capture. Only present when the visitor's browser still holds a valid stored landing.
+const ATTRIBUTION_DETAIL_KEYS = ["utmSource", "utmMedium", "utmCampaign", "utmContent", "utmTerm", "gclid", "ref", "landedAt"];
+
+function extractAttribution(body) {
+  const attribution = {};
+  for (const key of ATTRIBUTION_DETAIL_KEYS) {
+    const value = body[key];
+    if (typeof value === "string" && value) attribution[key] = value;
+  }
+  return attribution;
+}
+
 /* v8 ignore start */
 export function apiEndpoint(app) {
   registerLambdaRoute(app, "post", "/api/v1/session/beacon", ingestHandler);
@@ -52,6 +65,7 @@ export async function ingestHandler(event) {
       country,
       page,
       userAgent: userAgent.substring(0, 100),
+      ...extractAttribution(body),
     },
   });
 

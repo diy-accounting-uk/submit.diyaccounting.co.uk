@@ -1,0 +1,182 @@
+{
+  "$schema": "./scene-script.schema.json",
+  "name": "itsa-in-year-estimate",
+  "title": "Check an in-year estimate",
+  "description": "A signed-in walk through Making Tax Digital for Income Tax's tax calculation: ask HMRC for an in-year estimate of what the tax year owes, based on what has been submitted so far.",
+  "auth": "user",
+  "pages": ["web/public/index.html", "web/public/auth/login.html", "web/public/bundles.html", "web/public/hmrc/itsa/taxCalculation.html"],
+  "hmrcServices": ["mtd-vat", "mtd-income-tax"],
+  "environments": ["ci"],
+  "viewport": { "width": 1920, "height": 1080 },
+  "deviceScaleFactor": 2,
+  "fps": 30,
+
+  "pacing": {
+    "perCharMs": 80,
+    "betweenActionsMs": 500,
+    "aroundMotionMs": 500,
+    "minResidualMs": 120,
+    "timerThresholdMs": 250,
+    "timerFullScaleMs": 5000,
+    "waitCompressionAfterMs": 6000,
+    "waitCompressionFactor": 8
+  },
+
+  "captions": {
+    "fontPx": 40,
+    "lineHeightPx": 56,
+    "maxLines": 2,
+    "maxCharsPerLine": 46,
+    "charsPerSecond": 16,
+    "minMs": 1200,
+    "fadeMs": 200,
+    "safeArea": { "topPct": 5, "bottomPct": 5, "sidePct": 12.5 }
+  },
+
+  "suppress": ["#feedbackEngagementBanner", "#feedbackEngagementSection"],
+
+  "finalHoldMs": 2500,
+
+  "scenes": [
+    {
+      "id": "home",
+      "chapter": "Home",
+      "still": true,
+      "fastForward": true,
+      "steps": [
+        {
+          "action": "goto",
+          "url": "/",
+          "waitFor": "#mainContent",
+          "caption": "This is a sandbox preview against HMRC's test service, not a live filing.",
+          "headline": "A sandbox preview",
+          "keyWord": "sandbox"
+        },
+        { "action": "point", "target": { "role": "heading", "name": "DIY Accounting Submit" }, "dwellMs": 300 },
+        { "action": "hold", "ms": 400 }
+      ]
+    },
+    {
+      "id": "sign-in",
+      "chapter": "Sign in",
+      "still": true,
+      "fastForward": true,
+      "steps": [
+        {
+          "action": "click",
+          "target": "a.login-link",
+          "caption": "Sign in with the account you already use.",
+          "headline": "Sign in first",
+          "keyWord": "Sign"
+        },
+        {
+          "action": "login",
+          "caption": "Your account keeps a whole year's filings in one place.",
+          "headline": "Confirm your identity",
+          "keyWord": "identity"
+        },
+        { "action": "consent" },
+        { "action": "hold", "ms": 400 }
+      ]
+    },
+    {
+      "id": "subscription",
+      "chapter": "Resident",
+      "still": true,
+      "fastForward": true,
+      "steps": [
+        {
+          "action": "click",
+          "target": { "role": "link", "name": "Bundles" },
+          "caption": "Bundles decide which activities you can run.",
+          "headline": "Open your bundles",
+          "keyWord": "bundles"
+        },
+        {
+          "action": "ensureBundle",
+          "bundle": "Resident",
+          "testPass": true,
+          "caption": "Resident opens the Self Assessment activities.",
+          "headline": "Unlock Self Assessment",
+          "keyWord": "Self"
+        },
+        { "action": "hold", "ms": 500 }
+      ]
+    },
+    {
+      "id": "in-year-estimate",
+      "chapter": "In-year estimate",
+      "still": true,
+      "steps": [
+        {
+          "action": "goto",
+          "url": "/hmrc/itsa/taxCalculation.html",
+          "waitFor": "#itsaCalculationTriggerForm",
+          "caption": "Check what the year owes at any point, not just at the end.",
+          "headline": "Check anytime",
+          "keyWord": "anytime"
+        },
+        {
+          "action": "type",
+          "target": "#nino",
+          "text": "{{hmrcNino}}",
+          "clear": true,
+          "secret": true,
+          "caption": "Your National Insurance number.",
+          "headline": "Your NI number",
+          "keyWord": "NI"
+        },
+        { "action": "fill", "target": "#taxYear", "value": "2026-27" },
+        {
+          "action": "select",
+          "target": "#calculationType",
+          "value": "in-year",
+          "caption": "An in-year estimate, not the calculation a final declaration confirms.",
+          "headline": "An in-year estimate",
+          "keyWord": "estimate"
+        },
+        {
+          "action": "click",
+          "target": "#triggerBtn",
+          "caption": "Ask HMRC to calculate now.",
+          "headline": "Calculate now",
+          "keyWord": "Calculate"
+        },
+        {
+          "action": "hmrcAuthorise",
+          "caption": "Sign in to HMRC and say yes.",
+          "headline": "Grant HMRC access",
+          "keyWord": "Grant",
+          "timeoutMs": 60000
+        },
+        {
+          "action": "await",
+          "until": "#calculationResults",
+          "label": "Calculating",
+          "timeoutMs": 60000,
+          "caption": "HMRC shows this disclaimer before any figure.",
+          "headline": "HMRC's disclaimer first",
+          "keyWord": "disclaimer"
+        },
+        {
+          "action": "point",
+          "target": "#calculationDisclaimer",
+          "caption": "It is an estimate, and it can still change.",
+          "headline": "Still an estimate",
+          "keyWord": "estimate",
+          "dwellMs": 700
+        },
+        {
+          "action": "point",
+          "target": "#totalIncomeTaxAndNicsDue",
+          "caption": "What the year owes so far, based on what's been submitted.",
+          "headline": "What it owes so far",
+          "keyWord": "owes",
+          "dwellMs": 700
+        },
+        { "action": "still", "name": "in-year-estimate" },
+        { "action": "hold", "ms": 1200 }
+      ]
+    }
+  ]
+}

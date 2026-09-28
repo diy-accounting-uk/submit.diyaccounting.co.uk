@@ -143,4 +143,33 @@ class StripeReconciliationTablesTest {
                                         "Columns",
                                         Match.arrayWith(List.of(Map.of("Name", "customer", "Type", "string"))))))))));
     }
+
+    @Test
+    void chargesCarryLivemodeAndSubscriptionsCarryActorForRealCustomerFiltering() {
+        Template template = synthTemplate();
+
+        template.hasResourceProperties(
+                "AWS::Glue::Table",
+                Match.objectLike(Map.of(
+                        "TableInput",
+                        Match.objectLike(Map.of(
+                                "Name",
+                                "stripe_charges",
+                                "StorageDescriptor",
+                                Match.objectLike(Map.of(
+                                        "Columns",
+                                        Match.arrayWith(List.of(Map.of("Name", "livemode", "Type", "boolean"))))))))));
+
+        template.hasResourceProperties(
+                "AWS::Glue::Table",
+                Match.objectLike(Map.of(
+                        "TableInput",
+                        Match.objectLike(Map.of(
+                                "Name",
+                                "stripe_subscriptions",
+                                "StorageDescriptor",
+                                Match.objectLike(Map.of(
+                                        "Columns",
+                                        Match.arrayWith(List.of(Map.of("Name", "actor", "Type", "string"))))))))));
+    }
 }

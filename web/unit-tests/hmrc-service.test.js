@@ -16,7 +16,25 @@ import {
   getObligations,
   postSelfEmploymentPeriod,
   getOrCreateDeviceId,
+  resolveSyntheticTestScenario,
 } from "../public/lib/services/hmrc-service.js";
+
+describe("hmrc-service resolveSyntheticTestScenario", () => {
+  test("an explicit scenario always wins, synthetic or live", () => {
+    expect(resolveSyntheticTestScenario("NOT_FOUND", "synthetic", "UK_PROPERTY_FULL_EXPENSES")).toBe("NOT_FOUND");
+    expect(resolveSyntheticTestScenario("NOT_FOUND", "live", "UK_PROPERTY_FULL_EXPENSES")).toBe("NOT_FOUND");
+  });
+
+  test("a synthetic account with nothing chosen falls back to the named scenario", () => {
+    expect(resolveSyntheticTestScenario(null, "synthetic", "UK_PROPERTY_FULL_EXPENSES")).toBe("UK_PROPERTY_FULL_EXPENSES");
+    expect(resolveSyntheticTestScenario("", "synthetic", "UK_PROPERTY_FULL_EXPENSES")).toBe("UK_PROPERTY_FULL_EXPENSES");
+  });
+
+  test("a live account, or no account at all, never carries a sandbox-only header", () => {
+    expect(resolveSyntheticTestScenario(null, "live", "UK_PROPERTY_FULL_EXPENSES")).toBeNull();
+    expect(resolveSyntheticTestScenario(null, null, "UK_PROPERTY_FULL_EXPENSES")).toBeNull();
+  });
+});
 
 describe("hmrc-service getOrCreateDeviceId", () => {
   let store;

@@ -6,6 +6,6 @@
 CREATE OR REPLACE VIEW activity_events_all AS
 SELECT event_id, event_ts, ingest_ts, event, site, summary, actor, flow, outcome, failure,
        request_id, hashed_sub, bundle_id, pass_type_id, subscription_id, visitor_type,
-       country, page, hmrc_status, client_id, env, app_client, session_id, activity_id,
-       dt
+       country, page, hmrc_status, client_id, env, detail_json, app_client, session_id,
+       activity_id, dt
 FROM   activity_events

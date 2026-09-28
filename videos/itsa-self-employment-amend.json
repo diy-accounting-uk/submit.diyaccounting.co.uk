@@ -1,0 +1,299 @@
+{
+  "$schema": "./scene-script.schema.json",
+  "name": "itsa-self-employment-amend",
+  "title": "Amend a filed self-employment quarter",
+  "description": "A signed-in walk through Making Tax Digital for Income Tax: see what a self-employment business has filed so far this tax year, open it, and correct a figure with HMRC.",
+  "auth": "user",
+  "pages": [
+    "web/public/index.html",
+    "web/public/auth/login.html",
+    "web/public/bundles.html",
+    "web/public/hmrc/itsa/selfEmploymentPeriod.html",
+    "web/public/hmrc/itsa/selfEmploymentPeriods.html",
+    "web/public/hmrc/itsa/selfEmploymentPeriodView.html",
+    "web/public/hmrc/itsa/selfEmploymentPeriodAmend.html"
+  ],
+  "hmrcServices": ["mtd-vat", "mtd-income-tax"],
+  "environments": ["ci"],
+  "viewport": { "width": 1920, "height": 1080 },
+  "deviceScaleFactor": 2,
+  "fps": 30,
+
+  "pacing": {
+    "perCharMs": 80,
+    "betweenActionsMs": 500,
+    "aroundMotionMs": 500,
+    "minResidualMs": 120,
+    "timerThresholdMs": 250,
+    "timerFullScaleMs": 5000,
+    "waitCompressionAfterMs": 6000,
+    "waitCompressionFactor": 8
+  },
+
+  "captions": {
+    "fontPx": 40,
+    "lineHeightPx": 56,
+    "maxLines": 2,
+    "maxCharsPerLine": 46,
+    "charsPerSecond": 16,
+    "minMs": 1200,
+    "fadeMs": 200,
+    "safeArea": { "topPct": 5, "bottomPct": 5, "sidePct": 12.5 }
+  },
+
+  "suppress": ["#feedbackEngagementBanner", "#feedbackEngagementSection"],
+
+  "finalHoldMs": 2500,
+
+  "scenes": [
+    {
+      "id": "home",
+      "chapter": "Home",
+      "still": true,
+      "fastForward": true,
+      "steps": [
+        {
+          "action": "goto",
+          "url": "/",
+          "waitFor": "#mainContent",
+          "caption": "This is a sandbox preview against HMRC's test service, not a live filing.",
+          "headline": "A sandbox preview",
+          "keyWord": "sandbox"
+        },
+        { "action": "point", "target": { "role": "heading", "name": "DIY Accounting Submit" }, "dwellMs": 300 },
+        { "action": "hold", "ms": 400 }
+      ]
+    },
+    {
+      "id": "sign-in",
+      "chapter": "Sign in",
+      "still": true,
+      "fastForward": true,
+      "steps": [
+        {
+          "action": "click",
+          "target": "a.login-link",
+          "caption": "Sign in with the account you already use.",
+          "headline": "Sign in first",
+          "keyWord": "Sign"
+        },
+        {
+          "action": "login",
+          "caption": "Your account keeps a whole year's filings in one place.",
+          "headline": "Confirm your identity",
+          "keyWord": "identity"
+        },
+        { "action": "consent" },
+        { "action": "hold", "ms": 400 }
+      ]
+    },
+    {
+      "id": "subscription",
+      "chapter": "Resident",
+      "still": true,
+      "fastForward": true,
+      "steps": [
+        {
+          "action": "click",
+          "target": { "role": "link", "name": "Bundles" },
+          "caption": "Bundles decide which activities you can run.",
+          "headline": "Open your bundles",
+          "keyWord": "bundles"
+        },
+        {
+          "action": "ensureBundle",
+          "bundle": "Resident",
+          "testPass": true,
+          "caption": "Resident opens the Self Assessment activities.",
+          "headline": "Unlock Self Assessment",
+          "keyWord": "Self"
+        },
+        { "action": "hold", "ms": 500 }
+      ]
+    },
+    {
+      "id": "file-self-employment-quarter",
+      "chapter": "File a quarter",
+      "offCamera": true,
+      "steps": [
+        { "action": "goto", "url": "/hmrc/itsa/selfEmploymentPeriod.html", "waitFor": "#itsaSelfEmploymentPeriodForm" },
+        { "action": "type", "target": "#nino", "text": "{{hmrcNino}}", "clear": true, "secret": true },
+        { "action": "fill", "target": "#businessId", "value": "XBIS00000000001" },
+        { "action": "fill", "target": "#taxYear", "value": "2026-27" },
+        { "action": "fill", "target": "#periodStartDate", "value": "2026-04-06" },
+        { "action": "fill", "target": "#periodEndDate", "value": "2026-07-05" },
+        { "action": "fill", "target": "#turnover", "value": "1000" },
+        { "action": "fill", "target": "#costOfGoods", "value": "150" },
+        { "action": "click", "target": "#submitBtn" },
+        { "action": "hmrcAuthorise", "timeoutMs": 60000 },
+        { "action": "await", "until": "#selfEmploymentPeriodResults", "label": "Filing the quarter", "timeoutMs": 60000 }
+      ]
+    },
+    {
+      "id": "list-quarters",
+      "chapter": "What's filed so far",
+      "still": true,
+      "steps": [
+        {
+          "action": "goto",
+          "url": "/hmrc/itsa/selfEmploymentPeriods.html",
+          "waitFor": "#itsaSelfEmploymentPeriodsForm",
+          "caption": "Check what you've already told HMRC for this business.",
+          "headline": "What's filed so far",
+          "keyWord": "filed"
+        },
+        {
+          "action": "type",
+          "target": "#nino",
+          "text": "{{hmrcNino}}",
+          "clear": true,
+          "secret": true,
+          "caption": "Your National Insurance number.",
+          "headline": "Your NI number",
+          "keyWord": "NI"
+        },
+        {
+          "action": "fill",
+          "target": "#businessId",
+          "value": "XBIS00000000001",
+          "caption": "The self-employment business's ID.",
+          "headline": "The business ID",
+          "keyWord": "ID"
+        },
+        {
+          "action": "fill",
+          "target": "#taxYear",
+          "value": "2026-27",
+          "caption": "This tax year reports one running total, not a list of quarters.",
+          "headline": "One running total",
+          "keyWord": "total"
+        },
+        { "action": "hold", "ms": 400 },
+        {
+          "action": "click",
+          "target": "#retrieveBtn",
+          "caption": "Ask HMRC for the current total.",
+          "headline": "Ask HMRC for the total",
+          "keyWord": "Ask"
+        },
+        {
+          "action": "await",
+          "until": "#periodsResults",
+          "label": "Waiting for HMRC",
+          "timeoutMs": 60000,
+          "caption": "HMRC answers with the year-to-date total.",
+          "headline": "The year-to-date total",
+          "keyWord": "total"
+        },
+        { "action": "point", "target": "#periodsTable", "dwellMs": 500 },
+        { "action": "still", "name": "self-employment-periods" },
+        { "action": "hold", "ms": 500 }
+      ]
+    },
+    {
+      "id": "view-quarter",
+      "chapter": "Open it",
+      "still": true,
+      "steps": [
+        {
+          "action": "goto",
+          "url": "/hmrc/itsa/selfEmploymentPeriodView.html",
+          "waitFor": "#itsaSelfEmploymentPeriodViewForm",
+          "caption": "Open the total and see the figures behind it.",
+          "headline": "Open the total",
+          "keyWord": "Open"
+        },
+        { "action": "type", "target": "#nino", "text": "{{hmrcNino}}", "clear": true, "secret": true },
+        { "action": "fill", "target": "#businessId", "value": "XBIS00000000001" },
+        { "action": "fill", "target": "#taxYear", "value": "2026-27" },
+        { "action": "hold", "ms": 400 },
+        {
+          "action": "click",
+          "target": "#retrieveBtn",
+          "caption": "Retrieve it from HMRC.",
+          "headline": "Retrieve it",
+          "keyWord": "Retrieve"
+        },
+        {
+          "action": "await",
+          "until": "#periodViewResults",
+          "label": "Waiting for HMRC",
+          "timeoutMs": 60000,
+          "caption": "Turnover, other income and cost of goods, year to date.",
+          "headline": "Turnover and expenses",
+          "keyWord": "Turnover"
+        },
+        { "action": "point", "target": "#periodDetails", "dwellMs": 500 },
+        { "action": "still", "name": "self-employment-period-view" },
+        { "action": "hold", "ms": 500 }
+      ]
+    },
+    {
+      "id": "amend-quarter",
+      "chapter": "Correct it",
+      "still": true,
+      "steps": [
+        {
+          "action": "goto",
+          "url": "/hmrc/itsa/selfEmploymentPeriodAmend.html",
+          "waitFor": "#itsaSelfEmploymentPeriodAmendForm",
+          "caption": "Filed the wrong figure? Correct it here.",
+          "headline": "Correct a filed figure",
+          "keyWord": "Correct"
+        },
+        { "action": "type", "target": "#nino", "text": "{{hmrcNino}}", "clear": true, "secret": true },
+        { "action": "fill", "target": "#businessId", "value": "XBIS00000000001" },
+        {
+          "action": "fill",
+          "target": "#taxYear",
+          "value": "2026-27",
+          "caption": "This tax year reports a running total, not one quarter.",
+          "headline": "A running total",
+          "keyWord": "running"
+        },
+        { "action": "hold", "ms": 400 },
+        {
+          "action": "click",
+          "target": "#loadCurrentTotalBtn",
+          "caption": "Load what HMRC holds before changing it.",
+          "headline": "Load the current total",
+          "keyWord": "Load"
+        },
+        {
+          "action": "await",
+          "until": "#statusMessagesContainer:has-text(\"Loaded the current\")",
+          "label": "Loading the current total",
+          "timeoutMs": 30000
+        },
+        {
+          "action": "fill",
+          "target": "#turnover",
+          "value": "1200",
+          "caption": "Edit it to the corrected total for the year so far.",
+          "headline": "Edit to the new total",
+          "keyWord": "total"
+        },
+        { "action": "fill", "target": "#costOfGoods", "value": "180" },
+        { "action": "hold", "ms": 500 },
+        {
+          "action": "click",
+          "target": "#submitBtn",
+          "caption": "Send the correction to HMRC.",
+          "headline": "Send the correction",
+          "keyWord": "correction"
+        },
+        {
+          "action": "await",
+          "until": "#periodAmendResults",
+          "label": "Waiting for HMRC",
+          "timeoutMs": 60000,
+          "caption": "HMRC accepts the amendment.",
+          "headline": "HMRC accepts it",
+          "keyWord": "accepts"
+        },
+        { "action": "still", "name": "self-employment-period-amend" },
+        { "action": "hold", "ms": 1200 }
+      ]
+    }
+  ]
+}

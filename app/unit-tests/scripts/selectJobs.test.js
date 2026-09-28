@@ -83,6 +83,32 @@ describe("parseAnswer", () => {
     expect(answer.ok).toBe(true);
     expect(answer.skip).toEqual([]);
   });
+
+  test("a result wrapped in a markdown code fence with language tag parses", () => {
+    const decisions = { decisions: [{ job: "npm-test", skip: true, reason: "no JS changed" }] };
+    const fenced = `\`\`\`json\n${JSON.stringify(decisions)}\n\`\`\``;
+    const raw = success(fenced);
+    const answer = parseAnswer(raw, SKIPPABLE_JOB_IDS);
+    expect(answer.ok).toBe(true);
+    expect(answer.skip).toEqual(["npm-test"]);
+  });
+
+  test("a result wrapped in a markdown code fence without language tag parses", () => {
+    const decisions = { decisions: [{ job: "npm-test", skip: true, reason: "no JS changed" }] };
+    const fenced = `\`\`\`\n${JSON.stringify(decisions)}\n\`\`\``;
+    const raw = success(fenced);
+    const answer = parseAnswer(raw, SKIPPABLE_JOB_IDS);
+    expect(answer.ok).toBe(true);
+    expect(answer.skip).toEqual(["npm-test"]);
+  });
+
+  test("an unfenced result still parses", () => {
+    const decisions = { decisions: [{ job: "mvn-test", skip: false, reason: "Java changed" }] };
+    const raw = success(JSON.stringify(decisions));
+    const answer = parseAnswer(raw, SKIPPABLE_JOB_IDS);
+    expect(answer.ok).toBe(true);
+    expect(answer.skip).toEqual([]);
+  });
 });
 
 describe("isEligibleRef", () => {

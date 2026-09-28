@@ -199,6 +199,7 @@ describe("stripeReconcile", () => {
         invoice: "in_1",
         metadata: { bundleId: "resident-pro" },
         email: "should-not-appear@example.com",
+        livemode: true,
       });
 
       expect(row.customer).toBe(hashSub("cus_rawid123"));
@@ -206,6 +207,7 @@ describe("stripeReconcile", () => {
       expect(JSON.stringify(row)).not.toContain("example.com");
       expect(row.bundle_id).toBe("resident-pro");
       expect(row.invoice).toBe("in_1");
+      expect(row.livemode).toBe(true);
     });
 
     test("handles an expanded customer object and a missing customer", () => {
@@ -214,6 +216,11 @@ describe("stripeReconcile", () => {
 
       const withoutCustomer = sanitizeCharge({ id: "ch_2", customer: null });
       expect(withoutCustomer.customer).toBeNull();
+    });
+
+    test("leaves livemode null when the charge carries none", () => {
+      const row = sanitizeCharge({ id: "ch_3" });
+      expect(row.livemode).toBeNull();
     });
   });
 
@@ -309,7 +316,7 @@ describe("stripeReconcile", () => {
         cancel_at_period_end: false,
         canceled_at: null,
         customer: "cus_rawid456",
-        metadata: { bundleId: "resident-vat" },
+        metadata: { bundleId: "resident-vat", actor: "customer" },
         items: {
           data: [{ price: { id: "price_123", unit_amount: 999 } }],
         },
@@ -320,12 +327,18 @@ describe("stripeReconcile", () => {
       expect(row.price_id).toBe("price_123");
       expect(row.unit_amount).toBe(999);
       expect(row.bundle_id).toBe("resident-vat");
+      expect(row.actor).toBe("customer");
     });
 
     test("tolerates a subscription with no items", () => {
       const row = sanitizeSubscription({ id: "sub_1", status: "canceled", customer: null, items: { data: [] } });
       expect(row.price_id).toBeNull();
       expect(row.unit_amount).toBeNull();
+    });
+
+    test("leaves actor null when the subscription carries no metadata actor", () => {
+      const row = sanitizeSubscription({ id: "sub_2", status: "active", customer: null, items: { data: [] } });
+      expect(row.actor).toBeNull();
     });
   });
 

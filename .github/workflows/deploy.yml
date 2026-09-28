@@ -415,12 +415,13 @@ jobs:
           DISABLE_AUTOUPDATER: '1'
         run: |
           set -o pipefail
-          claude -p "$(cat "${OUT_DIR}/prompt.txt")" \
+          claude -p \
             --max-turns 6 \
             --output-format json \
             --permission-mode default \
             --disallowedTools "Bash,Edit,Write,WebFetch,WebSearch" \
             --allowedTools "Read,Grep,Glob" \
+            < "${OUT_DIR}/prompt.txt" \
             2>&1 | tee "${OUT_DIR}/claude-output.json"
 
       - name: Parse the answer
