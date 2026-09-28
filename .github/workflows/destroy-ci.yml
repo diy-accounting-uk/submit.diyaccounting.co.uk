@@ -734,6 +734,7 @@ jobs:
           retry-max-attempts: 3
 
       - name: Assume AWS deployment role
+        id: assume-deploy-role
         uses: aws-actions/configure-aws-credentials@e1253824e5c10ff9df46874f81ed3ec929e19cfd # v6
         with:
           role-to-assume: ${{ vars.SUBMIT_DEPLOY_ROLE_ARN }}
@@ -1214,8 +1215,14 @@ jobs:
           echo "row=$ROW" >> "$GITHUB_OUTPUT"
           echo "key=curated/dora/dt=$(date -u +%F)/${DORA_RUN_ID}-${DORA_RUN_ATTEMPT}.json" >> "$GITHUB_OUTPUT"
 
+      # Reachable only once 'Assume AWS deployment role' above actually configured credentials:
+      # always() alone would still run this step after that role assumption failed (or after any
+      # other earlier failure, including 'Wait for older ci deploy runs to finish'), and the write
+      # below needs the credentials that step provides. A missing-credentials failure here would
+      # otherwise mask whatever really failed earlier in the job behind an unrelated "Unable to
+      # locate credentials" error.
       - name: Write the DORA row to the lake
-        if: always()
+        if: ${{ always() && steps.assume-deploy-role.outcome == 'success' }}
         uses: './.github/actions/dora-row'
         with:
           bucket: '${{ needs.names.outputs.environment-name }}-env-analytics-lake-${{ vars.SUBMIT_ACCOUNT_ID }}'

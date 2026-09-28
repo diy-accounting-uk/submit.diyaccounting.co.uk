@@ -165,6 +165,7 @@ jobs:
       # exactly as alarm-triage.yml does.
       - name: Assume the read-only alarm triage role
         if: always()
+        id: assume-triage-role
         uses: aws-actions/configure-aws-credentials@e1253824e5c10ff9df46874f81ed3ec929e19cfd # v6
         with:
           role-to-assume: ${{ vars.SUBMIT_ALARM_TRIAGE_ROLE_ARN }}
@@ -500,9 +501,9 @@ jobs:
 
       # Agent-run ledger row for the one-stop dashboard (v_agent_runs_daily): one row per run,
       # recording whether this path landed a pull request, so the posted rate reads from data
-      # rather than from the artifact list. AWS credentials for this write are assumed
-      # unconditionally near the top of this job, so - unlike the alarm workflows - every outcome
-      # below is always reachable.
+      # rather than from the artifact list. AWS credentials for the write below are attempted
+      # unconditionally near the top of this job, so every outcome here is always reachable; the
+      # write itself is also gated on that attempt having actually succeeded.
       - name: Determine the outcome for the ledger
         if: always()
         id: ledger-outcome
@@ -567,8 +568,11 @@ jobs:
           echo "row=$ROW" >> "$GITHUB_OUTPUT"
           echo "key=curated/agent-runs/dt=$(date -u +%F)/${ROW_RUN_ID}-${{ github.run_attempt }}.json" >> "$GITHUB_OUTPUT"
 
+      # always() alone would still run this write after 'Assume the read-only alarm triage role'
+      # itself failed, attempting it without credentials and masking whatever really failed
+      # behind an unrelated "Unable to locate credentials" error.
       - name: Write the agent-run row to the lake
-        if: always()
+        if: always() && steps.assume-triage-role.outcome == 'success'
         uses: ./.github/actions/dora-row
         with:
           bucket: 'ci-env-analytics-lake-${{ vars.SUBMIT_ACCOUNT_ID }}'

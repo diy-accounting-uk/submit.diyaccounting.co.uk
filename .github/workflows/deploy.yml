@@ -232,6 +232,226 @@ jobs:
       isSkippingDeploy: ${{ steps.normalise.outputs.isSkippingDeploy }}
       github-environment: ${{ steps.normalise.outputs.github-environment }}
 
+  # Reasoned job filter, dual-run trial: the same select-jobs job test.yml carries, advisory
+  # only. No job below carries a `needs: [select-jobs]` and no job's `if:` reads its output, so
+  # whatever it decides never delays or changes this deploy's critical path; it only writes a
+  # decision artifact recording which behaviour suites and stack jobs it judges this change has
+  # nothing left to prove for, so a later comparison (scripts/ci/select-jobs-trial.mjs) can check
+  # each advised skip against what that job actually did. See select-jobs.mjs's module comment
+  # for the shared eligibility, budget, and kill-switch behaviour this job also carries; the
+  # `continue-on-error: true` and no job-level `if:` still apply even though nothing needs this
+  # job's success, so a Bedrock error here never surfaces as a red status check.
+  select-jobs:
+    name: 'select jobs'
+    needs:
+      - params
+    continue-on-error: true
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    environment: ci
+    permissions:
+      contents: read
+      id-token: write
+      actions: read
+    env:
+      CLAUDE_CODE_VERSION: '2.0.30'
+      MODEL_ID: 'eu.anthropic.claude-haiku-4-5-20251001-v1:0'
+      OUT_DIR: '/tmp/select-jobs'
+      SELECT_JOBS_BUDGET_PER_DAY: '200'
+      SELECT_JOBS_MODE: 'advisory'
+    outputs:
+      skip-json: ${{ steps.decide.outputs.skip-json }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          fetch-depth: 0
+
+      - name: Decide whether this ref is eligible for a job-selection call
+        id: eligibility
+        run: |
+          if [ "${{ github.ref }}" = "refs/heads/main" ]; then
+            echo "eligible=false" | tee -a "$GITHUB_OUTPUT"
+          else
+            echo "eligible=true" | tee -a "$GITHUB_OUTPUT"
+          fi
+
+      - name: Stop once ${{ env.SELECT_JOBS_BUDGET_PER_DAY }} decisions have already posted today
+        id: budget-guard
+        if: steps.eligibility.outputs.eligible == 'true'
+        uses: ./.github/actions/agent-run-budget
+        with:
+          workflow-file: deploy.yml
+          job-name: select jobs
+          step-name: Parse the answer
+          budget: ${{ env.SELECT_JOBS_BUDGET_PER_DAY }}
+
+      - name: Configure AWS role via GitHub OIDC
+        if: steps.eligibility.outputs.eligible == 'true' && steps.budget-guard.outputs.over-budget == 'false'
+        uses: aws-actions/configure-aws-credentials@e1253824e5c10ff9df46874f81ed3ec929e19cfd # v6
+        with:
+          role-to-assume: ${{ vars.SUBMIT_ACTIONS_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+          role-chaining: false
+          audience: sts.amazonaws.com
+          role-skip-session-tagging: true
+          output-credentials: true
+          retry-max-attempts: 3
+
+      - name: Assume the read-only alarm triage role
+        if: steps.eligibility.outputs.eligible == 'true' && steps.budget-guard.outputs.over-budget == 'false'
+        uses: aws-actions/configure-aws-credentials@e1253824e5c10ff9df46874f81ed3ec929e19cfd # v6
+        with:
+          role-to-assume: ${{ vars.SUBMIT_ALARM_TRIAGE_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+          role-chaining: true
+          audience: sts.amazonaws.com
+          role-skip-session-tagging: true
+          output-credentials: true
+          retry-max-attempts: 3
+
+      - name: Stop when the agent kill switch is on
+        if: steps.eligibility.outputs.eligible == 'true' && steps.budget-guard.outputs.over-budget == 'false'
+        id: kill-switch
+        uses: ./.github/actions/agent-kill-switch
+        with:
+          environment-name: ci
+
+      - name: Set up Node
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+
+      - name: Install Claude Code
+        if: >-
+          steps.eligibility.outputs.eligible == 'true' && steps.budget-guard.outputs.over-budget == 'false' &&
+          steps.kill-switch.conclusion != 'failure'
+        run: npm install -g "@anthropic-ai/claude-code@${CLAUDE_CODE_VERSION}"
+
+      - name: Find the last green run of this workflow on this branch
+        id: last-green
+        if: >-
+          steps.eligibility.outputs.eligible == 'true' && steps.budget-guard.outputs.over-budget == 'false' &&
+          steps.kill-switch.conclusion != 'failure'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          mkdir -p "${OUT_DIR}"
+          sha=$(gh run list --repo "${{ github.repository }}" --workflow deploy.yml \
+                  --branch "${{ github.ref_name }}" --status success --limit 1 \
+                  --json headSha --jq '.[0].headSha // empty' || true)
+          echo "sha=${sha}" | tee -a "$GITHUB_OUTPUT"
+
+      - name: Build the diff and changed-files inputs
+        id: diff
+        if: >-
+          steps.eligibility.outputs.eligible == 'true' && steps.budget-guard.outputs.over-budget == 'false' &&
+          steps.kill-switch.conclusion != 'failure'
+        env:
+          LAST_GREEN_SHA: ${{ steps.last-green.outputs.sha }}
+        run: |
+          set -euo pipefail
+          if [ -n "${LAST_GREEN_SHA}" ] && git cat-file -e "${LAST_GREEN_SHA}^{commit}" 2>/dev/null; then
+            range="${LAST_GREEN_SHA}..${{ github.sha }}"
+          else
+            git fetch origin '${{ github.event.repository.default_branch }}' --quiet
+            range="origin/${{ github.event.repository.default_branch }}...HEAD"
+          fi
+          echo "comparing ${range}" | tee -a "$GITHUB_STEP_SUMMARY"
+          git diff "${range}" > "${OUT_DIR}/diff.txt"
+          git diff --name-only "${range}" > "${OUT_DIR}/changed-files.txt"
+          echo "range=${range}" | tee -a "$GITHUB_OUTPUT"
+
+      - name: Write the invocation context
+        id: context
+        if: >-
+          steps.eligibility.outputs.eligible == 'true' && steps.budget-guard.outputs.over-budget == 'false' &&
+          steps.kill-switch.conclusion != 'failure'
+        run: |
+          set -euo pipefail
+          jq -n \
+            --arg eventName '${{ github.event_name }}' \
+            --arg ref '${{ github.ref }}' \
+            --arg refName '${{ github.ref_name }}' \
+            --arg environmentName '${{ needs.params.outputs.environment-name }}' \
+            --arg githubEnvironment '${{ needs.params.outputs.github-environment }}' \
+            --arg deploymentName '${{ needs.params.outputs.deployment-name }}' \
+            --arg forceAllStackDeployment '${{ needs.params.outputs.forceAllStackDeployment }}' \
+            --arg skipTestScenarios '${{ needs.params.outputs.skipTestScenarios }}' \
+            --arg isSkippingDeploy '${{ needs.params.outputs.isSkippingDeploy }}' \
+            --arg lastGreenSha '${{ steps.last-green.outputs.sha }}' \
+            --arg comparedRange '${{ steps.diff.outputs.range }}' \
+            '{eventName: $eventName, ref: $ref, refName: $refName, environmentName: $environmentName, githubEnvironment: $githubEnvironment, deploymentName: $deploymentName, forceAllStackDeployment: $forceAllStackDeployment, skipTestScenarios: $skipTestScenarios, isSkippingDeploy: $isSkippingDeploy, lastGreenSha: $lastGreenSha, comparedRange: $comparedRange}' \
+            > "${OUT_DIR}/context.json"
+
+      - name: Build the prompt
+        id: prompt
+        if: >-
+          steps.eligibility.outputs.eligible == 'true' && steps.budget-guard.outputs.over-budget == 'false' &&
+          steps.kill-switch.conclusion != 'failure'
+        run: |
+          set -euo pipefail
+          node scripts/ci/select-jobs.mjs prompt \
+            --context "${OUT_DIR}/context.json" \
+            --diff "${OUT_DIR}/diff.txt" \
+            --changed-files "${OUT_DIR}/changed-files.txt" \
+            --catalogue deploy.yml \
+            > "${OUT_DIR}/prompt.txt"
+          echo "prompt-hash=$(sha256sum "${OUT_DIR}/prompt.txt" | cut -d' ' -f1)" | tee -a "$GITHUB_OUTPUT"
+
+      - name: Run the job-selection agent
+        if: >-
+          steps.eligibility.outputs.eligible == 'true' && steps.budget-guard.outputs.over-budget == 'false' &&
+          steps.kill-switch.conclusion != 'failure'
+        id: run
+        env:
+          CLAUDE_CODE_USE_BEDROCK: '1'
+          AWS_REGION: ${{ env.AWS_REGION }}
+          ANTHROPIC_MODEL: ${{ env.MODEL_ID }}
+          ANTHROPIC_SMALL_FAST_MODEL: ${{ env.MODEL_ID }}
+          DISABLE_TELEMETRY: '1'
+          DISABLE_ERROR_REPORTING: '1'
+          DISABLE_AUTOUPDATER: '1'
+        run: |
+          set -o pipefail
+          claude -p "$(cat "${OUT_DIR}/prompt.txt")" \
+            --max-turns 6 \
+            --output-format json \
+            --permission-mode default \
+            --disallowedTools "Bash,Edit,Write,WebFetch,WebSearch" \
+            --allowedTools "Read,Grep,Glob" \
+            2>&1 | tee "${OUT_DIR}/claude-output.json"
+
+      - name: Parse the answer
+        id: decide
+        if: always()
+        run: |
+          set -euo pipefail
+          mkdir -p "${OUT_DIR}"
+          SKIP_JSON=$(node scripts/ci/select-jobs.mjs decide \
+            --ref "${{ github.ref }}" \
+            --claude-output "${OUT_DIR}/claude-output.json" \
+            --context "${OUT_DIR}/context.json" \
+            --model-id "${{ env.MODEL_ID }}" \
+            --prompt-hash "${{ steps.prompt.outputs.prompt-hash }}" \
+            --catalogue deploy.yml \
+            --mode "${SELECT_JOBS_MODE}" \
+            --out "${OUT_DIR}/decision.json")
+          echo "skip-json=${SKIP_JSON}" | tee -a "$GITHUB_OUTPUT"
+
+      # This run also calls test.yml with `uses:` (job "test"), whose own select-jobs job shares
+      # this same github.run_id and uploads its own decision artifact - the name is prefixed by
+      # which catalogue produced it so the two never collide.
+      - name: Save the decision artifact
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
+        with:
+          name: select-jobs-decision-deploy-${{ github.run_id }}
+          path: ${{ env.OUT_DIR }}/decision.json
+          if-no-files-found: warn
+          retention-days: 30
+
   # A workflow_dispatch naming an explicit deployment-name is about to deploy this same commit,
   # so any push-triggered run of deploy.yml for the same github.sha would otherwise run alongside
   # it and the two contend for the same ci apex alias and Cognito lane user (B140; the coordinator
