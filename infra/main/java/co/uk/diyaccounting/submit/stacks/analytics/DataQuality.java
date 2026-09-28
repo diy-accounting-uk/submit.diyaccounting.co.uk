@@ -83,7 +83,7 @@ public class DataQuality extends Construct {
                 ColumnValues "flow" in ["user-journey","ci-pipeline","infrastructure","operational","unknown"],
                 ColumnValues "site" in ["submit"],
                 ColumnValues "outcome" in ["failure"] with threshold < 0.2,
-                ColumnValues "event_ts" > (now() - 2 days)
+                ColumnValues "event_ts" > (now() - 2 days) with threshold > 0
             ]
             """;
 
@@ -136,7 +136,11 @@ public class DataQuality extends Construct {
 
     private static final String GLUE_METRICS_NAMESPACE = "Glue Data Quality";
     private static final String GLUE_FAILED_METRIC_NAME = "glue.data.quality.rules.failed";
-    private static final String RULESET_DIMENSION_NAME = "RulesetName";
+
+    private static final String RULESET_DIMENSION_NAME = "Ruleset";
+    private static final String TABLE_DIMENSION_NAME = "Table";
+    private static final String DATABASE_DIMENSION_NAME = "Database";
+    private static final String CATALOG_ID_DIMENSION_NAME = "CatalogId";
 
     public final List<CfnDataQualityRuleset> rulesets = new ArrayList<>();
     public final Role evaluationRole;
@@ -408,7 +412,10 @@ public class DataQuality extends Construct {
 
         // ============================================================================
         // Data-quality-failed alarm, one per target: Glue publishes this metric itself once
-        // CloudWatchMetricsEnabled is set on the evaluation run, dimensioned by ruleset name
+        // CloudWatchMetricsEnabled is set on the evaluation run, carrying all four of Ruleset,
+        // Table, Database and CatalogId as dimensions. CloudWatch matches an alarm to a metric on
+        // the exact dimension set, so the alarm must supply every one of them or it tracks a
+        // time series Glue never publishes and sits in OK with no datapoints forever.
         // ============================================================================
         for (Target target : this.targets) {
             var rulesetName = rulesetName(props.envName(), target.tableName());
@@ -418,7 +425,11 @@ public class DataQuality extends Construct {
                     .metric(Metric.Builder.create()
                             .namespace(GLUE_METRICS_NAMESPACE)
                             .metricName(GLUE_FAILED_METRIC_NAME)
-                            .dimensionsMap(Map.of(RULESET_DIMENSION_NAME, rulesetName))
+                            .dimensionsMap(Map.of(
+                                    RULESET_DIMENSION_NAME, rulesetName,
+                                    TABLE_DIMENSION_NAME, target.tableName(),
+                                    DATABASE_DIMENSION_NAME, props.glueDatabaseName(),
+                                    CATALOG_ID_DIMENSION_NAME, stack.getAccount()))
                             .statistic("Sum")
                             .period(Duration.hours(24))
                             .build())
