@@ -644,7 +644,7 @@ one operator decision or step inside it), human-driven. Model is the lowest that
 | MK-21 | 3.2 step 3: the bookkeeper and small-practice article with the `resident-pro` offer and the passes | machine-only | 2 | Sonnet |
 | MK-22 | 3.5: referral spec blocks 1 to 3 plus the `affiliate#<code>` item, the `ref`-at-sign-up write, the checkout metadata and the conversion write in the billing webhook (BACKLOG 15) | machine-only | ~9 | Sonnet |
 | MK-23 | 3.5: referral spec blocks 4 and 5, campaign passes, ambassador tiers, the customer's own code beside the passes on `bundles.html`, behaviour test | machine-only | ~10 | Sonnet |
-| MK-24 | 3.5: `affiliates.html` with the tiers, fee, window, rules, disclosure clause and the link to the platform's sign-up page; terms fixed by Q2, Q7, Q10 | machine-ask | ~3 | Sonnet |
+| MK-24 | 3.5: `affiliates.html` with the tiers, fee, window, rules, disclosure clause and the link to the platform's sign-up page; terms fixed by Q2, Q3, Q7, Q10 | machine-ask | ~3 | Sonnet |
 | MK-25 | 3.5: platform commission webhooks ingested into the lake; reconciliation view against `v_paid_subscribers_by_channel` per code (DATA-22, DATA-28) | machine-only | ~4 | Sonnet |
 | MK-26 | 3.5 step 5: approve and invite the first five casual affiliates | human-driven | 0 | none |
 | MK-27 | 3.6: LinkedIn profile line, company page, first post | human-driven | 0 | none |
@@ -668,7 +668,7 @@ one operator decision or step inside it), human-driven. Model is the lowest that
 | --- | --- | --- |
 | Q1 | The donate page's offer | (a) `resident` at £39 a year shown beside the donation amounts; (b) donation-only, `resident` offered on the book pages alone |
 | Q2 | Affiliate fee shape | (a) flat £10 per `resident`, £40 per `resident-pro`; (b) 25% of the first charge (£9.75 and £49.75) |
-| Q3 | Affiliate payout before £40 a month | (a) manual bank transfer from a monthly statement; (b) Stripe Connect from the start |
+| Q3 | When the referral platform account opens | (a) at the first approved affiliate, so recruitment runs through its hosted sign-up from day one (about £60 to £75 a month from phase 1); (b) at the first attributed paid conversion, with applications by email and a manual statement before |
 | Q4 | Google Ads shape | (a) Performance Max paused, Search alone at £1/day; (b) both, £1/day each |
 | Q5 | LinkedIn voice | (a) the founder's profile posts, company page as the record; (b) company page only |
 | Q6 | Creator test budget in year one | (a) bounty only, £0 flat; (b) one nano post capped at £150 after three affiliate conversions |
