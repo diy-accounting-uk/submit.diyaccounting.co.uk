@@ -76,4 +76,41 @@ describe("sessionBeaconPost ingestHandler", () => {
 
     expect(mockPublishActivityEvent).toHaveBeenCalledWith(expect.objectContaining({ actor: "synthetic" }));
   });
+
+  it("carries the landing attribution fields into the activity event detail", async () => {
+    await ingestHandler(
+      buildBeaconEvent({
+        page: "/index.html",
+        utmSource: "google",
+        utmMedium: "cpc",
+        utmCampaign: "autumn-vat",
+        utmContent: "banner",
+        utmTerm: "vat return",
+        gclid: "abc123",
+        ref: "partner-42",
+        landedAt: "2026-01-01T00:00:00.000Z",
+      }),
+    );
+
+    expect(mockPublishActivityEvent.mock.calls[0][0].detail).toMatchObject({
+      utmSource: "google",
+      utmMedium: "cpc",
+      utmCampaign: "autumn-vat",
+      utmContent: "banner",
+      utmTerm: "vat return",
+      gclid: "abc123",
+      ref: "partner-42",
+      landedAt: "2026-01-01T00:00:00.000Z",
+    });
+  });
+
+  it("carries no attribution fields when the beacon sends none", async () => {
+    await ingestHandler(buildBeaconEvent({ page: "/index.html" }));
+
+    const detail = mockPublishActivityEvent.mock.calls[0][0].detail;
+    expect(detail.utmSource).toBeUndefined();
+    expect(detail.gclid).toBeUndefined();
+    expect(detail.ref).toBeUndefined();
+    expect(detail.landedAt).toBeUndefined();
+  });
 });

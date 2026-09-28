@@ -69,6 +69,67 @@ function classifyVisitorKindForGa4() {
 
 gtag("set", "user_properties", { visitor_kind: classifyVisitorKindForGa4() });
 
+// Landing-source capture (M1). Independent of the GA4 consent above: this is first-party
+// analytics under the site's own consent model, the same basis session-beacon.js already
+// fires on. session-beacon.js reads this same key to carry the source to the server, since
+// both load as plain scripts with no shared module to import a constant from.
+const ATTRIBUTION_STORAGE_KEY = "attribution.landing";
+const ATTRIBUTION_WINDOW_MS = 90 * 24 * 60 * 60 * 1000;
+const ATTRIBUTION_URL_PARAMS = [
+  ["utm_source", "utmSource"],
+  ["utm_medium", "utmMedium"],
+  ["utm_campaign", "utmCampaign"],
+  ["utm_content", "utmContent"],
+  ["utm_term", "utmTerm"],
+  ["gclid", "gclid"],
+  ["ref", "ref"],
+];
+
+// The stored landing is read back only to decide whether it still applies, so an expired
+// or unparsable record is treated as absent rather than surfaced to the caller.
+function readStoredLandingAttribution() {
+  try {
+    const raw = localStorage.getItem(ATTRIBUTION_STORAGE_KEY);
+    if (!raw) return null;
+    const stored = JSON.parse(raw);
+    const landedAtMs = Date.parse(stored?.landedAt);
+    if (Number.isNaN(landedAtMs) || Date.now() - landedAtMs > ATTRIBUTION_WINDOW_MS) return null;
+    return stored;
+  } catch {
+    return null;
+  }
+}
+
+// First touch wins: a bare visit (no tagged params) never overwrites a still-valid stored
+// landing. A tagged landing always writes, so it both starts the first record and replaces
+// an existing one within the 90-day window.
+function captureLandingAttribution() {
+  let params;
+  try {
+    params = new URLSearchParams(window.location.search);
+  } catch {
+    return;
+  }
+
+  const landing = {};
+  for (const [param, key] of ATTRIBUTION_URL_PARAMS) {
+    const value = params.get(param);
+    if (value) landing[key] = value;
+  }
+
+  const isTaggedLanding = Object.keys(landing).length > 0;
+  if (!isTaggedLanding && readStoredLandingAttribution()) return;
+
+  landing.landedAt = new Date().toISOString();
+  try {
+    localStorage.setItem(ATTRIBUTION_STORAGE_KEY, JSON.stringify(landing));
+  } catch (error) {
+    console.warn("Failed to store landing attribution:", error);
+  }
+}
+
+captureLandingAttribution();
+
 // Reads one KEY=value line out of the plain-text /submit.env body. Blank when the key is
 // missing or its value is empty, which happens on any environment without its own GA4 property.
 function readSubmitEnvValue(envText, key) {
