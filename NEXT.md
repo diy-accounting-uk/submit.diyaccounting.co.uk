@@ -39,8 +39,6 @@ step.
 
 ## In flight
 
-- [ ] **B30w. ITSA workers charge tokens without a grant to update the bundles table.** On the kernel batch (`claude/kernel-grants`, worktree `.claude/worktrees/kernel`), PR #404, commit 53c67190: six charging workers get UpdateItem; its checks and branch deploy are running. ci's `ci-env-cis-unauthorized-api-calls` fires (2026-09-27 08:09, 18:23, 19:51, 23:15 and 2026-09-28 02:12 UTC; the alarm history shows them in +01:00) are each a denied `dynamodb:UpdateItem` on `ci-env-bundles` by `hmrc-itsa-se-annual-put-worker` (HmrcStack) or `hmrc-itsa-losses-and-claims-put-worker` (HmrcItsaStack): the token charge from `app/services/tokenEnforcement.js`. Their bundles grant is `dynamodb:Query` only. Fix: `dynamodb:UpdateItem` on every function that calls `consumeTokenForActivity` or `chargeTokenOnSuccess`, with a stack test. prod's CloudTrail shows no such denial since 2026-09-27. **Source**: B30a audit, 2026-09-28. **Owner**: Claude Code. **Model**: Sonnet. **Size**: ~3 files.
-
 ## Machine-only
 
 - [ ] **B82b. Reasoned job filter, dual-run trial (BACKLOG 82b).** Advisory `select-jobs` on test.yml and deploy.yml merged in PR #403 (632a9876); every job still runs and each run saves `select-jobs-decision-test-<run>` / `select-jobs-decision-deploy-<run>`. Remainder: once branch pushes have accrued advised skips, run `node scripts/ci/select-jobs-trial.mjs --workflow deploy.yml --limit 200` and `--workflow test.yml`, record the per-job table in BACKLOG row 82b, and name the job classes that meet the bar (zero misses over at least 50 advised skips) for B82c. **Source**: operator, 2026-09-27. **Owner**: Claude Code. **Model**: Haiku. **Size**: ~1 file.
