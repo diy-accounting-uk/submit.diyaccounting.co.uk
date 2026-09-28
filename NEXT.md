@@ -17,7 +17,7 @@ Haiku; the lowest tier that fits). Anything touching code goes through a `claude
 PR; the operator merges.
 
 **Prod runs deployment prod-f8d0065** (PR #405's merge deploy, run 36413943257, 2026-09-28), the only prod set standing.
-**ci**: `ci-set1` (last-known-good) is self-destructing (destroy-ci run 36428657359, 13:26 UTC 2026-09-28); no other ci set stands.
+**ci**: no ci set stands; `ci-set1` self-destructed (destroy-ci run 36428657359, 2026-09-28) and `/submit/ci/last-known-good-deployment` still names it. The lynx batch's deploy creates the next one.
 
 Rows CQ-57, CQ-58, F-BS2 and LP-* change the spreadsheets repository (`../spreadsheets.diyaccounting.co.uk/`): their batch branches, PRs and CI run there, under that repository's `CLAUDE.md` and tests; their plans (`PLAN_DIYA_GL_LAUNCH.md`, `PLAN_DIYA_GL_INDIA.md`, `PLAN_DIYACCOUNTING_BRAND.md`) are at this root. LP rows' briefs are in `PLAN_DIYA_GL_LAUNCH.md` under "Briefs"; `PLAN_DIYA_GL_INDIA.md` carries its own board.
 
