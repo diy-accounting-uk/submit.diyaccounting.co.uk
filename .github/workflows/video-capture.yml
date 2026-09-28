@@ -61,6 +61,7 @@ on:
           - 'itsa-carry-back-adjustments'
           - 'itsa-self-employment-amend'
           - 'itsa-uk-property-year'
+          - 'itsa-annual-from-book'
           - 'itsa-uk-property-year'
         default: 'tour'
       environment-name:
