@@ -4,7 +4,7 @@
 
 // scripts/ci/select-jobs.mjs
 //
-// Builds the prompt for test.yml's select-jobs job and parses its answer. The mechanical
+// Builds the prompt for a workflow's select-jobs job and parses its answer. The mechanical
 // `changes` job already turns every job below off on a docs-only push (see test.yml); this
 // script only ever ADDS skips on top of that, for a job the mechanical filter still runs but
 // that the diff shows has nothing left to prove for this change (e.g. a change confined to
@@ -14,9 +14,17 @@
 // A malformed, failed, or empty answer is read as "skip nothing": every job stays on. An
 // unrecognised job name in the answer is dropped rather than acted on.
 //
-// CLI usage from the select-jobs job in .github/workflows/test.yml:
-//   node scripts/ci/select-jobs.mjs prompt --context <json-file> --diff <file> --changed-files <file>
-//   node scripts/ci/select-jobs.mjs decide --ref <github.ref> --claude-output <file> --context <json-file> --out <file> [--model-id <id>] [--prompt-hash <hash>]
+// Two modes, named by what a decision does with its own advised skip list:
+//   advisory  - the decision artifact records what the model would have skipped, but the
+//               skip-json output is always "[]": every job still runs. This is the default.
+//   enforcing - the skip-json output is the model's advised list, so a dependent job's `if:`
+//               (test.yml's pattern) actually turns it off.
+// Both modes still obey "main always runs everything" and "a malformed/failed/empty answer
+// skips nothing" - the mode only changes what a NON-main, VALID answer gets to do.
+//
+// CLI usage from the select-jobs job in .github/workflows/test.yml or deploy.yml:
+//   node scripts/ci/select-jobs.mjs prompt --context <json-file> --diff <file> --changed-files <file> [--catalogue test.yml|deploy.yml]
+//   node scripts/ci/select-jobs.mjs decide --ref <github.ref> --claude-output <file> --context <json-file> --out <file> [--model-id <id>] [--prompt-hash <hash>] [--catalogue test.yml|deploy.yml] [--mode advisory|enforcing]
 //
 // `decide` always writes a decision (never throws): on main it short-circuits to "skip nothing"
 // without needing a claude-output file at all, and a missing or unreadable claude-output file
@@ -107,6 +115,92 @@ export const SKIPPABLE_JOBS = [
 
 export const SKIPPABLE_JOB_IDS = new Set(SKIPPABLE_JOBS.map((job) => job.id));
 
+// One entry per behaviour suite and stack-deploy job in deploy.yml that this trial (advisory
+// only, see the module comment above) records an opinion on. No dependent job in deploy.yml
+// reads this decision's output yet - unlike test.yml's catalogue above, nothing here is
+// mechanically skippable - so the ids only need to match deploy.yml's own job keys closely
+// enough for the comparison script (scripts/ci/select-jobs-trial.mjs) to look up each job's
+// actual conclusion from the same run.
+export const DEPLOY_SKIPPABLE_JOBS = [
+  { id: "deploy-auth", description: "Deploys AuthStack (Cognito user pool, hosted UI, identity providers) via CDK." },
+  { id: "deploy-hmrc", description: "Deploys HmrcStack (the VAT MTD Lambda functions and their API Gateway routes) via CDK." },
+  { id: "deploy-hmrc-itsa", description: "Deploys HmrcItsaStack (the Income Tax MTD Lambda functions and routes) via CDK." },
+  {
+    id: "deploy-companies-house",
+    description: "Deploys CompaniesHouseStack (confirmation statement and accounts filing Lambdas) via CDK.",
+  },
+  { id: "deploy-account", description: "Deploys AccountStack (customer account and bundle entitlement data) via CDK." },
+  { id: "deploy-billing", description: "Deploys BillingStack (Stripe billing Lambdas and webhooks) via CDK." },
+  { id: "deploy-diya-gl", description: "Deploys DiyaGlStack (the diya-gl subscription bundle's own resources) via CDK." },
+  { id: "deploy-api", description: "Deploys the API Gateway stage and its stack wiring for this deployment." },
+  { id: "deploy-edge", description: "Deploys EdgeStack (CloudFront distribution, WAF, and edge Lambdas) via CDK." },
+  { id: "deploy-publish", description: "Publishes web/public assets to S3 and invalidates the CloudFront distribution." },
+  { id: "deploy-ops", description: "Deploys OpsStack (alarms, dashboards, and the self-destruct timer) via CDK." },
+  { id: "web-test-auth", description: "End-to-end sign-in and authentication behaviour against the deployed environment." },
+  { id: "web-test-token-enforcement", description: "OAuth token enforcement behaviour against the deployed environment." },
+  { id: "web-test-payment", description: "Stripe payment behaviour against the deployed environment." },
+  { id: "web-test", description: "End-to-end VAT return submission journey against the deployed environment." },
+  { id: "web-test-bundle", description: "Bundle purchase and entitlement behaviour against the deployed environment." },
+  { id: "web-test-pass-redemption", description: "Practice licence pass redemption behaviour against the deployed environment." },
+  { id: "web-test-post-vat-return-synthetic", description: "VAT return posting behaviour against the deployed environment." },
+  { id: "web-test-practice-licence-synthetic", description: "Practice licence issuing behaviour against the deployed environment." },
+  { id: "web-test-get-vat-return-synthetic", description: "Retrieval of a submitted VAT return against the deployed environment." },
+  { id: "web-test-obligation-synthetic", description: "VAT obligations lookup against the deployed environment." },
+  { id: "web-test-liability-synthetic", description: "VAT liabilities lookup against the deployed environment." },
+  { id: "web-test-vat-payment-synthetic", description: "VAT payments lookup against the deployed environment." },
+  { id: "web-test-vat-penalty-synthetic", description: "VAT penalties lookup against the deployed environment." },
+  { id: "web-test-diya-gl-subscription", description: "diya-gl subscription bundle behaviour against the deployed environment." },
+  {
+    id: "web-test-fraud-prevention-headers-vat-synthetic",
+    description: "HMRC fraud prevention header behaviour on a VAT return post, against the deployed environment.",
+  },
+  { id: "web-test-compliance-synthetic", description: "Compliance-page behaviour against the deployed environment." },
+  { id: "web-test-help-synthetic", description: "Help pages behaviour against the deployed environment." },
+  { id: "web-test-vatValidation-synthetic", description: "VAT return field validation behaviour against the deployed environment." },
+  { id: "web-test-vatSchemes-synthetic", description: "VAT scheme selection behaviour against the deployed environment." },
+  {
+    id: "web-test-companies-house",
+    description: "Companies House confirmation statement and accounts filing behaviour against the deployed environment.",
+  },
+  {
+    id: "web-test-change-registered-office",
+    description: "Companies House registered-office change behaviour against the real sandbox (only runs when opted in).",
+  },
+  {
+    id: "web-test-change-registered-email",
+    description: "Companies House registered-email change behaviour against the real sandbox (only runs when opted in).",
+  },
+  { id: "web-test-itsa-business-details-synthetic", description: "ITSA business details behaviour against the deployed environment." },
+  { id: "web-test-itsa-obligations-synthetic", description: "ITSA obligations behaviour against the deployed environment." },
+  { id: "web-test-itsa-uk-property-period-synthetic", description: "ITSA UK property period behaviour against the deployed environment." },
+  {
+    id: "web-test-itsa-uk-property-annual-synthetic",
+    description: "ITSA UK property annual submission behaviour against the deployed environment.",
+  },
+  { id: "web-test-itsa-losses-and-claims-synthetic", description: "ITSA losses and claims behaviour against the deployed environment." },
+  {
+    id: "web-test-itsa-self-employment-period-synthetic",
+    description: "ITSA self-employment period behaviour against the deployed environment.",
+  },
+  { id: "web-test-itsa-annual-submission-synthetic", description: "ITSA annual submission behaviour against the deployed environment." },
+  { id: "web-test-itsa-final-declaration-synthetic", description: "ITSA final declaration behaviour against the deployed environment." },
+  { id: "web-test-generate-pass-activity", description: "Pass-generation activity logging behaviour against the deployed environment." },
+];
+
+export const DEPLOY_SKIPPABLE_JOB_IDS = new Set(DEPLOY_SKIPPABLE_JOBS.map((job) => job.id));
+
+// Keyed by the workflow file that calls this script, so the CLI can pick the matching catalogue
+// with one flag instead of the caller assembling a jobs list by hand.
+export const JOB_CATALOGUES = {
+  "test.yml": SKIPPABLE_JOBS,
+  "deploy.yml": DEPLOY_SKIPPABLE_JOBS,
+};
+
+export const JOB_ID_CATALOGUES = {
+  "test.yml": SKIPPABLE_JOB_IDS,
+  "deploy.yml": DEPLOY_SKIPPABLE_JOB_IDS,
+};
+
 // test.yml's push trigger already excludes main, but a workflow_dispatch or a workflow_call
 // (deploy.yml's prod deploy) can still name it, and main's own deploy is the integration proof
 // that always runs everything - so this job never advises anything there.
@@ -119,10 +213,10 @@ export function buildPrompt({ context, diff, changedFiles, jobs = SKIPPABLE_JOBS
   const changedFilesList =
     changedFiles.length > 0 ? changedFiles.map((f) => `- ${f}`).join("\n") : "(none listed - judge from the diff below)";
   const diffBlock = diff && diff.trim().length > 0 ? diff : "(no diff available - treat every job as still needing to run)";
-  return `You are deciding which of test.yml's already-mechanically-gated jobs can additionally be
-skipped for this run, on top of the paths/changes filter that already decided whether to run at
-all. Skipping a job here means it has nothing this change could have broken; it never means the
-job is unimportant. When genuinely unsure, do not skip.
+  return `You are deciding which of this workflow's jobs listed below can be skipped for this run
+because this change has nothing left for them to prove. Skipping a job here means it has nothing
+this change could have broken; it never means the job is unimportant. When genuinely unsure, do
+not skip.
 
 ## Invocation context
 ${JSON.stringify(context, null, 2)}
@@ -194,13 +288,29 @@ export function parseAnswer(claudeOutputRaw, knownJobIds = SKIPPABLE_JOB_IDS) {
   return { ok: true, skip, decisions, error: null };
 }
 
+const MODES = new Set(["advisory", "enforcing"]);
+
+// An unrecognised mode value (a typo in the workflow env, say) reads as advisory, the safer of
+// the two: every job still runs, only the decision artifact's record of what would have been
+// skipped changes shape.
+function normaliseMode(mode) {
+  return MODES.has(mode) ? mode : "advisory";
+}
+
 // The one place the "main -> skip nothing" rule is enforced. Main always wins, regardless of
-// what a claude-output file (if one even exists) says - the workflow's own job-level gating is
-// only a cost optimisation on top of this, never the source of truth for it.
-export function decideForContext({ context, claudeOutputRaw, knownJobIds = SKIPPABLE_JOB_IDS }) {
+// what a claude-output file (if one even exists) says or what mode is active - the workflow's
+// own job-level gating is only a cost optimisation on top of this, never the source of truth
+// for it.
+//
+// `skip` is always the model's own advised list, unaffected by mode, so a caller comparing
+// advised skips against actual job results (the dual-run trial) reads the same field whichever
+// mode produced it. `enforcedSkip` is what a dependent job's `if:` should act on: the advised
+// list in "enforcing" mode, always empty in "advisory" mode.
+export function decideForContext({ context, claudeOutputRaw, knownJobIds = SKIPPABLE_JOB_IDS, mode = "advisory" }) {
+  const resolvedMode = normaliseMode(mode);
   const ref = context && context.ref;
   if (!isEligibleRef(ref)) {
-    return { ok: true, skip: [], decisions: [], error: null, reason: "main: full run" };
+    return { ok: true, skip: [], decisions: [], error: null, reason: "main: full run", mode: resolvedMode, enforcedSkip: [] };
   }
   if (typeof claudeOutputRaw !== "string" || claudeOutputRaw.length === 0) {
     return {
@@ -209,17 +319,27 @@ export function decideForContext({ context, claudeOutputRaw, knownJobIds = SKIPP
       decisions: [],
       error: "no claude output available (budget spent, kill switch on, or the agent step did not complete)",
       reason: null,
+      mode: resolvedMode,
+      enforcedSkip: [],
     };
   }
-  return { ...parseAnswer(claudeOutputRaw, knownJobIds), reason: null };
+  const answer = parseAnswer(claudeOutputRaw, knownJobIds);
+  const enforcedSkip = resolvedMode === "enforcing" ? answer.skip : [];
+  return { ...answer, reason: null, mode: resolvedMode, enforcedSkip };
 }
 
-export function buildDecisionArtifact({ modelId, promptHash, context, answer }) {
+export function buildDecisionArtifact({ modelId, promptHash, catalogue, context, answer }) {
   return {
     modelId: modelId || null,
     promptHash: promptHash || null,
+    catalogue: catalogue || null,
     context,
-    answer,
+    mode: answer.mode,
+    advisedSkip: answer.skip,
+    enforcedSkip: answer.enforcedSkip,
+    decisions: answer.decisions,
+    ok: answer.ok,
+    error: answer.error,
     decidedAt: new Date().toISOString(),
   };
 }
@@ -241,6 +361,12 @@ function parseArgs(argv) {
   return opts;
 }
 
+// Falls back to test.yml's catalogue for an unrecognised or missing --catalogue value, the
+// same "unknown reads as the safe default" rule normaliseMode applies to --mode.
+function resolveCatalogue(name) {
+  return JOB_CATALOGUES[name] ? name : "test.yml";
+}
+
 function runPrompt(opts) {
   const context = readJson(opts.context, {});
   const diff = opts.diff && fs.existsSync(opts.diff) ? fs.readFileSync(opts.diff, "utf8") : "";
@@ -252,7 +378,8 @@ function runPrompt(opts) {
           .map((line) => line.trim())
           .filter(Boolean)
       : [];
-  process.stdout.write(buildPrompt({ context, diff, changedFiles }));
+  const catalogue = resolveCatalogue(opts.catalogue);
+  process.stdout.write(buildPrompt({ context, diff, changedFiles, jobs: JOB_CATALOGUES[catalogue] }));
 }
 
 function runDecide(opts) {
@@ -260,15 +387,22 @@ function runDecide(opts) {
   if (!context.ref) context.ref = opts.ref || "";
   const claudeOutputRaw =
     opts["claude-output"] && fs.existsSync(opts["claude-output"]) ? fs.readFileSync(opts["claude-output"], "utf8") : "";
-  const answer = decideForContext({ context, claudeOutputRaw, knownJobIds: SKIPPABLE_JOB_IDS });
+  const catalogue = resolveCatalogue(opts.catalogue);
+  const answer = decideForContext({
+    context,
+    claudeOutputRaw,
+    knownJobIds: JOB_ID_CATALOGUES[catalogue],
+    mode: opts.mode,
+  });
   const artifact = buildDecisionArtifact({
     modelId: opts["model-id"],
     promptHash: opts["prompt-hash"],
+    catalogue,
     context,
     answer,
   });
   fs.writeFileSync(opts.out, JSON.stringify(artifact, null, 2));
-  process.stdout.write(JSON.stringify(answer.skip));
+  process.stdout.write(JSON.stringify(answer.enforcedSkip));
 }
 
 function main() {

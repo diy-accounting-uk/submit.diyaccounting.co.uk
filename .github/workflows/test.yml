@@ -413,6 +413,10 @@ jobs:
       # per issue or per dispatch, so the budget bounds Bedrock spend on a runaway push loop
       # rather than reflecting a single call's cost.
       SELECT_JOBS_BUDGET_PER_DAY: '200'
+      # 'advisory' records what the model would have skipped in the decision artifact but always
+      # reports skip-json=[], so every job below still runs. 'enforcing' lets skip-json turn a
+      # job off. See select-jobs.mjs's module comment for what each mode does.
+      SELECT_JOBS_MODE: 'advisory'
     outputs:
       skip-json: ${{ steps.decide.outputs.skip-json }}
     steps:
@@ -555,6 +559,7 @@ jobs:
             --context "${OUT_DIR}/context.json" \
             --diff "${OUT_DIR}/diff.txt" \
             --changed-files "${OUT_DIR}/changed-files.txt" \
+            --catalogue test.yml \
             > "${OUT_DIR}/prompt.txt"
           echo "prompt-hash=$(sha256sum "${OUT_DIR}/prompt.txt" | cut -d' ' -f1)" | tee -a "$GITHUB_OUTPUT"
 
@@ -596,14 +601,21 @@ jobs:
             --context "${OUT_DIR}/context.json" \
             --model-id "${{ env.MODEL_ID }}" \
             --prompt-hash "${{ steps.prompt.outputs.prompt-hash }}" \
+            --catalogue test.yml \
+            --mode "${SELECT_JOBS_MODE}" \
             --out "${OUT_DIR}/decision.json")
           echo "skip-json=${SKIP_JSON}" | tee -a "$GITHUB_OUTPUT"
 
+      # deploy.yml calls this workflow with `uses:` (job "test"), and `github.run_id` inside a
+      # called workflow is the CALLER's run id - so a deploy.yml run carries both this job's
+      # artifact and deploy.yml's own select-jobs job's artifact under the same run id.
+      # upload-artifact refuses two artifacts of the same name in one run, so the name is
+      # prefixed by which catalogue produced it.
       - name: Save the decision artifact
         if: always()
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
         with:
-          name: select-jobs-decision-${{ github.run_id }}
+          name: select-jobs-decision-test-${{ github.run_id }}
           path: ${{ env.OUT_DIR }}/decision.json
           if-no-files-found: warn
           retention-days: 30
