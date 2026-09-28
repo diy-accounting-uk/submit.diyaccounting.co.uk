@@ -89,7 +89,9 @@ step.
 
 ## Human-driven
 
-- [ ] **OMK. Answer the marketing strategy's ten questions.** `PLAN_MARKETING_STRATEGY.md` §6, Q1 to Q10, each a choice between named alternatives: the donate page's offer, the affiliate fee shape, when the referral platform account opens, the Google Ads shape, the LinkedIn voice, the creator budget, the attribution window, what counts as a paid subscriber, the bank-feed regulatory question, and the referral platform (Dub Partners, Rewardful, Tolt, or in-house on Stripe Connect Express). Write each answer into §6; the MK rows that wait on them (§5) then join this board. **Source**: `PLAN_MARKETING_STRATEGY.md`. **Owner**: Operator. **Model**: none. **Size**: 0 files.
+- [ ] **OMK. Answer the marketing strategy's two new questions.** `PLAN_MARKETING_STRATEGY.md` §6: Q11, the spend pool (net subscription revenue only, or plus donations, which would open the campaign cap now); Q12, the cap's share of net revenue above £100 a month (50%, or 100% until the 1,000-subscriber milestone). Write each answer into §6. **Source**: `PLAN_MARKETING_STRATEGY.md`. **Owner**: Operator. **Model**: none. **Size**: 0 files.
+
+- [ ] **MK-36. Ask Plaid and Yapily for their partner terms.** Send the enquiry drafted in `PLAN_MARKETING_STRATEGY.md` §3.7 from the operator's address to Plaid and Yapily: agent or partner terms that keep diya-gl out of the regulated account-information activity, coverage of Tide, Starling and Revolut Business, and price at our volume. Record the answers in §3.7; MK-49 (the bank feed) waits on them. **Source**: `PLAN_MARKETING_STRATEGY.md` §5 MK-36. **Owner**: Operator. **Model**: none. **Size**: 0 files.
 
 - [ ] **LP-25a. Bank referral: the partner programme.** Pick the partner programme, sign up, and supply the referral link and the disclosure wording; write both into LP-25b. **Source**: `PLAN_DIYA_GL_LAUNCH.md`. **Owner**: Operator. **Model**: none. **Size**: 0 files.
 
