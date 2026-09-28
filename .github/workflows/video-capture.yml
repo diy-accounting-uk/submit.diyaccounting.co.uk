@@ -60,6 +60,8 @@ on:
           - 'itsa-foreign-property-losses'
           - 'itsa-carry-back-adjustments'
           - 'itsa-self-employment-amend'
+          - 'itsa-uk-property-year'
+          - 'itsa-uk-property-year'
         default: 'tour'
       environment-name:
         type: choice
