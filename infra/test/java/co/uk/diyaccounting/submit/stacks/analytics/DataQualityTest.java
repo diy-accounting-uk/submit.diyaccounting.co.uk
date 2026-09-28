@@ -167,8 +167,7 @@ class DataQualityTest {
                 Match.objectLike(Map.of(
                         "Ruleset",
                         Match.stringLikeRegexp(
-                                "[\\s\\S]*event_ts[\\s\\S]*now\\(\\) - 2 days\\)"
-                                        + " with threshold > 0[\\s\\S]*"))));
+                                "[\\s\\S]*event_ts[\\s\\S]*now\\(\\) - 2 days\\)" + " with threshold > 0[\\s\\S]*"))));
     }
 
     @Test
