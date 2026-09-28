@@ -5,7 +5,8 @@
 
 Answer "is now a good time for compaction?" and make it true. A compaction keeps a summary and
 drops the rest, so everything a later turn needs must sit in a commit, `NEXT.md`, a plan file or
-the summary text before `/compact` runs. Invoke as `/compact-ready`.
+the summary text before `/compact` runs. Invoke as `/compact-ready`; `/auto-merge` runs it after
+every verified merge.
 
 ## 1. Gather
 
@@ -49,4 +50,5 @@ Then the list the summary must keep, because it lives only in this conversation:
 3. Operator decisions from this session not yet in a file.
 4. Operator commands handed over and not yet run, in full with the `!` prefix.
 
-Offer the list as the `/compact` argument text, so the operator can paste it.
+When the answer is `yes`, print one line, `/compact ` followed by the list, in a fenced block, so the
+operator runs it as typed; the built-in `/compact` is the operator's to run.
