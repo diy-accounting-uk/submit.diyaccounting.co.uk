@@ -563,13 +563,19 @@ real alarm issue and fails on a hand-typed copy of one.
 
 ### Phase 2. Auto-merge, narrow
 
-- The authorship check becomes a required status check: every commit resolves to the owner, every
-  signature verifies, the head is not a fork.
-- P10's shape rules join the same check.
+- `scripts/merge-gate.mjs` (tests: `app/unit-tests/scripts/mergeGate.test.js`) and
+  `.github/workflows/merge-gate.yml` re-derive, on top of `verify-commit-signatures.yml`'s
+  verified-signature check: the full P2 authorship check (every commit's GitHub-resolved author
+  and committer is the owner, head not a fork), P4's refusal of a PR closing an issue raised by
+  someone else, and P10's five shape rules. The plan leaves P10's numbers open; the script's own
+  conservative choice is a 600s open-to-merge floor, a 20-character body floor, a 25-file/800-line
+  diff ceiling, one commit author email, and 6 merges per rolling 24 hours.
+- Rollout: the workflow reports every PR's result to its step summary; only a Markdown-only PR's
+  failure fails the job. Widen enforcement to code once the check has a run history.
+- Open: `merge gate` is not yet a required status check on the `main` ruleset (a settings write),
+  and platform auto-merge is not yet turned on gated by it — both are for the operator.
 - Auto-merge turns on only for PRs that pass it, and only where the PR closes nothing or closes an
   `origin:alarm` issue whose verifier passed.
-- Start with docs-only PRs, since the workspace already permits direct `.md` pushes to `main`, so
-  this adds no new risk. Widen to code once the check has a run history.
 
 Proves: the rule holds under a real batch, and the operator stops merging by hand.
 

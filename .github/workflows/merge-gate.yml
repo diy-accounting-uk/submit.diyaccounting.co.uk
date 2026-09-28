@@ -1,0 +1,37 @@
+# SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0
+# Copyright (C) 2006-2026 DIY Accounting Limited
+
+name: merge-gate
+run-name: "Merge gate for PR #${{ github.event.pull_request.number }}"
+
+# Runs scripts/merge-gate.mjs and prints its report to the step summary on
+# every PR. Not a required status check: this job's conclusion is report-only
+# for a code PR and enforced (job fails) only for a Markdown-only PR, mirroring
+# the script's own rollout. /auto-merge reads this job's conclusion like any
+# other.
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened, ready_for_review, edited]
+
+concurrency:
+  group: merge-gate-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+  pull-requests: read
+  issues: read
+
+jobs:
+  gate:
+    name: merge gate
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+
+      - name: Run the merge gate
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: node scripts/merge-gate.mjs --repo "${{ github.repository }}" --pr-number "${{ github.event.pull_request.number }}"
