@@ -73,9 +73,9 @@ step.
 
 ## Machine-ask
 
-## Human-driven
+- [ ] **MK-9. Google Ads: a capped Search campaign.** Operator decision, 2026-09-28: a Search campaign on the four keyword groups (`PLAN_MARKETING_STRATEGY.md` §3.6), Maximise clicks with a £0.30 maximum CPC, £1 a day, and Performance Max paused. Write it into `infra/google/ads/ads.toml` (the file `ads:sync` reads), show `npm run ads:sync` (dry run) to the operator, then apply with `npm run ads:sync -- --apply` on their yes. The ask: the operator's yes on the dry-run diff. **Source**: `PLAN_MARKETING_STRATEGY.md` §5 MK-9. **Owner**: Claude Code. **Model**: Sonnet. **Size**: ~2 files.
 
-- [ ] **OMK-9. The Google Ads change.** Choose one: (a) a Search campaign on the four keyword groups, Maximise clicks with a £0.30 maximum CPC, £1 a day, Performance Max paused (`PLAN_MARKETING_STRATEGY.md` §3.6, the recommendation); (b) Performance Max kept at £1 a day as it runs now. Reply with a or b; MK-9 then writes it into `ads.toml` and applies it with `npm run ads:sync -- --apply` on your yes. **Source**: `PLAN_MARKETING_STRATEGY.md` §5 MK-9. **Owner**: Operator. **Model**: none. **Size**: 0 files.
+## Human-driven
 
 - [ ] **OBS. Refine and approve `PLAN_BOOKS_TO_SUBMIT.md`.** The plan is a draft ("Draft for the operator to refine"): its tasks BS1 to BS14 join the board on approval, and open question 1 (which Google Cloud project holds the sign-in client, number 670010122633) decides where BS5's Drive client lands. LP-24a waits on BS5. **Source**: `PLAN_BOOKS_TO_SUBMIT.md`. **Owner**: Operator. **Model**: none. **Size**: 0 files.
 
