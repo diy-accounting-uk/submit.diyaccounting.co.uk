@@ -557,18 +557,39 @@ through the placements in 3.1. Web research read 2026-09-28; sources at the end 
 
 The regulatory line. Pulling a customer's bank transactions through open banking is an account
 information service. The usual pattern for a small UK accounting app is to work through an
-FCA-authorised aggregator (TrueLayer, Yapily, Plaid, Finexer; GoCardless Bank Account Data while
-it took new accounts) as its agent or under its permissions, so the aggregator carries the
-regulated activity; August, for example, runs as an agent of Plaid Financial Ltd. Larger products
-register as an AISP themselves, as FreeAgent did. Our own registration costs an FCA application
-fee in the hundreds of pounds and six to nine months; the agent route through Plaid or Moneyhub
-charges nothing upfront and the FCA reviews an agent in about two months; an aggregator's
-production pricing is sales-led with a realistic floor of £150 to £500 a month. Enable Banking's
-free restricted production covers only accounts the developer links personally. So the first step
-(operator, Q9) is to ask two aggregators for their agent and partner terms and price (MK-36); a
-regulatory adviser is engaged only if those terms leave diya-gl carrying the regulated activity.
-Against a £100 a month cost base, a live bank feed waits for the cap to cover it. Reading the CSV
-a bank already exports needs no permission and is what the free rung does today.
+FCA-authorised aggregator as its agent or under its permissions, so the aggregator carries the
+regulated activity: August runs as an agent of Plaid Financial Ltd, and Emma runs live on Yapily's
+own AIS and PIS permissions. Larger products register as an AISP themselves, as FreeAgent did. Our
+own registration costs an FCA application fee in the hundreds of pounds and six months to a year;
+agent registration is quicker and the FCA application itself is free with both Plaid and Yapily,
+but neither publishes a production price. Plaid confines EU/UK customers to a custom-quoted plan
+gated behind its paid Scale tier and an annual minimum spend, so "no upfront cost" covers only the
+FCA paperwork, not the platform access under it; Yapily's pricing is sales-led throughout. One
+unverified third-party estimate puts a realistic production floor near £150 to £500 a month for
+either, in line with this plan's earlier reading. GoCardless Bank Account Data, once the free
+route, closed to new accounts in July 2025 — Firefly III and Actual Budget's own bank-sync docs
+now point self-hosters at Enable Banking instead, but Enable Banking's free "restricted
+production" covers only accounts the developer links to their own name, not customer accounts at
+volume, and no agent or partner model surfaced for it. Finexer publishes a self-serve sandbox and
+a discounted pre-revenue startup rate, but one of Finexer's own blog posts says its coverage
+excludes Starling, Tide and Monzo Business while its own bank-coverage page lists all three — a
+contradiction this research could not resolve, so Finexer stays the fallback, not a first ask. So
+the first step (operator, Q9) is to ask two aggregators for their agent and partner terms and
+price (MK-36); a regulatory adviser is engaged only if those terms leave diya-gl carrying the
+regulated activity. Against a £100 a month cost base, a live bank feed waits for the cap to cover
+it. Reading the CSV a bank already exports needs no permission and is what the free rung does
+today.
+
+Comparison, from the published pages and the first-hand or reported experience found (read
+2026-09-28).
+
+| Aggregator | UK coverage of Tide / Starling / Revolut Business | Agent model and regulated party | Price at our volume | Minimum and onboarding | Reported experience |
+| --- | --- | --- | --- | --- | --- |
+| Plaid | All three listed among its UK/EU institutions; no separate confirmation that the Business tiers specifically are production-tested | Agent of Plaid's own FCA AIS permission; Plaid carries the regulated activity; FCA review about two months, "much faster" in some cases | EU/UK: custom quote only, no self-serve tier; one blog's unverified estimate is $0.30–$1 per connected account a month | FCA agent application is free; access still requires Plaid's paid Scale plan with an annual minimum spend; Sandbox is free and unlimited | Capterra 4.3/5 (69 reviews); syncs reported to break on smaller banks; August is a live, accounting-adjacent firm running as a Plaid agent |
+| Yapily | All three named among ~2,000 covered institutions; markets itself as the only vendor to have tested and fixed business-account connectivity | Agent under Yapily's own AIS and PIS permission as principal; UK-first | No published figures; one blog's unverified estimate is £200–£500 a month at entry production | Sales-led from first contact; no published minimum term or self-serve production tier | G2 4.2/5 (3 reviews, thin sample); Emma (11M+ UK open-banking users) reports 267% month-on-month transaction growth after integrating, though as a personal finance app, not a bookkeeping product |
+| Finexer | Lists all three on its coverage page, but a separate Finexer blog post says coverage excludes Starling, Tide and Monzo Business — unresolved by this research | Finexer is FCA-authorised itself and advertises "agent licensing"; no detail found on how the regulated activity splits with an agent | Usage-based, tiered Startup/Standard/Enterprise; discounted pre-revenue startup rate; no published £ figures | No minimum stated; free sandbox, the only one of the four with self-serve production sign-up | No independent reviews found; nearly all available content is Finexer's own comparison blog, which was this plan's main prior source |
+| TrueLayer | Reported strong UK/IE coverage; Stripe's UK Pay-by-Bank partner | TrueLayer is FCA-authorised (FRN 901096) and carries the regulated activity; partner programme is "talk to us" | No rate card; one blog's unverified historic estimate is £150–£300 a month at a starter tier | Sales-gated from the first contact; free Development/sandbox tier | No first-hand small-firm account found; repeatedly described as built for funded or larger teams |
+| Enable Banking | Not independently confirmed for this research (coverage and pricing pages returned errors); described by indie-developer blogs as the default post-GoCardless option | No agent or partner model found; production access for customer accounts needs Enable Banking's own paid licence | Per connected account per month, quote-based; no published figures | Free tier is "Restricted Production" for accounts the developer links to their own name only, not customer accounts at volume | Praised in indie-developer blogs as GoCardless Bank Account Data's free-tier replacement, but only at that self-linked scale |
 
 The institutions the operator named, and the two payment platforms diya-gl already reads.
 
@@ -580,13 +601,26 @@ The institutions the operator named, and the two payment platforms diya-gl alrea
 | PayPal | Not open banking; no aggregator needed | Yes: the Transaction Search API with the merchant's own app credentials; the customer's own access | Partner Directory needs Gold partner status | Read today for the company's own account (DATA-48). Gap: the same pull for a customer's PayPal account, with their credentials, from the DIYA-GL page |
 | Stripe | Not open banking; no aggregator needed | Yes: the Stripe API with the account holder's own restricted key, or a Stripe App the customer installs; the customer's own access | Yes: App Marketplace and Partner Directory pages link out | Read today for the company's own account (DATA-49, DATA-51). Gap: the Stripe App (MK-35) that does it for any Stripe account |
 
-The two aggregators to ask first: Plaid, because its agency model onboards a small firm as Plaid's
-FCA agent at no upfront cost, covers Tide, Starling and Revolut, and keeps the regulated activity
-with Plaid; and Yapily, because it onboards partners as agents under its own permissions as
-principal, is UK-first and covers the same three. Finexer is the pay-as-you-go alternative if
-both price above the cap; GoCardless Bank Account Data, once free for up to 50 connected banks a
-month, closed to new accounts in July 2025 and is not an option. TrueLayer is sales-led with no
-published price.
+The two aggregators to ask first stay Plaid and Yapily, on sharper grounds than before. Yapily:
+UK-first, names Tide, Starling and Revolut among its covered institutions, onboards partners as
+agents under its own AIS and PIS permissions as principal, and is the only one of the four to
+claim it has tested and fixed business-account connectivity specifically — the exact gap for Tide,
+Starling and Revolut Business. Its only production-scale reference found is Emma, a personal
+finance app rather than a bookkeeping product, and its pricing is sales-led with no published
+figure. Plaid: agent registration is free and the FCA review runs about two months against six
+months to a year for direct authorisation, and August is a live, accounting-adjacent comparable
+running as a Plaid agent — but EU/UK customers get no self-serve production tier, and the agent
+route sits behind Plaid's paid Scale plan and an annual minimum spend, so the zero-cost claim
+covers only the FCA paperwork. Finexer stays the fallback if both price above the cap: it is the
+only one of the four with a published self-serve sandbox and a discounted pre-revenue startup
+rate, but its own blog contradicts its own coverage page on whether Starling, Tide and Monzo
+Business are supported, so a Finexer quote needs that resolved in writing before it counts as a
+real option. TrueLayer stays out of the first ask, sales-led and built for funded or larger teams,
+with no first-hand small-firm account found. Enable Banking, checked new for this pass, does not
+fit: its free tier covers only accounts the developer links to their own name, and no agent or
+partner model surfaced for serving customer accounts at diya-gl's scale. GoCardless Bank Account
+Data, once free for up to 50 connected banks a month, closed to new accounts in July 2025 and is
+not an option.
 
 Enquiry text, from the operator's address (MK-36), one message to each:
 
@@ -597,8 +631,11 @@ Enquiry text, from the operator's address (MK-36), one message to each:
 > and a few hundred in the second. Please send: your partner or agent terms for a firm of our size,
 > including whether we would act as your agent under your FCA permissions or you would carry the
 > account information service; your price at that volume (per connected account, per data pull, or
-> monthly minimum); coverage of Tide, Starling and Revolut Business for business accounts; and any
-> minimum term.
+> monthly minimum), and any paid platform tier or minimum spend required to hold agent or partner
+> status, separate from any FCA application fee; confirmation that Tide, Starling and Revolut
+> Business are production-tested for business accounts specifically, not just personal accounts,
+> and their transaction history depth; how a customer's 90-day open banking re-consent works in
+> your flow and what, if anything, breaks an unattended sync; and any minimum term.
 
 Candidates, ranked by backlink value against effort, with the regulatory line applied.
 
@@ -666,14 +703,30 @@ with accounting software](https://wise.com/help/articles/2960247/connecting-your
 [Tide accounting integrations](https://www.tide.co/features/accounting-integrations/), [Monzo open
 banking API](https://docs.monzo.com/open-banking/), [PayPal partner FAQs](https://www.paypal.com/uk/webapps/mpp/partner-programme/faqs),
 [Plaid: FCA registration and the agency model](https://plaid.com/blog/fca-registration-and-how-plaid-can-help/),
+[Plaid pricing and billing docs](https://plaid.com/docs/account/billing/),
 [August: open banking, as an agent of Plaid](https://www.augustapp.com/dictionary/open-banking),
 [FreeAgent: open banking registration from the FCA](https://www.freeagent.com/company/press-room/freeagent-secures-open-banking-registration-from-fca/),
 [Finexer: open banking UK regulation](https://blog.finexer.com/open-banking-uk-regulation/),
-[Yapily: how to become an AISP](https://www.yapily.com/blog/how-to-become-an-aisp), [FCA application
-fees](https://www.fca.org.uk/firms/authorisation/apply/fees), [Open Banking Tracker: free open banking
+[Finexer pricing](https://finexer.com/pricing), [Finexer bank coverage](https://finexer.com/openbanking/banks),
+[Yapily: how to become an AISP](https://www.yapily.com/blog/how-to-become-an-aisp),
+[Yapily pricing](https://www.yapily.com/pricing), [Yapily coverage](https://www.yapily.com/coverage),
+[Yapily vs Plaid, business-account connectivity claim](https://www.yapily.com/blog/plaid-alternatives),
+[Yapily case study: Emma](https://www.yapily.com/blog/open-banking-case-study-emma),
+[Yapily: 90-day re-authentication changes](https://www.yapily.com/blog/90-day-reauthentication-changes),
+[TrueLayer partnerships](https://truelayer.com/partnerships/),
+[TrueLayer: the 90-day re-authentication rule](https://truelayer.com/blog/compliance-and-regulation/explaining-changes-to-the-90-day-rule-for-open-banking-access/),
+[FCA application fees](https://www.fca.org.uk/firms/authorisation/apply/fees), [Open Banking Tracker: free open banking
 APIs 2026](https://www.openbankingtracker.com/guides/free-open-banking-apis), [dev.to: cheapest open
 banking APIs 2026](https://dev.to/johnfrandsen/the-cheapest-open-banking-apis-for-small-businesses-and-indie-builders-in-2026-5cab),
+[dev.to: beyond TrueLayer, choosing an open banking API 2026](https://dev.to/johnfrandsen/beyond-truelayer-choosing-the-right-open-banking-api-for-european-projects-2026-5coa),
+[dev.to: comparing European open banking API providers 2026](https://dev.to/johnfrandsen/comparing-european-open-banking-api-providers-in-2026-plaid-truelayer-tink-gocardless-125c)
+(the last three dev.to pieces share one author who also builds a competing product, disclosed on
+one of them), [Plaid reviews, Capterra](https://www.capterra.com/p/174384/Plaid/reviews/),
+[Yapily reviews, G2](https://g2.com/products/yapily/reviews),
 [GoCardless Bank Account Data setup note](https://actualbudget.org/docs/advanced/bank-sync/gocardless/),
+[Firefly III: importing from GoCardless](https://docs.firefly-iii.org/tutorials/data-importer/gocardless/),
+[dev.to: self-hosted bank aggregation after the Nordigen shutdown](https://dev.to/johnfrandsen/self-hosted-bank-account-aggregation-in-2026-after-the-nordigen-free-tier-shutdown-3mdo),
+[Enable Banking pricing, G2](https://www.g2.com/products/enable-banking/pricing),
 [Zapier partner program](https://docs.zapier.com/platform/publish/partner-program), [MCP registry](https://github.com/modelcontextprotocol/registry),
 [awesome-mcp-registries](https://github.com/tuanone123/awesome-mcp-registries).
 
