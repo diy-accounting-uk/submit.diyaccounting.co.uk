@@ -89,9 +89,19 @@ describe("every video a covering scene script names is published, or reported pe
   });
 });
 
-describe("videos.html renders every publish.json entry that carries a videoId", () => {
-  test("its manifest filter keys on videoId, the field the checks above rely on", () => {
-    const videosHtmlSource = fs.readFileSync(path.join(repoRoot, "web/public/videos.html"), "utf8");
-    expect(videosHtmlSource).toMatch(/filter\(\s*\(v\)\s*=>\s*v\s*&&\s*v\.videoId\s*\)/);
+describe("every published entry renders on its group's page", () => {
+  const widgetSource = fs.readFileSync(path.join(repoRoot, "web/public/widgets/video-pages.js"), "utf8");
+  const areaPagesBlock = widgetSource.match(/const AREA_PAGES = \{([\s\S]*?)\};/)[1];
+
+  test("the shared widget's manifest filter keys on videoId, the field the checks above rely on", () => {
+    expect(widgetSource).toMatch(/filter\(\s*\(v\)\s*=>\s*v\s*&&\s*v\.videoId\s*\)/);
+  });
+
+  const publishedGroups = [...new Set(publishList.videos.filter((v) => v.videoId).map((v) => v.group))];
+
+  test.each(publishedGroups)('published group "%s" has an area page the widget renders it on', (group) => {
+    const match = areaPagesBlock.match(new RegExp(`"${group}":\\s*"([^"]+)"`));
+    expect(match, `AREA_PAGES in web/public/widgets/video-pages.js has no entry for group "${group}"`).not.toBeNull();
+    expect(fs.existsSync(path.join(repoRoot, "web/public", match[1]))).toBe(true);
   });
 });

@@ -58,6 +58,26 @@
     <priority>0.7</priority>
   </url>
   <url>
+    <loc>https://submit.diyaccounting.co.uk/videos-hmrc-vat.html</loc>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://submit.diyaccounting.co.uk/videos-hmrc-itsa.html</loc>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://submit.diyaccounting.co.uk/videos-account.html</loc>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
+    <loc>https://submit.diyaccounting.co.uk/videos-ch.html</loc>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+  </url>
+  <url>
     <loc>https://submit.diyaccounting.co.uk/mcp.html</loc>
     <changefreq>monthly</changefreq>
     <priority>0.6</priority>
