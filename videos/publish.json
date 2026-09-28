@@ -323,7 +323,8 @@
       "title": "DIY Accounting Submit: amend a filed self-employment quarter (sandbox)",
       "description": "DIY Accounting Submit is a free tool for filing Self Assessment under Making Tax Digital for Income Tax. A signed-in walk through Making Tax Digital for Income Tax: see what a self-employment business has filed so far this tax year, open it, and correct a figure with HMRC. This is a sandbox preview, recorded against HMRC's test environment, not a live filing. Try the VAT side of the product now at https://submit.diyaccounting.co.uk.",
       "tags": ["DIY Accounting", "Self Assessment", "HMRC", "Making Tax Digital", "ITSA"],
-      "categoryId": "27"
+      "categoryId": "27",
+      "videoId": "qmQ6MYeN1b0"
     },
     {
       "id": "itsa-uk-property-year",
@@ -336,7 +337,8 @@
       "title": "DIY Accounting Submit: a UK property quarter, amended and closed out for the year (sandbox)",
       "description": "DIY Accounting Submit is a free tool for filing Self Assessment under Making Tax Digital for Income Tax. A signed-in walk through Making Tax Digital for Income Tax for a UK property business: see what's filed so far, open it, correct a figure, then close the year out with the annual submission and its adjustable summary. This is a sandbox preview, recorded against HMRC's test environment, not a live filing. Try the VAT side of the product now at https://submit.diyaccounting.co.uk.",
       "tags": ["DIY Accounting", "Self Assessment", "HMRC", "Making Tax Digital", "ITSA"],
-      "categoryId": "27"
+      "categoryId": "27",
+      "videoId": "BviyZDQ1Qvk"
     },
     {
       "id": "itsa-annual-from-book",
@@ -349,7 +351,8 @@
       "title": "DIY Accounting Submit: fill the annual submission from a book (sandbox)",
       "description": "DIY Accounting Submit is a free tool for filing Self Assessment under Making Tax Digital for Income Tax. A signed-in walk through Making Tax Digital for Income Tax's annual submission: import the year's figures from a diya-gl book instead of typing them, claim the trading income allowance, and say why Class 4 National Insurance doesn't apply. This is a sandbox preview, recorded against HMRC's test environment, not a live filing. Try the VAT side of the product now at https://submit.diyaccounting.co.uk.",
       "tags": ["DIY Accounting", "Self Assessment", "HMRC", "Making Tax Digital", "ITSA"],
-      "categoryId": "27"
+      "categoryId": "27",
+      "videoId": "lVaUaacjEk0"
     },
     {
       "id": "itsa-loss-claims",
@@ -362,7 +365,8 @@
       "title": "DIY Accounting Submit: a sole trade loss carried sideways and back (sandbox)",
       "description": "DIY Accounting Submit is a free tool for filing Self Assessment under Making Tax Digital for Income Tax. A signed-in walk through Making Tax Digital for Income Tax's losses and claims for a self-employment business: sign in, take out Resident, get HMRC's access for the year, then set a loss sideways against this year's other income and back against an earlier year, and say which claim applies first. This is a sandbox preview, recorded against HMRC's test environment, not a live filing. Try the VAT side of the product now at https://submit.diyaccounting.co.uk.",
       "tags": ["DIY Accounting", "Self Assessment", "HMRC", "Making Tax Digital", "ITSA"],
-      "categoryId": "27"
+      "categoryId": "27",
+      "videoId": "hCrlmpntiB0"
     },
     {
       "id": "itsa-foreign-property-losses",
@@ -375,7 +379,8 @@
       "title": "DIY Accounting Submit: a foreign property loss: carried forward only (sandbox)",
       "description": "DIY Accounting Submit is a free tool for filing Self Assessment under Making Tax Digital for Income Tax. A signed-in walk through Making Tax Digital for Income Tax's losses and claims for a foreign property business: sign in, take out Resident, get HMRC's access for the year, then set a landlord's loss to carry forward, since carry-back is not on offer for a property business. This is a sandbox preview, recorded against HMRC's test environment, not a live filing. Try the VAT side of the product now at https://submit.diyaccounting.co.uk.",
       "tags": ["DIY Accounting", "Self Assessment", "HMRC", "Making Tax Digital", "ITSA"],
-      "categoryId": "27"
+      "categoryId": "27",
+      "videoId": "rBkJdaNfGGM"
     }
   ]
 }
