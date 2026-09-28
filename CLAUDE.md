@@ -81,6 +81,7 @@ Skills live at `.claude/skills/<name>/SKILL.md`.
 - `.claude/skills/capabilities/SKILL.md` — find the tooling the repository already has before building any, and keep `REPORT_CAPABILITIES.md` current; invoke as `/capabilities`
 - `.claude/skills/itsa-readiness/SKILL.md` — say whether the Income Tax (MTD) recognition email can go to HMRC, check by check with the evidence; invoke as `/itsa-readiness`
 - `.claude/skills/fast-deploy/SKILL.md` — put a candidate fix live on a ci set in minutes from the local tree (`npm run deploy:app-ci`, or a single-stack `deploy-cdk-stack.yml` dispatch) when a ci `test.yml` or `deploy.yml` failed and confidence in the fix is short of high; prod only on the operator's direct instruction; invoke as `/fast-deploy`
+- `.claude/skills/compact-ready/SKILL.md` — before a compaction: land or commit every agent's and worktree's work, write `NEXT.md` and chat decisions to files, keep monitors, then say yes / yes after / not yet and list what the summary must keep; invoke as `/compact-ready`
 - `.claude/skills/company-book/SKILL.md` — build, verify and hand over DIY Accounting Limited's own diya-gl book from its bank, Stripe, PayPal and supplier sources, and tell Cowork how to read it with the spreadsheets MCP; invoke as `/company-book`
 
 ## Permission Handling
