@@ -58,6 +58,7 @@ on:
           - 'mcp-diya-gl'
           - 'itsa-loss-claims'
           - 'itsa-foreign-property-losses'
+          - 'itsa-carry-back-adjustments'
         default: 'tour'
       environment-name:
         type: choice

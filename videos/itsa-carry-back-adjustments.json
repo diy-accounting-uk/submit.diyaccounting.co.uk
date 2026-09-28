@@ -1,0 +1,281 @@
+{
+  "$schema": "./scene-script.schema.json",
+  "name": "itsa-carry-back-adjustments",
+  "title": "What a carry-back claim saves against an earlier year",
+  "description": "A signed-in walk through Making Tax Digital for Income Tax's tax liability adjustments: sign in, take out Resident, get HMRC's access for the year, make a carry-back loss claim off camera, then record what that claim saves against the earlier tax year it reduces.",
+  "auth": "user",
+  "pages": [
+    "web/public/index.html",
+    "web/public/auth/login.html",
+    "web/public/bundles.html",
+    "web/public/hmrc/itsa/dashboard.html",
+    "web/public/hmrc/itsa/lossesAndClaims.html",
+    "web/public/hmrc/itsa/taxLiabilityAdjustments.html"
+  ],
+  "hmrcServices": ["mtd-vat", "mtd-income-tax"],
+  "environments": ["ci"],
+  "viewport": { "width": 1920, "height": 1080 },
+  "deviceScaleFactor": 2,
+  "fps": 30,
+
+  "pacing": {
+    "perCharMs": 80,
+    "betweenActionsMs": 500,
+    "aroundMotionMs": 500,
+    "minResidualMs": 120,
+    "timerThresholdMs": 250,
+    "timerFullScaleMs": 5000,
+    "waitCompressionAfterMs": 6000,
+    "waitCompressionFactor": 8
+  },
+
+  "captions": {
+    "fontPx": 40,
+    "lineHeightPx": 56,
+    "maxLines": 2,
+    "maxCharsPerLine": 46,
+    "charsPerSecond": 16,
+    "minMs": 1200,
+    "fadeMs": 200,
+    "safeArea": { "topPct": 5, "bottomPct": 5, "sidePct": 12.5 }
+  },
+
+  "suppress": ["#feedbackEngagementBanner", "#feedbackEngagementSection"],
+
+  "finalHoldMs": 2500,
+
+  "scenes": [
+    {
+      "id": "home",
+      "chapter": "Home",
+      "still": true,
+      "fastForward": true,
+      "steps": [
+        {
+          "action": "goto",
+          "url": "/",
+          "waitFor": "#mainContent",
+          "caption": "This is a sandbox preview against HMRC's test service, not a live filing.",
+          "headline": "A sandbox preview",
+          "keyWord": "sandbox"
+        },
+        {
+          "action": "caption",
+          "text": "See the full sign-in walkthrough in our sign-in video.",
+          "holdMs": 1200,
+          "headline": "Sign in, faster",
+          "keyWord": "faster"
+        },
+        { "action": "point", "target": { "role": "heading", "name": "DIY Accounting Submit" }, "dwellMs": 300 },
+        { "action": "hold", "ms": 400 }
+      ]
+    },
+    {
+      "id": "sign-in",
+      "chapter": "Sign in",
+      "still": true,
+      "fastForward": true,
+      "steps": [
+        {
+          "action": "click",
+          "target": "a.login-link",
+          "caption": "Sign in with the account you already use.",
+          "headline": "Sign in first",
+          "keyWord": "Sign"
+        },
+        {
+          "action": "login",
+          "caption": "Your account keeps a whole year's filings in one place.",
+          "headline": "Confirm your identity",
+          "keyWord": "identity"
+        },
+        { "action": "consent" },
+        { "action": "hold", "ms": 400 }
+      ]
+    },
+    {
+      "id": "subscription",
+      "chapter": "Resident",
+      "still": true,
+      "fastForward": true,
+      "steps": [
+        {
+          "action": "click",
+          "target": { "role": "link", "name": "Bundles" },
+          "caption": "Bundles decide which activities you can run.",
+          "headline": "Open your bundles",
+          "keyWord": "bundles"
+        },
+        {
+          "action": "ensureBundle",
+          "bundle": "Resident",
+          "testPass": true,
+          "caption": "Resident opens the Self Assessment activities.",
+          "headline": "Unlock Self Assessment",
+          "keyWord": "Self"
+        },
+        { "action": "hold", "ms": 500 },
+        {
+          "action": "click",
+          "target": { "role": "link", "name": "Activities" },
+          "caption": "Every activity starts from the home page.",
+          "headline": "Go to activities",
+          "keyWord": "activities"
+        },
+        { "action": "await", "until": ".developer-mode-toggle", "label": "Waiting for the developer mode toggle" },
+        {
+          "action": "click",
+          "target": ".developer-mode-toggle",
+          "caption": "One switch, so this run can ask HMRC's sandbox for a self-employment business.",
+          "headline": "Ask for a business",
+          "keyWord": "business"
+        },
+        { "action": "hold", "ms": 400 }
+      ]
+    },
+    {
+      "id": "business-picker",
+      "chapter": "The dashboard's business picker",
+      "still": true,
+      "fastForward": true,
+      "steps": [
+        {
+          "action": "click",
+          "target": { "role": "button", "name": "Self Assessment (HMRC)" },
+          "expectsNavigation": true,
+          "caption": "Making Tax Digital for Income Tax starts from one dashboard.",
+          "headline": "One dashboard for MTD",
+          "keyWord": "dashboard"
+        },
+        { "action": "await", "until": "#businessPickerForm", "label": "Opening the ITSA dashboard" },
+        {
+          "action": "type",
+          "target": "#nino",
+          "text": "{{hmrcNino}}",
+          "clear": true,
+          "secret": true,
+          "caption": "Type the National Insurance number HMRC asks for.",
+          "headline": "Enter your NI number",
+          "keyWord": "NI"
+        },
+        {
+          "action": "click",
+          "target": "#findBusinessesBtn",
+          "caption": "Ask HMRC which businesses it holds against that number.",
+          "headline": "Ask HMRC for businesses",
+          "keyWord": "businesses"
+        },
+        {
+          "action": "hmrcAuthorise",
+          "caption": "Sign in to HMRC and say yes once, for the whole year.",
+          "headline": "Grant access for the year",
+          "keyWord": "year",
+          "timeoutMs": 60000
+        },
+        {
+          "action": "await",
+          "until": "#businessPickerResults",
+          "label": "Waiting for HMRC",
+          "timeoutMs": 60000,
+          "caption": "HMRC answers with the businesses behind this Self Assessment.",
+          "headline": "HMRC lists your businesses",
+          "keyWord": "businesses"
+        },
+        { "action": "hold", "ms": 400 }
+      ]
+    },
+    {
+      "id": "carry-back-claim",
+      "chapter": "Make the carry-back claim",
+      "offCamera": true,
+      "steps": [
+        { "action": "goto", "url": "/hmrc/itsa/lossesAndClaims.html", "waitFor": "#itsaLossesLoadForm" },
+        { "action": "type", "target": "#nino", "text": "{{hmrcNino}}", "clear": true, "secret": true },
+        { "action": "fill", "target": "#businessId", "value": "XBIS00000000001" },
+        { "action": "fill", "target": "#taxYear", "value": "2026-27" },
+        { "action": "click", "target": "#suspendTemporalValidations" },
+        { "action": "click", "target": "#loadBtn" },
+        { "action": "await", "until": "#lossesEditForm", "label": "Loading losses and claims" },
+        { "action": "fill", "target": "#previousYearGeneralIncome", "value": "150" },
+        { "action": "click", "target": "#saveBtn" },
+        { "action": "await", "until": "#lossesResults", "label": "Waiting for HMRC", "timeoutMs": 60000 }
+      ]
+    },
+    {
+      "id": "adjustments",
+      "chapter": "What the claim saves",
+      "still": true,
+      "steps": [
+        {
+          "action": "goto",
+          "url": "/hmrc/itsa/taxLiabilityAdjustments.html",
+          "waitFor": "#itsaAdjustmentsLoadForm",
+          "caption": "This is the second half of a carry-back claim.",
+          "headline": "The second half",
+          "keyWord": "second"
+        },
+        { "action": "type", "target": "#nino", "text": "{{hmrcNino}}", "clear": true, "secret": true },
+        {
+          "action": "fill",
+          "target": "#taxYear",
+          "value": "2025-26",
+          "caption": "The earlier tax year the claim decreases.",
+          "headline": "The earlier tax year",
+          "keyWord": "earlier"
+        },
+        {
+          "action": "click",
+          "target": "#loadBtn",
+          "caption": "Load what HMRC already holds for that year.",
+          "headline": "Load the earlier year",
+          "keyWord": "Load"
+        },
+        { "action": "await", "until": "#adjustmentsEditForm", "label": "Loading tax liability adjustments" },
+        {
+          "action": "click",
+          "target": "#showEarlierYearBtn",
+          "caption": "Retrieve HMRC's own calculation for that year.",
+          "headline": "HMRC's own figure",
+          "keyWord": "figure"
+        },
+        {
+          "action": "await",
+          "until": "#earlierYearFigure:has-text('£')",
+          "label": "Waiting for HMRC",
+          "timeoutMs": 60000,
+          "caption": "The total Income Tax and National Insurance due, before this claim.",
+          "headline": "Before this claim",
+          "keyWord": "Before"
+        },
+        { "action": "point", "target": "#earlierYearFigure", "dwellMs": 600 },
+        {
+          "action": "fill",
+          "target": "#incomeTax",
+          "value": "150",
+          "caption": "Enter what the carry-back claim saves in Income Tax.",
+          "headline": "What the claim saves",
+          "keyWord": "saves"
+        },
+        { "action": "hold", "ms": 400 },
+        {
+          "action": "click",
+          "target": "#saveBtn",
+          "caption": "Save the adjustment.",
+          "headline": "Save the adjustment",
+          "keyWord": "Save"
+        },
+        {
+          "action": "await",
+          "until": "#adjustmentsResults",
+          "label": "Waiting for HMRC",
+          "timeoutMs": 60000,
+          "caption": "HMRC accepts the adjustment. This year's liability is credited.",
+          "headline": "Liability now credited",
+          "keyWord": "credited"
+        },
+        { "action": "still", "name": "itsa-carry-back-adjustments-final" },
+        { "action": "hold", "ms": 1200 }
+      ]
+    }
+  ]
+}
