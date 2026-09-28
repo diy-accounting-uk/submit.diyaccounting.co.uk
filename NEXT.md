@@ -67,6 +67,8 @@ step.
 
 ## Machine-ask
 
+- [ ] **B30y. Main's deploy of a453b950 (PR #404) failed on an API Gateway internal failure; redeploy it.** Run 36388849074's `deploy api` job: `AWS::ApiGatewayV2::Route` for hmrc-itsa-se-period-post returned `Handler invocation failed: Internal Failure` at 07:06:58 UTC 2026-09-28, and the rollback failed the same way on two Cognito authorizers and one route, so `prod-a453b95-app-ApiStack` is `ROLLBACK_FAILED` and prod-a453b95 stands with 7 stacks. The live set stays prod-632a987 (`last known good` and `destroy previous` were skipped). PR #404's branch deploy built the same code on ci cleanly. The ask (a prod dispatch, the operator's): first `gh workflow run destroy-prod.yml -f deployment-name=prod-a453b95`, then once it succeeds `gh run rerun 36388849074`; the session then watches the rerun and updates the prod line. **Source**: run 36388849074. **Owner**: Operator for the two dispatches, Claude Code for the watch. **Model**: Haiku. **Size**: 0 files.
+
 ## Human-driven
 
 - [ ] **OYT1. Verify the YouTube channel by phone, to lift the daily upload limit.** The upload API answered `uploadLimitExceeded` after the day's eleventh upload (2026-09-27), leaving three VID10a videos waiting. Verifying the channel raises the limit: https://www.youtube.com/verify (signed in as the channel's owner; a code by SMS or call). The limit otherwise resets within 24 hours and VID10a finishes then. **Source**: VID10a, 2026-09-27. **Owner**: operator. **Model**: none. **Size**: 0 files.
