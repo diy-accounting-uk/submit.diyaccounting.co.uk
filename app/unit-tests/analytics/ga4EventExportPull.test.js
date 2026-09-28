@@ -5,6 +5,7 @@ import { describe, test, expect, vi, beforeEach, afterEach } from "vitest";
 import { gunzipSync } from "zlib";
 
 const mockTableExists = vi.fn();
+const mockGetTables = vi.fn();
 const mockGetQueryResults = vi.fn();
 const mockCreateQueryJob = vi.fn();
 
@@ -20,6 +21,7 @@ vi.mock("@google-cloud/bigquery", () => ({
         table: (tableName) => ({
           exists: (...args) => mockTableExists(datasetId, tableName, ...args),
         }),
+        getTables: (...args) => mockGetTables(datasetId, ...args),
       };
     }
     createQueryJob(...args) {
@@ -63,6 +65,8 @@ describe("ga4EventExportPull", () => {
   beforeEach(() => {
     mockTableExists.mockReset();
     mockTableExists.mockResolvedValue([true]);
+    mockGetTables.mockReset();
+    mockGetTables.mockResolvedValue([[]]);
     mockGetQueryResults.mockReset();
     mockCreateQueryJob.mockReset();
     stubJob([]);
@@ -145,6 +149,32 @@ describe("ga4EventExportPull", () => {
 
     test("a missing table throws, and no object is written", async () => {
       mockTableExists.mockResolvedValue([false]);
+
+      await expect(handler({ date: "2026-08-20" })).rejects.toThrow(/does not exist/);
+      expect(mockCreateQueryJob).not.toHaveBeenCalled();
+      expect(mockS3Send).not.toHaveBeenCalled();
+    });
+
+    test("a missing table with a later daily or intraday export table present writes a zero-row day", async () => {
+      mockTableExists.mockResolvedValue([false]);
+      mockGetTables.mockResolvedValue([[{ id: "events_intraday_20260821" }]]);
+
+      const result = await handler({ date: "2026-08-20" });
+
+      expect(result).toEqual({
+        date: "2026-08-20",
+        key: "curated/ga4_bq/events/dt=2026-08-20/events.json.gz",
+        count: 0,
+      });
+      expect(mockCreateQueryJob).not.toHaveBeenCalled();
+      expect(mockS3Send).toHaveBeenCalledTimes(1);
+      const body = gunzipSync(mockS3Send.mock.calls[0][0].input.Body).toString("utf8");
+      expect(body).toBe("");
+    });
+
+    test("a missing table with only earlier or equal export tables present still throws", async () => {
+      mockTableExists.mockResolvedValue([false]);
+      mockGetTables.mockResolvedValue([[{ id: "events_20260819" }, { id: "events_intraday_20260820" }]]);
 
       await expect(handler({ date: "2026-08-20" })).rejects.toThrow(/does not exist/);
       expect(mockCreateQueryJob).not.toHaveBeenCalled();
