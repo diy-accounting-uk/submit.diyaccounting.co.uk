@@ -239,7 +239,13 @@ Answer with ONLY a JSON object, no prose outside it, shaped exactly like:
 {"decisions": [{"job": "<job id from the list above>", "skip": true|false, "reason": "<one sentence>"}]}
 
 Include one decision per job in the list above. A job you do not mention is treated as not
-skipped.`;
+skipped. Return the bare JSON object with no markdown code fence.`;
+}
+
+function stripMarkdownCodeFence(str) {
+  const trimmed = str.trim();
+  const fencedMatch = /^```(?:\w+)?\n([\s\S]*)\n```$/.exec(trimmed);
+  return fencedMatch ? fencedMatch[1] : trimmed;
 }
 
 // claudeOutputRaw is the text `claude -p --output-format json` printed: the CLI's own envelope
@@ -265,7 +271,7 @@ export function parseAnswer(claudeOutputRaw, knownJobIds = SKIPPABLE_JOB_IDS) {
 
   let answer;
   try {
-    answer = typeof envelope.result === "string" ? JSON.parse(envelope.result) : envelope.result;
+    answer = typeof envelope.result === "string" ? JSON.parse(stripMarkdownCodeFence(envelope.result)) : envelope.result;
   } catch {
     return { ok: false, skip: [], decisions: [], error: "claude's result is not valid JSON" };
   }
