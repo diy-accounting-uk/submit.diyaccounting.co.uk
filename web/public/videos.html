@@ -30,7 +30,9 @@
         max-width: 900px;
         margin: 0 auto;
       }
-      .videos-intro {
+      .videos-intro,
+      .video-section,
+      #videoContents {
         background: rgba(255, 255, 255, 0.95);
         border-radius: 8px;
         padding: 1.25em 1.5em;
@@ -41,10 +43,6 @@
         line-height: 1.6;
       }
       .video-section {
-        background: rgba(255, 255, 255, 0.95);
-        border-radius: 8px;
-        padding: 1.25em 1.5em;
-        margin-bottom: 1.5em;
         scroll-margin-top: 1em;
       }
       .video-section:target {
@@ -56,6 +54,34 @@
       }
       .video-section p {
         line-height: 1.6;
+      }
+      #videoContents h2 {
+        margin: 0 0 0.75em;
+        font-size: 1.3em;
+        color: var(--color-text-primary);
+      }
+      #videoContents h3 {
+        margin: 1em 0 0.4em;
+        font-size: 1em;
+        font-weight: 600;
+        color: var(--color-text-secondary);
+      }
+      #videoContents .video-contents-groups > h3:first-child {
+        margin-top: 0;
+      }
+      #videoContents ul {
+        margin: 0;
+        padding-left: 1.25em;
+      }
+      #videoContents li {
+        margin: 0.3em 0;
+      }
+      #videoContents a {
+        color: var(--color-brand-primary);
+      }
+      #videoContents a:hover,
+      #videoContents a:focus-visible {
+        color: var(--color-brand-primary-dark);
       }
       .video-frame {
         position: relative;
@@ -110,7 +136,7 @@
 
         <nav id="videoContents" aria-label="Contents" hidden>
           <h2>Contents</h2>
-          <ul></ul>
+          <div class="video-contents-groups"></div>
         </nav>
         <div id="videoList" aria-live="polite">
           <p class="service-description">Loading videos...</p>
@@ -135,6 +161,53 @@
       (function () {
         const MANIFEST_URL = "videos/publish.json";
         const EMBED_BASE = "https://www.youtube-nocookie.com/embed/";
+        const TITLE_PREFIX = "DIY Accounting Submit: ";
+        const GROUP_LABELS = {
+          "vat": "VAT",
+          "itsa": "Self Assessment (sandbox)",
+          "account": "Account and passes",
+          "companies-house": "Companies House",
+        };
+
+        // The section heading keeps the full title; only the Contents link drops the prefix
+        // every title repeats, since the page's own heading already says whose product this is.
+        function contentsLinkText(title) {
+          const text = String(title ?? "");
+          return text.startsWith(TITLE_PREFIX) ? text.slice(TITLE_PREFIX.length) : text;
+        }
+
+        // Buckets videos by their publish.json "group", one bucket per group in the order the
+        // group first appears, videos within a bucket kept in publish.json order.
+        function groupVideos(videos) {
+          const order = [];
+          const byGroup = new Map();
+          for (const video of videos) {
+            const key = video.group ?? "";
+            if (!byGroup.has(key)) {
+              byGroup.set(key, []);
+              order.push(key);
+            }
+            byGroup.get(key).push(video);
+          }
+          return order.map((key) => ({ label: GROUP_LABELS[key] ?? key, videos: byGroup.get(key) }));
+        }
+
+        function contentsGroupElements(group) {
+          const heading = document.createElement("h3");
+          heading.textContent = group.label;
+          const list = document.createElement("ul");
+          list.replaceChildren(
+            ...group.videos.map((video) => {
+              const link = document.createElement("a");
+              link.href = `#${video.id}`;
+              link.textContent = contentsLinkText(video.title);
+              const item = document.createElement("li");
+              item.append(link);
+              return item;
+            }),
+          );
+          return [heading, list];
+        }
 
         function escapeHtml(text) {
           return String(text ?? "").replace(
@@ -204,17 +277,8 @@
 
           const navContents = document.getElementById("videoContents");
           if (navContents) {
-            const ul = navContents.querySelector("ul");
-            ul.replaceChildren(
-              ...videos.map((video) => {
-                const link = document.createElement("a");
-                link.href = `#${video.id}`;
-                link.textContent = video.title;
-                const item = document.createElement("li");
-                item.append(link);
-                return item;
-              }),
-            );
+            const groupsContainer = navContents.querySelector(".video-contents-groups");
+            groupsContainer.replaceChildren(...groupVideos(videos).flatMap(contentsGroupElements));
             navContents.hidden = false;
           }
 
