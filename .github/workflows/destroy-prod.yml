@@ -3,36 +3,6 @@
 
 name: destroy-prod
 run-name: "destroy prod from ${{ github.ref_name }}"
-concurrency:
-  # This workflow always destroys prod's `{deployment}-app-*` stacks (environment-name is
-  # hardcoded 'prod' below) regardless of which branch dispatched it, so keying on
-  # github.ref_name let two destroy-prod runs from different branches race each other — the
-  # same bug as the other four workflows here, just against a fixed environment instead of an
-  # input-selected one. A fixed group name is the fix, not a per-branch one.
-  #
-  # This is deliberately its own group, not shared with deploy.yml's prod path: deploy.yml calls
-  # this workflow directly (its 'destroy-previous' job) to remove the deployment it just cut
-  # over from, so giving the two the same concurrency group would have that call wait on a slot
-  # its own parent run is holding — a permanent deadlock. deploy.yml keeps a distinct
-  # 'deploy-prod' name for exactly this reason.
-  #
-  # A destroy-prod run triggered independently (the schedule, or a standalone workflow_dispatch)
-  # can still overlap a deploy.yml prod run that isn't the one that spawned it — this group only
-  # serialises destroy-prod runs against each other, not against deploy.yml. The 'destroy' job's
-  # 'Wait for a running prod deploy' step closes that gap by polling instead of a group, for the
-  # same reason wait-for-ci-deploys.mjs exists: a group would have to be shared with deploy.yml's
-  # 'deploy-prod' to serialise against it, which is the exact deadlock above. That step is skipped
-  # when this run IS deploy.yml's own 'destroy-previous' call (called-from-deploy: true) — waiting
-  # there would be waiting on this run's own parent.
-  #
-  # Neither the schedule (below) nor a hand `workflow_dispatch` is authoritative over the other:
-  # both are direct triggers of this workflow, so both share this group, and cancel-in-progress:
-  # false means a second one queues behind the first rather than racing or cancelling it. If they
-  # end up naming the same set, the one that runs second now finds no stacks left and reports
-  # success rather than failing — see 'Confirm the deployment has stacks to destroy' below — so
-  # which of the two ran first decides nothing that needs deciding here.
-  group: destroy-prod
-  cancel-in-progress: false
 
 on:
   workflow_dispatch:
@@ -77,7 +47,7 @@ on:
 permissions:
   id-token: write
   contents: read
-  # actions:read lets the 'Wait for a running prod deploy' step in the 'destroy' job list
+  # actions:read lets the 'Wait for a running prod deploy' step in the 'wait-for-deploy' job list
   # deploy.yml runs via the GitHub API (see .github/actions/wait-for-ci-deploys).
   actions: read
 
@@ -146,6 +116,45 @@ jobs:
       sweep-for-stacks: ${{ steps.normalise.outputs.sweep-for-stacks }}
       isSweeping: ${{ steps.normalise.outputs.isSweeping }}
       called-from-deploy: ${{ steps.normalise.outputs.called-from-deploy }}
+
+  # A standalone destroy-prod run (the schedule, or a bare workflow_dispatch) shares no ordering
+  # with a deploy.yml prod run: deploy.yml only reaches this workflow, as its own destroy-previous
+  # job, near the end of a prod deploy — well after the new deployment's stacks are already built
+  # and cut over. Without this wait, a scheduled sweep could delete a deployment deploy.yml is
+  # still in the middle of building, which the 'destroy' job's own refusal step can't catch: it
+  # only protects a deployment that is already live or already recorded as last-known-good, not
+  # one still under construction.
+  #
+  # This wait carries no concurrency group of its own, and runs in its own job rather than as the
+  # 'destroy' job's first step. That split is what breaks a deadlock a shared group used to cause:
+  # deploy.yml's own prod run calls this workflow, as its 'destroy previous' job, to remove the
+  # deployment it just cut over from. When the group covered the whole workflow (or the 'destroy'
+  # job held it before this wait ran), a standalone dispatch acquired that group the moment it
+  # started, then sat here waiting on that same deploy run to finish — and the deploy run's own
+  # call into this workflow queued behind the dispatch for the same group, so each waited on the
+  # other. Waiting in an ungated job first, and asking the 'destroy' job below for its group only
+  # once this is over (or skipped, for deploy.yml's own call), means the group is never held while
+  # something is also waiting on the run that would release it.
+  #
+  # Skipped when this run IS deploy.yml's own 'destroy-previous' call (called-from-deploy: true):
+  # deploy.yml is the run that would be waited for, so waiting here would wait on this run's own
+  # parent, forever.
+  wait-for-deploy:
+    needs:
+      - params
+    if: ${{ !cancelled() && needs.params.outputs.called-from-deploy != 'true' }}
+    name: 'wait for a running prod deploy'
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+      - name: Wait for a running prod deploy
+        uses: './.github/actions/wait-for-ci-deploys'
+        with:
+          github-token: ${{ github.token }}
+          workflows: 'deploy.yml'
+          match-mode: 'environment'
+          target-environment: 'prod'
 
   sweep-for-stacks:
     needs:
@@ -617,14 +626,44 @@ jobs:
     # Same gate as the `names` job above, and for the same reason: this job deletes
     # CloudFormation stacks, so it must not run on a sweep that failed partway through
     # building its list. Only a skipped sweep (explicit deployment-name) or a sweep that
-    # completed and found a hit may reach here.
-    if: ${{ !cancelled() && (needs.sweep-for-stacks.result == 'skipped' || (needs.sweep-for-stacks.result == 'success' && needs.sweep-for-stacks.outputs.sweeper-hit != 'false')) }}
+    # completed and found a hit may reach here. wait-for-deploy adds the same skipped-is-fine
+    # clause as sweep-for-stacks: it is skipped (not run) for deploy.yml's own call into this
+    # workflow, and only a completed wait, not a failed or still-running one, may reach here.
+    if: ${{ !cancelled() && (needs.sweep-for-stacks.result == 'skipped' || (needs.sweep-for-stacks.result == 'success' && needs.sweep-for-stacks.outputs.sweeper-hit != 'false')) && (needs.wait-for-deploy.result == 'skipped' || needs.wait-for-deploy.result == 'success') }}
     needs:
       - params
       - names
       - sweep-for-stacks
+      - wait-for-deploy
     runs-on: ubuntu-latest
     environment: prod
+    # A job-level group, not a workflow-level one: only the jobs that actually mutate AWS state
+    # need to queue behind each other, so this destroying job carries the group alone, and
+    # wait-for-deploy (above), sweep-for-stacks and names all run unblocked by it.
+    #
+    # The group is fixed, not keyed on github.ref_name: this job always destroys prod's
+    # `{deployment}-app-*` stacks (environment-name is hardcoded 'prod' below) regardless of
+    # which branch dispatched it, so a per-branch key would let two runs from different branches
+    # race each other's deletes — the same bug as the other four workflows here, just against a
+    # fixed environment instead of an input-selected one.
+    #
+    # Neither the schedule nor a hand `workflow_dispatch` is authoritative over the other: both
+    # are direct triggers of this workflow, so both queue on this same group, and
+    # cancel-in-progress: false means a second one waits behind the first rather than racing or
+    # cancelling it. If they end up naming the same set, the one that runs second now finds no
+    # stacks left and reports success rather than failing (see 'Confirm the deployment has
+    # stacks to destroy' below), so which of the two ran first decides nothing that needs
+    # deciding here.
+    #
+    # This group is also what a called run (deploy.yml's own 'destroy-previous' job) queues on,
+    # same as a dispatched or scheduled run: deploy.yml's own job that calls this workflow holds
+    # no group of its own (it keeps a distinct 'deploy-prod' group for its own concurrency), so
+    # a called run waiting here is never waiting on its own parent — only wait-for-deploy, which
+    # this job needs and which is skipped for a called run, carries that risk, and it runs with
+    # no group at all.
+    concurrency:
+      group: destroy-prod
+      cancel-in-progress: false
     steps:
       - name: Checkout default branch
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
@@ -639,26 +678,6 @@ jobs:
 
       - name: Checkout
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
-      # A standalone destroy-prod run (the schedule, or a bare workflow_dispatch) shares no
-      # ordering with a deploy.yml prod run: deploy.yml only reaches this workflow, as its own
-      # destroy-previous job, near the end of a prod deploy — well after the new deployment's
-      # stacks are already built and cut over. Without this, a scheduled sweep could delete a
-      # deployment deploy.yml is still in the middle of building, which the refusal step below
-      # can't catch: it only protects a deployment that is already live or already recorded as
-      # last-known-good, not one still under construction. Placed before AWS role assumption so a
-      # long wait doesn't sit on a half-used STS session.
-      #
-      # Skipped when this run IS that destroy-previous call (called-from-deploy: true): deploy.yml
-      # is the run that would be waited for, so waiting here would wait on this run's own parent,
-      # forever.
-      - name: Wait for a running prod deploy
-        if: ${{ !cancelled() && needs.params.outputs.called-from-deploy != 'true' }}
-        uses: './.github/actions/wait-for-ci-deploys'
-        with:
-          github-token: ${{ github.token }}
-          workflows: 'deploy.yml'
-          match-mode: 'environment'
-          target-environment: 'prod'
 
       - name: Setup Node
         uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7
@@ -684,6 +703,7 @@ jobs:
           retry-max-attempts: 3
 
       - name: Assume AWS deployment role
+        id: assume-deploy-role
         uses: aws-actions/configure-aws-credentials@e1253824e5c10ff9df46874f81ed3ec929e19cfd # v6
         with:
           role-to-assume: ${{ vars.SUBMIT_DEPLOY_ROLE_ARN }}
@@ -1104,8 +1124,13 @@ jobs:
           echo "row=$ROW" >> "$GITHUB_OUTPUT"
           echo "key=curated/dora/dt=$(date -u +%F)/${DORA_RUN_ID}-${DORA_RUN_ATTEMPT}.json" >> "$GITHUB_OUTPUT"
 
+      # Reachable only once 'Assume AWS deployment role' above actually configured credentials:
+      # always() alone would still run this step after that role assumption failed (or after any
+      # other earlier failure), and the write below needs the credentials that step provides. A
+      # missing-credentials failure here would otherwise mask whatever really failed earlier in
+      # the job behind an unrelated "Unable to locate credentials" error.
       - name: Write the DORA row to the lake
-        if: always()
+        if: ${{ always() && steps.assume-deploy-role.outcome == 'success' }}
         uses: './.github/actions/dora-row'
         with:
           bucket: '${{ needs.names.outputs.environment-name }}-env-analytics-lake-${{ vars.SUBMIT_ACCOUNT_ID }}'

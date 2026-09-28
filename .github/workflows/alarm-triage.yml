@@ -183,6 +183,7 @@ jobs:
 
       - name: Assume the read-only alarm triage role
         if: steps.role.outputs.configured == 'true'
+        id: assume-triage-role
         uses: aws-actions/configure-aws-credentials@e1253824e5c10ff9df46874f81ed3ec929e19cfd # v6
         with:
           role-to-assume: ${{ vars.SUBMIT_ALARM_TRIAGE_ROLE_ARN }}
@@ -580,9 +581,10 @@ jobs:
 
       # Agent-run ledger row for the one-stop dashboard (v_agent_runs_daily): one row per run,
       # recording whether this path produced a usable answer, so nobody has to read run logs by
-      # hand to see the posted rate. Reachable only once the triage role held AWS credentials -
-      # a run that stops at "Stop when the triage role is not configured" has none, and writes no
-      # row (see WriteAgentRunLedgerRows in ObservabilityStack.java for the grant this step uses).
+      # hand to see the posted rate. A run that stops at "Stop when the triage role is not
+      # configured" writes no row here; the write itself (below) is also gated on
+      # 'Assume the read-only alarm triage role' having actually configured credentials (see
+      # WriteAgentRunLedgerRows in ObservabilityStack.java for the grant that step's role uses).
       - name: Determine the outcome for the ledger
         if: always() && !cancelled() && steps.role.outputs.configured == 'true'
         id: ledger-outcome
@@ -658,8 +660,13 @@ jobs:
           echo "row=$ROW" >> "$GITHUB_OUTPUT"
           echo "key=curated/agent-runs/dt=$(date -u +%F)/${ROW_RUN_ID}-${{ github.run_attempt }}.json" >> "$GITHUB_OUTPUT"
 
+      # steps.role.outputs.configured == 'true' alone is not enough: it only says the ARN was
+      # present, not that 'Assume the read-only alarm triage role' actually configured
+      # credentials. Checking that step's own outcome too avoids this write attempting without
+      # credentials, and masking whatever really failed behind an unrelated "Unable to locate
+      # credentials" error, when the role assumption itself fails.
       - name: Write the agent-run row to the lake
-        if: always() && !cancelled() && steps.role.outputs.configured == 'true'
+        if: always() && !cancelled() && steps.role.outputs.configured == 'true' && steps.assume-triage-role.outcome == 'success'
         uses: ./.github/actions/dora-row
         with:
           bucket: '${{ env.ENV_NAME }}-env-analytics-lake-${{ vars.SUBMIT_ACCOUNT_ID }}'

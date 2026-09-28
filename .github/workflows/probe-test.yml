@@ -760,6 +760,7 @@ jobs:
 
       - name: Assume AWS deployment role
         if: ${{ !cancelled() }}
+        id: assume-deploy-role
         uses: aws-actions/configure-aws-credentials@e1253824e5c10ff9df46874f81ed3ec929e19cfd # v6
         with:
           role-to-assume: ${{ vars.SUBMIT_DEPLOY_ROLE_ARN }}
@@ -828,8 +829,11 @@ jobs:
           echo "row=$ROW" >> "$GITHUB_OUTPUT"
           echo "dt=$(date -u +%F)" >> "$GITHUB_OUTPUT"
 
+      # !cancelled() alone would still run this write after 'Assume AWS deployment role' itself
+      # failed, attempting it without credentials and masking whatever really failed behind an
+      # unrelated "Unable to locate credentials" error.
       - name: Write the probe row to the lake
-        if: ${{ !cancelled() }}
+        if: ${{ !cancelled() && steps.assume-deploy-role.outcome == 'success' }}
         uses: './.github/actions/dora-row'
         with:
           bucket: '${{ needs.names.outputs.environment-name }}-env-analytics-lake-${{ vars.SUBMIT_ACCOUNT_ID }}'
