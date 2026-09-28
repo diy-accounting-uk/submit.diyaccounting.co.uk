@@ -16,7 +16,7 @@ runs), and for Claude Code steps the **Model** a sub-agent should use (Fable > O
 Haiku; the lowest tier that fits). Anything touching code goes through a `claude/*` branch and
 PR; the operator merges.
 
-**Prod runs deployment prod-632a987** (PR #403's merge deploy, run 36379908679, 2026-09-28), the only prod set standing.
+**Prod runs deployment prod-a453b95** (PR #404's merge deploy, run 36388849074 attempt 2, 2026-09-28), the only prod set standing.
 **ci**: `ci-set1` is last-known-good and the only set standing (created 19:04 UTC 2026-09-27).
 
 The board runs in five sections, in this order: **in flight** (a branch, a pull request or a run
@@ -38,8 +38,6 @@ names its model: the lowest tier that fits (Fable > Opus > Sonnet > Haiku), or `
 step.
 
 ## In flight
-
-- [ ] **B30y. Main's deploy of a453b950 (PR #404) failed on an API Gateway internal failure; redeploy it.** Run 36388849074's `deploy api` job: `AWS::ApiGatewayV2::Route` for hmrc-itsa-se-period-post returned `Handler invocation failed: Internal Failure` at 07:06:58 UTC 2026-09-28, and the rollback failed the same way on two Cognito authorizers and one route, so `prod-a453b95-app-ApiStack` is `ROLLBACK_FAILED` and prod-a453b95 stands with 7 stacks. The live set stays prod-632a987 (`last known good` and `destroy previous` were skipped). PR #404's branch deploy built the same code on ci cleanly. The operator dispatched destroy-prod run 36394171176 for prod-a453b95 and asked the session to run `gh run rerun 36388849074` when it succeeds; a background wait does that. Remainder: watch the rerun, then set the prod line to prod-a453b95. **Source**: run 36388849074. **Owner**: Claude Code. **Model**: Haiku. **Size**: 0 files.
 
 ## Machine-only
 
