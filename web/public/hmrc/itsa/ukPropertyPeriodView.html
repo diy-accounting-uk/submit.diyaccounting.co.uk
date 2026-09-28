@@ -84,7 +84,7 @@
             <div id="developerSection" class="form-group" style="display: none">
               <label for="testScenario">Test scenario (Developer/Sandbox only)</label>
               <select id="testScenario" name="testScenario">
-                <option value="UK_PROPERTY">Default (returns a UK property period summary)</option>
+                <option value="">Default (returns a UK property period summary)</option>
                 <option value="UK_NON_FHL_FULL_EXPENSES">Non-FHL, itemised expenses</option>
                 <option value="UK_NON_FHL_CONSOLIDATED">Non-FHL, consolidated expenses</option>
                 <option value="UK_FHL_FULL_EXPENSES">Furnished holiday letting, itemised expenses</option>
@@ -93,7 +93,10 @@
                 <option value="SUBMIT_API_HTTP_500">Submit API responds with 500</option>
                 <option value="SUBMIT_HMRC_API_HTTP_500">HMRC API responds with 500</option>
               </select>
-              <p class="hint">HMRC's retrieve answers not-found with no scenario, so this page always sends one.</p>
+              <p class="hint">
+                HMRC's retrieve answers not-found with no scenario. Leaving this at Default still sends one for a synthetic account -
+                the scenario named for whichever model the tax year resolves to; a live account sends none.
+              </p>
               <div style="margin-top: 10px">
                 <input type="checkbox" id="runFraudPreventionHeaderValidation" name="runFraudPreventionHeaderValidation" />
                 <label for="runFraudPreventionHeaderValidation" style="display: inline; font-weight: normal"
@@ -213,10 +216,23 @@
         }
       }
 
+      // Neither the dated nor the cumulative retrieve is stateful in the sandbox - both
+      // default (no Gov-Test-Scenario header) to "no data found", the same trap the BSAS
+      // retrieve carries (see ukPropertyAdjustments.html's retrieveSummary). A synthetic run
+      // with no explicit test scenario needs a named success scenario for whichever model the
+      // tax year resolves to; a live account must never carry a sandbox-only header.
       async function fetchPeriod(nino, businessId, taxYear, submissionId, testScenario, runFraudPreventionHeaderValidation, accessToken) {
+        const isCumulative =
+          window.itsaSubmissionModel &&
+          window.itsaSubmissionModel.isValidTaxYear(taxYear) &&
+          window.itsaSubmissionModel.resolveItsaSubmissionModel(taxYear) === "cumulative";
+        const hmrcAccount = sessionStorage.getItem("hmrcAccount");
+        const fallbackScenario = isCumulative ? "UK_PROPERTY_FULL_EXPENSES" : "UK_PROPERTY";
+        const effectiveTestScenario = window.resolveSyntheticTestScenario(testScenario, hmrcAccount, fallbackScenario);
+
         const params = new URLSearchParams({ nino, businessId, taxYear });
         if (submissionId) params.append("submissionId", submissionId);
-        if (testScenario) params.append("Gov-Test-Scenario", testScenario);
+        if (effectiveTestScenario) params.append("Gov-Test-Scenario", effectiveTestScenario);
         if (runFraudPreventionHeaderValidation) params.append("runFraudPreventionHeaderValidation", "true");
 
         const govClientHeaders = await getGovClientHeaders();
@@ -227,7 +243,6 @@
           ...govClientHeaders,
         };
 
-        const hmrcAccount = sessionStorage.getItem("hmrcAccount");
         if (hmrcAccount) {
           requestHeaders["hmrcAccount"] = hmrcAccount;
         }
