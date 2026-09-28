@@ -57,6 +57,7 @@ on:
           - 'file-confirmation-statement'
           - 'mcp-diya-gl'
           - 'itsa-loss-claims'
+          - 'itsa-foreign-property-losses'
         default: 'tour'
       environment-name:
         type: choice
