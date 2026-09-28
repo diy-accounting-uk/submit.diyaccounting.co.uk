@@ -13,6 +13,7 @@ import co.uk.diyaccounting.submit.constructs.AbstractApiLambdaProps;
 import co.uk.diyaccounting.submit.constructs.ApiLambda;
 import co.uk.diyaccounting.submit.constructs.ApiLambdaProps;
 import co.uk.diyaccounting.submit.constructs.Lambda;
+import co.uk.diyaccounting.submit.utils.OperatorEmailsHelper;
 import co.uk.diyaccounting.submit.utils.PopulatedMap;
 import co.uk.diyaccounting.submit.utils.SubHashSaltHelper;
 import java.util.List;
@@ -1308,6 +1309,9 @@ public class CompaniesHouseStack extends Stack {
 
         // Grant access to user sub hash salt secret in Secrets Manager
         SubHashSaltHelper.grantSaltAccess(fn, region, account, props.envName());
+
+        // enforceBundles() grants the operator bundle to an email on the operator list
+        OperatorEmailsHelper.grantOperatorEmailsAccess(fn, region, account, props.envName());
 
         // Grant EventBridge PutEvents permission
         fn.addToRolePolicy(PolicyStatement.Builder.create()

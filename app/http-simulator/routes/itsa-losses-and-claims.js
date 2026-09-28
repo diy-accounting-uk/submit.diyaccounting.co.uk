@@ -30,6 +30,14 @@ function isValidTaxYear(taxYear) {
   return /^\d{4}-\d{2}$/.test(taxYear);
 }
 
+// Individual Losses API v7.0's loss-claims path parameter: "The minimum tax year is 2026-27."
+// https://raw.githubusercontent.com/hmrc/individual-losses-api/master/resources/public/api/conf/7.0/common/pathParameters.yaml
+const MINIMUM_SUPPORTED_TAX_YEAR_START = 2026;
+
+function isSupportedTaxYear(taxYear) {
+  return parseInt(taxYear.slice(0, 4), 10) >= MINIMUM_SUPPORTED_TAX_YEAR_START;
+}
+
 function validatePathParams(req, res) {
   const { nino, businessId, taxYear } = req.params;
   if (!isValidNino(nino)) {
@@ -42,6 +50,13 @@ function validatePathParams(req, res) {
   }
   if (!isValidTaxYear(taxYear)) {
     res.status(400).json({ code: "FORMAT_TAX_YEAR", message: "The taxYear format is invalid" });
+    return false;
+  }
+  if (!isSupportedTaxYear(taxYear)) {
+    res.status(400).json({
+      code: "RULE_TAX_YEAR_NOT_SUPPORTED",
+      message: "The tax year specified does not lie within the supported range",
+    });
     return false;
   }
   return true;

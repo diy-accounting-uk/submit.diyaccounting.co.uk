@@ -272,12 +272,19 @@ test("Click through: Load and save ITSA Losses and Claims with HMRC", async ({ p
   /*  LOAD AND SAVE LOSSES AND CLAIMS */
   /* ***************************** */
 
-  const taxYear = "2023-24";
+  const taxYear = "2026-27";
 
   await initItsaLossesAndClaims(page, screenshotPath);
   await fillInItsaLossesLoad(
     page,
-    { hmrcNino: testNino, businessId, typeOfBusiness: "self-employment", taxYear, runFraudPreventionHeaderValidation },
+    {
+      hmrcNino: testNino,
+      businessId,
+      typeOfBusiness: "self-employment",
+      taxYear,
+      runFraudPreventionHeaderValidation,
+      suspendTemporalValidations: true,
+    },
     screenshotPath,
   );
   await submitItsaLossesLoadForm(page, screenshotPath);

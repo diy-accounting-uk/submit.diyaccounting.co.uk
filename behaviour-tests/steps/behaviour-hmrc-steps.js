@@ -127,18 +127,76 @@ export async function grantPermissionHmrcAuth(page, screenshotPath = defaultScre
  * read-only page, requiring credentials again because this is a new authorization request, not a
  * refresh of the old one. A page that already holds a sufficient token makes no such redirect, so
  * this is a no-op then.
+ *
+ * The redirect to HMRC's sandbox is a real, variable-length round trip (seen anywhere from a few
+ * seconds to tens of seconds against the live sandbox), so the entry check waits for one of
+ * HMRC's own pages to actually show up rather than testing an HMRC element for instant visibility
+ * - an instant check races the redirect and reads "not there yet" as "not needed". The wait is
+ * keyed off HMRC's own controls, not a change of origin: by the time this runs the redirect can
+ * already have finished (the round trip is sometimes faster than the click that triggered it
+ * returns), so the "current" origin at entry is not reliably the app's. Once one of HMRC's pages
+ * is showing, the rest can arrive in any order depending on whether the sandbox still holds a
+ * signed-in session (straight to consent, or straight to the permission grant, skipping sign-in
+ * entirely) - each step re-detects whichever page is now showing instead of assuming a fixed
+ * sequence, and stops as soon as none of HMRC's controls are showing any more (back at the app).
  */
 export async function completeHmrcReauthIfPresented(page, hmrcTestUsername, hmrcTestPassword, screenshotPath = defaultScreenshotPath) {
   await test.step("If the last click needed a wider HMRC grant, walk through it again", async () => {
-    const continueButton = page.getByRole("button", { name: "Continue" });
-    if (!(await continueButton.isVisible().catch(() => false))) {
+    const anyHmrcControl = page
+      .locator("#userId")
+      .or(page.locator("#givePermission"))
+      .or(page.getByRole("button", { name: "Sign in to the HMRC online service" }))
+      .or(page.getByRole("button", { name: "Continue" }));
+
+    const reauthStarted = await anyHmrcControl
+      .first()
+      .waitFor({ state: "visible", timeout: 60_000 })
+      .then(() => true)
+      .catch(() => false);
+    if (!reauthStarted) {
       return;
     }
-    await acceptCookiesHmrc(page, screenshotPath);
-    await goToHmrcAuth(page, screenshotPath);
-    await initHmrcAuth(page, screenshotPath);
-    await fillInHmrcAuth(page, hmrcTestUsername, hmrcTestPassword, screenshotPath);
-    await submitHmrcAuth(page, screenshotPath);
-    await grantPermissionHmrcAuth(page, screenshotPath);
+
+    const maxSteps = 10;
+    for (let step = 0; step < maxSteps; step += 1) {
+      await acceptCookiesHmrc(page, screenshotPath);
+
+      if (
+        await page
+          .locator("#userId")
+          .isVisible()
+          .catch(() => false)
+      ) {
+        await fillInHmrcAuth(page, hmrcTestUsername, hmrcTestPassword, screenshotPath);
+        await submitHmrcAuth(page, screenshotPath);
+      } else if (
+        await page
+          .locator("#givePermission")
+          .isVisible()
+          .catch(() => false)
+      ) {
+        await grantPermissionHmrcAuth(page, screenshotPath);
+        return; // grantPermissionHmrcAuth already waits for the redirect back to the app.
+      } else if (
+        await page
+          .getByRole("button", { name: "Sign in to the HMRC online service" })
+          .isVisible()
+          .catch(() => false)
+      ) {
+        await initHmrcAuth(page, screenshotPath);
+      } else if (
+        await page
+          .getByRole("button", { name: "Continue" })
+          .isVisible()
+          .catch(() => false)
+      ) {
+        await goToHmrcAuth(page, screenshotPath);
+      } else {
+        return; // none of HMRC's controls showing any more - back at the app.
+      }
+    }
+
+    await page.screenshot({ path: `${screenshotPath}/${timestamp()}-00-reauth-stuck.png` });
+    throw new Error(`completeHmrcReauthIfPresented: did not finish the HMRC walk within ${maxSteps} steps (stuck at ${page.url()})`);
   });
 }

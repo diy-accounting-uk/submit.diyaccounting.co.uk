@@ -160,7 +160,7 @@ export async function enforceBundles(event, options = {}) {
   const subscribedBundles = await getUserBundlesFromStorage(userSub);
   const subscribedBundleIds = subscribedBundles.map((b) => b.bundleId);
   const currentBundleIds = new Set([...(automaticBundleIds || []), ...(subscribedBundleIds || [])]);
-  if (isOperatorEmail(userEmail)) {
+  if (await isOperatorEmail(userEmail)) {
     currentBundleIds.add("operator");
   }
 

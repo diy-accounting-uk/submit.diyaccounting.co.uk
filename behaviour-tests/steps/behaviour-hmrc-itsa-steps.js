@@ -986,14 +986,15 @@ export async function initItsaLossesAndClaims(page, screenshotPath = defaultScre
 
 export async function fillInItsaLossesLoad(page, lossesQuery = {}, screenshotPath = defaultScreenshotPath) {
   await test.step("The user fills in the Losses and Claims load form", async () => {
-    const { hmrcNino, businessId, typeOfBusiness, taxYear, testScenario, runFraudPreventionHeaderValidation } = lossesQuery || {};
+    const { hmrcNino, businessId, typeOfBusiness, taxYear, testScenario, runFraudPreventionHeaderValidation, suspendTemporalValidations } =
+      lossesQuery || {};
     await loggedFill(page, "#nino", hmrcNino, "Entering National Insurance number", { screenshotPath });
     if (businessId) await loggedFill(page, "#businessId", businessId, "Entering business ID", { screenshotPath });
     if (typeOfBusiness) await loggedSelectOption(page, "#typeOfBusiness", typeOfBusiness, "the business type", { screenshotPath });
     if (taxYear) await loggedFill(page, "#taxYear", taxYear, "Entering tax year", { screenshotPath });
     await page.waitForTimeout(50);
 
-    if (testScenario || runFraudPreventionHeaderValidation) {
+    if (testScenario || runFraudPreventionHeaderValidation || suspendTemporalValidations) {
       if (isSyntheticMode()) {
         await page.waitForFunction(() => sessionStorage.getItem("hmrcAccount") === "synthetic", { timeout: 10000 });
       }
@@ -1009,6 +1010,9 @@ export async function fillInItsaLossesLoad(page, lossesQuery = {}, screenshotPat
       }
       if (runFraudPreventionHeaderValidation) {
         await page.locator("#runFraudPreventionHeaderValidation").check();
+      }
+      if (suspendTemporalValidations) {
+        await page.locator("#suspendTemporalValidations").check();
       }
     }
 

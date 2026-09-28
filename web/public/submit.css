@@ -239,6 +239,17 @@ header {
   flex-shrink: 0;
 }
 
+/* page-chrome.js removes the static ".chrome-fallback" link and, in the same
+   step, inserts the icon/auth-section row (.header-nav) before the <h1> and the
+   main nav bar (nav.main-nav) after the subtitle. Padding the header while the
+   fallback is still there reserves that footprint, so the insertion replaces
+   the gap in one reflow instead of pushing the title and page down. Pages that
+   never load page-chrome.js carry no fallback and get no padding. */
+header:has(> .chrome-fallback) {
+  padding-top: 34px;
+  padding-bottom: 86px;
+}
+
 /* Spreadsheet grid receding behind the header into the horizon */
 header::after {
   content: "";
@@ -521,6 +532,25 @@ header::after {
   .main-nav a {
     font-size: var(--font-size-sm);
     padding: var(--spacing-xs) var(--spacing-sm);
+  }
+
+  /* Both rows wrap onto more lines below 600px, and the main nav's five
+     links can wrap across three lines on the narrowest phones - reserve
+     for that worst case rather than the exact width, since a placeholder
+     a little taller than needed costs nothing but an under-sized one still
+     shifts the page. */
+  header:has(> .chrome-fallback) {
+    padding-top: 30px;
+    padding-bottom: 117px;
+  }
+}
+
+/* Between 480px and 600px the main nav's five links wrap onto only two
+   lines rather than three, so the reservation above is taller than this
+   range needs; narrow it here instead of leaving a visible empty gap. */
+@media (min-width: 480px) and (max-width: 600px) {
+  header:has(> .chrome-fallback) {
+    padding-bottom: 76px;
   }
 }
 

@@ -18,6 +18,7 @@ import co.uk.diyaccounting.submit.constructs.AsyncApiLambdaProps;
 import co.uk.diyaccounting.submit.constructs.Lambda;
 import co.uk.diyaccounting.submit.constructs.LambdaProps;
 import co.uk.diyaccounting.submit.utils.EmailHashSecretHelper;
+import co.uk.diyaccounting.submit.utils.OperatorEmailsHelper;
 import co.uk.diyaccounting.submit.utils.PopulatedMap;
 import co.uk.diyaccounting.submit.utils.SubHashSaltHelper;
 import java.util.ArrayList;
@@ -364,6 +365,9 @@ public class AccountStack extends Stack {
         SubHashSaltHelper.grantSaltAccess(this.bundleGetLambda, region, account, props.envName());
         infof("Granted Secrets Manager salt access to %s", this.bundleGetLambda.getFunctionName());
 
+        // bundleGet grants the operator bundle to an email on the operator list
+        OperatorEmailsHelper.grantOperatorEmailsAccess(this.bundleGetLambda, region, account, props.envName());
+
         // Grant EventBridge PutEvents permission
         this.bundleGetLambda.addToRolePolicy(PolicyStatement.Builder.create()
                 .effect(Effect.ALLOW)
@@ -601,6 +605,10 @@ public class AccountStack extends Stack {
 
         bundlesTable.grant(this.operatorSnapshotGetLambda, "dynamodb:Query");
         SubHashSaltHelper.grantSaltAccess(this.operatorSnapshotGetLambda, region, account, props.envName());
+        // operatorSnapshotGet's enforceBundles() call grants the operator bundle to an email on
+        // the operator list
+        OperatorEmailsHelper.grantOperatorEmailsAccess(
+                this.operatorSnapshotGetLambda, region, account, props.envName());
         this.operatorSnapshotGetLambda.addToRolePolicy(PolicyStatement.Builder.create()
                 .effect(Effect.ALLOW)
                 .actions(List.of("s3:GetObject"))

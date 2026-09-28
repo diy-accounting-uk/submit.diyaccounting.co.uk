@@ -42,7 +42,6 @@ COPY app/functions app/functions
 COPY app/data app/data
 COPY app/services app/services
 COPY submit.passes.toml submit.passes.toml
-COPY OPERATORS.txt OPERATORS.txt
 COPY lifecycle.toml lifecycle.toml
 COPY secrets-rotation.toml secrets-rotation.toml
 # stripeReconcile.js reads the donation Payment Links' bundle ids from here to resolve a

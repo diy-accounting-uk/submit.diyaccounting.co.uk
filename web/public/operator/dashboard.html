@@ -134,6 +134,24 @@
           margin-bottom: 0;
         }
       }
+
+      /* #objectivesContainer and the two panels in .side-panels are empty until
+         initPage()'s snapshot fetch resolves, then fill with the eight objectives'
+         tables and the visitors/experiments rows in one go. Reserving close to their
+         typical filled height keeps that fill from pushing .side-panels down - sized
+         for the eight fixed objectives at a normal screen width; a narrower one, where
+         the same tables wrap onto more lines, needs more. */
+      #objectivesContainer {
+        min-height: 2160px;
+      }
+      .side-panels .objective {
+        min-height: 174px;
+      }
+      @media (max-width: 600px) {
+        #objectivesContainer {
+          min-height: 3760px;
+        }
+      }
     </style>
   </head>
   <body class="page-wide">

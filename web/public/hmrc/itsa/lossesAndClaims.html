@@ -218,6 +218,28 @@
 
         updateDeveloperSectionVisibility();
         window.addEventListener("developer-mode-changed", updateDeveloperSectionVisibility);
+
+        restoreSuspendTemporalValidations();
+      }
+
+      // Load needs a wider HMRC scope than a plain read, so ticking this checkbox before Load
+      // can be followed by HMRC's own reauthorisation redirect, which reloads the page and
+      // resets the checkbox (it's plain DOM state, not sessionStorage). Persisting the tick
+      // into the same carrier the save retry after reauth already uses lets it survive that
+      // reload and still be set when Save reads it.
+      function persistSuspendTemporalValidations() {
+        const checkbox = document.getElementById("suspendTemporalValidations");
+        if (!checkbox?.checked) return;
+        const pendingSave = JSON.parse(sessionStorage.getItem("pendingLossesSaveRequest") || "null") || {};
+        pendingSave.lossesDetails = { ...(pendingSave.lossesDetails || {}), suspendTemporalValidations: true };
+        sessionStorage.setItem("pendingLossesSaveRequest", JSON.stringify(pendingSave));
+      }
+
+      function restoreSuspendTemporalValidations() {
+        const pendingSave = JSON.parse(sessionStorage.getItem("pendingLossesSaveRequest") || "null");
+        if (pendingSave?.lossesDetails?.suspendTemporalValidations) {
+          document.getElementById("suspendTemporalValidations").checked = true;
+        }
       }
 
       // Carry-back is refused server-side for anything but a sole trade (the sandbox's
@@ -415,6 +437,7 @@
           const hmrcAccount = sessionStorage.getItem("hmrcAccount");
           sessionStorage.setItem("oauth_state", state);
           sessionStorage.setItem(pendingKey, JSON.stringify(pendingValue));
+          persistSuspendTemporalValidations();
           sessionStorage.setItem("currentActivity", `${location.pathname}`);
           const oauthScope = window.hmrcScopeCheck ? await window.hmrcScopeCheck.getOAuthScopeString() : "write:self-assessment";
           const authResponseUrl = await window.authUrlBuilder.buildHmrcAuthUrl(state, oauthScope, hmrcAccount || "live");
