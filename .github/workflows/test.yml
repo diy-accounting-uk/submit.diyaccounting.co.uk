@@ -155,10 +155,11 @@ jobs:
         run: echo "version=$(node -p "require('./package-lock.json').packages['node_modules/playwright'].version")" >> "$GITHUB_OUTPUT"
 
   lint-workflows:
-    if: ${{ needs.changes.outputs.code == 'true' }}
+    if: ${{ needs.changes.outputs.code == 'true' && !contains(fromJSON(needs.select-jobs.outputs.skip-json || '[]'), 'lint-workflows') }}
     name: 'validate workflow syntax'
     runs-on: ubuntu-24.04
     needs:
+      - select-jobs
       - changes
     steps:
       - name: Checkout
@@ -197,10 +198,11 @@ jobs:
         run: node scripts/check-workflow-permissions.mjs
 
   lint-js:
-    if: ${{ needs.changes.outputs.code == 'true' }}
+    if: ${{ needs.changes.outputs.code == 'true' && !contains(fromJSON(needs.select-jobs.outputs.skip-json || '[]'), 'lint-js') }}
     name: 'eslint'
     runs-on: ubuntu-24.04
     needs:
+      - select-jobs
       - changes
     # Gates JavaScript files this change ADDS, and reports the repository total without failing on
     # it. Linting everything would be red on every run until a backlog of pre-existing findings is
@@ -353,6 +355,259 @@ jobs:
       runProxyBehaviourTests: ${{ steps.normalise.outputs.runProxyBehaviourTests }}
       github-environment: ${{ steps.normalise.outputs.github-environment }}
 
+  # Reasoned job filter (proof of concept): asks a model which of the jobs below, already
+  # mechanically gated on `needs.changes.outputs.code`, have nothing left to prove for this
+  # diff. Its answer only ADDS skips on top of that mechanical gate - it can turn a job that
+  # would run into a skip, never the reverse - and a malformed, failed, budget/kill-switch
+  # skipped, or main-branch answer is read as "skip nothing", so every gated job still runs.
+  #
+  # This job carries NO job-level `if:` and sets `continue-on-error: true`, so it always reports
+  # 'success' to every job that needs it, whatever happens inside it. Both are required, not
+  # decorative: GitHub Actions applies an implicit `success()` check to a dependent job's `if:`
+  # whenever that `if:` does not itself reference a status function (always()/success()/
+  # failure()/cancelled()), and success() is false when a needed job was skipped OR failed - so
+  # a select-jobs job that could be skipped (a job-level `if:`) or fail (an unhandled step error)
+  # would silently skip every job below it, including the required npm test/maven test/eslint
+  # status contexts, on exactly the runs (main, a kill-switched or budget-exhausted call) where
+  # running everything matters most. See:
+  # https://docs.github.com/en/actions/using-jobs/using-jobs-in-a-workflow - "If a job fails or
+  # is skipped, all jobs that need it are skipped unless the jobs use a conditional expression
+  # that causes the job to continue."
+  # https://docs.github.com/en/actions/learn-github-actions/expressions#status-check-functions -
+  # "A default status check of success() is applied unless you include one of these functions."
+  # A job whose steps fail but which itself carries `continue-on-error: true` still reports
+  # `success` to a downstream `needs.<job>.result` (confirmed against
+  # https://www.kenmuse.com/blog/how-to-handle-step-and-job-errors-in-github-actions/, which
+  # traces this exact case), so that field covers a genuine step failure (Bedrock error, a
+  # crashed script) the same way the internal gating below covers main, the budget and the kill
+  # switch. The `select-jobs.mjs decide` step (`if: always()`) is what actually turns every one
+  # of those cases into "skip nothing" (`decideForContext`, unit tested for each), so the job
+  # reporting success is necessary but not sufficient on its own - both layers matter.
+  select-jobs:
+    name: 'select jobs'
+    needs:
+      - params
+    continue-on-error: true
+    runs-on: ubuntu-24.04
+    # `continue-on-error: true` reports a step FAILURE inside this job as `success` downstream,
+    # but a job cancelled by hitting its own `timeout-minutes` is not a step failure - it reports
+    # `cancelled`, which the same default success() gate below would still read as "skip
+    # everything". 10 minutes is generous headroom for what this job actually does (git, npm
+    # install -g, one small Bedrock call) so that path stays theoretical rather than mitigated.
+    timeout-minutes: 10
+    # `npm-test-cdk-ci` below already declares `environment: ci` unconditionally - including on
+    # every run this workflow serves for a PROD deploy from main via deploy.yml's workflow_call -
+    # so this job doing the same is the existing, proven pattern, not a new risk. The eligibility
+    # check below means the ci-scoped AWS role chain is never actually exercised on main anyway.
+    environment: ci
+    permissions:
+      contents: read
+      id-token: write
+      actions: read
+    env:
+      CLAUDE_CODE_VERSION: '2.0.30'
+      MODEL_ID: 'eu.anthropic.claude-haiku-4-5-20251001-v1:0'
+      OUT_DIR: '/tmp/select-jobs'
+      # The one place this number is written, same convention as alarm-triage.yml's and
+      # support-triage.yml's own budgets. This path is called on every branch push rather than
+      # per issue or per dispatch, so the budget bounds Bedrock spend on a runaway push loop
+      # rather than reflecting a single call's cost.
+      SELECT_JOBS_BUDGET_PER_DAY: '200'
+    outputs:
+      skip-json: ${{ steps.decide.outputs.skip-json }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          fetch-depth: 0
+
+      # Cheap and unconditional: every step below that touches the budget, AWS or Bedrock is
+      # gated on this, but the eligibility that actually matters for correctness is
+      # `decideForContext`'s own `isEligibleRef` check in the final "Parse the answer" step -
+      # this is a cost optimisation on top of that, never its replacement.
+      - name: Decide whether this ref is eligible for a job-selection call
+        id: eligibility
+        run: |
+          if [ "${{ github.ref }}" = "refs/heads/main" ]; then
+            echo "eligible=false" | tee -a "$GITHUB_OUTPUT"
+          else
+            echo "eligible=true" | tee -a "$GITHUB_OUTPUT"
+          fi
+
+      - name: Stop once ${{ env.SELECT_JOBS_BUDGET_PER_DAY }} decisions have already posted today
+        id: budget-guard
+        if: steps.eligibility.outputs.eligible == 'true'
+        uses: ./.github/actions/agent-run-budget
+        with:
+          workflow-file: test.yml
+          job-name: select jobs
+          step-name: Parse the answer
+          budget: ${{ env.SELECT_JOBS_BUDGET_PER_DAY }}
+
+      - name: Configure AWS role via GitHub OIDC
+        if: steps.eligibility.outputs.eligible == 'true' && steps.budget-guard.outputs.over-budget == 'false'
+        uses: aws-actions/configure-aws-credentials@e1253824e5c10ff9df46874f81ed3ec929e19cfd # v6
+        with:
+          role-to-assume: ${{ vars.SUBMIT_ACTIONS_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+          role-chaining: false
+          audience: sts.amazonaws.com
+          role-skip-session-tagging: true
+          output-credentials: true
+          retry-max-attempts: 3
+
+      - name: Assume the read-only alarm triage role
+        if: steps.eligibility.outputs.eligible == 'true' && steps.budget-guard.outputs.over-budget == 'false'
+        uses: aws-actions/configure-aws-credentials@e1253824e5c10ff9df46874f81ed3ec929e19cfd # v6
+        with:
+          role-to-assume: ${{ vars.SUBMIT_ALARM_TRIAGE_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+          role-chaining: true
+          audience: sts.amazonaws.com
+          role-skip-session-tagging: true
+          output-credentials: true
+          retry-max-attempts: 3
+
+      - name: Stop when the agent kill switch is on
+        if: steps.eligibility.outputs.eligible == 'true' && steps.budget-guard.outputs.over-budget == 'false'
+        id: kill-switch
+        uses: ./.github/actions/agent-kill-switch
+        with:
+          environment-name: ci
+
+      # Unconditional (not gated like the steps around it): the final "Parse the answer" step
+      # (`if: always()`) needs a working `node` on every path, including one where every step
+      # below this is skipped.
+      - name: Set up Node
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+
+      - name: Install Claude Code
+        if: >-
+          steps.eligibility.outputs.eligible == 'true' && steps.budget-guard.outputs.over-budget == 'false' &&
+          steps.kill-switch.conclusion != 'failure'
+        run: npm install -g "@anthropic-ai/claude-code@${CLAUDE_CODE_VERSION}"
+
+      - name: Find the last green run of this workflow on this branch
+        id: last-green
+        if: >-
+          steps.eligibility.outputs.eligible == 'true' && steps.budget-guard.outputs.over-budget == 'false' &&
+          steps.kill-switch.conclusion != 'failure'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          mkdir -p "${OUT_DIR}"
+          sha=$(gh run list --repo "${{ github.repository }}" --workflow test.yml \
+                  --branch "${{ github.ref_name }}" --status success --limit 1 \
+                  --json headSha --jq '.[0].headSha // empty' || true)
+          echo "sha=${sha}" | tee -a "$GITHUB_OUTPUT"
+
+      - name: Build the diff and changed-files inputs
+        id: diff
+        if: >-
+          steps.eligibility.outputs.eligible == 'true' && steps.budget-guard.outputs.over-budget == 'false' &&
+          steps.kill-switch.conclusion != 'failure'
+        env:
+          LAST_GREEN_SHA: ${{ steps.last-green.outputs.sha }}
+        run: |
+          set -euo pipefail
+          if [ -n "${LAST_GREEN_SHA}" ] && git cat-file -e "${LAST_GREEN_SHA}^{commit}" 2>/dev/null; then
+            range="${LAST_GREEN_SHA}..${{ github.sha }}"
+          else
+            git fetch origin '${{ github.event.repository.default_branch }}' --quiet
+            range="origin/${{ github.event.repository.default_branch }}...HEAD"
+          fi
+          echo "comparing ${range}" | tee -a "$GITHUB_STEP_SUMMARY"
+          git diff "${range}" > "${OUT_DIR}/diff.txt"
+          git diff --name-only "${range}" > "${OUT_DIR}/changed-files.txt"
+          echo "range=${range}" | tee -a "$GITHUB_OUTPUT"
+
+      - name: Write the invocation context
+        id: context
+        if: >-
+          steps.eligibility.outputs.eligible == 'true' && steps.budget-guard.outputs.over-budget == 'false' &&
+          steps.kill-switch.conclusion != 'failure'
+        run: |
+          set -euo pipefail
+          jq -n \
+            --arg eventName '${{ github.event_name }}' \
+            --arg ref '${{ github.ref }}' \
+            --arg refName '${{ github.ref_name }}' \
+            --arg environmentName '${{ needs.params.outputs.environment-name }}' \
+            --arg githubEnvironment '${{ needs.params.outputs.github-environment }}' \
+            --arg deploymentName '${{ needs.params.outputs.deployment-name }}' \
+            --arg runProxyBehaviourTests '${{ needs.params.outputs.runProxyBehaviourTests }}' \
+            --arg lastGreenSha '${{ steps.last-green.outputs.sha }}' \
+            --arg comparedRange '${{ steps.diff.outputs.range }}' \
+            '{eventName: $eventName, ref: $ref, refName: $refName, environmentName: $environmentName, githubEnvironment: $githubEnvironment, deploymentName: $deploymentName, runProxyBehaviourTests: $runProxyBehaviourTests, lastGreenSha: $lastGreenSha, comparedRange: $comparedRange}' \
+            > "${OUT_DIR}/context.json"
+
+      - name: Build the prompt
+        id: prompt
+        if: >-
+          steps.eligibility.outputs.eligible == 'true' && steps.budget-guard.outputs.over-budget == 'false' &&
+          steps.kill-switch.conclusion != 'failure'
+        run: |
+          set -euo pipefail
+          node scripts/ci/select-jobs.mjs prompt \
+            --context "${OUT_DIR}/context.json" \
+            --diff "${OUT_DIR}/diff.txt" \
+            --changed-files "${OUT_DIR}/changed-files.txt" \
+            > "${OUT_DIR}/prompt.txt"
+          echo "prompt-hash=$(sha256sum "${OUT_DIR}/prompt.txt" | cut -d' ' -f1)" | tee -a "$GITHUB_OUTPUT"
+
+      - name: Run the job-selection agent
+        if: >-
+          steps.eligibility.outputs.eligible == 'true' && steps.budget-guard.outputs.over-budget == 'false' &&
+          steps.kill-switch.conclusion != 'failure'
+        id: run
+        env:
+          CLAUDE_CODE_USE_BEDROCK: '1'
+          AWS_REGION: ${{ env.AWS_REGION }}
+          ANTHROPIC_MODEL: ${{ env.MODEL_ID }}
+          ANTHROPIC_SMALL_FAST_MODEL: ${{ env.MODEL_ID }}
+          DISABLE_TELEMETRY: '1'
+          DISABLE_ERROR_REPORTING: '1'
+          DISABLE_AUTOUPDATER: '1'
+        run: |
+          set -o pipefail
+          claude -p "$(cat "${OUT_DIR}/prompt.txt")" \
+            --max-turns 6 \
+            --output-format json \
+            --permission-mode default \
+            --disallowedTools "Bash,Edit,Write,WebFetch,WebSearch" \
+            --allowedTools "Read,Grep,Glob" \
+            2>&1 | tee "${OUT_DIR}/claude-output.json"
+
+      # Always runs, whatever happened above (not eligible, over budget, kill switch on, or the
+      # agent step itself failed) - decideForContext (unit tested) turns every one of those into
+      # "skip nothing" rather than this step ever throwing.
+      - name: Parse the answer
+        id: decide
+        if: always()
+        run: |
+          set -euo pipefail
+          mkdir -p "${OUT_DIR}"
+          SKIP_JSON=$(node scripts/ci/select-jobs.mjs decide \
+            --ref "${{ github.ref }}" \
+            --claude-output "${OUT_DIR}/claude-output.json" \
+            --context "${OUT_DIR}/context.json" \
+            --model-id "${{ env.MODEL_ID }}" \
+            --prompt-hash "${{ steps.prompt.outputs.prompt-hash }}" \
+            --out "${OUT_DIR}/decision.json")
+          echo "skip-json=${SKIP_JSON}" | tee -a "$GITHUB_OUTPUT"
+
+      - name: Save the decision artifact
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
+        with:
+          name: select-jobs-decision-${{ github.run_id }}
+          path: ${{ env.OUT_DIR }}/decision.json
+          if-no-files-found: warn
+          retention-days: 30
+
   names:
     needs:
       - params
@@ -378,10 +633,11 @@ jobs:
       holding-url: ${{ steps.deployment-config.outputs.holding-url }}
 
   npm-test:
-    if: ${{ needs.changes.outputs.code == 'true' }}
+    if: ${{ needs.changes.outputs.code == 'true' && !contains(fromJSON(needs.select-jobs.outputs.skip-json || '[]'), 'npm-test') }}
     name: 'npm test'
     runs-on: ubuntu-24.04
     needs:
+      - select-jobs
       - changes
       - names
     permissions:
@@ -404,10 +660,11 @@ jobs:
       - run: npm test
 
   npm-unit-test:
-    if: ${{ needs.changes.outputs.code == 'true' }}
+    if: ${{ needs.changes.outputs.code == 'true' && !contains(fromJSON(needs.select-jobs.outputs.skip-json || '[]'), 'npm-unit-test') }}
     name: 'npm unit test'
     runs-on: ubuntu-latest
     needs:
+      - select-jobs
       - changes
       - names
     permissions:
@@ -429,10 +686,11 @@ jobs:
       - run: npm run test:coverage
 
   npm-mcp-test:
-    if: ${{ needs.changes.outputs.code == 'true' }}
+    if: ${{ needs.changes.outputs.code == 'true' && !contains(fromJSON(needs.select-jobs.outputs.skip-json || '[]'), 'npm-mcp-test') }}
     name: 'npm mcp test'
     runs-on: ubuntu-latest
     needs:
+      - select-jobs
       - changes
       - names
     permissions:
@@ -466,10 +724,11 @@ jobs:
         working-directory: mcp
 
   npm-system-test:
-    if: ${{ needs.changes.outputs.code == 'true' }}
+    if: ${{ needs.changes.outputs.code == 'true' && !contains(fromJSON(needs.select-jobs.outputs.skip-json || '[]'), 'npm-system-test') }}
     name: 'npm system test'
     runs-on: ubuntu-latest
     needs:
+      - select-jobs
       - changes
       - names
     permissions:
@@ -491,10 +750,11 @@ jobs:
       - run: npm run test:system
 
   npm-test-web-unit:
-    if: ${{ needs.changes.outputs.code == 'true' }}
+    if: ${{ needs.changes.outputs.code == 'true' && !contains(fromJSON(needs.select-jobs.outputs.skip-json || '[]'), 'npm-test-web-unit') }}
     name: 'npm unit test with coverage'
     runs-on: ubuntu-latest
     needs:
+      - select-jobs
       - changes
       - names
     permissions:
@@ -519,10 +779,11 @@ jobs:
       - run: npm run test:web-unit
 
   npm-browser-test:
-    if: ${{ needs.changes.outputs.code == 'true' }}
+    if: ${{ needs.changes.outputs.code == 'true' && !contains(fromJSON(needs.select-jobs.outputs.skip-json || '[]'), 'npm-browser-test') }}
     name: 'npm browser test'
     runs-on: ubuntu-latest
     needs:
+      - select-jobs
       - changes
       - names
     permissions:
@@ -546,10 +807,11 @@ jobs:
       - run: npm run test:browser
 
   mvn-test:
-    if: ${{ needs.changes.outputs.code == 'true' }}
+    if: ${{ needs.changes.outputs.code == 'true' && !contains(fromJSON(needs.select-jobs.outputs.skip-json || '[]'), 'mvn-test') }}
     name: 'maven test'
     runs-on: ubuntu-latest
     needs:
+      - select-jobs
       - changes
       - names
     permissions:
@@ -570,9 +832,10 @@ jobs:
           ./mvnw clean test
 
   npm-test-cdk-ci:
-    if: ${{ needs.changes.outputs.code == 'true' }}
+    if: ${{ needs.changes.outputs.code == 'true' && !contains(fromJSON(needs.select-jobs.outputs.skip-json || '[]'), 'npm-test-cdk-ci') }}
     name: 'npm test cdk-ci'
     needs:
+      - select-jobs
       - changes
       - names
     runs-on: ubuntu-24.04
@@ -658,9 +921,10 @@ jobs:
           COGNITO_CLIENT_ID: ${{ steps.lookup.outputs.cognito-client-id }}
 
   npm-test-cdk-prod:
-    if: ${{ needs.changes.outputs.code == 'true' }}
+    if: ${{ needs.changes.outputs.code == 'true' && !contains(fromJSON(needs.select-jobs.outputs.skip-json || '[]'), 'npm-test-cdk-prod') }}
     name: 'npm test cdk prod'
     needs:
+      - select-jobs
       - changes
       - names
     runs-on: ubuntu-24.04
@@ -747,12 +1011,13 @@ jobs:
   # Simulator behaviour tests - run in parallel without a tunnel, Docker or HMRC
   # Uses Playwright official container for faster builds (browsers pre-installed)
   behaviour-test-simulator-submit-vat:
-    if: ${{ needs.changes.outputs.code == 'true' }}
+    if: ${{ needs.changes.outputs.code == 'true' && !contains(fromJSON(needs.select-jobs.outputs.skip-json || '[]'), 'behaviour-test-simulator-submit-vat') }}
     name: 'simulator - submitVatBehaviour'
     runs-on: ubuntu-24.04
     container:
       image: mcr.microsoft.com/playwright:v${{ needs.playwright-version.outputs.version }}-jammy
     needs:
+      - select-jobs
       - changes
       - names
       - playwright-version
@@ -785,12 +1050,13 @@ jobs:
           path: target/behaviour-test-results/
 
   behaviour-test-simulator-post-vat-return:
-    if: ${{ needs.changes.outputs.code == 'true' }}
+    if: ${{ needs.changes.outputs.code == 'true' && !contains(fromJSON(needs.select-jobs.outputs.skip-json || '[]'), 'behaviour-test-simulator-post-vat-return') }}
     name: 'simulator - postVatReturnBehaviour'
     runs-on: ubuntu-24.04
     container:
       image: mcr.microsoft.com/playwright:v${{ needs.playwright-version.outputs.version }}-jammy
     needs:
+      - select-jobs
       - changes
       - names
       - playwright-version
@@ -822,12 +1088,13 @@ jobs:
           path: target/behaviour-test-results/
 
   behaviour-test-simulator-practice-licence:
-    if: ${{ needs.changes.outputs.code == 'true' }}
+    if: ${{ needs.changes.outputs.code == 'true' && !contains(fromJSON(needs.select-jobs.outputs.skip-json || '[]'), 'behaviour-test-simulator-practice-licence') }}
     name: 'simulator - practiceLicenceBehaviour'
     runs-on: ubuntu-24.04
     container:
       image: mcr.microsoft.com/playwright:v${{ needs.playwright-version.outputs.version }}-jammy
     needs:
+      - select-jobs
       - changes
       - names
       - playwright-version
@@ -862,12 +1129,13 @@ jobs:
           path: target/behaviour-test-results/
 
   behaviour-test-simulator-get-vat-return:
-    if: ${{ needs.changes.outputs.code == 'true' }}
+    if: ${{ needs.changes.outputs.code == 'true' && !contains(fromJSON(needs.select-jobs.outputs.skip-json || '[]'), 'behaviour-test-simulator-get-vat-return') }}
     name: 'simulator - getVatReturnBehaviour'
     runs-on: ubuntu-24.04
     container:
       image: mcr.microsoft.com/playwright:v${{ needs.playwright-version.outputs.version }}-jammy
     needs:
+      - select-jobs
       - changes
       - names
       - playwright-version
@@ -899,12 +1167,13 @@ jobs:
           path: target/behaviour-test-results/
 
   behaviour-test-simulator-get-vat-obligations:
-    if: ${{ needs.changes.outputs.code == 'true' }}
+    if: ${{ needs.changes.outputs.code == 'true' && !contains(fromJSON(needs.select-jobs.outputs.skip-json || '[]'), 'behaviour-test-simulator-get-vat-obligations') }}
     name: 'simulator - getVatObligationsBehaviour'
     runs-on: ubuntu-24.04
     container:
       image: mcr.microsoft.com/playwright:v${{ needs.playwright-version.outputs.version }}-jammy
     needs:
+      - select-jobs
       - changes
       - names
       - playwright-version
@@ -936,12 +1205,13 @@ jobs:
           path: target/behaviour-test-results/
 
   behaviour-test-simulator-get-vat-liabilities:
-    if: ${{ needs.changes.outputs.code == 'true' }}
+    if: ${{ needs.changes.outputs.code == 'true' && !contains(fromJSON(needs.select-jobs.outputs.skip-json || '[]'), 'behaviour-test-simulator-get-vat-liabilities') }}
     name: 'simulator - getVatLiabilitiesBehaviour'
     runs-on: ubuntu-24.04
     container:
       image: mcr.microsoft.com/playwright:v${{ needs.playwright-version.outputs.version }}-jammy
     needs:
+      - select-jobs
       - changes
       - names
       - playwright-version
@@ -973,12 +1243,13 @@ jobs:
           path: target/behaviour-test-results/
 
   behaviour-test-simulator-get-vat-payments:
-    if: ${{ needs.changes.outputs.code == 'true' }}
+    if: ${{ needs.changes.outputs.code == 'true' && !contains(fromJSON(needs.select-jobs.outputs.skip-json || '[]'), 'behaviour-test-simulator-get-vat-payments') }}
     name: 'simulator - getVatPaymentsBehaviour'
     runs-on: ubuntu-24.04
     container:
       image: mcr.microsoft.com/playwright:v${{ needs.playwright-version.outputs.version }}-jammy
     needs:
+      - select-jobs
       - changes
       - names
       - playwright-version
@@ -1010,12 +1281,13 @@ jobs:
           path: target/behaviour-test-results/
 
   behaviour-test-simulator-get-vat-penalties:
-    if: ${{ needs.changes.outputs.code == 'true' }}
+    if: ${{ needs.changes.outputs.code == 'true' && !contains(fromJSON(needs.select-jobs.outputs.skip-json || '[]'), 'behaviour-test-simulator-get-vat-penalties') }}
     name: 'simulator - getVatPenaltiesBehaviour'
     runs-on: ubuntu-24.04
     container:
       image: mcr.microsoft.com/playwright:v${{ needs.playwright-version.outputs.version }}-jammy
     needs:
+      - select-jobs
       - changes
       - names
       - playwright-version
@@ -1047,12 +1319,13 @@ jobs:
           path: target/behaviour-test-results/
 
   behaviour-test-simulator-fraud-prevention-headers:
-    if: ${{ needs.changes.outputs.code == 'true' }}
+    if: ${{ needs.changes.outputs.code == 'true' && !contains(fromJSON(needs.select-jobs.outputs.skip-json || '[]'), 'behaviour-test-simulator-fraud-prevention-headers') }}
     name: 'simulator - fraudPreventionHeadersBehaviour'
     runs-on: ubuntu-24.04
     container:
       image: mcr.microsoft.com/playwright:v${{ needs.playwright-version.outputs.version }}-jammy
     needs:
+      - select-jobs
       - changes
       - names
       - playwright-version
@@ -1084,12 +1357,13 @@ jobs:
           path: target/behaviour-test-results/
 
   behaviour-test-simulator-compliance:
-    if: ${{ needs.changes.outputs.code == 'true' }}
+    if: ${{ needs.changes.outputs.code == 'true' && !contains(fromJSON(needs.select-jobs.outputs.skip-json || '[]'), 'behaviour-test-simulator-compliance') }}
     name: 'simulator - complianceBehaviour'
     runs-on: ubuntu-24.04
     container:
       image: mcr.microsoft.com/playwright:v${{ needs.playwright-version.outputs.version }}-jammy
     needs:
+      - select-jobs
       - changes
       - names
       - playwright-version
@@ -1121,12 +1395,13 @@ jobs:
           path: target/behaviour-test-results/
 
   behaviour-test-simulator-vat-validation:
-    if: ${{ needs.changes.outputs.code == 'true' }}
+    if: ${{ needs.changes.outputs.code == 'true' && !contains(fromJSON(needs.select-jobs.outputs.skip-json || '[]'), 'behaviour-test-simulator-vat-validation') }}
     name: 'simulator - vatValidationBehaviour'
     runs-on: ubuntu-24.04
     container:
       image: mcr.microsoft.com/playwright:v${{ needs.playwright-version.outputs.version }}-jammy
     needs:
+      - select-jobs
       - changes
       - names
       - playwright-version
@@ -1158,12 +1433,13 @@ jobs:
           path: target/behaviour-test-results/
 
   behaviour-test-simulator-vat-schemes:
-    if: ${{ needs.changes.outputs.code == 'true' }}
+    if: ${{ needs.changes.outputs.code == 'true' && !contains(fromJSON(needs.select-jobs.outputs.skip-json || '[]'), 'behaviour-test-simulator-vat-schemes') }}
     name: 'simulator - vatSchemesBehaviour'
     runs-on: ubuntu-24.04
     container:
       image: mcr.microsoft.com/playwright:v${{ needs.playwright-version.outputs.version }}-jammy
     needs:
+      - select-jobs
       - changes
       - names
       - playwright-version
@@ -1195,12 +1471,13 @@ jobs:
           path: target/behaviour-test-results/
 
   behaviour-test-simulator-auth:
-    if: ${{ needs.changes.outputs.code == 'true' }}
+    if: ${{ needs.changes.outputs.code == 'true' && !contains(fromJSON(needs.select-jobs.outputs.skip-json || '[]'), 'behaviour-test-simulator-auth') }}
     name: 'simulator - authBehaviour'
     runs-on: ubuntu-24.04
     container:
       image: mcr.microsoft.com/playwright:v${{ needs.playwright-version.outputs.version }}-jammy
     needs:
+      - select-jobs
       - changes
       - names
       - playwright-version
@@ -1232,12 +1509,13 @@ jobs:
           path: target/behaviour-test-results/
 
   behaviour-test-simulator-bundle:
-    if: ${{ needs.changes.outputs.code == 'true' }}
+    if: ${{ needs.changes.outputs.code == 'true' && !contains(fromJSON(needs.select-jobs.outputs.skip-json || '[]'), 'behaviour-test-simulator-bundle') }}
     name: 'simulator - bundleBehaviour'
     runs-on: ubuntu-24.04
     container:
       image: mcr.microsoft.com/playwright:v${{ needs.playwright-version.outputs.version }}-jammy
     needs:
+      - select-jobs
       - changes
       - names
       - playwright-version
@@ -1269,12 +1547,13 @@ jobs:
           path: target/behaviour-test-results/
 
   behaviour-test-simulator-help:
-    if: ${{ needs.changes.outputs.code == 'true' }}
+    if: ${{ needs.changes.outputs.code == 'true' && !contains(fromJSON(needs.select-jobs.outputs.skip-json || '[]'), 'behaviour-test-simulator-help') }}
     name: 'simulator - helpBehaviour'
     runs-on: ubuntu-24.04
     container:
       image: mcr.microsoft.com/playwright:v${{ needs.playwright-version.outputs.version }}-jammy
     needs:
+      - select-jobs
       - changes
       - names
       - playwright-version
@@ -1306,12 +1585,13 @@ jobs:
           path: target/behaviour-test-results/
 
   behaviour-test-simulator-pass-redemption:
-    if: ${{ needs.changes.outputs.code == 'true' }}
+    if: ${{ needs.changes.outputs.code == 'true' && !contains(fromJSON(needs.select-jobs.outputs.skip-json || '[]'), 'behaviour-test-simulator-pass-redemption') }}
     name: 'simulator - passRedemptionBehaviour'
     runs-on: ubuntu-24.04
     container:
       image: mcr.microsoft.com/playwright:v${{ needs.playwright-version.outputs.version }}-jammy
     needs:
+      - select-jobs
       - changes
       - names
       - playwright-version
@@ -1343,12 +1623,13 @@ jobs:
           path: target/behaviour-test-results/
 
   behaviour-test-simulator-token-enforcement:
-    if: ${{ needs.changes.outputs.code == 'true' }}
+    if: ${{ needs.changes.outputs.code == 'true' && !contains(fromJSON(needs.select-jobs.outputs.skip-json || '[]'), 'behaviour-test-simulator-token-enforcement') }}
     name: 'simulator - tokenEnforcementBehaviour'
     runs-on: ubuntu-24.04
     container:
       image: mcr.microsoft.com/playwright:v${{ needs.playwright-version.outputs.version }}-jammy
     needs:
+      - select-jobs
       - changes
       - names
       - playwright-version
@@ -1380,12 +1661,13 @@ jobs:
           path: target/behaviour-test-results/
 
   behaviour-test-simulator-payment:
-    if: ${{ needs.changes.outputs.code == 'true' }}
+    if: ${{ needs.changes.outputs.code == 'true' && !contains(fromJSON(needs.select-jobs.outputs.skip-json || '[]'), 'behaviour-test-simulator-payment') }}
     name: 'simulator - paymentBehaviour'
     runs-on: ubuntu-24.04
     container:
       image: mcr.microsoft.com/playwright:v${{ needs.playwright-version.outputs.version }}-jammy
     needs:
+      - select-jobs
       - changes
       - names
       - playwright-version
@@ -1417,12 +1699,13 @@ jobs:
           path: target/behaviour-test-results/
 
   behaviour-test-simulator-generate-pass-activity:
-    if: ${{ needs.changes.outputs.code == 'true' }}
+    if: ${{ needs.changes.outputs.code == 'true' && !contains(fromJSON(needs.select-jobs.outputs.skip-json || '[]'), 'behaviour-test-simulator-generate-pass-activity') }}
     name: 'simulator - generatePassActivityBehaviour'
     runs-on: ubuntu-24.04
     container:
       image: mcr.microsoft.com/playwright:v${{ needs.playwright-version.outputs.version }}-jammy
     needs:
+      - select-jobs
       - changes
       - names
       - playwright-version
@@ -1454,12 +1737,13 @@ jobs:
           path: target/behaviour-test-results/
 
   behaviour-test-simulator-file-confirmation-statement:
-    if: ${{ needs.changes.outputs.code == 'true' }}
+    if: ${{ needs.changes.outputs.code == 'true' && !contains(fromJSON(needs.select-jobs.outputs.skip-json || '[]'), 'behaviour-test-simulator-file-confirmation-statement') }}
     name: 'simulator - fileConfirmationStatementBehaviour'
     runs-on: ubuntu-24.04
     container:
       image: mcr.microsoft.com/playwright:v${{ needs.playwright-version.outputs.version }}-jammy
     needs:
+      - select-jobs
       - changes
       - names
       - playwright-version
@@ -1491,12 +1775,13 @@ jobs:
           path: target/behaviour-test-results/
 
   behaviour-test-simulator-file-micro-entity-accounts:
-    if: ${{ needs.changes.outputs.code == 'true' }}
+    if: ${{ needs.changes.outputs.code == 'true' && !contains(fromJSON(needs.select-jobs.outputs.skip-json || '[]'), 'behaviour-test-simulator-file-micro-entity-accounts') }}
     name: 'simulator - fileMicroEntityAccountsBehaviour'
     runs-on: ubuntu-24.04
     container:
       image: mcr.microsoft.com/playwright:v${{ needs.playwright-version.outputs.version }}-jammy
     needs:
+      - select-jobs
       - changes
       - names
       - playwright-version
@@ -1528,12 +1813,13 @@ jobs:
           path: target/behaviour-test-results/
 
   behaviour-test-simulator-itsa-business-details:
-    if: ${{ needs.changes.outputs.code == 'true' }}
+    if: ${{ needs.changes.outputs.code == 'true' && !contains(fromJSON(needs.select-jobs.outputs.skip-json || '[]'), 'behaviour-test-simulator-itsa-business-details') }}
     name: 'simulator - itsaBusinessDetailsBehaviour'
     runs-on: ubuntu-24.04
     container:
       image: mcr.microsoft.com/playwright:v${{ needs.playwright-version.outputs.version }}-jammy
     needs:
+      - select-jobs
       - changes
       - names
       - playwright-version
@@ -1565,12 +1851,13 @@ jobs:
           path: target/behaviour-test-results/
 
   behaviour-test-simulator-itsa-obligations:
-    if: ${{ needs.changes.outputs.code == 'true' }}
+    if: ${{ needs.changes.outputs.code == 'true' && !contains(fromJSON(needs.select-jobs.outputs.skip-json || '[]'), 'behaviour-test-simulator-itsa-obligations') }}
     name: 'simulator - itsaObligationsBehaviour'
     runs-on: ubuntu-24.04
     container:
       image: mcr.microsoft.com/playwright:v${{ needs.playwright-version.outputs.version }}-jammy
     needs:
+      - select-jobs
       - changes
       - names
       - playwright-version
@@ -1602,12 +1889,13 @@ jobs:
           path: target/behaviour-test-results/
 
   behaviour-test-simulator-itsa-self-employment-period:
-    if: ${{ needs.changes.outputs.code == 'true' }}
+    if: ${{ needs.changes.outputs.code == 'true' && !contains(fromJSON(needs.select-jobs.outputs.skip-json || '[]'), 'behaviour-test-simulator-itsa-self-employment-period') }}
     name: 'simulator - itsaSelfEmploymentPeriodBehaviour'
     runs-on: ubuntu-24.04
     container:
       image: mcr.microsoft.com/playwright:v${{ needs.playwright-version.outputs.version }}-jammy
     needs:
+      - select-jobs
       - changes
       - names
       - playwright-version
@@ -1639,12 +1927,13 @@ jobs:
           path: target/behaviour-test-results/
 
   behaviour-test-simulator-itsa-annual-submission:
-    if: ${{ needs.changes.outputs.code == 'true' }}
+    if: ${{ needs.changes.outputs.code == 'true' && !contains(fromJSON(needs.select-jobs.outputs.skip-json || '[]'), 'behaviour-test-simulator-itsa-annual-submission') }}
     name: 'simulator - itsaAnnualSubmissionBehaviour'
     runs-on: ubuntu-24.04
     container:
       image: mcr.microsoft.com/playwright:v${{ needs.playwright-version.outputs.version }}-jammy
     needs:
+      - select-jobs
       - changes
       - names
       - playwright-version
@@ -1676,12 +1965,13 @@ jobs:
           path: target/behaviour-test-results/
 
   behaviour-test-simulator-itsa-uk-property-period:
-    if: ${{ needs.changes.outputs.code == 'true' }}
+    if: ${{ needs.changes.outputs.code == 'true' && !contains(fromJSON(needs.select-jobs.outputs.skip-json || '[]'), 'behaviour-test-simulator-itsa-uk-property-period') }}
     name: 'simulator - itsaUkPropertyPeriodBehaviour'
     runs-on: ubuntu-24.04
     container:
       image: mcr.microsoft.com/playwright:v${{ needs.playwright-version.outputs.version }}-jammy
     needs:
+      - select-jobs
       - changes
       - names
       - playwright-version
@@ -1713,12 +2003,13 @@ jobs:
           path: target/behaviour-test-results/
 
   behaviour-test-simulator-itsa-uk-property-annual-submission:
-    if: ${{ needs.changes.outputs.code == 'true' }}
+    if: ${{ needs.changes.outputs.code == 'true' && !contains(fromJSON(needs.select-jobs.outputs.skip-json || '[]'), 'behaviour-test-simulator-itsa-uk-property-annual-submission') }}
     name: 'simulator - itsaUkPropertyAnnualSubmissionBehaviour'
     runs-on: ubuntu-24.04
     container:
       image: mcr.microsoft.com/playwright:v${{ needs.playwright-version.outputs.version }}-jammy
     needs:
+      - select-jobs
       - changes
       - names
       - playwright-version
@@ -1750,12 +2041,13 @@ jobs:
           path: target/behaviour-test-results/
 
   behaviour-test-simulator-itsa-losses-and-claims:
-    if: ${{ needs.changes.outputs.code == 'true' }}
+    if: ${{ needs.changes.outputs.code == 'true' && !contains(fromJSON(needs.select-jobs.outputs.skip-json || '[]'), 'behaviour-test-simulator-itsa-losses-and-claims') }}
     name: 'simulator - itsaLossesAndClaimsBehaviour'
     runs-on: ubuntu-24.04
     container:
       image: mcr.microsoft.com/playwright:v${{ needs.playwright-version.outputs.version }}-jammy
     needs:
+      - select-jobs
       - changes
       - names
       - playwright-version
@@ -1787,12 +2079,13 @@ jobs:
           path: target/behaviour-test-results/
 
   behaviour-test-simulator-itsa-final-declaration:
-    if: ${{ needs.changes.outputs.code == 'true' }}
+    if: ${{ needs.changes.outputs.code == 'true' && !contains(fromJSON(needs.select-jobs.outputs.skip-json || '[]'), 'behaviour-test-simulator-itsa-final-declaration') }}
     name: 'simulator - itsaFinalDeclarationBehaviour'
     runs-on: ubuntu-24.04
     container:
       image: mcr.microsoft.com/playwright:v${{ needs.playwright-version.outputs.version }}-jammy
     needs:
+      - select-jobs
       - changes
       - names
       - playwright-version
@@ -1826,9 +2119,10 @@ jobs:
   # Proxy behaviour test - requires Docker and HMRC sandbox secrets
   # Uses manual Playwright install (not container) because Docker is needed for mock-oauth2-server
   behaviour-test-proxy-submit-vat:
-    if: ${{ needs.changes.outputs.code == 'true' && !cancelled() && needs.params.outputs.runProxyBehaviourTests == 'true' }}
+    if: ${{ needs.changes.outputs.code == 'true' && !cancelled() && needs.params.outputs.runProxyBehaviourTests == 'true' && !contains(fromJSON(needs.select-jobs.outputs.skip-json || '[]'), 'behaviour-test-proxy-submit-vat') }}
     name: 'proxy - submitVatBehaviour'
     needs:
+      - select-jobs
       - changes
       - params
       - names
