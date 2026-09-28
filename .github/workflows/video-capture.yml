@@ -62,7 +62,7 @@ on:
           - 'itsa-self-employment-amend'
           - 'itsa-uk-property-year'
           - 'itsa-annual-from-book'
-          - 'itsa-uk-property-year'
+          - 'itsa-in-year-estimate'
         default: 'tour'
       environment-name:
         type: choice
