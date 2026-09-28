@@ -89,9 +89,7 @@ step.
 
 ## Human-driven
 
-- [ ] **OMK. Answer the marketing strategy's two new questions.** `PLAN_MARKETING_STRATEGY.md` §6: Q11, the spend pool (net subscription revenue only, or plus donations, which would open the campaign cap now); Q12, the cap's share of net revenue above £100 a month (50%, or 100% until the 1,000-subscriber milestone). Write each answer into §6. **Source**: `PLAN_MARKETING_STRATEGY.md`. **Owner**: Operator. **Model**: none. **Size**: 0 files.
-
-- [ ] **MK-36. Ask Plaid and Yapily for their partner terms.** Send the enquiry drafted in `PLAN_MARKETING_STRATEGY.md` §3.7 from the operator's address to Plaid and Yapily: agent or partner terms that keep diya-gl out of the regulated account-information activity, coverage of Tide, Starling and Revolut Business, and price at our volume. Record the answers in §3.7; MK-49 (the bank feed) waits on them. **Source**: `PLAN_MARKETING_STRATEGY.md` §5 MK-36. **Owner**: Operator. **Model**: none. **Size**: 0 files.
+- [ ] **MK-36. Ask Plaid and Yapily for their partner terms.** Send, after the operator reviews it, the enquiry drafted in `PLAN_MARKETING_STRATEGY.md` §3.7 from the operator's address to Plaid and Yapily: agent or partner terms that keep diya-gl out of the regulated account-information activity, coverage of Tide, Starling and Revolut Business, and price at our volume. Record the answers in §3.7; MK-49 (the bank feed) waits on them. **Source**: `PLAN_MARKETING_STRATEGY.md` §5 MK-36. **Owner**: Operator. **Model**: none. **Size**: 0 files.
 
 - [ ] **LP-25a. Bank referral: the partner programme.** Pick the partner programme, sign up, and supply the referral link and the disclosure wording; write both into LP-25b. **Source**: `PLAN_DIYA_GL_LAUNCH.md`. **Owner**: Operator. **Model**: none. **Size**: 0 files.
 
