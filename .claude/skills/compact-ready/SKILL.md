@@ -6,7 +6,7 @@
 Answer "is now a good time for compaction?" and make it true. A compaction keeps a summary and
 drops the rest, so everything a later turn needs must sit in a commit, `NEXT.md`, a plan file or
 the summary text before `/compact` runs. Invoke as `/compact-ready`; `/auto-merge` runs it after
-every verified merge.
+every verified merge, and `/board` at the end of every render.
 
 ## 1. Gather
 
