@@ -11,9 +11,10 @@
 //
 // GA4's daily export table for a day usually lands within 24 hours of that day ending, so this
 // job targets D-2, not D-1: at 03:15 the D-1 table may not exist yet, and D-2 gives about 27
-// hours of margin. A missing table throws rather than writing an empty object or falling back to
-// the intraday table, because a missing table means the export lagged or broke and the Telegram
-// alarm is the right outcome; recovery is one state machine execution with an explicit date.
+// hours of margin. GA4's export also writes no table at all for a day with zero events, so a
+// missing target table is only treated as a lagging or broken export, worth the Telegram alarm,
+// when the dataset has no table for a later day either; otherwise the target day is written as
+// the zero-row day it was.
 
 import { gzipSync } from "zlib";
 import { S3Client, PutObjectCommand } from "@aws-sdk/client-s3";
@@ -24,6 +25,7 @@ import { createLogger } from "../../lib/logger.js";
 const logger = createLogger({ source: "app/functions/analytics/ga4EventExportPull.js" });
 
 const TABLE_DATE_PATTERN = /^\d{8}$/;
+const EXPORT_TABLE_ID_PATTERN = /^events_(?:intraday_)?(\d{8})$/;
 
 let cachedS3Client = null;
 
@@ -88,6 +90,24 @@ export function toTableDateSuffix(dateStr) {
     throw new Error(`Invalid target date "${dateStr}": expected YYYY-MM-DD`);
   }
   return suffix;
+}
+
+/**
+ * Whether GA4's export has a daily or intraday table for any day after `tableDateSuffix`. GA4's
+ * export writes no `events_YYYYMMDD` table at all for a day with zero events, so a later table's
+ * existence is what tells a missing target table apart from an export that is simply lagging.
+ *
+ * @param {BigQuery} bigQuery
+ * @param {string} datasetId
+ * @param {string} tableDateSuffix - "YYYYMMDD"
+ * @returns {Promise<boolean>}
+ */
+async function hasLaterExportTable(bigQuery, datasetId, tableDateSuffix) {
+  const [tables] = await bigQuery.dataset(datasetId).getTables();
+  return tables.some((table) => {
+    const match = EXPORT_TABLE_ID_PATTERN.exec(table.id);
+    return match !== null && match[1] > tableDateSuffix;
+  });
 }
 
 function buildQuery(projectId, datasetId, tableDateSuffix) {
@@ -188,7 +208,14 @@ export async function handler(event = {}) {
   const tableName = `events_${tableDateSuffix}`;
   const [tableExists] = await bigQuery.dataset(datasetId).table(tableName).exists();
   if (!tableExists) {
-    throw new Error(`GA4 BigQuery export table ${projectId}.${datasetId}.${tableName} does not exist for ${targetDate}`);
+    if (!(await hasLaterExportTable(bigQuery, datasetId, tableDateSuffix))) {
+      throw new Error(`GA4 BigQuery export table ${projectId}.${datasetId}.${tableName} does not exist for ${targetDate}`);
+    }
+
+    const s3Client = getS3Client();
+    const key = await putEventsObject(s3Client, bucket, targetDate, []);
+    logger.info({ message: "GA4 BigQuery event export pull found no events for the day", date: targetDate, key });
+    return { date: targetDate, key, count: 0 };
   }
 
   const [job] = await bigQuery.createQueryJob({

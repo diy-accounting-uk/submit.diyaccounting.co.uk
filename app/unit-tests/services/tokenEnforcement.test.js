@@ -152,7 +152,7 @@ describe("tokenEnforcement", () => {
       expect(consumeToken).toHaveBeenCalledWith("user-1", "resident", 1);
     });
 
-    it("charges nothing for self-employed-read against the real catalogue - business details, obligations and calculations only read", async () => {
+    it("charges nothing for self-employed-read against the real catalogue - business details and obligations only read", async () => {
       const catalog = loadCatalogFromRoot();
 
       const result = await consumeTokenForActivity("user-1", "self-employed-read", catalog);

@@ -275,8 +275,17 @@
 
       // Fetches the cumulative model's single running total for the tax year, the starting
       // point a customer edits to reach the new total, rather than a blank amend form.
+      //
+      // This retrieve is not stateful in the sandbox - its documented default (no
+      // Gov-Test-Scenario header) is "no data found", the same trap the BSAS retrieve carries
+      // (see ukPropertyAdjustments.html's retrieveSummary). A synthetic run with no explicit
+      // test scenario needs a named success scenario; a live account must never carry one. This
+      // button only shows for a cumulative tax year, so no isCumulative check is needed here.
       async function fetchCurrentTotal(nino, businessId, taxYear, accessToken) {
+        const hmrcAccount = sessionStorage.getItem("hmrcAccount");
+        const testScenario = window.resolveSyntheticTestScenario(null, hmrcAccount, "UK_PROPERTY_FULL_EXPENSES");
         const params = new URLSearchParams({ nino, businessId, taxYear });
+        if (testScenario) params.append("Gov-Test-Scenario", testScenario);
         const govClientHeaders = await getGovClientHeaders();
 
         const requestHeaders = {
@@ -284,7 +293,6 @@
           "Content-Type": "application/json",
           ...govClientHeaders,
         };
-        const hmrcAccount = sessionStorage.getItem("hmrcAccount");
         if (hmrcAccount) {
           requestHeaders["hmrcAccount"] = hmrcAccount;
         }

@@ -150,7 +150,7 @@ export async function ingestHandler(event) {
       client_reference_id: hashedSub,
       metadata: { hashedSub, bundleId },
       subscription_data: {
-        metadata: { hashedSub, bundleId },
+        metadata: { hashedSub, bundleId, actor: classifyActor(userEmail) },
       },
       line_items: [{ price: priceId, quantity: 1 }],
       success_url: returnTo

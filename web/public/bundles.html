@@ -256,6 +256,17 @@
         btn.style.backgroundColor = "#0a8927";
       };
 
+      // The landing attribution analytics.js stored under this key at first sign-in (MK-3): the
+      // server writes it once onto the account's first bundle and ignores it on every later one.
+      function readStoredLandingAttribution() {
+        try {
+          const raw = localStorage.getItem("attribution.landing");
+          return raw ? JSON.parse(raw) : undefined;
+        } catch {
+          return undefined;
+        }
+      }
+
       // --- request individual bundle
       async function requestBundle(bundleId, bundleName, qualifiers = {}, fireAndForget = true) {
         const idToken = getIdToken();
@@ -275,7 +286,7 @@
               "Content-Type": "application/json",
             },
             fireAndForget,
-            body: JSON.stringify({ bundleId, qualifiers }),
+            body: JSON.stringify({ bundleId, qualifiers, acquisition: readStoredLandingAttribution() }),
           });
           const body = await r.json().catch(() => ({}));
 

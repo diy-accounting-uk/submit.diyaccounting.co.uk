@@ -30,6 +30,24 @@ import { processSqsRecords } from "../../lib/sqsWorkerHelper.js";
 
 const logger = createLogger({ source: "app/functions/account/bundlePost.js" });
 
+// Same field names session-beacon.js carries to the activity event (MK-1), reused here so the
+// account's acquisition map and the traffic-side detail agree on what a "source" is.
+const ACQUISITION_KEYS = ["utmSource", "utmMedium", "utmCampaign", "utmContent", "utmTerm", "gclid", "ref", "landedAt"];
+
+// Picks only the known attribution fields out of whatever the client sent, so an unrelated
+// or malformed body never reaches the stored bundle. Returns undefined when none are present,
+// so the caller can leave the bundle item's acquisition attribute unset rather than writing an
+// empty map.
+function buildAcquisitionMap(source) {
+  if (!source || typeof source !== "object") return undefined;
+  const acquisition = {};
+  for (const key of ACQUISITION_KEYS) {
+    const value = source[key];
+    if (typeof value === "string" && value) acquisition[key] = value;
+  }
+  return Object.keys(acquisition).length > 0 ? acquisition : undefined;
+}
+
 function emitCapMetric(metricName, bundleId) {
   try {
     console.log(
@@ -283,6 +301,9 @@ export async function grantBundle(
   const qualifiers = requestBody.qualifiers || {};
 
   const currentBundles = await getUserBundles(userId);
+  // Captured before any bundle in this list is deleted and re-granted below, so a renewal of
+  // the account's only bundle still finds the acquisition its first grant recorded.
+  const existingAcquisition = currentBundles.find((bundle) => bundle?.acquisition)?.acquisition;
 
   const catalogBundle = getCatalogBundle(requestedBundle);
 
@@ -410,6 +431,14 @@ export async function grantBundle(
   const effectiveQualifiers = grantQualifiers || (Object.keys(qualifiers).length > 0 ? qualifiers : undefined);
   if (effectiveQualifiers && Object.keys(effectiveQualifiers).length > 0) {
     newBundle.qualifiers = effectiveQualifiers;
+  }
+
+  // Acquisition: written once for the account, from whichever grant is first to record one,
+  // and carried forward unchanged by every grant after that — never re-derived from a later
+  // request's own (possibly different) stored source.
+  const acquisition = existingAcquisition || buildAcquisitionMap(requestBody.acquisition);
+  if (acquisition) {
+    newBundle.acquisition = acquisition;
   }
 
   // Token tracking: set token fields from catalogue

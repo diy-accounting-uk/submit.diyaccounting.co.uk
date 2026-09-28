@@ -1,0 +1,162 @@
+<!doctype html>
+<!-- SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0 -->
+<!-- Copyright (C) 2006-2026 DIY Accounting Limited -->
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Account and passes walkthrough videos - DIY Accounting Submit</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta
+      name="description"
+      content="Short recordings of DIY Accounting Submit's account side in use: signing in, tokens, subscriptions, the site tour, receipts, and generating digital or physical passes."
+    />
+    <link rel="canonical" href="https://submit.diyaccounting.co.uk/videos-account.html" />
+    <link rel="icon" href="/favicon.ico" sizes="any" />
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+    <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png" />
+    <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16.png" />
+    <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" />
+    <link rel="manifest" href="/site.webmanifest" />
+    <link rel="stylesheet" href="./submit.css" />
+    <script src="./lib/analytics.js"></script>
+    <script src="./lib/session-beacon.js"></script>
+    <style>
+      #mainContent {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        border-radius: var(--radius-lg);
+        padding: 1em;
+      }
+      .videos-page {
+        max-width: 900px;
+        margin: 0 auto;
+      }
+      .videos-intro,
+      .video-section,
+      .video-contents-nav {
+        background: rgba(255, 255, 255, 0.95);
+        border-radius: 8px;
+        padding: 1.25em 1.5em;
+        margin-bottom: 1.5em;
+      }
+      .videos-intro p {
+        margin: 0;
+        line-height: 1.6;
+      }
+      .video-section {
+        scroll-margin-top: 1em;
+      }
+      .video-section:target {
+        outline: 3px solid #2c5aa0;
+      }
+      .video-section h2 {
+        margin: 0 0 0.5em;
+        font-size: 1.3em;
+      }
+      .video-section p {
+        line-height: 1.6;
+      }
+      .video-contents-nav h2 {
+        margin: 0 0 0.75em;
+        font-size: 1.3em;
+        color: var(--color-text-primary);
+      }
+      .video-contents-nav h3 {
+        margin: 1em 0 0.4em;
+        font-size: 1em;
+        font-weight: 600;
+        color: var(--color-text-secondary);
+      }
+      .video-contents-nav .video-contents-groups > h3:first-child {
+        margin-top: 0;
+      }
+      .video-contents-nav ul {
+        margin: 0;
+        padding-left: 1.25em;
+      }
+      .video-contents-nav li {
+        margin: 0.3em 0;
+      }
+      .video-contents-nav a {
+        color: var(--color-brand-primary);
+      }
+      .video-contents-nav a:hover,
+      .video-contents-nav a:focus-visible {
+        color: var(--color-brand-primary-dark);
+      }
+      .video-frame {
+        position: relative;
+        width: 100%;
+        aspect-ratio: 16 / 9;
+        background: #000;
+        border-radius: 6px;
+        overflow: hidden;
+        margin: 0.75em 0;
+      }
+      .video-frame iframe {
+        position: absolute;
+        inset: 0;
+        width: 100%;
+        height: 100%;
+        border: 0;
+      }
+      .video-share {
+        display: flex;
+        align-items: center;
+        gap: 0.75em;
+        flex-wrap: wrap;
+        font-size: 0.95em;
+      }
+      .video-share .btn-small {
+        padding: 0.35em 0.9em;
+      }
+      .video-share .copied {
+        color: #155724;
+      }
+    </style>
+  </head>
+  <body>
+    <a href="#mainContent" class="skip-link">Skip to main content</a>
+    <header>
+      <p class="chrome-fallback"><a href="./">DIY Accounting Submit</a></p>
+      <h1>Account and passes walkthrough videos</h1>
+      <p class="subtitle">Signing in, tokens, subscriptions, receipts and passes</p>
+    </header>
+
+    <main id="mainContent">
+      <div id="statusMessagesContainer" role="alert" aria-live="polite"></div>
+
+      <div class="videos-page">
+        <div class="videos-intro">
+          <p>
+            Each video is a recording of DIY Accounting Submit doing one thing, start to finish. Videos marked "(sandbox)" show features
+            recorded against HMRC's test service. They are hosted on the
+            <a href="https://www.youtube.com/@DIYAccountingSubmit" target="_blank" rel="noopener">DIY Accounting Submit YouTube channel</a>.
+          </p>
+        </div>
+
+        <nav id="videoContents" class="video-contents-nav" aria-label="Contents" hidden>
+          <h2>Contents</h2>
+          <div class="video-contents-groups"></div>
+        </nav>
+        <div id="videoList" aria-live="polite">
+          <p class="service-description">Loading videos...</p>
+        </div>
+      </div>
+    </main>
+
+    <footer data-footer="full"></footer>
+
+    <script src="widgets/page-chrome.js"></script>
+    <script src="lib/env-loader.js"></script>
+    <script type="module" src="submit.js"></script>
+    <script src="developer-mode.js"></script>
+    <script src="widgets/entitlement-status.js"></script>
+    <script src="widgets/auth-status.js"></script>
+    <script src="widgets/status-messages.js"></script>
+    <script type="module" src="widgets/view-source-link.js"></script>
+    <script type="module">
+      import { renderVideoPage } from "./widgets/video-pages.js";
+      renderVideoPage({ mode: "area", group: "account" });
+    </script>
+  </body>
+</html>

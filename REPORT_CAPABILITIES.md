@@ -3,7 +3,7 @@
 
 # Repository capabilities
 
-Built 2026-09-23 from commit `5b8b79e9`. Look here before you add a script, workflow, Lambda, check, sync, report, alarm, page or skill: the repository probably does it already.
+Built 2026-09-28 from `submit.diyaccounting.co.uk` commit `db459569` and `spreadsheets.diyaccounting.co.uk` commit `2ff80b4b7`. Look here before you add a script, workflow, Lambda, check, sync, report, alarm, page or skill: one of the two repositories probably does it already.
 
 How to use this file:
 
@@ -450,6 +450,72 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
     - [DEV-41](#dev-41-publish-videos-to-the-youtube-channel) Publish videos to the YouTube channel: use when the operator asks to publish, re-publish or check the videos, or a recording is ready.
     - [DEV-42](#dev-42-look-up-a-vat-submission-failure-alarms-customer) Look up a VAT submission-failure alarm's customer: use when the operator asks who a submission-failure alarm was or whether the customer needs a reply.
     - [DEV-43](#dev-43-find-existing-tooling-before-building-any) Find existing tooling before building any: use when a task would add a script, workflow, Lambda, check, sync, report, alarm, page or skill
+- **[Spreadsheets and diya-gl](#spreadsheets-and-diya-gl-ss)**
+  - [diya-gl engine, CLI and MCP server](#diya-gl-engine-cli-and-mcp-server-ss)
+    - [SS-01](#ss-01-run-the-diya-gl-calculation-engine) Run the diya-gl calculation engine: use when a diya-gl book's figures must be computed in JavaScript, independent of the Excel package.
+    - [SS-02](#ss-02-validate-diya-gl-books-against-the-v2-schema) Validate diya-gl books against the v2 schema: use when a book.toml or lines.jsonl document must be checked against the published diya-gl format before it is trusted.
+    - [SS-03](#ss-03-read-and-write-diya-gl-interchange-formats) Read and write diya-gl interchange formats: use when a book must move between book.toml/lines.jsonl, a diya-gl zip, a single-file JSON or a package zip.
+    - [SS-04](#ss-04-apply-book-edits-and-derivations) Apply book edits and derivations: use when a line must be added, changed or removed on a book, from the page, the CLI or the MCP server, the same way everywhere.
+    - [SS-05](#ss-05-run-the-diya-gl-cli) Run the diya-gl CLI: use when a book must be recalculated, read or written from the command line or a script, outside the browser.
+    - [SS-06](#ss-06-serve-the-diya-gl-mcp-server) Serve the diya-gl MCP server: use when an MCP session needs to extract, report on, edit or save a diya-gl book without HMRC filing.
+    - [SS-07](#ss-07-publish-the-diya-gl-format-specification-page) Publish the diya-gl format specification page: use when the public diya-gl format page must reflect the schemas, HMRC field mappings and checks the code actually carries.
+  - [Package pipeline: generate, archive and publish](#package-pipeline-generate-archive-and-publish-ss)
+    - [SS-08](#ss-08-generate-spreadsheet-packages-from-product-modules) Generate spreadsheet packages from product modules: use when a product's Excel workbooks must be regenerated for a tax year from its product module and template.
+    - [SS-09](#ss-09-build-package-zips-and-the-catalogue) Build package zips and the catalogue: use when generated packages must become the zip files and catalogue.toml the download page and S3 sync read.
+    - [SS-10](#ss-10-extract-reconciliation-scenarios-from-master-books) Extract reconciliation scenarios from master books: use when a reconciliation fixture, or the diya-gl subset behind it, must be regenerated from a master book under examples/.
+    - [SS-11](#ss-11-reconcile-generated-packages-against-expected-figures) Reconcile generated packages against expected figures: use when a generated package's recalculated figures must be checked against its fixture's expected values, or against a diya-gl book that populated it.
+    - [SS-12](#ss-12-judge-reconciliation-reports-with-an-llm) Judge reconciliation reports with an LLM: use when a reconciled report's headline indicators must be checked for sense, not just arithmetic.
+    - [SS-13](#ss-13-cross-check-figures-across-product-packages) Cross-check figures across product packages: use when a figure that should agree between BST, SE and Ltd packages for the same non-VAT scenario must be checked for consistency.
+    - [SS-14](#ss-14-verify-export-and-report-roundtrip-and-stability) Verify export and report roundtrip and stability: use when the fidelity of the export/report loop, or the stability of recalculation, must be scored rather than assumed.
+    - [SS-15](#ss-15-extract-diya-gl-data-and-financial-reports-from-populated-packages) Extract diya-gl data and financial reports from populated packages: use when a populated Excel package, or a customer's own upload, must yield its diya-gl data or its financial reports.
+    - [SS-16](#ss-16-write-workbooks-from-diya-gl-data) Write workbooks from diya-gl data: use when a book.toml/lines.jsonl document, or any interchange kind, must become the Excel workbook(s) the template composes.
+    - [SS-17](#ss-17-build-reconciliation-pages-and-record-releases) Build reconciliation pages and record releases: use when the published reconciliation pages must reflect the latest reports, or a diya-gl release must be recorded on them.
+    - [SS-18](#ss-18-archive-a-cut-of-packages-to-diy-accounting-archive) Archive a cut of packages to diy-accounting-archive: use when a tax year's finished packages must be copied into diy-accounting-archive with provenance.
+    - [SS-19](#ss-19-update-annual-hmrc-tax-rate-data) Update annual HMRC tax rate data: use when a new tax year's Income Tax, National Insurance or VAT thresholds must reach the SE/Ltd TOML data and the regenerated packages.
+    - [SS-20](#ss-20-publish-diya-gl-to-npm-ghcr-and-the-homebrew-tap) Publish diya-gl to npm, GHCR and the Homebrew tap: use when a green prod deploy from main should publish diya-gl's next version, or a finish-only rerun must complete a partial publish.
+  - [Web properties](#web-properties-ss)
+    - [SS-21](#ss-21-serve-the-spreadsheets-product-catalogue-and-downloads) Serve the spreadsheets product catalogue and downloads: use when the spreadsheets.diyaccounting.co.uk homepage, product catalogue or a package download must be shown or changed.
+    - [SS-22](#ss-22-take-stripe-and-paypal-donations) Take Stripe and PayPal donations: use when a download or the donate page must offer a Stripe Payment Link or PayPal donate button, or the Stripe side needs setting up.
+    - [SS-23](#ss-23-serve-knowledge-base-article-and-community-content) Serve knowledge base, article and community content: use when the knowledge-base, article, references, community or recently-updated pages must be shown, searched or regenerated.
+    - [SS-24](#ss-24-compile-the-redirect-engine) Compile the redirect engine: use when a URL on either site must redirect, or a site's redirects.toml has changed.
+    - [SS-25](#ss-25-generate-sitemaps) Generate sitemaps: use when either site's sitemap.xml must reflect the current catalogue or knowledge base.
+    - [SS-26](#ss-26-serve-the-diya-gl-product-pages-and-shell) Serve the DIYA-GL product pages and shell: use when one of the four DIYA-GL product pages (bst, se, taxi, ltd) needs its page shell, views or per-product manifest changed.
+    - [SS-27](#ss-27-save-and-load-books-locally-and-via-submits-cloud-store) Save and load books locally and via Submit's cloud store: use when a DIYA-GL book must be saved to a download, autosaved in the browser, or signed in and saved to the reader's account.
+    - [SS-28](#ss-28-store-books-in-google-drive) Store books in Google Drive: use when a reader wants a second, Google Drive-backed store for a DIYA-GL book, alongside Submit's cloud store.
+    - [SS-29](#ss-29-serve-diya-gl-as-an-offline-pwa) Serve DIYA-GL as an offline PWA: use when a DIYA-GL page must keep working offline once it has been opened online, or the service worker's cache scope changes.
+    - [SS-30](#ss-30-serve-the-holding-page-and-failover) Serve the holding page and failover: use when live spreadsheets.diyaccounting.co.uk traffic must move onto a maintenance page and back.
+  - [Analytics and tracking](#analytics-and-tracking-ss)
+    - [SS-31](#ss-31-load-ga4-analytics-with-consent-gating) Load GA4 analytics with consent gating: use when a page on either site needs GA4 loaded, gated behind the visitor's cookie choice, or visitor-kind classified.
+    - [SS-32](#ss-32-send-ga4-ecommerce-and-download-events) Send GA4 ecommerce and download events: use when the spreadsheets site needs a GA4 ecommerce event: a product list view, a runner download or a completed donation.
+    - [SS-33](#ss-33-send-diya-gl-ga4-events) Send DIYA-GL GA4 events: use when a book load, a book save, a donation prompt, or a cloud sign-in/save on the DIYA-GL pages must reach GA4.
+    - [SS-34](#ss-34-configure-cloudwatch-rum) Configure CloudWatch RUM: use when browser-side performance and error telemetry (CloudWatch RUM) must be wired up or its config changed.
+  - [Workflows and deploys](#workflows-and-deploys-ss)
+    - [SS-35](#ss-35-cdk-spreadsheetsstack) CDK: SpreadsheetsStack: use when tracing or changing the S3 + CloudFront infrastructure behind either site.
+    - [SS-36](#ss-36-deploy-the-spreadsheets-and-diya-gl-sites) Deploy the spreadsheets and diya-gl sites: use when a push or manual dispatch must deploy SpreadsheetsStack, upload package zips, smoke-test the result, or publish diya-gl after a green prod deploy.
+    - [SS-37](#ss-37-request-acm-certificates) Request ACM certificates: use when the ACM certificate for diya-gl.co.uk or the holding page's domain needs (re-)requesting in us-east-1.
+    - [SS-38](#ss-38-initialise-or-regenerate-repository-state) Initialise or regenerate repository state: use when a fresh checkout, or a full regeneration, needs packages, reports and tax data rebuilt from scratch.
+    - [SS-39](#ss-39-guard-commit-author-identity-on-prs) Guard commit author identity on PRs: use when a pull request's commits must be checked against the allowed commit-identity list before merge.
+    - [SS-40](#ss-40-run-codeql-scanning) Run CodeQL scanning: use when static-analysis scanning of the repository's code must run on a push, PR or schedule.
+    - [SS-41](#ss-41-run-the-scheduled-dependency-and-tax-data-update-workflow) Run the scheduled dependency and tax-data update workflow: use when dependency or tax-data updates must be checked and applied on a schedule or push.
+  - [Tests and CI gates](#tests-and-ci-gates-ss)
+    - [SS-42](#ss-42-route-tests-by-blast-radius) Route tests by blast radius: use when `npm test` must decide which tiers (gates, unit, calc, browser, infra) a change actually reaches.
+    - [SS-43](#ss-43-run-the-product-generation-and-test-workflows) Run the product generation and test workflows: use when CI must generate and reconcile one or all four products, or run the standard test/format/build gate.
+    - [SS-44](#ss-44-run-spreadsheets-behaviour-tests) Run spreadsheets behaviour tests: use when end-to-end Playwright journeys across both sites must run against local, ci or prod.
+    - [SS-45](#ss-45-run-compliance-checks) Run compliance checks: use when accessibility or penetration-style checks must run against ci or prod and produce a markdown report.
+  - [Skills](#skills-ss)
+    - [SS-46](#ss-46-render-the-spreadsheets-work-board) Render the spreadsheets work board: use when the operator asks for the open items, the board, or "what's in flight" in this repository.
+    - [SS-47](#ss-47-work-nextmd-as-dispatched-sub-agents) Work NEXT.md as dispatched sub-agents: use when the operator says "do next", "work the backlog", or a landed batch leaves items still open here.
+    - [SS-48](#ss-48-refine-nextmd-before-a-wave) Refine NEXT.md before a wave: use when a readiness or feasibility pass over this repository's board is needed before dispatching a wave.
+    - [SS-49](#ss-49-run-the-delivery-cycle-unattended) Run the delivery cycle unattended: use when the operator says "iterate" or "keep going until the board is clear" in this repository.
+    - [SS-50](#ss-50-watch-github-ci-to-green) Watch GitHub CI to green: use when a branch's CI needs watching to green, or the operator hands over a branch after a push.
+    - [SS-51](#ss-51-merge-every-pr-that-is-ready) Merge every PR that is ready: use when the operator says "auto-merge" or asks for the merge state of this repository.
+    - [SS-52](#ss-52-preview-what-auto-merge-would-do) Preview what auto-merge would do: use when the operator wants to see what would merge before anything changes.
+    - [SS-53](#ss-53-clean-up-stale-branches-and-worktrees) Clean up stale branches and worktrees: use when the operator says "clean" or "tidy the repo" in this repository.
+    - [SS-54](#ss-54-cool-down-an-overloaded-batch) Cool down an overloaded batch: use when a batch in this repository is stacking problems faster than it lands them.
+    - [SS-55](#ss-55-resume-normal-work-from-cool-down) Resume normal work from cool-down: use when the operator lifts cool-down in this repository.
+    - [SS-56](#ss-56-write-the-session-report) Write the session report: use when the operator asks for a session report or an account of how this repository's session went.
+    - [SS-57](#ss-57-write-plain-human-prose) Write plain, human prose: use when any human-facing text in this repository is being drafted: docs, comments, chat replies, site copy.
+    - [SS-58](#ss-58-excel-xml-manipulation-reference) Excel XML manipulation reference: use when writing or debugging code that edits xlsx files, chases external-link caches, renames tabs for non-March year-ends, or runs the LibreOffice recalculation pipeline.
 <!-- /generated:index -->
 
 ## Customer-facing site and accounts (SITE)
@@ -603,7 +669,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - **Entry:** `web/public/diy-accounting-spreadsheets.html`; `web/public/policybee.html`
 - **Files:** web/public/diy-accounting-limited.html, web/public/diy-accounting-spreadsheets.html, web/public/policybee.html, web/public/spreadsheets.html
 - **Keywords:** cross-sell, spreadsheets product, policybee, affiliate, company background page
-- **Related:** SITE-10
+- **Related:** SITE-10, SS-21
 
 #### SITE-12 Map the site structure
 
@@ -655,7 +721,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - **Entry:** `web/public/lib/analytics.js`
 - **Files:** web/browser-tests/cookieConsent.browser.test.js
 - **Keywords:** cookie consent, consent banner, ga4, analytics_storage, consent mode, privacy banner
-- **Related:** SITE-10
+- **Related:** SITE-10, SS-31
 
 #### SITE-16 Configure the frontend via TOML and env libraries
 
@@ -1606,7 +1672,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - **Entry:** `app/functions/diyaGl/diyaGlPut.js:ingestHandler`; `app/lib/zipMembers.js:isDiyaGlPackage`
 - **Files:** app/functions/diyaGl/diyaGlPut.js, app/unit-tests/functions/diyaGlPut.test.js, app/lib/zipMembers.js, app/unit-tests/lib/zipMembers.test.js, app/lib/diyaGlCors.js, app/unit-tests/functions/diyaGlCorsHeaders.test.js
 - **Keywords:** diya-gl, ledger book, upload book, zip package, isDiyaGlPackage, versioning, retention
-- **Related:** BILL-18, BILL-22, BILL-23
+- **Related:** BILL-18, BILL-22, BILL-23, SS-27
 
 #### BILL-18 Delete a diya-gl book
 
@@ -1666,7 +1732,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - **Entry:** `app/data/s3DiyaGlRepository.js:moveBookToClient`; `app/data/s3DiyaGlRepository.js:listBooks`
 - **Files:** app/data/s3DiyaGlRepository.js, app/unit-tests/data/s3DiyaGlRepository.test.js, _developers/RUNBOOK_DIYA_GL_BUCKET_CUTOVER.md
 - **Keywords:** diya-gl, s3 repository, book keys, metadata, tagging, visibility, cross-client move
-- **Related:** BILL-15, BILL-17, BILL-18, BILL-19, BILL-20
+- **Related:** BILL-15, BILL-17, BILL-18, BILL-19, BILL-20, SS-27
 
 ### Stripe billing (BILL)
 
@@ -1857,7 +1923,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - **Entry:** `infra/main/java/co/uk/diyaccounting/submit/stacks/DiyaGlStack.java`
 - **Files:** infra/main/java/co/uk/diyaccounting/submit/stacks/DiyaGlStack.java, infra/test/java/co/uk/diyaccounting/submit/stacks/DiyaGlStackTest.java
 - **Keywords:** cdk, diya-gl stack, s3 bucket grant, lapse sweep schedule, book-move lambda
-- **Related:** BILL-15, BILL-17, BILL-21, BILL-23
+- **Related:** BILL-15, BILL-17, BILL-21, BILL-23, SS-27
 
 ### Migrations and shared utilities (BILL)
 
@@ -3812,7 +3878,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - **Entry:** `web/public/lib/analytics.js:startGa4`
 - **Files:** web/public/lib/analytics.js, web/unit-tests/analytics.test.js
 - **Keywords:** gtag.js, ga4 measurement id, consent denied default, cross-domain session, visitor_kind property, submit.env
-- **Related:** DATA-23
+- **Related:** DATA-23, SS-31
 
 #### DATA-25 Configure and gate CloudWatch RUM
 
@@ -3822,7 +3888,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - **Entry:** `web/unit-tests/rum-config.test.js:`; `app/system-tests/rum-placeholders.system.test.js:`
 - **Files:** web/unit-tests/rum-config.test.js, web/unit-tests/rum-consent.test.js, app/system-tests/rum-placeholders.system.test.js
 - **Keywords:** cloudwatch rum, app monitor, guest role, consent.rum, rum placeholders, meta tag config
-- **Related:** DATA-24
+- **Related:** DATA-24, SS-34
 
 #### DATA-26 Render the operator objectives dashboard
 
@@ -4194,7 +4260,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - **Entry:** `mcp/lib/book-tools.js:openBook`; `mcp/lib/book-tools.js:saveBook`; `mcp/lib/book-tools.js:createSession`
 - **Files:** mcp/lib/book-tools.js, mcp/test/book-tools.test.js, mcp/test/fixtures/brickwork-pro-ltd-vat/book.toml, mcp/test/fixtures/precision-code-ltd-full/book.toml
 - **Keywords:** open_book, save_book, diya-gl, book.toml, lines.jsonl, cloud book, mcp book tools, xlsx export
-- **Related:** MCP-02, MCP-04, MCP-05, MCP-06
+- **Related:** MCP-02, MCP-04, MCP-05, MCP-06, SS-03, SS-06
 
 #### MCP-04 Derive micro-entity accounts figures for Companies House filing
 
@@ -4855,6 +4921,690 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - **Files:** .claude/skills/capabilities/SKILL.md, REPORT_CAPABILITIES.md, scripts/capabilities-index.mjs, app/unit-tests/capabilitiesIndex.test.js
 - **Keywords:** capability, existing tooling, find command, index, reuse, duplicate mechanism, what does the repo do
 
+## Spreadsheets and diya-gl (SS)
+
+<!-- generated:area SS -->
+- [diya-gl engine, CLI and MCP server](#diya-gl-engine-cli-and-mcp-server-ss): [SS-01](#ss-01-run-the-diya-gl-calculation-engine) Run the diya-gl calculation engine · [SS-02](#ss-02-validate-diya-gl-books-against-the-v2-schema) Validate diya-gl books against the v2 schema · [SS-03](#ss-03-read-and-write-diya-gl-interchange-formats) Read and write diya-gl interchange formats · [SS-04](#ss-04-apply-book-edits-and-derivations) Apply book edits and derivations · [SS-05](#ss-05-run-the-diya-gl-cli) Run the diya-gl CLI · [SS-06](#ss-06-serve-the-diya-gl-mcp-server) Serve the diya-gl MCP server · [SS-07](#ss-07-publish-the-diya-gl-format-specification-page) Publish the diya-gl format specification page
+- [Package pipeline: generate, archive and publish](#package-pipeline-generate-archive-and-publish-ss): [SS-08](#ss-08-generate-spreadsheet-packages-from-product-modules) Generate spreadsheet packages from product modules · [SS-09](#ss-09-build-package-zips-and-the-catalogue) Build package zips and the catalogue · [SS-10](#ss-10-extract-reconciliation-scenarios-from-master-books) Extract reconciliation scenarios from master books · [SS-11](#ss-11-reconcile-generated-packages-against-expected-figures) Reconcile generated packages against expected figures · [SS-12](#ss-12-judge-reconciliation-reports-with-an-llm) Judge reconciliation reports with an LLM · [SS-13](#ss-13-cross-check-figures-across-product-packages) Cross-check figures across product packages · [SS-14](#ss-14-verify-export-and-report-roundtrip-and-stability) Verify export and report roundtrip and stability · [SS-15](#ss-15-extract-diya-gl-data-and-financial-reports-from-populated-packages) Extract diya-gl data and financial reports from populated packages · [SS-16](#ss-16-write-workbooks-from-diya-gl-data) Write workbooks from diya-gl data · [SS-17](#ss-17-build-reconciliation-pages-and-record-releases) Build reconciliation pages and record releases · [SS-18](#ss-18-archive-a-cut-of-packages-to-diy-accounting-archive) Archive a cut of packages to diy-accounting-archive · [SS-19](#ss-19-update-annual-hmrc-tax-rate-data) Update annual HMRC tax rate data · [SS-20](#ss-20-publish-diya-gl-to-npm-ghcr-and-the-homebrew-tap) Publish diya-gl to npm, GHCR and the Homebrew tap
+- [Web properties](#web-properties-ss): [SS-21](#ss-21-serve-the-spreadsheets-product-catalogue-and-downloads) Serve the spreadsheets product catalogue and downloads · [SS-22](#ss-22-take-stripe-and-paypal-donations) Take Stripe and PayPal donations · [SS-23](#ss-23-serve-knowledge-base-article-and-community-content) Serve knowledge base, article and community content · [SS-24](#ss-24-compile-the-redirect-engine) Compile the redirect engine · [SS-25](#ss-25-generate-sitemaps) Generate sitemaps · [SS-26](#ss-26-serve-the-diya-gl-product-pages-and-shell) Serve the DIYA-GL product pages and shell · [SS-27](#ss-27-save-and-load-books-locally-and-via-submits-cloud-store) Save and load books locally and via Submit's cloud store · [SS-28](#ss-28-store-books-in-google-drive) Store books in Google Drive · [SS-29](#ss-29-serve-diya-gl-as-an-offline-pwa) Serve DIYA-GL as an offline PWA · [SS-30](#ss-30-serve-the-holding-page-and-failover) Serve the holding page and failover
+- [Analytics and tracking](#analytics-and-tracking-ss): [SS-31](#ss-31-load-ga4-analytics-with-consent-gating) Load GA4 analytics with consent gating · [SS-32](#ss-32-send-ga4-ecommerce-and-download-events) Send GA4 ecommerce and download events · [SS-33](#ss-33-send-diya-gl-ga4-events) Send DIYA-GL GA4 events · [SS-34](#ss-34-configure-cloudwatch-rum) Configure CloudWatch RUM
+- [Workflows and deploys](#workflows-and-deploys-ss): [SS-35](#ss-35-cdk-spreadsheetsstack) CDK: SpreadsheetsStack · [SS-36](#ss-36-deploy-the-spreadsheets-and-diya-gl-sites) Deploy the spreadsheets and diya-gl sites · [SS-37](#ss-37-request-acm-certificates) Request ACM certificates · [SS-38](#ss-38-initialise-or-regenerate-repository-state) Initialise or regenerate repository state · [SS-39](#ss-39-guard-commit-author-identity-on-prs) Guard commit author identity on PRs · [SS-40](#ss-40-run-codeql-scanning) Run CodeQL scanning · [SS-41](#ss-41-run-the-scheduled-dependency-and-tax-data-update-workflow) Run the scheduled dependency and tax-data update workflow
+- [Tests and CI gates](#tests-and-ci-gates-ss): [SS-42](#ss-42-route-tests-by-blast-radius) Route tests by blast radius · [SS-43](#ss-43-run-the-product-generation-and-test-workflows) Run the product generation and test workflows · [SS-44](#ss-44-run-spreadsheets-behaviour-tests) Run spreadsheets behaviour tests · [SS-45](#ss-45-run-compliance-checks) Run compliance checks
+- [Skills](#skills-ss): [SS-46](#ss-46-render-the-spreadsheets-work-board) Render the spreadsheets work board · [SS-47](#ss-47-work-nextmd-as-dispatched-sub-agents) Work NEXT.md as dispatched sub-agents · [SS-48](#ss-48-refine-nextmd-before-a-wave) Refine NEXT.md before a wave · [SS-49](#ss-49-run-the-delivery-cycle-unattended) Run the delivery cycle unattended · [SS-50](#ss-50-watch-github-ci-to-green) Watch GitHub CI to green · [SS-51](#ss-51-merge-every-pr-that-is-ready) Merge every PR that is ready · [SS-52](#ss-52-preview-what-auto-merge-would-do) Preview what auto-merge would do · [SS-53](#ss-53-clean-up-stale-branches-and-worktrees) Clean up stale branches and worktrees · [SS-54](#ss-54-cool-down-an-overloaded-batch) Cool down an overloaded batch · [SS-55](#ss-55-resume-normal-work-from-cool-down) Resume normal work from cool-down · [SS-56](#ss-56-write-the-session-report) Write the session report · [SS-57](#ss-57-write-plain-human-prose) Write plain, human prose · [SS-58](#ss-58-excel-xml-manipulation-reference) Excel XML manipulation reference
+<!-- /generated:area SS -->
+
+### diya-gl engine, CLI and MCP server (SS)
+
+<!-- generated:group diya-gl-engine-cli-and-mcp-server-ss -->
+- [SS-01](#ss-01-run-the-diya-gl-calculation-engine) Run the diya-gl calculation engine
+- [SS-02](#ss-02-validate-diya-gl-books-against-the-v2-schema) Validate diya-gl books against the v2 schema
+- [SS-03](#ss-03-read-and-write-diya-gl-interchange-formats) Read and write diya-gl interchange formats
+- [SS-04](#ss-04-apply-book-edits-and-derivations) Apply book edits and derivations
+- [SS-05](#ss-05-run-the-diya-gl-cli) Run the diya-gl CLI
+- [SS-06](#ss-06-serve-the-diya-gl-mcp-server) Serve the diya-gl MCP server
+- [SS-07](#ss-07-publish-the-diya-gl-format-specification-page) Publish the diya-gl format specification page
+<!-- /generated:group diya-gl-engine-cli-and-mcp-server-ss -->
+
+#### SS-01 Run the diya-gl calculation engine
+
+- **Use when:** a diya-gl book's figures must be computed in JavaScript, independent of the Excel package.
+- **Does:** diya-gl-engine.js is the pure-JS computation core: it derives sales, purchases, payroll, tax and balance-sheet figures from a book's lines the same way the spreadsheet template does. diya-gl-calculator.js runs it over a book and returns the report the reconcile and judge tooling compares against the Excel recalculation. product-workbook.js and the browser bundle both load the same module.
+- **Run:** `import { computeReport } from "app/lib/diya-gl-calculator.js"`
+- **Entry:** `../spreadsheets.diyaccounting.co.uk/app/lib/diya-gl-engine.js`; `../spreadsheets.diyaccounting.co.uk/app/lib/diya-gl-calculator.js`
+- **Files:** ../spreadsheets.diyaccounting.co.uk/app/lib/diya-gl-engine.js, ../spreadsheets.diyaccounting.co.uk/app/lib/diya-gl-calculator.js, ../spreadsheets.diyaccounting.co.uk/app/test/diya-gl-calculator.test.js
+- **Keywords:** diya-gl engine, second engine, js computation, calculator, independent recalculation, book figures
+- **Related:** SS-16, SS-11
+
+#### SS-02 Validate diya-gl books against the v2 schema
+
+- **Use when:** a book.toml or lines.jsonl document must be checked against the published diya-gl format before it is trusted.
+- **Does:** diya-gl-schema.js loads the published JSON Schema documents and validates a book and its lines against them. build-diya-gl-spec.js (SS-07) publishes the same schemas as the public format specification. app/lib/book-checks.js runs a further set of accounting checks (unbalanced entries, missing accounts) beyond schema shape.
+- **Run:** `import { validateBook, validateLines } from "app/lib/diya-gl-schema.js"`
+- **Entry:** `../spreadsheets.diyaccounting.co.uk/app/lib/diya-gl-schema.js`
+- **Files:** ../spreadsheets.diyaccounting.co.uk/app/lib/diya-gl-schema.js, ../spreadsheets.diyaccounting.co.uk/app/lib/book-checks.js, ../spreadsheets.diyaccounting.co.uk/app/lib/book-checks, ../spreadsheets.diyaccounting.co.uk/web/spreadsheets.diyaccounting.co.uk/public/schema/diya-gl-book-v2.schema.json, ../spreadsheets.diyaccounting.co.uk/web/spreadsheets.diyaccounting.co.uk/public/schema/diya-gl-lines-v2.schema.json
+- **Keywords:** diya-gl schema, book.toml, lines.jsonl, v2 schema, book checks, validation
+- **Related:** SS-03, SS-07
+
+#### SS-03 Read and write diya-gl interchange formats
+
+- **Use when:** a book must move between book.toml/lines.jsonl, a diya-gl zip, a single-file JSON or a package zip.
+- **Does:** diya-gl-interchange.js reads every kind of diya-gl source a customer can hand it and writes the diya-gl zip and JSON downloads. diya-gl-canonical.js is the one canonical form book and line comparisons are made in, so field order and formatting never register as a data difference. diya-gl-loader.js turns loaded diya-gl data into the scenario shape the spreadsheet generator writes onto a template. Submit's mcp/lib/book-tools.js (MCP-03) and app/services/microEntityAccounts.js (MCP-04, DATA-52) read the same book.toml/lines.jsonl shape this module defines.
+- **Run:** `import { readBookSource, writeDiyaGlZip, writeBookJson } from "app/lib/diya-gl-interchange.js"`
+- **Entry:** `../spreadsheets.diyaccounting.co.uk/app/lib/diya-gl-interchange.js`; `../spreadsheets.diyaccounting.co.uk/app/lib/diya-gl-canonical.js`; `../spreadsheets.diyaccounting.co.uk/app/lib/diya-gl-loader.js`
+- **Files:** ../spreadsheets.diyaccounting.co.uk/app/lib/diya-gl-interchange.js, ../spreadsheets.diyaccounting.co.uk/app/lib/diya-gl-canonical.js, ../spreadsheets.diyaccounting.co.uk/app/lib/diya-gl-loader.js
+- **Keywords:** diya-gl interchange, book.toml, lines.jsonl, canonical form, diya-gl zip, single-file json, workbook set
+- **Related:** SS-02, SS-15, SS-16, MCP-03, MCP-04, DATA-52
+
+#### SS-04 Apply book edits and derivations
+
+- **Use when:** a line must be added, changed or removed on a book, from the page, the CLI or the MCP server, the same way everywhere.
+- **Does:** diya-gl-edits.js exports the named edit functions (addSaleLine, addPurchaseLine, addBankLine, addPayrollLine, changeLineAmount, removeLine and more) every caller reaches through the engine bundle, so no caller reimplements an edit. diya-gl-edits-ltd.js adds Company-specific derivations (dividends, corporation tax, fixed assets) on top of the shared set.
+- **Run:** `import { addSaleLine, changeLineAmount } from "app/lib/diya-gl-edits.js"`
+- **Entry:** `../spreadsheets.diyaccounting.co.uk/app/lib/diya-gl-edits.js`; `../spreadsheets.diyaccounting.co.uk/app/lib/diya-gl-edits-ltd.js`
+- **Files:** ../spreadsheets.diyaccounting.co.uk/app/lib/diya-gl-edits.js, ../spreadsheets.diyaccounting.co.uk/app/lib/diya-gl-edits-ltd.js, ../spreadsheets.diyaccounting.co.uk/web/diya-gl.co.uk/public/edits.js
+- **Keywords:** diya-gl edits, addSaleLine, changeLineAmount, removeLine, undo stack, ltd derivations, dividends, corporation tax
+- **Related:** SS-01, SS-26
+
+#### SS-05 Run the diya-gl CLI
+
+- **Use when:** a book must be recalculated, read or written from the command line or a script, outside the browser.
+- **Does:** diya-gl.js dispatches `diya-gl <recalc|read-workbook|write-workbook|mcp>` to report.js, export.js, write-workbook.js or diya-gl-mcp.js (SS-06); each subcommand also ships as its own bin (diya-gl-recalc, diya-gl-read-workbook, diya-gl-write-workbook) for a caller that wants one command on its PATH. The package publishes to npm and a Docker image (SS-20).
+- **Run:** `npx diya-gl recalc --package bst --source-dir <dir>`; `npx diya-gl read-workbook --file <path>`; `npx diya-gl write-workbook --data <dir>`
+- **Entry:** `../spreadsheets.diyaccounting.co.uk/diya-gl/bin/diya-gl.js`; `../spreadsheets.diyaccounting.co.uk/diya-gl/bin/diya-gl-recalc.js`; `../spreadsheets.diyaccounting.co.uk/diya-gl/bin/diya-gl-read-workbook.js`; `../spreadsheets.diyaccounting.co.uk/diya-gl/bin/diya-gl-write-workbook.js`
+- **Files:** ../spreadsheets.diyaccounting.co.uk/diya-gl/bin/diya-gl.js, ../spreadsheets.diyaccounting.co.uk/diya-gl/bin/diya-gl-recalc.js, ../spreadsheets.diyaccounting.co.uk/diya-gl/bin/diya-gl-read-workbook.js, ../spreadsheets.diyaccounting.co.uk/diya-gl/bin/diya-gl-write-workbook.js, ../spreadsheets.diyaccounting.co.uk/diya-gl/bin/run-dist-bin.js, ../spreadsheets.diyaccounting.co.uk/diya-gl/package.json, ../spreadsheets.diyaccounting.co.uk/diya-gl/Dockerfile, ../spreadsheets.diyaccounting.co.uk/diya-gl/smoke.sh, ../spreadsheets.diyaccounting.co.uk/diya-gl/parity.sh
+- **Keywords:** diya-gl cli, recalc, read-workbook, write-workbook, npx diya-gl, docker image, dist bin
+- **Related:** SS-06, SS-15, SS-16, SS-20
+
+#### SS-06 Serve the diya-gl MCP server
+
+- **Use when:** an MCP session needs to extract, report on, edit or save a diya-gl book without HMRC filing.
+- **Does:** diya-gl-mcp.js is a stdio MCP server over a hand-rolled JSON-RPC transport (no @modelcontextprotocol/sdk, to avoid its HTTP-framework dependencies), exposing four tools: extract_book, report, edit_lines and save_workbook, across all four products. app/lib/mcp/server.js is the method table (initialize, tools/list, tools/call); diya-gl-tools.js wires each tool to export.js, diya-gl-edits.js or product-workbook.js. Submit's own mcp/ package (MCP-01) is a separate server for HMRC filing, not this one.
+- **Run:** `node app/bin/diya-gl-mcp.js`; `npm run mcp:diya-gl`; `npx diya-gl mcp`
+- **Entry:** `../spreadsheets.diyaccounting.co.uk/app/bin/diya-gl-mcp.js`; `../spreadsheets.diyaccounting.co.uk/app/lib/mcp/server.js`; `../spreadsheets.diyaccounting.co.uk/app/lib/mcp/diya-gl-tools.js`; `../spreadsheets.diyaccounting.co.uk/app/lib/mcp/jsonrpc-stdio.js`
+- **Files:** ../spreadsheets.diyaccounting.co.uk/app/bin/diya-gl-mcp.js, ../spreadsheets.diyaccounting.co.uk/app/lib/mcp/server.js, ../spreadsheets.diyaccounting.co.uk/app/lib/mcp/diya-gl-tools.js, ../spreadsheets.diyaccounting.co.uk/app/lib/mcp/jsonrpc-stdio.js, ../spreadsheets.diyaccounting.co.uk/.mcp.json
+- **Keywords:** diya-gl mcp, extract_book, edit_lines, save_workbook, stdio mcp server, json-rpc, model context protocol
+- **Related:** SS-04, SS-05, MCP-01, MCP-03
+
+#### SS-07 Publish the diya-gl format specification page
+
+- **Use when:** the public diya-gl format page must reflect the schemas, HMRC field mappings and checks the code actually carries.
+- **Does:** build-diya-gl-spec.js reads the v2 schemas, the HMRC form-layout and SA103 mapping data, book-checks.js run over one example book per product, and the published reconciliation reports, then writes every table on spec.html from those artefacts, so the page cannot claim a field or check the code does not carry.
+- **Run:** `npm run build:diya-gl-spec`
+- **Entry:** `../spreadsheets.diyaccounting.co.uk/app/bin/build-diya-gl-spec.js`
+- **Files:** ../spreadsheets.diyaccounting.co.uk/app/bin/build-diya-gl-spec.js, ../spreadsheets.diyaccounting.co.uk/web/diya-gl.co.uk/public/spec.html
+- **Keywords:** diya-gl spec, format specification, spec.html, schema tables, sa103 mapping, form layouts
+- **Related:** SS-02
+
+### Package pipeline: generate, archive and publish (SS)
+
+<!-- generated:group package-pipeline-generate-archive-and-publish-ss -->
+- [SS-08](#ss-08-generate-spreadsheet-packages-from-product-modules) Generate spreadsheet packages from product modules
+- [SS-09](#ss-09-build-package-zips-and-the-catalogue) Build package zips and the catalogue
+- [SS-10](#ss-10-extract-reconciliation-scenarios-from-master-books) Extract reconciliation scenarios from master books
+- [SS-11](#ss-11-reconcile-generated-packages-against-expected-figures) Reconcile generated packages against expected figures
+- [SS-12](#ss-12-judge-reconciliation-reports-with-an-llm) Judge reconciliation reports with an LLM
+- [SS-13](#ss-13-cross-check-figures-across-product-packages) Cross-check figures across product packages
+- [SS-14](#ss-14-verify-export-and-report-roundtrip-and-stability) Verify export and report roundtrip and stability
+- [SS-15](#ss-15-extract-diya-gl-data-and-financial-reports-from-populated-packages) Extract diya-gl data and financial reports from populated packages
+- [SS-16](#ss-16-write-workbooks-from-diya-gl-data) Write workbooks from diya-gl data
+- [SS-17](#ss-17-build-reconciliation-pages-and-record-releases) Build reconciliation pages and record releases
+- [SS-18](#ss-18-archive-a-cut-of-packages-to-diy-accounting-archive) Archive a cut of packages to diy-accounting-archive
+- [SS-19](#ss-19-update-annual-hmrc-tax-rate-data) Update annual HMRC tax rate data
+- [SS-20](#ss-20-publish-diya-gl-to-npm-ghcr-and-the-homebrew-tap) Publish diya-gl to npm, GHCR and the Homebrew tap
+<!-- /generated:group package-pipeline-generate-archive-and-publish-ss -->
+
+#### SS-08 Generate spreadsheet packages from product modules
+
+- **Use when:** a product's Excel workbooks must be regenerated for a tax year from its product module and template.
+- **Does:** generate.js dispatches to the four product modules (app/products/bst.js, taxi.js, se.js, ltd.js), which define their own metadata; generator.js writes scenario data onto the template, applies the year-end sequence and core properties. Multi-file products (SE, Ltd) recalculate through spreadsheet-runner.js's LibreOffice pipeline.
+- **Run:** `npm run generate`; `node app/bin/generate.js --package bst`; `node app/bin/generate.js --years se-2025-2026`
+- **Entry:** `../spreadsheets.diyaccounting.co.uk/app/bin/generate.js`; `../spreadsheets.diyaccounting.co.uk/app/lib/generator.js`
+- **Files:** ../spreadsheets.diyaccounting.co.uk/app/bin/generate.js, ../spreadsheets.diyaccounting.co.uk/app/lib/generator.js, ../spreadsheets.diyaccounting.co.uk/app/products, ../spreadsheets.diyaccounting.co.uk/app/lib/spreadsheet-runner.js
+- **Keywords:** generate packages, product modules, bst taxi se ltd, template, year-end sequence, libreoffice roundtrip
+- **Related:** SS-09, SS-11
+
+#### SS-09 Build package zips and the catalogue
+
+- **Use when:** generated packages must become the zip files and catalogue.toml the download page and S3 sync read.
+- **Does:** build-packages.js scans packages/ directories, builds zips into target/zips/ through package-builder.js, and writes web/spreadsheets.diyaccounting.co.uk/public/catalogue.toml. Deployment uploads the zips to S3 separately from the CDK BucketDeployment, which never prunes them.
+- **Run:** `npm run build:packages`; `node app/bin/build-packages.js --years 2`
+- **Entry:** `../spreadsheets.diyaccounting.co.uk/app/bin/build-packages.js`; `../spreadsheets.diyaccounting.co.uk/app/lib/package-builder.js`
+- **Files:** ../spreadsheets.diyaccounting.co.uk/app/bin/build-packages.js, ../spreadsheets.diyaccounting.co.uk/app/lib/package-builder.js, ../spreadsheets.diyaccounting.co.uk/web/spreadsheets.diyaccounting.co.uk/public/catalogue.toml
+- **Keywords:** build packages, package zips, catalogue.toml, target/zips, s3 sync, bucketdeployment prune false
+- **Related:** SS-08, SS-21
+
+#### SS-10 Extract reconciliation scenarios from master books
+
+- **Use when:** a reconciliation fixture, or the diya-gl subset behind it, must be regenerated from a master book under examples/.
+- **Does:** extract-scenarios.js writes every fixture and its diya-gl subset from the master books (precision-code-ltd, brickwork-pro, sp-sixty-driving, kestrel-executive-cars, basic-taxi-driver). No fixture states a figure of its own: transactions and expectations are derived here from each master's journals and ledgers. The CI sync gate (`npm run gate:fixtures`) reverts a hand-edited generated fixture.
+- **Run:** `npm run extract-scenarios`
+- **Entry:** `../spreadsheets.diyaccounting.co.uk/app/bin/extract-scenarios.js`
+- **Files:** ../spreadsheets.diyaccounting.co.uk/app/bin/extract-scenarios.js, ../spreadsheets.diyaccounting.co.uk/app/lib/scenario-extractor.js, ../spreadsheets.diyaccounting.co.uk/examples
+- **Keywords:** extract scenarios, master books, fixture, gate fixtures, source-derived, examples directory
+- **Related:** SS-11
+
+#### SS-11 Reconcile generated packages against expected figures
+
+- **Use when:** a generated package's recalculated figures must be checked against its fixture's expected values, or against a diya-gl book that populated it.
+- **Does:** reconcile.js runs test scenarios against generated packages and compares computed results to expected values, per product. `--book` checks a package populated from a real diya-gl book against diya-gl-calculator.js's independent JS computation of the same book, a second engine over the same input rather than a curated fixture.
+- **Run:** `npm run reconciliation`; `node app/bin/reconcile.js --package bst`; `node app/bin/reconcile.js --book <dir>`
+- **Entry:** `../spreadsheets.diyaccounting.co.uk/app/bin/reconcile.js`
+- **Files:** ../spreadsheets.diyaccounting.co.uk/app/bin/reconcile.js, ../spreadsheets.diyaccounting.co.uk/app/products
+- **Keywords:** reconcile, reconciliation, expected values, book check, second engine, compliance report
+- **Related:** SS-01, SS-08, SS-12, SS-13
+
+#### SS-12 Judge reconciliation reports with an LLM
+
+- **Use when:** a reconciled report's headline indicators must be checked for sense, not just arithmetic.
+- **Does:** judge-reconciliation.js sends a digest of headline and indicator figures (balance sheet, turnover, profit, tax charge, VAT boxes, profit-bridge residue) to Nova 2 Lite for a pass/fail verdict, escalating a fail or unparseable answer to Nova Pro before it blocks anything. It skips an unchanged digest against a committed verdict.
+- **Run:** `npm run judge:reconciliation`; `node app/bin/judge-reconciliation.js --package ltd`
+- **Entry:** `../spreadsheets.diyaccounting.co.uk/app/bin/judge-reconciliation.js`
+- **Files:** ../spreadsheets.diyaccounting.co.uk/app/bin/judge-reconciliation.js, ../spreadsheets.diyaccounting.co.uk/app/data/judge-rubric.md, ../spreadsheets.diyaccounting.co.uk/app/lib/report-indicators.js
+- **Keywords:** judge reconciliation, llm judge, nova lite, nova pro, judge rubric, headline indicators, verdict
+- **Related:** SS-11
+
+#### SS-13 Cross-check figures across product packages
+
+- **Use when:** a figure that should agree between BST, SE and Ltd packages for the same non-VAT scenario must be checked for consistency.
+- **Does:** cross-package-reconciliation.js reads the reconciliation reports for a shared scenario and asserts pre-tax profit is identical across BST, SE and Ltd, since face-value amounts carry no VAT split.
+- **Run:** `npm run cross-package-reconciliation`
+- **Entry:** `../spreadsheets.diyaccounting.co.uk/app/bin/cross-package-reconciliation.js`
+- **Files:** ../spreadsheets.diyaccounting.co.uk/app/bin/cross-package-reconciliation.js
+- **Keywords:** cross-package reconciliation, pre-tax profit, bst se ltd, shared scenario
+- **Related:** SS-11
+
+#### SS-14 Verify export and report roundtrip and stability
+
+- **Use when:** the fidelity of the export/report loop, or the stability of recalculation, must be scored rather than assumed.
+- **Does:** verify-roundtrip.js scores EQ1 (report.json agreement between the Excel-side and JS-side report.js runs) and EQ2 (canonical-line and book.toml agreement between the export and its fixture), distinguishing a declared structural absence from a real loss. verify-stability.js scores EQ3: idempotence, comparing saved-mode and recalculate-mode cell values and requiring every moved cell to be listed in volatile-cells.json with a reason.
+- **Run:** `npm run verify:roundtrip`; `npm run verify:stability`
+- **Entry:** `../spreadsheets.diyaccounting.co.uk/app/bin/verify-roundtrip.js`; `../spreadsheets.diyaccounting.co.uk/app/bin/verify-stability.js`
+- **Files:** ../spreadsheets.diyaccounting.co.uk/app/bin/verify-roundtrip.js, ../spreadsheets.diyaccounting.co.uk/app/bin/verify-stability.js, ../spreadsheets.diyaccounting.co.uk/app/data/volatile-cells.json, ../spreadsheets.diyaccounting.co.uk/app/data/roundtrip-unrepresentable.json
+- **Keywords:** verify roundtrip, verify stability, eq1, eq2, eq3, idempotence, volatile cells
+- **Related:** SS-15
+
+#### SS-15 Extract diya-gl data and financial reports from populated packages
+
+- **Use when:** a populated Excel package, or a customer's own upload, must yield its diya-gl data or its financial reports.
+- **Does:** export.js reads any source diya-gl-interchange.js understands and writes book.toml/lines.jsonl in canonical form plus report.json, validated against the published schema. report.js reads xlsx cell values (saved or recalculated) or computes reports straight from diya-gl data with `--data`, so an Excel-side and a JS-side run can be compared on the same scenario.
+- **Run:** `npm run export`; `node app/bin/export.js --file <path>`; `npm run report -- --package bst --source-dir <dir>`
+- **Entry:** `../spreadsheets.diyaccounting.co.uk/app/bin/export.js`; `../spreadsheets.diyaccounting.co.uk/app/bin/report.js`
+- **Files:** ../spreadsheets.diyaccounting.co.uk/app/bin/export.js, ../spreadsheets.diyaccounting.co.uk/app/bin/report.js, ../spreadsheets.diyaccounting.co.uk/app/lib/report-generator.js, ../spreadsheets.diyaccounting.co.uk/app/lib/xlsx-reader.js
+- **Keywords:** export, report, book.toml, lines.jsonl, report.json, data mode, recalculate mode
+- **Related:** SS-03, SS-14, SS-16
+
+#### SS-16 Write workbooks from diya-gl data
+
+- **Use when:** a book.toml/lines.jsonl document, or any interchange kind, must become the Excel workbook(s) the template composes.
+- **Does:** write-workbook.js takes diya-gl data and writes it through product-workbook.js's saveWorkbook path as cached formula results, the same way the books page's client-side export does; no LibreOffice recalculation runs.
+- **Run:** `npm run write-workbook`; `node app/bin/write-workbook.js --data <dir> --output-dir <dir>`
+- **Entry:** `../spreadsheets.diyaccounting.co.uk/app/bin/write-workbook.js`; `../spreadsheets.diyaccounting.co.uk/app/lib/product-workbook.js`
+- **Files:** ../spreadsheets.diyaccounting.co.uk/app/bin/write-workbook.js, ../spreadsheets.diyaccounting.co.uk/app/lib/product-workbook.js
+- **Keywords:** write-workbook, savework book, cached formula results, no recalculation, package zip
+- **Related:** SS-01, SS-03, SS-05
+
+#### SS-17 Build reconciliation pages and record releases
+
+- **Use when:** the published reconciliation pages must reflect the latest reports, or a diya-gl release must be recorded on them.
+- **Does:** build-reconciliation-pages.js builds each product's reconciliation.html/json and screenshots from reports/*.md and the fixtures, rebuilds the index, and (`--record`) appends a diya-gl release to app/data/releases.json and releases.html. publish-diya-gl.yml (SS-20) calls it after a version publishes.
+- **Run:** `node app/bin/build-reconciliation-pages.js --product all`; `node app/bin/build-reconciliation-pages.js --record diya-gl-v1.0.0`
+- **Entry:** `../spreadsheets.diyaccounting.co.uk/app/bin/build-reconciliation-pages.js`
+- **Files:** ../spreadsheets.diyaccounting.co.uk/app/bin/build-reconciliation-pages.js, ../spreadsheets.diyaccounting.co.uk/app/data/releases.json, ../spreadsheets.diyaccounting.co.uk/web/spreadsheets.diyaccounting.co.uk/public/reconciliation
+- **Keywords:** reconciliation pages, releases.json, release record, screenshots, index-only
+- **Related:** SS-20
+
+#### SS-18 Archive a cut of packages to diy-accounting-archive
+
+- **Use when:** a tax year's finished packages must be copied into diy-accounting-archive with provenance.
+- **Does:** The archive-packages skill copies every fully formed package directory under packages/ at one commit into diy-accounting-uk/diy-accounting-archive under packages-published/GB Accounts <tax year>/, with provenance in packages-published/MANIFEST.toml. Run by an operator or a Claude session; no workflow or schedule does it, and no commit there is bot-authored.
+- **Run:** `Follow the archive-packages skill`
+- **Entry:** `../spreadsheets.diyaccounting.co.uk/.claude/skills/archive-packages/SKILL.md`
+- **Files:** ../spreadsheets.diyaccounting.co.uk/.claude/skills/archive-packages/SKILL.md, ../spreadsheets.diyaccounting.co.uk/scripts/archive-packages.js
+- **Keywords:** archive packages, cut, diy-accounting-archive, manifest.toml, packages-published
+- **Related:** SS-09
+
+#### SS-19 Update annual HMRC tax rate data
+
+- **Use when:** a new tax year's Income Tax, National Insurance or VAT thresholds must reach the SE/Ltd TOML data and the regenerated packages.
+- **Does:** The package-updates skill lists what changes year to year (personal allowance, NI thresholds, VAT registration threshold) and the HMRC sources for each. hmrc-rate-urls.cjs and update-tax-data.sh pull and apply the update; the generate/reconcile/deploy pipeline then republishes.
+- **Run:** `npm run hmrc-rate-urls`; `npm run update-tax-data`
+- **Entry:** `../spreadsheets.diyaccounting.co.uk/.claude/skills/package-updates/SKILL.md`; `../spreadsheets.diyaccounting.co.uk/scripts/update-tax-data.sh`
+- **Files:** ../spreadsheets.diyaccounting.co.uk/.claude/skills/package-updates/SKILL.md, ../spreadsheets.diyaccounting.co.uk/scripts/update-tax-data.sh, ../spreadsheets.diyaccounting.co.uk/scripts/hmrc-rate-urls.cjs, ../spreadsheets.diyaccounting.co.uk/app/data
+- **Keywords:** tax data update, hmrc rates, personal allowance, ni thresholds, annual update, package-updates skill
+- **Related:** SS-08
+
+#### SS-20 Publish diya-gl to npm, GHCR and the Homebrew tap
+
+- **Use when:** a green prod deploy from main should publish diya-gl's next version, or a finish-only rerun must complete a partial publish.
+- **Does:** publish-diya-gl.yml checks whether diya-gl/package.json's version is already on npm; if not, it packs and smoke-tests the tarball, publishes to npm with provenance, builds and pushes a GHCR image, tags the commit, records the release (SS-17), rolls the patch version on main, and dispatches the homebrew-diya-gl tap. Every step keys on the registry/tag state, not on which run did the work, so a re-dispatch always finishes an interrupted publish.
+- **Run:** `gh workflow run publish-diya-gl.yml`
+- **Entry:** `../spreadsheets.diyaccounting.co.uk/.github/workflows/publish-diya-gl.yml`
+- **Files:** ../spreadsheets.diyaccounting.co.uk/.github/workflows/publish-diya-gl.yml, ../spreadsheets.diyaccounting.co.uk/diya-gl/package.json, ../spreadsheets.diyaccounting.co.uk/diya-gl/Dockerfile
+- **Keywords:** publish diya-gl, npm publish, ghcr image, homebrew tap, version roll, finish-only rerun
+- **Related:** SS-05, SS-17
+
+### Web properties (SS)
+
+<!-- generated:group web-properties-ss -->
+- [SS-21](#ss-21-serve-the-spreadsheets-product-catalogue-and-downloads) Serve the spreadsheets product catalogue and downloads
+- [SS-22](#ss-22-take-stripe-and-paypal-donations) Take Stripe and PayPal donations
+- [SS-23](#ss-23-serve-knowledge-base-article-and-community-content) Serve knowledge base, article and community content
+- [SS-24](#ss-24-compile-the-redirect-engine) Compile the redirect engine
+- [SS-25](#ss-25-generate-sitemaps) Generate sitemaps
+- [SS-26](#ss-26-serve-the-diya-gl-product-pages-and-shell) Serve the DIYA-GL product pages and shell
+- [SS-27](#ss-27-save-and-load-books-locally-and-via-submits-cloud-store) Save and load books locally and via Submit's cloud store
+- [SS-28](#ss-28-store-books-in-google-drive) Store books in Google Drive
+- [SS-29](#ss-29-serve-diya-gl-as-an-offline-pwa) Serve DIYA-GL as an offline PWA
+- [SS-30](#ss-30-serve-the-holding-page-and-failover) Serve the holding page and failover
+<!-- /generated:group web-properties-ss -->
+
+#### SS-21 Serve the spreadsheets product catalogue and downloads
+
+- **Use when:** the spreadsheets.diyaccounting.co.uk homepage, product catalogue or a package download must be shown or changed.
+- **Does:** index.html lists the products from catalogue.toml (SS-09); download.html serves each package's zip from /zips/ (symlinked to target/zips/ in dev). download-page.js reads the query parameters and hands off to the donation flow.
+- **Run:** no command; see Does and Entry
+- **Entry:** `../spreadsheets.diyaccounting.co.uk/web/spreadsheets.diyaccounting.co.uk/public/index.html`; `../spreadsheets.diyaccounting.co.uk/web/spreadsheets.diyaccounting.co.uk/public/download.html`
+- **Files:** ../spreadsheets.diyaccounting.co.uk/web/spreadsheets.diyaccounting.co.uk/public/index.html, ../spreadsheets.diyaccounting.co.uk/web/spreadsheets.diyaccounting.co.uk/public/download.html, ../spreadsheets.diyaccounting.co.uk/web/spreadsheets.diyaccounting.co.uk/public/lib/download-page.js
+- **Keywords:** spreadsheets homepage, product catalogue, download page, catalogue.toml, zips
+- **Related:** SS-09, SS-22
+
+#### SS-22 Take Stripe and PayPal donations
+
+- **Use when:** a download or the donate page must offer a Stripe Payment Link or PayPal donate button, or the Stripe side needs setting up.
+- **Does:** donate.html carries Stripe Payment Links (buy.stripe.com, preset and custom amounts) and a PayPal classic hosted Donate button; donate-page.js tracks the return from a download (SS-21) into a donation prompt. build-donate-page.mjs generates donate.html from donate.template.html. stripe-spreadsheets-setup.js is the idempotent Stripe-side setup script for the product and Payment Links.
+- **Run:** `npm run build:donate-page`; `STRIPE_SECRET_KEY=sk_test_... node scripts/stripe-spreadsheets-setup.js`
+- **Entry:** `../spreadsheets.diyaccounting.co.uk/web/spreadsheets.diyaccounting.co.uk/donate.template.html`; `../spreadsheets.diyaccounting.co.uk/scripts/build-donate-page.mjs`; `../spreadsheets.diyaccounting.co.uk/scripts/stripe-spreadsheets-setup.js`
+- **Files:** ../spreadsheets.diyaccounting.co.uk/web/spreadsheets.diyaccounting.co.uk/public/donate.html, ../spreadsheets.diyaccounting.co.uk/web/spreadsheets.diyaccounting.co.uk/donate.template.html, ../spreadsheets.diyaccounting.co.uk/scripts/build-donate-page.mjs, ../spreadsheets.diyaccounting.co.uk/scripts/stripe-spreadsheets-setup.js, ../spreadsheets.diyaccounting.co.uk/web/spreadsheets.diyaccounting.co.uk/public/lib/donate-page.js
+- **Keywords:** donate, stripe payment links, paypal donate button, custom amount, donate template
+- **Related:** SS-21, SS-32
+
+#### SS-23 Serve knowledge base, article and community content
+
+- **Use when:** the knowledge-base, article, references, community or recently-updated pages must be shown, searched or regenerated.
+- **Does:** knowledge-base.html, all-articles.html, references.html, community.html and recently-updated.html read their own TOML index; kb-search.js does fuzzy bigram-plus-keyword search over the articles; generate-knowledge-base-toml.cjs writes knowledge-base.toml from the article Markdown/HTML pairs under web/.../public/articles/.
+- **Run:** `npm run build:knowledge-base`
+- **Entry:** `../spreadsheets.diyaccounting.co.uk/scripts/generate-knowledge-base-toml.cjs`; `../spreadsheets.diyaccounting.co.uk/web/spreadsheets.diyaccounting.co.uk/public/lib/kb-search.js`
+- **Files:** ../spreadsheets.diyaccounting.co.uk/web/spreadsheets.diyaccounting.co.uk/public/knowledge-base.html, ../spreadsheets.diyaccounting.co.uk/web/spreadsheets.diyaccounting.co.uk/public/knowledge-base.toml, ../spreadsheets.diyaccounting.co.uk/web/spreadsheets.diyaccounting.co.uk/public/all-articles.html, ../spreadsheets.diyaccounting.co.uk/web/spreadsheets.diyaccounting.co.uk/public/references.html, ../spreadsheets.diyaccounting.co.uk/web/spreadsheets.diyaccounting.co.uk/public/community.html, ../spreadsheets.diyaccounting.co.uk/web/spreadsheets.diyaccounting.co.uk/public/recently-updated.html, ../spreadsheets.diyaccounting.co.uk/web/spreadsheets.diyaccounting.co.uk/public/articles, ../spreadsheets.diyaccounting.co.uk/scripts/generate-knowledge-base-toml.cjs, ../spreadsheets.diyaccounting.co.uk/web/spreadsheets.diyaccounting.co.uk/public/lib/kb-search.js, ../spreadsheets.diyaccounting.co.uk/web/spreadsheets.diyaccounting.co.uk/public/lib/knowledge-base-page.js, ../spreadsheets.diyaccounting.co.uk/web/spreadsheets.diyaccounting.co.uk/public/lib/references-page.js, ../spreadsheets.diyaccounting.co.uk/web/spreadsheets.diyaccounting.co.uk/public/lib/community-page.js, ../spreadsheets.diyaccounting.co.uk/web/spreadsheets.diyaccounting.co.uk/public/lib/recently-updated-page.js, ../spreadsheets.diyaccounting.co.uk/web/spreadsheets.diyaccounting.co.uk/public/lib/docs-download.js, ../spreadsheets.diyaccounting.co.uk/web/spreadsheets.diyaccounting.co.uk/public/lib/lightbox.js
+- **Keywords:** knowledge base, articles, kb-search, community page, references page, recently-updated, fuzzy search
+- **Related:**
+
+#### SS-24 Compile the redirect engine
+
+- **Use when:** a URL on either site must redirect, or a site's redirects.toml has changed.
+- **Does:** build-spreadsheets-redirects.cjs compiles each site's own redirects.toml into that site's redirect-function.js, a CloudFront Function SpreadsheetsStack (SS-35) attaches to the distribution. Both generated files are gitignored and rebuilt at build and deploy time; `npm run build:redirects` runs both sites.
+- **Run:** `npm run build:redirects`; `node scripts/build-spreadsheets-redirects.cjs --site spreadsheets`; `node scripts/build-spreadsheets-redirects.cjs --site diya-gl`
+- **Entry:** `../spreadsheets.diyaccounting.co.uk/scripts/build-spreadsheets-redirects.cjs`
+- **Files:** ../spreadsheets.diyaccounting.co.uk/scripts/build-spreadsheets-redirects.cjs, ../spreadsheets.diyaccounting.co.uk/web/spreadsheets.diyaccounting.co.uk/redirects.toml, ../spreadsheets.diyaccounting.co.uk/web/diya-gl.co.uk/redirects.toml
+- **Keywords:** redirect engine, redirects.toml, redirect-function.js, cloudfront function, build:redirects
+- **Related:** SS-35
+
+#### SS-25 Generate sitemaps
+
+- **Use when:** either site's sitemap.xml must reflect the current catalogue or knowledge base.
+- **Does:** build-sitemaps.js reads knowledge-base.toml and catalogue.toml and writes sitemap.xml for both spreadsheets.diyaccounting.co.uk and diya-gl.co.uk through sitemap-builder.js.
+- **Run:** `npm run build:sitemaps`
+- **Entry:** `../spreadsheets.diyaccounting.co.uk/app/bin/build-sitemaps.js`; `../spreadsheets.diyaccounting.co.uk/app/lib/sitemap-builder.js`
+- **Files:** ../spreadsheets.diyaccounting.co.uk/app/bin/build-sitemaps.js, ../spreadsheets.diyaccounting.co.uk/app/lib/sitemap-builder.js
+- **Keywords:** sitemap, sitemap.xml, build sitemaps, seo
+- **Related:** SS-23
+
+#### SS-26 Serve the DIYA-GL product pages and shell
+
+- **Use when:** one of the four DIYA-GL product pages (bst, se, taxi, ltd) needs its page shell, views or per-product manifest changed.
+- **Does:** shell.js mounts the shared page shell (state, empty state, file picker, drop zone, deep links, undo, inspector, save menu, toast, mobile bars) plus the two shared views, driven by the product manifest in web/diya-gl.co.uk/public/products/<id>.js the page names in body[data-product]. data.js builds window.DIYA_GL_SNAPSHOT from an upload, an example book, a blank book or autosave; headlines.js paints the year-at-a-glance stat tiles and charts from that snapshot.
+- **Run:** no command; see Does and Entry
+- **Entry:** `../spreadsheets.diyaccounting.co.uk/web/diya-gl.co.uk/public/shell.js`; `../spreadsheets.diyaccounting.co.uk/web/diya-gl.co.uk/public/data.js`; `../spreadsheets.diyaccounting.co.uk/web/diya-gl.co.uk/public/headlines.js`
+- **Files:** ../spreadsheets.diyaccounting.co.uk/web/diya-gl.co.uk/public/bst.html, ../spreadsheets.diyaccounting.co.uk/web/diya-gl.co.uk/public/se.html, ../spreadsheets.diyaccounting.co.uk/web/diya-gl.co.uk/public/taxi.html, ../spreadsheets.diyaccounting.co.uk/web/diya-gl.co.uk/public/ltd.html, ../spreadsheets.diyaccounting.co.uk/web/diya-gl.co.uk/public/shell.js, ../spreadsheets.diyaccounting.co.uk/web/diya-gl.co.uk/public/data.js, ../spreadsheets.diyaccounting.co.uk/web/diya-gl.co.uk/public/headlines.js, ../spreadsheets.diyaccounting.co.uk/web/diya-gl.co.uk/public/products
+- **Keywords:** diya-gl shell, book page, product manifest, diya_gl_snapshot, headlines strip, empty state, deep links
+- **Related:** SS-04, SS-27, SS-29
+
+#### SS-27 Save and load books locally and via Submit's cloud store
+
+- **Use when:** a DIYA-GL book must be saved to a download, autosaved in the browser, or signed in and saved to the reader's account.
+- **Does:** save.js writes the current book as a diya-gl zip or JSON download through diya-gl-interchange.js. autosave.js keeps the working book in IndexedDB only, with no network call. cloud.js signs the reader into Submit's Cognito pool (a public OAuth client id set in cloud-config.js, the BooksUserPoolClientId output of Submit's IdentityStack) and calls Submit's four /api/v1/books routes (BILL-17..BILL-23), showing a choice card on any conflict rather than merging or overwriting silently.
+- **Run:** no command; see Does and Entry
+- **Entry:** `../spreadsheets.diyaccounting.co.uk/web/diya-gl.co.uk/public/save.js`; `../spreadsheets.diyaccounting.co.uk/web/diya-gl.co.uk/public/autosave.js`; `../spreadsheets.diyaccounting.co.uk/web/diya-gl.co.uk/public/cloud.js`
+- **Files:** ../spreadsheets.diyaccounting.co.uk/web/diya-gl.co.uk/public/save.js, ../spreadsheets.diyaccounting.co.uk/web/diya-gl.co.uk/public/autosave.js, ../spreadsheets.diyaccounting.co.uk/web/diya-gl.co.uk/public/cloud.js, ../spreadsheets.diyaccounting.co.uk/web/diya-gl.co.uk/public/cloud-config.js
+- **Keywords:** save book, autosave, indexeddb, cloud sign-in, cognito, pkce, books api, conflict card
+- **Related:** SS-26, SS-28, BILL-17, BILL-23, BILL-39, MCP-03
+
+#### SS-28 Store books in Google Drive
+
+- **Use when:** a reader wants a second, Google Drive-backed store for a DIYA-GL book, alongside Submit's cloud store.
+- **Does:** drive.js requests a Drive token scoped to drive.file (files this page created, nothing else in the reader's Drive) directly from Google, since Cognito's hosted UI never carries a Google token, and keeps it in sessionStorage under the same "diya-gl.cloud." prefix cloud.js clears on sign-out. isOffered() keeps every Drive control off the page until the operator's console steps add diya-gl.co.uk and ci.diya-gl.co.uk as authorised origins for the Google OAuth client (DATA-44).
+- **Run:** no command; see Does and Entry
+- **Entry:** `../spreadsheets.diyaccounting.co.uk/web/diya-gl.co.uk/public/drive.js`
+- **Files:** ../spreadsheets.diyaccounting.co.uk/web/diya-gl.co.uk/public/drive.js, ../spreadsheets.diyaccounting.co.uk/web/diya-gl.co.uk/public/cloud-config.js
+- **Keywords:** google drive, drive.file scope, second store, drive token, authorised origins
+- **Related:** SS-27
+
+#### SS-29 Serve DIYA-GL as an offline PWA
+
+- **Use when:** a DIYA-GL page must keep working offline once it has been opened online, or the service worker's cache scope changes.
+- **Does:** pwa.js registers sw.js after the page finishes loading, so registration never competes with the engine bundle and resources loading on first paint. The service worker's cache scope is why diya-gl-events.js (SS-33) is kept apart from ecommerce-events.js.
+- **Run:** no command; see Does and Entry
+- **Entry:** `../spreadsheets.diyaccounting.co.uk/web/diya-gl.co.uk/public/pwa.js`; `../spreadsheets.diyaccounting.co.uk/web/diya-gl.co.uk/public/sw.js`
+- **Files:** ../spreadsheets.diyaccounting.co.uk/web/diya-gl.co.uk/public/pwa.js, ../spreadsheets.diyaccounting.co.uk/web/diya-gl.co.uk/public/sw.js
+- **Keywords:** pwa, service worker, offline, sw.js, cache scope
+- **Related:** SS-26, SS-33
+
+#### SS-30 Serve the holding page and failover
+
+- **Use when:** live spreadsheets.diyaccounting.co.uk traffic must move onto a maintenance page and back.
+- **Does:** HoldingStack (one per environment, in the spreadsheets account) serves web/spreadsheets.diyaccounting.co.uk/holding/index.html on a `holding.` subdomain, and CloudFront's 403/404 error responses fail over to it so deep links never show a raw S3 error. deploy-holding.yml dispatches the CDK deploy with `target: holding` or `restore`.
+- **Run:** `gh workflow run deploy-holding.yml -f target=holding`; `gh workflow run deploy-holding.yml -f target=restore`
+- **Entry:** `../spreadsheets.diyaccounting.co.uk/.github/workflows/deploy-holding.yml`; `../spreadsheets.diyaccounting.co.uk/infra/main/java/co/uk/diyaccounting/spreadsheets/stacks/HoldingStack.java`
+- **Files:** ../spreadsheets.diyaccounting.co.uk/.github/workflows/deploy-holding.yml, ../spreadsheets.diyaccounting.co.uk/infra/main/java/co/uk/diyaccounting/spreadsheets/stacks/HoldingStack.java, ../spreadsheets.diyaccounting.co.uk/web/spreadsheets.diyaccounting.co.uk/holding/index.html, ../spreadsheets.diyaccounting.co.uk/RUNBOOK_HOLDING_FAILOVER.md
+- **Keywords:** holding page, failover, maintenance page, holdingstack, deploy-holding, runbook
+- **Related:** SS-35
+
+### Analytics and tracking (SS)
+
+<!-- generated:group analytics-and-tracking-ss -->
+- [SS-31](#ss-31-load-ga4-analytics-with-consent-gating) Load GA4 analytics with consent gating
+- [SS-32](#ss-32-send-ga4-ecommerce-and-download-events) Send GA4 ecommerce and download events
+- [SS-33](#ss-33-send-diya-gl-ga4-events) Send DIYA-GL GA4 events
+- [SS-34](#ss-34-configure-cloudwatch-rum) Configure CloudWatch RUM
+<!-- /generated:group analytics-and-tracking-ss -->
+
+#### SS-31 Load GA4 analytics with consent gating
+
+- **Use when:** a page on either site needs GA4 loaded, gated behind the visitor's cookie choice, or visitor-kind classified.
+- **Does:** lib/analytics.js sets GA4 consent denied by default (Measurement ID G-X4ZPD99X2K, property 523400333, shared with diyaccounting.co.uk and submit.diyaccounting.co.uk through a cross-domain linker), restores a returning visitor's saved choice, classifies the session as bot/synthetic/human, and loads gtag.js dynamically (CSP forbids inline scripts). consent-banner.js shows the accept/decline banner once per visitor and writes the choice to localStorage under "consent.analytics". The same script is copied into the diya-gl.co.uk build by build:diya-gl-bundle (SS-06's sibling script scripts/build-diya-gl-bundle.mjs), so both sites share one copy of the crawler list kept in step by web/unit-tests/analytics.test.js.
+- **Run:** no command; see Does and Entry
+- **Entry:** `../spreadsheets.diyaccounting.co.uk/web/spreadsheets.diyaccounting.co.uk/public/lib/analytics.js`; `../spreadsheets.diyaccounting.co.uk/web/spreadsheets.diyaccounting.co.uk/public/lib/consent-banner.js`
+- **Files:** ../spreadsheets.diyaccounting.co.uk/web/spreadsheets.diyaccounting.co.uk/public/lib/analytics.js, ../spreadsheets.diyaccounting.co.uk/web/spreadsheets.diyaccounting.co.uk/public/lib/consent-banner.js, ../spreadsheets.diyaccounting.co.uk/web/unit-tests/analytics.test.js, ../spreadsheets.diyaccounting.co.uk/scripts/build-diya-gl-bundle.mjs
+- **Keywords:** ga4, google analytics, gtag, consent banner, consent.analytics, visitor kind, cross-domain linker, g-x4zpd99x2k
+- **Related:** SS-32, SS-33, SS-34, DATA-24, SITE-15
+
+#### SS-32 Send GA4 ecommerce and download events
+
+- **Use when:** the spreadsheets site needs a GA4 ecommerce event: a product list view, a runner download or a completed donation.
+- **Does:** ecommerce-events.js fires view_item_list on the product catalogue page, and exposes buildPurchaseEvent (the `donate` purchase-shaped payload a completed donation sends, so the Ads Purchase conversion counts subscriptions only) and buildRunnerDownloadEvent as pure builder functions other pages call.
+- **Run:** no command; see Does and Entry
+- **Entry:** `../spreadsheets.diyaccounting.co.uk/web/spreadsheets.diyaccounting.co.uk/public/lib/ecommerce-events.js`
+- **Files:** ../spreadsheets.diyaccounting.co.uk/web/spreadsheets.diyaccounting.co.uk/public/lib/ecommerce-events.js, ../spreadsheets.diyaccounting.co.uk/web/unit-tests/ecommerce-events.test.js, ../spreadsheets.diyaccounting.co.uk/web/browser-tests/site-ecommerce-events.browser.test.js
+- **Keywords:** view_item_list, buildPurchaseEvent, buildRunnerDownloadEvent, donate event, ads purchase conversion, ecommerce events
+- **Related:** SS-22, SS-31
+
+#### SS-33 Send DIYA-GL GA4 events
+
+- **Use when:** a book load, a book save, a donation prompt, or a cloud sign-in/save on the DIYA-GL pages must reach GA4.
+- **Does:** diya-gl-events.js is a set of pure GA4 event-payload builders (book_loaded, book_saved, donation_prompt, and the cloud sign-in/save events) kept apart from lib/ecommerce-events.js so this file sits inside the service worker's cache scope (SS-29) without risking that file's view_item_list guard. shell.js and cloud.js call these builders and send the result through shell.js's own trackEvent; nothing here touches gtag or the DOM directly.
+- **Run:** no command; see Does and Entry
+- **Entry:** `../spreadsheets.diyaccounting.co.uk/web/diya-gl.co.uk/public/diya-gl-events.js`
+- **Files:** ../spreadsheets.diyaccounting.co.uk/web/diya-gl.co.uk/public/diya-gl-events.js, ../spreadsheets.diyaccounting.co.uk/web/unit-tests/diya-gl-events.test.js
+- **Keywords:** book_loaded, book_saved, donation_prompt, cloud sign-in event, trackEvent, ga4 event builders
+- **Related:** SS-26, SS-27, SS-29, SS-31
+
+#### SS-34 Configure CloudWatch RUM
+
+- **Use when:** browser-side performance and error telemetry (CloudWatch RUM) must be wired up or its config changed.
+- **Does:** lib/analytics.js's initRum() loads the RUM client only once analytics consent is granted, reading its app monitor id, identity pool and guest role from lib/rum-config.js. SpreadsheetsStack overwrites the committed no-op rum-config.js with the real config at deploy time (CfnAppMonitor), so the committed copy is inert on a local server and in browser tests.
+- **Run:** no command; see Does and Entry
+- **Entry:** `../spreadsheets.diyaccounting.co.uk/web/spreadsheets.diyaccounting.co.uk/public/lib/rum-config.js`; `../spreadsheets.diyaccounting.co.uk/infra/main/java/co/uk/diyaccounting/spreadsheets/stacks/SpreadsheetsStack.java`
+- **Files:** ../spreadsheets.diyaccounting.co.uk/web/spreadsheets.diyaccounting.co.uk/public/lib/rum-config.js, ../spreadsheets.diyaccounting.co.uk/web/spreadsheets.diyaccounting.co.uk/public/lib/analytics.js, ../spreadsheets.diyaccounting.co.uk/infra/main/java/co/uk/diyaccounting/spreadsheets/stacks/SpreadsheetsStack.java
+- **Keywords:** cloudwatch rum, rum-config.js, app monitor, identity pool, guest role, deploy-time overwrite
+- **Related:** SS-31, SS-35, DATA-25
+
+### Workflows and deploys (SS)
+
+<!-- generated:group workflows-and-deploys-ss -->
+- [SS-35](#ss-35-cdk-spreadsheetsstack) CDK: SpreadsheetsStack
+- [SS-36](#ss-36-deploy-the-spreadsheets-and-diya-gl-sites) Deploy the spreadsheets and diya-gl sites
+- [SS-37](#ss-37-request-acm-certificates) Request ACM certificates
+- [SS-38](#ss-38-initialise-or-regenerate-repository-state) Initialise or regenerate repository state
+- [SS-39](#ss-39-guard-commit-author-identity-on-prs) Guard commit author identity on PRs
+- [SS-40](#ss-40-run-codeql-scanning) Run CodeQL scanning
+- [SS-41](#ss-41-run-the-scheduled-dependency-and-tax-data-update-workflow) Run the scheduled dependency and tax-data update workflow
+<!-- /generated:group workflows-and-deploys-ss -->
+
+#### SS-35 CDK: SpreadsheetsStack
+
+- **Use when:** tracing or changing the S3 + CloudFront infrastructure behind either site.
+- **Does:** SpreadsheetsStack.java provisions the S3 bucket, CloudFront distribution with Origin Access Control, the redirect CloudFront Function (SS-24), the RUM app monitor (SS-34) and its config-overwrite BucketDeployment, and the certificate binding. HoldingStack.java (SS-30) is a sibling stack for the maintenance page.
+- **Run:** `npm run cdk:synth`; `npm run cdk:diff`
+- **Entry:** `../spreadsheets.diyaccounting.co.uk/infra/main/java/co/uk/diyaccounting/spreadsheets/stacks/SpreadsheetsStack.java`
+- **Files:** ../spreadsheets.diyaccounting.co.uk/infra/main/java/co/uk/diyaccounting/spreadsheets/stacks/SpreadsheetsStack.java, ../spreadsheets.diyaccounting.co.uk/infra/main/java/co/uk/diyaccounting/spreadsheets/stacks/HoldingStack.java, ../spreadsheets.diyaccounting.co.uk/infra/main/java/co/uk/diyaccounting/spreadsheets/SpreadsheetsEnvironment.java
+- **Keywords:** spreadsheetsstack, cdk synth, s3 cloudfront, origin access control, oac, cdk diff
+- **Related:** SS-24, SS-30, SS-34, SS-36
+
+#### SS-36 Deploy the spreadsheets and diya-gl sites
+
+- **Use when:** a push or manual dispatch must deploy SpreadsheetsStack, upload package zips, smoke-test the result, or publish diya-gl after a green prod deploy.
+- **Does:** deploy.yml deploys SpreadsheetsStack via CDK, uploads the zip archives, runs a smoke test, and, after a green prod deploy from a push, calls publish-diya-gl.yml (SS-20). Deploys of the same ci environment queue rather than cancel, since a cancelled CDK deploy leaves the stack part-applied.
+- **Run:** `gh workflow run deploy.yml`
+- **Entry:** `../spreadsheets.diyaccounting.co.uk/.github/workflows/deploy.yml`
+- **Files:** ../spreadsheets.diyaccounting.co.uk/.github/workflows/deploy.yml
+- **Keywords:** deploy workflow, cdk deploy, smoke test, zip upload, queue not cancel
+- **Related:** SS-20, SS-35
+
+#### SS-37 Request ACM certificates
+
+- **Use when:** the ACM certificate for diya-gl.co.uk or the holding page's domain needs (re-)requesting in us-east-1.
+- **Does:** request-diya-gl-cert.yml and request-holding-cert.yml each dispatch a DNS-validated ACM certificate request for their domain, over OIDC, in us-east-1 (CloudFront's required region).
+- **Run:** `gh workflow run request-diya-gl-cert.yml`; `gh workflow run request-holding-cert.yml`
+- **Entry:** `../spreadsheets.diyaccounting.co.uk/.github/workflows/request-diya-gl-cert.yml`; `../spreadsheets.diyaccounting.co.uk/.github/workflows/request-holding-cert.yml`
+- **Files:** ../spreadsheets.diyaccounting.co.uk/.github/workflows/request-diya-gl-cert.yml, ../spreadsheets.diyaccounting.co.uk/.github/workflows/request-holding-cert.yml
+- **Keywords:** acm certificate, us-east-1, dns validation, diya-gl-cert, holding-cert
+- **Related:** SS-35
+
+#### SS-38 Initialise or regenerate repository state
+
+- **Use when:** a fresh checkout, or a full regeneration, needs packages, reports and tax data rebuilt from scratch.
+- **Does:** init.yml dispatches with options to delete packages/reports before regenerating and to delete and re-source app/data/*.toml tax data from HMRC, then runs the generation pipeline.
+- **Run:** `gh workflow run init.yml`
+- **Entry:** `../spreadsheets.diyaccounting.co.uk/.github/workflows/init.yml`
+- **Files:** ../spreadsheets.diyaccounting.co.uk/.github/workflows/init.yml
+- **Keywords:** init workflow, regenerate, delete packages, delete tax data, fresh checkout
+- **Related:** SS-08, SS-19
+
+#### SS-39 Guard commit author identity on PRs
+
+- **Use when:** a pull request's commits must be checked against the allowed commit-identity list before merge.
+- **Does:** identity-guard.yml reads every commit a PR adds and fails the run if any author email is not on .github/allowed-commit-identities.yml's allow-list, guarding against an inline git identity slipping through unnoticed.
+- **Run:** runs automatically on `pull_request` (opened, synchronize, reopened)
+- **Entry:** `../spreadsheets.diyaccounting.co.uk/.github/workflows/identity-guard.yml`
+- **Files:** ../spreadsheets.diyaccounting.co.uk/.github/workflows/identity-guard.yml, ../spreadsheets.diyaccounting.co.uk/.github/allowed-commit-identities.yml, ../spreadsheets.diyaccounting.co.uk/scripts/check-commit-identities.sh
+- **Keywords:** identity guard, commit author, allow-list, allowed-commit-identities
+- **Related:**
+
+#### SS-40 Run CodeQL scanning
+
+- **Use when:** static-analysis scanning of the repository's code must run on a push, PR or schedule.
+- **Does:** codeql.yml runs GitHub's CodeQL analysis on push to main, on pull requests and on a daily schedule, keyed per-ref so a branch and its PR keep independent runs.
+- **Run:** runs automatically; `gh workflow run codeql.yml`
+- **Entry:** `../spreadsheets.diyaccounting.co.uk/.github/workflows/codeql.yml`
+- **Files:** ../spreadsheets.diyaccounting.co.uk/.github/workflows/codeql.yml
+- **Keywords:** codeql, static analysis, security scanning, scheduled scan
+- **Related:** SS-45
+
+#### SS-41 Run the scheduled dependency and tax-data update workflow
+
+- **Use when:** dependency or tax-data updates must be checked and applied on a schedule or push.
+- **Does:** update.yml runs on a daily schedule and on push, keyed per-ref, to keep dependencies and tax data current between manual package-updates runs (SS-19).
+- **Run:** runs automatically; `gh workflow run update.yml`
+- **Entry:** `../spreadsheets.diyaccounting.co.uk/.github/workflows/update.yml`
+- **Files:** ../spreadsheets.diyaccounting.co.uk/.github/workflows/update.yml
+- **Keywords:** update workflow, scheduled update, dependency update, daily cron
+- **Related:** SS-19
+
+### Tests and CI gates (SS)
+
+<!-- generated:group tests-and-ci-gates-ss -->
+- [SS-42](#ss-42-route-tests-by-blast-radius) Route tests by blast radius
+- [SS-43](#ss-43-run-the-product-generation-and-test-workflows) Run the product generation and test workflows
+- [SS-44](#ss-44-run-spreadsheets-behaviour-tests) Run spreadsheets behaviour tests
+- [SS-45](#ss-45-run-compliance-checks) Run compliance checks
+<!-- /generated:group tests-and-ci-gates-ss -->
+
+#### SS-42 Route tests by blast radius
+
+- **Use when:** `npm test` must decide which tiers (gates, unit, calc, browser, infra) a change actually reaches.
+- **Does:** test-scope.mjs diffs against the merge base with origin/main, maps changed paths through its routing table, and runs gates and unit always, calc/browser/infra only when the diff reaches them; it prints the tiers picked and ends on one VERDICT line. A detached HEAD, missing origin/main, shallow clone or empty diff escalates to the full set. A tracked .githooks/pre-push runs it on every push; `SKIP_PUSH_TESTS=1` runs the gates tier alone and says what it skipped, never silently.
+- **Run:** `npm test`; `npm test -- --plan`; `npm test -- --all`; `npm test -- --base HEAD~1`
+- **Entry:** `../spreadsheets.diyaccounting.co.uk/scripts/test-scope.mjs`; `../spreadsheets.diyaccounting.co.uk/scripts/blast-radius.mjs`
+- **Files:** ../spreadsheets.diyaccounting.co.uk/scripts/test-scope.mjs, ../spreadsheets.diyaccounting.co.uk/scripts/blast-radius.mjs, ../spreadsheets.diyaccounting.co.uk/.githooks/pre-push, ../spreadsheets.diyaccounting.co.uk/.githooks/install.mjs
+- **Keywords:** test router, blast radius, test-scope, pre-push hook, verdict line, skip_libreoffice, tiers
+- **Related:** SS-43
+
+#### SS-43 Run the product generation and test workflows
+
+- **Use when:** CI must generate and reconcile one or all four products, or run the standard test/format/build gate.
+- **Does:** generate-bst.yml, generate-se.yml, generate-taxi.yml and generate-ltd.yml each generate and reconcile one product; generate-all.yml runs the four in sequence (not parallel, since each commit job pushes generated output the next product's tests must read). test.yml runs lint, format check, Maven verify and CDK synth on push, PR and a daily schedule.
+- **Run:** `gh workflow run generate-all.yml`; `gh workflow run generate-bst.yml`
+- **Entry:** `../spreadsheets.diyaccounting.co.uk/.github/workflows/generate-all.yml`; `../spreadsheets.diyaccounting.co.uk/.github/workflows/test.yml`
+- **Files:** ../spreadsheets.diyaccounting.co.uk/.github/workflows/generate-all.yml, ../spreadsheets.diyaccounting.co.uk/.github/workflows/generate-bst.yml, ../spreadsheets.diyaccounting.co.uk/.github/workflows/generate-se.yml, ../spreadsheets.diyaccounting.co.uk/.github/workflows/generate-taxi.yml, ../spreadsheets.diyaccounting.co.uk/.github/workflows/generate-ltd.yml, ../spreadsheets.diyaccounting.co.uk/.github/workflows/test.yml
+- **Keywords:** generate-all, generate-bst, generate-se, generate-taxi, generate-ltd, sequential commits, test.yml
+- **Related:** SS-08, SS-11, SS-42
+
+#### SS-44 Run spreadsheets behaviour tests
+
+- **Use when:** end-to-end Playwright journeys across both sites must run against local, ci or prod.
+- **Does:** test:spreadsheetsBehaviour-local/-ci/-prod set SPREADSHEETS_BASE_URL and DIYA_GL_BASE_URL and run the spreadsheetsBehaviour Playwright project, teeing output to spreadsheetsBehaviour.log. A case probing a CloudFront-only path (e.g. /runners/) must target a deployed host, since the local server serves only the document root.
+- **Run:** `npm run test:spreadsheetsBehaviour-local`; `npm run test:spreadsheetsBehaviour-ci`; `npm run test:spreadsheetsBehaviour-prod`
+- **Entry:** `../spreadsheets.diyaccounting.co.uk/behaviour-tests`
+- **Files:** ../spreadsheets.diyaccounting.co.uk/behaviour-tests, ../spreadsheets.diyaccounting.co.uk/playwright.config.js
+- **Keywords:** behaviour tests, spreadsheetsbehaviour, playwright, spreadsheets_base_url, diya_gl_base_url
+- **Related:** SS-42
+
+#### SS-45 Run compliance checks
+
+- **Use when:** accessibility or penetration-style checks must run against ci or prod and produce a markdown report.
+- **Does:** compliance:ci-report-md/-prod-report-md run pa11y, axe (including WCAG 2.2), Lighthouse and a text-spacing check for accessibility, and eslint-security, npm audit and retire.js for penetration, then compliance-report.js turns the raw outputs into one markdown report.
+- **Run:** `npm run compliance:ci-report-md`; `npm run compliance:prod-report-md`
+- **Entry:** `../spreadsheets.diyaccounting.co.uk/app/bin/compliance-report.js`
+- **Files:** ../spreadsheets.diyaccounting.co.uk/app/bin/compliance-report.js, ../spreadsheets.diyaccounting.co.uk/.pa11yci.ci.json, ../spreadsheets.diyaccounting.co.uk/.pa11yci.prod.json, ../spreadsheets.diyaccounting.co.uk/eslint.security.config.js, ../spreadsheets.diyaccounting.co.uk/.retireignore.json, ../spreadsheets.diyaccounting.co.uk/REPORT_ACCESSIBILITY_PENETRATION.md
+- **Keywords:** compliance report, pa11y, axe, lighthouse, text-spacing, eslint security, npm audit, retire.js
+- **Related:** SS-40
+
+### Skills (SS)
+
+<!-- generated:group skills-ss -->
+- [SS-46](#ss-46-render-the-spreadsheets-work-board) Render the spreadsheets work board
+- [SS-47](#ss-47-work-nextmd-as-dispatched-sub-agents) Work NEXT.md as dispatched sub-agents
+- [SS-48](#ss-48-refine-nextmd-before-a-wave) Refine NEXT.md before a wave
+- [SS-49](#ss-49-run-the-delivery-cycle-unattended) Run the delivery cycle unattended
+- [SS-50](#ss-50-watch-github-ci-to-green) Watch GitHub CI to green
+- [SS-51](#ss-51-merge-every-pr-that-is-ready) Merge every PR that is ready
+- [SS-52](#ss-52-preview-what-auto-merge-would-do) Preview what auto-merge would do
+- [SS-53](#ss-53-clean-up-stale-branches-and-worktrees) Clean up stale branches and worktrees
+- [SS-54](#ss-54-cool-down-an-overloaded-batch) Cool down an overloaded batch
+- [SS-55](#ss-55-resume-normal-work-from-cool-down) Resume normal work from cool-down
+- [SS-56](#ss-56-write-the-session-report) Write the session report
+- [SS-57](#ss-57-write-plain-human-prose) Write plain, human prose
+- [SS-58](#ss-58-excel-xml-manipulation-reference) Excel XML manipulation reference
+<!-- /generated:group skills-ss -->
+
+#### SS-46 Render the spreadsheets work board
+
+- **Use when:** the operator asks for the open items, the board, or "what's in flight" in this repository.
+- **Does:** The board skill renders NEXT.md's in-flight and open items with their source plan, for this repository (NEXT.md here only points at ../submit.diyaccounting.co.uk/'s plans and its own NEXT.md).
+- **Run:** `/board`
+- **Entry:** `../spreadsheets.diyaccounting.co.uk/.claude/skills/board/SKILL.md`
+- **Files:** ../spreadsheets.diyaccounting.co.uk/.claude/skills/board/SKILL.md, ../spreadsheets.diyaccounting.co.uk/NEXT.md
+- **Keywords:** board skill, open work, next.md, in-flight items
+- **Related:** DEV-27
+
+#### SS-47 Work NEXT.md as dispatched sub-agents
+
+- **Use when:** the operator says "do next", "work the backlog", or a landed batch leaves items still open here.
+- **Does:** The do-next skill dispatches NEXT.md's open items as waves of worktree-isolated sub-agents, lands them on one branch, and pushes in batches for one PR.
+- **Run:** `/do-next`
+- **Entry:** `../spreadsheets.diyaccounting.co.uk/.claude/skills/do-next/SKILL.md`
+- **Files:** ../spreadsheets.diyaccounting.co.uk/.claude/skills/do-next/SKILL.md
+- **Keywords:** do-next skill, worktree sub-agents, dispatch backlog
+- **Related:** DEV-28
+
+#### SS-48 Refine NEXT.md before a wave
+
+- **Use when:** a readiness or feasibility pass over this repository's board is needed before dispatching a wave.
+- **Does:** The refine skill checks every open row's references against origin/main, makes each brief complete with the lowest model that fits, shares facts across rows, and splits out any human step mixed into a row, then writes the file back and renders /board.
+- **Run:** `/refine`
+- **Entry:** `../spreadsheets.diyaccounting.co.uk/.claude/skills/refine/SKILL.md`
+- **Files:** ../spreadsheets.diyaccounting.co.uk/.claude/skills/refine/SKILL.md
+- **Keywords:** refine skill, board readiness, brief completeness, lowest model
+- **Related:** DEV-29
+
+#### SS-49 Run the delivery cycle unattended
+
+- **Use when:** the operator says "iterate" or "keep going until the board is clear" in this repository.
+- **Does:** The iterate skill runs board, a wave of sub-agent batches on one branch and one PR, watch, auto-merge, watch, board, again, until no machine-only row can start.
+- **Run:** `/iterate`
+- **Entry:** `../spreadsheets.diyaccounting.co.uk/.claude/skills/iterate/SKILL.md`
+- **Files:** ../spreadsheets.diyaccounting.co.uk/.claude/skills/iterate/SKILL.md
+- **Keywords:** iterate skill, delivery cycle, unattended, plan-do-check-act
+- **Related:** DEV-30
+
+#### SS-50 Watch GitHub CI to green
+
+- **Use when:** a branch's CI needs watching to green, or the operator hands over a branch after a push.
+- **Does:** The watch skill watches GitHub CI on main and every open PR's head branch until the whole scope is green, and fixes what goes red.
+- **Run:** `/watch`
+- **Entry:** `../spreadsheets.diyaccounting.co.uk/.claude/skills/watch/SKILL.md`
+- **Files:** ../spreadsheets.diyaccounting.co.uk/.claude/skills/watch/SKILL.md, ../spreadsheets.diyaccounting.co.uk/scripts/watch-ci.sh
+- **Keywords:** watch skill, github ci, keep it green
+- **Related:** DEV-31
+
+#### SS-51 Merge every PR that is ready
+
+- **Use when:** the operator says "auto-merge" or asks for the merge state of this repository.
+- **Does:** The auto-merge skill catalogues worktrees, branches, uncommitted work, PRs and review threads, merges every PR that passes every gate (no unresolved review thread, no uncommitted work, branch not ahead of origin, PR head equal to branch tip, every workflow green), and hands over to /watch.
+- **Run:** `/auto-merge`
+- **Entry:** `../spreadsheets.diyaccounting.co.uk/.claude/skills/auto-merge/SKILL.md`
+- **Files:** ../spreadsheets.diyaccounting.co.uk/.claude/skills/auto-merge/SKILL.md
+- **Keywords:** auto-merge skill, merge gates, review threads, pr head
+- **Related:** DEV-32
+
+#### SS-52 Preview what auto-merge would do
+
+- **Use when:** the operator wants to see what would merge before anything changes.
+- **Does:** The auto-merge-dry-run skill reports everything /auto-merge reports, with nothing changed: no merge, commit, push or file write.
+- **Run:** `/auto-merge-dry-run`
+- **Entry:** `../spreadsheets.diyaccounting.co.uk/.claude/skills/auto-merge-dry-run/SKILL.md`
+- **Files:** ../spreadsheets.diyaccounting.co.uk/.claude/skills/auto-merge-dry-run/SKILL.md
+- **Keywords:** auto-merge dry run, preview merge, no changes
+- **Related:** DEV-33
+
+#### SS-53 Clean up stale branches and worktrees
+
+- **Use when:** the operator says "clean" or "tidy the repo" in this repository.
+- **Does:** The clean skill gathers merged branches, worktrees of merged branches, logs and test artefacts and build output, asks once, removes every agreed category, then fetches, switches to main and pulls once nothing is in progress.
+- **Run:** `/clean`
+- **Entry:** `../spreadsheets.diyaccounting.co.uk/.claude/skills/clean/SKILL.md`
+- **Files:** ../spreadsheets.diyaccounting.co.uk/.claude/skills/clean/SKILL.md
+- **Keywords:** clean skill, stale branches, worktree removal, build output
+- **Related:** DEV-34
+
+#### SS-54 Cool down an overloaded batch
+
+- **Use when:** a batch in this repository is stacking problems faster than it lands them.
+- **Does:** The cool-down skill slows the flow of new work and settles what is already in flight: agents commit and stop, PRs and workflows are driven green one branch at a time, tracking documents catch up, and it holds the revival notes /wake reads from.
+- **Run:** `/cool-down`
+- **Entry:** `../spreadsheets.diyaccounting.co.uk/.claude/skills/cool-down/SKILL.md`
+- **Files:** ../spreadsheets.diyaccounting.co.uk/.claude/skills/cool-down/SKILL.md
+- **Keywords:** cool-down skill, slow the flow, settle in-flight work, revival notes
+- **Related:** DEV-35
+
+#### SS-55 Resume normal work from cool-down
+
+- **Use when:** the operator lifts cool-down in this repository.
+- **Does:** The wake skill resumes normal work, reading the revival notes cool-down left beside the rules they undo.
+- **Run:** `/wake`
+- **Entry:** `../spreadsheets.diyaccounting.co.uk/.claude/skills/wake/SKILL.md`
+- **Files:** ../spreadsheets.diyaccounting.co.uk/.claude/skills/wake/SKILL.md
+- **Keywords:** wake skill, resume work, revival notes
+- **Related:** DEV-36, SS-54
+
+#### SS-56 Write the session report
+
+- **Use when:** the operator asks for a session report or an account of how this repository's session went.
+- **Does:** The session-report skill writes REPORT_SESSION_<id>_<date>.md from measured figures: the result, the method in prose, the mechanisms that worked, and losses with a board row each.
+- **Run:** `/session-report`
+- **Entry:** `../spreadsheets.diyaccounting.co.uk/.claude/skills/session-report/SKILL.md`
+- **Files:** ../spreadsheets.diyaccounting.co.uk/.claude/skills/session-report/SKILL.md
+- **Keywords:** session-report skill, measured figures, board row per loss
+- **Related:** DEV-37
+
+#### SS-57 Write plain, human prose
+
+- **Use when:** any human-facing text in this repository is being drafted: docs, comments, chat replies, site copy.
+- **Does:** The plain-prose skill holds this repository's writing rules for plain, human prose and the LLM-voice tells to cut.
+- **Run:** `.claude/skills/plain-prose/SKILL.md`
+- **Entry:** `../spreadsheets.diyaccounting.co.uk/.claude/skills/plain-prose/SKILL.md`
+- **Files:** ../spreadsheets.diyaccounting.co.uk/.claude/skills/plain-prose/SKILL.md
+- **Keywords:** plain-prose skill, writing rules, llm-voice
+- **Related:** DEV-38
+
+#### SS-58 Excel XML manipulation reference
+
+- **Use when:** writing or debugging code that edits xlsx files, chases external-link caches, renames tabs for non-March year-ends, or runs the LibreOffice recalculation pipeline.
+- **Does:** The excel skill catalogues xlsx-as-zip manipulation with JSZip, external-link cache updates, xls-roundtrip recalculation, and the testing approaches used across the spreadsheet pipeline.
+- **Run:** `.claude/skills/excel/SKILL.md`
+- **Entry:** `../spreadsheets.diyaccounting.co.uk/.claude/skills/excel/SKILL.md`
+- **Files:** ../spreadsheets.diyaccounting.co.uk/.claude/skills/excel/SKILL.md
+- **Keywords:** excel skill, xlsx xml, jszip, external link cache, xls roundtrip, libreoffice
+- **Related:** SS-08, SS-14
 ## Keywords
 
 <!-- generated:keywords -->
@@ -4892,7 +5642,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - accounts filing: [MCP-04](#mcp-04-derive-micro-entity-accounts-figures-for-companies-house-filing), [DEV-04](#dev-04-simulate-companies-house-identity-and-filing)
 - accounts staging: [DATA-48](#data-48-stage-paypal-transactions-for-reconciliation), [DATA-49](#data-49-stage-stripe-transactions-for-reconciliation)
 - acm: [OPS-37](#ops-37-check-https-certificate-expiry)
-- acm certificate: [OPS-49](#ops-49-request-and-renew-the-holding-page-certificate)
+- acm certificate: [OPS-49](#ops-49-request-and-renew-the-holding-page-certificate), [SS-37](#ss-37-request-acm-certificates)
 - actionlint gap: [OPS-33](#ops-33-enforce-workflow-to-workflow-permission-grants)
 - active users daily: [DATA-27](#data-27-sql-views-activity-and-traffic)
 - activity: [BILL-35](#bill-35-load-and-query-the-productactivity-catalogue)
@@ -4908,9 +5658,11 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - add-references command: [DEV-26](#dev-26-enforce-claude-code-conventions-via-rules-and-hooks)
 - add_client: [MCP-08](#mcp-08-manage-practice-clients-and-hmrc-agent-authorisation)
 - addinitscript: [OPS-89](#ops-89-overlay-pointer-and-caption-cues-on-video)
+- addsaleline: [SS-04](#ss-04-apply-book-edits-and-derivations)
 - adjustments: [HMRC-13](#hmrc-13-submit-and-manage-the-self-employment-annual-summary), [HMRC-16](#hmrc-16-trigger-and-adjust-the-business-source-adjustable-summary)
 - admin pass: [BILL-07](#bill-07-admin-issue-a-pass)
 - ads advisor skill: [DATA-36](#data-36-answer-google-ads-questions-from-live-data)
+- ads purchase conversion: [SS-32](#ss-32-send-ga4-ecommerce-and-download-events)
 - ads.toml: [DATA-32](#data-32-sync-the-google-ads-account)
 - advertising standards: [SITE-20](#site-20-document-business-governance-and-positioning)
 - affiliate: [SITE-11](#site-11-promote-sibling-products-and-partners)
@@ -4944,6 +5696,8 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - alerts: [OPS-70](#ops-70-forward-operational-activity-events-to-telegram)
 - all-clients: [MCP-01](#mcp-01-expose-the-submission-mcp-server-and-tools), [MCP-09](#mcp-09-run-a-client-scoped-tool-across-every-practice-client)
 - allocation: [BILL-01](#bill-01-grant-a-bundle-to-a-user)
+- allow-list: [SS-39](#ss-39-guard-commit-author-identity-on-prs)
+- allowed-commit-identities: [SS-39](#ss-39-guard-commit-author-identity-on-prs)
 - allowlist: [OPS-28](#ops-28-enforce-commit-identity-allowlist)
 - amount owed: [HMRC-04](#hmrc-04-retrieve-vat-liabilities)
 - analytics event: [SITE-04](#site-04-track-visits-via-session-beacon)
@@ -4952,6 +5706,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - analytics_storage: [SITE-15](#site-15-show-and-persist-cookie-consent)
 - annual submission: [MCP-06](#mcp-06-derive-itsa-quarterly-and-annual-submission-figures)
 - annual summary: [HMRC-13](#hmrc-13-submit-and-manage-the-self-employment-annual-summary)
+- annual update: [SS-19](#ss-19-update-annual-hmrc-tax-rate-data)
 - apex isolation: [OPS-61](#ops-61-design-ci-branch-deploys-off-the-apex)
 - apex mid-move: [OPS-24](#ops-24-gate-probes-on-the-main-apex-deploy)
 - api docs: [DEV-06](#dev-06-simulate-hmrc-test-user-provisioning-and-api-docs)
@@ -4963,12 +5718,14 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - api lambda: [OPS-124](#ops-124-define-shared-lambda-cdk-constructs)
 - api subscriptions: [HMRC-32](#hmrc-32-register-and-verify-hmrc-developer-hub-application-config)
 - apilambda: [CH-14](#ch-14-provision-the-companies-house-cdk-stack)
-- app monitor: [DATA-25](#data-25-configure-and-gate-cloudwatch-rum)
+- app monitor: [DATA-25](#data-25-configure-and-gate-cloudwatch-rum), [SS-34](#ss-34-configure-cloudwatch-rum)
 - architecture rationale: [OPS-61](#ops-61-design-ci-branch-deploys-off-the-apex)
 - architecture report: [DEV-24](#dev-24-document-developer-setup-and-repository-conventions)
 - archive client: [BILL-16](#bill-16-manage-practice-clients)
+- archive packages: [SS-18](#ss-18-archive-a-cut-of-packages-to-diy-accounting-archive)
 - arn lookup: [OPS-136](#ops-136-retrieve-cloudformation-stack-outputs)
 - arrival_date: [DATA-51](#data-51-turn-staged-stripe-activity-into-diya-gl-lines)
+- articles: [SS-23](#ss-23-serve-knowledge-base-article-and-community-content)
 - assert: [CH-02](#ch-02-verify-the-companies-house-oauth-app-configuration)
 - assert configuration: [BILL-29](#bill-29-assert-the-paypal-donate-button-configuration)
 - asset groups: [DATA-33](#data-33-read-the-google-ads-account-inventory)
@@ -4989,6 +5746,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - authorisation: [BILL-04](#bill-04-enforce-bundle-entitlement-on-a-request)
 - authorisation code: [HMRC-23](#hmrc-23-exchange-an-hmrc-oauth-code-for-a-token), [HMRC-33](#hmrc-33-drive-hmrcs-sandbox-authorisation-flow-for-test-scripts)
 - authorisation status: [BILL-13](#bill-13-check-a-clients-authorisation-status)
+- authorised origins: [SS-28](#ss-28-store-books-in-google-drive)
 - authorization: [BILL-04](#bill-04-enforce-bundle-entitlement-on-a-request)
 - authorization code: [CH-01](#ch-01-exchange-a-companies-house-oauth-token)
 - authorization_code: [DEV-03](#dev-03-simulate-hmrc-oauth)
@@ -4996,10 +5754,12 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - authorizer: [SITE-02](#site-02-verify-jwts-at-the-api-gateway)
 - auto-close: [OPS-21](#ops-21-auto-close-resolved-alarm-issues)
 - auto-merge: [DEV-32](#dev-32-merge-every-pr-that-is-ready)
-- auto-merge dry run: [DEV-33](#dev-33-preview-what-auto-merge-would-do)
+- auto-merge dry run: [DEV-33](#dev-33-preview-what-auto-merge-would-do), [SS-52](#ss-52-preview-what-auto-merge-would-do)
+- auto-merge skill: [SS-51](#ss-51-merge-every-pr-that-is-ready)
 - auto-remediate: [OPS-79](#ops-79-track-an-alarm-familys-daily-remedy-budget)
 - auto-tagging: [DATA-32](#data-32-sync-the-google-ads-account)
 - automated code review: [OPS-31](#ops-31-run-a-claude-security-review-on-push)
+- autosave: [SS-27](#ss-27-save-and-load-books-locally-and-via-submits-cloud-store)
 - availability sli: [DATA-31](#data-31-sql-views-dora-and-operations)
 - aws account setup: [OPS-98](#ops-98-bootstrap-the-cdk-toolkit-across-accounts)
 - aws architecture: [OPS-58](#ops-58-document-multi-account-aws-architecture)
@@ -5014,7 +5774,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - aws-jwt-verify: [SITE-02](#site-02-verify-jwts-at-the-api-gateway)
 - aws_costs.md: [OPS-59](#ops-59-track-and-analyze-aws-spending)
 - awscustomresource: [OPS-127](#ops-127-upsert-route53-alias-records-via-custom-resource)
-- axe: [DATA-14](#data-14-catalogue-compliance-findings-for-the-dashboard)
+- axe: [DATA-14](#data-14-catalogue-compliance-findings-for-the-dashboard), [SS-45](#ss-45-run-compliance-checks)
 - axe-core: [OPS-96](#ops-96-scan-pages-for-accessibility-violations)
 - backfill: [BILL-41](#bill-41-backfill-the-stripe-test-mode-qualifier)
 - background poll: [DEV-31](#dev-31-watch-github-ci-to-green)
@@ -5044,7 +5804,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - behaviour test helpers: [HMRC-36](#hmrc-36-provide-itsa-behaviour-test-step-helpers), [DEV-19](#dev-19-provide-shared-behaviour-test-fixtures-and-steps)
 - behaviour test lane: [OPS-15](#ops-15-serialize-lane-test-user-rotation-jobs)
 - behaviour test master: [OPS-54](#ops-54-define-specialized-claude-code-sub-agent-personas)
-- behaviour tests: [OPS-26](#ops-26-run-the-automated-test-suite-in-ci)
+- behaviour tests: [OPS-26](#ops-26-run-the-automated-test-suite-in-ci), [SS-44](#ss-44-run-spreadsheets-behaviour-tests)
 - betaanalyticsdataclient: [DATA-06](#data-06-pull-ga4-reports-and-bigquery-event-export)
 - bidding optimisation: [DATA-36](#data-36-answer-google-ads-questions-from-live-data)
 - bigquery: [DATA-53](#data-53-reach-google-cloud-from-a-local-session-via-aws-sso), [DEV-19](#dev-19-provide-shared-behaviour-test-fixtures-and-steps)
@@ -5061,21 +5821,32 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - billing portal: [BILL-26](#bill-26-open-the-stripe-customer-billing-portal)
 - billing stack: [BILL-37](#bill-37-cdk-billing-app-stack)
 - billion laughs: [CH-11](#ch-11-parse-xml-safely)
+- blast radius: [SS-42](#ss-42-route-tests-by-blast-radius)
 - blocked requests: [OPS-74](#ops-74-detect-waf-blocked-scan-attacks)
 - board: [DEV-27](#dev-27-render-the-open-work-board)
 - board agent: [OPS-57](#ops-57-dispatch-agentic-lib-board-backlog-and-pr-agents)
 - board do-next watch auto-merge: [DEV-30](#dev-30-run-the-delivery-cycle-unattended)
 - board headings: [DEV-21](#dev-21-verify-module-wiring-and-repository-shape)
+- board readiness: [SS-48](#ss-48-refine-nextmd-before-a-wave)
+- board row per loss: [SS-56](#ss-56-write-the-session-report)
+- board skill: [SS-46](#ss-46-render-the-spreadsheets-work-board)
 - board-ci: [DEV-25](#dev-25-maintain-the-specialist-agent-prompt-library)
 - book: [MCP-17](#mcp-17-build-and-hand-over-the-companys-own-book)
+- book check: [SS-11](#ss-11-reconcile-generated-packages-against-expected-figures)
+- book checks: [SS-02](#ss-02-validate-diya-gl-books-against-the-v2-schema)
+- book figures: [SS-01](#ss-01-run-the-diya-gl-calculation-engine)
 - book from workbook: [MCP-11](#mcp-11-seed-a-book-from-a-workbook-set)
 - book keys: [BILL-23](#bill-23-store-diya-gl-books-in-s3)
 - book ownership: [BILL-15](#bill-15-move-a-book-to-a-client)
+- book page: [SS-26](#ss-26-serve-the-diya-gl-product-pages-and-shell)
 - book schema: [MCP-11](#mcp-11-seed-a-book-from-a-workbook-set)
 - book version: [BILL-20](#bill-20-fetch-a-versioned-diya-gl-book)
 - book-move lambda: [BILL-39](#bill-39-cdk-diya-gl-stack)
-- book.toml: [MCP-03](#mcp-03-load-and-save-diya-gl-books-via-mcp)
+- book.toml: [MCP-03](#mcp-03-load-and-save-diya-gl-books-via-mcp), [SS-02](#ss-02-validate-diya-gl-books-against-the-v2-schema), [SS-03](#ss-03-read-and-write-diya-gl-interchange-formats), [SS-15](#ss-15-extract-diya-gl-data-and-financial-reports-from-populated-packages)
+- book_loaded: [SS-33](#ss-33-send-diya-gl-ga4-events)
+- book_saved: [SS-33](#ss-33-send-diya-gl-ga4-events)
 - bookkeeping: [MCP-17](#mcp-17-build-and-hand-over-the-companys-own-book)
+- books api: [SS-27](#ss-27-save-and-load-books-locally-and-via-submits-cloud-store)
 - bootstrap account: [OPS-103](#ops-103-bootstrap-a-new-aws-account-for-cdk)
 - box 3: [HMRC-07](#hmrc-07-build-and-validate-9-box-vat-return-data)
 - box 5: [HMRC-07](#hmrc-07-build-and-validate-9-box-vat-return-data)
@@ -5083,15 +5854,25 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - branch hash: [OPS-02](#ops-02-derive-environment-and-deployment-names-from-a-branch)
 - branch protection: [OPS-60](#ops-60-guide-github-repository-configuration)
 - break-even: [DATA-36](#data-36-answer-google-ads-questions-from-live-data)
+- brief completeness: [SS-48](#ss-48-refine-nextmd-before-a-wave)
 - brief preparation: [DEV-29](#dev-29-refine-nextmd-before-a-wave)
 - browser test: [DEV-12](#dev-12-prove-the-client-status-stack-and-fetchauth)
 - browser tests: [OPS-26](#ops-26-run-the-automated-test-suite-in-ci)
 - brute force: [OPS-73](#ops-73-detect-404-scan-rate-attacks)
 - bsas: [HMRC-16](#hmrc-16-trigger-and-adjust-the-business-source-adjustable-summary), [HMRC-34](#hmrc-34-file-a-full-itsa-tax-year-in-sandbox), [DEV-09](#dev-09-simulate-hmrc-itsa-mtd-api)
+- bst se ltd: [SS-13](#ss-13-cross-check-figures-across-product-packages)
+- bst taxi se ltd: [SS-08](#ss-08-generate-spreadsheet-packages-from-product-modules)
+- bucketdeployment prune false: [SS-09](#ss-09-build-package-zips-and-the-catalogue)
 - budget alert: [OPS-72](#ops-72-forward-bedrock-budget-alerts)
 - budget dedupe: [DATA-41](#data-41-assert-gcp-billing-budget-and-stray-project)
 - budget forecast question: [DATA-36](#data-36-answer-google-ads-questions-from-live-data)
+- build output: [SS-53](#ss-53-clean-up-stale-branches-and-worktrees)
 - build output cleanup: [DEV-34](#dev-34-clean-up-stale-deployments-and-branches)
+- build packages: [SS-09](#ss-09-build-package-zips-and-the-catalogue)
+- build sitemaps: [SS-25](#ss-25-generate-sitemaps)
+- build:redirects: [SS-24](#ss-24-compile-the-redirect-engine)
+- buildpurchaseevent: [SS-32](#ss-32-send-ga4-ecommerce-and-download-events)
+- buildrunnerdownloadevent: [SS-32](#ss-32-send-ga4-ecommerce-and-download-events)
 - bulk vat return: [HMRC-08](#hmrc-08-parse-vat-returns-from-a-bulk-csv-file)
 - bundle: [BILL-01](#bill-01-grant-a-bundle-to-a-user), [BILL-02](#bill-02-list-a-users-bundles-and-token-balance), [BILL-03](#bill-03-delete-a-bundle)
 - bundle auto-grant: [DEV-07](#dev-07-simulate-the-public-demos-billing-and-oauth)
@@ -5111,8 +5892,11 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - business picker: [HMRC-09](#hmrc-09-retrieve-itsa-business-details)
 - business source adjustable summary: [HMRC-16](#hmrc-16-trigger-and-adjust-the-business-source-adjustable-summary)
 - business views: [DATA-10](#data-10-create-or-replace-athena-business-views)
+- cache scope: [SS-29](#ss-29-serve-diya-gl-as-an-offline-pwa)
+- cached formula results: [SS-16](#ss-16-write-workbooks-from-diya-gl-data)
 - cached status: [BILL-13](#bill-13-check-a-clients-authorisation-status)
 - caching policy: [OPS-115](#ops-115-provision-the-edgecloudfront-stack)
+- calculator: [SS-01](#ss-01-run-the-diya-gl-calculation-engine)
 - callback: [SITE-01](#site-01-sign-customers-in-via-cognito)
 - called workflow: [OPS-33](#ops-33-enforce-workflow-to-workflow-permission-grants)
 - callsubmitapi: [MCP-07](#mcp-07-file-vat-returns-and-accounts-via-api)
@@ -5120,6 +5904,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - cancel invitation: [BILL-14](#bill-14-cancel-a-pending-client-authorisation-invite)
 - cancel run: [OPS-01](#ops-01-cancel-superseded-push-triggered-deploys)
 - cancel subscription: [BILL-26](#bill-26-open-the-stripe-customer-billing-portal), [BILL-28](#bill-28-process-stripe-webhook-events)
+- canonical form: [SS-03](#ss-03-read-and-write-diya-gl-interchange-formats)
 - capability: [DEV-43](#dev-43-find-existing-tooling-before-building-any)
 - capacity: [BILL-02](#bill-02-list-a-users-bundles-and-token-balance)
 - capacity cap: [BILL-01](#bill-01-grant-a-bundle-to-a-user)
@@ -5130,12 +5915,14 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - cash account: [MCP-16](#mcp-16-parse-paypal-statements-into-diya-gl-lines)
 - catalogue: [BILL-35](#bill-35-load-and-query-the-productactivity-catalogue)
 - catalogue sync: [BILL-30](#bill-30-sync-the-stripe-productprice-catalogue)
+- catalogue.toml: [SS-09](#ss-09-build-package-zips-and-the-catalogue), [SS-21](#ss-21-serve-the-spreadsheets-product-catalogue-and-downloads)
 - cdk: [CH-14](#ch-14-provision-the-companies-house-cdk-stack), [BILL-36](#bill-36-cdk-account-stack), [BILL-37](#bill-37-cdk-billing-app-stack), [BILL-38](#bill-38-cdk-billing-webhook-stack), [BILL-39](#bill-39-cdk-diya-gl-stack)
 - cdk application logging: [OPS-129](#ops-129-configure-lambdacdk-application-logging)
 - cdk bootstrap: [OPS-98](#ops-98-bootstrap-the-cdk-toolkit-across-accounts)
 - cdk config: [OPS-126](#ops-126-provide-config-composition-helpers-for-cdk-code)
 - cdk custom resource: [DATA-10](#data-10-create-or-replace-athena-business-views)
-- cdk deploy: [OPS-08](#ops-08-deploy-a-single-cdk-stack-on-demand)
+- cdk deploy: [OPS-08](#ops-08-deploy-a-single-cdk-stack-on-demand), [SS-36](#ss-36-deploy-the-spreadsheets-and-diya-gl-sites)
+- cdk diff: [SS-35](#ss-35-cdk-spreadsheetsstack)
 - cdk entrypoint: [OPS-123](#ops-123-wire-cdk-application-entrypoints-per-account)
 - cdk introspection: [DEV-13](#dev-13-generate-the-openapi-spec-from-cdk-route-definitions)
 - cdk java specialist: [OPS-54](#ops-54-define-specialized-claude-code-sub-agent-personas)
@@ -5143,7 +5930,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - cdk naming: [DEV-26](#dev-26-enforce-claude-code-conventions-via-rules-and-hooks)
 - cdk prerequisites: [OPS-103](#ops-103-bootstrap-a-new-aws-account-for-cdk)
 - cdk stack: [HMRC-31](#hmrc-31-wire-hmrc-lambda-handlers-into-cdk-stacks), [OPS-112](#ops-112-provision-the-api-gateway-stack)
-- cdk synth: [OPS-06](#ops-06-run-the-full-deployment-pipeline), [OPS-08](#ops-08-deploy-a-single-cdk-stack-on-demand)
+- cdk synth: [OPS-06](#ops-06-run-the-full-deployment-pipeline), [OPS-08](#ops-08-deploy-a-single-cdk-stack-on-demand), [SS-35](#ss-35-cdk-spreadsheetsstack)
 - cdn allowlist: [OPS-96](#ops-96-scan-pages-for-accessibility-violations)
 - cdp screencast: [DEV-40](#dev-40-record-a-product-demo-video)
 - certbot deploy hook: [DEV-15](#dev-15-fetch-and-publish-proxy-variant-secrets)
@@ -5154,6 +5941,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - change of address: [CH-05](#ch-05-file-a-change-of-registered-office-address)
 - change of email: [CH-06](#ch-06-file-a-change-of-registered-email-address)
 - changed files: [OPS-91](#ops-91-validate-video-scene-scripts-and-timing)
+- changelineamount: [SS-04](#ss-04-apply-book-edits-and-derivations)
 - channel: [DEV-41](#dev-41-publish-videos-to-the-youtube-channel)
 - channel as code: [DATA-46](#data-46-configure-the-youtube-channel-as-code)
 - channel handle: [DATA-46](#data-46-configure-the-youtube-channel-as-code)
@@ -5186,6 +5974,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - claude rules: [DEV-26](#dev-26-enforce-claude-code-conventions-via-rules-and-hooks)
 - clean: [DEV-34](#dev-34-clean-up-stale-deployments-and-branches)
 - clean build: [DEV-22](#dev-22-clean-and-update-local-build-state)
+- clean skill: [SS-53](#ss-53-clean-up-stale-branches-and-worktrees)
 - cleanup test users: [OPS-12](#ops-12-clean-up-expired-test-users)
 - cli: [BILL-11](#bill-11-generate-admin-passes-from-cli-or-workflow)
 - client: [BILL-12](#bill-12-invite-a-client-to-authorise-agent-access), [BILL-13](#bill-13-check-a-clients-authorisation-status), [BILL-14](#bill-14-cancel-a-pending-client-authorisation-invite), [BILL-15](#bill-15-move-a-book-to-a-client)
@@ -5197,6 +5986,8 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - client_authorisation_status: [MCP-08](#mcp-08-manage-practice-clients-and-hmrc-agent-authorisation)
 - client_credentials: [DEV-03](#dev-03-simulate-hmrc-oauth)
 - cloud book: [MCP-03](#mcp-03-load-and-save-diya-gl-books-via-mcp)
+- cloud sign-in: [SS-27](#ss-27-save-and-load-books-locally-and-via-submits-cloud-store)
+- cloud sign-in event: [SS-33](#ss-33-send-diya-gl-ga4-events)
 - cloudformation: [OPS-136](#ops-136-retrieve-cloudformation-stack-outputs)
 - cloudformation drift: [OPS-07](#ops-07-lean-deploy-app-code-to-lambda-and-s3), [OPS-32](#ops-32-detect-cloudformation-drift)
 - cloudfront: [OPS-03](#ops-03-look-up-aws-resources-by-domain-convention), [OPS-115](#ops-115-provision-the-edgecloudfront-stack)
@@ -5207,6 +5998,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - cloudfront distribution id: [OPS-135](#ops-135-look-up-domains-and-cloudfront-distributions)
 - cloudfront edge: [OPS-131](#ops-131-serve-cloudfront-custom-error-pages)
 - cloudfront event: [DEV-18](#dev-18-provide-shared-unitsystem-test-fixtures)
+- cloudfront function: [SS-24](#ss-24-compile-the-redirect-engine)
 - cloudfront invalidation: [OPS-07](#ops-07-lean-deploy-app-code-to-lambda-and-s3), [OPS-120](#ops-120-provision-the-publish-stack)
 - cloudfront logs: [OPS-73](#ops-73-detect-404-scan-rate-attacks)
 - cloudfront metrics: [OPS-118](#ops-118-provision-the-observability-stack-in-us-east-1)
@@ -5221,22 +6013,24 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - cloudwatch logs: [OPS-86](#ops-86-provide-structured-pii-redacting-logging)
 - cloudwatch logs v2 delivery: [DATA-13](#data-13-catalogue-cloudfront-access-logs-for-athena)
 - cloudwatch metrics: [OPS-83](#ops-83-emit-cloudwatch-emf-metrics)
-- cloudwatch rum: [DATA-25](#data-25-configure-and-gate-cloudwatch-rum)
+- cloudwatch rum: [DATA-25](#data-25-configure-and-gate-cloudwatch-rum), [SS-34](#ss-34-configure-cloudwatch-rum)
 - co-authored-by claude: [DATA-07](#data-07-pull-github-operator-effort-data)
-- codeql: [OPS-30](#ops-30-run-codeql-security-scanning)
+- codeql: [OPS-30](#ops-30-run-codeql-security-scanning), [SS-40](#ss-40-run-codeql-scanning)
 - coding agent: [OPS-55](#ops-55-configure-github-copilot-review-and-workspace-setup)
-- cognito: [SITE-01](#site-01-sign-customers-in-via-cognito), [BILL-34](#bill-34-prefetch-and-retry-a-cognito-token-refresh), [OPS-110](#ops-110-force-logout-all-users-during-a-security-incident), [MCP-02](#mcp-02-authenticate-mcp-sessions-via-cognito), [DEV-16](#dev-16-manage-the-durable-cognito-test-user-lifecycle)
+- cognito: [SITE-01](#site-01-sign-customers-in-via-cognito), [BILL-34](#bill-34-prefetch-and-retry-a-cognito-token-refresh), [OPS-110](#ops-110-force-logout-all-users-during-a-security-incident), [MCP-02](#mcp-02-authenticate-mcp-sessions-via-cognito), [DEV-16](#dev-16-manage-the-durable-cognito-test-user-lifecycle), [SS-27](#ss-27-save-and-load-books-locally-and-via-submits-cloud-store)
 - cognito client id: [DATA-44](#data-44-assert-google-oauth-client-configuration)
 - cognito export: [OPS-137](#ops-137-export-cognito-users-for-reporting-or-backup)
 - cognito test user: [BILL-11](#bill-11-generate-admin-passes-from-cli-or-workflow), [OPS-12](#ops-12-clean-up-expired-test-users), [OPS-15](#ops-15-serialize-lane-test-user-rotation-jobs), [OPS-68](#ops-68-provision-and-assume-roles-for-test-user-provisioning)
 - cognito user pool: [OPS-03](#ops-03-look-up-aws-resources-by-domain-convention)
 - cognito-registered host: [OPS-10](#ops-10-claim-release-and-track-a-ci-deployment-slot)
 - cold start: [SITE-13](#site-13-warm-backend-routes-via-prefetch-scripts)
+- commit author: [SS-39](#ss-39-guard-commit-author-identity-on-prs)
 - commit identity: [OPS-28](#ops-28-enforce-commit-identity-allowlist)
 - commit identity allowlist: [DEV-22](#dev-22-clean-and-update-local-build-state)
 - commit identity controls: [OPS-63](#ops-63-report-identity-audit-findings)
 - commit signatures: [OPS-29](#ops-29-verify-commit-signatures-on-pull-requests)
 - commits: [DATA-07](#data-07-pull-github-operator-effort-data)
+- community page: [SS-23](#ss-23-serve-knowledge-base-article-and-community-content)
 - companies house: [CH-01](#ch-01-exchange-a-companies-house-oauth-token), [CH-02](#ch-02-verify-the-companies-house-oauth-app-configuration), [CH-03](#ch-03-search-the-companies-house-register), [CH-04](#ch-04-fetch-a-company-profile), [CH-05](#ch-05-file-a-change-of-registered-office-address), [CH-06](#ch-06-file-a-change-of-registered-email-address), [CH-07](#ch-07-preview-micro-entity-accounts-before-filing), [CH-08](#ch-08-file-micro-entity-accounts-to-companies-house), [CH-09](#ch-09-query-and-submit-document-transactions), [CH-10](#ch-10-fetch-http-with-a-timeout), [CH-12](#ch-12-generate-synthetic-test-companies), [CH-13](#ch-13-map-the-frc-ixbrl-taxonomy-and-validate-accounts), [CH-14](#ch-14-provision-the-companies-house-cdk-stack), [OPS-35](#ops-35-verify-third-party-console-configuration-against-declared-state), [MCP-04](#mcp-04-derive-micro-entity-accounts-figures-for-companies-house-filing), [DEV-04](#dev-04-simulate-companies-house-identity-and-filing)
 - companies house accounts: [MCP-07](#mcp-07-file-vat-returns-and-accounts-via-api)
 - company accounts: [MCP-17](#mcp-17-build-and-hand-over-the-companys-own-book)
@@ -5254,7 +6048,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - compliance dashboard: [HMRC-26](#hmrc-26-monitor-hmrc-fraud-prevention-header-compliance)
 - compliance fraud headers: [DATA-14](#data-14-catalogue-compliance-findings-for-the-dashboard)
 - compliance panel: [OPS-38](#ops-38-run-the-weekly-compliance-test-check), [DATA-14](#data-14-catalogue-compliance-findings-for-the-dashboard)
-- compliance report: [OPS-97](#ops-97-compile-the-compliance-audit-report)
+- compliance report: [OPS-97](#ops-97-compile-the-compliance-audit-report), [SS-11](#ss-11-reconcile-generated-packages-against-expected-figures), [SS-45](#ss-45-run-compliance-checks)
 - compliance rows: [OPS-95](#ops-95-generate-wcag-accessibility-compliance-rows)
 - compliance status: [DATA-29](#data-29-sql-views-submission-and-compliance)
 - compliance.toml: [OPS-38](#ops-38-run-the-weekly-compliance-test-check)
@@ -5264,9 +6058,11 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - concurrency group: [OPS-15](#ops-15-serialize-lane-test-user-rotation-jobs)
 - config composition: [OPS-126](#ops-126-provide-config-composition-helpers-for-cdk-code)
 - config validation: [OPS-84](#ops-84-validate-required-environment-variables-at-startup)
-- consent banner: [SITE-15](#site-15-show-and-persist-cookie-consent)
+- conflict card: [SS-27](#ss-27-save-and-load-books-locally-and-via-submits-cloud-store)
+- consent banner: [SITE-15](#site-15-show-and-persist-cookie-consent), [SS-31](#ss-31-load-ga4-analytics-with-consent-gating)
 - consent denied default: [DATA-24](#data-24-load-ga4-analytics-on-site-pages)
 - consent mode: [SITE-15](#site-15-show-and-persist-cookie-consent)
+- consent.analytics: [SS-31](#ss-31-load-ga4-analytics-with-consent-gating)
 - consent.rum: [DATA-25](#data-25-configure-and-gate-cloudwatch-rum)
 - console links: [OPS-76](#ops-76-gather-alarm-evidence-for-investigation), [OPS-80](#ops-80-build-aws-console-deep-links-for-operators)
 - consume token: [BILL-33](#bill-33-enforce-and-consume-activity-tokens)
@@ -5278,12 +6074,14 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - conversions: [DATA-34](#data-34-report-google-ads-campaign-performance)
 - cookie consent: [SITE-15](#site-15-show-and-persist-cookie-consent)
 - cool-down: [DEV-35](#dev-35-cool-down-an-overloaded-batch)
+- cool-down skill: [SS-54](#ss-54-cool-down-an-overloaded-batch)
 - coordinator model: [DEV-28](#dev-28-work-nextmd-as-dispatched-sub-agents)
 - copilot instructions: [OPS-55](#ops-55-configure-github-copilot-review-and-workspace-setup)
 - copilot review: [OPS-55](#ops-55-configure-github-copilot-review-and-workspace-setup)
 - copilot workspace setup: [OPS-55](#ops-55-configure-github-copilot-review-and-workspace-setup)
 - copy secrets: [OPS-106](#ops-106-replicate-secrets-across-aws-accounts)
 - copyright header: [DEV-20](#dev-20-check-spdx-licence-headers)
+- corporation tax: [SS-04](#ss-04-apply-book-edits-and-derivations)
 - corpus cli: [MCP-12](#mcp-12-read-invoices-from-the-local-mail-index)
 - corpus index: [DATA-20](#data-20-publish-the-nightly-raw-export-for-indexing)
 - correlation headers: [SITE-07](#site-07-format-http-responses-and-errors)
@@ -5326,7 +6124,9 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - cross-account secrets: [OPS-106](#ops-106-replicate-secrets-across-aws-accounts)
 - cross-account trust: [OPS-98](#ops-98-bootstrap-the-cdk-toolkit-across-accounts)
 - cross-client move: [BILL-23](#bill-23-store-diya-gl-books-in-s3)
+- cross-domain linker: [SS-31](#ss-31-load-ga4-analytics-with-consent-gating)
 - cross-domain session: [DATA-24](#data-24-load-ga4-analytics-on-site-pages)
+- cross-package reconciliation: [SS-13](#ss-13-cross-check-figures-across-product-packages)
 - cross-sell: [SITE-11](#site-11-promote-sibling-products-and-partners)
 - crud: [BILL-16](#bill-16-manage-practice-clients)
 - crystallisation: [HMRC-20](#hmrc-20-retrieve-itsa-crystallisation-obligations), [HMRC-21](#hmrc-21-submit-the-itsa-final-declaration), [DEV-09](#dev-09-simulate-hmrc-itsa-mtd-api)
@@ -5340,20 +6140,24 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - curated finance: [DATA-52](#data-52-pull-the-companys-own-diya-gl-book-into-the-lake)
 - curated prefix: [DATA-54](#data-54-relayout-the-lakes-yearmonthday-objects-into-dt-prefixes)
 - curated stripe: [DATA-09](#data-09-reconcile-stripe-payments-into-the-lake)
+- custom amount: [SS-22](#ss-22-take-stripe-and-paypal-donations)
 - custom error page: [OPS-131](#ops-131-serve-cloudfront-custom-error-pages)
 - custom resource: [OPS-132](#ops-132-enable-dynamodb-pitr-on-deploy)
 - customer id hashing: [DATA-09](#data-09-reconcile-stripe-payments-into-the-lake)
 - customer lookup: [DEV-42](#dev-42-look-up-a-vat-submission-failure-alarms-customer)
 - customer portal: [BILL-26](#bill-26-open-the-stripe-customer-billing-portal)
+- cut: [SS-18](#ss-18-archive-a-cut-of-packages-to-diy-accounting-archive)
 - daily budget: [OPS-79](#ops-79-track-an-alarm-familys-daily-remedy-budget), [DATA-35](#data-35-forecast-google-ads-keyword-performance)
 - daily cap: [OPS-20](#ops-20-enforce-daily-run-budgets-for-agent-paths)
 - daily check: [OPS-48](#ops-48-verify-backup-health-daily)
+- daily cron: [SS-41](#ss-41-run-the-scheduled-dependency-and-tax-data-update-workflow)
 - dashboard: [HMRC-09](#hmrc-09-retrieve-itsa-business-details)
 - dashboard snapshot: [DATA-18](#data-18-publish-the-nightly-operator-dashboard-snapshot)
 - dashboards: [OPS-117](#ops-117-provision-the-observability-stack)
 - data export: [OPS-41](#ops-41-export-a-customers-gdpr-subject-access-data)
 - data masking: [OPS-81](#ops-81-mask-and-redact-sensitive-data-from-logs)
 - data migration: [OPS-16](#ops-16-run-dynamodb-data-migrations)
+- data mode: [SS-15](#ss-15-extract-diya-gl-data-and-financial-reports-from-populated-packages)
 - data protection: [OPS-42](#ops-42-guide-icogdpr-compliance)
 - data stack: [OPS-113](#ops-113-provision-the-dynamodb-and-s3-data-stack)
 - data streams: [DATA-38](#data-38-sync-ga4-properties-streams-and-key-events)
@@ -5371,25 +6175,31 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - dedupe: [OPS-71](#ops-71-create-github-issues-from-cloudwatch-alarms)
 - deep clean: [DEV-22](#dev-22-clean-and-update-local-build-state)
 - deep link: [OPS-80](#ops-80-build-aws-console-deep-links-for-operators), [DATA-18](#data-18-publish-the-nightly-operator-dashboard-snapshot)
+- deep links: [SS-26](#ss-26-serve-the-diya-gl-product-pages-and-shell)
 - delegated relationship: [HMRC-24](#hmrc-24-verify-hmrc-agent-authorisation-for-a-client)
 - delete book: [BILL-18](#bill-18-delete-a-diya-gl-book)
 - delete bundle: [BILL-03](#bill-03-delete-a-bundle)
+- delete packages: [SS-38](#ss-38-initialise-or-regenerate-repository-state)
+- delete tax data: [SS-38](#ss-38-initialise-or-regenerate-repository-state)
 - delete user data: [OPS-40](#ops-40-delete-a-customers-data-for-gdpr-erasure)
 - deletebook: [BILL-18](#bill-18-delete-a-diya-gl-book)
-- delivery cycle: [DEV-30](#dev-30-run-the-delivery-cycle-unattended)
+- delivery cycle: [DEV-30](#dev-30-run-the-delivery-cycle-unattended), [SS-49](#ss-49-run-the-delivery-cycle-unattended)
 - demo video: [OPS-52](#ops-52-auto-record-demo-videos-on-prod-deploy), [OPS-88](#ops-88-orchestrate-demo-video-recording-journeys), [DEV-40](#dev-40-record-a-product-demo-video)
 - deny patterns: [OPS-17](#ops-17-redact-and-gate-unattended-agent-output-before-publishing)
 - dependabot: [OPS-36](#ops-36-configure-dependabot-dependency-updates)
 - dependency inventory: [OPS-39](#ops-39-generate-a-software-bill-of-materials)
 - dependency tracking: [OPS-130](#ops-130-track-runtime-and-dependency-lifecycle)
-- dependency update: [DEV-22](#dev-22-clean-and-update-local-build-state)
+- dependency update: [DEV-22](#dev-22-clean-and-update-local-build-state), [SS-41](#ss-41-run-the-scheduled-dependency-and-tax-data-update-workflow)
 - dependency updates: [OPS-36](#ops-36-configure-dependabot-dependency-updates)
 - deploy destroy run: [DATA-15](#data-15-catalogue-workflow-probe-and-agent-run-data)
 - deploy environment: [OPS-09](#ops-09-deploy-environment-stacks-and-populate-secrets)
 - deploy metrics row: [OPS-25](#ops-25-record-dora-and-probe-metrics)
 - deploy pipeline: [OPS-06](#ops-06-run-the-full-deployment-pipeline)
 - deploy validation failure: [OPS-23](#ops-23-raise-an-issue-from-a-probe-test-failure)
+- deploy workflow: [SS-36](#ss-36-deploy-the-spreadsheets-and-diya-gl-sites)
 - deploy-app: [OPS-07](#ops-07-lean-deploy-app-code-to-lambda-and-s3)
+- deploy-holding: [SS-30](#ss-30-serve-the-holding-page-and-failover)
+- deploy-time overwrite: [SS-34](#ss-34-configure-cloudwatch-rum)
 - deploy.yml: [OPS-01](#ops-01-cancel-superseded-push-triggered-deploys)
 - deployed environment: [OPS-27](#ops-27-run-probe-tests-against-deployed-environments)
 - deployed site audit: [OPS-62](#ops-62-report-accessibility-penetration-testing)
@@ -5418,21 +6228,39 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - device id: [HMRC-25](#hmrc-25-build-hmrc-fraud-prevention-headers)
 - digital pass: [BILL-06](#bill-06-generate-a-token-charged-pass)
 - disaster recovery: [OPS-109](#ops-109-disaster-recovery-restore-into-a-new-prod-account)
+- dispatch backlog: [SS-47](#ss-47-work-nextmd-as-dispatched-sub-agents)
 - dispute: [BILL-28](#bill-28-process-stripe-webhook-events)
 - dispute auto-accept: [BILL-31](#bill-31-configure-stripe-account-policies)
+- dist bin: [SS-05](#ss-05-run-the-diya-gl-cli)
 - distribution: [OPS-73](#ops-73-detect-404-scan-rate-attacks)
+- dividends: [SS-04](#ss-04-apply-book-edits-and-derivations)
+- diy-accounting-archive: [SS-18](#ss-18-archive-a-cut-of-packages-to-diy-accounting-archive)
 - diya-gl: [BILL-15](#bill-15-move-a-book-to-a-client), [BILL-17](#bill-17-upload-a-diya-gl-book), [BILL-18](#bill-18-delete-a-diya-gl-book), [BILL-19](#bill-19-list-a-users-diya-gl-books), [BILL-20](#bill-20-fetch-a-versioned-diya-gl-book), [BILL-21](#bill-21-sweep-lapsed-diya-gl-books), [BILL-22](#bill-22-check-diya-gl-retention-entitlement), [BILL-23](#bill-23-store-diya-gl-books-in-s3), [MCP-03](#mcp-03-load-and-save-diya-gl-books-via-mcp)
 - diya-gl bank lines: [MCP-10](#mcp-10-import-a-natwest-bank-statement-into-diya-gl-lines)
 - diya-gl book: [DATA-52](#data-52-pull-the-companys-own-diya-gl-book-into-the-lake)
+- diya-gl cli: [SS-05](#ss-05-run-the-diya-gl-cli)
+- diya-gl edits: [SS-04](#ss-04-apply-book-edits-and-derivations)
+- diya-gl engine: [SS-01](#ss-01-run-the-diya-gl-calculation-engine)
+- diya-gl interchange: [SS-03](#ss-03-read-and-write-diya-gl-interchange-formats)
 - diya-gl lines: [DATA-51](#data-51-turn-staged-stripe-activity-into-diya-gl-lines), [MCP-13](#mcp-13-import-stripe-transaction-and-payout-lines)
+- diya-gl mcp: [SS-06](#ss-06-serve-the-diya-gl-mcp-server)
+- diya-gl schema: [SS-02](#ss-02-validate-diya-gl-books-against-the-v2-schema)
+- diya-gl shell: [SS-26](#ss-26-serve-the-diya-gl-product-pages-and-shell)
+- diya-gl spec: [SS-07](#ss-07-publish-the-diya-gl-format-specification-page)
 - diya-gl stack: [BILL-39](#bill-39-cdk-diya-gl-stack)
+- diya-gl zip: [SS-03](#ss-03-read-and-write-diya-gl-interchange-formats)
+- diya-gl-cert: [SS-37](#ss-37-request-acm-certificates)
 - diya-gl-mcp: [MCP-17](#mcp-17-build-and-hand-over-the-companys-own-book)
 - diya-submit-mcp: [MCP-01](#mcp-01-expose-the-submission-mcp-server-and-tools)
+- diya_gl_base_url: [SS-44](#ss-44-run-spreadsheets-behaviour-tests)
+- diya_gl_snapshot: [SS-26](#ss-26-serve-the-diya-gl-product-pages-and-shell)
 - diyaccounting.co.uk: [OPS-133](#ops-133-serve-the-root-domain-holding-page)
+- dns validation: [SS-37](#ss-37-request-acm-certificates)
 - do-next: [DEV-28](#dev-28-work-nextmd-as-dispatched-sub-agents)
 - do-next agent: [OPS-57](#ops-57-dispatch-agentic-lib-board-backlog-and-pr-agents)
+- do-next skill: [SS-47](#ss-47-work-nextmd-as-dispatched-sub-agents)
 - do-next-ci: [DEV-25](#dev-25-maintain-the-specialist-agent-prompt-library)
-- docker image: [OPS-51](#ops-51-publish-build-artifacts-and-documentation), [OPS-114](#ops-114-provision-ecr-image-repositories)
+- docker image: [OPS-51](#ops-51-publish-build-artifacts-and-documentation), [OPS-114](#ops-114-provision-ecr-image-repositories), [SS-05](#ss-05-run-the-diya-gl-cli)
 - document client: [OPS-82](#ops-82-provide-a-shared-dynamodb-client)
 - document submission: [CH-09](#ch-09-query-and-submit-document-transactions)
 - dom helpers: [SITE-14](#site-14-render-page-chrome-and-widgets)
@@ -5440,18 +6268,25 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - domain cutover: [OPS-04](#ops-04-update-route53cloudfront-origins-for-a-domain)
 - domain url: [OPS-02](#ops-02-derive-environment-and-deployment-names-from-a-branch)
 - domain-scoped agent: [OPS-54](#ops-54-define-specialized-claude-code-sub-agent-personas)
+- donate: [SS-22](#ss-22-take-stripe-and-paypal-donations)
 - donate button: [BILL-29](#bill-29-assert-the-paypal-donate-button-configuration)
+- donate event: [SS-32](#ss-32-send-ga4-ecommerce-and-download-events)
+- donate template: [SS-22](#ss-22-take-stripe-and-paypal-donations)
+- donation_prompt: [SS-33](#ss-33-send-diya-gl-ga4-events)
 - dora metrics: [OPS-25](#ops-25-record-dora-and-probe-metrics)
 - dora row: [OPS-95](#ops-95-generate-wcag-accessibility-compliance-rows)
 - dora runs: [DATA-15](#data-15-catalogue-workflow-probe-and-agent-run-data)
 - dora runs daily: [DATA-31](#data-31-sql-views-dora-and-operations)
 - dora-row action: [DATA-15](#data-15-catalogue-workflow-probe-and-agent-run-data)
 - dora_runs: [DATA-11](#data-11-run-glue-data-quality-checks)
+- download page: [SS-21](#ss-21-serve-the-spreadsheets-product-catalogue-and-downloads)
 - downloads by product: [DATA-05](#data-05-pull-ga4-daily-bigquery-aggregate-tables)
 - dr drill: [OPS-109](#ops-109-disaster-recovery-restore-into-a-new-prod-account)
 - draft pr scope: [OPS-22](#ops-22-verify-a-triage-draft-pr-stays-in-scope)
 - drift: [BILL-05](#bill-05-reconcile-bundle-capacity-counters)
 - drift detection: [OPS-32](#ops-32-detect-cloudformation-drift)
+- drive token: [SS-28](#ss-28-store-books-in-google-drive)
+- drive.file scope: [SS-28](#ss-28-store-books-in-google-drive)
 - dry run: [BILL-41](#bill-41-backfill-the-stripe-test-mode-qualifier), [OPS-16](#ops-16-run-dynamodb-data-migrations), [OPS-40](#ops-40-delete-a-customers-data-for-gdpr-erasure), [OPS-106](#ops-106-replicate-secrets-across-aws-accounts)
 - dt partition: [DATA-05](#data-05-pull-ga4-daily-bigquery-aggregate-tables)
 - dt partition projection: [DATA-15](#data-15-catalogue-workflow-probe-and-agent-run-data)
@@ -5472,10 +6307,12 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - dynamodb streams: [DATA-04](#data-04-stream-dynamodb-table-changes-into-the-lake)
 - dynamodb tables: [OPS-113](#ops-113-provision-the-dynamodb-and-s3-data-stack), [DEV-14](#dev-14-start-the-proxy-and-simulator-local-dev-environments)
 - dynamodb ttl: [SITE-09](#site-09-track-and-poll-async-api-requests), [OPS-108](#ops-108-backfill-ttl-on-existing-dynamodb-records)
+- ecommerce events: [SS-32](#ss-32-send-ga4-ecommerce-and-download-events)
 - ecr repository: [OPS-114](#ops-114-provision-ecr-image-repositories)
 - edge lambda: [OPS-115](#ops-115-provision-the-edgecloudfront-stack), [OPS-124](#ops-124-define-shared-lambda-cdk-constructs)
 - edge stack: [OPS-115](#ops-115-provision-the-edgecloudfront-stack)
 - edgestack: [DATA-13](#data-13-catalogue-cloudfront-access-logs-for-athena)
+- edit_lines: [SS-06](#ss-06-serve-the-diya-gl-mcp-server)
 - eligibility: [CH-06](#ch-06-file-a-change-of-registered-email-address)
 - email hash: [BILL-10](#bill-10-redeem-a-pass)
 - email hash rotation: [OPS-43](#ops-43-rotate-stored-email-address-hashes)
@@ -5484,6 +6321,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - emailhashsecrethelper: [OPS-43](#ops-43-rotate-stored-email-address-hashes)
 - embedded metric format: [OPS-83](#ops-83-emit-cloudwatch-emf-metrics)
 - emf: [OPS-83](#ops-83-emit-cloudwatch-emf-metrics)
+- empty state: [SS-26](#ss-26-serve-the-diya-gl-product-pages-and-shell)
 - enable gcp apis: [DATA-40](#data-40-enable-required-google-cloud-apis)
 - encryption: [OPS-113](#ops-113-provision-the-dynamodb-and-s3-data-stack)
 - encryption key rotation: [OPS-43](#ops-43-rotate-stored-email-address-hashes)
@@ -5507,12 +6345,16 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - environment-level stack: [BILL-38](#bill-38-cdk-billing-webhook-stack)
 - environment-scoped stack: [DATA-12](#data-12-provision-the-analytics-lake-and-athena-workgroup)
 - ephemeral port: [DEV-14](#dev-14-start-the-proxy-and-simulator-local-dev-environments)
+- eq1: [SS-14](#ss-14-verify-export-and-report-roundtrip-and-stability)
+- eq2: [SS-14](#ss-14-verify-export-and-report-roundtrip-and-stability)
+- eq3: [SS-14](#ss-14-verify-export-and-report-roundtrip-and-stability)
 - error budget: [DATA-31](#data-31-sql-views-dora-and-operations)
 - error classification: [HMRC-29](#hmrc-29-call-the-hmrc-api)
 - error code mapping: [HMRC-27](#hmrc-27-validate-hmrc-identifiers-dates-and-amounts)
 - error handler: [OPS-131](#ops-131-serve-cloudfront-custom-error-pages)
 - error middleware: [SITE-07](#site-07-format-http-responses-and-errors)
 - eslint config: [DEV-23](#dev-23-configure-the-test-and-lint-toolchains)
+- eslint security: [SS-45](#ss-45-run-compliance-checks)
 - etag: [SITE-16](#site-16-configure-the-frontend-via-toml-and-env-libraries)
 - event builders: [DEV-18](#dev-18-provide-shared-unitsystem-test-fixtures)
 - event export: [DATA-06](#data-06-pull-ga4-reports-and-bigquery-event-export)
@@ -5521,24 +6363,31 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - events_* export: [DATA-39](#data-39-sync-ga4-in-bigquery-scheduled-queries)
 - evidence: [HMRC-38](#hmrc-38-check-readiness-for-the-itsa-recognition-email)
 - evidence links: [OPS-97](#ops-97-compile-the-compliance-audit-report)
+- examples directory: [SS-10](#ss-10-extract-reconciliation-scenarios-from-master-books)
+- excel skill: [SS-58](#ss-58-excel-xml-manipulation-reference)
 - exclude paths: [OPS-30](#ops-30-run-codeql-security-scanning)
 - existing tooling: [DEV-43](#dev-43-find-existing-tooling-before-building-any)
 - exit cool-down: [DEV-36](#dev-36-resume-normal-work-from-cool-down)
 - expected clicks: [DATA-35](#data-35-forecast-google-ads-keyword-performance)
+- expected values: [SS-11](#ss-11-reconcile-generated-packages-against-expected-figures)
 - experiment log: [SITE-21](#site-21-log-growth-experiments)
 - expire records: [OPS-108](#ops-108-backfill-ttl-on-existing-dynamodb-records)
 - expiry: [BILL-42](#bill-42-parse-iso-8601-durations-for-expiry)
 - expiry window: [OPS-12](#ops-12-clean-up-expired-test-users)
+- export: [SS-15](#ss-15-extract-diya-gl-data-and-financial-reports-from-populated-packages)
 - export user data: [OPS-41](#ops-41-export-a-customers-gdpr-subject-access-data)
 - export wiring: [DEV-21](#dev-21-verify-module-wiring-and-repository-shape)
 - exports prefix: [DATA-20](#data-20-publish-the-nightly-raw-export-for-indexing)
 - express: [DEV-01](#dev-01-run-the-http-simulator-server)
 - express adaptor: [SITE-06](#site-06-adapt-lambda-handlers-to-express-routes)
 - express server: [SITE-08](#site-08-bootstrap-the-app-server)
+- external link cache: [SS-58](#ss-58-excel-xml-manipulation-reference)
+- extract scenarios: [SS-10](#ss-10-extract-reconciliation-scenarios-from-master-books)
+- extract_book: [SS-06](#ss-06-serve-the-diya-gl-mcp-server)
 - fail closed: [OPS-22](#ops-22-verify-a-triage-draft-pr-stays-in-scope), [OPS-78](#ops-78-verify-an-alarm-issues-claimed-transition)
 - fail fast: [OPS-84](#ops-84-validate-required-environment-variables-at-startup)
 - failed rules metric: [DATA-11](#data-11-run-glue-data-quality-checks)
-- failover: [OPS-116](#ops-116-provision-the-holding-page-stack)
+- failover: [OPS-116](#ops-116-provision-the-holding-page-stack), [SS-30](#ss-30-serve-the-holding-page-and-failover)
 - false positive: [OPS-74](#ops-74-detect-waf-blocked-scan-attacks)
 - faq search: [SITE-10](#site-10-serve-general-site-pages)
 - favicon: [DEV-22](#dev-22-clean-and-update-local-build-state)
@@ -5564,16 +6413,20 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - finance staging path: [DATA-50](#data-50-resolve-finance-staging-directory-paths)
 - find command: [DEV-43](#dev-43-find-existing-tooling-before-building-any)
 - findings report: [OPS-62](#ops-62-report-accessibility-penetration-testing)
+- finish-only rerun: [SS-20](#ss-20-publish-diya-gl-to-npm-ghcr-and-the-homebrew-tap)
 - fire and forget: [DATA-01](#data-01-publish-activity-events-to-the-bus)
 - firehose putrecordbatch: [DATA-04](#data-04-stream-dynamodb-table-changes-into-the-lake)
 - firehose transform: [DATA-02](#data-02-transform-activity-events-into-lake-rows), [DATA-03](#data-03-transform-alarm-state-changes-into-lake-rows)
 - fixed asset register: [MCP-11](#mcp-11-seed-a-book-from-a-workbook-set)
+- fixture: [SS-10](#ss-10-extract-reconciliation-scenarios-from-master-books)
 - fixtures: [CH-12](#ch-12-generate-synthetic-test-companies), [DEV-01](#dev-01-run-the-http-simulator-server)
 - flatten envelope: [DATA-02](#data-02-transform-activity-events-into-lake-rows)
 - focus cost export: [DATA-08](#data-08-copy-the-aws-focus-cost-export), [DATA-30](#data-30-sql-views-cost)
 - focus format: [DATA-17](#data-17-export-aws-billing-data-in-focus-format)
 - force logout: [OPS-64](#ops-64-runbook-information-security-operations), [OPS-110](#ops-110-force-logout-all-users-during-a-security-incident)
 - form bundle number: [DEV-08](#dev-08-simulate-hmrc-vat-mtd-api)
+- form layouts: [SS-07](#ss-07-publish-the-diya-gl-format-specification-page)
+- format specification: [SS-07](#ss-07-publish-the-diya-gl-format-specification-page)
 - forwarder: [OPS-70](#ops-70-forward-operational-activity-events-to-telegram)
 - fraud header check: [DATA-14](#data-14-catalogue-compliance-findings-for-the-dashboard)
 - fraud headers: [OPS-97](#ops-97-compile-the-compliance-audit-report)
@@ -5581,6 +6434,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - fraud prevention header: [OPS-47](#ops-47-check-fraud-prevention-header-record-freshness)
 - fraud prevention headers: [HMRC-01](#hmrc-01-submit-a-vat-return), [HMRC-25](#hmrc-25-build-hmrc-fraud-prevention-headers), [HMRC-35](#hmrc-35-spike-test-the-itsa-sandbox-oauth-and-business-details-flow), [DEV-05](#dev-05-simulate-hmrc-agent-authorisation-and-fraud-prevention-headers)
 - frc taxonomy: [CH-13](#ch-13-map-the-frc-ixbrl-taxonomy-and-validate-accounts)
+- fresh checkout: [SS-38](#ss-38-initialise-or-regenerate-repository-state)
 - fresh project bootstrap: [DATA-40](#data-40-enable-required-google-cloud-apis)
 - frontend bundle: [BILL-43](#bill-43-build-the-frontend-test-bundle)
 - frs 102: [CH-13](#ch-13-map-the-frc-ixbrl-taxonomy-and-validate-accounts)
@@ -5590,12 +6444,15 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - fullscreen: [OPS-94](#ops-94-play-demo-videos-on-the-public-site)
 - funding links: [OPS-56](#ops-56-structure-github-issues-prs-and-funding-links)
 - funnel steps: [DATA-05](#data-05-pull-ga4-daily-bigquery-aggregate-tables)
-- ga4: [SITE-15](#site-15-show-and-persist-cookie-consent)
+- fuzzy search: [SS-23](#ss-23-serve-knowledge-base-article-and-community-content)
+- g-x4zpd99x2k: [SS-31](#ss-31-load-ga4-analytics-with-consent-gating)
+- ga4: [SITE-15](#site-15-show-and-persist-cookie-consent), [SS-31](#ss-31-load-ga4-analytics-with-consent-gating)
 - ga4 ads link: [DATA-33](#data-33-read-the-google-ads-account-inventory)
 - ga4 analytics admin access: [DATA-45](#data-45-apply-ga4-and-gcp-iam-role-bindings)
 - ga4 bigquery: [DATA-05](#data-05-pull-ga4-daily-bigquery-aggregate-tables)
 - ga4 bigquery sync: [DATA-39](#data-39-sync-ga4-in-bigquery-scheduled-queries)
 - ga4 data api: [DATA-06](#data-06-pull-ga4-reports-and-bigquery-event-export)
+- ga4 event builders: [SS-33](#ss-33-send-diya-gl-ga4-events)
 - ga4 funnel: [DATA-27](#data-27-sql-views-activity-and-traffic)
 - ga4 infrastructure: [OPS-67](#ops-67-apply-google-cloud--ga4-infrastructure)
 - ga4 inventory: [DATA-43](#data-43-read-the-google-cloud-and-ga4-inventory)
@@ -5604,12 +6461,19 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - ga4 purchase query: [DEV-19](#dev-19-provide-shared-behaviour-test-fixtures-and-steps)
 - ga4 service account: [DATA-37](#data-37-federate-lambda-credentials-to-google-cloud)
 - gap analysis: [HMRC-37](#hmrc-37-plan-the-hmrc-mtd-vat-and-itsa-rollout)
+- gate fixtures: [SS-10](#ss-10-extract-reconciliation-scenarios-from-master-books)
 - gate probes: [OPS-24](#ops-24-gate-probes-on-the-main-apex-deploy)
 - gcp billing budget: [DATA-41](#data-41-assert-gcp-billing-budget-and-stray-project)
 - gcp iam bindings: [DATA-45](#data-45-apply-ga4-and-gcp-iam-role-bindings)
 - gdpr erasure: [OPS-40](#ops-40-delete-a-customers-data-for-gdpr-erasure)
 - gdpr subject access: [OPS-41](#ops-41-export-a-customers-gdpr-subject-access-data)
+- generate packages: [SS-08](#ss-08-generate-spreadsheet-packages-from-product-modules)
 - generate pass: [BILL-06](#bill-06-generate-a-token-charged-pass), [BILL-11](#bill-11-generate-admin-passes-from-cli-or-workflow)
+- generate-all: [SS-43](#ss-43-run-the-product-generation-and-test-workflows)
+- generate-bst: [SS-43](#ss-43-run-the-product-generation-and-test-workflows)
+- generate-ltd: [SS-43](#ss-43-run-the-product-generation-and-test-workflows)
+- generate-se: [SS-43](#ss-43-run-the-product-generation-and-test-workflows)
+- generate-taxi: [SS-43](#ss-43-run-the-product-generation-and-test-workflows)
 - generated documentation: [OPS-51](#ops-51-publish-build-artifacts-and-documentation)
 - geo state: [OPS-46](#ops-46-query-and-persist-per-consumer-security-state-records)
 - get /api/v1/companies-house/company: [CH-04](#ch-04-fetch-a-company-profile)
@@ -5621,6 +6485,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - get_vat_receipt: [MCP-07](#mcp-07-file-vat-returns-and-accounts-via-api)
 - getpassesbyissuer: [BILL-09](#bill-09-list-a-users-issued-passes)
 - getqueryexecution: [DATA-10](#data-10-create-or-replace-athena-business-views)
+- ghcr image: [SS-20](#ss-20-publish-diya-gl-to-npm-ghcr-and-the-homebrew-tap)
 - git-common-dir: [DATA-50](#data-50-resolve-finance-staging-directory-paths)
 - github actions: [OPS-134](#ops-134-monitor-github-actions-ci-from-the-cli)
 - github actions role: [OPS-101](#ops-101-set-up-github-oidc-deployment-roles)
@@ -5628,7 +6493,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - github api: [OPS-85](#ops-85-obtain-and-use-github-app-api-tokens)
 - github app: [SITE-05](#site-05-submit-support-tickets)
 - github app token: [OPS-85](#ops-85-obtain-and-use-github-app-api-tokens), [DATA-07](#data-07-pull-github-operator-effort-data)
-- github ci: [DEV-31](#dev-31-watch-github-ci-to-green)
+- github ci: [DEV-31](#dev-31-watch-github-ci-to-green), [SS-50](#ss-50-watch-github-ci-to-green)
 - github copilot: [OPS-55](#ops-55-configure-github-copilot-review-and-workspace-setup)
 - github environment variable: [DATA-38](#data-38-sync-ga4-properties-streams-and-key-events)
 - github helpers: [OPS-85](#ops-85-obtain-and-use-github-app-api-tokens)
@@ -5646,10 +6511,12 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - google ads inventory: [DATA-33](#data-33-read-the-google-ads-account-inventory)
 - google ads report: [DATA-34](#data-34-report-google-ads-campaign-performance)
 - google ads sync: [DATA-32](#data-32-sync-the-google-ads-account)
+- google analytics: [SS-31](#ss-31-load-ga4-analytics-with-consent-gating)
 - google application credentials: [DATA-53](#data-53-reach-google-cloud-from-a-local-session-via-aws-sso)
 - google auth helper: [DATA-47](#data-47-authenticate-google-cloud-scripts-via-federated-credentials)
 - google cloud apply: [OPS-67](#ops-67-apply-google-cloud--ga4-infrastructure)
 - google cloud inventory: [DATA-43](#data-43-read-the-google-cloud-and-ga4-inventory)
+- google drive: [SS-28](#ss-28-store-books-in-google-drive)
 - google sts: [DATA-37](#data-37-federate-lambda-credentials-to-google-cloud)
 - google-apply workflow: [DATA-40](#data-40-enable-required-google-cloud-apis)
 - google_application_credentials: [DATA-47](#data-47-authenticate-google-cloud-scripts-via-federated-credentials)
@@ -5667,11 +6534,12 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - gross fee net: [DATA-49](#data-49-stage-stripe-transactions-for-reconciliation)
 - grouping strategy: [OPS-36](#ops-36-configure-dependabot-dependency-updates)
 - growth experiments: [SITE-21](#site-21-log-growth-experiments)
+- gtag: [SS-31](#ss-31-load-ga4-analytics-with-consent-gating)
 - gtag.js: [DATA-24](#data-24-load-ga4-analytics-on-site-pages)
 - guard main push: [DEV-26](#dev-26-enforce-claude-code-conventions-via-rules-and-hooks)
 - guardduty: [OPS-75](#ops-75-run-nightly-security-lake-analysis), [OPS-117](#ops-117-provision-the-observability-stack)
 - guardrail: [OPS-17](#ops-17-redact-and-gate-unattended-agent-output-before-publishing)
-- guest role: [DATA-25](#data-25-configure-and-gate-cloudwatch-rum)
+- guest role: [DATA-25](#data-25-configure-and-gate-cloudwatch-rum), [SS-34](#ss-34-configure-cloudwatch-rum)
 - gyb mail mirror: [HMRC-26](#hmrc-26-monitor-hmrc-fraud-prevention-header-compliance)
 - haiku: [OPS-18](#ops-18-run-alarm-and-support-triage)
 - halt triage: [OPS-19](#ops-19-kill-switch-to-stop-unattended-agent-workflows)
@@ -5686,6 +6554,8 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - header nav footer: [SITE-14](#site-14-render-page-chrome-and-widgets)
 - header validation: [DEV-05](#dev-05-simulate-hmrc-agent-authorisation-and-fraud-prevention-headers)
 - headless: [HMRC-33](#hmrc-33-drive-hmrcs-sandbox-authorisation-flow-for-test-scripts)
+- headline indicators: [SS-12](#ss-12-judge-reconciliation-reports-with-an-llm)
+- headlines strip: [SS-26](#ss-26-serve-the-diya-gl-product-pages-and-shell)
 - health alarm: [OPS-124](#ops-124-define-shared-lambda-cdk-constructs)
 - health canary: [OPS-119](#ops-119-provision-the-ops-stack)
 - help page: [SITE-10](#site-10-serve-general-site-pages)
@@ -5705,6 +6575,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - hmrc mtd journey: [OPS-97](#ops-97-compile-the-compliance-audit-report)
 - hmrc oauth: [DEV-03](#dev-03-simulate-hmrc-oauth)
 - hmrc production approval: [HMRC-37](#hmrc-37-plan-the-hmrc-mtd-vat-and-itsa-rollout)
+- hmrc rates: [SS-19](#ss-19-update-annual-hmrc-tax-rate-data)
 - hmrc receipt: [HMRC-22](#hmrc-22-store-and-retrieve-hmrc-submission-receipts)
 - hmrc receipts: [OPS-108](#ops-108-backfill-ttl-on-existing-dynamodb-records)
 - hmrc sandbox: [OPS-66](#ops-66-create-an-hmrc-sandbox-test-user)
@@ -5720,11 +6591,14 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - hmrc-registered host: [OPS-10](#ops-10-claim-release-and-track-a-ci-deployment-slot)
 - hmrc-service: [HMRC-29](#hmrc-29-call-the-hmrc-api)
 - hmrc.toml: [HMRC-32](#hmrc-32-register-and-verify-hmrc-developer-hub-application-config)
-- holding page: [OPS-04](#ops-04-update-route53cloudfront-origins-for-a-domain), [OPS-133](#ops-133-serve-the-root-domain-holding-page)
+- holding page: [OPS-04](#ops-04-update-route53cloudfront-origins-for-a-domain), [OPS-133](#ops-133-serve-the-root-domain-holding-page), [SS-30](#ss-30-serve-the-holding-page-and-failover)
 - holding page certificate: [OPS-49](#ops-49-request-and-renew-the-holding-page-certificate)
 - holding page domain: [OPS-49](#ops-49-request-and-renew-the-holding-page-certificate)
 - holding page stack: [OPS-116](#ops-116-provision-the-holding-page-stack)
+- holding-cert: [SS-37](#ss-37-request-acm-certificates)
+- holdingstack: [SS-30](#ss-30-serve-the-holding-page-and-failover)
 - holds: [MCP-16](#mcp-16-parse-paypal-statements-into-diya-gl-lines)
+- homebrew tap: [SS-20](#ss-20-publish-diya-gl-to-npm-ghcr-and-the-homebrew-tap)
 - homepage cta: [SITE-03](#site-03-capture-feedback-interest)
 - hosted ui: [SITE-01](#site-01-sign-customers-in-via-cognito), [DEV-16](#dev-16-manage-the-durable-cognito-test-user-lifecycle)
 - hourly: [BILL-05](#bill-05-reconcile-bundle-capacity-counters)
@@ -5745,25 +6619,32 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - ico checklist: [OPS-42](#ops-42-guide-icogdpr-compliance)
 - ico compliance: [OPS-42](#ops-42-guide-icogdpr-compliance)
 - id token: [DEV-18](#dev-18-provide-shared-unitsystem-test-fixtures)
+- idempotence: [SS-14](#ss-14-verify-export-and-report-roundtrip-and-stability)
 - idempotent enable: [DATA-40](#data-40-enable-required-google-cloud-apis)
 - identity: [CH-01](#ch-01-exchange-a-companies-house-oauth-token)
 - identity audit: [OPS-63](#ops-63-report-identity-audit-findings)
 - identity base url: [CH-09](#ch-09-query-and-submit-document-transactions)
-- identity guard: [OPS-28](#ops-28-enforce-commit-identity-allowlist)
+- identity guard: [OPS-28](#ops-28-enforce-commit-identity-allowlist), [SS-39](#ss-39-guard-commit-author-identity-on-prs)
+- identity pool: [SS-34](#ss-34-configure-cloudwatch-rum)
 - identity provider: [OPS-101](#ops-101-set-up-github-oidc-deployment-roles)
 - identity-sandbox: [CH-02](#ch-02-verify-the-companies-house-oauth-app-configuration)
 - identity.toml: [DATA-37](#data-37-federate-lambda-credentials-to-google-cloud), [DATA-42](#data-42-sync-gcp-workload-identity-and-org-policy)
 - import prior year: [HMRC-13](#hmrc-13-submit-and-manage-the-self-employment-annual-summary)
 - in flight: [DEV-27](#dev-27-render-the-open-work-board)
+- in-flight items: [SS-46](#ss-46-render-the-spreadsheets-work-board)
 - in-memory store: [DEV-01](#dev-01-run-the-http-simulator-server)
 - in-page script: [OPS-89](#ops-89-overlay-pointer-and-caption-cues-on-video)
 - incident response: [OPS-64](#ops-64-runbook-information-security-operations)
 - income and relief: [HMRC-19](#hmrc-19-calculate-itsa-tax-liability)
+- independent recalculation: [SS-01](#ss-01-run-the-diya-gl-calculation-engine)
 - index: [DEV-43](#dev-43-find-existing-tooling-before-building-any)
+- index-only: [SS-17](#ss-17-build-reconciliation-pages-and-record-releases)
+- indexeddb: [SS-27](#ss-27-save-and-load-books-locally-and-via-submits-cloud-store)
 - infosec runbook: [OPS-64](#ops-64-runbook-information-security-operations)
 - infra-apply: [CH-02](#ch-02-verify-the-companies-house-oauth-app-configuration), [OPS-35](#ops-35-verify-third-party-console-configuration-against-declared-state)
 - infrastructure: [CH-14](#ch-14-provision-the-companies-house-cdk-stack)
 - init fill submit verify: [HMRC-36](#hmrc-36-provide-itsa-behaviour-test-step-helpers)
+- init workflow: [SS-38](#ss-38-initialise-or-regenerate-repository-state)
 - installation token: [OPS-85](#ops-85-obtain-and-use-github-app-api-tokens)
 - intelligent tiering: [OPS-128](#ops-128-generate-s3-lifecycle-rules-for-storage-tiering)
 - intent to crystallise: [HMRC-19](#hmrc-19-calculate-itsa-tax-liability), [HMRC-20](#hmrc-20-retrieve-itsa-crystallisation-obligations)
@@ -5782,6 +6663,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - issued passes: [BILL-09](#bill-09-list-a-users-issued-passes)
 - issues and comments: [OPS-85](#ops-85-obtain-and-use-github-app-api-tokens)
 - iterate: [DEV-30](#dev-30-run-the-delivery-cycle-unattended)
+- iterate skill: [SS-49](#ss-49-run-the-delivery-cycle-unattended)
 - itsa: [MCP-06](#mcp-06-derive-itsa-quarterly-and-annual-submission-figures), [DEV-09](#dev-09-simulate-hmrc-itsa-mtd-api)
 - itsa annual submission: [HMRC-13](#hmrc-13-submit-and-manage-the-self-employment-annual-summary), [HMRC-15](#hmrc-15-submit-and-manage-the-uk-property-annual-summary)
 - itsa business details: [HMRC-09](#hmrc-09-retrieve-itsa-business-details)
@@ -5803,10 +6685,17 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - job minutes: [DEV-37](#dev-37-write-the-session-report)
 - join button: [SITE-03](#site-03-capture-feedback-interest)
 - journey: [OPS-88](#ops-88-orchestrate-demo-video-recording-journeys)
+- js computation: [SS-01](#ss-01-run-the-diya-gl-calculation-engine)
 - json error: [SITE-07](#site-07-format-http-responses-and-errors)
 - json export: [OPS-137](#ops-137-export-cognito-users-for-reporting-or-backup)
+- json-rpc: [SS-06](#ss-06-serve-the-diya-gl-mcp-server)
 - jsonl: [DEV-17](#dev-17-export-and-embed-dynamodb-test-state-in-reports)
+- jszip: [SS-58](#ss-58-excel-xml-manipulation-reference)
+- judge reconciliation: [SS-12](#ss-12-judge-reconciliation-reports-with-an-llm)
+- judge rubric: [SS-12](#ss-12-judge-reconciliation-reports-with-an-llm)
 - jwt: [SITE-02](#site-02-verify-jwts-at-the-api-gateway)
+- kb-search: [SS-23](#ss-23-serve-knowledge-base-article-and-community-content)
+- keep it green: [SS-50](#ss-50-watch-github-ci-to-green)
 - keepalive: [OPS-13](#ops-13-auto-destroy-stale-ci-deployments)
 - key events: [DATA-05](#data-05-pull-ga4-daily-bigquery-aggregate-tables), [DATA-38](#data-38-sync-ga4-properties-streams-and-key-events)
 - keyboard nav: [OPS-95](#ops-95-generate-wcag-accessibility-compliance-rows)
@@ -5816,6 +6705,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - kind helpers: [OPS-126](#ops-126-provide-config-composition-helpers-for-cdk-code)
 - kinesis firehose: [DATA-02](#data-02-transform-activity-events-into-lake-rows)
 - kms keys: [OPS-107](#ops-107-list-production-secrets-manager-entries)
+- knowledge base: [SS-23](#ss-23-serve-knowledge-base-article-and-community-content)
 - lake bucket: [DATA-12](#data-12-provision-the-analytics-lake-and-athena-workgroup)
 - lake relayout: [DATA-54](#data-54-relayout-the-lakes-yearmonthday-objects-into-dt-prefixes)
 - lambda: [CH-14](#ch-14-provision-the-companies-house-cdk-stack)
@@ -5844,11 +6734,13 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - legal declaration: [HMRC-21](#hmrc-21-submit-the-itsa-final-declaration)
 - lets encrypt: [OPS-37](#ops-37-check-https-certificate-expiry)
 - liabilities: [DEV-08](#dev-08-simulate-hmrc-vat-mtd-api)
+- libreoffice: [SS-58](#ss-58-excel-xml-manipulation-reference)
+- libreoffice roundtrip: [SS-08](#ss-08-generate-spreadsheet-packages-from-product-modules)
 - licence header: [DEV-20](#dev-20-check-spdx-licence-headers)
 - licensing: [SITE-20](#site-20-document-business-governance-and-positioning)
 - lifecycle policy: [OPS-114](#ops-114-provision-ecr-image-repositories)
-- lighthouse: [DEV-14](#dev-14-start-the-proxy-and-simulator-local-dev-environments)
-- lines.jsonl: [MCP-03](#mcp-03-load-and-save-diya-gl-books-via-mcp)
+- lighthouse: [DEV-14](#dev-14-start-the-proxy-and-simulator-local-dev-environments), [SS-45](#ss-45-run-compliance-checks)
+- lines.jsonl: [MCP-03](#mcp-03-load-and-save-diya-gl-books-via-mcp), [SS-02](#ss-02-validate-diya-gl-books-against-the-v2-schema), [SS-03](#ss-03-read-and-write-diya-gl-interchange-formats), [SS-15](#ss-15-extract-diya-gl-data-and-financial-reports-from-populated-packages)
 - list books: [BILL-19](#bill-19-list-a-users-diya-gl-books)
 - list bundles: [BILL-02](#bill-02-list-a-users-bundles-and-token-balance)
 - list clients: [BILL-16](#bill-16-manage-practice-clients)
@@ -5859,7 +6751,9 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - list_vat_obligations: [MCP-07](#mcp-07-file-vat-returns-and-accounts-via-api)
 - listlapsedbundleowners: [BILL-21](#bill-21-sweep-lapsed-diya-gl-books)
 - live mode: [BILL-25](#bill-25-retrieve-a-stripe-checkout-sessions-status)
+- llm judge: [SS-12](#ss-12-judge-reconciliation-reports-with-an-llm)
 - llm voice tells: [DEV-38](#dev-38-write-plain-human-prose)
+- llm-voice: [SS-57](#ss-57-write-plain-human-prose)
 - loading spinner: [SITE-14](#site-14-render-page-chrome-and-widgets)
 - local app: [OPS-88](#ops-88-orchestrate-demo-video-recording-journeys)
 - local aws credentials: [OPS-69](#ops-69-assume-and-clear-local-aws-deployment-credentials)
@@ -5887,13 +6781,17 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - loss carry forward: [HMRC-17](#hmrc-17-manage-itsa-losses-and-claims)
 - loss ranking: [DEV-37](#dev-37-write-the-session-report)
 - losses and claims: [HMRC-17](#hmrc-17-manage-itsa-losses-and-claims), [DEV-09](#dev-09-simulate-hmrc-itsa-mtd-api)
+- lowest model: [SS-48](#ss-48-refine-nextmd-before-a-wave)
+- ltd derivations: [SS-04](#ss-04-apply-book-edits-and-derivations)
 - mail index search: [MCP-12](#mcp-12-read-invoices-from-the-local-mail-index)
 - mail-antony: [MCP-12](#mcp-12-read-invoices-from-the-local-mail-index)
 - main deploy in progress: [OPS-24](#ops-24-gate-probes-on-the-main-apex-deploy)
+- maintenance page: [SS-30](#ss-30-serve-the-holding-page-and-failover)
 - making tax digital: [HMRC-11](#hmrc-11-retrieve-itsa-status), [DEV-09](#dev-09-simulate-hmrc-itsa-mtd-api)
 - manage subscription: [BILL-26](#bill-26-open-the-stripe-customer-billing-portal)
 - manage-secrets workflow: [OPS-45](#ops-45-manage-aws-secrets-manager-entries-and-rotation-tags)
 - management account: [DATA-08](#data-08-copy-the-aws-focus-cost-export), [DATA-17](#data-17-export-aws-billing-data-in-focus-format)
+- manifest.toml: [SS-18](#ss-18-archive-a-cut-of-packages-to-diy-accounting-archive)
 - manual adjustment: [HMRC-18](#hmrc-18-manage-itsa-tax-liability-adjustments)
 - manual change: [OPS-32](#ops-32-detect-cloudformation-drift)
 - manual destroy: [OPS-14](#ops-14-destroy-a-named-prod-deployment-on-demand)
@@ -5902,6 +6800,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - marketing guidance: [SITE-20](#site-20-document-business-governance-and-positioning)
 - marketing page: [MCP-15](#mcp-15-disclaim-an-mcp-server-on-the-marketing-site)
 - mask ip: [HMRC-27](#hmrc-27-validate-hmrc-identifiers-dates-and-amounts)
+- master books: [SS-10](#ss-10-extract-reconciliation-scenarios-from-master-books)
 - maximize clicks bidding: [DATA-35](#data-35-forecast-google-ads-keyword-performance)
 - mcp auth: [MCP-02](#mcp-02-authenticate-mcp-sessions-via-cognito)
 - mcp book tools: [MCP-03](#mcp-03-load-and-save-diya-gl-books-via-mcp)
@@ -5911,9 +6810,10 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - mcp server: [MCP-01](#mcp-01-expose-the-submission-mcp-server-and-tools)
 - mcp tools: [MCP-01](#mcp-01-expose-the-submission-mcp-server-and-tools)
 - mcp.html: [MCP-15](#mcp-15-disclaim-an-mcp-server-on-the-marketing-site)
-- measured figures: [DEV-37](#dev-37-write-the-session-report)
+- measured figures: [DEV-37](#dev-37-write-the-session-report), [SS-56](#ss-56-write-the-session-report)
 - measurement id: [DATA-38](#data-38-sync-ga4-properties-streams-and-key-events)
 - member account: [OPS-100](#ops-100-create-or-invite-aws-member-accounts)
+- merge gates: [SS-51](#ss-51-merge-every-pr-that-is-ready)
 - merge preview: [DEV-33](#dev-33-preview-what-auto-merge-would-do)
 - merge state: [DEV-32](#dev-32-merge-every-pr-that-is-ready)
 - merged branch cleanup: [DEV-34](#dev-34-clean-up-stale-deployments-and-branches)
@@ -5937,7 +6837,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - mock-oauth2-server: [DEV-14](#dev-14-start-the-proxy-and-simulator-local-dev-environments)
 - mock-oauth2-server replacement: [DEV-02](#dev-02-simulate-local-app-oauth)
 - mode not one-shot: [DEV-35](#dev-35-cool-down-an-overloaded-batch)
-- model context protocol: [MCP-01](#mcp-01-expose-the-submission-mcp-server-and-tools)
+- model context protocol: [MCP-01](#mcp-01-expose-the-submission-mcp-server-and-tools), [SS-06](#ss-06-serve-the-diya-gl-mcp-server)
 - model selection: [DEV-29](#dev-29-refine-nextmd-before-a-wave)
 - module bundle: [SITE-18](#site-18-bootstrap-the-frontend-module-bundle)
 - module index: [DEV-21](#dev-21-verify-module-wiring-and-repository-shape)
@@ -5968,16 +6868,19 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - navigation structure: [SITE-12](#site-12-map-the-site-structure)
 - never torn down: [BILL-38](#bill-38-cdk-billing-webhook-stack)
 - new account: [OPS-103](#ops-103-bootstrap-a-new-aws-account-for-cdk)
-- next.md: [OPS-57](#ops-57-dispatch-agentic-lib-board-backlog-and-pr-agents), [DEV-24](#dev-24-document-developer-setup-and-repository-conventions), [DEV-27](#dev-27-render-the-open-work-board), [DEV-28](#dev-28-work-nextmd-as-dispatched-sub-agents)
+- next.md: [OPS-57](#ops-57-dispatch-agentic-lib-board-backlog-and-pr-agents), [DEV-24](#dev-24-document-developer-setup-and-repository-conventions), [DEV-27](#dev-27-render-the-open-work-board), [DEV-28](#dev-28-work-nextmd-as-dispatched-sub-agents), [SS-46](#ss-46-render-the-spreadsheets-work-board)
 - next.md readiness: [DEV-29](#dev-29-refine-nextmd-before-a-wave)
 - next.md shape: [DEV-21](#dev-21-verify-module-wiring-and-repository-shape)
+- ni thresholds: [SS-19](#ss-19-update-annual-hmrc-tax-rate-data)
 - nightly analysis: [OPS-75](#ops-75-run-nightly-security-lake-analysis)
 - nightly ingestion: [DATA-22](#data-22-orchestrate-the-nightly-ingestion-workflow)
 - nightly publish: [DATA-18](#data-18-publish-the-nightly-operator-dashboard-snapshot)
 - nino: [HMRC-09](#hmrc-09-retrieve-itsa-business-details), [HMRC-27](#hmrc-27-validate-hmrc-identifiers-dates-and-amounts), [DEV-06](#dev-06-simulate-hmrc-test-user-provisioning-and-api-docs)
+- no changes: [SS-52](#ss-52-preview-what-auto-merge-would-do)
 - no charge: [BILL-07](#bill-07-admin-issue-a-pass)
 - no key file: [DATA-53](#data-53-reach-google-cloud-from-a-local-session-via-aws-sso)
 - no mcp server claim: [MCP-15](#mcp-15-disclaim-an-mcp-server-on-the-marketing-site)
+- no recalculation: [SS-16](#ss-16-write-workbooks-from-diya-gl-data)
 - no service account key: [DATA-47](#data-47-authenticate-google-cloud-scripts-via-federated-credentials)
 - no stored key: [DATA-37](#data-37-federate-lambda-credentials-to-google-cloud)
 - no webhook: [BILL-29](#bill-29-assert-the-paypal-donate-button-configuration)
@@ -5988,9 +6891,15 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - non-lambda mocks: [DEV-07](#dev-07-simulate-the-public-demos-billing-and-oauth)
 - non-main branch: [OPS-11](#ops-11-queue-ci-branch-deploys-in-creation-order)
 - not implemented: [BILL-27](#bill-27-recover-an-abandoned-checkout)
+- nova lite: [SS-12](#ss-12-judge-reconciliation-reports-with-an-llm)
+- nova pro: [SS-12](#ss-12-judge-reconciliation-reports-with-an-llm)
+- npm audit: [SS-45](#ss-45-run-compliance-checks)
 - npm package: [OPS-51](#ops-51-publish-build-artifacts-and-documentation)
+- npm publish: [SS-20](#ss-20-publish-diya-gl-to-npm-ghcr-and-the-homebrew-tap)
 - npm-check-updates: [DEV-22](#dev-22-clean-and-update-local-build-state)
+- npx diya-gl: [SS-05](#ss-05-run-the-diya-gl-cli)
 - null-tolerant map: [OPS-126](#ops-126-provide-config-composition-helpers-for-cdk-code)
+- oac: [SS-35](#ss-35-cdk-spreadsheetsstack)
 - oauth: [SITE-01](#site-01-sign-customers-in-via-cognito), [HMRC-23](#hmrc-23-exchange-an-hmrc-oauth-code-for-a-token), [CH-01](#ch-01-exchange-a-companies-house-oauth-token), [CH-02](#ch-02-verify-the-companies-house-oauth-app-configuration), [MCP-02](#mcp-02-authenticate-mcp-sessions-via-cognito), [DEV-02](#dev-02-simulate-local-app-oauth)
 - oauth authorize: [HMRC-33](#hmrc-33-drive-hmrcs-sandbox-authorisation-flow-for-test-scripts)
 - oauth client assert: [DATA-44](#data-44-assert-google-oauth-client-configuration)
@@ -6004,6 +6913,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - observability: [OPS-118](#ops-118-provision-the-observability-stack-in-us-east-1)
 - observability stack: [OPS-117](#ops-117-provision-the-observability-stack)
 - observabilitystack: [OPS-09](#ops-09-deploy-environment-stacks-and-populate-secrets)
+- offline: [SS-29](#ss-29-serve-diya-gl-as-an-offline-pwa)
 - oidc: [OPS-101](#ops-101-set-up-github-oidc-deployment-roles)
 - oidc exchange: [DATA-47](#data-47-authenticate-google-cloud-scripts-via-federated-credentials)
 - oidc provider: [OPS-103](#ops-103-bootstrap-a-new-aws-account-for-cdk)
@@ -6014,7 +6924,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - on-pass-on-subscription: [BILL-10](#bill-10-redeem-a-pass)
 - one-stop dashboard: [OPS-25](#ops-25-record-dora-and-probe-metrics), [DATA-05](#data-05-pull-ga4-daily-bigquery-aggregate-tables)
 - one-stop objectives: [DATA-18](#data-18-publish-the-nightly-operator-dashboard-snapshot), [DATA-26](#data-26-render-the-operator-objectives-dashboard)
-- open work: [DEV-27](#dev-27-render-the-open-work-board)
+- open work: [DEV-27](#dev-27-render-the-open-work-board), [SS-46](#ss-46-render-the-spreadsheets-work-board)
 - open_book: [MCP-03](#mcp-03-load-and-save-diya-gl-books-via-mcp)
 - openapi 3.0.3: [DEV-13](#dev-13-generate-the-openapi-spec-from-cdk-route-definitions)
 - openapi generator: [DEV-13](#dev-13-generate-the-openapi-spec-from-cdk-route-definitions)
@@ -6042,6 +6952,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - organization account: [OPS-100](#ops-100-create-or-invite-aws-member-accounts)
 - organization check: [OPS-102](#ops-102-verify-the-multi-account-aws-setup)
 - organizational units: [OPS-99](#ops-99-bootstrap-the-aws-organization-structure)
+- origin access control: [SS-35](#ss-35-cdk-spreadsheetsstack)
 - origin label: [OPS-56](#ops-56-structure-github-issues-prs-and-funding-links)
 - originfor tag: [OPS-135](#ops-135-look-up-domains-and-cloudfront-distributions), [OPS-116](#ops-116-provision-the-holding-page-stack)
 - ou setup: [OPS-99](#ops-99-bootstrap-the-aws-organization-structure)
@@ -6053,8 +6964,12 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - overloaded batch: [DEV-35](#dev-35-cool-down-an-overloaded-batch)
 - ownership check: [BILL-18](#bill-18-delete-a-diya-gl-book)
 - p&l: [MCP-17](#mcp-17-build-and-hand-over-the-companys-own-book)
-- pa11y: [DATA-14](#data-14-catalogue-compliance-findings-for-the-dashboard), [DEV-14](#dev-14-start-the-proxy-and-simulator-local-dev-environments)
+- pa11y: [DATA-14](#data-14-catalogue-compliance-findings-for-the-dashboard), [DEV-14](#dev-14-start-the-proxy-and-simulator-local-dev-environments), [SS-45](#ss-45-run-compliance-checks)
 - package manager: [OPS-36](#ops-36-configure-dependabot-dependency-updates)
+- package zip: [SS-16](#ss-16-write-workbooks-from-diya-gl-data)
+- package zips: [SS-09](#ss-09-build-package-zips-and-the-catalogue)
+- package-updates skill: [SS-19](#ss-19-update-annual-hmrc-tax-rate-data)
+- packages-published: [SS-18](#ss-18-archive-a-cut-of-packages-to-diy-accounting-archive)
 - page chrome: [SITE-14](#site-14-render-page-chrome-and-widgets)
 - page layout: [SITE-12](#site-12-map-the-site-structure)
 - pages report: [DATA-06](#data-06-pull-ga4-reports-and-bigquery-event-export)
@@ -6077,6 +6992,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - payout schedule: [BILL-31](#bill-31-configure-stripe-account-policies)
 - payouts: [MCP-13](#mcp-13-import-stripe-transaction-and-payout-lines)
 - paypal: [BILL-29](#bill-29-assert-the-paypal-donate-button-configuration), [OPS-35](#ops-35-verify-third-party-console-configuration-against-declared-state), [MCP-16](#mcp-16-parse-paypal-statements-into-diya-gl-lines)
+- paypal donate button: [SS-22](#ss-22-take-stripe-and-paypal-donations)
 - paypal transaction search: [DATA-48](#data-48-stage-paypal-transactions-for-reconciliation)
 - pdf: [MCP-16](#mcp-16-parse-paypal-statements-into-diya-gl-lines)
 - pdftotext: [MCP-16](#mcp-16-parse-paypal-statements-into-diya-gl-lines)
@@ -6090,6 +7006,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - period key: [HMRC-01](#hmrc-01-submit-a-vat-return), [HMRC-02](#hmrc-02-retrieve-a-submitted-vat-return), [HMRC-03](#hmrc-03-retrieve-vat-obligations), [HMRC-27](#hmrc-27-validate-hmrc-identifiers-dates-and-amounts)
 - period key hidden: [HMRC-28](#hmrc-28-format-and-match-hmrc-obligations)
 - permission grant: [OPS-33](#ops-33-enforce-workflow-to-workflow-permission-grants)
+- personal allowance: [SS-19](#ss-19-update-annual-hmrc-tax-rate-data)
 - personal data package: [OPS-41](#ops-41-export-a-customers-gdpr-subject-access-data)
 - physical pass: [BILL-06](#bill-06-generate-a-token-charged-pass)
 - pii redaction: [OPS-81](#ops-81-mask-and-redact-sensitive-data-from-logs), [OPS-86](#ops-86-provide-structured-pii-redacting-logging)
@@ -6097,17 +7014,19 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - pitr: [OPS-132](#ops-132-enable-dynamodb-pitr-on-deploy), [OPS-113](#ops-113-provision-the-dynamodb-and-s3-data-stack)
 - pitr restore: [OPS-50](#ops-50-drill-and-test-pitr-database-restoration)
 - pitr status: [OPS-48](#ops-48-verify-backup-health-daily)
-- pkce: [MCP-02](#mcp-02-authenticate-mcp-sessions-via-cognito)
+- pkce: [MCP-02](#mcp-02-authenticate-mcp-sessions-via-cognito), [SS-27](#ss-27-save-and-load-books-locally-and-via-submits-cloud-store)
 - plain english: [DEV-38](#dev-38-write-plain-human-prose)
 - plain prose: [DEV-38](#dev-38-write-plain-human-prose)
+- plain-prose skill: [SS-57](#ss-57-write-plain-human-prose)
 - plan: [BILL-44](#bill-44-document-the-price-update-project)
 - plan and apply: [BILL-30](#bill-30-sync-the-stripe-productprice-catalogue)
 - plan apply: [DATA-32](#data-32-sync-the-google-ads-account)
 - plan doc: [DEV-24](#dev-24-document-developer-setup-and-repository-conventions)
 - plan of record: [MCP-14](#mcp-14-document-the-submission-mcps-plan-and-tool-reference)
 - plan submission mcp: [MCP-14](#mcp-14-document-the-submission-mcps-plan-and-tool-reference)
+- plan-do-check-act: [SS-49](#ss-49-run-the-delivery-cycle-unattended)
 - playback controls: [OPS-94](#ops-94-play-demo-videos-on-the-public-site)
-- playwright: [HMRC-33](#hmrc-33-drive-hmrcs-sandbox-authorisation-flow-for-test-scripts), [OPS-88](#ops-88-orchestrate-demo-video-recording-journeys), [OPS-96](#ops-96-scan-pages-for-accessibility-violations)
+- playwright: [HMRC-33](#hmrc-33-drive-hmrcs-sandbox-authorisation-flow-for-test-scripts), [OPS-88](#ops-88-orchestrate-demo-video-recording-journeys), [OPS-96](#ops-96-scan-pages-for-accessibility-violations), [SS-44](#ss-44-run-spreadsheets-behaviour-tests)
 - playwright component test: [DEV-12](#dev-12-prove-the-client-status-stack-and-fetchauth)
 - playwright config: [DEV-23](#dev-23-configure-the-test-and-lint-toolchains)
 - playwright fixtures: [DEV-19](#dev-19-provide-shared-behaviour-test-fixtures-and-steps)
@@ -6131,6 +7050,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - post-deploy validation: [OPS-27](#ops-27-run-probe-tests-against-deployed-environments)
 - post-mortem: [DEV-17](#dev-17-export-and-embed-dynamodb-test-state-in-reports)
 - pr agent: [OPS-57](#ops-57-dispatch-agentic-lib-board-backlog-and-pr-agents)
+- pr head: [SS-51](#ss-51-merge-every-pr-that-is-ready)
 - pr merge gate: [DEV-32](#dev-32-merge-every-pr-that-is-ready)
 - pr readiness: [OPS-134](#ops-134-monitor-github-actions-ci-from-the-cli)
 - pr template: [OPS-56](#ops-56-structure-github-issues-prs-and-funding-links)
@@ -6141,12 +7061,15 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - practice.html: [BILL-16](#bill-16-manage-practice-clients)
 - pre-deploy: [BILL-41](#bill-41-backfill-the-stripe-test-mode-qualifier), [OPS-16](#ops-16-run-dynamodb-data-migrations)
 - pre-login: [BILL-08](#bill-08-check-a-passs-validity)
+- pre-push hook: [SS-42](#ss-42-route-tests-by-blast-radius)
+- pre-tax profit: [SS-13](#ss-13-cross-check-figures-across-product-packages)
 - prefetch: [SITE-13](#site-13-warm-backend-routes-via-prefetch-scripts), [BILL-34](#bill-34-prefetch-and-retry-a-cognito-token-refresh)
 - presenter credential: [CH-08](#ch-08-file-micro-entity-accounts-to-companies-house)
 - presenter secret: [CH-09](#ch-09-query-and-submit-document-transactions)
 - pretest: [BILL-43](#bill-43-build-the-frontend-test-bundle)
 - pretooluse hook: [DEV-26](#dev-26-enforce-claude-code-conventions-via-rules-and-hooks)
 - preview: [CH-07](#ch-07-preview-micro-entity-accounts-before-filing)
+- preview merge: [SS-52](#ss-52-preview-what-auto-merge-would-do)
 - price: [BILL-30](#bill-30-sync-the-stripe-productprice-catalogue)
 - price id: [BILL-24](#bill-24-create-a-stripe-checkout-session)
 - price sync: [DEV-39](#dev-39-sync-stripe-products-and-prices-from-the-catalogue)
@@ -6164,8 +7087,10 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - prod apex: [OPS-06](#ops-06-run-the-full-deployment-pipeline)
 - prod stacks: [OPS-14](#ops-14-destroy-a-named-prod-deployment-on-demand)
 - product: [BILL-30](#bill-30-sync-the-stripe-productprice-catalogue)
-- product catalogue: [BILL-35](#bill-35-load-and-query-the-productactivity-catalogue)
+- product catalogue: [BILL-35](#bill-35-load-and-query-the-productactivity-catalogue), [SS-21](#ss-21-serve-the-spreadsheets-product-catalogue-and-downloads)
 - product demos: [OPS-94](#ops-94-play-demo-videos-on-the-public-site)
+- product manifest: [SS-26](#ss-26-serve-the-diya-gl-product-pages-and-shell)
+- product modules: [SS-08](#ss-08-generate-spreadsheet-packages-from-product-modules)
 - product sync: [DEV-39](#dev-39-sync-stripe-products-and-prices-from-the-catalogue)
 - production approval: [HMRC-38](#hmrc-38-check-readiness-for-the-itsa-recognition-email)
 - project.toml: [DATA-41](#data-41-assert-gcp-billing-budget-and-stray-project)
@@ -6185,6 +7110,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - public site: [OPS-94](#ops-94-play-demo-videos-on-the-public-site), [MCP-15](#mcp-15-disclaim-an-mcp-server-on-the-marketing-site)
 - public video: [OPS-93](#ops-93-publish-demo-videos-to-youtube)
 - publish artifacts: [OPS-51](#ops-51-publish-build-artifacts-and-documentation)
+- publish diya-gl: [SS-20](#ss-20-publish-diya-gl-to-npm-ghcr-and-the-homebrew-tap)
 - publish filter: [OPS-17](#ops-17-redact-and-gate-unattended-agent-output-before-publishing)
 - publish stack: [OPS-120](#ops-120-provision-the-publish-stack)
 - publish video: [OPS-93](#ops-93-publish-demo-videos-to-youtube)
@@ -6196,10 +7122,12 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - push to main: [OPS-06](#ops-06-run-the-full-deployment-pipeline)
 - push trigger: [OPS-01](#ops-01-cancel-superseded-push-triggered-deploys), [OPS-31](#ops-31-run-a-claude-security-review-on-push)
 - putmetricdata: [OPS-83](#ops-83-emit-cloudwatch-emf-metrics), [DATA-21](#data-21-publish-nightly-business-metrics-to-cloudwatch)
+- pwa: [SS-29](#ss-29-serve-diya-gl-as-an-offline-pwa)
 - qr code: [SITE-19](#site-19-generate-qr-codes), [BILL-06](#bill-06-generate-a-token-charged-pass), [BILL-11](#bill-11-generate-admin-passes-from-cli-or-workflow)
 - qualifier: [BILL-41](#bill-41-backfill-the-stripe-test-mode-qualifier)
 - quarterly update: [HMRC-10](#hmrc-10-retrieve-itsa-obligations), [HMRC-12](#hmrc-12-submit-and-manage-self-employment-periodic-updates), [HMRC-14](#hmrc-14-submit-and-manage-uk-property-periodic-updates), [MCP-06](#mcp-06-derive-itsa-quarterly-and-annual-submission-figures)
 - queue deploys: [OPS-11](#ops-11-queue-ci-branch-deploys-in-creation-order)
+- queue not cancel: [SS-36](#ss-36-deploy-the-spreadsheets-and-diya-gl-sites)
 - queue processing: [SITE-09](#site-09-track-and-poll-async-api-requests)
 - race: [OPS-01](#ops-01-cancel-superseded-push-triggered-deploys)
 - race condition: [OPS-11](#ops-11-queue-ci-branch-deploys-in-creation-order), [OPS-15](#ops-15-serialize-lane-test-user-rotation-jobs)
@@ -6215,15 +7143,20 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - read-only check: [DATA-43](#data-43-read-the-google-cloud-and-ga4-inventory)
 - read-only merge check: [DEV-33](#dev-33-preview-what-auto-merge-would-do)
 - read-only snapshot: [DATA-33](#data-33-read-the-google-ads-account-inventory)
+- read-workbook: [SS-05](#ss-05-run-the-diya-gl-cli)
 - read:self-assessment: [HMRC-35](#hmrc-35-spike-test-the-itsa-sandbox-oauth-and-business-details-flow)
 - readme: [DEV-24](#dev-24-document-developer-setup-and-repository-conventions)
+- recalc: [SS-05](#ss-05-run-the-diya-gl-cli)
+- recalculate mode: [SS-15](#ss-15-extract-diya-gl-data-and-financial-reports-from-populated-packages)
 - receipt: [HMRC-01](#hmrc-01-submit-a-vat-return)
 - receipts: [DATA-04](#data-04-stream-dynamodb-table-changes-into-the-lake)
 - receipts page: [HMRC-22](#hmrc-22-store-and-retrieve-hmrc-submission-receipts)
+- recently-updated: [SS-23](#ss-23-serve-knowledge-base-article-and-community-content)
 - recognition email: [HMRC-38](#hmrc-38-check-readiness-for-the-itsa-recognition-email)
-- reconcile: [BILL-05](#bill-05-reconcile-bundle-capacity-counters), [MCP-05](#mcp-05-derive-vat-figures-via-mcp-tools), [MCP-16](#mcp-16-parse-paypal-statements-into-diya-gl-lines)
+- reconcile: [BILL-05](#bill-05-reconcile-bundle-capacity-counters), [MCP-05](#mcp-05-derive-vat-figures-via-mcp-tools), [MCP-16](#mcp-16-parse-paypal-statements-into-diya-gl-lines), [SS-11](#ss-11-reconcile-generated-packages-against-expected-figures)
 - reconcile stripe: [MCP-13](#mcp-13-import-stripe-transaction-and-payout-lines)
-- reconciliation: [DATA-48](#data-48-stage-paypal-transactions-for-reconciliation), [MCP-10](#mcp-10-import-a-natwest-bank-statement-into-diya-gl-lines)
+- reconciliation: [DATA-48](#data-48-stage-paypal-transactions-for-reconciliation), [MCP-10](#mcp-10-import-a-natwest-bank-statement-into-diya-gl-lines), [SS-11](#ss-11-reconcile-generated-packages-against-expected-figures)
+- reconciliation pages: [SS-17](#ss-17-build-reconciliation-pages-and-record-releases)
 - recording: [OPS-88](#ops-88-orchestrate-demo-video-recording-journeys)
 - recover checkout: [BILL-27](#bill-27-recover-an-abandoned-checkout)
 - redact: [OPS-17](#ops-17-redact-and-gate-unattended-agent-output-before-publishing)
@@ -6231,13 +7164,19 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - redeem pass: [BILL-10](#bill-10-redeem-a-pass)
 - redeempass: [BILL-10](#bill-10-redeem-a-pass)
 - redirect: [OPS-133](#ops-133-serve-the-root-domain-holding-page)
+- redirect engine: [SS-24](#ss-24-compile-the-redirect-engine)
 - redirect uri: [HMRC-32](#hmrc-32-register-and-verify-hmrc-developer-hub-application-config), [CH-02](#ch-02-verify-the-companies-house-oauth-app-configuration)
+- redirect-function.js: [SS-24](#ss-24-compile-the-redirect-engine)
+- redirects.toml: [SS-24](#ss-24-compile-the-redirect-engine)
 - reference check: [DEV-29](#dev-29-refine-nextmd-before-a-wave)
+- references page: [SS-23](#ss-23-serve-knowledge-base-article-and-community-content)
 - refine: [DEV-29](#dev-29-refine-nextmd-before-a-wave)
+- refine skill: [SS-48](#ss-48-refine-nextmd-before-a-wave)
 - refresh token: [OPS-53](#ops-53-verify-youtube-channel-consistency-weekly), [OPS-110](#ops-110-force-logout-all-users-during-a-security-incident)
 - refresh token scopes: [DATA-44](#data-44-assert-google-oauth-client-configuration)
 - refresh_token: [DEV-03](#dev-03-simulate-hmrc-oauth)
 - refund: [BILL-28](#bill-28-process-stripe-webhook-events)
+- regenerate: [SS-38](#ss-38-initialise-or-regenerate-repository-state)
 - register: [CH-03](#ch-03-search-the-companies-house-register)
 - registered email: [CH-06](#ch-06-file-a-change-of-registered-email-address), [DEV-04](#dev-04-simulate-companies-house-identity-and-filing)
 - registered office: [CH-05](#ch-05-file-a-change-of-registered-office-address), [DEV-04](#dev-04-simulate-companies-house-identity-and-filing)
@@ -6245,15 +7184,20 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - regulatory checklist: [OPS-42](#ops-42-guide-icogdpr-compliance)
 - reinvestment ceiling: [DATA-36](#data-36-answer-google-ads-questions-from-live-data)
 - relationships endpoint: [BILL-13](#bill-13-check-a-clients-authorisation-status)
+- release record: [SS-17](#ss-17-build-reconciliation-pages-and-record-releases)
 - release slot: [OPS-10](#ops-10-claim-release-and-track-a-ci-deployment-slot)
 - releases: [OPS-85](#ops-85-obtain-and-use-github-app-api-tokens), [MCP-16](#mcp-16-parse-paypal-statements-into-diya-gl-lines)
+- releases.json: [SS-17](#ss-17-build-reconciliation-pages-and-record-releases)
 - relief claims: [HMRC-17](#hmrc-17-manage-itsa-losses-and-claims)
 - remedy budget: [OPS-79](#ops-79-track-an-alarm-familys-daily-remedy-budget)
 - remedy row: [OPS-21](#ops-21-auto-close-resolved-alarm-issues), [OPS-22](#ops-22-verify-a-triage-draft-pr-stays-in-scope)
 - remove bundle: [BILL-03](#bill-03-delete-a-bundle)
+- removeline: [SS-04](#ss-04-apply-book-edits-and-derivations)
 - rental income: [HMRC-14](#hmrc-14-submit-and-manage-uk-property-periodic-updates)
 - rental property: [HMRC-15](#hmrc-15-submit-and-manage-the-uk-property-annual-summary)
+- report: [SS-15](#ss-15-extract-diya-gl-data-and-financial-reports-from-populated-packages)
 - report a vulnerability: [OPS-65](#ops-65-document-security-policy-and-disclosure)
+- report.json: [SS-15](#ss-15-extract-diya-gl-data-and-financial-reports-from-populated-packages)
 - report_identity_audit.md: [OPS-63](#ops-63-report-identity-audit-findings)
 - report_session file: [DEV-37](#dev-37-write-the-session-report)
 - repository contents: [DEV-22](#dev-22-clean-and-update-local-build-state)
@@ -6278,9 +7222,10 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - restore permissions: [OPS-111](#ops-111-provision-cross-account-backup-vaults-and-plans)
 - restore prod: [OPS-109](#ops-109-disaster-recovery-restore-into-a-new-prod-account)
 - restore salt: [OPS-44](#ops-44-hash-and-rotate-the-subject-id-salt)
-- resume work: [DEV-36](#dev-36-resume-normal-work-from-cool-down)
+- resume work: [DEV-36](#dev-36-resume-normal-work-from-cool-down), [SS-55](#ss-55-resume-normal-work-from-cool-down)
 - retention: [BILL-17](#bill-17-upload-a-diya-gl-book), [BILL-22](#bill-22-check-diya-gl-retention-entitlement)
 - retention days: [OPS-125](#ops-125-name-and-tag-cdk-resources-consistently)
+- retire.js: [SS-45](#ss-45-run-compliance-checks)
 - retrieveuserbundles: [BILL-02](#bill-02-list-a-users-bundles-and-token-balance)
 - retry navigation: [DEV-19](#dev-19-provide-shared-behaviour-test-fixtures-and-steps)
 - retryable error: [OPS-87](#ops-87-process-sqs-message-batches-in-lambda-workers)
@@ -6292,8 +7237,9 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - revenue view: [DATA-09](#data-09-reconcile-stripe-payments-into-the-lake)
 - review: [BILL-44](#bill-44-document-the-price-update-project)
 - review thread check: [DEV-32](#dev-32-merge-every-pr-that-is-ready)
+- review threads: [SS-51](#ss-51-merge-every-pr-that-is-ready)
 - revival: [DEV-36](#dev-36-resume-normal-work-from-cool-down)
-- revival notes: [DEV-35](#dev-35-cool-down-an-overloaded-batch)
+- revival notes: [DEV-35](#dev-35-cool-down-an-overloaded-batch), [SS-54](#ss-54-cool-down-an-overloaded-batch), [SS-55](#ss-55-resume-normal-work-from-cool-down)
 - right to be forgotten: [OPS-40](#ops-40-delete-a-customers-data-for-gdpr-erasure)
 - role diff apply: [DATA-45](#data-45-apply-ga4-and-gcp-iam-role-bindings)
 - role prompt: [DEV-25](#dev-25-maintain-the-specialist-agent-prompt-library)
@@ -6307,21 +7253,25 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - rum ga4 agreement: [DATA-23](#data-23-classify-visitor-kind-as-human-bot-or-synthetic)
 - rum injection: [OPS-07](#ops-07-lean-deploy-app-code-to-lambda-and-s3)
 - rum placeholders: [DATA-25](#data-25-configure-and-gate-cloudwatch-rum)
+- rum-config.js: [SS-34](#ss-34-configure-cloudwatch-rum)
 - run budget: [OPS-20](#ops-20-enforce-daily-run-budgets-for-agent-paths)
 - run_for_clients: [MCP-09](#mcp-09-run-a-client-scoped-tool-across-every-practice-client)
+- runbook: [SS-30](#ss-30-serve-the-holding-page-and-failover)
 - runbook_information_security.md: [OPS-64](#ops-64-runbook-information-security-operations)
 - runtime config: [SITE-16](#site-16-configure-the-frontend-via-toml-and-env-libraries)
 - runtime lifecycle: [OPS-130](#ops-130-track-runtime-and-dependency-lifecycle)
 - s3 bucket grant: [BILL-39](#bill-39-cdk-diya-gl-stack)
 - s3 buckets: [OPS-113](#ops-113-provision-the-dynamodb-and-s3-data-stack)
+- s3 cloudfront: [SS-35](#ss-35-cdk-spreadsheetsstack)
 - s3 deployment: [OPS-120](#ops-120-provision-the-publish-stack)
 - s3 lake: [DATA-12](#data-12-provision-the-analytics-lake-and-athena-workgroup)
 - s3 lifecycle: [OPS-128](#ops-128-generate-s3-lifecycle-rules-for-storage-tiering)
 - s3 listing: [BILL-19](#bill-19-list-a-users-diya-gl-books)
 - s3 repository: [BILL-23](#bill-23-store-diya-gl-books-in-s3)
 - s3 retrieval: [BILL-20](#bill-20-fetch-a-versioned-diya-gl-book)
-- s3 sync: [OPS-07](#ops-07-lean-deploy-app-code-to-lambda-and-s3), [DATA-20](#data-20-publish-the-nightly-raw-export-for-indexing)
+- s3 sync: [OPS-07](#ops-07-lean-deploy-app-code-to-lambda-and-s3), [DATA-20](#data-20-publish-the-nightly-raw-export-for-indexing), [SS-09](#ss-09-build-package-zips-and-the-catalogue)
 - sa103: [MCP-06](#mcp-06-derive-itsa-quarterly-and-annual-submission-figures)
+- sa103 mapping: [SS-07](#ss-07-publish-the-diya-gl-format-specification-page)
 - safe logger: [OPS-86](#ops-86-provide-structured-pii-redacting-logging)
 - safe parsing: [CH-11](#ch-11-parse-xml-safely)
 - sales fee split: [MCP-13](#mcp-13-import-stripe-transaction-and-payout-lines)
@@ -6337,7 +7287,10 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - sandbox obligations: [HMRC-28](#hmrc-28-format-and-match-hmrc-obligations)
 - sandbox tier: [BILL-22](#bill-22-check-diya-gl-retention-entitlement)
 - sar: [OPS-41](#ops-41-export-a-customers-gdpr-subject-access-data)
+- save book: [SS-27](#ss-27-save-and-load-books-locally-and-via-submits-cloud-store)
 - save_book: [MCP-03](#mcp-03-load-and-save-diya-gl-books-via-mcp)
+- save_workbook: [SS-06](#ss-06-serve-the-diya-gl-mcp-server)
+- savework book: [SS-16](#ss-16-write-workbooks-from-diya-gl-data)
 - sbom: [OPS-39](#ops-39-generate-a-software-bill-of-materials)
 - sc 1.2.1: [OPS-90](#ops-90-encode-captured-video-frames-and-captions)
 - scan and batch-write: [OPS-109](#ops-109-disaster-recovery-restore-into-a-new-prod-account)
@@ -6353,15 +7306,20 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - scheduled lambda: [BILL-05](#bill-05-reconcile-bundle-capacity-counters), [BILL-21](#bill-21-sweep-lapsed-diya-gl-books)
 - scheduled pr: [OPS-36](#ops-36-configure-dependabot-dependency-updates)
 - scheduled query: [DATA-39](#data-39-sync-ga4-in-bigquery-scheduled-queries)
-- scheduled scan: [OPS-30](#ops-30-run-codeql-security-scanning)
+- scheduled scan: [OPS-30](#ops-30-run-codeql-security-scanning), [SS-40](#ss-40-run-codeql-scanning)
+- scheduled update: [SS-41](#ss-41-run-the-scheduled-dependency-and-tax-data-update-workflow)
 - schema: [OPS-91](#ops-91-validate-video-scene-scripts-and-timing)
 - schema change: [OPS-16](#ops-16-run-dynamodb-data-migrations)
+- schema tables: [SS-07](#ss-07-publish-the-diya-gl-format-specification-page)
 - screen reader: [OPS-95](#ops-95-generate-wcag-accessibility-compliance-rows)
 - screenshot captions: [DEV-19](#dev-19-provide-shared-behaviour-test-fixtures-and-steps)
+- screenshots: [SS-17](#ss-17-build-reconciliation-pages-and-record-releases)
 - sdst: [HMRC-38](#hmrc-38-check-readiness-for-the-itsa-recognition-email)
 - se-derivations: [MCP-06](#mcp-06-derive-itsa-quarterly-and-annual-submission-figures)
 - search: [CH-03](#ch-03-search-the-companies-house-register)
 - search campaign create: [DATA-32](#data-32-sync-the-google-ads-account)
+- second engine: [SS-01](#ss-01-run-the-diya-gl-calculation-engine), [SS-11](#ss-11-reconcile-generated-packages-against-expected-figures)
+- second store: [SS-28](#ss-28-store-books-in-google-drive)
 - secret scan: [OPS-92](#ops-92-redact-secrets-from-video-artefacts)
 - secrets in logs: [OPS-81](#ops-81-mask-and-redact-sensitive-data-from-logs)
 - secrets manager: [HMRC-23](#hmrc-23-exchange-an-hmrc-oauth-code-for-a-token), [BILL-30](#bill-30-sync-the-stripe-productprice-catalogue), [BILL-32](#bill-32-provision-stripe-secrets), [OPS-45](#ops-45-manage-aws-secrets-manager-entries-and-rotation-tags), [OPS-106](#ops-106-replicate-secrets-across-aws-accounts), [DEV-15](#dev-15-fetch-and-publish-proxy-variant-secrets)
@@ -6381,6 +7339,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - security review: [OPS-31](#ops-31-run-a-claude-security-review-on-push)
 - security review prompt: [DEV-25](#dev-25-maintain-the-specialist-agent-prompt-library)
 - security scan: [OPS-30](#ops-30-run-codeql-security-scanning)
+- security scanning: [SS-40](#ss-40-run-codeql-scanning)
 - security state: [OPS-46](#ops-46-query-and-persist-per-consumer-security-state-records)
 - security-review.yml: [OPS-31](#ops-31-run-a-claude-security-review-on-push)
 - security.md: [OPS-65](#ops-65-document-security-policy-and-disclosure)
@@ -6396,20 +7355,25 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - send day: [HMRC-38](#hmrc-38-check-readiness-for-the-itsa-recognition-email)
 - sensitive fields: [OPS-81](#ops-81-mask-and-redact-sensitive-data-from-logs)
 - sensitivepathscan: [OPS-74](#ops-74-detect-waf-blocked-scan-attacks)
+- seo: [SS-25](#ss-25-generate-sitemaps)
+- sequential commits: [SS-43](#ss-43-run-the-product-generation-and-test-workflows)
+- service worker: [SS-29](#ss-29-serve-diya-gl-as-an-offline-pwa)
 - session beacon: [SITE-04](#site-04-track-visits-via-session-beacon)
 - session funnel: [DATA-06](#data-06-pull-ga4-reports-and-bigquery-event-export)
 - session report: [DEV-24](#dev-24-document-developer-setup-and-repository-conventions), [DEV-37](#dev-37-write-the-session-report)
 - session status: [BILL-25](#bill-25-retrieve-a-stripe-checkout-sessions-status)
 - session storage: [CH-01](#ch-01-exchange-a-companies-house-oauth-token)
+- session-report skill: [SS-56](#ss-56-write-the-session-report)
 - sessions by host source: [DATA-05](#data-05-pull-ga4-daily-bigquery-aggregate-tables)
 - set origins: [OPS-04](#ops-04-update-route53cloudfront-origins-for-a-domain)
-- settle in-flight work: [DEV-35](#dev-35-cool-down-an-overloaded-batch)
+- settle in-flight work: [DEV-35](#dev-35-cool-down-an-overloaded-batch), [SS-54](#ss-54-cool-down-an-overloaded-batch)
 - setup guide: [DEV-24](#dev-24-document-developer-setup-and-repository-conventions)
 - sha256: [SITE-17](#site-17-trace-and-secure-client-requests)
 - shared auth client: [DATA-47](#data-47-authenticate-google-cloud-scripts-via-federated-credentials)
 - shared client: [OPS-82](#ops-82-provide-a-shared-dynamodb-client)
 - shared construct: [OPS-124](#ops-124-define-shared-lambda-cdk-constructs)
 - shared query layer: [DATA-33](#data-33-read-the-google-ads-account-inventory)
+- shared scenario: [SS-13](#ss-13-cross-check-figures-across-product-packages)
 - shared worktree staging: [DATA-50](#data-50-resolve-finance-staging-directory-paths)
 - short ttl: [OPS-46](#ops-46-query-and-persist-per-consumer-security-state-records)
 - sideways relief: [HMRC-17](#hmrc-17-manage-itsa-losses-and-claims)
@@ -6419,22 +7383,32 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - signup to first submission: [DATA-29](#data-29-sql-views-submission-and-compliance)
 - silent local failure: [OPS-47](#ops-47-check-fraud-prevention-header-record-freshness)
 - single stack deploy: [OPS-08](#ops-08-deploy-a-single-cdk-stack-on-demand)
+- single-file json: [SS-03](#ss-03-read-and-write-diya-gl-interchange-formats)
 - site map: [SITE-12](#site-12-map-the-site-structure)
 - site-video-capture: [OPS-52](#ops-52-auto-record-demo-videos-on-prod-deploy)
+- sitemap: [SS-25](#ss-25-generate-sitemaps)
+- sitemap.xml: [SS-25](#ss-25-generate-sitemaps)
+- skip_libreoffice: [SS-42](#ss-42-route-tests-by-blast-radius)
 - slot pool: [OPS-10](#ops-10-claim-release-and-track-a-ci-deployment-slot)
-- slow the flow: [DEV-35](#dev-35-cool-down-an-overloaded-batch)
-- smoke test: [OPS-27](#ops-27-run-probe-tests-against-deployed-environments)
+- slow the flow: [DEV-35](#dev-35-cool-down-an-overloaded-batch), [SS-54](#ss-54-cool-down-an-overloaded-batch)
+- smoke test: [OPS-27](#ops-27-run-probe-tests-against-deployed-environments), [SS-36](#ss-36-deploy-the-spreadsheets-and-diya-gl-sites)
 - sns: [SITE-03](#site-03-capture-feedback-interest), [OPS-72](#ops-72-forward-bedrock-budget-alerts)
 - sns findings topic: [OPS-117](#ops-117-provision-the-observability-stack)
 - sns notification: [OPS-111](#ops-111-provision-cross-account-backup-vaults-and-plans), [DATA-16](#data-16-alert-on-cost-budget-and-anomaly-thresholds)
 - software composition: [OPS-39](#ops-39-generate-a-software-bill-of-materials)
 - sonnet escalation: [OPS-18](#ops-18-run-alarm-and-support-triage)
 - source accounts: [OPS-104](#ops-104-set-up-cross-account-backup-iam-roles)
+- source-derived: [SS-10](#ss-10-extract-reconciliation-scenarios-from-master-books)
 - spdx: [DEV-20](#dev-20-check-spdx-licence-headers)
+- spec.html: [SS-07](#ss-07-publish-the-diya-gl-format-specification-page)
 - specialist agent: [DEV-25](#dev-25-maintain-the-specialist-agent-prompt-library)
 - spreadsheets contract: [HMRC-08](#hmrc-08-parse-vat-returns-from-a-bulk-csv-file)
+- spreadsheets homepage: [SS-21](#ss-21-serve-the-spreadsheets-product-catalogue-and-downloads)
 - spreadsheets mcp: [MCP-17](#mcp-17-build-and-hand-over-the-companys-own-book)
 - spreadsheets product: [SITE-11](#site-11-promote-sibling-products-and-partners)
+- spreadsheets_base_url: [SS-44](#ss-44-run-spreadsheets-behaviour-tests)
+- spreadsheetsbehaviour: [SS-44](#ss-44-run-spreadsheets-behaviour-tests)
+- spreadsheetsstack: [SS-35](#ss-35-cdk-spreadsheetsstack)
 - sqs: [OPS-87](#ops-87-process-sqs-message-batches-in-lambda-workers)
 - ssm parameter: [OPS-19](#ops-19-kill-switch-to-stop-unattended-agent-workflows), [OPS-77](#ops-77-silence-alarms-during-deployment-teardown)
 - sso window: [DEV-30](#dev-30-run-the-delivery-cycle-unattended)
@@ -6445,17 +7419,19 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - stackname: [OPS-08](#ops-08-deploy-a-single-cdk-stack-on-demand)
 - staging: [MCP-17](#mcp-17-build-and-hand-over-the-companys-own-book)
 - staging directory: [DATA-50](#data-50-resolve-finance-staging-directory-paths)
+- stale branches: [SS-53](#ss-53-clean-up-stale-branches-and-worktrees)
 - stale deployment sweep: [DEV-34](#dev-34-clean-up-stale-deployments-and-branches)
 - standalone cdk app: [DATA-17](#data-17-export-aws-billing-data-in-focus-format)
 - standalone harness: [HMRC-35](#hmrc-35-spike-test-the-itsa-sandbox-oauth-and-business-details-flow)
 - statement: [MCP-16](#mcp-16-parse-paypal-statements-into-diya-gl-lines)
-- static analysis: [OPS-30](#ops-30-run-codeql-security-scanning)
+- static analysis: [OPS-30](#ops-30-run-codeql-security-scanning), [SS-40](#ss-40-run-codeql-scanning)
 - static pages: [SITE-10](#site-10-serve-general-site-pages)
 - status clear: [HMRC-02](#hmrc-02-retrieve-a-submitted-vat-return)
 - status codes: [SITE-07](#site-07-format-http-responses-and-errors)
 - status messages: [SITE-14](#site-14-render-page-chrome-and-widgets)
 - status stack: [DEV-12](#dev-12-prove-the-client-status-stack-and-fetchauth)
 - stdio: [MCP-01](#mcp-01-expose-the-submission-mcp-server-and-tools)
+- stdio mcp server: [SS-06](#ss-06-serve-the-diya-gl-mcp-server)
 - steady-state target: [DATA-30](#data-30-sql-views-cost)
 - step definitions: [HMRC-36](#hmrc-36-provide-itsa-behaviour-test-step-helpers)
 - step functions: [DATA-22](#data-22-orchestrate-the-nightly-ingestion-workflow)
@@ -6468,6 +7444,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - stripe gross fee split: [DATA-51](#data-51-turn-staged-stripe-activity-into-diya-gl-lines)
 - stripe import: [MCP-13](#mcp-13-import-stripe-transaction-and-payout-lines)
 - stripe listen: [DEV-19](#dev-19-provide-shared-behaviour-test-fixtures-and-steps)
+- stripe payment links: [SS-22](#ss-22-take-stripe-and-paypal-donations)
 - stripe payouts: [DATA-49](#data-49-stage-stripe-transactions-for-reconciliation)
 - stripe price by interval: [BILL-35](#bill-35-load-and-query-the-productactivity-catalogue)
 - stripe reconciliation: [DATA-09](#data-09-reconcile-stripe-payments-into-the-lake), [DATA-51](#data-51-turn-staged-stripe-activity-into-diya-gl-lines)
@@ -6517,6 +7494,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - support triage: [OPS-18](#ops-18-run-alarm-and-support-triage), [DEV-25](#dev-25-maintain-the-specialist-agent-prompt-library)
 - supportedidentityproviders: [DEV-16](#dev-16-manage-the-durable-cognito-test-user-lifecycle)
 - suppress alerts: [OPS-77](#ops-77-silence-alarms-during-deployment-teardown)
+- sw.js: [SS-29](#ss-29-serve-diya-gl-as-an-offline-pwa)
 - swagger spec: [DEV-13](#dev-13-generate-the-openapi-spec-from-cdk-route-definitions)
 - swagger ui: [DEV-06](#dev-06-simulate-hmrc-test-user-provisioning-and-api-docs)
 - sweep: [OPS-13](#ops-13-auto-destroy-stale-ci-deployments)
@@ -6530,6 +7508,8 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - table change: [DATA-04](#data-04-stream-dynamodb-table-changes-into-the-lake)
 - table name lookup: [OPS-136](#ops-136-retrieve-cloudformation-stack-outputs)
 - tagging: [BILL-23](#bill-23-store-diya-gl-books-in-s3)
+- target/zips: [SS-09](#ss-09-build-package-zips-and-the-catalogue)
+- tax data update: [SS-19](#ss-19-update-annual-hmrc-tax-rate-data)
 - tax liability: [HMRC-18](#hmrc-18-manage-itsa-tax-liability-adjustments), [HMRC-19](#hmrc-19-calculate-itsa-tax-liability)
 - tax liability adjustments: [HMRC-18](#hmrc-18-manage-itsa-tax-liability-adjustments), [DEV-09](#dev-09-simulate-hmrc-itsa-mtd-api)
 - tax year: [HMRC-11](#hmrc-11-retrieve-itsa-status), [HMRC-19](#hmrc-19-calculate-itsa-tax-liability), [HMRC-20](#hmrc-20-retrieve-itsa-crystallisation-obligations), [HMRC-21](#hmrc-21-submit-the-itsa-final-declaration), [HMRC-27](#hmrc-27-validate-hmrc-identifiers-dates-and-amounts)
@@ -6541,6 +7521,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - telegram: [OPS-70](#ops-70-forward-operational-activity-events-to-telegram), [OPS-72](#ops-72-forward-bedrock-budget-alerts), [OPS-35](#ops-35-verify-third-party-console-configuration-against-declared-state)
 - telegram alert: [HMRC-26](#hmrc-26-monitor-hmrc-fraud-prevention-header-compliance), [DATA-01](#data-01-publish-activity-events-to-the-bus)
 - telegram forwarder: [DATA-16](#data-16-alert-on-cost-budget-and-anomaly-thresholds)
+- template: [SS-08](#ss-08-generate-spreadsheet-packages-from-product-modules)
 - terms: [SITE-10](#site-10-serve-general-site-pages)
 - test bundle: [BILL-43](#bill-43-build-the-frontend-test-bundle)
 - test company: [CH-12](#ch-12-generate-synthetic-test-companies)
@@ -6549,18 +7530,23 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - test mode: [BILL-25](#bill-25-retrieve-a-stripe-checkout-sessions-status)
 - test naming: [DEV-26](#dev-26-enforce-claude-code-conventions-via-rules-and-hooks)
 - test report: [DEV-17](#dev-17-export-and-embed-dynamodb-test-state-in-reports)
+- test router: [SS-42](#ss-42-route-tests-by-blast-radius)
 - test step: [DEV-19](#dev-19-provide-shared-behaviour-test-fixtures-and-steps)
 - test suite: [OPS-26](#ops-26-run-the-automated-test-suite-in-ci)
 - test support api: [HMRC-34](#hmrc-34-file-a-full-itsa-tax-year-in-sandbox)
 - test user: [DEV-06](#dev-06-simulate-hmrc-test-user-provisioning-and-api-docs), [DEV-16](#dev-16-manage-the-durable-cognito-test-user-lifecycle)
 - test-data-link: [DEV-12](#dev-12-prove-the-client-status-stack-and-fetchauth)
+- test-scope: [SS-42](#ss-42-route-tests-by-blast-radius)
+- test.yml: [SS-43](#ss-43-run-the-product-generation-and-test-workflows)
 - test_auth_password: [OPS-68](#ops-68-provision-and-assume-roles-for-test-user-provisioning)
 - test_auth_username: [OPS-68](#ops-68-provision-and-assume-roles-for-test-user-provisioning)
 - testcontext: [DEV-17](#dev-17-export-and-embed-dynamodb-test-state-in-reports)
 - text spacing: [OPS-96](#ops-96-scan-pages-for-accessibility-violations)
+- text-spacing: [SS-45](#ss-45-run-compliance-checks)
 - third-party console: [OPS-35](#ops-35-verify-third-party-console-configuration-against-declared-state)
 - threat detection: [OPS-75](#ops-75-run-nightly-security-lake-analysis)
 - tidy repo: [DEV-34](#dev-34-clean-up-stale-deployments-and-branches)
+- tiers: [SS-42](#ss-42-route-tests-by-blast-radius)
 - time budget: [OPS-57](#ops-57-dispatch-agentic-lib-board-backlog-and-pr-agents)
 - time window: [OPS-76](#ops-76-gather-alarm-evidence-for-investigation)
 - timeout: [CH-10](#ch-10-fetch-http-with-a-timeout)
@@ -6580,6 +7566,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - toolkit stack: [OPS-98](#ops-98-bootstrap-the-cdk-toolkit-across-accounts)
 - totp: [DEV-16](#dev-16-manage-the-durable-cognito-test-user-lifecycle)
 - traceparent: [SITE-17](#site-17-trace-and-secure-client-requests)
+- trackevent: [SS-33](#ss-33-send-diya-gl-ga4-events)
 - trademarks: [SITE-20](#site-20-document-business-governance-and-positioning)
 - traffic by country: [DATA-27](#data-27-sql-views-activity-and-traffic)
 - traffic report: [DATA-06](#data-06-pull-ga4-reports-and-bigquery-event-export)
@@ -6610,9 +7597,11 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - uk property business: [HMRC-09](#hmrc-09-retrieve-itsa-business-details)
 - uk property period: [HMRC-14](#hmrc-14-submit-and-manage-uk-property-periodic-updates)
 - unassign: [BILL-03](#bill-03-delete-a-bundle)
+- unattended: [SS-49](#ss-49-run-the-delivery-cycle-unattended)
 - unattended agent: [OPS-17](#ops-17-redact-and-gate-unattended-agent-output-before-publishing), [OPS-19](#ops-19-kill-switch-to-stop-unattended-agent-workflows)
 - unattended agent workflow: [DATA-15](#data-15-catalogue-workflow-probe-and-agent-run-data)
 - unattended loop: [DEV-30](#dev-30-run-the-delivery-cycle-unattended)
+- undo stack: [SS-04](#ss-04-apply-book-edits-and-derivations)
 - unit tests: [OPS-26](#ops-26-run-the-automated-test-suite-in-ci)
 - unlimited sentinel: [BILL-33](#bill-33-enforce-and-consume-activity-tokens)
 - unlisted: [OPS-93](#ops-93-publish-demo-videos-to-youtube)
@@ -6622,10 +7611,11 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - unsigned commit: [OPS-29](#ops-29-verify-commit-signatures-on-pull-requests)
 - unsigned jwt: [DEV-02](#dev-02-simulate-local-app-oauth)
 - unverified issue: [SITE-05](#site-05-submit-support-tickets)
+- update workflow: [SS-41](#ss-41-run-the-scheduled-dependency-and-tax-data-update-workflow)
 - updateuserbundles: [BILL-03](#bill-03-delete-a-bundle)
 - upload book: [BILL-17](#bill-17-upload-a-diya-gl-book)
 - upsert record: [OPS-127](#ops-127-upsert-route53-alias-records-via-custom-resource)
-- us-east-1: [OPS-118](#ops-118-provision-the-observability-stack-in-us-east-1)
+- us-east-1: [OPS-118](#ops-118-provision-the-observability-stack-in-us-east-1), [SS-37](#ss-37-request-acm-certificates)
 - usage history: [SITE-10](#site-10-serve-general-site-pages)
 - user attributes: [OPS-137](#ops-137-export-cognito-users-for-reporting-or-backup)
 - user books: [BILL-19](#bill-19-list-a-users-diya-gl-books)
@@ -6635,8 +7625,10 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - user-agent classification: [DATA-23](#data-23-classify-visitor-kind-as-human-bot-or-synthetic)
 - user-restricted api: [HMRC-33](#hmrc-33-drive-hmrcs-sandbox-authorisation-flow-for-test-scripts)
 - utr: [HMRC-27](#hmrc-27-validate-hmrc-identifiers-dates-and-amounts)
+- v2 schema: [SS-02](#ss-02-validate-diya-gl-books-against-the-v2-schema)
 - validate workflows: [OPS-34](#ops-34-validate-github-actions-workflow-files)
 - validatelines: [DATA-51](#data-51-turn-staged-stripe-activity-into-diya-gl-lines)
+- validation: [SS-02](#ss-02-validate-diya-gl-books-against-the-v2-schema)
 - validity: [BILL-08](#bill-08-check-a-passs-validity)
 - vat account: [HMRC-05](#hmrc-05-retrieve-vat-payments), [HMRC-06](#hmrc-06-retrieve-vat-penalties)
 - vat box config: [HMRC-07](#hmrc-07-build-and-validate-9-box-vat-return-data)
@@ -6659,12 +7651,17 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - vatreturncsverror: [HMRC-08](#hmrc-08-parse-vat-returns-from-a-bulk-csv-file)
 - vendor ip: [HMRC-25](#hmrc-25-build-hmrc-fraud-prevention-headers)
 - vendored library: [SITE-19](#site-19-generate-qr-codes)
+- verdict: [SS-12](#ss-12-judge-reconciliation-reports-with-an-llm)
+- verdict line: [SS-42](#ss-42-route-tests-by-blast-radius)
 - verification: [MCP-17](#mcp-17-build-and-hand-over-the-companys-own-book)
 - verification field: [OPS-29](#ops-29-verify-commit-signatures-on-pull-requests)
 - verify ingestion jobs: [DATA-22](#data-22-orchestrate-the-nightly-ingestion-workflow)
 - verify pipeline: [DATA-22](#data-22-orchestrate-the-nightly-ingestion-workflow)
+- verify roundtrip: [SS-14](#ss-14-verify-export-and-report-roundtrip-and-stability)
 - verify setup: [OPS-102](#ops-102-verify-the-multi-account-aws-setup)
+- verify stability: [SS-14](#ss-14-verify-export-and-report-roundtrip-and-stability)
 - verify transition: [OPS-78](#ops-78-verify-an-alarm-issues-claimed-transition)
+- version roll: [SS-20](#ss-20-publish-diya-gl-to-npm-ghcr-and-the-homebrew-tap)
 - versioned fetch: [BILL-20](#bill-20-fetch-a-versioned-diya-gl-book)
 - versioning: [BILL-17](#bill-17-upload-a-diya-gl-book)
 - video artefacts: [OPS-92](#ops-92-redact-secrets-from-video-artefacts)
@@ -6674,13 +7671,15 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - video publish: [DEV-41](#dev-41-publish-videos-to-the-youtube-channel)
 - videos page: [OPS-94](#ops-94-play-demo-videos-on-the-public-site)
 - view vat return: [HMRC-02](#hmrc-02-retrieve-a-submitted-vat-return)
+- view_item_list: [SS-32](#ss-32-send-ga4-ecommerce-and-download-events)
 - viewer request: [OPS-131](#ops-131-serve-cloudfront-custom-error-pages)
 - visibility: [BILL-23](#bill-23-store-diya-gl-books-in-s3)
 - visitor classification: [SITE-04](#site-04-track-visits-via-session-beacon)
-- visitor kind: [DATA-23](#data-23-classify-visitor-kind-as-human-bot-or-synthetic)
+- visitor kind: [DATA-23](#data-23-classify-visitor-kind-as-human-bot-or-synthetic), [SS-31](#ss-31-load-ga4-analytics-with-consent-gating)
 - visitor_kind property: [DATA-24](#data-24-load-ga4-analytics-on-site-pages)
 - visitors by kind: [DATA-27](#data-27-sql-views-activity-and-traffic)
 - vitest config: [DEV-23](#dev-23-configure-the-test-and-lint-toolchains)
+- volatile cells: [SS-14](#ss-14-verify-export-and-report-roundtrip-and-stability)
 - vrn: [HMRC-27](#hmrc-27-validate-hmrc-identifiers-dates-and-amounts), [DEV-06](#dev-06-simulate-hmrc-test-user-provisioning-and-api-docs)
 - vulnerability disclosure: [OPS-65](#ops-65-document-security-policy-and-disclosure)
 - waf: [OPS-74](#ops-74-detect-waf-blocked-scan-attacks)
@@ -6688,9 +7687,11 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - wait for ci deploys: [OPS-11](#ops-11-queue-ci-branch-deploys-in-creation-order)
 - wait for main deploy: [OPS-24](#ops-24-gate-probes-on-the-main-apex-deploy)
 - wake: [DEV-36](#dev-36-resume-normal-work-from-cool-down)
+- wake skill: [SS-55](#ss-55-resume-normal-work-from-cool-down)
 - warm route: [SITE-13](#site-13-warm-backend-routes-via-prefetch-scripts)
 - watch: [DEV-31](#dev-31-watch-github-ci-to-green)
 - watch ci: [OPS-134](#ops-134-monitor-github-actions-ci-from-the-cli)
+- watch skill: [SS-50](#ss-50-watch-github-ci-to-green)
 - wave dispatch: [DEV-28](#dev-28-work-nextmd-as-dispatched-sub-agents)
 - wcag: [OPS-97](#ops-97-compile-the-compliance-audit-report), [OPS-62](#ops-62-report-accessibility-penetration-testing)
 - wcag 1.4.12: [OPS-96](#ops-96-scan-pages-for-accessibility-violations)
@@ -6709,7 +7710,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - what does the repo do: [DEV-43](#dev-43-find-existing-tooling-before-building-any)
 - window globals: [SITE-18](#site-18-bootstrap-the-frontend-module-bundle)
 - withdraw invite: [BILL-14](#bill-14-cancel-a-pending-client-authorisation-invite)
-- workbook set: [MCP-11](#mcp-11-seed-a-book-from-a-workbook-set)
+- workbook set: [MCP-11](#mcp-11-seed-a-book-from-a-workbook-set), [SS-03](#ss-03-read-and-write-diya-gl-interchange-formats)
 - worker handler: [HMRC-30](#hmrc-30-persist-async-hmrc-api-request-state)
 - workflow lint: [OPS-34](#ops-34-validate-github-actions-workflow-files)
 - workflow permissions: [OPS-33](#ops-33-enforce-workflow-to-workflow-permission-grants)
@@ -6719,16 +7720,20 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - workload identity pool: [DATA-42](#data-42-sync-gcp-workload-identity-and-org-policy)
 - workspace mirror: [DATA-20](#data-20-publish-the-nightly-raw-export-for-indexing)
 - worktree catalogue: [DEV-32](#dev-32-merge-every-pr-that-is-ready)
-- worktree removal: [DEV-34](#dev-34-clean-up-stale-deployments-and-branches)
-- worktree sub-agents: [DEV-28](#dev-28-work-nextmd-as-dispatched-sub-agents)
+- worktree removal: [DEV-34](#dev-34-clean-up-stale-deployments-and-branches), [SS-53](#ss-53-clean-up-stale-branches-and-worktrees)
+- worktree sub-agents: [DEV-28](#dev-28-work-nextmd-as-dispatched-sub-agents), [SS-47](#ss-47-work-nextmd-as-dispatched-sub-agents)
 - write-cred-configs: [DATA-42](#data-42-sync-gcp-workload-identity-and-org-policy)
 - write-truncated table: [DATA-39](#data-39-sync-ga4-in-bigquery-scheduled-queries)
+- write-workbook: [SS-05](#ss-05-run-the-diya-gl-cli), [SS-16](#ss-16-write-workbooks-from-diya-gl-data)
+- writing rules: [SS-57](#ss-57-write-plain-human-prose)
 - writing style: [DEV-38](#dev-38-write-plain-human-prose)
 - x-ray: [OPS-76](#ops-76-gather-alarm-evidence-for-investigation)
 - x-ray console: [OPS-80](#ops-80-build-aws-console-deep-links-for-operators)
 - x-request-id: [SITE-17](#site-17-trace-and-secure-client-requests)
 - xbrl validator: [CH-13](#ch-13-map-the-frc-ixbrl-taxonomy-and-validate-accounts)
+- xls roundtrip: [SS-58](#ss-58-excel-xml-manipulation-reference)
 - xlsx export: [MCP-03](#mcp-03-load-and-save-diya-gl-books-via-mcp)
+- xlsx xml: [SS-58](#ss-58-excel-xml-manipulation-reference)
 - xml: [CH-11](#ch-11-parse-xml-safely)
 - xml gateway: [CH-08](#ch-08-file-micro-entity-accounts-to-companies-house), [CH-11](#ch-11-parse-xml-safely), [DEV-04](#dev-04-simulate-companies-house-identity-and-filing)
 - xml submission: [CH-05](#ch-05-file-a-change-of-registered-office-address)
@@ -6738,6 +7743,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - year month day: [DATA-54](#data-54-relayout-the-lakes-yearmonthday-objects-into-dt-prefixes)
 - year-end: [HMRC-13](#hmrc-13-submit-and-manage-the-self-employment-annual-summary)
 - year-end calculation: [HMRC-16](#hmrc-16-trigger-and-adjust-the-business-source-adjustable-summary)
+- year-end sequence: [SS-08](#ss-08-generate-spreadsheet-packages-from-product-modules)
 - year-end summary: [HMRC-15](#hmrc-15-submit-and-manage-the-uk-property-annual-summary)
 - youtube channel config: [DATA-46](#data-46-configure-the-youtube-channel-as-code)
 - youtube check: [OPS-53](#ops-53-verify-youtube-channel-consistency-weekly)
@@ -6747,6 +7753,8 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - youtube-check.yml: [OPS-53](#ops-53-verify-youtube-channel-consistency-weekly)
 - youtube-upload.js: [DATA-46](#data-46-configure-the-youtube-channel-as-code), [DEV-41](#dev-41-publish-videos-to-the-youtube-channel)
 - zip package: [BILL-17](#bill-17-upload-a-diya-gl-book)
+- zip upload: [SS-36](#ss-36-deploy-the-spreadsheets-and-diya-gl-sites)
+- zips: [SS-21](#ss-21-serve-the-spreadsheets-product-catalogue-and-downloads)
 <!-- /generated:keywords -->
 
 ## Method

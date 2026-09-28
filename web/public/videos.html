@@ -8,7 +8,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta
       name="description"
-      content="Short recordings of DIY Accounting Submit in use: checking VAT obligations, submitting a VAT return to HMRC, viewing returns, liabilities, payments and penalties, and the Self Assessment sandbox."
+      content="Short recordings of DIY Accounting Submit in use, one task each: submitting a VAT return to HMRC, filing a Self Assessment quarterly update, signing in and taking out a day pass, and starting a company's confirmation statement, plus every other video by area."
     />
     <link rel="canonical" href="https://submit.diyaccounting.co.uk/videos.html" />
     <link rel="icon" href="/favicon.ico" sizes="any" />
@@ -32,7 +32,7 @@
       }
       .videos-intro,
       .video-section,
-      #videoContents {
+      .video-contents-nav {
         background: rgba(255, 255, 255, 0.95);
         border-radius: 8px;
         padding: 1.25em 1.5em;
@@ -55,32 +55,32 @@
       .video-section p {
         line-height: 1.6;
       }
-      #videoContents h2 {
+      .video-contents-nav h2 {
         margin: 0 0 0.75em;
         font-size: 1.3em;
         color: var(--color-text-primary);
       }
-      #videoContents h3 {
+      .video-contents-nav h3 {
         margin: 1em 0 0.4em;
         font-size: 1em;
         font-weight: 600;
         color: var(--color-text-secondary);
       }
-      #videoContents .video-contents-groups > h3:first-child {
+      .video-contents-nav .video-contents-groups > h3:first-child {
         margin-top: 0;
       }
-      #videoContents ul {
+      .video-contents-nav ul {
         margin: 0;
         padding-left: 1.25em;
       }
-      #videoContents li {
+      .video-contents-nav li {
         margin: 0.3em 0;
       }
-      #videoContents a {
+      .video-contents-nav a {
         color: var(--color-brand-primary);
       }
-      #videoContents a:hover,
-      #videoContents a:focus-visible {
+      .video-contents-nav a:hover,
+      .video-contents-nav a:focus-visible {
         color: var(--color-brand-primary-dark);
       }
       .video-frame {
@@ -134,7 +134,7 @@
           </p>
         </div>
 
-        <nav id="videoContents" aria-label="Contents" hidden>
+        <nav id="videoContents" class="video-contents-nav" aria-label="Contents" hidden>
           <h2>Contents</h2>
           <div class="video-contents-groups"></div>
         </nav>
@@ -154,164 +154,9 @@
     <script src="widgets/auth-status.js"></script>
     <script src="widgets/status-messages.js"></script>
     <script type="module" src="widgets/view-source-link.js"></script>
-    <script>
-      // Renders one section per entry of videos/publish.json that carries a videoId. The manifest
-      // is copied from the repository's videos/publish.json (npm run videos:manifest), so a new
-      // upload appears here without a page edit.
-      (function () {
-        const MANIFEST_URL = "videos/publish.json";
-        const EMBED_BASE = "https://www.youtube-nocookie.com/embed/";
-        const TITLE_PREFIX = "DIY Accounting Submit: ";
-        const GROUP_LABELS = {
-          "vat": "VAT",
-          "itsa": "Self Assessment (sandbox)",
-          "account": "Account and passes",
-          "companies-house": "Companies House",
-        };
-
-        // The section heading keeps the full title; only the Contents link drops the prefix
-        // every title repeats, since the page's own heading already says whose product this is.
-        function contentsLinkText(title) {
-          const text = String(title ?? "");
-          return text.startsWith(TITLE_PREFIX) ? text.slice(TITLE_PREFIX.length) : text;
-        }
-
-        // Buckets videos by their publish.json "group", one bucket per group in the order the
-        // group first appears, videos within a bucket kept in publish.json order.
-        function groupVideos(videos) {
-          const order = [];
-          const byGroup = new Map();
-          for (const video of videos) {
-            const key = video.group ?? "";
-            if (!byGroup.has(key)) {
-              byGroup.set(key, []);
-              order.push(key);
-            }
-            byGroup.get(key).push(video);
-          }
-          return order.map((key) => ({ label: GROUP_LABELS[key] ?? key, videos: byGroup.get(key) }));
-        }
-
-        function contentsGroupElements(group) {
-          const heading = document.createElement("h3");
-          heading.textContent = group.label;
-          const list = document.createElement("ul");
-          list.replaceChildren(
-            ...group.videos.map((video) => {
-              const link = document.createElement("a");
-              link.href = `#${video.id}`;
-              link.textContent = contentsLinkText(video.title);
-              const item = document.createElement("li");
-              item.append(link);
-              return item;
-            }),
-          );
-          return [heading, list];
-        }
-
-        function escapeHtml(text) {
-          return String(text ?? "").replace(
-            /[&<>"']/g,
-            (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c],
-          );
-        }
-
-        // The first two sentences of a description, split on a full stop followed by whitespace.
-        function firstTwoSentences(description) {
-          const sentences = String(description ?? "")
-            .split(/(?<=\.)\s+/)
-            .filter(Boolean);
-          return sentences.slice(0, 2).join(" ");
-        }
-
-        function shareLink(id) {
-          const url = new URL(window.location.href);
-          url.search = "";
-          url.hash = id;
-          return url.toString();
-        }
-
-        function sectionHtml(video) {
-          const id = escapeHtml(video.id);
-          const embedSrc = EMBED_BASE + encodeURIComponent(video.videoId);
-          return `
-            <section class="video-section" id="${id}" data-video-id="${escapeHtml(video.videoId)}">
-              <h2>${escapeHtml(video.title)}</h2>
-              <p>${escapeHtml(firstTwoSentences(video.description))}</p>
-              <div class="video-frame">
-                <iframe
-                  src="${embedSrc}"
-                  title="${escapeHtml(video.title)}"
-                  loading="lazy"
-                  allow="accelerometer; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
-                  referrerpolicy="strict-origin-when-cross-origin"
-                  allowfullscreen
-                ></iframe>
-              </div>
-              <div class="video-share">
-                <a class="video-link" href="videos.html#${id}">Link to this video</a>
-                <button type="button" class="btn btn-small copy-link" data-target="${id}">Copy link</button>
-                <span class="copied" hidden>Copied</span>
-              </div>
-            </section>`;
-        }
-
-        async function render() {
-          const container = document.getElementById("videoList");
-          let manifest;
-          try {
-            const response = await fetch(MANIFEST_URL, { cache: "no-store" });
-            if (!response.ok) throw new Error(`HTTP ${response.status}`);
-            manifest = await response.json();
-          } catch (err) {
-            container.innerHTML = '<p class="service-description">The video list could not be loaded.</p>';
-            console.error("[videos.html] manifest load failed:", err);
-            return;
-          }
-          const videos = (manifest.videos || []).filter((v) => v && v.videoId);
-          if (videos.length === 0) {
-            container.innerHTML = '<p class="service-description">No videos are published yet.</p>';
-            return;
-          }
-          container.innerHTML = videos.map(sectionHtml).join("\n");
-
-          const navContents = document.getElementById("videoContents");
-          if (navContents) {
-            const groupsContainer = navContents.querySelector(".video-contents-groups");
-            groupsContainer.replaceChildren(...groupVideos(videos).flatMap(contentsGroupElements));
-            navContents.hidden = false;
-          }
-
-          container.querySelectorAll("button.copy-link").forEach((button) => {
-            button.addEventListener("click", async () => {
-              const id = button.getAttribute("data-target");
-              const link = shareLink(id);
-              const copied = button.parentElement.querySelector(".copied");
-              try {
-                await navigator.clipboard.writeText(link);
-                copied.hidden = false;
-                setTimeout(() => {
-                  copied.hidden = true;
-                }, 2000);
-              } catch {
-                window.prompt("Copy this link", link);
-              }
-            });
-          });
-
-          // A hash arriving before the sections existed has nothing to scroll to; scroll now.
-          if (window.location.hash) {
-            const target = document.getElementById(window.location.hash.slice(1));
-            if (target) target.scrollIntoView();
-          }
-        }
-
-        if (document.readyState === "loading") {
-          document.addEventListener("DOMContentLoaded", render, { once: true });
-        } else {
-          render();
-        }
-      })();
+    <script type="module">
+      import { renderVideoPage } from "./widgets/video-pages.js";
+      renderVideoPage({ mode: "index" });
     </script>
   </body>
 </html>

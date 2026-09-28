@@ -110,6 +110,7 @@ describe("billingCheckoutPost", () => {
     expect(params.metadata.hashedSub.length).toBe(64); // SHA-256 hex
     expect(params.subscription_data.metadata.hashedSub).toBe(params.metadata.hashedSub);
     expect(params.subscription_data.metadata.bundleId).toBe("resident-pro");
+    expect(params.subscription_data.metadata.actor).toBe("customer");
     expect(params.line_items).toEqual([{ price: "price_test_123", quantity: 1 }]);
     expect(params.success_url).toBe(
       "https://test-submit.diyaccounting.co.uk/bundles.html?checkout=success&session_id={CHECKOUT_SESSION_ID}",

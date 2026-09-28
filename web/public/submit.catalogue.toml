@@ -344,8 +344,8 @@ paths = ["hmrc/itsa/dashboard.html", "hmrc/itsa/selfEmploymentPeriod.html", "hmr
 hmrcScopesRequired = ["write:self-assessment", "read:self-assessment"]
 environments = ["local", "test", "simulator", "proxy", "ci"]
 
-# self-employed-read: the free ITSA reads — business details, obligations, calculations, and
-# the self-employment/UK property period lists and views
+# self-employed-read: the free ITSA reads — business details, obligations, and the
+# self-employment/UK property period lists and views
 # Unlocked by: the same bundles as self-employed
 # Payment: None
 # display: never - reached from the self-employed dashboard, not its own home page entry
@@ -356,8 +356,21 @@ display = "never"
 bundles = ["resident", "resident-pro"]
 tokenCost = 0
 metered = true
-paths = ["hmrc/itsa/businessDetails.html", "hmrc/itsa/obligations.html", "hmrc/itsa/taxCalculation.html", "hmrc/itsa/selfEmploymentPeriods.html", "hmrc/itsa/selfEmploymentPeriodView.html", "hmrc/itsa/ukPropertyPeriods.html", "hmrc/itsa/ukPropertyPeriodView.html"]
+paths = ["hmrc/itsa/businessDetails.html", "hmrc/itsa/obligations.html", "hmrc/itsa/selfEmploymentPeriods.html", "hmrc/itsa/selfEmploymentPeriodView.html", "hmrc/itsa/ukPropertyPeriods.html", "hmrc/itsa/ukPropertyPeriodView.html"]
 hmrcScopesRequired = ["read:self-assessment"]
+environments = ["local", "test", "simulator", "proxy", "ci"]
+
+# self-employed-calculation: the tax calculation page. It triggers a calculation at HMRC, which
+# needs write:self-assessment, and files nothing, so it costs nothing.
+[[activities]]
+id = "self-employed-calculation"
+name = "Self Assessment tax calculation (HMRC)"
+display = "never"
+bundles = ["resident", "resident-pro"]
+tokenCost = 0
+metered = true
+paths = ["hmrc/itsa/taxCalculation.html"]
+hmrcScopesRequired = ["write:self-assessment", "read:self-assessment"]
 environments = ["local", "test", "simulator", "proxy", "ci"]
 
 # self-employed-year-end: the writes that finish or correct a self-employment tax year

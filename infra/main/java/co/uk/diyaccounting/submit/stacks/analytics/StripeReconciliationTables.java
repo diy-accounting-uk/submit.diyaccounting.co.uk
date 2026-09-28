@@ -184,6 +184,7 @@ public class StripeReconciliationTables {
                 "failure_code", "string",
                 "customer", "string",
                 "invoice", "string",
+                "livemode", "boolean",
                 "bundle_id", "string");
     }
 
@@ -199,6 +200,7 @@ public class StripeReconciliationTables {
                 "customer", "string",
                 "price_id", "string",
                 "unit_amount", "bigint",
-                "bundle_id", "string");
+                "bundle_id", "string",
+                "actor", "string");
     }
 }

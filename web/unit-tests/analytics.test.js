@@ -25,13 +25,19 @@ describe("web/public/lib/analytics.js", () => {
     dataLayerPushes = [];
     fetchResponseText = "GA4_MEASUREMENT_ID=G-TESTMEASURE\n";
 
+    const storedItems = {};
     global.localStorage = {
-      getItem: vi.fn(() => null),
+      getItem: vi.fn((key) => (key in storedItems ? storedItems[key] : null)),
+      setItem: vi.fn((key, value) => {
+        storedItems[key] = value;
+      }),
     };
 
     global.sessionStorage = {
       getItem: vi.fn(() => null),
     };
+
+    global.location = { search: "" };
 
     // Node defines a getter-only global.navigator; vi.stubGlobal replaces it safely for the test.
     vi.stubGlobal("navigator", { userAgent: "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15) AppleWebKit/605.1.15" });
@@ -154,5 +160,63 @@ describe("web/public/lib/analytics.js", () => {
       .map((entry) => JSON.parse(entry));
 
     expect(inlineDomains.sort()).toEqual(tomlHosts.sort());
+  });
+
+  describe("landing attribution capture", () => {
+    it("stores utm and click-id params from a tagged landing", () => {
+      global.location.search = "?utm_source=google&utm_medium=cpc&gclid=abc123";
+
+      eval(scriptContent);
+
+      const stored = JSON.parse(global.localStorage.setItem.mock.calls[0][1]);
+      expect(stored).toMatchObject({ utmSource: "google", utmMedium: "cpc", gclid: "abc123" });
+      expect(typeof stored.landedAt).toBe("string");
+    });
+
+    it("stores a bare record with no tag fields on a first, untagged visit", () => {
+      global.location.search = "";
+
+      eval(scriptContent);
+
+      const stored = JSON.parse(global.localStorage.setItem.mock.calls[0][1]);
+      expect(stored).toEqual({ landedAt: stored.landedAt });
+    });
+
+    it("does not overwrite a still-valid stored landing on a later bare visit", () => {
+      global.localStorage.getItem = vi.fn((key) =>
+        key === "attribution.landing" ? JSON.stringify({ utmSource: "google", landedAt: new Date().toISOString() }) : null,
+      );
+      global.location.search = "";
+
+      eval(scriptContent);
+
+      expect(global.localStorage.setItem).not.toHaveBeenCalled();
+    });
+
+    it("replaces a stored landing when a new tagged landing arrives", () => {
+      global.localStorage.getItem = vi.fn((key) =>
+        key === "attribution.landing" ? JSON.stringify({ utmSource: "google", landedAt: new Date().toISOString() }) : null,
+      );
+      global.location.search = "?utm_source=newsletter&ref=partner-42";
+
+      eval(scriptContent);
+
+      const stored = JSON.parse(global.localStorage.setItem.mock.calls[0][1]);
+      expect(stored).toMatchObject({ utmSource: "newsletter", ref: "partner-42" });
+    });
+
+    it("treats a stored landing older than 90 days as expired, so a bare visit still writes", () => {
+      const staleLandedAt = new Date(Date.now() - 91 * 24 * 60 * 60 * 1000).toISOString();
+      global.localStorage.getItem = vi.fn((key) =>
+        key === "attribution.landing" ? JSON.stringify({ utmSource: "google", landedAt: staleLandedAt }) : null,
+      );
+      global.location.search = "";
+
+      eval(scriptContent);
+
+      expect(global.localStorage.setItem).toHaveBeenCalled();
+      const stored = JSON.parse(global.localStorage.setItem.mock.calls[0][1]);
+      expect(stored.utmSource).toBeUndefined();
+    });
   });
 });

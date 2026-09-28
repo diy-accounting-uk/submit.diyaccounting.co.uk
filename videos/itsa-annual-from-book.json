@@ -1,0 +1,200 @@
+{
+  "$schema": "./scene-script.schema.json",
+  "name": "itsa-annual-from-book",
+  "title": "Fill the annual submission from a book",
+  "description": "A signed-in walk through Making Tax Digital for Income Tax's annual submission: import the year's figures from a diya-gl book instead of typing them, claim the trading income allowance, and say why Class 4 National Insurance doesn't apply.",
+  "auth": "user",
+  "pages": [
+    "web/public/index.html",
+    "web/public/auth/login.html",
+    "web/public/bundles.html",
+    "web/public/hmrc/itsa/selfEmploymentPeriod.html",
+    "web/public/hmrc/itsa/annualSubmission.html"
+  ],
+  "hmrcServices": ["mtd-vat", "mtd-income-tax"],
+  "environments": ["ci"],
+  "viewport": { "width": 1920, "height": 1080 },
+  "deviceScaleFactor": 2,
+  "fps": 30,
+
+  "pacing": {
+    "perCharMs": 80,
+    "betweenActionsMs": 500,
+    "aroundMotionMs": 500,
+    "minResidualMs": 120,
+    "timerThresholdMs": 250,
+    "timerFullScaleMs": 5000,
+    "waitCompressionAfterMs": 6000,
+    "waitCompressionFactor": 8
+  },
+
+  "captions": {
+    "fontPx": 40,
+    "lineHeightPx": 56,
+    "maxLines": 2,
+    "maxCharsPerLine": 46,
+    "charsPerSecond": 16,
+    "minMs": 1200,
+    "fadeMs": 200,
+    "safeArea": { "topPct": 5, "bottomPct": 5, "sidePct": 12.5 }
+  },
+
+  "suppress": ["#feedbackEngagementBanner", "#feedbackEngagementSection"],
+
+  "finalHoldMs": 2500,
+
+  "scenes": [
+    {
+      "id": "home",
+      "chapter": "Home",
+      "still": true,
+      "fastForward": true,
+      "steps": [
+        {
+          "action": "goto",
+          "url": "/",
+          "waitFor": "#mainContent",
+          "caption": "This is a sandbox preview against HMRC's test service, not a live filing.",
+          "headline": "A sandbox preview",
+          "keyWord": "sandbox"
+        },
+        { "action": "point", "target": { "role": "heading", "name": "DIY Accounting Submit" }, "dwellMs": 300 },
+        { "action": "hold", "ms": 400 }
+      ]
+    },
+    {
+      "id": "sign-in",
+      "chapter": "Sign in",
+      "still": true,
+      "fastForward": true,
+      "steps": [
+        {
+          "action": "click",
+          "target": "a.login-link",
+          "caption": "Sign in with the account you already use.",
+          "headline": "Sign in first",
+          "keyWord": "Sign"
+        },
+        {
+          "action": "login",
+          "caption": "Your account keeps a whole year's filings in one place.",
+          "headline": "Confirm your identity",
+          "keyWord": "identity"
+        },
+        { "action": "consent" },
+        { "action": "hold", "ms": 400 }
+      ]
+    },
+    {
+      "id": "subscription",
+      "chapter": "Resident",
+      "still": true,
+      "fastForward": true,
+      "steps": [
+        {
+          "action": "click",
+          "target": { "role": "link", "name": "Bundles" },
+          "caption": "Bundles decide which activities you can run.",
+          "headline": "Open your bundles",
+          "keyWord": "bundles"
+        },
+        {
+          "action": "ensureBundle",
+          "bundle": "Resident",
+          "testPass": true,
+          "caption": "Resident opens the Self Assessment activities.",
+          "headline": "Unlock Self Assessment",
+          "keyWord": "Self"
+        },
+        { "action": "hold", "ms": 500 }
+      ]
+    },
+    {
+      "id": "file-self-employment-quarter",
+      "chapter": "File a quarter",
+      "offCamera": true,
+      "steps": [
+        { "action": "goto", "url": "/hmrc/itsa/selfEmploymentPeriod.html", "waitFor": "#itsaSelfEmploymentPeriodForm" },
+        { "action": "type", "target": "#nino", "text": "{{hmrcNino}}", "clear": true, "secret": true },
+        { "action": "fill", "target": "#businessId", "value": "XBIS00000000001" },
+        { "action": "fill", "target": "#taxYear", "value": "2026-27" },
+        { "action": "fill", "target": "#periodStartDate", "value": "2026-04-06" },
+        { "action": "fill", "target": "#periodEndDate", "value": "2026-07-05" },
+        { "action": "fill", "target": "#turnover", "value": "1000" },
+        { "action": "fill", "target": "#costOfGoods", "value": "150" },
+        { "action": "click", "target": "#submitBtn" },
+        { "action": "hmrcAuthorise", "timeoutMs": 60000 },
+        { "action": "await", "until": "#selfEmploymentPeriodResults", "label": "Filing the quarter", "timeoutMs": 60000 }
+      ]
+    },
+    {
+      "id": "annual-submission-from-book",
+      "chapter": "Year end: annual submission",
+      "still": true,
+      "steps": [
+        {
+          "action": "goto",
+          "url": "/hmrc/itsa/annualSubmission.html",
+          "waitFor": "#itsaAnnualLoadForm",
+          "caption": "Once the year's quarters are in, the year-end steps start here.",
+          "headline": "Year-end steps start",
+          "keyWord": "Year-end"
+        },
+        { "action": "type", "target": "#nino", "text": "{{hmrcNino}}", "clear": true, "secret": true },
+        { "action": "fill", "target": "#businessId", "value": "XBIS00000000001" },
+        { "action": "fill", "target": "#taxYear", "value": "2026-27" },
+        {
+          "action": "click",
+          "target": "#loadBtn",
+          "caption": "Load what HMRC already holds for the year.",
+          "headline": "Load the year so far",
+          "keyWord": "Load"
+        },
+        { "action": "await", "until": "#annualEditForm", "label": "Loading the annual submission" },
+        {
+          "action": "point",
+          "target": "#importDerivedFigures",
+          "dwellMs": 700,
+          "caption": "Or fill the form straight from your diya-gl book, instead of typing every figure.",
+          "headline": "Import from a book",
+          "keyWord": "Import"
+        },
+        { "action": "hold", "ms": 600 },
+        {
+          "action": "click",
+          "target": "#allowanceTypeTrading",
+          "caption": "Claim the trading income allowance instead of itemised ones.",
+          "headline": "Claim the trading allowance",
+          "keyWord": "allowance"
+        },
+        { "action": "fill", "target": "#tradingIncomeAllowance", "value": "1000" },
+        {
+          "action": "select",
+          "target": "#class4NicsExemptionReason",
+          "value": "over-state-pension-age",
+          "caption": "Say why Class 4 National Insurance doesn't apply: pension age, diver, non-resident.",
+          "headline": "Say why NICs don't apply",
+          "keyWord": "NICs"
+        },
+        {
+          "action": "click",
+          "target": "#saveBtn",
+          "caption": "Save the year's allowances and non-financial details.",
+          "headline": "Save it all",
+          "keyWord": "Save"
+        },
+        {
+          "action": "await",
+          "until": "#annualSubmissionResults",
+          "label": "Waiting for HMRC",
+          "timeoutMs": 60000,
+          "caption": "HMRC accepts the annual submission.",
+          "headline": "HMRC accepts the year",
+          "keyWord": "accepts"
+        },
+        { "action": "still", "name": "annual-submission-from-book" },
+        { "action": "hold", "ms": 1200 }
+      ]
+    }
+  ]
+}

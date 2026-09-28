@@ -27,7 +27,7 @@ import { fileURLToPath } from "url";
 const AWS_REGION = "eu-west-2";
 const AWS_REGION_UE1 = "us-east-1";
 
-// CloudFront invalidation paths - must match PublishStack.java lines 227-269
+// CloudFront invalidation paths - must match PublishStack.java lines 224-272
 const CLOUDFRONT_INVALIDATION_PATHS = [
   "/activities/*",
   "/auth/*",
@@ -42,6 +42,10 @@ const CLOUDFRONT_INVALIDATION_PATHS = [
   "/widgets/*",
   "/about.html",
   "/videos.html",
+  "/videos-hmrc-vat.html",
+  "/videos-hmrc-itsa.html",
+  "/videos-account.html",
+  "/videos-ch.html",
   "/videos/*",
   "/accessibility.html",
   "/bundles.html",
@@ -71,6 +75,7 @@ const CLOUDFRONT_INVALIDATION_PATHS = [
   "/submit.js",
   "/submit.version.txt",
   "/terms.html",
+  "/.well-known/security.txt",
   "/site.webmanifest",
   "/developer-mode.js",
 ];

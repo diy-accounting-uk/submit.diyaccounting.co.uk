@@ -165,7 +165,9 @@ class DataQualityTest {
         template.hasResourceProperties(
                 "AWS::Glue::DataQualityRuleset",
                 Match.objectLike(Map.of(
-                        "Ruleset", Match.stringLikeRegexp("[\\s\\S]*event_ts[\\s\\S]*now\\(\\) - 2 days[\\s\\S]*"))));
+                        "Ruleset",
+                        Match.stringLikeRegexp(
+                                "[\\s\\S]*event_ts[\\s\\S]*now\\(\\) - 2 days\\)" + " with threshold > 0[\\s\\S]*"))));
     }
 
     @Test
@@ -198,12 +200,18 @@ class DataQualityTest {
                     "no alarm in this construct should carry an SNS action: " + properties);
         }
 
-        for (String rulesetName : List.of(
-                "docs_env_activity_events_dq",
-                "docs_env_alarm_state_changes_dq",
-                "docs_env_dora_runs_dq",
-                "docs_env_compliance_accessibility_dq",
-                "docs_env_compliance_fraud_headers_dq")) {
+        // Glue's own published metric carries all four of these dimensions together (confirmed
+        // against a live evaluation run's CloudWatch metric, not just the ruleset name), so the
+        // alarm must supply every one of them or it never matches any datapoint Glue publishes.
+        for (Map.Entry<String, String> target : Map.of(
+                        "docs_env_activity_events_dq", "activity_events",
+                        "docs_env_alarm_state_changes_dq", "alarm_state_changes",
+                        "docs_env_dora_runs_dq", "dora_runs",
+                        "docs_env_compliance_accessibility_dq", "compliance_accessibility",
+                        "docs_env_compliance_fraud_headers_dq", "compliance_fraud_headers")
+                .entrySet()) {
+            String rulesetName = target.getKey();
+            String tableName = target.getValue();
             template.hasResourceProperties(
                     "AWS::CloudWatch::Alarm",
                     Match.objectLike(Map.of(
@@ -212,7 +220,11 @@ class DataQualityTest {
                             "MetricName",
                             "glue.data.quality.rules.failed",
                             "Dimensions",
-                            List.of(Map.of("Name", "RulesetName", "Value", rulesetName)))));
+                            Match.arrayWith(List.of(
+                                    Match.objectLike(Map.of("Name", "CatalogId", "Value", "111111111111")),
+                                    Match.objectLike(Map.of("Name", "Database", "Value", "docs_env_analytics")),
+                                    Match.objectLike(Map.of("Name", "Ruleset", "Value", rulesetName)),
+                                    Match.objectLike(Map.of("Name", "Table", "Value", tableName)))))));
         }
     }
 

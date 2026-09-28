@@ -466,6 +466,70 @@ describe("bundlePost ingestHandler", () => {
   });
 
   // ============================================================================
+  // Acquisition (MK-3)
+  // ============================================================================
+
+  test("writes the acquisition map on the account's first bundle grant", async () => {
+    const token = makeIdToken("user-first-acquisition");
+    const event = buildEventWithToken(token, {
+      bundleId: "day-guest",
+      acquisition: { utmSource: "google", utmMedium: "cpc", gclid: "abc123", landedAt: "2026-01-01T00:00:00.000Z" },
+    });
+    event.headers["x-wait-time-ms"] = "30000";
+
+    await bundlePostHandler(event);
+
+    const bundlePutCalls = mockSend.mock.calls.filter(
+      (call) => call[0] instanceof MockPutCommand && call[0].input.Item?.bundleId === "day-guest",
+    );
+    expect(bundlePutCalls[0][0].input.Item.acquisition).toEqual({
+      utmSource: "google",
+      utmMedium: "cpc",
+      gclid: "abc123",
+      landedAt: "2026-01-01T00:00:00.000Z",
+    });
+  });
+
+  test("omits the acquisition map when the client sends no stored source", async () => {
+    const token = makeIdToken("user-no-acquisition");
+    const event = buildEventWithToken(token, { bundleId: "day-guest" });
+    event.headers["x-wait-time-ms"] = "30000";
+
+    await bundlePostHandler(event);
+
+    const bundlePutCalls = mockSend.mock.calls.filter(
+      (call) => call[0] instanceof MockPutCommand && call[0].input.Item?.bundleId === "day-guest",
+    );
+    expect(bundlePutCalls[0][0].input.Item.acquisition).toBeUndefined();
+  });
+
+  test("never overwrites the account's acquisition on a later bundle grant", async () => {
+    const userId = "user-second-bundle-acquisition";
+    const decodedToken = { sub: userId };
+
+    mockSend.mockImplementation(async (cmd) => {
+      if (cmd instanceof MockQueryCommand) {
+        // The account already holds a bundle carrying the acquisition its first grant recorded.
+        return {
+          Items: [{ bundleId: "day-guest", acquisition: { utmSource: "google", landedAt: "2026-01-01T00:00:00.000Z" } }],
+          Count: 1,
+        };
+      }
+      return {};
+    });
+
+    const result = await grantBundle(userId, { bundleId: "day-guest", acquisition: { utmSource: "facebook" } }, decodedToken, null, {
+      skipCapCheck: true,
+    });
+
+    expect(result.status).toBe("granted");
+    const bundlePutCalls = mockSend.mock.calls.filter(
+      (call) => call[0] instanceof MockPutCommand && call[0].input.Item?.bundleId === "day-guest",
+    );
+    expect(bundlePutCalls[0][0].input.Item.acquisition).toEqual({ utmSource: "google", landedAt: "2026-01-01T00:00:00.000Z" });
+  });
+
+  // ============================================================================
   // Error Handling Tests (500)
   // ============================================================================
 

@@ -79,9 +79,10 @@ export async function getSessionGeo(hashedSub) {
  * @param {string} hashedSub
  * @param {Object} fields
  * @param {string} fields.country
+ * @param {number} [fields.authTime] - epoch seconds of the sign-in the country belongs to
  * @param {number} [fields.revokedAt] - epoch seconds; omitted clears any prior revocation
  */
-export async function putSessionGeo(hashedSub, { country, revokedAt }) {
+export async function putSessionGeo(hashedSub, { country, authTime, revokedAt }) {
   const tableName = getResourceName("SECURITY_STATE_DYNAMODB_TABLE_NAME");
 
   await executeDynamoDbCommand(
@@ -91,6 +92,7 @@ export async function putSessionGeo(hashedSub, { country, revokedAt }) {
         Item: {
           stateKey: `geo#${hashedSub}`,
           country,
+          ...(authTime !== undefined ? { authTime } : {}),
           ...(revokedAt !== undefined ? { revokedAt } : {}),
           ttl: calculateOneHourTtl(new Date()).ttl,
         },
