@@ -169,6 +169,16 @@ describe("dynamoDbSecurityStateRepository", () => {
     expect(command.input.Item).not.toHaveProperty("revokedAt");
   });
 
+  test("putSessionGeo writes the sign-in time the country belongs to", async () => {
+    const { putSessionGeo } = await import("../../../app/data/dynamoDbSecurityStateRepository.js");
+    mockSend.mockResolvedValue({});
+
+    await putSessionGeo("hashed-abc", { country: "GB", authTime: 1700000000 });
+
+    const command = mockSend.mock.calls[0][0];
+    expect(command.input.Item).toEqual({ stateKey: "geo#hashed-abc", country: "GB", authTime: 1700000000, ttl: expect.any(Number) });
+  });
+
   test("getSignInSession keys the item as session#<hash>#<appClient> and returns the stored item", async () => {
     const { getSignInSession } = await import("../../../app/data/dynamoDbSecurityStateRepository.js");
     mockSend.mockResolvedValue({ Item: { stateKey: "session#hashed-abc#submit", lastIssuedAt: 1700000000000 } });

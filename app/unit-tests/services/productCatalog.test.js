@@ -84,7 +84,7 @@ describe("productCatalogHelper", () => {
     expect(activity.paths).not.toContain("hmrc/itsa/taxCalculation.html");
   });
 
-  it("self-employed-read carries business details, obligations, calculations and the period lists/views at no token cost", () => {
+  it("self-employed-read carries business details, obligations and the period lists/views at no token cost", () => {
     const catalog = parseCatalog(tomlText);
     const activity = catalog.activities.find((a) => a.id === "self-employed-read");
     expect(activity).toBeTruthy();
@@ -93,7 +93,6 @@ describe("productCatalogHelper", () => {
     expect(activity.paths).toEqual([
       "hmrc/itsa/businessDetails.html",
       "hmrc/itsa/obligations.html",
-      "hmrc/itsa/taxCalculation.html",
       "hmrc/itsa/selfEmploymentPeriods.html",
       "hmrc/itsa/selfEmploymentPeriodView.html",
       "hmrc/itsa/ukPropertyPeriods.html",
@@ -124,6 +123,15 @@ describe("productCatalogHelper", () => {
     const selfEmployed = catalog.activities.find((a) => a.id === "self-employed");
     expect(activity.environments).toEqual(selfEmployed.environments);
     expect(activity.hmrcScopesRequired).toEqual(selfEmployed.hmrcScopesRequired);
+  });
+
+  it("self-employed-calculation carries the tax calculation page at no token cost with write scope, since triggering a calculation writes at HMRC", () => {
+    const catalog = parseCatalog(tomlText);
+    const activity = catalog.activities.find((a) => a.id === "self-employed-calculation");
+    expect(activity.tokenCost).toBe(0);
+    expect(activity.paths).toEqual(["hmrc/itsa/taxCalculation.html"]);
+    expect(bundlesForActivity(catalog, "self-employed-calculation")).toEqual(bundlesForActivity(catalog, "self-employed"));
+    expect(activity.hmrcScopesRequired).toEqual(["write:self-assessment", "read:self-assessment"]);
   });
 
   it("self-employed-year-end-delete removes a loss claim or a tax liability adjustment at no token cost", () => {
