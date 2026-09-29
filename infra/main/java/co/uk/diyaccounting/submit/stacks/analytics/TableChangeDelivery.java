@@ -303,6 +303,14 @@ public class TableChangeDelivery extends Construct {
                 columns.add(column("expires_at", "string"));
                 columns.add(column("ttl", "bigint"));
                 columns.add(column("actor", "string"));
+                columns.add(column("acq_utm_source", "string"));
+                columns.add(column("acq_utm_medium", "string"));
+                columns.add(column("acq_utm_campaign", "string"));
+                columns.add(column("acq_utm_content", "string"));
+                columns.add(column("acq_utm_term", "string"));
+                columns.add(column("acq_gclid", "string"));
+                columns.add(column("acq_ref", "string"));
+                columns.add(column("acq_landed_at", "string"));
             }
             case "subscriptions" -> {
                 columns.add(column("hashed_sub", "string"));

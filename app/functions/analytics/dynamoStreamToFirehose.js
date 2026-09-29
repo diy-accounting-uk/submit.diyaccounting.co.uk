@@ -45,6 +45,7 @@ function projectReceipt(image) {
 }
 
 function projectBundle(image) {
+  const acquisition = image.acquisition ?? {};
   return {
     hashed_sub: image.hashedSub ?? null,
     bundle_id: image.bundleId ?? null,
@@ -52,6 +53,14 @@ function projectBundle(image) {
     expires_at: image.expiry ?? null,
     ttl: image.ttl ?? null,
     actor: image.actor ?? null,
+    acq_utm_source: acquisition.utmSource ?? null,
+    acq_utm_medium: acquisition.utmMedium ?? null,
+    acq_utm_campaign: acquisition.utmCampaign ?? null,
+    acq_utm_content: acquisition.utmContent ?? null,
+    acq_utm_term: acquisition.utmTerm ?? null,
+    acq_gclid: acquisition.gclid ?? null,
+    acq_ref: acquisition.ref ?? null,
+    acq_landed_at: acquisition.landedAt ?? null,
   };
 }
 

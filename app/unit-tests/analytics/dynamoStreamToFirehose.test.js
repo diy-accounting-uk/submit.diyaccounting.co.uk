@@ -118,9 +118,47 @@ describe("projectFields whitelists", () => {
       expires_at: "2026-02-01T00:00:00.000Z",
       ttl: 1800000000,
       actor: "customer",
+      acq_utm_source: null,
+      acq_utm_medium: null,
+      acq_utm_campaign: null,
+      acq_utm_content: null,
+      acq_utm_term: null,
+      acq_gclid: null,
+      acq_ref: null,
+      acq_landed_at: null,
     });
     expect(Object.values(row)).not.toContain("cus_probe");
     expect(Object.values(row)).not.toContain(999);
+  });
+
+  test("bundles: flattens the acquisition map to acq_ columns and drops unknown acquisition keys", () => {
+    const image = {
+      hashedSub: "hash-3",
+      bundleId: "resident-vat",
+      acquisition: {
+        utmSource: "google",
+        utmMedium: "cpc",
+        utmCampaign: "vat-brand",
+        utmContent: "ad-1",
+        utmTerm: "vat software",
+        gclid: "g123",
+        ref: "friend",
+        landedAt: "2026-09-01T10:00:00.000Z",
+        email: "leak@example.com",
+      },
+    };
+    const row = projectFields("bundles", image, null, "INSERT");
+    expect(row).toMatchObject({
+      acq_utm_source: "google",
+      acq_utm_medium: "cpc",
+      acq_utm_campaign: "vat-brand",
+      acq_utm_content: "ad-1",
+      acq_utm_term: "vat software",
+      acq_gclid: "g123",
+      acq_ref: "friend",
+      acq_landed_at: "2026-09-01T10:00:00.000Z",
+    });
+    expect(Object.values(row)).not.toContain("leak@example.com");
   });
 
   test("bundles: actor is null when the item carries none", () => {
