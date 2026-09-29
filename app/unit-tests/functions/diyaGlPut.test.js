@@ -365,6 +365,40 @@ describe("diyaGlPut", () => {
     expect(body.metadata.createdAt).toBe("2026-01-01T00:00:00.000Z");
   });
 
+  test("accepts If-Match quoted as HTTP defines it, as the browser sends it", async () => {
+    const metaKey = metadataKeyFor("test-sub", BOOK_ID);
+    const v3Key = versionKeyFor("test-sub", BOOK_ID, 3);
+    const existingMetadata = {
+      bookId: BOOK_ID,
+      latestVersion: 2,
+      latestETag: "abc",
+      versions: [
+        { version: 1, etag: "v1etag", size: 10, createdAt: "2026-01-01T00:00:00.000Z" },
+        { version: 2, etag: "abc", size: 12, createdAt: "2026-02-01T00:00:00.000Z" },
+      ],
+      createdAt: "2026-01-01T00:00:00.000Z",
+    };
+    mockS3Send.mockImplementation((command) => {
+      if (command.kind === "get" && command.input.Key === metaKey) {
+        return { ETag: '"meta-etag"', Body: jsonBody(existingMetadata) };
+      }
+      if (command.kind === "put" && command.input.Key === v3Key) {
+        return { ETag: '"zip-v3-etag"' };
+      }
+      if (command.kind === "put" && command.input.Key === metaKey) {
+        return { ETag: '"meta-v2-etag"' };
+      }
+      throw new Error(`Unexpected command ${command.kind} ${command.input.Key}`);
+    });
+
+    const result = await ingestHandler(buildPutEvent({ ifMatch: '"abc"' }));
+
+    expect(result.statusCode).toBe(200);
+    const body = JSON.parse(result.body);
+    expect(body.metadata.latestVersion).toBe(3);
+    expect(body.metadata.createdAt).toBe("2026-01-01T00:00:00.000Z");
+  });
+
   test("412s on a stale If-Match, carrying the true latestETag", async () => {
     const metaKey = metadataKeyFor("test-sub", BOOK_ID);
     const existingMetadata = { bookId: BOOK_ID, latestVersion: 2, latestETag: "abc", versions: [] };

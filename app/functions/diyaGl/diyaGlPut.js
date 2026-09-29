@@ -306,7 +306,8 @@ export async function ingestHandler(event) {
         }
       }
 
-      const ifMatchHeader = getHeader(event.headers, "if-match");
+      // A browser sends the entity tag quoted, as HTTP defines If-Match; the stored tag is unquoted.
+      const ifMatchHeader = getHeader(event.headers, "if-match")?.replace(/^"|"$/g, "") || null;
       if (existing) {
         if (ifMatchHeader !== existing.metadata.latestETag) {
           return http412PreconditionFailedResponse({
