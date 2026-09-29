@@ -463,6 +463,26 @@ class IngestionStackTest {
     }
 
     @Test
+    void hourlyGa4SessionsPullIsScheduledInProdOnly() {
+        Template prod = Template.fromStack(synthIngestionStack(
+                "prod", null, null, "523400333", "diyaccounting-ga4", "analytics_523400333", "europe-west2"));
+        prod.resourceCountIs("AWS::Events::Rule", 1);
+        prod.hasResourceProperties(
+                "AWS::Events::Rule",
+                Match.objectLike(Map.of(
+                        "Name",
+                        "docs-env-ga4-daily-pull-hourly-schedule",
+                        "ScheduleExpression",
+                        "cron(20 * * * ? *)",
+                        "Targets",
+                        Match.arrayWith(List.of(Match.objectLike(Map.of("Input", "{\"mode\":\"hourly\"}")))))));
+
+        Template ci = Template.fromStack(synthIngestionStack(
+                "ci", null, null, "552917343", "diyaccounting-ga4", "analytics_552917343", "europe-west2"));
+        ci.resourceCountIs("AWS::Events::Rule", 0);
+    }
+
+    @Test
     void ga4EventExportPullCanOnlyPutObjectsUnderItsOwnLakePrefix() {
         Template template = Template.fromStack(synthIngestionStack());
 

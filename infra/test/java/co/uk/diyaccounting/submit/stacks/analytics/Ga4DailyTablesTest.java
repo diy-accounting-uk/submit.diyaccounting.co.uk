@@ -43,16 +43,17 @@ class Ga4DailyTablesTest {
     }
 
     @Test
-    void createsFourTablesWithDateProjectionAndNoOtherPartitionKey() {
+    void createsFiveTablesWithDateProjectionAndNoOtherPartitionKey() {
         Template template = synthTemplate();
 
-        template.resourceCountIs("AWS::Glue::Table", 4);
+        template.resourceCountIs("AWS::Glue::Table", 5);
 
         for (String tableName : List.of(
                 "sessions_by_host_source_daily",
                 "funnel_steps_daily",
                 "key_events_daily",
-                "downloads_by_product_daily")) {
+                "downloads_by_product_daily",
+                "sessions_by_hour_kind")) {
             template.hasResourceProperties(
                     "AWS::Glue::Table",
                     Match.objectLike(Map.of(
@@ -82,7 +83,7 @@ class Ga4DailyTablesTest {
         Template template = synthTemplate();
 
         var tables = template.findResources("AWS::Glue::Table");
-        assertEquals(4, tables.size());
+        assertEquals(5, tables.size());
 
         for (var resource : tables.values()) {
             @SuppressWarnings("unchecked")
@@ -94,7 +95,9 @@ class Ga4DailyTablesTest {
             var storageDescriptor = (Map<String, Object>) tableInput.get("StorageDescriptor");
             var location = (String) storageDescriptor.get("Location");
 
-            assertEquals("s3://docs-env-analytics-lake-111111111111/curated/ga4_daily/" + tableName + "/", location);
+            var curatedPrefix =
+                    tableName.equals("sessions_by_hour_kind") ? "curated/ga4_hourly/" : "curated/ga4_daily/";
+            assertEquals("s3://docs-env-analytics-lake-111111111111/" + curatedPrefix + tableName + "/", location);
         }
     }
 
@@ -118,6 +121,28 @@ class Ga4DailyTablesTest {
                                                         Map.of("Name", "session_source", "Type", "string"),
                                                         Map.of("Name", "visitor_kind", "Type", "string"),
                                                         Map.of("Name", "sessions", "Type", "bigint"))))))))));
+    }
+
+    @Test
+    void sessionsByHourKindColumnsCarryTheHourVisitorKindAndCountFields() {
+        Template template = synthTemplate();
+
+        template.hasResourceProperties(
+                "AWS::Glue::Table",
+                Match.objectLike(Map.of(
+                        "TableInput",
+                        Match.objectLike(Map.of(
+                                "Name",
+                                "sessions_by_hour_kind",
+                                "StorageDescriptor",
+                                Match.objectLike(Map.of(
+                                        "Columns",
+                                        Match.arrayWith(
+                                                List.of(
+                                                        Map.of("Name", "hour", "Type", "string"),
+                                                        Map.of("Name", "visitor_kind", "Type", "string"),
+                                                        Map.of("Name", "sessions", "Type", "bigint"),
+                                                        Map.of("Name", "users", "Type", "bigint"))))))))));
     }
 
     @Test

@@ -239,15 +239,9 @@
             <thead>
               <tr>
                 <th>Kind</th>
-                <th title="Not available: GA4's export reaches the lake two days late, so no session count for the last hour exists yet.">
-                  Last 1 hour
-                </th>
-                <th title="Not available: GA4's export reaches the lake two days late, so no session count for the last day exists yet.">
-                  Last 1 day
-                </th>
-                <th title="Not available: GA4's export reaches the lake two days late, so no session count for the last 7 days exists yet.">
-                  Last 7 days
-                </th>
+                <th>Last 1 hour</th>
+                <th>Last 1 day</th>
+                <th>Last 7 days</th>
                 <th>Last 30 days</th>
                 <th>Trend</th>
                 <th>Last 90 days</th>
@@ -418,6 +412,9 @@
         ["sessions-synthetic", "Synthetic"],
       ];
 
+      const VISITORS_FAST_WINDOW_UNAVAILABLE =
+        "Not available: no sessions in this window, or this environment's GA4 property has no streaming export and its daily export reaches the lake two days late.";
+
       function renderVisitors(snapshot) {
         const tbody = document.getElementById("visitorsBody");
         tbody.innerHTML = "";
@@ -440,9 +437,11 @@
           kindCell.textContent = kindLabel;
           row.appendChild(kindCell);
 
-          // GA4 sessions reach the lake two days late (ga4DailyPull.js), so the fast windows
-          // have no source; the header tooltips say why.
-          ["last1h", "last1d", "last7d"].forEach((key) => row.appendChild(activityCountCell(observation, key)));
+          // The fast windows read GA4's streaming export; a property that only exports daily
+          // (ci) leaves them empty, and GA4's daily export reaches the lake two days late.
+          ["last1h", "last1d", "last7d"].forEach((key) =>
+            row.appendChild(activityCountCell(observation, key, VISITORS_FAST_WINDOW_UNAVAILABLE)),
+          );
           row.appendChild(activityCountCell(observation, "last30"));
           row.appendChild(activityTrendCell(observation));
           row.appendChild(activityCountCell(observation, "last90"));
@@ -501,9 +500,11 @@
         COMPANY_BALANCE_SHEET_ROWS.forEach(([id, label]) => bsBody.appendChild(renderCompanyAccountsRow(observationsById, id, label)));
       }
 
-      function activityCountCell(observation, key) {
+      function activityCountCell(observation, key, unavailableTitle) {
         const cell = document.createElement("td");
-        cell.textContent = formatValue("count", observation && observation[key] && observation[key].value);
+        const value = observation && observation[key] && observation[key].value;
+        cell.textContent = formatValue("count", value);
+        if (unavailableTitle && (value === null || value === undefined)) cell.title = unavailableTitle;
         return cell;
       }
 

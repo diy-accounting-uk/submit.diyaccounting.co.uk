@@ -52,7 +52,7 @@ key_events = { subscribe = "purchase", submit = "submit_vat_return", donate = "d
   project = "diyaccounting-ga4"
   location = "europe-west2"
   daily_export = true
-  streaming_export = false
+  streaming_export = true
 
 # The per-environment ci property. No id recorded: the script matches it by display_name and
 # creates it if missing, then writes the resulting measurement id onto the "ci" GitHub

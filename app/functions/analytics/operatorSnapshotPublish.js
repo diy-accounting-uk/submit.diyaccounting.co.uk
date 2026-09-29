@@ -7,8 +7,8 @@
 // objectives dashboard and writes one JSON snapshot per environment: the trailing 30 and 90
 // days for each of the eight objectives' observations, each carrying its value, its trend
 // against the prior comparable period, and a deep link to where the operator can see more.
-// An hourly "activity-only" run (prod only) refreshes just the activities objective's Last 1
-// hour/1 day/7 days columns in between, patching them onto that snapshot rather than rebuilding
+// An hourly "activity-only" run (prod only) refreshes just the Last 1 hour/1 day/7 days columns
+// of the activities and visitors observations in between, patching them onto that snapshot rather than rebuilding
 // it — see handler()'s mode branch. The API route (operatorSnapshotGet.js) only ever reads what
 // this Lambda writes; it never queries Athena itself, so the dashboard stays fast even while a
 // query here is slow.
@@ -28,8 +28,9 @@ import { readLatestSnapshot } from "./operatorSnapshotGet.js";
 
 const logger = createLogger({ source: "app/functions/analytics/operatorSnapshotPublish.js" });
 
-// The one objective an "activity-only" run refreshes: see handler()'s mode branch.
-const ACTIVITY_OBJECTIVE_ID = "activity-started-and-completed";
+// The objectives an "activity-only" run refreshes: every observation in them that carries a
+// fastWindowView (see handler()'s mode branch).
+const FAST_WINDOW_OBJECTIVE_IDS = ["activity-started-and-completed", "conversion-to-submission"];
 
 /**
  * One started and one completed observation per prod-listed catalogue activity
@@ -233,6 +234,8 @@ export const OBJECTIVE_DEFINITIONS = [
         valueExpr: "sessions",
         aggregation: "sum",
         where: "visitor_kind = 'human'",
+        fastWindowView: "v_visitors_by_kind_hourly",
+        fastWindowColumn: "hour",
         deepLink: (ctx) => buildGa4ReportsLink(ctx.ga4PropertyId),
       },
       {
@@ -244,6 +247,8 @@ export const OBJECTIVE_DEFINITIONS = [
         valueExpr: "sessions",
         aggregation: "sum",
         where: "visitor_kind = 'operator'",
+        fastWindowView: "v_visitors_by_kind_hourly",
+        fastWindowColumn: "hour",
         deepLink: (ctx) => buildGa4ReportsLink(ctx.ga4PropertyId),
       },
       {
@@ -255,6 +260,8 @@ export const OBJECTIVE_DEFINITIONS = [
         valueExpr: "sessions",
         aggregation: "sum",
         where: "visitor_kind = 'bot'",
+        fastWindowView: "v_visitors_by_kind_hourly",
+        fastWindowColumn: "hour",
         deepLink: (ctx) => buildGa4ReportsLink(ctx.ga4PropertyId),
       },
       {
@@ -266,6 +273,8 @@ export const OBJECTIVE_DEFINITIONS = [
         valueExpr: "sessions",
         aggregation: "sum",
         where: "visitor_kind = 'synthetic'",
+        fastWindowView: "v_visitors_by_kind_hourly",
+        fastWindowColumn: "hour",
         deepLink: (ctx) => buildGa4ReportsLink(ctx.ga4PropertyId),
       },
     ],
@@ -808,15 +817,13 @@ const nullObservationWindows = { last30: { value: null, trend: null }, last90: {
  * returned snapshot's failedObservationCount, so the caller can still surface it.
  *
  * `objectiveIds`, when given, builds only those objectives instead of every one in
- * OBJECTIVE_DEFINITIONS — the activity-only run's way of refreshing just the activities
- * objective without re-running the other seven.
+ * OBJECTIVE_DEFINITIONS — the activity-only run's way of refreshing just the fast columns
+ * without re-running the other objectives.
  *
  * `fastWindowOnly` skips the 30/90-day buildWindowedSql query entirely and answers only each observation's `id` plus its last1h/last1d/last7d fields, for an
- * observation that carries a `fastWindowView` (only the activity objective's observations do).
- * The result is a patch to merge onto an existing snapshot with mergeActivityFastWindows, not a
- * standalone snapshot: it carries no label, unit or deepLink, and every non-activity objective
- * comes back with a full observation list but no queries actually run for it (see
- * OBJECTIVE_DEFINITIONS filtering above) unless objectiveIds also names it.
+ * observation that carries a `fastWindowView`, and lists only those observations. The result is
+ * a patch to merge onto an existing snapshot with mergeFastWindows, not a standalone snapshot: it
+ * carries no label, unit or deepLink.
  *
  * @param {{workGroup: string, database: string, context: object, objectiveIds?: string[], fastWindowOnly?: boolean}} params
  * @returns {Promise<object>}
@@ -847,7 +854,10 @@ export async function buildSnapshot({ workGroup, database, context, objectiveIds
   const objectives = [];
   let failedObservationCount = 0;
   for (const objective of objectiveDefinitions) {
-    const observations = await mapInOrderWithConcurrency(objective.observations, OBSERVATION_QUERY_CONCURRENCY, async (observation) => {
+    const objectiveObservations = fastWindowOnly
+      ? objective.observations.filter((observation) => observation.fastWindowView)
+      : objective.observations;
+    const observations = await mapInOrderWithConcurrency(objectiveObservations, OBSERVATION_QUERY_CONCURRENCY, async (observation) => {
       let windows = nullObservationWindows;
       let fastWindows = {};
       try {
@@ -901,22 +911,22 @@ export async function buildSnapshot({ workGroup, database, context, objectiveIds
 }
 
 /**
- * Patches an existing snapshot's activity objective with a fastWindowOnly-built patch,
- * overlaying only the patched observations' last1h/last1d/last7d fields and leaving every
- * other field on every other observation — and every other objective entirely — untouched.
- * This is what lets the hourly activity-only run refresh three columns without blanking the
- * other seven objectives, which only the nightly full run recomputes.
+ * Patches an existing snapshot's objectives with a fastWindowOnly-built patch, overlaying only
+ * the patched observations' last1h/last1d/last7d fields and leaving every other field on every
+ * other observation — and every objective the patch does not name — untouched. This is what lets
+ * the hourly activity-only run refresh three columns without blanking the rest, which only the
+ * nightly full run recomputes.
  *
  * @param {object} existingSnapshot - the snapshot read back from snapshots/<env>/latest.json
- * @param {object} patchSnapshot - buildSnapshot's result with objectiveIds: [ACTIVITY_OBJECTIVE_ID], fastWindowOnly: true
+ * @param {object} patchSnapshot - buildSnapshot's result with objectiveIds: FAST_WINDOW_OBJECTIVE_IDS, fastWindowOnly: true
  * @returns {object}
  */
-export function mergeActivityFastWindows(existingSnapshot, patchSnapshot) {
-  const patchObjective = patchSnapshot.objectives.find((objective) => objective.id === ACTIVITY_OBJECTIVE_ID);
-  const patchById = new Map((patchObjective?.observations ?? []).map((patch) => [patch.id, patch]));
+export function mergeFastWindows(existingSnapshot, patchSnapshot) {
+  const patchById = new Map(patchSnapshot.objectives.flatMap((objective) => objective.observations.map((patch) => [patch.id, patch])));
+  const patchedObjectiveIds = new Set(patchSnapshot.objectives.map((objective) => objective.id));
 
   const objectives = (existingSnapshot.objectives ?? []).map((objective) => {
-    if (objective.id !== ACTIVITY_OBJECTIVE_ID) return objective;
+    if (!patchedObjectiveIds.has(objective.id)) return objective;
     return {
       ...objective,
       observations: objective.observations.map((observation) => {
@@ -967,8 +977,8 @@ export async function writeSnapshot({ bucket, envName, snapshot }) {
 /**
  * `event.mode` picks what this invocation refreshes: "full" rebuilds every objective the way
  * this Lambda always has (the nightly and weekly schedules); "activity-only" runs only the
- * activities objective's fast-window queries and patches them onto the existing snapshot (the
- * hourly schedule). There is no default: a schedule that forgot to set it is a configuration
+ * activity and visitor observations' fast-window queries and patches them onto the existing
+ * snapshot (the hourly schedule). There is no default: a schedule that forgot to set it is a configuration
  * bug, not a case to guess at.
  */
 export async function handler(event) {
@@ -1006,10 +1016,10 @@ export async function handler(event) {
       workGroup,
       database,
       context,
-      objectiveIds: [ACTIVITY_OBJECTIVE_ID],
+      objectiveIds: FAST_WINDOW_OBJECTIVE_IDS,
       fastWindowOnly: true,
     });
-    snapshot = mergeActivityFastWindows(existing, patch);
+    snapshot = mergeFastWindows(existing, patch);
   }
   await writeSnapshot({ bucket: lakeBucket, envName, snapshot });
 

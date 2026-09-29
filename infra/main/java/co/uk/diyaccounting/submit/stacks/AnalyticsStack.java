@@ -439,6 +439,7 @@ public class AnalyticsStack extends Stack {
         ga4DailyTables.funnelStepsTable.addResourceDependency(this.glueDatabase);
         ga4DailyTables.keyEventsTable.addResourceDependency(this.glueDatabase);
         ga4DailyTables.downloadsByProductTable.addResourceDependency(this.glueDatabase);
+        ga4DailyTables.sessionsByHourKindTable.addResourceDependency(this.glueDatabase);
 
         var workflowRunTables = new WorkflowRunTables(
                 this,
@@ -693,6 +694,11 @@ public class AnalyticsStack extends Stack {
         });
         // The three new sources each feed exactly one view, so their dependency edges are added
         // by view name rather than unconditionally on every view.
+        businessViews
+                .viewResourcesByName
+                .get("v_visitors_by_kind_hourly")
+                .getNode()
+                .addDependency(ga4DailyTables.sessionsByHourKindTable);
         businessViews
                 .viewResourcesByName
                 .get("v_alarm_state_changes_daily")

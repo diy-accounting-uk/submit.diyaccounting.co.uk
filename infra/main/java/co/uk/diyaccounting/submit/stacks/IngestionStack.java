@@ -13,6 +13,7 @@ import co.uk.diyaccounting.submit.stacks.analytics.NightlyIngestionWorkflow;
 import co.uk.diyaccounting.submit.utils.PopulatedMap;
 import co.uk.diyaccounting.submit.utils.SubHashSaltHelper;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.regex.Pattern;
 import org.immutables.value.Value;
@@ -28,6 +29,11 @@ import software.amazon.awscdk.services.cloudwatch.TreatMissingData;
 import software.amazon.awscdk.services.ecr.IRepository;
 import software.amazon.awscdk.services.ecr.Repository;
 import software.amazon.awscdk.services.ecr.RepositoryAttributes;
+import software.amazon.awscdk.services.events.CronOptions;
+import software.amazon.awscdk.services.events.Rule;
+import software.amazon.awscdk.services.events.RuleTargetInput;
+import software.amazon.awscdk.services.events.Schedule;
+import software.amazon.awscdk.services.events.targets.LambdaFunction;
 import software.amazon.awscdk.services.iam.Effect;
 import software.amazon.awscdk.services.iam.PolicyStatement;
 import software.amazon.awscdk.services.lambda.Architecture;
@@ -472,6 +478,10 @@ public class IngestionStack extends Stack {
                 && !props.ga4BigQueryProjectId().isBlank()) {
             ga4DailyPullEnv.with("GA4_BIGQUERY_PROJECT_ID", props.ga4BigQueryProjectId());
         }
+        if (props.ga4BigQueryDatasetId() != null
+                && !props.ga4BigQueryDatasetId().isBlank()) {
+            ga4DailyPullEnv.with("GA4_BIGQUERY_DATASET_ID", props.ga4BigQueryDatasetId());
+        }
         if (props.ga4BigQueryLocation() != null && !props.ga4BigQueryLocation().isBlank()) {
             ga4DailyPullEnv.with("GA4_BIGQUERY_LOCATION", props.ga4BigQueryLocation());
         }
@@ -506,12 +516,32 @@ public class IngestionStack extends Stack {
                 .build();
         ga4DailyPullLambda.getNode().addDependency(ga4DailyPullLogGroup.ensureResource());
 
-        // Own prefix only, not the whole lake: the job never touches another entity's data.
+        // Own prefixes only, not the whole lake: the job never touches another entity's data.
         ga4DailyPullLambda.addToRolePolicy(PolicyStatement.Builder.create()
                 .effect(Effect.ALLOW)
                 .actions(List.of("s3:PutObject"))
-                .resources(List.of(this.lakeBucket.getBucketArn() + "/curated/ga4_daily/*"))
+                .resources(List.of(
+                        this.lakeBucket.getBucketArn() + "/curated/ga4_daily/*",
+                        this.lakeBucket.getBucketArn() + "/curated/ga4_hourly/*"))
                 .build());
+
+        // Hourly mode: prod only, because only prod's GA4 property streams an intraday export
+        // (ci's stays daily-only, so its hourly visitor columns read null). Minute 20 lands after
+        // GA4's streaming inserts for the previous hour and before the operator snapshot's
+        // activity-only refresh at minute 45, which reads what this run wrote. Each run queries
+        // the last three days' export tables, one bounded query per table; BigQuery bills a
+        // 10 MB minimum per table, so about 30 MB an hour, roughly 22 GB a month, inside the
+        // free 1 TB monthly query allowance.
+        if (isProd) {
+            Rule.Builder.create(this, prefix + "-Ga4HourlySessionsPullSchedule")
+                    .ruleName(ga4DailyPullFunctionName + "-hourly-schedule")
+                    .description("Pull sessions by hour and visitor kind from GA4's streaming export into the lake")
+                    .schedule(Schedule.cron(CronOptions.builder().minute("20").build()))
+                    .targets(List.of(LambdaFunction.Builder.create(ga4DailyPullLambda)
+                            .event(RuleTargetInput.fromObject(Map.of("mode", "hourly")))
+                            .build()))
+                    .build();
+        }
 
         registerIngestionJob(
                 "Ga4DailyPull",
