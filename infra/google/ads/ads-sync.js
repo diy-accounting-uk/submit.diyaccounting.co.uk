@@ -27,6 +27,14 @@
 //   type = "SEARCH"
 //   budget_gbp = 5.00
 //   status = "PAUSED"
+//   locations = ["GB"]
+//   geo_target_type = "PRESENCE"
+//   contains_eu_political_advertising = false
+//
+//   [campaign.network]
+//   google_search = true
+//   search_network = false
+//   content_network = false
 //
 //   [campaign.bidding]
 //   strategy = "maximize_conversions"
@@ -43,6 +51,14 @@
 //   headlines = ["File VAT Returns Online", "HMRC MTD Compliant Software", "Free VAT Filing Tool"]
 //   descriptions = ["Submit VAT returns direct to HMRC.", "Free, simple, MTD compliant."]
 //   final_url = "https://submit.diyaccounting.co.uk/"
+//
+// A Search campaign declares all of locations (country codes, mapped to geo target constants and
+// created as location criteria), geo_target_type (PRESENCE, PRESENCE_OR_INTEREST; sent as the
+// positive geo target type), [campaign.network] (google_search, search_network, content_network,
+// sent as networkSettings) and contains_eu_political_advertising (sent as the API's
+// containsEuPoliticalAdvertising status, required on create since v21). None has a default. For a
+// Search campaign the live account already has, locations, geo target type, network settings and
+// the EU political advertising status are compared and drift is reported, never written.
 //
 // Every [[campaign]] also needs a [campaign.bidding] table, mapped one to one onto the API's
 // campaign bidding fields: manual_cpc (enhanced_cpc), maximize_clicks (the API's target_spend,
@@ -101,6 +117,27 @@ const CAMPAIGN_BIDDING_QUERY =
   "campaign.target_cpa.target_cpa_micros, campaign.target_roas.target_roas, " +
   "campaign.target_impression_share.location, campaign.target_impression_share.location_fraction_micros, " +
   "campaign.target_impression_share.cpc_bid_ceiling_micros FROM campaign";
+
+// Selects each Search campaign's targeting fields, compared against the declared locations, geo
+// target type, network settings and EU political advertising status.
+const CAMPAIGN_TARGETING_QUERY =
+  "SELECT campaign.resource_name, campaign.network_settings.target_google_search, " +
+  "campaign.network_settings.target_search_network, campaign.network_settings.target_content_network, " +
+  "campaign.geo_target_type_setting.positive_geo_target_type, campaign.contains_eu_political_advertising FROM campaign";
+
+const CAMPAIGN_LOCATION_QUERY =
+  "SELECT campaign.resource_name, campaign_criterion.location.geo_target_constant, campaign_criterion.negative " +
+  "FROM campaign_criterion WHERE campaign_criterion.type = 'LOCATION'";
+
+// Country code to the geo target constant id the API names it by.
+const GEO_TARGET_CONSTANT_ID_BY_COUNTRY = { GB: 2826 };
+
+const GEO_TARGET_TYPES = new Set(["PRESENCE", "PRESENCE_OR_INTEREST"]);
+
+const EU_POLITICAL_ADVERTISING_STATUS = {
+  true: "CONTAINS_EU_POLITICAL_ADVERTISING",
+  false: "DOES_NOT_CONTAIN_EU_POLITICAL_ADVERTISING",
+};
 
 const KEYWORD_MATCH_TYPES = new Set(["EXACT", "PHRASE", "BROAD"]);
 
@@ -258,6 +295,43 @@ function parseAdGroup(entry, campaignName) {
 }
 
 /**
+ * Parse a Search campaign's declared targeting: locations, geo target type, [campaign.network]
+ * and contains_eu_political_advertising. Every field is required; none has a default.
+ *
+ * @param {object} entry
+ */
+function parseSearchTargeting(entry) {
+  const name = entry.name;
+  if (!Array.isArray(entry.locations) || entry.locations.length === 0) {
+    throw new Error(`campaign "${name}" needs locations, a non-empty list of country codes`);
+  }
+  const locations = entry.locations.map((code) => {
+    if (GEO_TARGET_CONSTANT_ID_BY_COUNTRY[code] === undefined) {
+      throw new Error(
+        `campaign "${name}" has location ${JSON.stringify(code)}, known country codes are ${Object.keys(GEO_TARGET_CONSTANT_ID_BY_COUNTRY).join(", ")}`,
+      );
+    }
+    return String(code);
+  });
+  if (!GEO_TARGET_TYPES.has(entry.geo_target_type)) {
+    throw new Error(`campaign "${name}" needs geo_target_type, one of ${[...GEO_TARGET_TYPES].join(", ")}`);
+  }
+  const network = entry.network;
+  for (const key of ["google_search", "search_network", "content_network"]) {
+    if (typeof network?.[key] !== "boolean") throw new Error(`campaign "${name}" needs [campaign.network] ${key} as true or false`);
+  }
+  if (typeof entry.contains_eu_political_advertising !== "boolean") {
+    throw new Error(`campaign "${name}" needs contains_eu_political_advertising as true or false`);
+  }
+  return {
+    locations,
+    geoTargetType: String(entry.geo_target_type),
+    network: { googleSearch: network.google_search, searchNetwork: network.search_network, contentNetwork: network.content_network },
+    containsEuPoliticalAdvertising: entry.contains_eu_political_advertising,
+  };
+}
+
+/**
  * Parse one [[campaign]] entry: the fields common to every type, plus type-specific fields —
  * asset groups for PERFORMANCE_MAX, budget in pounds and ad groups for SEARCH.
  *
@@ -291,6 +365,7 @@ function parseCampaign(entry) {
   }
 
   // SEARCH
+  const targeting = parseSearchTargeting(entry);
   if (entry.budget_gbp === undefined) throw new Error(`campaign "${entry.name}" is missing budget_gbp`);
   const adGroups = (Array.isArray(entry.ad_group) ? entry.ad_group : []).map((adGroupEntry) => parseAdGroup(adGroupEntry, entry.name));
   if (adGroups.length === 0) throw new Error(`campaign "${entry.name}" has no [[campaign.ad_group]]`);
@@ -302,6 +377,7 @@ function parseCampaign(entry) {
     assetGroups: [],
     adGroups,
     bidding,
+    ...targeting,
   };
 }
 
@@ -436,6 +512,37 @@ export function shapeCampaignBidding(searchBody) {
 }
 
 /**
+ * Shape each campaign's network settings, geo target type, EU political advertising status and
+ * targeted locations (the geo target constant ids of its non-negative location criteria), keyed by
+ * the campaign's resource name.
+ *
+ * @param {object} targetingBody googleAds:search response for CAMPAIGN_TARGETING_QUERY
+ * @param {object} locationBody googleAds:search response for CAMPAIGN_LOCATION_QUERY
+ */
+export function shapeCampaignTargeting(targetingBody, locationBody) {
+  const byResourceName = new Map();
+  for (const row of targetingBody.results ?? []) {
+    const c = row.campaign;
+    byResourceName.set(c.resourceName, {
+      network: {
+        googleSearch: Boolean(c.networkSettings?.targetGoogleSearch),
+        searchNetwork: Boolean(c.networkSettings?.targetSearchNetwork),
+        contentNetwork: Boolean(c.networkSettings?.targetContentNetwork),
+      },
+      geoTargetType: c.geoTargetTypeSetting?.positiveGeoTargetType ?? null,
+      containsEuPoliticalAdvertising: c.containsEuPoliticalAdvertising === EU_POLITICAL_ADVERTISING_STATUS.true,
+      locations: [],
+    });
+  }
+  for (const row of locationBody.results ?? []) {
+    if (row.campaignCriterion.negative) continue;
+    const targeting = byResourceName.get(row.campaign.resourceName);
+    if (targeting) targeting.locations.push(row.campaignCriterion.location.geoTargetConstant);
+  }
+  return byResourceName;
+}
+
+/**
  * Read the account, conversion actions, conversion goals and campaigns the same way
  * ads-inventory.js does, plus each campaign's bidding strategy, shaped for planAds.
  *
@@ -443,18 +550,30 @@ export function shapeCampaignBidding(searchBody) {
  * @param {{customerId: string, apiVersion: string}} config
  */
 export async function readLiveState(token, config) {
-  const [customerBody, conversionActionsBody, conversionGoalsBody, campaignsBody, campaignBiddingBody] = await Promise.all([
+  const [
+    customerBody,
+    conversionActionsBody,
+    conversionGoalsBody,
+    campaignsBody,
+    campaignBiddingBody,
+    campaignTargetingBody,
+    locationBody,
+  ] = await Promise.all([
     googleAdsSearch(token, config.customerId, config.apiVersion, CUSTOMER_QUERY),
     googleAdsSearch(token, config.customerId, config.apiVersion, CONVERSION_ACTION_QUERY),
     googleAdsSearch(token, config.customerId, config.apiVersion, CONVERSION_GOAL_QUERY),
     googleAdsSearch(token, config.customerId, config.apiVersion, CAMPAIGN_QUERY),
     googleAdsSearch(token, config.customerId, config.apiVersion, CAMPAIGN_BIDDING_QUERY),
+    googleAdsSearch(token, config.customerId, config.apiVersion, CAMPAIGN_TARGETING_QUERY),
+    googleAdsSearch(token, config.customerId, config.apiVersion, CAMPAIGN_LOCATION_QUERY),
   ]);
   const shapedConversions = shapeConversionActions(conversionActionsBody, conversionGoalsBody);
   const campaigns = shapeCampaigns(campaignsBody);
   const biddingByResourceName = shapeCampaignBidding(campaignBiddingBody);
+  const targetingByResourceName = shapeCampaignTargeting(campaignTargetingBody, locationBody);
   for (const campaign of campaigns) {
     campaign.bidding = biddingByResourceName.get(campaign.resourceName) ?? null;
+    campaign.targeting = targetingByResourceName.get(campaign.resourceName) ?? null;
   }
   return {
     customer: shapeCustomer(customerBody),
@@ -486,6 +605,34 @@ function biddingFieldsDiffer(declared, live) {
   return false;
 }
 
+function geoTargetConstantsFor(countryCodes) {
+  return countryCodes.map((code) => `geoTargetConstants/${GEO_TARGET_CONSTANT_ID_BY_COUNTRY[code]}`);
+}
+
+function declaredTargeting(campaign) {
+  return {
+    locations: geoTargetConstantsFor(campaign.locations),
+    geoTargetType: campaign.geoTargetType,
+    network: campaign.network,
+    containsEuPoliticalAdvertising: campaign.containsEuPoliticalAdvertising,
+  };
+}
+
+/**
+ * The declared targeting fields that differ from the live campaign's; every field when live has no
+ * targeting at all.
+ */
+function targetingDriftFields(campaign, liveTargeting) {
+  const wanted = declaredTargeting(campaign);
+  if (!liveTargeting) return Object.keys(wanted);
+  const fields = [];
+  if ([...wanted.locations].sort().join(",") !== [...liveTargeting.locations].sort().join(",")) fields.push("locations");
+  if (wanted.geoTargetType !== liveTargeting.geoTargetType) fields.push("geoTargetType");
+  if (JSON.stringify(wanted.network) !== JSON.stringify(liveTargeting.network)) fields.push("network");
+  if (wanted.containsEuPoliticalAdvertising !== liveTargeting.containsEuPoliticalAdvertising) fields.push("containsEuPoliticalAdvertising");
+  return fields;
+}
+
 /**
  * The plan actions that create a declared Search campaign the live account lacks: its budget,
  * the campaign, and each ad group with its keywords and responsive search ad, in the order
@@ -502,7 +649,11 @@ function planCampaignCreation(campaign) {
       status: campaign.status,
       budgetMicros: campaign.budgetMicros,
       bidding: campaign.bidding,
+      geoTargetType: campaign.geoTargetType,
+      network: campaign.network,
+      containsEuPoliticalAdvertising: campaign.containsEuPoliticalAdvertising,
     },
+    { kind: "create-campaign-locations", campaignName: campaign.name, locations: campaign.locations },
   ];
   for (const adGroup of campaign.adGroups) {
     actions.push({ kind: "create-ad-group", campaignName: campaign.name, adGroupName: adGroup.name });
@@ -604,6 +755,19 @@ export function planAds(config, live) {
       });
     }
 
+    if (campaign.type === "SEARCH") {
+      const fields = targetingDriftFields(campaign, liveCampaign.targeting);
+      if (fields.length > 0) {
+        actions.push({
+          kind: "campaign-targeting-drift",
+          campaignName: campaign.name,
+          fields,
+          wanted: declaredTargeting(campaign),
+          live: liveCampaign.targeting ?? null,
+        });
+      }
+    }
+
     const allowedStrategies = CHANNEL_TYPE_BIDDING_STRATEGIES[campaign.type];
     if (allowedStrategies && !allowedStrategies.has(campaign.bidding.strategy)) {
       actions.push({
@@ -650,7 +814,15 @@ export function describe(action) {
     case "create-campaign-budget":
       return `campaign "${action.campaignName}": budget ${action.amountMicros} micros (would create)`;
     case "create-campaign":
-      return `campaign "${action.campaignName}": SEARCH, ${action.status}, bidding ${action.bidding.strategy} (would create)`;
+      return (
+        `campaign "${action.campaignName}": SEARCH, ${action.status}, bidding ${action.bidding.strategy}, ` +
+        `geo target type ${action.geoTargetType}, network ${JSON.stringify(action.network)}, ` +
+        `EU political advertising ${action.containsEuPoliticalAdvertising} (would create)`
+      );
+    case "create-campaign-locations":
+      return `campaign "${action.campaignName}": locations ${action.locations.join(", ")} (${geoTargetConstantsFor(action.locations).join(", ")}) (would create)`;
+    case "campaign-targeting-drift":
+      return `campaign "${action.campaignName}": targeting differs on ${action.fields.join(", ")} — live ${JSON.stringify(action.live)}, declared ${JSON.stringify(action.wanted)} (report only, not applied)`;
     case "create-ad-group":
       return `campaign "${action.campaignName}", ad group "${action.adGroupName}" (would create)`;
     case "create-ad-group-keywords":
@@ -725,6 +897,42 @@ function biddingMutatePayload(bidding) {
   return { updateMask: (masks.length > 0 ? masks : [field]).join(","), update: { [field]: subUpdate } };
 }
 
+/**
+ * The body of a Search campaign's create operation.
+ *
+ * @param {object} action a create-campaign plan action
+ * @param {string} budgetResourceName
+ */
+export function campaignCreateBody(action, budgetResourceName) {
+  const { update: biddingFields } = biddingMutatePayload(action.bidding);
+  return {
+    name: action.campaignName,
+    status: action.status,
+    advertisingChannelType: "SEARCH",
+    campaignBudget: budgetResourceName,
+    geoTargetTypeSetting: { positiveGeoTargetType: action.geoTargetType },
+    networkSettings: {
+      targetGoogleSearch: action.network.googleSearch,
+      targetSearchNetwork: action.network.searchNetwork,
+      targetContentNetwork: action.network.contentNetwork,
+    },
+    containsEuPoliticalAdvertising: EU_POLITICAL_ADVERTISING_STATUS[action.containsEuPoliticalAdvertising],
+    ...biddingFields,
+  };
+}
+
+/**
+ * The campaignCriteria create operations for a Search campaign's declared locations.
+ *
+ * @param {object} action a create-campaign-locations plan action
+ * @param {string} campaignResourceName
+ */
+export function locationCriteriaOperations(action, campaignResourceName) {
+  return geoTargetConstantsFor(action.locations).map((geoTargetConstant) => ({
+    create: { campaign: campaignResourceName, location: { geoTargetConstant } },
+  }));
+}
+
 // --- Network calls. Not covered by the unit tests (no network in tests); planAds and describe
 // carry the argument-handling and diff-shaping coverage. ---
 
@@ -768,6 +976,9 @@ async function applyAction(token, config, action, context) {
       // Report only: a conversion action's category and primary_for_goal are set where the
       // action is created (the GA4 property), never mutated here.
       return null;
+    case "campaign-targeting-drift":
+      // Report only: targeting on a live campaign is changed in the Ads UI, never mutated here.
+      return null;
     case "refuse-bidding-strategy":
       // Refused: the campaign's channel type cannot take this strategy. The plan line is the
       // operator-facing signal; there is nothing to apply.
@@ -780,21 +991,20 @@ async function applyAction(token, config, action, context) {
       return result;
     }
     case "create-campaign": {
-      const { update: biddingFields } = biddingMutatePayload(action.bidding);
       const result = await googleAdsMutate(token, config.customerId, config.apiVersion, "campaigns", [
-        {
-          create: {
-            name: action.campaignName,
-            status: action.status,
-            advertisingChannelType: "SEARCH",
-            campaignBudget: context.budgetResourceNameByCampaign[action.campaignName],
-            ...biddingFields,
-          },
-        },
+        { create: campaignCreateBody(action, context.budgetResourceNameByCampaign[action.campaignName]) },
       ]);
       context.campaignResourceNameByCampaign[action.campaignName] = result.results[0].resourceName;
       return result;
     }
+    case "create-campaign-locations":
+      return googleAdsMutate(
+        token,
+        config.customerId,
+        config.apiVersion,
+        "campaignCriteria",
+        locationCriteriaOperations(action, context.campaignResourceNameByCampaign[action.campaignName]),
+      );
     case "create-ad-group": {
       const result = await googleAdsMutate(token, config.customerId, config.apiVersion, "adGroups", [
         {
@@ -860,7 +1070,13 @@ export async function main(argv = process.argv.slice(2)) {
 
   const context = { budgetResourceNameByCampaign: {}, campaignResourceNameByCampaign: {}, adGroupResourceNameByKey: {} };
   for (const action of plan) {
-    if (action.kind === "conversion-action-drift" || action.kind === "refuse-bidding-strategy") continue;
+    if (
+      action.kind === "conversion-action-drift" ||
+      action.kind === "campaign-targeting-drift" ||
+      action.kind === "refuse-bidding-strategy"
+    ) {
+      continue;
+    }
     await applyAction(token, config, action, context);
     console.log(describe(action).replace("(would update)", "(updated)").replace("(would create)", "(created)"));
   }

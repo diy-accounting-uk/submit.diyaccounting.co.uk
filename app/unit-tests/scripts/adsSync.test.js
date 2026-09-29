@@ -2,7 +2,16 @@
 // Copyright (C) 2006-2026 DIY Accounting Limited
 
 import { describe, it, expect } from "vitest";
-import { parseArgs, parseConfig, planAds, describe as describeAction, shapeCampaignBidding } from "../../../infra/google/ads/ads-sync.js";
+import {
+  parseArgs,
+  parseConfig,
+  planAds,
+  describe as describeAction,
+  shapeCampaignBidding,
+  shapeCampaignTargeting,
+  campaignCreateBody,
+  locationCriteriaOperations,
+} from "../../../infra/google/ads/ads-sync.js";
 
 const VALID_TOML = `
 [account]
@@ -70,6 +79,14 @@ name = "Search #1"
 type = "SEARCH"
 budget_gbp = 5.00
 status = "PAUSED"
+locations = ["GB"]
+geo_target_type = "PRESENCE"
+contains_eu_political_advertising = false
+
+[campaign.network]
+google_search = true
+search_network = false
+content_network = false
 
 [campaign.bidding]
 strategy = "maximize_conversions"
@@ -591,7 +608,11 @@ describe("ads-sync planAds SEARCH campaign creation", () => {
         status: "PAUSED",
         budgetMicros: "5000000",
         bidding: { strategy: "maximize_conversions", targetCpaMicros: "12500000" },
+        geoTargetType: "PRESENCE",
+        network: { googleSearch: true, searchNetwork: false, contentNetwork: false },
+        containsEuPoliticalAdvertising: false,
       },
+      { kind: "create-campaign-locations", campaignName: "Search #1", locations: ["GB"] },
       { kind: "create-ad-group", campaignName: "Search #1", adGroupName: "VAT software" },
       {
         kind: "create-ad-group-keywords",
@@ -631,6 +652,150 @@ describe("ads-sync planAds SEARCH campaign creation", () => {
     live.campaigns = [];
 
     expect(() => planAds(config, live)).toThrow(/Campaign #1/);
+  });
+});
+
+describe("ads-sync Search campaign targeting", () => {
+  const liveSearchCampaign = (targeting) => ({
+    resourceName: "customers/8142685080/campaigns/2",
+    name: "Search #1",
+    status: "PAUSED",
+    advertisingChannelType: "SEARCH",
+    budgetResourceName: "customers/8142685080/campaignBudgets/2",
+    budgetAmountMicros: "5000000",
+    bidding: { strategy: "maximize_conversions", targetCpaMicros: "12500000" },
+    targeting,
+  });
+  const matchingTargeting = () => ({
+    locations: ["geoTargetConstants/2826"],
+    geoTargetType: "PRESENCE",
+    network: { googleSearch: true, searchNetwork: false, contentNetwork: false },
+    containsEuPoliticalAdvertising: false,
+  });
+
+  it("parses locations, geo target type, network settings and the EU political advertising declaration", () => {
+    const search = parseConfig(SEARCH_CAMPAIGN_TOML).campaigns[1];
+    expect(search.locations).toEqual(["GB"]);
+    expect(search.geoTargetType).toBe("PRESENCE");
+    expect(search.network).toEqual({ googleSearch: true, searchNetwork: false, contentNetwork: false });
+    expect(search.containsEuPoliticalAdvertising).toBe(false);
+  });
+
+  it.each([
+    ['locations = ["GB"]\n', /needs locations/],
+    ['geo_target_type = "PRESENCE"\n', /needs geo_target_type/],
+    ["contains_eu_political_advertising = false\n", /needs contains_eu_political_advertising/],
+    ["search_network = false\n", /needs \[campaign.network\] search_network/],
+    ["content_network = false\n", /needs \[campaign.network\] content_network/],
+    ["google_search = true\n", /needs \[campaign.network\] google_search/],
+  ])("throws when %s is not declared", (line, message) => {
+    expect(() => parseConfig(SEARCH_CAMPAIGN_TOML.replace(line, ""))).toThrow(message);
+  });
+
+  it("throws on a country code with no known geo target constant", () => {
+    expect(() => parseConfig(SEARCH_CAMPAIGN_TOML.replace('["GB"]', '["ZZ"]'))).toThrow(/location "ZZ"/);
+  });
+
+  it("builds the campaign create body with geo target type, network settings and the EU political advertising status", () => {
+    const [, campaignAction] = planAds(parseConfig(SEARCH_CAMPAIGN_TOML), baseLive());
+    expect(campaignCreateBody(campaignAction, "customers/8142685080/campaignBudgets/9")).toEqual({
+      name: "Search #1",
+      status: "PAUSED",
+      advertisingChannelType: "SEARCH",
+      campaignBudget: "customers/8142685080/campaignBudgets/9",
+      geoTargetTypeSetting: { positiveGeoTargetType: "PRESENCE" },
+      networkSettings: { targetGoogleSearch: true, targetSearchNetwork: false, targetContentNetwork: false },
+      containsEuPoliticalAdvertising: "DOES_NOT_CONTAIN_EU_POLITICAL_ADVERTISING",
+      maximizeConversions: { targetCpaMicros: "12500000" },
+    });
+  });
+
+  it("sends CONTAINS_EU_POLITICAL_ADVERTISING when declared true", () => {
+    const [, campaignAction] = planAds(
+      parseConfig(SEARCH_CAMPAIGN_TOML.replace("contains_eu_political_advertising = false", "contains_eu_political_advertising = true")),
+      baseLive(),
+    );
+    expect(campaignCreateBody(campaignAction, "b").containsEuPoliticalAdvertising).toBe("CONTAINS_EU_POLITICAL_ADVERTISING");
+  });
+
+  it("builds one location criterion per declared country against the created campaign", () => {
+    const action = { kind: "create-campaign-locations", campaignName: "Search #1", locations: ["GB"] };
+    expect(locationCriteriaOperations(action, "customers/8142685080/campaigns/7")).toEqual([
+      { create: { campaign: "customers/8142685080/campaigns/7", location: { geoTargetConstant: "geoTargetConstants/2826" } } },
+    ]);
+  });
+
+  it("describes the creation of each targeting field", () => {
+    const plan = planAds(parseConfig(SEARCH_CAMPAIGN_TOML), baseLive());
+    const text = plan.map(describeAction).join("\n");
+    expect(text).toContain("geo target type PRESENCE");
+    expect(text).toContain('network {"googleSearch":true,"searchNetwork":false,"contentNetwork":false}');
+    expect(text).toContain("EU political advertising false");
+    expect(text).toContain("locations GB (geoTargetConstants/2826)");
+  });
+
+  it("plans nothing for a live Search campaign whose targeting matches", () => {
+    const live = baseLive();
+    live.campaigns.push(liveSearchCampaign(matchingTargeting()));
+    expect(planAds(parseConfig(SEARCH_CAMPAIGN_TOML), live)).toEqual([]);
+  });
+
+  it("reports drift on locations and network settings of a live Search campaign", () => {
+    const live = baseLive();
+    live.campaigns.push(
+      liveSearchCampaign({
+        ...matchingTargeting(),
+        locations: [],
+        network: { googleSearch: true, searchNetwork: true, contentNetwork: true },
+      }),
+    );
+    const plan = planAds(parseConfig(SEARCH_CAMPAIGN_TOML), live);
+    expect(plan).toHaveLength(1);
+    expect(plan[0].kind).toBe("campaign-targeting-drift");
+    expect(plan[0].fields).toEqual(["locations", "network"]);
+    expect(describeAction(plan[0])).toContain("report only, not applied");
+  });
+
+  it("reports every targeting field as drift when live carries no targeting", () => {
+    const live = baseLive();
+    live.campaigns.push(liveSearchCampaign(null));
+    const [drift] = planAds(parseConfig(SEARCH_CAMPAIGN_TOML), live);
+    expect(drift.fields).toEqual(["locations", "geoTargetType", "network", "containsEuPoliticalAdvertising"]);
+  });
+
+  it("shapes targeting from the campaign and location criterion responses, skipping negative locations", () => {
+    const targeting = shapeCampaignTargeting(
+      {
+        results: [
+          {
+            campaign: {
+              resourceName: "customers/1/campaigns/2",
+              networkSettings: { targetGoogleSearch: true, targetSearchNetwork: true },
+              geoTargetTypeSetting: { positiveGeoTargetType: "PRESENCE_OR_INTEREST" },
+              containsEuPoliticalAdvertising: "DOES_NOT_CONTAIN_EU_POLITICAL_ADVERTISING",
+            },
+          },
+        ],
+      },
+      {
+        results: [
+          {
+            campaign: { resourceName: "customers/1/campaigns/2" },
+            campaignCriterion: { negative: false, location: { geoTargetConstant: "geoTargetConstants/2826" } },
+          },
+          {
+            campaign: { resourceName: "customers/1/campaigns/2" },
+            campaignCriterion: { negative: true, location: { geoTargetConstant: "geoTargetConstants/2840" } },
+          },
+        ],
+      },
+    );
+    expect(targeting.get("customers/1/campaigns/2")).toEqual({
+      network: { googleSearch: true, searchNetwork: true, contentNetwork: false },
+      geoTargetType: "PRESENCE_OR_INTEREST",
+      containsEuPoliticalAdvertising: false,
+      locations: ["geoTargetConstants/2826"],
+    });
   });
 });
 
