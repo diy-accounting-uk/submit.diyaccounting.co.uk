@@ -44,8 +44,6 @@ step.
 **COOL-DOWN is on since 2026-09-29T21:21:54Z.** No new board rows except a degradation. Agents commit
 and stop. One branch is driven green at a time. Lifted only by the operator in their own words.
 
-- [ ] **PRV1. The private repository: the spreadsheets half.** In flight: spreadsheets `claude/docs-private-repo`, PR #147 (removes the 29 HMRC publications under `_developers/hmrc-references/` and one coverage report, references rewritten to `../private.diyaccounting.co.uk/`). Submit (PR #426) and root (PR #35) are merged; the documents live in `diy-accounting-uk/private.diyaccounting.co.uk`, cloned at `../private.diyaccounting.co.uk/`. **Source**: operator, 2026-09-29. **Owner**: Claude Code. **Model**: none. **Size**: 0 files in this repository.
-
 ## Machine-only
 
 
