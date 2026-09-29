@@ -815,7 +815,7 @@ export function describe(action) {
       return `campaign "${action.campaignName}": budget ${action.amountMicros} micros (would create)`;
     case "create-campaign":
       return (
-        `campaign "${action.campaignName}": SEARCH, ${action.status}, bidding ${action.bidding.strategy}, ` +
+        `campaign "${action.campaignName}": SEARCH, ${action.status}, bidding ${JSON.stringify(action.bidding)}, ` +
         `geo target type ${action.geoTargetType}, network ${JSON.stringify(action.network)}, ` +
         `EU political advertising ${action.containsEuPoliticalAdvertising} (would create)`
       );
@@ -826,9 +826,9 @@ export function describe(action) {
     case "create-ad-group":
       return `campaign "${action.campaignName}", ad group "${action.adGroupName}" (would create)`;
     case "create-ad-group-keywords":
-      return `campaign "${action.campaignName}", ad group "${action.adGroupName}": ${action.keywords.length} keyword(s) (would create)`;
+      return `campaign "${action.campaignName}", ad group "${action.adGroupName}": ${action.keywords.length} keyword(s) ${action.keywords.map((keyword) => keyword.matchType + " " + JSON.stringify(keyword.text)).join(", ")} (would create)`;
     case "create-ad-group-ad":
-      return `campaign "${action.campaignName}", ad group "${action.adGroupName}": responsive search ad, ${action.ad.headlines.length} headline(s), ${action.ad.descriptions.length} description(s) (would create)`;
+      return `campaign "${action.campaignName}", ad group "${action.adGroupName}": responsive search ad to ${action.ad.finalUrl}, headlines ${JSON.stringify(action.ad.headlines)}, descriptions ${JSON.stringify(action.ad.descriptions)} (would create)`;
     default:
       return `${action.kind}`;
   }
