@@ -476,7 +476,7 @@ domain is small in traffic and high in blast radius. Every row touches a custome
 | Screenshots for a release | A2 | B1 R3 | C0 to C6 | The capture run already produces stills; nothing selects or publishes them | Selection and a destination | P8 |
 | Social post composition | A3 | B3 R4 | C6 | Nothing | An account, a voice, and the publication filter | P7, P8, Q7 |
 | Social post publishing | A2 given the text | B1 R4 | C6 | Nothing. No account exists on any social surface | Accounts and credentials. This is the real gap in the operator's ambition | P8, Q7 |
-| Emails-to-articles content pipeline | A3 | B2 R4 | C6 | Backlog 23. Ten article topics named from the sampled archive; nothing built | The pipeline, and the publication filter over 14 years of customer mail | P7, P8 |
+| Emails-to-articles content pipeline | A3 | B2 R4 | C6 | Ten article topics named from the sampled archive; nothing built | The pipeline, and the publication filter over 14 years of customer mail | P7, P8 |
 | Feature proposal from analytics | A3 | B3 R4 | C0 | Nothing | The export, then the optimiser | None |
 | HMRC listing and recognition correspondence | Human | B3 | C5 adjacent | The operator sends every email. A workflow can assemble the checklist and draft both | Nothing | P6 |
 | A pricing change | Human decides, A2 applies | B1 R4 | C4 | The catalogue is the source of truth and the sync applies it | Nothing | P5 |
