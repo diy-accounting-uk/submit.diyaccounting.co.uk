@@ -68,16 +68,6 @@ Each row names what has to happen before it can start.
 | 34g | Pairing the accounts filing with a CT600 to HMRC, so one balance sheet serves both filings; the combination customers asked about when the joint filing service closed. Undesigned; needs a design row (Opus) before any build. | `PLAN_COMPANIES_HOUSE.md` Horizons | L | Revenue. The joint filing customers lost when HMRC and Companies House closed theirs. |
 | OCH1 | A Companies House sandbox user for the opt-in ci filing suites (`runCompaniesHouseSandboxFiling=true` in `deploy.yml` and `probe-test.yml`, which sign in on `https://identity-sandbox.company-information.service.gov.uk`). When the sandbox identity site is up: create a throwaway account (own email, password, authenticator; keep the base32 key); on GitHub's `ci` environment set variable `TEST_COMPANIES_HOUSE_USER_ID` and secrets `TEST_COMPANIES_HOUSE_PASSWORD`, `TEST_COMPANIES_HOUSE_TOTP_SECRET`, `COMPANIES_HOUSE_SANDBOX_API_KEY`. Nothing on NEXT.md waits on it: the Companies House videos record on the simulator and the suites are off by default. | Run 36340607940; `PLAN_COMPANIES_HOUSE.md` OCH1 | S | Trust. Re-proves the two REST filings against Companies House's sandbox from ci. Operator. |
 
-## Tier 4: hardening and compliance
-
-| # | Item | Source | Effort | Value |
-|---|---|---|---|---|
-| 27a | External pen test: get quotes, book it, name the designated responsible individual | Split from #27 | S | Trust. External lead time and a budget decision. The automated WCAG and ZAP scans already exist and pass. |
-| LP-25a | Bank referral, the partner programme (operator): pick the programme (candidates Tide, Starling, Mettle, Monzo Business; fee levels are unverified until the operator reads the current partner terms), sign up, and supply the referral link and the disclosure wording for LP-25b. | `../private.diyaccounting.co.uk/strategy/PLAN_DIYA_GL_LAUNCH.md` 5d, LP-25a | S | Revenue. A referral income line from diya-gl's audience. |
-| LP-25b | Bank referral, the placement: the diya-gl homepage tier strip and the signed-out panel (`cloud.js` `renderSignedOut`), the disclosure line, a `referral_clicked` builder in `diya-gl-events.js` with its unit case, and the cloud browser spec (spreadsheets repository). After LP-25a. | `../private.diyaccounting.co.uk/strategy/PLAN_DIYA_GL_LAUNCH.md` 5d, LP-25b | S | Revenue. The link where the audience sees it. |
-
-
-
 ## Why this order
 
 Tier 1 holds what starts next; it is empty while `NEXT.md` carries the refined rows.
@@ -86,6 +76,5 @@ Tier 2 is the income engine. The ITSA bet leads (10, 11) because its lead time i
 
 Tier 3 converts operator hours into agent hours, which is the stated aim of the whole service. It runs continuously. Date gates order it: 43 from 2026-10-02, 48 the week of 2026-11-29, 52l from 2026-12-10, with 52m after 52l. The HMRC listing emails (32a, 75) and the Companies House rows 34e to 34g and OCH1 sit here until an operator step or a design row starts them.
 
-Tier 4 holds hardening (27a) and the bank referral (LP-25a, LP-25b), picked up when they fit.
 
 Within a tier, a small item outranks a large one of the same value class.
