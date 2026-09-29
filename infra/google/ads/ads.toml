@@ -113,7 +113,7 @@ strategy = "maximize_conversions"
 name = "Asset Group 1"
 
 [[campaign]]
-name = "Search: MTD VAT and ITSA"
+name = "Search: MTD VAT"
 type = "SEARCH"
 status = "ENABLED"
 budget_gbp = 1.00
@@ -167,25 +167,6 @@ descriptions = [
   "Submit VAT returns from your DIY Accounting spreadsheet under Making Tax Digital.",
 ]
 final_url = "https://submit.diyaccounting.co.uk/"
-
-[[campaign.ad_group]]
-name = "MTD Income Tax software"
-
-[[campaign.ad_group.keyword]]
-text = "mtd income tax software"
-match_type = "EXACT"
-
-[[campaign.ad_group.keyword]]
-text = "mtd income tax software"
-match_type = "PHRASE"
-
-[campaign.ad_group.ad]
-headlines = ["MTD Income Tax Software", "Income Tax for HMRC MTD", "Resident Plan From 3.99/mo", "File VAT and Income Tax"]
-descriptions = [
-  "Resident plan: VAT and Income Tax filing to HMRC as each is recognised. £39 a year.",
-  "Also £3.99 a month, cancel anytime. Built for sole traders and landlords.",
-]
-final_url = "https://submit.diyaccounting.co.uk/bundles.html"
 
 [[campaign.ad_group]]
 name = "File VAT return without accountant"
