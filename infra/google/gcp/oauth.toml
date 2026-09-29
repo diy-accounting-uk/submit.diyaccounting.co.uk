@@ -45,7 +45,7 @@ redirect_uris = [
 # not something google-oauth-assert.js can verify.
 [[client]]
 purpose = "drive_browser"
-id = ""
+id = "670010122633-56q89d0h9c4skb9cpj4h9j2gr3kq06vd.apps.googleusercontent.com"
 project_number = "670010122633"
 application_type = "web"
 scopes = ["https://www.googleapis.com/auth/drive.file"]
