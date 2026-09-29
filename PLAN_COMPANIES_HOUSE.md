@@ -197,8 +197,8 @@ nothing.
 | Id | Question | Owner |
 |---|---|---|
 | Q1 | Where to test: answered by probe on 2026-09-26. The test service `https://xmlgw.companieshouse.gov.uk/v1-0/xmlgw/Gateway` with `GatewayTest` 1 and the test presenter accepts `ConfirmationAndVerificationStatement-v1-0` and `PSCVerificationStatement-v1-0` (its `/SchemaStatus`) and answers `CompanyDataRequest` for 00001350, 04549236, 06060501, 03950344, 04615520, 01966794; the live presenter is refused there; the sandpit staging host with the live presenter validates schemas only | CS-A2 |
-| Q2 | Does a no-change statement pass without `Shareholdings`, or must every statement from a private company carry the full holder list? | CS-A2 |
-| Q3 | Does the test service accept a statement whose director has no code, and what reject code names an unverified director? | CS-A2 |
+| Q2 | Does a no-change statement pass without `Shareholdings`, or must every statement from a private company carry the full holder list? Waits on a terminal status: every poll answers 9999 (weekly run 36435654986, 2026-09-28). | CS-A3 |
+| Q3 | Does the test service accept a statement whose director has no code? No: it fails the schema at submit with error 100 (harness runs 36295600451 and 36435654986; the blank-code cases are pinned). Which reject code names an unverified director waits on a terminal status. | CS-A3 |
 | Q4 | Software authorisation for the form: Companies House publishes no test count or checklist. We build to the assumed criteria below and send the evidence (CS-A4); whether the live package reference from O34c covers this form is answered by the XML team's reply | CS-A4 |
 
 ## Filing under a customer's own presenter (CS-P1)
@@ -219,7 +219,8 @@ Design points to settle:
 - How the page asks for and explains the credit-account requirement.
 - `PaymentPeriodsRequest` still decides whether a fee is due, under either presenter.
 - The Stripe checkout is skipped at the same fee gate CS-11a's company list skips
-  (`app/functions/companies-house/companiesHouseConfirmationStatementPost.js` line 244).
+  (`app/functions/companies-house/companiesHouseConfirmationStatementPost.js`, the
+  `feeWaivedCompanyNumbers` check at line 260).
 - Micro-entity accounts carry no fee, so this option there only changes whose presenter shows on
   the filing.
 
