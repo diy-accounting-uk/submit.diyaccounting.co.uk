@@ -22,7 +22,7 @@ import { publishActivityEvent, publishActivityFailureEvent } from "../../lib/act
 const logger = createLogger({ source: "app/functions/hmrc/hmrcTokenPost.js" });
 
 let secretsClient = null;
-let cachedHmrcClientSecret;
+const cachedHmrcClientSecretByAccount = {};
 
 // Lazy initialization of SecretsManagerClient
 async function getSecretsClient() {
@@ -143,7 +143,7 @@ export async function ingestHandler(event) {
 export async function prepareTokenExchangeRequest(code, hmrcAccount) {
   const secretArn = hmrcAccount === "synthetic" ? process.env.HMRC_SANDBOX_CLIENT_SECRET_ARN : process.env.HMRC_CLIENT_SECRET_ARN;
   const overrideSecret = hmrcAccount === "synthetic" ? process.env.HMRC_SANDBOX_CLIENT_SECRET : process.env.HMRC_CLIENT_SECRET;
-  const clientSecret = await retrieveHmrcClientSecret(overrideSecret, secretArn);
+  const clientSecret = await retrieveHmrcClientSecret(hmrcAccount === "synthetic" ? "synthetic" : "live", overrideSecret, secretArn);
   const hmrcBaseUri = hmrcAccount === "synthetic" ? process.env.HMRC_SANDBOX_BASE_URI : process.env.HMRC_BASE_URI;
   const hmrcClientId = hmrcAccount === "synthetic" ? process.env.HMRC_SANDBOX_CLIENT_ID : process.env.HMRC_CLIENT_ID;
   const url = `${hmrcBaseUri}/oauth/token`;
@@ -159,17 +159,17 @@ export async function prepareTokenExchangeRequest(code, hmrcAccount) {
   return { url, body };
 }
 
-async function retrieveHmrcClientSecret(overrideSecret, secretArn) {
-  logger.info("Retrieving HMRC client secret");
+async function retrieveHmrcClientSecret(account, overrideSecret, secretArn) {
+  logger.info({ message: "Retrieving HMRC client secret", account });
   if (overrideSecret) {
-    cachedHmrcClientSecret = overrideSecret;
+    cachedHmrcClientSecretByAccount[account] = overrideSecret;
     logger.info(`Secret retrieved from override and cached`);
-  } else if (!cachedHmrcClientSecret) {
+  } else if (!cachedHmrcClientSecretByAccount[account]) {
     const client = await getSecretsClient();
     const { GetSecretValueCommand } = await import("@aws-sdk/client-secrets-manager");
     const data = await client.send(new GetSecretValueCommand({ SecretId: secretArn }));
-    cachedHmrcClientSecret = data.SecretString;
+    cachedHmrcClientSecretByAccount[account] = data.SecretString;
     logger.info("Secret retrieved from Secrets Manager and cached");
   }
-  return cachedHmrcClientSecret;
+  return cachedHmrcClientSecretByAccount[account];
 }
