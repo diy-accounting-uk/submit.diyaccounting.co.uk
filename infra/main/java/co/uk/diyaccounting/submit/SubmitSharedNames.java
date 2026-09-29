@@ -2004,7 +2004,7 @@ public class SubmitSharedNames {
 
         this.hmrcTokenPostLambdaHttpMethod = HttpMethod.POST;
         this.hmrcTokenPostLambdaUrlPath = "/api/v1/hmrc/token";
-        this.hmrcTokenPostLambdaJwtAuthorizer = false;
+        this.hmrcTokenPostLambdaJwtAuthorizer = true;
         this.hmrcTokenPostLambdaCustomAuthorizer = false;
         var hmrcTokenPostLambdaHandlerName = "hmrcTokenPost.ingestHandler";
         var hmrcTokenPostLambdaHandlerDashed =
@@ -3841,7 +3841,7 @@ public class SubmitSharedNames {
 
         this.companiesHouseTokenPostLambdaHttpMethod = HttpMethod.POST;
         this.companiesHouseTokenPostLambdaUrlPath = "/api/v1/companies-house/token";
-        this.companiesHouseTokenPostLambdaJwtAuthorizer = false;
+        this.companiesHouseTokenPostLambdaJwtAuthorizer = true;
         this.companiesHouseTokenPostLambdaCustomAuthorizer = false;
         var companiesHouseTokenPostLambdaHandlerName = "companiesHouseTokenPost.ingestHandler";
         var companiesHouseTokenPostLambdaHandlerDashed =
@@ -4466,10 +4466,10 @@ public class SubmitSharedNames {
                 "Redeems a pass code and grants the associated bundle to the authenticated user",
                 "redeemPass"));
 
-        // Pass Admin POST Lambda (JWT auth)
+        // Pass Admin POST Lambda (JWT auth; the handler admits operators and synthetic test users only)
         this.passAdminPostLambdaHttpMethod = HttpMethod.POST;
         this.passAdminPostLambdaUrlPath = "/api/v1/pass/admin";
-        this.passAdminPostLambdaJwtAuthorizer = false;
+        this.passAdminPostLambdaJwtAuthorizer = true;
         this.passAdminPostLambdaCustomAuthorizer = false;
         var passAdminPostLambdaHandlerName = "passAdminPost.ingestHandler";
         var passAdminPostLambdaHandlerDashed =

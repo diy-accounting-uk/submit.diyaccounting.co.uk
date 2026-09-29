@@ -106,6 +106,7 @@ describe("System: account/bundlePost high-level behaviours", () => {
     const adminEvent = buildLambdaEvent({
       method: "POST",
       path: "/api/v1/pass/admin",
+      headers: { Authorization: `Bearer ${makeIdToken("pass-admin-caller", { email: "synthetic-system-test@test.diyaccounting.co.uk" })}` },
       body: { passTypeId: "day-guest-test-pass", bundleId: "day-guest", validityPeriod: "P7D", maxUses: 1, createdBy: "system-test" },
     });
     const adminRes = await passAdminPostHandler(adminEvent);

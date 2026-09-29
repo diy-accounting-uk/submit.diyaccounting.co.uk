@@ -64,6 +64,7 @@ dotenvConfigIfNotBlank({ path: ".env.test" });
 
 describe("billingCheckoutPost", () => {
   const validToken = makeIdToken("test-user-sub", { email: "user@example.com" });
+  const syntheticEmailToken = () => makeIdToken("synthetic-sub", { email: "synthetic-local@test.diyaccounting.co.uk" });
 
   beforeEach(() => {
     mockGetUserBundles.mockReset();
@@ -182,12 +183,29 @@ describe("billingCheckoutPost", () => {
     expect(result.statusCode).toBe(500);
   });
 
-  test("uses STRIPE_TEST_PRICE_ID_RESIDENT_PRO_YEAR when synthetic flag is set in request body", async () => {
-    const event = buildEventWithToken(validToken, { synthetic: true });
+  test("uses STRIPE_TEST_PRICE_ID_RESIDENT_PRO_YEAR for a synthetic test user's verified email", async () => {
+    const event = buildEventWithToken(syntheticEmailToken(), {});
     await ingestHandler(event);
 
     const params = mockCheckoutSessionsCreate.mock.calls[0][0];
     expect(params.line_items[0].price).toBe("price_test_synthetic_456");
+  });
+
+  test("keeps the live price when the request body or hmrcaccount header asks for test mode", async () => {
+    const event = buildEventWithToken(validToken, { bundleId: "resident-pro", synthetic: true }, { headers: { hmrcaccount: "synthetic" } });
+    event.headers.Authorization = `Bearer ${validToken}`;
+    await ingestHandler(event);
+
+    const params = mockCheckoutSessionsCreate.mock.calls[0][0];
+    expect(params.line_items[0].price).not.toBe("price_test_synthetic_456");
+  });
+
+  test("keeps the live price for an email that only resembles a synthetic test user", async () => {
+    const lookalike = makeIdToken("lookalike-sub", { email: "synthetic-local@test.diyaccounting.co.uk.example.com" });
+    await ingestHandler(buildEventWithToken(lookalike, { bundleId: "resident-pro" }));
+
+    const params = mockCheckoutSessionsCreate.mock.calls[0][0];
+    expect(params.line_items[0].price).not.toBe("price_test_synthetic_456");
   });
 
   test("uses STRIPE_PRICE_ID_RESIDENT_PRO_YEAR by default (annual) when no synthetic flag", async () => {
@@ -239,7 +257,7 @@ describe("billingCheckoutPost", () => {
 
   test("uses STRIPE_TEST_PRICE_ID_RESIDENT_VAT for resident-vat synthetic checkout", async () => {
     process.env.STRIPE_TEST_PRICE_ID_RESIDENT_VAT = "price_vat_test_789";
-    const event = buildEventWithToken(validToken, { bundleId: "resident-vat", synthetic: true });
+    const event = buildEventWithToken(syntheticEmailToken(), { bundleId: "resident-vat" });
     await ingestHandler(event);
 
     const params = mockCheckoutSessionsCreate.mock.calls[0][0];
@@ -286,7 +304,7 @@ describe("billingCheckoutPost", () => {
   test("uses STRIPE_TEST_PRICE_ID_RESIDENT_MONTH for a synthetic resident monthly checkout", async () => {
     process.env.ENVIRONMENT_NAME = "ci";
     process.env.STRIPE_TEST_PRICE_ID_RESIDENT_MONTH = "price_resident_monthly_test_789";
-    const event = buildEventWithToken(validToken, { bundleId: "resident", interval: "monthly", synthetic: true });
+    const event = buildEventWithToken(syntheticEmailToken(), { bundleId: "resident", interval: "monthly" });
     await ingestHandler(event);
 
     const params = mockCheckoutSessionsCreate.mock.calls[0][0];

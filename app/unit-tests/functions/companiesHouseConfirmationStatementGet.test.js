@@ -128,6 +128,12 @@ describe("companiesHouseConfirmationStatementGet ingestHandler", () => {
     expect(body.errors[0].number).toBe(502);
   });
 
+  test("returns 404 when the caller has no request for the submission", async () => {
+    mockPollSubmission.mockResolvedValue({ notFound: true, submissionNumber: "00001A" });
+    const response = await companiesHouseConfirmationStatementGetHandler(buildEvent());
+    expect(response.statusCode).toBe(404);
+  });
+
   test("rejects a submission number that is not 6 characters", async () => {
     const response = await companiesHouseConfirmationStatementGetHandler(buildEvent({ submissionNumber: "SHORT" }));
     expect(response.statusCode).toBe(400);

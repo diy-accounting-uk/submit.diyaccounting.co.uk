@@ -178,6 +178,17 @@ export async function ingestHandler(event) {
     };
   }
 
+  const requestedCatalogBundle = getCatalogBundle(requestBody.bundleId);
+  if (requestedCatalogBundle && requestedCatalogBundle.allocation !== "on-request") {
+    logger.warn({ message: "Bundle request refused, bundle is not on-request", bundleId: requestBody.bundleId, userId });
+    return http403ForbiddenResponse({
+      request,
+      headers: responseHeaders,
+      message: "Bundle cannot be requested directly",
+      error: { status: "bundle_not_requestable", error: "bundle_not_requestable", bundle: requestBody.bundleId },
+    });
+  }
+
   let result;
   try {
     const waitTimeMs = parseInt(getHeader(event.headers, "x-wait-time-ms") || DEFAULT_WAIT_MS, 10);

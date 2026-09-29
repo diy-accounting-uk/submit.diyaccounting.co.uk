@@ -1068,6 +1068,16 @@ public class ObservabilityStack extends Stack {
                 .resources(List.of(analyticsLakeBucketArn + "/curated/agent-runs/*"))
                 .build());
 
+        // The weekly security review's full report: file, line and exploit path for each finding.
+        // The repository is public, so this prefix is the only place that report is written; the
+        // issue gets counts alone. No Glue table covers private/, and DenyCustomerData below keeps
+        // this role from reading the report back.
+        alarmTriageRole.addToPolicy(PolicyStatement.Builder.create()
+                .sid("WriteSecurityReviewReports")
+                .actions(List.of("s3:PutObject"))
+                .resources(List.of(analyticsLakeBucketArn + "/private/security-review/*"))
+                .build());
+
         // One explicit Deny so a later widening of an Allow above cannot reach customer data. Athena
         // and the lake are denied deliberately: the triage agent works from logs and traces, and
         // reaching the lake means reaching activity events, which carry hashed subs and bundle

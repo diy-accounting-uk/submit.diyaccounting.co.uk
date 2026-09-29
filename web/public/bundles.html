@@ -551,7 +551,6 @@
         try {
           const bundleId = btn.getAttribute("data-bundle-id");
           const interval = btn.getAttribute("data-interval");
-          const isSynthetic = sessionStorage.getItem("hmrcAccount") === "synthetic";
 
           // GA4 ecommerce: begin_checkout when the user starts a Stripe checkout
           if (typeof gtag === "function") {
@@ -565,7 +564,7 @@
           const response = await window.fetchWithIdToken("/api/v1/billing/checkout", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ bundleId, ...(interval && { interval }), ...(isSynthetic && { synthetic: true }) }),
+            body: JSON.stringify({ bundleId, ...(interval && { interval }) }),
           });
           const body = await response.json().catch(() => ({}));
 

@@ -171,9 +171,11 @@ test("Click through: Pass redemption grants bundle", async ({ page }, testInfo) 
   // Do NOT pass testPass explicitly — the admin endpoint must auto-derive it from the pass type.
   const createResult = await page.evaluate(async () => {
     try {
+      const idToken = localStorage.getItem("cognitoIdToken");
+      if (!idToken) return { ok: false, error: "No auth token" };
       const response = await fetch("/api/v1/pass/admin", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: { "Content-Type": "application/json", "Authorization": `Bearer ${idToken}` },
         body: JSON.stringify({
           passTypeId: "day-guest-test-pass",
           bundleId: "day-guest",

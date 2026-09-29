@@ -126,12 +126,22 @@ describe("billingActivityCheckoutPost", () => {
     expect(params.line_items).toEqual([{ price: "price_fcs_live_123", quantity: 1 }]);
   });
 
-  test("uses the test price id when the request is synthetic", async () => {
-    const event = buildEventWithToken(validToken, buildBody({ synthetic: true }));
+  test("uses the test price id for a synthetic test user's verified email", async () => {
+    const syntheticToken = makeIdToken("synthetic-sub", { email: "synthetic-local@test.diyaccounting.co.uk" });
+    const event = buildEventWithToken(syntheticToken, buildBody());
     await ingestHandler(event);
 
     const params = mockCheckoutSessionsCreate.mock.calls[0][0];
     expect(params.line_items[0].price).toBe("price_fcs_test_456");
+  });
+
+  test("keeps the live price id when the body or header asks for test mode", async () => {
+    const event = buildEventWithToken(validToken, buildBody({ synthetic: true }), { headers: { hmrcaccount: "synthetic" } });
+    event.headers.Authorization = `Bearer ${validToken}`;
+    await ingestHandler(event);
+
+    const params = mockCheckoutSessionsCreate.mock.calls[0][0];
+    expect(params.line_items[0].price).toBe("price_fcs_live_123");
   });
 
   test("returns 401 when no authorization header", async () => {

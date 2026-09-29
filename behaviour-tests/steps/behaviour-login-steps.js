@@ -181,9 +181,9 @@ export async function fillInMockAuth(page, testAuthUsername, screenshotPath = de
     await page.waitForTimeout(100);
 
     // <textarea class="u-full-width claims" name="claims" rows="15" placeholder="Optional claims JSON" autofocus="on"></textarea>
-    // { "email": "user@example.com" }
+    // { "email": "synthetic-user@test.diyaccounting.co.uk" }
     const identityToken = {
-      email: `${testAuthUsername}@example.com`,
+      email: `synthetic-${testAuthUsername}@test.diyaccounting.co.uk`,
     };
     await loggedFill(page, 'textarea[name="claims"]', JSON.stringify(identityToken), "Entering identity claims", { screenshotPath });
     await page.screenshot({ path: `${screenshotPath}/${timestamp()}-03-fill-in-moc-filled-claims.png` });

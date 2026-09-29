@@ -2,6 +2,9 @@
 // Copyright (C) 2006-2026 DIY Accounting Limited
 
 import { describe, test, expect } from "vitest";
+import { readFileSync } from "node:fs";
+import { join, dirname } from "node:path";
+import { fileURLToPath } from "node:url";
 import {
   parseSitemapPaths,
   urlConfigsFromSitemap,
@@ -90,5 +93,14 @@ describe("lighthouse-multi", () => {
   test("evaluateGates returns an empty array when every category meets its threshold", () => {
     const scores = { performance: 80, accessibility: 95, seo: 95, bestPractices: 95 };
     expect(evaluateGates(scores, scores)).toEqual([]);
+  });
+});
+
+describe("lighthouse.config.json coverage", () => {
+  test("configured paths equal the sitemap paths", () => {
+    const root = join(dirname(fileURLToPath(import.meta.url)), "../../..");
+    const config = JSON.parse(readFileSync(join(root, "lighthouse.config.json"), "utf8"));
+    const sitemapPaths = parseSitemapPaths(readFileSync(join(root, "web/public/sitemap.xml"), "utf8"));
+    expect(config.urls.map((url) => url.path).sort()).toEqual([...sitemapPaths].sort());
   });
 });

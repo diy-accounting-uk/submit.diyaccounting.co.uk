@@ -16,6 +16,7 @@
 
 import { parseXmlDocument, allElements, escapeXmlText } from "../lib/xmlDom.js";
 import { isValidCompaniesHousePersonalCode } from "./companiesHouseApi.js";
+import { isValidIsoDate } from "../lib/hmrcValidation.js";
 
 // The ConfirmationAndVerificationStatement element's own xs:sequence, in schema order. Read
 // directly from fixtures/companies-house-xmlgw/ConfirmationAndVerificationStatement-v1-0.xsd by
@@ -122,6 +123,32 @@ export function assertConfirmationStatementElementOrder(bodyXml, elementOrder = 
   }
 }
 
+function xmlWholeNumber(value, fieldName) {
+  const text = String(value ?? "").trim();
+  if (!/^\d{1,15}$/.test(text)) {
+    throw new Error(`${fieldName} must be a whole number`);
+  }
+  return escapeXmlText(text);
+}
+
+function xmlAmount(value, fieldName) {
+  const text = String(value ?? "").trim();
+  const [wholePart, fractionPart, ...rest] = text.split(".");
+  const wholeValid = /^\d{1,15}$/.test(wholePart);
+  const fractionValid = fractionPart === undefined || /^\d{1,6}$/.test(fractionPart);
+  if (!wholeValid || !fractionValid || rest.length > 0) {
+    throw new Error(`${fieldName} must be a non-negative number`);
+  }
+  return escapeXmlText(text);
+}
+
+function xmlIsoDate(value, fieldName) {
+  if (typeof value !== "string" || !isValidIsoDate(value)) {
+    throw new Error(`${fieldName} must be a date in YYYY-MM-DD form`);
+  }
+  return escapeXmlText(value);
+}
+
 function buildSicCodeXml(code) {
   return `<SICCode>${escapeXmlText(code)}</SICCode>`;
 }
@@ -150,17 +177,17 @@ function buildStatementOfCapitalXml({ totalAmountUnpaid, totalNumberOfIssuedShar
         `<Shares>` +
         `<ShareClass>${escapeXmlText(share.shareClass)}</ShareClass>` +
         `<PrescribedParticulars>${escapeXmlText(share.prescribedParticulars)}</PrescribedParticulars>` +
-        `<NumShares>${share.numShares}</NumShares>` +
-        `<AggregateNominalValue>${share.aggregateNominalValue}</AggregateNominalValue>` +
+        `<NumShares>${xmlWholeNumber(share.numShares, "numShares")}</NumShares>` +
+        `<AggregateNominalValue>${xmlAmount(share.aggregateNominalValue, "aggregateNominalValue")}</AggregateNominalValue>` +
         `</Shares>`,
     )
     .join("");
   return (
     `<StatementOfCapital><Capital>` +
-    `<TotalAmountUnpaid>${totalAmountUnpaid}</TotalAmountUnpaid>` +
-    `<TotalNumberOfIssuedShares>${totalNumberOfIssuedShares}</TotalNumberOfIssuedShares>` +
+    `<TotalAmountUnpaid>${xmlAmount(totalAmountUnpaid, "totalAmountUnpaid")}</TotalAmountUnpaid>` +
+    `<TotalNumberOfIssuedShares>${xmlWholeNumber(totalNumberOfIssuedShares, "totalNumberOfIssuedShares")}</TotalNumberOfIssuedShares>` +
     `<ShareCurrency>${escapeXmlText(shareCurrency)}</ShareCurrency>` +
-    `<TotalAggregateNominalValue>${totalAggregateNominalValue}</TotalAggregateNominalValue>` +
+    `<TotalAggregateNominalValue>${xmlAmount(totalAggregateNominalValue, "totalAggregateNominalValue")}</TotalAggregateNominalValue>` +
     `${sharesXml}</Capital></StatementOfCapital>`
   );
 }
@@ -186,8 +213,8 @@ function buildShareholdingXml({ shareClass, numberHeld, transfers, shareholders 
     .map(
       (transfer) =>
         `<Transfers>` +
-        `<DateOfTransfer>${transfer.dateOfTransfer}</DateOfTransfer>` +
-        `<NumberSharesTransferred>${transfer.numberSharesTransferred}</NumberSharesTransferred>` +
+        `<DateOfTransfer>${xmlIsoDate(transfer.dateOfTransfer, "dateOfTransfer")}</DateOfTransfer>` +
+        `<NumberSharesTransferred>${xmlWholeNumber(transfer.numberSharesTransferred, "numberSharesTransferred")}</NumberSharesTransferred>` +
         `</Transfers>`,
     )
     .join("");
@@ -200,7 +227,7 @@ function buildShareholdingXml({ shareClass, numberHeld, transfers, shareholders 
   return (
     `<Shareholdings>` +
     `<ShareClass>${escapeXmlText(shareClass)}</ShareClass>` +
-    `<NumberHeld>${numberHeld}</NumberHeld>` +
+    `<NumberHeld>${xmlWholeNumber(numberHeld, "numberHeld")}</NumberHeld>` +
     `${transfersXml}${shareholdersXml}</Shareholdings>`
   );
 }
@@ -222,7 +249,7 @@ function buildVerificationDirectorXml({ title, forename, otherForenames, surname
   return (
     `<Director><Person>` +
     `${titleXml}<Forename>${escapeXmlText(forename)}</Forename>${otherForenamesXml}` +
-    `<Surname>${escapeXmlText(surname)}</Surname><DOB>${dob}</DOB>` +
+    `<Surname>${escapeXmlText(surname)}</Surname><DOB>${xmlIsoDate(dob, "director date of birth")}</DOB>` +
     `<VerificationDetails>` +
     `<CompaniesHousePersonalCode>${escapeXmlText(personalCode)}</CompaniesHousePersonalCode>` +
     `<VerificationStatements><VerificationStatementForIndividual>INDIVIDUAL_VERIFIED</VerificationStatementForIndividual></VerificationStatements>` +
@@ -270,6 +297,7 @@ export function buildConfirmationStatementBody({
   if (!reviewDate || Number.isNaN(Date.parse(reviewDate))) {
     throw new Error("reviewDate is required");
   }
+  const reviewDateXml = xmlIsoDate(reviewDate, "reviewDate");
   const today = new Date().toISOString().slice(0, 10);
   if (reviewDate > today) {
     throw new Error(`reviewDate ${reviewDate} must not be in the future`);
@@ -295,7 +323,7 @@ export function buildConfirmationStatementBody({
     "<PSCExemptAsTradingOnRegulatedMarket>false</PSCExemptAsTradingOnRegulatedMarket>",
     "<PSCExemptAsSharesAdmittedOnMarket>false</PSCExemptAsSharesAdmittedOnMarket>",
     "<PSCExemptAsTradingOnUKRegulatedMarket>false</PSCExemptAsTradingOnUKRegulatedMarket>",
-    `<ReviewDate>${reviewDate}</ReviewDate>`,
+    `<ReviewDate>${reviewDateXml}</ReviewDate>`,
   ];
 
   if (sicCodes && sicCodes.length > 0) {

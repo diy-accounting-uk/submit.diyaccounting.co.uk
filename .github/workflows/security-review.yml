@@ -29,6 +29,12 @@ on:
 env:
   TARGET_BRANCH: ${{ inputs.target_branch || 'main' }}
   SKIP_IF_OPEN: ${{ inputs.skip_if_open_security_issues == null && 'true' || inputs.skip_if_open_security_issues }}
+  NODE_VERSION: '24'
+  AWS_REGION: 'eu-west-2'
+  CLAUDE_CODE_VERSION: '2.0.30'
+  # The one place this number is written. The budget guard, its step name and its skip comment
+  # all read it, so the three cannot drift apart.
+  SECURITY_REVIEW_TRIAGE_BUDGET_PER_DAY: '2'
 
 jobs:
   check-existing:
@@ -239,6 +245,303 @@ jobs:
             console.log(`Labelled issue #${issue.number} with ${labelsToAdd.join(', ')}`);
             core.setOutput('issue_number', issue.number.toString());
             core.setOutput('issue_url', issue.html_url);
+
+  # The triage runs in this workflow, after the issue exists, because the issue is created with
+  # GITHUB_TOKEN and an event that token raises starts no workflow. Keeping it here, rather than
+  # in a called workflow, also keeps the budget guard's count right: a called workflow's runs are
+  # recorded under the caller, with "caller / callee" job names.
+  triage-budget:
+    name: 'Triage budget'
+    needs: [create-issue, label-existing-issue]
+    if: ${{ !cancelled() && (needs.create-issue.outputs.issue_number != '' || needs.label-existing-issue.outputs.issue_number != '') }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 5
+    permissions:
+      contents: read
+      actions: read
+      issues: write
+    outputs:
+      proceed: ${{ steps.budget-guard.outputs.over-budget == 'false' }}
+    steps:
+      - name: Checkout the budget action
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          sparse-checkout: .github/actions/agent-run-budget
+          sparse-checkout-cone-mode: false
+          persist-credentials: false
+
+      - name: Stop once ${{ env.SECURITY_REVIEW_TRIAGE_BUDGET_PER_DAY }} triage runs have already posted a result today
+        id: budget-guard
+        uses: ./.github/actions/agent-run-budget
+        with:
+          workflow-file: security-review.yml
+          job-name: run-triage
+          step-name: Comment the triage summary
+          budget: ${{ env.SECURITY_REVIEW_TRIAGE_BUDGET_PER_DAY }}
+
+      - name: Comment that triage was skipped
+        if: steps.budget-guard.outputs.over-budget == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          ISSUE_NUMBER: ${{ needs.create-issue.outputs.issue_number || needs.label-existing-issue.outputs.issue_number }}
+          TRIAGE_COUNT: ${{ steps.budget-guard.outputs.count }}
+          TRIAGE_SINCE: ${{ steps.budget-guard.outputs.since }}
+        run: |
+          set -euo pipefail
+          MESSAGE="Security review triage was skipped: the budget of ${{ env.SECURITY_REVIEW_TRIAGE_BUDGET_PER_DAY }} triage runs per 24 hours is already used (${TRIAGE_COUNT} posted a result since ${TRIAGE_SINCE}). Nobody has reviewed this yet."
+          echo "$MESSAGE" | tee -a "$GITHUB_STEP_SUMMARY"
+          gh issue comment "$ISSUE_NUMBER" --repo "${{ github.repository }}" --body "$MESSAGE"
+
+  # Reviews the commit this run is on (main, on the schedule) read-only against
+  # prompts/security-review.md, so the scripts and actions it runs are the reviewed ones. The repository is
+  # public, and so are this job's log and step summary: the agent's answer never reaches either.
+  # The full report goes to the prod account's analytics lake under private/security-review/;
+  # the issue gets counts and area names that scripts/security-review-triage-output.mjs builds
+  # from a fixed vocabulary, never text the model wrote.
+  run-triage:
+    needs: [create-issue, label-existing-issue, triage-budget]
+    if: ${{ !cancelled() && needs.triage-budget.outputs.proceed == 'true' }}
+    runs-on: ubuntu-24.04
+    timeout-minutes: 45
+    environment: prod
+    concurrency:
+      group: security-review-triage
+      cancel-in-progress: false
+    permissions:
+      contents: read
+      id-token: write
+      issues: write
+      actions: read
+    env:
+      ISSUE_NUMBER: ${{ needs.create-issue.outputs.issue_number || needs.label-existing-issue.outputs.issue_number }}
+      REVIEW_REF: ${{ github.ref_name }}
+      MODEL_ID: 'eu.anthropic.claude-sonnet-4-5-20250929-v1:0'
+      SMALL_FAST_MODEL_ID: 'eu.anthropic.claude-haiku-4-5-20251001-v1:0'
+      REPORT_BUCKET: 'prod-env-analytics-lake-${{ vars.SUBMIT_ACCOUNT_ID }}'
+      RUN_URL: '${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}'
+    steps:
+      - name: Generate a token for diya-agent
+        id: app-token
+        uses: actions/create-github-app-token@fee1f7d63c2ff003460e3d139729b119787bc349 # v2.2.2
+        with:
+          app-id: ${{ vars.AGENT_APP_ID }}
+          private-key: ${{ secrets.AGENT_APP_PRIVATE_KEY }}
+
+      # No credentials left in .git/config: the agent can read every file in the checkout.
+      - name: Checkout the commit under review
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          persist-credentials: false
+
+      - name: Set up Node
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+
+      # From package-lock.json alone; nothing is installed. Kept out of the log.
+      - name: Audit the dependencies for the agent to read
+        run: npm audit --json > /tmp/npm-audit.json 2>/dev/null || true
+
+      - name: Configure AWS role via GitHub OIDC
+        uses: aws-actions/configure-aws-credentials@e1253824e5c10ff9df46874f81ed3ec929e19cfd # v6
+        with:
+          role-to-assume: ${{ vars.SUBMIT_ACTIONS_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+          role-chaining: false
+          audience: sts.amazonaws.com
+          role-skip-session-tagging: true
+          output-credentials: true
+          retry-max-attempts: 3
+
+      - name: Assume the read-only alarm triage role
+        id: assume-triage-role
+        uses: aws-actions/configure-aws-credentials@e1253824e5c10ff9df46874f81ed3ec929e19cfd # v6
+        with:
+          role-to-assume: ${{ vars.SUBMIT_ALARM_TRIAGE_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+          role-chaining: true
+          audience: sts.amazonaws.com
+          role-skip-session-tagging: true
+          output-credentials: true
+          retry-max-attempts: 3
+
+      - name: Stop when the agent kill switch is on
+        id: kill-switch
+        uses: ./.github/actions/agent-kill-switch
+        with:
+          environment-name: prod
+
+      - name: Install Claude Code
+        run: npm install -g "@anthropic-ai/claude-code@${CLAUDE_CODE_VERSION}"
+
+      - name: Run triage
+        uses: ./.github/actions/run-triage-agent
+        with:
+          model-id: ${{ env.MODEL_ID }}
+          small-fast-model-id: ${{ env.SMALL_FAST_MODEL_ID }}
+          output-file: /tmp/security-review-triage.json
+          prompt-file: prompts/security-review-triage.md
+          allowed-tools: 'Read,Grep,Glob'
+          max-turns: '120'
+          echo-output: 'false'
+
+      # Prints the run's shape only (subtype, turns); the answer itself stays off the log.
+      - name: Require a usable result
+        id: triage-run
+        run: |
+          set -o pipefail
+          if ! jq -e -r 'if type == "array" then map(select(.type == "result")) | last else . end | .subtype' /tmp/security-review-triage.json > /tmp/security-review-subtype.txt 2>/dev/null; then
+            echo "::error::the triage produced no Claude Code result; the output is not shown because it may hold findings"
+            exit 1
+          fi
+          echo "triage result subtype: $(cat /tmp/security-review-subtype.txt)" | tee -a "$GITHUB_STEP_SUMMARY"
+
+      - name: Name the private report
+        id: report
+        run: |
+          set -euo pipefail
+          KEY="private/security-review/dt=$(date -u +%F)/${{ github.run_id }}-${{ github.run_attempt }}.md"
+          echo "key=${KEY}" | tee -a "$GITHUB_OUTPUT"
+          echo "location=\`s3://${REPORT_BUCKET}/${KEY}\` in the prod account" | tee -a "$GITHUB_OUTPUT"
+
+      - name: Split the public summary from the private report
+        id: split
+        env:
+          REPORT_LOCATION: ${{ steps.report.outputs.location }}
+        run: |
+          set -euo pipefail
+          node scripts/security-review-triage-output.mjs \
+            --input /tmp/security-review-triage.json \
+            --public /tmp/security-review-public.md \
+            --private /tmp/security-review-private.md \
+            --commit "$(git rev-parse HEAD)" \
+            --branch "${REVIEW_REF}" \
+            --report-location "${REPORT_LOCATION}" \
+            | tee -a "$GITHUB_OUTPUT"
+
+      # Runs even when the split failed on a malformed summary block: the script writes the
+      # agent's answer before it judges the block, so the operator can still read it.
+      - name: Store the private report
+        if: ${{ !cancelled() && steps.report.outcome == 'success' && steps.assume-triage-role.outcome == 'success' }}
+        run: |
+          set -euo pipefail
+          if [ ! -s /tmp/security-review-private.md ]; then
+            echo "no private report was written" | tee -a "$GITHUB_STEP_SUMMARY"
+            exit 0
+          fi
+          {
+            echo "# Security review triage for issue #${ISSUE_NUMBER}"
+            echo
+            echo "- Branch: ${REVIEW_REF} at $(git rev-parse HEAD)"
+            echo "- Model: ${MODEL_ID}"
+            echo "- Run: ${RUN_URL}"
+            echo
+            cat /tmp/security-review-private.md
+          } > /tmp/security-review-private-with-header.md
+          aws s3 cp /tmp/security-review-private-with-header.md "s3://${REPORT_BUCKET}/${{ steps.report.outputs.key }}" \
+            --content-type 'text/markdown; charset=utf-8' --only-show-errors
+          echo "private report stored under ${{ steps.report.outputs.key }}" | tee -a "$GITHUB_STEP_SUMMARY"
+
+      - name: Filter the summary before it is published
+        id: publish-filter
+        uses: ./.github/actions/publish-filter
+        with:
+          input-file: /tmp/security-review-public.md
+          format: markdown
+          environment-name: prod
+          model-id: ${{ env.MODEL_ID }}
+          workflow-name: security-review
+          run-number: ${{ github.run_number }}
+          run-url: ${{ env.RUN_URL }}
+
+      - name: Comment the triage summary
+        id: comment-triage
+        env:
+          GH_TOKEN: ${{ steps.app-token.outputs.token }}
+        run: |
+          set -euo pipefail
+          gh issue comment "$ISSUE_NUMBER" --repo "${{ github.repository }}" --body-file "${{ steps.publish-filter.outputs.output-file }}"
+
+      - name: Close the issue when nothing is above Low
+        if: steps.split.outputs.close == 'true'
+        id: close-issue
+        env:
+          GH_TOKEN: ${{ steps.app-token.outputs.token }}
+        run: |
+          set -euo pipefail
+          gh issue close "$ISSUE_NUMBER" --repo "${{ github.repository }}" --reason completed
+
+      # After the comment, so the issue says the triage stopped, but the run still ends red.
+      - name: Fail the run when triage stopped early
+        if: steps.split.outputs.close == 'false' && steps.split.outputs.above-low == ''
+        run: |
+          echo "failing the run: the triage stopped before it finished" | tee -a "$GITHUB_STEP_SUMMARY"
+          exit 1
+
+      - name: Determine the outcome for the ledger
+        if: ${{ !cancelled() }}
+        id: ledger-outcome
+        run: |
+          set -euo pipefail
+          if [ "${{ steps.comment-triage.conclusion }}" = "success" ] && [ "${{ steps.split.outputs.above-low }}" = "" ]; then
+            OUTCOME=max-turns
+          elif [ "${{ steps.comment-triage.conclusion }}" = "success" ]; then
+            OUTCOME=posted
+          elif [ "${{ steps.kill-switch.conclusion }}" = "failure" ]; then
+            OUTCOME=skipped-kill-switch
+          elif [ "${{ steps.triage-run.conclusion }}" = "failure" ] || [ "${{ steps.split.conclusion }}" = "failure" ]; then
+            OUTCOME=no-answer
+          else
+            OUTCOME=no-action
+          fi
+          echo "outcome=${OUTCOME}" | tee -a "$GITHUB_OUTPUT"
+
+      - name: Build the agent-run row
+        if: ${{ !cancelled() }}
+        id: agent-run-row
+        env:
+          GH_TOKEN: ${{ github.token }}
+          ROW_RUN_ID: ${{ github.run_id }}
+          ROW_OUTCOME: ${{ steps.ledger-outcome.outputs.outcome }}
+          ROW_REDACTIONS: ${{ steps.publish-filter.outputs.redactions }}
+          ROW_GUARDRAIL_ACTION: ${{ steps.publish-filter.outputs.guardrail-action }}
+          ROW_REPOSITORY: ${{ github.repository }}
+        run: |
+          set -euo pipefail
+          STARTED_AT=$(gh api "repos/${ROW_REPOSITORY}/actions/runs/${ROW_RUN_ID}" --jq .run_started_at)
+          FINISHED_AT=$(date -u +%FT%TZ)
+          DURATION_SECONDS=$(( $(date -u -d "$FINISHED_AT" +%s) - $(date -u -d "$STARTED_AT" +%s) ))
+
+          ROW=$(jq -nc \
+            --arg run_id "$ROW_RUN_ID" \
+            --arg run_url "$RUN_URL" \
+            --arg trigger "${{ github.event_name }}" \
+            --arg issue_number "$ISSUE_NUMBER" \
+            --arg model_id "$MODEL_ID" \
+            --arg outcome "$ROW_OUTCOME" \
+            --arg redactions "${ROW_REDACTIONS:-}" \
+            --arg guardrail_action "${ROW_GUARDRAIL_ACTION:-}" \
+            --argjson duration_seconds "$DURATION_SECONDS" \
+            --arg finished_at "$FINISHED_AT" \
+            '{
+              workflow: "security-review", run_id: $run_id, run_url: $run_url, trigger: $trigger,
+              environment: "prod",
+              issue_number: (if $issue_number == "" then null else ($issue_number | tonumber) end),
+              model_id: $model_id, outcome: $outcome, escalated: false,
+              redactions: (if $redactions == "" then null else ($redactions | tonumber) end),
+              guardrail_action: (if $guardrail_action == "" then null else $guardrail_action end),
+              pr_number: null, duration_seconds: $duration_seconds, finished_at: $finished_at
+            }')
+          echo "row=$ROW" >> "$GITHUB_OUTPUT"
+          echo "key=curated/agent-runs/dt=$(date -u +%F)/${ROW_RUN_ID}-${{ github.run_attempt }}.json" >> "$GITHUB_OUTPUT"
+
+      - name: Write the agent-run row to the lake
+        if: ${{ !cancelled() && steps.assume-triage-role.outcome == 'success' }}
+        uses: ./.github/actions/dora-row
+        with:
+          bucket: ${{ env.REPORT_BUCKET }}
+          key: ${{ steps.agent-run-row.outputs.key }}
+          row: ${{ steps.agent-run-row.outputs.row }}
 
   summary:
     name: 'Summary'

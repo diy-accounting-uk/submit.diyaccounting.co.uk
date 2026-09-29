@@ -9,15 +9,14 @@ import {
   parseRequestBody,
   buildValidationError,
   http200OkResponse,
+  http401UnauthorizedResponse,
   http502BadGatewayResponse,
   buildUpstreamRejectionResponse,
   safeHostname,
   extractUserFromAuthorizerContext,
-  getHeader,
 } from "../../lib/httpResponseHelper.js";
 import { validateEnv } from "../../lib/env.js";
 import { registerLambdaRoute } from "../../lib/httpServerToLambdaAdaptor.js";
-import { getUserSub } from "../../lib/jwtHelper.js";
 import { initializeSalt } from "../../services/subHasher.js";
 import { publishActivityEvent, publishActivityFailureEvent } from "../../lib/activityAlert.js";
 import { fetchJsonWithTimeout, DEFAULT_TIMEOUTS } from "../../lib/httpFetch.js";
@@ -60,20 +59,17 @@ export async function ingestHandler(event) {
     });
   }
 
+  // The route sits behind the JWT authorizer, so the caller's sub comes from its context.
+  const userSub = extractUserFromAuthorizerContext(event)?.sub || null;
+  if (!userSub) {
+    return http401UnauthorizedResponse({ request, headers: { ...responseHeaders }, message: "Authentication required" });
+  }
+
   const errorMessages = [];
   const { code } = extractAndValidateParameters(event, errorMessages);
 
   if (errorMessages.length > 0) {
     return buildValidationError(request, errorMessages, responseHeaders);
-  }
-
-  // Associate the Companies House OAuth token exchange audit with the authenticated web user's
-  // sub, the same fallback order hmrcTokenPost uses: Authorization header, authorizer context,
-  // then the x-user-sub header.
-  let userSub = getUserSub(event);
-  if (!userSub) userSub = extractUserFromAuthorizerContext(event)?.sub || null;
-  if (!userSub) {
-    userSub = getHeader(event.headers, "x-user-sub") || null;
   }
 
   const upstreamHost = safeHostname(getIdentityBaseUrl());

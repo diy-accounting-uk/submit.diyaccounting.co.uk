@@ -297,6 +297,8 @@ export async function ensureBundleViaPassApi(page, bundleId, screenshotPath = de
     const createResult = await page.evaluate(
       async ({ bid, isTestPass }) => {
         try {
+          const idToken = localStorage.getItem("cognitoIdToken");
+          if (!idToken) return { ok: false, error: "No auth token" };
           const passBody = {
             passTypeId: bid,
             bundleId: bid,
@@ -307,7 +309,7 @@ export async function ensureBundleViaPassApi(page, bundleId, screenshotPath = de
           if (isTestPass) passBody.testPass = true;
           const response = await fetch("/api/v1/pass/admin", {
             method: "POST",
-            headers: { "Content-Type": "application/json" },
+            headers: { "Content-Type": "application/json", "Authorization": `Bearer ${idToken}` },
             body: JSON.stringify(passBody),
           });
           const body = await response.json();
@@ -347,59 +349,6 @@ export async function ensureBundleViaPassApi(page, bundleId, screenshotPath = de
 
     console.log(`Pass redemption result: ${JSON.stringify(redeemResult)}`);
     await page.screenshot({ path: `${screenshotPath}/${timestamp()}-pass-03-redeemed.png` });
-
-    // Step 3: If bundle requires subscription, grant directly via bundle API
-    // This bypasses Stripe for tests that need the bundle but aren't testing payment
-    const data = redeemResult?.data || redeemResult;
-    if (data?.requiresSubscription) {
-      const isSynthetic = data?.testPass || testPass;
-      console.log(`Bundle ${bundleId} requires subscription — granting directly via bundle API for test setup (synthetic=${isSynthetic})`);
-      const grantResult = await page.evaluate(
-        async ({ bid, synthetic }) => {
-          const idToken = localStorage.getItem("cognitoIdToken");
-          if (!idToken) return { ok: false, error: "No auth token" };
-          try {
-            const qualifiers = synthetic ? { synthetic: true } : {};
-            const response = await fetch("/api/v1/bundle", {
-              method: "POST",
-              headers: {
-                "Content-Type": "application/json",
-                "Authorization": `Bearer ${idToken}`,
-                "x-initial-request": "true",
-              },
-              body: JSON.stringify({ bundleId: bid, qualifiers }),
-            });
-            const body = await response.json();
-            return { ok: response.ok, status: response.status, ...body };
-          } catch (err) {
-            return { ok: false, error: err.message };
-          }
-        },
-        { bid: bundleId, synthetic: isSynthetic },
-      );
-      console.log(`Direct bundle grant result: ${JSON.stringify(grantResult)}`);
-      await page.screenshot({ path: `${screenshotPath}/${timestamp()}-pass-03b-direct-grant.png` });
-
-      // 202 means async — poll until the bundle appears as allocated
-      if (grantResult.status === 202 || !grantResult.message?.includes("already allocated")) {
-        const maxPolls = 10;
-        for (let i = 0; i < maxPolls; i++) {
-          await page.waitForTimeout(1000);
-          const allocated = await page.evaluate(async (bid) => {
-            const idToken = localStorage.getItem("cognitoIdToken");
-            if (!idToken) return false;
-            const resp = await fetch("/api/v1/bundle", { headers: { Authorization: `Bearer ${idToken}` } });
-            const d = await resp.json();
-            return (d.bundles || []).some((b) => b.bundleId === bid && b.allocated);
-          }, bundleId);
-          if (allocated) {
-            console.log(`[polling for grant]: Bundle ${bundleId} now allocated (poll ${i + 1}/${maxPolls})`);
-            break;
-          }
-          console.log(`[polling for grant]: Bundle ${bundleId} not yet allocated, waiting... (${i + 1}/${maxPolls})`);
-        }
-      }
-    }
 
     // Clear bundle cache so fetchUserBundles hits the API fresh after reload
     await page.evaluate(async () => {
@@ -611,6 +560,8 @@ export async function ensureBundleViaCheckout(
       const createResult = await page.evaluate(
         async ({ bid, isTestPass }) => {
           try {
+            const idToken = localStorage.getItem("cognitoIdToken");
+            if (!idToken) return { ok: false, error: "No auth token" };
             const passBody = {
               passTypeId: bid,
               bundleId: bid,
@@ -621,7 +572,7 @@ export async function ensureBundleViaCheckout(
             if (isTestPass) passBody.testPass = true;
             const response = await fetch("/api/v1/pass/admin", {
               method: "POST",
-              headers: { "Content-Type": "application/json" },
+              headers: { "Content-Type": "application/json", "Authorization": `Bearer ${idToken}` },
               body: JSON.stringify(passBody),
             });
             const body = await response.json();

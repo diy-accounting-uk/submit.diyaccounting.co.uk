@@ -217,4 +217,23 @@ describe("companiesHouseTokenPost ingestHandler", () => {
     expect(detail.event).toBe("companies-house-token-exchanged");
     expect(detail.hashedSub).toBe(hashSub("test-sub"));
   });
+
+  test("returns 401 and exchanges nothing when no authorizer context is present, ignoring an x-user-sub header", async () => {
+    const originalFetch = global.fetch;
+    global.fetch = vi.fn();
+    try {
+      const event = buildLambdaEvent({
+        method: "POST",
+        body: { code: "test-code" },
+        headers: { "x-user-sub": "header-sub" },
+        authorizer: {},
+      });
+      const response = await companiesHouseTokenPostHandler(event);
+
+      expect(response.statusCode).toBe(401);
+      expect(global.fetch).not.toHaveBeenCalled();
+    } finally {
+      global.fetch = originalFetch;
+    }
+  });
 });
