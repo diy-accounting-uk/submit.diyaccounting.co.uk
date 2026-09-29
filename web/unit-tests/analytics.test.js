@@ -122,6 +122,17 @@ describe("web/public/lib/analytics.js", () => {
     );
   });
 
+  it("tags a visit from a browser flagged by the operator bundle as operator", () => {
+    global.localStorage.setItem("visitorKind.operator", "1");
+
+    eval(scriptContent);
+    dataLayerPushes = global.dataLayer;
+
+    expect(dataLayerPushes.some((args) => args[0] === "set" && args[1] === "user_properties" && args[2].visitor_kind === "operator")).toBe(
+      true,
+    );
+  });
+
   it("tags a canary visit as bot", () => {
     global.navigator.userAgent = "DIYAccounting-Probe-Monitor/1.0";
 

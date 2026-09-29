@@ -235,6 +235,18 @@ export const OBJECTIVE_DEFINITIONS = [
         deepLink: (ctx) => buildGa4ReportsLink(ctx.ga4PropertyId),
       },
       {
+        id: "sessions-operator",
+        label: "Sessions, operator visitors",
+        unit: "count",
+        view: "v_visitors_by_kind_daily",
+        dayColumn: "day",
+        valueExpr: "sessions",
+        aggregation: "sum",
+        where: "visitor_kind = 'operator'",
+        dailySeries: true,
+        deepLink: (ctx) => buildGa4ReportsLink(ctx.ga4PropertyId),
+      },
+      {
         id: "sessions-bot",
         label: "Sessions, bot visitors",
         unit: "count",

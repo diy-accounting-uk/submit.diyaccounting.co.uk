@@ -63,6 +63,18 @@ const FIXTURE_SNAPSHOT = {
           deepLink: "https://analytics.google.com/analytics/web/#/p523400333/reports/intelligenthome",
         },
         {
+          id: "sessions-operator",
+          label: "Sessions, operator visitors",
+          unit: "count",
+          last30: { value: 12, trend: 0 },
+          last90: { value: 30, trend: 0 },
+          dailySeries: [
+            { day: "2026-09-06", value: 3 },
+            { day: "2026-09-07", value: 2 },
+          ],
+          deepLink: "https://analytics.google.com/analytics/web/#/p523400333/reports/intelligenthome",
+        },
+        {
           id: "sessions-bot",
           label: "Sessions, bot visitors",
           unit: "count",
@@ -329,7 +341,7 @@ test.describe("Operator Dashboard", () => {
     );
   });
 
-  test("renders the visitors panel with human, bot and synthetic sessions per day", async ({ page }) => {
+  test("renders the visitors panel with human, operator, bot and synthetic sessions per day", async ({ page }) => {
     await setupRoutes(page);
     await loadDashboard(page);
 
@@ -339,8 +351,9 @@ test.describe("Operator Dashboard", () => {
     const firstDay = page.locator('#visitorsPanel tr.visitors-day[data-day="2026-09-06"]');
     await expect(firstDay.locator("td").nth(0)).toHaveText("2026-09-06");
     await expect(firstDay.locator("td").nth(1)).toHaveText("30");
-    await expect(firstDay.locator("td").nth(2)).toHaveText("5");
-    await expect(firstDay.locator("td").nth(3)).toHaveText("8");
+    await expect(firstDay.locator("td").nth(2)).toHaveText("3");
+    await expect(firstDay.locator("td").nth(3)).toHaveText("5");
+    await expect(firstDay.locator("td").nth(4)).toHaveText("8");
   });
 
   test("shows a placeholder for an objective with no observations yet", async ({ page }) => {

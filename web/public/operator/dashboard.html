@@ -229,6 +229,7 @@
               <tr>
                 <th>Day</th>
                 <th>Human</th>
+                <th>Operator</th>
                 <th>Bot</th>
                 <th>Synthetic</th>
               </tr>
@@ -405,6 +406,7 @@
         const byDay = {};
         [
           ["sessions-human", "human"],
+          ["sessions-operator", "operator"],
           ["sessions-bot", "bot"],
           ["sessions-synthetic", "synthetic"],
         ].forEach(([observationId, kind]) => {
@@ -426,7 +428,7 @@
             dayCell.textContent = day;
             row.appendChild(dayCell);
 
-            ["human", "bot", "synthetic"].forEach((kind) => {
+            ["human", "operator", "bot", "synthetic"].forEach((kind) => {
               const cell = document.createElement("td");
               cell.textContent = formatValue("count", byDay[day][kind]);
               row.appendChild(cell);

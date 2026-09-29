@@ -12,7 +12,7 @@ import path from "node:path";
 const submitJsPath = path.join(process.cwd(), "web/public/submit.bundle.js");
 const scriptContent = fs.readFileSync(submitJsPath, "utf-8");
 
-function setUpRum({ userAgent, requestIdPrefix } = {}) {
+function setUpRum({ userAgent, requestIdPrefix, operatorFlag } = {}) {
   const metaTags = {
     "rum:appMonitorId": "test-monitor-123",
     "rum:region": "eu-west-2",
@@ -21,7 +21,7 @@ function setUpRum({ userAgent, requestIdPrefix } = {}) {
   };
 
   global.localStorage = {
-    getItem: vi.fn((key) => (key === "consent.rum" ? "granted" : null)),
+    getItem: vi.fn((key) => (key === "consent.rum" ? "granted" : key === "visitorKind.operator" && operatorFlag ? "1" : null)),
     setItem: vi.fn(),
   };
 
@@ -97,6 +97,13 @@ describe("RUM visitor_kind session attribute", () => {
 
     const attributesCall = global.window.AwsRumClient.q.find((entry) => entry.c === "addSessionAttributes");
     expect(attributesCall.p).toEqual({ visitor_kind: "synthetic" });
+  });
+
+  it("tags a visit from a browser flagged by the operator bundle as operator", () => {
+    setUpRum({ operatorFlag: true });
+
+    const attributesCall = global.window.AwsRumClient.q.find((entry) => entry.c === "addSessionAttributes");
+    expect(attributesCall.p).toEqual({ visitor_kind: "operator" });
   });
 
   it("tags a canary visit as bot", () => {

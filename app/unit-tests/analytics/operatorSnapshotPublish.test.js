@@ -478,11 +478,12 @@ describe("operatorSnapshotPublish", () => {
       expect(sqlStatements.some((sql) => sql.includes("area = 'accessibility'"))).toBe(true);
       expect(sqlStatements.some((sql) => sql.includes("area = 'fraud-prevention-headers'"))).toBe(true);
       expect(sqlStatements.some((sql) => sql.includes("visitor_kind = 'human'"))).toBe(true);
+      expect(sqlStatements.some((sql) => sql.includes("visitor_kind = 'operator'"))).toBe(true);
       expect(sqlStatements.some((sql) => sql.includes("visitor_kind = 'bot'"))).toBe(true);
       expect(sqlStatements.some((sql) => sql.includes("visitor_kind = 'synthetic'"))).toBe(true);
     });
 
-    test("attaches a daily series to the three visitor-kind observations only", async () => {
+    test("attaches a daily series to the four visitor-kind observations only", async () => {
       const dailyRows = [
         ["2026-09-01", "12"],
         ["2026-09-02", "9"],
@@ -499,7 +500,7 @@ describe("operatorSnapshotPublish", () => {
       const snapshot = await buildSnapshot({ workGroup: "wg", database: "db", context });
 
       const conversion = snapshot.objectives.find((o) => o.id === "conversion-to-submission");
-      for (const id of ["sessions-human", "sessions-bot", "sessions-synthetic"]) {
+      for (const id of ["sessions-human", "sessions-operator", "sessions-bot", "sessions-synthetic"]) {
         const observation = conversion.observations.find((o) => o.id === id);
         expect(observation.dailySeries).toEqual([
           { day: "2026-09-01", value: 12 },
@@ -508,7 +509,7 @@ describe("operatorSnapshotPublish", () => {
       }
 
       const withoutDailySeries = conversion.observations.filter(
-        (o) => !["sessions-human", "sessions-bot", "sessions-synthetic"].includes(o.id),
+        (o) => !["sessions-human", "sessions-operator", "sessions-bot", "sessions-synthetic"].includes(o.id),
       );
       expect(withoutDailySeries.length).toBeGreaterThan(0);
       for (const observation of withoutDailySeries) {
