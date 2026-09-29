@@ -2995,7 +2995,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 #### OPS-60 Guide GitHub repository configuration
 
 - **Use when:** setting up or checking a repository's branch protection, OIDC trust or webhook configuration.
-- **Does:** GITHUB_SETUP.md gives setup instructions for branch protection, OIDC trust, required status checks and webhooks.
+- **Does:** GITHUB_SETUP.md lists the GitHub-side setup: OIDC roles, repository settings, the main ruleset, environments, variables, secrets, labels and the order to create them.
 - **Run:** no command; see Does and Entry
 - **Entry:** `GITHUB_SETUP.md`
 - **Files:** GITHUB_SETUP.md
