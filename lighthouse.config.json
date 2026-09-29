@@ -108,6 +108,34 @@
       "thresholds": {
         "bestPractices": 92
       }
+    },
+    {
+      "path": "/videos-hmrc-vat.html",
+      "thresholds": {
+        "performance": 51,
+        "bestPractices": 92
+      }
+    },
+    {
+      "path": "/videos-hmrc-itsa.html",
+      "thresholds": {
+        "performance": 51,
+        "bestPractices": 92
+      }
+    },
+    {
+      "path": "/videos-account.html",
+      "thresholds": {
+        "performance": 51,
+        "bestPractices": 92
+      }
+    },
+    {
+      "path": "/videos-ch.html",
+      "thresholds": {
+        "performance": 51,
+        "bestPractices": 92
+      }
     }
   ]
 }
