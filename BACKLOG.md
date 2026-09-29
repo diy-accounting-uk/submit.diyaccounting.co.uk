@@ -112,6 +112,8 @@ Each row names what has to happen before it can start.
 | 79 | Screenshots for the site and the listings selected and published from the video-capture runs' stills, instead of taken by hand. | PLAN_REPOSITORY_AUTOMATION.md Phase 5 | S | Marketing. The stills already exist per capture run; nothing publishes them. |
 | 80 | Replies to comments on the YouTube channel's videos, drafted by a model and sent from the channel after the acceptance-rate gate of row 78. | PLAN_REPOSITORY_AUTOMATION.md Phase 5 | S | Marketing. Unanswered comments on the three public videos. |
 | 81 | Social posting: the accounts, a staged directory of composed posts, and template posting on a release or a new article; nothing goes out unseen until row 78's gate exists. | PLAN_REPOSITORY_AUTOMATION.md Phase 5 | M | Marketing. No social presence today; the posts would be machine-written public prose under the recommendation 12 byline. |
+| LP-25a | Bank referral, the partner programme (operator): pick the programme, sign up, supply the referral link and the disclosure wording for LP-25b. | `PLAN_DIYA_GL_LAUNCH.md` | S | Revenue. A referral income line from diya-gl's audience. |
+| LP-25b | Bank referral, the placement: the diya-gl homepage tier strip and the signed-out panel (`cloud.js` `renderSignedOut`), the disclosure line, a `referral_clicked` builder in `diya-gl-events.js` with its unit case, and the cloud browser spec (spreadsheets repository). After LP-25a. | `PLAN_DIYA_GL_LAUNCH.md` | S | Revenue. The link where the audience sees it. |
 
 
 

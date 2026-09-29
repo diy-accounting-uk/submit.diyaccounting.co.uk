@@ -3,7 +3,8 @@
 
 # PLAN: From books to Submit
 
-Draft for the operator to refine. No board rows exist for it yet.
+Draft for the operator to refine and approve. On approval, tasks BS1 to BS14 join `NEXT.md`;
+BS5 is already there, taken ahead because the Drive store is independent of filing.
 
 A customer's books reach a Submit filing in two ways. The activity page reads a file the
 customer drops, picks from disk or picks from their own Google Drive, and fills the form. Or a
