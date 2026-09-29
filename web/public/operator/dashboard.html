@@ -119,20 +119,10 @@
         font-variant-numeric: tabular-nums;
       }
 
-      /* On a wide screen the visitors table (4 narrow columns) and the experiments list sit
-         side by side instead of each spanning the full, now much wider, page. */
       .side-panels {
         display: grid;
         grid-template-columns: 1fr;
         gap: var(--spacing-lg);
-      }
-      @media (min-width: 1000px) {
-        .side-panels {
-          grid-template-columns: minmax(280px, 420px) 1fr;
-        }
-        .side-panels .objective {
-          margin-bottom: 0;
-        }
       }
 
       /* #objectivesContainer and the two panels in .side-panels are empty until
@@ -238,11 +228,19 @@
           <table class="observations" id="visitorsTable">
             <thead>
               <tr>
-                <th>Day</th>
-                <th>Human</th>
-                <th>Operator</th>
-                <th>Bot</th>
-                <th>Synthetic</th>
+                <th>Kind</th>
+                <th title="Not available: GA4's export reaches the lake two days late, so no session count for the last hour exists yet.">
+                  Last 1 hour
+                </th>
+                <th title="Not available: GA4's export reaches the lake two days late, so no session count for the last day exists yet.">
+                  Last 1 day
+                </th>
+                <th title="Not available: GA4's export reaches the lake two days late, so no session count for the last 7 days exists yet.">
+                  Last 7 days
+                </th>
+                <th>Last 30 days</th>
+                <th>Trend</th>
+                <th>Last 90 days</th>
               </tr>
             </thead>
             <tbody id="visitorsBody"></tbody>
@@ -403,6 +401,13 @@
         return section;
       }
 
+      const VISITOR_KINDS = [
+        ["sessions-human", "Human"],
+        ["sessions-operator", "Operator"],
+        ["sessions-bot", "Bot"],
+        ["sessions-synthetic", "Synthetic"],
+      ];
+
       function renderVisitors(snapshot) {
         const tbody = document.getElementById("visitorsBody");
         tbody.innerHTML = "";
@@ -415,39 +420,25 @@
           observationsById[observation.id] = observation;
         });
 
-        const byDay = {};
-        [
-          ["sessions-human", "human"],
-          ["sessions-operator", "operator"],
-          ["sessions-bot", "bot"],
-          ["sessions-synthetic", "synthetic"],
-        ].forEach(([observationId, kind]) => {
-          const series = (observationsById[observationId] && observationsById[observationId].dailySeries) || [];
-          series.forEach((point) => {
-            if (!byDay[point.day]) byDay[point.day] = {};
-            byDay[point.day][kind] = point.value;
-          });
+        VISITOR_KINDS.forEach(([observationId, kindLabel]) => {
+          const observation = observationsById[observationId];
+          const row = document.createElement("tr");
+          row.className = "visitors-kind";
+          row.dataset.kind = observationId.replace("sessions-", "");
+
+          const kindCell = document.createElement("td");
+          kindCell.textContent = kindLabel;
+          row.appendChild(kindCell);
+
+          // GA4 sessions reach the lake two days late (ga4DailyPull.js), so the fast windows
+          // have no source; the header tooltips say why.
+          ["last1h", "last1d", "last7d"].forEach((key) => row.appendChild(activityCountCell(observation, key)));
+          row.appendChild(activityCountCell(observation, "last30"));
+          row.appendChild(activityTrendCell(observation));
+          row.appendChild(activityCountCell(observation, "last90"));
+
+          tbody.appendChild(row);
         });
-
-        Object.keys(byDay)
-          .sort()
-          .forEach((day) => {
-            const row = document.createElement("tr");
-            row.className = "visitors-day";
-            row.dataset.day = day;
-
-            const dayCell = document.createElement("td");
-            dayCell.textContent = day;
-            row.appendChild(dayCell);
-
-            ["human", "operator", "bot", "synthetic"].forEach((kind) => {
-              const cell = document.createElement("td");
-              cell.textContent = formatValue("count", byDay[day][kind]);
-              row.appendChild(cell);
-            });
-
-            tbody.appendChild(row);
-          });
       }
 
       function renderCompanyAccountsRow(observationsById, id, label) {

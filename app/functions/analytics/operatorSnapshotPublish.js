@@ -233,7 +233,6 @@ export const OBJECTIVE_DEFINITIONS = [
         valueExpr: "sessions",
         aggregation: "sum",
         where: "visitor_kind = 'human'",
-        dailySeries: true,
         deepLink: (ctx) => buildGa4ReportsLink(ctx.ga4PropertyId),
       },
       {
@@ -245,7 +244,6 @@ export const OBJECTIVE_DEFINITIONS = [
         valueExpr: "sessions",
         aggregation: "sum",
         where: "visitor_kind = 'operator'",
-        dailySeries: true,
         deepLink: (ctx) => buildGa4ReportsLink(ctx.ga4PropertyId),
       },
       {
@@ -257,7 +255,6 @@ export const OBJECTIVE_DEFINITIONS = [
         valueExpr: "sessions",
         aggregation: "sum",
         where: "visitor_kind = 'bot'",
-        dailySeries: true,
         deepLink: (ctx) => buildGa4ReportsLink(ctx.ga4PropertyId),
       },
       {
@@ -269,7 +266,6 @@ export const OBJECTIVE_DEFINITIONS = [
         valueExpr: "sessions",
         aggregation: "sum",
         where: "visitor_kind = 'synthetic'",
-        dailySeries: true,
         deepLink: (ctx) => buildGa4ReportsLink(ctx.ga4PropertyId),
       },
     ],
@@ -741,28 +737,6 @@ export function buildWindowedSql({ view, dayColumn, valueExpr, aggregation, wher
 }
 
 /**
- * One row per day for the trailing 30 days, for an observation flagged `dailySeries: true`.
- * The windowed query above answers a single total for the period; the operator dashboard's
- * Visitors panel needs the day-by-day breakdown instead, so this runs as a second query
- * alongside it for those observations only.
- *
- * @param {{view: string, dayColumn: string, valueExpr: string, aggregation: string, where?: string}} observation
- * @returns {string}
- */
-export function buildDailySeriesSql({ view, dayColumn, valueExpr, aggregation, where }) {
-  const conditions = [`${dayColumn} > date_add('day', -30, current_date)`];
-  if (where) conditions.push(where);
-  return (
-    `SELECT ${dayColumn} AS day,\n` +
-    `       ${aggregation}(${valueExpr}) AS value\n` +
-    `FROM   ${view}\n` +
-    `WHERE  ${conditions.join(" AND ")}\n` +
-    `GROUP BY ${dayColumn}\n` +
-    `ORDER BY ${dayColumn}`
-  );
-}
-
-/**
  * The three fast, no-trend columns on the operator dashboard's Activities table (Last 1 hour,
  * Last 1 day, Last 7 days), computed against an hourly-grain view rather than
  * buildWindowedSql's `dayColumn`: a column truncated to a whole calendar day always reads as
@@ -784,10 +758,6 @@ export function buildActivityFastWindowSql({ fastWindowView, fastWindowColumn, v
 function toNumberOrNull(value) {
   if (value === null || value === undefined) return null;
   return Number(value);
-}
-
-export function toDailySeries(rows) {
-  return (rows || []).map((row) => ({ day: row.day, value: toNumberOrNull(row.value) }));
 }
 
 export function toActivityFastWindows(row) {
@@ -841,8 +811,7 @@ const nullObservationWindows = { last30: { value: null, trend: null }, last90: {
  * OBJECTIVE_DEFINITIONS — the activity-only run's way of refreshing just the activities
  * objective without re-running the other seven.
  *
- * `fastWindowOnly` skips the 30/90-day buildWindowedSql query entirely (and dailySeries with
- * it) and answers only each observation's `id` plus its last1h/last1d/last7d fields, for an
+ * `fastWindowOnly` skips the 30/90-day buildWindowedSql query entirely and answers only each observation's `id` plus its last1h/last1d/last7d fields, for an
  * observation that carries a `fastWindowView` (only the activity objective's observations do).
  * The result is a patch to merge onto an existing snapshot with mergeActivityFastWindows, not a
  * standalone snapshot: it carries no label, unit or deepLink, and every non-activity objective
@@ -880,19 +849,12 @@ export async function buildSnapshot({ workGroup, database, context, objectiveIds
   for (const objective of objectiveDefinitions) {
     const observations = await mapInOrderWithConcurrency(objective.observations, OBSERVATION_QUERY_CONCURRENCY, async (observation) => {
       let windows = nullObservationWindows;
-      let dailySeries = [];
       let fastWindows = {};
       try {
         if (!fastWindowOnly) {
           const sql = buildWindowedSql(observation);
           const rows = await runAthenaQuery({ workGroup, database, sql });
           windows = toObservationWindows(rows[0]);
-
-          if (observation.dailySeries) {
-            const dailySql = buildDailySeriesSql(observation);
-            const dailyRows = await runAthenaQuery({ workGroup, database, sql: dailySql });
-            dailySeries = toDailySeries(dailyRows);
-          }
         }
 
         if (observation.fastWindowView) {
@@ -924,9 +886,6 @@ export async function buildSnapshot({ workGroup, database, context, objectiveIds
       };
       if (windows.dataSince) {
         observationResult.dataSince = windows.dataSince;
-      }
-      if (observation.dailySeries) {
-        observationResult.dailySeries = dailySeries;
       }
       return observationResult;
     });

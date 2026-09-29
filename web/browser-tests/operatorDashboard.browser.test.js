@@ -56,10 +56,6 @@ const FIXTURE_SNAPSHOT = {
           unit: "count",
           last30: { value: 210, trend: 0.05 },
           last90: { value: 600, trend: 0.02 },
-          dailySeries: [
-            { day: "2026-09-06", value: 30 },
-            { day: "2026-09-07", value: 28 },
-          ],
           deepLink: "https://analytics.google.com/analytics/web/#/p523400333/reports/intelligenthome",
         },
         {
@@ -68,10 +64,6 @@ const FIXTURE_SNAPSHOT = {
           unit: "count",
           last30: { value: 12, trend: 0 },
           last90: { value: 30, trend: 0 },
-          dailySeries: [
-            { day: "2026-09-06", value: 3 },
-            { day: "2026-09-07", value: 2 },
-          ],
           deepLink: "https://analytics.google.com/analytics/web/#/p523400333/reports/intelligenthome",
         },
         {
@@ -80,10 +72,6 @@ const FIXTURE_SNAPSHOT = {
           unit: "count",
           last30: { value: 40, trend: -0.1 },
           last90: { value: 130, trend: 0.01 },
-          dailySeries: [
-            { day: "2026-09-06", value: 5 },
-            { day: "2026-09-07", value: 6 },
-          ],
           deepLink: "https://analytics.google.com/analytics/web/#/p523400333/reports/intelligenthome",
         },
         {
@@ -92,10 +80,6 @@ const FIXTURE_SNAPSHOT = {
           unit: "count",
           last30: { value: 60, trend: 0 },
           last90: { value: 180, trend: 0 },
-          dailySeries: [
-            { day: "2026-09-06", value: 8 },
-            { day: "2026-09-07", value: 8 },
-          ],
           deepLink: "https://analytics.google.com/analytics/web/#/p523400333/reports/intelligenthome",
         },
       ],
@@ -343,19 +327,33 @@ test.describe("Operator Dashboard", () => {
     );
   });
 
-  test("renders the visitors panel with human, operator, bot and synthetic sessions per day", async ({ page }) => {
+  test("renders the visitors panel as one row per kind with the activity table's windows", async ({ page }) => {
     await setupRoutes(page);
     await loadDashboard(page);
 
-    const rows = page.locator("#visitorsPanel tr.visitors-day");
-    await expect(rows).toHaveCount(2);
+    const rows = page.locator("#visitorsPanel tr.visitors-kind");
+    await expect(rows).toHaveCount(4);
+    await expect(rows.locator("td:first-child")).toHaveText(["Human", "Operator", "Bot", "Synthetic"]);
 
-    const firstDay = page.locator('#visitorsPanel tr.visitors-day[data-day="2026-09-06"]');
-    await expect(firstDay.locator("td").nth(0)).toHaveText("2026-09-06");
-    await expect(firstDay.locator("td").nth(1)).toHaveText("30");
-    await expect(firstDay.locator("td").nth(2)).toHaveText("3");
-    await expect(firstDay.locator("td").nth(3)).toHaveText("5");
-    await expect(firstDay.locator("td").nth(4)).toHaveText("8");
+    const human = page.locator('#visitorsPanel tr.visitors-kind[data-kind="human"]');
+    await expect(human.locator("td").nth(1)).toHaveText("—");
+    await expect(human.locator("td").nth(2)).toHaveText("—");
+    await expect(human.locator("td").nth(3)).toHaveText("—");
+    await expect(human.locator("td").nth(4)).toHaveText("210");
+    await expect(human.locator("td").nth(5)).toHaveText("↑ 5.0%");
+    await expect(human.locator("td").nth(6)).toHaveText("600");
+
+    const bot = page.locator('#visitorsPanel tr.visitors-kind[data-kind="bot"]');
+    await expect(bot.locator("td").nth(5)).toHaveText("↓ 10.0%");
+  });
+
+  test("explains in the fast-window header tooltips why the visitors table has no last-hour figure", async ({ page }) => {
+    await setupRoutes(page);
+    await loadDashboard(page);
+
+    const headers = page.locator("#visitorsTable thead th");
+    await expect(headers).toHaveText(["Kind", "Last 1 hour", "Last 1 day", "Last 7 days", "Last 30 days", "Trend", "Last 90 days"]);
+    await expect(headers.nth(1)).toHaveAttribute("title", /two days late/);
   });
 
   test("shows a placeholder for an objective with no observations yet", async ({ page }) => {
