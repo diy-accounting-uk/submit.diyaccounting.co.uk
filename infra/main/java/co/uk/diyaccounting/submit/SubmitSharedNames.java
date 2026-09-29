@@ -2004,7 +2004,7 @@ public class SubmitSharedNames {
 
         this.hmrcTokenPostLambdaHttpMethod = HttpMethod.POST;
         this.hmrcTokenPostLambdaUrlPath = "/api/v1/hmrc/token";
-        this.hmrcTokenPostLambdaJwtAuthorizer = false;
+        this.hmrcTokenPostLambdaJwtAuthorizer = true;
         this.hmrcTokenPostLambdaCustomAuthorizer = false;
         var hmrcTokenPostLambdaHandlerName = "hmrcTokenPost.ingestHandler";
         var hmrcTokenPostLambdaHandlerDashed =
@@ -3841,7 +3841,7 @@ public class SubmitSharedNames {
 
         this.companiesHouseTokenPostLambdaHttpMethod = HttpMethod.POST;
         this.companiesHouseTokenPostLambdaUrlPath = "/api/v1/companies-house/token";
-        this.companiesHouseTokenPostLambdaJwtAuthorizer = false;
+        this.companiesHouseTokenPostLambdaJwtAuthorizer = true;
         this.companiesHouseTokenPostLambdaCustomAuthorizer = false;
         var companiesHouseTokenPostLambdaHandlerName = "companiesHouseTokenPost.ingestHandler";
         var companiesHouseTokenPostLambdaHandlerDashed =

@@ -234,24 +234,30 @@ describe("hmrcTokenPost ingestHandler", () => {
     }
   });
 
-  test("resolves the user sub from the x-user-sub header when no authorizer context is present", async () => {
+  test("returns 401 and exchanges nothing when no authorizer context is present", async () => {
+    const originalFetch = global.fetch;
+    global.fetch = vi.fn();
+    try {
+      const event = buildLambdaEvent({ method: "POST", body: { code: "test-code" }, authorizer: {} });
+      const response = await hmrcTokenPostHandler(event);
+
+      expect(response.statusCode).toBe(401);
+      expect(global.fetch).not.toHaveBeenCalled();
+      expect(mockSend).not.toHaveBeenCalled();
+    } finally {
+      global.fetch = originalFetch;
+    }
+  });
+
+  test("ignores an x-user-sub header and returns 401 without authorizer context", async () => {
     const event = buildLambdaEvent({
       method: "POST",
       body: { code: "test-code" },
       headers: { "x-user-sub": "header-sub" },
       authorizer: {},
     });
-    await hmrcTokenPostHandler(event);
+    const response = await hmrcTokenPostHandler(event);
 
-    const detail = JSON.parse(mockSend.mock.calls[0][0].input.Entries[0].Detail);
-    expect(detail.hashedSub).toBe(hashSub("header-sub"));
-  });
-
-  test("omits the hashed sub when no user identity is present", async () => {
-    const event = buildLambdaEvent({ method: "POST", body: { code: "test-code" }, authorizer: {} });
-    await hmrcTokenPostHandler(event);
-
-    const detail = JSON.parse(mockSend.mock.calls[0][0].input.Entries[0].Detail);
-    expect(detail.hashedSub).toBeUndefined();
+    expect(response.statusCode).toBe(401);
   });
 });

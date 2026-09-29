@@ -10,12 +10,12 @@ import {
   buildTokenExchangeResponse,
   buildValidationError,
   http200OkResponse,
+  http401UnauthorizedResponse,
   extractUserFromAuthorizerContext,
   getHeader,
 } from "../../lib/httpResponseHelper.js";
 import { validateEnv } from "../../lib/env.js";
 import { registerLambdaRoute } from "../../lib/httpServerToLambdaAdaptor.js";
-import { getUserSub } from "../../lib/jwtHelper.js";
 import { initializeSalt } from "../../services/subHasher.js";
 import { publishActivityEvent, publishActivityFailureEvent } from "../../lib/activityAlert.js";
 
@@ -89,6 +89,14 @@ export async function ingestHandler(event) {
     });
   }
 
+  // The route sits behind the JWT authorizer, so the caller's sub comes from its context.
+  // It also reads the email claim into context, which resolveActorClass() below needs to
+  // tell this customer from a probe calling the endpoint directly.
+  const userSub = extractUserFromAuthorizerContext(event)?.sub || null;
+  if (!userSub) {
+    return http401UnauthorizedResponse({ request, headers: {}, message: "Authentication required" });
+  }
+
   // Extract and validate parameters
   const { code, hmrcAccount } = extractAndValidateParameters(event, errorMessages);
 
@@ -102,19 +110,6 @@ export async function ingestHandler(event) {
   // Processing
   logger.info({ message: "Exchanging authorization code for HMRC access token" });
   const tokenResponse = await prepareTokenExchangeRequest(code, hmrcAccount);
-  // Ensure HMRC OAuth token exchange audit is associated with the authenticated web user's sub
-  // Try Authorization header, then authorizer context, then custom x-user-sub header (case-insensitive)
-  let userSub = getUserSub(event);
-  // Always run this, even when userSub was already found via the Authorization header:
-  // it is also the only place on this request that reads the authorizer's email claim
-  // into context, which resolveActorClass() below needs to tell this customer from a
-  // probe calling the endpoint directly.
-  const authorizerUser = extractUserFromAuthorizerContext(event);
-  if (!userSub) userSub = authorizerUser?.sub || null;
-  if (!userSub) {
-    userSub = getHeader(event.headers, "x-user-sub") || null;
-  }
-
   const exchangeResponse = await buildTokenExchangeResponse(request, tokenResponse.url, tokenResponse.body, userSub);
 
   // Publish after HMRC's reply, not before, so the event records what actually happened.
