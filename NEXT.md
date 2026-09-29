@@ -41,7 +41,7 @@ step.
 
 ## In flight
 
-- [ ] **LH13. Close issue #13 with a compliance run over all 19 sitemap pages.** **In flight**: waits on `main`'s deploy of b741a7b5 (PRs #419 and #422, carrying PR #421's 03e11ba9), which carries the four videos pages in `lighthouse.config.json` and the sitemap-equality test. When prod promotes, dispatch `gh workflow run compliance.yml --ref main`, read job `accessibility-lighthouse` for 19 audited pages at or above their thresholds, and close #13 with the run link. **Source**: issue #13. **Owner**: Claude Code. **Model**: Haiku. **Size**: 0 files.
+- [ ] **LH13. Close issue #13 with a compliance run over all 19 sitemap pages.** **In flight**: waits on the prod deploy of afa65083 (`deploy.yml` dispatch 36621491788, set `prod-afa6508`, carrying PR #421's 03e11ba9; the merge deploy of 03e11ba9 was cancelled and #419, #422 and #423 triggered none), which carries the four videos pages in `lighthouse.config.json` and the sitemap-equality test. When prod promotes, dispatch `gh workflow run compliance.yml --ref main`, read job `accessibility-lighthouse` for 19 audited pages at or above their thresholds, and close #13 with the run link. **Source**: issue #13. **Owner**: Claude Code. **Model**: Haiku. **Size**: 0 files.
 
 ## Machine-only
 
