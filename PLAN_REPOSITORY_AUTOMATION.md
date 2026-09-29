@@ -15,7 +15,7 @@ phase 6 is the dashboard's D16 (BACKLOG 52l).
 > automated such that I can provide direction (operator requests) and governance (agent
 > policies) and expect these to be carried out.
 
-That is the aim `STRATEGY.md` already opens with: the operator's time goes to direction and the
+That is the aim `../STRATEGY.md` already opens with: the operator's time goes to direction and the
 few judgement calls that need a person. This plan is the scope baseline. It covers the whole
 GitHub and AWS surface, plus the outside surfaces the operator named: social posting, comment
 replies, screenshots and video.
@@ -449,12 +449,12 @@ domain is small in traffic and high in blast radius. Every row touches a custome
 | Support issue form | A1 | B1 R2 | C6 | One template, `.github/ISSUE_TEMPLATE/support.md` | Convert it to an issue form, so the fields are structured and `origin:human` lands at creation | None |
 | Triage and label an inbound support issue | A3 | B2 R4 | C6 | Nothing | An `issues: [opened]` path beside alarm-triage | P1 |
 | Identify the customer behind a failure alarm | A3 | B2 R4 | C3 | The `vat-submission-failure-alarm-user-lookup` skill, operator-triggered, read-only, no table scan | Firing from the alarm issue instead of from a person | P7 |
-| Draft a support reply into Gmail | A3 | B3 R4 | C6 | Named in `STRATEGY.md` W4. Nothing built | The mail path, the draft, and somewhere to measure acceptance | P7, P8 |
+| Draft a support reply into Gmail | A3 | B3 R4 | C6 | Named in `../STRATEGY.md` W4. Nothing built | The mail path, the draft, and somewhere to measure acceptance | P7, P8 |
 | Send a support reply | A3 | B3 R4 | C3, C6 | Nothing | A measured acceptance rate first, then a reply class that qualifies | P7, P8, Q6 |
 | Reply on a public GitHub issue | A3 | B3 R4 | C6 | Nothing | The publication filter, and a decision on whether public replies stay the operator's | P7, P8, Q8 |
 | Reply to a YouTube comment | A3 | B3 R4 | C6 | Nothing. The `youtube.force-ssl` scope already granted for upload also covers reading and replying to comment threads | Code and a policy. No new consent | P7, P8 |
 | Detect a customer-affecting incident from support volume | A3 | B3 R4 | C2 | Nothing | Enough volume to make a signal, which today there is not | None |
-| Donor thank-yous | Human | B3 | C6 | Human, deliberately (`STRATEGY.md` W4) | Nothing | Decision |
+| Donor thank-yous | Human | B3 | C6 | Human, deliberately (`../STRATEGY.md` W4) | Nothing | Decision |
 | Closing a support ticket | Human | B3 | C6 | Human | Nothing | P1 |
 
 ### 5.4 Revenue
@@ -717,7 +717,7 @@ share of the closed alarm issues that close themselves against the 43% this tabl
 
 - Inbound triage and labelling on `issues: [opened]`, beside alarm-triage.
 - The customer-lookup skill fires from the alarm issue rather than from a person asking.
-- Reply drafting into Gmail, which `STRATEGY.md` W4 already names.
+- Reply drafting into Gmail, which `../STRATEGY.md` W4 already names.
 - Replies stay drafts until the acceptance rate is measured. Then one class of reply, a settled
   answer matched to a published article, sends on its own.
 
@@ -836,7 +836,7 @@ is tier 1. Everything else waits.
 
 ## Sources
 
-- `STRATEGY.md` (the aim, and W4's autonomous-operations workstream), `BACKLOG.md` rows 23, 30,
+- `../STRATEGY.md` (the aim, and W4's autonomous-operations workstream), `BACKLOG.md` rows 23, 30,
   43, 47, 49, 52, 52l, 52m and 53, `NEXT.md`.
 - `.github/workflows/` (36 files), `.github/agents/`, `.github/actions/`, `.github/dependabot.yml`,
   `.github/ISSUE_TEMPLATE/support.md`, `.github/copilot-instructions.md`.

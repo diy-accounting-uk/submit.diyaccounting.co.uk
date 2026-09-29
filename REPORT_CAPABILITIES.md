@@ -772,10 +772,10 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 #### SITE-20 Document business governance and positioning
 
 - **Use when:** a question needs the licensing terms, trademark rules, product strategy or marketing rules.
-- **Does:** LICENSING.md sets out the PolyForm Internal Use License plus the hosted-service grant. TRADEMARKS.md covers trademark usage. STRATEGY.md covers product strategy. REPORT_COMPETITOR_ANALYSIS.md surveys the UK MTD market. MARKETING_GUIDANCE.md covers HMRC and advertising-standards marketing copy rules.
+- **Does:** LICENSING.md sets out the PolyForm Internal Use License plus the hosted-service grant. TRADEMARKS.md covers trademark usage. ../STRATEGY.md covers product strategy. ../REPORT_COMPETITOR_ANALYSIS.md surveys the UK MTD market. MARKETING_GUIDANCE.md covers HMRC and advertising-standards marketing copy rules.
 - **Run:** no command; see Does and Entry
-- **Entry:** `LICENSING.md`; `STRATEGY.md`
-- **Files:** LICENSING.md, TRADEMARKS.md, STRATEGY.md, REPORT_COMPETITOR_ANALYSIS.md, _developers/MARKETING_GUIDANCE.md
+- **Entry:** `LICENSING.md`; `../STRATEGY.md`
+- **Files:** LICENSING.md, TRADEMARKS.md, ../STRATEGY.md, ../REPORT_COMPETITOR_ANALYSIS.md, _developers/MARKETING_GUIDANCE.md
 - **Keywords:** licensing, polyform, trademarks, strategy, competitor analysis, marketing guidance, hmrc marketing rules, advertising standards
 
 #### SITE-21 Log growth experiments
@@ -1249,7 +1249,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - **Does:** The itsa-readiness skill checks each minimum standard in the approvals checklist against the code and tests. It checks the sandbox year ran within HMRC's 14-day log window and the fraud header validation is clean. It reports ready, ready after named actions, or the blockers.
 - **Run:** `/itsa-readiness`
 - **Entry:** `.claude/skills/itsa-readiness/SKILL.md`
-- **Files:** .claude/skills/itsa-readiness/SKILL.md, _developers/hmrc/ITSA_PRODUCTION_APPROVALS_CHECKLIST.md, _developers/hmrc/ITSA_PHASE_2_SANDBOX.md, _developers/hmrc/hmrc_questionnaire_itsa_pass_diy_accounting_limited_v1.md, _developers/hmrc/DRAFT_EMAIL_ITSA_RECOGNITION.md, _developers/hmrc/ITSA_MINIMUM_FUNCTIONALITY_STANDARDS.md
+- **Files:** .claude/skills/itsa-readiness/SKILL.md, _developers/hmrc/ITSA_PRODUCTION_APPROVALS_CHECKLIST.md, _developers/hmrc/ITSA_PHASE_2_SANDBOX.md, _developers/hmrc/hmrc_questionnaire_itsa_pass_diy_accounting_limited_v1.md, ../_developers/hmrc/DRAFT_EMAIL_ITSA_RECOGNITION.md, _developers/hmrc/ITSA_MINIMUM_FUNCTIONALITY_STANDARDS.md
 - **Keywords:** itsa readiness, recognition email, production approval, sdst, minimum functionality standards, evidence, send day, 14-day window
 - **Related:** HMRC-34, HMRC-37
 
@@ -1538,7 +1538,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - **Does:** The passGeneratePost.js ingestHandler charges the caller's tokens via tokenEnforcement.consumeTokenForActivity. It then creates a pass through passService.createPass. app/lib/qrCodeGenerator.js renders the pass's redemption URL as a QR code.
 - **Run:** `POST /api/v1/pass/generate`
 - **Entry:** `app/functions/account/passGeneratePost.js:ingestHandler`
-- **Files:** app/functions/account/passGeneratePost.js, app/unit-tests/functions/passGeneratePost.test.js, web/public/passes/generate-digital.html, web/public/passes/generate-physical.html, behaviour-tests/generatePassActivity.behaviour.test.js, behaviour-tests/steps/behaviour-pass-generation-steps.js, app/lib/qrCodeGenerator.js, app/unit-tests/lib/qrCodeGenerator.test.js, docs/QR_CODE_GENERATION.md, app/system-tests/qrCodeGeneration.system.test.js
+- **Files:** app/functions/account/passGeneratePost.js, app/unit-tests/functions/passGeneratePost.test.js, web/public/passes/generate-digital.html, web/public/passes/generate-physical.html, behaviour-tests/generatePassActivity.behaviour.test.js, behaviour-tests/steps/behaviour-pass-generation-steps.js, app/lib/qrCodeGenerator.js, app/unit-tests/lib/qrCodeGenerator.test.js, ../developers/submit/archive/docs/QR_CODE_GENERATION.md, app/system-tests/qrCodeGeneration.system.test.js
 - **Keywords:** pass, generate pass, qr code, token charge, digital pass, physical pass, createPass
 - **Related:** BILL-07, BILL-10, BILL-35
 
@@ -1730,7 +1730,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - **Does:** The s3DiyaGlRepository.js module is the S3 repository behind every diya-gl endpoint. It computes book and version keys, and reads and writes metadata. It lists and tags books, applies visibility rules, and moves a book between clients.
 - **Run:** `import { moveBookToClient, listBooks, deleteBook, putVersion, getVersion } from "app/data/s3DiyaGlRepository.js"`
 - **Entry:** `app/data/s3DiyaGlRepository.js:moveBookToClient`; `app/data/s3DiyaGlRepository.js:listBooks`
-- **Files:** app/data/s3DiyaGlRepository.js, app/unit-tests/data/s3DiyaGlRepository.test.js, _developers/RUNBOOK_DIYA_GL_BUCKET_CUTOVER.md
+- **Files:** app/data/s3DiyaGlRepository.js, app/unit-tests/data/s3DiyaGlRepository.test.js, ../developers/submit/archive/_developers/RUNBOOK_DIYA_GL_BUCKET_CUTOVER.md
 - **Keywords:** diya-gl, s3 repository, book keys, metadata, tagging, visibility, cross-client move
 - **Related:** BILL-15, BILL-17, BILL-18, BILL-19, BILL-20, SS-27
 
@@ -1977,10 +1977,10 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 #### BILL-44 Document the price-update project
 
 - **Use when:** researching why the pricing or bundle catalogue was changed the way it was.
-- **Does:** ../developers/submit/archive/PLAN_PRICE_UPDATE.md and REPORT_PRICE_UPDATE_REVIEW.md record the plan and review for the pricing update project. This area's billing and entitlement code implements that project's bundle-catalogue changes.
+- **Does:** ../developers/submit/archive/PLAN_PRICE_UPDATE.md and ../REPORT_PRICE_UPDATE_REVIEW.md record the plan and review for the pricing update project. This area's billing and entitlement code implements that project's bundle-catalogue changes.
 - **Run:** no command; see Does and Entry
-- **Entry:** `../developers/submit/archive/PLAN_PRICE_UPDATE.md`; `REPORT_PRICE_UPDATE_REVIEW.md`
-- **Files:** ../developers/submit/archive/PLAN_PRICE_UPDATE.md, REPORT_PRICE_UPDATE_REVIEW.md
+- **Entry:** `../developers/submit/archive/PLAN_PRICE_UPDATE.md`; `../REPORT_PRICE_UPDATE_REVIEW.md`
+- **Files:** ../developers/submit/archive/PLAN_PRICE_UPDATE.md, ../REPORT_PRICE_UPDATE_REVIEW.md
 - **Keywords:** price update, plan, review, bundle catalogue, pricing project
 - **Related:** BILL-35, BILL-30
 
@@ -2777,7 +2777,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - **Does:** restore-dynamodb-pitr.sh restores a DynamoDB table to a point in time, or to a target table. restore-drill.yml runs the drill on a schedule to prove the procedure still works. restore-test.yml runs a restore from PITR or the cross-account backup on demand.
 - **Run:** `gh workflow run restore-drill.yml`; `gh workflow run restore-test.yml -f table-name=<table>`; `./scripts/restore-dynamodb-pitr.sh <table-name> <restore-datetime> [target-table-name]`
 - **Entry:** `scripts/restore-dynamodb-pitr.sh`
-- **Files:** .github/workflows/restore-drill.yml, .github/workflows/restore-test.yml, scripts/restore-dynamodb-pitr.sh, _developers/RESTORE_DRILL.md
+- **Files:** .github/workflows/restore-drill.yml, .github/workflows/restore-test.yml, scripts/restore-dynamodb-pitr.sh, ../developers/submit/archive/_developers/RESTORE_DRILL.md
 - **Keywords:** pitr restore, restore drill, point in time recovery, dynamodb restore, cross-account backup
 - **Related:** OPS-49
 
@@ -3031,8 +3031,8 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - **Use when:** checking the design rationale behind CI branch deploys, before changing that mechanism.
 - **Does:** DESIGN_CI_BRANCH_DEPLOYS_OFF_THE_APEX.md is the architecture document for deploying feature branches to CI hosts without touching the prod apex.
 - **Run:** no command; see Does and Entry
-- **Entry:** `_developers/DESIGN_CI_BRANCH_DEPLOYS_OFF_THE_APEX.md`
-- **Files:** _developers/DESIGN_CI_BRANCH_DEPLOYS_OFF_THE_APEX.md
+- **Entry:** `../developers/submit/archive/_developers/DESIGN_CI_BRANCH_DEPLOYS_OFF_THE_APEX.md`
+- **Files:** ../developers/submit/archive/_developers/DESIGN_CI_BRANCH_DEPLOYS_OFF_THE_APEX.md
 - **Keywords:** ci branch deploys, design document, apex isolation, feature branch hosts, architecture rationale
 - **Related:** OPS-10, OPS-11
 
@@ -3519,7 +3519,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - **Does:** Kind is a set of tiny, static, null-tolerant helpers, such as order-preserving maps and explicit merge, that make Java CDK config code read like JS or Node config, documented in KIND.md. KindCdk builds on it for CDK-specific concerns: environment setup, CloudFormation outputs and AwsCustomResource provider management. PopulatedMap extends HashMap to throw on any blank key or value.
 - **Run:** no command; see Does and Entry
 - **Entry:** `infra/main/java/co/uk/diyaccounting/submit/utils/Kind.java`; `infra/main/java/co/uk/diyaccounting/submit/utils/KindCdk.java`; `infra/main/java/co/uk/diyaccounting/submit/utils/PopulatedMap.java`
-- **Files:** infra/main/java/co/uk/diyaccounting/submit/utils/Kind.java, infra/main/java/co/uk/diyaccounting/submit/utils/KindCdk.java, infra/main/java/co/uk/diyaccounting/submit/utils/KIND.md, infra/main/java/co/uk/diyaccounting/submit/utils/PopulatedMap.java, infra/test/java/co/uk/diyaccounting/submit/utils/KindTest.java, infra/test/java/co/uk/diyaccounting/submit/utils/KindCdkTest.java
+- **Files:** infra/main/java/co/uk/diyaccounting/submit/utils/Kind.java, infra/main/java/co/uk/diyaccounting/submit/utils/KindCdk.java, ../developers/submit/archive/infra/main/java/co/uk/diyaccounting/submit/utils/KIND.md, infra/main/java/co/uk/diyaccounting/submit/utils/PopulatedMap.java, infra/test/java/co/uk/diyaccounting/submit/utils/KindTest.java, infra/test/java/co/uk/diyaccounting/submit/utils/KindCdkTest.java
 - **Keywords:** kind helpers, config composition, cdk config, null-tolerant map, populatedmap
 - **Related:** OPS-127
 
@@ -3986,7 +3986,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - **Does:** ads-inventory.js is a read-only snapshot of the account named in ads.toml. It reads the customer record, conversion actions and goals, campaigns and asset groups. It also reads the GA4/Ads link, writing nothing; it is the shared layer ads-sync.js, ads-report.js and ads-forecast.js build on.
 - **Run:** `npm run ads:inventory`
 - **Entry:** `infra/google/ads/ads-inventory.js:main`
-- **Files:** infra/google/ads/ads-inventory.js, app/unit-tests/scripts/adsInventory.test.js, _developers/ADS_MCP_EVALUATION.md
+- **Files:** infra/google/ads/ads-inventory.js, app/unit-tests/scripts/adsInventory.test.js, ../developers/submit/archive/_developers/ADS_MCP_EVALUATION.md
 - **Keywords:** google ads inventory, read-only snapshot, conversion actions, asset groups, ga4 ads link, shared query layer
 - **Related:** DATA-32, DATA-34, DATA-35
 

@@ -3,7 +3,7 @@
 
 # Unified Backlog
 
-Compiled 2026-08-25 from every source: GitHub issues (#3 to #20), local plan docs (repo root and `_developers/`), customer and HMRC emails, CI signals, live AWS audit, cost analysis, the market survey, and the strategic review in [STRATEGY.md](STRATEGY.md). Sibling-repo items are marked with their repo.
+Compiled 2026-08-25 from every source: GitHub issues (#3 to #20), local plan docs (repo root and `_developers/`), customer and HMRC emails, CI signals, live AWS audit, cost analysis, the market survey, and the strategic review in [../STRATEGY.md](../STRATEGY.md). Sibling-repo items are marked with their repo.
 
 **How items are valued.** Each item gets a value class and a one-line reason:
 

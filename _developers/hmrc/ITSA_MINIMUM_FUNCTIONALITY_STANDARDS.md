@@ -11,7 +11,7 @@ Sources read 2026-09-03:
 
 Phase 1 is backlog row 10: sandbox integration with the self-employment quarterly update APIs
 (Business Details, Obligations, Self Employment Business). Phase 2 is row 11: annual summaries,
-final declaration, then the recognition application. Mapped against `STRATEGY.md` and
+final declaration, then the recognition application. Mapped against `../STRATEGY.md` and
 `../developers/submit/backlog/self-employed-api-operations.md`.
 
 ## The requirement that changes the plan
@@ -26,7 +26,7 @@ quarterly-update software category, not a closure of sandbox access — the how-
 still describes sandbox testing and the approvals checklist as open steps. Two things are not
 stated on any page checked: whether a new window opens for 2027-28 (the year the £30k mandation
 wave actually files under), and what a new entrant needs to do to be considered for that window.
-`STRATEGY.md`'s W3 goal ("listed and filing real quarterly updates well before April 2027") assumes
+`../STRATEGY.md`'s W3 goal ("listed and filing real quarterly updates well before April 2027") assumes
 production recognition is obtainable on our timeline; that assumption needs checking against this
 closure before row 11 commits further effort. HMRC's software-vendor contact is
 makingtaxdigital-softwarevendors@hmrc.gov.uk (SDSTeam@hmrc.gov.uk is the address already in use for
@@ -36,7 +36,7 @@ VAT).
 
 | Requirement | HMRC reference | Phase 1 | Phase 2 | Not planned | Notes |
 |---|---|---|---|---|---|
-| Fraud prevention header data on every call | How to integrate | Yes | | | Already built and HMRC-evaluated for VAT (`STRATEGY.md`); same header library applies to ITSA calls. |
+| Fraud prevention header data on every call | How to integrate | Yes | | | Already built and HMRC-evaluated for VAT (`../STRATEGY.md`); same header library applies to ITSA calls. |
 | Obtain a business ID per customer business | Business Details API | Yes | | | Row 10 lists Business Details explicitly. |
 | Create and maintain digital records, or digitally link to software that does | How to integrate | Yes | | | Met by the spreadsheet-plus-bridging model already used for VAT; no new build. |
 | Submit quarterly update information for each mandated income source | Self Employment Business, Obligations APIs | Yes | | | Row 10's core: `../developers/submit/backlog/self-employed-api-operations.md` specs the period-summary endpoints. |
@@ -45,7 +45,7 @@ VAT).
 | Carry business losses forward, back, or sideways | Individual Losses API | | Yes | | Not named in either backlog row today; row 11 needs to absorb it explicitly. |
 | Submit non-mandated income sources, or divert the customer to software that can | How to integrate | | | Not yet planned | No property-income or other non-self-employment source is in scope; `self-employed-api-operations.md` covers self-employment only. |
 | Submit the tax return itself (final declaration), or divert the customer to software that can | How to integrate; Individuals Tax Liability Adjustments API | | Yes | | Row 11's "final declaration." |
-| Property Business API (landlord income) | Property Business API | | | Not yet planned | The £20k-£30k mandation wave STRATEGY.md targets is described as sole traders; landlord support has no row in either backlog phase. |
+| Property Business API (landlord income) | Property Business API | | | Not yet planned | The £20k-£30k mandation wave ../STRATEGY.md targets is described as sole traders; landlord support has no row in either backlog phase. |
 
 ## Requirements neither phase covers yet
 

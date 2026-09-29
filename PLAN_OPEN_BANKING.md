@@ -18,8 +18,8 @@ No work runs from this plan until diya-gl and Submit make enough profit to carry
 cost well above that cost: a fixed monthly fee (the aggregators' quotes and estimates run from
 about £150 to £500 a month, Plaid's UK plan about $500 a month on an annual commitment) or a
 usage fee (about £0.20 to £0.30 per transaction). The profit figure comes from the dashboard's
-cost and revenue panels and `PLAN_MARKETING_STRATEGY.md`'s spend pool. Until then diya-gl reads the
-CSV each bank already exports (`PLAN_MARKETING_STRATEGY.md` §3.7 rank 5, task MK-33), which needs
+cost and revenue panels and `../PLAN_MARKETING_STRATEGY.md`'s spend pool. Until then diya-gl reads the
+CSV each bank already exports (`../PLAN_MARKETING_STRATEGY.md` §3.7 rank 5, task MK-33), which needs
 no permission and costs nothing.
 
 When it starts, the first task is OB-1.
@@ -126,5 +126,5 @@ Enquiry text, from the operator's address (OB-1), one message to each:
 > and their transaction history depth; how a customer's 90-day open banking re-consent works in
 > your flow and what, if anything, breaks an unattended sync; and any minimum term.
 
-Sources: `PLAN_MARKETING_STRATEGY.md` §3.7's source list (aggregator pricing, coverage, agent
+Sources: `../PLAN_MARKETING_STRATEGY.md` §3.7's source list (aggregator pricing, coverage, agent
 models, the 90-day re-consent rule, reviews).
