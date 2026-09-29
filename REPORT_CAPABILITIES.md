@@ -218,7 +218,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
     - [OPS-28](#ops-28-enforce-commit-identity-allowlist) Enforce commit identity allowlist: use when a PR's commit authorship must be checked against the allowed identity list.
     - [OPS-29](#ops-29-verify-commit-signatures-on-pull-requests) Verify commit signatures on pull requests: use when a PR's commits must all carry a verified signature before merge.
     - [OPS-30](#ops-30-run-codeql-security-scanning) Run CodeQL security scanning: use when checking what CodeQL scans, or excluding a new non-production path from the scan.
-    - [OPS-31](#ops-31-run-a-claude-security-review-on-push) Run a Claude security review on push: use when checking how pushed changes get an automated security review.
+    - [OPS-31](#ops-31-run-the-weekly-security-review-and-its-triage) Run the weekly security review and its triage: use when the weekly security-review issue needs a review, or a review must run on demand.
     - [OPS-32](#ops-32-detect-cloudformation-drift) Detect CloudFormation drift: use when checking whether deployed stacks have drifted from their CDK definition.
     - [OPS-33](#ops-33-enforce-workflow-to-workflow-permission-grants) Enforce workflow-to-workflow permission grants: use when a workflow calls another reusable workflow and its permission grants need checking before a run fails.
     - [OPS-34](#ops-34-validate-github-actions-workflow-files) Validate GitHub Actions workflow files: use when a workflow file's syntax or deployment-safety conventions need checking before a push.
@@ -1990,7 +1990,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - [Deploy pipeline](#deploy-pipeline-ops): [OPS-01](#ops-01-cancel-superseded-push-triggered-deploys) Cancel superseded push-triggered deploys · [OPS-02](#ops-02-derive-environment-and-deployment-names-from-a-branch) Derive environment and deployment names from a branch · [OPS-03](#ops-03-look-up-aws-resources-by-domain-convention) Look up AWS resources by domain convention · [OPS-04](#ops-04-update-route53cloudfront-origins-for-a-domain) Update Route53/CloudFront origins for a domain · [OPS-05](#ops-05-promote-a-ci-deployment-to-the-ci-apex) Promote a CI deployment to the CI apex · [OPS-06](#ops-06-run-the-full-deployment-pipeline) Run the full deployment pipeline · [OPS-07](#ops-07-lean-deploy-app-code-to-lambda-and-s3) Lean-deploy app code to Lambda and S3 · [OPS-08](#ops-08-deploy-a-single-cdk-stack-on-demand) Deploy a single CDK stack on demand · [OPS-09](#ops-09-deploy-environment-stacks-and-populate-secrets) Deploy environment stacks and populate secrets · [OPS-131](#ops-131-serve-cloudfront-custom-error-pages) Serve CloudFront custom error pages · [OPS-132](#ops-132-enable-dynamodb-pitr-on-deploy) Enable DynamoDB PITR on deploy · [OPS-133](#ops-133-serve-the-root-domain-holding-page) Serve the root-domain holding page · [OPS-134](#ops-134-monitor-github-actions-ci-from-the-cli) Monitor GitHub Actions CI from the CLI · [OPS-135](#ops-135-look-up-domains-and-cloudfront-distributions) Look up domains and CloudFront distributions · [OPS-136](#ops-136-retrieve-cloudformation-stack-outputs) Retrieve CloudFormation stack outputs · [OPS-137](#ops-137-export-cognito-users-for-reporting-or-backup) Export Cognito users for reporting or backup
 - [ci slot pool and sweep](#ci-slot-pool-and-sweep-ops): [OPS-10](#ops-10-claim-release-and-track-a-ci-deployment-slot) Claim, release and track a CI deployment slot · [OPS-11](#ops-11-queue-ci-branch-deploys-in-creation-order) Queue CI branch deploys in creation order · [OPS-12](#ops-12-clean-up-expired-test-users) Clean up expired test users · [OPS-13](#ops-13-auto-destroy-stale-ci-deployments) Auto-destroy stale CI deployments · [OPS-14](#ops-14-destroy-a-named-prod-deployment-on-demand) Destroy a named prod deployment on demand · [OPS-15](#ops-15-serialize-lane-test-user-rotation-jobs) Serialize lane test-user rotation jobs · [OPS-16](#ops-16-run-dynamodb-data-migrations) Run DynamoDB data migrations
 - [Alarms, triage and probes](#alarms-triage-and-probes-ops): [OPS-17](#ops-17-redact-and-gate-unattended-agent-output-before-publishing) Redact and gate unattended-agent output before publishing · [OPS-18](#ops-18-run-alarm-and-support-triage) Run alarm and support triage · [OPS-19](#ops-19-kill-switch-to-stop-unattended-agent-workflows) Kill-switch to stop unattended agent workflows · [OPS-20](#ops-20-enforce-daily-run-budgets-for-agent-paths) Enforce daily run budgets for agent paths · [OPS-21](#ops-21-auto-close-resolved-alarm-issues) Auto-close resolved alarm issues · [OPS-22](#ops-22-verify-a-triage-draft-pr-stays-in-scope) Verify a triage draft-PR stays in scope · [OPS-23](#ops-23-raise-an-issue-from-a-probe-test-failure) Raise an issue from a probe-test failure · [OPS-24](#ops-24-gate-probes-on-the-main-apex-deploy) Gate probes on the main apex deploy · [OPS-25](#ops-25-record-dora-and-probe-metrics) Record DORA and probe metrics · [OPS-26](#ops-26-run-the-automated-test-suite-in-ci) Run the automated test suite in CI · [OPS-27](#ops-27-run-probe-tests-against-deployed-environments) Run probe tests against deployed environments · [OPS-70](#ops-70-forward-operational-activity-events-to-telegram) Forward operational activity events to Telegram · [OPS-71](#ops-71-create-github-issues-from-cloudwatch-alarms) Create GitHub issues from CloudWatch alarms · [OPS-72](#ops-72-forward-bedrock-budget-alerts) Forward Bedrock budget alerts · [OPS-73](#ops-73-detect-404-scan-rate-attacks) Detect 404 scan-rate attacks · [OPS-74](#ops-74-detect-waf-blocked-scan-attacks) Detect WAF-blocked scan attacks · [OPS-75](#ops-75-run-nightly-security-lake-analysis) Run nightly Security Lake analysis · [OPS-76](#ops-76-gather-alarm-evidence-for-investigation) Gather alarm evidence for investigation · [OPS-77](#ops-77-silence-alarms-during-deployment-teardown) Silence alarms during deployment teardown · [OPS-78](#ops-78-verify-an-alarm-issues-claimed-transition) Verify an alarm issue's claimed transition · [OPS-79](#ops-79-track-an-alarm-familys-daily-remedy-budget) Track an alarm family's daily remedy budget · [OPS-80](#ops-80-build-aws-console-deep-links-for-operators) Build AWS console deep links for operators
-- [Security and compliance](#security-and-compliance-ops): [OPS-28](#ops-28-enforce-commit-identity-allowlist) Enforce commit identity allowlist · [OPS-29](#ops-29-verify-commit-signatures-on-pull-requests) Verify commit signatures on pull requests · [OPS-30](#ops-30-run-codeql-security-scanning) Run CodeQL security scanning · [OPS-31](#ops-31-run-a-claude-security-review-on-push) Run a Claude security review on push · [OPS-32](#ops-32-detect-cloudformation-drift) Detect CloudFormation drift · [OPS-33](#ops-33-enforce-workflow-to-workflow-permission-grants) Enforce workflow-to-workflow permission grants · [OPS-34](#ops-34-validate-github-actions-workflow-files) Validate GitHub Actions workflow files · [OPS-35](#ops-35-verify-third-party-console-configuration-against-declared-state) Verify third-party console configuration against declared state · [OPS-36](#ops-36-configure-dependabot-dependency-updates) Configure Dependabot dependency updates · [OPS-37](#ops-37-check-https-certificate-expiry) Check HTTPS certificate expiry · [OPS-38](#ops-38-run-the-weekly-compliance-test-check) Run the weekly compliance-test check · [OPS-39](#ops-39-generate-a-software-bill-of-materials) Generate a software bill of materials
+- [Security and compliance](#security-and-compliance-ops): [OPS-28](#ops-28-enforce-commit-identity-allowlist) Enforce commit identity allowlist · [OPS-29](#ops-29-verify-commit-signatures-on-pull-requests) Verify commit signatures on pull requests · [OPS-30](#ops-30-run-codeql-security-scanning) Run CodeQL security scanning · [OPS-31](#ops-31-run-the-weekly-security-review-and-its-triage) Run the weekly security review and its triage · [OPS-32](#ops-32-detect-cloudformation-drift) Detect CloudFormation drift · [OPS-33](#ops-33-enforce-workflow-to-workflow-permission-grants) Enforce workflow-to-workflow permission grants · [OPS-34](#ops-34-validate-github-actions-workflow-files) Validate GitHub Actions workflow files · [OPS-35](#ops-35-verify-third-party-console-configuration-against-declared-state) Verify third-party console configuration against declared state · [OPS-36](#ops-36-configure-dependabot-dependency-updates) Configure Dependabot dependency updates · [OPS-37](#ops-37-check-https-certificate-expiry) Check HTTPS certificate expiry · [OPS-38](#ops-38-run-the-weekly-compliance-test-check) Run the weekly compliance-test check · [OPS-39](#ops-39-generate-a-software-bill-of-materials) Generate a software bill of materials
 - [Data protection and privacy](#data-protection-and-privacy-ops): [OPS-40](#ops-40-delete-a-customers-data-for-gdpr-erasure) Delete a customer's data for GDPR erasure · [OPS-41](#ops-41-export-a-customers-gdpr-subject-access-data) Export a customer's GDPR subject-access data · [OPS-42](#ops-42-guide-icogdpr-compliance) Guide ICO/GDPR compliance · [OPS-43](#ops-43-rotate-stored-email-address-hashes) Rotate stored email-address hashes · [OPS-44](#ops-44-hash-and-rotate-the-subject-id-salt) Hash and rotate the subject-ID salt · [OPS-45](#ops-45-manage-aws-secrets-manager-entries-and-rotation-tags) Manage AWS Secrets Manager entries and rotation tags · [OPS-46](#ops-46-query-and-persist-per-consumer-security-state-records) Query and persist per-consumer security-state records · [OPS-47](#ops-47-check-fraud-prevention-header-record-freshness) Check fraud-prevention header record freshness · [OPS-48](#ops-48-verify-backup-health-daily) Verify backup health daily · [OPS-49](#ops-49-request-and-renew-the-holding-page-certificate) Request and renew the holding-page certificate · [OPS-50](#ops-50-drill-and-test-pitr-database-restoration) Drill and test PITR database restoration
 - [Video, publishing and accessibility](#video-publishing-and-accessibility-ops): [OPS-51](#ops-51-publish-build-artifacts-and-documentation) Publish build artifacts and documentation · [OPS-52](#ops-52-auto-record-demo-videos-on-prod-deploy) Auto-record demo videos on prod deploy · [OPS-53](#ops-53-verify-youtube-channel-consistency-weekly) Verify YouTube channel consistency weekly · [OPS-88](#ops-88-orchestrate-demo-video-recording-journeys) Orchestrate demo-video recording journeys · [OPS-89](#ops-89-overlay-pointer-and-caption-cues-on-video) Overlay pointer and caption cues on video · [OPS-90](#ops-90-encode-captured-video-frames-and-captions) Encode captured video frames and captions · [OPS-91](#ops-91-validate-video-scene-scripts-and-timing) Validate video scene scripts and timing · [OPS-92](#ops-92-redact-secrets-from-video-artefacts) Redact secrets from video artefacts · [OPS-93](#ops-93-publish-demo-videos-to-youtube) Publish demo videos to YouTube · [OPS-94](#ops-94-play-demo-videos-on-the-public-site) Play demo videos on the public site · [OPS-95](#ops-95-generate-wcag-accessibility-compliance-rows) Generate WCAG accessibility compliance rows · [OPS-96](#ops-96-scan-pages-for-accessibility-violations) Scan pages for accessibility violations · [OPS-97](#ops-97-compile-the-compliance-audit-report) Compile the compliance audit report
 - [Agent workflows](#agent-workflows-ops): [OPS-54](#ops-54-define-specialized-claude-code-sub-agent-personas) Define specialized Claude Code sub-agent personas · [OPS-55](#ops-55-configure-github-copilot-review-and-workspace-setup) Configure GitHub Copilot review and workspace setup · [OPS-56](#ops-56-structure-github-issues-prs-and-funding-links) Structure GitHub issues, PRs and funding links · [OPS-57](#ops-57-dispatch-agentic-lib-board-backlog-and-pr-agents) Dispatch agentic-lib board, backlog and PR agents
@@ -2313,7 +2313,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 
 - **Use when:** an [ALARM] or support issue needs an automated first-pass triage.
 - **Does:** run-triage-agent executes claude -p against Bedrock, Haiku with Sonnet escalation for complex cases. It writes the JSON result to a file without failing the job on the model's verdict. alarm-triage.yml dispatches it from an [ALARM] issue and support-triage.yml from a support issue.
-- **Run:** `gh workflow run alarm-triage.yml`; `gh workflow run support-triage.yml`
+- **Run:** `gh workflow run alarm-triage.yml`; `gh workflow run support-triage.yml`; security-review.yml runs it too (OPS-31)
 - **Entry:** `.github/actions/run-triage-agent/action.yml`
 - **Files:** .github/actions/run-triage-agent/action.yml, .github/workflows/alarm-triage.yml, .github/workflows/support-triage.yml, app/unit-tests/supportTriageWorkflow.test.js
 - **Keywords:** triage agent, alarm triage, support triage, claude -p, bedrock, haiku, sonnet escalation
@@ -2525,7 +2525,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - [OPS-28](#ops-28-enforce-commit-identity-allowlist) Enforce commit identity allowlist
 - [OPS-29](#ops-29-verify-commit-signatures-on-pull-requests) Verify commit signatures on pull requests
 - [OPS-30](#ops-30-run-codeql-security-scanning) Run CodeQL security scanning
-- [OPS-31](#ops-31-run-a-claude-security-review-on-push) Run a Claude security review on push
+- [OPS-31](#ops-31-run-the-weekly-security-review-and-its-triage) Run the weekly security review and its triage
 - [OPS-32](#ops-32-detect-cloudformation-drift) Detect CloudFormation drift
 - [OPS-33](#ops-33-enforce-workflow-to-workflow-permission-grants) Enforce workflow-to-workflow permission grants
 - [OPS-34](#ops-34-validate-github-actions-workflow-files) Validate GitHub Actions workflow files
@@ -2566,15 +2566,15 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - **Keywords:** codeql, static analysis, security scan, scheduled scan, exclude paths
 - **Related:** OPS-36
 
-#### OPS-31 Run a Claude security review on push
+#### OPS-31 Run the weekly security review and its triage
 
-- **Use when:** checking how pushed changes get an automated security review.
-- **Does:** security-review.yml triggers a Claude session that reviews changed code for security issues on push.
-- **Run:** no command; see Does and Entry
+- **Use when:** the weekly security-review issue needs a review, or a review must run on demand.
+- **Does:** security-review.yml opens a security-review issue every Monday, then runs a Sonnet agent over the checked-out commit, read-only, against prompts/security-review.md. The full report, with file, line and exploit path per finding, goes to the prod analytics lake under private/security-review/. The issue gets counts by severity and the areas checked, built by scripts/security-review-triage-output.mjs from a fixed vocabulary. With nothing above Low the issue closes.
+- **Run:** `gh workflow run security-review.yml`; `gh workflow run security-review.yml -f issue_number=<n>` for an existing issue; read a report with `aws --profile submit-prod s3 cp s3://prod-env-analytics-lake-972912397388/private/security-review/dt=<date>/<run>-<attempt>.md -`
 - **Entry:** `.github/workflows/security-review.yml`
-- **Files:** .github/workflows/security-review.yml
-- **Keywords:** security review, claude review, push trigger, automated code review, security-review.yml
-- **Related:** OPS-31
+- **Files:** .github/workflows/security-review.yml, prompts/security-review.md, prompts/security-review-triage.md, scripts/security-review-triage-output.mjs, app/unit-tests/scripts/securityReviewTriageOutput.test.js
+- **Keywords:** security review, security triage, OWASP, private report, weekly review, security-review.yml
+- **Related:** OPS-17, OPS-18, OPS-20
 
 #### OPS-32 Detect CloudFormation drift
 
@@ -5758,7 +5758,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - auto-merge skill: [SS-51](#ss-51-merge-every-pr-that-is-ready)
 - auto-remediate: [OPS-79](#ops-79-track-an-alarm-familys-daily-remedy-budget)
 - auto-tagging: [DATA-32](#data-32-sync-the-google-ads-account)
-- automated code review: [OPS-31](#ops-31-run-a-claude-security-review-on-push)
+- automated code review: [OPS-31](#ops-31-run-the-weekly-security-review-and-its-triage)
 - autosave: [SS-27](#ss-27-save-and-load-books-locally-and-via-submits-cloud-store)
 - availability sli: [DATA-31](#data-31-sql-views-dora-and-operations)
 - aws account setup: [OPS-98](#ops-98-bootstrap-the-cdk-toolkit-across-accounts)
@@ -5970,7 +5970,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - claim slot: [OPS-10](#ops-10-claim-release-and-track-a-ci-deployment-slot)
 - class 4 nic: [HMRC-18](#hmrc-18-manage-itsa-tax-liability-adjustments)
 - claude -p: [OPS-18](#ops-18-run-alarm-and-support-triage)
-- claude review: [OPS-31](#ops-31-run-a-claude-security-review-on-push)
+- claude review: [OPS-31](#ops-31-run-the-weekly-security-review-and-its-triage)
 - claude rules: [DEV-26](#dev-26-enforce-claude-code-conventions-via-rules-and-hooks)
 - clean: [DEV-34](#dev-34-clean-up-stale-deployments-and-branches)
 - clean build: [DEV-22](#dev-22-clean-and-update-local-build-state)
@@ -7120,7 +7120,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - purchases lines: [MCP-12](#mcp-12-read-invoices-from-the-local-mail-index)
 - push and pr trigger: [OPS-26](#ops-26-run-the-automated-test-suite-in-ci)
 - push to main: [OPS-06](#ops-06-run-the-full-deployment-pipeline)
-- push trigger: [OPS-01](#ops-01-cancel-superseded-push-triggered-deploys), [OPS-31](#ops-31-run-a-claude-security-review-on-push)
+- push trigger: [OPS-01](#ops-01-cancel-superseded-push-triggered-deploys)
 - putmetricdata: [OPS-83](#ops-83-emit-cloudwatch-emf-metrics), [DATA-21](#data-21-publish-nightly-business-metrics-to-cloudwatch)
 - pwa: [SS-29](#ss-29-serve-diya-gl-as-an-offline-pwa)
 - qr code: [SITE-19](#site-19-generate-qr-codes), [BILL-06](#bill-06-generate-a-token-charged-pass), [BILL-11](#bill-11-generate-admin-passes-from-cli-or-workflow)
@@ -7336,12 +7336,12 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - security lake: [OPS-75](#ops-75-run-nightly-security-lake-analysis)
 - security lint: [DEV-23](#dev-23-configure-the-test-and-lint-toolchains)
 - security policy: [OPS-65](#ops-65-document-security-policy-and-disclosure)
-- security review: [OPS-31](#ops-31-run-a-claude-security-review-on-push)
+- security review: [OPS-31](#ops-31-run-the-weekly-security-review-and-its-triage)
 - security review prompt: [DEV-25](#dev-25-maintain-the-specialist-agent-prompt-library)
 - security scan: [OPS-30](#ops-30-run-codeql-security-scanning)
 - security scanning: [SS-40](#ss-40-run-codeql-scanning)
 - security state: [OPS-46](#ops-46-query-and-persist-per-consumer-security-state-records)
-- security-review.yml: [OPS-31](#ops-31-run-a-claude-security-review-on-push)
+- security-review.yml: [OPS-31](#ops-31-run-the-weekly-security-review-and-its-triage)
 - security.md: [OPS-65](#ops-65-document-security-policy-and-disclosure)
 - seed book.toml: [MCP-11](#mcp-11-seed-a-book-from-a-workbook-set)
 - self assessment: [DEV-09](#dev-09-simulate-hmrc-itsa-mtd-api)
