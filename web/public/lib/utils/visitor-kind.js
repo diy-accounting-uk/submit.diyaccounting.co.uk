@@ -30,11 +30,17 @@ const BOT_USER_AGENT_PATTERNS = [
 const SYNTHETIC_SESSION_STORAGE_KEY = "requestIdPrefix";
 const SYNTHETIC_SESSION_STORAGE_VALUE = "test_";
 
+// The flag widgets/entitlement-status.js sets once GET /api/v1/bundle returns the operator
+// bundle. Later pages in that browser classify as operator, signed in or not; the first page
+// after sign-in has already sent its kind.
+const OPERATOR_LOCAL_STORAGE_KEY = "visitorKind.operator";
+
 /**
  * Classify the current browser session: "bot" for crawlers, AI agents and the synthetic
- * canaries; "synthetic" for the behaviour-test suites; "human" otherwise.
+ * canaries; "synthetic" for the behaviour-test suites; "operator" for a browser flagged by
+ * the operator bundle; "human" otherwise.
  *
- * @returns {"human"|"bot"|"synthetic"}
+ * @returns {"human"|"operator"|"bot"|"synthetic"}
  */
 export function classifyVisitorKind() {
   let userAgent = "";
@@ -52,7 +58,15 @@ export function classifyVisitorKind() {
       return "synthetic";
     }
   } catch {
-    // sessionStorage unavailable (private browsing, disabled storage): fall through to human
+    // sessionStorage unavailable (private browsing, disabled storage): fall through to operator and human
+  }
+
+  try {
+    if (localStorage.getItem(OPERATOR_LOCAL_STORAGE_KEY) === "1") {
+      return "operator";
+    }
+  } catch {
+    // localStorage unavailable: fall through to human
   }
 
   return "human";

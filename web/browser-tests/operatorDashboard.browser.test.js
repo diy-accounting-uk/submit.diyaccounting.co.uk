@@ -9,6 +9,7 @@ import fs from "fs";
 import path from "path";
 import { setTimeout as delay } from "timers/promises";
 import { dotenvConfigIfNotBlank } from "@app/lib/env.js";
+import { OBJECTIVE_DEFINITIONS } from "@app/functions/analytics/operatorSnapshotPublish.js";
 
 dotenvConfigIfNotBlank({ path: ".env.test" });
 
@@ -56,10 +57,14 @@ const FIXTURE_SNAPSHOT = {
           unit: "count",
           last30: { value: 210, trend: 0.05 },
           last90: { value: 600, trend: 0.02 },
-          dailySeries: [
-            { day: "2026-09-06", value: 30 },
-            { day: "2026-09-07", value: 28 },
-          ],
+          deepLink: "https://analytics.google.com/analytics/web/#/p523400333/reports/intelligenthome",
+        },
+        {
+          id: "sessions-operator",
+          label: "Sessions, operator visitors",
+          unit: "count",
+          last30: { value: 12, trend: 0 },
+          last90: { value: 30, trend: 0 },
           deepLink: "https://analytics.google.com/analytics/web/#/p523400333/reports/intelligenthome",
         },
         {
@@ -68,10 +73,6 @@ const FIXTURE_SNAPSHOT = {
           unit: "count",
           last30: { value: 40, trend: -0.1 },
           last90: { value: 130, trend: 0.01 },
-          dailySeries: [
-            { day: "2026-09-06", value: 5 },
-            { day: "2026-09-07", value: 6 },
-          ],
           deepLink: "https://analytics.google.com/analytics/web/#/p523400333/reports/intelligenthome",
         },
         {
@@ -80,10 +81,6 @@ const FIXTURE_SNAPSHOT = {
           unit: "count",
           last30: { value: 60, trend: 0 },
           last90: { value: 180, trend: 0 },
-          dailySeries: [
-            { day: "2026-09-06", value: 8 },
-            { day: "2026-09-07", value: 8 },
-          ],
           deepLink: "https://analytics.google.com/analytics/web/#/p523400333/reports/intelligenthome",
         },
       ],
@@ -171,6 +168,7 @@ const FIXTURE_SNAPSHOT = {
           last7d: { value: 12 },
           last30: { value: 40, trend: 0.1 },
           last90: { value: 110, trend: 0.05 },
+          dataSince: "2026-09-28",
         },
         {
           id: "submit-vat::completed",
@@ -181,12 +179,13 @@ const FIXTURE_SNAPSHOT = {
           last7d: { value: 8 },
           last30: { value: 22, trend: -0.05 },
           last90: { value: 60, trend: 0.02 },
+          dataSince: "2026-09-03",
         },
         {
           id: "bundle::started",
           label: "View and edit your bundles — started",
           unit: "count",
-          last30: { value: 31, trend: 0 },
+          last30: { value: 4, trend: null, isNew: true },
           last90: { value: 90, trend: 0 },
         },
         {
@@ -235,8 +234,50 @@ const FIXTURE_EXPERIMENTS = {
       start: "2026-09-01",
       end: "2026-09-30",
     },
+    {
+      id: "exp-2026-09-resident-price",
+      objective: "conversion-to-paid",
+      hypothesis: "",
+      lever: "price",
+      metric: "purchases-per-human-session",
+      start: "2026-09-22",
+    },
   ],
 };
+
+const SAMPLE_VALUE_BY_UNIT = { count: 1234, gbp: 12345.67, usd: 123.45, ratio: 0.987, hours: 12.5, runs: 42 };
+
+// Every observation the publisher defines, each with a value in every column, which is the
+// most the page ever renders; the layout tests size the page's reserved heights against it.
+function fullShapeSnapshot() {
+  const context = {
+    region: "eu-west-2",
+    athenaWorkGroupName: "prod-env-analytics",
+    githubRepo: "diy-accounting-uk/submit.diyaccounting.co.uk",
+    ga4PropertyId: "523400333",
+  };
+  const windows = (unit) => ({
+    last30: { value: SAMPLE_VALUE_BY_UNIT[unit], trend: 0.123 },
+    last90: { value: SAMPLE_VALUE_BY_UNIT[unit], trend: 0.123 },
+  });
+  return {
+    generatedAt: "2026-09-29T07:45:25.539Z",
+    environment: "prod",
+    objectives: OBJECTIVE_DEFINITIONS.map((objective) => ({
+      id: objective.id,
+      name: objective.name,
+      observations: objective.observations.map((observation) => ({
+        id: observation.id,
+        label: observation.label,
+        unit: observation.unit,
+        ...windows(observation.unit),
+        ...(observation.fastWindowView ? { last1h: { value: 12 }, last1d: { value: 123 }, last7d: { value: 1234 } } : {}),
+        deepLink: observation.deepLink(context),
+      })),
+    })),
+    failedObservationCount: 0,
+  };
+}
 
 // The real 403 body a signed-in caller without the operator bundle gets back from
 // operatorSnapshotGet.js (app/functions/analytics/operatorSnapshotGet.js) - kept in sync with
@@ -329,18 +370,33 @@ test.describe("Operator Dashboard", () => {
     );
   });
 
-  test("renders the visitors panel with human, bot and synthetic sessions per day", async ({ page }) => {
+  test("renders the visitors panel as one row per kind with the activity table's windows", async ({ page }) => {
     await setupRoutes(page);
     await loadDashboard(page);
 
-    const rows = page.locator("#visitorsPanel tr.visitors-day");
-    await expect(rows).toHaveCount(2);
+    const rows = page.locator("#visitorsPanel tr.visitors-kind");
+    await expect(rows).toHaveCount(4);
+    await expect(rows.locator("td:first-child")).toHaveText(["Human", "Operator", "Bot", "Synthetic"]);
 
-    const firstDay = page.locator('#visitorsPanel tr.visitors-day[data-day="2026-09-06"]');
-    await expect(firstDay.locator("td").nth(0)).toHaveText("2026-09-06");
-    await expect(firstDay.locator("td").nth(1)).toHaveText("30");
-    await expect(firstDay.locator("td").nth(2)).toHaveText("5");
-    await expect(firstDay.locator("td").nth(3)).toHaveText("8");
+    const human = page.locator('#visitorsPanel tr.visitors-kind[data-kind="human"]');
+    await expect(human.locator("td").nth(1)).toHaveText("—");
+    await expect(human.locator("td").nth(2)).toHaveText("—");
+    await expect(human.locator("td").nth(3)).toHaveText("—");
+    await expect(human.locator("td").nth(4)).toHaveText("210");
+    await expect(human.locator("td").nth(5)).toHaveText("↑ 5.0%");
+    await expect(human.locator("td").nth(6)).toHaveText("600");
+
+    const bot = page.locator('#visitorsPanel tr.visitors-kind[data-kind="bot"]');
+    await expect(bot.locator("td").nth(5)).toHaveText("↓ 10.0%");
+  });
+
+  test("explains in the fast-window header tooltips why the visitors table has no last-hour figure", async ({ page }) => {
+    await setupRoutes(page);
+    await loadDashboard(page);
+
+    const headers = page.locator("#visitorsTable thead th");
+    await expect(headers).toHaveText(["Kind", "Last 1 hour", "Last 1 day", "Last 7 days", "Last 30 days", "Trend", "Last 90 days"]);
+    await expect(headers.nth(1)).toHaveAttribute("title", /two days late/);
   });
 
   test("shows a placeholder for an objective with no observations yet", async ({ page }) => {
@@ -401,6 +457,29 @@ test.describe("Operator Dashboard", () => {
     await expect(bundleRow.locator("td").nth(0)).toHaveText("View and edit your bundles");
   });
 
+  test("labels a non-zero window against an empty prior window as new", async ({ page }) => {
+    await setupRoutes(page);
+    await loadDashboard(page);
+
+    const bundleRow = page.locator('#activitiesPanel .activity-row[data-activity-id="bundle"]');
+    await expect(bundleRow.locator("td").nth(5)).toHaveText("new");
+  });
+
+  test("says from which day the started and completed counts begin, derived from the snapshot", async ({ page }) => {
+    await setupRoutes(page);
+    await loadDashboard(page);
+
+    await expect(page.locator("#activitiesDataSince")).toHaveText("Started counts begin 2026-09-28. Completed counts begin 2026-09-03");
+  });
+
+  test("explains what the Started and Completed columns count in the header tooltips", async ({ page }) => {
+    await setupRoutes(page);
+    await loadDashboard(page);
+
+    await expect(page.locator("#activitiesTable thead th[colspan]").nth(0)).toHaveAttribute("title", /signed-in customer/);
+    await expect(page.locator("#activitiesTable thead th[colspan]").nth(1)).toHaveAttribute("title", /whether or not the customer clicked/);
+  });
+
   test("hides the activities panel when the snapshot carries no activity observations", async ({ page }) => {
     await setupRoutes(page, { snapshotBody: FIXTURE_SNAPSHOT_NO_ACTIVITIES });
     await loadDashboard(page);
@@ -431,6 +510,38 @@ test.describe("Operator Dashboard", () => {
     await expect(experiment).toContainText("(no hypothesis yet)");
     await expect(experiment).toContainText("2026-09-01");
     await expect(experiment).toContainText("2026-09-30");
+  });
+
+  test.describe("reserved heights", () => {
+    for (const width of [390, 700, 900, 1280]) {
+      test(`reserve at least the rendered height of each panel at ${width}px wide`, async ({ page }) => {
+        await page.setViewportSize({ width, height: 900 });
+        await setupRoutes(page, { snapshotBody: fullShapeSnapshot() });
+        await loadDashboard(page);
+        await expect(page.locator(".objective[data-objective-id]")).toHaveCount(8);
+
+        const heights = await page.evaluate(() => {
+          const panels = {
+            objectivesContainer: document.getElementById("objectivesContainer"),
+            visitorsPanel: document.getElementById("visitorsPanel"),
+            experimentsPanel: document.getElementById("experimentsPanel"),
+          };
+          const result = {};
+          for (const [name, element] of Object.entries(panels)) {
+            result[name] = { reserved: parseFloat(getComputedStyle(element).minHeight), rendered: 0 };
+          }
+          for (const [name, element] of Object.entries(panels)) {
+            element.style.minHeight = "0";
+            result[name].rendered = element.getBoundingClientRect().height;
+          }
+          return result;
+        });
+
+        for (const [name, { reserved, rendered }] of Object.entries(heights)) {
+          expect(reserved, `${name} reserves ${reserved}px for ${rendered}px of content`).toBeGreaterThanOrEqual(rendered);
+        }
+      });
+    }
   });
 
   test.describe("wide-window layout", () => {

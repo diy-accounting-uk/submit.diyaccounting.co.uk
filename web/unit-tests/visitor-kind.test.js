@@ -47,6 +47,38 @@ describe("classifyVisitorKind", () => {
     expect(classifyVisitorKind()).toBe("synthetic");
   });
 
+  it("classifies a browser flagged by the operator bundle as operator", () => {
+    vi.stubGlobal("navigator", { userAgent: "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15) AppleWebKit/605.1.15" });
+    vi.stubGlobal("sessionStorage", { getItem: vi.fn(() => null) });
+    vi.stubGlobal("localStorage", { getItem: vi.fn((key) => (key === "visitorKind.operator" ? "1" : null)) });
+
+    expect(classifyVisitorKind()).toBe("operator");
+  });
+
+  it("prefers synthetic and bot over operator", () => {
+    const flagged = { getItem: vi.fn((key) => (key === "visitorKind.operator" ? "1" : null)) };
+    vi.stubGlobal("localStorage", flagged);
+    vi.stubGlobal("navigator", { userAgent: "Mozilla/5.0 HeadlessChrome/120.0" });
+    vi.stubGlobal("sessionStorage", { getItem: vi.fn((key) => (key === "requestIdPrefix" ? "test_" : null)) });
+    expect(classifyVisitorKind()).toBe("synthetic");
+
+    vi.stubGlobal("navigator", { userAgent: "Googlebot/2.1" });
+    vi.stubGlobal("sessionStorage", { getItem: vi.fn(() => null) });
+    expect(classifyVisitorKind()).toBe("bot");
+  });
+
+  it("falls back to human when localStorage throws", () => {
+    vi.stubGlobal("navigator", { userAgent: "Mozilla/5.0 AppleWebKit/605.1.15" });
+    vi.stubGlobal("sessionStorage", { getItem: vi.fn(() => null) });
+    vi.stubGlobal("localStorage", {
+      getItem: vi.fn(() => {
+        throw new Error("blocked");
+      }),
+    });
+
+    expect(classifyVisitorKind()).toBe("human");
+  });
+
   it("prefers bot over synthetic when both markers are present", () => {
     vi.stubGlobal("navigator", { userAgent: "DIYAccounting-Probe-Monitor/1.0" });
     vi.stubGlobal("sessionStorage", { getItem: vi.fn((key) => (key === "requestIdPrefix" ? "test_" : null)) });

@@ -53,6 +53,7 @@ function buildActivityObservations() {
       valueExpr: "starts",
       aggregation: "sum",
       where: `activity = '${activity.id}'`,
+      reportDataSince: true,
       // v_activity_started_daily groups by whole calendar day, which cannot answer a trailing
       // 1-hour or 1-day window accurately (see v_activity_started_hourly.sql), so the fast
       // columns read from the hourly view instead, in the same query shape.
@@ -69,6 +70,7 @@ function buildActivityObservations() {
       valueExpr: "completions",
       aggregation: "sum",
       where: `activity = '${activity.id}'`,
+      reportDataSince: true,
       fastWindowView: "v_submissions_by_activity_hourly",
       fastWindowColumn: "hour",
       deepLink: (ctx) => buildAthenaSavedQueryLink(ctx.region, ctx.athenaWorkGroupName),
@@ -231,7 +233,17 @@ export const OBJECTIVE_DEFINITIONS = [
         valueExpr: "sessions",
         aggregation: "sum",
         where: "visitor_kind = 'human'",
-        dailySeries: true,
+        deepLink: (ctx) => buildGa4ReportsLink(ctx.ga4PropertyId),
+      },
+      {
+        id: "sessions-operator",
+        label: "Sessions, operator visitors",
+        unit: "count",
+        view: "v_visitors_by_kind_daily",
+        dayColumn: "day",
+        valueExpr: "sessions",
+        aggregation: "sum",
+        where: "visitor_kind = 'operator'",
         deepLink: (ctx) => buildGa4ReportsLink(ctx.ga4PropertyId),
       },
       {
@@ -243,7 +255,6 @@ export const OBJECTIVE_DEFINITIONS = [
         valueExpr: "sessions",
         aggregation: "sum",
         where: "visitor_kind = 'bot'",
-        dailySeries: true,
         deepLink: (ctx) => buildGa4ReportsLink(ctx.ga4PropertyId),
       },
       {
@@ -255,7 +266,6 @@ export const OBJECTIVE_DEFINITIONS = [
         valueExpr: "sessions",
         aggregation: "sum",
         where: "visitor_kind = 'synthetic'",
-        dailySeries: true,
         deepLink: (ctx) => buildGa4ReportsLink(ctx.ga4PropertyId),
       },
     ],
@@ -708,39 +718,21 @@ export async function runAthenaQuery({ workGroup, database, sql }) {
  * immediately preceding comparable periods (the 30 or 90 days before that) in a single pass,
  * so a day with no rows for a window reads as SQL NULL rather than a false zero.
  *
- * @param {{view: string, dayColumn: string, valueExpr: string, aggregation: string, where?: string}} observation
+ * `reportDataSince` adds the earliest day the view holds rows for this observation, so a
+ * window longer than the data reads as "since <day>" on the page rather than as a full window.
+ *
+ * @param {{view: string, dayColumn: string, valueExpr: string, aggregation: string, where?: string, reportDataSince?: boolean}} observation
  * @returns {string}
  */
-export function buildWindowedSql({ view, dayColumn, valueExpr, aggregation, where }) {
+export function buildWindowedSql({ view, dayColumn, valueExpr, aggregation, where, reportDataSince }) {
   const whereClause = where ? `\nWHERE  ${where}` : "";
+  const dataSinceColumn = reportDataSince ? `,\n       cast(min(${dayColumn}) AS varchar) AS data_since` : "";
   return (
     `SELECT ${aggregation}(CASE WHEN ${dayColumn} > date_add('day', -30, current_date) THEN ${valueExpr} END) AS last_30,\n` +
     `       ${aggregation}(CASE WHEN ${dayColumn} > date_add('day', -60, current_date) AND ${dayColumn} <= date_add('day', -30, current_date) THEN ${valueExpr} END) AS prev_30,\n` +
     `       ${aggregation}(CASE WHEN ${dayColumn} > date_add('day', -90, current_date) THEN ${valueExpr} END) AS last_90,\n` +
-    `       ${aggregation}(CASE WHEN ${dayColumn} > date_add('day', -180, current_date) AND ${dayColumn} <= date_add('day', -90, current_date) THEN ${valueExpr} END) AS prev_90\n` +
+    `       ${aggregation}(CASE WHEN ${dayColumn} > date_add('day', -180, current_date) AND ${dayColumn} <= date_add('day', -90, current_date) THEN ${valueExpr} END) AS prev_90${dataSinceColumn}\n` +
     `FROM   ${view}${whereClause}`
-  );
-}
-
-/**
- * One row per day for the trailing 30 days, for an observation flagged `dailySeries: true`.
- * The windowed query above answers a single total for the period; the operator dashboard's
- * Visitors panel needs the day-by-day breakdown instead, so this runs as a second query
- * alongside it for those observations only.
- *
- * @param {{view: string, dayColumn: string, valueExpr: string, aggregation: string, where?: string}} observation
- * @returns {string}
- */
-export function buildDailySeriesSql({ view, dayColumn, valueExpr, aggregation, where }) {
-  const conditions = [`${dayColumn} > date_add('day', -30, current_date)`];
-  if (where) conditions.push(where);
-  return (
-    `SELECT ${dayColumn} AS day,\n` +
-    `       ${aggregation}(${valueExpr}) AS value\n` +
-    `FROM   ${view}\n` +
-    `WHERE  ${conditions.join(" AND ")}\n` +
-    `GROUP BY ${dayColumn}\n` +
-    `ORDER BY ${dayColumn}`
   );
 }
 
@@ -768,10 +760,6 @@ function toNumberOrNull(value) {
   return Number(value);
 }
 
-export function toDailySeries(rows) {
-  return (rows || []).map((row) => ({ day: row.day, value: toNumberOrNull(row.value) }));
-}
-
 export function toActivityFastWindows(row) {
   return {
     last1h: { value: toNumberOrNull(row?.last_1h) },
@@ -790,15 +778,23 @@ export function computeTrend(current, previous) {
   return (current - previous) / previous;
 }
 
+// A window whose prior comparable period held nothing has no percentage to show, but a
+// non-zero count against an empty prior period is new activity, which the page labels "new".
+function newInWindowFlag(current, previous) {
+  return current !== null && current > 0 && (previous === null || previous === 0) ? { isNew: true } : {};
+}
+
 export function toObservationWindows(row) {
   const last30 = toNumberOrNull(row?.last_30);
   const prev30 = toNumberOrNull(row?.prev_30);
   const last90 = toNumberOrNull(row?.last_90);
   const prev90 = toNumberOrNull(row?.prev_90);
-  return {
-    last30: { value: last30, trend: computeTrend(last30, prev30) },
-    last90: { value: last90, trend: computeTrend(last90, prev90) },
+  const windows = {
+    last30: { value: last30, trend: computeTrend(last30, prev30), ...newInWindowFlag(last30, prev30) },
+    last90: { value: last90, trend: computeTrend(last90, prev90), ...newInWindowFlag(last90, prev90) },
   };
+  if (row?.data_since) windows.dataSince = row.data_since;
+  return windows;
 }
 
 const nullObservationWindows = { last30: { value: null, trend: null }, last90: { value: null, trend: null } };
@@ -815,8 +811,7 @@ const nullObservationWindows = { last30: { value: null, trend: null }, last90: {
  * OBJECTIVE_DEFINITIONS — the activity-only run's way of refreshing just the activities
  * objective without re-running the other seven.
  *
- * `fastWindowOnly` skips the 30/90-day buildWindowedSql query entirely (and dailySeries with
- * it) and answers only each observation's `id` plus its last1h/last1d/last7d fields, for an
+ * `fastWindowOnly` skips the 30/90-day buildWindowedSql query entirely and answers only each observation's `id` plus its last1h/last1d/last7d fields, for an
  * observation that carries a `fastWindowView` (only the activity objective's observations do).
  * The result is a patch to merge onto an existing snapshot with mergeActivityFastWindows, not a
  * standalone snapshot: it carries no label, unit or deepLink, and every non-activity objective
@@ -854,19 +849,12 @@ export async function buildSnapshot({ workGroup, database, context, objectiveIds
   for (const objective of objectiveDefinitions) {
     const observations = await mapInOrderWithConcurrency(objective.observations, OBSERVATION_QUERY_CONCURRENCY, async (observation) => {
       let windows = nullObservationWindows;
-      let dailySeries = [];
       let fastWindows = {};
       try {
         if (!fastWindowOnly) {
           const sql = buildWindowedSql(observation);
           const rows = await runAthenaQuery({ workGroup, database, sql });
           windows = toObservationWindows(rows[0]);
-
-          if (observation.dailySeries) {
-            const dailySql = buildDailySeriesSql(observation);
-            const dailyRows = await runAthenaQuery({ workGroup, database, sql: dailySql });
-            dailySeries = toDailySeries(dailyRows);
-          }
         }
 
         if (observation.fastWindowView) {
@@ -896,8 +884,8 @@ export async function buildSnapshot({ workGroup, database, context, objectiveIds
         deepLink: observation.deepLink(context),
         ...fastWindows,
       };
-      if (observation.dailySeries) {
-        observationResult.dailySeries = dailySeries;
+      if (windows.dataSince) {
+        observationResult.dataSince = windows.dataSince;
       }
       return observationResult;
     });

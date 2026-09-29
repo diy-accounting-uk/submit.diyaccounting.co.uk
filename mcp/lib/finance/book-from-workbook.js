@@ -16,6 +16,7 @@ import { extractBook, extractLines } from "@diy-accounting-uk/diya-gl/dist/app/l
 import { validateBook, validateLines } from "@diy-accounting-uk/diya-gl/dist/app/lib/diya-gl-schema.js";
 import { stampBook } from "@diy-accounting-uk/diya-gl/dist/app/lib/provenance.js";
 import { productModule } from "@diy-accounting-uk/diya-gl/dist/app/lib/products.js";
+import { buildSheetMap, loadSharedStrings, readCellValue } from "@diy-accounting-uk/diya-gl/dist/app/lib/xlsx-parts.js";
 import { stringify } from "smol-toml";
 
 // The OpenAccounts sheet carries the Companies House number in a cell
@@ -236,4 +237,95 @@ export function openingBankBalanceLines(book) {
     throw new Error(`Opening bank balance lines failed validation:\n${errors.join("\n")}`);
   }
   return lines;
+}
+
+// The closing balance of each opening balance key, on the hub's
+// TrialBalance sheet ("FINAL Balances", column EJ; debit positive, credit
+// negative). Same keys as OPENING_JOURNAL_ACCOUNTS and
+// OPENING_JOURNAL_BANK_ACCOUNTS. Asset keys read the cell as it stands,
+// liability and capital keys read it negated, so every value is on the
+// side openingJournalLines() takes it.
+const CLOSING_BALANCE_ROW = { stock: 19, tradeDebtors: 20, longTermDebtors: 37 };
+const CLOSING_CREDIT_ROW = {
+  tradeCreditors: 28,
+  netWagesDue: 29,
+  wageDeductionsDue: 30,
+  dividendsDue: 31,
+  cisDue: 32,
+  vatDue: 33,
+  payeDue: 34,
+  corporationTaxDue: 35,
+  directorsLoan: 39,
+  longTermCreditors: 40,
+  shareCapital: 42,
+  retainedEarnings: 43,
+  capitalReserves: 44,
+};
+const CLOSING_BANK_ROW = { 1200: 22, 1210: 23, 1230: 24, 1220: 25 };
+const CLOSING_FIXED_ASSET_ROWS = [6, 7, 8, 9, 10, 11, 12, 13, 14, 15];
+const CLOSING_BALANCE_COLUMN = "EJ";
+
+function roundToPence(value) {
+  const rounded = Math.round(value * 100) / 100;
+  return rounded === 0 ? 0 : rounded;
+}
+
+/**
+ * Reads the next year's opening balances from a closing Company workbook
+ * set: the prior year's TrialBalance "FINAL Balances" for every account
+ * openingJournalLines() maps, in pence. Zero balances are left out. A
+ * debit trade creditors balance (Trade Creditors closing +0.02) is added to
+ * tradeDebtors, because the book schema holds tradeCreditors at a minimum
+ * of 0.
+ * @param {{dir: string}} params - the directory holding the prior year's workbooks
+ * @returns {Promise<Object>} book.openingBalances, ready to merge into a book
+ */
+export async function openingBalancesFromClosingSet({ dir } = {}) {
+  if (!dir) throw new Error("openingBalancesFromClosingSet requires a dir");
+
+  const set = await workbookSetFromDirectory(dir);
+  const zip = await set.zip("Financialaccounts.xlsx");
+  const sheetPath = (await buildSheetMap(zip)).get("TrialBalance");
+  if (!sheetPath) throw new Error(`${dir}/Financialaccounts.xlsx has no TrialBalance sheet`);
+  const xml = await zip.file(sheetPath).async("string");
+  const sharedStrings = await loadSharedStrings(zip);
+
+  const closing = (row) => {
+    const value = readCellValue(xml, `${CLOSING_BALANCE_COLUMN}${row}`, sharedStrings);
+    if (typeof value !== "number") {
+      throw new Error(`${dir}/Financialaccounts.xlsx TrialBalance!${CLOSING_BALANCE_COLUMN}${row} is not a number: ${value}`);
+    }
+    return value;
+  };
+
+  for (const row of CLOSING_FIXED_ASSET_ROWS) {
+    if (roundToPence(closing(row)) !== 0) {
+      throw new Error(
+        `TrialBalance!${CLOSING_BALANCE_COLUMN}${row} holds a fixed asset balance, which openingBalancesFromClosingSet does not carry`,
+      );
+    }
+  }
+
+  const openingBalances = {};
+  const add = (key, value) => {
+    openingBalances[key] = roundToPence((openingBalances[key] || 0) + value);
+  };
+  for (const [key, row] of Object.entries(CLOSING_BALANCE_ROW)) add(key, closing(row));
+  for (const [key, row] of Object.entries(CLOSING_CREDIT_ROW)) {
+    const credit = -closing(row);
+    if (key === "tradeCreditors" && credit < 0) add("tradeDebtors", -credit);
+    else add(key, credit);
+  }
+  for (const key of Object.keys(openingBalances)) {
+    if (openingBalances[key] === 0) delete openingBalances[key];
+  }
+
+  const bankAccounts = {};
+  for (const [code, row] of Object.entries(CLOSING_BANK_ROW)) {
+    const value = roundToPence(closing(row));
+    if (value !== 0) bankAccounts[code] = value;
+  }
+  if (Object.keys(bankAccounts).length > 0) openingBalances.bankAccounts = bankAccounts;
+
+  return openingBalances;
 }

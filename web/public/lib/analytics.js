@@ -46,7 +46,12 @@ const GA4_BOT_USER_AGENT_PATTERNS = [
 
 // Classifies this session for the visitor panels: "bot" for crawlers, AI agents and the
 // canaries; "synthetic" for the behaviour-test suites, which mark themselves by setting
-// requestIdPrefix in sessionStorage; "human" otherwise.
+// requestIdPrefix in sessionStorage; "operator" for a browser that has fetched the operator
+// bundle (widgets/entitlement-status.js sets the flag), so the operator's pages after that
+// fetch classify as operator, signed in or not; "human" otherwise. The first page after
+// sign-in has already sent its kind by the time the flag is set.
+const GA4_OPERATOR_LOCAL_STORAGE_KEY = "visitorKind.operator";
+
 function classifyVisitorKindForGa4() {
   let userAgent = "";
   try {
@@ -62,7 +67,14 @@ function classifyVisitorKindForGa4() {
       return "synthetic";
     }
   } catch {
-    // sessionStorage unavailable: fall through to human
+    // sessionStorage unavailable: fall through to operator and human
+  }
+  try {
+    if (localStorage.getItem(GA4_OPERATOR_LOCAL_STORAGE_KEY) === "1") {
+      return "operator";
+    }
+  } catch {
+    // localStorage unavailable: fall through to human
   }
   return "human";
 }

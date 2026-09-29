@@ -107,6 +107,45 @@ window.getGovClientHeaders = window.getGovClientHeaders || function(){ return Pr
     await expect(messagesList).toContainText("C1");
   });
 
+  test("labels allowances in plain English and never prints raw keys or NaN", async ({ page }) => {
+    await loadPage(page);
+    await page.evaluate(() => {
+      document.getElementById("calculationResults").style.display = "block";
+      window.displayCalculation(
+        {
+          metadata: { calculationId: "calc-5", calculationType: "in-year" },
+          calculation: {
+            taxCalculation: { totalIncomeTaxAndNicsDue: 1900, incomeTax: {}, nics: {}, totalTaxDeducted: 0 },
+            allowancesAndDeductions: {
+              personalAllowance: 12570,
+              blindPersonsAllowance: 2870,
+              qualifyingLoanInterestFromInvestments: 100,
+              someNewHmrcAllowance: 5,
+              annuityPayments: { grossAnnuityPayments: 300, reliefClaimed: 60 },
+              marriageAllowanceTransferOut: { personalAllowanceBeforeTransferOut: 12570, transferredOutAmount: 1260 },
+              emptyThing: {},
+              textThing: "n/a",
+            },
+          },
+          messages: { errors: [], warnings: [], info: [] },
+        },
+        "AB123456C",
+        "2023-24",
+        "in-year",
+      );
+    });
+
+    const list = page.locator("#allowancesAndDeductions");
+    await expect(list).toContainText("Blind person's allowance");
+    await expect(list).toContainText("Qualifying loan interest from investments");
+    await expect(list).toContainText("Some new hmrc allowance");
+    await expect(list).toContainText("Annuity payments: gross annuity payments");
+    await expect(list).toContainText("£1260.00");
+    const text = await list.innerText();
+    expect(text).not.toContain("NaN");
+    expect(text).not.toMatch(/[a-z][A-Z]/);
+  });
+
   test("shows the continue-to-final-declaration link only for an intent-to-finalise calculation", async ({ page }) => {
     await loadPage(page);
     // The results live in a container hidden until a calculation has been triggered - show it

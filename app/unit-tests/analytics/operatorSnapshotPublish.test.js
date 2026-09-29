@@ -49,11 +49,9 @@ vi.mock("@aws-sdk/client-s3", () => ({
 import {
   handler,
   buildWindowedSql,
-  buildDailySeriesSql,
   buildActivityFastWindowSql,
   computeTrend,
   toObservationWindows,
-  toDailySeries,
   toActivityFastWindows,
   buildSnapshot,
   mergeActivityFastWindows,
@@ -64,11 +62,6 @@ import {
   OBJECTIVE_DEFINITIONS,
 } from "@app/functions/analytics/operatorSnapshotPublish.js";
 import { loadCatalogFromRoot, isActivityListedInEnvironment } from "@app/services/productCatalog.js";
-
-const DAILY_SERIES_OBSERVATION_COUNT = OBJECTIVE_DEFINITIONS.reduce(
-  (sum, objective) => sum + objective.observations.filter((observation) => observation.dailySeries).length,
-  0,
-);
 
 const FAST_WINDOW_OBSERVATION_COUNT = OBJECTIVE_DEFINITIONS.reduce(
   (sum, objective) => sum + objective.observations.filter((observation) => observation.fastWindowView).length,
@@ -87,29 +80,18 @@ function resultSetOfRows(header, rows) {
   return { Rows: [{ Data: header.map(varchar) }, ...rows.map((row) => ({ Data: row.map(varchar) }))] };
 }
 
-// A daily-series query is told apart from a windowed one by its own "AS day" column alias
-// (buildDailySeriesSql's marker, never present in buildWindowedSql's output), tracked against
-// the execution id its StartQueryExecutionCommand call returned.
-function mockAllQueriesSucceedWith(windowedRow, dailyRows = [["2026-09-01", "3"]]) {
+function mockAllQueriesSucceedWith(windowedRow) {
   let counter = 0;
-  const kindByExecutionId = {};
   mockAthenaSend.mockImplementation((command) => {
     switch (command.constructor.name) {
       case "StartQueryExecutionCommand": {
         counter += 1;
-        const executionId = `qid-${counter}`;
-        kindByExecutionId[executionId] = command.input.QueryString.includes("AS day") ? "daily" : "windowed";
-        return Promise.resolve({ QueryExecutionId: executionId });
+        return Promise.resolve({ QueryExecutionId: `qid-${counter}` });
       }
       case "GetQueryExecutionCommand":
         return Promise.resolve({ QueryExecution: { Status: { State: "SUCCEEDED" } } });
-      case "GetQueryResultsCommand": {
-        const kind = kindByExecutionId[command.input.QueryExecutionId];
-        if (kind === "daily") {
-          return Promise.resolve({ ResultSet: resultSetOfRows(["day", "value"], dailyRows) });
-        }
+      case "GetQueryResultsCommand":
         return Promise.resolve({ ResultSet: resultSetOf(["last_30", "prev_30", "last_90", "prev_90"], windowedRow) });
-      }
       default:
         throw new Error(`unexpected command ${command.constructor.name}`);
     }
@@ -194,6 +176,12 @@ describe("operatorSnapshotPublish", () => {
   });
 
   describe("buildWindowedSql", () => {
+    test("adds the earliest day only when asked", () => {
+      const observation = { view: "v", dayColumn: "day", valueExpr: "n", aggregation: "sum" };
+      expect(buildWindowedSql(observation)).not.toContain("data_since");
+      expect(buildWindowedSql({ ...observation, reportDataSince: true })).toContain("cast(min(day) AS varchar) AS data_since");
+    });
+
     test("builds the four conditional aggregates without a filter", () => {
       const sql = buildWindowedSql({
         view: "v_availability_sli_daily",
@@ -242,35 +230,6 @@ describe("operatorSnapshotPublish", () => {
     });
   });
 
-  describe("buildDailySeriesSql", () => {
-    test("groups by day over the trailing 30 days", () => {
-      const sql = buildDailySeriesSql({
-        view: "v_visitors_by_kind_daily",
-        dayColumn: "day",
-        valueExpr: "sessions",
-        aggregation: "sum",
-        where: "visitor_kind = 'human'",
-      });
-      expect(sql).toContain("SELECT day AS day");
-      expect(sql).toContain("sum(sessions) AS value");
-      expect(sql).toContain("FROM   v_visitors_by_kind_daily");
-      expect(sql).toContain("WHERE  day > date_add('day', -30, current_date) AND visitor_kind = 'human'");
-      expect(sql).toContain("GROUP BY day");
-      expect(sql).toContain("ORDER BY day");
-    });
-
-    test("keeps the trailing-30-day window without an observation filter", () => {
-      const sql = buildDailySeriesSql({
-        view: "v_visitors_by_kind_daily",
-        dayColumn: "day",
-        valueExpr: "sessions",
-        aggregation: "sum",
-      });
-      expect(sql).toContain("WHERE  day > date_add('day', -30, current_date)");
-      expect(sql).not.toContain("AND");
-    });
-  });
-
   describe("computeTrend", () => {
     test("is null when either side is missing", () => {
       expect(computeTrend(null, 10)).toBeNull();
@@ -295,30 +254,28 @@ describe("operatorSnapshotPublish", () => {
       expect(windows.last90).toEqual({ value: 300, trend: 0 });
     });
 
+    test("marks a non-zero window against an empty prior window as new", () => {
+      const windows = toObservationWindows({ last_30: "4", prev_30: null, last_90: "4", prev_90: "0" });
+      expect(windows.last30).toEqual({ value: 4, trend: null, isNew: true });
+      expect(windows.last90).toEqual({ value: 4, trend: null, isNew: true });
+    });
+
+    test("does not mark a zero or absent window as new", () => {
+      const windows = toObservationWindows({ last_30: "0", prev_30: "0", last_90: null, prev_90: null });
+      expect(windows.last30).toEqual({ value: 0, trend: null });
+      expect(windows.last90).toEqual({ value: null, trend: null });
+    });
+
+    test("carries the earliest day the data holds when the query reports it", () => {
+      expect(toObservationWindows({ last_30: "1", data_since: "2026-09-28" }).dataSince).toBe("2026-09-28");
+      expect(toObservationWindows({ last_30: "1" }).dataSince).toBeUndefined();
+    });
+
     test("reads a missing row as every window null", () => {
       expect(toObservationWindows(undefined)).toEqual({
         last30: { value: null, trend: null },
         last90: { value: null, trend: null },
       });
-    });
-  });
-
-  describe("toDailySeries", () => {
-    test("reads each row's day and value", () => {
-      expect(
-        toDailySeries([
-          { day: "2026-09-01", value: "12" },
-          { day: "2026-09-02", value: "7" },
-        ]),
-      ).toEqual([
-        { day: "2026-09-01", value: 12 },
-        { day: "2026-09-02", value: 7 },
-      ]);
-    });
-
-    test("reads no rows as an empty series", () => {
-      expect(toDailySeries(undefined)).toEqual([]);
-      expect(toDailySeries([])).toEqual([]);
     });
   });
 
@@ -419,7 +376,7 @@ describe("operatorSnapshotPublish", () => {
       const startCalls = mockAthenaSend.mock.calls.filter(([command]) => command.constructor.name === "StartQueryExecutionCommand");
       // Every activity observation fires one more query than a plain windowed observation: its
       // own fast-window (Last 1 hour/1 day/7 days) query alongside the 30/90-day one.
-      expect(startCalls).toHaveLength(observationCount + DAILY_SERIES_OBSERVATION_COUNT + FAST_WINDOW_OBSERVATION_COUNT);
+      expect(startCalls).toHaveLength(observationCount + FAST_WINDOW_OBSERVATION_COUNT);
 
       expect(snapshot.environment).toBe("test");
       expect(snapshot.objectives).toHaveLength(10);
@@ -478,16 +435,13 @@ describe("operatorSnapshotPublish", () => {
       expect(sqlStatements.some((sql) => sql.includes("area = 'accessibility'"))).toBe(true);
       expect(sqlStatements.some((sql) => sql.includes("area = 'fraud-prevention-headers'"))).toBe(true);
       expect(sqlStatements.some((sql) => sql.includes("visitor_kind = 'human'"))).toBe(true);
+      expect(sqlStatements.some((sql) => sql.includes("visitor_kind = 'operator'"))).toBe(true);
       expect(sqlStatements.some((sql) => sql.includes("visitor_kind = 'bot'"))).toBe(true);
       expect(sqlStatements.some((sql) => sql.includes("visitor_kind = 'synthetic'"))).toBe(true);
     });
 
-    test("attaches a daily series to the three visitor-kind observations only", async () => {
-      const dailyRows = [
-        ["2026-09-01", "12"],
-        ["2026-09-02", "9"],
-      ];
-      mockAllQueriesSucceedWith(["10", "5", "30", "20"], dailyRows);
+    test("publishes a windowed observation for each of the four visitor kinds", async () => {
+      mockAllQueriesSucceedWith(["10", "5", "30", "20"]);
 
       const context = {
         envName: "test",
@@ -499,25 +453,10 @@ describe("operatorSnapshotPublish", () => {
       const snapshot = await buildSnapshot({ workGroup: "wg", database: "db", context });
 
       const conversion = snapshot.objectives.find((o) => o.id === "conversion-to-submission");
-      for (const id of ["sessions-human", "sessions-bot", "sessions-synthetic"]) {
+      for (const id of ["sessions-human", "sessions-operator", "sessions-bot", "sessions-synthetic"]) {
         const observation = conversion.observations.find((o) => o.id === id);
-        expect(observation.dailySeries).toEqual([
-          { day: "2026-09-01", value: 12 },
-          { day: "2026-09-02", value: 9 },
-        ]);
-      }
-
-      const withoutDailySeries = conversion.observations.filter(
-        (o) => !["sessions-human", "sessions-bot", "sessions-synthetic"].includes(o.id),
-      );
-      expect(withoutDailySeries.length).toBeGreaterThan(0);
-      for (const observation of withoutDailySeries) {
-        expect(observation.dailySeries).toBeUndefined();
-      }
-
-      const uptime = snapshot.objectives.find((o) => o.id === "uptime");
-      for (const observation of uptime.observations) {
-        expect(observation.dailySeries).toBeUndefined();
+        expect(observation.last30).toEqual({ value: 10, trend: 1 });
+        expect(observation.last90).toEqual({ value: 30, trend: 0.5 });
       }
     });
 

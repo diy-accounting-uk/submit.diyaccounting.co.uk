@@ -119,37 +119,37 @@
         font-variant-numeric: tabular-nums;
       }
 
-      /* On a wide screen the visitors table (4 narrow columns) and the experiments list sit
-         side by side instead of each spanning the full, now much wider, page. */
       .side-panels {
         display: grid;
         grid-template-columns: 1fr;
         gap: var(--spacing-lg);
       }
-      @media (min-width: 1000px) {
-        .side-panels {
-          grid-template-columns: minmax(280px, 420px) 1fr;
-        }
-        .side-panels .objective {
-          margin-bottom: 0;
-        }
-      }
 
       /* #objectivesContainer and the two panels in .side-panels are empty until
          initPage()'s snapshot fetch resolves, then fill with the eight objectives'
-         tables and the visitors/experiments rows in one go. Reserving close to their
-         typical filled height keeps that fill from pushing .side-panels down - sized
-         for the eight fixed objectives at a normal screen width; a narrower one, where
-         the same tables wrap onto more lines, needs more. */
+         tables and the visitors/experiments rows in one go. Each reservation is the height
+         measured on a snapshot with every observation present, plus a margin for font
+         differences, so that fill does not push what sits below; the narrow-screen tables
+         wrap onto more lines and need more. The browser test measures the rendered
+         heights at 390, 700, 900 and 1280 px and fails when a reservation falls short. */
       #objectivesContainer {
-        min-height: 2160px;
+        min-height: 1600px;
       }
-      .side-panels .objective {
-        min-height: 174px;
+      #visitorsPanel {
+        min-height: 200px;
+      }
+      #experimentsPanel {
+        min-height: 100px;
       }
       @media (max-width: 600px) {
         #objectivesContainer {
-          min-height: 3760px;
+          min-height: 2640px;
+        }
+        #visitorsPanel {
+          min-height: 280px;
+        }
+        #experimentsPanel {
+          min-height: 130px;
         }
       }
     </style>
@@ -193,12 +193,23 @@
       <section id="activitiesPanel" class="objective" hidden>
         <h2>Activity started and completed</h2>
         <p class="subtitle">Each activity's primary button clicked, and how often it went on to complete</p>
+        <p class="subtitle" id="activitiesDataSince" hidden></p>
         <table class="observations" id="activitiesTable">
           <thead>
             <tr>
               <th rowspan="2">Activity</th>
-              <th colspan="6">Started</th>
-              <th colspan="6">Completed</th>
+              <th
+                colspan="6"
+                title="Clicks on the activity's start button by a signed-in customer. Counting began on the day noted above the table."
+              >
+                Started
+              </th>
+              <th
+                colspan="6"
+                title="Every completion event for the activity, whether or not the customer clicked its start button first: queries that run when a page loads, failed VAT submissions and bundle grants included."
+              >
+                Completed
+              </th>
             </tr>
             <tr>
               <th>Last 1 hour</th>
@@ -227,10 +238,19 @@
           <table class="observations" id="visitorsTable">
             <thead>
               <tr>
-                <th>Day</th>
-                <th>Human</th>
-                <th>Bot</th>
-                <th>Synthetic</th>
+                <th>Kind</th>
+                <th title="Not available: GA4's export reaches the lake two days late, so no session count for the last hour exists yet.">
+                  Last 1 hour
+                </th>
+                <th title="Not available: GA4's export reaches the lake two days late, so no session count for the last day exists yet.">
+                  Last 1 day
+                </th>
+                <th title="Not available: GA4's export reaches the lake two days late, so no session count for the last 7 days exists yet.">
+                  Last 7 days
+                </th>
+                <th>Last 30 days</th>
+                <th>Trend</th>
+                <th>Last 90 days</th>
               </tr>
             </thead>
             <tbody id="visitorsBody"></tbody>
@@ -313,7 +333,8 @@
         return String(Math.round(value * 100) / 100);
       }
 
-      function formatTrend(trend) {
+      function formatTrend(trend, isNew) {
+        if (isNew) return { text: "new", className: "trend-flat" };
         if (trend === null || trend === undefined) return { text: "—", className: "trend-unknown" };
         const pct = (trend * 100).toFixed(1) + "%";
         if (trend > 0) return { text: "↑ " + pct, className: "trend-up" };
@@ -390,6 +411,13 @@
         return section;
       }
 
+      const VISITOR_KINDS = [
+        ["sessions-human", "Human"],
+        ["sessions-operator", "Operator"],
+        ["sessions-bot", "Bot"],
+        ["sessions-synthetic", "Synthetic"],
+      ];
+
       function renderVisitors(snapshot) {
         const tbody = document.getElementById("visitorsBody");
         tbody.innerHTML = "";
@@ -402,38 +430,25 @@
           observationsById[observation.id] = observation;
         });
 
-        const byDay = {};
-        [
-          ["sessions-human", "human"],
-          ["sessions-bot", "bot"],
-          ["sessions-synthetic", "synthetic"],
-        ].forEach(([observationId, kind]) => {
-          const series = (observationsById[observationId] && observationsById[observationId].dailySeries) || [];
-          series.forEach((point) => {
-            if (!byDay[point.day]) byDay[point.day] = {};
-            byDay[point.day][kind] = point.value;
-          });
+        VISITOR_KINDS.forEach(([observationId, kindLabel]) => {
+          const observation = observationsById[observationId];
+          const row = document.createElement("tr");
+          row.className = "visitors-kind";
+          row.dataset.kind = observationId.replace("sessions-", "");
+
+          const kindCell = document.createElement("td");
+          kindCell.textContent = kindLabel;
+          row.appendChild(kindCell);
+
+          // GA4 sessions reach the lake two days late (ga4DailyPull.js), so the fast windows
+          // have no source; the header tooltips say why.
+          ["last1h", "last1d", "last7d"].forEach((key) => row.appendChild(activityCountCell(observation, key)));
+          row.appendChild(activityCountCell(observation, "last30"));
+          row.appendChild(activityTrendCell(observation));
+          row.appendChild(activityCountCell(observation, "last90"));
+
+          tbody.appendChild(row);
         });
-
-        Object.keys(byDay)
-          .sort()
-          .forEach((day) => {
-            const row = document.createElement("tr");
-            row.className = "visitors-day";
-            row.dataset.day = day;
-
-            const dayCell = document.createElement("td");
-            dayCell.textContent = day;
-            row.appendChild(dayCell);
-
-            ["human", "bot", "synthetic"].forEach((kind) => {
-              const cell = document.createElement("td");
-              cell.textContent = formatValue("count", byDay[day][kind]);
-              row.appendChild(cell);
-            });
-
-            tbody.appendChild(row);
-          });
       }
 
       function renderCompanyAccountsRow(observationsById, id, label) {
@@ -493,11 +508,33 @@
       }
 
       function activityTrendCell(observation) {
-        const trend = formatTrend(observation && observation.last30 && observation.last30.trend);
+        const last30 = observation && observation.last30;
+        const trend = formatTrend(last30 && last30.trend, last30 && last30.isNew);
         const cell = document.createElement("td");
         cell.textContent = trend.text;
         cell.className = trend.className;
         return cell;
+      }
+
+      // A window of 90 days reaches back before the data begins when the earliest day the
+      // view holds is inside it; the note says from which day each side's counts start.
+      function activitiesDataSinceNote(observations, generatedAt) {
+        const windowStart = new Date(generatedAt);
+        windowStart.setUTCDate(windowStart.getUTCDate() - 90);
+        const windowStartDay = windowStart.toISOString().slice(0, 10);
+        const earliestByKind = {};
+        observations.forEach((observation) => {
+          const kind = observation.id.split("::")[1];
+          if (!observation.dataSince) return;
+          if (!earliestByKind[kind] || observation.dataSince < earliestByKind[kind]) earliestByKind[kind] = observation.dataSince;
+        });
+        return [
+          ["started", "Started"],
+          ["completed", "Completed"],
+        ]
+          .filter(([kind]) => earliestByKind[kind] && earliestByKind[kind] > windowStartDay)
+          .map(([kind, name]) => name + " counts begin " + earliestByKind[kind])
+          .join(". ");
       }
 
       // The pair's own label carries " — started"/" — completed" (operatorSnapshotPublish.js);
@@ -562,6 +599,10 @@
           return;
         }
         panel.hidden = false;
+
+        const dataSinceNote = document.getElementById("activitiesDataSince");
+        dataSinceNote.textContent = activitiesDataSinceNote(objective.observations, snapshot.generatedAt);
+        dataSinceNote.hidden = dataSinceNote.textContent === "";
 
         const body = document.getElementById("activitiesBody");
         body.innerHTML = "";

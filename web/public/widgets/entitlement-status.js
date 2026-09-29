@@ -92,6 +92,13 @@
         }
 
         if (data && data.bundles && Array.isArray(data.bundles)) {
+          if (data.bundles.some((b) => b.bundleId === "operator" && b.allocated)) {
+            try {
+              localStorage.setItem("visitorKind.operator", "1");
+            } catch {
+              // localStorage unavailable: the session stays classified as human
+            }
+          }
           bundlesCache = data.bundles.filter((b) => b.allocated).map((b) => (typeof b === "string" ? b : b.bundleId));
           return bundlesCache;
         }

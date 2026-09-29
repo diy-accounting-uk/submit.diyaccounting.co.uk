@@ -49,10 +49,10 @@ jobs:
           else
             BASE_SHA="${{ github.event.before }}"
             if [ -z "$BASE_SHA" ] || [ "$BASE_SHA" = "0000000000000000000000000000000000000000" ]; then
-              # First push of a new branch: there is no previous head to diff against, so every
-              # line the branch carries counts as added. The empty tree's hash is fixed across
-              # every git repository.
-              BASE_SHA="4b825dc642cb6eb9a060e54bf8d69288fbee4904"
+              # First push of a new branch: there is no previous head, so the lines the branch
+              # adds are the ones since it left main. main's own lines were scanned when they
+              # were pushed there.
+              BASE_SHA="$(git merge-base origin/main "${{ github.sha }}")"
             fi
           fi
           git diff "$BASE_SHA" "${{ github.sha }}" > /tmp/content-scan.diff

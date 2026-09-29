@@ -159,7 +159,7 @@ public class BusinessViews extends Construct {
             new ViewDefinition(
                     "v_subscription_renewals_daily",
                     "Subscriptions that renewed each day, by bundle",
-                    List.of("dynamo_subscriptions", "activity_events_all")),
+                    List.of("activity_events_all")),
             new ViewDefinition(
                     "v_subscription_cancellations_daily",
                     "Subscriptions cancelled each day, by bundle",
@@ -193,7 +193,11 @@ public class BusinessViews extends Construct {
             new ViewDefinition(
                     "v_sign_ins_daily",
                     "Sign-ins and refreshes each day, by app client, event and actor",
-                    List.of("activity_events_all")));
+                    List.of("activity_events_all")),
+            new ViewDefinition(
+                    "v_paid_subscribers_by_channel",
+                    "Live paid subscribers each month by acquisition source and bundle: active base, MRR and ARR",
+                    List.of("stripe_charges", "stripe_subscriptions", "dynamo_subscriptions", "dynamo_bundles")));
 
     public final List<CfnNamedQuery> namedQueries = new ArrayList<>();
     public final List<CustomResource> viewResources = new ArrayList<>();

@@ -591,7 +591,7 @@ jobs:
           cache: 'npm'
 
       - name: Node dependencies
-        run: timeout 120 npm ci --prefer-offline || { sleep 30; timeout 180 npm ci; }
+        run: timeout 120 npm ci --ignore-scripts --prefer-offline || { sleep 30; timeout 180 npm ci --ignore-scripts; }
         timeout-minutes: 6
         env:
           NPM_CONFIG_FETCH_RETRIES: "3"
@@ -713,7 +713,7 @@ jobs:
           cache: 'npm'
 
       - name: Node dependencies
-        run: timeout 120 npm ci --prefer-offline || { sleep 30; timeout 180 npm ci; }
+        run: timeout 120 npm ci --ignore-scripts --prefer-offline || { sleep 30; timeout 180 npm ci --ignore-scripts; }
         timeout-minutes: 6
         env:
           NPM_CONFIG_FETCH_RETRIES: "3"
@@ -835,7 +835,7 @@ jobs:
           cache: 'npm'
 
       - name: Node dependencies
-        run: timeout 120 npm ci --prefer-offline || { sleep 30; timeout 180 npm ci; }
+        run: timeout 120 npm ci --ignore-scripts --prefer-offline || { sleep 30; timeout 180 npm ci --ignore-scripts; }
         timeout-minutes: 6
         env:
           NPM_CONFIG_FETCH_RETRIES: "3"
@@ -962,7 +962,7 @@ jobs:
           cache: 'npm'
 
       - name: Node dependencies
-        run: timeout 120 npm ci --prefer-offline || { sleep 30; timeout 180 npm ci; }
+        run: timeout 120 npm ci --ignore-scripts --prefer-offline || { sleep 30; timeout 180 npm ci --ignore-scripts; }
         timeout-minutes: 6
         env:
           NPM_CONFIG_FETCH_RETRIES: "3"
@@ -1084,7 +1084,7 @@ jobs:
           cache: 'npm'
 
       - name: Node dependencies
-        run: timeout 120 npm ci --prefer-offline || { sleep 30; timeout 180 npm ci; }
+        run: timeout 120 npm ci --ignore-scripts --prefer-offline || { sleep 30; timeout 180 npm ci --ignore-scripts; }
         timeout-minutes: 6
         env:
           NPM_CONFIG_FETCH_RETRIES: "3"
@@ -1368,7 +1368,7 @@ jobs:
           cache: 'npm'
 
       - name: Node dependencies
-        run: timeout 120 npm ci --prefer-offline || { sleep 30; timeout 180 npm ci; }
+        run: timeout 120 npm ci --ignore-scripts --prefer-offline || { sleep 30; timeout 180 npm ci --ignore-scripts; }
         timeout-minutes: 6
         env:
           NPM_CONFIG_FETCH_RETRIES: "3"
@@ -1495,7 +1495,7 @@ jobs:
           cache: 'npm'
 
       - name: Node dependencies
-        run: timeout 120 npm ci --prefer-offline || { sleep 30; timeout 180 npm ci; }
+        run: timeout 120 npm ci --ignore-scripts --prefer-offline || { sleep 30; timeout 180 npm ci --ignore-scripts; }
         timeout-minutes: 6
         env:
           NPM_CONFIG_FETCH_RETRIES: "3"
@@ -1620,7 +1620,7 @@ jobs:
           cache: 'npm'
 
       - name: Node dependencies
-        run: timeout 120 npm ci --prefer-offline || { sleep 30; timeout 180 npm ci; }
+        run: timeout 120 npm ci --ignore-scripts --prefer-offline || { sleep 30; timeout 180 npm ci --ignore-scripts; }
         timeout-minutes: 6
         env:
           NPM_CONFIG_FETCH_RETRIES: "3"
