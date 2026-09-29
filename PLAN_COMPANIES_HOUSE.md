@@ -43,8 +43,8 @@ first.
 | Registered office change | REST, OAuth as the company's user, no presenter | proven | live, proven on DIY Accounting Limited | free |
 | Registered email change | REST, OAuth as the company's user, no presenter | proven | live, proven on DIY Accounting Limited | free |
 | Micro-entity accounts | XML Gateway, presenter id + code, package reference | test presenter 66666727000: 000004 acknowledged 2026-09-13; status lookups fail until Companies House IT fixes the test account (B34.6c) | the credit-account presenter: authenticates on the live gateway since 2026-09-26; needs live clearance and the live package reference (O34c), then B34c | no Companies House fee; customer pays `resident-ltd` 99p a month (listed on ci only) |
-| Confirmation statement | XML Gateway, as above | test presenter 66666727000: endpoint and schemas confirmed 2026-09-26; not run (CS-A2) | the credit-account presenter: needs the test harness (CS-A2), its scheduled runs (CS-A3), software authorisation (CS-A4), then CS-11b (the operator's own proof filing, then customers) | our presenter: customer pays £61.35 by Stripe, Companies House charges the £50 fee to the credit account behind the presenter; the operator's own filings skip the Stripe charge (the fee waiver for listed company numbers, CS-11a); own presenter (CS-P1): Companies House charges £50 to the customer's own credit account, no Submit fee |
-| PSC verification statement (VS01) | XML Gateway, as above | test presenter 66666727000: CS-13b | the credit-account presenter: after CS-13a and CS-13b | Companies House fee to check |
+| Confirmation statement | XML Gateway, as above | test presenter 66666727000: harness run 36295600451: every case passes the gateway at submit, every status poll answers 9999 until Companies House repairs the presenter | the credit-account presenter: needs the cases pinned (CS-A3), software authorisation (CS-A4), then CS-11b (the operator's own proof filing, then customers) | our presenter: customer pays £61.35 by Stripe, Companies House charges the £50 fee to the credit account behind the presenter; the operator's own filings skip the Stripe charge (the fee waiver for listed company numbers, CS-11a); own presenter (CS-P1): Companies House charges £50 to the customer's own credit account, no Submit fee |
+| PSC verification statement (VS01) | XML Gateway, as above | test presenter 66666727000: CS-13b | the credit-account presenter: after CS-13b | Companies House fee to check |
 
 **Presenters**
 
@@ -65,14 +65,11 @@ flowchart LR
     B346c --> O34c
     B346c --> B34c
     O34c --> B34c
-    CSA2[CS-A2 harness and weekly workflow] --> CSA3[CS-A3 first live run, pinned]
+    B346c --> CSA3[CS-A3 statement cases pinned]
+    B346c --> CS13b[CS-13b]
     CSA3 --> CSA4[CS-A4 evidence to the XML team]
-    CHIT --> CSA4
     CSA4 --> CS11b[CS-11b]
     CS11b --> CSP1[CS-P1]
-    CSA2 --> CS13b[CS-13b]
-    CS13a[CS-13a] --> CS13b
-    CS11a[CS-11a] --> CS11b
     Design[design row: not yet written] --> Row34e[34e]
     Design --> Row34f[34f]
     Design --> Row34g[34g]
@@ -81,14 +78,11 @@ flowchart LR
 - B34.6c: blocked by Companies House IT repairing the test presenter account (no row; external)
 - O34c: blocked by B34.6c
 - B34c: blocked by B34.6c and O34c
-- CS-A2: blocked by nothing (the criteria below are defined)
-- CS-A3: blocked by CS-A2 (the first dispatch of its workflow on `main`)
-- CS-A4: blocked by CS-A3 and by Companies House IT (`GetSubmissionStatus` answers 9999 until the test presenter is repaired, so no case reaches a terminal status)
-- CS-11a: blocked by nothing (the fee waiver scoped to listed company numbers, wired through CDK)
-- CS-11b: blocked by CS-A4 and CS-11a
+- CS-A3: blocked by B34.6c (every status poll answers 9999 until the test presenter is repaired)
+- CS-13b: blocked by B34.6c, as CS-A3
+- CS-A4: blocked by CS-A3
+- CS-11b: blocked by CS-A4
 - CS-P1: blocked by CS-11b (it adds a second payment path to the journey CS-11b launches)
-- CS-13a: blocked by nothing (its fixture landed with CS-1, closed)
-- CS-13b: blocked by CS-13a and CS-A2
 - 34e, 34f, 34g: blocked by a design row that still needs writing. BACKLOG.md cites "NEXT.md
   B34.8" as the row that designs them; that label is closed against unrelated work (lifting the
   company-lookup page to prod) and is not on `NEXT.md`, so the design row does not exist yet.
@@ -268,7 +262,7 @@ and send the evidence.
 | 13 | Each submission traceable to a signed-in user, company and time | HMRC fraud prevention headers; Companies House has no such envelope field | The async request record per submission (`putAsyncRequest`), named in the pack |
 | 14 | A written summary sent with the submission numbers | GOV.UK "tell us when you've made test submissions"; HMRC's questionnaires | The CS-A4 pack: product, forms, case table, run link, contact |
 
-The PSC verification statement joins rows 1 to 9 once CS-13a lands (CS-13b).
+The PSC verification statement joins rows 1 to 9 with CS-13b.
 
 ## Horizons
 
@@ -309,14 +303,45 @@ reference date changes.
 | B34.6c | Poll test submission 000004 once Companies House IT confirms the test presenter account works; pin the returned `StatusCode` as a case in `companiesHouseAccountsGet.test.js` | ~1 | Sonnet | Companies House IT | Blocked |
 | O34c | Ask the XML team to clear the credit-account presenter for live accounts filing and issue the live package reference; set the live presenter id, code and package reference on GitHub's `prod` environment | 0 | none | B34.6c | Blocked |
 | B34c | `CompaniesHouseStack.java` sets the prod gateway values; one accounts filing on the prod lane for the operator's own company, polled to a terminal state; `prod` added to the activity's `environments` and `resident`'s listing | ~5 | Sonnet | B34.6c, O34c | Blocked |
-| CS-A2 | Test-service harness: every statement variant and error path as a case, starting with a `CompanyDataRequest`, a no-change statement, a SIC change, one with `Shareholdings` and one with a blank director code; each polled to a terminal state, an evidence log; `companies-house-test-service.yml` runs it weekly and on dispatch, redacted exchanges and the evidence log as run artefacts | ~5 | Sonnet | nothing | Machine-only |
-| CS-A3 | The workflow's first dispatch on `main`; every observed response pinned in the simulator and the reject-code message map; settles Q2 and Q3 | ~3 | Sonnet | CS-A2 | Blocked |
+| CS-A3 | Every observed response pinned in the simulator and the reject-code message map once a poll returns a terminal status; settles Q2 and Q3 | ~3 | Sonnet | B34.6c (Companies House IT) | Blocked |
 | CS-A4 | Claude Code assembles the evidence pack from a `companies-house-test-service.yml` run inside 14 days; the operator sends it to `xml@companieshouse.gov.uk` and asks for the live package reference for the confirmation statement | 0 | Sonnet | CS-A3, Companies House IT | Blocked |
-| CS-13a | Build the PSC verification statement: XML builder, submit and poll Lambdas, simulator class, tests, result-view section | ~8 | Sonnet | nothing | Machine-only |
-| CS-13b | The PSC verification statement's cases in the CS-A2 harness, run by its weekly workflow | ~2 | Sonnet | CS-13a, CS-A2 | Blocked |
-| CS-11a | `COMPANIES_HOUSE_CS_FEE_WAIVED_COMPANY_NUMBERS` in place of `COMPANIES_HOUSE_CS_FEE_MODE`, carried from `.env.prod` through a `CompaniesHouseStack.java` prop, so only the operator's own company skips the Stripe fee | ~6 | Sonnet | none | Machine-only |
+| CS-13b | The PSC verification statement's cases in the harness, run by its weekly workflow, pinned once a poll returns a terminal status | ~2 | Sonnet | B34.6c (Companies House IT) | Blocked |
 | CS-11b | Customer prod launch: `prod` on the confirmation statement activity's `environments`, the live Stripe price for the £61.35 fee, prod gateway values and the live package reference, the operator's own proof filing first, `compliance.toml` rows | ~7 | Sonnet | CS-A4, CS-11a | Blocked |
 | CS-P1 | Filing under a customer's own presenter: the page option, storing no credentials, the credit-account explanation, skipping the Stripe checkout at the existing fee gate | ~5 | Sonnet | CS-11b | Blocked |
+
+
+## Task detail
+
+The full brief for each open task, with the evidence it carries. Backlog context for the accounts
+filing (formerly `BACKLOG.md` rows 34b and 34c):
+
+- **Accounts filing through the XML Gateway (was 34b).** Companies House accounts filing through the XML Gateway (iXBRL in an XML envelope, FRS 105 micro-entity first). Presenter account issued 2026-09-05 (ID E0000052288, code in the operator's credentials store). The build that needs no credentials is on main (ci only), and `resident-ltd` at 99p a month carries it, listed on ci only. Test presenter 66666727000 issued 2026-09-11, on the ci environment since 2026-09-12; test submission 000004 acknowledged 2026-09-13; its status lookup waits on the XML team's answer (NEXT.md O34d, then B34.6c).
+- **Accounts filing, the launch to prod (was 34c).** Companies House accounts filing: the launch to prod. After 34b's sandbox proof (NEXT.md O34d, B34.6c): (1) Companies House's XML team confirms submission 000004's outcome and that `GetSubmissionStatus` works for test presenter 66666727000, and a poll returns a status; (2) Companies House clears the presenter for the live service and issues the live package reference (test is 0012), the operator's email exchange; (3) the live presenter id and code and `COMPANIES_HOUSE_PACKAGE_REFERENCE` go on the GitHub `prod` environment and reach Secrets Manager through `deploy-environment.yml`; (4) `CompaniesHouseStack.java` sets the prod values (`COMPANIES_HOUSE_GATEWAY_TEST=false`, the live reference) instead of leaving them unset; (5) one filing on the prod lane for a company the operator controls, its status polled to a terminal state; (6) `prod` added to `file-micro-entity-accounts`' `environments` and `resident-ltd`'s `listedInEnvironments` in `web/public/submit.catalogue.toml` (a two-line change), with the activity page and the accounts video no longer calling it a sandbox preview. Steps 1 and 2 are the operator's; 3 is theirs to set; 4 to 6 are Claude Code's.
+
+The tasks:
+
+- **B34.6c. Companies House accounts filing: the sandbox proof.** The XML team was asked on 2026-09-23 22:22 UTC in a new thread (from antony@, subject "Submission 000004 status and
+  GetSubmissionStatus query") whether 000004 was accepted and whether lookups are enabled for test
+  presenter 66666727000. When the answer says they are: poll 000004 through `GET /api/v1/companies-house/accounts/000004` on a
+  standing ci set and pin the returned `StatusCode` and any rejections as a case in
+  `app/unit-tests/functions/companiesHouseAccountsGet.test.js`. The prod catalogue listing is
+  BACKLOG 34c's: prod carries no `COMPANIES_HOUSE_XMLGW_URI` and no presenter secret ARNs. Blocked
+  on IT at Companies House: the XML team answered on 2026-09-25 13:59 that the test presenter's account "was not set up successfully, causing the error", and will reply when IT answers. They asked for the request and response on 2026-09-24; the reply went the same day with transactions 1790285530232 (9999) and 1790285532345 (502), masked (`../DRAFT_EMAIL_XMLGW_000004_REPLY.md`; the unmasked set, from the 21:42 run, is `../DRAFT_EMAIL_XMLGW_000004_REPLY_UNMASKED.md`). In the 9999 response the gateway echoes `Method` CHMD5 with an empty `Value`. A re-poll on 2026-09-26 13:43 UTC still answered 9999 (`../staging/xmlgw-000004-poll/`); no reply on the thread since 2026-09-25 16:16. **Source**: BACKLOG 34b. **Owner**: Claude Code. **Model**: Sonnet. **Size**:
+  ~1 file.
+
+- **CS-A3. The harness's statement cases, pinned.** Harness run 36295600451 on `main` (d19cd6df): all six confirmation statement submissions (five ConfirmationAndVerificationStatement v1-0 cases and the v1-3 ConfirmationStatement case) now pass the gateway at submit; each status poll answers 9999 `No presenter ID supplied` from `GetSubmissionStatus`, the test-presenter account fault Companies House's XML team reported on their side (B34.6c waits on the same). The two blank-code cases are pinned at schema error 100. Remainder: when a poll returns a terminal status, dispatch `companies-house-test-service.yml` on `main` and pin each case's accepted or rejected outcome (the wrong-authentication-code case should reject). Blocked on Companies House fixing the test presenter account (B34.6c). **Source**: `PLAN_COMPANIES_HOUSE.md`. **Owner**: Claude Code. **Model**: Sonnet. **Size**: ~1 file.
+
+- **CS-13b. PSC verification statement (VS01): the test-service proof.** Harness run 36295600451: the director-PSC case for 04549236 passes the gateway at submit and its status poll answers 9999 `No presenter ID supplied` (the test-presenter fault, as CS-A3); the blank-code case is pinned at error 100. Remainder: pin the director-PSC case's outcome with CS-A3's next run. Blocked on Companies House fixing the test presenter account (B34.6c). **Source**: `PLAN_COMPANIES_HOUSE.md`. **Owner**: Claude Code. **Model**: Sonnet. **Size**: ~1 file.
+
+- **O34c. Companies House clears the presenter for live accounts filing.** BACKLOG 34c steps 2 and 3, after B34.6c's sandbox proof: ask the XML team (`xml@companieshouse.gov.uk`) to clear the new presenter that holds the credit account (its id in `../NEXT_OPERATOR_RUNBOOK.md` task A; it authenticates on the live gateway since 2026-09-26) for the live service and issue the live package reference (the test one is 0012); then set the live presenter id, presenter code and `COMPANIES_HOUSE_PACKAGE_REFERENCE` on GitHub's `prod` environment (Settings, Environments, prod), which `deploy-environment.yml` carries into Secrets Manager. Blocked on B34.6c. **Source**: BACKLOG 34c. **Owner**: Operator. **Model**: none. **Size**: 0 files.
+
+- **CS-A4. Software authorisation: send the evidence.** Claude Code assembles the pack from a `companies-house-test-service.yml` run inside the last 14 days, against `PLAN_COMPANIES_HOUSE.md`'s criteria table: product and forms, one line per case with its submission number and outcome, the run link, the page's axe result (`scripts/axe-quickscan.mjs`), a declaration screenshot, contact. It drafts the email at the workspace root. The operator sends it to `xml@companieshouse.gov.uk` from their own address and asks for the live package reference for the confirmation statement (or confirmation that the accounts reference from O34c covers it), then sets it on GitHub's `prod` environment. Every case needs a terminal `ACCEPT` or `REJECT`, which `GetSubmissionStatus` cannot return while it answers 9999 (B34.6c's blocker). Blocked on CS-A3 and on Companies House IT repairing the test presenter. **Source**: `PLAN_COMPANIES_HOUSE.md`. **Owner**: Claude Code (the pack), Operator (the send). **Model**: Sonnet. **Size**: 0 files.
+
+- **B34c. Companies House accounts filing launched on prod.** BACKLOG 34c steps 4 to 6: `CompaniesHouseStack.java` sets the prod values (`COMPANIES_HOUSE_GATEWAY_TEST=false`, the live package reference) instead of leaving them unset; one filing on the prod lane for a company the operator controls, polled to a terminal state; `prod` added to `file-micro-entity-accounts`' `environments` and `resident`'s listing in `web/public/submit.catalogue.toml`, with the activity page and the accounts video no longer calling it a sandbox preview. Blocked on B34.6c and O34c. **Source**: BACKLOG 34c. **Owner**: Claude Code. **Model**: Sonnet. **Size**: ~5 files.
+
+- **CS-11b. Confirmation statement's customer prod launch.** DIY Accounting Limited already files its own statements through Submit under its credit-account presenter; CS-11b takes the same activity to customers on prod. `file-confirmation-statement` already lists `bundles = ["resident", "resident-pro"]`, so no operator-only gate is needed — add `prod` to its `environments` (`web/public/submit.catalogue.toml` lines 449 to 457, `environments` at 457; the VS01 activity too, when CS-13a adds one), and a live Stripe price alongside the existing one for the £61.35 fee. Prove it first: the prod gateway values and the live package reference from CS-A4, then one fee-free operator proof filing (a second statement for 06846849 in the 2026-27 payment period, its fee waived by CS-11a's company list; the operator approved it; it moves the next review date to about a year after the filing day) before the listing goes live. Then `compliance.toml` rows for the credit account and the authorisation. Shares BACKLOG 34c steps 3 and 4 with the accounts launch. Blocked on CS-A4. **Source**: `PLAN_COMPANIES_HOUSE.md`. **Owner**: Claude Code. **Model**: Sonnet. **Size**: ~7 files.
+
+- **CS-P1. Filing under a customer's own presenter.** A customer can give their own Companies House presenter id and authentication code instead of Submit's; Submit presents under their presenter, Companies House charges the £50 confirmation statement fee to the customer's own credit account, and Submit skips its £61.35 fee. Outside ACSP (`PLAN_COMPANIES_HOUSE_ACSP.md`), since Submit is not the one paying or engaging Companies House. Build: the page option on `web/public/companies-house/fileConfirmationStatement.html` (credentials entered per filing, never stored, with the credit-account requirement explained); `PaymentPeriodsRequest` still decides whether a fee is due; the Stripe checkout skipped at the same fee gate CS-11a's company list skips (`app/functions/companies-house/companiesHouseConfirmationStatementPost.js`'s `feeWaivedCompanyNumbers` check, line 260); the simulator route and its tests. Micro-entity accounts carry no fee, so the option there only changes whose presenter shows on the filing. Blocked on CS-11b, since it adds a second payment path to the journey CS-11b launches. **Source**: `PLAN_COMPANIES_HOUSE.md`. **Owner**: Claude Code. **Model**: Sonnet. **Size**: ~5 files.
 
 ## Sources
 
