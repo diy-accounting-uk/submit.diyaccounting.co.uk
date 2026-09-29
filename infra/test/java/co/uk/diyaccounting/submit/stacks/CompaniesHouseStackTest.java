@@ -220,15 +220,15 @@ class CompaniesHouseStackTest {
     }
 
     @Test
-    void tokenLambdaCarriesItsDesignedRouteAndHasNoAuthorizer() {
+    void tokenLambdaCarriesItsDesignedRouteBehindTheJwtAuthorizer() {
         CompaniesHouseStack stack = synthCompaniesHouseStack();
 
         assertEquals(HttpMethod.POST, stack.companiesHouseTokenPostLambdaProps.httpMethod());
         assertEquals("/api/v1/companies-house/token", stack.companiesHouseTokenPostLambdaProps.urlPath());
 
-        // No authorizer: the route is reached before any Companies House token exists, matching
-        // hmrcTokenPost's own route.
-        assertEquals(false, stack.companiesHouseTokenPostLambdaProps.jwtAuthorizer());
+        // The signed-in user's own session reaches the exchange; the user is taken from the
+        // authorizer, as hmrcTokenPost's route does.
+        assertEquals(true, stack.companiesHouseTokenPostLambdaProps.jwtAuthorizer());
         assertEquals(false, stack.companiesHouseTokenPostLambdaProps.customAuthorizer());
     }
 
