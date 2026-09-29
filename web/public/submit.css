@@ -554,6 +554,14 @@ header::after {
   }
 }
 
+/* Below 480px the icon and auth row wraps onto a second line, so the row is
+   taller than the single-line reservation above. */
+@media (max-width: 479px) {
+  header:has(> .chrome-fallback) {
+    padding-top: 68px;
+  }
+}
+
 /* ============================================
    Layout - Main Content
    ============================================ */
@@ -932,12 +940,18 @@ footer {
   }
 }
 
+/* holds the place of content that arrives after first paint, so what follows does not jump */
+.reserve-viewport-height {
+  min-height: 80vh;
+}
+
 /* bundles page */
 .bundles-list {
   display: flex;
   flex-direction: column;
   gap: 1.5em;
   margin: 2em 0;
+  min-height: 80vh;
 }
 
 .service-item {

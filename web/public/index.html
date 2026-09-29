@@ -126,11 +126,21 @@
           &#x2715;
         </button>
       </div>
+      <script>
+        // Hold the banner's place from first paint when it is going to appear, so the page does not jump when the feature flag answers.
+        (function () {
+          var banner = document.getElementById("feedbackEngagementBanner");
+          if (banner && localStorage.getItem("cognitoIdToken") && localStorage.getItem("feedbackEngagementRegistered") !== "true") {
+            banner.style.display = "block";
+            banner.style.visibility = "hidden";
+          }
+        })();
+      </script>
 
       <div id="statusMessagesContainer" role="alert" aria-live="polite"></div>
 
       <div class="form-container" style="text-align: center">
-        <div id="dynamicActivities" style="margin: 2em 0"></div>
+        <div id="dynamicActivities" class="reserve-viewport-height" style="margin: 2em 0"></div>
 
         <!--div id="activitiesByBundle" style="text-align: left; margin: 1.5em auto; max-width: 640px"></div-->
       </div>
@@ -572,10 +582,14 @@
         // Check feature flag
         if (window.featureFlags && typeof window.featureFlags.isFeatureEnabled === "function") {
           const enabled = await window.featureFlags.isFeatureEnabled("feedback-engagement");
-          if (!enabled) return;
+          if (!enabled) {
+            banner.style.display = "none";
+            return;
+          }
         }
 
         banner.style.display = "block";
+        banner.style.visibility = "visible";
 
         var joinBtn = document.getElementById("feedbackEngagementBtn");
         var dismissBtn = document.getElementById("feedbackDismissBtn");
