@@ -181,6 +181,32 @@ describe("ga4EventExportPull", () => {
       expect(mockS3Send).not.toHaveBeenCalled();
     });
 
+    test("a missing dataset writes a zero-row day", async () => {
+      mockTableExists.mockResolvedValue([false]);
+      mockGetTables.mockRejectedValue(Object.assign(new Error("Not found: Dataset diyaccounting-ga4:analytics_523400333"), { code: 404 }));
+
+      const result = await handler({ date: "2026-08-20" });
+
+      expect(result).toEqual({
+        date: "2026-08-20",
+        key: "curated/ga4_bq/events/dt=2026-08-20/events.json.gz",
+        count: 0,
+      });
+      expect(mockCreateQueryJob).not.toHaveBeenCalled();
+      expect(mockS3Send).toHaveBeenCalledTimes(1);
+      expect(gunzipSync(mockS3Send.mock.calls[0][0].input.Body).toString("utf8")).toBe("");
+    });
+
+    test("an error other than a missing dataset while listing tables still throws, and no object is written", async () => {
+      mockTableExists.mockResolvedValue([false]);
+      mockGetTables.mockRejectedValue(
+        Object.assign(new Error("Access Denied: Dataset diyaccounting-ga4:analytics_523400333"), { code: 403 }),
+      );
+
+      await expect(handler({ date: "2026-08-20" })).rejects.toThrow(/Access Denied/);
+      expect(mockS3Send).not.toHaveBeenCalled();
+    });
+
     test("the query job is created with the configured location", async () => {
       await handler({ date: "2026-08-20" });
 
