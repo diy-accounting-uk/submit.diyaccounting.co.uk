@@ -44,7 +44,7 @@ step.
 **COOL-DOWN is on since 2026-09-29T21:21:54Z.** No new board rows except a degradation. Agents commit
 and stop. One branch is driven green at a time. Lifted only by the operator in their own words.
 
-- [ ] **PRV1. Remove the PRV1 worktree after its PR merges.** In flight: `claude/docs-private-repo`, PR #426. The documents moved to `../private.diyaccounting.co.uk/` and every reference here points there. Remaining after the merge: remove the worktree `.claude/worktrees/prv1-submit` and the branch `claude/docs-private-repo` (`git worktree remove` and `git branch -D` are the operator's). **Source**: operator, 2026-09-29. **Owner**: Operator. **Model**: none. **Size**: 0 files.
+- [ ] **PRV1. The private repository: the spreadsheets half.** In flight: spreadsheets `claude/docs-private-repo`, PR #147 (removes the 29 HMRC publications under `_developers/hmrc-references/` and one coverage report, references rewritten to `../private.diyaccounting.co.uk/`). Submit (PR #426) and root (PR #35) are merged; the documents live in `diy-accounting-uk/private.diyaccounting.co.uk`, cloned at `../private.diyaccounting.co.uk/`. **Source**: operator, 2026-09-29. **Owner**: Claude Code. **Model**: none. **Size**: 0 files in this repository.
 
 ## Machine-only
 
