@@ -183,6 +183,7 @@ const FIXTURE_SNAPSHOT = {
           last7d: { value: 12 },
           last30: { value: 40, trend: 0.1 },
           last90: { value: 110, trend: 0.05 },
+          dataSince: "2026-09-28",
         },
         {
           id: "submit-vat::completed",
@@ -193,12 +194,13 @@ const FIXTURE_SNAPSHOT = {
           last7d: { value: 8 },
           last30: { value: 22, trend: -0.05 },
           last90: { value: 60, trend: 0.02 },
+          dataSince: "2026-09-03",
         },
         {
           id: "bundle::started",
           label: "View and edit your bundles — started",
           unit: "count",
-          last30: { value: 31, trend: 0 },
+          last30: { value: 4, trend: null, isNew: true },
           last90: { value: 90, trend: 0 },
         },
         {
@@ -412,6 +414,29 @@ test.describe("Operator Dashboard", () => {
 
     const bundleRow = panel.locator('.activity-row[data-activity-id="bundle"]');
     await expect(bundleRow.locator("td").nth(0)).toHaveText("View and edit your bundles");
+  });
+
+  test("labels a non-zero window against an empty prior window as new", async ({ page }) => {
+    await setupRoutes(page);
+    await loadDashboard(page);
+
+    const bundleRow = page.locator('#activitiesPanel .activity-row[data-activity-id="bundle"]');
+    await expect(bundleRow.locator("td").nth(5)).toHaveText("new");
+  });
+
+  test("says from which day the started and completed counts begin, derived from the snapshot", async ({ page }) => {
+    await setupRoutes(page);
+    await loadDashboard(page);
+
+    await expect(page.locator("#activitiesDataSince")).toHaveText("Started counts begin 2026-09-28. Completed counts begin 2026-09-03");
+  });
+
+  test("explains what the Started and Completed columns count in the header tooltips", async ({ page }) => {
+    await setupRoutes(page);
+    await loadDashboard(page);
+
+    await expect(page.locator("#activitiesTable thead th[colspan]").nth(0)).toHaveAttribute("title", /signed-in customer/);
+    await expect(page.locator("#activitiesTable thead th[colspan]").nth(1)).toHaveAttribute("title", /whether or not the customer clicked/);
   });
 
   test("hides the activities panel when the snapshot carries no activity observations", async ({ page }) => {

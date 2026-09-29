@@ -194,6 +194,12 @@ describe("operatorSnapshotPublish", () => {
   });
 
   describe("buildWindowedSql", () => {
+    test("adds the earliest day only when asked", () => {
+      const observation = { view: "v", dayColumn: "day", valueExpr: "n", aggregation: "sum" };
+      expect(buildWindowedSql(observation)).not.toContain("data_since");
+      expect(buildWindowedSql({ ...observation, reportDataSince: true })).toContain("cast(min(day) AS varchar) AS data_since");
+    });
+
     test("builds the four conditional aggregates without a filter", () => {
       const sql = buildWindowedSql({
         view: "v_availability_sli_daily",
@@ -293,6 +299,23 @@ describe("operatorSnapshotPublish", () => {
       expect(windows.last30.value).toBe(110);
       expect(windows.last30.trend).toBeCloseTo(0.1);
       expect(windows.last90).toEqual({ value: 300, trend: 0 });
+    });
+
+    test("marks a non-zero window against an empty prior window as new", () => {
+      const windows = toObservationWindows({ last_30: "4", prev_30: null, last_90: "4", prev_90: "0" });
+      expect(windows.last30).toEqual({ value: 4, trend: null, isNew: true });
+      expect(windows.last90).toEqual({ value: 4, trend: null, isNew: true });
+    });
+
+    test("does not mark a zero or absent window as new", () => {
+      const windows = toObservationWindows({ last_30: "0", prev_30: "0", last_90: null, prev_90: null });
+      expect(windows.last30).toEqual({ value: 0, trend: null });
+      expect(windows.last90).toEqual({ value: null, trend: null });
+    });
+
+    test("carries the earliest day the data holds when the query reports it", () => {
+      expect(toObservationWindows({ last_30: "1", data_since: "2026-09-28" }).dataSince).toBe("2026-09-28");
+      expect(toObservationWindows({ last_30: "1" }).dataSince).toBeUndefined();
     });
 
     test("reads a missing row as every window null", () => {
