@@ -41,6 +41,9 @@ step.
 
 ## In flight
 
+**COOL-DOWN is on since 2026-09-29T21:21:54Z.** No new board rows except a degradation. Agents commit
+and stop. One branch is driven green at a time. Lifted only by the operator in their own words.
+
 ## Machine-only
 
 
