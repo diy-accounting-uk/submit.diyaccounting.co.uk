@@ -194,6 +194,12 @@ A fresh agent carries none of your context, so the brief stands alone. Every bri
 - **A background command that expands a list runs under `bash -c`**, because the shell where a background command runs is not bash and does not split unquoted variables into words.
 - **What it owns and what it must not touch**, with the reason. Where another agent in the same
   wave is nearby, name it.
+- **For a brief that adds or changes an Athena view, name the ci type proof.** Run
+  `SELECT * FROM (<view sql>) LIMIT 0` with `aws --profile submit-ci athena start-query-execution`
+  (workgroup `ci-env-analytics`, database `ci_env_analytics`; prod's are `prod-env-analytics` and
+  `prod_env_analytics`) and read the column types back from `get-query-results` ResultSetMetadata,
+  read-only. `AthenaViewColumnTypesTest` catches the time-zone family before a deploy; the run
+  catches the rest.
 - **For a brief that touches a workflow, three facts about called workflows and one instruction.**
   A called workflow inherits its caller's `github.event_name`, so a `schedule` guard inside it fires
   during the scheduled deploy's own probes and rolls the apex back. A called workflow may request no

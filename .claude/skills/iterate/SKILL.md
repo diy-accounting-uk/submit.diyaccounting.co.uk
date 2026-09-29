@@ -89,6 +89,10 @@ every slot is held; `main` deploys to prod and takes no ci slot.
   by the coordinator before dispatch, never left to the worker to split. A brief that touches a workflow
   carries the called-workflow checklist: inherited `github.event_name`, permissions the callers
   must grant, `--repo` on `gh` with no checkout, grep the siblings for the same defect. A brief
+  that adds or changes an Athena view names the ci type proof: `SELECT * FROM (<view sql>) LIMIT 0`
+  via `aws --profile submit-ci athena start-query-execution` (workgroup `ci-env-analytics`, database
+  `ci_env_analytics`; prod's are `prod-env-analytics` and `prod_env_analytics`), column types read
+  back from `get-query-results` ResultSetMetadata, read-only. A brief
   that dispatches a workflow names the exact inputs (`destroy-ci.yml` needs
   `-f sweep-for-stacks=true` to sweep).
 - **Land each report as it arrives**: `git status --short` in the worktree first, then
