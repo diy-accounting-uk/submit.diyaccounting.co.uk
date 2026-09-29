@@ -439,8 +439,7 @@ jobs:
       # origin:unattended-agent says a model ran this with nobody watching. Applied here, outside
       # the agent's own tool calls, so it lands whether or not the agent remembered to ask for it.
       # Uses the "add labels" endpoint rather than `gh pr create --label`, which requires the
-      # label to already exist: this endpoint creates it on first use (see alarm-triage.yml,
-      # REPORT_IDENTITY_AUDIT.md section 8 recommendation 6).
+      # label to already exist: this endpoint creates it on first use.
       - name: Label any PR this run opened
         if: always() && steps.run.outcome != 'skipped'
         env:

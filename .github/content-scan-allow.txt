@@ -30,7 +30,7 @@ noreply@anthropic.com
 /@([a-z0-9-]+\.)?ico\.org\.uk$/
 
 # The operator's own git-commit identities, documented in .github/allowed-commit-identities.yml
-# (current) and REPORT_IDENTITY_AUDIT.md (former employer accounts, kept there for the audit).
+# (current) and the operator's former employer accounts.
 antonyccartwright@gmail.com
 antony.cartwright@awaze.com
 antony.cartwright@westfieldhealth.com
@@ -85,8 +85,3 @@ AKIAIOSFODNN7EXAMPLE
 eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiIxMjM0NTY3ODkwIn0.dozjgNryP4J3jVmNHl0w5N_XgL0n3I9PYLxDmkAmr1c
 /^Bearer abc123\.def456-ghi789$/
 /^Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9\.payload\.sig$/
-
-# A coincidental digit run inside an SVG path's coordinate data in the vendored HTML export
-# reference/Obligations and returns | VAT (MTD) End-to-End Service Guide - VAT (MTD) end-to-end
-# service guide.html; not an address.
-2.81.8.8

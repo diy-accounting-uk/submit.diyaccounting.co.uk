@@ -27,6 +27,7 @@ services = [
   "serviceusage.googleapis.com",
   "cloudresourcemanager.googleapis.com",
   "analyticsadmin.googleapis.com",
+  "analyticsdata.googleapis.com",
   "cloudbilling.googleapis.com",
   "billingbudgets.googleapis.com",
   "bigquery.googleapis.com",

@@ -339,8 +339,8 @@ export async function ingestHandler(event) {
     }),
   );
   // origin:machine says the shared support-ticket identity filed this, not the operator. GitHub
-  // creates a label on first use if it doesn't already exist, so this never fails while the
-  // label is still pending creation (see REPORT_IDENTITY_AUDIT.md section 8, recommendation 6).
+  // creates a label on first use if it doesn't already exist, so this never fails on a missing
+  // label.
   const labels = ["support", categoryLabels[category], "origin:machine"];
 
   try {

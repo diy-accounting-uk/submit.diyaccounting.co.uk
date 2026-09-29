@@ -18,7 +18,7 @@ These instructions guide GitHub Copilot's code review agent to provide specializ
 
 ## Repository Documentation
 
-**Primary Reference**: See [`./REPORT_REPOSITORY_CONTENTS.md`](../REPORT_REPOSITORY_CONTENTS.md) for comprehensive technical documentation including:
+**Primary Reference**: See [`./REPORT_CAPABILITIES.md`](../REPORT_CAPABILITIES.md) for comprehensive technical documentation including:
 
 - Complete architecture overview (AWS serverless stack)
 - All npm scripts in `package.json` with detailed descriptions
@@ -29,7 +29,7 @@ These instructions guide GitHub Copilot's code review agent to provide specializ
 - Directory structure and file purposes
 - AWS deployment architecture and security model
 
-**When reviewing code**, reference REPORT_REPOSITORY_CONTENTS.md to understand context, verify script usage, and check consistency with documented patterns.
+**When reviewing code**, reference REPORT_CAPABILITIES.md to understand context, verify script usage, and check consistency with documented patterns.
 
 ## Code Review Philosophy
 
@@ -190,7 +190,7 @@ The infrastructure is divided into **two CDK applications**:
 
 ### Available npm Scripts
 
-See REPORT_REPOSITORY_CONTENTS.md Section "Package.json Operations" for the complete reference of all npm scripts. Key scripts include:
+See `package.json` and the npm script entries in REPORT_CAPABILITIES.md for the complete reference of all npm scripts. Key scripts include:
 
 **Build & Deploy**:
 - `npm run build` - Full Maven build + restore deployment markers
@@ -417,7 +417,7 @@ When reviewing a pull request, work through these checks:
 
 ## Resources and References
 
-- **Repository Documentation**: [`./REPORT_REPOSITORY_CONTENTS.md`](../REPORT_REPOSITORY_CONTENTS.md)
+- **Repository Documentation**: [`./REPORT_CAPABILITIES.md`](../REPORT_CAPABILITIES.md)
 - **README**: [`./README.md`](../README.md)
 - **Package Scripts**: [`./package.json`](../package.json)
 - **Maven Build**: [`./pom.xml`](../pom.xml)

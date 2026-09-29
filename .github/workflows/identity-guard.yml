@@ -9,7 +9,6 @@ run-name: "identity guard for PR #${{ github.event.pull_request.number }}"
 # commits landed on main authored by a third party's GitHub account. This
 # check reads every commit added by a pull request and fails the run if any
 # author email is not on the allow-list in .github/allowed-commit-identities.yml.
-# See REPORT_IDENTITY_AUDIT.md for the history this closes.
 
 on:
   pull_request:

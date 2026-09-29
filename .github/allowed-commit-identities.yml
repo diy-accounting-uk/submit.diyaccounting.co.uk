@@ -9,8 +9,7 @@
 #
 # Add an address when a new legitimate committer or bot starts writing
 # commits. Do not add a third party's address to work around a failure —
-# fix the workflow or script that set it instead. See REPORT_IDENTITY_AUDIT.md
-# for the history behind this list.
+# fix the workflow or script that set it instead.
 
 allowed_author_emails:
   # The operator, across the identities GitHub already resolves to the

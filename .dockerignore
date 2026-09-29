@@ -25,7 +25,6 @@ web/unit-tests
 
 # Documentation
 README.md
-REPORT_REPOSITORY_CONTENTS.md
 *.md
 prompts
 _developers

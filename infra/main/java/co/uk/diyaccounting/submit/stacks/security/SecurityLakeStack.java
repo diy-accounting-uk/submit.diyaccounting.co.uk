@@ -98,8 +98,7 @@ public class SecurityLakeStack extends Stack {
             return "diy-accounting-uk/submit.diyaccounting.co.uk";
         }
 
-        // GitHub App configuration for the GitHub alert counts pull (diya-ops, see
-        // REPORT_IDENTITY_AUDIT.md section 8 recommendation 2).
+        // GitHub App configuration for the GitHub alert counts pull (diya-ops).
         @Value.Default
         default String githubAppId() {
             return "";

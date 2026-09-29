@@ -71,6 +71,8 @@ every slot is held; `main` deploys to prod and takes no ci slot.
 
 - **One batch branch per wave** (`claude/<codename>-<theme>`, named as `/do-next` says, its own worktree under
   `.claude/worktrees/<codename>`), every agent worktree branched from it, `NEXT.md` never on it.
+  Every worktree, the batch one and each agent's, is created with `scripts/worktree-add.sh <path>
+  <branch> <base>`, which links `node_modules` from the main checkout and fails when it cannot.
   A worktree for an analysis or review agent branches from `origin/main` after a fetch; the brief names that commit.
 - **One agent per row.** Rows that share a file go to one agent in one brief, in the order the
   plan fixes, a commit per row. A row over about 25 files is a two-agent chain (design, then
@@ -89,6 +91,10 @@ every slot is held; `main` deploys to prod and takes no ci slot.
   by the coordinator before dispatch, never left to the worker to split. A brief that touches a workflow
   carries the called-workflow checklist: inherited `github.event_name`, permissions the callers
   must grant, `--repo` on `gh` with no checkout, grep the siblings for the same defect. A brief
+  that adds or changes an Athena view names the ci type proof: `SELECT * FROM (<view sql>) LIMIT 0`
+  via `aws --profile submit-ci athena start-query-execution` (workgroup `ci-env-analytics`, database
+  `ci_env_analytics`; prod's are `prod-env-analytics` and `prod_env_analytics`), column types read
+  back from `get-query-results` ResultSetMetadata, read-only. A brief
   that dispatches a workflow names the exact inputs (`destroy-ci.yml` needs
   `-f sweep-for-stacks=true` to sweep).
 - **Land each report as it arrives**: `git status --short` in the worktree first, then
@@ -96,7 +102,8 @@ every slot is held; `main` deploys to prod and takes no ci slot.
   content proof (`git diff <agent-branch> <batch> -- <its files>` empty). Read the diff before
   landing it; a test that asserts a count across the whole stack, or a comment that restates the
   code, is fixed on the batch, not sent back.
-- **Once per batch before its first push**: `./mvnw clean verify` and then `npm test` on the
+- **Once per batch before its first push**: check `[ -L node_modules ]` in the batch worktree and
+  stop with a message when it fails, then `./mvnw clean verify` and then `npm test` on the
   merged tree, serially in one background command, because the two run concurrently push the load
   average past 100 and vitest files time out. Then run `npm run test:<suite>Behaviour-simulator`
   for every suite whose routes, pages or helpers the batch changed, serially (e.g. `auth`, `bundle`,

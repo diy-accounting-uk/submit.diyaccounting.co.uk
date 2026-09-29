@@ -200,7 +200,7 @@ Cognito pricing](https://aws.amazon.com/cognito/pricing/) via [Frontegg's
 summary](https://frontegg.com/guides/aws-cognito-pricing), read 2026-09-03). Google sign-in
 through Cognito's social identity providers counts as a social MAU, inside the 10,000 free.
 Submit's pool runs on Plus with threat protection and costs about $4 a month today for
-about 50 MAU (`AWS_COSTS.md` in the Submit repository). Sharing that pool means the first
+about 50 MAU. Sharing that pool means the first
 ten thousand spreadsheets users cost nothing in Cognito if the pool sits on Essentials or
 Lite, and about 1.5p a user a month on Plus.
 
@@ -927,4 +927,4 @@ its phases 3 to 5 are absorbed by the page; its phase 6 is this plan's Filing ru
 - This repository: the four product plans under `../developers/spreadsheets/archive/`
   (`PLAN_DIYA_GL_{BST,SE,TAXI,LTD}_CLI_MCP_WEB.md`), `../developers/spreadsheets/PLAN_DIYA_CLOUD.md`,
   `../developers/spreadsheets/SPEC-basic-sole-trader-import-export.md`, the v2 schemas; the Submit
-  repository's `README.md` (HMRC recognition for VAT) and `AWS_COSTS.md` (Cognito cost).
+  repository's `README.md` (HMRC recognition for VAT).

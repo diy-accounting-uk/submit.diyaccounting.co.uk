@@ -64,8 +64,8 @@ have to discover to finish. Then put that in the brief. The checks that paid for
   wrong: the brief names the query that settles the cause (the Athena database and workgroup, the
   table's projection file, the writer's line) and the two or three causes it can find, so the agent
   fixes the layer it finds rather than the one the row guessed.
-- **The runtime the agent will find.** A fresh worktree has no `node_modules` (symlink the main
-  checkout's), no `submit.bundle.js` (`npm run bundle` first), no `mcp/node_modules` (`npm ci` in
+- **The runtime the agent will find.** A fresh worktree has no `node_modules` (`scripts/worktree-add.sh`
+  links the main checkout's), no `submit.bundle.js` (`npm run bundle` first), no `mcp/node_modules` (`npm ci` in
   `mcp/`), no spreadsheet reader on the machine (the diya-gl package bundles one), and
   `spotless:apply` reformats files the row does not own (format only its own). A Maven proof
   names the test class; the batch runs the full verify once.
@@ -91,6 +91,10 @@ have to discover to finish. Then put that in the brief. The checks that paid for
   list from its schema source (e.g. `AnalyticsStack.java` `buildActivityEventColumns` for
   `activity_events`), asks for an `EXPLAIN` against ci to verify the plan, and states the projected
   scan size and estimated cost.
+  A new or changed view is also run on ci as `SELECT * FROM (<view sql>) LIMIT 0`
+  (`aws --profile submit-ci athena start-query-execution`, workgroup `ci-env-analytics`, database
+  `ci_env_analytics`; prod's are `prod-env-analytics` and `prod_env_analytics`), and its column types
+  are read back from `get-query-results` ResultSetMetadata; the brief names that proof.
 - **Test allow-lists are scoped to the case.** An allow-list that exempts a test case names only
   that case and never exempts a whole class, module or pattern.
 - **The model**, the lowest that fits, from the work not the label: a one-file mechanical edit or

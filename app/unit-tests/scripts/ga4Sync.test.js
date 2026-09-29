@@ -6,6 +6,7 @@
 import { describe, test, expect } from "vitest";
 
 import {
+  loadConfigFromRoot,
   parseArgs,
   parseConfig,
   matchProperty,
@@ -18,6 +19,8 @@ import {
   describeLocationMismatch,
   buildGithubVariablePlan,
   buildPropertyPlan,
+  formatEventCountLine,
+  extractEventCount,
   isVariableAccessForbidden,
   githubVariableFinding,
   applyGithubVariable,
@@ -506,5 +509,35 @@ describe("buildPropertyPlan", () => {
     ]);
     expect(plan.bigQueryLink.action).toBe("noop");
     expect(plan.githubVariable).toEqual({ action: "skip" });
+  });
+});
+
+describe("ci property in analytics.toml", () => {
+  test("plans a BigQuery link for the display_name-matched ci property", () => {
+    const config = loadConfigFromRoot();
+    const ci = config.properties.find((p) => p.displayName === "DIY Accounting Submit (ci)");
+    expect(ci.bigQueryLink).toEqual({ project: "diyaccounting-ga4", location: "europe-west2", dailyExport: true, streamingExport: false });
+
+    const liveProperty = matchProperty(ci, [{ name: "properties/552917343", displayName: "DIY Accounting Submit (ci)" }]);
+    const liveStreams = [
+      {
+        name: "properties/552917343/dataStreams/1",
+        webStreamData: { defaultUri: "https://ci-submit.diyaccounting.co.uk", measurementId: "G-DV0SDVEZWC" },
+      },
+    ];
+    const plan = buildPropertyPlan({ configProperty: ci, liveProperty, liveStreams, liveBigQueryLinks: [] });
+
+    expect(plan.bigQueryLink).toMatchObject({ action: "create", project: "diyaccounting-ga4", dailyExport: true, streamingExport: false });
+  });
+});
+
+describe("event count line", () => {
+  test("formats one line per property", () => {
+    expect(formatEventCountLine("DIY Accounting Submit (ci)", 42)).toBe("DIY Accounting Submit (ci) events (yesterday..today): 42");
+  });
+
+  test("reads the total from a report row and treats no rows as zero", () => {
+    expect(extractEventCount({ rows: [{ metricValues: [{ value: "17" }] }] })).toBe(17);
+    expect(extractEventCount({})).toBe(0);
   });
 });
