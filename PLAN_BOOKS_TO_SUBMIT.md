@@ -58,7 +58,7 @@ Its project number is 670010122633 (`oauth.toml:18`). The consent screen brand i
 enabled-API list of `diyaccounting-ga4` (`infra/google/gcp/project.toml:25-43`). The Submit CSP
 allows scripts from itself, RUM and Tag Manager only, and frames from itself, YouTube and the
 simulator only (`infra/main/java/co/uk/diyaccounting/submit/stacks/EdgeStack.java:792-802`).
-`../developers/submit/archive/PLAN_SIGN_IN_PARITY.md` (line 41) lists the diya-gl Drive store as a third-party grant, off while
+`../private.diyaccounting.co.uk/engineering/submit/archive/PLAN_SIGN_IN_PARITY.md` (line 41) lists the diya-gl Drive store as a third-party grant, off while
 `googleClientId` is null.
 
 **The diya-gl pages (spreadsheets repo).**
@@ -73,7 +73,7 @@ simulator only (`infra/main/java/co/uk/diyaccounting/submit/stacks/EdgeStack.jav
 | Drive offered only to a signed-in Submit subscriber (`active-subscription`) | `drive.js:77-83` |
 | "Save to my Google Drive" in the save menu | `shell.js:2967-2968` |
 | `googleClientId: null`, so every Drive control is off | `../spreadsheets/web/diya-gl.co.uk/public/cloud-config.js:25` |
-| LP-24 design and the seven operator console steps | `PLAN_DIYA_GL_LAUNCH.md:349-358`, `:634-667`, `:779-795` |
+| LP-24 design and the seven operator console steps | `../private.diyaccounting.co.uk/strategy/PLAN_DIYA_GL_LAUNCH.md:349-358`, `:634-667`, `:779-795` |
 | LP-24a, the console steps, is an open operator row | `../spreadsheets/NEXT.md:44` |
 | No link from a diya-gl page to Submit | grep of `shell.js` for `submit.diyaccounting` |
 
@@ -275,7 +275,7 @@ confirm brand verification. They replace LP-24a's steps 1 to 4.
    Accounting one page download, the same as a local file, and a Drive store tied to a Submit
    account gives the same experience while making DIY Accounting a party to the customer's
    Drive access. The subscriber gate at `drive.js:77-83` goes, and the launch plan's Resident
-   bundle (`PLAN_DIYA_GL_LAUNCH.md:356-358`) drops Drive; the spreadsheets
+   bundle (`../private.diyaccounting.co.uk/strategy/PLAN_DIYA_GL_LAUNCH.md:356-358`) drops Drive; the spreadsheets
    repository makes that change.
 9. **Headless Google.** No test Google account signs in headlessly, so consent, Picker and
    upload are checked by hand after a prod deploy, as LP-24 already plans.

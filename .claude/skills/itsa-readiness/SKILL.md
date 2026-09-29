@@ -8,13 +8,13 @@ description: Say whether DIY Accounting Submit is ready to send HMRC the Income 
 
 # itsa-readiness
 
-Answer one question: can the recognition email (`../_developers/hmrc/DRAFT_EMAIL_ITSA_RECOGNITION.md`)
+Answer one question: can the recognition email (`../private.diyaccounting.co.uk/hmrc/itsa/DRAFT_EMAIL_ITSA_RECOGNITION.md`)
 go to `SDSTeam@hmrc.gov.uk` now, or on the day the operator names? Check every item below against
 the files and the code on `origin/main`. Report what you checked, not what a file claims.
 
 ## The checks
 
-1. **Every minimum standard is evidenced.** Read `_developers/hmrc/ITSA_PRODUCTION_APPROVALS_CHECKLIST.md`,
+1. **Every minimum standard is evidenced.** Read `../private.diyaccounting.co.uk/hmrc/itsa/ITSA_PRODUCTION_APPROVALS_CHECKLIST.md`,
    section "The standards" (13 rows). For each row:
    - "Proof in the repository" names a handler, page and test. Confirm each file exists
      (`[ -e <path> ]`) and each test passes: `npx vitest run <unit test>` or
@@ -27,7 +27,7 @@ the files and the code on `origin/main`. Report what you checked, not what a fil
 2. **The sandbox year ran inside HMRC's 14-day log window.** HMRC reads the last 14 days of
    sandbox activity. Read the run record at the end of `_developers/hmrc/ITSA_PHASE_2_SANDBOX.md`
    and the "Testing in the last two weeks" row of
-   `_developers/hmrc/hmrc_questionnaire_itsa_pass_diy_accounting_limited_v1.md`. The last run date
+   `../private.diyaccounting.co.uk/hmrc/itsa/hmrc_questionnaire_itsa_pass_diy_accounting_limited_v1.md`. The last run date
    plus 14 days is the latest send day. If the send day is later, re-run the year first
    (NEXT.md row B11.T10; the command is in `ITSA_PHASE_2_SANDBOX.md`, section "The command"),
    for 2023-24, 2025-26 and 2026-27, and update that row with the dates and commit.
@@ -39,7 +39,7 @@ the files and the code on `origin/main`. Report what you checked, not what a fil
 5. **The email matches the evidence.** Read the draft email. Every claim in it must match a
    checklist row. The sandbox application id must match the checklist's
    (`uqMHA6RsDGGa7h8EG2VqfqAmv4tV`). It must ask about the 2027-28 production window, because
-   `_developers/hmrc/ITSA_MINIMUM_FUNCTIONALITY_STANDARDS.md` records the 2026-27 closure notice.
+   `../private.diyaccounting.co.uk/hmrc/itsa/ITSA_MINIMUM_FUNCTIONALITY_STANDARDS.md` records the 2026-27 closure notice.
 6. **Nothing open on the board blocks it.** `grep -n 'ITSA\|B11\|O11' NEXT.md`. Any open row that
    is not the send itself is listed.
 

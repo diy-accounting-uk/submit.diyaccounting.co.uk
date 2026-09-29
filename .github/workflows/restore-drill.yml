@@ -19,7 +19,7 @@ run-name: "Restore drill: prod tables into ci from the cross-account vault"
 # (BackupAccountAccessStack), not from ci. Once the copy lands in ci's own vault
 # (ci-env-primary-vault), the restore is an ordinary same-account restore under
 # ci-env-backup-role, exactly like restore-test.yml's proven local restore in the backup
-# account. See ../developers/submit/archive/_developers/RESTORE_DRILL.md.
+# account. See ../private.diyaccounting.co.uk/engineering/submit/archive/_developers/RESTORE_DRILL.md.
 
 on:
   workflow_dispatch: {}

@@ -175,7 +175,7 @@ describe("invoiceLinesForPeriod", () => {
         amount: 9.17,
         amountCurrency: "GBP",
         taxCode: "E",
-        documentReference: "PL-PSC03001837355/11",
+        documentReference: "PL-PSC00000000000/11",
         detailComment: "Hiscox",
       });
     }
@@ -190,7 +190,7 @@ describe("invoiceLinesForPeriod", () => {
       amount: 10.12,
       amountCurrency: "GBP",
       taxCode: "E",
-      documentReference: "PL-PSC03001837355/12",
+      documentReference: "PL-PSC00000000000/12",
       detailComment: "Hiscox",
     });
   });

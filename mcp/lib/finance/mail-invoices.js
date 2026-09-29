@@ -214,7 +214,7 @@ const PAYMENT_SCHEDULE_TABLE_HEADER = /^Date\s+Amount$/i;
 const PAYMENT_SCHEDULE_ROW = /^(\d{2})\/(\d{2})\/(\d{4})\s+(\S.*)$/;
 
 // The Direct Debit's own reference sits below the table on the same
-// attachment page ("Reference Number: PL-PSC03001837355/12"), so an
+// attachment page ("Reference Number: PL-PSC00000000000/12"), so an
 // instalment posted from it carries that as its documentReference, the way
 // an ordinary invoice line carries an invoice number.
 const PAYMENT_SCHEDULE_REFERENCE = /Reference Number:\s*(\S+)/i;

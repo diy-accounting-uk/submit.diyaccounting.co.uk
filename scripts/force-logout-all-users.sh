@@ -4,7 +4,7 @@
 
 #
 # Force every user in an environment's Cognito user pool to sign out immediately,
-# for the cross-account hold in RUNBOOK_INFORMATION_SECURITY.md section 6.6.
+# for the cross-account hold in ../private.diyaccounting.co.uk/security/RUNBOOK_INFORMATION_SECURITY.md section 6.6.
 #
 # Calls admin-user-global-sign-out per user. Every refresh token dies immediately;
 # an access token already issued stays valid until its own exp, up to an hour later

@@ -61,7 +61,7 @@ GB123456123456
 
 # The company's own VAT registration numbers used with HMRC's sandbox: the developer test VRN
 # probed by infra/hmrc/hmrc.toml's health checks, and the one named in the API-approval
-# submission record (../_developers/hmrc/HMRC_MTD_API_APPROVAL_SUBMISSION.md).
+# submission record (../private.diyaccounting.co.uk/hmrc/vat/HMRC_MTD_API_APPROVAL_SUBMISSION.md).
 193051768
 239849510
 

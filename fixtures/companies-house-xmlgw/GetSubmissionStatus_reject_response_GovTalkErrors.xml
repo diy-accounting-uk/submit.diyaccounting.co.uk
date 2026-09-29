@@ -4,7 +4,7 @@
   GetSubmissionStatus poll, sent with a SubmissionNumber and a PresenterID in the order
   GetSubmissionStatus-v2-9.xsd's content model requires: ((CompanyNumber|SubmissionNumber),
   PresenterID). Observed against ci-claud0efc, polling submission number 000004 (presenter
-  E0000052288, company 06846849), twice within five minutes of the submission's own
+  E0000000000, company 06846849), twice within five minutes of the submission's own
   acknowledgement, 2026-09-13: identical both times.
 
   Like Accounts_reject_response_GovTalkErrors.xml, this is not a byte-for-byte capture of the
