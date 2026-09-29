@@ -390,7 +390,7 @@
       "sourceArtifact": "video-itsa-carry-back-adjustments-ci",
       "videoFile": "target/videos/video-itsa-carry-back-adjustments-ci/itsa-carry-back-adjustments.mp4",
       "captionFile": "target/videos/video-itsa-carry-back-adjustments-ci/itsa-carry-back-adjustments.vtt",
-      "title": "DIY Accounting Submit: what a carry-back claim saves in an earlier year (coming soon - sandbox example)",
+      "title": "DIY Accounting Submit: the tax a carry-back claim saves (coming soon - sandbox example)",
       "description": "DIY Accounting Submit is a free tool for filing Self Assessment under Making Tax Digital for Income Tax. A signed-in walk through Making Tax Digital for Income Tax's tax liability adjustments: sign in, take out Resident, get HMRC's access for the year, make a carry-back loss claim off camera, then record what that claim saves against the earlier tax year it reduces. This is a sandbox preview, recorded against HMRC's test environment, not a live filing. Try the VAT side of the product now at https://submit.diyaccounting.co.uk.",
       "tags": ["DIY Accounting", "Self Assessment", "HMRC", "Making Tax Digital", "ITSA"],
       "categoryId": "27",
