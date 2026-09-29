@@ -13,6 +13,7 @@ import {
 } from "../../lib/httpResponseHelper.js";
 import { registerLambdaRoute } from "../../lib/httpServerToLambdaAdaptor.js";
 import { decodeJwtToken } from "../../lib/jwtHelper.js";
+import { isSyntheticTestUserEmail } from "../../lib/syntheticTestUser.js";
 import { initializeSalt, hashSub } from "../../services/subHasher.js";
 import { getStripeClient } from "../../lib/stripeClient.js";
 import { getUserBundles } from "../../data/dynamoDbBundleRepository.js";
@@ -90,16 +91,15 @@ export async function ingestHandler(event) {
     await initializeSalt();
     const hashedSub = hashSub(userSub);
 
-    // Determine synthetic mode: bundle qualifiers are the source of truth (same pattern as billingPortalGet.js)
+    // Determine synthetic mode from server-side facts only: the caller's synthetic bundle or verified test-user email
     const userBundles = await getUserBundles(userSub);
     const hasSyntheticBundle = userBundles.some((b) => b.qualifiers?.synthetic === true);
 
     const body = typeof event.body === "string" ? JSON.parse(event.body) : event.body || {};
-    const isSynthetic = hasSyntheticBundle || body.synthetic === true || event.headers?.["hmrcaccount"] === "synthetic";
+    const isSynthetic = hasSyntheticBundle || isSyntheticTestUserEmail(userEmail);
     let syntheticSource = "none";
     if (hasSyntheticBundle) syntheticSource = "bundle-qualifier";
-    else if (body.synthetic === true) syntheticSource = "request-body";
-    else if (event.headers?.["hmrcaccount"] === "synthetic") syntheticSource = "hmrcaccount-header";
+    else if (isSynthetic) syntheticSource = "test-user-email";
     logger.info({ message: "Synthetic mode resolved", isSynthetic, syntheticSource });
 
     const baseUrl = process.env.DIY_SUBMIT_BASE_URL || "https://submit.diyaccounting.co.uk/";

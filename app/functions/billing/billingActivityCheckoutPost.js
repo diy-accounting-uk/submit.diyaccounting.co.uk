@@ -22,6 +22,7 @@ import {
 } from "../../lib/httpResponseHelper.js";
 import { registerLambdaRoute } from "../../lib/httpServerToLambdaAdaptor.js";
 import { decodeJwtToken } from "../../lib/jwtHelper.js";
+import { isSyntheticTestUserEmail } from "../../lib/syntheticTestUser.js";
 import { initializeSalt, hashSub } from "../../services/subHasher.js";
 import { getStripeClient } from "../../lib/stripeClient.js";
 import { getUserBundles } from "../../data/dynamoDbBundleRepository.js";
@@ -94,7 +95,7 @@ export async function ingestHandler(event) {
     const hasSyntheticBundle = userBundles.some((b) => b.qualifiers?.synthetic === true);
 
     const body = typeof event.body === "string" ? JSON.parse(event.body) : event.body || {};
-    const isSynthetic = hasSyntheticBundle || body.synthetic === true || event.headers?.["hmrcaccount"] === "synthetic";
+    const isSynthetic = hasSyntheticBundle || isSyntheticTestUserEmail(userEmail);
 
     const activityId = body.activityId;
     const subjectKey = body.subjectKey;
