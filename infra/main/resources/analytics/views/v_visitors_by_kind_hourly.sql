@@ -10,7 +10,7 @@
 -- The partition predicate keeps it to the last 8 days: the dashboard reads at most 7, and
 -- without it every query lists every projected dt prefix the table carries.
 CREATE OR REPLACE VIEW v_visitors_by_kind_hourly AS
-SELECT from_iso8601_timestamp(hour) AS hour,
+SELECT CAST(from_iso8601_timestamp(hour) AS timestamp) AS hour,
        visitor_kind,
        sum(sessions) AS sessions,
        sum(users)    AS users
