@@ -143,6 +143,21 @@ test.describe("area pages", () => {
   }
 });
 
+test.describe("videos-hmrc-itsa.html", () => {
+  const itsaVideos = EMBEDDED.filter((v) => v.group === "itsa");
+
+  test("embeds all ten itsa videos, each with its title and a caption track", async ({ page }) => {
+    expect(itsaVideos).toHaveLength(10);
+    await serveRealSite(page);
+    await page.goto("http://localhost:3000/videos-hmrc-itsa.html", { waitUntil: "domcontentloaded" });
+    await assertSections(page, itsaVideos);
+    for (const video of itsaVideos) {
+      expect(video.captionFile).toMatch(/\.vtt$/);
+      await expect(page.locator(`section.video-section#${video.id} iframe`)).toHaveAttribute("title", video.title);
+    }
+  });
+});
+
 test.describe("about.html", () => {
   test("carries the Watch the walkthroughs button linking to videos.html", async ({ page }) => {
     await serveRealSite(page);

@@ -395,6 +395,20 @@
       "tags": ["DIY Accounting", "Self Assessment", "HMRC", "Making Tax Digital", "ITSA"],
       "categoryId": "27",
       "videoId": "NGMwzvQ77es"
+    },
+    {
+      "id": "itsa-in-year-estimate",
+      "group": "itsa",
+      "publish": true,
+      "sourceRun": 36593311059,
+      "sourceArtifact": "video-itsa-in-year-estimate-ci",
+      "videoFile": "target/videos/video-itsa-in-year-estimate-ci/itsa-in-year-estimate.mp4",
+      "captionFile": "target/videos/video-itsa-in-year-estimate-ci/itsa-in-year-estimate.vtt",
+      "title": "DIY Accounting Submit: check what the tax year owes so far (coming soon - sandbox example)",
+      "description": "DIY Accounting Submit is a free tool for filing Self Assessment under Making Tax Digital for Income Tax. A signed-in walk through Making Tax Digital for Income Tax's tax calculation: sign in, take out Resident, get HMRC's access for the year, then ask HMRC for an in-year estimate of what the tax year owes, based on what has been submitted so far. This is a sandbox preview, recorded against HMRC's test environment, not a live filing. Try the VAT side of the product now at https://submit.diyaccounting.co.uk.",
+      "tags": ["DIY Accounting", "Self Assessment", "HMRC", "Making Tax Digital", "ITSA"],
+      "categoryId": "27",
+      "videoId": "WSaN2igO9v4"
     }
   ]
 }
