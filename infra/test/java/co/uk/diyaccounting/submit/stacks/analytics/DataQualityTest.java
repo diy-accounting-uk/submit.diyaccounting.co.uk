@@ -167,7 +167,8 @@ class DataQualityTest {
                 Match.objectLike(Map.of(
                         "Ruleset",
                         Match.stringLikeRegexp(
-                                "[\\s\\S]*event_ts[\\s\\S]*now\\(\\) - 2 days\\)" + " with threshold > 0[\\s\\S]*"))));
+                                "[\\s\\S]*CustomSql \\\"select count\\(\\*\\) from primary where event_ts"
+                                        + " > current_timestamp\\(\\) - interval 2 days\\\" > 0[\\s\\S]*"))));
     }
 
     @Test

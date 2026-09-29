@@ -83,7 +83,7 @@ public class DataQuality extends Construct {
                 ColumnValues "flow" in ["user-journey","ci-pipeline","infrastructure","operational","unknown"],
                 ColumnValues "site" in ["submit"],
                 ColumnValues "outcome" in ["failure"] with threshold < 0.2,
-                ColumnValues "event_ts" > (now() - 2 days) with threshold > 0
+                CustomSql "select count(*) from primary where event_ts > current_timestamp() - interval 2 days" > 0
             ]
             """;
 
