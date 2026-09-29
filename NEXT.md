@@ -41,7 +41,7 @@ step.
 
 ## In flight
 
-- [ ] **PRV1. Remove the PRV1 worktree after its PR merges.** In flight: `claude/docs-private-repo`, PR #PRNUM. The documents moved to `../private.diyaccounting.co.uk/` and every reference here points there. Remaining after the merge: remove the worktree `.claude/worktrees/prv1-submit` and the branch `claude/docs-private-repo` (`git worktree remove` and `git branch -D` are the operator's). **Source**: operator, 2026-09-29. **Owner**: Operator. **Model**: none. **Size**: 0 files.
+- [ ] **PRV1. Remove the PRV1 worktree after its PR merges.** In flight: `claude/docs-private-repo`, PR #426. The documents moved to `../private.diyaccounting.co.uk/` and every reference here points there. Remaining after the merge: remove the worktree `.claude/worktrees/prv1-submit` and the branch `claude/docs-private-repo` (`git worktree remove` and `git branch -D` are the operator's). **Source**: operator, 2026-09-29. **Owner**: Operator. **Model**: none. **Size**: 0 files.
 
 ## Machine-only
 
