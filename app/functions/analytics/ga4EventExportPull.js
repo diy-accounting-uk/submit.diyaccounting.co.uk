@@ -110,6 +110,10 @@ async function hasLaterExportTable(bigQuery, datasetId, tableDateSuffix) {
   });
 }
 
+function isDatasetNotFound(error) {
+  return error?.code === 404 && /Not found: Dataset/i.test(error.message ?? "");
+}
+
 function buildQuery(projectId, datasetId, tableDateSuffix) {
   return `
 SELECT
@@ -208,7 +212,20 @@ export async function handler(event = {}) {
   const tableName = `events_${tableDateSuffix}`;
   const [tableExists] = await bigQuery.dataset(datasetId).table(tableName).exists();
   if (!tableExists) {
-    if (!(await hasLaterExportTable(bigQuery, datasetId, tableDateSuffix))) {
+    let datasetMissing = false;
+    let laterTableExists = false;
+    try {
+      laterTableExists = await hasLaterExportTable(bigQuery, datasetId, tableDateSuffix);
+    } catch (error) {
+      if (!isDatasetNotFound(error)) throw error;
+      datasetMissing = true;
+      logger.warn({
+        message: "GA4 BigQuery export dataset does not exist yet; writing a zero-row day",
+        dataset: `${projectId}.${datasetId}`,
+        date: targetDate,
+      });
+    }
+    if (!datasetMissing && !laterTableExists) {
       throw new Error(`GA4 BigQuery export table ${projectId}.${datasetId}.${tableName} does not exist for ${targetDate}`);
     }
 
