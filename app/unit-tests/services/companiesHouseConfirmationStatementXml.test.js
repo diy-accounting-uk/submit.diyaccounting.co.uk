@@ -361,3 +361,67 @@ describe("services/companiesHouseConfirmationStatementXml", () => {
     });
   });
 });
+
+describe("buildConfirmationStatementBody value validation", () => {
+  const INJECTED = "1</NumShares><Injected>x</Injected><NumShares>1";
+  const CAPITAL = {
+    totalAmountUnpaid: "0",
+    totalNumberOfIssuedShares: "1",
+    shareCurrency: "GBP",
+    totalAggregateNominalValue: "1",
+    shares: [{ shareClass: "ORDINARY", prescribedParticulars: "x", numShares: "1", aggregateNominalValue: "1" }],
+  };
+  const HOLDING = { shareClass: "ORDINARY", numberHeld: "1", shareholders: [{ surname: "A" }] };
+
+  test.each([
+    ["totalAmountUnpaid", { statementOfCapital: { ...CAPITAL, totalAmountUnpaid: INJECTED } }],
+    ["totalNumberOfIssuedShares", { statementOfCapital: { ...CAPITAL, totalNumberOfIssuedShares: INJECTED } }],
+    ["totalAggregateNominalValue", { statementOfCapital: { ...CAPITAL, totalAggregateNominalValue: INJECTED } }],
+    ["numShares", { statementOfCapital: { ...CAPITAL, shares: [{ ...CAPITAL.shares[0], numShares: INJECTED }] } }],
+    ["aggregateNominalValue", { statementOfCapital: { ...CAPITAL, shares: [{ ...CAPITAL.shares[0], aggregateNominalValue: INJECTED }] } }],
+    ["numberHeld", { shareholdings: [{ ...HOLDING, numberHeld: INJECTED }] }],
+    [
+      "dateOfTransfer",
+      {
+        shareholdings: [
+          { ...HOLDING, transfers: [{ dateOfTransfer: "2020-01-01</DateOfTransfer><Injected/>", numberSharesTransferred: "1" }] },
+        ],
+      },
+    ],
+    [
+      "numberSharesTransferred",
+      { shareholdings: [{ ...HOLDING, transfers: [{ dateOfTransfer: "2020-01-01", numberSharesTransferred: INJECTED }] }] },
+    ],
+  ])("refuses markup in %s", (fieldName, override) => {
+    expect(() => buildConfirmationStatementBody({ ...BASE_INPUT, ...override })).toThrow(new RegExp(fieldName, "i"));
+  });
+
+  test("refuses markup in reviewDate and a director's date of birth", () => {
+    expect(() => buildConfirmationStatementBody({ ...BASE_INPUT, reviewDate: "2024-08-30</ReviewDate><Injected/>" })).toThrow(/reviewDate/);
+    expect(() =>
+      buildConfirmationStatementBody({ ...BASE_INPUT, directors: [{ ...BASE_INPUT.directors[0], dob: "1967-08-13</DOB><Injected/>" }] }),
+    ).toThrow(/date of birth/);
+  });
+
+  test("refuses a negative or non-numeric amount and a fractional share count", () => {
+    expect(() => buildConfirmationStatementBody({ ...BASE_INPUT, statementOfCapital: { ...CAPITAL, totalAmountUnpaid: "-1" } })).toThrow(
+      /totalAmountUnpaid/,
+    );
+    expect(() => buildConfirmationStatementBody({ ...BASE_INPUT, shareholdings: [{ ...HOLDING, numberHeld: "1.5" }] })).toThrow(
+      /numberHeld/,
+    );
+  });
+
+  test("accepts decimal nominal values and numeric values sent as numbers", () => {
+    const xml = buildConfirmationStatementBody({
+      ...BASE_INPUT,
+      statementOfCapital: {
+        ...CAPITAL,
+        totalAggregateNominalValue: 0.5,
+        shares: [{ ...CAPITAL.shares[0], numShares: 2, aggregateNominalValue: "0.50" }],
+      },
+    });
+    expect(firstElementText(parseXmlDocument(xml), "TotalAggregateNominalValue")).toBe("0.5");
+    expect(firstElementText(parseXmlDocument(xml), "NumShares")).toBe("2");
+  });
+});
