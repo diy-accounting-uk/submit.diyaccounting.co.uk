@@ -446,7 +446,7 @@ This repo deploys to two accounts: **submit-ci** (367191799875) and **submit-pro
 
 **Current state**: Gateway and spreadsheets are fully migrated to their own accounts. Submit CI is migrating to 367191799875. Submit prod is still in 887764105431 (migrating to 972912397388 in Phase 1.4). Root DNS and holding page remain in 887764105431 permanently.
 
-**GitHub Actions variables**: `SUBMIT_*` are environment-scoped (ci/prod have different values). `ROOT_*`, `GATEWAY_*`, `SPREADSHEETS_*` are repo-level.
+**GitHub Actions variables**: `SUBMIT_*` are environment-scoped (ci/prod have different values). `ROOT_*`, `GATEWAY_*` and `SPREADSHEETS_*` are org-level (`gh variable list --org diy-accounting-uk`).
 
 See `PLAN_ACCOUNT_SEPARATION.md` for the full migration plan.
 
