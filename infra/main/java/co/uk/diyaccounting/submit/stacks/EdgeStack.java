@@ -149,7 +149,8 @@ public class EdgeStack extends Stack {
 
         // Comma-separated IPv4/IPv6 addresses for the manual WAF block list (phase 9.3), read from
         // cdk-application/cdk.json's wafManualBlockIps context key. Defaults to empty: no address is
-        // blocked until an operator adds one following RUNBOOK_INFORMATION_SECURITY.md section 7.5.
+        // blocked until an operator adds one following
+        // ../private.diyaccounting.co.uk/security/RUNBOOK_INFORMATION_SECURITY.md section 7.5.
         @Value.Default
         default String wafManualBlockIps() {
             return "";
@@ -236,7 +237,8 @@ public class EdgeStack extends Stack {
         // ============================================================================
         // Addresses come from cdk-application/cdk.json's wafManualBlockIps context key, a
         // comma-separated list that defaults to empty. A deploy always resets the IP sets to
-        // exactly this list, which is deliberate: RUNBOOK_INFORMATION_SECURITY.md section 7.5
+        // exactly this list, which is deliberate:
+        // ../private.diyaccounting.co.uk/security/RUNBOOK_INFORMATION_SECURITY.md section 7.5
         // tells an operator to add a hand-applied block to cdk.json too, or the next deploy drops
         // it. Two sets, not one, because CfnIPSet requires one ipAddressVersion per set and about
         // half of the traffic arrives over IPv6.

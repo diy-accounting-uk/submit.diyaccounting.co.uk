@@ -15,7 +15,7 @@ phase 6 is the dashboard's D16 (BACKLOG 52l).
 > automated such that I can provide direction (operator requests) and governance (agent
 > policies) and expect these to be carried out.
 
-That is the aim `../STRATEGY.md` already opens with: the operator's time goes to direction and the
+That is the aim `../private.diyaccounting.co.uk/strategy/STRATEGY.md` already opens with: the operator's time goes to direction and the
 few judgement calls that need a person. This plan is the scope baseline. It covers the whole
 GitHub and AWS surface, plus the outside surfaces the operator named: social posting, comment
 replies, screenshots and video.
@@ -154,7 +154,7 @@ choose on the operator's behalf. It also does not stop dead: an idle agent costs
 wrong one, and the reversible half survives either answer.
 
 **P10. Automation stays inside the shapes GitHub's abuse heuristics accept.**
-This is not hypothetical. `../developers/submit/archive/PLAN_FLAGGED.md` records the flagging of two of the
+This is not hypothetical. `../private.diyaccounting.co.uk/engineering/submit/archive/PLAN_FLAGGED.md` records the flagging of two of the
 operator's orgs on 2026-05-03 and the full suspension of `@antonycc` on 2026-05-06. The
 high-confidence signals it lists are the exact output of naive auto-merge: 17 seconds from open
 to merge, an empty PR body, zero reviewers, a self-merge, 283 files in one PR, a deletion-heavy
@@ -441,7 +441,7 @@ a reliability rank, its axis C blast radius, what exists today, what it needs, a
 
 ### 5.3 Support
 
-Inbound volume fell about 97% after 2018 (`../developers/submit/SUPPORT_MAIL_ANALYSIS_2026-09.md`), so this
+Inbound volume fell about 97% after 2018 (`../private.diyaccounting.co.uk/engineering/submit/SUPPORT_MAIL_ANALYSIS_2026-09.md`), so this
 domain is small in traffic and high in blast radius. Every row touches a customer.
 
 | Capability | A | B | C | Today | Needs | Gate |
@@ -449,12 +449,12 @@ domain is small in traffic and high in blast radius. Every row touches a custome
 | Support issue form | A1 | B1 R2 | C6 | One template, `.github/ISSUE_TEMPLATE/support.md` | Convert it to an issue form, so the fields are structured and `origin:human` lands at creation | None |
 | Triage and label an inbound support issue | A3 | B2 R4 | C6 | Nothing | An `issues: [opened]` path beside alarm-triage | P1 |
 | Identify the customer behind a failure alarm | A3 | B2 R4 | C3 | The `vat-submission-failure-alarm-user-lookup` skill, operator-triggered, read-only, no table scan | Firing from the alarm issue instead of from a person | P7 |
-| Draft a support reply into Gmail | A3 | B3 R4 | C6 | Named in `../STRATEGY.md` W4. Nothing built | The mail path, the draft, and somewhere to measure acceptance | P7, P8 |
+| Draft a support reply into Gmail | A3 | B3 R4 | C6 | Named in `../private.diyaccounting.co.uk/strategy/STRATEGY.md` W4. Nothing built | The mail path, the draft, and somewhere to measure acceptance | P7, P8 |
 | Send a support reply | A3 | B3 R4 | C3, C6 | Nothing | A measured acceptance rate first, then a reply class that qualifies | P7, P8, Q6 |
 | Reply on a public GitHub issue | A3 | B3 R4 | C6 | Nothing | The publication filter, and a decision on whether public replies stay the operator's | P7, P8, Q8 |
 | Reply to a YouTube comment | A3 | B3 R4 | C6 | Nothing. The `youtube.force-ssl` scope already granted for upload also covers reading and replying to comment threads | Code and a policy. No new consent | P7, P8 |
 | Detect a customer-affecting incident from support volume | A3 | B3 R4 | C2 | Nothing | Enough volume to make a signal, which today there is not | None |
-| Donor thank-yous | Human | B3 | C6 | Human, deliberately (`../STRATEGY.md` W4) | Nothing | Decision |
+| Donor thank-yous | Human | B3 | C6 | Human, deliberately (`../private.diyaccounting.co.uk/strategy/STRATEGY.md` W4) | Nothing | Decision |
 | Closing a support ticket | Human | B3 | C6 | Human | Nothing | P1 |
 
 ### 5.4 Revenue
@@ -717,7 +717,7 @@ share of the closed alarm issues that close themselves against the 43% this tabl
 
 - Inbound triage and labelling on `issues: [opened]`, beside alarm-triage.
 - The customer-lookup skill fires from the alarm issue rather than from a person asking.
-- Reply drafting into Gmail, which `../STRATEGY.md` W4 already names.
+- Reply drafting into Gmail, which `../private.diyaccounting.co.uk/strategy/STRATEGY.md` W4 already names.
 - Replies stay drafts until the acceptance rate is measured. Then one class of reply, a settled
   answer matched to a published article, sends on its own.
 
@@ -733,7 +733,7 @@ can send.
 - Comment replies start on YouTube, because the credential already exists and the volume is small
   enough to read every one.
 - Social posting needs accounts first, and none exist. Then a staged post directory the operator
-  empties, in the shape `../PLAN_FINANCE_AUTOMATION.md` chose for its write boundary. Then
+  empties, in the shape `../private.diyaccounting.co.uk/finance/PLAN_FINANCE_AUTOMATION.md` chose for its write boundary. Then
   automatic posting from a template with a named source. Then composed posts, if the acceptance
   rate earns it.
 
@@ -842,7 +842,7 @@ Prove the three agent workflows by dispatch, in order. All three are on main, `w
 
 ## Sources
 
-- `../STRATEGY.md` (the aim, and W4's autonomous-operations workstream), `BACKLOG.md` rows 23, 30,
+- `../private.diyaccounting.co.uk/strategy/STRATEGY.md` (the aim, and W4's autonomous-operations workstream), `BACKLOG.md` rows 23, 30,
   43, 47, 49, 52, 52l, 52m and 53, `NEXT.md`.
 - `.github/workflows/` (36 files), `.github/agents/`, `.github/actions/`, `.github/dependabot.yml`,
   `.github/ISSUE_TEMPLATE/support.md`, `.github/copilot-instructions.md`.
@@ -851,8 +851,8 @@ Prove the three agent workflows by dispatch, in order. All three are on main, `w
   `scripts/resolve-alarm-evidence.mjs`, `prompts/alarm-triage.md`.
 - `infra/main/java/co/uk/diyaccounting/submit/stacks/OpsStack.java`, `ObservabilityStack.java`,
   `ObservabilityUE1Stack.java`, `CostExportStack.java`, and the `analytics/` stacks and views.
-- `.claude/skills/` (eight skills), `../developers/submit/archive/PLAN_FLAGGED.md`,
-  `../developers/submit/SUPPORT_MAIL_ANALYSIS_2026-09.md`, `../PLAN_FINANCE_AUTOMATION.md`.
+- `.claude/skills/` (eight skills), `../private.diyaccounting.co.uk/engineering/submit/archive/PLAN_FLAGGED.md`,
+  `../private.diyaccounting.co.uk/engineering/submit/SUPPORT_MAIL_ANALYSIS_2026-09.md`, `../private.diyaccounting.co.uk/finance/PLAN_FINANCE_AUTOMATION.md`.
 - Live reads on 2026-09-09: the repository settings, the `main` ruleset, the labels, the
   environments, the Actions permissions, the Dependabot and code-scanning alerts, the last 100
   workflow runs, the 55 `[ALARM]` issues, and the commit verification state of `main`.

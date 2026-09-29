@@ -5,7 +5,7 @@
 
 > The work this plan describes is in `../spreadsheets.diyaccounting.co.uk/`; bare paths are relative to that repository's root. Its rows are on this repository's `NEXT.md`.
 
-Split out of `../developers/spreadsheets/archive/PLAN_LICENSING_UPLIFT.md` on 2026-09-10. That plan was about changing the licence,
+Split out of `../private.diyaccounting.co.uk/engineering/spreadsheets/archive/PLAN_LICENSING_UPLIFT.md` on 2026-09-10. That plan was about changing the licence,
 which is done. What is left of the brand is two separate things, and both live here: **one source
 for the marks, palette and tokens**, and **a name we do not hold**.
 
@@ -36,7 +36,7 @@ why it is a person's row rather than a check: a mark either looks right or it do
 
 ## Part two: the marks themselves
 
-The filing pack is already built and sits in `../developers/spreadsheets/trade-marks/`: the free searches and
+The filing pack is already built and sits in `../private.diyaccounting.co.uk/engineering/spreadsheets/trade-marks/`: the free searches and
 their results, the goods and services wording for classes 9, 42 and 35 drawn from the IPO's
 pre-approved terms, the first-use evidence with dates, and a series-rule check.
 

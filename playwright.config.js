@@ -342,7 +342,7 @@ export default defineConfig({
     // the site's own visitorClassifier both read the browser tokens. scanRate404Detect.js
     // excludes this marker from its 404-rate query, so behaviour-test traffic never raises a
     // scan alert against a real environment. This is a telemetry filter, not a security control
-    // — anyone can send this user agent — see RUNBOOK_INFORMATION_SECURITY.md section 7.5.
+    // — anyone can send this user agent — see ../private.diyaccounting.co.uk/security/RUNBOOK_INFORMATION_SECURITY.md section 7.5.
     userAgent:
       "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36 DIYAccountingProbe/1",
     // Save a video for every test

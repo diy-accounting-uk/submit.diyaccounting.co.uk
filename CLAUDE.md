@@ -70,7 +70,7 @@ Skills live at `.claude/skills/<name>/SKILL.md`.
 - `.claude/skills/stripe-catalogue-sync/SKILL.md` — sync Stripe products and prices from the bundle catalogue, test then live, and land the price ids
 - `.claude/skills/site-video-capture/SKILL.md` — record a video of the real site from a scene script (`videos/*.json`)
 - `.claude/skills/video-publish/SKILL.md` — publish the recordings to the YouTube channel: fetch them from their capture runs, check them, upload unlisted with the stored credentials, flip public; carries the once-per-project console walk-through
-- `.claude/skills/session-report/SKILL.md` — write the session's report (`../REPORT_SESSION_SUBMIT_<id>_<date>.md`, at the workspace root) from measured figures: what landed, what made it efficient, where it lost time or money, one board row per loss; invoke as `/session-report`
+- `.claude/skills/session-report/SKILL.md` — write the session's report (`../private.diyaccounting.co.uk/sessions/REPORT_SESSION_SUBMIT_<id>_<date>.md`, committed in the private repository) from measured figures: what landed, what made it efficient, where it lost time or money, one board row per loss; invoke as `/session-report`
 - `.claude/skills/refine/SKILL.md` — the four passes over `NEXT.md` before a wave: references against `origin/main`, briefs complete enough for their sub-agent with the lowest model that fits, shared facts written into every row they help, and the human step split out of mixed rows; invoke as `/refine`
 - `.claude/skills/iterate/SKILL.md` — the delivery cycle run unattended: board, a wave of isolated sub-agent batches on one branch and one PR, watch, auto-merge, watch, board, again, until no machine-only row can start; a Plan–Do–Check–Act cycle in the orchestrator–workers shape; invoke as `/iterate`
 - `.claude/skills/clean/SKILL.md` — gather stale deployments, merged branches, worktrees of merged branches, logs and test artefacts, and build output; ask once; remove every agreed category in one go; then fetch, switch to main and pull when nothing is in progress; invoke as `/clean`
@@ -177,7 +177,7 @@ Behaviour tests (`npm run test:*Behaviour-*`) take approximately 2-3 minutes. Ou
 - Tests MUST NOT be overfit to specific responses
 - Simulator should NOT encourage hardcoding specific dates/periods
 
-See `../developers/submit/archive/OBLIGATION_FLEXIBILITY_FIX.md` for detailed guidance.
+See `../private.diyaccounting.co.uk/engineering/submit/archive/OBLIGATION_FLEXIBILITY_FIX.md` for detailed guidance.
 
 ## Target Directory Access
 
@@ -561,7 +561,7 @@ The spreadsheets site is managed by the sibling repository `diy-accounting-uk/sp
 
 Behaviour tests exist for spreadsheets (`test:spreadsheetsBehaviour-*`).
 
-**Stripe Payment Links** are live on the spreadsheets site for donations (see `../developers/submit/archive/PLAN_STRIPE_1.md` — completed). Submit site subscription payments are planned in `PLAN_PAYMENT_INTEGRATION.md`.
+**Stripe Payment Links** are live on the spreadsheets site for donations (see `../private.diyaccounting.co.uk/engineering/submit/archive/PLAN_STRIPE_1.md` — completed). Submit site subscription payments are planned in `PLAN_PAYMENT_INTEGRATION.md`.
 
 ## Security Checklist
 
@@ -676,7 +676,10 @@ All repositories live in the **`diy-accounting-uk` GitHub org** — the `antonyc
 | `www.diyaccounting.co.uk/` | `diy-accounting-uk/www.diyaccounting.co.uk` | **Active** | Gateway static site (S3 + CloudFront) |
 | `root.diyaccounting.co.uk/` | `diy-accounting-uk/root.diyaccounting.co.uk` | **Active** | Root AWS account — Route53 DNS, holding page |
 | `diy-accounting-archive/` | `diy-accounting-uk/diy-accounting-archive` | Archived | Pre-migration spreadsheets repo, kept for history — do not develop here |
+| `private.diyaccounting.co.uk/` | `diy-accounting-uk/private.diyaccounting.co.uk` | **Active** | Private reference documents (correspondence, evidence, strategy, finance, engineering notes); no build or workflows. State documents that give too much away go here, not in the public repos or loose at the root |
 | _not checked out here_ | `diy-accounting-uk/homebrew-diya-gl` | **Active** | Homebrew tap for `diya-gl`; `Formula/diya-gl.rb` is regenerated from the npm registry. Read it with `gh api`, don't clone it into this workspace |
+
+**Documents that give too much away** (correspondence, identifiers, strategy, finance, security findings) go to `../private.diyaccounting.co.uk/`, never into this public repository or loose at the workspace root.
 
 **Each subdirectory has a `CLAUDE.md`** with project-specific instructions — always read it before working in that project.
 

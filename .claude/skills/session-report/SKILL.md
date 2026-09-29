@@ -1,13 +1,13 @@
 ---
 name: session-report
-description: Write the session's report as REPORT_SESSION_SUBMIT_<id>_<date>.md at the workspace root (~/projects/diy-accounting-limited/) — what the session landed, the mechanisms that made it efficient, where it lost time or money, and the improvements it suggests, each with its value, ranked most impactful first — from measured figures (git, GitHub Actions job minutes, agent token counts, the deploy runs, the transcript), never from memory. Invoke when the operator asks for a session report, an account of the session, or "how did this session do".
+description: Write the session's report as REPORT_SESSION_SUBMIT_<id>_<date>.md in the private repository's sessions/ folder (~/projects/diy-accounting-limited/private.diyaccounting.co.uk/sessions/) — what the session landed, the mechanisms that made it efficient, where it lost time or money, and the improvements it suggests, each with its value, ranked most impactful first — from measured figures (git, GitHub Actions job minutes, agent token counts, the deploy runs, the transcript), never from memory. Invoke when the operator asks for a session report, an account of the session, or "how did this session do".
 ---
 <!-- SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0 -->
 <!-- Copyright (C) 2006-2026 DIY Accounting Limited -->
 
 # session-report
 
-One file per session, at the workspace root (`~/projects/diy-accounting-limited/`, the repository's parent, which is not a git repository): `REPORT_SESSION_SUBMIT_<id>_<YYYY-MM-DD>.md`. It leads with the
+One file per session, in `../private.diyaccounting.co.uk/sessions/` (the private repository beside this one): `REPORT_SESSION_SUBMIT_<id>_<YYYY-MM-DD>.md`. It leads with the
 result and the mechanisms that produced it, then the losses, each loss tied to a suggested
 improvement and its value. Every figure in it is measured in this session; nothing is recalled.
 
@@ -69,7 +69,7 @@ nothing; say so and give the private-rate figure beside it.
 **AWS.** Count the deploys (`gh run list --workflow deploy.yml` and `deploy-environment.yml`, by
 environment), the ci sets created and how long each stood (`SelfDestructStack` creation to
 deletion, from CloudFormation), and any prod set left standing beside the live one (`$35.28` a
-month each, `../developers/submit/archive/PLAN_COST_OPTIMISATION.md`). Every ci set costs its hours of
+month each, `../private.diyaccounting.co.uk/engineering/submit/archive/PLAN_COST_OPTIMISATION.md`). Every ci set costs its hours of
 Lambda, DynamoDB, CloudFront and Cognito; name the source for any figure. The workflows make no
 metered LLM call; say so if that is still true.
 
@@ -154,9 +154,8 @@ pre-authorises the command. The operator picks which suggestions become rows.
 
 ## Write-back
 
-Prettier the report alone (`npx prettier --write ../REPORT_SESSION_SUBMIT_<id>_<date>.md` from the repository; never reformat
-`NEXT.md`) and keep the licence header comment the other reports carry. The report is not committed: the workspace root
-is outside every repository. Commit any anchor files it refreshed as a docs-only commit to `main` (a refreshed anchor file
+Prettier the report alone (`npx prettier --write ../private.diyaccounting.co.uk/sessions/REPORT_SESSION_SUBMIT_<id>_<date>.md` from the repository; never reformat
+`NEXT.md`) and keep the licence header comment the other reports carry. Commit the report and push it in the private repository (`git -C ../private.diyaccounting.co.uk add sessions/<file>`, commit, push), never left loose. Commit any anchor files it refreshed as a docs-only commit to `main` (a refreshed anchor file
 is also copied to the other repository's `anchors/` and committed there), and push. Then say, in the
 reply: the file name and the result line, and end the reply with the ranked suggestions and their
 values as its last block, so the operator's choice sits where they stop reading.

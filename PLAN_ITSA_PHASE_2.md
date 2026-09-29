@@ -1032,8 +1032,8 @@ The evidence HMRC asks for, and where it already exists:
 | Evidence | Where |
 |---|---|
 | Fraud prevention headers, validated | `_developers/hmrc/ITSA_SPIKE.md` records a clean validator run, one warning for a header the sandbox test user cannot supply |
-| A completed developer checklist | `_developers/hmrc/hmrc_questionnaire_1_software_developer_checklist_diy_accounting_limited_v2.md`, from the VAT approval, needs an ITSA pass |
-| WCAG 2.1 AA evidence | `_developers/hmrc/hmrc_questionnaire_2_WCAG_2.1_AA_diy_accounting_limited_v2.md` and `_developers/hmrc/WCAG_2.2_AA_EVIDENCE.md` |
+| A completed developer checklist | `../private.diyaccounting.co.uk/hmrc/questionnaires/hmrc_questionnaire_1_software_developer_checklist_diy_accounting_limited_v2.md`, from the VAT approval, needs an ITSA pass |
+| WCAG 2.1 AA evidence | `../private.diyaccounting.co.uk/hmrc/questionnaires/hmrc_questionnaire_2_WCAG_2.1_AA_diy_accounting_limited_v2.md` and `../private.diyaccounting.co.uk/hmrc/itsa/WCAG_2.2_AA_EVIDENCE.md` |
 | Endpoint test logs | The behaviour suites, run against the ci deployment with the sandbox test user |
 
 What a workflow can do: assemble the checklist answers from the repository, run the sandbox
@@ -1049,7 +1049,7 @@ question about whether a production window opens for the 2027-28 tax year. Addre
 
 Twenty-two tracks. Each is one sub-agent's work. The ten endpoint tracks share a spine of files
 every new Lambda has to touch, so they hold that spine one at a time, in order, each rebasing on
-the previous merge. That is the pattern `../developers/submit/archive/PLAN_COMPANIES_HOUSE_REST_FILING.md` used for
+the previous merge. That is the pattern `../private.diyaccounting.co.uk/engineering/submit/archive/PLAN_COMPANIES_HOUSE_REST_FILING.md` used for
 `SubmitSharedNames.java`, and it works here for the same reason.
 
 The shared spine: `infra/main/java/co/uk/diyaccounting/submit/SubmitSharedNames.java`,
@@ -1279,7 +1279,7 @@ Waits on T8, on T19 for the cumulative page shape, and on `PLAN_SUBMISSION_MCP.m
 
 ### T10. The recognition pack (Haiku to assemble, operator to send)
 
-Owns `_developers/hmrc/ITSA_PRODUCTION_APPROVALS_CHECKLIST.md`, an ITSA pass over the two
+Owns `../private.diyaccounting.co.uk/hmrc/itsa/ITSA_PRODUCTION_APPROVALS_CHECKLIST.md`, an ITSA pass over the two
 questionnaires, and the two draft emails.
 
 One application covers both approval stages (D3), so the checklist answers for every API in
@@ -1639,7 +1639,7 @@ T22's service functions fetch.
   words, before any HMRC call happens.
 - The declaration page names a business whose calculation shows a loss with no claim recorded
   against it, above the tick rather than after it.
-- The checklist in `_developers/hmrc/ITSA_PRODUCTION_APPROVALS_CHECKLIST.md` answers for all
+- The checklist in `../private.diyaccounting.co.uk/hmrc/itsa/ITSA_PRODUCTION_APPROVALS_CHECKLIST.md` answers for all
   nine APIs in the minimum functionality standards, each with a working endpoint behind it.
 - An async worker retry of a quarterly update spends no second token.
 - `taxCalculation.html` shows the disclaimer above the figures with the page's stylesheet
@@ -1758,8 +1758,8 @@ Tell HMRC's SDS team the licence changed. One email from antony@diyaccounting.co
 ## Sources
 
 - `BACKLOG.md` rows 10 and 11. `NEXT.md` O11 and B11.T10.
-- `_developers/hmrc/ITSA_SPIKE.md`, `_developers/hmrc/ITSA_MINIMUM_FUNCTIONALITY_STANDARDS.md`.
-- `PLAN_SUBMISSION_MCP.md`, `../developers/submit/archive/PLAN_COMPANIES_HOUSE_REST_FILING.md`.
+- `_developers/hmrc/ITSA_SPIKE.md`, `../private.diyaccounting.co.uk/hmrc/itsa/ITSA_MINIMUM_FUNCTIONALITY_STANDARDS.md`.
+- `PLAN_SUBMISSION_MCP.md`, `../private.diyaccounting.co.uk/engineering/submit/archive/PLAN_COMPANIES_HOUSE_REST_FILING.md`.
 - Making Tax Digital for Income Tax end-to-end service guide, "How to integrate with HMRC APIs":
   <https://developer.service.hmrc.gov.uk/guides/income-tax-mtd-end-to-end-service-guide/documentation/how-to-integrate.html>
 - Individual Losses (MTD) 7.0 and Individuals Tax Liability Adjustments (MTD) 1.0, whose

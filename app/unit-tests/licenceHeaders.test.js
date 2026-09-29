@@ -47,7 +47,6 @@ const EXCLUDED_FILES = new Set([
   "mvnw",
   "mvnw.cmd",
   "web/public/lib/qrcode.min.js",
-  "../developers/submit/backlog/battery-pack/LICENSE",
 ]);
 
 function isExcluded(path) {
