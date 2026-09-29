@@ -115,11 +115,31 @@ read on.
    code that could not be deployed in time; an agent that ends its turn on a long foreground
    build; a scheduled workflow colliding with a deploy's probes.
 5. **Placement**: where the session sits on each efficiency against published anchors, with the
-   anchors cited and the scales labelled as constructed. Do a web search for anchors dated within
-   the last three months; do not reuse last report's numbers.
+   anchors cited and the scales labelled as constructed. Anchors come from `anchors/` in this
+   skill's directory (see Anchors below), never from the last report's text.
 6. **Suggested improvements**: one line each, ranked most impactful first: what to change, its
    value (the measured loss it removes, in the losses table's unit), and the board row that already
    covers it, if one does.
+
+
+## Anchors
+
+`anchors/` beside this file holds one file per source (a site, a report, a price list), each with
+front matter: `source`, `url`, `retrieved` (the UTC date the facts were read), `query` (the search
+that found it), `efficiencies` (the report rows it anchors) and `read` (`page` when the page was
+read, `search-summary` when only a search engine's summary was). The body lists the facts, one per
+line, as the source states them.
+
+**Maximum age: 30 days.** For each efficiency the Placement table needs, use the anchor files whose
+`retrieved` date is within 30 days of today. When an efficiency has none, or all of its files are
+older, run a fresh web search for it (anchors published within the last three months), then write
+or overwrite that source's file with today's `retrieved` date and the query used; a source whose
+new search finds nothing current is left as it is, and the report names it as stale. Prefer
+reading the page over the search summary, and set `read: page` when you do. Commit the changed
+anchor files with the report.
+
+The same folder, with the same files and rule, lives in both `submit.diyaccounting.co.uk` and
+`spreadsheets.diyaccounting.co.uk`; a refresh in one is copied to the other in the same session.
 
 ## The suggested improvements
 
@@ -136,7 +156,7 @@ pre-authorises the command. The operator picks which suggestions become rows.
 
 Prettier the report alone (`npx prettier --write REPORT_SESSION_*.md`; never reformat
 `NEXT.md`), run `npx vitest run app/unit-tests/licenceHeaders.test.js` (the report needs the
-header comment), commit the report alone as a docs-only commit to `main`, and push. Then say, in the
+header comment), commit the report and any anchor files it refreshed as a docs-only commit to `main` (a refreshed anchor file is also copied to the other repository's `anchors/` and committed there), and push. Then say, in the
 reply: the file name and the result line, and end the reply with the ranked suggestions and their
 values as its last block, so the operator's choice sits where they stop reading.
 
