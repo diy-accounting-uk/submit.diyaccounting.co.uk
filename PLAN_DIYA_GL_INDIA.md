@@ -41,6 +41,13 @@ then what would be the attractive pricing model. Check in on PLAN_DIYA_GL_HOME.m
 on the UK's pricing model. Also slightly different serendipitus branding [the :diya_lamp: emoji, a
 clay oil lamp, U+1FAD4 🪔]"
 
+(2026-09-29) "Please consider a variation of the india plan where we don’t offer any backend. There
+would be browser storage and the user’s own google drive, no backend services, no government
+integration, just referral links to companies like tide who offer services in india, if possible
+a sync by api with client side auth to support accounts in diy, or we could just import one way.
+The idea is near zero cost, no backend, low friction to use another provider, ideally on a path
+that gets us a referral fee."
+
 Readings: "diya-git schema" is the DIYA-GL schema. "news things" is "new things". "uk in and core"
 is three calc namespaces: `uk`, `in`, `core`.
 
@@ -570,6 +577,75 @@ Risks:
    company (S56). A public search of the IP India register for DIYA and DIYA-GL in classes 9
    and 42 has not been done (H-IN-3).
 
+## Variant: no backend, referral-funded
+
+The alternative to the paid tier above, for the operator to choose (open decision 3). The engine
+and product work (IN-1 to IN-17) is the same in both; what differs is storage, revenue and data in.
+
+| Part | Paid tier (above) | No-backend variant |
+|---|---|---|
+| Storage | device, 24h sandbox, DIYA cloud store on S3 | device (the IndexedDB autosave) and the user's own Google Drive through the browser-only `drive.file` client LP-24c makes free; no DIYA storage, no sign-in to DIYA |
+| Revenue | ₹499 a year bundle, after an OIDAR GST registration | referral commission from Indian providers, paid to the UK company; nothing sold in India |
+| Government | none (views to file by hand) | none: the ITR-4, GST and TDS views are what the user or their CA files |
+| Bank data | not planned | one-way import of files the user downloads: the bank statement, GSTR-2B, Form 26AS and AIS |
+| Leaving | the open book format | the open book format, plus an export in the shape the referred provider imports |
+| Fixed cost | the OIDAR registration and an authorised representative (H-IN-1) | the `.in` domains (H-IN-2) and static hosting; no India registration if the tax points below hold |
+
+### Why a sync is file import
+
+No Indian bank or aggregator offers an API a browser can call without a server (VR3):
+
+- The Account Aggregator framework hands data only to a regulated Financial Information User,
+  which runs a backend with consent artefacts and a seven-year audit trail (VR3).
+- ICICI's API banking needs onboarding and a whitelisted server IP (VR4).
+- Razorpay's and RazorpayX's secret key must stay server-side (VR5).
+- No public-client (PKCE) OAuth offering from an Indian bank was found.
+
+So data comes in one way, as files the user downloads:
+
+| Source | Formats | Import |
+|---|---|---|
+| Bank statement: SBI, HDFC, ICICI, Axis | CSV or Excel from net banking; many users only have PDF (VR6) | CSV and Excel parsed in the page; a PDF parser is a later row |
+| GSTR-2B, the purchase-side GST credit | JSON or Excel, one month per file (VR7) | the JSON gives the purchase lines with their ITC |
+| Form 26AS | PDF, Excel or text, password-protected (VR8) | Excel gives the TDS receivable ledger |
+| AIS | PDF or JSON (VR8) | JSON gives the TDS receivable ledger |
+
+No common column layout across banks was found. Each bank's importer is written from a real
+statement, with a reconciliation test.
+
+### Referral partners
+
+| Partner | Fit | Terms found | Open for a UK publisher |
+|---|---|---|---|
+| Zoho Books | accounting; the natural "move to a provider" step | 15% of first-year revenue, rising to 20%; 90-day cookie; $25 minimum payout (VR9) | yes: global sign-up, USD payout |
+| Razorpay Partner Program | payments for the same sole proprietors | up to ₹500 a referral plus a recurring share (VR10) | sign-up open to individuals; payout to a non-Indian entity unconfirmed |
+| Vyapar | billing and GST invoicing, the closest product | up to 50% revenue share plus renewals, paid weekly (VR11) | India-framed; foreign payout unconfirmed |
+| Tide India | business account, UPI, GST invoicing, Udyam (VR1) | one global CPA programme on Impact; no India terms found (VR2) | unconfirmed; ask Tide |
+
+Indian programmes often assume a PAN and an Indian bank account for payout (VR12). Each
+unconfirmed row is settled by asking the partner (H-IN-6).
+
+### Tax and regulation on referral income
+
+- Commission paid to a foreign company for services rendered wholly outside India, with no
+  permanent establishment there, is not chargeable in India and draws no section 195
+  withholding (ITAT rulings, VR13). The payer usually asks for a no-PE declaration and files
+  Form 15CA/15CB.
+- GST falls on the Indian payer under reverse charge, since the payer imports a service from
+  a UK firm. OIDAR covers a foreign supplier selling to Indian consumers, the opposite
+  direction. No source states this directly, so a CA confirms it (H-IN-7).
+- The equalisation levy ended on 1 April 2025 (S51).
+- Lending is out of scope. A page that links out sits outside the RBI Digital Lending
+  Directions 2025 as a lending service provider. A page that took loan applications or
+  influenced lending decisions would not (VR14), so a referral here is to accounts, payments
+  and software only.
+
+### Rows the variant changes
+
+| Removes | Adds |
+|---|---|
+| IN-18 (the ₹499 bundle), IN-19 (the rupee tier strip), H-IN-1 (the OIDAR quote), H-IN-5 (Stripe UPI) | IN-23 statement importers (CSV and Excel, one bank per commit, from a real statement); IN-24 GSTR-2B JSON and AIS JSON importers; IN-25 the referral strip on the India page, one partner per card, tagged links, a disclosure line, and GA4 `referral_clicked` with a `jurisdiction` dimension; IN-26 the export to the chosen provider's import format (Zoho Books first); H-IN-6 join the programmes and confirm the payout path for a UK company (Zoho first); H-IN-7 a CA's opinion on the tax points above |
+
 ## Decisions taken (operator, 2026-09-19)
 
 1. Price shape: ₹499 a year is the India bundle's only price.
@@ -588,6 +664,10 @@ Risks:
    the proof and a CA review as the oracle (recommended for phase 2), or an Indian Excel
    template family so the LibreOffice reconciliation method applies (a large body of work that
    would follow the Rust port's oracle instead).
+3. Revenue model. Alternatives: the paid tier (₹499 a year through Submit, an OIDAR registration
+   first), or the no-backend variant (device and Google Drive storage, referral commission,
+   one-way file import). The variant is recommended: its fixed cost is the domains, and it
+   earns before any India registration.
 
 ## Task list
 
@@ -833,3 +913,20 @@ Web, all accessed 2026-09-18:
 - S54 NIXI foreign registrants and KYC: https://www.registry.in/about-registry and https://domainindia.com/support/kb/comprehensive-guide-to-kyc-and-e-kyc-requirements-for-in-and-nixi-managed-domain
 - S55 "Diya" marks on the Indian register listings: https://www.startupwala.com/trademarks-registration/search-DELHI-DIYA-GOLD-5891994 and https://www.quickcompany.in/trademarks/3262270-diya-outdoor-media
 - S56 Indian trade mark fees and Madrid: https://www.intepat.com/blog/trademark-registration-fees-india and https://www.intepat.com/blog/madrid-protocol
+
+Variant sources, read 2026-09-29:
+
+- VR1 Tide India's business account: https://www.tide.co/en-IN/ and https://ffnews.com/newsarticle/tide-launches-app-and-business-account-in-india/
+- VR2 Tide's affiliate programme: https://www.tide.co/affiliate-programme/ and https://www.tide.co/support/joining/affiliate-programme/who-can-become-a-tide-affiliate/
+- VR3 Account Aggregator FIU requirements: https://hyperverge.co/blog/account-aggregator-framework-rbi/ and https://taxguru.in/rbi/account-aggregator-framework-complete-application-to-compliance-guide-fintech-founders-nbfc-professionals.html
+- VR4 ICICI API banking onboarding: https://developer.icicibank.com/ and https://www.icici.bank.in/business-banking/cms/corporate-api-suite
+- VR5 Razorpay key handling: https://razorpay.com/docs/api/authentication/?preferred-country=IN
+- VR6 Indian bank statement downloads: https://www.banlxlai.com/blog/download-bank-statement-sbi-hdfc-icici-axis
+- VR7 GSTR-2B downloads: https://www.taxscan.in/know-how-to-download-excel-json-file-of-gstr-2b-from-gst-portal/123323
+- VR8 Form 26AS and AIS downloads: https://www.incometaxindia.gov.in/tax-services/online-26as-traces and https://bachatt.app/blog/how-to-download-form-26as-and-ais-from-income-tax-portal
+- VR9 Zoho affiliate programme: https://www.zoho.com/affiliate/
+- VR10 Razorpay Partner Program: https://razorpay.com/partners/
+- VR11 Vyapar partner programme: https://vyaparapp.in/distributor/create
+- VR12 Indian affiliate payouts and PAN: https://www.buildersociety.com/threads/how-to-receive-amazon-in-affiliate-payments-without-indian-bank-account.3486/
+- VR13 Section 195 and commission to foreign agents: https://www.taxscan.in/top-stories/no-tds-us-195-on-commission-paid-to-foreign-agent-for-services-rendered-outside-india-itat-1448977 and https://www.jurishour.in/direct-tax/export-commission-foreign-agents-services-india-tds/
+- VR14 RBI Digital Lending Directions 2025: https://www.lawrbit.com/article/reserve-bank-of-india-digital-lending-directions-2025/
