@@ -794,7 +794,7 @@ For specific topics, see:
 | Accessibility/penetration report | `REPORT_ACCESSIBILITY_PENETRATION.md` |
 | Security review report | `../developers/submit/archive/REPORT_SECURITY_REVIEW.md` |
 | HMRC fraud prevention | `hmrc-fraud-prevention.md` |
-| HMRC MTD approval submission | `_developers/hmrc/HMRC_MTD_API_APPROVAL_SUBMISSION.md` |
+| HMRC MTD approval submission | `../_developers/hmrc/HMRC_MTD_API_APPROVAL_SUBMISSION.md` |
 | Salted hash implementation | `../developers/submit/archive/SALTED_HASH_IMPLEMENTATION.md` |
 | Salt secret recovery | `../developers/submit/archive/SALT_SECRET_RECOVERY.md` |
 | CloudFront fix history | `../developers/submit/archive/CLOUDFRONT_FRAUD_HEADERS_FIX.md` |

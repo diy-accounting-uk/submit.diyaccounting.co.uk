@@ -8,7 +8,7 @@ description: Say whether DIY Accounting Submit is ready to send HMRC the Income 
 
 # itsa-readiness
 
-Answer one question: can the recognition email (`_developers/hmrc/DRAFT_EMAIL_ITSA_RECOGNITION.md`)
+Answer one question: can the recognition email (`../_developers/hmrc/DRAFT_EMAIL_ITSA_RECOGNITION.md`)
 go to `SDSTeam@hmrc.gov.uk` now, or on the day the operator names? Check every item below against
 the files and the code on `origin/main`. Report what you checked, not what a file claims.
 
