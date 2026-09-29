@@ -7,7 +7,7 @@
 // directory per test and removed afterwards, the same way book-tools.test.js
 // reaches its own example books.
 
-import { copyFileSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { copyFileSync, existsSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
@@ -15,9 +15,15 @@ import { parse as parseToml } from "smol-toml";
 
 import { applyCellWrites } from "@diy-accounting-uk/diya-gl/dist/app/lib/spreadsheet-runner.js";
 
-import { validateLines } from "@diy-accounting-uk/diya-gl/dist/app/lib/diya-gl-schema.js";
+import { validateBook, validateLines } from "@diy-accounting-uk/diya-gl/dist/app/lib/diya-gl-schema.js";
 
-import { bookFromWorkbookSet, openingBankBalanceLines, openingJournalLines, toToml } from "../lib/finance/book-from-workbook.js";
+import {
+  bookFromWorkbookSet,
+  openingBalancesFromClosingSet,
+  openingBankBalanceLines,
+  openingJournalLines,
+  toToml,
+} from "../lib/finance/book-from-workbook.js";
 
 // This workspace's sibling checkout of the spreadsheets repository; never
 // copied into this repository. Currentaccount.xlsx carries no line data
@@ -220,5 +226,44 @@ describe("toToml", () => {
     const parsed = parseToml(toml);
     expect(parsed.entityInformation.organizationIdentifier).toBe("Precision Code Ltd");
     expect(parsed.openingBalances.tradeCreditors).toBe(book.openingBalances.tradeCreditors);
+  });
+});
+
+const CLOSING_SET_2025_2026 = "/Users/antony/projects/diy-accounting-limited/drive/DIY Accounting Limited/finance/2025-2026 accounts/";
+
+describe.skipIf(!existsSync(CLOSING_SET_2025_2026))("openingBalancesFromClosingSet", () => {
+  it("carries the 2025-2026 closing balances into a balanced, schema-valid opening journal", async () => {
+    const openingBalances = await openingBalancesFromClosingSet({ dir: CLOSING_SET_2025_2026 });
+    const seeded = await bookFromWorkbookSet({ dir: scratch });
+    const merged = { ...seeded, documentInfo: { ...seeded.documentInfo, periodCoveredStart: "2026-04-01" }, openingBalances };
+
+    expect(validateBook(merged).errors).toEqual([]);
+
+    const { book: declared, lines } = openingJournalLines(merged);
+    const bankLines = openingBankBalanceLines(declared);
+    const signed = (line) => (line.debitCreditCode === "D" ? line.amount : -line.amount);
+    const residual = Math.round(lines.reduce((sum, line) => sum + signed(line), 0) * 100) / 100;
+    expect(Math.abs(residual)).toBe(0);
+    expect(bankLines).toHaveLength(4);
+  });
+
+  it("posts the closing debit Trade Creditors balance to tradeDebtors", async () => {
+    const openingBalances = await openingBalancesFromClosingSet({ dir: CLOSING_SET_2025_2026 });
+
+    expect(openingBalances.tradeDebtors).toBeCloseTo(0.02, 10);
+    expect(openingBalances.tradeCreditors).toBeUndefined();
+    expect(openingBalances).toEqual({
+      corporationTaxDue: 745.49,
+      dividendsDue: 660,
+      directorsLoan: -443.29,
+      shareCapital: 100,
+      retainedEarnings: 15.9,
+      tradeDebtors: 0.02,
+      bankAccounts: { 1200: 614.52, 1210: 247.01, 1220: 80.08, 1230: 136.47 },
+    });
+  });
+
+  it("requires a dir", async () => {
+    await expect(openingBalancesFromClosingSet()).rejects.toThrow(/requires a dir/);
   });
 });

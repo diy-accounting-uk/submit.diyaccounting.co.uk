@@ -39,7 +39,7 @@ The parsers live in `mcp/lib/finance/` (run `npm ci` in `mcp/` first):
 
 | Source | Module | Call |
 |---|---|---|
-| Opening balances and chart of accounts | `book-from-workbook.js` | `bookFromWorkbookSet` over the prior year's workbook set; `openingJournalLines(book)` and `openingBankBalanceLines(book)` to turn its `openingBalances` into the lines the engine reads |
+| Opening balances and chart of accounts | `book-from-workbook.js` | `openingBalancesFromClosingSet({ dir })` over the prior year's closing set returns `[openingBalances]` from `TrialBalance!EJ` (a debit Trade Creditors balance lands in `tradeDebtors`); `bookFromWorkbookSet` over the prior year's workbook set; `openingJournalLines(book)` and `openingBankBalanceLines(book)` to turn its `openingBalances` into the lines the engine reads |
 | NatWest | `bank-lines.js` | `bankLinesFromCsv(text, { accountMainID, labels })` returns `{ lines, unlabelled }`; `closingBalance(text)` |
 | Stripe | `stripe-lines.js` | `stripeLinesFromTransactions(transactions, { ..., labels })` returns `{ lines, unlabelled }`; `stripePayoutLines`, `reconcileStripeMonth` |
 | PayPal | `paypal-statement-lines.js` | `paypalLinesFromStatementPdf(transactionsPdf, { ...accounts, statementPdfPath, labels })` returns `{ lines, unlabelled }`; `reconcilePaypalMonth({ transactionsText, statementText })`; needs `pdftotext` (poppler) |
