@@ -11,6 +11,7 @@ import {
   assertClientIdMatches,
   assertBrandMatches,
   assertScopesGranted,
+  resolveProjectNumber,
   isStackOutsideThisAccount,
 } from "../../../infra/google/gcp/google-oauth-assert.js";
 
@@ -155,5 +156,41 @@ describe("isStackOutsideThisAccount", () => {
       false,
     );
     expect(isStackOutsideThisAccount(new Error("AccessDenied"))).toBe(false);
+  });
+});
+
+describe("resolveProjectNumber", () => {
+  test("uses the recorded project_number while no id exists", () => {
+    expect(resolveProjectNumber({ purpose: "drive_browser", id: null, projectNumber: "670010122633" })).toBe("670010122633");
+  });
+  test("derives it from the id and accepts an agreeing project_number", () => {
+    const id = "670010122633-abc.apps.googleusercontent.com";
+    expect(resolveProjectNumber({ purpose: "drive_browser", id, projectNumber: "670010122633" })).toBe("670010122633");
+  });
+  test("rejects an id from another project than project_number", () => {
+    const id = "111-abc.apps.googleusercontent.com";
+    expect(() => resolveProjectNumber({ purpose: "drive_browser", id, projectNumber: "670010122633" })).toThrow(/project 111/);
+  });
+  test("answers null when neither is recorded", () => {
+    expect(resolveProjectNumber({ purpose: "youtube_upload", id: null, projectNumber: null })).toBeNull();
+  });
+});
+
+describe("oauth.toml drive_browser entry", () => {
+  test("is a web client with no id yet, in the sign-in client's project, with the ci set origins", async () => {
+    const fs = await import("node:fs");
+    const { clients } = parseConfig(fs.readFileSync("infra/google/gcp/oauth.toml", "utf-8"));
+    const drive = clients.find((client) => client.purpose === "drive_browser");
+    const signIn = clients.find((client) => client.purpose === "sign_in");
+    expect(drive.applicationType).toBe("web");
+    expect(drive.projectNumber).toBe(deriveProjectNumber(signIn.id));
+    expect(drive.scopes).toEqual(["https://www.googleapis.com/auth/drive.file"]);
+    expect(drive.javascriptOrigins).toEqual(
+      expect.arrayContaining([
+        "https://ci-set1.submit.diyaccounting.co.uk",
+        "https://ci-set2.submit.diyaccounting.co.uk",
+        "https://ci.diya-gl.co.uk",
+      ]),
+    );
   });
 });

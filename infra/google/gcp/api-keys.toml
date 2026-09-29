@@ -1,0 +1,29 @@
+# SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0
+# Copyright (C) 2006-2026 DIY Accounting Limited
+
+# Google API keys as code. infra/google/gcp/google-api-keys.js reads this file, lists the project's
+# live keys through the API Keys API, and creates or updates each key declared here so its
+# restrictions match. The key string is never printed or committed: the script sets it as the
+# GitHub repository variable named by `github_variable`, whose value the browser code reads.
+# A Picker key is public by design in the page that uses it, and its restrictions are what
+# protect it, so a key with no referrer or API restriction is refused.
+
+[project]
+id = "diy-accounting-submit"
+number = "670010122633"
+
+# The browser key for the Google Picker on the Submit activity pages and the diya-gl pages.
+[[key]]
+id = "drive-picker-browser"
+display_name = "Drive Picker (browser)"
+github_variable = "GOOGLE_DRIVE_PICKER_API_KEY"
+api_services = ["drive.googleapis.com", "picker.googleapis.com"]
+allowed_referrers = [
+  "https://submit.diyaccounting.co.uk/*",
+  "https://ci-submit.diyaccounting.co.uk/*",
+  "https://ci-set1.submit.diyaccounting.co.uk/*",
+  "https://ci-set2.submit.diyaccounting.co.uk/*",
+  "https://diya-gl.co.uk/*",
+  "https://ci.diya-gl.co.uk/*",
+  "https://docs.google.com/*",
+]

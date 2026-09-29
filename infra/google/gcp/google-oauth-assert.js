@@ -4,7 +4,7 @@
 
 // infra/google/gcp/google-oauth-assert.js
 //
-// Checks infra/google/gcp/oauth.toml's two Google OAuth clients against everything about them a
+// Checks infra/google/gcp/oauth.toml's Google OAuth clients against everything about them a
 // live API can actually confirm: each client's Google Auth Platform brand (where the file
 // declares one), the sign-in client id against Cognito's own copy of it in AWS, the YouTube
 // client id against the Secrets Manager secret it's read from (once the file records one), and
@@ -50,7 +50,9 @@ function normalizeClient(entry) {
   const brand = entry.brand ? { appName: entry.brand.app_name, audience: entry.brand.audience } : null;
   return {
     purpose: entry.purpose,
-    id: entry.id ?? null,
+    id: entry.id || null,
+    projectNumber: entry.project_number ? String(entry.project_number) : null,
+    javascriptOrigins: entry.javascript_origins ?? [],
     applicationType: entry.application_type ?? null,
     scopes: entry.scopes ?? [],
     redirectUris: entry.redirect_uris ?? [],
@@ -96,6 +98,21 @@ export function deriveProjectNumber(clientId) {
     throw new Error(`Could not derive a project number from client id "${clientId}" (expected "<project number>-...")`);
   }
   return projectNumber;
+}
+
+/**
+ * The project whose brand a client is checked against: the one in its recorded id, or its
+ * recorded project_number while no id exists yet. A recorded id and project_number must agree.
+ *
+ * @param {{purpose: string, id: string|null, projectNumber: string|null}} client
+ * @returns {string|null}
+ */
+export function resolveProjectNumber(client) {
+  const fromId = client.id ? deriveProjectNumber(client.id) : null;
+  if (fromId && client.projectNumber && fromId !== client.projectNumber) {
+    throw new Error(`${client.purpose}: id belongs to project ${fromId} but oauth.toml records project_number ${client.projectNumber}`);
+  }
+  return fromId ?? client.projectNumber;
 }
 
 /**
@@ -195,11 +212,11 @@ async function fetchGrantedScopes(accessToken) {
 async function checkBrand(client, googleToken, failures) {
   if (!client.brand) return;
   try {
-    if (!client.id) {
-      console.log("  brand: skipped (no id recorded to derive the project from)");
+    const projectNumber = resolveProjectNumber(client);
+    if (!projectNumber) {
+      console.log("  brand: skipped (no id or project_number recorded to name the project)");
       return;
     }
-    const projectNumber = deriveProjectNumber(client.id);
     const liveBrand = await fetchBrand(googleToken, projectNumber);
     assertBrandMatches(client.purpose, client.brand, liveBrand);
     console.log(`  brand: matches (${liveBrand.applicationTitle}, ${liveBrand.orgInternalOnly ? "internal" : "external"})`);
@@ -263,6 +280,11 @@ async function checkYoutubeClient(client, failures) {
   }
 }
 
+function reportDriveClient(client) {
+  if (client.purpose !== "drive_browser") return;
+  console.log(client.id ? `  client id recorded (${client.id})` : "  client id not recorded yet; scripts/drive-client-record.js writes it");
+}
+
 export async function main() {
   const config = loadConfigFromRoot();
   assertFederatedCredentials();
@@ -275,6 +297,7 @@ export async function main() {
     await checkBrand(client, googleToken, failures);
     await checkSignInClient(client, failures);
     await checkYoutubeClient(client, failures);
+    reportDriveClient(client);
   }
 
   if (failures.length > 0) {
