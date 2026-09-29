@@ -89,7 +89,7 @@ describe("pollSubmission", () => {
     mockSend.mockImplementation(async (cmd) => {
       const lib = await import("@aws-sdk/lib-dynamodb");
       if (cmd instanceof lib.GetCommand) {
-        return {};
+        return { Item: { requestId: cmd.input.Key.requestId, status: "pending" } };
       }
       return {};
     });
@@ -126,6 +126,16 @@ describe("pollSubmission", () => {
       gatewayTest: false,
     });
     expect(mockPostToGateway).toHaveBeenCalledWith("<GovTalkMessage>status request</GovTalkMessage>", {});
+  });
+
+  test("returns notFound without calling the gateway when the user has no request for the submission", async () => {
+    mockSend.mockImplementation(async () => ({}));
+
+    const result = await pollSubmission({ userSub: "user-2", submissionNumber: "00001A", kind: "confirmation-statement" });
+
+    expect(result).toEqual({ notFound: true, submissionNumber: "00001A" });
+    expect(mockPostToGateway).not.toHaveBeenCalled();
+    expect(mockEventBridgeSend).not.toHaveBeenCalled();
   });
 
   test("forwards a Gov-Test-Scenario to the gateway call", async () => {

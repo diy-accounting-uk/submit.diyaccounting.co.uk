@@ -132,7 +132,7 @@ describe("companiesHouseAccountsGet ingestHandler", () => {
         return { Items: [], Count: 0 };
       }
       if (cmd instanceof lib.GetCommand) {
-        return {};
+        return { Item: { requestId: cmd.input.Key.requestId, status: "pending" } };
       }
       return {};
     });
@@ -163,6 +163,17 @@ describe("companiesHouseAccountsGet ingestHandler", () => {
       gatewayTest: false,
     });
     expect(mockPostToGateway).toHaveBeenCalledWith("<GovTalkMessage>status request</GovTalkMessage>", {});
+  });
+
+  test("returns 404 without polling the gateway when the caller has no request for the submission", async () => {
+    mockSend.mockImplementation(async (cmd) => {
+      const lib = await import("@aws-sdk/lib-dynamodb");
+      if (cmd instanceof lib.QueryCommand) return { Items: [], Count: 0 };
+      return {};
+    });
+    const response = await companiesHouseAccountsGetHandler(buildEvent());
+    expect(response.statusCode).toBe(404);
+    expect(mockPostToGateway).not.toHaveBeenCalled();
   });
 
   test("logs the redacted request and response bodies, never the presenter id or code", async () => {

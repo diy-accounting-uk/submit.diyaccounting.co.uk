@@ -10,6 +10,7 @@
 import {
   extractRequest,
   http200OkResponse,
+  http404NotFoundResponse,
   buildValidationError,
   http500ServerErrorResponse,
   getHeader,
@@ -81,6 +82,14 @@ export async function ingestHandler(event) {
     acceptedEvent: "companies-house-accounts-accepted",
     acceptedSummary: "Companies House micro-entity accounts accepted",
   });
+
+  if (result.notFound) {
+    return http404NotFoundResponse({
+      request,
+      headers: { ...responseHeaders },
+      message: "Submission not found",
+    });
+  }
 
   if (result.errors) {
     return http500ServerErrorResponse({

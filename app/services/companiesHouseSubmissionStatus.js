@@ -24,7 +24,8 @@ const logger = createLogger({ source: "app/services/companiesHouseSubmissionStat
 
 /**
  * Poll the Companies House XML Gateway for one submission's status and record the outcome: a
- * cached completed/failed async request short-circuits the gateway call; REJECT stores "failed";
+ * cached completed/failed async request short-circuits the gateway call; a submission with no
+ * request persisted for this user returns `{ notFound: true }` without calling the gateway; REJECT stores "failed";
  * ACCEPT writes a receipt, stores "completed" and publishes acceptedEvent; PENDING/PARKED leave
  * the request state as-is so the caller can keep polling.
  *
@@ -36,13 +37,18 @@ const logger = createLogger({ source: "app/services/companiesHouseSubmissionStat
  *   async request record only, so it can be told apart from another form in flight for this user
  * @param {string} input.acceptedEvent - the activityAlert event name published on ACCEPT
  * @param {string} input.acceptedSummary - its summary text
- * @returns {Promise<{data: object}|{errors: Array, submissionNumber: string}>}
+ * @returns {Promise<{data: object}|{errors: Array, submissionNumber: string}|{notFound: true, submissionNumber: string}>}
  */
 export async function pollSubmission({ userSub, submissionNumber, govTestScenario, kind, acceptedEvent, acceptedSummary }) {
   const asyncRequestsTableName = process.env.COMPANIES_HOUSE_ACCOUNTS_ASYNC_REQUESTS_TABLE_NAME;
   const persistedRequest = await getAsyncRequest(userSub, submissionNumber, asyncRequestsTableName);
 
-  if (persistedRequest?.status === "completed" || persistedRequest?.status === "failed") {
+  if (!persistedRequest) {
+    logger.warn({ message: "Companies House status poll for a submission this user did not make", submissionNumber });
+    return { notFound: true, submissionNumber };
+  }
+
+  if (persistedRequest.status === "completed" || persistedRequest.status === "failed") {
     return { data: persistedRequest.data };
   }
 
