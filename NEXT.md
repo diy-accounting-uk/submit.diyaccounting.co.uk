@@ -17,7 +17,7 @@ Haiku; the lowest tier that fits). Anything touching code goes through a `claude
 PR; the operator merges.
 
 **Prod runs deployment prod-afa6508** (dispatch 36621491788 of afa65083, 2026-09-29); main's deploy of PR #424 (8f10c301) replaces it.
-**ci**: `ci-set2` (last-known-good) stands, created 18:51 UTC 2026-09-29 (PR #421's branch deploy).
+**ci**: `ci-set1` (last-known-good, PR #424's branch deploy, created 20:47 UTC 2026-09-29) and `ci-set2` (created 18:51 UTC) stand; each self-destructs 4 hours after creation.
 
 Rows F-BS3 and LP-* change the spreadsheets repository (`../spreadsheets.diyaccounting.co.uk/`): their batch branches, PRs and CI run there, under that repository's `CLAUDE.md` and tests; their plans (`PLAN_DIYA_GL_LAUNCH.md`, `../PLAN_DIYA_GL_INDIA.md`, `PLAN_DIYACCOUNTING_BRAND.md`) are at this root. LP rows' briefs are in `PLAN_DIYA_GL_LAUNCH.md` under "Briefs"; `../PLAN_DIYA_GL_INDIA.md` carries its own board.
 
