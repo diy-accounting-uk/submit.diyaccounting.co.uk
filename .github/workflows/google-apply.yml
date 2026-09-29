@@ -138,6 +138,19 @@ jobs:
             node infra/google/gcp/google-roles-apply.js --apply 2>&1 | tee google-roles-apply.log
           fi
 
+      # The restricted Drive Picker key (infra/google/gcp/api-keys.toml). The key string goes only
+      # into a repository variable, never a log; a token that cannot manage variables yields a
+      # finding, not a failure.
+      - name: Run google-api-keys
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          if [ "$GOOGLE_APPLY" != "true" ]; then
+            node infra/google/gcp/google-api-keys.js 2>&1 | tee google-api-keys.log
+          else
+            node infra/google/gcp/google-api-keys.js --apply 2>&1 | tee google-api-keys.log
+          fi
+
       - name: Run gcp-billing-assert
         run: |
           if [ "$GOOGLE_APPLY" != "true" ]; then
@@ -186,7 +199,7 @@ jobs:
         run: |
           echo "# Google apply ($([ "$GOOGLE_APPLY" = "true" ] && echo apply || echo plan))" >> "$GITHUB_STEP_SUMMARY"
           echo "" >> "$GITHUB_STEP_SUMMARY"
-          for log in google-inventory.log gcp-enable-apis.log gcp-identity-sync.log google-roles-apply.log gcp-billing-assert.log ga4-sync.log ga4-bigquery-sync.log google-oauth-assert.log ads-sync.log; do
+          for log in google-inventory.log gcp-enable-apis.log gcp-identity-sync.log google-roles-apply.log google-api-keys.log gcp-billing-assert.log ga4-sync.log ga4-bigquery-sync.log google-oauth-assert.log ads-sync.log; do
             if [ -f "$log" ]; then
               echo "## $log" >> "$GITHUB_STEP_SUMMARY"
               echo '```' >> "$GITHUB_STEP_SUMMARY"

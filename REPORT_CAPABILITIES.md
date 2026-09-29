@@ -4070,8 +4070,8 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 #### DATA-40 Enable required Google Cloud APIs
 
 - **Use when:** a fresh GA4 project needs its required services enabled with no console click.
-- **Does:** gcp-enable-apis.js idempotently enables every service listed in project.toml's apis.services table on the GA4 project. It runs first in google-apply.yml so a fresh project needs no manual step.
-- **Run:** `node infra/google/gcp/gcp-enable-apis.js`; `node infra/google/gcp/gcp-enable-apis.js --apply`; `node infra/google/gcp/gcp-enable-apis.js --apply --project diyaccounting-ga4`
+- **Does:** gcp-enable-apis.js idempotently enables every service listed in project.toml's apis.services table on the GA4 project and each apis.other_projects entry on its own project. It runs first in google-apply.yml so a fresh project needs no manual step.
+- **Run:** `node infra/google/gcp/gcp-enable-apis.js`; `node infra/google/gcp/gcp-enable-apis.js --apply`; `node infra/google/gcp/gcp-enable-apis.js --apply --project diy-accounting-submit`
 - **Entry:** `infra/google/gcp/gcp-enable-apis.js:main`
 - **Files:** infra/google/gcp/gcp-enable-apis.js, app/unit-tests/scripts/gcpEnableApis.test.js
 - **Keywords:** enable gcp apis, idempotent enable, project.toml services, fresh project bootstrap, google-apply workflow
@@ -4110,10 +4110,10 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 #### DATA-44 Assert Google OAuth client configuration
 
 - **Use when:** the sign-in or YouTube OAuth client's live configuration must be checked against oauth.toml.
-- **Does:** google-oauth-assert.js checks oauth.toml's two declared OAuth clients against everything a live API can confirm. It checks each client's Auth Platform brand, its id against Cognito or Secrets Manager, and token scopes. It never writes anything.
+- **Does:** google-oauth-assert.js checks oauth.toml's declared OAuth clients (sign-in, YouTube upload, Drive browser) against everything a live API can confirm. It checks each client's Auth Platform brand, its id against Cognito or Secrets Manager, and token scopes. It never writes anything.
 - **Run:** `node infra/google/gcp/google-oauth-assert.js`
 - **Entry:** `infra/google/gcp/google-oauth-assert.js:main`
-- **Files:** infra/google/gcp/google-oauth-assert.js, app/unit-tests/scripts/googleOauthAssert.test.js, infra/google/gcp/oauth.toml
+- **Files:** infra/google/gcp/google-oauth-assert.js, app/unit-tests/scripts/googleOauthAssert.test.js, infra/google/gcp/oauth.toml, scripts/drive-client-record.js (writes the downloaded Drive browser client's id into oauth.toml), infra/google/gcp/google-api-keys.js (plans and applies infra/google/gcp/api-keys.toml, the restricted Drive Picker key)
 - **Keywords:** oauth client assert, auth platform brand, cognito client id, youtube client secret, refresh token scopes, read-only, oauth.toml
 - **Related:** DATA-46
 

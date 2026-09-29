@@ -5,13 +5,15 @@
 // infra/google/gcp/gcp-enable-apis.js
 //
 // Makes sure the Google APIs the analytics scripts and the YouTube quota project need, listed
-// in infra/google/gcp/project.toml's [apis].services, are enabled on the GA4 project, using the same
-// service account the scripts run as (it holds Owner there). Idempotent: an enabled service is
-// left alone. Runs first in google-apply.yml so a fresh project never needs a hand click in the
+// in infra/google/gcp/project.toml, are enabled on each project it names: [apis].services on the
+// GA4 project and each [[apis.other_projects]] entry on its own project, using the same service
+// account the scripts run as. Idempotent: an enabled service is left alone. Runs first in google-apply.yml so a fresh project never needs a hand click in the
 // console.
 //
 // Usage:
-//   node infra/google/gcp/gcp-enable-apis.js [--apply] [--project diyaccounting-ga4]
+//   node infra/google/gcp/gcp-enable-apis.js [--apply] [--project <id>]
+//
+// Without --project every project in project.toml is handled; with it, only that one.
 //
 // Credentials: application default credentials from google-github-actions/auth's federated
 // exchange.
@@ -40,13 +42,46 @@ export function parseConfig(tomlString) {
   return services.map(String);
 }
 
-export function loadConfigFromRoot() {
+/**
+ * Every project project.toml enables APIs on: the GA4 project from [apis].services, then each
+ * [[apis.other_projects]] entry.
+ *
+ * @param {string} tomlString
+ * @returns {{projectId: string, services: string[]}[]}
+ */
+export function parseTargets(tomlString) {
+  const parsed = TOML.parse(tomlString);
+  const others = (parsed.apis?.other_projects ?? []).map((entry) => {
+    if (!entry.project_id || !Array.isArray(entry.services) || entry.services.length === 0) {
+      throw new Error(`Invalid [[apis.other_projects]] entry: ${JSON.stringify(entry)}`);
+    }
+    return { projectId: entry.project_id, services: entry.services.map(String) };
+  });
+  return [{ projectId: DEFAULT_PROJECT, services: parseConfig(tomlString) }, ...others];
+}
+
+export function loadTargetsFromRoot() {
   const filePath = path.join(process.cwd(), CONFIG_PATH);
-  return parseConfig(fs.readFileSync(filePath, "utf-8"));
+  return parseTargets(fs.readFileSync(filePath, "utf-8"));
+}
+
+/**
+ * The targets a run covers: all of them, or only the one --project names.
+ *
+ * @param {{projectId: string, services: string[]}[]} targets
+ * @param {string|null} project
+ */
+export function selectTargets(targets, project) {
+  if (!project) return targets;
+  const selected = targets.filter((target) => target.projectId === project);
+  if (selected.length === 0) {
+    throw new Error(`project.toml declares no APIs for project "${project}"`);
+  }
+  return selected;
 }
 
 export function parseArgs(argv) {
-  const opts = { apply: false, project: DEFAULT_PROJECT };
+  const opts = { apply: false, project: null };
   for (let i = 0; i < argv.length; i++) {
     const arg = argv[i];
     if (arg === "--apply") opts.apply = true;
@@ -56,7 +91,7 @@ export function parseArgs(argv) {
       process.exit(0);
     } else throw new Error(`Unknown argument "${arg}"`);
   }
-  if (!opts.project) throw new Error("--project needs a value");
+  if (opts.project === undefined) throw new Error("--project needs a value");
   return opts;
 }
 
@@ -87,29 +122,36 @@ function describeEnableAction(enable, apply) {
   return apply ? " (enabling)" : " (would enable)";
 }
 
-export async function main(argv = process.argv.slice(2)) {
-  const opts = parseArgs(argv);
-  const requiredServices = loadConfigFromRoot();
-  assertFederatedCredentials();
-  const token = await getAccessToken(createGoogleAuthClient());
-  const base = `https://serviceusage.googleapis.com/v1/projects/${opts.project}/services`;
-
+async function enableForProject({ projectId, services }, apply, token) {
+  const base = `https://serviceusage.googleapis.com/v1/projects/${projectId}/services`;
   const states = {};
-  for (const service of requiredServices) {
+  for (const service of services) {
     const data = await googleGet(`${base}/${service}`, token);
     states[service] = data.state;
   }
-  const plan = planEnables(states, requiredServices);
+  const plan = planEnables(states, services);
   for (const { service, state, enable } of plan) {
-    console.log(`${service}: ${state}${describeEnableAction(enable, opts.apply)}`);
+    console.log(`${projectId} ${service}: ${state}${describeEnableAction(enable, apply)}`);
   }
-  if (!opts.apply) return plan;
+  if (!apply) return plan;
   for (const { service, enable } of plan) {
     if (!enable) continue;
     const op = await googlePost(`${base}/${service}:enable`, token);
-    console.log(`${service}: ${op.done === false ? "enable operation started" : "enabled"}`);
+    console.log(`${projectId} ${service}: ${op.done === false ? "enable operation started" : "enabled"}`);
   }
   return plan;
+}
+
+export async function main(argv = process.argv.slice(2)) {
+  const opts = parseArgs(argv);
+  const targets = selectTargets(loadTargetsFromRoot(), opts.project);
+  assertFederatedCredentials();
+  const token = await getAccessToken(createGoogleAuthClient());
+  const plans = [];
+  for (const target of targets) {
+    plans.push(...(await enableForProject(target, opts.apply, token)));
+  }
+  return plans;
 }
 
 if (import.meta.url === `file://${process.argv[1]}`) {

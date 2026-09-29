@@ -42,6 +42,21 @@ services = [
   "sts.googleapis.com",
 ]
 
+# Google APIs enabled on the project that hosts the sign-in OAuth client (its number leads the
+# client id in infra/google/gcp/oauth.toml). Drive and Picker serve the browser-only Drive store on
+# the diya-gl pages and the Submit activity pages; API Keys hosts the restricted Picker key
+# declared in infra/google/gcp/api-keys.toml.
+[[apis.other_projects]]
+project_id = "diy-accounting-submit"
+services = [
+  "serviceusage.googleapis.com",
+  "apikeys.googleapis.com",
+  "drive.googleapis.com",
+  "picker.googleapis.com",
+  # The brands lookup in google-oauth-assert.js is checked against the project named in its URL.
+  "iap.googleapis.com",
+]
+
 # The billing budget infra/google/gcp/gcp-billing-assert.js reuses (it was created by hand on the
 # billing account) rather than duplicating, adding whichever alert threshold is missing.
 [budget]
@@ -82,3 +97,16 @@ roles = ["predefinedRoles/admin"]
 project_id = "diyaccounting-ga4"
 member = "serviceAccount:ga4-report-pull@diyaccounting-ga4.iam.gserviceaccount.com"
 roles = ["roles/owner", "roles/bigquery.jobUser"]
+
+# The same service account on diy-accounting-submit, the sign-in client's project, narrowed to
+# what the scripts do there:
+#   roles/viewer                        reads the project's IAM policy (google-roles-apply.js) and its
+#                                       Auth Platform brand (google-oauth-assert.js)
+#   roles/serviceusage.serviceUsageAdmin  enables the APIs listed under [[apis.other_projects]]
+#   roles/serviceusage.apiKeysAdmin     creates and restricts the key in api-keys.toml
+# Applying this entry needs setIamPolicy on the project, which the service account does not yet
+# hold: a project owner grants these three roles to it once.
+[[gcp.project_bindings]]
+project_id = "diy-accounting-submit"
+member = "serviceAccount:ga4-report-pull@diyaccounting-ga4.iam.gserviceaccount.com"
+roles = ["roles/viewer", "roles/serviceusage.serviceUsageAdmin", "roles/serviceusage.apiKeysAdmin"]

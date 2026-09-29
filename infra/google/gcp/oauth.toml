@@ -36,6 +36,33 @@ redirect_uris = [
   secret = "prod/submit/google/client_secret"
   identity_stack = "prod-env-IdentityStack"
 
+# The browser-only client for saving and opening books in the customer's own Google Drive: the
+# diya-gl pages and the Submit activity pages ask Google for the drive.file scope on a click, with
+# no secret and no redirect. It lives in the sign-in client's project, so one consent screen
+# covers both. The console creates it (Google has no API for standard clients); download its
+# JSON and run `node scripts/drive-client-record.js <file>`, which refuses anything but a web
+# client with exactly these origins and writes the id below. The origins are a maintained record,
+# not something google-oauth-assert.js can verify.
+[[client]]
+purpose = "drive_browser"
+id = ""
+project_number = "670010122633"
+application_type = "web"
+scopes = ["https://www.googleapis.com/auth/drive.file"]
+javascript_origins = [
+  "https://submit.diyaccounting.co.uk",
+  "https://ci-submit.diyaccounting.co.uk",
+  "https://ci-set1.submit.diyaccounting.co.uk",
+  "https://ci-set2.submit.diyaccounting.co.uk",
+  "https://diya-gl.co.uk",
+  "https://ci.diya-gl.co.uk",
+]
+
+  # The brand is the sign-in client's: same project, same consent screen.
+  [client.brand]
+  app_name = "DIY Accounting Submit"
+  audience = "external"
+
 # The Desktop app client scripts/youtube-upload.js authenticates as. No id recorded yet: it has
 # never been read back out of Secrets Manager into this file (the script that created it only
 # ever writes there — see scripts/youtube-upload.js's header). Once read once — for instance

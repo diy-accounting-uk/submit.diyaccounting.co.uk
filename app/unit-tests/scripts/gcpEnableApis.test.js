@@ -2,7 +2,14 @@
 // Copyright (C) 2006-2026 DIY Accounting Limited
 
 import { describe, it, expect } from "vitest";
-import { parseArgs, planEnables, parseConfig, DEFAULT_PROJECT } from "../../../infra/google/gcp/gcp-enable-apis.js";
+import {
+  parseArgs,
+  planEnables,
+  parseConfig,
+  parseTargets,
+  selectTargets,
+  DEFAULT_PROJECT,
+} from "../../../infra/google/gcp/gcp-enable-apis.js";
 
 const SAMPLE_SERVICES = [
   "serviceusage.googleapis.com",
@@ -12,8 +19,8 @@ const SAMPLE_SERVICES = [
 ];
 
 describe("gcp-enable-apis parseArgs", () => {
-  it("defaults to the GA4 project and plan mode", () => {
-    expect(parseArgs([])).toEqual({ apply: false, project: DEFAULT_PROJECT });
+  it("defaults to every project and plan mode", () => {
+    expect(parseArgs([])).toEqual({ apply: false, project: null });
   });
   it("reads --apply and --project", () => {
     expect(parseArgs(["--apply", "--project", "other"])).toEqual({ apply: true, project: "other" });
@@ -48,5 +55,30 @@ describe("gcp-enable-apis planEnables", () => {
   it("plans nothing when everything is enabled", () => {
     const states = Object.fromEntries(SAMPLE_SERVICES.map((s) => [s, "ENABLED"]));
     expect(planEnables(states, SAMPLE_SERVICES).some((p) => p.enable)).toBe(false);
+  });
+});
+
+describe("gcp-enable-apis parseTargets and selectTargets", () => {
+  const toml = `[apis]
+services = ["serviceusage.googleapis.com"]
+
+[[apis.other_projects]]
+project_id = "diy-accounting-submit"
+services = ["drive.googleapis.com", "picker.googleapis.com"]
+`;
+  it("lists the GA4 project first, then each other project", () => {
+    expect(parseTargets(toml)).toEqual([
+      { projectId: DEFAULT_PROJECT, services: ["serviceusage.googleapis.com"] },
+      { projectId: "diy-accounting-submit", services: ["drive.googleapis.com", "picker.googleapis.com"] },
+    ]);
+  });
+  it("rejects an other_projects entry with no services", () => {
+    expect(() => parseTargets(`${toml}\n[[apis.other_projects]]\nproject_id = "x"\n`)).toThrow(/other_projects/);
+  });
+  it("selects one project by id and refuses an undeclared one", () => {
+    const targets = parseTargets(toml);
+    expect(selectTargets(targets, "diy-accounting-submit")).toHaveLength(1);
+    expect(selectTargets(targets, null)).toHaveLength(2);
+    expect(() => selectTargets(targets, "nope")).toThrow(/declares no APIs/);
   });
 });
