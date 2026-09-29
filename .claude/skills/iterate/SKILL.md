@@ -71,6 +71,8 @@ every slot is held; `main` deploys to prod and takes no ci slot.
 
 - **One batch branch per wave** (`claude/<codename>-<theme>`, named as `/do-next` says, its own worktree under
   `.claude/worktrees/<codename>`), every agent worktree branched from it, `NEXT.md` never on it.
+  Every worktree, the batch one and each agent's, is created with `scripts/worktree-add.sh <path>
+  <branch> <base>`, which links `node_modules` from the main checkout and fails when it cannot.
   A worktree for an analysis or review agent branches from `origin/main` after a fetch; the brief names that commit.
 - **One agent per row.** Rows that share a file go to one agent in one brief, in the order the
   plan fixes, a commit per row. A row over about 25 files is a two-agent chain (design, then
@@ -100,7 +102,8 @@ every slot is held; `main` deploys to prod and takes no ci slot.
   content proof (`git diff <agent-branch> <batch> -- <its files>` empty). Read the diff before
   landing it; a test that asserts a count across the whole stack, or a comment that restates the
   code, is fixed on the batch, not sent back.
-- **Once per batch before its first push**: `./mvnw clean verify` and then `npm test` on the
+- **Once per batch before its first push**: check `[ -L node_modules ]` in the batch worktree and
+  stop with a message when it fails, then `./mvnw clean verify` and then `npm test` on the
   merged tree, serially in one background command, because the two run concurrently push the load
   average past 100 and vitest files time out. Then run `npm run test:<suite>Behaviour-simulator`
   for every suite whose routes, pages or helpers the batch changed, serially (e.g. `auth`, `bundle`,

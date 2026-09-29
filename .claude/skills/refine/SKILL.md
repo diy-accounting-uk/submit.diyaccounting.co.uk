@@ -64,8 +64,8 @@ have to discover to finish. Then put that in the brief. The checks that paid for
   wrong: the brief names the query that settles the cause (the Athena database and workgroup, the
   table's projection file, the writer's line) and the two or three causes it can find, so the agent
   fixes the layer it finds rather than the one the row guessed.
-- **The runtime the agent will find.** A fresh worktree has no `node_modules` (symlink the main
-  checkout's), no `submit.bundle.js` (`npm run bundle` first), no `mcp/node_modules` (`npm ci` in
+- **The runtime the agent will find.** A fresh worktree has no `node_modules` (`scripts/worktree-add.sh`
+  links the main checkout's), no `submit.bundle.js` (`npm run bundle` first), no `mcp/node_modules` (`npm ci` in
   `mcp/`), no spreadsheet reader on the machine (the diya-gl package bundles one), and
   `spotless:apply` reformats files the row does not own (format only its own). A Maven proof
   names the test class; the batch runs the full verify once.
