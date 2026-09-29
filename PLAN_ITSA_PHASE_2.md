@@ -1733,27 +1733,27 @@ Each stays a row in `BACKLOG.md` (its tier and value); the brief lives here.
 
 ### 10. ITSA phase 1 sandbox integration
 
-ITSA build, phase 1: sandbox integration with the self-employment quarterly update APIs. Business Details, Obligations and the five period-summary endpoints are on main behind the environments gate; the sandbox proof is NEXT.md B10.4. Decided 2026-09-08: the hand-rolled `hmrcApi.js` client stays, and a quarterly update costs one token like a VAT return; the mandate dates and thresholds are in `_developers/hmrc/ITSA_SPIKE.md`.
+ITSA build, phase 1: sandbox integration with the self-employment quarterly update APIs. On main and proven: the sandbox year ran clean on 2023-24, 2025-26 and 2026-27 on 2026-09-25 with a valid `Gov-Client-Multi-Factor` header, and the eight ITSA suites run in CI. The send is row 11. The hand-rolled `hmrcApi.js` client stays, and a quarterly update costs one token like a VAT return; the mandate dates and thresholds are in `_developers/hmrc/ITSA_SPIKE.md`.
 
-**Source**: Issues #16, #20; strategy. **Effort**: L. **Value**: Revenue. The strategic bet. Voluntary sign-up is open now and HMRC auto-enrolment starts September 2026.
+**Source**: Issues #16, #20; `../private.diyaccounting.co.uk/strategy/STRATEGY.md`; `PLAN_ITSA_PHASE_2.md`. **Effort**: L. **Value**: Revenue. The strategic bet. Voluntary sign-up is open now and HMRC auto-enrolment starts September 2026.
 
 ### 17d. Walkthrough video test-data review
 
-Review the eight walkthrough videos for test-data improvements (HMRC's sandbox answered "No liabilities/payments/penalties found" for the three VAT read pages, so those show the search and not a result), de-duplicate the day-pass and HMRC-authorisation scenes that every recording repeats, and compress the full recordings; re-record what changes with `site-video-capture` and republish. All eight are public on the channel since 2026-09-15.
+Review the eight walkthrough videos for test-data improvements (HMRC's sandbox answered "No liabilities/payments/penalties found" for the three VAT read pages, so those show the search and not a result), de-duplicate the day-pass and HMRC-authorisation scenes that every recording repeats, and compress the full recordings; re-record what changes with `site-video-capture` and republish. All eight are public on the channel.
 
-**Source**: Operator, 2026-09-15. **Effort**: S. **Value**: Revenue. The recordings are the product's shop window; a result on screen and shorter runs make them worth watching.
+**Source**: Operator, 2026-09-15; `PLAN_ITSA_PHASE_2.md` 17d. **Effort**: S. **Value**: Revenue. The recordings are the product's shop window; a result on screen and shorter runs make them worth watching.
 
 ### 32a. Software-choices listing update
 
-Ask SDST to update DIY Accounting Submit's entry on HMRC's software-choices listing so it shows viewing liabilities, payments and penalties as well as obligations and returns. Optional: the production credentials already cover the whole VAT (MTD) API, so this is a listing edit, not an approval. One email from antony@diyaccounting.co.uk to `SDSTeam@hmrc.gov.uk`.
+Ask SDST to update DIY Accounting Submit's entry on HMRC's software-choices listing so it shows viewing liabilities, payments and penalties as well as obligations and returns. Optional: the production credentials already cover the whole VAT (MTD) API, so this is a listing edit, not an approval. One email from antony@diyaccounting.co.uk to `SDSTeam@hmrc.gov.uk`, separate from row 75's.
 
-**Source**: Issue #19. **Effort**: S. **Value**: Revenue, minor. The listing is where HMRC sends people looking for software. Operator.
+**Source**: Issue #19; `PLAN_ITSA_PHASE_2.md` 32a. **Effort**: S. **Value**: Revenue, minor. The listing is where HMRC sends people looking for software. Operator.
 
 ### 75. Tell SDST the licence changed
 
-Tell HMRC's SDS team the licence changed (the spreadsheets launch plan's H-LU-9; its gate, Submit's relabel LU-8a, landed 2026-09-09, and the operator holds the draft). One email from antony@diyaccounting.co.uk to `SDSTeam@hmrc.gov.uk`, three facts: the MTD approval submission and the production-credentials email described the service as AGPL open source; the licence is now PolyForm Internal Use 1.0.0 with an additional grant for accountants and bookkeepers, and the service stays free to use; the change is live in production. `Gov-Vendor-License-IDs` behaviour is unchanged. Then the two source documents in `_developers/hmrc/` annotated with the date and recipient. Kept apart from row 32a's listing request. Claude Code drafts, the operator says go before the send.
+Tell HMRC's SDS team the licence changed. One email from antony@diyaccounting.co.uk to `SDSTeam@hmrc.gov.uk`, three facts: the MTD approval submission and the production-credentials email described the service as AGPL open source; the licence is now PolyForm Internal Use 1.0.0 with an additional grant for accountants and bookkeepers, and the service stays free to use; the change is live in production. `Gov-Vendor-License-IDs` behaviour is unchanged. Then annotate `../private.diyaccounting.co.uk/hmrc/vat/HMRC_MTD_API_APPROVAL_SUBMISSION.md` and `../private.diyaccounting.co.uk/hmrc/correspondence/HMRC_PRODUCTION_CREDENTIALS_EMAIL.md` with the date and recipient. Kept apart from row 32a's listing request. Claude Code drafts, the operator says go before the send (runbook task E).
 
-**Source**: `../developers/submit/archive/PLAN_LICENSING_UPLIFT_SUBMIT.md` H-LU-9; moved off NEXT.md 2026-09-17. **Effort**: S. **Value**: Trust. HMRC's record of the product should match what it is. Haiku.
+**Source**: `PLAN_ITSA_PHASE_2.md` 75; `../private.diyaccounting.co.uk/engineering/submit/archive/PLAN_LICENSING_UPLIFT_SUBMIT.md` H-LU-9. **Effort**: S. **Value**: Trust. HMRC's record of the product should match what it is. Haiku.
 
 ## Sources
 

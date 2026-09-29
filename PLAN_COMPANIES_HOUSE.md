@@ -348,7 +348,7 @@ The tasks:
 
 A Companies House sandbox user for the opt-in ci filing suites (`runCompaniesHouseSandboxFiling=true` in `deploy.yml` and `probe-test.yml`, which sign in on `https://identity-sandbox.company-information.service.gov.uk`). When the sandbox identity site is up: create a throwaway account (own email, password, authenticator; keep the base32 key); on GitHub's `ci` environment set variable `TEST_COMPANIES_HOUSE_USER_ID` and secrets `TEST_COMPANIES_HOUSE_PASSWORD`, `TEST_COMPANIES_HOUSE_TOTP_SECRET`, `COMPANIES_HOUSE_SANDBOX_API_KEY`. Nothing on NEXT.md waits on it: the Companies House videos record on the simulator and the suites are off by default.
 
-**Source**: Run 36340607940; moved off NEXT.md 2026-09-27. **Effort**: S. **Value**: Trust. Re-proves the two REST filings against Companies House's sandbox from ci. Operator.
+**Source**: Run 36340607940; `PLAN_COMPANIES_HOUSE.md` OCH1. **Effort**: S. **Value**: Trust. Re-proves the two REST filings against Companies House's sandbox from ci. Operator.
 
 ## Sources
 
