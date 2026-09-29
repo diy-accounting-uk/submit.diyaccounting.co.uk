@@ -40,6 +40,9 @@ import {
   planStatusSync,
   applyStatusSync,
   runStatusSync,
+  planMetadataSync,
+  buildSnippetUpdate,
+  runMetadataSync,
   flipUploadedVideosPublic,
 } from "../../../scripts/youtube-upload.js";
 
@@ -61,6 +64,7 @@ describe("parseArgs", () => {
       publicVideo: false,
       check: false,
       syncStatus: false,
+      syncMetadata: false,
       apply: false,
       clientFile: undefined,
       storeClient: undefined,
@@ -74,6 +78,9 @@ describe("parseArgs", () => {
   });
   test("reads --sync-status", () => {
     expect(parseArgs(["--sync-status"]).syncStatus).toBe(true);
+  });
+  test("reads --sync-metadata", () => {
+    expect(parseArgs(["--sync-metadata"]).syncMetadata).toBe(true);
   });
   test("reads --apply", () => {
     expect(parseArgs(["--sync-status", "--apply"]).apply).toBe(true);
@@ -1049,5 +1056,69 @@ describe("runStatusSync", () => {
 
     expect(plan).toEqual([]);
     expect(applyStatusSyncImpl).not.toHaveBeenCalled();
+  });
+});
+
+describe("metadata sync", () => {
+  const list = {
+    videos: [
+      { id: "relabelled", videoId: "yt-1", title: "New title", description: "Same description", categoryId: "27", tags: ["a"] },
+      { id: "in-sync", videoId: "yt-2", title: "Title", description: "Description" },
+      { id: "not-uploaded", videoId: null, title: "Draft", description: "Draft" },
+    ],
+  };
+  const liveSnippetsById = {
+    "yt-1": { title: "Old title", description: "Same description", categoryId: "27", tags: ["a", "b"], defaultLanguage: "en" },
+    "yt-2": { title: "Title", description: "Description", categoryId: "27" },
+  };
+
+  test("plans a difference per changed field and skips in-sync and unuploaded entries", () => {
+    expect(planMetadataSync({ list, liveSnippetsById })).toEqual([
+      { id: "relabelled", videoId: "yt-1", field: "title", live: "Old title", declared: "New title" },
+    ]);
+  });
+
+  test("plans nothing when the live snippets match", () => {
+    const matching = { "yt-1": { title: "New title", description: "Same description" }, "yt-2": liveSnippetsById["yt-2"] };
+    expect(planMetadataSync({ list, liveSnippetsById: matching })).toEqual([]);
+  });
+
+  test("a snippet update carries the declared text with the live categoryId, tags and language", () => {
+    expect(buildSnippetUpdate({ entry: list.videos[0], liveSnippet: liveSnippetsById["yt-1"] })).toEqual({
+      id: "yt-1",
+      snippet: { title: "New title", description: "Same description", categoryId: "27", tags: ["a", "b"], defaultLanguage: "en" },
+    });
+  });
+
+  test("writes nothing without --apply", async () => {
+    const setVideoSnippetImpl = vi.fn();
+    const plan = await runMetadataSync({
+      list,
+      accessToken: "t",
+      quotaProject: "p",
+      apply: false,
+      fetchVideoSnippetsImpl: vi.fn().mockResolvedValue(liveSnippetsById),
+      setVideoSnippetImpl,
+      log: () => {},
+      printPlan: () => {},
+    });
+    expect(plan).toHaveLength(1);
+    expect(setVideoSnippetImpl).not.toHaveBeenCalled();
+  });
+
+  test("with --apply writes one update per changed video", async () => {
+    const setVideoSnippetImpl = vi.fn().mockResolvedValue({});
+    await runMetadataSync({
+      list,
+      accessToken: "t",
+      quotaProject: "p",
+      apply: true,
+      fetchVideoSnippetsImpl: vi.fn().mockResolvedValue(liveSnippetsById),
+      setVideoSnippetImpl,
+      log: () => {},
+      printPlan: () => {},
+    });
+    expect(setVideoSnippetImpl).toHaveBeenCalledTimes(1);
+    expect(setVideoSnippetImpl.mock.calls[0][0].resource.id).toBe("yt-1");
   });
 });

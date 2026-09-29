@@ -143,6 +143,47 @@ test.describe("area pages", () => {
   }
 });
 
+test.describe("videos-hmrc-itsa.html", () => {
+  const itsaVideos = EMBEDDED.filter((v) => v.group === "itsa");
+
+  test("embeds all ten itsa videos, each with its title and a caption track", async ({ page }) => {
+    expect(itsaVideos).toHaveLength(10);
+    await serveRealSite(page);
+    await page.goto("http://localhost:3000/videos-hmrc-itsa.html", { waitUntil: "domcontentloaded" });
+    await assertSections(page, itsaVideos);
+    for (const video of itsaVideos) {
+      expect(video.captionFile).toMatch(/\.vtt$/);
+      await expect(page.locator(`section.video-section#${video.id} iframe`)).toHaveAttribute("title", video.title);
+    }
+  });
+});
+
+test.describe("relabelled and stripped titles", () => {
+  const relabelled = EMBEDDED.find((v) => v.id === "itsa-quarterly-update");
+  const stripped = EMBEDDED.find((v) => v.id === "change-registered-email");
+  const contentsText = (video) => video.title.replace("DIY Accounting Submit: ", "");
+
+  test("a video of a feature not yet on prod reads coming soon in its heading, iframe title and Contents link", async ({ page }) => {
+    expect(relabelled.title).toMatch(/\(coming soon - sandbox example\)$/);
+    await serveRealSite(page);
+    await page.goto("http://localhost:3000/videos-hmrc-itsa.html", { waitUntil: "domcontentloaded" });
+    const section = page.locator(`section.video-section#${relabelled.id}`);
+    await expect(section.locator("h2")).toHaveText(relabelled.title);
+    await expect(section.locator("iframe")).toHaveAttribute("title", relabelled.title);
+    await expect(page.locator(`nav a[href$="#${relabelled.id}"]`).first()).toHaveText(contentsText(relabelled));
+  });
+
+  test("a video of a live feature carries no sandbox label in its heading, iframe title and Contents link", async ({ page }) => {
+    expect(stripped.title).not.toMatch(/sandbox/i);
+    await serveRealSite(page);
+    await page.goto("http://localhost:3000/videos-ch.html", { waitUntil: "domcontentloaded" });
+    const section = page.locator(`section.video-section#${stripped.id}`);
+    await expect(section.locator("h2")).toHaveText(stripped.title);
+    await expect(section.locator("iframe")).toHaveAttribute("title", stripped.title);
+    await expect(page.locator(`nav a[href$="#${stripped.id}"]`).first()).toHaveText(contentsText(stripped));
+  });
+});
+
 test.describe("about.html", () => {
   test("carries the Watch the walkthroughs button linking to videos.html", async ({ page }) => {
     await serveRealSite(page);

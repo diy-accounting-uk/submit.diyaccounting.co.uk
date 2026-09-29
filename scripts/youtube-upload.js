@@ -8,6 +8,7 @@
 // Usage: node scripts/youtube-upload.js [--check] [--public] [--client-file <path>]
 //        node scripts/youtube-upload.js --store-client <path>
 //        node scripts/youtube-upload.js --sync-status [--apply]
+//        node scripts/youtube-upload.js --sync-metadata [--apply]
 //
 // Credentials come from an OAuth client of our own (type Desktop app), created once in the
 // Google Cloud console — see videos/PUBLISH.md. Google blocks gcloud's own OAuth client from
@@ -45,6 +46,10 @@
 // publicStatsViewable, selfDeclaredMadeForKids, license) against what YouTube actually has
 // recorded for every entry with a videoId, and prints the differences. Nothing is written
 // until --apply is also given.
+//
+// --sync-metadata does the same for the title and description in videos/publish.json against
+// YouTube's snippet. A write sends the declared title and description with the live video's own
+// categoryId, tags and defaultLanguage, because videos.update replaces the whole snippet.
 
 import fs from "fs";
 import path from "path";
@@ -102,6 +107,7 @@ export function parseArgs(argv) {
     publicVideo: argv.includes("--public"),
     check: argv.includes("--check"),
     syncStatus: argv.includes("--sync-status"),
+    syncMetadata: argv.includes("--sync-metadata"),
     apply: argv.includes("--apply"),
     clientFile: readFlagValue(argv, "--client-file"),
     storeClient: readFlagValue(argv, "--store-client"),
@@ -638,6 +644,112 @@ export async function runStatusSync({
   return plan;
 }
 
+export async function fetchVideoSnippets({ videoIds, accessToken, quotaProject = resolveQuotaProject(), fetchImpl = fetch }) {
+  const snippetsById = {};
+  for (const batch of chunkIntoBatches(videoIds, VIDEO_STATUS_BATCH_SIZE)) {
+    const response = await fetchImpl(`${VIDEOS_ENDPOINT}?part=snippet&id=${batch.join(",")}`, {
+      headers: { "Authorization": `Bearer ${accessToken}`, "x-goog-user-project": quotaProject },
+    });
+    if (!response.ok) {
+      throw new Error(`Failed to look up video snippet for ${batch.join(",")}: ${response.status} ${await response.text()}`);
+    }
+    const data = await response.json();
+    for (const item of data.items ?? []) {
+      snippetsById[item.id] = item.snippet;
+    }
+  }
+  return snippetsById;
+}
+
+const SYNCED_SNIPPET_FIELDS = ["title", "description"];
+
+/**
+ * Compare each entry's declared title and description against YouTube's snippet.
+ * Pure, so it is unit tested; the network call that produces `liveSnippetsById` is not.
+ *
+ * @returns {Array<{id: string, videoId: string, field: string, live: unknown, declared: unknown}>}
+ */
+export function planMetadataSync({ list, liveSnippetsById }) {
+  const plan = [];
+  for (const entry of list.videos.filter((video) => video.videoId)) {
+    const live = liveSnippetsById[entry.videoId] ?? {};
+    for (const field of SYNCED_SNIPPET_FIELDS) {
+      if (live[field] !== entry[field]) {
+        plan.push({ id: entry.id, videoId: entry.videoId, field, live: live[field], declared: entry[field] });
+      }
+    }
+  }
+  return plan;
+}
+
+// The snippet part is replaced whole, so the live categoryId, tags and defaultLanguage travel
+// with the declared title and description; categoryId and title are required by YouTube.
+export function buildSnippetUpdate({ entry, liveSnippet }) {
+  const snippet = {
+    title: entry.title,
+    description: entry.description,
+    categoryId: liveSnippet.categoryId,
+  };
+  if (liveSnippet.tags) {
+    snippet.tags = liveSnippet.tags;
+  }
+  if (liveSnippet.defaultLanguage) {
+    snippet.defaultLanguage = liveSnippet.defaultLanguage;
+  }
+  return { id: entry.videoId, snippet };
+}
+
+export async function setVideoSnippet({ resource, accessToken, quotaProject = resolveQuotaProject(), fetchImpl = fetch }) {
+  const response = await fetchImpl(`${VIDEOS_ENDPOINT}?part=snippet`, {
+    method: "PUT",
+    headers: {
+      "Authorization": `Bearer ${accessToken}`,
+      "Content-Type": "application/json",
+      "x-goog-user-project": quotaProject,
+    },
+    body: JSON.stringify(resource),
+  });
+  if (!response.ok) {
+    throw new Error(`Updating the snippet of ${resource.id} failed: ${response.status} ${await response.text()}`);
+  }
+  return (await response.json()).snippet;
+}
+
+/**
+ * The --sync-metadata mode: plan title and description differences against YouTube, print
+ * them, and write them (one PUT per video) only when asked.
+ */
+export async function runMetadataSync({
+  list,
+  accessToken,
+  quotaProject,
+  apply,
+  fetchVideoSnippetsImpl = fetchVideoSnippets,
+  setVideoSnippetImpl = setVideoSnippet,
+  log = console.log,
+  printPlan = (plan) => console.table(plan.map(({ id, field, live, declared }) => ({ id, field, live, declared }))),
+}) {
+  const videoIds = list.videos.filter((entry) => entry.videoId).map((entry) => entry.videoId);
+  const liveSnippetsById = await fetchVideoSnippetsImpl({ videoIds, accessToken, quotaProject });
+  const plan = planMetadataSync({ list, liveSnippetsById });
+  if (plan.length === 0) {
+    log("Every video's title and description match videos/publish.json.");
+    return plan;
+  }
+  printPlan(plan);
+  if (!apply) {
+    log("Plan only. Re-run with --apply to write these changes.");
+    return plan;
+  }
+  for (const videoId of new Set(plan.map((change) => change.videoId))) {
+    const entry = list.videos.find((video) => video.videoId === videoId);
+    const resource = buildSnippetUpdate({ entry, liveSnippet: liveSnippetsById[videoId] });
+    await setVideoSnippetImpl({ resource, accessToken, quotaProject });
+    log(`${entry.id} https://youtu.be/${videoId} snippet updated: ${entry.title}`);
+  }
+  return plan;
+}
+
 // YouTube indexes a freshly uploaded video asynchronously: a caption POST a second after the
 // upload can answer 404 videoNotFound for a video that exists. Three tries, ~30 s in all.
 export const CAPTION_RETRY_DELAYS_MS = [10_000, 20_000];
@@ -737,7 +849,7 @@ export async function flipUploadedVideosPublic({
 }
 
 export async function main() {
-  const { publicVideo, check, syncStatus, apply, clientFile, storeClient } = parseArgs(process.argv.slice(2));
+  const { publicVideo, check, syncStatus, syncMetadata, apply, clientFile, storeClient } = parseArgs(process.argv.slice(2));
 
   if (storeClient) {
     await storeClientCredentials({ clientFile: storeClient });
@@ -758,6 +870,11 @@ export async function main() {
 
   if (syncStatus) {
     await runStatusSync({ list, accessToken, quotaProject, apply });
+    return;
+  }
+
+  if (syncMetadata) {
+    await runMetadataSync({ list, accessToken, quotaProject, apply });
     return;
   }
 
