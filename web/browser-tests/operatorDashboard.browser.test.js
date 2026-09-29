@@ -9,6 +9,7 @@ import fs from "fs";
 import path from "path";
 import { setTimeout as delay } from "timers/promises";
 import { dotenvConfigIfNotBlank } from "@app/lib/env.js";
+import { OBJECTIVE_DEFINITIONS } from "@app/functions/analytics/operatorSnapshotPublish.js";
 
 dotenvConfigIfNotBlank({ path: ".env.test" });
 
@@ -233,8 +234,50 @@ const FIXTURE_EXPERIMENTS = {
       start: "2026-09-01",
       end: "2026-09-30",
     },
+    {
+      id: "exp-2026-09-resident-price",
+      objective: "conversion-to-paid",
+      hypothesis: "",
+      lever: "price",
+      metric: "purchases-per-human-session",
+      start: "2026-09-22",
+    },
   ],
 };
+
+const SAMPLE_VALUE_BY_UNIT = { count: 1234, gbp: 12345.67, usd: 123.45, ratio: 0.987, hours: 12.5, runs: 42 };
+
+// Every observation the publisher defines, each with a value in every column, which is the
+// most the page ever renders; the layout tests size the page's reserved heights against it.
+function fullShapeSnapshot() {
+  const context = {
+    region: "eu-west-2",
+    athenaWorkGroupName: "prod-env-analytics",
+    githubRepo: "diy-accounting-uk/submit.diyaccounting.co.uk",
+    ga4PropertyId: "523400333",
+  };
+  const windows = (unit) => ({
+    last30: { value: SAMPLE_VALUE_BY_UNIT[unit], trend: 0.123 },
+    last90: { value: SAMPLE_VALUE_BY_UNIT[unit], trend: 0.123 },
+  });
+  return {
+    generatedAt: "2026-09-29T07:45:25.539Z",
+    environment: "prod",
+    objectives: OBJECTIVE_DEFINITIONS.map((objective) => ({
+      id: objective.id,
+      name: objective.name,
+      observations: objective.observations.map((observation) => ({
+        id: observation.id,
+        label: observation.label,
+        unit: observation.unit,
+        ...windows(observation.unit),
+        ...(observation.fastWindowView ? { last1h: { value: 12 }, last1d: { value: 123 }, last7d: { value: 1234 } } : {}),
+        deepLink: observation.deepLink(context),
+      })),
+    })),
+    failedObservationCount: 0,
+  };
+}
 
 // The real 403 body a signed-in caller without the operator bundle gets back from
 // operatorSnapshotGet.js (app/functions/analytics/operatorSnapshotGet.js) - kept in sync with
@@ -467,6 +510,38 @@ test.describe("Operator Dashboard", () => {
     await expect(experiment).toContainText("(no hypothesis yet)");
     await expect(experiment).toContainText("2026-09-01");
     await expect(experiment).toContainText("2026-09-30");
+  });
+
+  test.describe("reserved heights", () => {
+    for (const width of [390, 700, 900, 1280]) {
+      test(`reserve at least the rendered height of each panel at ${width}px wide`, async ({ page }) => {
+        await page.setViewportSize({ width, height: 900 });
+        await setupRoutes(page, { snapshotBody: fullShapeSnapshot() });
+        await loadDashboard(page);
+        await expect(page.locator(".objective[data-objective-id]")).toHaveCount(8);
+
+        const heights = await page.evaluate(() => {
+          const panels = {
+            objectivesContainer: document.getElementById("objectivesContainer"),
+            visitorsPanel: document.getElementById("visitorsPanel"),
+            experimentsPanel: document.getElementById("experimentsPanel"),
+          };
+          const result = {};
+          for (const [name, element] of Object.entries(panels)) {
+            result[name] = { reserved: parseFloat(getComputedStyle(element).minHeight), rendered: 0 };
+          }
+          for (const [name, element] of Object.entries(panels)) {
+            element.style.minHeight = "0";
+            result[name].rendered = element.getBoundingClientRect().height;
+          }
+          return result;
+        });
+
+        for (const [name, { reserved, rendered }] of Object.entries(heights)) {
+          expect(reserved, `${name} reserves ${reserved}px for ${rendered}px of content`).toBeGreaterThanOrEqual(rendered);
+        }
+      });
+    }
   });
 
   test.describe("wide-window layout", () => {

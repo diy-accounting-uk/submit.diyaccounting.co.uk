@@ -127,19 +127,29 @@
 
       /* #objectivesContainer and the two panels in .side-panels are empty until
          initPage()'s snapshot fetch resolves, then fill with the eight objectives'
-         tables and the visitors/experiments rows in one go. Reserving close to their
-         typical filled height keeps that fill from pushing .side-panels down - sized
-         for the eight fixed objectives at a normal screen width; a narrower one, where
-         the same tables wrap onto more lines, needs more. */
+         tables and the visitors/experiments rows in one go. Each reservation is the height
+         measured on a snapshot with every observation present, plus a margin for font
+         differences, so that fill does not push what sits below; the narrow-screen tables
+         wrap onto more lines and need more. The browser test measures the rendered
+         heights at 390, 700, 900 and 1280 px and fails when a reservation falls short. */
       #objectivesContainer {
-        min-height: 2160px;
+        min-height: 1600px;
       }
-      .side-panels .objective {
-        min-height: 174px;
+      #visitorsPanel {
+        min-height: 200px;
+      }
+      #experimentsPanel {
+        min-height: 100px;
       }
       @media (max-width: 600px) {
         #objectivesContainer {
-          min-height: 3760px;
+          min-height: 2640px;
+        }
+        #visitorsPanel {
+          min-height: 280px;
+        }
+        #experimentsPanel {
+          min-height: 130px;
         }
       }
     </style>
