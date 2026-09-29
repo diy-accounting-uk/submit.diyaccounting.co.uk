@@ -13,15 +13,14 @@ from `PLAN_DIYA_GL_LAUNCH.md` §3 to §5.
 
 ## Board
 
-Phase 1, the core/uk split, plus the two operator rows that gate nothing else. Same columns and
-rules as `NEXT.md`'s board; phase 2 and 3 rows (IN-7 onwards, H-IN-3 to H-IN-5) join it when
+Phase 1, the core/uk split, plus the operator row that gates nothing else. Same columns and
+rules as `NEXT.md`'s board; phase 2 and 3 rows (IN-7 onwards, H-IN-3, H-IN-4, H-IN-6, H-IN-7) join it when
 phase 1 lands. `Source` here is this plan.
 
 | # | Item | Source | Needs | Precursors | State | Size | Model | Status |
 |---|---|---|---|---|---|---|---|---|
 | IN-4 | Additive schema fields: `documentInfo.diya-gl:jurisdiction`, the line `diya-gl:type` pattern, four Indian product enum values; every example's canonical text unchanged | this plan | machine-only | — | ready-to-start | ~4 files | Sonnet | — |
 | IN-1 | The jurisdiction registry `app/lib/jurisdictions.js`: `jurisdictionOf(book)` with absence meaning `uk`; `productOf` and `loadTaxDataForBook` resolve through it | this plan | machine-only | — | ready-to-start | ~5 files | Sonnet | — |
-| H-IN-1 | An OIDAR GST registration quote (registration, authorised representative, monthly GSTR-5A) from an Indian CA | this plan | human-driven | — | ready-to-start | ~0 files | operator | — |
 | H-IN-2 | Register `diya-gl.in`, `diyagl.in` and `diya-gl.co.in` in the management account through Route 53 | this plan | human-driven | — | ready-to-start | ~0 files | operator | — |
 | IN-3 | The formatting seam `app/lib/money-format.js` with a `uk` profile replacing the 32 `£` and 17 `en-GB` literals; report text byte-identical | this plan | machine-only | IN-1 | blocked-to-start | ~20 files | Sonnet | after IN-1 |
 | IN-6 | `defaultCurrency` honoured: the page formatter reads it; a shared book check warns when a line's `amountCurrency` differs | this plan | machine-only | IN-3 | blocked-to-start | ~5 files | Sonnet | after IN-3 |
@@ -62,9 +61,9 @@ registry chooses the tax modules and the tax-year rule, and the parity gate keep
 book byte-identical. bedrock-meter's currency work is a display-only converter for a USD
 ledger; nothing ports back. DIYA-GL keeps single-currency books with `defaultCurrency`
 (already in the schema, default GBP) and a new check that every line agrees with it.
-Pricing (operator, 2026-09-19): free and donations first; the one paid India bundle is ₹499 a
-year through Submit's catalogue, and it opens only when GA4 shows a save rate that justifies
-the OIDAR GST registration (18% IGST from the first consumer sale) the paid tier needs.
+India runs with no backend (operator, 2026-09-29): books on the device and in the user's own
+Google Drive, no government integration, data in by one-way file import, and revenue from
+referral commission paid by Indian providers to the UK company; nothing is sold in India.
 `Proprietor` (44AD) is the first Indian product. Branding: the same DIYA-GL mark with the 🪔
 lamp beside it, the domains diya-gl.in, diyagl.in and diya-gl.co.in registered now, a marigold
 accent, and no festival tie-in.
@@ -452,96 +451,6 @@ choice; a wrong combination (44ADA on a business chart, composition above ₹1.5
 receipts above the limit) is a book check with a fix-it helper, the way the UK products handle
 a VAT flag.
 
-## Pricing for India
-
-### Purchasing power
-
-- India's nominal GDP per capita is US$2,878 (2025) and US$12,801 at PPP (2026); the UK's
-  nominal figure is about US$57,608 (2025) (S37, S38). The nominal gap is twenty to one; the
-  price-level gap inside India (PPP over nominal) is about 4.4 to one.
-- Global subscriptions priced for India: Spotify about US$1.50 a month against US$10.99 in the
-  US; Netflix from ₹149 (mobile) and ₹199; Notion Plus ₹670 a user a month (S39). SaaS pricing
-  guides put India at 55% to 80% off US list (S39).
-- Indian accounting software: Zoho Books is free with no time limit for revenue under ₹25L,
-  then ₹899 a month plus 18% GST; Vyapar's mobile app is free and the desktop plan is about
-  ₹3,399 a year; TallyPrime Silver is ₹22,500 one-off plus about ₹4,500 a year (S40, S41).
-  Indian small-business software is priced annually.
-- GBP/INR is about 128.7 (17 September 2026) (S42), so the UK's 99p is ₹127.
-
-### Rails
-
-- Stripe UPI: available to Stripe accounts in GB (the list on the UPI page includes GB),
-  presentment in INR, customer location India, recurring through UPI AutoPay e-mandates,
-  ₹1 to ₹1,00,000 a payment and ₹15,000 a recurring payment (S43). The existing Submit Stripe
-  account can enable it in the Dashboard. Stripe's own Indian accounts are invite-only and do
-  not process UPI, which is a different matter (S44).
-- Stripe fees on a UK account for a non-UK card: 3.25% + 20p, plus 2% when the charge currency
-  converts to GBP (S45). The 20p fixed component is what decides the price shape below. The UPI
-  fee for a GB account is not on the public page; it is read from the Dashboard before the price
-  is set (H-IN-5).
-- RBI e-mandates: a recurring card or UPI debit needs a registered mandate with an authentication
-  factor at registration, a pre-debit notice 24 hours ahead, and a fresh authentication above
-  ₹15,000 (S46). An annual charge under ₹15,000 is one authenticated payment with no mandate.
-- Razorpay's cross-border product accepts INR by card, net banking and UPI for a foreign
-  business with no Indian entity under its PA-CB licence (December 2025), settling in GBP;
-  domestic fees are 2% plus GST and international cards 3% plus GST (S47, S48). It is the
-  fallback if Stripe's UPI fee or success rate disappoints; it would be a second billing
-  integration, which the bundle system is built to avoid.
-- Stripe's INR minimum charge is ₹0.50 (S49).
-
-### The Indian tax on the price
-
-A foreign supplier of online services (OIDAR) to Indian consumers registers for GST from the
-first sale with no threshold, charges 18% IGST, files GSTR-5A, and appoints an authorised
-representative in India; a sale to a GST-registered business is instead reverse-charged by the
-buyer (S50). The equalisation levy on foreign digital services ended on 1 April 2025 (S51). So
-every consumer price below is GST-inclusive and the company keeps price ÷ 1.18, and the fixed
-cost of the registration and the representative is the true break-even. Get the quote (H-IN-1)
-before setting any price.
-
-### The offer
-
-The India tiers are `PLAN_DIYA_GL_HOME.md`'s three tiers with the resident price in rupees.
-HOME (e) already gives the no-account reader the "On this device" row (DG-4) over the IndexedDB
-autosave, HOME (b) the 24h sandbox (DG-2a, DG-2b), and HOME (c) the resident bundle through
-Submit, enabled on ci only until prod lifts `DIYA_GL_RESIDENT_TIER`. HOME (d)'s rule is that a
-yearly charge is a second button, never a second tier; the India bundle keeps to that by being
-one price for one market.
-
-| Tier    | Price            | What it is                                                                                                                                                    |
-| ------- | ---------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Free    | ₹0               | the India page and its offline runner; the book kept on this device (the autosave in `autosave.js`, the DG-4 row); the downloaded file is the durable copy     |
-| Sandbox | ₹0, sign-in      | DG-2's 24-hour signed-in storage, the same on every host                                                                                                      |
-| Paid    | one India bundle | `resident-diya-gl-in` in Submit's catalogue: books kept until deleted (DG-3), the same entitlement path as `resident-diya-gl`, ci only until prod lifts the tier |
-
-Price points, with the Stripe card fee at 3.25% + 20p + 2% and 18% GST inside the price:
-
-| Price                    | In GBP | Stripe fee | Fee share | Net of GST and fee, a year | For                                                                                          | Against                                                                                           |
-| ------------------------ | ------ | ---------- | --------- | -------------------------- | -------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------- |
-| ₹49 a month              | £0.38  | £0.22      | 58%       | £1.61                      | PPP-honest (99p ÷ 4.4 is ₹29; Spotify's ratio gives ₹15); a familiar Indian micro-price      | the 20p kills it on cards; twelve mandate debits a year; the smallest number that funds nothing  |
-| ₹99 a month              | £0.77  | £0.24      | 31%       | £5.35                      | near UK parity per month; one price to explain                                               | above Spotify India; reads as a foreign price; monthly churn on a mandate                         |
-| ₹499 a year              | £3.88  | £0.40      | 10%       | £3.48 of £3.88 gross       | one charge under the ₹15,000 mandate line; Vyapar's annual convention; ₹42 a month effective | the operator's UK decision of no annual plan; a year's commitment before the product has a record |
-| ₹999 a year              | £7.77  | £0.61      | 8%        | £6.07                      | still under Zoho's cheapest month; fee share smallest                                        | double the PPP line; the free tier already does the accounts                                      |
-
-Decision (operator, 2026-09-19): ₹499 a year is the India bundle's only price, as
-`resident-diya-gl-in` with `stripeCurrency = "inr"`, `stripeInterval = "year"`,
-`stripePriceAmount = 49900`; `scripts/stripe-setup.js` in Submit already takes currency and
-interval per bundle. India launches free and donations only, which the pages already prompt
-for. The paid tier waits on the GA4 save-rate gate below, because the OIDAR registration's
-fixed cost is paid for by subscribers who do not yet exist; H-IN-1 gets the quote meanwhile so
-the gate has a number to clear. The rail (Stripe UPI or Razorpay) is still open.
-
-### What GA4 evidence would change it
-
-LP-9's events gain a `jurisdiction` dimension. The first reading is the GA4 save-rate gate
-the paid tier waits on: the share of India-page loads that reach a save, read against H-IN-1's
-quote, opens IN-18 when a plausible conversion of those savers at ₹499 covers the
-registration's yearly cost. Three readings move the price: the share of India-page loads that
-reach a save (below 20% says the free tier has not earned an ask);
-UPI's share of India checkouts (above 70% with a card failure rate above 15% says move rails
-to Razorpay); and the subscribe-click to checkout-complete ratio at ₹499 against a ₹299 test
-(a ratio twice as high at ₹299 pays for itself at the same fee share).
-
 ## Branding
 
 The word is the same word. "Diya" is Hindi for the clay oil lamp lit at Diwali and in Hindu,
@@ -577,19 +486,19 @@ Risks:
    company (S56). A public search of the IP India register for DIYA and DIYA-GL in classes 9
    and 42 has not been done (H-IN-3).
 
-## Variant: no backend, referral-funded
+## Revenue and data: no backend, referral-funded
 
-The alternative to the paid tier above, for the operator to choose (open decision 3). The engine
-and product work (IN-1 to IN-17) is the same in both; what differs is storage, revenue and data in.
+Decided by the operator on 2026-09-29. The engine and product work (IN-1 to IN-17) stands as
+written above.
 
-| Part | Paid tier (above) | No-backend variant |
-|---|---|---|
-| Storage | device, 24h sandbox, DIYA cloud store on S3 | device (the IndexedDB autosave) and the user's own Google Drive through the browser-only `drive.file` client LP-24c makes free; no DIYA storage, no sign-in to DIYA |
-| Revenue | ₹499 a year bundle, after an OIDAR GST registration | referral commission from Indian providers, paid to the UK company; nothing sold in India |
-| Government | none (views to file by hand) | none: the ITR-4, GST and TDS views are what the user or their CA files |
-| Bank data | not planned | one-way import of files the user downloads: the bank statement, GSTR-2B, Form 26AS and AIS |
-| Leaving | the open book format | the open book format, plus an export in the shape the referred provider imports |
-| Fixed cost | the OIDAR registration and an authorised representative (H-IN-1) | the `.in` domains (H-IN-2) and static hosting; no India registration if the tax points below hold |
+| Part | India |
+|---|---|
+| Storage | the device (the IndexedDB autosave) and the user's own Google Drive, through the browser-only `drive.file` client LP-24c makes free; no DIYA storage and no sign-in to DIYA |
+| Revenue | referral commission from Indian providers, paid to the UK company; nothing is sold in India |
+| Government | none: the ITR-4, GST and TDS views are what the user or their CA files |
+| Bank data | one-way import of files the user downloads: the bank statement, GSTR-2B, Form 26AS and AIS |
+| Leaving | the open book format, plus an export in the shape the referred provider imports |
+| Fixed cost | the `.in` domains (H-IN-2) and static hosting; no India registration if the tax points below hold |
 
 ### Why a sync is file import
 
@@ -640,34 +549,19 @@ unconfirmed row is settled by asking the partner (H-IN-6).
   influenced lending decisions would not (VR14), so a referral here is to accounts, payments
   and software only.
 
-### Rows the variant changes
+## Decisions taken
 
-| Removes | Adds |
-|---|---|
-| IN-18 (the ₹499 bundle), IN-19 (the rupee tier strip), H-IN-1 (the OIDAR quote), H-IN-5 (Stripe UPI) | IN-23 statement importers (CSV and Excel, one bank per commit, from a real statement); IN-24 GSTR-2B JSON and AIS JSON importers; IN-25 the referral strip on the India page, one partner per card, tagged links, a disclosure line, and GA4 `referral_clicked` with a `jurisdiction` dimension; IN-26 the export to the chosen provider's import format (Zoho Books first); H-IN-6 join the programmes and confirm the payout path for a UK company (Zoho first); H-IN-7 a CA's opinion on the tax points above |
-
-## Decisions taken (operator, 2026-09-19)
-
-1. Price shape: ₹499 a year is the India bundle's only price.
-2. When the paid tier opens: free and donations first; the paid India tier waits until GA4
-   shows a save rate that justifies the OIDAR GST registration's fixed cost (the "GA4 save-rate
-   gate" precursor on IN-18, IN-19 and H-IN-5); H-IN-1, the OIDAR quote, proceeds meanwhile.
-3. First Indian product: `Proprietor` (44AD).
-4. Domains: register `diya-gl.in`, `diyagl.in` and `diya-gl.co.in` now through Route 53 in the
+1. First Indian product: `Proprietor` (44AD).
+2. Domains: register `diya-gl.in`, `diyagl.in` and `diya-gl.co.in` now through Route 53 in the
    management account (H-IN-2 is ready to start); the IP India search (H-IN-3) follows.
+3. Revenue and data (2026-09-29): no backend, referral-funded, one-way file import.
 
 ## Decisions still open
 
-1. Rails. Alternatives: Stripe UPI on the existing account (recommended; one billing system),
-   or Razorpay's cross-border product (a second integration, better UPI success rates claimed).
-2. What an India book produces. Alternatives: pages and JSON only, with the engine's checks as
+1. What an India book produces. Alternatives: pages and JSON only, with the engine's checks as
    the proof and a CA review as the oracle (recommended for phase 2), or an Indian Excel
    template family so the LibreOffice reconciliation method applies (a large body of work that
    would follow the Rust port's oracle instead).
-3. Revenue model. Alternatives: the paid tier (₹499 a year through Submit, an OIDAR registration
-   first), or the no-backend variant (device and Google Drive storage, referral commission,
-   one-way file import). The variant is recommended: its fixed cost is the domains, and it
-   earns before any India registration.
 
 ## Task list
 
@@ -690,20 +584,21 @@ unconfirmed row is settled by asking the partner (H-IN-6).
 | IN-15   | Product `Professional`: 44ADA and books-based, the GST regular scheme with ITC, the TDS receivable ledger against 26AS                                                                                                                       | 2     | IN-12                  | Opus   | ~8 files, as IN-12 for `professional`                                                                                                                                                                             |
 | IN-16   | Product `CabDriver`: `Proprietor` plus the 194-O receipt type and a takings view                                                                                                                                                          | 2     | IN-12                  | Sonnet | ~6 files, as IN-12 for `cab-driver`                                                                                                                                                                                |
 | IN-17   | Product `PrivateLimited`: Schedule III statements, the regime choice, TDS payable by section, PF/ESI/PT payroll                                                                                                                             | 3     | IN-15                  | Opus   | ~10 files, as IN-12 for `private-limited`                                                                                                                                                                          |
-| IN-18   | The `resident-diya-gl-in` bundle in Submit's catalogue (INR, yearly, 49900), UPI enabled, `diyaGlEntitlement.js` reading either bundle                                                                                                       | 3     | LP-21, DG-3a, H-IN-1, GA4 save-rate gate | Sonnet | ~4 files: `../submit.diyaccounting.co.uk/web/public/submit.catalogue.toml`, `app/services/diyaGlEntitlement.js`, `.env.ci`, `.env.prod`                                                                            |
-| IN-19   | The India page's tier strip and panel in rupees: the "On this device" row (DG-4), the 24h sandbox label (DG-2b), the ₹499 offer where DG-3b puts the upgrade                                                                               | 3     | IN-14, DG-3b, DG-4, GA4 save-rate gate | Sonnet | ~3 files: `web/diya-gl.co.uk/public/cloud.js`, `shell.js`, `web/browser-tests/diya-gl-cloud.browser.test.js`                                                                                                       |
-| IN-20   | GA4: a `jurisdiction` dimension on LP-9's events; the India price-test events                                                                                                                                                             | 3     | LP-9, IN-14            | Sonnet | ~3 files: `public/lib/analytics.js`, `public/diya-gl/diya-gl-events.js`, `web/unit-tests/diya-gl-events.test.js`                                                                                                   |
+| IN-20   | GA4: a `jurisdiction` dimension on LP-9's events; `referral_clicked` with the partner                                                                                                                                                             | 3     | LP-9, IN-14            | Sonnet | ~3 files: `public/lib/analytics.js`, `public/diya-gl/diya-gl-events.js`, `web/unit-tests/diya-gl-events.test.js`                                                                                                   |
 | IN-21   | The lamp mark and the accent token in the brand repository, consumed by the India page                                                                                                                                                    | 3     | LU-13, IN-14           | Sonnet | ~3 files in the brand repository, `public/diya-gl/in.css`                                                                                                                                                          |
 | IN-22   | Copy: the MCP server description, the package README and the spec page say which jurisdictions the build reads; a spec section for the `in:` extension                                                                                     | 3     | IN-12                  | Sonnet | ~4 files: `app/lib/mcp/server.js`, `diya-gl/README.md`, `public/diya-gl.html`, `app/bin/build-sitemaps.js`                                                                                                        |
-| H-IN-1  | An OIDAR GST registration quote (registration, authorised representative, monthly GSTR-5A) from an Indian CA; the number the GA4 save-rate gate reads against                                                                             | 1     | —                      | operator | —                                                                                                                                                                                                                  |
+| IN-23   | Bank statement importers: CSV and Excel, one bank per commit (SBI, HDFC, ICICI, Axis), each written from a real statement with a reconciliation test | 2 | IN-11 | Sonnet | ~2 files a bank: `public/diya-gl/import-in-<bank>.js`, its test |
+| IN-24   | GSTR-2B JSON (purchase lines with their ITC) and AIS JSON (the TDS receivable ledger) importers | 2 | IN-9, IN-10 | Sonnet | ~4 files: two importers and their tests |
+| IN-25   | The referral strip on the India page: one card per partner, tagged links, a disclosure line, `referral_clicked` | 3 | IN-14, IN-20, H-IN-6 | Sonnet | ~3 files: `in-proprietor.html`, `public/diya-gl/diya-gl-events.js`, its browser test |
+| IN-26   | Export to the referred provider's import format, Zoho Books first | 3 | IN-12, H-IN-6 | Sonnet | ~3 files: the exporter, its test, the page's save menu |
+| H-IN-6  | Join the referral programmes and confirm each one pays a UK company (Zoho Books first; ask Razorpay, Vyapar and Tide India about a foreign payout); the partner list for IN-25 | 3 | — | operator | the partners' sign-up pages |
+| H-IN-7  | An Indian CA's opinion that referral commission paid to the UK company needs no Indian registration, withholding or GST from it | 3 | — | operator | — |
 | H-IN-2  | Register `diya-gl.in`, `diyagl.in`, `diya-gl.co.in` in the management account through Route 53 (decided 2026-09-19)                                                                                                                       | 1     | —                      | operator | Route 53 (887764105431)                                                                                                                                                                                            |
 | H-IN-3  | The IP India public search for DIYA and DIYA-GL in classes 9 and 42; the Madrid-or-direct decision                                                                                                                                         | 3     | H-IN-2, H-LU-4         | operator | —                                                                                                                                                                                                                  |
 | H-IN-4  | An Indian CA reviews `app/data/in/fy-2026-2027.toml` and the `Proprietor` golden report before the page is public                                                                                                                          | 2     | IN-12                  | operator | —                                                                                                                                                                                                                  |
-| H-IN-5  | Read Stripe's UPI fee for the GB account in the Dashboard and enable UPI                                                                                                                                                                  | 3     | GA4 save-rate gate     | operator | dashboard.stripe.com                                                                                                                                                                                               |
 
-Phase 1 (IN-1 to IN-6) benefits the UK alone and lands on its own; H-IN-1 and H-IN-2 run
-beside it. Phase 2 needs nothing from Submit. Phase 3 is commerce and brand, and its paid-tier
-rows (IN-18, IN-19, H-IN-5) wait on the GA4 save-rate gate.
+Phase 1 (IN-1 to IN-6) benefits the UK alone and lands on its own; H-IN-2 runs beside it.
+Phase 2 needs nothing from Submit. Phase 3 is referrals, export and brand.
 
 ## Briefs
 
@@ -810,17 +705,8 @@ and golden report; IN-15 adds the ITC and 26AS ledgers to the report, IN-16 the 
 type and the takings view from `taxi.js`, IN-17 the Schedule III statements and the payroll
 journal. Acceptance as IN-12.
 
-**IN-18, the bundle.** In `submit.catalogue.toml` add `[[bundles]] id = "resident-diya-gl-in"`
-with `stripePriceAmount = 49900`, `stripeCurrency = "inr"`, `stripeInterval = "year"`,
-`tokensGranted` and refresh as `resident-diya-gl`, listed in every environment once H-IN-1 is
-done and the GA4 save-rate gate has opened; run `scripts/stripe-setup.js --dry-run` then live. Acceptance: the price exists in Stripe
-test and live; the bundles page shows it to a signed-in user; DG-3's entitlement reads either
-bundle.
-
-**IN-19 to IN-22.** IN-19: the India page's tier strip and panel show DG-4's "On this device"
-row, DG-2b's sandbox label and DG-3b's upgrade offer with the ₹499 price, formatted through the
-`in` profile. IN-20: every event from
-`diya-gl-events.js` carries `jurisdiction`; a `price_test` event with the variant. IN-21: the
+**IN-20 to IN-22.** IN-20: every event from `diya-gl-events.js` carries `jurisdiction`; a
+`referral_clicked` event carries the partner. IN-21: the
 lamp SVG and the accent token in the brand repository, pinned by the page. IN-22: the copy reads
 "UK and Indian" where a build carries both jurisdictions, and the spec page documents
 `diya-gl:jurisdiction`, `diya-gl:type` and the `in:` keys with the same field table as the UK
@@ -893,20 +779,6 @@ Web, all accessed 2026-09-18:
 - S34 EPF, ESI, Form 16: https://empxtrack.com/blog/esi-pf-statutory-compliance/ and https://www.epfindia.gov.in/site_docs/PDFs/MiscPDFs/ContributionRate.pdf and https://calcguru.in/epf-wage-ceiling-25000/
 - S35 Professional tax: https://ezhrm.in/professional-tax-india-2026-state-wise-slabs-filing-guide/ and https://www.motilaloswal.com/personal-finance/tax/what-is-professional-tax-tax-slab-rates-and-how-to-pay-the-p-tax
 - S36 Indian numbering and en-IN: https://en.wikipedia.org/wiki/Indian_numbering_system and https://codes.jarhalab.com/guides/how-to-format-inr-with-indian-numbering-system
-- S37 India GDP per capita: https://statisticstimes.com/economy/country/india-gdp-per-capita.php and https://www.imf.org/external/datamapper/NGDPDPC@WEO/OEMDC/ADVEC/WEOWORLD
-- S38 UK GDP per capita: https://statisticstimes.com/economy/country/uk-gdp-per-capita.php
-- S39 India subscription and SaaS price points: https://qz.com/india/1873128/amazon-prime-video-spotify-apple-music-priced-lowest-in-india, https://www.notebookcheck.net/Netflix-Indian-streaming-subscription-plan-dropped-as-low-as-INR-199-per-month-for-any-device.585539.0.html, https://www.itforsme.in/pricing/notion-india, https://www.playto.so/blogs/how-to-price-your-saas-for-indian-vs-international-customers-in-2026
-- S40 Zoho Books India pricing and free plan: https://www.patronaccounting.com/blog/zoho-books-pricing-india-2026 and https://www.zoho.com/blog/books/free-edition-of-zoho-books-india.html
-- S41 Vyapar and TallyPrime pricing: https://www.itforsme.in/pricing/vyapar-india and https://www.erpresearch.com/pricing/tallyprime
-- S42 GBP/INR: https://www.xe.com/en-us/currencyconverter/convert/?Amount=1&From=GBP&To=INR
-- S43 Stripe UPI (business locations include GB; recurring; limits): https://docs.stripe.com/payments/upi
-- S44 Stripe accounts in India, invite-only, no UPI: https://support.stripe.com/questions/supported-payment-methods-currencies-and-businesses-for-stripe-accounts-in-india and https://www.skydo.com/people-ask/does-stripe-support-upi-in-india
-- S45 Stripe UK international card fees: https://www.wearefounders.uk/stripe-fees-uk-2026/ and https://checkoutpage.com/blog/stripe-international-fees
-- S46 RBI e-mandates: https://www.khaitanco.com/thought-leaderships/RBI-enhances-transaction-limits-for-processing-of-e-mandates-for-recurring-transactions:-from-INR-5000-to-INR-15000 and https://docs.stripe.com/india-recurring-payments
-- S47 Razorpay for foreign businesses without an Indian entity: https://razorpay.com/blog/how-to-accept-payments-from-indian-customers-without-a-local-entity/ and https://razorpay.com/blog/razorpay-rbi-cross-border-licence-global-payments/
-- S48 Razorpay fees: https://razorpay.com/blog/razorpay-payment-gateway-pricing-explained/
-- S49 Stripe minimum charge amounts: https://docs.stripe.com/currencies
-- S50 OIDAR registration for foreign suppliers: https://www.india-briefing.com/news/oidar-compliance-india-gst-registration-ntor-gstr5a-digital-tax-43951.html and https://treelife.in/legal/oidar-registration-in-india/
 - S51 Equalisation levy abolished: https://www.akmglobal.com/blog/income-tax-update-no-equalization-levy-from-april_1/
 - S52 The diya lamp: https://en.wikipedia.org/wiki/Diya_(lamp)
 - S53 Route 53 registers .in: https://docs.aws.amazon.com/en_en/Route53/latest/DeveloperGuide/in.html
@@ -914,7 +786,7 @@ Web, all accessed 2026-09-18:
 - S55 "Diya" marks on the Indian register listings: https://www.startupwala.com/trademarks-registration/search-DELHI-DIYA-GOLD-5891994 and https://www.quickcompany.in/trademarks/3262270-diya-outdoor-media
 - S56 Indian trade mark fees and Madrid: https://www.intepat.com/blog/trademark-registration-fees-india and https://www.intepat.com/blog/madrid-protocol
 
-Variant sources, read 2026-09-29:
+Revenue and data sources, read 2026-09-29:
 
 - VR1 Tide India's business account: https://www.tide.co/en-IN/ and https://ffnews.com/newsarticle/tide-launches-app-and-business-account-in-india/
 - VR2 Tide's affiliate programme: https://www.tide.co/affiliate-programme/ and https://www.tide.co/support/joining/affiliate-programme/who-can-become-a-tide-affiliate/
