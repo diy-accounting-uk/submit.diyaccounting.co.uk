@@ -42,9 +42,11 @@ const ANALYTICS_ADMIN_V1BETA = "https://analyticsadmin.googleapis.com/v1beta";
 // BigQuery links, key events and enhanced measurement settings are v1alpha-only resources on
 // the Analytics Admin API; they have not graduated to v1beta.
 const ANALYTICS_ADMIN_V1ALPHA = "https://analyticsadmin.googleapis.com/v1alpha";
+const ANALYTICS_DATA_V1BETA = "https://analyticsdata.googleapis.com/v1beta";
 const CLOUD_RESOURCE_MANAGER_V3 = "https://cloudresourcemanager.googleapis.com/v3";
 
 const ANALYTICS_EDIT_SCOPE = "https://www.googleapis.com/auth/analytics.edit";
+const ANALYTICS_READONLY_SCOPE = "https://www.googleapis.com/auth/analytics.readonly";
 const CLOUD_PLATFORM_READONLY_SCOPE = "https://www.googleapis.com/auth/cloud-platform.read-only";
 const DEFAULT_COUNTING_METHOD = "ONCE_PER_EVENT";
 
@@ -304,6 +306,22 @@ export function describeLocationMismatch(plan) {
   return `BigQuery link ${plan.name}: dataset location is ${plan.locationMismatch.live}, config says ${plan.locationMismatch.wanted}; a link's location cannot be changed in place (recreate the link to move it)`;
 }
 
+/** The line the plan prints for a property's event count over yesterday..today. */
+export function formatEventCountLine(displayName, eventCount) {
+  return `${displayName} events (yesterday..today): ${eventCount}`;
+}
+
+/**
+ * Read the eventCount total from a runReport response body. A property with no events returns
+ * no rows, which is a count of zero.
+ *
+ * @param {{rows?: Array<{metricValues: Array<{value: string}>}>}} data
+ * @returns {number}
+ */
+export function extractEventCount(data) {
+  return Number(data.rows?.[0]?.metricValues?.[0]?.value ?? 0);
+}
+
 /**
  * @param {{githubEnvironment: string|null}} input
  * @param {string|null} input.measurementId - the designated stream's measurement id, once known
@@ -400,6 +418,10 @@ export function buildPropertyPlan({
 
 // --- Reporting ---
 
+function describeLinkSettings(linkPlan) {
+  return `dailyExport=${linkPlan.dailyExport} streamingExport=${linkPlan.streamingExport}`;
+}
+
 function printPropertyPlan(plan, dryRun) {
   const tag = dryRun ? "[dry-run] " : "";
   console.log(`\n=== GA4 sync: "${plan.displayName}"${dryRun ? " (dry run)" : ""} ===`);
@@ -435,9 +457,11 @@ function printPropertyPlan(plan, dryRun) {
     if (plan.bigQueryLink.action === "noop") {
       console.log(`BigQuery link: already in sync (${plan.bigQueryLink.name})`);
     } else if (plan.bigQueryLink.action === "update") {
-      console.log(`BigQuery link: ${tag}would update (${plan.bigQueryLink.name})`);
+      console.log(`BigQuery link: ${tag}would update (${plan.bigQueryLink.name}) to ${describeLinkSettings(plan.bigQueryLink)}`);
     } else {
-      console.log(`BigQuery link: ${tag}would create${plan.bigQueryLink.blockedOnProperty ? " (after the property is created)" : ""}`);
+      console.log(
+        `BigQuery link: ${tag}would create ${describeLinkSettings(plan.bigQueryLink)}${plan.bigQueryLink.blockedOnProperty ? " (after the property is created)" : ""}`,
+      );
     }
     const mismatch = describeLocationMismatch(plan.bigQueryLink);
     if (mismatch) console.log(mismatch);
@@ -482,6 +506,15 @@ async function listDataStreams(client, propertyName) {
 async function listBigQueryLinks(client, propertyName) {
   const { data } = await client.request({ url: `${ANALYTICS_ADMIN_V1ALPHA}/${propertyName}/bigQueryLinks` });
   return extractBigQueryLinks(data);
+}
+
+async function fetchEventCount(client, propertyName) {
+  const { data } = await client.request({
+    url: `${ANALYTICS_DATA_V1BETA}/${propertyName}:runReport`,
+    method: "POST",
+    data: { dateRanges: [{ startDate: "yesterday", endDate: "today" }], metrics: [{ name: "eventCount" }] },
+  });
+  return extractEventCount(data);
 }
 
 async function listKeyEvents(client, propertyName) {
@@ -696,7 +729,7 @@ export async function main() {
   const config = loadConfigFromRoot();
 
   assertFederatedCredentials();
-  const client = await createGoogleAuthorizedClient([ANALYTICS_EDIT_SCOPE, CLOUD_PLATFORM_READONLY_SCOPE]);
+  const client = await createGoogleAuthorizedClient([ANALYTICS_EDIT_SCOPE, ANALYTICS_READONLY_SCOPE, CLOUD_PLATFORM_READONLY_SCOPE]);
 
   console.log(
     `Reading current GA4 state for account ${config.account.id} ("${config.account.displayName}")${opts.apply ? "" : " (dry run)"}...`,
@@ -737,6 +770,7 @@ export async function main() {
     });
     plans.push(plan);
     printPropertyPlan(plan, !opts.apply);
+    if (liveProperty) console.log(formatEventCountLine(configProperty.displayName, await fetchEventCount(client, liveProperty.name)));
 
     if (githubVariableRead.forbidden && plan.githubVariable.value) {
       findings.set(plan.githubVariable.environment, githubVariableFinding(plan.githubVariable.environment, plan.githubVariable.value));

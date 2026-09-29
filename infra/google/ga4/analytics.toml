@@ -66,6 +66,12 @@ github_environment = "ci"
   uri = "https://ci-submit.diyaccounting.co.uk"
   measurement_id = "G-DV0SDVEZWC"
 
+  [property.bigquery_link]
+  project = "diyaccounting-ga4"
+  location = "europe-west2"
+  daily_export = true
+  streaming_export = false
+
 # Retired GA4 property (www site)
 # Trashed 2026-09-05; permanent deletion ~2026-10-10, restorable until then from Admin>Account>Trash.
 # Kept as a reference record here. Not read or applied by infra/google/ga4/ga4-sync.js.
