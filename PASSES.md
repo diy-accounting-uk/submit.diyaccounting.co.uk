@@ -112,7 +112,7 @@ The `generate-pass.yml` workflow creates passes and stores them in DynamoDB.
 
 ### Via API
 
-`POST /api/v1/pass/admin` - Admin endpoint for programmatic pass creation.
+`POST /api/v1/pass/admin` - Programmatic pass creation. Requires an ID token (`Authorization: Bearer`) for an operator or a `synthetic-*@test.diyaccounting.co.uk` test user. Test users can create `day-guest`, `invited-guest`, `resident-vat`, `resident` and `resident-pro` passes, always as test passes.
 
 ## Pass Redemption Flow
 
@@ -148,6 +148,7 @@ The simulator environment runs entirely locally with dynalite, a mock OAuth serv
 # 2. Create a day-guest pass
 PASS_CODE=$(curl -s -X POST http://localhost:3000/api/v1/pass/admin \
   -H "Content-Type: application/json" \
+  -H "Authorization: Bearer $ID_TOKEN" \
   -d '{
     "passTypeId": "day-guest-test-pass",
     "bundleId": "day-guest",
@@ -174,6 +175,7 @@ The flow: enter code → "Redeem Pass" → pass validated → "Request Day Guest
 # Create a resident-pro pass
 PASS_CODE=$(curl -s -X POST http://localhost:3000/api/v1/pass/admin \
   -H "Content-Type: application/json" \
+  -H "Authorization: Bearer $ID_TOKEN" \
   -d '{
     "passTypeId": "resident-pro-test-pass",
     "bundleId": "resident-pro",

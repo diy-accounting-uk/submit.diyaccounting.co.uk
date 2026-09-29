@@ -1545,7 +1545,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 #### BILL-07 Admin-issue a pass
 
 - **Use when:** an operator or admin must create a pass of any catalogue type with no token charge.
-- **Does:** The passAdminPost.js ingestHandler creates a pass directly via passService.createPass. It accepts caller-supplied validity, max uses, email restriction and notes, with no token charge.
+- **Does:** The passAdminPost.js ingestHandler creates a pass directly via passService.createPass for an operator or a synthetic test user (test users: five bundles, always test passes). It accepts caller-supplied validity, max uses, email restriction (operators only) and notes, with no token charge.
 - **Run:** `POST /api/v1/pass/admin`
 - **Entry:** `app/functions/account/passAdminPost.js:ingestHandler`
 - **Files:** app/functions/account/passAdminPost.js

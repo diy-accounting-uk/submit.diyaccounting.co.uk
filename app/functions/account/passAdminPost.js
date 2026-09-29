@@ -9,15 +9,23 @@ import {
   extractRequest,
   http200OkResponse,
   http400BadRequestResponse,
+  http401UnauthorizedResponse,
+  http403ForbiddenResponse,
   http500ServerErrorResponse,
   parseRequestBody,
 } from "../../lib/httpResponseHelper.js";
+import { decodeJwtToken } from "../../lib/jwtHelper.js";
+import { isOperatorEmail } from "../../lib/operators.js";
+import { isSyntheticTestUserEmail } from "../../lib/syntheticTestUser.js";
 import { registerLambdaRoute } from "../../lib/httpServerToLambdaAdaptor.js";
 import { createPass } from "../../services/passService.js";
 import { publishActivityEvent, classifyActor } from "../../lib/activityAlert.js";
 import { loadPassTypesFromRoot, getPassTypeById } from "../../services/productCatalog.js";
 
 const logger = createLogger({ source: "app/functions/account/passAdminPost.js" });
+
+// Synthetic test users may create passes only for the bundles the automated lanes exercise.
+const SYNTHETIC_ISSUABLE_BUNDLE_IDS = ["day-guest", "invited-guest", "resident-vat", "resident", "resident-pro"];
 
 /* v8 ignore start */
 export function apiEndpoint(app) {
@@ -30,6 +38,29 @@ export async function ingestHandler(event) {
 
   const { request } = extractRequest(event);
   const responseHeaders = { "Content-Type": "application/json", "Access-Control-Allow-Origin": "*" };
+
+  let decodedToken;
+  try {
+    decodedToken = decodeJwtToken(event.headers);
+  } catch (error) {
+    return http401UnauthorizedResponse({
+      request,
+      headers: responseHeaders,
+      message: "Authentication required",
+      error: error.message,
+    });
+  }
+  const callerEmail = decodedToken.email;
+  const callerIsOperator = await isOperatorEmail(callerEmail);
+  const callerIsSyntheticTestUser = isSyntheticTestUserEmail(callerEmail);
+  if (!callerIsOperator && !callerIsSyntheticTestUser) {
+    logger.warn({ message: "Pass creation refused, caller is not an operator or a synthetic test user" });
+    return http403ForbiddenResponse({
+      request,
+      headers: responseHeaders,
+      message: "Not permitted to create passes",
+    });
+  }
 
   const requestBody = parseRequestBody(event);
   if (event.body && !requestBody) {
@@ -48,6 +79,15 @@ export async function ingestHandler(event) {
     });
   }
 
+  if (!callerIsOperator && !SYNTHETIC_ISSUABLE_BUNDLE_IDS.includes(requestBody.bundleId)) {
+    logger.warn({ message: "Pass creation refused, bundle is not issuable by a synthetic test user", bundleId: requestBody.bundleId });
+    return http403ForbiddenResponse({
+      request,
+      headers: responseHeaders,
+      message: "Not permitted to create a pass for this bundle",
+    });
+  }
+
   const {
     passTypeId,
     bundleId,
@@ -62,7 +102,7 @@ export async function ingestHandler(event) {
   } = requestBody;
 
   // Derive testPass from pass type definition if not explicitly provided
-  let testPass = explicitTestPass;
+  let testPass = callerIsOperator ? explicitTestPass : true;
   if (testPass === undefined) {
     try {
       const passTypesConfig = loadPassTypesFromRoot();
@@ -86,13 +126,10 @@ export async function ingestHandler(event) {
       validUntil,
       validityPeriod,
       maxUses,
-      restrictedToEmail,
+      restrictedToEmail: callerIsOperator ? restrictedToEmail : undefined,
       createdBy: createdBy || "admin",
       notes,
-      // This route carries no JWT authorizer, so no caller email ever reaches it; classifyActor
-      // with no email resolves to "system", the same call an authenticated route makes with its
-      // decoded token's email.
-      actor: classifyActor(undefined),
+      actor: classifyActor(callerEmail),
     });
 
     logger.info({ message: "Admin pass created", passTypeId, bundleId });
@@ -113,7 +150,7 @@ export async function ingestHandler(event) {
         validFrom: pass.validFrom,
         validUntil: pass.validUntil,
         maxUses: pass.maxUses,
-        restrictedToEmail: restrictedToEmail ? true : false,
+        restrictedToEmail: callerIsOperator && restrictedToEmail ? true : false,
       },
     });
   } catch (error) {

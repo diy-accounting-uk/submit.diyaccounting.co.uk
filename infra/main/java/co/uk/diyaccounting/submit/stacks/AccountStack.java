@@ -1205,6 +1205,8 @@ public class AccountStack extends Stack {
         // Grant access to user sub hash salt secret in Secrets Manager
         SubHashSaltHelper.grantSaltAccess(this.passAdminPostLambda, region, account, props.envName());
         EmailHashSecretHelper.grantEmailHashSecretAccess(this.passAdminPostLambda, region, account, props.envName());
+        // passAdminPost admits operators, so it reads the operator list
+        OperatorEmailsHelper.grantOperatorEmailsAccess(this.passAdminPostLambda, region, account, props.envName());
         this.passAdminPostLambda.addToRolePolicy(PolicyStatement.Builder.create()
                 .effect(Effect.ALLOW)
                 .actions(List.of("events:PutEvents"))

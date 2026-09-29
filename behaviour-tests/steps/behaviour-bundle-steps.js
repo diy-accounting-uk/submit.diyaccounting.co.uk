@@ -297,6 +297,8 @@ export async function ensureBundleViaPassApi(page, bundleId, screenshotPath = de
     const createResult = await page.evaluate(
       async ({ bid, isTestPass }) => {
         try {
+          const idToken = localStorage.getItem("cognitoIdToken");
+          if (!idToken) return { ok: false, error: "No auth token" };
           const passBody = {
             passTypeId: bid,
             bundleId: bid,
@@ -307,7 +309,7 @@ export async function ensureBundleViaPassApi(page, bundleId, screenshotPath = de
           if (isTestPass) passBody.testPass = true;
           const response = await fetch("/api/v1/pass/admin", {
             method: "POST",
-            headers: { "Content-Type": "application/json" },
+            headers: { "Content-Type": "application/json", "Authorization": `Bearer ${idToken}` },
             body: JSON.stringify(passBody),
           });
           const body = await response.json();
@@ -558,6 +560,8 @@ export async function ensureBundleViaCheckout(
       const createResult = await page.evaluate(
         async ({ bid, isTestPass }) => {
           try {
+            const idToken = localStorage.getItem("cognitoIdToken");
+            if (!idToken) return { ok: false, error: "No auth token" };
             const passBody = {
               passTypeId: bid,
               bundleId: bid,
@@ -568,7 +572,7 @@ export async function ensureBundleViaCheckout(
             if (isTestPass) passBody.testPass = true;
             const response = await fetch("/api/v1/pass/admin", {
               method: "POST",
-              headers: { "Content-Type": "application/json" },
+              headers: { "Content-Type": "application/json", "Authorization": `Bearer ${idToken}` },
               body: JSON.stringify(passBody),
             });
             const body = await response.json();

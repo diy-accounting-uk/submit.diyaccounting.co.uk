@@ -40,7 +40,7 @@ function makeJWT(sub = "user-123", extra = {}) {
 
 function buildAdminPostEvent(body = {}) {
   return {
-    headers: {},
+    headers: { Authorization: `Bearer ${makeJWT("pass-admin-caller", { email: "synthetic-system-test@test.diyaccounting.co.uk" })}` },
     body: JSON.stringify(body),
     requestContext: {
       http: { method: "POST", path: "/api/v1/pass/admin" },

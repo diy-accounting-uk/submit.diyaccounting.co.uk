@@ -4466,10 +4466,10 @@ public class SubmitSharedNames {
                 "Redeems a pass code and grants the associated bundle to the authenticated user",
                 "redeemPass"));
 
-        // Pass Admin POST Lambda (JWT auth)
+        // Pass Admin POST Lambda (JWT auth; the handler admits operators and synthetic test users only)
         this.passAdminPostLambdaHttpMethod = HttpMethod.POST;
         this.passAdminPostLambdaUrlPath = "/api/v1/pass/admin";
-        this.passAdminPostLambdaJwtAuthorizer = false;
+        this.passAdminPostLambdaJwtAuthorizer = true;
         this.passAdminPostLambdaCustomAuthorizer = false;
         var passAdminPostLambdaHandlerName = "passAdminPost.ingestHandler";
         var passAdminPostLambdaHandlerDashed =
