@@ -103,7 +103,7 @@ biddable = false
 [[campaign]]
 name = "Campaign #1"
 type = "PERFORMANCE_MAX"
-status = "ENABLED"
+status = "PAUSED"
 budget_micros = 1000000
 
 [campaign.bidding]
@@ -111,6 +111,100 @@ strategy = "maximize_conversions"
 
 [[campaign.asset_group]]
 name = "Asset Group 1"
+
+[[campaign]]
+name = "Search: MTD VAT and ITSA"
+type = "SEARCH"
+status = "ENABLED"
+budget_gbp = 1.00
+locations = ["GB"]
+geo_target_type = "PRESENCE"
+contains_eu_political_advertising = false
+
+[campaign.network]
+google_search = true
+search_network = false
+content_network = false
+
+[campaign.bidding]
+strategy = "maximize_clicks"
+cpc_bid_ceiling_gbp = 0.30
+
+[[campaign.ad_group]]
+name = "Submit VAT return online free"
+
+[[campaign.ad_group.keyword]]
+text = "submit vat return online free"
+match_type = "EXACT"
+
+[[campaign.ad_group.keyword]]
+text = "submit vat return online free"
+match_type = "PHRASE"
+
+[campaign.ad_group.ad]
+headlines = ["Submit VAT Return Online", "Free VAT Return to HMRC", "MTD VAT - Try 3 Free", "Direct to HMRC, No Agent"]
+descriptions = [
+  "Try a free day pass with 3 VAT submissions to HMRC under Making Tax Digital.",
+  "Then VAT returns from 99p a month. Cancel anytime. Works with your spreadsheet.",
+]
+final_url = "https://submit.diyaccounting.co.uk/"
+
+[[campaign.ad_group]]
+name = "Free MTD VAT software"
+
+[[campaign.ad_group.keyword]]
+text = "free mtd vat software"
+match_type = "EXACT"
+
+[[campaign.ad_group.keyword]]
+text = "free mtd vat software"
+match_type = "PHRASE"
+
+[campaign.ad_group.ad]
+headlines = ["Free MTD VAT Software", "MTD VAT - Try It Free", "Works With Your Spreadsheet", "Sends Your VAT to HMRC"]
+descriptions = [
+  "Free day pass covers 3 VAT submissions to HMRC. Then 99p a month, cancel anytime.",
+  "Submit VAT returns from your DIY Accounting spreadsheet under Making Tax Digital.",
+]
+final_url = "https://submit.diyaccounting.co.uk/"
+
+[[campaign.ad_group]]
+name = "MTD Income Tax software"
+
+[[campaign.ad_group.keyword]]
+text = "mtd income tax software"
+match_type = "EXACT"
+
+[[campaign.ad_group.keyword]]
+text = "mtd income tax software"
+match_type = "PHRASE"
+
+[campaign.ad_group.ad]
+headlines = ["MTD Income Tax Software", "Income Tax for HMRC MTD", "Resident Plan From 3.99/mo", "File VAT and Income Tax"]
+descriptions = [
+  "Resident plan: VAT and Income Tax filing to HMRC as each is recognised. £39 a year.",
+  "Also £3.99 a month, cancel anytime. Built for sole traders and landlords.",
+]
+final_url = "https://submit.diyaccounting.co.uk/bundles.html"
+
+[[campaign.ad_group]]
+name = "File VAT return without accountant"
+
+[[campaign.ad_group.keyword]]
+text = "file vat return without accountant"
+match_type = "EXACT"
+
+[[campaign.ad_group.keyword]]
+text = "file vat return without accountant"
+match_type = "PHRASE"
+
+[campaign.ad_group.ad]
+headlines = ["File VAT Return Yourself", "No Accountant Needed", "Submit VAT Direct to HMRC", "Try 3 VAT Returns Free"]
+descriptions = [
+  "File your own VAT return under Making Tax Digital. Free day pass, then 99p a month.",
+  "Submit straight to HMRC from your spreadsheet. No agent, cancel anytime.",
+]
+final_url = "https://submit.diyaccounting.co.uk/"
 
 # The parameter name a future reserve-floor check reads the account's minimum daily budget
 # from; nothing reads it yet.
