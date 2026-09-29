@@ -14,7 +14,7 @@
 // ConditionExpression: if_not_exists(activeCount, :zero) < :cap
 
 import { describe, it, expect, beforeAll, afterAll } from "vitest";
-import { ingestHandler as bundlePostHandler } from "@app/functions/account/bundlePost.js";
+import { ingestHandler as bundlePostHandler, grantBundle } from "@app/functions/account/bundlePost.js";
 import { ingestHandler as bundleGetHandler } from "@app/functions/account/bundleGet.js";
 import { getBundle } from "./helpers/catalogueValues.js";
 
@@ -49,6 +49,12 @@ function buildPostEvent(token, body = {}) {
       http: { method: "POST", path: "/api/v1/bundle" },
     },
   };
+}
+
+// Grants through the path passes and webhooks use: bundlePost's HTTP handler only accepts on-request bundles.
+async function grantDirect(sub, bundleId) {
+  const decodedToken = { sub, email: `${sub}@example.com` };
+  return await grantBundle(sub, { bundleId, qualifiers: {} }, decodedToken, null);
 }
 
 function buildGetEvent(token) {
@@ -103,41 +109,32 @@ afterAll(async () => {
 describe("System: bundle capacity and per-user uniqueness", () => {
   describe("per-user uniqueness (hard-wired rule)", () => {
     it("should grant a bundle to a new user", async () => {
-      const token = makeJWT("cap-unique-user-1");
-      const event = buildPostEvent(token, { bundleId: "invited-guest", qualifiers: {} });
-      const res = await bundlePostHandler(event);
-      const body = JSON.parse(res.body);
-      expect(res.statusCode).toBe(201);
+      const body = await grantDirect("cap-unique-user-1", "invited-guest");
+      expect(body.statusCode).toBe(201);
       expect(body.status).toBe("granted");
     });
 
     it("should re-grant when same user requests same bundle again", async () => {
-      const token = makeJWT("cap-unique-user-2");
-      const event = buildPostEvent(token, { bundleId: "invited-guest", qualifiers: {} });
-
       // First request - granted
-      const res1 = await bundlePostHandler(event);
-      expect(JSON.parse(res1.body).status).toBe("granted");
+      const body1 = await grantDirect("cap-unique-user-2", "invited-guest");
+      expect(body1.status).toBe("granted");
 
       // Second request - existing bundle deleted and re-granted with fresh tokens
-      const res2 = await bundlePostHandler(event);
-      const body2 = JSON.parse(res2.body);
-      expect(res2.statusCode).toBe(201);
+      const body2 = await grantDirect("cap-unique-user-2", "invited-guest");
+      expect(body2.statusCode).toBe(201);
       expect(body2.status).toBe("granted");
       expect(body2.granted).toBe(true);
     });
 
     it("should allow same user to have different bundle types", async () => {
-      const token = makeJWT("cap-unique-user-3");
+      const body1 = await grantDirect("cap-unique-user-3", "invited-guest");
+      expect(body1.status).toBe("granted");
 
-      const res1 = await bundlePostHandler(buildPostEvent(token, { bundleId: "invited-guest", qualifiers: {} }));
-      expect(JSON.parse(res1.body).status).toBe("granted");
-
-      const res2 = await bundlePostHandler(buildPostEvent(token, { bundleId: "resident-guest", qualifiers: {} }));
-      expect(JSON.parse(res2.body).status).toBe("granted");
+      const body2 = await grantDirect("cap-unique-user-3", "resident-guest");
+      expect(body2.status).toBe("granted");
 
       // Verify user has both bundles
-      const getRes = await bundleGetHandler(buildGetEvent(token));
+      const getRes = await bundleGetHandler(buildGetEvent(makeJWT("cap-unique-user-3")));
       const bundles = JSON.parse(getRes.body).bundles;
       const bundleIds = bundles.map((b) => b.bundleId);
       expect(bundleIds).toContain("invited-guest");
@@ -163,11 +160,8 @@ describe("System: bundle capacity and per-user uniqueness", () => {
 
     it("should grant bundle when no cap is defined", async () => {
       // invited-guest has no cap field — uncapped bundles are always grantable
-      const token = makeJWT("cap-no-cap-user");
-      const event = buildPostEvent(token, { bundleId: "invited-guest", qualifiers: {} });
-      const res = await bundlePostHandler(event);
-      const body = JSON.parse(res.body);
-      expect(res.statusCode).toBe(201);
+      const body = await grantDirect("cap-no-cap-user", "invited-guest");
+      expect(body.statusCode).toBe(201);
       expect(body.status).toBe("granted");
     });
 
@@ -221,11 +215,8 @@ describe("System: bundle capacity and per-user uniqueness", () => {
       // invited-guest has no cap — multiple users can each allocate it
       const users = ["cap-multi-user-a", "cap-multi-user-b", "cap-multi-user-c"];
       for (const userId of users) {
-        const token = makeJWT(userId);
-        const event = buildPostEvent(token, { bundleId: "invited-guest", qualifiers: {} });
-        const res = await bundlePostHandler(event);
-        const body = JSON.parse(res.body);
-        expect(res.statusCode).toBe(201);
+        const body = await grantDirect(userId, "invited-guest");
+        expect(body.statusCode).toBe(201);
         expect(body.status).toBe("granted");
       }
 

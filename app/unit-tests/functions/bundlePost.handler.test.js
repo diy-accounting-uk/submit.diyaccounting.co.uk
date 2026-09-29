@@ -257,20 +257,34 @@ describe("bundlePost ingestHandler", () => {
   // Happy Path Tests (200)
   // ============================================================================
 
-  test("returns 201 and grants automatic bundle without persistence", async () => {
-    const token = makeIdToken("user-auto");
-    const event = buildEventWithToken(token, { bundleId: "default" });
-    event.headers["x-wait-time-ms"] = "30000";
+  test("grantBundle returns 201 for an automatic bundle without persistence", async () => {
+    const decodedToken = { sub: "user-auto", email: "auto@example.com" };
 
-    const response = await bundlePostHandler(event);
+    const result = await grantBundle("user-auto", { bundleId: "default" }, decodedToken, null);
 
-    expect(response.statusCode).toBe(201);
-    const body = parseResponseBody(response);
-    expect(body.status).toBe("granted");
-    expect(body.granted).toBe(true);
-    expect(body.expiry).toBe(null); // automatic bundles don't have expiry
-    expect(body.bundle).toBe("default");
+    expect(result.statusCode).toBe(201);
+    expect(result.status).toBe("granted");
+    expect(result.granted).toBe(true);
+    expect(result.expiry).toBe(null); // automatic bundles don't have expiry
+    expect(result.bundle).toBe("default");
   });
+
+  test.each(["default", "resident-vat", "resident", "resident-pro", "resident-guest", "invited-guest", "resident-pro-comp", "operator"])(
+    "returns 403 and grants nothing when %s is requested directly",
+    async (bundleId) => {
+      const token = makeIdToken(`user-refused-${bundleId}`);
+      const event = buildEventWithToken(token, { bundleId });
+      event.headers["x-wait-time-ms"] = "30000";
+      mockSend.mockClear();
+
+      const response = await bundlePostHandler(event);
+
+      expect(response.statusCode).toBe(403);
+      const body = parseResponseBody(response);
+      expect(body.error).toBe("bundle_not_requestable");
+      expect(mockSend).not.toHaveBeenCalled();
+    },
+  );
 
   test("returns 201 and grants test bundle with timeout producing expiry", async () => {
     const token = makeIdToken("user-test");
