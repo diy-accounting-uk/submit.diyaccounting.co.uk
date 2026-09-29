@@ -4707,7 +4707,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - **Does:** README.md describes the app, setup and key features, and CLAUDE.md carries the project's Claude Code conventions. _developers/SETUP.md is the local development setup guide, and NEXT.md is the live open-work board. BACKLOG.md holds future work, PLAN_REPOSITORY_AUTOMATION.md tracks the automation plan, and REPORT_*.md files are generated architecture and session reports.
 - **Run:** no command; see Does and Entry
 - **Entry:** `README.md`; `_developers/SETUP.md`; `NEXT.md`
-- **Files:** README.md, CLAUDE.md, _developers/SETUP.md, NEXT.md, BACKLOG.md, PLAN_REPOSITORY_AUTOMATION.md, REPORT_REPOSITORY_CONTENTS.md, REPORT_GIT_CONFIG.md, REPORT_SESSION_uOKRjk_2026-09-22.md, REPORT_SESSION_yQdSoM_2026-09-23.md
+- **Files:** README.md, CLAUDE.md, _developers/SETUP.md, NEXT.md, BACKLOG.md, PLAN_REPOSITORY_AUTOMATION.md, REPORT_REPOSITORY_CONTENTS.md, REPORT_GIT_CONFIG.md
 - **Keywords:** readme, setup guide, developer onboarding, next.md, backlog, plan doc, session report, architecture report
 - **Related:** DEV-27, DEV-40
 
@@ -4856,7 +4856,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 #### DEV-37 Write the session report
 
 - **Use when:** the operator asks for a session report, an account of the session, or how did this session do.
-- **Does:** session-report writes REPORT_SESSION_<id>_<date>.md at the repo root. It records what the session landed, what made it efficient, where it lost time or money, and ranked improvements. Every figure comes from git, job minutes, agent token counts, deploy runs and the transcript, never from memory.
+- **Does:** session-report writes REPORT_SESSION_SUBMIT_<id>_<date>.md at the workspace root. It records what the session landed, what made it efficient, where it lost time or money, and ranked improvements. Every figure comes from git, job minutes, agent token counts, deploy runs and the transcript, never from memory.
 - **Run:** `/session-report`
 - **Entry:** `.claude/skills/session-report/SKILL.md`
 - **Files:** .claude/skills/session-report/SKILL.md
@@ -5579,7 +5579,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 #### SS-56 Write the session report
 
 - **Use when:** the operator asks for a session report or an account of how this repository's session went.
-- **Does:** The session-report skill writes REPORT_SESSION_<id>_<date>.md from measured figures: the result, the method in prose, the mechanisms that worked, and losses with a board row each.
+- **Does:** The session-report skill writes ../REPORT_SESSION_SUBMIT_<id>_<date>.md from measured figures: the result, the method in prose, the mechanisms that worked, and losses with a board row each.
 - **Run:** `/session-report`
 - **Entry:** `../spreadsheets.diyaccounting.co.uk/.claude/skills/session-report/SKILL.md`
 - **Files:** ../spreadsheets.diyaccounting.co.uk/.claude/skills/session-report/SKILL.md
