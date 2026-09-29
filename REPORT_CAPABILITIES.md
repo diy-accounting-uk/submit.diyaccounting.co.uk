@@ -259,12 +259,9 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
     - [OPS-56](#ops-56-structure-github-issues-prs-and-funding-links) Structure GitHub issues, PRs and funding links: use when opening a support issue or PR needs the repository's standard structured template.
     - [OPS-57](#ops-57-dispatch-agentic-lib-board-backlog-and-pr-agents) Dispatch agentic-lib board, backlog and PR agents: use when the board, the NEXT.md backlog, or an issue-described change needs an agent dispatched from the shared agentic-lib library.
   - [Environment and accounts](#environment-and-accounts-ops)
-    - [OPS-58](#ops-58-document-multi-account-aws-architecture) Document multi-account AWS architecture: use when checking why a resource lives in a particular AWS account, or which account a new resource belongs in.
-    - [OPS-59](#ops-59-track-and-analyze-aws-spending) Track and analyze AWS spending: use when checking this repository's AWS cost-tracking approach or past spend.
     - [OPS-60](#ops-60-guide-github-repository-configuration) Guide GitHub repository configuration: use when setting up or checking a repository's branch protection, OIDC trust or webhook configuration.
     - [OPS-61](#ops-61-design-ci-branch-deploys-off-the-apex) Design CI branch deploys off the apex: use when checking the design rationale behind CI branch deploys, before changing that mechanism.
     - [OPS-62](#ops-62-report-accessibility-penetration-testing) Report accessibility penetration testing: use when checking past accessibility penetration test findings before a new test or fix.
-    - [OPS-63](#ops-63-report-identity-audit-findings) Report identity audit findings: use when checking past findings on commit-identity or signing controls before changing them.
     - [OPS-64](#ops-64-runbook-information-security-operations) Runbook information-security operations: use when an information-security incident needs its runbook procedure, or all users need a cross-account logout hold.
     - [OPS-65](#ops-65-document-security-policy-and-disclosure) Document security policy and disclosure: use when someone needs to know how to report a vulnerability, or what the disclosure procedure commits to.
     - [OPS-66](#ops-66-create-an-hmrc-sandbox-test-user) Create an HMRC sandbox test user: use when a fresh HMRC MTD sandbox test user is needed for VAT or Income Tax testing.
@@ -429,7 +426,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
   - [Build hygiene, toolchain & docs](#build-hygiene-toolchain--docs-dev)
     - [DEV-22](#dev-22-clean-and-update-local-build-state) Clean and update local build state: use when local build artefacts, node_modules or dependency versions are stale, or a commit's author needs checking.
     - [DEV-23](#dev-23-configure-the-test-and-lint-toolchains) Configure the test and lint toolchains: use when Vitest coverage thresholds, Playwright browser settings, or ESLint/security-lint rules need checking or changing.
-    - [DEV-24](#dev-24-document-developer-setup-and-repository-conventions) Document developer setup and repository conventions: use when a new contributor needs the setup guide, or the architecture, git config or session record needs reading.
+    - [DEV-24](#dev-24-document-developer-setup-and-repository-conventions) Document developer setup and repository conventions: use when a new contributor needs the setup guide, or the session record needs reading.
     - [DEV-25](#dev-25-maintain-the-specialist-agent-prompt-library) Maintain the specialist agent prompt library: use when a Claude session needs a reusable role prompt, or a one-off analysis prompt.
     - [DEV-26](#dev-26-enforce-claude-code-conventions-via-rules-and-hooks) Enforce Claude Code conventions via rules and hooks: use when a Claude session writes Lambda, CDK or test code, or pushes to main.
   - [Claude Code delivery-cycle skills](#claude-code-delivery-cycle-skills-dev)
@@ -1994,7 +1991,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - [Data protection and privacy](#data-protection-and-privacy-ops): [OPS-40](#ops-40-delete-a-customers-data-for-gdpr-erasure) Delete a customer's data for GDPR erasure · [OPS-41](#ops-41-export-a-customers-gdpr-subject-access-data) Export a customer's GDPR subject-access data · [OPS-42](#ops-42-guide-icogdpr-compliance) Guide ICO/GDPR compliance · [OPS-43](#ops-43-rotate-stored-email-address-hashes) Rotate stored email-address hashes · [OPS-44](#ops-44-hash-and-rotate-the-subject-id-salt) Hash and rotate the subject-ID salt · [OPS-45](#ops-45-manage-aws-secrets-manager-entries-and-rotation-tags) Manage AWS Secrets Manager entries and rotation tags · [OPS-46](#ops-46-query-and-persist-per-consumer-security-state-records) Query and persist per-consumer security-state records · [OPS-47](#ops-47-check-fraud-prevention-header-record-freshness) Check fraud-prevention header record freshness · [OPS-48](#ops-48-verify-backup-health-daily) Verify backup health daily · [OPS-49](#ops-49-request-and-renew-the-holding-page-certificate) Request and renew the holding-page certificate · [OPS-50](#ops-50-drill-and-test-pitr-database-restoration) Drill and test PITR database restoration
 - [Video, publishing and accessibility](#video-publishing-and-accessibility-ops): [OPS-51](#ops-51-publish-build-artifacts-and-documentation) Publish build artifacts and documentation · [OPS-52](#ops-52-auto-record-demo-videos-on-prod-deploy) Auto-record demo videos on prod deploy · [OPS-53](#ops-53-verify-youtube-channel-consistency-weekly) Verify YouTube channel consistency weekly · [OPS-88](#ops-88-orchestrate-demo-video-recording-journeys) Orchestrate demo-video recording journeys · [OPS-89](#ops-89-overlay-pointer-and-caption-cues-on-video) Overlay pointer and caption cues on video · [OPS-90](#ops-90-encode-captured-video-frames-and-captions) Encode captured video frames and captions · [OPS-91](#ops-91-validate-video-scene-scripts-and-timing) Validate video scene scripts and timing · [OPS-92](#ops-92-redact-secrets-from-video-artefacts) Redact secrets from video artefacts · [OPS-93](#ops-93-publish-demo-videos-to-youtube) Publish demo videos to YouTube · [OPS-94](#ops-94-play-demo-videos-on-the-public-site) Play demo videos on the public site · [OPS-95](#ops-95-generate-wcag-accessibility-compliance-rows) Generate WCAG accessibility compliance rows · [OPS-96](#ops-96-scan-pages-for-accessibility-violations) Scan pages for accessibility violations · [OPS-97](#ops-97-compile-the-compliance-audit-report) Compile the compliance audit report
 - [Agent workflows](#agent-workflows-ops): [OPS-54](#ops-54-define-specialized-claude-code-sub-agent-personas) Define specialized Claude Code sub-agent personas · [OPS-55](#ops-55-configure-github-copilot-review-and-workspace-setup) Configure GitHub Copilot review and workspace setup · [OPS-56](#ops-56-structure-github-issues-prs-and-funding-links) Structure GitHub issues, PRs and funding links · [OPS-57](#ops-57-dispatch-agentic-lib-board-backlog-and-pr-agents) Dispatch agentic-lib board, backlog and PR agents
-- [Environment and accounts](#environment-and-accounts-ops): [OPS-58](#ops-58-document-multi-account-aws-architecture) Document multi-account AWS architecture · [OPS-59](#ops-59-track-and-analyze-aws-spending) Track and analyze AWS spending · [OPS-60](#ops-60-guide-github-repository-configuration) Guide GitHub repository configuration · [OPS-61](#ops-61-design-ci-branch-deploys-off-the-apex) Design CI branch deploys off the apex · [OPS-62](#ops-62-report-accessibility-penetration-testing) Report accessibility penetration testing · [OPS-63](#ops-63-report-identity-audit-findings) Report identity audit findings · [OPS-64](#ops-64-runbook-information-security-operations) Runbook information-security operations · [OPS-65](#ops-65-document-security-policy-and-disclosure) Document security policy and disclosure · [OPS-66](#ops-66-create-an-hmrc-sandbox-test-user) Create an HMRC sandbox test user · [OPS-67](#ops-67-apply-google-cloud--ga4-infrastructure) Apply Google Cloud / GA4 infrastructure · [OPS-68](#ops-68-provision-and-assume-roles-for-test-user-provisioning) Provision and assume roles for test-user provisioning · [OPS-69](#ops-69-assume-and-clear-local-aws-deployment-credentials) Assume and clear local AWS deployment credentials · [OPS-98](#ops-98-bootstrap-the-cdk-toolkit-across-accounts) Bootstrap the CDK toolkit across accounts · [OPS-99](#ops-99-bootstrap-the-aws-organization-structure) Bootstrap the AWS Organization structure · [OPS-100](#ops-100-create-or-invite-aws-member-accounts) Create or invite AWS member accounts · [OPS-101](#ops-101-set-up-github-oidc-deployment-roles) Set up GitHub OIDC deployment roles · [OPS-102](#ops-102-verify-the-multi-account-aws-setup) Verify the multi-account AWS setup · [OPS-103](#ops-103-bootstrap-a-new-aws-account-for-cdk) Bootstrap a new AWS account for CDK
+- [Environment and accounts](#environment-and-accounts-ops): [OPS-60](#ops-60-guide-github-repository-configuration) Guide GitHub repository configuration · [OPS-61](#ops-61-design-ci-branch-deploys-off-the-apex) Design CI branch deploys off the apex · [OPS-62](#ops-62-report-accessibility-penetration-testing) Report accessibility penetration testing · [OPS-64](#ops-64-runbook-information-security-operations) Runbook information-security operations · [OPS-65](#ops-65-document-security-policy-and-disclosure) Document security policy and disclosure · [OPS-66](#ops-66-create-an-hmrc-sandbox-test-user) Create an HMRC sandbox test user · [OPS-67](#ops-67-apply-google-cloud--ga4-infrastructure) Apply Google Cloud / GA4 infrastructure · [OPS-68](#ops-68-provision-and-assume-roles-for-test-user-provisioning) Provision and assume roles for test-user provisioning · [OPS-69](#ops-69-assume-and-clear-local-aws-deployment-credentials) Assume and clear local AWS deployment credentials · [OPS-98](#ops-98-bootstrap-the-cdk-toolkit-across-accounts) Bootstrap the CDK toolkit across accounts · [OPS-99](#ops-99-bootstrap-the-aws-organization-structure) Bootstrap the AWS Organization structure · [OPS-100](#ops-100-create-or-invite-aws-member-accounts) Create or invite AWS member accounts · [OPS-101](#ops-101-set-up-github-oidc-deployment-roles) Set up GitHub OIDC deployment roles · [OPS-102](#ops-102-verify-the-multi-account-aws-setup) Verify the multi-account AWS setup · [OPS-103](#ops-103-bootstrap-a-new-aws-account-for-cdk) Bootstrap a new AWS account for CDK
 - [Shared runtime libraries](#shared-runtime-libraries-ops): [OPS-81](#ops-81-mask-and-redact-sensitive-data-from-logs) Mask and redact sensitive data from logs · [OPS-82](#ops-82-provide-a-shared-dynamodb-client) Provide a shared DynamoDB client · [OPS-83](#ops-83-emit-cloudwatch-emf-metrics) Emit CloudWatch EMF metrics · [OPS-84](#ops-84-validate-required-environment-variables-at-startup) Validate required environment variables at startup · [OPS-85](#ops-85-obtain-and-use-github-app-api-tokens) Obtain and use GitHub App API tokens · [OPS-86](#ops-86-provide-structured-pii-redacting-logging) Provide structured PII-redacting logging · [OPS-87](#ops-87-process-sqs-message-batches-in-lambda-workers) Process SQS message batches in Lambda workers
 - [Backup and disaster recovery](#backup-and-disaster-recovery-ops): [OPS-104](#ops-104-set-up-cross-account-backup-iam-roles) Set up cross-account backup IAM roles · [OPS-105](#ops-105-copy-production-data-to-backup-for-migration) Copy production data to backup for migration · [OPS-106](#ops-106-replicate-secrets-across-aws-accounts) Replicate secrets across AWS accounts · [OPS-107](#ops-107-list-production-secrets-manager-entries) List production Secrets Manager entries · [OPS-108](#ops-108-backfill-ttl-on-existing-dynamodb-records) Backfill TTL on existing DynamoDB records · [OPS-109](#ops-109-disaster-recovery-restore-into-a-new-prod-account) Disaster-recovery restore into a new prod account · [OPS-110](#ops-110-force-logout-all-users-during-a-security-incident) Force logout all users during a security incident
 - [CDK infrastructure stacks](#cdk-infrastructure-stacks-ops): [OPS-111](#ops-111-provision-cross-account-backup-vaults-and-plans) Provision cross-account backup vaults and plans · [OPS-112](#ops-112-provision-the-api-gateway-stack) Provision the API Gateway stack · [OPS-113](#ops-113-provision-the-dynamodb-and-s3-data-stack) Provision the DynamoDB and S3 data stack · [OPS-114](#ops-114-provision-ecr-image-repositories) Provision ECR image repositories · [OPS-115](#ops-115-provision-the-edgecloudfront-stack) Provision the Edge/CloudFront stack · [OPS-116](#ops-116-provision-the-holding-page-stack) Provision the holding-page stack · [OPS-117](#ops-117-provision-the-observability-stack) Provision the Observability stack · [OPS-118](#ops-118-provision-the-observability-stack-in-us-east-1) Provision the Observability stack in us-east-1 · [OPS-119](#ops-119-provision-the-ops-stack) Provision the Ops stack · [OPS-120](#ops-120-provision-the-publish-stack) Provision the Publish stack · [OPS-121](#ops-121-provision-the-security-baseline-stack) Provision the Security Baseline stack · [OPS-122](#ops-122-provision-the-security-detection-stack) Provision the Security Detection stack
@@ -2976,12 +2973,9 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 ### Environment and accounts (OPS)
 
 <!-- generated:group environment-and-accounts-ops -->
-- [OPS-58](#ops-58-document-multi-account-aws-architecture) Document multi-account AWS architecture
-- [OPS-59](#ops-59-track-and-analyze-aws-spending) Track and analyze AWS spending
 - [OPS-60](#ops-60-guide-github-repository-configuration) Guide GitHub repository configuration
 - [OPS-61](#ops-61-design-ci-branch-deploys-off-the-apex) Design CI branch deploys off the apex
 - [OPS-62](#ops-62-report-accessibility-penetration-testing) Report accessibility penetration testing
-- [OPS-63](#ops-63-report-identity-audit-findings) Report identity audit findings
 - [OPS-64](#ops-64-runbook-information-security-operations) Runbook information-security operations
 - [OPS-65](#ops-65-document-security-policy-and-disclosure) Document security policy and disclosure
 - [OPS-66](#ops-66-create-an-hmrc-sandbox-test-user) Create an HMRC sandbox test user
@@ -2996,25 +2990,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - [OPS-103](#ops-103-bootstrap-a-new-aws-account-for-cdk) Bootstrap a new AWS account for CDK
 <!-- /generated:group environment-and-accounts-ops -->
 
-#### OPS-58 Document multi-account AWS architecture
 
-- **Use when:** checking why a resource lives in a particular AWS account, or which account a new resource belongs in.
-- **Does:** AWS_ARCHITECTURE.md describes the six-account structure: management, gateway, spreadsheets, submit-ci, submit-prod and submit-backup. It documents the security and isolation rationale behind the split.
-- **Run:** no command; see Does and Entry
-- **Entry:** `AWS_ARCHITECTURE.md`
-- **Files:** AWS_ARCHITECTURE.md
-- **Keywords:** aws architecture, multi-account, account isolation, submit-ci, submit-prod
-- **Related:** OPS-59
-
-#### OPS-59 Track and analyze AWS spending
-
-- **Use when:** checking this repository's AWS cost-tracking approach or past spend.
-- **Does:** AWS_COSTS.md documents cost-tracking methodology, monthly spend and cost-optimisation strategies.
-- **Run:** no command; see Does and Entry
-- **Entry:** `AWS_COSTS.md`
-- **Files:** AWS_COSTS.md
-- **Keywords:** aws costs, cost tracking, monthly spend, cost optimisation, aws_costs.md
-- **Related:** OPS-58
 
 #### OPS-60 Guide GitHub repository configuration
 
@@ -3046,15 +3022,6 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - **Keywords:** accessibility test, penetration test, findings report, deployed site audit, wcag
 - **Related:** OPS-36
 
-#### OPS-63 Report identity audit findings
-
-- **Use when:** checking past findings on commit-identity or signing controls before changing them.
-- **Does:** REPORT_IDENTITY_AUDIT.md holds the findings from an audit of the repository's commit-identity and signing controls.
-- **Run:** no command; see Does and Entry
-- **Entry:** `REPORT_IDENTITY_AUDIT.md`
-- **Files:** REPORT_IDENTITY_AUDIT.md
-- **Keywords:** identity audit, commit identity controls, signing controls, audit findings, report_identity_audit.md
-- **Related:** OPS-28, OPS-29
 
 #### OPS-64 Runbook information-security operations
 
@@ -3074,7 +3041,6 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - **Entry:** `SECURITY.md`
 - **Files:** SECURITY.md
 - **Keywords:** security policy, vulnerability disclosure, responsible disclosure, security.md, report a vulnerability
-- **Related:** OPS-63
 
 #### OPS-66 Create an HMRC sandbox test user
 
@@ -4703,11 +4669,11 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 
 #### DEV-24 Document developer setup and repository conventions
 
-- **Use when:** a new contributor needs the setup guide, or the architecture, git config or session record needs reading.
-- **Does:** README.md describes the app, setup and key features, and CLAUDE.md carries the project's Claude Code conventions. _developers/SETUP.md is the local development setup guide, and NEXT.md is the live open-work board. BACKLOG.md holds future work, PLAN_REPOSITORY_AUTOMATION.md tracks the automation plan, and REPORT_*.md files are generated architecture and session reports.
+- **Use when:** a new contributor needs the setup guide, or the session record needs reading.
+- **Does:** README.md describes the app, setup and key features, and CLAUDE.md carries the project's Claude Code conventions. _developers/SETUP.md is the local development setup guide, and NEXT.md is the live open-work board. BACKLOG.md holds future work, PLAN_REPOSITORY_AUTOMATION.md tracks the automation plan, and REPORT_*.md files are session and audit reports.
 - **Run:** no command; see Does and Entry
 - **Entry:** `README.md`; `_developers/SETUP.md`; `NEXT.md`
-- **Files:** README.md, CLAUDE.md, _developers/SETUP.md, NEXT.md, BACKLOG.md, PLAN_REPOSITORY_AUTOMATION.md, REPORT_REPOSITORY_CONTENTS.md, REPORT_GIT_CONFIG.md
+- **Files:** README.md, CLAUDE.md, _developers/SETUP.md, NEXT.md, BACKLOG.md, PLAN_REPOSITORY_AUTOMATION.md
 - **Keywords:** readme, setup guide, developer onboarding, next.md, backlog, plan doc, session report, architecture report
 - **Related:** DEV-27, DEV-40
 
@@ -5630,7 +5596,6 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - accessibility scan: [OPS-96](#ops-96-scan-pages-for-accessibility-violations), [DEV-14](#dev-14-start-the-proxy-and-simulator-local-dev-environments)
 - accessibility statement: [SITE-10](#site-10-serve-general-site-pages)
 - accessibility test: [OPS-62](#ops-62-report-accessibility-penetration-testing)
-- account isolation: [OPS-58](#ops-58-document-multi-account-aws-architecture)
 - account migration: [OPS-106](#ops-106-replicate-secrets-across-aws-accounts), [OPS-107](#ops-107-list-production-secrets-manager-entries)
 - account policies: [BILL-31](#bill-31-configure-stripe-account-policies)
 - account separation: [OPS-105](#ops-105-copy-production-data-to-backup-for-migration)
@@ -5737,7 +5702,6 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - athena query: [DATA-13](#data-13-catalogue-cloudfront-access-logs-for-athena)
 - athena view: [DATA-10](#data-10-create-or-replace-athena-business-views)
 - athena workgroup: [DATA-12](#data-12-provision-the-analytics-lake-and-athena-workgroup)
-- audit findings: [OPS-63](#ops-63-report-identity-audit-findings)
 - audit trail: [DEV-17](#dev-17-export-and-embed-dynamodb-test-state-in-reports)
 - auth logic: [DEV-12](#dev-12-prove-the-client-status-stack-and-fetchauth)
 - auth platform brand: [DATA-44](#data-44-assert-google-oauth-client-configuration)
@@ -5761,17 +5725,14 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - autosave: [SS-27](#ss-27-save-and-load-books-locally-and-via-submits-cloud-store)
 - availability sli: [DATA-31](#data-31-sql-views-dora-and-operations)
 - aws account setup: [OPS-98](#ops-98-bootstrap-the-cdk-toolkit-across-accounts)
-- aws architecture: [OPS-58](#ops-58-document-multi-account-aws-architecture)
 - aws budgets: [DATA-16](#data-16-alert-on-cost-budget-and-anomaly-thresholds)
 - aws config recorder: [OPS-121](#ops-121-provision-the-security-baseline-stack)
-- aws costs: [OPS-59](#ops-59-track-and-analyze-aws-spending)
 - aws organization: [OPS-99](#ops-99-bootstrap-the-aws-organization-structure)
 - aws sdk: [OPS-82](#ops-82-provide-a-shared-dynamodb-client)
 - aws security credentials supplier: [DATA-37](#data-37-federate-lambda-credentials-to-google-cloud)
 - aws sso: [DATA-53](#data-53-reach-google-cloud-from-a-local-session-via-aws-sso)
 - aws sts assume-role: [OPS-69](#ops-69-assume-and-clear-local-aws-deployment-credentials)
 - aws-jwt-verify: [SITE-02](#site-02-verify-jwts-at-the-api-gateway)
-- aws_costs.md: [OPS-59](#ops-59-track-and-analyze-aws-spending)
 - awscustomresource: [OPS-127](#ops-127-upsert-route53-alias-records-via-custom-resource)
 - axe: [DATA-14](#data-14-catalogue-compliance-findings-for-the-dashboard), [SS-45](#ss-45-run-compliance-checks)
 - axe-core: [OPS-96](#ops-96-scan-pages-for-accessibility-violations)
@@ -6025,7 +5986,6 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - commit author: [SS-39](#ss-39-guard-commit-author-identity-on-prs)
 - commit identity: [OPS-28](#ops-28-enforce-commit-identity-allowlist)
 - commit identity allowlist: [DEV-22](#dev-22-clean-and-update-local-build-state)
-- commit identity controls: [OPS-63](#ops-63-report-identity-audit-findings)
 - commit signatures: [OPS-29](#ops-29-verify-commit-signatures-on-pull-requests)
 - commits: [DATA-07](#data-07-pull-github-operator-effort-data)
 - community page: [SS-23](#ss-23-serve-knowledge-base-article-and-community-content)
@@ -6090,10 +6050,8 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - cost anomaly detection: [DATA-16](#data-16-alert-on-cost-budget-and-anomaly-thresholds)
 - cost daily: [DATA-30](#data-30-sql-views-cost)
 - cost export bucket: [DATA-17](#data-17-export-aws-billing-data-in-focus-format)
-- cost optimisation: [OPS-59](#ops-59-track-and-analyze-aws-spending)
 - cost per session: [DATA-36](#data-36-answer-google-ads-questions-from-live-data)
 - cost per submission: [DATA-30](#data-30-sql-views-cost)
-- cost tracking: [OPS-59](#ops-59-track-and-analyze-aws-spending)
 - cost vs target: [DATA-30](#data-30-sql-views-cost)
 - cost-copy role: [DATA-17](#data-17-export-aws-billing-data-in-focus-format)
 - countactiveallocations: [BILL-05](#bill-05-reconcile-bundle-capacity-counters)
@@ -6620,7 +6578,6 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - idempotence: [SS-14](#ss-14-verify-export-and-report-roundtrip-and-stability)
 - idempotent enable: [DATA-40](#data-40-enable-required-google-cloud-apis)
 - identity: [CH-01](#ch-01-exchange-a-companies-house-oauth-token)
-- identity audit: [OPS-63](#ops-63-report-identity-audit-findings)
 - identity base url: [CH-09](#ch-09-query-and-submit-document-transactions)
 - identity guard: [OPS-28](#ops-28-enforce-commit-identity-allowlist), [SS-39](#ss-39-guard-commit-author-identity-on-prs)
 - identity pool: [SS-34](#ss-34-configure-cloudwatch-rum)
@@ -6843,7 +6800,6 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - monthly budget: [DATA-16](#data-16-alert-on-cost-budget-and-anomaly-thresholds)
 - monthly feedback email: [HMRC-26](#hmrc-26-monitor-hmrc-fraud-prevention-header-compliance)
 - monthly record: [OPS-47](#ops-47-check-fraud-prevention-header-record-freshness)
-- monthly spend: [OPS-59](#ops-59-track-and-analyze-aws-spending)
 - move book: [BILL-15](#bill-15-move-a-book-to-a-client)
 - move ou: [OPS-100](#ops-100-create-or-invite-aws-member-accounts)
 - move_book_to_client: [MCP-08](#mcp-08-manage-practice-clients-and-hmrc-agent-authorisation)
@@ -6857,7 +6813,6 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - mtd-income-tax: [OPS-66](#ops-66-create-an-hmrc-sandbox-test-user)
 - mtd-it: [BILL-12](#bill-12-invite-a-client-to-authorise-agent-access)
 - mtd-vat: [HMRC-24](#hmrc-24-verify-hmrc-agent-authorisation-for-a-client), [BILL-12](#bill-12-invite-a-client-to-authorise-agent-access), [OPS-66](#ops-66-create-an-hmrc-sandbox-test-user)
-- multi-account: [OPS-58](#ops-58-document-multi-account-aws-architecture)
 - multi-account check: [OPS-102](#ops-102-verify-the-multi-account-aws-setup)
 - my passes: [BILL-09](#bill-09-list-a-users-issued-passes)
 - naming convention: [OPS-02](#ops-02-derive-environment-and-deployment-names-from-a-branch)
@@ -7198,7 +7153,6 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - report: [SS-15](#ss-15-extract-diya-gl-data-and-financial-reports-from-populated-packages)
 - report a vulnerability: [OPS-65](#ops-65-document-security-policy-and-disclosure)
 - report.json: [SS-15](#ss-15-extract-diya-gl-data-and-financial-reports-from-populated-packages)
-- report_identity_audit.md: [OPS-63](#ops-63-report-identity-audit-findings)
 - report_session file: [DEV-37](#dev-37-write-the-session-report)
 - repository contents: [DEV-22](#dev-22-clean-and-update-local-build-state)
 - repository structure check: [DEV-21](#dev-21-verify-module-wiring-and-repository-shape)
@@ -7380,7 +7334,6 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - sideways relief: [HMRC-17](#hmrc-17-manage-itsa-losses-and-claims)
 - sign in: [SITE-01](#site-01-sign-customers-in-via-cognito), [MCP-02](#mcp-02-authenticate-mcp-sessions-via-cognito)
 - signature verify: [SITE-02](#site-02-verify-jwts-at-the-api-gateway)
-- signing controls: [OPS-63](#ops-63-report-identity-audit-findings)
 - signup to first submission: [DATA-29](#data-29-sql-views-submission-and-compliance)
 - silent local failure: [OPS-47](#ops-47-check-fraud-prevention-header-record-freshness)
 - single stack deploy: [OPS-08](#ops-08-deploy-a-single-cdk-stack-on-demand)
@@ -7466,9 +7419,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - submission failure: [DEV-42](#dev-42-look-up-a-vat-submission-failure-alarms-customer)
 - submissions daily: [DATA-29](#data-29-sql-views-submission-and-compliance)
 - submit vat: [HMRC-01](#hmrc-01-submit-a-vat-return)
-- submit-ci: [OPS-58](#ops-58-document-multi-account-aws-architecture)
 - submit-deployment-role: [OPS-69](#ops-69-assume-and-clear-local-aws-deployment-credentials)
-- submit-prod: [OPS-58](#ops-58-document-multi-account-aws-architecture)
 - submit.bundle.js: [BILL-43](#bill-43-build-the-frontend-test-bundle)
 - submit.env: [SITE-16](#site-16-configure-the-frontend-via-toml-and-env-libraries), [DATA-24](#data-24-load-ga4-analytics-on-site-pages)
 - submit.js: [SITE-18](#site-18-bootstrap-the-frontend-module-bundle)

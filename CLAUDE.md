@@ -52,9 +52,7 @@ stripped after sessions kept accreting status notes and "tidy up X if wanted" li
 
 ## Quick Reference
 
-**Primary documentation**: See `REPORT_REPOSITORY_CONTENTS.md` for complete architecture, npm scripts, AWS stacks, and directory structure.
-
-**Capability index**: before you add a script, workflow, Lambda, check, sync, report, alarm, page or skill, look in `REPORT_CAPABILITIES.md` (the `capabilities` skill says how). Use or extend what it lists.
+**Capability index** (architecture, npm scripts, workflows, stacks, directory map): before you add a script, workflow, Lambda, check, sync, report, alarm, page or skill, look in `REPORT_CAPABILITIES.md` (the `capabilities` skill says how). Use or extend what it lists.
 - The Index at the top lists every capability as id, name and "use when".
 - Each entry (`#### <ID> <name>`) gives Use when, Does, Run (the command), Entry (the code), Files, Keywords.
 - `grep -n -i '<word>' REPORT_CAPABILITIES.md`, or the Keywords section, finds an entry by word.

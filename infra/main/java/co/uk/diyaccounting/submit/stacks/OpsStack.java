@@ -112,8 +112,7 @@ public class OpsStack extends Stack {
             return "";
         }
 
-        // GitHub App configuration for the alarm-to-issue Lambda (diya-ops, see
-        // REPORT_IDENTITY_AUDIT.md section 8 recommendation 2). Both id and installation id must
+        // GitHub App configuration for the alarm-to-issue Lambda (diya-ops). Both id and installation id must
         // be set for the Lambda to be built; the private key itself is read from Secrets Manager
         // at runtime, by name, from GITHUB_APP_PRIVATE_KEY_SECRET_ID.
         @Value.Default

@@ -6,7 +6,7 @@ run-name: "Commit signature check for PR #${{ github.event.pull_request.number }
 
 # Fails when any commit on a PR lacks a verified signature
 # (commit.verification.verified from the GitHub API), which is the only proof
-# that the author field is not a self-asserted string. See REPORT_GIT_CONFIG.md.
+# that the author field is not a self-asserted string.
 #
 # Commits authored by github-actions[bot] are exempt: publish.yml's version bump
 # and the alarm-triage PRs are made by the runner, which has no signing key.
@@ -60,6 +60,6 @@ jobs:
           } >> "$GITHUB_STEP_SUMMARY"
 
           if [ "$unverified" -gt 0 ]; then
-            echo "::error::${unverified} of ${total} commits on this PR are not signed and verified. Sign commits with the registered SSH key (REPORT_GIT_CONFIG.md); only github-actions[bot] commits are exempt."
+            echo "::error::${unverified} of ${total} commits on this PR are not signed and verified. Sign commits with the registered SSH key; only github-actions[bot] commits are exempt."
             exit 1
           fi

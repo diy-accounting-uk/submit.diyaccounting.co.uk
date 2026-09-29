@@ -20,7 +20,7 @@ source = "BACKLOG 11a"
 [[items]]
 id = "mtd-terms-of-use"
 name = "MTD terms of use"
-description = "HMRC's software developer terms of use, tracked against reference/HMRC_MTD_API_Production_Approval_Guide.pdf"
+description = "HMRC's software developer terms of use, tracked against ../reference/HMRC_MTD_API_Production_Approval_Guide.pdf"
 status = "current"
 date = "2026-09-05"
 date_kind = "reviewed"

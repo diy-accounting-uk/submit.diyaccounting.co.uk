@@ -170,8 +170,7 @@ public class AccountStack extends Stack {
         // Lambdas below.
         String hmrcAgentAuthorisationBaseUri();
 
-        // GitHub App configuration for the support-ticket Lambda (diya-ops, see
-        // REPORT_IDENTITY_AUDIT.md section 8 recommendation 2). The same App and installation
+        // GitHub App configuration for the support-ticket Lambda (diya-ops). The same App and installation
         // OpsStack reads, but this Lambda's own minted token is scoped to the spreadsheets
         // repository, not this one, so neither Lambda's token can reach the other's repository.
         // Both id and installation id must be set for the Lambda to be built.

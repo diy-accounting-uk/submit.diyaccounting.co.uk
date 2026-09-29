@@ -7,7 +7,7 @@
 // Confirms that an alarm issue's claim is true: that the named CloudWatch
 // alarm really transitioned to ALARM inside the window the issue body
 // gives. This is the strongest proof available anywhere in the alarm
-// pipeline (see REPORT_IDENTITY_AUDIT.md section 5, rank 1), because it
+// pipeline, because it
 // depends on nothing but re-reading AWS's own record with
 // `cloudwatch describe-alarm-history`.
 //

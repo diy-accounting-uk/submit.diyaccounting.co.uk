@@ -12,7 +12,7 @@ Purpose: Plan the path to HMRC approval and real customer VAT submissions. This 
 ## Scope and Inputs
 
 - Target: The entire repository and its integration with HMRC APIs.
-- Primary Reference: `REPORT_REPOSITORY_CONTENTS.md` for architecture and environment context.
+- Primary Reference: `REPORT_CAPABILITIES.md` for architecture and environment context.
 - Domain: HMRC Making Tax Digital (MTD) for VAT.
 
 ## Goals

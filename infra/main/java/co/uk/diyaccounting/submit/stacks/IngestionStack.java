@@ -152,7 +152,7 @@ public class IngestionStack extends Stack {
         }
 
         // The diya-ops GitHub App id and installation id OpsStack's alarm-to-issue Lambda also
-        // reads (see REPORT_IDENTITY_AUDIT.md section 8, recommendations 2 and 3). Defaulted to
+        // reads. Defaulted to
         // blank rather than made required so a caller that has not been updated to pass them yet
         // still compiles; the operator effort pull job simply gets no secret grant and fails at
         // invocation time until both are set, the same guard stripeSecretKeyArn uses.
