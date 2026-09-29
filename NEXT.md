@@ -63,8 +63,6 @@ step.
 
 ## Machine-ask
 
-- [ ] **B30ab. destroy-prod reports an already-vacated set as success.** The paging fix (stack names counted across every CLI page in `destroy-prod.yml`, `destroy-ci.yml` and `deploy-cdk-stack.yml`) is on `main` (PR #410). Remainder: `gh workflow run destroy-prod.yml -f deployment-name=prod-f8d0065` (the operator's dispatch) reports "already vacated" instead of failing. **Source**: destroy-prod run 36488747288, 2026-09-28. **Owner**: Claude Code. **Model**: Haiku. **Size**: 0 files.
-
 - [ ] **MK-9. Google Ads: a capped Search campaign.** Operator decision, 2026-09-28: a Search campaign on the four keyword groups (`PLAN_MARKETING_STRATEGY.md` §3.6), Maximise clicks with a £0.30 maximum CPC, £1 a day, and Performance Max paused. Write it into `infra/google/ads/ads.toml` (the file `ads:sync` reads), show `npm run ads:sync` (dry run) to the operator, then apply with `npm run ads:sync -- --apply` on their yes. The ask: the operator's yes on the dry-run diff. **Source**: `PLAN_MARKETING_STRATEGY.md` §5 MK-9. **Owner**: Claude Code. **Model**: Sonnet. **Size**: ~2 files.
 
 ## Human-driven
