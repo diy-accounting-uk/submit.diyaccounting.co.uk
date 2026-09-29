@@ -289,4 +289,5 @@ natural break: the file and the table agree, so the next thing to settle is whet
 work in flight (agents, worktrees, monitors, chat decisions) is in a state a compaction keeps.
 Act on its answer as that skill says: `yes` prints the `/compact <summary>` line in full for the
 operator, `yes after <action>` does the action and prints it, `not yet` names what must land
-first. Its output follows the board's lists, and is the last thing in the reply.
+first. `not yet` is only for an agent mid-edit with no commit or a merge between its gates and its
+verification; PRs in CI, running deploys and pending asks are `yes`, named in the summary. Its output follows the board's lists, and is the last thing in the reply.

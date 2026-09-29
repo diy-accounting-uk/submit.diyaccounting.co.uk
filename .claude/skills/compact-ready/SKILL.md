@@ -40,8 +40,19 @@ Also list this session's running sub-agents, Monitors and background commands, b
 
 ## 3. Answer
 
-One line first: `yes`, `yes after <action>`, or `not yet: <what to wait for>`. Waiting is right only
-when an agent is mid-edit with no commit, or a merge is between its gates and its verification.
+One line first: `yes`, `yes after <action>`, or `not yet: <what to wait for>`.
+
+`not yet` has exactly two causes, and nothing else earns it:
+
+1. A sub-agent is mid-edit and its work is not committed.
+2. A merge is between its gates and its verification.
+
+Everything else is `yes`, with the item named in the summary. That includes a PR in CI, a deploy
+running, a push waiting for a deploy, a scheduled or nightly run, an operator's pending yes, a
+Monitor or background command, and a sub-agent that has committed but not yet reported. Each of
+these goes on waiting unaided, and its notification arrives after the compaction. Waiting for them
+before compacting only delays the compaction; it protects nothing. Before writing `not yet`, name
+which of the two causes applies; if neither does, the answer is `yes`.
 
 Then the list the summary must keep, because it lives only in this conversation:
 
