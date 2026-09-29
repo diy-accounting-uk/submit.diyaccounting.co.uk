@@ -141,6 +141,12 @@ public class BusinessViews extends Construct {
                     "Sessions and users each day, by hostname and visitor kind (human, bot, synthetic)",
                     List.of("sessions_by_host_source_daily")),
             new ViewDefinition(
+                    "v_visitors_by_kind_hourly",
+                    "Sessions each hour by visitor kind from GA4's streaming export: feeds the operator"
+                            + " dashboard's Last 1 hour, 1 day and 7 days visitor columns, which the two-day-late"
+                            + " daily view cannot answer",
+                    List.of("sessions_by_hour_kind")),
+            new ViewDefinition(
                     "v_availability_sli_daily",
                     "The uptime SLI: probe pass rate and error budget remaining each day, by suite",
                     List.of("probe_runs")),

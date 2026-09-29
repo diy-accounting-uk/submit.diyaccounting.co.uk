@@ -18,7 +18,10 @@ import software.constructs.Construct;
  * infra/google/gcp/bigquery.toml} maintains in BigQuery's {@code ga4_daily} dataset, which {@code
  * app/functions/analytics/ga4DailyPull.js} writes nightly to {@code
  * curated/ga4_daily/<table>/dt=YYYY-MM-DD/data.json.gz}: {@code sessions_by_host_source_daily},
- * {@code funnel_steps_daily}, {@code key_events_daily} and {@code downloads_by_product_daily}.
+ * {@code funnel_steps_daily}, {@code key_events_daily} and {@code downloads_by_product_daily}. A
+ * fifth table, {@code sessions_by_hour_kind}, holds sessions by hour and visitor kind that the same
+ * Lambda's hourly mode writes from GA4's raw export to {@code
+ * curated/ga4_hourly/sessions_by_hour_kind/dt=YYYY-MM-DD/data.json.gz}.
  *
  * <p>Modelled line for line on {@link Ga4Tables}: one {@code dt} partition-projection column
  * (type {@code date}, format {@code yyyy-MM-dd}), so a new day's object is queryable the moment
@@ -33,16 +36,19 @@ import software.constructs.Construct;
 public class Ga4DailyTables {
 
     private static final String CURATED_PREFIX = "curated/ga4_daily/";
+    private static final String HOURLY_CURATED_PREFIX = "curated/ga4_hourly/";
 
     private static final String SESSIONS_BY_HOST_SOURCE_TABLE_NAME = "sessions_by_host_source_daily";
     private static final String FUNNEL_STEPS_TABLE_NAME = "funnel_steps_daily";
     private static final String KEY_EVENTS_TABLE_NAME = "key_events_daily";
     private static final String DOWNLOADS_BY_PRODUCT_TABLE_NAME = "downloads_by_product_daily";
+    private static final String SESSIONS_BY_HOUR_KIND_TABLE_NAME = "sessions_by_hour_kind";
 
     public final CfnTable sessionsByHostSourceTable;
     public final CfnTable funnelStepsTable;
     public final CfnTable keyEventsTable;
     public final CfnTable downloadsByProductTable;
+    public final CfnTable sessionsByHourKindTable;
 
     @Value.Immutable
     public interface Ga4DailyTablesProps {
@@ -68,6 +74,7 @@ public class Ga4DailyTables {
                 scope,
                 props,
                 catalogId,
+                CURATED_PREFIX,
                 SESSIONS_BY_HOST_SOURCE_TABLE_NAME,
                 "Sessions by hostname, session source/medium and visitor kind, one day at a time",
                 buildSessionsByHostSourceColumns());
@@ -76,6 +83,7 @@ public class Ga4DailyTables {
                 scope,
                 props,
                 catalogId,
+                CURATED_PREFIX,
                 FUNNEL_STEPS_TABLE_NAME,
                 "Distinct sessions reaching each login-to-submission funnel step, one day at a time",
                 buildFunnelStepsColumns());
@@ -84,6 +92,7 @@ public class Ga4DailyTables {
                 scope,
                 props,
                 catalogId,
+                CURATED_PREFIX,
                 KEY_EVENTS_TABLE_NAME,
                 "Key events by hostname, one day at a time",
                 buildKeyEventsColumns());
@@ -92,19 +101,30 @@ public class Ga4DailyTables {
                 scope,
                 props,
                 catalogId,
+                CURATED_PREFIX,
                 DOWNLOADS_BY_PRODUCT_TABLE_NAME,
                 "Downloads by product, one day at a time",
                 buildDownloadsByProductColumns());
+
+        this.sessionsByHourKindTable = buildTable(
+                scope,
+                props,
+                catalogId,
+                HOURLY_CURATED_PREFIX,
+                SESSIONS_BY_HOUR_KIND_TABLE_NAME,
+                "Sessions and users by hour and visitor kind from GA4's raw export, the last few days rewritten hourly",
+                buildSessionsByHourKindColumns());
     }
 
     private static CfnTable buildTable(
             Construct scope,
             Ga4DailyTablesProps props,
             String catalogId,
+            String curatedPrefix,
             String tableName,
             String description,
             List<CfnTable.ColumnProperty> columns) {
-        var location = "s3://%s/%s%s/".formatted(props.lakeBucketName(), CURATED_PREFIX, tableName);
+        var location = "s3://%s/%s%s/".formatted(props.lakeBucketName(), curatedPrefix, tableName);
 
         var parameters = new LinkedHashMap<String, String>();
         parameters.put("classification", "json");
@@ -170,6 +190,14 @@ public class Ga4DailyTables {
                 "hostname", "string",
                 "session_source", "string",
                 "session_medium", "string",
+                "visitor_kind", "string",
+                "sessions", "bigint",
+                "users", "bigint");
+    }
+
+    private static List<CfnTable.ColumnProperty> buildSessionsByHourKindColumns() {
+        return columnsOf(
+                "hour", "string",
                 "visitor_kind", "string",
                 "sessions", "bigint",
                 "users", "bigint");

@@ -13,6 +13,14 @@
 // A missing table or partition throws rather than writing an empty object: it means the
 // scheduled query hasn't run yet or was renamed, and the Telegram alarm on this job's errors is
 // the right outcome, not a silent gap on the dashboard.
+//
+// The same function has a second, hourly mode (event.mode === "hourly") that counts sessions
+// by hour and visitor kind straight from GA4's raw export for the last few days, reading
+// events_intraday_YYYYMMDD while a day is still streaming and events_YYYYMMDD once GA4 has
+// replaced it. That is the only source for the dashboard's Last 1 hour, 1 day and 7 days
+// visitor columns, because the daily aggregates above land two days late. A day with neither
+// table (a property that does not stream, or a day before streaming began) is an empty hour,
+// never an error.
 
 import { gzipSync } from "zlib";
 import { S3Client, PutObjectCommand } from "@aws-sdk/client-s3";
@@ -25,6 +33,10 @@ const logger = createLogger({ source: "app/functions/analytics/ga4DailyPull.js" 
 // Matches infra/google/gcp/bigquery.toml's [dataset] and each [[queries]] destination_table.
 const GA4_DAILY_DATASET_ID = "ga4_daily";
 const TABLES = ["sessions_by_host_source_daily", "funnel_steps_daily", "key_events_daily", "downloads_by_product_daily"];
+
+const HOURLY_TABLE_NAME = "sessions_by_hour_kind";
+const HOURLY_LOOKBACK_DAYS = 3;
+const TABLE_DATE_PATTERN = /^\d{8}$/;
 
 let cachedS3Client = null;
 
@@ -110,13 +122,134 @@ async function putTableObject(s3Client, bucket, tableName, dateStr, records) {
 }
 
 /**
- * Pull one day of every ga4_daily aggregate table into the lake, one object per table.
+ * The UTC dates the hourly pull rewrites on each run, newest first: today and the days before it.
+ * Older days keep the object their last in-window run wrote.
+ *
+ * @param {Date} [now]
+ * @param {number} [lookbackDays]
+ * @returns {string[]} "YYYY-MM-DD"
+ */
+export function hourlyTargetDates(now = new Date(), lookbackDays = HOURLY_LOOKBACK_DAYS) {
+  return Array.from({ length: lookbackDays }, (_, offset) =>
+    new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate() - offset)).toISOString().slice(0, 10),
+  );
+}
+
+function toTableDateSuffix(dateStr) {
+  const suffix = dateStr.replaceAll("-", "");
+  if (!TABLE_DATE_PATTERN.test(suffix)) {
+    throw new Error(`Invalid target date "${dateStr}": expected YYYY-MM-DD`);
+  }
+  return suffix;
+}
+
+/**
+ * Sessions by hour and visitor kind for one export table. Restricted to session_start events, and
+ * to the one table named, so BigQuery bills that table's columns and nothing else. The hour is
+ * an ISO 8601 UTC string so Athena's from_iso8601_timestamp reads it back.
+ */
+export function buildHourlyQuery(projectId, datasetId, tableName) {
+  return `
+SELECT FORMAT_TIMESTAMP('%Y-%m-%dT%H:00:00Z', TIMESTAMP_TRUNC(TIMESTAMP_MICROS(event_timestamp), HOUR)) AS hour,
+       COALESCE(
+         (SELECT value.string_value FROM UNNEST(user_properties) WHERE key = 'visitor_kind'),
+         '(unclassified)'
+       )                                                                                          AS visitor_kind,
+       COUNT(DISTINCT CONCAT(user_pseudo_id, '.',
+         CAST((SELECT value.int_value FROM UNNEST(event_params) WHERE key = 'ga_session_id') AS STRING))) AS sessions,
+       COUNT(DISTINCT user_pseudo_id)                                                             AS users
+FROM \`${projectId}.${datasetId}.${tableName}\`
+WHERE event_name = 'session_start'
+GROUP BY 1, 2
+`.trim();
+}
+
+async function tableExists(bigQuery, datasetId, tableName) {
+  const [exists] = await bigQuery.dataset(datasetId).table(tableName).exists();
+  return exists;
+}
+
+async function firstExistingTable(bigQuery, datasetId, tableNames) {
+  for (const tableName of tableNames) {
+    if (await tableExists(bigQuery, datasetId, tableName)) return tableName;
+  }
+  return null;
+}
+
+async function pullHourlyDay({ bigQuery, projectId, datasetId, location, dateStr }) {
+  const suffix = toTableDateSuffix(dateStr);
+  const sourceTable = await firstExistingTable(bigQuery, datasetId, [`events_${suffix}`, `events_intraday_${suffix}`]);
+  if (sourceTable === null) return { sourceTable: null, rows: [] };
+
+  const [job] = await bigQuery.createQueryJob({ query: buildHourlyQuery(projectId, datasetId, sourceTable), location });
+  const [rows] = await job.getQueryResults();
+  return { sourceTable, rows };
+}
+
+/**
+ * Hourly mode: rewrite the last few days' sessions-by-hour-and-visitor-kind objects from GA4's
+ * raw export.
+ *
+ * @returns {Promise<{mode: "hourly", dates: string[], keys: Record<string, string>, counts: Record<string, number>, sourceTables: Record<string, string|null>}>}
+ */
+async function handleHourly() {
+  const projectId = process.env.GA4_BIGQUERY_PROJECT_ID;
+  if (!projectId) throw new Error("GA4_BIGQUERY_PROJECT_ID environment variable is required");
+
+  const datasetId = process.env.GA4_BIGQUERY_DATASET_ID;
+  if (!datasetId) throw new Error("GA4_BIGQUERY_DATASET_ID environment variable is required");
+
+  const location = process.env.GA4_BIGQUERY_LOCATION;
+  if (!location) throw new Error("GA4_BIGQUERY_LOCATION environment variable is required");
+
+  const bucket = process.env.ANALYTICS_LAKE_BUCKET_NAME;
+  if (!bucket) throw new Error("ANALYTICS_LAKE_BUCKET_NAME environment variable is required");
+
+  const bigQuery = await getBigQueryClient();
+  const s3Client = getS3Client();
+
+  const dates = hourlyTargetDates();
+  const keys = {};
+  const counts = {};
+  const sourceTables = {};
+  for (const dateStr of dates) {
+    const { sourceTable, rows } = await pullHourlyDay({ bigQuery, projectId, datasetId, location, dateStr });
+    keys[dateStr] = await putHourlyObject(s3Client, bucket, dateStr, rows);
+    counts[dateStr] = rows.length;
+    sourceTables[dateStr] = sourceTable;
+  }
+
+  logger.info({ message: "GA4 hourly sessions pull complete", dates, counts, sourceTables });
+  return { mode: "hourly", dates, keys, counts, sourceTables };
+}
+
+async function putHourlyObject(s3Client, bucket, dateStr, records) {
+  const key = `curated/ga4_hourly/${HOURLY_TABLE_NAME}/dt=${dateStr}/data.json.gz`;
+  await s3Client.send(
+    new PutObjectCommand({
+      Bucket: bucket,
+      Key: key,
+      Body: toNdjsonGzip(records),
+      ContentType: "application/json",
+      ContentEncoding: "gzip",
+    }),
+  );
+  return key;
+}
+
+/**
+ * Pull one day of every ga4_daily aggregate table into the lake, one object per table, or, with
+ * `mode: "hourly"`, the last few days of sessions by hour and visitor kind.
  *
  * @param {{date?: string}} [event] - an explicit `date` ("YYYY-MM-DD") overrides D-2, which is
  *   what a backfill invoke passes.
  * @returns {Promise<{date: string, keys: Record<string, string>, counts: Record<string, number>}>}
  */
 export async function handler(event = {}) {
+  if (event.mode === "hourly") {
+    return handleHourly();
+  }
+
   const targetDate = event.date ?? defaultTargetDate();
 
   const projectId = process.env.GA4_BIGQUERY_PROJECT_ID;

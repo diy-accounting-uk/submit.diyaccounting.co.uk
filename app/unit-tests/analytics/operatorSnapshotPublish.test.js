@@ -54,7 +54,7 @@ import {
   toObservationWindows,
   toActivityFastWindows,
   buildSnapshot,
-  mergeActivityFastWindows,
+  mergeFastWindows,
   mapInOrderWithConcurrency,
   writeSnapshot,
   parseResultSet,
@@ -678,7 +678,8 @@ describe("operatorSnapshotPublish", () => {
       });
 
       const startCalls = mockAthenaSend.mock.calls.filter(([command]) => command.constructor.name === "StartQueryExecutionCommand");
-      expect(startCalls).toHaveLength(FAST_WINDOW_OBSERVATION_COUNT);
+      const activityObjective = OBJECTIVE_DEFINITIONS.find((o) => o.id === "activity-started-and-completed");
+      expect(startCalls).toHaveLength(activityObjective.observations.length);
 
       const activities = patch.objectives.find((o) => o.id === "activity-started-and-completed");
       const observation = activities.observations.find((o) => o.id === "submit-vat::started");
@@ -689,7 +690,122 @@ describe("operatorSnapshotPublish", () => {
     });
   });
 
-  describe("mergeActivityFastWindows", () => {
+  describe("visitor fast windows", () => {
+    function mockFastWindowQueriesAnswering(row) {
+      mockAthenaSend.mockImplementation((command) => {
+        switch (command.constructor.name) {
+          case "StartQueryExecutionCommand":
+            return Promise.resolve({ QueryExecutionId: "qid" });
+          case "GetQueryExecutionCommand":
+            return Promise.resolve({ QueryExecution: { Status: { State: "SUCCEEDED" } } });
+          case "GetQueryResultsCommand":
+            return Promise.resolve({ ResultSet: resultSetOf(["last_1h", "last_1d", "last_7d"], row) });
+          default:
+            throw new Error(`unexpected command ${command.constructor.name}`);
+        }
+      });
+    }
+
+    const visitorIds = ["sessions-human", "sessions-operator", "sessions-bot", "sessions-synthetic"];
+    const context = {
+      envName: "test",
+      region: "eu-west-2",
+      athenaWorkGroupName: "test-env-analytics",
+      githubRepo: "r",
+      ga4PropertyId: null,
+    };
+
+    test("each visitor kind's fast columns read the hourly view filtered to that kind", async () => {
+      mockFastWindowQueriesAnswering(["1", "3", "12"]);
+      await buildSnapshot({ workGroup: "wg", database: "db", context, objectiveIds: ["conversion-to-submission"], fastWindowOnly: true });
+
+      const sqlStatements = mockAthenaSend.mock.calls
+        .filter(([command]) => command.constructor.name === "StartQueryExecutionCommand")
+        .map(([command]) => command.input.QueryString);
+      expect(sqlStatements).toHaveLength(visitorIds.length);
+      for (const kind of ["human", "operator", "bot", "synthetic"]) {
+        expect(
+          sqlStatements.some((sql) => sql.includes("FROM   v_visitors_by_kind_hourly") && sql.includes(`visitor_kind = '${kind}'`)),
+        ).toBe(true);
+      }
+      expect(sqlStatements.every((sql) => sql.includes("sum(CASE WHEN hour >"))).toBe(true);
+    });
+
+    test("a fast-window-only run lists only the visitor observations that have a fast view", async () => {
+      mockFastWindowQueriesAnswering(["1", "3", "12"]);
+      const patch = await buildSnapshot({
+        workGroup: "wg",
+        database: "db",
+        context,
+        objectiveIds: ["conversion-to-submission"],
+        fastWindowOnly: true,
+      });
+
+      const conversion = patch.objectives.find((o) => o.id === "conversion-to-submission");
+      expect(conversion.observations.map((o) => o.id)).toEqual(visitorIds);
+      expect(conversion.observations[0]).toEqual({
+        id: "sessions-human",
+        last1h: { value: 1 },
+        last1d: { value: 3 },
+        last7d: { value: 12 },
+      });
+    });
+
+    test("a visitor's fast columns are null when the hourly view has no rows", async () => {
+      mockFastWindowQueriesAnswering([null, null, null]);
+      const patch = await buildSnapshot({
+        workGroup: "wg",
+        database: "db",
+        context,
+        objectiveIds: ["conversion-to-submission"],
+        fastWindowOnly: true,
+      });
+
+      const human = patch.objectives[0].observations.find((o) => o.id === "sessions-human");
+      expect(human.last1h).toEqual({ value: null });
+      expect(human.last7d).toEqual({ value: null });
+    });
+
+    test("mergeFastWindows patches the visitor observations of the conversion objective and leaves its other observations", () => {
+      const existing = {
+        generatedAt: "a",
+        objectives: [
+          {
+            id: "conversion-to-submission",
+            observations: [
+              { id: "new-accounts", last30: { value: 5 } },
+              { id: "sessions-human", last30: { value: 210 } },
+            ],
+          },
+        ],
+        failedObservationCount: 0,
+      };
+      const patch = {
+        generatedAt: "b",
+        objectives: [
+          {
+            id: "conversion-to-submission",
+            observations: [{ id: "sessions-human", last1h: { value: 2 }, last1d: { value: 30 }, last7d: { value: 90 } }],
+          },
+        ],
+        failedObservationCount: 0,
+      };
+
+      const merged = mergeFastWindows(existing, patch);
+
+      const observations = merged.objectives[0].observations;
+      expect(observations[0]).toEqual({ id: "new-accounts", last30: { value: 5 } });
+      expect(observations[1]).toEqual({
+        id: "sessions-human",
+        last30: { value: 210 },
+        last1h: { value: 2 },
+        last1d: { value: 30 },
+        last7d: { value: 90 },
+      });
+    });
+  });
+
+  describe("mergeFastWindows", () => {
     const existingSnapshot = {
       generatedAt: "2026-09-25T03:15:00.000Z",
       environment: "test",
@@ -739,7 +855,7 @@ describe("operatorSnapshotPublish", () => {
         failedObservationCount: 0,
       };
 
-      const merged = mergeActivityFastWindows(existingSnapshot, patchSnapshot);
+      const merged = mergeFastWindows(existingSnapshot, patchSnapshot);
 
       expect(merged.generatedAt).toBe("2026-09-26T09:00:00.000Z");
       expect(merged.objectives.find((o) => o.id === "uptime")).toEqual(existingSnapshot.objectives[0]);
@@ -771,7 +887,7 @@ describe("operatorSnapshotPublish", () => {
         failedObservationCount: 2,
       };
 
-      const merged = mergeActivityFastWindows(existingSnapshot, patchSnapshot);
+      const merged = mergeFastWindows(existingSnapshot, patchSnapshot);
       expect(merged.failedObservationCount).toBe(2);
     });
   });

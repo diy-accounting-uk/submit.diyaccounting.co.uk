@@ -55,6 +55,9 @@ const FIXTURE_SNAPSHOT = {
           id: "sessions-human",
           label: "Sessions, human visitors",
           unit: "count",
+          last1h: { value: 2 },
+          last1d: { value: 30 },
+          last7d: { value: 90 },
           last30: { value: 210, trend: 0.05 },
           last90: { value: 600, trend: 0.02 },
           deepLink: "https://analytics.google.com/analytics/web/#/p523400333/reports/intelligenthome",
@@ -379,9 +382,9 @@ test.describe("Operator Dashboard", () => {
     await expect(rows.locator("td:first-child")).toHaveText(["Human", "Operator", "Bot", "Synthetic"]);
 
     const human = page.locator('#visitorsPanel tr.visitors-kind[data-kind="human"]');
-    await expect(human.locator("td").nth(1)).toHaveText("—");
-    await expect(human.locator("td").nth(2)).toHaveText("—");
-    await expect(human.locator("td").nth(3)).toHaveText("—");
+    await expect(human.locator("td").nth(1)).toHaveText("2");
+    await expect(human.locator("td").nth(2)).toHaveText("30");
+    await expect(human.locator("td").nth(3)).toHaveText("90");
     await expect(human.locator("td").nth(4)).toHaveText("210");
     await expect(human.locator("td").nth(5)).toHaveText("↑ 5.0%");
     await expect(human.locator("td").nth(6)).toHaveText("600");
@@ -390,13 +393,21 @@ test.describe("Operator Dashboard", () => {
     await expect(bot.locator("td").nth(5)).toHaveText("↓ 10.0%");
   });
 
-  test("explains in the fast-window header tooltips why the visitors table has no last-hour figure", async ({ page }) => {
+  test("explains why a visitor fast-window figure is missing only on the cells that have none", async ({ page }) => {
     await setupRoutes(page);
     await loadDashboard(page);
 
     const headers = page.locator("#visitorsTable thead th");
     await expect(headers).toHaveText(["Kind", "Last 1 hour", "Last 1 day", "Last 7 days", "Last 30 days", "Trend", "Last 90 days"]);
-    await expect(headers.nth(1)).toHaveAttribute("title", /two days late/);
+    await expect(headers.nth(1)).not.toHaveAttribute("title", /.+/);
+
+    const human = page.locator('#visitorsPanel tr.visitors-kind[data-kind="human"]');
+    await expect(human.locator("td").nth(1)).not.toHaveAttribute("title", /.+/);
+
+    const operator = page.locator('#visitorsPanel tr.visitors-kind[data-kind="operator"]');
+    await expect(operator.locator("td").nth(1)).toHaveText("—");
+    await expect(operator.locator("td").nth(1)).toHaveAttribute("title", /streaming export/);
+    await expect(operator.locator("td").nth(4)).not.toHaveAttribute("title", /.+/);
   });
 
   test("shows a placeholder for an objective with no observations yet", async ({ page }) => {

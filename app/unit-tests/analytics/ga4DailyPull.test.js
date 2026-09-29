@@ -6,6 +6,7 @@ import { gunzipSync } from "zlib";
 
 const mockGetQueryResults = vi.fn();
 const mockCreateQueryJob = vi.fn();
+const mockTableExists = vi.fn();
 
 const mockBigQueryOptions = [];
 vi.mock("@google-cloud/bigquery", () => ({
@@ -16,6 +17,9 @@ vi.mock("@google-cloud/bigquery", () => ({
     }
     createQueryJob(...args) {
       return mockCreateQueryJob(...args);
+    }
+    dataset() {
+      return { table: (name) => ({ exists: () => mockTableExists(name) }) };
     }
   },
 }));
@@ -34,7 +38,7 @@ vi.mock("@aws-sdk/client-s3", () => ({
   },
 }));
 
-import { handler, defaultTargetDate, toNdjsonGzip } from "../../functions/analytics/ga4DailyPull.js";
+import { handler, defaultTargetDate, toNdjsonGzip, hourlyTargetDates, buildHourlyQuery } from "../../functions/analytics/ga4DailyPull.js";
 
 const TABLES = ["sessions_by_host_source_daily", "funnel_steps_daily", "key_events_daily", "downloads_by_product_daily"];
 
@@ -60,6 +64,9 @@ describe("ga4DailyPull", () => {
     stubJob([]);
     mockS3Send.mockReset();
     mockS3Send.mockResolvedValue({});
+    mockTableExists.mockReset();
+    mockTableExists.mockResolvedValue([false]);
+    process.env.GA4_BIGQUERY_DATASET_ID = "analytics_523400333";
 
     process.env.ANALYTICS_LAKE_BUCKET_NAME = "test-lake-bucket";
     process.env.GA4_BIGQUERY_PROJECT_ID = "diyaccounting-ga4";
@@ -71,6 +78,7 @@ describe("ga4DailyPull", () => {
     delete process.env.ANALYTICS_LAKE_BUCKET_NAME;
     delete process.env.GA4_BIGQUERY_PROJECT_ID;
     delete process.env.GA4_BIGQUERY_LOCATION;
+    delete process.env.GA4_BIGQUERY_DATASET_ID;
     for (const name of Object.keys(FEDERATION_ENV)) {
       delete process.env[name];
     }
@@ -189,6 +197,68 @@ describe("ga4DailyPull", () => {
       await expect(handler({ date: "2026-08-20" })).rejects.toThrow(/GOOGLE_WIF_AUDIENCE/);
       expect(mockCreateQueryJob).not.toHaveBeenCalled();
       expect(mockS3Send).not.toHaveBeenCalled();
+    });
+  });
+  describe("hourly mode", () => {
+    const putKeys = () => mockS3Send.mock.calls.map(([command]) => command.input.Key);
+    const putBody = (key) => {
+      const call = mockS3Send.mock.calls.find(([command]) => command.input.Key === key);
+      return gunzipSync(call[0].input.Body).toString("utf8");
+    };
+
+    test("hourlyTargetDates lists today and the two days before it in UTC, newest first", () => {
+      expect(hourlyTargetDates(new Date("2026-09-29T00:10:00Z"))).toEqual(["2026-09-29", "2026-09-28", "2026-09-27"]);
+    });
+
+    test("prefers the daily table over the intraday one and bounds the query to that single table", async () => {
+      mockTableExists.mockImplementation(async (name) => [name.startsWith("events_2")]);
+      stubJob([{ hour: "2026-09-28T07:00:00Z", visitor_kind: "human", sessions: 4, users: 3 }]);
+
+      const result = await handler({ mode: "hourly" });
+
+      const [today] = hourlyTargetDates();
+      expect(result.sourceTables[today]).toBe(`events_${today.replaceAll("-", "")}`);
+      expect(mockCreateQueryJob).toHaveBeenCalledTimes(3);
+      for (const [{ query }] of mockCreateQueryJob.mock.calls) {
+        expect(query).toMatch(/FROM `diyaccounting-ga4\.analytics_523400333\.events_\d{8}`/);
+        expect(query).not.toContain("*");
+      }
+    });
+
+    test("writes one object per day under the hourly prefix with the rows as NDJSON", async () => {
+      mockTableExists.mockImplementation(async (name) => [name.startsWith("events_intraday_")]);
+      const row = { hour: "2026-09-29T07:00:00Z", visitor_kind: "human", sessions: 4, users: 3 };
+      stubJob([row]);
+
+      const result = await handler({ mode: "hourly" });
+
+      const dates = hourlyTargetDates();
+      expect(putKeys()).toEqual(dates.map((date) => `curated/ga4_hourly/sessions_by_hour_kind/dt=${date}/data.json.gz`));
+      expect(JSON.parse(putBody(result.keys[dates[0]]).trim())).toEqual(row);
+      expect(mockCreateQueryJob.mock.calls[0][0].query).toContain("events_intraday_");
+    });
+
+    test("a property with no export tables gets empty objects and no query, never an error", async () => {
+      const result = await handler({ mode: "hourly" });
+
+      expect(mockCreateQueryJob).not.toHaveBeenCalled();
+      expect(Object.values(result.counts)).toEqual([0, 0, 0]);
+      expect(mockS3Send).toHaveBeenCalledTimes(3);
+      expect(putBody(putKeys()[0])).toBe("");
+    });
+
+    test("throws when the GA4 dataset id is not configured", async () => {
+      delete process.env.GA4_BIGQUERY_DATASET_ID;
+      await expect(handler({ mode: "hourly" })).rejects.toThrow(/GA4_BIGQUERY_DATASET_ID/);
+    });
+
+    test("buildHourlyQuery counts distinct session_start sessions by hour and visitor_kind", () => {
+      const query = buildHourlyQuery("p", "d", "events_intraday_20260929");
+
+      expect(query).toContain("FROM `p.d.events_intraday_20260929`");
+      expect(query).toContain("event_name = 'session_start'");
+      expect(query).toContain("key = 'visitor_kind'");
+      expect(query).toContain("GROUP BY 1, 2");
     });
   });
 });
