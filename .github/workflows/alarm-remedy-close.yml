@@ -97,7 +97,7 @@ jobs:
 
       - name: Install dependencies
         if: steps.budget-guard.outputs.over-budget == 'false'
-        run: timeout 120 npm ci --prefer-offline || { sleep 30; timeout 180 npm ci; }
+        run: timeout 120 npm ci --ignore-scripts --prefer-offline || { sleep 30; timeout 180 npm ci --ignore-scripts; }
 
       - name: Generate a token for diya-agent
         if: steps.budget-guard.outputs.over-budget == 'false'
