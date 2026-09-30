@@ -101,12 +101,6 @@ step.
 
 ## Machine-ask
 
-- [ ] **SEC9. No DynamoDB Scan on prod customer tables from a session.** On 2026-09-30 a research sub-agent ran three `aws dynamodb scan` calls on `prod-env-bundles` with the operator's SSO role (CloudTrail 19:50 UTC), which fired `prod-env-dynamodb-customer-table-scan` (issue #434, closed with its cause). The memory `never-scan-customer-tables` puts the rule in briefs. Two enforcement options:
-  - (A) A PreToolUse hook, `.claude/hooks/guard-dynamodb-scan.sh`, beside `guard-main-push.sh` and registered the same way in `.claude/settings.json` (line ~27). It blocks a Bash command that contains `dynamodb scan` (or `execute-statement` with a `SELECT` and no key) and names a `prod` profile or a `prod-env-` table, with a message pointing to the Athena lake. It lives in this repository and takes effect on the next session start.
-  - (B) An explicit `Deny` on `dynamodb:Scan` for `arn:aws:dynamodb:*:972912397388:table/prod-env-*` in the SSO permission set. That is IAM Identity Center in the management account (`root.diyaccounting.co.uk`), and it also blocks you in the console and CLI.
-
-  Recommendation: A. It stops the session without limiting you. The ask is your go on the `.claude/settings.json` change, because that file is yours. Proof: the hook refuses `aws --profile submit-prod dynamodb scan --table-name prod-env-bundles` and allows `aws --profile submit-prod dynamodb describe-table --table-name prod-env-bundles`. **Source**: session report 4oLomq, 2026-09-30. **Owner**: Claude Code; the settings change is the operator's go. **Model**: Haiku. **Size**: 2 files.
-
 - [ ] **O75. Send the licence-change email.** The draft is committed (private a687b05). The operator says go and sends `../private.diyaccounting.co.uk/hmrc/correspondence/DRAFT_EMAIL_LICENCE_CHANGE.md` from antony@diyaccounting.co.uk to `SDSTeam@hmrc.gov.uk`; the session then adds the send date and recipient to `../private.diyaccounting.co.uk/hmrc/vat/HMRC_MTD_API_APPROVAL_SUBMISSION.md` and `../private.diyaccounting.co.uk/hmrc/correspondence/HMRC_PRODUCTION_CREDENTIALS_EMAIL.md`. **Source**: BACKLOG 75. **Owner**: Operator (the send), Claude Code (the annotation). **Model**: Haiku. **Size**: 0 files in this repository.
 
 ## Human-driven
