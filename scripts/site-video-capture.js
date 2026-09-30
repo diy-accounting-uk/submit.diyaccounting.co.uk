@@ -38,6 +38,7 @@ import { createCapture } from "./lib/video/capture.js";
 import { writeManifest, resolveFfmpegBinary, encodeVideo, buildContactSheet, mixNarrationTrack, muxNarration } from "./lib/video/encode.js";
 import { writeVtt, writeTranscript, writeTimeline, captionTextForStep } from "./lib/video/captions.js";
 import { substituteValues } from "./lib/video/values.js";
+import { buildCaptureManifest, writeCaptureManifest } from "./lib/video/pipelineVersion.js";
 import { collectSecrets, assertNoSecrets } from "./lib/video/secrets.js";
 import { synthesizeSpeech, audioDurationMs } from "./lib/video/narration.js";
 
@@ -711,6 +712,7 @@ async function main() {
   writeTimeline(path.join(outDir, `${script.name}.timeline.json`), stepRecords);
   fs.writeFileSync(path.join(outDir, `${script.name}.overlay-events.json`), JSON.stringify(overlayEvents, null, 2));
   writeVtt(path.join(outDir, `${script.name}.vtt`), captionEvents);
+  writeCaptureManifest(path.join(outDir, `${script.name}.manifest.json`), buildCaptureManifest({ scriptName: script.name }));
   writeTranscript(path.join(outDir, `${script.name}.transcript.md`), {
     title: script.title,
     description: script.description,

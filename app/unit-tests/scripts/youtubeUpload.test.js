@@ -170,9 +170,9 @@ describe("recordVideoId", () => {
         { id: "b", publish: true, videoId: null },
       ],
     };
-    const next = recordVideoId(list, "a", "xyz789");
+    const next = recordVideoId(list, "a", "xyz789", 8);
     expect(next.videos).toEqual([
-      { id: "a", publish: true, videoId: "xyz789" },
+      { id: "a", publish: true, videoId: "xyz789", pipelineVersion: 8 },
       { id: "b", publish: true, videoId: null },
     ]);
     expect(list.videos[0].videoId).toBeNull();
@@ -684,6 +684,7 @@ describe("publishEntry", () => {
       accessToken: "token",
       quotaProject: "p",
       publicVideo: true,
+      pipelineVersion: 8,
       uploadVideoImpl,
       uploadCaptionImpl: vi.fn(),
       savePublishListImpl: vi.fn(),
@@ -713,6 +714,7 @@ describe("publishEntry", () => {
       accessToken: "token",
       quotaProject: "p",
       publicVideo: false,
+      pipelineVersion: 8,
       uploadVideoImpl,
       uploadCaptionImpl,
       savePublishListImpl,
@@ -722,6 +724,7 @@ describe("publishEntry", () => {
 
     expect(order).toEqual([["save", "yt-new"], ["copy"], ["caption"]]);
     expect(result.videos[0].videoId).toBe("yt-new");
+    expect(result.videos[0].pipelineVersion).toBe(8);
     expect(uploadCaptionImpl).toHaveBeenCalledWith({ entry, videoId: "yt-new", accessToken: "token", quotaProject: "p" });
   });
 
@@ -738,6 +741,7 @@ describe("publishEntry", () => {
         accessToken: "token",
         quotaProject: "p",
         publicVideo: false,
+        pipelineVersion: 8,
         uploadVideoImpl,
         uploadCaptionImpl,
         savePublishListImpl,

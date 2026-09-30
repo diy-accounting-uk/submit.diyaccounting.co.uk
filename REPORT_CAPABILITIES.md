@@ -2890,10 +2890,10 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 
 - **Use when:** a recorded demo video is ready to upload to YouTube, unlisted or public, or its manifest needs syncing.
 - **Does:** youtube-upload.js uploads a local video file to YouTube, unlisted or public. It reads title, description, tags and caption file per video from videos/publish.json, documented in videos/PUBLISH.md, and uses selectPendingUploads to skip videos already published. copy-videos-manifest.js keeps the video manifest in sync between source and destination directories.
-- **Run:** `npm run video:publish`; `npm run video:publish -- --public`; `npm run video:publish -- --check`; `npm run videos:manifest`
-- **Entry:** `scripts/youtube-upload.js`; `scripts/copy-videos-manifest.js`
-- **Files:** scripts/youtube-upload.js, app/unit-tests/scripts/youtubeUpload.test.js, scripts/copy-videos-manifest.js, videos/PUBLISH.md, web/unit-tests/videos-manifest.test.js
-- **Keywords:** youtube upload, publish video, unlisted, public video, publish.json, video manifest
+- **Run:** `npm run video:publish`; `npm run video:publish -- --public`; `npm run video:publish -- --check`; `npm run videos:manifest`; `npm run video:stale`; `npm run video:stale -- --dispatch`
+- **Entry:** `scripts/youtube-upload.js`; `scripts/copy-videos-manifest.js`; `scripts/video-stale.js`
+- **Files:** scripts/youtube-upload.js, scripts/video-stale.js, scripts/lib/video/pipelineVersion.js, app/unit-tests/video/pipelineVersion.test.js, app/unit-tests/scripts/youtubeUpload.test.js, scripts/copy-videos-manifest.js, videos/PUBLISH.md, web/unit-tests/videos-manifest.test.js
+- **Keywords:** youtube upload, publish video, unlisted, public video, publish.json, video manifest, pipelineVersion, stale video, re-record
 - **Related:** OPS-88, OPS-94
 
 #### OPS-94 Play demo videos on the public site
@@ -7002,6 +7002,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - physical pass: [BILL-06](#bill-06-generate-a-token-charged-pass)
 - pii redaction: [OPS-81](#ops-81-mask-and-redact-sensitive-data-from-logs), [OPS-86](#ops-86-provide-structured-pii-redacting-logging)
 - pino logger: [OPS-86](#ops-86-provide-structured-pii-redacting-logging)
+- pipelineversion: [OPS-93](#ops-93-publish-demo-videos-to-youtube)
 - pitr: [OPS-132](#ops-132-enable-dynamodb-pitr-on-deploy), [OPS-113](#ops-113-provision-the-dynamodb-and-s3-data-stack)
 - pitr restore: [OPS-50](#ops-50-drill-and-test-pitr-database-restoration)
 - pitr status: [OPS-48](#ops-48-verify-backup-health-daily)
@@ -7133,6 +7134,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - rates and allowances: [SITE-22](#site-22-source-and-publish-sourced-tax-facts)
 - raw export: [DATA-20](#data-20-publish-the-nightly-raw-export-for-indexing)
 - re-key: [BILL-40](#bill-40-migrate-the-hashed-sub-salt)
+- re-record: [OPS-93](#ops-93-publish-demo-videos-to-youtube)
 - read-only: [DATA-44](#data-44-assert-google-oauth-client-configuration)
 - read-only aws query: [DEV-42](#dev-42-look-up-a-vat-submission-failure-alarms-customer)
 - read-only check: [DATA-43](#data-43-read-the-google-cloud-and-ga4-inventory)
@@ -7417,6 +7419,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - staging directory: [DATA-50](#data-50-resolve-finance-staging-directory-paths)
 - stale branches: [SS-53](#ss-53-clean-up-stale-branches-and-worktrees)
 - stale deployment sweep: [DEV-34](#dev-34-clean-up-stale-deployments-and-branches)
+- stale video: [OPS-93](#ops-93-publish-demo-videos-to-youtube)
 - standalone cdk app: [DATA-17](#data-17-export-aws-billing-data-in-focus-format)
 - standalone harness: [HMRC-35](#hmrc-35-spike-test-the-itsa-sandbox-oauth-and-business-details-flow)
 - statement: [MCP-16](#mcp-16-parse-paypal-statements-into-diya-gl-lines)
