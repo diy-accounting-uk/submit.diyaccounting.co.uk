@@ -144,6 +144,11 @@ public class BusinessViews extends Construct {
                     "Sessions and users each day, by hostname and visitor kind (human, bot, synthetic)",
                     List.of("sessions_by_host_source_daily")),
             new ViewDefinition(
+                    "v_visitors_by_browser_daily",
+                    "Page requests each day by browser and operating system from the CloudFront access log's"
+                            + " user agent, crawlers and test browsers excluded",
+                    List.of("cloudfront_requests")),
+            new ViewDefinition(
                     "v_visitors_by_kind_hourly",
                     "Sessions each hour by visitor kind from GA4's streaming export: feeds the operator"
                             + " dashboard's Last 1 hour, 1 day and 7 days visitor columns, which the two-day-late"

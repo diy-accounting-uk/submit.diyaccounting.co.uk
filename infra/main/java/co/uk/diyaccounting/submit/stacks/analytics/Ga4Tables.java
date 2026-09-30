@@ -240,6 +240,8 @@ public class Ga4Tables {
                 "currency", "string",
                 "device_category", "string",
                 "device_os", "string",
+                "device_browser", "string",
+                "device_browser_version", "string",
                 "country", "string",
                 "traffic_source", "string",
                 "traffic_medium", "string",
