@@ -292,9 +292,9 @@ function handleActivityStartClick(event) {
 }
 
 function ensurePrivacyLink() {
-  const anchors = Array.from(document.querySelectorAll('footer a[href$="privacy.html"]'));
+  const anchors = Array.from(document.querySelectorAll('body > footer a[href$="privacy.html"]'));
   if (anchors.length) return;
-  const footer = document.querySelector("footer .footer-left") || document.querySelector("footer");
+  const footer = document.querySelector("body > footer .footer-left") || document.querySelector("body > footer");
   if (!footer) return;
   const link = document.createElement("a");
   link.href = "/privacy.html";

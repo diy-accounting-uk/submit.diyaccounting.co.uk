@@ -178,7 +178,7 @@
 
   function renderPageChrome() {
     const header = document.querySelector("header");
-    const footer = document.querySelector("footer");
+    const footer = document.querySelector("body > footer");
     const rootPrefix = computeRootPrefix();
 
     // Each render is independent: a mistake building one must not cost the

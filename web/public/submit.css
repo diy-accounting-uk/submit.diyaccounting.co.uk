@@ -796,7 +796,7 @@ textarea.input--error:focus {
   padding-bottom: 0;
 }
 
-footer {
+body > footer {
   margin-top: 2em;
   font-size: 0.9em;
   color: #737373;
