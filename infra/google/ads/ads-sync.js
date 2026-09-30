@@ -10,8 +10,9 @@
 // each campaign's bidding strategy fields, and writes through customers:mutate (auto-tagging),
 // campaignBudgets:mutate (a campaign's budget), campaigns:mutate (a campaign's status, its bidding
 // strategy, and a new Search campaign itself), customerConversionGoals:mutate (a goal's biddable
-// flag), adGroups:mutate, adGroupCriteria:mutate and adGroupAds:mutate (a new Search campaign's ad
-// groups, keywords and responsive search ad).
+// flag), adGroups:mutate, adGroupCriteria:mutate and adGroupAds:mutate (a Search campaign's ad
+// groups, keywords and responsive search ad) and campaignCriteria:mutate (a Search campaign's
+// negative keywords).
 //
 // A declared conversion action, conversion goal or Performance Max campaign the live account does
 // not have fails the run: this script never creates a conversion action (those are created in the
@@ -59,6 +60,21 @@
 // containsEuPoliticalAdvertising status, required on create since v21). None has a default. For a
 // Search campaign the live account already has, locations, geo target type, network settings and
 // the EU political advertising status are compared and drift is reported, never written.
+//
+// A Search campaign the live account already has is also diffed on its ad groups and keywords. A
+// declared ad group the campaign lacks is created with its keywords and ad. An ad group the
+// campaign has that the toml does not declare is paused, never removed, so it keeps its history.
+// A declared ad group the campaign has is diffed on keywords only: missing keywords are added and
+// undeclared ones removed, matched by lower-cased text and match type. A live ad's copy is not
+// compared.
+//
+// A Search campaign may declare campaign-level negative keywords, one list per match type, each a
+// list of texts. The live campaign's negative keywords are made to match: missing ones are added,
+// undeclared ones removed. A campaign that declares none has every live negative keyword removed.
+//
+//   [campaign.negative_keywords]
+//   phrase = ["login", "jobs"]
+//   exact = ["vat online account"]
 //
 // Every [[campaign]] also needs a [campaign.bidding] table, mapped one to one onto the API's
 // campaign bidding fields: manual_cpc (enhanced_cpc), maximize_clicks (the API's target_spend,
@@ -128,6 +144,20 @@ const CAMPAIGN_TARGETING_QUERY =
 const CAMPAIGN_LOCATION_QUERY =
   "SELECT campaign.resource_name, campaign_criterion.location.geo_target_constant, campaign_criterion.negative " +
   "FROM campaign_criterion WHERE campaign_criterion.type = 'LOCATION'";
+
+const CAMPAIGN_NEGATIVE_KEYWORD_QUERY =
+  "SELECT campaign.resource_name, campaign_criterion.resource_name, campaign_criterion.keyword.text, " +
+  "campaign_criterion.keyword.match_type FROM campaign_criterion " +
+  "WHERE campaign_criterion.type = 'KEYWORD' AND campaign_criterion.negative = TRUE";
+
+const AD_GROUP_QUERY =
+  "SELECT campaign.resource_name, ad_group.resource_name, ad_group.name, ad_group.status FROM ad_group " +
+  "WHERE ad_group.status != 'REMOVED'";
+
+const AD_GROUP_KEYWORD_QUERY =
+  "SELECT ad_group.resource_name, ad_group_criterion.resource_name, ad_group_criterion.keyword.text, " +
+  "ad_group_criterion.keyword.match_type FROM ad_group_criterion " +
+  "WHERE ad_group_criterion.type = 'KEYWORD' AND ad_group_criterion.negative = FALSE AND ad_group_criterion.status != 'REMOVED'";
 
 // Country code to the geo target constant id the API names it by.
 const GEO_TARGET_CONSTANT_ID_BY_COUNTRY = { GB: 2826 };
@@ -248,6 +278,44 @@ function parseBidding(entry, campaignName) {
   }
 }
 
+function keywordKey(keyword) {
+  return `${keyword.matchType} ${JSON.stringify(keyword.text.toLowerCase())}`;
+}
+
+/**
+ * Parse a [campaign.negative_keywords] table: a list of texts per match type (phrase, exact,
+ * broad). Absent means none.
+ *
+ * @param {object|undefined} entry
+ * @param {string} campaignName
+ * @returns {Array<{text: string, matchType: string}>}
+ */
+function parseNegativeKeywords(entry, campaignName) {
+  if (entry === undefined) return [];
+  const negatives = [];
+  const seen = new Set();
+  for (const [matchKey, texts] of Object.entries(entry)) {
+    const matchType = matchKey.toUpperCase();
+    if (!KEYWORD_MATCH_TYPES.has(matchType)) {
+      throw new Error(
+        `campaign "${campaignName}"'s [campaign.negative_keywords] has match type "${matchKey}", must be one of ${[...KEYWORD_MATCH_TYPES].join(", ").toLowerCase()}`,
+      );
+    }
+    if (!Array.isArray(texts)) throw new Error(`campaign "${campaignName}"'s negative_keywords.${matchKey} must be a list of texts`);
+    for (const text of texts) {
+      if (typeof text !== "string" || text.trim() === "") {
+        throw new Error(`campaign "${campaignName}"'s negative_keywords.${matchKey} has an empty or non-text entry`);
+      }
+      const negative = { text: text.trim(), matchType };
+      const key = keywordKey(negative);
+      if (seen.has(key)) throw new Error(`campaign "${campaignName}" declares negative keyword ${key} more than once`);
+      seen.add(key);
+      negatives.push(negative);
+    }
+  }
+  return negatives;
+}
+
 /**
  * Parse one [[campaign.ad_group]] entry: its keywords and its one responsive search ad.
  *
@@ -267,6 +335,12 @@ function parseAdGroup(entry, campaignName) {
     return { text: String(keywordEntry.text), matchType: String(keywordEntry.match_type) };
   });
   if (keywords.length === 0) throw new Error(`ad group "${entry.name}" has no [[campaign.ad_group.keyword]]`);
+  const seenKeywords = new Set();
+  for (const keyword of keywords) {
+    const key = keywordKey(keyword);
+    if (seenKeywords.has(key)) throw new Error(`ad group "${entry.name}" declares keyword ${key} more than once`);
+    seenKeywords.add(key);
+  }
 
   const ad = entry.ad;
   if (!ad) throw new Error(`ad group "${entry.name}" has no [campaign.ad_group.ad]`);
@@ -376,6 +450,7 @@ function parseCampaign(entry) {
     budgetMicros: poundsToMicros(entry.budget_gbp),
     assetGroups: [],
     adGroups,
+    negativeKeywords: parseNegativeKeywords(entry.negative_keywords, entry.name),
     bidding,
     ...targeting,
   };
@@ -543,6 +618,46 @@ export function shapeCampaignTargeting(targetingBody, locationBody) {
 }
 
 /**
+ * Shape each campaign's ad groups (with their positive keywords) and campaign-level negative
+ * keywords, keyed by the campaign's resource name.
+ *
+ * @param {object} adGroupBody googleAds:search response for AD_GROUP_QUERY
+ * @param {object} adGroupKeywordBody googleAds:search response for AD_GROUP_KEYWORD_QUERY
+ * @param {object} negativeKeywordBody googleAds:search response for CAMPAIGN_NEGATIVE_KEYWORD_QUERY
+ * @returns {Map<string, {adGroups: object[], negativeKeywords: object[]}>}
+ */
+export function shapeCampaignKeywords(adGroupBody, adGroupKeywordBody, negativeKeywordBody) {
+  const byCampaign = new Map();
+  const entryFor = (campaignResourceName) => {
+    if (!byCampaign.has(campaignResourceName)) byCampaign.set(campaignResourceName, { adGroups: [], negativeKeywords: [] });
+    return byCampaign.get(campaignResourceName);
+  };
+  const adGroupByResourceName = new Map();
+  for (const row of adGroupBody.results ?? []) {
+    const adGroup = { resourceName: row.adGroup.resourceName, name: row.adGroup.name, status: row.adGroup.status, keywords: [] };
+    adGroupByResourceName.set(adGroup.resourceName, adGroup);
+    entryFor(row.campaign.resourceName).adGroups.push(adGroup);
+  }
+  for (const row of adGroupKeywordBody.results ?? []) {
+    const adGroup = adGroupByResourceName.get(row.adGroup.resourceName);
+    if (!adGroup) continue;
+    adGroup.keywords.push({
+      resourceName: row.adGroupCriterion.resourceName,
+      text: row.adGroupCriterion.keyword.text,
+      matchType: row.adGroupCriterion.keyword.matchType,
+    });
+  }
+  for (const row of negativeKeywordBody.results ?? []) {
+    entryFor(row.campaign.resourceName).negativeKeywords.push({
+      resourceName: row.campaignCriterion.resourceName,
+      text: row.campaignCriterion.keyword.text,
+      matchType: row.campaignCriterion.keyword.matchType,
+    });
+  }
+  return byCampaign;
+}
+
+/**
  * Read the account, conversion actions, conversion goals and campaigns the same way
  * ads-inventory.js does, plus each campaign's bidding strategy, shaped for planAds.
  *
@@ -558,6 +673,9 @@ export async function readLiveState(token, config) {
     campaignBiddingBody,
     campaignTargetingBody,
     locationBody,
+    adGroupBody,
+    adGroupKeywordBody,
+    negativeKeywordBody,
   ] = await Promise.all([
     googleAdsSearch(token, config.customerId, config.apiVersion, CUSTOMER_QUERY),
     googleAdsSearch(token, config.customerId, config.apiVersion, CONVERSION_ACTION_QUERY),
@@ -566,14 +684,21 @@ export async function readLiveState(token, config) {
     googleAdsSearch(token, config.customerId, config.apiVersion, CAMPAIGN_BIDDING_QUERY),
     googleAdsSearch(token, config.customerId, config.apiVersion, CAMPAIGN_TARGETING_QUERY),
     googleAdsSearch(token, config.customerId, config.apiVersion, CAMPAIGN_LOCATION_QUERY),
+    googleAdsSearch(token, config.customerId, config.apiVersion, AD_GROUP_QUERY),
+    googleAdsSearch(token, config.customerId, config.apiVersion, AD_GROUP_KEYWORD_QUERY),
+    googleAdsSearch(token, config.customerId, config.apiVersion, CAMPAIGN_NEGATIVE_KEYWORD_QUERY),
   ]);
   const shapedConversions = shapeConversionActions(conversionActionsBody, conversionGoalsBody);
   const campaigns = shapeCampaigns(campaignsBody);
   const biddingByResourceName = shapeCampaignBidding(campaignBiddingBody);
   const targetingByResourceName = shapeCampaignTargeting(campaignTargetingBody, locationBody);
+  const keywordsByResourceName = shapeCampaignKeywords(adGroupBody, adGroupKeywordBody, negativeKeywordBody);
   for (const campaign of campaigns) {
     campaign.bidding = biddingByResourceName.get(campaign.resourceName) ?? null;
     campaign.targeting = targetingByResourceName.get(campaign.resourceName) ?? null;
+    const keywords = keywordsByResourceName.get(campaign.resourceName);
+    campaign.adGroups = keywords?.adGroups ?? [];
+    campaign.negativeKeywords = keywords?.negativeKeywords ?? [];
   }
   return {
     customer: shapeCustomer(customerBody),
@@ -655,10 +780,104 @@ function planCampaignCreation(campaign) {
     },
     { kind: "create-campaign-locations", campaignName: campaign.name, locations: campaign.locations },
   ];
+  if (campaign.negativeKeywords.length > 0) {
+    actions.push({ kind: "add-campaign-negative-keywords", campaignName: campaign.name, keywords: campaign.negativeKeywords });
+  }
   for (const adGroup of campaign.adGroups) {
     actions.push({ kind: "create-ad-group", campaignName: campaign.name, adGroupName: adGroup.name });
     actions.push({ kind: "create-ad-group-keywords", campaignName: campaign.name, adGroupName: adGroup.name, keywords: adGroup.keywords });
     actions.push({ kind: "create-ad-group-ad", campaignName: campaign.name, adGroupName: adGroup.name, ad: adGroup.ad });
+  }
+  return actions;
+}
+
+/**
+ * The actions that make a live Search campaign's ad groups, their keywords and its negative
+ * keywords match the declaration: declared ad groups the campaign lacks are created, live ad
+ * groups the toml does not declare are paused, and keywords are added and removed by lower-cased
+ * text and match type.
+ *
+ * @param {ReturnType<parseCampaign>} campaign
+ * @param {object} liveCampaign
+ */
+function planCampaignKeywords(campaign, liveCampaign) {
+  const actions = [];
+  const liveAdGroups = liveCampaign.adGroups ?? [];
+  const declaredNames = new Set(campaign.adGroups.map((adGroup) => adGroup.name));
+
+  for (const declared of campaign.adGroups) {
+    const liveAdGroup = liveAdGroups.find((candidate) => candidate.name === declared.name);
+    if (!liveAdGroup) {
+      actions.push({
+        kind: "create-ad-group",
+        campaignName: campaign.name,
+        campaignResourceName: liveCampaign.resourceName,
+        adGroupName: declared.name,
+      });
+      actions.push({
+        kind: "create-ad-group-keywords",
+        campaignName: campaign.name,
+        adGroupName: declared.name,
+        keywords: declared.keywords,
+      });
+      actions.push({ kind: "create-ad-group-ad", campaignName: campaign.name, adGroupName: declared.name, ad: declared.ad });
+      continue;
+    }
+    if (liveAdGroup.status !== "ENABLED") {
+      actions.push({
+        kind: "update-ad-group-status",
+        adGroupName: declared.name,
+        resourceName: liveAdGroup.resourceName,
+        wanted: "ENABLED",
+        live: liveAdGroup.status,
+      });
+    }
+    const liveByKey = new Map(
+      liveAdGroup.keywords.map((keyword) => [keywordKey({ text: keyword.text, matchType: keyword.matchType }), keyword]),
+    );
+    const declaredKeys = new Set(declared.keywords.map(keywordKey));
+    const toAdd = declared.keywords.filter((keyword) => !liveByKey.has(keywordKey(keyword)));
+    const toRemove = liveAdGroup.keywords.filter((keyword) => !declaredKeys.has(keywordKey(keyword)));
+    if (toAdd.length > 0) {
+      actions.push({
+        kind: "create-ad-group-keywords",
+        campaignName: campaign.name,
+        adGroupName: declared.name,
+        adGroupResourceName: liveAdGroup.resourceName,
+        keywords: toAdd,
+      });
+    }
+    if (toRemove.length > 0) {
+      actions.push({ kind: "remove-ad-group-keywords", campaignName: campaign.name, adGroupName: declared.name, keywords: toRemove });
+    }
+  }
+
+  for (const liveAdGroup of liveAdGroups) {
+    if (declaredNames.has(liveAdGroup.name) || liveAdGroup.status === "PAUSED") continue;
+    actions.push({
+      kind: "update-ad-group-status",
+      adGroupName: liveAdGroup.name,
+      resourceName: liveAdGroup.resourceName,
+      wanted: "PAUSED",
+      live: liveAdGroup.status,
+    });
+  }
+
+  const liveNegatives = liveCampaign.negativeKeywords ?? [];
+  const liveNegativeKeys = new Set(liveNegatives.map(keywordKey));
+  const declaredNegativeKeys = new Set(campaign.negativeKeywords.map(keywordKey));
+  const negativesToAdd = campaign.negativeKeywords.filter((keyword) => !liveNegativeKeys.has(keywordKey(keyword)));
+  const negativesToRemove = liveNegatives.filter((keyword) => !declaredNegativeKeys.has(keywordKey(keyword)));
+  if (negativesToAdd.length > 0) {
+    actions.push({
+      kind: "add-campaign-negative-keywords",
+      campaignName: campaign.name,
+      campaignResourceName: liveCampaign.resourceName,
+      keywords: negativesToAdd,
+    });
+  }
+  if (negativesToRemove.length > 0) {
+    actions.push({ kind: "remove-campaign-negative-keywords", campaignName: campaign.name, keywords: negativesToRemove });
   }
   return actions;
 }
@@ -766,6 +985,7 @@ export function planAds(config, live) {
           live: liveCampaign.targeting ?? null,
         });
       }
+      actions.push(...planCampaignKeywords(campaign, liveCampaign));
     }
 
     const allowedStrategies = CHANNEL_TYPE_BIDDING_STRATEGIES[campaign.type];
@@ -793,6 +1013,10 @@ export function planAds(config, live) {
   }
 
   return actions;
+}
+
+function describeKeywords(keywords) {
+  return keywords.map((keyword) => keyword.matchType + " " + JSON.stringify(keyword.text)).join(", ");
 }
 
 export function describe(action) {
@@ -826,7 +1050,15 @@ export function describe(action) {
     case "create-ad-group":
       return `campaign "${action.campaignName}", ad group "${action.adGroupName}" (would create)`;
     case "create-ad-group-keywords":
-      return `campaign "${action.campaignName}", ad group "${action.adGroupName}": ${action.keywords.length} keyword(s) ${action.keywords.map((keyword) => keyword.matchType + " " + JSON.stringify(keyword.text)).join(", ")} (would create)`;
+      return `campaign "${action.campaignName}", ad group "${action.adGroupName}": ${action.keywords.length} keyword(s) ${describeKeywords(action.keywords)} (would create)`;
+    case "update-ad-group-status":
+      return `ad group "${action.adGroupName}": status ${action.live} (declared ${action.wanted}) (would ${action.wanted === "PAUSED" ? "pause" : "update"})`;
+    case "remove-ad-group-keywords":
+      return `campaign "${action.campaignName}", ad group "${action.adGroupName}": ${action.keywords.length} keyword(s) ${describeKeywords(action.keywords)} (would remove)`;
+    case "add-campaign-negative-keywords":
+      return `campaign "${action.campaignName}": ${action.keywords.length} negative keyword(s) ${describeKeywords(action.keywords)} (would create)`;
+    case "remove-campaign-negative-keywords":
+      return `campaign "${action.campaignName}": ${action.keywords.length} negative keyword(s) ${describeKeywords(action.keywords)} (would remove)`;
     case "create-ad-group-ad":
       return `campaign "${action.campaignName}", ad group "${action.adGroupName}": responsive search ad to ${action.ad.finalUrl}, headlines ${JSON.stringify(action.ad.headlines)}, descriptions ${JSON.stringify(action.ad.descriptions)} (would create)`;
     default:
@@ -933,6 +1165,18 @@ export function locationCriteriaOperations(action, campaignResourceName) {
   }));
 }
 
+/**
+ * The campaignCriteria create operations for a campaign's negative keywords.
+ *
+ * @param {Array<{text: string, matchType: string}>} keywords
+ * @param {string} campaignResourceName
+ */
+export function negativeKeywordOperations(keywords, campaignResourceName) {
+  return keywords.map((keyword) => ({
+    create: { campaign: campaignResourceName, negative: true, keyword: { text: keyword.text, matchType: keyword.matchType } },
+  }));
+}
+
 // --- Network calls. Not covered by the unit tests (no network in tests); planAds and describe
 // carry the argument-handling and diff-shaping coverage. ---
 
@@ -1010,7 +1254,7 @@ async function applyAction(token, config, action, context) {
         {
           create: {
             name: action.adGroupName,
-            campaign: context.campaignResourceNameByCampaign[action.campaignName],
+            campaign: action.campaignResourceName ?? context.campaignResourceNameByCampaign[action.campaignName],
             status: "ENABLED",
           },
         },
@@ -1019,12 +1263,44 @@ async function applyAction(token, config, action, context) {
       return result;
     }
     case "create-ad-group-keywords": {
-      const adGroupResourceName = context.adGroupResourceNameByKey[`${action.campaignName}/${action.adGroupName}`];
+      const adGroupResourceName =
+        action.adGroupResourceName ?? context.adGroupResourceNameByKey[`${action.campaignName}/${action.adGroupName}`];
       const operations = action.keywords.map((keyword) => ({
         create: { adGroup: adGroupResourceName, status: "ENABLED", keyword: { text: keyword.text, matchType: keyword.matchType } },
       }));
       return googleAdsMutate(token, config.customerId, config.apiVersion, "adGroupCriteria", operations);
     }
+    case "update-ad-group-status":
+      return googleAdsMutate(token, config.customerId, config.apiVersion, "adGroups", [
+        { updateMask: "status", update: { resourceName: action.resourceName, status: action.wanted } },
+      ]);
+    case "remove-ad-group-keywords":
+      return googleAdsMutate(
+        token,
+        config.customerId,
+        config.apiVersion,
+        "adGroupCriteria",
+        action.keywords.map((keyword) => ({ remove: keyword.resourceName })),
+      );
+    case "add-campaign-negative-keywords":
+      return googleAdsMutate(
+        token,
+        config.customerId,
+        config.apiVersion,
+        "campaignCriteria",
+        negativeKeywordOperations(
+          action.keywords,
+          action.campaignResourceName ?? context.campaignResourceNameByCampaign[action.campaignName],
+        ),
+      );
+    case "remove-campaign-negative-keywords":
+      return googleAdsMutate(
+        token,
+        config.customerId,
+        config.apiVersion,
+        "campaignCriteria",
+        action.keywords.map((keyword) => ({ remove: keyword.resourceName })),
+      );
     case "create-ad-group-ad": {
       const adGroupResourceName = context.adGroupResourceNameByKey[`${action.campaignName}/${action.adGroupName}`];
       return googleAdsMutate(token, config.customerId, config.apiVersion, "adGroupAds", [
@@ -1078,7 +1354,13 @@ export async function main(argv = process.argv.slice(2)) {
       continue;
     }
     await applyAction(token, config, action, context);
-    console.log(describe(action).replace("(would update)", "(updated)").replace("(would create)", "(created)"));
+    console.log(
+      describe(action)
+        .replace("(would update)", "(updated)")
+        .replace("(would create)", "(created)")
+        .replace("(would remove)", "(removed)")
+        .replace("(would pause)", "(paused)"),
+    );
   }
   return plan;
 }
