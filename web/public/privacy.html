@@ -174,9 +174,16 @@
         </ul>
         <h4>Consent and Control</h4>
         <p>
-          GA4 loads with <strong>analytics consent denied by default</strong>. No analytics cookies are set and no tracking data is sent to
-          Google until you explicitly grant consent via the cookie banner. You can withdraw consent at any time by clearing your browser's
-          site data and revisiting the site.
+          Our lawful basis for analytics and advertising measurement is your <strong>consent</strong>. Until you accept the cookie banner,
+          the GA4 script is not loaded, no request is made to Google, and nothing about your visit is written to your browser for these
+          purposes. If you decline, that stays the case. You can withdraw consent at any time by clearing your browser's site data and
+          revisiting the site.
+        </p>
+        <h4>Google Ads measurement</h4>
+        <p>
+          If you arrive from a Google ad, the link carries a click identifier (<code>gclid</code>) and campaign tags (<code>utm_*</code>).
+          With your consent we keep them in your browser for up to 90 days and send them with your session, so we can count which ads lead
+          to sign-ups and payments. Without consent they are not kept.
         </p>
         <h4>Data Retention and Processing</h4>
         <ul>
@@ -327,8 +334,8 @@
           </li>
           <li><strong>RUM data</strong>: Only collected after you click "Accept" in the consent banner.</li>
           <li>
-            <strong>Google Analytics data</strong>: Only collected after you grant analytics consent via the cookie banner. No cookies or
-            tracking data are sent before consent.
+            <strong>Google Analytics and advertising measurement data</strong>: Only collected after you grant consent via the cookie
+            banner. Nothing is sent to Google and no campaign tags are stored before consent.
           </li>
           <li>
             <strong>Infrastructure logs</strong>: Collected automatically by AWS services when you use the site, for security and
@@ -442,13 +449,41 @@
         <ul>
           <li><strong>Authentication tokens</strong>: Cognito access, identity, and refresh tokens for session management</li>
           <li><strong>User info</strong>: Parsed user profile from Cognito (sub, name, email)</li>
-          <li><strong>Consent preferences</strong>: Your RUM and Google Analytics consent choices</li>
-          <li><strong>Auth state</strong>: OAuth state parameter for CSRF protection during login</li>
+          <li><strong>Sign-in details</strong>: Login provider, last auth update time, and OAuth state for CSRF protection during login</li>
+          <li>
+            <strong><code>consent.rum</code> and <code>consent.analytics</code></strong
+            >: Your banner choice, so we do not ask again
+          </li>
+          <li>
+            <strong><code>attribution.landing</code></strong
+            >: Stored only after you accept. The click id, campaign tags and referral code from the link you arrived on, kept up to 90 days
+            to measure which ads and referrals lead to sign-ups and payments. Deleted if you decline.
+          </li>
+          <li>
+            <strong><code>rum.config</code></strong
+            >: Monitoring configuration for CloudWatch RUM, stored only after you accept
+          </li>
+          <li>
+            <strong><code>feedbackEngagementRegistered</code></strong
+            >: Remembers that you have already answered the feedback invitation
+          </li>
+          <li>
+            <strong><code>visitorKind.operator</code></strong
+            >: Marks the site operator's browser so it is excluded from visitor counts
+          </li>
         </ul>
 
         <h3>sessionStorage (cleared when browser tab closes)</h3>
         <ul>
           <li><strong>MFA metadata</strong>: Multi-factor authentication information for fraud prevention headers (if applicable)</li>
+          <li>
+            <strong>Journey state</strong>: Pending requests, OAuth state, HMRC and Companies House tokens, form drafts, and the page to
+            return to after sign-in, so a journey survives redirects
+          </li>
+          <li>
+            <strong><code>__diy_session__</code></strong
+            >: Set after you accept, when the once-per-session visit beacon is sent, so it is sent once per tab session
+          </li>
         </ul>
 
         <p>

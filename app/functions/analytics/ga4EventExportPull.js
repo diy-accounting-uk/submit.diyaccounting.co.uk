@@ -133,6 +133,8 @@ SELECT
   (SELECT value.string_value FROM UNNEST(event_params) WHERE key = 'currency')          AS currency,
   device.category                        AS device_category,
   device.operating_system                AS device_os,
+  device.web_info.browser                AS device_browser,
+  device.web_info.browser_version        AS device_browser_version,
   geo.country                            AS country,
   traffic_source.source                  AS traffic_source,
   traffic_source.medium                  AS traffic_medium,

@@ -7,18 +7,19 @@
 -- a subscription bundle in the month. MRR is that month's charged amount in pounds; ARR is MRR
 -- times twelve. The charge's Stripe customer joins to stripe_subscriptions, whose id is the
 -- dynamo_subscriptions subscription_id, which carries the hashed_sub that dynamo_bundles keys
--- its acquisition columns on. dynamo_bundles holds one change record per write, so each
--- account's acquisition is the latest non-null value seen for that hashed_sub and bundle.
--- Accounts with no acquisition record report source 'unknown'.
+-- its acquisition columns on. dynamo_bundles holds one change record per write, and the bundle
+-- that carried the acquisition (a day pass) is not the paid bundle, so acquisition joins on
+-- hashed_sub alone: the earliest record naming a source (utm_source, gclid or ref) wins, and a
+-- landing-time-only record names none. Accounts with no sourced record report source 'unknown'.
 CREATE OR REPLACE VIEW v_paid_subscribers_by_channel AS
 WITH acquisition AS (
   SELECT hashed_sub,
-         bundle_id,
-         max_by(acq_utm_source, change_ts) FILTER (WHERE acq_utm_source IS NOT NULL) AS utm_source,
-         max_by(acq_gclid, change_ts)      FILTER (WHERE acq_gclid IS NOT NULL)      AS gclid,
-         max_by(acq_ref, change_ts)        FILTER (WHERE acq_ref IS NOT NULL)        AS ref
+         min_by(acq_utm_source, change_ts) AS utm_source,
+         min_by(acq_gclid, change_ts)      AS gclid,
+         min_by(acq_ref, change_ts)        AS ref
   FROM   dynamo_bundles
-  GROUP  BY hashed_sub, bundle_id),
+  WHERE  acq_utm_source IS NOT NULL OR acq_gclid IS NOT NULL OR acq_ref IS NOT NULL
+  GROUP  BY hashed_sub),
 subscription_owner AS (
   SELECT subscription_id, arbitrary(hashed_sub) AS hashed_sub
   FROM   dynamo_subscriptions
@@ -53,5 +54,5 @@ SELECT date(c.month) AS month,
        sum(c.net_minor) * 12 / 100.0 AS arr_gbp
 FROM   paid_charges c
 LEFT JOIN customer_account ca ON ca.customer = c.customer AND ca.bundle_id = c.bundle_id
-LEFT JOIN acquisition a ON a.hashed_sub = ca.hashed_sub AND a.bundle_id = c.bundle_id
+LEFT JOIN acquisition a ON a.hashed_sub = ca.hashed_sub
 GROUP  BY 1, 2, 3

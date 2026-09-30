@@ -619,6 +619,35 @@ describe("billingWebhookPost", () => {
     expect(mockUpdateBundleSubscriptionFields).toHaveBeenCalledTimes(2);
   });
 
+  test("checkout.session.completed writes the session's acquisition metadata onto the paid bundle", async () => {
+    const checkoutPayload = buildCheckoutSessionPayload({
+      metadata: {
+        hashedSub: "hashed_sub_value",
+        bundleId: "resident-pro",
+        acq_gclid: "abc123",
+        acq_utmSource: "google",
+        acq_landedAt: "2026-01-01T00:00:00.000Z",
+        acq_unknownField: "ignored",
+      },
+    });
+    mockWebhooksConstructEvent.mockReturnValue(checkoutPayload);
+
+    await ingestHandler(buildWebhookEvent(checkoutPayload));
+
+    const [, bundle] = mockPutBundleByHashedSub.mock.calls[0];
+    expect(bundle.acquisition).toEqual({ gclid: "abc123", utmSource: "google", landedAt: "2026-01-01T00:00:00.000Z" });
+  });
+
+  test("checkout.session.completed without acquisition metadata leaves the paid bundle untagged", async () => {
+    const checkoutPayload = buildCheckoutSessionPayload();
+    mockWebhooksConstructEvent.mockReturnValue(checkoutPayload);
+
+    await ingestHandler(buildWebhookEvent(checkoutPayload));
+
+    const [, bundle] = mockPutBundleByHashedSub.mock.calls[0];
+    expect(bundle.acquisition).toBeUndefined();
+  });
+
   test("checkout.session.completed for the personal resident bundle restores the owner's sandboxed books", async () => {
     const payload = buildCheckoutSessionPayload({ metadata: { hashedSub: "hashed_sub_value", bundleId: "resident" } });
     mockWebhooksConstructEvent.mockReturnValue(payload);

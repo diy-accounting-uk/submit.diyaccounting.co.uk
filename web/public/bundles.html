@@ -564,7 +564,7 @@
           const response = await window.fetchWithIdToken("/api/v1/billing/checkout", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ bundleId, ...(interval && { interval }) }),
+            body: JSON.stringify({ bundleId, ...(interval && { interval }), acquisition: readStoredLandingAttribution() }),
           });
           const body = await response.json().catch(() => ({}));
 

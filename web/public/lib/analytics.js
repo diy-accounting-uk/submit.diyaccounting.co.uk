@@ -10,15 +10,20 @@ window.dataLayer = window.dataLayer || [];
 function gtag() {
   dataLayer.push(arguments);
 }
-gtag("consent", "default", { analytics_storage: "denied" });
-// A returning visitor who already accepted the cookie banner shouldn't have
-// to accept it again on every page — apply their saved choice straight away.
-try {
-  if (localStorage.getItem("consent.analytics") === "granted") {
-    gtag("consent", "update", { analytics_storage: "granted" });
+gtag("consent", "default", {
+  analytics_storage: "denied",
+  ad_storage: "denied",
+  ad_user_data: "denied",
+  ad_personalization: "denied",
+});
+
+function hasStoredAnalyticsConsent() {
+  try {
+    return localStorage.getItem("consent.analytics") === "granted";
+  } catch (error) {
+    console.warn("Failed to read analytics consent from localStorage:", error);
+    return false;
   }
-} catch (error) {
-  console.warn("Failed to read analytics consent from localStorage:", error);
 }
 
 // The three hosts sharing GA4 property 523400333 (infra/google/ga4/analytics.toml), so a visit that
@@ -81,10 +86,11 @@ function classifyVisitorKindForGa4() {
 
 gtag("set", "user_properties", { visitor_kind: classifyVisitorKindForGa4() });
 
-// Landing-source capture (M1). Independent of the GA4 consent above: this is first-party
-// analytics under the site's own consent model, the same basis session-beacon.js already
-// fires on. session-beacon.js reads this same key to carry the source to the server, since
-// both load as plain scripts with no shared module to import a constant from.
+// Landing-source capture. Nothing is stored until the visitor accepts the banner, because the
+// click id and campaign tags are advertising measurement. The tags read from the URL at page
+// load are held in memory so an Accept on a later step of the same page view still records them.
+// session-beacon.js reads the stored key to carry the source to the server, since both load as
+// plain scripts with no shared module to import a constant from.
 const ATTRIBUTION_STORAGE_KEY = "attribution.landing";
 const ATTRIBUTION_WINDOW_MS = 90 * 24 * 60 * 60 * 1000;
 const ATTRIBUTION_URL_PARAMS = [
@@ -96,6 +102,22 @@ const ATTRIBUTION_URL_PARAMS = [
   ["gclid", "gclid"],
   ["ref", "ref"],
 ];
+
+function readLandingParamsFromUrl() {
+  const landing = {};
+  try {
+    const params = new URLSearchParams(window.location.search);
+    for (const [param, key] of ATTRIBUTION_URL_PARAMS) {
+      const value = params.get(param);
+      if (value) landing[key] = value;
+    }
+  } catch {
+    // no readable URL: no params
+  }
+  return landing;
+}
+
+const landingParamsThisPageView = readLandingParamsFromUrl();
 
 // The stored landing is read back only to decide whether it still applies, so an expired
 // or unparsable record is treated as absent rather than surfaced to the caller.
@@ -114,20 +136,10 @@ function readStoredLandingAttribution() {
 
 // First touch wins: a bare visit (no tagged params) never overwrites a still-valid stored
 // landing. A tagged landing always writes, so it both starts the first record and replaces
-// an existing one within the 90-day window.
+// an existing one within the 90-day window. Runs only after consent is granted.
 function captureLandingAttribution() {
-  let params;
-  try {
-    params = new URLSearchParams(window.location.search);
-  } catch {
-    return;
-  }
-
-  const landing = {};
-  for (const [param, key] of ATTRIBUTION_URL_PARAMS) {
-    const value = params.get(param);
-    if (value) landing[key] = value;
-  }
+  const urlParams = readLandingParamsFromUrl();
+  const landing = Object.keys(urlParams).length > 0 ? urlParams : { ...landingParamsThisPageView };
 
   const isTaggedLanding = Object.keys(landing).length > 0;
   if (!isTaggedLanding && readStoredLandingAttribution()) return;
@@ -140,7 +152,13 @@ function captureLandingAttribution() {
   }
 }
 
-captureLandingAttribution();
+function deleteLandingAttribution() {
+  try {
+    localStorage.removeItem(ATTRIBUTION_STORAGE_KEY);
+  } catch (error) {
+    console.warn("Failed to delete landing attribution:", error);
+  }
+}
 
 // Reads one KEY=value line out of the plain-text /submit.env body. Blank when the key is
 // missing or its value is empty, which happens on any environment without its own GA4 property.
@@ -166,13 +184,32 @@ function startGa4(measurementId) {
   document.head.appendChild(script);
 }
 
-fetch("/submit.env", { cache: "no-store" })
-  .then((response) => (response.ok ? response.text() : ""))
-  .then((envText) => {
-    const measurementId = readSubmitEnvValue(envText, "GA4_MEASUREMENT_ID");
-    if (measurementId) {
-      startGa4(measurementId);
-    }
-    return null;
-  })
-  .catch((error) => console.warn("Failed to read GA4_MEASUREMENT_ID from /submit.env:", error));
+let ga4Started = false;
+
+// Basic consent mode: gtag.js is requested only after the visitor accepts, so Google receives
+// nothing before then.
+function startAnalyticsAfterConsent() {
+  gtag("consent", "update", { analytics_storage: "granted" });
+  captureLandingAttribution();
+  if (ga4Started) return;
+  ga4Started = true;
+  fetch("/submit.env", { cache: "no-store" })
+    .then((response) => (response.ok ? response.text() : ""))
+    .then((envText) => {
+      const measurementId = readSubmitEnvValue(envText, "GA4_MEASUREMENT_ID");
+      if (measurementId) {
+        startGa4(measurementId);
+      }
+      return null;
+    })
+    .catch((error) => console.warn("Failed to read GA4_MEASUREMENT_ID from /submit.env:", error));
+}
+
+document.addEventListener("consent-granted", startAnalyticsAfterConsent);
+document.addEventListener("consent-declined", deleteLandingAttribution);
+
+// A returning visitor who already accepted the cookie banner shouldn't have
+// to accept it again on every page, so their saved choice applies straight away.
+if (hasStoredAnalyticsConsent()) {
+  startAnalyticsAfterConsent();
+}

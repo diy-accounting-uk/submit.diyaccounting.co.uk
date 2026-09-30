@@ -12,7 +12,8 @@ import { publishActivityEvent } from "../../lib/activityAlert.js";
 const logger = createLogger({ source: "app/functions/account/sessionBeaconPost.js" });
 
 // Landing-attribution fields session-beacon.js carries from analytics.js's localStorage
-// capture. Only present when the visitor's browser still holds a valid stored landing.
+// capture. The beacon is sent only after consent, and carries them when the browser still
+// holds a valid stored landing.
 const ATTRIBUTION_DETAIL_KEYS = ["utmSource", "utmMedium", "utmCampaign", "utmContent", "utmTerm", "gclid", "ref", "landedAt"];
 
 function extractAttribution(body) {

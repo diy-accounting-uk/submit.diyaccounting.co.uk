@@ -11,9 +11,23 @@ const scriptContent = fs.readFileSync(path.join(process.cwd(), "web/public/lib/s
 
 describe("web/public/lib/session-beacon.js", () => {
   let sentRequests;
+  let documentListeners;
+
+  function acceptBanner() {
+    global.localStorage.getItem = vi.fn((key) => (key === "consent.analytics" ? "granted" : storedAttribution(key)));
+    for (const listener of documentListeners["consent-granted"] || []) listener();
+  }
+  let storedAttribution = () => null;
 
   beforeEach(() => {
     sentRequests = [];
+    documentListeners = {};
+    storedAttribution = () => null;
+    global.document = {
+      addEventListener: vi.fn((name, listener) => {
+        (documentListeners[name] ||= []).push(listener);
+      }),
+    };
 
     global.sessionStorage = {
       getItem: vi.fn(() => null),
@@ -31,47 +45,83 @@ describe("web/public/lib/session-beacon.js", () => {
     };
   });
 
-  it("fires once per browser session", () => {
-    eval(scriptContent);
+  describe("before consent", () => {
+    it("sends nothing and leaves the session flag unset", () => {
+      eval(scriptContent);
 
-    expect(global.sessionStorage.setItem).toHaveBeenCalledWith("__diy_session__", "1");
-    expect(sentRequests).toHaveLength(1);
-  });
+      expect(sentRequests).toHaveLength(0);
+      expect(global.sessionStorage.setItem).not.toHaveBeenCalled();
+    });
 
-  it("skips firing when a session beacon has already fired", () => {
-    global.sessionStorage.getItem = vi.fn(() => "1");
+    it("sends nothing after the visitor declines", () => {
+      eval(scriptContent);
+      global.localStorage.getItem = vi.fn((key) => (key === "consent.analytics" ? "declined" : null));
+      for (const listener of documentListeners["consent-declined"] || []) listener();
 
-    eval(scriptContent);
+      expect(sentRequests).toHaveLength(0);
+      expect(global.sessionStorage.setItem).not.toHaveBeenCalled();
+    });
 
-    expect(sentRequests).toHaveLength(0);
-  });
+    it("sends once when the visitor accepts", () => {
+      eval(scriptContent);
+      acceptBanner();
 
-  it("sends the page with no attribution fields when none are stored", () => {
-    eval(scriptContent);
-
-    expect(JSON.parse(sentRequests[0])).toEqual({ page: "/index.html" });
-  });
-
-  it("carries the stored landing attribution fields alongside the page", () => {
-    global.localStorage.getItem = vi.fn((key) =>
-      key === "attribution.landing" ? JSON.stringify({ utmSource: "google", gclid: "abc123", landedAt: "2026-01-01T00:00:00.000Z" }) : null,
-    );
-
-    eval(scriptContent);
-
-    expect(JSON.parse(sentRequests[0])).toEqual({
-      page: "/index.html",
-      utmSource: "google",
-      gclid: "abc123",
-      landedAt: "2026-01-01T00:00:00.000Z",
+      expect(global.sessionStorage.setItem).toHaveBeenCalledWith("__diy_session__", "1");
+      expect(sentRequests).toHaveLength(1);
     });
   });
 
-  it("sends just the page when the stored attribution is not valid JSON", () => {
-    global.localStorage.getItem = vi.fn((key) => (key === "attribution.landing" ? "not-json" : null));
+  describe("after consent", () => {
+    beforeEach(() => {
+      global.localStorage.getItem = vi.fn((key) => (key === "consent.analytics" ? "granted" : storedAttribution(key)));
+    });
 
-    eval(scriptContent);
+    it("fires once per browser session", () => {
+      eval(scriptContent);
 
-    expect(JSON.parse(sentRequests[0])).toEqual({ page: "/index.html" });
+      expect(global.sessionStorage.setItem).toHaveBeenCalledWith("__diy_session__", "1");
+      expect(sentRequests).toHaveLength(1);
+    });
+
+    it("skips firing when a session beacon has already fired", () => {
+      global.sessionStorage.getItem = vi.fn(() => "1");
+
+      eval(scriptContent);
+
+      expect(sentRequests).toHaveLength(0);
+    });
+
+    it("sends the page with no attribution fields when none are stored", () => {
+      eval(scriptContent);
+
+      expect(JSON.parse(sentRequests[0])).toEqual({ page: "/index.html" });
+    });
+
+    it("carries the stored landing attribution fields alongside the page", () => {
+      storedAttribution = (key) =>
+        key === "attribution.landing"
+          ? JSON.stringify({ utmSource: "google", gclid: "abc123", landedAt: "2026-01-01T00:00:00.000Z" })
+          : null;
+      global.localStorage.getItem = vi.fn((key) => (key === "consent.analytics" ? "granted" : storedAttribution(key)));
+
+      eval(scriptContent);
+
+      expect(JSON.parse(sentRequests[0])).toEqual({
+        page: "/index.html",
+        utmSource: "google",
+        gclid: "abc123",
+        landedAt: "2026-01-01T00:00:00.000Z",
+      });
+    });
+
+    it("sends just the page when the stored attribution is not valid JSON", () => {
+      global.localStorage.getItem = vi.fn((key) =>
+        key === "consent.analytics" ? "granted" : key === "attribution.landing" ? "not-json" : null,
+      );
+
+      eval(scriptContent);
+
+      expect(JSON.parse(sentRequests[0])).toEqual({ page: "/index.html" });
+    });
   });
 });
