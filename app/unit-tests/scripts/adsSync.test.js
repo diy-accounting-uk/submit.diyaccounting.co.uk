@@ -2,6 +2,8 @@
 // Copyright (C) 2006-2026 DIY Accounting Limited
 
 import { describe, it, expect } from "vitest";
+import fs from "node:fs";
+import path from "node:path";
 import {
   parseArgs,
   parseConfig,
@@ -11,6 +13,8 @@ import {
   shapeCampaignTargeting,
   campaignCreateBody,
   locationCriteriaOperations,
+  negativeKeywordOperations,
+  shapeCampaignKeywords,
 } from "../../../infra/google/ads/ads-sync.js";
 
 const VALID_TOML = `
@@ -665,6 +669,19 @@ describe("ads-sync Search campaign targeting", () => {
     budgetAmountMicros: "5000000",
     bidding: { strategy: "maximize_conversions", targetCpaMicros: "12500000" },
     targeting,
+    adGroups: [
+      {
+        resourceName: "customers/8142685080/adGroups/20",
+        name: "VAT software",
+        status: "ENABLED",
+        keywords: [
+          { resourceName: "customers/8142685080/adGroupCriteria/20~1", text: "vat filing software", matchType: "EXACT" },
+          { resourceName: "customers/8142685080/adGroupCriteria/20~2", text: "hmrc mtd vat", matchType: "PHRASE" },
+          { resourceName: "customers/8142685080/adGroupCriteria/20~3", text: "submit vat return", matchType: "BROAD" },
+        ],
+      },
+    ],
+    negativeKeywords: [],
   });
   const matchingTargeting = () => ({
     locations: ["geoTargetConstants/2826"],
@@ -836,5 +853,293 @@ describe("ads-sync shapeCampaignBidding", () => {
     const body = { results: [{ campaign: { resourceName: "customers/8142685080/campaigns/3", biddingStrategyType: "COMMISSION" } }] };
 
     expect(shapeCampaignBidding(body).get("customers/8142685080/campaigns/3")).toEqual({ strategy: null });
+  });
+});
+
+const NEGATIVE_KEYWORDS_TOML = `${SEARCH_CAMPAIGN_TOML}
+[campaign.negative_keywords]
+phrase = ["login", "Jobs"]
+exact = ["vat online account"]
+`;
+
+describe("ads-sync negative keywords", () => {
+  const CAMPAIGN = "customers/8142685080/campaigns/2";
+  const liveCampaign = (overrides) => ({
+    resourceName: CAMPAIGN,
+    name: "Search #1",
+    status: "PAUSED",
+    advertisingChannelType: "SEARCH",
+    budgetResourceName: "customers/8142685080/campaignBudgets/2",
+    budgetAmountMicros: "5000000",
+    bidding: { strategy: "maximize_conversions", targetCpaMicros: "12500000" },
+    targeting: {
+      locations: ["geoTargetConstants/2826"],
+      geoTargetType: "PRESENCE",
+      network: { googleSearch: true, searchNetwork: false, contentNetwork: false },
+      containsEuPoliticalAdvertising: false,
+    },
+    adGroups: [
+      {
+        resourceName: "customers/8142685080/adGroups/20",
+        name: "VAT software",
+        status: "ENABLED",
+        keywords: [
+          { resourceName: "customers/8142685080/adGroupCriteria/20~1", text: "vat filing software", matchType: "EXACT" },
+          { resourceName: "customers/8142685080/adGroupCriteria/20~2", text: "hmrc mtd vat", matchType: "PHRASE" },
+          { resourceName: "customers/8142685080/adGroupCriteria/20~3", text: "submit vat return", matchType: "BROAD" },
+        ],
+      },
+    ],
+    negativeKeywords: [],
+    ...overrides,
+  });
+  const liveWith = (campaign) => {
+    const live = baseLive();
+    live.campaigns.push(campaign);
+    return live;
+  };
+
+  it("parses negative keywords per match type, upper-casing the match type and trimming the text", () => {
+    const [, search] = parseConfig(NEGATIVE_KEYWORDS_TOML).campaigns;
+    expect(search.negativeKeywords).toEqual([
+      { text: "login", matchType: "PHRASE" },
+      { text: "Jobs", matchType: "PHRASE" },
+      { text: "vat online account", matchType: "EXACT" },
+    ]);
+  });
+
+  it("declares no negative keywords when the table is absent", () => {
+    const [, search] = parseConfig(SEARCH_CAMPAIGN_TOML).campaigns;
+    expect(search.negativeKeywords).toEqual([]);
+  });
+
+  it("throws on an unknown negative keyword match type", () => {
+    expect(() => parseConfig(`${SEARCH_CAMPAIGN_TOML}\n[campaign.negative_keywords]\nfuzzy = ["x"]\n`)).toThrow(/match type "fuzzy"/);
+  });
+
+  it("throws on a negative keyword declared twice, ignoring case", () => {
+    expect(() => parseConfig(`${SEARCH_CAMPAIGN_TOML}\n[campaign.negative_keywords]\nphrase = ["Jobs", "jobs"]\n`)).toThrow(
+      /more than once/,
+    );
+  });
+
+  it("throws on a keyword declared twice in one ad group", () => {
+    const duplicated = SEARCH_CAMPAIGN_TOML.replace(
+      'text = "hmrc mtd vat"\nmatch_type = "PHRASE"',
+      'text = "vat filing software"\nmatch_type = "EXACT"',
+    );
+    expect(() => parseConfig(duplicated)).toThrow(/more than once/);
+  });
+
+  it("plans one add action with every declared negative when the live campaign has none", () => {
+    const plan = planAds(parseConfig(NEGATIVE_KEYWORDS_TOML), liveWith(liveCampaign()));
+    expect(plan).toHaveLength(1);
+    expect(plan[0]).toMatchObject({ kind: "add-campaign-negative-keywords", campaignResourceName: CAMPAIGN });
+    expect(plan[0].keywords).toHaveLength(3);
+    expect(describeAction(plan[0])).toContain('EXACT "vat online account"');
+    expect(describeAction(plan[0])).toContain("(would create)");
+  });
+
+  it("plans nothing when the live negatives match, ignoring case", () => {
+    const negativeKeywords = [
+      { resourceName: `${CAMPAIGN}~1`, text: "login", matchType: "PHRASE" },
+      { resourceName: `${CAMPAIGN}~2`, text: "jobs", matchType: "PHRASE" },
+      { resourceName: `${CAMPAIGN}~3`, text: "vat online account", matchType: "EXACT" },
+    ];
+    expect(planAds(parseConfig(NEGATIVE_KEYWORDS_TOML), liveWith(liveCampaign({ negativeKeywords })))).toEqual([]);
+  });
+
+  it("adds a missing negative and removes an undeclared one, treating a changed match type as both", () => {
+    const negativeKeywords = [
+      { resourceName: `${CAMPAIGN}~1`, text: "login", matchType: "EXACT" },
+      { resourceName: `${CAMPAIGN}~2`, text: "jobs", matchType: "PHRASE" },
+      { resourceName: `${CAMPAIGN}~3`, text: "vat online account", matchType: "EXACT" },
+      { resourceName: `${CAMPAIGN}~4`, text: "salary", matchType: "PHRASE" },
+    ];
+    const plan = planAds(parseConfig(NEGATIVE_KEYWORDS_TOML), liveWith(liveCampaign({ negativeKeywords })));
+    const added = plan.find((action) => action.kind === "add-campaign-negative-keywords");
+    const removed = plan.find((action) => action.kind === "remove-campaign-negative-keywords");
+    expect(added.keywords).toEqual([{ text: "login", matchType: "PHRASE" }]);
+    expect(removed.keywords.map((keyword) => keyword.resourceName)).toEqual([`${CAMPAIGN}~1`, `${CAMPAIGN}~4`]);
+    expect(describeAction(removed)).toContain("(would remove)");
+  });
+
+  it("removes every live negative when the campaign declares none", () => {
+    const negativeKeywords = [{ resourceName: `${CAMPAIGN}~1`, text: "login", matchType: "PHRASE" }];
+    const plan = planAds(parseConfig(SEARCH_CAMPAIGN_TOML), liveWith(liveCampaign({ negativeKeywords })));
+    expect(plan.map((action) => action.kind)).toEqual(["remove-campaign-negative-keywords"]);
+  });
+
+  it("plans the negatives after the locations when the campaign is created", () => {
+    const plan = planAds(parseConfig(NEGATIVE_KEYWORDS_TOML), baseLive());
+    const kinds = plan.map((action) => action.kind);
+    expect(kinds.indexOf("add-campaign-negative-keywords")).toBe(kinds.indexOf("create-campaign-locations") + 1);
+    expect(plan.find((action) => action.kind === "add-campaign-negative-keywords").campaignResourceName).toBeUndefined();
+  });
+
+  it("builds campaign-level negative criteria against the campaign", () => {
+    expect(negativeKeywordOperations([{ text: "login", matchType: "PHRASE" }], CAMPAIGN)).toEqual([
+      { create: { campaign: CAMPAIGN, negative: true, keyword: { text: "login", matchType: "PHRASE" } } },
+    ]);
+  });
+});
+
+describe("ads-sync ad groups on a live Search campaign", () => {
+  const CAMPAIGN = "customers/8142685080/campaigns/2";
+  const liveAdGroup = (name, status, keywords = []) => ({
+    resourceName: `customers/8142685080/adGroups/${name}`,
+    name,
+    status,
+    keywords,
+  });
+  const liveCampaign = (adGroups) => ({
+    resourceName: CAMPAIGN,
+    name: "Search #1",
+    status: "PAUSED",
+    advertisingChannelType: "SEARCH",
+    budgetResourceName: "customers/8142685080/campaignBudgets/2",
+    budgetAmountMicros: "5000000",
+    bidding: { strategy: "maximize_conversions", targetCpaMicros: "12500000" },
+    targeting: {
+      locations: ["geoTargetConstants/2826"],
+      geoTargetType: "PRESENCE",
+      network: { googleSearch: true, searchNetwork: false, contentNetwork: false },
+      containsEuPoliticalAdvertising: false,
+    },
+    adGroups,
+    negativeKeywords: [],
+  });
+  const plan = (adGroups) => {
+    const live = baseLive();
+    live.campaigns.push(liveCampaign(adGroups));
+    return planAds(parseConfig(SEARCH_CAMPAIGN_TOML), live);
+  };
+  const declaredKeywords = [
+    { resourceName: "k1", text: "vat filing software", matchType: "EXACT" },
+    { resourceName: "k2", text: "hmrc mtd vat", matchType: "PHRASE" },
+    { resourceName: "k3", text: "submit vat return", matchType: "BROAD" },
+  ];
+
+  it("creates a declared ad group the campaign lacks, with keywords and ad, and pauses an undeclared enabled one", () => {
+    const actions = plan([liveAdGroup("Old group", "ENABLED", [{ resourceName: "k9", text: "old", matchType: "EXACT" }])]);
+    expect(actions.map((action) => action.kind)).toEqual([
+      "create-ad-group",
+      "create-ad-group-keywords",
+      "create-ad-group-ad",
+      "update-ad-group-status",
+    ]);
+    expect(actions[0].campaignResourceName).toBe(CAMPAIGN);
+    expect(actions[3]).toMatchObject({ adGroupName: "Old group", wanted: "PAUSED", live: "ENABLED" });
+    expect(describeAction(actions[3])).toContain("(would pause)");
+  });
+
+  it("leaves an undeclared ad group that is already paused alone", () => {
+    const actions = plan([liveAdGroup("VAT software", "ENABLED", declaredKeywords), liveAdGroup("Old group", "PAUSED")]);
+    expect(actions).toEqual([]);
+  });
+
+  it("adds missing keywords and removes undeclared ones in a declared ad group", () => {
+    const actions = plan([
+      liveAdGroup("VAT software", "ENABLED", [
+        declaredKeywords[0],
+        { resourceName: "k2", text: "hmrc mtd vat", matchType: "EXACT" },
+        { resourceName: "k9", text: "old", matchType: "PHRASE" },
+      ]),
+    ]);
+    const added = actions.find((action) => action.kind === "create-ad-group-keywords");
+    const removed = actions.find((action) => action.kind === "remove-ad-group-keywords");
+    expect(added.adGroupResourceName).toBe("customers/8142685080/adGroups/VAT software");
+    expect(added.keywords).toEqual([
+      { text: "hmrc mtd vat", matchType: "PHRASE" },
+      { text: "submit vat return", matchType: "BROAD" },
+    ]);
+    expect(removed.keywords.map((keyword) => keyword.resourceName)).toEqual(["k2", "k9"]);
+  });
+
+  it("re-enables a declared ad group that is paused live", () => {
+    const [action] = plan([liveAdGroup("VAT software", "PAUSED", declaredKeywords)]);
+    expect(action).toMatchObject({ kind: "update-ad-group-status", wanted: "ENABLED", live: "PAUSED" });
+  });
+
+  it("shapes ad groups, their keywords and the campaign negatives from search responses", () => {
+    const shaped = shapeCampaignKeywords(
+      {
+        results: [
+          { campaign: { resourceName: CAMPAIGN }, adGroup: { resourceName: "customers/1/adGroups/5", name: "G", status: "ENABLED" } },
+        ],
+      },
+      {
+        results: [
+          {
+            adGroup: { resourceName: "customers/1/adGroups/5" },
+            adGroupCriterion: { resourceName: "customers/1/adGroupCriteria/5~1", keyword: { text: "a b", matchType: "PHRASE" } },
+          },
+        ],
+      },
+      {
+        results: [
+          {
+            campaign: { resourceName: CAMPAIGN },
+            campaignCriterion: { resourceName: `${CAMPAIGN}~9`, keyword: { text: "jobs", matchType: "PHRASE" } },
+          },
+        ],
+      },
+    );
+    expect(shaped.get(CAMPAIGN)).toEqual({
+      adGroups: [
+        {
+          resourceName: "customers/1/adGroups/5",
+          name: "G",
+          status: "ENABLED",
+          keywords: [{ resourceName: "customers/1/adGroupCriteria/5~1", text: "a b", matchType: "PHRASE" }],
+        },
+      ],
+      negativeKeywords: [{ resourceName: `${CAMPAIGN}~9`, text: "jobs", matchType: "PHRASE" }],
+    });
+  });
+});
+
+describe("infra/google/ads/ads.toml", () => {
+  const config = parseConfig(fs.readFileSync(path.join(process.cwd(), "infra/google/ads/ads.toml"), "utf-8"));
+  const search = config.campaigns.find((campaign) => campaign.name === "Search: MTD VAT");
+  const words = (text) => text.toLowerCase().split(/\s+/);
+  const containsPhrase = (haystack, needle) => {
+    const hay = words(haystack);
+    const need = words(needle);
+    return hay.some((_, start) => need.every((word, offset) => hay[start + offset] === word));
+  };
+
+  it("runs the search campaign at 1 pound a day with a 1 pound click ceiling", () => {
+    expect(search.budgetMicros).toBe("1000000");
+    expect(search.bidding).toEqual({ strategy: "maximize_clicks", cpcBidCeilingMicros: "1000000" });
+  });
+
+  it("declares six ad groups of phrase-match keywords, 34 in all, each with one ad", () => {
+    expect(search.adGroups.map((adGroup) => adGroup.name)).toEqual([
+      "Own brand",
+      "Bridging software",
+      "MTD VAT software",
+      "Submit VAT return",
+      "Free MTD VAT",
+      "Spreadsheet and Excel",
+    ]);
+    const keywords = search.adGroups.flatMap((adGroup) => adGroup.keywords);
+    expect(keywords).toHaveLength(34);
+    expect(keywords.every((keyword) => keyword.matchType === "PHRASE")).toBe(true);
+    expect(new Set(keywords.map((keyword) => keyword.text)).size).toBe(34);
+  });
+
+  it("carries negatives that block none of its own keywords", () => {
+    expect(search.negativeKeywords.length).toBeGreaterThan(100);
+    const keywords = search.adGroups.flatMap((adGroup) => adGroup.keywords.map((keyword) => keyword.text));
+    const blocked = [];
+    for (const negative of search.negativeKeywords) {
+      for (const keyword of keywords) {
+        const hit =
+          negative.matchType === "EXACT" ? keyword.toLowerCase() === negative.text.toLowerCase() : containsPhrase(keyword, negative.text);
+        if (hit) blocked.push(`${negative.text} blocks ${keyword}`);
+      }
+    }
+    expect(blocked).toEqual([]);
   });
 });
