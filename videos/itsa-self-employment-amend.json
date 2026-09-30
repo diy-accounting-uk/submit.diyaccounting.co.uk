@@ -291,6 +291,17 @@
           "headline": "HMRC accepts it",
           "keyWord": "accepts"
         },
+        { "action": "scroll", "target": "#periodAmendResults" },
+        { "action": "hold", "ms": 600 },
+        {
+          "action": "point",
+          "target": "#periodAmendResults h3",
+          "caption": "Amended. HMRC now holds the corrected total.",
+          "headline": "Amendment accepted",
+          "keyWord": "accepted",
+          "dwellMs": 600
+        },
+        { "action": "hold", "ms": 2500 },
         { "action": "still", "name": "self-employment-period-amend" },
         { "action": "hold", "ms": 1200 }
       ]

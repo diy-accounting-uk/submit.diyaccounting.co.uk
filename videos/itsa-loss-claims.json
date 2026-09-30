@@ -278,6 +278,17 @@
           "headline": "HMRC accepts the claim",
           "keyWord": "claim"
         },
+        { "action": "scroll", "target": "#lossesResults" },
+        { "action": "hold", "ms": 600 },
+        {
+          "action": "point",
+          "target": "#lossesResults h3",
+          "caption": "Saved. The claim order is on record with HMRC.",
+          "headline": "Claim saved",
+          "keyWord": "saved",
+          "dwellMs": 600
+        },
+        { "action": "hold", "ms": 2500 },
         { "action": "still", "name": "itsa-loss-claims-final" },
         { "action": "hold", "ms": 1200 }
       ]

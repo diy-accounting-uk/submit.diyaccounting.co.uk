@@ -651,6 +651,17 @@
           "headline": "The year is filed",
           "keyWord": "filed"
         },
+        { "action": "scroll", "target": "#finalDeclarationResults" },
+        { "action": "hold", "ms": 600 },
+        {
+          "action": "point",
+          "target": "#finalDeclarationResults h3",
+          "caption": "Filed. The whole year is now closed out.",
+          "headline": "Final declaration filed",
+          "keyWord": "filed",
+          "dwellMs": 600
+        },
+        { "action": "hold", "ms": 2500 },
         { "action": "still", "name": "itsa-year-final-declaration" },
         { "action": "hold", "ms": 1200 }
       ]

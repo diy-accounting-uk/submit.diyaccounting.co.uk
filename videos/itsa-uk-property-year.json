@@ -402,6 +402,17 @@
           "headline": "HMRC accepts the change",
           "keyWord": "accepts"
         },
+        { "action": "scroll", "target": "#adjustmentResults" },
+        { "action": "hold", "ms": 600 },
+        {
+          "action": "point",
+          "target": "#adjustmentResults h3",
+          "caption": "Submitted. HMRC has the corrected rental figure.",
+          "headline": "Adjustment submitted",
+          "keyWord": "submitted",
+          "dwellMs": 600
+        },
+        { "action": "hold", "ms": 2500 },
         { "action": "still", "name": "uk-property-adjustments" },
         { "action": "hold", "ms": 1200 }
       ]
