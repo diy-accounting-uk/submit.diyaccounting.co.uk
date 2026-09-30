@@ -327,4 +327,51 @@ window.getGovClientHeaders = window.getGovClientHeaders || function(){ return Pr
 
     await page.locator("#declarationContainer").screenshot({ path: screenshotPath("finalDeclaration") });
   });
+
+  test("sends the calculation test scenario to the retrieve and the declaration test scenario to the submit", async ({ page }) => {
+    await page.addInitScript(() => {
+      sessionStorage.setItem("showDeveloperOptions", "true");
+      sessionStorage.setItem("hmrcAccessToken", "test-token");
+    });
+    await loadPage(page);
+
+    const calculationSelect = page.locator("#calculationTestScenario");
+    await expect(calculationSelect).toBeVisible();
+    await expect(calculationSelect.locator("option")).toHaveText([
+      "Default (a UK self-employment example)",
+      "UK self-employment with Gift Aid",
+      "Scottish self-employment with dividends",
+    ]);
+
+    await page.evaluate(() => {
+      window.sentScenarios = {};
+      window.getCalculation = async (nino, taxYear, calculationId, token, headers, validate, testScenario) => {
+        window.sentScenarios.retrieve = testScenario;
+        return {
+          metadata: { calculationId, calculationType: "intent-to-finalise" },
+          calculation: { taxCalculation: { totalIncomeTaxAndNicsDue: 1700 }, allowancesAndDeductions: { personalAllowance: 12570 } },
+          inputs: { incomeSources: { businessIncomeSources: [] } },
+        };
+      };
+      window.postFinalDeclaration = async (details, token, headers, validate, testScenario) => {
+        window.sentScenarios.submit = testScenario;
+        return {};
+      };
+    });
+
+    await page.locator("#nino").fill("AB123456C");
+    await page.locator("#taxYear").fill("2024-25");
+    await page.locator("#calculationId").fill("calc-7");
+    await calculationSelect.selectOption("UK_SE_GIFTAID_EXAMPLE");
+    await page.locator("#testScenario").selectOption("FINAL_DECLARATION_RECEIVED");
+    await page.locator("#retrieveBtn").click();
+
+    await expect(page.locator("#totalIncomeTaxAndNicsDue")).toHaveText("£1,700.00");
+    await page.locator("#declarationTick").check();
+    await page.locator("#submitDeclarationBtn").click();
+    await expect(page.locator("#finalDeclarationResults")).toBeVisible();
+
+    const sent = await page.evaluate(() => window.sentScenarios);
+    expect(sent).toEqual({ retrieve: "UK_SE_GIFTAID_EXAMPLE", submit: "FINAL_DECLARATION_RECEIVED" });
+  });
 });

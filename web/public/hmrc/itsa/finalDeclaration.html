@@ -83,6 +83,15 @@
               <option value="FINAL_DECLARATION_RECEIVED">Final declaration already received</option>
             </select>
             <div style="margin-top: 10px">
+              <label for="calculationTestScenario">Calculation test scenario (Developer/Sandbox only)</label>
+              <p id="calculationTestScenario-hint" class="hint">The HMRC sandbox example returned when retrieving the calculation</p>
+              <select id="calculationTestScenario" name="calculationTestScenario" aria-describedby="calculationTestScenario-hint">
+                <option value="">Default (a UK self-employment example)</option>
+                <option value="UK_SE_GIFTAID_EXAMPLE">UK self-employment with Gift Aid</option>
+                <option value="SCOT_SE_DIVIDENDS_EXAMPLE">Scottish self-employment with dividends</option>
+              </select>
+            </div>
+            <div style="margin-top: 10px">
               <input type="checkbox" id="runFraudPreventionHeaderValidation" name="runFraudPreventionHeaderValidation" />
               <label for="runFraudPreventionHeaderValidation" style="display: inline; font-weight: normal"
                 >Validate Fraud Prevention Headers</label
@@ -428,7 +437,7 @@
         const nino = document.getElementById("nino").value.trim().toUpperCase();
         const taxYear = document.getElementById("taxYear").value.trim();
         const calculationId = document.getElementById("calculationId").value.trim();
-        const testScenario = document.getElementById("testScenario")?.value;
+        const calculationTestScenario = document.getElementById("calculationTestScenario")?.value;
         const runFraudPreventionHeaderValidation = document.getElementById("runFraudPreventionHeaderValidation")?.checked || false;
 
         if (!nino || !taxYear || !calculationId) {
@@ -438,7 +447,7 @@
 
         await ensureAuthorizedThen(
           "pendingFinalDeclarationRetrieveRequest",
-          { nino, taxYear, calculationId, testScenario, runFraudPreventionHeaderValidation },
+          { nino, taxYear, calculationId, calculationTestScenario, runFraudPreventionHeaderValidation },
           "read:self-assessment",
           async (accessToken) => {
             try {
@@ -449,7 +458,7 @@
                 nino,
                 taxYear,
                 calculationId,
-                testScenario,
+                calculationTestScenario,
                 runFraudPreventionHeaderValidation,
                 accessToken,
               );
@@ -533,7 +542,7 @@
               pendingRetrieve.nino,
               pendingRetrieve.taxYear,
               pendingRetrieve.calculationId,
-              pendingRetrieve.testScenario,
+              pendingRetrieve.calculationTestScenario,
               pendingRetrieve.runFraudPreventionHeaderValidation,
               accessToken,
             );
