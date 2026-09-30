@@ -62,6 +62,13 @@ step.
 
 ## Machine-only
 
+- [ ] **VID19. ITSA videos show HMRC sandbox placeholder figures (£-99999999999.99).** In the `itsa-carry-back-adjustments` video at 2:04, "Total Income Tax and National Insurance due, before this claim" reads £-99999999999.99, and the `itsa-year` final declaration shows the same number (FORM1's screenshot). The same form shows 5000.99 in the Class 4 and Capital Gains Tax decrease fields. This is HMRC's sandbox answering with its schema-boundary example body: a calculation retrieved with no `Gov-Test-Scenario` returns the minimum values. The code is not at fault. The sandbox offers realistic bodies: `taxCalculation.html` lists `UK_SE_GIFTAID_EXAMPLE` and `SCOT_SE_DIVIDENDS_EXAMPLE` (lines ~85–100). Fix:
+  - (1) In every ITSA scene script that shows a calculation (`itsa-carry-back-adjustments`, `itsa-year`, `itsa-in-year-estimate`, `itsa-annual-from-book`, `itsa-loss-claims`), select `UK_SE_GIFTAID_EXAMPLE` with a `testScenario` step (as B17d did for the VAT read pages) before the retrieve. Where a page offers no scenario picker for its own retrieve (the carry-back "Show that year's calculated liability" button), add one on sandbox only, beside the page's existing test-scenario control.
+  - (2) Find where 5000.99 comes from in the carry-back form (`taxLiabilityAdjustments.html` or the scene script), and fill realistic figures that agree with the calculation shown.
+  - (3) A unit test that fails any scene script whose recorded stills contain "99999999999" (read the check-timings output), so a placeholder never reaches a published video.
+
+  Land it with FORM1, VID16 and VID17, then re-record once. **Source**: operator, 2026-09-30. **Owner**: Claude Code. **Model**: Sonnet. **Size**: ~7 files.
+
 - [ ] **VID18. Burned-in captions duplicate YouTube's subtitles.** In the `itsa-uk-property-year` video at 3:53, with CC on, the same line shows twice: the burned-in caption box ("Change a figure if HMRC's version is wrong.") and, below it, YouTube's caption track from the uploaded `.vtt` (`scripts/youtube-upload.js` `uploadCaption`, line ~783). The two overlap and clash. Choose one per video:
   - (A) Keep only the burned-in headline and drop the burned-in caption text, so YouTube's track carries the words. Viewers can turn it off, and screen readers can read it.
   - (B) Keep the burned-in caption and stop uploading the `.vtt`.
