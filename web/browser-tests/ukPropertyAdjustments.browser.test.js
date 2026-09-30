@@ -9,6 +9,7 @@ import fs from "fs";
 import path from "path";
 import { setTimeout as delay } from "timers/promises";
 import { dotenvConfigIfNotBlank } from "@app/lib/env.js";
+import { serveHmrcFieldTableAssets, serveSiteStyles, screenshotPath, expectCleanFigures } from "./hmrcFieldTableAssets.js";
 
 dotenvConfigIfNotBlank({ path: ".env.test" });
 
@@ -46,6 +47,7 @@ window.getGovClientHeaders = window.getGovClientHeaders || function(){ return Pr
         await route.continue();
       }
     });
+    await serveHmrcFieldTableAssets(page);
 
     await page.goto("http://localhost:3000/hmrc/itsa/ukPropertyAdjustments.html", { waitUntil: "domcontentloaded" });
     await delay(200);
@@ -123,5 +125,37 @@ window.getGovClientHeaders = window.getGovClientHeaders || function(){ return Pr
     });
 
     expect(receivedScenario).toBe("STATEFUL");
+  });
+
+  test("shows the year-end summary as named, defined rows with formatted amounts and no raw keys", async ({ page }) => {
+    await serveSiteStyles(page);
+    await page.setViewportSize({ width: 1280, height: 900 });
+    await loadPage(page);
+    await page.evaluate(() => {
+      document.getElementById("triggerForm").style.display = "none";
+      document.getElementById("summaryContainer").style.display = "block";
+      window.displaySummary({
+        adjustableSummaryCalculation: {
+          totalIncome: 8430.43,
+          income: { totalRentsReceived: 8000.43, otherPropertyIncome: 430 },
+          totalDeductions: 1000,
+          deductions: { costOfReplacingDomesticItems: 1000 },
+          netProfit: 5430.43,
+        },
+      });
+    });
+
+    const table = page.locator("#summaryDetails table.field-table");
+    const row = (field) => table.locator(`tr[data-hmrc-field="${field}"]`);
+    await expect(row("income.totalRentsReceived").locator(".field-name")).toHaveText("Total rents received");
+    await expect(row("income.totalRentsReceived").locator("td.field-amount")).toHaveText("£8,000.43");
+    await expect(row("deductions.costOfReplacingDomesticItems").locator("td.field-amount")).toHaveText("£1,000.00");
+    await expect(row("netProfit")).toHaveClass(/field-row-total/);
+    await expect(row("netProfit").locator("td.field-amount")).toHaveText("£5,430.43");
+    await expect(table.locator("tbody tr")).toHaveCount(6);
+    expectCleanFigures(expect, await page.locator("#summaryContainer").innerText());
+    await expect(page.locator("#adjustTotalRentsReceived")).toHaveAttribute("data-hmrc-field", "income.totalRentsReceived");
+
+    await page.locator("#summaryContainer").screenshot({ path: screenshotPath("ukPropertyAdjustments") });
   });
 });

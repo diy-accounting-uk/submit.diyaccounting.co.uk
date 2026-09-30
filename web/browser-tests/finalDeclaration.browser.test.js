@@ -9,6 +9,7 @@ import fs from "fs";
 import path from "path";
 import { setTimeout as delay } from "timers/promises";
 import { dotenvConfigIfNotBlank } from "@app/lib/env.js";
+import { serveHmrcFieldTableAssets, serveSiteStyles, screenshotPath, expectCleanFigures } from "./hmrcFieldTableAssets.js";
 
 dotenvConfigIfNotBlank({ path: ".env.test" });
 
@@ -28,6 +29,7 @@ test.describe("ITSA Final Declaration - Form", () => {
         await route.continue();
       }
     });
+    await serveHmrcFieldTableAssets(page);
 
     const modifiedHtml = htmlContent.replace("<head>", '<head><base href="http://localhost:3000/hmrc/itsa/">').replace(
       "<body>",
@@ -263,5 +265,66 @@ window.getGovClientHeaders = window.getGovClientHeaders || function(){ return Pr
     });
 
     await expect(page.locator("#taxLiabilityAdjustmentLine")).toContainText("No tax liability adjustment is recorded");
+  });
+
+  test("shows the calculation as named, defined rows with formatted amounts and no raw keys", async ({ page }) => {
+    await serveSiteStyles(page);
+    await page.setViewportSize({ width: 1280, height: 900 });
+    await loadPage(page);
+    await page.evaluate(() => {
+      document.getElementById("retrieveForm").style.display = "none";
+      document.getElementById("declarationContainer").style.display = "block";
+    });
+
+    await page.evaluate(() => {
+      window.displayCalculation({
+        metadata: { calculationId: "calc-9", calculationType: "intent-to-finalise" },
+        calculation: {
+          taxCalculation: {
+            totalIncomeTaxAndNicsDue: 7654.32,
+            incomeTax: { totalIncomeTaxDue: 6200.12 },
+            nics: { totalNic: 1454.2 },
+            totalTaxDeducted: -99999999999.99,
+          },
+          allowancesAndDeductions: {
+            personalAllowance: 12570,
+            marriageAllowanceTransferOut: { personalAllowanceBeforeTransferOut: 12570, transferredOutAmount: 1260 },
+            reducedPersonalAllowance: 10000,
+            giftOfInvestmentsAndPropertyToCharity: 1000,
+            blindPersonsAllowance: 3130,
+            lossesAppliedToGeneralIncome: 250,
+            qualifyingLoanInterestFromInvestments: 120.5,
+            pensionContributions: 5000.99,
+            pensionContributionsDetail: { retirementAnnuityPayments: 5000.99 },
+            annuityPayments: { reliefClaimed: 300, rate: 20 },
+          },
+        },
+      });
+    });
+
+    await expect(page.locator("#totalIncomeTaxAndNicsDue")).toHaveText("£7,654.32");
+    await expect(page.locator("#incomeTaxAmount")).toHaveText("£6,200.12");
+    await expect(page.locator("#totalTaxDeductedAmount")).toHaveText("-£99,999,999,999.99");
+
+    const table = page.locator("#allowancesAndDeductions table.field-table");
+    const row = (field) => table.locator(`tr[data-hmrc-field="${field}"]`);
+    await expect(row("pensionContributions").locator(".field-name")).toHaveText("Pension contributions");
+    await expect(row("pensionContributions").locator("td.field-amount")).toHaveText("£5,000.99");
+    await expect(row("marriageAllowanceTransferOut.transferredOutAmount").locator("td.field-amount")).toHaveText("£1,260.00");
+    await expect(row("annuityPayments.rate").locator("td.field-amount")).toHaveText("20%");
+    await expect(row("personalAllowance").locator(".field-definition")).toContainText("The personal allowance available for the tax year.");
+    await expect(table.locator("tbody tr")).toHaveCount(12);
+    for (const cells of await table.locator("tbody tr").evaluateAll((rows) => rows.map((r) => r.children.length))) {
+      expect(cells).toBe(2);
+    }
+    const amountAlign = await row("personalAllowance")
+      .locator("td.field-amount")
+      .evaluate((el) => getComputedStyle(el).textAlign);
+    expect(amountAlign).toBe("right");
+
+    expectCleanFigures(expect, await page.locator("#declarationContainer").innerText());
+    await expect(page.locator(".field-table-source a").first()).toHaveAttribute("href", /individual-calculations-api\/8\.0/);
+
+    await page.locator("#declarationContainer").screenshot({ path: screenshotPath("finalDeclaration") });
   });
 });

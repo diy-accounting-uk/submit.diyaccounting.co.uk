@@ -9,6 +9,7 @@ import fs from "fs";
 import path from "path";
 import { setTimeout as delay } from "timers/promises";
 import { dotenvConfigIfNotBlank } from "@app/lib/env.js";
+import { serveHmrcFieldTableAssets, serveSiteStyles, screenshotPath, expectCleanFigures } from "./hmrcFieldTableAssets.js";
 
 dotenvConfigIfNotBlank({ path: ".env.test" });
 
@@ -28,6 +29,7 @@ test.describe("ITSA Tax Calculation - Form", () => {
         await route.continue();
       }
     });
+    await serveHmrcFieldTableAssets(page);
 
     const modifiedHtml = htmlContent.replace("<head>", '<head><base href="http://localhost:3000/hmrc/itsa/">').replace(
       "<body>",
@@ -88,7 +90,7 @@ window.getGovClientHeaders = window.getGovClientHeaders || function(){ return Pr
           calculation: {
             taxCalculation: {
               totalIncomeTaxAndNicsDue: 1900,
-              incomeTax: { totalIncomeTax: 1400 },
+              incomeTax: { totalIncomeTaxDue: 1400 },
               nics: { totalNic: 500 },
               totalTaxDeducted: 0,
             },
@@ -102,7 +104,9 @@ window.getGovClientHeaders = window.getGovClientHeaders || function(){ return Pr
       );
     });
 
-    await expect(page.locator("#totalIncomeTaxAndNicsDue")).toHaveText("£1900.00");
+    await expect(page.locator("#totalIncomeTaxAndNicsDue")).toHaveText("£1,900.00");
+    await expect(page.locator("#incomeTaxAmount")).toHaveText("£1,400.00");
+    await expect(page.locator("#nicsAmount")).toHaveText("£500.00");
     const messagesList = page.locator("#calculationMessagesList li").first();
     await expect(messagesList).toContainText("C1");
   });
@@ -136,14 +140,20 @@ window.getGovClientHeaders = window.getGovClientHeaders || function(){ return Pr
     });
 
     const list = page.locator("#allowancesAndDeductions");
-    await expect(list).toContainText("Blind person's allowance");
-    await expect(list).toContainText("Qualifying loan interest from investments");
-    await expect(list).toContainText("Some new hmrc allowance");
-    await expect(list).toContainText("Annuity payments: gross annuity payments");
-    await expect(list).toContainText("£1260.00");
-    const text = await list.innerText();
-    expect(text).not.toContain("NaN");
-    expect(text).not.toMatch(/[a-z][A-Z]/);
+    const row = (field) => list.locator(`tr[data-hmrc-field="${field}"]`);
+    await expect(row("blindPersonsAllowance").locator("th .field-name")).toHaveText("Blind Person's Allowance");
+    await expect(row("blindPersonsAllowance").locator("td")).toHaveText("£2,870.00");
+    await expect(row("qualifyingLoanInterestFromInvestments").locator("th .field-name")).toHaveText("Qualifying loan interest");
+    await expect(row("someNewHmrcAllowance").locator("th .field-name")).toHaveText("Some new hmrc allowance");
+    await expect(row("annuityPayments.grossAnnuityPayments").locator("th .field-name")).toHaveText(
+      "Annuity payments: gross annuity payments",
+    );
+    await expect(row("marriageAllowanceTransferOut.transferredOutAmount").locator("td")).toHaveText("£1,260.00");
+    await expect(row("personalAllowance").locator("th .field-definition")).toContainText(
+      "The personal allowance available for the tax year.",
+    );
+    await expect(list.locator(".field-table-source a").first()).toHaveAttribute("href", /developer\.service\.hmrc\.gov\.uk/);
+    expectCleanFigures(expect, await list.innerText());
   });
 
   test("shows the continue-to-final-declaration link only for an intent-to-finalise calculation", async ({ page }) => {
@@ -269,5 +279,76 @@ window.getGovClientHeaders = window.getGovClientHeaders || function(){ return Pr
     });
 
     await expect(page.locator("#businessProfitAndLossTable table")).toHaveCount(0);
+  });
+
+  test("shows the calculation as named, defined rows with formatted amounts and no raw keys", async ({ page }) => {
+    await serveSiteStyles(page);
+    await page.setViewportSize({ width: 1280, height: 900 });
+    await loadPage(page);
+    await page.evaluate(() => {
+      document.getElementById("triggerForm").style.display = "none";
+      document.getElementById("calculationResults").style.display = "block";
+    });
+
+    await page.evaluate(() => {
+      window.displayCalculation(
+        {
+          metadata: { calculationId: "calc-9", calculationType: "in-year" },
+          calculation: {
+            taxCalculation: {
+              totalIncomeTaxAndNicsDue: 7654.32,
+              incomeTax: { totalIncomeTaxDue: 6200.12 },
+              nics: { totalNic: 1454.2 },
+              totalTaxDeducted: -99999999999.99,
+            },
+            allowancesAndDeductions: {
+              personalAllowance: 12570,
+              marriageAllowanceTransferOut: { personalAllowanceBeforeTransferOut: 12570, transferredOutAmount: 1260 },
+              reducedPersonalAllowance: 10000,
+              giftOfInvestmentsAndPropertyToCharity: 1000,
+              blindPersonsAllowance: 3130,
+              lossesAppliedToGeneralIncome: 250,
+              qualifyingLoanInterestFromInvestments: 120.5,
+              pensionContributions: 5000.99,
+              pensionContributionsDetail: { retirementAnnuityPayments: 5000.99 },
+              annuityPayments: { reliefClaimed: 300, rate: 20 },
+            },
+            businessProfitAndLoss: [
+              { incomeSourceId: "XAIS12345678910", incomeSourceType: "self-employment", taxableProfit: 23456, adjustedIncomeTaxLoss: 0 },
+            ],
+          },
+          messages: { errors: [], warnings: [], info: [] },
+        },
+        "AB123456C",
+        "2024-25",
+        "in-year",
+      );
+    });
+
+    await expect(page.locator("#totalIncomeTaxAndNicsDue")).toHaveText("£7,654.32");
+    await expect(page.locator("#incomeTaxAmount")).toHaveText("£6,200.12");
+    await expect(page.locator("#totalTaxDeductedAmount")).toHaveText("-£99,999,999,999.99");
+
+    const table = page.locator("#allowancesAndDeductions table.field-table");
+    const row = (field) => table.locator(`tr[data-hmrc-field="${field}"]`);
+    await expect(row("pensionContributions").locator(".field-name")).toHaveText("Pension contributions");
+    await expect(row("pensionContributions").locator("td.field-amount")).toHaveText("£5,000.99");
+    await expect(row("marriageAllowanceTransferOut.transferredOutAmount").locator("td.field-amount")).toHaveText("£1,260.00");
+    await expect(row("annuityPayments.rate").locator("td.field-amount")).toHaveText("20%");
+    await expect(row("personalAllowance").locator(".field-definition")).toContainText("The personal allowance available for the tax year.");
+    await expect(table.locator("tbody tr")).toHaveCount(12);
+    for (const cells of await table.locator("tbody tr").evaluateAll((rows) => rows.map((r) => r.children.length))) {
+      expect(cells).toBe(2);
+    }
+    const amountAlign = await row("personalAllowance")
+      .locator("td.field-amount")
+      .evaluate((el) => getComputedStyle(el).textAlign);
+    expect(amountAlign).toBe("right");
+
+    await expect(page.locator("#businessProfitAndLossTable tbody td").nth(1)).toHaveText("£23,456.00");
+    expectCleanFigures(expect, await page.locator("#calculationFigures").innerText());
+    await expect(page.locator(".field-table-source a").first()).toHaveAttribute("href", /individual-calculations-api\/8\.0/);
+
+    await page.locator("#calculationResults").screenshot({ path: screenshotPath("taxCalculation") });
   });
 });

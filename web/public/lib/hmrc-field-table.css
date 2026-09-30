@@ -1,0 +1,110 @@
+/* SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0 */
+/* Copyright (C) 2006-2026 DIY Accounting Limited */
+
+/* Tables drawn by hmrc-field-table.js: a schedule of HMRC figures, read like a set of accounts.
+   Names and definitions on the left, amounts in a right-aligned column of tabular figures, and a
+   total row ruled single above and double below. */
+
+.field-table {
+  width: 100%;
+  max-width: 46rem;
+  border-collapse: collapse;
+  margin: 0.5em 0 0.25em;
+  font-variant-numeric: tabular-nums;
+}
+
+.field-table caption.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
+
+.field-table thead th {
+  padding: 0.4em 1em 0.4em 0;
+  border-bottom: 2px solid var(--color-border-dark, #0b0c0c);
+  color: var(--color-text-hint, #505a5f);
+  font-size: var(--font-size-sm, 0.9em);
+  font-weight: var(--font-weight-semibold, 600);
+  text-align: left;
+}
+
+.field-table tbody th,
+.field-table tbody td {
+  padding: 0.6em 1em 0.6em 0;
+  border-bottom: 1px solid var(--color-border, #ddd);
+  vertical-align: top;
+}
+
+.field-table tbody th {
+  font-weight: var(--font-weight-normal, 400);
+  text-align: left;
+}
+
+.field-table .field-amount {
+  padding-right: 0;
+  text-align: right;
+  white-space: nowrap;
+}
+
+.field-table td.field-amount {
+  color: var(--color-text-primary, #333);
+  font-weight: var(--font-weight-semibold, 600);
+}
+
+.field-name {
+  display: block;
+  color: var(--color-text-primary, #333);
+  font-weight: var(--font-weight-semibold, 600);
+}
+
+.field-definition {
+  display: block;
+  max-width: 60ch;
+  margin-top: 0.2em;
+  color: var(--color-text-hint, #505a5f);
+  font-size: var(--font-size-sm, 0.9em);
+  line-height: 1.4;
+}
+
+.field-table .field-row-total th,
+.field-table .field-row-total td {
+  border-top: 1px solid var(--color-border-dark, #0b0c0c);
+  border-bottom: 3px double var(--color-border-dark, #0b0c0c);
+}
+
+.field-table .field-row-total .field-name,
+.field-table .field-row-total td.field-amount {
+  font-weight: var(--font-weight-bold, 700);
+}
+
+.field-table-source {
+  margin: 0.5em 0 1.5em;
+  color: var(--color-text-hint, #505a5f);
+  font-size: var(--font-size-xs, 0.85em);
+}
+
+/* VAT Return boxes keep their grid; each box carries its definition under the figure. */
+.box-definition {
+  flex-basis: 100%;
+  margin: 0.2em 0 0;
+  color: var(--color-text-hint, #505a5f);
+  font-size: var(--font-size-sm, 0.9em);
+  font-weight: var(--font-weight-normal, 400);
+  line-height: 1.4;
+}
+
+@media (max-width: 480px) {
+  .field-table tbody th,
+  .field-table tbody td {
+    padding-right: 0.5em;
+  }
+}
+
+.results-table .field-amount {
+  text-align: right;
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}
