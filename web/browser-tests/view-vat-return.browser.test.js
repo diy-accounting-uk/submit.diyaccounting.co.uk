@@ -156,32 +156,20 @@ window.authorizedFetch = window.authorizedFetch || function(){ return Promise.re
   });
 
   test("monetary values format correctly for 9-box display", async ({ page }) => {
-    // Test the formatting logic for monetary values
-    await page.addInitScript(() => {
-      window.formatMonetaryValue = function (value, isWholeAmount) {
-        if (isWholeAmount) {
-          return "£" + Math.round(value).toString();
-        }
-        return "£" + value.toFixed(2);
-      };
-    });
-
     await page.goto("about:blank");
+    await page.addScriptTag({ path: path.resolve("web/public/lib/money-format.js") });
 
-    // Test Box 1-5 (decimal) formatting
-    const box1 = await page.evaluate(() => window.formatMonetaryValue(1000.0, false));
-    expect(box1).toBe("£1000.00");
+    // Box 1-5 (decimal) formatting
+    expect(await page.evaluate(() => window.formatGbp(1000.0))).toBe("£1,000.00");
+    expect(await page.evaluate(() => window.formatGbp(900.5))).toBe("£900.50");
+    expect(await page.evaluate(() => window.formatGbp(463872))).toBe("£463,872.00");
+    expect(await page.evaluate(() => window.formatGbp(-1234.5))).toBe("-£1,234.50");
 
-    const box5 = await page.evaluate(() => window.formatMonetaryValue(900.5, false));
-    expect(box5).toBe("£900.50");
-
-    // Test Box 6-9 (whole) formatting
-    const box6 = await page.evaluate(() => window.formatMonetaryValue(5000, true));
-    expect(box6).toBe("£5000");
+    // Box 6-9 (whole) formatting
+    const box6 = await page.evaluate(() => window.formatGbpWhole(5000));
+    expect(box6).toBe("£5,000");
     expect(box6).not.toContain(".");
-
-    const box8Zero = await page.evaluate(() => window.formatMonetaryValue(0, true));
-    expect(box8Zero).toBe("£0");
+    expect(await page.evaluate(() => window.formatGbpWhole(0))).toBe("£0");
   });
 
   test("9-box VAT return validation rules", async ({ page }) => {

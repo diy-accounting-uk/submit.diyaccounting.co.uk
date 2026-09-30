@@ -132,6 +132,7 @@
     <script type="module" src="../../submit.js"></script>
     <script src="../../developer-mode.js"></script>
     <script src="../../lib/request-cache.js"></script>
+    <script src="../../lib/money-format.js"></script>
     <script src="../../lib/toml-parser.js"></script>
     <script src="../../lib/hmrc-scope-check.js"></script>
     <script src="../../widgets/entitlement-status.js"></script>
@@ -577,7 +578,7 @@
       // Format a monetary amount for display
       function formatCurrency(amount) {
         if (amount === undefined || amount === null) return "-";
-        return `£${Number(amount).toFixed(2)}`;
+        return formatGbp(amount);
       }
 
       // Toggle search criteria button handler
