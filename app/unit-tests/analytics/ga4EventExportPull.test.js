@@ -224,6 +224,14 @@ describe("ga4EventExportPull", () => {
       expect(options.query).not.toMatch(/\buser_id\b/);
     });
 
+    test("the query selects the browser and its version from the device web info", async () => {
+      await handler({ date: "2026-08-20" });
+
+      const [options] = mockCreateQueryJob.mock.calls[0];
+      expect(options.query).toMatch(/device\.web_info\.browser\s+AS device_browser,/);
+      expect(options.query).toMatch(/device\.web_info\.browser_version\s+AS device_browser_version,/);
+    });
+
     test("metric values come back as numbers, not strings, and are written unchanged", async () => {
       stubJob([
         {
