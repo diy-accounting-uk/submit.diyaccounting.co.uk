@@ -19,9 +19,20 @@ describe("web/public/lib/analytics.js", () => {
   let headScripts;
   let dataLayerPushes;
   let fetchResponseText;
+  let documentListeners;
+
+  function fire(eventName) {
+    for (const listener of documentListeners[eventName] || []) listener();
+  }
+
+  function acceptBannerThenFire() {
+    global.localStorage.setItem("consent.analytics", "granted");
+    fire("consent-granted");
+  }
 
   beforeEach(() => {
     headScripts = [];
+    documentListeners = {};
     dataLayerPushes = [];
     fetchResponseText = "GA4_MEASUREMENT_ID=G-TESTMEASURE\n";
 
@@ -30,6 +41,9 @@ describe("web/public/lib/analytics.js", () => {
       getItem: vi.fn((key) => (key in storedItems ? storedItems[key] : null)),
       setItem: vi.fn((key, value) => {
         storedItems[key] = value;
+      }),
+      removeItem: vi.fn((key) => {
+        delete storedItems[key];
       }),
     };
 
@@ -43,6 +57,9 @@ describe("web/public/lib/analytics.js", () => {
     vi.stubGlobal("navigator", { userAgent: "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15) AppleWebKit/605.1.15" });
 
     global.document = {
+      addEventListener: vi.fn((name, listener) => {
+        (documentListeners[name] ||= []).push(listener);
+      }),
       head: {
         appendChild: vi.fn((el) => headScripts.push(el)),
       },
@@ -67,6 +84,7 @@ describe("web/public/lib/analytics.js", () => {
 
   it("loads gtag.js and configures it with the id read from /submit.env", async () => {
     eval(scriptContent);
+    acceptBannerThenFire();
     // Capture dataLayer pushes made after the eval, via the global gtag/dataLayer the script defines.
     dataLayerPushes = global.dataLayer;
 
@@ -82,6 +100,7 @@ describe("web/public/lib/analytics.js", () => {
     fetchResponseText = "GA4_MEASUREMENT_ID=\n";
 
     eval(scriptContent);
+    acceptBannerThenFire();
     dataLayerPushes = global.dataLayer;
 
     await flushPromises();
@@ -92,6 +111,7 @@ describe("web/public/lib/analytics.js", () => {
 
   it("configures the GA4 linker for the three shared-property hosts", async () => {
     eval(scriptContent);
+    acceptBannerThenFire();
     dataLayerPushes = global.dataLayer;
 
     await flushPromises();
@@ -99,6 +119,63 @@ describe("web/public/lib/analytics.js", () => {
     const configCall = dataLayerPushes.find((args) => args[0] === "config" && args[1] === "G-TESTMEASURE");
     expect(configCall[2]).toEqual({
       linker: { domains: ["diyaccounting.co.uk", "spreadsheets.diyaccounting.co.uk", "submit.diyaccounting.co.uk"] },
+    });
+  });
+
+  describe("before consent", () => {
+    it("defaults all four consent types to denied", () => {
+      eval(scriptContent);
+
+      const defaultCall = global.dataLayer.find((args) => args[0] === "consent" && args[1] === "default");
+      expect(defaultCall[2]).toEqual({
+        analytics_storage: "denied",
+        ad_storage: "denied",
+        ad_user_data: "denied",
+        ad_personalization: "denied",
+      });
+    });
+
+    it("makes no request and loads no gtag.js", async () => {
+      global.location.search = "?gclid=abc123";
+
+      eval(scriptContent);
+      await flushPromises();
+
+      expect(global.fetch).not.toHaveBeenCalled();
+      expect(headScripts).toHaveLength(0);
+    });
+
+    it("stores no landing attribution", () => {
+      global.location.search = "?utm_source=google&gclid=abc123";
+
+      eval(scriptContent);
+
+      expect(global.localStorage.setItem).not.toHaveBeenCalled();
+    });
+
+    it("stores nothing and loads nothing after a Decline, and deletes any stored landing", async () => {
+      global.localStorage.setItem("attribution.landing", JSON.stringify({ gclid: "old" }));
+      eval(scriptContent);
+
+      global.localStorage.setItem("consent.analytics", "declined");
+      fire("consent-declined");
+      await flushPromises();
+
+      expect(global.localStorage.getItem("attribution.landing")).toBeNull();
+      expect(headScripts).toHaveLength(0);
+    });
+  });
+
+  describe("on a return visit that already accepted", () => {
+    it("loads gtag.js and captures attribution without a new click", async () => {
+      global.localStorage.setItem("consent.analytics", "granted");
+      global.location.search = "?gclid=abc123";
+
+      eval(scriptContent);
+      await flushPromises();
+
+      expect(headScripts).toHaveLength(1);
+      expect(JSON.parse(global.localStorage.getItem("attribution.landing"))).toMatchObject({ gclid: "abc123" });
     });
   });
 
@@ -174,12 +251,23 @@ describe("web/public/lib/analytics.js", () => {
   });
 
   describe("landing attribution capture", () => {
+    it("keeps the tags read at page load when the URL no longer carries them at Accept", () => {
+      global.location.search = "?gclid=abc123";
+      eval(scriptContent);
+      global.location.search = "";
+
+      acceptBannerThenFire();
+
+      expect(JSON.parse(global.localStorage.getItem("attribution.landing"))).toMatchObject({ gclid: "abc123" });
+    });
+
     it("stores utm and click-id params from a tagged landing", () => {
       global.location.search = "?utm_source=google&utm_medium=cpc&gclid=abc123";
 
       eval(scriptContent);
+      acceptBannerThenFire();
 
-      const stored = JSON.parse(global.localStorage.setItem.mock.calls[0][1]);
+      const stored = JSON.parse(global.localStorage.setItem.mock.calls.find((call) => call[0] === "attribution.landing")[1]);
       expect(stored).toMatchObject({ utmSource: "google", utmMedium: "cpc", gclid: "abc123" });
       expect(typeof stored.landedAt).toBe("string");
     });
@@ -188,8 +276,9 @@ describe("web/public/lib/analytics.js", () => {
       global.location.search = "";
 
       eval(scriptContent);
+      acceptBannerThenFire();
 
-      const stored = JSON.parse(global.localStorage.setItem.mock.calls[0][1]);
+      const stored = JSON.parse(global.localStorage.setItem.mock.calls.find((call) => call[0] === "attribution.landing")[1]);
       expect(stored).toEqual({ landedAt: stored.landedAt });
     });
 
@@ -200,8 +289,9 @@ describe("web/public/lib/analytics.js", () => {
       global.location.search = "";
 
       eval(scriptContent);
+      acceptBannerThenFire();
 
-      expect(global.localStorage.setItem).not.toHaveBeenCalled();
+      expect(global.localStorage.setItem).not.toHaveBeenCalledWith("attribution.landing", expect.anything());
     });
 
     it("replaces a stored landing when a new tagged landing arrives", () => {
@@ -211,8 +301,9 @@ describe("web/public/lib/analytics.js", () => {
       global.location.search = "?utm_source=newsletter&ref=partner-42";
 
       eval(scriptContent);
+      acceptBannerThenFire();
 
-      const stored = JSON.parse(global.localStorage.setItem.mock.calls[0][1]);
+      const stored = JSON.parse(global.localStorage.setItem.mock.calls.find((call) => call[0] === "attribution.landing")[1]);
       expect(stored).toMatchObject({ utmSource: "newsletter", ref: "partner-42" });
     });
 
@@ -224,9 +315,10 @@ describe("web/public/lib/analytics.js", () => {
       global.location.search = "";
 
       eval(scriptContent);
+      acceptBannerThenFire();
 
-      expect(global.localStorage.setItem).toHaveBeenCalled();
-      const stored = JSON.parse(global.localStorage.setItem.mock.calls[0][1]);
+      expect(global.localStorage.setItem).toHaveBeenCalledWith("attribution.landing", expect.anything());
+      const stored = JSON.parse(global.localStorage.setItem.mock.calls.find((call) => call[0] === "attribution.landing")[1]);
       expect(stored.utmSource).toBeUndefined();
     });
   });

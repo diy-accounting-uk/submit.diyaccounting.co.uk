@@ -128,16 +128,6 @@ function hasConsentChoice() {
   }
 }
 
-function updateAnalyticsConsent(granted) {
-  try {
-    if (typeof window.gtag === "function") {
-      window.gtag("consent", "update", { analytics_storage: granted ? "granted" : "denied" });
-    }
-  } catch (error) {
-    console.warn("Failed to update analytics consent:", error);
-  }
-}
-
 function showConsentBannerIfNeeded() {
   if (hasConsentChoice()) return;
   if (document.getElementById("consent-banner")) return;
@@ -162,7 +152,6 @@ function showConsentBannerIfNeeded() {
       console.warn("Failed to store consent in localStorage:", error);
     }
     document.body.removeChild(banner);
-    updateAnalyticsConsent(true);
     document.dispatchEvent(new CustomEvent("consent-granted", { detail: { type: "rum" } }));
     maybeInitRum();
   };
@@ -174,7 +163,7 @@ function showConsentBannerIfNeeded() {
       console.warn("Failed to store consent in localStorage:", error);
     }
     document.body.removeChild(banner);
-    updateAnalyticsConsent(false);
+    document.dispatchEvent(new CustomEvent("consent-declined"));
   };
 }
 

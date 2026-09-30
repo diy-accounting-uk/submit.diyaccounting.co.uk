@@ -4,8 +4,9 @@
 // web/browser-tests/cookieConsent.browser.test.js
 //
 // Covers B19's code half (cookie consent banner). GA4 loads with
-// analytics_storage denied by default (lib/analytics.js); this banner is
-// the only way a visitor can turn it on. Serves the real static site from
+// every consent type denied by default (lib/analytics.js); this banner is
+// the only way a visitor can turn analytics, landing attribution and the
+// session beacon on. Serves the real static site from
 // disk (not a stripped-down fixture) so the real submit.js and analytics.js
 // run, and checks the show/accept/persist/decline flow end to end.
 
@@ -40,6 +41,10 @@ async function serveRealSite(page) {
       await route.fulfill({ status: 200, contentType: "application/javascript", body: "" });
       return;
     }
+    if (url.pathname === "/submit.env") {
+      await route.fulfill({ status: 200, contentType: "text/plain", body: "GA4_MEASUREMENT_ID=G-TESTMEASURE\n" });
+      return;
+    }
     if (url.pathname.startsWith("/api/")) {
       await route.fulfill({ status: 200, contentType: "application/json", body: "{}" });
       return;
@@ -61,7 +66,54 @@ async function gtagConsentCalls(page) {
   return page.evaluate(() => (window.dataLayer || []).filter((entry) => entry[0] === "consent").map((entry) => Array.from(entry)));
 }
 
+function trackRequests(page) {
+  const seen = { gtag: 0, beacon: 0 };
+  page.on("request", (request) => {
+    const url = request.url();
+    if (url.startsWith("https://www.googletagmanager.com/gtag/js")) seen.gtag += 1;
+    if (url.endsWith("/api/v1/session/beacon")) seen.beacon += 1;
+  });
+  return seen;
+}
+
 test.describe("Cookie consent banner", () => {
+  test("before a choice there is no attribution, no gtag.js request and no beacon", async ({ page }) => {
+    const seen = trackRequests(page);
+    await serveRealSite(page);
+    await page.goto("http://localhost:3000/index.html?gclid=abc123&utm_source=google", { waitUntil: "domcontentloaded" });
+    await expect(page.locator("#consent-banner")).toBeVisible({ timeout: 5000 });
+    await delay(500);
+
+    expect(await page.evaluate(() => localStorage.getItem("attribution.landing"))).toBeNull();
+    expect(await page.evaluate(() => sessionStorage.getItem("__diy_session__"))).toBeNull();
+    expect(seen.gtag).toBe(0);
+    expect(seen.beacon).toBe(0);
+  });
+
+  test("after Accept the attribution is stored, gtag.js is requested and the beacon is sent", async ({ page }) => {
+    const seen = trackRequests(page);
+    await serveRealSite(page);
+    await page.goto("http://localhost:3000/index.html?gclid=abc123&utm_source=google", { waitUntil: "domcontentloaded" });
+    await page.locator("#consent-banner #consent-accept").click();
+
+    await expect.poll(() => seen.gtag).toBe(1);
+    await expect.poll(() => seen.beacon).toBe(1);
+    const landing = await page.evaluate(() => JSON.parse(localStorage.getItem("attribution.landing")));
+    expect(landing).toMatchObject({ gclid: "abc123", utmSource: "google" });
+  });
+
+  test("Decline stores no attribution and sends no gtag.js request or beacon", async ({ page }) => {
+    const seen = trackRequests(page);
+    await serveRealSite(page);
+    await page.goto("http://localhost:3000/index.html?gclid=abc123", { waitUntil: "domcontentloaded" });
+    await page.locator("#consent-banner #consent-decline").click();
+    await delay(500);
+
+    expect(await page.evaluate(() => localStorage.getItem("attribution.landing"))).toBeNull();
+    expect(seen.gtag).toBe(0);
+    expect(seen.beacon).toBe(0);
+  });
+
   test("shows on first visit with plain wording and a link to the privacy policy", async ({ page }) => {
     await serveRealSite(page);
     await page.goto("http://localhost:3000/index.html", { waitUntil: "domcontentloaded" });
@@ -75,7 +127,11 @@ test.describe("Cookie consent banner", () => {
 
     // Consent starts denied.
     const calls = await gtagConsentCalls(page);
-    expect(calls[0]).toEqual(["consent", "default", { analytics_storage: "denied" }]);
+    expect(calls[0]).toEqual([
+      "consent",
+      "default",
+      { analytics_storage: "denied", ad_storage: "denied", ad_user_data: "denied", ad_personalization: "denied" },
+    ]);
   });
 
   test("Accept dismisses the banner, grants GA4 consent, and persists the choice", async ({ page }) => {
