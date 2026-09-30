@@ -42,6 +42,8 @@
     "update-to-greatest": "npx npm-check-updates --upgrade --enginesNode --target greatest --verbose --install always --reject 'alpha'",
     "update:java": "./scripts/update-java.sh",
     "bundle": "node scripts/bundle-for-tests.js",
+    "build:mtd-calendar": "node scripts/build-mtd-calendar.mjs",
+    "verify:tax-sources": "node scripts/verify-tax-sources.mjs",
     "videos:manifest": "node scripts/copy-videos-manifest.js",
     "pretest": "npm run bundle",
     "test": "vitest --run --exclude '**/.claude/**' app/unit-tests/*.test.js app/unit-tests/*/*.test.js app/unit-tests/*/*/*.test.js web/unit-tests/*.test.js app/system-tests/*.test.js",

@@ -39,6 +39,7 @@
     { label: "Bundles", target: "bundles.html" },
     { label: "Practice", target: "practice.html" },
     { label: "Spreadsheets", target: "spreadsheets.html" },
+    { label: "MTD calendar", target: "mtd-calendar.html" },
   ];
 
   function findOwnScript() {

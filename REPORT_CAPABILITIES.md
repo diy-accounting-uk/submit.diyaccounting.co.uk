@@ -34,6 +34,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
     - [SITE-10](#site-10-serve-general-site-pages) Serve general site pages: use when adding or changing a static informational page, or the FAQ/help search behind it.
     - [SITE-11](#site-11-promote-sibling-products-and-partners) Promote sibling products and partners: use when adding or changing a cross-sell page for a sibling product or an affiliate.
     - [SITE-12](#site-12-map-the-site-structure) Map the site structure: use when adding or moving a page and its place in the header, nav or footer needs checking.
+    - [SITE-22](#site-22-source-and-publish-sourced-tax-facts) Source and publish sourced tax facts: use when a page states a tax date, threshold or rate and each figure needs a gov.uk source, or a source has passed 30 days old.
   - [Frontend infrastructure](#frontend-infrastructure-site)
     - [SITE-13](#site-13-warm-backend-routes-via-prefetch-scripts) Warm backend routes via prefetch scripts: use when a page must pre-warm a Lambda or route before its own script needs the real response.
     - [SITE-14](#site-14-render-page-chrome-and-widgets) Render page chrome and widgets: use when a page needs the shared header, nav and footer, or a small shared UI widget.
@@ -521,7 +522,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - [Authentication and authorization](#authentication-and-authorization-site): [SITE-01](#site-01-sign-customers-in-via-cognito) Sign customers in via Cognito · [SITE-02](#site-02-verify-jwts-at-the-api-gateway) Verify JWTs at the API gateway
 - [Account and engagement APIs](#account-and-engagement-apis-site): [SITE-03](#site-03-capture-feedback-interest) Capture feedback interest · [SITE-04](#site-04-track-visits-via-session-beacon) Track visits via session beacon · [SITE-05](#site-05-submit-support-tickets) Submit support tickets
 - [Server and API plumbing](#server-and-api-plumbing-site): [SITE-06](#site-06-adapt-lambda-handlers-to-express-routes) Adapt Lambda handlers to Express routes · [SITE-07](#site-07-format-http-responses-and-errors) Format HTTP responses and errors · [SITE-08](#site-08-bootstrap-the-app-server) Bootstrap the app server · [SITE-09](#site-09-track-and-poll-async-api-requests) Track and poll async API requests
-- [Site pages and content](#site-pages-and-content-site): [SITE-10](#site-10-serve-general-site-pages) Serve general site pages · [SITE-11](#site-11-promote-sibling-products-and-partners) Promote sibling products and partners · [SITE-12](#site-12-map-the-site-structure) Map the site structure
+- [Site pages and content](#site-pages-and-content-site): [SITE-10](#site-10-serve-general-site-pages) Serve general site pages · [SITE-11](#site-11-promote-sibling-products-and-partners) Promote sibling products and partners · [SITE-12](#site-12-map-the-site-structure) Map the site structure · [SITE-22](#site-22-source-and-publish-sourced-tax-facts) Source and publish sourced tax facts
 - [Frontend infrastructure](#frontend-infrastructure-site): [SITE-13](#site-13-warm-backend-routes-via-prefetch-scripts) Warm backend routes via prefetch scripts · [SITE-14](#site-14-render-page-chrome-and-widgets) Render page chrome and widgets · [SITE-15](#site-15-show-and-persist-cookie-consent) Show and persist cookie consent · [SITE-16](#site-16-configure-the-frontend-via-toml-and-env-libraries) Configure the frontend via TOML and env libraries · [SITE-17](#site-17-trace-and-secure-client-requests) Trace and secure client requests · [SITE-18](#site-18-bootstrap-the-frontend-module-bundle) Bootstrap the frontend module bundle · [SITE-19](#site-19-generate-qr-codes) Generate QR codes
 - [Business documentation](#business-documentation-site): [SITE-20](#site-20-document-business-governance-and-positioning) Document business governance and positioning · [SITE-21](#site-21-log-growth-experiments) Log growth experiments
 <!-- /generated:area SITE -->
@@ -646,6 +647,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - [SITE-10](#site-10-serve-general-site-pages) Serve general site pages
 - [SITE-11](#site-11-promote-sibling-products-and-partners) Promote sibling products and partners
 - [SITE-12](#site-12-map-the-site-structure) Map the site structure
+- [SITE-22](#site-22-source-and-publish-sourced-tax-facts) Source and publish sourced tax facts
 <!-- /generated:group site-pages-and-content-site -->
 
 #### SITE-10 Serve general site pages
@@ -677,6 +679,16 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - **Files:** _developers/SITE_MAP.md
 - **Keywords:** site map, page layout, navigation structure, header footer diagram
 - **Related:** SITE-10, SITE-13
+
+#### SITE-22 Source and publish sourced tax facts
+
+- **Use when:** a page states a tax date, threshold or rate and each figure needs a gov.uk source, or a source has passed 30 days old.
+- **Does:** The tax-sources skill keeps one JSON file per gov.uk source (url, retrieved date, verbatim quote, fact ids) and says how to refresh one or all. verify-tax-sources.mjs fetches each page and fails when a quote is missing. build-mtd-calendar.mjs renders web/public/mtd-calendar.html from those files and throws when a fact has no source. The unit test fails on an unsourced fact, a source older than 30 days, or a committed page that differs from the render.
+- **Run:** `node scripts/verify-tax-sources.mjs [name]`; `npm run build:mtd-calendar`; `npx vitest run web/unit-tests/mtdCalendar.test.js`
+- **Entry:** `scripts/build-mtd-calendar.mjs:renderMtdCalendar`; `scripts/verify-tax-sources.mjs:quoteAppearsIn`
+- **Files:** .claude/skills/tax-sources/SKILL.md, .claude/skills/tax-sources/sources/, scripts/build-mtd-calendar.mjs, scripts/verify-tax-sources.mjs, web/public/mtd-calendar.html, web/unit-tests/mtdCalendar.test.js
+- **Keywords:** tax sources, gov.uk, mtd calendar, thresholds, deadlines, quote, retrieved, rates, sourced facts
+- **Related:** SITE-10, SITE-12
 
 ### Frontend infrastructure (SITE)
 
@@ -6125,6 +6137,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - date range match: [HMRC-28](#hmrc-28-format-and-match-hmrc-obligations)
 - date utils: [BILL-42](#bill-42-parse-iso-8601-durations-for-expiry)
 - dated quarters: [HMRC-12](#hmrc-12-submit-and-manage-self-employment-periodic-updates), [HMRC-14](#hmrc-14-submit-and-manage-uk-property-periodic-updates), [HMRC-34](#hmrc-34-file-a-full-itsa-tax-year-in-sandbox)
+- deadlines: [SITE-22](#site-22-source-and-publish-sourced-tax-facts)
 - debugger client: [DEV-02](#dev-02-simulate-local-app-oauth)
 - declare and verify: [BILL-29](#bill-29-assert-the-paypal-donate-button-configuration)
 - declared state: [OPS-35](#ops-35-verify-third-party-console-configuration-against-declared-state)
@@ -6480,6 +6493,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - gov-client header: [DEV-18](#dev-18-provide-shared-unitsystem-test-fixtures)
 - gov-test-scenario: [DEV-08](#dev-08-simulate-hmrc-vat-mtd-api)
 - gov-vendor: [HMRC-25](#hmrc-25-build-hmrc-fraud-prevention-headers), [DEV-05](#dev-05-simulate-hmrc-agent-authorisation-and-fraud-prevention-headers)
+- gov.uk: [SITE-22](#site-22-source-and-publish-sourced-tax-facts)
 - govtalk: [CH-08](#ch-08-file-micro-entity-accounts-to-companies-house), [CH-11](#ch-11-parse-xml-safely), [DEV-04](#dev-04-simulate-companies-house-identity-and-filing)
 - gpg signing: [OPS-29](#ops-29-verify-commit-signatures-on-pull-requests)
 - grace period: [BILL-21](#bill-21-sweep-lapsed-diya-gl-books)
@@ -6804,6 +6818,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - move ou: [OPS-100](#ops-100-create-or-invite-aws-member-accounts)
 - move_book_to_client: [MCP-08](#mcp-08-manage-practice-clients-and-hmrc-agent-authorisation)
 - movebooktoclient: [BILL-15](#bill-15-move-a-book-to-a-client)
+- mtd calendar: [SITE-22](#site-22-source-and-publish-sourced-tax-facts)
 - mtd enrolment: [HMRC-11](#hmrc-11-retrieve-itsa-status)
 - mtd for itsa: [HMRC-10](#hmrc-10-retrieve-itsa-obligations)
 - mtd it: [MCP-06](#mcp-06-derive-itsa-quarterly-and-annual-submission-figures)
@@ -7084,6 +7099,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - queue deploys: [OPS-11](#ops-11-queue-ci-branch-deploys-in-creation-order)
 - queue not cancel: [SS-36](#ss-36-deploy-the-spreadsheets-and-diya-gl-sites)
 - queue processing: [SITE-09](#site-09-track-and-poll-async-api-requests)
+- quote: [SITE-22](#site-22-source-and-publish-sourced-tax-facts)
 - race: [OPS-01](#ops-01-cancel-superseded-push-triggered-deploys)
 - race condition: [OPS-11](#ops-11-queue-ci-branch-deploys-in-creation-order), [OPS-15](#ops-15-serialize-lane-test-user-rotation-jobs)
 - raise issue: [OPS-23](#ops-23-raise-an-issue-from-a-probe-test-failure)
@@ -7091,6 +7107,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - rate counter: [OPS-46](#ops-46-query-and-persist-per-consumer-security-state-records)
 - rate limit: [SITE-05](#site-05-submit-support-tickets), [OPS-79](#ops-79-track-an-alarm-familys-daily-remedy-budget)
 - rate limit agent: [OPS-20](#ops-20-enforce-daily-run-budgets-for-agent-paths)
+- rates: [SITE-22](#site-22-source-and-publish-sourced-tax-facts)
 - raw export: [DATA-20](#data-20-publish-the-nightly-raw-export-for-indexing)
 - re-key: [BILL-40](#bill-40-migrate-the-hashed-sub-salt)
 - read-only: [DATA-44](#data-44-assert-google-oauth-client-configuration)
@@ -7180,6 +7197,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - retention: [BILL-17](#bill-17-upload-a-diya-gl-book), [BILL-22](#bill-22-check-diya-gl-retention-entitlement)
 - retention days: [OPS-125](#ops-125-name-and-tag-cdk-resources-consistently)
 - retire.js: [SS-45](#ss-45-run-compliance-checks)
+- retrieved: [SITE-22](#site-22-source-and-publish-sourced-tax-facts)
 - retrieveuserbundles: [BILL-02](#bill-02-list-a-users-bundles-and-token-balance)
 - retry navigation: [DEV-19](#dev-19-provide-shared-behaviour-test-fixtures-and-steps)
 - retryable error: [OPS-87](#ops-87-process-sqs-message-batches-in-lambda-workers)
@@ -7353,6 +7371,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - sonnet escalation: [OPS-18](#ops-18-run-alarm-and-support-triage)
 - source accounts: [OPS-104](#ops-104-set-up-cross-account-backup-iam-roles)
 - source-derived: [SS-10](#ss-10-extract-reconciliation-scenarios-from-master-books)
+- sourced facts: [SITE-22](#site-22-source-and-publish-sourced-tax-facts)
 - spdx: [DEV-20](#dev-20-check-spdx-licence-headers)
 - spec.html: [SS-07](#ss-07-publish-the-diya-gl-format-specification-page)
 - specialist agent: [DEV-25](#dev-25-maintain-the-specialist-agent-prompt-library)
@@ -7464,6 +7483,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - tax data update: [SS-19](#ss-19-update-annual-hmrc-tax-rate-data)
 - tax liability: [HMRC-18](#hmrc-18-manage-itsa-tax-liability-adjustments), [HMRC-19](#hmrc-19-calculate-itsa-tax-liability)
 - tax liability adjustments: [HMRC-18](#hmrc-18-manage-itsa-tax-liability-adjustments), [DEV-09](#dev-09-simulate-hmrc-itsa-mtd-api)
+- tax sources: [SITE-22](#site-22-source-and-publish-sourced-tax-facts)
 - tax year: [HMRC-11](#hmrc-11-retrieve-itsa-status), [HMRC-19](#hmrc-19-calculate-itsa-tax-liability), [HMRC-20](#hmrc-20-retrieve-itsa-crystallisation-obligations), [HMRC-21](#hmrc-21-submit-the-itsa-final-declaration), [HMRC-27](#hmrc-27-validate-hmrc-identifiers-dates-and-amounts)
 - tax year 2025-26: [HMRC-12](#hmrc-12-submit-and-manage-self-employment-periodic-updates)
 - taxonomy schema: [CH-13](#ch-13-map-the-frc-ixbrl-taxonomy-and-validate-accounts)
@@ -7497,6 +7517,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - text-spacing: [SS-45](#ss-45-run-compliance-checks)
 - third-party console: [OPS-35](#ops-35-verify-third-party-console-configuration-against-declared-state)
 - threat detection: [OPS-75](#ops-75-run-nightly-security-lake-analysis)
+- thresholds: [SITE-22](#site-22-source-and-publish-sourced-tax-facts)
 - tidy repo: [DEV-34](#dev-34-clean-up-stale-deployments-and-branches)
 - tiers: [SS-42](#ss-42-route-tests-by-blast-radius)
 - time budget: [OPS-57](#ops-57-dispatch-agentic-lib-board-backlog-and-pr-agents)
