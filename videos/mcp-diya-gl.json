@@ -38,7 +38,7 @@
     "safeArea": { "topPct": 5, "bottomPct": 5, "sidePct": 12.5 }
   },
 
-  "finalHoldMs": 3000,
+  "finalHoldMs": 6000,
 
   "scenes": [
     {
