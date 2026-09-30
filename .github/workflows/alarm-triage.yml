@@ -71,11 +71,17 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
           ISSUE_NUMBER: ${{ inputs.issue-number || github.event.issue.number }}
+          BUDGET_REASON: ${{ steps.budget-guard.outputs.reason }}
           TRIAGE_COUNT: ${{ steps.budget-guard.outputs.count }}
           TRIAGE_SINCE: ${{ steps.budget-guard.outputs.since }}
         run: |
           set -euo pipefail
-          gh issue comment "$ISSUE_NUMBER" --repo "${{ github.repository }}" --body "Alarm triage was skipped: the budget of ${{ env.TRIAGE_BUDGET_PER_DAY }} triage runs per 24 hours is already used (${TRIAGE_COUNT} posted a result since ${TRIAGE_SINCE}). Nobody has looked at this alarm yet."
+          if [ "${BUDGET_REASON}" = "api-error" ]; then
+            BODY="Alarm triage was skipped: the daily run budget could not be counted because the GitHub API failed after three attempts. Nobody has looked at this alarm yet."
+          else
+            BODY="Alarm triage was skipped: the budget of ${{ env.TRIAGE_BUDGET_PER_DAY }} triage runs per 24 hours is already used (${TRIAGE_COUNT} posted a result since ${TRIAGE_SINCE}). Nobody has looked at this alarm yet."
+          fi
+          gh issue comment "$ISSUE_NUMBER" --repo "${{ github.repository }}" --body "${BODY}"
 
       - name: Read the alarm out of the issue body
         if: steps.budget-guard.outputs.over-budget == 'false'

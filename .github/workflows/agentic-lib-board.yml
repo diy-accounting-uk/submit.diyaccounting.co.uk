@@ -157,8 +157,16 @@ jobs:
 
       - name: Record that the daily run budget is spent
         if: steps.budget-guard.outputs.over-budget == 'true'
+        env:
+          BUDGET_REASON: ${{ steps.budget-guard.outputs.reason }}
         run: |
-          echo "Board run skipped: the budget of ${{ env.BOARD_BUDGET_PER_DAY }} runs per 24 hours is already used (${{ steps.budget-guard.outputs.count }} posted a result since ${{ steps.budget-guard.outputs.since }})." | tee -a "$GITHUB_STEP_SUMMARY"
+          set -euo pipefail
+          if [ "${BUDGET_REASON}" = "api-error" ]; then
+            MESSAGE="Board run skipped: the daily run budget could not be counted because the GitHub API failed after three attempts."
+          else
+            MESSAGE="Board run skipped: the budget of ${{ env.BOARD_BUDGET_PER_DAY }} runs per 24 hours is already used (${{ steps.budget-guard.outputs.count }} posted a result since ${{ steps.budget-guard.outputs.since }})."
+          fi
+          echo "$MESSAGE" | tee -a "$GITHUB_STEP_SUMMARY"
 
       # `git commit` is in the agent's allow-list below (the write-back path commits NEXT.md
       # itself, unlike agentic-lib-code.yml's push-and-PR step), so this identity has to exist
