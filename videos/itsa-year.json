@@ -566,6 +566,7 @@
           "headline": "Intent to finalise",
           "keyWord": "finalise"
         },
+        { "action": "testScenario", "value": "UK_SE_GIFTAID_EXAMPLE" },
         { "action": "click", "target": "#triggerBtn" },
         {
           "action": "await",

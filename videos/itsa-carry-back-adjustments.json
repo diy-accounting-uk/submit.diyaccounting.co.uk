@@ -232,6 +232,7 @@
           "keyWord": "Load"
         },
         { "action": "await", "until": "#adjustmentsEditForm", "label": "Loading tax liability adjustments" },
+        { "action": "testScenario", "target": "#calculationTestScenario", "value": "UK_SE_GIFTAID_EXAMPLE" },
         {
           "action": "click",
           "target": "#showEarlierYearBtn",
@@ -257,6 +258,8 @@
           "headline": "What the claim saves",
           "keyWord": "saves"
         },
+        { "action": "fill", "target": "#class4", "value": "40" },
+        { "action": "fill", "target": "#capitalGainsTax", "value": "0" },
         { "action": "hold", "ms": 400 },
         {
           "action": "click",
