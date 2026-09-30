@@ -325,6 +325,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
     - [DATA-08](#data-08-copy-the-aws-focus-cost-export) Copy the AWS FOCUS cost export: use when the management account's FOCUS cost export must land in this account's lake for cost views.
     - [DATA-09](#data-09-reconcile-stripe-payments-into-the-lake) Reconcile Stripe payments into the lake: use when the previous day's Stripe balance transactions, charges or subscriptions must land in the lake.
     - [DATA-52](#data-52-pull-the-companys-own-diya-gl-book-into-the-lake) Pull the company's own diya-gl book into the lake: use when DIY Accounting Limited's own P&L and balance sheet must land in the lake from its resident diya-gl book.
+    - [DATA-55](#data-55-pull-paypal-receipts-into-the-lake) Pull PayPal receipts into the lake: use when the previous day's settled PayPal receipts and refunds must land in the lake, or a range of past days must be backfilled.
   - [Lake infrastructure, quality and cost](#lake-infrastructure-quality-and-cost-data)
     - [DATA-10](#data-10-create-or-replace-athena-business-views) Create or replace Athena business views: use when a new or changed Athena view under infra/main/resources/analytics/views must deploy with the stack.
     - [DATA-11](#data-11-run-glue-data-quality-checks) Run Glue Data Quality checks: use when new lake partitions must be registered and a Glue Data Quality ruleset run must be started.
@@ -3542,7 +3543,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 ## Analytics and finance (DATA)
 
 <!-- generated:area DATA -->
-- [Lake ingestion](#lake-ingestion-data): [DATA-01](#data-01-publish-activity-events-to-the-bus) Publish activity events to the bus · [DATA-02](#data-02-transform-activity-events-into-lake-rows) Transform activity events into lake rows · [DATA-03](#data-03-transform-alarm-state-changes-into-lake-rows) Transform alarm state changes into lake rows · [DATA-04](#data-04-stream-dynamodb-table-changes-into-the-lake) Stream DynamoDB table changes into the lake · [DATA-05](#data-05-pull-ga4-daily-bigquery-aggregate-tables) Pull GA4 daily BigQuery aggregate tables · [DATA-06](#data-06-pull-ga4-reports-and-bigquery-event-export) Pull GA4 reports and BigQuery event export · [DATA-07](#data-07-pull-github-operator-effort-data) Pull GitHub operator-effort data · [DATA-08](#data-08-copy-the-aws-focus-cost-export) Copy the AWS FOCUS cost export · [DATA-09](#data-09-reconcile-stripe-payments-into-the-lake) Reconcile Stripe payments into the lake · [DATA-52](#data-52-pull-the-companys-own-diya-gl-book-into-the-lake) Pull the company's own diya-gl book into the lake
+- [Lake ingestion](#lake-ingestion-data): [DATA-01](#data-01-publish-activity-events-to-the-bus) Publish activity events to the bus · [DATA-02](#data-02-transform-activity-events-into-lake-rows) Transform activity events into lake rows · [DATA-03](#data-03-transform-alarm-state-changes-into-lake-rows) Transform alarm state changes into lake rows · [DATA-04](#data-04-stream-dynamodb-table-changes-into-the-lake) Stream DynamoDB table changes into the lake · [DATA-05](#data-05-pull-ga4-daily-bigquery-aggregate-tables) Pull GA4 daily BigQuery aggregate tables · [DATA-06](#data-06-pull-ga4-reports-and-bigquery-event-export) Pull GA4 reports and BigQuery event export · [DATA-07](#data-07-pull-github-operator-effort-data) Pull GitHub operator-effort data · [DATA-08](#data-08-copy-the-aws-focus-cost-export) Copy the AWS FOCUS cost export · [DATA-09](#data-09-reconcile-stripe-payments-into-the-lake) Reconcile Stripe payments into the lake · [DATA-52](#data-52-pull-the-companys-own-diya-gl-book-into-the-lake) Pull the company's own diya-gl book into the lake · [DATA-55](#data-55-pull-paypal-receipts-into-the-lake) Pull PayPal receipts into the lake
 - [Lake infrastructure, quality and cost](#lake-infrastructure-quality-and-cost-data): [DATA-10](#data-10-create-or-replace-athena-business-views) Create or replace Athena business views · [DATA-11](#data-11-run-glue-data-quality-checks) Run Glue Data Quality checks · [DATA-54](#data-54-relayout-the-lakes-yearmonthday-objects-into-dt-prefixes) Relayout the lake's year/month/day objects into dt= prefixes · [DATA-12](#data-12-provision-the-analytics-lake-and-athena-workgroup) Provision the analytics lake and Athena workgroup · [DATA-13](#data-13-catalogue-cloudfront-access-logs-for-athena) Catalogue CloudFront access logs for Athena · [DATA-14](#data-14-catalogue-compliance-findings-for-the-dashboard) Catalogue compliance findings for the dashboard · [DATA-15](#data-15-catalogue-workflow-probe-and-agent-run-data) Catalogue workflow, probe and agent run data · [DATA-16](#data-16-alert-on-cost-budget-and-anomaly-thresholds) Alert on cost budget and anomaly thresholds · [DATA-17](#data-17-export-aws-billing-data-in-focus-format) Export AWS billing data in FOCUS format
 - [Nightly publish and orchestration](#nightly-publish-and-orchestration-data): [DATA-18](#data-18-publish-the-nightly-operator-dashboard-snapshot) Publish the nightly operator dashboard snapshot · [DATA-19](#data-19-serve-the-operator-dashboard-snapshot-via-the-api) Serve the operator dashboard snapshot via the API · [DATA-20](#data-20-publish-the-nightly-raw-export-for-indexing) Publish the nightly raw export for indexing · [DATA-21](#data-21-publish-nightly-business-metrics-to-cloudwatch) Publish nightly business metrics to CloudWatch · [DATA-22](#data-22-orchestrate-the-nightly-ingestion-workflow) Orchestrate the nightly ingestion workflow
 - [Site-side analytics and RUM](#site-side-analytics-and-rum-data): [DATA-23](#data-23-classify-visitor-kind-as-human-bot-or-synthetic) Classify visitor kind as human, bot or synthetic · [DATA-24](#data-24-load-ga4-analytics-on-site-pages) Load GA4 analytics on site pages · [DATA-25](#data-25-configure-and-gate-cloudwatch-rum) Configure and gate CloudWatch RUM · [DATA-26](#data-26-render-the-operator-objectives-dashboard) Render the operator objectives dashboard
@@ -3565,6 +3566,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - [DATA-08](#data-08-copy-the-aws-focus-cost-export) Copy the AWS FOCUS cost export
 - [DATA-09](#data-09-reconcile-stripe-payments-into-the-lake) Reconcile Stripe payments into the lake
 - [DATA-52](#data-52-pull-the-companys-own-diya-gl-book-into-the-lake) Pull the company's own diya-gl book into the lake
+- [DATA-55](#data-55-pull-paypal-receipts-into-the-lake) Pull PayPal receipts into the lake
 <!-- /generated:group lake-ingestion-data -->
 
 #### DATA-01 Publish activity events to the bus
@@ -3665,6 +3667,16 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - **Files:** app/functions/analytics/companyBookPull.js, app/unit-tests/analytics/companyBookPull.test.js, app/services/microEntityAccounts.js, infra/main/java/co/uk/diyaccounting/submit/stacks/IngestionStack.java, infra/test/java/co/uk/diyaccounting/submit/stacks/IngestionStackTest.java, infra/main/java/co/uk/diyaccounting/submit/stacks/analytics/NightlyIngestionWorkflow.java
 - **Keywords:** company book pull, diya-gl book, frs 105, balance sheet, micro-entity accounts, curated finance, company book id, company book owner prefix
 - **Related:** DATA-09
+
+#### DATA-55 Pull PayPal receipts into the lake
+
+- **Use when:** the previous day's settled PayPal receipts and refunds must land in the lake, or a range of past days must be backfilled.
+- **Does:** paypalDonationsPull.js reads the previous day's PayPal Transaction Search records with the two credentials in Secrets Manager. It keeps settled receipts (T0013 donations labelled donation-paypal, other receipts paypal-other-receipt) and refunds as negative rows naming their receipt, and drops holds, releases, conversions and transfers through app/services/paypalTransactions.js. A non-GBP receipt takes the pound amount its T0200 conversion credited; one with no conversion is logged and left out. It writes gzipped NDJSON under curated/paypal/; PayPalDonationTables.java provisions paypal_donations, which v_revenue_daily unions with Stripe. The Lambda accepts `date`, or `from` and `to` (at most 93 days) to backfill. The job exists only when PAYPAL_PULL_ENABLED is true; the table exists everywhere.
+- **Run:** no command; see Does and Entry
+- **Entry:** `app/functions/analytics/paypalDonationsPull.js:handler`
+- **Files:** app/functions/analytics/paypalDonationsPull.js, app/unit-tests/analytics/paypalDonationsPull.test.js, app/services/paypalTransactions.js, app/services/paypalTransactionSearch.js, infra/main/java/co/uk/diyaccounting/submit/stacks/analytics/PayPalDonationTables.java, infra/test/java/co/uk/diyaccounting/submit/stacks/analytics/PayPalDonationTablesTest.java, infra/main/resources/analytics/views/v_revenue_daily.sql, infra/main/java/co/uk/diyaccounting/submit/stacks/IngestionStack.java, infra/test/java/co/uk/diyaccounting/submit/stacks/IngestionStackTest.java
+- **Keywords:** paypal donations pull, paypal receipts, paypal refunds, currency conversion, backfill, curated paypal, paypal_donations, revenue view
+- **Related:** DATA-09, DATA-48
 
 ### Lake infrastructure, quality and cost (DATA)
 
@@ -5748,7 +5760,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - awscustomresource: [OPS-127](#ops-127-upsert-route53-alias-records-via-custom-resource)
 - axe: [DATA-14](#data-14-catalogue-compliance-findings-for-the-dashboard), [SS-45](#ss-45-run-compliance-checks)
 - axe-core: [OPS-96](#ops-96-scan-pages-for-accessibility-violations)
-- backfill: [BILL-41](#bill-41-backfill-the-stripe-test-mode-qualifier)
+- backfill: [BILL-41](#bill-41-backfill-the-stripe-test-mode-qualifier), [DATA-55](#data-55-pull-paypal-receipts-into-the-lake)
 - background poll: [DEV-31](#dev-31-watch-github-ci-to-green)
 - backlog: [DEV-24](#dev-24-document-developer-setup-and-repository-conventions), [DEV-27](#dev-27-render-the-open-work-board)
 - backlog work: [DEV-28](#dev-28-work-nextmd-as-dispatched-sub-agents)
@@ -6106,8 +6118,10 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - cumulative model: [HMRC-12](#hmrc-12-submit-and-manage-self-employment-periodic-updates), [HMRC-14](#hmrc-14-submit-and-manage-uk-property-periodic-updates), [HMRC-27](#hmrc-27-validate-hmrc-identifiers-dates-and-amounts), [HMRC-34](#hmrc-34-file-a-full-itsa-tax-year-in-sandbox)
 - curated cost: [DATA-08](#data-08-copy-the-aws-focus-cost-export)
 - curated finance: [DATA-52](#data-52-pull-the-companys-own-diya-gl-book-into-the-lake)
+- curated paypal: [DATA-55](#data-55-pull-paypal-receipts-into-the-lake)
 - curated prefix: [DATA-54](#data-54-relayout-the-lakes-yearmonthday-objects-into-dt-prefixes)
 - curated stripe: [DATA-09](#data-09-reconcile-stripe-payments-into-the-lake)
+- currency conversion: [DATA-55](#data-55-pull-paypal-receipts-into-the-lake)
 - custom amount: [SS-22](#ss-22-take-stripe-and-paypal-donations)
 - custom error page: [OPS-131](#ops-131-serve-cloudfront-custom-error-pages)
 - custom resource: [OPS-132](#ops-132-enable-dynamodb-pitr-on-deploy)
@@ -6962,7 +6976,11 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - payouts: [MCP-13](#mcp-13-import-stripe-transaction-and-payout-lines)
 - paypal: [BILL-29](#bill-29-assert-the-paypal-donate-button-configuration), [OPS-35](#ops-35-verify-third-party-console-configuration-against-declared-state), [MCP-16](#mcp-16-parse-paypal-statements-into-diya-gl-lines)
 - paypal donate button: [SS-22](#ss-22-take-stripe-and-paypal-donations)
+- paypal donations pull: [DATA-55](#data-55-pull-paypal-receipts-into-the-lake)
+- paypal receipts: [DATA-55](#data-55-pull-paypal-receipts-into-the-lake)
+- paypal refunds: [DATA-55](#data-55-pull-paypal-receipts-into-the-lake)
 - paypal transaction search: [DATA-48](#data-48-stage-paypal-transactions-for-reconciliation)
+- paypal_donations: [DATA-55](#data-55-pull-paypal-receipts-into-the-lake)
 - pdf: [MCP-16](#mcp-16-parse-paypal-statements-into-diya-gl-lines)
 - pdftotext: [MCP-16](#mcp-16-parse-paypal-statements-into-diya-gl-lines)
 - penalties: [DEV-08](#dev-08-simulate-hmrc-vat-mtd-api)
@@ -7206,7 +7224,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - reusable workflow: [OPS-33](#ops-33-enforce-workflow-to-workflow-permission-grants)
 - reuse: [DEV-43](#dev-43-find-existing-tooling-before-building-any)
 - revenue daily: [DATA-28](#data-28-sql-views-revenue-and-subscription)
-- revenue view: [DATA-09](#data-09-reconcile-stripe-payments-into-the-lake)
+- revenue view: [DATA-09](#data-09-reconcile-stripe-payments-into-the-lake), [DATA-55](#data-55-pull-paypal-receipts-into-the-lake)
 - review: [BILL-44](#bill-44-document-the-price-update-project)
 - review thread check: [DEV-32](#dev-32-merge-every-pr-that-is-ready)
 - review threads: [SS-51](#ss-51-merge-every-pr-that-is-ready)

@@ -5,14 +5,8 @@
 
 import { describe, test, expect, vi } from "vitest";
 
-import {
-  parseArgs,
-  computeMonthRange,
-  formatDateStamp,
-  formatPayPalDateTime,
-  fetchAccessToken,
-  fetchAllTransactions,
-} from "../../../../scripts/finance/paypal-stage.js";
+import { parseArgs, computeMonthRange, formatDateStamp } from "../../../../scripts/finance/paypal-stage.js";
+import { formatPayPalDateTime, fetchAccessToken, fetchAllTransactions } from "../../../services/paypalTransactionSearch.js";
 
 describe("parseArgs", () => {
   test("reads --month", () => {

@@ -185,6 +185,15 @@ public class IngestionStack extends Stack {
             return "";
         }
 
+        // True when the environment has PayPal credentials in Secrets Manager (from the GitHub
+        // Environment variable PAYPAL_CLIENT_ID and secret PAYPAL_CLIENT_SECRET, via
+        // deploy-environment.yml's PAYPAL_PULL_ENABLED). False means no PayPal pull job and no
+        // secret grant; the paypal_donations table exists either way.
+        @Value.Default
+        default boolean paypalPullEnabled() {
+            return false;
+        }
+
         // The Google Cloud project number and service account behind infra/google/gcp/identity.toml; the
         // federated audience is built from them and the environment name.
         @Value.Default
@@ -718,6 +727,78 @@ public class IngestionStack extends Stack {
         }
 
         // ============================================================================
+        // PayPal donations pull job: yesterday's settled PayPal receipts into the lake, read
+        // through the Transaction Search API with the two credentials deploy-environment.yml
+        // lands in Secrets Manager. Created only when paypalPullEnabled is set (prod); ci has no
+        // PayPal secret, so no job and no grant exist there. The secrets are referenced by name,
+        // which avoids the random ARN suffix Secrets Manager appends.
+        // ============================================================================
+        Function paypalDonationsPullLambda = null;
+        if (props.paypalPullEnabled()) {
+            var paypalDonationsPullFunctionName = prefix + "-paypal-donations-pull";
+            var paypalClientIdSecretId = "%s/submit/paypal/client_id".formatted(props.envName());
+            var paypalClientSecretSecretId = "%s/submit/paypal/client_secret".formatted(props.envName());
+
+            var paypalDonationsPullEnv = new PopulatedMap<String, String>()
+                    .with("ENVIRONMENT_NAME", props.envName())
+                    .with("ANALYTICS_LAKE_BUCKET_NAME", sharedNames.analyticsLakeBucketName)
+                    .with("PAYPAL_CLIENT_ID_SECRET_ID", paypalClientIdSecretId)
+                    .with("PAYPAL_CLIENT_SECRET_SECRET_ID", paypalClientSecretSecretId);
+
+            IRepository paypalDonationsPullRepository = Repository.fromRepositoryAttributes(
+                    this,
+                    prefix + "-PaypalDonationsPull-EcrRepo",
+                    RepositoryAttributes.builder()
+                            .repositoryArn(sharedNames.ecrRepositoryArn)
+                            .repositoryName(sharedNames.ecrRepositoryName)
+                            .build());
+
+            // Same exposure as the other jobs above: env-scoped, stable function name - use the
+            // idempotent create-if-missing path, not a plain LogGroup.
+            var paypalDonationsPullLogGroup = ensureLogGroupWithDependency(
+                    this, prefix + "-PaypalDonationsPullLogGroup", "/aws/lambda/" + paypalDonationsPullFunctionName);
+
+            paypalDonationsPullLambda = DockerImageFunction.Builder.create(this, prefix + "-PaypalDonationsPullFn")
+                    .functionName(paypalDonationsPullFunctionName)
+                    .code(DockerImageCode.fromEcr(
+                            paypalDonationsPullRepository,
+                            EcrImageCodeProps.builder()
+                                    .tagOrDigest(props.baseImageTag())
+                                    .cmd(List.of("app/functions/analytics/paypalDonationsPull.handler"))
+                                    .build()))
+                    .timeout(Duration.minutes(15))
+                    .memorySize(512)
+                    .architecture(Architecture.ARM_64)
+                    .environment(paypalDonationsPullEnv)
+                    .logGroup(paypalDonationsPullLogGroup.logGroup())
+                    .build();
+            paypalDonationsPullLambda.getNode().addDependency(paypalDonationsPullLogGroup.ensureResource());
+
+            // Own prefix only, and the two secrets only. No salt and no DynamoDB: a lake row
+            // carries no payer identity.
+            paypalDonationsPullLambda.addToRolePolicy(PolicyStatement.Builder.create()
+                    .effect(Effect.ALLOW)
+                    .actions(List.of("s3:PutObject"))
+                    .resources(List.of(this.lakeBucket.getBucketArn() + "/curated/paypal/*"))
+                    .build());
+            paypalDonationsPullLambda.addToRolePolicy(PolicyStatement.Builder.create()
+                    .effect(Effect.ALLOW)
+                    .actions(List.of("secretsmanager:GetSecretValue"))
+                    .resources(List.of(
+                            "arn:aws:secretsmanager:%s:%s:secret:%s-*"
+                                    .formatted(this.getRegion(), this.getAccount(), paypalClientIdSecretId),
+                            "arn:aws:secretsmanager:%s:%s:secret:%s-*"
+                                    .formatted(this.getRegion(), this.getAccount(), paypalClientSecretSecretId)))
+                    .build());
+
+            registerIngestionJob(
+                    "PaypalDonationsPull",
+                    paypalDonationsPullFunctionName,
+                    paypalDonationsPullLambda,
+                    "Pull yesterday's settled PayPal receipts into the analytics lake");
+        }
+
+        // ============================================================================
         // Nightly orchestration: one Step Functions state machine, one EventBridge Scheduler
         // schedule, replacing the five independent rules and DLQs the jobs used before this
         // machine existed
@@ -745,6 +826,7 @@ public class IngestionStack extends Stack {
                         .ga4DailyPullLambda(ga4DailyPullLambda)
                         .operatorEffortPullLambda(operatorEffortPullLambda)
                         .companyBookPullLambda(Optional.ofNullable(companyBookPullLambda))
+                        .paypalDonationsPullLambda(Optional.ofNullable(paypalDonationsPullLambda))
                         .dataQualityRunLambda(dataQualityRunLambda)
                         .metricsPublishLambda(metricsPublishLambda)
                         .rawExportPublishLambda(rawExportPublishLambda)
