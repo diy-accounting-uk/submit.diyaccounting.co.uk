@@ -661,7 +661,7 @@ jobs:
               "/about.html" "/videos.html" "/videos/*" "/accessibility.html" "/bundles.html" "/faqs.toml" \
               "/guide.html" "/help.html" "/mcp.html" \
               "/diy-accounting-spreadsheets.html" "/diy-accounting-limited.html" "/spreadsheets.html" \
-              "/mtd-calendar.html" \
+              "/mtd-calendar.html" "/rates.html" \
               "/android-chrome-192.png" "/android-chrome-512.png" "/apple-touch-icon.png" \
               "/favicon.ico" "/favicon.svg" "/favicon-16.png" "/favicon-32.png" \
               "/index.html" "/privacy.html" \

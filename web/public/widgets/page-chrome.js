@@ -40,6 +40,7 @@
     { label: "Practice", target: "practice.html" },
     { label: "Spreadsheets", target: "spreadsheets.html" },
     { label: "MTD calendar", target: "mtd-calendar.html" },
+    { label: "Rates", target: "rates.html" },
   ];
 
   function findOwnScript() {

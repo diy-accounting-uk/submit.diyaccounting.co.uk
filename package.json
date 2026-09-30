@@ -43,6 +43,7 @@
     "update:java": "./scripts/update-java.sh",
     "bundle": "node scripts/bundle-for-tests.js",
     "build:mtd-calendar": "node scripts/build-mtd-calendar.mjs",
+    "build:rates-page": "node scripts/build-rates-page.mjs",
     "verify:tax-sources": "node scripts/verify-tax-sources.mjs",
     "videos:manifest": "node scripts/copy-videos-manifest.js",
     "pretest": "npm run bundle",

@@ -68,6 +68,8 @@ the licence its directory takes in the table above.
   [Open Government Licence v3.0](https://www.nationalarchives.gov.uk/doc/open-government-licence/version/3/).
 - **HMRC form field standards** (`web/public/docs/hmrc-form-field-standards/`), Crown
   copyright, used under the Open Government Licence v3.0.
+- **DIYA-GL tax modules** (web/public/lib/diya-gl/tax/), Apache-2.0, copied verbatim from the
+  @diy-accounting-uk/diya-gl package named in package.json by scripts/build-rates-page.mjs.
 - **Apache Maven Wrapper** (`mvnw`, `mvnw.cmd`, `.mvn/wrapper/maven-wrapper.properties`),
   Apache License 2.0, copyright the Apache Software Foundation.
 

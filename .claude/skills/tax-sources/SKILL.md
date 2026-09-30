@@ -7,7 +7,7 @@ description: Gather and refresh the HMRC and HM Treasury sources behind the site
 
 # tax-sources
 
-Every tax fact on the site (`web/public/mtd-calendar.html`, and any later rates page) rests on a
+Every tax fact on the site (`web/public/mtd-calendar.html` and `web/public/rates.html`) rests on a
 source file in `sources/`. A source file records a gov.uk page, the day it was read and the words on
 the page that state the fact. A page is built from these files, and a unit test fails when a fact has
 no source or its source is older than 30 days.
@@ -39,7 +39,7 @@ field, so rates, allowances and any other tax figure use it unchanged.
 
 Fact ids are kebab-case and carry the subject and the date or year they apply to
 (`itsa-mtd-over-30k-2027-04`, `itsa-quarterly-update-deadlines`). The text, date and wording of a
-fact live in the page that shows it (`scripts/build-mtd-calendar.mjs` for the calendar), never in the
+fact live in the page that shows it (`scripts/build-mtd-calendar.mjs` for the calendar, `scripts/build-rates-page.mjs` for the rates page), never in the
 source file. One page can need several files, one per quote. A fact can list in several files.
 
 A fact with no gov.uk page that states it stays off the site. Say so in the report instead of
@@ -62,14 +62,14 @@ sourcing it elsewhere.
    update `quote`. If the fact changed, update the fact's text in the page that uses it, and keep the
    id when the meaning is the same fact (a new rate for the same allowance) or add a new id when it
    is a new fact.
-3. Rebuild the pages that use the source (`npm run build:mtd-calendar`) and commit the sources and the
+3. Rebuild the pages that use the source (`npm run build:mtd-calendar`, `npm run build:rates-page`) and commit the sources and the
    regenerated page together.
 
 ## Refresh all sources
 
 1. `node scripts/verify-tax-sources.mjs` checks every file.
 2. Refresh each file that failed as above, then set `retrieved` to today on the rest.
-3. `npm run build:mtd-calendar`, then `npx vitest run web/unit-tests/mtdCalendar.test.js`.
+3. `npm run build:mtd-calendar` and `npm run build:rates-page`, then `npx vitest run web/unit-tests/mtdCalendar.test.js web/unit-tests/ratesPage.test.js`.
 4. Commit.
 
 The 30-day limit makes the unit test fail once a source ages out. Refresh all before then.

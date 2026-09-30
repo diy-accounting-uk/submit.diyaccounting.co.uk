@@ -5,10 +5,11 @@ import { describe, test, expect } from "vitest";
 import { MAX_SOURCE_AGE_DAYS, loadSources, sourceQuoteHtml, normaliseText, quoteAppearsIn } from "../../scripts/tax-sources.mjs";
 import { allFactIds } from "../../scripts/build-mtd-calendar.mjs";
 import { RATES_FACT_IDS } from "../../scripts/rates-fact-ids.mjs";
+import { allRatesFactIds } from "../../scripts/build-rates-page.mjs";
 
 const sources = loadSources();
 const DAY_MS = 24 * 60 * 60 * 1000;
-const pageFactIds = () => [...allFactIds(), ...RATES_FACT_IDS];
+const pageFactIds = () => [...allFactIds(), ...allRatesFactIds()];
 
 describe("tax sources", () => {
   test("every fact on the MTD calendar has a source file listing its id", () => {
@@ -42,6 +43,10 @@ describe("tax sources", () => {
 
   test("the rates fact ids are unique", () => {
     expect(new Set(RATES_FACT_IDS).size).toBe(RATES_FACT_IDS.length);
+  });
+
+  test("the rates page shows exactly the rates fact ids", () => {
+    expect([...allRatesFactIds()].sort()).toEqual([...RATES_FACT_IDS].sort());
   });
 });
 

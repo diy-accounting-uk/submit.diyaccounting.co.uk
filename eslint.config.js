@@ -183,6 +183,8 @@ export default [
       // Developer documentation and archive (not application code)
       "_developers/",
       "reference/",
+      // Verbatim copies of the diya-gl tax modules
+      "web/public/lib/diya-gl/",
       // Vendored minified library
       "web/public/lib/qrcode.min.js",
       // Generated bundle (built from web/public/submit.js)

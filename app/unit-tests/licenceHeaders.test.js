@@ -32,6 +32,7 @@ const EXCLUDED_PATH_PREFIXES = [
   "web/public/docs/api/",
   "fixtures/companies-house-xmlgw/",
   "web/public/docs/hmrc-form-field-standards/",
+  "web/public/lib/diya-gl/",
   "node_modules/",
   "target/",
 ];
