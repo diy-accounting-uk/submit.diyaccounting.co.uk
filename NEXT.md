@@ -45,6 +45,12 @@ step.
 
 ## Machine-only
 
+- [ ] **BRW1. Browser in the lake: measure Edge's share of visitors and of paid customers.** The lake has no browser column, so `PLAN_PAID_GOOGLE_SEARCH.md` §7c could not measure how many visitors use Edge (the proxy for the Windows and Office customer, and the case for Bing, BING1). Two sources:
+  - (1) The GA4 export pull selects `device.category` and `device.operating_system` (`app/functions/analytics/ga4EventExportPull.js` lines ~134–135) but not `device.web_info.browser` or `device.web_info.browser_version`. Add them as `device_browser` and `device_browser_version` there and in the `ga4_bq_events` columns (`infra/main/java/co/uk/diyaccounting/submit/stacks/analytics/Ga4Tables.java` line ~241), keeping the column order the writer uses. This covers GA4 events, including the cookieless pings.
+  - (2) The CloudFront access logs (`cloudfront_requests`, `CloudFrontAccessLogs.java`) hold `cs_user_agent` for every request, with no consent dependency. Add a view `v_visitors_by_browser_daily` beside `v_visitors_by_kind_daily.sql` that classifies the user agent (Edge `Edg/`, Chrome, Firefox, Safari, other) and the OS, per day, for page requests only, excluding the crawlers `v_visitors_by_kind_daily` already excludes; register it in `BusinessViews.java`.
+
+  Proof: `AthenaViewColumnTypesTest`, the export pull's unit test with the new fields in its fixture, and a prod `SELECT * FROM (<view sql>) LIMIT 0` (workgroup `prod-env-analytics`, database `prod_env_analytics`) with the column types read back. Then one query: Edge's share of page visitors over the last 30 days, and of the sessions that reached `begin_checkout`, written into the plan's §7c. **Source**: `PLAN_PAID_GOOGLE_SEARCH.md` evidence gap, operator 2026-09-30. **Owner**: Claude Code. **Model**: Sonnet. **Size**: ~5 files.
+
 ## Machine-ask
 
 - [ ] **O75. Send the licence-change email.** The draft is committed (private a687b05). The operator says go and sends `../private.diyaccounting.co.uk/hmrc/correspondence/DRAFT_EMAIL_LICENCE_CHANGE.md` from antony@diyaccounting.co.uk to `SDSTeam@hmrc.gov.uk`; the session then adds the send date and recipient to `../private.diyaccounting.co.uk/hmrc/vat/HMRC_MTD_API_APPROVAL_SUBMISSION.md` and `../private.diyaccounting.co.uk/hmrc/correspondence/HMRC_PRODUCTION_CREDENTIALS_EMAIL.md`. **Source**: BACKLOG 75. **Owner**: Operator (the send), Claude Code (the annotation). **Model**: Haiku. **Size**: 0 files in this repository.
