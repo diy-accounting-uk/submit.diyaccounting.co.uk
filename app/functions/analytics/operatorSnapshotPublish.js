@@ -349,6 +349,16 @@ export const OBJECTIVE_DEFINITIONS = [
         aggregation: "avg",
         deepLink: (ctx) => buildAthenaSavedQueryLink(ctx.region, ctx.athenaWorkGroupName),
       },
+      {
+        id: "paid-landings",
+        label: "Paid landings",
+        unit: "count",
+        view: "v_paid_landings_daily",
+        dayColumn: "day",
+        valueExpr: "paid_landings",
+        aggregation: "sum",
+        deepLink: (ctx) => buildAthenaSavedQueryLink(ctx.region, ctx.athenaWorkGroupName),
+      },
     ],
   },
   {

@@ -417,6 +417,7 @@ describe("operatorSnapshotPublish", () => {
         "FROM   v_visitors_by_kind_daily",
         "FROM   v_cost_vs_target_monthly",
         "FROM   v_cost_per_submission_daily",
+        "FROM   v_paid_landings_daily",
         "FROM   security_hub_findings",
         "FROM   guardduty_findings",
         "FROM   github_alerts",

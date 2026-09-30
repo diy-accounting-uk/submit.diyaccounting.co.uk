@@ -149,6 +149,11 @@ public class BusinessViews extends Construct {
                             + " user agent, crawlers and test browsers excluded",
                     List.of("cloudfront_requests")),
             new ViewDefinition(
+                    "v_paid_landings_daily",
+                    "Page requests each day that carry a gclid or utm_source in the query string, by landing page,"
+                            + " utm_source and utm_campaign, read from the CloudFront access log without consent",
+                    List.of("cloudfront_requests")),
+            new ViewDefinition(
                     "v_visitors_by_kind_hourly",
                     "Sessions each hour by visitor kind from GA4's streaming export: feeds the operator"
                             + " dashboard's Last 1 hour, 1 day and 7 days visitor columns, which the two-day-late"
