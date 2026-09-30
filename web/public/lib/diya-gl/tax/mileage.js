@@ -4,13 +4,27 @@
 // mileage.js — the HMRC approved mileage allowance, shared by the Basic
 // Sole Trader and Taxi Driver engines.
 
-// HMRC's approved mileage rate for a car: 45p to the first 10,000 business
-// miles in the tax year, 25p beyond. It has held since 2011/12 and matches
-// every tax year this app's own data files carry (app/data/*.toml). A figure
-// worked out from it ahead of any one tax year's data -- an expected value at
-// fixture-extraction time, say -- does not go stale the way a rate that does
-// change year to year would.
-export const HMRC_CAR_MILEAGE_RATES = { higher_rate_limit: 10000, higher_rate_pence: 0.45, lower_rate_pence: 0.25 };
+// HMRC's approved mileage rate for a car in tax year 2025-26 and every year
+// back to 2011-12: 45p to the first 10,000 business miles, 25p beyond. The
+// committed scenario fixtures and example books are dated in 2025-26, so their
+// expected motoring figures are worked out at these rates. Tax year 2026-27
+// pays 55p (app/data/se-2026-2027.toml), so a check against a package built
+// for another year restates the fixture's claim at that year's rates.
+export const FIXTURE_CAR_MILEAGE_RATES = { higher_rate_limit: 10000, higher_rate_pence: 0.45, lower_rate_pence: 0.25 };
+
+/**
+ * How much more the mileage claim is at a tax year's rates than at the
+ * fixture's. A fixture figure that has the claim in it moves by this amount
+ * when the package under test was built for another year: added for a cost,
+ * taken off for a profit.
+ *
+ * @param {number} totalMiles - the business miles the fixture's claim was worked out from
+ * @param {Object} yearRates - the package's tax year [mileage] table
+ * @returns {number} the year's claim less the fixture's
+ */
+export function mileageClaimChangeFromFixture(totalMiles, yearRates) {
+  return calculateMileageAllowance(totalMiles, yearRates) - calculateMileageAllowance(totalMiles, FIXTURE_CAR_MILEAGE_RATES);
+}
 
 /**
  * The allowance a year's business miles claim: the first band of miles at
