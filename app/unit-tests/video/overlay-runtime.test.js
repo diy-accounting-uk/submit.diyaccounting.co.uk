@@ -175,15 +175,6 @@ describe("overlay-runtime.js", () => {
     expect(label.isConnected).toBe(true);
   });
 
-  test("caption() builds its element on demand and sets the text", () => {
-    const svc = loadRuntime();
-    expect(() => svc.caption("Loading your obligations")).not.toThrow();
-
-    const box = findByText(globalThis.document.documentElement, "Loading your obligations");
-    expect(box).not.toBeNull();
-    expect(box.style.opacity).toBe("1");
-  });
-
   test("headline() builds its element on demand and renders each word as its own node", () => {
     const svc = loadRuntime();
     expect(() => svc.headline("Give permission", "permission", { centerX: 960, top: 200, maxWidth: 400 })).not.toThrow();
@@ -214,7 +205,7 @@ describe("overlay-runtime.js", () => {
   test("does not rebuild, and keeps a single root, across repeated calls once connected", () => {
     const svc = loadRuntime();
     svc.chapter("Sign in to HMRC");
-    svc.caption("One moment...");
+    svc.headline("One moment...", null, { centerX: 960, top: 200, maxWidth: 400 });
     svc.chapter("Authorise DIY Accounting");
 
     expect(findAllById(globalThis.document.documentElement, "svc-overlay")).toHaveLength(1);

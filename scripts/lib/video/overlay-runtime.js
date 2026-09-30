@@ -37,7 +37,6 @@
     ringEl,
     trailCanvas,
     trailCtx,
-    captionBox,
     headlineBox,
     chapterLabel,
     heartbeatEl,
@@ -81,18 +80,8 @@
       "color:#fff;text-shadow:0 1px 3px rgba(0,0,0,0.7);opacity:0;transition:opacity 250ms ease;";
     root.appendChild(chapterLabel);
 
-    captionBox = document.createElement("div");
-    captionBox.style.cssText =
-      "position:absolute;left:50%;bottom:90px;transform:translateX(-50%);max-width:1440px;" +
-      "padding:24px;border-radius:8px;background:rgba(12,14,18,0.82);border:1px solid rgba(255,255,255,0.25);" +
-      "font:40px/56px -apple-system,Segoe UI,Roboto,sans-serif;color:#fff;text-align:center;" +
-      "opacity:0;transition:opacity 250ms ease;white-space:pre-line;";
-    root.appendChild(captionBox);
-
     // The headline tag — a short callout label anchored beside the element a step acts on,
-    // distinct from captionBox's wide subtitle bar: a compact, left-accented tag rather than a
-    // full-width bottom panel, so the two tracks never read as the same thing twice. Static once
-    // shown (opacity only, matching every other cue here) — the one animated thing about it is
+    // a compact, left-accented tag. Static once shown (opacity only, matching every other cue here) — the one animated thing about it is
     // its single key word's colour, never a repeat, per WCAG SC 2.3.1.
     headlineBox = document.createElement("div");
     headlineBox.style.cssText =
@@ -317,18 +306,6 @@
     log("typeChar", { x: cx, y: cy });
   }
 
-  function caption(text) {
-    ensureDom();
-    if (!root) return log("caption-skipped-not-ready", { text });
-    if (!text) {
-      captionBox.style.opacity = "0";
-      return;
-    }
-    captionBox.textContent = text;
-    captionBox.style.opacity = "1";
-    log("caption", { text });
-  }
-
   // placement: {centerX, top, maxWidth} in CSS px, computed in Node by headlinePlacement.js
   // (clear of the step's target, inside the frame) — this only ever renders what it is given.
   // keyWord is matched word by word against the headline's own words (case-insensitive, with
@@ -472,7 +449,6 @@
     click,
     typeChar,
     highlight,
-    caption,
     headline,
     chapter,
     timerStart,

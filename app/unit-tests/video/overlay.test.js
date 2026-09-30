@@ -22,7 +22,7 @@ function fakePage(evaluateImpl) {
 describe("svcCall", () => {
   test("returns the evaluate result on a normal call, with no retry", async () => {
     const page = fakePage(() => "ok");
-    await expect(svcCall(page, "caption", "text")).resolves.toBe("ok");
+    await expect(svcCall(page, "chapter", "text")).resolves.toBe("ok");
     expect(page.evaluate).toHaveBeenCalledTimes(1);
     expect(page.waitForLoadState).not.toHaveBeenCalled();
   });
@@ -34,7 +34,7 @@ describe("svcCall", () => {
       if (calls === 1) throw new Error("Execution context was destroyed");
       return "ok after retry";
     });
-    await expect(svcCall(page, "caption", "text")).resolves.toBe("ok after retry");
+    await expect(svcCall(page, "chapter", "text")).resolves.toBe("ok after retry");
     expect(page.evaluate).toHaveBeenCalledTimes(2);
     expect(page.waitForLoadState).toHaveBeenCalledTimes(1);
     expect(page.waitForLoadState).toHaveBeenCalledWith("domcontentloaded");
@@ -58,7 +58,7 @@ describe("svcCall", () => {
         return Promise.resolve();
       }),
     };
-    await svcCall(page, "caption", "text");
+    await svcCall(page, "chapter", "text");
     expect(order).toEqual(["evaluate-1", "waitForLoadState", "evaluate-2"]);
   });
 
@@ -66,7 +66,7 @@ describe("svcCall", () => {
     const page = fakePage(() => {
       throw new Error("element not found");
     });
-    await expect(svcCall(page, "caption", "text")).rejects.toThrow("element not found");
+    await expect(svcCall(page, "chapter", "text")).rejects.toThrow("element not found");
     expect(page.evaluate).toHaveBeenCalledTimes(1);
     expect(page.waitForLoadState).not.toHaveBeenCalled();
   });
@@ -75,7 +75,7 @@ describe("svcCall", () => {
     const page = fakePage(() => {
       throw new Error("Execution context was destroyed");
     });
-    await expect(svcCall(page, "caption", "text")).rejects.toThrow("Execution context was destroyed");
+    await expect(svcCall(page, "chapter", "text")).rejects.toThrow("Execution context was destroyed");
     expect(page.evaluate).toHaveBeenCalledTimes(2);
     expect(page.waitForLoadState).toHaveBeenCalledTimes(1);
   });

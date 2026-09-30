@@ -58,10 +58,6 @@ export async function typeChar(page, rect) {
   return svcCall(page, "typeChar", rect);
 }
 
-export async function caption(page, text) {
-  return svcCall(page, "caption", text);
-}
-
 // rect is the step's target box (or null for a step with no target); viewport is the script's
 // own {width, height}. The placement — clear of rect, above or below it, inside the frame — is
 // computed here in Node (headlinePlacement.js, unit-tested) rather than in overlay-runtime.js,
