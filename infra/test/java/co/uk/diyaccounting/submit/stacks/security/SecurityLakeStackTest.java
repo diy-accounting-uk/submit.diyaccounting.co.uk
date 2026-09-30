@@ -79,10 +79,10 @@ class SecurityLakeStackTest {
                 "AWS::CloudWatch::Alarm",
                 Match.objectLike(Map.of(
                         "AlarmName", "docs-env-lifecycle-days-remaining",
-                        "MetricName", "LifecycleMinDaysRemaining",
+                        "MetricName", "LifecycleMinDaysBeforeAlarm",
                         "Namespace", "Submit/Security",
                         "ComparisonOperator", "LessThanOrEqualToThreshold",
-                        "Threshold", 60)));
+                        "Threshold", 0)));
 
         var tables = template.findResources("AWS::Glue::Table");
         var tableNames = tables.values().stream()

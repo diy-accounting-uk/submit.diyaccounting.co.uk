@@ -3533,7 +3533,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 #### OPS-130 Track runtime and dependency lifecycle
 
 - **Use when:** a Lambda or Synthetics runtime version, dependency, or certificate is approaching end-of-life and needs tracking.
-- **Does:** lifecycle.toml tracks Lambda and Synthetics runtime versions, dependencies and certificates approaching end-of-life, recording the action taken against each.
+- **Does:** lifecycle.toml tracks Lambda and Synthetics runtime versions, dependencies and certificates approaching end-of-life, recording the action taken against each. An optional per-item `alarm_days` (default 60) sets how many days before its end date the `lifecycle-days-remaining` alarm fires.
 - **Run:** no command; see Does and Entry
 - **Entry:** `lifecycle.toml`
 - **Files:** lifecycle.toml

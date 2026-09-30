@@ -17,8 +17,9 @@
 // <time>" reads as "the check ran and found nothing", which is the distinction Glue Data Quality
 // rules elsewhere in this pipeline (RowCount > 0) rely on.
 //
-// The lifecycle alarm publishes a custom metric (Submit/Security, LifecycleMinDaysRemaining) so a
-// CloudWatch alarm can fire when an item is inside 60 days of its end date; every other source's
+// The lifecycle alarm publishes a custom metric (Submit/Security, LifecycleMinDaysBeforeAlarm): the
+// minimum over items of days remaining minus the item's alarm_days (60 when lifecycle.toml sets
+// none), so a CloudWatch alarm fires at <= 0, when an item is inside its own alarm window; every other source's
 // health is the plain Lambda-errors alarm on this function.
 
 import { SecurityHubClient, GetFindingsCommand } from "@aws-sdk/client-securityhub";
@@ -43,7 +44,8 @@ const logger = createLogger({ source: "app/functions/security/securityLakeNightl
 const REGION = process.env.AWS_REGION || "eu-west-2";
 const WAF_LOG_GROUP_REGION = "us-east-1";
 const METRICS_NAMESPACE = "Submit/Security";
-const LIFECYCLE_ALARM_METRIC_NAME = "LifecycleMinDaysRemaining";
+const LIFECYCLE_ALARM_METRIC_NAME = "LifecycleMinDaysBeforeAlarm";
+export const DEFAULT_LIFECYCLE_ALARM_DAYS = 60;
 const INSIGHTS_QUERY_POLL_INTERVAL_MS = 2000;
 const INSIGHTS_QUERY_MAX_POLLS = 30;
 
@@ -376,6 +378,7 @@ export async function buildLifecycleRows(fetchImpl, tomlPath, dateStr, now = new
       current: entry.current,
       end_date: effectiveEndDate,
       days_remaining: computeDaysRemaining(effectiveEndDate, now),
+      alarm_days: typeof entry.alarm_days === "number" ? entry.alarm_days : DEFAULT_LIFECYCLE_ALARM_DAYS,
       source: entry.source,
       checked_at: now.toISOString(),
     });
@@ -383,8 +386,10 @@ export async function buildLifecycleRows(fetchImpl, tomlPath, dateStr, now = new
   return rows;
 }
 
-export function minDaysRemaining(lifecycleRows) {
-  const known = lifecycleRows.map((row) => row.days_remaining).filter((value) => typeof value === "number");
+export function minDaysBeforeAlarm(lifecycleRows) {
+  const known = lifecycleRows
+    .filter((row) => typeof row.days_remaining === "number")
+    .map((row) => row.days_remaining - (typeof row.alarm_days === "number" ? row.alarm_days : DEFAULT_LIFECYCLE_ALARM_DAYS));
   return known.length > 0 ? Math.min(...known) : null;
 }
 
@@ -562,7 +567,7 @@ export async function handler(event = {}) {
   await putLakeObject(s3, bucket, "rotation", dateStr, rotationRows);
   counts["rotation"] = rotationRows.length;
 
-  const minDays = minDaysRemaining(lifecycleRows);
+  const minDays = minDaysBeforeAlarm(lifecycleRows);
   if (minDays !== null) {
     await getCloudWatchClient().send(
       new PutMetricDataCommand({
@@ -572,6 +577,6 @@ export async function handler(event = {}) {
     );
   }
 
-  logger.info({ message: "Security lake nightly run complete", date: dateStr, counts, minDaysRemaining: minDays });
-  return { date: dateStr, counts, minDaysRemaining: minDays };
+  logger.info({ message: "Security lake nightly run complete", date: dateStr, counts, minDaysBeforeAlarm: minDays });
+  return { date: dateStr, counts, minDaysBeforeAlarm: minDays };
 }
