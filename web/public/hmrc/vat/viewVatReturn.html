@@ -13,6 +13,7 @@
     <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" />
     <link rel="manifest" href="/site.webmanifest" />
     <link rel="stylesheet" href="../../submit.css" />
+    <link rel="stylesheet" href="../../lib/hmrc-field-table.css" />
     <!-- CloudWatch RUM configuration placeholders; replace values during deployment -->
     <meta name="rum:appMonitorId" content="${RUM_APP_MONITOR_ID}" />
     <meta name="rum:region" content="${AWS_REGION}" />
@@ -139,6 +140,7 @@
     <script src="../../developer-mode.js"></script>
     <script src="../../lib/request-cache.js"></script>
     <script src="../../lib/money-format.js"></script>
+    <script src="../../lib/hmrc-field-table.js"></script>
     <script src="../../lib/toml-parser.js"></script>
     <script src="../../lib/hmrc-scope-check.js"></script>
     <script src="../../widgets/entitlement-status.js"></script>
@@ -544,6 +546,27 @@
           return value === true ? "Yes" : value === false ? "No" : "-";
         };
 
+        // Boxes 3 and 5 are the totals, so their figures are bold; boxes 6 to 9 are whole pounds.
+        const boxHtml = (box) => {
+          const whole = box.box >= 6;
+          const amount = whole ? formatWholePounds(returnData[box.field]) : formatCurrency(returnData[box.field]);
+          const shownAmount = box.box === 3 || box.box === 5 ? `<strong>${amount}</strong>` : amount;
+          const amountClass = box.box === 5 ? ' class="net-amount"' : "";
+          return `
+                <div class="detail-item" id="vatReturnBox${box.box}" data-hmrc-field="${box.field}">
+                  <label>Box ${box.box}: ${escapeHtml(box.label)}:</label>
+                  <span${amountClass}>${shownAmount}</span>
+                  <p class="box-definition" id="vatReturnBox${box.box}Definition">
+                    “${escapeHtml(box.definition)}”
+                    ${HmrcFieldTable.sourceLink(box.source, { anchor: box.anchor, text: `VAT Notice 700/12, box ${box.box}` })}
+                  </p>
+                </div>`;
+        };
+        const boxesHtml = (first, last) =>
+          HmrcFieldTable.VAT_RETURN_BOXES.filter((box) => box.box >= first && box.box <= last)
+            .map(boxHtml)
+            .join("");
+
         // Get period display from the dates (periodStart/periodEnd are set on returnData before calling displayReturn)
         const periodDisplay =
           returnData.periodStart && returnData.periodEnd
@@ -572,51 +595,18 @@
 
             <div class="detail-section">
               <h4>VAT Amounts</h4>
-              <div class="detail-grid">
-                <div class="detail-item">
-                  <label>Box 1: VAT due on sales and other outputs:</label>
-                  <span>${formatCurrency(returnData.vatDueSales)}</span>
-                </div>
-                <div class="detail-item">
-                  <label>Box 2: VAT due on acquisitions from EU:</label>
-                  <span>${formatCurrency(returnData.vatDueAcquisitions)}</span>
-                </div>
-                <div class="detail-item">
-                  <label>Box 3: Total VAT due (Box 1 + Box 2):</label>
-                  <span><strong>${formatCurrency(returnData.totalVatDue)}</strong></span>
-                </div>
-                <div class="detail-item">
-                  <label>Box 4: VAT reclaimed on purchases and inputs:</label>
-                  <span>${formatCurrency(returnData.vatReclaimedCurrPeriod)}</span>
-                </div>
-                <div class="detail-item">
-                  <label>Box 5: Net VAT to pay or reclaim:</label>
-                  <span class="net-amount"><strong>${formatCurrency(returnData.netVatDue)}</strong></span>
-                </div>
-              </div>
+              <div class="detail-grid">${boxesHtml(1, 5)}</div>
             </div>
 
             <div class="detail-section">
               <h4>Turnover (whole pounds)</h4>
-              <div class="detail-grid">
-                <div class="detail-item">
-                  <label>Box 6: Total value of sales (excl. VAT):</label>
-                  <span>${formatWholePounds(returnData.totalValueSalesExVAT)}</span>
-                </div>
-                <div class="detail-item">
-                  <label>Box 7: Total value of purchases (excl. VAT):</label>
-                  <span>${formatWholePounds(returnData.totalValuePurchasesExVAT)}</span>
-                </div>
-                <div class="detail-item">
-                  <label>Box 8: Total value of goods supplied to EU (excl. VAT):</label>
-                  <span>${formatWholePounds(returnData.totalValueGoodsSuppliedExVAT)}</span>
-                </div>
-                <div class="detail-item">
-                  <label>Box 9: Total acquisitions from EU (excl. VAT):</label>
-                  <span>${formatWholePounds(returnData.totalAcquisitionsExVAT)}</span>
-                </div>
-              </div>
+              <div class="detail-grid">${boxesHtml(6, 9)}</div>
             </div>
+
+            <p class="field-table-source">
+              Box definitions quoted from ${HmrcFieldTable.sourceLink("vatNotice70012")}, retrieved
+              ${HmrcFieldTable.formatIsoDate(HmrcFieldTable.SOURCES.vatNotice70012.retrieved)}.
+            </p>
           </div>
         `;
 
@@ -711,13 +701,18 @@
 
       .detail-item {
         display: flex;
+        flex-wrap: wrap;
         justify-content: space-between;
-        align-items: center;
+        align-items: baseline;
+        align-content: flex-start;
+        gap: 0 1em;
         padding: 8px 0;
         border-bottom: 1px solid #f0f0f0;
       }
 
       .detail-item label {
+        flex: 1 1 0;
+        margin: 0;
         font-weight: 500;
         color: #555;
       }
@@ -725,6 +720,9 @@
       .detail-item span {
         font-weight: 600;
         color: #333;
+        font-variant-numeric: tabular-nums;
+        text-align: right;
+        white-space: nowrap;
       }
 
       .net-amount {

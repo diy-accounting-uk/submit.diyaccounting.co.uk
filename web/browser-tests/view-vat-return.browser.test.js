@@ -9,6 +9,7 @@ import fs from "fs";
 import path from "path";
 import { setTimeout as delay } from "timers/promises";
 import { dotenvConfigIfNotBlank } from "@app/lib/env.js";
+import { serveHmrcFieldTableAssets, serveSiteStyles, screenshotPath, expectCleanFigures } from "./hmrcFieldTableAssets.js";
 
 dotenvConfigIfNotBlank({ path: ".env.test" });
 
@@ -213,5 +214,75 @@ window.authorizedFetch = window.authorizedFetch || function(){ return Promise.re
 
     const decimalInvalid = await page.evaluate(() => window.validateDecimalPlaces(1000.001, 2));
     expect(decimalInvalid).toBe(false);
+  });
+
+  test("gives each box a stable id, its VAT Notice 700/12 definition and a link to that box's guidance", async ({ page }) => {
+    await serveSiteStyles(page);
+    await page.route("**/*.js", async (route) => {
+      if (route.request().resourceType() === "script") {
+        await route.fulfill({ status: 200, contentType: "application/javascript", body: "" });
+      } else {
+        await route.continue();
+      }
+    });
+    await serveHmrcFieldTableAssets(page);
+    await page.setViewportSize({ width: 1280, height: 900 });
+
+    const html = viewVatReturnHtmlContent.replace("<head>", '<head><base href="http://localhost:3000/hmrc/vat/">').replace(
+      "<body>",
+      `<body><script>
+window.showStatus = function(){};
+window.hideStatus = function(){};
+window.loadEnv = function(){ return Promise.resolve({}); };
+</script>`,
+    );
+    await page.route("**/hmrc/vat/viewVatReturn.html", async (route) => {
+      await route.fulfill({ status: 200, contentType: "text/html", body: html });
+    });
+    await page.goto("http://localhost:3000/hmrc/vat/viewVatReturn.html", { waitUntil: "domcontentloaded" });
+
+    await page.evaluate(() => {
+      document.getElementById("searchForm").style.display = "none";
+      document.getElementById("returnResults").style.display = "block";
+      window.displayReturn({
+        finalised: true,
+        vatDueSales: 1234.56,
+        vatDueAcquisitions: 0,
+        totalVatDue: 1234.56,
+        vatReclaimedCurrPeriod: 234.5,
+        netVatDue: 1000.06,
+        totalValueSalesExVAT: 6173,
+        totalValuePurchasesExVAT: 1172,
+        totalValueGoodsSuppliedExVAT: 0,
+        totalAcquisitionsExVAT: 0,
+      });
+    });
+
+    await expect(page.locator("#vatReturnBox1 span")).toHaveText("£1,234.56");
+    await expect(page.locator("#vatReturnBox5 span")).toHaveText("£1,000.06");
+    await expect(page.locator("#vatReturnBox6 span")).toHaveText("£6,173");
+    for (let box = 1; box <= 9; box += 1) {
+      const item = page.locator(`#vatReturnBox${box}`);
+      await expect(item.locator("label")).toContainText(`Box ${box}:`);
+      await expect(item.locator(`#vatReturnBox${box}Definition`)).toContainText("“");
+      await expect(item.locator(`#vatReturnBox${box}Definition a`)).toHaveAttribute(
+        "href",
+        `https://www.gov.uk/guidance/how-to-fill-in-and-submit-your-vat-return-vat-notice-70012#filling-in-box-${box}`,
+      );
+    }
+    await expect(page.locator("#vatReturnBox1")).toHaveAttribute("data-hmrc-field", "vatDueSales");
+    await expect(page.locator("#returnDetails .field-table-source")).toContainText("retrieved 1 October 2026");
+
+    const detailsText = await page.locator("#returnDetails").innerText();
+    expectCleanFigures(expect, detailsText);
+
+    // The VAT behaviour step reads each box's figure as the first pound amount after its label.
+    const detailsHtml = await page.locator("#returnDetails").innerHTML();
+    const firstAmountAfter = (label) => detailsHtml.match(new RegExp(`${label}[^£]*£([0-9,]+(?:\\.[0-9]{2})?)`))?.[1];
+    expect(firstAmountAfter("VAT due on sales")).toBe("1,234.56");
+    expect(firstAmountAfter("VAT reclaimed on purchases")).toBe("234.50");
+    expect(firstAmountAfter("Total value of sales")).toBe("6,173");
+
+    await page.locator("#returnDetails").screenshot({ path: screenshotPath("viewVatReturn") });
   });
 });

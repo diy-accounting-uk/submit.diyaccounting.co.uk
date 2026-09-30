@@ -333,10 +333,10 @@
     return summaryRows(summaryCalculation, UK_PROPERTY_SUMMARY_FIELDS);
   }
 
-  function sourceLink(sourceKey, anchor) {
+  function sourceLink(sourceKey, { anchor, text } = {}) {
     const source = SOURCES[sourceKey];
     const href = anchor ? `${source.url}#${anchor}` : source.url;
-    return `<a href="${escapeHtml(href)}" rel="noopener" target="_blank">${escapeHtml(source.title)}</a>`;
+    return `<a href="${escapeHtml(href)}" rel="noopener" target="_blank">${escapeHtml(text || source.title)}</a>`;
   }
 
   function sourcesFooter(rows) {
