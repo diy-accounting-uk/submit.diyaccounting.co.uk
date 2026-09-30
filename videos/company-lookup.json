@@ -134,7 +134,17 @@
           "headline": "Read the company profile",
           "keyWord": "profile"
         },
-        { "action": "hold", "ms": 1500 },
+        { "action": "scroll", "target": "#profileView" },
+        { "action": "hold", "ms": 600 },
+        {
+          "action": "point",
+          "target": "#profileView h3",
+          "caption": "Status, address and officers, straight from the register.",
+          "headline": "Profile from the register",
+          "keyWord": "register",
+          "dwellMs": 600
+        },
+        { "action": "hold", "ms": 2500 },
         { "action": "still", "name": "company-lookup-profile" },
         { "action": "hold", "ms": 1500 }
       ]

@@ -7,10 +7,13 @@ import fs from "fs";
 import path from "path";
 import { describe, test, expect } from "vitest";
 
+// timer-check.json is a deliberately slow step that exercises the timer overlay; it has no answer to show.
+const NO_ANSWER_SCRIPTS = new Set(["timer-check.json"]);
+
 const videosDir = path.resolve("videos");
 const sceneScripts = fs
   .readdirSync(videosDir)
-  .filter((name) => name.startsWith("itsa-") && name.endsWith(".json"))
+  .filter((name) => name.endsWith(".json") && !NO_ANSWER_SCRIPTS.has(name))
   .map((name) => ({ name, script: JSON.parse(fs.readFileSync(path.join(videosDir, name), "utf8")) }))
   .filter(({ script }) => Array.isArray(script.scenes));
 

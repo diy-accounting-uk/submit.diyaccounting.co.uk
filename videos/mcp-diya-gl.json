@@ -150,7 +150,18 @@
           "caption": "Every figure and check comes back the same way, however it's called.",
           "headline": "The figures come back",
           "keyWord": "figures"
-        }
+        },
+        { "action": "scroll", "target": "text=engineVersion" },
+        { "action": "hold", "ms": 600 },
+        {
+          "action": "point",
+          "target": "text=engineVersion",
+          "caption": "The engine version and every figure, ready to read.",
+          "headline": "Figures and engine version",
+          "keyWord": "version",
+          "dwellMs": 600
+        },
+        { "action": "hold", "ms": 2500 }
       ]
     }
   ]
