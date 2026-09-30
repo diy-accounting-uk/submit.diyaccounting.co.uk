@@ -49,8 +49,6 @@ step.
 
   **In flight**: merged as ecfc67eb (PR #431); main deploy 36746766015 running. **Source**: BACKLOG 66; `PLAN_ONE_STOP_DASHBOARD.md` D2. **Owner**: Claude Code; the backfill is the operator's. **Model**: Haiku. **Size**: ~3 files.
 
-- [ ] **PIPE1. "select jobs" fails on a single GitHub 502.** `.github/actions/agent-run-budget/action.yml` made one unretried `gh api` call per counted run, so one HTTP 502 turned "select jobs" red on PRs #429 and #431. PR #432 retries each call three times, writes `over-budget=true`, `count=unknown`, `reason=api-error` on persistent failure and exits 0, and the skip messages in five callers name the API error. Remainder: merge, then the next push's "select jobs" green. **In flight**: branch `claude/vesper-pipe-budget`, PR #432, CI running. **Source**: PRs #429 and #431, 2026-09-30. **Owner**: Claude Code. **Model**: Haiku. **Size**: 6 files.
-
 ## Machine-only
 
 ## Machine-ask
