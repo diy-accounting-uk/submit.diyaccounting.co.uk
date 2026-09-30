@@ -17,10 +17,10 @@ name: video-capture-on-deploy
 run-name: "record videos touched since the last deploy"
 
 concurrency:
-  # video-capture.yml's own concurrency group (video-capture-<environment>) cancels an
-  # in-progress capture when a newer one starts, so two runs of this workflow dispatching at the
-  # same time would cancel each other's captures instead of each running to completion. Queue
-  # instead of cancelling: every deploy's set of touched videos still gets recorded, just later.
+  # video-capture.yml queues same-environment captures but keeps only one pending run per group
+  # and drops an older pending one, so this workflow dispatches its scripts one after another and
+  # waits for each to finish. Two runs of this workflow dispatching at once would drop captures;
+  # queue instead of cancelling: every deploy's set of touched videos still gets recorded, just later.
   group: video-capture-on-deploy
   cancel-in-progress: false
 
@@ -188,6 +188,18 @@ jobs:
           SCRIPTS: ${{ steps.due.outputs.names }}
         run: |
           set -euo pipefail
+
+          # Captures for prod run on main. A capture already queued or running there (a hand
+          # dispatch, or an earlier run of this workflow) would hold this one pending and GitHub
+          # drops an older pending run, so skip instead of queueing behind it.
+          ACTIVE=$(for ACTIVE_STATUS in queued in_progress waiting; do
+            gh run list --repo "$REPO" --workflow video-capture.yml --branch main --status "$ACTIVE_STATUS" --json databaseId --jq '.[].databaseId'
+          done)
+          if [ -n "$ACTIVE" ]; then
+            echo "::warning::video-capture.yml already has a run queued or in progress on main (${ACTIVE//$'\n'/ }); skipping this dispatch"
+            exit 0
+          fi
+
           echo "$SCRIPTS" | while IFS= read -r SCRIPT; do
             [ -z "$SCRIPT" ] && continue
 
@@ -212,11 +224,10 @@ jobs:
               continue
             fi
 
-            # video-capture.yml's own concurrency group (video-capture-prod, cancel-in-progress:
-            # true) cancels an in-progress capture when a newer one starts, so the next script's
-            # dispatch must wait for this one to finish rather than racing it.
+            # video-capture.yml queues captures per environment and holds one pending run, so the
+            # next script's dispatch waits for this one to finish.
             for _ in $(seq 1 80); do
-              STATUS=$(gh run list --repo "$REPO" --workflow video-capture.yml --limit 1 --json status,databaseId --jq "if .[0].databaseId == ${NEW_RUN_ID} then .[0].status else \"unknown\" end")
+              STATUS=$(gh run view "$NEW_RUN_ID" --repo "$REPO" --json status --jq .status)
               if [ "$STATUS" = "completed" ]; then
                 break
               fi

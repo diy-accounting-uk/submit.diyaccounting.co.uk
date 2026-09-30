@@ -10,20 +10,19 @@ run-name: "record ${{ inputs.script }} video"
 # procedure — local iteration first, then this workflow for the real recording.
 
 concurrency:
-  # This workflow toggles Cognito native auth during recording. Serialising same-environment
-  # video-capture runs against each other still avoids wasting a run on a recording that a newer
-  # one will supersede; the hold-native-auth action (see its own enable/disable steps below)
-  # is what keeps this workflow's toggle from racing deploy.yml, deploy-app.yml or probe-test.yml
-  # over the same Cognito setting. Key the group on the environment being recorded, not the
-  # branch triggering it, so that workflow_dispatch calls targeting prod from any branch
-  # serialize with each other. When deployment-name is given, use it (often reused across
-  # branches for targeted re-records); otherwise resolve the effective environment from the
-  # explicit input or branch.
+  # This workflow toggles Cognito native auth during recording, so same-environment runs must not
+  # overlap. They queue instead of cancelling: a cancelled capture is a lost recording, and the
+  # hold-native-auth action (see its own enable/disable steps below) keeps this workflow's toggle
+  # from racing deploy.yml, deploy-app.yml or probe-test.yml over the same Cognito setting.
+  # GitHub keeps one pending run per group and drops an older pending one, so a caller that
+  # dispatches several captures waits for each to finish before dispatching the next
+  # (video-capture-on-deploy.yml does). Key the group on the environment being recorded, not the
+  # branch triggering it, so that workflow_dispatch calls targeting prod from any branch queue
+  # behind each other. When deployment-name is given, use it (often reused across branches for
+  # targeted re-records); otherwise resolve the effective environment from the explicit input or
+  # branch.
   group: video-capture-${{ inputs.deployment-name || (inputs.environment-name && inputs.environment-name != '(auto)' && inputs.environment-name) || (github.ref == 'refs/heads/main' && 'prod' || 'ci') }}
-  # Capture runs consume time and resources but make no infrastructure changes; a cancelled run's
-  # native-auth hold is dropped as stale by the next enable or disable call anywhere for the
-  # environment. Newer captures targeting the same environment supersede older ones.
-  cancel-in-progress: true
+  cancel-in-progress: false
 
 on:
   workflow_dispatch:
