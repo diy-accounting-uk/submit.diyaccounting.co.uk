@@ -124,6 +124,16 @@ the transcript, the timeline or the overlay event log, and the Cognito one-time 
 masked on screen. A `type` or `fill` step that has to carry a credential of its own marks itself
 `"secret": true`, which keeps the value out of the transcript and the timeline.
 
+HMRC's sandbox answers "no data found" to the liabilities, payments and penalties reads unless
+the request carries a `Gov-Test-Scenario` header. A `testScenario` step sets the page's hidden
+`#testScenario` select (the developer panel stays closed) before the step that submits the
+form; it fails when the page has no such option. The scenarios have fixed date windows, so the
+form dates are the window HMRC documents for that scenario, not a period key:
+`view-liabilities` uses `MULTIPLE_LIABILITIES_2018_19` (2018-04-05 to 2018-12-21),
+`view-payments` uses `MULTIPLE_PAYMENTS_2018_19` (2018-02-27 to 2018-12-21), and
+`view-penalties` uses `MULTIPLE_PENALTIES` (a late submission and a late payment penalty, no
+dates). Obligations return data without a header.
+
 Two values a logged-in script cannot hard-code come from `{{...}}` placeholders.
 `{{hmrcVatNumber}}` is the VAT registration number of the test user this run actually got.
 `{{today}}`, `{{daysAgo:N}}`, `{{monthsAgo:N}}` and `{{yearsAgo:N}}` are dates from one clock
@@ -173,6 +183,15 @@ every recording, not just this one run. `videos/sign-in.json` is the canonical, 
 for the walkthrough itself; every other signed-in script fast-forwards the same three scenes and
 carries one caption pointing at it (`"See the full sign-in ... walkthrough in our sign-in
 video."`).
+
+The HMRC authorisation repeats the same way. `videos/hmrc-authorise.json` is the canonical,
+full-pace video for it (sign-in and day pass fast-forwarded, then the authorise scene at full
+pace). Every other script fast-forwards its own `hmrcAuthorise`: a scene that holds only the
+authorisation is marked `fastForward`; an authorisation inside a scene that keeps its pace
+carries `"fastForward": true` on the `hmrcAuthorise` step itself. Either carries one caption
+pointing at the HMRC authorisation video. A step-level `fastForward` runs that step at zero
+pacing and leaves the rest of the scene alone. Each recording is its own browser session, so a
+later video cannot start after an earlier one; the repeated stretch is sped through instead.
 
 A scene marked `fastForward` still has to leave the page in a state the *next* scene can rely on
 — ensureBundle's grant, for instance, is asynchronous, and a plain `click` step never waits for
@@ -273,11 +292,23 @@ page's actual redraws, not by this field — it only controls the constant-rate 
 resamples onto.
 
 The encode is H.264 High, yuv420p, faststart, at the frames' own captured resolution (never
-downscaled to a fixed target). `crf 12` with `-tune animation` is the measured default: on a
-3840x2160, 30fps, 3492-frame capture (`videos/view-obligations.json` against the simulator), it
-gave the smallest file of the four combinations tried (crf 10/12 × stillimage/animation) at an
-SSIM against the source frames indistinguishable from the other three — every combination was
-already visually lossless at this content's motion level, so file size decided.
+downscaled to a fixed target), a closed GOP of half the frame rate and BT.709 tags, which is
+YouTube's recommended upload profile. The default is `crf 22`, `-preset medium`, `-tune animation`,
+measured on the first 30 seconds of a 3840x2160, 30fps capture of `videos/view-liabilities.json`
+against the simulator:
+
+| Setting | Size | SSIM against crf 12 slow | Encode time |
+|---|---|---|---|
+| crf 12 slow | 14.4 MB | reference | 184 s |
+| crf 18 slow | 9.7 MB | 0.99955 | 101 s |
+| crf 22 slow | 7.2 MB | 0.99915 | 29 s |
+| crf 22 medium | 7.4 MB | 0.99914 | 18 s |
+| crf 26 medium | 5.4 MB | 0.99847 | 16 s |
+
+Size target: 2 Mbps of video for this screen content, about 30 MB per two minutes, half the
+crf 12 output. YouTube suggests 35 to 45 Mbps for 4K camera footage and re-encodes every upload
+to VP9 anyway; a UI recording at SSIM above 0.999 gives that re-encode a clean source without
+the upload cost.
 
 ## Reference
 

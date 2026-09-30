@@ -29,13 +29,11 @@ import fs from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { SecretsManagerClient, GetSecretValueCommand } from "@aws-sdk/client-secrets-manager";
+import { fetchAccessToken, fetchAllTransactions } from "../../app/services/paypalTransactionSearch.js";
 import { resolveStagingDir } from "./lib/staging-paths.js";
 
 const __filename = fileURLToPath(import.meta.url);
 
-const OAUTH_TOKEN_URL = "https://api-m.paypal.com/v1/oauth2/token";
-const TRANSACTIONS_URL = "https://api-m.paypal.com/v1/reporting/transactions";
-const PAGE_SIZE = 500;
 const CLIENT_ID_SECRET = "prod/submit/paypal/client_id";
 const CLIENT_SECRET_SECRET = "prod/submit/paypal/client_secret";
 
@@ -85,15 +83,6 @@ export function formatDateStamp(date) {
 }
 
 /**
- * @param {Date} date
- * @returns {string} the Transaction Search API's start_date/end_date shape, e.g.
- *   "2026-03-01T00:00:00+0000"
- */
-export function formatPayPalDateTime(date) {
-  return `${date.toISOString().split(".")[0]}+0000`;
-}
-
-/**
  * @param {string} month - "YYYY-MM"
  * @param {string} [cwd]
  */
@@ -106,77 +95,6 @@ export function stagingFilePaths(month, cwd = process.cwd()) {
     dateStamp,
     transactionsFile: path.join(dir, `${dateStamp}-paypal-transactions.json`),
   };
-}
-
-/**
- * Exchanges the client id and secret for an access token via the client_credentials grant.
- *
- * @param {string} clientId
- * @param {string} clientSecret
- * @param {typeof fetch} [fetchImpl]
- * @returns {Promise<string>} the bearer access token
- */
-export async function fetchAccessToken(clientId, clientSecret, fetchImpl = fetch) {
-  const response = await fetchImpl(OAUTH_TOKEN_URL, {
-    method: "POST",
-    headers: {
-      "Authorization": `Basic ${Buffer.from(`${clientId}:${clientSecret}`).toString("base64")}`,
-      "Content-Type": "application/x-www-form-urlencoded",
-    },
-    body: "grant_type=client_credentials",
-  });
-  const body = await response.json();
-  if (!response.ok || !body.access_token) {
-    throw new Error(`PayPal OAuth token request failed with ${response.status}: ${JSON.stringify(body)}`);
-  }
-  return body.access_token;
-}
-
-/**
- * Fetches one page of the Transaction Search API's results.
- *
- * @param {string} accessToken
- * @param {{startDate: Date, endDate: Date, page: number}} params
- * @param {typeof fetch} [fetchImpl]
- */
-export async function fetchTransactionsPage(accessToken, { startDate, endDate, page }, fetchImpl = fetch) {
-  const query = new URLSearchParams({
-    start_date: formatPayPalDateTime(startDate),
-    end_date: formatPayPalDateTime(endDate),
-    fields: "all",
-    page_size: String(PAGE_SIZE),
-    page: String(page),
-  });
-  const response = await fetchImpl(`${TRANSACTIONS_URL}?${query}`, {
-    headers: { "Authorization": `Bearer ${accessToken}`, "Content-Type": "application/json" },
-  });
-  const body = await response.json();
-  if (!response.ok) {
-    throw new Error(`PayPal Transaction Search request failed with ${response.status}: ${JSON.stringify(body)}`);
-  }
-  return body;
-}
-
-/**
- * Pages through the Transaction Search API for [start, end], as the raw
- * transaction_details objects (status field intact; nothing filtered here).
- *
- * @param {string} accessToken
- * @param {Date} start
- * @param {Date} end
- * @param {typeof fetch} [fetchImpl]
- */
-export async function fetchAllTransactions(accessToken, start, end, fetchImpl = fetch) {
-  const transactions = [];
-  let page = 1;
-  let totalPages = 1;
-  do {
-    const body = await fetchTransactionsPage(accessToken, { startDate: start, endDate: end, page }, fetchImpl);
-    transactions.push(...(body.transaction_details ?? []));
-    totalPages = body.total_pages ?? 1;
-    page += 1;
-  } while (page <= totalPages);
-  return transactions;
 }
 
 /**

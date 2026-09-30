@@ -206,6 +206,7 @@
       "id": "authorise",
       "chapter": "Authorise with HMRC",
       "still": true,
+      "fastForward": true,
       "steps": [
         {
           "action": "click",
@@ -216,9 +217,9 @@
         },
         {
           "action": "hmrcAuthorise",
-          "caption": "Sign in to HMRC and say yes once.",
-          "headline": "Grant HMRC access",
-          "keyWord": "Grant",
+          "caption": "See the full HMRC access walkthrough in our HMRC authorisation video.",
+          "headline": "Grant access, faster",
+          "keyWord": "faster",
           "timeoutMs": 60000
         },
         {

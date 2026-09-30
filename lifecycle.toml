@@ -5,6 +5,8 @@
 #
 # Tracks runtime versions, dependencies, certificates, and other lifecycle items.
 # Current as of 2026-09-08.
+#
+# alarm_days (optional, default 60): the lifecycle alarm fires when an item is this many days from its end_date.
 
 [[lifecycle]]
 name = "Lambda Node.js Runtime"
@@ -35,6 +37,7 @@ name = "Local Development Certificate (certbot)"
 kind = "certificate"
 current = "local.submit.diyaccounting.co.uk"
 end_date = "2026-11-29"
+alarm_days = 21  # inside certbot's 30-day renewal window; a 90-day certificate is 60 days from its end for two thirds of each cycle
 source = "_developers/SETUP.md - renewal via certbot renew with custom directory flags"
 action = "Renewal runs weekly via launchd on Sundays 05:00. Manual refresh required in week of 2026-11-29."
 

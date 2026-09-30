@@ -61,131 +61,12 @@
 
 import { validateLines } from "@diy-accounting-uk/diya-gl/dist/app/lib/diya-gl-schema.js";
 
-import { isCurrencyConversionOrTransfer, isHoldCandidate, isReleaseCandidate } from "./paypal-statement-lines.js";
+import { CREDIT_NOTE_EVENT_CODES, adaptTransactions, isScaffolding } from "../../../app/services/paypalTransactions.js";
 
 import { matchLabel } from "./labels.js";
 
 function compact(line) {
   return Object.fromEntries(Object.entries(line).filter(([, value]) => value !== undefined));
-}
-
-function isoDateFromApiDateTime(text) {
-  return text.slice(0, 10);
-}
-
-// PayPal's own settled/successful status code on a Transaction Search page.
-// Every other status ("P" pending, "D" denied, "V" reversed, ...) is a
-// movement still in flight or one that never happened, never posted.
-const SETTLED_STATUS = "S";
-
-// A currency conversion moves the wallet's own balance between its currency
-// pots; a bank deposit or a withdrawal is a transfer to/from the linked bank
-// account, already carried by the bank statement's own BAC/D-D line. Neither
-// is a sale or purchase of its own. Descriptions synthesised here only to
-// drive paypal-statement-lines.js's own isCurrencyConversionOrTransfer,
-// which matches on free text rather than an event code.
-const TRANSFER_DESCRIPTION_BY_EVENT_CODE = new Map([
-  ["T0200", "General currency conversion"],
-  ["T0300", "Bank deposit to PayPal account"],
-  ["T0400", "General withdrawal"],
-  ["T0403", "General withdrawal"],
-]);
-
-// A hold placement reserves balance without moving it. This account's own
-// usage carries two event codes for one: T1501 (pending when placed) and
-// T2101 (already settled when placed, against a bank-deposit top-up -- see
-// the module comment). Both synthesise a description isHoldCandidate reads
-// as a hold; neither is ever a sale or purchase of its own.
-const HOLD_EVENT_CODES = new Set(["T1501", "T2101"]);
-
-// T1105 releases a T1501/T2101 hold, matched via paypal_reference_id rather
-// than a free-text label -- see resolvesToAHold below. Synthesised as an
-// unambiguous "Reversal of ..." release label so isReleaseCandidate accepts
-// it the same way it accepts the statement PDF's own unambiguous rows.
-const RELEASE_EVENT_CODES = new Set(["T1105"]);
-
-// "Other" (T9900): ambiguous by its own free-text label -- see the module
-// comment on why this route resolves it via paypal_reference_id rather than
-// paypal-statement-lines.js's chooseReleaseRows.
-const AMBIGUOUS_RELEASE_EVENT_CODES = new Set(["T9900"]);
-
-// A PayPal debit card's own cashback bonus (T0801) and a settled T9900 that
-// is not, in fact, a hold's release both reduce purchases -- neither is
-// income, and neither is a bill of its own.
-const CREDIT_NOTE_EVENT_CODES = new Set(["T0801", "T9900"]);
-const CASHBACK_DESCRIPTION = "Debit Card Cashback Bonus";
-
-function payerName(record) {
-  const payer = record.payer_info || {};
-  const name = payer.payer_name || {};
-  if (name.alternate_full_name) return name.alternate_full_name;
-  const fullName = [name.given_name, name.surname].filter(Boolean).join(" ").trim();
-  if (fullName) return fullName;
-  return payer.email_address;
-}
-
-function describeRecord(ti, record) {
-  const subject = ti.transaction_subject && ti.transaction_subject.trim();
-  return subject || payerName(record) || ti.transaction_event_code;
-}
-
-// The free-text description paypal-statement-lines.js's own classifiers
-// read for this record -- synthesised from its event code for the codes
-// this module itself treats as scaffolding (transfer, hold, release), or
-// the record's own subject/payer name otherwise. An ambiguous "Other"
-// (T9900) is named after what it actually references, resolved once every
-// record on the page has been adapted -- see the second pass below.
-function descriptionFor(ti, record, code) {
-  if (TRANSFER_DESCRIPTION_BY_EVENT_CODE.has(code)) return TRANSFER_DESCRIPTION_BY_EVENT_CODE.get(code);
-  if (HOLD_EVENT_CODES.has(code)) return "General hold";
-  if (RELEASE_EVENT_CODES.has(code)) return "Reversal of General Hold";
-  if (AMBIGUOUS_RELEASE_EVENT_CODES.has(code)) return "Other";
-  if (code === "T0801") return CASHBACK_DESCRIPTION;
-  return describeRecord(ti, record);
-}
-
-// Adapts one raw transaction_details object into the shape
-// paypal-statement-lines.js's own classifiers read: {id, status, gross,
-// description}. gross carries the API's own signed amount, already in major
-// units (unlike Stripe's minor-unit balance transactions).
-function adapt(record) {
-  const ti = record.transaction_info;
-  const code = ti.transaction_event_code;
-  return {
-    id: ti.transaction_id,
-    referenceId: ti.paypal_reference_id,
-    code,
-    status: ti.transaction_status === SETTLED_STATUS ? "Completed" : ti.transaction_status,
-    gross: Number(ti.transaction_amount.value),
-    fee: ti.fee_amount ? Number(ti.fee_amount.value) : 0,
-    currency: ti.transaction_amount.currency_code,
-    date: isoDateFromApiDateTime(ti.transaction_initiation_date),
-    description: descriptionFor(ti, record, code),
-  };
-}
-
-// An ambiguous "Other" (T9900) names itself after whatever it references --
-// this account's own usage always references that month's own debit-card
-// purchase (T0500), never the hold it happens to share an amount with (see
-// the module comment). Run once every record on the page has been adapted,
-// so the reference can resolve regardless of array order.
-function nameAmbiguousReleases(adaptedRecords, byId) {
-  for (const adapted of adaptedRecords) {
-    if (!AMBIGUOUS_RELEASE_EVENT_CODES.has(adapted.code)) continue;
-    const referenced = adapted.referenceId ? byId.get(adapted.referenceId) : undefined;
-    adapted.description = `Other: ${referenced ? referenced.description : adapted.code}`;
-  }
-}
-
-// True when a release candidate's own paypal_reference_id resolves, within
-// this page, to a record this module classifies as a hold -- the API's own
-// linkage in place of paypal-statement-lines.js's Activity Summary Releases
-// figure. A release candidate whose reference does not resolve to a hold is
-// a genuine, separate movement (see the module comment on T9900), not this
-// route's scaffolding to unpost.
-function resolvesToAHold(adapted, byId) {
-  const referenced = adapted.referenceId ? byId.get(adapted.referenceId) : undefined;
-  return referenced !== undefined && HOLD_EVENT_CODES.has(referenced.code);
 }
 
 function receiptGrossLine(adapted, { sourceJournalID, accountMainID, taxCode }) {
@@ -279,17 +160,12 @@ export function paypalLinesFromTransactions(
   if (!purchasesAccountMainID) throw new Error("purchasesAccountMainID is required");
   if (!feeAccountMainID) throw new Error("feeAccountMainID is required");
 
-  const adaptedRecords = transactions.map(adapt);
-  const byId = new Map(adaptedRecords.map((adapted) => [adapted.id, adapted]));
-  nameAmbiguousReleases(adaptedRecords, byId);
+  const { adaptedRecords, byId } = adaptTransactions(transactions);
 
   const unlabelled = [];
   const lines = [];
   for (const adapted of adaptedRecords) {
-    if (adapted.status !== "Completed") continue;
-    if (isCurrencyConversionOrTransfer(adapted.description)) continue;
-    if (isHoldCandidate(adapted)) continue;
-    if (isReleaseCandidate(adapted) && resolvesToAHold(adapted, byId)) continue;
+    if (isScaffolding(adapted, byId)) continue;
 
     if (CREDIT_NOTE_EVENT_CODES.has(adapted.code)) {
       lines.push(creditNoteLine(adapted, { purchasesAccountMainID, taxCode }));

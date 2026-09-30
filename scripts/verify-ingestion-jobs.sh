@@ -4,7 +4,7 @@
 
 #
 # Seven-day row counts per scheduled ingestion source: activity events, DynamoDB table
-# changes, Stripe reconciliation, GA4 traffic and CloudFront access logs.
+# changes, Stripe reconciliation, PayPal receipts, GA4 traffic and CloudFront access logs.
 #
 # Read-only. Every check is an Athena SELECT against the {env}-env-analytics workgroup (which
 # already has its own query-result output location configured, so this script names none) or
@@ -219,6 +219,7 @@ check_source "Table changes: subscriptions" "dynamo_subscriptions" "ymd" "curate
 check_source "Table changes: passes"        "dynamo_passes"        "ymd" "curated/tables/passes/"          "optional"
 check_source "Stripe charges"         "stripe_charges"       "dt"  "curated/stripe/stripe_charges/dt="        "optional"
 check_source "Stripe subscriptions"   "stripe_subscriptions" "dt"  "curated/stripe/stripe_subscriptions/dt="  "required"
+check_source "PayPal receipts"        "paypal_donations"     "dt"  "curated/paypal/paypal_donations/dt="     "optional"
 check_source "GA4 traffic"            "ga4_traffic"           "dt"  "curated/ga4/report=traffic/dt="           "required"
 check_source "CloudFront requests"    "cloudfront_requests"  "ymd" "raw/cloudfront/"                                    "required"
 

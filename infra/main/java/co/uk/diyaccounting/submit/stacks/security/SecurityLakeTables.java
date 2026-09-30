@@ -130,6 +130,7 @@ public class SecurityLakeTables {
                         "current", "string",
                         "end_date", "string",
                         "days_remaining", "int",
+                        "alarm_days", "int",
                         "source", "string",
                         "checked_at", "string"));
 

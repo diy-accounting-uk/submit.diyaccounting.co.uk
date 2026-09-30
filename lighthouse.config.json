@@ -42,6 +42,9 @@
       }
     },
     {
+      "path": "/mtd-calendar.html"
+    },
+    {
       "path": "/bundles.html",
       "thresholds": {
         "performance": 51,

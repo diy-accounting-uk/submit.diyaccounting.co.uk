@@ -18,7 +18,7 @@ import {
   computeDaysRemaining,
   readLifecycleToml,
   buildLifecycleRows,
-  minDaysRemaining,
+  minDaysBeforeAlarm,
   fetchWafBlockRows,
   readRotationToml,
   buildRotationRows,
@@ -299,10 +299,38 @@ source = "pom.xml"
     expect(rows[0].days_remaining).toBeNull();
   });
 
-  test("minDaysRemaining ignores rows with no known end date", () => {
-    expect(minDaysRemaining([{ days_remaining: 90 }, { days_remaining: null }, { days_remaining: 10 }])).toBe(10);
-    expect(minDaysRemaining([{ days_remaining: null }])).toBeNull();
-    expect(minDaysRemaining([])).toBeNull();
+  test("minDaysBeforeAlarm ignores rows with no known end date", () => {
+    expect(minDaysBeforeAlarm([{ days_remaining: 90 }, { days_remaining: null }, { days_remaining: 100 }])).toBe(30);
+    expect(minDaysBeforeAlarm([{ days_remaining: null }])).toBeNull();
+    expect(minDaysBeforeAlarm([])).toBeNull();
+  });
+
+  test("minDaysBeforeAlarm subtracts each row's alarm_days and defaults to 60", () => {
+    expect(minDaysBeforeAlarm([{ days_remaining: 45, alarm_days: 21 }])).toBe(24);
+    expect(minDaysBeforeAlarm([{ days_remaining: 20, alarm_days: 21 }])).toBe(-1);
+    expect(minDaysBeforeAlarm([{ days_remaining: 45 }])).toBe(-15);
+    expect(minDaysBeforeAlarm([{ days_remaining: 45, alarm_days: 21 }, { days_remaining: 80 }])).toBe(20);
+  });
+
+  test("buildLifecycleRows carries alarm_days from the toml and defaults it to 60", async () => {
+    const tomlPath = writeTempToml(`
+[[lifecycle]]
+name = "Short window"
+kind = "certificate"
+current = "a"
+end_date = "2026-11-29"
+alarm_days = 21
+source = "s"
+
+[[lifecycle]]
+name = "Default window"
+kind = "certificate"
+current = "b"
+end_date = "2027-02-06"
+source = "s"
+`);
+    const rows = await buildLifecycleRows(vi.fn(), tomlPath, "2026-09-30", new Date("2026-09-30T00:00:00Z"));
+    expect(rows.map((row) => row.alarm_days)).toEqual([21, 60]);
   });
 });
 

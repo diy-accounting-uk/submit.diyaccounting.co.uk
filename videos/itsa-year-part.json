@@ -52,6 +52,7 @@
       "id": "home",
       "chapter": "Home",
       "still": true,
+      "fastForward": true,
       "steps": [
         {
           "action": "goto",
@@ -61,6 +62,13 @@
           "headline": "A sandbox preview",
           "keyWord": "sandbox"
         },
+        {
+          "action": "caption",
+          "text": "See the full sign-in walkthrough in our sign-in video.",
+          "holdMs": 1200,
+          "headline": "Sign in, faster",
+          "keyWord": "faster"
+        },
         { "action": "point", "target": { "role": "heading", "name": "DIY Accounting Submit" }, "dwellMs": 300 },
         { "action": "hold", "ms": 400 }
       ]
@@ -69,6 +77,7 @@
       "id": "sign-in",
       "chapter": "Sign in",
       "still": true,
+      "fastForward": true,
       "steps": [
         {
           "action": "click",
@@ -91,6 +100,7 @@
       "id": "subscription",
       "chapter": "Resident",
       "still": true,
+      "fastForward": true,
       "steps": [
         {
           "action": "click",
@@ -115,6 +125,7 @@
           "headline": "Go to activities",
           "keyWord": "activities"
         },
+        { "action": "await", "until": ".developer-mode-toggle", "label": "Waiting for the developer mode toggle" },
         {
           "action": "click",
           "target": ".developer-mode-toggle",
@@ -158,10 +169,11 @@
         },
         {
           "action": "hmrcAuthorise",
-          "caption": "Sign in to HMRC and say yes once, for the whole year.",
-          "headline": "Grant access for the year",
-          "keyWord": "year",
-          "timeoutMs": 60000
+          "caption": "See the full HMRC access walkthrough in our HMRC authorisation video.",
+          "headline": "Grant access, faster",
+          "keyWord": "faster",
+          "timeoutMs": 60000,
+          "fastForward": true
         },
         {
           "action": "await",

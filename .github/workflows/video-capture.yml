@@ -35,6 +35,7 @@ on:
         options:
           - 'tour'
           - 'view-obligations'
+          - 'hmrc-authorise'
           - 'view-return'
           - 'view-liabilities'
           - 'view-payments'

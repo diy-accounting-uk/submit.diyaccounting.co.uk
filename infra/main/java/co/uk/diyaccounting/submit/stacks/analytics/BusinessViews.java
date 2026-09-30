@@ -92,7 +92,10 @@ public class BusinessViews extends Construct {
                     "v_pass_redemptions_daily",
                     "Passes issued and redeemed each day, by pass type",
                     List.of("activity_events_all", "dynamo_passes")),
-            new ViewDefinition("v_revenue_daily", "Stripe revenue each day, by product", List.of("stripe_charges")),
+            new ViewDefinition(
+                    "v_revenue_daily",
+                    "Stripe and PayPal revenue each day, by product",
+                    List.of("stripe_charges", "paypal_donations")),
             new ViewDefinition(
                     "v_hmrc_failures_by_class",
                     "HMRC submission failures each day, by failure class",

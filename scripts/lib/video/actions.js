@@ -209,6 +209,37 @@ async function doSelect(page, step, ctx) {
   return { waitMs: 0, rect };
 }
 
+// HMRC's sandbox answers "no data found" for a VAT read unless the request carries a
+// Gov-Test-Scenario header naming the sample data to return. The pages carry a select for it
+// inside the developer section, which a recording never shows, so the value is set on the
+// hidden select directly: the form submits it with the rest, the page keeps it through the
+// authorise redirect, and nothing about the developer panel reaches the frame. An option the
+// page does not offer fails the step, so a renamed scenario cannot quietly record "no data".
+async function doTestScenario(page, step, ctx) {
+  const selector = step.target || "#testScenario";
+  const outcome = await page.evaluate(
+    ({ selector, value }) => {
+      const select = document.querySelector(selector);
+      if (!select) return "missing";
+      if (![...select.options].some((option) => option.value === value)) return "no-option";
+      select.value = value;
+      select.dispatchEvent(new Event("change", { bubbles: true }));
+      return "set";
+    },
+    { selector, value: step.value },
+  );
+  if (outcome !== "set") {
+    await writeFailureStill(page, ctx);
+    const reason = outcome === "missing" ? `"${selector}" is not on the page` : `"${selector}" has no option "${step.value}"`;
+    throw new SceneStepError(`scene "${ctx.sceneId}" step ${ctx.stepIndex} (testScenario): ${reason}`, {
+      sceneId: ctx.sceneId,
+      stepIndex: ctx.stepIndex,
+      target: selector,
+    });
+  }
+  return { waitMs: 0, rect: null };
+}
+
 async function doScroll(page, step, ctx) {
   let targetY;
   if (step.target) {
@@ -452,6 +483,7 @@ const HANDLERS = {
   press: doPress,
   tab: doTab,
   select: doSelect,
+  testScenario: doTestScenario,
   scroll: doScroll,
   highlight: doHighlight,
   await: doAwait,

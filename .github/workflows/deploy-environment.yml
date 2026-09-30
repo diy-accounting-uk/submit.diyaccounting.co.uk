@@ -1194,6 +1194,10 @@ jobs:
           # means no job and no grant (see PLAN_ONE_STOP_DASHBOARD.md's "D10 build" section).
           COMPANY_BOOK_ID: ${{ vars.SUBMIT_COMPANY_BOOK_ID }}
           COMPANY_BOOK_OWNER_PREFIX: ${{ vars.SUBMIT_COMPANY_BOOK_OWNER_PREFIX }}
+          # The PayPal donations pull job exists only where the PayPal credentials were landed
+          # by this workflow's create-secrets job (see the PAYPAL_CLIENT_ID and
+          # PAYPAL_CLIENT_SECRET steps above).
+          PAYPAL_PULL_ENABLED: ${{ vars.PAYPAL_CLIENT_ID != '' && secrets.PAYPAL_CLIENT_SECRET != '' }}
 
   deploy-ecr:
     name: 'deploy ecr'

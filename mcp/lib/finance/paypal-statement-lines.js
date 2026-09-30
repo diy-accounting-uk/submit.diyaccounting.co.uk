@@ -46,6 +46,14 @@ import { validateLines } from "@diy-accounting-uk/diya-gl/dist/app/lib/diya-gl-s
 
 import { matchLabel } from "./labels.js";
 
+import {
+  BANK_DEPOSIT_TO_PAYPAL,
+  UNAMBIGUOUS_RELEASE_LABEL,
+  isCurrencyConversionOrTransfer,
+  isHoldCandidate,
+  isReleaseCandidate,
+} from "../../../app/services/paypalTransactions.js";
+
 const execFileAsync = promisify(execFile);
 
 /**
@@ -248,64 +256,6 @@ export function parsePaypalActivitySummary(text) {
   }
 
   return summary;
-}
-
-// A hold or an authorisation: a negative row that reserves balance without
-// a sale or purchase behind it. Excludes the row that releases one again --
-// "Reversal of ...", "Void of ..." and "Other: ..." are read as release
-// labels by the checks below, never as a hold placement's own label.
-const HOLD_OR_AUTHORISATION = /\b(hold|authorisation|authorization)\b/i;
-const RELEASE_LABEL = /^(reversal of|void of|other:)/i;
-// "Reversal of ..." and "Void of ..." are PayPal's own unambiguous release
-// labels; chooseReleaseRows always counts these. "Other: ..." is the
-// ambiguous one -- see the module comment.
-const UNAMBIGUOUS_RELEASE_LABEL = /^(reversal of|void of)/i;
-// Moves the wallet's own balance between its currency pots; no sale or
-// purchase behind it.
-const CURRENCY_CONVERSION = /currency conversion/i;
-// A transfer to or from the linked bank account. The bank statement already
-// carries this as its own BAC (deposit) or D/D (withdrawal) line.
-const BANK_DEPOSIT_TO_PAYPAL = /^bank deposit to paypal account/i;
-const WITHDRAWAL = /\bwithdrawal\b/i;
-
-/**
- * True for a currency conversion or a transfer to/from the linked bank
- * account -- balance mechanics with no sale or purchase behind them,
- * excluded from posting. Exported so a reconciliation report can categorise
- * a row exactly as paypalLinesFromStatementText does, rather than a second,
- * driftable copy of the same regexes.
- * @param {string} description
- * @returns {boolean}
- */
-export function isCurrencyConversionOrTransfer(description) {
-  return CURRENCY_CONVERSION.test(description) || BANK_DEPOSIT_TO_PAYPAL.test(description) || WITHDRAWAL.test(description);
-}
-
-/**
- * True for a hold/authorisation candidate: negative, and not itself labelled
- * as a release (an authorisation's own void is still "Authorisation" in
- * PayPal's label, so the release check runs first). A hold never posts,
- * whatever its own status -- PayPal marks the placement of a hold "Pending"
- * far more often than "Completed", so this carries no status test of its
- * own.
- * @param {{gross: number, description: string}} record
- * @returns {boolean}
- */
-export function isHoldCandidate(record) {
-  return record.gross < 0 && !RELEASE_LABEL.test(record.description) && HOLD_OR_AUTHORISATION.test(record.description);
-}
-
-/**
- * True for a release candidate: positive, labelled as undoing something,
- * whatever that label is, and "Completed" -- only a release that has
- * actually happened frees real balance. A negative "Other: ..." (a genuine,
- * differently-labelled cost) is never a release candidate regardless of
- * status.
- * @param {{status: string, gross: number, description: string}} record
- * @returns {boolean}
- */
-export function isReleaseCandidate(record) {
-  return record.status === "Completed" && record.gross > 0 && RELEASE_LABEL.test(record.description);
 }
 
 /**

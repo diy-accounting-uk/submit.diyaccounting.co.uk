@@ -54,6 +54,12 @@ key_events = { subscribe = "purchase", submit = "submit_vat_return", donate = "d
   daily_export = true
   streaming_export = true
 
+  # The link that lets GA4 resolve an auto-tagged click's gclid to the Ads campaign, so those
+  # sessions report as google / cpc and Ads imports the GA4 conversions.
+  [property.ads_link]
+  customer_id = "8142685080"
+  ads_personalization = true
+
 # The per-environment ci property. No id recorded: the script matches it by display_name and
 # creates it if missing, then writes the resulting measurement id onto the "ci" GitHub
 # Environment as SUBMIT_GA4_MEASUREMENT_ID.

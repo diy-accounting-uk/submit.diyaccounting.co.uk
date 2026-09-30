@@ -299,8 +299,8 @@ public class SecurityLakeStack extends Stack {
         // Alarms: the Lambda construct's own health checks (Errors and log-error-line detection)
         // fanned into one composite and wired to the security-findings topic, the same shape
         // ObservabilityUE1Stack uses for its budget alert forward Lambda; plus a dedicated alarm
-        // on the lifecycle-days-remaining metric for when any tracked item is inside 60 days of
-        // its end date.
+        // on the lifecycle metric (days remaining minus each item's alarm_days, 60 by default) for when
+        // any tracked item is inside its alarm window.
         // ============================================================================
         var healthAlarm = Lambda.stackHealthAlarm(this, prefix, "security-lake", List.of(this.nightlyLambdaConstruct));
         healthAlarm.addAlarmAction(new SnsAction(securityFindingsTopic));
@@ -308,15 +308,15 @@ public class SecurityLakeStack extends Stack {
         this.lifecycleDaysRemainingAlarm = Alarm.Builder.create(this, prefix + "-LifecycleDaysRemainingAlarm")
                 .alarmName(prefix + "-lifecycle-days-remaining")
                 .alarmDescription(
-                        "A tracked lifecycle item (a runtime, a dependency, a certificate) is within 60 days of its"
-                                + " end date")
+                        "A tracked lifecycle item (a runtime, a dependency, a certificate) is inside its alarm window"
+                                + " before its end date (alarm_days in lifecycle.toml, 60 by default)")
                 .metric(Metric.Builder.create()
                         .namespace("Submit/Security")
-                        .metricName("LifecycleMinDaysRemaining")
+                        .metricName("LifecycleMinDaysBeforeAlarm")
                         .statistic("Minimum")
                         .period(Duration.hours(24))
                         .build())
-                .threshold(60)
+                .threshold(0)
                 .evaluationPeriods(1)
                 .comparisonOperator(ComparisonOperator.LESS_THAN_OR_EQUAL_TO_THRESHOLD)
                 .treatMissingData(TreatMissingData.NOT_BREACHING)

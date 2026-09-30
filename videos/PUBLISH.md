@@ -4,24 +4,21 @@
 # Publishing the demo videos
 
 `videos/publish.json` holds the title, description, tags and caption file for each demo
-video, read by `scripts/youtube-upload.js`. Every video is `publish: true`: three already
-public on the channel (`view-obligations`, `submit-return`, `view-return`), three prod
-recordings awaiting review (`view-liabilities`, `view-payments`, `view-penalties`), and two
-sandbox previews recorded against a ci deployment and HMRC's ITSA test environment
-(`itsa-business-details`, `itsa-quarterly-update`), whose titles and descriptions say so.
+video, read by `scripts/youtube-upload.js`. Every entry in it is the source of truth for what
+is on the channel; the entries with a `videoId` are uploaded and the rest wait for a recording.
+
+`hmrc-authorise` is the canonical HMRC access video. The VAT and Income Tax videos speed
+through that step and point to it, and their descriptions carry `{{video:hmrc-authorise}}`,
+which the upload and `--sync-metadata` fill with `https://youtu.be/<its videoId>`. A video with
+that link uploads after `hmrc-authorise`, and both commands stop with a named error while it has
+no `videoId`.
 
 ## Steps
 
-1. **Download the recordings** (the mp4s live under gitignored `target/`, so fetch them again):
+1. **Download the recordings** named in `publish.json` (the mp4s live under gitignored
+   `target/videos/`, so fetch them again). Per entry, take its `sourceRun` and `sourceArtifact`:
    ```bash
-   gh run download 33952515598 -n video-view-obligations-prod -D target/videos/video-view-obligations-prod
-   gh run download 33953044775 -n video-submit-return-prod -D target/videos/video-submit-return-prod
-   gh run download 34058244686 -n video-view-return-prod -D target/videos/video-view-return-prod
-   gh run download 34651931632 -n video-view-liabilities-prod -D target/videos/video-view-liabilities-prod
-   gh run download 34689643435 -n video-view-payments-prod -D target/videos/video-view-payments-prod
-   gh run download 34689889022 -n video-view-penalties-prod -D target/videos/video-view-penalties-prod
-   gh run download 34904243853 -n video-itsa-business-details-ci -D target/videos/video-itsa-business-details-ci
-   gh run download 34904726583 -n video-itsa-quarterly-update-ci -D target/videos/video-itsa-quarterly-update-ci
+   gh run download <sourceRun> -n <sourceArtifact> -D target/videos/<sourceArtifact>
    ```
 2. **Create an OAuth client, once, in the Google Cloud console** (project `diyaccounting-ga4`,
    signed in as the channel owner). Google blocks gcloud's own client from asking for YouTube

@@ -204,6 +204,10 @@ public class SubmitEnvironment {
         // Environment variables only, no cdk.json fallback: unset means no job and no grant.
         var companyBookId = envOr("COMPANY_BOOK_ID", "");
         var companyBookOwnerPrefix = envOr("COMPANY_BOOK_OWNER_PREFIX", "");
+        // PayPal credentials landed by deploy-environment.yml on the environments that have them
+        // (prod). GitHub Environment variables only, no cdk.json fallback: unset means no PayPal
+        // pull job and no secret grant.
+        var paypalPullEnabled = Boolean.parseBoolean(envOr("PAYPAL_PULL_ENABLED", "false"));
         var scanDetection404PerMinute = Integer.parseInt(envOr(
                 "SCAN_DETECTION_404_PER_MINUTE",
                 appProps.scanDetection404PerMinute == null || appProps.scanDetection404PerMinute.isBlank()
@@ -465,6 +469,7 @@ public class SubmitEnvironment {
                         .githubAppInstallationId(githubAppInstallationId != null ? githubAppInstallationId : "")
                         .companyBookId(companyBookId != null ? companyBookId : "")
                         .companyBookOwnerPrefix(companyBookOwnerPrefix != null ? companyBookOwnerPrefix : "")
+                        .paypalPullEnabled(paypalPullEnabled)
                         .build());
         this.ingestionStack.addStackDependency(this.analyticsStack);
 

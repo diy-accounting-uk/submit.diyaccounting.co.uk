@@ -248,6 +248,7 @@ public class PublishStack extends Stack {
                         "/diy-accounting-spreadsheets.html",
                         "/diy-accounting-limited.html",
                         "/spreadsheets.html",
+                        "/mtd-calendar.html",
                         "/android-chrome-192.png",
                         "/android-chrome-512.png",
                         "/apple-touch-icon.png",

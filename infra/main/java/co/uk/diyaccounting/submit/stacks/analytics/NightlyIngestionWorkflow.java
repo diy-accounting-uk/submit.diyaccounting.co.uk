@@ -103,6 +103,13 @@ public class NightlyIngestionWorkflow {
          */
         Optional<IFunction> companyBookPullLambda();
 
+        /**
+         * The PayPal donations pull job's Lambda, present only when {@code IngestionStack} built
+         * it (PayPal credentials configured). Its branch is added to the parallel state only when
+         * this is present.
+         */
+        Optional<IFunction> paypalDonationsPullLambda();
+
         /** Imported by name from {@code AnalyticsStack}: {@code DataQuality.runLambda}. */
         IFunction dataQualityRunLambda();
 
@@ -151,6 +158,12 @@ public class NightlyIngestionWorkflow {
         props.companyBookPullLambda()
                 .ifPresent(companyBookPullLambda -> ingestionParallel.branch(buildTask(
                         scope, prefix + "-Nightly-CompanyBookPull", "company book pull", companyBookPullLambda)));
+        props.paypalDonationsPullLambda()
+                .ifPresent(paypalDonationsPullLambda -> ingestionParallel.branch(buildTask(
+                        scope,
+                        prefix + "-Nightly-PaypalDonationsPull",
+                        "PayPal donations pull",
+                        paypalDonationsPullLambda)));
 
         var dataQualityTask =
                 buildTask(scope, prefix + "-Nightly-DataQuality", "data quality run", props.dataQualityRunLambda());

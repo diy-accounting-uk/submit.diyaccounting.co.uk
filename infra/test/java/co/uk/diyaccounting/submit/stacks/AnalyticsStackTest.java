@@ -91,7 +91,7 @@ class AnalyticsStackTest {
                                 "DataFormatConversionConfiguration",
                                 Match.objectLike(Map.of("Enabled", true)))))));
 
-        analytics.resourceCountIs("AWS::Glue::Table", 29);
+        analytics.resourceCountIs("AWS::Glue::Table", 30);
         analytics.hasResourceProperties(
                 "AWS::Glue::Table",
                 Match.objectLike(Map.of(

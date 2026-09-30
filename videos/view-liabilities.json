@@ -146,12 +146,13 @@
         {
           "action": "fill",
           "target": "#fromDate",
-          "value": "{{monthsAgo:11}}",
+          "value": "2018-04-05",
           "caption": "Then the stretch of time to check.",
           "headline": "Choose the start date",
           "keyWord": "start"
         },
-        { "action": "fill", "target": "#toDate", "value": "{{today}}" },
+        { "action": "fill", "target": "#toDate", "value": "2018-12-21" },
+        { "action": "testScenario", "value": "MULTIPLE_LIABILITIES_2018_19" },
         { "action": "hold", "ms": 700 }
       ]
     },
@@ -159,6 +160,7 @@
       "id": "authorise",
       "chapter": "Authorise with HMRC",
       "still": true,
+      "fastForward": true,
       "steps": [
         {
           "action": "click",
@@ -169,9 +171,9 @@
         },
         {
           "action": "hmrcAuthorise",
-          "caption": "Sign in to HMRC and say yes once.",
-          "headline": "Grant HMRC access",
-          "keyWord": "Grant",
+          "caption": "See the full HMRC access walkthrough in our HMRC authorisation video.",
+          "headline": "Grant access, faster",
+          "keyWord": "faster",
           "timeoutMs": 60000
         },
         { "action": "hold", "ms": 500 }

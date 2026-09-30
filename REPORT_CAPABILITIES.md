@@ -34,6 +34,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
     - [SITE-10](#site-10-serve-general-site-pages) Serve general site pages: use when adding or changing a static informational page, or the FAQ/help search behind it.
     - [SITE-11](#site-11-promote-sibling-products-and-partners) Promote sibling products and partners: use when adding or changing a cross-sell page for a sibling product or an affiliate.
     - [SITE-12](#site-12-map-the-site-structure) Map the site structure: use when adding or moving a page and its place in the header, nav or footer needs checking.
+    - [SITE-22](#site-22-source-and-publish-sourced-tax-facts) Source and publish sourced tax facts: use when a page states a tax date, threshold or rate and each figure needs a gov.uk source, or a source has passed 30 days old.
   - [Frontend infrastructure](#frontend-infrastructure-site)
     - [SITE-13](#site-13-warm-backend-routes-via-prefetch-scripts) Warm backend routes via prefetch scripts: use when a page must pre-warm a Lambda or route before its own script needs the real response.
     - [SITE-14](#site-14-render-page-chrome-and-widgets) Render page chrome and widgets: use when a page needs the shared header, nav and footer, or a small shared UI widget.
@@ -324,6 +325,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
     - [DATA-08](#data-08-copy-the-aws-focus-cost-export) Copy the AWS FOCUS cost export: use when the management account's FOCUS cost export must land in this account's lake for cost views.
     - [DATA-09](#data-09-reconcile-stripe-payments-into-the-lake) Reconcile Stripe payments into the lake: use when the previous day's Stripe balance transactions, charges or subscriptions must land in the lake.
     - [DATA-52](#data-52-pull-the-companys-own-diya-gl-book-into-the-lake) Pull the company's own diya-gl book into the lake: use when DIY Accounting Limited's own P&L and balance sheet must land in the lake from its resident diya-gl book.
+    - [DATA-55](#data-55-pull-paypal-receipts-into-the-lake) Pull PayPal receipts into the lake: use when the previous day's settled PayPal receipts and refunds must land in the lake, or a range of past days must be backfilled.
   - [Lake infrastructure, quality and cost](#lake-infrastructure-quality-and-cost-data)
     - [DATA-10](#data-10-create-or-replace-athena-business-views) Create or replace Athena business views: use when a new or changed Athena view under infra/main/resources/analytics/views must deploy with the stack.
     - [DATA-11](#data-11-run-glue-data-quality-checks) Run Glue Data Quality checks: use when new lake partitions must be registered and a Glue Data Quality ruleset run must be started.
@@ -521,7 +523,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - [Authentication and authorization](#authentication-and-authorization-site): [SITE-01](#site-01-sign-customers-in-via-cognito) Sign customers in via Cognito · [SITE-02](#site-02-verify-jwts-at-the-api-gateway) Verify JWTs at the API gateway
 - [Account and engagement APIs](#account-and-engagement-apis-site): [SITE-03](#site-03-capture-feedback-interest) Capture feedback interest · [SITE-04](#site-04-track-visits-via-session-beacon) Track visits via session beacon · [SITE-05](#site-05-submit-support-tickets) Submit support tickets
 - [Server and API plumbing](#server-and-api-plumbing-site): [SITE-06](#site-06-adapt-lambda-handlers-to-express-routes) Adapt Lambda handlers to Express routes · [SITE-07](#site-07-format-http-responses-and-errors) Format HTTP responses and errors · [SITE-08](#site-08-bootstrap-the-app-server) Bootstrap the app server · [SITE-09](#site-09-track-and-poll-async-api-requests) Track and poll async API requests
-- [Site pages and content](#site-pages-and-content-site): [SITE-10](#site-10-serve-general-site-pages) Serve general site pages · [SITE-11](#site-11-promote-sibling-products-and-partners) Promote sibling products and partners · [SITE-12](#site-12-map-the-site-structure) Map the site structure
+- [Site pages and content](#site-pages-and-content-site): [SITE-10](#site-10-serve-general-site-pages) Serve general site pages · [SITE-11](#site-11-promote-sibling-products-and-partners) Promote sibling products and partners · [SITE-12](#site-12-map-the-site-structure) Map the site structure · [SITE-22](#site-22-source-and-publish-sourced-tax-facts) Source and publish sourced tax facts
 - [Frontend infrastructure](#frontend-infrastructure-site): [SITE-13](#site-13-warm-backend-routes-via-prefetch-scripts) Warm backend routes via prefetch scripts · [SITE-14](#site-14-render-page-chrome-and-widgets) Render page chrome and widgets · [SITE-15](#site-15-show-and-persist-cookie-consent) Show and persist cookie consent · [SITE-16](#site-16-configure-the-frontend-via-toml-and-env-libraries) Configure the frontend via TOML and env libraries · [SITE-17](#site-17-trace-and-secure-client-requests) Trace and secure client requests · [SITE-18](#site-18-bootstrap-the-frontend-module-bundle) Bootstrap the frontend module bundle · [SITE-19](#site-19-generate-qr-codes) Generate QR codes
 - [Business documentation](#business-documentation-site): [SITE-20](#site-20-document-business-governance-and-positioning) Document business governance and positioning · [SITE-21](#site-21-log-growth-experiments) Log growth experiments
 <!-- /generated:area SITE -->
@@ -646,6 +648,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - [SITE-10](#site-10-serve-general-site-pages) Serve general site pages
 - [SITE-11](#site-11-promote-sibling-products-and-partners) Promote sibling products and partners
 - [SITE-12](#site-12-map-the-site-structure) Map the site structure
+- [SITE-22](#site-22-source-and-publish-sourced-tax-facts) Source and publish sourced tax facts
 <!-- /generated:group site-pages-and-content-site -->
 
 #### SITE-10 Serve general site pages
@@ -677,6 +680,16 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - **Files:** _developers/SITE_MAP.md
 - **Keywords:** site map, page layout, navigation structure, header footer diagram
 - **Related:** SITE-10, SITE-13
+
+#### SITE-22 Source and publish sourced tax facts
+
+- **Use when:** a page states a tax date, threshold or rate and each figure needs a gov.uk source, or a source has passed 30 days old.
+- **Does:** The tax-sources skill keeps one JSON file per gov.uk source (url, retrieved date, verbatim quote, fact ids) and says how to refresh one or all. verify-tax-sources.mjs fetches each page and fails when a quote is missing. build-mtd-calendar.mjs renders web/public/mtd-calendar.html from those files and throws when a fact has no source. The unit test fails on an unsourced fact, a source older than 30 days, or a committed page that differs from the render.
+- **Run:** `node scripts/verify-tax-sources.mjs [name]`; `npm run build:mtd-calendar`; `npx vitest run web/unit-tests/mtdCalendar.test.js`
+- **Entry:** `scripts/build-mtd-calendar.mjs:renderMtdCalendar`; `scripts/verify-tax-sources.mjs:quoteAppearsIn`
+- **Files:** .claude/skills/tax-sources/SKILL.md, .claude/skills/tax-sources/sources/, scripts/build-mtd-calendar.mjs, scripts/verify-tax-sources.mjs, web/public/mtd-calendar.html, web/unit-tests/mtdCalendar.test.js
+- **Keywords:** tax sources, gov.uk, mtd calendar, thresholds, deadlines, quote, retrieved, rates, sourced facts
+- **Related:** SITE-10, SITE-12
 
 ### Frontend infrastructure (SITE)
 
@@ -3521,7 +3534,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 #### OPS-130 Track runtime and dependency lifecycle
 
 - **Use when:** a Lambda or Synthetics runtime version, dependency, or certificate is approaching end-of-life and needs tracking.
-- **Does:** lifecycle.toml tracks Lambda and Synthetics runtime versions, dependencies and certificates approaching end-of-life, recording the action taken against each.
+- **Does:** lifecycle.toml tracks Lambda and Synthetics runtime versions, dependencies and certificates approaching end-of-life, recording the action taken against each. An optional per-item `alarm_days` (default 60) sets how many days before its end date the `lifecycle-days-remaining` alarm fires.
 - **Run:** no command; see Does and Entry
 - **Entry:** `lifecycle.toml`
 - **Files:** lifecycle.toml
@@ -3530,7 +3543,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 ## Analytics and finance (DATA)
 
 <!-- generated:area DATA -->
-- [Lake ingestion](#lake-ingestion-data): [DATA-01](#data-01-publish-activity-events-to-the-bus) Publish activity events to the bus · [DATA-02](#data-02-transform-activity-events-into-lake-rows) Transform activity events into lake rows · [DATA-03](#data-03-transform-alarm-state-changes-into-lake-rows) Transform alarm state changes into lake rows · [DATA-04](#data-04-stream-dynamodb-table-changes-into-the-lake) Stream DynamoDB table changes into the lake · [DATA-05](#data-05-pull-ga4-daily-bigquery-aggregate-tables) Pull GA4 daily BigQuery aggregate tables · [DATA-06](#data-06-pull-ga4-reports-and-bigquery-event-export) Pull GA4 reports and BigQuery event export · [DATA-07](#data-07-pull-github-operator-effort-data) Pull GitHub operator-effort data · [DATA-08](#data-08-copy-the-aws-focus-cost-export) Copy the AWS FOCUS cost export · [DATA-09](#data-09-reconcile-stripe-payments-into-the-lake) Reconcile Stripe payments into the lake · [DATA-52](#data-52-pull-the-companys-own-diya-gl-book-into-the-lake) Pull the company's own diya-gl book into the lake
+- [Lake ingestion](#lake-ingestion-data): [DATA-01](#data-01-publish-activity-events-to-the-bus) Publish activity events to the bus · [DATA-02](#data-02-transform-activity-events-into-lake-rows) Transform activity events into lake rows · [DATA-03](#data-03-transform-alarm-state-changes-into-lake-rows) Transform alarm state changes into lake rows · [DATA-04](#data-04-stream-dynamodb-table-changes-into-the-lake) Stream DynamoDB table changes into the lake · [DATA-05](#data-05-pull-ga4-daily-bigquery-aggregate-tables) Pull GA4 daily BigQuery aggregate tables · [DATA-06](#data-06-pull-ga4-reports-and-bigquery-event-export) Pull GA4 reports and BigQuery event export · [DATA-07](#data-07-pull-github-operator-effort-data) Pull GitHub operator-effort data · [DATA-08](#data-08-copy-the-aws-focus-cost-export) Copy the AWS FOCUS cost export · [DATA-09](#data-09-reconcile-stripe-payments-into-the-lake) Reconcile Stripe payments into the lake · [DATA-52](#data-52-pull-the-companys-own-diya-gl-book-into-the-lake) Pull the company's own diya-gl book into the lake · [DATA-55](#data-55-pull-paypal-receipts-into-the-lake) Pull PayPal receipts into the lake
 - [Lake infrastructure, quality and cost](#lake-infrastructure-quality-and-cost-data): [DATA-10](#data-10-create-or-replace-athena-business-views) Create or replace Athena business views · [DATA-11](#data-11-run-glue-data-quality-checks) Run Glue Data Quality checks · [DATA-54](#data-54-relayout-the-lakes-yearmonthday-objects-into-dt-prefixes) Relayout the lake's year/month/day objects into dt= prefixes · [DATA-12](#data-12-provision-the-analytics-lake-and-athena-workgroup) Provision the analytics lake and Athena workgroup · [DATA-13](#data-13-catalogue-cloudfront-access-logs-for-athena) Catalogue CloudFront access logs for Athena · [DATA-14](#data-14-catalogue-compliance-findings-for-the-dashboard) Catalogue compliance findings for the dashboard · [DATA-15](#data-15-catalogue-workflow-probe-and-agent-run-data) Catalogue workflow, probe and agent run data · [DATA-16](#data-16-alert-on-cost-budget-and-anomaly-thresholds) Alert on cost budget and anomaly thresholds · [DATA-17](#data-17-export-aws-billing-data-in-focus-format) Export AWS billing data in FOCUS format
 - [Nightly publish and orchestration](#nightly-publish-and-orchestration-data): [DATA-18](#data-18-publish-the-nightly-operator-dashboard-snapshot) Publish the nightly operator dashboard snapshot · [DATA-19](#data-19-serve-the-operator-dashboard-snapshot-via-the-api) Serve the operator dashboard snapshot via the API · [DATA-20](#data-20-publish-the-nightly-raw-export-for-indexing) Publish the nightly raw export for indexing · [DATA-21](#data-21-publish-nightly-business-metrics-to-cloudwatch) Publish nightly business metrics to CloudWatch · [DATA-22](#data-22-orchestrate-the-nightly-ingestion-workflow) Orchestrate the nightly ingestion workflow
 - [Site-side analytics and RUM](#site-side-analytics-and-rum-data): [DATA-23](#data-23-classify-visitor-kind-as-human-bot-or-synthetic) Classify visitor kind as human, bot or synthetic · [DATA-24](#data-24-load-ga4-analytics-on-site-pages) Load GA4 analytics on site pages · [DATA-25](#data-25-configure-and-gate-cloudwatch-rum) Configure and gate CloudWatch RUM · [DATA-26](#data-26-render-the-operator-objectives-dashboard) Render the operator objectives dashboard
@@ -3553,6 +3566,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - [DATA-08](#data-08-copy-the-aws-focus-cost-export) Copy the AWS FOCUS cost export
 - [DATA-09](#data-09-reconcile-stripe-payments-into-the-lake) Reconcile Stripe payments into the lake
 - [DATA-52](#data-52-pull-the-companys-own-diya-gl-book-into-the-lake) Pull the company's own diya-gl book into the lake
+- [DATA-55](#data-55-pull-paypal-receipts-into-the-lake) Pull PayPal receipts into the lake
 <!-- /generated:group lake-ingestion-data -->
 
 #### DATA-01 Publish activity events to the bus
@@ -3653,6 +3667,16 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - **Files:** app/functions/analytics/companyBookPull.js, app/unit-tests/analytics/companyBookPull.test.js, app/services/microEntityAccounts.js, infra/main/java/co/uk/diyaccounting/submit/stacks/IngestionStack.java, infra/test/java/co/uk/diyaccounting/submit/stacks/IngestionStackTest.java, infra/main/java/co/uk/diyaccounting/submit/stacks/analytics/NightlyIngestionWorkflow.java
 - **Keywords:** company book pull, diya-gl book, frs 105, balance sheet, micro-entity accounts, curated finance, company book id, company book owner prefix
 - **Related:** DATA-09
+
+#### DATA-55 Pull PayPal receipts into the lake
+
+- **Use when:** the previous day's settled PayPal receipts and refunds must land in the lake, or a range of past days must be backfilled.
+- **Does:** paypalDonationsPull.js reads the previous day's PayPal Transaction Search records with the two credentials in Secrets Manager. It keeps settled receipts (T0013 donations labelled donation-paypal, other receipts paypal-other-receipt) and refunds as negative rows naming their receipt, and drops holds, releases, conversions and transfers through app/services/paypalTransactions.js. A non-GBP receipt takes the pound amount its T0200 conversion credited; one with no conversion is logged and left out. It writes gzipped NDJSON under curated/paypal/; PayPalDonationTables.java provisions paypal_donations, which v_revenue_daily unions with Stripe. The Lambda accepts `date`, or `from` and `to` (at most 93 days) to backfill. The job exists only when PAYPAL_PULL_ENABLED is true; the table exists everywhere.
+- **Run:** no command; see Does and Entry
+- **Entry:** `app/functions/analytics/paypalDonationsPull.js:handler`
+- **Files:** app/functions/analytics/paypalDonationsPull.js, app/unit-tests/analytics/paypalDonationsPull.test.js, app/services/paypalTransactions.js, app/services/paypalTransactionSearch.js, infra/main/java/co/uk/diyaccounting/submit/stacks/analytics/PayPalDonationTables.java, infra/test/java/co/uk/diyaccounting/submit/stacks/analytics/PayPalDonationTablesTest.java, infra/main/resources/analytics/views/v_revenue_daily.sql, infra/main/java/co/uk/diyaccounting/submit/stacks/IngestionStack.java, infra/test/java/co/uk/diyaccounting/submit/stacks/IngestionStackTest.java
+- **Keywords:** paypal donations pull, paypal receipts, paypal refunds, currency conversion, backfill, curated paypal, paypal_donations, revenue view
+- **Related:** DATA-09, DATA-48
 
 ### Lake infrastructure, quality and cost (DATA)
 
@@ -5736,7 +5760,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - awscustomresource: [OPS-127](#ops-127-upsert-route53-alias-records-via-custom-resource)
 - axe: [DATA-14](#data-14-catalogue-compliance-findings-for-the-dashboard), [SS-45](#ss-45-run-compliance-checks)
 - axe-core: [OPS-96](#ops-96-scan-pages-for-accessibility-violations)
-- backfill: [BILL-41](#bill-41-backfill-the-stripe-test-mode-qualifier)
+- backfill: [BILL-41](#bill-41-backfill-the-stripe-test-mode-qualifier), [DATA-55](#data-55-pull-paypal-receipts-into-the-lake)
 - background poll: [DEV-31](#dev-31-watch-github-ci-to-green)
 - backlog: [DEV-24](#dev-24-document-developer-setup-and-repository-conventions), [DEV-27](#dev-27-render-the-open-work-board)
 - backlog work: [DEV-28](#dev-28-work-nextmd-as-dispatched-sub-agents)
@@ -6094,8 +6118,10 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - cumulative model: [HMRC-12](#hmrc-12-submit-and-manage-self-employment-periodic-updates), [HMRC-14](#hmrc-14-submit-and-manage-uk-property-periodic-updates), [HMRC-27](#hmrc-27-validate-hmrc-identifiers-dates-and-amounts), [HMRC-34](#hmrc-34-file-a-full-itsa-tax-year-in-sandbox)
 - curated cost: [DATA-08](#data-08-copy-the-aws-focus-cost-export)
 - curated finance: [DATA-52](#data-52-pull-the-companys-own-diya-gl-book-into-the-lake)
+- curated paypal: [DATA-55](#data-55-pull-paypal-receipts-into-the-lake)
 - curated prefix: [DATA-54](#data-54-relayout-the-lakes-yearmonthday-objects-into-dt-prefixes)
 - curated stripe: [DATA-09](#data-09-reconcile-stripe-payments-into-the-lake)
+- currency conversion: [DATA-55](#data-55-pull-paypal-receipts-into-the-lake)
 - custom amount: [SS-22](#ss-22-take-stripe-and-paypal-donations)
 - custom error page: [OPS-131](#ops-131-serve-cloudfront-custom-error-pages)
 - custom resource: [OPS-132](#ops-132-enable-dynamodb-pitr-on-deploy)
@@ -6125,6 +6151,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - date range match: [HMRC-28](#hmrc-28-format-and-match-hmrc-obligations)
 - date utils: [BILL-42](#bill-42-parse-iso-8601-durations-for-expiry)
 - dated quarters: [HMRC-12](#hmrc-12-submit-and-manage-self-employment-periodic-updates), [HMRC-14](#hmrc-14-submit-and-manage-uk-property-periodic-updates), [HMRC-34](#hmrc-34-file-a-full-itsa-tax-year-in-sandbox)
+- deadlines: [SITE-22](#site-22-source-and-publish-sourced-tax-facts)
 - debugger client: [DEV-02](#dev-02-simulate-local-app-oauth)
 - declare and verify: [BILL-29](#bill-29-assert-the-paypal-donate-button-configuration)
 - declared state: [OPS-35](#ops-35-verify-third-party-console-configuration-against-declared-state)
@@ -6480,6 +6507,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - gov-client header: [DEV-18](#dev-18-provide-shared-unitsystem-test-fixtures)
 - gov-test-scenario: [DEV-08](#dev-08-simulate-hmrc-vat-mtd-api)
 - gov-vendor: [HMRC-25](#hmrc-25-build-hmrc-fraud-prevention-headers), [DEV-05](#dev-05-simulate-hmrc-agent-authorisation-and-fraud-prevention-headers)
+- gov.uk: [SITE-22](#site-22-source-and-publish-sourced-tax-facts)
 - govtalk: [CH-08](#ch-08-file-micro-entity-accounts-to-companies-house), [CH-11](#ch-11-parse-xml-safely), [DEV-04](#dev-04-simulate-companies-house-identity-and-filing)
 - gpg signing: [OPS-29](#ops-29-verify-commit-signatures-on-pull-requests)
 - grace period: [BILL-21](#bill-21-sweep-lapsed-diya-gl-books)
@@ -6804,6 +6832,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - move ou: [OPS-100](#ops-100-create-or-invite-aws-member-accounts)
 - move_book_to_client: [MCP-08](#mcp-08-manage-practice-clients-and-hmrc-agent-authorisation)
 - movebooktoclient: [BILL-15](#bill-15-move-a-book-to-a-client)
+- mtd calendar: [SITE-22](#site-22-source-and-publish-sourced-tax-facts)
 - mtd enrolment: [HMRC-11](#hmrc-11-retrieve-itsa-status)
 - mtd for itsa: [HMRC-10](#hmrc-10-retrieve-itsa-obligations)
 - mtd it: [MCP-06](#mcp-06-derive-itsa-quarterly-and-annual-submission-figures)
@@ -6947,7 +6976,11 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - payouts: [MCP-13](#mcp-13-import-stripe-transaction-and-payout-lines)
 - paypal: [BILL-29](#bill-29-assert-the-paypal-donate-button-configuration), [OPS-35](#ops-35-verify-third-party-console-configuration-against-declared-state), [MCP-16](#mcp-16-parse-paypal-statements-into-diya-gl-lines)
 - paypal donate button: [SS-22](#ss-22-take-stripe-and-paypal-donations)
+- paypal donations pull: [DATA-55](#data-55-pull-paypal-receipts-into-the-lake)
+- paypal receipts: [DATA-55](#data-55-pull-paypal-receipts-into-the-lake)
+- paypal refunds: [DATA-55](#data-55-pull-paypal-receipts-into-the-lake)
 - paypal transaction search: [DATA-48](#data-48-stage-paypal-transactions-for-reconciliation)
+- paypal_donations: [DATA-55](#data-55-pull-paypal-receipts-into-the-lake)
 - pdf: [MCP-16](#mcp-16-parse-paypal-statements-into-diya-gl-lines)
 - pdftotext: [MCP-16](#mcp-16-parse-paypal-statements-into-diya-gl-lines)
 - penalties: [DEV-08](#dev-08-simulate-hmrc-vat-mtd-api)
@@ -7084,6 +7117,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - queue deploys: [OPS-11](#ops-11-queue-ci-branch-deploys-in-creation-order)
 - queue not cancel: [SS-36](#ss-36-deploy-the-spreadsheets-and-diya-gl-sites)
 - queue processing: [SITE-09](#site-09-track-and-poll-async-api-requests)
+- quote: [SITE-22](#site-22-source-and-publish-sourced-tax-facts)
 - race: [OPS-01](#ops-01-cancel-superseded-push-triggered-deploys)
 - race condition: [OPS-11](#ops-11-queue-ci-branch-deploys-in-creation-order), [OPS-15](#ops-15-serialize-lane-test-user-rotation-jobs)
 - raise issue: [OPS-23](#ops-23-raise-an-issue-from-a-probe-test-failure)
@@ -7091,6 +7125,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - rate counter: [OPS-46](#ops-46-query-and-persist-per-consumer-security-state-records)
 - rate limit: [SITE-05](#site-05-submit-support-tickets), [OPS-79](#ops-79-track-an-alarm-familys-daily-remedy-budget)
 - rate limit agent: [OPS-20](#ops-20-enforce-daily-run-budgets-for-agent-paths)
+- rates: [SITE-22](#site-22-source-and-publish-sourced-tax-facts)
 - raw export: [DATA-20](#data-20-publish-the-nightly-raw-export-for-indexing)
 - re-key: [BILL-40](#bill-40-migrate-the-hashed-sub-salt)
 - read-only: [DATA-44](#data-44-assert-google-oauth-client-configuration)
@@ -7180,6 +7215,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - retention: [BILL-17](#bill-17-upload-a-diya-gl-book), [BILL-22](#bill-22-check-diya-gl-retention-entitlement)
 - retention days: [OPS-125](#ops-125-name-and-tag-cdk-resources-consistently)
 - retire.js: [SS-45](#ss-45-run-compliance-checks)
+- retrieved: [SITE-22](#site-22-source-and-publish-sourced-tax-facts)
 - retrieveuserbundles: [BILL-02](#bill-02-list-a-users-bundles-and-token-balance)
 - retry navigation: [DEV-19](#dev-19-provide-shared-behaviour-test-fixtures-and-steps)
 - retryable error: [OPS-87](#ops-87-process-sqs-message-batches-in-lambda-workers)
@@ -7188,7 +7224,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - reusable workflow: [OPS-33](#ops-33-enforce-workflow-to-workflow-permission-grants)
 - reuse: [DEV-43](#dev-43-find-existing-tooling-before-building-any)
 - revenue daily: [DATA-28](#data-28-sql-views-revenue-and-subscription)
-- revenue view: [DATA-09](#data-09-reconcile-stripe-payments-into-the-lake)
+- revenue view: [DATA-09](#data-09-reconcile-stripe-payments-into-the-lake), [DATA-55](#data-55-pull-paypal-receipts-into-the-lake)
 - review: [BILL-44](#bill-44-document-the-price-update-project)
 - review thread check: [DEV-32](#dev-32-merge-every-pr-that-is-ready)
 - review threads: [SS-51](#ss-51-merge-every-pr-that-is-ready)
@@ -7353,6 +7389,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - sonnet escalation: [OPS-18](#ops-18-run-alarm-and-support-triage)
 - source accounts: [OPS-104](#ops-104-set-up-cross-account-backup-iam-roles)
 - source-derived: [SS-10](#ss-10-extract-reconciliation-scenarios-from-master-books)
+- sourced facts: [SITE-22](#site-22-source-and-publish-sourced-tax-facts)
 - spdx: [DEV-20](#dev-20-check-spdx-licence-headers)
 - spec.html: [SS-07](#ss-07-publish-the-diya-gl-format-specification-page)
 - specialist agent: [DEV-25](#dev-25-maintain-the-specialist-agent-prompt-library)
@@ -7464,6 +7501,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - tax data update: [SS-19](#ss-19-update-annual-hmrc-tax-rate-data)
 - tax liability: [HMRC-18](#hmrc-18-manage-itsa-tax-liability-adjustments), [HMRC-19](#hmrc-19-calculate-itsa-tax-liability)
 - tax liability adjustments: [HMRC-18](#hmrc-18-manage-itsa-tax-liability-adjustments), [DEV-09](#dev-09-simulate-hmrc-itsa-mtd-api)
+- tax sources: [SITE-22](#site-22-source-and-publish-sourced-tax-facts)
 - tax year: [HMRC-11](#hmrc-11-retrieve-itsa-status), [HMRC-19](#hmrc-19-calculate-itsa-tax-liability), [HMRC-20](#hmrc-20-retrieve-itsa-crystallisation-obligations), [HMRC-21](#hmrc-21-submit-the-itsa-final-declaration), [HMRC-27](#hmrc-27-validate-hmrc-identifiers-dates-and-amounts)
 - tax year 2025-26: [HMRC-12](#hmrc-12-submit-and-manage-self-employment-periodic-updates)
 - taxonomy schema: [CH-13](#ch-13-map-the-frc-ixbrl-taxonomy-and-validate-accounts)
@@ -7497,6 +7535,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - text-spacing: [SS-45](#ss-45-run-compliance-checks)
 - third-party console: [OPS-35](#ops-35-verify-third-party-console-configuration-against-declared-state)
 - threat detection: [OPS-75](#ops-75-run-nightly-security-lake-analysis)
+- thresholds: [SITE-22](#site-22-source-and-publish-sourced-tax-facts)
 - tidy repo: [DEV-34](#dev-34-clean-up-stale-deployments-and-branches)
 - tiers: [SS-42](#ss-42-route-tests-by-blast-radius)
 - time budget: [OPS-57](#ops-57-dispatch-agentic-lib-board-backlog-and-pr-agents)

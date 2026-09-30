@@ -21,6 +21,7 @@ const PAGES = [
   "/accessibility.html",
   "/auth/login.html",
   "/bundles.html",
+  "/mtd-calendar.html",
   "/hmrc/vat/submitVat.html",
   "/hmrc/vat/vatObligations.html",
   "/hmrc/vat/viewVatReturn.html",
