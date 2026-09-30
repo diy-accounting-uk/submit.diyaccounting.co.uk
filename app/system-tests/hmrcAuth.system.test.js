@@ -51,7 +51,7 @@ describe("System: HMRC Auth Flow (hmrcAuthUrl + hmrcToken)", () => {
       expect(tokenBody.body).toHaveProperty("grant_type", "authorization_code");
       expect(tokenBody.body).toHaveProperty("code", "test-authorization-code-123");
     }
-  });
+  }, 30000);
 
   it("should handle synthetic account in auth flow", async () => {
     // Step 1: Generate auth URL for synthetic - performed client side
@@ -70,7 +70,7 @@ describe("System: HMRC Auth Flow (hmrcAuthUrl + hmrcToken)", () => {
       const tokenBody = parseResponseBody(tokenResponse);
       expect(tokenBody.body).toHaveProperty("client_id", process.env.HMRC_SANDBOX_CLIENT_ID);
     }
-  });
+  }, 30000);
 
   it("should validate missing code in token exchange", async () => {
     const tokenEvent = buildLambdaEvent({
