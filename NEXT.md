@@ -52,13 +52,13 @@ step.
   - R2: `session-beacon.js` and `sessionBeaconPost.js` send attribution fields only after Accept, and no beacon after Reject.
   - R4: `privacy.html` states what is stored (`attribution.landing`, `__diy_session__`, `consent.*`, `rum.config`), the Google Ads measurement use, and consent as the basis.
 
-  Proof: unit and browser tests for both consent states, and the behaviour suites. **In flight**: batch `claude/voyager-consent`. **Source**: OADS2 research, 2026-09-30. **Owner**: Claude Code. **Model**: Sonnet. **Size**: ~7 files.
+  Proof: unit and browser tests for both consent states, and the behaviour suites. **In flight**: batch `claude/voyager-consent`, PR #436, CI running. **Source**: OADS2 research, 2026-09-30. **Owner**: Claude Code. **Model**: Sonnet. **Size**: ~7 files.
 
 - [ ] **ADS2b. Paid customers carry their acquisition source.** `billingWebhookPost.js` (lines ~259–274) writes no `acquisition` on the paid bundle. `v_paid_subscribers_by_channel.sql` (lines ~15–21, 56) joins on `hashed_sub` + `bundle_id`, so paid sources read `unknown`. `bundlePost.js` line ~450 keeps the first grant's record, so an untagged first day pass blocks a later ad click. Rows R5 and R6 of `../private.diyaccounting.co.uk/PLAN_PAID_CLICK_MEASUREMENT.md`:
   - R5: consented attribution goes into Stripe checkout metadata (`bundles.html`, `billingCheckoutPost.js`) and is written as `acquisition` on the paid bundle by the webhook.
   - R6: the view joins acquisition on `hashed_sub` only; a tagged record replaces an untagged `{landedAt}`-only one.
 
-  Proof: unit tests for each, `AthenaViewColumnTypesTest`, and a prod `SELECT * FROM (<view sql>) LIMIT 0`. **In flight**: batch `claude/voyager-consent`. **Source**: OADS2 research, 2026-09-30. **Owner**: Claude Code. **Model**: Sonnet. **Size**: ~6 files.
+  Proof: unit tests for each, `AthenaViewColumnTypesTest`, and a prod `SELECT * FROM (<view sql>) LIMIT 0`. **In flight**: batch `claude/voyager-consent`, PR #436, CI running. **Source**: OADS2 research, 2026-09-30. **Owner**: Claude Code. **Model**: Sonnet. **Size**: ~6 files.
 
 ## Machine-only
 
