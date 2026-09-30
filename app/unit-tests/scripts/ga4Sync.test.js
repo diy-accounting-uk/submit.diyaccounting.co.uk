@@ -16,6 +16,7 @@ import {
   buildKeyEventPlan,
   extractBigQueryLinks,
   buildBigQueryLinkPlan,
+  buildGoogleAdsLinkPlan,
   describeLocationMismatch,
   buildGithubVariablePlan,
   buildPropertyPlan,
@@ -352,6 +353,49 @@ describe("buildBigQueryLinkPlan", () => {
       "BigQuery link properties/1/bigQueryLinks/1: dataset location is us, config says europe-west2; a link's location cannot be changed in place (recreate the link to move it)",
     );
     expect(describeLocationMismatch({ action: "noop", name: "x" })).toBeNull();
+  });
+});
+
+describe("buildGoogleAdsLinkPlan", () => {
+  const wanted = { customerId: "8142685080", adsPersonalization: true };
+
+  test("skips when no link is configured", () => {
+    expect(buildGoogleAdsLinkPlan(null)).toEqual({ action: "skip" });
+  });
+
+  test("creates the link when the property has none for the customer", () => {
+    expect(buildGoogleAdsLinkPlan(wanted, [{ name: "properties/1/googleAdsLinks/9", customerId: "1111111111" }])).toEqual({
+      action: "create",
+      name: null,
+      customerId: "8142685080",
+      adsPersonalization: true,
+    });
+  });
+
+  test("is a no-op when the customer is linked with the wanted personalization, dashes ignored", () => {
+    const live = [{ name: "properties/1/googleAdsLinks/2", customerId: "814-268-5080", adsPersonalizationEnabled: true }];
+    expect(buildGoogleAdsLinkPlan(wanted, live)).toEqual({
+      action: "noop",
+      name: "properties/1/googleAdsLinks/2",
+      customerId: "8142685080",
+    });
+  });
+
+  test("updates personalization when it differs", () => {
+    const live = [{ name: "properties/1/googleAdsLinks/2", customerId: "8142685080" }];
+    expect(buildGoogleAdsLinkPlan(wanted, live)).toMatchObject({
+      action: "update",
+      name: "properties/1/googleAdsLinks/2",
+      adsPersonalization: true,
+    });
+  });
+});
+
+describe("shared property Google Ads link in analytics.toml", () => {
+  test("declares the Ads customer that ads.toml manages", () => {
+    const config = loadConfigFromRoot();
+    const shared = config.properties.find((property) => property.id === "523400333");
+    expect(shared.googleAdsLink).toEqual({ customerId: "8142685080", adsPersonalization: true });
   });
 });
 

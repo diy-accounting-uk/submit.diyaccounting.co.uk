@@ -92,6 +92,15 @@ function normalizeProperty(entry) {
         streamingExport: entry.bigquery_link.streaming_export ?? false,
       }
     : null;
+  const googleAdsLink = entry.ads_link
+    ? {
+        customerId: String(entry.ads_link.customer_id ?? "").replace(/-/g, ""),
+        adsPersonalization: entry.ads_link.ads_personalization ?? true,
+      }
+    : null;
+  if (googleAdsLink && !googleAdsLink.customerId) {
+    throw new Error(`[property.ads_link] under "${entry.display_name}" is missing customer_id`);
+  }
   return {
     id: entry.id ? String(entry.id) : null,
     displayName: entry.display_name,
@@ -101,6 +110,7 @@ function normalizeProperty(entry) {
     keyEvents: entry.key_events ?? null,
     streams,
     bigQueryLink,
+    googleAdsLink,
   };
 }
 
@@ -337,6 +347,30 @@ export function buildGithubVariablePlan({ githubEnvironment, measurementId, curr
     : { action: "set", name: GITHUB_VARIABLE_NAME, environment: githubEnvironment, value: measurementId, previousValue: currentValue };
 }
 
+/**
+ * The Google Ads link is what lets GA4 resolve a gclid to the Ads campaign, so sessions from
+ * auto-tagged clicks report as google / cpc and Ads can import GA4 conversions.
+ *
+ * @param {{customerId: string, adsPersonalization: boolean}|null} configLink
+ * @param {Array<object>} [liveLinks] - the property's googleAdsLinks
+ */
+export function buildGoogleAdsLinkPlan(configLink, liveLinks = []) {
+  if (!configLink) return { action: "skip" };
+  const existing = liveLinks.find((link) => String(link.customerId).replace(/-/g, "") === configLink.customerId);
+  if (!existing) {
+    return { action: "create", name: null, customerId: configLink.customerId, adsPersonalization: configLink.adsPersonalization };
+  }
+  if (Boolean(existing.adsPersonalizationEnabled) === configLink.adsPersonalization) {
+    return { action: "noop", name: existing.name, customerId: configLink.customerId };
+  }
+  return {
+    action: "update",
+    name: existing.name,
+    customerId: configLink.customerId,
+    adsPersonalization: configLink.adsPersonalization,
+  };
+}
+
 /** The BigQuery link plan while the property itself is still pending creation, so no live link can exist yet. */
 function buildPendingBigQueryLinkPlan(configLink) {
   if (!configLink) return { action: "skip" };
@@ -362,6 +396,7 @@ function buildPendingBigQueryLinkPlan(configLink) {
  * @param {{name: string, displayName: string}|null} input.liveProperty
  * @param {Array<object>} [input.liveStreams]
  * @param {Array<object>} [input.liveBigQueryLinks]
+ * @param {Array<object>} [input.liveGoogleAdsLinks]
  * @param {Array<object>} [input.liveKeyEvents]
  * @param {Record<string, object>} [input.liveEnhancedMeasurementByStreamName]
  * @param {string|null} [input.projectNumber]
@@ -372,6 +407,7 @@ export function buildPropertyPlan({
   liveProperty,
   liveStreams = [],
   liveBigQueryLinks = [],
+  liveGoogleAdsLinks = [],
   liveKeyEvents = [],
   liveEnhancedMeasurementByStreamName = {},
   projectNumber = null,
@@ -396,6 +432,10 @@ export function buildPropertyPlan({
     ? buildPendingBigQueryLinkPlan(configProperty.bigQueryLink)
     : buildBigQueryLinkPlan(configProperty.bigQueryLink, liveBigQueryLinks, projectNumber);
 
+  const googleAdsLinkPlan = propertyPending
+    ? { ...buildGoogleAdsLinkPlan(configProperty.googleAdsLink), blockedOnProperty: true }
+    : buildGoogleAdsLinkPlan(configProperty.googleAdsLink, liveGoogleAdsLinks);
+
   // The GitHub variable takes its measurement id from the property's one designated stream —
   // every per-environment property (the only kind that declares github_environment) has exactly
   // one. The shared property has no github_environment, so this plan is always "skip" for it.
@@ -412,6 +452,7 @@ export function buildPropertyPlan({
     streams: streamPlans,
     keyEvents: keyEventPlan,
     bigQueryLink: bigQueryLinkPlan,
+    googleAdsLink: googleAdsLinkPlan,
     githubVariable: githubVariablePlan,
   };
 }
@@ -420,6 +461,19 @@ export function buildPropertyPlan({
 
 function describeLinkSettings(linkPlan) {
   return `dailyExport=${linkPlan.dailyExport} streamingExport=${linkPlan.streamingExport}`;
+}
+
+function printGoogleAdsLinkPlan(adsLink, tag) {
+  if (adsLink.action === "skip") return;
+  if (adsLink.action === "noop") {
+    console.log(`Google Ads link: already in sync (${adsLink.name}, customer ${adsLink.customerId})`);
+  } else if (adsLink.action === "update") {
+    console.log(`Google Ads link: ${tag}would set adsPersonalization=${adsLink.adsPersonalization} (${adsLink.name})`);
+  } else {
+    console.log(
+      `Google Ads link: ${tag}would create for customer ${adsLink.customerId} adsPersonalization=${adsLink.adsPersonalization}${adsLink.blockedOnProperty ? " (after the property is created)" : ""}`,
+    );
+  }
 }
 
 function printPropertyPlan(plan, dryRun) {
@@ -467,6 +521,8 @@ function printPropertyPlan(plan, dryRun) {
     if (mismatch) console.log(mismatch);
   }
 
+  printGoogleAdsLinkPlan(plan.googleAdsLink, tag);
+
   if (plan.githubVariable.action !== "skip") {
     if (plan.githubVariable.action === "noop") {
       console.log(
@@ -506,6 +562,11 @@ async function listDataStreams(client, propertyName) {
 async function listBigQueryLinks(client, propertyName) {
   const { data } = await client.request({ url: `${ANALYTICS_ADMIN_V1ALPHA}/${propertyName}/bigQueryLinks` });
   return extractBigQueryLinks(data);
+}
+
+async function listGoogleAdsLinks(client, propertyName) {
+  const { data } = await client.request({ url: `${ANALYTICS_ADMIN_V1ALPHA}/${propertyName}/googleAdsLinks` });
+  return data.googleAdsLinks || [];
 }
 
 async function fetchEventCount(client, propertyName) {
@@ -685,6 +746,24 @@ async function updateBigQueryLink(client, plan) {
   });
 }
 
+async function createGoogleAdsLink(client, propertyName, plan) {
+  const { data } = await client.request({
+    url: `${ANALYTICS_ADMIN_V1ALPHA}/${propertyName}/googleAdsLinks`,
+    method: "POST",
+    data: { customerId: plan.customerId, adsPersonalizationEnabled: plan.adsPersonalization },
+  });
+  return data;
+}
+
+async function updateGoogleAdsLink(client, plan) {
+  await client.request({
+    url: `${ANALYTICS_ADMIN_V1ALPHA}/${plan.name}`,
+    method: "PATCH",
+    params: { updateMask: "adsPersonalizationEnabled" },
+    data: { adsPersonalizationEnabled: plan.adsPersonalization },
+  });
+}
+
 async function applyPropertyPlan(client, plan, accountName) {
   let propertyName = plan.property.name;
   if (plan.property.action === "create") {
@@ -721,6 +800,14 @@ async function applyPropertyPlan(client, plan, accountName) {
     console.log(`Updated BigQuery link ${plan.bigQueryLink.name}`);
   }
 
+  if (plan.googleAdsLink.action === "create") {
+    const created = await createGoogleAdsLink(client, propertyName, plan.googleAdsLink);
+    console.log(`Created Google Ads link ${created.name}`);
+  } else if (plan.googleAdsLink.action === "update") {
+    await updateGoogleAdsLink(client, plan.googleAdsLink);
+    console.log(`Updated Google Ads link ${plan.googleAdsLink.name}`);
+  }
+
   return applyGithubVariable(plan.githubVariable);
 }
 
@@ -750,6 +837,7 @@ export async function main() {
     const liveProperty = matchProperty(configProperty, liveProperties);
     const liveStreams = liveProperty ? await listDataStreams(client, liveProperty.name) : [];
     const liveBigQueryLinks = liveProperty ? await listBigQueryLinks(client, liveProperty.name) : [];
+    const liveGoogleAdsLinks = liveProperty && configProperty.googleAdsLink ? await listGoogleAdsLinks(client, liveProperty.name) : [];
     const liveKeyEvents = liveProperty && configProperty.keyEvents ? await listKeyEvents(client, liveProperty.name) : [];
     const liveEnhancedMeasurementByStreamName = liveProperty ? await loadEnhancedMeasurementSettings(client, liveStreams) : {};
     const githubVariableRead = configProperty.githubEnvironment
@@ -763,6 +851,7 @@ export async function main() {
       liveProperty,
       liveStreams,
       liveBigQueryLinks,
+      liveGoogleAdsLinks,
       liveKeyEvents,
       liveEnhancedMeasurementByStreamName,
       projectNumber,
