@@ -3,7 +3,8 @@
 
 -- Page requests each day by browser and operating system, read from the CloudFront access
 -- log's user agent, which needs no consent. Only successful GET requests for a page count.
--- Crawlers, AI agents, scanners, the probe monitor, headless browsers and the behaviour-test Chrome (version 131) are left out.
+-- Crawlers, AI agents, scanners, the probe monitor, headless browsers and the behaviour
+-- tests' marked user agent are left out.
 -- Edge and Opera are matched before Chrome because both carry a Chrome token. c_ip is
 -- personal data and is not read, so the count is page requests, not distinct visitors.
 CREATE OR REPLACE VIEW v_visitors_by_browser_daily AS
@@ -43,7 +44,7 @@ WHERE  ua NOT LIKE '%bot%'
   AND  ua NOT LIKE '%pa11y%'
   AND  ua NOT LIKE '%probe-monitor%'
   AND  ua NOT LIKE '%palo alto%'
-  AND  ua NOT LIKE '%chrome/131.0.0.0%'
+  AND  ua NOT LIKE '%diyaccountingprobe%'
   AND  ua NOT LIKE '%claudedesktop%'
   AND  ua NOT LIKE '%chatgpt-user%'
   AND  ua NOT LIKE '%perplexity-user%'
