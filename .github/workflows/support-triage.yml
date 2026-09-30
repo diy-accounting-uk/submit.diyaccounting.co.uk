@@ -74,11 +74,16 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
           ISSUE_NUMBER: ${{ inputs.issue-number || github.event.issue.number }}
+          BUDGET_REASON: ${{ steps.budget-guard.outputs.reason }}
           TRIAGE_COUNT: ${{ steps.budget-guard.outputs.count }}
           TRIAGE_SINCE: ${{ steps.budget-guard.outputs.since }}
         run: |
           set -euo pipefail
-          MESSAGE="Support triage was skipped: the budget of ${{ env.SUPPORT_TRIAGE_BUDGET_PER_DAY }} triage runs per 24 hours is already used (${TRIAGE_COUNT} posted a result since ${TRIAGE_SINCE}). Nobody has looked at this ticket yet."
+          if [ "${BUDGET_REASON}" = "api-error" ]; then
+            MESSAGE="Support triage was skipped: the daily run budget could not be counted because the GitHub API failed after three attempts. Nobody has looked at this ticket yet."
+          else
+            MESSAGE="Support triage was skipped: the budget of ${{ env.SUPPORT_TRIAGE_BUDGET_PER_DAY }} triage runs per 24 hours is already used (${TRIAGE_COUNT} posted a result since ${TRIAGE_SINCE}). Nobody has looked at this ticket yet."
+          fi
           echo "$MESSAGE" | tee -a "$GITHUB_STEP_SUMMARY"
           gh issue comment "$ISSUE_NUMBER" --repo "${{ github.repository }}" --body "$MESSAGE"
 
