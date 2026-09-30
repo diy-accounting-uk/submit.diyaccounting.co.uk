@@ -461,7 +461,7 @@ header::after {
   display: flex;
   flex-wrap: wrap;
   justify-content: center;
-  gap: var(--spacing-xl);
+  gap: var(--spacing-xs);
   margin-bottom: var(--spacing-xl);
   padding: var(--spacing-sm) 0;
   border-top: 1px solid var(--color-border);
@@ -472,7 +472,7 @@ header::after {
   color: var(--color-brand-primary);
   text-decoration: none;
   font-size: var(--font-size-base);
-  padding: var(--spacing-sm) var(--spacing-md);
+  padding: var(--spacing-sm);
   transition:
     color 0.2s,
     background-color 0.2s,
@@ -531,27 +531,34 @@ header::after {
   }
 
   .main-nav a {
+    display: inline-flex;
+    align-items: center;
+    min-height: 44px;
+    box-sizing: border-box;
     font-size: var(--font-size-sm);
     padding: var(--spacing-xs) var(--spacing-sm);
   }
 
-  /* Both rows wrap onto more lines below 600px, and the main nav's five
-     links can wrap across three lines on the narrowest phones - reserve
-     for that worst case rather than the exact width, since a placeholder
-     a little taller than needed costs nothing but an under-sized one still
-     shifts the page. */
+  /* The main nav's seven links wrap onto two lines from 360px to 600px and
+     three below that - reserve for the wrapped height (nav plus its bottom
+     margin), since a placeholder a little taller than needed costs nothing
+     but an under-sized one still shifts the page. */
   header:has(> .chrome-fallback) {
     padding-top: 30px;
-    padding-bottom: 117px;
+    padding-bottom: 154px;
   }
 }
 
-/* Between 480px and 600px the main nav's five links wrap onto only two
-   lines rather than three, so the reservation above is taller than this
-   range needs; narrow it here instead of leaving a visible empty gap. */
-@media (min-width: 480px) and (max-width: 600px) {
+@media (max-width: 359px) {
   header:has(> .chrome-fallback) {
-    padding-bottom: 76px;
+    padding-bottom: 214px;
+  }
+}
+
+/* From 601px to 672px the seven links still wrap onto two lines. */
+@media (min-width: 601px) and (max-width: 672px) {
+  header:has(> .chrome-fallback) {
+    padding-bottom: 126px;
   }
 }
 

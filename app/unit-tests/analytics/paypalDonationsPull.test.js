@@ -37,6 +37,8 @@ const mockFetchAllTransactions = vi.fn();
 vi.mock("@app/services/paypalTransactionSearch.js", () => ({
   fetchAccessToken: (...args) => mockFetchAccessToken(...args),
   fetchAllTransactions: (...args) => mockFetchAllTransactions(...args),
+  createPacer: () => async () => {},
+  realSleep: async () => {},
 }));
 
 const { handler, donationRowsFromTransactions, computeDayWindow, daysOf, defaultTargetDate, objectKey, toNdjsonGzip } =
@@ -298,6 +300,15 @@ describe("handler", () => {
       objectKey("2026-09-16"),
     ]);
     expect(mockFetchAccessToken).toHaveBeenCalledTimes(1);
+  });
+
+  test("every day of a range fetches through the same pacer", async () => {
+    mockFetchAllTransactions.mockResolvedValue([]);
+    await handler({ from: "2026-09-14", to: "2026-09-16" });
+
+    const paces = mockFetchAllTransactions.mock.calls.map((call) => call[4].pace);
+    expect(paces).toHaveLength(3);
+    expect(new Set(paces).size).toBe(1);
   });
 
   test("a range over 93 days writes nothing", async () => {

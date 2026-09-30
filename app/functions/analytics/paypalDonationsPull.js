@@ -14,7 +14,7 @@ import { gzipSync } from "zlib";
 import { S3Client, PutObjectCommand } from "@aws-sdk/client-s3";
 import { SecretsManagerClient, GetSecretValueCommand } from "@aws-sdk/client-secrets-manager";
 import { createLogger } from "../../lib/logger.js";
-import { fetchAccessToken, fetchAllTransactions } from "../../services/paypalTransactionSearch.js";
+import { createPacer, fetchAccessToken, fetchAllTransactions, realSleep } from "../../services/paypalTransactionSearch.js";
 import {
   CREDIT_NOTE_EVENT_CODES,
   REFUND_EVENT_CODES,
@@ -199,10 +199,11 @@ export async function handler(event = {}) {
   const [clientId, clientSecret] = await Promise.all([readSecret(clientIdSecretId), readSecret(clientSecretSecretId)]);
   const accessToken = await fetchAccessToken(clientId, clientSecret);
 
+  const pace = createPacer();
   const results = [];
   for (const targetDate of days) {
     const { start, end } = computeDayWindow(targetDate);
-    const transactions = await fetchAllTransactions(accessToken, start, end);
+    const transactions = await fetchAllTransactions(accessToken, start, end, fetch, { sleep: realSleep, pace });
     const rows = donationRowsFromTransactions(transactions, {
       onlyDate: targetDate,
       onUnmatched: (id, currency) =>
