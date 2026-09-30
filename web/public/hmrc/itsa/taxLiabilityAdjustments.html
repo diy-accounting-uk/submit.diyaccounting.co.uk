@@ -81,6 +81,15 @@
               <option value="NOT_FOUND">Not Found</option>
             </select>
             <div style="margin-top: 10px">
+              <label for="calculationTestScenario">Calculation test scenario (Developer/Sandbox only)</label>
+              <p id="calculationTestScenario-hint" class="hint">The HMRC sandbox example used for that year's calculated liability</p>
+              <select id="calculationTestScenario" name="calculationTestScenario" aria-describedby="calculationTestScenario-hint">
+                <option value="">Default (a UK self-employment example)</option>
+                <option value="UK_SE_GIFTAID_EXAMPLE">UK self-employment with Gift Aid</option>
+                <option value="SCOT_SE_DIVIDENDS_EXAMPLE">Scottish self-employment with dividends</option>
+              </select>
+            </div>
+            <div style="margin-top: 10px">
               <input type="checkbox" id="suspendTemporalValidations" name="suspendTemporalValidations" />
               <label for="suspendTemporalValidations" style="display: inline; font-weight: normal"
                 >Suspend temporal validations (sandbox tax year has not really ended)</label
@@ -159,6 +168,8 @@
     <script src="../../widgets/status-messages.js"></script>
     <script src="../../widgets/pass-redeemer.js"></script>
     <script src="../../widgets/submission-cost.js"></script>
+    <script src="../../lib/money-format.js"></script>
+    <script src="../../lib/hmrc-field-table.js"></script>
     <script>
       let loadedNino = "";
       let loadedTaxYear = "";
@@ -180,11 +191,6 @@
 
         updateDeveloperSectionVisibility();
         window.addEventListener("developer-mode-changed", updateDeveloperSectionVisibility);
-      }
-
-      function formatCurrency(value) {
-        if (value === undefined || value === null) return "-";
-        return `£${Number(value).toFixed(2)}`;
       }
 
       function readCarryBackLossesDecrease() {
@@ -235,6 +241,7 @@
         const nino = loadedNino;
         const taxYear = loadedTaxYear;
         const accessToken = sessionStorage.getItem("hmrcAccessToken");
+        const calculationTestScenario = document.getElementById("calculationTestScenario").value || null;
         const button = document.getElementById("showEarlierYearBtn");
         const figureEl = document.getElementById("earlierYearFigure");
 
@@ -247,10 +254,10 @@
             accessToken,
             govClientHeaders,
             false,
-            null,
+            calculationTestScenario,
           );
           const totalIncomeTaxAndNicsDue = result?.calculation?.taxCalculation?.totalIncomeTaxAndNicsDue;
-          figureEl.textContent = formatCurrency(totalIncomeTaxAndNicsDue);
+          figureEl.textContent = HmrcFieldTable.formatMoney(totalIncomeTaxAndNicsDue);
         } catch (error) {
           figureEl.textContent = "Could not retrieve HMRC's calculation for that year.";
           console.error(error);

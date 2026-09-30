@@ -9,6 +9,7 @@ import fs from "fs";
 import path from "path";
 import { setTimeout as delay } from "timers/promises";
 import { dotenvConfigIfNotBlank } from "@app/lib/env.js";
+import { serveHmrcFieldTableAssets, serveSiteStyles, screenshotPath } from "./hmrcFieldTableAssets.js";
 
 dotenvConfigIfNotBlank({ path: ".env.test" });
 
@@ -220,5 +221,55 @@ test.describe("ITSA Tax Liability Adjustments - Form", () => {
 
     await page.locator("#nino").fill("ab123456c");
     await expect(page.locator("#nino")).toHaveValue("AB123456C");
+  });
+
+  test("offers a calculation test scenario in developer mode and sends it with that year's calculation", async ({ page }) => {
+    await serveSiteStyles(page);
+    await page.addInitScript(() => sessionStorage.setItem("showDeveloperOptions", "true"));
+    await loadPageAtRealOrigin(page, html, "http://localhost:3000/hmrc/itsa/taxLiabilityAdjustments.html");
+    await serveHmrcFieldTableAssets(page);
+    await page.reload({ waitUntil: "domcontentloaded" });
+    await page.setViewportSize({ width: 1280, height: 900 });
+
+    const select = page.locator("#calculationTestScenario");
+    await expect(select).toBeVisible();
+    await expect(select.locator("option")).toHaveText([
+      "Default (a UK self-employment example)",
+      "UK self-employment with Gift Aid",
+      "Scottish self-employment with dividends",
+    ]);
+    await select.selectOption("UK_SE_GIFTAID_EXAMPLE");
+    await page.locator("#developerSection").screenshot({ path: screenshotPath("taxLiabilityAdjustments-developer") });
+
+    const sentScenario = await page.evaluate(async () => {
+      let received;
+      window.triggerCalculation = async (details, token, headers, validate, testScenario) => {
+        received = testScenario;
+        return { calculation: { taxCalculation: { totalIncomeTaxAndNicsDue: 1700 } } };
+      };
+      document.getElementById("adjustmentsEditForm").style.display = "block";
+      await window.showEarlierYearFigure();
+      return received;
+    });
+    expect(sentScenario).toBe("UK_SE_GIFTAID_EXAMPLE");
+    await expect(page.locator("#earlierYearFigure")).toHaveText("£1,700.00");
+  });
+
+  test("sends no calculation test scenario when the default is left selected", async ({ page }) => {
+    await loadPageAtRealOrigin(page, html, "http://localhost:3000/hmrc/itsa/taxLiabilityAdjustments.html");
+    await serveHmrcFieldTableAssets(page);
+    await page.reload({ waitUntil: "domcontentloaded" });
+
+    const sentScenario = await page.evaluate(async () => {
+      let received = "unset";
+      window.triggerCalculation = async (details, token, headers, validate, testScenario) => {
+        received = testScenario;
+        return { calculation: { taxCalculation: {} } };
+      };
+      await window.showEarlierYearFigure();
+      return received;
+    });
+    expect(sentScenario).toBeNull();
+    await expect(page.locator("#earlierYearFigure")).toHaveText("—");
   });
 });
