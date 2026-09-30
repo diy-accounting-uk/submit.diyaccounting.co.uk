@@ -110,6 +110,13 @@ public class NightlyIngestionWorkflow {
          */
         Optional<IFunction> paypalDonationsPullLambda();
 
+        /**
+         * The Google Ads cost pull job's Lambda, present only when {@code IngestionStack} built
+         * it (Ads credentials held). Its branch is added to the parallel state only when this is
+         * present.
+         */
+        Optional<IFunction> adsCostPullLambda();
+
         /** Imported by name from {@code AnalyticsStack}: {@code DataQuality.runLambda}. */
         IFunction dataQualityRunLambda();
 
@@ -164,6 +171,9 @@ public class NightlyIngestionWorkflow {
                         prefix + "-Nightly-PaypalDonationsPull",
                         "PayPal donations pull",
                         paypalDonationsPullLambda)));
+        props.adsCostPullLambda()
+                .ifPresent(adsCostPullLambda -> ingestionParallel.branch(buildTask(
+                        scope, prefix + "-Nightly-AdsCostPull", "Ads cost pull", adsCostPullLambda)));
 
         var dataQualityTask =
                 buildTask(scope, prefix + "-Nightly-DataQuality", "data quality run", props.dataQualityRunLambda());

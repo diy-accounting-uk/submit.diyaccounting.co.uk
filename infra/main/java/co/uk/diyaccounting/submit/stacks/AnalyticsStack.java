@@ -26,6 +26,7 @@ import co.uk.diyaccounting.submit.stacks.analytics.Ga4DailyTables;
 import co.uk.diyaccounting.submit.stacks.analytics.Ga4Tables;
 import co.uk.diyaccounting.submit.stacks.analytics.OperatorEffortTables;
 import co.uk.diyaccounting.submit.stacks.analytics.OperatorSnapshotPublish;
+import co.uk.diyaccounting.submit.stacks.analytics.AdsCostTables;
 import co.uk.diyaccounting.submit.stacks.analytics.PayPalDonationTables;
 import co.uk.diyaccounting.submit.stacks.analytics.RawExport;
 import co.uk.diyaccounting.submit.stacks.analytics.StripeReconciliationTables;
@@ -426,6 +427,15 @@ public class AnalyticsStack extends Stack {
                         .build());
         paypalTables.donationsTable.addResourceDependency(this.glueDatabase);
 
+        var adsCostTables = new AdsCostTables(
+                this,
+                AdsCostTables.AdsCostTablesProps.builder()
+                        .idPrefix(prefix)
+                        .databaseName(sharedNames.glueDatabaseName)
+                        .lakeBucketName(sharedNames.analyticsLakeBucketName)
+                        .build());
+        adsCostTables.costTable.addResourceDependency(this.glueDatabase);
+
         var ga4Tables = new Ga4Tables(
                 this,
                 Ga4Tables.Ga4TablesProps.builder()
@@ -703,6 +713,7 @@ public class AnalyticsStack extends Stack {
             r.getNode().addDependency(stripeTables.chargesTable);
         });
         businessViews.viewResourcesByName.get("v_revenue_daily").getNode().addDependency(paypalTables.donationsTable);
+        businessViews.viewResourcesByName.get("v_ads_cost_daily").getNode().addDependency(adsCostTables.costTable);
         // The three new sources each feed exactly one view, so their dependency edges are added
         // by view name rather than unconditionally on every view.
         businessViews

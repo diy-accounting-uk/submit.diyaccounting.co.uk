@@ -149,10 +149,19 @@ public class BusinessViews extends Construct {
                             + " user agent, crawlers and test browsers excluded",
                     List.of("cloudfront_requests")),
             new ViewDefinition(
+                    "v_ads_cost_daily",
+                    "Google Ads impressions, clicks and cost each day, by campaign and ad group",
+                    List.of("ads_cost")),
+            new ViewDefinition(
                     "v_paid_landings_daily",
                     "Page requests each day that carry a gclid or utm_source in the query string, by landing page,"
                             + " utm_source and utm_campaign, read from the CloudFront access log without consent",
                     List.of("cloudfront_requests")),
+            new ViewDefinition(
+                    "v_ads_cost_per_paid_landing_daily",
+                    "The day's Google Ads cost divided by the day's paid landings",
+                    List.of("v_ads_cost_daily", "v_paid_landings_daily"),
+                    List.of("v_ads_cost_daily", "v_paid_landings_daily")),
             new ViewDefinition(
                     "v_visitors_by_kind_hourly",
                     "Sessions each hour by visitor kind from GA4's streaming export: feeds the operator"

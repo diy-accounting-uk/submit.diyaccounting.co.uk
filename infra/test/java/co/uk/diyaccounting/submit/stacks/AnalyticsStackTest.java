@@ -91,7 +91,7 @@ class AnalyticsStackTest {
                                 "DataFormatConversionConfiguration",
                                 Match.objectLike(Map.of("Enabled", true)))))));
 
-        analytics.resourceCountIs("AWS::Glue::Table", 30);
+        analytics.resourceCountIs("AWS::Glue::Table", 31);
         analytics.hasResourceProperties(
                 "AWS::Glue::Table",
                 Match.objectLike(Map.of(
@@ -138,7 +138,7 @@ class AnalyticsStackTest {
         // (the custom resource below is what actually creates the view). One more named query
         // per BusinessViews view, including v_activity_started_daily and its hourly
         // counterpart, v_activity_started_hourly.
-        analytics.resourceCountIs("AWS::Athena::NamedQuery", 36);
+        analytics.resourceCountIs("AWS::Athena::NamedQuery", 38);
 
         // The view itself is created by a one-shot custom resource, not a hand-built VIRTUAL_VIEW.
         var customResources = analytics.findResources("Custom::AWS");
