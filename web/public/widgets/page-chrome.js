@@ -130,7 +130,8 @@
         'terms.html">terms</a>' +
         '<a href="' +
         rootPrefix +
-        'accessibility.html">accessibility</a>'
+        'accessibility.html">accessibility</a>' +
+        '<a href="#" data-cookie-choices>Cookie choices</a>'
       : "";
 
     const center =

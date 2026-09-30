@@ -4,7 +4,7 @@
 // app/functions/account/sessionBeaconPost.js
 
 import { createLogger } from "../../lib/logger.js";
-import { extractRequest, http200OkResponse, getHeader } from "../../lib/httpResponseHelper.js";
+import { extractRequest, http200OkResponse, http400BadRequestResponse, getHeader } from "../../lib/httpResponseHelper.js";
 import { registerLambdaRoute } from "../../lib/httpServerToLambdaAdaptor.js";
 import { classifyVisitor } from "../../lib/visitorClassifier.js";
 import { publishActivityEvent } from "../../lib/activityAlert.js";
@@ -31,6 +31,26 @@ export function apiEndpoint(app) {
 }
 /* v8 ignore stop */
 
+const CONSENT_ANSWERS = ["accepted", "rejected"];
+const CONSENT_SURFACES = ["dialog", "banner"];
+
+// A consent answer is a count: it carries the answer, the surface it came from and the country,
+// and nothing that identifies the visitor or the page.
+async function publishConsentAnswer({ request, body, country, visitorType }) {
+  const headers = { "Content-Type": "application/json" };
+  if (!CONSENT_ANSWERS.includes(body.consentAnswer) || !CONSENT_SURFACES.includes(body.consentSurface)) {
+    return http400BadRequestResponse({ request, headers, message: "Unknown consent answer or surface" });
+  }
+  await publishActivityEvent({
+    event: "consent-answered",
+    summary: `Consent ${body.consentAnswer} on the ${body.consentSurface}`,
+    actor: visitorType === "synthetic" ? "synthetic" : "visitor",
+    flow: "user-journey",
+    detail: { answer: body.consentAnswer, surface: body.consentSurface, country },
+  });
+  return http200OkResponse({ request, headers, data: { ok: true } });
+}
+
 export async function ingestHandler(event) {
   const { request } = extractRequest(event);
   const headers = event.headers || {};
@@ -50,6 +70,10 @@ export async function ingestHandler(event) {
     body = JSON.parse(event.body || "{}") || {};
   } catch {
     // ignore parse errors
+  }
+
+  if (body.consentAnswer !== undefined) {
+    return publishConsentAnswer({ request, body, country, visitorType });
   }
 
   const page = body.page || "/";

@@ -71,7 +71,7 @@ function trackRequests(page) {
   page.on("request", (request) => {
     const url = request.url();
     if (url.startsWith("https://www.googletagmanager.com/gtag/js")) seen.gtag += 1;
-    if (url.endsWith("/api/v1/session/beacon")) seen.beacon += 1;
+    if (url.endsWith("/api/v1/session/beacon") && !request.postDataJSON()?.consentAnswer) seen.beacon += 1;
   });
   return seen;
 }
@@ -81,7 +81,7 @@ test.describe("Cookie consent banner", () => {
     const seen = trackRequests(page);
     await serveRealSite(page);
     await page.goto("http://localhost:3000/index.html?gclid=abc123&utm_source=google", { waitUntil: "domcontentloaded" });
-    await expect(page.locator("#consent-banner")).toBeVisible({ timeout: 5000 });
+    await expect(page.locator("#consent-dialog")).toBeVisible({ timeout: 5000 });
     await delay(500);
 
     expect(await page.evaluate(() => localStorage.getItem("attribution.landing"))).toBeNull();
@@ -94,7 +94,7 @@ test.describe("Cookie consent banner", () => {
     const seen = trackRequests(page);
     await serveRealSite(page);
     await page.goto("http://localhost:3000/index.html?gclid=abc123&utm_source=google", { waitUntil: "domcontentloaded" });
-    await page.locator("#consent-banner #consent-accept").click();
+    await page.locator("#consent-dialog #consent-accept").click();
 
     await expect.poll(() => seen.gtag).toBe(1);
     await expect.poll(() => seen.beacon).toBe(1);
@@ -106,7 +106,7 @@ test.describe("Cookie consent banner", () => {
     const seen = trackRequests(page);
     await serveRealSite(page);
     await page.goto("http://localhost:3000/index.html?gclid=abc123", { waitUntil: "domcontentloaded" });
-    await page.locator("#consent-banner #consent-decline").click();
+    await page.locator("#consent-dialog #consent-decline").click();
     await delay(500);
 
     expect(await page.evaluate(() => localStorage.getItem("attribution.landing"))).toBeNull();
@@ -196,5 +196,93 @@ test.describe("Cookie consent banner", () => {
 
     const outline = await acceptBtn.evaluate((el) => getComputedStyle(el).outlineStyle);
     expect(outline).not.toBe("none");
+  });
+
+  test("a visit whose URL carries gclid gets the whole-page dialog with equal Accept and Reject", async ({ page }) => {
+    await serveRealSite(page);
+    await page.goto("http://localhost:3000/index.html?gclid=abc123", { waitUntil: "domcontentloaded" });
+
+    const dialog = page.locator("#consent-dialog");
+    await expect(dialog).toBeVisible({ timeout: 5000 });
+    await expect(page.locator("#consent-banner")).toHaveCount(0);
+    await expect(dialog).toContainText("Google");
+
+    const viewport = page.viewportSize();
+    const box = await dialog.boundingBox();
+    expect(box.width).toBeGreaterThanOrEqual(viewport.width - 1);
+    expect(box.height).toBeGreaterThanOrEqual(viewport.height - 1);
+
+    const accept = await page.locator("#consent-accept").boundingBox();
+    const reject = await page.locator("#consent-decline").boundingBox();
+    expect(reject.width).toBeCloseTo(accept.width, 0);
+    expect(reject.height).toBeCloseTo(accept.height, 0);
+    await expect(page.locator("#consent-decline")).toHaveText("Reject");
+
+    await page.locator("#consent-decline").focus();
+    await expect(page.locator("#consent-decline")).toBeFocused();
+  });
+
+  test("a utm_ parameter alone also gets the dialog, on any page", async ({ page }) => {
+    await serveRealSite(page);
+    await page.goto("http://localhost:3000/privacy.html?utm_source=google", { waitUntil: "domcontentloaded" });
+    await expect(page.locator("#consent-dialog")).toBeVisible({ timeout: 5000 });
+  });
+
+  test("Reject on the dialog opens the page, stores no attribution and posts a count with no identifier", async ({ page }) => {
+    const answers = [];
+    page.on("request", (request) => {
+      if (request.url().endsWith("/api/v1/session/beacon")) answers.push(request.postDataJSON());
+    });
+    await serveRealSite(page);
+    await page.goto("http://localhost:3000/index.html?gclid=abc123", { waitUntil: "domcontentloaded" });
+    await page.locator("#consent-dialog #consent-decline").click();
+
+    await expect(page.locator("#consent-dialog")).toHaveCount(0);
+    await expect.poll(() => answers.length).toBe(1);
+    expect(answers[0]).toEqual({ consentAnswer: "rejected", consentSurface: "dialog" });
+    expect(await page.evaluate(() => localStorage.getItem("attribution.landing"))).toBeNull();
+    await expect(page.locator("h1").first()).toBeVisible();
+  });
+
+  test("Accept on the dialog stores the attribution and posts an accepted count", async ({ page }) => {
+    const answers = [];
+    page.on("request", (request) => {
+      if (request.url().endsWith("/api/v1/session/beacon") && request.postDataJSON()?.consentAnswer) {
+        answers.push(request.postDataJSON());
+      }
+    });
+    await serveRealSite(page);
+    await page.goto("http://localhost:3000/index.html?gclid=abc123", { waitUntil: "domcontentloaded" });
+    await page.locator("#consent-dialog #consent-accept").click();
+
+    await expect.poll(() => answers.length).toBe(1);
+    expect(answers[0]).toEqual({ consentAnswer: "accepted", consentSurface: "dialog" });
+    const landing = await page.evaluate(() => JSON.parse(localStorage.getItem("attribution.landing")));
+    expect(landing).toMatchObject({ gclid: "abc123" });
+  });
+
+  test("a plain visit keeps the banner and posts a banner count", async ({ page }) => {
+    const answers = [];
+    page.on("request", (request) => {
+      if (request.url().endsWith("/api/v1/session/beacon")) answers.push(request.postDataJSON());
+    });
+    await serveRealSite(page);
+    await page.goto("http://localhost:3000/index.html", { waitUntil: "domcontentloaded" });
+    await expect(page.locator("#consent-banner")).toBeVisible({ timeout: 5000 });
+    await expect(page.locator("#consent-dialog")).toHaveCount(0);
+
+    await page.locator("#consent-decline").click();
+    await expect.poll(() => answers.length).toBe(1);
+    expect(answers[0]).toEqual({ consentAnswer: "rejected", consentSurface: "banner" });
+  });
+
+  test("the Cookie choices footer link reopens the choice after an answer", async ({ page }) => {
+    await serveRealSite(page);
+    await page.goto("http://localhost:3000/index.html", { waitUntil: "domcontentloaded" });
+    await page.locator("#consent-decline").click();
+    await expect(page.locator("#consent-banner")).toHaveCount(0);
+
+    await page.locator("[data-cookie-choices]").first().click();
+    await expect(page.locator("#consent-dialog")).toBeVisible();
   });
 });

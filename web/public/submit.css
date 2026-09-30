@@ -1979,3 +1979,37 @@ a.external-link:hover::after {
     width: 100%;
   }
 }
+
+/* Whole-page consent dialog shown on a visit that arrived from an advert (#consent-dialog, added
+   by submit.js). Accept and Reject share one class so they render at the same size and weight. */
+.consent-dialog {
+  position: fixed;
+  inset: 0;
+  z-index: 10000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--spacing-md);
+  background: rgba(0, 0, 0, 0.6);
+}
+
+.consent-dialog-panel {
+  max-width: 34rem;
+  width: 100%;
+  padding: 24px;
+  border-radius: 8px;
+  background: #fff;
+  color: #111;
+}
+
+.consent-dialog-actions {
+  display: flex;
+  gap: 12px;
+  margin-top: 16px;
+}
+
+.consent-dialog-button {
+  flex: 1 1 0;
+  min-height: 44px;
+  padding: 6px 10px;
+}

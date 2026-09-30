@@ -54,7 +54,7 @@ describe("RUM Consent", () => {
         }
         return [];
       }),
-      getElementById: vi.fn((id) => domElements[id] || null),
+      getElementById: vi.fn((id) => domElements[id] || (id === "consent-accept" || id === "consent-decline" ? mockElement() : null)),
       createElement: vi.fn(() => mockElement()),
       addEventListener: vi.fn(),
       dispatchEvent: vi.fn((event) => {
