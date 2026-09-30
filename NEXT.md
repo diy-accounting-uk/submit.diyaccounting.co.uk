@@ -16,8 +16,8 @@ runs), and for Claude Code steps the **Model** a sub-agent should use (Fable > O
 Haiku; the lowest tier that fits). Anything touching code goes through a `claude/*` branch and
 PR; the operator merges.
 
-**Prod runs deployment prod-e433b4c** (PR #432's merge deploy, 2026-09-30), the only prod set.
-**ci**: `ci-set1` (last-known-good, created 14:30 UTC 2026-09-30) stands; `ci-set2` is down to its `SelfDestructStack`, which the 02:34 UTC `destroy-ci` sweep removes.
+**Prod runs deployment prod-e433b4c** (PR #432's merge deploy, 2026-09-30). PR #438's deploy 36783603748 is promoting prod-0eb9d92 (setting origins), and PR #436's deploy 36785715669 is queued behind it.
+**ci**: `ci-set2` (last-known-good, created 21:37 UTC 2026-09-30) and `ci-set1` (created 14:30 UTC, past its 18:30 self-destruct, 9 stacks; the 02:34 UTC `destroy-ci` sweep removes what is left).
 
 Rows F-BS3 and LP-* change the spreadsheets repository (`../spreadsheets.diyaccounting.co.uk/`): their batch branches, PRs and CI run there, under that repository's `CLAUDE.md` and tests; their plans (`../private.diyaccounting.co.uk/strategy/PLAN_DIYA_GL_LAUNCH.md`, `../private.diyaccounting.co.uk/strategy/PLAN_DIYA_GL_INDIA.md`, `PLAN_DIYACCOUNTING_BRAND.md`) are at this root. LP rows' briefs are in `../private.diyaccounting.co.uk/strategy/PLAN_DIYA_GL_LAUNCH.md` under "Briefs"; `../private.diyaccounting.co.uk/strategy/PLAN_DIYA_GL_INDIA.md` carries its own board.
 
