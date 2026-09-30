@@ -119,6 +119,41 @@ describe("billingCheckoutPost", () => {
     expect(params.cancel_url).toBe("https://test-submit.diyaccounting.co.uk/bundles.html?checkout=canceled");
   });
 
+  test("puts the whitelisted acquisition fields into the session metadata, trimmed and capped", async () => {
+    const acquisition = {
+      gclid: "  abc123  ",
+      utmSource: "google",
+      utmMedium: "cpc",
+      utmCampaign: "c".repeat(500),
+      ref: "partner",
+      landedAt: "2026-01-01T00:00:00.000Z",
+      hashedSub: "attacker-value",
+      extra: "ignored",
+      utmTerm: 42,
+    };
+    await ingestHandler(buildEventWithToken(validToken, { bundleId: "resident-pro", acquisition }));
+
+    const params = mockCheckoutSessionsCreate.mock.calls[0][0];
+    expect(params.metadata).toEqual({
+      hashedSub: params.metadata.hashedSub,
+      bundleId: "resident-pro",
+      acq_gclid: "abc123",
+      acq_utmSource: "google",
+      acq_utmMedium: "cpc",
+      acq_utmCampaign: "c".repeat(200),
+      acq_ref: "partner",
+      acq_landedAt: "2026-01-01T00:00:00.000Z",
+    });
+    expect(params.metadata.hashedSub).toHaveLength(64);
+  });
+
+  test("adds no acquisition metadata when the request carries none", async () => {
+    await ingestHandler(buildEventWithToken(validToken, { bundleId: "resident-pro" }));
+
+    const params = mockCheckoutSessionsCreate.mock.calls[0][0];
+    expect(Object.keys(params.metadata).sort()).toEqual(["bundleId", "hashedSub"]);
+  });
+
   test("publishes the checkout-session-created event with the hashed sub, never the raw sub", async () => {
     const event = buildEventWithToken(validToken);
     await ingestHandler(event);

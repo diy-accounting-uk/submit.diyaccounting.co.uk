@@ -19,6 +19,7 @@ import { getStripeClient } from "../../lib/stripeClient.js";
 import { getUserBundles } from "../../data/dynamoDbBundleRepository.js";
 import { publishActivityEvent, classifyActor, maskEmail } from "../../lib/activityAlert.js";
 import { resolveAllowedReturnTo } from "./billingReturnUrl.js";
+import { buildAcquisitionMap, acquisitionToStripeMetadata } from "../../lib/acquisition.js";
 import {
   loadCatalogFromRoot,
   getCatalogBundleById,
@@ -140,6 +141,8 @@ export async function ingestHandler(event) {
       });
     }
 
+    const acquisitionMetadata = acquisitionToStripeMetadata(buildAcquisitionMap(body.acquisition));
+
     const stripe = await getStripeClient({ test: isSynthetic });
 
     logger.info({ message: "Creating checkout session", isSynthetic, bundleId, priceId: priceId.substring(0, 20) + "..." });
@@ -148,7 +151,7 @@ export async function ingestHandler(event) {
       mode: "subscription",
       customer_email: userEmail,
       client_reference_id: hashedSub,
-      metadata: { hashedSub, bundleId },
+      metadata: { hashedSub, bundleId, ...acquisitionMetadata },
       subscription_data: {
         metadata: { hashedSub, bundleId, actor: classifyActor(userEmail) },
       },

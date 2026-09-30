@@ -16,6 +16,7 @@ import { publishActivityEvent, maskEmail, classifyActor } from "../../lib/activi
 import { SANDBOX_RETENTION_MS } from "../../services/diyaGlEntitlement.js";
 import { setOwnerBooksRetention } from "../../data/s3DiyaGlRepository.js";
 import { listClientsByHashedSub } from "../../data/dynamoDbPracticeClientRepository.js";
+import { acquisitionFromStripeMetadata } from "../../lib/acquisition.js";
 
 const logger = createLogger({ source: "app/functions/billing/billingWebhookPost.js" });
 
@@ -270,6 +271,11 @@ async function handleCheckoutComplete(session, { test = false } = {}) {
     cancelAtPeriodEnd: false,
     actor,
   };
+
+  const acquisition = acquisitionFromStripeMetadata(session.metadata);
+  if (acquisition) {
+    bundleRecord.acquisition = acquisition;
+  }
 
   await putBundleByHashedSub(hashedSub, bundleRecord);
   logger.info({ message: "Bundle granted via webhook", hashedSub, bundleId, tokensGranted });

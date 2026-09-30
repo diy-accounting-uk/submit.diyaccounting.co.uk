@@ -543,6 +543,53 @@ describe("bundlePost ingestHandler", () => {
     expect(bundlePutCalls[0][0].input.Item.acquisition).toEqual({ utmSource: "google", landedAt: "2026-01-01T00:00:00.000Z" });
   });
 
+  test("a tagged acquisition replaces one holding only a landing time", async () => {
+    const userId = "user-untagged-then-tagged";
+    mockSend.mockImplementation(async (cmd) => {
+      if (cmd instanceof MockQueryCommand) {
+        return { Items: [{ bundleId: "day-guest", acquisition: { landedAt: "2026-01-01T00:00:00.000Z" } }], Count: 1 };
+      }
+      return {};
+    });
+
+    const result = await grantBundle(
+      userId,
+      { bundleId: "day-guest", acquisition: { gclid: "abc123", utmSource: "google", landedAt: "2026-02-01T00:00:00.000Z" } },
+      { sub: userId },
+      null,
+      { skipCapCheck: true },
+    );
+
+    expect(result.status).toBe("granted");
+    const bundlePutCalls = mockSend.mock.calls.filter(
+      (call) => call[0] instanceof MockPutCommand && call[0].input.Item?.bundleId === "day-guest",
+    );
+    expect(bundlePutCalls[0][0].input.Item.acquisition).toEqual({
+      gclid: "abc123",
+      utmSource: "google",
+      landedAt: "2026-02-01T00:00:00.000Z",
+    });
+  });
+
+  test("an untagged acquisition does not replace a landing-time-only record", async () => {
+    const userId = "user-untagged-twice";
+    mockSend.mockImplementation(async (cmd) => {
+      if (cmd instanceof MockQueryCommand) {
+        return { Items: [{ bundleId: "day-guest", acquisition: { landedAt: "2026-01-01T00:00:00.000Z" } }], Count: 1 };
+      }
+      return {};
+    });
+
+    await grantBundle(userId, { bundleId: "day-guest", acquisition: { landedAt: "2026-02-01T00:00:00.000Z" } }, { sub: userId }, null, {
+      skipCapCheck: true,
+    });
+
+    const bundlePutCalls = mockSend.mock.calls.filter(
+      (call) => call[0] instanceof MockPutCommand && call[0].input.Item?.bundleId === "day-guest",
+    );
+    expect(bundlePutCalls[0][0].input.Item.acquisition).toEqual({ landedAt: "2026-01-01T00:00:00.000Z" });
+  });
+
   // ============================================================================
   // Error Handling Tests (500)
   // ============================================================================

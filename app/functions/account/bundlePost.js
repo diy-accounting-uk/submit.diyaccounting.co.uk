@@ -27,26 +27,9 @@ import * as asyncApiServices from "../../services/asyncApiServices.js";
 import { initializeSalt } from "../../services/subHasher.js";
 import { publishActivityEvent, classifyActor } from "../../lib/activityAlert.js";
 import { processSqsRecords } from "../../lib/sqsWorkerHelper.js";
+import { buildAcquisitionMap, isTaggedAcquisition } from "../../lib/acquisition.js";
 
 const logger = createLogger({ source: "app/functions/account/bundlePost.js" });
-
-// Same field names session-beacon.js carries to the activity event (MK-1), reused here so the
-// account's acquisition map and the traffic-side detail agree on what a "source" is.
-const ACQUISITION_KEYS = ["utmSource", "utmMedium", "utmCampaign", "utmContent", "utmTerm", "gclid", "ref", "landedAt"];
-
-// Picks only the known attribution fields out of whatever the client sent, so an unrelated
-// or malformed body never reaches the stored bundle. Returns undefined when none are present,
-// so the caller can leave the bundle item's acquisition attribute unset rather than writing an
-// empty map.
-function buildAcquisitionMap(source) {
-  if (!source || typeof source !== "object") return undefined;
-  const acquisition = {};
-  for (const key of ACQUISITION_KEYS) {
-    const value = source[key];
-    if (typeof value === "string" && value) acquisition[key] = value;
-  }
-  return Object.keys(acquisition).length > 0 ? acquisition : undefined;
-}
 
 function emitCapMetric(metricName, bundleId) {
   try {
@@ -444,10 +427,14 @@ export async function grantBundle(
     newBundle.qualifiers = effectiveQualifiers;
   }
 
-  // Acquisition: written once for the account, from whichever grant is first to record one,
-  // and carried forward unchanged by every grant after that — never re-derived from a later
-  // request's own (possibly different) stored source.
-  const acquisition = existingAcquisition || buildAcquisitionMap(requestBody.acquisition);
+  // Acquisition: carried forward unchanged from the account's first record, except that a tagged
+  // record (a named source) replaces one that holds only a landing time. A tagged record is never
+  // overwritten, and a later request's own stored source never displaces it.
+  const requestedAcquisition = buildAcquisitionMap(requestBody.acquisition);
+  const acquisition =
+    existingAcquisition && (isTaggedAcquisition(existingAcquisition) || !isTaggedAcquisition(requestedAcquisition))
+      ? existingAcquisition
+      : requestedAcquisition || existingAcquisition;
   if (acquisition) {
     newBundle.acquisition = acquisition;
   }
