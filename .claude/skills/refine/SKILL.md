@@ -95,6 +95,9 @@ have to discover to finish. Then put that in the brief. The checks that paid for
   (`aws --profile submit-ci athena start-query-execution`, workgroup `ci-env-analytics`, database
   `ci_env_analytics`; prod's are `prod-env-analytics` and `prod_env_analytics`), and its column types
   are read back from `get-query-results` ResultSetMetadata; the brief names that proof.
+- **A new view, table or stack resource raises the counts in the environment tests that assert
+  them.** Grep `resourceCountIs` in `infra/test/java` for the resource type (a view is an
+  `AWS::Athena::NamedQuery`), and name each test and its new count in the brief.
 - **Test allow-lists are scoped to the case.** An allow-list that exempts a test case names only
   that case and never exempts a whole class, module or pattern.
 - **The model**, the lowest that fits, from the work not the label: a one-file mechanical edit or
