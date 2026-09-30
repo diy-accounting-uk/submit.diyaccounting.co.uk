@@ -471,8 +471,8 @@ header::after {
 .main-nav a {
   color: var(--color-brand-primary);
   text-decoration: none;
-  font-size: var(--font-size-base);
-  padding: var(--spacing-sm);
+  font-size: var(--font-size-sm);
+  padding: var(--spacing-sm) 0.4em;
   transition:
     color 0.2s,
     background-color 0.2s,
@@ -555,8 +555,8 @@ header::after {
   }
 }
 
-/* From 601px to 672px the seven links still wrap onto two lines. */
-@media (min-width: 601px) and (max-width: 672px) {
+/* From 601px to 770px the seven links still wrap onto two lines. */
+@media (min-width: 601px) and (max-width: 770px) {
   header:has(> .chrome-fallback) {
     padding-bottom: 126px;
   }

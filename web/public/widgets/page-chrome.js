@@ -40,7 +40,7 @@
     { label: "Practice", target: "practice.html" },
     { label: "Spreadsheets", target: "spreadsheets.html" },
     { label: "MTD calendar", target: "mtd-calendar.html" },
-    { label: "Rates", target: "rates.html" },
+    { label: "HMRC Tax Rates and Allowances", target: "rates.html" },
   ];
 
   function findOwnScript() {
