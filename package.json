@@ -437,6 +437,7 @@
     "ads:inventory": "node infra/google/ads/ads-inventory.js",
     "ads:sync": "node infra/google/ads/ads-sync.js",
     "ads:report": "node infra/google/ads/ads-report.js",
+    "ads:conversions-upload": "node infra/google/ads/ads-conversions-upload.js",
     "ads:forecast": "node infra/google/ads/ads-forecast.js",
     "capabilities:index": "node scripts/capabilities-index.mjs",
     "seo:structured-data-submit-prod": "npx sdtt --url https://submit.diyaccounting.co.uk/ --presets Google SocialMedia",

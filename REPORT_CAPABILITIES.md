@@ -360,6 +360,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
     - [DATA-35](#data-35-forecast-google-ads-keyword-performance) Forecast Google Ads keyword performance: use when a task asks how many clicks or conversions a proposed keyword list and daily budget would deliver.
     - [DATA-36](#data-36-answer-google-ads-questions-from-live-data) Answer Google Ads questions from live data: use when asked how the Google Ads account is doing, what a budget would buy, or how to optimise spend.
   - [Google Cloud and GA4 administration](#google-cloud-and-ga4-administration-data)
+    - [DATA-56](#data-56-upload-paid-conversions-to-google-ads) Upload paid conversions to Google Ads: use when paid subscription conversions with a stored gclid must reach Google Ads through the Data Manager API.
     - [DATA-37](#data-37-federate-lambda-credentials-to-google-cloud) Federate Lambda credentials to Google Cloud: use when an analytics Lambda must call a Google Cloud or GA4 API without a stored service-account key.
     - [DATA-38](#data-38-sync-ga4-properties-streams-and-key-events) Sync GA4 properties, streams and key events: use when a GA4 property's streams, key events, enhanced measurement or BigQuery link must match analytics.toml.
     - [DATA-39](#data-39-sync-ga4-in-bigquery-scheduled-queries) Sync GA4-in-BigQuery scheduled queries: use when the ga4_daily BigQuery dataset's scheduled queries must match bigquery.toml.
@@ -3549,7 +3550,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - [Site-side analytics and RUM](#site-side-analytics-and-rum-data): [DATA-23](#data-23-classify-visitor-kind-as-human-bot-or-synthetic) Classify visitor kind as human, bot or synthetic · [DATA-24](#data-24-load-ga4-analytics-on-site-pages) Load GA4 analytics on site pages · [DATA-25](#data-25-configure-and-gate-cloudwatch-rum) Configure and gate CloudWatch RUM · [DATA-26](#data-26-render-the-operator-objectives-dashboard) Render the operator objectives dashboard
 - [SQL views](#sql-views-data): [DATA-27](#data-27-sql-views-activity-and-traffic) SQL views: activity and traffic · [DATA-28](#data-28-sql-views-revenue-and-subscription) SQL views: revenue and subscription · [DATA-29](#data-29-sql-views-submission-and-compliance) SQL views: submission and compliance · [DATA-30](#data-30-sql-views-cost) SQL views: cost · [DATA-31](#data-31-sql-views-dora-and-operations) SQL views: DORA and operations
 - [Google Ads administration](#google-ads-administration-data): [DATA-32](#data-32-sync-the-google-ads-account) Sync the Google Ads account · [DATA-33](#data-33-read-the-google-ads-account-inventory) Read the Google Ads account inventory · [DATA-34](#data-34-report-google-ads-campaign-performance) Report Google Ads campaign performance · [DATA-35](#data-35-forecast-google-ads-keyword-performance) Forecast Google Ads keyword performance · [DATA-36](#data-36-answer-google-ads-questions-from-live-data) Answer Google Ads questions from live data
-- [Google Cloud and GA4 administration](#google-cloud-and-ga4-administration-data): [DATA-37](#data-37-federate-lambda-credentials-to-google-cloud) Federate Lambda credentials to Google Cloud · [DATA-38](#data-38-sync-ga4-properties-streams-and-key-events) Sync GA4 properties, streams and key events · [DATA-39](#data-39-sync-ga4-in-bigquery-scheduled-queries) Sync GA4-in-BigQuery scheduled queries · [DATA-40](#data-40-enable-required-google-cloud-apis) Enable required Google Cloud APIs · [DATA-41](#data-41-assert-gcp-billing-budget-and-stray-project) Assert GCP billing budget and stray project · [DATA-42](#data-42-sync-gcp-workload-identity-and-org-policy) Sync GCP workload identity and org policy · [DATA-43](#data-43-read-the-google-cloud-and-ga4-inventory) Read the Google Cloud and GA4 inventory · [DATA-44](#data-44-assert-google-oauth-client-configuration) Assert Google OAuth client configuration · [DATA-45](#data-45-apply-ga4-and-gcp-iam-role-bindings) Apply GA4 and GCP IAM role bindings · [DATA-46](#data-46-configure-the-youtube-channel-as-code) Configure the YouTube channel as code · [DATA-47](#data-47-authenticate-google-cloud-scripts-via-federated-credentials) Authenticate Google Cloud scripts via federated credentials · [DATA-53](#data-53-reach-google-cloud-from-a-local-session-via-aws-sso) Reach Google Cloud from a local session via AWS SSO
+- [Google Cloud and GA4 administration](#google-cloud-and-ga4-administration-data): [DATA-56](#data-56-upload-paid-conversions-to-google-ads) Upload paid conversions to Google Ads · [DATA-37](#data-37-federate-lambda-credentials-to-google-cloud) Federate Lambda credentials to Google Cloud · [DATA-38](#data-38-sync-ga4-properties-streams-and-key-events) Sync GA4 properties, streams and key events · [DATA-39](#data-39-sync-ga4-in-bigquery-scheduled-queries) Sync GA4-in-BigQuery scheduled queries · [DATA-40](#data-40-enable-required-google-cloud-apis) Enable required Google Cloud APIs · [DATA-41](#data-41-assert-gcp-billing-budget-and-stray-project) Assert GCP billing budget and stray project · [DATA-42](#data-42-sync-gcp-workload-identity-and-org-policy) Sync GCP workload identity and org policy · [DATA-43](#data-43-read-the-google-cloud-and-ga4-inventory) Read the Google Cloud and GA4 inventory · [DATA-44](#data-44-assert-google-oauth-client-configuration) Assert Google OAuth client configuration · [DATA-45](#data-45-apply-ga4-and-gcp-iam-role-bindings) Apply GA4 and GCP IAM role bindings · [DATA-46](#data-46-configure-the-youtube-channel-as-code) Configure the YouTube channel as code · [DATA-47](#data-47-authenticate-google-cloud-scripts-via-federated-credentials) Authenticate Google Cloud scripts via federated credentials · [DATA-53](#data-53-reach-google-cloud-from-a-local-session-via-aws-sso) Reach Google Cloud from a local session via AWS SSO
 - [Finance staging and reconciliation](#finance-staging-and-reconciliation-data): [DATA-48](#data-48-stage-paypal-transactions-for-reconciliation) Stage PayPal transactions for reconciliation · [DATA-49](#data-49-stage-stripe-transactions-for-reconciliation) Stage Stripe transactions for reconciliation · [DATA-50](#data-50-resolve-finance-staging-directory-paths) Resolve finance staging directory paths · [DATA-51](#data-51-turn-staged-stripe-activity-into-diya-gl-lines) Turn staged Stripe activity into diya-gl lines
 <!-- /generated:area DATA -->
 
@@ -4013,6 +4014,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 ### Google Cloud and GA4 administration (DATA)
 
 <!-- generated:group google-cloud-and-ga4-administration-data -->
+- [DATA-56](#data-56-upload-paid-conversions-to-google-ads) Upload paid conversions to Google Ads
 - [DATA-37](#data-37-federate-lambda-credentials-to-google-cloud) Federate Lambda credentials to Google Cloud
 - [DATA-38](#data-38-sync-ga4-properties-streams-and-key-events) Sync GA4 properties, streams and key events
 - [DATA-39](#data-39-sync-ga4-in-bigquery-scheduled-queries) Sync GA4-in-BigQuery scheduled queries
@@ -4026,6 +4028,16 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - [DATA-47](#data-47-authenticate-google-cloud-scripts-via-federated-credentials) Authenticate Google Cloud scripts via federated credentials
 - [DATA-53](#data-53-reach-google-cloud-from-a-local-session-via-aws-sso) Reach Google Cloud from a local session via AWS SSO
 <!-- /generated:group google-cloud-and-ga4-administration-data -->
+
+#### DATA-56 Upload paid conversions to Google Ads
+
+- **Use when:** paid subscription conversions with a stored gclid must reach Google Ads through the Data Manager API.
+- **Does:** ads-conversions-upload.js reads paid Stripe charges with a stored gclid from the lake. It sends each with the invoice id as transactionId and adUserData granted. Without a send flag it prints the events and calls no Google API.
+- **Run:** `npm run ads:conversions-upload`; `npm run ads:conversions-upload -- --since 2026-09-28 --validate-only`; `npm run ads:conversions-upload -- --apply`
+- **Entry:** `infra/google/ads/ads-conversions-upload.js:main`; `infra/google/ads/ads-conversions-upload.js:shapeConversionEvents`
+- **Files:** infra/google/ads/ads-conversions-upload.js, app/unit-tests/scripts/adsConversionsUpload.test.js, infra/google/ads/ads.toml
+- **Keywords:** google ads conversion upload, offline conversions, data manager api, gclid, transactionId, consent, import from clicks
+- **Related:** DATA-33, DATA-34
 
 #### DATA-37 Federate Lambda credentials to Google Cloud
 
@@ -6042,6 +6054,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - config composition: [OPS-126](#ops-126-provide-config-composition-helpers-for-cdk-code)
 - config validation: [OPS-84](#ops-84-validate-required-environment-variables-at-startup)
 - conflict card: [SS-27](#ss-27-save-and-load-books-locally-and-via-submits-cloud-store)
+- consent: [DATA-56](#data-56-upload-paid-conversions-to-google-ads)
 - consent banner: [SITE-15](#site-15-show-and-persist-cookie-consent), [SS-31](#ss-31-load-ga4-analytics-with-consent-gating)
 - consent denied default: [DATA-24](#data-24-load-ga4-analytics-on-site-pages)
 - consent mode: [SITE-15](#site-15-show-and-persist-cookie-consent)
@@ -6138,6 +6151,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - dashboard snapshot: [DATA-18](#data-18-publish-the-nightly-operator-dashboard-snapshot)
 - dashboards: [OPS-117](#ops-117-provision-the-observability-stack)
 - data export: [OPS-41](#ops-41-export-a-customers-gdpr-subject-access-data)
+- data manager api: [DATA-56](#data-56-upload-paid-conversions-to-google-ads)
 - data masking: [OPS-81](#ops-81-mask-and-redact-sensitive-data-from-logs)
 - data migration: [OPS-16](#ops-16-run-dynamodb-data-migrations)
 - data mode: [SS-15](#ss-15-extract-diya-gl-data-and-financial-reports-from-populated-packages)
@@ -6447,6 +6461,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - gap analysis: [HMRC-37](#hmrc-37-plan-the-hmrc-mtd-vat-and-itsa-rollout)
 - gate fixtures: [SS-10](#ss-10-extract-reconciliation-scenarios-from-master-books)
 - gate probes: [OPS-24](#ops-24-gate-probes-on-the-main-apex-deploy)
+- gclid: [DATA-56](#data-56-upload-paid-conversions-to-google-ads)
 - gcp billing budget: [DATA-41](#data-41-assert-gcp-billing-budget-and-stray-project)
 - gcp iam bindings: [DATA-45](#data-45-apply-ga4-and-gcp-iam-role-bindings)
 - gdpr erasure: [OPS-40](#ops-40-delete-a-customers-data-for-gdpr-erasure)
@@ -6491,6 +6506,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - glue data quality: [DATA-11](#data-11-run-glue-data-quality-checks)
 - glue database: [DATA-12](#data-12-provision-the-analytics-lake-and-athena-workgroup)
 - glue table: [DATA-13](#data-13-catalogue-cloudfront-access-logs-for-athena)
+- google ads conversion upload: [DATA-56](#data-56-upload-paid-conversions-to-google-ads)
 - google ads forecast: [DATA-35](#data-35-forecast-google-ads-keyword-performance)
 - google ads inventory: [DATA-33](#data-33-read-the-google-ads-account-inventory)
 - google ads report: [DATA-34](#data-34-report-google-ads-campaign-performance)
@@ -6613,6 +6629,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - identity provider: [OPS-101](#ops-101-set-up-github-oidc-deployment-roles)
 - identity-sandbox: [CH-02](#ch-02-verify-the-companies-house-oauth-app-configuration)
 - identity.toml: [DATA-37](#data-37-federate-lambda-credentials-to-google-cloud), [DATA-42](#data-42-sync-gcp-workload-identity-and-org-policy)
+- import from clicks: [DATA-56](#data-56-upload-paid-conversions-to-google-ads)
 - import prior year: [HMRC-13](#hmrc-13-submit-and-manage-the-self-employment-annual-summary)
 - in flight: [DEV-27](#dev-27-render-the-open-work-board)
 - in-flight items: [SS-46](#ss-46-render-the-spreadsheets-work-board)
@@ -6900,6 +6917,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - observability stack: [OPS-117](#ops-117-provision-the-observability-stack)
 - observabilitystack: [OPS-09](#ops-09-deploy-environment-stacks-and-populate-secrets)
 - offline: [SS-29](#ss-29-serve-diya-gl-as-an-offline-pwa)
+- offline conversions: [DATA-56](#data-56-upload-paid-conversions-to-google-ads)
 - oidc: [OPS-101](#ops-101-set-up-github-oidc-deployment-roles)
 - oidc exchange: [DATA-47](#data-47-authenticate-google-cloud-scripts-via-federated-credentials)
 - oidc provider: [OPS-103](#ops-103-bootstrap-a-new-aws-account-for-cdk)
@@ -7576,6 +7594,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - transaction: [CH-05](#ch-05-file-a-change-of-registered-office-address), [CH-06](#ch-06-file-a-change-of-registered-email-address), [CH-09](#ch-09-query-and-submit-document-transactions)
 - transaction lifecycle: [DEV-04](#dev-04-simulate-companies-house-identity-and-filing)
 - transaction_status: [DATA-48](#data-48-stage-paypal-transactions-for-reconciliation)
+- transactionid: [DATA-56](#data-56-upload-paid-conversions-to-google-ads)
 - transcript: [OPS-90](#ops-90-encode-captured-video-frames-and-captions), [OPS-92](#ops-92-redact-secrets-from-video-artefacts)
 - trend: [DATA-18](#data-18-publish-the-nightly-operator-dashboard-snapshot)
 - trend deep link: [DATA-26](#data-26-render-the-operator-objectives-dashboard)

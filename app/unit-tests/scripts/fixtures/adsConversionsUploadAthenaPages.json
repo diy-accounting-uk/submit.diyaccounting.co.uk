@@ -1,0 +1,42 @@
+[
+  {
+    "ResultSet": {
+      "Rows": [
+        {
+          "Data": [
+            { "VarCharValue": "invoice_id" },
+            { "VarCharValue": "gclid" },
+            { "VarCharValue": "net_minor" },
+            { "VarCharValue": "currency" },
+            { "VarCharValue": "created" }
+          ]
+        },
+        {
+          "Data": [
+            { "VarCharValue": "in_1TestAAA" },
+            { "VarCharValue": "Cj0KCQtestA" },
+            { "VarCharValue": "1200" },
+            { "VarCharValue": "GBP" },
+            { "VarCharValue": "1790000000" }
+          ]
+        }
+      ]
+    },
+    "NextToken": "page-2"
+  },
+  {
+    "ResultSet": {
+      "Rows": [
+        {
+          "Data": [
+            { "VarCharValue": "in_1TestBBB" },
+            { "VarCharValue": "Cj0KCQtestB" },
+            { "VarCharValue": "4900" },
+            { "VarCharValue": "GBP" },
+            { "VarCharValue": "1790086400" }
+          ]
+        }
+      ]
+    }
+  }
+]
