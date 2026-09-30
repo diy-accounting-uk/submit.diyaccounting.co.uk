@@ -5,15 +5,14 @@
 // Usage: node scripts/build-mtd-calendar.mjs   (npm run build:mtd-calendar)
 // Every fact below needs at least one source file listing its id; the build throws otherwise.
 
-import { readdirSync, readFileSync, writeFileSync } from "node:fs";
+import { writeFileSync } from "node:fs";
 import { join, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
 import prettier from "prettier";
+import { loadSources, formatIsoDate, escapeHtml, sourceQuoteHtml } from "./tax-sources.mjs";
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), "..");
-export const SOURCES_DIR = join(ROOT, ".claude", "skills", "tax-sources", "sources");
 export const PAGE_PATH = join(ROOT, "web", "public", "mtd-calendar.html");
-export const MAX_SOURCE_AGE_DAYS = 30;
 
 export const DATED_FACTS = [
   {
@@ -72,35 +71,10 @@ export function allFactIds() {
   return [...DATED_FACTS, QUARTERLY_FACT, FINAL_DECLARATION_FACT, ...UNDATED_FACTS].map((f) => f.id);
 }
 
-export function loadSources(dir = SOURCES_DIR) {
-  return readdirSync(dir)
-    .filter((f) => f.endsWith(".json"))
-    .sort()
-    .map((f) => ({ name: f.slice(0, -5), ...JSON.parse(readFileSync(join(dir, f), "utf8")) }));
-}
-
-const MONTHS = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
-
-export function formatIsoDate(iso) {
-  const [year, month, day] = iso.split("-").map(Number);
-  return `${day} ${MONTHS[month - 1]} ${year}`;
-}
-
-function escapeHtml(text) {
-  return text.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
-}
-
 function sourcesHtml(factId, sources) {
   const supporting = sources.filter((s) => s.facts.includes(factId));
   if (supporting.length === 0) throw new Error(`Fact ${factId} has no source file`);
-  return supporting
-    .map(
-      (s) =>
-        `<blockquote class="source-quote"><p>${escapeHtml(s.quote)}</p>` +
-        `<footer><a href="${escapeHtml(s.url)}" rel="noopener">${escapeHtml(s.url.replace("https://www.gov.uk", "gov.uk"))}</a>` +
-        ` <span class="retrieved">Retrieved ${formatIsoDate(s.retrieved)}</span></footer></blockquote>`,
-    )
-    .join("");
+  return supporting.map(sourceQuoteHtml).join("");
 }
 
 function entryHtml(fact, sources, heading, extraHtml = "") {

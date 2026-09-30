@@ -6,27 +6,9 @@
 // Exits 1 when a page cannot be fetched or a quote is absent.
 
 import { readdirSync, readFileSync } from "node:fs";
-import { join, dirname } from "node:path";
+import { join } from "node:path";
 import { fileURLToPath } from "node:url";
-
-export const SOURCES_DIR = join(dirname(fileURLToPath(import.meta.url)), "..", ".claude", "skills", "tax-sources", "sources");
-
-export function normaliseText(text) {
-  return text
-    .replace(/<(script|style)[^>]*>[\s\S]*?<\/\1>/gi, " ")
-    .replace(/<[^>]+>/g, " ")
-    .replace(/&nbsp;/g, " ")
-    .replace(/&amp;/g, "&")
-    .replace(/&pound;/g, "£")
-    .replace(/&#(\d+);/g, (_, code) => String.fromCharCode(Number(code)))
-    .replace(/\s+([.,;:])/g, "$1")
-    .replace(/\s+/g, " ")
-    .trim();
-}
-
-export function quoteAppearsIn(quote, pageHtml) {
-  return normaliseText(pageHtml).includes(normaliseText(quote));
-}
+import { SOURCES_DIR, quoteAppearsIn } from "./tax-sources.mjs";
 
 async function main() {
   const wanted = process.argv.slice(2);

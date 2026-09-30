@@ -33,6 +33,11 @@
     <priority>0.8</priority>
   </url>
   <url>
+    <loc>https://submit.diyaccounting.co.uk/rates.html</loc>
+    <changefreq>monthly</changefreq>
+    <priority>0.8</priority>
+  </url>
+  <url>
     <loc>https://submit.diyaccounting.co.uk/bundles.html</loc>
     <changefreq>monthly</changefreq>
     <priority>0.8</priority>

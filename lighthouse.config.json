@@ -45,6 +45,9 @@
       "path": "/mtd-calendar.html"
     },
     {
+      "path": "/rates.html"
+    },
+    {
       "path": "/bundles.html",
       "thresholds": {
         "performance": 51,

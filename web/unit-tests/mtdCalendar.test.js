@@ -3,49 +3,12 @@
 
 import { describe, test, expect } from "vitest";
 import { readFileSync } from "node:fs";
-import {
-  PAGE_PATH,
-  MAX_SOURCE_AGE_DAYS,
-  allFactIds,
-  loadSources,
-  renderMtdCalendar,
-  renderCalendarHtml,
-  formatIsoDate,
-} from "../../scripts/build-mtd-calendar.mjs";
+import { PAGE_PATH, allFactIds, renderMtdCalendar, renderCalendarHtml } from "../../scripts/build-mtd-calendar.mjs";
+import { loadSources, formatIsoDate } from "../../scripts/tax-sources.mjs";
 
 const sources = loadSources();
-const DAY_MS = 24 * 60 * 60 * 1000;
-
-describe("MTD calendar sources", () => {
-  test("every fact on the page has a source file listing its id", () => {
-    const listed = new Set(sources.flatMap((s) => s.facts));
-    const unsourced = allFactIds().filter((id) => !listed.has(id));
-    expect(unsourced).toEqual([]);
-  });
-
-  test("every source file lists only facts the page shows", () => {
-    const shown = new Set(allFactIds());
-    const orphaned = sources.flatMap((s) => s.facts.filter((id) => !shown.has(id)).map((id) => `${s.name}: ${id}`));
-    expect(orphaned).toEqual([]);
-  });
-
-  test("every source is a gov.uk page with a quote and an ISO retrieval date", () => {
-    for (const s of sources) {
-      expect(s.url, s.name).toMatch(/^https:\/\/www\.gov\.uk\//);
-      expect(s.quote.length, s.name).toBeGreaterThan(20);
-      expect(s.retrieved, s.name).toMatch(/^\d{4}-\d{2}-\d{2}$/);
-      expect(s.facts.length, s.name).toBeGreaterThan(0);
-    }
-  });
-
-  test(`every source was retrieved within ${MAX_SOURCE_AGE_DAYS} days`, () => {
-    const now = Date.now();
-    const stale = sources
-      .filter((s) => now - Date.parse(`${s.retrieved}T00:00:00Z`) > MAX_SOURCE_AGE_DAYS * DAY_MS)
-      .map((s) => `${s.name}: retrieved ${s.retrieved}`);
-    expect(stale, "run the tax-sources skill to refresh").toEqual([]);
-  });
-});
+const calendarFactIds = new Set(allFactIds());
+const calendarSources = sources.filter((s) => s.facts.some((id) => calendarFactIds.has(id)));
 
 describe("MTD calendar page", () => {
   test("the committed page equals what the build script renders", async () => {
@@ -58,7 +21,7 @@ describe("MTD calendar page", () => {
 
   test("each fact shows its quote, source link and retrieval date", () => {
     const html = readFileSync(PAGE_PATH, "utf8");
-    for (const s of sources) {
+    for (const s of calendarSources) {
       expect(html).toContain(s.url);
       expect(html).toContain(`Retrieved ${formatIsoDate(s.retrieved)}`);
     }

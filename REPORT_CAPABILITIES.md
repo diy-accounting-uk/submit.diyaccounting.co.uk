@@ -684,11 +684,11 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 #### SITE-22 Source and publish sourced tax facts
 
 - **Use when:** a page states a tax date, threshold or rate and each figure needs a gov.uk source, or a source has passed 30 days old.
-- **Does:** The tax-sources skill keeps one JSON file per gov.uk source (url, retrieved date, verbatim quote, fact ids) and says how to refresh one or all. verify-tax-sources.mjs fetches each page and fails when a quote is missing. build-mtd-calendar.mjs renders web/public/mtd-calendar.html from those files and throws when a fact has no source. The unit test fails on an unsourced fact, a source older than 30 days, or a committed page that differs from the render.
-- **Run:** `node scripts/verify-tax-sources.mjs [name]`; `npm run build:mtd-calendar`; `npx vitest run web/unit-tests/mtdCalendar.test.js`
-- **Entry:** `scripts/build-mtd-calendar.mjs:renderMtdCalendar`; `scripts/verify-tax-sources.mjs:quoteAppearsIn`
-- **Files:** .claude/skills/tax-sources/SKILL.md, .claude/skills/tax-sources/sources/, scripts/build-mtd-calendar.mjs, scripts/verify-tax-sources.mjs, web/public/mtd-calendar.html, web/unit-tests/mtdCalendar.test.js
-- **Keywords:** tax sources, gov.uk, mtd calendar, thresholds, deadlines, quote, retrieved, rates, sourced facts
+- **Does:** The tax-sources skill keeps one JSON file per gov.uk source (url, retrieved date, verbatim quote, fact ids) and says how to refresh one or all. verify-tax-sources.mjs fetches each page and fails when a quote is missing. build-mtd-calendar.mjs renders web/public/mtd-calendar.html from those files and throws when a fact has no source. build-rates-page.mjs renders web/public/rates.html (rate tables per tax year and financial year, each cell sourced) and the rates-data.js module, and copies five diya-gl tax modules into web/public/lib/diya-gl/tax/. rates-calculator.js and rates-compute.js run the tax, National Insurance, VAT, CIS and corporation tax calculator in the browser over those modules. The unit tests fail on an unsourced fact, a source older than 30 days, a committed page that differs from the render, or an engine figure that differs from its quoted gov.uk figure.
+- **Run:** `node scripts/verify-tax-sources.mjs [name]`; `npm run build:mtd-calendar`; `npm run build:rates-page`; `npx vitest run web/unit-tests/mtdCalendar.test.js web/unit-tests/ratesPage.test.js web/unit-tests/ratesCompute.test.js`
+- **Entry:** `scripts/build-mtd-calendar.mjs:renderMtdCalendar`; `scripts/tax-sources.mjs:quoteAppearsIn`; `scripts/build-rates-page.mjs:renderRatesPage`; `web/public/lib/rates/rates-compute.js:computeSelfEmployed`
+- **Files:** .claude/skills/tax-sources/SKILL.md, .claude/skills/tax-sources/sources/, scripts/build-mtd-calendar.mjs, scripts/verify-tax-sources.mjs, scripts/tax-sources.mjs, scripts/rates-fact-ids.mjs, scripts/build-rates-page.mjs, web/public/mtd-calendar.html, web/public/rates.html, web/public/lib/rates/, web/public/lib/diya-gl/tax/, web/unit-tests/mtdCalendar.test.js, web/unit-tests/ratesPage.test.js, web/unit-tests/ratesCompute.test.js, web/unit-tests/taxSources.test.js
+- **Keywords:** tax sources, gov.uk, mtd calendar, thresholds, deadlines, quote, retrieved, rates, sourced facts, rates and allowances, calculator, corporation tax, national insurance, income tax, mileage, cis
 - **Related:** SITE-10, SITE-12
 
 ### Frontend infrastructure (SITE)
@@ -5880,7 +5880,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - cached formula results: [SS-16](#ss-16-write-workbooks-from-diya-gl-data)
 - cached status: [BILL-13](#bill-13-check-a-clients-authorisation-status)
 - caching policy: [OPS-115](#ops-115-provision-the-edgecloudfront-stack)
-- calculator: [SS-01](#ss-01-run-the-diya-gl-calculation-engine)
+- calculator: [SITE-22](#site-22-source-and-publish-sourced-tax-facts), [SS-01](#ss-01-run-the-diya-gl-calculation-engine)
 - callback: [SITE-01](#site-01-sign-customers-in-via-cognito)
 - called workflow: [OPS-33](#ops-33-enforce-workflow-to-workflow-permission-grants)
 - callsubmitapi: [MCP-07](#mcp-07-file-vat-returns-and-accounts-via-api)
@@ -5949,6 +5949,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - ci or prod: [OPS-02](#ops-02-derive-environment-and-deployment-names-from-a-branch)
 - ci slot: [OPS-10](#ops-10-claim-release-and-track-a-ci-deployment-slot)
 - ci-set: [OPS-05](#ops-05-promote-a-ci-deployment-to-the-ci-apex), [OPS-10](#ops-10-claim-release-and-track-a-ci-deployment-slot)
+- cis: [SITE-22](#site-22-source-and-publish-sourced-tax-facts)
 - cis benchmark: [OPS-121](#ops-121-provision-the-security-baseline-stack)
 - citation references: [DEV-26](#dev-26-enforce-claude-code-conventions-via-rules-and-hooks)
 - claim slot: [OPS-10](#ops-10-claim-release-and-track-a-ci-deployment-slot)
@@ -6063,7 +6064,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - copilot workspace setup: [OPS-55](#ops-55-configure-github-copilot-review-and-workspace-setup)
 - copy secrets: [OPS-106](#ops-106-replicate-secrets-across-aws-accounts)
 - copyright header: [DEV-20](#dev-20-check-spdx-licence-headers)
-- corporation tax: [SS-04](#ss-04-apply-book-edits-and-derivations)
+- corporation tax: [SITE-22](#site-22-source-and-publish-sourced-tax-facts), [SS-04](#ss-04-apply-book-edits-and-derivations)
 - corpus cli: [MCP-12](#mcp-12-read-invoices-from-the-local-mail-index)
 - corpus index: [DATA-20](#data-20-publish-the-nightly-raw-export-for-indexing)
 - correlation headers: [SITE-07](#site-07-format-http-responses-and-errors)
@@ -6619,6 +6620,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - in-page script: [OPS-89](#ops-89-overlay-pointer-and-caption-cues-on-video)
 - incident response: [OPS-64](#ops-64-runbook-information-security-operations)
 - income and relief: [HMRC-19](#hmrc-19-calculate-itsa-tax-liability)
+- income tax: [SITE-22](#site-22-source-and-publish-sourced-tax-facts)
 - independent recalculation: [SS-01](#ss-01-run-the-diya-gl-calculation-engine)
 - index: [DEV-43](#dev-43-find-existing-tooling-before-building-any)
 - index-only: [SS-17](#ss-17-build-reconciliation-pages-and-record-releases)
@@ -6810,6 +6812,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - micro-entity accounts: [CH-07](#ch-07-preview-micro-entity-accounts-before-filing), [CH-08](#ch-08-file-micro-entity-accounts-to-companies-house), [DATA-52](#data-52-pull-the-companys-own-diya-gl-book-into-the-lake)
 - migration: [BILL-40](#bill-40-migrate-the-hashed-sub-salt), [BILL-41](#bill-41-backfill-the-stripe-test-mode-qualifier)
 - migration runner: [OPS-16](#ops-16-run-dynamodb-data-migrations)
+- mileage: [SITE-22](#site-22-source-and-publish-sourced-tax-facts)
 - milestones: [MCP-14](#mcp-14-document-the-submission-mcps-plan-and-tool-reference)
 - minimum functionality standards: [HMRC-38](#hmrc-38-check-readiness-for-the-itsa-recognition-email)
 - mock billing: [SITE-08](#site-08-bootstrap-the-app-server), [DEV-07](#dev-07-simulate-the-public-demos-billing-and-oauth)
@@ -6845,6 +6848,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - multi-account check: [OPS-102](#ops-102-verify-the-multi-account-aws-setup)
 - my passes: [BILL-09](#bill-09-list-a-users-issued-passes)
 - naming convention: [OPS-02](#ops-02-derive-environment-and-deployment-names-from-a-branch)
+- national insurance: [SITE-22](#site-22-source-and-publish-sourced-tax-facts)
 - native auth: [DEV-16](#dev-16-manage-the-durable-cognito-test-user-lifecycle)
 - natwest csv: [MCP-10](#mcp-10-import-a-natwest-bank-statement-into-diya-gl-lines)
 - navigation structure: [SITE-12](#site-12-map-the-site-structure)
@@ -7126,6 +7130,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - rate limit: [SITE-05](#site-05-submit-support-tickets), [OPS-79](#ops-79-track-an-alarm-familys-daily-remedy-budget)
 - rate limit agent: [OPS-20](#ops-20-enforce-daily-run-budgets-for-agent-paths)
 - rates: [SITE-22](#site-22-source-and-publish-sourced-tax-facts)
+- rates and allowances: [SITE-22](#site-22-source-and-publish-sourced-tax-facts)
 - raw export: [DATA-20](#data-20-publish-the-nightly-raw-export-for-indexing)
 - re-key: [BILL-40](#bill-40-migrate-the-hashed-sub-salt)
 - read-only: [DATA-44](#data-44-assert-google-oauth-client-configuration)

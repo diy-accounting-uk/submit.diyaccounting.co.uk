@@ -57,6 +57,7 @@ const CLOUDFRONT_INVALIDATION_PATHS = [
   "/diy-accounting-limited.html",
   "/spreadsheets.html",
   "/mtd-calendar.html",
+  "/rates.html",
   "/android-chrome-192.png",
   "/android-chrome-512.png",
   "/apple-touch-icon.png",

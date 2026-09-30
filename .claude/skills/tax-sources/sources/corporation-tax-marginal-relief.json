@@ -1,0 +1,13 @@
+{
+  "url": "https://www.gov.uk/government/publications/rates-and-allowances-corporation-tax/rates-and-allowances-corporation-tax",
+  "retrieved": "2026-09-30",
+  "quote": "Rate 2026 2025 2024 2023 2022 Small profits rate (companies with profits under £50,000) 19% 19 % 19% 19% — Main rate (companies with profits over £250,000) 25% 25% 25% 25% — Main rate (all profits except ring fence profits) — — — — 19% Marginal Relief lower limit £50,000 £50,000 £50,000 £50,000 — Marginal Relief upper limit £250,000 £250,000 £250,000 £250,000 — Standard fraction 3/200 3/200 3/200 3/200 —",
+  "facts": [
+    "corporation-tax-lower-limit-fy2025",
+    "corporation-tax-lower-limit-fy2026",
+    "corporation-tax-upper-limit-fy2025",
+    "corporation-tax-upper-limit-fy2026",
+    "corporation-tax-marginal-relief-fraction-fy2025",
+    "corporation-tax-marginal-relief-fraction-fy2026"
+  ]
+}
