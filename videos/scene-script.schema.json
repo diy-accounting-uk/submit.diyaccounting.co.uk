@@ -458,6 +458,20 @@
           }
         },
         {
+          "if": { "properties": { "action": { "const": "testScenario" } } },
+          "then": {
+            "additionalProperties": false,
+            "required": ["action", "value"],
+            "description": "Sets the page's hidden Gov-Test-Scenario select (#testScenario unless target says otherwise) without opening the developer panel, so HMRC's sandbox answers with sample data instead of \"no data found\". Fails when the page has no such select or option. Place it before the step that submits the form. Needs auth \"user\".",
+            "properties": {
+              "action": {},
+              "value": { "type": "string", "minLength": 1 },
+              "target": { "type": "string", "minLength": 1 },
+              "note": { "type": "string" }
+            }
+          }
+        },
+        {
           "if": { "properties": { "action": { "const": "hmrcAuthorise" } } },
           "then": {
             "additionalProperties": false,
@@ -470,7 +484,11 @@
               "headline": { "type": "string", "minLength": 1 },
               "keyWord": { "type": "string", "minLength": 1 },
               "pauseMs": { "type": "number", "minimum": 0 },
-              "note": { "type": "string" }
+              "note": { "type": "string" },
+              "fastForward": {
+                "type": "boolean",
+                "description": "Runs this step at zero pacing while the rest of its scene keeps its own. For an HMRC authorisation a full-pace video already shows."
+              }
             }
           }
         },

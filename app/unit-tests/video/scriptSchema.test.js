@@ -49,6 +49,33 @@ function baseScript(overrides = {}) {
   };
 }
 
+describe("fastForward steps", () => {
+  const withStep = (step) =>
+    baseScript({ auth: "user", scenes: [{ id: "picker", chapter: "Picker", steps: [{ action: "goto", url: "/" }, step] }] });
+
+  test("accepts a step marked fastForward: true", () => {
+    expect(() => validateScript(withStep({ action: "hmrcAuthorise", fastForward: true }))).not.toThrow();
+  });
+
+  test("rejects a non-boolean fastForward value on a step", () => {
+    expect(() => validateScript(withStep({ action: "hmrcAuthorise", fastForward: "yes" }))).toThrow(/steps\[1\]\.fastForward/);
+  });
+});
+
+describe("testScenario steps", () => {
+  const withStep = (auth, step) =>
+    baseScript({ auth, scenes: [{ id: "form", chapter: "Form", steps: [{ action: "goto", url: "/" }, step] }] });
+
+  test("names the scenario value it sets", () => {
+    expect(() => validateScript(withStep("user", { action: "testScenario", value: "MULTIPLE_LIABILITIES_2018_19" }))).not.toThrow();
+    expect(() => validateScript(withStep("user", { action: "testScenario" }))).toThrow(/value/);
+  });
+
+  test("needs a signed-in script", () => {
+    expect(() => validateScript(withStep("none", { action: "testScenario", value: "SINGLE_PAYMENT" }))).toThrow(/auth to be "user"/);
+  });
+});
+
 describe("every scene script in the repo", () => {
   const names = fs
     .readdirSync(videosDir)

@@ -20,6 +20,8 @@ import {
   selectPendingUploads,
   recordVideoId,
   buildVideoResource,
+  hasVideoLink,
+  resolveDescription,
   resolveDeclaredStatus,
   resolvePrivacyStatus,
   resolveQuotaProject,
@@ -1120,5 +1122,59 @@ describe("metadata sync", () => {
     });
     expect(setVideoSnippetImpl).toHaveBeenCalledTimes(1);
     expect(setVideoSnippetImpl.mock.calls[0][0].resource.id).toBe("yt-1");
+  });
+});
+
+describe("video links in a description", () => {
+  const list = {
+    videos: [
+      { id: "hmrc-authorise", videoId: "AAAAAAAAAAA", description: "The full walkthrough." },
+      { id: "view-payments", description: "Payments. See {{video:hmrc-authorise}} for access." },
+      { id: "pending-target", description: "Nothing yet." },
+    ],
+  };
+  const linking = list.videos[1];
+
+  test("fills the link from the target entry's videoId", () => {
+    expect(resolveDescription(linking, list)).toBe("Payments. See https://youtu.be/AAAAAAAAAAA for access.");
+  });
+
+  test("leaves a description without a link unchanged", () => {
+    expect(resolveDescription(list.videos[0], list)).toBe("The full walkthrough.");
+  });
+
+  test("follows the videoId the list holds now, not a fixed one", () => {
+    const changed = { videos: [{ ...list.videos[0], videoId: "BBBBBBBBBBB" }, linking] };
+    expect(resolveDescription(linking, changed)).toContain("https://youtu.be/BBBBBBBBBBB");
+  });
+
+  test("throws when the target has no videoId yet", () => {
+    const notUploaded = { videos: [{ id: "hmrc-authorise", description: "x" }, linking] };
+    expect(() => resolveDescription(linking, notUploaded)).toThrow(/hmrc-authorise.*no videoId/);
+  });
+
+  test("throws when the target is not in the list", () => {
+    expect(() => resolveDescription(linking, { videos: [linking] })).toThrow(/not in videos\/publish.json/);
+  });
+
+  test("hasVideoLink tells a linking description from a plain one", () => {
+    expect(hasVideoLink(linking)).toBe(true);
+    expect(hasVideoLink(list.videos[0])).toBe(false);
+  });
+
+  test("the sync plan compares the live description with the filled link", () => {
+    const uploaded = { videos: [list.videos[0], { ...linking, videoId: "CCCCCCCCCCC", title: "T" }] };
+    const live = {
+      AAAAAAAAAAA: { title: undefined, description: "The full walkthrough." },
+      CCCCCCCCCCC: { title: "T", description: "Payments. See https://youtu.be/AAAAAAAAAAA for access." },
+    };
+    expect(planMetadataSync({ list: uploaded, liveSnippetsById: live }).filter((change) => change.id === "view-payments")).toEqual([]);
+  });
+
+  test("every description link in publish.json names an entry of the list", () => {
+    const real = JSON.parse(fs.readFileSync(path.join(process.cwd(), "videos", "publish.json"), "utf8"));
+    const withIds = { videos: real.videos.map((video) => ({ ...video, videoId: video.videoId ?? "ZZZZZZZZZZZ" })) };
+    for (const video of real.videos) expect(() => resolveDescription(video, withIds)).not.toThrow();
+    expect(real.videos.filter(hasVideoLink).length).toBeGreaterThan(0);
   });
 });

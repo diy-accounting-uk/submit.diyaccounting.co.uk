@@ -66,16 +66,25 @@ function runOrThrow(bin, args, opts = {}) {
 // half the frame rate, two B-frames, CABAC, BT.709 tags, faststart. No overlay is drawn by
 // ffmpeg — everything visible was already drawn in the page, so it survives into the stills too.
 //
-// crf 12 with -tune animation is the measured default for this content: on a 3840x2160, 30fps,
-// 3492-frame capture (videos/view-obligations.json against the simulator), crf 12/animation gave
-// the smallest file of the four combinations tried (crf 10/12 x stillimage/animation) at an SSIM
-// against the source frames indistinguishable from the other three (0.99965, against 0.99962 to
-// 0.99970) — every combination is already visually lossless at this content's motion level, so
-// size decides. width/height are the frames' own captured resolution (the CSS viewport times
-// deviceScaleFactor), not a fixed 1080p target, so YouTube's re-encode always has the
-// higher-resolution source to draw its 4K delivery ladder from.
-export function encodeVideo({ ffmpegBin, manifestPath, outputPath, fps, width, height, crf = 12, tune = "animation" }) {
-  const args = [
+// crf 22, preset medium, -tune animation is the measured default for this content. On the first 30
+// seconds of a 3840x2160, 30fps simulator capture of videos/view-liabilities.json (470 captured
+// frames, JPEG screencast source), against a crf 12 / preset slow encode:
+//
+//   crf 12 slow    14.4 MB   SSIM 1.0000 (reference)   184 s to encode (machine loaded)
+//   crf 18 slow     9.7 MB   SSIM 0.99955              101 s
+//   crf 22 slow     7.2 MB   SSIM 0.99915               29 s
+//   crf 22 medium   7.4 MB   SSIM 0.99914               18 s
+//   crf 26 medium   5.4 MB   SSIM 0.99847               16 s
+//
+// crf 22 medium halves the file and encodes ten times faster at an SSIM still above 0.999. The
+// size target is 2 Mbps of video for screen content (about 30 MB per two minutes), against the
+// 35 to 45 Mbps YouTube suggests for 4K camera footage; YouTube re-encodes every upload to VP9
+// regardless, so a cleaner-than-needed source only costs upload time. The resolution stays at
+// the frames' own captured size (the CSS viewport times deviceScaleFactor) so YouTube's 4K tier
+// keeps a 4K source. The rest follows YouTube's recommended upload settings: H.264 High, CABAC,
+// closed GOP of half the frame rate, BT.709, yuv420p, faststart.
+export function buildEncodeArgs({ manifestPath, outputPath, fps, width, height, crf = 22, preset = "medium", tune = "animation" }) {
+  return [
     "-y",
     "-f",
     "concat",
@@ -94,7 +103,7 @@ export function encodeVideo({ ffmpegBin, manifestPath, outputPath, fps, width, h
     "-profile:v",
     "high",
     "-preset",
-    "slow",
+    preset,
     "-tune",
     tune,
     "-crf",
@@ -119,7 +128,10 @@ export function encodeVideo({ ffmpegBin, manifestPath, outputPath, fps, width, h
     "+faststart",
     outputPath,
   ];
-  return runOrThrow(ffmpegBin, args);
+}
+
+export function encodeVideo({ ffmpegBin, ...options }) {
+  return runOrThrow(ffmpegBin, buildEncodeArgs(options));
 }
 
 // A 3-across montage of the per-scene stills, so the operator reviews one image instead of nine.

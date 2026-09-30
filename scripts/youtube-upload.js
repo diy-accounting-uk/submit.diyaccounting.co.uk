@@ -167,6 +167,26 @@ export function resolvePrivacyStatus(declaredStatus, fallbackPrivacyStatus) {
   return declaredStatus.privacyStatus ?? fallbackPrivacyStatus;
 }
 
+// A description can link to another video in the list with {{video:<id>}}. The link is filled
+// from that entry's videoId when the description is used, so nothing hardcodes a YouTube id
+// that only exists after the upload. A target with no videoId yet throws: the linking video
+// must not go out with a dead link.
+const VIDEO_LINK_PATTERN = /\{\{video:([a-z0-9-]+)\}\}/g;
+
+export function hasVideoLink(entry) {
+  return typeof entry.description === "string" && new RegExp(VIDEO_LINK_PATTERN.source).test(entry.description);
+}
+
+export function resolveDescription(entry, list) {
+  if (typeof entry.description !== "string") return entry.description;
+  return entry.description.replace(VIDEO_LINK_PATTERN, (_match, targetId) => {
+    const target = list.videos.find((video) => video.id === targetId);
+    if (!target) throw new Error(`${entry.id}: description links to "${targetId}", which is not in videos/publish.json`);
+    if (!target.videoId) throw new Error(`${entry.id}: description links to "${targetId}", which has no videoId yet; upload it first`);
+    return `https://youtu.be/${target.videoId}`;
+  });
+}
+
 export function buildVideoResource(entry, { publicVideo, declaredStatus = {} }) {
   return {
     snippet: {
@@ -671,7 +691,8 @@ const SYNCED_SNIPPET_FIELDS = ["title", "description"];
  */
 export function planMetadataSync({ list, liveSnippetsById }) {
   const plan = [];
-  for (const entry of list.videos.filter((video) => video.videoId)) {
+  for (const listed of list.videos.filter((video) => video.videoId)) {
+    const entry = { ...listed, description: resolveDescription(listed, list) };
     const live = liveSnippetsById[entry.videoId] ?? {};
     for (const field of SYNCED_SNIPPET_FIELDS) {
       if (live[field] !== entry[field]) {
@@ -742,7 +763,8 @@ export async function runMetadataSync({
     return plan;
   }
   for (const videoId of new Set(plan.map((change) => change.videoId))) {
-    const entry = list.videos.find((video) => video.videoId === videoId);
+    const listed = list.videos.find((video) => video.videoId === videoId);
+    const entry = { ...listed, description: resolveDescription(listed, list) };
     const resource = buildSnippetUpdate({ entry, liveSnippet: liveSnippetsById[videoId] });
     await setVideoSnippetImpl({ resource, accessToken, quotaProject });
     log(`${entry.id} https://youtu.be/${videoId} snippet updated: ${entry.title}`);
@@ -818,7 +840,13 @@ export async function publishEntry({
 }) {
   log(`Uploading ${entry.id} (${publicVideo ? "public" : "unlisted"})...`);
   const declaredStatus = resolveDeclaredStatus(list, entry);
-  const videoId = await uploadVideoImpl({ entry, accessToken, quotaProject, publicVideo, declaredStatus });
+  const videoId = await uploadVideoImpl({
+    entry: { ...entry, description: resolveDescription(entry, list) },
+    accessToken,
+    quotaProject,
+    publicVideo,
+    declaredStatus,
+  });
   log(`  video id: ${videoId}`);
   const recorded = recordVideoId(list, entry.id, videoId);
   savePublishListImpl(recorded);
@@ -893,7 +921,10 @@ export async function main() {
     requireFile(entry.captionFile, `caption file for ${entry.id}`);
   }
 
-  for (const entry of pending) {
+  // A description that links to another video goes out after the video it links to.
+  const linkTargetsFirst = [...pending].sort((a, b) => Number(hasVideoLink(a)) - Number(hasVideoLink(b)));
+  for (const pendingEntry of linkTargetsFirst) {
+    const entry = list.videos.find((video) => video.id === pendingEntry.id);
     list = await publishEntry({ entry, list, accessToken, quotaProject, publicVideo });
   }
 }

@@ -33,6 +33,7 @@ import {
 } from "./lib/video/overlay.js";
 import { executeAction, SceneStepError } from "./lib/video/actions.js";
 import { createWaitPhase } from "./lib/video/waitPhase.js";
+import { isFastForward } from "./lib/video/fastForward.js";
 import { createCapture } from "./lib/video/capture.js";
 import { writeManifest, resolveFfmpegBinary, encodeVideo, buildContactSheet, mixNarrationTrack, muxNarration } from "./lib/video/encode.js";
 import { writeVtt, writeTranscript, writeTimeline, captionTextForStep } from "./lib/video/captions.js";
@@ -242,9 +243,8 @@ function narrationRequestsFor(script, selectedSceneIds) {
   const requests = [];
   for (const scene of script.scenes) {
     if (scene.offCamera === true) continue;
-    const fastForward = scene.fastForward === true || (selectedSceneIds ? !selectedSceneIds.has(scene.id) : false);
-    if (fastForward) continue;
     for (const step of scene.steps) {
+      if (isFastForward(scene, step, selectedSceneIds)) continue;
       if (step.action === "caption") requests.push({ text: step.text, sceneId: scene.id });
       else if (step.caption) requests.push({ text: step.caption, sceneId: scene.id });
     }
@@ -455,8 +455,7 @@ async function main() {
       // A script can mark a scene fastForward: true so it always runs sped up on every
       // recording (a repeated preamble such as sign-in and day pass) — the same zero-pacing
       // treatment --scene gives an unselected scene, but never turned off by omitting --scene.
-      const fastForward = scene.fastForward === true || (selectedSceneIds ? !selectedSceneIds.has(scene.id) : false);
-      const pacing = offCamera || fastForward ? scalePacing(script.pacing, 0) : scaledPacing;
+      const sceneFastForward = isFastForward(scene, {}, selectedSceneIds);
 
       let offCameraStartedAt = null;
       if (offCamera) {
@@ -465,12 +464,18 @@ async function main() {
       }
 
       if (!offCamera && hasNavigated) await overlayChapter(page, scene.chapter);
-      console.log(`\n=== scene "${scene.id}" (${scene.chapter}) ${offCamera ? "[off-camera]" : fastForward ? "[fast-forward]" : ""} ===`);
+      console.log(
+        `\n=== scene "${scene.id}" (${scene.chapter}) ${offCamera ? "[off-camera]" : sceneFastForward ? "[fast-forward]" : ""} ===`,
+      );
 
       const entries = [];
 
       for (let stepIndex = 0; stepIndex < scene.steps.length; stepIndex++) {
         const step = scene.steps[stepIndex];
+        // A step can also be fast-forwarded on its own (a repeated HMRC authorisation inside a
+        // scene that otherwise plays at full pace), so the pacing is chosen per step.
+        const fastForward = isFastForward(scene, step, selectedSceneIds);
+        const pacing = offCamera || fastForward ? scalePacing(script.pacing, 0) : scaledPacing;
         const waitPhaseCtl = createWaitPhase(page, step, unscaledPacing, capture, WAIT_CAPABLE_ACTIONS.has(step.action));
         const ctx = {
           baseUrl: args.baseUrl,
@@ -638,7 +643,10 @@ async function main() {
         const description = describeStep(step, waitMs, values, now);
         // An off-camera step names nothing a viewer sees: it never reaches the transcript, so it
         // never has to describe itself in words a reader would notice weren't on screen.
-        if (!offCamera) entries.push({ caption: captionTextForStep(step), description, note: step.note || null });
+        // A testScenario step sets a form value the viewer never sees, so the transcript has
+        // nothing to say about it.
+        if (!offCamera && step.action !== "testScenario")
+          entries.push({ caption: captionTextForStep(step), description, note: step.note || null });
 
         const compression = WAIT_CAPABLE_ACTIONS.has(step.action) ? compressionFor(waitMs, unscaledPacing) : null;
 
@@ -668,7 +676,7 @@ async function main() {
       // no note — the whole scene is absent from the transcript, not just quiet within it.
       if (!offCamera) sceneRecords.push({ id: scene.id, chapter: scene.chapter, entries });
 
-      if (scene.still && !fastForward && !offCamera) {
+      if (scene.still && !sceneFastForward && !offCamera) {
         const stillPath = path.join(stillsDir, `${String(sceneIndex + 1).padStart(2, "0")}-${scene.id}.png`);
         await page.screenshot({ path: stillPath });
       }

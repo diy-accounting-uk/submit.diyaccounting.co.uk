@@ -27,6 +27,7 @@ import readline from "node:readline";
 export const DISPATCHABLE_SCRIPTS = [
   "tour",
   "view-obligations",
+  "hmrc-authorise",
   "view-return",
   "view-liabilities",
   "view-payments",

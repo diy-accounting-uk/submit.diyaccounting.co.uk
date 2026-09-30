@@ -4,7 +4,13 @@
 // app/unit-tests/video/encode.test.js
 
 import { describe, test, expect } from "vitest";
-import { frameFileName, buildManifest, buildNarrationMixArgs, muxNarrationArgs } from "../../../scripts/lib/video/encode.js";
+import {
+  frameFileName,
+  buildManifest,
+  buildEncodeArgs,
+  buildNarrationMixArgs,
+  muxNarrationArgs,
+} from "../../../scripts/lib/video/encode.js";
 
 describe("frameFileName", () => {
   test("pads to six digits", () => {
@@ -124,5 +130,41 @@ describe("muxNarrationArgs", () => {
   test("keeps +faststart on the remux, since this is the mp4 site-video-capture.js ships", () => {
     const args = muxNarrationArgs({ videoPath: "video.mp4", narrationTrackPath: "mix.wav", outputPath: "out.mp4" });
     expect(args).toContain("+faststart");
+  });
+});
+
+describe("buildEncodeArgs", () => {
+  const base = { manifestPath: "frames/manifest.txt", outputPath: "out.mp4", fps: 30, width: 3840, height: 2160 };
+  const valueAfter = (args, flag) => args[args.indexOf(flag) + 1];
+
+  test("encodes at crf 22, preset medium, tune animation by default", () => {
+    const args = buildEncodeArgs(base);
+    expect(valueAfter(args, "-crf")).toBe("22");
+    expect(valueAfter(args, "-preset")).toBe("medium");
+    expect(valueAfter(args, "-tune")).toBe("animation");
+  });
+
+  test("keeps the frames' own resolution and YouTube's closed GOP of half the frame rate", () => {
+    const args = buildEncodeArgs(base);
+    expect(valueAfter(args, "-vf")).toBe("scale=3840:2160:flags=lanczos,format=yuv420p");
+    expect(valueAfter(args, "-g")).toBe("15");
+    expect(valueAfter(args, "-keyint_min")).toBe("15");
+    expect(valueAfter(args, "-sc_threshold")).toBe("0");
+  });
+
+  test("writes H.264 High with CABAC, BT.709 tags and the moov atom first", () => {
+    const args = buildEncodeArgs(base);
+    expect(valueAfter(args, "-profile:v")).toBe("high");
+    expect(valueAfter(args, "-coder")).toBe("1");
+    expect(valueAfter(args, "-colorspace")).toBe("bt709");
+    expect(valueAfter(args, "-movflags")).toBe("+faststart");
+    expect(args[args.length - 1]).toBe("out.mp4");
+  });
+
+  test("takes crf, preset and tune overrides", () => {
+    const args = buildEncodeArgs({ ...base, crf: 18, preset: "slow", tune: "stillimage" });
+    expect(valueAfter(args, "-crf")).toBe("18");
+    expect(valueAfter(args, "-preset")).toBe("slow");
+    expect(valueAfter(args, "-tune")).toBe("stillimage");
   });
 });

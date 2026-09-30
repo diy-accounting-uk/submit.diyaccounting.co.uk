@@ -36,6 +36,7 @@ const STEP_REQUIRED_FIELDS = {
   press: ["key"],
   tab: [],
   select: ["target", "value"],
+  testScenario: ["value"],
   scroll: [],
   highlight: ["target"],
   caption: ["text"],
@@ -52,7 +53,15 @@ const STEP_REQUIRED_FIELDS = {
 
 // Actions that run one of the behaviour tests' journey step functions. They drive credentials
 // and a real identity provider, so a script may only use them once it has declared auth "user".
-const USER_ONLY_ACTIONS = new Set(["login", "consent", "ensureBundle", "hmrcAuthorise", "companiesHouseAuthorise", "submitReturn"]);
+const USER_ONLY_ACTIONS = new Set([
+  "testScenario",
+  "login",
+  "consent",
+  "ensureBundle",
+  "hmrcAuthorise",
+  "companiesHouseAuthorise",
+  "submitReturn",
+]);
 
 // HMRC sandbox services a script may ask its minted test user to be enrolled in. Defaults to
 // ["mtd-vat"] when a script omits the field, so an existing VAT-only script needs no change.
@@ -100,6 +109,7 @@ function validateStep(step, scenePath, sceneId, stepIndex, auth) {
   if (!(step.action in STEP_REQUIRED_FIELDS)) fail(path, `unknown action "${step.action}"`);
   requireKeys(step, STEP_REQUIRED_FIELDS[step.action], path);
   if ("target" in step) validateTarget(step.target, `${path}.target`);
+  if ("fastForward" in step && typeof step.fastForward !== "boolean") fail(`${path}.fastForward`, "must be a boolean");
   if (USER_ONLY_ACTIONS.has(step.action) && auth !== "user") {
     fail(path, `action "${step.action}" needs the script's auth to be "user", not "${auth}"`);
   }

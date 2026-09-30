@@ -1,10 +1,10 @@
 {
   "$schema": "./scene-script.schema.json",
-  "name": "view-penalties",
-  "title": "Check for VAT penalty points with HMRC",
-  "description": "A signed-in walk through VAT penalties: sign in, take out a day pass, ask HMRC whether a VAT registration number carries any penalty points, and read the answer.",
+  "name": "hmrc-authorise",
+  "title": "Give DIY Accounting Submit access to HMRC",
+  "description": "The HMRC authorisation every VAT and Income Tax activity starts with: sign in, take out a day pass, send the first request, sign in at HMRC, grant access and come back to the answer.",
   "auth": "user",
-  "pages": ["web/public/index.html", "web/public/auth/login.html", "web/public/bundles.html", "web/public/hmrc/vat/vatPenalties.html"],
+  "pages": ["web/public/index.html", "web/public/auth/login.html", "web/public/bundles.html", "web/public/hmrc/vat/vatObligations.html"],
   "viewport": { "width": 1920, "height": 1080 },
   "deviceScaleFactor": 2,
   "fps": 30,
@@ -46,9 +46,9 @@
           "action": "goto",
           "url": "/",
           "waitFor": "#mainContent",
-          "caption": "HMRC can charge a penalty for a late VAT return or payment.",
-          "headline": "Check for penalty points",
-          "keyWord": "penalty"
+          "caption": "Every activity that talks to HMRC starts with one grant of access.",
+          "headline": "One grant of access",
+          "keyWord": "access"
         },
         {
           "action": "caption",
@@ -115,35 +115,44 @@
         },
         {
           "action": "await",
-          "until": "button:has-text('VAT Penalties (HMRC)')",
+          "until": "button:has-text('VAT Obligations (HMRC)')",
           "label": "Waiting for the day pass to unlock the activity"
         },
         { "action": "hold", "ms": 500 }
       ]
     },
     {
-      "id": "penalties-form",
+      "id": "obligations-form",
       "chapter": "Ask HMRC",
       "still": true,
+      "fastForward": true,
       "steps": [
         {
           "action": "click",
-          "target": "button:has-text('VAT Penalties (HMRC)')",
-          "caption": "Open VAT Penalties to check for penalty points.",
-          "headline": "Open VAT Penalties",
-          "keyWord": "Penalties"
+          "target": "button:has-text('VAT Obligations (HMRC)')",
+          "caption": "Open VAT Obligations to ask HMRC what is due.",
+          "headline": "Open VAT Obligations",
+          "keyWord": "Obligations"
         },
-        { "action": "await", "until": "#vatPenaltiesForm", "label": "Opening the penalties form" },
+        { "action": "await", "until": "#vatObligationsForm", "label": "Opening the obligations form" },
         {
           "action": "type",
           "target": "#vrn",
           "text": "{{hmrcVatNumber}}",
           "clear": true,
-          "caption": "Type the VAT registration number. There is no date range to set.",
+          "caption": "Type the VAT registration number.",
           "headline": "Enter your VAT number",
           "keyWord": "number"
         },
-        { "action": "testScenario", "value": "MULTIPLE_PENALTIES" },
+        {
+          "action": "fill",
+          "target": "#fromDate",
+          "value": "{{monthsAgo:11}}",
+          "caption": "Then the stretch of time to look at.",
+          "headline": "Choose the start date",
+          "keyWord": "start"
+        },
+        { "action": "fill", "target": "#toDate", "value": "{{today}}" },
         { "action": "hold", "ms": 700 }
       ]
     },
@@ -151,7 +160,6 @@
       "id": "authorise",
       "chapter": "Authorise with HMRC",
       "still": true,
-      "fastForward": true,
       "steps": [
         {
           "action": "click",
@@ -162,9 +170,9 @@
         },
         {
           "action": "hmrcAuthorise",
-          "caption": "See the full HMRC access walkthrough in our HMRC authorisation video.",
-          "headline": "Grant access, faster",
-          "keyWord": "faster",
+          "caption": "Sign in to HMRC and say yes once. Later requests reuse that access.",
+          "headline": "Grant HMRC access",
+          "keyWord": "Grant",
           "timeoutMs": 60000
         },
         { "action": "hold", "ms": 500 }
@@ -177,25 +185,25 @@
       "steps": [
         {
           "action": "await",
-          "until": "#penaltiesResults",
+          "until": "#obligationsResults",
           "label": "Waiting for HMRC",
           "timeoutMs": 180000,
-          "caption": "HMRC answers for the last 24 months.",
+          "caption": "With access granted, HMRC answers straight away.",
           "headline": "HMRC sends the answer",
           "keyWord": "answer"
         },
-        { "action": "scroll", "target": "#penaltiesResults" },
+        { "action": "scroll", "target": "#obligationsTable" },
         { "action": "hold", "ms": 1500 },
         {
           "action": "point",
-          "target": "#penaltiesResults",
-          "caption": "Any penalty points or charges show here.",
-          "headline": "Read any penalty points",
-          "keyWord": "penalty",
+          "target": "#obligationsTable",
+          "caption": "Every other activity now runs without asking again.",
+          "headline": "No second request",
+          "keyWord": "second",
           "dwellMs": 600
         },
         { "action": "hold", "ms": 2500 },
-        { "action": "still", "name": "penalties-results" },
+        { "action": "still", "name": "access-granted" },
         { "action": "hold", "ms": 1500 }
       ]
     }
