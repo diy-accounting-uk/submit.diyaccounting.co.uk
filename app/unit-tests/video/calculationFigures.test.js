@@ -28,22 +28,26 @@ function placeholderSteps(script) {
   );
 }
 
-function sceneRetrievesCalculation(scene) {
+function calculationRetrieveIndex(scene) {
   const steps = scene.steps || [];
   const opensCalculationPage = steps.some((step) => step.action === "goto" && String(step.url).includes("taxCalculation.html"));
-  return steps.some(
-    (step) => step.action === "click" && ((opensCalculationPage && step.target === "#triggerBtn") || step.target === "#showEarlierYearBtn"),
+  const awaitsDeclaration = steps.some((step) => step.action === "await" && String(step.until).includes("#declarationContainer"));
+  return steps.findIndex(
+    (step) =>
+      step.action === "click" &&
+      ((opensCalculationPage && step.target === "#triggerBtn") ||
+        (awaitsDeclaration && step.target === "#retrieveBtn") ||
+        step.target === "#showEarlierYearBtn"),
   );
 }
 
 function scenesRetrievingWithoutScenario(script) {
   return script.scenes.filter((scene) => {
-    if (!sceneRetrievesCalculation(scene)) return false;
-    const steps = scene.steps;
-    const retrieveIndex = steps.findIndex(
-      (step) => step.action === "click" && (step.target === "#triggerBtn" || step.target === "#showEarlierYearBtn"),
-    );
-    return !steps.slice(0, retrieveIndex).some((step) => step.action === "testScenario" && CALCULATION_SCENARIOS.includes(step.value));
+    const retrieveIndex = calculationRetrieveIndex(scene);
+    if (retrieveIndex === -1) return false;
+    return !scene.steps
+      .slice(0, retrieveIndex)
+      .some((step) => step.action === "testScenario" && CALCULATION_SCENARIOS.includes(step.value));
   });
 }
 
@@ -65,6 +69,21 @@ describe("calculation figures in scene scripts", () => {
   test("a scene that retrieves a calculation with no scenario is rejected", () => {
     const script = { scenes: [{ id: "calc", steps: [{ action: "click", target: "#showEarlierYearBtn" }] }] };
     expect(scenesRetrievingWithoutScenario(script).map((scene) => scene.id)).toEqual(["calc"]);
+  });
+
+  test("a final declaration scene that retrieves with no scenario is rejected", () => {
+    const script = {
+      scenes: [
+        {
+          id: "declare",
+          steps: [
+            { action: "click", target: "#retrieveBtn" },
+            { action: "await", until: "#declarationContainer" },
+          ],
+        },
+      ],
+    };
+    expect(scenesRetrievingWithoutScenario(script).map((scene) => scene.id)).toEqual(["declare"]);
   });
 
   test("a step that expects the placeholder figure is rejected", () => {

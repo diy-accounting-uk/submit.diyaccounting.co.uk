@@ -610,6 +610,7 @@
           "keyWord": "final"
         },
         { "action": "await", "until": "#itsaFinalDeclarationRetrieveForm", "label": "Opening the final declaration form" },
+        { "action": "testScenario", "target": "#calculationTestScenario", "value": "UK_SE_GIFTAID_EXAMPLE" },
         {
           "action": "click",
           "target": "#retrieveBtn",
