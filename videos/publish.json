@@ -118,7 +118,7 @@
       "group": "itsa",
       "publish": true,
       "pipelineVersion": 1,
-      "sourceRun": 34904726583,
+      "sourceRun": 36913209658,
       "sourceArtifact": "video-itsa-quarterly-update-ci",
       "videoFile": "target/videos/video-itsa-quarterly-update-ci/itsa-quarterly-update.mp4",
       "captionFile": "target/videos/video-itsa-quarterly-update-ci/itsa-quarterly-update.vtt",
@@ -148,7 +148,7 @@
       "group": "itsa",
       "publish": true,
       "pipelineVersion": 7,
-      "sourceRun": 36366746493,
+      "sourceRun": 36909768760,
       "sourceArtifact": "video-itsa-year-ci",
       "videoFile": "target/videos/video-itsa-year-ci/itsa-year.mp4",
       "captionFile": "target/videos/video-itsa-year-ci/itsa-year.vtt",
@@ -267,8 +267,8 @@
       "id": "company-lookup",
       "group": "companies-house",
       "publish": true,
-      "pipelineVersion": 6,
-      "sourceRun": 36340310985,
+      "pipelineVersion": 9,
+      "sourceRun": 36916677202,
       "sourceArtifact": "video-company-lookup-ci",
       "videoFile": "target/videos/video-company-lookup-ci/company-lookup.mp4",
       "captionFile": "target/videos/video-company-lookup-ci/company-lookup.vtt",
@@ -276,7 +276,7 @@
       "description": "DIY Accounting Submit is a free tool for sending VAT returns to HMRC under Making Tax Digital, and for looking up companies at Companies House. This video shows searching for a company by name or number and reading back its Companies House profile: status, incorporation date and registered address. It's a real recording of the live product, not a mockup or a design draft. Try it yourself at https://submit.diyaccounting.co.uk.",
       "tags": ["DIY Accounting", "Companies House", "company lookup", "company search"],
       "categoryId": "27",
-      "videoId": "k7LIHmu9Y5Y"
+      "videoId": "YQh-fzFYp7k"
     },
     {
       "id": "file-confirmation-statement",
@@ -297,27 +297,27 @@
       "id": "change-registered-office",
       "group": "companies-house",
       "publish": true,
-      "pipelineVersion": 6,
+      "pipelineVersion": 9,
       "videoFile": "target/videos/local-change-registered-office/change-registered-office.mp4",
       "captionFile": "target/videos/local-change-registered-office/change-registered-office.vtt",
       "title": "DIY Accounting Submit: change registered office address",
       "description": "DIY Accounting Submit is a free tool for filing with Companies House and HMRC. This video shows changing a company's registered office address: look up the current address, enter the new one, review it, then file with Companies House. This is a sandbox preview, recorded against a local simulator, not a live filing. Try the VAT side of the product now at https://submit.diyaccounting.co.uk.",
       "tags": ["DIY Accounting", "Companies House", "registered office", "sandbox"],
       "categoryId": "27",
-      "videoId": "hxl5x2hztgw"
+      "videoId": "JjxmMWrLRRk"
     },
     {
       "id": "change-registered-email",
       "group": "companies-house",
       "publish": true,
-      "pipelineVersion": 6,
+      "pipelineVersion": 9,
       "videoFile": "target/videos/change-registered-email/change-registered-email.mp4",
       "captionFile": "target/videos/change-registered-email/change-registered-email.vtt",
       "title": "DIY Accounting Submit: change registered email address",
       "description": "DIY Accounting Submit is a free tool for filing with Companies House and HMRC. This video shows changing a company's registered email address: check eligibility, enter the new address, review it, then file with Companies House. This is a sandbox preview, recorded against a local simulator, not a live filing. Try the VAT side of the product now at https://submit.diyaccounting.co.uk.",
       "tags": ["DIY Accounting", "Companies House", "registered email", "sandbox"],
       "categoryId": "27",
-      "videoId": "1sr_qUKEaSk"
+      "videoId": "xtNOJSUJrKY"
     },
     {
       "id": "file-micro-entity-accounts",
@@ -353,8 +353,8 @@
       "id": "itsa-self-employment-amend",
       "group": "itsa",
       "publish": true,
-      "pipelineVersion": 7,
-      "sourceRun": 36474680949,
+      "pipelineVersion": 9,
+      "sourceRun": 36915576462,
       "sourceArtifact": "video-itsa-self-employment-amend-ci",
       "videoFile": "target/videos/video-itsa-self-employment-amend-ci/itsa-self-employment-amend.mp4",
       "captionFile": "target/videos/video-itsa-self-employment-amend-ci/itsa-self-employment-amend.vtt",
@@ -362,7 +362,7 @@
       "description": "DIY Accounting Submit is a free tool for filing Self Assessment under Making Tax Digital for Income Tax. A signed-in walk through Making Tax Digital for Income Tax: see what a self-employment business has filed so far this tax year, open it, and correct a figure with HMRC. This is a sandbox preview, recorded against HMRC's test environment, not a live filing. Try the VAT side of the product now at https://submit.diyaccounting.co.uk.",
       "tags": ["DIY Accounting", "Self Assessment", "HMRC", "Making Tax Digital", "ITSA"],
       "categoryId": "27",
-      "videoId": "qmQ6MYeN1b0"
+      "videoId": "e_o0vfPl-HQ"
     },
     {
       "id": "itsa-uk-property-year",
@@ -429,7 +429,7 @@
       "group": "itsa",
       "publish": true,
       "pipelineVersion": 7,
-      "sourceRun": 36500793584,
+      "sourceRun": 36914520911,
       "sourceArtifact": "video-itsa-carry-back-adjustments-ci",
       "videoFile": "target/videos/video-itsa-carry-back-adjustments-ci/itsa-carry-back-adjustments.mp4",
       "captionFile": "target/videos/video-itsa-carry-back-adjustments-ci/itsa-carry-back-adjustments.vtt",
@@ -444,7 +444,7 @@
       "group": "itsa",
       "publish": true,
       "pipelineVersion": 7,
-      "sourceRun": 36593311059,
+      "sourceRun": 36912420462,
       "sourceArtifact": "video-itsa-in-year-estimate-ci",
       "videoFile": "target/videos/video-itsa-in-year-estimate-ci/itsa-in-year-estimate.mp4",
       "captionFile": "target/videos/video-itsa-in-year-estimate-ci/itsa-in-year-estimate.vtt",
