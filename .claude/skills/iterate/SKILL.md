@@ -102,12 +102,13 @@ every slot is held; `main` deploys to prod and takes no ci slot.
   content proof (`git diff <agent-branch> <batch> -- <its files>` empty). Read the diff before
   landing it; a test that asserts a count across the whole stack, or a comment that restates the
   code, is fixed on the batch, not sent back.
-- **Once per batch before its first push**: check `[ -L node_modules ]` in the batch worktree and
-  stop with a message when it fails, then `./mvnw clean verify` and then `npm test` on the
-  merged tree, serially in one background command, because the two run concurrently push the load
-  average past 100 and vitest files time out. Then run `npm run test:<suite>Behaviour-simulator`
-  for every suite whose routes, pages or helpers the batch changed, serially (e.g. `auth`, `bundle`,
-  `postVatReturn`, `practiceLicence` when the batch touched auth, sign-in or practice code).
+- **Once per batch before its first push**: run `scripts/batch-check.sh <batch-branch>` in one
+  background command. It checks out a clean detached worktree of the branch, links `node_modules`,
+  and runs the CI gates serially: maven verify, `npm test`, browser tests, Prettier, Spotless, the
+  two ESLint ratchets, ESLint on added files and the docker build when the branch touches it.
+  Each gate prints PASS, FAIL or SKIP with its log path. Fix every FAIL before the push. Then run
+  `npm run test:<suite>Behaviour-simulator` for every suite whose routes, pages or helpers the
+  batch changed, serially (e.g. `auth`, `bundle`, `postVatReturn`, `practiceLicence` when the batch touched auth, sign-in or practice code).
   Then one push, one PR whose body says what each row turned out
   to be, and `/watch`.
 

@@ -99,7 +99,7 @@ jobs:
             --by-resource-arn "$SOURCE_TABLE_ARN" \
             --region "${{ env.AWS_REGION }}" \
             --query 'sort_by(RecoveryPoints[?Status==`COMPLETED`], &CompletionDate)[-1].RecoveryPointArn' \
-            --output text)
+            --output json | jq -r '. // "None"')
 
           if [ -z "$RP" ] || [ "$RP" = "None" ]; then
             echo "FAIL: no completed recovery point for $SOURCE_TABLE in $VAULT_NAME."
@@ -252,11 +252,12 @@ jobs:
         run: |
           set -euo pipefail
           # The copy carries the source account's table ARN, so match on the table name.
+          # JSON output: text output applies --query to each page, printing one ARN per page.
           RP=$(aws backup list-recovery-points-by-backup-vault \
             --backup-vault-name "$VAULT_NAME" \
             --region "${{ env.AWS_REGION }}" \
             --query "sort_by(RecoveryPoints[?Status=='COMPLETED' && ends_with(ResourceArn, ':table/$SOURCE_TABLE')], &CompletionDate)[-1].RecoveryPointArn" \
-            --output text)
+            --output json | jq -r '. // "None"')
 
           if [ -z "$RP" ] || [ "$RP" = "None" ]; then
             echo "No copied recovery point for $SOURCE_TABLE in $VAULT_NAME yet."
