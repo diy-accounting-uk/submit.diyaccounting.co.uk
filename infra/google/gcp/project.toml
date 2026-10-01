@@ -34,6 +34,8 @@ services = [
   "bigquerydatatransfer.googleapis.com",
   "youtube.googleapis.com",
   "googleads.googleapis.com",
+  # Data Manager (infra/google/ads/ads-conversions-upload.js): events:ingest for paid conversions.
+  "datamanager.googleapis.com",
   "iap.googleapis.com",
   "apikeys.googleapis.com",
   # Workload identity federation (infra/google/gcp/gcp-identity-sync.js): the pool and providers live in
