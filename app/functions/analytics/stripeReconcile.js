@@ -18,6 +18,7 @@ import { createLogger } from "../../lib/logger.js";
 import { getStripeClient } from "../../lib/stripeClient.js";
 
 const CHARGE_API_VERSION = "2024-12-18.acacia";
+import { subscriptionPeriod } from "../../lib/stripeSubscriptionPeriod.js";
 import { initializeSalt, hashSub } from "../../services/subHasher.js";
 
 const logger = createLogger({ source: "app/functions/analytics/stripeReconcile.js" });
@@ -209,12 +210,13 @@ export function sanitizeCharge(
 
 export function sanitizeSubscription(subscription) {
   const item = subscription.items?.data?.[0];
+  const period = subscriptionPeriod(subscription);
   return {
     id: subscription.id,
     status: subscription.status,
     created: subscription.created,
-    current_period_start: subscription.current_period_start ?? null,
-    current_period_end: subscription.current_period_end ?? null,
+    current_period_start: period.start,
+    current_period_end: period.end,
     cancel_at_period_end: subscription.cancel_at_period_end ?? null,
     canceled_at: subscription.canceled_at ?? null,
     customer: hashCustomerId(subscription.customer),
