@@ -1,6 +1,6 @@
 ---
 name: donor-usage
-description: List everyone who donated through Stripe or PayPal, holds a prod submit account, or submitted anything, as one union with a flag per set, with each person's donations, account date and submissions (VAT returns since 2026-02-21, every other submission kind since the activity lake's first day), into a private file at the workspace root. Read-only apart from one salt read the operator accepts. Invoke when the operator asks which donors use submit, whether donors file, who the users and donors are, or for the donor-to-usage cross reference.
+description: List everyone who donated through Stripe or PayPal, subscribed to submit, holds a prod submit account, or submitted anything, as one union with a flag per set, with each person's donations, account date and submissions (VAT returns since 2026-02-21, every other submission kind since the activity lake's first day), into a private file at the workspace root. Read-only apart from one salt read the operator accepts. Invoke when the operator asks which donors use submit, whether donors file, who the users and donors are, or for the donor-to-usage cross reference.
 ---
 
 <!-- SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0 -->
@@ -23,7 +23,7 @@ Set by the operator before the first run; re-ask only if they say they changed:
 |---|---|
 | Salt read | One `GetSecretValue` of `prod/submit/user-sub-hash-salt` from the SSO admin session. It fires `env-salt-secret-unexpected-read` and opens an alarm issue; close it after the run with the run's date and "donor-usage run" as the evidence. |
 | What counts as a donation | Donations only: Stripe charges from the spreadsheets site's donation Payment Links, and PayPal donation receipts. Submit subscriptions and pass purchases are excluded. |
-| Shape | The union, never the intersection: one row per person who is a donor, a non-test prod account holder, or a submitter, with a flag per set. A submitter seen only as a lake hash with no account match is an "unknown account" row keyed by the hash's first 8 characters. |
+| Shape | The union, never the intersection: one row per person who is a donor, a subscriber, a non-test prod account holder, or a submitter, with a flag per set. A submitter seen only as a lake hash with no account match is an "unknown account" row keyed by the hash's first 8 characters. |
 | Detail per row | Name, email, donation dates and totals, account creation date, submission kinds with counts and first and last dates. |
 | Merge rule | Email or name: rows from different sources merge on a case-insensitive exact email match, or a normalised full-name match (lower case, whitespace collapsed, titles dropped). Say which rule merged every row. |
 
@@ -36,6 +36,7 @@ customer table.
 |---|---|---|
 | Stripe donations | Stripe live account | the live key the way `scripts/finance/stripe-stage.js` reads it (`infra/stripe/stripe.toml` `[keys.prod].live`, Secrets Manager in `eu-west-2`, `AWS_PROFILE=submit-prod`); list every succeeded charge since the window start (`autoPagingToArray` takes `limit` up to 10000); a donation is a charge whose checkout session (`checkout.sessions.list({ payment_intent })`) has a `payment_link` that is a donation link: resolve each `plink_…` id with `paymentLinks.list` (active and inactive) and match its URL to a `[[payment_link]]` in `stripe.toml`, or its `payment_intent_data.metadata.bundleId` starting `donation-`; `metadata.bundleId` on the charge itself is unreliable (4 of 105 at the first full run); a charge with no payment link is a submit subscription; name and email from `billing_details`, falling back to the customer object; a part refund shows net |
 | PayPal donations | PayPal API | the transaction search `scripts/finance/paypal-stage.js` wraps (`app/services/paypalTransactionSearch.js`), every event code since the window start; a donation is `T0013` with status `S` (each carries the donation button's item text); `T0002` (an accounts-product payment), `T0011` (check the payer: the operator's own transfer is not a donation) and funding, transfer, cashback, conversion and payment-out codes are not; name and email from `payer_info` |
+| Subscribers | Stripe live account, and DynamoDB `prod-env-bundles` | `subscriptions.list({ status: "all" })` with the customer expanded, every subscription created or active since the window start: customer email and name, product and price (resolve the bundle through `stripe.toml`), status, start, cancel or end date, charges paid and total (the subscription charges set aside from the donation rule); then, per account hash and salt version, `Query` `prod-env-bundles` (key `hashedSub` + `bundleId`) for the paid bundles the account holds now and their expiry; PayPal `T0002` accounts-product payments are purchases, listed with the subscriber columns and marked as such |
 | Accounts | Cognito `prod-env-user-pool` | `aws cognito-idp list-users` (it paginates itself; no `--max-items` with `--no-paginate`): `sub`, `email`, `name`, `given_name`, `family_name`, `UserCreateDate`; drop every `@test.diyaccounting.co.uk` user |
 | Hash | `app/services/subHasher.js` | load the salt registry once with `USER_SUB_HASH_SALT` set from the secret in the glue process's environment, never echoed or written; hash every non-test account's `sub` with `hashSub` (and `hashSubWithVersion` for every version in the registry, since older rows carry older versions); then hash every account and count how many of the lake's distinct `hashed_sub` values match, per version, as a standing check (22 of 48 under v2 at the first full run) |
 | VAT returns, from 2026-02-21 | DynamoDB `prod-env-receipts` | `Query` on `hashedSub` per account and per salt version (key schema `hashedSub` + `receiptId`; each item carries `saltVersion` and `createdAt`, the submission time); count, first and last `createdAt` |
@@ -71,15 +72,15 @@ the first run; earlier use shows only through the receipts table, which carries 
 <!-- private: donor-usage run <date>, not for any repository -->
 # Donors, accounts and submitters, <window start> to <date>
 
-<one line per set and per overlap: people, donors, accounts, submitters; donor only, account only, donor and account, account and submitted, all three, unknown-account submitters>
+<one line per set and per overlap: people, donors, subscribers, accounts, submitters; every non-empty combination of the four, and unknown-account submitters>
 
-| Name | Emails | Donor (source, payments, total, first / last) | Account since | VAT returns (since 2026-02-21) | Other submissions (since <lake start>) | Used, no submission | Merged by |
+| Name | Emails | Donor (source, payments, total, first / last) | Subscriber (bundle, status, start / end, paid) | Account since (bundles held now) | VAT returns (since 2026-02-21) | Other submissions (since <lake start>) | Used, no submission | Merged by |
 
 ## Possible matches not merged
 <pairs where only part of the name matches, or the same name appears twice>
 
 ## Coverage
-<window per source; the Stripe and PayPal reconciliation counts; the statement check; the lake hash check; Athena bytes scanned; test-actor submissions on real accounts; what the lake and the receipts table cannot see>
+<window per source; the Stripe and PayPal reconciliation counts; subscriptions by status and bundle; the statement check; the lake hash check; Athena bytes scanned; test-actor submissions on real accounts; what the lake and the receipts table cannot see>
 ```
 
 Rows merge by email, then by normalised full name (lower case, whitespace collapsed, titles
