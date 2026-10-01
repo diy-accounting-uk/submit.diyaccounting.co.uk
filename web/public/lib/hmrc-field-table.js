@@ -388,6 +388,31 @@
     container.replaceChildren(...parsed.body.childNodes);
   }
 
+  // columns: [{ label, kind? ("money" or "text") }], rows: arrays of values in column order.
+  // Money columns are right-aligned tabular figures; absent values show a dash. Built with DOM calls only.
+  function mountResultsTable(container, columns, rows) {
+    const table = document.createElement("table");
+    table.className = "results-table";
+    const headRow = table.createTHead().insertRow();
+    for (const column of columns) {
+      const th = document.createElement("th");
+      th.scope = "col";
+      th.textContent = column.label;
+      if (column.kind === "money") th.className = "money-column";
+      headRow.appendChild(th);
+    }
+    const body = table.createTBody();
+    for (const values of rows) {
+      const tr = body.insertRow();
+      columns.forEach((column, index) => {
+        const td = tr.insertCell();
+        td.textContent = formatValue(values[index], column.kind === "money" ? "money" : "text");
+        if (column.kind === "money") td.className = "money-column";
+      });
+    }
+    container.replaceChildren(table);
+  }
+
   window.HmrcFieldTable = {
     SOURCES,
     VAT_RETURN_BOXES,
@@ -405,5 +430,6 @@
     sourceLink,
     renderFieldTable,
     mountFieldTable,
+    mountResultsTable,
   };
 })();

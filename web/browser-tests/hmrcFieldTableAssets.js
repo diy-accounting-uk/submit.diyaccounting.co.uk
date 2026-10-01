@@ -23,6 +23,11 @@ export async function serveHmrcFieldTableAssets(page) {
   await serveFile(page, "**/lib/hmrc-field-table.css", "lib/hmrc-field-table.css", "text/css");
 }
 
+// The real money-input.js, for a page whose forms parse pounds amounts.
+export function serveMoneyInput(page) {
+  return serveFile(page, "**/lib/money-input.js", "lib/money-input.js", "application/javascript");
+}
+
 // The site stylesheet, for a screenshot that looks like the deployed page.
 export function serveSiteStyles(page) {
   return serveFile(page, "**/submit.css", "submit.css", "text/css");
