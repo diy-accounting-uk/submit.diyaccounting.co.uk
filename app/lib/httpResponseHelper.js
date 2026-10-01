@@ -358,10 +358,13 @@ export function extractUserFromAuthorizerContext(event) {
     // Plumb userSub and email through the async context so downstream observability
     // (activity events → telegram routing, resolveActorClass) can classify a
     // customer-journey event by who signed in, even when the caller doesn't pass
-    // `actor` explicitly.
+    // `actor` explicitly. A Cognito access token has no email claim, but a native-pool user's
+    // username is their email address, so that stands in when the claim is absent.
     if (context.getStore()) {
       context.set("userSub", ctx.sub);
-      if (ctx.email) context.set("userEmail", ctx.email);
+      const signInName = ctx["cognito:username"] || ctx.username || "";
+      const classifiableEmail = ctx.email || (signInName.includes("@") ? signInName : "");
+      if (classifiableEmail) context.set("userEmail", classifiableEmail);
     }
     return {
       sub: ctx.sub,

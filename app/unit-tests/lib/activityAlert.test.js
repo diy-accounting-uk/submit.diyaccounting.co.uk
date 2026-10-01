@@ -30,6 +30,7 @@ import {
   resolveActorClass,
 } from "@app/lib/activityAlert.js";
 import { context } from "@app/lib/logger.js";
+import { extractUserFromAuthorizerContext } from "@app/lib/httpResponseHelper.js";
 import { initializeSalt, hashSub } from "@app/services/subHasher.js";
 
 describe("lib/activityAlert", () => {
@@ -360,6 +361,49 @@ describe("lib/activityAlert", () => {
         context.set("requestId", "abc-123");
         context.set("userEmail", "synthetic-local@test.diyaccounting.co.uk");
         expect(resolveActorClass()).toBe("test-user");
+      });
+    });
+
+    describe("through the authorizer claims", () => {
+      const eventWithClaims = (claims) => ({ requestContext: { authorizer: { lambda: claims } } });
+
+      test("classifies an access token whose username is a synthetic email as test-user", async () => {
+        await context.run(new Map(), async () => {
+          context.set("requestId", "abc-123");
+          const user = extractUserFromAuthorizerContext(
+            eventWithClaims({ sub: "s1", username: "synthetic-video@test.diyaccounting.co.uk", client_id: "c1" }),
+          );
+          expect(user.email).toBe("");
+          expect(resolveActorClass()).toBe("test-user");
+        });
+      });
+
+      test("classifies an access token whose username is an ordinary email as customer", async () => {
+        await context.run(new Map(), async () => {
+          context.set("requestId", "abc-123");
+          extractUserFromAuthorizerContext(eventWithClaims({ sub: "s2", username: "alice@example.com" }));
+          expect(resolveActorClass()).toBe("customer");
+        });
+      });
+
+      test("leaves a federated username unclassified by email so the requestId prefix decides", async () => {
+        await context.run(new Map(), async () => {
+          context.set("requestId", "test_abc-123");
+          extractUserFromAuthorizerContext(eventWithClaims({ sub: "s3", username: "Google_1234567890" }));
+          expect(context.get("userEmail")).toBeUndefined();
+          expect(resolveActorClass()).toBe("test-user");
+        });
+      });
+
+      test("prefers the email claim of an ID token over the cognito username", async () => {
+        await context.run(new Map(), async () => {
+          context.set("requestId", "abc-123");
+          const user = extractUserFromAuthorizerContext(
+            eventWithClaims({ "sub": "s4", "cognito:username": "Google_99", "email": "bob@test.diyaccounting.co.uk" }),
+          );
+          expect(user.email).toBe("bob@test.diyaccounting.co.uk");
+          expect(resolveActorClass()).toBe("test-user");
+        });
       });
     });
 
