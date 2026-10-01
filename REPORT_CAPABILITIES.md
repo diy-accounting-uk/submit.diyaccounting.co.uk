@@ -456,6 +456,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
     - [DEV-44](#dev-44-check-a-batch-against-every-ci-gate-locally) Check a batch against every CI gate locally: use when a batch branch is about to take its first push, or a local pass has gone red in CI.
 - **[Spreadsheets and diya-gl](#spreadsheets-and-diya-gl-ss)**
   - [diya-gl engine, CLI and MCP server](#diya-gl-engine-cli-and-mcp-server-ss)
+    - [DEV-45](#dev-45-match-donors-to-submit-accounts-and-their-submissions) Match donors to submit accounts and their submissions: use when the operator asks which donors use submit, whether donors file, or for the donor-to-usage cross reference.
     - [SS-01](#ss-01-run-the-diya-gl-calculation-engine) Run the diya-gl calculation engine: use when a diya-gl book's figures must be computed in JavaScript, independent of the Excel package.
     - [SS-02](#ss-02-validate-diya-gl-books-against-the-v2-schema) Validate diya-gl books against the v2 schema: use when a book.toml or lines.jsonl document must be checked against the published diya-gl format before it is trusted.
     - [SS-03](#ss-03-read-and-write-diya-gl-interchange-formats) Read and write diya-gl interchange formats: use when a book must move between book.toml/lines.jsonl, a diya-gl zip, a single-file JSON or a package zip.
@@ -4969,7 +4970,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 ## Spreadsheets and diya-gl (SS)
 
 <!-- generated:area SS -->
-- [diya-gl engine, CLI and MCP server](#diya-gl-engine-cli-and-mcp-server-ss): [SS-01](#ss-01-run-the-diya-gl-calculation-engine) Run the diya-gl calculation engine · [SS-02](#ss-02-validate-diya-gl-books-against-the-v2-schema) Validate diya-gl books against the v2 schema · [SS-03](#ss-03-read-and-write-diya-gl-interchange-formats) Read and write diya-gl interchange formats · [SS-04](#ss-04-apply-book-edits-and-derivations) Apply book edits and derivations · [SS-05](#ss-05-run-the-diya-gl-cli) Run the diya-gl CLI · [SS-06](#ss-06-serve-the-diya-gl-mcp-server) Serve the diya-gl MCP server · [SS-07](#ss-07-publish-the-diya-gl-format-specification-page) Publish the diya-gl format specification page
+- [diya-gl engine, CLI and MCP server](#diya-gl-engine-cli-and-mcp-server-ss): [DEV-45](#dev-45-match-donors-to-submit-accounts-and-their-submissions) Match donors to submit accounts and their submissions · [SS-01](#ss-01-run-the-diya-gl-calculation-engine) Run the diya-gl calculation engine · [SS-02](#ss-02-validate-diya-gl-books-against-the-v2-schema) Validate diya-gl books against the v2 schema · [SS-03](#ss-03-read-and-write-diya-gl-interchange-formats) Read and write diya-gl interchange formats · [SS-04](#ss-04-apply-book-edits-and-derivations) Apply book edits and derivations · [SS-05](#ss-05-run-the-diya-gl-cli) Run the diya-gl CLI · [SS-06](#ss-06-serve-the-diya-gl-mcp-server) Serve the diya-gl MCP server · [SS-07](#ss-07-publish-the-diya-gl-format-specification-page) Publish the diya-gl format specification page
 - [Package pipeline: generate, archive and publish](#package-pipeline-generate-archive-and-publish-ss): [SS-08](#ss-08-generate-spreadsheet-packages-from-product-modules) Generate spreadsheet packages from product modules · [SS-09](#ss-09-build-package-zips-and-the-catalogue) Build package zips and the catalogue · [SS-10](#ss-10-extract-reconciliation-scenarios-from-master-books) Extract reconciliation scenarios from master books · [SS-11](#ss-11-reconcile-generated-packages-against-expected-figures) Reconcile generated packages against expected figures · [SS-12](#ss-12-judge-reconciliation-reports-with-an-llm) Judge reconciliation reports with an LLM · [SS-13](#ss-13-cross-check-figures-across-product-packages) Cross-check figures across product packages · [SS-14](#ss-14-verify-export-and-report-roundtrip-and-stability) Verify export and report roundtrip and stability · [SS-15](#ss-15-extract-diya-gl-data-and-financial-reports-from-populated-packages) Extract diya-gl data and financial reports from populated packages · [SS-16](#ss-16-write-workbooks-from-diya-gl-data) Write workbooks from diya-gl data · [SS-17](#ss-17-build-reconciliation-pages-and-record-releases) Build reconciliation pages and record releases · [SS-18](#ss-18-archive-a-cut-of-packages-to-diy-accounting-archive) Archive a cut of packages to diy-accounting-archive · [SS-19](#ss-19-update-annual-hmrc-tax-rate-data) Update annual HMRC tax rate data · [SS-20](#ss-20-publish-diya-gl-to-npm-ghcr-and-the-homebrew-tap) Publish diya-gl to npm, GHCR and the Homebrew tap
 - [Web properties](#web-properties-ss): [SS-21](#ss-21-serve-the-spreadsheets-product-catalogue-and-downloads) Serve the spreadsheets product catalogue and downloads · [SS-22](#ss-22-take-stripe-and-paypal-donations) Take Stripe and PayPal donations · [SS-23](#ss-23-serve-knowledge-base-article-and-community-content) Serve knowledge base, article and community content · [SS-24](#ss-24-compile-the-redirect-engine) Compile the redirect engine · [SS-25](#ss-25-generate-sitemaps) Generate sitemaps · [SS-26](#ss-26-serve-the-diya-gl-product-pages-and-shell) Serve the DIYA-GL product pages and shell · [SS-27](#ss-27-save-and-load-books-locally-and-via-submits-cloud-store) Save and load books locally and via Submit's cloud store · [SS-28](#ss-28-store-books-in-google-drive) Store books in Google Drive · [SS-29](#ss-29-serve-diya-gl-as-an-offline-pwa) Serve DIYA-GL as an offline PWA · [SS-30](#ss-30-serve-the-holding-page-and-failover) Serve the holding page and failover
 - [Analytics and tracking](#analytics-and-tracking-ss): [SS-31](#ss-31-load-ga4-analytics-with-consent-gating) Load GA4 analytics with consent gating · [SS-32](#ss-32-send-ga4-ecommerce-and-download-events) Send GA4 ecommerce and download events · [SS-33](#ss-33-send-diya-gl-ga4-events) Send DIYA-GL GA4 events · [SS-34](#ss-34-configure-cloudwatch-rum) Configure CloudWatch RUM
@@ -4981,6 +4982,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 ### diya-gl engine, CLI and MCP server (SS)
 
 <!-- generated:group diya-gl-engine-cli-and-mcp-server-ss -->
+- [DEV-45](#dev-45-match-donors-to-submit-accounts-and-their-submissions) Match donors to submit accounts and their submissions
 - [SS-01](#ss-01-run-the-diya-gl-calculation-engine) Run the diya-gl calculation engine
 - [SS-02](#ss-02-validate-diya-gl-books-against-the-v2-schema) Validate diya-gl books against the v2 schema
 - [SS-03](#ss-03-read-and-write-diya-gl-interchange-formats) Read and write diya-gl interchange formats
@@ -4989,6 +4991,15 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - [SS-06](#ss-06-serve-the-diya-gl-mcp-server) Serve the diya-gl MCP server
 - [SS-07](#ss-07-publish-the-diya-gl-format-specification-page) Publish the diya-gl format specification page
 <!-- /generated:group diya-gl-engine-cli-and-mcp-server-ss -->
+
+#### DEV-45 Match donors to submit accounts and their submissions
+
+- **Use when:** the operator asks which donors use submit, whether donors file, or for the donor-to-usage cross reference.
+- **Does:** reads Stripe donation charges and PayPal donation receipts, matches them by email or name to the prod Cognito pool, hashes the matched subs with the salt, and reads VAT returns from the receipts table and other submissions from the activity lake. Writes one private file at the workspace root.
+- **Run:** `/donor-usage`
+- **Entry:** `.claude/skills/donor-usage/SKILL.md`
+- **Files:** .claude/skills/donor-usage/SKILL.md, app/services/subHasher.js, scripts/finance/stripe-stage.js, scripts/finance/paypal-stage.js
+- **Keywords:** donor, donation, donors who submit, cross reference, Stripe donor, PayPal donor, usage by donor
 
 #### SS-01 Run the diya-gl calculation engine
 
@@ -6158,6 +6169,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - credential leak: [OPS-92](#ops-92-redact-secrets-from-video-artefacts)
 - credentials.json: [MCP-02](#mcp-02-authenticate-mcp-sessions-via-cognito)
 - credit note: [DATA-51](#data-51-turn-staged-stripe-activity-into-diya-gl-lines)
+- cross reference: [DEV-45](#dev-45-match-donors-to-submit-accounts-and-their-submissions)
 - cross-account backup: [OPS-50](#ops-50-drill-and-test-pitr-database-restoration), [OPS-111](#ops-111-provision-cross-account-backup-vaults-and-plans)
 - cross-account copy: [OPS-48](#ops-48-verify-backup-health-daily)
 - cross-account copyobject: [DATA-08](#data-08-copy-the-aws-focus-cost-export)
@@ -6321,7 +6333,10 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - donate button: [BILL-29](#bill-29-assert-the-paypal-donate-button-configuration)
 - donate event: [SS-32](#ss-32-send-ga4-ecommerce-and-download-events)
 - donate template: [SS-22](#ss-22-take-stripe-and-paypal-donations)
+- donation: [DEV-45](#dev-45-match-donors-to-submit-accounts-and-their-submissions)
 - donation_prompt: [SS-33](#ss-33-send-diya-gl-ga4-events)
+- donor: [DEV-45](#dev-45-match-donors-to-submit-accounts-and-their-submissions)
+- donors who submit: [DEV-45](#dev-45-match-donors-to-submit-accounts-and-their-submissions)
 - dora metrics: [OPS-25](#ops-25-record-dora-and-probe-metrics)
 - dora row: [OPS-95](#ops-95-generate-wcag-accessibility-compliance-rows)
 - dora runs: [DATA-15](#data-15-catalogue-workflow-probe-and-agent-run-data)
@@ -7058,6 +7073,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - paypal: [BILL-29](#bill-29-assert-the-paypal-donate-button-configuration), [OPS-35](#ops-35-verify-third-party-console-configuration-against-declared-state), [MCP-16](#mcp-16-parse-paypal-statements-into-diya-gl-lines)
 - paypal donate button: [SS-22](#ss-22-take-stripe-and-paypal-donations)
 - paypal donations pull: [DATA-55](#data-55-pull-paypal-receipts-into-the-lake)
+- paypal donor: [DEV-45](#dev-45-match-donors-to-submit-accounts-and-their-submissions)
 - paypal receipts: [DATA-55](#data-55-pull-paypal-receipts-into-the-lake)
 - paypal refunds: [DATA-55](#data-55-pull-paypal-receipts-into-the-lake)
 - paypal transaction search: [DATA-48](#data-48-stage-paypal-transactions-for-reconciliation)
@@ -7521,6 +7537,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - stray project: [DATA-41](#data-41-assert-gcp-billing-budget-and-stray-project)
 - stripe: [BILL-24](#bill-24-create-a-stripe-checkout-session), [BILL-25](#bill-25-retrieve-a-stripe-checkout-sessions-status), [BILL-26](#bill-26-open-the-stripe-customer-billing-portal), [BILL-27](#bill-27-recover-an-abandoned-checkout), [BILL-28](#bill-28-process-stripe-webhook-events), [BILL-30](#bill-30-sync-the-stripe-productprice-catalogue), [BILL-31](#bill-31-configure-stripe-account-policies), [BILL-32](#bill-32-provision-stripe-secrets), [OPS-35](#ops-35-verify-third-party-console-configuration-against-declared-state)
 - stripe balance transactions: [DATA-49](#data-49-stage-stripe-transactions-for-reconciliation)
+- stripe donor: [DEV-45](#dev-45-match-donors-to-submit-accounts-and-their-submissions)
 - stripe gross fee split: [DATA-51](#data-51-turn-staged-stripe-activity-into-diya-gl-lines)
 - stripe import: [MCP-13](#mcp-13-import-stripe-transaction-and-payout-lines)
 - stripe listen: [DEV-19](#dev-19-provide-shared-behaviour-test-fixtures-and-steps)
@@ -7697,6 +7714,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - upload book: [BILL-17](#bill-17-upload-a-diya-gl-book)
 - upsert record: [OPS-127](#ops-127-upsert-route53-alias-records-via-custom-resource)
 - us-east-1: [OPS-118](#ops-118-provision-the-observability-stack-in-us-east-1), [SS-37](#ss-37-request-acm-certificates)
+- usage by donor: [DEV-45](#dev-45-match-donors-to-submit-accounts-and-their-submissions)
 - usage history: [SITE-10](#site-10-serve-general-site-pages)
 - user attributes: [OPS-137](#ops-137-export-cognito-users-for-reporting-or-backup)
 - user books: [BILL-19](#bill-19-list-a-users-diya-gl-books)
