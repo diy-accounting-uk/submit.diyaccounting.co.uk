@@ -8,6 +8,7 @@ import fs from "fs";
 import path from "path";
 import { setTimeout as delay } from "timers/promises";
 import { dotenvConfigIfNotBlank } from "@app/lib/env.js";
+import { serveMoneyInput } from "./hmrcFieldTableAssets.js";
 
 dotenvConfigIfNotBlank({ path: ".env.test" });
 
@@ -157,6 +158,7 @@ test.describe("File Confirmation Statement page", () => {
     await page.route("**/*.js", async (route) => {
       await route.fulfill({ status: 200, contentType: "application/javascript", body: "" });
     });
+    await serveMoneyInput(page);
 
     // Stands in for the real Stripe/simulator checkout page: records the redirect's query params
     // on the Node side (the browser context that recorded __submitCalls etc. is gone once the

@@ -119,22 +119,68 @@
             <div class="form-group">
               <label for="turnover">Turnover</label>
               <p id="turnover-hint" class="hint">The corrected takings, fees, sales or money earned by the business for this period.</p>
-              <input type="number" id="turnover" name="turnover" step="0.01" min="0" aria-describedby="turnover-hint" />
+              <p id="turnover-money-hint" class="hint">For example, £600 or £193.54</p>
+              <div class="input-prefix">
+                <span class="prefix">£</span>
+                <input
+                  type="text"
+                  id="turnover"
+                  name="turnover"
+                  aria-describedby="turnover-hint turnover-money-hint"
+                  inputmode="decimal"
+                  data-money="pounds-and-pence"
+                  data-money-min="0"
+                />
+              </div>
             </div>
 
             <div class="form-group">
               <label for="otherIncome">Other income</label>
-              <input type="number" id="otherIncome" name="otherIncome" step="0.01" min="0" />
+              <p id="otherIncome-money-hint" class="hint">For example, £600 or £193.54</p>
+              <div class="input-prefix">
+                <span class="prefix">£</span>
+                <input
+                  type="text"
+                  id="otherIncome"
+                  name="otherIncome"
+                  aria-describedby="otherIncome-money-hint"
+                  inputmode="decimal"
+                  data-money="pounds-and-pence"
+                  data-money-min="0"
+                />
+              </div>
             </div>
 
             <div class="form-group">
               <label for="costOfGoods">Cost of goods</label>
-              <input type="number" id="costOfGoods" name="costOfGoods" step="0.01" />
+              <p id="costOfGoods-money-hint" class="hint">For example, £600 or £193.54</p>
+              <div class="input-prefix">
+                <span class="prefix">£</span>
+                <input
+                  type="text"
+                  id="costOfGoods"
+                  name="costOfGoods"
+                  aria-describedby="costOfGoods-money-hint"
+                  inputmode="decimal"
+                  data-money="pounds-and-pence"
+                />
+              </div>
             </div>
 
             <div class="form-group">
               <label for="otherExpenses">Other expenses</label>
-              <input type="number" id="otherExpenses" name="otherExpenses" step="0.01" />
+              <p id="otherExpenses-money-hint" class="hint">For example, £600 or £193.54</p>
+              <div class="input-prefix">
+                <span class="prefix">£</span>
+                <input
+                  type="text"
+                  id="otherExpenses"
+                  name="otherExpenses"
+                  aria-describedby="otherExpenses-money-hint"
+                  inputmode="decimal"
+                  data-money="pounds-and-pence"
+                />
+              </div>
             </div>
 
             <!-- Developer Test Scenario Section -->
@@ -180,6 +226,7 @@
     <script src="../../developer-mode.js"></script>
     <script src="../../lib/request-cache.js"></script>
     <script src="../../lib/toml-parser.js"></script>
+    <script src="../../lib/money-input.js"></script>
     <script src="../../lib/hmrc-scope-check.js"></script>
     <script src="../../lib/itsaSubmissionModel.js"></script>
     <script type="module" src="../../lib/services/hmrc-service.js"></script>
@@ -427,12 +474,13 @@
 
       function readAmendData(source) {
         const periodIncome = {};
-        if (source.turnover !== "" && source.turnover !== undefined) periodIncome.turnover = Number(source.turnover);
-        if (source.otherIncome !== "" && source.otherIncome !== undefined) periodIncome.other = Number(source.otherIncome);
+        if (window.parseMoneyInput(source.turnover) !== null) periodIncome.turnover = window.parseMoneyInput(source.turnover);
+        if (window.parseMoneyInput(source.otherIncome) !== null) periodIncome.other = window.parseMoneyInput(source.otherIncome);
 
         const periodExpenses = {};
-        if (source.costOfGoods !== "" && source.costOfGoods !== undefined) periodExpenses.costOfGoods = Number(source.costOfGoods);
-        if (source.otherExpenses !== "" && source.otherExpenses !== undefined) periodExpenses.otherExpenses = Number(source.otherExpenses);
+        if (window.parseMoneyInput(source.costOfGoods) !== null) periodExpenses.costOfGoods = window.parseMoneyInput(source.costOfGoods);
+        if (window.parseMoneyInput(source.otherExpenses) !== null)
+          periodExpenses.otherExpenses = window.parseMoneyInput(source.otherExpenses);
 
         return {
           nino: (source.nino || "").replace(/\s+/g, "").toUpperCase(),
@@ -532,6 +580,12 @@
 
       async function handleFormSubmission(event) {
         event.preventDefault();
+
+        const moneyProblem = window.moneyInputProblem();
+        if (moneyProblem) {
+          showStatus(moneyProblem, "error");
+          return;
+        }
 
         const formData = new FormData(event.target);
         const amendData = readAmendData({

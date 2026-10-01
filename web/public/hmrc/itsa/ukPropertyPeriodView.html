@@ -13,6 +13,7 @@
     <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" />
     <link rel="manifest" href="/site.webmanifest" />
     <link rel="stylesheet" href="../../submit.css" />
+    <link rel="stylesheet" href="../../lib/hmrc-field-table.css" />
     <!-- CloudWatch RUM configuration placeholders; replace values during deployment -->
     <meta name="rum:appMonitorId" content="${RUM_APP_MONITOR_ID}" />
     <meta name="rum:region" content="${AWS_REGION}" />
@@ -135,7 +136,7 @@
       <!-- Results Display -->
       <div id="periodViewResults" class="results-container" style="display: none">
         <h3>Period Summary</h3>
-        <dl id="periodDetails"></dl>
+        <div id="periodDetails"></div>
         <div class="button-group">
           <button type="button" id="newSearchBtn" class="secondary-button">New search</button>
         </div>
@@ -152,6 +153,7 @@
     <script src="../../lib/request-cache.js"></script>
     <script src="../../lib/toml-parser.js"></script>
     <script src="../../lib/hmrc-scope-check.js"></script>
+    <script src="../../lib/money-format.js"></script>
     <script src="../../lib/hmrc-field-table.js"></script>
     <script src="../../lib/itsaSubmissionModel.js"></script>
     <script type="module" src="../../lib/services/hmrc-service.js"></script>
@@ -430,27 +432,20 @@
 
       function displayPeriod(period) {
         const details = document.getElementById("periodDetails");
-        const formatDate = (iso) => (iso && /^\d{4}-\d{2}-\d{2}$/.test(iso) ? window.HmrcFieldTable.formatIsoDate(iso) : "-");
+        const mount = (rows) => window.HmrcFieldTable.mountFieldTable(details, rows, { caption: "Period summary" });
 
         // The cumulative model (2025-26 onwards) carries one flat ukProperty object - furnished
         // holiday lettings ended 5 April 2025, so there is no FHL/non-FHL split to read there.
         if (period?.ukProperty) {
-          const property = period.ukProperty;
-          const income = property.income || {};
-          const expenses = property.expenses || {};
-
-          details.innerHTML = `
-            <dt>Reported to</dt>
-            <dd>${escapeHtml(formatDate(period?.toDate))}</dd>
-            <dt>Rental income (year to date)</dt>
-            <dd>${escapeHtml(income.periodAmount ?? "-")}</dd>
-            <dt>Other property income (year to date)</dt>
-            <dd>${escapeHtml(income.otherIncome ?? "-")}</dd>
-            <dt>Repairs and maintenance (year to date)</dt>
-            <dd>${escapeHtml(expenses.repairsAndMaintenance ?? "-")}</dd>
-            <dt>Other property expenses (year to date)</dt>
-            <dd>${escapeHtml(expenses.other ?? expenses.consolidatedExpenses ?? "-")}</dd>
-          `;
+          const income = period.ukProperty.income || {};
+          const expenses = period.ukProperty.expenses || {};
+          mount([
+            { field: "toDate", label: "Reported to", kind: "text", value: period?.toDate },
+            { field: "periodAmount", label: "Rental income (year to date)", value: income.periodAmount },
+            { field: "otherIncome", label: "Other property income (year to date)", value: income.otherIncome },
+            { field: "repairsAndMaintenance", label: "Repairs and maintenance (year to date)", value: expenses.repairsAndMaintenance },
+            { field: "other", label: "Other property expenses (year to date)", value: expenses.other ?? expenses.consolidatedExpenses },
+          ]);
           return;
         }
 
@@ -459,29 +454,20 @@
         const income = property.income || {};
         const expenses = property.expenses || {};
 
-        details.innerHTML = `
-          <dt>Period start date</dt>
-          <dd>${escapeHtml(formatDate(period?.fromDate))}</dd>
-          <dt>Period end date</dt>
-          <dd>${escapeHtml(formatDate(period?.toDate))}</dd>
-          <dt>Property type</dt>
-          <dd>${propertyType === "ukFhlProperty" ? "Furnished holiday letting" : "UK property"}</dd>
-          <dt>Rental income</dt>
-          <dd>${escapeHtml(income.periodAmount ?? "-")}</dd>
-          <dt>Other property income</dt>
-          <dd>${escapeHtml(income.otherIncome ?? "-")}</dd>
-          <dt>Repairs and maintenance</dt>
-          <dd>${escapeHtml(expenses.repairsAndMaintenance ?? "-")}</dd>
-          <dt>Other property expenses</dt>
-          <dd>${escapeHtml(expenses.other ?? expenses.consolidatedExpenses ?? "-")}</dd>
-        `;
-      }
-
-      function escapeHtml(text) {
-        if (text === null || text === undefined) return "";
-        const div = document.createElement("div");
-        div.textContent = text;
-        return div.innerHTML;
+        mount([
+          { field: "fromDate", label: "Period start date", kind: "text", value: period?.fromDate },
+          { field: "toDate", label: "Period end date", kind: "text", value: period?.toDate },
+          {
+            field: "propertyType",
+            label: "Property type",
+            kind: "text",
+            value: propertyType === "ukFhlProperty" ? "Furnished holiday letting" : "UK property",
+          },
+          { field: "periodAmount", label: "Rental income", value: income.periodAmount },
+          { field: "otherIncome", label: "Other property income", value: income.otherIncome },
+          { field: "repairsAndMaintenance", label: "Repairs and maintenance", value: expenses.repairsAndMaintenance },
+          { field: "other", label: "Other property expenses", value: expenses.other ?? expenses.consolidatedExpenses },
+        ]);
       }
 
       document.getElementById("toggleSearchCriteriaBtn")?.addEventListener("click", () => {

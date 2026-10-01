@@ -9,7 +9,7 @@ import fs from "fs";
 import path from "path";
 import { setTimeout as delay } from "timers/promises";
 import { dotenvConfigIfNotBlank } from "@app/lib/env.js";
-import { serveHmrcFieldTableAssets, serveSiteStyles, screenshotPath } from "./hmrcFieldTableAssets.js";
+import { serveMoneyInput, serveHmrcFieldTableAssets, serveSiteStyles, screenshotPath } from "./hmrcFieldTableAssets.js";
 
 dotenvConfigIfNotBlank({ path: ".env.test" });
 
@@ -26,6 +26,8 @@ async function loadPage(page, html, url) {
       await route.continue();
     }
   });
+
+  await serveMoneyInput(page);
 
   const modifiedHtml = html.replace("<head>", `<head><base href="${new URL(".", url)}">`).replace(
     "<body>",
@@ -56,6 +58,8 @@ async function loadPageAtRealOrigin(page, html, url) {
       await route.continue();
     }
   });
+
+  await serveMoneyInput(page);
 
   const modifiedHtml = html.replace(
     "<body>",
