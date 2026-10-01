@@ -1,6 +1,6 @@
 ---
 name: donor-usage
-description: List everyone who donated through Stripe or PayPal, holds a prod submit account, or submitted anything, as one union with a flag per set, and say for each what they donated and (VAT returns since 2026-02-21, every other submission kind since the activity lake's first day), into a private file at the workspace root. Read-only apart from one salt read the operator accepts. Invoke when the operator asks which donors use submit, whether donors file, who the users and donors are, or for the donor-to-usage cross reference.
+description: List everyone who donated through Stripe or PayPal, holds a prod submit account, or submitted anything, as one union with a flag per set, with each person's donations, account date and submissions (VAT returns since 2026-02-21, every other submission kind since the activity lake's first day), into a private file at the workspace root. Read-only apart from one salt read the operator accepts. Invoke when the operator asks which donors use submit, whether donors file, who the users and donors are, or for the donor-to-usage cross reference.
 ---
 
 <!-- SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0 -->
