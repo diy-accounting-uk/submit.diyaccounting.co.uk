@@ -16,8 +16,8 @@ runs), and for Claude Code steps the **Model** a sub-agent should use (Fable > O
 Haiku; the lowest tier that fits). Anything touching code goes through a `claude/*` branch and
 PR; the operator merges.
 
-**Prod runs deployment prod-60b5411** (PR #439). PR #440's merge (0ac6862b4) is deploying: `deploy.yml` 36826570281; `google apply` 36826569480 creates the Ads upload conversion action (operator approved, 2026-10-01).
-**ci**: `ci-set1` (last-known-good, 10 stacks, first created 01:57 UTC 2026-10-01, redeployed by PR #440's branch).
+**Prod runs deployment prod-60b5411** (PR #439). PR #440's deploy 36826570281 has stood up `prod-0ac6862` (9 stacks, 06:52 UTC) and is still running; the Ads upload conversion action exists (google apply 36826569480, attempt 2).
+**ci**: `ci-set1` (last-known-good, 10 stacks, first created 01:57 UTC 2026-10-01).
 
 Rows F-BS3 and LP-* change the spreadsheets repository (`../spreadsheets.diyaccounting.co.uk/`): their batch branches, PRs and CI run there, under that repository's `CLAUDE.md` and tests; their plans (`../private.diyaccounting.co.uk/strategy/PLAN_DIYA_GL_LAUNCH.md`, `../private.diyaccounting.co.uk/strategy/PLAN_DIYA_GL_INDIA.md`, `PLAN_DIYACCOUNTING_BRAND.md`). LP rows' briefs are in `../private.diyaccounting.co.uk/strategy/PLAN_DIYA_GL_LAUNCH.md` under "Briefs"; `../private.diyaccounting.co.uk/strategy/PLAN_DIYA_GL_INDIA.md` carries its own board.
 
@@ -41,7 +41,7 @@ step.
 
 ## In flight
 
-- [ ] **FORM2c. ITSA period results as field tables.** `PLAN_FORM_AUDIT.md` A8 and A9: `selfEmploymentPeriodView`, `ukPropertyPeriodView`, `selfEmploymentPeriods` and `ukPropertyPeriods` print money raw and absent as "-". Use `web/public/lib/hmrc-field-table.js` (with `money-format.js`) for the `<dl>`s and `formatGbp`, right-aligned, for the table columns. Proof: browser tests per page (pattern in `web/browser-tests/hmrcFieldTableAssets.js`) and the period behaviour suites. **Source**: FORM1 audit. **Owner**: Claude Code. **Model**: Sonnet. **Size**: ~6 files. **In flight**: batch `claude/yarrow-forms`, agent worktree `.claude/worktrees/yarrow-form2c`.
+- [ ] **FORM2c. ITSA period results as field tables.** `PLAN_FORM_AUDIT.md` A8 and A9: `selfEmploymentPeriodView`, `ukPropertyPeriodView`, `selfEmploymentPeriods` and `ukPropertyPeriods` print money raw and absent as "-". Use `web/public/lib/hmrc-field-table.js` (with `money-format.js`) for the `<dl>`s and `formatGbp`, right-aligned, for the table columns. Proof: browser tests per page (pattern in `web/browser-tests/hmrcFieldTableAssets.js`) and the period behaviour suites. **Source**: FORM1 audit. **Owner**: Claude Code. **Model**: Sonnet. **Size**: ~6 files. **In flight**: landed on batch `claude/yarrow-forms` (b8c5c73b5); waits for FORM2b, then push and PR.
 
 - [ ] **FORM2b. Money inputs take £ and commas.** `PLAN_FORM_AUDIT.md` A6 and A7: every `type="number"` money input on the ITSA submission and adjustment pages and the Companies House accounts and confirmation-statement pages gets a £ prefix, a "For example, £600 or £193.54" hint, `inputmode="decimal"`, and a parser that accepts £ and commas before validation (one shared module under `web/public/lib/`). Proof: a unit test of the parser, browser tests per page, the ITSA and Companies House behaviour suites. FORM2c edits the period pages; FORM2b the submission and adjustment pages, so they run in parallel. **Source**: FORM1 audit. **Owner**: Claude Code. **Model**: Sonnet. **Size**: ~14 files. **In flight**: batch `claude/yarrow-forms`, agent worktree `.claude/worktrees/yarrow-form2b`.
 
