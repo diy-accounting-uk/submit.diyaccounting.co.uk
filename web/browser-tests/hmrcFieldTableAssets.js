@@ -43,3 +43,8 @@ export function expectCleanFigures(expect, text) {
   expect(text).not.toContain("undefined");
   expect(text).not.toMatch(/\b[a-z]+[A-Z][A-Za-z]*\b/);
 }
+
+// The real error summary and inline message module.
+export function serveFormErrors(page) {
+  return serveFile(page, "**/lib/form-errors.js", "lib/form-errors.js", "application/javascript");
+}

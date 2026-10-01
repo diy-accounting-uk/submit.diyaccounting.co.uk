@@ -43,7 +43,7 @@
         </div>
         <div id="searchCriteriaContainer">
           <h2>Retrieve obligations</h2>
-          <form id="itsaObligationsForm">
+          <form id="itsaObligationsForm" novalidate>
             <div class="form-group">
               <label for="nino">National Insurance number</label>
               <p id="nino-hint" class="hint">
@@ -147,6 +147,7 @@
     <script src="../../developer-mode.js"></script>
     <script src="../../lib/request-cache.js"></script>
     <script src="../../lib/toml-parser.js"></script>
+    <script src="../../lib/form-errors.js"></script>
     <script src="../../lib/hmrc-scope-check.js"></script>
     <script type="module" src="../../lib/services/hmrc-service.js"></script>
     <script src="../../widgets/entitlement-status.js"></script>
@@ -356,10 +357,7 @@
         const testScenario = formData.get("testScenario");
         const runFraudPreventionHeaderValidation = document.getElementById("runFraudPreventionHeaderValidation")?.checked || false;
 
-        if (!nino) {
-          showStatus("Please enter a National Insurance number.", "error");
-          return;
-        }
+        if (!window.formErrors.requireFields(["nino"])) return;
 
         const accessToken = sessionStorage.getItem("hmrcAccessToken");
         const scopeSufficient = accessToken && window.hmrcScopeCheck ? await window.hmrcScopeCheck.isTokenSufficient() : !!accessToken;

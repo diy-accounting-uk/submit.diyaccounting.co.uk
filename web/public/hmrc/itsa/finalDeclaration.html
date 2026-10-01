@@ -46,7 +46,7 @@
       <!-- Retrieve form -->
       <div id="retrieveForm" class="form-container">
         <h2>Retrieve the Calculation</h2>
-        <form id="itsaFinalDeclarationRetrieveForm">
+        <form id="itsaFinalDeclarationRetrieveForm" novalidate>
           <div class="form-group">
             <label for="nino">National Insurance number</label>
             <p id="nino-hint" class="hint">
@@ -189,6 +189,7 @@
     <script src="../../developer-mode.js"></script>
     <script src="../../lib/request-cache.js"></script>
     <script src="../../lib/toml-parser.js"></script>
+    <script src="../../lib/form-errors.js"></script>
     <script src="../../lib/hmrc-scope-check.js"></script>
     <script type="module" src="../../lib/services/hmrc-service.js"></script>
     <script src="../../widgets/entitlement-status.js"></script>
@@ -455,10 +456,7 @@
         const calculationTestScenario = document.getElementById("calculationTestScenario")?.value;
         const runFraudPreventionHeaderValidation = document.getElementById("runFraudPreventionHeaderValidation")?.checked || false;
 
-        if (!nino || !taxYear || !calculationId) {
-          showStatus("Please fill in the National Insurance number, tax year and calculation ID.", "error");
-          return;
-        }
+        if (!window.formErrors.requireFields(["nino", "taxYear", "calculationId"])) return;
 
         await ensureAuthorizedThen(
           "pendingFinalDeclarationRetrieveRequest",

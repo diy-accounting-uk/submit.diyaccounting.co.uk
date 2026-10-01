@@ -688,6 +688,33 @@ input[type="date"]:focus {
   border: 0;
 }
 
+/* Error summary at the top of a form */
+.error-summary {
+  border: 5px solid var(--color-error);
+  padding: var(--spacing-md);
+  margin-bottom: var(--spacing-lg);
+}
+
+.error-summary:focus {
+  outline: 3px solid var(--color-error);
+  outline-offset: 0;
+}
+
+.error-summary__title {
+  margin-top: 0;
+  font-size: var(--font-size-lg);
+}
+
+.error-summary__list {
+  margin: 0;
+  padding-left: var(--spacing-lg);
+}
+
+.error-summary__list a {
+  color: var(--color-error);
+  font-weight: var(--font-weight-bold);
+}
+
 /* Error state for form groups */
 .form-group--error {
   border-left: 5px solid var(--color-error);

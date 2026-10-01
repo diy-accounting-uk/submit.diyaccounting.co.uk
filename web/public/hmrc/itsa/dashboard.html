@@ -103,7 +103,7 @@
           The steps below link to the file family the picked business uses - self-employment or property - because HMRC's endpoints, field
           names and even the quarterly model differ between them.
         </p>
-        <form id="businessPickerForm">
+        <form id="businessPickerForm" novalidate>
           <div class="form-group">
             <label for="nino">National Insurance number</label>
             <p id="nino-hint" class="hint">
@@ -259,6 +259,7 @@
     <script src="../../developer-mode.js"></script>
     <script src="../../lib/request-cache.js"></script>
     <script src="../../lib/toml-parser.js"></script>
+    <script src="../../lib/form-errors.js"></script>
     <script src="../../lib/hmrc-scope-check.js"></script>
     <script type="module" src="../../lib/services/hmrc-service.js"></script>
     <script src="../../widgets/entitlement-status.js"></script>
@@ -434,10 +435,7 @@
         event.preventDefault();
         const nino = document.getElementById("nino").value.replace(/\s+/g, "").toUpperCase();
 
-        if (!nino) {
-          showStatus("Please enter a National Insurance number.", "error");
-          return;
-        }
+        if (!window.formErrors.requireFields(["nino"])) return;
 
         await ensureAuthorizedThen("pendingDashboardBusinessPickerRequest", { nino }, async (accessToken) => {
           try {
