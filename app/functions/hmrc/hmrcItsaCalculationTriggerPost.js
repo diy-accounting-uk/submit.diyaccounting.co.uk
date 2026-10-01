@@ -49,6 +49,19 @@ const HMRC_API_VERSION = "8.0";
 // HMRC's business validation, not to a format check made before the request is ever sent.
 const CALCULATION_TYPES = ["in-year", "intent-to-finalise", "intent-to-amend"];
 
+// Gov-Test-Scenario values the trigger endpoint accepts. The retrieve endpoint accepts a
+// different set, so one scenario chosen on the page reaches only the call that understands it.
+const TRIGGER_TEST_SCENARIOS = [
+  "NO_INCOME_SUBMISSIONS_EXIST",
+  "FINAL_DECLARATION_RECEIVED",
+  "INCOME_SOURCES_CHANGED",
+  "RECENT_SUBMISSIONS_EXIST",
+  "RESIDENCY_CHANGED",
+  "CALCULATION_IN_PROGRESS",
+  "BUSINESS_VALIDATION_FAILURE",
+  "TAX_YEAR_NOT_ENDED",
+];
+
 // HMRC's calculation runs asynchronously after a 202: "it is recommended you wait at least 5
 // seconds before calling the retrieval endpoint" (Individual Calculations 8.0 spec).
 const MIN_CALCULATION_WAIT_MS = 5000;
@@ -516,6 +529,11 @@ export async function triggerAndAwaitItsaCalculation(
   // input is already in the path.
   const hmrcBase = hmrcAccount === "synthetic" ? process.env.HMRC_SANDBOX_BASE_URI : process.env.HMRC_BASE_URI;
   const hmrcRequestUrl = `${hmrcBase}/individuals/calculations/${nino}/self-assessment/${taxYear}/trigger/${calculationType}`;
+  const govClientHeadersWithoutScenario = Object.fromEntries(
+    Object.entries(govClientHeaders || {}).filter(([name]) => name.toLowerCase() !== "gov-test-scenario"),
+  );
+  const triggerTestScenario = TRIGGER_TEST_SCENARIOS.includes(testScenario) ? testScenario : undefined;
+  const retrieveTestScenario = TRIGGER_TEST_SCENARIOS.includes(testScenario) ? undefined : testScenario;
   let hmrcResponse = {};
   let hmrcResponseBody;
   /* v8 ignore start */
@@ -530,15 +548,15 @@ export async function triggerAndAwaitItsaCalculation(
   } else {
     const hmrcRequestHeaders = buildHmrcHeaders(
       hmrcAccessToken,
-      govClientHeaders,
-      testScenario,
+      govClientHeadersWithoutScenario,
+      triggerTestScenario,
       requestId,
       traceparent,
       correlationId,
       HMRC_API_VERSION,
     );
     /* v8 ignore stop */
-    const httpResult = await hmrcHttpPost(hmrcRequestUrl, hmrcRequestHeaders, govClientHeaders, {}, auditForUserSub);
+    const httpResult = await hmrcHttpPost(hmrcRequestUrl, hmrcRequestHeaders, govClientHeadersWithoutScenario, {}, auditForUserSub);
     hmrcResponse = httpResult.hmrcResponse;
     hmrcResponseBody = httpResult.hmrcResponseBody;
   }
@@ -564,8 +582,8 @@ export async function triggerAndAwaitItsaCalculation(
       taxYear,
       calculationId,
       hmrcAccessToken,
-      govClientHeaders,
-      testScenario,
+      govClientHeadersWithoutScenario,
+      retrieveTestScenario,
       hmrcAccount,
       auditForUserSub,
       runFraudPreventionHeaderValidation,

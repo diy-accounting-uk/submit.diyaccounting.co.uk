@@ -239,6 +239,34 @@ describe("hmrcItsaCalculationTriggerPost ingestHandler", () => {
     }, 30000);
   });
 
+  test("sends a retrieve-only scenario to the retrieve call and not to the trigger call", async () => {
+    mockFetch.mockResolvedValueOnce(jsonResponse({ ok: true, status: 202, body: { calculationId: VALID_CALCULATION_ID } }));
+    mockFetch.mockResolvedValueOnce(jsonResponse({ ok: true, status: 200, body: { metadata: { calculationId: VALID_CALCULATION_ID } } }));
+
+    const event = buildTriggerEvent({
+      headers: { "x-wait-time-ms": "30000", "x-initial-request": "true", "Gov-Test-Scenario": "UK_SE_GIFTAID_EXAMPLE" },
+    });
+    await hmrcItsaCalculationTriggerPostHandler(event);
+
+    const [triggerCall, retrieveCall] = mockFetch.mock.calls;
+    expect(triggerCall[1].headers["Gov-Test-Scenario"]).toBeUndefined();
+    expect(retrieveCall[1].headers["Gov-Test-Scenario"]).toBe("UK_SE_GIFTAID_EXAMPLE");
+  }, 15000);
+
+  test("sends a trigger-only scenario to the trigger call and not to the retrieve call", async () => {
+    mockFetch.mockResolvedValueOnce(jsonResponse({ ok: true, status: 202, body: { calculationId: VALID_CALCULATION_ID } }));
+    mockFetch.mockResolvedValueOnce(jsonResponse({ ok: true, status: 200, body: { metadata: { calculationId: VALID_CALCULATION_ID } } }));
+
+    const event = buildTriggerEvent({
+      headers: { "x-wait-time-ms": "30000", "x-initial-request": "true", "Gov-Test-Scenario": "RECENT_SUBMISSIONS_EXIST" },
+    });
+    await hmrcItsaCalculationTriggerPostHandler(event);
+
+    const [triggerCall, retrieveCall] = mockFetch.mock.calls;
+    expect(triggerCall[1].headers["Gov-Test-Scenario"]).toBe("RECENT_SUBMISSIONS_EXIST");
+    expect(retrieveCall[1].headers["Gov-Test-Scenario"]).toBeUndefined();
+  }, 15000);
+
   test("publishes the itsa-calculation-triggered event with the hashed sub, never the raw sub", async () => {
     mockFetch.mockResolvedValueOnce(jsonResponse({ ok: true, status: 202, body: { calculationId: VALID_CALCULATION_ID } }));
     mockFetch.mockResolvedValueOnce(jsonResponse({ ok: true, status: 200, body: { metadata: { calculationId: VALID_CALCULATION_ID } } }));

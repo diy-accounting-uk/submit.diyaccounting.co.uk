@@ -277,12 +277,12 @@
           "keyWord": "NI"
         },
         {
-          "action": "point",
+          "action": "fill",
           "target": "#businessId",
+          "value": "XBIS12345678901",
           "caption": "The business ID from a moment ago goes here.",
           "headline": "Same business ID",
-          "keyWord": "ID",
-          "dwellMs": 600
+          "keyWord": "ID"
         },
         {
           "action": "fill",

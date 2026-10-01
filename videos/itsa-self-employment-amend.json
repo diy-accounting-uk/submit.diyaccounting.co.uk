@@ -119,9 +119,9 @@
         { "action": "goto", "url": "/hmrc/itsa/selfEmploymentPeriod.html", "waitFor": "#itsaSelfEmploymentPeriodForm" },
         { "action": "type", "target": "#nino", "text": "{{hmrcNino}}", "clear": true, "secret": true },
         { "action": "fill", "target": "#businessId", "value": "XBIS00000000001" },
-        { "action": "fill", "target": "#taxYear", "value": "2026-27" },
-        { "action": "fill", "target": "#periodStartDate", "value": "2026-04-06" },
-        { "action": "fill", "target": "#periodEndDate", "value": "2026-07-05" },
+        { "action": "fill", "target": "#taxYear", "value": "2024-25" },
+        { "action": "fill", "target": "#periodStartDate", "value": "2024-04-06" },
+        { "action": "fill", "target": "#periodEndDate", "value": "2024-07-05" },
         { "action": "fill", "target": "#turnover", "value": "1000" },
         { "action": "fill", "target": "#costOfGoods", "value": "150" },
         { "action": "click", "target": "#submitBtn" },
@@ -163,27 +163,27 @@
         {
           "action": "fill",
           "target": "#taxYear",
-          "value": "2026-27",
-          "caption": "This tax year reports one running total, not a list of quarters.",
-          "headline": "One running total",
-          "keyWord": "total"
+          "value": "2024-25",
+          "caption": "The tax year this business filed quarters in.",
+          "headline": "Choose the tax year",
+          "keyWord": "year"
         },
         { "action": "hold", "ms": 400 },
         {
           "action": "click",
           "target": "#retrieveBtn",
-          "caption": "Ask HMRC for the current total.",
-          "headline": "Ask HMRC for the total",
-          "keyWord": "Ask"
+          "caption": "Ask HMRC for the quarters on file.",
+          "headline": "Ask HMRC for the list",
+          "keyWord": "list"
         },
         {
           "action": "await",
           "until": "#periodsResults",
           "label": "Waiting for HMRC",
           "timeoutMs": 60000,
-          "caption": "HMRC answers with the year-to-date total.",
-          "headline": "The year-to-date total",
-          "keyWord": "total"
+          "caption": "HMRC answers with each quarter and its period ID.",
+          "headline": "Each quarter and its ID",
+          "keyWord": "ID"
         },
         { "action": "point", "target": "#periodsTable", "dwellMs": 500 },
         { "action": "still", "name": "self-employment-periods" },
@@ -199,13 +199,14 @@
           "action": "goto",
           "url": "/hmrc/itsa/selfEmploymentPeriodView.html",
           "waitFor": "#itsaSelfEmploymentPeriodViewForm",
-          "caption": "Open the total and see the figures behind it.",
-          "headline": "Open the total",
+          "caption": "Open one quarter and see the figures behind it.",
+          "headline": "Open one quarter",
           "keyWord": "Open"
         },
         { "action": "type", "target": "#nino", "text": "{{hmrcNino}}", "clear": true, "secret": true },
         { "action": "fill", "target": "#businessId", "value": "XBIS00000000001" },
-        { "action": "fill", "target": "#taxYear", "value": "2026-27" },
+        { "action": "fill", "target": "#taxYear", "value": "2024-25" },
+        { "action": "fill", "target": "#periodId", "value": "2017-04-06_2017-07-04" },
         { "action": "hold", "ms": 400 },
         {
           "action": "click",
@@ -219,7 +220,7 @@
           "until": "#periodViewResults",
           "label": "Waiting for HMRC",
           "timeoutMs": 60000,
-          "caption": "Turnover, other income and cost of goods, year to date.",
+          "caption": "Turnover, other income and cost of goods for that quarter.",
           "headline": "Turnover and expenses",
           "keyWord": "Turnover"
         },
@@ -246,34 +247,24 @@
         {
           "action": "fill",
           "target": "#taxYear",
-          "value": "2026-27",
-          "caption": "This tax year reports a running total, not one quarter.",
-          "headline": "A running total",
-          "keyWord": "running"
+          "value": "2024-25",
+          "caption": "The tax year the quarter was filed in.",
+          "headline": "The tax year",
+          "keyWord": "year"
         },
+        { "action": "fill", "target": "#periodId", "value": "2017-04-06_2017-07-04" },
         { "action": "hold", "ms": 400 },
-        {
-          "action": "click",
-          "target": "#loadCurrentTotalBtn",
-          "caption": "Load what HMRC holds before changing it.",
-          "headline": "Load the current total",
-          "keyWord": "Load"
-        },
-        {
-          "action": "await",
-          "until": "#statusMessagesContainer:has-text(\"Loaded the current\")",
-          "label": "Loading the current total",
-          "timeoutMs": 30000
-        },
         {
           "action": "fill",
           "target": "#turnover",
           "value": "1200",
-          "caption": "Edit it to the corrected total for the year so far.",
-          "headline": "Edit to the new total",
-          "keyWord": "total"
+          "caption": "Enter the corrected figures for that quarter.",
+          "headline": "Enter the new figures",
+          "keyWord": "figures"
         },
+        { "action": "fill", "target": "#otherIncome", "value": "50" },
         { "action": "fill", "target": "#costOfGoods", "value": "180" },
+        { "action": "fill", "target": "#otherExpenses", "value": "40" },
         { "action": "hold", "ms": 500 },
         {
           "action": "click",
