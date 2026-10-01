@@ -1,0 +1,109 @@
+# SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0
+# Copyright (C) 2006-2026 DIY Accounting Limited
+
+name: ads conversions upload
+run-name: "ads conversions upload (${{ inputs.mode || 'apply' }})"
+
+# Uploads paid-subscription conversions with a stored gclid to Google Ads through the Data Manager
+# API. The invoice id is the transactionId, so re-sending a day is a no-op. Runs after the nightly
+# analytics ingestion (02:15 UTC) has refreshed the lake.
+concurrency:
+  group: ads-conversions-upload
+  cancel-in-progress: false
+
+defaults:
+  run:
+    shell: bash
+
+on:
+  schedule:
+    - cron: '0 5 * * *'
+  workflow_dispatch:
+    inputs:
+      since:
+        description: "First day to include, YYYY-MM-DD (default: yesterday)"
+        required: false
+        type: string
+      mode:
+        description: "apply uploads, validate-only has Google check without storing, dry-run only prints the events"
+        required: false
+        default: apply
+        type: choice
+        options:
+          - apply
+          - validate-only
+          - dry-run
+
+env:
+  NODE_VERSION: '24'
+  AWS_REGION: 'eu-west-2'
+
+jobs:
+  ads-conversions-upload:
+    name: upload
+    runs-on: ubuntu-24.04
+    environment: prod
+    permissions:
+      id-token: write
+      contents: read
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+
+      - name: Setup Node.js
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: timeout 120 npm ci --ignore-scripts --prefer-offline || { sleep 30; timeout 180 npm ci --ignore-scripts; }
+        timeout-minutes: 6
+        env:
+          NPM_CONFIG_FETCH_RETRIES: "3"
+
+      - name: Configure AWS role via GitHub OIDC
+        uses: aws-actions/configure-aws-credentials@e1253824e5c10ff9df46874f81ed3ec929e19cfd # v6
+        with:
+          role-to-assume: ${{ vars.SUBMIT_ACTIONS_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+          role-chaining: false
+          audience: sts.amazonaws.com
+          role-skip-session-tagging: true
+          output-credentials: true
+          retry-max-attempts: 3
+
+      - name: Assume AWS deployment role
+        uses: aws-actions/configure-aws-credentials@e1253824e5c10ff9df46874f81ed3ec929e19cfd # v6
+        with:
+          role-to-assume: ${{ vars.SUBMIT_DEPLOY_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+          role-chaining: true
+          audience: sts.amazonaws.com
+          role-skip-session-tagging: true
+          output-credentials: true
+          retry-max-attempts: 3
+
+      - name: Upload conversions
+        env:
+          SINCE_INPUT: ${{ inputs.since }}
+          MODE_INPUT: ${{ inputs.mode || 'apply' }}
+        run: |
+          since="${SINCE_INPUT:-$(date -u -d yesterday +%F)}"
+          case "$MODE_INPUT" in
+            apply) mode_flag="--apply" ;;
+            validate-only) mode_flag="--validate-only" ;;
+            dry-run) mode_flag="" ;;
+            *) echo "Unknown mode: $MODE_INPUT" >&2; exit 1 ;;
+          esac
+          node infra/google/ads/ads-conversions-upload.js --env prod --since "$since" $mode_flag 2>&1 | tee ads-conversions-upload.log
+
+      - name: Generate step summary
+        if: always()
+        run: |
+          if [ -f ads-conversions-upload.log ]; then
+            echo "# Ads conversions upload (${{ inputs.mode || 'apply' }})" >> "$GITHUB_STEP_SUMMARY"
+            echo '```' >> "$GITHUB_STEP_SUMMARY"
+            cat ads-conversions-upload.log >> "$GITHUB_STEP_SUMMARY"
+            echo '```' >> "$GITHUB_STEP_SUMMARY"
+          fi
