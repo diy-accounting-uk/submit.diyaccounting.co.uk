@@ -16,8 +16,8 @@ runs), and for Claude Code steps the **Model** a sub-agent should use (Fable > O
 Haiku; the lowest tier that fits). Anything touching code goes through a `claude/*` branch and
 PR; the operator merges.
 
-**Prod runs deployment prod-7c757d6** (PR #441). PR #443's merge (16e9ce429) is deploying: `deploy.yml` 36844523325.
-**ci**: `ci-set1` (last-known-good, 10 stacks, first created 01:57 UTC 2026-10-01).
+**Prod runs deployment prod-7c757d6** (PR #441). PR #443's deploy 36844523325 is standing up `prod-16e9ce4` (8 of 9 stacks at 10:07 UTC).
+**ci**: `ci-set2` (last-known-good, 10 stacks, created 09:12 UTC 2026-10-01).
 
 Rows F-BS3 and LP-* change the spreadsheets repository (`../spreadsheets.diyaccounting.co.uk/`): their batch branches, PRs and CI run there, under that repository's `CLAUDE.md` and tests; their plans (`../private.diyaccounting.co.uk/strategy/PLAN_DIYA_GL_LAUNCH.md`, `../private.diyaccounting.co.uk/strategy/PLAN_DIYA_GL_INDIA.md`, `PLAN_DIYACCOUNTING_BRAND.md`). LP rows' briefs are in `../private.diyaccounting.co.uk/strategy/PLAN_DIYA_GL_LAUNCH.md` under "Briefs"; `../private.diyaccounting.co.uk/strategy/PLAN_DIYA_GL_INDIA.md` carries its own board.
 
@@ -41,9 +41,9 @@ step.
 
 ## In flight
 
-## Machine-only
+- [ ] **ADS2g. Run the Ads conversion upload daily.** The uploader works end to end: a `--validate-only` call on 2026-10-01 with a one-row events file was accepted (`v-4893977c-c21e-4c93-80d1-9dd175bf1d5d`) with the re-consented token (adwords and Data Manager scopes) and `datamanager.googleapis.com` enabled. Nothing runs it: `infra/google/ads/ads-conversions-upload.js` is a script (`npm run ads:conversions-upload`), and R8 of `../private.diyaccounting.co.uk/PLAN_PAID_CLICK_MEASUREMENT.md` asks for a daily job. Add a scheduled GitHub workflow on the `google-apply.yml` pattern (prod environment, the same AWS role that reads `prod/submit/google/ads/refresh_token` and the OAuth client, Athena read on `prod_env_analytics`) that runs `--apply --since <yesterday>` once a day; the invoice id as `transactionId` makes a repeat a no-op. Called-workflow checklist applies; proof is `actionlint`, `prettier --check`, then one `workflow_dispatch` after merge showing "0 event(s)" or an upload. The first real upload shows in `npm run ads:report` conversions. **Source**: ADS2c R8; OADS2f proof, 2026-10-01. **Owner**: Claude Code. **Model**: Sonnet. **Size**: ~2 files. **In flight**: batch `claude/basalt-ads`, agent worktree `.claude/worktrees/basalt-ads2g`.
 
-- [ ] **ADS2g. Run the Ads conversion upload daily.** The uploader works end to end: a `--validate-only` call on 2026-10-01 with a one-row events file was accepted (`v-4893977c-c21e-4c93-80d1-9dd175bf1d5d`) with the re-consented token (adwords and Data Manager scopes) and `datamanager.googleapis.com` enabled. Nothing runs it: `infra/google/ads/ads-conversions-upload.js` is a script (`npm run ads:conversions-upload`), and R8 of `../private.diyaccounting.co.uk/PLAN_PAID_CLICK_MEASUREMENT.md` asks for a daily job. Add a scheduled GitHub workflow on the `google-apply.yml` pattern (prod environment, the same AWS role that reads `prod/submit/google/ads/refresh_token` and the OAuth client, Athena read on `prod_env_analytics`) that runs `--apply --since <yesterday>` once a day; the invoice id as `transactionId` makes a repeat a no-op. Called-workflow checklist applies; proof is `actionlint`, `prettier --check`, then one `workflow_dispatch` after merge showing "0 event(s)" or an upload. The first real upload shows in `npm run ads:report` conversions. **Source**: ADS2c R8; OADS2f proof, 2026-10-01. **Owner**: Claude Code. **Model**: Sonnet. **Size**: ~2 files.
+## Machine-only
 
 ## Machine-ask
 
