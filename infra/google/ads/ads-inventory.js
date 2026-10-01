@@ -18,7 +18,7 @@
 //   node infra/google/ads/ads-inventory.js --consent [--client-file <path>]
 //
 // --consent runs the same loopback OAuth consent scripts/youtube-upload.js uses, requesting the
-// adwords scope instead of the YouTube ones, and stores the resulting refresh token in the
+// adwords and Data Manager scopes ([oauth] and [upload] in ads.toml) instead of the YouTube ones, and stores the resulting refresh token in the
 // Secrets Manager secret ads.toml names through scripts/put-secret-with-rotation-tag.sh. A run
 // without --consent reads that stored refresh token and exchanges it for an access token.
 //
@@ -60,7 +60,7 @@ const ASSET_GROUP_QUERY = "SELECT asset_group.resource_name, asset_group.name, a
  * Parse infra/google/ads/ads.toml's content.
  *
  * @param {string} tomlString
- * @returns {{customerId: string, projectId: string, oauthClientSecretName: string, refreshTokenSecretName: string, scope: string, apiVersion: string, ga4PropertyId: string}}
+ * @returns {{customerId: string, projectId: string, oauthClientSecretName: string, refreshTokenSecretName: string, scope: string, uploadScope: string, apiVersion: string, ga4PropertyId: string}}
  */
 export function parseConfig(tomlString) {
   const parsed = TOML.parse(tomlString);
@@ -69,14 +69,24 @@ export function parseConfig(tomlString) {
   const oauthClientSecretName = parsed.secrets?.oauth_client;
   const refreshTokenSecretName = parsed.secrets?.refresh_token;
   const scope = parsed.oauth?.scope;
+  const uploadScope = parsed.upload?.scope;
   const apiVersion = parsed.api?.version;
   const ga4PropertyId = parsed.ga4?.property_id;
-  if (!customerId || !projectId || !oauthClientSecretName || !refreshTokenSecretName || !scope || !apiVersion || !ga4PropertyId) {
+  if (
+    !customerId ||
+    !projectId ||
+    !oauthClientSecretName ||
+    !refreshTokenSecretName ||
+    !scope ||
+    !uploadScope ||
+    !apiVersion ||
+    !ga4PropertyId
+  ) {
     throw new Error(
-      "ads.toml is missing one of [account].customer_id, [project].id, [secrets].oauth_client, [secrets].refresh_token, [oauth].scope, [api].version or [ga4].property_id",
+      "ads.toml is missing one of [account].customer_id, [project].id, [secrets].oauth_client, [secrets].refresh_token, [oauth].scope, [upload].scope, [api].version or [ga4].property_id",
     );
   }
-  return { customerId, projectId, oauthClientSecretName, refreshTokenSecretName, scope, apiVersion, ga4PropertyId };
+  return { customerId, projectId, oauthClientSecretName, refreshTokenSecretName, scope, uploadScope, apiVersion, ga4PropertyId };
 }
 
 export function loadConfigFromRoot() {
@@ -332,7 +342,7 @@ export async function getAdsAccessToken(config, { clientFile } = {}) {
 
 async function runConsent(config, clientFile) {
   const clientCredentials = await resolveClientCredentials({ clientFile, smClient: getSecretsManagerClient() });
-  const refreshToken = await runLoopbackConsent({ clientCredentials, scopes: [config.scope] });
+  const refreshToken = await runLoopbackConsent({ clientCredentials, scopes: [config.scope, config.uploadScope] });
   execFileSync(
     // eslint-disable-next-line sonarjs/no-os-command-from-path -- deliberately runs this repo's own script, resolved relative to cwd, not searched on PATH
     "scripts/put-secret-with-rotation-tag.sh",

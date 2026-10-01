@@ -47,6 +47,9 @@ refresh_token = "prod/submit/google/ads/refresh_token"
 [oauth]
 scope = "https://www.googleapis.com/auth/adwords"
 
+[upload]
+scope = "https://www.googleapis.com/auth/datamanager"
+
 [api]
 version = "v25"
 
@@ -61,6 +64,7 @@ property_id = "523400333"
       oauthClientSecretName: "prod/submit/youtube/oauth_client",
       refreshTokenSecretName: "prod/submit/google/ads/refresh_token",
       scope: "https://www.googleapis.com/auth/adwords",
+      uploadScope: "https://www.googleapis.com/auth/datamanager",
       apiVersion: "v25",
       ga4PropertyId: "523400333",
     });
