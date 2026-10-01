@@ -24,12 +24,12 @@
     <a href="#mainContent" class="skip-link">Skip to main content</a>
     <header>
       <p class="chrome-fallback"><a href="../../">DIY Accounting Submit</a></p>
-      <h1>VAT Penalties</h1>
+      <h1>VAT penalties</h1>
       <p class="subtitle">Retrieve VAT penalties from HMRC</p>
     </header>
 
     <main id="mainContent">
-      <div id="syntheticIndicator" class="synthetic-indicator">⚠️ SYNTHETIC MODE - calls go to HMRC's sandbox API</div>
+      <div id="syntheticIndicator" class="synthetic-indicator">Synthetic mode - calls go to HMRC's sandbox API</div>
 
       <div id="statusMessagesContainer" role="alert" aria-live="polite"></div>
 
@@ -44,7 +44,7 @@
           <button type="button" id="cancelRequestBtn" class="cancel-button" style="display: none">Cancel Request</button>
         </div>
         <div id="searchCriteriaContainer">
-          <h2>Retrieve VAT Penalties</h2>
+          <h2>Retrieve VAT penalties</h2>
           <p class="hint">Shows penalties HMRC has recorded in the last 24 months. There is no date range to choose.</p>
           <form id="vatPenaltiesForm">
             <div class="form-group">
@@ -113,7 +113,7 @@
 
       <!-- Results Display -->
       <div id="penaltiesResults" class="results-container" style="display: none">
-        <h3>VAT Penalties</h3>
+        <h3>VAT penalties</h3>
         <div id="penaltiesSummary"></div>
         <div id="lateSubmissionPenaltiesTable"></div>
         <div id="latePaymentPenaltiesTable"></div>
@@ -487,10 +487,10 @@
         summaryContainer.innerHTML = `
           <table class="results-table">
             <tbody>
-              <tr><th>Active penalty points</th><td>${escapeHtml(String(summary.activePenaltyPoints ?? "-"))}</td></tr>
-              <tr><th>Inactive penalty points</th><td>${escapeHtml(String(summary.inactivePenaltyPoints ?? "-"))}</td></tr>
+              <tr><th>Active penalty points</th><td>${escapeHtml(String(summary.activePenaltyPoints ?? "—"))}</td></tr>
+              <tr><th>Inactive penalty points</th><td>${escapeHtml(String(summary.inactivePenaltyPoints ?? "—"))}</td></tr>
               <tr><th>Compliance achieved by</th><td>${escapeHtml(formatDate(summary.periodOfComplianceAchievement))}</td></tr>
-              <tr><th>Regime threshold</th><td>${escapeHtml(String(summary.regimeThreshold ?? "-"))}</td></tr>
+              <tr><th>Regime threshold</th><td>${escapeHtml(String(summary.regimeThreshold ?? "—"))}</td></tr>
               <tr><th>Late submission penalty charge total</th><td>${escapeHtml(formatCurrency(totalisations.lateSubmissionPenaltyTotalValue))}</td></tr>
               <tr><th>Penalised principal total</th><td>${escapeHtml(formatCurrency(totalisations.penalisedPrincipalTotal))}</td></tr>
               <tr><th>Late payment penalty (posted)</th><td>${escapeHtml(formatCurrency(totalisations.latePaymentPenaltyPostedTotal))}</td></tr>
@@ -513,7 +513,7 @@
             const created = formatDate(detail.penaltyCreationDate);
             const expires = formatDate(detail.penaltyExpiryDate);
             const chargeAmount =
-              detail.chargeAmount === undefined || detail.chargeAmount === null ? "-" : formatCurrency(detail.chargeAmount);
+              detail.chargeAmount === undefined || detail.chargeAmount === null ? "—" : formatCurrency(detail.chargeAmount);
             html += `<tr><td>${escapeHtml(category)}</td><td>${escapeHtml(status)}</td><td>${escapeHtml(created)}</td><td>${escapeHtml(expires)}</td><td>${escapeHtml(chargeAmount)}</td></tr>`;
           });
           html += "</tbody></table>";
@@ -529,8 +529,8 @@
           html += "<th>Charge Reference</th><th>Category</th><th>Status</th><th>Period</th><th>Penalty Amount</th><th>Due Date</th>";
           html += "</tr></thead><tbody>";
           latePaymentDetails.forEach((detail) => {
-            const chargeReference = detail.principalChargeReference || "-";
-            const category = detail.penaltyCategory || "-";
+            const chargeReference = detail.principalChargeReference || "—";
+            const category = detail.penaltyCategory || "—";
             const status = capitalize(detail.penaltyStatus);
             const period = formatDateRange(detail.principalChargeBillingFrom, detail.principalChargeBillingTo);
             const amount =
@@ -559,7 +559,7 @@
 
       // Format a single date for display
       function formatDate(dateStr) {
-        if (!dateStr) return "-";
+        if (!dateStr) return "—";
         const date = new Date(dateStr);
         if (isNaN(date.getTime())) return dateStr;
         const options = { day: "numeric", month: "short", year: "numeric" };
@@ -568,7 +568,7 @@
 
       // Format date range for display
       function formatDateRange(startStr, endStr) {
-        if (!startStr || !endStr) return "-";
+        if (!startStr || !endStr) return "—";
         const startDate = new Date(startStr);
         const endDate = new Date(endStr);
         const options = { day: "numeric", month: "short", year: "numeric" };
@@ -577,7 +577,7 @@
 
       // Format a monetary amount for display
       function formatCurrency(amount) {
-        if (amount === undefined || amount === null) return "-";
+        if (amount === undefined || amount === null) return "—";
         return formatGbp(amount);
       }
 

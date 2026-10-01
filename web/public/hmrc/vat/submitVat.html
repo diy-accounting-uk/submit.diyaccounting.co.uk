@@ -33,7 +33,7 @@
     </header>
 
     <main id="mainContent">
-      <div id="syntheticIndicator" class="synthetic-indicator">⚠️ SYNTHETIC MODE - calls go to HMRC's sandbox API</div>
+      <div id="syntheticIndicator" class="synthetic-indicator">Synthetic mode - calls go to HMRC's sandbox API</div>
 
       <div id="statusMessagesContainer" role="alert" aria-live="polite"></div>
 
@@ -45,7 +45,7 @@
         <button type="button" id="cancelRequestBtn" class="cancel-button" style="display: none">Cancel Request</button>
       </div>
       <div id="vatForm" class="form-container">
-        <h2>VAT Return Submission</h2>
+        <h2>VAT return submission</h2>
         <form id="vatSubmissionForm">
           <div class="form-group">
             <label for="vatNumber">VAT registration number</label>
@@ -59,7 +59,7 @@
               name="vatNumber"
               required
               value=""
-              placeholder="e.g., 983238295"
+              placeholder="123456789"
               maxlength="9"
               pattern="[0-9]{9}"
               aria-describedby="vatNumber-hint"
@@ -90,7 +90,7 @@
 
             <!-- Box 1: VAT due on sales -->
             <div class="form-group">
-              <label for="vatDueSales">Box 1: VAT due on sales and other outputs</label>
+              <label for="vatDueSales">Box 1: VAT due in the period on sales and other outputs</label>
               <p id="vatDueSales-hint" class="hint">Enter an amount with up to 2 decimal places, for example £600 or £193.54</p>
               <div class="input-prefix">
                 <span class="prefix">£</span>
@@ -110,7 +110,9 @@
 
             <!-- Box 2: VAT due on acquisitions -->
             <div class="form-group">
-              <label for="vatDueAcquisitions">Box 2: VAT due on acquisitions from EU</label>
+              <label for="vatDueAcquisitions"
+                >Box 2: VAT due in the period on acquisitions of goods made in Northern Ireland from EU member states</label
+              >
               <p id="vatDueAcquisitions-hint" class="hint">
                 Enter an amount with up to 2 decimal places, for example £600 or £193.54. Usually 0 post-Brexit.
               </p>
@@ -132,7 +134,7 @@
 
             <!-- Box 3: Total VAT due (calculated) -->
             <div class="form-group calculated-field">
-              <label for="totalVatDue">Box 3: Total VAT due (Box 1 + Box 2)</label>
+              <label for="totalVatDue">Box 3: Total VAT due</label>
               <p id="totalVatDue-hint" class="hint">Auto-calculated: Sum of boxes 1 and 2</p>
               <div class="input-prefix">
                 <span class="prefix">£</span>
@@ -153,7 +155,9 @@
 
             <!-- Box 4: VAT reclaimed -->
             <div class="form-group">
-              <label for="vatReclaimedCurrPeriod">Box 4: VAT reclaimed on purchases and other inputs</label>
+              <label for="vatReclaimedCurrPeriod"
+                >Box 4: VAT reclaimed in the period on purchases and other inputs (including acquisitions from the EU)</label
+              >
               <p id="vatReclaimedCurrPeriod-hint" class="hint">Enter an amount with up to 2 decimal places, for example £600 or £193.54</p>
               <div class="input-prefix">
                 <span class="prefix">£</span>
@@ -173,7 +177,7 @@
 
             <!-- Box 5: Net VAT due (calculated) -->
             <div class="form-group calculated-field">
-              <label for="netVatDue">Box 5: Net VAT due or to be reclaimed</label>
+              <label for="netVatDue">Box 5: Net VAT to pay to HMRC or reclaim</label>
               <p id="netVatDue-hint" class="hint">Auto-calculated: Difference between boxes 3 and 4 (always positive)</p>
               <div class="input-prefix">
                 <span class="prefix">£</span>
@@ -194,7 +198,7 @@
 
             <!-- Box 6: Total value of sales -->
             <div class="form-group">
-              <label for="totalValueSalesExVAT">Box 6: Total value of sales excluding VAT</label>
+              <label for="totalValueSalesExVAT">Box 6: Total value of sales and all other outputs excluding any VAT</label>
               <p id="totalValueSalesExVAT-hint" class="hint">Enter a whole number without pence, for example £15000</p>
               <div class="input-prefix">
                 <span class="prefix">£</span>
@@ -214,7 +218,7 @@
 
             <!-- Box 7: Total value of purchases -->
             <div class="form-group">
-              <label for="totalValuePurchasesExVAT">Box 7: Total value of purchases excluding VAT</label>
+              <label for="totalValuePurchasesExVAT">Box 7: Total value of purchases and all other inputs excluding any VAT</label>
               <p id="totalValuePurchasesExVAT-hint" class="hint">Enter a whole number without pence, for example £15000</p>
               <div class="input-prefix">
                 <span class="prefix">£</span>
@@ -234,7 +238,9 @@
 
             <!-- Box 8: Total value of goods supplied to EU -->
             <div class="form-group">
-              <label for="totalValueGoodsSuppliedExVAT">Box 8: Total value of goods supplied to EU</label>
+              <label for="totalValueGoodsSuppliedExVAT"
+                >Box 8: Total value of all supplies of goods and related costs, excluding any VAT, to EU member states</label
+              >
               <p id="totalValueGoodsSuppliedExVAT-hint" class="hint">Enter a whole number without pence. Usually 0 post-Brexit.</p>
               <div class="input-prefix">
                 <span class="prefix">£</span>
@@ -254,7 +260,9 @@
 
             <!-- Box 9: Total acquisitions from EU -->
             <div class="form-group">
-              <label for="totalAcquisitionsExVAT">Box 9: Total value of acquisitions from EU</label>
+              <label for="totalAcquisitionsExVAT"
+                >Box 9: Total value of all acquisitions of goods and related costs, excluding any VAT, from EU member states</label
+              >
               <p id="totalAcquisitionsExVAT-hint" class="hint">Enter a whole number without pence. Usually 0 post-Brexit.</p>
               <div class="input-prefix">
                 <span class="prefix">£</span>

@@ -27,12 +27,12 @@
     <a href="#mainContent" class="skip-link">Skip to main content</a>
     <header>
       <p class="chrome-fallback"><a href="../../">DIY Accounting Submit</a></p>
-      <h1>View VAT Return</h1>
+      <h1>View VAT return</h1>
       <p class="subtitle">View submitted VAT return details</p>
     </header>
 
     <main id="mainContent">
-      <div id="syntheticIndicator" class="synthetic-indicator">⚠️ SYNTHETIC MODE - calls go to HMRC's sandbox API</div>
+      <div id="syntheticIndicator" class="synthetic-indicator">Synthetic mode - calls go to HMRC's sandbox API</div>
 
       <div id="statusMessagesContainer" role="alert" aria-live="polite"></div>
 
@@ -44,7 +44,7 @@
         <button type="button" id="cancelRequestBtn" class="cancel-button" style="display: none">Cancel Request</button>
       </div>
       <div id="searchForm" class="form-container">
-        <h2>Retrieve VAT Return</h2>
+        <h2>Retrieve VAT return</h2>
         <form id="vatReturnForm">
           <div class="form-group">
             <label for="vrn">VAT registration number</label>
@@ -58,7 +58,7 @@
               name="vrn"
               required
               value=""
-              placeholder="e.g., 983238295"
+              placeholder="123456789"
               maxlength="9"
               pattern="[0-9]{9}"
               aria-describedby="vrn-hint"
@@ -121,7 +121,7 @@
 
       <!-- Results Display -->
       <div id="returnResults" class="results-container" style="display: none">
-        <h3>VAT Return Details</h3>
+        <h3>VAT return details</h3>
         <div id="returnDetails"></div>
         <div class="button-group">
           <button type="button" id="newSearchBtn" class="secondary-button">View Another Return</button>
@@ -554,8 +554,8 @@
           const amountClass = box.box === 5 ? ' class="net-amount"' : "";
           return `
                 <div class="detail-item" id="vatReturnBox${box.box}" data-hmrc-field="${box.field}">
-                  <label>Box ${box.box}: ${escapeHtml(box.label)}:</label>
-                  <span${amountClass}>${shownAmount}</span>
+                  <dt>Box ${box.box}: ${escapeHtml(box.label)}</dt>
+                  <dd${amountClass}>${shownAmount}</dd>
                   <p class="box-definition" id="vatReturnBox${box.box}Definition">
                     “${escapeHtml(box.definition)}”
                     ${HmrcFieldTable.sourceLink(box.source, { anchor: box.anchor, text: `VAT Notice 700/12, box ${box.box}` })}
@@ -579,28 +579,28 @@
           <div class="return-details">
             <div class="detail-section">
               <h4>Period Information</h4>
-              <div class="detail-grid">
+              <dl class="detail-grid">
                 <div class="detail-item">
-                  <label>Period:</label>
-                  <span><strong>${escapeHtml(periodDisplay)}</strong></span>
+                  <dt>Period:</dt>
+                  <dd><strong>${escapeHtml(periodDisplay)}</strong></dd>
                 </div>
                 <div class="detail-item">
-                  <label>Finalised:</label>
-                  <span class="${returnData.finalised ? "status-fulfilled" : "status-open"}">
+                  <dt>Finalised:</dt>
+                  <dd class="${returnData.finalised ? "status-fulfilled" : "status-open"}">
                     ${formatBoolean(returnData.finalised)}
-                  </span>
+                  </dd>
                 </div>
-              </div>
+              </dl>
             </div>
 
             <div class="detail-section">
               <h4>VAT Amounts</h4>
-              <div class="detail-grid">${boxesHtml(1, 5)}</div>
+              <dl class="detail-grid">${boxesHtml(1, 5)}</dl>
             </div>
 
             <div class="detail-section">
               <h4>Turnover (whole pounds)</h4>
-              <div class="detail-grid">${boxesHtml(6, 9)}</div>
+              <dl class="detail-grid">${boxesHtml(6, 9)}</dl>
             </div>
 
             <p class="field-table-source">
@@ -710,14 +710,15 @@
         border-bottom: 1px solid #f0f0f0;
       }
 
-      .detail-item label {
+      .detail-item dt {
         flex: 1 1 0;
         margin: 0;
         font-weight: 500;
         color: #555;
       }
 
-      .detail-item span {
+      .detail-item dd {
+        margin: 0;
         font-weight: 600;
         color: #333;
         font-variant-numeric: tabular-nums;

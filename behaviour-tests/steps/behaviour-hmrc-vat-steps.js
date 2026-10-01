@@ -1807,28 +1807,15 @@ export async function verifyViewVatReturnResults(page, testScenario = null, scre
       }
 
       // Validate monetary values are properly formatted (£X.XX format)
-      const monetaryFields = [
-        "VAT due on sales",
-        "VAT due on acquisitions",
-        "Total VAT due",
-        "VAT reclaimed on purchases",
-        "Net VAT due",
-        "Total value of sales",
-        "Total value of purchases",
-        "Total value of goods supplied",
-        "Total acquisitions",
-      ];
-
-      for (const field of monetaryFields) {
-        const regex = new RegExp(`${field}[^£]*£([0-9,]+\\.[0-9]{2})`);
-        const match = detailsHtml.match(regex);
-        if (match) {
-          const value = match[1].replace(/,/g, "");
-          const numValue = parseFloat(value);
-          expect(numValue, `${field} should be a valid number`).not.toBeNaN();
-          expect(numValue, `${field} should not be negative`).toBeGreaterThanOrEqual(0);
-          console.log(`${field} validated: £${value}`);
-        }
+      for (let box = 1; box <= 9; box += 1) {
+        const field = `Box ${box}`;
+        const amountText = await page.locator(`#vatReturnBox${box} dd`).first().innerText();
+        const match = amountText.match(/£([0-9,]+(?:\.[0-9]{2})?)/);
+        expect(match, `${field} should show a £ amount`).not.toBeNull();
+        const numValue = parseFloat(match[1].replace(/,/g, ""));
+        expect(numValue, `${field} should be a valid number`).not.toBeNaN();
+        expect(numValue, `${field} should not be negative`).toBeGreaterThanOrEqual(0);
+        console.log(`${field} validated: £${numValue}`);
       }
 
       // Validate Finalised status (Yes/No)

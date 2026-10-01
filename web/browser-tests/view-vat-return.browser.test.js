@@ -279,9 +279,9 @@ window.loadEnv = function(){ return Promise.resolve({}); };
     // The VAT behaviour step reads each box's figure as the first pound amount after its label.
     const detailsHtml = await page.locator("#returnDetails").innerHTML();
     const firstAmountAfter = (label) => detailsHtml.match(new RegExp(`${label}[^£]*£([0-9,]+(?:\\.[0-9]{2})?)`))?.[1];
-    expect(firstAmountAfter("VAT due on sales")).toBe("1,234.56");
-    expect(firstAmountAfter("VAT reclaimed on purchases")).toBe("234.50");
-    expect(firstAmountAfter("Total value of sales")).toBe("6,173");
+    expect(firstAmountAfter("VAT due in the period on sales")).toBe("1,234.56");
+    expect(firstAmountAfter("VAT reclaimed in the period on purchases")).toBe("234.50");
+    expect(firstAmountAfter("Total value of sales and all other outputs")).toBe("6,173");
 
     await page.locator("#returnDetails").screenshot({ path: screenshotPath("viewVatReturn") });
   });
