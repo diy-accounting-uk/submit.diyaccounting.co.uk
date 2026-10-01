@@ -127,13 +127,13 @@
           />
         </div>
         <div class="form-group">
-          <label for="adjustCostOfReplacingDomesticItems">Cost of replacing domestic items</label>
+          <label for="adjustRepairsAndMaintenance">Repairs and maintenance</label>
           <input
             type="number"
-            id="adjustCostOfReplacingDomesticItems"
-            name="adjustCostOfReplacingDomesticItems"
+            id="adjustRepairsAndMaintenance"
+            name="adjustRepairsAndMaintenance"
             step="0.01"
-            data-hmrc-field="expenses.costOfReplacingDomesticItems"
+            data-hmrc-field="expenses.repairsAndMaintenance"
           />
         </div>
         <div class="button-group">
@@ -396,10 +396,9 @@
         };
         if (!zeroAdjustments) {
           const totalRentsReceived = document.getElementById("adjustTotalRentsReceived").value;
-          const costOfReplacingDomesticItems = document.getElementById("adjustCostOfReplacingDomesticItems").value;
+          const repairsAndMaintenance = document.getElementById("adjustRepairsAndMaintenance").value;
           if (totalRentsReceived !== "") adjustDetails.income = { totalRentsReceived: Number(totalRentsReceived) };
-          if (costOfReplacingDomesticItems !== "")
-            adjustDetails.expenses = { costOfReplacingDomesticItems: Number(costOfReplacingDomesticItems) };
+          if (repairsAndMaintenance !== "") adjustDetails.expenses = { repairsAndMaintenance: Number(repairsAndMaintenance) };
         }
 
         await ensureAuthorizedThen(
