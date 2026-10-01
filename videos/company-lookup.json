@@ -127,8 +127,21 @@
       "steps": [
         {
           "action": "await",
-          "until": "#profileView, #searchResults",
+          "until": "#searchResults .link-button",
           "label": "Waiting for Companies House",
+          "timeoutMs": 30000
+        },
+        {
+          "action": "click",
+          "target": "#searchResults .link-button",
+          "caption": "Pick the company to open its profile.",
+          "headline": "Open the company",
+          "keyWord": "company"
+        },
+        {
+          "action": "await",
+          "until": "#companyProfile dd",
+          "label": "Waiting for the profile",
           "timeoutMs": 30000,
           "caption": "The profile carries the company's status, address and officers.",
           "headline": "Read the company profile",

@@ -213,7 +213,11 @@
         const figures = document.getElementById("calculationFigures");
         const messagesContainer = document.getElementById("calculationMessages");
         const calc = calculation?.calculation;
-        const messages = calculation?.messages || { info: [], warnings: [], errors: [] };
+        const messages = {
+          info: calculation?.messages?.info || [],
+          warnings: calculation?.messages?.warnings || [],
+          errors: calculation?.messages?.errors || [],
+        };
 
         if (calc) {
           figures.style.display = "block";
