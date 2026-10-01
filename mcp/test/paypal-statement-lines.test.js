@@ -15,7 +15,7 @@
 // a Releases figure and a candidate row's amount that a hand-written pair
 // makes easy to see.
 
-import { readFileSync } from "node:fs";
+import { existsSync, readFileSync } from "node:fs";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { describe, expect, it, vi } from "vitest";
@@ -28,7 +28,10 @@ import {
   parsePaypalStatementRecords,
   paypalLinesFromStatementPdf,
   paypalLinesFromStatementText,
+  paypalWalletLinesFromStatementPdf,
+  paypalWalletLinesFromStatementText,
   reconcilePaypalMonth,
+  runPdftotext,
   settlesElsewhere,
 } from "../lib/finance/paypal-statement-lines.js";
 
@@ -451,5 +454,156 @@ describe("paypalLinesFromStatementPdf", () => {
 
     expect(runPdftotext).toHaveBeenCalledWith("statement.pdf");
     expect(lines.some((line) => line.documentReference === "PDF0002")).toBe(false);
+  });
+});
+
+const REAL_PAYPAL_DIR = "/Users/antony/projects/diy-accounting-limited/drive/DIY Accounting Limited/finance/2026-2027 accounts/paypal/";
+const WALLET = "1220";
+
+function signedNet(lines) {
+  const cents = lines.reduce((sum, line) => sum + (line.debitCreditCode === "D" ? 1 : -1) * Math.round(line.amount * 100), 0);
+  return cents / 100;
+}
+
+describe.skipIf(!existsSync(REAL_PAYPAL_DIR))("paypalWalletLinesFromStatementPdf over the real months", () => {
+  const MONTHS = ["2026-04", "2026-05", "2026-06", "2026-07", "2026-08"];
+
+  async function readMonth(month) {
+    const transactionsPdf = `${REAL_PAYPAL_DIR}${month} PayPal - transactions.PDF`;
+    const statementPdf = `${REAL_PAYPAL_DIR}${month} PayPal - statement.PDF`;
+    return {
+      transactionsPdf,
+      statementPdf,
+      transactionsText: await runPdftotext(transactionsPdf),
+      statementText: await runPdftotext(statementPdf),
+    };
+  }
+
+  // The bank statement carries a top-up and a withdrawal as its own line, so
+  // the wallet lines plus those transfers are the whole statement movement.
+  function bankTransfersNet(transactionsText) {
+    return round(
+      parsePaypalStatementRecords(transactionsText)
+        .filter((record) => record.currency === "GBP" && /^(bank deposit to paypal account|.*\bwithdrawal\b)/i.test(record.description))
+        .filter((record) => record.status === "Completed" || /^bank deposit/i.test(record.description))
+        .reduce((sum, record) => sum + record.net, 0),
+    );
+  }
+
+  function round(value) {
+    return Math.round(value * 100) / 100;
+  }
+
+  it.each(MONTHS)("%s wallet lines plus the bank transfers equal the statement movement, residual 0", async (month) => {
+    const { transactionsPdf, statementPdf, transactionsText, statementText } = await readMonth(month);
+
+    expect(reconcilePaypalMonth({ transactionsText, statementText }).residual).toBe(0);
+
+    const lines = await paypalWalletLinesFromStatementPdf(transactionsPdf, { walletAccountMainID: WALLET, statementPdfPath: statementPdf });
+    const { statementMovement } = reconcilePaypalMonth({ transactionsText, statementText });
+
+    expect(round(signedNet(lines) + bankTransfersNet(transactionsText))).toBe(statementMovement);
+  });
+
+  it("posts a dollar bill at the pound figure of its conversion pair", async () => {
+    const { transactionsText, statementText } = await readMonth("2026-06");
+
+    const { lines } = paypalLinesFromStatementText(transactionsText, { ...ACCOUNTS, statementText });
+
+    const gitHub = lines.filter((line) => line.detailComment.includes("GitHub"));
+    expect(gitHub.map((line) => [line.postingDate, line.amount, line.amountCurrency])).toEqual([
+      ["2026-06-02", 11.59, "GBP"],
+      ["2026-06-06", 3.13, "GBP"],
+    ]);
+  });
+
+  it("leaves out a dollar row that has no conversion pair", async () => {
+    const { transactionsText, statementText } = await readMonth("2026-05");
+
+    const { lines } = paypalLinesFromStatementText(transactionsText, { ...ACCOUNTS, statementText });
+
+    expect(lines.filter((line) => line.detailComment.includes("GitHub")).map((line) => line.amount)).toEqual([3.09]);
+  });
+
+  it("moves nothing on the wallet for a credit that returns a same-day hold", async () => {
+    const { transactionsText, statementText } = await readMonth("2026-05");
+
+    const lines = paypalWalletLinesFromStatementText(transactionsText, { walletAccountMainID: WALLET, statementText });
+
+    expect(lines.some((line) => line.detailComment === "Other: AWS EMEA")).toBe(false);
+  });
+});
+
+describe("paypalWalletLinesFromStatementText", () => {
+  const rows = [
+    { date: "02/06/2026", description: "Donation Payment: A N Other", status: "Completed", gross: 10, fee: -0.59, id: "WALLET0001" },
+    {
+      date: "03/06/2026",
+      description: "Pre-approved Payment Bill User Payment: Google Cloud EMEA Limited",
+      status: "Completed",
+      gross: -24,
+      id: "WALLET0002",
+    },
+    { date: "04/06/2026", description: "Debit Card Cashback Bonus", status: "Completed", gross: 0.44, id: "WALLET0003" },
+    { date: "05/06/2026", description: "Mobile Payment: A N Other", status: "Completed", gross: 1000, fee: -29.3, id: "WALLET0004" },
+  ];
+  const text = statementText(rows);
+  const labels = {
+    rule: [
+      { pattern: "Debit Card Cashback Bonus", skipJournalLine: true, walletBankCode: "K" },
+      { pattern: "Mobile Payment", skipJournalLine: true, walletBankCode: "DL" },
+    ],
+  };
+
+  it("brings a receipt's gross in as DR and takes its fee and a bill out as CR", () => {
+    const lines = paypalWalletLinesFromStatementText(text, { walletAccountMainID: WALLET });
+
+    const byEntry = Object.fromEntries(lines.map((line) => [line.entryNumber, line]));
+    expect(byEntry["PAYPAL-WALLET-WALLET0001"]).toMatchObject({
+      "amount": 10,
+      "debitCreditCode": "D",
+      "diya-gl:bankCode": "DR",
+      "accountMainID": WALLET,
+    });
+    expect(byEntry["PAYPAL-WALLET-WALLET0001-FEE"]).toMatchObject({ "amount": 0.59, "debitCreditCode": "C", "diya-gl:bankCode": "CR" });
+    expect(byEntry["PAYPAL-WALLET-WALLET0002"]).toMatchObject({ "amount": 24, "debitCreditCode": "C", "diya-gl:bankCode": "CR" });
+  });
+
+  it("takes the bank code a label rule names for a receipt's wallet line", () => {
+    const lines = paypalWalletLinesFromStatementText(text, { walletAccountMainID: WALLET, labels });
+
+    const byEntry = Object.fromEntries(lines.map((line) => [line.entryNumber, line]));
+    expect(byEntry["PAYPAL-WALLET-WALLET0003"]["diya-gl:bankCode"]).toBe("K");
+    expect(byEntry["PAYPAL-WALLET-WALLET0004"]).toMatchObject({ "amount": 1000, "diya-gl:bankCode": "DL" });
+  });
+});
+
+describe("paypalLinesFromStatementText label rule fields", () => {
+  const rows = [
+    { date: "03/06/2026", description: "Other: AWS EMEA", status: "Completed", gross: 15.66, id: "RULE0001" },
+    { date: "05/06/2026", description: "Mobile Payment: A N Other", status: "Completed", gross: 1000, fee: -29.3, id: "RULE0002" },
+  ];
+  const labels = {
+    rule: [
+      { pattern: "Other: AWS EMEA", sourceJournalID: "purchases", accountMainID: "5301", documentType: "credit-note", taxCode: "OS" },
+      { pattern: "Mobile Payment", skipJournalLine: true },
+    ],
+  };
+
+  it("posts a rule's documentType on the gross line", () => {
+    const { lines } = paypalLinesFromStatementText(statementText(rows), { ...ACCOUNTS, labels });
+
+    expect(lines.find((line) => line.entryNumber === "PAYPAL-RULE0001")).toMatchObject({
+      sourceJournalID: "purchases",
+      accountMainID: "5301",
+      documentType: "credit-note",
+    });
+  });
+
+  it("posts no gross line for a skipJournalLine rule and still posts its fee", () => {
+    const { lines } = paypalLinesFromStatementText(statementText(rows), { ...ACCOUNTS, labels });
+
+    expect(lines.some((line) => line.entryNumber === "PAYPAL-RULE0002")).toBe(false);
+    expect(lines.find((line) => line.entryNumber === "PAYPAL-RULE0002-FEE")).toMatchObject({ amount: 29.3 });
   });
 });

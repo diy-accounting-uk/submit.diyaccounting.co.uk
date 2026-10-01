@@ -303,7 +303,7 @@ Before any push, check **every** deploy workflow for that branch — this repo h
 into a running deploy. Confirm they are finished by reading the runs, not by assuming elapsed time.
 
 Before the first push of a batch, run `scripts/batch-check.sh <batch-branch>` once, in one background
-command. It runs every CI gate (maven verify, `npm test`, browser tests, Prettier, Spotless, the
+command. It runs every CI gate (maven verify, `npm test`, the mcp tests, browser tests, Prettier, Spotless, the
 ESLint ratchets, the docker build when touched) in a clean worktree and prints PASS, FAIL or SKIP per
 gate. Fix every FAIL first. Then run `npm run test:<suite>Behaviour-simulator` for every suite whose routes, pages or
 helpers the batch changed, serially (at least `auth`, `bundle`, `postVatReturn` and `practiceLicence`

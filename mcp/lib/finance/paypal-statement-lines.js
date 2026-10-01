@@ -30,6 +30,16 @@
 //     the unhelpful "Other: ..."), but only when the same statement's
 //     statement.PDF says so
 //
+// A bill in another currency posts at the pound figure PayPal debited for
+// it, read from the pound leg of its currency-conversion pair on the same
+// day. A foreign-currency row with no such pair never moved the wallet's
+// pound balance, so it does not post.
+//
+// paypalWalletLinesFromStatementText posts the same records a second time,
+// on the wallet's own bank account: gross receipts in, fees and bills out.
+// Together with the bank statement's own top-up and withdrawal lines it
+// carries the wallet's balance to the statement's closing figure.
+//
 // Why the statement.PDF is the authority on releases: a transaction's own
 // free-text description cannot say, on its own, whether a given "Other: X"
 // row freed a hold or was a genuinely separate movement that happens to
@@ -49,6 +59,7 @@ import { matchLabel } from "./labels.js";
 import {
   BANK_DEPOSIT_TO_PAYPAL,
   UNAMBIGUOUS_RELEASE_LABEL,
+  isCurrencyConversion,
   isCurrencyConversionOrTransfer,
   isHoldCandidate,
   isReleaseCandidate,
@@ -334,23 +345,83 @@ export function chooseReleaseRows(releaseCandidates, releasesTotal) {
   return { releaseIds: new Set([...unambiguous, ...subset].map((record) => record.id)), matched: true };
 }
 
-function isPostable(record, chosenReleaseIds) {
+function isPostable(record, chosenReleaseIds, poundAmounts) {
   if (record.status !== "Completed") return false;
   if (isCurrencyConversionOrTransfer(record.description)) return false;
   if (isHoldCandidate(record)) return false; // never posts
   if (isReleaseCandidate(record) && chosenReleaseIds.has(record.id)) return false; // this month's Releases figure already counts it
+  if (record.currency !== "GBP" && !poundAmounts.has(record)) return false; // no conversion pair: never moved the pound balance
   return true;
 }
 
-function receiptGrossLine(record, { sourceJournalID, accountMainID, taxCode }) {
+// The pound figure of each completed foreign-currency record: the amount of
+// the same-day GBP "General Currency Conversion" row that funded it. Each
+// conversion leg is used once, in statement order, so two bills on one day
+// take their own legs.
+function poundAmountsOfForeignRecords(records) {
+  const amounts = new Map();
+  const conversions = records.filter((record) => record.status === "Completed" && isCurrencyConversion(record.description));
+  const used = new Set();
+  for (const record of records) {
+    if (record.currency === "GBP" || record.status !== "Completed" || isCurrencyConversion(record.description)) continue;
+    const foreignLeg = conversions.find(
+      (leg) => !used.has(leg) && leg.currency === record.currency && leg.date === record.date && leg.gross === -record.gross,
+    );
+    const poundLeg = conversions.find(
+      (leg) => !used.has(leg) && leg.currency === "GBP" && leg.date === record.date && Math.sign(leg.gross) === Math.sign(record.gross),
+    );
+    if (!foreignLeg || !poundLeg) continue;
+    used.add(foreignLeg);
+    used.add(poundLeg);
+    amounts.set(record, poundLeg.gross);
+  }
+  return amounts;
+}
+
+function chosenReleaseIdsFor(records, activitySummary) {
+  const chosenReleaseIds = new Set();
+  for (const currency of new Set(records.map((record) => record.currency))) {
+    const releaseCandidates = records.filter((record) => record.currency === currency && isReleaseCandidate(record));
+    if (releaseCandidates.length === 0) continue;
+
+    const releasesTotal = activitySummary.releases?.[currency];
+    if (releasesTotal === undefined) {
+      for (const record of releaseCandidates) {
+        if (UNAMBIGUOUS_RELEASE_LABEL.test(record.description)) chosenReleaseIds.add(record.id);
+      }
+      continue;
+    }
+    const { releaseIds } = chooseReleaseRows(releaseCandidates, releasesTotal);
+    for (const id of releaseIds) chosenReleaseIds.add(id);
+  }
+  return chosenReleaseIds;
+}
+
+// Every record that posts, with the pound figures of its gross and fee.
+function postableRecords(text, statementText) {
+  const records = parsePaypalStatementRecords(text);
+  const activitySummary = statementText ? parsePaypalActivitySummary(statementText) : {};
+  const chosenReleaseIds = chosenReleaseIdsFor(records, activitySummary);
+  const poundAmounts = poundAmountsOfForeignRecords(records);
+  return records
+    .filter((record) => isPostable(record, chosenReleaseIds, poundAmounts))
+    .map((record) => {
+      if (record.currency !== "GBP" && record.fee !== 0) {
+        throw new Error(`PayPal ${record.currency} record ${record.id} carries a fee; no pound figure for it`);
+      }
+      return { record, gross: record.currency === "GBP" ? record.gross : poundAmounts.get(record), currency: "GBP" };
+    });
+}
+
+function receiptGrossLine({ record, gross, currency }, { sourceJournalID, accountMainID, documentType, taxCode }) {
   return compact({
     entryNumber: `PAYPAL-${record.id}`,
     sourceJournalID,
     postingDate: record.date,
     accountMainID,
-    amount: Math.abs(record.gross),
-    amountCurrency: record.currency,
-    documentType: "receipt",
+    amount: Math.abs(gross),
+    amountCurrency: currency,
+    documentType: documentType ?? "receipt",
     documentReference: record.id,
     detailComment: record.description,
     paymentMethod: "online-payment",
@@ -358,15 +429,15 @@ function receiptGrossLine(record, { sourceJournalID, accountMainID, taxCode }) {
   });
 }
 
-function billGrossLine(record, { sourceJournalID, accountMainID, taxCode }) {
+function billGrossLine({ record, gross, currency }, { sourceJournalID, accountMainID, documentType, taxCode }) {
   return compact({
     entryNumber: `PAYPAL-${record.id}`,
     sourceJournalID,
     postingDate: record.date,
     accountMainID,
-    amount: Math.abs(record.gross),
-    amountCurrency: record.currency,
-    documentType: "invoice",
+    amount: Math.abs(gross),
+    amountCurrency: currency,
+    documentType: documentType ?? "invoice",
     documentReference: record.id,
     detailComment: record.description,
     paymentMethod: "online-payment",
@@ -374,14 +445,14 @@ function billGrossLine(record, { sourceJournalID, accountMainID, taxCode }) {
   });
 }
 
-function feeLine(record, { feeAccountMainID, taxCode }) {
+function feeLine({ record, currency }, { feeAccountMainID, taxCode }) {
   return compact({
     entryNumber: `PAYPAL-${record.id}-FEE`,
     sourceJournalID: "purchases",
     postingDate: record.date,
     accountMainID: feeAccountMainID,
     amount: Math.abs(record.fee),
-    amountCurrency: record.currency,
+    amountCurrency: currency,
     documentType: "receipt",
     documentReference: record.id,
     detailComment: "PayPal transaction fee",
@@ -406,10 +477,15 @@ function feeLine(record, { feeAccountMainID, taxCode }) {
  * every "Other: ..." row posts, since nothing here can then tell a real
  * movement from a release that merely shares its amount. A label rule
  * matching a postable record's own description sets its sourceJournalID,
- * accountMainID and taxCode in place of the default sales/purchases account
- * above; a record no rule matches keeps that default and is also listed in
- * unlabelled. The fee line always posts to feeAccountMainID, whatever the
- * gross line's own rule -- the fee is PayPal's own charge, not the payee's.
+ * accountMainID, taxCode and, when the rule carries one, documentType in
+ * place of the default sales/purchases account above; a rule with
+ * skipJournalLine set posts no sales or purchases gross line at all, for a
+ * receipt that only the wallet's own bank line carries (see
+ * paypalWalletLinesFromStatementText). A record no rule matches keeps the
+ * default and is also listed in unlabelled. The fee line always posts to
+ * feeAccountMainID, whatever the gross line's own rule -- the fee is
+ * PayPal's own charge, not the payee's. A bill in another currency posts at
+ * the pound figure of its conversion pair; one with no pair does not post.
  * @param {string} text - pdftotext -layout output for the statement PDF being posted
  * @param {{salesAccountMainID: string, purchasesAccountMainID: string, feeAccountMainID: string, taxCode?: string, statementText?: string, labels?: Object}} options
  *   statementText - this same month's statement.PDF text, read for its
@@ -426,54 +502,26 @@ export function paypalLinesFromStatementText(
   if (!purchasesAccountMainID) throw new Error("purchasesAccountMainID is required");
   if (!feeAccountMainID) throw new Error("feeAccountMainID is required");
 
-  const records = parsePaypalStatementRecords(text);
-  const activitySummary = statementText ? parsePaypalActivitySummary(statementText) : {};
-
-  const chosenReleaseIds = new Set();
-  for (const currency of new Set(records.map((record) => record.currency))) {
-    const releaseCandidates = records.filter((record) => record.currency === currency && isReleaseCandidate(record));
-    if (releaseCandidates.length === 0) continue;
-
-    const releasesTotal = activitySummary.releases?.[currency];
-    if (releasesTotal === undefined) {
-      for (const record of releaseCandidates) {
-        if (UNAMBIGUOUS_RELEASE_LABEL.test(record.description)) chosenReleaseIds.add(record.id);
-      }
-      continue;
-    }
-    const { releaseIds } = chooseReleaseRows(releaseCandidates, releasesTotal);
-    for (const id of releaseIds) chosenReleaseIds.add(id);
-  }
-
   const unlabelled = [];
   const lines = [];
-  for (const record of records) {
-    if (!isPostable(record, chosenReleaseIds)) continue;
-
+  for (const posting of postableRecords(text, statementText)) {
+    const { record, gross } = posting;
     const rule = matchLabel(record.description, labels);
     if (labels && !rule) {
       unlabelled.push(record);
     }
 
-    if (record.gross >= 0) {
-      lines.push(
-        receiptGrossLine(record, {
-          sourceJournalID: rule?.sourceJournalID ?? "sales",
-          accountMainID: rule?.accountMainID ?? salesAccountMainID,
-          taxCode: rule?.taxCode ?? taxCode,
-        }),
-      );
-    } else {
-      lines.push(
-        billGrossLine(record, {
-          sourceJournalID: rule?.sourceJournalID ?? "purchases",
-          accountMainID: rule?.accountMainID ?? purchasesAccountMainID,
-          taxCode: rule?.taxCode ?? taxCode,
-        }),
-      );
+    if (!rule?.skipJournalLine) {
+      const coding = {
+        sourceJournalID: rule?.sourceJournalID ?? (gross >= 0 ? "sales" : "purchases"),
+        accountMainID: rule?.accountMainID ?? (gross >= 0 ? salesAccountMainID : purchasesAccountMainID),
+        documentType: rule?.documentType,
+        taxCode: rule?.taxCode ?? taxCode,
+      };
+      lines.push(gross >= 0 ? receiptGrossLine(posting, coding) : billGrossLine(posting, coding));
     }
     if (record.fee !== 0) {
-      lines.push(feeLine(record, { feeAccountMainID, taxCode }));
+      lines.push(feeLine(posting, { feeAccountMainID, taxCode }));
     }
   }
 
@@ -494,6 +542,111 @@ export function paypalLinesFromStatementText(
     throw new Error(`PayPal statement lines failed validation:\n${errors.join("\n")}`);
   }
   return { lines, unlabelled };
+}
+
+function walletLine({ record, amount, side, bankCode, entryNumber, detailComment, walletAccountMainID }) {
+  return {
+    "entryNumber": entryNumber,
+    "sourceJournalID": "bank",
+    "postingDate": record.date,
+    "accountMainID": walletAccountMainID,
+    "amount": Math.abs(amount),
+    "amountCurrency": "GBP",
+    "documentType": "bank-statement",
+    "documentReference": record.id,
+    "detailComment": detailComment,
+    "diya-gl:bankCode": bankCode,
+    "diya-gl:bankAccountID": walletAccountMainID,
+    "debitCreditCode": side,
+  };
+}
+
+// A credit that returns exactly what a completed hold took on the same day:
+// the hold and its release leave the wallet's balance where it was.
+function releasesSameDayHold(record, records) {
+  return (
+    record.gross > 0 &&
+    records.some(
+      (other) =>
+        other !== record &&
+        other.status === "Completed" &&
+        other.currency === record.currency &&
+        other.date === record.date &&
+        isHoldCandidate(other) &&
+        other.gross === -record.gross,
+    )
+  );
+}
+
+/**
+ * The wallet's own bank lines for one month's PayPal "Transaction History":
+ * each postable receipt's gross comes in (bank code DR, or the matching
+ * label rule's walletBankCode) and each fee and bill goes out (bank code
+ * CR), so the wallet account moves the way PayPal's balance does. A credit
+ * that returns the same amount as a completed hold on the same day moves
+ * nothing, because the hold and the credit cancel inside the wallet. The
+ * transfers to and from the linked bank are the bank statement's own lines
+ * and are not posted here. With the bank statement's top-up and withdrawal
+ * lines added, the net of these lines is the month's Available-balance
+ * movement on the statement.PDF.
+ * @param {string} text - pdftotext -layout output for the month's transactions PDF
+ * @param {{walletAccountMainID: string, statementText?: string, labels?: Object}} options
+ * @returns {Array<Object>} validated diya-gl bank lines on the wallet account
+ */
+export function paypalWalletLinesFromStatementText(text, { walletAccountMainID, statementText, labels } = {}) {
+  if (!walletAccountMainID) throw new Error("walletAccountMainID is required");
+
+  const records = parsePaypalStatementRecords(text);
+  const lines = [];
+  for (const { record, gross } of postableRecords(text, statementText)) {
+    if (releasesSameDayHold(record, records)) continue;
+    const rule = matchLabel(record.description, labels);
+    if (gross >= 0) {
+      lines.push(
+        walletLine({
+          record,
+          amount: gross,
+          side: "D",
+          bankCode: rule?.walletBankCode ?? "DR",
+          entryNumber: `PAYPAL-WALLET-${record.id}`,
+          detailComment: record.description,
+          walletAccountMainID,
+        }),
+      );
+    } else {
+      lines.push(
+        walletLine({
+          record,
+          amount: gross,
+          side: "C",
+          bankCode: "CR",
+          entryNumber: `PAYPAL-WALLET-${record.id}`,
+          detailComment: record.description,
+          walletAccountMainID,
+        }),
+      );
+    }
+    if (record.fee !== 0) {
+      lines.push(
+        walletLine({
+          record,
+          amount: record.fee,
+          side: "C",
+          bankCode: "CR",
+          entryNumber: `PAYPAL-WALLET-${record.id}-FEE`,
+          detailComment: "PayPal transaction fee",
+          walletAccountMainID,
+        }),
+      );
+    }
+  }
+
+  const book = { accounts: { bank: { [walletAccountMainID]: {} } } };
+  const { valid, errors } = validateLines(lines, book);
+  if (!valid) {
+    throw new Error(`PayPal wallet lines failed validation:\n${errors.join("\n")}`);
+  }
+  return lines;
 }
 
 /**
@@ -519,6 +672,25 @@ export async function paypalLinesFromStatementPdf(
   const text = await runPdftotextFn(pdfPath);
   const statementText = statementPdfPath !== undefined ? await runPdftotextFn(statementPdfPath) : undefined;
   return paypalLinesFromStatementText(text, { ...options, statementText });
+}
+
+/**
+ * Reads a PayPal "Transaction History" PDF, and optionally its own
+ * statement.PDF, with pdftotext, and turns the transactions PDF into the
+ * wallet's bank lines; see paypalWalletLinesFromStatementText.
+ * @param {string} pdfPath - path to the PayPal "Transaction History" PDF
+ * @param {{walletAccountMainID: string, statementPdfPath?: string, labels?: Object}} options
+ * @param {{runPdftotext?: (pdfPath: string) => Promise<string>}} [deps]
+ * @returns {Promise<Array<Object>>} validated diya-gl bank lines on the wallet account
+ */
+export async function paypalWalletLinesFromStatementPdf(
+  pdfPath,
+  { statementPdfPath, ...options } = {},
+  { runPdftotext: runPdftotextFn = runPdftotext } = {},
+) {
+  const text = await runPdftotextFn(pdfPath);
+  const statementText = statementPdfPath !== undefined ? await runPdftotextFn(statementPdfPath) : undefined;
+  return paypalWalletLinesFromStatementText(text, { ...options, statementText });
 }
 
 function round2(value) {
