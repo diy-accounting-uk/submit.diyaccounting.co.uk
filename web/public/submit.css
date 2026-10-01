@@ -539,8 +539,8 @@ header::after {
     padding: var(--spacing-xs) var(--spacing-sm);
   }
 
-  /* The main nav's seven links wrap onto two lines from 360px to 600px and
-     three below that - reserve for the wrapped height (nav plus its bottom
+  /* The main nav's seven links wrap onto two lines from 480px to 600px, three
+     from 330px to 479px and four below that - reserve for the wrapped height (nav plus its bottom
      margin), since a placeholder a little taller than needed costs nothing
      but an under-sized one still shifts the page. */
   header:has(> .chrome-fallback) {
@@ -549,14 +549,20 @@ header::after {
   }
 }
 
-@media (max-width: 359px) {
+@media (max-width: 479px) {
   header:has(> .chrome-fallback) {
     padding-bottom: 214px;
   }
 }
 
-/* From 601px to 770px the seven links still wrap onto two lines. */
-@media (min-width: 601px) and (max-width: 770px) {
+@media (max-width: 329px) {
+  header:has(> .chrome-fallback) {
+    padding-bottom: 274px;
+  }
+}
+
+/* From 601px to 765px the seven links still wrap onto two lines. */
+@media (min-width: 601px) and (max-width: 765px) {
   header:has(> .chrome-fallback) {
     padding-bottom: 126px;
   }
