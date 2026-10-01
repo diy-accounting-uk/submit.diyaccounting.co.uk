@@ -96,7 +96,7 @@ jobs:
             # Fall back to environment-level secret
             STRIPE_SECRET_ARN=$(aws secretsmanager list-secrets \
               --filter Key=name,Values="/submit/${{ inputs.environment-name }}/stripe-secret-key" \
-              --query "SecretList[0].ARN" --output text 2>/dev/null || echo "")
+              --query "SecretList[0].ARN" --output json 2>/dev/null | jq -r '. // empty' || echo "")
           fi
 
           if [ -n "${STRIPE_SECRET_ARN}" ] && [ "${STRIPE_SECRET_ARN}" != "None" ]; then
