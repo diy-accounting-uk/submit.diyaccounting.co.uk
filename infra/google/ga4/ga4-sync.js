@@ -297,7 +297,8 @@ export function buildBigQueryLinkPlan(configLink, liveLinks = [], projectNumber 
   const locationMismatch =
     existing.datasetLocation !== configLink.location ? { live: existing.datasetLocation, wanted: configLink.location } : null;
   const flagsInSync =
-    existing.dailyExportEnabled === configLink.dailyExport && existing.streamingExportEnabled === configLink.streamingExport;
+    Boolean(existing.dailyExportEnabled) === configLink.dailyExport &&
+    Boolean(existing.streamingExportEnabled) === configLink.streamingExport;
   if (flagsInSync) {
     return locationMismatch ? { action: "noop", name: existing.name, locationMismatch } : { action: "noop", name: existing.name };
   }
@@ -308,6 +309,22 @@ export function buildBigQueryLinkPlan(configLink, liveLinks = [], projectNumber 
     streamingExport: configLink.streamingExport,
     ...(locationMismatch ? { locationMismatch } : {}),
   };
+}
+
+/**
+ * The lines that show a live BigQuery link's full resource, so a missing export dataset can be
+ * diagnosed from the plan log. The API omits boolean fields that are false, so absent fields print as false.
+ */
+export function describeLiveBigQueryLink(link) {
+  const streams = link.exportStreams?.length ? link.exportStreams.join(", ") : "(none)";
+  const excluded = link.excludedEvents?.length ? link.excludedEvents.join(", ") : "(none)";
+  return [
+    `BigQuery link resource ${link.name}:`,
+    `  project=${link.project} datasetLocation=${link.datasetLocation}`,
+    `  dailyExportEnabled=${Boolean(link.dailyExportEnabled)} streamingExportEnabled=${Boolean(link.streamingExportEnabled)} freshDailyExportEnabled=${Boolean(link.freshDailyExportEnabled)} includeAdvertisingId=${Boolean(link.includeAdvertisingId)}`,
+    `  exportStreams=${streams}`,
+    `  excludedEvents=${excluded}`,
+  ];
 }
 
 /** The line a link plan prints about a dataset location the config wants but cannot change. */
@@ -859,6 +876,9 @@ export async function main() {
     });
     plans.push(plan);
     printPropertyPlan(plan, !opts.apply);
+    for (const link of liveBigQueryLinks) {
+      for (const line of describeLiveBigQueryLink(link)) console.log(line);
+    }
     if (liveProperty) console.log(formatEventCountLine(configProperty.displayName, await fetchEventCount(client, liveProperty.name)));
 
     if (githubVariableRead.forbidden && plan.githubVariable.value) {

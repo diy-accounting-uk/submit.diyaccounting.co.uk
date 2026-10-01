@@ -18,6 +18,7 @@ import {
   buildBigQueryLinkPlan,
   buildGoogleAdsLinkPlan,
   describeLocationMismatch,
+  describeLiveBigQueryLink,
   buildGithubVariablePlan,
   buildPropertyPlan,
   formatEventCountLine,
@@ -287,6 +288,30 @@ describe("extractBigQueryLinks", () => {
   });
 });
 
+describe("describeLiveBigQueryLink", () => {
+  test("prints every field of the link, with omitted booleans as false and empty lists as none", () => {
+    const lines = describeLiveBigQueryLink({
+      name: "properties/1/bigQueryLinks/1",
+      project: "projects/9",
+      datasetLocation: "europe-west2",
+      dailyExportEnabled: true,
+    });
+    expect(lines).toEqual([
+      "BigQuery link resource properties/1/bigQueryLinks/1:",
+      "  project=projects/9 datasetLocation=europe-west2",
+      "  dailyExportEnabled=true streamingExportEnabled=false freshDailyExportEnabled=false includeAdvertisingId=false",
+      "  exportStreams=(none)",
+      "  excludedEvents=(none)",
+    ]);
+  });
+
+  test("lists export streams and excluded events", () => {
+    const lines = describeLiveBigQueryLink({ name: "n", exportStreams: ["properties/1/dataStreams/2"], excludedEvents: ["a", "b"] });
+    expect(lines).toContain("  exportStreams=properties/1/dataStreams/2");
+    expect(lines).toContain("  excludedEvents=a, b");
+  });
+});
+
 describe("buildBigQueryLinkPlan", () => {
   const configLink = { project: "diyaccounting-ga4", location: "europe-west2", dailyExport: true, streamingExport: false };
 
@@ -311,6 +336,18 @@ describe("buildBigQueryLinkPlan", () => {
     ];
     const plan = buildBigQueryLinkPlan(configLink, liveLinks, "123456789");
     expect(plan.action).toBe("noop");
+  });
+
+  test("treats a boolean the API omits as false", () => {
+    const liveLinks = [
+      {
+        name: "properties/1/bigQueryLinks/1",
+        project: "projects/diyaccounting-ga4",
+        datasetLocation: "europe-west2",
+        dailyExportEnabled: true,
+      },
+    ];
+    expect(buildBigQueryLinkPlan(configLink, liveLinks, null)).toEqual({ action: "noop", name: "properties/1/bigQueryLinks/1" });
   });
 
   test("proposes an update when the export flags don't match, without the immutable location", () => {
