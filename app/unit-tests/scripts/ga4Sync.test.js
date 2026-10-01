@@ -16,6 +16,8 @@ import {
   buildKeyEventPlan,
   extractBigQueryLinks,
   buildBigQueryLinkPlan,
+  buildBigQueryLinkPatch,
+  buildBigQueryLinkCreateBody,
   buildGoogleAdsLinkPlan,
   describeLocationMismatch,
   describeLiveBigQueryLink,
@@ -366,8 +368,64 @@ describe("buildBigQueryLinkPlan", () => {
       name: "properties/1/bigQueryLinks/1",
       dailyExport: configLink.dailyExport,
       streamingExport: configLink.streamingExport,
+      exportStreams: [],
     });
     expect(plan).not.toHaveProperty("location");
+  });
+
+  test("plans an update when the link exports none of the property's streams", () => {
+    const liveLinks = [
+      {
+        name: "properties/1/bigQueryLinks/1",
+        project: "projects/diyaccounting-ga4",
+        datasetLocation: "europe-west2",
+        dailyExportEnabled: true,
+      },
+    ];
+    const plan = buildBigQueryLinkPlan(configLink, liveLinks, null, ["properties/1/dataStreams/9"]);
+    expect(plan).toEqual({
+      action: "update",
+      name: "properties/1/bigQueryLinks/1",
+      dailyExport: true,
+      streamingExport: false,
+      exportStreams: ["properties/1/dataStreams/9"],
+    });
+  });
+
+  test("is a noop when the link exports exactly the property's streams, in any order", () => {
+    const liveLinks = [
+      {
+        name: "properties/1/bigQueryLinks/1",
+        project: "projects/diyaccounting-ga4",
+        datasetLocation: "europe-west2",
+        dailyExportEnabled: true,
+        exportStreams: ["properties/1/dataStreams/2", "properties/1/dataStreams/1"],
+      },
+    ];
+    const plan = buildBigQueryLinkPlan(configLink, liveLinks, null, ["properties/1/dataStreams/1", "properties/1/dataStreams/2"]);
+    expect(plan).toEqual({ action: "noop", name: "properties/1/bigQueryLinks/1" });
+  });
+
+  test("patches export streams along with the export flags", () => {
+    expect(buildBigQueryLinkPatch({ dailyExport: true, streamingExport: false, exportStreams: ["properties/1/dataStreams/9"] })).toEqual({
+      updateMask: "dailyExportEnabled,streamingExportEnabled,exportStreams",
+      body: { dailyExportEnabled: true, streamingExportEnabled: false, exportStreams: ["properties/1/dataStreams/9"] },
+    });
+  });
+
+  test("creates a link that names the streams to export", () => {
+    expect(buildBigQueryLinkCreateBody(configLink, ["properties/1/dataStreams/9"])).toEqual({
+      project: "projects/diyaccounting-ga4",
+      datasetLocation: "europe-west2",
+      dailyExportEnabled: true,
+      streamingExportEnabled: false,
+      exportStreams: ["properties/1/dataStreams/9"],
+    });
+  });
+
+  test("plans a create that exports every stream of the property", () => {
+    const plan = buildBigQueryLinkPlan(configLink, [], null, ["properties/1/dataStreams/1"]);
+    expect(plan.exportStreams).toEqual(["properties/1/dataStreams/1"]);
   });
 
   test("reports a dataset location mismatch instead of patching it", () => {
@@ -568,6 +626,7 @@ describe("buildPropertyPlan", () => {
         datasetLocation: "europe-west2",
         dailyExportEnabled: true,
         streamingExportEnabled: false,
+        exportStreams: ["properties/523400333/dataStreams/1"],
       },
     ];
     const liveKeyEvents = [{ name: "properties/523400333/keyEvents/1", eventName: "submit_vat_return" }];

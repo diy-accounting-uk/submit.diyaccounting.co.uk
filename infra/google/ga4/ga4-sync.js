@@ -277,9 +277,11 @@ function projectMatches(linkProject, { projectId, projectNumber }) {
  * @param {{project: string, location: string, dailyExport: boolean, streamingExport: boolean}|null} configLink
  * @param {Array<object>} [liveLinks]
  * @param {string|null} [projectNumber]
+ * @param {Array<string>} [liveStreamNames] every data stream of the property; the link exports all of them
  */
-export function buildBigQueryLinkPlan(configLink, liveLinks = [], projectNumber = null) {
+export function buildBigQueryLinkPlan(configLink, liveLinks = [], projectNumber = null, liveStreamNames = []) {
   if (!configLink) return { action: "skip" };
+  const exportStreams = [...liveStreamNames].sort();
   const existing = liveLinks.find((link) => projectMatches(link.project, { projectId: configLink.project, projectNumber }));
   if (!existing) {
     return {
@@ -289,6 +291,7 @@ export function buildBigQueryLinkPlan(configLink, liveLinks = [], projectNumber 
       location: configLink.location,
       dailyExport: configLink.dailyExport,
       streamingExport: configLink.streamingExport,
+      exportStreams,
     };
   }
   // A link's dataset location is fixed at creation: the Analytics Admin API rejects
@@ -299,7 +302,10 @@ export function buildBigQueryLinkPlan(configLink, liveLinks = [], projectNumber 
   const flagsInSync =
     Boolean(existing.dailyExportEnabled) === configLink.dailyExport &&
     Boolean(existing.streamingExportEnabled) === configLink.streamingExport;
-  if (flagsInSync) {
+  const liveExportStreams = [...(existing.exportStreams ?? [])].sort();
+  const streamsInSync =
+    liveExportStreams.length === exportStreams.length && liveExportStreams.every((name, i) => name === exportStreams[i]);
+  if (flagsInSync && streamsInSync) {
     return locationMismatch ? { action: "noop", name: existing.name, locationMismatch } : { action: "noop", name: existing.name };
   }
   return {
@@ -307,6 +313,7 @@ export function buildBigQueryLinkPlan(configLink, liveLinks = [], projectNumber 
     name: existing.name,
     dailyExport: configLink.dailyExport,
     streamingExport: configLink.streamingExport,
+    exportStreams,
     ...(locationMismatch ? { locationMismatch } : {}),
   };
 }
@@ -447,7 +454,12 @@ export function buildPropertyPlan({
 
   const bigQueryLinkPlan = propertyPending
     ? buildPendingBigQueryLinkPlan(configProperty.bigQueryLink)
-    : buildBigQueryLinkPlan(configProperty.bigQueryLink, liveBigQueryLinks, projectNumber);
+    : buildBigQueryLinkPlan(
+        configProperty.bigQueryLink,
+        liveBigQueryLinks,
+        projectNumber,
+        liveStreams.map((stream) => stream.name),
+      );
 
   const googleAdsLinkPlan = propertyPending
     ? { ...buildGoogleAdsLinkPlan(configProperty.googleAdsLink), blockedOnProperty: true }
@@ -477,7 +489,8 @@ export function buildPropertyPlan({
 // --- Reporting ---
 
 function describeLinkSettings(linkPlan) {
-  return `dailyExport=${linkPlan.dailyExport} streamingExport=${linkPlan.streamingExport}`;
+  const streams = linkPlan.exportStreams?.length ? ` exportStreams=${linkPlan.exportStreams.join(",")}` : "";
+  return `dailyExport=${linkPlan.dailyExport} streamingExport=${linkPlan.streamingExport}${streams}`;
 }
 
 function printGoogleAdsLinkPlan(adsLink, tag) {
@@ -740,26 +753,41 @@ async function createKeyEvent(client, propertyName, eventName) {
   return data;
 }
 
-async function createBigQueryLink(client, propertyName, plan) {
+/** The POST body for a new BigQuery link; it exports the named streams. */
+export function buildBigQueryLinkCreateBody(plan, exportStreams) {
+  return {
+    project: `projects/${plan.project}`,
+    datasetLocation: plan.location,
+    dailyExportEnabled: plan.dailyExport,
+    streamingExportEnabled: plan.streamingExport,
+    exportStreams,
+  };
+}
+
+/** The PATCH update mask and body for an existing BigQuery link. */
+export function buildBigQueryLinkPatch(plan) {
+  return {
+    updateMask: "dailyExportEnabled,streamingExportEnabled,exportStreams",
+    body: { dailyExportEnabled: plan.dailyExport, streamingExportEnabled: plan.streamingExport, exportStreams: plan.exportStreams },
+  };
+}
+
+async function createBigQueryLink(client, propertyName, plan, exportStreams) {
   const { data } = await client.request({
     url: `${ANALYTICS_ADMIN_V1ALPHA}/${propertyName}/bigQueryLinks`,
     method: "POST",
-    data: {
-      project: `projects/${plan.project}`,
-      datasetLocation: plan.location,
-      dailyExportEnabled: plan.dailyExport,
-      streamingExportEnabled: plan.streamingExport,
-    },
+    data: buildBigQueryLinkCreateBody(plan, exportStreams),
   });
   return data;
 }
 
 async function updateBigQueryLink(client, plan) {
+  const { updateMask, body } = buildBigQueryLinkPatch(plan);
   await client.request({
     url: `${ANALYTICS_ADMIN_V1ALPHA}/${plan.name}`,
     method: "PATCH",
-    params: { updateMask: "dailyExportEnabled,streamingExportEnabled" },
-    data: { dailyExportEnabled: plan.dailyExport, streamingExportEnabled: plan.streamingExport },
+    params: { updateMask },
+    data: body,
   });
 }
 
@@ -789,6 +817,7 @@ async function applyPropertyPlan(client, plan, accountName) {
     console.log(`Created property ${propertyName}`);
   }
 
+  const streamNames = [];
   for (const { config, plan: streamPlan, enhancedMeasurement } of plan.streams) {
     let streamName = streamPlan.name;
     if (streamPlan.action === "create") {
@@ -796,6 +825,7 @@ async function applyPropertyPlan(client, plan, accountName) {
       streamName = created.name;
       console.log(`Created data stream ${streamName} (${created.webStreamData?.measurementId})`);
     }
+    streamNames.push(streamName);
     if (enhancedMeasurement.action === "update") {
       await updateEnhancedMeasurementSettings(client, streamName, enhancedMeasurement.streamEnabled);
       console.log(`Set enhanced measurement streamEnabled=${enhancedMeasurement.streamEnabled} on ${streamName}`);
@@ -810,7 +840,7 @@ async function applyPropertyPlan(client, plan, accountName) {
   }
 
   if (plan.bigQueryLink.action === "create") {
-    const created = await createBigQueryLink(client, propertyName, plan.bigQueryLink);
+    const created = await createBigQueryLink(client, propertyName, plan.bigQueryLink, streamNames.sort());
     console.log(`Created BigQuery link ${created.name}`);
   } else if (plan.bigQueryLink.action === "update") {
     await updateBigQueryLink(client, plan.bigQueryLink);
