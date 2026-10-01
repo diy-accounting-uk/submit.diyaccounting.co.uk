@@ -108,3 +108,10 @@
   white-space: nowrap;
   font-variant-numeric: tabular-nums;
 }
+
+.results-table th.money-column,
+.results-table td.money-column {
+  text-align: right;
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}

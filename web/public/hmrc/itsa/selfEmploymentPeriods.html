@@ -13,6 +13,7 @@
     <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" />
     <link rel="manifest" href="/site.webmanifest" />
     <link rel="stylesheet" href="../../submit.css" />
+    <link rel="stylesheet" href="../../lib/hmrc-field-table.css" />
     <!-- CloudWatch RUM configuration placeholders; replace values during deployment -->
     <meta name="rum:appMonitorId" content="${RUM_APP_MONITOR_ID}" />
     <meta name="rum:region" content="${AWS_REGION}" />
@@ -136,6 +137,7 @@
     <script src="../../lib/request-cache.js"></script>
     <script src="../../lib/toml-parser.js"></script>
     <script src="../../lib/hmrc-scope-check.js"></script>
+    <script src="../../lib/money-format.js"></script>
     <script src="../../lib/hmrc-field-table.js"></script>
     <script src="../../lib/itsaSubmissionModel.js"></script>
     <script type="module" src="../../lib/services/hmrc-service.js"></script>
@@ -457,37 +459,16 @@
 
       function displayPeriods(periods) {
         const tableContainer = document.getElementById("periodsTable");
-        const formatDate = (iso) => (iso && /^\d{4}-\d{2}-\d{2}$/.test(iso) ? window.HmrcFieldTable.formatIsoDate(iso) : "-");
-
         if (!periods || periods.length === 0) {
           tableContainer.innerHTML = '<p class="no-data">No period summaries found for the specified business and tax year.</p>';
           return;
         }
 
-        let tableHtml = `
-          <table class="results-table">
-            <thead>
-              <tr>
-                <th>Period ID</th>
-                <th>Start date</th>
-                <th>End date</th>
-              </tr>
-            </thead>
-            <tbody>
-        `;
-
-        periods.forEach((period) => {
-          tableHtml += `
-            <tr>
-              <td>${escapeHtml(period.periodId)}</td>
-              <td>${escapeHtml(formatDate(period.periodStartDate))}</td>
-              <td>${escapeHtml(formatDate(period.periodEndDate))}</td>
-            </tr>
-          `;
-        });
-
-        tableHtml += "</tbody></table>";
-        tableContainer.innerHTML = tableHtml;
+        window.HmrcFieldTable.mountResultsTable(
+          tableContainer,
+          [{ label: "Period ID" }, { label: "Start date" }, { label: "End date" }],
+          periods.map((period) => [period.periodId, period.periodStartDate, period.periodEndDate]),
+        );
       }
 
       function displayCurrentTotal(periodSummary) {
@@ -501,33 +482,16 @@
           return;
         }
 
-        tableContainer.innerHTML = `
-          <table class="results-table">
-            <thead>
-              <tr>
-                <th>Reported to</th>
-                <th>Turnover (year to date)</th>
-                <th>Other income (year to date)</th>
-                <th>Cost of goods (year to date)</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr>
-                <td>${escapeHtml(dates.periodEndDate || "-")}</td>
-                <td>${escapeHtml(income.turnover ?? "-")}</td>
-                <td>${escapeHtml(income.other ?? "-")}</td>
-                <td>${escapeHtml(expenses.costOfGoods ?? "-")}</td>
-              </tr>
-            </tbody>
-          </table>
-        `;
-      }
-
-      function escapeHtml(text) {
-        if (!text) return "";
-        const div = document.createElement("div");
-        div.textContent = text;
-        return div.innerHTML;
+        window.HmrcFieldTable.mountResultsTable(
+          tableContainer,
+          [
+            { label: "Reported to" },
+            { label: "Turnover (year to date)", kind: "money" },
+            { label: "Other income (year to date)", kind: "money" },
+            { label: "Cost of goods (year to date)", kind: "money" },
+          ],
+          [[dates.periodEndDate, income.turnover, income.other, expenses.costOfGoods]],
+        );
       }
 
       document.getElementById("toggleSearchCriteriaBtn")?.addEventListener("click", () => {

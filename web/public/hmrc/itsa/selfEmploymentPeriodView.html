@@ -13,6 +13,7 @@
     <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" />
     <link rel="manifest" href="/site.webmanifest" />
     <link rel="stylesheet" href="../../submit.css" />
+    <link rel="stylesheet" href="../../lib/hmrc-field-table.css" />
     <!-- CloudWatch RUM configuration placeholders; replace values during deployment -->
     <meta name="rum:appMonitorId" content="${RUM_APP_MONITOR_ID}" />
     <meta name="rum:region" content="${AWS_REGION}" />
@@ -134,7 +135,7 @@
       <!-- Results Display -->
       <div id="periodViewResults" class="results-container" style="display: none">
         <h3>Period Summary</h3>
-        <dl id="periodDetails"></dl>
+        <div id="periodDetails"></div>
         <div class="button-group">
           <button type="button" id="newSearchBtn" class="secondary-button">New search</button>
         </div>
@@ -151,6 +152,7 @@
     <script src="../../lib/request-cache.js"></script>
     <script src="../../lib/toml-parser.js"></script>
     <script src="../../lib/hmrc-scope-check.js"></script>
+    <script src="../../lib/money-format.js"></script>
     <script src="../../lib/hmrc-field-table.js"></script>
     <script src="../../lib/itsaSubmissionModel.js"></script>
     <script type="module" src="../../lib/services/hmrc-service.js"></script>
@@ -421,27 +423,14 @@
         const income = period?.periodIncome || {};
         const expenses = period?.periodExpenses || {};
 
-        const formatDate = (iso) => (iso && /^\d{4}-\d{2}-\d{2}$/.test(iso) ? window.HmrcFieldTable.formatIsoDate(iso) : "-");
-
-        details.innerHTML = `
-          <dt>Period start date</dt>
-          <dd>${escapeHtml(formatDate(dates.periodStartDate))}</dd>
-          <dt>Period end date</dt>
-          <dd>${escapeHtml(formatDate(dates.periodEndDate))}</dd>
-          <dt>Turnover</dt>
-          <dd>${escapeHtml(income.turnover ?? "-")}</dd>
-          <dt>Other income</dt>
-          <dd>${escapeHtml(income.other ?? "-")}</dd>
-          <dt>Cost of goods</dt>
-          <dd>${escapeHtml(expenses.costOfGoods ?? "-")}</dd>
-        `;
-      }
-
-      function escapeHtml(text) {
-        if (text === null || text === undefined) return "";
-        const div = document.createElement("div");
-        div.textContent = text;
-        return div.innerHTML;
+        const rows = [
+          { field: "periodStartDate", label: "Period start date", kind: "text", value: dates.periodStartDate },
+          { field: "periodEndDate", label: "Period end date", kind: "text", value: dates.periodEndDate },
+          { field: "turnover", label: "Turnover", value: income.turnover },
+          { field: "other", label: "Other income", value: income.other },
+          { field: "costOfGoods", label: "Cost of goods", value: expenses.costOfGoods },
+        ];
+        window.HmrcFieldTable.mountFieldTable(details, rows, { caption: "Period summary" });
       }
 
       document.getElementById("toggleSearchCriteriaBtn")?.addEventListener("click", () => {
