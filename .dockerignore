@@ -47,9 +47,11 @@ dist
 mock-oauth2-server.json
 
 # CDK and infrastructure code (not needed in Lambda runtime), except the Stripe catalogue
-# stripeReconcile reads for the donation Payment Links' bundle ids
+# stripeReconcile reads for the donation Payment Links' bundle ids, and the Ads config
+# adsCostPull reads for the customer id and API version
 infra
 !infra/stripe/stripe.toml
+!infra/google/ads/ads.toml
 cdk-environment
 cdk-application
 pom.xml
