@@ -13,6 +13,7 @@
     <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" />
     <link rel="manifest" href="/site.webmanifest" />
     <link rel="stylesheet" href="../../submit.css" />
+    <link rel="stylesheet" href="../../lib/hmrc-field-table.css" />
     <!-- CloudWatch RUM configuration placeholders; replace values during deployment -->
     <meta name="rum:appMonitorId" content="${RUM_APP_MONITOR_ID}" />
     <meta name="rum:region" content="${AWS_REGION}" />
@@ -82,6 +83,15 @@
               <option value="FINAL_DECLARATION_RECEIVED">Final declaration already received</option>
             </select>
             <div style="margin-top: 10px">
+              <label for="calculationTestScenario">Calculation test scenario (Developer/Sandbox only)</label>
+              <p id="calculationTestScenario-hint" class="hint">The HMRC sandbox example returned when retrieving the calculation</p>
+              <select id="calculationTestScenario" name="calculationTestScenario" aria-describedby="calculationTestScenario-hint">
+                <option value="">Default (a UK self-employment example)</option>
+                <option value="UK_SE_GIFTAID_EXAMPLE">UK self-employment with Gift Aid</option>
+                <option value="SCOT_SE_DIVIDENDS_EXAMPLE">Scottish self-employment with dividends</option>
+              </select>
+            </div>
+            <div style="margin-top: 10px">
               <input type="checkbox" id="runFraudPreventionHeaderValidation" name="runFraudPreventionHeaderValidation" />
               <label for="runFraudPreventionHeaderValidation" style="display: inline; font-weight: normal"
                 >Validate Fraud Prevention Headers</label
@@ -103,17 +113,10 @@
         <h3>Total Income Tax and National Insurance Due</h3>
         <p id="totalIncomeTaxAndNicsDue" class="headline-figure"></p>
 
-        <dl>
-          <dt>Income tax</dt>
-          <dd id="incomeTaxAmount"></dd>
-          <dt>National Insurance</dt>
-          <dd id="nicsAmount"></dd>
-          <dt>Tax already deducted</dt>
-          <dd id="totalTaxDeductedAmount"></dd>
-        </dl>
+        <div id="taxBreakdown"></div>
 
-        <h3>Allowances and Deductions</h3>
-        <dl id="allowancesAndDeductions"></dl>
+        <h3 id="allowancesAndDeductionsHeading">Allowances and Deductions</h3>
+        <div id="allowancesAndDeductions"></div>
 
         <p id="calculationIdDisplay" class="hint"></p>
 
@@ -179,6 +182,8 @@
     <script src="../../widgets/status-messages.js"></script>
     <script src="../../widgets/pass-redeemer.js"></script>
     <script src="../../widgets/submission-cost.js"></script>
+    <script src="../../lib/money-format.js"></script>
+    <script src="../../lib/hmrc-field-table.js"></script>
     <script>
       let retrievedCalculation = null;
       let retrievedNino = "";
@@ -249,10 +254,11 @@
         );
       }
 
-      function formatCurrency(value) {
-        if (value === undefined || value === null) return "-";
-        return `£${Number(value).toFixed(2)}`;
-      }
+      const TAX_BREAKDOWN_VALUE_IDS = {
+        "taxCalculation.incomeTax.totalIncomeTaxDue": "incomeTaxAmount",
+        "taxCalculation.nics.totalNic": "nicsAmount",
+        "taxCalculation.totalTaxDeducted": "totalTaxDeductedAmount",
+      };
 
       function escapeHtml(text) {
         if (text === null || text === undefined) return "";
@@ -265,16 +271,21 @@
         retrievedCalculation = calculation;
         const calc = calculation?.calculation || {};
         const taxCalculation = calc.taxCalculation || {};
-        document.getElementById("totalIncomeTaxAndNicsDue").textContent = formatCurrency(taxCalculation.totalIncomeTaxAndNicsDue);
-        document.getElementById("incomeTaxAmount").textContent = formatCurrency(taxCalculation.incomeTax?.totalIncomeTax);
-        document.getElementById("nicsAmount").textContent = formatCurrency(taxCalculation.nics?.totalNic);
-        document.getElementById("totalTaxDeductedAmount").textContent = formatCurrency(taxCalculation.totalTaxDeducted);
-
-        const allowancesList = document.getElementById("allowancesAndDeductions");
-        const allowances = calc.allowancesAndDeductions || {};
-        allowancesList.innerHTML = Object.keys(allowances)
-          .map((key) => `<dt>${escapeHtml(key)}</dt><dd>${escapeHtml(formatCurrency(allowances[key]))}</dd>`)
-          .join("");
+        document.getElementById("totalIncomeTaxAndNicsDue").textContent = HmrcFieldTable.formatMoney(
+          taxCalculation.totalIncomeTaxAndNicsDue,
+        );
+        const breakdownRows = HmrcFieldTable.taxCalculationRows(calc).map((row) => ({
+          ...row,
+          valueId: TAX_BREAKDOWN_VALUE_IDS[row.field],
+        }));
+        HmrcFieldTable.mountFieldTable(document.getElementById("taxBreakdown"), breakdownRows, {
+          caption: "Income Tax and National Insurance",
+        });
+        HmrcFieldTable.mountFieldTable(
+          document.getElementById("allowancesAndDeductions"),
+          HmrcFieldTable.allowanceRows(calc.allowancesAndDeductions),
+          { caption: "Allowances and deductions", emptyText: "HMRC's calculation carries no allowances or deductions." },
+        );
 
         document.getElementById("calculationIdDisplay").textContent = `Calculation ID: ${calculation.metadata?.calculationId || "-"}`;
 
@@ -427,7 +438,7 @@
         const nino = document.getElementById("nino").value.trim().toUpperCase();
         const taxYear = document.getElementById("taxYear").value.trim();
         const calculationId = document.getElementById("calculationId").value.trim();
-        const testScenario = document.getElementById("testScenario")?.value;
+        const calculationTestScenario = document.getElementById("calculationTestScenario")?.value;
         const runFraudPreventionHeaderValidation = document.getElementById("runFraudPreventionHeaderValidation")?.checked || false;
 
         if (!nino || !taxYear || !calculationId) {
@@ -437,7 +448,7 @@
 
         await ensureAuthorizedThen(
           "pendingFinalDeclarationRetrieveRequest",
-          { nino, taxYear, calculationId, testScenario, runFraudPreventionHeaderValidation },
+          { nino, taxYear, calculationId, calculationTestScenario, runFraudPreventionHeaderValidation },
           "read:self-assessment",
           async (accessToken) => {
             try {
@@ -448,7 +459,7 @@
                 nino,
                 taxYear,
                 calculationId,
-                testScenario,
+                calculationTestScenario,
                 runFraudPreventionHeaderValidation,
                 accessToken,
               );
@@ -532,7 +543,7 @@
               pendingRetrieve.nino,
               pendingRetrieve.taxYear,
               pendingRetrieve.calculationId,
-              pendingRetrieve.testScenario,
+              pendingRetrieve.calculationTestScenario,
               pendingRetrieve.runFraudPreventionHeaderValidation,
               accessToken,
             );

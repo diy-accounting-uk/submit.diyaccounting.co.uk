@@ -1,0 +1,22 @@
+{
+  "results": [
+    {
+      "campaign": { "resourceName": "customers/8142685080/campaigns/24295022766", "name": "Search: MTD VAT", "id": "24295022766" },
+      "adGroup": { "resourceName": "customers/8142685080/adGroups/198457346577", "id": "198457346577", "name": "Own brand" },
+      "metrics": { "clicks": "2", "costMicros": "600000", "impressions": "25" },
+      "segments": { "date": "2026-09-28" }
+    },
+    {
+      "campaign": { "resourceName": "customers/8142685080/campaigns/24295022766", "name": "Search: MTD VAT", "id": "24295022766" },
+      "adGroup": {
+        "resourceName": "customers/8142685080/adGroups/200929043735",
+        "id": "200929043735",
+        "name": "Submit VAT return online free"
+      },
+      "metrics": { "clicks": "1", "costMicros": "300000", "impressions": "15" },
+      "segments": { "date": "2026-09-28" }
+    }
+  ],
+  "fieldMask": "segments.date,campaign.id,campaign.name,adGroup.id,adGroup.name,metrics.impressions,metrics.clicks,metrics.costMicros",
+  "queryResourceConsumption": "251"
+}

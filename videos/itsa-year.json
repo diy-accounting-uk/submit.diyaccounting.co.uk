@@ -566,6 +566,7 @@
           "headline": "Intent to finalise",
           "keyWord": "finalise"
         },
+        { "action": "testScenario", "value": "UK_SE_GIFTAID_EXAMPLE" },
         { "action": "click", "target": "#triggerBtn" },
         {
           "action": "await",
@@ -609,6 +610,7 @@
           "keyWord": "final"
         },
         { "action": "await", "until": "#itsaFinalDeclarationRetrieveForm", "label": "Opening the final declaration form" },
+        { "action": "testScenario", "target": "#calculationTestScenario", "value": "UK_SE_GIFTAID_EXAMPLE" },
         {
           "action": "click",
           "target": "#retrieveBtn",
@@ -651,6 +653,17 @@
           "headline": "The year is filed",
           "keyWord": "filed"
         },
+        { "action": "scroll", "target": "#finalDeclarationResults" },
+        { "action": "hold", "ms": 600 },
+        {
+          "action": "point",
+          "target": "#finalDeclarationResults h3",
+          "caption": "Filed. The whole year is now closed out.",
+          "headline": "Final declaration filed",
+          "keyWord": "filed",
+          "dwellMs": 600
+        },
+        { "action": "hold", "ms": 2500 },
         { "action": "still", "name": "itsa-year-final-declaration" },
         { "action": "hold", "ms": 1200 }
       ]

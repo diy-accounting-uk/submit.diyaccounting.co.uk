@@ -232,6 +232,7 @@
           "keyWord": "Load"
         },
         { "action": "await", "until": "#adjustmentsEditForm", "label": "Loading tax liability adjustments" },
+        { "action": "testScenario", "target": "#calculationTestScenario", "value": "UK_SE_GIFTAID_EXAMPLE" },
         {
           "action": "click",
           "target": "#showEarlierYearBtn",
@@ -257,6 +258,8 @@
           "headline": "What the claim saves",
           "keyWord": "saves"
         },
+        { "action": "fill", "target": "#class4", "value": "40" },
+        { "action": "fill", "target": "#capitalGainsTax", "value": "0" },
         { "action": "hold", "ms": 400 },
         {
           "action": "click",
@@ -274,6 +277,17 @@
           "headline": "Liability now credited",
           "keyWord": "credited"
         },
+        { "action": "scroll", "target": "#adjustmentsResults" },
+        { "action": "hold", "ms": 600 },
+        {
+          "action": "point",
+          "target": "#adjustmentsResults h3",
+          "caption": "Saved. The adjustment is on the year's record.",
+          "headline": "Adjustments saved",
+          "keyWord": "saved",
+          "dwellMs": 600
+        },
+        { "action": "hold", "ms": 2500 },
         { "action": "still", "name": "itsa-carry-back-adjustments-final" },
         { "action": "hold", "ms": 1200 }
       ]

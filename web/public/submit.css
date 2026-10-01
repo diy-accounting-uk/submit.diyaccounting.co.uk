@@ -471,8 +471,8 @@ header::after {
 .main-nav a {
   color: var(--color-brand-primary);
   text-decoration: none;
-  font-size: var(--font-size-base);
-  padding: var(--spacing-sm);
+  font-size: var(--font-size-sm);
+  padding: var(--spacing-sm) 0.4em;
   transition:
     color 0.2s,
     background-color 0.2s,
@@ -539,8 +539,8 @@ header::after {
     padding: var(--spacing-xs) var(--spacing-sm);
   }
 
-  /* The main nav's seven links wrap onto two lines from 360px to 600px and
-     three below that - reserve for the wrapped height (nav plus its bottom
+  /* The main nav's seven links wrap onto two lines from 480px to 600px, three
+     from 330px to 479px and four below that - reserve for the wrapped height (nav plus its bottom
      margin), since a placeholder a little taller than needed costs nothing
      but an under-sized one still shifts the page. */
   header:has(> .chrome-fallback) {
@@ -549,14 +549,20 @@ header::after {
   }
 }
 
-@media (max-width: 359px) {
+@media (max-width: 479px) {
   header:has(> .chrome-fallback) {
     padding-bottom: 214px;
   }
 }
 
-/* From 601px to 672px the seven links still wrap onto two lines. */
-@media (min-width: 601px) and (max-width: 672px) {
+@media (max-width: 329px) {
+  header:has(> .chrome-fallback) {
+    padding-bottom: 274px;
+  }
+}
+
+/* From 601px to 765px the seven links still wrap onto two lines. */
+@media (min-width: 601px) and (max-width: 765px) {
   header:has(> .chrome-fallback) {
     padding-bottom: 126px;
   }
@@ -796,7 +802,7 @@ textarea.input--error:focus {
   padding-bottom: 0;
 }
 
-footer {
+body > footer {
   margin-top: 2em;
   font-size: 0.9em;
   color: #737373;
@@ -1978,4 +1984,38 @@ a.external-link:hover::after {
   .form-actions button {
     width: 100%;
   }
+}
+
+/* Whole-page consent dialog shown on a visit that arrived from an advert (#consent-dialog, added
+   by submit.js). Accept and Reject share one class so they render at the same size and weight. */
+.consent-dialog {
+  position: fixed;
+  inset: 0;
+  z-index: 10000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--spacing-md);
+  background: rgba(0, 0, 0, 0.6);
+}
+
+.consent-dialog-panel {
+  max-width: 34rem;
+  width: 100%;
+  padding: 24px;
+  border-radius: 8px;
+  background: #fff;
+  color: #111;
+}
+
+.consent-dialog-actions {
+  display: flex;
+  gap: 12px;
+  margin-top: 16px;
+}
+
+.consent-dialog-button {
+  flex: 1 1 0;
+  min-height: 44px;
+  padding: 6px 10px;
 }

@@ -128,9 +128,62 @@ function hasConsentChoice() {
   }
 }
 
-function showConsentBannerIfNeeded() {
-  if (hasConsentChoice()) return;
-  if (document.getElementById("consent-banner")) return;
+function isPaidVisit() {
+  try {
+    const params = new URLSearchParams(window.location.search);
+    if (params.has("gclid")) return true;
+    return Array.from(params.keys()).some((name) => name.startsWith("utm_"));
+  } catch (error) {
+    console.warn("Failed to read the URL for a paid visit:", error);
+    return false;
+  }
+}
+
+// Counts each answer with no identifier: no cookie, no storage, no page, no attribution fields.
+function postConsentAnswer(answer, surface) {
+  try {
+    fetch("/api/v1/session/beacon", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ consentAnswer: answer, consentSurface: surface }),
+      keepalive: true,
+    }).catch(() => {
+      // Best-effort: ad blockers and offline never block the answer itself.
+    });
+  } catch {
+    // Best-effort, as above.
+  }
+}
+
+function storeConsentAnswer(value) {
+  try {
+    localStorage.setItem("consent.rum", value);
+    localStorage.setItem("consent.analytics", value);
+  } catch (error) {
+    console.warn("Failed to store consent in localStorage:", error);
+  }
+}
+
+function removeConsentSurfaces() {
+  for (const id of ["consent-banner", "consent-dialog"]) {
+    const element = document.getElementById(id);
+    if (element) element.parentNode.removeChild(element);
+  }
+}
+
+function answerConsent(value, surface) {
+  storeConsentAnswer(value);
+  removeConsentSurfaces();
+  postConsentAnswer(value === "granted" ? "accepted" : "rejected", surface);
+  if (value === "granted") {
+    document.dispatchEvent(new CustomEvent("consent-granted", { detail: { type: "rum" } }));
+    maybeInitRum();
+  } else {
+    document.dispatchEvent(new CustomEvent("consent-declined"));
+  }
+}
+
+function buildConsentBanner() {
   const banner = document.createElement("div");
   banner.id = "consent-banner";
   banner.setAttribute("role", "region");
@@ -143,28 +196,45 @@ function showConsentBannerIfNeeded() {
       <button id="consent-accept" class="btn" style="padding:6px 10px;min-height:44px">Accept</button>
       <button id="consent-decline" class="btn" style="padding:6px 10px;min-height:44px;background:#555;border-color:#555">Decline</button>
     </div>`;
-  document.body.appendChild(banner);
-  document.getElementById("consent-accept").onclick = () => {
-    try {
-      localStorage.setItem("consent.rum", "granted");
-      localStorage.setItem("consent.analytics", "granted");
-    } catch (error) {
-      console.warn("Failed to store consent in localStorage:", error);
-    }
-    document.body.removeChild(banner);
-    document.dispatchEvent(new CustomEvent("consent-granted", { detail: { type: "rum" } }));
-    maybeInitRum();
-  };
-  document.getElementById("consent-decline").onclick = () => {
-    try {
-      localStorage.setItem("consent.rum", "declined");
-      localStorage.setItem("consent.analytics", "declined");
-    } catch (error) {
-      console.warn("Failed to store consent in localStorage:", error);
-    }
-    document.body.removeChild(banner);
-    document.dispatchEvent(new CustomEvent("consent-declined"));
-  };
+  return banner;
+}
+
+function buildConsentDialog() {
+  const dialog = document.createElement("div");
+  dialog.id = "consent-dialog";
+  dialog.className = "consent-dialog";
+  dialog.setAttribute("role", "dialog");
+  dialog.setAttribute("aria-modal", "true");
+  dialog.setAttribute("aria-labelledby", "consent-dialog-title");
+  dialog.innerHTML = `
+    <div class="consent-dialog-panel">
+      <h2 id="consent-dialog-title">Your cookie choice</h2>
+      <p>You arrived from an advert. If you accept, we store which advert brought you here and use Google Ads and Google Analytics to measure whether it led to a purchase. If you reject, we store nothing and the site works the same. See our <a href="/privacy.html">privacy policy</a>.</p>
+      <div class="consent-dialog-actions">
+        <button id="consent-accept" class="btn consent-dialog-button">Accept</button>
+        <button id="consent-decline" class="btn consent-dialog-button">Reject</button>
+      </div>
+    </div>`;
+  return dialog;
+}
+
+function showConsentBannerIfNeeded({ reopen = false } = {}) {
+  if (!reopen && hasConsentChoice()) return;
+  if (document.getElementById("consent-banner") || document.getElementById("consent-dialog")) return;
+  const asDialog = reopen || isPaidVisit();
+  const surface = asDialog ? "dialog" : "banner";
+  const element = asDialog ? buildConsentDialog() : buildConsentBanner();
+  document.body.appendChild(element);
+  document.getElementById("consent-accept").onclick = () => answerConsent("granted", surface);
+  document.getElementById("consent-decline").onclick = () => answerConsent("declined", surface);
+  if (asDialog) document.getElementById("consent-accept").focus();
+}
+
+function reopenConsentChoice(event) {
+  const link = event.target.closest?.("[data-cookie-choices]");
+  if (!link) return;
+  event.preventDefault();
+  showConsentBannerIfNeeded({ reopen: true });
 }
 
 function loadScript(src) {
@@ -183,11 +253,9 @@ function rumReady() {
 }
 
 async function maybeInitRum() {
+  if (!hasConsentChoice()) showConsentBannerIfNeeded();
   if (!window.__RUM_CONFIG__) return;
-  if (!hasRumConsent()) {
-    showConsentBannerIfNeeded();
-    return;
-  }
+  if (!hasRumConsent()) return;
   if (window.__RUM_INIT_DONE__) return;
   const c = window.__RUM_CONFIG__;
   if (!c.appMonitorId || !c.region || !c.identityPoolId || !c.guestRoleArn) return;
@@ -292,9 +360,9 @@ function handleActivityStartClick(event) {
 }
 
 function ensurePrivacyLink() {
-  const anchors = Array.from(document.querySelectorAll('footer a[href$="privacy.html"]'));
+  const anchors = Array.from(document.querySelectorAll('body > footer a[href$="privacy.html"]'));
   if (anchors.length) return;
-  const footer = document.querySelector("footer .footer-left") || document.querySelector("footer");
+  const footer = document.querySelector("body > footer .footer-left") || document.querySelector("body > footer");
   if (!footer) return;
   const link = document.createElement("a");
   link.href = "/privacy.html";
@@ -306,6 +374,7 @@ function ensurePrivacyLink() {
 // Wire up on load
 if (typeof window !== "undefined" && typeof document !== "undefined") {
   document.addEventListener("click", handleActivityStartClick);
+  document.addEventListener("click", reopenConsentChoice);
   if (document.readyState === "loading") {
     document.addEventListener("DOMContentLoaded", () => {
       ensurePrivacyLink();

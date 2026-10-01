@@ -359,7 +359,11 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
     - [DATA-34](#data-34-report-google-ads-campaign-performance) Report Google Ads campaign performance: use when a task asks how Google Ads campaigns, ad groups or keywords are performing over a date range.
     - [DATA-35](#data-35-forecast-google-ads-keyword-performance) Forecast Google Ads keyword performance: use when a task asks how many clicks or conversions a proposed keyword list and daily budget would deliver.
     - [DATA-36](#data-36-answer-google-ads-questions-from-live-data) Answer Google Ads questions from live data: use when asked how the Google Ads account is doing, what a budget would buy, or how to optimise spend.
+  - [Google Ads data and paid landing tracking](#google-ads-data-and-paid-landing-tracking-data)
+    - [DATA-58](#data-58-count-paid-landings-from-cloudfront-access-logs) Count paid landings from CloudFront access logs: use when paid landing page requests must be counted per day, landing page, utm_source and utm_campaign.
+    - [DATA-59](#data-59-pull-google-ads-daily-cost-into-the-lake) Pull Google Ads daily cost into the lake: use when the previous day's Google Ads impressions, clicks and cost must land in the lake, or backfill a date range.
   - [Google Cloud and GA4 administration](#google-cloud-and-ga4-administration-data)
+    - [DATA-56](#data-56-upload-paid-conversions-to-google-ads) Upload paid conversions to Google Ads: use when paid subscription conversions with a stored gclid must reach Google Ads through the Data Manager API.
     - [DATA-37](#data-37-federate-lambda-credentials-to-google-cloud) Federate Lambda credentials to Google Cloud: use when an analytics Lambda must call a Google Cloud or GA4 API without a stored service-account key.
     - [DATA-38](#data-38-sync-ga4-properties-streams-and-key-events) Sync GA4 properties, streams and key events: use when a GA4 property's streams, key events, enhanced measurement or BigQuery link must match analytics.toml.
     - [DATA-39](#data-39-sync-ga4-in-bigquery-scheduled-queries) Sync GA4-in-BigQuery scheduled queries: use when the ga4_daily BigQuery dataset's scheduled queries must match bigquery.toml.
@@ -2890,10 +2894,10 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 
 - **Use when:** a recorded demo video is ready to upload to YouTube, unlisted or public, or its manifest needs syncing.
 - **Does:** youtube-upload.js uploads a local video file to YouTube, unlisted or public. It reads title, description, tags and caption file per video from videos/publish.json, documented in videos/PUBLISH.md, and uses selectPendingUploads to skip videos already published. copy-videos-manifest.js keeps the video manifest in sync between source and destination directories.
-- **Run:** `npm run video:publish`; `npm run video:publish -- --public`; `npm run video:publish -- --check`; `npm run videos:manifest`
-- **Entry:** `scripts/youtube-upload.js`; `scripts/copy-videos-manifest.js`
-- **Files:** scripts/youtube-upload.js, app/unit-tests/scripts/youtubeUpload.test.js, scripts/copy-videos-manifest.js, videos/PUBLISH.md, web/unit-tests/videos-manifest.test.js
-- **Keywords:** youtube upload, publish video, unlisted, public video, publish.json, video manifest
+- **Run:** `npm run video:publish`; `npm run video:publish -- --public`; `npm run video:publish -- --check`; `npm run videos:manifest`; `npm run video:stale`; `npm run video:stale -- --dispatch`
+- **Entry:** `scripts/youtube-upload.js`; `scripts/copy-videos-manifest.js`; `scripts/video-stale.js`
+- **Files:** scripts/youtube-upload.js, scripts/video-stale.js, scripts/lib/video/pipelineVersion.js, app/unit-tests/video/pipelineVersion.test.js, app/unit-tests/scripts/youtubeUpload.test.js, scripts/copy-videos-manifest.js, videos/PUBLISH.md, web/unit-tests/videos-manifest.test.js
+- **Keywords:** youtube upload, publish video, unlisted, public video, publish.json, video manifest, pipelineVersion, stale video, re-record
 - **Related:** OPS-88, OPS-94
 
 #### OPS-94 Play demo videos on the public site
@@ -3549,7 +3553,8 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - [Site-side analytics and RUM](#site-side-analytics-and-rum-data): [DATA-23](#data-23-classify-visitor-kind-as-human-bot-or-synthetic) Classify visitor kind as human, bot or synthetic · [DATA-24](#data-24-load-ga4-analytics-on-site-pages) Load GA4 analytics on site pages · [DATA-25](#data-25-configure-and-gate-cloudwatch-rum) Configure and gate CloudWatch RUM · [DATA-26](#data-26-render-the-operator-objectives-dashboard) Render the operator objectives dashboard
 - [SQL views](#sql-views-data): [DATA-27](#data-27-sql-views-activity-and-traffic) SQL views: activity and traffic · [DATA-28](#data-28-sql-views-revenue-and-subscription) SQL views: revenue and subscription · [DATA-29](#data-29-sql-views-submission-and-compliance) SQL views: submission and compliance · [DATA-30](#data-30-sql-views-cost) SQL views: cost · [DATA-31](#data-31-sql-views-dora-and-operations) SQL views: DORA and operations
 - [Google Ads administration](#google-ads-administration-data): [DATA-32](#data-32-sync-the-google-ads-account) Sync the Google Ads account · [DATA-33](#data-33-read-the-google-ads-account-inventory) Read the Google Ads account inventory · [DATA-34](#data-34-report-google-ads-campaign-performance) Report Google Ads campaign performance · [DATA-35](#data-35-forecast-google-ads-keyword-performance) Forecast Google Ads keyword performance · [DATA-36](#data-36-answer-google-ads-questions-from-live-data) Answer Google Ads questions from live data
-- [Google Cloud and GA4 administration](#google-cloud-and-ga4-administration-data): [DATA-37](#data-37-federate-lambda-credentials-to-google-cloud) Federate Lambda credentials to Google Cloud · [DATA-38](#data-38-sync-ga4-properties-streams-and-key-events) Sync GA4 properties, streams and key events · [DATA-39](#data-39-sync-ga4-in-bigquery-scheduled-queries) Sync GA4-in-BigQuery scheduled queries · [DATA-40](#data-40-enable-required-google-cloud-apis) Enable required Google Cloud APIs · [DATA-41](#data-41-assert-gcp-billing-budget-and-stray-project) Assert GCP billing budget and stray project · [DATA-42](#data-42-sync-gcp-workload-identity-and-org-policy) Sync GCP workload identity and org policy · [DATA-43](#data-43-read-the-google-cloud-and-ga4-inventory) Read the Google Cloud and GA4 inventory · [DATA-44](#data-44-assert-google-oauth-client-configuration) Assert Google OAuth client configuration · [DATA-45](#data-45-apply-ga4-and-gcp-iam-role-bindings) Apply GA4 and GCP IAM role bindings · [DATA-46](#data-46-configure-the-youtube-channel-as-code) Configure the YouTube channel as code · [DATA-47](#data-47-authenticate-google-cloud-scripts-via-federated-credentials) Authenticate Google Cloud scripts via federated credentials · [DATA-53](#data-53-reach-google-cloud-from-a-local-session-via-aws-sso) Reach Google Cloud from a local session via AWS SSO
+- [Google Ads data and paid landing tracking](#google-ads-data-and-paid-landing-tracking-data): [DATA-58](#data-58-count-paid-landings-from-cloudfront-access-logs) Count paid landings from CloudFront access logs · [DATA-59](#data-59-pull-google-ads-daily-cost-into-the-lake) Pull Google Ads daily cost into the lake
+- [Google Cloud and GA4 administration](#google-cloud-and-ga4-administration-data): [DATA-56](#data-56-upload-paid-conversions-to-google-ads) Upload paid conversions to Google Ads · [DATA-37](#data-37-federate-lambda-credentials-to-google-cloud) Federate Lambda credentials to Google Cloud · [DATA-38](#data-38-sync-ga4-properties-streams-and-key-events) Sync GA4 properties, streams and key events · [DATA-39](#data-39-sync-ga4-in-bigquery-scheduled-queries) Sync GA4-in-BigQuery scheduled queries · [DATA-40](#data-40-enable-required-google-cloud-apis) Enable required Google Cloud APIs · [DATA-41](#data-41-assert-gcp-billing-budget-and-stray-project) Assert GCP billing budget and stray project · [DATA-42](#data-42-sync-gcp-workload-identity-and-org-policy) Sync GCP workload identity and org policy · [DATA-43](#data-43-read-the-google-cloud-and-ga4-inventory) Read the Google Cloud and GA4 inventory · [DATA-44](#data-44-assert-google-oauth-client-configuration) Assert Google OAuth client configuration · [DATA-45](#data-45-apply-ga4-and-gcp-iam-role-bindings) Apply GA4 and GCP IAM role bindings · [DATA-46](#data-46-configure-the-youtube-channel-as-code) Configure the YouTube channel as code · [DATA-47](#data-47-authenticate-google-cloud-scripts-via-federated-credentials) Authenticate Google Cloud scripts via federated credentials · [DATA-53](#data-53-reach-google-cloud-from-a-local-session-via-aws-sso) Reach Google Cloud from a local session via AWS SSO
 - [Finance staging and reconciliation](#finance-staging-and-reconciliation-data): [DATA-48](#data-48-stage-paypal-transactions-for-reconciliation) Stage PayPal transactions for reconciliation · [DATA-49](#data-49-stage-stripe-transactions-for-reconciliation) Stage Stripe transactions for reconciliation · [DATA-50](#data-50-resolve-finance-staging-directory-paths) Resolve finance staging directory paths · [DATA-51](#data-51-turn-staged-stripe-activity-into-diya-gl-lines) Turn staged Stripe activity into diya-gl lines
 <!-- /generated:area DATA -->
 
@@ -4010,9 +4015,37 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - **Keywords:** ads advisor skill, cost per session, break-even, reinvestment ceiling, bidding optimisation, budget forecast question
 - **Related:** DATA-34, DATA-35, DATA-32
 
+### Google Ads data and paid landing tracking (DATA)
+
+<!-- generated:group google-ads-data-and-paid-landing-tracking-data -->
+- [DATA-58](#data-58-count-paid-landings-from-cloudfront-access-logs) Count paid landings from CloudFront access logs
+- [DATA-59](#data-59-pull-google-ads-daily-cost-into-the-lake) Pull Google Ads daily cost into the lake
+<!-- /generated:group google-ads-data-and-paid-landing-tracking-data -->
+
+#### DATA-58 Count paid landings from CloudFront access logs
+
+- **Use when:** paid landing page requests must be counted per day, landing page, utm_source and utm_campaign.
+- **Does:** v_paid_landings_daily counts successful GET requests to pages whose query string carries a gclid (Google Ads click id) or utm_source parameter, read from the CloudFront access log's cs_uri_query field. Only page requests for site pages (/ or *.html) count; crawlers and synthetic traffic are filtered by user agent. The click id itself is never selected, so no lake row contains a value gclid sends to Google. Consent does not gate the count because nothing is stored on the visitor's device. BusinessViews.java registers the view. operatorSnapshotPublish.js measures paid-landings and ads-cost-per-paid-landing-gbp observations from it.
+- **Run:** no command; see Does and Entry
+- **Entry:** `infra/main/resources/analytics/views/v_paid_landings_daily.sql:`
+- **Files:** infra/main/resources/analytics/views/v_paid_landings_daily.sql, infra/main/java/co/uk/diyaccounting/submit/stacks/analytics/BusinessViews.java, app/functions/analytics/operatorSnapshotPublish.js, app/unit-tests/analytics/operatorSnapshotPublish.test.js, infra/test/java/co/uk/diyaccounting/submit/stacks/analytics/BusinessViewsTest.java
+- **Keywords:** paid landings, gclid, utm_source, utm_campaign, cloudfront access log, page requests, no consent needed, operator objective
+- **Related:** DATA-59, DATA-32
+
+#### DATA-59 Pull Google Ads daily cost into the lake
+
+- **Use when:** the previous day's Google Ads impressions, clicks and cost must land in the lake, or backfill a date range.
+- **Does:** adsCostPull.js reads the previous day's Google Ads performance by campaign and ad group through the Ads API. It authenticates to Google via workload identity federation. A campaign with no ad groups (Performance Max) receives one row with an empty ad group, so daily rows always sum to the campaign total. It writes gzipped NDJSON under curated/ads/ads_cost/dt=YYYY-MM-DD/. AdsCostTables.java provisions the ads_cost Glue table with dt partition projection. The job exists only in prod when ADS_COST_PULL_ENABLED is true. v_ads_cost_daily sums by day and campaign; v_ads_cost_per_paid_landing_daily divides daily cost by v_paid_landings_daily's paid landing count. operatorSnapshotPublish.js measures ads-cost-gbp and ads-cost-per-paid-landing-gbp observations from them.
+- **Run:** no command; see Does and Entry
+- **Entry:** `app/functions/analytics/adsCostPull.js:handler`
+- **Files:** app/functions/analytics/adsCostPull.js, app/unit-tests/analytics/adsCostPull.test.js, app/unit-tests/analytics/fixtures/adsCostAdGroupSearch.json, app/unit-tests/analytics/fixtures/adsCostCampaignSearch.json, infra/main/java/co/uk/diyaccounting/submit/stacks/analytics/AdsCostTables.java, infra/main/resources/analytics/views/v_ads_cost_daily.sql, infra/main/resources/analytics/views/v_ads_cost_per_paid_landing_daily.sql, infra/main/java/co/uk/diyaccounting/submit/stacks/IngestionStack.java, infra/main/java/co/uk/diyaccounting/submit/stacks/analytics/NightlyIngestionWorkflow.java, infra/test/java/co/uk/diyaccounting/submit/stacks/analytics/BusinessViewsTest.java
+- **Keywords:** google ads cost, impressions clicks, ads api, workload identity federation, curated ads, performance max, cost per paid landing, nightly pull, operator objective
+- **Related:** DATA-58, DATA-32, DATA-33
+
 ### Google Cloud and GA4 administration (DATA)
 
 <!-- generated:group google-cloud-and-ga4-administration-data -->
+- [DATA-56](#data-56-upload-paid-conversions-to-google-ads) Upload paid conversions to Google Ads
 - [DATA-37](#data-37-federate-lambda-credentials-to-google-cloud) Federate Lambda credentials to Google Cloud
 - [DATA-38](#data-38-sync-ga4-properties-streams-and-key-events) Sync GA4 properties, streams and key events
 - [DATA-39](#data-39-sync-ga4-in-bigquery-scheduled-queries) Sync GA4-in-BigQuery scheduled queries
@@ -4026,6 +4059,16 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - [DATA-47](#data-47-authenticate-google-cloud-scripts-via-federated-credentials) Authenticate Google Cloud scripts via federated credentials
 - [DATA-53](#data-53-reach-google-cloud-from-a-local-session-via-aws-sso) Reach Google Cloud from a local session via AWS SSO
 <!-- /generated:group google-cloud-and-ga4-administration-data -->
+
+#### DATA-56 Upload paid conversions to Google Ads
+
+- **Use when:** paid subscription conversions with a stored gclid must reach Google Ads through the Data Manager API.
+- **Does:** ads-conversions-upload.js reads paid Stripe charges with a stored gclid from the lake. It sends each with the invoice id as transactionId and adUserData granted. Without a send flag it prints the events and calls no Google API.
+- **Run:** `npm run ads:conversions-upload`; `npm run ads:conversions-upload -- --since 2026-09-28 --validate-only`; `npm run ads:conversions-upload -- --apply`
+- **Entry:** `infra/google/ads/ads-conversions-upload.js:main`; `infra/google/ads/ads-conversions-upload.js:shapeConversionEvents`
+- **Files:** infra/google/ads/ads-conversions-upload.js, app/unit-tests/scripts/adsConversionsUpload.test.js, infra/google/ads/ads.toml
+- **Keywords:** google ads conversion upload, offline conversions, data manager api, gclid, transactionId, consent, import from clicks
+- **Related:** DATA-33, DATA-34
 
 #### DATA-37 Federate Lambda credentials to Google Cloud
 
@@ -5651,6 +5694,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - adjustments: [HMRC-13](#hmrc-13-submit-and-manage-the-self-employment-annual-summary), [HMRC-16](#hmrc-16-trigger-and-adjust-the-business-source-adjustable-summary)
 - admin pass: [BILL-07](#bill-07-admin-issue-a-pass)
 - ads advisor skill: [DATA-36](#data-36-answer-google-ads-questions-from-live-data)
+- ads api: [DATA-59](#data-59-pull-google-ads-daily-cost-into-the-lake)
 - ads purchase conversion: [SS-32](#ss-32-send-ga4-ecommerce-and-download-events)
 - ads.toml: [DATA-32](#data-32-sync-the-google-ads-account)
 - advertising standards: [SITE-20](#site-20-document-business-governance-and-positioning)
@@ -5975,6 +6019,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - cloudformation: [OPS-136](#ops-136-retrieve-cloudformation-stack-outputs)
 - cloudformation drift: [OPS-07](#ops-07-lean-deploy-app-code-to-lambda-and-s3), [OPS-32](#ops-32-detect-cloudformation-drift)
 - cloudfront: [OPS-03](#ops-03-look-up-aws-resources-by-domain-convention), [OPS-115](#ops-115-provision-the-edgecloudfront-stack)
+- cloudfront access log: [DATA-58](#data-58-count-paid-landings-from-cloudfront-access-logs)
 - cloudfront access logs: [DATA-13](#data-13-catalogue-cloudfront-access-logs-for-athena)
 - cloudfront alias: [OPS-04](#ops-04-update-route53cloudfront-origins-for-a-domain), [OPS-127](#ops-127-upsert-route53-alias-records-via-custom-resource)
 - cloudfront cutover: [OPS-05](#ops-05-promote-a-ci-deployment-to-the-ci-apex)
@@ -6042,6 +6087,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - config composition: [OPS-126](#ops-126-provide-config-composition-helpers-for-cdk-code)
 - config validation: [OPS-84](#ops-84-validate-required-environment-variables-at-startup)
 - conflict card: [SS-27](#ss-27-save-and-load-books-locally-and-via-submits-cloud-store)
+- consent: [DATA-56](#data-56-upload-paid-conversions-to-google-ads)
 - consent banner: [SITE-15](#site-15-show-and-persist-cookie-consent), [SS-31](#ss-31-load-ga4-analytics-with-consent-gating)
 - consent denied default: [DATA-24](#data-24-load-ga4-analytics-on-site-pages)
 - consent mode: [SITE-15](#site-15-show-and-persist-cookie-consent)
@@ -6075,6 +6121,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - cost anomaly detection: [DATA-16](#data-16-alert-on-cost-budget-and-anomaly-thresholds)
 - cost daily: [DATA-30](#data-30-sql-views-cost)
 - cost export bucket: [DATA-17](#data-17-export-aws-billing-data-in-focus-format)
+- cost per paid landing: [DATA-59](#data-59-pull-google-ads-daily-cost-into-the-lake)
 - cost per session: [DATA-36](#data-36-answer-google-ads-questions-from-live-data)
 - cost per submission: [DATA-30](#data-30-sql-views-cost)
 - cost vs target: [DATA-30](#data-30-sql-views-cost)
@@ -6117,6 +6164,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - csv per view: [DATA-20](#data-20-publish-the-nightly-raw-export-for-indexing)
 - ctr: [DATA-34](#data-34-report-google-ads-campaign-performance)
 - cumulative model: [HMRC-12](#hmrc-12-submit-and-manage-self-employment-periodic-updates), [HMRC-14](#hmrc-14-submit-and-manage-uk-property-periodic-updates), [HMRC-27](#hmrc-27-validate-hmrc-identifiers-dates-and-amounts), [HMRC-34](#hmrc-34-file-a-full-itsa-tax-year-in-sandbox)
+- curated ads: [DATA-59](#data-59-pull-google-ads-daily-cost-into-the-lake)
 - curated cost: [DATA-08](#data-08-copy-the-aws-focus-cost-export)
 - curated finance: [DATA-52](#data-52-pull-the-companys-own-diya-gl-book-into-the-lake)
 - curated paypal: [DATA-55](#data-55-pull-paypal-receipts-into-the-lake)
@@ -6138,6 +6186,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - dashboard snapshot: [DATA-18](#data-18-publish-the-nightly-operator-dashboard-snapshot)
 - dashboards: [OPS-117](#ops-117-provision-the-observability-stack)
 - data export: [OPS-41](#ops-41-export-a-customers-gdpr-subject-access-data)
+- data manager api: [DATA-56](#data-56-upload-paid-conversions-to-google-ads)
 - data masking: [OPS-81](#ops-81-mask-and-redact-sensitive-data-from-logs)
 - data migration: [OPS-16](#ops-16-run-dynamodb-data-migrations)
 - data mode: [SS-15](#ss-15-extract-diya-gl-data-and-financial-reports-from-populated-packages)
@@ -6447,6 +6496,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - gap analysis: [HMRC-37](#hmrc-37-plan-the-hmrc-mtd-vat-and-itsa-rollout)
 - gate fixtures: [SS-10](#ss-10-extract-reconciliation-scenarios-from-master-books)
 - gate probes: [OPS-24](#ops-24-gate-probes-on-the-main-apex-deploy)
+- gclid: [DATA-58](#data-58-count-paid-landings-from-cloudfront-access-logs), [DATA-56](#data-56-upload-paid-conversions-to-google-ads)
 - gcp billing budget: [DATA-41](#data-41-assert-gcp-billing-budget-and-stray-project)
 - gcp iam bindings: [DATA-45](#data-45-apply-ga4-and-gcp-iam-role-bindings)
 - gdpr erasure: [OPS-40](#ops-40-delete-a-customers-data-for-gdpr-erasure)
@@ -6491,6 +6541,8 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - glue data quality: [DATA-11](#data-11-run-glue-data-quality-checks)
 - glue database: [DATA-12](#data-12-provision-the-analytics-lake-and-athena-workgroup)
 - glue table: [DATA-13](#data-13-catalogue-cloudfront-access-logs-for-athena)
+- google ads conversion upload: [DATA-56](#data-56-upload-paid-conversions-to-google-ads)
+- google ads cost: [DATA-59](#data-59-pull-google-ads-daily-cost-into-the-lake)
 - google ads forecast: [DATA-35](#data-35-forecast-google-ads-keyword-performance)
 - google ads inventory: [DATA-33](#data-33-read-the-google-ads-account-inventory)
 - google ads report: [DATA-34](#data-34-report-google-ads-campaign-performance)
@@ -6613,7 +6665,9 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - identity provider: [OPS-101](#ops-101-set-up-github-oidc-deployment-roles)
 - identity-sandbox: [CH-02](#ch-02-verify-the-companies-house-oauth-app-configuration)
 - identity.toml: [DATA-37](#data-37-federate-lambda-credentials-to-google-cloud), [DATA-42](#data-42-sync-gcp-workload-identity-and-org-policy)
+- import from clicks: [DATA-56](#data-56-upload-paid-conversions-to-google-ads)
 - import prior year: [HMRC-13](#hmrc-13-submit-and-manage-the-self-employment-annual-summary)
+- impressions clicks: [DATA-59](#data-59-pull-google-ads-daily-cost-into-the-lake)
 - in flight: [DEV-27](#dev-27-render-the-open-work-board)
 - in-flight items: [SS-46](#ss-46-render-the-spreadsheets-work-board)
 - in-memory store: [DEV-01](#dev-01-run-the-http-simulator-server)
@@ -6861,9 +6915,11 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - nightly analysis: [OPS-75](#ops-75-run-nightly-security-lake-analysis)
 - nightly ingestion: [DATA-22](#data-22-orchestrate-the-nightly-ingestion-workflow)
 - nightly publish: [DATA-18](#data-18-publish-the-nightly-operator-dashboard-snapshot)
+- nightly pull: [DATA-59](#data-59-pull-google-ads-daily-cost-into-the-lake)
 - nino: [HMRC-09](#hmrc-09-retrieve-itsa-business-details), [HMRC-27](#hmrc-27-validate-hmrc-identifiers-dates-and-amounts), [DEV-06](#dev-06-simulate-hmrc-test-user-provisioning-and-api-docs)
 - no changes: [SS-52](#ss-52-preview-what-auto-merge-would-do)
 - no charge: [BILL-07](#bill-07-admin-issue-a-pass)
+- no consent needed: [DATA-58](#data-58-count-paid-landings-from-cloudfront-access-logs)
 - no key file: [DATA-53](#data-53-reach-google-cloud-from-a-local-session-via-aws-sso)
 - no mcp server claim: [MCP-15](#mcp-15-disclaim-an-mcp-server-on-the-marketing-site)
 - no recalculation: [SS-16](#ss-16-write-workbooks-from-diya-gl-data)
@@ -6900,6 +6956,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - observability stack: [OPS-117](#ops-117-provision-the-observability-stack)
 - observabilitystack: [OPS-09](#ops-09-deploy-environment-stacks-and-populate-secrets)
 - offline: [SS-29](#ss-29-serve-diya-gl-as-an-offline-pwa)
+- offline conversions: [DATA-56](#data-56-upload-paid-conversions-to-google-ads)
 - oidc: [OPS-101](#ops-101-set-up-github-oidc-deployment-roles)
 - oidc exchange: [DATA-47](#data-47-authenticate-google-cloud-scripts-via-federated-credentials)
 - oidc provider: [OPS-103](#ops-103-bootstrap-a-new-aws-account-for-cdk)
@@ -6928,6 +6985,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - operator effort: [DATA-07](#data-07-pull-github-operator-effort-data)
 - operator interventions: [DATA-07](#data-07-pull-github-operator-effort-data), [DATA-31](#data-31-sql-views-dora-and-operations)
 - operator match: [BILL-04](#bill-04-enforce-bundle-entitlement-on-a-request)
+- operator objective: [DATA-58](#data-58-count-paid-landings-from-cloudfront-access-logs), [DATA-59](#data-59-pull-google-ads-daily-cost-into-the-lake)
 - operator snapshot: [DATA-18](#data-18-publish-the-nightly-operator-dashboard-snapshot)
 - operator snapshot api: [DATA-19](#data-19-serve-the-operator-dashboard-snapshot-via-the-api)
 - operator tooling: [OPS-80](#ops-80-build-aws-console-deep-links-for-operators)
@@ -6959,8 +7017,10 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - packages-published: [SS-18](#ss-18-archive-a-cut-of-packages-to-diy-accounting-archive)
 - page chrome: [SITE-14](#site-14-render-page-chrome-and-widgets)
 - page layout: [SITE-12](#site-12-map-the-site-structure)
+- page requests: [DATA-58](#data-58-count-paid-landings-from-cloudfront-access-logs)
 - pages report: [DATA-06](#data-06-pull-ga4-reports-and-bigquery-event-export)
 - pagination: [CH-03](#ch-03-search-the-companies-house-register), [BILL-19](#bill-19-list-a-users-diya-gl-books)
+- paid landings: [DATA-58](#data-58-count-paid-landings-from-cloudfront-access-logs)
 - parallel branch: [DATA-22](#data-22-orchestrate-the-nightly-ingestion-workflow)
 - parquet: [DATA-02](#data-02-transform-activity-events-into-lake-rows)
 - parseisodurationtodate: [BILL-42](#bill-42-parse-iso-8601-durations-for-expiry)
@@ -6994,6 +7054,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - penetration test: [OPS-62](#ops-62-report-accessibility-penetration-testing)
 - per-account synthesis: [OPS-123](#ops-123-wire-cdk-application-entrypoints-per-account)
 - per-client loop: [MCP-09](#mcp-09-run-a-client-scoped-tool-across-every-practice-client)
+- performance max: [DATA-59](#data-59-pull-google-ads-daily-cost-into-the-lake)
 - period key: [HMRC-01](#hmrc-01-submit-a-vat-return), [HMRC-02](#hmrc-02-retrieve-a-submitted-vat-return), [HMRC-03](#hmrc-03-retrieve-vat-obligations), [HMRC-27](#hmrc-27-validate-hmrc-identifiers-dates-and-amounts)
 - period key hidden: [HMRC-28](#hmrc-28-format-and-match-hmrc-obligations)
 - permission grant: [OPS-33](#ops-33-enforce-workflow-to-workflow-permission-grants)
@@ -7002,6 +7063,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - physical pass: [BILL-06](#bill-06-generate-a-token-charged-pass)
 - pii redaction: [OPS-81](#ops-81-mask-and-redact-sensitive-data-from-logs), [OPS-86](#ops-86-provide-structured-pii-redacting-logging)
 - pino logger: [OPS-86](#ops-86-provide-structured-pii-redacting-logging)
+- pipelineversion: [OPS-93](#ops-93-publish-demo-videos-to-youtube)
 - pitr: [OPS-132](#ops-132-enable-dynamodb-pitr-on-deploy), [OPS-113](#ops-113-provision-the-dynamodb-and-s3-data-stack)
 - pitr restore: [OPS-50](#ops-50-drill-and-test-pitr-database-restoration)
 - pitr status: [OPS-48](#ops-48-verify-backup-health-daily)
@@ -7133,6 +7195,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - rates and allowances: [SITE-22](#site-22-source-and-publish-sourced-tax-facts)
 - raw export: [DATA-20](#data-20-publish-the-nightly-raw-export-for-indexing)
 - re-key: [BILL-40](#bill-40-migrate-the-hashed-sub-salt)
+- re-record: [OPS-93](#ops-93-publish-demo-videos-to-youtube)
 - read-only: [DATA-44](#data-44-assert-google-oauth-client-configuration)
 - read-only aws query: [DEV-42](#dev-42-look-up-a-vat-submission-failure-alarms-customer)
 - read-only check: [DATA-43](#data-43-read-the-google-cloud-and-ga4-inventory)
@@ -7417,6 +7480,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - staging directory: [DATA-50](#data-50-resolve-finance-staging-directory-paths)
 - stale branches: [SS-53](#ss-53-clean-up-stale-branches-and-worktrees)
 - stale deployment sweep: [DEV-34](#dev-34-clean-up-stale-deployments-and-branches)
+- stale video: [OPS-93](#ops-93-publish-demo-videos-to-youtube)
 - standalone cdk app: [DATA-17](#data-17-export-aws-billing-data-in-focus-format)
 - standalone harness: [HMRC-35](#hmrc-35-spike-test-the-itsa-sandbox-oauth-and-business-details-flow)
 - statement: [MCP-16](#mcp-16-parse-paypal-statements-into-diya-gl-lines)
@@ -7573,6 +7637,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - transaction: [CH-05](#ch-05-file-a-change-of-registered-office-address), [CH-06](#ch-06-file-a-change-of-registered-email-address), [CH-09](#ch-09-query-and-submit-document-transactions)
 - transaction lifecycle: [DEV-04](#dev-04-simulate-companies-house-identity-and-filing)
 - transaction_status: [DATA-48](#data-48-stage-paypal-transactions-for-reconciliation)
+- transactionid: [DATA-56](#data-56-upload-paid-conversions-to-google-ads)
 - transcript: [OPS-90](#ops-90-encode-captured-video-frames-and-captions), [OPS-92](#ops-92-redact-secrets-from-video-artefacts)
 - trend: [DATA-18](#data-18-publish-the-nightly-operator-dashboard-snapshot)
 - trend deep link: [DATA-26](#data-26-render-the-operator-objectives-dashboard)
@@ -7620,6 +7685,8 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - user provisioning role: [OPS-68](#ops-68-provision-and-assume-roles-for-test-user-provisioning)
 - user-agent classification: [DATA-23](#data-23-classify-visitor-kind-as-human-bot-or-synthetic)
 - user-restricted api: [HMRC-33](#hmrc-33-drive-hmrcs-sandbox-authorisation-flow-for-test-scripts)
+- utm_campaign: [DATA-58](#data-58-count-paid-landings-from-cloudfront-access-logs)
+- utm_source: [DATA-58](#data-58-count-paid-landings-from-cloudfront-access-logs)
 - utr: [HMRC-27](#hmrc-27-validate-hmrc-identifiers-dates-and-amounts)
 - v2 schema: [SS-02](#ss-02-validate-diya-gl-books-against-the-v2-schema)
 - validate workflows: [OPS-34](#ops-34-validate-github-actions-workflow-files)
@@ -7713,7 +7780,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - workflow permissions: [OPS-33](#ops-33-enforce-workflow-to-workflow-permission-grants)
 - workflow_dispatch: [BILL-11](#bill-11-generate-admin-passes-from-cli-or-workflow), [OPS-01](#ops-01-cancel-superseded-push-triggered-deploys)
 - workload identity: [OPS-67](#ops-67-apply-google-cloud--ga4-infrastructure)
-- workload identity federation: [DATA-06](#data-06-pull-ga4-reports-and-bigquery-event-export), [DATA-37](#data-37-federate-lambda-credentials-to-google-cloud), [DATA-53](#data-53-reach-google-cloud-from-a-local-session-via-aws-sso)
+- workload identity federation: [DATA-06](#data-06-pull-ga4-reports-and-bigquery-event-export), [DATA-59](#data-59-pull-google-ads-daily-cost-into-the-lake), [DATA-37](#data-37-federate-lambda-credentials-to-google-cloud), [DATA-53](#data-53-reach-google-cloud-from-a-local-session-via-aws-sso)
 - workload identity pool: [DATA-42](#data-42-sync-gcp-workload-identity-and-org-policy)
 - workspace mirror: [DATA-20](#data-20-publish-the-nightly-raw-export-for-indexing)
 - worktree catalogue: [DEV-32](#dev-32-merge-every-pr-that-is-ready)

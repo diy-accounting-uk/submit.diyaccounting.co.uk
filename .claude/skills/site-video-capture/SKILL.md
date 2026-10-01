@@ -10,7 +10,7 @@ description: Record a video of the real site for a human audience from a scene s
 
 A scene script (`videos/<name>.json`) is the edit surface. A UI change means editing the
 script and rerunning, never editing the mp4. `scripts/site-video-capture.js` drives a real
-browser through the script with Playwright, draws a pointer, trail and captions with an
+browser through the script with Playwright, draws a pointer, trail and headlines with an
 in-page overlay, captures the session with CDP screencast at 3840x2160, and encodes a
 constant-frame-rate H.264 mp4 with ffmpeg. Every run also writes a `.vtt`, a `.transcript.md`
 and per-scene stills alongside the mp4.
@@ -24,9 +24,10 @@ through the site. `videos/scene-script.schema.json` documents the format.
 ## Step 1a — the burned-in headline is not the caption
 
 Every step's `caption` goes into the `.vtt` and the transcript — the full narration, read by a
-screen reader or a viewer with sound off. A step can also carry a `headline` (three to six
+screen reader or a viewer with sound off — and is never drawn into the frame, so YouTube's
+caption track is the only place the words show. A step can also carry a `headline` (three to six
 words) and an optional `keyWord`: a short, burned-in callout tag the video itself shows, styled
-and positioned so it never reads as the same thing as the caption twice.
+and positioned so it reads as a label, not a subtitle.
 
 - **Write it or leave it out.** A step with no `headline` shows no burned-in line — there is no
   fallback to the caption text. Keep it to three to six words; the tag is a single line.
@@ -39,7 +40,7 @@ and positioned so it never reads as the same thing as the caption twice.
   (`scripts/lib/video/headlinePlacement.js`, unit-tested). Every other step's headline (`goto`,
   `await`, `login`, `hmrcAuthorise`, a bare `caption` step, …) shows against no target, in a
   fixed band below the chapter label.
-- **Style**: a compact dark tag (not the caption's wide bottom bar), left-accented in the
+- **Style**: a compact dark tag left-accented in the
   overlay's own blue, bold white text with the key word in the timer pill's amber — reusing the
   two colours already in the overlay rather than adding a third. Static once shown: the only
   motion is the entrance fade, matching every other cue here (WCAG SC 2.3.1 — nothing flashes).
@@ -266,8 +267,7 @@ in `videos/publish.json` (see `videos/PUBLISH.md`).
 ## Step 6 — publish accessibly
 
 The mp4, the `.vtt` and the `.transcript.md` ship together, always. The transcript is what
-satisfies WCAG SC 1.2.1 for a silent video — burned-in captions alone do not, because they
-are pixels, unreadable by assistive tech. Embed the mp4 with player controls and without
+satisfies WCAG SC 1.2.1 for a silent video; the video draws no caption text, only the headline tag. Embed the mp4 with player controls and without
 autoplay, so SC 1.4.2 and 2.2.2 stay out of the embedder's problem.
 
 Captions and the video title follow `plain-prose`: short sentences, read aloud before
@@ -320,7 +320,7 @@ the upload cost.
 - `scripts/lib/video/pacing.js` — the three pacing groups, wait subtraction, time
   compression for a wait past six seconds, caption minimum hold.
 - `scripts/lib/video/overlay-runtime.js` / `overlay.js` — the in-page pointer, trail,
-  caption box, headline tag, timer pill and chapter label.
+  headline tag, timer pill and chapter label.
 - `scripts/lib/video/headlinePlacement.js` — pure placement math for the headline tag (above
   or below its target, clear of it, inside the frame), unit-tested with no browser.
 - `scripts/lib/video/capture.js` / `encode.js` — CDP screencast capture and the ffmpeg

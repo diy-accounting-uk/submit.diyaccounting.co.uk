@@ -42,7 +42,7 @@
 
   "suppress": ["#feedbackEngagementBanner", "#feedbackEngagementSection"],
 
-  "finalHoldMs": 3000,
+  "finalHoldMs": 4000,
 
   "scenes": [
     {
@@ -302,9 +302,38 @@
           "headline": "Income and expenses",
           "keyWord": "expenses"
         },
+        { "action": "fill", "target": "#costOfGoods", "value": "150" },
         { "action": "hold", "ms": 1500 },
         { "action": "still", "name": "itsa-quarterly-update-form" },
-        { "action": "hold", "ms": 1500 }
+        {
+          "action": "click",
+          "target": "#submitBtn",
+          "caption": "File the quarter with HMRC.",
+          "headline": "File the quarter",
+          "keyWord": "File"
+        },
+        {
+          "action": "await",
+          "until": "#selfEmploymentPeriodResults",
+          "label": "Waiting for HMRC",
+          "timeoutMs": 60000,
+          "caption": "HMRC accepts the quarterly update.",
+          "headline": "HMRC accepts the quarter",
+          "keyWord": "accepts"
+        },
+        { "action": "scroll", "target": "#selfEmploymentPeriodResults" },
+        { "action": "hold", "ms": 600 },
+        {
+          "action": "point",
+          "target": "#selfEmploymentPeriodResults h3",
+          "caption": "Filed. HMRC's answer carries the period ID.",
+          "headline": "Quarterly update filed",
+          "keyWord": "filed",
+          "dwellMs": 600
+        },
+        { "action": "hold", "ms": 2500 },
+        { "action": "still", "name": "itsa-quarterly-update-filed" },
+        { "action": "hold", "ms": 1200 }
       ]
     }
   ]

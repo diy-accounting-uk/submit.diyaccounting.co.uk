@@ -11,6 +11,7 @@ import fs from "fs";
 import path from "path";
 import { setTimeout as delay } from "timers/promises";
 import { dotenvConfigIfNotBlank } from "@app/lib/env.js";
+import { serveHmrcFieldTableAssets } from "./hmrcFieldTableAssets.js";
 
 dotenvConfigIfNotBlank({ path: ".env.test" });
 
@@ -38,6 +39,7 @@ async function loadItsaPage(page, fileName) {
       await route.continue();
     }
   });
+  await serveHmrcFieldTableAssets(page);
 
   const modifiedHtml = html.replace(
     "<body>",
@@ -248,7 +250,7 @@ test.describe("ITSA pages - WCAG 2.1 AA (populated state)", () => {
           calculation: {
             taxCalculation: {
               totalIncomeTaxAndNicsDue: 1900,
-              incomeTax: { totalIncomeTax: 1400 },
+              incomeTax: { totalIncomeTaxDue: 1400 },
               nics: { totalNic: 500 },
               totalTaxDeducted: 0,
             },

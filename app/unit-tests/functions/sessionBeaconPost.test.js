@@ -113,4 +113,23 @@ describe("sessionBeaconPost ingestHandler", () => {
     expect(detail.ref).toBeUndefined();
     expect(detail.landedAt).toBeUndefined();
   });
+
+  it("publishes a consent-answered count with no page or attribution fields", async () => {
+    const response = await ingestHandler(
+      buildBeaconEvent({ consentAnswer: "rejected", consentSurface: "dialog", page: "/x", gclid: "abc" }),
+    );
+
+    expect(response.statusCode).toBe(200);
+    expect(mockPublishActivityEvent).toHaveBeenCalledTimes(1);
+    const published = mockPublishActivityEvent.mock.calls[0][0];
+    expect(published.event).toBe("consent-answered");
+    expect(published.detail).toEqual({ answer: "rejected", surface: "dialog", country: "GB" });
+  });
+
+  it("rejects a consent answer outside accepted or rejected", async () => {
+    const response = await ingestHandler(buildBeaconEvent({ consentAnswer: "maybe", consentSurface: "banner" }));
+
+    expect(response.statusCode).toBe(400);
+    expect(mockPublishActivityEvent).not.toHaveBeenCalled();
+  });
 });

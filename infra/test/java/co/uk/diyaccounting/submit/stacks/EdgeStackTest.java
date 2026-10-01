@@ -115,4 +115,24 @@ class EdgeStackTest {
 
         assertTrue(!template.toJSON().toString().contains("distributionid"));
     }
+
+    @Test
+    void contentSecurityPolicyAllowsGoogleAdsPingsInConnectSrcAndImgSrc() {
+        String templateJson = Template.fromStack(synthEdgeStack()).toJSON().toString();
+
+        for (String directive : new String[] {"connect-src", "img-src"}) {
+            java.util.regex.Matcher matcher =
+                    java.util.regex.Pattern.compile(directive + " [^;]*;").matcher(templateJson);
+            int policies = 0;
+            while (matcher.find()) {
+                if (!matcher.group().contains("googletagmanager.com")) {
+                    continue;
+                }
+                policies++;
+                assertTrue(matcher.group().contains("https://www.googleadservices.com"), directive);
+                assertTrue(matcher.group().contains("https://googleads.g.doubleclick.net"), directive);
+            }
+            assertTrue(policies > 0, directive + " not found");
+        }
+    }
 }

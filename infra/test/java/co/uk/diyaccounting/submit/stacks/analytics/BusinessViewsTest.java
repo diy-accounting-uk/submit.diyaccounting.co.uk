@@ -6,6 +6,7 @@
 package co.uk.diyaccounting.submit.stacks.analytics;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import co.uk.diyaccounting.submit.SubmitSharedNames;
@@ -28,7 +29,7 @@ import software.amazon.awscdk.services.s3.Bucket;
  */
 class BusinessViewsTest {
 
-    private static final int VIEW_COUNT = 33;
+    private static final int VIEW_COUNT = 36;
 
     private Template synthBusinessViews() {
         var sharedNames = SubmitSharedNames.forDocs();
@@ -125,7 +126,10 @@ class BusinessViewsTest {
                 "v_agent_runs_daily",
                 "v_compliance_status",
                 "v_sign_ins_daily",
-                "v_paid_subscribers_by_channel");
+                "v_paid_subscribers_by_channel",
+                "v_paid_landings_daily",
+                "v_ads_cost_daily",
+                "v_ads_cost_per_paid_landing_daily");
 
         var customResources = template.findResources("Custom::AthenaView");
         var viewNamesFound = new ArrayList<String>();
@@ -144,6 +148,19 @@ class BusinessViewsTest {
         assertEquals(
                 expectedViewNames.size(), viewNamesFound.size(), "expected every view name to appear exactly once");
         assertEquals(expectedViewNames, Set.copyOf(viewNamesFound));
+    }
+
+    @Test
+    void paidLandingsViewCountsGclidRequestsWithoutReadingTheClientAddress() {
+        Template template = synthBusinessViews();
+
+        var sql = sqlForView(template, "v_paid_landings_daily");
+        assertTrue(sql.contains("gclid="), "expected the view to detect gclid in the query string: " + sql);
+        assertTrue(sql.contains("utm_campaign="), "expected utm_campaign to be read: " + sql);
+        assertTrue(
+                sql.contains("diyaccountingprobe") && sql.contains("probe-monitor"),
+                "expected probe user agents to be excluded: " + sql);
+        assertFalse(sql.contains("c_ip"), "c_ip is personal data and must not be read: " + sql);
     }
 
     @Test

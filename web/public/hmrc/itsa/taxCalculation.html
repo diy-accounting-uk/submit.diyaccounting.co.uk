@@ -13,6 +13,7 @@
     <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" />
     <link rel="manifest" href="/site.webmanifest" />
     <link rel="stylesheet" href="../../submit.css" />
+    <link rel="stylesheet" href="../../lib/hmrc-field-table.css" />
     <!-- CloudWatch RUM configuration placeholders; replace values during deployment -->
     <meta name="rum:appMonitorId" content="${RUM_APP_MONITOR_ID}" />
     <meta name="rum:region" content="${AWS_REGION}" />
@@ -113,17 +114,10 @@
           <h3>Total Income Tax and National Insurance Due</h3>
           <p id="totalIncomeTaxAndNicsDue" class="headline-figure"></p>
 
-          <dl>
-            <dt>Income tax</dt>
-            <dd id="incomeTaxAmount"></dd>
-            <dt>National Insurance</dt>
-            <dd id="nicsAmount"></dd>
-            <dt>Tax already deducted</dt>
-            <dd id="totalTaxDeductedAmount"></dd>
-          </dl>
+          <div id="taxBreakdown"></div>
 
-          <h3>Allowances and Deductions</h3>
-          <dl id="allowancesAndDeductions"></dl>
+          <h3 id="allowancesAndDeductionsHeading">Allowances and Deductions</h3>
+          <div id="allowancesAndDeductions"></div>
 
           <h3>Businesses</h3>
           <div id="businessProfitAndLossTable"></div>
@@ -163,6 +157,8 @@
     <script src="../../widgets/auth-status.js"></script>
     <script src="../../widgets/status-messages.js"></script>
     <script src="../../widgets/pass-redeemer.js"></script>
+    <script src="../../lib/money-format.js"></script>
+    <script src="../../lib/hmrc-field-table.js"></script>
     <script>
       function initializePage() {
         const hmrcAccount = sessionStorage.getItem("hmrcAccount");
@@ -207,16 +203,15 @@
         if (calc) {
           figures.style.display = "block";
           const taxCalculation = calc.taxCalculation || {};
-          document.getElementById("totalIncomeTaxAndNicsDue").textContent = formatCurrency(taxCalculation.totalIncomeTaxAndNicsDue);
-          document.getElementById("incomeTaxAmount").textContent = formatCurrency(taxCalculation.incomeTax?.totalIncomeTax);
-          document.getElementById("nicsAmount").textContent = formatCurrency(taxCalculation.nics?.totalNic);
-          document.getElementById("totalTaxDeductedAmount").textContent = formatCurrency(taxCalculation.totalTaxDeducted);
-
-          const allowancesList = document.getElementById("allowancesAndDeductions");
-          const allowances = calc.allowancesAndDeductions || {};
-          allowancesList.innerHTML = allowanceRows(allowances)
-            .map(([label, value]) => `<dt>${escapeHtml(label)}</dt><dd>${escapeHtml(formatCurrency(value))}</dd>`)
-            .join("");
+          document.getElementById("totalIncomeTaxAndNicsDue").textContent = HmrcFieldTable.formatMoney(
+            taxCalculation.totalIncomeTaxAndNicsDue,
+          );
+          renderTaxBreakdown(calc);
+          HmrcFieldTable.mountFieldTable(
+            document.getElementById("allowancesAndDeductions"),
+            HmrcFieldTable.allowanceRows(calc.allowancesAndDeductions),
+            { caption: "Allowances and deductions", emptyText: "HMRC's calculation carries no allowances or deductions." },
+          );
 
           renderBusinessProfitAndLoss(calc.businessProfitAndLoss || []);
 
@@ -251,59 +246,17 @@
           : "";
       }
 
-      function formatCurrency(value) {
-        if (typeof value !== "number" || !Number.isFinite(value)) return "-";
-        return `£${value.toFixed(2)}`;
-      }
-
-      const ALLOWANCE_LABELS = {
-        personalAllowance: "Personal allowance",
-        reducedPersonalAllowance: "Reduced personal allowance",
-        marriageAllowanceTransferOut: "Marriage allowance transferred out",
-        blindPersonsAllowance: "Blind person's allowance",
-        giftOfInvestmentsAndPropertyToCharity: "Gifts of investments and property to charity",
-        giftAidRelief: "Gift Aid relief",
-        dividendAllowance: "Dividend allowance",
-        annuityPayments: "Annuity payments",
-        qualifyingLoanInterestFromInvestments: "Qualifying loan interest from investments",
-        postCessationTradeReceipts: "Post-cessation trade receipts",
-        paymentsToTradeUnionsForDeathBenefits: "Payments to trade unions for death benefits",
-        lossesAppliedToGeneralIncome: "Losses applied to general income",
-        transferredOutAmount: "Amount transferred out",
-        personalAllowanceBeforeTransferOut: "Personal allowance before transfer",
-        grossAnnuityPayments: "Gross annuity payments",
-        reliefClaimed: "Relief claimed",
-        reductionsAndAdditions: "Reductions and additions",
+      const TAX_BREAKDOWN_VALUE_IDS = {
+        "taxCalculation.incomeTax.totalIncomeTaxDue": "incomeTaxAmount",
+        "taxCalculation.nics.totalNic": "nicsAmount",
+        "taxCalculation.totalTaxDeducted": "totalTaxDeductedAmount",
       };
 
-      function allowanceLabel(key) {
-        if (ALLOWANCE_LABELS[key]) return ALLOWANCE_LABELS[key];
-        const words = key
-          .replace(/([a-z0-9])([A-Z])/g, "$1 $2")
-          .replace(/[_-]+/g, " ")
-          .trim()
-          .toLowerCase();
-        return words.charAt(0).toUpperCase() + words.slice(1);
-      }
-
-      // Numeric values show as one row; an object shows one row per numeric field it carries,
-      // labelled "Parent: field"; anything else is left out.
-      function allowanceRows(allowances) {
-        const rows = [];
-        for (const key of Object.keys(allowances)) {
-          const value = allowances[key];
-          if (typeof value === "number" && Number.isFinite(value)) {
-            rows.push([allowanceLabel(key), value]);
-          } else if (value && typeof value === "object" && !Array.isArray(value)) {
-            for (const field of Object.keys(value)) {
-              const amount = value[field];
-              if (typeof amount === "number" && Number.isFinite(amount)) {
-                rows.push([`${allowanceLabel(key)}: ${allowanceLabel(field).toLowerCase()}`, amount]);
-              }
-            }
-          }
-        }
-        return rows;
+      function renderTaxBreakdown(calc) {
+        const rows = HmrcFieldTable.taxCalculationRows(calc).map((row) => ({ ...row, valueId: TAX_BREAKDOWN_VALUE_IDS[row.field] }));
+        HmrcFieldTable.mountFieldTable(document.getElementById("taxBreakdown"), rows, {
+          caption: "Income Tax and National Insurance",
+        });
       }
 
       // One row per business HMRC's calculation carries - a customer with one business sees one
@@ -340,8 +293,8 @@
                   return `
                     <tr>
                       <td>${escapeHtml(name)} (${escapeHtml(entry.incomeSourceId)})</td>
-                      <td>${escapeHtml(entry.taxableProfit ?? "-")}</td>
-                      ${lossFields.map(([key]) => `<td>${entry[key] !== undefined ? escapeHtml(entry[key]) : "-"}</td>`).join("")}
+                      <td class="field-amount">${escapeHtml(HmrcFieldTable.formatMoney(entry.taxableProfit))}</td>
+                      ${lossFields.map(([key]) => `<td class="field-amount">${escapeHtml(HmrcFieldTable.formatMoney(entry[key]))}</td>`).join("")}
                     </tr>
                   `;
                 })

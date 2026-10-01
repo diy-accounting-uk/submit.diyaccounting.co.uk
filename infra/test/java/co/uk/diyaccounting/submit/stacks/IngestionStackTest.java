@@ -551,6 +551,93 @@ class IngestionStackTest {
         assertTrue(((String) env.get("GOOGLE_WIF_AUDIENCE")).endsWith("/providers/aws-docs"));
     }
 
+    private static IngestionStack synthIngestionStackWithAds(String testId, boolean adsCostPullEnabled) {
+        App app = new App();
+        SubmitSharedNames sharedNames = SubmitSharedNames.forDocs();
+
+        var props = IngestionStack.IngestionStackProps.builder()
+                .env(Environment.builder()
+                        .account("111111111111")
+                        .region("eu-west-2")
+                        .build())
+                .crossRegionReferences(false)
+                .envName("docs")
+                .deploymentName("docs")
+                .resourceNamePrefix(sharedNames.envResourceNamePrefix)
+                .cloudTrailEnabled("false")
+                .sharedNames(sharedNames)
+                .baseImageTag("latest")
+                .ga4PropertyId("999000111")
+                .ga4BigQueryProjectId("docs-ga4")
+                .adsCostPullEnabled(adsCostPullEnabled)
+                .build();
+
+        return new IngestionStack(app, "TestIngestionStack-ads-" + testId, props);
+    }
+
+    @Test
+    void adsCostPullJobExistsOnlyWhenAdsCostPullIsEnabled() {
+        Template disabled = Template.fromStack(synthIngestionStackWithAds("disabled", false));
+
+        disabled.resourceCountIs("AWS::Lambda::Function", 6);
+        assertEquals(
+                0,
+                disabled.findResources(
+                                "AWS::Lambda::Function",
+                                Map.of("Properties", Map.of("FunctionName", "docs-env-ads-cost-pull")))
+                        .size());
+        assertFalse(
+                joinedDefinitionString(disabled).contains("\"Ads cost pull\":{"),
+                "a disabled Ads cost pull should leave the workflow without its branch");
+
+        Template enabled = Template.fromStack(synthIngestionStackWithAds("enabled", true));
+
+        enabled.resourceCountIs("AWS::Lambda::Function", 7);
+        assertEquals(
+                1,
+                enabled.findResources(
+                                "AWS::Lambda::Function",
+                                Map.of("Properties", Map.of("FunctionName", "docs-env-ads-cost-pull")))
+                        .size());
+        assertTrue(
+                joinedDefinitionString(enabled).contains("\"Ads cost pull\":{"),
+                "an enabled Ads cost pull should add its branch to the workflow");
+    }
+
+    @Test
+    @SuppressWarnings("unchecked")
+    void adsCostPullCanOnlyPutUnderCuratedAdsAndReadItsTwoSecretsByArn() {
+        Template template = Template.fromStack(synthIngestionStackWithAds("scoped", true));
+
+        assertTrue(
+                actionResources(template, "s3:PutObject").stream()
+                        .anyMatch(resource -> resource.endsWith("/curated/ads/*")),
+                "expected an s3:PutObject statement scoped to .../curated/ads/*");
+
+        var secretStatements = template.findResources("AWS::IAM::Policy").values().stream()
+                .map(policy -> (Map<String, Object>) policy.get("Properties"))
+                .map(properties -> (Map<String, Object>) properties.get("PolicyDocument"))
+                .flatMap(document -> ((List<Map<String, Object>>) document.get("Statement")).stream())
+                .filter(statement -> "secretsmanager:GetSecretValue".equals(statement.get("Action")))
+                .filter(statement -> statement.get("Resource") instanceof List)
+                .toList();
+        assertEquals(1, secretStatements.size());
+        assertEquals(
+                List.of(
+                        "arn:aws:secretsmanager:eu-west-2:111111111111:secret:docs/submit/youtube/oauth_client-*",
+                        "arn:aws:secretsmanager:eu-west-2:111111111111:secret:docs/submit/google/ads/refresh_token-*"),
+                secretStatements.get(0).get("Resource"));
+
+        var lambdaEnvironment = environmentVariablesOf(template.findResources(
+                "AWS::Lambda::Function", Map.of("Properties", Map.of("FunctionName", "docs-env-ads-cost-pull"))));
+        assertEquals(
+                "arn:aws:secretsmanager:eu-west-2:111111111111:secret:docs/submit/youtube/oauth_client",
+                lambdaEnvironment.get("ADS_OAUTH_CLIENT_SECRET_ARN"));
+        assertEquals(
+                "arn:aws:secretsmanager:eu-west-2:111111111111:secret:docs/submit/google/ads/refresh_token",
+                lambdaEnvironment.get("ADS_REFRESH_TOKEN_SECRET_ARN"));
+    }
+
     private static IngestionStack synthIngestionStackWithPaypal(String testId, boolean paypalPullEnabled) {
         App app = new App();
         SubmitSharedNames sharedNames = SubmitSharedNames.forDocs();

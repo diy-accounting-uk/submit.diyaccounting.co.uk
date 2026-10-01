@@ -126,6 +126,17 @@ test.describe("rates.html", () => {
 
   test("the navigation links to the rates page", async ({ page }) => {
     await openRatesPage(page);
-    await expect(page.locator("nav.main-nav a:has-text('Rates')")).toHaveAttribute("href", "rates.html");
+    await expect(page.locator("nav.main-nav a:has-text('HMRC Tax Rates and Allowances')")).toHaveAttribute("href", "rates.html");
   });
+
+  for (const width of [1280, 1920]) {
+    test(`the seven navigation links fit one row at ${width} px`, async ({ page }) => {
+      await page.setViewportSize({ width, height: 900 });
+      await openRatesPage(page);
+      const rowTops = await page
+        .locator("nav.main-nav a")
+        .evaluateAll((links) => [...new Set(links.map((link) => Math.round(link.getBoundingClientRect().top)))]);
+      expect(rowTops).toHaveLength(1);
+    });
+  }
 });

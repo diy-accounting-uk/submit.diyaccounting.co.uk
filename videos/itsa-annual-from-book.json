@@ -192,6 +192,17 @@
           "headline": "HMRC accepts the year",
           "keyWord": "accepts"
         },
+        { "action": "scroll", "target": "#annualSubmissionResults" },
+        { "action": "hold", "ms": 600 },
+        {
+          "action": "point",
+          "target": "#annualSubmissionResults h3",
+          "caption": "Saved. The annual submission is now with HMRC.",
+          "headline": "Annual submission saved",
+          "keyWord": "saved",
+          "dwellMs": 600
+        },
+        { "action": "hold", "ms": 2500 },
         { "action": "still", "name": "annual-submission-from-book" },
         { "action": "hold", "ms": 1200 }
       ]

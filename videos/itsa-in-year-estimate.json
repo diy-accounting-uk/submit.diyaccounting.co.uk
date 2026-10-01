@@ -35,7 +35,7 @@
 
   "suppress": ["#feedbackEngagementBanner", "#feedbackEngagementSection"],
 
-  "finalHoldMs": 2500,
+  "finalHoldMs": 4000,
 
   "scenes": [
     {
@@ -135,6 +135,7 @@
           "headline": "An in-year estimate",
           "keyWord": "estimate"
         },
+        { "action": "testScenario", "value": "UK_SE_GIFTAID_EXAMPLE" },
         {
           "action": "click",
           "target": "#triggerBtn",

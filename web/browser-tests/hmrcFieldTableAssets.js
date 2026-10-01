@@ -1,0 +1,40 @@
+// SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0
+// Copyright (C) 2006-2026 DIY Accounting Limited
+
+// web/browser-tests/hmrcFieldTableAssets.js
+// Serves the real field-table script, its stylesheet and money-format.js from disk to a page
+// whose other scripts are stubbed out. Register it after the "**/*.js" stub: Playwright tries
+// the most recently registered route first.
+
+import fs from "fs";
+import path from "path";
+
+const PUBLIC_DIR = path.join(process.cwd(), "web/public");
+
+function serveFile(page, pattern, relativePath, contentType) {
+  return page.route(pattern, async (route) => {
+    await route.fulfill({ status: 200, contentType, body: fs.readFileSync(path.join(PUBLIC_DIR, relativePath), "utf-8") });
+  });
+}
+
+export async function serveHmrcFieldTableAssets(page) {
+  await serveFile(page, "**/lib/money-format.js", "lib/money-format.js", "application/javascript");
+  await serveFile(page, "**/lib/hmrc-field-table.js", "lib/hmrc-field-table.js", "application/javascript");
+  await serveFile(page, "**/lib/hmrc-field-table.css", "lib/hmrc-field-table.css", "text/css");
+}
+
+// The site stylesheet, for a screenshot that looks like the deployed page.
+export function serveSiteStyles(page) {
+  return serveFile(page, "**/submit.css", "submit.css", "text/css");
+}
+
+export function screenshotPath(name) {
+  return path.join(process.cwd(), "target/browser-test-results/field-tables", `${name}-1280.png`);
+}
+
+// Fails on any sign of an unformatted or raw API figure in the text of a rendered table.
+export function expectCleanFigures(expect, text) {
+  expect(text).not.toContain("NaN");
+  expect(text).not.toContain("undefined");
+  expect(text).not.toMatch(/\b[a-z]+[A-Z][A-Za-z]*\b/);
+}

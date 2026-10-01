@@ -40,7 +40,7 @@
     { label: "Practice", target: "practice.html" },
     { label: "Spreadsheets", target: "spreadsheets.html" },
     { label: "MTD calendar", target: "mtd-calendar.html" },
-    { label: "Rates", target: "rates.html" },
+    { label: "HMRC Tax Rates and Allowances", target: "rates.html" },
   ];
 
   function findOwnScript() {
@@ -130,7 +130,8 @@
         'terms.html">terms</a>' +
         '<a href="' +
         rootPrefix +
-        'accessibility.html">accessibility</a>'
+        'accessibility.html">accessibility</a>' +
+        '<a href="#" data-cookie-choices>Cookie choices</a>'
       : "";
 
     const center =
@@ -178,7 +179,7 @@
 
   function renderPageChrome() {
     const header = document.querySelector("header");
-    const footer = document.querySelector("footer");
+    const footer = document.querySelector("body > footer");
     const rootPrefix = computeRootPrefix();
 
     // Each render is independent: a mistake building one must not cost the

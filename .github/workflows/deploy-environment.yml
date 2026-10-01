@@ -1198,6 +1198,9 @@ jobs:
           # by this workflow's create-secrets job (see the PAYPAL_CLIENT_ID and
           # PAYPAL_CLIENT_SECRET steps above).
           PAYPAL_PULL_ENABLED: ${{ vars.PAYPAL_CLIENT_ID != '' && secrets.PAYPAL_CLIENT_SECRET != '' }}
+          # The Google Ads cost pull job reads the Ads OAuth client and refresh token held in prod's
+          # Secrets Manager (see infra/google/ads/ads.toml).
+          ADS_COST_PULL_ENABLED: ${{ needs.names.outputs.environment-name == 'prod' }}
 
   deploy-ecr:
     name: 'deploy ecr'

@@ -9,6 +9,7 @@ import fs from "fs";
 import path from "path";
 import { setTimeout as delay } from "timers/promises";
 import { dotenvConfigIfNotBlank } from "@app/lib/env.js";
+import { serveHmrcFieldTableAssets, serveSiteStyles, screenshotPath, expectCleanFigures } from "./hmrcFieldTableAssets.js";
 
 dotenvConfigIfNotBlank({ path: ".env.test" });
 
@@ -46,6 +47,7 @@ window.getGovClientHeaders = window.getGovClientHeaders || function(){ return Pr
         await route.continue();
       }
     });
+    await serveHmrcFieldTableAssets(page);
 
     await page.goto("http://localhost:3000/hmrc/itsa/adjustments.html", { waitUntil: "domcontentloaded" });
     await delay(200);
@@ -90,8 +92,8 @@ window.getGovClientHeaders = window.getGovClientHeaders || function(){ return Pr
     });
 
     const summaryDetails = page.locator("#summaryDetails");
-    await expect(summaryDetails).toContainText("10000");
-    await expect(summaryDetails).toContainText("6000");
+    await expect(summaryDetails).toContainText("£10,000.00");
+    await expect(summaryDetails).toContainText("£6,000.00");
   });
 
   test("retrieveSummary retries while HMRC answers the triggered summary is not ready yet", async ({ page }) => {
@@ -208,5 +210,48 @@ window.getGovClientHeaders = window.getGovClientHeaders || function(){ return Pr
     });
 
     expect(receivedScenario).toBe("STATEFUL");
+  });
+
+  test("shows the year-end summary as named, defined rows with formatted amounts and no raw keys", async ({ page }) => {
+    await serveSiteStyles(page);
+    await page.setViewportSize({ width: 1280, height: 900 });
+    await loadPage(page);
+    await page.evaluate(() => {
+      document.getElementById("triggerForm").style.display = "none";
+      document.getElementById("summaryContainer").style.display = "block";
+      window.displaySummary({
+        adjustableSummaryCalculation: {
+          totalIncome: 12430.43,
+          income: { turnover: 12000.43, other: 430 },
+          totalExpenses: 3210,
+          expenses: { costOfGoods: 1800.5 },
+          totalAdditions: 0,
+          netLoss: 250.75,
+        },
+      });
+    });
+
+    const table = page.locator("#summaryDetails table.field-table");
+    const row = (field) => table.locator(`tr[data-hmrc-field="${field}"]`);
+    await expect(row("income.turnover").locator(".field-name")).toHaveText("Turnover");
+    await expect(row("income.turnover").locator("td.field-amount")).toHaveText("£12,000.43");
+    await expect(row("expenses.costOfGoods").locator("td.field-amount")).toHaveText("£1,800.50");
+    await expect(row("totalAdditions").locator("td.field-amount")).toHaveText("£0.00");
+    await expect(row("netLoss").locator(".field-name")).toHaveText("Net loss");
+    await expect(row("netLoss")).toHaveClass(/field-row-total/);
+    await expect(row("netProfit")).toHaveCount(0);
+    await expect(row("totalIncome").locator(".field-definition")).toContainText("The total income for the income source.");
+    await expect(table.locator("tbody tr")).toHaveCount(6);
+    expectCleanFigures(expect, await page.locator("#summaryContainer").innerText());
+    await expect(page.locator("#adjustTurnover")).toHaveAttribute("data-hmrc-field", "income.turnover");
+
+    await page.locator("#summaryContainer").screenshot({ path: screenshotPath("adjustments") });
+  });
+
+  test("shows a dash for a summary figure HMRC did not return", async ({ page }) => {
+    await loadPage(page);
+    await page.evaluate(() => window.displaySummary({ adjustableSummaryCalculation: { totalIncome: 100 } }));
+    const row = page.locator('#summaryDetails tr[data-hmrc-field="income.turnover"] td.field-amount');
+    await expect(row).toHaveText("—");
   });
 });

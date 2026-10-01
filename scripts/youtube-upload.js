@@ -61,6 +61,7 @@ import TOML from "@iarna/toml";
 import { OAuth2Client } from "google-auth-library";
 import { SecretsManagerClient, GetSecretValueCommand, UpdateSecretCommand, CreateSecretCommand } from "@aws-sdk/client-secrets-manager";
 import { copyVideosManifest } from "./copy-videos-manifest.js";
+import { readPipelineVersion } from "./lib/video/pipelineVersion.js";
 
 export const PUBLISH_LIST_PATH = path.resolve("videos/publish.json");
 export const CONFIG_PATH = "infra/google/gcp/youtube.toml";
@@ -149,8 +150,8 @@ export function selectUploadedVideos(list) {
   return list.videos.filter((entry) => entry.publish === true && entry.videoId);
 }
 
-export function recordVideoId(list, id, videoId) {
-  return { ...list, videos: list.videos.map((entry) => (entry.id === id ? { ...entry, videoId } : entry)) };
+export function recordVideoId(list, id, videoId, pipelineVersion) {
+  return { ...list, videos: list.videos.map((entry) => (entry.id === id ? { ...entry, videoId, pipelineVersion } : entry)) };
 }
 
 // videos/publish.json declares the status every video should carry (embeddable,
@@ -832,12 +833,14 @@ export async function publishEntry({
   accessToken,
   quotaProject,
   publicVideo,
+  pipelineVersion,
   uploadVideoImpl = uploadVideo,
   uploadCaptionImpl = uploadCaption,
   savePublishListImpl = savePublishList,
   copyVideosManifestImpl = copyVideosManifest,
   log = console.log,
 }) {
+  if (!Number.isInteger(pipelineVersion)) throw new Error(`${entry.id}: publishEntry needs the capture's pipelineVersion`);
   log(`Uploading ${entry.id} (${publicVideo ? "public" : "unlisted"})...`);
   const declaredStatus = resolveDeclaredStatus(list, entry);
   const videoId = await uploadVideoImpl({
@@ -848,7 +851,7 @@ export async function publishEntry({
     declaredStatus,
   });
   log(`  video id: ${videoId}`);
-  const recorded = recordVideoId(list, entry.id, videoId);
+  const recorded = recordVideoId(list, entry.id, videoId, pipelineVersion);
   savePublishListImpl(recorded);
   copyVideosManifestImpl();
   await uploadCaptionImpl({ entry, videoId, accessToken, quotaProject });
@@ -919,13 +922,21 @@ export async function main() {
   for (const entry of pending) {
     requireFile(entry.videoFile, `video file for ${entry.id}`);
     requireFile(entry.captionFile, `caption file for ${entry.id}`);
+    readPipelineVersion(entry.videoFile);
   }
 
   // A description that links to another video goes out after the video it links to.
   const linkTargetsFirst = [...pending].sort((a, b) => Number(hasVideoLink(a)) - Number(hasVideoLink(b)));
   for (const pendingEntry of linkTargetsFirst) {
     const entry = list.videos.find((video) => video.id === pendingEntry.id);
-    list = await publishEntry({ entry, list, accessToken, quotaProject, publicVideo });
+    list = await publishEntry({
+      entry,
+      list,
+      accessToken,
+      quotaProject,
+      publicVideo,
+      pipelineVersion: readPipelineVersion(entry.videoFile),
+    });
   }
 }
 

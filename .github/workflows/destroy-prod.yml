@@ -117,6 +117,39 @@ jobs:
       isSweeping: ${{ steps.normalise.outputs.isSweeping }}
       called-from-deploy: ${{ steps.normalise.outputs.called-from-deploy }}
 
+  # A scheduled run that finds a prod deploy already running ends green here and skips every job
+  # below; the next schedule tries again. A dispatch keeps waiting in 'wait-for-deploy'. Runs for
+  # deploy.yml's own call too and answers false, because called-from-deploy is true there.
+  prod-deploy-check:
+    needs:
+      - params
+    name: 'check for a running prod deploy'
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Skip the scheduled sweep while a prod deploy runs
+        id: check
+        shell: bash
+        env:
+          GH_TOKEN: ${{ github.token }}
+          EVENT_NAME: ${{ github.event_name }}
+          CALLED_FROM_DEPLOY: ${{ needs.params.outputs.called-from-deploy }}
+        run: |
+          set -euo pipefail
+          if [ "$EVENT_NAME" != "schedule" ] || [ "$CALLED_FROM_DEPLOY" = "true" ]; then
+            echo "deploy-running=false" | tee -a "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          RUNNING=$(gh api "repos/${GITHUB_REPOSITORY}/actions/workflows/deploy.yml/runs?per_page=100" \
+            --jq '[.workflow_runs[] | select(.head_branch == "main" and (.status | IN("in_progress","queued","pending","waiting","requested"))) | .id] | join(" ")')
+          if [ -n "$RUNNING" ]; then
+            echo "deploy-running=true" | tee -a "$GITHUB_OUTPUT"
+            echo "prod deploy running (deploy.yml run $RUNNING); sweep skipped until the next schedule" | tee -a "$GITHUB_STEP_SUMMARY"
+          else
+            echo "deploy-running=false" | tee -a "$GITHUB_OUTPUT"
+          fi
+    outputs:
+      deploy-running: ${{ steps.check.outputs.deploy-running }}
+
   # A standalone destroy-prod run (the schedule, or a bare workflow_dispatch) shares no ordering
   # with a deploy.yml prod run: deploy.yml only reaches this workflow, as its own destroy-previous
   # job, near the end of a prod deploy — well after the new deployment's stacks are already built
@@ -142,7 +175,8 @@ jobs:
   wait-for-deploy:
     needs:
       - params
-    if: ${{ !cancelled() && needs.params.outputs.called-from-deploy != 'true' }}
+      - prod-deploy-check
+    if: ${{ !cancelled() && needs.prod-deploy-check.result == 'success' && needs.prod-deploy-check.outputs.deploy-running != 'true' && needs.params.outputs.called-from-deploy != 'true' }}
     name: 'wait for a running prod deploy'
     runs-on: ubuntu-24.04
     steps:
@@ -159,7 +193,8 @@ jobs:
   sweep-for-stacks:
     needs:
       - params
-    if: ${{ needs.params.outputs.isSweeping == 'true' }}
+      - prod-deploy-check
+    if: ${{ needs.params.outputs.isSweeping == 'true' && needs.prod-deploy-check.outputs.deploy-running != 'true' }}
     name: 'sweep for prod stacks'
     runs-on: ubuntu-24.04
     environment: prod
@@ -597,9 +632,10 @@ jobs:
     # partial stack list is not one to act on. `!cancelled()` only lifts the implicit
     # success() this job would otherwise inherit from `needs`; it does not mean the sweep
     # worked, which was the bug.
-    if: ${{ !cancelled() && (needs.sweep-for-stacks.result == 'skipped' || (needs.sweep-for-stacks.result == 'success' && needs.sweep-for-stacks.outputs.sweeper-hit != 'false')) }}
+    if: ${{ !cancelled() && needs.prod-deploy-check.result == 'success' && needs.prod-deploy-check.outputs.deploy-running != 'true' && (needs.sweep-for-stacks.result == 'skipped' || (needs.sweep-for-stacks.result == 'success' && needs.sweep-for-stacks.outputs.sweeper-hit != 'false')) }}
     needs:
       - params
+      - prod-deploy-check
       - sweep-for-stacks
     runs-on: ubuntu-24.04
     environment: prod
@@ -629,9 +665,10 @@ jobs:
     # completed and found a hit may reach here. wait-for-deploy adds the same skipped-is-fine
     # clause as sweep-for-stacks: it is skipped (not run) for deploy.yml's own call into this
     # workflow, and only a completed wait, not a failed or still-running one, may reach here.
-    if: ${{ !cancelled() && (needs.sweep-for-stacks.result == 'skipped' || (needs.sweep-for-stacks.result == 'success' && needs.sweep-for-stacks.outputs.sweeper-hit != 'false')) && (needs.wait-for-deploy.result == 'skipped' || needs.wait-for-deploy.result == 'success') }}
+    if: ${{ !cancelled() && needs.prod-deploy-check.result == 'success' && needs.prod-deploy-check.outputs.deploy-running != 'true' && (needs.sweep-for-stacks.result == 'skipped' || (needs.sweep-for-stacks.result == 'success' && needs.sweep-for-stacks.outputs.sweeper-hit != 'false')) && (needs.wait-for-deploy.result == 'skipped' || needs.wait-for-deploy.result == 'success') }}
     needs:
       - params
+      - prod-deploy-check
       - names
       - sweep-for-stacks
       - wait-for-deploy

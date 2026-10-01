@@ -87,7 +87,12 @@ function ukSeSavingsExample(nino, taxYear, calculationId, calculationType = "in-
     },
     calculation: {
       allowancesAndDeductions: { personalAllowance: 12570 },
-      taxCalculation: { incomeTax: { totalIncomeTax: 1400 }, nics: { totalNic: 500 }, totalTaxDeducted: 0, totalIncomeTaxAndNicsDue: 1900 },
+      taxCalculation: {
+        incomeTax: { totalIncomeTaxDue: 1400 },
+        nics: { totalNic: 500 },
+        totalTaxDeducted: 0,
+        totalIncomeTaxAndNicsDue: 1900,
+      },
       endOfYearEstimate: { totalTaxableIncome: 15000 },
     },
     messages: emptyMessages(),
@@ -99,7 +104,7 @@ function ukSeGiftaidExample(nino, taxYear, calculationId, calculationType = "in-
   const example = ukSeSavingsExample(nino, taxYear, calculationId, calculationType);
   example.calculation.allowancesAndDeductions = { personalAllowance: 12570, giftAidRelief: 400 };
   example.calculation.taxCalculation = {
-    incomeTax: { totalIncomeTax: 1200 },
+    incomeTax: { totalIncomeTaxDue: 1200 },
     nics: { totalNic: 500 },
     totalTaxDeducted: 0,
     totalIncomeTaxAndNicsDue: 1700,
@@ -113,7 +118,7 @@ function scotSeDividendsExample(nino, taxYear, calculationId, calculationType = 
   example.inputs.personalInformation.taxRegime = "scotland";
   example.calculation.allowancesAndDeductions = { personalAllowance: 12570, dividendAllowance: 500 };
   example.calculation.taxCalculation = {
-    incomeTax: { totalIncomeTax: 1600 },
+    incomeTax: { totalIncomeTaxDue: 1600 },
     nics: { totalNic: 500 },
     totalTaxDeducted: 0,
     totalIncomeTaxAndNicsDue: 2100,

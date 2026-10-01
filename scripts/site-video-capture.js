@@ -25,7 +25,6 @@ import { validateScript, effectiveScaleFactor } from "./lib/video/scriptSchema.j
 import { groupFor, pauseForGroup, residualAfterWait, captionMinMs, compressionFor, remainingFinalHoldMs } from "./lib/video/pacing.js";
 import {
   installOverlay,
-  caption as overlayCaption,
   headline as overlayHeadline,
   chapter as overlayChapter,
   suppress as overlaySuppress,
@@ -38,6 +37,7 @@ import { createCapture } from "./lib/video/capture.js";
 import { writeManifest, resolveFfmpegBinary, encodeVideo, buildContactSheet, mixNarrationTrack, muxNarration } from "./lib/video/encode.js";
 import { writeVtt, writeTranscript, writeTimeline, captionTextForStep } from "./lib/video/captions.js";
 import { substituteValues } from "./lib/video/values.js";
+import { buildCaptureManifest, writeCaptureManifest } from "./lib/video/pipelineVersion.js";
 import { collectSecrets, assertNoSecrets } from "./lib/video/secrets.js";
 import { synthesizeSpeech, audioDurationMs } from "./lib/video/narration.js";
 
@@ -215,8 +215,8 @@ const WAIT_CAPABLE_ACTIONS = new Set([
 
 // Journey actions end wherever the identity provider or HMRC sent them, which can be the URL they
 // started on. Every other action is judged by whether the URL moved. Either way the overlay was
-// reinstalled from scratch by the navigation, so the chapter label, the suppressed elements and
-// the caption all have to be put back.
+// reinstalled from scratch by the navigation, so the chapter label and the suppressed elements
+// have to be put back.
 const ALWAYS_NAVIGATING_ACTIONS = new Set([
   "goto",
   "login",
@@ -494,14 +494,14 @@ async function main() {
         const startMs = elapsed();
         const frameStart = capture?.frames.length ?? null;
         const group = groupFor(step.action);
-        // A goto's own caption describes the page it lands on, so it is shown after navigation
-        // (see the doGoto branch below) rather than before, alongside every other action's cue.
-        // An off-camera scene shows no caption at all — nothing here reaches a viewer.
+        // A step's caption is never burned into the frame: the uploaded .vtt track carries the
+        // words. Its hold and narration still run here. A goto's caption describes the page it
+        // lands on, so its hold starts after navigation (see the doGoto branch below).
+        // An off-camera scene has no caption at all — nothing here reaches a viewer.
         const showCaptionBeforeAction = !offCamera && step.caption && step.action !== "goto";
 
         let captionHideAt = null;
         if (showCaptionBeforeAction) {
-          await overlayCaption(page, step.caption);
           const hold = fastForward ? { minMs: 0, audioPath: null } : await resolveCaptionHold(step.caption, scene.id);
           if (hold.audioPath) narrationClips.push({ path: hold.audioPath, startMs });
           const minMs = hold.minMs;
@@ -549,9 +549,7 @@ async function main() {
                 : { minMs: step.holdMs || captionMinMs(step.text, script.captions), audioPath: null };
             if (hold.audioPath) narrationClips.push({ path: hold.audioPath, startMs });
             const minMs = hold.minMs;
-            await overlayCaption(page, step.text);
             await new Promise((resolve) => setTimeout(resolve, minMs));
-            await overlayCaption(page, null);
             captionEvents.push({
               startMs,
               text: step.text,
@@ -587,7 +585,6 @@ async function main() {
               await overlayChapter(page, scene.chapter);
               if (script.suppress?.length) await overlaySuppress(page, script.suppress);
               if (step.caption) {
-                await overlayCaption(page, step.caption);
                 if (!captionHideAt) {
                   const hold = fastForward ? { minMs: 0, audioPath: null } : await resolveCaptionHold(step.caption, scene.id);
                   if (hold.audioPath) narrationClips.push({ path: hold.audioPath, startMs });
@@ -605,7 +602,7 @@ async function main() {
               // A real navigation replaces the whole document, so even a headline already shown
               // by onTargetRect before the navigation started (a click that also navigates) is
               // gone from the fresh one and has to be put back, the same as the chapter label
-              // and the caption above. Against no target: whatever box a locator resolved to on
+              // above. Against no target: whatever box a locator resolved to on
               // the old page means nothing on the new one.
               if (step.headline) await holdHeadline(step.headline, step.keyWord, null);
             }
@@ -622,7 +619,6 @@ async function main() {
         if (captionHideAt) {
           const remaining = captionHideAt() - elapsed();
           if (remaining > 0) await new Promise((resolve) => setTimeout(resolve, remaining));
-          await overlayCaption(page, null);
           const last = captionEvents[captionEvents.length - 1];
           last.endMs = elapsed();
         }
@@ -711,6 +707,7 @@ async function main() {
   writeTimeline(path.join(outDir, `${script.name}.timeline.json`), stepRecords);
   fs.writeFileSync(path.join(outDir, `${script.name}.overlay-events.json`), JSON.stringify(overlayEvents, null, 2));
   writeVtt(path.join(outDir, `${script.name}.vtt`), captionEvents);
+  writeCaptureManifest(path.join(outDir, `${script.name}.manifest.json`), buildCaptureManifest({ scriptName: script.name }));
   writeTranscript(path.join(outDir, `${script.name}.transcript.md`), {
     title: script.title,
     description: script.description,

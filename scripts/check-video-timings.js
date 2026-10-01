@@ -9,6 +9,11 @@
 //
 // Usage:
 //   node scripts/check-video-timings.js target/videos/tour/tour.timeline.json
+//   node scripts/check-video-timings.js --static [videos/name.json ...]   (every script when none named)
+//
+// --static runs the final-caption tail check against a timeline estimated from the script alone
+// (explicit holds, pacing pauses and typing cadence; waits on the backend count as zero, which
+// makes the estimate the shortest the video can be).
 //
 // No ffprobe on the operator's Mac or in the Playwright container (only ffmpeg-static's ffmpeg
 // binary). The mp4-level checks below either parse `ffmpeg -i`'s own stderr report or walk the
@@ -20,9 +25,14 @@
 import fs from "fs";
 import path from "path";
 import { spawnSync } from "child_process";
+import { pathToFileURL } from "url";
 import { validateScript, effectiveScaleFactor } from "./lib/video/scriptSchema.js";
 import { resolveFfmpegBinary } from "./lib/video/encode.js";
 import { checkTimings, checkTimerMarkers, checkTypingCadence } from "./lib/video/checks.js";
+import { captionMinMs, groupFor, pauseForGroup } from "./lib/video/pacing.js";
+import { captionTextForStep } from "./lib/video/captions.js";
+
+const NARRATION_TAIL_MARGIN_MS = 2000;
 
 function readJson(p) {
   return JSON.parse(fs.readFileSync(p, "utf8"));
@@ -88,7 +98,81 @@ function checkVtt(vttPath, transcriptPath) {
   return { cueCount: cueTextLines.length, missing };
 }
 
+// The last captioned step's narration, plus a margin, must end before the video does.
+export function checkFinalCaptionTail(timelineSteps, script) {
+  if (!timelineSteps.length) return [];
+  const endOfVideoMs = timelineSteps[timelineSteps.length - 1].endMs + script.finalHoldMs;
+  const sceneById = new Map(script.scenes.map((scene) => [scene.id, scene]));
+  for (let i = timelineSteps.length - 1; i >= 0; i--) {
+    const record = timelineSteps[i];
+    const scene = sceneById.get(record.sceneId);
+    if (!scene || scene.offCamera || scene.fastForward || record.offCamera || record.fastForward) continue;
+    const text = captionTextForStep(scene.steps[record.stepIndex]);
+    if (!text) continue;
+    const narrationEndMs = record.startMs + captionMinMs(text, script.captions);
+    if (narrationEndMs + NARRATION_TAIL_MARGIN_MS <= endOfVideoMs) return [];
+    return [
+      {
+        step: `${record.sceneId}#${record.stepIndex}`,
+        check: "finalCaptionTail",
+        expected: `video ends at or after ${narrationEndMs + NARRATION_TAIL_MARGIN_MS}ms`,
+        actual: `${Math.round(endOfVideoMs)}ms`,
+        shortByMs: Math.round(narrationEndMs + NARRATION_TAIL_MARGIN_MS - endOfVideoMs),
+      },
+    ];
+  }
+  return [];
+}
+
+// A timeline built from the script alone: holds are their own length, typed text is paced per
+// character, every other grouped action takes its configured pause, and waits count as zero.
+export function estimateTimeline(script) {
+  const steps = [];
+  let clockMs = 0;
+  for (const scene of script.scenes) {
+    const offCamera = Boolean(scene.offCamera);
+    const fastForward = Boolean(scene.fastForward);
+    (scene.steps || []).forEach((step, stepIndex) => {
+      const startMs = clockMs;
+      if (!offCamera && !fastForward) {
+        let durationMs = 0;
+        if (step.action === "hold") durationMs = step.ms;
+        else if (step.action === "caption") durationMs = step.holdMs || captionMinMs(step.text, script.captions);
+        else {
+          const group = groupFor(step.action);
+          if (group) durationMs = pauseForGroup(group, script.pacing);
+          if (step.action === "type") durationMs += (step.text || "").length * script.pacing.perCharMs;
+        }
+        clockMs += durationMs;
+      }
+      steps.push({ sceneId: scene.id, stepIndex, offCamera, fastForward, startMs, endMs: clockMs });
+    });
+  }
+  return steps;
+}
+
+function runStatic(names) {
+  const files = names.length
+    ? names
+    : fs
+        .readdirSync("videos")
+        .filter((n) => n.endsWith(".json") && !["publish.json", "scene-script.schema.json"].includes(n))
+        .map((n) => path.join("videos", n));
+  const failures = [];
+  for (const file of files) {
+    const script = validateScript(readJson(file));
+    for (const failure of checkFinalCaptionTail(estimateTimeline(script), script)) failures.push({ script: file, ...failure });
+  }
+  if (failures.length > 0) {
+    console.error("\nFAILURES:");
+    console.table(failures);
+    process.exit(1);
+  }
+  console.log(`All static checks passed over ${files.length} scripts.`);
+}
+
 function main() {
+  if (process.argv[2] === "--static") return runStatic(process.argv.slice(3));
   const timelinePath = process.argv[2];
   if (!timelinePath) {
     console.error("Usage: node scripts/check-video-timings.js <path/to/name.timeline.json>");
@@ -107,6 +191,7 @@ function main() {
     ...checkTimings(timelineSteps, script),
     ...checkTimerMarkers(timelineSteps, overlayEvents, script),
     ...checkTypingCadence(overlayEvents, script),
+    ...checkFinalCaptionTail(timelineSteps, script),
   ];
 
   const mp4Path = path.join(outDir, `${name}.mp4`);
@@ -168,4 +253,4 @@ function main() {
   console.log("\nAll checks passed.");
 }
 
-main();
+if (process.argv[1] && import.meta.url === pathToFileURL(path.resolve(process.argv[1])).href) main();

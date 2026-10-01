@@ -33,7 +33,7 @@
 
   "suppress": ["#feedbackEngagementBanner", "#feedbackEngagementSection"],
 
-  "finalHoldMs": 3000,
+  "finalHoldMs": 3500,
 
   "scenes": [
     {

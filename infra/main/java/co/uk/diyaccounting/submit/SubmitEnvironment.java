@@ -208,6 +208,9 @@ public class SubmitEnvironment {
         // (prod). GitHub Environment variables only, no cdk.json fallback: unset means no PayPal
         // pull job and no secret grant.
         var paypalPullEnabled = Boolean.parseBoolean(envOr("PAYPAL_PULL_ENABLED", "false"));
+        // The Google Ads OAuth client and refresh token are held in Secrets Manager on prod only;
+        // deploy-environment.yml sets this there. Unset means no Ads cost pull job and no grant.
+        var adsCostPullEnabled = Boolean.parseBoolean(envOr("ADS_COST_PULL_ENABLED", "false"));
         var scanDetection404PerMinute = Integer.parseInt(envOr(
                 "SCAN_DETECTION_404_PER_MINUTE",
                 appProps.scanDetection404PerMinute == null || appProps.scanDetection404PerMinute.isBlank()
@@ -470,6 +473,7 @@ public class SubmitEnvironment {
                         .companyBookId(companyBookId != null ? companyBookId : "")
                         .companyBookOwnerPrefix(companyBookOwnerPrefix != null ? companyBookOwnerPrefix : "")
                         .paypalPullEnabled(paypalPullEnabled)
+                        .adsCostPullEnabled(adsCostPullEnabled)
                         .build());
         this.ingestionStack.addStackDependency(this.analyticsStack);
 

@@ -194,6 +194,14 @@ public class IngestionStack extends Stack {
             return false;
         }
 
+        // True on the environment that holds the Google Ads OAuth client and refresh token in
+        // Secrets Manager (prod; see infra/google/ads/ads.toml). False means no Ads cost pull job
+        // and no secret grant; the ads_cost table exists either way.
+        @Value.Default
+        default boolean adsCostPullEnabled() {
+            return false;
+        }
+
         // The Google Cloud project number and service account behind infra/google/gcp/identity.toml; the
         // federated audience is built from them and the environment name.
         @Value.Default
@@ -799,6 +807,74 @@ public class IngestionStack extends Stack {
         }
 
         // ============================================================================
+        // Google Ads cost pull job: yesterday's impressions, clicks and cost per campaign and ad
+        // group into the lake, read through the Ads API with the OAuth client and refresh token
+        // infra/google/ads/ads-inventory.js --consent stores in Secrets Manager. Created only
+        // when adsCostPullEnabled is set (prod). The secrets are passed to the Lambda as partial
+        // ARNs, which Secrets Manager resolves without the random suffix.
+        // ============================================================================
+        Function adsCostPullLambda = null;
+        if (props.adsCostPullEnabled()) {
+            var adsCostPullFunctionName = prefix + "-ads-cost-pull";
+            var adsOauthClientSecretArn = "arn:aws:secretsmanager:%s:%s:secret:%s/submit/youtube/oauth_client"
+                    .formatted(this.getRegion(), this.getAccount(), props.envName());
+            var adsRefreshTokenSecretArn = "arn:aws:secretsmanager:%s:%s:secret:%s/submit/google/ads/refresh_token"
+                    .formatted(this.getRegion(), this.getAccount(), props.envName());
+
+            var adsCostPullEnv = new PopulatedMap<String, String>()
+                    .with("ENVIRONMENT_NAME", props.envName())
+                    .with("ANALYTICS_LAKE_BUCKET_NAME", sharedNames.analyticsLakeBucketName)
+                    .with("ADS_OAUTH_CLIENT_SECRET_ARN", adsOauthClientSecretArn)
+                    .with("ADS_REFRESH_TOKEN_SECRET_ARN", adsRefreshTokenSecretArn);
+
+            IRepository adsCostPullRepository = Repository.fromRepositoryAttributes(
+                    this,
+                    prefix + "-AdsCostPull-EcrRepo",
+                    RepositoryAttributes.builder()
+                            .repositoryArn(sharedNames.ecrRepositoryArn)
+                            .repositoryName(sharedNames.ecrRepositoryName)
+                            .build());
+
+            var adsCostPullLogGroup = ensureLogGroupWithDependency(
+                    this, prefix + "-AdsCostPullLogGroup", "/aws/lambda/" + adsCostPullFunctionName);
+
+            adsCostPullLambda = DockerImageFunction.Builder.create(this, prefix + "-AdsCostPullFn")
+                    .functionName(adsCostPullFunctionName)
+                    .code(DockerImageCode.fromEcr(
+                            adsCostPullRepository,
+                            EcrImageCodeProps.builder()
+                                    .tagOrDigest(props.baseImageTag())
+                                    .cmd(List.of("app/functions/analytics/adsCostPull.handler"))
+                                    .build()))
+                    .timeout(Duration.minutes(5))
+                    .memorySize(512)
+                    .architecture(Architecture.ARM_64)
+                    .environment(adsCostPullEnv)
+                    .logGroup(adsCostPullLogGroup.logGroup())
+                    .build();
+            adsCostPullLambda.getNode().addDependency(adsCostPullLogGroup.ensureResource());
+
+            // Own prefix only, and the two secrets only: no salt, no DynamoDB, since a lake row
+            // carries no customer identity.
+            adsCostPullLambda.addToRolePolicy(PolicyStatement.Builder.create()
+                    .effect(Effect.ALLOW)
+                    .actions(List.of("s3:PutObject"))
+                    .resources(List.of(this.lakeBucket.getBucketArn() + "/curated/ads/*"))
+                    .build());
+            adsCostPullLambda.addToRolePolicy(PolicyStatement.Builder.create()
+                    .effect(Effect.ALLOW)
+                    .actions(List.of("secretsmanager:GetSecretValue"))
+                    .resources(List.of(adsOauthClientSecretArn + "-*", adsRefreshTokenSecretArn + "-*"))
+                    .build());
+
+            registerIngestionJob(
+                    "AdsCostPull",
+                    adsCostPullFunctionName,
+                    adsCostPullLambda,
+                    "Pull yesterday's Google Ads impressions, clicks and cost into the analytics lake");
+        }
+
+        // ============================================================================
         // Nightly orchestration: one Step Functions state machine, one EventBridge Scheduler
         // schedule, replacing the five independent rules and DLQs the jobs used before this
         // machine existed
@@ -827,6 +903,7 @@ public class IngestionStack extends Stack {
                         .operatorEffortPullLambda(operatorEffortPullLambda)
                         .companyBookPullLambda(Optional.ofNullable(companyBookPullLambda))
                         .paypalDonationsPullLambda(Optional.ofNullable(paypalDonationsPullLambda))
+                        .adsCostPullLambda(Optional.ofNullable(adsCostPullLambda))
                         .dataQualityRunLambda(dataQualityRunLambda)
                         .metricsPublishLambda(metricsPublishLambda)
                         .rawExportPublishLambda(rawExportPublishLambda)

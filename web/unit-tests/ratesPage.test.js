@@ -133,7 +133,9 @@ describe("rates page", () => {
   });
 
   test("the navigation lists the page", () => {
-    expect(readFileSync("web/public/widgets/page-chrome.js", "utf8")).toContain('{ label: "Rates", target: "rates.html" }');
+    expect(readFileSync("web/public/widgets/page-chrome.js", "utf8")).toContain(
+      '{ label: "HMRC Tax Rates and Allowances", target: "rates.html" }',
+    );
   });
 
   test("each year maps to its engine file", () => {

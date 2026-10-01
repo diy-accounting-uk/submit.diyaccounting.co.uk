@@ -12,15 +12,16 @@
 # The workflow_run event carries only the triggering run's head_sha, not what it deployed
 # before, so the base of the diff is the newest earlier successful deploy.yml run on main with a
 # different head_sha. workflow_dispatch's head-sha/base-sha inputs bypass that discovery for a
-# manual re-run or a check of a specific range.
+# manual re-run or a check of a specific range. The scripts input skips the diff and records the
+# named scripts in turn (npm run video:stale -- --dispatch uses it to re-record stale videos).
 name: video-capture-on-deploy
 run-name: "record videos touched since the last deploy"
 
 concurrency:
-  # video-capture.yml's own concurrency group (video-capture-<environment>) cancels an
-  # in-progress capture when a newer one starts, so two runs of this workflow dispatching at the
-  # same time would cancel each other's captures instead of each running to completion. Queue
-  # instead of cancelling: every deploy's set of touched videos still gets recorded, just later.
+  # video-capture.yml queues same-environment captures but keeps only one pending run per group
+  # and drops an older pending one, so this workflow dispatches its scripts one after another and
+  # waits for each to finish. Two runs of this workflow dispatching at once would drop captures;
+  # queue instead of cancelling: every deploy's set of touched videos still gets recorded, just later.
   group: video-capture-on-deploy
   cancel-in-progress: false
 
@@ -39,6 +40,11 @@ on:
       base-sha:
         type: string
         description: 'Base commit to diff from (defaults to the newest earlier successful deploy.yml run on main)'
+        required: false
+        default: ''
+      scripts:
+        type: string
+        description: 'Space-separated scene scripts to record one after another, instead of diffing (npm run video:stale -- --dispatch sets this)'
         required: false
         default: ''
 
@@ -70,8 +76,14 @@ jobs:
           RUN_ID: ${{ github.event.workflow_run.id }}
           INPUT_HEAD_SHA: ${{ inputs.head-sha }}
           INPUT_BASE_SHA: ${{ inputs.base-sha }}
+          INPUT_SCRIPTS: ${{ inputs.scripts }}
         run: |
           set -euo pipefail
+          if [ -n "$INPUT_SCRIPTS" ]; then
+            echo "Scripts were named by the dispatch; no diff to resolve."
+            echo "head=" | tee -a "$GITHUB_OUTPUT"
+            exit 0
+          fi
           HEAD="${INPUT_HEAD_SHA:-$RUN_HEAD_SHA}"
           if [ -z "$HEAD" ]; then
             echo "No head sha available (no triggering deploy run and no head-sha input); nothing to record."
@@ -138,14 +150,35 @@ jobs:
             echo "VIDEO_SCRIPTS_EOF"
           } | tee -a "$GITHUB_OUTPUT" > /dev/null
 
+      - name: Take the scripts named by the dispatch
+        id: named
+        if: ${{ inputs.scripts != '' }}
+        env:
+          INPUT_SCRIPTS: ${{ inputs.scripts }}
+        run: |
+          set -euo pipefail
+          NAMED=""
+          for SCRIPT in $INPUT_SCRIPTS; do
+            [[ "$SCRIPT" =~ ^[a-z0-9-]+$ ]] || { echo "Invalid script name: ${SCRIPT}"; exit 1; }
+            [ -f "videos/${SCRIPT}.json" ] || { echo "No scene script videos/${SCRIPT}.json"; exit 1; }
+            NAMED="${NAMED}${SCRIPT}"$'\n'
+          done
+          echo "Scripts to record:"
+          printf '%s' "$NAMED"
+          {
+            echo "names<<VIDEO_SCRIPTS_EOF"
+            printf '%s' "$NAMED"
+            echo "VIDEO_SCRIPTS_EOF"
+          } | tee -a "$GITHUB_OUTPUT" > /dev/null
+
       - name: Filter to scenes due a recording
         id: due
-        if: ${{ steps.scripts.outputs.names != '' }}
+        if: ${{ steps.scripts.outputs.names != '' || steps.named.outputs.names != '' }}
         env:
           GH_TOKEN: ${{ github.token }}
           REPO: ${{ github.repository }}
           EVENT_NAME: ${{ github.event_name }}
-          NAMES: ${{ steps.scripts.outputs.names }}
+          NAMES: ${{ steps.scripts.outputs.names || steps.named.outputs.names }}
         run: |
           set -euo pipefail
           if [ "$EVENT_NAME" = "workflow_dispatch" ]; then
@@ -188,6 +221,18 @@ jobs:
           SCRIPTS: ${{ steps.due.outputs.names }}
         run: |
           set -euo pipefail
+
+          # Captures for prod run on main. A capture already queued or running there (a hand
+          # dispatch, or an earlier run of this workflow) would hold this one pending and GitHub
+          # drops an older pending run, so skip instead of queueing behind it.
+          ACTIVE=$(for ACTIVE_STATUS in queued in_progress waiting; do
+            gh run list --repo "$REPO" --workflow video-capture.yml --branch main --status "$ACTIVE_STATUS" --json databaseId --jq '.[].databaseId'
+          done)
+          if [ -n "$ACTIVE" ]; then
+            echo "::warning::video-capture.yml already has a run queued or in progress on main (${ACTIVE//$'\n'/ }); skipping this dispatch"
+            exit 0
+          fi
+
           echo "$SCRIPTS" | while IFS= read -r SCRIPT; do
             [ -z "$SCRIPT" ] && continue
 
@@ -212,11 +257,10 @@ jobs:
               continue
             fi
 
-            # video-capture.yml's own concurrency group (video-capture-prod, cancel-in-progress:
-            # true) cancels an in-progress capture when a newer one starts, so the next script's
-            # dispatch must wait for this one to finish rather than racing it.
+            # video-capture.yml queues captures per environment and holds one pending run, so the
+            # next script's dispatch waits for this one to finish.
             for _ in $(seq 1 80); do
-              STATUS=$(gh run list --repo "$REPO" --workflow video-capture.yml --limit 1 --json status,databaseId --jq "if .[0].databaseId == ${NEW_RUN_ID} then .[0].status else \"unknown\" end")
+              STATUS=$(gh run view "$NEW_RUN_ID" --repo "$REPO" --json status --jq .status)
               if [ "$STATUS" = "completed" ]; then
                 break
               fi
