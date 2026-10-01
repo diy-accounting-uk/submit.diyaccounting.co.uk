@@ -778,14 +778,30 @@ jobs:
             exit 1
           fi
 
+          PARAMETER_NAME="/submit/ci/last-known-good-deployment"
           LAST_KNOWN_GOOD=$(aws ssm get-parameter \
-            --name "/submit/ci/last-known-good-deployment" \
+            --name "$PARAMETER_NAME" \
             --query "Parameter.Value" --output text 2>/dev/null || echo "")
           echo "Last known good ci deployment: [$LAST_KNOWN_GOOD]"
 
           REASON=""
           if [ "$DEPLOYMENT" = "$LAST_KNOWN_GOOD" ]; then
-            REASON="it is the last known good deployment"
+            STANDING_STACKS=$(
+              for REGION in eu-west-2 us-east-1; do
+                aws cloudformation describe-stacks --region "$REGION" \
+                  --query "Stacks[?starts_with(StackName, '${DEPLOYMENT}-')].StackName" \
+                  --output text
+              done | tr '\t' '\n' | grep -c . || true
+            )
+            if [ "${STANDING_STACKS:-0}" -eq 0 ]; then
+              echo "[$DEPLOYMENT] is named last known good but has no stacks; setting $PARAMETER_NAME to None"
+              aws ssm put-parameter --name "$PARAMETER_NAME" --type String --value "None" --overwrite
+              echo "nothing-to-destroy=true" >> "$GITHUB_OUTPUT"
+              echo "$DEPLOYMENT has no stacks; cleared $PARAMETER_NAME" >> "$GITHUB_STEP_SUMMARY"
+              exit 0
+            else
+              REASON="it is the last known good deployment"
+            fi
           else
             LIVE_DISTRIBUTION=$(aws cloudfront list-distributions \
               --query "DistributionList.Items[?Aliases.Items!=null && contains(Aliases.Items, '${CI_APEX_DOMAIN}') && contains(Aliases.Items, '${DEPLOYMENT}.submit.diyaccounting.co.uk')].Id | [0]" \
@@ -819,7 +835,7 @@ jobs:
       # succeeded.
       - name: Confirm the deployment has stacks to destroy
         id: confirm-stacks
-        if: ${{ !cancelled() && steps.refuse.outputs.keep-live-set != 'true' }}
+        if: ${{ !cancelled() && steps.refuse.outcome == 'success' && steps.refuse.outputs.keep-live-set != 'true' && steps.refuse.outputs.nothing-to-destroy != 'true' }}
         shell: bash
         env:
           DEPLOYMENT: ${{ needs.names.outputs.deployment-name }}
@@ -863,7 +879,7 @@ jobs:
           node "${GITHUB_WORKSPACE}/.github/actions/claim-ci-slot/hold-ci-slot.mjs"
 
       - name: Node dependencies
-        if: ${{ !cancelled() && steps.refuse.outputs.keep-live-set != 'true' }}
+        if: ${{ !cancelled() && steps.refuse.outcome == 'success' && steps.refuse.outputs.keep-live-set != 'true' && steps.refuse.outputs.nothing-to-destroy != 'true' }}
         run: timeout 120 npm ci --ignore-scripts --prefer-offline || { sleep 30; timeout 180 npm ci --ignore-scripts; }
         timeout-minutes: 6
         env:
@@ -872,7 +888,7 @@ jobs:
       # Never silence a kept set's alarms: a live or last-known-good deployment being kept
       # because its branch was deleted still needs its own alerting live.
       - name: Silence the deployment's alarms
-        if: ${{ !cancelled() && steps.refuse.outputs.keep-live-set != 'true' }}
+        if: ${{ !cancelled() && steps.refuse.outcome == 'success' && steps.refuse.outputs.keep-live-set != 'true' && steps.refuse.outputs.nothing-to-destroy != 'true' }}
         run: node scripts/silence-deployment-alarms.mjs --env "${{ needs.names.outputs.environment-name }}" --deployment "${{ needs.names.outputs.deployment-name }}"
 
       # deploy.yml's own cut-over calls this workflow in the same run as its 'maven package' job.
@@ -881,7 +897,7 @@ jobs:
       # cleanup pass below. The actual stack deletion further down reads stack names, not the jar.
       - name: Download Maven build artifact
         id: download-maven-destroy
-        if: ${{ !cancelled() && steps.refuse.outputs.keep-live-set != 'true' }}
+        if: ${{ !cancelled() && steps.refuse.outcome == 'success' && steps.refuse.outputs.keep-live-set != 'true' && steps.refuse.outputs.nothing-to-destroy != 'true' }}
         uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8
         continue-on-error: true
         with:
@@ -889,14 +905,14 @@ jobs:
           path: target/
 
       - name: Cache Maven build output
-        if: ${{ !cancelled() && steps.download-maven-destroy.outcome != 'success' && steps.refuse.outputs.keep-live-set != 'true' }}
+        if: ${{ !cancelled() && steps.download-maven-destroy.outcome != 'success' && steps.refuse.outcome == 'success' && steps.refuse.outputs.keep-live-set != 'true' && steps.refuse.outputs.nothing-to-destroy != 'true' }}
         uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6
         with:
           path: target
           key: maven-target-${{ hashFiles('infra/main/java/**', 'infra/main/resources/**', 'pom.xml') }}
 
       - name: Build CDK
-        if: ${{ !cancelled() && steps.refuse.outputs.keep-live-set != 'true' }}
+        if: ${{ !cancelled() && steps.refuse.outcome == 'success' && steps.refuse.outputs.keep-live-set != 'true' && steps.refuse.outputs.nothing-to-destroy != 'true' }}
         run: |
           if [ -f target/submit-application.jar ]; then
             echo "Maven output already available (target/submit-application.jar), skipping build"
