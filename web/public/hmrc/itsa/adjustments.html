@@ -129,11 +129,35 @@
         <p class="hint">Change a figure if HMRC's calculation is wrong, or confirm no change is needed.</p>
         <div class="form-group">
           <label for="adjustTurnover">Turnover</label>
-          <input type="number" id="adjustTurnover" name="adjustTurnover" step="0.01" data-hmrc-field="income.turnover" />
+          <p id="adjustTurnover-money-hint" class="hint">For example, £600 or £193.54</p>
+          <div class="input-prefix">
+            <span class="prefix">£</span>
+            <input
+              type="text"
+              id="adjustTurnover"
+              name="adjustTurnover"
+              data-hmrc-field="income.turnover"
+              aria-describedby="adjustTurnover-money-hint"
+              inputmode="decimal"
+              data-money="pounds-and-pence"
+            />
+          </div>
         </div>
         <div class="form-group">
           <label for="adjustCostOfGoods">Cost of goods</label>
-          <input type="number" id="adjustCostOfGoods" name="adjustCostOfGoods" step="0.01" data-hmrc-field="expenses.costOfGoods" />
+          <p id="adjustCostOfGoods-money-hint" class="hint">For example, £600 or £193.54</p>
+          <div class="input-prefix">
+            <span class="prefix">£</span>
+            <input
+              type="text"
+              id="adjustCostOfGoods"
+              name="adjustCostOfGoods"
+              data-hmrc-field="expenses.costOfGoods"
+              aria-describedby="adjustCostOfGoods-money-hint"
+              inputmode="decimal"
+              data-money="pounds-and-pence"
+            />
+          </div>
         </div>
         <div class="button-group">
           <button type="button" id="submitAdjustmentBtn" class="btn">Submit adjustment</button>
@@ -167,6 +191,7 @@
     <script src="../../widgets/status-messages.js"></script>
     <script src="../../widgets/pass-redeemer.js"></script>
     <script src="../../lib/money-format.js"></script>
+    <script src="../../lib/money-input.js"></script>
     <script src="../../lib/hmrc-field-table.js"></script>
     <script>
       let triggeredNino = "";
@@ -422,6 +447,13 @@
       }
 
       async function handleAdjustmentSubmit(zeroAdjustments) {
+        if (!zeroAdjustments) {
+          const moneyProblem = window.moneyInputProblem();
+          if (moneyProblem) {
+            showStatus(moneyProblem, "error");
+            return;
+          }
+        }
         const testScenario = document.getElementById("testScenario")?.value;
         const runFraudPreventionHeaderValidation = document.getElementById("runFraudPreventionHeaderValidation")?.checked || false;
 
@@ -432,10 +464,10 @@
           zeroAdjustments,
         };
         if (!zeroAdjustments) {
-          const turnover = document.getElementById("adjustTurnover").value;
-          const costOfGoods = document.getElementById("adjustCostOfGoods").value;
-          if (turnover !== "") adjustDetails.income = { turnover: Number(turnover) };
-          if (costOfGoods !== "") adjustDetails.expenses = { costOfGoods: Number(costOfGoods) };
+          const turnover = window.parseMoneyInput(document.getElementById("adjustTurnover").value);
+          const costOfGoods = window.parseMoneyInput(document.getElementById("adjustCostOfGoods").value);
+          if (turnover !== null) adjustDetails.income = { turnover };
+          if (costOfGoods !== null) adjustDetails.expenses = { costOfGoods };
         }
 
         await ensureAuthorizedThen(

@@ -79,62 +79,232 @@
           <h3>Balance sheet - current year</h3>
           <div class="form-group">
             <label for="currentFixedAssets">Fixed assets</label>
-            <input type="number" id="currentFixedAssets" name="currentFixedAssets" required step="1" />
+            <p id="currentFixedAssets-money-hint" class="hint">For example, £600 or £1,200</p>
+            <div class="input-prefix">
+              <span class="prefix">£</span>
+              <input
+                type="text"
+                id="currentFixedAssets"
+                name="currentFixedAssets"
+                required
+                aria-describedby="currentFixedAssets-money-hint"
+                inputmode="decimal"
+                data-money="whole-pounds"
+              />
+            </div>
           </div>
           <div class="form-group">
             <label for="currentCurrentAssets">Current assets</label>
-            <input type="number" id="currentCurrentAssets" name="currentCurrentAssets" required step="1" />
+            <p id="currentCurrentAssets-money-hint" class="hint">For example, £600 or £1,200</p>
+            <div class="input-prefix">
+              <span class="prefix">£</span>
+              <input
+                type="text"
+                id="currentCurrentAssets"
+                name="currentCurrentAssets"
+                required
+                aria-describedby="currentCurrentAssets-money-hint"
+                inputmode="decimal"
+                data-money="whole-pounds"
+              />
+            </div>
           </div>
           <div class="form-group">
             <label for="currentCreditorsWithinOneYear">Creditors: amounts falling due within one year</label>
-            <input type="number" id="currentCreditorsWithinOneYear" name="currentCreditorsWithinOneYear" required step="1" />
+            <p id="currentCreditorsWithinOneYear-money-hint" class="hint">For example, £600 or £1,200</p>
+            <div class="input-prefix">
+              <span class="prefix">£</span>
+              <input
+                type="text"
+                id="currentCreditorsWithinOneYear"
+                name="currentCreditorsWithinOneYear"
+                required
+                aria-describedby="currentCreditorsWithinOneYear-money-hint"
+                inputmode="decimal"
+                data-money="whole-pounds"
+              />
+            </div>
           </div>
           <div class="form-group">
             <label for="currentCreditorsAfterOneYear">Creditors: amounts falling due after more than one year</label>
-            <input type="number" id="currentCreditorsAfterOneYear" name="currentCreditorsAfterOneYear" required step="1" value="0" />
+            <p id="currentCreditorsAfterOneYear-money-hint" class="hint">For example, £600 or £1,200</p>
+            <div class="input-prefix">
+              <span class="prefix">£</span>
+              <input
+                type="text"
+                id="currentCreditorsAfterOneYear"
+                name="currentCreditorsAfterOneYear"
+                required
+                value="0"
+                aria-describedby="currentCreditorsAfterOneYear-money-hint"
+                inputmode="decimal"
+                data-money="whole-pounds"
+              />
+            </div>
           </div>
           <div class="form-group">
             <label for="currentCalledUpShareCapital">Called up share capital</label>
-            <input type="number" id="currentCalledUpShareCapital" name="currentCalledUpShareCapital" required step="1" />
+            <p id="currentCalledUpShareCapital-money-hint" class="hint">For example, £600 or £1,200</p>
+            <div class="input-prefix">
+              <span class="prefix">£</span>
+              <input
+                type="text"
+                id="currentCalledUpShareCapital"
+                name="currentCalledUpShareCapital"
+                required
+                aria-describedby="currentCalledUpShareCapital-money-hint"
+                inputmode="decimal"
+                data-money="whole-pounds"
+              />
+            </div>
           </div>
           <div class="form-group">
             <label for="currentProfitAndLossAccount">Profit and loss account</label>
-            <input type="number" id="currentProfitAndLossAccount" name="currentProfitAndLossAccount" required step="1" />
+            <p id="currentProfitAndLossAccount-money-hint" class="hint">For example, £600 or £1,200</p>
+            <div class="input-prefix">
+              <span class="prefix">£</span>
+              <input
+                type="text"
+                id="currentProfitAndLossAccount"
+                name="currentProfitAndLossAccount"
+                required
+                aria-describedby="currentProfitAndLossAccount-money-hint"
+                inputmode="decimal"
+                data-money="whole-pounds"
+              />
+            </div>
           </div>
           <div class="form-group">
             <label for="currentCapitalAndReserves">Capital and reserves</label>
-            <input type="number" id="currentCapitalAndReserves" name="currentCapitalAndReserves" required step="1" />
+            <p id="currentCapitalAndReserves-money-hint" class="hint">For example, £600 or £1,200</p>
+            <div class="input-prefix">
+              <span class="prefix">£</span>
+              <input
+                type="text"
+                id="currentCapitalAndReserves"
+                name="currentCapitalAndReserves"
+                required
+                aria-describedby="currentCapitalAndReserves-money-hint"
+                inputmode="decimal"
+                data-money="whole-pounds"
+              />
+            </div>
           </div>
           <p id="currentYearTotals" class="hint"></p>
 
           <h3>Balance sheet - prior year</h3>
           <div class="form-group">
             <label for="priorFixedAssets">Fixed assets</label>
-            <input type="number" id="priorFixedAssets" name="priorFixedAssets" required step="1" />
+            <p id="priorFixedAssets-money-hint" class="hint">For example, £600 or £1,200</p>
+            <div class="input-prefix">
+              <span class="prefix">£</span>
+              <input
+                type="text"
+                id="priorFixedAssets"
+                name="priorFixedAssets"
+                required
+                aria-describedby="priorFixedAssets-money-hint"
+                inputmode="decimal"
+                data-money="whole-pounds"
+              />
+            </div>
           </div>
           <div class="form-group">
             <label for="priorCurrentAssets">Current assets</label>
-            <input type="number" id="priorCurrentAssets" name="priorCurrentAssets" required step="1" />
+            <p id="priorCurrentAssets-money-hint" class="hint">For example, £600 or £1,200</p>
+            <div class="input-prefix">
+              <span class="prefix">£</span>
+              <input
+                type="text"
+                id="priorCurrentAssets"
+                name="priorCurrentAssets"
+                required
+                aria-describedby="priorCurrentAssets-money-hint"
+                inputmode="decimal"
+                data-money="whole-pounds"
+              />
+            </div>
           </div>
           <div class="form-group">
             <label for="priorCreditorsWithinOneYear">Creditors: amounts falling due within one year</label>
-            <input type="number" id="priorCreditorsWithinOneYear" name="priorCreditorsWithinOneYear" required step="1" />
+            <p id="priorCreditorsWithinOneYear-money-hint" class="hint">For example, £600 or £1,200</p>
+            <div class="input-prefix">
+              <span class="prefix">£</span>
+              <input
+                type="text"
+                id="priorCreditorsWithinOneYear"
+                name="priorCreditorsWithinOneYear"
+                required
+                aria-describedby="priorCreditorsWithinOneYear-money-hint"
+                inputmode="decimal"
+                data-money="whole-pounds"
+              />
+            </div>
           </div>
           <div class="form-group">
             <label for="priorCreditorsAfterOneYear">Creditors: amounts falling due after more than one year</label>
-            <input type="number" id="priorCreditorsAfterOneYear" name="priorCreditorsAfterOneYear" required step="1" value="0" />
+            <p id="priorCreditorsAfterOneYear-money-hint" class="hint">For example, £600 or £1,200</p>
+            <div class="input-prefix">
+              <span class="prefix">£</span>
+              <input
+                type="text"
+                id="priorCreditorsAfterOneYear"
+                name="priorCreditorsAfterOneYear"
+                required
+                value="0"
+                aria-describedby="priorCreditorsAfterOneYear-money-hint"
+                inputmode="decimal"
+                data-money="whole-pounds"
+              />
+            </div>
           </div>
           <div class="form-group">
             <label for="priorCalledUpShareCapital">Called up share capital</label>
-            <input type="number" id="priorCalledUpShareCapital" name="priorCalledUpShareCapital" required step="1" />
+            <p id="priorCalledUpShareCapital-money-hint" class="hint">For example, £600 or £1,200</p>
+            <div class="input-prefix">
+              <span class="prefix">£</span>
+              <input
+                type="text"
+                id="priorCalledUpShareCapital"
+                name="priorCalledUpShareCapital"
+                required
+                aria-describedby="priorCalledUpShareCapital-money-hint"
+                inputmode="decimal"
+                data-money="whole-pounds"
+              />
+            </div>
           </div>
           <div class="form-group">
             <label for="priorProfitAndLossAccount">Profit and loss account</label>
-            <input type="number" id="priorProfitAndLossAccount" name="priorProfitAndLossAccount" required step="1" />
+            <p id="priorProfitAndLossAccount-money-hint" class="hint">For example, £600 or £1,200</p>
+            <div class="input-prefix">
+              <span class="prefix">£</span>
+              <input
+                type="text"
+                id="priorProfitAndLossAccount"
+                name="priorProfitAndLossAccount"
+                required
+                aria-describedby="priorProfitAndLossAccount-money-hint"
+                inputmode="decimal"
+                data-money="whole-pounds"
+              />
+            </div>
           </div>
           <div class="form-group">
             <label for="priorCapitalAndReserves">Capital and reserves</label>
-            <input type="number" id="priorCapitalAndReserves" name="priorCapitalAndReserves" required step="1" />
+            <p id="priorCapitalAndReserves-money-hint" class="hint">For example, £600 or £1,200</p>
+            <div class="input-prefix">
+              <span class="prefix">£</span>
+              <input
+                type="text"
+                id="priorCapitalAndReserves"
+                name="priorCapitalAndReserves"
+                required
+                aria-describedby="priorCapitalAndReserves-money-hint"
+                inputmode="decimal"
+                data-money="whole-pounds"
+              />
+            </div>
           </div>
           <p id="priorYearTotals" class="hint"></p>
 
@@ -235,6 +405,7 @@
     <script src="../developer-mode.js"></script>
     <script src="../lib/request-cache.js"></script>
     <script src="../lib/toml-parser.js"></script>
+    <script src="../lib/money-input.js"></script>
     <script src="../widgets/entitlement-status.js"></script>
     <script src="../widgets/auth-status.js"></script>
     <script src="../widgets/status-messages.js"></script>
@@ -275,7 +446,7 @@
         const year = {};
         BALANCE_SHEET_FIELDS.forEach((field) => {
           const inputId = prefix + field.charAt(0).toUpperCase() + field.slice(1);
-          year[field] = Number(document.getElementById(inputId).value);
+          year[field] = window.parseMoneyInput(document.getElementById(inputId).value, { wholePounds: true }) ?? 0;
         });
         return year;
       }
@@ -351,6 +522,11 @@
 
       async function handleAccountsFormSubmit(event) {
         event.preventDefault();
+        const moneyProblem = window.moneyInputProblem();
+        if (moneyProblem) {
+          showStatus(moneyProblem, "error");
+          return;
+        }
         const currentYear = readYear("current");
         const priorYear = readYear("prior");
         if (netAssetsOf(currentYear) !== currentYear.capitalAndReserves || netAssetsOf(priorYear) !== priorYear.capitalAndReserves) {

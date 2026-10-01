@@ -130,39 +130,147 @@
         <p class="hint">Enter only the figures that apply. Leave a field at 0 to leave it out of what's sent to HMRC.</p>
         <div class="form-group">
           <label for="includedNonTaxableProfits">Included non-taxable profits</label>
-          <input type="number" id="includedNonTaxableProfits" name="includedNonTaxableProfits" step="0.01" value="0" />
+          <p id="includedNonTaxableProfits-money-hint" class="hint">For example, £600 or £193.54</p>
+          <div class="input-prefix">
+            <span class="prefix">£</span>
+            <input
+              type="text"
+              id="includedNonTaxableProfits"
+              name="includedNonTaxableProfits"
+              value="0"
+              aria-describedby="includedNonTaxableProfits-money-hint"
+              inputmode="decimal"
+              data-money="pounds-and-pence"
+            />
+          </div>
         </div>
         <div class="form-group">
           <label for="basisAdjustment">Basis period adjustment</label>
-          <input type="number" id="basisAdjustment" name="basisAdjustment" step="0.01" value="0" />
+          <p id="basisAdjustment-money-hint" class="hint">For example, £600 or £193.54</p>
+          <div class="input-prefix">
+            <span class="prefix">£</span>
+            <input
+              type="text"
+              id="basisAdjustment"
+              name="basisAdjustment"
+              value="0"
+              aria-describedby="basisAdjustment-money-hint"
+              inputmode="decimal"
+              data-money="pounds-and-pence"
+            />
+          </div>
         </div>
         <div class="form-group">
           <label for="accountingAdjustment">Accounting adjustment</label>
-          <input type="number" id="accountingAdjustment" name="accountingAdjustment" step="0.01" value="0" />
+          <p id="accountingAdjustment-money-hint" class="hint">For example, £600 or £193.54</p>
+          <div class="input-prefix">
+            <span class="prefix">£</span>
+            <input
+              type="text"
+              id="accountingAdjustment"
+              name="accountingAdjustment"
+              value="0"
+              aria-describedby="accountingAdjustment-money-hint"
+              inputmode="decimal"
+              data-money="pounds-and-pence"
+            />
+          </div>
         </div>
         <div class="form-group">
           <label for="outstandingBusinessIncome">Outstanding business income</label>
-          <input type="number" id="outstandingBusinessIncome" name="outstandingBusinessIncome" step="0.01" value="0" />
+          <p id="outstandingBusinessIncome-money-hint" class="hint">For example, £600 or £193.54</p>
+          <div class="input-prefix">
+            <span class="prefix">£</span>
+            <input
+              type="text"
+              id="outstandingBusinessIncome"
+              name="outstandingBusinessIncome"
+              value="0"
+              aria-describedby="outstandingBusinessIncome-money-hint"
+              inputmode="decimal"
+              data-money="pounds-and-pence"
+            />
+          </div>
         </div>
         <div class="form-group">
           <label for="balancingChargeBpra">Balancing charge (business premises renovation allowance)</label>
-          <input type="number" id="balancingChargeBpra" name="balancingChargeBpra" step="0.01" value="0" />
+          <p id="balancingChargeBpra-money-hint" class="hint">For example, £600 or £193.54</p>
+          <div class="input-prefix">
+            <span class="prefix">£</span>
+            <input
+              type="text"
+              id="balancingChargeBpra"
+              name="balancingChargeBpra"
+              value="0"
+              aria-describedby="balancingChargeBpra-money-hint"
+              inputmode="decimal"
+              data-money="pounds-and-pence"
+            />
+          </div>
         </div>
         <div class="form-group">
           <label for="balancingChargeOther">Balancing charge (other)</label>
-          <input type="number" id="balancingChargeOther" name="balancingChargeOther" step="0.01" value="0" />
+          <p id="balancingChargeOther-money-hint" class="hint">For example, £600 or £193.54</p>
+          <div class="input-prefix">
+            <span class="prefix">£</span>
+            <input
+              type="text"
+              id="balancingChargeOther"
+              name="balancingChargeOther"
+              value="0"
+              aria-describedby="balancingChargeOther-money-hint"
+              inputmode="decimal"
+              data-money="pounds-and-pence"
+            />
+          </div>
         </div>
         <div class="form-group">
           <label for="goodsAndServicesOwnUse">Goods and services for own use</label>
-          <input type="number" id="goodsAndServicesOwnUse" name="goodsAndServicesOwnUse" step="0.01" value="0" />
+          <p id="goodsAndServicesOwnUse-money-hint" class="hint">For example, £600 or £193.54</p>
+          <div class="input-prefix">
+            <span class="prefix">£</span>
+            <input
+              type="text"
+              id="goodsAndServicesOwnUse"
+              name="goodsAndServicesOwnUse"
+              value="0"
+              aria-describedby="goodsAndServicesOwnUse-money-hint"
+              inputmode="decimal"
+              data-money="pounds-and-pence"
+            />
+          </div>
         </div>
         <div class="form-group">
           <label for="transitionProfitAmount">Transition profit amount</label>
-          <input type="number" id="transitionProfitAmount" name="transitionProfitAmount" step="0.01" value="0" />
+          <p id="transitionProfitAmount-money-hint" class="hint">For example, £600 or £193.54</p>
+          <div class="input-prefix">
+            <span class="prefix">£</span>
+            <input
+              type="text"
+              id="transitionProfitAmount"
+              name="transitionProfitAmount"
+              value="0"
+              aria-describedby="transitionProfitAmount-money-hint"
+              inputmode="decimal"
+              data-money="pounds-and-pence"
+            />
+          </div>
         </div>
         <div class="form-group">
           <label for="transitionProfitAccelerationAmount">Transition profit acceleration amount</label>
-          <input type="number" id="transitionProfitAccelerationAmount" name="transitionProfitAccelerationAmount" step="0.01" value="0" />
+          <p id="transitionProfitAccelerationAmount-money-hint" class="hint">For example, £600 or £193.54</p>
+          <div class="input-prefix">
+            <span class="prefix">£</span>
+            <input
+              type="text"
+              id="transitionProfitAccelerationAmount"
+              name="transitionProfitAccelerationAmount"
+              value="0"
+              aria-describedby="transitionProfitAccelerationAmount-money-hint"
+              inputmode="decimal"
+              data-money="pounds-and-pence"
+            />
+          </div>
         </div>
 
         <h2>Allowances</h2>
@@ -181,63 +289,159 @@
         <div id="tradingAllowanceFields">
           <div class="form-group">
             <label for="tradingIncomeAllowance">Trading income allowance</label>
-            <input type="number" id="tradingIncomeAllowance" name="tradingIncomeAllowance" step="0.01" value="0" disabled />
+            <p id="tradingIncomeAllowance-money-hint" class="hint">For example, £600 or £193.54</p>
+            <div class="input-prefix">
+              <span class="prefix">£</span>
+              <input
+                type="text"
+                id="tradingIncomeAllowance"
+                name="tradingIncomeAllowance"
+                value="0"
+                disabled
+                aria-describedby="tradingIncomeAllowance-money-hint"
+                inputmode="decimal"
+                data-money="pounds-and-pence"
+              />
+            </div>
           </div>
         </div>
 
         <div id="itemisedAllowanceFields">
           <div class="form-group">
             <label for="annualInvestmentAllowance">Annual investment allowance</label>
-            <input type="number" id="annualInvestmentAllowance" name="annualInvestmentAllowance" step="0.01" value="0" disabled />
+            <p id="annualInvestmentAllowance-money-hint" class="hint">For example, £600 or £193.54</p>
+            <div class="input-prefix">
+              <span class="prefix">£</span>
+              <input
+                type="text"
+                id="annualInvestmentAllowance"
+                name="annualInvestmentAllowance"
+                value="0"
+                disabled
+                aria-describedby="annualInvestmentAllowance-money-hint"
+                inputmode="decimal"
+                data-money="pounds-and-pence"
+              />
+            </div>
           </div>
           <div class="form-group">
             <label for="capitalAllowanceMainPool">Capital allowance, main pool</label>
-            <input type="number" id="capitalAllowanceMainPool" name="capitalAllowanceMainPool" step="0.01" value="0" disabled />
+            <p id="capitalAllowanceMainPool-money-hint" class="hint">For example, £600 or £193.54</p>
+            <div class="input-prefix">
+              <span class="prefix">£</span>
+              <input
+                type="text"
+                id="capitalAllowanceMainPool"
+                name="capitalAllowanceMainPool"
+                value="0"
+                disabled
+                aria-describedby="capitalAllowanceMainPool-money-hint"
+                inputmode="decimal"
+                data-money="pounds-and-pence"
+              />
+            </div>
           </div>
           <div class="form-group">
             <label for="capitalAllowanceSpecialRatePool">Capital allowance, special rate pool</label>
-            <input
-              type="number"
-              id="capitalAllowanceSpecialRatePool"
-              name="capitalAllowanceSpecialRatePool"
-              step="0.01"
-              value="0"
-              disabled
-            />
+            <p id="capitalAllowanceSpecialRatePool-money-hint" class="hint">For example, £600 or £193.54</p>
+            <div class="input-prefix">
+              <span class="prefix">£</span>
+              <input
+                type="text"
+                id="capitalAllowanceSpecialRatePool"
+                name="capitalAllowanceSpecialRatePool"
+                value="0"
+                disabled
+                aria-describedby="capitalAllowanceSpecialRatePool-money-hint"
+                inputmode="decimal"
+                data-money="pounds-and-pence"
+              />
+            </div>
           </div>
           <div class="form-group">
             <label for="businessPremisesRenovationAllowance">Business premises renovation allowance</label>
-            <input
-              type="number"
-              id="businessPremisesRenovationAllowance"
-              name="businessPremisesRenovationAllowance"
-              step="0.01"
-              value="0"
-              disabled
-            />
+            <p id="businessPremisesRenovationAllowance-money-hint" class="hint">For example, £600 or £193.54</p>
+            <div class="input-prefix">
+              <span class="prefix">£</span>
+              <input
+                type="text"
+                id="businessPremisesRenovationAllowance"
+                name="businessPremisesRenovationAllowance"
+                value="0"
+                disabled
+                aria-describedby="businessPremisesRenovationAllowance-money-hint"
+                inputmode="decimal"
+                data-money="pounds-and-pence"
+              />
+            </div>
           </div>
           <div class="form-group">
             <label for="enhancedCapitalAllowance">Enhanced capital allowance</label>
-            <input type="number" id="enhancedCapitalAllowance" name="enhancedCapitalAllowance" step="0.01" value="0" disabled />
+            <p id="enhancedCapitalAllowance-money-hint" class="hint">For example, £600 or £193.54</p>
+            <div class="input-prefix">
+              <span class="prefix">£</span>
+              <input
+                type="text"
+                id="enhancedCapitalAllowance"
+                name="enhancedCapitalAllowance"
+                value="0"
+                disabled
+                aria-describedby="enhancedCapitalAllowance-money-hint"
+                inputmode="decimal"
+                data-money="pounds-and-pence"
+              />
+            </div>
           </div>
           <div class="form-group">
             <label for="allowanceOnSales">Allowance on sales</label>
-            <input type="number" id="allowanceOnSales" name="allowanceOnSales" step="0.01" value="0" disabled />
+            <p id="allowanceOnSales-money-hint" class="hint">For example, £600 or £193.54</p>
+            <div class="input-prefix">
+              <span class="prefix">£</span>
+              <input
+                type="text"
+                id="allowanceOnSales"
+                name="allowanceOnSales"
+                value="0"
+                disabled
+                aria-describedby="allowanceOnSales-money-hint"
+                inputmode="decimal"
+                data-money="pounds-and-pence"
+              />
+            </div>
           </div>
           <div class="form-group">
             <label for="capitalAllowanceSingleAssetPool">Capital allowance, single asset pool</label>
-            <input
-              type="number"
-              id="capitalAllowanceSingleAssetPool"
-              name="capitalAllowanceSingleAssetPool"
-              step="0.01"
-              value="0"
-              disabled
-            />
+            <p id="capitalAllowanceSingleAssetPool-money-hint" class="hint">For example, £600 or £193.54</p>
+            <div class="input-prefix">
+              <span class="prefix">£</span>
+              <input
+                type="text"
+                id="capitalAllowanceSingleAssetPool"
+                name="capitalAllowanceSingleAssetPool"
+                value="0"
+                disabled
+                aria-describedby="capitalAllowanceSingleAssetPool-money-hint"
+                inputmode="decimal"
+                data-money="pounds-and-pence"
+              />
+            </div>
           </div>
           <div class="form-group">
             <label for="zeroEmissionsCarAllowance">Zero emissions car allowance</label>
-            <input type="number" id="zeroEmissionsCarAllowance" name="zeroEmissionsCarAllowance" step="0.01" value="0" disabled />
+            <p id="zeroEmissionsCarAllowance-money-hint" class="hint">For example, £600 or £193.54</p>
+            <div class="input-prefix">
+              <span class="prefix">£</span>
+              <input
+                type="text"
+                id="zeroEmissionsCarAllowance"
+                name="zeroEmissionsCarAllowance"
+                value="0"
+                disabled
+                aria-describedby="zeroEmissionsCarAllowance-money-hint"
+                inputmode="decimal"
+                data-money="pounds-and-pence"
+              />
+            </div>
           </div>
         </div>
 
@@ -276,6 +480,7 @@
     <script src="../../developer-mode.js"></script>
     <script src="../../lib/request-cache.js"></script>
     <script src="../../lib/toml-parser.js"></script>
+    <script src="../../lib/money-input.js"></script>
     <script src="../../lib/hmrc-scope-check.js"></script>
     <script type="module" src="../../lib/services/hmrc-service.js"></script>
     <script src="../../widgets/entitlement-status.js"></script>
@@ -325,7 +530,7 @@
 
       function numberOrUndefined(value) {
         if (value === "" || value === null || value === undefined) return undefined;
-        const num = Number(value);
+        const num = window.parseMoneyInput(value);
         return num === 0 ? undefined : num;
       }
 
@@ -550,6 +755,11 @@
       }
 
       async function handleSaveClick() {
+        const moneyProblem = window.moneyInputProblem();
+        if (moneyProblem) {
+          showStatus(moneyProblem, "error");
+          return;
+        }
         const annualDetails = {
           nino: loadedNino,
           businessId: loadedBusinessId,

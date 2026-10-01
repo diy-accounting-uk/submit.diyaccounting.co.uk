@@ -9,7 +9,7 @@ import fs from "fs";
 import path from "path";
 import { setTimeout as delay } from "timers/promises";
 import { dotenvConfigIfNotBlank } from "@app/lib/env.js";
-import { serveHmrcFieldTableAssets, serveSiteStyles, screenshotPath, expectCleanFigures } from "./hmrcFieldTableAssets.js";
+import { serveMoneyInput, serveHmrcFieldTableAssets, serveSiteStyles, screenshotPath, expectCleanFigures } from "./hmrcFieldTableAssets.js";
 
 dotenvConfigIfNotBlank({ path: ".env.test" });
 
@@ -48,6 +48,7 @@ window.getGovClientHeaders = window.getGovClientHeaders || function(){ return Pr
       }
     });
     await serveHmrcFieldTableAssets(page);
+    await serveMoneyInput(page);
 
     await page.goto("http://localhost:3000/hmrc/itsa/adjustments.html", { waitUntil: "domcontentloaded" });
     await delay(200);

@@ -115,31 +115,54 @@
         <p class="hint">Enter only the figures that apply. Leave a field at 0 to leave it out of what's sent to HMRC.</p>
         <div class="form-group">
           <label for="balancingCharge">Balancing charge</label>
-          <input type="number" id="balancingCharge" name="balancingCharge" step="0.01" value="0" />
+          <p id="balancingCharge-money-hint" class="hint">For example, £600 or £193.54</p>
+          <div class="input-prefix">
+            <span class="prefix">£</span>
+            <input
+              type="text"
+              id="balancingCharge"
+              name="balancingCharge"
+              value="0"
+              aria-describedby="balancingCharge-money-hint"
+              inputmode="decimal"
+              data-money="pounds-and-pence"
+            />
+          </div>
         </div>
         <div class="form-group">
           <label for="privateUseAdjustment">Private use adjustment</label>
           <p id="privateUseAdjustment-hint" class="hint">
             Cannot be entered alongside the property income allowance below - HMRC rejects the combination.
           </p>
-          <input
-            type="number"
-            id="privateUseAdjustment"
-            name="privateUseAdjustment"
-            step="0.01"
-            value="0"
-            aria-describedby="privateUseAdjustment-hint"
-          />
+          <p id="privateUseAdjustment-money-hint" class="hint">For example, £600 or £193.54</p>
+          <div class="input-prefix">
+            <span class="prefix">£</span>
+            <input
+              type="text"
+              id="privateUseAdjustment"
+              name="privateUseAdjustment"
+              value="0"
+              aria-describedby="privateUseAdjustment-hint privateUseAdjustment-money-hint"
+              inputmode="decimal"
+              data-money="pounds-and-pence"
+            />
+          </div>
         </div>
         <div class="form-group">
           <label for="businessPremisesRenovationAllowanceBalancingCharges">Business premises renovation allowance balancing charges</label>
-          <input
-            type="number"
-            id="businessPremisesRenovationAllowanceBalancingCharges"
-            name="businessPremisesRenovationAllowanceBalancingCharges"
-            step="0.01"
-            value="0"
-          />
+          <p id="businessPremisesRenovationAllowanceBalancingCharges-money-hint" class="hint">For example, £600 or £193.54</p>
+          <div class="input-prefix">
+            <span class="prefix">£</span>
+            <input
+              type="text"
+              id="businessPremisesRenovationAllowanceBalancingCharges"
+              name="businessPremisesRenovationAllowanceBalancingCharges"
+              value="0"
+              aria-describedby="businessPremisesRenovationAllowanceBalancingCharges-money-hint"
+              inputmode="decimal"
+              data-money="pounds-and-pence"
+            />
+          </div>
         </div>
         <div class="form-group">
           <input type="checkbox" id="nonResidentLandlord" name="nonResidentLandlord" />
@@ -169,37 +192,108 @@
         <div id="propertyIncomeAllowanceFields">
           <div class="form-group">
             <label for="propertyIncomeAllowance">Property income allowance</label>
-            <input type="number" id="propertyIncomeAllowance" name="propertyIncomeAllowance" step="0.01" value="0" disabled />
+            <p id="propertyIncomeAllowance-money-hint" class="hint">For example, £600 or £193.54</p>
+            <div class="input-prefix">
+              <span class="prefix">£</span>
+              <input
+                type="text"
+                id="propertyIncomeAllowance"
+                name="propertyIncomeAllowance"
+                value="0"
+                disabled
+                aria-describedby="propertyIncomeAllowance-money-hint"
+                inputmode="decimal"
+                data-money="pounds-and-pence"
+              />
+            </div>
           </div>
         </div>
 
         <div id="itemisedAllowanceFields">
           <div class="form-group">
             <label for="annualInvestmentAllowance">Annual investment allowance</label>
-            <input type="number" id="annualInvestmentAllowance" name="annualInvestmentAllowance" step="0.01" value="0" disabled />
+            <p id="annualInvestmentAllowance-money-hint" class="hint">For example, £600 or £193.54</p>
+            <div class="input-prefix">
+              <span class="prefix">£</span>
+              <input
+                type="text"
+                id="annualInvestmentAllowance"
+                name="annualInvestmentAllowance"
+                value="0"
+                disabled
+                aria-describedby="annualInvestmentAllowance-money-hint"
+                inputmode="decimal"
+                data-money="pounds-and-pence"
+              />
+            </div>
           </div>
           <div class="form-group">
             <label for="businessPremisesRenovationAllowance">Business premises renovation allowance</label>
-            <input
-              type="number"
-              id="businessPremisesRenovationAllowance"
-              name="businessPremisesRenovationAllowance"
-              step="0.01"
-              value="0"
-              disabled
-            />
+            <p id="businessPremisesRenovationAllowance-money-hint" class="hint">For example, £600 or £193.54</p>
+            <div class="input-prefix">
+              <span class="prefix">£</span>
+              <input
+                type="text"
+                id="businessPremisesRenovationAllowance"
+                name="businessPremisesRenovationAllowance"
+                value="0"
+                disabled
+                aria-describedby="businessPremisesRenovationAllowance-money-hint"
+                inputmode="decimal"
+                data-money="pounds-and-pence"
+              />
+            </div>
           </div>
           <div class="form-group">
             <label for="otherCapitalAllowance">Other capital allowance</label>
-            <input type="number" id="otherCapitalAllowance" name="otherCapitalAllowance" step="0.01" value="0" disabled />
+            <p id="otherCapitalAllowance-money-hint" class="hint">For example, £600 or £193.54</p>
+            <div class="input-prefix">
+              <span class="prefix">£</span>
+              <input
+                type="text"
+                id="otherCapitalAllowance"
+                name="otherCapitalAllowance"
+                value="0"
+                disabled
+                aria-describedby="otherCapitalAllowance-money-hint"
+                inputmode="decimal"
+                data-money="pounds-and-pence"
+              />
+            </div>
           </div>
           <div class="form-group">
             <label for="costOfReplacingDomesticItems">Cost of replacing domestic items</label>
-            <input type="number" id="costOfReplacingDomesticItems" name="costOfReplacingDomesticItems" step="0.01" value="0" disabled />
+            <p id="costOfReplacingDomesticItems-money-hint" class="hint">For example, £600 or £193.54</p>
+            <div class="input-prefix">
+              <span class="prefix">£</span>
+              <input
+                type="text"
+                id="costOfReplacingDomesticItems"
+                name="costOfReplacingDomesticItems"
+                value="0"
+                disabled
+                aria-describedby="costOfReplacingDomesticItems-money-hint"
+                inputmode="decimal"
+                data-money="pounds-and-pence"
+              />
+            </div>
           </div>
           <div class="form-group">
             <label for="zeroEmissionsCarAllowance">Zero emissions car allowance</label>
-            <input type="number" id="zeroEmissionsCarAllowance" name="zeroEmissionsCarAllowance" step="0.01" value="0" disabled />
+            <p id="zeroEmissionsCarAllowance-money-hint" class="hint">For example, £600 or £193.54</p>
+            <div class="input-prefix">
+              <span class="prefix">£</span>
+              <input
+                type="text"
+                id="zeroEmissionsCarAllowance"
+                name="zeroEmissionsCarAllowance"
+                value="0"
+                disabled
+                aria-describedby="zeroEmissionsCarAllowance-money-hint"
+                inputmode="decimal"
+                data-money="pounds-and-pence"
+              />
+            </div>
           </div>
         </div>
 
@@ -226,6 +320,7 @@
     <script src="../../developer-mode.js"></script>
     <script src="../../lib/request-cache.js"></script>
     <script src="../../lib/toml-parser.js"></script>
+    <script src="../../lib/money-input.js"></script>
     <script src="../../lib/hmrc-scope-check.js"></script>
     <script type="module" src="../../lib/services/hmrc-service.js"></script>
     <script src="../../widgets/entitlement-status.js"></script>
@@ -275,7 +370,7 @@
 
       function numberOrUndefined(value) {
         if (value === "" || value === null || value === undefined) return undefined;
-        const num = Number(value);
+        const num = window.parseMoneyInput(value);
         return num === 0 ? undefined : num;
       }
 
@@ -482,6 +577,11 @@
       }
 
       async function handleSaveClick() {
+        const moneyProblem = window.moneyInputProblem();
+        if (moneyProblem) {
+          showStatus(moneyProblem, "error");
+          return;
+        }
         const annualDetails = {
           nino: loadedNino,
           businessId: loadedBusinessId,

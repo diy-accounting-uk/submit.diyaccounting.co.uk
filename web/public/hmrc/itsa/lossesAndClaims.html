@@ -129,25 +129,73 @@
         <p class="hint">The amount of earlier losses applied in this tax year. Leave at 0 if none.</p>
         <div class="form-group">
           <label for="broughtForwardLosses">Brought forward losses</label>
-          <input type="number" id="broughtForwardLosses" name="broughtForwardLosses" step="0.01" value="0" />
+          <p id="broughtForwardLosses-money-hint" class="hint">For example, £600 or £193.54</p>
+          <div class="input-prefix">
+            <span class="prefix">£</span>
+            <input
+              type="text"
+              id="broughtForwardLosses"
+              name="broughtForwardLosses"
+              value="0"
+              aria-describedby="broughtForwardLosses-money-hint"
+              inputmode="decimal"
+              data-money="pounds-and-pence"
+            />
+          </div>
         </div>
 
         <h2>Carry forward</h2>
         <p class="hint">The ordinary first-year-of-trading case, and any bad year. Also how a landlord's rental loss carries.</p>
         <div class="form-group">
           <label for="currentYearLosses">This year's loss to carry forward</label>
-          <input type="number" id="currentYearLosses" name="currentYearLosses" step="0.01" value="0" />
+          <p id="currentYearLosses-money-hint" class="hint">For example, £600 or £193.54</p>
+          <div class="input-prefix">
+            <span class="prefix">£</span>
+            <input
+              type="text"
+              id="currentYearLosses"
+              name="currentYearLosses"
+              value="0"
+              aria-describedby="currentYearLosses-money-hint"
+              inputmode="decimal"
+              data-money="pounds-and-pence"
+            />
+          </div>
         </div>
         <div class="form-group">
           <label for="previousYearsLosses">Previous years' losses used this year</label>
-          <input type="number" id="previousYearsLosses" name="previousYearsLosses" step="0.01" value="0" />
+          <p id="previousYearsLosses-money-hint" class="hint">For example, £600 or £193.54</p>
+          <div class="input-prefix">
+            <span class="prefix">£</span>
+            <input
+              type="text"
+              id="previousYearsLosses"
+              name="previousYearsLosses"
+              value="0"
+              aria-describedby="previousYearsLosses-money-hint"
+              inputmode="decimal"
+              data-money="pounds-and-pence"
+            />
+          </div>
         </div>
 
         <h2>Carry sideways</h2>
         <p class="hint">Set this year's trading loss against this year's other income. Real for a sole trader who also has a job.</p>
         <div class="form-group">
           <label for="currentYearGeneralIncome">Loss set against this year's other income</label>
-          <input type="number" id="currentYearGeneralIncome" name="currentYearGeneralIncome" step="0.01" value="0" />
+          <p id="currentYearGeneralIncome-money-hint" class="hint">For example, £600 or £193.54</p>
+          <div class="input-prefix">
+            <span class="prefix">£</span>
+            <input
+              type="text"
+              id="currentYearGeneralIncome"
+              name="currentYearGeneralIncome"
+              value="0"
+              aria-describedby="currentYearGeneralIncome-money-hint"
+              inputmode="decimal"
+              data-money="pounds-and-pence"
+            />
+          </div>
         </div>
 
         <div id="carryBackSection">
@@ -155,15 +203,51 @@
           <p class="hint">Carries a loss back to an earlier year. Not available for a property business.</p>
           <div class="form-group">
             <label for="previousYearGeneralIncome">Set against an earlier year's general income</label>
-            <input type="number" id="previousYearGeneralIncome" name="previousYearGeneralIncome" step="0.01" value="0" />
+            <p id="previousYearGeneralIncome-money-hint" class="hint">For example, £600 or £193.54</p>
+            <div class="input-prefix">
+              <span class="prefix">£</span>
+              <input
+                type="text"
+                id="previousYearGeneralIncome"
+                name="previousYearGeneralIncome"
+                value="0"
+                aria-describedby="previousYearGeneralIncome-money-hint"
+                inputmode="decimal"
+                data-money="pounds-and-pence"
+              />
+            </div>
           </div>
           <div class="form-group">
             <label for="earlyYearLosses">Early years losses</label>
-            <input type="number" id="earlyYearLosses" name="earlyYearLosses" step="0.01" value="0" />
+            <p id="earlyYearLosses-money-hint" class="hint">For example, £600 or £193.54</p>
+            <div class="input-prefix">
+              <span class="prefix">£</span>
+              <input
+                type="text"
+                id="earlyYearLosses"
+                name="earlyYearLosses"
+                value="0"
+                aria-describedby="earlyYearLosses-money-hint"
+                inputmode="decimal"
+                data-money="pounds-and-pence"
+              />
+            </div>
           </div>
           <div class="form-group">
             <label for="terminalLosses">Terminal losses, on ceasing to trade</label>
-            <input type="number" id="terminalLosses" name="terminalLosses" step="0.01" value="0" />
+            <p id="terminalLosses-money-hint" class="hint">For example, £600 or £193.54</p>
+            <div class="input-prefix">
+              <span class="prefix">£</span>
+              <input
+                type="text"
+                id="terminalLosses"
+                name="terminalLosses"
+                value="0"
+                aria-describedby="terminalLosses-money-hint"
+                inputmode="decimal"
+                data-money="pounds-and-pence"
+              />
+            </div>
           </div>
         </div>
 
@@ -202,6 +286,7 @@
     <script src="../../developer-mode.js"></script>
     <script src="../../lib/request-cache.js"></script>
     <script src="../../lib/toml-parser.js"></script>
+    <script src="../../lib/money-input.js"></script>
     <script src="../../lib/hmrc-scope-check.js"></script>
     <script type="module" src="../../lib/services/hmrc-service.js"></script>
     <script src="../../widgets/entitlement-status.js"></script>
@@ -272,7 +357,7 @@
       }
 
       function hasEntry(...values) {
-        return values.some((v) => Number(v) !== 0);
+        return values.some((v) => (window.parseMoneyInput(v) ?? 0) !== 0);
       }
 
       // States plainly which claim is about to be made, before the customer saves - the
@@ -303,30 +388,30 @@
       }
 
       function readLosses() {
-        const broughtForwardLosses = Number(document.getElementById("broughtForwardLosses").value) || 0;
+        const broughtForwardLosses = window.parseMoneyInput(document.getElementById("broughtForwardLosses").value) ?? 0;
         return broughtForwardLosses !== 0 ? { broughtForwardLosses } : {};
       }
 
       function readClaims() {
         const claims = {};
 
-        const currentYearLosses = Number(document.getElementById("currentYearLosses").value) || 0;
-        const previousYearsLosses = Number(document.getElementById("previousYearsLosses").value) || 0;
+        const currentYearLosses = window.parseMoneyInput(document.getElementById("currentYearLosses").value) ?? 0;
+        const previousYearsLosses = window.parseMoneyInput(document.getElementById("previousYearsLosses").value) ?? 0;
         if (currentYearLosses !== 0 || previousYearsLosses !== 0) {
           claims.carryForward = {};
           if (currentYearLosses !== 0) claims.carryForward.currentYearLosses = currentYearLosses;
           if (previousYearsLosses !== 0) claims.carryForward.previousYearsLosses = previousYearsLosses;
         }
 
-        const currentYearGeneralIncome = Number(document.getElementById("currentYearGeneralIncome").value) || 0;
+        const currentYearGeneralIncome = window.parseMoneyInput(document.getElementById("currentYearGeneralIncome").value) ?? 0;
         if (currentYearGeneralIncome !== 0) {
           claims.carrySideways = { currentYearGeneralIncome };
         }
 
         if (document.getElementById("typeOfBusiness").value === "self-employment") {
-          const previousYearGeneralIncome = Number(document.getElementById("previousYearGeneralIncome").value) || 0;
-          const earlyYearLosses = Number(document.getElementById("earlyYearLosses").value) || 0;
-          const terminalLosses = Number(document.getElementById("terminalLosses").value) || 0;
+          const previousYearGeneralIncome = window.parseMoneyInput(document.getElementById("previousYearGeneralIncome").value) ?? 0;
+          const earlyYearLosses = window.parseMoneyInput(document.getElementById("earlyYearLosses").value) ?? 0;
+          const terminalLosses = window.parseMoneyInput(document.getElementById("terminalLosses").value) ?? 0;
           if (previousYearGeneralIncome !== 0 || earlyYearLosses !== 0 || terminalLosses !== 0) {
             claims.carryBack = {};
             if (previousYearGeneralIncome !== 0) claims.carryBack.previousYearGeneralIncome = previousYearGeneralIncome;
@@ -523,6 +608,11 @@
       }
 
       async function handleSaveClick() {
+        const moneyProblem = window.moneyInputProblem();
+        if (moneyProblem) {
+          showStatus(moneyProblem, "error");
+          return;
+        }
         const lossesDetails = {
           nino: loadedNino,
           businessId: loadedBusinessId,
