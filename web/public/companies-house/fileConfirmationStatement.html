@@ -24,7 +24,7 @@
     <a href="#mainContent" class="skip-link">Skip to main content</a>
     <header>
       <p class="chrome-fallback"><a href="../">DIY Accounting Submit</a></p>
-      <h1>File Confirmation Statement</h1>
+      <h1>File confirmation statement</h1>
       <p class="subtitle">File a company's annual confirmation statement (CS01) with Companies House</p>
     </header>
 
@@ -124,8 +124,9 @@
 
           <h3>SIC codes</h3>
           <div class="form-group">
-            <label for="sicCodes">SIC codes (comma-separated, up to four)</label>
-            <input type="text" id="sicCodes" name="sicCodes" spellcheck="false" />
+            <label for="sicCodes">SIC codes</label>
+            <p id="sicCodes-hint" class="hint">Enter up to four codes separated by commas.</p>
+            <input type="text" id="sicCodes" name="sicCodes" spellcheck="false" aria-describedby="sicCodes-hint" />
           </div>
 
           <h3>Statement of capital</h3>

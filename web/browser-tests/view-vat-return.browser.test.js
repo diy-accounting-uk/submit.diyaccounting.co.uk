@@ -258,12 +258,12 @@ window.loadEnv = function(){ return Promise.resolve({}); };
       });
     });
 
-    await expect(page.locator("#vatReturnBox1 span")).toHaveText("£1,234.56");
-    await expect(page.locator("#vatReturnBox5 span")).toHaveText("£1,000.06");
-    await expect(page.locator("#vatReturnBox6 span")).toHaveText("£6,173");
+    await expect(page.locator("#vatReturnBox1 dd")).toHaveText("£1,234.56");
+    await expect(page.locator("#vatReturnBox5 dd")).toHaveText("£1,000.06");
+    await expect(page.locator("#vatReturnBox6 dd")).toHaveText("£6,173");
     for (let box = 1; box <= 9; box += 1) {
       const item = page.locator(`#vatReturnBox${box}`);
-      await expect(item.locator("label")).toContainText(`Box ${box}:`);
+      await expect(item.locator("dt")).toContainText(`Box ${box}:`);
       await expect(item.locator(`#vatReturnBox${box}Definition`)).toContainText("“");
       await expect(item.locator(`#vatReturnBox${box}Definition a`)).toHaveAttribute(
         "href",

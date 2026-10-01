@@ -69,8 +69,9 @@
           leave blank to reuse the one already on file.
         </p>
         <div class="form-group">
-          <label for="arnInput">ARN</label>
-          <input type="text" id="arnInput" autocomplete="off" placeholder="e.g. AARN1234567" />
+          <label for="arnInput">Agent reference number</label>
+          <p id="arnInput-hint" class="hint">For an agent, usually starting with 'A'.</p>
+          <input type="text" id="arnInput" autocomplete="off" placeholder="e.g. AARN1234567" aria-describedby="arnInput-hint" />
         </div>
       </div>
 
@@ -83,23 +84,23 @@
           </div>
           <div class="form-group">
             <label for="vrnInput">VAT registration number</label>
-            <p class="hint">9 digits, for a client filing VAT.</p>
-            <input type="text" id="vrnInput" name="vrn" autocomplete="off" />
+            <p id="vrnInput-hint" class="hint">9 digits, for a client filing VAT.</p>
+            <input type="text" id="vrnInput" name="vrn" autocomplete="off" aria-describedby="vrnInput-hint" />
           </div>
           <div class="form-group">
             <label for="ninoInput">National Insurance number</label>
-            <p class="hint">For a client filing Income Tax Self Assessment.</p>
-            <input type="text" id="ninoInput" name="nino" autocomplete="off" />
+            <p id="ninoInput-hint" class="hint">For a client filing Income Tax Self Assessment.</p>
+            <input type="text" id="ninoInput" name="nino" autocomplete="off" aria-describedby="ninoInput-hint" />
           </div>
           <div class="form-group">
-            <label for="utrInput">Unique Taxpayer Reference</label>
-            <p class="hint">10 digits.</p>
-            <input type="text" id="utrInput" name="utr" autocomplete="off" />
+            <label for="utrInput">Unique Taxpayer Reference (UTR)</label>
+            <p id="utrInput-hint" class="hint">10 or 13 digits.</p>
+            <input type="text" id="utrInput" name="utr" autocomplete="off" aria-describedby="utrInput-hint" />
           </div>
           <div class="form-group">
             <label for="companyNumberInput">Company number</label>
-            <p class="hint">8 characters, for a client filing company accounts.</p>
-            <input type="text" id="companyNumberInput" name="companyNumber" autocomplete="off" />
+            <p id="companyNumberInput-hint" class="hint">8 characters, for a client filing company accounts.</p>
+            <input type="text" id="companyNumberInput" name="companyNumber" autocomplete="off" aria-describedby="companyNumberInput-hint" />
           </div>
           <div id="addClientErrors" class="error-message" style="display: none"></div>
           <button type="submit" id="addClientBtn" class="btn">Add client</button>

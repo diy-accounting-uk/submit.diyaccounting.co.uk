@@ -91,12 +91,13 @@
               <input type="text" id="support-subject" required maxlength="100" />
 
               <label for="support-description">Description</label>
+              <p id="support-description-hint" class="hint">Describe your issue. Include any error messages you see.</p>
               <textarea
                 id="support-description"
                 required
                 maxlength="2000"
                 rows="6"
-                placeholder="Describe your issue. Include any error messages you see."
+                aria-describedby="support-description-hint"
               ></textarea>
 
               <label for="support-category">Category</label>

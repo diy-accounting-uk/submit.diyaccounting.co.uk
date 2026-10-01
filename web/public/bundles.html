@@ -55,12 +55,13 @@
           <p style="color: #666; font-size: 0.9em">Enter a four-word passphrase to redeem your invitation.</p>
           <div id="passEntryForm" style="margin: 1em auto; max-width: 440px; text-align: left">
             <label for="passInput" style="display: block; margin-bottom: 0.4em; font-weight: 600">Passphrase</label>
+            <p id="passInput-hint" class="hint">Enter four words separated by hyphens, for example word-word-word-word.</p>
             <input
               type="text"
               id="passInput"
-              placeholder="word-word-word-word"
               autocomplete="off"
               spellcheck="false"
+              aria-describedby="passInput-hint"
               style="width: 100%; padding: 0.6em; font-size: 1em; border: 1px solid #ccc; border-radius: 4px; box-sizing: border-box"
             />
             <div style="margin-top: 0.75em; text-align: center">
@@ -118,6 +119,7 @@
     <script src="lib/request-cache.js"></script>
     <script src="lib/bundle-cache.js"></script>
     <script src="lib/toml-parser.js"></script>
+    <script src="lib/money-format.js"></script>
     <script src="lib/feature-flags.js"></script>
     <script src="widgets/entitlement-status.js"></script>
     <script src="widgets/auth-status.js"></script>
@@ -329,12 +331,6 @@
         return false;
       }
 
-      // --- format a catalogue price (amount in pence) as e.g. "£39" or "£3.99"
-      const formatGbpPence = (amountPence) => {
-        const pounds = amountPence / 100;
-        return `£${Number.isInteger(pounds) ? pounds.toFixed(0) : pounds.toFixed(2)}`;
-      };
-
       // --- render one catalog card
       const cardHtml = (b) => {
         const rawName = (b && (b.name || b.id)) || "";
@@ -422,10 +418,10 @@
             const monthly = prices.find((p) => p !== annual && p.interval === "month") || prices.find((p) => p !== annual);
             return `
             <div class="service-item" style="text-align:left">
-              <button type="button" class="btn service-btn" data-bundle-id="${b.id}" data-bundle-name="${safeName}" data-subscribe="true" data-interval="annual" style="background-color: #6f42c1;">Subscribe ${formatGbpPence(annual.amount)}/yr \u2014 ${rawName}</button>
+              <button type="button" class="btn service-btn" data-bundle-id="${b.id}" data-bundle-name="${safeName}" data-subscribe="true" data-interval="annual" style="background-color: #6f42c1;">Subscribe ${formatGbp(annual.amount / 100)}/yr \u2014 ${rawName}</button>
               ${
                 monthly
-                  ? `<p style="font-size:0.85em; margin:0.5em 0 0;"><button type="button" class="btn-link" data-bundle-id="${b.id}" data-bundle-name="${safeName}" data-subscribe="true" data-interval="monthly" style="background:none;border:none;padding:0;color:#2c5aa0;text-decoration:underline;cursor:pointer;">or ${formatGbpPence(monthly.amount)}/month</button></p>`
+                  ? `<p style="font-size:0.85em; margin:0.5em 0 0;"><button type="button" class="btn-link" data-bundle-id="${b.id}" data-bundle-name="${safeName}" data-subscribe="true" data-interval="monthly" style="background:none;border:none;padding:0;color:#2c5aa0;text-decoration:underline;cursor:pointer;">or ${formatGbp(monthly.amount / 100)}/month</button></p>`
                   : ""
               }
               <p style="font-size:0.85em; color:#383d41; margin:0.5em 0 0;">${b.description || "Subscription via Stripe"}</p>
