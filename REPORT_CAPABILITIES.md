@@ -3968,7 +3968,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 #### DATA-32 Sync the Google Ads account
 
 - **Use when:** ads.toml's declared tagging, goals, campaigns or bidding strategy must be applied to the live account.
-- **Does:** ads-sync.js diffs ads.toml's declared tagging, goals and campaign settings against the live Google Ads account. It applies the difference with --apply. A missing Search campaign is created outright; it never creates conversion actions, goals or Performance Max campaigns.
+- **Does:** ads-sync.js diffs ads.toml's declared tagging, goals and campaign settings against the live Google Ads account. It applies the difference with --apply. A missing Search campaign and a missing [upload] conversion action are created outright; it never creates the GA4 conversion actions, goals or Performance Max campaigns.
 - **Run:** `npm run ads:sync`; `npm run ads:sync -- --apply`
 - **Entry:** `infra/google/ads/ads-sync.js:main`; `infra/google/ads/ads-sync.js:planAds`
 - **Files:** infra/google/ads/ads-sync.js, app/unit-tests/scripts/adsSync.test.js, infra/google/ads/ads.toml
