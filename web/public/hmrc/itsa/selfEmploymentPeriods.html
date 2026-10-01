@@ -29,7 +29,7 @@
     </header>
 
     <main id="mainContent">
-      <div id="syntheticIndicator" class="synthetic-indicator">⚠️ SYNTHETIC MODE - calls go to HMRC's sandbox API</div>
+      <div id="syntheticIndicator" class="synthetic-indicator">⚠️ Synthetic mode - calls go to HMRC's sandbox API</div>
 
       <div id="statusMessagesContainer" role="alert" aria-live="polite"></div>
 
@@ -38,23 +38,23 @@
       <!-- Search Form -->
       <div id="periodsForm" class="form-container">
         <div class="form-toggle-buttons">
-          <button type="button" id="toggleSearchCriteriaBtn" class="secondary-button" style="display: none">Show Search Criteria</button>
-          <button type="button" id="cancelRequestBtn" class="cancel-button" style="display: none">Cancel Request</button>
+          <button type="button" id="toggleSearchCriteriaBtn" class="secondary-button" style="display: none">Show search criteria</button>
+          <button type="button" id="cancelRequestBtn" class="cancel-button" style="display: none">Cancel request</button>
         </div>
         <div id="searchCriteriaContainer">
-          <h2>List Period Summaries</h2>
+          <h2>List period summaries</h2>
           <form id="itsaSelfEmploymentPeriodsForm">
             <div class="form-group">
               <label for="nino">National Insurance number</label>
-              <p id="nino-hint" class="hint">This is two letters, six numbers and a final letter, for example AB123456C.</p>
+              <p id="nino-hint" class="hint">This is two letters, six numbers and a final letter, for example QQ 12 34 56 C.</p>
               <input
                 type="text"
                 id="nino"
                 name="nino"
                 required
                 value=""
-                placeholder="e.g., AB123456C"
-                maxlength="9"
+                placeholder="e.g., QQ 12 34 56 C"
+                maxlength="13"
                 aria-describedby="nino-hint"
                 spellcheck="false"
                 autocapitalize="characters"
@@ -111,7 +111,7 @@
               </div>
             </div>
 
-            <button type="submit" id="retrieveBtn" class="btn">List Period Summaries</button>
+            <button type="submit" id="retrieveBtn" class="btn">List period summaries</button>
           </form>
         </div>
       </div>
@@ -121,7 +121,7 @@
         <h3>Period Summaries</h3>
         <div id="periodsTable"></div>
         <div class="button-group">
-          <button type="button" id="newSearchBtn" class="secondary-button">New Search</button>
+          <button type="button" id="newSearchBtn" class="secondary-button">New search</button>
         </div>
       </div>
     </main>
@@ -136,6 +136,7 @@
     <script src="../../lib/request-cache.js"></script>
     <script src="../../lib/toml-parser.js"></script>
     <script src="../../lib/hmrc-scope-check.js"></script>
+    <script src="../../lib/hmrc-field-table.js"></script>
     <script src="../../lib/itsaSubmissionModel.js"></script>
     <script type="module" src="../../lib/services/hmrc-service.js"></script>
     <script src="../../widgets/entitlement-status.js"></script>
@@ -159,7 +160,7 @@
         const taxYearValue = document.getElementById("taxYear").value.trim();
         const isCumulative = isCumulativeTaxYear(taxYearValue);
         document.getElementById("cumulativeListNote").style.display = isCumulative ? "block" : "none";
-        document.getElementById("retrieveBtn").textContent = isCumulative ? "Show Current Total" : "List Period Summaries";
+        document.getElementById("retrieveBtn").textContent = isCumulative ? "Show current total" : "List period summaries";
       }
 
       function hideSearchCriteria() {
@@ -369,7 +370,7 @@
         event.preventDefault();
 
         const formData = new FormData(event.target);
-        const nino = formData.get("nino").trim().toUpperCase();
+        const nino = formData.get("nino").replace(/\s+/g, "").toUpperCase();
         const businessId = formData.get("businessId").trim();
         const taxYear = formData.get("taxYear").trim();
         const testScenario = formData.get("testScenario");
@@ -456,6 +457,7 @@
 
       function displayPeriods(periods) {
         const tableContainer = document.getElementById("periodsTable");
+        const formatDate = (iso) => (iso && /^\d{4}-\d{2}-\d{2}$/.test(iso) ? window.HmrcFieldTable.formatIsoDate(iso) : "-");
 
         if (!periods || periods.length === 0) {
           tableContainer.innerHTML = '<p class="no-data">No period summaries found for the specified business and tax year.</p>';
@@ -478,8 +480,8 @@
           tableHtml += `
             <tr>
               <td>${escapeHtml(period.periodId)}</td>
-              <td>${escapeHtml(period.periodStartDate)}</td>
-              <td>${escapeHtml(period.periodEndDate)}</td>
+              <td>${escapeHtml(formatDate(period.periodStartDate))}</td>
+              <td>${escapeHtml(formatDate(period.periodEndDate))}</td>
             </tr>
           `;
         });

@@ -49,7 +49,7 @@ test.describe("Submission cost widget", () => {
   <body>
     <input id="turnover" type="number" />
     <div id="submissionCost" class="submission-cost"></div>
-    <button type="submit" id="submitBtn">File Quarterly Update</button>
+    <button type="submit" id="submitBtn">File quarterly update</button>
     <script src="lib/toml-parser.js"></script>
     <script src="lib/request-cache.js"></script>
     <script src="widgets/submission-cost.js"></script>

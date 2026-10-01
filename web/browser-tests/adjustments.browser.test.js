@@ -61,7 +61,7 @@ window.getGovClientHeaders = window.getGovClientHeaders || function(){ return Pr
 
     const triggerBtn = page.locator("#triggerBtn");
     await expect(triggerBtn).toBeVisible();
-    await expect(triggerBtn).toHaveText(/Trigger Year-End Summary/);
+    await expect(triggerBtn).toHaveText(/Trigger year-end summary/);
 
     const summaryContainer = page.locator("#summaryContainer");
     await expect(summaryContainer).toBeHidden();

@@ -37,7 +37,7 @@
     </header>
 
     <main id="mainContent">
-      <div id="syntheticIndicator" class="synthetic-indicator">⚠️ SYNTHETIC MODE - calls go to HMRC's sandbox API</div>
+      <div id="syntheticIndicator" class="synthetic-indicator">⚠️ Synthetic mode - calls go to HMRC's sandbox API</div>
 
       <div id="statusMessagesContainer" role="alert" aria-live="polite"></div>
 
@@ -49,22 +49,36 @@
         <form id="itsaFinalDeclarationRetrieveForm">
           <div class="form-group">
             <label for="nino">National Insurance number</label>
+            <p id="nino-hint" class="hint">
+              This is two letters, six numbers and a final letter, for example QQ 12 34 56 C. You can find it on your National Insurance
+              card, payslip or P60.
+            </p>
             <input
               type="text"
               id="nino"
               name="nino"
               required
               value=""
-              placeholder="e.g., AB123456C"
-              maxlength="9"
+              placeholder="e.g., QQ 12 34 56 C"
+              maxlength="13"
               spellcheck="false"
               autocapitalize="characters"
+              aria-describedby="nino-hint"
             />
           </div>
 
           <div class="form-group">
             <label for="taxYear">Tax year</label>
-            <input type="text" id="taxYear" name="taxYear" required placeholder="e.g., 2023-24" maxlength="7" />
+            <p id="taxYear-hint" class="hint">Enter in the format 2023-24, for example.</p>
+            <input
+              type="text"
+              id="taxYear"
+              name="taxYear"
+              required
+              placeholder="e.g., 2023-24"
+              maxlength="7"
+              aria-describedby="taxYear-hint"
+            />
           </div>
 
           <div class="form-group">
@@ -99,7 +113,7 @@
             </div>
           </div>
 
-          <button type="submit" id="retrieveBtn" class="btn">Retrieve Calculation</button>
+          <button type="submit" id="retrieveBtn" class="btn">Retrieve calculation</button>
         </form>
       </div>
 
@@ -143,7 +157,7 @@
             </label>
           </div>
           <div id="submissionCost" class="submission-cost"></div>
-          <button type="button" id="submitDeclarationBtn" class="btn" disabled>Submit Final Declaration</button>
+          <button type="button" id="submitDeclarationBtn" class="btn" disabled>Submit final declaration</button>
         </div>
 
         <div id="recentSubmissionsChanged" style="display: none">
@@ -158,10 +172,10 @@
 
       <!-- Results Display -->
       <div id="finalDeclarationResults" class="results-container" style="display: none">
-        <h3>Final Declaration Filed</h3>
+        <h3>Final declaration filed</h3>
         <p>HMRC has accepted the final declaration. Your Self Assessment return for the year is filed.</p>
         <div class="button-group">
-          <button type="button" id="newSearchBtn" class="secondary-button">Start Again</button>
+          <button type="button" id="newSearchBtn" class="secondary-button">Start again</button>
         </div>
       </div>
     </main>
@@ -435,7 +449,7 @@
 
       async function handleRetrieveFormSubmission(event) {
         event.preventDefault();
-        const nino = document.getElementById("nino").value.trim().toUpperCase();
+        const nino = document.getElementById("nino").value.replace(/\s+/g, "").toUpperCase();
         const taxYear = document.getElementById("taxYear").value.trim();
         const calculationId = document.getElementById("calculationId").value.trim();
         const calculationTestScenario = document.getElementById("calculationTestScenario")?.value;

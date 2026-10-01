@@ -109,7 +109,7 @@ test.describe("annualSubmission.html imports a book's derived figures", () => {
     await importFile(page, "annual.json", JSON.stringify(DERIVED_2025_26));
 
     await expect(page.locator("#importDerivedFiguresStatus")).toHaveText(
-      "Imported 5 figures from annual.json for 2025-26. Not on this form: allowances.structuredBuildingAllowance, adjustments.overlapReliefUsed.",
+      "Imported 5 figures from annual.json for 2025-26. Some fields were not on this form.",
     );
     await expect(page.locator("#allowanceTypeItemised")).toBeChecked();
     await expect(page.locator("#annualInvestmentAllowance")).toHaveValue("12000");

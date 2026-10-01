@@ -82,7 +82,7 @@
     </header>
 
     <main id="mainContent">
-      <div id="syntheticIndicator" class="synthetic-indicator">⚠️ SYNTHETIC MODE - calls go to HMRC's sandbox API</div>
+      <div id="syntheticIndicator" class="synthetic-indicator">⚠️ Synthetic mode - calls go to HMRC's sandbox API</div>
 
       <div id="statusMessagesContainer" role="alert" aria-live="polite"></div>
 
@@ -106,19 +106,24 @@
         <form id="businessPickerForm">
           <div class="form-group">
             <label for="nino">National Insurance number</label>
+            <p id="nino-hint" class="hint">
+              This is two letters, six numbers and a final letter, for example QQ 12 34 56 C. You can find it on your National Insurance
+              card, payslip or P60.
+            </p>
             <input
               type="text"
               id="nino"
               name="nino"
               required
               value=""
-              placeholder="e.g., AB123456C"
-              maxlength="9"
+              placeholder="e.g., QQ 12 34 56 C"
+              maxlength="13"
               spellcheck="false"
               autocapitalize="characters"
+              aria-describedby="nino-hint"
             />
           </div>
-          <button type="submit" id="findBusinessesBtn" class="btn">Find My Businesses</button>
+          <button type="submit" id="findBusinessesBtn" class="btn">Find my businesses</button>
         </form>
         <div id="businessPickerResults" style="display: none">
           <div id="businessPickerList" class="business-picker-list"></div>
@@ -427,7 +432,7 @@
 
       async function handleFindBusinessesSubmission(event) {
         event.preventDefault();
-        const nino = document.getElementById("nino").value.trim().toUpperCase();
+        const nino = document.getElementById("nino").value.replace(/\s+/g, "").toUpperCase();
 
         if (!nino) {
           showStatus("Please enter a National Insurance number.", "error");

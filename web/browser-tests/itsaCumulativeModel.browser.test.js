@@ -124,7 +124,7 @@ test.describe("ITSA cumulative model - self-employment periods list", () => {
     await page.locator("#taxYear").fill("2023-24");
     await page.locator("#taxYear").dispatchEvent("input");
 
-    await expect(page.locator("#retrieveBtn")).toHaveText("List Period Summaries");
+    await expect(page.locator("#retrieveBtn")).toHaveText("List period summaries");
     await expect(page.locator("#cumulativeListNote")).toBeHidden();
   });
 
@@ -134,7 +134,7 @@ test.describe("ITSA cumulative model - self-employment periods list", () => {
     await page.locator("#taxYear").fill("2025-26");
     await page.locator("#taxYear").dispatchEvent("input");
 
-    await expect(page.locator("#retrieveBtn")).toHaveText("Show Current Total");
+    await expect(page.locator("#retrieveBtn")).toHaveText("Show current total");
     await expect(page.locator("#cumulativeListNote")).toBeVisible();
   });
 });
@@ -245,6 +245,6 @@ test.describe("ITSA cumulative model - UK property periods list", () => {
     await page.locator("#taxYear").fill("2025-26");
     await page.locator("#taxYear").dispatchEvent("input");
 
-    await expect(page.locator("#retrieveBtn")).toHaveText("Show Current Total");
+    await expect(page.locator("#retrieveBtn")).toHaveText("Show current total");
   });
 });
