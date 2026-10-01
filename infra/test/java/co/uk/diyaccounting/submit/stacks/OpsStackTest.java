@@ -141,6 +141,39 @@ class OpsStackTest {
 
     @Test
     @SuppressWarnings("unchecked")
+    void canariesWaitForTheRolePropagationWhichWaitsForTheRoleAndItsPolicy() {
+        OpsStack opsStack = synthOpsStack("prod", null, "https://submit.diyaccounting.co.uk/");
+        Template template = Template.fromStack(opsStack);
+
+        String waitId = template.findResources("AWS::CloudFormation::CustomResource").keySet().stream()
+                .filter(id -> id.startsWith("CanaryRolePropagationWait") && !id.contains("Provider"))
+                .findFirst()
+                .orElseThrow();
+        String roleId = template.findResources("AWS::IAM::Role").keySet().stream()
+                .filter(id -> id.startsWith("CanaryRole"))
+                .findFirst()
+                .orElseThrow();
+        String rolePolicyId = template.findResources("AWS::IAM::Policy").keySet().stream()
+                .filter(id -> id.startsWith("CanaryRoleDefaultPolicy"))
+                .findFirst()
+                .orElseThrow();
+
+        List<String> waitDependsOn = (List<String>) template.findResources("AWS::CloudFormation::CustomResource")
+                .get(waitId)
+                .get("DependsOn");
+        assertTrue(waitDependsOn.contains(roleId), "wait must depend on the role: " + waitDependsOn);
+        assertTrue(waitDependsOn.contains(rolePolicyId), "wait must depend on the role's policy: " + waitDependsOn);
+
+        var canaries = template.findResources("AWS::Synthetics::Canary");
+        assertEquals(2, canaries.size());
+        canaries.forEach((id, canary) -> {
+            var dependsOn = (List<String>) canary.get("DependsOn");
+            assertTrue(dependsOn.contains(waitId), id + " must depend on the wait: " + dependsOn);
+        });
+    }
+
+    @Test
+    @SuppressWarnings("unchecked")
     void alarmToGithubIssueLambdaCanReadOnlyItsOwnEnvironmentsAlarmSilenceParameters() {
         OpsStack opsStack = synthOpsStack("prod", TEST_GITHUB_APP_ID, null);
         Template template = Template.fromStack(opsStack);
