@@ -7,6 +7,7 @@ import { createLogger } from "../../lib/logger.js";
 import { extractRequest } from "../../lib/httpResponseHelper.js";
 import { registerLambdaRoute } from "../../lib/httpServerToLambdaAdaptor.js";
 import { getStripeClient } from "../../lib/stripeClient.js";
+import { subscriptionPeriod } from "../../lib/stripeSubscriptionPeriod.js";
 import { putBundleByHashedSub, updateBundleSubscriptionFields, resetTokensByHashedSub } from "../../data/dynamoDbBundleRepository.js";
 import { initializeSalt } from "../../services/subHasher.js";
 import { putSubscription, getSubscription, updateSubscription } from "../../data/dynamoDbSubscriptionRepository.js";
@@ -246,8 +247,9 @@ async function handleCheckoutComplete(session, { test = false } = {}) {
     try {
       const stripe = await getStripeClient({ test });
       const subscription = await stripe.subscriptions.retrieve(subscriptionId);
-      currentPeriodEnd = subscription.current_period_end ? new Date(subscription.current_period_end * 1000).toISOString() : null;
-      currentPeriodStart = subscription.current_period_start ? new Date(subscription.current_period_start * 1000).toISOString() : null;
+      const period = subscriptionPeriod(subscription);
+      currentPeriodEnd = period.end ? new Date(period.end * 1000).toISOString() : null;
+      currentPeriodStart = period.start ? new Date(period.start * 1000).toISOString() : null;
     } catch (error) {
       logger.warn({ message: "Failed to retrieve subscription details", subscriptionId, error: error.message });
     }
@@ -369,34 +371,28 @@ async function handleInvoicePaid(invoice, { test = false } = {}) {
   const { hashedSub, bundleId } = subRecord;
   const tokensGranted = getCatalogTokensGranted(bundleId);
 
-  // Retrieve subscription for updated period info. Start from the record's last known period
-  // end, not null: a failed retrieve, or one whose reply carries no current_period_end, must
-  // never overwrite a real value with nothing -- that would erase the renewal from
-  // dynamo_subscriptions (a MODIFY whose current_period_end moved forward is how the analytics
-  // view counts a renewal at all) and drop the bundle's expiry back to a 30-day guess below.
-  let currentPeriodEnd = subRecord.currentPeriodEnd ?? null;
-  try {
-    const stripe = await getStripeClient({ test });
-    const subscription = await stripe.subscriptions.retrieve(subscriptionId);
-    if (subscription.current_period_end) {
-      currentPeriodEnd = new Date(subscription.current_period_end * 1000).toISOString();
-    }
-  } catch (error) {
-    logger.warn({ message: "Failed to retrieve subscription for token refresh", subscriptionId, error: error.message });
+  // The new period end comes from Stripe alone. A failed retrieve or a reply without a period end
+  // throws so Stripe redelivers the event: writing the record's old period end back would leave
+  // the bundle expired after a paid renewal.
+  const stripe = await getStripeClient({ test });
+  const subscription = await stripe.subscriptions.retrieve(subscriptionId);
+  const period = subscriptionPeriod(subscription);
+  if (!period.end) {
+    logger.error({ message: "invoice.paid: Stripe subscription carries no period end", subscriptionId, invoiceId: invoice.id });
+    throw new Error(`Stripe subscription ${subscriptionId} carries no period end`);
   }
-
-  const nextResetAt = currentPeriodEnd || new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString();
+  const currentPeriodEnd = new Date(period.end * 1000).toISOString();
 
   // Reset tokens for the new billing period - an unlimited grant (the resident-pro practice
   // licence) carries no count, so there is nothing to reset.
   if (!isUnlimitedTokenGrant(tokensGranted)) {
-    await resetTokensByHashedSub(hashedSub, bundleId, tokensGranted, nextResetAt);
+    await resetTokensByHashedSub(hashedSub, bundleId, tokensGranted, currentPeriodEnd);
   }
 
   // Update period dates on the bundle
   await updateBundleSubscriptionFields(hashedSub, bundleId, {
-    currentPeriodEnd: currentPeriodEnd || nextResetAt,
-    expiry: currentPeriodEnd || nextResetAt,
+    currentPeriodEnd,
+    expiry: currentPeriodEnd,
   });
 
   // Update subscription record

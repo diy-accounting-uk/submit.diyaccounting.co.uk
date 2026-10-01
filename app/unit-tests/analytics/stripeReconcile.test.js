@@ -306,6 +306,17 @@ describe("stripeReconcile", () => {
   });
 
   describe("sanitizeSubscription", () => {
+    test("reads the billing period from the subscription item", () => {
+      const row = sanitizeSubscription({
+        id: "sub_2",
+        customer: "cus_x",
+        items: { data: [{ current_period_start: 1700000000, current_period_end: 1702592000, price: { id: "price_1" } }] },
+      });
+
+      expect(row.current_period_start).toBe(1700000000);
+      expect(row.current_period_end).toBe(1702592000);
+    });
+
     test("keeps the documented fields and hashes the customer", () => {
       const row = sanitizeSubscription({
         id: "sub_1",

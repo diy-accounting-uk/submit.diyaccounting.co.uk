@@ -23,6 +23,7 @@
 //   AWS_REGION                         AWS region (default: eu-west-2)
 
 import Stripe from "stripe";
+import { subscriptionPeriod } from "../app/lib/stripeSubscriptionPeriod.js";
 
 const STRIPE_SECRET_KEY = process.env.STRIPE_SECRET_KEY;
 if (!STRIPE_SECRET_KEY) {
@@ -130,7 +131,7 @@ function displaySubscription(sub) {
   console.log(`  Status:             ${sub.status}`);
   console.log(`  Customer:           ${sub.customer}`);
   console.log(`  Cancel at end:      ${sub.cancel_at_period_end}`);
-  console.log(`  Current period end: ${formatDate(sub.current_period_end)}`);
+  console.log(`  Current period end: ${formatDate(subscriptionPeriod(sub).end)}`);
   console.log(`  Created:            ${formatDate(sub.created)}`);
   if (sub.items?.data?.length > 0) {
     for (const item of sub.items.data) {

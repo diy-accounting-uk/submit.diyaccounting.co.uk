@@ -389,7 +389,7 @@ describe("billingWebhookPost", () => {
     expect(mockUpdateSubscription).toHaveBeenCalledTimes(1);
   });
 
-  test("invoice.paid keeps the subscription record's last known period end when the Stripe retrieve fails", async () => {
+  test("invoice.paid fails and writes nothing when the Stripe retrieve fails", async () => {
     mockGetSubscription.mockResolvedValue({
       pk: "stripe#sub_test_456",
       hashedSub: "hashed_sub_value",
@@ -409,21 +409,20 @@ describe("billingWebhookPost", () => {
 
     const result = await ingestHandler(buildWebhookEvent(payload));
 
-    expect(result.statusCode).toBe(200);
-    const [, updates] = mockUpdateSubscription.mock.calls[0];
-    expect(updates.currentPeriodEnd).toBe("2026-09-06T09:38:58.000Z");
-    const [, , bundleUpdates] = mockUpdateBundleSubscriptionFields.mock.calls[0];
-    expect(bundleUpdates.currentPeriodEnd).toBe("2026-09-06T09:38:58.000Z");
+    expect(result.statusCode).toBe(500);
+    expect(mockResetTokensByHashedSub).not.toHaveBeenCalled();
+    expect(mockUpdateBundleSubscriptionFields).not.toHaveBeenCalled();
+    expect(mockUpdateSubscription).not.toHaveBeenCalled();
   });
 
-  test("invoice.paid keeps the subscription record's last known period end when Stripe's reply carries none", async () => {
+  test("invoice.paid fails and writes nothing when Stripe's reply carries no period end anywhere", async () => {
     mockGetSubscription.mockResolvedValue({
       pk: "stripe#sub_test_456",
       hashedSub: "hashed_sub_value",
       bundleId: "resident-pro",
       currentPeriodEnd: "2026-09-06T09:38:58.000Z",
     });
-    mockSubscriptionsRetrieve.mockResolvedValue({ id: "sub_test_456" });
+    mockSubscriptionsRetrieve.mockResolvedValue({ id: "sub_test_456", items: { data: [{ id: "si_1" }] } });
 
     const payload = {
       id: "evt_test_invoice_no_period_end",
@@ -436,9 +435,70 @@ describe("billingWebhookPost", () => {
 
     const result = await ingestHandler(buildWebhookEvent(payload));
 
+    expect(result.statusCode).toBe(500);
+    expect(mockResetTokensByHashedSub).not.toHaveBeenCalled();
+    expect(mockUpdateBundleSubscriptionFields).not.toHaveBeenCalled();
+    expect(mockUpdateSubscription).not.toHaveBeenCalled();
+  });
+
+  test("invoice.paid moves expiry, period end and token reset to the period end carried on the subscription item", async () => {
+    mockGetSubscription.mockResolvedValue({
+      pk: "stripe#sub_test_456",
+      hashedSub: "hashed_sub_value",
+      bundleId: "resident",
+      currentPeriodEnd: "2026-06-06T09:38:58.000Z",
+    });
+    const itemPeriodEnd = 1790000000;
+    mockSubscriptionsRetrieve.mockResolvedValue({
+      id: "sub_test_456",
+      items: { data: [{ id: "si_1", current_period_start: 1787400000, current_period_end: itemPeriodEnd }] },
+    });
+
+    const payload = {
+      id: "evt_test_invoice_item_period",
+      type: "invoice.paid",
+      data: {
+        object: { id: "in_test_item_period", parent: { subscription_details: { subscription: "sub_test_456" } } },
+      },
+    };
+    mockWebhooksConstructEvent.mockReturnValue(payload);
+
+    const result = await ingestHandler(buildWebhookEvent(payload));
+
+    const expectedEnd = new Date(itemPeriodEnd * 1000).toISOString();
     expect(result.statusCode).toBe(200);
+    expect(mockResetTokensByHashedSub).toHaveBeenCalledWith("hashed_sub_value", "resident", 100, expectedEnd);
+    const [, , bundleUpdates] = mockUpdateBundleSubscriptionFields.mock.calls[0];
+    expect(bundleUpdates.expiry).toBe(expectedEnd);
+    expect(bundleUpdates.currentPeriodEnd).toBe(expectedEnd);
     const [, updates] = mockUpdateSubscription.mock.calls[0];
-    expect(updates.currentPeriodEnd).toBe("2026-09-06T09:38:58.000Z");
+    expect(updates.currentPeriodEnd).toBe(expectedEnd);
+  });
+
+  test("invoice.paid still reads a period end carried on the subscription itself", async () => {
+    mockGetSubscription.mockResolvedValue({
+      pk: "stripe#sub_test_456",
+      hashedSub: "hashed_sub_value",
+      bundleId: "resident",
+      currentPeriodEnd: "2026-06-06T09:38:58.000Z",
+    });
+    const topLevelPeriodEnd = 1790000000;
+    mockSubscriptionsRetrieve.mockResolvedValue({ id: "sub_test_456", current_period_end: topLevelPeriodEnd });
+
+    const payload = {
+      id: "evt_test_invoice_top_level_period",
+      type: "invoice.paid",
+      data: {
+        object: { id: "in_test_top_level_period", parent: { subscription_details: { subscription: "sub_test_456" } } },
+      },
+    };
+    mockWebhooksConstructEvent.mockReturnValue(payload);
+
+    const result = await ingestHandler(buildWebhookEvent(payload));
+
+    expect(result.statusCode).toBe(200);
+    const [, , bundleUpdates] = mockUpdateBundleSubscriptionFields.mock.calls[0];
+    expect(bundleUpdates.expiry).toBe(new Date(topLevelPeriodEnd * 1000).toISOString());
   });
 
   test("invoice.paid refreshes tokens when the subscription is an expanded object", async () => {
@@ -1025,6 +1085,26 @@ describe("billingWebhookPost", () => {
     const result = await ingestHandler(event);
 
     expect(result.statusCode).toBe(200);
+  });
+
+  test("checkout records the period carried on the subscription item", async () => {
+    mockSubscriptionsRetrieve.mockResolvedValue({
+      id: "sub_test_456",
+      status: "active",
+      items: { data: [{ id: "si_1", current_period_start: 1787400000, current_period_end: 1790000000 }] },
+    });
+
+    const payload = buildCheckoutSessionPayload();
+    mockWebhooksConstructEvent.mockReturnValue(payload);
+
+    await ingestHandler(buildWebhookEvent(payload));
+
+    const [, bundle] = mockPutBundleByHashedSub.mock.calls[0];
+    expect(bundle.currentPeriodEnd).toBe(new Date(1790000000 * 1000).toISOString());
+    expect(bundle.expiry).toBe(new Date(1790000000 * 1000).toISOString());
+    const [subscriptionRecord] = mockPutSubscription.mock.calls[0];
+    expect(subscriptionRecord.currentPeriodStart).toBe(new Date(1787400000 * 1000).toISOString());
+    expect(subscriptionRecord.currentPeriodEnd).toBe(new Date(1790000000 * 1000).toISOString());
   });
 
   test("sets currentPeriodEnd from Stripe subscription when available", async () => {
