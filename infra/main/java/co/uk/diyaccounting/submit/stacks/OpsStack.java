@@ -17,12 +17,14 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import org.immutables.value.Value;
+import software.amazon.awscdk.CustomResource;
 import software.amazon.awscdk.Duration;
 import software.amazon.awscdk.Environment;
 import software.amazon.awscdk.RemovalPolicy;
 import software.amazon.awscdk.Stack;
 import software.amazon.awscdk.StackProps;
 import software.amazon.awscdk.Tags;
+import software.amazon.awscdk.customresources.Provider;
 import software.amazon.awscdk.services.cloudwatch.Alarm;
 import software.amazon.awscdk.services.cloudwatch.ComparisonOperator;
 import software.amazon.awscdk.services.cloudwatch.Metric;
@@ -46,6 +48,7 @@ import software.amazon.awscdk.services.logs.FilterPattern;
 import software.amazon.awscdk.services.logs.ILogGroup;
 import software.amazon.awscdk.services.logs.LogGroup;
 import software.amazon.awscdk.services.logs.MetricFilter;
+import software.amazon.awscdk.services.logs.RetentionDays;
 import software.amazon.awscdk.services.s3.Bucket;
 import software.amazon.awscdk.services.s3.BucketEncryption;
 import software.amazon.awscdk.services.s3.LifecycleRule;
@@ -594,6 +597,16 @@ public class OpsStack extends Stack {
         infof("OpsStack %s created successfully for %s", this.getNode().getId(), props.resourceNamePrefix());
     }
 
+    private static final String CANARY_ROLE_PROPAGATION_WAIT_CODE =
+            """
+            exports.handler = async (event) => {
+              if (event.RequestType === 'Create') {
+                await new Promise((resolve) => setTimeout(resolve, 30000));
+              }
+              return { PhysicalResourceId: 'canary-role-propagation-wait' };
+            };
+            """;
+
     private void createSyntheticCanaries(OpsStackProps props) {
         // Use deployment name for unique canary names (max 21 chars for canary names)
         // Format: {env}-{suffix} e.g., "ci-monitorin-hlth" or "prod-hlth"
@@ -628,6 +641,36 @@ public class OpsStack extends Stack {
                 .conditions(Map.of("StringEquals", Map.of("cloudwatch:namespace", "CloudWatchSynthetics")))
                 .build());
 
+        // Synthetics creates each canary's Lambda with this role at once, and IAM can take longer
+        // than CloudFormation's own ordering to make a new role assumable by Lambda. Both canaries
+        // wait on this resource, which depends on the role and its default policy and holds for
+        // thirty seconds on create.
+        var rolePropagationWaitLogGroup = LogGroup.Builder.create(this, "CanaryRolePropagationWaitFnLogGroup")
+                .retention(RetentionDays.THREE_DAYS)
+                .removalPolicy(RemovalPolicy.DESTROY)
+                .build();
+        var rolePropagationWaitFn = Function.Builder.create(this, "CanaryRolePropagationWaitFn")
+                .runtime(software.amazon.awscdk.services.lambda.Runtime.NODEJS_24_X)
+                .handler("index.handler")
+                .code(software.amazon.awscdk.services.lambda.Code.fromInline(CANARY_ROLE_PROPAGATION_WAIT_CODE))
+                .timeout(Duration.minutes(2))
+                .description("Waits for the canary role to propagate through IAM before the canaries are created")
+                .logGroup(rolePropagationWaitLogGroup)
+                .build();
+        var rolePropagationWaitProviderLogGroup = LogGroup.Builder.create(
+                        this, "CanaryRolePropagationWaitProviderLogGroup")
+                .retention(RetentionDays.THREE_DAYS)
+                .removalPolicy(RemovalPolicy.DESTROY)
+                .build();
+        var rolePropagationWaitProvider = Provider.Builder.create(this, "CanaryRolePropagationWaitProvider")
+                .onEventHandler(rolePropagationWaitFn)
+                .logGroup(rolePropagationWaitProviderLogGroup)
+                .build();
+        var canaryRolePropagationWait = CustomResource.Builder.create(this, "CanaryRolePropagationWait")
+                .serviceToken(rolePropagationWaitProvider.getServiceToken())
+                .build();
+        canaryRolePropagationWait.getNode().addDependency(canaryRole);
+
         // Health Check Canary - use short suffix to maximize prefix uniqueness
         String healthCanaryName = truncateCanaryName(deploymentPrefix + "-hlth");
         this.healthCanary = Canary.Builder.create(this, "HealthCanary")
@@ -645,6 +688,7 @@ public class OpsStack extends Stack {
                         .build())
                 .startAfterCreation(true)
                 .build();
+        this.healthCanary.getNode().addDependency(canaryRolePropagationWait);
 
         // Health Check Alarm
         // Period is 2 hours: the canary runs once an hour, so a 2-hour period always contains
@@ -694,6 +738,7 @@ public class OpsStack extends Stack {
                         .build())
                 .startAfterCreation(true)
                 .build();
+        this.apiCanary.getNode().addDependency(canaryRolePropagationWait);
 
         // API Check Alarm - same 2-hour period and NOT_BREACHING rationale as HealthAlarm above.
         this.apiCheckAlarm = Alarm.Builder.create(this, "ApiAlarm")
