@@ -302,9 +302,10 @@ Before any push, check **every** deploy workflow for that branch — this repo h
 `deploy environment` and `deploy-app`, and checking only the one you were watching is how you push
 into a running deploy. Confirm they are finished by reading the runs, not by assuming elapsed time.
 
-Before the first push of a batch, run the full local suite once: `npm test` and `./mvnw clean
-verify`. First check `[ -L node_modules ]` in the batch worktree and stop with a message when it
-fails (`scripts/worktree-add.sh` creates the link). Then run `npm run test:<suite>Behaviour-simulator` for every suite whose routes, pages or
+Before the first push of a batch, run `scripts/batch-check.sh <batch-branch>` once, in one background
+command. It runs every CI gate (maven verify, `npm test`, browser tests, Prettier, Spotless, the
+ESLint ratchets, the docker build when touched) in a clean worktree and prints PASS, FAIL or SKIP per
+gate. Fix every FAIL first. Then run `npm run test:<suite>Behaviour-simulator` for every suite whose routes, pages or
 helpers the batch changed, serially (at least `auth`, `bundle`, `postVatReturn` and `practiceLicence`
 when the batch touched auth, sign-in or practice code). That is the moment the change becomes someone else's problem.
 

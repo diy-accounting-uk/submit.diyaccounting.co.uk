@@ -453,6 +453,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
     - [DEV-41](#dev-41-publish-videos-to-the-youtube-channel) Publish videos to the YouTube channel: use when the operator asks to publish, re-publish or check the videos, or a recording is ready.
     - [DEV-42](#dev-42-look-up-a-vat-submission-failure-alarms-customer) Look up a VAT submission-failure alarm's customer: use when the operator asks who a submission-failure alarm was or whether the customer needs a reply.
     - [DEV-43](#dev-43-find-existing-tooling-before-building-any) Find existing tooling before building any: use when a task would add a script, workflow, Lambda, check, sync, report, alarm, page or skill
+    - [DEV-44](#dev-44-check-a-batch-against-every-ci-gate-locally) Check a batch against every CI gate locally: use when a batch branch is about to take its first push, or a local pass has gone red in CI.
 - **[Spreadsheets and diya-gl](#spreadsheets-and-diya-gl-ss)**
   - [diya-gl engine, CLI and MCP server](#diya-gl-engine-cli-and-mcp-server-ss)
     - [SS-01](#ss-01-run-the-diya-gl-calculation-engine) Run the diya-gl calculation engine: use when a diya-gl book's figures must be computed in JavaScript, independent of the Excel package.
@@ -4469,7 +4470,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - [Local dev environment & secrets](#local-dev-environment--secrets-dev): [DEV-14](#dev-14-start-the-proxy-and-simulator-local-dev-environments) Start the proxy and simulator local dev environments · [DEV-15](#dev-15-fetch-and-publish-proxy-variant-secrets) Fetch and publish proxy-variant secrets · [DEV-16](#dev-16-manage-the-durable-cognito-test-user-lifecycle) Manage the durable Cognito test-user lifecycle
 - [Test fixtures, reports & DynamoDB export](#test-fixtures-reports--dynamodb-export-dev): [DEV-17](#dev-17-export-and-embed-dynamodb-test-state-in-reports) Export and embed DynamoDB test state in reports · [DEV-18](#dev-18-provide-shared-unitsystem-test-fixtures) Provide shared unit/system-test fixtures · [DEV-19](#dev-19-provide-shared-behaviour-test-fixtures-and-steps) Provide shared behaviour-test fixtures and steps · [DEV-20](#dev-20-check-spdx-licence-headers) Check SPDX licence headers · [DEV-21](#dev-21-verify-module-wiring-and-repository-shape) Verify module wiring and repository shape
 - [Build hygiene, toolchain & docs](#build-hygiene-toolchain--docs-dev): [DEV-22](#dev-22-clean-and-update-local-build-state) Clean and update local build state · [DEV-23](#dev-23-configure-the-test-and-lint-toolchains) Configure the test and lint toolchains · [DEV-24](#dev-24-document-developer-setup-and-repository-conventions) Document developer setup and repository conventions · [DEV-25](#dev-25-maintain-the-specialist-agent-prompt-library) Maintain the specialist agent prompt library · [DEV-26](#dev-26-enforce-claude-code-conventions-via-rules-and-hooks) Enforce Claude Code conventions via rules and hooks
-- [Claude Code delivery-cycle skills](#claude-code-delivery-cycle-skills-dev): [DEV-27](#dev-27-render-the-open-work-board) Render the open-work board · [DEV-28](#dev-28-work-nextmd-as-dispatched-sub-agents) Work NEXT.md as dispatched sub-agents · [DEV-29](#dev-29-refine-nextmd-before-a-wave) Refine NEXT.md before a wave · [DEV-30](#dev-30-run-the-delivery-cycle-unattended) Run the delivery cycle unattended · [DEV-31](#dev-31-watch-github-ci-to-green) Watch GitHub CI to green · [DEV-32](#dev-32-merge-every-pr-that-is-ready) Merge every PR that is ready · [DEV-33](#dev-33-preview-what-auto-merge-would-do) Preview what auto-merge would do · [DEV-34](#dev-34-clean-up-stale-deployments-and-branches) Clean up stale deployments and branches · [DEV-35](#dev-35-cool-down-an-overloaded-batch) Cool down an overloaded batch · [DEV-36](#dev-36-resume-normal-work-from-cool-down) Resume normal work from cool-down · [DEV-37](#dev-37-write-the-session-report) Write the session report · [DEV-38](#dev-38-write-plain-human-prose) Write plain, human prose · [DEV-39](#dev-39-sync-stripe-products-and-prices-from-the-catalogue) Sync Stripe products and prices from the catalogue · [DEV-40](#dev-40-record-a-product-demo-video) Record a product demo video · [DEV-41](#dev-41-publish-videos-to-the-youtube-channel) Publish videos to the YouTube channel · [DEV-42](#dev-42-look-up-a-vat-submission-failure-alarms-customer) Look up a VAT submission-failure alarm's customer · [DEV-43](#dev-43-find-existing-tooling-before-building-any) Find existing tooling before building any
+- [Claude Code delivery-cycle skills](#claude-code-delivery-cycle-skills-dev): [DEV-27](#dev-27-render-the-open-work-board) Render the open-work board · [DEV-28](#dev-28-work-nextmd-as-dispatched-sub-agents) Work NEXT.md as dispatched sub-agents · [DEV-29](#dev-29-refine-nextmd-before-a-wave) Refine NEXT.md before a wave · [DEV-30](#dev-30-run-the-delivery-cycle-unattended) Run the delivery cycle unattended · [DEV-31](#dev-31-watch-github-ci-to-green) Watch GitHub CI to green · [DEV-32](#dev-32-merge-every-pr-that-is-ready) Merge every PR that is ready · [DEV-33](#dev-33-preview-what-auto-merge-would-do) Preview what auto-merge would do · [DEV-34](#dev-34-clean-up-stale-deployments-and-branches) Clean up stale deployments and branches · [DEV-35](#dev-35-cool-down-an-overloaded-batch) Cool down an overloaded batch · [DEV-36](#dev-36-resume-normal-work-from-cool-down) Resume normal work from cool-down · [DEV-37](#dev-37-write-the-session-report) Write the session report · [DEV-38](#dev-38-write-plain-human-prose) Write plain, human prose · [DEV-39](#dev-39-sync-stripe-products-and-prices-from-the-catalogue) Sync Stripe products and prices from the catalogue · [DEV-40](#dev-40-record-a-product-demo-video) Record a product demo video · [DEV-41](#dev-41-publish-videos-to-the-youtube-channel) Publish videos to the YouTube channel · [DEV-42](#dev-42-look-up-a-vat-submission-failure-alarms-customer) Look up a VAT submission-failure alarm's customer · [DEV-43](#dev-43-find-existing-tooling-before-building-any) Find existing tooling before building any · [DEV-44](#dev-44-check-a-batch-against-every-ci-gate-locally) Check a batch against every CI gate locally
 <!-- /generated:area DEV -->
 
 ### Simulator server & OAuth mocks (DEV)
@@ -4784,6 +4785,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - [DEV-41](#dev-41-publish-videos-to-the-youtube-channel) Publish videos to the YouTube channel
 - [DEV-42](#dev-42-look-up-a-vat-submission-failure-alarms-customer) Look up a VAT submission-failure alarm's customer
 - [DEV-43](#dev-43-find-existing-tooling-before-building-any) Find existing tooling before building any
+- [DEV-44](#dev-44-check-a-batch-against-every-ci-gate-locally) Check a batch against every CI gate locally
 <!-- /generated:group claude-code-delivery-cycle-skills-dev -->
 
 #### DEV-27 Render the open-work board
@@ -4953,6 +4955,16 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - **Entry:** `.claude/skills/capabilities/SKILL.md`; `scripts/capabilities-index.mjs:render`
 - **Files:** .claude/skills/capabilities/SKILL.md, REPORT_CAPABILITIES.md, scripts/capabilities-index.mjs, app/unit-tests/capabilitiesIndex.test.js
 - **Keywords:** capability, existing tooling, find command, index, reuse, duplicate mechanism, what does the repo do
+
+#### DEV-44 Check a batch against every CI gate locally
+
+- **Use when:** a batch branch is about to take its first push, or a local pass has gone red in CI.
+- **Does:** batch-check.sh checks out a clean detached worktree of a ref and links node_modules. It runs the bundle, maven verify, npm test, browser tests, Prettier, Spotless, both ESLint ratchets and ESLint on added files. It runs the docker build when the ref touches the Dockerfile, .dockerignore or a COPY source. Each gate prints PASS, FAIL or SKIP with its log path.
+- **Run:** `scripts/batch-check.sh <ref> [--docker]`
+- **Entry:** `scripts/batch-check.sh:run_gate`
+- **Files:** scripts/batch-check.sh
+- **Keywords:** batch check, ci gates locally, clean worktree, prettier, spotless, eslint ratchet, docker build, pre-push check
+- **Related:** DEV-22, DEV-28
 
 ## Spreadsheets and diya-gl (SS)
 
@@ -5821,6 +5833,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - bank statement import: [MCP-10](#mcp-10-import-a-natwest-bank-statement-into-diya-gl-lines)
 - bankcode: [MCP-10](#mcp-10-import-a-natwest-bank-statement-into-diya-gl-lines)
 - batch branch: [DEV-28](#dev-28-work-nextmd-as-dispatched-sub-agents)
+- batch check: [DEV-44](#dev-44-check-a-batch-against-every-ci-gate-locally)
 - batch processing: [OPS-87](#ops-87-process-sqs-message-batches-in-lambda-workers)
 - batch scan update: [OPS-43](#ops-43-rotate-stored-email-address-hashes)
 - batch tools: [MCP-09](#mcp-09-run-a-client-scoped-tool-across-every-practice-client)
@@ -5989,6 +6002,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - ci branch deploys: [OPS-61](#ops-61-design-ci-branch-deploys-off-the-apex)
 - ci deployments: [DEV-27](#dev-27-render-the-open-work-board)
 - ci failure react: [DEV-31](#dev-31-watch-github-ci-to-green)
+- ci gates locally: [DEV-44](#dev-44-check-a-batch-against-every-ci-gate-locally)
 - ci monitoring: [OPS-134](#ops-134-monitor-github-actions-ci-from-the-cli)
 - ci or prod: [OPS-02](#ops-02-derive-environment-and-deployment-names-from-a-branch)
 - ci slot: [OPS-10](#ops-10-claim-release-and-track-a-ci-deployment-slot)
@@ -6003,6 +6017,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - clean: [DEV-34](#dev-34-clean-up-stale-deployments-and-branches)
 - clean build: [DEV-22](#dev-22-clean-and-update-local-build-state)
 - clean skill: [SS-53](#ss-53-clean-up-stale-branches-and-worktrees)
+- clean worktree: [DEV-44](#dev-44-check-a-batch-against-every-ci-gate-locally)
 - cleanup test users: [OPS-12](#ops-12-clean-up-expired-test-users)
 - cli: [BILL-11](#bill-11-generate-admin-passes-from-cli-or-workflow)
 - client: [BILL-12](#bill-12-invite-a-client-to-authorise-agent-access), [BILL-13](#bill-13-check-a-clients-authorisation-status), [BILL-14](#bill-14-cancel-a-pending-client-authorisation-invite), [BILL-15](#bill-15-move-a-book-to-a-client)
@@ -6293,6 +6308,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - do-next agent: [OPS-57](#ops-57-dispatch-agentic-lib-board-backlog-and-pr-agents)
 - do-next skill: [SS-47](#ss-47-work-nextmd-as-dispatched-sub-agents)
 - do-next-ci: [DEV-25](#dev-25-maintain-the-specialist-agent-prompt-library)
+- docker build: [DEV-44](#dev-44-check-a-batch-against-every-ci-gate-locally)
 - docker image: [OPS-51](#ops-51-publish-build-artifacts-and-documentation), [OPS-114](#ops-114-provision-ecr-image-repositories), [SS-05](#ss-05-run-the-diya-gl-cli)
 - document client: [OPS-82](#ops-82-provide-a-shared-dynamodb-client)
 - document submission: [CH-09](#ch-09-query-and-submit-document-transactions)
@@ -6387,6 +6403,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - error handler: [OPS-131](#ops-131-serve-cloudfront-custom-error-pages)
 - error middleware: [SITE-07](#site-07-format-http-responses-and-errors)
 - eslint config: [DEV-23](#dev-23-configure-the-test-and-lint-toolchains)
+- eslint ratchet: [DEV-44](#dev-44-check-a-batch-against-every-ci-gate-locally)
 - eslint security: [SS-45](#ss-45-run-compliance-checks)
 - etag: [SITE-16](#site-16-configure-the-frontend-via-toml-and-env-libraries)
 - event builders: [DEV-18](#dev-18-provide-shared-unitsystem-test-fixtures)
@@ -7114,6 +7131,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - practice.html: [BILL-16](#bill-16-manage-practice-clients)
 - pre-deploy: [BILL-41](#bill-41-backfill-the-stripe-test-mode-qualifier), [OPS-16](#ops-16-run-dynamodb-data-migrations)
 - pre-login: [BILL-08](#bill-08-check-a-passs-validity)
+- pre-push check: [DEV-44](#dev-44-check-a-batch-against-every-ci-gate-locally)
 - pre-push hook: [SS-42](#ss-42-route-tests-by-blast-radius)
 - pre-tax profit: [SS-13](#ss-13-cross-check-figures-across-product-packages)
 - prefetch: [SITE-13](#site-13-warm-backend-routes-via-prefetch-scripts), [BILL-34](#bill-34-prefetch-and-retry-a-cognito-token-refresh)
@@ -7121,6 +7139,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - presenter secret: [CH-09](#ch-09-query-and-submit-document-transactions)
 - pretest: [BILL-43](#bill-43-build-the-frontend-test-bundle)
 - pretooluse hook: [DEV-26](#dev-26-enforce-claude-code-conventions-via-rules-and-hooks)
+- prettier: [DEV-44](#dev-44-check-a-batch-against-every-ci-gate-locally)
 - preview: [CH-07](#ch-07-preview-micro-entity-accounts-before-filing)
 - preview merge: [SS-52](#ss-52-preview-what-auto-merge-would-do)
 - price: [BILL-30](#bill-30-sync-the-stripe-productprice-catalogue)
@@ -7461,6 +7480,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - spdx: [DEV-20](#dev-20-check-spdx-licence-headers)
 - spec.html: [SS-07](#ss-07-publish-the-diya-gl-format-specification-page)
 - specialist agent: [DEV-25](#dev-25-maintain-the-specialist-agent-prompt-library)
+- spotless: [DEV-44](#dev-44-check-a-batch-against-every-ci-gate-locally)
 - spreadsheets contract: [HMRC-08](#hmrc-08-parse-vat-returns-from-a-bulk-csv-file)
 - spreadsheets homepage: [SS-21](#ss-21-serve-the-spreadsheets-product-catalogue-and-downloads)
 - spreadsheets mcp: [MCP-17](#mcp-17-build-and-hand-over-the-companys-own-book)
