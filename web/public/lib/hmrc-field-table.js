@@ -245,7 +245,15 @@
     return isAmount(value) ? window.formatGbp(value) : ABSENT;
   }
 
+  function formatTextValue(value) {
+    if (value === null || value === undefined) return ABSENT;
+    if (typeof value === "boolean") return value ? "Yes" : "No";
+    if (typeof value === "string" && /^\d{4}-\d{2}-\d{2}$/.test(value)) return formatIsoDate(value);
+    return String(value);
+  }
+
   function formatValue(value, kind) {
+    if (kind === "text") return formatTextValue(value);
     if (!isAmount(value)) return ABSENT;
     return kind === "percent" ? `${value}%` : window.formatGbp(value);
   }
@@ -346,7 +354,7 @@
     return `<p class="field-table-source">Definitions quoted from ${cited}.</p>`;
   }
 
-  // rows: [{ field, label, value, kind?, definition?, source?, total?, valueId? }]
+  // rows: [{ field, label, value, kind? (money, percent or text), definition?, source?, total?, valueId? }]
   function renderFieldTable(rows, { caption, emptyText } = {}) {
     if (!rows || rows.length === 0) {
       return `<p class="no-data">${escapeHtml(emptyText || "HMRC returned no figures here.")}</p>`;

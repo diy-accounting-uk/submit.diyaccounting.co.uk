@@ -14,6 +14,7 @@
     <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" />
     <link rel="manifest" href="/site.webmanifest" />
     <link rel="stylesheet" href="../../submit.css" />
+    <link rel="stylesheet" href="../../lib/hmrc-field-table.css" />
     <!-- CloudWatch RUM configuration placeholders; replace values during deployment -->
     <meta name="rum:appMonitorId" content="${RUM_APP_MONITOR_ID}" />
     <meta name="rum:region" content="${AWS_REGION}" />
@@ -68,6 +69,8 @@
     <script src="../../developer-mode.js"></script>
     <script src="../../lib/request-cache.js"></script>
     <script src="../../lib/toml-parser.js"></script>
+    <script src="../../lib/money-format.js"></script>
+    <script src="../../lib/hmrc-field-table.js"></script>
     <script src="../../widgets/entitlement-status.js"></script>
     <script src="../../widgets/auth-status.js"></script>
     <script type="module" src="../../widgets/view-source-link.js"></script>
@@ -160,7 +163,6 @@
       }
 
       async function viewReceipt(name) {
-        const idToken = getIdToken();
         const res = await window.fetchWithIdToken(`/api/v1/hmrc/receipt/${encodeURIComponent(name)}`, {});
         if (!res.ok) return alert("Failed to fetch receipt");
         const text = await res.text();
@@ -174,103 +176,77 @@
         }
       }
 
+      const RECEIPT_FIELD_NAMES = {
+        processingDate: "Processing date",
+        paymentIndicator: "Payment indicator",
+        formBundleNumber: "Form bundle number",
+        chargeRefNumber: "Charge reference number",
+        periodId: "Period ID",
+        calculationId: "Calculation ID",
+        correlationId: "Correlation ID",
+        taxYear: "Tax year",
+        periodStartDate: "Start date",
+        periodEndDate: "End date",
+        href: "Link",
+        rel: "Relation",
+      };
+
+      function receiptFieldName(key) {
+        if (RECEIPT_FIELD_NAMES[key]) return RECEIPT_FIELD_NAMES[key];
+        const words = key
+          .replace(/([a-z0-9])([A-Z])/g, "$1 $2")
+          .replace(/[_-]+/g, " ")
+          .trim()
+          .toLowerCase();
+        return words.charAt(0).toUpperCase() + words.slice(1);
+      }
+
+      // One entry per leaf value. Nested objects and arrays become "Parent: field" names.
+      function flattenReceipt(value, path, labelPrefix, entries) {
+        if (Array.isArray(value)) {
+          value.forEach((item, index) => {
+            flattenReceipt(item, `${path}.${index}`, `${labelPrefix} ${index + 1}`, entries);
+          });
+        } else if (value && typeof value === "object") {
+          for (const [key, child] of Object.entries(value)) {
+            const label = receiptFieldName(key);
+            flattenReceipt(child, path ? `${path}.${key}` : key, labelPrefix ? `${labelPrefix}: ${label.toLowerCase()}` : label, entries);
+          }
+        } else {
+          entries.push({ field: path, label: labelPrefix, value });
+        }
+      }
+
+      function receiptRows(data) {
+        const entries = [];
+        if (Array.isArray(data)) {
+          flattenReceipt(data, "receipt", "Item", entries);
+        } else {
+          flattenReceipt(data, "", "", entries);
+        }
+        return entries;
+      }
+
       function displayReceiptTable(data, name) {
         const receiptDisplay = document.getElementById("receiptDisplay");
         const receiptContent = document.getElementById("receiptContent");
 
-        // Create table
-        const table = document.createElement("table");
-        table.style.width = "100%";
-        table.style.borderCollapse = "collapse";
+        const vatBoxes = Object.fromEntries(HmrcFieldTable.VAT_RETURN_BOXES.map((box) => [box.field, box]));
+        const dataRows = receiptRows(data).map((entry) => {
+          const isAmount = typeof entry.value === "number" && Number.isFinite(entry.value);
+          const box = vatBoxes[entry.field];
+          const row = { ...entry, kind: isAmount ? "money" : "text" };
+          return box ? { ...row, label: box.label, definition: box.definition, source: box.source } : row;
+        });
+        const rows = [{ field: "receiptName", label: "Receipt name", value: name, kind: "text" }, ...dataRows];
 
-        // Add table header
-        const thead = document.createElement("thead");
-        const headerRow = document.createElement("tr");
-        const propHeader = document.createElement("th");
-        propHeader.textContent = "Property";
-        const valueHeader = document.createElement("th");
-        valueHeader.textContent = "Value";
-        headerRow.appendChild(propHeader);
-        headerRow.appendChild(valueHeader);
-        thead.appendChild(headerRow);
-        table.appendChild(thead);
+        HmrcFieldTable.mountFieldTable(receiptContent, rows, { caption: "Receipt details" });
 
-        // Add table body
-        const tbody = document.createElement("tbody");
-
-        // Add receipt name first
-        const nameRow = document.createElement("tr");
-        const nameProp = document.createElement("td");
-        nameProp.textContent = "Receipt Name";
-        nameProp.style.fontWeight = "bold";
-        const nameValue = document.createElement("td");
-        nameValue.textContent = name;
-        nameRow.appendChild(nameProp);
-        nameRow.appendChild(nameValue);
-        tbody.appendChild(nameRow);
-
-        // Add all data properties
-        function addDataToTable(obj, prefix = "") {
-          for (const [key, value] of Object.entries(obj)) {
-            const row = document.createElement("tr");
-            const propCell = document.createElement("td");
-            const valueCell = document.createElement("td");
-
-            const displayKey = prefix ? `${prefix}.${key}` : key;
-            propCell.textContent = displayKey;
-            propCell.style.fontWeight = "bold";
-
-            if (value && typeof value === "object" && !Array.isArray(value)) {
-              valueCell.textContent = "[Object]";
-              row.appendChild(propCell);
-              row.appendChild(valueCell);
-              tbody.appendChild(row);
-              addDataToTable(value, displayKey);
-            } else if (Array.isArray(value)) {
-              valueCell.textContent = `[Array with ${value.length} items]`;
-              row.appendChild(propCell);
-              row.appendChild(valueCell);
-              tbody.appendChild(row);
-              value.forEach((item, index) => {
-                if (item && typeof item === "object") {
-                  addDataToTable(item, `${displayKey}[${index}]`);
-                } else {
-                  const itemRow = document.createElement("tr");
-                  const itemProp = document.createElement("td");
-                  const itemValue = document.createElement("td");
-                  itemProp.textContent = `${displayKey}[${index}]`;
-                  itemProp.style.fontWeight = "bold";
-                  itemValue.textContent = String(item);
-                  itemRow.appendChild(itemProp);
-                  itemRow.appendChild(itemValue);
-                  tbody.appendChild(itemRow);
-                }
-              });
-            } else {
-              valueCell.textContent = String(value);
-              row.appendChild(propCell);
-              row.appendChild(valueCell);
-              tbody.appendChild(row);
-            }
-          }
-        }
-
-        addDataToTable(data);
-        table.appendChild(tbody);
-
-        // Clear and populate content
-        receiptContent.innerHTML = "";
-        receiptContent.appendChild(table);
-
-        // Show the display area
         receiptDisplay.style.display = "block";
-
-        // Scroll to the receipt display
         receiptDisplay.scrollIntoView({ behavior: "smooth" });
       }
 
       async function downloadReceipt(name) {
-        const idToken = getIdToken();
         const res = await window.fetchWithIdToken(`/api/v1/hmrc/receipt/${encodeURIComponent(name)}`, {});
         if (!res.ok) return alert("Failed to download receipt");
         const blob = new Blob([await res.text()], { type: "application/json" });
@@ -296,7 +272,6 @@
       }
 
       document.getElementById("exportCsvBtn").addEventListener("click", async () => {
-        const idToken = getIdToken();
         const res = await window.fetchWithIdToken("/api/v1/hmrc/receipt", {});
         if (!res.ok) return alert("Failed to export CSV");
         const json = await res.json();
