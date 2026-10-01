@@ -90,7 +90,7 @@ window.authorizedFetch = window.authorizedFetch || function(){ return Promise.re
 
     const retrieveBtn = page.locator("#retrieveBtn");
     await expect(retrieveBtn).toBeVisible();
-    await expect(retrieveBtn).toHaveText(/Retrieve Obligations/);
+    await expect(retrieveBtn).toHaveText(/Retrieve obligations/);
 
     // Results container starts hidden until a search completes
     const resultsContainer = page.locator("#obligationsResults");

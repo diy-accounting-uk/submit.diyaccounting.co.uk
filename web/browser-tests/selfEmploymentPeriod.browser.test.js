@@ -84,7 +84,7 @@ window.authorizedFetch = window.authorizedFetch || function(){ return Promise.re
 
     const submitBtn = page.locator("#submitBtn");
     await expect(submitBtn).toBeVisible();
-    await expect(submitBtn).toHaveText(/File Quarterly Update/);
+    await expect(submitBtn).toHaveText(/File quarterly update/);
 
     const resultsContainer = page.locator("#selfEmploymentPeriodResults");
     await expect(resultsContainer).toBeHidden();

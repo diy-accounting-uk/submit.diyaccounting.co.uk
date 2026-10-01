@@ -24,7 +24,7 @@
     <a href="#mainContent" class="skip-link">Skip to main content</a>
     <header>
       <p class="chrome-fallback"><a href="../">DIY Accounting Submit</a></p>
-      <h1>Change Registered Office Address</h1>
+      <h1>Change registered office address</h1>
       <p class="subtitle">File a change of registered office address with Companies House</p>
     </header>
 
@@ -75,15 +75,15 @@
           </div>
           <div class="form-group">
             <label for="addressLine1">Address line 1</label>
-            <input type="text" id="addressLine1" name="addressLine1" required value="" />
+            <input type="text" id="addressLine1" name="addressLine1" required value="" autocomplete="address-line1" />
           </div>
           <div class="form-group">
             <label for="addressLine2">Address line 2 (optional)</label>
-            <input type="text" id="addressLine2" name="addressLine2" value="" />
+            <input type="text" id="addressLine2" name="addressLine2" value="" autocomplete="address-line2" />
           </div>
           <div class="form-group">
             <label for="locality">Town or city</label>
-            <input type="text" id="locality" name="locality" required value="" />
+            <input type="text" id="locality" name="locality" required value="" autocomplete="address-level2" />
           </div>
           <div class="form-group">
             <label for="region">County (optional)</label>
@@ -91,11 +91,11 @@
           </div>
           <div class="form-group">
             <label for="postalCode">Postcode</label>
-            <input type="text" id="postalCode" name="postalCode" required value="" spellcheck="false" />
+            <input type="text" id="postalCode" name="postalCode" required value="" spellcheck="false" autocomplete="postal-code" />
           </div>
           <div class="form-group">
             <label for="country">Country</label>
-            <select id="country" name="country" required>
+            <select id="country" name="country" required autocomplete="country-name">
               <option value="England">England</option>
               <option value="Wales">Wales</option>
               <option value="Scotland">Scotland</option>

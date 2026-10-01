@@ -87,8 +87,9 @@
 // reason in the plan, and never applied.
 //
 // A conversion action's category and primary_for_goal are compared and reported, but never
-// written — there is no conversionActions:mutate call here, so that drift stays a plan line until
-// it is fixed in the GA4 property or the Ads UI. The GA4 side of the Ads link stays with
+// written, so that drift stays a plan line until it is fixed in the GA4 property or the Ads UI.
+// The one conversionActions:mutate call creates the [upload] "Import from clicks" action when the
+// account has none of that name. The GA4 side of the Ads link stays with
 // ga4-sync.js.
 //
 // Usage:
@@ -483,6 +484,9 @@ export function parseConfig(tomlString) {
   });
   if (conversionActions.length === 0) throw new Error("ads.toml declares no [[conversion_action]]");
 
+  const uploadConversionActionName = parsed.upload?.conversion_action_name;
+  if (!uploadConversionActionName) throw new Error("ads.toml is missing [upload].conversion_action_name");
+
   const conversionGoals = (Array.isArray(parsed.customer_conversion_goal) ? parsed.customer_conversion_goal : []).map((entry) => {
     if (!entry.category || !entry.origin || typeof entry.biddable !== "boolean") {
       throw new Error(`[[customer_conversion_goal]] entry is missing category, origin or biddable: ${JSON.stringify(entry)}`);
@@ -502,6 +506,7 @@ export function parseConfig(tomlString) {
     ...base,
     autoTagging,
     conversionActions,
+    uploadConversionActionName: String(uploadConversionActionName),
     conversionGoals,
     campaigns,
     reserveFloorSsmParameter: String(reserveFloorSsmParameter),
@@ -886,7 +891,7 @@ function planCampaignKeywords(campaign, liveCampaign) {
  * Decide what differs between ads.toml's declared state and the live account. Pure, so it is
  * unit-tested against mocked live state.
  *
- * A declared conversion action, conversion goal or Performance Max campaign the live account does
+ * A declared GA4 conversion action, conversion goal or Performance Max campaign the live account does
  * not have is not a plan action: this script has no create path for any of the three, so a name
  * it cannot find live throws instead of silently planning nothing. A declared Search campaign the
  * live account lacks plans a create instead.
@@ -922,6 +927,10 @@ export function planAds(config, live) {
         live: { category: liveAction.category, primaryForGoal: liveAction.primaryForGoal },
       });
     }
+  }
+
+  if (!liveActionsByName.has(config.uploadConversionActionName)) {
+    actions.push({ kind: "create-upload-conversion-action", name: config.uploadConversionActionName });
   }
 
   const liveGoalsByCategory = new Map(live.conversionGoals.map((goal) => [goal.category, goal]));
@@ -1008,7 +1017,7 @@ export function planAds(config, live) {
 
   if (missing.length > 0) {
     throw new Error(
-      `ads.toml declares ${missing.join(", ")}, which the live account does not have. ads-sync.js never creates a conversion action, a conversion goal or a Performance Max campaign — create it live first.`,
+      `ads.toml declares ${missing.join(", ")}, which the live account does not have. ads-sync.js creates only the [upload] conversion action and Search campaigns, never the GA4 conversion actions, a conversion goal or a Performance Max campaign — create it live first.`,
     );
   }
 
@@ -1025,6 +1034,8 @@ export function describe(action) {
       return `customer auto-tagging: ${action.live} (declared ${action.wanted}) (would update)`;
     case "conversion-action-drift":
       return `conversion action "${action.name}": differs on ${action.fields.join(", ")} — live ${JSON.stringify(action.live)}, declared ${JSON.stringify(action.wanted)} (report only, not applied)`;
+    case "create-upload-conversion-action":
+      return `conversion action "${action.name}": UPLOAD_CLICKS, PURCHASE, one per click (would create)`;
     case "update-conversion-goal":
       return `customer conversion goal ${action.category}: biddable ${action.live} (declared ${action.wanted}) (would update)`;
     case "update-campaign-status":
@@ -1135,6 +1146,10 @@ function biddingMutatePayload(bidding) {
  * @param {object} action a create-campaign plan action
  * @param {string} budgetResourceName
  */
+export function uploadConversionActionCreateBody(action) {
+  return { name: action.name, type: "UPLOAD_CLICKS", category: "PURCHASE", countingType: "ONE_PER_CLICK", status: "ENABLED" };
+}
+
 export function campaignCreateBody(action, budgetResourceName) {
   const { update: biddingFields } = biddingMutatePayload(action.bidding);
   return {
@@ -1195,6 +1210,10 @@ async function applyAction(token, config, action, context) {
     case "update-auto-tagging":
       return googleAdsMutate(token, config.customerId, config.apiVersion, "customers", [
         { updateMask: "autoTaggingEnabled", update: { resourceName: `customers/${config.customerId}`, autoTaggingEnabled: action.wanted } },
+      ]);
+    case "create-upload-conversion-action":
+      return googleAdsMutate(token, config.customerId, config.apiVersion, "conversionActions", [
+        { create: uploadConversionActionCreateBody(action) },
       ]);
     case "update-conversion-goal": {
       const resourceName = `customers/${config.customerId}/customerConversionGoals/${action.category}~${action.origin}`;

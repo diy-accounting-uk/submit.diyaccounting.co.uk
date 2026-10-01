@@ -176,51 +176,56 @@
     {
       box: 1,
       field: "vatDueSales",
-      label: "VAT due on sales and other outputs",
+      label: "VAT due in the period on sales and other outputs",
       definition: "Include the VAT due on all goods and services you supplied in the period covered by the return.",
     },
     {
       box: 2,
       field: "vatDueAcquisitions",
-      label: "VAT due on acquisitions from EU",
+      label: "VAT due in the period on acquisitions of goods made in Northern Ireland from EU member states",
       definition: "Box 2 VAT due in the period on acquisitions of goods made in Northern Ireland from EU member states",
     },
     {
       box: 3,
       field: "totalVatDue",
-      label: "Total VAT due (Box 1 + Box 2)",
+      label: "Total VAT due",
       definition: "Show the total VAT due, that is, boxes 1 and 2 added together.",
     },
     {
       box: 4,
       field: "vatReclaimedCurrPeriod",
-      label: "VAT reclaimed on purchases and inputs",
+      label: "VAT reclaimed in the period on purchases and other inputs (including acquisitions from the EU)",
       definition: "Show the total amount of deductible VAT charged on your business purchases.",
     },
-    { box: 5, field: "netVatDue", label: "Net VAT to pay or reclaim", definition: "deduct the number in box 4 from the number in box 3" },
+    {
+      box: 5,
+      field: "netVatDue",
+      label: "Net VAT to pay to HMRC or reclaim",
+      definition: "deduct the number in box 4 from the number in box 3",
+    },
     {
       box: 6,
       field: "totalValueSalesExVAT",
-      label: "Total value of sales (excl. VAT)",
+      label: "Total value of sales and all other outputs excluding any VAT",
       definition: "Show the total value of all your business sales and other specific outputs but leave out any VAT.",
     },
     {
       box: 7,
       field: "totalValuePurchasesExVAT",
-      label: "Total value of purchases (excl. VAT)",
+      label: "Total value of purchases and all other inputs excluding any VAT",
       definition: "Show the total value of your purchases and expenses but leave out any VAT.",
     },
     {
       box: 8,
       field: "totalValueGoodsSuppliedExVAT",
-      label: "Total value of goods supplied to EU (excl. VAT)",
+      label: "Total value of all supplies of goods and related costs, excluding any VAT, to EU member states",
       definition:
         "Show the total value of all supplies of goods to EU member states and directly related costs, such as freight and insurance, where these form part of the invoice or contract price.",
     },
     {
       box: 9,
       field: "totalAcquisitionsExVAT",
-      label: "Total acquisitions from EU (excl. VAT)",
+      label: "Total value of all acquisitions of goods and related costs, excluding any VAT, from EU member states",
       definition: "Box 9 total value of all acquisitions goods and related costs, excluding any VAT, from EU member states.",
     },
   ].map((entry) => ({ ...entry, source: "vatNotice70012", anchor: `filling-in-box-${entry.box}` }));
@@ -245,7 +250,15 @@
     return isAmount(value) ? window.formatGbp(value) : ABSENT;
   }
 
+  function formatTextValue(value) {
+    if (value === null || value === undefined) return ABSENT;
+    if (typeof value === "boolean") return value ? "Yes" : "No";
+    if (typeof value === "string" && /^\d{4}-\d{2}-\d{2}$/.test(value)) return formatIsoDate(value);
+    return String(value);
+  }
+
   function formatValue(value, kind) {
+    if (kind === "text") return formatTextValue(value);
     if (!isAmount(value)) return ABSENT;
     return kind === "percent" ? `${value}%` : window.formatGbp(value);
   }
@@ -346,7 +359,7 @@
     return `<p class="field-table-source">Definitions quoted from ${cited}.</p>`;
   }
 
-  // rows: [{ field, label, value, kind?, definition?, source?, total?, valueId? }]
+  // rows: [{ field, label, value, kind? (money, percent or text), definition?, source?, total?, valueId? }]
   function renderFieldTable(rows, { caption, emptyText } = {}) {
     if (!rows || rows.length === 0) {
       return `<p class="no-data">${escapeHtml(emptyText || "HMRC returned no figures here.")}</p>`;

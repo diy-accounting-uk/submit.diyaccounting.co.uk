@@ -29,7 +29,7 @@
     </header>
 
     <main id="mainContent">
-      <div id="syntheticIndicator" class="synthetic-indicator">⚠️ SYNTHETIC MODE - calls go to HMRC's sandbox API</div>
+      <div id="syntheticIndicator" class="synthetic-indicator">⚠️ Synthetic mode - calls go to HMRC's sandbox API</div>
 
       <div id="statusMessagesContainer" role="alert" aria-live="polite"></div>
 
@@ -38,23 +38,23 @@
       <!-- Period Summary Form -->
       <div id="selfEmploymentPeriodForm" class="form-container">
         <div class="form-toggle-buttons">
-          <button type="button" id="toggleSearchCriteriaBtn" class="secondary-button" style="display: none">Show Form</button>
-          <button type="button" id="cancelRequestBtn" class="cancel-button" style="display: none">Cancel Request</button>
+          <button type="button" id="toggleSearchCriteriaBtn" class="secondary-button" style="display: none">Show form</button>
+          <button type="button" id="cancelRequestBtn" class="cancel-button" style="display: none">Cancel request</button>
         </div>
         <div id="searchCriteriaContainer">
           <h2>Create a Period Summary</h2>
           <form id="itsaSelfEmploymentPeriodForm">
             <div class="form-group">
               <label for="nino">National Insurance number</label>
-              <p id="nino-hint" class="hint">This is two letters, six numbers and a final letter, for example AB123456C.</p>
+              <p id="nino-hint" class="hint">This is two letters, six numbers and a final letter, for example QQ 12 34 56 C.</p>
               <input
                 type="text"
                 id="nino"
                 name="nino"
                 required
                 value=""
-                placeholder="e.g., AB123456C"
-                maxlength="9"
+                placeholder="e.g., QQ 12 34 56 C"
+                maxlength="13"
                 aria-describedby="nino-hint"
                 spellcheck="false"
                 autocapitalize="characters"
@@ -172,21 +172,21 @@
             </div>
 
             <div id="submissionCost" class="submission-cost"></div>
-            <button type="submit" id="submitBtn" class="btn">File Quarterly Update</button>
+            <button type="submit" id="submitBtn" class="btn">File quarterly update</button>
           </form>
         </div>
       </div>
 
       <!-- Results Display -->
       <div id="selfEmploymentPeriodResults" class="results-container" style="display: none">
-        <h3>Quarterly Update Filed</h3>
+        <h3>Quarterly update filed</h3>
         <p>HMRC has accepted the period summary.</p>
         <dl>
           <dt>Period ID</dt>
           <dd id="periodIdResult"></dd>
         </dl>
         <div class="button-group">
-          <button type="button" id="newSearchBtn" class="secondary-button">File Another</button>
+          <button type="button" id="newSearchBtn" class="secondary-button">File another</button>
         </div>
       </div>
     </main>
@@ -411,7 +411,7 @@
       }
 
       async function handleLoadCurrentTotal() {
-        const nino = document.getElementById("nino").value.trim().toUpperCase();
+        const nino = document.getElementById("nino").value.replace(/\s+/g, "").toUpperCase();
         const businessId = document.getElementById("businessId").value.trim();
         const taxYear = document.getElementById("taxYear").value.trim();
 
@@ -467,7 +467,7 @@
 
       function readPeriodData(source) {
         return {
-          nino: (source.nino || "").trim().toUpperCase(),
+          nino: (source.nino || "").replace(/\s+/g, "").toUpperCase(),
           businessId: (source.businessId || "").trim(),
           taxYear: (source.taxYear || "").trim(),
           periodStartDate: source.periodStartDate || undefined,
@@ -583,7 +583,7 @@
 
         const formData = new FormData(event.target);
         const periodData = readPeriodData({
-          nino: formData.get("nino"),
+          nino: formData.get("nino").replace(/\s+/g, "").toUpperCase(),
           businessId: formData.get("businessId"),
           taxYear: formData.get("taxYear"),
           periodStartDate: formData.get("periodStartDate"),

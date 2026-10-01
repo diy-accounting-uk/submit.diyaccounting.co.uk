@@ -12,6 +12,7 @@ import {
   shapeCampaignBidding,
   shapeCampaignTargeting,
   campaignCreateBody,
+  uploadConversionActionCreateBody,
   locationCriteriaOperations,
   negativeKeywordOperations,
   shapeCampaignKeywords,
@@ -37,6 +38,10 @@ version = "v25"
 
 [ga4]
 property_id = "523400333"
+
+[upload]
+conversion_action_name = "DIY Accounting (upload) purchase"
+scope = "https://www.googleapis.com/auth/datamanager"
 
 [[conversion_action]]
 name = "DIY Accounting (web) purchase"
@@ -140,6 +145,14 @@ function baseLive() {
         name: "DIY Accounting (web) submit_vat_return",
         type: "GOOGLE_ANALYTICS_4_CUSTOM",
         category: "SIGNUP",
+        status: "ENABLED",
+        primaryForGoal: true,
+      },
+      {
+        resourceName: "customers/8142685080/conversionActions/3",
+        name: "DIY Accounting (upload) purchase",
+        type: "UPLOAD_CLICKS",
+        category: "PURCHASE",
         status: "ENABLED",
         primaryForGoal: true,
       },
@@ -454,13 +467,42 @@ describe("ads-sync planAds", () => {
     expect(describeAction(plan[0])).toContain("declared 1000000 micros");
   });
 
+  it("plans a create when the upload conversion action is missing live", () => {
+    const config = parseConfig(VALID_TOML);
+    const live = baseLive();
+    live.conversionActions = live.conversionActions.filter((action) => action.name !== "DIY Accounting (upload) purchase");
+
+    const plan = planAds(config, live);
+
+    expect(plan).toEqual([{ kind: "create-upload-conversion-action", name: "DIY Accounting (upload) purchase" }]);
+    expect(describeAction(plan[0])).toBe(
+      'conversion action "DIY Accounting (upload) purchase": UPLOAD_CLICKS, PURCHASE, one per click (would create)',
+    );
+  });
+
+  it("builds the upload conversion action create body", () => {
+    expect(uploadConversionActionCreateBody({ kind: "create-upload-conversion-action", name: "DIY Accounting (upload) purchase" })).toEqual(
+      {
+        name: "DIY Accounting (upload) purchase",
+        type: "UPLOAD_CLICKS",
+        category: "PURCHASE",
+        countingType: "ONE_PER_CLICK",
+        status: "ENABLED",
+      },
+    );
+  });
+
+  it("throws when [upload].conversion_action_name is missing", () => {
+    expect(() => parseConfig(VALID_TOML.replace(/\[upload\][\s\S]*?(?=\[\[conversion_action\]\])/, ""))).toThrow(/upload/);
+  });
+
   it("fails the run when a declared conversion action has no live match", () => {
     const config = parseConfig(VALID_TOML);
     const live = baseLive();
     live.conversionActions = live.conversionActions.filter((action) => action.name !== "DIY Accounting (web) submit_vat_return");
 
     expect(() => planAds(config, live)).toThrow(/DIY Accounting \(web\) submit_vat_return/);
-    expect(() => planAds(config, live)).toThrow(/never creates/);
+    expect(() => planAds(config, live)).toThrow(/never the GA4 conversion actions/);
   });
 
   it("ignores a live conversion action ads.toml does not declare", () => {

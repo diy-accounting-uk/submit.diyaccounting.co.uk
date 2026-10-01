@@ -158,4 +158,24 @@ window.getGovClientHeaders = window.getGovClientHeaders || function(){ return Pr
 
     await page.locator("#summaryContainer").screenshot({ path: screenshotPath("ukPropertyAdjustments") });
   });
+
+  test("submitting an adjustment sends repairs and maintenance under expenses and no field outside HMRC's request", async ({ page }) => {
+    await loadPage(page);
+    const sentAdjustDetails = await page.evaluate(async () => {
+      sessionStorage.setItem("hmrcAccount", "synthetic");
+      window.ensureAuthorizedThen = async (pendingKey, pendingValue, run) => run("token");
+      let sent;
+      window.adjustBsasUkProperty = async (adjustDetails) => {
+        sent = adjustDetails;
+      };
+      document.getElementById("summaryContainer").style.display = "block";
+      document.getElementById("adjustTotalRentsReceived").value = "100.5";
+      document.getElementById("adjustRepairsAndMaintenance").value = "25";
+      await window.handleAdjustmentSubmit(false);
+      return sent;
+    });
+
+    expect(sentAdjustDetails.income).toEqual({ totalRentsReceived: 100.5 });
+    expect(sentAdjustDetails.expenses).toEqual({ repairsAndMaintenance: 25 });
+  });
 });

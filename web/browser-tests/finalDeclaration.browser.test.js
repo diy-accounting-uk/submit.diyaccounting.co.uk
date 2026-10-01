@@ -61,7 +61,7 @@ window.getGovClientHeaders = window.getGovClientHeaders || function(){ return Pr
 
     const retrieveBtn = page.locator("#retrieveBtn");
     await expect(retrieveBtn).toBeVisible();
-    await expect(retrieveBtn).toHaveText(/Retrieve Calculation/);
+    await expect(retrieveBtn).toHaveText(/Retrieve calculation/);
 
     const declarationContainer = page.locator("#declarationContainer");
     await expect(declarationContainer).toBeHidden();

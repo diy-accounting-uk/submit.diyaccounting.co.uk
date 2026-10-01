@@ -29,7 +29,7 @@
     </header>
 
     <main id="mainContent">
-      <div id="syntheticIndicator" class="synthetic-indicator">⚠️ SYNTHETIC MODE - calls go to HMRC's sandbox API</div>
+      <div id="syntheticIndicator" class="synthetic-indicator">⚠️ Synthetic mode - calls go to HMRC's sandbox API</div>
 
       <div id="statusMessagesContainer" role="alert" aria-live="polite"></div>
 
@@ -41,16 +41,21 @@
         <form id="itsaLossesLoadForm">
           <div class="form-group">
             <label for="nino">National Insurance number</label>
+            <p id="nino-hint" class="hint">
+              This is two letters, six numbers and a final letter, for example QQ 12 34 56 C. You can find it on your National Insurance
+              card, payslip or P60.
+            </p>
             <input
               type="text"
               id="nino"
               name="nino"
               required
               value=""
-              placeholder="e.g., AB123456C"
-              maxlength="9"
+              placeholder="e.g., QQ 12 34 56 C"
+              maxlength="13"
               spellcheck="false"
               autocapitalize="characters"
+              aria-describedby="nino-hint"
             />
           </div>
 
@@ -79,7 +84,16 @@
 
           <div class="form-group">
             <label for="taxYear">Tax year</label>
-            <input type="text" id="taxYear" name="taxYear" required placeholder="e.g., 2023-24" maxlength="7" />
+            <p id="taxYear-hint" class="hint">Enter in the format 2023-24, for example.</p>
+            <input
+              type="text"
+              id="taxYear"
+              name="taxYear"
+              required
+              placeholder="e.g., 2023-24"
+              maxlength="7"
+              aria-describedby="taxYear-hint"
+            />
           </div>
 
           <!-- Developer Test Scenario Section -->
@@ -105,7 +119,7 @@
             </div>
           </div>
 
-          <button type="submit" id="loadBtn" class="btn">Load Losses and Claims</button>
+          <button type="submit" id="loadBtn" class="btn">Load losses and claims</button>
         </form>
       </div>
 
@@ -166,15 +180,15 @@
         <p id="claimSummary" class="hint" aria-live="polite"></p>
 
         <div id="submissionCost" class="submission-cost"></div>
-        <button type="button" id="saveBtn" class="btn">Save Losses and Claims</button>
+        <button type="button" id="saveBtn" class="btn">Save losses and claims</button>
       </div>
 
       <!-- Results Display -->
       <div id="lossesResults" class="results-container" style="display: none">
-        <h3>Losses and Claims Saved</h3>
+        <h3>Losses and claims saved</h3>
         <p>HMRC has accepted the losses and claims.</p>
         <div class="button-group">
-          <button type="button" id="newSearchBtn" class="secondary-button">Load Another</button>
+          <button type="button" id="newSearchBtn" class="secondary-button">Load another</button>
         </div>
       </div>
     </main>
@@ -452,7 +466,7 @@
 
       async function handleLoadFormSubmission(event) {
         event.preventDefault();
-        const nino = document.getElementById("nino").value.trim().toUpperCase();
+        const nino = document.getElementById("nino").value.replace(/\s+/g, "").toUpperCase();
         const businessId = document.getElementById("businessId").value.trim();
         const typeOfBusiness = document.getElementById("typeOfBusiness").value;
         const taxYear = document.getElementById("taxYear").value.trim();

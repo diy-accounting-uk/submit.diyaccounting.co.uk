@@ -38,6 +38,42 @@ function isValidTaxYear(taxYear) {
   return /^\d{4}-\d{2}$/.test(taxYear);
 }
 
+const UK_PROPERTY_ADJUST_INCOME_FIELDS = ["totalRentsReceived", "premiumsOfLeaseGrant", "reversePremiums", "otherPropertyIncome"];
+
+const UK_PROPERTY_ADJUST_EXPENSES_FIELDS = [
+  "consolidatedExpenses",
+  "premisesRunningCosts",
+  "repairsAndMaintenance",
+  "financialCosts",
+  "professionalFees",
+  "costOfServices",
+  "residentialFinancialCost",
+  "other",
+  "travelCosts",
+];
+
+/**
+ * The Business Source Adjustable Summary v7.0 "Submit UK Property Accounting Adjustments" schema
+ * allows only the listed fields under ukProperty.income and ukProperty.expenses
+ * ("additionalProperties": false); HMRC answers any other field with
+ * RULE_INCORRECT_OR_EMPTY_BODY_SUBMITTED.
+ * @param {Object|undefined} ukProperty - the parsed ukProperty object of the request body
+ * @returns {string[]} the JSON paths of every field the schema does not define
+ */
+export function findUnknownUkPropertyAdjustFields(ukProperty) {
+  const sections = [
+    ["income", UK_PROPERTY_ADJUST_INCOME_FIELDS],
+    ["expenses", UK_PROPERTY_ADJUST_EXPENSES_FIELDS],
+  ];
+  return sections.flatMap(([section, allowedFields]) => {
+    const values = ukProperty?.[section];
+    if (!values || typeof values !== "object") return [];
+    return Object.keys(values)
+      .filter((field) => !allowedFields.includes(field))
+      .map((field) => `/ukProperty/${section}/${field}`);
+  });
+}
+
 /** True when the caller sent zeroAdjustments together with any of income/expenses/additions. */
 function hasBothAdjustmentForms(body) {
   const hasZeroAdjustments = body?.zeroAdjustments === true;
@@ -213,6 +249,14 @@ export function apiEndpoint(app) {
     }
 
     const ukProperty = req.body?.ukProperty;
+    const unknownFieldPaths = findUnknownUkPropertyAdjustFields(ukProperty);
+    if (unknownFieldPaths.length > 0) {
+      return res.status(400).json({
+        code: "RULE_INCORRECT_OR_EMPTY_BODY_SUBMITTED",
+        message: "An empty or non-matching body was submitted",
+        paths: unknownFieldPaths,
+      });
+    }
     if (hasBothAdjustmentForms(ukProperty)) {
       return res.status(400).json({
         code: "RULE_BOTH_ADJUSTMENTS_SUPPLIED",

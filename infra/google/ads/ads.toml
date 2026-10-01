@@ -47,8 +47,8 @@ version = "v25"
 property_id = "523400333"
 
 # infra/google/ads/ads-conversions-upload.js sends paid conversions to this "Import from clicks"
-# conversion action through the Data Manager API. The action is created in the Ads UI, not by
-# ads-sync.js, and the script fails when the account has no action of this name. The stored
+# conversion action through the Data Manager API. ads-sync.js --apply creates the action, and the
+# script fails when the account has no action of this name. The stored
 # refresh token must be consented with this scope as well as the adwords one.
 [upload]
 conversion_action_name = "DIY Accounting (upload) purchase"

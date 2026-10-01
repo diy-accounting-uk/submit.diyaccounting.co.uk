@@ -61,7 +61,7 @@ window.getGovClientHeaders = window.getGovClientHeaders || function(){ return Pr
 
     const loadBtn = page.locator("#loadBtn");
     await expect(loadBtn).toBeVisible();
-    await expect(loadBtn).toHaveText(/Load Annual Submission/);
+    await expect(loadBtn).toHaveText(/Load annual submission/);
 
     const editForm = page.locator("#annualEditForm");
     await expect(editForm).toBeHidden();

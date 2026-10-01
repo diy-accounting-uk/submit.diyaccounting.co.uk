@@ -29,7 +29,7 @@
     </header>
 
     <main id="mainContent">
-      <div id="syntheticIndicator" class="synthetic-indicator">⚠️ SYNTHETIC MODE - calls go to HMRC's sandbox API</div>
+      <div id="syntheticIndicator" class="synthetic-indicator">⚠️ Synthetic mode - calls go to HMRC's sandbox API</div>
 
       <div id="statusMessagesContainer" role="alert" aria-live="polite"></div>
 
@@ -38,17 +38,17 @@
       <!-- Business Details Form -->
       <div id="businessDetailsForm" class="form-container">
         <div class="form-toggle-buttons">
-          <button type="button" id="toggleSearchCriteriaBtn" class="secondary-button" style="display: none">Show Search Criteria</button>
-          <button type="button" id="cancelRequestBtn" class="cancel-button" style="display: none">Cancel Request</button>
+          <button type="button" id="toggleSearchCriteriaBtn" class="secondary-button" style="display: none">Show search criteria</button>
+          <button type="button" id="cancelRequestBtn" class="cancel-button" style="display: none">Cancel request</button>
         </div>
         <div id="searchCriteriaContainer">
-          <h2>Retrieve Business Details</h2>
+          <h2>Retrieve business details</h2>
           <form id="itsaBusinessDetailsForm">
             <div class="form-group">
               <label for="nino">National Insurance number</label>
               <p id="nino-hint" class="hint">
-                This is two letters, six numbers and a final letter, for example AB123456C. You can find it on your National Insurance card,
-                payslip or P60.
+                This is two letters, six numbers and a final letter, for example QQ 12 34 56 C. You can find it on your National Insurance
+                card, payslip or P60.
               </p>
               <input
                 type="text"
@@ -56,8 +56,8 @@
                 name="nino"
                 required
                 value=""
-                placeholder="e.g., AB123456C"
-                maxlength="9"
+                placeholder="e.g., QQ 12 34 56 C"
+                maxlength="13"
                 aria-describedby="nino-hint"
                 spellcheck="false"
                 autocapitalize="characters"
@@ -97,7 +97,7 @@
               </div>
             </div>
 
-            <button type="submit" id="retrieveBtn" class="btn">Retrieve Business Details</button>
+            <button type="submit" id="retrieveBtn" class="btn">Retrieve business details</button>
           </form>
         </div>
       </div>
@@ -107,7 +107,7 @@
         <h3>Businesses</h3>
         <div id="businessDetailsTable"></div>
         <div class="button-group">
-          <button type="button" id="newSearchBtn" class="secondary-button">New Search</button>
+          <button type="button" id="newSearchBtn" class="secondary-button">New search</button>
         </div>
       </div>
     </main>
@@ -297,7 +297,7 @@
         event.preventDefault();
 
         const formData = new FormData(event.target);
-        const nino = formData.get("nino").trim().toUpperCase();
+        const nino = formData.get("nino").replace(/\s+/g, "").toUpperCase();
         const testScenario = formData.get("testScenario");
         const runFraudPreventionHeaderValidation = document.getElementById("runFraudPreventionHeaderValidation")?.checked || false;
 
