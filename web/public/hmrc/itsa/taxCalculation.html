@@ -46,7 +46,7 @@
       <!-- Trigger form -->
       <div id="triggerForm" class="form-container">
         <h2>Calculate</h2>
-        <form id="itsaCalculationTriggerForm">
+        <form id="itsaCalculationTriggerForm" novalidate>
           <div class="form-group">
             <label for="nino">National Insurance number</label>
             <p id="nino-hint" class="hint">
@@ -165,6 +165,7 @@
     <script src="../../developer-mode.js"></script>
     <script src="../../lib/request-cache.js"></script>
     <script src="../../lib/toml-parser.js"></script>
+    <script src="../../lib/form-errors.js"></script>
     <script src="../../lib/hmrc-scope-check.js"></script>
     <script type="module" src="../../lib/services/hmrc-service.js"></script>
     <script src="../../widgets/entitlement-status.js"></script>
@@ -361,10 +362,7 @@
         const testScenario = document.getElementById("testScenario")?.value;
         const runFraudPreventionHeaderValidation = document.getElementById("runFraudPreventionHeaderValidation")?.checked || false;
 
-        if (!nino || !taxYear || !calculationType) {
-          showStatus("Please fill in the National Insurance number, tax year and calculation type.", "error");
-          return;
-        }
+        if (!window.formErrors.requireFields(["nino", "taxYear", "calculationType"])) return;
 
         const calculationDetails = { nino, taxYear, calculationType };
 

@@ -38,7 +38,7 @@
       <!-- Load criteria -->
       <div id="loadCriteriaForm" class="form-container">
         <h2>Load a Business's Losses and Claims</h2>
-        <form id="itsaLossesLoadForm">
+        <form id="itsaLossesLoadForm" novalidate>
           <div class="form-group">
             <label for="nino">National Insurance number</label>
             <p id="nino-hint" class="hint">
@@ -287,6 +287,7 @@
     <script src="../../lib/request-cache.js"></script>
     <script src="../../lib/toml-parser.js"></script>
     <script src="../../lib/money-input.js"></script>
+    <script src="../../lib/form-errors.js"></script>
     <script src="../../lib/hmrc-scope-check.js"></script>
     <script type="module" src="../../lib/services/hmrc-service.js"></script>
     <script src="../../widgets/entitlement-status.js"></script>
@@ -558,10 +559,7 @@
         const testScenario = document.getElementById("testScenario")?.value;
         const runFraudPreventionHeaderValidation = document.getElementById("runFraudPreventionHeaderValidation")?.checked || false;
 
-        if (!nino || !businessId || !taxYear) {
-          showStatus("Please fill in the National Insurance number, business ID and tax year.", "error");
-          return;
-        }
+        if (!window.formErrors.requireFields(["nino", "businessId", "taxYear"])) return;
 
         await ensureAuthorizedThen(
           "pendingLossesLoadRequest",
@@ -608,11 +606,7 @@
       }
 
       async function handleSaveClick() {
-        const moneyProblem = window.moneyInputProblem();
-        if (moneyProblem) {
-          showStatus(moneyProblem, "error");
-          return;
-        }
+        if (window.formErrors.reportMoneyProblems()) return;
         const lossesDetails = {
           nino: loadedNino,
           businessId: loadedBusinessId,

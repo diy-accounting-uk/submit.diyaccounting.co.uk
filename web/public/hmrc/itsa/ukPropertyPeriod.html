@@ -43,7 +43,7 @@
         </div>
         <div id="searchCriteriaContainer">
           <h2>Create a Period Summary</h2>
-          <form id="itsaUkPropertyPeriodForm">
+          <form id="itsaUkPropertyPeriodForm" novalidate>
             <div class="form-group">
               <label for="nino">National Insurance number</label>
               <p id="nino-hint" class="hint">This is two letters, six numbers and a final letter, for example QQ 12 34 56 C.</p>
@@ -262,6 +262,7 @@
     <script src="../../lib/request-cache.js"></script>
     <script src="../../lib/toml-parser.js"></script>
     <script src="../../lib/money-input.js"></script>
+    <script src="../../lib/form-errors.js"></script>
     <script src="../../lib/hmrc-scope-check.js"></script>
     <script src="../../lib/itsaSubmissionModel.js"></script>
     <script type="module" src="../../lib/services/hmrc-service.js"></script>
@@ -482,10 +483,7 @@
         const businessId = document.getElementById("businessId").value.trim();
         const taxYear = document.getElementById("taxYear").value.trim();
 
-        if (!nino || !businessId || !taxYear) {
-          showStatus("Enter the National Insurance number, business ID and tax year first.", "error");
-          return;
-        }
+        if (!window.formErrors.requireFields(["nino", "businessId", "taxYear"])) return;
 
         const accessToken = sessionStorage.getItem("hmrcAccessToken");
         const scopeSufficient = accessToken && window.hmrcScopeCheck ? await window.hmrcScopeCheck.isTokenSufficient() : !!accessToken;
@@ -663,11 +661,7 @@
       async function handleFormSubmission(event) {
         event.preventDefault();
 
-        const moneyProblem = window.moneyInputProblem();
-        if (moneyProblem) {
-          showStatus(moneyProblem, "error");
-          return;
-        }
+        if (window.formErrors.reportMoneyProblems()) return;
 
         const formData = new FormData(event.target);
         const periodData = readPeriodData({
@@ -685,20 +679,14 @@
         const testScenario = formData.get("testScenario");
         const runFraudPreventionHeaderValidation = document.getElementById("runFraudPreventionHeaderValidation")?.checked || false;
 
-        if (!periodData.nino || !periodData.businessId || !periodData.taxYear) {
-          showStatus("Please fill in the National Insurance number, business ID and tax year.", "error");
-          return;
-        }
+        if (!window.formErrors.requireFields(["nino", "businessId", "taxYear"])) return;
 
         const isCumulative =
           window.itsaSubmissionModel &&
           window.itsaSubmissionModel.isValidTaxYear(periodData.taxYear) &&
           window.itsaSubmissionModel.resolveItsaSubmissionModel(periodData.taxYear) === "cumulative";
 
-        if (!isCumulative && (!periodData.fromDate || !periodData.toDate)) {
-          showStatus("Please fill in the period start and end dates.", "error");
-          return;
-        }
+        if (!window.formErrors.requireFields(isCumulative ? ["periodAmount"] : ["fromDate", "toDate", "periodAmount"])) return;
 
         const accessToken = sessionStorage.getItem("hmrcAccessToken");
         const scopeSufficient = accessToken && window.hmrcScopeCheck ? await window.hmrcScopeCheck.isTokenSufficient() : !!accessToken;

@@ -43,7 +43,7 @@
         </div>
         <div id="searchCriteriaContainer">
           <h2>Amend a Period Summary</h2>
-          <form id="itsaSelfEmploymentPeriodAmendForm">
+          <form id="itsaSelfEmploymentPeriodAmendForm" novalidate>
             <div class="form-group">
               <label for="nino">National Insurance number</label>
               <p id="nino-hint" class="hint">
@@ -227,6 +227,7 @@
     <script src="../../lib/request-cache.js"></script>
     <script src="../../lib/toml-parser.js"></script>
     <script src="../../lib/money-input.js"></script>
+    <script src="../../lib/form-errors.js"></script>
     <script src="../../lib/hmrc-scope-check.js"></script>
     <script src="../../lib/itsaSubmissionModel.js"></script>
     <script type="module" src="../../lib/services/hmrc-service.js"></script>
@@ -422,10 +423,7 @@
         const businessId = document.getElementById("businessId").value.trim();
         const taxYear = document.getElementById("taxYear").value.trim();
 
-        if (!nino || !businessId || !taxYear) {
-          showStatus("Enter the National Insurance number, business ID and tax year first.", "error");
-          return;
-        }
+        if (!window.formErrors.requireFields(["nino", "businessId", "taxYear"])) return;
 
         const accessToken = sessionStorage.getItem("hmrcAccessToken");
         const scopeSufficient = accessToken && window.hmrcScopeCheck ? await window.hmrcScopeCheck.isTokenSufficient() : !!accessToken;
@@ -581,11 +579,7 @@
       async function handleFormSubmission(event) {
         event.preventDefault();
 
-        const moneyProblem = window.moneyInputProblem();
-        if (moneyProblem) {
-          showStatus(moneyProblem, "error");
-          return;
-        }
+        if (window.formErrors.reportMoneyProblems()) return;
 
         const formData = new FormData(event.target);
         const amendData = readAmendData({
@@ -601,20 +595,14 @@
         const testScenario = formData.get("testScenario");
         const runFraudPreventionHeaderValidation = document.getElementById("runFraudPreventionHeaderValidation")?.checked || false;
 
-        if (!amendData.nino || !amendData.businessId || !amendData.taxYear) {
-          showStatus("Please fill in the National Insurance number, business ID and tax year.", "error");
-          return;
-        }
+        if (!window.formErrors.requireFields(["nino", "businessId", "taxYear"])) return;
 
         const isCumulative =
           window.itsaSubmissionModel &&
           window.itsaSubmissionModel.isValidTaxYear(amendData.taxYear) &&
           window.itsaSubmissionModel.resolveItsaSubmissionModel(amendData.taxYear) === "cumulative";
 
-        if (!isCumulative && !amendData.periodId) {
-          showStatus("Please fill in the period ID.", "error");
-          return;
-        }
+        if (!isCumulative && !window.formErrors.requireFields(["periodId"])) return;
 
         const accessToken = sessionStorage.getItem("hmrcAccessToken");
         const scopeSufficient = accessToken && window.hmrcScopeCheck ? await window.hmrcScopeCheck.isTokenSufficient() : !!accessToken;

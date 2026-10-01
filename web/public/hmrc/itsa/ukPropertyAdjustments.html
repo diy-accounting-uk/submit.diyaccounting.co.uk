@@ -40,7 +40,7 @@
       <div id="triggerForm" class="form-container">
         <h2>Trigger the Year-End Summary</h2>
         <div id="obligationsWarning" class="status-message status-error" style="display: none" role="alert"></div>
-        <form id="itsaBsasTriggerForm">
+        <form id="itsaBsasTriggerForm" novalidate>
           <div class="form-group">
             <label for="nino">National Insurance number</label>
             <p id="nino-hint" class="hint">
@@ -187,6 +187,7 @@
     <script src="../../developer-mode.js"></script>
     <script src="../../lib/request-cache.js"></script>
     <script src="../../lib/toml-parser.js"></script>
+    <script src="../../lib/form-errors.js"></script>
     <script src="../../lib/hmrc-scope-check.js"></script>
     <script type="module" src="../../lib/services/hmrc-service.js"></script>
     <script src="../../widgets/entitlement-status.js"></script>
@@ -316,10 +317,8 @@
         const testScenario = document.getElementById("testScenario")?.value;
         const runFraudPreventionHeaderValidation = document.getElementById("runFraudPreventionHeaderValidation")?.checked || false;
 
-        if (!nino || !businessId || !taxYear || !accountingPeriodStartDate || !accountingPeriodEndDate) {
-          showStatus("Please fill in the National Insurance number, business ID, tax year and accounting period.", "error");
+        if (!window.formErrors.requireFields(["nino", "businessId", "taxYear", "accountingPeriodStartDate", "accountingPeriodEndDate"]))
           return;
-        }
 
         const triggerDetails = {
           nino,
@@ -413,11 +412,7 @@
 
       async function handleAdjustmentSubmit(zeroAdjustments) {
         if (!zeroAdjustments) {
-          const moneyProblem = window.moneyInputProblem();
-          if (moneyProblem) {
-            showStatus(moneyProblem, "error");
-            return;
-          }
+          if (window.formErrors.reportMoneyProblems()) return;
         }
         const testScenario = document.getElementById("testScenario")?.value;
         const runFraudPreventionHeaderValidation = document.getElementById("runFraudPreventionHeaderValidation")?.checked || false;

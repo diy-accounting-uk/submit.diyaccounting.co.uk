@@ -44,7 +44,7 @@
         </div>
         <div id="searchCriteriaContainer">
           <h2>Retrieve a Period Summary</h2>
-          <form id="itsaUkPropertyPeriodViewForm">
+          <form id="itsaUkPropertyPeriodViewForm" novalidate>
             <div class="form-group">
               <label for="nino">National Insurance number</label>
               <p id="nino-hint" class="hint">
@@ -152,6 +152,7 @@
     <script src="../../developer-mode.js"></script>
     <script src="../../lib/request-cache.js"></script>
     <script src="../../lib/toml-parser.js"></script>
+    <script src="../../lib/form-errors.js"></script>
     <script src="../../lib/hmrc-scope-check.js"></script>
     <script src="../../lib/money-format.js"></script>
     <script src="../../lib/hmrc-field-table.js"></script>
@@ -357,10 +358,7 @@
           window.itsaSubmissionModel.isValidTaxYear(taxYear) &&
           window.itsaSubmissionModel.resolveItsaSubmissionModel(taxYear) === "cumulative";
 
-        if (!nino || !businessId || !taxYear || (!isCumulative && !submissionId)) {
-          showStatus("Please fill in the National Insurance number, business ID, tax year and submission ID.", "error");
-          return;
-        }
+        if (!window.formErrors.requireFields(["nino", "businessId", "taxYear"].concat(isCumulative ? [] : ["submissionId"]))) return;
 
         const accessToken = sessionStorage.getItem("hmrcAccessToken");
         const scopeSufficient = accessToken && window.hmrcScopeCheck ? await window.hmrcScopeCheck.isTokenSufficient() : !!accessToken;
