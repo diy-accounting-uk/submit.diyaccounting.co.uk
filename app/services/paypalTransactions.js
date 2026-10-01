@@ -28,6 +28,15 @@ export const BANK_DEPOSIT_TO_PAYPAL = /^bank deposit to paypal account/i;
 const WITHDRAWAL = /\bwithdrawal\b/i;
 
 /**
+ * True for a currency conversion row.
+ * @param {string} description
+ * @returns {boolean}
+ */
+export function isCurrencyConversion(description) {
+  return CURRENCY_CONVERSION.test(description);
+}
+
+/**
  * True for a currency conversion or a transfer to/from the linked bank
  * account -- balance mechanics with no sale or purchase behind them,
  * excluded from posting. Exported so a reconciliation report can categorise

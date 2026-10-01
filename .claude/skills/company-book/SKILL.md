@@ -42,7 +42,7 @@ The parsers live in `mcp/lib/finance/` (run `npm ci` in `mcp/` first):
 | Opening balances and chart of accounts | `book-from-workbook.js` | `openingBalancesFromClosingSet({ dir })` over the prior year's closing set returns `[openingBalances]` from `TrialBalance!EJ` (a debit Trade Creditors balance lands in `tradeDebtors`); `bookFromWorkbookSet` over the prior year's workbook set; `openingJournalLines(book)` and `openingBankBalanceLines(book)` to turn its `openingBalances` into the lines the engine reads |
 | NatWest | `bank-lines.js` | `bankLinesFromCsv(text, { accountMainID, labels })` returns `{ lines, unlabelled }`; `closingBalance(text)` |
 | Stripe | `stripe-lines.js` | `stripeLinesFromTransactions(transactions, { ..., labels })` returns `{ lines, unlabelled }`; `stripePayoutLines`, `reconcileStripeMonth` |
-| PayPal | `paypal-statement-lines.js` | `paypalLinesFromStatementPdf(transactionsPdf, { ...accounts, statementPdfPath, labels })` returns `{ lines, unlabelled }`; `reconcilePaypalMonth({ transactionsText, statementText })`; needs `pdftotext` (poppler) |
+| PayPal | `paypal-statement-lines.js` | `paypalLinesFromStatementPdf(transactionsPdf, { ...accounts, statementPdfPath, labels })` returns `{ lines, unlabelled }`; `paypalWalletLinesFromStatementPdf(transactionsPdf, { walletAccountMainID, statementPdfPath, labels })` returns the wallet's own bank lines; `reconcilePaypalMonth({ transactionsText, statementText })`; needs `pdftotext` (poppler) |
 | PayPal (API) | `paypal-lines.js` | `paypalLinesFromTransactions(transactions, { ...accounts, labels })` over `scripts/finance/paypal-stage.js`'s staged JSON returns `{ lines, unlabelled }` |
 | Supplier invoices | `mail-invoices.js` | `invoiceLinesForPeriod({ from, to, suppliers })`; finds the corpus CLI from a main checkout or a worktree; a "Payment schedule.pdf" attachment gives one line per instalment |
 
@@ -52,6 +52,11 @@ a TOML library and pass the parsed object as `labels`; a rule matching a line's 
 its account, journal and VAT code, and a line no rule matches falls back to the parser's own
 default coding and comes back in `unlabelled` for review. The parsers hold no payee data
 themselves -- only the caller reads the map.
+
+A label rule can also carry `documentType` (the gross line's document type), `skipJournalLine` (no
+sales or purchases line; the wallet line carries the receipt), `walletBankCode` (the wallet line's
+bank code), and, on a bank rule, `counterAccountMainID` and `counterBankCode` (the build adds the
+other leg of a transfer to another declared account).
 
 Validate with `validateBook` and `validateLines` from `@diy-accounting-uk/diya-gl`
 (`dist/app/lib/diya-gl-schema.js`).
@@ -64,6 +69,13 @@ Posting rules:
 
 - Take account codes from the prior year's workbooks. Never invent one.
 - Post gross income and fees as separate lines. Never net them.
+- The PayPal wallet (1220) moves like PayPal's balance: each receipt's gross in (`DR`), each fee and
+  bill out (`CR`), a withdrawal to the current account a `BC` line there with a `BB` leg on the
+  wallet, a top-up the reverse, a director's own payment `DL`, cashback `K`. A credit that returns a
+  same-day hold moves nothing. A bill in another currency posts at the pound figure of its
+  conversion pair. 1220 equals each month's statement closing balance, opening included.
+- Dividends paid carry bank code `DV`, a transfer between the current and savings accounts `BS` on the
+  current side and `BB` on the savings side, savings interest `K`.
 - A payout or transfer that shows in two sources (a Stripe payout and its bank credit, a PayPal
   withdrawal and its bank credit) is one movement. Post it once, on the bank side.
 - PayPal holds and their releases never post. The statement's own Releases figure decides which
