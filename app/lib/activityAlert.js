@@ -113,15 +113,13 @@ export async function publishActivityEvent({
  * and business metrics all agree on whether a submission came from a real customer.
  *
  * Preference order: an explicit override, then the signed-in user's email (set into
- * context by extractUserFromAuthorizerContext whenever the API Gateway authorizer carries
- * one), then the `test_` requestId prefix a browser session sets. A probe or canary that
+ * context by extractUserFromAuthorizerContext from the email claim, or from the username
+ * when the token is an access token and the username is an email address), then the `test_` requestId prefix a browser session sets. A probe or canary that
  * calls a protected endpoint directly (no browser, no sessionStorage) never sets that
- * prefix, but it does carry a Cognito access token for its own synthetic user, so the
- * email tier is what actually classifies it. There is no third tier that hashes the
- * signed-in sub and matches it against the synthetic lane users: their Cognito subs are
- * only knowable by an AdminGetUser call, not by anything carried on the request, so a
- * signed-in caller with no email on their token falls straight through to the requestId
- * prefix.
+ * prefix, but it does carry a Cognito access token for its own synthetic user, whose
+ * username is its email address, so the email tier is what classifies it. A federated
+ * caller (username like Google_<id>) has no email on an access token and falls through to
+ * the requestId prefix.
  *
  * @param {string} [explicitActor] - Overrides the derived class when supplied
  * @returns {"customer"|"test-user"|"probe"|"system"}
