@@ -172,8 +172,8 @@ public class NightlyIngestionWorkflow {
                         "PayPal donations pull",
                         paypalDonationsPullLambda)));
         props.adsCostPullLambda()
-                .ifPresent(adsCostPullLambda -> ingestionParallel.branch(buildTask(
-                        scope, prefix + "-Nightly-AdsCostPull", "Ads cost pull", adsCostPullLambda)));
+                .ifPresent(adsCostPullLambda -> ingestionParallel.branch(
+                        buildTask(scope, prefix + "-Nightly-AdsCostPull", "Ads cost pull", adsCostPullLambda)));
 
         var dataQualityTask =
                 buildTask(scope, prefix + "-Nightly-DataQuality", "data quality run", props.dataQualityRunLambda());

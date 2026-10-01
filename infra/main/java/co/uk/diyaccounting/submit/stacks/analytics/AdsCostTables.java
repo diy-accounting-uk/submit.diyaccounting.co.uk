@@ -70,7 +70,8 @@ public class AdsCostTables {
                 .databaseName(props.databaseName())
                 .tableInput(CfnTable.TableInputProperty.builder()
                         .name(COST_TABLE_NAME)
-                        .description("Google Ads impressions, clicks and cost for the day by campaign and ad group, one JSON object per line")
+                        .description(
+                                "Google Ads impressions, clicks and cost for the day by campaign and ad group, one JSON object per line")
                         .tableType("EXTERNAL_TABLE")
                         .parameters(parameters)
                         .partitionKeys(List.of(CfnTable.ColumnProperty.builder()

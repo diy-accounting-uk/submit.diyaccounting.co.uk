@@ -12,6 +12,7 @@ import static co.uk.diyaccounting.submit.utils.KindCdk.ensureAwsCustomResourcePr
 import co.uk.diyaccounting.submit.SubmitSharedNames;
 import co.uk.diyaccounting.submit.constructs.Lambda;
 import co.uk.diyaccounting.submit.constructs.LambdaProps;
+import co.uk.diyaccounting.submit.stacks.analytics.AdsCostTables;
 import co.uk.diyaccounting.submit.stacks.analytics.AlarmStateChangeDelivery;
 import co.uk.diyaccounting.submit.stacks.analytics.AnalyticsDashboard;
 import co.uk.diyaccounting.submit.stacks.analytics.BusinessViews;
@@ -26,7 +27,6 @@ import co.uk.diyaccounting.submit.stacks.analytics.Ga4DailyTables;
 import co.uk.diyaccounting.submit.stacks.analytics.Ga4Tables;
 import co.uk.diyaccounting.submit.stacks.analytics.OperatorEffortTables;
 import co.uk.diyaccounting.submit.stacks.analytics.OperatorSnapshotPublish;
-import co.uk.diyaccounting.submit.stacks.analytics.AdsCostTables;
 import co.uk.diyaccounting.submit.stacks.analytics.PayPalDonationTables;
 import co.uk.diyaccounting.submit.stacks.analytics.RawExport;
 import co.uk.diyaccounting.submit.stacks.analytics.StripeReconciliationTables;

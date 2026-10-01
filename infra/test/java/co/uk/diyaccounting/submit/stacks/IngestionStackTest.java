@@ -629,8 +629,7 @@ class IngestionStackTest {
                 secretStatements.get(0).get("Resource"));
 
         var lambdaEnvironment = environmentVariablesOf(template.findResources(
-                "AWS::Lambda::Function",
-                Map.of("Properties", Map.of("FunctionName", "docs-env-ads-cost-pull"))));
+                "AWS::Lambda::Function", Map.of("Properties", Map.of("FunctionName", "docs-env-ads-cost-pull"))));
         assertEquals(
                 "arn:aws:secretsmanager:eu-west-2:111111111111:secret:docs/submit/youtube/oauth_client",
                 lambdaEnvironment.get("ADS_OAUTH_CLIENT_SECRET_ARN"));
