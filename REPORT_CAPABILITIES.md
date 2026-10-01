@@ -4959,7 +4959,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 #### DEV-44 Check a batch against every CI gate locally
 
 - **Use when:** a batch branch is about to take its first push, or a local pass has gone red in CI.
-- **Does:** batch-check.sh checks out a clean detached worktree of a ref and links node_modules. It runs the bundle, maven verify, npm test, browser tests, Prettier, Spotless, both ESLint ratchets and ESLint on added files. It runs the docker build when the ref touches the Dockerfile, .dockerignore or a COPY source. Each gate prints PASS, FAIL or SKIP with its log path.
+- **Does:** batch-check.sh checks out a clean detached worktree of a ref and links node_modules. It runs the bundle, maven verify, npm test, the mcp tests, browser tests, Prettier, Spotless, both ESLint ratchets and ESLint on added files. It runs the docker build when the ref touches the Dockerfile, .dockerignore or a COPY source. Each gate prints PASS, FAIL or SKIP with its log path.
 - **Run:** `scripts/batch-check.sh <ref> [--docker]`
 - **Entry:** `scripts/batch-check.sh:run_gate`
 - **Files:** scripts/batch-check.sh

@@ -6,7 +6,7 @@
 #
 #   scripts/batch-check.sh <ref> [--docker]
 #
-# Gates, serially, all run even after a failure: bundle, maven verify, npm test, browser tests,
+# Gates, serially, all run even after a failure: bundle, maven verify, npm test, mcp test, browser tests,
 # prettier, spotless, the two eslint ratchets, eslint on added files, and the docker build.
 # The docker build runs when the ref changes Dockerfile, .dockerignore or a path the Dockerfile
 # COPYs from the build context, or when --docker is given.
@@ -59,6 +59,9 @@ git worktree add --detach "$work" "$sha" >"$logdir/setup.log" 2>&1 || {
   exit 1
 }
 ln -sfn "$main_checkout/node_modules" "$work/node_modules"
+if [ -d "$main_checkout/mcp/node_modules" ]; then
+  ln -sfn "$main_checkout/mcp/node_modules" "$work/mcp/node_modules"
+fi
 
 echo "ref=$ref sha=$sha"
 echo "worktree=$work"
@@ -161,6 +164,12 @@ docker_trigger() {
 run_gate bundle npm run bundle
 run_gate maven-verify ./mvnw clean verify
 run_gate npm-test npm test
+if [ -d "$work/mcp/node_modules" ]; then
+  run_gate mcp-test sh -c 'cd mcp && npx vitest run'
+else
+  echo "FAIL mcp-test (0s) log=none, no mcp/node_modules in the main checkout; run npm ci in mcp/ there"
+  failed=1
+fi
 run_gate browser-tests npm run test:browser
 run_gate prettier npx prettier --check .
 run_gate spotless ./mvnw spotless:check

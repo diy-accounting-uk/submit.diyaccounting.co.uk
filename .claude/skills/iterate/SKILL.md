@@ -104,7 +104,7 @@ every slot is held; `main` deploys to prod and takes no ci slot.
   code, is fixed on the batch, not sent back.
 - **Once per batch before its first push**: run `scripts/batch-check.sh <batch-branch>` in one
   background command. It checks out a clean detached worktree of the branch, links `node_modules`,
-  and runs the CI gates serially: maven verify, `npm test`, browser tests, Prettier, Spotless, the
+  and runs the CI gates serially: maven verify, `npm test`, the mcp tests, browser tests, Prettier, Spotless, the
   two ESLint ratchets, ESLint on added files and the docker build when the branch touches it.
   Each gate prints PASS, FAIL or SKIP with its log path. Fix every FAIL before the push. Then run
   `npm run test:<suite>Behaviour-simulator` for every suite whose routes, pages or helpers the
