@@ -369,6 +369,12 @@
     );
   }
 
+  // Parses the escaped markup of renderFieldTable into nodes, so the page never assigns a string to innerHTML.
+  function mountFieldTable(container, rows, options) {
+    const parsed = new DOMParser().parseFromString(renderFieldTable(rows, options), "text/html");
+    container.replaceChildren(...parsed.body.childNodes);
+  }
+
   window.HmrcFieldTable = {
     SOURCES,
     VAT_RETURN_BOXES,
@@ -385,5 +391,6 @@
     ukPropertySummaryRows,
     sourceLink,
     renderFieldTable,
+    mountFieldTable,
   };
 })();

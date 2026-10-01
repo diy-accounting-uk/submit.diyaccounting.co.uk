@@ -278,10 +278,11 @@
           ...row,
           valueId: TAX_BREAKDOWN_VALUE_IDS[row.field],
         }));
-        document.getElementById("taxBreakdown").innerHTML = HmrcFieldTable.renderFieldTable(breakdownRows, {
+        HmrcFieldTable.mountFieldTable(document.getElementById("taxBreakdown"), breakdownRows, {
           caption: "Income Tax and National Insurance",
         });
-        document.getElementById("allowancesAndDeductions").innerHTML = HmrcFieldTable.renderFieldTable(
+        HmrcFieldTable.mountFieldTable(
+          document.getElementById("allowancesAndDeductions"),
           HmrcFieldTable.allowanceRows(calc.allowancesAndDeductions),
           { caption: "Allowances and deductions", emptyText: "HMRC's calculation carries no allowances or deductions." },
         );

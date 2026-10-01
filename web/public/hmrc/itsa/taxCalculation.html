@@ -207,7 +207,8 @@
             taxCalculation.totalIncomeTaxAndNicsDue,
           );
           renderTaxBreakdown(calc);
-          document.getElementById("allowancesAndDeductions").innerHTML = HmrcFieldTable.renderFieldTable(
+          HmrcFieldTable.mountFieldTable(
+            document.getElementById("allowancesAndDeductions"),
             HmrcFieldTable.allowanceRows(calc.allowancesAndDeductions),
             { caption: "Allowances and deductions", emptyText: "HMRC's calculation carries no allowances or deductions." },
           );
@@ -253,7 +254,7 @@
 
       function renderTaxBreakdown(calc) {
         const rows = HmrcFieldTable.taxCalculationRows(calc).map((row) => ({ ...row, valueId: TAX_BREAKDOWN_VALUE_IDS[row.field] }));
-        document.getElementById("taxBreakdown").innerHTML = HmrcFieldTable.renderFieldTable(rows, {
+        HmrcFieldTable.mountFieldTable(document.getElementById("taxBreakdown"), rows, {
           caption: "Income Tax and National Insurance",
         });
       }

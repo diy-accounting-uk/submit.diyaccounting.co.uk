@@ -231,7 +231,8 @@
       }
 
       function displaySummary(bsas) {
-        document.getElementById("summaryDetails").innerHTML = HmrcFieldTable.renderFieldTable(
+        HmrcFieldTable.mountFieldTable(
+          document.getElementById("summaryDetails"),
           HmrcFieldTable.ukPropertySummaryRows(bsas?.adjustableSummaryCalculation),
           { caption: "Year-end summary" },
         );
