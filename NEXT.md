@@ -41,11 +41,11 @@ step.
 
 ## In flight
 
+- [ ] **FORM2c. ITSA period results as field tables.** `PLAN_FORM_AUDIT.md` A8 and A9: `selfEmploymentPeriodView`, `ukPropertyPeriodView`, `selfEmploymentPeriods` and `ukPropertyPeriods` print money raw and absent as "-". Use `web/public/lib/hmrc-field-table.js` (with `money-format.js`) for the `<dl>`s and `formatGbp`, right-aligned, for the table columns. Proof: browser tests per page (pattern in `web/browser-tests/hmrcFieldTableAssets.js`) and the period behaviour suites. **Source**: FORM1 audit. **Owner**: Claude Code. **Model**: Sonnet. **Size**: ~6 files. **In flight**: batch `claude/yarrow-forms`, agent worktree `.claude/worktrees/yarrow-form2c`.
+
+- [ ] **FORM2b. Money inputs take £ and commas.** `PLAN_FORM_AUDIT.md` A6 and A7: every `type="number"` money input on the ITSA submission and adjustment pages and the Companies House accounts and confirmation-statement pages gets a £ prefix, a "For example, £600 or £193.54" hint, `inputmode="decimal"`, and a parser that accepts £ and commas before validation (one shared module under `web/public/lib/`). Proof: a unit test of the parser, browser tests per page, the ITSA and Companies House behaviour suites. FORM2c edits the period pages; FORM2b the submission and adjustment pages, so they run in parallel. **Source**: FORM1 audit. **Owner**: Claude Code. **Model**: Sonnet. **Size**: ~14 files. **In flight**: batch `claude/yarrow-forms`, agent worktree `.claude/worktrees/yarrow-form2b`.
+
 ## Machine-only
-
-- [ ] **FORM2c. ITSA period results as field tables.** `PLAN_FORM_AUDIT.md` A8 and A9: `selfEmploymentPeriodView`, `ukPropertyPeriodView`, `selfEmploymentPeriods` and `ukPropertyPeriods` print money raw and absent as "-". Use `web/public/lib/hmrc-field-table.js` (with `money-format.js`) for the `<dl>`s and `formatGbp`, right-aligned, for the table columns. Proof: browser tests per page (pattern in `web/browser-tests/hmrcFieldTableAssets.js`) and the period behaviour suites. **Source**: FORM1 audit. **Owner**: Claude Code. **Model**: Sonnet. **Size**: ~6 files.
-
-- [ ] **FORM2b. Money inputs take £ and commas.** `PLAN_FORM_AUDIT.md` A6 and A7: every `type="number"` money input on the ITSA submission and adjustment pages and the Companies House accounts and confirmation-statement pages gets a £ prefix, a "For example, £600 or £193.54" hint, `inputmode="decimal"`, and a parser that accepts £ and commas before validation (one shared module under `web/public/lib/`). Proof: a unit test of the parser, browser tests per page, the ITSA and Companies House behaviour suites. FORM2c edits the period pages; FORM2b the submission and adjustment pages, so they run in parallel. **Source**: FORM1 audit. **Owner**: Claude Code. **Model**: Sonnet. **Size**: ~14 files.
 
 ## Machine-ask
 
