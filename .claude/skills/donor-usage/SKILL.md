@@ -12,7 +12,8 @@ Joins payment identity to usage, which is personal data. The result goes to one 
 workspace root, `../DONOR_USAGE_<YYYY-MM-DD>.md` (the root is not a repository and only the
 operator reads it), mode `600`. Nothing personal goes into this repository, a commit, a PR, an
 issue, a log line in chat, or the scratchpad beyond the run's own glue. Glue code lives in the
-session scratchpad and is deleted at the end of the run.
+session scratchpad and is deleted at the end of the run; symlink the repository's `node_modules`
+into the glue directory (`ln -sfn`), or the glue cannot import `stripe` or the AWS SDK.
 
 ## Operator's settings
 
@@ -32,12 +33,12 @@ customer table.
 
 | What | Where | How |
 |---|---|---|
-| Stripe donations | Stripe live account | the live key the way `scripts/finance/stripe-stage.js` reads it (`infra/stripe/stripe.toml` `[keys.prod].live`, resolved in Secrets Manager with `AWS_PROFILE=submit-prod`); list charges since the window start; a donation is a charge from a Payment Link listed in `stripe.toml` or carrying a donation `metadata.bundleId` (the same rule as `app/functions/analytics/stripeReconcile.js`); name and email from `billing_details`, falling back to the customer object |
-| PayPal donations | PayPal API | `scripts/finance/paypal-stage.js` for each month since the window start, or the transaction search it wraps (`app/services/paypalTransactionSearch.js`); a donation is a completed receipt that `app/services/paypalTransactions.js` classes as a sale, not a transfer or conversion; name and email from `payer_info` |
+| Stripe donations | Stripe live account | the live key the way `scripts/finance/stripe-stage.js` reads it (`infra/stripe/stripe.toml` `[keys.prod].live`, resolved in Secrets Manager with `AWS_PROFILE=submit-prod`); list charges since the window start (`autoPagingToArray` takes `limit` up to 10000); a donation is a charge whose `metadata.bundleId` starts `donation-`, or, for older charges, whose checkout session's `payment_link` is a donation link in `stripe.toml` (the same rule as `app/functions/analytics/stripeReconcile.js`); name and email from `billing_details`, falling back to the customer object |
+| PayPal donations | PayPal API | `scripts/finance/paypal-stage.js` for each month since the window start, or the transaction search it wraps (`app/services/paypalTransactionSearch.js`); a donation is a positive transaction with event code `T0013` and status `S`; `T0002` (an accounts-product payment) and `T0011` are not donations, and `T0003` and `T0006` are payments out; name and email from `payer_info` |
 | Accounts | Cognito `prod-env-user-pool` | `aws cognito-idp list-users` (paginated): `sub`, `email`, `name`, `given_name`, `family_name`, `UserCreateDate`; drop `synthetic-*@test.diyaccounting.co.uk` and every other `@test.diyaccounting.co.uk` user |
 | Hash | `app/services/subHasher.js` | load the salt registry once with `USER_SUB_HASH_SALT` set from the secret in the glue process's environment, never echoed or written; hash each matched `sub` with `hashSub` (and `hashSubWithVersion` for every version in the registry, since older rows carry older versions) |
-| VAT returns, from 2026-02-21 | DynamoDB `prod-env-receipts` | `Query` on `hashedSub` per matched user (key schema `hashedSub` + `receiptId`); count, first and last date |
-| Other submissions, from 2026-08-29 | Athena `prod_env_analytics.activity_events` (workgroup `prod-env-analytics`, partition `dt`) | one query over the matched hashes with a `dt` filter from the first partition; events: `vat-return-submitted`, every `itsa-*-created`, `-amended`, `-filed` and `-submitted` event, and the Companies House filing events (list them with `grep -rhoE '"[a-z-]+-(filed|submitted)"' app/functions` before the query); also the usage events (sign-in, pass redeemed, obligations viewed) as "used, did not submit"; state bytes scanned |
+| VAT returns, from 2026-02-21 | DynamoDB `prod-env-receipts` | `Query` on `hashedSub` per matched user and per salt version (key schema `hashedSub` + `receiptId`; each item carries `saltVersion` and `createdAt`, the submission time); count, first and last `createdAt` |
+| Other submissions, from 2026-08-29 | Athena `prod_env_analytics.activity_events` (workgroup `prod-env-analytics`, partition `dt`) | one query over the matched hashes with `dt >= DATE '<lake start>'` (`dt` is a DATE; a string literal fails with TYPE_MISMATCH); submission events: `vat-return-submitted`, and the `itsa-*` and `companies-house-*` events ending `-created`, `-amended`, `-filed` or `-submitted` (list them with `grep -rhoE '"(itsa|companies-house)-[a-z-]+-(created|amended|filed|submitted)"' app/functions`; a wider grep also catches `checkout-session-created` and `dispute-created`); also the usage events (sign-in, pass redeemed, obligations viewed) as "used, did not submit"; state bytes scanned |
 
 ## Window
 
