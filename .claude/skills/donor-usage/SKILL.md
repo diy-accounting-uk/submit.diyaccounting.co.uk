@@ -34,12 +34,28 @@ customer table.
 
 | What | Where | How |
 |---|---|---|
-| Stripe donations | Stripe live account | the live key the way `scripts/finance/stripe-stage.js` reads it (`infra/stripe/stripe.toml` `[keys.prod].live`, resolved in Secrets Manager with `AWS_PROFILE=submit-prod`); list charges since the window start (`autoPagingToArray` takes `limit` up to 10000); a donation is a charge whose `metadata.bundleId` starts `donation-`, or, for older charges, whose checkout session's `payment_link` is a donation link in `stripe.toml` (the same rule as `app/functions/analytics/stripeReconcile.js`); name and email from `billing_details`, falling back to the customer object |
-| PayPal donations | PayPal API | `scripts/finance/paypal-stage.js` for each month since the window start, or the transaction search it wraps (`app/services/paypalTransactionSearch.js`); a donation is a positive transaction with event code `T0013` and status `S`; `T0002` (an accounts-product payment) and `T0011` are not donations, and `T0003` and `T0006` are payments out; name and email from `payer_info` |
-| Accounts | Cognito `prod-env-user-pool` | `aws cognito-idp list-users` (paginated): `sub`, `email`, `name`, `given_name`, `family_name`, `UserCreateDate`; drop `synthetic-*@test.diyaccounting.co.uk` and every other `@test.diyaccounting.co.uk` user |
-| Hash | `app/services/subHasher.js` | load the salt registry once with `USER_SUB_HASH_SALT` set from the secret in the glue process's environment, never echoed or written; hash every non-test account's `sub` with `hashSub` (and `hashSubWithVersion` for every version in the registry, since older rows carry older versions) |
+| Stripe donations | Stripe live account | the live key the way `scripts/finance/stripe-stage.js` reads it (`infra/stripe/stripe.toml` `[keys.prod].live`, Secrets Manager in `eu-west-2`, `AWS_PROFILE=submit-prod`); list every succeeded charge since the window start (`autoPagingToArray` takes `limit` up to 10000); a donation is a charge whose checkout session (`checkout.sessions.list({ payment_intent })`) has a `payment_link` that is a donation link: resolve each `plink_…` id with `paymentLinks.list` (active and inactive) and match its URL to a `[[payment_link]]` in `stripe.toml`, or its `payment_intent_data.metadata.bundleId` starting `donation-`; `metadata.bundleId` on the charge itself is unreliable (4 of 105 at the first full run); a charge with no payment link is a submit subscription; name and email from `billing_details`, falling back to the customer object; a part refund shows net |
+| PayPal donations | PayPal API | the transaction search `scripts/finance/paypal-stage.js` wraps (`app/services/paypalTransactionSearch.js`), every event code since the window start; a donation is `T0013` with status `S` (each carries the donation button's item text); `T0002` (an accounts-product payment), `T0011` (check the payer: the operator's own transfer is not a donation) and funding, transfer, cashback, conversion and payment-out codes are not; name and email from `payer_info` |
+| Accounts | Cognito `prod-env-user-pool` | `aws cognito-idp list-users` (it paginates itself; no `--max-items` with `--no-paginate`): `sub`, `email`, `name`, `given_name`, `family_name`, `UserCreateDate`; drop every `@test.diyaccounting.co.uk` user |
+| Hash | `app/services/subHasher.js` | load the salt registry once with `USER_SUB_HASH_SALT` set from the secret in the glue process's environment, never echoed or written; hash every non-test account's `sub` with `hashSub` (and `hashSubWithVersion` for every version in the registry, since older rows carry older versions); then hash every account and count how many of the lake's distinct `hashed_sub` values match, per version, as a standing check (22 of 48 under v2 at the first full run) |
 | VAT returns, from 2026-02-21 | DynamoDB `prod-env-receipts` | `Query` on `hashedSub` per account and per salt version (key schema `hashedSub` + `receiptId`; each item carries `saltVersion` and `createdAt`, the submission time); count, first and last `createdAt` |
-| Other submissions, from 2026-08-29 | Athena `prod_env_analytics.activity_events` (workgroup `prod-env-analytics`, partition `dt`) | one query over every hash, grouped by `hashed_sub`, with `dt >= DATE '<lake start>'` (`dt` is a DATE; a string literal fails with TYPE_MISMATCH); submission events: `vat-return-submitted`, and the `itsa-*` and `companies-house-*` events ending `-created`, `-amended`, `-filed` or `-submitted` (list them with `grep -rhoE '"(itsa|companies-house)-[a-z-]+-(created|amended|filed|submitted)"' app/functions`; a wider grep also catches `checkout-session-created` and `dispute-created`); also the usage events (sign-in, pass redeemed, obligations viewed) as "used, did not submit"; state bytes scanned |
+| Other submissions, from 2026-08-29 | Athena `prod_env_analytics.activity_events` (workgroup `prod-env-analytics`, partition `dt`) | one query grouped by `hashed_sub, actor, event` over every row with `hashed_sub IS NOT NULL` and `dt >= DATE '<lake start>'` (`dt` is a DATE; a string literal fails with TYPE_MISMATCH); submission events: `vat-return-submitted` and the `itsa-*` and `companies-house-*` events ending `-created`, `-amended`, `-filed` or `-submitted` (`grep -rhoE '"(itsa|companies-house)-[a-z-]+-(created|amended|filed|submitted)"' app/functions`); count `actor = 'test-user'` events on a real account's hash apart from `customer` and `system` (probes and captures sign in as test users); usage events (sign-in, pass redeemed, obligations viewed) mark "used, did not submit"; a submitting hash with no account is an unknown-account row; state bytes scanned |
+
+## Reconcile before matching
+
+Each payment source is checked against the operator's mail and statements, and the counts go in
+the file's Coverage section. Nothing unclassified is dropped; it is listed for the operator.
+
+- **Stripe:** parse the original "Payment of £… for DIY Accounting Limited" notifications in
+  `../mail/antony@diyaccounting.co.uk/2026/*/*/*.eml` (month and day directories are not
+  zero-padded) for their `pi_…` ids; the bodies carry the amount and id only, no name or email.
+  Report API charges, mail notices, matched one to one, mail only, API only, donations,
+  subscriptions, unclassified.
+- **PayPal:** the original notices from `service@paypal.co.uk` in both mailboxes (antony@ and
+  support@; transaction ids in the body; replies add nothing), and the statement PDFs in
+  `../drive/DIY Accounting Limited/finance/<year> accounts/paypal/` (`pdftotext -layout`; 2025-2026
+  for February and March, 2026-2027 from March). Report API transactions by event code, mail
+  notices matched, statement lines matched, and months with no statement yet.
 
 ## Window
 
@@ -55,21 +71,24 @@ the first run; earlier use shows only through the receipts table, which carries 
 <!-- private: donor-usage run <date>, not for any repository -->
 # Donors, accounts and submitters, <window start> to <date>
 
-<one line per set and per overlap: donors, accounts, submitters; donor only, account only, donor and account, account and submitted, all three, unknown-account submitters>
+<one line per set and per overlap: people, donors, accounts, submitters; donor only, account only, donor and account, account and submitted, all three, unknown-account submitters>
 
-| Name | Email | Donor | Account | Submitter | Merged by | Donations | First / last donation | Account since | VAT returns (since 2026-02-21) | Other submissions (since <lake start>) | Used, no submission |
+| Name | Emails | Donor (source, payments, total, first / last) | Account since | VAT returns (since 2026-02-21) | Other submissions (since <lake start>) | Used, no submission | Merged by |
 
-## Possible matches not counted
+## Possible matches not merged
 <pairs where only part of the name matches, or the same name appears twice>
 
 ## Coverage
-<window per source, counts read per source, Athena bytes scanned, what the lake and the receipts table cannot see>
+<window per source; the Stripe and PayPal reconciliation counts; the statement check; the lake hash check; Athena bytes scanned; test-actor submissions on real accounts; what the lake and the receipts table cannot see>
 ```
 
-`chmod 600` the file. Then delete the scratchpad glue and any staged personal data it wrote.
+Rows merge by email, then by normalised full name (lower case, whitespace collapsed, titles
+dropped, two or more tokens). `chmod 600` the file. Then delete the scratchpad glue and any staged
+personal data it wrote.
 
 ## After the run
 
-1. Close the `env-salt-secret-unexpected-read` alarm issue the salt read opened, naming this
-   run. If no issue opened, say so.
+1. Close the `[ALARM] prod-env-salt-secret-unexpected-read` issue the salt read opened (it
+   appears about a minute after the read), naming this run. If none opens within ten minutes,
+   say so.
 2. Reply with the file path and the one-line counts only. No names or emails in the reply.
