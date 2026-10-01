@@ -52,7 +52,7 @@ the file's Coverage section. Nothing unclassified is dropped; it is listed for t
   zero-padded) for their `pi_…` ids, walking each body with Python's `email` package (the subject carries no id; quote any shell glob, since zsh fails an unquoted `*.eml` with "no matches found"); the bodies carry the amount and id only, no name or email.
   Report API charges, mail notices, matched one to one, mail only, API only, donations,
   subscriptions, unclassified.
-- **PayPal:** the original notices from `service@paypal.co.uk` in both mailboxes (antony@ and
+- **PayPal:** the original notices sent by PayPal itself (its `paypal.co.uk` service sender) in both mailboxes (antony@ and
   support@; transaction ids in the body; replies add nothing), and the statement PDFs in
   `../drive/DIY Accounting Limited/finance/<year> accounts/paypal/` (`pdftotext -layout`; 2025-2026
   for February and March, 2026-2027 from March). Report API transactions by event code, mail
