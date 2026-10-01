@@ -4064,9 +4064,9 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 
 - **Use when:** paid subscription conversions with a stored gclid must reach Google Ads through the Data Manager API.
 - **Does:** ads-conversions-upload.js reads paid Stripe charges with a stored gclid from the lake. It sends each with the invoice id as transactionId and adUserData granted. Without a send flag it prints the events and calls no Google API.
-- **Run:** `npm run ads:conversions-upload`; `npm run ads:conversions-upload -- --since 2026-09-28 --validate-only`; `npm run ads:conversions-upload -- --apply`
+- **Run:** `npm run ads:conversions-upload`; `npm run ads:conversions-upload -- --since 2026-09-28 --validate-only`; `npm run ads:conversions-upload -- --apply`; daily at 05:00 UTC by `.github/workflows/ads-conversions-upload.yml`, or `gh workflow run ads-conversions-upload.yml -f mode=validate-only -f since=2026-09-28`
 - **Entry:** `infra/google/ads/ads-conversions-upload.js:main`; `infra/google/ads/ads-conversions-upload.js:shapeConversionEvents`
-- **Files:** infra/google/ads/ads-conversions-upload.js, app/unit-tests/scripts/adsConversionsUpload.test.js, infra/google/ads/ads.toml
+- **Files:** infra/google/ads/ads-conversions-upload.js, .github/workflows/ads-conversions-upload.yml, app/unit-tests/scripts/adsConversionsUpload.test.js, infra/google/ads/ads.toml
 - **Keywords:** google ads conversion upload, offline conversions, data manager api, gclid, transactionId, consent, import from clicks
 - **Related:** DATA-33, DATA-34
 
