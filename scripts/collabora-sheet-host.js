@@ -28,6 +28,7 @@ import http from "http";
 import fs from "fs";
 import os from "os";
 import path from "path";
+import zlib from "zlib";
 import { spawn, execFileSync } from "child_process";
 
 const SPREADSHEETS_ZIPS = "https://spreadsheets.diyaccounting.co.uk/zips/";
@@ -54,17 +55,37 @@ function parseArgs(argv) {
   return args;
 }
 
+// The package zip holds one workbook. Reads it out with zlib so the capture container needs no
+// unzip binary: the central directory gives each entry's name and local header offset.
+function xlsxFromZip(zip) {
+  let eocd = zip.length - 22;
+  while (eocd >= 0 && zip.readUInt32LE(eocd) !== 0x06054b50) eocd--;
+  if (eocd < 0) throw new Error("not a zip file");
+  let entry = zip.readUInt32LE(eocd + 16);
+  for (let i = 0; i < zip.readUInt16LE(eocd + 10); i++) {
+    const method = zip.readUInt16LE(entry + 10);
+    const compressedSize = zip.readUInt32LE(entry + 20);
+    const nameLength = zip.readUInt16LE(entry + 28);
+    const name = zip.toString("utf8", entry + 46, entry + 46 + nameLength);
+    const local = zip.readUInt32LE(entry + 42);
+    if (name.endsWith(".xlsx")) {
+      const dataStart = local + 30 + zip.readUInt16LE(local + 26) + zip.readUInt16LE(local + 28);
+      const data = zip.subarray(dataStart, dataStart + compressedSize);
+      return { name: path.basename(name), bytes: method === 8 ? zlib.inflateRawSync(data) : Buffer.from(data) };
+    }
+    entry += 46 + nameLength + zip.readUInt16LE(entry + 30) + zip.readUInt16LE(entry + 32);
+  }
+  throw new Error("the zip holds no .xlsx");
+}
+
 async function workbookFromPackage(packageName) {
-  const dir = fs.mkdtempSync(path.join(os.tmpdir(), "collabora-sheet-"));
-  const zipPath = path.join(dir, "package.zip");
   const url = SPREADSHEETS_ZIPS + encodeURIComponent(`${packageName}.zip`);
   const response = await fetch(url);
   if (!response.ok) throw new Error(`GET ${url} answered ${response.status}`);
-  fs.writeFileSync(zipPath, Buffer.from(await response.arrayBuffer()));
-  execFileSync("unzip", ["-q", "-o", zipPath, "-d", dir]);
-  const xlsx = fs.readdirSync(dir, { recursive: true }).find((name) => String(name).endsWith(".xlsx"));
-  if (!xlsx) throw new Error(`${url} holds no .xlsx`);
-  return path.join(dir, String(xlsx));
+  const { name, bytes } = xlsxFromZip(Buffer.from(await response.arrayBuffer()));
+  const file = path.join(fs.mkdtempSync(path.join(os.tmpdir(), "collabora-sheet-")), name);
+  fs.writeFileSync(file, bytes);
+  return file;
 }
 
 // The container reaches this host by host.docker.internal: Docker Desktop defines it, and the
