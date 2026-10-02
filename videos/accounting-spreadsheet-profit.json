@@ -186,6 +186,10 @@
           "keyWord": "800"
         },
         {
+          "action": "still",
+          "name": "april-sales-total"
+        },
+        {
           "action": "click",
           "target": "#spreadsheet-tab9",
           "caption": "Now April's purchases: plants and compost for a job.",
@@ -373,6 +377,10 @@
         {
           "action": "hold",
           "ms": 2500
+        },
+        {
+          "action": "still",
+          "name": "profit-and-loss-final"
         }
       ]
     }

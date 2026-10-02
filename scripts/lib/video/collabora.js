@@ -68,12 +68,24 @@ export async function waitForWorkbook(page, { timeoutMs = 120000 } = {}) {
   await page.waitForFunction(() => window.app?.socket && window.app?.calc?.cellCursorRectangle, null, { timeout: timeoutMs });
 }
 
-// Off camera, once per load: removes the "what's new" panel CODE shows on a first visit,
+// Off camera, once per load: hides the "what's new" panel CODE shows on a first visit,
 // recalculates every formula (LibreOffice keeps an xlsx's cached values on load, so the package's
 // month headers and tax year label read the template's year until a hard recalculation), and
 // turns off the spelling underline.
 export async function prepareWorkbook(page) {
-  await page.evaluate(() => document.querySelector(".iframe-welcome-wrap")?.remove());
+  await page.evaluate(() => {
+    const hide = () =>
+      document.querySelectorAll(".iframe-welcome-wrap").forEach((panel) => {
+        if (panel.style.display !== "none") panel.style.display = "none";
+      });
+    hide();
+    new MutationObserver(hide).observe(document.body, {
+      childList: true,
+      subtree: true,
+      attributes: true,
+      attributeFilter: ["style", "class"],
+    });
+  });
   await page.evaluate(() => window.app.map.sendUnoCommand(".uno:CalculateHard"));
   await page.evaluate(() => window.app.map.sendUnoCommand(".uno:SpellOnline", { Enable: { type: "boolean", value: false } }));
   await page.waitForTimeout(1500);
