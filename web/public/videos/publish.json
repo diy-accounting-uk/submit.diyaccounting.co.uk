@@ -1555,20 +1555,20 @@
       "description": "DIY Accounting Submit is a free tool for filing with Companies House and HMRC. This video shows changing a company's registered office address: look up the current address, enter the new one, review it, then file with Companies House. This is a sandbox preview, recorded against a local simulator, not a live filing. Try the VAT side of the product now at https://submit.diyaccounting.co.uk.",
       "tags": ["DIY Accounting", "Companies House", "registered office", "sandbox"],
       "categoryId": "27",
-      "videoId": "JjxmMWrLRRk"
+      "videoId": null
     },
     {
       "id": "change-registered-email",
       "group": "companies-house",
       "publish": true,
       "pipelineVersion": 9,
-      "videoFile": "target/videos/change-registered-email/change-registered-email.mp4",
-      "captionFile": "target/videos/change-registered-email/change-registered-email.vtt",
+      "videoFile": "target/videos/local-change-registered-email/change-registered-email.mp4",
+      "captionFile": "target/videos/local-change-registered-email/change-registered-email.vtt",
       "title": "DIY Accounting Submit: change registered email address",
       "description": "DIY Accounting Submit is a free tool for filing with Companies House and HMRC. This video shows changing a company's registered email address: check eligibility, enter the new address, review it, then file with Companies House. This is a sandbox preview, recorded against a local simulator, not a live filing. Try the VAT side of the product now at https://submit.diyaccounting.co.uk.",
       "tags": ["DIY Accounting", "Companies House", "registered email", "sandbox"],
       "categoryId": "27",
-      "videoId": "xtNOJSUJrKY"
+      "videoId": null
     },
     {
       "id": "file-micro-entity-accounts",
