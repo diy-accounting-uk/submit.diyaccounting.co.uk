@@ -141,7 +141,7 @@ export function estimateTimeline(script) {
         else {
           const group = groupFor(step.action);
           if (group) durationMs = pauseForGroup(group, script.pacing);
-          if (step.action === "type") durationMs += (step.text || "").length * script.pacing.perCharMs;
+          if (step.action === "type" || step.action === "sheetType") durationMs += (step.text || "").length * script.pacing.perCharMs;
         }
         clockMs += durationMs;
       }

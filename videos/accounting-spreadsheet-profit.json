@@ -1,0 +1,380 @@
+{
+  "$schema": "./scene-script.schema.json",
+  "name": "accounting-spreadsheet-profit",
+  "title": "Record sales and purchases in the Excel workbook, see your profit",
+  "description": "A sole trader opens the free Basic Sole Trader Excel workbook, enters three sales and two purchases over April and May, and reads the profit from the Profit & Loss sheet. The workbook is shown in Collabora Online, which runs the real .xlsx.",
+  "auth": "none",
+  "pages": ["scripts/collabora-sheet-host.js", "scripts/lib/video/collabora.js"],
+  "viewport": {
+    "width": 1920,
+    "height": 1080
+  },
+  "deviceScaleFactor": 2,
+  "fps": 30,
+  "localApp": {
+    "command": "node scripts/collabora-sheet-host.js --package 'GB Accounts Basic Sole Trader 2027-04-05 (Apr27) Excel 2007' ${COLLABORA_URL:+--cool-url $COLLABORA_URL --wopi-base http://$(hostname -i | cut -d' ' -f1):8099}",
+    "url": "http://localhost:8099",
+    "readyPattern": "collabora sheet host ready",
+    "readyTimeoutMs": 240000
+  },
+  "pacing": {
+    "perCharMs": 90,
+    "betweenActionsMs": 700,
+    "aroundMotionMs": 600,
+    "minResidualMs": 150,
+    "timerThresholdMs": 250,
+    "timerFullScaleMs": 5000,
+    "waitCompressionAfterMs": 6000,
+    "waitCompressionFactor": 8
+  },
+  "captions": {
+    "fontPx": 40,
+    "lineHeightPx": 56,
+    "maxLines": 2,
+    "maxCharsPerLine": 46,
+    "charsPerSecond": 15,
+    "minMs": 1500,
+    "fadeMs": 250,
+    "safeArea": {
+      "topPct": 5,
+      "bottomPct": 5,
+      "sidePct": 12.5
+    }
+  },
+  "finalHoldMs": 6000,
+  "scenes": [
+    {
+      "id": "setup",
+      "chapter": "Setup",
+      "offCamera": true,
+      "steps": [
+        {
+          "action": "goto",
+          "url": "/",
+          "note": "The host's start page posts the workbook to Collabora, so the page that loads is the editor itself. The first load in a fresh container can take a minute, which sheetPrepare waits out."
+        },
+        {
+          "action": "sheetPrepare"
+        },
+        {
+          "action": "sheetZoom",
+          "percent": 150
+        }
+      ]
+    },
+    {
+      "id": "open",
+      "chapter": "The workbook",
+      "still": true,
+      "steps": [
+        {
+          "action": "caption",
+          "text": "This is the Basic Sole Trader workbook. You download it free from our spreadsheets site.",
+          "headline": "The Basic Sole Trader workbook",
+          "keyWord": "Basic Sole Trader"
+        },
+        {
+          "action": "point",
+          "target": "#spreadsheet-tab8",
+          "caption": "There's a sheet for each month's sales, and one for its purchases.",
+          "headline": "A sheet for every month",
+          "keyWord": "month",
+          "dwellMs": 600
+        }
+      ]
+    },
+    {
+      "id": "april",
+      "chapter": "April: two sales and a purchase",
+      "still": true,
+      "steps": [
+        {
+          "action": "click",
+          "target": "#spreadsheet-tab8",
+          "caption": "Open April's sales.",
+          "headline": "April's sales",
+          "keyWord": "April"
+        },
+        {
+          "action": "sheetCell",
+          "cell": "SalesApr!A4"
+        },
+        {
+          "action": "sheetType",
+          "text": "10/04/2026",
+          "then": "Tab",
+          "caption": "Type the date the customer paid you.",
+          "headline": "Date of the sale",
+          "keyWord": "Date"
+        },
+        {
+          "action": "sheetType",
+          "text": "Lawn and hedges, 12 Oak Road",
+          "then": "Tab",
+          "caption": "Then the customer and the job.",
+          "headline": "The customer and the job",
+          "keyWord": "customer"
+        },
+        {
+          "action": "sheetType",
+          "text": "",
+          "then": "Tab"
+        },
+        {
+          "action": "sheetType",
+          "text": "Bank",
+          "then": "Tab",
+          "caption": "How they paid. Leave this blank if they still owe you.",
+          "headline": "How they paid",
+          "keyWord": "paid"
+        },
+        {
+          "action": "sheetType",
+          "text": "",
+          "then": "Tab"
+        },
+        {
+          "action": "sheetType",
+          "text": "500",
+          "then": "Enter",
+          "caption": "And the amount: £500.",
+          "headline": "Amount: £500",
+          "keyWord": "500"
+        },
+        {
+          "action": "sheetCell",
+          "cell": "SalesApr!A5",
+          "caption": "A second job in April: a garden tidy for £300.",
+          "headline": "A second sale",
+          "keyWord": "second"
+        },
+        {
+          "action": "sheetType",
+          "text": "24/04/2026",
+          "then": "Tab"
+        },
+        {
+          "action": "sheetType",
+          "text": "Garden tidy, 3 Mill Lane",
+          "then": "Tab"
+        },
+        {
+          "action": "sheetType",
+          "text": "",
+          "then": "Tab"
+        },
+        {
+          "action": "sheetType",
+          "text": "Bank",
+          "then": "Tab"
+        },
+        {
+          "action": "sheetType",
+          "text": "",
+          "then": "Tab"
+        },
+        {
+          "action": "sheetType",
+          "text": "300",
+          "then": "Enter"
+        },
+        {
+          "action": "sheetPoint",
+          "cell": "SalesApr!F1",
+          "caption": "The month's total updates as you type: £800.",
+          "headline": "April's sales: £800",
+          "keyWord": "800"
+        },
+        {
+          "action": "click",
+          "target": "#spreadsheet-tab9",
+          "caption": "Now April's purchases: plants and compost for a job.",
+          "headline": "A purchase",
+          "keyWord": "purchase"
+        },
+        {
+          "action": "sheetCell",
+          "cell": "PurchasesApr!A5"
+        },
+        {
+          "action": "sheetType",
+          "text": "15/04/2026",
+          "then": "Tab"
+        },
+        {
+          "action": "sheetType",
+          "text": "Plants and compost",
+          "then": "Tab"
+        },
+        {
+          "action": "sheetType",
+          "text": "",
+          "then": "Tab"
+        },
+        {
+          "action": "sheetType",
+          "text": "Bank",
+          "then": "Tab"
+        },
+        {
+          "action": "sheetType",
+          "text": "s",
+          "then": "Tab",
+          "caption": "The expense letter sorts it. S is for stock and materials you use on jobs.",
+          "headline": "Letter S: materials",
+          "keyWord": "S"
+        },
+        {
+          "action": "sheetType",
+          "text": "",
+          "then": "Tab"
+        },
+        {
+          "action": "sheetType",
+          "text": "200",
+          "then": "Enter",
+          "caption": "They cost £200.",
+          "headline": "Amount: £200",
+          "keyWord": "200"
+        }
+      ]
+    },
+    {
+      "id": "may",
+      "chapter": "May: a sale and a purchase",
+      "still": true,
+      "steps": [
+        {
+          "action": "click",
+          "target": "#spreadsheet-tab10"
+        },
+        {
+          "action": "sheetCell",
+          "cell": "SalesMay!A4",
+          "caption": "May: a new border for £700.",
+          "headline": "A sale in May",
+          "keyWord": "May"
+        },
+        {
+          "action": "sheetType",
+          "text": "08/05/2026",
+          "then": "Tab"
+        },
+        {
+          "action": "sheetType",
+          "text": "New border, 7 Elm Close",
+          "then": "Tab"
+        },
+        {
+          "action": "sheetType",
+          "text": "",
+          "then": "Tab"
+        },
+        {
+          "action": "sheetType",
+          "text": "Bank",
+          "then": "Tab"
+        },
+        {
+          "action": "sheetType",
+          "text": "",
+          "then": "Tab"
+        },
+        {
+          "action": "sheetType",
+          "text": "700",
+          "then": "Enter"
+        },
+        {
+          "action": "click",
+          "target": "#spreadsheet-tab11"
+        },
+        {
+          "action": "sheetCell",
+          "cell": "PurchasesMay!A5"
+        },
+        {
+          "action": "sheetType",
+          "text": "12/05/2026",
+          "then": "Tab"
+        },
+        {
+          "action": "sheetType",
+          "text": "Leaflets",
+          "then": "Tab"
+        },
+        {
+          "action": "sheetType",
+          "text": "",
+          "then": "Tab"
+        },
+        {
+          "action": "sheetType",
+          "text": "Bank",
+          "then": "Tab"
+        },
+        {
+          "action": "sheetType",
+          "text": "a",
+          "then": "Tab",
+          "caption": "And leaflets to find new customers. A is for advertising.",
+          "headline": "Letter A: advertising",
+          "keyWord": "advertising"
+        },
+        {
+          "action": "sheetType",
+          "text": "",
+          "then": "Tab"
+        },
+        {
+          "action": "sheetType",
+          "text": "100",
+          "then": "Enter",
+          "caption": "They cost £100.",
+          "headline": "Amount: £100",
+          "keyWord": "100"
+        }
+      ]
+    },
+    {
+      "id": "profit",
+      "chapter": "See the profit",
+      "still": true,
+      "steps": [
+        {
+          "action": "click",
+          "target": "#spreadsheet-tab3",
+          "caption": "The Profit & Loss sheet adds up every month for you.",
+          "headline": "The Profit & Loss sheet",
+          "keyWord": "Profit"
+        },
+        {
+          "action": "sheetZoom",
+          "percent": 120
+        },
+        {
+          "action": "sheetPoint",
+          "cell": "Profit & Loss Acc!D24",
+          "caption": "£600 profit in April, and £600 in May.",
+          "headline": "£600 a month",
+          "keyWord": "£600"
+        },
+        {
+          "action": "sheetPoint",
+          "cell": "Profit & Loss Acc!E24"
+        },
+        {
+          "action": "sheetPoint",
+          "cell": "Profit & Loss Acc!C24",
+          "caption": "The year so far: £1,500 of sales, £300 of costs, £1,200 profit.",
+          "headline": "Net profit: £1,200",
+          "keyWord": "1,200"
+        },
+        {
+          "action": "hold",
+          "ms": 2500
+        }
+      ]
+    }
+  ]
+}

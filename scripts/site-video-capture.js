@@ -179,6 +179,15 @@ function describeStep(step, waitMs, values, now) {
       return step.target ? `scrolls to ${describeTarget(step.target)}` : `scrolls to the ${step.to}`;
     case "highlight":
       return `highlights ${describeTarget(step.target)}`;
+    case "sheetPrepare":
+      return "opens the workbook";
+    case "sheetZoom":
+      return `zooms the sheet to ${step.percent}%`;
+    case "sheetCell":
+    case "sheetPoint":
+      return `points at ${step.cell}`;
+    case "sheetType":
+      return `types ${describeValue(step, "text", values, now)} into the current cell${step.then ? ` and presses ${step.then}` : ""}`;
     case "await":
       return `waits for ${step.label || step.until}${waitSuffix}`;
     case "hold":
@@ -231,7 +240,7 @@ const ALWAYS_NAVIGATING_ACTIONS = new Set([
 // pointAndReturnRect) — the only ones that can hand a headline its target's actual box through
 // ctx.onTargetRect. Every other action's headline, if it has one, places against no target at
 // all (headlinePlacement.js's "default" anchor).
-const TARGET_RECT_ACTIONS = new Set(["click", "point", "type", "fill", "select", "highlight"]);
+const TARGET_RECT_ACTIONS = new Set(["click", "point", "type", "fill", "select", "highlight", "sheetCell", "sheetType", "sheetPoint"]);
 
 // The ordered list of (text, sceneId) pairs the scene loop's three resolveCaptionHold call
 // sites will ask Polly for: a "caption" action step names its own text; any other step with a

@@ -16,6 +16,53 @@ const KEY_CODES = {
   Tab: { char: 9, key: 1282 },
 };
 
+// A scene script names a cell the way a spreadsheet user reads it: SalesApr!A4, or
+// Profit & Loss Acc!C24 for a sheet name with spaces. Collabora's GoToCell wants LibreOffice's
+// own form, $SalesApr.A4 and $'Profit & Loss Acc'.C24.
+export function libreOfficeReference(ref) {
+  const bang = ref.lastIndexOf("!");
+  if (bang < 1) throw new Error(`cell reference "${ref}" needs a sheet and a cell, like SalesApr!A4`);
+  const sheet = ref.slice(0, bang);
+  const cell = ref.slice(bang + 1);
+  if (!/^[A-Z]{1,3}[0-9]{1,7}$/.test(cell)) throw new Error(`cell reference "${ref}" has no cell like A4 after the "!"`);
+  return `$${/^[A-Za-z0-9_]+$/.test(sheet) ? sheet : `'${sheet.replace(/'/g, "''")}'`}.${cell}`;
+}
+
+// Collabora zooms in fixed steps; zoomTo takes the step number. 100% is step 10.
+const ZOOM_STEP_BY_PERCENT = {
+  20: 1,
+  25: 2,
+  30: 3,
+  35: 4,
+  40: 5,
+  50: 6,
+  60: 7,
+  70: 8,
+  85: 9,
+  100: 10,
+  120: 11,
+  150: 12,
+  170: 13,
+  200: 14,
+  235: 15,
+  280: 16,
+  335: 17,
+  400: 18,
+};
+
+export function zoomStepFor(percent) {
+  const step = ZOOM_STEP_BY_PERCENT[percent];
+  if (!step) throw new Error(`Collabora has no ${percent}% zoom; steps are ${Object.keys(ZOOM_STEP_BY_PERCENT).join(", ")}`);
+  return step;
+}
+
+export async function setZoom(page, percent) {
+  const step = zoomStepFor(percent);
+  await page.evaluate((s) => window.app.zoomControl.zoomTo(s, undefined, true), step);
+  await page.waitForFunction((s) => window.app.map.getZoom() === s, step, { timeout: 10000 });
+  await page.waitForTimeout(1500);
+}
+
 export async function waitForWorkbook(page, { timeoutMs = 120000 } = {}) {
   await page.locator("#pos_window-input-address").waitFor({ state: "visible", timeout: timeoutMs });
   await page.waitForFunction(() => window.app?.socket && window.app?.calc?.cellCursorRectangle, null, { timeout: timeoutMs });

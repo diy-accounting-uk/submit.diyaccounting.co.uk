@@ -344,6 +344,94 @@
           }
         },
         {
+          "if": { "properties": { "action": { "const": "sheetPrepare" } } },
+          "then": {
+            "additionalProperties": false,
+            "required": ["action"],
+            "description": "Waits for the Collabora workbook to open, then clears its welcome panel, recalculates every formula and turns spelling underlines off. Off camera, once per load.",
+            "properties": {
+              "action": {},
+              "timeoutMs": { "type": "number", "exclusiveMinimum": 0 },
+              "caption": { "type": "string" },
+              "headline": { "type": "string", "minLength": 1 },
+              "keyWord": { "type": "string", "minLength": 1 },
+              "pauseMs": { "type": "number", "minimum": 0 },
+              "note": { "type": "string" }
+            }
+          }
+        },
+        {
+          "if": { "properties": { "action": { "const": "sheetZoom" } } },
+          "then": {
+            "additionalProperties": false,
+            "required": ["action", "percent"],
+            "description": "Sets the sheet zoom.",
+            "properties": {
+              "action": {},
+              "percent": { "type": "integer", "description": "One of Collabora's zoom steps: 20, 25, 30, 35, 40, 50, 60, 70, 85, 100, 120, 150, 170, 200, 235, 280, 335, 400." },
+              "caption": { "type": "string" },
+              "headline": { "type": "string", "minLength": 1 },
+              "keyWord": { "type": "string", "minLength": 1 },
+              "pauseMs": { "type": "number", "minimum": 0 },
+              "note": { "type": "string" }
+            }
+          }
+        },
+        {
+          "if": { "properties": { "action": { "const": "sheetCell" } } },
+          "then": {
+            "additionalProperties": false,
+            "required": ["action", "cell"],
+            "description": "Moves the cell cursor to a cell and points the on-screen pointer at it.",
+            "properties": {
+              "action": {},
+              "cell": { "type": "string", "minLength": 1, "description": "Sheet and cell, like SalesApr!A4 or Profit & Loss Acc!C24." },
+              "dwellMs": { "type": "number", "minimum": 0 },
+              "caption": { "type": "string" },
+              "headline": { "type": "string", "minLength": 1 },
+              "keyWord": { "type": "string", "minLength": 1 },
+              "pauseMs": { "type": "number", "minimum": 0 },
+              "note": { "type": "string" }
+            }
+          }
+        },
+        {
+          "if": { "properties": { "action": { "const": "sheetPoint" } } },
+          "then": {
+            "additionalProperties": false,
+            "required": ["action", "cell"],
+            "description": "Like sheetCell, with a default dwell, for pointing at a total.",
+            "properties": {
+              "action": {},
+              "cell": { "type": "string", "minLength": 1, "description": "Sheet and cell, like SalesApr!F1." },
+              "dwellMs": { "type": "number", "minimum": 0 },
+              "caption": { "type": "string" },
+              "headline": { "type": "string", "minLength": 1 },
+              "keyWord": { "type": "string", "minLength": 1 },
+              "pauseMs": { "type": "number", "minimum": 0 },
+              "note": { "type": "string" }
+            }
+          }
+        },
+        {
+          "if": { "properties": { "action": { "const": "sheetType" } } },
+          "then": {
+            "additionalProperties": false,
+            "required": ["action", "text"],
+            "description": "Types into the current cell, then presses Tab or Enter.",
+            "properties": {
+              "action": {},
+              "text": { "$ref": "#/definitions/substitutedText", "description": "Typed into the cell the cursor is on, through Collabora's socket messages. Empty text presses the key alone." },
+              "then": { "type": "string", "enum": ["Tab", "Enter"] },
+              "caption": { "type": "string" },
+              "headline": { "type": "string", "minLength": 1 },
+              "keyWord": { "type": "string", "minLength": 1 },
+              "pauseMs": { "type": "number", "minimum": 0 },
+              "note": { "type": "string" }
+            }
+          }
+        },
+        {
           "if": { "properties": { "action": { "const": "caption" } } },
           "then": {
             "additionalProperties": false,
