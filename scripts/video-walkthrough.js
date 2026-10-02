@@ -213,6 +213,8 @@ export function main(argv = process.argv.slice(2)) {
     try {
       const { walkthrough, bytes } = buildForEntry(entry);
       entry.walkthrough = walkthrough;
+      savePublishList(list);
+      copyVideosManifest();
       console.log(`${entry.id}: ${walkthrough.length} scenes, ${(bytes / 1024).toFixed(0)} KB`);
     } catch (error) {
       failures.push(error.message);
