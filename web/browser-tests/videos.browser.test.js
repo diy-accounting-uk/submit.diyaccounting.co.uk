@@ -31,6 +31,7 @@ const CONTENT_TYPES = {
   ".txt": "text/plain",
   ".json": "application/json",
   ".png": "image/png",
+  ".webp": "image/webp",
   ".svg": "image/svg+xml",
   ".ico": "image/x-icon",
 };
@@ -181,6 +182,142 @@ test.describe("relabelled and stripped titles", () => {
     await expect(section.locator("h2")).toHaveText(stripped.title);
     await expect(section.locator("iframe")).toHaveAttribute("title", stripped.title);
     await expect(page.locator(`nav a[href$="#${stripped.id}"]`).first()).toHaveText(contentsText(stripped));
+  });
+});
+
+// The manifest served to the page: one non-featured video of the group carries a three-scene
+// walkthrough, another carries none.
+const WALKTHROUGH_GROUP = "account";
+const WALKTHROUGH_VIDEOS = EMBEDDED.filter((v) => v.group === WALKTHROUGH_GROUP);
+const WITH_WALKTHROUGH = WALKTHROUGH_VIDEOS.find((v) => !FEATURED_IDS.includes(v.id));
+const WITHOUT_WALKTHROUGH = WALKTHROUGH_VIDEOS.find((v) => v.id !== WITH_WALKTHROUGH.id);
+const SCENES = [
+  { scene: "one", headline: "First step", caption: "The first thing happens.", startSeconds: 4 },
+  { scene: "two", headline: "Second step", caption: "The second thing happens.", startSeconds: 21 },
+  { scene: "three", headline: "Third step", caption: "The third thing happens.", startSeconds: 40 },
+].map((s) => ({
+  ...s,
+  thumb: `videos/${WITH_WALKTHROUGH.id}/${s.scene}-thumb.webp`,
+  full: `videos/${WITH_WALKTHROUGH.id}/${s.scene}.webp`,
+}));
+
+async function serveWalkthroughManifest(page) {
+  await serveRealSite(page);
+  const videos = MANIFEST.videos.map((v) => {
+    const { walkthrough: _ignored, ...rest } = v;
+    return v.id === WITH_WALKTHROUGH.id ? { ...rest, walkthrough: SCENES } : rest;
+  });
+  await page.route("**/videos/publish.json", (route) =>
+    route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify({ ...MANIFEST, videos }) }),
+  );
+}
+
+const AREA_URL = `http://localhost:3000/${AREA_PAGES[WALKTHROUGH_GROUP]}`;
+
+test.describe("walkthrough under a video", () => {
+  test("the twistie is closed by default and opens to one thumbnail per scene", async ({ page }) => {
+    await serveWalkthroughManifest(page);
+    await page.goto(AREA_URL, { waitUntil: "domcontentloaded" });
+    const twistie = page.locator(`section#${WITH_WALKTHROUGH.id} details.walkthrough`);
+    await expect(twistie).toHaveCount(1);
+    await expect(twistie).not.toHaveAttribute("open", "");
+    await expect(twistie.locator("summary")).toHaveText(/Walkthrough: 3 steps/);
+    await twistie.locator("summary").click();
+    await expect(twistie.locator(".walkthrough-thumb")).toHaveCount(3);
+    await expect(twistie.locator(".walkthrough-thumb img").first()).toHaveAttribute("alt", SCENES[0].caption);
+    await expect(twistie.locator(".walkthrough-headline").first()).toHaveText(SCENES[0].headline);
+  });
+
+  test("a video with no walkthrough data has no twistie", async ({ page }) => {
+    await serveWalkthroughManifest(page);
+    await page.goto(AREA_URL, { waitUntil: "domcontentloaded" });
+    await expect(page.locator(`section#${WITHOUT_WALKTHROUGH.id}`)).toHaveCount(1);
+    await expect(page.locator(`section#${WITHOUT_WALKTHROUGH.id} details`)).toHaveCount(0);
+  });
+
+  test("a thumbnail opens the overlay, Escape closes it and focus returns to the thumbnail", async ({ page }) => {
+    await serveWalkthroughManifest(page);
+    await page.goto(AREA_URL, { waitUntil: "domcontentloaded" });
+    await page.locator(`section#${WITH_WALKTHROUGH.id} details.walkthrough summary`).click();
+    const thumb = page.locator(`#${WITH_WALKTHROUGH.id}-two .walkthrough-thumb`);
+    await thumb.click();
+    const overlay = page.locator("dialog.walkthrough-overlay");
+    await expect(overlay).toBeVisible();
+    await expect(overlay.locator("h3")).toHaveText(SCENES[1].headline);
+    await expect(overlay.locator("img")).toHaveAttribute("alt", SCENES[1].caption);
+    await expect(overlay.locator("img")).toHaveAttribute("src", SCENES[1].full);
+    await expect(overlay.locator(".walkthrough-close")).toBeFocused();
+    await page.keyboard.press("Escape");
+    await expect(overlay).toBeHidden();
+    await expect(thumb).toBeFocused();
+  });
+
+  test("arrow keys and buttons move between scenes", async ({ page }) => {
+    await serveWalkthroughManifest(page);
+    await page.goto(AREA_URL, { waitUntil: "domcontentloaded" });
+    await page.locator(`section#${WITH_WALKTHROUGH.id} details.walkthrough summary`).click();
+    await page.locator(`#${WITH_WALKTHROUGH.id}-one .walkthrough-thumb`).click();
+    const overlay = page.locator("dialog.walkthrough-overlay");
+    await expect(overlay.locator(".walkthrough-previous")).toBeDisabled();
+    await page.keyboard.press("ArrowRight");
+    await expect(overlay.locator("h3")).toHaveText(SCENES[1].headline);
+    await overlay.locator(".walkthrough-next").click();
+    await expect(overlay.locator("h3")).toHaveText(SCENES[2].headline);
+    await expect(overlay.locator(".walkthrough-next")).toBeDisabled();
+    await page.keyboard.press("ArrowLeft");
+    await expect(overlay.locator("h3")).toHaveText(SCENES[1].headline);
+  });
+
+  test("sharing without the share sheet copies the scene text and both links and says Copied", async ({ page, context }) => {
+    await context.grantPermissions(["clipboard-read", "clipboard-write"]);
+    await serveWalkthroughManifest(page);
+    await page.addInitScript(() => {
+      Object.defineProperty(navigator, "share", { value: undefined, configurable: true });
+    });
+    await page.goto(AREA_URL, { waitUntil: "domcontentloaded" });
+    await page.locator(`section#${WITH_WALKTHROUGH.id} details.walkthrough summary`).click();
+    const item = page.locator(`#${WITH_WALKTHROUGH.id}-two`);
+    await item.locator(".walkthrough-share").click();
+    await expect(item.locator(".walkthrough-status")).toHaveText("Copied");
+    const copied = await page.evaluate(() => navigator.clipboard.readText());
+    expect(copied).toContain(SCENES[1].caption);
+    expect(copied).toContain(`${AREA_URL}#${WITH_WALKTHROUGH.id}-two`);
+    expect(copied).toContain(`https://youtu.be/${WITH_WALKTHROUGH.videoId}?t=21`);
+  });
+
+  test("sharing inside the overlay uses the share sheet when there is one", async ({ page }) => {
+    await serveWalkthroughManifest(page);
+    await page.addInitScript(() => {
+      window.sharedPayloads = [];
+      navigator.share = async (payload) => {
+        window.sharedPayloads.push(payload);
+      };
+    });
+    await page.goto(AREA_URL, { waitUntil: "domcontentloaded" });
+    await page.locator(`section#${WITH_WALKTHROUGH.id} details.walkthrough summary`).click();
+    await page.locator(`#${WITH_WALKTHROUGH.id}-three .walkthrough-thumb`).click();
+    await page.locator("dialog.walkthrough-overlay .walkthrough-share-overlay").click();
+    const [payload] = await page.evaluate(() => window.sharedPayloads);
+    expect(payload.url).toBe(`${AREA_URL}#${WITH_WALKTHROUGH.id}-three`);
+    expect(payload.text).toContain(SCENES[2].caption);
+    expect(payload.text).toContain(`https://youtu.be/${WITH_WALKTHROUGH.videoId}?t=40`);
+  });
+
+  test("a scene hash opens the twistie and the overlay on that scene", async ({ page }) => {
+    await serveWalkthroughManifest(page);
+    await page.goto(`${AREA_URL}#${WITH_WALKTHROUGH.id}-three`, { waitUntil: "domcontentloaded" });
+    await expect(page.locator(`section#${WITH_WALKTHROUGH.id} details.walkthrough`)).toHaveAttribute("open", "");
+    const overlay = page.locator("dialog.walkthrough-overlay");
+    await expect(overlay).toBeVisible();
+    await expect(overlay.locator("h3")).toHaveText(SCENES[2].headline);
+  });
+
+  test("a scene hash on the index for a video not featured there redirects to its area page and opens the scene", async ({ page }) => {
+    await serveWalkthroughManifest(page);
+    expect(FEATURED_IDS).not.toContain(WITH_WALKTHROUGH.id);
+    await page.goto(`http://localhost:3000/videos.html#${WITH_WALKTHROUGH.id}-two`, { waitUntil: "domcontentloaded" });
+    await page.waitForURL(`**/${AREA_PAGES[WALKTHROUGH_GROUP]}#${WITH_WALKTHROUGH.id}-two`);
+    await expect(page.locator("dialog.walkthrough-overlay h3")).toHaveText(SCENES[1].headline);
   });
 });
 

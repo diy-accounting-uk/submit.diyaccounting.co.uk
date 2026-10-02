@@ -119,6 +119,18 @@ npm run video:publish -- --public
 flips the uploaded entries to public. Never run `--public` before the operator has watched
 the unlisted uploads.
 
+Then build the walkthrough panels for the newly published ids and commit the result:
+
+```bash
+npm run video:walkthrough -- --id <video id> [--id <video id> ...]
+```
+
+It reads each id's capture artifact (downloading it with `gh run download` when
+`target/videos/<sourceArtifact>/` is missing), writes a thumbnail and a full-size WebP per scene
+under `web/public/videos/<id>/`, and writes the `walkthrough` array into `videos/publish.json` and
+its `web/public/` copy. Commit the images and both manifests on a `claude/*` branch. The twistie
+under the video on the site shows nothing until this is done.
+
 Then check the site embeds every public video:
 
 ```bash

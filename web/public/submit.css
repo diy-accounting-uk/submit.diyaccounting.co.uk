@@ -2046,3 +2046,114 @@ a.external-link:hover::after {
   min-height: 44px;
   padding: 6px 10px;
 }
+
+/* Walkthrough under each embedded video (widgets/video-walkthrough.js) */
+.walkthrough {
+  margin-top: 1em;
+}
+.walkthrough > summary {
+  cursor: pointer;
+  font-weight: 600;
+  color: var(--color-brand-primary);
+  padding: 0.4em 0;
+}
+.walkthrough-list {
+  list-style: none;
+  margin: 0.75em 0 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 1em;
+}
+.walkthrough-item {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4em;
+  scroll-margin-top: 1em;
+}
+.walkthrough-item:target .walkthrough-thumb {
+  outline: 3px solid var(--color-brand-primary);
+}
+.walkthrough-thumb {
+  display: block;
+  padding: 0;
+  border: 1px solid #c9ced6;
+  border-radius: var(--radius-md);
+  background: #fff;
+  cursor: zoom-in;
+  overflow: hidden;
+}
+.walkthrough-thumb img {
+  display: block;
+  width: 100%;
+  height: auto;
+  aspect-ratio: 16 / 9;
+  object-fit: cover;
+  object-position: top;
+}
+.walkthrough-thumb:focus-visible,
+.walkthrough-overlay button:focus-visible {
+  outline: 3px solid var(--color-brand-primary);
+  outline-offset: 2px;
+}
+.walkthrough-headline {
+  margin: 0;
+  font-size: 1em;
+}
+.walkthrough-caption {
+  margin: 0;
+  font-size: 0.9em;
+  line-height: 1.5;
+}
+.walkthrough-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.6em;
+}
+.walkthrough-status {
+  color: #155724;
+  font-size: 0.9em;
+}
+.walkthrough-overlay {
+  box-sizing: border-box;
+  width: min(1100px, 96vw);
+  max-height: 96vh;
+  padding: 1em 1.25em;
+  border: 0;
+  border-radius: var(--radius-lg);
+  background: #fff;
+  color: var(--color-text-primary, #1a1a1a);
+  overflow: auto;
+}
+.walkthrough-overlay::backdrop {
+  background: rgba(0, 0, 0, 0.88);
+}
+.walkthrough-overlay-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1em;
+  margin-bottom: 0.6em;
+  font-size: 0.9em;
+}
+.walkthrough-overlay-image {
+  display: block;
+  width: 100%;
+  max-height: 66vh;
+  object-fit: contain;
+  background: #f1f3f6;
+  border-radius: var(--radius-md);
+}
+.walkthrough-overlay-heading {
+  margin: 0.75em 0 0.25em;
+}
+.walkthrough-overlay-caption {
+  margin: 0 0 0.75em;
+  line-height: 1.5;
+}
+.walkthrough-overlay-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.6em;
+}

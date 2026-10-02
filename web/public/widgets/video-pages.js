@@ -6,6 +6,8 @@
 // and, for an area page, its group — this module holds the one copy of the markup and the
 // manifest handling that all five pages share.
 
+import { walkthroughElement, wireWalkthrough, openSceneFromHash, sceneForHash } from "./video-walkthrough.js";
+
 const MANIFEST_URL = "videos/publish.json";
 const EMBED_BASE = "https://www.youtube-nocookie.com/embed/";
 const TITLE_PREFIX = "DIY Accounting Submit: ";
@@ -102,6 +104,11 @@ function areaLinkHref(video) {
   return `${areaPageForGroup(video.group)}#${video.id}`;
 }
 
+// The absolute, shareable URL for one scene of a video's walkthrough, on the video's area page.
+function sceneShareLink(video, scene) {
+  return new URL(`${areaPageForGroup(video.group)}#${video.id}-${scene.scene}`, window.location.href).toString();
+}
+
 // The absolute, shareable URL for a video, always its area page even when read from the index
 // or from another area page — so a copied link and a YouTube description link keep working.
 function shareLink(video) {
@@ -148,6 +155,8 @@ function sectionElement(video) {
   share.append(link, button, copied);
 
   section.append(heading, summary, frame, share);
+  const walkthrough = walkthroughElement(video);
+  if (walkthrough) section.append(walkthrough);
   return section;
 }
 
@@ -178,20 +187,22 @@ function wireCopyButtons(container, videosById) {
   });
 }
 
-// A hash naming a video on this page scrolls to it. On the index, a hash naming a video that
-// is published but not featured there has no section to scroll to, so it redirects to the
-// video's own area page instead of landing on an empty page.
-function handleHash(mode, videos, pageVideos) {
+// A hash naming a video on this page scrolls to it; a hash naming one of its walkthrough scenes
+// opens the walkthrough and that scene. On the index, a hash naming a video (or a scene of a
+// video) that is published but not featured there has no section to scroll to, so it redirects
+// to the video's own area page instead of landing on an empty page.
+function handleHash(mode, videos, pageVideos, walkthrough) {
   if (!window.location.hash) return;
   const id = window.location.hash.slice(1);
+  if (openSceneFromHash(window.location.hash, pageVideos, walkthrough)) return;
   if (pageVideos.some((video) => video.id === id)) {
     const target = document.getElementById(id);
     if (target) target.scrollIntoView();
     return;
   }
   if (mode !== "index") return;
-  const video = videos.find((v) => v.id === id);
-  if (video) window.location.replace(areaLinkHref(video));
+  const video = videos.find((v) => v.id === id) ?? sceneForHash(window.location.hash, videos)?.video;
+  if (video) window.location.replace(`${areaPageForGroup(video.group)}#${id}`);
 }
 
 export async function renderVideoPage({ mode, group }) {
@@ -238,6 +249,7 @@ export async function renderVideoPage({ mode, group }) {
   const videosById = new Map(videos.map((video) => [video.id, video]));
   wireCopyButtons(container, videosById);
 
+  const walkthrough = wireWalkthrough(container, videosById, sceneShareLink);
   // A hash arriving before the sections existed has nothing to scroll to; act on it now.
-  handleHash(mode, videos, pageVideos);
+  handleHash(mode, videos, pageVideos, walkthrough);
 }
