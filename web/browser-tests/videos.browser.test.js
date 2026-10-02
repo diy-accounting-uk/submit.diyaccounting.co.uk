@@ -4,8 +4,9 @@
 // web/browser-tests/videos.browser.test.js
 // videos.html is the index: the full table of contents plus the four featured videos, each
 // under an anchor that resolves, with a youtube-nocookie embed and a share link. Each area page
-// (videos-hmrc-vat.html, videos-hmrc-itsa.html, videos-account.html, videos-ch.html) carries
-// every video of its own group, plus the same full contents. A hash on the index naming a
+// (videos-hmrc-vat.html, videos-hmrc-itsa.html, videos-account.html, videos-ch.html,
+// videos-accounting.html) carries every video of its own group, plus the same full contents, or
+// says none is published yet when its group has nothing uploaded. A hash on the index naming a
 // video that is published but not featured there redirects to that video's area page. And
 // about.html carries the button that leads to the index.
 
@@ -182,6 +183,49 @@ test.describe("relabelled and stripped titles", () => {
     await expect(section.locator("h2")).toHaveText(stripped.title);
     await expect(section.locator("iframe")).toHaveAttribute("title", stripped.title);
     await expect(page.locator(`nav a[href$="#${stripped.id}"]`).first()).toHaveText(contentsText(stripped));
+  });
+});
+
+test.describe("videos-accounting.html", () => {
+  const ACCOUNTING_URL = `http://localhost:3000/${AREA_PAGES.accounting}`;
+  const accountingEntry = MANIFEST.videos.find((v) => v.group === "accounting");
+  const uploaded = { ...accountingEntry, videoId: "AbCdEfGhIjK" };
+
+  async function serveUploadedAccountingVideo(page) {
+    await serveRealSite(page);
+    const videos = MANIFEST.videos.map((v) => (v.id === uploaded.id ? uploaded : v));
+    await page.route("**/videos/publish.json", (route) =>
+      route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify({ ...MANIFEST, videos }) }),
+    );
+  }
+
+  test("says no videos are published yet while the group has nothing uploaded", async ({ page }) => {
+    await serveRealSite(page);
+    await page.goto(ACCOUNTING_URL, { waitUntil: "domcontentloaded" });
+    await expect(page.locator("#videoList")).toHaveText("No videos are published yet.");
+    await expect(page.locator("section.video-section")).toHaveCount(0);
+    await expect(page.locator("#videoContents h3", { hasText: "How to do your accounts" })).toHaveCount(0);
+  });
+
+  test("shows an uploaded accounting video with its embed and share link", async ({ page }) => {
+    await serveUploadedAccountingVideo(page);
+    await page.goto(ACCOUNTING_URL, { waitUntil: "domcontentloaded" });
+    await assertSections(page, [uploaded]);
+  });
+
+  test("lists an uploaded accounting video under its own heading, without the title prefix", async ({ page }) => {
+    await serveUploadedAccountingVideo(page);
+    await page.goto("http://localhost:3000/videos.html", { waitUntil: "domcontentloaded" });
+    await expect(page.locator("#videoContents h3", { hasText: "How to do your accounts" })).toHaveCount(1);
+    const link = page.locator(`#videoContents a[href="${AREA_PAGES.accounting}#${uploaded.id}"]`);
+    await expect(link).toHaveText(uploaded.title.replace("DIY Accounting: ", ""));
+  });
+
+  test("a hash on the index naming an accounting video redirects to the accounting page", async ({ page }) => {
+    await serveUploadedAccountingVideo(page);
+    await page.goto(`http://localhost:3000/videos.html#${uploaded.id}`, { waitUntil: "domcontentloaded" });
+    await page.waitForURL(`**/${AREA_PAGES.accounting}#${uploaded.id}`);
+    await expect(page.locator(`section.video-section#${uploaded.id}`)).toBeVisible();
   });
 });
 

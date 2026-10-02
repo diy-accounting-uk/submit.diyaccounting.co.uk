@@ -1,22 +1,23 @@
 // SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0
 // Copyright (C) 2006-2026 DIY Accounting Limited
 
-// Renders one of the five video pages (the index, or one of the four area pages) from
+// Renders one of the six video pages (the index, or one of the five area pages) from
 // videos/publish.json. Each page's own inline script calls renderVideoPage() with its mode
 // and, for an area page, its group — this module holds the one copy of the markup and the
-// manifest handling that all five pages share.
+// manifest handling that all six pages share.
 
 import { walkthroughElement, wireWalkthrough, openSceneFromHash, sceneForHash, sceneAnchor } from "./video-walkthrough.js";
 
 const MANIFEST_URL = "videos/publish.json";
 const EMBED_BASE = "https://www.youtube-nocookie.com/embed/";
-const TITLE_PREFIX = "DIY Accounting Submit: ";
+const TITLE_PREFIXES = ["DIY Accounting Submit: ", "DIY Accounting: "];
 
 const GROUP_LABELS = {
   "vat": "VAT",
   "itsa": "Self Assessment (sandbox)",
   "account": "Account and passes",
   "companies-house": "Companies House",
+  "accounting": "How to do your accounts",
 };
 
 export const AREA_PAGES = {
@@ -24,6 +25,7 @@ export const AREA_PAGES = {
   "itsa": "videos-hmrc-itsa.html",
   "account": "videos-account.html",
   "companies-house": "videos-ch.html",
+  "accounting": "videos-accounting.html",
 };
 
 // The index shows only these, one per area, in this order; every other published video shows
@@ -38,7 +40,8 @@ function areaPageForGroup(group) {
 // repeats, since the page's own heading already says whose product this is.
 function contentsLinkText(title) {
   const text = String(title ?? "");
-  return text.startsWith(TITLE_PREFIX) ? text.slice(TITLE_PREFIX.length) : text;
+  const prefix = TITLE_PREFIXES.find((p) => text.startsWith(p));
+  return prefix ? text.slice(prefix.length) : text;
 }
 
 // Buckets videos by their publish.json "group", one bucket per group in the order the group
@@ -99,7 +102,7 @@ function firstTwoSentences(description) {
   return sentences.slice(0, 2).join(" ");
 }
 
-// A relative link to the video's own section, valid from any of the five pages.
+// A relative link to the video's own section, valid from any of the six pages.
 function areaLinkHref(video) {
   return `${areaPageForGroup(video.group)}#${video.id}`;
 }

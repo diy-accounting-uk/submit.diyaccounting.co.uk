@@ -46,6 +46,7 @@ const CLOUDFRONT_INVALIDATION_PATHS = [
   "/videos-hmrc-itsa.html",
   "/videos-account.html",
   "/videos-ch.html",
+  "/videos-accounting.html",
   "/videos/*",
   "/accessibility.html",
   "/bundles.html",

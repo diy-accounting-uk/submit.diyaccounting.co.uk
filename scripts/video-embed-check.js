@@ -31,7 +31,7 @@ export function parseArgs(argv) {
   return args;
 }
 
-const AREA_PAGE_SUFFIX = { "vat": "vat", "itsa": "itsa", "account": "account", "companies-house": "ch" };
+const AREA_PAGE_SUFFIX = { "vat": "vat", "itsa": "itsa", "account": "account", "companies-house": "ch", "accounting": "accounting" };
 
 /** The linked area page a manifest group is shown on, or null. */
 export function groupAreaPageMatches(group, areaPages) {
@@ -89,7 +89,9 @@ export function compareEmbeds({ channelVideos, manifestVideos, areaPages, embeds
     if (status !== 200) problems.push(`oEmbed for embedded ${videoId} on ${page} answered ${status ?? "nothing"}, not 200`);
   }
 
-  const groups = [...new Set(manifestVideos.filter((v) => v.group).map((v) => v.group))];
+  // A group only needs a linked area page once one of its videos is uploaded: the index links an
+  // area page through its published videos alone.
+  const groups = [...new Set(manifestVideos.filter((v) => v.group && v.videoId).map((v) => v.group))];
   for (const group of groups) {
     if (!groupAreaPageMatches(group, areaPages)) problems.push(`manifest group ${group} has no area page linked from videos.html`);
   }
