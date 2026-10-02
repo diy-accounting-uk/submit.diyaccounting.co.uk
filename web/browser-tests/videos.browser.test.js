@@ -201,6 +201,10 @@ test.describe("videos-accounting.html", () => {
 
   test("says no videos are published yet while the group has nothing uploaded", async ({ page }) => {
     await serveRealSite(page);
+    const videos = MANIFEST.videos.map((v) => (v.group === "accounting" ? { ...v, videoId: null } : v));
+    await page.route("**/videos/publish.json", (route) =>
+      route.fulfill({ status: 200, contentType: "application/json", body: JSON.stringify({ ...MANIFEST, videos }) }),
+    );
     await page.goto(ACCOUNTING_URL, { waitUntil: "domcontentloaded" });
     await expect(page.locator("#videoList")).toHaveText("No videos are published yet.");
     await expect(page.locator("section.video-section")).toHaveCount(0);
