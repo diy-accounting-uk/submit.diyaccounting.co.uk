@@ -14,10 +14,15 @@
 // The start page posts the WOPI form, so a Playwright goto("/") lands on the editor itself, with
 // no iframe between the capture and the canvas. The container stops when this process does.
 //
+// With --cool-url, a Collabora server is already running (a GitHub Actions service container
+// beside the capture job's own container) and no container starts here; --wopi-base is then the
+// address that server reaches this host at.
+//
 // Usage:
 //   node scripts/collabora-sheet-host.js --package "GB Accounts Basic Sole Trader 2027-04-05 (Apr27) Excel 2007"
 //   node scripts/collabora-sheet-host.js --file path/to/workbook.xlsx
-// Options: --port 8099 (WOPI host and start page), --cool-port 9980, --image collabora/code:latest
+//   node scripts/collabora-sheet-host.js --package "..." --cool-url http://collabora:9980 --wopi-base "http://$(hostname):8099"
+// Options: --port 8099 (WOPI host and start page), --cool-port 9980, --image <ref> (default: the pinned CODE 26.04.4.2 digest)
 
 import http from "http";
 import fs from "fs";
@@ -29,7 +34,11 @@ const SPREADSHEETS_ZIPS = "https://spreadsheets.diyaccounting.co.uk/zips/";
 const CONTAINER = "video-collabora";
 
 function parseArgs(argv) {
-  const args = { port: 8099, coolPort: 9980, image: "collabora/code:latest" };
+  const args = {
+    port: 8099,
+    coolPort: 9980,
+    image: "collabora/code@sha256:4e983196eb9878f339cc506c38c21f1cc3473bca3d6de883c5de08f9c0cc3a6c",
+  };
   for (let i = 0; i < argv.length; i++) {
     const next = () => argv[++i];
     if (argv[i] === "--package") args.packageName = next();
@@ -37,6 +46,8 @@ function parseArgs(argv) {
     else if (argv[i] === "--port") args.port = Number(next());
     else if (argv[i] === "--cool-port") args.coolPort = Number(next());
     else if (argv[i] === "--image") args.image = next();
+    else if (argv[i] === "--cool-url") args.coolUrl = next();
+    else if (argv[i] === "--wopi-base") args.wopiBase = next();
     else throw new Error(`unknown argument ${argv[i]}`);
   }
   if (!args.packageName === !args.file) throw new Error("give exactly one of --package <name> or --file <xlsx>");
@@ -116,24 +127,28 @@ async function main() {
   const file = args.file ? path.resolve(args.file) : await workbookFromPackage(args.packageName);
   const bytes = fs.readFileSync(file);
   const fileName = path.basename(file);
-  const coolUrl = `http://localhost:${args.coolPort}`;
-  const wopiBase = `http://host.docker.internal:${args.port}`;
+  const coolUrl = args.coolUrl || `http://localhost:${args.coolPort}`;
+  const wopiBase = args.wopiBase || `http://host.docker.internal:${args.port}`;
+  const ownsContainer = !args.coolUrl;
 
-  const container = startContainer(args);
   const stop = (code = 0) => {
-    try {
-      execFileSync("docker", ["rm", "-f", CONTAINER], { stdio: "ignore" });
-    } catch {
-      // Already gone.
+    if (ownsContainer) {
+      try {
+        execFileSync("docker", ["rm", "-f", CONTAINER], { stdio: "ignore" });
+      } catch {
+        // Already gone.
+      }
     }
     process.exit(code);
   };
   process.on("SIGTERM", () => stop(0));
   process.on("SIGINT", () => stop(0));
-  container.on("exit", (code) => {
-    console.error(`collabora container exited (code ${code})`);
-    process.exit(1);
-  });
+  if (ownsContainer) {
+    startContainer(args).on("exit", (code) => {
+      console.error(`collabora container exited (code ${code})`);
+      process.exit(1);
+    });
+  }
 
   const editUrl = editUrlFor(await waitForDiscovery(coolUrl, 180000), coolUrl);
   let loads = 0;
