@@ -252,6 +252,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
     - [OPS-93](#ops-93-publish-demo-videos-to-youtube) Publish demo videos to YouTube: use when a recorded demo video is ready to upload to YouTube, unlisted or public, or its manifest needs syncing.
     - [OPS-94](#ops-94-play-demo-videos-on-the-public-site) Play demo videos on the public site: use when the public site needs a page listing the recorded product demos with working playback controls.
     - [OPS-138](#ops-138-check-every-public-video-is-embedded-on-the-site) Check every public video is embedded on the site: use when a video was published, replaced or deleted, or a new `publish.json` shipped, and every public channel video must still play from a page linked off videos.html.
+    - [OPS-139](#ops-139-build-the-walkthrough-panel-under-each-video) Build the walkthrough panel under each video: use when a video was published or re-recorded and its page needs the scene screenshots, text and share links.
     - [OPS-95](#ops-95-generate-wcag-accessibility-compliance-rows) Generate WCAG accessibility compliance rows: use when WCAG manual and automated review results need turning into rows for the compliance dashboard.
     - [OPS-96](#ops-96-scan-pages-for-accessibility-violations) Scan pages for accessibility violations: use when a page set needs an axe-core accessibility scan or a WCAG 1.4.12 text-spacing check.
     - [OPS-97](#ops-97-compile-the-compliance-audit-report) Compile the compliance audit report: use when WCAG, fraud-header and VAT-logic test results need aggregating into one pass/fail compliance report.
@@ -2009,7 +2010,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - [Alarms, triage and probes](#alarms-triage-and-probes-ops): [OPS-17](#ops-17-redact-and-gate-unattended-agent-output-before-publishing) Redact and gate unattended-agent output before publishing · [OPS-18](#ops-18-run-alarm-and-support-triage) Run alarm and support triage · [OPS-19](#ops-19-kill-switch-to-stop-unattended-agent-workflows) Kill-switch to stop unattended agent workflows · [OPS-20](#ops-20-enforce-daily-run-budgets-for-agent-paths) Enforce daily run budgets for agent paths · [OPS-21](#ops-21-auto-close-resolved-alarm-issues) Auto-close resolved alarm issues · [OPS-22](#ops-22-verify-a-triage-draft-pr-stays-in-scope) Verify a triage draft-PR stays in scope · [OPS-23](#ops-23-raise-an-issue-from-a-probe-test-failure) Raise an issue from a probe-test failure · [OPS-24](#ops-24-gate-probes-on-the-main-apex-deploy) Gate probes on the main apex deploy · [OPS-25](#ops-25-record-dora-and-probe-metrics) Record DORA and probe metrics · [OPS-26](#ops-26-run-the-automated-test-suite-in-ci) Run the automated test suite in CI · [OPS-27](#ops-27-run-probe-tests-against-deployed-environments) Run probe tests against deployed environments · [OPS-70](#ops-70-forward-operational-activity-events-to-telegram) Forward operational activity events to Telegram · [OPS-71](#ops-71-create-github-issues-from-cloudwatch-alarms) Create GitHub issues from CloudWatch alarms · [OPS-72](#ops-72-forward-bedrock-budget-alerts) Forward Bedrock budget alerts · [OPS-73](#ops-73-detect-404-scan-rate-attacks) Detect 404 scan-rate attacks · [OPS-74](#ops-74-detect-waf-blocked-scan-attacks) Detect WAF-blocked scan attacks · [OPS-75](#ops-75-run-nightly-security-lake-analysis) Run nightly Security Lake analysis · [OPS-76](#ops-76-gather-alarm-evidence-for-investigation) Gather alarm evidence for investigation · [OPS-77](#ops-77-silence-alarms-during-deployment-teardown) Silence alarms during deployment teardown · [OPS-78](#ops-78-verify-an-alarm-issues-claimed-transition) Verify an alarm issue's claimed transition · [OPS-79](#ops-79-track-an-alarm-familys-daily-remedy-budget) Track an alarm family's daily remedy budget · [OPS-80](#ops-80-build-aws-console-deep-links-for-operators) Build AWS console deep links for operators
 - [Security and compliance](#security-and-compliance-ops): [OPS-28](#ops-28-enforce-commit-identity-allowlist) Enforce commit identity allowlist · [OPS-29](#ops-29-verify-commit-signatures-on-pull-requests) Verify commit signatures on pull requests · [OPS-30](#ops-30-run-codeql-security-scanning) Run CodeQL security scanning · [OPS-31](#ops-31-run-the-weekly-security-review-and-its-triage) Run the weekly security review and its triage · [OPS-32](#ops-32-detect-cloudformation-drift) Detect CloudFormation drift · [OPS-33](#ops-33-enforce-workflow-to-workflow-permission-grants) Enforce workflow-to-workflow permission grants · [OPS-34](#ops-34-validate-github-actions-workflow-files) Validate GitHub Actions workflow files · [OPS-35](#ops-35-verify-third-party-console-configuration-against-declared-state) Verify third-party console configuration against declared state · [OPS-36](#ops-36-configure-dependabot-dependency-updates) Configure Dependabot dependency updates · [OPS-37](#ops-37-check-https-certificate-expiry) Check HTTPS certificate expiry · [OPS-38](#ops-38-run-the-weekly-compliance-test-check) Run the weekly compliance-test check · [OPS-39](#ops-39-generate-a-software-bill-of-materials) Generate a software bill of materials
 - [Data protection and privacy](#data-protection-and-privacy-ops): [OPS-40](#ops-40-delete-a-customers-data-for-gdpr-erasure) Delete a customer's data for GDPR erasure · [OPS-41](#ops-41-export-a-customers-gdpr-subject-access-data) Export a customer's GDPR subject-access data · [OPS-42](#ops-42-guide-icogdpr-compliance) Guide ICO/GDPR compliance · [OPS-43](#ops-43-rotate-stored-email-address-hashes) Rotate stored email-address hashes · [OPS-44](#ops-44-hash-and-rotate-the-subject-id-salt) Hash and rotate the subject-ID salt · [OPS-45](#ops-45-manage-aws-secrets-manager-entries-and-rotation-tags) Manage AWS Secrets Manager entries and rotation tags · [OPS-46](#ops-46-query-and-persist-per-consumer-security-state-records) Query and persist per-consumer security-state records · [OPS-47](#ops-47-check-fraud-prevention-header-record-freshness) Check fraud-prevention header record freshness · [OPS-48](#ops-48-verify-backup-health-daily) Verify backup health daily · [OPS-49](#ops-49-request-and-renew-the-holding-page-certificate) Request and renew the holding-page certificate · [OPS-50](#ops-50-drill-and-test-pitr-database-restoration) Drill and test PITR database restoration
-- [Video, publishing and accessibility](#video-publishing-and-accessibility-ops): [OPS-51](#ops-51-publish-build-artifacts-and-documentation) Publish build artifacts and documentation · [OPS-52](#ops-52-auto-record-demo-videos-on-prod-deploy) Auto-record demo videos on prod deploy · [OPS-53](#ops-53-verify-youtube-channel-consistency-weekly) Verify YouTube channel consistency weekly · [OPS-88](#ops-88-orchestrate-demo-video-recording-journeys) Orchestrate demo-video recording journeys · [OPS-89](#ops-89-overlay-pointer-and-caption-cues-on-video) Overlay pointer and caption cues on video · [OPS-90](#ops-90-encode-captured-video-frames-and-captions) Encode captured video frames and captions · [OPS-91](#ops-91-validate-video-scene-scripts-and-timing) Validate video scene scripts and timing · [OPS-92](#ops-92-redact-secrets-from-video-artefacts) Redact secrets from video artefacts · [OPS-93](#ops-93-publish-demo-videos-to-youtube) Publish demo videos to YouTube · [OPS-94](#ops-94-play-demo-videos-on-the-public-site) Play demo videos on the public site · [OPS-138](#ops-138-check-every-public-video-is-embedded-on-the-site) Check every public video is embedded on the site · [OPS-95](#ops-95-generate-wcag-accessibility-compliance-rows) Generate WCAG accessibility compliance rows · [OPS-96](#ops-96-scan-pages-for-accessibility-violations) Scan pages for accessibility violations · [OPS-97](#ops-97-compile-the-compliance-audit-report) Compile the compliance audit report
+- [Video, publishing and accessibility](#video-publishing-and-accessibility-ops): [OPS-51](#ops-51-publish-build-artifacts-and-documentation) Publish build artifacts and documentation · [OPS-52](#ops-52-auto-record-demo-videos-on-prod-deploy) Auto-record demo videos on prod deploy · [OPS-53](#ops-53-verify-youtube-channel-consistency-weekly) Verify YouTube channel consistency weekly · [OPS-88](#ops-88-orchestrate-demo-video-recording-journeys) Orchestrate demo-video recording journeys · [OPS-89](#ops-89-overlay-pointer-and-caption-cues-on-video) Overlay pointer and caption cues on video · [OPS-90](#ops-90-encode-captured-video-frames-and-captions) Encode captured video frames and captions · [OPS-91](#ops-91-validate-video-scene-scripts-and-timing) Validate video scene scripts and timing · [OPS-92](#ops-92-redact-secrets-from-video-artefacts) Redact secrets from video artefacts · [OPS-93](#ops-93-publish-demo-videos-to-youtube) Publish demo videos to YouTube · [OPS-94](#ops-94-play-demo-videos-on-the-public-site) Play demo videos on the public site · [OPS-138](#ops-138-check-every-public-video-is-embedded-on-the-site) Check every public video is embedded on the site · [OPS-139](#ops-139-build-the-walkthrough-panel-under-each-video) Build the walkthrough panel under each video · [OPS-95](#ops-95-generate-wcag-accessibility-compliance-rows) Generate WCAG accessibility compliance rows · [OPS-96](#ops-96-scan-pages-for-accessibility-violations) Scan pages for accessibility violations · [OPS-97](#ops-97-compile-the-compliance-audit-report) Compile the compliance audit report
 - [Agent workflows](#agent-workflows-ops): [OPS-54](#ops-54-define-specialized-claude-code-sub-agent-personas) Define specialized Claude Code sub-agent personas · [OPS-55](#ops-55-configure-github-copilot-review-and-workspace-setup) Configure GitHub Copilot review and workspace setup · [OPS-56](#ops-56-structure-github-issues-prs-and-funding-links) Structure GitHub issues, PRs and funding links · [OPS-57](#ops-57-dispatch-agentic-lib-board-backlog-and-pr-agents) Dispatch agentic-lib board, backlog and PR agents
 - [Environment and accounts](#environment-and-accounts-ops): [OPS-60](#ops-60-guide-github-repository-configuration) Guide GitHub repository configuration · [OPS-61](#ops-61-design-ci-branch-deploys-off-the-apex) Design CI branch deploys off the apex · [OPS-62](#ops-62-report-accessibility-penetration-testing) Report accessibility penetration testing · [OPS-64](#ops-64-runbook-information-security-operations) Runbook information-security operations · [OPS-65](#ops-65-document-security-policy-and-disclosure) Document security policy and disclosure · [OPS-66](#ops-66-create-an-hmrc-sandbox-test-user) Create an HMRC sandbox test user · [OPS-67](#ops-67-apply-google-cloud--ga4-infrastructure) Apply Google Cloud / GA4 infrastructure · [OPS-68](#ops-68-provision-and-assume-roles-for-test-user-provisioning) Provision and assume roles for test-user provisioning · [OPS-69](#ops-69-assume-and-clear-local-aws-deployment-credentials) Assume and clear local AWS deployment credentials · [OPS-98](#ops-98-bootstrap-the-cdk-toolkit-across-accounts) Bootstrap the CDK toolkit across accounts · [OPS-99](#ops-99-bootstrap-the-aws-organization-structure) Bootstrap the AWS Organization structure · [OPS-100](#ops-100-create-or-invite-aws-member-accounts) Create or invite AWS member accounts · [OPS-101](#ops-101-set-up-github-oidc-deployment-roles) Set up GitHub OIDC deployment roles · [OPS-102](#ops-102-verify-the-multi-account-aws-setup) Verify the multi-account AWS setup · [OPS-103](#ops-103-bootstrap-a-new-aws-account-for-cdk) Bootstrap a new AWS account for CDK
 - [Shared runtime libraries](#shared-runtime-libraries-ops): [OPS-81](#ops-81-mask-and-redact-sensitive-data-from-logs) Mask and redact sensitive data from logs · [OPS-82](#ops-82-provide-a-shared-dynamodb-client) Provide a shared DynamoDB client · [OPS-83](#ops-83-emit-cloudwatch-emf-metrics) Emit CloudWatch EMF metrics · [OPS-84](#ops-84-validate-required-environment-variables-at-startup) Validate required environment variables at startup · [OPS-85](#ops-85-obtain-and-use-github-app-api-tokens) Obtain and use GitHub App API tokens · [OPS-86](#ops-86-provide-structured-pii-redacting-logging) Provide structured PII-redacting logging · [OPS-87](#ops-87-process-sqs-message-batches-in-lambda-workers) Process SQS message batches in Lambda workers
@@ -2812,6 +2813,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - [OPS-93](#ops-93-publish-demo-videos-to-youtube) Publish demo videos to YouTube
 - [OPS-94](#ops-94-play-demo-videos-on-the-public-site) Play demo videos on the public site
 - [OPS-138](#ops-138-check-every-public-video-is-embedded-on-the-site) Check every public video is embedded on the site
+- [OPS-139](#ops-139-build-the-walkthrough-panel-under-each-video) Build the walkthrough panel under each video
 - [OPS-95](#ops-95-generate-wcag-accessibility-compliance-rows) Generate WCAG accessibility compliance rows
 - [OPS-96](#ops-96-scan-pages-for-accessibility-violations) Scan pages for accessibility violations
 - [OPS-97](#ops-97-compile-the-compliance-audit-report) Compile the compliance audit report
@@ -2923,6 +2925,16 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - **Files:** scripts/video-embed-check.js, app/unit-tests/scripts/videoEmbedCheck.test.js, scripts/youtube-upload.js, web/public/videos.html
 - **Keywords:** video embed check, embedded videos, oembed, public videos, area pages, channel uploads, videos.html
 - **Related:** OPS-93, OPS-94
+
+#### OPS-139 Build the walkthrough panel under each video
+
+- **Use when:** a video was published or re-recorded and its page needs the scene screenshots, text and share links.
+- **Does:** video-walkthrough.js reads each published video's capture artifact (downloading it with gh when missing), takes one frame per captioned scene from the recording with ffmpeg-static, writes a thumbnail and a full-size WebP under web/public/videos/<id>/, and writes the scene list (headline, caption, start second, image paths) into the entry's `walkthrough` array in publish.json and its web/public copy. video-walkthrough.js in web/public/widgets renders it under the embed as a twistie of thumbnails with a lights-down overlay, previous and next, and a share action that carries the scene text, a link to the scene and the YouTube link at that second.
+- **Run:** `npm run video:walkthrough`; `npm run video:walkthrough -- --id <video id>`
+- **Entry:** `scripts/video-walkthrough.js`; `web/public/widgets/video-walkthrough.js`
+- **Files:** scripts/video-walkthrough.js, app/unit-tests/scripts/videoWalkthrough.test.js, web/public/widgets/video-walkthrough.js, web/public/widgets/video-pages.js, web/public/submit.css, web/browser-tests/videos.browser.test.js, videos/publish.json
+- **Keywords:** walkthrough, screenshots, thumbnails, lights down, share link, scene frames, marketing assets, twistie, webp
+- **Related:** OPS-93, OPS-94, OPS-138
 
 #### OPS-95 Generate WCAG accessibility compliance rows
 
@@ -6827,6 +6839,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - licensing: [SITE-20](#site-20-document-business-governance-and-positioning)
 - lifecycle policy: [OPS-114](#ops-114-provision-ecr-image-repositories)
 - lighthouse: [DEV-14](#dev-14-start-the-proxy-and-simulator-local-dev-environments), [SS-45](#ss-45-run-compliance-checks)
+- lights down: [OPS-139](#ops-139-build-the-walkthrough-panel-under-each-video)
 - lines.jsonl: [MCP-03](#mcp-03-load-and-save-diya-gl-books-via-mcp), [SS-02](#ss-02-validate-diya-gl-books-against-the-v2-schema), [SS-03](#ss-03-read-and-write-diya-gl-interchange-formats), [SS-15](#ss-15-extract-diya-gl-data-and-financial-reports-from-populated-packages)
 - list books: [BILL-19](#bill-19-list-a-users-diya-gl-books)
 - list bundles: [BILL-02](#bill-02-list-a-users-bundles-and-token-balance)
@@ -6884,6 +6897,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - manual destroy: [OPS-14](#ops-14-destroy-a-named-prod-deployment-on-demand)
 - manual review: [OPS-95](#ops-95-generate-wcag-accessibility-compliance-rows)
 - manual stack deploy: [OPS-08](#ops-08-deploy-a-single-cdk-stack-on-demand)
+- marketing assets: [OPS-139](#ops-139-build-the-walkthrough-panel-under-each-video)
 - marketing guidance: [SITE-20](#site-20-document-business-governance-and-positioning)
 - marketing page: [MCP-15](#mcp-15-disclaim-an-mcp-server-on-the-marketing-site)
 - mask ip: [HMRC-27](#hmrc-27-validate-hmrc-identifiers-dates-and-amounts)
@@ -7409,6 +7423,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - scan detection alarm: [OPS-122](#ops-122-provision-the-security-detection-stack)
 - scan rate: [OPS-73](#ops-73-detect-404-scan-rate-attacks)
 - scannable code: [SITE-19](#site-19-generate-qr-codes)
+- scene frames: [OPS-139](#ops-139-build-the-walkthrough-panel-under-each-video)
 - scene script: [OPS-52](#ops-52-auto-record-demo-videos-on-prod-deploy), [OPS-88](#ops-88-orchestrate-demo-video-recording-journeys), [DEV-40](#dev-40-record-a-product-demo-video)
 - scene script validation: [OPS-91](#ops-91-validate-video-scene-scripts-and-timing)
 - scenes to record: [OPS-91](#ops-91-validate-video-scene-scripts-and-timing)
@@ -7424,7 +7439,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - schema tables: [SS-07](#ss-07-publish-the-diya-gl-format-specification-page)
 - screen reader: [OPS-95](#ops-95-generate-wcag-accessibility-compliance-rows)
 - screenshot captions: [DEV-19](#dev-19-provide-shared-behaviour-test-fixtures-and-steps)
-- screenshots: [SS-17](#ss-17-build-reconciliation-pages-and-record-releases)
+- screenshots: [OPS-139](#ops-139-build-the-walkthrough-panel-under-each-video), [SS-17](#ss-17-build-reconciliation-pages-and-record-releases)
 - sdst: [HMRC-38](#hmrc-38-check-readiness-for-the-itsa-recognition-email)
 - se-derivations: [MCP-06](#mcp-06-derive-itsa-quarterly-and-annual-submission-figures)
 - search: [CH-03](#ch-03-search-the-companies-house-register)
@@ -7481,6 +7496,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - settle in-flight work: [DEV-35](#dev-35-cool-down-an-overloaded-batch), [SS-54](#ss-54-cool-down-an-overloaded-batch)
 - setup guide: [DEV-24](#dev-24-document-developer-setup-and-repository-conventions)
 - sha256: [SITE-17](#site-17-trace-and-secure-client-requests)
+- share link: [OPS-139](#ops-139-build-the-walkthrough-panel-under-each-video)
 - shared auth client: [DATA-47](#data-47-authenticate-google-cloud-scripts-via-federated-credentials)
 - shared client: [OPS-82](#ops-82-provide-a-shared-dynamodb-client)
 - shared construct: [OPS-124](#ops-124-define-shared-lambda-cdk-constructs)
@@ -7660,6 +7676,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - third-party console: [OPS-35](#ops-35-verify-third-party-console-configuration-against-declared-state)
 - threat detection: [OPS-75](#ops-75-run-nightly-security-lake-analysis)
 - thresholds: [SITE-22](#site-22-source-and-publish-sourced-tax-facts)
+- thumbnails: [OPS-139](#ops-139-build-the-walkthrough-panel-under-each-video)
 - tidy repo: [DEV-34](#dev-34-clean-up-stale-deployments-and-branches)
 - tiers: [SS-42](#ss-42-route-tests-by-blast-radius)
 - time budget: [OPS-57](#ops-57-dispatch-agentic-lib-board-backlog-and-pr-agents)
@@ -7703,6 +7720,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - ttl: [BILL-42](#bill-42-parse-iso-8601-durations-for-expiry)
 - ttl backfill: [OPS-108](#ops-108-backfill-ttl-on-existing-dynamodb-records)
 - ttl policy: [OPS-113](#ops-113-provision-the-dynamodb-and-s3-data-stack)
+- twistie: [OPS-139](#ops-139-build-the-walkthrough-panel-under-each-video)
 - typeahead: [CH-03](#ch-03-search-the-companies-house-register)
 - typeofbusiness: [HMRC-16](#hmrc-16-trigger-and-adjust-the-business-source-adjustable-summary)
 - typing cadence: [OPS-91](#ops-91-validate-video-scene-scripts-and-timing)
@@ -7809,6 +7827,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - wait for main deploy: [OPS-24](#ops-24-gate-probes-on-the-main-apex-deploy)
 - wake: [DEV-36](#dev-36-resume-normal-work-from-cool-down)
 - wake skill: [SS-55](#ss-55-resume-normal-work-from-cool-down)
+- walkthrough: [OPS-139](#ops-139-build-the-walkthrough-panel-under-each-video)
 - warm route: [SITE-13](#site-13-warm-backend-routes-via-prefetch-scripts)
 - watch: [DEV-31](#dev-31-watch-github-ci-to-green)
 - watch ci: [OPS-134](#ops-134-monitor-github-actions-ci-from-the-cli)
@@ -7825,6 +7844,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - webhook signing secret: [BILL-32](#bill-32-provision-stripe-secrets)
 - webhook stack: [BILL-38](#bill-38-cdk-billing-webhook-stack)
 - webhooks: [OPS-60](#ops-60-guide-github-repository-configuration)
+- webp: [OPS-139](#ops-139-build-the-walkthrough-panel-under-each-video)
 - webvtt: [OPS-90](#ops-90-encode-captured-video-frames-and-captions)
 - weekly review: [OPS-31](#ops-31-run-the-weekly-security-review-and-its-triage)
 - weekly schedule: [OPS-38](#ops-38-run-the-weekly-compliance-test-check)

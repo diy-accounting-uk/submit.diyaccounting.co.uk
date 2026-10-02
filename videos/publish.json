@@ -21,7 +21,25 @@
       "description": "DIY Accounting Submit is a free tool for sending VAT returns to HMRC under Making Tax Digital. This video shows signing in, taking out a day pass, and asking HMRC which VAT periods are due on a VAT registration number. It's a real recording of the live product, not a mockup or a design draft. The HMRC sign-in and access step is shown in full at {{video:hmrc-authorise}}. Try it yourself at https://submit.diyaccounting.co.uk.",
       "tags": ["DIY Accounting", "VAT", "HMRC", "Making Tax Digital", "VAT obligations", "VAT return"],
       "categoryId": "27",
-      "videoId": "yFW9QD6wExE"
+      "videoId": "yFW9QD6wExE",
+      "walkthrough": [
+        {
+          "scene": "obligations-form",
+          "headline": "Ask HMRC",
+          "caption": "Type the VAT registration number. Then the stretch of time to look at.",
+          "startSeconds": 24,
+          "thumb": "videos/view-obligations/obligations-form-thumb.webp",
+          "full": "videos/view-obligations/obligations-form.webp"
+        },
+        {
+          "scene": "results",
+          "headline": "The answer",
+          "caption": "HMRC answers with the periods it is expecting. Each row is a period, its due date and its status.",
+          "startSeconds": 62,
+          "thumb": "videos/view-obligations/results-thumb.webp",
+          "full": "videos/view-obligations/results.webp"
+        }
+      ]
     },
     {
       "id": "hmrc-authorise",
@@ -36,7 +54,25 @@
       "tags": ["DIY Accounting", "VAT", "HMRC", "Making Tax Digital", "HMRC authorisation", "VAT return"],
       "categoryId": "27",
       "sourceRun": 36850899559,
-      "videoId": "i6b77NES-Xc"
+      "videoId": "i6b77NES-Xc",
+      "walkthrough": [
+        {
+          "scene": "authorise",
+          "headline": "Authorise with HMRC",
+          "caption": "The first request sends you to HMRC to grant access. Sign in to HMRC and say yes once. Later requests reuse that access.",
+          "startSeconds": 41,
+          "thumb": "videos/hmrc-authorise/authorise-thumb.webp",
+          "full": "videos/hmrc-authorise/authorise.webp"
+        },
+        {
+          "scene": "results",
+          "headline": "The answer",
+          "caption": "With access granted, HMRC answers straight away. Every other activity now runs without asking again.",
+          "startSeconds": 80,
+          "thumb": "videos/hmrc-authorise/results-thumb.webp",
+          "full": "videos/hmrc-authorise/results.webp"
+        }
+      ]
     },
     {
       "id": "submit-return",
@@ -51,7 +87,131 @@
       "description": "DIY Accounting Submit is a free tool for sending VAT returns to HMRC under Making Tax Digital. This video shows signing in, taking out a day pass, checking which VAT period is open, then filling in the nine boxes and submitting the return to HMRC. It's a real recording of the live product, not a mockup or a design draft. The HMRC sign-in and access step is shown in full at {{video:hmrc-authorise}}. Try it yourself at https://submit.diyaccounting.co.uk.",
       "tags": ["DIY Accounting", "VAT return", "HMRC", "Making Tax Digital", "VAT submission"],
       "categoryId": "27",
-      "videoId": "klwCVNlLOyk"
+      "videoId": "klwCVNlLOyk",
+      "walkthrough": [
+        {
+          "scene": "obligations-form",
+          "headline": "Ask HMRC",
+          "caption": "Type the VAT registration number. Then the stretch of time to look at.",
+          "startSeconds": 37,
+          "thumb": "videos/submit-return/obligations-form-thumb.webp",
+          "full": "videos/submit-return/obligations-form.webp"
+        },
+        {
+          "scene": "results",
+          "headline": "The periods on file",
+          "caption": "HMRC answers with every period it holds. An open period is still waiting for a return.",
+          "startSeconds": 85,
+          "thumb": "videos/submit-return/results-thumb.webp",
+          "full": "videos/submit-return/results.webp"
+        },
+        {
+          "scene": "submit-form",
+          "step": 0,
+          "headline": "Start the return",
+          "caption": "Start a return for that open period.",
+          "startSeconds": 103,
+          "thumb": "videos/submit-return/submit-form-0-thumb.webp",
+          "full": "videos/submit-return/submit-form-0.webp"
+        },
+        {
+          "scene": "submit-form",
+          "step": 2,
+          "headline": "Box 1, VAT on sales",
+          "caption": "Box 1 is the VAT due on your sales.",
+          "startSeconds": 111,
+          "thumb": "videos/submit-return/submit-form-2-thumb.webp",
+          "full": "videos/submit-return/submit-form-2.webp"
+        },
+        {
+          "scene": "submit-form",
+          "step": 3,
+          "headline": "Box 2, usually zero",
+          "caption": "Box 2 is VAT on EU acquisitions, usually zero now.",
+          "startSeconds": 117,
+          "thumb": "videos/submit-return/submit-form-3-thumb.webp",
+          "full": "videos/submit-return/submit-form-3.webp"
+        },
+        {
+          "scene": "submit-form",
+          "step": 4,
+          "headline": "Box 3 adds it up",
+          "caption": "Box 3 adds boxes 1 and 2 for you.",
+          "startSeconds": 125,
+          "thumb": "videos/submit-return/submit-form-4-thumb.webp",
+          "full": "videos/submit-return/submit-form-4.webp"
+        },
+        {
+          "scene": "submit-form",
+          "step": 5,
+          "headline": "Box 4, VAT reclaimed",
+          "caption": "Box 4 is VAT you can reclaim on purchases.",
+          "startSeconds": 131,
+          "thumb": "videos/submit-return/submit-form-5-thumb.webp",
+          "full": "videos/submit-return/submit-form-5.webp"
+        },
+        {
+          "scene": "submit-form",
+          "step": 6,
+          "headline": "Box 5, the net total",
+          "caption": "Box 5 works out what you owe overall.",
+          "startSeconds": 138,
+          "thumb": "videos/submit-return/submit-form-6-thumb.webp",
+          "full": "videos/submit-return/submit-form-6.webp"
+        },
+        {
+          "scene": "submit-form",
+          "step": 7,
+          "headline": "Box 6, total sales",
+          "caption": "Box 6 is your total sales, without VAT.",
+          "startSeconds": 144,
+          "thumb": "videos/submit-return/submit-form-7-thumb.webp",
+          "full": "videos/submit-return/submit-form-7.webp"
+        },
+        {
+          "scene": "submit-form",
+          "step": 8,
+          "headline": "Box 7, total purchases",
+          "caption": "Box 7 is your total purchases, without VAT.",
+          "startSeconds": 150,
+          "thumb": "videos/submit-return/submit-form-8-thumb.webp",
+          "full": "videos/submit-return/submit-form-8.webp"
+        },
+        {
+          "scene": "submit-form",
+          "step": 9,
+          "headline": "Boxes 8 and 9, EU trade",
+          "caption": "Boxes 8 and 9 cover EU trade, usually zero now.",
+          "startSeconds": 157,
+          "thumb": "videos/submit-return/submit-form-9-thumb.webp",
+          "full": "videos/submit-return/submit-form-9.webp"
+        },
+        {
+          "scene": "submit-form",
+          "step": 11,
+          "headline": "Confirm the declaration",
+          "caption": "Tick the declaration to confirm the return is accurate.",
+          "startSeconds": 165,
+          "thumb": "videos/submit-return/submit-form-11-thumb.webp",
+          "full": "videos/submit-return/submit-form-11.webp"
+        },
+        {
+          "scene": "authorise-submit",
+          "headline": "Authorise again",
+          "caption": "Submitting needs a wider grant, so HMRC asks once more. Sign in to HMRC and say yes again.",
+          "startSeconds": 173,
+          "thumb": "videos/submit-return/authorise-submit-thumb.webp",
+          "full": "videos/submit-return/authorise-submit.webp"
+        },
+        {
+          "scene": "receipt",
+          "headline": "Submitted",
+          "caption": "HMRC confirms the return is filed. The receipt is your record that it went through.",
+          "startSeconds": 205,
+          "thumb": "videos/submit-return/receipt-thumb.webp",
+          "full": "videos/submit-return/receipt.webp"
+        }
+      ]
     },
     {
       "id": "view-return",
@@ -66,7 +226,133 @@
       "description": "DIY Accounting Submit is a free tool for sending VAT returns to HMRC under Making Tax Digital. This video shows signing in, taking out a day pass, and opening a VAT return already on file with HMRC to read back all nine boxes. The return on screen was filed earlier, off camera, with Box 6 (total sales excluding VAT) at £5,000. It's a real recording of the live product, not a mockup or a design draft. The HMRC sign-in and access step is shown in full at {{video:hmrc-authorise}}. Try it yourself at https://submit.diyaccounting.co.uk.",
       "tags": ["DIY Accounting", "VAT return", "HMRC", "Making Tax Digital", "VAT obligations"],
       "categoryId": "27",
-      "videoId": "WKlb6KApkb8"
+      "videoId": "WKlb6KApkb8",
+      "walkthrough": [
+        {
+          "scene": "obligations-form",
+          "headline": "Ask HMRC",
+          "caption": "Type the VAT registration number. Then the stretch of time to look at.",
+          "startSeconds": 31,
+          "thumb": "videos/view-return/obligations-form-thumb.webp",
+          "full": "videos/view-return/obligations-form.webp"
+        },
+        {
+          "scene": "results",
+          "headline": "The periods on file",
+          "caption": "HMRC answers with every period it holds. One of these periods is still open, waiting for a return.",
+          "startSeconds": 75,
+          "thumb": "videos/view-return/results-thumb.webp",
+          "full": "videos/view-return/results.webp"
+        },
+        {
+          "scene": "obligations-again",
+          "step": 0,
+          "headline": "Back to activities",
+          "caption": "Back to the activities, to ask again.",
+          "startSeconds": 98,
+          "thumb": "videos/view-return/obligations-again-0-thumb.webp",
+          "full": "videos/view-return/obligations-again-0.webp"
+        },
+        {
+          "scene": "obligations-again",
+          "step": 2,
+          "headline": "Ask HMRC again",
+          "caption": "Ask HMRC the same question again.",
+          "startSeconds": 105,
+          "thumb": "videos/view-return/obligations-again-2-thumb.webp",
+          "full": "videos/view-return/obligations-again-2.webp"
+        },
+        {
+          "scene": "obligations-again",
+          "step": 4,
+          "headline": "Same VAT number",
+          "caption": "The same VAT registration number.",
+          "startSeconds": 112,
+          "thumb": "videos/view-return/obligations-again-4-thumb.webp",
+          "full": "videos/view-return/obligations-again-4.webp"
+        },
+        {
+          "scene": "obligations-again",
+          "step": 8,
+          "headline": "No sign-in needed",
+          "caption": "This time no HMRC sign-in is needed.",
+          "startSeconds": 122,
+          "thumb": "videos/view-return/obligations-again-8-thumb.webp",
+          "full": "videos/view-return/obligations-again-8.webp"
+        },
+        {
+          "scene": "obligations-again",
+          "step": 9,
+          "headline": "Periods after filing",
+          "caption": "The periods on file, after the submission.",
+          "startSeconds": 129,
+          "thumb": "videos/view-return/obligations-again-9-thumb.webp",
+          "full": "videos/view-return/obligations-again-9.webp"
+        },
+        {
+          "scene": "view-return",
+          "step": 0,
+          "headline": "Back to activities",
+          "caption": "Back to the activities, to view a return.",
+          "startSeconds": 138,
+          "thumb": "videos/view-return/view-return-0-thumb.webp",
+          "full": "videos/view-return/view-return-0.webp"
+        },
+        {
+          "scene": "view-return",
+          "step": 2,
+          "headline": "Open View VAT Return",
+          "caption": "Ask to see a return you've already sent.",
+          "startSeconds": 145,
+          "thumb": "videos/view-return/view-return-2-thumb.webp",
+          "full": "videos/view-return/view-return-2.webp"
+        },
+        {
+          "scene": "view-return",
+          "step": 4,
+          "headline": "Same VAT number",
+          "caption": "The same VAT registration number.",
+          "startSeconds": 153,
+          "thumb": "videos/view-return/view-return-4-thumb.webp",
+          "full": "videos/view-return/view-return-4.webp"
+        },
+        {
+          "scene": "view-return",
+          "step": 5,
+          "headline": "Choose the period",
+          "caption": "Then the period you want to read back.",
+          "startSeconds": 159,
+          "thumb": "videos/view-return/view-return-5-thumb.webp",
+          "full": "videos/view-return/view-return-5.webp"
+        },
+        {
+          "scene": "view-return",
+          "step": 8,
+          "headline": "Same access covers this",
+          "caption": "The same HMRC access already covers this.",
+          "startSeconds": 167,
+          "thumb": "videos/view-return/view-return-8-thumb.webp",
+          "full": "videos/view-return/view-return-8.webp"
+        },
+        {
+          "scene": "view-return",
+          "step": 9,
+          "headline": "HMRC sends the return",
+          "caption": "HMRC sends back exactly what was filed.",
+          "startSeconds": 174,
+          "thumb": "videos/view-return/view-return-9-thumb.webp",
+          "full": "videos/view-return/view-return-9.webp"
+        },
+        {
+          "scene": "view-return",
+          "step": 12,
+          "headline": "Read all nine boxes",
+          "caption": "All nine boxes, just as they were submitted.",
+          "startSeconds": 183,
+          "thumb": "videos/view-return/view-return-12-thumb.webp",
+          "full": "videos/view-return/view-return-12.webp"
+        }
+      ]
     },
     {
       "id": "view-liabilities",
@@ -81,7 +367,25 @@
       "description": "DIY Accounting Submit is a free tool for sending VAT returns to HMRC under Making Tax Digital. This video shows signing in, taking out a day pass, and asking HMRC what VAT is still outstanding on a VAT registration number. It's a real recording of the live product, not a mockup or a design draft. The HMRC sign-in and access step is shown in full at {{video:hmrc-authorise}}. Try it yourself at https://submit.diyaccounting.co.uk.",
       "tags": ["DIY Accounting", "VAT", "HMRC", "Making Tax Digital", "VAT liabilities", "VAT return"],
       "categoryId": "27",
-      "videoId": "ji-c7MhZIwo"
+      "videoId": "ji-c7MhZIwo",
+      "walkthrough": [
+        {
+          "scene": "liabilities-form",
+          "headline": "Ask HMRC",
+          "caption": "Type the VAT registration number. Then the stretch of time to check.",
+          "startSeconds": 34,
+          "thumb": "videos/view-liabilities/liabilities-form-thumb.webp",
+          "full": "videos/view-liabilities/liabilities-form.webp"
+        },
+        {
+          "scene": "results",
+          "headline": "The answer",
+          "caption": "HMRC answers with whatever it currently has on file. Any outstanding VAT shows here, with its due date.",
+          "startSeconds": 82,
+          "thumb": "videos/view-liabilities/results-thumb.webp",
+          "full": "videos/view-liabilities/results.webp"
+        }
+      ]
     },
     {
       "id": "view-payments",
@@ -96,7 +400,25 @@
       "description": "DIY Accounting Submit is a free tool for sending VAT returns to HMRC under Making Tax Digital. This video shows signing in, taking out a day pass, and asking HMRC which VAT payments it has recorded against a VAT registration number. It's a real recording of the live product, not a mockup or a design draft. The HMRC sign-in and access step is shown in full at {{video:hmrc-authorise}}. Try it yourself at https://submit.diyaccounting.co.uk.",
       "tags": ["DIY Accounting", "VAT", "HMRC", "Making Tax Digital", "VAT payments", "VAT return"],
       "categoryId": "27",
-      "videoId": "uJZ0jCnhATk"
+      "videoId": "uJZ0jCnhATk",
+      "walkthrough": [
+        {
+          "scene": "payments-form",
+          "headline": "Ask HMRC",
+          "caption": "Type the VAT registration number. Then the stretch of time to check.",
+          "startSeconds": 29,
+          "thumb": "videos/view-payments/payments-form-thumb.webp",
+          "full": "videos/view-payments/payments-form.webp"
+        },
+        {
+          "scene": "results",
+          "headline": "The answer",
+          "caption": "HMRC answers with whatever payments it has on file. Any payment against the account shows here, with its date.",
+          "startSeconds": 70,
+          "thumb": "videos/view-payments/results-thumb.webp",
+          "full": "videos/view-payments/results.webp"
+        }
+      ]
     },
     {
       "id": "view-penalties",
@@ -111,7 +433,25 @@
       "description": "DIY Accounting Submit is a free tool for sending VAT returns to HMRC under Making Tax Digital. This video shows signing in, taking out a day pass, and asking HMRC whether a VAT registration number carries any penalty points. It's a real recording of the live product, not a mockup or a design draft. The HMRC sign-in and access step is shown in full at {{video:hmrc-authorise}}. Try it yourself at https://submit.diyaccounting.co.uk.",
       "tags": ["DIY Accounting", "VAT", "HMRC", "Making Tax Digital", "VAT penalties", "VAT return"],
       "categoryId": "27",
-      "videoId": "MKNB9flqJMA"
+      "videoId": "MKNB9flqJMA",
+      "walkthrough": [
+        {
+          "scene": "penalties-form",
+          "headline": "Ask HMRC",
+          "caption": "Open VAT Penalties to check for penalty points. Type the VAT registration number. There is no date range to set.",
+          "startSeconds": 37,
+          "thumb": "videos/view-penalties/penalties-form-thumb.webp",
+          "full": "videos/view-penalties/penalties-form.webp"
+        },
+        {
+          "scene": "results",
+          "headline": "The answer",
+          "caption": "HMRC answers for the last 24 months. Any penalty points or charges show here.",
+          "startSeconds": 82,
+          "thumb": "videos/view-penalties/results-thumb.webp",
+          "full": "videos/view-penalties/results.webp"
+        }
+      ]
     },
     {
       "id": "itsa-quarterly-update",
@@ -126,7 +466,189 @@
       "description": "DIY Accounting Submit is a free tool for filing Self Assessment under Making Tax Digital for Income Tax. This video shows signing in, taking out Resident ITSA, asking HMRC which businesses and quarterly obligations sit against a National Insurance number, then opening the form a quarterly update is filed on. This is a sandbox preview, recorded against HMRC's test environment, not a live filing. The HMRC sign-in and access step is shown in full at {{video:hmrc-authorise}}. Try the VAT side of the product now at https://submit.diyaccounting.co.uk.",
       "tags": ["DIY Accounting", "Self Assessment", "HMRC", "Making Tax Digital", "ITSA"],
       "categoryId": "27",
-      "videoId": "Mz017jlKwWI"
+      "videoId": "Mz017jlKwWI",
+      "walkthrough": [
+        {
+          "scene": "business-details",
+          "step": 0,
+          "headline": "One dashboard for MTD",
+          "caption": "Making Tax Digital for Income Tax starts from one dashboard.",
+          "startSeconds": 34,
+          "thumb": "videos/itsa-quarterly-update/business-details-0-thumb.webp",
+          "full": "videos/itsa-quarterly-update/business-details-0.webp"
+        },
+        {
+          "scene": "business-details",
+          "step": 2,
+          "headline": "Enter your NI number",
+          "caption": "Type the National Insurance number HMRC asks for.",
+          "startSeconds": 43,
+          "thumb": "videos/itsa-quarterly-update/business-details-2-thumb.webp",
+          "full": "videos/itsa-quarterly-update/business-details-2.webp"
+        },
+        {
+          "scene": "business-details",
+          "step": 3,
+          "headline": "Ask HMRC for businesses",
+          "caption": "Ask HMRC which businesses it holds against that number.",
+          "startSeconds": 51,
+          "thumb": "videos/itsa-quarterly-update/business-details-3-thumb.webp",
+          "full": "videos/itsa-quarterly-update/business-details-3.webp"
+        },
+        {
+          "scene": "business-details",
+          "step": 4,
+          "headline": "Grant access, faster",
+          "caption": "See the full HMRC access walkthrough in our HMRC authorisation video.",
+          "startSeconds": 58,
+          "thumb": "videos/itsa-quarterly-update/business-details-4-thumb.webp",
+          "full": "videos/itsa-quarterly-update/business-details-4.webp"
+        },
+        {
+          "scene": "business-details",
+          "step": 5,
+          "headline": "HMRC lists your businesses",
+          "caption": "HMRC answers with every business behind this Self Assessment.",
+          "startSeconds": 78,
+          "thumb": "videos/itsa-quarterly-update/business-details-5-thumb.webp",
+          "full": "videos/itsa-quarterly-update/business-details-5.webp"
+        },
+        {
+          "scene": "business-details",
+          "step": 6,
+          "headline": "Note each business ID",
+          "caption": "Each business carries an ID. Every later filing needs it.",
+          "startSeconds": 85,
+          "thumb": "videos/itsa-quarterly-update/business-details-6-thumb.webp",
+          "full": "videos/itsa-quarterly-update/business-details-6.webp"
+        },
+        {
+          "scene": "obligations",
+          "step": 0,
+          "headline": "See quarters by business",
+          "caption": "Obligations groups the open and fulfilled quarters by business.",
+          "startSeconds": 96,
+          "thumb": "videos/itsa-quarterly-update/obligations-0-thumb.webp",
+          "full": "videos/itsa-quarterly-update/obligations-0.webp"
+        },
+        {
+          "scene": "obligations",
+          "step": 2,
+          "headline": "Same NI number",
+          "caption": "The same National Insurance number, every business.",
+          "startSeconds": 104,
+          "thumb": "videos/itsa-quarterly-update/obligations-2-thumb.webp",
+          "full": "videos/itsa-quarterly-update/obligations-2.webp"
+        },
+        {
+          "scene": "obligations",
+          "step": 3,
+          "headline": "Same access still counts",
+          "caption": "The read:self-assessment access from before still counts.",
+          "startSeconds": 111,
+          "thumb": "videos/itsa-quarterly-update/obligations-3-thumb.webp",
+          "full": "videos/itsa-quarterly-update/obligations-3.webp"
+        },
+        {
+          "scene": "obligations",
+          "step": 4,
+          "headline": "Due dates and status",
+          "caption": "HMRC answers with each quarter's due date and status.",
+          "startSeconds": 118,
+          "thumb": "videos/itsa-quarterly-update/obligations-4-thumb.webp",
+          "full": "videos/itsa-quarterly-update/obligations-4.webp"
+        },
+        {
+          "scene": "obligations",
+          "step": 7,
+          "headline": "Open means still owed",
+          "caption": "Open means a quarterly update is still owed.",
+          "startSeconds": 129,
+          "thumb": "videos/itsa-quarterly-update/obligations-7-thumb.webp",
+          "full": "videos/itsa-quarterly-update/obligations-7.webp"
+        },
+        {
+          "scene": "quarterly-update-form",
+          "step": 0,
+          "headline": "Back to the dashboard",
+          "caption": "Back to the dashboard to open the filing form.",
+          "startSeconds": 139,
+          "thumb": "videos/itsa-quarterly-update/quarterly-update-form-0-thumb.webp",
+          "full": "videos/itsa-quarterly-update/quarterly-update-form-0.webp"
+        },
+        {
+          "scene": "quarterly-update-form",
+          "step": 1,
+          "headline": "File the open quarter",
+          "caption": "This is the form an open quarter is filed on.",
+          "startSeconds": 146,
+          "thumb": "videos/itsa-quarterly-update/quarterly-update-form-1-thumb.webp",
+          "full": "videos/itsa-quarterly-update/quarterly-update-form-1.webp"
+        },
+        {
+          "scene": "quarterly-update-form",
+          "step": 3,
+          "headline": "NI number carries over",
+          "caption": "The National Insurance number carries over.",
+          "startSeconds": 153,
+          "thumb": "videos/itsa-quarterly-update/quarterly-update-form-3-thumb.webp",
+          "full": "videos/itsa-quarterly-update/quarterly-update-form-3.webp"
+        },
+        {
+          "scene": "quarterly-update-form",
+          "step": 4,
+          "headline": "Same business ID",
+          "caption": "The business ID from a moment ago goes here.",
+          "startSeconds": 160,
+          "thumb": "videos/itsa-quarterly-update/quarterly-update-form-4-thumb.webp",
+          "full": "videos/itsa-quarterly-update/quarterly-update-form-4.webp"
+        },
+        {
+          "scene": "quarterly-update-form",
+          "step": 5,
+          "headline": "Choose the tax year",
+          "caption": "Then the tax year this quarter falls in.",
+          "startSeconds": 166,
+          "thumb": "videos/itsa-quarterly-update/quarterly-update-form-5-thumb.webp",
+          "full": "videos/itsa-quarterly-update/quarterly-update-form-5.webp"
+        },
+        {
+          "scene": "quarterly-update-form",
+          "step": 8,
+          "headline": "Income and expenses",
+          "caption": "And the quarter's income and expenses.",
+          "startSeconds": 175,
+          "thumb": "videos/itsa-quarterly-update/quarterly-update-form-8-thumb.webp",
+          "full": "videos/itsa-quarterly-update/quarterly-update-form-8.webp"
+        },
+        {
+          "scene": "quarterly-update-form",
+          "step": 12,
+          "headline": "File the quarter",
+          "caption": "File the quarter with HMRC.",
+          "startSeconds": 185,
+          "thumb": "videos/itsa-quarterly-update/quarterly-update-form-12-thumb.webp",
+          "full": "videos/itsa-quarterly-update/quarterly-update-form-12.webp"
+        },
+        {
+          "scene": "quarterly-update-form",
+          "step": 13,
+          "headline": "HMRC accepts the quarter",
+          "caption": "HMRC accepts the quarterly update.",
+          "startSeconds": 190,
+          "thumb": "videos/itsa-quarterly-update/quarterly-update-form-13-thumb.webp",
+          "full": "videos/itsa-quarterly-update/quarterly-update-form-13.webp"
+        },
+        {
+          "scene": "quarterly-update-form",
+          "step": 16,
+          "headline": "Quarterly update filed",
+          "caption": "Filed. HMRC's answer carries the period ID.",
+          "startSeconds": 198,
+          "thumb": "videos/itsa-quarterly-update/quarterly-update-form-16-thumb.webp",
+          "full": "videos/itsa-quarterly-update/quarterly-update-form-16.webp"
+        }
+      ]
     },
     {
       "id": "itsa-business-details",
@@ -141,7 +663,25 @@
       "description": "DIY Accounting Submit is a free tool for filing Self Assessment under Making Tax Digital for Income Tax. This video shows signing in, taking out Resident ITSA, and asking HMRC which self-employment and property businesses it holds against a National Insurance number. This is a sandbox preview, recorded against HMRC's test environment, not a live filing. The HMRC sign-in and access step is shown in full at {{video:hmrc-authorise}}. Try the VAT side of the product now at https://submit.diyaccounting.co.uk.",
       "tags": ["DIY Accounting", "Self Assessment", "HMRC", "Making Tax Digital", "ITSA"],
       "categoryId": "27",
-      "videoId": "BOspayLOE1Y"
+      "videoId": "BOspayLOE1Y",
+      "walkthrough": [
+        {
+          "scene": "business-details-form",
+          "headline": "Ask HMRC",
+          "caption": "Business Details is the first step: which businesses does HMRC know about? Type the National Insurance number HMRC asks for.",
+          "startSeconds": 38,
+          "thumb": "videos/itsa-business-details/business-details-form-thumb.webp",
+          "full": "videos/itsa-business-details/business-details-form.webp"
+        },
+        {
+          "scene": "results",
+          "headline": "The answer",
+          "caption": "HMRC answers with the businesses it holds against that number. Each row carries a business ID. Every later Self Assessment filing needs it.",
+          "startSeconds": 94,
+          "thumb": "videos/itsa-business-details/results-thumb.webp",
+          "full": "videos/itsa-business-details/results.webp"
+        }
+      ]
     },
     {
       "id": "itsa-year",
@@ -156,7 +696,468 @@
       "description": "DIY Accounting Submit is a free tool for filing Self Assessment under Making Tax Digital for Income Tax. This video walks a whole tax year: signing in, taking out Resident, picking a business, filing a quarterly update for a self-employment business and for a UK property business, then the annual submission, adjustments, losses and claims, the tax calculation and the final declaration HMRC accepts. This is a sandbox preview, recorded against HMRC's test environment, not a live filing. The HMRC sign-in and access step is shown in full at {{video:hmrc-authorise}}. Try the VAT side of the product now at https://submit.diyaccounting.co.uk.",
       "tags": ["DIY Accounting", "Self Assessment", "HMRC", "Making Tax Digital", "ITSA", "final declaration"],
       "categoryId": "27",
-      "videoId": "y_cXA1cfcks"
+      "videoId": "y_cXA1cfcks",
+      "walkthrough": [
+        {
+          "scene": "business-picker",
+          "step": 0,
+          "headline": "One dashboard for MTD",
+          "caption": "Making Tax Digital for Income Tax starts from one dashboard.",
+          "startSeconds": 41,
+          "thumb": "videos/itsa-year/business-picker-0-thumb.webp",
+          "full": "videos/itsa-year/business-picker-0.webp"
+        },
+        {
+          "scene": "business-picker",
+          "step": 2,
+          "headline": "Enter your NI number",
+          "caption": "Type the National Insurance number HMRC asks for.",
+          "startSeconds": 50,
+          "thumb": "videos/itsa-year/business-picker-2-thumb.webp",
+          "full": "videos/itsa-year/business-picker-2.webp"
+        },
+        {
+          "scene": "business-picker",
+          "step": 3,
+          "headline": "Ask HMRC for businesses",
+          "caption": "Ask HMRC which businesses it holds against that number.",
+          "startSeconds": 57,
+          "thumb": "videos/itsa-year/business-picker-3-thumb.webp",
+          "full": "videos/itsa-year/business-picker-3.webp"
+        },
+        {
+          "scene": "business-picker",
+          "step": 4,
+          "headline": "Grant access, faster",
+          "caption": "See the full HMRC access walkthrough in our HMRC authorisation video.",
+          "startSeconds": 64,
+          "thumb": "videos/itsa-year/business-picker-4-thumb.webp",
+          "full": "videos/itsa-year/business-picker-4.webp"
+        },
+        {
+          "scene": "business-picker",
+          "step": 5,
+          "headline": "HMRC lists your businesses",
+          "caption": "HMRC answers with the businesses behind this Self Assessment.",
+          "startSeconds": 88,
+          "thumb": "videos/itsa-year/business-picker-5-thumb.webp",
+          "full": "videos/itsa-year/business-picker-5.webp"
+        },
+        {
+          "scene": "business-picker",
+          "step": 6,
+          "headline": "Note each business ID",
+          "caption": "Each business carries an ID.",
+          "startSeconds": 94,
+          "thumb": "videos/itsa-year/business-picker-6-thumb.webp",
+          "full": "videos/itsa-year/business-picker-6.webp"
+        },
+        {
+          "scene": "business-details",
+          "step": 0,
+          "headline": "Two businesses this year",
+          "caption": "This year has a self-employment and a UK property business.",
+          "startSeconds": 100,
+          "thumb": "videos/itsa-year/business-details-0-thumb.webp",
+          "full": "videos/itsa-year/business-details-0.webp"
+        },
+        {
+          "scene": "business-details",
+          "step": 1,
+          "headline": "List businesses by type",
+          "caption": "Business Details lists every business by type.",
+          "startSeconds": 108,
+          "thumb": "videos/itsa-year/business-details-1-thumb.webp",
+          "full": "videos/itsa-year/business-details-1.webp"
+        },
+        {
+          "scene": "business-details",
+          "step": 3,
+          "headline": "Self-employment and property",
+          "caption": "This sandbox account holds a self-employment and a property business.",
+          "startSeconds": 115,
+          "thumb": "videos/itsa-year/business-details-3-thumb.webp",
+          "full": "videos/itsa-year/business-details-3.webp"
+        },
+        {
+          "scene": "business-details",
+          "step": 4,
+          "headline": "Same NI number",
+          "caption": "The same National Insurance number, every business.",
+          "startSeconds": 123,
+          "thumb": "videos/itsa-year/business-details-4-thumb.webp",
+          "full": "videos/itsa-year/business-details-4.webp"
+        },
+        {
+          "scene": "business-details",
+          "step": 5,
+          "headline": "Same scope covers this",
+          "caption": "The scope granted a moment ago still covers this.",
+          "startSeconds": 129,
+          "thumb": "videos/itsa-year/business-details-5-thumb.webp",
+          "full": "videos/itsa-year/business-details-5.webp"
+        },
+        {
+          "scene": "business-details",
+          "step": 6,
+          "headline": "Both businesses, two IDs",
+          "caption": "HMRC answers with both businesses and their IDs.",
+          "startSeconds": 135,
+          "thumb": "videos/itsa-year/business-details-6-thumb.webp",
+          "full": "videos/itsa-year/business-details-6.webp"
+        },
+        {
+          "scene": "business-details",
+          "step": 8,
+          "headline": "One form per business",
+          "caption": "One quarterly update form per business type, all year.",
+          "startSeconds": 143,
+          "thumb": "videos/itsa-year/business-details-8-thumb.webp",
+          "full": "videos/itsa-year/business-details-8.webp"
+        },
+        {
+          "scene": "quarterly-update-self-employment",
+          "step": 0,
+          "headline": "First quarter, self-employment",
+          "caption": "First quarter, the self-employment business.",
+          "startSeconds": 151,
+          "thumb": "videos/itsa-year/quarterly-update-self-employment-0-thumb.webp",
+          "full": "videos/itsa-year/quarterly-update-self-employment-0.webp"
+        },
+        {
+          "scene": "quarterly-update-self-employment",
+          "step": 2,
+          "headline": "The self-employment ID",
+          "caption": "This business's ID, from Business Details.",
+          "startSeconds": 160,
+          "thumb": "videos/itsa-year/quarterly-update-self-employment-2-thumb.webp",
+          "full": "videos/itsa-year/quarterly-update-self-employment-2.webp"
+        },
+        {
+          "scene": "quarterly-update-self-employment",
+          "step": 3,
+          "headline": "Choose the tax year",
+          "caption": "The tax year this quarter falls in.",
+          "startSeconds": 166,
+          "thumb": "videos/itsa-year/quarterly-update-self-employment-3-thumb.webp",
+          "full": "videos/itsa-year/quarterly-update-self-employment-3.webp"
+        },
+        {
+          "scene": "quarterly-update-self-employment",
+          "step": 6,
+          "headline": "Income and expenses",
+          "caption": "Then the quarter's income and expenses.",
+          "startSeconds": 174,
+          "thumb": "videos/itsa-year/quarterly-update-self-employment-6-thumb.webp",
+          "full": "videos/itsa-year/quarterly-update-self-employment-6.webp"
+        },
+        {
+          "scene": "quarterly-update-self-employment",
+          "step": 9,
+          "headline": "File with HMRC",
+          "caption": "File it with HMRC.",
+          "startSeconds": 182,
+          "thumb": "videos/itsa-year/quarterly-update-self-employment-9-thumb.webp",
+          "full": "videos/itsa-year/quarterly-update-self-employment-9.webp"
+        },
+        {
+          "scene": "quarterly-update-self-employment",
+          "step": 10,
+          "headline": "HMRC accepts the quarter",
+          "caption": "HMRC accepts the period summary.",
+          "startSeconds": 186,
+          "thumb": "videos/itsa-year/quarterly-update-self-employment-10-thumb.webp",
+          "full": "videos/itsa-year/quarterly-update-self-employment-10.webp"
+        },
+        {
+          "scene": "quarterly-update-uk-property",
+          "step": 0,
+          "headline": "Same quarter, property business",
+          "caption": "Same quarter, the UK property business - its own form.",
+          "startSeconds": 196,
+          "thumb": "videos/itsa-year/quarterly-update-uk-property-0-thumb.webp",
+          "full": "videos/itsa-year/quarterly-update-uk-property-0.webp"
+        },
+        {
+          "scene": "quarterly-update-uk-property",
+          "step": 2,
+          "headline": "The property ID",
+          "caption": "The property business's own ID.",
+          "startSeconds": 206,
+          "thumb": "videos/itsa-year/quarterly-update-uk-property-2-thumb.webp",
+          "full": "videos/itsa-year/quarterly-update-uk-property-2.webp"
+        },
+        {
+          "scene": "quarterly-update-uk-property",
+          "step": 6,
+          "headline": "Rent and expenses",
+          "caption": "Rent received, and the expenses against it.",
+          "startSeconds": 216,
+          "thumb": "videos/itsa-year/quarterly-update-uk-property-6-thumb.webp",
+          "full": "videos/itsa-year/quarterly-update-uk-property-6.webp"
+        },
+        {
+          "scene": "quarterly-update-uk-property",
+          "step": 9,
+          "headline": "File with HMRC",
+          "caption": "File it with HMRC.",
+          "startSeconds": 224,
+          "thumb": "videos/itsa-year/quarterly-update-uk-property-9-thumb.webp",
+          "full": "videos/itsa-year/quarterly-update-uk-property-9.webp"
+        },
+        {
+          "scene": "quarterly-update-uk-property",
+          "step": 10,
+          "headline": "Both businesses now filed",
+          "caption": "Both businesses now have this quarter on file.",
+          "startSeconds": 229,
+          "thumb": "videos/itsa-year/quarterly-update-uk-property-10-thumb.webp",
+          "full": "videos/itsa-year/quarterly-update-uk-property-10.webp"
+        },
+        {
+          "scene": "annual-submission",
+          "step": 0,
+          "headline": "Year-end steps start",
+          "caption": "Once every quarter is in, the year-end steps start here.",
+          "startSeconds": 238,
+          "thumb": "videos/itsa-year/annual-submission-0-thumb.webp",
+          "full": "videos/itsa-year/annual-submission-0.webp"
+        },
+        {
+          "scene": "annual-submission",
+          "step": 4,
+          "headline": "Load the year so far",
+          "caption": "Load what HMRC already holds for the year.",
+          "startSeconds": 251,
+          "thumb": "videos/itsa-year/annual-submission-4-thumb.webp",
+          "full": "videos/itsa-year/annual-submission-4.webp"
+        },
+        {
+          "scene": "annual-submission",
+          "step": 6,
+          "headline": "Claim the trading allowance",
+          "caption": "Claim the trading income allowance instead of itemised ones.",
+          "startSeconds": 257,
+          "thumb": "videos/itsa-year/annual-submission-6-thumb.webp",
+          "full": "videos/itsa-year/annual-submission-6.webp"
+        },
+        {
+          "scene": "annual-submission",
+          "step": 8,
+          "headline": "Save allowances and adjustments",
+          "caption": "Save the year's allowances and adjustments.",
+          "startSeconds": 266,
+          "thumb": "videos/itsa-year/annual-submission-8-thumb.webp",
+          "full": "videos/itsa-year/annual-submission-8.webp"
+        },
+        {
+          "scene": "annual-submission",
+          "step": 9,
+          "headline": "HMRC accepts the year",
+          "caption": "HMRC accepts the annual submission.",
+          "startSeconds": 273,
+          "thumb": "videos/itsa-year/annual-submission-9-thumb.webp",
+          "full": "videos/itsa-year/annual-submission-9.webp"
+        },
+        {
+          "scene": "adjustments",
+          "step": 0,
+          "headline": "HMRC works out a summary",
+          "caption": "HMRC works out a business source adjustable summary from the quarters filed.",
+          "startSeconds": 278,
+          "thumb": "videos/itsa-year/adjustments-0-thumb.webp",
+          "full": "videos/itsa-year/adjustments-0.webp"
+        },
+        {
+          "scene": "adjustments",
+          "step": 6,
+          "headline": "Trigger HMRC's summary",
+          "caption": "Trigger the summary and read what HMRC calculated.",
+          "startSeconds": 295,
+          "thumb": "videos/itsa-year/adjustments-6-thumb.webp",
+          "full": "videos/itsa-year/adjustments-6.webp"
+        },
+        {
+          "scene": "adjustments",
+          "step": 7,
+          "headline": "Turnover, expenses, net profit",
+          "caption": "Turnover, expenses and the net profit HMRC worked out.",
+          "startSeconds": 302,
+          "thumb": "videos/itsa-year/adjustments-7-thumb.webp",
+          "full": "videos/itsa-year/adjustments-7.webp"
+        },
+        {
+          "scene": "adjustments",
+          "step": 9,
+          "headline": "Correct a figure",
+          "caption": "Change a figure if HMRC's version is wrong.",
+          "startSeconds": 324,
+          "thumb": "videos/itsa-year/adjustments-9-thumb.webp",
+          "full": "videos/itsa-year/adjustments-9.webp"
+        },
+        {
+          "scene": "adjustments",
+          "step": 12,
+          "headline": "HMRC accepts the change",
+          "caption": "HMRC accepts the adjustment.",
+          "startSeconds": 333,
+          "thumb": "videos/itsa-year/adjustments-12-thumb.webp",
+          "full": "videos/itsa-year/adjustments-12.webp"
+        },
+        {
+          "scene": "losses-and-claims",
+          "step": 0,
+          "headline": "Claim a loss here",
+          "caption": "A loss this year, or from an earlier year, is claimed here.",
+          "startSeconds": 344,
+          "thumb": "videos/itsa-year/losses-and-claims-0-thumb.webp",
+          "full": "videos/itsa-year/losses-and-claims-0.webp"
+        },
+        {
+          "scene": "losses-and-claims",
+          "step": 4,
+          "headline": "Suspend the tax year check",
+          "caption": "The sandbox's current tax year hasn't really ended, so suspend that check.",
+          "startSeconds": 357,
+          "thumb": "videos/itsa-year/losses-and-claims-4-thumb.webp",
+          "full": "videos/itsa-year/losses-and-claims-4.webp"
+        },
+        {
+          "scene": "losses-and-claims",
+          "step": 5,
+          "headline": "Load the loss position",
+          "caption": "Load this business's loss position for the year.",
+          "startSeconds": 365,
+          "thumb": "videos/itsa-year/losses-and-claims-5-thumb.webp",
+          "full": "videos/itsa-year/losses-and-claims-5.webp"
+        },
+        {
+          "scene": "losses-and-claims",
+          "step": 7,
+          "headline": "Carry the loss forward",
+          "caption": "This year's loss, carried forward to next year.",
+          "startSeconds": 371,
+          "thumb": "videos/itsa-year/losses-and-claims-7-thumb.webp",
+          "full": "videos/itsa-year/losses-and-claims-7.webp"
+        },
+        {
+          "scene": "losses-and-claims",
+          "step": 9,
+          "headline": "HMRC accepts the claim",
+          "caption": "HMRC accepts the claim.",
+          "startSeconds": 379,
+          "thumb": "videos/itsa-year/losses-and-claims-9-thumb.webp",
+          "full": "videos/itsa-year/losses-and-claims-9.webp"
+        },
+        {
+          "scene": "tax-calculation",
+          "step": 0,
+          "headline": "HMRC can now calculate",
+          "caption": "With every business and the year-end steps in, HMRC can calculate.",
+          "startSeconds": 390,
+          "thumb": "videos/itsa-year/tax-calculation-0-thumb.webp",
+          "full": "videos/itsa-year/tax-calculation-0.webp"
+        },
+        {
+          "scene": "tax-calculation",
+          "step": 3,
+          "headline": "Intent to finalise",
+          "caption": "Intent to finalise is the calculation the final declaration confirms.",
+          "startSeconds": 402,
+          "thumb": "videos/itsa-year/tax-calculation-3-thumb.webp",
+          "full": "videos/itsa-year/tax-calculation-3.webp"
+        },
+        {
+          "scene": "tax-calculation",
+          "step": 6,
+          "headline": "HMRC's disclaimer first",
+          "caption": "HMRC shows this disclaimer before any figure.",
+          "startSeconds": 410,
+          "thumb": "videos/itsa-year/tax-calculation-6-thumb.webp",
+          "full": "videos/itsa-year/tax-calculation-6.webp"
+        },
+        {
+          "scene": "tax-calculation",
+          "step": 7,
+          "headline": "Still an estimate",
+          "caption": "It is an estimate, and it can still change.",
+          "startSeconds": 426,
+          "thumb": "videos/itsa-year/tax-calculation-7-thumb.webp",
+          "full": "videos/itsa-year/tax-calculation-7.webp"
+        },
+        {
+          "scene": "tax-calculation",
+          "step": 8,
+          "headline": "What the year owes",
+          "caption": "What the whole tax year owes, across both businesses.",
+          "startSeconds": 432,
+          "thumb": "videos/itsa-year/tax-calculation-8-thumb.webp",
+          "full": "videos/itsa-year/tax-calculation-8.webp"
+        },
+        {
+          "scene": "final-declaration",
+          "step": 0,
+          "headline": "The final step",
+          "caption": "The last step confirms this calculation and files the return.",
+          "startSeconds": 440,
+          "thumb": "videos/itsa-year/final-declaration-0-thumb.webp",
+          "full": "videos/itsa-year/final-declaration-0.webp"
+        },
+        {
+          "scene": "final-declaration",
+          "step": 3,
+          "headline": "Retrieve the calculation",
+          "caption": "Retrieve the calculation this declaration confirms.",
+          "startSeconds": 448,
+          "thumb": "videos/itsa-year/final-declaration-3-thumb.webp",
+          "full": "videos/itsa-year/final-declaration-3.webp"
+        },
+        {
+          "scene": "final-declaration",
+          "step": 4,
+          "headline": "Same disclaimer, every business",
+          "caption": "The same disclaimer, and every business HMRC counted.",
+          "startSeconds": 455,
+          "thumb": "videos/itsa-year/final-declaration-4-thumb.webp",
+          "full": "videos/itsa-year/final-declaration-4.webp"
+        },
+        {
+          "scene": "final-declaration",
+          "step": 7,
+          "headline": "Confirm it's correct",
+          "caption": "I confirm this information is correct and complete to the best of my knowledge.",
+          "startSeconds": 466,
+          "thumb": "videos/itsa-year/final-declaration-7-thumb.webp",
+          "full": "videos/itsa-year/final-declaration-7.webp"
+        },
+        {
+          "scene": "final-declaration",
+          "step": 9,
+          "headline": "File the whole year",
+          "caption": "File the return for the whole year.",
+          "startSeconds": 474,
+          "thumb": "videos/itsa-year/final-declaration-9-thumb.webp",
+          "full": "videos/itsa-year/final-declaration-9.webp"
+        },
+        {
+          "scene": "final-declaration",
+          "step": 10,
+          "headline": "The year is filed",
+          "caption": "HMRC accepts the final declaration. The year is filed.",
+          "startSeconds": 479,
+          "thumb": "videos/itsa-year/final-declaration-10-thumb.webp",
+          "full": "videos/itsa-year/final-declaration-10.webp"
+        },
+        {
+          "scene": "final-declaration",
+          "step": 13,
+          "headline": "Final declaration filed",
+          "caption": "Filed. The whole year is now closed out.",
+          "startSeconds": 491,
+          "thumb": "videos/itsa-year/final-declaration-13-thumb.webp",
+          "full": "videos/itsa-year/final-declaration-13.webp"
+        }
+      ]
     },
     {
       "id": "sign-in",
@@ -171,7 +1172,41 @@
       "description": "DIY Accounting Submit is a free tool for sending VAT returns to HMRC under Making Tax Digital. This video shows the part every other activity starts with: signing in through Cognito's Hosted UI (Google sign-in follows the same page) and taking out a day pass so the VAT activities unlock. It's a real recording of the live product, not a mockup or a design draft. Try it yourself at https://submit.diyaccounting.co.uk.",
       "tags": ["DIY Accounting", "sign in", "day pass", "HMRC", "Making Tax Digital"],
       "categoryId": "27",
-      "videoId": "Ks6BYfVMjpM"
+      "videoId": "Ks6BYfVMjpM",
+      "walkthrough": [
+        {
+          "scene": "home",
+          "headline": "Home",
+          "caption": "Every activity needs an account signed in first.",
+          "startSeconds": 0,
+          "thumb": "videos/sign-in/home-thumb.webp",
+          "full": "videos/sign-in/home.webp"
+        },
+        {
+          "scene": "sign-in",
+          "headline": "Sign in",
+          "caption": "This account signs in through Cognito's Hosted UI. Google sign-in follows this same page. Its consent screen is Google's own.",
+          "startSeconds": 8,
+          "thumb": "videos/sign-in/sign-in-thumb.webp",
+          "full": "videos/sign-in/sign-in.webp"
+        },
+        {
+          "scene": "day-pass",
+          "headline": "Day pass",
+          "caption": "Bundles decide which activities you can run. A day pass opens the VAT activities for a day, no subscription needed.",
+          "startSeconds": 37,
+          "thumb": "videos/sign-in/day-pass-thumb.webp",
+          "full": "videos/sign-in/day-pass.webp"
+        },
+        {
+          "scene": "activities",
+          "headline": "Activities",
+          "caption": "Every activity starts from the home page, once you're signed in.",
+          "startSeconds": 58,
+          "thumb": "videos/sign-in/activities-thumb.webp",
+          "full": "videos/sign-in/activities.webp"
+        }
+      ]
     },
     {
       "id": "tokens",
@@ -186,7 +1221,53 @@
       "description": "DIY Accounting Submit is a free tool for sending VAT returns to HMRC under Making Tax Digital. This video shows the token balance every account carries: what a bundle grants, what each metered activity spends, and what happens when the balance runs out. It's a real recording of the live product, not a mockup or a design draft. Try it yourself at https://submit.diyaccounting.co.uk.",
       "tags": ["DIY Accounting", "tokens", "token usage", "HMRC", "Making Tax Digital"],
       "categoryId": "27",
-      "videoId": "rN-UX2o4Z9Q"
+      "videoId": "rN-UX2o4Z9Q",
+      "walkthrough": [
+        {
+          "scene": "balance",
+          "step": 0,
+          "headline": "Your balance, always on screen",
+          "caption": "Every account carries a running token balance, shown in the header.",
+          "startSeconds": 25,
+          "thumb": "videos/tokens/balance-0-thumb.webp",
+          "full": "videos/tokens/balance-0.webp"
+        },
+        {
+          "scene": "balance",
+          "step": 1,
+          "headline": "Open token usage",
+          "caption": "Click it to see where the tokens came from and where they went.",
+          "startSeconds": 32,
+          "thumb": "videos/tokens/balance-1-thumb.webp",
+          "full": "videos/tokens/balance-1.webp"
+        },
+        {
+          "scene": "balance",
+          "step": 3,
+          "headline": "What granted them",
+          "caption": "Each bundle you hold grants tokens on its own schedule.",
+          "startSeconds": 40,
+          "thumb": "videos/tokens/balance-3-thumb.webp",
+          "full": "videos/tokens/balance-3.webp"
+        },
+        {
+          "scene": "balance",
+          "step": 5,
+          "headline": "What spent them",
+          "caption": "Every metered activity spends one token when it runs.",
+          "startSeconds": 48,
+          "thumb": "videos/tokens/balance-5-thumb.webp",
+          "full": "videos/tokens/balance-5.webp"
+        },
+        {
+          "scene": "running-out",
+          "headline": "Running out",
+          "caption": "Run out, and the activity says so before it lets you spend nothing.",
+          "startSeconds": 57,
+          "thumb": "videos/tokens/running-out-thumb.webp",
+          "full": "videos/tokens/running-out.webp"
+        }
+      ]
     },
     {
       "id": "subscription-management",
@@ -201,7 +1282,33 @@
       "description": "DIY Accounting Submit is a free tool for sending VAT returns to HMRC under Making Tax Digital. This video shows a subscription bundle: what Subscribe starts through Stripe's own checkout, where an active subscription shows once it's running, and how Stripe's billing portal ends it. It's a real recording of the live product, not a mockup or a design draft. Try it yourself at https://submit.diyaccounting.co.uk.",
       "tags": ["DIY Accounting", "subscription", "billing", "HMRC", "Making Tax Digital"],
       "categoryId": "27",
-      "videoId": "CCnxkiq7K2g"
+      "videoId": "CCnxkiq7K2g",
+      "walkthrough": [
+        {
+          "scene": "subscribe",
+          "headline": "Subscribe",
+          "caption": "A subscription bundle runs every month until you cancel it. Subscribe opens Stripe's own checkout, where a live site takes a card.",
+          "startSeconds": 17,
+          "thumb": "videos/subscription-management/subscribe-thumb.webp",
+          "full": "videos/subscription-management/subscribe.webp"
+        },
+        {
+          "scene": "active",
+          "headline": "Once it's active",
+          "caption": "Once active, it shows in your current bundles.",
+          "startSeconds": 37,
+          "thumb": "videos/subscription-management/active-thumb.webp",
+          "full": "videos/subscription-management/active.webp"
+        },
+        {
+          "scene": "cancel",
+          "headline": "Cancel",
+          "caption": "A real subscription adds a Manage Subscription button. It opens Stripe's own billing portal — Cancel plan ends it.",
+          "startSeconds": 57,
+          "thumb": "videos/subscription-management/cancel-thumb.webp",
+          "full": "videos/subscription-management/cancel.webp"
+        }
+      ]
     },
     {
       "id": "tour",
@@ -216,7 +1323,57 @@
       "description": "DIY Accounting Submit is a free tool for sending VAT returns to HMRC under Making Tax Digital. This video is an unauthenticated tour of the site: what it does, how to use it, the bundles that unlock each activity, and where to find help and accessibility information. It's a real recording of the live product, not a mockup or a design draft. Try it yourself at https://submit.diyaccounting.co.uk.",
       "tags": ["DIY Accounting", "tour", "overview", "HMRC", "Making Tax Digital"],
       "categoryId": "27",
-      "videoId": "6TQGQ8t46X8"
+      "videoId": "6TQGQ8t46X8",
+      "walkthrough": [
+        {
+          "scene": "home",
+          "headline": "Home",
+          "caption": "Everything you can do is listed on the home page. DIY Accounting has run VAT submissions for years.",
+          "startSeconds": 0,
+          "thumb": "videos/tour/home-thumb.webp",
+          "full": "videos/tour/home.webp"
+        },
+        {
+          "scene": "about",
+          "headline": "About",
+          "caption": "The info icon is the way in to everything explanatory. Making Tax Digital compliant and recognised by HMRC.",
+          "startSeconds": 24,
+          "thumb": "videos/tour/about-thumb.webp",
+          "full": "videos/tour/about.webp"
+        },
+        {
+          "scene": "guide",
+          "headline": "User guide",
+          "caption": "It also covers obligations, liabilities, payments and penalties. Every submission leaves a receipt you can find again.",
+          "startSeconds": 44,
+          "thumb": "videos/tour/guide-thumb.webp",
+          "full": "videos/tour/guide.webp"
+        },
+        {
+          "scene": "help",
+          "headline": "Help",
+          "caption": "Type a word to filter the questions. If nothing fits, the support form reaches a person.",
+          "startSeconds": 70,
+          "thumb": "videos/tour/help-thumb.webp",
+          "full": "videos/tour/help.webp"
+        },
+        {
+          "scene": "bundles",
+          "headline": "Bundles",
+          "caption": "Bundles decide what you can run and how many submissions you get. Got a pass? Redeem it here.",
+          "startSeconds": 99,
+          "thumb": "videos/tour/bundles-thumb.webp",
+          "full": "videos/tour/bundles.webp"
+        },
+        {
+          "scene": "accessibility",
+          "headline": "Accessibility",
+          "caption": "Including what still does not work. Start at submit.diyaccounting.co.uk.",
+          "startSeconds": 118,
+          "thumb": "videos/tour/accessibility-thumb.webp",
+          "full": "videos/tour/accessibility.webp"
+        }
+      ]
     },
     {
       "id": "my-receipts",
@@ -231,7 +1388,17 @@
       "description": "DIY Accounting Submit is a free tool for sending VAT returns to HMRC under Making Tax Digital. This video shows a signed-in walk through submission receipts: submitting a VAT return, then finding and opening its receipt from the account's receipt history. It's a real recording of the live product, not a mockup or a design draft. Try it yourself at https://submit.diyaccounting.co.uk.",
       "tags": ["DIY Accounting", "receipts", "VAT return", "HMRC", "Making Tax Digital"],
       "categoryId": "27",
-      "videoId": "2RNO6PZhX-s"
+      "videoId": "2RNO6PZhX-s",
+      "walkthrough": [
+        {
+          "scene": "receipts",
+          "headline": "Your receipts",
+          "caption": "Open one to see the full HMRC response. It carries HMRC's own confirmation, kept for your records.",
+          "startSeconds": 24,
+          "thumb": "videos/my-receipts/receipts-thumb.webp",
+          "full": "videos/my-receipts/receipts.webp"
+        }
+      ]
     },
     {
       "id": "generate-pass-digital",
@@ -246,7 +1413,45 @@
       "description": "DIY Accounting Submit is a free tool for sending VAT returns to HMRC under Making Tax Digital. This video shows generating a digital pass: a shareable link that gives whoever redeems it free VAT submission access for 7 days. It's a real recording of the live product, not a mockup or a design draft. Try it yourself at https://submit.diyaccounting.co.uk.",
       "tags": ["DIY Accounting", "digital pass", "day pass", "HMRC", "Making Tax Digital"],
       "categoryId": "27",
-      "videoId": "K3IJe9BvC0U"
+      "videoId": "K3IJe9BvC0U",
+      "walkthrough": [
+        {
+          "scene": "generate",
+          "step": 0,
+          "headline": "Open Generate Digital Pass",
+          "caption": "This spends a handful of tokens to mint a shareable pass.",
+          "startSeconds": 26,
+          "thumb": "videos/generate-pass-digital/generate-0-thumb.webp",
+          "full": "videos/generate-pass-digital/generate-0.webp"
+        },
+        {
+          "scene": "generate",
+          "step": 2,
+          "headline": "Add a note (optional)",
+          "caption": "A note for your own records, not shown to whoever redeems it.",
+          "startSeconds": 34,
+          "thumb": "videos/generate-pass-digital/generate-2-thumb.webp",
+          "full": "videos/generate-pass-digital/generate-2.webp"
+        },
+        {
+          "scene": "generate",
+          "step": 3,
+          "headline": "Always redeemed anonymously",
+          "caption": "Companies House and HMRC never see who redeems it.",
+          "startSeconds": 42,
+          "thumb": "videos/generate-pass-digital/generate-3-thumb.webp",
+          "full": "videos/generate-pass-digital/generate-3.webp"
+        },
+        {
+          "scene": "generate",
+          "step": 5,
+          "headline": "Share this code",
+          "caption": "This is the pass code, ready to share.",
+          "startSeconds": 50,
+          "thumb": "videos/generate-pass-digital/generate-5-thumb.webp",
+          "full": "videos/generate-pass-digital/generate-5.webp"
+        }
+      ]
     },
     {
       "id": "generate-pass-physical",
@@ -261,7 +1466,17 @@
       "description": "DIY Accounting Submit is a free tool for sending VAT returns to HMRC under Making Tax Digital. This video shows generating a physical pass: a code for merchandise or print that gives whoever redeems it free VAT submission access. It's a real recording of the live product, not a mockup or a design draft. Try it yourself at https://submit.diyaccounting.co.uk.",
       "tags": ["DIY Accounting", "physical pass", "merchandise", "HMRC", "Making Tax Digital"],
       "categoryId": "27",
-      "videoId": "5W7LAj75cFM"
+      "videoId": "5W7LAj75cFM",
+      "walkthrough": [
+        {
+          "scene": "generate",
+          "headline": "Generate the pass",
+          "caption": "It works the same way whether it ends up on a mug or a leaflet. This is the code, ready to print or engrave.",
+          "startSeconds": 27,
+          "thumb": "videos/generate-pass-physical/generate-thumb.webp",
+          "full": "videos/generate-pass-physical/generate.webp"
+        }
+      ]
     },
     {
       "id": "company-lookup",
@@ -276,7 +1491,25 @@
       "description": "DIY Accounting Submit is a free tool for sending VAT returns to HMRC under Making Tax Digital, and for looking up companies at Companies House. This video shows searching for a company by name or number and reading back its Companies House profile: status, incorporation date and registered address. It's a real recording of the live product, not a mockup or a design draft. Try it yourself at https://submit.diyaccounting.co.uk.",
       "tags": ["DIY Accounting", "Companies House", "company lookup", "company search"],
       "categoryId": "27",
-      "videoId": "YQh-fzFYp7k"
+      "videoId": "YQh-fzFYp7k",
+      "walkthrough": [
+        {
+          "scene": "search",
+          "headline": "Search",
+          "caption": "Type a company name or number. Companies House answers with a profile.",
+          "startSeconds": 13,
+          "thumb": "videos/company-lookup/search-thumb.webp",
+          "full": "videos/company-lookup/search.webp"
+        },
+        {
+          "scene": "profile",
+          "headline": "The profile",
+          "caption": "The profile carries the company's status, address and officers. Status, address and officers, straight from the register.",
+          "startSeconds": 32,
+          "thumb": "videos/company-lookup/profile-thumb.webp",
+          "full": "videos/company-lookup/profile.webp"
+        }
+      ]
     },
     {
       "id": "file-confirmation-statement",
@@ -291,7 +1524,25 @@
       "description": "DIY Accounting Submit is a free tool for filing with Companies House and HMRC. This video shows starting a confirmation statement (CS01): sign in, take out Resident, look up a company, then read its directors and persons with significant control from Companies House's register. It's a real recording of the live product, not a mockup or a design draft. Try it yourself at https://submit.diyaccounting.co.uk.",
       "tags": ["DIY Accounting", "Companies House", "confirmation statement", "CS01"],
       "categoryId": "27",
-      "videoId": "t6TeSVYnhlQ"
+      "videoId": "t6TeSVYnhlQ",
+      "walkthrough": [
+        {
+          "scene": "company-lookup",
+          "headline": "Which company?",
+          "caption": "Type the company number. Companies House confirms the next statement due.",
+          "startSeconds": 29,
+          "thumb": "videos/file-confirmation-statement/company-lookup-thumb.webp",
+          "full": "videos/file-confirmation-statement/company-lookup.webp"
+        },
+        {
+          "scene": "register",
+          "headline": "The register",
+          "caption": "This is the company's own register of officers. And its people with significant control.",
+          "startSeconds": 53,
+          "thumb": "videos/file-confirmation-statement/register-thumb.webp",
+          "full": "videos/file-confirmation-statement/register.webp"
+        }
+      ]
     },
     {
       "id": "change-registered-office",
@@ -332,7 +1583,114 @@
       "description": "DIY Accounting Submit is a free tool for filing with Companies House and HMRC. This video shows filing a company's FRS 105 micro-entity accounts: sign in, take out Resident, look up a company, fill in the balance sheet, preview the iXBRL, and file it with Companies House. This is a sandbox preview, recorded against a local simulator, not a live filing. Try the VAT side of the product now at https://submit.diyaccounting.co.uk.",
       "tags": ["DIY Accounting", "Companies House", "micro-entity accounts", "sandbox"],
       "categoryId": "27",
-      "videoId": "_FZyGeODndw"
+      "videoId": "_FZyGeODndw",
+      "walkthrough": [
+        {
+          "scene": "company-lookup",
+          "step": 0,
+          "headline": "Find the company",
+          "caption": "Open File Micro-entity Accounts to find the company.",
+          "startSeconds": 30,
+          "thumb": "videos/file-micro-entity-accounts/company-lookup-0-thumb.webp",
+          "full": "videos/file-micro-entity-accounts/company-lookup-0.webp"
+        },
+        {
+          "scene": "company-lookup",
+          "step": 2,
+          "headline": "Enter the company number",
+          "caption": "Type the company number.",
+          "startSeconds": 38,
+          "thumb": "videos/file-micro-entity-accounts/company-lookup-2-thumb.webp",
+          "full": "videos/file-micro-entity-accounts/company-lookup-2.webp"
+        },
+        {
+          "scene": "company-lookup",
+          "step": 3,
+          "headline": "Look up the company",
+          "caption": "Look up the company with Companies House.",
+          "startSeconds": 44,
+          "thumb": "videos/file-micro-entity-accounts/company-lookup-3-thumb.webp",
+          "full": "videos/file-micro-entity-accounts/company-lookup-3.webp"
+        },
+        {
+          "scene": "company-lookup",
+          "step": 5,
+          "headline": "Confirm the company name",
+          "caption": "Companies House confirms the company name.",
+          "startSeconds": 50,
+          "thumb": "videos/file-micro-entity-accounts/company-lookup-5-thumb.webp",
+          "full": "videos/file-micro-entity-accounts/company-lookup-5.webp"
+        },
+        {
+          "scene": "accounts-form",
+          "step": 0,
+          "headline": "Set the accounting period",
+          "caption": "Set the accounting period.",
+          "startSeconds": 57,
+          "thumb": "videos/file-micro-entity-accounts/accounts-form-0-thumb.webp",
+          "full": "videos/file-micro-entity-accounts/accounts-form-0.webp"
+        },
+        {
+          "scene": "accounts-form",
+          "step": 2,
+          "headline": "This year, then last year",
+          "caption": "Enter this year's balance sheet, then last year's for comparison.",
+          "startSeconds": 65,
+          "thumb": "videos/file-micro-entity-accounts/accounts-form-2-thumb.webp",
+          "full": "videos/file-micro-entity-accounts/accounts-form-2.webp"
+        },
+        {
+          "scene": "accounts-form",
+          "step": 8,
+          "headline": "Net assets must balance",
+          "caption": "This checks net assets against capital and reserves.",
+          "startSeconds": 81,
+          "thumb": "videos/file-micro-entity-accounts/accounts-form-8-thumb.webp",
+          "full": "videos/file-micro-entity-accounts/accounts-form-8.webp"
+        },
+        {
+          "scene": "accounts-form",
+          "step": 16,
+          "headline": "Name the approving director",
+          "caption": "Name the director approving the accounts.",
+          "startSeconds": 101,
+          "thumb": "videos/file-micro-entity-accounts/accounts-form-16-thumb.webp",
+          "full": "videos/file-micro-entity-accounts/accounts-form-16.webp"
+        },
+        {
+          "scene": "accounts-form",
+          "step": 18,
+          "headline": "Accept the statements",
+          "caption": "Accept the four statutory statements.",
+          "startSeconds": 110,
+          "thumb": "videos/file-micro-entity-accounts/accounts-form-18-thumb.webp",
+          "full": "videos/file-micro-entity-accounts/accounts-form-18.webp"
+        },
+        {
+          "scene": "preview",
+          "headline": "Preview",
+          "caption": "Preview the iXBRL before anything is filed. This is the XML that will be filed. Nothing has gone to Companies House yet.",
+          "startSeconds": 122,
+          "thumb": "videos/file-micro-entity-accounts/preview-thumb.webp",
+          "full": "videos/file-micro-entity-accounts/preview.webp"
+        },
+        {
+          "scene": "submit",
+          "headline": "File it",
+          "caption": "Type the company's Companies House authentication code. Submit the filing to Companies House's sandbox.",
+          "startSeconds": 139,
+          "thumb": "videos/file-micro-entity-accounts/submit-thumb.webp",
+          "full": "videos/file-micro-entity-accounts/submit.webp"
+        },
+        {
+          "scene": "result",
+          "headline": "The outcome",
+          "caption": "Companies House settles on an outcome. The filing is accepted.",
+          "startSeconds": 156,
+          "thumb": "videos/file-micro-entity-accounts/result-thumb.webp",
+          "full": "videos/file-micro-entity-accounts/result.webp"
+        }
+      ]
     },
     {
       "id": "mcp-diya-gl",
@@ -347,7 +1705,69 @@
       "description": "diya-gl is DIY Accounting's open-source bookkeeping engine. This video looks under the hood: an MCP Inspector session driving diya-gl's Model Context Protocol server, extracting a real example set of accounts and reading back its report, transactions and account balances. Try DIY Accounting Submit's VAT side of the product at https://submit.diyaccounting.co.uk.",
       "tags": ["DIY Accounting", "diya-gl", "MCP", "Model Context Protocol", "developer tools"],
       "categoryId": "27",
-      "videoId": "B3uicaZhUi4"
+      "videoId": "B3uicaZhUi4",
+      "walkthrough": [
+        {
+          "scene": "connect",
+          "headline": "Connecting to the server",
+          "caption": "Switching it on starts diya-gl and opens a channel to it. Connected. diya-gl just listed the tools it offers.",
+          "startSeconds": 0,
+          "thumb": "videos/mcp-diya-gl/connect-thumb.webp",
+          "full": "videos/mcp-diya-gl/connect.webp"
+        },
+        {
+          "scene": "tools",
+          "headline": "What the server offers",
+          "caption": "Four tools: extract_book, report, edit_lines, save_workbook. extract_book reads a set of accounts and hands back the figures.",
+          "startSeconds": 23,
+          "thumb": "videos/mcp-diya-gl/tools-thumb.webp",
+          "full": "videos/mcp-diya-gl/tools.webp"
+        },
+        {
+          "scene": "extract-book",
+          "headline": "Reading a set of accounts",
+          "caption": "Running it turns the spreadsheet into structured data. The whole book comes back as data, ready to check or change.",
+          "startSeconds": 41,
+          "thumb": "videos/mcp-diya-gl/extract-book-thumb.webp",
+          "full": "videos/mcp-diya-gl/extract-book.webp"
+        },
+        {
+          "scene": "figures",
+          "step": 0,
+          "headline": "Open the report tool",
+          "caption": "report runs the same sums diya-gl uses to fill in the workbook.",
+          "startSeconds": 62,
+          "thumb": "videos/mcp-diya-gl/figures-0-thumb.webp",
+          "full": "videos/mcp-diya-gl/figures-0.webp"
+        },
+        {
+          "scene": "figures",
+          "step": 1,
+          "headline": "Compute the figures",
+          "caption": "It reuses the book this session already extracted.",
+          "startSeconds": 70,
+          "thumb": "videos/mcp-diya-gl/figures-1-thumb.webp",
+          "full": "videos/mcp-diya-gl/figures-1.webp"
+        },
+        {
+          "scene": "figures",
+          "step": 2,
+          "headline": "The figures come back",
+          "caption": "Every figure and check comes back the same way, however it's called.",
+          "startSeconds": 77,
+          "thumb": "videos/mcp-diya-gl/figures-2-thumb.webp",
+          "full": "videos/mcp-diya-gl/figures-2.webp"
+        },
+        {
+          "scene": "figures",
+          "step": 5,
+          "headline": "Figures and engine version",
+          "caption": "The engine version and every figure, ready to read.",
+          "startSeconds": 86,
+          "thumb": "videos/mcp-diya-gl/figures-5-thumb.webp",
+          "full": "videos/mcp-diya-gl/figures-5.webp"
+        }
+      ]
     },
     {
       "id": "itsa-self-employment-amend",
@@ -362,7 +1782,125 @@
       "description": "DIY Accounting Submit is a free tool for filing Self Assessment under Making Tax Digital for Income Tax. A signed-in walk through Making Tax Digital for Income Tax: see what a self-employment business has filed so far this tax year, open it, and correct a figure with HMRC. This is a sandbox preview, recorded against HMRC's test environment, not a live filing. Try the VAT side of the product now at https://submit.diyaccounting.co.uk.",
       "tags": ["DIY Accounting", "Self Assessment", "HMRC", "Making Tax Digital", "ITSA"],
       "categoryId": "27",
-      "videoId": "e_o0vfPl-HQ"
+      "videoId": "e_o0vfPl-HQ",
+      "walkthrough": [
+        {
+          "scene": "list-quarters",
+          "step": 0,
+          "headline": "What's filed so far",
+          "caption": "Check what you've already told HMRC for this business.",
+          "startSeconds": 32,
+          "thumb": "videos/itsa-self-employment-amend/list-quarters-0-thumb.webp",
+          "full": "videos/itsa-self-employment-amend/list-quarters-0.webp"
+        },
+        {
+          "scene": "list-quarters",
+          "step": 1,
+          "headline": "Your NI number",
+          "caption": "Your National Insurance number.",
+          "startSeconds": 39,
+          "thumb": "videos/itsa-self-employment-amend/list-quarters-1-thumb.webp",
+          "full": "videos/itsa-self-employment-amend/list-quarters-1.webp"
+        },
+        {
+          "scene": "list-quarters",
+          "step": 2,
+          "headline": "The business ID",
+          "caption": "The self-employment business's ID.",
+          "startSeconds": 44,
+          "thumb": "videos/itsa-self-employment-amend/list-quarters-2-thumb.webp",
+          "full": "videos/itsa-self-employment-amend/list-quarters-2.webp"
+        },
+        {
+          "scene": "list-quarters",
+          "step": 3,
+          "headline": "Choose the tax year",
+          "caption": "The tax year this business filed quarters in.",
+          "startSeconds": 50,
+          "thumb": "videos/itsa-self-employment-amend/list-quarters-3-thumb.webp",
+          "full": "videos/itsa-self-employment-amend/list-quarters-3.webp"
+        },
+        {
+          "scene": "list-quarters",
+          "step": 5,
+          "headline": "Ask HMRC for the list",
+          "caption": "Ask HMRC for the quarters on file.",
+          "startSeconds": 56,
+          "thumb": "videos/itsa-self-employment-amend/list-quarters-5-thumb.webp",
+          "full": "videos/itsa-self-employment-amend/list-quarters-5.webp"
+        },
+        {
+          "scene": "list-quarters",
+          "step": 6,
+          "headline": "Each quarter and its ID",
+          "caption": "HMRC answers with each quarter and its period ID.",
+          "startSeconds": 61,
+          "thumb": "videos/itsa-self-employment-amend/list-quarters-6-thumb.webp",
+          "full": "videos/itsa-self-employment-amend/list-quarters-6.webp"
+        },
+        {
+          "scene": "view-quarter",
+          "headline": "Open it",
+          "caption": "Retrieve it from HMRC. Turnover, other income and cost of goods for that quarter.",
+          "startSeconds": 72,
+          "thumb": "videos/itsa-self-employment-amend/view-quarter-thumb.webp",
+          "full": "videos/itsa-self-employment-amend/view-quarter.webp"
+        },
+        {
+          "scene": "amend-quarter",
+          "step": 0,
+          "headline": "Correct a filed figure",
+          "caption": "Filed the wrong figure? Correct it here.",
+          "startSeconds": 100,
+          "thumb": "videos/itsa-self-employment-amend/amend-quarter-0-thumb.webp",
+          "full": "videos/itsa-self-employment-amend/amend-quarter-0.webp"
+        },
+        {
+          "scene": "amend-quarter",
+          "step": 3,
+          "headline": "The tax year",
+          "caption": "The tax year the quarter was filed in.",
+          "startSeconds": 110,
+          "thumb": "videos/itsa-self-employment-amend/amend-quarter-3-thumb.webp",
+          "full": "videos/itsa-self-employment-amend/amend-quarter-3.webp"
+        },
+        {
+          "scene": "amend-quarter",
+          "step": 6,
+          "headline": "Enter the new figures",
+          "caption": "Enter the corrected figures for that quarter.",
+          "startSeconds": 117,
+          "thumb": "videos/itsa-self-employment-amend/amend-quarter-6-thumb.webp",
+          "full": "videos/itsa-self-employment-amend/amend-quarter-6.webp"
+        },
+        {
+          "scene": "amend-quarter",
+          "step": 11,
+          "headline": "Send the correction",
+          "caption": "Send the correction to HMRC.",
+          "startSeconds": 128,
+          "thumb": "videos/itsa-self-employment-amend/amend-quarter-11-thumb.webp",
+          "full": "videos/itsa-self-employment-amend/amend-quarter-11.webp"
+        },
+        {
+          "scene": "amend-quarter",
+          "step": 12,
+          "headline": "HMRC accepts it",
+          "caption": "HMRC accepts the amendment.",
+          "startSeconds": 133,
+          "thumb": "videos/itsa-self-employment-amend/amend-quarter-12-thumb.webp",
+          "full": "videos/itsa-self-employment-amend/amend-quarter-12.webp"
+        },
+        {
+          "scene": "amend-quarter",
+          "step": 15,
+          "headline": "Amendment accepted",
+          "caption": "Amended. HMRC now holds the corrected total.",
+          "startSeconds": 143,
+          "thumb": "videos/itsa-self-employment-amend/amend-quarter-15-thumb.webp",
+          "full": "videos/itsa-self-employment-amend/amend-quarter-15.webp"
+        }
+      ]
     },
     {
       "id": "itsa-uk-property-year",
@@ -377,7 +1915,224 @@
       "description": "DIY Accounting Submit is a free tool for filing Self Assessment under Making Tax Digital for Income Tax. A signed-in walk through Making Tax Digital for Income Tax for a UK property business: see what's filed so far, open it, correct a figure, then close the year out with the annual submission and its adjustable summary. This is a sandbox preview, recorded against HMRC's test environment, not a live filing. Try the VAT side of the product now at https://submit.diyaccounting.co.uk.",
       "tags": ["DIY Accounting", "Self Assessment", "HMRC", "Making Tax Digital", "ITSA"],
       "categoryId": "27",
-      "videoId": "8sCxuEWeCNo"
+      "videoId": "8sCxuEWeCNo",
+      "walkthrough": [
+        {
+          "scene": "list-quarters",
+          "step": 0,
+          "headline": "What's filed so far",
+          "caption": "Check what you've already told HMRC for this property.",
+          "startSeconds": 24,
+          "thumb": "videos/itsa-uk-property-year/list-quarters-0-thumb.webp",
+          "full": "videos/itsa-uk-property-year/list-quarters-0.webp"
+        },
+        {
+          "scene": "list-quarters",
+          "step": 1,
+          "headline": "Your NI number",
+          "caption": "Your National Insurance number.",
+          "startSeconds": 31,
+          "thumb": "videos/itsa-uk-property-year/list-quarters-1-thumb.webp",
+          "full": "videos/itsa-uk-property-year/list-quarters-1.webp"
+        },
+        {
+          "scene": "list-quarters",
+          "step": 2,
+          "headline": "The property ID",
+          "caption": "The property business's ID.",
+          "startSeconds": 36,
+          "thumb": "videos/itsa-uk-property-year/list-quarters-2-thumb.webp",
+          "full": "videos/itsa-uk-property-year/list-quarters-2.webp"
+        },
+        {
+          "scene": "list-quarters",
+          "step": 3,
+          "headline": "One running total",
+          "caption": "This tax year reports one running total, not a list of quarters.",
+          "startSeconds": 41,
+          "thumb": "videos/itsa-uk-property-year/list-quarters-3-thumb.webp",
+          "full": "videos/itsa-uk-property-year/list-quarters-3.webp"
+        },
+        {
+          "scene": "list-quarters",
+          "step": 5,
+          "headline": "Ask HMRC for the total",
+          "caption": "Ask HMRC for the current total.",
+          "startSeconds": 48,
+          "thumb": "videos/itsa-uk-property-year/list-quarters-5-thumb.webp",
+          "full": "videos/itsa-uk-property-year/list-quarters-5.webp"
+        },
+        {
+          "scene": "list-quarters",
+          "step": 6,
+          "headline": "The year-to-date total",
+          "caption": "HMRC answers with the year-to-date total.",
+          "startSeconds": 54,
+          "thumb": "videos/itsa-uk-property-year/list-quarters-6-thumb.webp",
+          "full": "videos/itsa-uk-property-year/list-quarters-6.webp"
+        },
+        {
+          "scene": "view-quarter",
+          "headline": "Open it",
+          "caption": "Retrieve it from HMRC. Rental income, other income and repairs, year to date.",
+          "startSeconds": 63,
+          "thumb": "videos/itsa-uk-property-year/view-quarter-thumb.webp",
+          "full": "videos/itsa-uk-property-year/view-quarter.webp"
+        },
+        {
+          "scene": "amend-quarter",
+          "step": 0,
+          "headline": "Correct a filed figure",
+          "caption": "Filed the wrong figure? Correct it here.",
+          "startSeconds": 87,
+          "thumb": "videos/itsa-uk-property-year/amend-quarter-0-thumb.webp",
+          "full": "videos/itsa-uk-property-year/amend-quarter-0.webp"
+        },
+        {
+          "scene": "amend-quarter",
+          "step": 3,
+          "headline": "A running total",
+          "caption": "This tax year reports a running total, not one quarter.",
+          "startSeconds": 97,
+          "thumb": "videos/itsa-uk-property-year/amend-quarter-3-thumb.webp",
+          "full": "videos/itsa-uk-property-year/amend-quarter-3.webp"
+        },
+        {
+          "scene": "amend-quarter",
+          "step": 5,
+          "headline": "Load the current total",
+          "caption": "Load what HMRC holds before changing it.",
+          "startSeconds": 104,
+          "thumb": "videos/itsa-uk-property-year/amend-quarter-5-thumb.webp",
+          "full": "videos/itsa-uk-property-year/amend-quarter-5.webp"
+        },
+        {
+          "scene": "amend-quarter",
+          "step": 7,
+          "headline": "Edit to the new total",
+          "caption": "Edit it to the corrected total for the year so far.",
+          "startSeconds": 111,
+          "thumb": "videos/itsa-uk-property-year/amend-quarter-7-thumb.webp",
+          "full": "videos/itsa-uk-property-year/amend-quarter-7.webp"
+        },
+        {
+          "scene": "amend-quarter",
+          "step": 10,
+          "headline": "Send the correction",
+          "caption": "Send the correction to HMRC.",
+          "startSeconds": 119,
+          "thumb": "videos/itsa-uk-property-year/amend-quarter-10-thumb.webp",
+          "full": "videos/itsa-uk-property-year/amend-quarter-10.webp"
+        },
+        {
+          "scene": "amend-quarter",
+          "step": 11,
+          "headline": "HMRC accepts it",
+          "caption": "HMRC accepts the amendment.",
+          "startSeconds": 124,
+          "thumb": "videos/itsa-uk-property-year/amend-quarter-11-thumb.webp",
+          "full": "videos/itsa-uk-property-year/amend-quarter-11.webp"
+        },
+        {
+          "scene": "annual-submission",
+          "step": 0,
+          "headline": "Year-end steps start",
+          "caption": "Once the year's quarters are in, the year-end steps start here.",
+          "startSeconds": 132,
+          "thumb": "videos/itsa-uk-property-year/annual-submission-0-thumb.webp",
+          "full": "videos/itsa-uk-property-year/annual-submission-0.webp"
+        },
+        {
+          "scene": "annual-submission",
+          "step": 4,
+          "headline": "Load the year so far",
+          "caption": "Load what HMRC already holds for the year.",
+          "startSeconds": 144,
+          "thumb": "videos/itsa-uk-property-year/annual-submission-4-thumb.webp",
+          "full": "videos/itsa-uk-property-year/annual-submission-4.webp"
+        },
+        {
+          "scene": "annual-submission",
+          "step": 6,
+          "headline": "Claim the property allowance",
+          "caption": "Claim the property income allowance instead of itemised ones.",
+          "startSeconds": 151,
+          "thumb": "videos/itsa-uk-property-year/annual-submission-6-thumb.webp",
+          "full": "videos/itsa-uk-property-year/annual-submission-6.webp"
+        },
+        {
+          "scene": "annual-submission",
+          "step": 9,
+          "headline": "Save allowances and adjustments",
+          "caption": "Save the year's allowances and adjustments.",
+          "startSeconds": 162,
+          "thumb": "videos/itsa-uk-property-year/annual-submission-9-thumb.webp",
+          "full": "videos/itsa-uk-property-year/annual-submission-9.webp"
+        },
+        {
+          "scene": "annual-submission",
+          "step": 10,
+          "headline": "HMRC accepts the year",
+          "caption": "HMRC accepts the annual submission.",
+          "startSeconds": 169,
+          "thumb": "videos/itsa-uk-property-year/annual-submission-10-thumb.webp",
+          "full": "videos/itsa-uk-property-year/annual-submission-10.webp"
+        },
+        {
+          "scene": "adjustments",
+          "step": 0,
+          "headline": "HMRC works out a summary",
+          "caption": "HMRC works out a business source adjustable summary from the quarters filed.",
+          "startSeconds": 175,
+          "thumb": "videos/itsa-uk-property-year/adjustments-0-thumb.webp",
+          "full": "videos/itsa-uk-property-year/adjustments-0.webp"
+        },
+        {
+          "scene": "adjustments",
+          "step": 6,
+          "headline": "Trigger HMRC's summary",
+          "caption": "Trigger the summary and read what HMRC calculated.",
+          "startSeconds": 191,
+          "thumb": "videos/itsa-uk-property-year/adjustments-6-thumb.webp",
+          "full": "videos/itsa-uk-property-year/adjustments-6.webp"
+        },
+        {
+          "scene": "adjustments",
+          "step": 7,
+          "headline": "Rent, expenses, profit",
+          "caption": "Rental income, expenses and the net profit HMRC worked out.",
+          "startSeconds": 198,
+          "thumb": "videos/itsa-uk-property-year/adjustments-7-thumb.webp",
+          "full": "videos/itsa-uk-property-year/adjustments-7.webp"
+        },
+        {
+          "scene": "adjustments",
+          "step": 9,
+          "headline": "Correct a figure",
+          "caption": "Change a figure if HMRC's version is wrong.",
+          "startSeconds": 215,
+          "thumb": "videos/itsa-uk-property-year/adjustments-9-thumb.webp",
+          "full": "videos/itsa-uk-property-year/adjustments-9.webp"
+        },
+        {
+          "scene": "adjustments",
+          "step": 11,
+          "headline": "HMRC accepts the change",
+          "caption": "HMRC accepts the adjustment.",
+          "startSeconds": 222,
+          "thumb": "videos/itsa-uk-property-year/adjustments-11-thumb.webp",
+          "full": "videos/itsa-uk-property-year/adjustments-11.webp"
+        },
+        {
+          "scene": "adjustments",
+          "step": 14,
+          "headline": "Adjustment submitted",
+          "caption": "Submitted. HMRC has the corrected rental figure.",
+          "startSeconds": 235,
+          "thumb": "videos/itsa-uk-property-year/adjustments-14-thumb.webp",
+          "full": "videos/itsa-uk-property-year/adjustments-14.webp"
+        }
+      ]
     },
     {
       "id": "itsa-annual-from-book",
@@ -392,7 +2147,81 @@
       "description": "DIY Accounting Submit is a free tool for filing Self Assessment under Making Tax Digital for Income Tax. A signed-in walk through Making Tax Digital for Income Tax's annual submission: import the year's figures from a diya-gl book instead of typing them, claim the trading income allowance, and say why Class 4 National Insurance doesn't apply. This is a sandbox preview, recorded against HMRC's test environment, not a live filing. Try the VAT side of the product now at https://submit.diyaccounting.co.uk.",
       "tags": ["DIY Accounting", "Self Assessment", "HMRC", "Making Tax Digital", "ITSA"],
       "categoryId": "27",
-      "videoId": "wrKyoDMfkl8"
+      "videoId": "wrKyoDMfkl8",
+      "walkthrough": [
+        {
+          "scene": "annual-submission-from-book",
+          "step": 0,
+          "headline": "Year-end steps start",
+          "caption": "Once the year's quarters are in, the year-end steps start here.",
+          "startSeconds": 31,
+          "thumb": "videos/itsa-annual-from-book/annual-submission-from-book-0-thumb.webp",
+          "full": "videos/itsa-annual-from-book/annual-submission-from-book-0.webp"
+        },
+        {
+          "scene": "annual-submission-from-book",
+          "step": 4,
+          "headline": "Load the year so far",
+          "caption": "Load what HMRC already holds for the year.",
+          "startSeconds": 43,
+          "thumb": "videos/itsa-annual-from-book/annual-submission-from-book-4-thumb.webp",
+          "full": "videos/itsa-annual-from-book/annual-submission-from-book-4.webp"
+        },
+        {
+          "scene": "annual-submission-from-book",
+          "step": 6,
+          "headline": "Import from a book",
+          "caption": "Or fill the form straight from your diya-gl book, instead of typing every figure.",
+          "startSeconds": 50,
+          "thumb": "videos/itsa-annual-from-book/annual-submission-from-book-6-thumb.webp",
+          "full": "videos/itsa-annual-from-book/annual-submission-from-book-6.webp"
+        },
+        {
+          "scene": "annual-submission-from-book",
+          "step": 8,
+          "headline": "Claim the trading allowance",
+          "caption": "Claim the trading income allowance instead of itemised ones.",
+          "startSeconds": 59,
+          "thumb": "videos/itsa-annual-from-book/annual-submission-from-book-8-thumb.webp",
+          "full": "videos/itsa-annual-from-book/annual-submission-from-book-8.webp"
+        },
+        {
+          "scene": "annual-submission-from-book",
+          "step": 10,
+          "headline": "Say why NICs don't apply",
+          "caption": "Say why Class 4 National Insurance doesn't apply: pension age, diver, non-resident.",
+          "startSeconds": 67,
+          "thumb": "videos/itsa-annual-from-book/annual-submission-from-book-10-thumb.webp",
+          "full": "videos/itsa-annual-from-book/annual-submission-from-book-10.webp"
+        },
+        {
+          "scene": "annual-submission-from-book",
+          "step": 11,
+          "headline": "Save it all",
+          "caption": "Save the year's allowances and non-financial details.",
+          "startSeconds": 76,
+          "thumb": "videos/itsa-annual-from-book/annual-submission-from-book-11-thumb.webp",
+          "full": "videos/itsa-annual-from-book/annual-submission-from-book-11.webp"
+        },
+        {
+          "scene": "annual-submission-from-book",
+          "step": 12,
+          "headline": "HMRC accepts the year",
+          "caption": "HMRC accepts the annual submission.",
+          "startSeconds": 83,
+          "thumb": "videos/itsa-annual-from-book/annual-submission-from-book-12-thumb.webp",
+          "full": "videos/itsa-annual-from-book/annual-submission-from-book-12.webp"
+        },
+        {
+          "scene": "annual-submission-from-book",
+          "step": 15,
+          "headline": "Annual submission saved",
+          "caption": "Saved. The annual submission is now with HMRC.",
+          "startSeconds": 90,
+          "thumb": "videos/itsa-annual-from-book/annual-submission-from-book-15-thumb.webp",
+          "full": "videos/itsa-annual-from-book/annual-submission-from-book-15.webp"
+        }
+      ]
     },
     {
       "id": "itsa-loss-claims",
@@ -407,7 +2236,117 @@
       "description": "DIY Accounting Submit is a free tool for filing Self Assessment under Making Tax Digital for Income Tax. A signed-in walk through Making Tax Digital for Income Tax's losses and claims for a self-employment business: sign in, take out Resident, get HMRC's access for the year, then set a loss sideways against this year's other income and back against an earlier year, and say which claim applies first. This is a sandbox preview, recorded against HMRC's test environment, not a live filing. The HMRC sign-in and access step is shown in full at {{video:hmrc-authorise}}. Try the VAT side of the product now at https://submit.diyaccounting.co.uk.",
       "tags": ["DIY Accounting", "Self Assessment", "HMRC", "Making Tax Digital", "ITSA"],
       "categoryId": "27",
-      "videoId": "SB70VjoBjBc"
+      "videoId": "SB70VjoBjBc",
+      "walkthrough": [
+        {
+          "scene": "losses-and-claims",
+          "step": 0,
+          "headline": "A loss, three ways",
+          "caption": "A loss can carry forward, sideways, or back to an earlier year.",
+          "startSeconds": 55,
+          "thumb": "videos/itsa-loss-claims/losses-and-claims-0-thumb.webp",
+          "full": "videos/itsa-loss-claims/losses-and-claims-0.webp"
+        },
+        {
+          "scene": "losses-and-claims",
+          "step": 2,
+          "headline": "The self-employment ID",
+          "caption": "The self-employment business's own ID.",
+          "startSeconds": 65,
+          "thumb": "videos/itsa-loss-claims/losses-and-claims-2-thumb.webp",
+          "full": "videos/itsa-loss-claims/losses-and-claims-2.webp"
+        },
+        {
+          "scene": "losses-and-claims",
+          "step": 3,
+          "headline": "Choose the tax year",
+          "caption": "HMRC's sandbox needs this tax year for carry-back claims.",
+          "startSeconds": 71,
+          "thumb": "videos/itsa-loss-claims/losses-and-claims-3-thumb.webp",
+          "full": "videos/itsa-loss-claims/losses-and-claims-3.webp"
+        },
+        {
+          "scene": "losses-and-claims",
+          "step": 4,
+          "headline": "Suspend the tax year check",
+          "caption": "The sandbox's current tax year hasn't really ended, so suspend that check.",
+          "startSeconds": 78,
+          "thumb": "videos/itsa-loss-claims/losses-and-claims-4-thumb.webp",
+          "full": "videos/itsa-loss-claims/losses-and-claims-4.webp"
+        },
+        {
+          "scene": "losses-and-claims",
+          "step": 5,
+          "headline": "Load the loss position",
+          "caption": "Load this business's loss position for the year.",
+          "startSeconds": 86,
+          "thumb": "videos/itsa-loss-claims/losses-and-claims-5-thumb.webp",
+          "full": "videos/itsa-loss-claims/losses-and-claims-5.webp"
+        },
+        {
+          "scene": "losses-and-claims",
+          "step": 7,
+          "headline": "Carry the loss sideways",
+          "caption": "Carry sideways: set this year's loss against this year's other income.",
+          "startSeconds": 93,
+          "thumb": "videos/itsa-loss-claims/losses-and-claims-7-thumb.webp",
+          "full": "videos/itsa-loss-claims/losses-and-claims-7.webp"
+        },
+        {
+          "scene": "losses-and-claims",
+          "step": 8,
+          "headline": "Carry the loss back",
+          "caption": "Carry back: set the rest against an earlier year's general income.",
+          "startSeconds": 101,
+          "thumb": "videos/itsa-loss-claims/losses-and-claims-8-thumb.webp",
+          "full": "videos/itsa-loss-claims/losses-and-claims-8.webp"
+        },
+        {
+          "scene": "losses-and-claims",
+          "step": 9,
+          "headline": "Which claim goes first",
+          "caption": "Claiming both at once means saying which one HMRC applies first.",
+          "startSeconds": 108,
+          "thumb": "videos/itsa-loss-claims/losses-and-claims-9-thumb.webp",
+          "full": "videos/itsa-loss-claims/losses-and-claims-9.webp"
+        },
+        {
+          "scene": "losses-and-claims",
+          "step": 10,
+          "headline": "Sideways applies first",
+          "caption": "Sideways first, then whatever is left carries back.",
+          "startSeconds": 115,
+          "thumb": "videos/itsa-loss-claims/losses-and-claims-10-thumb.webp",
+          "full": "videos/itsa-loss-claims/losses-and-claims-10.webp"
+        },
+        {
+          "scene": "losses-and-claims",
+          "step": 13,
+          "headline": "Save the claim",
+          "caption": "Save the claim.",
+          "startSeconds": 123,
+          "thumb": "videos/itsa-loss-claims/losses-and-claims-13-thumb.webp",
+          "full": "videos/itsa-loss-claims/losses-and-claims-13.webp"
+        },
+        {
+          "scene": "losses-and-claims",
+          "step": 14,
+          "headline": "HMRC accepts the claim",
+          "caption": "HMRC accepts the claim.",
+          "startSeconds": 127,
+          "thumb": "videos/itsa-loss-claims/losses-and-claims-14-thumb.webp",
+          "full": "videos/itsa-loss-claims/losses-and-claims-14.webp"
+        },
+        {
+          "scene": "losses-and-claims",
+          "step": 17,
+          "headline": "Claim saved",
+          "caption": "Saved. The claim order is on record with HMRC.",
+          "startSeconds": 136,
+          "thumb": "videos/itsa-loss-claims/losses-and-claims-17-thumb.webp",
+          "full": "videos/itsa-loss-claims/losses-and-claims-17.webp"
+        }
+      ]
     },
     {
       "id": "itsa-foreign-property-losses",
@@ -422,7 +2361,117 @@
       "description": "DIY Accounting Submit is a free tool for filing Self Assessment under Making Tax Digital for Income Tax. A signed-in walk through Making Tax Digital for Income Tax's losses and claims for a foreign property business: sign in, take out Resident, get HMRC's access for the year, then set a landlord's loss to carry forward, since carry-back is not on offer for a property business. This is a sandbox preview, recorded against HMRC's test environment, not a live filing. The HMRC sign-in and access step is shown in full at {{video:hmrc-authorise}}. Try the VAT side of the product now at https://submit.diyaccounting.co.uk.",
       "tags": ["DIY Accounting", "Self Assessment", "HMRC", "Making Tax Digital", "ITSA"],
       "categoryId": "27",
-      "videoId": "96N4lDtFELY"
+      "videoId": "96N4lDtFELY",
+      "walkthrough": [
+        {
+          "scene": "losses-and-claims",
+          "step": 0,
+          "headline": "A foreign rental loss",
+          "caption": "A rental loss abroad is claimed here too.",
+          "startSeconds": 68,
+          "thumb": "videos/itsa-foreign-property-losses/losses-and-claims-0-thumb.webp",
+          "full": "videos/itsa-foreign-property-losses/losses-and-claims-0.webp"
+        },
+        {
+          "scene": "losses-and-claims",
+          "step": 2,
+          "headline": "Foreign property business",
+          "caption": "Choose foreign property as the business type.",
+          "startSeconds": 77,
+          "thumb": "videos/itsa-foreign-property-losses/losses-and-claims-2-thumb.webp",
+          "full": "videos/itsa-foreign-property-losses/losses-and-claims-2.webp"
+        },
+        {
+          "scene": "losses-and-claims",
+          "step": 3,
+          "headline": "Only carries forward",
+          "caption": "Carry-back is only for a sole trade. A landlord's loss carries forward.",
+          "startSeconds": 82,
+          "thumb": "videos/itsa-foreign-property-losses/losses-and-claims-3-thumb.webp",
+          "full": "videos/itsa-foreign-property-losses/losses-and-claims-3.webp"
+        },
+        {
+          "scene": "losses-and-claims",
+          "step": 4,
+          "headline": "The foreign property ID",
+          "caption": "This foreign property business's own ID.",
+          "startSeconds": 90,
+          "thumb": "videos/itsa-foreign-property-losses/losses-and-claims-4-thumb.webp",
+          "full": "videos/itsa-foreign-property-losses/losses-and-claims-4.webp"
+        },
+        {
+          "scene": "losses-and-claims",
+          "step": 5,
+          "headline": "Choose the tax year",
+          "caption": "The tax year this loss falls in.",
+          "startSeconds": 96,
+          "thumb": "videos/itsa-foreign-property-losses/losses-and-claims-5-thumb.webp",
+          "full": "videos/itsa-foreign-property-losses/losses-and-claims-5.webp"
+        },
+        {
+          "scene": "losses-and-claims",
+          "step": 6,
+          "headline": "Suspend the tax year check",
+          "caption": "The sandbox's current tax year hasn't really ended, so suspend that check.",
+          "startSeconds": 101,
+          "thumb": "videos/itsa-foreign-property-losses/losses-and-claims-6-thumb.webp",
+          "full": "videos/itsa-foreign-property-losses/losses-and-claims-6.webp"
+        },
+        {
+          "scene": "losses-and-claims",
+          "step": 7,
+          "headline": "Load the loss position",
+          "caption": "Load this business's loss position for the year.",
+          "startSeconds": 110,
+          "thumb": "videos/itsa-foreign-property-losses/losses-and-claims-7-thumb.webp",
+          "full": "videos/itsa-foreign-property-losses/losses-and-claims-7.webp"
+        },
+        {
+          "scene": "losses-and-claims",
+          "step": 9,
+          "headline": "No carry-back for property",
+          "caption": "Carry back is hidden here - it's not on offer for a property business.",
+          "startSeconds": 118,
+          "thumb": "videos/itsa-foreign-property-losses/losses-and-claims-9-thumb.webp",
+          "full": "videos/itsa-foreign-property-losses/losses-and-claims-9.webp"
+        },
+        {
+          "scene": "losses-and-claims",
+          "step": 10,
+          "headline": "Carry the loss forward",
+          "caption": "This year's loss, carried forward to set against next year's rental income.",
+          "startSeconds": 124,
+          "thumb": "videos/itsa-foreign-property-losses/losses-and-claims-10-thumb.webp",
+          "full": "videos/itsa-foreign-property-losses/losses-and-claims-10.webp"
+        },
+        {
+          "scene": "losses-and-claims",
+          "step": 13,
+          "headline": "Save the claim",
+          "caption": "Save the claim.",
+          "startSeconds": 133,
+          "thumb": "videos/itsa-foreign-property-losses/losses-and-claims-13-thumb.webp",
+          "full": "videos/itsa-foreign-property-losses/losses-and-claims-13.webp"
+        },
+        {
+          "scene": "losses-and-claims",
+          "step": 14,
+          "headline": "HMRC accepts the claim",
+          "caption": "HMRC accepts the claim.",
+          "startSeconds": 137,
+          "thumb": "videos/itsa-foreign-property-losses/losses-and-claims-14-thumb.webp",
+          "full": "videos/itsa-foreign-property-losses/losses-and-claims-14.webp"
+        },
+        {
+          "scene": "losses-and-claims",
+          "step": 17,
+          "headline": "Claim saved",
+          "caption": "Saved. The loss is on record for next year.",
+          "startSeconds": 147,
+          "thumb": "videos/itsa-foreign-property-losses/losses-and-claims-17-thumb.webp",
+          "full": "videos/itsa-foreign-property-losses/losses-and-claims-17.webp"
+        }
+      ]
     },
     {
       "id": "itsa-carry-back-adjustments",
@@ -437,7 +2486,90 @@
       "description": "DIY Accounting Submit is a free tool for filing Self Assessment under Making Tax Digital for Income Tax. A signed-in walk through Making Tax Digital for Income Tax's tax liability adjustments: sign in, take out Resident, get HMRC's access for the year, make a carry-back loss claim off camera, then record what that claim saves against the earlier tax year it reduces. This is a sandbox preview, recorded against HMRC's test environment, not a live filing. The HMRC sign-in and access step is shown in full at {{video:hmrc-authorise}}. Try the VAT side of the product now at https://submit.diyaccounting.co.uk.",
       "tags": ["DIY Accounting", "Self Assessment", "HMRC", "Making Tax Digital", "ITSA"],
       "categoryId": "27",
-      "videoId": "9BuqtHMTQyA"
+      "videoId": "9BuqtHMTQyA",
+      "walkthrough": [
+        {
+          "scene": "adjustments",
+          "step": 0,
+          "headline": "The second half",
+          "caption": "This is the second half of a carry-back claim.",
+          "startSeconds": 65,
+          "thumb": "videos/itsa-carry-back-adjustments/adjustments-0-thumb.webp",
+          "full": "videos/itsa-carry-back-adjustments/adjustments-0.webp"
+        },
+        {
+          "scene": "adjustments",
+          "step": 2,
+          "headline": "The earlier tax year",
+          "caption": "The earlier tax year the claim decreases.",
+          "startSeconds": 73,
+          "thumb": "videos/itsa-carry-back-adjustments/adjustments-2-thumb.webp",
+          "full": "videos/itsa-carry-back-adjustments/adjustments-2.webp"
+        },
+        {
+          "scene": "adjustments",
+          "step": 4,
+          "headline": "Load the earlier year",
+          "caption": "Load what HMRC already holds for that year.",
+          "startSeconds": 80,
+          "thumb": "videos/itsa-carry-back-adjustments/adjustments-4-thumb.webp",
+          "full": "videos/itsa-carry-back-adjustments/adjustments-4.webp"
+        },
+        {
+          "scene": "adjustments",
+          "step": 7,
+          "headline": "HMRC's own figure",
+          "caption": "Retrieve HMRC's own calculation for that year.",
+          "startSeconds": 88,
+          "thumb": "videos/itsa-carry-back-adjustments/adjustments-7-thumb.webp",
+          "full": "videos/itsa-carry-back-adjustments/adjustments-7.webp"
+        },
+        {
+          "scene": "adjustments",
+          "step": 8,
+          "headline": "Before this claim",
+          "caption": "The total Income Tax and National Insurance due, before this claim.",
+          "startSeconds": 95,
+          "thumb": "videos/itsa-carry-back-adjustments/adjustments-8-thumb.webp",
+          "full": "videos/itsa-carry-back-adjustments/adjustments-8.webp"
+        },
+        {
+          "scene": "adjustments",
+          "step": 10,
+          "headline": "What the claim saves",
+          "caption": "Enter what the carry-back claim saves in Income Tax.",
+          "startSeconds": 108,
+          "thumb": "videos/itsa-carry-back-adjustments/adjustments-10-thumb.webp",
+          "full": "videos/itsa-carry-back-adjustments/adjustments-10.webp"
+        },
+        {
+          "scene": "adjustments",
+          "step": 14,
+          "headline": "Save the adjustment",
+          "caption": "Save the adjustment.",
+          "startSeconds": 118,
+          "thumb": "videos/itsa-carry-back-adjustments/adjustments-14-thumb.webp",
+          "full": "videos/itsa-carry-back-adjustments/adjustments-14.webp"
+        },
+        {
+          "scene": "adjustments",
+          "step": 15,
+          "headline": "Liability now credited",
+          "caption": "HMRC accepts the adjustment. This year's liability is credited.",
+          "startSeconds": 122,
+          "thumb": "videos/itsa-carry-back-adjustments/adjustments-15-thumb.webp",
+          "full": "videos/itsa-carry-back-adjustments/adjustments-15.webp"
+        },
+        {
+          "scene": "adjustments",
+          "step": 18,
+          "headline": "Adjustments saved",
+          "caption": "Saved. The adjustment is on the year's record.",
+          "startSeconds": 133,
+          "thumb": "videos/itsa-carry-back-adjustments/adjustments-18-thumb.webp",
+          "full": "videos/itsa-carry-back-adjustments/adjustments-18.webp"
+        }
+      ]
     },
     {
       "id": "itsa-in-year-estimate",
@@ -452,7 +2584,81 @@
       "description": "DIY Accounting Submit is a free tool for filing Self Assessment under Making Tax Digital for Income Tax. A signed-in walk through Making Tax Digital for Income Tax's tax calculation: sign in, take out Resident, get HMRC's access for the year, then ask HMRC for an in-year estimate of what the tax year owes, based on what has been submitted so far. This is a sandbox preview, recorded against HMRC's test environment, not a live filing. The HMRC sign-in and access step is shown in full at {{video:hmrc-authorise}}. Try the VAT side of the product now at https://submit.diyaccounting.co.uk.",
       "tags": ["DIY Accounting", "Self Assessment", "HMRC", "Making Tax Digital", "ITSA"],
       "categoryId": "27",
-      "videoId": "174ANlnyRFU"
+      "videoId": "174ANlnyRFU",
+      "walkthrough": [
+        {
+          "scene": "in-year-estimate",
+          "step": 0,
+          "headline": "Check anytime",
+          "caption": "Check what the year owes at any point, not just at the end.",
+          "startSeconds": 29,
+          "thumb": "videos/itsa-in-year-estimate/in-year-estimate-0-thumb.webp",
+          "full": "videos/itsa-in-year-estimate/in-year-estimate-0.webp"
+        },
+        {
+          "scene": "in-year-estimate",
+          "step": 1,
+          "headline": "Your NI number",
+          "caption": "Your National Insurance number.",
+          "startSeconds": 36,
+          "thumb": "videos/itsa-in-year-estimate/in-year-estimate-1-thumb.webp",
+          "full": "videos/itsa-in-year-estimate/in-year-estimate-1.webp"
+        },
+        {
+          "scene": "in-year-estimate",
+          "step": 3,
+          "headline": "An in-year estimate",
+          "caption": "An in-year estimate, not the calculation a final declaration confirms.",
+          "startSeconds": 43,
+          "thumb": "videos/itsa-in-year-estimate/in-year-estimate-3-thumb.webp",
+          "full": "videos/itsa-in-year-estimate/in-year-estimate-3.webp"
+        },
+        {
+          "scene": "in-year-estimate",
+          "step": 5,
+          "headline": "Calculate now",
+          "caption": "Ask HMRC to calculate now.",
+          "startSeconds": 50,
+          "thumb": "videos/itsa-in-year-estimate/in-year-estimate-5-thumb.webp",
+          "full": "videos/itsa-in-year-estimate/in-year-estimate-5.webp"
+        },
+        {
+          "scene": "in-year-estimate",
+          "step": 6,
+          "headline": "Grant access, faster",
+          "caption": "See the full HMRC access walkthrough in our HMRC authorisation video.",
+          "startSeconds": 55,
+          "thumb": "videos/itsa-in-year-estimate/in-year-estimate-6-thumb.webp",
+          "full": "videos/itsa-in-year-estimate/in-year-estimate-6.webp"
+        },
+        {
+          "scene": "in-year-estimate",
+          "step": 7,
+          "headline": "HMRC's disclaimer first",
+          "caption": "HMRC shows this disclaimer before any figure.",
+          "startSeconds": 75,
+          "thumb": "videos/itsa-in-year-estimate/in-year-estimate-7-thumb.webp",
+          "full": "videos/itsa-in-year-estimate/in-year-estimate-7.webp"
+        },
+        {
+          "scene": "in-year-estimate",
+          "step": 8,
+          "headline": "Still an estimate",
+          "caption": "It is an estimate, and it can still change.",
+          "startSeconds": 88,
+          "thumb": "videos/itsa-in-year-estimate/in-year-estimate-8-thumb.webp",
+          "full": "videos/itsa-in-year-estimate/in-year-estimate-8.webp"
+        },
+        {
+          "scene": "in-year-estimate",
+          "step": 9,
+          "headline": "What it owes so far",
+          "caption": "What the year owes so far, based on what's been submitted.",
+          "startSeconds": 94,
+          "thumb": "videos/itsa-in-year-estimate/in-year-estimate-9-thumb.webp",
+          "full": "videos/itsa-in-year-estimate/in-year-estimate-9.webp"
+        }
+      ]
     }
   ]
 }

@@ -45,16 +45,19 @@ function dailyTableSuffixes(lookbackDays) {
 }
 
 /**
- * Finds a Stripe test-mode subscription id created between `olderThanMs` and `newestMs` ago —
- * old enough for its GA4 purchase event's daily BigQuery export to have landed under normal
- * operation, but not so old it falls outside the lookback window this module then queries.
- * Every ci run of payment.behaviour.test.js creates and later cancels one such subscription,
- * so this stands in for a persisted "last run's transaction id" without adding new storage.
+ * Finds a Stripe test-mode subscription id of `customerEmail`'s created between `olderThanMs`
+ * and `newestMs` ago — old enough for its GA4 purchase event's daily BigQuery export to have
+ * landed under normal operation, but not so old it falls outside the lookback window this module
+ * then queries. Every ci run of payment.behaviour.test.js creates and later cancels one such
+ * subscription for its lane user and fires a purchase carrying its id, so this stands in for a
+ * persisted "last run's transaction id" without adding new storage. Other lanes' subscriptions
+ * fire no purchase, hence the customer filter.
  *
- * @param {{olderThanMs: number, newestMs: number}} window
+ * @param {{olderThanMs: number, newestMs: number, customerEmail: string}} window
  * @returns {Promise<string|null>}
  */
-export async function findPastStripeSubscriptionId({ olderThanMs, newestMs }) {
+export async function findPastStripeSubscriptionId({ olderThanMs, newestMs, customerEmail }) {
+  if (newestMs <= olderThanMs) return null;
   const stripe = await getStripeClient({ test: true });
   const now = Date.now();
   const subscriptions = await stripe.subscriptions.list({
@@ -63,9 +66,30 @@ export async function findPastStripeSubscriptionId({ olderThanMs, newestMs }) {
       gte: Math.floor((now - newestMs) / 1000),
       lte: Math.floor((now - olderThanMs) / 1000),
     },
-    limit: 1,
+    expand: ["data.customer"],
+    limit: 100,
   });
-  return subscriptions.data[0]?.id ?? null;
+  const wanted = String(customerEmail).toLowerCase();
+  const match = subscriptions.data.find((subscription) => subscription.customer?.email?.toLowerCase() === wanted);
+  return match?.id ?? null;
+}
+
+/**
+ * The start (UTC midnight, in ms) of the first whole day the GA4 export dataset covers: the day
+ * after its oldest daily table, since the export can begin part way through that day. Null when
+ * the dataset holds no daily table. A purchase fired earlier may never have been exported.
+ *
+ * @param {{projectId: string, datasetId: string}} input
+ * @returns {Promise<number|null>}
+ */
+export async function exportFirstWholeDayStartMs({ projectId, datasetId }) {
+  const client = await getBigQueryClient(projectId);
+  const [tables] = await client.dataset(datasetId).getTables();
+  const days = tables
+    .map((table) => /^events_(\d{4})(\d{2})(\d{2})$/.exec(table.id))
+    .filter(Boolean)
+    .map(([, year, month, day]) => Date.UTC(Number(year), Number(month) - 1, Number(day)));
+  return days.length > 0 ? Math.min(...days) + 24 * 60 * 60 * 1000 : null;
 }
 
 /**
