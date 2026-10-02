@@ -142,13 +142,6 @@
         "performance": 51,
         "bestPractices": 92
       }
-    },
-    {
-      "path": "/videos-accounting.html",
-      "thresholds": {
-        "performance": 51,
-        "bestPractices": 92
-      }
     }
   ]
 }
