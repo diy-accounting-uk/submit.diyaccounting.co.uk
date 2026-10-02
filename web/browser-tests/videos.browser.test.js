@@ -214,7 +214,11 @@ test.describe("videos-accounting.html", () => {
   test("shows an uploaded accounting video with its embed and share link", async ({ page }) => {
     await serveUploadedAccountingVideo(page);
     await page.goto(ACCOUNTING_URL, { waitUntil: "domcontentloaded" });
-    await assertSections(page, [uploaded]);
+    const shown = MANIFEST.videos
+      .filter((v) => v.group === "accounting")
+      .map((v) => (v.id === uploaded.id ? uploaded : v))
+      .filter((v) => v.videoId);
+    await assertSections(page, shown);
   });
 
   test("lists an uploaded accounting video under its own heading, without the title prefix", async ({ page }) => {
