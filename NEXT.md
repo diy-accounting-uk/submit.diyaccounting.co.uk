@@ -16,7 +16,7 @@ runs), and for Claude Code steps the **Model** a sub-agent should use (Fable > O
 Haiku; the lowest tier that fits). Anything touching code goes through a `claude/*` branch and
 PR; the operator merges.
 
-**Prod runs deployment prod-1f74495** (PR #457, deploy 36940281838, 2026-10-02).
+**Prod runs deployment prod-f233996** (PR #459, deploy 36983005497, 2026-10-02).
 **ci**: `ci-set1` (last-known-good, 10 stacks, created 22:55 UTC 2026-10-01).
 
 Rows F-BS3 and LP-* change the spreadsheets repository (`../spreadsheets.diyaccounting.co.uk/`): their batch branches, PRs and CI run there, under that repository's `CLAUDE.md` and tests; their plans (`../private.diyaccounting.co.uk/strategy/PLAN_DIYA_GL_LAUNCH.md`, `../private.diyaccounting.co.uk/strategy/PLAN_DIYA_GL_INDIA.md`, `PLAN_DIYACCOUNTING_BRAND.md`). LP rows' briefs are in `../private.diyaccounting.co.uk/strategy/PLAN_DIYA_GL_LAUNCH.md` under "Briefs"; `../private.diyaccounting.co.uk/strategy/PLAN_DIYA_GL_INDIA.md` carries its own board.
@@ -40,8 +40,6 @@ names its model: the lowest tier that fits (Fable > Opus > Sonnet > Haiku), or `
 step.
 
 ## In flight
-
-- [ ] **B17e. Upload the last four re-recorded ITSA videos (BACKLOG 17d).** Merged as PR #459 (f23399611); main's deploy 36983005497 (prod-f233996) carries the new ids to the site's video page. Uploaded unlisted with captions: itsa-quarterly-update Mz017jlKwWI, itsa-year y_cXA1cfcks, itsa-carry-back-adjustments 9BuqtHMTQyA, itsa-in-year-estimate 174ANlnyRFU; the English caption for itsa-self-employment-amend (e_o0vfPl-HQ) is up. Remaining: the deploy finishes green, then this row closes. `file-micro-entity-accounts` keeps its old recording until Companies House repairs its test presenter (B34.6c). **Owner**: Claude Code. **Model**: Sonnet. **Size**: 2 files.
 
 ## Machine-only
 
