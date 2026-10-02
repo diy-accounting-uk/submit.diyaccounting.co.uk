@@ -41,8 +41,6 @@ step.
 
 ## In flight
 
-- [ ] **B17i. How-to accounting video 2: the same sales and purchases, then the profit, in the Basic Sole Trader spreadsheet (BACKLOG 17d).** Merged as PR #464 (3c5656c3e); recorded on ci by `video-capture.yml` run 37038028005 (Collabora reached the host; the only timing miss is typing cadence, 116 ms against 90, Collabora's socket round trip) and uploaded unlisted as https://youtu.be/woPN9kL9nDI with 13 walkthrough frames on `claude/harbor-sheet-publish` (batch check running). Remaining: PR and `/auto-merge` that branch; after the YouTube quota resets at 07:00 UTC, `AWS_PROFILE=submit-prod npm run video:publish -- --public`, then `npm run video:embed-check`. The package's cached values show last year's dates in LibreOffice until a hard recalculation; the spreadsheets session has been asked to fix the generator. **Owner**: Claude Code. **Model**: Sonnet. **Size**: 0 files left.
-
 ## Machine-only
 
 ## Machine-ask
@@ -58,6 +56,8 @@ step.
 - [ ] **OF2p. September's statements and five book decisions.** (1) Put September's files in Drive under `finance/2026-2027 accounts/`: `bank/Current 600947-80597386 01-09-2026-30-09-2026.csv`, `bank/Savings 600947-80634672 01-09-2026-30-09-2026.csv`, `paypal/2026-09 PayPal - transactions.PDF`, `paypal/2026-09 PayPal - statement.PDF`. (2) Decide, each as built or the alternative: (a) five AWS "Other: AWS EMEA" PayPal credits £160.22, each matching a same-day hold with no cash moved: as built purchases credit notes (creditors −£111.23, profit before tax £1,409.86), or unpost (creditors +£48.99, profit £1,249.64); (b) the £29.30 PayPal fee on the director's £1,000 payment: as built a company expense owed to the director on the loan account, or the director bears it (profit +£29.30); (c) opening 1220: as built PayPal's March statement £94.27 (retained earnings +£14.19), or the FY2025-26 workbook's £80.08 (1220 £14.19 under every statement, or £14.19 other income in April); (d) £2.28 PayPal cashback: as built a wallet receipt coded `K` (interest received), or a purchases credit note (1220 £2.28 under the statement); (e) Stripe: as built payouts are debtor receipts and 1230 stays at £136.47, or 1230 tracks Stripe's balance (£177.28 at 31 August; debtors about £0, creditors −£160.22). Write the answers into F2p. **Source**: F2p's build, 2026-10-01. **Owner**: Operator. **Model**: none. **Size**: 0 files.
 
 ## Blocked
+
+- [ ] **B17i. Make the spreadsheet accounting video public (BACKLOG 17d).** Merged as PRs #464 (the Collabora recording) and #465 (429a36cd1, the manifest entry and 13 walkthrough frames): https://youtu.be/woPN9kL9nDI is uploaded unlisted and embedded on `videos-accounting.html`. The flip to public failed on the YouTube quota. Remaining, after 07:00 UTC 2026-10-03 (the quota reset): `AWS_PROFILE=submit-prod npm run video:publish -- --public`, then `AWS_PROFILE=submit-prod npm run video:embed-check` (expect 32 of 32). Blocked until 2026-10-03 07:00 UTC. **Owner**: Claude Code. **Model**: Haiku. **Size**: 0 files.
 
 - [ ] **B52m-a. Income, reserve and budget on the dashboard (BACKLOG 52m).** Trailing 30-day income, the reserve with its £2,000 floor, the budget at 20% of trailing income, and the reinvestment fraction as a lever. Blocked on BACKLOG 43: the cost panel carries revenue once the 2026-10-02 renewal and the September bill land. **Source**: BACKLOG 52m; `PLAN_ONE_STOP_DASHBOARD.md` D17. **Owner**: Claude Code. **Model**: Sonnet. **Size**: ~2 files.
 
