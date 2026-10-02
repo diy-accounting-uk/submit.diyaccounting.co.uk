@@ -3015,6 +3015,137 @@
           "full": "videos/accounting-diya-gl-profit/profit.webp"
         }
       ]
+    },
+    {
+      "id": "accounting-spreadsheet-profit",
+      "group": "accounting",
+      "publish": true,
+      "sourceRun": 37038028005,
+      "sourceArtifact": "video-accounting-spreadsheet-profit-",
+      "videoFile": "target/videos/video-accounting-spreadsheet-profit-/accounting-spreadsheet-profit.mp4",
+      "captionFile": "target/videos/video-accounting-spreadsheet-profit-/accounting-spreadsheet-profit.vtt",
+      "title": "DIY Accounting: sales, purchases and profit in the Excel workbook",
+      "description": "The second video in a how-to series on doing your own accounts. A sole trader opens the free Basic Sole Trader Excel workbook from DIY Accounting and enters three sales and two purchases over April and May, each on its month sheet. The workbook adds up as they go, and the Profit & Loss sheet shows £1,200 of profit for the year. The workbook is the real download, opened here in Collabora Online, which runs the .xlsx as Excel or LibreOffice would. It is a real recording, not a mockup. Download the workbook free at https://spreadsheets.diyaccounting.co.uk.",
+      "tags": ["DIY Accounting", "Excel", "bookkeeping", "sole trader", "profit and loss", "self-employed accounts"],
+      "categoryId": "27",
+      "videoId": "woPN9kL9nDI",
+      "pipelineVersion": 9,
+      "walkthrough": [
+        {
+          "scene": "open",
+          "headline": "The workbook",
+          "caption": "This is the Basic Sole Trader workbook. You download it free from our spreadsheets site. There's a sheet for each month's sales, and one for its purchases.",
+          "startSeconds": 0,
+          "thumb": "videos/accounting-spreadsheet-profit/open-thumb.webp",
+          "full": "videos/accounting-spreadsheet-profit/open.webp"
+        },
+        {
+          "scene": "april",
+          "step": 0,
+          "headline": "April's sales",
+          "caption": "Open April's sales.",
+          "startSeconds": 16,
+          "thumb": "videos/accounting-spreadsheet-profit/april-0-thumb.webp",
+          "full": "videos/accounting-spreadsheet-profit/april-0.webp"
+        },
+        {
+          "scene": "april",
+          "step": 2,
+          "headline": "Date of the sale",
+          "caption": "Type the date the customer paid you.",
+          "startSeconds": 23,
+          "thumb": "videos/accounting-spreadsheet-profit/april-2-thumb.webp",
+          "full": "videos/accounting-spreadsheet-profit/april-2.webp"
+        },
+        {
+          "scene": "april",
+          "step": 3,
+          "headline": "The customer and the job",
+          "caption": "Then the customer and the job.",
+          "startSeconds": 29,
+          "thumb": "videos/accounting-spreadsheet-profit/april-3-thumb.webp",
+          "full": "videos/accounting-spreadsheet-profit/april-3.webp"
+        },
+        {
+          "scene": "april",
+          "step": 5,
+          "headline": "How they paid",
+          "caption": "How they paid. Leave this blank if they still owe you.",
+          "startSeconds": 39,
+          "thumb": "videos/accounting-spreadsheet-profit/april-5-thumb.webp",
+          "full": "videos/accounting-spreadsheet-profit/april-5.webp"
+        },
+        {
+          "scene": "april",
+          "step": 7,
+          "headline": "Amount: £500",
+          "caption": "And the amount: £500.",
+          "startSeconds": 47,
+          "thumb": "videos/accounting-spreadsheet-profit/april-7-thumb.webp",
+          "full": "videos/accounting-spreadsheet-profit/april-7.webp"
+        },
+        {
+          "scene": "april",
+          "step": 8,
+          "headline": "A second sale",
+          "caption": "A second job in April: a garden tidy for £300.",
+          "startSeconds": 53,
+          "thumb": "videos/accounting-spreadsheet-profit/april-8-thumb.webp",
+          "full": "videos/accounting-spreadsheet-profit/april-8.webp"
+        },
+        {
+          "scene": "april",
+          "step": 15,
+          "headline": "April's sales: £800",
+          "caption": "The month's total updates as you type: £800.",
+          "startSeconds": 73,
+          "thumb": "videos/accounting-spreadsheet-profit/april-15-thumb.webp",
+          "full": "videos/accounting-spreadsheet-profit/april-15.webp"
+        },
+        {
+          "scene": "april",
+          "step": 17,
+          "headline": "A purchase",
+          "caption": "Now April's purchases: plants and compost for a job.",
+          "startSeconds": 81,
+          "thumb": "videos/accounting-spreadsheet-profit/april-17-thumb.webp",
+          "full": "videos/accounting-spreadsheet-profit/april-17.webp"
+        },
+        {
+          "scene": "april",
+          "step": 23,
+          "headline": "Letter S: materials",
+          "caption": "The expense letter sorts it. S is for stock and materials you use on jobs.",
+          "startSeconds": 100,
+          "thumb": "videos/accounting-spreadsheet-profit/april-23-thumb.webp",
+          "full": "videos/accounting-spreadsheet-profit/april-23.webp"
+        },
+        {
+          "scene": "april",
+          "step": 25,
+          "headline": "Amount: £200",
+          "caption": "They cost £200.",
+          "startSeconds": 110,
+          "thumb": "videos/accounting-spreadsheet-profit/april-25-thumb.webp",
+          "full": "videos/accounting-spreadsheet-profit/april-25.webp"
+        },
+        {
+          "scene": "may",
+          "headline": "May: a sale and a purchase",
+          "caption": "And leaflets to find new customers. A is for advertising. They cost £100.",
+          "startSeconds": 116,
+          "thumb": "videos/accounting-spreadsheet-profit/may-thumb.webp",
+          "full": "videos/accounting-spreadsheet-profit/may.webp"
+        },
+        {
+          "scene": "profit",
+          "headline": "See the profit",
+          "caption": "£600 profit in April, and £600 in May. The year so far: £1,500 of sales, £300 of costs, £1,200 profit.",
+          "startSeconds": 165,
+          "thumb": "videos/accounting-spreadsheet-profit/profit-thumb.webp",
+          "full": "videos/accounting-spreadsheet-profit/profit.webp"
+        }
+      ]
     }
   ]
 }
