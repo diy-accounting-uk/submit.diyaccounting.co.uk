@@ -2659,6 +2659,20 @@
           "full": "videos/itsa-in-year-estimate/in-year-estimate-9.webp"
         }
       ]
+    },
+    {
+      "id": "accounting-diya-gl-profit",
+      "group": "accounting",
+      "publish": true,
+      "sourceRun": null,
+      "sourceArtifact": "video-accounting-diya-gl-profit-",
+      "videoFile": "target/videos/video-accounting-diya-gl-profit-/accounting-diya-gl-profit.mp4",
+      "captionFile": "target/videos/video-accounting-diya-gl-profit-/accounting-diya-gl-profit.vtt",
+      "title": "DIY Accounting: record sales and purchases, see your profit",
+      "description": "The first video in a how-to series on doing your own accounts. A sole trader starts a new book in diya-gl, DIY Accounting's free bookkeeping tool that runs in your browser. They enter three sales and two purchases over April and May, each with a date, a description and an amount. The book adds up as they go, and the year total and the profit and loss account both show £1,200 of profit. It's a real recording of the live tool, not a mockup or a design draft. Try it yourself at https://diya-gl.co.uk/bst.html.",
+      "tags": ["DIY Accounting", "diya-gl", "bookkeeping", "sole trader", "profit and loss", "self-employed accounts"],
+      "categoryId": "27",
+      "videoId": null
     }
   ]
 }

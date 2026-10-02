@@ -58,7 +58,11 @@ driving diya-gl's MCP server — declares a top-level `localApp` instead: a `com
 `url` its web UI serves, and a `readyPattern` to match against the command's own stdout/stderr
 before the run treats it as ready (`readyTimeoutMs` overrides the 30s default). The capture starts
 it, uses its `url` as the base url when `--base-url` was not given, and stops it when the run
-ends. `videos/mcp-diya-gl.json` also shows the pattern for a target whose interactive controls are
+ends. A target that is already live on the web needs no server, only a check that it answers:
+`videos/accounting-diya-gl-profit.json` records diya-gl's Basic Sole Trader page at
+https://diya-gl.co.uk, and its `command` is a `curl` whose output the `readyPattern` matches. CI
+reaches that page the same way, with no checkout of the spreadsheets repository.
+`videos/mcp-diya-gl.json` also shows the pattern for a target whose interactive controls are
 not plain HTML: a Mantine switch's accessible `role=switch` element sits under a track span that
 intercepts a direct click, so that scene's target is a CSS selector on the label instead
 (`.mantine-Switch-root`), with a `note` explaining why.

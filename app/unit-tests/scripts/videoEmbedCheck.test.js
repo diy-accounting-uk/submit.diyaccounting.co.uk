@@ -4,7 +4,7 @@
 import { describe, it, expect } from "vitest";
 import { compareEmbeds, extractEmbedId, groupAreaPageMatches, parseArgs } from "../../../scripts/video-embed-check.js";
 
-const areaPages = ["videos-hmrc-vat.html", "videos-hmrc-itsa.html", "videos-account.html", "videos-ch.html"];
+const areaPages = ["videos-hmrc-vat.html", "videos-hmrc-itsa.html", "videos-account.html", "videos-ch.html", "videos-accounting.html"];
 
 function scenario(overrides = {}) {
   return {
@@ -59,10 +59,23 @@ describe("compareEmbeds", () => {
     expect(rows.find((r) => r.id === "account-one").ok).toBe(false);
   });
 
-  it("fails a manifest group with no linked area page", () => {
-    const manifestVideos = [...scenario().manifestVideos, { id: "ch-one", group: "companies-house", videoId: null }];
-    const { problems } = compareEmbeds(scenario({ manifestVideos, areaPages: areaPages.filter((p) => p !== "videos-ch.html") }));
+  it("fails a manifest group with an uploaded video and no linked area page", () => {
+    const base = scenario();
+    const { problems } = compareEmbeds(
+      scenario({
+        channelVideos: [...base.channelVideos, { videoId: "ccc", title: "Companies House", privacyStatus: "public" }],
+        manifestVideos: [...base.manifestVideos, { id: "ch-one", group: "companies-house", videoId: "ccc" }],
+        areaPages: areaPages.filter((p) => p !== "videos-ch.html"),
+        embeds: new Map([...base.embeds, ["ccc", "videos.html"]]),
+        oembedStatus: new Map([...base.oembedStatus, ["ccc", 200]]),
+      }),
+    );
     expect(problems).toEqual(["manifest group companies-house has no area page linked from videos.html"]);
+  });
+
+  it("passes a manifest group whose videos are not uploaded yet and whose area page is not linked", () => {
+    const manifestVideos = [...scenario().manifestVideos, { id: "accounting-one", group: "accounting", videoId: null }];
+    expect(compareEmbeds(scenario({ manifestVideos })).problems).toEqual([]);
   });
 
   it("fails an embedded video whose oEmbed answers 404", () => {
@@ -85,6 +98,7 @@ describe("helpers", () => {
     expect(groupAreaPageMatches("itsa", areaPages)).toBe("videos-hmrc-itsa.html");
     expect(groupAreaPageMatches("companies-house", areaPages)).toBe("videos-ch.html");
     expect(groupAreaPageMatches("account", areaPages)).toBe("videos-account.html");
+    expect(groupAreaPageMatches("accounting", areaPages)).toBe("videos-accounting.html");
   });
 
   it("reads the video id from an embed URL", () => {
