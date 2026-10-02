@@ -9,7 +9,7 @@
 // and two purchases, and reads the profit back off the Profit & Loss sheet. Writes stills and a
 // webm recording to --out, and exits non-zero unless net profit reads 1200.
 //
-// Usage: node scripts/collabora-sheet-spike.js [--url http://localhost:8099/] [--out target/collabora-spike]
+// Usage: node scripts/collabora-sheet-spike.js [--url http://localhost:8099/] [--out target/collabora-spike] [--scale 2]
 
 import { chromium } from "playwright";
 import fs from "fs";
@@ -20,6 +20,7 @@ const args = process.argv.slice(2);
 const option = (name, fallback) => (args.includes(name) ? args[args.indexOf(name) + 1] : fallback);
 const url = option("--url", "http://localhost:8099/");
 const out = path.resolve(option("--out", "target/collabora-spike"));
+const deviceScaleFactor = Number(option("--scale", "1"));
 fs.mkdirSync(out, { recursive: true });
 
 const PROFIT_AND_LOSS = "$'Profit & Loss Acc'";
@@ -27,6 +28,7 @@ const PROFIT_AND_LOSS = "$'Profit & Loss Acc'";
 const browser = await chromium.launch();
 const context = await browser.newContext({
   viewport: { width: 1920, height: 1080 },
+  deviceScaleFactor,
   recordVideo: { dir: out, size: { width: 1920, height: 1080 } },
 });
 const page = await context.newPage();
