@@ -73,7 +73,12 @@ import {
   deleteHashedUserSubTxt,
   extractUserSubFromLocalStorage,
 } from "./helpers/fileHelper.js";
-import { exportDatasetExists, findPastStripeSubscriptionId, pollForPurchaseEvent } from "./helpers/ga4PurchaseQuery.js";
+import {
+  exportDatasetExists,
+  exportFirstWholeDayStartMs,
+  findPastStripeSubscriptionId,
+  pollForPurchaseEvent,
+} from "./helpers/ga4PurchaseQuery.js";
 
 dotenvConfigIfNotBlank({ path: ".env" });
 
@@ -441,12 +446,17 @@ test("Payment funnel: guest → exhaustion → upgrade → submission → usage"
       return;
     }
 
+    const exportStartMs = await exportFirstWholeDayStartMs({ projectId, datasetId });
+    const lookbackMs = 4 * 24 * 60 * 60 * 1000;
     const priorTransactionId = await findPastStripeSubscriptionId({
       olderThanMs: 26 * 60 * 60 * 1000,
-      newestMs: 4 * 24 * 60 * 60 * 1000,
+      newestMs: exportStartMs === null ? 0 : Math.min(lookbackMs, Date.now() - exportStartMs),
+      customerEmail: testAuthUsername,
     });
     if (!priorTransactionId) {
-      console.log("No prior Stripe subscription old enough to check yet — skipping the BigQuery assertion");
+      console.log(
+        "No prior subscription of this lane created since the export began and old enough to check — skipping the BigQuery assertion",
+      );
       return;
     }
 
