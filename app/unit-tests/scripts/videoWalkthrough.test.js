@@ -1,8 +1,11 @@
 // SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0
 // Copyright (C) 2006-2026 DIY Accounting Limited
 
+import fs from "node:fs";
+import os from "node:os";
+import path from "node:path";
 import { describe, it, expect } from "vitest";
-import { parseArgs, planWalkthrough, buildWalkthroughEntries, SETTLE_BACK_MS } from "../../../scripts/video-walkthrough.js";
+import { ensureArtifact, parseArgs, planWalkthrough, buildWalkthroughEntries, SETTLE_BACK_MS } from "../../../scripts/video-walkthrough.js";
 
 function step(sceneId, stepIndex, startMs, endMs) {
   return { sceneId, stepIndex, startMs, endMs };
@@ -162,5 +165,20 @@ describe("parseArgs", () => {
   it("rejects an unknown argument and a bare --id", () => {
     expect(() => parseArgs(["--x"])).toThrow(/Unknown argument/);
     expect(() => parseArgs(["--id"])).toThrow(/--id needs/);
+  });
+});
+
+describe("ensureArtifact for a locally recorded entry", () => {
+  it("uses the recording's own directory when the mp4 and timeline exist", () => {
+    const dir = fs.mkdtempSync(path.join(os.tmpdir(), "walkthrough-"));
+    fs.writeFileSync(path.join(dir, "local-one.mp4"), "");
+    fs.writeFileSync(path.join(dir, "local-one.timeline.json"), "{}");
+    expect(ensureArtifact({ id: "local-one", videoFile: path.join(dir, "local-one.mp4") })).toBe(dir);
+  });
+
+  it("throws when the local recording or its timeline is missing", () => {
+    const dir = fs.mkdtempSync(path.join(os.tmpdir(), "walkthrough-"));
+    fs.writeFileSync(path.join(dir, "local-one.mp4"), "");
+    expect(() => ensureArtifact({ id: "local-one", videoFile: path.join(dir, "local-one.mp4") })).toThrow(/no local recording/);
   });
 });

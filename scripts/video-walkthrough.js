@@ -165,9 +165,19 @@ function writeWebp(ffmpeg, mp4Path, frameMs, width, quality, outPath) {
   return fs.statSync(outPath).size;
 }
 
-function ensureArtifact(entry) {
+export function ensureArtifact(entry) {
   if (!entry.sourceRun || !entry.sourceArtifact) {
-    throw new Error(`${entry.id}: no sourceRun and sourceArtifact in publish.json, so there is no capture artifact to read`);
+    const localDir = entry.videoFile ? path.resolve(path.dirname(entry.videoFile)) : null;
+    if (
+      localDir &&
+      fs.existsSync(path.join(localDir, `${entry.id}.mp4`)) &&
+      fs.existsSync(path.join(localDir, `${entry.id}.timeline.json`))
+    ) {
+      return localDir;
+    }
+    throw new Error(
+      `${entry.id}: no sourceRun and sourceArtifact in publish.json, and no local recording with its timeline at ${entry.videoFile}`,
+    );
   }
   const dir = path.resolve("target", "videos", entry.sourceArtifact);
   if (fs.existsSync(path.join(dir, `${entry.id}.mp4`))) return dir;

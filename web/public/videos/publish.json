@@ -1555,20 +1555,144 @@
       "description": "DIY Accounting Submit is a free tool for filing with Companies House and HMRC. This video shows changing a company's registered office address: look up the current address, enter the new one, review it, then file with Companies House. This is a sandbox preview, recorded against a local simulator, not a live filing. Try the VAT side of the product now at https://submit.diyaccounting.co.uk.",
       "tags": ["DIY Accounting", "Companies House", "registered office", "sandbox"],
       "categoryId": "27",
-      "videoId": "JjxmMWrLRRk"
+      "videoId": "ERMFEKNdV_0",
+      "walkthrough": [
+        {
+          "scene": "company-lookup",
+          "step": 0,
+          "headline": "Open the activity",
+          "caption": "Open Change Registered Office Address to find the company.",
+          "startSeconds": 6,
+          "thumb": "videos/change-registered-office/company-lookup-0-thumb.webp",
+          "full": "videos/change-registered-office/company-lookup-0.webp"
+        },
+        {
+          "scene": "company-lookup",
+          "step": 2,
+          "headline": "Enter the company number",
+          "caption": "Type the company number.",
+          "startSeconds": 14,
+          "thumb": "videos/change-registered-office/company-lookup-2-thumb.webp",
+          "full": "videos/change-registered-office/company-lookup-2.webp"
+        },
+        {
+          "scene": "company-lookup",
+          "step": 3,
+          "headline": "Look up the address",
+          "caption": "This looks up the current address at Companies House.",
+          "startSeconds": 19,
+          "thumb": "videos/change-registered-office/company-lookup-3-thumb.webp",
+          "full": "videos/change-registered-office/company-lookup-3.webp"
+        },
+        {
+          "scene": "company-lookup",
+          "step": 5,
+          "headline": "The address on file",
+          "caption": "This is the address on file today.",
+          "startSeconds": 26,
+          "thumb": "videos/change-registered-office/company-lookup-5-thumb.webp",
+          "full": "videos/change-registered-office/company-lookup-5.webp"
+        },
+        {
+          "scene": "new-address",
+          "headline": "The new address",
+          "caption": "Confirm the address is one the company can be reached at. Review before anything is filed.",
+          "startSeconds": 33,
+          "thumb": "videos/change-registered-office/new-address-thumb.webp",
+          "full": "videos/change-registered-office/new-address.webp"
+        },
+        {
+          "scene": "review",
+          "headline": "Review",
+          "caption": "File the change with Companies House's sandbox. Sign in to Companies House and say yes once.",
+          "startSeconds": 58,
+          "thumb": "videos/change-registered-office/review-thumb.webp",
+          "full": "videos/change-registered-office/review.webp"
+        },
+        {
+          "scene": "result",
+          "headline": "The outcome",
+          "caption": "Companies House settles on an outcome.",
+          "startSeconds": 80,
+          "thumb": "videos/change-registered-office/result-thumb.webp",
+          "full": "videos/change-registered-office/result.webp"
+        }
+      ]
     },
     {
       "id": "change-registered-email",
       "group": "companies-house",
       "publish": true,
       "pipelineVersion": 9,
-      "videoFile": "target/videos/change-registered-email/change-registered-email.mp4",
-      "captionFile": "target/videos/change-registered-email/change-registered-email.vtt",
+      "videoFile": "target/videos/local-change-registered-email/change-registered-email.mp4",
+      "captionFile": "target/videos/local-change-registered-email/change-registered-email.vtt",
       "title": "DIY Accounting Submit: change registered email address",
       "description": "DIY Accounting Submit is a free tool for filing with Companies House and HMRC. This video shows changing a company's registered email address: check eligibility, enter the new address, review it, then file with Companies House. This is a sandbox preview, recorded against a local simulator, not a live filing. Try the VAT side of the product now at https://submit.diyaccounting.co.uk.",
       "tags": ["DIY Accounting", "Companies House", "registered email", "sandbox"],
       "categoryId": "27",
-      "videoId": "xtNOJSUJrKY"
+      "videoId": "eIa2Qn3IqWg",
+      "walkthrough": [
+        {
+          "scene": "company-lookup",
+          "step": 0,
+          "headline": "Open the activity",
+          "caption": "Open Change Registered Email Address to find the company.",
+          "startSeconds": 13,
+          "thumb": "videos/change-registered-email/company-lookup-0-thumb.webp",
+          "full": "videos/change-registered-email/company-lookup-0.webp"
+        },
+        {
+          "scene": "company-lookup",
+          "step": 2,
+          "headline": "Enter the company number",
+          "caption": "Type the company number.",
+          "startSeconds": 23,
+          "thumb": "videos/change-registered-email/company-lookup-2-thumb.webp",
+          "full": "videos/change-registered-email/company-lookup-2.webp"
+        },
+        {
+          "scene": "company-lookup",
+          "step": 3,
+          "headline": "Check eligibility first",
+          "caption": "This checks eligibility at Companies House.",
+          "startSeconds": 29,
+          "thumb": "videos/change-registered-email/company-lookup-3-thumb.webp",
+          "full": "videos/change-registered-email/company-lookup-3.webp"
+        },
+        {
+          "scene": "company-lookup",
+          "step": 4,
+          "headline": "Grant Companies House access",
+          "caption": "Sign in to Companies House and say yes once.",
+          "startSeconds": 37,
+          "thumb": "videos/change-registered-email/company-lookup-4-thumb.webp",
+          "full": "videos/change-registered-email/company-lookup-4.webp"
+        },
+        {
+          "scene": "new-email",
+          "headline": "The new address",
+          "caption": "Confirm the company is likely to notice mail sent there. Review before anything is filed.",
+          "startSeconds": 50,
+          "thumb": "videos/change-registered-email/new-email-thumb.webp",
+          "full": "videos/change-registered-email/new-email.webp"
+        },
+        {
+          "scene": "review",
+          "headline": "Review",
+          "caption": "Nothing has gone to Companies House yet. File the change with Companies House.",
+          "startSeconds": 77,
+          "thumb": "videos/change-registered-email/review-thumb.webp",
+          "full": "videos/change-registered-email/review.webp"
+        },
+        {
+          "scene": "result",
+          "headline": "The outcome",
+          "caption": "Companies House settles on an outcome.",
+          "startSeconds": 93,
+          "thumb": "videos/change-registered-email/result-thumb.webp",
+          "full": "videos/change-registered-email/result.webp"
+        }
+      ]
     },
     {
       "id": "file-micro-entity-accounts",
@@ -2664,7 +2788,7 @@
       "id": "accounting-diya-gl-profit",
       "group": "accounting",
       "publish": true,
-      "sourceRun": null,
+      "sourceRun": 37020999836,
       "sourceArtifact": "video-accounting-diya-gl-profit-",
       "videoFile": "target/videos/video-accounting-diya-gl-profit-/accounting-diya-gl-profit.mp4",
       "captionFile": "target/videos/video-accounting-diya-gl-profit-/accounting-diya-gl-profit.vtt",
@@ -2672,7 +2796,225 @@
       "description": "The first video in a how-to series on doing your own accounts. A sole trader starts a new book in diya-gl, DIY Accounting's free bookkeeping tool that runs in your browser. They enter three sales and two purchases over April and May, each with a date, a description and an amount. The book adds up as they go, and the year total and the profit and loss account both show £1,200 of profit. It's a real recording of the live tool, not a mockup or a design draft. Try it yourself at https://diya-gl.co.uk/bst.html.",
       "tags": ["DIY Accounting", "diya-gl", "bookkeeping", "sole trader", "profit and loss", "self-employed accounts"],
       "categoryId": "27",
-      "videoId": null
+      "videoId": "UEsbvVF0Wos",
+      "pipelineVersion": 9,
+      "walkthrough": [
+        {
+          "scene": "new-book",
+          "step": 0,
+          "headline": "A sole trader's books",
+          "caption": "This is diya-gl's Basic Sole Trader book. It's free and runs in your browser.",
+          "startSeconds": 0,
+          "thumb": "videos/accounting-diya-gl-profit/new-book-0-thumb.webp",
+          "full": "videos/accounting-diya-gl-profit/new-book-0.webp"
+        },
+        {
+          "scene": "new-book",
+          "step": 1,
+          "headline": "Start a new book",
+          "caption": "Start a new book for your business.",
+          "startSeconds": 8,
+          "thumb": "videos/accounting-diya-gl-profit/new-book-1-thumb.webp",
+          "full": "videos/accounting-diya-gl-profit/new-book-1.webp"
+        },
+        {
+          "scene": "new-book",
+          "step": 2,
+          "headline": "Your business name",
+          "caption": "Type your business name.",
+          "startSeconds": 14,
+          "thumb": "videos/accounting-diya-gl-profit/new-book-2-thumb.webp",
+          "full": "videos/accounting-diya-gl-profit/new-book-2.webp"
+        },
+        {
+          "scene": "new-book",
+          "step": 3,
+          "headline": "Set the year end",
+          "caption": "Then the year end. 31 March 2027 covers the 2026 to 2027 tax year.",
+          "startSeconds": 20,
+          "thumb": "videos/accounting-diya-gl-profit/new-book-3-thumb.webp",
+          "full": "videos/accounting-diya-gl-profit/new-book-3.webp"
+        },
+        {
+          "scene": "new-book",
+          "step": 4,
+          "headline": "Create the book",
+          "caption": "Create it. The book starts empty, with a row for every month.",
+          "startSeconds": 31,
+          "thumb": "videos/accounting-diya-gl-profit/new-book-4-thumb.webp",
+          "full": "videos/accounting-diya-gl-profit/new-book-4.webp"
+        },
+        {
+          "scene": "new-book",
+          "step": 5,
+          "headline": "Sales left, purchases right",
+          "caption": "April is open. Sales go on the left, purchases on the right.",
+          "startSeconds": 39,
+          "thumb": "videos/accounting-diya-gl-profit/new-book-5-thumb.webp",
+          "full": "videos/accounting-diya-gl-profit/new-book-5.webp"
+        },
+        {
+          "scene": "april",
+          "step": 0,
+          "headline": "Date of the sale",
+          "caption": "A sale. First, the date the customer paid you.",
+          "startSeconds": 47,
+          "thumb": "videos/accounting-diya-gl-profit/april-0-thumb.webp",
+          "full": "videos/accounting-diya-gl-profit/april-0.webp"
+        },
+        {
+          "scene": "april",
+          "step": 1,
+          "headline": "What the job was",
+          "caption": "Then what the job was.",
+          "startSeconds": 54,
+          "thumb": "videos/accounting-diya-gl-profit/april-1-thumb.webp",
+          "full": "videos/accounting-diya-gl-profit/april-1.webp"
+        },
+        {
+          "scene": "april",
+          "step": 2,
+          "headline": "Amount: £500",
+          "caption": "And how much they paid: £500.",
+          "startSeconds": 62,
+          "thumb": "videos/accounting-diya-gl-profit/april-2-thumb.webp",
+          "full": "videos/accounting-diya-gl-profit/april-2.webp"
+        },
+        {
+          "scene": "april",
+          "step": 3,
+          "headline": "Add the sale",
+          "caption": "Add it. The book works out every total again.",
+          "startSeconds": 68,
+          "thumb": "videos/accounting-diya-gl-profit/april-3-thumb.webp",
+          "full": "videos/accounting-diya-gl-profit/april-3.webp"
+        },
+        {
+          "scene": "april",
+          "step": 4,
+          "headline": "A second sale",
+          "caption": "A second job in April: a garden tidy for £300.",
+          "startSeconds": 74,
+          "thumb": "videos/accounting-diya-gl-profit/april-4-thumb.webp",
+          "full": "videos/accounting-diya-gl-profit/april-4.webp"
+        },
+        {
+          "scene": "april",
+          "step": 8,
+          "headline": "A purchase",
+          "caption": "Now a purchase: plants and compost for a job.",
+          "startSeconds": 89,
+          "thumb": "videos/accounting-diya-gl-profit/april-8-thumb.webp",
+          "full": "videos/accounting-diya-gl-profit/april-8.webp"
+        },
+        {
+          "scene": "april",
+          "step": 9,
+          "headline": "Cost of sales",
+          "caption": "Materials for your jobs go under cost of sales.",
+          "startSeconds": 96,
+          "thumb": "videos/accounting-diya-gl-profit/april-9-thumb.webp",
+          "full": "videos/accounting-diya-gl-profit/april-9.webp"
+        },
+        {
+          "scene": "april",
+          "step": 11,
+          "headline": "Amount: £200",
+          "caption": "They cost £200.",
+          "startSeconds": 105,
+          "thumb": "videos/accounting-diya-gl-profit/april-11-thumb.webp",
+          "full": "videos/accounting-diya-gl-profit/april-11.webp"
+        },
+        {
+          "scene": "april",
+          "step": 12,
+          "headline": "Add the purchase",
+          "caption": "Add it.",
+          "startSeconds": 110,
+          "thumb": "videos/accounting-diya-gl-profit/april-12-thumb.webp",
+          "full": "videos/accounting-diya-gl-profit/april-12.webp"
+        },
+        {
+          "scene": "april",
+          "step": 13,
+          "headline": "April's profit: £600",
+          "caption": "April so far: £800 of sales, £200 of costs, £600 profit.",
+          "startSeconds": 114,
+          "thumb": "videos/accounting-diya-gl-profit/april-13-thumb.webp",
+          "full": "videos/accounting-diya-gl-profit/april-13.webp"
+        },
+        {
+          "scene": "may",
+          "step": 0,
+          "headline": "Open May",
+          "caption": "Open May by clicking its row.",
+          "startSeconds": 125,
+          "thumb": "videos/accounting-diya-gl-profit/may-0-thumb.webp",
+          "full": "videos/accounting-diya-gl-profit/may-0.webp"
+        },
+        {
+          "scene": "may",
+          "step": 1,
+          "headline": "Show the entries",
+          "caption": "Then show its entries.",
+          "startSeconds": 130,
+          "thumb": "videos/accounting-diya-gl-profit/may-1-thumb.webp",
+          "full": "videos/accounting-diya-gl-profit/may-1.webp"
+        },
+        {
+          "scene": "may",
+          "step": 2,
+          "headline": "A sale in May",
+          "caption": "A bigger job in May: a new border for £700.",
+          "startSeconds": 135,
+          "thumb": "videos/accounting-diya-gl-profit/may-2-thumb.webp",
+          "full": "videos/accounting-diya-gl-profit/may-2.webp"
+        },
+        {
+          "scene": "may",
+          "step": 6,
+          "headline": "A purchase in May",
+          "caption": "And leaflets to find new customers.",
+          "startSeconds": 150,
+          "thumb": "videos/accounting-diya-gl-profit/may-6-thumb.webp",
+          "full": "videos/accounting-diya-gl-profit/may-6.webp"
+        },
+        {
+          "scene": "may",
+          "step": 7,
+          "headline": "Advertising",
+          "caption": "Leaflets go under advertising.",
+          "startSeconds": 155,
+          "thumb": "videos/accounting-diya-gl-profit/may-7-thumb.webp",
+          "full": "videos/accounting-diya-gl-profit/may-7.webp"
+        },
+        {
+          "scene": "may",
+          "step": 9,
+          "headline": "Amount: £100",
+          "caption": "They cost £100.",
+          "startSeconds": 162,
+          "thumb": "videos/accounting-diya-gl-profit/may-9-thumb.webp",
+          "full": "videos/accounting-diya-gl-profit/may-9.webp"
+        },
+        {
+          "scene": "may",
+          "step": 10,
+          "headline": "Add the purchase",
+          "caption": "Add it.",
+          "startSeconds": 168,
+          "thumb": "videos/accounting-diya-gl-profit/may-10-thumb.webp",
+          "full": "videos/accounting-diya-gl-profit/may-10.webp"
+        },
+        {
+          "scene": "profit",
+          "headline": "See the profit",
+          "caption": "The P&L tab sets the same figures out as a profit and loss account. Net profit: £1,200. That's your sales less what you spent to earn them.",
+          "startSeconds": 172,
+          "thumb": "videos/accounting-diya-gl-profit/profit-thumb.webp",
+          "full": "videos/accounting-diya-gl-profit/profit.webp"
+        }
+      ]
     }
   ]
 }
