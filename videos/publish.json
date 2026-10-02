@@ -117,7 +117,7 @@
       "id": "itsa-quarterly-update",
       "group": "itsa",
       "publish": true,
-      "pipelineVersion": 1,
+      "pipelineVersion": 9,
       "sourceRun": 36913209658,
       "sourceArtifact": "video-itsa-quarterly-update-ci",
       "videoFile": "target/videos/video-itsa-quarterly-update-ci/itsa-quarterly-update.mp4",
@@ -126,7 +126,7 @@
       "description": "DIY Accounting Submit is a free tool for filing Self Assessment under Making Tax Digital for Income Tax. This video shows signing in, taking out Resident ITSA, asking HMRC which businesses and quarterly obligations sit against a National Insurance number, then opening the form a quarterly update is filed on. This is a sandbox preview, recorded against HMRC's test environment, not a live filing. The HMRC sign-in and access step is shown in full at {{video:hmrc-authorise}}. Try the VAT side of the product now at https://submit.diyaccounting.co.uk.",
       "tags": ["DIY Accounting", "Self Assessment", "HMRC", "Making Tax Digital", "ITSA"],
       "categoryId": "27",
-      "videoId": "sDnKOsbB6RA"
+      "videoId": "Mz017jlKwWI"
     },
     {
       "id": "itsa-business-details",
@@ -147,7 +147,7 @@
       "id": "itsa-year",
       "group": "itsa",
       "publish": true,
-      "pipelineVersion": 7,
+      "pipelineVersion": 9,
       "sourceRun": 36909768760,
       "sourceArtifact": "video-itsa-year-ci",
       "videoFile": "target/videos/video-itsa-year-ci/itsa-year.mp4",
@@ -156,7 +156,7 @@
       "description": "DIY Accounting Submit is a free tool for filing Self Assessment under Making Tax Digital for Income Tax. This video walks a whole tax year: signing in, taking out Resident, picking a business, filing a quarterly update for a self-employment business and for a UK property business, then the annual submission, adjustments, losses and claims, the tax calculation and the final declaration HMRC accepts. This is a sandbox preview, recorded against HMRC's test environment, not a live filing. The HMRC sign-in and access step is shown in full at {{video:hmrc-authorise}}. Try the VAT side of the product now at https://submit.diyaccounting.co.uk.",
       "tags": ["DIY Accounting", "Self Assessment", "HMRC", "Making Tax Digital", "ITSA", "final declaration"],
       "categoryId": "27",
-      "videoId": "_KpfhBfFtmE"
+      "videoId": "y_cXA1cfcks"
     },
     {
       "id": "sign-in",
@@ -428,7 +428,7 @@
       "id": "itsa-carry-back-adjustments",
       "group": "itsa",
       "publish": true,
-      "pipelineVersion": 7,
+      "pipelineVersion": 9,
       "sourceRun": 36914520911,
       "sourceArtifact": "video-itsa-carry-back-adjustments-ci",
       "videoFile": "target/videos/video-itsa-carry-back-adjustments-ci/itsa-carry-back-adjustments.mp4",
@@ -437,13 +437,13 @@
       "description": "DIY Accounting Submit is a free tool for filing Self Assessment under Making Tax Digital for Income Tax. A signed-in walk through Making Tax Digital for Income Tax's tax liability adjustments: sign in, take out Resident, get HMRC's access for the year, make a carry-back loss claim off camera, then record what that claim saves against the earlier tax year it reduces. This is a sandbox preview, recorded against HMRC's test environment, not a live filing. The HMRC sign-in and access step is shown in full at {{video:hmrc-authorise}}. Try the VAT side of the product now at https://submit.diyaccounting.co.uk.",
       "tags": ["DIY Accounting", "Self Assessment", "HMRC", "Making Tax Digital", "ITSA"],
       "categoryId": "27",
-      "videoId": "NGMwzvQ77es"
+      "videoId": "9BuqtHMTQyA"
     },
     {
       "id": "itsa-in-year-estimate",
       "group": "itsa",
       "publish": true,
-      "pipelineVersion": 7,
+      "pipelineVersion": 9,
       "sourceRun": 36912420462,
       "sourceArtifact": "video-itsa-in-year-estimate-ci",
       "videoFile": "target/videos/video-itsa-in-year-estimate-ci/itsa-in-year-estimate.mp4",
@@ -452,7 +452,7 @@
       "description": "DIY Accounting Submit is a free tool for filing Self Assessment under Making Tax Digital for Income Tax. A signed-in walk through Making Tax Digital for Income Tax's tax calculation: sign in, take out Resident, get HMRC's access for the year, then ask HMRC for an in-year estimate of what the tax year owes, based on what has been submitted so far. This is a sandbox preview, recorded against HMRC's test environment, not a live filing. The HMRC sign-in and access step is shown in full at {{video:hmrc-authorise}}. Try the VAT side of the product now at https://submit.diyaccounting.co.uk.",
       "tags": ["DIY Accounting", "Self Assessment", "HMRC", "Making Tax Digital", "ITSA"],
       "categoryId": "27",
-      "videoId": "WSaN2igO9v4"
+      "videoId": "174ANlnyRFU"
     }
   ]
 }
