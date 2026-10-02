@@ -17,6 +17,16 @@ import fs from "fs";
 import path from "path";
 import * as overlay from "./overlay.js";
 import { substituteValues } from "./values.js";
+import {
+  waitForWorkbook,
+  prepareWorkbook,
+  setZoom,
+  goToCell,
+  libreOfficeReference,
+  cellCursorRect,
+  typeIntoCell,
+  pressKey,
+} from "./collabora.js";
 
 // The journey actions (login, consent, ensureBundle, hmrcAuthorise) run the behaviour tests' own
 // step functions. Loading that bridge registers a process-wide module resolution hook and pulls
@@ -474,7 +484,65 @@ async function disableDeveloperMode(page) {
   });
 }
 
+// Collabora draws the grid on a canvas, so a cell has no element to locate: the cell cursor's box
+// stands in for one. Moving the cursor and reading its box are separate round trips to the
+// server, so the box is read once the cursor has settled.
+const CURSOR_SETTLE_MS = 300;
+
+async function currentCellRect(page) {
+  await page.waitForTimeout(CURSOR_SETTLE_MS);
+  return cellCursorRect(page);
+}
+
+async function pointAtCellRect(page, rect, onRect) {
+  await overlay.pointTo(page, rect.left + rect.width / 2, rect.top + rect.height / 2);
+  if (onRect) await onRect(rect);
+}
+
+// Off camera, once per load: waits for the workbook, then clears the welcome panel, recalculates
+// and turns spelling underlines off.
+async function doSheetPrepare(page, step, ctx) {
+  await waitForWorkbook(page, { timeoutMs: step.timeoutMs || 180000 });
+  await prepareWorkbook(page);
+  return { waitMs: 0, rect: null };
+}
+
+async function doSheetZoom(page, step) {
+  await setZoom(page, step.percent);
+  return { waitMs: 0, rect: null };
+}
+
+async function doSheetCell(page, step, ctx) {
+  await goToCell(page, libreOfficeReference(step.cell));
+  const rect = await currentCellRect(page);
+  await pointAtCellRect(page, rect, ctx.onTargetRect);
+  if (step.dwellMs) await new Promise((resolve) => setTimeout(resolve, step.dwellMs));
+  return { waitMs: 0, rect };
+}
+
+// Types into the cell the cursor is on, through Collabora's socket messages, then presses the
+// key that leaves the cell. Empty text presses the key alone, to step over a column.
+async function doSheetType(page, step, ctx) {
+  const text = substituteValues(step.text, ctx.values, ctx.now);
+  const rect = await currentCellRect(page);
+  await pointAtCellRect(page, rect, ctx.onTargetRect);
+  if (text) {
+    await overlay.highlight(page, rect, text.length * ctx.pacing.perCharMs + 200);
+    for (const character of text) {
+      await typeIntoCell(page, character, { perCharMs: ctx.pacing.perCharMs });
+      if (ctx.pacing.perCharMs > 0) await overlay.typeChar(page, rect);
+    }
+  }
+  if (step.then) await pressKey(page, step.then);
+  return { waitMs: 0, rect };
+}
+
 const HANDLERS = {
+  sheetPrepare: doSheetPrepare,
+  sheetZoom: doSheetZoom,
+  sheetCell: doSheetCell,
+  sheetType: doSheetType,
+  sheetPoint: (page, step, ctx) => doSheetCell(page, { ...step, dwellMs: step.dwellMs ?? 600 }, ctx),
   goto: doGoto,
   click: doClick,
   point: doPoint,
