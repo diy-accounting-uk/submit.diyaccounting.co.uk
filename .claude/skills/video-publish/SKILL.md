@@ -119,6 +119,17 @@ npm run video:publish -- --public
 flips the uploaded entries to public. Never run `--public` before the operator has watched
 the unlisted uploads.
 
+Then check the site embeds every public video:
+
+```bash
+AWS_PROFILE=submit-prod npm run video:embed-check
+```
+
+Run it after every publish and again after the deploy that ships a new `publish.json`. It lists
+the channel's public uploads, loads `videos.html` and its area pages, and fails when a public
+video is embedded nowhere, a manifest group has no area page, or oEmbed does not answer 200.
+Fix a failure before the run is called done.
+
 ## Step 6 — check the declared status is what YouTube actually has
 
 `videos/publish.json` declares the status every video should carry (`embeddable`,
@@ -148,5 +159,6 @@ reason in `publish.json`.
 ## Re-publishing a changed recording
 
 A new recording of an existing video is a new YouTube video: set the entry's `videoId` back
-to `null`, update `sourceRun`, run Steps 1, 1a and 5, then unlist or delete the old video by
-hand in YouTube Studio and note its id in the commit message.
+to `null`, update `sourceRun`, run Steps 1, 1a and 5, then, once the new video is public, delete
+the old one through the API (`DELETE https://www.googleapis.com/youtube/v3/videos?id=<id>`,
+50 quota units) and note its id in the commit message.
