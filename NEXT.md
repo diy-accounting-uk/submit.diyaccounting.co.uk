@@ -16,7 +16,7 @@ runs), and for Claude Code steps the **Model** a sub-agent should use (Fable > O
 Haiku; the lowest tier that fits). Anything touching code goes through a `claude/*` branch and
 PR; the operator merges.
 
-**Prod runs deployment prod-00604e4** (PR #462, deploy 37020967120, 2026-10-02).
+**Prod runs deployment prod-239d79d** (PR #463, deploy 37032576890, 2026-10-02).
 **ci**: `ci-set1` (last-known-good, 10 stacks, created 22:55 UTC 2026-10-01).
 
 Rows F-BS3 and LP-* change the spreadsheets repository (`../spreadsheets.diyaccounting.co.uk/`): their batch branches, PRs and CI run there, under that repository's `CLAUDE.md` and tests; their plans (`../private.diyaccounting.co.uk/strategy/PLAN_DIYA_GL_LAUNCH.md`, `../private.diyaccounting.co.uk/strategy/PLAN_DIYA_GL_INDIA.md`, `PLAN_DIYACCOUNTING_BRAND.md`). LP rows' briefs are in `../private.diyaccounting.co.uk/strategy/PLAN_DIYA_GL_LAUNCH.md` under "Briefs"; `../private.diyaccounting.co.uk/strategy/PLAN_DIYA_GL_INDIA.md` carries its own board.
@@ -41,11 +41,7 @@ step.
 
 ## In flight
 
-- [ ] **B17h. How-to accounting video 1: a few sales and purchases, then the profit, in diya-gl (BACKLOG 17d).** Public as https://youtu.be/UEsbvVF0Wos from `video-capture.yml` run 37020999836, with 24 walkthrough frames; the manifest entry, frames and the page's sitemap and Lighthouse entries are on `claude/garnet-ch-videos`, PR #463. Remaining: `/auto-merge` PR #463, then `npm run video:embed-check` on prod. **Owner**: Claude Code. **Model**: Sonnet. **Size**: 0 files left.
-
-- [ ] **B17g. Walkthrough panels for the two Companies House filing videos (BACKLOG 17d).** Re-recorded on the simulator on the operator's machine and public: change-registered-office https://youtu.be/ERMFEKNdV_0, change-registered-email https://youtu.be/eIa2Qn3IqWg (JjxmMWrLRRk and xtNOJSUJrKY deleted), 7 walkthrough frames each, on `claude/garnet-ch-videos`, PR #463. Remaining: `/auto-merge` PR #463. **Owner**: Claude Code. **Model**: Sonnet. **Size**: 0 files left.
-
-- [ ] **B17i. How-to accounting video 2: the same sales and purchases, then the profit, in the Basic Sole Trader spreadsheet (BACKLOG 17d).** Built on `claude/garnet-sheet-video`, PR #464: the downloaded Apr27 workbook in Collabora Online (CODE) in Docker, driven through Collabora's socket by new scene actions, a `collabora` service container in `video-capture.yml`; the local recording passes the timing check and its stills show the P&L net profit 1,200 (design in `_developers/DESIGN_SPREADSHEET_VIDEO.md`). Remaining: `/auto-merge` PR #464; `gh workflow run video-capture.yml -f script=accounting-spreadsheet-profit` (the first run must show CODE calls the host back at `hostname -i`); check the headline tag's contrast over the white sheet; upload; manifest entry with `sourceRun`; `npm run video:walkthrough -- --id accounting-spreadsheet-profit`; embed check. The package's cached values show last year's dates in LibreOffice until a hard recalculation; the spreadsheets session has been asked to fix the generator. **Owner**: Claude Code. **Model**: Sonnet. **Size**: ~2 files plus images.
+- [ ] **B17i. How-to accounting video 2: the same sales and purchases, then the profit, in the Basic Sole Trader spreadsheet (BACKLOG 17d).** Merged as PR #464 (3c5656c3e); recorded on ci by `video-capture.yml` run 37038028005 (Collabora reached the host; the only timing miss is typing cadence, 116 ms against 90, Collabora's socket round trip) and uploaded unlisted as https://youtu.be/woPN9kL9nDI with 13 walkthrough frames on `claude/harbor-sheet-publish` (batch check running). Remaining: PR and `/auto-merge` that branch; after the YouTube quota resets at 07:00 UTC, `AWS_PROFILE=submit-prod npm run video:publish -- --public`, then `npm run video:embed-check`. The package's cached values show last year's dates in LibreOffice until a hard recalculation; the spreadsheets session has been asked to fix the generator. **Owner**: Claude Code. **Model**: Sonnet. **Size**: 0 files left.
 
 ## Machine-only
 
