@@ -13,17 +13,21 @@ import {
   shapeAdGroupRows,
   shapeKeywordRows,
   buildReport,
+  shapeCampaignStatusRows,
+  shapeKeywordStatusRows,
+  shapeBillingSetups,
 } from "../../../infra/google/ads/ads-report.js";
 
 describe("ads-report parseArgs", () => {
   it("defaults to no explicit range, no json and no client file", () => {
-    expect(parseArgs([])).toEqual({ from: undefined, to: undefined, json: false, clientFile: undefined });
+    expect(parseArgs([])).toEqual({ from: undefined, to: undefined, json: false, status: false, clientFile: undefined });
   });
   it("reads --from and --to together", () => {
     expect(parseArgs(["--from", "2026-08-01", "--to", "2026-08-28"])).toEqual({
       from: "2026-08-01",
       to: "2026-08-28",
       json: false,
+      status: false,
       clientFile: undefined,
     });
   });
@@ -171,5 +175,55 @@ describe("ads-report buildReport", () => {
   it("carries the range and the three row sets through unchanged", () => {
     const report = buildReport({ from: "2026-08-01", to: "2026-08-28", campaigns: [1], adGroups: [2], keywords: [3] });
     expect(report).toEqual({ from: "2026-08-01", to: "2026-08-28", campaigns: [1], adGroups: [2], keywords: [3] });
+  });
+});
+
+describe("ads-report --status", () => {
+  it("reads --status", () => {
+    expect(parseArgs(["--status"]).status).toBe(true);
+  });
+  it("rejects --status with a date range", () => {
+    expect(() => parseArgs(["--status", "--from", "2026-08-01", "--to", "2026-08-02"])).toThrow(/--status/);
+  });
+  it("shapes a campaign's serving status, budget and CPC ceiling", () => {
+    const [row] = shapeCampaignStatusRows({
+      results: [
+        {
+          campaign: {
+            id: "1",
+            name: "C",
+            status: "ENABLED",
+            servingStatus: "SERVING",
+            primaryStatus: "LIMITED",
+            primaryStatusReasons: ["BUDGET_CONSTRAINED"],
+            biddingStrategyType: "TARGET_SPEND",
+            targetSpend: { cpcBidCeilingMicros: "1000000" },
+            startDateTime: "2026-09-30 00:00:00",
+          },
+          campaignBudget: { amountMicros: "1000000", status: "ENABLED" },
+        },
+      ],
+    });
+    expect(row).toMatchObject({ primaryStatus: "LIMITED", primaryStatusReasons: ["BUDGET_CONSTRAINED"], budgetGbp: 1, cpcCeilingGbp: 1 });
+  });
+  it("shapes a keyword's serving and approval status", () => {
+    const [row] = shapeKeywordStatusRows({
+      results: [
+        {
+          campaign: { name: "C" },
+          adGroup: { name: "G" },
+          adGroupCriterion: {
+            keyword: { text: "k", matchType: "PHRASE" },
+            status: "ENABLED",
+            systemServingStatus: "RARELY_SERVED",
+            approvalStatus: "APPROVED",
+          },
+        },
+      ],
+    });
+    expect(row).toMatchObject({ text: "k", systemServingStatus: "RARELY_SERVED", qualityScore: null, primaryStatusReasons: [] });
+  });
+  it("answers an empty array when there are no billing setups", () => {
+    expect(shapeBillingSetups({})).toEqual([]);
   });
 });
