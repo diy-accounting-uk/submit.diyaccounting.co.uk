@@ -22,7 +22,7 @@
 //   node scripts/collabora-sheet-host.js --package "GB Accounts Basic Sole Trader 2027-04-05 (Apr27) Excel 2007"
 //   node scripts/collabora-sheet-host.js --file path/to/workbook.xlsx
 //   node scripts/collabora-sheet-host.js --package "..." --cool-url http://collabora:9980 --wopi-base "http://$(hostname):8099"
-// Options: --port 8099 (WOPI host and start page), --cool-port 9980, --image <ref> (default: the pinned CODE 26.04.4.2 digest)
+// Options: --port 8099 (WOPI host and start page), --cool-port 9980, --image <ref> (default: the pinned CODE image digest)
 
 import http from "http";
 import fs from "fs";
