@@ -194,7 +194,7 @@ const WITHOUT_WALKTHROUGH = WALKTHROUGH_VIDEOS.find((v) => v.id !== WITH_WALKTHR
 const SCENES = [
   { scene: "one", headline: "First step", caption: "The first thing happens.", startSeconds: 4 },
   { scene: "two", headline: "Second step", caption: "The second thing happens.", startSeconds: 21 },
-  { scene: "three", headline: "Third step", caption: "The third thing happens.", startSeconds: 40 },
+  { scene: "three", step: 5, headline: "Third step", caption: "The third thing happens.", startSeconds: 40 },
 ].map((s) => ({
   ...s,
   thumb: `videos/${WITH_WALKTHROUGH.id}/${s.scene}-thumb.webp`,
@@ -295,17 +295,17 @@ test.describe("walkthrough under a video", () => {
     });
     await page.goto(AREA_URL, { waitUntil: "domcontentloaded" });
     await page.locator(`section#${WITH_WALKTHROUGH.id} details.walkthrough summary`).click();
-    await page.locator(`#${WITH_WALKTHROUGH.id}-three .walkthrough-thumb`).click();
+    await page.locator(`#${WITH_WALKTHROUGH.id}-three-5 .walkthrough-thumb`).click();
     await page.locator("dialog.walkthrough-overlay .walkthrough-share-overlay").click();
     const [payload] = await page.evaluate(() => window.sharedPayloads);
-    expect(payload.url).toBe(`${AREA_URL}#${WITH_WALKTHROUGH.id}-three`);
+    expect(payload.url).toBe(`${AREA_URL}#${WITH_WALKTHROUGH.id}-three-5`);
     expect(payload.text).toContain(SCENES[2].caption);
     expect(payload.text).toContain(`https://youtu.be/${WITH_WALKTHROUGH.videoId}?t=40`);
   });
 
   test("a scene hash opens the twistie and the overlay on that scene", async ({ page }) => {
     await serveWalkthroughManifest(page);
-    await page.goto(`${AREA_URL}#${WITH_WALKTHROUGH.id}-three`, { waitUntil: "domcontentloaded" });
+    await page.goto(`${AREA_URL}#${WITH_WALKTHROUGH.id}-three-5`, { waitUntil: "domcontentloaded" });
     await expect(page.locator(`section#${WITH_WALKTHROUGH.id} details.walkthrough`)).toHaveAttribute("open", "");
     const overlay = page.locator("dialog.walkthrough-overlay");
     await expect(overlay).toBeVisible();

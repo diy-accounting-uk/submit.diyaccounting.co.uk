@@ -16,6 +16,7 @@
 //
 // Scenes shown: a scene with at least one captioned step, unless the scene is flagged
 // fastForward (those compress a step every video repeats, such as sign-in, into seconds).
+// A scene with more than three captioned steps gets one frame per captioned step.
 
 import fs from "fs";
 import path from "path";
@@ -32,6 +33,7 @@ export const FULL_WIDTH = 1600;
 export const FULL_MAX_BYTES = 150 * 1024;
 export const WEBP_QUALITIES = [90, 82, 74, 66, 58, 50, 42];
 export const MAX_CAPTIONS_PER_SCENE = 2;
+export const MAX_CAPTIONS_PER_SCENE_FRAME = 3;
 
 export function parseArgs(argv) {
   const ids = [];
@@ -61,40 +63,70 @@ function sentence(text) {
  * @returns {Array<{scene: string, headline: string, caption: string, startSeconds: number, frameMs: number}>}
  */
 export function planWalkthrough({ script, timeline, videoDurationMs = Infinity }) {
+  const frameAt = (startMs, endMs) => {
+    const latestFrameMs = Math.max(0, Math.min(endMs, videoDurationMs) - 1);
+    return Math.min(latestFrameMs, Math.max(startMs, endMs - SETTLE_BACK_MS));
+  };
   const plan = [];
   for (const scene of script.scenes) {
     if (scene.fastForward) continue;
-    const captioned = scene.steps.filter((step) => captionTextForStep(step));
+    const captioned = scene.steps.map((step, index) => ({ step, index })).filter(({ step }) => captionTextForStep(step));
     if (captioned.length === 0) continue;
     const timed = timeline.steps.filter((step) => step.sceneId === scene.id);
     if (timed.length !== scene.steps.length) {
       throw new Error(`scene "${scene.id}" has ${scene.steps.length} steps in the script but ${timed.length} in the timeline`);
     }
+    if (captioned.length > MAX_CAPTIONS_PER_SCENE_FRAME) {
+      let previousCaption = null;
+      for (const { step, index } of captioned) {
+        const caption = sentence(captionTextForStep(step));
+        if (caption === previousCaption) continue;
+        previousCaption = caption;
+        const timing = timed.find((t) => t.stepIndex === index);
+        if (!timing) throw new Error(`scene "${scene.id}" has no timeline entry for step ${index}`);
+        plan.push({
+          scene: scene.id,
+          step: index,
+          headline: step.headline || scene.chapter || caption,
+          caption,
+          startSeconds: Math.floor(timing.startMs / 1000),
+          frameMs: frameAt(timing.startMs, timing.endMs),
+        });
+      }
+      continue;
+    }
     const startMs = Math.min(...timed.map((step) => step.startMs));
     const endMs = Math.max(...timed.map((step) => step.endMs));
-    const lastCaptioned = captioned[captioned.length - 1];
+    const lastCaptioned = captioned[captioned.length - 1].step;
     const headline = scene.chapter || lastCaptioned.headline || captionTextForStep(lastCaptioned);
     const caption = captioned
       .slice(-MAX_CAPTIONS_PER_SCENE)
-      .map((step) => sentence(captionTextForStep(step)))
+      .map(({ step }) => sentence(captionTextForStep(step)))
       .join(" ");
-    const latestFrameMs = Math.max(0, Math.min(endMs, videoDurationMs) - 1);
-    const frameMs = Math.min(latestFrameMs, Math.max(startMs, endMs - SETTLE_BACK_MS));
-    plan.push({ scene: scene.id, headline, caption, startSeconds: Math.floor(startMs / 1000), frameMs });
+    plan.push({ scene: scene.id, headline, caption, startSeconds: Math.floor(startMs / 1000), frameMs: frameAt(startMs, endMs) });
   }
   return plan;
 }
 
+/** The key naming a plan item's images and anchor: the scene id, plus the step for a split scene. */
+export function frameKey(item) {
+  return item.step === undefined ? item.scene : `${item.scene}-${item.step}`;
+}
+
 /** The manifest entry's walkthrough array for a plan, with the site paths of its two images. */
 export function buildWalkthroughEntries(videoId, plan) {
-  return plan.map(({ scene, headline, caption, startSeconds }) => ({
-    scene,
-    headline,
-    caption,
-    startSeconds,
-    thumb: `videos/${videoId}/${scene}-thumb.webp`,
-    full: `videos/${videoId}/${scene}.webp`,
-  }));
+  return plan.map((item) => {
+    const entry = { scene: item.scene };
+    if (item.step !== undefined) entry.step = item.step;
+    return {
+      ...entry,
+      headline: item.headline,
+      caption: item.caption,
+      startSeconds: item.startSeconds,
+      thumb: `videos/${videoId}/${frameKey(item)}-thumb.webp`,
+      full: `videos/${videoId}/${frameKey(item)}.webp`,
+    };
+  });
 }
 
 function ffmpegProbeDurationMs(ffmpeg, mp4Path) {
@@ -157,14 +189,14 @@ export function buildForEntry(entry, { ffmpeg = resolveFfmpegBinary(), outRoot =
   fs.mkdirSync(outDir, { recursive: true });
   let bytes = 0;
   for (const item of plan) {
-    writeWebp(ffmpeg, mp4Path, item.frameMs, THUMB_WIDTH, 70, path.join(outDir, `${item.scene}-thumb.webp`));
-    const fullPath = path.join(outDir, `${item.scene}.webp`);
+    writeWebp(ffmpeg, mp4Path, item.frameMs, THUMB_WIDTH, 70, path.join(outDir, `${frameKey(item)}-thumb.webp`));
+    const fullPath = path.join(outDir, `${frameKey(item)}.webp`);
     let size = Infinity;
     for (const quality of WEBP_QUALITIES) {
       size = writeWebp(ffmpeg, mp4Path, item.frameMs, FULL_WIDTH, quality, fullPath);
       if (size <= FULL_MAX_BYTES) break;
     }
-    bytes += size + fs.statSync(path.join(outDir, `${item.scene}-thumb.webp`)).size;
+    bytes += size + fs.statSync(path.join(outDir, `${frameKey(item)}-thumb.webp`)).size;
   }
   return { walkthrough: buildWalkthroughEntries(entry.id, plan), bytes };
 }

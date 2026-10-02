@@ -6,7 +6,7 @@
 // and, for an area page, its group — this module holds the one copy of the markup and the
 // manifest handling that all five pages share.
 
-import { walkthroughElement, wireWalkthrough, openSceneFromHash, sceneForHash } from "./video-walkthrough.js";
+import { walkthroughElement, wireWalkthrough, openSceneFromHash, sceneForHash, sceneAnchor } from "./video-walkthrough.js";
 
 const MANIFEST_URL = "videos/publish.json";
 const EMBED_BASE = "https://www.youtube-nocookie.com/embed/";
@@ -106,7 +106,7 @@ function areaLinkHref(video) {
 
 // The absolute, shareable URL for one scene of a video's walkthrough, on the video's area page.
 function sceneShareLink(video, scene) {
-  return new URL(`${areaPageForGroup(video.group)}#${video.id}-${scene.scene}`, window.location.href).toString();
+  return new URL(`${areaPageForGroup(video.group)}#${sceneAnchor(video, scene)}`, window.location.href).toString();
 }
 
 // The absolute, shareable URL for a video, always its area page even when read from the index

@@ -9,8 +9,13 @@
 const YOUTUBE_SHORT_BASE = "https://youtu.be/";
 const COPIED_MS = 2500;
 
+// A split scene's frames are told apart by step: `<scene id>-<step>`.
+export function sceneKey(scene) {
+  return scene.step === undefined ? scene.scene : `${scene.scene}-${scene.step}`;
+}
+
 export function sceneAnchor(video, scene) {
-  return `${video.id}-${scene.scene}`;
+  return `${video.id}-${sceneKey(scene)}`;
 }
 
 export function youtubeLink(video, scene) {
@@ -51,7 +56,7 @@ function sceneItem(video, scene) {
 
   const open = button("walkthrough-thumb", "");
   open.dataset.videoId = video.id;
-  open.dataset.scene = scene.scene;
+  open.dataset.scene = sceneKey(scene);
   open.setAttribute("aria-label", `View full size: ${scene.headline}`);
   const image = document.createElement("img");
   image.src = scene.thumb;
@@ -67,7 +72,7 @@ function sceneItem(video, scene) {
   const actions = el("div", "walkthrough-actions");
   const share = button("btn btn-small walkthrough-share", "Share");
   share.dataset.videoId = video.id;
-  share.dataset.scene = scene.scene;
+  share.dataset.scene = sceneKey(scene);
   share.setAttribute("aria-label", `Share: ${scene.headline}`);
   const status = el("span", "walkthrough-status");
   status.setAttribute("role", "status");
@@ -194,7 +199,7 @@ export function wireWalkthrough(container, videosById, siteUrlFor) {
 
   function openScene(videoId, sceneId, openerElement = null) {
     const video = videosById.get(videoId);
-    const index = video?.walkthrough?.findIndex((s) => s.scene === sceneId) ?? -1;
+    const index = video?.walkthrough?.findIndex((s) => sceneKey(s) === sceneId) ?? -1;
     if (index < 0) return false;
     const itemId = CSS.escape(`${video.id}-${sceneId}`);
     opener = openerElement ?? container.querySelector(`#${itemId} .walkthrough-thumb`);
@@ -213,7 +218,7 @@ export function wireWalkthrough(container, videosById, siteUrlFor) {
     const share = target?.closest(".walkthrough-share");
     if (share) {
       const video = videosById.get(share.dataset.videoId);
-      const scene = video?.walkthrough?.find((s) => s.scene === share.dataset.scene);
+      const scene = video?.walkthrough?.find((s) => sceneKey(s) === share.dataset.scene);
       if (scene) shareScene({ video, scene, siteUrl: siteUrlFor(video, scene), statusElement: share.nextElementSibling });
     }
   });
@@ -256,5 +261,5 @@ export function openSceneFromHash(hash, videos, controller) {
   if (!details) return false;
   details.open = true;
   document.getElementById(sceneAnchor(found.video, found.scene))?.scrollIntoView();
-  return controller.openScene(found.video.id, found.scene.scene);
+  return controller.openScene(found.video.id, sceneKey(found.scene));
 }

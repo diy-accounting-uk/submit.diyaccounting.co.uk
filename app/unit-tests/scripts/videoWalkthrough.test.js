@@ -86,6 +86,60 @@ describe("planWalkthrough", () => {
   });
 });
 
+describe("a scene with more than three captioned steps", () => {
+  const longScript = {
+    scenes: [
+      {
+        id: "long",
+        chapter: "Long scene",
+        steps: [
+          { action: "click", caption: "One", headline: "Step one" },
+          { action: "hold" },
+          { action: "type", caption: "Two." },
+          { action: "point", caption: "Two." },
+          { action: "scroll", caption: "Four", headline: "Step four" },
+          { action: "hold", caption: "Five", headline: "Step five" },
+        ],
+      },
+    ],
+  };
+  const longTimeline = {
+    steps: [
+      step("long", 0, 0, 2000),
+      step("long", 1, 2000, 2500),
+      step("long", 2, 2500, 5000),
+      step("long", 3, 5000, 7000),
+      step("long", 4, 7000, 9000),
+      step("long", 5, 9000, 9100),
+    ],
+  };
+
+  it("gets one frame per captioned step, skipping a caption identical to the one before", () => {
+    const plan = planWalkthrough({ script: longScript, timeline: longTimeline });
+    expect(plan.map((p) => p.step)).toEqual([0, 2, 4, 5]);
+  });
+
+  it("takes each step's own headline, caption, start and settled frame", () => {
+    const [first, second, , last] = planWalkthrough({ script: longScript, timeline: longTimeline });
+    expect(first).toEqual({
+      scene: "long",
+      step: 0,
+      headline: "Step one",
+      caption: "One.",
+      startSeconds: 0,
+      frameMs: 2000 - SETTLE_BACK_MS,
+    });
+    expect(second.headline).toBe("Long scene");
+    expect(second.startSeconds).toBe(2);
+    expect(last.frameMs).toBe(9000);
+  });
+
+  it("names images and the manifest entry by scene and step", () => {
+    const [entry] = buildWalkthroughEntries("demo", planWalkthrough({ script: longScript, timeline: longTimeline }));
+    expect(entry).toMatchObject({ scene: "long", step: 0, thumb: "videos/demo/long-0-thumb.webp", full: "videos/demo/long-0.webp" });
+  });
+});
+
 describe("buildWalkthroughEntries", () => {
   it("gives each scene the site paths of its thumbnail and full image", () => {
     const entries = buildWalkthroughEntries("demo", planWalkthrough({ script, timeline }));
