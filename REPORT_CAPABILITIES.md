@@ -3386,10 +3386,10 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 #### OPS-112 Provision the API Gateway stack
 
 - **Use when:** the account's API Gateway with its Lambda integrations needs synthesizing or redeploying.
-- **Does:** ApiStack creates the API Gateway with Lambda integrations for the account, VAT, HMRC and billing endpoints.
+- **Does:** ApiStack creates the HTTP API, its stage and domain, and the routes for the auth, account, VAT and billing Lambdas; ApiRoutesStack adds the Income Tax, Companies House and DIYA-GL routes to the same API, so each stack stays under the 500-resource limit. Both use ApiRoutes for routes and authorisers.
 - **Run:** `npm run cdk:synth-environment`; `npm run cdk:synth-application`
 - **Entry:** `infra/main/java/co/uk/diyaccounting/submit/stacks/ApiStack.java`
-- **Files:** infra/main/java/co/uk/diyaccounting/submit/stacks/ApiStack.java, infra/test/java/co/uk/diyaccounting/submit/stacks/ApiStackTest.java
+- **Files:** infra/main/java/co/uk/diyaccounting/submit/stacks/ApiStack.java, infra/main/java/co/uk/diyaccounting/submit/stacks/ApiRoutesStack.java, infra/main/java/co/uk/diyaccounting/submit/stacks/ApiRoutes.java, infra/test/java/co/uk/diyaccounting/submit/stacks/ApiStackTest.java
 - **Keywords:** api gateway, lambda integration, vat endpoints, hmrc endpoints, billing endpoints, cdk stack
 - **Related:** OPS-113, OPS-117
 
