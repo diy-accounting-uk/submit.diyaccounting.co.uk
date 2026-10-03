@@ -16,7 +16,7 @@ runs), and for Claude Code steps the **Model** a sub-agent should use (Fable > O
 Haiku; the lowest tier that fits). Anything touching code goes through a `claude/*` branch and
 PR; the operator merges.
 
-**Prod runs deployment prod-66e3d04** (PR #467, deploy 37088058202, 2026-10-03).
+**Prod runs deployment prod-5314342** (PR #468, deploy 37096444084, 2026-10-03).
 **ci**: `ci-set1` (last-known-good, 10 stacks, created 17:40 UTC 2026-10-02).
 
 Rows F-BS3 and LP-* change the spreadsheets repository (`../spreadsheets.diyaccounting.co.uk/`): their batch branches, PRs and CI run there, under that repository's `CLAUDE.md` and tests; their plans (`../private.diyaccounting.co.uk/strategy/PLAN_DIYA_GL_LAUNCH.md`, `../private.diyaccounting.co.uk/strategy/PLAN_DIYA_GL_INDIA.md`, `PLAN_DIYACCOUNTING_BRAND.md`). LP rows' briefs are in `../private.diyaccounting.co.uk/strategy/PLAN_DIYA_GL_LAUNCH.md` under "Briefs"; `../private.diyaccounting.co.uk/strategy/PLAN_DIYA_GL_INDIA.md` carries its own board.
@@ -40,8 +40,6 @@ names its model: the lowest tier that fits (Fable > Opus > Sonnet > Haiku), or `
 step.
 
 ## In flight
-
-- [ ] **VAT1. Offer the open obligations on the VAT return form.** In flight: merged as 5314342a6 (PR #468, with the probe fixes: screenshots wait for load, the GA4 purchase lookup picks an exported transaction); `main`'s deploy puts it on prod; the row closes when that deploy is green. `web/public/hmrc/vat/submitVat.html` takes `periodStart` and `periodEnd` as free `type="date"` inputs (lines 75–80) and never fetches the customer's open obligations; `ObligationUtils` (lines 381–412) only formats and nothing calls it; a comment at line 414 says the obligation dropdown was replaced by date inputs with the period key resolved server-side. So a customer can type a period HMRC is not expecting and only learns from the server's 400, which on 2026-10-02 one customer did three times in two minutes before filing. Add a fetch of the open obligations (`GET /api/v1/hmrc/vat/obligations`, the route the obligations page uses, with the signed-in VRN) and offer them as a choice that fills the two dates, keeping the free dates for a period HMRC does not list; the fraud-prevention headers and the server-side period-key resolution are unchanged. Unit test in `web/unit-tests/` for the choice filling the dates; `npm run test:submitVatBehaviour-simulator` and `test:postVatReturnBehaviour-simulator` still pass. **Source**: B30ai's form question, 2026-10-03. **Owner**: Claude Code. **Model**: Sonnet. **Size**: ~2 files.
 
 ## Machine-only
 
