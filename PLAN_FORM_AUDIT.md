@@ -7,7 +7,7 @@ Pages checked against `web/public/docs/hmrc-form-field-standards/` (HMRC termino
 `web/public/hmrc/itsa/*.html` (19), `web/public/hmrc/vat/*.html` (6), `web/public/companies-house/*.html` (6), `bundles.html`, `practice.html`,
 `help.html`, `hmrc/receipt/receipts.html`, `passes/generate-*.html`. "ITSA (all)" means every ITSA page with that field.
 
-Boarded 2026-10-03 as five `NEXT.md` rows: FA1 (A1 to A5, A10, A12 to A14 on the ITSA pages), FA2 (the same classes on the VAT, Companies House, practice, help and bundles pages, A16 to A25, A27), FA3 (A6 to A9), FA4 (A15), FA5 (A11, A26).
+Open on 2026-10-03: FA2 on `NEXT.md` (A5, A13, A14, A16, A17, A22, A23, A25, A27 on the VAT, Companies House, practice, help and bundles pages). Landed: A1 to A4, A6 to A12, A15, A18 to A21, A24 and A26 (main, 2026-10-01), and A5, A13, A14 on the ITSA pages (FA1).
 
 | # | Page | Element | Fault | Rule broken | Model |
 |---|---|---|---|---|---|
