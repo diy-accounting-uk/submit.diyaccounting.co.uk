@@ -3,7 +3,7 @@
 
 # PLAN: HMRC Assist
 
-HMRC Assist returns up to five feedback messages on a draft return before it is filed. It is live for Income Tax (the Self Assessment Assist (MTD) API, sandbox and production) and arrives for VAT in April 2027 (the VAT Assist (MTD) API, listed on the Developer Hub without documentation on 2026-10-03, early adopters in production from January 2027). This plan takes HMRC Assist over from `PLAN_ENGAGEMENT.md` item 24 and designs the integration from what HMRC has published: the Income Tax API's specification, the VAT service guide's rules, the June 2026 slides and the three emails.
+HMRC Assist returns up to five feedback messages on a draft return before it is filed. It is live for Income Tax (the Self Assessment Assist (MTD) API, sandbox and production) and arrives for VAT in April 2027 (the VAT Assist (MTD) API, listed on the Developer Hub without documentation on 2026-10-03, early adopters in production from January 2027). This plan takes HMRC Assist over from `../private.diyaccounting.co.uk/engineering/submit/archive/PLAN_ENGAGEMENT.md` item 24 and designs the integration from what HMRC has published: the Income Tax API's specification, the VAT service guide's rules, the June 2026 slides and the three emails.
 
 ## Operator assertions (verbatim)
 
