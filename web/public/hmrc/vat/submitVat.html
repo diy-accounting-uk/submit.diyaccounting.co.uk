@@ -1253,8 +1253,11 @@
           });
         }
 
-        const hmrcAssistActivity = await window.hmrcScopeCheck.getActivityById("vat-assist-check");
-        const hmrcAssistEnvironmentName = await window.fetchCurrentEnvironmentName();
+        const hmrcAssistActivity =
+          window.hmrcScopeCheck && window.fetchCurrentEnvironmentName && window.isActivityListedInEnvironment
+            ? await window.hmrcScopeCheck.getActivityById("vat-assist-check")
+            : null;
+        const hmrcAssistEnvironmentName = hmrcAssistActivity ? await window.fetchCurrentEnvironmentName() : null;
         if (hmrcAssistActivity && window.isActivityListedInEnvironment(hmrcAssistActivity, hmrcAssistEnvironmentName)) {
           hmrcAssist = window.hmrcAssistMessages.mount({
             kind: "vat",
