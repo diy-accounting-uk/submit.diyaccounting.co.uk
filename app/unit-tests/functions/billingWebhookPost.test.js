@@ -595,6 +595,107 @@ describe("billingWebhookPost", () => {
     expect(mockUpdateSubscription).toHaveBeenCalledWith("stripe#sub_test_456", { status: "past_due", cancelAtPeriodEnd: false });
   });
 
+  test("customer.subscription.updated active with a later period end extends expiry and period end without resetting tokens", async () => {
+    mockGetSubscription.mockResolvedValue({
+      pk: "stripe#sub_test_456",
+      hashedSub: "hashed_sub_value",
+      bundleId: "resident",
+      currentPeriodEnd: "2026-06-06T09:38:58.000Z",
+    });
+    const payload = {
+      id: "evt_test_sub_update_period",
+      type: "customer.subscription.updated",
+      data: {
+        object: {
+          id: "sub_test_456",
+          status: "active",
+          cancel_at_period_end: false,
+          items: { data: [{ id: "si_1", current_period_end: 1790000000 }] },
+        },
+      },
+    };
+    mockWebhooksConstructEvent.mockReturnValue(payload);
+
+    const result = await ingestHandler(buildWebhookEvent(payload));
+
+    expect(result.statusCode).toBe(200);
+    expect(mockResetTokensByHashedSub).not.toHaveBeenCalled();
+    const expectedEnd = new Date(1790000000 * 1000).toISOString();
+    expect(mockUpdateBundleSubscriptionFields).toHaveBeenCalledWith("hashed_sub_value", "resident", {
+      currentPeriodEnd: expectedEnd,
+      expiry: expectedEnd,
+    });
+    expect(mockUpdateSubscription).toHaveBeenCalledWith("stripe#sub_test_456", { currentPeriodEnd: expectedEnd });
+  });
+
+  test("customer.subscription.updated past_due with a later period end extends nothing", async () => {
+    mockGetSubscription.mockResolvedValue({
+      pk: "stripe#sub_test_456",
+      hashedSub: "hashed_sub_value",
+      bundleId: "resident",
+      currentPeriodEnd: "2026-06-06T09:38:58.000Z",
+    });
+    const payload = {
+      id: "evt_test_sub_update_period",
+      type: "customer.subscription.updated",
+      data: {
+        object: {
+          id: "sub_test_456",
+          status: "past_due",
+          cancel_at_period_end: false,
+          items: { data: [{ id: "si_1", current_period_end: 1790000000 }] },
+        },
+      },
+    };
+    mockWebhooksConstructEvent.mockReturnValue(payload);
+
+    const result = await ingestHandler(buildWebhookEvent(payload));
+
+    expect(result.statusCode).toBe(200);
+    expect(mockResetTokensByHashedSub).not.toHaveBeenCalled();
+    for (const [, , updates] of mockUpdateBundleSubscriptionFields.mock.calls) {
+      expect(updates).not.toHaveProperty("expiry");
+      expect(updates).not.toHaveProperty("currentPeriodEnd");
+    }
+    for (const [, updates] of mockUpdateSubscription.mock.calls) {
+      expect(updates).not.toHaveProperty("currentPeriodEnd");
+    }
+  });
+
+  test("customer.subscription.updated active with a period end that is not later extends nothing", async () => {
+    mockGetSubscription.mockResolvedValue({
+      pk: "stripe#sub_test_456",
+      hashedSub: "hashed_sub_value",
+      bundleId: "resident",
+      currentPeriodEnd: "2026-11-30T00:00:00.000Z",
+    });
+    const payload = {
+      id: "evt_test_sub_update_period",
+      type: "customer.subscription.updated",
+      data: {
+        object: {
+          id: "sub_test_456",
+          status: "active",
+          cancel_at_period_end: false,
+          items: { data: [{ id: "si_1", current_period_end: 1790000000 }] },
+        },
+      },
+    };
+    mockWebhooksConstructEvent.mockReturnValue(payload);
+
+    const result = await ingestHandler(buildWebhookEvent(payload));
+
+    expect(result.statusCode).toBe(200);
+    expect(mockResetTokensByHashedSub).not.toHaveBeenCalled();
+    for (const [, , updates] of mockUpdateBundleSubscriptionFields.mock.calls) {
+      expect(updates).not.toHaveProperty("expiry");
+      expect(updates).not.toHaveProperty("currentPeriodEnd");
+    }
+    for (const [, updates] of mockUpdateSubscription.mock.calls) {
+      expect(updates).not.toHaveProperty("currentPeriodEnd");
+    }
+  });
+
   test("customer.subscription.deleted marks bundle as canceled", async () => {
     mockGetSubscription.mockResolvedValue({
       pk: "stripe#sub_test_456",
