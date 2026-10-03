@@ -4,7 +4,7 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <title>ITSA Dashboard - DIY Accounting Submit</title>
+    <title>ITSA dashboard - DIY Accounting Submit</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <link rel="icon" href="/favicon.ico" sizes="any" />
     <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
@@ -82,7 +82,7 @@
     </header>
 
     <main id="mainContent">
-      <div id="syntheticIndicator" class="synthetic-indicator">⚠️ Synthetic mode - calls go to HMRC's sandbox API</div>
+      <div id="syntheticIndicator" class="synthetic-indicator">Synthetic mode - calls go to HMRC's sandbox API</div>
 
       <div id="statusMessagesContainer" role="alert" aria-live="polite"></div>
 
@@ -98,7 +98,7 @@
 
       <!-- Business picker -->
       <div id="businessPickerContainer" class="form-container">
-        <h2>Pick a Business</h2>
+        <h2>Pick a business</h2>
         <p class="hint">
           The steps below link to the file family the picked business uses - self-employment or property - because HMRC's endpoints, field
           names and even the quarterly model differ between them.
@@ -116,7 +116,6 @@
               name="nino"
               required
               value=""
-              placeholder="e.g., QQ 12 34 56 C"
               maxlength="13"
               spellcheck="false"
               autocapitalize="characters"
@@ -144,7 +143,7 @@
       <div class="form-container">
         <div class="dashboard-steps">
           <div class="dashboard-step">
-            <h2>1. Business Details</h2>
+            <h2>1. Business details</h2>
             <p>Look up the self-employment and property businesses HMRC holds against your National Insurance number.</p>
             <a href="businessDetails.html" class="btn" style="display: inline-block; width: auto; text-decoration: none"
               >Go to Business Details</a
@@ -153,17 +152,17 @@
           <div class="dashboard-step">
             <h2>2. Obligations</h2>
             <p>Check which quarterly updates are open, due, or already sent, grouped by business.</p>
-            <a href="obligations.html" class="btn" style="display: inline-block; width: auto; text-decoration: none">Go to Obligations</a>
+            <a href="obligations.html" class="btn" style="display: inline-block; width: auto; text-decoration: none">Go to obligations</a>
           </div>
           <div class="dashboard-step">
-            <h2>3. File a Quarterly Update</h2>
+            <h2>3. File a quarterly update</h2>
             <p>Send a period summary of income and expenses to HMRC for the picked business.</p>
             <a href="selfEmploymentPeriod.html" id="step3Link" class="btn" style="display: inline-block; width: auto; text-decoration: none"
               >Go to File a Quarterly Update</a
             >
           </div>
           <div class="dashboard-step">
-            <h2>4. Period Summaries</h2>
+            <h2>4. Period summaries</h2>
             <p>List the quarterly updates already filed for the picked business.</p>
             <a
               href="selfEmploymentPeriods.html"
@@ -174,7 +173,7 @@
             >
           </div>
           <div class="dashboard-step">
-            <h2>5. View a Period Summary</h2>
+            <h2>5. View a period summary</h2>
             <p>Retrieve one filed quarterly update by tax year and period ID.</p>
             <a
               href="selfEmploymentPeriodView.html"
@@ -185,7 +184,7 @@
             >
           </div>
           <div class="dashboard-step">
-            <h2>6. Amend a Period Summary</h2>
+            <h2>6. Amend a period summary</h2>
             <p>Correct the income and expenses on a quarterly update already filed with HMRC.</p>
             <a
               href="selfEmploymentPeriodAmend.html"
@@ -199,21 +198,21 @@
           <div class="dashboard-divider">Year end</div>
 
           <div class="dashboard-step">
-            <h2>7. Annual Submission</h2>
+            <h2>7. Annual submission</h2>
             <p>Load the year's annual submission for the picked business, enter adjustments and allowances, and save them to HMRC.</p>
             <a href="annualSubmission.html" id="step7Link" class="btn" style="display: inline-block; width: auto; text-decoration: none"
               >Go to Annual Submission</a
             >
           </div>
           <div class="dashboard-step">
-            <h2>8. Year-End Adjustments</h2>
+            <h2>8. Year-end adjustments</h2>
             <p>Trigger the year-end summary, read the net profit HMRC computed, and change a figure if it is wrong.</p>
             <a href="adjustments.html" id="step8Link" class="btn" style="display: inline-block; width: auto; text-decoration: none"
               >Go to Adjustments</a
             >
           </div>
           <div class="dashboard-step">
-            <h2>9. Losses and Claims</h2>
+            <h2>9. Losses and claims</h2>
             <p class="applicability">
               Applies if the picked business made a loss this year, or carries one from an earlier year. Every business's loss carries
               forward the same way; a sole trade can also carry sideways or back.
@@ -223,7 +222,7 @@
             >
           </div>
           <div class="dashboard-step">
-            <h2>10. Tax Liability Adjustments</h2>
+            <h2>10. Tax liability adjustments</h2>
             <p class="applicability">
               Applies only if a carry-back claim was made in Losses and Claims. This is the second half of that claim - it tells HMRC what
               the carry-back saves.
@@ -233,14 +232,14 @@
             >
           </div>
           <div class="dashboard-step">
-            <h2>11. Tax Calculation</h2>
+            <h2>11. Tax calculation</h2>
             <p>Trigger a calculation and see what the tax year owes, with one row per business.</p>
             <a href="taxCalculation.html" class="btn" style="display: inline-block; width: auto; text-decoration: none"
               >Go to Tax Calculation</a
             >
           </div>
           <div class="dashboard-step">
-            <h2>12. Final Declaration</h2>
+            <h2>12. Final declaration</h2>
             <p>Read the calculation again, confirm it is complete and correct for every business, and file the return.</p>
             <a href="finalDeclaration.html" class="btn" style="display: inline-block; width: auto; text-decoration: none"
               >Go to Final Declaration</a

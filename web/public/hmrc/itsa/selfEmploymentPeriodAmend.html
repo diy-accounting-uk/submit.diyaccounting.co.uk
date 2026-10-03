@@ -4,7 +4,7 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <title>Amend a Period Summary - DIY Accounting Submit</title>
+    <title>Amend a period summary - DIY Accounting Submit</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <link rel="icon" href="/favicon.ico" sizes="any" />
     <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
@@ -24,12 +24,12 @@
     <a href="#mainContent" class="skip-link">Skip to main content</a>
     <header>
       <p class="chrome-fallback"><a href="../../">DIY Accounting Submit</a></p>
-      <h1>Amend a Period Summary</h1>
+      <h1>Amend a period summary</h1>
       <p class="subtitle">Correct the income and expenses on a quarterly update already filed with HMRC</p>
     </header>
 
     <main id="mainContent">
-      <div id="syntheticIndicator" class="synthetic-indicator">⚠️ Synthetic mode - calls go to HMRC's sandbox API</div>
+      <div id="syntheticIndicator" class="synthetic-indicator">Synthetic mode - calls go to HMRC's sandbox API</div>
 
       <div id="statusMessagesContainer" role="alert" aria-live="polite"></div>
 
@@ -42,7 +42,7 @@
           <button type="button" id="cancelRequestBtn" class="cancel-button" style="display: none">Cancel request</button>
         </div>
         <div id="searchCriteriaContainer">
-          <h2>Amend a Period Summary</h2>
+          <h2>Amend a period summary</h2>
           <form id="itsaSelfEmploymentPeriodAmendForm" novalidate>
             <div class="form-group">
               <label for="nino">National Insurance number</label>
@@ -56,7 +56,6 @@
                 name="nino"
                 required
                 value=""
-                placeholder="e.g., QQ 12 34 56 C"
                 maxlength="13"
                 spellcheck="false"
                 autocapitalize="characters"
@@ -67,41 +66,19 @@
             <div class="form-group">
               <label for="businessId">Business ID</label>
               <p id="businessId-hint" class="hint">The business ID from Business Details, for example XAIS12345678910.</p>
-              <input
-                type="text"
-                id="businessId"
-                name="businessId"
-                required
-                placeholder="e.g., XAIS12345678910"
-                aria-describedby="businessId-hint"
-              />
+              <input type="text" id="businessId" name="businessId" required aria-describedby="businessId-hint" />
             </div>
 
             <div class="form-group">
               <label for="taxYear">Tax year</label>
               <p id="taxYear-hint" class="hint">Enter in the format 2023-24, for example.</p>
-              <input
-                type="text"
-                id="taxYear"
-                name="taxYear"
-                required
-                placeholder="e.g., 2023-24"
-                maxlength="7"
-                aria-describedby="taxYear-hint"
-              />
+              <input type="text" id="taxYear" name="taxYear" required maxlength="7" aria-describedby="taxYear-hint" />
             </div>
 
             <div id="periodIdGroup" class="form-group">
               <label for="periodId">Period ID</label>
-              <p id="periodId-hint" class="hint">From the Period Summaries list, for example 2023-04-06_2023-07-05.</p>
-              <input
-                type="text"
-                id="periodId"
-                name="periodId"
-                required
-                placeholder="e.g., 2023-04-06_2023-07-05"
-                aria-describedby="periodId-hint"
-              />
+              <p id="periodId-hint" class="hint">From the period summaries list, for example 2023-04-06_2023-07-05.</p>
+              <input type="text" id="periodId" name="periodId" required aria-describedby="periodId-hint" />
             </div>
 
             <div id="loadCurrentTotalGroup" class="form-group" style="display: none">

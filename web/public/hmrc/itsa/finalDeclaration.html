@@ -4,7 +4,7 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <title>Final Declaration - DIY Accounting Submit</title>
+    <title>Final declaration - DIY Accounting Submit</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <link rel="icon" href="/favicon.ico" sizes="any" />
     <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
@@ -32,12 +32,12 @@
     <a href="#mainContent" class="skip-link">Skip to main content</a>
     <header>
       <p class="chrome-fallback"><a href="../../">DIY Accounting Submit</a></p>
-      <h1>Final Declaration</h1>
+      <h1>Final declaration</h1>
       <p class="subtitle">Confirm the calculation and file the return with HMRC</p>
     </header>
 
     <main id="mainContent">
-      <div id="syntheticIndicator" class="synthetic-indicator">⚠️ Synthetic mode - calls go to HMRC's sandbox API</div>
+      <div id="syntheticIndicator" class="synthetic-indicator">Synthetic mode - calls go to HMRC's sandbox API</div>
 
       <div id="statusMessagesContainer" role="alert" aria-live="polite"></div>
 
@@ -45,7 +45,7 @@
 
       <!-- Retrieve form -->
       <div id="retrieveForm" class="form-container">
-        <h2>Retrieve the Calculation</h2>
+        <h2>Retrieve the calculation</h2>
         <form id="itsaFinalDeclarationRetrieveForm" novalidate>
           <div class="form-group">
             <label for="nino">National Insurance number</label>
@@ -59,7 +59,6 @@
               name="nino"
               required
               value=""
-              placeholder="e.g., QQ 12 34 56 C"
               maxlength="13"
               spellcheck="false"
               autocapitalize="characters"
@@ -70,15 +69,7 @@
           <div class="form-group">
             <label for="taxYear">Tax year</label>
             <p id="taxYear-hint" class="hint">Enter in the format 2023-24, for example.</p>
-            <input
-              type="text"
-              id="taxYear"
-              name="taxYear"
-              required
-              placeholder="e.g., 2023-24"
-              maxlength="7"
-              aria-describedby="taxYear-hint"
-            />
+            <input type="text" id="taxYear" name="taxYear" required maxlength="7" aria-describedby="taxYear-hint" />
           </div>
 
           <div class="form-group">
@@ -124,17 +115,17 @@
           submit more information.
         </div>
 
-        <h3>Total Income Tax and National Insurance Due</h3>
+        <h3>Total Income Tax and National Insurance due</h3>
         <p id="totalIncomeTaxAndNicsDue" class="headline-figure"></p>
 
         <div id="taxBreakdown"></div>
 
-        <h3 id="allowancesAndDeductionsHeading">Allowances and Deductions</h3>
+        <h3 id="allowancesAndDeductionsHeading">Allowances and deductions</h3>
         <div id="allowancesAndDeductions"></div>
 
         <p id="calculationIdDisplay" class="hint"></p>
 
-        <h3>Businesses in This Return</h3>
+        <h3>Businesses in this return</h3>
         <p class="hint">
           Every business HMRC counted in this calculation, so a business you have but HMRC did not count is a gap you can still fix before
           you declare.

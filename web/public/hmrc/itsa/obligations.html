@@ -4,7 +4,7 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <title>ITSA Obligations - DIY Accounting Submit</title>
+    <title>ITSA obligations - DIY Accounting Submit</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <link rel="icon" href="/favicon.ico" sizes="any" />
     <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
@@ -24,12 +24,12 @@
     <a href="#mainContent" class="skip-link">Skip to main content</a>
     <header>
       <p class="chrome-fallback"><a href="../../">DIY Accounting Submit</a></p>
-      <h1>ITSA Obligations</h1>
+      <h1>ITSA obligations</h1>
       <p class="subtitle">Retrieve your quarterly update obligations from HMRC</p>
     </header>
 
     <main id="mainContent">
-      <div id="syntheticIndicator" class="synthetic-indicator">⚠️ Synthetic mode - calls go to HMRC's sandbox API</div>
+      <div id="syntheticIndicator" class="synthetic-indicator">Synthetic mode - calls go to HMRC's sandbox API</div>
 
       <div id="statusMessagesContainer" role="alert" aria-live="polite"></div>
 
@@ -56,7 +56,6 @@
                 name="nino"
                 required
                 value=""
-                placeholder="e.g., QQ 12 34 56 C"
                 maxlength="13"
                 aria-describedby="nino-hint"
                 spellcheck="false"
@@ -78,7 +77,7 @@
             <div class="form-group">
               <label for="businessId">Business ID (optional)</label>
               <p id="businessId-hint" class="hint">The business ID from Business Details. Requires a business type above.</p>
-              <input type="text" id="businessId" name="businessId" placeholder="e.g., XAIS12345678910" aria-describedby="businessId-hint" />
+              <input type="text" id="businessId" name="businessId" aria-describedby="businessId-hint" />
             </div>
 
             <div class="form-group">

@@ -161,7 +161,7 @@ test.describe("ITSA Dashboard", () => {
     await delay(200);
 
     expect(page.url()).toContain("selfEmploymentPeriod.html");
-    await expect(page.locator("h1")).toHaveText("File a Quarterly Update");
+    await expect(page.locator("h1")).toHaveText("File a quarterly update");
   });
 
   // A sole trade and a rental is nine tokens for the year (D6): four quarterly updates each,
