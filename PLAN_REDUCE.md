@@ -37,15 +37,12 @@ the seven functions.
 
 ---
 
-## 2. SQS Worker Handler Boilerplate (internal refactor, no library) — partly done
+## 2. SQS Worker Handler Boilerplate (internal refactor, no library) — in progress
 
-`isRetryableError()` is extracted to `app/lib/sqsWorkerHelper.js` and imported by the three
-hmrc handlers, removing the identical copy in each. The remaining part of this item — a shared
-`processSqsRecords()` wrapping steps 1-5 and 7 — is not done: `bundlePost.js`/`bundleDelete.js`
-always rethrow on error while the hmrc handlers classify retryable vs terminal, so a shared
-wrapper needs a real per-caller policy, and `hmrcVatReturnPost.js` (the live VAT submission
-path) has no direct `workerHandler` unit test to catch a wrong merge. That part needs its own
-pass with handler-specific tests in place first.
+`isRetryableError()` and `processSqsRecords()` live in `app/lib/sqsWorkerHelper.js` with an
+`errorPolicy` of `rethrow` or `classify` per caller; five of the thirty-eight `workerHandler`s
+use it. The other thirty-three are `NEXT.md` R2a (the eighteen with a `workerHandler` unit case)
+and R2b (the fifteen without one, which get the case first).
 
 **What**: Five Lambda files implement the same `workerHandler(event)` pattern with near-identical
 boilerplate:
@@ -358,15 +355,11 @@ Consider removing `envSchema.js` unless there is a concrete plan to use typed en
 
 ---
 
-## 11. `getTableName()` Pattern in Every Repository (internal refactor) — not done
+## 11. `getTableName()` Pattern in Every Repository (internal refactor) — done
 
-The suggested `const TABLE_NAME = process.env.X` at module scope is not behaviour-neutral:
-several unit tests import the repository module once at the top of the file, then set the
-table-name env var per test inside `beforeEach` (e.g.
-`app/unit-tests/data/dynamoDbBundleRepository.putBundle.test.js`). A module-scope constant
-would capture whatever the env var held at import time, before any test sets it, and stay
-wrong for the life of the module. `getTableName()` stays a function so it keeps reading the
-env var at call time.
+The per-repository `getTableName()` functions are gone (ed19c468a, a shared `getResourceName()`
+helper); the env var is still read at call time, which the unit tests that set it in
+`beforeEach` after importing the module need.
 
 **What**: Six repository files define an identical pattern:
 
@@ -545,4 +538,4 @@ healthy, low-dependency codebase.
 
 ## Remaining
 
-Work the PLAN_REDUCE simplification items; the first pass landed in PR #141 and left the HTML header and nav duplication across 32 pages. **Effort**: S/M. **Value**: Hygiene. Standing simplification list; behavior-neutral. Good sub-agent filler.
+Item 2's thirty-three unconverted workers, as `NEXT.md` R2a and R2b. Every other item is done or recommends no action.

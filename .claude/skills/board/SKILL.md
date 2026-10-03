@@ -121,17 +121,15 @@ by it says so in its `Status` (`unblocks CS-9`).
   narrative lives in `NEXT.md`, never in this column.
 - `GH issue`: only when the row cites one (`Issue #18` → `#18`), else `—`.
 
-**Part 2 — one list per `PLAN_*.md`** at the repo root, each headed `**PLAN_<NAME>.md**`,
-holding only the plan's tasks that are **open and not on `NEXT.md`**. A task is open when the
-plan's own status line or task entry does not record it as landed (a merge commit, a PR number,
-"on main"); it is on the board when its label, or a NEXT.md row whose **Source** names it,
-appears in `NEXT.md` (grep both, never recall). A plan whose every open task is boarded is left
-out of the lists and named in one closing line (`Every open task boarded: BOOKS_TO_SUBMIT,
-FORM_AUDIT`), so a missing plan reads as checked, not skipped. A plan with no open task at all
-is a candidate for the archive; say so in that line.
+**Part 2 — the plans.** Every `PLAN_*.md` at the repo root appears once, in exactly one of
+the two sub-parts, so a plan missing from both reads as unread. A task is open when the plan's
+own status line or task entry does not record it as landed (a merge commit, a PR number, "on
+main"); it is on the board when its label, or a NEXT.md row whose **Source** names it, appears in
+`NEXT.md` (grep both, never recall).
 
-Within a list, one task per line, in the plan's own order: the plan's task label, a short name,
-then a bracketed status of two fields:
+**Part 2a — one list per plan with an open task not on `NEXT.md`**, each headed
+`**PLAN_<NAME>.md**`, holding only those tasks. Within a list, one task per line, in the plan's
+own order: the plan's task label, a short name, then a bracketed status of two fields:
 
 ```
 **PLAN_COMPANIES_HOUSE.md**
@@ -145,6 +143,13 @@ then a bracketed status of two fields:
 
 These lists are the board's intake: a `ready` task here is what `/refine` pulls onto `NEXT.md`
 next. Pulling is not part of a render.
+
+**Part 2b — one line per remaining plan**, in two groups. First the plans whose every open task
+is on the board: the plan's name, the count of its open tasks and the board labels that carry
+them (`PLAN_HMRC_ASSIST.md: 8 open, all boarded (HA1 to HA8)`). Then the plans with no open task
+at all, each marked as a candidate for the archive
+(`PLAN_ENGAGEMENT.md: no open task; candidate for ../private.diyaccounting.co.uk/engineering/submit/archive/`).
+Archiving is not part of a render.
 
 **Part 3 — the open alarm issues, grouped.** Run
 `gh issue list --state open --label alarm --limit 200 --json number,title,createdAt,updatedAt`
