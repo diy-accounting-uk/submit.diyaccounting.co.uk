@@ -7,6 +7,8 @@ Pages checked against `web/public/docs/hmrc-form-field-standards/` (HMRC termino
 `web/public/hmrc/itsa/*.html` (19), `web/public/hmrc/vat/*.html` (6), `web/public/companies-house/*.html` (6), `bundles.html`, `practice.html`,
 `help.html`, `hmrc/receipt/receipts.html`, `passes/generate-*.html`. "ITSA (all)" means every ITSA page with that field.
 
+Boarded 2026-10-03 as five `NEXT.md` rows: FA1 (A1 to A5, A10, A12 to A14 on the ITSA pages), FA2 (the same classes on the VAT, Companies House, practice, help and bundles pages, A16 to A25, A27), FA3 (A6 to A9), FA4 (A15), FA5 (A11, A26).
+
 | # | Page | Element | Fault | Rule broken | Model |
 |---|---|---|---|---|---|
 | A1 | ITSA (all 19) | `#nino` placeholder, `#nino-hint` | Example is `AB123456C`, a real person's number, in the placeholder and in the hints on obligations, businessDetails, the period pages | NI number example is `QQ 12 34 56 C`; never `AB 12 34 56 C` | Haiku |

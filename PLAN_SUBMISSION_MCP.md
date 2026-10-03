@@ -3,8 +3,9 @@
 
 # PLAN: The submission MCP
 
-Status: open, drafted 2026-09-07. M1 is on main (M1a, PR #226; M1b and M1c, PR #232); M2 to M7 are
-BACKLOG 60, 61, 63, 64 and 65 under row 51.
+Status: open, drafted 2026-09-07. M1 is on main (M1a, PR #226; M1b and M1c, PR #232); M2 to M8 are rows
+on `NEXT.md` (boarded 2026-10-03); M3 uses the authorization code grant with PKCE on a loopback
+redirect, because Cognito has no device-code grant.
 
 An MCP server for DIY Accounting Submit. It takes a customer's books, works out the figures a
 filing needs with the diya-gl library from the spreadsheets repository, and drives the two

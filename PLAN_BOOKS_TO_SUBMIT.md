@@ -3,8 +3,8 @@
 
 # PLAN: From books to Submit
 
-Draft for the operator to refine and approve. On approval, tasks BS1 to BS14 join `NEXT.md`;
-BS5 is already there, taken ahead because the Drive store is independent of filing.
+Approved 2026-09-26 and boarded 2026-10-03: BS1 to BS14 are rows on `NEXT.md`; BS5 landed (PR
+#419, the client id recorded in PR #425).
 
 A customer's books reach a Submit filing in two ways. The activity page reads a file the
 customer drops, picks from disk or picks from their own Google Drive, and fills the form. Or a
@@ -266,7 +266,7 @@ confirm brand verification. They replace LP-24a's steps 1 to 4.
    retrieves DIY Accounting authored files only (a diya-gl zip, a spreadsheets `.xlsx` or package
    zip, a books zip). A file Drive holds as a native Google Sheet is refused with a message asking
    for the DIY Accounting file, because a converted Sheet does not reliably convert back to the
-   workbook the reader expects. Native Sheets support is its own plan, `PLAN_GOOGLE_SHEETS.md`.
+   workbook the reader expects. Native Sheets support is its own plan, `../private.diyaccounting.co.uk/engineering/submit/backlog/PLAN_GOOGLE_SHEETS.md`.
 7. **Period mismatch.** A VAT book whose periods straddle HMRC's obligation dates
    (`PLAN_SUBMISSION_MCP.md`, dependencies table) fills nothing. The message must say which
    periods the book covers.
