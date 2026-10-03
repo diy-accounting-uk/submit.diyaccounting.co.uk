@@ -7,7 +7,6 @@ Status: open, drafted 2026-09-07, reshaped the same evening around objectives, l
 experiments, then widened to eight objectives with the optimisation and reinvestment loop. D1, D5 to D9
 and D11 to D15 are on main, D3 too; D4 on main; D2 in part (NEXT.md D2); D10, D16 and D17 open (NEXT.md B52i, B52l,
 B52m-a and B52m-b).
-Backlog row 52; NEXT.md B52a is the first row.
 
 One page the operator opens to see how DIY Accounting is doing against eight objectives, which levers
 are being pulled, and how each running experiment is moving its metric. The same data, exported

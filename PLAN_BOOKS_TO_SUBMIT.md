@@ -228,13 +228,13 @@ The operator accepted every recommendation below on 2026-09-26; each "Recommend"
 | Id | What | Files (estimate) | Size | Model | Depends on |
 |---|---|---|---|---|---|
 | BS1 | Move the three derivations into the diya-gl package with tests; release; MCP imports them | spreadsheets `app/lib/calculators/`, `diya-gl/`, submit `mcp/lib/vat-tools.js`, `itsa-tools.js`, `mcp/package.json` | ~8 | Opus | decision 2 |
-| BS2 | Submit browser bundle: engine read plus derivations, stubs as in `build-diya-gl-bundle.mjs`; an npm script | `scripts/build-books-bundle.mjs`, `package.json`, `web/public/lib/books-bundle.js` (built) | ~4 | Sonnet | BS1 |
+| BS2 | Submit browser bundle: engine read plus derivations, stubs as in `build-diya-gl-bundle.mjs`; an npm script | `scripts/build-books-bundle.mjs`, `package.json`, `web/public/lib/books-bundle.js` (built) | ~4 | Sonnet | diya-gl 1.2.44 (published) |
 | BS3 | The "Fill from your books" widget: drop zone, file dialog, status line, per-page field mapping | `web/public/widgets/books-import.js`, `web/public/hmrc/vat/submitVat.html`, `hmrc/itsa/selfEmploymentPeriod.html`, `hmrc/itsa/annualSubmission.html`, CSS | ~6 | Sonnet | BS2 |
 | BS4 | Browser tests for BS3 with fixture books (diya-gl zip, xlsx, package zip, `.xls`, wrong period) | `web/browser-tests/booksImport.browser.test.js`, fixtures | ~3 | Sonnet | BS3 |
 | BS5 | Google browser client: `oauth.toml` entry, Drive and Picker APIs in `project.toml`, a restricted API key recorded as code, the assert script extended | `infra/google/gcp/oauth.toml`, `project.toml`, `google-oauth-assert.js` | ~4 | Sonnet | decision 4; console steps (operator) |
 | BS6 | Drive button on the Submit widget: GIS token client, Picker, download; CSP adds `accounts.google.com`, `apis.google.com`, `docs.google.com` frames, `www.googleapis.com` | `web/public/widgets/books-import.js`, `web/public/lib/google-drive-picker.js`, `EdgeStack.java` | ~4 | Sonnet | BS3, BS5 |
 | BS7 | Journey B receiver on Submit: read the fragment before any auth redirect, store, fill, clear | `web/public/widgets/books-import.js`, `web/public/lib/auth-url-builder.js` | ~3 | Sonnet | BS3 |
-| BS8 | Journey B sender on the diya-gl page: menu item, period choice, derive, open Submit | spreadsheets `shell.js`, a new `submit-handoff.js`, product manifests | ~4 | Sonnet | BS1, BS7 |
+| BS8 | Journey B sender on the diya-gl page: menu item, period choice, derive, open Submit | spreadsheets `shell.js`, a new `submit-handoff.js`, product manifests | ~4 | Sonnet | BS7 |
 | BS9 | Journey C: Drive offered without a Cognito session; Picker for "Open from Google Drive"; spec cases updated | spreadsheets `drive.js`, `cloud.js`, `shell.js`, `web/browser-tests/diya-gl-drive.browser.test.js` | ~5 | Sonnet | BS5 |
 | BS10 | `cloud-config.js` `googleClientId` set per host, and the Picker key | spreadsheets `cloud-config.js` | ~1 | Haiku | BS5 |
 | BS11 | Privacy page: Drive, `drive.file`, the book stays in the browser | `web/public/privacy.html`, spreadsheets privacy copy | ~2 | Haiku | decision 6 |
