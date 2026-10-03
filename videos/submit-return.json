@@ -218,7 +218,7 @@
       "steps": [
         {
           "action": "click",
-          "target": { "role": "button", "name": "Submit Return" },
+          "target": { "role": "button", "name": "Submit return" },
           "caption": "Start a return for that open period.",
           "headline": "Start the return",
           "keyWord": "Start"

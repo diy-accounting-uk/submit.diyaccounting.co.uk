@@ -4,7 +4,7 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <title>VAT Payments - DIY Accounting Submit</title>
+    <title>VAT payments - DIY Accounting Submit</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <link rel="icon" href="/favicon.ico" sizes="any" />
     <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
@@ -41,10 +41,10 @@
           <button type="button" id="toggleSearchCriteriaBtn" class="secondary-button" style="display: none">
             Show Payments Search Criteria
           </button>
-          <button type="button" id="cancelRequestBtn" class="cancel-button" style="display: none">Cancel Request</button>
+          <button type="button" id="cancelRequestBtn" class="cancel-button" style="display: none">Cancel request</button>
         </div>
         <div id="searchCriteriaContainer">
-          <h2>Retrieve VAT Payments</h2>
+          <h2>Retrieve VAT payments</h2>
           <form id="vatPaymentsForm">
             <div class="form-group">
               <label for="vrn">VAT registration number</label>
@@ -58,7 +58,6 @@
                 name="vrn"
                 required
                 value=""
-                placeholder="e.g., 983238295"
                 maxlength="9"
                 pattern="[0-9]{9}"
                 aria-describedby="vrn-hint"
@@ -116,17 +115,17 @@
               </div>
             </div>
 
-            <button type="submit" id="retrieveBtn" class="btn" data-activity-start="vat-payments">Retrieve Payments</button>
+            <button type="submit" id="retrieveBtn" class="btn" data-activity-start="vat-payments">Retrieve payments</button>
           </form>
         </div>
       </div>
 
       <!-- Results Display -->
       <div id="paymentsResults" class="results-container" style="display: none">
-        <h3>VAT Payments</h3>
+        <h3>VAT payments</h3>
         <div id="paymentsTable"></div>
         <div class="button-group">
-          <button type="button" id="newSearchBtn" class="secondary-button">New Search</button>
+          <button type="button" id="newSearchBtn" class="secondary-button">New search</button>
         </div>
       </div>
     </main>
@@ -528,7 +527,7 @@
 
       // Format a single date for display
       function formatDate(dateStr) {
-        if (!dateStr) return "-";
+        if (!dateStr) return "—";
         const date = new Date(dateStr);
         const options = { day: "numeric", month: "short", year: "numeric" };
         return date.toLocaleDateString("en-GB", options);
@@ -536,7 +535,7 @@
 
       // Format a monetary amount for display
       function formatCurrency(amount) {
-        if (amount === undefined || amount === null) return "-";
+        if (amount === undefined || amount === null) return "—";
         return formatGbp(amount);
       }
 
