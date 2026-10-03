@@ -9,7 +9,13 @@ import fs from "fs";
 import path from "path";
 import { setTimeout as delay } from "timers/promises";
 import { dotenvConfigIfNotBlank } from "@app/lib/env.js";
-import { serveHmrcFieldTableAssets, serveSiteStyles, screenshotPath, expectCleanFigures } from "./hmrcFieldTableAssets.js";
+import {
+  serveHmrcAssistWidget,
+  serveHmrcFieldTableAssets,
+  serveSiteStyles,
+  screenshotPath,
+  expectCleanFigures,
+} from "./hmrcFieldTableAssets.js";
 
 dotenvConfigIfNotBlank({ path: ".env.test" });
 
@@ -30,6 +36,7 @@ test.describe("ITSA Tax Calculation - Form", () => {
       }
     });
     await serveHmrcFieldTableAssets(page);
+    await serveHmrcAssistWidget(page);
 
     const modifiedHtml = htmlContent.replace("<head>", '<head><base href="http://localhost:3000/hmrc/itsa/">').replace(
       "<body>",

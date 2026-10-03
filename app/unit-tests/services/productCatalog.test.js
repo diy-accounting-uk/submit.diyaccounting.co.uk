@@ -122,7 +122,7 @@ describe("productCatalogHelper", () => {
     expect(bundlesForActivity(catalog, "self-employed-year-end")).toEqual(bundlesForActivity(catalog, "self-employed"));
     const selfEmployed = catalog.activities.find((a) => a.id === "self-employed");
     expect(activity.environments).toEqual(selfEmployed.environments);
-    expect(activity.hmrcScopesRequired).toEqual(selfEmployed.hmrcScopesRequired);
+    expect(activity.hmrcScopesRequired).toEqual(["write:self-assessment", "read:self-assessment"]);
   });
 
   it("self-employed-calculation carries the tax calculation page at no token cost with write scope, since triggering a calculation writes at HMRC", () => {
@@ -131,7 +131,24 @@ describe("productCatalogHelper", () => {
     expect(activity.tokenCost).toBe(0);
     expect(activity.paths).toEqual(["hmrc/itsa/taxCalculation.html"]);
     expect(bundlesForActivity(catalog, "self-employed-calculation")).toEqual(bundlesForActivity(catalog, "self-employed"));
-    expect(activity.hmrcScopesRequired).toEqual(["write:self-assessment", "read:self-assessment"]);
+    expect(activity.hmrcScopesRequired).toEqual([
+      "write:self-assessment",
+      "read:self-assessment",
+      "read:self-assessment-assist",
+      "write:self-assessment-assist",
+    ]);
+  });
+
+  it("self-employed, which carries the final declaration page, requests the Self Assessment Assist scopes", () => {
+    const catalog = parseCatalog(tomlText);
+    const activity = catalog.activities.find((a) => a.id === "self-employed");
+    expect(activity.paths).toContain("hmrc/itsa/finalDeclaration.html");
+    expect(activity.hmrcScopesRequired).toEqual([
+      "write:self-assessment",
+      "read:self-assessment",
+      "read:self-assessment-assist",
+      "write:self-assessment-assist",
+    ]);
   });
 
   it("self-employed-year-end-delete removes a loss claim or a tax liability adjustment at no token cost", () => {

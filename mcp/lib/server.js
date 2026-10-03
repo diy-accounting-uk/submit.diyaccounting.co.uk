@@ -298,7 +298,7 @@ export const TOOLS = {
       "A stored HMRC VAT receipt by its file name, over the deployed API. clientId, when given, narrows the fetch to " +
       "one of the practice's clients but does not change which receipt is read.",
     inputSchema: {
-      name: z.string().describe("The receipt file name, including .json"),
+      name: z.string().describe("The receipt file name, including .json (submit_vat_return answers receiptId without the suffix)"),
       clientId: z.string().optional().describe("A practice client's id, to check the receipt belongs to that client"),
     },
     handler: getVatReceipt,

@@ -99,6 +99,20 @@ describe("vat-period-choice", () => {
       expect(freeDates.hidden).toBe(true);
     });
 
+    it("reports the status and period key of the chosen obligation, and nothing for another period or an unbound select", () => {
+      expect(choice.chosenObligation(select)).toBeNull();
+      open = obligations;
+      bind();
+      choose("0");
+      expect(choice.chosenObligation(select)).toBe(obligations[0]);
+      expect(choice.chosenObligation(select).status).toBe("F");
+      choose("2");
+      expect(choice.chosenObligation(select)).toBe(obligations[2]);
+      expect(choice.chosenObligation(select).periodKey).toBe("18A2");
+      choose(choice.ANOTHER_PERIOD);
+      expect(choice.chosenObligation(select)).toBeNull();
+    });
+
     it("leaves the dates editable and unchanged when another period is chosen", () => {
       bind();
       choose(choice.ANOTHER_PERIOD);

@@ -12,7 +12,9 @@ import {
   loadFrcTaxonomyConcepts,
   MANDATORY_CONCEPT_KEYS,
   STATEMENT_KEYS,
+  DORMANT_STATEMENT_KEYS,
   CONCEPTS,
+  sharesIssuedFor,
 } from "@app/services/microEntityAccountsIxbrl.js";
 import { parseXmlDocument } from "@app/lib/xmlDom.js";
 
@@ -65,6 +67,18 @@ function dimensionNames(xhtml) {
   }
   return names;
 }
+
+const DORMANT_INPUT = {
+  ...SAMPLE_INPUT,
+  dormant: true,
+  dormantTradingStatus: "noLongerTrading",
+  shareClass: "ordinaryShares",
+  nominalValue: 0.5,
+  balanceSheet: {
+    current: { ...SAMPLE_INPUT.balanceSheet.prior, calledUpShareCapital: 100, profitAndLossAccount: 7900 },
+    prior: SAMPLE_INPUT.balanceSheet.prior,
+  },
+};
 
 describe("services/microEntityAccountsIxbrl", () => {
   describe("buildMicroEntityAccounts", () => {
@@ -201,6 +215,78 @@ describe("services/microEntityAccountsIxbrl", () => {
       );
       expect(profitAndLossFact.getAttribute("sign")).toBe("-");
       expect(profitAndLossFact.textContent).toBe("500");
+    });
+  });
+
+  describe("buildMicroEntityAccounts for a dormant company", () => {
+    const dormantXhtml = buildMicroEntityAccounts(DORMANT_INPUT);
+
+    test("parses as well-formed XML", () => {
+      expect(() => parseXmlDocument(dormantXhtml)).not.toThrow();
+    });
+
+    test("the section 480 statement is present and the section 477 statement is absent", () => {
+      const names = factNames(dormantXhtml);
+      expect(names).toContain(`direp:${CONCEPTS.statementAuditExemptionSection480.name}`);
+      expect(names).not.toContain(`direp:${CONCEPTS.statementAuditExemptionSection477.name}`);
+      expect(dormantXhtml).toContain("section 480 of the Companies Act 2006 relating to dormant companies");
+    });
+
+    test("keeps the members, directors' responsibilities and regime statements", () => {
+      const names = factNames(dormantXhtml);
+      for (const key of DORMANT_STATEMENT_KEYS.filter((key) => key !== "statementAuditExemptionSection480")) {
+        expect(names).toContain(`${CONCEPTS[key].prefix}:${CONCEPTS[key].name}`);
+      }
+    });
+
+    test("reports the dormant flag as true and the trading status at the chosen member", () => {
+      expect(dormantXhtml).toMatch(/name="bus:EntityDormantTruefalse"[^>]*>true</);
+      expect(dimensionNames(dormantXhtml)).toContainEqual({
+        dimension: "bus:EntityTradingStatusDimension",
+        member: "bus:EntityNoLongerTradingButTradedInPast",
+      });
+    });
+
+    test("a company that never traded reports the never-traded member", () => {
+      const xhtml = buildMicroEntityAccounts({ ...DORMANT_INPUT, dormantTradingStatus: "neverTraded" });
+      expect(dimensionNames(xhtml)).toContainEqual({ dimension: "bus:EntityTradingStatusDimension", member: "bus:EntityHasNeverTraded" });
+    });
+
+    test("the share note carries the number of shares and the nominal value against the share class", () => {
+      expect(dormantXhtml).toMatch(/name="core:NumberSharesIssuedFullyPaid"[^>]*unitRef="shares"[^>]*>200</);
+      expect(dormantXhtml).toMatch(/name="core:NominalValueAllottedShareCapital"[^>]*unitRef="GBP"[^>]*>0.5</);
+      expect(dimensionNames(dormantXhtml)).toContainEqual({
+        dimension: "bus:EntityShareClassesDimension",
+        member: "bus:OrdinaryShareClass1",
+      });
+      expect(dormantXhtml).toContain("200 ordinary shares of £0.5 each");
+    });
+
+    test("every concept it uses is in the FRS 102 taxonomy", () => {
+      const known = new Set(loadFrcTaxonomyConcepts());
+      for (const name of [...factNames(dormantXhtml), ...dimensionNames(dormantXhtml).flatMap((d) => [d.dimension, d.member])]) {
+        expect(known.has(name), `${name} is in the taxonomy`).toBe(true);
+      }
+    });
+
+    test("a company that is not dormant carries no section 480 statement, share note or trading status dimension", () => {
+      const xhtml = buildMicroEntityAccounts(SAMPLE_INPUT);
+      const names = factNames(xhtml);
+      expect(names).not.toContain(`direp:${CONCEPTS.statementAuditExemptionSection480.name}`);
+      expect(names).not.toContain("core:NumberSharesIssuedFullyPaid");
+      expect(dimensionNames(xhtml).map((d) => d.dimension)).not.toContain("bus:EntityTradingStatusDimension");
+    });
+  });
+
+  describe("sharesIssuedFor", () => {
+    test("divides the capital by the nominal value", () => {
+      expect(sharesIssuedFor(100, 0.01)).toBe(10000);
+      expect(sharesIssuedFor(100, 1)).toBe(100);
+    });
+
+    test("is null when the capital is not a whole number of shares or the nominal value is not positive", () => {
+      expect(sharesIssuedFor(100, 30)).toBeNull();
+      expect(sharesIssuedFor(100, 0)).toBeNull();
     });
   });
 

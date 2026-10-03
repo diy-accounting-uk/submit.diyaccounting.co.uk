@@ -1006,7 +1006,8 @@ jobs:
           echo "=== Phase 2: EdgeStack (depends on ApiStack outputs) ==="
           delete_stack_in_region "${DEPLOYMENT}-app-EdgeStack" us-east-1
 
-          echo "=== Phase 3: ApiStack (depends on Lambda stacks) ==="
+          echo "=== Phase 3: ApiRoutesStack, then ApiStack (depends on Lambda stacks) ==="
+          delete_stack_in_region "${DEPLOYMENT}-app-ApiRoutesStack" eu-west-2
           delete_stack_in_region "${DEPLOYMENT}-app-ApiStack" eu-west-2
 
           echo "=== Phase 4: Lambda stacks (no cross-dependencies) ==="

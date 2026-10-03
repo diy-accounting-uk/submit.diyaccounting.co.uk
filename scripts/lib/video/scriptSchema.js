@@ -36,6 +36,7 @@ const STEP_REQUIRED_FIELDS = {
   press: ["key"],
   tab: [],
   select: ["target", "value"],
+  dropFile: ["target", "file"],
   testScenario: ["value"],
   scroll: [],
   highlight: ["target"],
@@ -114,6 +115,10 @@ function validateStep(step, scenePath, sceneId, stepIndex, auth) {
   if (!(step.action in STEP_REQUIRED_FIELDS)) fail(path, `unknown action "${step.action}"`);
   requireKeys(step, STEP_REQUIRED_FIELDS[step.action], path);
   if ("target" in step) validateTarget(step.target, `${path}.target`);
+  if (step.action === "dropFile") {
+    if (typeof step.file !== "string" || step.file.length === 0) fail(`${path}.file`, "must be a non-empty repo-relative path");
+    if ("name" in step && (typeof step.name !== "string" || step.name.length === 0)) fail(`${path}.name`, "must be a non-empty string");
+  }
   if ("fastForward" in step && typeof step.fastForward !== "boolean") fail(`${path}.fastForward`, "must be a boolean");
   if (USER_ONLY_ACTIONS.has(step.action) && auth !== "user") {
     fail(path, `action "${step.action}" needs the script's auth to be "user", not "${auth}"`);

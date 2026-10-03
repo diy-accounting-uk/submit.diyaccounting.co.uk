@@ -4,7 +4,7 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <title>Tax Calculation - DIY Accounting Submit</title>
+    <title>Tax calculation - DIY Accounting Submit</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <link rel="icon" href="/favicon.ico" sizes="any" />
     <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
@@ -32,12 +32,12 @@
     <a href="#mainContent" class="skip-link">Skip to main content</a>
     <header>
       <p class="chrome-fallback"><a href="../../">DIY Accounting Submit</a></p>
-      <h1>Tax Calculation</h1>
+      <h1>Tax calculation</h1>
       <p class="subtitle">See what the tax year owes, based on what you've submitted so far</p>
     </header>
 
     <main id="mainContent">
-      <div id="syntheticIndicator" class="synthetic-indicator">⚠️ Synthetic mode - calls go to HMRC's sandbox API</div>
+      <div id="syntheticIndicator" class="synthetic-indicator">Synthetic mode - calls go to HMRC's sandbox API</div>
 
       <div id="statusMessagesContainer" role="alert" aria-live="polite"></div>
 
@@ -59,7 +59,6 @@
               name="nino"
               required
               value=""
-              placeholder="e.g., QQ 12 34 56 C"
               maxlength="13"
               spellcheck="false"
               autocapitalize="characters"
@@ -70,15 +69,7 @@
           <div class="form-group">
             <label for="taxYear">Tax year</label>
             <p id="taxYear-hint" class="hint">Enter in the format 2023-24, for example.</p>
-            <input
-              type="text"
-              id="taxYear"
-              name="taxYear"
-              required
-              placeholder="e.g., 2023-24"
-              maxlength="7"
-              aria-describedby="taxYear-hint"
-            />
+            <input type="text" id="taxYear" name="taxYear" required maxlength="7" aria-describedby="taxYear-hint" />
           </div>
 
           <div class="form-group">
@@ -125,18 +116,19 @@
         </div>
 
         <div id="calculationFigures" style="display: none">
-          <h3>Total Income Tax and National Insurance Due</h3>
+          <h3>Total Income Tax and National Insurance due</h3>
           <p id="totalIncomeTaxAndNicsDue" class="headline-figure"></p>
 
           <div id="taxBreakdown"></div>
 
-          <h3 id="allowancesAndDeductionsHeading">Allowances and Deductions</h3>
+          <h3 id="allowancesAndDeductionsHeading">Allowances and deductions</h3>
           <div id="allowancesAndDeductions"></div>
 
           <h3>Businesses</h3>
           <div id="businessProfitAndLossTable"></div>
 
           <p id="calculationIdDisplay" class="hint"></p>
+          <div id="hmrcAssistCheck"></div>
           <div id="continueToFinalDeclaration" class="button-group" style="display: none">
             <a
               href="finalDeclaration.html"
@@ -172,10 +164,33 @@
     <script src="../../widgets/auth-status.js"></script>
     <script src="../../widgets/status-messages.js"></script>
     <script src="../../widgets/pass-redeemer.js"></script>
+    <script src="../../widgets/hmrc-assist-messages.js"></script>
     <script src="../../lib/money-format.js"></script>
     <script src="../../lib/hmrc-field-table.js"></script>
     <script>
+      // The calculation on screen, which HMRC Assist reports on; null until one is displayed
+      let hmrcAssistDraft = null;
+      let hmrcAssist = null;
+
+      function describeHmrcAssistDraft() {
+        if (!hmrcAssistDraft) return { applicable: false, ready: false };
+        const { nino, taxYear, calculationId } = hmrcAssistDraft;
+        return {
+          applicable: true,
+          ready: true,
+          key: calculationId,
+          requestBody: { nino, taxYear, calculationId },
+          acknowledgeIdentity: { nino },
+        };
+      }
+
       function initializePage() {
+        hmrcAssist = window.hmrcAssistMessages.mount({
+          kind: "itsa",
+          container: document.getElementById("hmrcAssistCheck"),
+          describeDraft: describeHmrcAssistDraft,
+          unavailableText: "HMRC Assist feedback is unavailable at the moment. You can still continue to your final declaration.",
+        });
         const hmrcAccount = sessionStorage.getItem("hmrcAccount");
         if (hmrcAccount === "synthetic") {
           const syntheticIndicator = document.getElementById("syntheticIndicator");
@@ -218,6 +233,10 @@
           warnings: calculation?.messages?.warnings || [],
           errors: calculation?.messages?.errors || [],
         };
+
+        const calculationId = calculation?.metadata?.calculationId;
+        hmrcAssistDraft = calc && calculationId ? { nino, taxYear, calculationId } : null;
+        hmrcAssist.reset();
 
         if (calc) {
           figures.style.display = "block";

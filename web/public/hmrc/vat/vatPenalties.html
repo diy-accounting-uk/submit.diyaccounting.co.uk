@@ -4,7 +4,7 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <title>VAT Penalties - DIY Accounting Submit</title>
+    <title>VAT penalties - DIY Accounting Submit</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <link rel="icon" href="/favicon.ico" sizes="any" />
     <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
@@ -41,7 +41,7 @@
           <button type="button" id="toggleSearchCriteriaBtn" class="secondary-button" style="display: none">
             Show Penalties Search Criteria
           </button>
-          <button type="button" id="cancelRequestBtn" class="cancel-button" style="display: none">Cancel Request</button>
+          <button type="button" id="cancelRequestBtn" class="cancel-button" style="display: none">Cancel request</button>
         </div>
         <div id="searchCriteriaContainer">
           <h2>Retrieve VAT penalties</h2>
@@ -59,7 +59,6 @@
                 name="vrn"
                 required
                 value=""
-                placeholder="e.g., 983238295"
                 maxlength="9"
                 pattern="[0-9]{9}"
                 aria-describedby="vrn-hint"
@@ -88,11 +87,11 @@
                 <option value="LATE_SUBMISSION">Late Submission (single)</option>
                 <option value="LATE_PAYMENT">Late Payment (single)</option>
                 <option value="MULTIPLE_PENALTIES">Multiple Penalties (one of each)</option>
-                <option value="MULTIPLE_LATE_PAYMENT_PENALTIES">Multiple Late Payment Penalties</option>
-                <option value="MULTIPLE_LATE_SUBMISSION_PENALTIES">Multiple Late Submission Penalties</option>
-                <option value="MULTIPLE_INACTIVE_LATE_SUBMISSION_PENALTIES">Multiple Inactive Late Submission Penalties</option>
-                <option value="THRESHOLD_LATE_SUBMISSION_PENALTIES">Threshold Late Submission Penalties</option>
-                <option value="CHARGE_LATE_SUBMISSION_PENALTIES">Charge Late Submission Penalties</option>
+                <option value="MULTIPLE_LATE_PAYMENT_PENALTIES">Multiple Late payment penalties</option>
+                <option value="MULTIPLE_LATE_SUBMISSION_PENALTIES">Multiple Late submission penalties</option>
+                <option value="MULTIPLE_INACTIVE_LATE_SUBMISSION_PENALTIES">Multiple Inactive Late submission penalties</option>
+                <option value="THRESHOLD_LATE_SUBMISSION_PENALTIES">Threshold Late submission penalties</option>
+                <option value="CHARGE_LATE_SUBMISSION_PENALTIES">Charge Late submission penalties</option>
                 <option value="SUBMIT_API_HTTP_500">Submit API responds with 500</option>
                 <option value="SUBMIT_HMRC_API_HTTP_500">HMRC API responds with 500</option>
                 <option value="SUBMIT_HMRC_API_HTTP_503">HMRC API responds with 503</option>
@@ -106,7 +105,7 @@
               </div>
             </div>
 
-            <button type="submit" id="retrieveBtn" class="btn" data-activity-start="vat-penalties">Retrieve Penalties</button>
+            <button type="submit" id="retrieveBtn" class="btn" data-activity-start="vat-penalties">Retrieve penalties</button>
           </form>
         </div>
       </div>
@@ -118,7 +117,7 @@
         <div id="lateSubmissionPenaltiesTable"></div>
         <div id="latePaymentPenaltiesTable"></div>
         <div class="button-group">
-          <button type="button" id="newSearchBtn" class="secondary-button">New Search</button>
+          <button type="button" id="newSearchBtn" class="secondary-button">New search</button>
         </div>
       </div>
     </main>
@@ -499,12 +498,12 @@
           </table>
         `;
 
-        // Late Submission Penalties table
+        // Late submission penalties table
         if (lateSubmissionDetails.length === 0) {
           lateSubmissionContainer.innerHTML =
-            '<h4>Late Submission Penalties</h4><p class="no-data">No late submission penalties in the last 24 months.</p>';
+            '<h4>Late submission penalties</h4><p class="no-data">No late submission penalties in the last 24 months.</p>';
         } else {
-          let html = '<h4>Late Submission Penalties</h4><table class="results-table"><thead><tr>';
+          let html = '<h4>Late submission penalties</h4><table class="results-table"><thead><tr>';
           html += "<th>Category</th><th>Status</th><th>Created</th><th>Expires</th><th>Charge Amount</th>";
           html += "</tr></thead><tbody>";
           lateSubmissionDetails.forEach((detail) => {
@@ -520,12 +519,12 @@
           lateSubmissionContainer.innerHTML = html;
         }
 
-        // Late Payment Penalties table
+        // Late payment penalties table
         if (latePaymentDetails.length === 0) {
           latePaymentContainer.innerHTML =
-            '<h4>Late Payment Penalties</h4><p class="no-data">No late payment penalties in the last 24 months.</p>';
+            '<h4>Late payment penalties</h4><p class="no-data">No late payment penalties in the last 24 months.</p>';
         } else {
-          let html = '<h4>Late Payment Penalties</h4><table class="results-table"><thead><tr>';
+          let html = '<h4>Late payment penalties</h4><table class="results-table"><thead><tr>';
           html += "<th>Charge Reference</th><th>Category</th><th>Status</th><th>Period</th><th>Penalty Amount</th><th>Due Date</th>";
           html += "</tr></thead><tbody>";
           latePaymentDetails.forEach((detail) => {
@@ -553,7 +552,7 @@
 
       // Capitalize the first letter of a status/category string
       function capitalize(text) {
-        if (!text) return "-";
+        if (!text) return "—";
         return text.charAt(0).toUpperCase() + text.slice(1);
       }
 

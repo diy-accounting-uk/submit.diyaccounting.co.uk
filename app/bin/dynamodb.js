@@ -635,6 +635,22 @@ if (import.meta.url === `file://${process.argv[1]}`) {
     if (hmrcItsaFinalDeclarationPostAsyncRequestsTableName) {
       await ensureAsyncRequestsTableExists(hmrcItsaFinalDeclarationPostAsyncRequestsTableName, endpoint);
     }
+    const hmrcVatAssistReportPostAsyncRequestsTableName = process.env.HMRC_VAT_ASSIST_REPORT_POST_ASYNC_REQUESTS_TABLE_NAME;
+    if (hmrcVatAssistReportPostAsyncRequestsTableName) {
+      await ensureAsyncRequestsTableExists(hmrcVatAssistReportPostAsyncRequestsTableName, endpoint);
+    }
+    const hmrcVatAssistAcknowledgePostAsyncRequestsTableName = process.env.HMRC_VAT_ASSIST_ACKNOWLEDGE_POST_ASYNC_REQUESTS_TABLE_NAME;
+    if (hmrcVatAssistAcknowledgePostAsyncRequestsTableName) {
+      await ensureAsyncRequestsTableExists(hmrcVatAssistAcknowledgePostAsyncRequestsTableName, endpoint);
+    }
+    const hmrcItsaAssistReportPostAsyncRequestsTableName = process.env.HMRC_ITSA_ASSIST_REPORT_POST_ASYNC_REQUESTS_TABLE_NAME;
+    if (hmrcItsaAssistReportPostAsyncRequestsTableName) {
+      await ensureAsyncRequestsTableExists(hmrcItsaAssistReportPostAsyncRequestsTableName, endpoint);
+    }
+    const hmrcItsaAssistAcknowledgePostAsyncRequestsTableName = process.env.HMRC_ITSA_ASSIST_ACKNOWLEDGE_POST_ASYNC_REQUESTS_TABLE_NAME;
+    if (hmrcItsaAssistAcknowledgePostAsyncRequestsTableName) {
+      await ensureAsyncRequestsTableExists(hmrcItsaAssistAcknowledgePostAsyncRequestsTableName, endpoint);
+    }
     const companiesHouseAccountsAsyncRequestsTableName = process.env.COMPANIES_HOUSE_ACCOUNTS_ASYNC_REQUESTS_TABLE_NAME;
     if (companiesHouseAccountsAsyncRequestsTableName) {
       await ensureAsyncRequestsTableExists(companiesHouseAccountsAsyncRequestsTableName, endpoint);

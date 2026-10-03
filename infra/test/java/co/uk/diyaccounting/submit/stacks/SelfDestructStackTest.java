@@ -80,6 +80,7 @@ class SelfDestructStackTest {
         assertEquals("ci-selfdestructtest-app-OpsStack", variables.get("OPS_STACK_NAME"));
         assertEquals("ci-selfdestructtest-app-PublishStack", variables.get("PUBLISH_STACK_NAME"));
         assertEquals("ci-selfdestructtest-app-EdgeStack", variables.get("EDGE_STACK_NAME"));
+        assertEquals("ci-selfdestructtest-app-ApiRoutesStack", variables.get("API_ROUTES_STACK_NAME"));
         assertEquals("ci-selfdestructtest-app-ApiStack", variables.get("API_STACK_NAME"));
         assertEquals("ci-selfdestructtest-app-AuthStack", variables.get("AUTH_STACK_NAME"));
         assertEquals("ci-selfdestructtest-app-HmrcStack", variables.get("HMRC_STACK_NAME"));

@@ -51,7 +51,8 @@
  *                                  restore checkpoint id (default "../itsa-sandbox/<tax-year>/" relative
  *                                  to workspace root, outside the repository)
  *   ITSA_SANDBOX_SCOPE             OAuth scope to request (default
- *                                  "read:self-assessment write:self-assessment")
+ *                                  "read:self-assessment write:self-assessment
+ *                                  read:self-assessment-assist write:self-assessment-assist")
  *   ITSA_SANDBOX_HEADFUL           set to "true" to watch the browser
  *   ITSA_SANDBOX_COGNITO_PASSWORD  current password of the durable Cognito test lane's user
  *                                  this script signs in as to build a real
@@ -97,6 +98,8 @@ import { buildBsasAdjustRequestBody } from "../app/functions/hmrc/hmrcItsaBsasSe
 import { buildBsasUkPropertyAdjustRequestBody } from "../app/functions/hmrc/hmrcItsaBsasUkPropertyAdjustPost.js";
 import { buildLossesAndClaimsRequestBody, LossesAndClaimsValidationError } from "../app/functions/hmrc/hmrcItsaLossesAndClaimsPut.js";
 import { buildTaxLiabilityAdjustmentsRequestBody } from "../app/functions/hmrc/hmrcItsaTaxLiabilityAdjustmentsPut.js";
+import { itsaAssist } from "../app/lib/hmrcAssistApi.js";
+import { ITSA_NO_MESSAGES_CALCULATION_ID, ITSA_NOT_FOUND_CALCULATION_ID } from "../app/http-simulator/scenarios/assist.js";
 
 // Individual Calculations 8.0: recommended minimum wait between the trigger's 202 and the
 // first retrieve attempt, and how many times to retry while HMRC still answers 404.
@@ -616,7 +619,8 @@ async function main() {
   if (!/^\d{4}-\d{2}$/.test(taxYear)) {
     throw new Error(`ITSA_SANDBOX_TAX_YEAR must look like "2023-24", got "${taxYear}"`);
   }
-  const scope = process.env.ITSA_SANDBOX_SCOPE || "read:self-assessment write:self-assessment";
+  const scope =
+    process.env.ITSA_SANDBOX_SCOPE || "read:self-assessment write:self-assessment read:self-assessment-assist write:self-assessment-assist";
   const cognitoPassword = requireEnv("ITSA_SANDBOX_COGNITO_PASSWORD");
   const cognitoEnvironment = process.env.ITSA_SANDBOX_COGNITO_ENVIRONMENT || "ci";
   const cognitoLane = process.env.ITSA_SANDBOX_COGNITO_LANE || "local";
@@ -1193,6 +1197,49 @@ async function main() {
   // miss here is recorded and warned about, not treated as a script failure.
   const businessIncomeSources = calculation.inputs?.incomeSources?.businessIncomeSources;
   record("calculation-retrieve-income-sources", { businessIncomeSources });
+
+  // Phase 8b: Self Assessment Assist. A report for this run's calculation, the sandbox's fixed
+  // no-messages id (204) and its fixed not-found id (404), then the acknowledgement of the first
+  // report when HMRC returned one. The calculation's own report is a 200 with placeholder
+  // messages for any valid id; the two fixed ids are the sandbox's documented scenarios.
+  const assistReport = await callHmrc({
+    step: "assist-report",
+    method: "POST",
+    url: itsaAssist.reportUrl(sandboxBase, { nino, taxYear, calculationId: finalCalculationId }),
+    headers: hmrcHeaders("1.0"),
+    okStatuses: [200, 204],
+    nino,
+  });
+  await callHmrc({
+    step: "assist-report-no-messages",
+    method: "POST",
+    url: itsaAssist.reportUrl(sandboxBase, { nino, taxYear, calculationId: ITSA_NO_MESSAGES_CALCULATION_ID }),
+    headers: hmrcHeaders("1.0"),
+    okStatuses: [204],
+    nino,
+  });
+  await callHmrc({
+    step: "assist-report-not-found",
+    method: "POST",
+    url: itsaAssist.reportUrl(sandboxBase, { nino, taxYear, calculationId: ITSA_NOT_FOUND_CALCULATION_ID }),
+    headers: hmrcHeaders("1.0"),
+    okStatuses: [404],
+    nino,
+  });
+  if (assistReport.status === 200) {
+    await callHmrc({
+      step: "assist-acknowledge",
+      method: "POST",
+      url: itsaAssist.acknowledgeUrl(sandboxBase, {
+        nino,
+        reportId: assistReport.body.reportId,
+        correlationId: assistReport.body.correlationId,
+      }),
+      headers: hmrcHeaders("1.0"),
+      okStatuses: [204],
+      nino,
+    });
+  }
 
   // Phase 9: the final declaration - the proof this script exists to produce.
   await callHmrc({

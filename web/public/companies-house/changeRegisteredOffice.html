@@ -4,7 +4,7 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <title>Change Registered Office Address - DIY Accounting Submit</title>
+    <title>Change registered office address - DIY Accounting Submit</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <link rel="icon" href="/favicon.ico" sizes="any" />
     <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
@@ -49,7 +49,6 @@
               name="companyNumber"
               required
               value=""
-              placeholder="e.g., 00000001"
               aria-describedby="companyNumber-hint"
               spellcheck="false"
             />
@@ -71,7 +70,8 @@
           <h3>New address</h3>
           <div class="form-group">
             <label for="premises">Premises</label>
-            <input type="text" id="premises" name="premises" required value="" placeholder="e.g., 13 or The Old Rectory" />
+            <p id="premises-hint" class="hint">The building number or name, for example 13 or The Old Rectory.</p>
+            <input type="text" id="premises" name="premises" required value="" aria-describedby="premises-hint" />
           </div>
           <div class="form-group">
             <label for="addressLine1">Address line 1</label>

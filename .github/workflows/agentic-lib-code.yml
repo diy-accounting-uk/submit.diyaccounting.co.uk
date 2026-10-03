@@ -354,11 +354,21 @@ jobs:
             rm -f "${straypatch}"
           done
 
+      - name: Generate a token for diya-agent
+        if: always() && steps.run.outcome != 'skipped'
+        id: app-token
+        uses: actions/create-github-app-token@fee1f7d63c2ff003460e3d139729b119787bc349 # v2.2.2
+        with:
+          app-id: ${{ vars.AGENT_APP_ID }}
+          private-key: ${{ secrets.AGENT_APP_PRIVATE_KEY }}
+
+      # Commits through the GitHub API as the app, so GitHub signs the commit and
+      # verify-commit-signatures.yml sees a verified one.
       - name: Prepare a complete run's branch and pull request body
         if: always() && steps.run.outcome != 'skipped'
         id: prepare-pr
         env:
-          GH_TOKEN: ${{ secrets.AGENT_TOKEN }}
+          GH_TOKEN: ${{ steps.app-token.outputs.token }}
         run: |
           set -euo pipefail
           if [ ! -s "${OUT_DIR}/CHANGES.md" ] || ! grep -qxF -- '- **Status**: complete' "${OUT_DIR}/CHANGES.md"; then
@@ -378,19 +388,17 @@ jobs:
 
           git checkout -b "${BRANCH}"
 
-          # The agent commits its own work; this only covers the case where it edited files and
-          # forgot to. A commit made here has no narrative to draw on beyond the PR title.
-          if ! git diff --quiet || ! git diff --cached --quiet; then
-            git add -A
-            git commit -m "$(head -1 "${OUT_DIR}/PR.md" | sed 's/^# *//')"
-          fi
-
-          if [ "$(git rev-parse HEAD)" = "${{ steps.before.outputs.sha }}" ]; then
+          git add -A
+          if git diff --cached --quiet "${{ steps.before.outputs.sha }}"; then
             echo "::error::Status is complete but nothing was committed or changed"
             exit 1
           fi
 
-          git push origin "${BRANCH}"
+          # One API commit carries everything the agent committed or left edited since the
+          # starting point; its message is the PR title.
+          head -1 "${OUT_DIR}/PR.md" | sed 's/^# *//' > "${OUT_DIR}/commit-message.txt"
+          scripts/github-api-commit.sh --repo "${{ github.repository }}" --branch "${BRANCH}" \
+            --base-sha "${{ steps.before.outputs.sha }}" --message-file "${OUT_DIR}/commit-message.txt"
 
           head -1 "${OUT_DIR}/PR.md" | sed 's/^# *//' > "${OUT_DIR}/pr-title.txt"
           tail -n +2 "${OUT_DIR}/PR.md" > "${OUT_DIR}/pr-body.md"

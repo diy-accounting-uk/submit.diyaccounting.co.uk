@@ -534,7 +534,7 @@ export async function verifyVatSubmission(page, testScenario = null, screenshotP
 
       // Check for the success message
       const successHeader = receiptDisplay.locator("h3");
-      await expect(successHeader).toContainText("VAT Return Submitted Successfully");
+      await expect(successHeader).toContainText("VAT return submitted successfully");
       await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-02-verify-vat-submitted.png` });
 
       // Verify receipt details are populated with correct HMRC formats
@@ -806,7 +806,7 @@ export async function verifyVatObligationsResults(page, obligationsQuery, screen
 
     // Validate date formats
     const isValidDateString = (dateStr) => {
-      if (!dateStr || dateStr === "-") return true; // Allow empty or placeholder
+      if (!dateStr || dateStr === "-" || dateStr === "—") return true; // Allow empty or placeholder
       // Try parsing various formats
       const parsed = new Date(dateStr);
       if (!isNaN(parsed.getTime())) return true;
@@ -868,11 +868,11 @@ export async function verifyVatObligationsResults(page, obligationsQuery, screen
     // - Action button should reflect status (now at column index 4)
     for (const r of rows) {
       if (r.statusCode === "F") {
-        await expect(rowLocator.nth(rows.indexOf(r)).locator("td").nth(4).getByRole("button")).toHaveText(/View Return/);
-        expect(r.actionText).toContain("View Return");
+        await expect(rowLocator.nth(rows.indexOf(r)).locator("td").nth(4).getByRole("button")).toHaveText(/View return/);
+        expect(r.actionText).toContain("View return");
       } else if (r.statusCode === "O") {
-        await expect(rowLocator.nth(rows.indexOf(r)).locator("td").nth(4).getByRole("button")).toHaveText(/Submit Return/);
-        expect(r.actionText).toContain("Submit Return");
+        await expect(rowLocator.nth(rows.indexOf(r)).locator("td").nth(4).getByRole("button")).toHaveText(/Submit return/);
+        expect(r.actionText).toContain("Submit return");
       }
     }
 
@@ -1839,22 +1839,22 @@ export async function verifyViewVatReturnResults(page, testScenario = null, scre
 /* Obligation Action Button Steps */
 
 /**
- * Click the first "Submit Return" button in the obligations results table.
+ * Click the first "Submit return" button in the obligations results table.
  * Navigates to submitVat.html with pre-populated URL params from the obligation.
  * @returns {{ navigated: boolean, vrn?: string, periodStart?: string, periodEnd?: string }}
  */
 export async function clickObligationSubmitReturn(page, screenshotPath = defaultScreenshotPath) {
-  return await test.step("The user clicks 'Submit Return' on an open obligation", async () => {
-    const submitReturnBtn = page.locator('#obligationsTable button:has-text("Submit Return")').first();
+  return await test.step("The user clicks 'Submit return' on an open obligation", async () => {
+    const submitReturnBtn = page.locator('#obligationsTable button:has-text("Submit return")').first();
     const isVisible = await submitReturnBtn.isVisible({ timeout: 3000 }).catch(() => false);
 
     if (!isVisible) {
-      console.log("[clickObligationSubmitReturn] No 'Submit Return' button found in obligations table");
+      console.log("[clickObligationSubmitReturn] No 'Submit return' button found in obligations table");
       await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-01-no-submit-return-btn.png` });
       return { navigated: false };
     }
 
-    console.log("[clickObligationSubmitReturn] Found 'Submit Return' button, clicking...");
+    console.log("[clickObligationSubmitReturn] Found 'Submit return' button, clicking...");
     await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-01-submit-return-btn-found.png` });
 
     await Promise.all([page.waitForURL(/submitVat\.html/, { timeout: 15000 }), submitReturnBtn.click()]);
@@ -1888,22 +1888,22 @@ export async function clickObligationSubmitReturn(page, screenshotPath = default
 }
 
 /**
- * Click the first "View Return" button in the obligations results table.
+ * Click the first "View return" button in the obligations results table.
  * Navigates to viewVatReturn.html with pre-populated URL params from the obligation.
  * @returns {{ navigated: boolean, vrn?: string, periodStart?: string, periodEnd?: string }}
  */
 export async function clickObligationViewReturn(page, screenshotPath = defaultScreenshotPath) {
-  return await test.step("The user clicks 'View Return' on a fulfilled obligation", async () => {
-    const viewReturnBtn = page.locator('#obligationsTable button:has-text("View Return")').first();
+  return await test.step("The user clicks 'View return' on a fulfilled obligation", async () => {
+    const viewReturnBtn = page.locator('#obligationsTable button:has-text("View return")').first();
     const isVisible = await viewReturnBtn.isVisible({ timeout: 3000 }).catch(() => false);
 
     if (!isVisible) {
-      console.log("[clickObligationViewReturn] No 'View Return' button found in obligations table");
+      console.log("[clickObligationViewReturn] No 'View return' button found in obligations table");
       await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-01-no-view-return-btn.png` });
       return { navigated: false };
     }
 
-    console.log("[clickObligationViewReturn] Found 'View Return' button, clicking...");
+    console.log("[clickObligationViewReturn] Found 'View return' button, clicking...");
     await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-01-view-return-btn-found.png` });
 
     await Promise.all([page.waitForURL(/viewVatReturn\.html/, { timeout: 15000 }), viewReturnBtn.click()]);

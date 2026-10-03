@@ -4,7 +4,7 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <title>View a UK Property Period Summary - DIY Accounting Submit</title>
+    <title>View a UK property period summary - DIY Accounting Submit</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <link rel="icon" href="/favicon.ico" sizes="any" />
     <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
@@ -25,12 +25,12 @@
     <a href="#mainContent" class="skip-link">Skip to main content</a>
     <header>
       <p class="chrome-fallback"><a href="../../">DIY Accounting Submit</a></p>
-      <h1>View a UK Property Period Summary</h1>
+      <h1>View a UK property period summary</h1>
       <p class="subtitle">Retrieve one filed quarterly update by tax year and submission ID</p>
     </header>
 
     <main id="mainContent">
-      <div id="syntheticIndicator" class="synthetic-indicator">⚠️ Synthetic mode - calls go to HMRC's sandbox API</div>
+      <div id="syntheticIndicator" class="synthetic-indicator">Synthetic mode - calls go to HMRC's sandbox API</div>
 
       <div id="statusMessagesContainer" role="alert" aria-live="polite"></div>
 
@@ -43,7 +43,7 @@
           <button type="button" id="cancelRequestBtn" class="cancel-button" style="display: none">Cancel request</button>
         </div>
         <div id="searchCriteriaContainer">
-          <h2>Retrieve a Period Summary</h2>
+          <h2>Retrieve a period summary</h2>
           <form id="itsaUkPropertyPeriodViewForm" novalidate>
             <div class="form-group">
               <label for="nino">National Insurance number</label>
@@ -57,7 +57,6 @@
                 name="nino"
                 required
                 value=""
-                placeholder="e.g., QQ 12 34 56 C"
                 maxlength="13"
                 spellcheck="false"
                 autocapitalize="characters"
@@ -68,28 +67,13 @@
             <div class="form-group">
               <label for="businessId">Business ID</label>
               <p id="businessId-hint" class="hint">The business ID from Business Details, for example XAIS12345678910.</p>
-              <input
-                type="text"
-                id="businessId"
-                name="businessId"
-                required
-                placeholder="e.g., XAIS12345678910"
-                aria-describedby="businessId-hint"
-              />
+              <input type="text" id="businessId" name="businessId" required aria-describedby="businessId-hint" />
             </div>
 
             <div class="form-group">
               <label for="taxYear">Tax year</label>
               <p id="taxYear-hint" class="hint">Enter in the format 2023-24, for example.</p>
-              <input
-                type="text"
-                id="taxYear"
-                name="taxYear"
-                required
-                placeholder="e.g., 2023-24"
-                maxlength="7"
-                aria-describedby="taxYear-hint"
-              />
+              <input type="text" id="taxYear" name="taxYear" required maxlength="7" aria-describedby="taxYear-hint" />
             </div>
 
             <p id="cumulativeViewNote" class="hint" style="display: none">
@@ -99,7 +83,7 @@
 
             <div id="submissionIdGroup" class="form-group">
               <label for="submissionId">Submission ID</label>
-              <p id="submissionId-hint" class="hint">From the Period Summaries list.</p>
+              <p id="submissionId-hint" class="hint">From the period summaries list.</p>
               <input type="text" id="submissionId" name="submissionId" required aria-describedby="submissionId-hint" />
             </div>
 
@@ -135,7 +119,7 @@
 
       <!-- Results Display -->
       <div id="periodViewResults" class="results-container" style="display: none">
-        <h3>Period Summary</h3>
+        <h3>Period summary</h3>
         <div id="periodDetails"></div>
         <div class="button-group">
           <button type="button" id="newSearchBtn" class="secondary-button">New search</button>

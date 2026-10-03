@@ -233,6 +233,7 @@ describe("functions/infra/selfDestruct", () => {
       OPS_STACK_NAME: "ops",
       PUBLISH_STACK_NAME: "publish",
       EDGE_STACK_NAME: "edge",
+      API_ROUTES_STACK_NAME: "api-routes",
       API_STACK_NAME: "api",
       AUTH_STACK_NAME: "auth",
       HMRC_STACK_NAME: "hmrc",
@@ -677,6 +678,7 @@ describe("functions/infra/selfDestruct", () => {
       "ops",
       "publish",
       "edge",
+      "api-routes",
       "auth",
       "hmrc",
       "hmrc-itsa",
@@ -686,6 +688,8 @@ describe("functions/infra/selfDestruct", () => {
       "account",
       "self-destruct",
     ]);
+    // ApiRoutesStack imports ApiStack's API id, so the deletion loop reaches it first.
+    expect(describedStackNames.lastIndexOf("api-routes")).toBeLessThan(describedStackNames.lastIndexOf("api"));
   });
 
   it("calls the silencer before any CloudFormation call, and still deletes stacks when the silencer rejects", async () => {
@@ -712,6 +716,7 @@ describe("functions/infra/selfDestruct", () => {
       "ops",
       "publish",
       "edge",
+      "api-routes",
       "auth",
       "hmrc",
       "hmrc-itsa",
@@ -757,16 +762,16 @@ describe("functions/infra/selfDestruct", () => {
     delete process.env.EDGE_ORIGIN_BUCKET;
   });
 
-  it("still errors on a bucket-emptying failure that is neither a missing bucket nor a region redirect", async () => {
+  it("warns on a bucket-emptying failure that is neither a missing bucket nor a region redirect", async () => {
     process.env.EDGE_ORIGIN_BUCKET = "ci-branch-origin-bucket";
     listObjectsV2Error = Object.assign(new Error("Access Denied"), { name: "AccessDenied" });
-    const errorSpy = vi.spyOn(console, "error");
+    const warnSpy = vi.spyOn(console, "warn");
 
     const { ingestHandler } = await import("@app/functions/infra/selfDestruct.js");
     const res = await ingestHandler(makeEvent(), { getRemainingTimeInMillis: () => 900000 });
 
     expect(res.statusCode).toBe(200);
-    expect(errorSpy).toHaveBeenCalledWith(expect.stringContaining("Error retrieving bucket contents for bucket ci-branch-origin-bucket"));
+    expect(warnSpy).toHaveBeenCalledWith(expect.stringContaining("Could not retrieve bucket contents for bucket ci-branch-origin-bucket"));
 
     delete process.env.EDGE_ORIGIN_BUCKET;
   });

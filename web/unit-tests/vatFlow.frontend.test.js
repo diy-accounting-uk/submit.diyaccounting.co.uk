@@ -108,6 +108,10 @@ describe("VAT Flow Frontend JavaScript", () => {
     const loadingSpinnerJsContent = fs.readFileSync(path.join(process.cwd(), "web/public/widgets/loading-spinner.js"), "utf-8");
     eval(loadingSpinnerJsContent);
 
+    // Load and execute the period choice and the HMRC Assist check the page mounts
+    eval(fs.readFileSync(path.join(process.cwd(), "web/public/lib/vat-period-choice.js"), "utf-8"));
+    eval(fs.readFileSync(path.join(process.cwd(), "web/public/widgets/hmrc-assist-messages.js"), "utf-8"));
+
     // Set up global references so inline scripts can find functions
     // These use getters so that when tests replace window.X, the global.X reflects the change
     Object.defineProperty(global, "showStatus", {

@@ -5,7 +5,7 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <title>Submit VAT Return - DIY Accounting</title>
+    <title>Submit VAT return - DIY Accounting</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <link rel="icon" href="/favicon.ico" sizes="any" />
     <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
@@ -41,8 +41,8 @@
 
       <!-- VAT Submission Form -->
       <div class="form-toggle-buttons">
-        <button type="button" id="toggleFormBtn" class="secondary-button" style="display: none">Show Submission Form</button>
-        <button type="button" id="cancelRequestBtn" class="cancel-button" style="display: none">Cancel Request</button>
+        <button type="button" id="toggleFormBtn" class="secondary-button" style="display: none">Show submission form</button>
+        <button type="button" id="cancelRequestBtn" class="cancel-button" style="display: none">Cancel request</button>
       </div>
       <div id="vatForm" class="form-container">
         <h2>VAT return submission</h2>
@@ -95,7 +95,7 @@
 
           <!-- 9-Box VAT Return Entry -->
           <fieldset class="vat-boxes">
-            <legend>VAT Return Details</legend>
+            <legend>VAT return details</legend>
 
             <!-- Box 1: VAT due on sales -->
             <div class="form-group">
@@ -342,14 +342,16 @@
             </div>
           </div>
 
+          <div id="hmrcAssistCheck"></div>
+
           <p id="tokenCostInfo" class="hint" style="margin-top: 0.5em; display: none"></p>
-          <button type="submit" class="btn" id="submitBtn" data-activity-start="submit-vat">Submit VAT Return</button>
+          <button type="submit" class="btn" id="submitBtn" data-activity-start="submit-vat">Submit VAT return</button>
         </form>
       </div>
 
       <!-- Receipt Display -->
       <div id="receiptDisplay" class="receipt" style="display: none">
-        <h3>✅ VAT Return Submitted Successfully!</h3>
+        <h3>✅ VAT return submitted successfully</h3>
         <div class="receipt-details">
           <div class="receipt-item">
             <span><strong>Processing Date:</strong></span>
@@ -382,6 +384,7 @@
     <script src="../../lib/toml-parser.js"></script>
     <script src="../../lib/hmrc-scope-check.js"></script>
     <script src="../../lib/vat-period-choice.js"></script>
+    <script src="../../widgets/hmrc-assist-messages.js"></script>
     <script src="../../widgets/entitlement-status.js"></script>
     <script src="../../widgets/auth-status.js"></script>
     <script src="../../widgets/status-messages.js"></script>
@@ -416,10 +419,13 @@
       const VAT_WHOLE_MIN = -9999999999999;
       const VAT_WHOLE_MAX = 9999999999999;
 
+      // While true, validation answers without touching the field error messages
+      let validationQuiet = false;
+
       // Show field-level error message
       function showFieldError(fieldId, message) {
         const field = document.getElementById(fieldId);
-        if (!field) return;
+        if (!field || validationQuiet) return;
 
         // Remove existing error
         clearFieldError(fieldId);
@@ -449,7 +455,7 @@
       // Clear field-level error message
       function clearFieldError(fieldId) {
         const field = document.getElementById(fieldId);
-        if (!field) return;
+        if (!field || validationQuiet) return;
 
         field.classList.remove("input--error");
         field.removeAttribute("aria-invalid");
@@ -587,6 +593,15 @@
           ) && isValid;
 
         return isValid;
+      }
+
+      function boxesAreValid() {
+        validationQuiet = true;
+        try {
+          return validateAll9BoxFields();
+        } finally {
+          validationQuiet = false;
+        }
       }
 
       // Collect 9-box VAT data from form
@@ -910,6 +925,34 @@
       // when the page loads with a token in place and when the VRN is entered; without a token the form
       // offers a connect button and keeps the free date inputs.
       let obligationsLoadedForVrn = null;
+      let hmrcAssist = null;
+
+      const HMRC_ASSIST_BOX_IDS = [
+        "vatDueSales",
+        "vatDueAcquisitions",
+        "totalVatDue",
+        "vatReclaimedCurrPeriod",
+        "netVatDue",
+        "totalValueSalesExVAT",
+        "totalValuePurchasesExVAT",
+        "totalValueGoodsSuppliedExVAT",
+        "totalAcquisitionsExVAT",
+      ];
+
+      function describeHmrcAssistDraft() {
+        const vrn = document.getElementById("vatNumber").value.trim();
+        const obligation = window.vatPeriodChoice.chosenObligation(document.getElementById("obligationChoice"));
+        if (!obligation || obligation.status !== "O") return { applicable: false, ready: false };
+        const boxes = collect9BoxData();
+        delete boxes.finalised;
+        return {
+          applicable: true,
+          ready: /^\d{9}$/.test(vrn) && boxesAreValid(),
+          key: `${vrn}:${obligation.periodKey}`,
+          requestBody: { vrn, periodKey: obligation.periodKey, ...boxes },
+          acknowledgeIdentity: { vrn },
+        };
+      }
 
       function showObligationStatus(message) {
         document.getElementById("obligationStatus").textContent = message;
@@ -969,6 +1012,7 @@
             open,
           );
           showObligationStatus("");
+          hmrcAssist?.refresh();
         } catch (error) {
           console.warn("Could not read open obligations:", error);
           obligationsLoadedForVrn = null;
@@ -1206,6 +1250,29 @@
         if (totalAcquisitionsInput) {
           totalAcquisitionsInput.addEventListener("blur", function () {
             validateVatWholeAmount(this.value, "totalAcquisitionsExVAT", "total acquisitions from EU");
+          });
+        }
+
+        const hmrcAssistActivity =
+          window.hmrcScopeCheck && window.fetchCurrentEnvironmentName && window.isActivityListedInEnvironment
+            ? await window.hmrcScopeCheck.getActivityById("vat-assist-check")
+            : null;
+        const hmrcAssistEnvironmentName = hmrcAssistActivity ? await window.fetchCurrentEnvironmentName() : null;
+        if (hmrcAssistActivity && window.isActivityListedInEnvironment(hmrcAssistActivity, hmrcAssistEnvironmentName)) {
+          hmrcAssist = window.hmrcAssistMessages.mount({
+            kind: "vat",
+            container: document.getElementById("hmrcAssistCheck"),
+            describeDraft: describeHmrcAssistDraft,
+            watch: [
+              "vatNumber",
+              "obligationChoice",
+              "periodStart",
+              "periodEnd",
+              ...HMRC_ASSIST_BOX_IDS.filter((id) => id !== "totalVatDue" && id !== "netVatDue"),
+            ].map((id) => document.getElementById(id)),
+            submitButton: document.getElementById("submitBtn"),
+            highlightIds: HMRC_ASSIST_BOX_IDS,
+            unavailableText: "HMRC Assist feedback is unavailable at the moment. You can still submit your return.",
           });
         }
 

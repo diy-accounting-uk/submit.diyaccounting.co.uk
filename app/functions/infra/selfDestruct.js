@@ -341,6 +341,7 @@ export async function ingestHandler(event, context) {
     addStackNameIfPresent(stacksToDelete, process.env.OPS_STACK_NAME);
     addStackNameIfPresent(stacksToDelete, process.env.PUBLISH_STACK_NAME);
     addStackNameIfPresent(stacksToDelete, process.env.EDGE_STACK_NAME);
+    addStackNameIfPresent(stacksToDelete, process.env.API_ROUTES_STACK_NAME);
     addStackNameIfPresent(stacksToDelete, process.env.API_STACK_NAME);
     addStackNameIfPresent(stacksToDelete, process.env.AUTH_STACK_NAME);
     addStackNameIfPresent(stacksToDelete, process.env.HMRC_STACK_NAME);
@@ -687,8 +688,8 @@ async function emptyBucket(bucketName) {
         // the wrong-region client with PermanentRedirect rather than NoSuchBucket.
         console.warn(`Bucket ${bucketName} not addressable in the resolved region yet: ${error.message}`);
       } else {
-        console.error(`Error retrieving bucket contents for bucket ${bucketName}: ${error.message}`);
-        console.log(`Error retrieving bucket contents for bucket ${bucketName}: stack trace: ${error.stack}`);
+        console.warn(`Could not retrieve bucket contents for bucket ${bucketName}: ${error.message}`);
+        console.log(`Could not retrieve bucket contents for bucket ${bucketName}: stack trace: ${error.stack}`);
       }
       continuationToken = undefined;
     }

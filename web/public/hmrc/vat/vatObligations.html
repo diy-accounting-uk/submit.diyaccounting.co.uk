@@ -4,7 +4,7 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <title>VAT Obligations - DIY Accounting Submit</title>
+    <title>VAT obligations - DIY Accounting Submit</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <link rel="icon" href="/favicon.ico" sizes="any" />
     <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
@@ -41,12 +41,12 @@
       <div id="obligationsForm" class="form-container">
         <div class="form-toggle-buttons">
           <button type="button" id="toggleSearchCriteriaBtn" class="secondary-button" style="display: none">
-            Show Obligation Search Criteria
+            Show obligation search criteria
           </button>
-          <button type="button" id="cancelRequestBtn" class="cancel-button" style="display: none">Cancel Request</button>
+          <button type="button" id="cancelRequestBtn" class="cancel-button" style="display: none">Cancel request</button>
         </div>
         <div id="searchCriteriaContainer">
-          <h2>Retrieve VAT Obligations</h2>
+          <h2>Retrieve VAT obligations</h2>
           <form id="vatObligationsForm">
             <div class="form-group">
               <label for="vrn">VAT registration number</label>
@@ -60,7 +60,6 @@
                 name="vrn"
                 required
                 value=""
-                placeholder="e.g., 983238295"
                 maxlength="9"
                 pattern="[0-9]{9}"
                 aria-describedby="vrn-hint"
@@ -157,17 +156,17 @@
               </div>
             </div>
 
-            <button type="submit" id="retrieveBtn" class="btn" data-activity-start="vat-obligations">Retrieve Obligations</button>
+            <button type="submit" id="retrieveBtn" class="btn" data-activity-start="vat-obligations">Retrieve obligations</button>
           </form>
         </div>
       </div>
 
       <!-- Results Display -->
       <div id="obligationsResults" class="results-container" style="display: none">
-        <h3>VAT Obligations</h3>
+        <h3>VAT obligations</h3>
         <div id="obligationsTable"></div>
         <div class="button-group">
-          <button type="button" id="newSearchBtn" class="secondary-button">New Search</button>
+          <button type="button" id="newSearchBtn" class="secondary-button">New search</button>
         </div>
       </div>
     </main>
@@ -577,8 +576,8 @@
               <td>
                 ${
                   obligation.status === "F"
-                    ? `<button class="action-button btn" onclick="viewReturn('${escapedVrn}', '${escapedPeriodKey}', '${escapedPeriodStart}', '${escapedPeriodEnd}')">View Return</button>`
-                    : `<button class="action-button btn" onclick="submitReturn('${escapedVrn}', '${escapedPeriodKey}', '${escapedPeriodStart}', '${escapedPeriodEnd}')">Submit Return</button>`
+                    ? `<button class="action-button btn" onclick="viewReturn('${escapedVrn}', '${escapedPeriodKey}', '${escapedPeriodStart}', '${escapedPeriodEnd}')">View return</button>`
+                    : `<button class="action-button btn" onclick="submitReturn('${escapedVrn}', '${escapedPeriodKey}', '${escapedPeriodStart}', '${escapedPeriodEnd}')">Submit return</button>`
                 }
               </td>
             </tr>
@@ -599,7 +598,7 @@
 
       // Format a single date for display
       function formatDate(dateStr) {
-        if (!dateStr) return "-";
+        if (!dateStr) return "—";
         const date = new Date(dateStr);
         const options = { day: "numeric", month: "short", year: "numeric" };
         return date.toLocaleDateString("en-GB", options);
@@ -607,7 +606,7 @@
 
       // Format date range for display (HMRC requirement: show dates instead of period key)
       function formatDateRange(startStr, endStr) {
-        if (!startStr || !endStr) return "-";
+        if (!startStr || !endStr) return "—";
         const startDate = new Date(startStr);
         const endDate = new Date(endStr);
         const options = { day: "numeric", month: "short", year: "numeric" };

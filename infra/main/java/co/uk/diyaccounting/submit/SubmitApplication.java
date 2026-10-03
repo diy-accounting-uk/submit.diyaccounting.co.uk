@@ -11,6 +11,7 @@ import static co.uk.diyaccounting.submit.utils.Kind.warnf;
 
 import co.uk.diyaccounting.submit.constructs.AbstractApiLambdaProps;
 import co.uk.diyaccounting.submit.stacks.AccountStack;
+import co.uk.diyaccounting.submit.stacks.ApiRoutesStack;
 import co.uk.diyaccounting.submit.stacks.ApiStack;
 import co.uk.diyaccounting.submit.stacks.AuthStack;
 import co.uk.diyaccounting.submit.stacks.BillingStack;
@@ -42,6 +43,7 @@ public class SubmitApplication {
     public final BillingStack billingStack;
     public final DiyaGlStack diyaGlStack;
     public final ApiStack apiStack;
+    public final ApiRoutesStack apiRoutesStack;
     public final OpsStack opsStack;
     public final EdgeStack edgeStack;
     public final PublishStack publishStack;
@@ -547,15 +549,19 @@ public class SubmitApplication {
                             + "written by IdentityStack during the environment deploy.");
         }
 
-        // Create a map of Lambda function references from other stacks
+        // The API's routes are split across ApiStack and ApiRoutesStack, each under CloudFormation's
+        // 500-resource limit, grouped by the stack that owns the Lambda so a route never moves
+        // between the two API stacks on a later deploy (a move into the stack deployed first would
+        // collide with the route still held by the other).
         List<AbstractApiLambdaProps> lambdaFunctions = new java.util.ArrayList<>();
         lambdaFunctions.addAll(this.authStack.lambdaFunctionProps);
         lambdaFunctions.addAll(this.hmrcStack.lambdaFunctionProps);
-        lambdaFunctions.addAll(this.hmrcItsaStack.lambdaFunctionProps);
-        lambdaFunctions.addAll(this.companiesHouseStack.lambdaFunctionProps);
         lambdaFunctions.addAll(this.accountStack.lambdaFunctionProps);
         lambdaFunctions.addAll(this.billingStack.lambdaFunctionProps);
-        lambdaFunctions.addAll(this.diyaGlStack.lambdaFunctionProps);
+        List<AbstractApiLambdaProps> routesStackLambdaFunctions = new java.util.ArrayList<>();
+        routesStackLambdaFunctions.addAll(this.hmrcItsaStack.lambdaFunctionProps);
+        routesStackLambdaFunctions.addAll(this.companiesHouseStack.lambdaFunctionProps);
+        routesStackLambdaFunctions.addAll(this.diyaGlStack.lambdaFunctionProps);
 
         this.apiStack = new ApiStack(
                 app,
@@ -584,6 +590,34 @@ public class SubmitApplication {
         this.apiStack.addStackDependency(authStack);
         this.apiStack.addStackDependency(billingStack);
         this.apiStack.addStackDependency(diyaGlStack);
+
+        infof(
+                "Synthesizing stack %s for deployment %s to environment %s",
+                sharedNames.apiRoutesStackId, deploymentName, envName);
+        this.apiRoutesStack = new ApiRoutesStack(
+                app,
+                sharedNames.apiRoutesStackId,
+                ApiRoutesStack.ApiRoutesStackProps.builder()
+                        .env(primaryEnv)
+                        .crossRegionReferences(false)
+                        .envName(envName)
+                        .deploymentName(deploymentName)
+                        .resourceNamePrefix(sharedNames.appResourceNamePrefix)
+                        .cloudTrailEnabled(cloudTrailEnabled)
+                        .sharedNames(sharedNames)
+                        .httpApi(this.apiStack.httpApi)
+                        .routeKeysTakenElsewhere(this.apiStack.routeKeys)
+                        .lambdaFunctions(routesStackLambdaFunctions)
+                        .userPoolId(cognitoUserPoolId)
+                        .userPoolClientId(cognitoUserPoolClientId)
+                        .booksUserPoolClientId(cognitoBooksUserPoolClientId)
+                        .mcpUserPoolClientId(cognitoMcpUserPoolClientId)
+                        .customAuthorizerLambdaArn(authStack.customAuthorizerLambda.getFunctionArn())
+                        .build());
+        this.apiRoutesStack.addStackDependency(apiStack);
+        this.apiRoutesStack.addStackDependency(hmrcItsaStack);
+        this.apiRoutesStack.addStackDependency(companiesHouseStack);
+        this.apiRoutesStack.addStackDependency(diyaGlStack);
 
         // Get optional alert email from environment variable
         String alertEmail = envOr("ALERT_EMAIL", "");

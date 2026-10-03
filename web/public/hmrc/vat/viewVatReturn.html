@@ -4,7 +4,7 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <title>View VAT Return - DIY Accounting Submit</title>
+    <title>View VAT return - DIY Accounting Submit</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <link rel="icon" href="/favicon.ico" sizes="any" />
     <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
@@ -40,8 +40,8 @@
 
       <!-- Search Form -->
       <div class="form-toggle-buttons">
-        <button type="button" id="toggleFormBtn" class="secondary-button" style="display: none">Show Search Form</button>
-        <button type="button" id="cancelRequestBtn" class="cancel-button" style="display: none">Cancel Request</button>
+        <button type="button" id="toggleFormBtn" class="secondary-button" style="display: none">Show search form</button>
+        <button type="button" id="cancelRequestBtn" class="cancel-button" style="display: none">Cancel request</button>
       </div>
       <div id="searchForm" class="form-container">
         <h2>Retrieve VAT return</h2>
@@ -66,8 +66,8 @@
             />
           </div>
 
-          <div class="form-group">
-            <label>VAT period</label>
+          <div class="form-group" role="group" aria-labelledby="vatPeriod-label">
+            <p id="vatPeriod-label" class="field-label">VAT period</p>
             <p id="periodDates-hint" class="hint">Enter the start and end dates of the VAT period you want to view</p>
             <div class="period-date-inputs" style="display: flex; gap: 1em; flex-wrap: wrap">
               <div>
@@ -115,7 +115,7 @@
             </div>
           </div>
 
-          <button type="submit" id="retrieveBtn" class="btn" data-activity-start="view-vat-return">View Return</button>
+          <button type="submit" id="retrieveBtn" class="btn" data-activity-start="view-vat-return">View return</button>
         </form>
       </div>
 
@@ -124,8 +124,8 @@
         <h3>VAT return details</h3>
         <div id="returnDetails"></div>
         <div class="button-group">
-          <button type="button" id="newSearchBtn" class="secondary-button">View Another Return</button>
-          <button type="button" id="backToObligationsBtn" class="secondary-button">Back to Obligations</button>
+          <button type="button" id="newSearchBtn" class="secondary-button">View another return</button>
+          <button type="button" id="backToObligationsBtn" class="secondary-button">Back to obligations</button>
         </div>
       </div>
     </main>
@@ -543,7 +543,7 @@
         const formatWholePounds = (value) => formatCurrency(value, 0);
 
         const formatBoolean = (value) => {
-          return value === true ? "Yes" : value === false ? "No" : "-";
+          return value === true ? "Yes" : value === false ? "No" : "—";
         };
 
         // Boxes 3 and 5 are the totals, so their figures are bold; boxes 6 to 9 are whole pounds.
@@ -573,12 +573,12 @@
             ? DateUtils.formatDateRange(returnData.periodStart, returnData.periodEnd)
             : returnData.start && returnData.end
               ? DateUtils.formatDateRange(returnData.start, returnData.end)
-              : "-";
+              : "—";
 
         const detailsHtml = `
           <div class="return-details">
             <div class="detail-section">
-              <h4>Period Information</h4>
+              <h4>Period information</h4>
               <dl class="detail-grid">
                 <div class="detail-item">
                   <dt>Period:</dt>
@@ -594,7 +594,7 @@
             </div>
 
             <div class="detail-section">
-              <h4>VAT Amounts</h4>
+              <h4>VAT amounts</h4>
               <dl class="detail-grid">${boxesHtml(1, 5)}</dl>
             </div>
 

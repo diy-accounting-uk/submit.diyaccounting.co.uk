@@ -4,7 +4,7 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <title>File a Quarterly Update - DIY Accounting Submit</title>
+    <title>File a quarterly update - DIY Accounting Submit</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <link rel="icon" href="/favicon.ico" sizes="any" />
     <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
@@ -24,12 +24,12 @@
     <a href="#mainContent" class="skip-link">Skip to main content</a>
     <header>
       <p class="chrome-fallback"><a href="../../">DIY Accounting Submit</a></p>
-      <h1>File a Quarterly Update</h1>
+      <h1>File a quarterly update</h1>
       <p class="subtitle">Create a self-employment period summary with HMRC</p>
     </header>
 
     <main id="mainContent">
-      <div id="syntheticIndicator" class="synthetic-indicator">⚠️ Synthetic mode - calls go to HMRC's sandbox API</div>
+      <div id="syntheticIndicator" class="synthetic-indicator">Synthetic mode - calls go to HMRC's sandbox API</div>
 
       <div id="statusMessagesContainer" role="alert" aria-live="polite"></div>
 
@@ -42,7 +42,7 @@
           <button type="button" id="cancelRequestBtn" class="cancel-button" style="display: none">Cancel request</button>
         </div>
         <div id="searchCriteriaContainer">
-          <h2>Create a Period Summary</h2>
+          <h2>Create a period summary</h2>
           <form id="itsaSelfEmploymentPeriodForm" novalidate>
             <div class="form-group">
               <label for="nino">National Insurance number</label>
@@ -53,7 +53,6 @@
                 name="nino"
                 required
                 value=""
-                placeholder="e.g., QQ 12 34 56 C"
                 maxlength="13"
                 aria-describedby="nino-hint"
                 spellcheck="false"
@@ -64,28 +63,13 @@
             <div class="form-group">
               <label for="businessId">Business ID</label>
               <p id="businessId-hint" class="hint">The business ID from Business Details, for example XAIS12345678910.</p>
-              <input
-                type="text"
-                id="businessId"
-                name="businessId"
-                required
-                placeholder="e.g., XAIS12345678910"
-                aria-describedby="businessId-hint"
-              />
+              <input type="text" id="businessId" name="businessId" required aria-describedby="businessId-hint" />
             </div>
 
             <div class="form-group">
               <label for="taxYear">Tax year</label>
               <p id="taxYear-hint" class="hint">The tax year this period falls in, format YYYY-YY, for example 2024-25.</p>
-              <input
-                type="text"
-                id="taxYear"
-                name="taxYear"
-                required
-                placeholder="e.g., 2024-25"
-                maxlength="7"
-                aria-describedby="taxYear-hint"
-              />
+              <input type="text" id="taxYear" name="taxYear" required maxlength="7" aria-describedby="taxYear-hint" />
             </div>
 
             <div id="loadCurrentTotalGroup" class="form-group" style="display: none">

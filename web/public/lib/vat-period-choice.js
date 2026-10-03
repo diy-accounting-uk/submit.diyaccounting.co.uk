@@ -13,6 +13,7 @@
   const MAX_SEARCH_DAYS = 365;
 
   const activeBindings = new WeakMap();
+  const boundObligations = new WeakMap();
 
   const dateFormat = new Intl.DateTimeFormat("en-GB", { day: "numeric", month: "long", year: "numeric", timeZone: "UTC" });
 
@@ -56,6 +57,7 @@
     activeBindings.get(select)?.abort();
     const binding = new AbortController();
     activeBindings.set(select, binding);
+    boundObligations.set(select, obligations);
     const { signal } = binding;
 
     select.replaceChildren();
@@ -112,6 +114,19 @@
     }
   }
 
+  /**
+   * The obligation the select currently shows: its status and period key. Null when the select
+   * is unbound or on "another period", where no obligation is known.
+   *
+   * @param {HTMLSelectElement} select
+   * @returns {{status: string, periodKey: string, start: string, end: string}|null}
+   */
+  function chosenObligation(select) {
+    const obligations = boundObligations.get(select);
+    if (!obligations || select.value === ANOTHER_PERIOD) return null;
+    return obligations[Number(select.value)] || null;
+  }
+
   window.vatPeriodChoice = {
     ANOTHER_PERIOD,
     openObligations,
@@ -119,5 +134,6 @@
     findMatchingObligation,
     obligationSearchWindow,
     bindChoice,
+    chosenObligation,
   };
 })();

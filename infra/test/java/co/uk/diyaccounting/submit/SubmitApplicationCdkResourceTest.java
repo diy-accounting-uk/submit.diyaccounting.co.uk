@@ -6,6 +6,7 @@
 package co.uk.diyaccounting.submit;
 
 import static co.uk.diyaccounting.submit.utils.Kind.infof;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import co.uk.diyaccounting.submit.constructs.AsyncApiLambda;
 import co.uk.diyaccounting.submit.constructs.Lambda;
@@ -93,8 +94,8 @@ class SubmitApplicationCdkResourceTest {
 
         infof("Created stack:", submitApplication.hmrcItsaStack.getStackName());
         Template hmrcItsaStackTemplate = Template.fromStack(submitApplication.hmrcItsaStack);
-        hmrcItsaStackTemplate.resourceCountIs("AWS::Lambda::Function", 28);
-        assertStackHealthAlarm(hmrcItsaStackTemplate, 14, 14, routedPrefixes);
+        hmrcItsaStackTemplate.resourceCountIs("AWS::Lambda::Function", 36);
+        assertStackHealthAlarm(hmrcItsaStackTemplate, 18, 18, routedPrefixes);
 
         infof("Created stack:", submitApplication.companiesHouseStack.getStackName());
         Template companiesHouseStackTemplate = Template.fromStack(submitApplication.companiesHouseStack);
@@ -211,96 +212,74 @@ class SubmitApplicationCdkResourceTest {
         }
 
         apiStackTemplate.resourceCountIs("AWS::ApiGatewayV2::Api", 1);
+        Template apiRoutesStackTemplate = Template.fromStack(submitApplication.apiRoutesStack);
+        apiRoutesStackTemplate.resourceCountIs("AWS::ApiGatewayV2::Api", 0);
+        List<Template> apiTemplates = List.of(apiStackTemplate, apiRoutesStackTemplate);
+        // Each API stack keeps headroom under CloudFormation's 500-resource limit, which the
+        // deploy otherwise only reports at synth in the pipeline.
+        assertResourceTotalUnder(apiStackTemplate, 450);
+        assertResourceTotalUnder(apiRoutesStackTemplate, 450);
         // Confirm key routes exist, including multiple HTTP methods on the same path
-        apiStackTemplate.hasResourceProperties("AWS::ApiGatewayV2::Route", Map.of("RouteKey", "POST /api/v1/bundle"));
-        apiStackTemplate.hasResourceProperties("AWS::ApiGatewayV2::Route", Map.of("RouteKey", "DELETE /api/v1/bundle"));
-        apiStackTemplate.hasResourceProperties(
-                "AWS::ApiGatewayV2::Route", Map.of("RouteKey", "DELETE /api/v1/bundle/{id}"));
-        apiStackTemplate.hasResourceProperties(
-                "AWS::ApiGatewayV2::Route", Map.of("RouteKey", "GET /api/v1/companies-house/search"));
-        apiStackTemplate.hasResourceProperties(
-                "AWS::ApiGatewayV2::Route", Map.of("RouteKey", "GET /api/v1/companies-house/company/{companyNumber}"));
-        apiStackTemplate.hasResourceProperties(
-                "AWS::ApiGatewayV2::Route", Map.of("RouteKey", "POST /api/v1/companies-house/token"));
-        apiStackTemplate.hasResourceProperties(
-                "AWS::ApiGatewayV2::Route", Map.of("RouteKey", "POST /api/v1/companies-house/transaction"));
-        apiStackTemplate.hasResourceProperties(
-                "AWS::ApiGatewayV2::Route",
-                Map.of("RouteKey", "GET /api/v1/companies-house/transaction/{transactionId}"));
-        apiStackTemplate.hasResourceProperties(
-                "AWS::ApiGatewayV2::Route",
-                Map.of("RouteKey", "PUT /api/v1/companies-house/transaction/{transactionId}"));
-        apiStackTemplate.hasResourceProperties(
-                "AWS::ApiGatewayV2::Route",
+        assertApiRoute(apiTemplates, Map.of("RouteKey", "POST /api/v1/bundle"));
+        assertApiRoute(apiTemplates, Map.of("RouteKey", "DELETE /api/v1/bundle"));
+        assertApiRoute(apiTemplates, Map.of("RouteKey", "DELETE /api/v1/bundle/{id}"));
+        assertApiRoute(apiTemplates, Map.of("RouteKey", "GET /api/v1/companies-house/search"));
+        assertApiRoute(apiTemplates, Map.of("RouteKey", "GET /api/v1/companies-house/company/{companyNumber}"));
+        assertApiRoute(apiTemplates, Map.of("RouteKey", "POST /api/v1/companies-house/token"));
+        assertApiRoute(apiTemplates, Map.of("RouteKey", "POST /api/v1/companies-house/transaction"));
+        assertApiRoute(apiTemplates, Map.of("RouteKey", "GET /api/v1/companies-house/transaction/{transactionId}"));
+        assertApiRoute(apiTemplates, Map.of("RouteKey", "PUT /api/v1/companies-house/transaction/{transactionId}"));
+        assertApiRoute(
+                apiTemplates,
                 Map.of("RouteKey", "GET /api/v1/companies-house/company/{companyNumber}/registered-office-address"));
-        apiStackTemplate.hasResourceProperties(
-                "AWS::ApiGatewayV2::Route",
+        assertApiRoute(
+                apiTemplates,
                 Map.of(
                         "RouteKey",
                         "POST /api/v1/companies-house/transaction/{transactionId}/registered-office-address"));
-        apiStackTemplate.hasResourceProperties(
-                "AWS::ApiGatewayV2::Route",
+        assertApiRoute(
+                apiTemplates,
                 Map.of(
                         "RouteKey",
                         "GET /api/v1/companies-house/company/{companyNumber}/registered-email-address/eligibility"));
-        apiStackTemplate.hasResourceProperties(
-                "AWS::ApiGatewayV2::Route",
+        assertApiRoute(
+                apiTemplates,
                 Map.of(
                         "RouteKey",
                         "POST /api/v1/companies-house/transaction/{transactionId}/registered-email-address"));
-        apiStackTemplate.hasResourceProperties(
-                "AWS::ApiGatewayV2::Route", Map.of("RouteKey", "POST /api/v1/companies-house/accounts/preview"));
-        apiStackTemplate.hasResourceProperties(
-                "AWS::ApiGatewayV2::Route", Map.of("RouteKey", "POST /api/v1/companies-house/accounts"));
-        apiStackTemplate.hasResourceProperties(
-                "AWS::ApiGatewayV2::Route",
-                Map.of("RouteKey", "GET /api/v1/companies-house/accounts/{submissionNumber}"));
-        apiStackTemplate.hasResourceProperties(
-                "AWS::ApiGatewayV2::Route",
-                Map.of("RouteKey", "GET /api/v1/companies-house/company/{companyNumber}/officers"));
-        apiStackTemplate.hasResourceProperties(
-                "AWS::ApiGatewayV2::Route",
+        assertApiRoute(apiTemplates, Map.of("RouteKey", "POST /api/v1/companies-house/accounts/preview"));
+        assertApiRoute(apiTemplates, Map.of("RouteKey", "POST /api/v1/companies-house/accounts"));
+        assertApiRoute(apiTemplates, Map.of("RouteKey", "GET /api/v1/companies-house/accounts/{submissionNumber}"));
+        assertApiRoute(
+                apiTemplates, Map.of("RouteKey", "GET /api/v1/companies-house/company/{companyNumber}/officers"));
+        assertApiRoute(
+                apiTemplates,
                 Map.of(
                         "RouteKey",
                         "GET /api/v1/companies-house/company/{companyNumber}/persons-with-significant-control"));
-        apiStackTemplate.hasResourceProperties(
-                "AWS::ApiGatewayV2::Route",
-                Map.of("RouteKey", "POST /api/v1/companies-house/company/{companyNumber}/filing-data"));
-        apiStackTemplate.hasResourceProperties(
-                "AWS::ApiGatewayV2::Route",
-                Map.of("RouteKey", "POST /api/v1/companies-house/confirmation-statement/preview"));
-        apiStackTemplate.hasResourceProperties(
-                "AWS::ApiGatewayV2::Route", Map.of("RouteKey", "POST /api/v1/companies-house/confirmation-statement"));
-        apiStackTemplate.hasResourceProperties(
-                "AWS::ApiGatewayV2::Route",
+        assertApiRoute(
+                apiTemplates, Map.of("RouteKey", "POST /api/v1/companies-house/company/{companyNumber}/filing-data"));
+        assertApiRoute(apiTemplates, Map.of("RouteKey", "POST /api/v1/companies-house/confirmation-statement/preview"));
+        assertApiRoute(apiTemplates, Map.of("RouteKey", "POST /api/v1/companies-house/confirmation-statement"));
+        assertApiRoute(
+                apiTemplates,
                 Map.of("RouteKey", "GET /api/v1/companies-house/confirmation-statement/{submissionNumber}"));
         // The new diya-gl paths are the primary routes; the old books paths are served alongside
         // them permanently, since the spreadsheets site's cloud.js keeps calling the old paths.
-        apiStackTemplate.hasResourceProperties("AWS::ApiGatewayV2::Route", Map.of("RouteKey", "GET /api/v1/diya-gl"));
-        apiStackTemplate.hasResourceProperties(
-                "AWS::ApiGatewayV2::Route", Map.of("RouteKey", "GET /api/v1/diya-gl/{bookId}/versions/{version}"));
-        apiStackTemplate.hasResourceProperties(
-                "AWS::ApiGatewayV2::Route", Map.of("RouteKey", "PUT /api/v1/diya-gl/{bookId}"));
-        apiStackTemplate.hasResourceProperties(
-                "AWS::ApiGatewayV2::Route", Map.of("RouteKey", "DELETE /api/v1/diya-gl/{bookId}"));
-        apiStackTemplate.hasResourceProperties(
-                "AWS::ApiGatewayV2::Route", Map.of("RouteKey", "OPTIONS /api/v1/diya-gl"));
-        apiStackTemplate.hasResourceProperties(
-                "AWS::ApiGatewayV2::Route", Map.of("RouteKey", "OPTIONS /api/v1/diya-gl/{bookId}/versions/{version}"));
-        apiStackTemplate.hasResourceProperties(
-                "AWS::ApiGatewayV2::Route", Map.of("RouteKey", "OPTIONS /api/v1/diya-gl/{bookId}"));
-        apiStackTemplate.hasResourceProperties("AWS::ApiGatewayV2::Route", Map.of("RouteKey", "GET /api/v1/books"));
-        apiStackTemplate.hasResourceProperties(
-                "AWS::ApiGatewayV2::Route", Map.of("RouteKey", "GET /api/v1/books/{bookId}/versions/{version}"));
-        apiStackTemplate.hasResourceProperties(
-                "AWS::ApiGatewayV2::Route", Map.of("RouteKey", "PUT /api/v1/books/{bookId}"));
-        apiStackTemplate.hasResourceProperties(
-                "AWS::ApiGatewayV2::Route", Map.of("RouteKey", "DELETE /api/v1/books/{bookId}"));
-        apiStackTemplate.hasResourceProperties("AWS::ApiGatewayV2::Route", Map.of("RouteKey", "OPTIONS /api/v1/books"));
-        apiStackTemplate.hasResourceProperties(
-                "AWS::ApiGatewayV2::Route", Map.of("RouteKey", "OPTIONS /api/v1/books/{bookId}/versions/{version}"));
-        apiStackTemplate.hasResourceProperties(
-                "AWS::ApiGatewayV2::Route", Map.of("RouteKey", "OPTIONS /api/v1/books/{bookId}"));
+        assertApiRoute(apiTemplates, Map.of("RouteKey", "GET /api/v1/diya-gl"));
+        assertApiRoute(apiTemplates, Map.of("RouteKey", "GET /api/v1/diya-gl/{bookId}/versions/{version}"));
+        assertApiRoute(apiTemplates, Map.of("RouteKey", "PUT /api/v1/diya-gl/{bookId}"));
+        assertApiRoute(apiTemplates, Map.of("RouteKey", "DELETE /api/v1/diya-gl/{bookId}"));
+        assertApiRoute(apiTemplates, Map.of("RouteKey", "OPTIONS /api/v1/diya-gl"));
+        assertApiRoute(apiTemplates, Map.of("RouteKey", "OPTIONS /api/v1/diya-gl/{bookId}/versions/{version}"));
+        assertApiRoute(apiTemplates, Map.of("RouteKey", "OPTIONS /api/v1/diya-gl/{bookId}"));
+        assertApiRoute(apiTemplates, Map.of("RouteKey", "GET /api/v1/books"));
+        assertApiRoute(apiTemplates, Map.of("RouteKey", "GET /api/v1/books/{bookId}/versions/{version}"));
+        assertApiRoute(apiTemplates, Map.of("RouteKey", "PUT /api/v1/books/{bookId}"));
+        assertApiRoute(apiTemplates, Map.of("RouteKey", "DELETE /api/v1/books/{bookId}"));
+        assertApiRoute(apiTemplates, Map.of("RouteKey", "OPTIONS /api/v1/books"));
+        assertApiRoute(apiTemplates, Map.of("RouteKey", "OPTIONS /api/v1/books/{bookId}/versions/{version}"));
+        assertApiRoute(apiTemplates, Map.of("RouteKey", "OPTIONS /api/v1/books/{bookId}"));
 
         // Each Companies House route also gets ApiStack's automatic HEAD route, except PUT
         // /transaction/{transactionId}, which shares its path (and so its auto-HEAD route) with
@@ -342,7 +321,12 @@ class SubmitApplicationCdkResourceTest {
         // cross-origin browser preflight to reach a route with no authoriser, the same reason
         // the books routes get one), for 170 + 3 = 173. POST /api/v1/activity/started adds its own
         // route plus its own auto-HEAD route, for 173 + 2 = 175.
-        apiStackTemplate.resourceCountIs("AWS::ApiGatewayV2::Route", 179);
+        assertEquals(
+                187,
+                apiStackTemplate.findResources("AWS::ApiGatewayV2::Route").size()
+                        + apiRoutesStackTemplate
+                                .findResources("AWS::ApiGatewayV2::Route")
+                                .size());
 
         // Dashboard moved to environment-level ObservabilityStack
         infof("Created stack:", submitApplication.opsStack.getStackName());
@@ -1318,5 +1302,24 @@ class SubmitApplicationCdkResourceTest {
             ctx.put(e.getKey(), e.getValue().asText());
         }
         return ctx;
+    }
+
+    private static void assertApiRoute(List<Template> apiTemplates, Map<String, Object> routeProperties) {
+        int found = 0;
+        for (Template template : apiTemplates) {
+            found += template.findResources("AWS::ApiGatewayV2::Route", Map.of("Properties", routeProperties))
+                    .size();
+        }
+        assertEquals(1, found, "route " + routeProperties + " across the API stacks");
+    }
+
+    @SuppressWarnings("unchecked")
+    private static void assertResourceTotalUnder(Template template, int limit) {
+        Map<String, Object> resources =
+                (Map<String, Object>) ((Map<String, Object>) template.toJSON()).get("Resources");
+        infof("API stack resource total: %d", resources.size());
+        if (resources.size() >= limit) {
+            throw new AssertionFailedError("API stack has " + resources.size() + " resources, limit " + limit);
+        }
     }
 }

@@ -4,7 +4,7 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <title>UK Property Year-End Adjustments - DIY Accounting Submit</title>
+    <title>UK property year-end adjustments - DIY Accounting Submit</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <link rel="icon" href="/favicon.ico" sizes="any" />
     <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
@@ -25,12 +25,12 @@
     <a href="#mainContent" class="skip-link">Skip to main content</a>
     <header>
       <p class="chrome-fallback"><a href="../../">DIY Accounting Submit</a></p>
-      <h1>UK Property Year-End Adjustments</h1>
+      <h1>UK property year-end adjustments</h1>
       <p class="subtitle">Trigger the year-end summary, review the figures HMRC calculated, and adjust them if needed</p>
     </header>
 
     <main id="mainContent">
-      <div id="syntheticIndicator" class="synthetic-indicator">⚠️ Synthetic mode - calls go to HMRC's sandbox API</div>
+      <div id="syntheticIndicator" class="synthetic-indicator">Synthetic mode - calls go to HMRC's sandbox API</div>
 
       <div id="statusMessagesContainer" role="alert" aria-live="polite"></div>
 
@@ -38,7 +38,7 @@
 
       <!-- Trigger form -->
       <div id="triggerForm" class="form-container">
-        <h2>Trigger the Year-End Summary</h2>
+        <h2>Trigger the year-end summary</h2>
         <div id="obligationsWarning" class="status-message status-error" style="display: none" role="alert"></div>
         <form id="itsaBsasTriggerForm" novalidate>
           <div class="form-group">
@@ -53,7 +53,6 @@
               name="nino"
               required
               value=""
-              placeholder="e.g., QQ 12 34 56 C"
               maxlength="13"
               spellcheck="false"
               autocapitalize="characters"
@@ -64,28 +63,13 @@
           <div class="form-group">
             <label for="businessId">Business ID</label>
             <p id="businessId-hint" class="hint">The business ID from Business Details, for example XAIS12345678910.</p>
-            <input
-              type="text"
-              id="businessId"
-              name="businessId"
-              required
-              placeholder="e.g., XAIS12345678910"
-              aria-describedby="businessId-hint"
-            />
+            <input type="text" id="businessId" name="businessId" required aria-describedby="businessId-hint" />
           </div>
 
           <div class="form-group">
             <label for="taxYear">Tax year</label>
             <p id="taxYear-hint" class="hint">Enter in the format 2023-24, for example.</p>
-            <input
-              type="text"
-              id="taxYear"
-              name="taxYear"
-              required
-              placeholder="e.g., 2023-24"
-              maxlength="7"
-              aria-describedby="taxYear-hint"
-            />
+            <input type="text" id="taxYear" name="taxYear" required maxlength="7" aria-describedby="taxYear-hint" />
           </div>
 
           <div class="form-group">
@@ -122,10 +106,10 @@
 
       <!-- Summary and adjustment form, shown after a successful trigger and retrieve -->
       <div id="summaryContainer" class="results-container" style="display: none">
-        <h3>Year-End Summary</h3>
+        <h3>Year-end summary</h3>
         <div id="summaryDetails"></div>
 
-        <h3>Submit an Adjustment</h3>
+        <h3>Submit an adjustment</h3>
         <p class="hint">
           Change a figure if HMRC's calculation is wrong, or confirm no change is needed. These figures adjust the year-end summary above,
           not your quarterly updates.

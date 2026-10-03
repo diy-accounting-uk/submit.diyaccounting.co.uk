@@ -13,6 +13,8 @@ const state = {
   tokens: new Map(),
   // Businesses created through the Self Assessment Test Support API, keyed by normalised NINO
   testSupportBusinesses: new Map(),
+  // HMRC Assist reports issued by this simulator, keyed by reportId
+  assistReports: new Map(),
 };
 
 /**
@@ -23,6 +25,25 @@ export function reset() {
   state.authorizationCodes.clear();
   state.tokens.clear();
   state.testSupportBusinesses.clear();
+  state.assistReports.clear();
+}
+
+/**
+ * Remember an HMRC Assist report this simulator issued
+ * @param {string} reportId - Report id
+ * @param {Object} data - Identifiers and correlation id the report was issued with
+ */
+export function storeAssistReport(reportId, data) {
+  state.assistReports.set(reportId, data);
+}
+
+/**
+ * Get an issued HMRC Assist report
+ * @param {string} reportId - Report id
+ * @returns {Object|undefined}
+ */
+export function getAssistReport(reportId) {
+  return state.assistReports.get(reportId);
 }
 
 /**
