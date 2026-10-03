@@ -1661,16 +1661,6 @@ enrolments. The businesses, accounting periods and ITSA status the proof needs c
 test support API, and its vendor-state checkpoints reset the user between runs.
 
 
-## Backlog rows this plan carries
-
-Each stays a row in `BACKLOG.md` (its tier and value); the brief lives here.
-
-### 32a. Software-choices listing update
-
-Ask SDST to update DIY Accounting Submit's entry on HMRC's software-choices listing so it shows viewing liabilities, payments and penalties as well as obligations and returns. Optional: the production credentials already cover the whole VAT (MTD) API, so this is a listing edit, not an approval. One email from antony@diyaccounting.co.uk to `SDSTeam@hmrc.gov.uk`, separate from row 75's.
-
-**Source**: Issue #19; `PLAN_ITSA_PHASE_2.md` 32a. **Effort**: S. **Value**: Revenue, minor. The listing is where HMRC sends people looking for software. Operator.
-
 ## Sources
 
 - `PLAN_ITSA_APPROVAL.md` (rows 10 and 11, the application and the sends).
