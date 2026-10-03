@@ -3,7 +3,7 @@
 
 // app/functions/hmrc/hmrcVatPaymentsGet.js
 
-import { createLogger, context } from "../../lib/logger.js";
+import { createLogger } from "../../lib/logger.js";
 import {
   extractRequest,
   http200OkResponse,
@@ -15,6 +15,7 @@ import {
   serializeResponseHeaders,
 } from "../../lib/httpResponseHelper.js";
 import { validateEnv } from "../../lib/env.js";
+import { processSqsRecords } from "../../lib/sqsWorkerHelper.js";
 import { registerLambdaRoute } from "../../lib/httpServerToLambdaAdaptor.js";
 import {
   UnauthorizedTokenError,
@@ -297,47 +298,19 @@ export async function ingestHandler(event) {
 
 // SQS worker Lambda ingestHandler function
 export async function workerHandler(event) {
-  await initializeSalt();
-  validateEnv([
-    "HMRC_BASE_URI",
-    "HMRC_SANDBOX_BASE_URI",
-    "BUNDLE_DYNAMODB_TABLE_NAME",
-    "HMRC_API_REQUESTS_DYNAMODB_TABLE_NAME",
-    "HMRC_VAT_PAYMENTS_GET_ASYNC_REQUESTS_TABLE_NAME",
-  ]);
-
   const asyncRequestsTableName = process.env.HMRC_VAT_PAYMENTS_GET_ASYNC_REQUESTS_TABLE_NAME;
 
-  logger.info({ message: "SQS Worker entry", recordCount: event.Records?.length });
-
-  for (const record of event.Records || []) {
-    let userSub;
-    let requestId;
-    let traceparent;
-    let correlationId;
-    try {
-      const body = JSON.parse(record.body);
-      userSub = body.userId;
-      requestId = body.requestId;
-      traceparent = body.traceparent;
-      correlationId = body.correlationId;
-      const payload = body.payload;
-
-      if (!userSub || !requestId) {
-        logger.error({ message: "SQS Message missing userId or requestId", recordId: record.messageId, body });
-        continue;
-      }
-
-      if (!context.getStore()) {
-        context.enterWith(new Map());
-      }
-      context.set("requestId", requestId);
-      context.set("traceparent", traceparent);
-      context.set("correlationId", correlationId);
-      context.set("userSub", userSub);
-
-      logger.info({ message: "Processing SQS message", userSub, requestId, messageId: record.messageId });
-
+  return processSqsRecords(event, {
+    requiredEnv: [
+      "HMRC_BASE_URI",
+      "HMRC_SANDBOX_BASE_URI",
+      "BUNDLE_DYNAMODB_TABLE_NAME",
+      "HMRC_API_REQUESTS_DYNAMODB_TABLE_NAME",
+      "HMRC_VAT_PAYMENTS_GET_ASYNC_REQUESTS_TABLE_NAME",
+    ],
+    logger,
+    errorPolicy: "classify",
+    processRecord: async (payload, { userId: userSub, requestId }) => {
       const { payments, hmrcResponse } = await getVatPayments(
         payload.vrn,
         payload.hmrcAccessToken,
@@ -378,7 +351,7 @@ export async function workerHandler(event) {
           userSub,
           result,
         });
-        continue;
+        return;
       }
 
       await asyncApiServices.complete({
@@ -389,55 +362,16 @@ export async function workerHandler(event) {
       });
 
       logger.info({ message: "Successfully processed SQS message", requestId });
-    } catch (error) {
-      const isRetryable = isRetryableError(error);
-
-      if (isRetryable) {
-        logger.warn({ message: "Transient error in worker, re-throwing for SQS retry", error: error.message, requestId });
-        throw error;
-      }
-
-      logger.error({
-        message: "Terminal error processing SQS message",
-        error: error.message,
-        stack: error.stack,
-        messageId: record.messageId,
-        userSub,
+    },
+    onTerminalError: async (error, { userId: userSub, requestId }) => {
+      await asyncApiServices.error({
+        asyncRequestsTableName,
         requestId,
+        userSub,
+        error,
       });
-      if (userSub && requestId) {
-        await asyncApiServices.error({
-          asyncRequestsTableName,
-          requestId,
-          userSub,
-          error,
-        });
-      }
-      // Do not re-throw terminal errors to avoid infinite SQS retry loops
-    }
-  }
-}
-
-/**
- * Determine if an error is retryable (transient) or terminal.
- * @param {Error} error
- * @returns {boolean}
- */
-function isRetryableError(error) {
-  // Explicitly marked retryable HMRC errors
-  if (error.message?.includes("HMRC temporary error")) return true;
-
-  // Fetch timeout
-  if (error.name === "AbortError") return true;
-
-  // Standard Node.js network errors
-  const retryableCodes = ["ECONNRESET", "ETIMEDOUT", "ENOTFOUND", "ESOCKETTIMEDOUT", "ECONNREFUSED", "EHOSTUNREACH"];
-  if (error.code && retryableCodes.includes(error.code)) return true;
-
-  // DynamoDB throughput or other transient AWS errors might have retryable: true
-  if (error.retryable) return true;
-
-  return false;
+    },
+  });
 }
 
 // Service adaptor aware of the downstream service but not the consuming Lambda's incoming/outgoing HTTP request/response

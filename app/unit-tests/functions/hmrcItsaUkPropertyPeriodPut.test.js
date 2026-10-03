@@ -276,3 +276,81 @@ describe("hmrcItsaUkPropertyPeriodPut ingestHandler - cumulative tax year", () =
     expect(mockFetch).not.toHaveBeenCalled();
   });
 });
+
+import { workerHandler as hmrcItsaUkPropertyPeriodPutWorker } from "@app/functions/hmrc/hmrcItsaUkPropertyPeriodPut.js";
+
+describe("hmrcItsaUkPropertyPeriodPut worker", () => {
+  beforeEach(() => {
+    Object.assign(process.env, setupTestEnv());
+    vi.clearAllMocks();
+  });
+
+  function buildWorkerEvent() {
+    return {
+      Records: [
+        {
+          body: JSON.stringify({
+            userId: "user-123",
+            requestId: "req-456",
+            payload: {
+              nino: "AB123456C",
+              hmrcAccessToken: "token",
+              govClientHeaders: {},
+              hmrcAccount: "live",
+              userSub: "user-123",
+              businessId: "XAIS12345678901",
+              taxYear: "2023-24",
+              submissionId: "4557ecb5-fd32-48cc-81f5-e6acd1099f3c",
+              fromDate: "2023-04-06",
+              toDate: "2023-07-05",
+              ukNonFhlProperty: {
+                income: {
+                  periodAmount: 1000,
+                },
+              },
+              ukFhlProperty: {},
+            },
+          }),
+          messageId: "msg-789",
+        },
+      ],
+    };
+  }
+
+  async function asyncRequestWrites(status) {
+    const lib = await import("@aws-sdk/lib-dynamodb");
+    return mockSend.mock.calls.filter(
+      (call) => call[0] instanceof lib.UpdateCommand && call[0].input.ExpressionAttributeValues[":status"] === status,
+    );
+  }
+
+  test("successfully processes SQS message and marks as completed", async () => {
+    mockHmrcSuccess(mockFetch, {});
+
+    await hmrcItsaUkPropertyPeriodPutWorker(buildWorkerEvent());
+
+    const completed = await asyncRequestWrites("completed");
+    expect(completed).toHaveLength(1);
+    expect(completed[0][0].input.ExpressionAttributeValues[":data"].hmrcResponse.status).toBe(200);
+  });
+
+  test("records a terminal error in the async request and does not re-throw it", async () => {
+    mockFetch.mockRejectedValueOnce(new Error("HMRC rejected the request"));
+
+    await expect(hmrcItsaUkPropertyPeriodPutWorker(buildWorkerEvent())).resolves.toBeUndefined();
+
+    const failed = await asyncRequestWrites("failed");
+    expect(failed).toHaveLength(1);
+    expect(failed[0][0].input.ExpressionAttributeValues[":data"].message).toContain("HMRC rejected the request");
+    expect(await asyncRequestWrites("completed")).toHaveLength(0);
+  });
+
+  test("re-throws a retryable error for SQS redelivery and writes no outcome", async () => {
+    mockFetch.mockRejectedValueOnce(Object.assign(new Error("connection reset"), { code: "ECONNRESET" }));
+
+    await expect(hmrcItsaUkPropertyPeriodPutWorker(buildWorkerEvent())).rejects.toThrow("connection reset");
+
+    expect(await asyncRequestWrites("failed")).toHaveLength(0);
+    expect(await asyncRequestWrites("completed")).toHaveLength(0);
+  });
+});

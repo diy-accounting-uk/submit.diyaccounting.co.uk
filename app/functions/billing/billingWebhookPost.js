@@ -445,6 +445,19 @@ async function handleSubscriptionUpdated(subscription, { test = false } = {}) {
 
   logger.info({ message: "Subscription status updated", hashedSub, bundleId, status: subscription.status });
 
+  // Stripe rolls the period before it finalises and pays the renewal invoice, an hour or more
+  // later and longer while a card is retried. An active subscription's new period end extends
+  // access now; tokens stay with invoice.paid.
+  const period = subscriptionPeriod(subscription);
+  if (subscription.status === "active" && period.end) {
+    const newPeriodEnd = new Date(period.end * 1000).toISOString();
+    if (!subRecord.currentPeriodEnd || new Date(newPeriodEnd) > new Date(subRecord.currentPeriodEnd)) {
+      await updateBundleSubscriptionFields(hashedSub, bundleId, { currentPeriodEnd: newPeriodEnd, expiry: newPeriodEnd });
+      await updateSubscription(`stripe#${subscription.id}`, { currentPeriodEnd: newPeriodEnd });
+      logger.info({ message: "Bundle expiry extended on subscription.updated", hashedSub, bundleId, currentPeriodEnd: newPeriodEnd });
+    }
+  }
+
   // Notify when user schedules cancellation via Stripe portal
   if (subscription.cancel_at_period_end) {
     await publishActivityEvent({
