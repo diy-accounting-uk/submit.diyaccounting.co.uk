@@ -76,7 +76,8 @@ import {
 import {
   exportDatasetExists,
   exportFirstWholeDayStartMs,
-  findPastStripeSubscriptionId,
+  exportedTransactionWindow,
+  findPastStripeSubscription,
   pollForPurchaseEvent,
 } from "./helpers/ga4PurchaseQuery.js";
 
@@ -446,27 +447,34 @@ test("Payment funnel: guest → exhaustion → upgrade → submission → usage"
       return;
     }
 
-    const exportStartMs = await exportFirstWholeDayStartMs({ projectId, datasetId });
-    const lookbackMs = 4 * 24 * 60 * 60 * 1000;
-    const priorTransactionId = await findPastStripeSubscriptionId({
-      olderThanMs: 26 * 60 * 60 * 1000,
-      newestMs: exportStartMs === null ? 0 : Math.min(lookbackMs, Date.now() - exportStartMs),
-      customerEmail: testAuthUsername,
+    const lookbackDays = 4;
+    const window = exportedTransactionWindow({
+      nowMs: Date.now(),
+      lookbackDays,
+      exportFirstWholeDayStartMs: await exportFirstWholeDayStartMs({ projectId, datasetId }),
     });
-    if (!priorTransactionId) {
+    const priorSubscription = window ? await findPastStripeSubscription({ ...window, customerEmail: testAuthUsername }) : null;
+    if (!priorSubscription) {
       console.log(
-        "No prior subscription of this lane created since the export began and old enough to check — skipping the BigQuery assertion",
+        "No prior subscription of this lane created on a UTC day whose daily export has landed and that the query window covers — skipping the BigQuery assertion",
       );
       return;
     }
+    const priorTransactionId = priorSubscription.id;
+    const priorCreatedIso = new Date(priorSubscription.createdMs).toISOString();
 
-    console.log(`Checking BigQuery for a purchase event carrying transaction_id=${priorTransactionId}...`);
+    console.log(
+      `Checking BigQuery for a purchase event carrying transaction_id=${priorTransactionId} (subscription created ${priorCreatedIso})...`,
+    );
     const result = await pollForPurchaseEvent(
-      { transactionId: priorTransactionId, projectId, datasetId, location },
+      { transactionId: priorTransactionId, projectId, datasetId, location, lookbackDays },
       { attempts: 3, intervalMs: 10_000 },
     );
     console.log(`BigQuery purchase lookup: found=${result.found} (tables queried: ${result.tablesQueried.join(", ")})`);
-    expect(result.found).toBe(true);
+    expect(
+      result.found,
+      `purchase transaction_id=${priorTransactionId} (subscription created ${priorCreatedIso}) not in ${result.tablesQueried.join(", ")}`,
+    ).toBe(true);
   });
 
   // ============================================================

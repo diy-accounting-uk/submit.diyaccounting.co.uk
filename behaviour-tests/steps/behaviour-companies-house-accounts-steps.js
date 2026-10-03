@@ -7,7 +7,7 @@
 // steps file only needs the Cognito sign-in already covered by behaviour-login-steps.js.
 
 import { expect, test } from "@playwright/test";
-import { loggedClick, loggedFill, timestamp } from "../helpers/behaviour-helpers.js";
+import { loggedClick, loggedFill, timestamp, takeScreenshot } from "../helpers/behaviour-helpers.js";
 
 const defaultScreenshotPath = "target/behaviour-test-results/screenshots/behaviour-companies-house-accounts-steps";
 
@@ -21,7 +21,7 @@ export async function goToFileMicroEntityAccounts(page, screenshotPath = default
     });
     await page.waitForLoadState("networkidle");
     await expect(page.locator("#companyForm")).toBeVisible();
-    await page.screenshot({ path: `${screenshotPath}/${timestamp()}-01-company-form.png` });
+    await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-01-company-form.png` });
   });
 }
 
@@ -31,7 +31,7 @@ export async function enterCompanyNumberAndLookUp(page, companyNumber, screensho
     await loggedClick(page, "#companyLookupBtn", "Looking up the company", { screenshotPath });
     await page.waitForLoadState("networkidle");
     await expect(page.locator("#formView")).toBeVisible({ timeout: 15000 });
-    await page.screenshot({ path: `${screenshotPath}/${timestamp()}-01-company-looked-up.png` });
+    await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-01-company-looked-up.png` });
   });
 }
 
@@ -39,7 +39,7 @@ export async function verifyCompanyLookedUp(page, expectedName, expectedNumber, 
   await test.step(`The user sees ${expectedName} (${expectedNumber}) as the company being filed for`, async () => {
     await expect(page.locator("#formCompanyName")).toContainText(expectedName);
     await expect(page.locator("#formCompanyNumber")).toContainText(expectedNumber);
-    await page.screenshot({ path: `${screenshotPath}/${timestamp()}-01-company-confirmed.png` });
+    await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-01-company-confirmed.png` });
   });
 }
 
@@ -66,7 +66,7 @@ export async function fillInAccountsForm(page, accounts, screenshotPath = defaul
     await page.check("#statementMembersNotRequiredAudit");
     await page.check("#statementDirectorsResponsibilities");
     await page.check("#statementMicroEntityProvisions");
-    await page.screenshot({ path: `${screenshotPath}/${timestamp()}-01-accounts-form-filled.png` });
+    await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-01-accounts-form-filled.png` });
   });
 }
 
@@ -77,7 +77,7 @@ export async function previewAccounts(page, screenshotPath = defaultScreenshotPa
     await expect(page.locator("#previewView")).toBeVisible({ timeout: 15000 });
     const preview = await page.locator("#previewIxbrl").textContent();
     expect(preview).toContain("<?xml");
-    await page.screenshot({ path: `${screenshotPath}/${timestamp()}-01-preview.png` });
+    await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-01-preview.png` });
   });
 }
 
@@ -96,14 +96,14 @@ export async function enterCompanyAuthCodeAndSubmit(page, companyAuthCode, scree
     await loggedFill(page, "#companyAuthCode", companyAuthCode, "Company authentication code", { screenshotPath });
     await loggedClick(page, "#submitFilingBtn", "Submitting the accounts filing", { screenshotPath });
     await expect(page.locator("#resultView")).toBeVisible({ timeout: 15000 });
-    await page.screenshot({ path: `${screenshotPath}/${timestamp()}-01-submitted.png` });
+    await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-01-submitted.png` });
   });
 }
 
 export async function verifyFilingAccepted(page, screenshotPath = defaultScreenshotPath) {
   await test.step("The user sees the filing accepted", async () => {
     await expect(page.locator("#filingResult")).toContainText("ACCEPT", { timeout: 30000 });
-    await page.screenshot({ path: `${screenshotPath}/${timestamp()}-01-accepted.png` });
+    await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-01-accepted.png` });
   });
 }
 
@@ -111,6 +111,6 @@ export async function verifyFilingRejected(page, expectedRejectCode, screenshotP
   await test.step(`The user sees the filing rejected with reject code ${expectedRejectCode}`, async () => {
     await expect(page.locator("#filingResult")).toContainText("REJECT", { timeout: 30000 });
     await expect(page.locator("#rejections")).toContainText(expectedRejectCode);
-    await page.screenshot({ path: `${screenshotPath}/${timestamp()}-01-rejected.png` });
+    await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-01-rejected.png` });
   });
 }
