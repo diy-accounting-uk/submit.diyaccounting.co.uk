@@ -70,9 +70,14 @@ flowchart LR
     CSA3 --> CSA4[CS-A4 evidence to the XML team]
     CSA4 --> CS11b[CS-11b]
     CS11b --> CSP1[CS-P1]
-    Design[B34h design row] --> Row34e[34e]
-    Design --> Row34f[34f]
-    Design --> Row34g[34g]
+    B34h[B34h design] --> B34f
+    B34f --> B34e
+    B34e --> B34g1
+    B34g1 --> B34g2
+    O34g[O34g HMRC SDST test credentials] --> B34g1
+    O34g --> B34g2
+    B346c --> B34f
+    B346c --> B34e
 ```
 
 - B34.6c: blocked by Companies House IT repairing the test presenter account (no row; external)
@@ -83,8 +88,10 @@ flowchart LR
 - CS-A4: blocked by CS-A3
 - CS-11b: blocked by CS-A4
 - CS-P1: blocked by CS-11b (it adds a second payment path to the journey CS-11b launches)
-- 34e, 34f, 34g: blocked by the design row B34h on `NEXT.md` (Opus), which writes their design
-  under Horizons; 34g also follows 34e's envelope.
+- B34f: blocked by B34h; its terminal-state proof by B34.6c
+- B34e: blocked by B34f (shared builder and Lambdas); its terminal-state proof by B34.6c
+- B34g1: blocked by B34e (the CT600 carries B34e's full accounts); its ETS proof by O34g
+- B34g2: blocked by B34g1 and O34g
 
 ## Operator dates
 
@@ -271,13 +278,7 @@ machine-only, nothing blocks it. CS-13b: its cases in the CS-A2 harness, run by 
 by CS-13a and CS-A2.
 
 **FRS 102 section 1A small-company accounts (34e), dormant company accounts (34f), and CT600
-pairing (34g)** all reuse the FRS 102 entry point and the accounts envelope this plan's Accounts
-section already builds. FRS 102 1A adds the small-companies-regime statements, a directors' report
-and a profit and loss account. Dormant accounts are the micro-entity filing with a dormant flag, a
-section 480 statement in place of section 477, and a share-allocation note. CT600 pairing sends the
-same balance sheet's accounts iXBRL, plus a computations iXBRL, to HMRC's Transaction Engine
-alongside the CT600 return, so one balance sheet serves both filings. None of the three has a
-design row yet — see the dependency graph.
+pairing (34g)** follow the design below (B34h).
 
 **The wider Companies House catalogue.** Beyond the filings above, Companies House exposes: the
 Public Data API (register reads, no auth beyond an API key); the Streaming API (register changes as
@@ -293,6 +294,181 @@ verification statement, the PSC verification statement, then the 14-day event fo
 register consistent before each confirmation statement, then share allotments and accounting
 reference date changes.
 
+### Design: FRS 102 section 1A, dormant company accounts and CT600 pairing
+
+The design B34f, B34e, B34g1 and B34g2 build to. B34g on `NEXT.md` splits into B34g1 and B34g2.
+
+**Reused from the micro-entity filing.** All four builds reuse these, unchanged unless the row says
+otherwise.
+
+| Part | Where | B34f | B34e | B34g |
+|---|---|---|---|---|
+| FRS 102 2026-01-01 entry point, concept check | `microEntityAccountsIxbrl.js`, the concepts fixture | yes | yes | accounts iXBRL |
+| Companies House envelope | `buildAccountsSubmission` | yes | yes | no |
+| Presenter, counter, poll | `resolvePresenterCredentials`, `allocateSubmissionNumber`, `pollSubmission` | yes | yes | no |
+| Async record and receipt | `putAsyncRequest`, `putReceipt` | yes | yes | yes |
+| Page shell | `fileMicroEntityAccounts.html` views | same page | copy | copy |
+| Token charge | catalogue `tokenCost = 1`, `metered` | same activity | new activity | new activity |
+| Book read | `microEntityAccounts.js`, diya-gl 1.2.40 | extend | extend | extend |
+
+The page shell is the four views (company, form, preview, result), the company lookup, the
+company authentication code typed at the preview and sent once, and the test-scenario select. The
+Companies House envelope takes any iXBRL document, so B34e and B34f change only the document.
+
+**What each build adds.**
+
+| Build | Adds |
+|---|---|
+| B34f dormant | `dormant: true` wired from page to builder; section 480 statement in place of 477; trading status member; share-allocation note |
+| B34e FRS 102 1A | small-companies-regime statements; profit and loss account; directors' report; Format 1 balance sheet sub-lines; notes; prior-year columns; optional section 444 filleting |
+| B34g1 HMRC filing core | Transaction Engine envelope; IRmark; CT600 XML from the book; computations iXBRL; the accounts iXBRL wrapped in the CT600 |
+| B34g2 HMRC filing journey | Lambdas, page, catalogue activity, receipts, the link from an accepted accounts filing |
+
+B34f detail. The builder already takes `input.dormant` and writes `bus:EntityDormantTruefalse`; the
+page and `companiesHouseAccountsPost.js` never set it. A dormant filing writes
+`direp:StatementThatCompanyEntitledToExemptionFromAuditUnderSection480CompaniesAct2006RelatingToDormantCompanies`
+in place of the section 477 statement, keeps the section 476 members statement, the directors'
+responsibilities and the regime statement, and reports
+`bus:EntityTradingStatus` on `bus:EntityTradingStatusDimension` at `bus:EntityHasNeverTraded` or
+`bus:EntityNoLongerTradingButTradedInPast`. The share note uses `core:NumberSharesIssuedFullyPaid`
+and `core:NominalValueAllottedShareCapital`. Every statement stays checked by phrase. All
+concept names above are in `fixtures/frc-taxonomy/frs-102-2026-concepts.json`.
+
+B34e detail. `AccountingStandardsApplied` carries `bus:FRS102` and the accounts carry
+`bus:SmallEntities`; the regime statements are
+`direp:StatementThatAccountsHaveBeenPreparedInAccordanceWithProvisionsSmallCompaniesRegime` and
+`direp:StatementThatDirectorsReportHasBeenPreparedInAccordanceWithProvisionsSmallCompaniesRegime`.
+The P&L uses `core:TurnoverRevenue`, `core:GrossProfitLoss`, `core:OperatingProfitLoss`,
+`core:ProfitLossOnOrdinaryActivitiesBeforeTax` and `core:ProfitLoss`; the directors' report uses
+`direp:DirectorSigningDirectorsReport` and `bus:NameEntityOfficer` for each director, which the
+generic dimension validations need beside any director dimension. Filleting adds
+`direp:StatementThatDirectorsHaveElectedNotToDeliverProfitLossAccountUnderSection4445ACompaniesAct2006`
+and drops the P&L and directors' report from the Companies House copy only. B34e moves the shared
+parts of `microEntityAccountsIxbrl.js` (contexts, monetary format, statements, dimensioned
+contexts) into `app/services/accountsIxbrlCommon.js`, so the three regimes share one context and
+fact writer.
+
+B34g1 detail. HMRC takes iXBRL only inside the CT600 XML (`EncodedInlineXBRLDocument`, base64, as
+HMRC recommends), posted to the Transaction Engine. The GovTalk envelope differs from Companies
+House's: `EnvelopeVersion` 2.0, `Class` `HMRC-CT-CT600`, `Function` `submit`, `Role` `Principal`,
+`Keys/Key Type="UTR"`, `ChannelRouting/Channel/URI` the 4-digit vendor ID, and an IRmark in
+`IRheader`. The body is `IRenvelope` in `http://www.govtalk.gov.uk/taxation/CT/5`, form CT600
+(2026) Version 3, RIM artefacts V1.994 (2025-10-10), the version `ct600-v3.toml` records. The
+accounts iXBRL is B34e's full document (HMRC needs the P&L, which the micro and filleted copies
+omit), built from the same figures as the Companies House copy, so one balance sheet serves both.
+The computations iXBRL follows HMRC's computations format v1.1 (sections 1 and 2:
+accounts adjustments and capital allowances); taxable profit, losses and the tax rows sit in the
+CT600 boxes until HMRC publishes further sections. Test endpoints, from HMRC's CT XBRL technical
+pack 2.0: TPVS `https://www.tpvs.hmrc.gov.uk/HMRC/CT600` validates the payload with no
+credentials; ETS `https://test-transaction-engine.tax.service.gov.uk/submission` takes the full
+envelope with `GatewayTest` 1 and the SDS team's credentials. The test service answers a wrong
+IRmark with error 2021 and still validates the iXBRL; live stops at it.
+
+B34g2 detail. The customer's Government Gateway user ID and password for a company enrolled for
+Corporation Tax go in `IDAuthentication`, typed per filing, sent once, never stored or logged, as
+the Companies House authentication code is today. `redactPresenterCredentials` gains an HMRC twin.
+
+**Data from the customer's book.** All from diya-gl 1.2.40's `calculatedResultsFor` for a Company
+book, the outputs `../spreadsheets.diyaccounting.co.uk/app/lib/calculators/ltd.js` builds.
+
+| Figure | diya-gl output | Build | State |
+|---|---|---|---|
+| Balance sheet, current year | `PubBalSht` F6 to F39 | all | read today |
+| Balance sheet, prior year | opening balance | all | read today |
+| Balance sheet sub-lines | `PubBalSht` E10 to E30 | B34e | in the output, unread |
+| P&L, current year | `PubP&L` F7 to F54 | B34e, B34g1 | in the output, unread |
+| P&L, prior year | `PubP&L` B9, B14, B18 | B34e | set to 0 |
+| Fixed asset note | `PubNotes` columns, G8 to G20 | B34e | in the output, unread |
+| Depreciation rates | `PubNotes` B27 to B31 | B34e | in the output, unread |
+| Directors' pay, tax note | `PubNotes` D35, D41 | B34e | in the output, unread |
+| Directors, shareholdings | `Report` A97, A98, F97, F98 | B34e, B34f | in the output, unread |
+| Total shares | `Report` I95 | B34f | in the output, unread |
+| Tax computation | `CorporationTax` K5 to K39 | B34g1 | in the output, unread |
+| CT600 boxes | `CT600` cells | B34g1 | 31 of 276 boxes mapped |
+| Computation lines | `ct-computation-v1.1.toml` | B34g1 | a few lines mapped |
+
+Typed on the page, with no book figure: principal activity, accounting policies text, average
+employees, the dormant trading status, share class, the directors' report signer and date, the
+company UTR, and the CT600 declaration. A loaded book fills every field it has; the user can edit
+any field before the preview. A dormant filing refuses a book with journal lines in the period.
+
+**Pages and fields.**
+
+| Page | Build | Fields added |
+|---|---|---|
+| `fileMicroEntityAccounts.html` | B34f | dormant checkbox; trading status; shares fully paid; nominal value; share class |
+| `fileSmallCompanyAccounts.html` | B34e | balance sheet sub-lines; P&L; notes; directors' report; filleting election |
+| `fileCompanyTaxReturn.html` | B34g2 | UTR; accounts choice; CT600 review; computations review; Gateway credentials; declaration |
+
+The dormant checkbox swaps the section 477 statement for the section 480 statement.
+Every money field on the B34e page has a current and a prior column, and the review shows the
+Companies House copy and, when filleted, what it leaves out. The tax return page offers the
+accounts from an accepted Companies House filing or from the book, and the accounts result view
+links to it.
+
+**Test proofs.**
+
+| Build | Proof | Waits on |
+|---|---|---|
+| B34f | test service submit acknowledged; poll to a terminal state | terminal state: B34.6c |
+| B34e | as B34f, full and filleted | terminal state: B34.6c |
+| B34g1 | TPVS pass; ETS acknowledged and polled | ETS: O34g |
+| B34g2 | simulator journey; one ETS filing from the page | O34g |
+
+Every build proves its iXBRL against the concepts fixture and the public validator the micro
+filing passed, before any gateway call. B34f and B34e reuse the published accounts test companies
+and the test presenter; the gateway accepts a submission today and every poll answers 9999 until
+Companies House repairs the test presenter (B34.6c). O34g is the operator's registration with
+HMRC's Software Developers Support Team (SDST) for the test services: the ETS sender ID and
+password and the 4-digit vendor ID, set on GitHub's `ci` environment.
+
+**Files each build owns.**
+
+| Build | Files | Count |
+|---|---|---|
+| B34f | builder, Post and Preview Lambdas, micro page, their tests, behaviour steps, simulator fixture | ~9 |
+| B34e | `accountsIxbrlCommon.js`, `smallCompanyAccountsIxbrl.js`, book read, Lambdas, page, catalogue, tests, simulator, behaviour suite | ~16 |
+| B34g1 | `hmrcTransactionEngine.js` (envelope, IRmark, poll), `ct600Xml.js`, `ctComputationsIxbrl.js`, simulator route, fixtures, tests | ~12 |
+| B34g2 | three Lambdas, `CompaniesHouseStack.java` or a new stack, page, catalogue, receipts, behaviour suite, `REPORT_CAPABILITIES.md` | ~14 |
+
+**Size, model, order.**
+
+| Build | Size | Model | After |
+|---|---|---|---|
+| B34f | S | Sonnet | B34h |
+| B34e | M | Sonnet | B34f |
+| B34g1 | L | Opus | B34e |
+| B34g2 | M | Sonnet | B34g1, O34g |
+
+B34e follows B34f because both edit `microEntityAccountsIxbrl.js` and the accounts Lambdas. B34g1
+follows B34e because the CT600 carries B34e's full accounts document. B34g1 earns Opus for the
+IRmark canonicalisation and the CT600 box rules; the rest are Sonnet once the design fixes the
+tags. B34g1 can reach TPVS before O34g; its ETS proof waits on O34g.
+
+**Open questions.**
+
+| # | Question | Answer from | Blocks |
+|---|---|---|---|
+| 1 | Can two activities share `^/api/v1/companies-house/accounts.*`? | `bundleManagement.js` path matching | B34e |
+| 2 | Prior-year P&L: a prior book, or typed? | operator | B34e |
+| 3 | Filleted copy at Companies House: offered, and the default? | operator | B34e |
+| 4 | Dormant rules in the accounts TIS (P&L facts, trading status) | Companies House accounts TIS, XML forum | B34f |
+| 5 | One live package reference for every accounts regime? | XML team, with O34c | launch |
+| 6 | HMRC accepts FRS 102 2026-01-01 and which computations taxonomy | gov.uk "Taxonomies accepted by HMRC" | B34g1 |
+| 7 | Live Transaction Engine URL, poll and IRmark rules | Document Submission Protocol, IRmark spec | B34g1 |
+| 8 | TPVS still open to developers | SDST, "How to use the test services" | B34g1 |
+| 9 | CT recognition criteria for the software list | SDST | B34g2 launch |
+| 10 | Agent filing for `resident-pro` practices | HMRC CT technical pack | B34g2 |
+| 11 | The 245 CT600 boxes with no diya-gl cell | spreadsheets repository, `ct600-v3.toml` | B34g1 |
+| 12 | Share class and nominal value in the book | spreadsheets Companysecretary register | B34f |
+| 13 | Token charge for a paired filing: 2 tokens or 1 | operator | B34g2 |
+
+Row 2: `ltd.js` sets the prior-year P&L cells to 0, and FRS 102 1A needs comparatives. Row 3:
+the default proposed is full accounts at Companies House, with filleting as an option. Row 11:
+`ct600-v3.toml` names the spreadsheets rows T2, T7 and T8 for the remaining cells; B34g1 covers
+the boxes a small trading company fills and refuses a book that needs any other. Row 13: the
+default proposed is one token per filing sent, 2 for a pair.
+
 ## Tasks
 
 | Id | What | Files | Model | Blocked by | Class |
@@ -305,6 +481,11 @@ reference date changes.
 | CS-13b | The PSC verification statement's cases in the harness, run by its weekly workflow, pinned once a poll returns a terminal status | ~2 | Sonnet | B34.6c (Companies House IT) | Blocked |
 | CS-11b | Customer prod launch: `prod` on the confirmation statement activity's `environments`, the live Stripe price for the £61.35 fee, prod gateway values and the live package reference, the operator's own proof filing first, `compliance.toml` rows | ~7 | Sonnet | CS-A4, CS-11a | Blocked |
 | CS-P1 | Filing under a customer's own presenter: the page option, storing no credentials, the credit-account explanation, skipping the Stripe checkout at the existing fee gate | ~5 | Sonnet | CS-11b | Blocked |
+| B34f | Dormant company accounts on the micro-entity page and builder, per the B34h design | ~9 | Sonnet | B34h; B34.6c for the terminal proof | Blocked |
+| B34e | FRS 102 section 1A accounts: shared iXBRL writer, new builder, page and activity, per the B34h design | ~16 | Sonnet | B34f; B34.6c for the terminal proof | Blocked |
+| B34g1 | HMRC Transaction Engine envelope, IRmark, CT600 XML and computations iXBRL, per the B34h design | ~12 | Opus | B34e; O34g for the ETS proof | Blocked |
+| B34g2 | The CT600 filing journey: Lambdas, page, activity, receipts, per the B34h design | ~14 | Sonnet | B34g1, O34g | Blocked |
+| O34g | Register with HMRC's SDST for the CT test services; set the ETS sender ID, password and vendor ID on GitHub's `ci` environment | 0 | none | none | Operator |
 
 
 ## Task detail
