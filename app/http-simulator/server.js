@@ -13,6 +13,8 @@ import { apiEndpoint as vatObligationsEndpoint } from "./routes/vat-obligations.
 import { apiEndpoint as vatLiabilitiesEndpoint } from "./routes/vat-liabilities.js";
 import { apiEndpoint as vatPaymentsEndpoint } from "./routes/vat-payments.js";
 import { apiEndpoint as vatPenaltiesEndpoint } from "./routes/vat-penalties.js";
+import { apiEndpoint as vatAssistEndpoint } from "./routes/vat-assist.js";
+import { apiEndpoint as itsaAssistEndpoint } from "./routes/itsa-assist.js";
 import { apiEndpoint as agentAuthorisationEndpoint } from "./routes/agent-authorisation.js";
 import { apiEndpoint as itsaBusinessDetailsEndpoint } from "./routes/itsa-business-details.js";
 import { apiEndpoint as itsaTestSupportEndpoint } from "./routes/itsa-test-support.js";
@@ -84,6 +86,8 @@ export function createApp() {
   vatLiabilitiesEndpoint(app);
   vatPaymentsEndpoint(app);
   vatPenaltiesEndpoint(app);
+  vatAssistEndpoint(app);
+  itsaAssistEndpoint(app);
   agentAuthorisationEndpoint(app);
   itsaBusinessDetailsEndpoint(app);
   itsaTestSupportEndpoint(app);
