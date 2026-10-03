@@ -66,6 +66,10 @@ public class DataStack extends Stack {
     public ITable hmrcItsaCalculationTriggerPostAsyncRequestsTable;
     public ITable hmrcItsaCalculationGetAsyncRequestsTable;
     public ITable hmrcItsaFinalDeclarationPostAsyncRequestsTable;
+    public ITable hmrcVatAssistReportPostAsyncRequestsTable;
+    public ITable hmrcVatAssistAcknowledgePostAsyncRequestsTable;
+    public ITable hmrcItsaAssistReportPostAsyncRequestsTable;
+    public ITable hmrcItsaAssistAcknowledgePostAsyncRequestsTable;
     public ITable hmrcItsaLossesAndClaimsGetAsyncRequestsTable;
     public ITable hmrcItsaLossesAndClaimsPutAsyncRequestsTable;
     public ITable hmrcItsaLossesAndClaimsDeleteAsyncRequestsTable;
@@ -695,6 +699,70 @@ public class DataStack extends Stack {
                 "Ensured HMRC ITSA final declaration async requests DynamoDB table with name %s",
                 props.sharedNames().hmrcItsaFinalDeclarationPostAsyncRequestsTableName);
 
+        // HMRC VAT Assist report async request storage
+        this.hmrcVatAssistReportPostAsyncRequestsTable = ensureTable(
+                this,
+                props.resourceNamePrefix() + "-HmrcVatAssistReportPostAsyncRequestsTable",
+                props.sharedNames().hmrcVatAssistReportPostAsyncRequestsTableName,
+                "hashedSub",
+                "requestId");
+        ensureTimeToLive(
+                this,
+                props.resourceNamePrefix() + "-HmrcVatAssistReportPostAsyncTTL",
+                props.sharedNames().hmrcVatAssistReportPostAsyncRequestsTableName,
+                "ttl");
+        infof(
+                "Ensured HMRC VAT Assist report async requests DynamoDB table with name %s",
+                props.sharedNames().hmrcVatAssistReportPostAsyncRequestsTableName);
+
+        // HMRC VAT Assist acknowledge async request storage
+        this.hmrcVatAssistAcknowledgePostAsyncRequestsTable = ensureTable(
+                this,
+                props.resourceNamePrefix() + "-HmrcVatAssistAcknowledgePostAsyncRequestsTable",
+                props.sharedNames().hmrcVatAssistAcknowledgePostAsyncRequestsTableName,
+                "hashedSub",
+                "requestId");
+        ensureTimeToLive(
+                this,
+                props.resourceNamePrefix() + "-HmrcVatAssistAcknowledgePostAsyncTTL",
+                props.sharedNames().hmrcVatAssistAcknowledgePostAsyncRequestsTableName,
+                "ttl");
+        infof(
+                "Ensured HMRC VAT Assist acknowledge async requests DynamoDB table with name %s",
+                props.sharedNames().hmrcVatAssistAcknowledgePostAsyncRequestsTableName);
+
+        // HMRC ITSA Assist report async request storage
+        this.hmrcItsaAssistReportPostAsyncRequestsTable = ensureTable(
+                this,
+                props.resourceNamePrefix() + "-HmrcItsaAssistReportPostAsyncRequestsTable",
+                props.sharedNames().hmrcItsaAssistReportPostAsyncRequestsTableName,
+                "hashedSub",
+                "requestId");
+        ensureTimeToLive(
+                this,
+                props.resourceNamePrefix() + "-HmrcItsaAssistReportPostAsyncTTL",
+                props.sharedNames().hmrcItsaAssistReportPostAsyncRequestsTableName,
+                "ttl");
+        infof(
+                "Ensured HMRC ITSA Assist report async requests DynamoDB table with name %s",
+                props.sharedNames().hmrcItsaAssistReportPostAsyncRequestsTableName);
+
+        // HMRC ITSA Assist acknowledge async request storage
+        this.hmrcItsaAssistAcknowledgePostAsyncRequestsTable = ensureTable(
+                this,
+                props.resourceNamePrefix() + "-HmrcItsaAssistAcknowledgePostAsyncRequestsTable",
+                props.sharedNames().hmrcItsaAssistAcknowledgePostAsyncRequestsTableName,
+                "hashedSub",
+                "requestId");
+        ensureTimeToLive(
+                this,
+                props.resourceNamePrefix() + "-HmrcItsaAssistAcknowledgePostAsyncTTL",
+                props.sharedNames().hmrcItsaAssistAcknowledgePostAsyncRequestsTableName,
+                "ttl");
+        infof(
+                "Ensured HMRC ITSA Assist acknowledge async requests DynamoDB table with name %s",
+                props.sharedNames().hmrcItsaAssistAcknowledgePostAsyncRequestsTableName);
+
         // HMRC ITSA losses and claims GET (retrieve) async request storage
         this.hmrcItsaLossesAndClaimsGetAsyncRequestsTable = ensureTable(
                 this,
@@ -1202,6 +1270,38 @@ public class DataStack extends Stack {
                 this,
                 "HmrcItsaFinalDeclarationPostAsyncRequestsTableArn",
                 this.hmrcItsaFinalDeclarationPostAsyncRequestsTable.getTableArn());
+        cfnOutput(
+                this,
+                "HmrcVatAssistReportPostAsyncRequestsTableName",
+                this.hmrcVatAssistReportPostAsyncRequestsTable.getTableName());
+        cfnOutput(
+                this,
+                "HmrcVatAssistReportPostAsyncRequestsTableArn",
+                this.hmrcVatAssistReportPostAsyncRequestsTable.getTableArn());
+        cfnOutput(
+                this,
+                "HmrcVatAssistAcknowledgePostAsyncRequestsTableName",
+                this.hmrcVatAssistAcknowledgePostAsyncRequestsTable.getTableName());
+        cfnOutput(
+                this,
+                "HmrcVatAssistAcknowledgePostAsyncRequestsTableArn",
+                this.hmrcVatAssistAcknowledgePostAsyncRequestsTable.getTableArn());
+        cfnOutput(
+                this,
+                "HmrcItsaAssistReportPostAsyncRequestsTableName",
+                this.hmrcItsaAssistReportPostAsyncRequestsTable.getTableName());
+        cfnOutput(
+                this,
+                "HmrcItsaAssistReportPostAsyncRequestsTableArn",
+                this.hmrcItsaAssistReportPostAsyncRequestsTable.getTableArn());
+        cfnOutput(
+                this,
+                "HmrcItsaAssistAcknowledgePostAsyncRequestsTableName",
+                this.hmrcItsaAssistAcknowledgePostAsyncRequestsTable.getTableName());
+        cfnOutput(
+                this,
+                "HmrcItsaAssistAcknowledgePostAsyncRequestsTableArn",
+                this.hmrcItsaAssistAcknowledgePostAsyncRequestsTable.getTableArn());
         cfnOutput(
                 this,
                 "HmrcItsaLossesAndClaimsGetAsyncRequestsTableName",

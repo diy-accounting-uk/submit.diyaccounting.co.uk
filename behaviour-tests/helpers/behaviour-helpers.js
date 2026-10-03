@@ -221,6 +221,18 @@ export async function runLocalDynamoDb(runDynamoDb, bundleTableName, hmrcApiRequ
     const hmrcItsaFinalDeclarationPostAsyncTable = process.env.HMRC_ITSA_FINAL_DECLARATION_POST_ASYNC_REQUESTS_TABLE_NAME;
     if (hmrcItsaFinalDeclarationPostAsyncTable) await ensureAsyncRequestsTableExists(hmrcItsaFinalDeclarationPostAsyncTable, endpoint);
 
+    const hmrcVatAssistReportPostAsyncTable = process.env.HMRC_VAT_ASSIST_REPORT_POST_ASYNC_REQUESTS_TABLE_NAME;
+    if (hmrcVatAssistReportPostAsyncTable) await ensureAsyncRequestsTableExists(hmrcVatAssistReportPostAsyncTable, endpoint);
+
+    const hmrcVatAssistAcknowledgePostAsyncTable = process.env.HMRC_VAT_ASSIST_ACKNOWLEDGE_POST_ASYNC_REQUESTS_TABLE_NAME;
+    if (hmrcVatAssistAcknowledgePostAsyncTable) await ensureAsyncRequestsTableExists(hmrcVatAssistAcknowledgePostAsyncTable, endpoint);
+
+    const hmrcItsaAssistReportPostAsyncTable = process.env.HMRC_ITSA_ASSIST_REPORT_POST_ASYNC_REQUESTS_TABLE_NAME;
+    if (hmrcItsaAssistReportPostAsyncTable) await ensureAsyncRequestsTableExists(hmrcItsaAssistReportPostAsyncTable, endpoint);
+
+    const hmrcItsaAssistAcknowledgePostAsyncTable = process.env.HMRC_ITSA_ASSIST_ACKNOWLEDGE_POST_ASYNC_REQUESTS_TABLE_NAME;
+    if (hmrcItsaAssistAcknowledgePostAsyncTable) await ensureAsyncRequestsTableExists(hmrcItsaAssistAcknowledgePostAsyncTable, endpoint);
+
     const hmrcItsaLossesAndClaimsGetAsyncTable = process.env.HMRC_ITSA_LOSSES_AND_CLAIMS_GET_ASYNC_REQUESTS_TABLE_NAME;
     if (hmrcItsaLossesAndClaimsGetAsyncTable) await ensureAsyncRequestsTableExists(hmrcItsaLossesAndClaimsGetAsyncTable, endpoint);
 

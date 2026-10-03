@@ -93,8 +93,8 @@ class SubmitApplicationCdkResourceTest {
 
         infof("Created stack:", submitApplication.hmrcItsaStack.getStackName());
         Template hmrcItsaStackTemplate = Template.fromStack(submitApplication.hmrcItsaStack);
-        hmrcItsaStackTemplate.resourceCountIs("AWS::Lambda::Function", 28);
-        assertStackHealthAlarm(hmrcItsaStackTemplate, 14, 14, routedPrefixes);
+        hmrcItsaStackTemplate.resourceCountIs("AWS::Lambda::Function", 36);
+        assertStackHealthAlarm(hmrcItsaStackTemplate, 18, 18, routedPrefixes);
 
         infof("Created stack:", submitApplication.companiesHouseStack.getStackName());
         Template companiesHouseStackTemplate = Template.fromStack(submitApplication.companiesHouseStack);
@@ -342,7 +342,7 @@ class SubmitApplicationCdkResourceTest {
         // cross-origin browser preflight to reach a route with no authoriser, the same reason
         // the books routes get one), for 170 + 3 = 173. POST /api/v1/activity/started adds its own
         // route plus its own auto-HEAD route, for 173 + 2 = 175.
-        apiStackTemplate.resourceCountIs("AWS::ApiGatewayV2::Route", 179);
+        apiStackTemplate.resourceCountIs("AWS::ApiGatewayV2::Route", 187);
 
         // Dashboard moved to environment-level ObservabilityStack
         infof("Created stack:", submitApplication.opsStack.getStackName());

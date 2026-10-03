@@ -95,6 +95,22 @@ public class HmrcItsaStack extends Stack {
     public Function hmrcItsaTaxLiabilityAdjustmentsDeleteLambda;
     public ILogGroup hmrcItsaTaxLiabilityAdjustmentsDeleteLambdaLogGroup;
 
+    public AbstractApiLambdaProps hmrcVatAssistReportPostLambdaProps;
+    public Function hmrcVatAssistReportPostLambda;
+    public ILogGroup hmrcVatAssistReportPostLambdaLogGroup;
+
+    public AbstractApiLambdaProps hmrcVatAssistAcknowledgePostLambdaProps;
+    public Function hmrcVatAssistAcknowledgePostLambda;
+    public ILogGroup hmrcVatAssistAcknowledgePostLambdaLogGroup;
+
+    public AbstractApiLambdaProps hmrcItsaAssistReportPostLambdaProps;
+    public Function hmrcItsaAssistReportPostLambda;
+    public ILogGroup hmrcItsaAssistReportPostLambdaLogGroup;
+
+    public AbstractApiLambdaProps hmrcItsaAssistAcknowledgePostLambdaProps;
+    public Function hmrcItsaAssistAcknowledgePostLambda;
+    public ILogGroup hmrcItsaAssistAcknowledgePostLambdaLogGroup;
+
     public List<AbstractApiLambdaProps> lambdaFunctionProps;
 
     @Value.Immutable
@@ -254,6 +270,30 @@ public class HmrcItsaStack extends Stack {
                 this,
                 "ImportedHmrcItsaTaxLiabilityAdjustmentsDeleteAsyncRequestsTable-%s".formatted(props.deploymentName()),
                 props.sharedNames().hmrcItsaTaxLiabilityAdjustmentsDeleteAsyncRequestsTableName);
+
+        // Lookup existing DynamoDB HMRC VAT Assist report async request table
+        ITable hmrcVatAssistReportPostAsyncRequestsTable = Table.fromTableName(
+                this,
+                "ImportedHmrcVatAssistReportPostAsyncRequestsTable-%s".formatted(props.deploymentName()),
+                props.sharedNames().hmrcVatAssistReportPostAsyncRequestsTableName);
+
+        // Lookup existing DynamoDB HMRC VAT Assist acknowledge async request table
+        ITable hmrcVatAssistAcknowledgePostAsyncRequestsTable = Table.fromTableName(
+                this,
+                "ImportedHmrcVatAssistAcknowledgePostAsyncRequestsTable-%s".formatted(props.deploymentName()),
+                props.sharedNames().hmrcVatAssistAcknowledgePostAsyncRequestsTableName);
+
+        // Lookup existing DynamoDB HMRC ITSA Assist report async request table
+        ITable hmrcItsaAssistReportPostAsyncRequestsTable = Table.fromTableName(
+                this,
+                "ImportedHmrcItsaAssistReportPostAsyncRequestsTable-%s".formatted(props.deploymentName()),
+                props.sharedNames().hmrcItsaAssistReportPostAsyncRequestsTableName);
+
+        // Lookup existing DynamoDB HMRC ITSA Assist acknowledge async request table
+        ITable hmrcItsaAssistAcknowledgePostAsyncRequestsTable = Table.fromTableName(
+                this,
+                "ImportedHmrcItsaAssistAcknowledgePostAsyncRequestsTable-%s".formatted(props.deploymentName()),
+                props.sharedNames().hmrcItsaAssistAcknowledgePostAsyncRequestsTableName);
 
         this.lambdaFunctionProps = new java.util.ArrayList<>();
 
@@ -1488,6 +1528,350 @@ public class HmrcItsaStack extends Stack {
                 "Granted DynamoDB and Secrets Manager salt permissions to %s and its worker",
                 this.hmrcItsaTaxLiabilityAdjustmentsDeleteLambda.getFunctionName());
 
+        // VAT Assist report
+        var vatAssistReportPostLambdaEnv = new PopulatedMap<String, String>()
+                .with("DIY_SUBMIT_BASE_URL", props.sharedNames().publicBaseUrl)
+                .with("HMRC_BASE_URI", props.hmrcBaseUri())
+                .with("HMRC_SANDBOX_BASE_URI", props.hmrcSandboxBaseUri())
+                .with("BUNDLE_DYNAMODB_TABLE_NAME", props.sharedNames().bundlesTableName)
+                .with("HMRC_API_REQUESTS_DYNAMODB_TABLE_NAME", hmrcApiRequestsTable.getTableName())
+                .with("RECEIPTS_DYNAMODB_TABLE_NAME", props.sharedNames().receiptsTableName)
+                .with(
+                        "HMRC_VAT_ASSIST_REPORT_POST_ASYNC_REQUESTS_TABLE_NAME",
+                        hmrcVatAssistReportPostAsyncRequestsTable.getTableName())
+                .with("ACTIVITY_BUS_NAME", props.sharedNames().activityBusName)
+                .with("ENVIRONMENT_NAME", props.envName());
+        if (props.mcpUserPoolClientId() != null && !props.mcpUserPoolClientId().isBlank()) {
+            vatAssistReportPostLambdaEnv.with("COGNITO_MCP_CLIENT_ID", props.mcpUserPoolClientId());
+        }
+        var hmrcVatAssistReportPostLambdaUrlOrigin = new AsyncApiLambda(
+                this,
+                AsyncApiLambdaProps.builder()
+                        .idPrefix(props.sharedNames().hmrcVatAssistReportPostIngestLambdaFunctionName)
+                        .baseImageTag(props.baseImageTag())
+                        .ecrRepositoryName(props.sharedNames().ecrRepositoryName)
+                        .ecrRepositoryArn(props.sharedNames().ecrRepositoryArn)
+                        .ingestFunctionName(props.sharedNames().hmrcVatAssistReportPostIngestLambdaFunctionName)
+                        .ingestHandler(props.sharedNames().hmrcVatAssistReportPostIngestLambdaHandler)
+                        .ingestLambdaArn(props.sharedNames().hmrcVatAssistReportPostIngestLambdaArn)
+                        .ingestProvisionedConcurrencyAliasArn(props.sharedNames()
+                                .hmrcVatAssistReportPostIngestProvisionedConcurrencyLambdaAliasArn)
+                        .workerFunctionName(props.sharedNames().hmrcVatAssistReportPostWorkerLambdaFunctionName)
+                        .workerHandler(props.sharedNames().hmrcVatAssistReportPostWorkerLambdaHandler)
+                        .workerLambdaArn(props.sharedNames().hmrcVatAssistReportPostWorkerLambdaArn)
+                        .workerProvisionedConcurrencyAliasArn(props.sharedNames()
+                                .hmrcVatAssistReportPostWorkerProvisionedConcurrencyLambdaAliasArn)
+                        .workerQueueName(props.sharedNames().hmrcVatAssistReportPostLambdaQueueName)
+                        .workerDeadLetterQueueName(
+                                props.sharedNames().hmrcVatAssistReportPostLambdaDeadLetterQueueName)
+                        .workerProvisionedConcurrency(0)
+                        .workerLambdaTimeout(Duration.seconds(120))
+                        .queueVisibilityTimeout(Duration.seconds(140))
+                        .provisionedConcurrencyAliasName(props.sharedNames().provisionedConcurrencyAliasName)
+                        .httpMethod(props.sharedNames().hmrcVatAssistReportPostLambdaHttpMethod)
+                        .urlPath(props.sharedNames().hmrcVatAssistReportPostLambdaUrlPath)
+                        .jwtAuthorizer(props.sharedNames().hmrcVatAssistReportPostLambdaJwtAuthorizer)
+                        .customAuthorizer(props.sharedNames().hmrcVatAssistReportPostLambdaCustomAuthorizer)
+                        .environment(vatAssistReportPostLambdaEnv)
+                        .build());
+
+        // Update API environment with SQS queue URL
+        vatAssistReportPostLambdaEnv.put(
+                "SQS_QUEUE_URL", hmrcVatAssistReportPostLambdaUrlOrigin.queue.getQueueUrl());
+
+        this.hmrcVatAssistReportPostLambdaProps = hmrcVatAssistReportPostLambdaUrlOrigin.apiProps;
+        this.hmrcVatAssistReportPostLambda = hmrcVatAssistReportPostLambdaUrlOrigin.ingestLambda;
+        this.hmrcVatAssistReportPostLambdaLogGroup = hmrcVatAssistReportPostLambdaUrlOrigin.logGroup;
+        this.lambdaFunctionProps.add(this.hmrcVatAssistReportPostLambdaProps);
+        infof(
+                "Created Async API Lambda %s for VAT Assist report with ingestHandler %s and worker %s",
+                this.hmrcVatAssistReportPostLambda.getNode().getId(),
+                props.sharedNames().hmrcVatAssistReportPostIngestLambdaHandler,
+                props.sharedNames().hmrcVatAssistReportPostWorkerLambdaHandler);
+
+        // Grant the VAT Assist report Lambda and its worker the bundles read, receipt access and async request table access.
+        List.of(this.hmrcVatAssistReportPostLambda, hmrcVatAssistReportPostLambdaUrlOrigin.workerLambda)
+                .forEach(fn -> {
+                    bundlesTable.grant(fn, "dynamodb:Query");
+                    hmrcApiRequestsTable.grant(fn, "dynamodb:PutItem");
+                    receiptsTable.grant(fn, "dynamodb:PutItem");
+                    hmrcVatAssistReportPostAsyncRequestsTable.grant(fn, "dynamodb:GetItem", "dynamodb:UpdateItem");
+
+                    // Grant access to user sub hash salt secret in Secrets Manager
+                    SubHashSaltHelper.grantSaltAccess(fn, region, account, props.envName());
+
+                    // enforceBundles() grants the operator bundle to an email on the operator list
+                    OperatorEmailsHelper.grantOperatorEmailsAccess(fn, region, account, props.envName());
+
+                    // Grant EventBridge PutEvents permission
+                    fn.addToRolePolicy(PolicyStatement.Builder.create()
+                            .effect(Effect.ALLOW)
+                            .actions(List.of("events:PutEvents"))
+                            .resources(List.of(activityBusArn))
+                            .build());
+                });
+        infof(
+                "Granted DynamoDB and Secrets Manager salt permissions to %s and its worker",
+                this.hmrcVatAssistReportPostLambda.getFunctionName());
+
+        // VAT Assist acknowledge
+        var vatAssistAcknowledgePostLambdaEnv = new PopulatedMap<String, String>()
+                .with("DIY_SUBMIT_BASE_URL", props.sharedNames().publicBaseUrl)
+                .with("HMRC_BASE_URI", props.hmrcBaseUri())
+                .with("HMRC_SANDBOX_BASE_URI", props.hmrcSandboxBaseUri())
+                .with("BUNDLE_DYNAMODB_TABLE_NAME", props.sharedNames().bundlesTableName)
+                .with("HMRC_API_REQUESTS_DYNAMODB_TABLE_NAME", hmrcApiRequestsTable.getTableName())
+                .with("RECEIPTS_DYNAMODB_TABLE_NAME", props.sharedNames().receiptsTableName)
+                .with(
+                        "HMRC_VAT_ASSIST_ACKNOWLEDGE_POST_ASYNC_REQUESTS_TABLE_NAME",
+                        hmrcVatAssistAcknowledgePostAsyncRequestsTable.getTableName())
+                .with("ACTIVITY_BUS_NAME", props.sharedNames().activityBusName)
+                .with("ENVIRONMENT_NAME", props.envName());
+        if (props.mcpUserPoolClientId() != null && !props.mcpUserPoolClientId().isBlank()) {
+            vatAssistAcknowledgePostLambdaEnv.with("COGNITO_MCP_CLIENT_ID", props.mcpUserPoolClientId());
+        }
+        var hmrcVatAssistAcknowledgePostLambdaUrlOrigin = new AsyncApiLambda(
+                this,
+                AsyncApiLambdaProps.builder()
+                        .idPrefix(props.sharedNames().hmrcVatAssistAcknowledgePostIngestLambdaFunctionName)
+                        .baseImageTag(props.baseImageTag())
+                        .ecrRepositoryName(props.sharedNames().ecrRepositoryName)
+                        .ecrRepositoryArn(props.sharedNames().ecrRepositoryArn)
+                        .ingestFunctionName(props.sharedNames().hmrcVatAssistAcknowledgePostIngestLambdaFunctionName)
+                        .ingestHandler(props.sharedNames().hmrcVatAssistAcknowledgePostIngestLambdaHandler)
+                        .ingestLambdaArn(props.sharedNames().hmrcVatAssistAcknowledgePostIngestLambdaArn)
+                        .ingestProvisionedConcurrencyAliasArn(props.sharedNames()
+                                .hmrcVatAssistAcknowledgePostIngestProvisionedConcurrencyLambdaAliasArn)
+                        .workerFunctionName(props.sharedNames().hmrcVatAssistAcknowledgePostWorkerLambdaFunctionName)
+                        .workerHandler(props.sharedNames().hmrcVatAssistAcknowledgePostWorkerLambdaHandler)
+                        .workerLambdaArn(props.sharedNames().hmrcVatAssistAcknowledgePostWorkerLambdaArn)
+                        .workerProvisionedConcurrencyAliasArn(props.sharedNames()
+                                .hmrcVatAssistAcknowledgePostWorkerProvisionedConcurrencyLambdaAliasArn)
+                        .workerQueueName(props.sharedNames().hmrcVatAssistAcknowledgePostLambdaQueueName)
+                        .workerDeadLetterQueueName(
+                                props.sharedNames().hmrcVatAssistAcknowledgePostLambdaDeadLetterQueueName)
+                        .workerProvisionedConcurrency(0)
+                        .workerLambdaTimeout(Duration.seconds(120))
+                        .queueVisibilityTimeout(Duration.seconds(140))
+                        .provisionedConcurrencyAliasName(props.sharedNames().provisionedConcurrencyAliasName)
+                        .httpMethod(props.sharedNames().hmrcVatAssistAcknowledgePostLambdaHttpMethod)
+                        .urlPath(props.sharedNames().hmrcVatAssistAcknowledgePostLambdaUrlPath)
+                        .jwtAuthorizer(props.sharedNames().hmrcVatAssistAcknowledgePostLambdaJwtAuthorizer)
+                        .customAuthorizer(props.sharedNames().hmrcVatAssistAcknowledgePostLambdaCustomAuthorizer)
+                        .environment(vatAssistAcknowledgePostLambdaEnv)
+                        .build());
+
+        // Update API environment with SQS queue URL
+        vatAssistAcknowledgePostLambdaEnv.put(
+                "SQS_QUEUE_URL", hmrcVatAssistAcknowledgePostLambdaUrlOrigin.queue.getQueueUrl());
+
+        this.hmrcVatAssistAcknowledgePostLambdaProps = hmrcVatAssistAcknowledgePostLambdaUrlOrigin.apiProps;
+        this.hmrcVatAssistAcknowledgePostLambda = hmrcVatAssistAcknowledgePostLambdaUrlOrigin.ingestLambda;
+        this.hmrcVatAssistAcknowledgePostLambdaLogGroup = hmrcVatAssistAcknowledgePostLambdaUrlOrigin.logGroup;
+        this.lambdaFunctionProps.add(this.hmrcVatAssistAcknowledgePostLambdaProps);
+        infof(
+                "Created Async API Lambda %s for VAT Assist acknowledge with ingestHandler %s and worker %s",
+                this.hmrcVatAssistAcknowledgePostLambda.getNode().getId(),
+                props.sharedNames().hmrcVatAssistAcknowledgePostIngestLambdaHandler,
+                props.sharedNames().hmrcVatAssistAcknowledgePostWorkerLambdaHandler);
+
+        // Grant the VAT Assist acknowledge Lambda and its worker the bundles read, receipt access and async request table access.
+        List.of(this.hmrcVatAssistAcknowledgePostLambda, hmrcVatAssistAcknowledgePostLambdaUrlOrigin.workerLambda)
+                .forEach(fn -> {
+                    bundlesTable.grant(fn, "dynamodb:Query");
+                    hmrcApiRequestsTable.grant(fn, "dynamodb:PutItem");
+                    receiptsTable.grant(fn, "dynamodb:GetItem", "dynamodb:PutItem");
+                    hmrcVatAssistAcknowledgePostAsyncRequestsTable.grant(fn, "dynamodb:GetItem", "dynamodb:UpdateItem");
+
+                    // Grant access to user sub hash salt secret in Secrets Manager
+                    SubHashSaltHelper.grantSaltAccess(fn, region, account, props.envName());
+
+                    // enforceBundles() grants the operator bundle to an email on the operator list
+                    OperatorEmailsHelper.grantOperatorEmailsAccess(fn, region, account, props.envName());
+
+                    // Grant EventBridge PutEvents permission
+                    fn.addToRolePolicy(PolicyStatement.Builder.create()
+                            .effect(Effect.ALLOW)
+                            .actions(List.of("events:PutEvents"))
+                            .resources(List.of(activityBusArn))
+                            .build());
+                });
+        infof(
+                "Granted DynamoDB and Secrets Manager salt permissions to %s and its worker",
+                this.hmrcVatAssistAcknowledgePostLambda.getFunctionName());
+
+        // ITSA Assist report
+        var itsaAssistReportPostLambdaEnv = new PopulatedMap<String, String>()
+                .with("DIY_SUBMIT_BASE_URL", props.sharedNames().publicBaseUrl)
+                .with("HMRC_BASE_URI", props.hmrcBaseUri())
+                .with("HMRC_SANDBOX_BASE_URI", props.hmrcSandboxBaseUri())
+                .with("BUNDLE_DYNAMODB_TABLE_NAME", props.sharedNames().bundlesTableName)
+                .with("HMRC_API_REQUESTS_DYNAMODB_TABLE_NAME", hmrcApiRequestsTable.getTableName())
+                .with("RECEIPTS_DYNAMODB_TABLE_NAME", props.sharedNames().receiptsTableName)
+                .with(
+                        "HMRC_ITSA_ASSIST_REPORT_POST_ASYNC_REQUESTS_TABLE_NAME",
+                        hmrcItsaAssistReportPostAsyncRequestsTable.getTableName())
+                .with("ACTIVITY_BUS_NAME", props.sharedNames().activityBusName)
+                .with("ENVIRONMENT_NAME", props.envName());
+        if (props.mcpUserPoolClientId() != null && !props.mcpUserPoolClientId().isBlank()) {
+            itsaAssistReportPostLambdaEnv.with("COGNITO_MCP_CLIENT_ID", props.mcpUserPoolClientId());
+        }
+        var hmrcItsaAssistReportPostLambdaUrlOrigin = new AsyncApiLambda(
+                this,
+                AsyncApiLambdaProps.builder()
+                        .idPrefix(props.sharedNames().hmrcItsaAssistReportPostIngestLambdaFunctionName)
+                        .baseImageTag(props.baseImageTag())
+                        .ecrRepositoryName(props.sharedNames().ecrRepositoryName)
+                        .ecrRepositoryArn(props.sharedNames().ecrRepositoryArn)
+                        .ingestFunctionName(props.sharedNames().hmrcItsaAssistReportPostIngestLambdaFunctionName)
+                        .ingestHandler(props.sharedNames().hmrcItsaAssistReportPostIngestLambdaHandler)
+                        .ingestLambdaArn(props.sharedNames().hmrcItsaAssistReportPostIngestLambdaArn)
+                        .ingestProvisionedConcurrencyAliasArn(props.sharedNames()
+                                .hmrcItsaAssistReportPostIngestProvisionedConcurrencyLambdaAliasArn)
+                        .workerFunctionName(props.sharedNames().hmrcItsaAssistReportPostWorkerLambdaFunctionName)
+                        .workerHandler(props.sharedNames().hmrcItsaAssistReportPostWorkerLambdaHandler)
+                        .workerLambdaArn(props.sharedNames().hmrcItsaAssistReportPostWorkerLambdaArn)
+                        .workerProvisionedConcurrencyAliasArn(props.sharedNames()
+                                .hmrcItsaAssistReportPostWorkerProvisionedConcurrencyLambdaAliasArn)
+                        .workerQueueName(props.sharedNames().hmrcItsaAssistReportPostLambdaQueueName)
+                        .workerDeadLetterQueueName(
+                                props.sharedNames().hmrcItsaAssistReportPostLambdaDeadLetterQueueName)
+                        .workerProvisionedConcurrency(0)
+                        .workerLambdaTimeout(Duration.seconds(120))
+                        .queueVisibilityTimeout(Duration.seconds(140))
+                        .provisionedConcurrencyAliasName(props.sharedNames().provisionedConcurrencyAliasName)
+                        .httpMethod(props.sharedNames().hmrcItsaAssistReportPostLambdaHttpMethod)
+                        .urlPath(props.sharedNames().hmrcItsaAssistReportPostLambdaUrlPath)
+                        .jwtAuthorizer(props.sharedNames().hmrcItsaAssistReportPostLambdaJwtAuthorizer)
+                        .customAuthorizer(props.sharedNames().hmrcItsaAssistReportPostLambdaCustomAuthorizer)
+                        .environment(itsaAssistReportPostLambdaEnv)
+                        .build());
+
+        // Update API environment with SQS queue URL
+        itsaAssistReportPostLambdaEnv.put(
+                "SQS_QUEUE_URL", hmrcItsaAssistReportPostLambdaUrlOrigin.queue.getQueueUrl());
+
+        this.hmrcItsaAssistReportPostLambdaProps = hmrcItsaAssistReportPostLambdaUrlOrigin.apiProps;
+        this.hmrcItsaAssistReportPostLambda = hmrcItsaAssistReportPostLambdaUrlOrigin.ingestLambda;
+        this.hmrcItsaAssistReportPostLambdaLogGroup = hmrcItsaAssistReportPostLambdaUrlOrigin.logGroup;
+        this.lambdaFunctionProps.add(this.hmrcItsaAssistReportPostLambdaProps);
+        infof(
+                "Created Async API Lambda %s for ITSA Assist report with ingestHandler %s and worker %s",
+                this.hmrcItsaAssistReportPostLambda.getNode().getId(),
+                props.sharedNames().hmrcItsaAssistReportPostIngestLambdaHandler,
+                props.sharedNames().hmrcItsaAssistReportPostWorkerLambdaHandler);
+
+        // Grant the ITSA Assist report Lambda and its worker the bundles read, receipt access and async request table access.
+        List.of(this.hmrcItsaAssistReportPostLambda, hmrcItsaAssistReportPostLambdaUrlOrigin.workerLambda)
+                .forEach(fn -> {
+                    bundlesTable.grant(fn, "dynamodb:Query");
+                    hmrcApiRequestsTable.grant(fn, "dynamodb:PutItem");
+                    receiptsTable.grant(fn, "dynamodb:PutItem");
+                    hmrcItsaAssistReportPostAsyncRequestsTable.grant(fn, "dynamodb:GetItem", "dynamodb:UpdateItem");
+
+                    // Grant access to user sub hash salt secret in Secrets Manager
+                    SubHashSaltHelper.grantSaltAccess(fn, region, account, props.envName());
+
+                    // enforceBundles() grants the operator bundle to an email on the operator list
+                    OperatorEmailsHelper.grantOperatorEmailsAccess(fn, region, account, props.envName());
+
+                    // Grant EventBridge PutEvents permission
+                    fn.addToRolePolicy(PolicyStatement.Builder.create()
+                            .effect(Effect.ALLOW)
+                            .actions(List.of("events:PutEvents"))
+                            .resources(List.of(activityBusArn))
+                            .build());
+                });
+        infof(
+                "Granted DynamoDB and Secrets Manager salt permissions to %s and its worker",
+                this.hmrcItsaAssistReportPostLambda.getFunctionName());
+
+        // ITSA Assist acknowledge
+        var itsaAssistAcknowledgePostLambdaEnv = new PopulatedMap<String, String>()
+                .with("DIY_SUBMIT_BASE_URL", props.sharedNames().publicBaseUrl)
+                .with("HMRC_BASE_URI", props.hmrcBaseUri())
+                .with("HMRC_SANDBOX_BASE_URI", props.hmrcSandboxBaseUri())
+                .with("BUNDLE_DYNAMODB_TABLE_NAME", props.sharedNames().bundlesTableName)
+                .with("HMRC_API_REQUESTS_DYNAMODB_TABLE_NAME", hmrcApiRequestsTable.getTableName())
+                .with("RECEIPTS_DYNAMODB_TABLE_NAME", props.sharedNames().receiptsTableName)
+                .with(
+                        "HMRC_ITSA_ASSIST_ACKNOWLEDGE_POST_ASYNC_REQUESTS_TABLE_NAME",
+                        hmrcItsaAssistAcknowledgePostAsyncRequestsTable.getTableName())
+                .with("ACTIVITY_BUS_NAME", props.sharedNames().activityBusName)
+                .with("ENVIRONMENT_NAME", props.envName());
+        if (props.mcpUserPoolClientId() != null && !props.mcpUserPoolClientId().isBlank()) {
+            itsaAssistAcknowledgePostLambdaEnv.with("COGNITO_MCP_CLIENT_ID", props.mcpUserPoolClientId());
+        }
+        var hmrcItsaAssistAcknowledgePostLambdaUrlOrigin = new AsyncApiLambda(
+                this,
+                AsyncApiLambdaProps.builder()
+                        .idPrefix(props.sharedNames().hmrcItsaAssistAcknowledgePostIngestLambdaFunctionName)
+                        .baseImageTag(props.baseImageTag())
+                        .ecrRepositoryName(props.sharedNames().ecrRepositoryName)
+                        .ecrRepositoryArn(props.sharedNames().ecrRepositoryArn)
+                        .ingestFunctionName(props.sharedNames().hmrcItsaAssistAcknowledgePostIngestLambdaFunctionName)
+                        .ingestHandler(props.sharedNames().hmrcItsaAssistAcknowledgePostIngestLambdaHandler)
+                        .ingestLambdaArn(props.sharedNames().hmrcItsaAssistAcknowledgePostIngestLambdaArn)
+                        .ingestProvisionedConcurrencyAliasArn(props.sharedNames()
+                                .hmrcItsaAssistAcknowledgePostIngestProvisionedConcurrencyLambdaAliasArn)
+                        .workerFunctionName(props.sharedNames().hmrcItsaAssistAcknowledgePostWorkerLambdaFunctionName)
+                        .workerHandler(props.sharedNames().hmrcItsaAssistAcknowledgePostWorkerLambdaHandler)
+                        .workerLambdaArn(props.sharedNames().hmrcItsaAssistAcknowledgePostWorkerLambdaArn)
+                        .workerProvisionedConcurrencyAliasArn(props.sharedNames()
+                                .hmrcItsaAssistAcknowledgePostWorkerProvisionedConcurrencyLambdaAliasArn)
+                        .workerQueueName(props.sharedNames().hmrcItsaAssistAcknowledgePostLambdaQueueName)
+                        .workerDeadLetterQueueName(
+                                props.sharedNames().hmrcItsaAssistAcknowledgePostLambdaDeadLetterQueueName)
+                        .workerProvisionedConcurrency(0)
+                        .workerLambdaTimeout(Duration.seconds(120))
+                        .queueVisibilityTimeout(Duration.seconds(140))
+                        .provisionedConcurrencyAliasName(props.sharedNames().provisionedConcurrencyAliasName)
+                        .httpMethod(props.sharedNames().hmrcItsaAssistAcknowledgePostLambdaHttpMethod)
+                        .urlPath(props.sharedNames().hmrcItsaAssistAcknowledgePostLambdaUrlPath)
+                        .jwtAuthorizer(props.sharedNames().hmrcItsaAssistAcknowledgePostLambdaJwtAuthorizer)
+                        .customAuthorizer(props.sharedNames().hmrcItsaAssistAcknowledgePostLambdaCustomAuthorizer)
+                        .environment(itsaAssistAcknowledgePostLambdaEnv)
+                        .build());
+
+        // Update API environment with SQS queue URL
+        itsaAssistAcknowledgePostLambdaEnv.put(
+                "SQS_QUEUE_URL", hmrcItsaAssistAcknowledgePostLambdaUrlOrigin.queue.getQueueUrl());
+
+        this.hmrcItsaAssistAcknowledgePostLambdaProps = hmrcItsaAssistAcknowledgePostLambdaUrlOrigin.apiProps;
+        this.hmrcItsaAssistAcknowledgePostLambda = hmrcItsaAssistAcknowledgePostLambdaUrlOrigin.ingestLambda;
+        this.hmrcItsaAssistAcknowledgePostLambdaLogGroup = hmrcItsaAssistAcknowledgePostLambdaUrlOrigin.logGroup;
+        this.lambdaFunctionProps.add(this.hmrcItsaAssistAcknowledgePostLambdaProps);
+        infof(
+                "Created Async API Lambda %s for ITSA Assist acknowledge with ingestHandler %s and worker %s",
+                this.hmrcItsaAssistAcknowledgePostLambda.getNode().getId(),
+                props.sharedNames().hmrcItsaAssistAcknowledgePostIngestLambdaHandler,
+                props.sharedNames().hmrcItsaAssistAcknowledgePostWorkerLambdaHandler);
+
+        // Grant the ITSA Assist acknowledge Lambda and its worker the bundles read, receipt access and async request table access.
+        List.of(this.hmrcItsaAssistAcknowledgePostLambda, hmrcItsaAssistAcknowledgePostLambdaUrlOrigin.workerLambda)
+                .forEach(fn -> {
+                    bundlesTable.grant(fn, "dynamodb:Query");
+                    hmrcApiRequestsTable.grant(fn, "dynamodb:PutItem");
+                    receiptsTable.grant(fn, "dynamodb:GetItem", "dynamodb:PutItem");
+                    hmrcItsaAssistAcknowledgePostAsyncRequestsTable.grant(fn, "dynamodb:GetItem", "dynamodb:UpdateItem");
+
+                    // Grant access to user sub hash salt secret in Secrets Manager
+                    SubHashSaltHelper.grantSaltAccess(fn, region, account, props.envName());
+
+                    // enforceBundles() grants the operator bundle to an email on the operator list
+                    OperatorEmailsHelper.grantOperatorEmailsAccess(fn, region, account, props.envName());
+
+                    // Grant EventBridge PutEvents permission
+                    fn.addToRolePolicy(PolicyStatement.Builder.create()
+                            .effect(Effect.ALLOW)
+                            .actions(List.of("events:PutEvents"))
+                            .resources(List.of(activityBusArn))
+                            .build());
+                });
+        infof(
+                "Granted DynamoDB and Secrets Manager salt permissions to %s and its worker",
+                this.hmrcItsaAssistAcknowledgePostLambda.getFunctionName());
+
         Lambda.stackHealthAlarm(
                 this,
                 props.resourceNamePrefix(),
@@ -1506,7 +1890,11 @@ public class HmrcItsaStack extends Stack {
                         hmrcItsaLossesAndClaimsDeleteLambdaUrlOrigin,
                         hmrcItsaTaxLiabilityAdjustmentsGetLambdaUrlOrigin,
                         hmrcItsaTaxLiabilityAdjustmentsPutLambdaUrlOrigin,
-                        hmrcItsaTaxLiabilityAdjustmentsDeleteLambdaUrlOrigin));
+                        hmrcItsaTaxLiabilityAdjustmentsDeleteLambdaUrlOrigin,
+                        hmrcVatAssistReportPostLambdaUrlOrigin,
+                        hmrcVatAssistAcknowledgePostLambdaUrlOrigin,
+                        hmrcItsaAssistReportPostLambdaUrlOrigin,
+                        hmrcItsaAssistAcknowledgePostLambdaUrlOrigin));
 
         infof("HmrcItsaStack %s created successfully for %s", id, props.deploymentName());
     }

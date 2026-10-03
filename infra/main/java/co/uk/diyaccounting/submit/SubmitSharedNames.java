@@ -116,6 +116,10 @@ public class SubmitSharedNames {
     public String hmrcItsaCalculationTriggerPostAsyncRequestsTableName;
     public String hmrcItsaCalculationGetAsyncRequestsTableName;
     public String hmrcItsaFinalDeclarationPostAsyncRequestsTableName;
+    public String hmrcVatAssistReportPostAsyncRequestsTableName;
+    public String hmrcVatAssistAcknowledgePostAsyncRequestsTableName;
+    public String hmrcItsaAssistReportPostAsyncRequestsTableName;
+    public String hmrcItsaAssistAcknowledgePostAsyncRequestsTableName;
     public String hmrcItsaLossesAndClaimsGetAsyncRequestsTableName;
     public String hmrcItsaLossesAndClaimsPutAsyncRequestsTableName;
     public String hmrcItsaLossesAndClaimsDeleteAsyncRequestsTableName;
@@ -805,6 +809,62 @@ public class SubmitSharedNames {
     public String hmrcItsaFinalDeclarationPostLambdaUrlPath;
     public boolean hmrcItsaFinalDeclarationPostLambdaJwtAuthorizer;
     public boolean hmrcItsaFinalDeclarationPostLambdaCustomAuthorizer;
+    public String hmrcVatAssistReportPostIngestLambdaHandler;
+    public String hmrcVatAssistReportPostIngestLambdaFunctionName;
+    public String hmrcVatAssistReportPostIngestLambdaArn;
+    public String hmrcVatAssistReportPostIngestProvisionedConcurrencyLambdaAliasArn;
+    public String hmrcVatAssistReportPostWorkerLambdaHandler;
+    public String hmrcVatAssistReportPostWorkerLambdaFunctionName;
+    public String hmrcVatAssistReportPostWorkerLambdaArn;
+    public String hmrcVatAssistReportPostWorkerProvisionedConcurrencyLambdaAliasArn;
+    public String hmrcVatAssistReportPostLambdaQueueName;
+    public String hmrcVatAssistReportPostLambdaDeadLetterQueueName;
+    public HttpMethod hmrcVatAssistReportPostLambdaHttpMethod;
+    public String hmrcVatAssistReportPostLambdaUrlPath;
+    public boolean hmrcVatAssistReportPostLambdaJwtAuthorizer;
+    public boolean hmrcVatAssistReportPostLambdaCustomAuthorizer;
+    public String hmrcVatAssistAcknowledgePostIngestLambdaHandler;
+    public String hmrcVatAssistAcknowledgePostIngestLambdaFunctionName;
+    public String hmrcVatAssistAcknowledgePostIngestLambdaArn;
+    public String hmrcVatAssistAcknowledgePostIngestProvisionedConcurrencyLambdaAliasArn;
+    public String hmrcVatAssistAcknowledgePostWorkerLambdaHandler;
+    public String hmrcVatAssistAcknowledgePostWorkerLambdaFunctionName;
+    public String hmrcVatAssistAcknowledgePostWorkerLambdaArn;
+    public String hmrcVatAssistAcknowledgePostWorkerProvisionedConcurrencyLambdaAliasArn;
+    public String hmrcVatAssistAcknowledgePostLambdaQueueName;
+    public String hmrcVatAssistAcknowledgePostLambdaDeadLetterQueueName;
+    public HttpMethod hmrcVatAssistAcknowledgePostLambdaHttpMethod;
+    public String hmrcVatAssistAcknowledgePostLambdaUrlPath;
+    public boolean hmrcVatAssistAcknowledgePostLambdaJwtAuthorizer;
+    public boolean hmrcVatAssistAcknowledgePostLambdaCustomAuthorizer;
+    public String hmrcItsaAssistReportPostIngestLambdaHandler;
+    public String hmrcItsaAssistReportPostIngestLambdaFunctionName;
+    public String hmrcItsaAssistReportPostIngestLambdaArn;
+    public String hmrcItsaAssistReportPostIngestProvisionedConcurrencyLambdaAliasArn;
+    public String hmrcItsaAssistReportPostWorkerLambdaHandler;
+    public String hmrcItsaAssistReportPostWorkerLambdaFunctionName;
+    public String hmrcItsaAssistReportPostWorkerLambdaArn;
+    public String hmrcItsaAssistReportPostWorkerProvisionedConcurrencyLambdaAliasArn;
+    public String hmrcItsaAssistReportPostLambdaQueueName;
+    public String hmrcItsaAssistReportPostLambdaDeadLetterQueueName;
+    public HttpMethod hmrcItsaAssistReportPostLambdaHttpMethod;
+    public String hmrcItsaAssistReportPostLambdaUrlPath;
+    public boolean hmrcItsaAssistReportPostLambdaJwtAuthorizer;
+    public boolean hmrcItsaAssistReportPostLambdaCustomAuthorizer;
+    public String hmrcItsaAssistAcknowledgePostIngestLambdaHandler;
+    public String hmrcItsaAssistAcknowledgePostIngestLambdaFunctionName;
+    public String hmrcItsaAssistAcknowledgePostIngestLambdaArn;
+    public String hmrcItsaAssistAcknowledgePostIngestProvisionedConcurrencyLambdaAliasArn;
+    public String hmrcItsaAssistAcknowledgePostWorkerLambdaHandler;
+    public String hmrcItsaAssistAcknowledgePostWorkerLambdaFunctionName;
+    public String hmrcItsaAssistAcknowledgePostWorkerLambdaArn;
+    public String hmrcItsaAssistAcknowledgePostWorkerProvisionedConcurrencyLambdaAliasArn;
+    public String hmrcItsaAssistAcknowledgePostLambdaQueueName;
+    public String hmrcItsaAssistAcknowledgePostLambdaDeadLetterQueueName;
+    public HttpMethod hmrcItsaAssistAcknowledgePostLambdaHttpMethod;
+    public String hmrcItsaAssistAcknowledgePostLambdaUrlPath;
+    public boolean hmrcItsaAssistAcknowledgePostLambdaJwtAuthorizer;
+    public boolean hmrcItsaAssistAcknowledgePostLambdaCustomAuthorizer;
 
     public String hmrcItsaLossesAndClaimsGetIngestLambdaHandler;
     public String hmrcItsaLossesAndClaimsGetIngestLambdaFunctionName;
@@ -1548,6 +1608,14 @@ public class SubmitSharedNames {
                 "%s-hmrc-itsa-calculation-get-async-requests".formatted(this.envResourceNamePrefix);
         this.hmrcItsaFinalDeclarationPostAsyncRequestsTableName =
                 "%s-hmrc-itsa-final-declaration-post-async-requests".formatted(this.envResourceNamePrefix);
+        this.hmrcVatAssistReportPostAsyncRequestsTableName =
+                "%s-hmrc-vat-assist-report-post-async-requests".formatted(this.envResourceNamePrefix);
+        this.hmrcVatAssistAcknowledgePostAsyncRequestsTableName =
+                "%s-hmrc-vat-assist-acknowledge-post-async-requests".formatted(this.envResourceNamePrefix);
+        this.hmrcItsaAssistReportPostAsyncRequestsTableName =
+                "%s-hmrc-itsa-assist-report-post-async-requests".formatted(this.envResourceNamePrefix);
+        this.hmrcItsaAssistAcknowledgePostAsyncRequestsTableName =
+                "%s-hmrc-itsa-assist-acknowledge-post-async-requests".formatted(this.envResourceNamePrefix);
         this.hmrcItsaLossesAndClaimsGetAsyncRequestsTableName =
                 "%s-hmrc-itsa-losses-and-claims-get-async-requests".formatted(this.envResourceNamePrefix);
         this.hmrcItsaLossesAndClaimsPutAsyncRequestsTableName =
@@ -3441,6 +3509,122 @@ public class SubmitSharedNames {
                                 "query",
                                 false,
                                 "When true, validates HMRC Fraud Prevention Headers"))));
+
+        this.hmrcVatAssistReportPostLambdaHttpMethod = HttpMethod.POST;
+        this.hmrcVatAssistReportPostLambdaUrlPath = "/api/v1/hmrc/vat/assist/report";
+        this.hmrcVatAssistReportPostLambdaJwtAuthorizer = false;
+        this.hmrcVatAssistReportPostLambdaCustomAuthorizer = true;
+        var hmrcVatAssistReportPostLambdaHandlerName = "hmrcVatAssistReportPost.ingestHandler";
+        var hmrcVatAssistReportPostLambdaWorkerHandlerName = "hmrcVatAssistReportPost.workerHandler";
+        var hmrcVatAssistReportPostLambdaHandlerDashed =
+                ResourceNameUtils.convertCamelCaseToDashSeparated(hmrcVatAssistReportPostLambdaHandlerName);
+        this.hmrcVatAssistReportPostIngestLambdaFunctionName =
+                "%s-%s".formatted(this.appResourceNamePrefix, hmrcVatAssistReportPostLambdaHandlerDashed);
+        this.hmrcVatAssistReportPostIngestLambdaHandler =
+                "%s/hmrc/%s".formatted(appLambdaHandlerPrefix, hmrcVatAssistReportPostLambdaHandlerName);
+        this.hmrcVatAssistReportPostIngestLambdaArn =
+                "%s-%s".formatted(appLambdaArnPrefix, hmrcVatAssistReportPostLambdaHandlerDashed);
+        this.hmrcVatAssistReportPostIngestProvisionedConcurrencyLambdaAliasArn = "%s:%s"
+                .formatted(this.hmrcVatAssistReportPostIngestLambdaArn, this.provisionedConcurrencyAliasName);
+        this.hmrcVatAssistReportPostWorkerLambdaFunctionName =
+                "%s-worker".formatted(this.hmrcVatAssistReportPostIngestLambdaFunctionName);
+        this.hmrcVatAssistReportPostWorkerLambdaHandler =
+                "%s/hmrc/%s".formatted(appLambdaHandlerPrefix, hmrcVatAssistReportPostLambdaWorkerHandlerName);
+        this.hmrcVatAssistReportPostWorkerLambdaArn =
+                "%s-worker".formatted(this.hmrcVatAssistReportPostIngestLambdaArn);
+        this.hmrcVatAssistReportPostWorkerProvisionedConcurrencyLambdaAliasArn = "%s:%s"
+                .formatted(this.hmrcVatAssistReportPostWorkerLambdaArn, this.provisionedConcurrencyAliasName);
+        this.hmrcVatAssistReportPostLambdaQueueName =
+                "%s-queue".formatted(this.hmrcVatAssistReportPostIngestLambdaFunctionName);
+        this.hmrcVatAssistReportPostLambdaDeadLetterQueueName =
+                "%s-dlq".formatted(this.hmrcVatAssistReportPostIngestLambdaFunctionName);
+
+        this.hmrcVatAssistAcknowledgePostLambdaHttpMethod = HttpMethod.POST;
+        this.hmrcVatAssistAcknowledgePostLambdaUrlPath = "/api/v1/hmrc/vat/assist/acknowledge";
+        this.hmrcVatAssistAcknowledgePostLambdaJwtAuthorizer = false;
+        this.hmrcVatAssistAcknowledgePostLambdaCustomAuthorizer = true;
+        var hmrcVatAssistAcknowledgePostLambdaHandlerName = "hmrcVatAssistAcknowledgePost.ingestHandler";
+        var hmrcVatAssistAcknowledgePostLambdaWorkerHandlerName = "hmrcVatAssistAcknowledgePost.workerHandler";
+        var hmrcVatAssistAcknowledgePostLambdaHandlerDashed =
+                ResourceNameUtils.convertCamelCaseToDashSeparated(hmrcVatAssistAcknowledgePostLambdaHandlerName);
+        this.hmrcVatAssistAcknowledgePostIngestLambdaFunctionName =
+                "%s-%s".formatted(this.appResourceNamePrefix, hmrcVatAssistAcknowledgePostLambdaHandlerDashed);
+        this.hmrcVatAssistAcknowledgePostIngestLambdaHandler =
+                "%s/hmrc/%s".formatted(appLambdaHandlerPrefix, hmrcVatAssistAcknowledgePostLambdaHandlerName);
+        this.hmrcVatAssistAcknowledgePostIngestLambdaArn =
+                "%s-%s".formatted(appLambdaArnPrefix, hmrcVatAssistAcknowledgePostLambdaHandlerDashed);
+        this.hmrcVatAssistAcknowledgePostIngestProvisionedConcurrencyLambdaAliasArn = "%s:%s"
+                .formatted(this.hmrcVatAssistAcknowledgePostIngestLambdaArn, this.provisionedConcurrencyAliasName);
+        this.hmrcVatAssistAcknowledgePostWorkerLambdaFunctionName =
+                "%s-worker".formatted(this.hmrcVatAssistAcknowledgePostIngestLambdaFunctionName);
+        this.hmrcVatAssistAcknowledgePostWorkerLambdaHandler =
+                "%s/hmrc/%s".formatted(appLambdaHandlerPrefix, hmrcVatAssistAcknowledgePostLambdaWorkerHandlerName);
+        this.hmrcVatAssistAcknowledgePostWorkerLambdaArn =
+                "%s-worker".formatted(this.hmrcVatAssistAcknowledgePostIngestLambdaArn);
+        this.hmrcVatAssistAcknowledgePostWorkerProvisionedConcurrencyLambdaAliasArn = "%s:%s"
+                .formatted(this.hmrcVatAssistAcknowledgePostWorkerLambdaArn, this.provisionedConcurrencyAliasName);
+        this.hmrcVatAssistAcknowledgePostLambdaQueueName =
+                "%s-queue".formatted(this.hmrcVatAssistAcknowledgePostIngestLambdaFunctionName);
+        this.hmrcVatAssistAcknowledgePostLambdaDeadLetterQueueName =
+                "%s-dlq".formatted(this.hmrcVatAssistAcknowledgePostIngestLambdaFunctionName);
+
+        this.hmrcItsaAssistReportPostLambdaHttpMethod = HttpMethod.POST;
+        this.hmrcItsaAssistReportPostLambdaUrlPath = "/api/v1/hmrc/itsa/assist/report";
+        this.hmrcItsaAssistReportPostLambdaJwtAuthorizer = false;
+        this.hmrcItsaAssistReportPostLambdaCustomAuthorizer = true;
+        var hmrcItsaAssistReportPostLambdaHandlerName = "hmrcItsaAssistReportPost.ingestHandler";
+        var hmrcItsaAssistReportPostLambdaWorkerHandlerName = "hmrcItsaAssistReportPost.workerHandler";
+        var hmrcItsaAssistReportPostLambdaHandlerDashed =
+                ResourceNameUtils.convertCamelCaseToDashSeparated(hmrcItsaAssistReportPostLambdaHandlerName);
+        this.hmrcItsaAssistReportPostIngestLambdaFunctionName =
+                "%s-%s".formatted(this.appResourceNamePrefix, hmrcItsaAssistReportPostLambdaHandlerDashed);
+        this.hmrcItsaAssistReportPostIngestLambdaHandler =
+                "%s/hmrc/%s".formatted(appLambdaHandlerPrefix, hmrcItsaAssistReportPostLambdaHandlerName);
+        this.hmrcItsaAssistReportPostIngestLambdaArn =
+                "%s-%s".formatted(appLambdaArnPrefix, hmrcItsaAssistReportPostLambdaHandlerDashed);
+        this.hmrcItsaAssistReportPostIngestProvisionedConcurrencyLambdaAliasArn = "%s:%s"
+                .formatted(this.hmrcItsaAssistReportPostIngestLambdaArn, this.provisionedConcurrencyAliasName);
+        this.hmrcItsaAssistReportPostWorkerLambdaFunctionName =
+                "%s-worker".formatted(this.hmrcItsaAssistReportPostIngestLambdaFunctionName);
+        this.hmrcItsaAssistReportPostWorkerLambdaHandler =
+                "%s/hmrc/%s".formatted(appLambdaHandlerPrefix, hmrcItsaAssistReportPostLambdaWorkerHandlerName);
+        this.hmrcItsaAssistReportPostWorkerLambdaArn =
+                "%s-worker".formatted(this.hmrcItsaAssistReportPostIngestLambdaArn);
+        this.hmrcItsaAssistReportPostWorkerProvisionedConcurrencyLambdaAliasArn = "%s:%s"
+                .formatted(this.hmrcItsaAssistReportPostWorkerLambdaArn, this.provisionedConcurrencyAliasName);
+        this.hmrcItsaAssistReportPostLambdaQueueName =
+                "%s-queue".formatted(this.hmrcItsaAssistReportPostIngestLambdaFunctionName);
+        this.hmrcItsaAssistReportPostLambdaDeadLetterQueueName =
+                "%s-dlq".formatted(this.hmrcItsaAssistReportPostIngestLambdaFunctionName);
+
+        this.hmrcItsaAssistAcknowledgePostLambdaHttpMethod = HttpMethod.POST;
+        this.hmrcItsaAssistAcknowledgePostLambdaUrlPath = "/api/v1/hmrc/itsa/assist/acknowledge";
+        this.hmrcItsaAssistAcknowledgePostLambdaJwtAuthorizer = false;
+        this.hmrcItsaAssistAcknowledgePostLambdaCustomAuthorizer = true;
+        var hmrcItsaAssistAcknowledgePostLambdaHandlerName = "hmrcItsaAssistAcknowledgePost.ingestHandler";
+        var hmrcItsaAssistAcknowledgePostLambdaWorkerHandlerName = "hmrcItsaAssistAcknowledgePost.workerHandler";
+        var hmrcItsaAssistAcknowledgePostLambdaHandlerDashed =
+                ResourceNameUtils.convertCamelCaseToDashSeparated(hmrcItsaAssistAcknowledgePostLambdaHandlerName);
+        this.hmrcItsaAssistAcknowledgePostIngestLambdaFunctionName =
+                "%s-%s".formatted(this.appResourceNamePrefix, hmrcItsaAssistAcknowledgePostLambdaHandlerDashed);
+        this.hmrcItsaAssistAcknowledgePostIngestLambdaHandler =
+                "%s/hmrc/%s".formatted(appLambdaHandlerPrefix, hmrcItsaAssistAcknowledgePostLambdaHandlerName);
+        this.hmrcItsaAssistAcknowledgePostIngestLambdaArn =
+                "%s-%s".formatted(appLambdaArnPrefix, hmrcItsaAssistAcknowledgePostLambdaHandlerDashed);
+        this.hmrcItsaAssistAcknowledgePostIngestProvisionedConcurrencyLambdaAliasArn = "%s:%s"
+                .formatted(this.hmrcItsaAssistAcknowledgePostIngestLambdaArn, this.provisionedConcurrencyAliasName);
+        this.hmrcItsaAssistAcknowledgePostWorkerLambdaFunctionName =
+                "%s-worker".formatted(this.hmrcItsaAssistAcknowledgePostIngestLambdaFunctionName);
+        this.hmrcItsaAssistAcknowledgePostWorkerLambdaHandler =
+                "%s/hmrc/%s".formatted(appLambdaHandlerPrefix, hmrcItsaAssistAcknowledgePostLambdaWorkerHandlerName);
+        this.hmrcItsaAssistAcknowledgePostWorkerLambdaArn =
+                "%s-worker".formatted(this.hmrcItsaAssistAcknowledgePostIngestLambdaArn);
+        this.hmrcItsaAssistAcknowledgePostWorkerProvisionedConcurrencyLambdaAliasArn = "%s:%s"
+                .formatted(this.hmrcItsaAssistAcknowledgePostWorkerLambdaArn, this.provisionedConcurrencyAliasName);
+        this.hmrcItsaAssistAcknowledgePostLambdaQueueName =
+                "%s-queue".formatted(this.hmrcItsaAssistAcknowledgePostIngestLambdaFunctionName);
+        this.hmrcItsaAssistAcknowledgePostLambdaDeadLetterQueueName =
+                "%s-dlq".formatted(this.hmrcItsaAssistAcknowledgePostIngestLambdaFunctionName);
 
         this.hmrcItsaLossesAndClaimsGetLambdaHttpMethod = HttpMethod.GET;
         this.hmrcItsaLossesAndClaimsGetLambdaUrlPath = "/api/v1/hmrc/itsa/losses-and-claims";
