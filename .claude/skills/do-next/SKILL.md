@@ -39,8 +39,8 @@ says a batch is stacking problems faster than it lands them.
 
 ## Start with `/board`
 
-**Invoke `/board` before dispatching anything.** It reads `NEXT.md` and `BACKLOG.md` fresh, puts
-the rows in tier order, and reports the things that decide what this batch should contain: which
+**Invoke `/board` before dispatching anything.** It reads `NEXT.md` and the `PLAN_*.md` documents fresh, puts
+the rows in board order, and reports the things that decide what this batch should contain: which
 alarms are open, which deployment sets are standing, and which branches carry unpushed work. It
 also writes the sequenced board back, so the order you then work is the order on disk rather than
 one you hold in your head.

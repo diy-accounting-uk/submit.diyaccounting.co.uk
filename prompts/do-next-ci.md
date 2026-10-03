@@ -116,7 +116,7 @@ Read `NEXT.md`. Take the **simplest ready task owned by Claude Code** that is no
 worked. Simplest means fewest files, least ambiguity, most contained blast radius — not most
 valuable. Ambition is what makes an unattended ten-minute run produce a mess.
 
-Never edit `NEXT.md` or `BACKLOG.md`: the board is kept on `main` by the board workflow and the
+Never edit `NEXT.md` or a `PLAN_*.md`: the board is kept on `main` by the board workflow and the
 terminal session, and a task whose only change is a board edit is not a task for this run.
 
 Exclude any task that:

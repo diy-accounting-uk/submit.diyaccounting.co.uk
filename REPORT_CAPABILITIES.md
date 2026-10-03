@@ -4775,11 +4775,11 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 #### DEV-24 Document developer setup and repository conventions
 
 - **Use when:** a new contributor needs the setup guide, or the session record needs reading.
-- **Does:** README.md describes the app, setup and key features, and CLAUDE.md carries the project's Claude Code conventions. _developers/SETUP.md is the local development setup guide, and NEXT.md is the live open-work board. BACKLOG.md holds future work, PLAN_REPOSITORY_AUTOMATION.md tracks the automation plan, and REPORT_*.md files are session and audit reports.
+- **Does:** README.md describes the app, setup and key features, and CLAUDE.md carries the project's Claude Code conventions. _developers/SETUP.md is the local development setup guide, and NEXT.md is the live open-work board. The PLAN_*.md documents hold the work not yet boarded, PLAN_REPOSITORY_AUTOMATION.md tracks the automation plan, and REPORT_*.md files are session and audit reports.
 - **Run:** no command; see Does and Entry
 - **Entry:** `README.md`; `_developers/SETUP.md`; `NEXT.md`
-- **Files:** README.md, CLAUDE.md, _developers/SETUP.md, NEXT.md, BACKLOG.md, PLAN_REPOSITORY_AUTOMATION.md
-- **Keywords:** readme, setup guide, developer onboarding, next.md, backlog, plan doc, session report, architecture report
+- **Files:** README.md, CLAUDE.md, _developers/SETUP.md, NEXT.md, PLAN_REPOSITORY_AUTOMATION.md
+- **Keywords:** readme, setup guide, developer onboarding, next.md, plan doc, session report, architecture report
 - **Related:** DEV-27, DEV-40
 
 #### DEV-25 Maintain the specialist agent prompt library
@@ -4829,7 +4829,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 #### DEV-27 Render the open-work board
 
 - **Use when:** the operator asks for the board, the open items, or what is in flight.
-- **Does:** board renders a table for NEXT.md items and backlog tier 1, with tiers 2-5 as one-line lists. It also renders open alarm issues by family, live ci and prod deployments, and a branch audit. It reads NEXT.md and BACKLOG.md fresh every time, never from memory.
+- **Does:** board renders a table for NEXT.md items, then one list per PLAN_*.md of the open tasks not yet on the board. It also renders open alarm issues by family, live ci and prod deployments, and a branch audit. It reads NEXT.md and the PLAN_*.md documents fresh every time, never from memory.
 - **Run:** `/board`
 - **Entry:** `.claude/skills/board/SKILL.md`
 - **Files:** .claude/skills/board/SKILL.md

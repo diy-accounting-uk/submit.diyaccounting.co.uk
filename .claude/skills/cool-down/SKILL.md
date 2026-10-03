@@ -141,8 +141,6 @@ This is the part that is always skipped and always missed later.
   PR**. A row that says work is happening without saying where is not a status.
 - `NEXT.md`: every open row's status line is made true as of now. Closed rows are deleted, not
   annotated; this file holds open work only.
-- `BACKLOG.md`: its live-status block is brought into step with the board. The tier tables stay
-  as they are.
 - `PLAN_*.md`: any plan whose decisions moved during the batch records them, so the plan and the
   board do not disagree.
 - Commit the documents on their own, separately from any code fix, so the history reads.

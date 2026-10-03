@@ -5,8 +5,7 @@
 
 Status: **design, drafted 2026-09-09.** Phases 0 and 1 in part on main (commit signing, CODEOWNERS, the
 origin labels, the alarm-origin verifier); the ruleset gate, the Actions settings, the security-review cron and the kill switch are done (2026-09-16).
-BACKLOG rows 68 to 72 are open, on NEXT.md as B68 to B72; rows 76 to 81 carry the rest of phases 2 to 5;
-phase 6 is the dashboard's D16 (BACKLOG 52l).
+Open on NEXT.md: B54 and O54 (the signed-commits rule); phase 6 is the dashboard's D16 (NEXT.md B52l).
 
 ## What the operator asked for
 
@@ -314,7 +313,7 @@ event-triggered one is a small change, and each names the event it would need.
 | `video-publish` | Fetches recordings from their capture runs, checks them, uploads unlisted, flips public on the operator's word | A successful capture run; the public flip stays the operator's by P8 |
 | `ga4-property-sync` | Finds or creates a GA4 property, stream and BigQuery link per environment, lands the measurement id | Creation of a new GitHub Environment |
 | `do-next` | Dispatches `NEXT.md`'s open items as worktree-isolated sub-agents and lands each one | A schedule, or a push that adds a `NEXT.md` row |
-| `board` | Renders the open-work board from `NEXT.md`, `BACKLOG.md`, the alarm issues and the live deployments | A schedule, posting to an issue or Telegram |
+| `board` | Renders the open-work board from `NEXT.md`, the `PLAN_*.md` documents, the alarm issues and the live deployments | A schedule, posting to an issue or Telegram |
 | `vat-submission-failure-alarm-user-lookup` | From a submission-failure alarm, finds the customer, what HMRC answered, whether they wrote in | The `[ALARM] prod-env-hmrc-submission-failure` issue opening |
 | `plain-prose` | The writing rules every human-facing surface follows | Not event-shaped; it is a constraint on the others |
 
@@ -850,8 +849,7 @@ Prove the three agent workflows by dispatch, in order. All three are on main, `w
 
 ## Sources
 
-- `../private.diyaccounting.co.uk/strategy/STRATEGY.md` (the aim, and W4's autonomous-operations workstream), `BACKLOG.md` rows 23, 30,
-  43, 47, 49, 52, 52l, 52m and 53, `NEXT.md`.
+- `../private.diyaccounting.co.uk/strategy/STRATEGY.md` (the aim, and W4's autonomous-operations workstream), `NEXT.md`.
 - `.github/workflows/` (36 files), `.github/agents/`, `.github/actions/`, `.github/dependabot.yml`,
   `.github/ISSUE_TEMPLATE/support.md`, `.github/copilot-instructions.md`.
 - `app/functions/ops/alarmToGithubIssue.js`, `activityTelegramForwarder.js` and

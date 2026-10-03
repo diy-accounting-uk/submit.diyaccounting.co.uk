@@ -21,7 +21,7 @@ branch is the operator's to delete, exactly as in the terminal.
 **The monitor line in the mode header is always "none".** A background poller cannot outlive this
 runner. Do not report one and do not start one.
 
-**Everything else you may read freely**: `NEXT.md`, `BACKLOG.md`, the open alarm issues, the runs on
+**Everything else you may read freely**: `NEXT.md`, the `PLAN_*.md` documents, the open alarm issues, the runs on
 `main` and on every open PR's head, and `origin`'s branches. If a read fails, render that part as
 unverified and name the failure — never as absent.
 

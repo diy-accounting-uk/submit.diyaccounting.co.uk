@@ -156,7 +156,7 @@ waits, and the board reads it as one blocked lump. Split it:
 Every "Blocked on …" and every row another row names as its blocker is a claim about the
 present. Test each one:
 
-- **Live or stale.** A blocker is live while its row is open on `NEXT.md` or in `BACKLOG.md`,
+- **Live or stale.** A blocker is live while its row is open on `NEXT.md` or in its `PLAN_*.md`,
   its date is in the future, or the outside event it waits for (a reply, a send) has no record
   yet in the repository, the board, the mail mirror or the inboxes. It is stale when its row has
   closed, its PR merged, its date passed, or something on the board says it happened. Remove a
@@ -168,7 +168,7 @@ present. Test each one:
   sandbox proof, the fixture-backed code before the credential, the draft before the send. Split
   it into a ready row and a blocked row (`CS-13a` builds, `CS-13b` proves); the blocked row
   names only what it truly waits on.
-- **Missing links.** A blocker that names a row nobody has written (a design row a backlog entry
+- **Missing links.** A blocker that names a row nobody has written (a design row a plan task
   cites, a label that closed on other work) is a gap: write the row, or rewrite the blocker to
   what it stood for.
 - **Where a plan keeps the graph** (a `## Dependency graph` section, as `PLAN_COMPANIES_HOUSE.md`

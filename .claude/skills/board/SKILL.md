@@ -1,6 +1,6 @@
 ---
 name: board
-description: Render the open-work board — one table for NEXT.md items plus backlog tier 1, tiers 2-5 as one-line lists, the open alarm issues grouped by family with a recommended action each, the live ci and prod deployments with when each spare set goes, and a branch audit. Ends with /compact-ready. Invoke when the operator asks for the board, the open items, or "what's in flight".
+description: Render the open-work board — one table for NEXT.md items, then one list per PLAN_*.md of the open tasks not yet on the board, the open alarm issues grouped by family with a recommended action each, the live ci and prod deployments with when each spare set goes, and a branch audit. Ends with /compact-ready. Invoke when the operator asks for the board, the open items, or "what's in flight".
 ---
 
 <!-- SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0 -->
@@ -8,8 +8,8 @@ description: Render the open-work board — one table for NEXT.md items plus bac
 
 # board
 
-Render the current open-work board from `NEXT.md` and `BACKLOG.md` (both at the repo
-root). Read both files fresh every time — never render from memory of an earlier turn.
+Render the current open-work board from `NEXT.md` and the `PLAN_*.md` documents (all at the repo
+root). Read every file fresh every time — never render from memory of an earlier turn.
 
 ## Output shape
 
@@ -44,25 +44,22 @@ Neither fact belongs in a table. One sentence each, or one sentence for both whe
 "no cool-down, no monitor running" is worth saying once, because its absence is otherwise
 indistinguishable from not having looked.
 
-**Part 1 — a table** covering every open item in `NEXT.md` plus every row in the
-backlog's Tier 1, deduplicated (a NEXT.md item that is also a tier 1 row gets one
-combined row). Columns:
+**Part 1 — a table** covering every open item in `NEXT.md`. Columns:
 
-| # | Item | Tier | State | Where | Needs | Size | Model | Status | GH issue |
+| # | Item | Plan | State | Where | Needs | Size | Model | Status | GH issue |
 
 Rows run in board order: **in-flight rows first, whatever their class, at the top of the
 table**, then **machine-only, then machine-ask, then human-driven, then blocked**. Within
 a group, a row that other rows wait on comes first, the most rows unblocked (counted through
 the chain: CS-H2 unblocks CS-9, which unblocks CS-11 and CS-13b) ahead of fewer, because
-clearing it is what lets the board move; then rows by tier, an alarm or a pipeline failure
-counting as tier 1 whether or not a backlog row carries it, then the untiered; within a
-tier, the rows that can start run by the size of the change, fewest files first, read from
-`Size` (a row without a count follows the counted ones); equal sizes keep `NEXT.md`'s
-order. In the blocked group the same rule runs on the chain: a row whose blockers are
-closest to clearing comes first. Never group rows by backlog number.
+clearing it is what lets the board move; then an alarm or a pipeline failure ahead of every
+other row; then the rows that can start run by the size of the change, fewest files first,
+read from `Size` (a row without a count follows the counted ones); equal sizes keep
+`NEXT.md`'s order. In the blocked group the same rule runs on the chain: a row whose blockers
+are closest to clearing comes first. Never group rows by plan.
 
 **Check the declared blockers before ordering.** Every "Blocked on …" names rows, dates or
-outside events. For each named row: is it still on `NEXT.md` or open in `BACKLOG.md`? A
+outside events. For each named row: is it still on `NEXT.md` or open in its plan? A
 blocker that has closed (its row gone, its PR merged, its date passed) is stale; a blocker
 the board contradicts (the named row is itself described as done or unblocked elsewhere on
 the board, or a newer row supersedes it) is stale too. A row whose every blocker is stale
@@ -73,14 +70,13 @@ blockers you removed after the lists, one line each, and write the corrected blo
 back to `NEXT.md` with the rest of the write-back. A row that names another row as unblocked
 by it says so in its `Status` (`unblocks CS-9`).
 
-- `#`: the backlog row number (`44`), the NEXT.md label (`B14a`), or both (`B44/44`).
-  Backlog row numbers are NOT GitHub issue numbers — never conflate them.
+- `#`: the NEXT.md label (`B14a`). A label is not a GitHub issue number — never conflate them.
 - `Item`: a short name, not the row's full prose.
-- `Tier`: the backlog tier (`T1`…`T5`). An alarm item or a pipeline failure (a failed,
+- `Plan`: the `PLAN_*.md` at the repo root that owns the row, by the part after `PLAN_`
+  (`COMPANIES_HOUSE`), read from the row's **Source** line and confirmed by grep for the label
+  in that file; `—` when no plan carries it. An alarm item or a pipeline failure (a failed,
   cancelled or wrongly firing workflow, deploy, sweep or cron, or a set the sweep left
-  standing) is `T1` whether or not a backlog row carries it. Any other item tracked only
-  on `NEXT.md` gets `—`, exactly as an item without a GitHub issue does; `NEXT` is where
-  things are tracked, not a tier.
+  standing) orders first whatever this column says.
 - `State`: exactly one word — `in-flight`, `ready` (nothing prevents starting it, whoever
   the owner is), or `blocked` (waiting on a date, a prerequisite item, or a decision not yet
   made). Operator-owned work that could start today is `ready`, not `blocked`.
@@ -123,29 +119,32 @@ by it says so in its `Status` (`unblocks CS-9`).
   as of this render. Date-gated items name the date; blocked items name the blocker;
   in-flight items name the current step only (their branch and PR are in `Where`). The full
   narrative lives in `NEXT.md`, never in this column.
-- `GH issue`: only when the backlog Source column cites one (`Issue #18` → `#18`),
-  else `—`.
+- `GH issue`: only when the row cites one (`Issue #18` → `#18`), else `—`.
 
-**Part 2 — one list per backlog tier below Tier 1** (whatever tiers the file
-currently has), each headed `**Tier N**`, then one item per line as a list, sorted by state
-(`done`, then `in-flight`, then `ready`, then `blocked`) and by row number within a state
-(numeric part first, then the letter suffix: 30, 30a, 34, 34b, 82a). Each line: the backlog row number, a short name, then a bracketed status
-of three fields, then the item's issue refs if any:
+**Part 2 — one list per `PLAN_*.md`** at the repo root, each headed `**PLAN_<NAME>.md**`,
+holding only the plan's tasks that are **open and not on `NEXT.md`**. A task is open when the
+plan's own status line or task entry does not record it as landed (a merge commit, a PR number,
+"on main"); it is on the board when its label, or a NEXT.md row whose **Source** names it,
+appears in `NEXT.md` (grep both, never recall). A plan whose every open task is boarded is left
+out of the lists and named in one closing line (`Every open task boarded: BOOKS_TO_SUBMIT,
+FORM_AUDIT`), so a missing plan reads as checked, not skipped. A plan with no open task at all
+is a candidate for the archive; say so in that line.
+
+Within a list, one task per line, in the plan's own order: the plan's task label, a short name,
+then a bracketed status of two fields:
 
 ```
-- 10 ITSA phase 1 [B10.4, blocked, NEXT.md & BACKLOG.md & PLAN_ITSA_PHASE_2.md] #16, #20
-- 53 Secret rotation [B53a, in-flight, NEXT.md & BACKLOG.md]
-- 49 Google IaC [49, ready, BACKLOG.md]
+**PLAN_COMPANIES_HOUSE.md**
+- CS-11b Confirmation statement customer launch [ready, —]
+- B34c Accounts filing on prod [blocked, O34c]
 ```
 
-- Field 1, the label: the `NEXT.md` label that carries the row when there is one (`B53a`,
-  `O11`, `B34c`), else the backlog row number.
-- Field 2, the state, exactly one of `done`, `in-flight`, `ready`, `blocked`, by the same
-  tests Part 1 uses (`done` when the work has landed and the row only waits to be removed
-  from the backlog; `blocked` names nothing more here, since Part 1 or the row carries the
-  blocker).
-- Field 3, where the item is written, from `NEXT.md`, `BACKLOG.md` and the `PLAN_*.md`
-  file that owns it (by name), joined with ` & `; check by grep, never from memory.
+- Field 1, the state, exactly one of `ready` or `blocked`, by the same tests Part 1 uses
+  (nothing in flight belongs here: in-flight work has a board row).
+- Field 2, the blocker: the label, date or outside event the plan names, `—` when ready.
+
+These lists are the board's intake: a `ready` task here is what `/refine` pulls onto `NEXT.md`
+next. Pulling is not part of a render.
 
 **Part 3 — the open alarm issues, grouped.** Run
 `gh issue list --state open --label alarm --limit 200 --json number,title,createdAt,updatedAt`
@@ -202,7 +201,7 @@ for branches with commits nowhere else, whether their content already exists on 
 
 - `open`: content not on `main`, carried by an open PR (say which) or the integration branch.
 - `unique, desirable`: content not on `main`, not on any open PR, and it belongs to an open
-  `NEXT.md` item or backlog row (name it): needs a PR or folding into the batch.
+  `NEXT.md` item or plan task (name it): needs a PR or folding into the batch.
 - `stale`: every commit on `main`, or content identical to `main` (merged under other commits),
   or an abandoned design superseded by a plan doc on `main`. Action: delete, by the operator
   for local and origin alike.
@@ -226,14 +225,13 @@ the end) gets a note in `Action`: rename before its next push.
 ## Rules
 
 - Open and in-flight work only. Nothing done, decided-against, or removed.
-- Never annotate an item "deferred", "later", or similar — its tier already says
-  that. Status words describe state (open, in flight, blocked on X, operator-owned,
+- Never annotate an item "deferred", "later", or similar. Status words describe state (open, in flight, blocked on X, operator-owned,
   date-gated), not priority.
 - If a GitHub issue referenced by a row is known to be closed, drop the ref rather
   than list a dead issue; run `gh issue list --state open` to check only when the
   answer would change a row.
-- End with one line for any open GitHub issue that is referenced from NEXT.md but is
-  not a backlog row (e.g. a standing-drift issue), so the table stays complete without
+- End with one line for any open GitHub issue that is referenced from NEXT.md without a
+  row of its own (e.g. a standing-drift issue), so the table stays complete without
   inventing rows.
 - No commentary beyond the table, the lists, and that closing line, unless something
   in the session materially changed an item since the files were last written — then
@@ -254,8 +252,8 @@ the end) gets a note in `Action`: rename before its next push.
 - **Every alarm family has a home on `NEXT.md`.** A family whose action is `close as stale`
   or `close as superseded` joins the operator item that lists issues to close (create it if
   missing; keep the list current, adding new numbers and dropping closed ones). A family whose
-  action is `fix`, `tune` or `investigate` gets its own Claude Code item under BACKLOG row 30
-  (`B30<letter>`, next free letter) with the file or lookup it needs, the owner and the model
+  action is `fix`, `tune` or `investigate` gets its own Claude Code item labelled `AL<n>` (the
+  next free number) with the file or lookup it needs, the owner and the model
   tier, in the ready or blocked section its blocker dictates (an AWS lookup with no SSO session
   is blocked on `aws sso login --sso-session diyaccounting`). `keep open and watch` needs no
   item. **Never close, label or comment on an issue while rendering the board.** A render is a
@@ -279,8 +277,8 @@ the end) gets a note in `Action`: rename before its next push.
   carries the same machine-only / machine-ask / human-driven / blocked sequence the
   table just printed.** A render that shows one order while the file holds another is the
   failure this rule exists to prevent. Before committing the `NEXT.md` write-back, run `npx vitest run app/unit-tests/nextShape.test.js` and fix the file if it fails. Commit the `NEXT.md`-only change to `main` (the
-  docs exception allows a direct push) and push. Never add rendered status for items that are not on `NEXT.md`; the backlog's
-  tier tables stay as they are.
+  docs exception allows a direct push) and push. Never add rendered status for items that are not on `NEXT.md`; a render
+  reads the plans and never edits them.
 
 ## Then `/compact-ready`
 
