@@ -1,18 +1,17 @@
 // SPDX-License-Identifier: LicenseRef-PolyForm-Internal-Use-1.0.0
 // Copyright (C) 2006-2026 DIY Accounting Limited
 
-// app/unit-tests/video/dropFileAction.test.js
+// web/browser-tests/dropFileAction.browser.test.js
 //
 // The dropFile action hands a file from disk to a page: through the file input a drop target
 // holds or stands for, or through drag and drop events when it holds none. Runs in a real
 // browser against a page served from this file's own HTML.
 
-import { describe, test, expect, beforeAll, afterAll } from "vitest";
-import { chromium } from "playwright";
-import { executeAction, SceneStepError } from "../../../scripts/lib/video/actions.js";
-import { installOverlay } from "../../../scripts/lib/video/overlay.js";
+import { test, expect } from "@playwright/test";
+import { executeAction, SceneStepError } from "../../scripts/lib/video/actions.js";
+import { installOverlay } from "../../scripts/lib/video/overlay.js";
 
-const FIXTURE = "app/unit-tests/video/fixtures/dropFileSample.csv";
+const FIXTURE = "web/browser-tests/fixtures/dropFileSample.csv";
 const FIXTURE_BYTES = 46;
 
 const PAGE_HTML = `<!doctype html><html><body>
@@ -33,46 +32,34 @@ const PAGE_HTML = `<!doctype html><html><body>
 
 const ctx = { sceneId: "upload", stepIndex: 2, stillsDir: "target/videos/test-stills" };
 
-describe("dropFile action", () => {
-  let browser;
-  let page;
-
-  beforeAll(async () => {
-    browser = await chromium.launch();
-  });
-  afterAll(async () => {
-    await browser.close();
-  });
-
-  async function freshPage() {
-    page = await browser.newPage();
+test.describe("dropFile action", () => {
+  async function openFixturePage(page) {
     await installOverlay(page);
     await page.route("http://dropfile.test/", (route) => route.fulfill({ contentType: "text/html", body: PAGE_HTML }));
     await page.goto("http://dropfile.test/");
-    return page;
   }
-  const seen = () => page.locator("#seen").textContent();
+  const seen = (page) => page.locator("#seen").textContent();
 
-  test("sets the file on the input inside the target", async () => {
-    await freshPage();
+  test("sets the file on the input inside the target", async ({ page }) => {
+    await openFixturePage(page);
     await executeAction(page, { action: "dropFile", target: "#withInput", file: FIXTURE, name: "march.csv" }, ctx);
-    expect(await seen()).toBe(`input-plain:march.csv:${FIXTURE_BYTES};`);
+    expect(await seen(page)).toBe(`input-plain:march.csv:${FIXTURE_BYTES};`);
   });
 
-  test("sets the file on the control a label points at", async () => {
-    await freshPage();
+  test("sets the file on the control a label points at", async ({ page }) => {
+    await openFixturePage(page);
     await executeAction(page, { action: "dropFile", target: "#labelled", file: FIXTURE }, ctx);
-    expect(await seen()).toBe(`input-viaLabel:dropFileSample.csv:${FIXTURE_BYTES};`);
+    expect(await seen(page)).toBe(`input-viaLabel:dropFileSample.csv:${FIXTURE_BYTES};`);
   });
 
-  test("dispatches a drop when the target has no file input", async () => {
-    await freshPage();
+  test("dispatches a drop when the target has no file input", async ({ page }) => {
+    await openFixturePage(page);
     await executeAction(page, { action: "dropFile", target: "#zone", file: FIXTURE, name: "march.csv" }, ctx);
-    expect(await seen()).toBe(`drop:march.csv:${FIXTURE_BYTES};`);
+    expect(await seen(page)).toBe(`drop:march.csv:${FIXTURE_BYTES};`);
   });
 
-  test("fails naming the file when it does not exist", async () => {
-    await freshPage();
+  test("fails naming the file when it does not exist", async ({ page }) => {
+    await openFixturePage(page);
     await expect(executeAction(page, { action: "dropFile", target: "#zone", file: "no/such/file.csv" }, ctx)).rejects.toBeInstanceOf(
       SceneStepError,
     );
