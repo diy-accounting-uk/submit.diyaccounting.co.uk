@@ -179,7 +179,7 @@ describe("hmrcVatReturnPost activity events and business metrics", () => {
     expect(published).not.toContain("test-token");
   });
 
-  test("an unmatched obligation reports itself as a failed filing", async () => {
+  test("an unmatched obligation records the block without a failure metric", async () => {
     mockGetVatObligations.mockResolvedValue({
       obligations: { obligations: [] },
       hmrcResponse: { ok: true, status: 200 },
@@ -189,7 +189,25 @@ describe("hmrcVatReturnPost activity events and business metrics", () => {
     expect(response.statusCode).toBe(400);
 
     expect(failureEventsWithCategory("obligation-not-matched")).toHaveLength(1);
-    expect(metricCalls("VatSubmissionFailure")).toHaveLength(1);
+    expect(metricCalls("VatSubmissionFailure")).toHaveLength(0);
+    expect(mockFetch).not.toHaveBeenCalled();
+  });
+
+  test("an already filed period records the block without a failure metric", async () => {
+    mockGetVatObligations.mockResolvedValue({
+      obligations: {
+        obligations: [
+          { start: TEST_PERIOD_START, end: TEST_PERIOD_END, due: "2023-05-07", status: "F", periodKey: "18A1", received: "2023-04-20" },
+        ],
+      },
+      hmrcResponse: { ok: true, status: 200 },
+    });
+
+    const response = await hmrcVatReturnPostHandler(buildSubmissionEvent());
+    expect(response.statusCode).toBe(409);
+
+    expect(failureEventsWithCategory("obligation-already-fulfilled")).toHaveLength(1);
+    expect(metricCalls("VatSubmissionFailure")).toHaveLength(0);
     expect(mockFetch).not.toHaveBeenCalled();
   });
 
