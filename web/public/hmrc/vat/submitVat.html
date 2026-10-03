@@ -342,6 +342,8 @@
             </div>
           </div>
 
+          <div id="hmrcAssistCheck"></div>
+
           <p id="tokenCostInfo" class="hint" style="margin-top: 0.5em; display: none"></p>
           <button type="submit" class="btn" id="submitBtn" data-activity-start="submit-vat">Submit VAT return</button>
         </form>
@@ -382,6 +384,7 @@
     <script src="../../lib/toml-parser.js"></script>
     <script src="../../lib/hmrc-scope-check.js"></script>
     <script src="../../lib/vat-period-choice.js"></script>
+    <script src="../../widgets/hmrc-assist-messages.js"></script>
     <script src="../../widgets/entitlement-status.js"></script>
     <script src="../../widgets/auth-status.js"></script>
     <script src="../../widgets/status-messages.js"></script>
@@ -416,10 +419,13 @@
       const VAT_WHOLE_MIN = -9999999999999;
       const VAT_WHOLE_MAX = 9999999999999;
 
+      // While true, validation answers without touching the field error messages
+      let validationQuiet = false;
+
       // Show field-level error message
       function showFieldError(fieldId, message) {
         const field = document.getElementById(fieldId);
-        if (!field) return;
+        if (!field || validationQuiet) return;
 
         // Remove existing error
         clearFieldError(fieldId);
@@ -449,7 +455,7 @@
       // Clear field-level error message
       function clearFieldError(fieldId) {
         const field = document.getElementById(fieldId);
-        if (!field) return;
+        if (!field || validationQuiet) return;
 
         field.classList.remove("input--error");
         field.removeAttribute("aria-invalid");
@@ -587,6 +593,15 @@
           ) && isValid;
 
         return isValid;
+      }
+
+      function boxesAreValid() {
+        validationQuiet = true;
+        try {
+          return validateAll9BoxFields();
+        } finally {
+          validationQuiet = false;
+        }
       }
 
       // Collect 9-box VAT data from form
@@ -910,6 +925,34 @@
       // when the page loads with a token in place and when the VRN is entered; without a token the form
       // offers a connect button and keeps the free date inputs.
       let obligationsLoadedForVrn = null;
+      let hmrcAssist = null;
+
+      const HMRC_ASSIST_BOX_IDS = [
+        "vatDueSales",
+        "vatDueAcquisitions",
+        "totalVatDue",
+        "vatReclaimedCurrPeriod",
+        "netVatDue",
+        "totalValueSalesExVAT",
+        "totalValuePurchasesExVAT",
+        "totalValueGoodsSuppliedExVAT",
+        "totalAcquisitionsExVAT",
+      ];
+
+      function describeHmrcAssistDraft() {
+        const vrn = document.getElementById("vatNumber").value.trim();
+        const obligation = window.vatPeriodChoice.chosenObligation(document.getElementById("obligationChoice"));
+        if (!obligation || obligation.status !== "O") return { applicable: false, ready: false };
+        const boxes = collect9BoxData();
+        delete boxes.finalised;
+        return {
+          applicable: true,
+          ready: /^\d{9}$/.test(vrn) && boxesAreValid(),
+          key: `${vrn}:${obligation.periodKey}`,
+          requestBody: { vrn, periodKey: obligation.periodKey, ...boxes },
+          acknowledgeIdentity: { vrn },
+        };
+      }
 
       function showObligationStatus(message) {
         document.getElementById("obligationStatus").textContent = message;
@@ -969,6 +1012,7 @@
             open,
           );
           showObligationStatus("");
+          hmrcAssist?.refresh();
         } catch (error) {
           console.warn("Could not read open obligations:", error);
           obligationsLoadedForVrn = null;
@@ -1208,6 +1252,22 @@
             validateVatWholeAmount(this.value, "totalAcquisitionsExVAT", "total acquisitions from EU");
           });
         }
+
+        hmrcAssist = window.hmrcAssistMessages.mount({
+          kind: "vat",
+          container: document.getElementById("hmrcAssistCheck"),
+          describeDraft: describeHmrcAssistDraft,
+          watch: [
+            "vatNumber",
+            "obligationChoice",
+            "periodStart",
+            "periodEnd",
+            ...HMRC_ASSIST_BOX_IDS.filter((id) => id !== "totalVatDue" && id !== "netVatDue"),
+          ].map((id) => document.getElementById(id)),
+          submitButton: document.getElementById("submitBtn"),
+          highlightIds: HMRC_ASSIST_BOX_IDS,
+          unavailableText: "HMRC Assist feedback is unavailable at the moment. You can still submit your return.",
+        });
 
         // === Form Data Persistence (WCAG 2.2.1 mitigation) ===
         // Auto-save form data as user types so it's preserved if session expires

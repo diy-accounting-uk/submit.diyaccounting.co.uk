@@ -2158,3 +2158,26 @@ a.external-link:hover::after {
   align-items: center;
   gap: 0.6em;
 }
+
+/* HMRC Assist feedback */
+.hmrc-assist {
+  margin: var(--spacing-md, 1em) 0;
+}
+.hmrc-assist-feedback {
+  border-left: 4px solid currentColor;
+  padding-left: 1em;
+  margin: 0.5em 0 1em;
+}
+.hmrc-assist-feedback ol {
+  padding-left: 1.25em;
+}
+.hmrc-assist-message {
+  margin-bottom: 1em;
+}
+.hmrc-assist-message p {
+  margin: 0.25em 0;
+}
+input.hmrc-assist-highlight {
+  outline: 3px solid #ffdd00;
+  outline-offset: 0;
+}
