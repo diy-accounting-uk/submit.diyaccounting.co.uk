@@ -341,6 +341,7 @@ export async function ingestHandler(event, context) {
     addStackNameIfPresent(stacksToDelete, process.env.OPS_STACK_NAME);
     addStackNameIfPresent(stacksToDelete, process.env.PUBLISH_STACK_NAME);
     addStackNameIfPresent(stacksToDelete, process.env.EDGE_STACK_NAME);
+    addStackNameIfPresent(stacksToDelete, process.env.API_ROUTES_STACK_NAME);
     addStackNameIfPresent(stacksToDelete, process.env.API_STACK_NAME);
     addStackNameIfPresent(stacksToDelete, process.env.AUTH_STACK_NAME);
     addStackNameIfPresent(stacksToDelete, process.env.HMRC_STACK_NAME);

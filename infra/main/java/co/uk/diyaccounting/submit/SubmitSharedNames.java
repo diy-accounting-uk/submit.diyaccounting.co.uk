@@ -221,6 +221,7 @@ public class SubmitSharedNames {
     public String companiesHouseStackId;
     public String accountStackId;
     public String apiStackId;
+    public String apiRoutesStackId;
     public String opsStackId;
     public String selfDestructStackId;
 
@@ -1663,6 +1664,7 @@ public class SubmitSharedNames {
         this.billingStackId = "%s-app-BillingStack".formatted(props.deploymentName);
         this.diyaGlStackId = "%s-app-DiyaGlStack".formatted(props.deploymentName);
         this.apiStackId = "%s-app-ApiStack".formatted(props.deploymentName);
+        this.apiRoutesStackId = "%s-app-ApiRoutesStack".formatted(props.deploymentName);
         this.opsStackId = "%s-app-OpsStack".formatted(props.deploymentName);
         this.selfDestructStackId = "%s-app-SelfDestructStack".formatted(props.deploymentName);
 

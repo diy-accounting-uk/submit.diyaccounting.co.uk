@@ -23,10 +23,6 @@ import software.amazon.awscdk.RemovalPolicy;
 import software.amazon.awscdk.Stack;
 import software.amazon.awscdk.StackProps;
 import software.amazon.awscdk.Tags;
-import software.amazon.awscdk.aws_apigatewayv2_authorizers.HttpJwtAuthorizer;
-import software.amazon.awscdk.aws_apigatewayv2_authorizers.HttpLambdaAuthorizer;
-import software.amazon.awscdk.aws_apigatewayv2_authorizers.HttpLambdaResponseType;
-import software.amazon.awscdk.aws_apigatewayv2_integrations.HttpLambdaIntegration;
 import software.amazon.awscdk.customresources.Provider;
 import software.amazon.awscdk.services.apigatewayv2.ApiMapping;
 import software.amazon.awscdk.services.apigatewayv2.CfnStage;
@@ -35,8 +31,6 @@ import software.amazon.awscdk.services.apigatewayv2.CorsPreflightOptions;
 import software.amazon.awscdk.services.apigatewayv2.DomainName;
 import software.amazon.awscdk.services.apigatewayv2.HttpApi;
 import software.amazon.awscdk.services.apigatewayv2.HttpMethod;
-import software.amazon.awscdk.services.apigatewayv2.HttpRoute;
-import software.amazon.awscdk.services.apigatewayv2.HttpRouteKey;
 import software.amazon.awscdk.services.certificatemanager.Certificate;
 import software.amazon.awscdk.services.certificatemanager.ICertificate;
 import software.amazon.awscdk.services.cloudwatch.Alarm;
@@ -59,6 +53,9 @@ import software.constructs.Construct;
 public class ApiStack extends Stack {
 
     public final HttpApi httpApi;
+
+    /** Route keys this stack created, which ApiRoutesStack must not create again. */
+    public final java.util.Set<String> routeKeys;
 
     @Value.Immutable
     public interface ApiStackProps extends StackProps, SubmitStackProps {
@@ -300,60 +297,6 @@ public class ApiStack extends Stack {
                 .alarmDescription("API Gateway 5xx errors >= 1 for API " + this.httpApi.getApiId())
                 .build();
 
-        // Create authorizers to selectively apply to routes
-        String issuer = "https://cognito-idp.%s.amazonaws.com/%s".formatted(getRegion(), props.userPoolId());
-        // The submission MCP's own client reaches the same VAT and Companies House routes the
-        // Submit web client reaches, for the same signed-in user (route-level authorisation
-        // keys off sub, never off which client issued the token) -- so its audience joins this
-        // authoriser's own rather than getting a separate one, the same pattern
-        // cloudBookAudience below uses. Blank until the deploy wiring sets mcpUserPoolClientId,
-        // so an unset value changes nothing here.
-        var mainAudience = new java.util.ArrayList<String>(List.of(props.userPoolClientId()));
-        if (props.mcpUserPoolClientId() != null && !props.mcpUserPoolClientId().isBlank()) {
-            mainAudience.add(props.mcpUserPoolClientId());
-        }
-        HttpJwtAuthorizer jwtAuthorizer = HttpJwtAuthorizer.Builder.create(
-                        props.resourceNamePrefix() + "-CognitoAuthorizer", issuer)
-                .jwtAudience(mainAudience)
-                .build();
-
-        // Same user pool, same issuer, but a books-client-scoped audience: a books token must
-        // never be accepted on the VAT or Companies House routes, and vice versa. The submission
-        // MCP's own client reaches the same cloud book routes, so its audience joins this
-        // authoriser's own rather than getting a separate one; blank until the deploy wiring sets
-        // mcpUserPoolClientId, so an unset value changes nothing here.
-        var cloudBookAudience = new java.util.ArrayList<String>(List.of(props.booksUserPoolClientId()));
-        if (props.mcpUserPoolClientId() != null && !props.mcpUserPoolClientId().isBlank()) {
-            cloudBookAudience.add(props.mcpUserPoolClientId());
-        }
-        HttpJwtAuthorizer booksJwtAuthorizer = HttpJwtAuthorizer.Builder.create(
-                        props.resourceNamePrefix() + "-BooksCognitoAuthorizer", issuer)
-                .jwtAudience(cloudBookAudience)
-                .build();
-
-        // Same user pool and issuer again, but with both audiences: the checkout and portal
-        // routes accept a token from either client, since a DIYA-GL subscriber checks out and
-        // manages their subscription with a books-client token, while everyone else uses the
-        // main client's.
-        HttpJwtAuthorizer billingJwtAuthorizer = HttpJwtAuthorizer.Builder.create(
-                        props.resourceNamePrefix() + "-BillingCognitoAuthorizer", issuer)
-                .jwtAudience(List.of(props.userPoolClientId(), props.booksUserPoolClientId()))
-                .build();
-
-        // Same user pool and issuer again, with every configured client's audience: the
-        // sign-out route is the one route every client must reach, since a token from any of
-        // the three clients names a session that route has to end. mcpUserPoolClientId joins
-        // the list the same way it joins the books audience above, only when non-blank.
-        var allClientsAudience =
-                new java.util.ArrayList<String>(List.of(props.userPoolClientId(), props.booksUserPoolClientId()));
-        if (props.mcpUserPoolClientId() != null && !props.mcpUserPoolClientId().isBlank()) {
-            allClientsAudience.add(props.mcpUserPoolClientId());
-        }
-        HttpJwtAuthorizer allClientsJwtAuthorizer = HttpJwtAuthorizer.Builder.create(
-                        props.resourceNamePrefix() + "-AllClientsCognitoAuthorizer", issuer)
-                .jwtAudience(allClientsAudience)
-                .build();
-
         // Create custom Lambda authorizer for X-Authorization header
         IFunction customAuthorizerLambda = Function.fromFunctionAttributes(
                 this,
@@ -363,14 +306,8 @@ public class ApiStack extends Stack {
                         .sameEnvironment(true)
                         .build());
 
-        HttpLambdaAuthorizer customAuthorizer = HttpLambdaAuthorizer.Builder.create(
-                        props.resourceNamePrefix() + "-CustomAuthorizer", customAuthorizerLambda)
-                .responseTypes(List.of(HttpLambdaResponseType.IAM))
-                .identitySource(List.of("$request.header.X-Authorization"))
-                .resultsCacheTtl(Duration.minutes(5))
-                .build();
-
-        // Ensure API Gateway can invoke the custom authorizer Lambda explicitly (robust across regions)
+        // Ensure API Gateway can invoke the custom authorizer Lambda explicitly (robust across regions).
+        // The grant covers every route on this API, ApiRoutesStack's included.
         customAuthorizerLambda.addPermission(
                 props.resourceNamePrefix() + "-AllowInvokeAuthorizerFromHttpApi",
                 Permission.builder()
@@ -380,48 +317,17 @@ public class ApiStack extends Stack {
                                 + this.httpApi.getApiId() + "/*")
                         .build());
 
-        java.util.Set<String> createdRouteKeys = new java.util.HashSet<>();
-        java.util.Map<String, String> firstCreatorByRoute = new java.util.HashMap<>();
-        // A Lambda published under a second route (DiyaGlStack's onSecondPublishedPath, or two
-        // different HTTP methods sharing one path) is still one underlying function, and the
-        // invoke permission below already scopes to every route on this API
-        // ("execute-api:.../*"), so a second identical permission is pure duplication -
-        // deduped by function name, the same way HEAD/OPTIONS routes are deduped by path.
-        for (int i = 0; i < props.lambdaFunctions().size(); i++) {
-            AbstractApiLambdaProps apiLambdaProps = props.lambdaFunctions().get(i);
-            String routeKeyStr = apiLambdaProps.httpMethod().toString() + " " + apiLambdaProps.urlPath();
-            if (createdRouteKeys.contains(routeKeyStr)) {
-                String firstCreator = firstCreatorByRoute.getOrDefault(routeKeyStr, "<unknown>");
-                infof(
-                        "Skipping duplicate route %s (attempted by %s, first created by %s)",
-                        routeKeyStr, apiLambdaProps.ingestFunctionName(), firstCreator);
-                continue;
-            }
-            createdRouteKeys.add(routeKeyStr);
-            firstCreatorByRoute.put(routeKeyStr, apiLambdaProps.ingestFunctionName());
-            createRouteForLambda(
-                    apiLambdaProps,
-                    jwtAuthorizer,
-                    booksJwtAuthorizer,
-                    billingJwtAuthorizer,
-                    allClientsJwtAuthorizer,
-                    customAuthorizer,
-                    createdRouteKeys,
-                    firstCreatorByRoute);
-        }
-
-        // Synthesis-time diagnostics: list all created routes
-        if (!createdRouteKeys.isEmpty()) {
-            var sorted = new java.util.ArrayList<>(createdRouteKeys);
-            java.util.Collections.sort(sorted);
-            infof("Total unique API routes synthesized: %d", sorted.size());
-            for (String rk : sorted) {
-                String creator = firstCreatorByRoute.getOrDefault(rk, "<unknown>");
-                infof(" - %s (by %s)", rk, creator);
-            }
-        } else {
-            infof("No API routes synthesized");
-        }
+        ApiRoutes routes = new ApiRoutes(
+                this,
+                this.httpApi,
+                props.resourceNamePrefix(),
+                props.userPoolId(),
+                props.userPoolClientId(),
+                props.booksUserPoolClientId(),
+                props.mcpUserPoolClientId(),
+                customAuthorizerLambda);
+        routes.addAll(props.lambdaFunctions());
+        this.routeKeys = routes.routeKeys();
 
         // Outputs
         cfnOutput(this, "HttpApiId", this.httpApi.getHttpApiId());
@@ -488,181 +394,4 @@ public class ApiStack extends Stack {
               return { PhysicalResourceId: event.PhysicalResourceId || "cleanup-noop" };
             };
             """;
-
-    private void createRouteForLambda(
-            AbstractApiLambdaProps apiLambdaProps,
-            HttpJwtAuthorizer jwtAuthorizer,
-            HttpJwtAuthorizer booksJwtAuthorizer,
-            HttpJwtAuthorizer billingJwtAuthorizer,
-            HttpJwtAuthorizer allClientsJwtAuthorizer,
-            HttpLambdaAuthorizer customAuthorizer,
-            java.util.Set<String> createdRouteKeys,
-            java.util.Map<String, String> firstCreatorByRoute) {
-
-        // Build stable, unique construct IDs per route using method+path signature
-        String keySuffix = (apiLambdaProps.httpMethod().toString() + "-" + apiLambdaProps.urlPath())
-                .replaceAll("[^A-Za-z0-9]+", "-")
-                .replaceAll("^-+|-+$", "");
-
-        String importedFnId = apiLambdaProps.ingestFunctionName() + "-imported-" + keySuffix;
-        String integrationId = apiLambdaProps.ingestFunctionName() + "-Integration-" + keySuffix;
-        String routeId = apiLambdaProps.ingestFunctionName() + "-Route-" + keySuffix;
-
-        IFunction fn = Function.fromFunctionAttributes(
-                this,
-                importedFnId,
-                FunctionAttributes.builder()
-                        .functionArn(apiLambdaProps.ingestProvisionedConcurrencyAliasArn())
-                        .sameEnvironment(true)
-                        .build());
-
-        // Create HTTP Lambda integration
-        HttpLambdaIntegration integration = HttpLambdaIntegration.Builder.create(integrationId, fn)
-                .timeout(Duration.seconds(29))
-                .build();
-
-        // Create HTTP route with the appropriate authoriser. A billing route is checked first:
-        // its authoriser accepts either client's audience, since a DIYA-GL subscriber checks out
-        // and manages billing with a books-client token. A books route is checked next: its own
-        // JWT authoriser, scoped to the books client id, keeps a books token off every other
-        // route regardless of what jwtAuthorizer()/customAuthorizer() say.
-        var routeKey = HttpRouteKey.with(apiLambdaProps.urlPath(), apiLambdaProps.httpMethod());
-        if (apiLambdaProps.billingJwtAuthorizer()) {
-            HttpRoute.Builder.create(this, routeId)
-                    .httpApi(this.httpApi)
-                    .routeKey(routeKey)
-                    .integration(integration)
-                    .authorizer(billingJwtAuthorizer)
-                    .build();
-        } else if (apiLambdaProps.booksJwtAuthorizer()) {
-            HttpRoute.Builder.create(this, routeId)
-                    .httpApi(this.httpApi)
-                    .routeKey(routeKey)
-                    .integration(integration)
-                    .authorizer(booksJwtAuthorizer)
-                    .build();
-        } else if (apiLambdaProps.allClientsJwtAuthorizer()) {
-            HttpRoute.Builder.create(this, routeId)
-                    .httpApi(this.httpApi)
-                    .routeKey(routeKey)
-                    .integration(integration)
-                    .authorizer(allClientsJwtAuthorizer)
-                    .build();
-        } else if (apiLambdaProps.customAuthorizer()) {
-            HttpRoute.Builder.create(this, routeId)
-                    .httpApi(this.httpApi)
-                    .routeKey(routeKey)
-                    .integration(integration)
-                    .authorizer(customAuthorizer)
-                    .build();
-        } else if (apiLambdaProps.jwtAuthorizer()) {
-            HttpRoute.Builder.create(this, routeId)
-                    .httpApi(this.httpApi)
-                    .routeKey(routeKey)
-                    .integration(integration)
-                    .authorizer(jwtAuthorizer)
-                    .build();
-        } else {
-            HttpRoute.Builder.create(this, routeId)
-                    .httpApi(this.httpApi)
-                    .routeKey(routeKey)
-                    .integration(integration)
-                    .build();
-        }
-
-        infof(
-                "Created route %s %s for function %s",
-                apiLambdaProps.httpMethod().toString(), apiLambdaProps.urlPath(), fn.getFunctionName());
-
-        // HttpLambdaIntegration grants API Gateway invoke on this function for every route it
-        // binds, so no permission is added here: a second, API-wide grant per function was what
-        // pushed this stack past CloudFormation's 500-resource limit.
-
-        // Per-function error alarm already exists as `{fn}-errors` from the Lambda construct
-        // (Lambda.java) on this same fn.metricErrors() metric — no need to alarm on it again here.
-
-        // Additionally create a HEAD route for the same path to ensure HEAD requests are accepted across the API.
-        // Only create if the primary route isn't already HEAD and there's no explicit HEAD route defined elsewhere.
-        if (apiLambdaProps.httpMethod() != HttpMethod.HEAD) {
-            String headRouteKeyStr = "HEAD " + apiLambdaProps.urlPath();
-            if (!createdRouteKeys.contains(headRouteKeyStr)) {
-                // Track so we don't double-create if encountered again
-                createdRouteKeys.add(headRouteKeyStr);
-                firstCreatorByRoute.put(headRouteKeyStr, apiLambdaProps.ingestFunctionName());
-
-                String headRouteId = apiLambdaProps.ingestFunctionName() + "-Route-HEAD-" + keySuffix;
-                var headRouteKey = HttpRouteKey.with(apiLambdaProps.urlPath(), HttpMethod.HEAD);
-
-                if (apiLambdaProps.billingJwtAuthorizer()) {
-                    HttpRoute.Builder.create(this, headRouteId)
-                            .httpApi(this.httpApi)
-                            .routeKey(headRouteKey)
-                            .integration(integration)
-                            .authorizer(billingJwtAuthorizer)
-                            .build();
-                } else if (apiLambdaProps.booksJwtAuthorizer()) {
-                    HttpRoute.Builder.create(this, headRouteId)
-                            .httpApi(this.httpApi)
-                            .routeKey(headRouteKey)
-                            .integration(integration)
-                            .authorizer(booksJwtAuthorizer)
-                            .build();
-                } else if (apiLambdaProps.allClientsJwtAuthorizer()) {
-                    HttpRoute.Builder.create(this, headRouteId)
-                            .httpApi(this.httpApi)
-                            .routeKey(headRouteKey)
-                            .integration(integration)
-                            .authorizer(allClientsJwtAuthorizer)
-                            .build();
-                } else if (apiLambdaProps.customAuthorizer()) {
-                    HttpRoute.Builder.create(this, headRouteId)
-                            .httpApi(this.httpApi)
-                            .routeKey(headRouteKey)
-                            .integration(integration)
-                            .authorizer(customAuthorizer)
-                            .build();
-                } else if (apiLambdaProps.jwtAuthorizer()) {
-                    HttpRoute.Builder.create(this, headRouteId)
-                            .httpApi(this.httpApi)
-                            .routeKey(headRouteKey)
-                            .integration(integration)
-                            .authorizer(jwtAuthorizer)
-                            .build();
-                } else {
-                    HttpRoute.Builder.create(this, headRouteId)
-                            .httpApi(this.httpApi)
-                            .routeKey(headRouteKey)
-                            .integration(integration)
-                            .build();
-                }
-
-                infof(
-                        "Created route HEAD %s for function %s (via auto-HEAD)",
-                        apiLambdaProps.urlPath(), fn.getFunctionName());
-            }
-        }
-
-        // A books route's CORS preflight is an unauthenticated OPTIONS route on the same path,
-        // answered by the same integration (the handler itself returns the 204). Deduped by path
-        // alone, not method, since PUT and DELETE on /api/v1/books/{bookId} share one preflight.
-        if (apiLambdaProps.optionsPreflightRoute()) {
-            String optionsRouteKeyStr = "OPTIONS " + apiLambdaProps.urlPath();
-            if (!createdRouteKeys.contains(optionsRouteKeyStr)) {
-                createdRouteKeys.add(optionsRouteKeyStr);
-                firstCreatorByRoute.put(optionsRouteKeyStr, apiLambdaProps.ingestFunctionName());
-
-                String optionsRouteId = apiLambdaProps.ingestFunctionName() + "-Route-OPTIONS-" + keySuffix;
-                var optionsRouteKey = HttpRouteKey.with(apiLambdaProps.urlPath(), HttpMethod.OPTIONS);
-                HttpRoute.Builder.create(this, optionsRouteId)
-                        .httpApi(this.httpApi)
-                        .routeKey(optionsRouteKey)
-                        .integration(integration)
-                        .build();
-
-                infof(
-                        "Created route OPTIONS %s for function %s (unauthenticated preflight)",
-                        apiLambdaProps.urlPath(), fn.getFunctionName());
-            }
-        }
-    }
 }

@@ -1797,6 +1797,7 @@ jobs:
           npx dotenv -e ../.env.${{ needs.names.outputs.environment-name }} -- \
             npx cdk deploy \
               ${{ needs.names.outputs.deployment-name }}-app-ApiStack \
+              ${{ needs.names.outputs.deployment-name }}-app-ApiRoutesStack \
               --exclusively \
               --require-approval never \
               --ci true \
