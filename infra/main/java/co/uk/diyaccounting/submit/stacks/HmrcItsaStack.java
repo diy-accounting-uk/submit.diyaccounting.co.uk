@@ -1554,16 +1554,15 @@ public class HmrcItsaStack extends Stack {
                         .ingestFunctionName(props.sharedNames().hmrcVatAssistReportPostIngestLambdaFunctionName)
                         .ingestHandler(props.sharedNames().hmrcVatAssistReportPostIngestLambdaHandler)
                         .ingestLambdaArn(props.sharedNames().hmrcVatAssistReportPostIngestLambdaArn)
-                        .ingestProvisionedConcurrencyAliasArn(props.sharedNames()
-                                .hmrcVatAssistReportPostIngestProvisionedConcurrencyLambdaAliasArn)
+                        .ingestProvisionedConcurrencyAliasArn(
+                                props.sharedNames().hmrcVatAssistReportPostIngestProvisionedConcurrencyLambdaAliasArn)
                         .workerFunctionName(props.sharedNames().hmrcVatAssistReportPostWorkerLambdaFunctionName)
                         .workerHandler(props.sharedNames().hmrcVatAssistReportPostWorkerLambdaHandler)
                         .workerLambdaArn(props.sharedNames().hmrcVatAssistReportPostWorkerLambdaArn)
-                        .workerProvisionedConcurrencyAliasArn(props.sharedNames()
-                                .hmrcVatAssistReportPostWorkerProvisionedConcurrencyLambdaAliasArn)
+                        .workerProvisionedConcurrencyAliasArn(
+                                props.sharedNames().hmrcVatAssistReportPostWorkerProvisionedConcurrencyLambdaAliasArn)
                         .workerQueueName(props.sharedNames().hmrcVatAssistReportPostLambdaQueueName)
-                        .workerDeadLetterQueueName(
-                                props.sharedNames().hmrcVatAssistReportPostLambdaDeadLetterQueueName)
+                        .workerDeadLetterQueueName(props.sharedNames().hmrcVatAssistReportPostLambdaDeadLetterQueueName)
                         .workerProvisionedConcurrency(0)
                         .workerLambdaTimeout(Duration.seconds(120))
                         .queueVisibilityTimeout(Duration.seconds(140))
@@ -1576,8 +1575,7 @@ public class HmrcItsaStack extends Stack {
                         .build());
 
         // Update API environment with SQS queue URL
-        vatAssistReportPostLambdaEnv.put(
-                "SQS_QUEUE_URL", hmrcVatAssistReportPostLambdaUrlOrigin.queue.getQueueUrl());
+        vatAssistReportPostLambdaEnv.put("SQS_QUEUE_URL", hmrcVatAssistReportPostLambdaUrlOrigin.queue.getQueueUrl());
 
         this.hmrcVatAssistReportPostLambdaProps = hmrcVatAssistReportPostLambdaUrlOrigin.apiProps;
         this.hmrcVatAssistReportPostLambda = hmrcVatAssistReportPostLambdaUrlOrigin.ingestLambda;
@@ -1589,7 +1587,8 @@ public class HmrcItsaStack extends Stack {
                 props.sharedNames().hmrcVatAssistReportPostIngestLambdaHandler,
                 props.sharedNames().hmrcVatAssistReportPostWorkerLambdaHandler);
 
-        // Grant the VAT Assist report Lambda and its worker the bundles read, receipt access and async request table access.
+        // Grant the VAT Assist report Lambda and its worker the bundles read, receipt access and async request table
+        // access.
         List.of(this.hmrcVatAssistReportPostLambda, hmrcVatAssistReportPostLambdaUrlOrigin.workerLambda)
                 .forEach(fn -> {
                     bundlesTable.grant(fn, "dynamodb:Query");
@@ -1675,7 +1674,8 @@ public class HmrcItsaStack extends Stack {
                 props.sharedNames().hmrcVatAssistAcknowledgePostIngestLambdaHandler,
                 props.sharedNames().hmrcVatAssistAcknowledgePostWorkerLambdaHandler);
 
-        // Grant the VAT Assist acknowledge Lambda and its worker the bundles read, receipt access and async request table access.
+        // Grant the VAT Assist acknowledge Lambda and its worker the bundles read, receipt access and async request
+        // table access.
         List.of(this.hmrcVatAssistAcknowledgePostLambda, hmrcVatAssistAcknowledgePostLambdaUrlOrigin.workerLambda)
                 .forEach(fn -> {
                     bundlesTable.grant(fn, "dynamodb:Query");
@@ -1726,13 +1726,13 @@ public class HmrcItsaStack extends Stack {
                         .ingestFunctionName(props.sharedNames().hmrcItsaAssistReportPostIngestLambdaFunctionName)
                         .ingestHandler(props.sharedNames().hmrcItsaAssistReportPostIngestLambdaHandler)
                         .ingestLambdaArn(props.sharedNames().hmrcItsaAssistReportPostIngestLambdaArn)
-                        .ingestProvisionedConcurrencyAliasArn(props.sharedNames()
-                                .hmrcItsaAssistReportPostIngestProvisionedConcurrencyLambdaAliasArn)
+                        .ingestProvisionedConcurrencyAliasArn(
+                                props.sharedNames().hmrcItsaAssistReportPostIngestProvisionedConcurrencyLambdaAliasArn)
                         .workerFunctionName(props.sharedNames().hmrcItsaAssistReportPostWorkerLambdaFunctionName)
                         .workerHandler(props.sharedNames().hmrcItsaAssistReportPostWorkerLambdaHandler)
                         .workerLambdaArn(props.sharedNames().hmrcItsaAssistReportPostWorkerLambdaArn)
-                        .workerProvisionedConcurrencyAliasArn(props.sharedNames()
-                                .hmrcItsaAssistReportPostWorkerProvisionedConcurrencyLambdaAliasArn)
+                        .workerProvisionedConcurrencyAliasArn(
+                                props.sharedNames().hmrcItsaAssistReportPostWorkerProvisionedConcurrencyLambdaAliasArn)
                         .workerQueueName(props.sharedNames().hmrcItsaAssistReportPostLambdaQueueName)
                         .workerDeadLetterQueueName(
                                 props.sharedNames().hmrcItsaAssistReportPostLambdaDeadLetterQueueName)
@@ -1748,8 +1748,7 @@ public class HmrcItsaStack extends Stack {
                         .build());
 
         // Update API environment with SQS queue URL
-        itsaAssistReportPostLambdaEnv.put(
-                "SQS_QUEUE_URL", hmrcItsaAssistReportPostLambdaUrlOrigin.queue.getQueueUrl());
+        itsaAssistReportPostLambdaEnv.put("SQS_QUEUE_URL", hmrcItsaAssistReportPostLambdaUrlOrigin.queue.getQueueUrl());
 
         this.hmrcItsaAssistReportPostLambdaProps = hmrcItsaAssistReportPostLambdaUrlOrigin.apiProps;
         this.hmrcItsaAssistReportPostLambda = hmrcItsaAssistReportPostLambdaUrlOrigin.ingestLambda;
@@ -1761,7 +1760,8 @@ public class HmrcItsaStack extends Stack {
                 props.sharedNames().hmrcItsaAssistReportPostIngestLambdaHandler,
                 props.sharedNames().hmrcItsaAssistReportPostWorkerLambdaHandler);
 
-        // Grant the ITSA Assist report Lambda and its worker the bundles read, receipt access and async request table access.
+        // Grant the ITSA Assist report Lambda and its worker the bundles read, receipt access and async request table
+        // access.
         List.of(this.hmrcItsaAssistReportPostLambda, hmrcItsaAssistReportPostLambdaUrlOrigin.workerLambda)
                 .forEach(fn -> {
                     bundlesTable.grant(fn, "dynamodb:Query");
@@ -1847,13 +1847,15 @@ public class HmrcItsaStack extends Stack {
                 props.sharedNames().hmrcItsaAssistAcknowledgePostIngestLambdaHandler,
                 props.sharedNames().hmrcItsaAssistAcknowledgePostWorkerLambdaHandler);
 
-        // Grant the ITSA Assist acknowledge Lambda and its worker the bundles read, receipt access and async request table access.
+        // Grant the ITSA Assist acknowledge Lambda and its worker the bundles read, receipt access and async request
+        // table access.
         List.of(this.hmrcItsaAssistAcknowledgePostLambda, hmrcItsaAssistAcknowledgePostLambdaUrlOrigin.workerLambda)
                 .forEach(fn -> {
                     bundlesTable.grant(fn, "dynamodb:Query");
                     hmrcApiRequestsTable.grant(fn, "dynamodb:PutItem");
                     receiptsTable.grant(fn, "dynamodb:GetItem", "dynamodb:PutItem");
-                    hmrcItsaAssistAcknowledgePostAsyncRequestsTable.grant(fn, "dynamodb:GetItem", "dynamodb:UpdateItem");
+                    hmrcItsaAssistAcknowledgePostAsyncRequestsTable.grant(
+                            fn, "dynamodb:GetItem", "dynamodb:UpdateItem");
 
                     // Grant access to user sub hash salt secret in Secrets Manager
                     SubHashSaltHelper.grantSaltAccess(fn, region, account, props.envName());

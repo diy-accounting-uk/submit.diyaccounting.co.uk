@@ -3524,16 +3524,16 @@ public class SubmitSharedNames {
                 "%s/hmrc/%s".formatted(appLambdaHandlerPrefix, hmrcVatAssistReportPostLambdaHandlerName);
         this.hmrcVatAssistReportPostIngestLambdaArn =
                 "%s-%s".formatted(appLambdaArnPrefix, hmrcVatAssistReportPostLambdaHandlerDashed);
-        this.hmrcVatAssistReportPostIngestProvisionedConcurrencyLambdaAliasArn = "%s:%s"
-                .formatted(this.hmrcVatAssistReportPostIngestLambdaArn, this.provisionedConcurrencyAliasName);
+        this.hmrcVatAssistReportPostIngestProvisionedConcurrencyLambdaAliasArn =
+                "%s:%s".formatted(this.hmrcVatAssistReportPostIngestLambdaArn, this.provisionedConcurrencyAliasName);
         this.hmrcVatAssistReportPostWorkerLambdaFunctionName =
                 "%s-worker".formatted(this.hmrcVatAssistReportPostIngestLambdaFunctionName);
         this.hmrcVatAssistReportPostWorkerLambdaHandler =
                 "%s/hmrc/%s".formatted(appLambdaHandlerPrefix, hmrcVatAssistReportPostLambdaWorkerHandlerName);
         this.hmrcVatAssistReportPostWorkerLambdaArn =
                 "%s-worker".formatted(this.hmrcVatAssistReportPostIngestLambdaArn);
-        this.hmrcVatAssistReportPostWorkerProvisionedConcurrencyLambdaAliasArn = "%s:%s"
-                .formatted(this.hmrcVatAssistReportPostWorkerLambdaArn, this.provisionedConcurrencyAliasName);
+        this.hmrcVatAssistReportPostWorkerProvisionedConcurrencyLambdaAliasArn =
+                "%s:%s".formatted(this.hmrcVatAssistReportPostWorkerLambdaArn, this.provisionedConcurrencyAliasName);
         this.hmrcVatAssistReportPostLambdaQueueName =
                 "%s-queue".formatted(this.hmrcVatAssistReportPostIngestLambdaFunctionName);
         this.hmrcVatAssistReportPostLambdaDeadLetterQueueName =
@@ -3582,16 +3582,16 @@ public class SubmitSharedNames {
                 "%s/hmrc/%s".formatted(appLambdaHandlerPrefix, hmrcItsaAssistReportPostLambdaHandlerName);
         this.hmrcItsaAssistReportPostIngestLambdaArn =
                 "%s-%s".formatted(appLambdaArnPrefix, hmrcItsaAssistReportPostLambdaHandlerDashed);
-        this.hmrcItsaAssistReportPostIngestProvisionedConcurrencyLambdaAliasArn = "%s:%s"
-                .formatted(this.hmrcItsaAssistReportPostIngestLambdaArn, this.provisionedConcurrencyAliasName);
+        this.hmrcItsaAssistReportPostIngestProvisionedConcurrencyLambdaAliasArn =
+                "%s:%s".formatted(this.hmrcItsaAssistReportPostIngestLambdaArn, this.provisionedConcurrencyAliasName);
         this.hmrcItsaAssistReportPostWorkerLambdaFunctionName =
                 "%s-worker".formatted(this.hmrcItsaAssistReportPostIngestLambdaFunctionName);
         this.hmrcItsaAssistReportPostWorkerLambdaHandler =
                 "%s/hmrc/%s".formatted(appLambdaHandlerPrefix, hmrcItsaAssistReportPostLambdaWorkerHandlerName);
         this.hmrcItsaAssistReportPostWorkerLambdaArn =
                 "%s-worker".formatted(this.hmrcItsaAssistReportPostIngestLambdaArn);
-        this.hmrcItsaAssistReportPostWorkerProvisionedConcurrencyLambdaAliasArn = "%s:%s"
-                .formatted(this.hmrcItsaAssistReportPostWorkerLambdaArn, this.provisionedConcurrencyAliasName);
+        this.hmrcItsaAssistReportPostWorkerProvisionedConcurrencyLambdaAliasArn =
+                "%s:%s".formatted(this.hmrcItsaAssistReportPostWorkerLambdaArn, this.provisionedConcurrencyAliasName);
         this.hmrcItsaAssistReportPostLambdaQueueName =
                 "%s-queue".formatted(this.hmrcItsaAssistReportPostIngestLambdaFunctionName);
         this.hmrcItsaAssistReportPostLambdaDeadLetterQueueName =
