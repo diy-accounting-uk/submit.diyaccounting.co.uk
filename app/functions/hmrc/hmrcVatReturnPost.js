@@ -382,6 +382,7 @@ async function resolvePeriodKeyFromObligations({
       summary: "VAT return blocked: period already filed at HMRC",
       userSub,
       detail: { received: matchedObligation.received },
+      emitMetric: false,
       clientId,
     });
     const receivedOn = matchedObligation.received
@@ -410,6 +411,7 @@ async function resolvePeriodKeyFromObligations({
     failure: "obligation-not-matched",
     summary: "VAT return blocked: no open obligation for the requested period",
     userSub,
+    emitMetric: false,
     clientId,
   });
   const openPeriodsAdvice = openPeriods.length
