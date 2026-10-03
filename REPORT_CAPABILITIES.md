@@ -5867,7 +5867,7 @@ Each entry has the same fields: Use when, Does, Run, Entry, Files, Keywords, Rel
 - axe-core: [OPS-96](#ops-96-scan-pages-for-accessibility-violations)
 - backfill: [BILL-41](#bill-41-backfill-the-stripe-test-mode-qualifier), [DATA-55](#data-55-pull-paypal-receipts-into-the-lake)
 - background poll: [DEV-31](#dev-31-watch-github-ci-to-green)
-- backlog: [DEV-24](#dev-24-document-developer-setup-and-repository-conventions), [DEV-27](#dev-27-render-the-open-work-board)
+- backlog: [DEV-27](#dev-27-render-the-open-work-board)
 - backlog work: [DEV-28](#dev-28-work-nextmd-as-dispatched-sub-agents)
 - backup account: [OPS-111](#ops-111-provision-cross-account-backup-vaults-and-plans)
 - backup health: [OPS-48](#ops-48-verify-backup-health-daily)
