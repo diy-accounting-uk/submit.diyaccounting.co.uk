@@ -14,6 +14,7 @@ import {
   parseRequestBody,
   buildValidationError,
   http401UnauthorizedResponse,
+  http404NotFoundResponse,
   http500ServerErrorResponse,
   getHeader,
   serializeResponseHeaders,
@@ -33,6 +34,7 @@ import {
   buildHmrcHeaders,
 } from "../services/hmrcApi.js";
 import { enforceBundles } from "../services/bundleManagement.js";
+import { loadCatalogFromRoot, isActivityListedInEnvironment } from "../services/productCatalog.js";
 import * as asyncApiServices from "../services/asyncApiServices.js";
 import { getAsyncRequest } from "../data/dynamoDbAsyncRequestRepository.js";
 import { buildFraudHeaders, detectVendorPublicIp } from "./buildFraudHeaders.js";
@@ -104,11 +106,12 @@ export async function postHmrcAssist({ url, body, acceptVersion, context: reques
  * @param {string} config.route - The Express route the local server registers
  * @param {string} config.asyncTableEnvName - Env var naming the async requests table
  * @param {string} config.operationName - Human name for log lines
+ * @param {string} [config.activityId] - Catalogue activity that must be listed in this environment; when it is not, the route answers 404
  * @param {(body: Object, errorMessages: string[]) => Object} config.validateBody - Reads and validates the body fields
  * @param {(params: Object, requestContext: Object) => Promise<{hmrcResponse: Object, hmrcResponseBody: Object, data: Object|null}>} config.call -
  *   Makes the HMRC call and stores what must be stored; data is the success body, or { statusCode: 204 }
  */
-export function createAssistHandlers({ sourceName, route, asyncTableEnvName, operationName, validateBody, call }) {
+export function createAssistHandlers({ sourceName, route, asyncTableEnvName, operationName, activityId, validateBody, call }) {
   const handlerLogger = createLogger({ source: sourceName });
   const requiredEnv = [
     "HMRC_BASE_URI",
@@ -166,6 +169,17 @@ export function createAssistHandlers({ sourceName, route, asyncTableEnvName, ope
     const sqsQueueUrl = process.env.SQS_QUEUE_URL;
 
     let errorMessages = [];
+
+    if (activityId) {
+      const activity = loadCatalogFromRoot().activities.find((candidate) => candidate.id === activityId);
+      if (!isActivityListedInEnvironment(activity, process.env.ENVIRONMENT_NAME)) {
+        return http404NotFoundResponse({
+          request,
+          message: "Not available in this environment",
+          error: { error: "not-available-in-environment" },
+        });
+      }
+    }
 
     let userSub;
     let bundleIds = [];

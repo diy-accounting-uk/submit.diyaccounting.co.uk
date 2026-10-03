@@ -5,7 +5,7 @@
 import { describe, test, beforeEach, expect, vi } from "vitest";
 import { dotenvConfigIfNotBlank } from "@app/lib/env.js";
 import { buildHmrcEvent } from "@app/test-helpers/eventBuilders.js";
-import { setupTestEnv, setupFetchMock, mockHmrcError } from "@app/test-helpers/mockHelpers.js";
+import { setupTestEnv, parseResponseBody, setupFetchMock, mockHmrcError } from "@app/test-helpers/mockHelpers.js";
 
 const mockSend = vi.fn();
 const mockSqsSend = vi.fn();
@@ -236,5 +236,14 @@ describe("hmrcVatAssistAcknowledgePost ingestHandler", () => {
     const response = await ingestHandler(event);
     expect(response.statusCode).toBe(403);
     expect(hmrcCalls()).toHaveLength(0);
+  });
+
+  test("answers 404 and calls neither HMRC nor the queue when the environment does not list the activity", async () => {
+    process.env.ENVIRONMENT_NAME = "prod";
+    const response = await ingestHandler(buildEvent());
+    expect(response.statusCode).toBe(404);
+    expect(parseResponseBody(response).error).toBe("not-available-in-environment");
+    expect(hmrcCalls()).toHaveLength(0);
+    expect(mockSqsSend).not.toHaveBeenCalled();
   });
 });

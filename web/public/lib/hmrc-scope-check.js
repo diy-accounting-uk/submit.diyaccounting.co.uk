@@ -70,6 +70,16 @@
   }
 
   /**
+   * Find an activity in the catalogue by its id.
+   * @param {string} activityId
+   * @returns {Promise<object|null>} The activity, or null when the catalogue could not be read or has no such activity
+   */
+  async function getActivityById(activityId) {
+    const catalog = await fetchCatalog();
+    return catalog?.activities?.find((activity) => activity.id === activityId) || null;
+  }
+
+  /**
    * Check whether the stored HMRC token scope satisfies the required scopes.
    * @param {string[]} requiredScopes - Scopes the current activity needs
    * @returns {boolean} true if the stored scope covers all required scopes
@@ -116,6 +126,7 @@
 
   window.hmrcScopeCheck = {
     getRequiredScopes,
+    getActivityById,
     hasRequiredScopes,
     getOAuthScopeString,
     isTokenSufficient,

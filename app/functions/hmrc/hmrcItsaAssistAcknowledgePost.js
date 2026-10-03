@@ -41,6 +41,7 @@ export const { apiEndpoint, extractAndValidateParameters, ingestHandler, workerH
   route: "/api/v1/hmrc/itsa/assist/acknowledge",
   asyncTableEnvName: "HMRC_ITSA_ASSIST_ACKNOWLEDGE_POST_ASYNC_REQUESTS_TABLE_NAME",
   operationName: "Self Assessment Assist acknowledge",
+  activityId: "self-employed",
   validateBody,
   call,
 });

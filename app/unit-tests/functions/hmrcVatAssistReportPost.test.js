@@ -270,4 +270,13 @@ describe("hmrcVatAssistReportPost ingestHandler", () => {
     expect(response.statusCode).toBe(403);
     expect(hmrcCalls()).toHaveLength(0);
   });
+
+  test("answers 404 and calls neither HMRC nor the queue when the environment does not list the activity", async () => {
+    process.env.ENVIRONMENT_NAME = "prod";
+    const response = await ingestHandler(buildEvent());
+    expect(response.statusCode).toBe(404);
+    expect(parseResponseBody(response).error).toBe("not-available-in-environment");
+    expect(hmrcCalls()).toHaveLength(0);
+    expect(mockSqsSend).not.toHaveBeenCalled();
+  });
 });

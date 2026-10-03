@@ -1253,21 +1253,25 @@
           });
         }
 
-        hmrcAssist = window.hmrcAssistMessages.mount({
-          kind: "vat",
-          container: document.getElementById("hmrcAssistCheck"),
-          describeDraft: describeHmrcAssistDraft,
-          watch: [
-            "vatNumber",
-            "obligationChoice",
-            "periodStart",
-            "periodEnd",
-            ...HMRC_ASSIST_BOX_IDS.filter((id) => id !== "totalVatDue" && id !== "netVatDue"),
-          ].map((id) => document.getElementById(id)),
-          submitButton: document.getElementById("submitBtn"),
-          highlightIds: HMRC_ASSIST_BOX_IDS,
-          unavailableText: "HMRC Assist feedback is unavailable at the moment. You can still submit your return.",
-        });
+        const hmrcAssistActivity = await window.hmrcScopeCheck.getActivityById("vat-assist-check");
+        const hmrcAssistEnvironmentName = await window.fetchCurrentEnvironmentName();
+        if (hmrcAssistActivity && window.isActivityListedInEnvironment(hmrcAssistActivity, hmrcAssistEnvironmentName)) {
+          hmrcAssist = window.hmrcAssistMessages.mount({
+            kind: "vat",
+            container: document.getElementById("hmrcAssistCheck"),
+            describeDraft: describeHmrcAssistDraft,
+            watch: [
+              "vatNumber",
+              "obligationChoice",
+              "periodStart",
+              "periodEnd",
+              ...HMRC_ASSIST_BOX_IDS.filter((id) => id !== "totalVatDue" && id !== "netVatDue"),
+            ].map((id) => document.getElementById(id)),
+            submitButton: document.getElementById("submitBtn"),
+            highlightIds: HMRC_ASSIST_BOX_IDS,
+            unavailableText: "HMRC Assist feedback is unavailable at the moment. You can still submit your return.",
+          });
+        }
 
         // === Form Data Persistence (WCAG 2.2.1 mitigation) ===
         // Auto-save form data as user types so it's preserved if session expires

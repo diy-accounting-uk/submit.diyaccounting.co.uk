@@ -41,6 +41,7 @@ export const { apiEndpoint, extractAndValidateParameters, ingestHandler, workerH
   route: "/api/v1/hmrc/vat/assist/acknowledge",
   asyncTableEnvName: "HMRC_VAT_ASSIST_ACKNOWLEDGE_POST_ASYNC_REQUESTS_TABLE_NAME",
   operationName: "VAT Assist acknowledge",
+  activityId: "vat-assist-check",
   validateBody,
   call,
 });

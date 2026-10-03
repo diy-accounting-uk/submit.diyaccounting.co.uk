@@ -89,6 +89,7 @@ export const { apiEndpoint, extractAndValidateParameters, ingestHandler, workerH
   route: "/api/v1/hmrc/vat/assist/report",
   asyncTableEnvName: "HMRC_VAT_ASSIST_REPORT_POST_ASYNC_REQUESTS_TABLE_NAME",
   operationName: "VAT Assist report",
+  activityId: "vat-assist-check",
   validateBody,
   call,
 });

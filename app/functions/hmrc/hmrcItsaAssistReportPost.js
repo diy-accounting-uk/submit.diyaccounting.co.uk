@@ -68,6 +68,7 @@ export const { apiEndpoint, extractAndValidateParameters, ingestHandler, workerH
   route: "/api/v1/hmrc/itsa/assist/report",
   asyncTableEnvName: "HMRC_ITSA_ASSIST_REPORT_POST_ASYNC_REQUESTS_TABLE_NAME",
   operationName: "Self Assessment Assist report",
+  activityId: "self-employed",
   validateBody,
   call,
 });

@@ -69,15 +69,21 @@ function obligation(status) {
  * @param {import("@playwright/test").Page} page
  * @param {{obligations?: object[], report?: (request: object, count: number) => {status: number, body?: object}|Promise<object>, acknowledge?: (request: object, count: number) => {status: number}}} behaviour
  */
-async function openForm(page, { obligations = [obligation("O")], report, acknowledge } = {}) {
+async function openForm(page, { obligations = [obligation("O")], report, acknowledge, environmentName = "ci" } = {}) {
   const reportRequests = [];
   const acknowledgeRequests = [];
+
+  await page.route("**/submit.environment-name.txt", async (route) => {
+    if (environmentName === null) return route.abort();
+    await route.fulfill({ status: 200, contentType: "text/plain", body: environmentName });
+  });
 
   await page.route("**/submit.js", async (route) => {
     await route.fulfill({
       status: 200,
       contentType: "application/javascript",
       body: `
+        import "/lib/services/catalog-service.js";
         window.authorizedFetch = (url, options) => fetch(url, options);
         window.getGovClientHeaders = async () => ({});
       `,
@@ -87,7 +93,8 @@ async function openForm(page, { obligations = [obligation("O")], report, acknowl
     await route.fulfill({
       status: 200,
       contentType: "application/javascript",
-      body: `window.hmrcScopeCheck = { isTokenSufficient: async () => true, clearHmrcToken: () => {}, getOAuthScopeString: async () => "read:vat" };`,
+      body: `window.hmrcScopeCheck = { isTokenSufficient: async () => true, clearHmrcToken: () => {}, getOAuthScopeString: async () => "read:vat",
+        getActivityById: async (id) => window.TOML.parse(await (await fetch("/submit.catalogue.toml")).text()).activities.find((activity) => activity.id === id) };`,
     });
   });
   await page.route("**/api/v1/hmrc/vat/obligation*", async (route) => {
@@ -323,6 +330,22 @@ test.describe("HMRC Assist check on the VAT return", () => {
     await page.locator("#totalValueSalesExVAT").fill("not a number");
     await expect(page.locator("#hmrcAssistCheckBtn")).toBeDisabled();
   });
+
+  for (const [label, environmentName] of [
+    ["the environment is prod", "prod"],
+    ["the environment name cannot be read", null],
+  ]) {
+    test(`shows no control and makes no assist request when ${label}`, async ({ page }) => {
+      const { reportRequests, acknowledgeRequests } = await openForm(page, { environmentName });
+      await fillBoxes(page);
+      await settle(page);
+
+      await expect(page.locator("#hmrcAssistCheckBtn")).toHaveCount(0);
+      await expect(page.locator("#hmrcAssistCheck")).toBeEmpty();
+      expect(reportRequests).toHaveLength(0);
+      expect(acknowledgeRequests).toHaveLength(0);
+    });
+  }
 
   test("shows no control when the obligation is fulfilled", async ({ page }) => {
     await openForm(page, { obligations: [obligation("F")] });
