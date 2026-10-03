@@ -186,7 +186,7 @@ Arrangements". The body, with the mail client's chrome and the standing footer r
 
 **What is worth doing now, before HMRC's 2027 update.**
 
-1. A one-paragraph note to SDST, in place of the application: the product is built and
+1. A one-paragraph note to SDST, in place of the application (sent 2026-10-03): the product is built and
    sandbox-tested end to end for self-employment and UK property, include
    antony@diyaccounting.co.uk in the 2027-28 notifications, and is a readiness review accepted in
    advance. No attachments.
@@ -199,6 +199,8 @@ Arrangements". The body, with the mail client's chrome and the standing footer r
    VitalTax for MTD Income Tax, and announced MTD for Income Tax in their product on 2025-11-18
    (both in the mail mirror). A commercial decision, the operator's.
 
+**Sent 2026-10-03.** The note to SDST went from antony@diyaccounting.co.uk (text as sent in `../private.diyaccounting.co.uk/hmrc/itsa/DRAFT_EMAIL_ITSA_2027_NOTE.md`); it also points HMRC at the published ITSA sandbox recordings as evidence of the working product. SDST's reply, if any, rewrites the blocked rows below.
+
 **What waits.** The recognition application, the production-credentials email, the checklist,
 the finder listing and the Income Tax ad group all wait on HMRC's early-2027 update. The ad group
 must not run before recognition, because the product could not deliver what it advertised.
@@ -210,14 +212,6 @@ section is their board.
 
 ### Ready
 
-- [ ] **IA1. Note to SDST.** The operator sends one paragraph from antony@diyaccounting.co.uk to
-  `SDSTeam@hmrc.gov.uk`: DIY Accounting Submit is built and sandbox-tested end to end for Income
-  Tax (MTD), self-employment and UK property, quarterly updates through final declaration; we
-  hold VAT (MTD) production credentials; please include this address in the 2027-28 production
-  access notifications, and say whether a readiness review can be lodged before the window
-  opens. A session drafts it to `../private.diyaccounting.co.uk/hmrc/itsa/DRAFT_EMAIL_ITSA_2027_NOTE.md`
-  first and records the send date there. **Owner**: Claude Code (draft), Operator (send).
-  **Model**: Haiku. **Size**: 1 file (private).
 - [ ] **IA2. Developer Hub email preferences.** The operator signs in to the Developer Hub and
   turns on the Income Tax (MTD) notices under Email preferences, so the 2027 update arrives.
   **Owner**: Operator. **Model**: none. **Size**: 0 files.
@@ -270,7 +264,7 @@ send.
 
 ```
 IA2 ──► HMRC's early-2027 update ──► IA5 ──► IA6 ──► IA7 ──► IA8 ──► IA10
-IA1 ──┘                                        └──► IA9
+                                               └──► IA9
 IA3 ──► IA6
 IA4 (independent; (a) opens a spreadsheets row)
 ```
