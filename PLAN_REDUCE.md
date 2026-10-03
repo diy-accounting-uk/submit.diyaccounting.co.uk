@@ -37,12 +37,10 @@ the seven functions.
 
 ---
 
-## 2. SQS Worker Handler Boilerplate (internal refactor, no library) — in progress
+## 2. SQS Worker Handler Boilerplate (internal refactor, no library) — done (PR #470)
 
 `isRetryableError()` and `processSqsRecords()` live in `app/lib/sqsWorkerHelper.js` with an
-`errorPolicy` of `rethrow` or `classify` per caller; five of the thirty-eight `workerHandler`s
-use it. The other thirty-three are `NEXT.md` R2a (the eighteen with a `workerHandler` unit case)
-and R2b (the fifteen without one, which get the case first).
+`errorPolicy` of `rethrow` or `classify` per caller; all thirty-eight `workerHandler`s use it.
 
 **What**: Five Lambda files implement the same `workerHandler(event)` pattern with near-identical
 boilerplate:
@@ -538,4 +536,4 @@ healthy, low-dependency codebase.
 
 ## Remaining
 
-Item 2's thirty-three unconverted workers, as `NEXT.md` R2a and R2b. Every other item is done or recommends no action.
+No item has open work.
