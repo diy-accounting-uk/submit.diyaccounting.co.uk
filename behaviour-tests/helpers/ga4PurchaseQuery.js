@@ -8,11 +8,11 @@
 //
 // The ci property's BigQuery link only has the daily export enabled (see
 // infra/google/ga4/ga4-sync.js — no streaming export), and that daily table for a given day
-// can take up to about 27 hours to appear (the same margin app/functions/analytics/
-// ga4EventExportPull.js's D-2 targeting is built around). A same-run purchase event's row
+// can take up to about 27 hours after the day closes to appear (the same margin app/functions/
+// analytics/ga4EventExportPull.js's D-2 targeting is built around). A same-run purchase event's row
 // therefore cannot exist yet when the test that fired it is still running. So this check looks
-// up a PAST run's transaction id (a Stripe test-mode subscription id, old enough that its daily
-// export should already have landed) and confirms BigQuery has ingested a purchase event
+// up a PAST run's transaction id (a Stripe test-mode subscription id, created on a day whose
+// daily export should already have landed) and confirms BigQuery has ingested a purchase event
 // carrying it, rather than polling for the current run's own event.
 //
 // Reads application default credentials, the same federated path ga4EventExportPull.js uses —
@@ -44,34 +44,51 @@ function dailyTableSuffixes(lookbackDays) {
   return suffixes;
 }
 
+const dayMs = 24 * 60 * 60 * 1000;
+export const dailyExportLagMs = 27 * 60 * 60 * 1000;
+
 /**
- * Finds a Stripe test-mode subscription id of `customerEmail`'s created between `olderThanMs`
- * and `newestMs` ago — old enough for its GA4 purchase event's daily BigQuery export to have
- * landed under normal operation, but not so old it falls outside the lookback window this module
- * then queries. Every ci run of payment.behaviour.test.js creates and later cancels one such
- * subscription for its lane user and fires a purchase carrying its id, so this stands in for a
- * persisted "last run's transaction id" without adding new storage. Other lanes' subscriptions
- * fire no purchase, hence the customer filter.
+ * The creation-time window a transaction must fall in for its purchase event to be readable in
+ * the daily tables: created on a UTC day whose daily table has had `dailyExportLagMs` since the
+ * day closed (so the table has landed), and on or after the first day of the `lookbackDays`
+ * tables the query reads, and after the first whole day the export covers.
  *
- * @param {{olderThanMs: number, newestMs: number, customerEmail: string}} window
- * @returns {Promise<string|null>}
+ * @param {{nowMs: number, lookbackDays: number, exportFirstWholeDayStartMs: number|null}} input
+ * @returns {{createdAfterMs: number, createdBeforeMs: number}|null} null when no day qualifies
  */
-export async function findPastStripeSubscriptionId({ olderThanMs, newestMs, customerEmail }) {
-  if (newestMs <= olderThanMs) return null;
+export function exportedTransactionWindow({ nowMs, lookbackDays, exportFirstWholeDayStartMs }) {
+  if (exportFirstWholeDayStartMs === null) return null;
+  const todayStartMs = Math.floor(nowMs / dayMs) * dayMs;
+  const createdBeforeMs = Math.floor((nowMs - dailyExportLagMs) / dayMs) * dayMs;
+  const createdAfterMs = Math.max(todayStartMs - lookbackDays * dayMs, exportFirstWholeDayStartMs);
+  return createdAfterMs < createdBeforeMs ? { createdAfterMs, createdBeforeMs } : null;
+}
+
+/**
+ * Finds a Stripe test-mode subscription of `customerEmail`'s created inside the window (see
+ * exportedTransactionWindow). Every ci run of payment.behaviour.test.js creates and later
+ * cancels one such subscription for its lane user and fires a purchase carrying its id, so this
+ * stands in for a persisted "last run's transaction id" without adding new storage. Other lanes'
+ * subscriptions fire no purchase, hence the customer filter.
+ *
+ * @param {{createdAfterMs: number, createdBeforeMs: number, customerEmail: string}} window
+ * @returns {Promise<{id: string, createdMs: number}|null>}
+ */
+export async function findPastStripeSubscription({ createdAfterMs, createdBeforeMs, customerEmail }) {
+  if (createdBeforeMs <= createdAfterMs) return null;
   const stripe = await getStripeClient({ test: true });
-  const now = Date.now();
   const subscriptions = await stripe.subscriptions.list({
     status: "all",
     created: {
-      gte: Math.floor((now - newestMs) / 1000),
-      lte: Math.floor((now - olderThanMs) / 1000),
+      gte: Math.floor(createdAfterMs / 1000),
+      lt: Math.floor(createdBeforeMs / 1000),
     },
     expand: ["data.customer"],
     limit: 100,
   });
   const wanted = String(customerEmail).toLowerCase();
   const match = subscriptions.data.find((subscription) => subscription.customer?.email?.toLowerCase() === wanted);
-  return match?.id ?? null;
+  return match ? { id: match.id, createdMs: match.created * 1000 } : null;
 }
 
 /**

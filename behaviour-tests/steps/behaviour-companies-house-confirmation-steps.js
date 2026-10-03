@@ -8,7 +8,7 @@
 // credentials, matching the micro-entity accounts journey.
 
 import { expect, test } from "@playwright/test";
-import { loggedClick, loggedFill, timestamp } from "../helpers/behaviour-helpers.js";
+import { loggedClick, loggedFill, timestamp, takeScreenshot } from "../helpers/behaviour-helpers.js";
 import { isCompaniesHouseSimulatorLane } from "./behaviour-companies-house-filing-steps.js";
 import { hashSub, initializeSalt } from "@app/services/subHasher.js";
 import { buildChargeKey, deleteActivityCharge } from "@app/data/dynamoDbActivityChargeRepository.js";
@@ -70,7 +70,7 @@ export async function goToFileConfirmationStatement(page, screenshotPath = defau
     });
     await page.waitForLoadState("networkidle");
     await expect(page.locator("#companyForm")).toBeVisible();
-    await page.screenshot({ path: `${screenshotPath}/${timestamp()}-01-company-form.png` });
+    await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-01-company-form.png` });
   });
 }
 
@@ -80,7 +80,7 @@ export async function enterCompanyNumberAndLookUp(page, companyNumber, screensho
     await loggedClick(page, "#companyLookupBtn", "Looking up the company", { screenshotPath });
     await page.waitForLoadState("networkidle");
     await expect(page.locator("#authView")).toBeVisible({ timeout: 15000 });
-    await page.screenshot({ path: `${screenshotPath}/${timestamp()}-01-company-looked-up.png` });
+    await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-01-company-looked-up.png` });
   });
 }
 
@@ -89,7 +89,7 @@ export async function verifyCompanyLookedUp(page, expectedName, expectedNumber, 
     await expect(page.locator("#authCompanyName")).toContainText(expectedName);
     await expect(page.locator("#authCompanyNumber")).toContainText(expectedNumber);
     await expect(page.locator("#publicOfficersBody")).not.toBeEmpty({ timeout: 15000 });
-    await page.screenshot({ path: `${screenshotPath}/${timestamp()}-01-company-confirmed.png` });
+    await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-01-company-confirmed.png` });
   });
 }
 
@@ -99,7 +99,7 @@ export async function enterCompanyAuthCodeAndReadRegister(page, companyAuthCode,
     await loggedClick(page, "#authSubmitBtn", "Reading register data", { screenshotPath });
     await page.waitForLoadState("networkidle");
     await expect(page.locator("#reviewView")).toBeVisible({ timeout: 15000 });
-    await page.screenshot({ path: `${screenshotPath}/${timestamp()}-01-register-data-read.png` });
+    await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-01-register-data-read.png` });
   });
 }
 
@@ -107,7 +107,7 @@ export async function verifyReviewFormPopulated(page, screenshotPath = defaultSc
   await test.step("The user sees the review date and current directors pre-filled from the register", async () => {
     await expect(page.locator("#reviewDate")).not.toHaveValue("");
     await expect(page.locator("[data-director-row]").first()).toBeVisible();
-    await page.screenshot({ path: `${screenshotPath}/${timestamp()}-01-review-form-populated.png` });
+    await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-01-review-form-populated.png` });
   });
 }
 
@@ -121,7 +121,7 @@ export async function tryPreviewWithBlankPersonalCodes(page, screenshotPath = de
     await loggedClick(page, "#previewBtn", "Trying to preview with no personal codes entered", { screenshotPath });
     await expect(page.locator("#statusMessagesContainer")).toContainText("personal code", { timeout: 15000 });
     await expect(page.locator("#previewView")).toBeHidden();
-    await page.screenshot({ path: `${screenshotPath}/${timestamp()}-01-blank-personal-code-blocked.png` });
+    await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-01-blank-personal-code-blocked.png` });
   });
 }
 
@@ -138,14 +138,14 @@ export async function fillInDirectorPersonalCodes(
       });
       await loggedFill(page, `#directorPersonalCode-${index}`, personalCode, `Director ${index + 1} personal code`, { screenshotPath });
     }
-    await page.screenshot({ path: `${screenshotPath}/${timestamp()}-01-personal-codes-entered.png` });
+    await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-01-personal-codes-entered.png` });
   });
 }
 
 export async function acceptLawfulPurposeStatement(page, screenshotPath = defaultScreenshotPath) {
   await test.step("The user confirms the intended future activities of the company are lawful", async () => {
     await page.check("#lawfulPurposeStatement");
-    await page.screenshot({ path: `${screenshotPath}/${timestamp()}-01-lawful-purpose-accepted.png` });
+    await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-01-lawful-purpose-accepted.png` });
   });
 }
 
@@ -156,7 +156,7 @@ export async function previewConfirmationStatement(page, screenshotPath = defaul
     await expect(page.locator("#previewView")).toBeVisible({ timeout: 15000 });
     const preview = await page.locator("#previewXml").textContent();
     expect(preview).toContain("ConfirmationAndVerificationStatement");
-    await page.screenshot({ path: `${screenshotPath}/${timestamp()}-01-preview.png` });
+    await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-01-preview.png` });
   });
 }
 
@@ -215,7 +215,7 @@ export async function payConfirmationStatementFeeDirectly(page, { companyNumber,
     if (!result.ok) {
       throw new Error(`Failed to pay the confirmation statement fee directly: ${JSON.stringify(result.checkoutBody)}`);
     }
-    await page.screenshot({ path: `${screenshotPath}/${timestamp()}-fee-paid-directly.png` });
+    await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-fee-paid-directly.png` });
   });
 }
 
@@ -235,11 +235,11 @@ export async function payAndSubmitViaSimulatorCheckout(
     await resetConfirmationStatementCharge(page, companyNumber, reviewDate);
     await loggedClick(page, "#submitFilingBtn", "Starting the checkout for the confirmation statement fee", { screenshotPath });
     await page.waitForURL(/checkout=success/, { timeout: 30000 });
-    await page.screenshot({ path: `${screenshotPath}/${timestamp()}-01-checkout-returned.png` });
+    await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-01-checkout-returned.png` });
 
     await expect(page.locator("#authView")).toBeVisible({ timeout: 15000 });
     await expect(page.locator("#statusMessagesContainer")).toContainText("Payment received", { timeout: 15000 });
-    await page.screenshot({ path: `${screenshotPath}/${timestamp()}-01-resumed-after-payment.png` });
+    await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-01-resumed-after-payment.png` });
 
     await enterCompanyAuthCodeAndReadRegister(page, companyAuthCode, screenshotPath);
   });
@@ -259,14 +259,14 @@ export async function submitConfirmationStatementFiling(page, screenshotPath = d
   await test.step("The user submits the confirmation statement to Companies House", async () => {
     await loggedClick(page, "#submitFilingBtn", "Submitting the confirmation statement filing", { screenshotPath });
     await expect(page.locator("#resultView")).toBeVisible({ timeout: 15000 });
-    await page.screenshot({ path: `${screenshotPath}/${timestamp()}-01-submitted.png` });
+    await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-01-submitted.png` });
   });
 }
 
 export async function verifyFilingAccepted(page, screenshotPath = defaultScreenshotPath) {
   await test.step("The user sees the filing accepted after polling to a terminal state", async () => {
     await expect(page.locator("#filingResult")).toContainText("ACCEPT", { timeout: 30000 });
-    await page.screenshot({ path: `${screenshotPath}/${timestamp()}-01-accepted.png` });
+    await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-01-accepted.png` });
   });
 }
 
@@ -274,6 +274,6 @@ export async function verifyFilingRejected(page, expectedRejectCode, screenshotP
   await test.step(`The user sees the filing rejected with reject code ${expectedRejectCode} after polling to a terminal state`, async () => {
     await expect(page.locator("#filingResult")).toContainText("REJECT", { timeout: 30000 });
     await expect(page.locator("#rejections")).toContainText(expectedRejectCode);
-    await page.screenshot({ path: `${screenshotPath}/${timestamp()}-01-rejected.png` });
+    await takeScreenshot(page, { path: `${screenshotPath}/${timestamp()}-01-rejected.png` });
   });
 }

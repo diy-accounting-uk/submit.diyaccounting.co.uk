@@ -511,7 +511,7 @@ const autoFocusScreenshot = async (page, context) => {
   const slug = toSlug(context || "focus");
   const file = `${timestamp()}-01-focus-${slug || "target"}.png`;
   try {
-    await page.screenshot({ path: path.join(autoPath, file) });
+    await takeScreenshot(page, { path: path.join(autoPath, file) });
   } catch (e) {
     console.warn(`[WARN] Failed to take focus screenshot: ${e.message}`);
   }
@@ -548,7 +548,7 @@ export const loggedClick = async (page, selectorOrLocator, description = "", opt
       const name = `${timestamp()}-00-focus-${labelSlug || "target"}.png`;
       try {
         ensureDirSync(opts.screenshotPath);
-        await page.screenshot({ path: path.join(opts.screenshotPath, name) });
+        await takeScreenshot(page, { path: path.join(opts.screenshotPath, name) });
       } catch (e) {
         console.warn(`[WARN] Failed to take focus screenshot at provided path: ${e.message}`);
       }
@@ -594,7 +594,7 @@ export const loggedFill = async (page, selectorOrLocator, value, description = "
         const name = `${timestamp()}-00-focus-${labelSlug || "target"}.png`;
         try {
           ensureDirSync(opts.screenshotPath);
-          await page.screenshot({ path: path.join(opts.screenshotPath, name) });
+          await takeScreenshot(page, { path: path.join(opts.screenshotPath, name) });
         } catch (e) {
           console.warn(`[WARN] Failed to take focus screenshot at provided path: ${e.message}`);
         }
@@ -653,7 +653,7 @@ export const loggedFocus = async (page, selectorOrLocator, description = "", opt
       const name = `${timestamp()}-00-focus-${labelSlug || "target"}.png`;
       try {
         ensureDirSync(opts.screenshotPath);
-        await page.screenshot({ path: path.join(opts.screenshotPath, name) });
+        await takeScreenshot(page, { path: path.join(opts.screenshotPath, name) });
       } catch (e) {
         console.warn(`[WARN] Failed to take focus screenshot at provided path: ${e.message}`);
       }
@@ -702,7 +702,7 @@ export const loggedSelectOption = async (page, selectorOrLocator, valueOrOptions
         const name = `${timestamp()}-00-focus-${labelSlug || "target"}.png`;
         try {
           ensureDirSync(opts.screenshotPath);
-          await page.screenshot({ path: path.join(opts.screenshotPath, name) });
+          await takeScreenshot(page, { path: path.join(opts.screenshotPath, name) });
         } catch (e) {
           console.warn(`[WARN] Failed to take focus screenshot at provided path: ${e.message}`);
         }
@@ -731,6 +731,16 @@ export const loggedSelectOption = async (page, selectorOrLocator, valueOrOptions
       }
     },
   );
+
+/**
+ * Screenshot of the page once the document in front of it has finished loading. A capture taken
+ * while the page is mid-navigation (a redirect after login, a TOTP form submit) fails with
+ * "Unable to capture screenshot", so every step and helper screenshot goes through here.
+ */
+export async function takeScreenshot(page, options) {
+  await page.waitForLoadState("load");
+  return page.screenshot(options);
+}
 
 // Generate timestamp for file naming
 export function timestamp() {
