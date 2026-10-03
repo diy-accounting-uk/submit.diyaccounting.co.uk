@@ -7,8 +7,7 @@ Phase 1 put the self-employment quarterly update on the sandbox: Business Detail
 and the five period-summary endpoints. Phase 2 finishes the tax year. It adds the annual
 submission, the business source adjustable summary, the tax calculation and the final
 declaration, then the pages that carry a sole trader from four quarterly updates to a filed
-return. The recognition application and the software finder listing follow the build as their
-own track.
+return. The recognition application and the software finder listing are `PLAN_ITSA_APPROVAL.md`.
 
 ## Operator assertions (verbatim)
 
@@ -994,56 +993,7 @@ update page does. Nothing in this phase's build sequence waits on the DIYA-GL im
 
 ## The recognition application and the finder listing
 
-This track starts when the build runs against the sandbox and not before, which is the
-operator's parked decision. HMRC's how-to-integrate guide sets out what it takes.
-
-HMRC recognises three product shapes. Ours is a **full end-to-end product**, built in two
-stages. The guide allows the stages to be approved one at a time, and we apply for both at once
-(D3), as one submission covering the whole journey from a quarterly update to a filed return:
-
-| Stage | APIs HMRC requires |
-|---|---|
-| In-year (quarterly updates) | Business Details, Obligations, Self-Employment Business, Property Business, Individual Calculations |
-| End-of-year | Business Details, Self-Employment Business, Property Business, Business Source Adjustable Summary, Individual Losses, Individuals Tax Liability Adjustments, Obligations, Individual Calculations |
-
-Applying for both stages at once means the checklist has to answer for every API in both rows
-before anything is sent. All nine have a build in this phase (D9), Individual Losses and
-Individuals Tax Liability Adjustments included, so the checklist answers each with working
-endpoints and a customer journey behind it.
-
-The steps, in order:
-
-1. Register a production application on the Developer Hub, or add the ITSA API subscriptions to
-   the existing one. Accept the terms of use.
-2. Test every endpoint of every API in the minimum functionality standards, in the sandbox,
-   with fraud prevention headers on every call. HMRC's specialist team reads the logs, so the
-   testing has to be real traffic from the deployed application, not a local harness.
-3. Send the sandbox application id used for testing to SDST, as soon as testing finishes, so
-   they can find the calls in their logs.
-4. Ask SDST for the Production Approvals Checklist, complete it, return it.
-5. HMRC reviews the testing, the fraud header accuracy and the checklist, then grants
-   production access or says what to fix.
-6. Ask about the software finder listing at the same time. The gov.uk page that lists
-   compatible software is HMRC's, and vendors get on it through the software vendor team, who
-   want the product name, what it supports, its pricing and its accessibility position.
-
-The evidence HMRC asks for, and where it already exists:
-
-| Evidence | Where |
-|---|---|
-| Fraud prevention headers, validated | `_developers/hmrc/ITSA_SPIKE.md` records a clean validator run, one warning for a header the sandbox test user cannot supply |
-| A completed developer checklist | `../private.diyaccounting.co.uk/hmrc/questionnaires/hmrc_questionnaire_1_software_developer_checklist_diy_accounting_limited_v2.md`, from the VAT approval, needs an ITSA pass |
-| WCAG 2.1 AA evidence | `../private.diyaccounting.co.uk/hmrc/questionnaires/hmrc_questionnaire_2_WCAG_2.1_AA_diy_accounting_limited_v2.md` and `../private.diyaccounting.co.uk/hmrc/itsa/WCAG_2.2_AA_EVIDENCE.md` |
-| Endpoint test logs | The behaviour suites, run against the ci deployment with the sandbox test user |
-
-What a workflow can do: assemble the checklist answers from the repository, run the sandbox
-endpoint sweep and produce the log, refresh the WCAG evidence, and draft both emails. What only
-the operator can do: hold the Developer Hub account, accept the terms of use, press send on the
-emails to SDST and to the software vendor team, and answer HMRC when they reply.
-
-The two emails go out together, per the parked decision: the recognition application, and the
-question about whether a production window opens for the 2027-28 tax year. Addresses are
-`SDSTeam@hmrc.gov.uk` and `makingtaxdigital-softwarevendors@hmrc.gov.uk`.
+Moved to `PLAN_ITSA_APPROVAL.md` on 2026-10-03, with HMRC's letter of 2026-09-30 and its appraisal.
 
 ## The build sequence
 
@@ -1277,25 +1227,9 @@ form does not carry is named in the status line rather than dropped silently. `f
 
 Waits on T8, on T19 for the cumulative page shape, and on `PLAN_SUBMISSION_MCP.md` M1.
 
-### T10. The recognition pack (Haiku to assemble, operator to send)
+### T10. The recognition pack
 
-Owns `../private.diyaccounting.co.uk/hmrc/itsa/ITSA_PRODUCTION_APPROVALS_CHECKLIST.md`, an ITSA pass over the two
-questionnaires, and the two draft emails.
-
-One application covers both approval stages (D3), so the checklist answers for every API in
-both rows of the stage table in one pass. All nine have a build behind them (D9): Business
-Details, Obligations, Self-Employment Business, Property Business, Business Source Adjustable
-Summary, Self Assessment Individual Details, Individual Calculations, Individual Losses and
-Individuals Tax Liability Adjustments. Nothing in the checklist rests on a reviewer agreeing
-that a function is optional.
-
-The two draft emails carry the same change. The SDST email asks for approval of the whole
-end-to-end journey rather than the in-year stage alone, names the sandbox application id, and
-lists both income types the journey covers. The software vendor team email describes the
-product as filing quarterly updates, loss claims and a final declaration for self-employment and
-UK property income.
-
-Waits on T7. The operator sends.
+Assembled and on main; its remaining edits and the sends are `PLAN_ITSA_APPROVAL.md` (IA3, IA6 to IA9).
 
 ### T11. The UK property period summary (Sonnet)
 
@@ -1731,12 +1665,6 @@ test support API, and its vendor-state checkpoints reset the user between runs.
 
 Each stays a row in `BACKLOG.md` (its tier and value); the brief lives here.
 
-### 10. ITSA phase 1 sandbox integration
-
-ITSA build, phase 1: sandbox integration with the self-employment quarterly update APIs. On main and proven: the sandbox year ran clean on 2023-24, 2025-26 and 2026-27 on 2026-09-25 with a valid `Gov-Client-Multi-Factor` header, and the eight ITSA suites run in CI. The send is row 11. The hand-rolled `hmrcApi.js` client stays, and a quarterly update costs one token like a VAT return; the mandate dates and thresholds are in `_developers/hmrc/ITSA_SPIKE.md`.
-
-**Source**: Issues #16, #20; `../private.diyaccounting.co.uk/strategy/STRATEGY.md`; `PLAN_ITSA_PHASE_2.md`. **Effort**: L. **Value**: Revenue. The strategic bet. Voluntary sign-up is open now and HMRC auto-enrolment starts September 2026.
-
 ### 17d. Walkthrough video test-data review
 
 Review the eight walkthrough videos for test-data improvements (HMRC's sandbox answered "No liabilities/payments/penalties found" for the three VAT read pages, so those show the search and not a result), de-duplicate the day-pass and HMRC-authorisation scenes that every recording repeats, and compress the full recordings; re-record what changes with `site-video-capture` and republish. All eight are public on the channel.
@@ -1757,7 +1685,7 @@ Tell HMRC's SDS team the licence changed. One email from antony@diyaccounting.co
 
 ## Sources
 
-- `BACKLOG.md` rows 10 and 11. `NEXT.md` O11 and B11.T10.
+- `PLAN_ITSA_APPROVAL.md` (rows 10 and 11, the application and the sends).
 - `_developers/hmrc/ITSA_SPIKE.md`, `../private.diyaccounting.co.uk/hmrc/itsa/ITSA_MINIMUM_FUNCTIONALITY_STANDARDS.md`.
 - `PLAN_SUBMISSION_MCP.md`, `../private.diyaccounting.co.uk/engineering/submit/archive/PLAN_COMPANIES_HOUSE_REST_FILING.md`.
 - Making Tax Digital for Income Tax end-to-end service guide, "How to integrate with HMRC APIs":
