@@ -687,8 +687,8 @@ async function emptyBucket(bucketName) {
         // the wrong-region client with PermanentRedirect rather than NoSuchBucket.
         console.warn(`Bucket ${bucketName} not addressable in the resolved region yet: ${error.message}`);
       } else {
-        console.error(`Error retrieving bucket contents for bucket ${bucketName}: ${error.message}`);
-        console.log(`Error retrieving bucket contents for bucket ${bucketName}: stack trace: ${error.stack}`);
+        console.warn(`Could not retrieve bucket contents for bucket ${bucketName}: ${error.message}`);
+        console.log(`Could not retrieve bucket contents for bucket ${bucketName}: stack trace: ${error.stack}`);
       }
       continuationToken = undefined;
     }

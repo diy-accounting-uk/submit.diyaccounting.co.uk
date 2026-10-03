@@ -757,16 +757,16 @@ describe("functions/infra/selfDestruct", () => {
     delete process.env.EDGE_ORIGIN_BUCKET;
   });
 
-  it("still errors on a bucket-emptying failure that is neither a missing bucket nor a region redirect", async () => {
+  it("warns on a bucket-emptying failure that is neither a missing bucket nor a region redirect", async () => {
     process.env.EDGE_ORIGIN_BUCKET = "ci-branch-origin-bucket";
     listObjectsV2Error = Object.assign(new Error("Access Denied"), { name: "AccessDenied" });
-    const errorSpy = vi.spyOn(console, "error");
+    const warnSpy = vi.spyOn(console, "warn");
 
     const { ingestHandler } = await import("@app/functions/infra/selfDestruct.js");
     const res = await ingestHandler(makeEvent(), { getRemainingTimeInMillis: () => 900000 });
 
     expect(res.statusCode).toBe(200);
-    expect(errorSpy).toHaveBeenCalledWith(expect.stringContaining("Error retrieving bucket contents for bucket ci-branch-origin-bucket"));
+    expect(warnSpy).toHaveBeenCalledWith(expect.stringContaining("Could not retrieve bucket contents for bucket ci-branch-origin-bucket"));
 
     delete process.env.EDGE_ORIGIN_BUCKET;
   });
