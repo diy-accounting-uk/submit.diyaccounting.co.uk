@@ -1875,6 +1875,13 @@ export async function clickObligationSubmitReturn(page, screenshotPath = default
     // Verify the form is visible
     await expect(page.locator("#vatSubmissionForm")).toBeVisible({ timeout: 10000 });
 
+    // The period choice lists HMRC's open obligations and has the deep-linked one selected
+    const longDate = new Intl.DateTimeFormat("en-GB", { day: "numeric", month: "long", year: "numeric", timeZone: "UTC" });
+    const expectedPeriod = `${longDate.format(new Date(periodStart))} to ${longDate.format(new Date(periodEnd))}`;
+    await expect(page.locator("#obligationChoice")).toBeVisible({ timeout: 10000 });
+    await expect(page.locator("#obligationChoice option:checked")).toContainText(expectedPeriod);
+    await page.screenshot({ path: `${screenshotPath}/${timestamp()}-03-period-choice-shown.png` });
+
     return { navigated: true, vrn, periodStart, periodEnd };
   });
 }

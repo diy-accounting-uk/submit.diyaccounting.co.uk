@@ -69,18 +69,27 @@
 
           <div class="form-group">
             <label>VAT period</label>
-            <p id="periodDates-hint" class="hint">Enter the start and end dates of your VAT period</p>
-            <div class="period-date-inputs" style="display: flex; gap: 1em; flex-wrap: wrap">
-              <div>
-                <label for="periodStart">Period start</label>
-                <input type="date" id="periodStart" name="periodStart" required aria-describedby="periodDates-hint" />
-              </div>
-              <div>
-                <label for="periodEnd">Period end</label>
-                <input type="date" id="periodEnd" name="periodEnd" required aria-describedby="periodDates-hint" />
+            <div id="obligationChoiceGroup" hidden>
+              <p id="obligationChoice-hint" class="hint">Choose a period HMRC is expecting a return for</p>
+              <select id="obligationChoice" aria-describedby="obligationChoice-hint"></select>
+            </div>
+            <p id="obligationStatus" class="hint" role="status"></p>
+            <button type="button" id="connectHmrcBtn" class="secondary-button" style="display: none">
+              Connect to HMRC to list your open periods
+            </button>
+            <div id="periodDates">
+              <p id="periodDates-hint" class="hint">Enter the start and end dates of your VAT period</p>
+              <div class="period-date-inputs" style="display: flex; gap: 1em; flex-wrap: wrap">
+                <div>
+                  <label for="periodStart">Period start</label>
+                  <input type="date" id="periodStart" name="periodStart" required aria-describedby="periodDates-hint" />
+                </div>
+                <div>
+                  <label for="periodEnd">Period end</label>
+                  <input type="date" id="periodEnd" name="periodEnd" required aria-describedby="periodDates-hint" />
+                </div>
               </div>
             </div>
-            <!-- Hidden fields for backwards compatibility -->
             <input type="hidden" id="periodKey" name="periodKey" value="" />
           </div>
 
@@ -372,48 +381,12 @@
     <script src="../../lib/request-cache.js"></script>
     <script src="../../lib/toml-parser.js"></script>
     <script src="../../lib/hmrc-scope-check.js"></script>
+    <script src="../../lib/vat-period-choice.js"></script>
     <script src="../../widgets/entitlement-status.js"></script>
     <script src="../../widgets/auth-status.js"></script>
     <script src="../../widgets/status-messages.js"></script>
     <script src="../../widgets/pass-redeemer.js"></script>
     <script>
-      // Obligation formatting utilities (inline version for non-module context)
-      const ObligationUtils = {
-        formatObligationForDisplay(obligation) {
-          const startDate = new Date(obligation.start);
-          const endDate = new Date(obligation.end);
-          const dueDate = obligation.due ? new Date(obligation.due) : null;
-          const dateOptions = { day: "numeric", month: "short", year: "numeric" };
-          return {
-            _periodKey: obligation.periodKey,
-            id: obligation.periodKey,
-            displayName: `${startDate.toLocaleDateString("en-GB", dateOptions)} to ${endDate.toLocaleDateString("en-GB", dateOptions)}`,
-            startDate: obligation.start,
-            endDate: obligation.end,
-            dueDate: obligation.due,
-            dueDateFormatted: dueDate ? dueDate.toLocaleDateString("en-GB", dateOptions) : null,
-            status: obligation.status,
-            statusDisplay: obligation.status === "O" ? "Open" : "Submitted",
-          };
-        },
-        formatObligationsForSelection(obligations) {
-          if (!Array.isArray(obligations)) return [];
-          return obligations.map(this.formatObligationForDisplay).sort((a, b) => new Date(b.endDate) - new Date(a.endDate));
-        },
-        filterOpenObligations(formattedObligations) {
-          return formattedObligations.filter((o) => o.status === "O");
-        },
-        getDropdownOptionText(formattedObligation) {
-          if (formattedObligation.dueDateFormatted) {
-            return `${formattedObligation.displayName} (Due: ${formattedObligation.dueDateFormatted})`;
-          }
-          return formattedObligation.displayName;
-        },
-      };
-
-      // Note: Obligation dropdown has been replaced with date inputs (periodStart/periodEnd).
-      // Period key is now resolved server-side from the dates.
-
       // Strip commas from numeric input (thousands separators like "1,234.56" → "1234.56")
       function stripCommas(value) {
         return String(value).replace(/,/g, "");
@@ -819,7 +792,6 @@
           showStatus("Submitting VAT return to HMRC...", "info");
 
           // Submit VAT return with 9-box data
-          // Pass period info (either periodKey or periodStart/periodEnd)
           const submitResponse = await submitVatWithCalculatedHeaders(submissionData.vatNumber, submissionData, accessToken);
 
           // Display success
@@ -934,6 +906,94 @@
       let receiptDisplay = null;
       let vatFormContainer = null;
 
+      // Offer HMRC's open obligations as a choice of VAT period. Needs the customer's HMRC token, so it runs
+      // when the page loads with a token in place and when the VRN is entered; without a token the form
+      // offers a connect button and keeps the free date inputs.
+      let obligationsLoadedForVrn = null;
+
+      function showObligationStatus(message) {
+        document.getElementById("obligationStatus").textContent = message;
+      }
+
+      async function loadOpenObligations() {
+        const vrn = document.getElementById("vatNumber").value.trim();
+        if (!/^\d{9}$/.test(vrn) || obligationsLoadedForVrn === vrn) return;
+        obligationsLoadedForVrn = vrn;
+
+        const connectBtn = document.getElementById("connectHmrcBtn");
+        const accessToken = sessionStorage.getItem("hmrcAccessToken");
+        const canReadObligations =
+          accessToken && window.hmrcScopeCheck
+            ? await window.hmrcScopeCheck.isTokenSufficient("/hmrc/vat/vatObligations.html")
+            : !!accessToken;
+        if (!canReadObligations) {
+          obligationsLoadedForVrn = null;
+          connectBtn.style.display = "";
+          showObligationStatus("Connect to HMRC to choose from your open VAT periods, or enter the dates below.");
+          return;
+        }
+        connectBtn.style.display = "none";
+
+        try {
+          const { from, to } = window.vatPeriodChoice.obligationSearchWindow(Date.now());
+          const params = new URLSearchParams({ vrn, from, to, status: "O" });
+          const requestHeaders = {
+            "Authorization": `Bearer ${accessToken}`,
+            "Content-Type": "application/json",
+            ...(await getGovClientHeaders()),
+            "x-wait-time-ms": "0",
+          };
+          const hmrcAccount = sessionStorage.getItem("hmrcAccount");
+          if (hmrcAccount) requestHeaders["hmrcAccount"] = hmrcAccount;
+
+          const response = await window.authorizedFetch(`/api/v1/hmrc/vat/obligation?${params}`, {
+            method: "GET",
+            headers: requestHeaders,
+          });
+          hideStatus(); // Clear the polling banner the fetch leaves behind
+          if (!response.ok) throw new Error(`Obligations request failed with status ${response.status}`);
+          const result = await response.json();
+          const open = window.vatPeriodChoice.openObligations(result.obligations);
+          if (open.length === 0) {
+            showObligationStatus("HMRC lists no open VAT periods for this number. Enter the dates below.");
+            return;
+          }
+          window.vatPeriodChoice.bindChoice(
+            {
+              select: document.getElementById("obligationChoice"),
+              startInput: document.getElementById("periodStart"),
+              endInput: document.getElementById("periodEnd"),
+              freeDates: document.getElementById("periodDates"),
+              group: document.getElementById("obligationChoiceGroup"),
+            },
+            open,
+          );
+          showObligationStatus("");
+        } catch (error) {
+          console.warn("Could not read open obligations:", error);
+          obligationsLoadedForVrn = null;
+          showObligationStatus("HMRC's list of open VAT periods could not be read. Enter the dates below.");
+        }
+      }
+
+      async function connectHmrc() {
+        try {
+          const hmrcAccount = sessionStorage.getItem("hmrcAccount");
+          const state = generateRandomState();
+          sessionStorage.setItem("oauth_state", state);
+          sessionStorage.setItem("currentActivity", location.pathname);
+          const oauthScope = window.hmrcScopeCheck ? await window.hmrcScopeCheck.getOAuthScopeString() : "write:vat read:vat";
+          const authResponseUrl = await window.authUrlBuilder.buildHmrcAuthUrl(state, oauthScope, hmrcAccount || "live");
+          try {
+            window.__correlation?.prepareRedirect?.();
+          } catch {}
+          window.location.href = authResponseUrl;
+        } catch (error) {
+          console.error("Authentication error:", error);
+          showStatus(`Authentication failed: ${error.message}`, "error");
+        }
+      }
+
       // Initialize page
       async function initializePage() {
         const urlParams = new URLSearchParams(window.location.search);
@@ -961,7 +1021,6 @@
         if (periodEnd) {
           document.getElementById("periodEnd").value = periodEnd;
         }
-        // Legacy periodKey support (set hidden field for backwards compatibility)
         if (periodKey) {
           document.getElementById("periodKey").value = periodKey;
         }
@@ -1007,6 +1066,10 @@
 
         // Load and display token info if authenticated
         updateTokenInfo();
+
+        document.getElementById("connectHmrcBtn")?.addEventListener("click", connectHmrc);
+        document.getElementById("vatNumber")?.addEventListener("input", loadOpenObligations);
+        await loadOpenObligations();
       }
 
       async function updateTokenInfo() {
@@ -1097,8 +1160,6 @@
             e.target.value = e.target.value.replace(/\D/g, "");
           });
         }
-
-        // Note: Obligation dropdown replaced with date inputs - period key resolved server-side
 
         // Auto-calculation event listeners for 9-box VAT return
         const vatDueSalesInput = document.getElementById("vatDueSales");
